@@ -271,6 +271,15 @@ Las claves pueden ir en variables de entorno (`api_key_env`) o guardarse desde l
 > menudo. Abre **Proveedores → Probar y ver modelos**: marca en rojo los que no existen y
 > lista los reales para corregirlos en **Modelos**.
 
+## El LMS de la clase
+
+En [`lms/`](lms/) está la plataforma del curso de programación agéntica: front **Qwik** estático
+dentro de un backend **Go**, con el temario en archivos (`lms/content/`). Login (cuentas locales
+hoy, Keycloak cuando esté), cursos → sesiones con objetivos, ciclo de aprendizaje con
+herramientas, enlaces publicados, preguntas, tareas con rúbrica y notas, y el API `/api/v1` del
+[contrato](docs/CONTRATO.md) que consumirá `jmd`. `docker compose up -d --build lms` y
+http://localhost:8080. Guía: [`lms/README.md`](lms/README.md).
+
 ## Desarrollo
 
 ```bash

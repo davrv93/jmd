@@ -32,3 +32,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t jmd-test .
+
+  lms:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: lms/web/package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: lms/api/go.mod
+          cache-dependency-path: lms/api/go.sum
+      - name: front (Qwik, estático)
+        working-directory: lms/web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: api (Go) con el front dentro
+        working-directory: lms/api
+        run: |
+          go vet ./...
+          go test ./...
+          ./scripts/build.sh
+      - run: docker build -t lms-test -f lms/Dockerfile lms
