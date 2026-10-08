@@ -8,6 +8,11 @@ on:
     branches-ignore: [main]
     paths: ['install.sh', 'install.ps1', '.github/workflows/release.yml', 'Cargo.toml', 'Cargo.lock']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión a publicar (p. ej. v0.1.0). Vacío = solo compilar y probar'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -137,7 +142,8 @@ jobs:
           & "$env:RUNNER_TEMP\ps51\jmd.exe" --version
 
   publish:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Con un tag v*, o a mano con «version» (GitHub crea el tag al publicar).
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.version != '')
     needs: [build, smoke]
     runs-on: ubuntu-latest
     steps:
@@ -149,9 +155,13 @@ jobs:
       - name: sumas y release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.version || github.ref_name }}
         run: |
+          # La versión publicada debe ser la de Cargo.toml (la que muestra `jmd --version`).
+          crate="v$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)"
+          [ "$TAG" = "$crate" ] || { echo "::error::$TAG no coincide con Cargo.toml ($crate)"; exit 1; }
           cd dist
           sha256sum jmd-* > SHA256SUMS
           cat SHA256SUMS
-          gh release create "$GITHUB_REF_NAME" jmd-* SHA256SUMS ../install.sh ../install.ps1 \
-            --repo "$GITHUB_REPOSITORY" --title "jmd $GITHUB_REF_NAME" --generate-notes
+          gh release create "$TAG" jmd-* SHA256SUMS ../install.sh ../install.ps1 \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "jmd $TAG" --generate-notes

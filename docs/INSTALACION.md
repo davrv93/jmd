@@ -185,4 +185,7 @@ git tag v0.1.0 && git push origin v0.1.0
 El workflow `release` compila para Linux x86_64/ARM64 (musl, sirve para cualquier distro y para
 WSL), macOS universal y Windows x64. Después **prueba los instaladores en cada sistema**: instala,
 arranca el gateway y corre `jmd status`. Solo si todo pasa, publica la release con
-`SHA256SUMS`. Para probarlo sin publicar: *Actions → release → Run workflow*.
+`SHA256SUMS`.
+
+Sin empujar el tag: *Actions → release → Run workflow* con `version` = `v0.1.0` (debe coincidir
+con `Cargo.toml`). GitHub crea el tag al publicar. Con `version` vacío solo compila y prueba.
