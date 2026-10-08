@@ -1,4 +1,4 @@
-# ai-orchestrator
+# jmd · gateway de IA
 
 Gateway de IA **compatible con OpenAI**, escrito en Rust, que elige el modelo por ti y no
 se cae cuando un proveedor gratuito te devuelve 429. Trae una **UI de gestión** y
@@ -48,7 +48,7 @@ Todo lo demás ocurre detrás.
 Necesitas Docker **o** Podman.
 
 ```bash
-cd ai-orchestrator
+git clone https://github.com/davrv93/jmd && cd jmd
 cp .env.example .env          # pon ADMIN_TOKEN y las claves que tengas
 
 docker compose up -d --build  # o: podman compose up -d --build
@@ -75,7 +75,7 @@ Sin contenedores: `cargo run --release` (lee `config.yaml` y guarda en `./data`)
 ```bash
 # Linux/WSL: el binario sale del propio gateway
 mkdir -p ~/.local/bin && curl -fsSL http://localhost:4000/download/jmd -o ~/.local/bin/jmd && chmod +x ~/.local/bin/jmd
-# macOS/Windows: cargo install --git <este repo> ai-orchestrator --bin jmd
+# macOS/Windows (o desde el código): cargo install --git https://github.com/davrv93/jmd --bin jmd
 
 jmd login --url http://localhost:4000 --token <ADMIN_TOKEN>
 jmd status              # gateway, tokens, Claude Code, OpenCode, RTK y caveman

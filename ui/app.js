@@ -764,8 +764,7 @@ async function viewTerminal() {
         <p class="muted small">Linux y WSL (el binario sale de este servidor):</p>
         ${codeLine(`mkdir -p ~/.local/bin && curl -fsSL ${origin}/download/jmd -o ~/.local/bin/jmd && chmod +x ~/.local/bin/jmd`)}
         <p class="muted small">macOS y Windows (necesita Rust):</p>
-        ${codeLine("cargo install --git https://github.com/davrv93/ddesign-k ai-orchestrator --bin jmd")}
-        <p class="muted small">Mientras no esté en la rama principal, añade <span class="mono">--branch claude/magical-noether-egkbo5</span>.</p>
+        ${codeLine("cargo install --git https://github.com/davrv93/jmd --bin jmd")}
         <p class="muted small">Conectar (el token es el mismo de esta UI):</p>
         ${codeLine(`jmd login --url ${origin} --token <ADMIN_TOKEN>`)}
         ${codeLine("jmd status")}
