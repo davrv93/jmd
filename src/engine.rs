@@ -167,9 +167,29 @@ impl Engine {
             }
             std::fs::rename(&tmp, &self.config_path).map_err(|e| format!("no se pudo guardar: {e}"))?;
         }
+        // Un modelo o proveedor corregido no debe seguir castigado por los fallos de antes
+        // (p. ej. un 404 de un ID mal escrito deja una hora de cooldown).
+        let changed_providers: Vec<&String> = new.providers.iter()
+            .filter(|(n, p)| old.providers.get(*n) != Some(*p)).map(|(n, _)| n).collect();
+        for (name, spec) in &new.models {
+            let touched = old.models.get(name) != Some(spec)
+                || spec.deployments.iter().any(|d| changed_providers.contains(&&d.provider));
+            if touched {
+                self.reset_model(name, spec);
+            }
+        }
         *self.cfg.write().unwrap() = Arc::new(new);
         self.judge_cache.lock().unwrap().0.clear();
         Ok(())
+    }
+
+    /// Cierra el circuito y quita los cooldowns de un modelo y de sus deployments.
+    pub fn reset_model(&self, name: &str, spec: &crate::config::ModelSpec) {
+        self.breaker.reset(name);
+        self.cooldowns.clear(name);
+        for d in &spec.deployments {
+            self.cooldowns.clear(&format!("dep:{}", deployment_key(d)));
+        }
     }
 
     /// Al arrancar, lo gastado hoy sale de la telemetría (los presupuestos sobreviven a reinicios).

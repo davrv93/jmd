@@ -518,5 +518,12 @@ async fn invalid_key_with_400_falls_back_instead_of_failing() {
     let (_, v, _) = call(&app, "POST", "/v1/chat/completions", Some(chat("keyfail", "hola")), None).await;
     assert_eq!(v["orchestrator"]["attempts"][0]["skipped"], "cooldown");
     assert_eq!(fake.calls.lock().unwrap()["badkey-x"], 1);
-    let _ = e;
+
+    // Al corregir el modelo en la configuración, su cooldown desaparece y se vuelve a probar.
+    let mut cfg = (*e.cfg()).clone();
+    cfg.models.get_mut("badkey").unwrap().deployments[0].model = "ok-fixed".into();
+    e.replace_config(cfg).unwrap();
+    let (_, v, _) = call(&app, "POST", "/v1/chat/completions", Some(chat("keyfail", "hola")), None).await;
+    assert_eq!(v["orchestrator"]["model"], "badkey");
+    assert_eq!(v["orchestrator"]["upstream_model"], "ok-fixed");
 }

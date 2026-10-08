@@ -617,12 +617,9 @@ async fn delete_agent(State(e): State<AppState>, headers: HeaderMap, Path(name):
 async fn reset_model(State(e): State<AppState>, headers: HeaderMap, Path(name): Path<String>) -> Response {
     guard!(admin_auth(&e, &headers));
     let cfg = e.cfg();
-    e.breaker.reset(&name);
-    e.cooldowns.clear(&name);
-    if let Some(m) = cfg.models.get(&name) {
-        for d in &m.deployments {
-            e.cooldowns.clear(&format!("dep:{}", crate::quotas::deployment_key(d)));
-        }
+    match cfg.models.get(&name) {
+        Some(m) => e.reset_model(&name, m),
+        None => return error(StatusCode::NOT_FOUND, "modelo desconocido", "not_found", json!({})),
     }
     Json(json!({"ok": true})).into_response()
 }
