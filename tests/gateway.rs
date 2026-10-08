@@ -36,6 +36,10 @@ async fn fake_chat(State(f): State<Arc<Fake>>, Json(body): Json<Value>) -> Respo
         return (StatusCode::TOO_MANY_REQUESTS, [("retry-after", "0")],
             Json(json!({"error": {"message": "Rate limit exceeded", "code": 429}}))).into_response();
     }
+    if model.starts_with("badkey-") {
+        return (StatusCode::BAD_REQUEST, Json(json!([{"error": {"code": 400,
+            "message": "Please pass a valid API key", "status": "INVALID_ARGUMENT"}}]))).into_response();
+    }
     if model.starts_with("bad-") {
         return (StatusCode::BAD_REQUEST, Json(json!({"error": {"message": "messages[0]: campo inválido"}}))).into_response();
     }
@@ -124,6 +128,7 @@ models:
   seer:    {{capabilities: [text, image], deployments: [{{provider: p2, model: ok-vision}}]}}
   capmodel: {{capabilities: [text], deployments: [{{provider: limited, model: ok-capped}}]}}
   toolmodel: {{capabilities: [text, tools], deployments: [{{provider: p2, model: tool-x}}]}}
+  badkey:  {{capabilities: [text], deployments: [{{provider: p1, model: badkey-x}}]}}
 agents:
   general: {{chain: [good], priority: speed}}
   coding:  {{chain: [flaky, good], params: {{temperature: 0.2}}}}
@@ -133,6 +138,7 @@ agents:
   vision:  {{chain: [good, seer]}}
   capped:  {{chain: [capmodel, good]}}
   tools:   {{chain: [toolmodel]}}
+  keyfail: {{chain: [badkey, good]}}
 compat:
   model_aliases:
     "claude-*sonnet*": general
@@ -499,4 +505,18 @@ async fn style_and_tool_compression_reach_the_provider_and_the_stats() {
     let rows = s["by_style"].as_array().unwrap();
     assert!(rows.iter().any(|r| r["style"] == "full" && r["client"] == "jmd"), "{s}");
     assert!(rows.iter().any(|r| r["style"] == "lite" && r["tool_chars_saved"].as_i64().unwrap() > 2000), "{s}");
+}
+
+#[tokio::test]
+async fn invalid_key_with_400_falls_back_instead_of_failing() {
+    let (app, e, fake, _d) = setup().await;
+    let (st, v, _) = call(&app, "POST", "/v1/chat/completions", Some(chat("keyfail", "hola")), None).await;
+    assert_eq!(st, StatusCode::OK, "{v}");
+    assert_eq!(v["orchestrator"]["model"], "good");
+    assert_eq!(v["orchestrator"]["attempts"][0]["kind"], "auth");
+    // auth pone cooldown: la siguiente petición ni lo intenta.
+    let (_, v, _) = call(&app, "POST", "/v1/chat/completions", Some(chat("keyfail", "hola")), None).await;
+    assert_eq!(v["orchestrator"]["attempts"][0]["skipped"], "cooldown");
+    assert_eq!(fake.calls.lock().unwrap()["badkey-x"], 1);
+    let _ = e;
 }

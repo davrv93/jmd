@@ -53,6 +53,10 @@ const NOT_FOUND: &[&str] = &["model not found", "does not exist", "not a valid m
 const UNAVAILABLE: &[&str] = &["no endpoints found", "currently unavailable", "deprecated", "no longer available",
     "decommissioned", "temporarily unavailable"];
 const UNSUPPORTED: &[&str] = &["does not support", "not supported", "unsupported", "no support for"];
+/// Clave mal o ausente. Algunos proveedores lo dicen con 400 en vez de 401 (Gemini:
+/// «Please pass a valid API key», status INVALID_ARGUMENT): no es culpa de la petición.
+const AUTH: &[&str] = &["api key", "api_key", "apikey", "invalid key", "invalid_key", "unauthorized",
+    "unauthenticated", "authentication", "permission denied", "permission_denied", "access denied"];
 
 fn has(text: &str, needles: &[&str]) -> bool {
     needles.iter().any(|n| text.contains(n))
@@ -69,7 +73,8 @@ pub fn classify_status(status: u16, body: &str) -> ErrorKind {
         404 => if has(&t, UNAVAILABLE) { Unavailable } else { NotFound },
         413 => Context,
         400..=499 => {
-            if has(&t, CONTEXT) { Context }
+            if has(&t, AUTH) { Auth }
+            else if has(&t, CONTEXT) { Context }
             else if has(&t, NOT_FOUND) { NotFound }
             else if has(&t, UNAVAILABLE) { Unavailable }
             else if has(&t, UNSUPPORTED) { Unsupported }
@@ -306,6 +311,11 @@ mod tests {
         assert_eq!(classify_status(400, "This model's maximum context length is 8192"), Context);
         assert_eq!(classify_status(400, "model does not support image input"), Unsupported);
         assert_eq!(classify_status(400, "messages: field required"), BadRequest);
+        // Gemini responde 400 ante una clave inválida: es auth (fallback), no la petición.
+        let gemini = r#"[{"error": {"code": 400, "message": "Please pass a valid API key", "status": "INVALID_ARGUMENT"}}]"#;
+        assert_eq!(classify_status(400, gemini), Auth);
+        assert_eq!(classify_status(400, "API key not valid. Please pass a valid API key."), Auth);
+        assert_eq!(classify_status(403, "PERMISSION_DENIED"), Auth);
         assert_eq!(classify_status(503, "overloaded"), ServerError);
         assert_eq!(classify_status(504, ""), Timeout);
     }
