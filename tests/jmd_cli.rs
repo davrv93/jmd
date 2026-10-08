@@ -1,0 +1,184 @@
+//! Pruebas del binario `jmd` de punta a punta: MCP (HTTP y stdio) y skills.
+//!
+//! Cada prueba usa un HOME y una configuración temporales, así que no lee lo que haya
+//! configurado en la máquina (Claude Code, OpenCode…).
+
+use axum::extract::State;
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::{IntoResponse, Response};
+use axum::routing::post;
+use axum::{Json, Router};
+use serde_json::{json, Value};
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::sync::{Arc, Mutex};
+
+struct Tmp(PathBuf);
+impl Tmp {
+    fn new(tag: &str) -> Self {
+        let p = std::env::temp_dir().join(format!("jmd-cli-{tag}-{}", uuid::Uuid::new_v4().simple()));
+        std::fs::create_dir_all(&p).unwrap();
+        Tmp(p)
+    }
+}
+impl Drop for Tmp {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+/// `jmd` con un entorno aislado; devuelve (código, stdout).
+fn jmd(home: &Path, cwd: &Path, args: &[&str]) -> (i32, String) {
+    let out = Command::new(env!("CARGO_BIN_EXE_jmd"))
+        .args(args)
+        .current_dir(cwd)
+        .env("HOME", home)
+        .env("USERPROFILE", home)
+        .env("APPDATA", home.join("appdata"))
+        .env("XDG_CONFIG_HOME", home.join(".config"))
+        .env("JMD_MCP_CONFIG", home.join("mcp.json"))
+        .env("NO_COLOR", "1")
+        .output()
+        .expect("ejecutar jmd");
+    (out.status.code().unwrap_or(-1), String::from_utf8_lossy(&out.stdout).to_string()
+        + &String::from_utf8_lossy(&out.stderr))
+}
+
+// --- Servidor MCP falso por HTTP transmisible --------------------------------
+
+#[derive(Default)]
+struct Mcp {
+    calls: Mutex<Vec<Value>>,
+}
+
+async fn mcp_http(State(s): State<Arc<Mcp>>, headers: HeaderMap, Json(msg): Json<Value>) -> Response {
+    s.calls.lock().unwrap().push(msg.clone());
+    let method = msg["method"].as_str().unwrap_or("");
+    if msg.get("id").is_none() {
+        return StatusCode::ACCEPTED.into_response(); // notificación
+    }
+    if method != "initialize" && headers.get("mcp-session-id").and_then(|v| v.to_str().ok()) != Some("s-1") {
+        return (StatusCode::BAD_REQUEST, "falta la sesión").into_response();
+    }
+    let id = msg["id"].clone();
+    let result = match method {
+        "initialize" => json!({"protocolVersion": "2025-06-18", "capabilities": {"tools": {}},
+            "serverInfo": {"name": "falso", "version": "9.9"}}),
+        "tools/list" => json!({"tools": [
+            {"name": "echo", "description": "Repite el texto", "inputSchema": {"type": "object", "properties": {"text": {"type": "string"}}}},
+            {"name": "sumar", "description": "Suma dos números", "inputSchema": {"type": "object"}}]}),
+        _ => return Json(json!({"jsonrpc": "2.0", "id": id, "error": {"code": -32601, "message": "no"}})).into_response(),
+    };
+    let body = json!({"jsonrpc": "2.0", "id": id, "result": result});
+    if method == "tools/list" {
+        // Una respuesta en SSE, para probar ese camino.
+        return ([("content-type", "text/event-stream")], format!("event: message\ndata: {body}\n\n")).into_response();
+    }
+    ([("mcp-session-id", "s-1")], Json(body)).into_response()
+}
+
+async fn start_mcp() -> String {
+    let app = Router::new().route("/mcp", post(mcp_http)).with_state(Arc::new(Mcp::default()));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{addr}/mcp")
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn mcp_list_tools_add_remove() {
+    let url = start_mcp().await;
+    let home = Tmp::new("home");
+    let cwd = Tmp::new("cwd");
+    let h = home.0.clone();
+    let c = cwd.0.clone();
+    let u = url.clone();
+    tokio::task::spawn_blocking(move || {
+        // Sin servidores
+        let (code, out) = jmd(&h, &c, &["mcp"]);
+        assert_eq!(code, 0, "{out}");
+        assert!(out.contains("No hay servidores MCP"), "{out}");
+
+        // add por URL, luego list y tools
+        let (code, out) = jmd(&h, &c, &["mcp", "add", "web", "--url", &u]);
+        assert_eq!(code, 0, "{out}");
+        let (code, out) = jmd(&h, &c, &["--json", "mcp", "list"]);
+        assert_eq!(code, 0, "{out}");
+        let v: Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v[0]["name"], "web");
+        assert_eq!(v[0]["ok"], true, "{out}");
+        assert_eq!(v[0]["tools"], 2);
+        let (code, out) = jmd(&h, &c, &["--json", "mcp", "tools", "web"]);
+        assert_eq!(code, 0, "{out}");
+        let tools: Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(tools[0]["name"], "echo");
+
+        // Un servidor que no existe: falla con su error, sin tumbar la lista
+        let (code, _) = jmd(&h, &c, &["mcp", "add", "roto", "--", "comando-que-no-existe-jmd"]);
+        assert_eq!(code, 0);
+        let (_, out) = jmd(&h, &c, &["--json", "mcp", "list"]);
+        let v: Value = serde_json::from_str(&out).unwrap();
+        let roto = v.as_array().unwrap().iter().find(|s| s["name"] == "roto").unwrap();
+        assert_eq!(roto["ok"], false);
+
+        // El .mcp.json del proyecto (formato de Claude Code) también cuenta
+        std::fs::write(c.join(".mcp.json"), json!({"mcpServers": {"proyecto": {"type": "http", "url": u}}}).to_string()).unwrap();
+        let (_, out) = jmd(&h, &c, &["--json", "mcp", "list"]);
+        let v: Value = serde_json::from_str(&out).unwrap();
+        assert!(v.as_array().unwrap().iter().any(|s| s["name"] == "proyecto" && s["source"] == ".mcp.json"));
+
+        let (code, out) = jmd(&h, &c, &["mcp", "remove", "roto"]);
+        assert_eq!(code, 0, "{out}");
+        assert!(out.contains("quitado"));
+    }).await.unwrap();
+}
+
+#[cfg(unix)]
+#[tokio::test(flavor = "multi_thread")]
+async fn mcp_over_stdio() {
+    if Command::new("python3").arg("--version").output().is_err() {
+        eprintln!("sin python3: se salta la prueba stdio");
+        return;
+    }
+    let home = Tmp::new("home");
+    let cwd = Tmp::new("cwd");
+    let script = home.0.join("srv.py");
+    std::fs::write(&script, r#"
+import json, sys
+for line in sys.stdin:
+    m = json.loads(line)
+    if "id" not in m:
+        continue
+    if m["method"] == "initialize":
+        r = {"protocolVersion": "2025-06-18", "capabilities": {}, "serverInfo": {"name": "py", "version": "1"}}
+    elif m["method"] == "tools/list":
+        print("log que no es JSON", flush=True)
+        r = {"tools": [{"name": "hora", "description": "Da la hora", "inputSchema": {"type": "object"}}]}
+    else:
+        r = {}
+    print(json.dumps({"jsonrpc": "2.0", "id": m["id"], "result": r}), flush=True)
+"#).unwrap();
+    let (h, c, s) = (home.0.clone(), cwd.0.clone(), script.display().to_string());
+    tokio::task::spawn_blocking(move || {
+        let (code, out) = jmd(&h, &c, &["mcp", "add", "py", "--", "python3", &s]);
+        assert_eq!(code, 0, "{out}");
+        let (code, out) = jmd(&h, &c, &["--json", "mcp", "tools", "py"]);
+        assert_eq!(code, 0, "{out}");
+        let tools: Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(tools[0]["name"], "hora");
+    }).await.unwrap();
+}
+
+#[test]
+fn skills_include_builtin_and_project() {
+    let home = Tmp::new("home");
+    let cwd = Tmp::new("cwd");
+    let dir = cwd.0.join(".claude").join("skills").join("marca");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("SKILL.md"), "---\nname: marca\ndescription: Colores y tono de la marca\n---\nUsa azul.").unwrap();
+    let (code, out) = jmd(&home.0, &cwd.0, &["--json", "skills"]);
+    assert_eq!(code, 0, "{out}");
+    let v: Value = serde_json::from_str(&out).unwrap();
+    let names: Vec<&str> = v.as_array().unwrap().iter().filter_map(|s| s["name"].as_str()).collect();
+    assert!(names.contains(&"prototipo") && names.contains(&"marca"), "{names:?}");
+}

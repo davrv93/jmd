@@ -191,9 +191,30 @@ impl Client {
                     continue;
                 }
                 if let Ok(v) = serde_json::from_str::<Value>(data) {
-                    if let Some(t) = v["choices"][0]["delta"]["content"].as_str() {
+                    let delta = &v["choices"][0]["delta"];
+                    if let Some(t) = delta["content"].as_str() {
                         meta.text.push_str(t);
                         on_text(t);
+                    }
+                    // Las llamadas a herramientas llegan en trozos, por índice.
+                    for tc in delta["tool_calls"].as_array().into_iter().flatten() {
+                        let idx = tc["index"].as_u64().unwrap_or(meta.tool_calls.len() as u64) as usize;
+                        while meta.tool_calls.len() <= idx {
+                            meta.tool_calls.push(ToolCall::default());
+                        }
+                        let call = &mut meta.tool_calls[idx];
+                        if let Some(id) = tc["id"].as_str().filter(|s| !s.is_empty()) {
+                            call.id = id.to_string();
+                        }
+                        if let Some(n) = tc["function"]["name"].as_str() {
+                            call.name.push_str(n);
+                        }
+                        if let Some(a) = tc["function"]["arguments"].as_str() {
+                            call.arguments.push_str(a);
+                        }
+                    }
+                    if let Some(f) = v["choices"][0]["finish_reason"].as_str() {
+                        meta.finish = Some(f.to_string());
                     }
                     if let Some(u) = v["usage"]["completion_tokens"].as_u64() {
                         meta.output_tokens = Some(u);
@@ -207,7 +228,16 @@ impl Client {
 }
 
 #[derive(Debug, Default, Clone)]
+pub struct ToolCall {
+    pub id: String,
+    pub name: String,
+    pub arguments: String,
+}
+
+#[derive(Debug, Default, Clone)]
 pub struct ChatMeta {
+    pub tool_calls: Vec<ToolCall>,
+    pub finish: Option<String>,
     pub request_id: String,
     pub agent: String,
     pub model: String,
