@@ -107,8 +107,8 @@ impl Client {
     fn unreachable(&self, e: reqwest::Error) -> anyhow::Error {
         if e.is_connect() || e.is_timeout() {
             anyhow!("no se pudo conectar con {}: el gateway no está corriendo en esa dirección.\n  \
-                Arráncalo: `ai-orchestrator` (binario) o `docker compose up -d` (en la carpeta del repo).\n  \
-                ¿Otra dirección? `jmd login --url …`   (detalle: {e})", self.s.url)
+                Gateway en esta máquina: `jmd gateway start` (o `jmd init` la primera vez).\n  \
+                ¿Otra dirección? `jmd init` o `jmd login --url …`   (detalle: {e})", self.s.url)
         } else {
             anyhow!(e)
         }

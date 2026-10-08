@@ -65,8 +65,7 @@ podman run -d --name ai-orchestrator -p 127.0.0.1:4000:4000 \
 Abre **http://localhost:4000/ui/** y entra con `ADMIN_TOKEN`. Si lo dejaste vacío, se
 generó uno: `docker exec ai-orchestrator cat /data/admin_token` (o `podman exec …`).
 
-Sin contenedores: el binario `ai-orchestrator` de las releases (`JMD_WITH_GATEWAY=1` en el
-instalador) o `cargo run --release`. Lee `config.yaml` si existe y, si no, la semilla que lleva
+Sin contenedores: `jmd init` (lo hace todo el instalador) o `cargo run --release`. Lee `config.yaml` si existe y, si no, la semilla que lleva
 dentro; guarda en `./data`.
 
 ## Desde la terminal: `jmd`, Claude Code y OpenCode
@@ -83,11 +82,16 @@ irm https://raw.githubusercontent.com/davrv93/jmd/main/install.ps1 | iex
 curl -fsSL https://raw.githubusercontent.com/davrv93/jmd/main/install.sh | sh
 ```
 
+Al terminar, el instalador abre **`jmd init`**. Monta el gateway en tu máquina: pide las claves
+de los proveedores, las verifica y deja el gateway corriendo en segundo plano. También puede
+conectarte a un gateway que ya existe.
+
 ```bash
-jmd login               # URL del gateway y token
-jmd status              # gateway, tokens, Claude Code, OpenCode, RTK y caveman
+jmd status              # gateway, claves de los proveedores, Claude Code, OpenCode, RTK y caveman
+jmd chat "hola"         # prueba rápida
 jmd setup claude        # Claude Code → gateway (y ofrece el hook de RTK)
 jmd setup opencode      # proveedor «jmd» en opencode.json (--project para el del proyecto)
+jmd gateway stop|start|logs|token   # el gateway de tu máquina
 ```
 
 Guía completa por sistema (WSL y su red, rutas, el gateway sin Docker, problemas frecuentes):
@@ -95,6 +99,8 @@ Guía completa por sistema (WSL y su red, rutas, el gateway sin Docker, problema
 
 | Comando | |
 |---|---|
+| `jmd init` | Asistente: gateway local (claves verificadas, arranque en segundo plano) o remoto |
+| `jmd gateway start\|stop\|restart\|status\|logs\|token` | El gateway de esta máquina |
 | `jmd` | Modo interactivo: los comandos de abajo y, si no es un comando, chat con streaming (`/model`, `/style`, `/rate`, `/clear`) |
 | `jmd models` · `providers` · `provider <n> [test\|balance]` · `quotas` | Estado, cuotas y saldo |
 | `jmd stats` · `requests` | Uso, éxito, latencia, calidad y ahorro por estilo y cliente (+ `rtk gain`) |

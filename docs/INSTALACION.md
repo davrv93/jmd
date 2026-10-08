@@ -14,9 +14,22 @@ alumno solo instala `jmd` y su agente, y las cuotas y la telemetría quedan en u
 
 ## 1. Instalar `jmd`
 
-No hace falta Rust: los instaladores bajan el binario de
+No hace falta Rust. Los instaladores bajan el binario de
 [GitHub Releases](https://github.com/davrv93/jmd/releases), comprueban su SHA-256 y lo dejan
-en el PATH del usuario, sin pedir permisos de administrador.
+en el PATH del usuario, sin pedir permisos de administrador. Instalan dos programas: `jmd`
+(el CLI) y `ai-orchestrator` (el gateway).
+
+Al terminar se abre el asistente **`jmd init`**, que pregunta:
+
+1. **¿Dónde está el gateway?** En esta máquina, o «ya hay uno» si te dieron una URL.
+2. **En esta máquina:** las claves de cada proveedor (OpenRouter, Gemini…). Se escriben sin que
+   se vean y **se verifican en el momento** contra el proveedor: si una no sirve, te lo dice y
+   te la vuelve a pedir. Luego genera el token de administración, guarda todo y deja el gateway
+   **corriendo en segundo plano**, aunque cierres la terminal.
+3. **Ya hay uno:** pide la URL y tu clave, y conecta `jmd`.
+
+No hay variables de entorno que exportar. Para cambiar una clave, o pasar de local a remoto,
+vuelve a ejecutar `jmd init`.
 
 ### Windows (PowerShell)
 
@@ -77,26 +90,40 @@ curl -fsSL https://raw.githubusercontent.com/davrv93/jmd/main/install.sh | sh
 |---|---|
 | `JMD_VERSION=v0.2.0` | Una versión concreta (por defecto, la última) |
 | `JMD_INSTALL_DIR=…` | Otra carpeta |
-| `JMD_WITH_GATEWAY=1` | Instalar también el gateway como binario, sin Docker |
+| `JMD_WITH_GATEWAY=0` | No instalar el gateway: solo `jmd`, para quien usa un gateway remoto |
+| `JMD_NO_INIT=1` | No abrir el asistente al terminar |
 
 En PowerShell se definen antes: `$env:JMD_VERSION = "v0.2.0"`. En sh van delante:
 `curl … | JMD_VERSION=v0.2.0 sh`.
 
-Para actualizar, vuelve a ejecutar el instalador. `jmd update` te muestra el comando de tu sistema.
+Para actualizar, vuelve a ejecutar el instalador. Si ya estaba configurado, no pregunta nada:
+reinicia el gateway con la versión nueva. `jmd update` te muestra el comando de tu sistema.
 
 ---
 
-## 2. Conectar con el gateway y el agente
+## 2. Usarlo
 
 ```bash
-jmd login            # pregunta la URL del gateway y el token
-jmd status           # comprueba todo: gateway, tokens, Claude Code, OpenCode, RTK, caveman
-jmd setup claude     # Claude Code → gateway
-jmd setup opencode   # OpenCode → gateway
+jmd status           # todo de un vistazo: gateway, claves de los proveedores, agentes, RTK
+jmd chat "hola"      # prueba rápida
+jmd setup claude     # Claude Code → gateway   (o: jmd setup opencode)
 ```
 
-Después, en la misma terminal de VS Code: `claude` u `opencode`, o `jmd` para el modo
-interactivo propio.
+Después, en la terminal de VS Code: `claude` u `opencode`, o `jmd` para el modo interactivo
+propio.
+
+### El gateway en tu máquina
+
+| Comando | |
+|---|---|
+| `jmd gateway status` | ¿Está corriendo? En qué puerto y con qué PID |
+| `jmd gateway stop` · `start` · `restart` | Detener, arrancar, reiniciar |
+| `jmd gateway logs` | Últimas líneas del log |
+| `jmd gateway token` | Token de administración, para entrar en la UI (`http://127.0.0.1:4000/ui/`) |
+| `jmd init` | Cambiar claves o configuración (si está corriendo, lo reinicia solo) |
+
+El gateway escucha solo en `127.0.0.1`. Si el puerto 4000 está ocupado, usa el siguiente libre.
+Tras reiniciar el ordenador, arráncalo con `jmd gateway start`.
 
 ### Dónde queda cada cosa
 
@@ -104,6 +131,7 @@ interactivo propio.
 |---|---|---|
 | `jmd` | `%LOCALAPPDATA%\Programs\jmd\jmd.exe` | `~/.local/bin/jmd` |
 | Configuración de `jmd` | `%APPDATA%\jmd\config.json` | `~/.config/jmd/config.json` |
+| Gateway local (claves, token, log) | `%LOCALAPPDATA%\jmd\gateway` | macOS: `~/Library/Application Support/jmd/gateway` · Linux/WSL: `~/.local/share/jmd/gateway` |
 | Claude Code (`jmd setup claude`) | `%USERPROFILE%\.claude\settings.json` | `~/.claude/settings.json` |
 | OpenCode (`jmd setup opencode`) | `%USERPROFILE%\.config\opencode\opencode.json` | `~/.config/opencode/opencode.json` |
 | Solo para un proyecto (`--project`) | `.claude\settings.local.json` · `opencode.json` | igual |
@@ -138,23 +166,14 @@ docker compose up -d --build  # o: podman compose up -d --build
 UI en http://localhost:4000/ui/. Si dejaste `ADMIN_TOKEN` vacío, el token se generó solo:
 `docker exec ai-orchestrator cat /data/admin_token`.
 
-### Sin contenedores (un binario)
+### Sin contenedores
 
-Instala con `JMD_WITH_GATEWAY=1` y arranca. Si no encuentra `config.yaml`, usa la semilla que
-lleva dentro; los datos quedan en `./data` (o en `DATA_DIR`).
+Es lo que hace `jmd init` al elegir «en esta máquina»: no hace falta nada más. Para gestionarlo,
+usa `jmd gateway …`.
 
-```powershell
-# Windows
-$env:ADMIN_TOKEN = "un-token-largo"; $env:OPENROUTER_API_KEY = "sk-or-…"
-ai-orchestrator
-```
-
-```bash
-# macOS / Linux / WSL
-ADMIN_TOKEN=un-token-largo OPENROUTER_API_KEY=sk-or-… ai-orchestrator
-```
-
-Por defecto escucha en `0.0.0.0:4000`. Para dejarlo solo en local: `HOST=127.0.0.1`.
+También puedes ejecutar `ai-orchestrator` a mano. Lee `config.yaml` de `DATA_DIR` (o la semilla
+que lleva dentro) y las claves de las variables de entorno: `ADMIN_TOKEN`, `OPENROUTER_API_KEY`,
+`GEMINI_API_KEY`…
 
 ### Para toda la clase
 
@@ -169,7 +188,9 @@ entrará con su cuenta y la clave dejará de hacer falta.
 | Síntoma | Causa y arreglo |
 |---|---|
 | `jmd: command not found` / «no se reconoce» | La terminal se abrió antes de instalar: ábrela de nuevo. En sh, añade `~/.local/bin` al PATH (el instalador te da la línea) |
-| `no se pudo conectar con http://localhost:4000` | El gateway no está levantado, o está al otro lado de WSL (ver «Red entre WSL y Windows») |
+| `no se pudo conectar con http://127.0.0.1:4000` | El gateway no está corriendo: `jmd gateway start` (o `jmd init` la primera vez). Si está al otro lado de WSL, ver «Red entre WSL y Windows» |
+| `jmd status` dice «clave rechazada» | El proveedor no acepta esa clave: `jmd init` para cambiarla (la verifica antes de guardarla) |
+| Todos los modelos fallan con `not_found` | El proveedor cambió los IDs de sus modelos gratis: `jmd provider openrouter test` marca los que ya no existen y lista los que hay; se corrigen en la UI, pestaña Modelos |
 | Claude Code no pasa por el gateway | Hay un `ANTHROPIC_BASE_URL` definido en la terminal que gana a settings.json; `jmd status` lo avisa. Quítalo con `unset ANTHROPIC_BASE_URL` o `Remove-Item Env:ANTHROPIC_BASE_URL` |
 | `HTTP 401` | Token de administración o clave de `/v1` incorrectos: `jmd login` |
 | Instalaste en Windows y no aparece en WSL (o al revés) | Son sistemas distintos: instala en los dos, o solo donde usas la terminal |

@@ -12,6 +12,8 @@
 //! ```
 
 mod client;
+mod gateway;
+mod init;
 mod out;
 mod setup;
 
@@ -36,6 +38,41 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
+    /// Asistente: monta el gateway en esta máquina (pide y verifica las claves) o conéctate a uno
+    Init {
+        /// Gateway en esta máquina, sin preguntar
+        #[arg(long, conflicts_with = "remote")]
+        local: bool,
+        /// Gateway existente en esta URL, sin preguntar
+        #[arg(long)]
+        remote: Option<String>,
+        /// Clave de un proveedor: --key openrouter=sk-or-… (repetible)
+        #[arg(long = "key", value_name = "PROVEEDOR=CLAVE")]
+        keys: Vec<String>,
+        /// Puerto del gateway local (por defecto 4000, o el siguiente libre)
+        #[arg(long)]
+        port: Option<u16>,
+        /// No verificar las claves contra el proveedor
+        #[arg(long)]
+        no_verify: bool,
+        /// Guardar la configuración sin arrancar el gateway
+        #[arg(long)]
+        no_start: bool,
+        /// Gateway remoto: clave de /v1
+        #[arg(long = "api-key")]
+        api_key: Option<String>,
+        /// Gateway remoto: token de administración
+        #[arg(long)]
+        token: Option<String>,
+    },
+    /// El gateway local: start · stop · restart · status · logs · token
+    Gateway {
+        #[arg(value_parser = ["start", "stop", "restart", "status", "logs", "token"], default_value = "status")]
+        action: String,
+        /// Líneas de log a mostrar
+        #[arg(short = 'n', default_value_t = 40)]
+        n: usize,
+    },
     /// Guarda la URL del gateway y los tokens en ~/.config/jmd/config.json
     Login {
         #[arg(long)]
@@ -156,6 +193,10 @@ fn prompt(label: &str, current: Option<&str>) -> Result<String> {
 
 async fn run(c: &mut Client, cmd: Cmd, as_json: bool) -> Result<()> {
     match cmd {
+        Cmd::Init { local, remote, keys, port, no_verify, no_start, api_key, token } => {
+            init::run(init::Opts { local, remote, keys, port, no_verify, no_start, api_key, token }).await
+        }
+        Cmd::Gateway { action, n } => gateway_cmd(&action, n, as_json).await,
         Cmd::Login { url, token, key } => login(c, url, token, key).await,
         Cmd::Status => status(c, as_json).await,
         Cmd::Models => models(c, as_json).await,
@@ -198,6 +239,91 @@ async fn run(c: &mut Client, cmd: Cmd, as_json: bool) -> Result<()> {
             Ok(())
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// gateway local
+// ---------------------------------------------------------------------------
+
+async fn gateway_cmd(action: &str, n: usize, as_json: bool) -> Result<()> {
+    let dir = gateway::data_dir();
+    match action {
+        "start" | "restart" => {
+            if action == "restart" {
+                gateway::stop(&dir).await?;
+            }
+            if let Some(st) = gateway::running(&dir) {
+                if gateway::healthy(st.port).await {
+                    println!("{} ya está corriendo en http://127.0.0.1:{} (pid {})", green("✓"), st.port, st.pid);
+                    return Ok(());
+                }
+                gateway::stop(&dir).await?;
+            }
+            if !dir.join("config.yaml").exists() {
+                bail!("el gateway local aún no está configurado: jmd init");
+            }
+            let mut s = Settings::load();
+            let wanted = url_port(&s.url).unwrap_or(gateway::DEFAULT_PORT);
+            let port = if gateway::port_free(wanted) { wanted } else {
+                gateway::free_port(wanted + 1).ok_or_else(|| anyhow!("no hay puertos libres"))?
+            };
+            let st = gateway::start(&dir, port).await?;
+            s.url = format!("http://127.0.0.1:{port}");
+            if s.admin_token.is_none() {
+                s.admin_token = gateway::read_token(&dir);
+            }
+            s.save()?;
+            println!("{} gateway en http://127.0.0.1:{} (pid {})", green("✓"), st.port, st.pid);
+            Ok(())
+        }
+        "stop" => {
+            if gateway::stop(&dir).await? {
+                println!("{} gateway detenido", green("✓"));
+            } else {
+                println!("{}", dim("el gateway local no estaba corriendo"));
+            }
+            Ok(())
+        }
+        "logs" => {
+            println!("{}", gateway::tail(&dir, n));
+            println!("{}", dim(&format!("({})", gateway::log_path(&dir).display())));
+            Ok(())
+        }
+        "token" => {
+            let t = gateway::read_token(&dir).ok_or_else(|| anyhow!("no hay gateway local configurado: jmd init"))?;
+            eprintln!("{}", dim("token de administración del gateway local (para la UI). No lo compartas:"));
+            println!("{t}");
+            Ok(())
+        }
+        _ => {
+            let st = gateway::running(&dir);
+            let up = match &st {
+                Some(s) => gateway::healthy(s.port).await,
+                None => false,
+            };
+            if as_json {
+                print_json(&json!({"dir": dir, "running": st.is_some(), "healthy": up,
+                    "pid": st.as_ref().map(|s| s.pid), "port": st.as_ref().map(|s| s.port)}));
+                return Ok(());
+            }
+            match (&st, up) {
+                (Some(s), true) => println!("{} corriendo en http://127.0.0.1:{} (pid {})", green("✓"), s.port, s.pid),
+                (Some(s), false) => println!("{} el proceso {} existe pero no responde: jmd gateway logs", yellow("!"), s.pid),
+                (None, _) if dir.join("config.yaml").exists() => println!("{} detenido · jmd gateway start", dim("·")),
+                (None, _) => println!("{} sin configurar · jmd init", dim("·")),
+            }
+            println!("{}", dim(&format!("datos: {}", dir.display())));
+            Ok(())
+        }
+    }
+}
+
+fn url_port(url: &str) -> Option<u16> {
+    let host = url.split("://").nth(1)?;
+    if !(host.starts_with("127.0.0.1") || host.starts_with("localhost")) {
+        return None;
+    }
+    host.split(':').nth(1)?.trim_end_matches('/').parse().ok()
 }
 
 // ---------------------------------------------------------------------------
@@ -244,6 +370,7 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
     let admin = c.admin_get("/admin/api/status").await;
     let v1 = c.models().await;
     let savings = c.admin_get("/admin/api/savings").await.ok();
+    let keys = if health.is_ok() { c.admin_get("/admin/api/keys").await.ok() } else { None };
     let rtk = setup::rtk();
     let claude_cfg = std::fs::read_to_string(setup::claude_path(false)).ok()
         .and_then(|t| serde_json::from_str::<Value>(&t).ok());
@@ -257,7 +384,7 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
             "savings": savings.as_ref().map(|s| &s["config"]),
             "claude": setup::version_of("claude"), "claude_points_to_gateway": claude_url.as_deref() == Some(&c.s.url),
             "opencode": setup::version_of("opencode"), "opencode_configured": oc_cfg.is_some(),
-            "rtk": matches!(rtk, setup::Rtk::Ok(_)), "caveman": setup::caveman_installed(),
+            "rtk": matches!(rtk, setup::Rtk::Ok(_)), "caveman": setup::caveman_installed(), "keys": keys,
         }));
         return Ok(());
     }
@@ -265,7 +392,14 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
     println!("{}", bold("Gateway"));
     match &health {
         Ok(h) => println!("  {} {} · versión {}", ok(true), c.s.url, h["version"].as_str().unwrap_or("?")),
-        Err(e) => println!("  {} {e}", ok(false)),
+        Err(e) => {
+            println!("  {} {e}", ok(false));
+            if gateway::data_dir().join("config.yaml").exists() {
+                println!("  {} hay un gateway local configurado: jmd gateway start", yellow("→"));
+            } else {
+                println!("  {} ¿primera vez? jmd init", yellow("→"));
+            }
+        }
     }
     let up = health.is_ok();
     match &admin {
@@ -287,6 +421,19 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
         let cfg = &s["config"];
         println!("  estilo {} · compresión de herramientas {}", cyan(cfg["style"].as_str().unwrap_or("off")),
             if cfg["compress_tool_output"].as_bool() == Some(true) { cyan("on") } else { dim("off") });
+    }
+    if let Some(keys) = keys.as_ref().and_then(|k| k.as_object()) {
+        println!("\n{}", bold("Claves de los proveedores"));
+        for (name, k) in keys {
+            let msg = k["message"].as_str().unwrap_or("");
+            match k["state"].as_str() {
+                Some("valid") => println!("  {} {name}", ok(true)),
+                Some("rejected") => println!("  {} {name}: clave rechazada · cámbiala con jmd init --local (o en la UI) · {}",
+                    ok(false), dim(msg)),
+                Some("missing") => println!("  {} {name}: sin clave (sus modelos se saltan)", dim("·")),
+                _ => println!("  {} {name}: no se pudo comprobar · {}", yellow("!"), dim(msg)),
+            }
+        }
     }
     println!("\n{}", bold("Agentes de terminal"));
     match setup::version_of("claude") {
@@ -798,6 +945,7 @@ const REPL_HELP: &str = "\
 Comandos (con o sin «/»):
   models · providers · provider <n> [test|balance] · quotas · stats · requests [-n N]
   route <texto> · style [off|lite|full|ultra] · reset <modelo> · status · setup <claude|opencode|all> · ui
+  gateway [start|stop|restart|status|logs|token] · init
 Sesión de chat:
   /model <perfil>     cambia el perfil (auto, coding, coding-deep, reasoning… o un modelo)
   /style <nivel>      estilo solo para esta sesión (off · lite · full · ultra)
@@ -809,7 +957,8 @@ Cualquier otra cosa se envía como mensaje.";
 
 fn is_command(word: &str) -> bool {
     matches!(word, "help" | "login" | "status" | "doctor" | "models" | "model" | "providers" | "provider" | "quotas" | "quota"
-        | "stats" | "requests" | "route" | "style" | "reset" | "setup" | "ui" | "chat" | "ask" | "update")
+        | "stats" | "requests" | "route" | "style" | "reset" | "setup" | "ui" | "chat" | "ask" | "update" | "init"
+        | "gateway")
 }
 
 async fn repl(c: &mut Client) -> Result<()> {

@@ -84,8 +84,14 @@ async fn fake_chat(State(f): State<Arc<Fake>>, Json(body): Json<Value>) -> Respo
     ).into_response()
 }
 
-async fn fake_models() -> Json<Value> {
-    Json(json!({"data": [{"id": "ok-a"}, {"id": "ok-b"}, {"id": "rl-a"}]}))
+async fn fake_models(headers: axum::http::HeaderMap) -> Response {
+    // Como Gemini: una clave mala da 400 «Please pass a valid API key».
+    match headers.get("authorization").and_then(|v| v.to_str().ok()) {
+        Some("Bearer mala") => (StatusCode::BAD_REQUEST, Json(json!([{"error": {"code": 400,
+            "message": "Please pass a valid API key", "status": "INVALID_ARGUMENT"}}]))).into_response(),
+        Some("Bearer prohibida") => (StatusCode::UNAUTHORIZED, "no").into_response(),
+        _ => Json(json!({"data": [{"id": "ok-a"}, {"id": "ok-b"}, {"id": "rl-a"}]})).into_response(),
+    }
 }
 
 async fn fake_key() -> Json<Value> {
@@ -526,4 +532,24 @@ async fn invalid_key_with_400_falls_back_instead_of_failing() {
     let (_, v, _) = call(&app, "POST", "/v1/chat/completions", Some(chat("keyfail", "hola")), None).await;
     assert_eq!(v["orchestrator"]["model"], "badkey");
     assert_eq!(v["orchestrator"]["upstream_model"], "ok-fixed");
+}
+
+#[tokio::test]
+async fn key_checks_against_the_provider() {
+    use ai_orchestrator::keys::{check_key, KeyState};
+    let (base, _fake) = start_fake().await;
+    let p = ai_orchestrator::config::Provider { base_url: base, enabled: true, ..Default::default() };
+    let client = reqwest::Client::new();
+    assert_eq!(check_key(&client, &p, Some("buena")).await.state, KeyState::Valid);
+    assert_eq!(check_key(&client, &p, Some("mala")).await.state, KeyState::Rejected);
+    assert_eq!(check_key(&client, &p, Some("prohibida")).await.state, KeyState::Rejected);
+    assert_eq!(check_key(&client, &p, None).await.state, KeyState::Missing);
+    let caido = ai_orchestrator::config::Provider { base_url: "http://127.0.0.1:9".into(), ..Default::default() };
+    assert_eq!(check_key(&client, &caido, Some("x")).await.state, KeyState::Unknown);
+
+    // /admin/api/keys con la configuración de prueba: p1 y p2 tienen clave aceptada
+    let (app, _e, _f, _d) = setup().await;
+    let (st, v, _) = call(&app, "GET", "/admin/api/keys", None, Some(ADMIN)).await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(v["p1"]["state"], "valid");
 }

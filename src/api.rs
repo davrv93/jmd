@@ -57,6 +57,7 @@ pub fn router(engine: AppState) -> Router {
         .route("/admin/api/providers/:name", put(put_provider).delete(delete_provider))
         .route("/admin/api/providers/:name/models", post(provider_models))
         .route("/admin/api/providers/:name/balance", post(provider_balance))
+        .route("/admin/api/keys", get(check_keys))
         .route("/admin/api/models/:name", put(put_model).delete(delete_model))
         .route("/admin/api/models/:name/reset", post(reset_model))
         .route("/admin/api/agents/:name", put(put_agent).delete(delete_agent))
@@ -660,8 +661,20 @@ async fn provider_models(State(e): State<AppState>, headers: HeaderMap, Path(nam
             .map(|d| json!({"group": g, "model": d.model, "exists": ok.then(|| known.contains(d.model.as_str()))}))
             .collect::<Vec<_>>()
     }).collect();
+    let key = crate::keys::check_key(&e.client, p, None).await;
     Json(json!({"ok": ok, "status": status, "latency": t0.elapsed().as_secs_f64(), "error": err,
-                "models": ids, "configured": configured})).into_response()
+                "models": ids, "configured": configured, "key": key})).into_response()
+}
+
+/// Comprueba la clave de cada proveedor activo contra el propio proveedor.
+async fn check_keys(State(e): State<AppState>, headers: HeaderMap) -> Response {
+    guard!(admin_auth(&e, &headers));
+    let cfg = e.cfg();
+    let checks = futures::future::join_all(cfg.providers.iter().filter(|(_, p)| p.enabled).map(|(n, p)| {
+        let client = e.client.clone();
+        async move { (n.clone(), crate::keys::check_key(&client, p, None).await) }
+    })).await;
+    Json(json!(checks.into_iter().collect::<std::collections::BTreeMap<_, _>>())).into_response()
 }
 
 async fn provider_balance(State(e): State<AppState>, headers: HeaderMap, Path(name): Path<String>) -> Response {

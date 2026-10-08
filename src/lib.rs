@@ -6,6 +6,7 @@ pub mod api;
 pub mod classifier;
 pub mod config;
 pub mod engine;
+pub mod keys;
 pub mod quotas;
 pub mod reliability;
 pub mod savings;
