@@ -120,6 +120,8 @@ enum Cmd {
     },
     /// Abre la UI de gestión en el navegador
     Ui,
+    /// Muestra cómo actualizar jmd en este sistema
+    Update,
 }
 
 #[tokio::main]
@@ -178,6 +180,16 @@ async fn run(c: &mut Client, cmd: Cmd, as_json: bool) -> Result<()> {
             Ok(())
         }
         Cmd::Setup { target, project, yes, undo } => setup_cmd(c, &target, project, yes, undo).await,
+        Cmd::Update => {
+            println!("jmd {} · {}", env!("CARGO_PKG_VERSION"), std::env::consts::OS);
+            if cfg!(windows) {
+                println!("En PowerShell:\n  irm https://raw.githubusercontent.com/davrv93/jmd/main/install.ps1 | iex");
+            } else {
+                println!("En la terminal:\n  curl -fsSL https://raw.githubusercontent.com/davrv93/jmd/main/install.sh | sh");
+            }
+            println!("{}", dim("una versión concreta: JMD_VERSION=v0.2.0 · novedades: https://github.com/davrv93/jmd/releases"));
+            Ok(())
+        }
         Cmd::Ui => {
             let url = format!("{}/ui/", c.s.url);
             println!("{url}");
@@ -794,7 +806,7 @@ Cualquier otra cosa se envía como mensaje.";
 
 fn is_command(word: &str) -> bool {
     matches!(word, "help" | "login" | "status" | "doctor" | "models" | "model" | "providers" | "provider" | "quotas" | "quota"
-        | "stats" | "requests" | "route" | "style" | "reset" | "setup" | "ui" | "chat" | "ask")
+        | "stats" | "requests" | "route" | "style" | "reset" | "setup" | "ui" | "chat" | "ask" | "update")
 }
 
 async fn repl(c: &mut Client) -> Result<()> {

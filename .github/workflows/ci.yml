@@ -2,12 +2,15 @@ name: ci
 
 on:
   push:
-    branches: [main]
   pull_request:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -17,6 +20,12 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
       - run: node --check ui/app.js
+        if: runner.os == 'Linux'
+      - name: instaladores (sintaxis)
+        if: runner.os == 'Linux'
+        run: |
+          sh -n install.sh
+          shellcheck -s sh install.sh || true
 
   image:
     runs-on: ubuntu-latest

@@ -65,23 +65,33 @@ podman run -d --name ai-orchestrator -p 127.0.0.1:4000:4000 \
 Abre **http://localhost:4000/ui/** y entra con `ADMIN_TOKEN`. Si lo dejaste vacío, se
 generó uno: `docker exec ai-orchestrator cat /data/admin_token` (o `podman exec …`).
 
-Sin contenedores: `cargo run --release` (lee `config.yaml` y guarda en `./data`).
+Sin contenedores: el binario `ai-orchestrator` de las releases (`JMD_WITH_GATEWAY=1` en el
+instalador) o `cargo run --release`. Lee `config.yaml` si existe y, si no, la semilla que lleva
+dentro; guarda en `./data`.
 
 ## Desde la terminal: `jmd`, Claude Code y OpenCode
 
-`jmd` es el CLI del gateway. Va dentro de la imagen y también se descarga desde la UI
-(pestaña **Terminal**).
+`jmd` es el CLI del gateway. Para cada sistema operativo:
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/davrv93/jmd/main/install.ps1 | iex
+```
 
 ```bash
-# Linux/WSL: el binario sale del propio gateway
-mkdir -p ~/.local/bin && curl -fsSL http://localhost:4000/download/jmd -o ~/.local/bin/jmd && chmod +x ~/.local/bin/jmd
-# macOS/Windows (o desde el código): cargo install --git https://github.com/davrv93/jmd --bin jmd
+# macOS, Linux y WSL
+curl -fsSL https://raw.githubusercontent.com/davrv93/jmd/main/install.sh | sh
+```
 
-jmd login --url http://localhost:4000 --token <ADMIN_TOKEN>
+```bash
+jmd login               # URL del gateway y token
 jmd status              # gateway, tokens, Claude Code, OpenCode, RTK y caveman
 jmd setup claude        # Claude Code → gateway (y ofrece el hook de RTK)
 jmd setup opencode      # proveedor «jmd» en opencode.json (--project para el del proyecto)
 ```
+
+Guía completa por sistema (WSL y su red, rutas, el gateway sin Docker, problemas frecuentes):
+**[docs/INSTALACION.md](docs/INSTALACION.md)**.
 
 | Comando | |
 |---|---|
@@ -90,7 +100,7 @@ jmd setup opencode      # proveedor «jmd» en opencode.json (--project para el 
 | `jmd stats` · `requests` | Uso, éxito, latencia, calidad y ahorro por estilo y cliente (+ `rtk gain`) |
 | `jmd route "…"` · `chat "…"` | Ruta sin llamar · pregunta |
 | `jmd style off\|lite\|full\|ultra [--compress on]` | Ahorro de tokens para todos los clientes |
-| `jmd reset <modelo>` · `ui` | Quita cooldowns · abre la UI |
+| `jmd reset <modelo>` · `ui` · `update` | Quita cooldowns · abre la UI · cómo actualizar |
 
 Todos aceptan `--json`.
 

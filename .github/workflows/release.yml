@@ -1,0 +1,153 @@
+name: release
+
+# Tag v* → compila, prueba los instaladores en cada sistema y publica la release.
+# Ejecución manual, o un push a una rama que toque el empaquetado → lo mismo, sin publicar.
+on:
+  push:
+    tags: ['v*']
+    branches-ignore: [main]
+    paths: ['install.sh', 'install.ps1', '.github/workflows/release.yml', 'Cargo.toml', 'Cargo.lock']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, archive: tar.gz }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, archive: tar.gz }
+          - { os: macos-latest, target: universal-apple-darwin, archive: tar.gz }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, archive: zip }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target == 'universal-apple-darwin' && 'aarch64-apple-darwin,x86_64-apple-darwin' || matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: musl
+        if: contains(matrix.target, 'linux-musl')
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq musl-tools
+      - name: compilar
+        if: matrix.target != 'universal-apple-darwin'
+        run: cargo build --release --locked --target ${{ matrix.target }} --bins
+      - name: compilar (macOS universal)
+        if: matrix.target == 'universal-apple-darwin'
+        run: |
+          cargo build --release --locked --target aarch64-apple-darwin --bins
+          cargo build --release --locked --target x86_64-apple-darwin --bins
+          mkdir -p target/universal-apple-darwin/release
+          for b in jmd ai-orchestrator; do
+            lipo -create -output target/universal-apple-darwin/release/$b \
+              target/aarch64-apple-darwin/release/$b target/x86_64-apple-darwin/release/$b
+          done
+      - name: empaquetar
+        shell: bash
+        run: |
+          name=jmd-${{ matrix.target }}
+          ext=""; [ "$RUNNER_OS" = Windows ] && ext=.exe
+          mkdir -p pkg dist
+          cp target/${{ matrix.target }}/release/jmd$ext target/${{ matrix.target }}/release/ai-orchestrator$ext \
+             README.md LICENSE config.yaml pkg/
+          if [ "${{ matrix.archive }}" = zip ]; then
+            (cd pkg && 7z a -tzip ../dist/$name.zip . > /dev/null)
+          else
+            tar -czf dist/$name.tar.gz -C pkg .
+          fi
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: dist/*
+
+  # Instala con los instaladores reales y arranca el gateway en cada sistema.
+  smoke:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl }
+          - { os: macos-latest, target: universal-apple-darwin }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: dist
+      - name: instalar y probar (sh)
+        if: runner.os != 'Windows'
+        run: |
+          export JMD_ARCHIVE="$PWD/dist/jmd-${{ matrix.target }}.tar.gz" JMD_WITH_GATEWAY=1 JMD_INSTALL_DIR="$RUNNER_TEMP/bin"
+          sh install.sh
+          "$RUNNER_TEMP/bin/jmd" --help > /dev/null
+          file "$RUNNER_TEMP/bin/jmd" || true
+          if [ "$RUNNER_OS" = macOS ]; then
+            # La parte Intel del binario universal, con Rosetta si el runner la tiene.
+            arch -x86_64 "$RUNNER_TEMP/bin/jmd" --version || echo "::warning::sin Rosetta: no se probó la parte x86_64"
+          fi
+          cd "$RUNNER_TEMP"
+          ADMIN_TOKEN=t DATA_DIR="$RUNNER_TEMP/data" PORT=4077 "$RUNNER_TEMP/bin/ai-orchestrator" &
+          for i in $(seq 1 40); do curl -fsS localhost:4077/health && break; sleep 0.5; done
+          JMD_URL=http://127.0.0.1:4077 JMD_ADMIN_TOKEN=t "$RUNNER_TEMP/bin/jmd" status
+          JMD_URL=http://127.0.0.1:4077 JMD_ADMIN_TOKEN=t "$RUNNER_TEMP/bin/jmd" models > /dev/null
+          kill %1
+      - name: instalar y probar (PowerShell)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:JMD_ARCHIVE = "$PWD\dist\jmd-x86_64-pc-windows-msvc.zip"
+          $env:JMD_WITH_GATEWAY = '1'
+          ./install.ps1
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs\jmd'
+          & "$dir\jmd.exe" --help | Out-Null
+          $env:ADMIN_TOKEN = 't'; $env:DATA_DIR = "$env:RUNNER_TEMP\data"; $env:PORT = '4077'
+          $gw = Start-Process -FilePath "$dir\ai-orchestrator.exe" -PassThru -WorkingDirectory $env:RUNNER_TEMP
+          $ok = $false
+          foreach ($i in 1..40) {
+            try { Invoke-RestMethod http://127.0.0.1:4077/health | Out-Null; $ok = $true; break } catch { Start-Sleep -Milliseconds 500 }
+          }
+          if (-not $ok) { throw 'el gateway no respondió' }
+          $env:JMD_URL = 'http://127.0.0.1:4077'; $env:JMD_ADMIN_TOKEN = 't'
+          & "$dir\jmd.exe" status
+          if ($LASTEXITCODE -ne 0) { throw 'jmd status falló' }
+          & "$dir\jmd.exe" models | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw 'jmd models falló' }
+          Stop-Process -Id $gw.Id
+      - name: instalador de PowerShell 5.1 (el que trae Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $env:JMD_ARCHIVE = "$PWD\dist\jmd-x86_64-pc-windows-msvc.zip"
+          $env:JMD_INSTALL_DIR = "$env:RUNNER_TEMP\ps51"
+          ./install.ps1
+          & "$env:RUNNER_TEMP\ps51\jmd.exe" --version
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, smoke]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: sumas y release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd dist
+          sha256sum jmd-* > SHA256SUMS
+          cat SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" jmd-* SHA256SUMS ../install.sh ../install.ps1 \
+            --repo "$GITHUB_REPOSITORY" --title "jmd $GITHUB_REF_NAME" --generate-notes

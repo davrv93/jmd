@@ -744,6 +744,7 @@ const JMD_COMMANDS = [
   ["jmd style full --compress on", "respuestas cortas y salidas de herramientas recortadas"],
   ["jmd setup claude|opencode|all", "conecta el agente (y RTK) con el gateway"],
   ["jmd reset <modelo> · jmd ui", "quita cooldowns · abre esta UI"],
+  ["jmd update", "cómo actualizar jmd en este sistema"],
 ];
 
 async function viewTerminal() {
@@ -761,10 +762,12 @@ async function viewTerminal() {
   $("#main").innerHTML = `<h2>Terminal e integraciones</h2>
     <div class="grid">
       <div class="card"><h3>1 · Instalar jmd</h3>
-        <p class="muted small">Linux y WSL (el binario sale de este servidor):</p>
+        <p class="muted small">macOS, Linux y WSL:</p>
+        ${codeLine("curl -fsSL https://raw.githubusercontent.com/davrv93/jmd/main/install.sh | sh")}
+        <p class="muted small">Windows (PowerShell):</p>
+        ${codeLine("irm https://raw.githubusercontent.com/davrv93/jmd/main/install.ps1 | iex")}
+        <p class="muted small">Sin acceso a GitHub (Linux/WSL x86_64, desde este servidor):</p>
         ${codeLine(`mkdir -p ~/.local/bin && curl -fsSL ${origin}/download/jmd -o ~/.local/bin/jmd && chmod +x ~/.local/bin/jmd`)}
-        <p class="muted small">macOS y Windows (necesita Rust):</p>
-        ${codeLine("cargo install --git https://github.com/davrv93/jmd --bin jmd")}
         <p class="muted small">Conectar (el token es el mismo de esta UI):</p>
         ${codeLine(`jmd login --url ${origin} --token <ADMIN_TOKEN>`)}
         ${codeLine("jmd status")}

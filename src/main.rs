@@ -25,10 +25,13 @@ async fn main() -> anyhow::Result<()> {
     let text = if live.exists() {
         std::fs::read_to_string(&live)?
     } else {
-        let t = std::fs::read_to_string(&seed)
-            .map_err(|e| anyhow::anyhow!("no se pudo leer la semilla {}: {e}", seed.display()))?;
+        // Sin semilla en disco (binario suelto en Windows/macOS), la que va dentro del binario.
+        let (t, origin) = match std::fs::read_to_string(&seed) {
+            Ok(t) => (t, seed.display().to_string()),
+            Err(_) => (include_str!("../config.yaml").to_string(), "la semilla incluida en el binario".to_string()),
+        };
         std::fs::write(&live, &t)?;
-        tracing::info!("primera ejecución: {} copiado a {}", seed.display(), live.display());
+        tracing::info!("primera ejecución: {origin} copiada a {}", live.display());
         t
     };
     let cfg = Config::from_yaml(&text).map_err(|e| anyhow::anyhow!("{}: {e}", live.display()))?;
