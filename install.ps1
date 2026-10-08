@@ -2,24 +2,26 @@
 #
 #   irm https://raw.githubusercontent.com/davrv93/jmd/main/install.ps1 | iex
 #
-# Variables opcionales (defínelas antes, p. ej. $env:JMD_VERSION = "v0.2.0"):
-#   JMD_VERSION        versión concreta (por defecto, la última publicada)
+# Variables opcionales (definelas antes, p. ej. $env:JMD_VERSION = "v0.2.0"):
+#   JMD_VERSION        version concreta (por defecto, la ultima publicada)
 #   JMD_INSTALL_DIR    carpeta destino (por defecto %LOCALAPPDATA%\Programs\jmd)
-#   JMD_WITH_GATEWAY   "1" para instalar también el gateway (ai-orchestrator.exe) sin Docker
+#   JMD_WITH_GATEWAY   "1" para instalar tambien el gateway (ai-orchestrator.exe) sin Docker
 #   JMD_ARCHIVE        instala desde un .zip local (sin descargar)
 #   JMD_DOWNLOAD_BASE  espejo de descarga (por defecto, GitHub Releases)
 
 $ErrorActionPreference = 'Stop'
-$ProgressPreference = 'SilentlyContinue'   # Invoke-WebRequest es lentísimo con la barra
+# Este archivo es ASCII a proposito: PowerShell 5.1 lee los .ps1 sin BOM como Windows-1252.
+$ene = [char]0x00F1; $oacute = [char]0x00F3; $dot = [char]0x00B7
+$ProgressPreference = 'SilentlyContinue'   # Invoke-WebRequest es lentisimo con la barra
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $Repo = if ($env:JMD_REPO) { $env:JMD_REPO } else { 'davrv93/jmd' }
 $Version = if ($env:JMD_VERSION) { $env:JMD_VERSION } else { 'latest' }
 $Dir = if ($env:JMD_INSTALL_DIR) { $env:JMD_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\jmd' }
 
-# x64 nativo; en Windows ARM64 el binario x64 corre con la emulación del sistema.
+# x64 nativo; en Windows ARM64 el binario x64 corre con la emulacion del sistema.
 $arch = $env:PROCESSOR_ARCHITECTURE
-if ($arch -eq 'ARM64') { Write-Host 'Windows ARM64: se instala la versión x64 (corre emulada).' }
+if ($arch -eq 'ARM64') { Write-Host "Windows ARM64: se instala la versi$($oacute)n x64 (corre emulada)." }
 elseif ($arch -ne 'AMD64') { throw "arquitectura no soportada: $arch" }
 $Asset = 'jmd-x86_64-pc-windows-msvc.zip'
 
@@ -55,14 +57,14 @@ try {
         $src = Join-Path $Out $b
         if (-not (Test-Path $src)) { throw "el paquete no trae $b" }
         $dst = Join-Path $Dir $b
-        # Un .exe en uso no se puede sobrescribir, pero sí renombrar.
+        # Un .exe en uso no se puede sobrescribir, pero si renombrar.
         if (Test-Path $dst) {
             $old = "$dst.old"
             Remove-Item $old -Force -ErrorAction SilentlyContinue
             Rename-Item $dst (Split-Path $old -Leaf) -ErrorAction SilentlyContinue
         }
         Copy-Item $src $dst -Force
-        Unblock-File $dst   # quita la marca «descargado de internet»
+        Unblock-File $dst   # quita la marca "descargado de internet"
         Write-Host "OK $dst"
     }
 } finally {
@@ -75,10 +77,10 @@ if (-not $userPath) { $userPath = '' }
 if (($userPath -split ';') -notcontains $Dir) {
     $newPath = if ($userPath) { "$userPath;$Dir" } else { $Dir }
     [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
-    Write-Host "Añadido $Dir al PATH de tu usuario (abre una terminal nueva para que lo tome)."
+    Write-Host "A$($ene)adido $Dir al PATH de tu usuario (abre una terminal nueva para que lo tome)."
 }
 if (($env:Path -split ';') -notcontains $Dir) { $env:Path = "$env:Path;$Dir" }
 
 & (Join-Path $Dir 'jmd.exe') --version
 Write-Host ''
-Write-Host 'Siguiente paso: jmd login --url <URL del gateway> --token <token>   ·   jmd status'
+Write-Host "Siguiente paso: jmd login --url <URL del gateway> --token <token>   $dot   jmd status"

@@ -129,7 +129,11 @@ jobs:
         run: |
           $env:JMD_ARCHIVE = "$PWD\dist\jmd-x86_64-pc-windows-msvc.zip"
           $env:JMD_INSTALL_DIR = "$env:RUNNER_TEMP\ps51"
-          ./install.ps1
+          $out = ./install.ps1 *>&1 | Out-String
+          Write-Host $out
+          # PowerShell 5.1 lee los .ps1 sin BOM como Windows-1252: los acentos deben salir bien.
+          if ($out -notmatch "A$([char]0x00F1)adido") { throw 'el mensaje del PATH no salio o salio con la codificacion rota' }
+          if ($out -match [char]0x00C3) { throw 'texto con codificacion rota (mojibake)' }
           & "$env:RUNNER_TEMP\ps51\jmd.exe" --version
 
   publish:
