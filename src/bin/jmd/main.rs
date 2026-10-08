@@ -267,7 +267,9 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
         Ok(h) => println!("  {} {} · versión {}", ok(true), c.s.url, h["version"].as_str().unwrap_or("?")),
         Err(e) => println!("  {} {e}", ok(false)),
     }
+    let up = health.is_ok();
     match &admin {
+        _ if !up => {}
         Ok(s) => {
             println!("  {} token de administración", ok(true));
             for w in s["warnings"].as_array().into_iter().flatten() {
@@ -277,6 +279,7 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
         Err(e) => println!("  {} administración: {e}", ok(false)),
     }
     match &v1 {
+        _ if !up => {}
         Ok(m) => println!("  {} /v1 ({} perfiles y modelos)", ok(true), m["data"].as_array().map(|a| a.len()).unwrap_or(0)),
         Err(e) => println!("  {} /v1: {e}", ok(false)),
     }

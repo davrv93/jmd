@@ -106,7 +106,9 @@ impl Client {
 
     fn unreachable(&self, e: reqwest::Error) -> anyhow::Error {
         if e.is_connect() || e.is_timeout() {
-            anyhow!("no se pudo conectar con {} ({e}). ¿Está levantado? `docker compose up -d` o `jmd login --url …`", self.s.url)
+            anyhow!("no se pudo conectar con {}: el gateway no está corriendo en esa dirección.\n  \
+                Arráncalo: `ai-orchestrator` (binario) o `docker compose up -d` (en la carpeta del repo).\n  \
+                ¿Otra dirección? `jmd login --url …`   (detalle: {e})", self.s.url)
         } else {
             anyhow!(e)
         }
