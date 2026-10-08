@@ -19,6 +19,7 @@ mod mcp;
 mod out;
 mod setup;
 mod skills;
+mod tools;
 
 use anyhow::{anyhow, bail, Result};
 use clap::{Parser, Subcommand};
@@ -133,7 +134,7 @@ enum Cmd {
         /// Conectar los servidores MCP también en una pregunta suelta (en el chat interactivo, siempre)
         #[arg(long)]
         mcp: bool,
-        /// Ejecutar las herramientas MCP sin pedir confirmación
+        /// Ejecutar las herramientas (comandos, archivos, MCP) sin pedir confirmación
         #[arg(long)]
         auto: bool,
     },
@@ -1123,7 +1124,7 @@ Comandos (con o sin «/»):
 Sesión de chat:
   /todos              la lista de tareas del agente
   /mcp                servidores MCP de esta sesión y su estado · /tools: herramientas que ve el modelo
-  /auto               ejecutar herramientas MCP sin preguntar (otra vez: volver a preguntar)
+  /auto               ejecutar herramientas (comandos, archivos, MCP) sin preguntar (otra vez: volver a preguntar)
   /skills             skills disponibles · /proto <descripción>: prototipo de UI en HTML
   /model <perfil>     cambia el perfil (auto, coding, coding-deep, reasoning… o un modelo)
   /style <nivel>      estilo solo para esta sesión (off · lite · full · ultra)
@@ -1209,8 +1210,8 @@ async fn chat_loop(c: &mut Client, s: &mut Session, commands: bool) -> Result<()
             }
             "auto" if slash => {
                 s.agent.auto = !s.agent.auto;
-                println!("{}", if s.agent.auto { yellow("herramientas MCP sin confirmación (vuelve con /auto)") }
-                    else { dim("las herramientas MCP vuelven a pedir confirmación") });
+                println!("{}", if s.agent.auto { yellow("herramientas sin confirmación: comandos, archivos y MCP (vuelve con /auto)") }
+                    else { dim("las herramientas vuelven a pedir confirmación") });
                 Ok(())
             }
             "skills" if slash => {

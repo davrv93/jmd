@@ -5,13 +5,16 @@
 //! - **MCP**: al entrar al chat se conectan en segundo plano los servidores configurados (ver
 //!   `mcp.rs`). Sus herramientas se ofrecen al modelo como `mcp__servidor__herramienta`, y
 //!   cada uso pide confirmación salvo con `/auto` (o «a» = siempre para ese servidor).
+//! - **Herramientas propias** (`tools.rs`): shell, write_file, read_file y list_dir, sin MCP.
+//! - Cada llamada se muestra con sus argumentos y el resumen de su resultado; una llamada
+//!   idéntica no se ejecuta más de dos veces por turno, y cada 40 pasos se pregunta si seguir.
 
 use crate::client::{ChatMeta, Client, ToolCall};
 use crate::mcp::{self, Server, Session, Tool};
 use crate::out::{bold, cyan, dim, green, red, yellow};
 use anyhow::Result;
 use serde_json::{json, Value};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, IsTerminal, Write};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -20,7 +23,26 @@ pub const SYSTEM: &str = "Eres el asistente de la terminal jmd. Responde en el i
 Para tareas de tres o más pasos, planifica con la herramienta todo_write: escribe la lista completa, \
 marca una sola tarea como in_progress al empezarla y como completed al terminarla, y actualiza la \
 lista en cuanto cambie el plan. Para preguntas o tareas simples, no la uses.\n\
+Para actuar en la máquina usa tus herramientas: shell (comandos), write_file (crear o editar archivos), \
+read_file y list_dir. Lee el resultado de cada herramienta antes de seguir: si falló, corrige la causa \
+(otra ruta, otro comando, instalar lo que falta) o pregunta; nunca repitas la misma llamada esperando \
+otro resultado. Si falta un programa (php, composer, node, npm…), dilo y propón cómo instalarlo en vez \
+de insistir. Al terminar, resume qué hiciste y qué queda pendiente.\n\
 Si hay herramientas mcp__*, úsalas cuando aporten datos reales en vez de suponer.";
+
+/// Dónde corre: sin esto el modelo no sabe qué es «mi carpeta Downloads» ni qué shell hay.
+fn environment() -> String {
+    let home = std::env::var(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).unwrap_or_default();
+    let cwd = std::env::current_dir().map(|p| p.display().to_string()).unwrap_or_default();
+    let os = match std::env::consts::OS {
+        "macos" => "macOS",
+        "windows" => "Windows",
+        "linux" if std::env::var_os("WSL_DISTRO_NAME").is_some() => "Linux (WSL)",
+        "linux" => "Linux",
+        o => o,
+    };
+    format!("\n\nEntorno: {os} · shell {} · carpeta personal {home} · carpeta actual {cwd}", crate::tools::shell_name())
+}
 
 // ---------------------------------------------------------------------------
 // Tareas
@@ -199,11 +221,12 @@ impl Agent {
     }
 
     pub fn system_prompt(&self) -> String {
-        format!("{SYSTEM}{}", crate::skills::system_section(&self.skills))
+        format!("{SYSTEM}{}{}", environment(), crate::skills::system_section(&self.skills))
     }
 
     pub async fn tool_defs(&self) -> Vec<Value> {
         let mut defs = vec![todo_tool()];
+        defs.extend(crate::tools::defs());
         defs.extend(crate::skills::tools());
         if let Some(p) = &self.mcp {
             defs.extend(mcp_tool_defs(p).await);
@@ -211,23 +234,24 @@ impl Agent {
         defs
     }
 
-    fn confirm(&mut self, server: &str, call: &ToolCall) -> bool {
-        if self.auto || self.trusted.contains(server) {
+    /// `group` es el servidor MCP, o «jmd» para las herramientas propias.
+    fn confirm(&mut self, group: &str, call: &ToolCall, what: &str) -> bool {
+        if self.auto || self.trusted.contains(group) {
             return true;
         }
         if !std::io::stdin().is_terminal() {
             eprintln!("{} {} denegada: sin terminal para confirmar (usa /auto)", yellow("!"), call.name);
             return false;
         }
-        let args: String = call.arguments.chars().take(300).collect();
-        print!("{} {} {}\n  ¿Ejecutar? [s]í · [n]o · [a] siempre para «{server}»: ", yellow("?"), cyan(&call.name), dim(&args));
+        let what: String = what.chars().take(300).collect();
+        print!("{} {} {}\n  ¿Ejecutar? [s]í · [n]o · [a] siempre para «{group}»: ", yellow("?"), cyan(&call.name), dim(&what));
         let _ = std::io::stdout().flush();
         let mut s = String::new();
         let _ = std::io::stdin().lock().read_line(&mut s);
         match s.trim().to_lowercase().as_str() {
             "s" | "si" | "sí" | "y" | "yes" => true,
             "a" | "siempre" => {
-                self.trusted.insert(server.to_string());
+                self.trusted.insert(group.to_string());
                 true
             }
             _ => false,
@@ -273,6 +297,16 @@ impl Agent {
                 Err(e) => format!("Error: {e}"),
             };
         }
+        if crate::tools::is_builtin(&call.name) {
+            let what = crate::tools::describe(&call.name, &args);
+            if crate::tools::needs_confirm(&call.name) && !self.confirm("jmd", call, &what) {
+                return "La persona no autorizó esta herramienta. Sigue sin ella o pregúntale.".into();
+            }
+            println!("{} {} {}", dim("↳"), cyan(&call.name), dim(&what.chars().take(140).collect::<String>()));
+            let (text, is_error) = crate::tools::run(&call.name, &args).await;
+            show_result(&text, is_error);
+            return text;
+        }
         let Some(pool) = self.mcp.clone() else { return format!("Error: herramienta desconocida {}", call.name) };
         // Buscar a qué servidor y herramienta corresponde el nombre.
         let target = {
@@ -285,29 +319,66 @@ impl Agent {
             })
         };
         let Some((idx, server, tool)) = target else { return format!("Error: herramienta desconocida {}", call.name) };
-        if !self.confirm(&server, call) {
+        let what = compact_args(&args);
+        if !self.confirm(&server, call, &what) {
             return "La persona no autorizó esta herramienta. Sigue sin ella o pregúntale.".into();
         }
-        println!("{} {}", dim("↳ ejecutando"), cyan(&format!("{server}/{tool}")));
+        println!("{} {} {}", dim("↳"), cyan(&format!("{server}/{tool}")), dim(&what.chars().take(140).collect::<String>()));
         let mut p = pool.lock().await;
         let McpState::Ready { session, .. } = &mut p[idx].state else { return "Error: el servidor MCP se desconectó".into() };
-        match session.call_tool(&tool, args).await {
-            Ok((text, is_error)) => {
-                let text: String = text.chars().take(20_000).collect();
-                if is_error { format!("Error de la herramienta: {text}") } else { text }
-            }
-            Err(e) => format!("Error: {e:#}"),
-        }
+        let (text, is_error) = match session.call_tool(&tool, args).await {
+            Ok((text, is_error)) => (crate::tools::clip(&text), is_error),
+            Err(e) => (format!("{e:#}"), true),
+        };
+        show_result(&text, is_error);
+        if is_error { format!("Error de la herramienta: {text}") } else { text }
     }
 }
 
+/// Los argumentos en una línea: si hay uno solo de texto, solo su valor.
+fn compact_args(args: &Value) -> String {
+    match args.as_object() {
+        Some(o) if o.len() == 1 => match o.values().next() {
+            Some(Value::String(s)) => s.replace('\n', " ⏎ "),
+            Some(v) => v.to_string(),
+            None => String::new(),
+        },
+        Some(o) if o.is_empty() => String::new(),
+        _ => args.to_string(),
+    }
+}
+
+fn show_result(text: &str, is_error: bool) {
+    let p = crate::tools::preview(text);
+    if is_error {
+        println!("  {} {}", red("✗"), p);
+    } else {
+        println!("  {} {}", green("✓"), dim(&p));
+    }
+}
+
+/// Vueltas de herramientas antes de preguntar si se sigue.
+const STEPS: usize = 40;
+/// Veces que se deja repetir exactamente la misma llamada en un turno.
+const SAME_CALL: usize = 2;
+
 /// Un turno completo: el modelo responde y, mientras pida herramientas, se ejecutan y se le
-/// devuelven los resultados (hasta 15 vueltas). Devuelve el último `ChatMeta`.
+/// devuelven los resultados. Cada `STEPS` vueltas pregunta si sigue. Devuelve el último `ChatMeta`.
 pub async fn run_turn(c: &Client, agent: &mut Agent, history: &mut Vec<Value>, model: &str, hints: &Value)
     -> Result<ChatMeta> {
     let tools = agent.tool_defs().await;
+    let mut hints = hints.clone();
     let mut last = ChatMeta::default();
-    for _ in 0..15 {
+    let mut seen: HashMap<String, (usize, String)> = HashMap::new();
+    let mut refused = 0;
+    let mut step = 0;
+    loop {
+        if step > 0 && step % STEPS == 0 && !ask_continue(step) {
+            history.push(json!({"role": "assistant", "content":
+                format!("(Me detuve tras {step} pasos de herramientas, a pedido de la persona.)")}));
+            return Ok(last);
+        }
+        step += 1;
         let mut messages = vec![json!({"role": "system", "content": agent.system_prompt()})];
         messages.extend(history.iter().cloned());
         let body = json!({"model": model, "stream": true, "messages": messages, "tools": tools, "orchestrator": hints});
@@ -318,6 +389,11 @@ pub async fn run_turn(c: &Client, agent: &mut Agent, history: &mut Vec<Value>, m
         }).await?;
         if !meta.text.is_empty() {
             println!();
+        }
+        // Todo el turno con el mismo perfil: si no, cada vuelta se vuelve a enrutar y puede caer
+        // en otro modelo que no sabe lo que planeó el anterior.
+        if model == "auto" && hints.get("agent").is_none() && !meta.agent.is_empty() {
+            hints["agent"] = json!(meta.agent);
         }
         if meta.tool_calls.is_empty() {
             history.push(json!({"role": "assistant", "content": meta.text}));
@@ -334,14 +410,51 @@ pub async fn run_turn(c: &Client, agent: &mut Agent, history: &mut Vec<Value>, m
             "tool_calls": calls.iter().map(|c| json!({"id": c.id, "type": "function",
                 "function": {"name": c.name, "arguments": c.arguments}})).collect::<Vec<_>>(),
         }));
+        let mut all_refused = true;
         for call in &calls {
-            let result = agent.execute(call).await;
+            let key = format!("{}\u{0}{}", call.name, normalize_args(&call.arguments));
+            let (count, prev) = seen.get(&key).cloned().unwrap_or_default();
+            let result = if call.name != "todo_write" && count >= SAME_CALL {
+                println!("  {} {} pedida {} veces con los mismos argumentos: no se ejecuta otra vez",
+                    yellow("!"), call.name, count + 1);
+                seen.insert(key, (count + 1, prev.clone()));
+                format!("No se ejecutó: ya pediste esta misma llamada {count} veces y el resultado fue:\n{}\n\
+                    Repetirla dará lo mismo. Cambia de enfoque (otro comando, otra ruta, otra herramienta) \
+                    o explícale a la persona qué está fallando.", prev.chars().take(2000).collect::<String>())
+            } else {
+                all_refused = false;
+                let r = agent.execute(call).await;
+                seen.insert(key, (count + 1, r.clone()));
+                r
+            };
             history.push(json!({"role": "tool", "tool_call_id": call.id, "content": result}));
         }
+        refused = if all_refused { refused + 1 } else { 0 };
         last = meta;
+        if refused >= 2 {
+            eprintln!("{} el modelo insiste en repetir las mismas llamadas: se corta el turno. \
+                Prueba con otro perfil (/model coding-deep) o dale más contexto.", yellow("!"));
+            history.push(json!({"role": "assistant", "content": "(Turno cortado: repetía las mismas llamadas.)"}));
+            return Ok(last);
+        }
     }
-    eprintln!("{} se alcanzó el máximo de 15 vueltas de herramientas", yellow("!"));
-    Ok(last)
+}
+
+/// Mismos argumentos aunque cambien el orden de las claves o los espacios.
+fn normalize_args(a: &str) -> String {
+    serde_json::from_str::<Value>(a).map(|v| v.to_string()).unwrap_or_else(|_| a.trim().to_string())
+}
+
+fn ask_continue(step: usize) -> bool {
+    if !std::io::stdin().is_terminal() {
+        eprintln!("{} se alcanzaron {step} pasos de herramientas", yellow("!"));
+        return false;
+    }
+    print!("{} van {step} pasos de herramientas. ¿Sigo? [S/n]: ", yellow("?"));
+    let _ = std::io::stdout().flush();
+    let mut s = String::new();
+    let _ = std::io::stdin().lock().read_line(&mut s);
+    !matches!(s.trim().to_lowercase().as_str(), "n" | "no")
 }
 
 #[cfg(test)]

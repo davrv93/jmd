@@ -1,4 +1,4 @@
-//! Pruebas del binario `jmd` de punta a punta: MCP (HTTP y stdio) y skills.
+//! Pruebas del binario `jmd` de punta a punta: MCP (HTTP y stdio), skills y el bucle del agente.
 //!
 //! Cada prueba usa un HOME y una configuración temporales, así que no lee lo que haya
 //! configurado en la máquina (Claude Code, OpenCode…).
@@ -181,4 +181,74 @@ fn skills_include_builtin_and_project() {
     let v: Value = serde_json::from_str(&out).unwrap();
     let names: Vec<&str> = v.as_array().unwrap().iter().filter_map(|s| s["name"].as_str()).collect();
     assert!(names.contains(&"prototipo") && names.contains(&"marca"), "{names:?}");
+}
+
+// --- Gateway falso: el bucle de herramientas del agente ----------------------
+
+/// Un stream SSE de chat/completions con una sola llamada a herramienta.
+fn sse_tool_call(name: &str, args: Value) -> Response {
+    let chunk = json!({"choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "id": "",
+        "type": "function", "function": {"name": name, "arguments": args.to_string()}}]}, "finish_reason": "tool_calls"}]});
+    ([("content-type", "text/event-stream"), ("x-orchestrator-agent", "coding"), ("x-orchestrator-model", "falso")],
+        format!("data: {chunk}\n\ndata: [DONE]\n\n")).into_response()
+}
+
+async fn fake_chat(State(s): State<Arc<Mcp>>, Json(body): Json<Value>) -> Response {
+    let n = {
+        let mut calls = s.calls.lock().unwrap();
+        calls.push(body);
+        calls.len()
+    };
+    if n == 1 {
+        sse_tool_call("write_file", json!({"path": "out/hola.txt", "content": "hola"}))
+    } else {
+        // Un modelo atascado: siempre el mismo comando.
+        sse_tool_call("shell", json!({"command": "echo repetido"}))
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn agent_runs_builtin_tools_and_stops_repeated_calls() {
+    let state = Arc::new(Mcp::default());
+    let app = Router::new().route("/v1/chat/completions", post(fake_chat)).with_state(state.clone());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+    let home = Tmp::new("agent");
+    let url = format!("http://{addr}");
+    let (code, out) = tokio::task::spawn_blocking({
+        let home = home.0.clone();
+        move || {
+            let out = Command::new(env!("CARGO_BIN_EXE_jmd"))
+                .args(["chat", "--auto", "crea el archivo y prueba"])
+                .current_dir(&home)
+                .env("HOME", &home).env("USERPROFILE", &home).env("APPDATA", home.join("appdata"))
+                .env("XDG_CONFIG_HOME", home.join(".config")).env("JMD_MCP_CONFIG", home.join("mcp.json"))
+                .env("JMD_URL", &url).env("NO_COLOR", "1")
+                .output().expect("ejecutar jmd");
+            (out.status.code().unwrap_or(-1), String::from_utf8_lossy(&out.stdout).to_string()
+                + &String::from_utf8_lossy(&out.stderr))
+        }
+    }).await.unwrap();
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(std::fs::read_to_string(home.0.join("out/hola.txt")).unwrap(), "hola");
+    // Se ve qué hizo cada herramienta.
+    assert!(out.contains("write_file") && out.contains("Creado"), "{out}");
+    assert!(out.contains("echo repetido") && out.contains("repetido"), "{out}");
+    // El mismo comando se ejecuta dos veces, se rechaza dos y se corta el turno.
+    assert_eq!(out.matches("no se ejecuta otra vez").count(), 2, "{out}");
+    assert!(out.contains("se corta el turno"), "{out}");
+    let calls = state.calls.lock().unwrap();
+    assert_eq!(calls.len(), 5, "{out}");
+    // A partir de la segunda vuelta, el turno sigue con el perfil elegido en la primera.
+    assert!(calls[0]["orchestrator"].get("agent").is_none());
+    assert_eq!(calls[1]["orchestrator"]["agent"], "coding");
+    // El modelo recibe el resultado del comando y el aviso de que no lo repita.
+    let last = calls[4]["messages"].as_array().unwrap();
+    let tool_msgs: Vec<&str> = last.iter().filter(|m| m["role"] == "tool").filter_map(|m| m["content"].as_str()).collect();
+    assert!(tool_msgs[1].contains("código de salida: 0") && tool_msgs[1].contains("repetido"), "{tool_msgs:?}");
+    assert!(tool_msgs[3].starts_with("No se ejecutó"), "{tool_msgs:?}");
+    let system = last[0]["content"].as_str().unwrap();
+    assert!(system.contains("Entorno:") && system.contains("carpeta personal"), "{system}");
 }

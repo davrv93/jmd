@@ -111,7 +111,7 @@ Guía completa por sistema (WSL y su red, rutas, el gateway sin Docker, problema
 
 Todos aceptan `--json`.
 
-### El chat de `jmd`: tareas, MCP y prototipos
+### El chat de `jmd`: tareas, comandos, MCP y prototipos
 
 `jmd`, sin argumentos, abre el modo interactivo. Ahí, lo que no es un comando se envía al
 modelo, que puede usar herramientas:
@@ -125,6 +125,18 @@ modelo, que puede usar herramientas:
   │ ○ Añadir pruebas
   └
   ```
+- **Comandos y archivos (como OpenCode).** Sin instalar nada más, el modelo tiene `shell`
+  (sh en macOS/Linux/WSL, PowerShell en Windows), `write_file`, `read_file` y `list_dir`. Sabe
+  en qué sistema está, cuál es tu carpeta personal y la actual, así que «créalo en Downloads»
+  funciona. Ejecutar un comando o escribir un archivo pide confirmación (`s`, `n`, o `a` =
+  siempre); leer, no. Cada paso se ve con su resultado:
+  ```
+  ↳ shell (en ~/Downloads/cursos) composer create-project laravel/laravel backend --no-interaction
+    ✗ sh: composer: command not found
+  ```
+  Si el modelo repite la misma llamada con los mismos argumentos, la tercera no se ejecuta y se
+  le pide cambiar de enfoque; si insiste, se corta el turno. Cada 40 pasos pregunta si sigue.
+  Todo el turno va con el perfil que eligió el router en la primera vuelta.
 - **MCP.** `jmd mcp` lista los servidores configurados en `jmd`, en el `.mcp.json` del proyecto,
   en Claude Code (`~/.claude.json`) y en OpenCode (`opencode.json`). Se conecta a cada uno
   (stdio o HTTP) y dice si responde y cuántas herramientas tiene. En el chat se conectan en
@@ -145,7 +157,8 @@ modelo, que puede usar herramientas:
   `./prototipos/panel-de-alumnos….html` y lo abre en el navegador. Para iterar, pídelo en el
   chat y se sobrescribe.
 
-Una pregunta suelta también puede usar MCP: `jmd chat --mcp "…"` (`--auto` para no confirmar).
+Una pregunta suelta también usa las herramientas: `jmd chat --auto "…"` (sin `--auto` pide
+confirmación; `--mcp` conecta además los servidores MCP).
 
 **Claude Code** habla la API de Anthropic. El gateway expone `POST /v1/messages` (y
 `/v1/messages/count_tokens`) y la traduce a OpenAI, con streaming, tools, imágenes y PDF.
