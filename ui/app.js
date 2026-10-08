@@ -359,8 +359,12 @@ function providerForm(name, p) {
     try {
       const r = await api("POST", `/admin/api/providers/${encodeURIComponent(name)}/models`);
       state.providerModels[name] = r.models.map((m) => m.id);
-      $("#test-out").innerHTML = r.ok ? `<span class="pill ok">OK</span> ${r.models.length} modelos · ${fmtNum(r.latency, 2)} s`
-        : `<span class="pill bad">${esc(r.status ?? "sin conexión")}</span> ${esc(r.error || "")}`;
+      const k = r.key || {};
+      const keyPill = { valid: `<span class="pill ok">clave aceptada</span>`, rejected: `<span class="pill bad">clave rechazada</span>`,
+        missing: `<span class="pill warn">sin clave</span>`, unknown: `<span class="pill">clave sin comprobar</span>` }[k.state] || "";
+      $("#test-out").innerHTML = (r.ok ? `<span class="pill ok">OK</span> ${r.models.length} modelos · ${fmtNum(r.latency, 2)} s`
+        : `<span class="pill bad">${esc(r.status ?? "sin conexión")}</span> ${esc(r.error || "")}`)
+        + ` ${keyPill}${k.state === "rejected" ? ` <span class="small muted">${esc(k.message)}</span>` : ""}`;
       const conf = r.configured.map((c) => `<tr><td class="mono">${esc(c.group)}</td><td class="mono">${esc(c.model)}</td>
         <td>${c.exists === true ? `<span class="pill ok">existe</span>` : c.exists === false ? `<span class="pill bad">no está en /models</span>` : "?"}</td></tr>`).join("");
       $("#models-out").innerHTML = `

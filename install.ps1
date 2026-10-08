@@ -5,7 +5,8 @@
 # Variables opcionales (definelas antes, p. ej. $env:JMD_VERSION = "v0.2.0"):
 #   JMD_VERSION        version concreta (por defecto, la ultima publicada)
 #   JMD_INSTALL_DIR    carpeta destino (por defecto %LOCALAPPDATA%\Programs\jmd)
-#   JMD_WITH_GATEWAY   "1" para instalar tambien el gateway (ai-orchestrator.exe) sin Docker
+#   JMD_WITH_GATEWAY   "0" para no instalar el gateway (ai-orchestrator.exe); por defecto se instala
+#   JMD_NO_INIT        "1" para no lanzar el asistente `jmd init` al terminar
 #   JMD_ARCHIVE        instala desde un .zip local (sin descargar)
 #   JMD_DOWNLOAD_BASE  espejo de descarga (por defecto, GitHub Releases)
 
@@ -52,7 +53,7 @@ try {
     New-Item -ItemType Directory -Force -Path $Dir | Out-Null
 
     $bins = @('jmd.exe')
-    if ($env:JMD_WITH_GATEWAY -eq '1') { $bins += 'ai-orchestrator.exe' }
+    if ($env:JMD_WITH_GATEWAY -ne '0') { $bins += 'ai-orchestrator.exe' }
     foreach ($b in $bins) {
         $src = Join-Path $Out $b
         if (-not (Test-Path $src)) { throw "el paquete no trae $b" }
@@ -81,6 +82,22 @@ if (($userPath -split ';') -notcontains $Dir) {
 }
 if (($env:Path -split ';') -notcontains $Dir) { $env:Path = "$env:Path;$Dir" }
 
-& (Join-Path $Dir 'jmd.exe') --version
+$jmd = Join-Path $Dir 'jmd.exe'
+& $jmd --version
 Write-Host ''
-Write-Host "Siguiente paso: jmd login --url <URL del gateway> --token <token>   $dot   jmd status"
+
+# Asistente: solo en una consola interactiva. Si ya estaba configurado es una actualizacion.
+$gw = $null
+try { $gw = (& $jmd gateway status --json 2>$null | Out-String | ConvertFrom-Json) } catch { }
+$jmdConfig = Join-Path $env:APPDATA 'jmd\config.json'
+if ($gw -and $gw.running) {
+    & $jmd gateway restart
+    Write-Host "Actualizado. Todo sigue configurado: jmd status"
+} elseif (Test-Path $jmdConfig) {
+    Write-Host "Actualizado. Ya estaba configurado: jmd status  (para cambiar algo: jmd init)"
+} elseif ($env:JMD_NO_INIT -ne '1' -and [Environment]::UserInteractive -and $Host.Name -eq 'ConsoleHost') {
+    & $jmd init
+    if ($LASTEXITCODE -ne 0) { Write-Host 'Puedes repetirlo cuando quieras: jmd init' }
+} else {
+    Write-Host "Siguiente paso: jmd init   (monta el gateway en esta maquina o conectate a uno)"
+}

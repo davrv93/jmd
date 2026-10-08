@@ -65,8 +65,7 @@ podman run -d --name ai-orchestrator -p 127.0.0.1:4000:4000 \
 Abre **http://localhost:4000/ui/** y entra con `ADMIN_TOKEN`. Si lo dejaste vacío, se
 generó uno: `docker exec ai-orchestrator cat /data/admin_token` (o `podman exec …`).
 
-Sin contenedores: el binario `ai-orchestrator` de las releases (`JMD_WITH_GATEWAY=1` en el
-instalador) o `cargo run --release`. Lee `config.yaml` si existe y, si no, la semilla que lleva
+Sin contenedores: `jmd init` (lo hace todo el instalador) o `cargo run --release`. Lee `config.yaml` si existe y, si no, la semilla que lleva
 dentro; guarda en `./data`.
 
 ## Desde la terminal: `jmd`, Claude Code y OpenCode
@@ -83,11 +82,16 @@ irm https://raw.githubusercontent.com/davrv93/jmd/main/install.ps1 | iex
 curl -fsSL https://raw.githubusercontent.com/davrv93/jmd/main/install.sh | sh
 ```
 
+Al terminar, el instalador abre **`jmd init`**. Monta el gateway en tu máquina: pide las claves
+de los proveedores, las verifica y deja el gateway corriendo en segundo plano. También puede
+conectarte a un gateway que ya existe.
+
 ```bash
-jmd login               # URL del gateway y token
-jmd status              # gateway, tokens, Claude Code, OpenCode, RTK y caveman
+jmd status              # gateway, claves de los proveedores, Claude Code, OpenCode, RTK y caveman
+jmd chat "hola"         # prueba rápida
 jmd setup claude        # Claude Code → gateway (y ofrece el hook de RTK)
 jmd setup opencode      # proveedor «jmd» en opencode.json (--project para el del proyecto)
+jmd gateway stop|start|logs|token   # el gateway de tu máquina
 ```
 
 Guía completa por sistema (WSL y su red, rutas, el gateway sin Docker, problemas frecuentes):
@@ -95,7 +99,10 @@ Guía completa por sistema (WSL y su red, rutas, el gateway sin Docker, problema
 
 | Comando | |
 |---|---|
-| `jmd` | Modo interactivo: los comandos de abajo y, si no es un comando, chat con streaming (`/model`, `/style`, `/rate`, `/clear`) |
+| `jmd init` | Asistente: gateway local (claves verificadas, arranque en segundo plano) o remoto |
+| `jmd gateway start\|stop\|restart\|status\|logs\|token` | El gateway de esta máquina |
+| `jmd` | Modo interactivo: los comandos de abajo y, si no es un comando, chat con agente (`/todos`, `/mcp`, `/tools`, `/auto`, `/skills`, `/proto`, `/model`, `/style`, `/rate`, `/clear`) |
+| `jmd mcp [list\|tools <n>\|add\|remove]` · `jmd skills` | Servidores MCP y skills |
 | `jmd models` · `providers` · `provider <n> [test\|balance]` · `quotas` | Estado, cuotas y saldo |
 | `jmd stats` · `requests` | Uso, éxito, latencia, calidad y ahorro por estilo y cliente (+ `rtk gain`) |
 | `jmd route "…"` · `chat "…"` | Ruta sin llamar · pregunta |
@@ -103,6 +110,42 @@ Guía completa por sistema (WSL y su red, rutas, el gateway sin Docker, problema
 | `jmd reset <modelo>` · `ui` · `update` | Quita cooldowns · abre la UI · cómo actualizar |
 
 Todos aceptan `--json`.
+
+### El chat de `jmd`: tareas, MCP y prototipos
+
+`jmd`, sin argumentos, abre el modo interactivo. Ahí, lo que no es un comando se envía al
+modelo, que puede usar herramientas:
+
+- **Lista de tareas (como OpenCode).** En tareas de varios pasos, el modelo planifica con
+  `todo_write` y `jmd` dibuja el panel cada vez que cambia. `/todos` lo vuelve a mostrar.
+  ```
+  ┌ Tareas 1/3
+  │ ✓ Revisar el módulo de login
+  │ ▶ Corregir la validación del token
+  │ ○ Añadir pruebas
+  └
+  ```
+- **MCP.** `jmd mcp` lista los servidores configurados en `jmd`, en el `.mcp.json` del proyecto,
+  en Claude Code (`~/.claude.json`) y en OpenCode (`opencode.json`). Se conecta a cada uno
+  (stdio o HTTP) y dice si responde y cuántas herramientas tiene. En el chat se conectan en
+  segundo plano y el modelo las usa con confirmación: `s`, `n`, o `a` = siempre para ese
+  servidor; `/auto` las ejecuta sin preguntar. `/mcp` muestra el estado y `/tools` lo que ve el
+  modelo.
+  ```bash
+  jmd mcp add fs -- npx -y @modelcontextprotocol/server-filesystem .
+  jmd mcp add docs --url https://ejemplo.com/mcp --header "Authorization: Bearer …"
+  jmd mcp tools fs
+  ```
+- **Skills** (formato `SKILL.md` de Claude Code). Se leen las de `.claude/skills/` del proyecto,
+  las de `~/.claude/skills/`, las de `~/.config/jmd/skills/` y las incluidas. El modelo ve la
+  lista y carga la que necesita (`load_skill`). `jmd skills` las lista.
+- **Prototipos de UI.** Viene incluida la skill `prototipo`: un mockup en un solo archivo HTML,
+  adaptable a móvil, con modo claro y oscuro, estados vacíos y de error y contenido realista en
+  español. `/proto panel de alumnos con notas por curso` lo genera en
+  `./prototipos/panel-de-alumnos….html` y lo abre en el navegador. Para iterar, pídelo en el
+  chat y se sobrescribe.
+
+Una pregunta suelta también puede usar MCP: `jmd chat --mcp "…"` (`--auto` para no confirmar).
 
 **Claude Code** habla la API de Anthropic. El gateway expone `POST /v1/messages` (y
 `/v1/messages/count_tokens`) y la traduce a OpenAI, con streaming, tools, imágenes y PDF.
@@ -301,7 +344,8 @@ src/
   config.rs       esquema, validación, claves tapadas, alias de modelos
   anthropic.rs    traducción Anthropic ⇄ OpenAI (peticiones, respuestas, SSE)
   savings.rs      estilo de respuesta y compresión de salidas de herramientas
-  bin/jmd/        el CLI: comandos, modo interactivo, setup de Claude Code/OpenCode/RTK
+  bin/jmd/        el CLI: comandos, modo interactivo, init y gateway local, setup de Claude
+                  Code/OpenCode/RTK, agente (tareas, MCP, skills, prototipos)
 ui/               index.html · app.js · style.css (sin dependencias; van dentro del binario)
 tests/gateway.rs  gateway real contra un proveedor OpenAI falso (429, 400, 503, SSE, /models, /key)
 ```

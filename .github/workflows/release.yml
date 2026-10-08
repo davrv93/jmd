@@ -92,7 +92,7 @@ jobs:
       - name: instalar y probar (sh)
         if: runner.os != 'Windows'
         run: |
-          export JMD_ARCHIVE="$PWD/dist/jmd-${{ matrix.target }}.tar.gz" JMD_WITH_GATEWAY=1 JMD_INSTALL_DIR="$RUNNER_TEMP/bin"
+          export JMD_ARCHIVE="$PWD/dist/jmd-${{ matrix.target }}.tar.gz" JMD_NO_INIT=1 JMD_INSTALL_DIR="$RUNNER_TEMP/bin"
           sh install.sh
           "$RUNNER_TEMP/bin/jmd" --help > /dev/null
           file "$RUNNER_TEMP/bin/jmd" || true
@@ -106,12 +106,19 @@ jobs:
           JMD_URL=http://127.0.0.1:4077 JMD_ADMIN_TOKEN=t "$RUNNER_TEMP/bin/jmd" status
           JMD_URL=http://127.0.0.1:4077 JMD_ADMIN_TOKEN=t "$RUNNER_TEMP/bin/jmd" models > /dev/null
           kill %1
+          # El asistente sin preguntas: configura, arranca en segundo plano, status, stop.
+          export JMD_GATEWAY_DIR="$RUNNER_TEMP/gw"
+          "$RUNNER_TEMP/bin/jmd" init --local --no-verify --port 4078 --key openrouter=dummy
+          "$RUNNER_TEMP/bin/jmd" status
+          "$RUNNER_TEMP/bin/jmd" gateway status | grep -q corriendo
+          "$RUNNER_TEMP/bin/jmd" gateway restart
+          "$RUNNER_TEMP/bin/jmd" gateway stop
       - name: instalar y probar (PowerShell)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $env:JMD_ARCHIVE = "$PWD\dist\jmd-x86_64-pc-windows-msvc.zip"
-          $env:JMD_WITH_GATEWAY = '1'
+          $env:JMD_NO_INIT = '1'
           ./install.ps1
           $dir = Join-Path $env:LOCALAPPDATA 'Programs\jmd'
           & "$dir\jmd.exe" --help | Out-Null
@@ -128,12 +135,26 @@ jobs:
           & "$dir\jmd.exe" models | Out-Null
           if ($LASTEXITCODE -ne 0) { throw 'jmd models falló' }
           Stop-Process -Id $gw.Id
+          # El asistente sin preguntas: configura, arranca en segundo plano, status, stop.
+          Remove-Item Env:JMD_URL, Env:JMD_ADMIN_TOKEN
+          $env:JMD_GATEWAY_DIR = "$env:RUNNER_TEMP\gw"
+          & "$dir\jmd.exe" init --local --no-verify --port 4078 --key openrouter=dummy
+          if ($LASTEXITCODE -ne 0) { throw 'jmd init falló' }
+          & "$dir\jmd.exe" status
+          if ($LASTEXITCODE -ne 0) { throw 'jmd status falló' }
+          $st = (& "$dir\jmd.exe" gateway status --json | Out-String | ConvertFrom-Json)
+          if (-not $st.running -or -not $st.healthy) { throw 'el gateway de jmd init no está corriendo' }
+          & "$dir\jmd.exe" gateway restart
+          if ($LASTEXITCODE -ne 0) { throw 'jmd gateway restart falló' }
+          & "$dir\jmd.exe" gateway stop
       - name: instalador de PowerShell 5.1 (el que trae Windows)
         if: runner.os == 'Windows'
         shell: powershell
         run: |
           $env:JMD_ARCHIVE = "$PWD\dist\jmd-x86_64-pc-windows-msvc.zip"
           $env:JMD_INSTALL_DIR = "$env:RUNNER_TEMP\ps51"
+          $env:JMD_NO_INIT = '1'
+          Remove-Item "$env:APPDATA\jmd\config.json" -ErrorAction SilentlyContinue
           $out = ./install.ps1 *>&1 | Out-String
           Write-Host $out
           # PowerShell 5.1 lee los .ps1 sin BOM como Windows-1252: los acentos deben salir bien.

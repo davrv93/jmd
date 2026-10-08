@@ -11,9 +11,14 @@
 //! jmd help            todo lo demás
 //! ```
 
+mod agent;
 mod client;
+mod gateway;
+mod init;
+mod mcp;
 mod out;
 mod setup;
+mod skills;
 
 use anyhow::{anyhow, bail, Result};
 use clap::{Parser, Subcommand};
@@ -36,6 +41,41 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
+    /// Asistente: monta el gateway en esta máquina (pide y verifica las claves) o conéctate a uno
+    Init {
+        /// Gateway en esta máquina, sin preguntar
+        #[arg(long, conflicts_with = "remote")]
+        local: bool,
+        /// Gateway existente en esta URL, sin preguntar
+        #[arg(long)]
+        remote: Option<String>,
+        /// Clave de un proveedor: --key openrouter=sk-or-… (repetible)
+        #[arg(long = "key", value_name = "PROVEEDOR=CLAVE")]
+        keys: Vec<String>,
+        /// Puerto del gateway local (por defecto 4000, o el siguiente libre)
+        #[arg(long)]
+        port: Option<u16>,
+        /// No verificar las claves contra el proveedor
+        #[arg(long)]
+        no_verify: bool,
+        /// Guardar la configuración sin arrancar el gateway
+        #[arg(long)]
+        no_start: bool,
+        /// Gateway remoto: clave de /v1
+        #[arg(long = "api-key")]
+        api_key: Option<String>,
+        /// Gateway remoto: token de administración
+        #[arg(long)]
+        token: Option<String>,
+    },
+    /// El gateway local: start · stop · restart · status · logs · token
+    Gateway {
+        #[arg(value_parser = ["start", "stop", "restart", "status", "logs", "token"], default_value = "status")]
+        action: String,
+        /// Líneas de log a mostrar
+        #[arg(short = 'n', default_value_t = 40)]
+        n: usize,
+    },
     /// Guarda la URL del gateway y los tokens en ~/.config/jmd/config.json
     Login {
         #[arg(long)]
@@ -90,7 +130,20 @@ enum Cmd {
         /// quality · speed · cost
         #[arg(long, short = 'p')]
         priority: Option<String>,
+        /// Conectar los servidores MCP también en una pregunta suelta (en el chat interactivo, siempre)
+        #[arg(long)]
+        mcp: bool,
+        /// Ejecutar las herramientas MCP sin pedir confirmación
+        #[arg(long)]
+        auto: bool,
     },
+    /// Servidores MCP: list (por defecto) · tools <nombre> · add <nombre> … · remove <nombre>
+    Mcp {
+        #[command(subcommand)]
+        action: Option<McpCmd>,
+    },
+    /// Skills disponibles para el chat (las de Claude Code y las incluidas, como «prototipo»)
+    Skills,
     /// Estilo de respuesta para todos los clientes (a la manera de caveman) y compresión de salidas
     Style {
         /// off · lite · full · ultra
@@ -122,6 +175,31 @@ enum Cmd {
     Ui,
     /// Muestra cómo actualizar jmd en este sistema
     Update,
+}
+
+#[derive(Subcommand)]
+enum McpCmd {
+    /// Conecta con cada servidor configurado y muestra si responde y cuántas herramientas tiene
+    List,
+    /// Herramientas de un servidor
+    Tools { name: String },
+    /// Añade un servidor a la configuración de jmd: `add fs -- npx -y @modelcontextprotocol/server-filesystem .`
+    /// o `add docs --url https://…/mcp`
+    Add {
+        name: String,
+        #[arg(long)]
+        url: Option<String>,
+        /// Cabecera HTTP «Nombre: valor» (repetible)
+        #[arg(long = "header")]
+        headers: Vec<String>,
+        /// Variable de entorno NOMBRE=valor para un servidor stdio (repetible)
+        #[arg(long = "env")]
+        envs: Vec<String>,
+        #[arg(last = true)]
+        command: Vec<String>,
+    },
+    /// Quita un servidor de la configuración de jmd
+    Remove { name: String },
 }
 
 #[tokio::main]
@@ -156,6 +234,10 @@ fn prompt(label: &str, current: Option<&str>) -> Result<String> {
 
 async fn run(c: &mut Client, cmd: Cmd, as_json: bool) -> Result<()> {
     match cmd {
+        Cmd::Init { local, remote, keys, port, no_verify, no_start, api_key, token } => {
+            init::run(init::Opts { local, remote, keys, port, no_verify, no_start, api_key, token }).await
+        }
+        Cmd::Gateway { action, n } => gateway_cmd(&action, n, as_json).await,
         Cmd::Login { url, token, key } => login(c, url, token, key).await,
         Cmd::Status => status(c, as_json).await,
         Cmd::Models => models(c, as_json).await,
@@ -165,13 +247,34 @@ async fn run(c: &mut Client, cmd: Cmd, as_json: bool) -> Result<()> {
         Cmd::Stats => stats(c, as_json).await,
         Cmd::Requests { n } => requests(c, n, as_json).await,
         Cmd::Route { text, model } => route(c, &text.join(" "), &model, as_json).await,
-        Cmd::Chat { text, model, style, priority } => {
-            let mut session = Session { model, style, priority, history: vec![], last: None };
-            if text.is_empty() {
+        Cmd::Chat { text, model, style, priority, mcp, auto } => {
+            let interactive = text.is_empty();
+            let pool = if interactive || mcp { start_mcp_quietly() } else { None };
+            let mut session = Session::new(model, style, priority, pool);
+            session.agent.auto = auto;
+            if interactive {
                 chat_repl(c, &mut session).await
             } else {
+                if mcp {
+                    wait_mcp(&session).await;
+                }
                 ask(c, &mut session, &text.join(" ")).await.map(|_| ())
             }
+        }
+        Cmd::Mcp { action } => mcp_cmd(action.unwrap_or(McpCmd::List), as_json).await,
+        Cmd::Skills => {
+            let cwd = std::env::current_dir().unwrap_or_else(|_| ".".into());
+            let list = skills::discover(&cwd);
+            if as_json {
+                print_json(&json!(list.iter().map(|k| json!({"name": k.name, "description": k.description, "source": k.source}))
+                    .collect::<Vec<_>>()));
+                return Ok(());
+            }
+            let rows: Vec<Vec<String>> = list.iter().map(|k| vec![cyan(&k.name), dim(&k.source),
+                k.description.chars().take(90).collect()]).collect();
+            table(&["skill", "origen", "para qué"], &rows);
+            println!("{}", dim("en el chat, el modelo las carga solo; para prototipos: /proto <descripción>"));
+            Ok(())
         }
         Cmd::Style { level, compress, max } => style(c, level, compress, max, as_json).await,
         Cmd::Reset { model } => {
@@ -198,6 +301,180 @@ async fn run(c: &mut Client, cmd: Cmd, as_json: bool) -> Result<()> {
             Ok(())
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// MCP
+// ---------------------------------------------------------------------------
+
+async fn mcp_cmd(action: McpCmd, as_json: bool) -> Result<()> {
+    let cwd = std::env::current_dir().unwrap_or_else(|_| ".".into());
+    match action {
+        McpCmd::List => {
+            let servers = mcp::discover(&cwd);
+            if servers.is_empty() {
+                println!("{}", dim("No hay servidores MCP configurados (ni en jmd, ni en Claude Code, ni en OpenCode)."));
+                println!("{}", dim("Añade uno: jmd mcp add fs -- npx -y @modelcontextprotocol/server-filesystem ."));
+                return Ok(());
+            }
+            if !as_json {
+                println!("{}", dim(&format!("conectando con {} servidor(es)…", servers.iter().filter(|s| s.enabled).count())));
+            }
+            let probes = futures::future::join_all(servers.iter().filter(|s| s.enabled).cloned().map(mcp::probe)).await;
+            if as_json {
+                print_json(&json!(servers.iter().map(|s| {
+                    let p = probes.iter().find(|p| p.server.name == s.name);
+                    json!({"name": s.name, "source": s.source, "transport": s.kind(), "target": s.target(), "enabled": s.enabled,
+                        "ok": p.map(|p| p.result.is_ok()), "tools": p.and_then(|p| p.result.as_ref().ok().map(|(t, _)| t.len())),
+                        "error": p.and_then(|p| p.result.as_ref().err().map(|e| format!("{e:#}")))})
+                }).collect::<Vec<_>>()));
+                return Ok(());
+            }
+            let rows: Vec<Vec<String>> = servers.iter().map(|s| {
+                let state = match probes.iter().find(|p| p.server.name == s.name) {
+                    None => dim("desactivado"),
+                    Some(p) => match &p.result {
+                        Ok((tools, _)) => green(&format!("✓ activo · {} herramientas · {:.1} s", tools.len(), p.seconds)),
+                        Err(e) => red(&format!("✗ {}", format!("{e:#}").chars().take(70).collect::<String>())),
+                    },
+                };
+                vec![cyan(&s.name), state, dim(s.kind()), dim(&s.source), dim(&s.target().chars().take(50).collect::<String>())]
+            }).collect();
+            table(&["servidor", "estado", "tipo", "origen", "comando / URL"], &rows);
+            println!("{}", dim("herramientas: jmd mcp tools <servidor> · en el chat (jmd) se conectan solos: /mcp"));
+            Ok(())
+        }
+        McpCmd::Tools { name } => {
+            let server = mcp::discover(&cwd).into_iter().find(|s| s.name == name)
+                .ok_or_else(|| anyhow!("no hay un servidor MCP llamado «{name}» (jmd mcp list)"))?;
+            let p = mcp::probe(server).await;
+            let (tools, version) = p.result?;
+            if as_json {
+                print_json(&json!(tools.iter().map(|t| json!({"name": t.name, "description": t.description,
+                    "input_schema": t.input_schema})).collect::<Vec<_>>()));
+                return Ok(());
+            }
+            println!("{} {} {}", bold(&name), dim(&version), dim(&format!("· {} herramientas", tools.len())));
+            let rows: Vec<Vec<String>> = tools.iter().map(|t| vec![cyan(&t.name),
+                t.description.lines().next().unwrap_or("").chars().take(90).collect()]).collect();
+            table(&["herramienta", "descripción"], &rows);
+            Ok(())
+        }
+        McpCmd::Add { name, url, headers, envs, command } => {
+            let entry = match (url, command.is_empty()) {
+                (Some(u), _) => {
+                    let h: serde_json::Map<String, Value> = headers.iter().filter_map(|h| h.split_once(':'))
+                        .map(|(k, v)| (k.trim().to_string(), json!(v.trim()))).collect();
+                    json!({"type": "http", "url": u, "headers": h})
+                }
+                (None, false) => {
+                    let env: serde_json::Map<String, Value> = envs.iter().filter_map(|e| e.split_once('='))
+                        .map(|(k, v)| (k.to_string(), json!(v))).collect();
+                    json!({"command": command[0], "args": command[1..], "env": env})
+                }
+                (None, true) => bail!("indica el comando (tras --) o --url. Ej.: jmd mcp add fs -- npx -y @modelcontextprotocol/server-filesystem ."),
+            };
+            let path = mcp::edit_jmd_config(|m| { m.insert(name.clone(), entry); })?;
+            println!("{} «{name}» añadido en {}", green("✓"), path.display());
+            println!("{}", dim(&format!("compruébalo: jmd mcp tools {name}")));
+            Ok(())
+        }
+        McpCmd::Remove { name } => {
+            let mut found = false;
+            let path = mcp::edit_jmd_config(|m| { found = m.remove(&name).is_some(); })?;
+            if found {
+                println!("{} «{name}» quitado de {}", green("✓"), path.display());
+            } else {
+                println!("{} «{name}» no está en {} (los de Claude Code/OpenCode se quitan allí)", yellow("!"), path.display());
+            }
+            Ok(())
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// gateway local
+// ---------------------------------------------------------------------------
+
+async fn gateway_cmd(action: &str, n: usize, as_json: bool) -> Result<()> {
+    let dir = gateway::data_dir();
+    match action {
+        "start" | "restart" => {
+            if action == "restart" {
+                gateway::stop(&dir).await?;
+            }
+            if let Some(st) = gateway::running(&dir) {
+                if gateway::healthy(st.port).await {
+                    println!("{} ya está corriendo en http://127.0.0.1:{} (pid {})", green("✓"), st.port, st.pid);
+                    return Ok(());
+                }
+                gateway::stop(&dir).await?;
+            }
+            if !dir.join("config.yaml").exists() {
+                bail!("el gateway local aún no está configurado: jmd init");
+            }
+            let mut s = Settings::load();
+            let wanted = url_port(&s.url).unwrap_or(gateway::DEFAULT_PORT);
+            let port = if gateway::port_free(wanted) { wanted } else {
+                gateway::free_port(wanted + 1).ok_or_else(|| anyhow!("no hay puertos libres"))?
+            };
+            let st = gateway::start(&dir, port).await?;
+            s.url = format!("http://127.0.0.1:{port}");
+            if s.admin_token.is_none() {
+                s.admin_token = gateway::read_token(&dir);
+            }
+            s.save()?;
+            println!("{} gateway en http://127.0.0.1:{} (pid {})", green("✓"), st.port, st.pid);
+            Ok(())
+        }
+        "stop" => {
+            if gateway::stop(&dir).await? {
+                println!("{} gateway detenido", green("✓"));
+            } else {
+                println!("{}", dim("el gateway local no estaba corriendo"));
+            }
+            Ok(())
+        }
+        "logs" => {
+            println!("{}", gateway::tail(&dir, n));
+            println!("{}", dim(&format!("({})", gateway::log_path(&dir).display())));
+            Ok(())
+        }
+        "token" => {
+            let t = gateway::read_token(&dir).ok_or_else(|| anyhow!("no hay gateway local configurado: jmd init"))?;
+            eprintln!("{}", dim("token de administración del gateway local (para la UI). No lo compartas:"));
+            println!("{t}");
+            Ok(())
+        }
+        _ => {
+            let st = gateway::running(&dir);
+            let up = match &st {
+                Some(s) => gateway::healthy(s.port).await,
+                None => false,
+            };
+            if as_json {
+                print_json(&json!({"dir": dir, "running": st.is_some(), "healthy": up,
+                    "pid": st.as_ref().map(|s| s.pid), "port": st.as_ref().map(|s| s.port)}));
+                return Ok(());
+            }
+            match (&st, up) {
+                (Some(s), true) => println!("{} corriendo en http://127.0.0.1:{} (pid {})", green("✓"), s.port, s.pid),
+                (Some(s), false) => println!("{} el proceso {} existe pero no responde: jmd gateway logs", yellow("!"), s.pid),
+                (None, _) if dir.join("config.yaml").exists() => println!("{} detenido · jmd gateway start", dim("·")),
+                (None, _) => println!("{} sin configurar · jmd init", dim("·")),
+            }
+            println!("{}", dim(&format!("datos: {}", dir.display())));
+            Ok(())
+        }
+    }
+}
+
+fn url_port(url: &str) -> Option<u16> {
+    let host = url.split("://").nth(1)?;
+    if !(host.starts_with("127.0.0.1") || host.starts_with("localhost")) {
+        return None;
+    }
+    host.split(':').nth(1)?.trim_end_matches('/').parse().ok()
 }
 
 // ---------------------------------------------------------------------------
@@ -244,6 +521,7 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
     let admin = c.admin_get("/admin/api/status").await;
     let v1 = c.models().await;
     let savings = c.admin_get("/admin/api/savings").await.ok();
+    let keys = if health.is_ok() { c.admin_get("/admin/api/keys").await.ok() } else { None };
     let rtk = setup::rtk();
     let claude_cfg = std::fs::read_to_string(setup::claude_path(false)).ok()
         .and_then(|t| serde_json::from_str::<Value>(&t).ok());
@@ -257,7 +535,7 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
             "savings": savings.as_ref().map(|s| &s["config"]),
             "claude": setup::version_of("claude"), "claude_points_to_gateway": claude_url.as_deref() == Some(&c.s.url),
             "opencode": setup::version_of("opencode"), "opencode_configured": oc_cfg.is_some(),
-            "rtk": matches!(rtk, setup::Rtk::Ok(_)), "caveman": setup::caveman_installed(),
+            "rtk": matches!(rtk, setup::Rtk::Ok(_)), "caveman": setup::caveman_installed(), "keys": keys,
         }));
         return Ok(());
     }
@@ -265,9 +543,18 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
     println!("{}", bold("Gateway"));
     match &health {
         Ok(h) => println!("  {} {} · versión {}", ok(true), c.s.url, h["version"].as_str().unwrap_or("?")),
-        Err(e) => println!("  {} {e}", ok(false)),
+        Err(e) => {
+            println!("  {} {e}", ok(false));
+            if gateway::data_dir().join("config.yaml").exists() {
+                println!("  {} hay un gateway local configurado: jmd gateway start", yellow("→"));
+            } else {
+                println!("  {} ¿primera vez? jmd init", yellow("→"));
+            }
+        }
     }
+    let up = health.is_ok();
     match &admin {
+        _ if !up => {}
         Ok(s) => {
             println!("  {} token de administración", ok(true));
             for w in s["warnings"].as_array().into_iter().flatten() {
@@ -277,6 +564,7 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
         Err(e) => println!("  {} administración: {e}", ok(false)),
     }
     match &v1 {
+        _ if !up => {}
         Ok(m) => println!("  {} /v1 ({} perfiles y modelos)", ok(true), m["data"].as_array().map(|a| a.len()).unwrap_or(0)),
         Err(e) => println!("  {} /v1: {e}", ok(false)),
     }
@@ -284,6 +572,19 @@ async fn status(c: &Client, as_json: bool) -> Result<()> {
         let cfg = &s["config"];
         println!("  estilo {} · compresión de herramientas {}", cyan(cfg["style"].as_str().unwrap_or("off")),
             if cfg["compress_tool_output"].as_bool() == Some(true) { cyan("on") } else { dim("off") });
+    }
+    if let Some(keys) = keys.as_ref().and_then(|k| k.as_object()) {
+        println!("\n{}", bold("Claves de los proveedores"));
+        for (name, k) in keys {
+            let msg = k["message"].as_str().unwrap_or("");
+            match k["state"].as_str() {
+                Some("valid") => println!("  {} {name}", ok(true)),
+                Some("rejected") => println!("  {} {name}: clave rechazada · cámbiala con jmd init --local (o en la UI) · {}",
+                    ok(false), dim(msg)),
+                Some("missing") => println!("  {} {name}: sin clave (sus modelos se saltan)", dim("·")),
+                _ => println!("  {} {name}: no se pudo comprobar · {}", yellow("!"), dim(msg)),
+            }
+        }
     }
     println!("\n{}", bold("Agentes de terminal"));
     match setup::version_of("claude") {
@@ -757,10 +1058,38 @@ struct Session {
     priority: Option<String>,
     history: Vec<Value>,
     last: Option<String>,
+    agent: agent::Agent,
+}
+
+impl Session {
+    fn new(model: String, style: Option<String>, priority: Option<String>, pool: Option<agent::McpPool>) -> Self {
+        Session { model, style, priority, history: vec![], last: None, agent: agent::Agent::new(pool) }
+    }
+}
+
+/// Conecta los servidores MCP en segundo plano (JMD_NO_MCP=1 lo desactiva).
+fn start_mcp_quietly() -> Option<agent::McpPool> {
+    if std::env::var("JMD_NO_MCP").is_ok_and(|v| v == "1") {
+        return None;
+    }
+    let cwd = std::env::current_dir().unwrap_or_else(|_| ".".into());
+    let servers = mcp::discover(&cwd);
+    (!servers.is_empty()).then(|| agent::start_mcp(servers))
+}
+
+/// En una pregunta suelta con --mcp: esperar a que terminen de conectar (máx. 45 s).
+async fn wait_mcp(s: &Session) {
+    let Some(pool) = &s.agent.mcp else { return };
+    for _ in 0..90 {
+        if !pool.lock().await.iter().any(|m| matches!(m.state, agent::McpState::Connecting)) {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    }
+    eprintln!("{}", agent::mcp_summary(pool).await);
 }
 
 async fn ask(c: &Client, s: &mut Session, text: &str) -> Result<client::ChatMeta> {
-    s.history.push(json!({"role": "user", "content": text}));
     let mut hints = json!({});
     if let Some(st) = &s.style {
         hints["style"] = json!(st);
@@ -768,24 +1097,18 @@ async fn ask(c: &Client, s: &mut Session, text: &str) -> Result<client::ChatMeta
     if let Some(p) = &s.priority {
         hints["priority"] = json!(p);
     }
-    let body = json!({"model": s.model, "stream": true, "messages": s.history, "orchestrator": hints});
-    let mut stdout = std::io::stdout();
-    let res = c.chat_stream(&body, |t| {
-        let _ = write!(stdout, "{t}");
-        let _ = stdout.flush();
-    }).await;
-    match res {
+    let mark = s.history.len();
+    s.history.push(json!({"role": "user", "content": text}));
+    match agent::run_turn(c, &mut s.agent, &mut s.history, &s.model, &hints).await {
         Ok(meta) => {
-            println!();
             let upstream = if meta.upstream_model.is_empty() { String::new() } else { format!(" ({})", meta.upstream_model) };
             eprintln!("{}", dim(&format!("↳ {} · {}{} · {:.1} s · intentos {}{}", meta.agent, meta.model, upstream,
                 meta.seconds, meta.attempts, meta.output_tokens.map(|t| format!(" · {t} tok")).unwrap_or_default())));
-            s.history.push(json!({"role": "assistant", "content": meta.text}));
             s.last = Some(meta.request_id.clone()).filter(|r| !r.is_empty());
             Ok(meta)
         }
         Err(e) => {
-            s.history.pop();
+            s.history.truncate(mark);
             Err(e)
         }
     }
@@ -795,7 +1118,13 @@ const REPL_HELP: &str = "\
 Comandos (con o sin «/»):
   models · providers · provider <n> [test|balance] · quotas · stats · requests [-n N]
   route <texto> · style [off|lite|full|ultra] · reset <modelo> · status · setup <claude|opencode|all> · ui
+  gateway [start|stop|restart|status|logs|token] · init
+  mcp [list|tools <n>|add|remove] · skills
 Sesión de chat:
+  /todos              la lista de tareas del agente
+  /mcp                servidores MCP de esta sesión y su estado · /tools: herramientas que ve el modelo
+  /auto               ejecutar herramientas MCP sin preguntar (otra vez: volver a preguntar)
+  /skills             skills disponibles · /proto <descripción>: prototipo de UI en HTML
   /model <perfil>     cambia el perfil (auto, coding, coding-deep, reasoning… o un modelo)
   /style <nivel>      estilo solo para esta sesión (off · lite · full · ultra)
   /priority <p>       quality · speed · cost
@@ -806,16 +1135,20 @@ Cualquier otra cosa se envía como mensaje.";
 
 fn is_command(word: &str) -> bool {
     matches!(word, "help" | "login" | "status" | "doctor" | "models" | "model" | "providers" | "provider" | "quotas" | "quota"
-        | "stats" | "requests" | "route" | "style" | "reset" | "setup" | "ui" | "chat" | "ask" | "update")
+        | "stats" | "requests" | "route" | "style" | "reset" | "setup" | "ui" | "chat" | "ask" | "update" | "init"
+        | "gateway" | "mcp" | "skills")
 }
 
 async fn repl(c: &mut Client) -> Result<()> {
-    let mut s = Session { model: "auto".into(), style: None, priority: None, history: vec![], last: None };
+    let mut s = Session::new("auto".into(), None, None, start_mcp_quietly());
     match c.health().await {
         Ok(h) => println!("{} {} · gateway {} · {}", bold("jmd"), env!("CARGO_PKG_VERSION"), h["version"].as_str().unwrap_or("?"), c.s.url),
         Err(e) => println!("{} {e}", yellow("!")),
     }
     println!("{}", dim("escribe help para ver los comandos; lo que no sea un comando se envía como mensaje (perfil auto)"));
+    if let Some(pool) = &s.agent.mcp {
+        println!("{}", dim(&format!("MCP: conectando {} servidor(es) en segundo plano · /mcp para ver su estado", pool.lock().await.len())));
+    }
     chat_loop(c, &mut s, true).await
 }
 
@@ -851,8 +1184,50 @@ async fn chat_loop(c: &mut Client, s: &mut Session, commands: bool) -> Result<()
             }
             "clear" if slash => {
                 s.history.clear();
-                println!("{}", dim("conversación borrada"));
+                s.agent.todos.clear();
+                println!("{}", dim("conversación y tareas borradas"));
                 Ok(())
+            }
+            "todos" | "tareas" if slash => {
+                println!("{}", agent::render_todos(&s.agent.todos));
+                Ok(())
+            }
+            "mcp" if slash && rest.is_empty() => {
+                match &s.agent.mcp {
+                    Some(pool) => print!("{}", agent::mcp_details(pool).await),
+                    None => println!("{}", dim("MCP: ningún servidor configurado (jmd mcp add …) o desactivado con JMD_NO_MCP=1")),
+                }
+                Ok(())
+            }
+            "tools" | "herramientas" if slash => {
+                let defs = s.agent.tool_defs().await;
+                for d in &defs {
+                    println!("  {} {}", cyan(d["function"]["name"].as_str().unwrap_or("")),
+                        dim(&d["function"]["description"].as_str().unwrap_or("").chars().take(80).collect::<String>()));
+                }
+                Ok(())
+            }
+            "auto" if slash => {
+                s.agent.auto = !s.agent.auto;
+                println!("{}", if s.agent.auto { yellow("herramientas MCP sin confirmación (vuelve con /auto)") }
+                    else { dim("las herramientas MCP vuelven a pedir confirmación") });
+                Ok(())
+            }
+            "skills" if slash => {
+                for k in &s.agent.skills {
+                    println!("  {} {} {}", cyan(&k.name), dim(&format!("[{}]", k.source)),
+                        k.description.chars().take(80).collect::<String>());
+                }
+                Ok(())
+            }
+            "proto" | "prototipo" if slash => {
+                if rest.is_empty() {
+                    Err(anyhow!("uso: /proto <qué pantalla o flujo quieres> (p. ej. /proto panel de alumnos con notas)"))
+                } else {
+                    let prompt = format!("Usa la skill «prototipo»: carga sus instrucciones con load_skill y luego \
+                        crea el prototipo con save_prototype. Pedido: {}", rest.join(" "));
+                    ask(c, s, &prompt).await.map(|_| ())
+                }
             }
             "model" if slash && !rest.is_empty() => {
                 s.model = rest[0].to_string();

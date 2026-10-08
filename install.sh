@@ -6,7 +6,8 @@
 # Variables opcionales:
 #   JMD_VERSION=v0.2.0        versión concreta (por defecto, la última publicada)
 #   JMD_INSTALL_DIR=~/bin     dónde dejar el binario (por defecto ~/.local/bin)
-#   JMD_WITH_GATEWAY=1        instala también el gateway (ai-orchestrator) sin Docker
+#   JMD_WITH_GATEWAY=0        no instalar el gateway (ai-orchestrator); por defecto se instala
+#   JMD_NO_INIT=1             no lanzar el asistente `jmd init` al terminar
 #   JMD_ARCHIVE=ruta.tar.gz   instala desde un archivo local (sin descargar)
 #   JMD_DOWNLOAD_BASE=URL     espejo de descarga (por defecto, GitHub Releases)
 set -eu
@@ -84,7 +85,7 @@ install_bin() {
   say "✓ $DIR/$1"
 }
 install_bin jmd
-if [ "${JMD_WITH_GATEWAY:-0}" = 1 ]; then install_bin ai-orchestrator; fi
+if [ "${JMD_WITH_GATEWAY:-1}" != 0 ]; then install_bin ai-orchestrator; fi
 
 "$DIR/jmd" --version
 
@@ -105,5 +106,16 @@ case ":$PATH:" in
     esac ;;
 esac
 
+# Asistente: solo con una terminal de verdad (con `curl | sh` la entrada es el script,
+# así que se lee de /dev/tty). Si ya estaba configurado es una actualización: no pregunta.
 say ""
-say "Siguiente paso: jmd login --url <URL del gateway> --token <token>   ·   jmd status"
+if "$DIR/jmd" gateway status --json 2>/dev/null | grep -q '"running": true'; then
+  "$DIR/jmd" gateway restart
+  say "Actualizado. Todo sigue configurado: jmd status"
+elif [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/jmd/config.json" ]; then
+  say "Actualizado. Ya estaba configurado: jmd status  (para cambiar algo: jmd init)"
+elif [ "${JMD_NO_INIT:-0}" != 1 ] && [ -t 1 ] && (: < /dev/tty) 2>/dev/null; then
+  "$DIR/jmd" init < /dev/tty || say "Puedes repetirlo cuando quieras: jmd init"
+else
+  say "Siguiente paso: jmd init   (monta el gateway en esta máquina o conéctate a uno)"
+fi
