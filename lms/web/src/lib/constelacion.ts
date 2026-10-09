@@ -92,12 +92,30 @@ export function jmd(opts: { x?: number; y?: number; escala?: number; dibujar?: b
   return `<g transform="translate(${x} ${y}) scale(${escala})">${lineas.join("")}${puntos.join("")}</g>`;
 }
 
-// Cielo completo: estrellas sueltas y una o varias JMD. Flores, pétalos y trono de loto son
-// opcionales (los usa la PPT); el LMS va sobrio, solo con estrellas.
-export function cielo(opts: { ancho?: number; alto?: number; semilla?: number; estrellas?: number; flores?: number; petalos?: number; trono?: { x: number; y: number; r: number }; letras?: { x: number; y: number; escala: number; dibujar?: boolean; flores?: boolean }[] } = {}): string {
-  const { ancho = 1600, alto = 1000, semilla = 40, estrellas = 140, flores = 0, petalos = 0, trono, letras = [] } = opts;
+// Constelación: una polilínea de 3–5 estrellas unidas por trazos finos. Es lo que da al cielo su
+// aire de mapa estelar sin competir con la lectura; se pinta muy tenue (clase «traza tenue»).
+function constelacion(r: () => number, ancho: number, alto: number): string {
+  const n = 3 + Math.floor(r() * 3);
+  let x = r() * ancho, y = r() * alto;
+  const pts: P[] = [[x, y]];
+  for (let i = 1; i < n; i++) {
+    x = Math.max(0, Math.min(ancho, x + (r() - 0.5) * 220));
+    y = Math.max(0, Math.min(alto, y + (r() - 0.5) * 180));
+    pts.push([x, y]);
+  }
+  const d = pts.map(([a, b], i) => `${i ? "L" : "M"}${a.toFixed(0)} ${b.toFixed(0)}`).join(" ");
+  const linea = `<path class="traza tenue" d="${d}"/>`;
+  const nodos = pts.map(([a, b]) => `<circle class="estrella" cx="${a.toFixed(0)}" cy="${b.toFixed(0)}" r="1.6"/>`).join("");
+  return linea + nodos;
+}
+
+// Cielo completo: estrellas sueltas, unas constelaciones y una o varias JMD. Flores, pétalos y
+// trono de loto son opcionales (los usa la PPT); el LMS va sobrio, solo con estrellas y trazos.
+export function cielo(opts: { ancho?: number; alto?: number; semilla?: number; estrellas?: number; constelaciones?: number; flores?: number; petalos?: number; trono?: { x: number; y: number; r: number }; letras?: { x: number; y: number; escala: number; dibujar?: boolean; flores?: boolean }[] } = {}): string {
+  const { ancho = 1600, alto = 1000, semilla = 40, estrellas = 140, constelaciones = 6, flores = 0, petalos = 0, trono, letras = [] } = opts;
   const r = rng(semilla);
   const out: string[] = [];
+  for (let i = 0; i < constelaciones; i++) out.push(constelacion(r, ancho, alto));
   for (let i = 0; i < estrellas; i++) {
     const rad = r() < 0.12 ? 1.8 : 0.6 + r();
     out.push(`<circle class="polvo" style="--d:${(r() * 6).toFixed(1)}s" cx="${(r() * ancho).toFixed(0)}" cy="${(r() * alto).toFixed(0)}" r="${rad.toFixed(1)}"/>`);

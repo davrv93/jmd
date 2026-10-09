@@ -181,6 +181,13 @@ export interface Grade {
   graded_at: string | null;
   feedback_md: string;
 }
+export interface RunResult {
+  stdout: string;
+  stderr: string;
+  exit_code: number;
+  duration_ms: number;
+  timed_out: boolean;
+}
 export interface LinkItem extends Material {
   lesson_id: string;
   lesson_title: string;
@@ -238,6 +245,7 @@ export const api = {
   resolve: (q: string, resolved: boolean) => req<Question>("POST", `/api/v1/questions/${encodeURIComponent(q)}/resolve`, { resolved }),
   examples: (course: string) => req<ExampleSummary[]>("GET", `/api/v1/courses/${encodeURIComponent(course)}/examples`),
   example: (id: string) => req<Example>("GET", `/api/v1/examples/${encodeURIComponent(id)}`),
+  run: (language: string, code: string) => req<RunResult>("POST", "/api/v1/run", { language, code }),
   courseProgress: (id: string) => req<CourseProgress>("GET", `/api/v1/courses/${encodeURIComponent(id)}/progress`),
 };
 

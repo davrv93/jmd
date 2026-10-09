@@ -7,7 +7,8 @@ import { cielo } from "~/lib/constelacion";
 import { Icon } from "~/components/icon";
 
 // El cielo se calcula una vez (determinista) y va como SVG en línea: sin peticiones ni JS.
-const CIELO = cielo({ semilla: 40, estrellas: 110, letras: [{ x: 1060, y: 680, escala: 0.75 }] });
+// Constelaciones tenues de fondo y las letras JMD discretas, pequeñas y arrinconadas.
+const CIELO = cielo({ semilla: 41, estrellas: 120, constelaciones: 7, letras: [{ x: 1130, y: 730, escala: 0.5 }] });
 const MARCA = `<svg class="mark" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1.5 14.1 9.9 22.5 12 14.1 14.1 12 22.5 9.9 14.1 1.5 12 9.9 9.9z"/></svg>`;
 
 const NAV = [
