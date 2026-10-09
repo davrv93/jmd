@@ -2,8 +2,8 @@
 #   docker compose up -d --build
 #   podman compose up -d --build      (o podman-compose up -d --build)
 #
-# Las variables salen de .env (copia .env.example). La configuración viva y la telemetría
-# quedan en el volumen aio_data (/data dentro del contenedor).
+# Las variables salen de .env (copia .env.example y, para el LMS, lms/.env.example). La
+# configuración viva y la telemetría quedan en aio_data; la base del LMS, en lms_data.
 
 services:
   orchestrator:
@@ -25,5 +25,29 @@ services:
       - aio_data:/data
     restart: unless-stopped
 
+  lms:
+    build: ./lms
+    image: localhost/lms:latest
+    container_name: lms
+    ports:
+      - "127.0.0.1:${LMS_PORT:-8080}:8080"
+    environment:
+      LMS_ADMIN_EMAIL: ${LMS_ADMIN_EMAIL:-}
+      LMS_ADMIN_PASSWORD: ${LMS_ADMIN_PASSWORD:-}
+      LMS_ADMIN_NAME: ${LMS_ADMIN_NAME:-Instructor}
+      LMS_INVITE_CODE: ${LMS_INVITE_CODE:-}
+      LMS_COHORT: ${LMS_COHORT:-}
+      LMS_PUBLIC_URL: ${LMS_PUBLIC_URL:-http://localhost:8080}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-lms-web}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-lms-api}
+    volumes:
+      - lms_data:/data
+      # El temario se lee de aquí: edita lms/content, haz commit, y se recarga solo.
+      - ./lms/content:/app/content:ro
+    restart: unless-stopped
+
 volumes:
   aio_data:
+  lms_data:
