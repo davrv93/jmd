@@ -188,10 +188,25 @@ function circuitPill(m) {
   return usable ? `<span class="pill ok">disponible</span>` : `<span class="pill bad">sin deployment usable</span>`;
 }
 
+/// Cuentas del LMS: lo que lleva hoy cada alumno y cada cohorte frente a su cuota.
+function accountsCard(u) {
+  const lim = (n) => (n ? fmtNum(n) : "∞");
+  const rows = (u.today || []).map((r) => `<tr><td>${r.scope === "user" ? "alumno" : "cohorte"}</td><td class="mono">${esc(r.id)}</td>
+      <td>${fmtNum(r.requests)} / ${lim(r.limits.requests_per_day)}</td><td>${fmtNum(r.tokens)} / ${lim(r.limits.tokens_per_day)}</td></tr>`).join("");
+  return `<h2 style="margin-top:20px">Cuentas del LMS</h2>
+    <div class="card table-wrap">
+      <p class="muted small">Realm ${esc(u.issuer)} · por alumno ${lim(u.per_user.requests_per_day)} peticiones y ${lim(u.per_user.tokens_per_day)} tokens al día
+        · por cohorte ${lim(u.per_cohort.requests_per_day)} / ${lim(u.per_cohort.tokens_per_day)} (se cambian en la pestaña YAML, sección <code>auth</code>).</p>
+      ${rows ? `<table><thead><tr><th></th><th>Quién</th><th>Peticiones hoy</th><th>Tokens hoy</th></tr></thead><tbody>${rows}</tbody></table>`
+             : `<p class="muted">Nadie ha usado su cuenta hoy.</p>`}
+    </div>`;
+}
+
 async function viewPanel() {
   const main = $("#main");
   const render = async () => {
-    const [quotas, status] = await Promise.all([api("GET", "/admin/api/quotas"), api("GET", "/admin/api/status")]);
+    const [quotas, status, usage] = await Promise.all([api("GET", "/admin/api/quotas"), api("GET", "/admin/api/status"),
+      api("GET", "/admin/api/usage").catch(() => null)]);
     const byModel = {};
     for (const s of status.stats) {
       const m = (byModel[s.model] ||= { calls: 0, ok: 0, lat: [], q: [] });
@@ -212,6 +227,7 @@ async function viewPanel() {
     main.innerHTML = `
       <div class="row"><h2>Cuotas</h2><span class="spacer"></span><span class="muted small">se actualiza cada 10 s</span></div>
       <div class="grid">${Object.entries(quotas).map(([n, q]) => quotaCard(n, q)).join("")}</div>
+      ${usage && usage.enabled ? accountsCard(usage) : ""}
       <h2 style="margin-top:20px">Modelos</h2>
       <div class="card table-wrap"><table>
         <thead><tr><th>Modelo</th><th>Estado</th><th>Llamadas</th><th>Éxito</th><th>Latencia</th><th>Calidad</th><th></th></tr></thead>

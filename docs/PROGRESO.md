@@ -32,4 +32,12 @@ preguntas, tareas con entrega y nota, y el contrato `/api/v1` para `jmd`.
 - Fase 3: árbol de archivos y diffs del repo de la sesión, Sandpack.
 - Fase 5: runner con gVisor y autocalificación.
 - Fase 6: servidor MCP del LMS en `/mcp`.
-- `jmd`: `login --sso`, `courses`, `lesson open`, `submit`, `grades`, `ask` contra este API.
+- ~~`jmd`: `login --sso`, `courses`, `lesson open`, `submit`, `grades`, `ask` contra este API.~~
+  **Hecho (2026-10-09, v0.4.0):** `jmd login --sso` (PKCE con navegador, `--device`, y modo local
+  con correo y contraseña mientras no haya Keycloak), `logout`, `whoami`, `token`, `courses`,
+  `course`, `lesson`, `lesson open`, `materials pull`, `assignments`, `assignment`, `submit`,
+  `grades`, `ask --line`; el gateway valida los access tokens del realm (`aud: ai-gateway`) con
+  cuotas por alumno y cohorte y emite tokens personales; `jmd setup claude|opencode` conectan a
+  los agentes con la cuenta (`apiKeyHelper`) y registran el MCP `lms` (`jmd mcp serve`). Probado
+  de punta a punta contra un realm y un LMS simulados (`tests/jmd_cli.rs`, `tests/gateway.rs`).
+  Falta probarlo contra Keycloak de verdad cuando esté levantado.

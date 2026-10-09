@@ -177,9 +177,17 @@ que lleva dentro) y las claves de las variables de entorno: `ADMIN_TOKEN`, `OPEN
 
 ### Para toda la clase
 
-Ponlo en un servidor con HTTPS delante (nginx o Caddy) y define `GATEWAY_API_KEYS`. Cada alumno
-hace `jmd login --url https://tu-dominio --key <su clave>`. Cuando esté listo el SSO del LMS,
-entrará con su cuenta y la clave dejará de hacer falta.
+Ponlo en un servidor con HTTPS delante (nginx o Caddy). Dos formas de dar acceso:
+
+- **Claves fijas:** define `GATEWAY_API_KEYS` y cada alumno hace
+  `jmd login --url https://tu-dominio --key <su clave>`.
+- **Con la cuenta del LMS (SSO):** pon `auth.issuer` (el realm `lms` de Keycloak) en la pestaña
+  YAML de la UI y las cuotas por alumno y cohorte en `auth.per_user` / `auth.cohorts`. Cada alumno
+  entra con `jmd login --sso --lms https://lms.tu-dominio` (abre el navegador; `--device` en WSL
+  o sin navegador) y `jmd setup claude` / `jmd setup opencode` dejan a los agentes entrando con su
+  cuenta. `jmd whoami` le dice cuánto le queda hoy. Mientras el LMS esté en modo local (sin
+  Keycloak), el mismo comando pide correo y contraseña y los comandos del curso funcionan igual;
+  el gateway sigue con claves fijas hasta que haya realm.
 
 ---
 
@@ -192,7 +200,8 @@ entrará con su cuenta y la clave dejará de hacer falta.
 | `jmd status` dice «clave rechazada» | El proveedor no acepta esa clave: `jmd init` para cambiarla (la verifica antes de guardarla) |
 | Todos los modelos fallan con `not_found` | El proveedor cambió los IDs de sus modelos gratis: `jmd provider openrouter test` marca los que ya no existen y lista los que hay; se corrigen en la UI, pestaña Modelos |
 | Claude Code no pasa por el gateway | Hay un `ANTHROPIC_BASE_URL` definido en la terminal que gana a settings.json; `jmd status` lo avisa. Quítalo con `unset ANTHROPIC_BASE_URL` o `Remove-Item Env:ANTHROPIC_BASE_URL` |
-| `HTTP 401` | Token de administración o clave de `/v1` incorrectos: `jmd login` |
+| `HTTP 401` | Token de administración o clave de `/v1` incorrectos: `jmd login`. Con cuenta del LMS: `jmd login --sso` otra vez (la sesión caducó o se revocó) |
+| `tu cuenta agotó su cuota de hoy` (429) | Se reinicia a medianoche UTC; `jmd whoami` muestra el uso. Quien administra cambia `auth.per_user` en la UI |
 | Instalaste en Windows y no aparece en WSL (o al revés) | Son sistemas distintos: instala en los dos, o solo donde usas la terminal |
 
 ---

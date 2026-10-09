@@ -308,11 +308,39 @@ La pestaña **Probar** también la envía con los botones Buena, Regular y Mala.
 | `GET /v1/models` | `auto`, los agentes y los modelos |
 | `POST /v1/route` | Dry-run: qué agente y qué cadena tocarían, sin llamar a nadie |
 | `POST /v1/feedback` | `{request_id, quality}` |
+| `GET /v1/auth/me` · `POST /v1/auth/exchange` · `DELETE /v1/auth/token` | La cuenta del LMS: quién soy y mi cuota de hoy; un token personal (`jg_…`) a cambio del access token; revocarlo |
 | `GET /health` | |
-| `/admin/api/*` | Lo que usa la UI (con `Authorization: Bearer $ADMIN_TOKEN`) |
+| `/admin/api/*` | Lo que usa la UI (con `Authorization: Bearer $ADMIN_TOKEN`); `usage` y `tokens` son las cuentas del LMS |
 
 `/v1` pide `Authorization: Bearer <una de GATEWAY_API_KEYS>`. Si esa variable está vacía,
 no pide nada: déjalo así solo en local.
+
+### Con la cuenta del LMS (SSO)
+
+Con `auth.issuer` en la configuración (el realm `lms` de Keycloak), `/v1` acepta además los
+**access tokens** de ese realm con audiencia `ai-gateway`: los valida con el JWKS del issuer
+(firma RS256, `iss`, `exp`, `aud`) y lleva **cuotas por alumno y por cohorte** (peticiones y
+tokens por día UTC; `auth.per_user`, `auth.per_cohort`, `auth.cohorts`). Al pasarse, 429 con
+`Retry-After` y quién se pasó. La telemetría guarda `sub` y la cohorte, nunca el email, y el
+Panel de la UI muestra el uso de hoy.
+
+Para los clientes que no saben refrescar (OpenCode), `POST /v1/auth/exchange` con el access
+token devuelve un **token personal** `jg_…` de `auth.personal_token_days` días; solo se guarda su
+hash, y se revoca desde `DELETE /v1/auth/token` o la UI.
+
+```bash
+jmd login --sso --lms https://lms.tu-dominio   # abre el navegador (PKCE); --device si no hay navegador
+jmd whoami                                      # quién eres y cuánto te queda hoy
+jmd setup claude                                # Claude Code entra con tu cuenta (apiKeyHelper = `jmd token`)
+jmd setup opencode                              # OpenCode, con el token personal
+jmd courses · lesson open <id> · assignments · submit <tarea> · grades · ask <sesión> "…"
+jmd logout
+```
+
+Si el LMS aún no tiene SSO (modo local), `jmd login --sso --lms …` pide correo y contraseña y
+usa el token local del LMS para los comandos del curso. `jmd setup` registra además el
+**servidor MCP `lms`** (`jmd mcp serve`): el agente ve tus cursos, sesiones, tareas y notas y
+puede publicar preguntas. Los tokens quedan en `~/.config/jmd/tokens.json` (600).
 
 ## Configuración
 
@@ -333,7 +361,8 @@ En [`lms/`](lms/) está la plataforma del curso de programación agéntica: fron
 dentro de un backend **Go**, con el temario en archivos (`lms/content/`). Login (cuentas locales
 hoy, Keycloak cuando esté), cursos → sesiones con objetivos, ciclo de aprendizaje con
 herramientas, enlaces publicados, preguntas, tareas con rúbrica y notas, y el API `/api/v1` del
-[contrato](docs/CONTRATO.md) que consumirá `jmd`. `docker compose up -d --build lms` y
+[contrato](docs/CONTRATO.md) que consume `jmd` (`jmd login --sso`, `courses`, `lesson open`,
+`submit`, `grades`, `ask`, y el MCP `lms` para los agentes). `docker compose up -d --build lms` y
 http://localhost:8080. Guía: [`lms/README.md`](lms/README.md).
 
 ## Desarrollo

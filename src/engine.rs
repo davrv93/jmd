@@ -86,6 +86,8 @@ pub struct CallCtx {
     pub saved_chars: Option<u64>,
     /// Quién llamó: openai · anthropic · jmd · ui.
     pub client: Option<String>,
+    /// La cuenta del LMS, si la petición trajo una.
+    pub principal: Option<crate::auth::Principal>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -123,6 +125,9 @@ pub struct Engine {
     judge_cache: Mutex<(HashMap<String, JudgeOut>, VecDeque<String>)>,
     pub gateway_keys: Vec<String>,
     pub admin_token: String,
+    /// Claves del issuer y cuotas por alumno y cohorte (cuentas del LMS).
+    pub jwks: crate::auth::Jwks,
+    pub usage: crate::auth::Usage,
 }
 
 impl Engine {
@@ -143,8 +148,11 @@ impl Engine {
             judge_cache: Mutex::new((HashMap::new(), VecDeque::new())),
             gateway_keys,
             admin_token,
+            jwks: crate::auth::Jwks::default(),
+            usage: crate::auth::Usage::default(),
         };
         e.seed_quotas();
+        e.seed_usage();
         e
     }
 
@@ -193,6 +201,20 @@ impl Engine {
     }
 
     /// Al arrancar, lo gastado hoy sale de la telemetría (los presupuestos sobreviven a reinicios).
+    /// Al arrancar, lo que cada cuenta del LMS gastó hoy (día UTC) según la telemetría.
+    fn seed_usage(&self) {
+        let t = now();
+        let since = (t / 86_400.0).floor() * 86_400.0;
+        for (user, cohort, req, tok) in self.telemetry.usage_today(since) {
+            let Some(sub) = user else { continue };
+            let p = crate::auth::Principal { sub, cohorts: cohort.into_iter().collect(), ..Default::default() };
+            for _ in 1..req {
+                self.usage.record(&p, 0, t);
+            }
+            self.usage.record(&p, tok, t);
+        }
+    }
+
     fn seed_quotas(&self) {
         let cfg = self.cfg();
         let t = now();
@@ -619,8 +641,14 @@ impl Engine {
             prompt_tokens: usage.and_then(|u| u["prompt_tokens"].as_u64()),
             completion_tokens: usage.and_then(|u| u["completion_tokens"].as_u64()),
             quality_auto: quality, style: ctx.style.clone(), saved_chars: ctx.saved_chars,
-            client: ctx.client.clone(), ..Default::default()
+            client: ctx.client.clone(), user: ctx.principal.as_ref().map(|p| p.sub.clone()),
+            cohort: ctx.principal.as_ref().and_then(|p| p.cohort().map(String::from)), ..Default::default()
         });
+        if let Some(p) = &ctx.principal {
+            let tokens = usage.and_then(|u| u["total_tokens"].as_u64()).or_else(|| usage.map(|u|
+                u["prompt_tokens"].as_u64().unwrap_or(0) + u["completion_tokens"].as_u64().unwrap_or(0))).unwrap_or(0);
+            self.usage.record(p, tokens, now());
+        }
     }
 }
 

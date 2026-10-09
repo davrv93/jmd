@@ -15,10 +15,13 @@ mod agent;
 mod client;
 mod gateway;
 mod init;
+mod lms;
 mod mcp;
+mod mcp_server;
 mod out;
 mod setup;
 mod skills;
+mod sso;
 mod tools;
 
 use anyhow::{anyhow, bail, Result};
@@ -77,7 +80,7 @@ enum Cmd {
         #[arg(short = 'n', default_value_t = 40)]
         n: usize,
     },
-    /// Guarda la URL del gateway y los tokens en ~/.config/jmd/config.json
+    /// Entra con tu cuenta del LMS (--sso, --device) o guarda la URL y las claves del gateway
     Login {
         #[arg(long)]
         url: Option<String>,
@@ -87,6 +90,76 @@ enum Cmd {
         /// Clave de /v1 (una de GATEWAY_API_KEYS), si el gateway la pide
         #[arg(long)]
         key: Option<String>,
+        /// Entrar con la cuenta del LMS (abre el navegador; con el LMS en modo local pide correo y contraseña)
+        #[arg(long)]
+        sso: bool,
+        /// Sin navegador: muestra una dirección y un código (WSL, servidores)
+        #[arg(long)]
+        device: bool,
+        /// URL del LMS (se recuerda)
+        #[arg(long)]
+        lms: Option<String>,
+        /// Ir directo al servidor de identidad (realm), sin pasar por el LMS
+        #[arg(long)]
+        issuer: Option<String>,
+        /// Modo local del LMS, sin preguntar: correo
+        #[arg(long)]
+        email: Option<String>,
+        /// Modo local del LMS, sin preguntar: contraseña
+        #[arg(long)]
+        password: Option<String>,
+    },
+    /// Cierra la sesión del LMS (revoca el refresh token) y borra los tokens
+    Logout,
+    /// Quién eres en el LMS y en el gateway, y cuánto te queda hoy
+    Whoami,
+    /// Un token vigente para el gateway (lo usa Claude Code como apiKeyHelper)
+    Token,
+    /// Mis cursos
+    Courses,
+    /// Temario de un curso
+    Course { id: String },
+    /// Una sesión: `lesson <id>` la muestra; `lesson open <id>` clona el repo y baja los materiales
+    Lesson {
+        #[arg(required = true, num_args = 1..=2)]
+        args: Vec<String>,
+    },
+    /// Materiales de una sesión: `materials pull <sesión>` los baja a ./materiales/
+    Materials {
+        #[arg(value_parser = ["pull"])]
+        action: String,
+        lesson: String,
+    },
+    /// Tareas (de un curso o de todos)
+    Assignments {
+        #[arg(long)]
+        course: Option<String>,
+    },
+    /// Enunciado de una tarea, rúbrica y mis entregas
+    Assignment { id: String },
+    /// Entrega la tarea con el origin y el HEAD del repo actual
+    Submit {
+        id: String,
+        /// Nota para quien califica
+        #[arg(long)]
+        notes: Option<String>,
+        /// Entregar aunque haya cambios sin commit o sin push
+        #[arg(long, short = 'y')]
+        yes: bool,
+    },
+    /// Mis notas
+    Grades {
+        #[arg(long)]
+        course: Option<String>,
+    },
+    /// Publica una pregunta en una sesión: `ask <sesión> "¿…?" [--line archivo:N]`
+    Ask {
+        lesson: String,
+        #[arg(required = true, num_args = 1..)]
+        text: Vec<String>,
+        /// Cita una línea de código: archivo:N
+        #[arg(long)]
+        line: Option<String>,
     },
     /// Comprueba el gateway, los tokens y qué agentes y herramientas hay instalados
     #[command(alias = "doctor")]
@@ -120,7 +193,6 @@ enum Cmd {
         model: String,
     },
     /// Pregunta al gateway (sin texto: chat interactivo)
-    #[command(alias = "ask")]
     Chat {
         text: Vec<String>,
         #[arg(long, short = 'm', default_value = "auto")]
@@ -201,12 +273,20 @@ enum McpCmd {
     },
     /// Quita un servidor de la configuración de jmd
     Remove { name: String },
+    /// Sirve el LMS como servidor MCP por stdio (lo registran `jmd setup claude|opencode`)
+    Serve,
 }
 
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-    let mut c = Client::new(Settings::load());
+    let mut settings = Settings::load();
+    if settings.api_key.as_deref().is_none_or(str::is_empty) && !matches!(cli.cmd, Some(Cmd::Token) | Some(Cmd::Logout)) {
+        if let Some(b) = sso::gateway_bearer().await {
+            settings.api_key = Some(b);
+        }
+    }
+    let mut c = Client::new(settings);
     let res = match cli.cmd {
         None => repl(&mut c).await,
         Some(cmd) => run(&mut c, cmd, cli.json).await,
@@ -239,7 +319,26 @@ async fn run(c: &mut Client, cmd: Cmd, as_json: bool) -> Result<()> {
             init::run(init::Opts { local, remote, keys, port, no_verify, no_start, api_key, token }).await
         }
         Cmd::Gateway { action, n } => gateway_cmd(&action, n, as_json).await,
-        Cmd::Login { url, token, key } => login(c, url, token, key).await,
+        Cmd::Login { url, token, key, sso: false, device: false, lms: None, issuer: None, email: None, password: None } =>
+            login(c, url, token, key).await,
+        Cmd::Login { lms, issuer, device, email, password, .. } =>
+            sso::login(sso::LoginOpts { lms, issuer, device, email, password }, &c.s).await,
+        Cmd::Logout => sso::logout().await,
+        Cmd::Whoami => sso::whoami(&c.s, as_json).await,
+        Cmd::Token => sso::token().await,
+        Cmd::Courses => lms::courses(as_json).await,
+        Cmd::Course { id } => lms::course(&id, as_json).await,
+        Cmd::Lesson { args } => match args.as_slice() {
+            [open, id] if open == "open" => lms::lesson_open(id).await,
+            [id] => lms::lesson(id, as_json).await,
+            _ => bail!("uso: jmd lesson <id> · jmd lesson open <id>"),
+        },
+        Cmd::Materials { lesson, .. } => lms::materials_pull(&lesson).await,
+        Cmd::Assignments { course } => lms::assignments(course.as_deref(), as_json).await,
+        Cmd::Assignment { id } => lms::assignment(&id, as_json).await,
+        Cmd::Submit { id, notes, yes } => lms::submit(&id, notes, yes, as_json).await,
+        Cmd::Grades { course } => lms::grades(course.as_deref(), as_json).await,
+        Cmd::Ask { lesson, text, line } => lms::ask(&lesson, &text.join(" "), line.as_deref(), as_json).await,
         Cmd::Status => status(c, as_json).await,
         Cmd::Models => models(c, as_json).await,
         Cmd::Providers => providers(c, as_json).await,
@@ -262,6 +361,7 @@ async fn run(c: &mut Client, cmd: Cmd, as_json: bool) -> Result<()> {
                 ask(c, &mut session, &text.join(" ")).await.map(|_| ())
             }
         }
+        Cmd::Mcp { action: Some(McpCmd::Serve) } => mcp_server::serve().await,
         Cmd::Mcp { action } => mcp_cmd(action.unwrap_or(McpCmd::List), as_json).await,
         Cmd::Skills => {
             let cwd = std::env::current_dir().unwrap_or_else(|_| ".".into());
@@ -380,6 +480,7 @@ async fn mcp_cmd(action: McpCmd, as_json: bool) -> Result<()> {
             println!("{}", dim(&format!("compruébalo: jmd mcp tools {name}")));
             Ok(())
         }
+        McpCmd::Serve => mcp_server::serve().await,
         McpCmd::Remove { name } => {
             let mut found = false;
             let path = mcp::edit_jmd_config(|m| { found = m.remove(&name).is_some(); })?;
@@ -988,12 +1089,28 @@ fn setup_claude(c: &Client, project: bool, yes: bool, undo: bool) -> Result<()> 
         println!("{} Claude Code ya no usa el gateway ({})", green("✓"), path.display());
         return Ok(());
     }
-    let token = c.s.api_key.clone().filter(|k| !k.is_empty()).unwrap_or_else(|| setup::NO_KEY.into());
-    let merged = setup::claude_settings(existing.as_deref(), &c.s.url, &token)?;
+    let tokens = sso::Tokens::load();
+    let with_account = tokens.logged_in();
+    let merged = if with_account {
+        setup::claude_settings_sso(existing.as_deref(), &c.s.url)?
+    } else {
+        let token = c.s.api_key.clone().filter(|k| !k.is_empty()).unwrap_or_else(|| setup::NO_KEY.into());
+        setup::claude_settings(existing.as_deref(), &c.s.url, &token)?
+    };
     let backup = setup::write_with_backup(&path, &merged)?;
     println!("{} {}", bold("Claude Code"), dim(&path.display().to_string()));
     println!("  {} ANTHROPIC_BASE_URL={} {}", green("✓"), c.s.url,
         backup.map(|b| dim(&format!("(copia: {})", b.display()))).unwrap_or_default());
+    if with_account {
+        println!("  {} apiKeyHelper = `jmd token`: entra al gateway con tu cuenta ({})", green("✓"), tokens.who());
+        let mcp_path = setup::claude_mcp_path(project);
+        let what = mcp_path.display().to_string();
+        let existing = std::fs::read_to_string(&mcp_path).ok();
+        match setup::claude_mcp(existing.as_deref(), &what).and_then(|v| setup::write_with_backup(&mcp_path, &v)) {
+            Ok(_) => println!("  {} servidor MCP «{}» registrado en {what} (cursos, sesiones, tareas, notas, preguntas)", green("✓"), setup::LMS_MCP),
+            Err(e) => println!("  {} MCP del LMS: {e}", yellow("!")),
+        }
+    }
     if project && setup::gitignore(".claude/settings.local.json")? {
         println!("  {} .claude/settings.local.json añadido a .gitignore", green("✓"));
     }
@@ -1031,16 +1148,31 @@ async fn setup_opencode(c: &Client, project: bool) -> Result<()> {
         .filter(|m| m["owned_by"] != "upstream")
         .map(|m| (m["id"].as_str().unwrap_or("").to_string(), m["description"].as_str().unwrap_or("").to_string()))
         .collect();
-    let key = if c.s.api_key.as_deref().is_some_and(|k| !k.is_empty()) { "{env:JMD_API_KEY}" } else { setup::NO_KEY };
+    let tokens = sso::Tokens::load();
+    let personal = tokens.gateway_token.clone().filter(|_| tokens.has_sso() || tokens.logged_in());
+    let key = match &personal {
+        Some(p) => p.as_str(),
+        None if c.s.api_key.as_deref().is_some_and(|k| !k.is_empty()) => "{env:JMD_API_KEY}",
+        None => setup::NO_KEY,
+    };
     let path = setup::opencode_path(project);
     let existing = std::fs::read_to_string(&path).ok();
-    let merged = setup::opencode_config(existing.as_deref(), &c.s.url, &models, key)?;
+    let mut merged = setup::opencode_config(existing.as_deref(), &c.s.url, &models, key)?;
+    if tokens.logged_in() {
+        setup::opencode_mcp(&mut merged)?;
+    }
     let backup = setup::write_with_backup(&path, &merged)?;
     println!("{} {}", bold("OpenCode"), dim(&path.display().to_string()));
     println!("  {} proveedor jmd → {}/v1 con {} perfiles (modelo por defecto: {}) {}", green("✓"), c.s.url, models.len(),
         merged["model"].as_str().unwrap_or(""), backup.map(|b| dim(&format!("(copia: {})", b.display()))).unwrap_or_default());
-    if key != setup::NO_KEY {
+    if personal.is_some() {
+        println!("  {} entra al gateway con tu cuenta ({}) mediante un token personal ({} días)", green("✓"), tokens.who(),
+            ((tokens.gateway_token_expires - std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0)) / 86_400.0).round());
+    } else if key != setup::NO_KEY {
         println!("  {} exporta la clave antes de abrir OpenCode: export JMD_API_KEY=…", yellow("!"));
+    }
+    if tokens.logged_in() {
+        println!("  {} servidor MCP «{}»: cursos, sesiones, tareas, notas y preguntas del LMS", green("✓"), setup::LMS_MCP);
     }
     println!("  {}", dim("en OpenCode: /models → jmd/auto, jmd/coding, jmd/coding-deep…"));
     if setup::version_of("opencode").is_none() {
@@ -1121,6 +1253,8 @@ Comandos (con o sin «/»):
   route <texto> · style [off|lite|full|ultra] · reset <modelo> · status · setup <claude|opencode|all> · ui
   gateway [start|stop|restart|status|logs|token] · init
   mcp [list|tools <n>|add|remove] · skills
+  login --sso · logout · whoami · courses · course <id> · lesson [open] <id> · assignments · assignment <id>
+  submit <id> · grades · ask <sesión> \"…\" (publica una pregunta en el LMS)
 Sesión de chat:
   /todos              la lista de tareas del agente
   /mcp                servidores MCP de esta sesión y su estado · /tools: herramientas que ve el modelo
@@ -1137,7 +1271,8 @@ Cualquier otra cosa se envía como mensaje.";
 fn is_command(word: &str) -> bool {
     matches!(word, "help" | "login" | "status" | "doctor" | "models" | "model" | "providers" | "provider" | "quotas" | "quota"
         | "stats" | "requests" | "route" | "style" | "reset" | "setup" | "ui" | "chat" | "ask" | "update" | "init"
-        | "gateway" | "mcp" | "skills")
+        | "gateway" | "mcp" | "skills" | "logout" | "whoami" | "token" | "courses" | "course" | "lesson" | "materials"
+        | "assignments" | "assignment" | "submit" | "grades")
 }
 
 async fn repl(c: &mut Client) -> Result<()> {
@@ -1253,7 +1388,7 @@ async fn chat_loop(c: &mut Client, s: &mut Session, commands: bool) -> Result<()
             w if (slash || commands) && is_command(w) => {
                 let mut argv = vec!["jmd".to_string(), w.to_string()];
                 // route y chat llevan el resto como un único texto
-                if matches!(w, "route" | "chat" | "ask") {
+                if matches!(w, "route" | "chat") {
                     if !rest.is_empty() {
                         argv.push(rest.join(" "));
                     }

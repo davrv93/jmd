@@ -2,6 +2,7 @@
 //! cuotas, aprendizaje y UI de gestión.
 
 pub mod anthropic;
+pub mod auth;
 pub mod api;
 pub mod classifier;
 pub mod config;

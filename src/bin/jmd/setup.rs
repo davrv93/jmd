@@ -40,6 +40,18 @@ pub fn claude_settings(existing: Option<&str>, url: &str, token: &str) -> Result
     Ok(Value::Object(root))
 }
 
+/// Claude Code con la cuenta del LMS: `apiKeyHelper` = `jmd token` (devuelve un token vigente,
+/// refrescado) en vez de una clave fija en `env`.
+pub fn claude_settings_sso(existing: Option<&str>, url: &str) -> Result<Value> {
+    let mut root = object(existing, "settings.json de Claude Code")?;
+    let env = root.entry("env").or_insert_with(|| json!({}));
+    let Value::Object(env) = env else { bail!("settings.json: «env» no es un objeto") };
+    env.insert("ANTHROPIC_BASE_URL".into(), json!(url));
+    env.remove("ANTHROPIC_AUTH_TOKEN");
+    root.insert("apiKeyHelper".into(), json!("jmd token"));
+    Ok(Value::Object(root))
+}
+
 /// Quita la conexión con el gateway de settings.json (para `jmd setup claude --undo`).
 pub fn claude_undo(existing: &str) -> Result<Value> {
     let mut root = object(Some(existing), "settings.json de Claude Code")?;
@@ -47,7 +59,39 @@ pub fn claude_undo(existing: &str) -> Result<Value> {
         env.remove("ANTHROPIC_BASE_URL");
         env.remove("ANTHROPIC_AUTH_TOKEN");
     }
+    if root.get("apiKeyHelper").and_then(Value::as_str) == Some("jmd token") {
+        root.remove("apiKeyHelper");
+    }
     Ok(Value::Object(root))
+}
+
+/// El servidor MCP del LMS, tal como lo entienden Claude Code (`mcpServers`) y OpenCode (`mcp`).
+pub const LMS_MCP: &str = "lms";
+
+fn jmd_bin() -> String {
+    std::env::current_exe().ok().map(|p| p.to_string_lossy().to_string()).unwrap_or_else(|| "jmd".into())
+}
+
+/// Registra `lms` en un JSON con `mcpServers` (`~/.claude.json` o `.mcp.json`).
+pub fn claude_mcp(existing: Option<&str>, what: &str) -> Result<Value> {
+    let mut root = object(existing, what)?;
+    let servers = root.entry("mcpServers").or_insert_with(|| json!({}));
+    let Value::Object(servers) = servers else { bail!("{what}: «mcpServers» no es un objeto") };
+    servers.insert(LMS_MCP.into(), json!({"type": "stdio", "command": jmd_bin(), "args": ["mcp", "serve"]}));
+    Ok(Value::Object(root))
+}
+
+/// Registra `lms` en el `mcp` de opencode.json (ya cargado como objeto).
+pub fn opencode_mcp(root: &mut Value) -> Result<()> {
+    let Value::Object(root) = root else { bail!("opencode.json no es un objeto") };
+    let mcp = root.entry("mcp").or_insert_with(|| json!({}));
+    let Value::Object(mcp) = mcp else { bail!("opencode.json: «mcp» no es un objeto") };
+    mcp.insert(LMS_MCP.into(), json!({"type": "local", "command": [jmd_bin(), "mcp", "serve"], "enabled": true}));
+    Ok(())
+}
+
+pub fn claude_mcp_path(project: bool) -> PathBuf {
+    if project { PathBuf::from(".mcp.json") } else { home().join(".claude.json") }
 }
 
 /// OpenCode: proveedor `jmd` (OpenAI-compatible) con `auto` y los agentes como modelos.
@@ -214,6 +258,20 @@ mod tests {
         assert_eq!(v["env"]["ANTHROPIC_BASE_URL"], "http://localhost:4000");
         assert_eq!(v["env"]["ANTHROPIC_AUTH_TOKEN"], "k");
         assert!(v["hooks"]["PreToolUse"].is_array());
+        // Con cuenta: apiKeyHelper y sin clave fija; --undo lo deja limpio.
+        let v = claude_settings_sso(Some(&v.to_string()), "http://localhost:4000").unwrap();
+        assert_eq!(v["apiKeyHelper"], "jmd token");
+        assert!(v["env"].get("ANTHROPIC_AUTH_TOKEN").is_none());
+        assert_eq!(v["env"]["FOO"], "1");
+        let u = claude_undo(&v.to_string()).unwrap();
+        assert!(u.get("apiKeyHelper").is_none() && u["env"].get("ANTHROPIC_BASE_URL").is_none());
+        let m = claude_mcp(Some(r#"{"mcpServers": {"fs": {"command": "x"}}, "other": 1}"#), ".mcp.json").unwrap();
+        assert_eq!(m["mcpServers"]["fs"]["command"], "x");
+        assert_eq!(m["mcpServers"]["lms"]["args"], json!(["mcp", "serve"]));
+        assert_eq!(m["other"], 1);
+        let mut oc = json!({"model": "jmd/auto"});
+        opencode_mcp(&mut oc).unwrap();
+        assert_eq!(oc["mcp"]["lms"]["type"], "local");
         let undone = claude_undo(&v.to_string()).unwrap();
         assert_eq!(undone["env"], json!({"FOO": "1"}));
         assert!(claude_settings(Some("// comentario\n{}"), "u", "k").is_err());

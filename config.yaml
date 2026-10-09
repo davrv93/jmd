@@ -221,6 +221,21 @@ savings:
   compress_tool_output: false
   tool_output_max_chars: 12000
 
+# ---------------------------------------------------------------------------
+# Cuentas del LMS (contrato 2.4). Con `issuer` definido, /v1 acepta además de las claves fijas los
+# access tokens del realm (audiencia `ai-gateway`, validados con su JWKS) y emite tokens personales
+# (`jg_…`, POST /v1/auth/exchange) para los clientes que no refrescan. Las cuotas son por día UTC;
+# 0 = sin límite. El uso de hoy se ve en la UI (Panel) y en GET /admin/api/usage.
+# ---------------------------------------------------------------------------
+auth:
+  issuer: ""                 # p. ej. https://auth.tu-dominio/realms/lms (vacío = apagado)
+  audience: ai-gateway
+  per_user: {requests_per_day: 300, tokens_per_day: 0}
+  per_cohort: {requests_per_day: 0, tokens_per_day: 0}
+  # cohorts:
+  #   cohorte-2026-1: {requests_per_day: 5000, tokens_per_day: 20000000}
+  personal_token_days: 30
+
 # Nombres de modelo de los clientes → perfil del gateway (`*` comodín; gana el más específico).
 compat:
   model_aliases:

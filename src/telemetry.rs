@@ -5,6 +5,7 @@
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -37,6 +38,17 @@ CREATE INDEX IF NOT EXISTS calls_agent_model ON calls(agent, model, ts);
 -- (las columnas style, saved_chars y client se añaden con ALTER en open() para bases antiguas)
 CREATE INDEX IF NOT EXISTS calls_request ON calls(request_id);
 CREATE INDEX IF NOT EXISTS calls_provider ON calls(provider, ts);
+CREATE TABLE IF NOT EXISTS user_tokens (
+    hash TEXT PRIMARY KEY,
+    sub TEXT NOT NULL,
+    name TEXT,
+    cohorts TEXT NOT NULL DEFAULT '',
+    roles TEXT NOT NULL DEFAULT '',
+    label TEXT,
+    created REAL NOT NULL,
+    expires REAL NOT NULL,
+    last_used REAL
+);
 ";
 
 #[derive(Debug, Default, Clone)]
@@ -61,6 +73,9 @@ pub struct Row {
     pub style: Option<String>,
     pub saved_chars: Option<u64>,
     pub client: Option<String>,
+    /// Cuenta del LMS (`sub`) y su cohorte; nunca el email.
+    pub user: Option<String>,
+    pub cohort: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize)]
@@ -89,7 +104,7 @@ impl Telemetry {
         let db = Connection::open(path)?;
         db.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;")?;
         db.execute_batch(SCHEMA)?;
-        for col in ["style TEXT", "saved_chars INTEGER", "client TEXT"] {
+        for col in ["style TEXT", "saved_chars INTEGER", "client TEXT", "user TEXT", "cohort TEXT"] {
             // Falla si ya existe: es la migración de las bases creadas antes de estas columnas.
             let _ = db.execute(&format!("ALTER TABLE calls ADD COLUMN {col}"), []);
         }
@@ -101,11 +116,11 @@ impl Telemetry {
         let res = db.execute(
             "INSERT INTO calls (ts, request_id, profile, agent, bucket, route_source, model, provider, upstream_model,
                 ok, final, latency, error_kind, status, stream, prompt_tokens, completion_tokens, quality_auto,
-                style, saved_chars, client)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)",
+                style, saved_chars, client, user, cohort)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)",
             params![now(), r.request_id, r.profile, r.agent, r.bucket, r.route_source, r.model, r.provider,
                 r.upstream_model, r.ok, r.is_final, r.latency, r.error_kind, r.status, r.stream,
-                r.prompt_tokens, r.completion_tokens, r.quality_auto, r.style, r.saved_chars, r.client],
+                r.prompt_tokens, r.completion_tokens, r.quality_auto, r.style, r.saved_chars, r.client, r.user, r.cohort],
         );
         if let Err(e) = res {
             tracing::warn!("telemetría: {e}");
@@ -205,7 +220,7 @@ impl Telemetry {
         let mut st = match db.prepare_cached(
             "SELECT ts, request_id, profile, agent, route_source, model, provider, upstream_model, ok, final,
                     latency, error_kind, status, stream, prompt_tokens, completion_tokens,
-                    COALESCE(quality_user, quality_auto)
+                    COALESCE(quality_user, quality_auto), user, cohort, client
              FROM calls ORDER BY id DESC LIMIT ?1",
         ) {
             Ok(s) => s,
@@ -221,6 +236,8 @@ impl Telemetry {
                 "error_kind": r.get::<_, Option<String>>(11)?, "status": r.get::<_, Option<i64>>(12)?,
                 "stream": r.get::<_, bool>(13)?, "prompt_tokens": r.get::<_, Option<i64>>(14)?,
                 "completion_tokens": r.get::<_, Option<i64>>(15)?, "quality": r.get::<_, Option<f64>>(16)?,
+                "user": r.get::<_, Option<String>>(17)?, "cohort": r.get::<_, Option<String>>(18)?,
+                "client": r.get::<_, Option<String>>(19)?,
             }))
         })
         .map(|rows| rows.flatten().collect())
@@ -259,6 +276,62 @@ impl Telemetry {
             .ok()
             .flatten()
             .is_some()
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// Tokens personales del gateway (`jg_…`): solo se guarda el hash.
+// ---------------------------------------------------------------------------
+
+impl Telemetry {
+    pub fn token_insert(&self, hash: &str, p: &crate::auth::Principal, label: Option<&str>, days: u32) -> Result<f64, String> {
+        let t = now();
+        let expires = t + days.max(1) as f64 * 86_400.0;
+        self.db.lock().unwrap().execute(
+            "INSERT INTO user_tokens (hash, sub, name, cohorts, roles, label, created, expires) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![hash, p.sub, p.name, p.cohorts.join(","), p.roles.join(","), label, t, expires],
+        ).map_err(|e| e.to_string())?;
+        Ok(expires)
+    }
+
+    /// El principal de un token personal vigente; anota el último uso.
+    pub fn token_lookup(&self, hash: &str) -> Option<crate::auth::Principal> {
+        let db = self.db.lock().unwrap();
+        let t = now();
+        let row = db.query_row(
+            "SELECT sub, name, cohorts, roles FROM user_tokens WHERE hash = ?1 AND expires > ?2",
+            params![hash, t],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?)),
+        ).optional().ok().flatten()?;
+        let _ = db.execute("UPDATE user_tokens SET last_used = ?1 WHERE hash = ?2", params![t, hash]);
+        let split = |s: String| s.split(',').filter(|x| !x.is_empty()).map(String::from).collect::<Vec<_>>();
+        Some(crate::auth::Principal { sub: row.0, name: row.1, cohorts: split(row.2), roles: split(row.3) })
+    }
+
+    pub fn token_revoke(&self, hash: &str) -> bool {
+        self.db.lock().unwrap().execute("DELETE FROM user_tokens WHERE hash = ?1", params![hash]).unwrap_or(0) > 0
+    }
+
+    /// Para la UI: tokens vigentes (sin el hash completo).
+    pub fn tokens_list(&self) -> Vec<Value> {
+        let db = self.db.lock().unwrap();
+        let mut st = match db.prepare("SELECT hash, sub, name, cohorts, label, created, expires, last_used FROM user_tokens \
+            WHERE expires > ?1 ORDER BY created DESC") { Ok(s) => s, Err(_) => return vec![] };
+        st.query_map(params![now()], |r| Ok(serde_json::json!({
+            "id": r.get::<_, String>(0)?, "sub": r.get::<_, String>(1)?, "name": r.get::<_, Option<String>>(2)?,
+            "cohorts": r.get::<_, String>(3)?, "label": r.get::<_, Option<String>>(4)?, "created": r.get::<_, f64>(5)?,
+            "expires": r.get::<_, f64>(6)?, "last_used": r.get::<_, Option<f64>>(7)?,
+        }))).map(|rows| rows.flatten().collect()).unwrap_or_default()
+    }
+
+    /// Uso de hoy por cuenta del LMS (para reconstruir las cuotas al reiniciar).
+    pub fn usage_today(&self, since: f64) -> Vec<(Option<String>, Option<String>, u64, u64)> {
+        let db = self.db.lock().unwrap();
+        let mut st = match db.prepare("SELECT user, cohort, COUNT(*), COALESCE(SUM(COALESCE(prompt_tokens,0) + COALESCE(completion_tokens,0)),0) \
+            FROM calls WHERE ts >= ?1 AND final = 1 AND ok = 1 AND user IS NOT NULL GROUP BY user, cohort") { Ok(s) => s, Err(_) => return vec![] };
+        st.query_map(params![since], |r| Ok((r.get(0)?, r.get(1)?, r.get::<_, i64>(2)? as u64, r.get::<_, i64>(3)? as u64)))
+            .map(|rows| rows.flatten().collect()).unwrap_or_default()
     }
 }
 

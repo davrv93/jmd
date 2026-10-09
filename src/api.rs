@@ -18,6 +18,7 @@
 #![allow(clippy::result_large_err)] // las respuestas de error son el Err de los guardas
 
 use crate::config::{AgentSpec, Config, ModelSpec, Priority, Provider};
+use crate::auth::Principal;
 use crate::engine::{prepare_body, trunc, Attempt, CallCtx, Engine, Failure, Hints, PlanError, Reply, RoutePlan};
 use crate::quotas::probe_balance;
 use crate::reliability::now;
@@ -28,7 +29,7 @@ use axum::body::{Body, Bytes};
 use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
-use axum::routing::{get, post, put};
+use axum::routing::{delete, get, post, put};
 use axum::{Json, Router};
 use futures::StreamExt;
 use serde::Deserialize;
@@ -52,6 +53,12 @@ pub fn router(engine: AppState) -> Router {
         .route("/v1/messages/count_tokens", post(count_tokens))
         .route("/v1/route", post(route))
         .route("/v1/feedback", post(feedback))
+        .route("/v1/auth/me", get(auth_me))
+        .route("/v1/auth/exchange", post(auth_exchange))
+        .route("/v1/auth/token", delete(auth_revoke_own))
+        .route("/admin/api/usage", get(admin_usage))
+        .route("/admin/api/tokens", get(admin_tokens))
+        .route("/admin/api/tokens/:hash", delete(admin_token_delete))
         .route("/admin/api/config", get(get_config).put(put_config))
         .route("/admin/api/config.yaml", get(get_config_yaml).put(put_config_yaml))
         .route("/admin/api/providers/:name", put(put_provider).delete(delete_provider))
@@ -95,16 +102,44 @@ fn ct_eq(a: &str, b: &str) -> bool {
     a.len() == b.len() && a.bytes().zip(b.bytes()).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
 }
 
-fn gateway_auth(e: &Engine, headers: &HeaderMap) -> Result<(), Response> {
-    if e.gateway_keys.is_empty() {
-        return Ok(());
-    }
+/// Quién llama a /v1: una clave estática (`None`), o una cuenta del LMS por su access token
+/// OIDC o por un token personal del gateway (`jg_…`).
+async fn gateway_auth(e: &Engine, headers: &HeaderMap) -> Result<Option<Principal>, ApiErr> {
     let t = bearer(headers);
     if e.gateway_keys.iter().any(|k| ct_eq(k, &t)) {
-        Ok(())
-    } else {
-        Err(error(StatusCode::UNAUTHORIZED, "clave inválida", "auth", json!({})))
+        return Ok(None);
     }
+    let cfg = e.cfg();
+    if t.starts_with(crate::auth::TOKEN_PREFIX) {
+        return match e.telemetry.token_lookup(&crate::auth::hash_token(&t)) {
+            Some(p) => Ok(Some(p)),
+            None => Err(ApiErr::new(StatusCode::UNAUTHORIZED, "token personal vencido o revocado: vuelve a entrar con `jmd login --sso`", "auth")),
+        };
+    }
+    if cfg.auth.enabled() && t.matches('.').count() == 2 {
+        return match e.jwks.verify(&t, &cfg.auth).await {
+            Ok(p) => Ok(Some(p)),
+            Err(m) => Err(ApiErr::new(StatusCode::UNAUTHORIZED, format!("token de la cuenta no válido: {m}"), "auth")),
+        };
+    }
+    // Sin GATEWAY_API_KEYS el gateway es abierto: lo que no sea una cuenta pasa igual.
+    if e.gateway_keys.is_empty() {
+        return Ok(None);
+    }
+    Err(ApiErr::new(StatusCode::UNAUTHORIZED, "clave inválida", "auth"))
+}
+
+/// Cuota de la cuenta antes de atender.
+fn check_quota(e: &Engine, p: &Principal) -> Result<(), ApiErr> {
+    e.usage.check(p, &e.cfg().auth, now()).map_err(|q| {
+        let who = if q.scope == "user" { "tu cuenta".to_string() } else { format!("tu cohorte {}", p.cohort().unwrap_or("")) };
+        let what = if q.what == "requests_per_day" { "peticiones" } else { "tokens" };
+        let mut err = ApiErr::new(StatusCode::TOO_MANY_REQUESTS,
+            format!("{who} agotó su cuota de {what} de hoy ({}/{}); se reinicia a medianoche UTC", q.used, q.limit), "quota_exceeded");
+        err.extra = json!({"quota": q});
+        err.retry_after = Some(q.retry_after as i64);
+        err
+    })
 }
 
 fn admin_auth(e: &Engine, headers: &HeaderMap) -> Result<(), Response> {
@@ -282,7 +317,7 @@ async fn health() -> Json<Value> {
 }
 
 async fn models(State(e): State<AppState>, headers: HeaderMap) -> Response {
-    guard!(gateway_auth(&e, &headers));
+    guard!(gateway_auth(&e, &headers).await.map_err(|e| e.render(Wire::OpenAI)));
     let cfg = e.cfg();
     let created = now() as i64;
     let mut data = vec![json!({"id": "auto", "object": "model", "created": created, "owned_by": "ai-orchestrator",
@@ -299,7 +334,7 @@ async fn models(State(e): State<AppState>, headers: HeaderMap) -> Response {
 }
 
 async fn route(State(e): State<AppState>, headers: HeaderMap, raw: Bytes) -> Response {
-    guard!(gateway_auth(&e, &headers));
+    guard!(gateway_auth(&e, &headers).await.map_err(|e| e.render(Wire::OpenAI)));
     do_route(&e, &headers, &raw).await
 }
 
@@ -314,17 +349,15 @@ async fn do_route(e: &Engine, headers: &HeaderMap, raw: &Bytes) -> Response {
 }
 
 async fn chat(State(e): State<AppState>, headers: HeaderMap, raw: Bytes) -> Response {
-    guard!(gateway_auth(&e, &headers));
+    let who = match gateway_auth(&e, &headers).await { Ok(p) => p, Err(err) => return err.render(Wire::OpenAI) };
     let body = match parse_body(&raw) { Ok(b) => b, Err(r) => return r };
     let client = client_name(&headers, Wire::OpenAI);
-    handle(e, &headers, body, Wire::OpenAI, client, None).await
+    handle(e, &headers, body, Wire::OpenAI, client, None, who).await
 }
 
 /// `POST /v1/messages`: la API de Anthropic (Claude Code), traducida a OpenAI.
 async fn messages(State(e): State<AppState>, headers: HeaderMap, raw: Bytes) -> Response {
-    if gateway_auth(&e, &headers).is_err() {
-        return ApiErr::new(StatusCode::UNAUTHORIZED, "clave inválida", "auth").render(Wire::Anthropic);
-    }
+    let who = match gateway_auth(&e, &headers).await { Ok(p) => p, Err(err) => return err.render(Wire::Anthropic) };
     let req: Value = match serde_json::from_slice(&raw) {
         Ok(v) => v,
         Err(_) => return ApiErr::new(StatusCode::BAD_REQUEST, "JSON inválido", "invalid_request_error").render(Wire::Anthropic),
@@ -335,14 +368,12 @@ async fn messages(State(e): State<AppState>, headers: HeaderMap, raw: Bytes) -> 
     };
     let requested = req["model"].as_str().unwrap_or("auto").to_string();
     let client = client_name(&headers, Wire::Anthropic);
-    handle(e, &headers, body, Wire::Anthropic, client, Some(requested)).await
+    handle(e, &headers, body, Wire::Anthropic, client, Some(requested), who).await
 }
 
 /// `POST /v1/messages/count_tokens`: estimación (≈ 4 caracteres por token).
 async fn count_tokens(State(e): State<AppState>, headers: HeaderMap, raw: Bytes) -> Response {
-    if gateway_auth(&e, &headers).is_err() {
-        return ApiErr::new(StatusCode::UNAUTHORIZED, "clave inválida", "auth").render(Wire::Anthropic);
-    }
+    guard!(gateway_auth(&e, &headers).await.map_err(|e| e.render(Wire::Anthropic)));
     let req: Value = serde_json::from_slice(&raw).unwrap_or(Value::Null);
     match crate::anthropic::to_openai(&req) {
         Ok(body) => Json(json!({"input_tokens": crate::classifier::extract_features(&body).est_tokens})).into_response(),
@@ -350,10 +381,78 @@ async fn count_tokens(State(e): State<AppState>, headers: HeaderMap, raw: Bytes)
     }
 }
 
+// ---------------------------------------------------------------------------
+// Cuentas del LMS: quién soy, token personal, uso
+// ---------------------------------------------------------------------------
+
+/// `GET /v1/auth/me`: la cuenta que trae la petición y lo que le queda hoy.
+async fn auth_me(State(e): State<AppState>, headers: HeaderMap) -> Response {
+    let who = match gateway_auth(&e, &headers).await { Ok(p) => p, Err(err) => return err.render(Wire::OpenAI) };
+    let cfg = e.cfg();
+    match who {
+        Some(p) => Json(json!({"sub": p.sub, "name": p.name, "cohorts": p.cohorts, "roles": p.roles,
+            "usage": e.usage.remaining(&p, &cfg.auth, now()), "issuer": cfg.auth.issuer})).into_response(),
+        None => Json(json!({"sub": null, "anonymous": true, "auth_enabled": cfg.auth.enabled(), "issuer": cfg.auth.issuer})).into_response(),
+    }
+}
+
+/// `POST /v1/auth/exchange`: con un access token del realm, un token personal de larga vida
+/// (`jg_…`) para los clientes que no saben refrescar (OpenCode). Cuerpo opcional `{label}`.
+async fn auth_exchange(State(e): State<AppState>, headers: HeaderMap, raw: Bytes) -> Response {
+    let cfg = e.cfg();
+    if !cfg.auth.enabled() {
+        return error(StatusCode::NOT_FOUND, "este gateway no acepta cuentas del LMS (auth.issuer vacío)", "not_found", json!({}));
+    }
+    let t = bearer(&headers);
+    let p = match e.jwks.verify(&t, &cfg.auth).await {
+        Ok(p) => p,
+        Err(m) => return error(StatusCode::UNAUTHORIZED, format!("hace falta un access token del realm: {m}"), "auth", json!({})),
+    };
+    let body: Value = serde_json::from_slice(&raw).unwrap_or(Value::Null);
+    let label = body["label"].as_str().map(|l| l.chars().take(60).collect::<String>());
+    let (token, hash) = crate::auth::new_personal_token();
+    match e.telemetry.token_insert(&hash, &p, label.as_deref(), cfg.auth.personal_token_days) {
+        Ok(expires) => (StatusCode::CREATED, Json(json!({"token": token, "expires_at": expires, "sub": p.sub}))).into_response(),
+        Err(m) => error(StatusCode::INTERNAL_SERVER_ERROR, m, "server_error", json!({})),
+    }
+}
+
+/// `DELETE /v1/auth/token`: revoca el token personal con el que se llama.
+async fn auth_revoke_own(State(e): State<AppState>, headers: HeaderMap) -> Response {
+    let t = bearer(&headers);
+    if !t.starts_with(crate::auth::TOKEN_PREFIX) {
+        return error(StatusCode::BAD_REQUEST, "llama con el token personal que quieres revocar", "invalid_request_error", json!({}));
+    }
+    Json(json!({"revoked": e.telemetry.token_revoke(&crate::auth::hash_token(&t))})).into_response()
+}
+
+async fn admin_usage(State(e): State<AppState>, headers: HeaderMap) -> Response {
+    guard!(admin_auth(&e, &headers));
+    let cfg = e.cfg();
+    Json(json!({"enabled": cfg.auth.enabled(), "issuer": cfg.auth.issuer, "audience": cfg.auth.audience,
+        "per_user": cfg.auth.per_user, "per_cohort": cfg.auth.per_cohort, "cohorts": cfg.auth.cohorts,
+        "today": e.usage.today(&cfg.auth, now())})).into_response()
+}
+
+async fn admin_tokens(State(e): State<AppState>, headers: HeaderMap) -> Response {
+    guard!(admin_auth(&e, &headers));
+    Json(json!({"tokens": e.telemetry.tokens_list()})).into_response()
+}
+
+async fn admin_token_delete(State(e): State<AppState>, headers: HeaderMap, Path(hash): Path<String>) -> Response {
+    guard!(admin_auth(&e, &headers));
+    Json(json!({"revoked": e.telemetry.token_revoke(&hash)})).into_response()
+}
+
 /// Camino común: ruta → estilo y compresión → fallback → respuesta en el formato de entrada.
 async fn handle(e: AppState, headers: &HeaderMap, body: Value, wire: Wire, client: String,
-                requested_model: Option<String>) -> Response {
+                requested_model: Option<String>, who: Option<Principal>) -> Response {
     let h = match hints(headers, &body) { Ok(h) => h, Err(err) => return err.render(wire) };
+    if let Some(p) = &who {
+        if let Err(err) = check_quota(&e, p) {
+            return err.render(wire);
+        }
+    }
     let cfg = e.cfg();
     let plan = match e.plan(&cfg, &body, body["model"].as_str(), &h).await {
         Ok(p) => p,
@@ -374,7 +473,7 @@ async fn handle(e: AppState, headers: &HeaderMap, body: Value, wire: Wire, clien
     let rid = uuid::Uuid::new_v4().simple().to_string();
     let ctx = CallCtx { request_id: rid.clone(), profile: plan.profile.clone(), agent: plan.task(),
         bucket: Some(plan.decision.bucket()), source: plan.decision.source.clone(), stream,
-        style: Some(style.as_str().into()), saved_chars: (saved > 0).then_some(saved), client: Some(client) };
+        style: Some(style.as_str().into()), saved_chars: (saved > 0).then_some(saved), client: Some(client), principal: who };
 
     let res = e.run(&cfg, &plan.chain, per_try, deadline, |m, t| {
         let (cfg, payload, ctx, e) = (&cfg, &payload, &ctx, &e);
@@ -531,7 +630,7 @@ struct FeedbackIn {
 async fn feedback(State(e): State<AppState>, headers: HeaderMap, Json(fb): Json<FeedbackIn>) -> Response {
     // La UI valora respuestas con el token de administración.
     if admin_auth(&e, &headers).is_err() {
-        guard!(gateway_auth(&e, &headers));
+        guard!(gateway_auth(&e, &headers).await.map_err(|e| e.render(Wire::OpenAI)));
     }
     if !(0.0..=1.0).contains(&fb.quality) {
         return error(StatusCode::BAD_REQUEST, "quality debe estar entre 0 y 1", "invalid_request_error", json!({}));
@@ -769,7 +868,7 @@ async fn playground(State(e): State<AppState>, headers: HeaderMap, raw: Bytes) -
     guard!(admin_auth(&e, &headers));
     let mut body = match parse_body(&raw) { Ok(b) => b, Err(r) => return r };
     body["stream"] = json!(false);
-    handle(e, &headers, body, Wire::OpenAI, "ui".into(), None).await
+    handle(e, &headers, body, Wire::OpenAI, "ui".into(), None, None).await
 }
 
 async fn admin_route(State(e): State<AppState>, headers: HeaderMap, raw: Bytes) -> Response {

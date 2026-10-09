@@ -7,6 +7,8 @@
 //!   down-*    503
 //! y expone /models y /key (saldo al estilo OpenRouter).
 
+mod common;
+
 use ai_orchestrator::{api, config::Config, engine::Engine, telemetry::Telemetry};
 use axum::body::Body;
 use axum::extract::State;
@@ -552,4 +554,109 @@ async fn key_checks_against_the_provider() {
     let (st, v, _) = call(&app, "GET", "/admin/api/keys", None, Some(ADMIN)).await;
     assert_eq!(st, StatusCode::OK);
     assert_eq!(v["p1"]["state"], "valid");
+}
+
+// --- Cuentas del LMS: JWT del realm, cuotas por alumno y cohorte, token personal ------------
+
+async fn setup_with_auth(issuer: &str) -> (Router, Arc<Engine>) {
+    let (base, _fake) = start_fake().await;
+    let dir = tempdir::Dir::new();
+    let path = dir.0.join("config.yaml");
+    let mut cfg = config(&base);
+    cfg.auth.issuer = issuer.to_string();
+    cfg.auth.per_user.requests_per_day = 2;
+    cfg.auth.cohorts.insert("cohorte-2026-1".into(), ai_orchestrator::config::UserQuota { requests_per_day: 3, tokens_per_day: 0 });
+    std::fs::write(&path, cfg.to_yaml()).unwrap();
+    let engine = Arc::new(Engine::new(cfg, path, Telemetry::open(":memory:").unwrap(), vec!["clave-fija".into()], ADMIN.into()));
+    std::mem::forget(dir);
+    (api::router(engine.clone()), engine)
+}
+
+async fn chat_as(app: &Router, token: &str) -> (StatusCode, Value) {
+    let req = Request::post("/v1/chat/completions").header("authorization", format!("Bearer {token}"))
+        .header("content-type", "application/json")
+        .body(Body::from(json!({"model": "general", "messages": [{"role": "user", "content": "hola"}]}).to_string())).unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    let status = resp.status();
+    let body = resp.into_body().collect().await.unwrap().to_bytes();
+    (status, serde_json::from_slice(&body).unwrap_or(Value::Null))
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn lms_accounts_jwt_quotas_and_personal_tokens() {
+    let (issuer, _i) = common::start_issuer("ana", &["cohorte-2026-1"]).await;
+    let (app, engine) = setup_with_auth(&issuer).await;
+    let ana = common::access_token(&issuer, "ana", &["cohorte-2026-1"], 900.0);
+    let luis = common::access_token(&issuer, "luis", &["cohorte-2026-1"], 900.0);
+
+    // La clave fija sigue valiendo; un token cualquiera, no.
+    assert_eq!(chat_as(&app, "clave-fija").await.0, StatusCode::OK);
+    let (st, body) = chat_as(&app, "nada").await;
+    assert_eq!(st, StatusCode::UNAUTHORIZED, "{body}");
+    // Un JWT para otra audiencia o de otro issuer, tampoco.
+    let other = common::sign(&json!({"iss": issuer, "sub": "ana", "aud": "lms-api", "exp": 4102444800u64}), common::KID);
+    let (st, body) = chat_as(&app, &other).await;
+    assert_eq!(st, StatusCode::UNAUTHORIZED);
+    assert!(body["error"]["message"].as_str().unwrap().contains("ai-gateway"), "{body}");
+    let forged = common::sign(&json!({"iss": "https://otro", "sub": "ana", "aud": "ai-gateway", "exp": 4102444800u64}), common::KID);
+    assert_eq!(chat_as(&app, &forged).await.0, StatusCode::UNAUTHORIZED);
+
+    // Ana: 2 peticiones al día. La tercera, 429 con Retry-After y quién se pasó.
+    assert_eq!(chat_as(&app, &ana).await.0, StatusCode::OK);
+    assert_eq!(chat_as(&app, &ana).await.0, StatusCode::OK);
+    let req = Request::post("/v1/chat/completions").header("authorization", format!("Bearer {ana}"))
+        .header("content-type", "application/json")
+        .body(Body::from(json!({"model": "general", "messages": [{"role": "user", "content": "hola"}]}).to_string())).unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::TOO_MANY_REQUESTS);
+    assert!(resp.headers().get("retry-after").is_some());
+    let body: Value = serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(body["error"]["quota"]["scope"], "user");
+    assert!(body["error"]["message"].as_str().unwrap().contains("tu cuenta"), "{body}");
+    // La cohorte lleva 2 de 3: Luis puede una vez y luego la cohorte se agota.
+    assert_eq!(chat_as(&app, &luis).await.0, StatusCode::OK);
+    let (st, body) = chat_as(&app, &luis).await;
+    assert_eq!(st, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(body["error"]["quota"]["scope"], "cohort");
+
+    // /v1/auth/me dice quién soy y lo que llevo.
+    let req = Request::get("/v1/auth/me").header("authorization", format!("Bearer {ana}")).body(Body::empty()).unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    let me: Value = serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(me["sub"], "ana");
+    assert_eq!(me["cohorts"][0], "cohorte-2026-1");
+    assert_eq!(me["usage"]["user"]["requests"], 2);
+    assert_eq!(me["usage"]["cohort"]["requests"], 3);
+
+    // La telemetría guarda sub y cohorte, nunca el email.
+    let rows = engine.telemetry.recent(50);
+    let r = rows.iter().find(|r| r["user"] == "ana").expect("fila de ana");
+    assert_eq!(r["cohort"], "cohorte-2026-1");
+    assert!(!json!(rows).to_string().contains("ejemplo.edu"));
+
+    // Token personal: se emite con el JWT y vale como el JWT (misma cuenta y cuota).
+    let req = Request::post("/v1/auth/exchange").header("authorization", format!("Bearer {luis}"))
+        .header("content-type", "application/json").body(Body::from(json!({"label": "opencode"}).to_string())).unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let tk: Value = serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    let personal = tk["token"].as_str().unwrap().to_string();
+    assert!(personal.starts_with("jg_"));
+    let (st, body) = chat_as(&app, &personal).await;
+    assert_eq!(st, StatusCode::TOO_MANY_REQUESTS, "{body}"); // la cohorte sigue agotada
+    assert_eq!(body["error"]["quota"]["scope"], "cohort");
+    // Sin JWT no hay token personal.
+    let req = Request::post("/v1/auth/exchange").header("authorization", "Bearer clave-fija").body(Body::empty()).unwrap();
+    assert_eq!(app.clone().oneshot(req).await.unwrap().status(), StatusCode::UNAUTHORIZED);
+    // La UI ve el uso y los tokens, y puede revocar.
+    let req = Request::get("/admin/api/usage").header("authorization", format!("Bearer {ADMIN}")).body(Body::empty()).unwrap();
+    let usage: Value = serde_json::from_slice(&app.clone().oneshot(req).await.unwrap().into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(usage["today"].as_array().unwrap().len(), 3, "{usage}");
+    let req = Request::get("/admin/api/tokens").header("authorization", format!("Bearer {ADMIN}")).body(Body::empty()).unwrap();
+    let list: Value = serde_json::from_slice(&app.clone().oneshot(req).await.unwrap().into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(list["tokens"][0]["sub"], "luis");
+    assert_eq!(list["tokens"][0]["label"], "opencode");
+    let req = Request::delete("/v1/auth/token").header("authorization", format!("Bearer {personal}")).body(Body::empty()).unwrap();
+    assert_eq!(app.clone().oneshot(req).await.unwrap().status(), StatusCode::OK);
+    assert_eq!(chat_as(&app, &personal).await.0, StatusCode::UNAUTHORIZED);
 }

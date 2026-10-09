@@ -39,3 +39,22 @@ LMS expone **además** del contrato, y cualquier desviación, para que `jmd` lo 
   `graded`). `checks` llega vacío.
 - **Modo local de identidad:** mientras no esté Keycloak, los tokens son opacos (`lms_…`). Con
   `OIDC_ISSUER` definido, los JWT del realm con `aud: lms-api` se aceptan tal como dice el contrato.
+
+## Lo que `jmd` y el gateway añaden (2026-10-09)
+
+- **Gateway:** `GET /v1/auth/me` (sub, cohortes, roles y uso de hoy), `POST /v1/auth/exchange`
+  (access token del realm → token personal `jg_…` para OpenCode y otros clientes sin refresco),
+  `DELETE /v1/auth/token`, y en administración `GET /admin/api/usage` y `GET|DELETE /admin/api/tokens`.
+  Configuración en `auth:` de `config.yaml` (issuer, audiencia, cuotas por alumno y cohorte, vida de
+  los tokens personales).
+- **`jmd login --sso` sin Keycloak:** si `GET /api/v1/auth/config` dice `oidc: false`, pide correo y
+  contraseña y usa `POST /api/v1/auth/login` (el token `lms_…` como Bearer), tal como propone este
+  documento. Con `--issuer URL` va directo al realm sin pasar por el LMS.
+- **MCP del LMS:** mientras el LMS no tenga `/mcp` (fase 6), `jmd mcp serve` lo expone por stdio con la
+  cuenta de `jmd` (`lms_courses`, `lms_lesson`, `lms_assignments`, `lms_grades`, `lms_ask`…), y
+  `jmd setup claude|opencode` lo registran como servidor `lms`.
+- **`jmd lesson open`:** clona el repo en una carpeta con el nombre del repositorio y hace `checkout`
+  de la `ref`; los materiales van a `./materiales/` (archivos descargados con sesión; los enlaces,
+  en `materiales/enlaces.md`).
+- **`jmd submit`:** sondea `GET /api/v1/submissions/{id}` unos segundos; si sigue `queued` (sin
+  runner), lo dice y remite a `jmd grades`.

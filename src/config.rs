@@ -26,6 +26,72 @@ pub struct Config {
     pub savings: SavingsCfg,
     #[serde(default)]
     pub compat: CompatCfg,
+    /// Cuentas del LMS (OIDC) y cuotas por alumno y cohorte. Apagado si `issuer` está vacío.
+    #[serde(default)]
+    pub auth: AuthCfg,
+}
+
+// ---------------------------------------------------------------------------
+// Cuentas del LMS: access tokens del realm y cuotas por alumno y por cohorte (contrato 2.4)
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
+pub struct UserQuota {
+    /// 0 = sin límite.
+    #[serde(default)]
+    pub requests_per_day: u64,
+    #[serde(default)]
+    pub tokens_per_day: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct AuthCfg {
+    /// `https://auth.<dominio>/realms/lms`. Vacío = el gateway no acepta cuentas del LMS.
+    #[serde(default)]
+    pub issuer: String,
+    /// Audiencia que debe traer el access token.
+    #[serde(default = "default_audience")]
+    pub audience: String,
+    /// JWKS explícito; si falta, se descubre en `{issuer}/.well-known/openid-configuration`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub jwks_url: Option<String>,
+    /// Cuota de cada alumno.
+    #[serde(default)]
+    pub per_user: UserQuota,
+    /// Cuota de cada cohorte que no figure en `cohorts`.
+    #[serde(default)]
+    pub per_cohort: UserQuota,
+    /// Cuotas de cohortes concretas (`cohorte-2026-1: {requests_per_day: 2000}`).
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub cohorts: BTreeMap<String, UserQuota>,
+    /// Vida de los tokens personales (`jg_…`) que emite `POST /v1/auth/exchange`.
+    #[serde(default = "default_token_days")]
+    pub personal_token_days: u32,
+}
+
+fn default_audience() -> String {
+    "ai-gateway".into()
+}
+
+fn default_token_days() -> u32 {
+    30
+}
+
+impl Default for AuthCfg {
+    fn default() -> Self {
+        Self { issuer: String::new(), audience: default_audience(), jwks_url: None, per_user: UserQuota::default(),
+            per_cohort: UserQuota::default(), cohorts: BTreeMap::new(), personal_token_days: default_token_days() }
+    }
+}
+
+impl AuthCfg {
+    pub fn enabled(&self) -> bool {
+        !self.issuer.trim().is_empty()
+    }
+
+    pub fn cohort_quota(&self, cohort: &str) -> UserQuota {
+        self.cohorts.get(cohort).cloned().unwrap_or_else(|| self.per_cohort.clone())
+    }
 }
 
 fn default_profile() -> String {
