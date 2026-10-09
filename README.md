@@ -148,9 +148,11 @@ modelo, que puede usar herramientas:
   jmd mcp add docs --url https://ejemplo.com/mcp --header "Authorization: Bearer …"
   jmd mcp tools fs
   ```
-- **Skills** (formato `SKILL.md` de Claude Code). Se leen las de `.claude/skills/` del proyecto,
-  las de `skills/` del proyecto, las de `~/.claude/skills/`, las de `~/.config/jmd/skills/` y las
-  incluidas. El modelo ve la
+- **Skills** (formato `SKILL.md` de Claude Code; también vale un archivo `nombre.md` con la
+  cabecera `name`/`description`). Se leen las de `.claude/skills/` y `skills/` del proyecto, **las
+  carpetas tuyas que registres** con `jmd skills add <carpeta>` (con subcarpetas, agrúpalas como
+  quieras; o la variable `JMD_SKILLS`), las de `~/.config/jmd/skills/`, las de `~/.claude/skills/`
+  y las incluidas. En el chat, `/skill <nombre> <pedido>` obliga a usar una. El modelo ve la
   lista y carga la que necesita (`load_skill`). `jmd skills` las lista.
 - **Prototipos de UI.** Viene incluida la skill `prototipo`: un mockup en un solo archivo HTML,
   adaptable a móvil, con modo claro y oscuro, estados vacíos y de error y contenido realista en

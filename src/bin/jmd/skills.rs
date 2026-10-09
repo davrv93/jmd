@@ -1,11 +1,15 @@
 //! Skills: instrucciones empaquetadas que el modelo carga cuando las necesita.
 //!
 //! Mismo formato que Claude Code: una carpeta con `SKILL.md`, cuya cabecera YAML trae `name`
-//! y `description`. Se buscan en (gana la primera con ese nombre):
-//! 1. `.claude/skills/*/SKILL.md` del proyecto
-//! 2. `~/.config/jmd/skills/*/SKILL.md`
-//! 3. `~/.claude/skills/*/SKILL.md`
-//! 4. Las incluidas en jmd (`prototipo`)
+//! y `description`; también vale un archivo suelto `nombre.md` con esa cabecera. Dentro de cada
+//! carpeta se busca en subcarpetas (hasta 4 niveles), así que puedes agrupar las tuyas como
+//! quieras. Se buscan en (gana la primera con ese nombre):
+//! 1. `.claude/skills/` y `skills/` del proyecto
+//! 2. Las carpetas que registres con `jmd skills add <ruta>` (en `~/.config/jmd/skills.json`) y
+//!    las de la variable `JMD_SKILLS` (rutas separadas por `:`, o `;` en Windows)
+//! 3. `~/.config/jmd/skills/`
+//! 4. `~/.claude/skills/`
+//! 5. Las incluidas en jmd (`prototipo`)
 //!
 //! El modelo ve la lista (nombre y descripción) en el mensaje de sistema y carga el cuerpo con
 //! la herramienta `load_skill`. El prototipado tiene además `save_prototype`, que guarda el HTML
@@ -79,18 +83,92 @@ fn parse(text: &str, source: &str, fallback_name: &str) -> Option<Skill> {
     })
 }
 
+fn push(out: &mut Vec<Skill>, s: Skill) {
+    if !out.iter().any(|o| o.name == s.name) {
+        out.push(s);
+    }
+}
+
+/// Lee las skills de una carpeta: `*/SKILL.md`, archivos `*.md` con cabecera, y subcarpetas.
 fn from_dir(dir: &Path, source: &str, out: &mut Vec<Skill>) {
+    walk(dir, source, out, 0);
+}
+
+fn walk(dir: &Path, source: &str, out: &mut Vec<Skill>, depth: u8) {
     let Ok(rd) = std::fs::read_dir(dir) else { return };
-    let mut entries: Vec<PathBuf> = rd.flatten().map(|e| e.path()).filter(|p| p.is_dir()).collect();
+    let mut entries: Vec<PathBuf> = rd.flatten().map(|e| e.path()).collect();
     entries.sort();
-    for d in entries {
-        let fallback = d.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-        if let Some(s) = std::fs::read_to_string(d.join("SKILL.md")).ok().and_then(|t| parse(&t, source, &fallback)) {
-            if !out.iter().any(|o| o.name == s.name) {
-                out.push(s);
+    for p in entries {
+        let fallback = p.file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        if p.is_dir() {
+            if let Some(s) = std::fs::read_to_string(p.join("SKILL.md")).ok().and_then(|t| parse(&t, source, &fallback)) {
+                push(out, s);
+            } else if depth < 4 && !fallback.starts_with('.') {
+                walk(&p, source, out, depth + 1);
+            }
+        } else if p.extension().is_some_and(|e| e == "md") && !fallback.eq_ignore_ascii_case("SKILL") && !fallback.eq_ignore_ascii_case("README") {
+            if let Some(s) = std::fs::read_to_string(&p).ok().and_then(|t| parse(&t, source, &fallback)) {
+                push(out, s);
             }
         }
     }
+}
+
+/// Carpetas registradas con `jmd skills add` (`~/.config/jmd/skills.json`).
+pub fn dirs_path() -> PathBuf {
+    crate::client::config_path().with_file_name("skills.json")
+}
+
+pub fn registered_dirs() -> Vec<PathBuf> {
+    let mut dirs: Vec<PathBuf> = std::fs::read_to_string(dirs_path()).ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .map(|v| v["dirs"].as_array().into_iter().flatten().filter_map(|d| d.as_str().map(PathBuf::from)).collect())
+        .unwrap_or_default();
+    if let Some(env) = std::env::var_os("JMD_SKILLS") {
+        dirs.extend(std::env::split_paths(&env).filter(|p| !p.as_os_str().is_empty()));
+    }
+    dirs
+}
+
+fn save_dirs(dirs: &[PathBuf]) -> anyhow::Result<PathBuf> {
+    let path = dirs_path();
+    if let Some(d) = path.parent() {
+        std::fs::create_dir_all(d)?;
+    }
+    let list: Vec<String> = dirs.iter().map(|d| d.to_string_lossy().to_string()).collect();
+    std::fs::write(&path, serde_json::to_string_pretty(&json!({"dirs": list}))? + "\n")?;
+    Ok(path)
+}
+
+/// `jmd skills add <ruta>`: registra una carpeta (se guarda absoluta). Devuelve cuántas skills tiene.
+pub fn add_dir(path: &Path) -> anyhow::Result<(PathBuf, usize)> {
+    let abs = std::fs::canonicalize(path).map_err(|e| anyhow::anyhow!("{}: {e}", path.display()))?;
+    if !abs.is_dir() {
+        anyhow::bail!("{} no es una carpeta", abs.display());
+    }
+    let mut found = vec![];
+    from_dir(&abs, "x", &mut found);
+    let mut dirs: Vec<PathBuf> = std::fs::read_to_string(dirs_path()).ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .map(|v| v["dirs"].as_array().into_iter().flatten().filter_map(|d| d.as_str().map(PathBuf::from)).collect())
+        .unwrap_or_default();
+    if !dirs.contains(&abs) {
+        dirs.push(abs.clone());
+    }
+    save_dirs(&dirs)?;
+    Ok((abs, found.len()))
+}
+
+pub fn remove_dir(path: &Path) -> anyhow::Result<bool> {
+    let abs = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let mut dirs: Vec<PathBuf> = std::fs::read_to_string(dirs_path()).ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .map(|v| v["dirs"].as_array().into_iter().flatten().filter_map(|d| d.as_str().map(PathBuf::from)).collect())
+        .unwrap_or_default();
+    let before = dirs.len();
+    dirs.retain(|d| d != &abs && d != path);
+    save_dirs(&dirs)?;
+    Ok(dirs.len() < before)
 }
 
 pub fn discover(cwd: &Path) -> Vec<Skill> {
@@ -98,12 +176,14 @@ pub fn discover(cwd: &Path) -> Vec<Skill> {
     let mut out = vec![];
     from_dir(&cwd.join(".claude").join("skills"), "proyecto", &mut out);
     from_dir(&cwd.join("skills"), "proyecto (skills/)", &mut out);
+    for d in registered_dirs() {
+        let label = d.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| d.display().to_string());
+        from_dir(&d, &label, &mut out);
+    }
     from_dir(&crate::client::config_path().with_file_name("skills"), "jmd", &mut out);
     from_dir(&home.join(".claude").join("skills"), "Claude Code", &mut out);
     if let Some(s) = parse(PROTOTIPO, "incluida", "prototipo") {
-        if !out.iter().any(|o| o.name == s.name) {
-            out.push(s);
-        }
+        push(&mut out, s);
     }
     out
 }

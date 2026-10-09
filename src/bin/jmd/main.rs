@@ -215,8 +215,11 @@ enum Cmd {
         #[command(subcommand)]
         action: Option<McpCmd>,
     },
-    /// Skills disponibles para el chat (las de Claude Code y las incluidas, como «prototipo»)
-    Skills,
+    /// Skills del chat: list (por defecto) · add <carpeta> · remove <carpeta>
+    Skills {
+        #[command(subcommand)]
+        action: Option<SkillsCmd>,
+    },
     /// Estilo de respuesta para todos los clientes (a la manera de caveman) y compresión de salidas
     Style {
         /// off · lite · full · ultra
@@ -248,6 +251,16 @@ enum Cmd {
     Ui,
     /// Muestra cómo actualizar jmd en este sistema
     Update,
+}
+
+#[derive(Subcommand)]
+enum SkillsCmd {
+    /// Las skills que ve el modelo y de dónde salen
+    List,
+    /// Registra una carpeta tuya con skills (SKILL.md en subcarpetas, o archivos .md con cabecera)
+    Add { path: String },
+    /// Quita una carpeta registrada
+    Remove { path: String },
 }
 
 #[derive(Subcommand)]
@@ -363,7 +376,24 @@ async fn run(c: &mut Client, cmd: Cmd, as_json: bool) -> Result<()> {
         }
         Cmd::Mcp { action: Some(McpCmd::Serve) } => mcp_server::serve().await,
         Cmd::Mcp { action } => mcp_cmd(action.unwrap_or(McpCmd::List), as_json).await,
-        Cmd::Skills => {
+        Cmd::Skills { action: Some(SkillsCmd::Add { path }) } => {
+            let (abs, n) = skills::add_dir(std::path::Path::new(&path))?;
+            println!("{} {} registrada ({n} skill{}) en {}", green("✓"), abs.display(), if n == 1 { "" } else { "s" },
+                skills::dirs_path().display());
+            if n == 0 {
+                println!("{} no encontré ninguna skill ahí: cada una va en <carpeta>/SKILL.md (o un archivo .md) con cabecera ---name/description---", yellow("!"));
+            }
+            Ok(())
+        }
+        Cmd::Skills { action: Some(SkillsCmd::Remove { path }) } => {
+            if skills::remove_dir(std::path::Path::new(&path))? {
+                println!("{} {path} quitada", green("✓"));
+            } else {
+                println!("{} {path} no estaba registrada", yellow("!"));
+            }
+            Ok(())
+        }
+        Cmd::Skills { .. } => {
             let cwd = std::env::current_dir().unwrap_or_else(|_| ".".into());
             let list = skills::discover(&cwd);
             if as_json {
@@ -374,7 +404,11 @@ async fn run(c: &mut Client, cmd: Cmd, as_json: bool) -> Result<()> {
             let rows: Vec<Vec<String>> = list.iter().map(|k| vec![cyan(&k.name), dim(&k.source),
                 k.description.chars().take(90).collect()]).collect();
             table(&["skill", "origen", "para qué"], &rows);
-            println!("{}", dim("en el chat, el modelo las carga solo; para prototipos: /proto <descripción>"));
+            let dirs = skills::registered_dirs();
+            if !dirs.is_empty() {
+                println!("{}", dim(&format!("carpetas registradas: {}", dirs.iter().map(|d| d.display().to_string()).collect::<Vec<_>>().join(" · "))));
+            }
+            println!("{}", dim("en el chat: /skill <nombre> <pedido> la aplica; /proto <descripción> para prototipos; jmd skills add <carpeta> registra las tuyas"));
             Ok(())
         }
         Cmd::Style { level, compress, max } => style(c, level, compress, max, as_json).await,
@@ -1259,7 +1293,8 @@ Sesión de chat:
   /todos              la lista de tareas del agente
   /mcp                servidores MCP de esta sesión y su estado · /tools: herramientas que ve el modelo
   /auto               ejecutar herramientas (comandos, archivos, MCP) sin preguntar (otra vez: volver a preguntar)
-  /skills             skills disponibles · /proto <descripción>: prototipo de UI en HTML
+  /skills             skills disponibles (relee las carpetas) · /skill <nombre> <pedido>: aplica esa skill
+  /proto <descripción>  prototipo de UI en HTML
   /model <perfil>     cambia el perfil (auto, coding, coding-deep, reasoning… o un modelo)
   /style <nivel>      estilo solo para esta sesión (off · lite · full · ultra)
   /priority <p>       quality · speed · cost
@@ -1349,7 +1384,27 @@ async fn chat_loop(c: &mut Client, s: &mut Session, commands: bool) -> Result<()
                     else { dim("las herramientas vuelven a pedir confirmación") });
                 Ok(())
             }
+            "skill" if slash => {
+                let Some(name) = rest.first() else {
+                    return Err(anyhow!("uso: /skill <nombre> [qué quieres hacer con ella]"))
+                        .or_else(|e: anyhow::Error| { eprintln!("{} {e}", red("error:")); Ok(()) });
+                };
+                if !s.agent.skills.iter().any(|k| &k.name == name) {
+                    eprintln!("{} no hay ninguna skill «{name}» (mira /skills)", red("error:"));
+                    Ok(())
+                } else {
+                    let pedido = rest[1..].join(" ");
+                    let prompt = if pedido.is_empty() {
+                        format!("Carga la skill «{name}» con load_skill y aplícala a lo que te pedí antes en esta conversación.")
+                    } else {
+                        format!("Carga la skill «{name}» con load_skill ANTES de hacer nada y síguela al pie de la letra. Pedido: {pedido}")
+                    };
+                    ask(c, s, &prompt).await.map(|_| ())
+                }
+            }
             "skills" if slash => {
+                let cwd = std::env::current_dir().unwrap_or_else(|_| ".".into());
+                s.agent.skills = skills::discover(&cwd);
                 for k in &s.agent.skills {
                     println!("  {} {} {}", cyan(&k.name), dim(&format!("[{}]", k.source)),
                         k.description.chars().take(80).collect::<String>());

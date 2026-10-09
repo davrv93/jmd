@@ -176,11 +176,33 @@ fn skills_include_builtin_and_project() {
     let dir = cwd.0.join(".claude").join("skills").join("marca");
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("SKILL.md"), "---\nname: marca\ndescription: Colores y tono de la marca\n---\nUsa azul.").unwrap();
+    // skills/ del proyecto, con subcarpetas y un archivo suelto.
+    let d2 = cwd.0.join("skills").join("web").join("landing-editorial");
+    std::fs::create_dir_all(&d2).unwrap();
+    std::fs::write(d2.join("SKILL.md"), "---\nname: landing-editorial\ndescription: Landings con tono editorial\n---\nTitulares largos.").unwrap();
+    std::fs::write(cwd.0.join("skills").join("correo.md"), "---\ndescription: Correos breves\n---\nDos párrafos.").unwrap();
+    std::fs::write(cwd.0.join("skills").join("README.md"), "no es una skill").unwrap();
+    // Una carpeta propia, registrada con `jmd skills add`.
+    let mine = Tmp::new("mis-skills");
+    let d3 = mine.0.join("datos").join("sql");
+    std::fs::create_dir_all(&d3).unwrap();
+    std::fs::write(d3.join("SKILL.md"), "---\nname: sql\ndescription: Consultas SQL\n---\nUsa CTEs.").unwrap();
+    let (code, out) = jmd(&home.0, &cwd.0, &["skills", "add", &mine.0.to_string_lossy()]);
+    assert!(code == 0 && out.contains("1 skill") && out.contains("registrada"), "{out}");
     let (code, out) = jmd(&home.0, &cwd.0, &["--json", "skills"]);
     assert_eq!(code, 0, "{out}");
     let v: Value = serde_json::from_str(&out).unwrap();
     let names: Vec<&str> = v.as_array().unwrap().iter().filter_map(|s| s["name"].as_str()).collect();
-    assert!(names.contains(&"prototipo") && names.contains(&"marca"), "{names:?}");
+    for n in ["prototipo", "marca", "landing-editorial", "correo", "sql"] {
+        assert!(names.contains(&n), "falta {n}: {names:?}");
+    }
+    assert!(!names.contains(&"README"), "{names:?}");
+    let sql = v.as_array().unwrap().iter().find(|s| s["name"] == "sql").unwrap();
+    assert_eq!(sql["source"].as_str().unwrap(), mine.0.file_name().unwrap().to_string_lossy());
+    let (code, out) = jmd(&home.0, &cwd.0, &["skills", "remove", &mine.0.to_string_lossy()]);
+    assert!(code == 0 && out.contains("quitada"), "{out}");
+    let (_, out) = jmd(&home.0, &cwd.0, &["--json", "skills"]);
+    assert!(!out.contains("\"sql\""), "{out}");
 }
 
 // --- Gateway falso: el bucle de herramientas del agente ----------------------
