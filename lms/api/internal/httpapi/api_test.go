@@ -452,3 +452,29 @@ func TestAdminAndReload(t *testing.T) {
 		t.Fatalf("progress del curso: %d %s", r.code, r.raw)
 	}
 }
+
+// Un alumno con cuenta local que entra luego por SSO con el mismo correo conserva su cuenta.
+func TestOIDCReusesLocalAccount(t *testing.T) {
+	e := newEnv(t)
+	e.register("ana@x.test")
+	local, err := e.db.UserByEmail(t.Context(), "ana@x.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{DB: e.db}
+	c := &auth.Claims{Sub: "kc-123", Email: "Ana@x.test", Name: "Ana", Groups: []string{"/c1"}}
+	c.RealmAccess.Roles = []string{"student", "offline_access"}
+	u, err := s.upsertOIDC(t.Context(), c)
+	if err != nil {
+		t.Fatalf("upsertOIDC: %v", err)
+	}
+	if u.ID != local.ID || len(u.Cohorts) != 1 || u.Cohorts[0] != "c1" {
+		t.Fatalf("debía reutilizar la cuenta local %s, obtuve %+v", local.ID, u)
+	}
+	// Y una cuenta nueva del realm se crea con el sub como id.
+	c2 := &auth.Claims{Sub: "kc-456", Email: "nuevo@x.test", Name: "Nuevo"}
+	u2, err := s.upsertOIDC(t.Context(), c2)
+	if err != nil || u2.ID != "kc-456" || u2.Roles[0] != "student" {
+		t.Fatalf("cuenta nueva: %+v %v", u2, err)
+	}
+}

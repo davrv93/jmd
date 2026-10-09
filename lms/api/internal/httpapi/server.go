@@ -225,7 +225,18 @@ func (s *Server) upsertOIDC(ctx context.Context, c *auth.Claims) (*store.User, e
 	if name == "" {
 		name = c.Email
 	}
-	u := &store.User{ID: c.Sub, Email: c.Email, Name: name, Roles: roles, Cohorts: auth.NormalizeCohorts(c.Groups)}
+	cohorts := auth.NormalizeCohorts(c.Groups)
+	// Cuenta local creada antes del SSO con el mismo correo: se reutiliza (mismo id) para no
+	// perder progreso, preguntas ni entregas, y toma los roles y cohortes del realm. Es seguro
+	// porque en el realm no hay registro propio y los correos los da de alta el instructor.
+	if prev, err := s.DB.UserByEmail(ctx, strings.ToLower(strings.TrimSpace(c.Email))); err == nil && prev.ID != c.Sub {
+		if err := s.DB.UpdateUserRoles(ctx, prev.ID, roles, cohorts); err != nil {
+			return nil, err
+		}
+		prev.Roles, prev.Cohorts = roles, cohorts
+		return prev, nil
+	}
+	u := &store.User{ID: c.Sub, Email: c.Email, Name: name, Roles: roles, Cohorts: cohorts}
 	if err := s.DB.UpsertOIDCUser(ctx, u); err != nil {
 		return nil, err
 	}
