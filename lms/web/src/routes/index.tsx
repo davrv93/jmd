@@ -2,6 +2,9 @@ import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from 
 import type { DocumentHead } from "@builder.io/qwik-city";
 import { api, errMsg, type AuthConfig } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
+import { jmd } from "~/lib/constelacion";
+
+const LETRAS = `<svg class="jmd-svg" viewBox="0 0 560 270" role="img" aria-label="JMD en constelación">${jmd({ x: 12, y: 8, dibujar: true })}</svg>`;
 
 export default component$(() => {
   const session = useContext(SessionContext);
@@ -52,9 +55,13 @@ export default component$(() => {
   }
 
   return (
-    <div class="login">
-      <h1>Entrar</h1>
-      <p class="muted">Plataforma del curso de programación agéntica: clases, enlaces, ciclo de aprendizaje y tareas.</p>
+    <>
+    <section class="hero">
+      <div dangerouslySetInnerHTML={LETRAS} />
+      <h1>Programación <b>agéntica</b></h1>
+      <p>Clases, diapositivas, enlaces, ciclo de aprendizaje y tareas del curso. Entra con el usuario y la contraseña que te dio el instructor.</p>
+    </section>
+    <div class="login" style="margin-top:1rem">
       <div class="card">
         {cfg.v?.oidc && (
           <p>
@@ -68,7 +75,7 @@ export default component$(() => {
               <input id="name" required minLength={2} value={form.name} onInput$={(_, el) => (form.name = el.value)} />
             </>
           )}
-          <label for="email">Correo</label>
+          <label for="email">Usuario (tu correo del curso)</label>
           <input id="email" type="email" required autoComplete="username" value={form.email} onInput$={(_, el) => (form.email = el.value)} />
           <label for="password">Contraseña</label>
           <input id="password" type="password" required minLength={8} autoComplete={mode.value === "login" ? "current-password" : "new-password"} value={form.password} onInput$={(_, el) => (form.password = el.value)} />
@@ -104,6 +111,7 @@ export default component$(() => {
         </p>
       </div>
     </div>
+    </>
   );
 });
 

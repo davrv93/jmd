@@ -88,6 +88,7 @@ export interface Material {
   kind: string;
   url: string;
   objective_ids: string[];
+  slides?: string[] | null;
 }
 export interface CycleStep {
   id: string;
@@ -253,7 +254,7 @@ export const TOOLS: Record<string, { icon: string; label: string }> = {
 };
 
 export const KINDS: Record<string, string> = {
-  link: "enlace", doc: "documentación", repo: "repositorio", video: "vídeo", slides: "diapositivas", pdf: "PDF", note: "nota",
+  link: "enlace", doc: "documentación", repo: "repositorio", video: "vídeo", slides: "diapositivas", pdf: "PDF", note: "nota", file: "adjunto", zip: "adjunto .zip", pptx: "PowerPoint",
 };
 
 export const STATUS: Record<string, { label: string; cls: string }> = {

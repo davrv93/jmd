@@ -110,8 +110,12 @@ func loadCourse(dir string, c *Catalog) (*Course, error) {
 		l.CourseID = course.ID
 		l.SourceRel, _ = filepath.Rel(dir, f)
 		for i := range l.Materials {
-			if m := &l.Materials[i]; m.File != "" && m.URL == "" {
+			m := &l.Materials[i]
+			if m.File != "" && m.URL == "" {
 				m.URL = "/files/" + course.ID + "/" + m.File
+			}
+			for _, f := range m.SlideFiles {
+				m.Slides = append(m.Slides, "/files/"+course.ID+"/"+f)
 			}
 		}
 		lessons[l.ID] = l
@@ -194,6 +198,25 @@ func loadLesson(path string) (*Lesson, error) {
 		}
 		if l.Materials[i].ObjectiveIDs == nil {
 			l.Materials[i].ObjectiveIDs = []string{}
+		}
+		if d := l.Materials[i].SlidesDir; d != "" {
+			if !safeRel(d) {
+				return nil, fmt.Errorf("material %s: slides_dir %q debe ser una ruta relativa dentro del curso", l.Materials[i].ID, d)
+			}
+			courseDir := filepath.Dir(filepath.Dir(path))
+			var imgs []string
+			for _, ext := range []string{"*.webp", "*.png", "*.jpg", "*.jpeg"} {
+				m, _ := filepath.Glob(filepath.Join(courseDir, filepath.FromSlash(d), ext))
+				imgs = append(imgs, m...)
+			}
+			if len(imgs) == 0 {
+				return nil, fmt.Errorf("material %s: slides_dir %q no tiene imágenes", l.Materials[i].ID, d)
+			}
+			sort.Strings(imgs)
+			for _, f := range imgs {
+				rel, _ := filepath.Rel(courseDir, f)
+				l.Materials[i].SlideFiles = append(l.Materials[i].SlideFiles, filepath.ToSlash(rel))
+			}
 		}
 		if f := l.Materials[i].File; f != "" {
 			if !safeRel(f) {

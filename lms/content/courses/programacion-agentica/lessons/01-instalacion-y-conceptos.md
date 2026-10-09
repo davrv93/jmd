@@ -17,6 +17,27 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: pa-01-ppt
+    title: Diapositivas de la clase 1 (PowerPoint)
+    kind: slides
+    file: materials/clase-01-diapositivas.pptx
+    slides_dir: materials/clase-01-diapositivas
+    objective_ids: [pa-01-o1, pa-01-o2, pa-01-o3]
+  - id: pa-01-ppt-pdf
+    title: Diapositivas de la clase 1 (PDF)
+    kind: pdf
+    file: materials/clase-01-diapositivas.pdf
+    objective_ids: [pa-01-o1, pa-01-o2, pa-01-o3]
+  - id: pa-01-repo
+    title: Repositorio del curso · davrv93/jmd (código de jmd, gateway y este LMS)
+    kind: repo
+    url: https://github.com/davrv93/jmd
+    objective_ids: [pa-01-o1]
+  - id: pa-01-skills
+    title: skills.zip · skills del instructor (landing-editorial) para ~/.claude/skills
+    kind: zip
+    file: materials/skills.zip
+    objective_ids: [pa-01-o3]
   - id: pa-01-pdf
     title: Clase 1 en PDF (objetivos, ciclo, enlaces, contenido y tarea)
     kind: pdf
@@ -581,6 +602,18 @@ description: Genera el informe semanal del alumno en Markdown con la plantilla d
 Ejecuta `python scripts/plantilla.py --semana N` para obtener la plantilla y
 rellénala con lo hecho (commits de la semana: `git log --since="1 week ago"`).
 ```
+
+**5. landing-editorial** (la tienes en **Adjuntos → skills.zip**): una skill grande, con
+plantilla y nueve archivos de referencia (tokens, animaciones, scroll guiado, componentes,
+responsive, redacción, checklist y recetas por negocio). Instálala así:
+
+```bash
+unzip skills.zip -d ~/.claude/skills/   # queda ~/.claude/skills/landing-editorial/SKILL.md
+claude                                  # y pide: «hazme una landing editorial para una cafetería»
+```
+
+Ábrela y mira cómo el `SKILL.md` solo apunta a `references/…`: el agente lee cada referencia
+cuando la necesita. Es el «contexto bajo demanda» llevado a una skill real.
 
 Fíjate en el patrón: la **descripción dice cuándo usarla** (eso es lo que el agente lee
 siempre), y el cuerpo dice **cómo**, en pasos cortos y verificables. Los ejemplos de Anthropic

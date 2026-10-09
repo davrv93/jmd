@@ -71,6 +71,12 @@ type Material struct {
 	URL          string   `yaml:"url" json:"url"`
 	File         string   `yaml:"file" json:"-"` // ruta relativa a la carpeta del curso (p. ej. materials/clase-01.pdf)
 	ObjectiveIDs []string `yaml:"objective_ids" json:"objective_ids"`
+
+	// SlidesDir es una carpeta de imágenes (una por diapositiva, en orden alfabético) que el
+	// front muestra en un visor embebido; File queda como la descarga (.pptx o .pdf).
+	SlidesDir  string   `yaml:"slides_dir" json:"-"`
+	SlideFiles []string `yaml:"-" json:"-"`      // rutas relativas al curso, para autorizar /files
+	Slides     []string `yaml:"-" json:"slides"` // URLs de las imágenes
 }
 
 // CycleStep es un paso del ciclo de aprendizaje: qué hacer, con qué herramienta y cómo comprobarlo.

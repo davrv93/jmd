@@ -3,6 +3,9 @@ import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from
 import { api, errMsg, fmtDate, KINDS, requireLogin, TOOLS, type Lesson, type Question } from "~/lib/api";
 import { SessionContext, isStaff } from "~/lib/session";
 import { Copy } from "~/components/copy";
+import { Slides } from "~/components/slides";
+
+const ADJUNTO = new Set(["zip", "file", "pptx"]);
 
 export default component$(() => {
   const loc = useLocation();
@@ -81,6 +84,9 @@ export default component$(() => {
   const byObjective = (oid: string) => l.materials.filter((m) => m.objective_ids.includes(oid));
   const orphan = l.materials.filter((m) => m.objective_ids.length === 0 || !m.objective_ids.some((o) => l.objectives.some((x) => x.id === o)));
   const me = session.me;
+  const deck = l.materials.find((m) => (m.slides?.length ?? 0) > 0);
+  const descargas = l.materials.filter((m) => m === deck || (m.kind === "pdf" && /diapositiva/i.test(m.title)));
+  const adjuntos = l.materials.filter((m) => ADJUNTO.has(m.kind) && m !== deck);
 
   return (
     <div class="two">
@@ -122,6 +128,28 @@ export default component$(() => {
             </p>
           )}
         </section>
+
+        {deck && (
+          <section id="diapositivas">
+            <h2>Diapositivas de la clase</h2>
+            <Slides deck={deck} downloads={descargas} />
+          </section>
+        )}
+
+        {adjuntos.length > 0 && (
+          <section id="adjuntos">
+            <h2>Adjuntos</h2>
+            {adjuntos.map((m) => (
+              <a key={m.id} class="card adjunto" href={m.url} download style="display:flex">
+                <span class="ico">📦</span>
+                <span>
+                  <b>{m.title}</b>
+                  <div class="small muted">{KINDS[m.kind] ?? m.kind} · clic para descargar</div>
+                </span>
+              </a>
+            ))}
+          </section>
+        )}
 
         <section id="ciclo">
           <h2>Ciclo de aprendizaje</h2>
@@ -175,7 +203,7 @@ export default component$(() => {
                 <ul class="links">
                   {byObjective(o.id).map((m) => (
                     <li key={m.id}>
-                      <a href={m.url} target="_blank" rel="noopener">{m.title}</a> <span class="badge">{KINDS[m.kind] ?? m.kind}</span>
+                      <a href={m.url} target="_blank" rel="noopener" download={ADJUNTO.has(m.kind) || undefined}>{m.title}</a> <span class="badge">{KINDS[m.kind] ?? m.kind}</span>
                     </li>
                   ))}
                 </ul>
@@ -186,7 +214,7 @@ export default component$(() => {
             <ul class="links">
               {orphan.map((m) => (
                 <li key={m.id}>
-                  <a href={m.url} target="_blank" rel="noopener">{m.title}</a> <span class="badge">{KINDS[m.kind] ?? m.kind}</span>
+                  <a href={m.url} target="_blank" rel="noopener" download={ADJUNTO.has(m.kind) || undefined}>{m.title}</a> <span class="badge">{KINDS[m.kind] ?? m.kind}</span>
                 </li>
               ))}
             </ul>
@@ -271,6 +299,8 @@ export default component$(() => {
         <nav class="toc card">
           <b>En esta sesión</b>
           <a href="#objetivos">Objetivos</a>
+          {deck && <a href="#diapositivas">Diapositivas</a>}
+          {adjuntos.length > 0 && <a href="#adjuntos">Adjuntos</a>}
           <a href="#ciclo">Ciclo de aprendizaje</a>
           <a href="#enlaces">Enlaces y materiales</a>
           <a href="#contenido">Contenido</a>

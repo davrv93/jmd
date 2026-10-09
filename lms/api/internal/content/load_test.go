@@ -38,6 +38,19 @@ func TestRealContent(t *testing.T) {
 	if a == nil || a.LessonID != "pa-01" || a.MaxPoints() != 20 {
 		t.Fatalf("tarea-01: %+v", a)
 	}
+	// Las diapositivas se embeben desde slides_dir: una URL por imagen, en orden.
+	var deck *Material
+	for i := range l.Materials {
+		if len(l.Materials[i].Slides) > 0 {
+			deck = &l.Materials[i]
+		}
+	}
+	if deck == nil || len(deck.Slides) < 10 || len(deck.SlideFiles) != len(deck.Slides) {
+		t.Fatalf("la clase 1 debe traer diapositivas embebidas: %+v", deck)
+	}
+	if !strings.HasSuffix(deck.Slides[0], "/01.webp") || !strings.HasSuffix(deck.File, ".pptx") {
+		t.Errorf("diapositivas: primera %q, descarga %q", deck.Slides[0], deck.File)
+	}
 	for _, m := range l.Materials {
 		if !strings.HasPrefix(m.URL, "https://") && !strings.HasPrefix(m.URL, "/files/") {
 			t.Errorf("material %s sin URL https: %q", m.ID, m.URL)

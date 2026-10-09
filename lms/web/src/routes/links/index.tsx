@@ -28,7 +28,7 @@ export default component$(() => {
           <ul class="links">
             {items.map((l) => (
               <li key={l.id}>
-                <a href={l.url} target="_blank" rel="noopener">{l.title}</a> <span class="badge">{KINDS[l.kind] ?? l.kind}</span>
+                <a href={l.url} target="_blank" rel="noopener" download={["zip", "file", "pptx"].includes(l.kind) || undefined}>{l.title}</a> <span class="badge">{KINDS[l.kind] ?? l.kind}</span>
               </li>
             ))}
           </ul>

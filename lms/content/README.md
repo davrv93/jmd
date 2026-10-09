@@ -39,6 +39,10 @@ recording: {url: https://…zoom…, passcode: "…"}   # opcional; abre en pest
 repo: {url: https://github.com/…, ref: main}      # opcional; `jmd lesson open pa-01` lo clona
 materials:                       # enlaces publicados; kind: link · video · slides · pdf · repo · doc
   - {id: m1, title: …, kind: link, url: https://…, objective_ids: [pa-01-o1]}
+  # diapositivas embebidas: una imagen por diapositiva en slides_dir; file es la descarga
+  - {id: ppt, title: Diapositivas, kind: slides, file: materials/clase-01.pptx, slides_dir: materials/clase-01-diapositivas}
+  # adjunto para descargar (kind: zip · file): se sirve con su nombre de archivo
+  - {id: zip, title: skills.zip, kind: zip, file: materials/skills.zip}
 cycle:                           # ciclo de aprendizaje: pasos con su herramienta y su comprobación
   - id: ver
     title: Ver la clase

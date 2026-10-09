@@ -1,9 +1,11 @@
 package httpapi
 
 import (
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -123,7 +125,7 @@ func (s *Server) lesson(w http.ResponseWriter, r *http.Request, p *Principal) {
 	}
 	materials := make([]map[string]any, 0, len(l.Materials))
 	for _, m := range l.Materials {
-		materials = append(materials, map[string]any{"id": m.ID, "title": m.Title, "kind": m.Kind, "url": m.URL, "objective_ids": m.ObjectiveIDs})
+		materials = append(materials, map[string]any{"id": m.ID, "title": m.Title, "kind": m.Kind, "url": m.URL, "objective_ids": m.ObjectiveIDs, "slides": m.Slides})
 	}
 	var prev, next string
 	var flat []*content.Lesson
@@ -350,7 +352,7 @@ func (s *Server) courseFile(w http.ResponseWriter, r *http.Request, p *Principal
 				continue
 			}
 			for _, mat := range l.Materials {
-				if mat.File == rel {
+				if mat.File == rel || slices.Contains(mat.SlideFiles, rel) {
 					allowed = true
 				}
 			}
@@ -366,8 +368,19 @@ func (s *Server) courseFile(w http.ResponseWriter, r *http.Request, p *Principal
 		return
 	}
 	w.Header().Set("Cache-Control", "private, max-age=300")
-	if strings.HasSuffix(rel, ".pdf") {
+	// Tipos explícitos: la imagen alpine no trae /etc/mime.types y .pptx no está en la tabla de Go.
+	// Los adjuntos (.zip, .pptx) se descargan con su nombre; PDF e imágenes se ven en el navegador.
+	switch ext := strings.ToLower(filepath.Ext(rel)); ext {
+	case ".pdf":
 		w.Header().Set("Content-Type", "application/pdf")
+	case ".webp", ".png", ".jpg", ".jpeg":
+		w.Header().Set("Content-Type", mime.TypeByExtension(ext))
+	case ".pptx":
+		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation")
+		w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filepath.Base(rel)}))
+	case ".zip":
+		w.Header().Set("Content-Type", "application/zip")
+		w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filepath.Base(rel)}))
 	}
 	http.ServeFile(w, r, full)
 }
