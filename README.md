@@ -159,6 +159,10 @@ modelo, que puede usar herramientas:
   español. `/proto panel de alumnos con notas por curso` lo genera en
   `./prototipos/panel-de-alumnos….html` y lo abre en el navegador. Para iterar, pídelo en el
   chat y se sobrescribe.
+- **Diseño 3D.** En `skills/diseno-3d/` va la skill `diseno-3d`: modela objetos (manzana, pera,
+  casa, robot, perrito y parecidos) con código Three.js en un solo HTML que gira en el navegador
+  y se exporta a GLB o STL. `/skill diseno-3d una manzana roja con hoja` lo guarda en
+  `./prototipos/`. Sirve con cualquier modelo del gateway (`/model muse-spark`, DeepSeek…).
 
 Una pregunta suelta también usa las herramientas: `jmd chat --auto "…"` (sin `--auto` pide
 confirmación; `--mcp` conecta además los servidores MCP).
