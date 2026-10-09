@@ -169,6 +169,41 @@ func (r *Runner) ensureImage(ctx context.Context, image string) {
 	_ = exec.CommandContext(pullCtx, r.Runtime, "pull", "-q", image).Run()
 }
 
+// DefaultTermImage es la imagen por defecto para la shell interactiva.
+const DefaultTermImage = "python:3.12-alpine"
+
+// ShellCmd arma una shell interactiva AISLADA (para el terminal del estudio). Mismas barreras que
+// Run: sin red, sin socket, raíz de solo lectura, tmpfs con exec en /tmp, sin capabilities, usuario
+// sin privilegios, CPU/memoria/procesos limitados. Devuelve también el nombre del contenedor para
+// poder matarlo. El llamador la ejecuta con un PTY y respeta ctx para el cierre.
+func (r *Runner) ShellCmd(ctx context.Context, image string) (*exec.Cmd, string) {
+	if image == "" {
+		image = DefaultTermImage
+	}
+	r.ensureImage(ctx, image)
+	name := "lmsterm-" + randHex(6)
+	args := []string{
+		"run", "--rm", "-it", "--name", name,
+		"--network=none", "--read-only",
+		"--tmpfs", "/tmp:rw,exec,size=128m,mode=1777",
+		"--memory", "512m", "--memory-swap", "512m",
+		"--cpus", "0.5", "--pids-limit", "128",
+		"--cap-drop", "ALL", "--security-opt", "no-new-privileges",
+		"--user", "65534:65534",
+		"--workdir", "/tmp",
+		"-e", "HOME=/tmp", "-e", "TERM=xterm-256color",
+		image, "sh",
+	}
+	return exec.CommandContext(ctx, r.Runtime, args...), name
+}
+
+// Kill borra un contenedor por nombre (best-effort, para el cierre del terminal).
+func (r *Runner) Kill(name string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	_ = exec.CommandContext(ctx, r.Runtime, "rm", "-f", name).Run()
+}
+
 // limitedWriter escribe como mucho n bytes y descarta el resto.
 type limitedWriter struct {
 	w io.Writer

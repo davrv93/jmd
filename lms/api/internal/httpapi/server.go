@@ -31,9 +31,19 @@ type Server struct {
 	SessionTTL    time.Duration
 	Web           fs.FS      // build del front; nil = solo API
 	Runner        *runner.Runner // ejecuta código de los alumnos; nil/deshabilitado = sin /run
+	TermImage     string          // imagen de la shell interactiva del estudio (vacío = por defecto)
+	LLM           LLMConfig       // gateway OpenAI-compatible para /generate
 
-	login    *limiter
-	runLimit *limiter
+	login     *limiter
+	runLimit  *limiter
+	termSlots *slots
+}
+
+// LLMConfig apunta a un endpoint OpenAI-compatible (el gateway de la clase) para generar landings.
+type LLMConfig struct {
+	URL   string // p. ej. https://gateway/v1/chat/completions
+	Key   string
+	Model string // p. ej. auto
 }
 
 // Principal es quien hace la petición, venga por cookie, token local o JWT del realm.
@@ -74,6 +84,9 @@ func (s *Server) Handler() http.Handler {
 	if s.runLimit == nil {
 		s.runLimit = newLimiter(20, time.Minute)
 	}
+	if s.termSlots == nil {
+		s.termSlots = newSlots()
+	}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/v1/health", func(w http.ResponseWriter, r *http.Request) {
@@ -113,6 +126,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/courses/{id}/examples", s.authed(s.courseExamples))
 	mux.Handle("GET /api/v1/examples/{id}", s.authed(s.example))
 	mux.Handle("POST /api/v1/run", s.authed(s.run))
+	mux.Handle("GET /api/v1/term", s.authed(s.term))
+	mux.Handle("POST /api/v1/generate", s.authed(s.generate))
 	mux.Handle("GET /api/v1/admin/users", s.authed(s.admin(s.users)))
 	mux.Handle("PUT /api/v1/admin/users/{id}", s.authed(s.admin(s.updateUser)))
 	mux.Handle("POST /api/v1/admin/reload", s.authed(s.admin(s.reload)))

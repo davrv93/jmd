@@ -11,6 +11,9 @@
 //	LMS_COHORT          cohorte de quien se registra (p. ej. cohorte-2026-2)
 //	LMS_RUNNER          docker | podman para ejecutar código; vacío = deshabilitado
 //	LMS_RUNNER_TIMEOUT  tope por ejecución (p. ej. 15s, 1m); por defecto 15s
+//	LMS_TERM_IMAGE      imagen de la shell interactiva del estudio (por defecto python:3.12-alpine)
+//	LMS_LLM_URL         endpoint OpenAI-compatible para generar landings; vacío = deshabilitado
+//	LMS_LLM_KEY / LMS_LLM_MODEL   clave y modelo del gateway (modelo por defecto «auto»)
 //	OIDC_ISSUER / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET / OIDC_AUDIENCE   Keycloak (opcional)
 package main
 
@@ -92,11 +95,22 @@ func run() error {
 			Runtime: os.Getenv("LMS_RUNNER"), // "docker" o "podman"; vacío = deshabilitado
 			Timeout: runner.ParseTimeout(os.Getenv("LMS_RUNNER_TIMEOUT")),
 		},
+		TermImage: os.Getenv("LMS_TERM_IMAGE"),
+		LLM: httpapi.LLMConfig{
+			URL:   os.Getenv("LMS_LLM_URL"),
+			Key:   os.Getenv("LMS_LLM_KEY"),
+			Model: env("LMS_LLM_MODEL", "auto"),
+		},
 	}
 	if srv.Runner.Available() {
 		slog.Info("runner de código activo", "runtime", srv.Runner.Runtime, "timeout", srv.Runner.Timeout)
 	} else {
 		slog.Info("runner de código desactivado (define LMS_RUNNER=docker para activarlo)")
+	}
+	if srv.LLM.URL != "" {
+		slog.Info("generación por IA activa", "url", srv.LLM.URL, "model", srv.LLM.Model)
+	} else {
+		slog.Info("generación por IA desactivada (define LMS_LLM_URL para activarla)")
 	}
 	if iss := os.Getenv("OIDC_ISSUER"); iss != "" {
 		o, err := auth.NewOIDC(ctx, auth.OIDCConfig{

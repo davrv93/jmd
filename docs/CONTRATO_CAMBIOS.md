@@ -69,6 +69,21 @@ Node, Bash y Go pasa por este endpoint.
 - No está ligado a la calificación de tareas (`autograde` sigue pendiente): es una herramienta de
   aprendizaje, no la corrección automática.
 
+## Estudio de landing (2026-10-09)
+
+Ejercicio guiado para crear una landing con la skill `landing-editorial`: el alumno edita un prompt,
+pulsa «Generar», ve el resultado en un visor y tiene una terminal aislada para experimentar.
+
+| Método y ruta | Para qué |
+|---|---|
+| `POST /api/v1/generate` `{prompt}` | Genera un `index.html`. Requiere `LMS_LLM_URL` (endpoint OpenAI-compatible, p. ej. el gateway); si falta, `503 unavailable`. Límite de 20/min por usuario; prompt ≤ 8000 caracteres |
+| `GET /api/v1/term` | WebSocket: shell interactiva DENTRO de un contenedor efímero (sin red, sin socket de Docker, sin privilegios, límites). Un terminal por usuario; se cierra a los 20 min |
+
+- La terminal usa el mismo motor y aislamiento que el runner (`LMS_RUNNER`); la imagen la elige `LMS_TERM_IMAGE` (por defecto `python:3.12-alpine`). El contenedor **no** ve el host ni el socket.
+- El visor web es un `iframe` en el navegador (sandbox `allow-scripts`), no del servidor.
+- La generación no sube el skill entero: manda un «system» que resume `landing-editorial`. Sin gateway, el alumno pega el `index.html` hecho con su OpenCode + el skill.
+- La skill viaja en `materials/skills.zip` (raíz `landing-editorial/`).
+
 ## Desviaciones (ver DECISIONES.md)
 
 - **Sin runner todavía:** las entregas quedan en `queued` hasta que el instructor califica (pasa a

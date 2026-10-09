@@ -617,6 +617,14 @@ siempre), y el cuerpo dice **cómo**, en pasos cortos y verificables. Los ejempl
 > **«Skills: cómo funcionan y cómo aprovecharlas»** y **«OpenCode: guía de uso para el curso»**.
 > Y para practicar sin instalar nada, **«Probar código aquí mismo»** (el sandbox del LMS).
 
+### Practica: crea una landing con el skill
+
+Abre el **Estudio** (menú superior, o `/studio/`). Escribe el prompt, pulsa **Generar** y mira el
+resultado en el **visor** (la página web se renderiza ahí mismo). Abajo tienes una **terminal**
+real en un contenedor aislado para inspeccionar y experimentar, y puedes **editar el prompt** todo
+lo que quieras. Si la generación por IA aún no está conectada, genera el `index.html` con tu
+OpenCode + el skill **landing-editorial** y pégalo en la pestaña «HTML» del visor.
+
 ---
 
 ## Tareas

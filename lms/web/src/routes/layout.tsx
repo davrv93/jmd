@@ -13,6 +13,7 @@ const MARCA = `<svg class="mark" width="18" height="18" viewBox="0 0 24 24" aria
 
 const NAV = [
   { href: "/courses/", label: "Inicio", icon: "home", match: ["/courses/", "/lessons/"] },
+  { href: "/studio/", label: "Estudio", icon: "sparkles", match: ["/studio/"] },
   { href: "/examples/", label: "Ejemplos", icon: "sparkles", match: ["/examples/"] },
   { href: "/links/", label: "Enlaces", icon: "link", match: ["/links/"] },
   { href: "/grades/", label: "Notas", icon: "award", match: ["/grades/", "/assignments/"] },

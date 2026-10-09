@@ -246,6 +246,7 @@ export const api = {
   examples: (course: string) => req<ExampleSummary[]>("GET", `/api/v1/courses/${encodeURIComponent(course)}/examples`),
   example: (id: string) => req<Example>("GET", `/api/v1/examples/${encodeURIComponent(id)}`),
   run: (language: string, code: string) => req<RunResult>("POST", "/api/v1/run", { language, code }),
+  generate: (prompt: string) => req<{ html: string }>("POST", "/api/v1/generate", { prompt }),
   courseProgress: (id: string) => req<CourseProgress>("GET", `/api/v1/courses/${encodeURIComponent(id)}/progress`),
 };
 
