@@ -8,7 +8,7 @@ export const RouterHead = component$(() => {
       <title>{head.title ? `${head.title} · JMD` : "JMD · Programación agéntica"}</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <meta name="color-scheme" content="dark" />
-      <meta name="theme-color" content="#2e0d5e" />
+      <meta name="theme-color" content="#0b0a10" />
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       {head.meta.map((m) => (
         <meta key={m.key} {...m} />

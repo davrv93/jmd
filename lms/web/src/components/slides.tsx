@@ -21,7 +21,7 @@ export const Slides = component$((props: { deck: Material; downloads: Material[]
         if (e.key === "ArrowLeft" || e.key === "PageUp") go(i.value - 1);
       }}
     >
-      <div class="lienzo">
+      <div class="lienzo" id="lienzo-diapositivas">
         <img src={slides[i.value]} alt={`Diapositiva ${i.value + 1} de ${total}`} width={1600} height={900} />
         {i.value > 0 && (
           <button type="button" class="prev" aria-label="Anterior" onClick$={() => go(i.value - 1)}>‹</button>
@@ -34,6 +34,17 @@ export const Slides = component$((props: { deck: Material; downloads: Material[]
         <span class="badge accent">
           {i.value + 1} / {total}
         </span>
+        <button
+          type="button"
+          class="ghost small"
+          onClick$={() => {
+            const el = document.getElementById("lienzo-diapositivas");
+            if (document.fullscreenElement) document.exitFullscreen();
+            else el?.requestFullscreen?.();
+          }}
+        >
+          ⛶ Pantalla completa
+        </button>
         <span style="flex:1" />
         {props.downloads.map((d) => (
           <a key={d.id} class="btn ghost small" href={d.url} download>

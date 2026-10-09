@@ -64,8 +64,14 @@ function petaloCae(x: number, y: number, t: number, rot: number, d: number): str
 }
 
 // Las letras J M D como constelación: trazos finos, estrellas y flores en los vértices.
-export function jmd(opts: { x?: number; y?: number; escala?: number; dibujar?: boolean } = {}): string {
-  const { x = 0, y = 0, escala = 1, dibujar = false } = opts;
+// Estrella mayor de cuatro puntas: marca los vértices principales en el estilo sobrio.
+function astro(x: number, y: number, r: number, d: number): string {
+  const k = r * 0.2;
+  return `<path class="astro brilla" style="--d:${d}s" d="M${x} ${y - r}L${x + k} ${y - k}L${x + r} ${y}L${x + k} ${y + k}L${x} ${y + r}L${x - k} ${y + k}L${x - r} ${y}L${x - k} ${y - k}Z"/>`;
+}
+
+export function jmd(opts: { x?: number; y?: number; escala?: number; dibujar?: boolean; flores?: boolean } = {}): string {
+  const { x = 0, y = 0, escala = 1, dibujar = false, flores = false } = opts;
   const lineas: string[] = [];
   const nodos = new Map<string, P>();
   let n = 0;
@@ -78,15 +84,18 @@ export function jmd(opts: { x?: number; y?: number; escala?: number; dibujar?: b
   }
   const puntos = [...nodos.entries()].map(([k, [a, b]], i) =>
     FLORES.has(k)
-      ? flor(a, b, 22, (i * 0.7) % 6.28, "flor brilla")
+      ? flores
+        ? flor(a, b, 22, (i * 0.7) % 6.28, "flor brilla")
+        : astro(a, b, 11, (i % 5) * 0.6)
       : `<circle class="estrella brilla" style="--d:${(i % 7) * 0.4}s" cx="${a}" cy="${b}" r="3.2"/>`,
   );
   return `<g transform="translate(${x} ${y}) scale(${escala})">${lineas.join("")}${puntos.join("")}</g>`;
 }
 
-// Cielo completo: estrellas sueltas, flores pequeñas a la deriva y una o varias JMD.
-export function cielo(opts: { ancho?: number; alto?: number; semilla?: number; estrellas?: number; flores?: number; petalos?: number; trono?: { x: number; y: number; r: number }; letras?: { x: number; y: number; escala: number; dibujar?: boolean }[] } = {}): string {
-  const { ancho = 1600, alto = 1000, semilla = 40, estrellas = 140, flores = 9, petalos = 26, trono, letras = [] } = opts;
+// Cielo completo: estrellas sueltas y una o varias JMD. Flores, pétalos y trono de loto son
+// opcionales (los usa la PPT); el LMS va sobrio, solo con estrellas.
+export function cielo(opts: { ancho?: number; alto?: number; semilla?: number; estrellas?: number; flores?: number; petalos?: number; trono?: { x: number; y: number; r: number }; letras?: { x: number; y: number; escala: number; dibujar?: boolean; flores?: boolean }[] } = {}): string {
+  const { ancho = 1600, alto = 1000, semilla = 40, estrellas = 140, flores = 0, petalos = 0, trono, letras = [] } = opts;
   const r = rng(semilla);
   const out: string[] = [];
   for (let i = 0; i < estrellas; i++) {
@@ -125,6 +134,7 @@ export const ESTILO_SVG = `
 .flor .nucleo{fill:${PALETA.oro}}
 .flor .semilla{fill:#8a5a00}
 .flor.deriva{opacity:.35}
+.astro{fill:#fff;filter:drop-shadow(0 0 6px rgba(226,184,74,.85))}
 .trono path{stroke:${PALETA.lila};stroke-width:1;stroke-opacity:.5}
 .trono .t0{fill:#4b2a8f;fill-opacity:.35}.trono .t1{fill:#6a49c4;fill-opacity:.32}.trono .t2{fill:${PALETA.azulFlor};fill-opacity:.22}
 .trono .base{fill:${PALETA.oro};fill-opacity:.12}

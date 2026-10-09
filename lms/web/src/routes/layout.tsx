@@ -5,7 +5,7 @@ import { SessionContext, isStaff, type Session } from "~/lib/session";
 import { cielo } from "~/lib/constelacion";
 
 // El cielo se calcula una vez (determinista) y va como SVG en línea: sin peticiones ni JS.
-const CIELO = cielo({ semilla: 40, trono: { x: 800, y: 1010, r: 330 }, letras: [{ x: 1020, y: 640, escala: 0.9 }, { x: 90, y: 120, escala: 0.45 }] });
+const CIELO = cielo({ semilla: 40, estrellas: 110, letras: [{ x: 1060, y: 680, escala: 0.75 }] });
 
 export default component$(() => {
   const session = useStore<Session>({ me: null, loaded: false });
