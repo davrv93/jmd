@@ -26,7 +26,11 @@ services:
     restart: unless-stopped
 
   lms:
-    build: ./lms
+    build:
+      context: ./lms
+      args:
+        # 1 = instala el cliente docker en la imagen para el runner (ver aviso de seguridad).
+        WITH_RUNNER: ${WITH_RUNNER:-0}
     image: localhost/lms:latest
     container_name: lms
     ports:
@@ -42,10 +46,16 @@ services:
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-lms-web}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-lms-api}
+      # Runner de código: vacío = desactivado. Si se activa, ver el aviso del socket más abajo.
+      LMS_RUNNER: ${LMS_RUNNER:-}
+      LMS_RUNNER_TIMEOUT: ${LMS_RUNNER_TIMEOUT:-15s}
     volumes:
       - lms_data:/data
       # El temario se lee de aquí: edita lms/content, haz commit, y se recarga solo.
       - ./lms/content:/app/content:ro
+      # AVISO DE SEGURIDAD: montar el socket de Docker da control del host a quien lo tenga.
+      # Descoméntalo SOLO si vas a usar el runner, y mejor en una máquina/VM dedicada al runner.
+      # - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
 
 volumes:

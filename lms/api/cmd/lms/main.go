@@ -9,6 +9,8 @@
 //	LMS_ADMIN_EMAIL / LMS_ADMIN_PASSWORD / LMS_ADMIN_NAME   cuenta del instructor (se crea si no existe)
 //	LMS_INVITE_CODE     código para que los alumnos se registren (vacío = sin registro)
 //	LMS_COHORT          cohorte de quien se registra (p. ej. cohorte-2026-2)
+//	LMS_RUNNER          docker | podman para ejecutar código; vacío = deshabilitado
+//	LMS_RUNNER_TIMEOUT  tope por ejecución (p. ej. 15s, 1m); por defecto 15s
 //	OIDC_ISSUER / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET / OIDC_AUDIENCE   Keycloak (opcional)
 package main
 
@@ -27,6 +29,7 @@ import (
 	"github.com/davrv93/jmd/lms/api/internal/auth"
 	"github.com/davrv93/jmd/lms/api/internal/content"
 	"github.com/davrv93/jmd/lms/api/internal/httpapi"
+	"github.com/davrv93/jmd/lms/api/internal/runner"
 	"github.com/davrv93/jmd/lms/api/internal/store"
 	"github.com/davrv93/jmd/lms/api/internal/webdist"
 )
@@ -85,6 +88,15 @@ func run() error {
 		DefaultCohort: os.Getenv("LMS_COHORT"),
 		PublicURL:     strings.TrimRight(env("LMS_PUBLIC_URL", "http://localhost:8080"), "/"),
 		Web:           webdist.FS(),
+		Runner: &runner.Runner{
+			Runtime: os.Getenv("LMS_RUNNER"), // "docker" o "podman"; vacío = deshabilitado
+			Timeout: runner.ParseTimeout(os.Getenv("LMS_RUNNER_TIMEOUT")),
+		},
+	}
+	if srv.Runner.Available() {
+		slog.Info("runner de código activo", "runtime", srv.Runner.Runtime, "timeout", srv.Runner.Timeout)
+	} else {
+		slog.Info("runner de código desactivado (define LMS_RUNNER=docker para activarlo)")
 	}
 	if iss := os.Getenv("OIDC_ISSUER"); iss != "" {
 		o, err := auth.NewOIDC(ctx, auth.OIDCConfig{

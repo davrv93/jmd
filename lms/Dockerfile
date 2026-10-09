@@ -19,6 +19,10 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /lms ./cmd/lms
 
 FROM docker.io/library/alpine:3.22
 RUN adduser -D -H -u 10001 lms && mkdir -p /data /app/content && chown lms /data
+# Runner de código (opt-in): instala el cliente docker para poder lanzar contenedores.
+# Con WITH_RUNNER=0 (por defecto) el LMS no ejecuta código y no incluye el cliente.
+ARG WITH_RUNNER=0
+RUN [ "$WITH_RUNNER" = "1" ] && apk add --no-cache docker-cli || true
 COPY --from=api /lms /usr/local/bin/lms
 COPY content /app/content
 ENV LMS_ADDR=:8080 LMS_DATA_DIR=/data LMS_CONTENT_DIR=/app/content

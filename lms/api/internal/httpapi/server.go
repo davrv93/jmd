@@ -16,6 +16,7 @@ import (
 
 	"github.com/davrv93/jmd/lms/api/internal/auth"
 	"github.com/davrv93/jmd/lms/api/internal/content"
+	"github.com/davrv93/jmd/lms/api/internal/runner"
 	"github.com/davrv93/jmd/lms/api/internal/store"
 )
 
@@ -28,9 +29,11 @@ type Server struct {
 	DefaultCohort string     // cohorte de quien se registra con el código
 	PublicURL     string     // https://lms.<dominio> (para las URLs de las preguntas)
 	SessionTTL    time.Duration
-	Web           fs.FS // build del front; nil = solo API
+	Web           fs.FS      // build del front; nil = solo API
+	Runner        *runner.Runner // ejecuta código de los alumnos; nil/deshabilitado = sin /run
 
-	login *limiter
+	login    *limiter
+	runLimit *limiter
 }
 
 // Principal es quien hace la petición, venga por cookie, token local o JWT del realm.
@@ -67,6 +70,9 @@ func (s *Server) Handler() http.Handler {
 	}
 	if s.login == nil {
 		s.login = newLimiter(10, time.Minute)
+	}
+	if s.runLimit == nil {
+		s.runLimit = newLimiter(20, time.Minute)
 	}
 	mux := http.NewServeMux()
 
@@ -106,6 +112,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/courses/{id}/progress", s.authed(s.staff(s.courseProgress)))
 	mux.Handle("GET /api/v1/courses/{id}/examples", s.authed(s.courseExamples))
 	mux.Handle("GET /api/v1/examples/{id}", s.authed(s.example))
+	mux.Handle("POST /api/v1/run", s.authed(s.run))
 	mux.Handle("GET /api/v1/admin/users", s.authed(s.admin(s.users)))
 	mux.Handle("PUT /api/v1/admin/users/{id}", s.authed(s.admin(s.updateUser)))
 	mux.Handle("POST /api/v1/admin/reload", s.authed(s.admin(s.reload)))

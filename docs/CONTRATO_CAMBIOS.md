@@ -20,6 +20,7 @@ LMS expone **además** del contrato, y cualquier desviación, para que `jmd` lo 
 | `GET /api/v1/courses/{id}/progress` | Avance de cada alumno (instructor) |
 | `GET /files/{course}/{ruta}` | Archivos de materiales (p. ej. el PDF de la clase), con sesión |
 | `GET /api/v1/admin/users` · `PUT /api/v1/admin/users/{id}` · `POST /api/v1/admin/reload` | Administración |
+| `POST /api/v1/run` `{language, code}` | Ejecuta código del alumno en el runner aislado (ver más abajo) |
 
 ## Campos extra en respuestas del contrato
 
@@ -46,11 +47,29 @@ en borrador, solo los ve el instructor. Mismo control de acceso que `GET /course
 
 `GET /courses` (cada curso) y `GET /courses/{id}` llevan además `examples_total`: cuántos ve quien pregunta.
 
+## Runner de código (2026-10-09)
+
+Los ejemplos del LMS traen un laboratorio: el alumno edita el código y, según el lenguaje, lo
+ejecuta o lo previsualiza. La previsualización web (HTML/CSS) es 100 % en el navegador; la
+ejecución de Python, Node, Bash y Go pasa por este endpoint.
+
+| Método y ruta | Para qué |
+|---|---|
+| `POST /api/v1/run` `{language, code}` | Ejecuta `code` y responde `{stdout, stderr, exit_code, duration_ms, timed_out}`. Requiere sesión; límite de 20 ejecuciones por minuto y por usuario. Código ≤ 64 KB |
+
+- Aislamiento (ver `api/internal/runner`): contenedor efímero con `--network=none`, raíz de solo
+  lectura, `/tmp` escribible y pequeño, sin capabilities, usuario sin privilegios, CPU/memoria/
+  procesos limitados y tiempo máximo (`LMS_RUNNER_TIMEOUT`, por defecto 15 s).
+- Se activa con `LMS_RUNNER=docker|podman`; vacío = desactivado y el endpoint responde
+  `503 {error:{code:"unavailable"}}`. Al activarlo, el contenedor del LMS necesita acceso al socket
+  del motor (aviso de seguridad en `compose.yaml`): mejor un host/VM dedicado al runner.
+- No está ligado a la calificación de tareas (`autograde` sigue pendiente): es una herramienta de
+  aprendizaje, no la corrección automática.
+
 ## Desviaciones (ver DECISIONES.md)
 
 - **Sin runner todavía:** las entregas quedan en `queued` hasta que el instructor califica (pasa a
-  `graded`). `checks` llega vacío.
-- **Modo local de identidad:** mientras no esté Keycloak, los tokens son opacos (`lms_…`). Con
+  `graded`). `checks` llega vacío.- **Modo local de identidad:** mientras no esté Keycloak, los tokens son opacos (`lms_…`). Con
   `OIDC_ISSUER` definido, los JWT del realm con `aud: lms-api` se aceptan tal como dice el contrato.
 
 ## Lo que `jmd` y el gateway añaden (2026-10-09)
