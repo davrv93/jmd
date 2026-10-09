@@ -615,6 +615,7 @@ siempre), y el cuerpo dice **cómo**, en pasos cortos y verificables. Los ejempl
 
 > Guías completas en los ejemplos de la sesión: **«Tu primera skill en OpenCode»**,
 > **«Skills: cómo funcionan y cómo aprovecharlas»** y **«OpenCode: guía de uso para el curso»**.
+> Y para practicar sin instalar nada, **«Probar código aquí mismo»** (el sandbox del LMS).
 
 ---
 

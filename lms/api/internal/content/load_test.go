@@ -56,8 +56,8 @@ func TestRealContent(t *testing.T) {
 			t.Errorf("material %s sin URL https: %q", m.ID, m.URL)
 		}
 	}
-	// Ejemplos: los seis, en el orden de «order», ligados a la clase 1 y con HTML.
-	want := []string{"ej-skill-saludo", "ej-skill-commit", "ej-mcp-config", "ej-parametros", "ej-skills-guia", "ej-opencode-guia"}
+	// Ejemplos: los siete, en el orden de «order», ligados a la clase 1 y con HTML.
+	want := []string{"ej-skill-saludo", "ej-skill-commit", "ej-mcp-config", "ej-parametros", "ej-skills-guia", "ej-opencode-guia", "ej-runner"}
 	exs := cat.Examples(c.ID)
 	if len(exs) != len(want) {
 		t.Fatalf("ejemplos: %d, quería %d", len(exs), len(want))

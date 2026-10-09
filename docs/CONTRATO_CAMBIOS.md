@@ -49,9 +49,12 @@ en borrador, solo los ve el instructor. Mismo control de acceso que `GET /course
 
 ## Runner de código (2026-10-09)
 
-Los ejemplos del LMS traen un laboratorio: el alumno edita el código y, según el lenguaje, lo
-ejecuta o lo previsualiza. La previsualización web (HTML/CSS) es 100 % en el navegador; la
-ejecución de Python, Node, Bash y Go pasa por este endpoint.
+Los ejemplos del LMS traen un laboratorio, pero es **opt-in por bloque**: solo los bloques que
+quien escribe marca con prefijo llevan botón. ```` ```run-python ```` (o `run-node`, `run-bash`,
+`run-go`) → editar y ejecutar en el servidor; ```` ```live-html ```` (o `live-css`) → editar y ver
+en un iframe (100 % en el navegador). Cualquier otro bloque es solo lectura + copiar, para que las
+instrucciones del texto (```` ```bash ````) no ofrezcan un botón que falla. La ejecución de Python,
+Node, Bash y Go pasa por este endpoint.
 
 | Método y ruta | Para qué |
 |---|---|
