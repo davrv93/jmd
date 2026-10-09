@@ -97,6 +97,7 @@ pub fn discover(cwd: &Path) -> Vec<Skill> {
     let home = crate::client::home();
     let mut out = vec![];
     from_dir(&cwd.join(".claude").join("skills"), "proyecto", &mut out);
+    from_dir(&cwd.join("skills"), "proyecto (skills/)", &mut out);
     from_dir(&crate::client::config_path().with_file_name("skills"), "jmd", &mut out);
     from_dir(&home.join(".claude").join("skills"), "Claude Code", &mut out);
     if let Some(s) = parse(PROTOTIPO, "incluida", "prototipo") {

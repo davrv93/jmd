@@ -149,7 +149,8 @@ modelo, que puede usar herramientas:
   jmd mcp tools fs
   ```
 - **Skills** (formato `SKILL.md` de Claude Code). Se leen las de `.claude/skills/` del proyecto,
-  las de `~/.claude/skills/`, las de `~/.config/jmd/skills/` y las incluidas. El modelo ve la
+  las de `skills/` del proyecto, las de `~/.claude/skills/`, las de `~/.config/jmd/skills/` y las
+  incluidas. El modelo ve la
   lista y carga la que necesita (`load_skill`). `jmd skills` las lista.
 - **Prototipos de UI.** Viene incluida la skill `prototipo`: un mockup en un solo archivo HTML,
   adaptable a móvil, con modo claro y oscuro, estados vacíos y de error y contenido realista en
