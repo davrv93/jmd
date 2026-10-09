@@ -56,8 +56,8 @@ func TestRealContent(t *testing.T) {
 			t.Errorf("material %s sin URL https: %q", m.ID, m.URL)
 		}
 	}
-	// Ejemplos: los cuatro, en el orden de «order», ligados a la clase 1 y con HTML.
-	want := []string{"ej-skill-saludo", "ej-skill-commit", "ej-mcp-config", "ej-parametros"}
+	// Ejemplos: los seis, en el orden de «order», ligados a la clase 1 y con HTML.
+	want := []string{"ej-skill-saludo", "ej-skill-commit", "ej-mcp-config", "ej-parametros", "ej-skills-guia", "ej-opencode-guia"}
 	exs := cat.Examples(c.ID)
 	if len(exs) != len(want) {
 		t.Fatalf("ejemplos: %d, quería %d", len(exs), len(want))
@@ -76,7 +76,7 @@ func TestRealContent(t *testing.T) {
 			t.Errorf("%s: el HTML no tiene bloques de código o títulos", e.ID)
 		}
 	}
-	if exs[0].LessonID != "pa-01" || exs[0].Title != "Tu primera skill: saludo" {
+	if exs[0].LessonID != "pa-01" || exs[0].Title != "Tu primera skill en OpenCode" {
 		t.Errorf("ej-skill-saludo: %+v", exs[0])
 	}
 }

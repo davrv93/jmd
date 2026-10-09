@@ -1,58 +1,31 @@
 ---
 id: ej-mcp-config
-title: Registrar un servidor MCP en Claude Code y OpenCode
-summary: El mismo servidor MCP, local (stdio) y remoto (HTTP), en los dos agentes.
-tags: [mcp]
+title: Registrar un servidor MCP en OpenCode
+summary: Un servidor MCP local (stdio) y uno remoto (HTTP) en opencode.json, y cómo comprobarlos.
+tags: [mcp, opencode]
 level: intermedio
 lesson: pa-01
 order: 3
 ---
-Un servidor MCP se escribe una vez y lo usa cualquier cliente. Aquí registras dos: el del LMS que
-trae `jmd` (**stdio**: el agente arranca el proceso) y uno remoto por **HTTP**.
+Un servidor MCP se escribe una vez y lo usa cualquier cliente. Aquí registras dos en OpenCode:
+uno local (**stdio**: el agente arranca el proceso) y uno remoto por **HTTP**.
 
-## Claude Code
+## El archivo de configuración
 
-```bash
-# stdio: el agente lanza «jmd mcp serve» con tu sesión de jmd
-claude mcp add lms -- jmd mcp serve
-
-# stdio con variables de entorno (la clave no va en el comando, va en -e)
-claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_TOKEN" \
-  -- npx -y @modelcontextprotocol/server-github
-
-# HTTP: un servidor remoto
-claude mcp add --transport http lms-remoto https://lms.tu-dominio/mcp
-
-claude mcp list            # registrados y si responden
-claude mcp remove github   # quitar uno
-```
-
-Por defecto el registro es **local** (solo tú, solo este proyecto). Con `--scope project` se
-guarda en `.mcp.json` en la raíz del repo y lo comparte el equipo; con `--scope user`, vale para
-todos tus proyectos.
-
-Dentro de la sesión, `/mcp` muestra cada servidor y sus *tools*.
-
-## OpenCode
-
-En `opencode.json` (en el proyecto) o `~/.config/opencode/opencode.json` (global):
+OpenCode lee `opencode.json` del proyecto, o `~/.config/opencode/opencode.json` para todos tus
+proyectos. La sección `mcp` va al lado de `provider`:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "lms": {
-      "type": "local",
-      "command": ["jmd", "mcp", "serve"],
-      "enabled": true
-    },
     "github": {
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
       "environment": { "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_TOKEN}" },
       "enabled": true
     },
-    "lms-remoto": {
+    "lms": {
       "type": "remote",
       "url": "https://lms.tu-dominio/mcp",
       "enabled": true
@@ -61,22 +34,32 @@ En `opencode.json` (en el proyecto) o `~/.config/opencode/opencode.json` (global
 }
 ```
 
-`local` es stdio y `remote` es HTTP: los mismos dos transportes con otros nombres.
+- `"type": "local"` = stdio: OpenCode lanza el comando y habla con él por su entrada/salida.
+- `"type": "remote"` = streamable HTTP: el servidor vive en una URL (aquí, el MCP del LMS).
+- Los secretos van por variables de entorno (`"environment"` o `{env:VAR}`), no escritos a mano.
 
-## Atajo
+## Comprobar
 
-`jmd setup claude` y `jmd setup opencode` registran el servidor `lms` por ti. Hazlo a mano una
-vez para saber qué escriben y dónde.
+Abre OpenCode y pide: «lista los repositorios con la herramienta de GitHub». Debe llamar a la
+herramienta del servidor MCP (te pedirá permiso la primera vez) y responder con lo que ves en la
+web. Si algo falla, revisa que el comando exista en el PATH y que la variable de entorno esté
+definida en la misma terminal desde la que lanzas OpenCode.
 
-## Comprobación
+## Y con Claude Code
 
-Abre el agente y pide: «lista mis cursos con la herramienta del LMS». Debe llamar a
-`lms_courses` (te pedirá permiso la primera vez) y responder con lo que ves en la web.
+El mismo servidor, con su CLI:
+
+```bash
+claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_TOKEN" \
+  -- npx -y @modelcontextprotocol/server-github
+claude mcp add --transport http lms-remoto https://lms.tu-dominio/mcp
+claude mcp list        # registrados y si responden
+```
 
 ## Errores típicos
 
 | Síntoma | Causa |
 |---|---|
-| El servidor sale «failed» en `claude mcp list` | El comando no está en el PATH de donde corre el agente (WSL ≠ Windows) |
+| El servidor no aparece o sale «failed» | El comando no está en el PATH de donde corre el agente (WSL ≠ Windows) |
 | Se conecta pero sin *tools* | Falta la variable de entorno (la clave) o es inválida |
-| Te funciona y al compañero no | Lo registraste en alcance local: usa `--scope project` |
+| Te funciona y al compañero no | Lo tienes en tu config personal: muévelo a `opencode.json` del repo para compartirlo |

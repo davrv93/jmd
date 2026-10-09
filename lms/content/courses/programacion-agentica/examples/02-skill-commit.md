@@ -12,7 +12,7 @@ hizo bien. Así no dependes de que el modelo «se acuerde»: si se equivoca, git
 
 ## 1. La skill
 
-`.claude/skills/commit/SKILL.md`:
+`.opencode/skills/commit/SKILL.md`:
 
 ```markdown
 ---
@@ -51,7 +51,7 @@ git commit --allow-empty -m "docs: añade la guía"     # aceptado
 
 ```bash
 echo "# Clase 1" > NOTAS.md && git add NOTAS.md
-claude      # y pide: «haz commit»
+opencode      # y pide: «haz commit»
 ```
 
 El agente debe leer el diff, proponerte algo como el bloque de abajo y esperar tu visto bueno:
@@ -65,5 +65,5 @@ Para tener a mano los comandos de instalación sin abrir el LMS.
 ## Para pensar
 
 - La skill es **contexto** (puede fallar); el hook es **control** (no falla). En un equipo, el
-  hook va en el repositorio (p. ej. con `core.hooksPath`) y la skill en `.claude/skills/`.
+  hook va en el repositorio (p. ej. con `core.hooksPath`) y la skill en `.opencode/skills/`.
 - Si añades un tipo (`perf`, `ci`), cámbialo en los dos sitios.

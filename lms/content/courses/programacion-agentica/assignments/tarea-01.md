@@ -7,11 +7,11 @@ max_score: 20
 autograde: false
 objective_ids: [pa-01-o1, pa-01-o3]
 rubric:
-  - criterion: Entorno instalado con evidencia (VS Code, Docker, jmd, agente)
+  - criterion: Entorno instalado con evidencia (VS Code, Docker, OpenCode)
     levels:
       - {title: Sin evidencia, points: 0}
       - {title: Parcial (falta alguna pieza o comprobación), points: 4}
-      - {title: Completo (las cuatro comprobaciones en verde), points: 8}
+      - {title: Completo (las comprobaciones en verde), points: 8}
   - criterion: Skill `saludo` correcta (front matter válido, descripción que dice cuándo usarla, instrucciones claras)
     levels:
       - {title: No entregada, points: 0}
@@ -30,16 +30,16 @@ Un repositorio git (GitHub, GitLab o Forgejo, público o con acceso para el inst
 `clase-01`, con:
 
 1. **`EVIDENCIA.md`** con la salida literal de estos comandos (bloques de código) y una captura
-   de pantalla del agente corriendo en la terminal de VS Code:
+   de pantalla de OpenCode respondiendo en la terminal de VS Code:
 
    ```bash
    code --version
    docker run --rm hello-world
-   jmd status
+   opencode --version
    ```
 
-2. **`.claude/skills/saludo/SKILL.md`**: tu primera skill. Debe tener `name` y `description`
-   en el front matter y, debajo, instrucciones en pasos. Pídele al agente «salúdame» y pega su
+2. **`.opencode/skills/saludo/SKILL.md`**: tu primera skill. Debe tener `name` y `description`
+   en el front matter y, debajo, instrucciones en pasos. Pídele a OpenCode «salúdame» y pega su
    respuesta en `EVIDENCIA.md`.
 
 3. **`REFLEXION.md`** (10–15 líneas): qué le pediste al agente en el paso «practicar», qué
@@ -48,6 +48,5 @@ Un repositorio git (GitHub, GitLab o Forgejo, público o con acceso para el inst
 ## Cómo entregar
 
 - Desde el LMS: en esta tarea, pega la URL del repositorio y el SHA del commit.
-- Desde la terminal, dentro del repo: `jmd submit tarea-01` (envía el `origin` y el `HEAD`).
 
 Se califica el commit exacto que entregues; si subes cambios después, vuelve a entregar.

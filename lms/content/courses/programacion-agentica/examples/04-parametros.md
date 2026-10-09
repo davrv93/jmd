@@ -5,28 +5,27 @@ summary: Dos llamadas al mismo modelo, con temperature 0.1 y 1.0, y un max_token
 tags: [modelos, parámetros]
 level: básico
 lesson: pa-01
-repo: {url: https://github.com/davrv93/jmd, ref: main}
 order: 4
 ---
 Los parámetros de generación van **en cada petición**. Lo más rápido para verlos es llamar al
-gateway a mano: habla el formato de OpenAI (`POST /v1/chat/completions`) y con `model: "auto"`
+gateway a mano: habla el formato de OpenAI (`POST /v1/chat/completions`) y con el modelo `auto`
 elige el modelo por ti.
 
 ## Preparación
 
 ```bash
-export JMD_KEY="pon-aquí-tu-clave"   # la que te dio el instructor (la misma de jmd login)
-export JMD_URL="http://127.0.0.1:4000/v1/chat/completions"
+export GATEWAY_API_KEY="pon-aquí-tu-clave"   # la que te dio el instructor
+export GATEWAY_URL="https://gateway.tu-dominio/v1/chat/completions"
 ```
 
-Si usas el gateway de la clase y no uno local, cambia `JMD_URL` por la URL que te dieron.
+Si usas un gateway local, cambia `GATEWAY_URL` por `http://127.0.0.1:4000/v1/chat/completions`.
 `jq` es opcional: solo sirve para leer la respuesta.
 
 ## Llamada 1 · temperature 0.1
 
 ```bash
-curl -s "$JMD_URL" \
-  -H "Authorization: Bearer $JMD_KEY" \
+curl -s "$GATEWAY_URL" \
+  -H "Authorization: Bearer $GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "auto",
@@ -42,8 +41,8 @@ curl -s "$JMD_URL" \
 ## Llamada 2 · temperature 1.0
 
 ```bash
-curl -s "$JMD_URL" \
-  -H "Authorization: Bearer $JMD_KEY" \
+curl -s "$GATEWAY_URL" \
+  -H "Authorization: Bearer $GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "auto",
@@ -62,8 +61,8 @@ cambian en cada intento. Para código quieres lo primero; para ideas, lo segundo
 ## max_tokens corta, no resume
 
 ```bash
-curl -s "$JMD_URL" \
-  -H "Authorization: Bearer $JMD_KEY" \
+curl -s "$GATEWAY_URL" \
+  -H "Authorization: Bearer $GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "auto", "max_tokens": 5,
        "messages": [{"role": "user", "content": "Explica qué es Docker."}]}' \
@@ -78,6 +77,6 @@ de salida, que es lo que gasta tu cuota).
 
 | Respuesta | Causa |
 |---|---|
-| `401` | Falta `JMD_KEY` o no es válida (`echo $JMD_KEY`) |
-| `Connection refused` | No hay gateway en esa URL: `jmd status` te dice cuál usas |
+| `401` | Falta `GATEWAY_API_KEY` o no es válida (`echo $GATEWAY_API_KEY`) |
+| `Connection refused` | No hay gateway en esa URL: revisa `GATEWAY_URL` o levanta el gateway de nuevo |
 | `429` | Cuota agotada en todos los modelos de la cadena: espera o baja `max_tokens` |

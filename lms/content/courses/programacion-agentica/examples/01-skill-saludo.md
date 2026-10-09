@@ -1,8 +1,8 @@
 ---
 id: ej-skill-saludo
-title: "Tu primera skill: saludo"
-summary: Una skill mínima de Claude Code, de la carpeta vacía a verla funcionar.
-tags: [skills, claude-code]
+title: "Tu primera skill en OpenCode"
+summary: Una skill mínima, de la carpeta vacía a verla funcionar en OpenCode.
+tags: [skills, opencode]
 level: básico
 lesson: pa-01
 order: 1
@@ -15,12 +15,16 @@ el cuerpo, solo cuando tu pedido encaja con la descripción. Esta es la skill de
 Dentro de tu repositorio `clase-01` (alcance de proyecto, se versiona con el repo):
 
 ```bash
-mkdir -p .claude/skills/saludo
+mkdir -p .opencode/skills/saludo
 ```
+
+OpenCode busca las skills del proyecto en `.opencode/skills/`. Si prefieres que valgan para
+todos tus proyectos, usa `~/.config/opencode/skills/`; también lee `.claude/skills/` y
+`.agents/skills/`, así que una skill de Claude Code te sirve igual.
 
 ## 2. Escribe el `SKILL.md`
 
-`.claude/skills/saludo/SKILL.md`:
+`.opencode/skills/saludo/SKILL.md`:
 
 ```markdown
 ---
@@ -33,7 +37,8 @@ Pregunta el nombre si no lo sabes. Responde en español, en dos líneas:
 ```
 
 Fíjate en el reparto: la **descripción dice cuándo** usarla (incluye las frases que la
-disparan) y el cuerpo dice **cómo**, en pasos cortos.
+disparan) y el cuerpo dice **cómo**, en pasos cortos. El `name` debe ir en minúsculas, con
+guiones simples, y coincidir con el nombre de la carpeta.
 
 ## 3. Dale algo que leer
 
@@ -47,8 +52,8 @@ EOF
 ## 4. Pruébala
 
 ```bash
-claude -p "salúdame, soy Ana"       # una sola respuesta, sin abrir la sesión
-claude                              # o en la sesión: «qué toca hoy» o /saludo
+opencode run "salúdame, soy Ana"   # una sola respuesta, sin abrir la sesión
+opencode                           # o en la sesión: «qué toca hoy»
 ```
 
 Lo esperado, en dos líneas:
