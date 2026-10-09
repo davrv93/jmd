@@ -31,7 +31,10 @@ type Catalog struct {
 	assignments map[string]*Assignment
 	// assignmentsByCourse conserva el orden de los archivos.
 	assignmentsByCourse map[string][]*Assignment
-	fingerprint         string
+	examples            map[string]*Example
+	// examplesByCourse va ordenado por order y luego por título.
+	examplesByCourse map[string][]*Example
+	fingerprint      string
 }
 
 var md = goldmark.New(
@@ -41,13 +44,15 @@ var md = goldmark.New(
 	goldmark.WithRendererOptions(html.WithUnsafe()),
 )
 
-// Load lee dir/courses/<slug>/{course.yaml,lessons/*.md,assignments/*.md}.
+// Load lee dir/courses/<slug>/{course.yaml,lessons/*.md,assignments/*.md,examples/*.md}.
 func Load(dir string) (*Catalog, error) {
 	c := &Catalog{
 		courseByID:          map[string]*Course{},
 		lessons:             map[string]*Lesson{},
 		assignments:         map[string]*Assignment{},
 		assignmentsByCourse: map[string][]*Assignment{},
+		examples:            map[string]*Example{},
+		examplesByCourse:    map[string][]*Example{},
 	}
 	coursesDir := filepath.Join(dir, "courses")
 	entries, err := os.ReadDir(coursesDir)
@@ -165,6 +170,40 @@ func loadCourse(dir string, c *Catalog) (*Course, error) {
 		c.assignments[a.ID] = a
 		c.assignmentsByCourse[course.ID] = append(c.assignmentsByCourse[course.ID], a)
 	}
+	files, _ = filepath.Glob(filepath.Join(dir, "examples", "*.md"))
+	sort.Strings(files)
+	var examples []*Example
+	for _, f := range files {
+		e, err := loadExample(f)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", filepath.Base(f), err)
+		}
+		if _, dup := c.examples[e.ID]; dup {
+			return nil, fmt.Errorf("%s: id de ejemplo repetido: %s", filepath.Base(f), e.ID)
+		}
+		if e.LessonID != "" {
+			if l, ok := c.lessons[e.LessonID]; !ok || l.CourseID != course.ID {
+				return nil, fmt.Errorf("%s: la sesión %q no existe en este curso", filepath.Base(f), e.LessonID)
+			}
+		}
+		e.CourseID = course.ID
+		c.examples[e.ID] = e
+		examples = append(examples, e)
+	}
+	// Primero los que llevan order (de menor a mayor); luego el resto, por título.
+	sort.SliceStable(examples, func(i, j int) bool {
+		a, b := examples[i], examples[j]
+		if (a.Order > 0) != (b.Order > 0) {
+			return a.Order > 0
+		}
+		if a.Order != b.Order {
+			return a.Order < b.Order
+		}
+		return a.Title < b.Title
+	})
+	if examples != nil {
+		c.examplesByCourse[course.ID] = examples
+	}
 	if course.Cohorts == nil {
 		course.Cohorts = []string{}
 	}
@@ -277,6 +316,39 @@ func loadAssignment(path string) (*Assignment, error) {
 	return &a, nil
 }
 
+func loadExample(path string) (*Example, error) {
+	fm, body, err := readFrontMatter(path)
+	if err != nil {
+		return nil, err
+	}
+	// yaml.v3 solo pisa las claves presentes: sin «published», queda publicado.
+	e := Example{Published: true}
+	if err := yaml.Unmarshal(fm, &e); err != nil {
+		return nil, fmt.Errorf("front matter: %w", err)
+	}
+	if e.ID == "" || e.Title == "" {
+		return nil, errors.New("front matter: faltan id o title")
+	}
+	if e.Level == "" {
+		e.Level = "básico"
+	}
+	if !exampleLevels[e.Level] {
+		return nil, fmt.Errorf("front matter: level %q no válido (básico · intermedio · avanzado)", e.Level)
+	}
+	if e.Repo != nil && e.Repo.URL == "" {
+		e.Repo = nil
+	}
+	if e.Tags == nil {
+		e.Tags = []string{}
+	}
+	e.BodyMD = string(body)
+	e.BodyHTML, err = render(body)
+	if err != nil {
+		return nil, err
+	}
+	return &e, nil
+}
+
 // readFrontMatter separa el bloque YAML inicial (entre líneas "---") del cuerpo.
 func readFrontMatter(path string) (fm, body []byte, err error) {
 	raw, err := os.ReadFile(path)
@@ -358,6 +430,18 @@ func (c *Catalog) Assignments(courseID string) []*Assignment {
 	out := c.assignmentsByCourse[courseID]
 	if out == nil {
 		return []*Assignment{}
+	}
+	return out
+}
+
+// Example busca un ejemplo por id.
+func (c *Catalog) Example(id string) *Example { return c.examples[id] }
+
+// Examples devuelve los ejemplos de un curso: por order y luego por título.
+func (c *Catalog) Examples(courseID string) []*Example {
+	out := c.examplesByCourse[courseID]
+	if out == nil {
+		return []*Example{}
 	}
 	return out
 }

@@ -62,6 +62,7 @@ func (s *Server) courses(w http.ResponseWriter, r *http.Request, p *Principal) {
 		out = append(out, map[string]any{
 			"id": c.ID, "slug": c.Slug, "title": c.Title, "role": roleIn(p), "description": c.Description,
 			"cohorts": c.Cohorts, "lessons_total": total, "lessons_published": published,
+			"examples_total": len(s.visibleExamples(p, c.ID)),
 		})
 	}
 	writeJSON(w, 200, out)
@@ -101,7 +102,7 @@ func (s *Server) course(w http.ResponseWriter, r *http.Request, p *Principal) {
 	}
 	writeJSON(w, 200, map[string]any{
 		"id": c.ID, "slug": c.Slug, "title": c.Title, "description": c.Description, "role": roleIn(p),
-		"modules": modules, "assignments": assignments,
+		"modules": modules, "assignments": assignments, "examples_total": len(s.visibleExamples(p, c.ID)),
 	})
 }
 

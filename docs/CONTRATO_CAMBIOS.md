@@ -33,6 +33,19 @@ LMS expone **además** del contrato, y cualquier desviación, para que `jmd` lo 
 - `GET /materials/{id}/download`: hoy los materiales son enlaces o archivos del repo; `url` es el
   enlace (o `/files/...`) y `expires_at` es informativo. Cuando haya Garage será una URL prefirmada.
 
+## Ejemplos (2026-10-09)
+
+Ejemplos prácticos por curso, en `content/courses/<curso>/examples/*.md` (front matter + Markdown,
+se recargan solos como las sesiones). Los que llevan `published: false`, o cuelgan de una sesión
+en borrador, solo los ve el instructor. Mismo control de acceso que `GET /courses/{id}`.
+
+| Método y ruta | Para qué |
+|---|---|
+| `GET /api/v1/courses/{id}/examples` | Ejemplos visibles del curso, por `order` y título: `[{id, title, summary, tags, level, lesson_id, lesson_title, repo: {url, ref} \| null, published}]` |
+| `GET /api/v1/examples/{id}` | Lo mismo de un ejemplo, más `content_html`, `course: {id, slug, title}`, `prev` y `next` (ids del curso; `""` si no hay) |
+
+`GET /courses` (cada curso) y `GET /courses/{id}` llevan además `examples_total`: cuántos ve quien pregunta.
+
 ## Desviaciones (ver DECISIONES.md)
 
 - **Sin runner todavía:** las entregas quedan en `queued` hasta que el instructor califica (pasa a

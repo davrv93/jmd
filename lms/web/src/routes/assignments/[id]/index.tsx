@@ -1,180 +1,246 @@
 import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
-import { api, errMsg, fmtDate, requireLogin, STATUS, type Assignment, type Submission } from "~/lib/api";
-import { SessionContext, isStaff } from "~/lib/session";
-import { Copy } from "~/components/copy";
+import { api, errMsg, fmtDate, rel, requireLogin, STATUS, type Assignment, type Submission } from "~/lib/api";
+import { SessionContext, isStaff, toast } from "~/lib/session";
+import { getParam, pathId, setParams, setTitle } from "~/lib/url";
+import { Icon } from "~/components/icon";
+import { Copy, Crumbs, Empty, ErrorState, Loading, Status, Tabs } from "~/components/ui";
+import { Prose } from "~/components/prose";
 
 export default component$(() => {
   const loc = useLocation();
   const session = useContext(SessionContext);
-  const st = useStore<{ a: Assignment | null; all: Submission[]; error: string }>({ a: null, all: [], error: "" });
+  const st = useStore<{ a: Assignment | null; all: Submission[]; error: string; sending: boolean }>({ a: null, all: [], error: "", sending: false });
   const form = useStore({ repo_url: "", commit_sha: "", notes: "" });
-  const formError = useSignal("");
+  const tab = useSignal("enunciado");
   const grading = useStore<Record<string, { score: string; feedback: string }>>({});
 
-  const load = $(async (id: string) => {
-    st.a = await api.assignment(id);
-    if (isStaff(session.me)) st.all = await api.submissions(id);
-  });
-
-  // eslint-disable-next-line qwik/no-use-visible-task
-  useVisibleTask$(async ({ track }) => {
-    const id = track(() => loc.params.id);
-    track(() => session.loaded);
-    if (!session.loaded) return;
+  const load = $(async () => {
+    st.error = "";
+    const id = pathId("assignments");
     try {
-      await load(id);
+      st.a = await api.assignment(id);
+      setTitle(st.a.title);
+      const last = st.a.my_submissions[0];
+      if (last && !form.repo_url) form.repo_url = last.repo_url;
+      if (isStaff(session.me)) st.all = await api.submissions(id);
     } catch (e) {
       if (!requireLogin(e)) st.error = errMsg(e);
     }
   });
 
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(async ({ track }) => {
+    track(() => loc.url.pathname);
+    track(() => session.loaded);
+    session.help = "tarea";
+    if (!session.loaded) return;
+    tab.value = getParam("tab") || (location.hash === "#calificar" ? "calificar" : "enunciado");
+    await load();
+  });
+
+  const select = $((id: string) => {
+    tab.value = id;
+    setParams({ tab: id === "enunciado" ? "" : id });
+  });
+
   const submit = $(async () => {
     if (!st.a) return;
-    formError.value = "";
+    st.sending = true;
     try {
       await api.submit(st.a.id, { repo_url: form.repo_url.trim(), commit_sha: form.commit_sha.trim(), notes: form.notes });
       form.notes = "";
-      await load(st.a.id);
+      form.commit_sha = "";
+      await load();
+      toast(session, "Entrega enviada");
+      select("entregas");
     } catch (e) {
-      if (!requireLogin(e)) formError.value = errMsg(e);
+      if (!requireLogin(e)) toast(session, errMsg(e), "bad");
+    } finally {
+      st.sending = false;
     }
   });
 
-  const grade = $(async (sid: string) => {
-    const g = grading[sid];
-    if (!g || !st.a) return;
+  const grade = $(async (sid: string, fallback: { score: string; feedback: string }) => {
+    const g = grading[sid] ?? fallback;
+    if (!st.a || g.score === "") return;
     try {
       await api.grade(sid, parseFloat(g.score), g.feedback);
-      await load(st.a.id);
+      await load();
+      toast(session, "Nota guardada");
     } catch (e) {
-      if (!requireLogin(e)) alert(errMsg(e));
+      if (!requireLogin(e)) toast(session, errMsg(e), "bad");
     }
   });
 
+  if (st.error) return <ErrorState message={st.error} retry$={load} />;
   const a = st.a;
-  if (st.error) return <p class="error">{st.error}</p>;
-  if (!a) return <p class="muted">Cargando…</p>;
-  const status = STATUS[a.status] ?? { label: a.status, cls: "" };
+  if (!a) return <Loading lines={6} />;
+  const status = STATUS[a.status] ?? STATUS.pending;
   const staff = isStaff(session.me);
+  const delivered = a.my_submissions.length > 0;
+  const graded = a.my_submissions.some((s) => s.status === "graded");
+  const best = a.my_submissions.find((s) => s.score != null);
 
   return (
     <>
-      <p class="small">
-        <Link href={`/courses/${a.course_id}/`}>← Curso</Link>
-        {a.lesson_id && <> · <Link href={`/lessons/${a.lesson_id}/`}>{a.lesson_title || a.lesson_id}</Link></>}
-      </p>
-      <h1>{a.title}</h1>
-      <p class="row">
-        <span class={`badge ${status.cls}`}>{status.label}</span>
-        {a.due_at && <span class="small muted">Entrega hasta {fmtDate(a.due_at)}</span>}
-        <span class="small muted">· {a.max_score} puntos</span>
-        {a.autograde && <span class="badge accent">con pruebas automáticas</span>}
-      </p>
-
-      <section class="prose" dangerouslySetInnerHTML={a.description_html} />
-
-      {a.rubric.length > 0 && (
-        <section>
-          <h2>Rúbrica</h2>
-          <table class="plain rubric">
-            <tbody>
-              {a.rubric.map((c) => (
-                <tr key={c.criterion}>
-                  <td>{c.criterion}</td>
-                  <td>
-                    {c.levels.map((lv) => (
-                      <span key={lv.title} class="badge" style="margin:.1rem .2rem .1rem 0">
-                        {lv.title}: {lv.points}
-                      </span>
-                    ))}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
-
-      <section id="entregar">
-        <h2>Entregar</h2>
-        <p class="small muted">
-          Desde el repositorio, en la terminal: <Copy text={a.submit_command} /> (envía el <code>origin</code> y el <code>HEAD</code>). O aquí:
-        </p>
-        <form class="card" preventdefault:submit onSubmit$={submit}>
-          <label for="repo">URL del repositorio</label>
-          <input id="repo" required placeholder="https://github.com/usuario/clase-01" value={form.repo_url} onInput$={(_, el) => (form.repo_url = el.value)} />
-          <label for="sha">Commit (SHA) — <code>git rev-parse HEAD</code></label>
-          <input id="sha" required pattern="[0-9a-fA-F]{7,40}" value={form.commit_sha} onInput$={(_, el) => (form.commit_sha = el.value)} />
-          <label for="notes">Notas para el instructor (opcional)</label>
-          <textarea id="notes" value={form.notes} onInput$={(_, el) => (form.notes = el.value)} />
-          {formError.value && <p class="error small">{formError.value}</p>}
-          <p style="margin-bottom:0"><button type="submit">Entregar</button></p>
-        </form>
-        {a.my_submissions.length > 0 && (
-          <>
-            <h3>Mis entregas</h3>
-            <table class="plain">
-              <thead><tr><th>Fecha</th><th>Repositorio</th><th>Commit</th><th>Estado</th><th>Nota</th></tr></thead>
-              <tbody>
-                {a.my_submissions.map((s) => (
-                  <tr key={s.id}>
-                    <td class="small">{fmtDate(s.created_at)}</td>
-                    <td class="small"><a href={s.repo_url} target="_blank" rel="noopener">{s.repo_url.replace(/^https?:\/\//, "")}</a></td>
-                    <td><code>{s.commit_sha.slice(0, 7)}</code></td>
-                    <td><span class={`badge ${STATUS[s.status]?.cls ?? ""}`}>{STATUS[s.status]?.label ?? s.status}</span></td>
-                    <td>
-                      {s.score != null ? `${s.score} / ${s.max_score}` : "—"}
-                      {s.feedback_md && <div class="small muted" style="white-space:pre-wrap">{s.feedback_md}</div>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
+      <Crumbs items={[{ href: "/courses/", label: "Inicio" }, { href: `/courses/${a.course_id}/?tab=tareas`, label: "Tareas" }, { label: a.title }]} />
+      <div class="head">
+        <span class="lead-ico gold" style="width:46px;height:46px"><Icon name="task" size={22} /></span>
+        <div class="grow">
+          <h1>{a.title}</h1>
+          <div class="row sm muted" style="margin-top:.35rem;gap:.8rem">
+            <Status s={status} />
+            {a.due_at && <span title={fmtDate(a.due_at)}><Icon name="calendar" size={13} /> Entrega {rel(a.due_at)} · {fmtDate(a.due_at)}</span>}
+            <span><Icon name="award" size={13} /> {a.max_score} puntos</span>
+            {a.lesson_id && <Link href={`/lessons/${a.lesson_id}/`}><Icon name="book" size={13} /> {a.lesson_title || a.lesson_id}</Link>}
+            {a.autograde && <span class="badge accent"><Icon name="zap" size={11} /> pruebas automáticas</span>}
+          </div>
+        </div>
+        {best && (
+          <div class="fact" style="text-align:center;min-width:6rem">
+            <div class="k">Nota</div>
+            <div class="v" style="font-size:1.3rem">{best.score}<span class="sm muted">/{best.max_score}</span></div>
+          </div>
         )}
-      </section>
+      </div>
 
-      {staff && (
-        <section id="calificar">
-          <h2>Entregas de los alumnos</h2>
-          {st.all.length === 0 && <p class="muted small">Nadie ha entregado todavía.</p>}
-          {st.all.map((s) => {
-            const g = grading[s.id] ?? { score: s.score != null ? String(s.score) : "", feedback: s.feedback_md };
+      <div class="stepper" style="margin:-.3rem 0 1rem">
+        <span class="done"><Icon name="checkCircle" size={14} /> Publicada</span><i />
+        <span class={delivered ? "done" : "on"}><Icon name={delivered ? "checkCircle" : "circle"} size={14} /> Entregada</span><i />
+        <span class={graded ? "done" : delivered ? "on" : ""}><Icon name={graded ? "checkCircle" : "circle"} size={14} /> Calificada</span>
+      </div>
+
+      <Tabs
+        active={tab.value}
+        onSelect$={select}
+        tabs={[
+          { id: "enunciado", label: "Enunciado", icon: "file" },
+          ...(a.rubric.length ? [{ id: "rubrica", label: "Rúbrica", icon: "award" }] : []),
+          { id: "entregar", label: "Entregar", icon: "send" },
+          { id: "entregas", label: "Mis entregas", icon: "clock", count: a.my_submissions.length },
+          ...(staff ? [{ id: "calificar", label: "Calificar", icon: "users", count: st.all.filter((s) => s.status !== "graded").length }] : []),
+        ]}
+      />
+
+      {tab.value === "enunciado" && <Prose html={a.description_html} />}
+
+      {tab.value === "rubrica" && (
+        <div class="list">
+          {a.rubric.map((c) => {
+            const max = Math.max(...c.levels.map((l) => l.points));
             return (
-              <div class="card" key={s.id}>
-                <div class="row">
-                  <b style="flex:1">{s.user ?? s.user_id}</b>
-                  <span class={`badge ${STATUS[s.status]?.cls ?? ""}`}>{STATUS[s.status]?.label ?? s.status}</span>
-                  <span class="small muted">{fmtDate(s.created_at)}</span>
-                </div>
-                <div class="small">
-                  <a href={s.repo_url} target="_blank" rel="noopener">{s.repo_url}</a> @ <code>{s.commit_sha.slice(0, 7)}</code>
-                  {s.notes && <div class="muted" style="white-space:pre-wrap">{s.notes}</div>}
-                </div>
-                <div class="row" style="margin-top:.5rem;align-items:flex-end">
-                  <span style="width:7rem">
-                    <label>Nota / {s.max_score}</label>
-                    <input type="number" min="0" max={s.max_score} step="0.5" value={g.score} onInput$={(_, el) => (grading[s.id] = { ...g, score: el.value })} />
-                  </span>
-                  <span style="flex:1;min-width:14rem">
-                    <label>Comentarios (Markdown)</label>
-                    <input value={g.feedback} onInput$={(_, el) => (grading[s.id] = { ...g, feedback: el.value })} />
-                  </span>
-                  <button type="button" onClick$={() => grade(s.id)}>Calificar</button>
-                </div>
+              <div class="item" key={c.criterion} style="align-items:flex-start">
+                <span class="lead-ico"><Icon name="target" /></span>
+                <span class="grow">
+                  <div class="t">{c.criterion}</div>
+                  <div class="row" style="margin-top:.35rem">
+                    {c.levels.map((lv) => (
+                      <span key={lv.title} class={`badge ${lv.points === max ? "ok" : ""}`}>{lv.title} · {lv.points}</span>
+                    ))}
+                  </div>
+                </span>
+                <span class="badge gold">{max} pts</span>
               </div>
             );
           })}
-        </section>
+        </div>
       )}
+
+      {tab.value === "entregar" && (
+        <div class="split">
+          <form class="card" preventdefault:submit onSubmit$={submit}>
+            <label for="repo" style="margin-top:0">URL del repositorio</label>
+            <input id="repo" required type="url" placeholder="https://github.com/usuario/clase-01" value={form.repo_url} onInput$={(_, el) => (form.repo_url = el.value)} />
+            <label for="sha">Commit (SHA)</label>
+            <input id="sha" required pattern="[0-9a-fA-F]{7,40}" placeholder="a1b2c3d" value={form.commit_sha} onInput$={(_, el) => (form.commit_sha = el.value)} />
+            <div class="hint">En el repo: <code>git rev-parse HEAD</code> (7 a 40 caracteres hexadecimales).</div>
+            <label for="notes">Notas para el instructor (opcional)</label>
+            <textarea id="notes" value={form.notes} onInput$={(_, el) => (form.notes = el.value)} />
+            <div class="row" style="margin-top:.8rem">
+              <button type="submit" class="btn" disabled={st.sending}><Icon name="send" size={14} /> {delivered ? "Entregar de nuevo" : "Entregar"}</button>
+              {delivered && <span class="hint">Cuenta la última entrega.</span>}
+            </div>
+          </form>
+          <aside class="card">
+            <div class="section-t" style="margin-top:0"><Icon name="terminal" /> Desde la terminal</div>
+            <p class="sm muted">Dentro del repositorio, envía el <code>origin</code> y el <code>HEAD</code> de una vez:</p>
+            <Copy text={a.submit_command} />
+            <div class="section-t"><Icon name="info" /> Antes de entregar</div>
+            <ul class="sm muted" style="padding-left:1.1rem;margin:.3rem 0">
+              <li>Haz push del commit: el instructor debe poder verlo.</li>
+              <li>Si el repo es privado, dale acceso al instructor.</li>
+              <li>Revisa la rúbrica.</li>
+            </ul>
+          </aside>
+        </div>
+      )}
+
+      {tab.value === "entregas" &&
+        (a.my_submissions.length === 0 ? (
+          <Empty icon="send" title="Aún no entregaste" text="Cuando entregues, verás aquí el estado, la nota y los comentarios.">
+            <button type="button" class="btn sm" onClick$={() => select("entregar")}>Entregar ahora</button>
+          </Empty>
+        ) : (
+          <div class="list">
+            {a.my_submissions.map((s, i) => (
+              <div key={s.id} class="item" style="align-items:flex-start">
+                <span class="lead-ico"><Icon name={i === 0 ? "star" : "clock"} /></span>
+                <span class="grow">
+                  <div class="row">
+                    <a class="t sm" href={s.repo_url} target="_blank" rel="noopener">{s.repo_url.replace(/^https?:\/\//, "")}</a>
+                    <code>{s.commit_sha.slice(0, 7)}</code>
+                    {i === 0 && <span class="badge accent">la que cuenta</span>}
+                  </div>
+                  <div class="d" title={fmtDate(s.created_at)}>{rel(s.created_at)}</div>
+                  {s.feedback_md && <div class="sm" style="white-space:pre-wrap;margin-top:.35rem;padding:.5rem .65rem;background:var(--s2);border-radius:6px">{s.feedback_md}</div>}
+                </span>
+                {s.score != null && <span class="badge ok">{s.score}/{s.max_score}</span>}
+                <Status s={STATUS[s.status] ?? STATUS.pending} />
+              </div>
+            ))}
+          </div>
+        ))}
+
+      {tab.value === "calificar" &&
+        staff &&
+        (st.all.length === 0 ? (
+          <Empty icon="users" title="Nadie ha entregado todavía" />
+        ) : (
+          <div class="stack">
+            {st.all.map((s) => {
+              const g = grading[s.id] ?? { score: s.score != null ? String(s.score) : "", feedback: s.feedback_md };
+              return (
+                <div class="card" key={s.id}>
+                  <div class="row">
+                    <b class="grow">{s.user ?? s.user_id}</b>
+                    <Status s={STATUS[s.status] ?? STATUS.pending} />
+                    <span class="xs muted" title={fmtDate(s.created_at)}>{rel(s.created_at)}</span>
+                  </div>
+                  <div class="sm" style="margin-top:.3rem">
+                    <a href={s.repo_url} target="_blank" rel="noopener">{s.repo_url}</a> @ <code>{s.commit_sha.slice(0, 7)}</code>
+                    {s.notes && <div class="muted" style="white-space:pre-wrap">{s.notes}</div>}
+                  </div>
+                  <div class="row" style="margin-top:.6rem;align-items:flex-end">
+                    <span style="width:7rem">
+                      <label style="margin-top:0">Nota / {s.max_score}</label>
+                      <input type="number" min="0" max={s.max_score} step="0.5" value={g.score} onInput$={(_, el) => (grading[s.id] = { ...g, score: el.value })} />
+                    </span>
+                    <span class="grow" style="min-width:14rem">
+                      <label style="margin-top:0">Comentarios</label>
+                      <input value={g.feedback} onInput$={(_, el) => (grading[s.id] = { ...g, feedback: el.value })} />
+                    </span>
+                    <button type="button" class="btn" onClick$={() => grade(s.id, g)}><Icon name="check" size={14} /> Guardar</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
     </>
   );
 });
 
-export const onStaticGenerate: StaticGenerateHandler = async () => {
-  const { assignmentIds } = await import("~/lib/content-routes");
-  return { params: (await assignmentIds()).map((id) => ({ id })) };
-};
+export const onStaticGenerate: StaticGenerateHandler = async () => ({ params: [{ id: "_" }] });
 
 export const head: DocumentHead = { title: "Tarea" };

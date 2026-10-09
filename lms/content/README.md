@@ -10,6 +10,7 @@ content/
     course.yaml                 curso: módulos y el orden de las sesiones
     lessons/<archivo>.md        una sesión: front matter YAML + cuerpo en Markdown
     assignments/<archivo>.md    una tarea: front matter YAML + enunciado en Markdown
+    examples/<archivo>.md       un ejemplo práctico: front matter YAML + cuerpo en Markdown
 ```
 
 ## `course.yaml`
@@ -70,4 +71,21 @@ rubric:
       - {title: Cumple, points: 10}
 ---
 Enunciado en Markdown.
+```
+
+## Ejemplo (`examples/*.md`)
+
+```yaml
+---
+id: ej-skill-saludo              # único en todo el contenido
+title: "Tu primera skill: saludo" # entre comillas si lleva «: »
+summary: Una línea para la lista
+tags: [skills, claude-code]
+level: básico                    # básico · intermedio · avanzado (por defecto básico)
+lesson: pa-01                    # opcional; la sesión debe existir en el curso
+repo: {url: https://github.com/…, ref: main}   # opcional
+published: true                  # si falta, publicado; false = solo lo ve el instructor
+order: 1                         # opcional; primero por order, luego por título (sin order, al final)
+---
+Cuerpo en Markdown, con bloques de código que se puedan copiar y ejecutar.
 ```

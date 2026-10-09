@@ -42,9 +42,10 @@ En desarrollo: `go run ./cmd/lms` en `api/` (puerto 8080) y `npm run dev` en `we
 Todo está documentado en [`content/README.md`](content/README.md). En resumen: un archivo
 `content/courses/<curso>/lessons/NN-titulo.md` con front matter (objetivos, grabación, repo,
 materiales, ciclo de aprendizaje) y el cuerpo en Markdown (avance, conceptos, tareas); una tarea
-es `assignments/tarea-NN.md` con su rúbrica. Añade el id de la sesión al módulo en `course.yaml`,
-haz commit, y el servidor lo recarga solo (si es una sesión **nueva**, reconstruye el front para
-que exista su página: `docker compose up -d --build lms`).
+es `assignments/tarea-NN.md` con su rúbrica, y un ejemplo es `examples/NN-titulo.md`. Añade el id
+de la sesión al módulo en `course.yaml`, haz commit, y el servidor lo recarga solo. Las páginas con
+id (`/lessons/<id>/`, `/assignments/<id>/`, `/examples/<id>/`…) se generan una sola vez y el servidor
+las sirve para cualquier id, así que el contenido nuevo no obliga a reconstruir el front.
 
 El PDF de una clase:
 

@@ -1,84 +1,180 @@
-import { component$, useContext, useStore, useVisibleTask$ } from "@builder.io/qwik";
+import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
-import { api, errMsg, fmtDate, requireLogin, STATUS, type Course } from "~/lib/api";
+import { api, errMsg, fmtDate, LEVEL, rel, requireLogin, STATUS, type Course, type ExampleSummary } from "~/lib/api";
 import { SessionContext, isStaff } from "~/lib/session";
+import { getParam, pathId, setParams, setTitle } from "~/lib/url";
+import { Icon } from "~/components/icon";
+import { Crumbs, Empty, ErrorState, lessonState, Loading, Ring, Status, Tabs } from "~/components/ui";
 
 export default component$(() => {
   const loc = useLocation();
   const session = useContext(SessionContext);
-  const st = useStore<{ c: Course | null; error: string }>({ c: null, error: "" });
-  // eslint-disable-next-line qwik/no-use-visible-task
-  useVisibleTask$(async ({ track }) => {
-    track(() => loc.params.slug);
+  const st = useStore<{ c: Course | null; ex: ExampleSummary[] | null; error: string }>({ c: null, ex: null, error: "" });
+  const tab = useSignal("temario");
+
+  const load = $(async () => {
+    st.error = "";
+    const slug = pathId("courses");
     try {
-      st.c = await api.course(loc.params.slug);
+      st.c = await api.course(slug);
+      setTitle(st.c.title);
+      st.ex = await api.examples(st.c.id).catch(() => []);
     } catch (e) {
       if (!requireLogin(e)) st.error = errMsg(e);
     }
   });
+
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(async ({ track }) => {
+    track(() => loc.url.pathname);
+    session.help = "curso";
+    tab.value = getParam("tab") || "temario";
+    await load();
+  });
+
+  const select = $((id: string) => {
+    tab.value = id;
+    setParams({ tab: id === "temario" ? "" : id });
+  });
+
+  if (st.error) return <ErrorState message={st.error} retry$={load} />;
   const c = st.c;
+  if (!c) return <Loading lines={6} />;
+
+  const lessons = c.modules.flatMap((m) => m.lessons).filter((l) => l.published || isStaff(session.me));
+  let d = 0,
+    t = 0;
+  for (const l of lessons) if (l.published) {
+      d += Math.min(l.steps_done, l.steps);
+      t += l.steps;
+    }
+  const next = lessons.find((l) => l.published && l.steps_done < l.steps) ?? lessons[0];
+  const staff = isStaff(session.me);
+
   return (
     <>
-      <p class="small"><Link href="/courses/">← Cursos</Link></p>
-      {st.error && <p class="error">{st.error}</p>}
-      {!c && !st.error && <p class="muted">Cargando…</p>}
-      {c && (
-        <>
+      <Crumbs items={[{ href: "/courses/", label: "Inicio" }, { label: c.title }]} />
+      <div class="head">
+        <Ring pct={t ? (100 * d) / t : 0} size={58} />
+        <div class="grow">
           <h1>{c.title}</h1>
-          <p class="muted">{c.description}</p>
-          {isStaff(session.me) && (
-            <p class="small"><Link href={`/instructor/${c.slug}/`}>Ver avance de los alumnos →</Link></p>
-          )}
-          {c.modules.map((m) => (
-            <section key={m.id}>
-              <h2>{m.title}</h2>
-              {m.lessons.length === 0 && <p class="muted small">Sin sesiones publicadas todavía.</p>}
-              {m.lessons.map((l) => (
-                <Link key={l.id} class="card" href={`/lessons/${l.id}/`} style="display:block">
-                  <div class="row">
-                    <b style="flex:1">{l.title}</b>
-                    {!l.published && <span class="badge warn">borrador</span>}
-                    {l.starts_at && <span class="muted small">{fmtDate(l.starts_at)}</span>}
-                  </div>
-                  <div class="row small muted" style="margin-top:.3rem">
-                    <span>{l.objectives} objetivos</span>
-                    <span>·</span>
-                    <span>
-                      {l.steps_done}/{l.steps} pasos del ciclo
-                    </span>
-                    <span class="progress" style="flex:1;min-width:6rem">
-                      <i style={`width:${l.steps ? Math.round((100 * l.steps_done) / l.steps) : 0}%`} />
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </section>
-          ))}
-          <h2>Tareas</h2>
-          {c.assignments.length === 0 && <p class="muted small">Sin tareas todavía.</p>}
-          {c.assignments.map((a) => (
-            <Link key={a.id} class="card" href={`/assignments/${a.id}/`} style="display:block">
-              <div class="row">
-                <b style="flex:1">{a.title}</b>
-                <span class={`badge ${STATUS[a.status]?.cls ?? ""}`}>{STATUS[a.status]?.label ?? a.status}</span>
-                {a.score != null && (
-                  <span class="badge ok">
-                    {a.score}/{a.max_score}
-                  </span>
-                )}
-              </div>
-              {a.due_at && <div class="small muted">Entrega hasta {fmtDate(a.due_at)}</div>}
+          <p>{c.description}</p>
+        </div>
+        <div class="row">
+          {staff && (
+            <Link class="btn ghost sm" href={`/instructor/${c.slug}/`}>
+              <Icon name="users" size={14} /> Avance de alumnos
             </Link>
-          ))}
-        </>
-      )}
+          )}
+          {next && (
+            <Link class="btn" href={`/lessons/${next.id}/`}>
+              <Icon name="play" size={15} /> {d > 0 ? "Continuar" : "Empezar"}
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <Tabs
+        active={tab.value}
+        onSelect$={select}
+        tabs={[
+          { id: "temario", label: "Temario", icon: "layers", count: lessons.length },
+          { id: "tareas", label: "Tareas", icon: "task", count: c.assignments.length },
+          { id: "ejemplos", label: "Ejemplos", icon: "sparkles", count: st.ex?.length ?? 0 },
+        ]}
+      />
+
+      {tab.value === "temario" &&
+        (c.modules.length === 0 ? (
+          <Empty icon="layers" title="Sin sesiones todavía" text="El instructor publicará aquí las sesiones del curso." />
+        ) : (
+          <div class="stack">
+            {c.modules.map((m) => {
+              const ls = m.lessons.filter((l) => l.published || staff);
+              return (
+                <section key={m.id}>
+                  <div class="section-t"><Icon name="layers" /> {m.title}</div>
+                  {ls.length === 0 ? (
+                    <p class="sm faint">Sin sesiones publicadas todavía.</p>
+                  ) : (
+                    <div class="list">
+                      {ls.map((l, i) => {
+                        const s = lessonState(l.steps_done, l.steps, l.published);
+                        return (
+                          <Link key={l.id} class="item" href={`/lessons/${l.id}/`}>
+                            <span class={s.cls} data-tip={s.label}><Icon name={s.icon} size={20} /></span>
+                            <span class="grow">
+                              <div class="t">{l.title}</div>
+                              <div class="d row" style="gap:.8rem">
+                                <span>Sesión {i + 1}</span>
+                                {l.starts_at && <span title={fmtDate(l.starts_at)}><Icon name="calendar" size={12} /> {fmtDate(l.starts_at, false)}</span>}
+                                <span><Icon name="target" size={12} /> {l.objectives} objetivos</span>
+                                <span><Icon name="cycle" size={12} /> {l.steps_done}/{l.steps} pasos</span>
+                              </div>
+                            </span>
+                            {!l.published && <span class="badge warn"><Icon name="lock" size={12} /> borrador</span>}
+                            <Icon name="chevronRight" class="faint" />
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        ))}
+
+      {tab.value === "tareas" &&
+        (c.assignments.length === 0 ? (
+          <Empty icon="task" title="Sin tareas todavía" text="Cuando el instructor publique una tarea, la verás aquí con su fecha de entrega." />
+        ) : (
+          <div class="list">
+            {c.assignments.map((a) => (
+              <Link key={a.id} class="item" href={`/assignments/${a.id}/`}>
+                <span class="lead-ico"><Icon name="task" /></span>
+                <span class="grow">
+                  <div class="t">{a.title}</div>
+                  <div class="d" title={fmtDate(a.due_at)}>
+                    {a.due_at ? `Entrega ${rel(a.due_at)} · ${fmtDate(a.due_at)}` : "Sin fecha límite"} · {a.max_score} puntos
+                  </div>
+                </span>
+                {a.score != null && <span class="badge ok">{a.score}/{a.max_score}</span>}
+                <Status s={STATUS[a.status] ?? STATUS.pending} />
+              </Link>
+            ))}
+          </div>
+        ))}
+
+      {tab.value === "ejemplos" &&
+        (st.ex === null ? (
+          <Loading lines={3} />
+        ) : st.ex.length === 0 ? (
+          <Empty icon="sparkles" title="Sin ejemplos todavía" text="Aquí aparecerán casos prácticos con código para copiar." />
+        ) : (
+          <div class="grid">
+            {st.ex.map((e) => (
+              <Link key={e.id} class="card" href={`/examples/${e.id}/`}>
+                <div class="row" style="margin-bottom:.35rem">
+                  <span class="lead-ico"><Icon name="sparkles" /></span>
+                  <b class="grow">{e.title}</b>
+                </div>
+                <p class="sm muted" style="margin:0 0 .5rem">{e.summary}</p>
+                <div class="row">
+                  <span class={`badge ${LEVEL[e.level] ?? ""}`}>{e.level}</span>
+                  {e.tags.map((tg) => (
+                    <span key={tg} class="badge"><Icon name="tag" size={11} /> {tg}</span>
+                  ))}
+                </div>
+              </Link>
+            ))}
+          </div>
+        ))}
     </>
   );
 });
 
-export const onStaticGenerate: StaticGenerateHandler = async () => {
-  const { courseSlugs } = await import("~/lib/content-routes");
-  return { params: (await courseSlugs()).map((slug) => ({ slug })) };
-};
+// Se genera una sola página (/courses/_/); el servidor la sirve para cualquier curso.
+export const onStaticGenerate: StaticGenerateHandler = async () => ({ params: [{ slug: "_" }] });
 
 export const head: DocumentHead = { title: "Curso" };

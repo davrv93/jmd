@@ -56,6 +56,29 @@ func TestRealContent(t *testing.T) {
 			t.Errorf("material %s sin URL https: %q", m.ID, m.URL)
 		}
 	}
+	// Ejemplos: los cuatro, en el orden de «order», ligados a la clase 1 y con HTML.
+	want := []string{"ej-skill-saludo", "ej-skill-commit", "ej-mcp-config", "ej-parametros"}
+	exs := cat.Examples(c.ID)
+	if len(exs) != len(want) {
+		t.Fatalf("ejemplos: %d, quería %d", len(exs), len(want))
+	}
+	for i, e := range exs {
+		if e.ID != want[i] || cat.Example(e.ID) != e {
+			t.Errorf("ejemplo %d: %q, quería %q", i, e.ID, want[i])
+		}
+		if e.LessonID != "" && e.LessonID != "pa-01" {
+			t.Errorf("%s: sesión %q", e.ID, e.LessonID)
+		}
+		if !e.Published || e.Summary == "" || len(e.Tags) == 0 || !exampleLevels[e.Level] {
+			t.Errorf("%s: front matter incompleto: %+v", e.ID, e)
+		}
+		if !strings.Contains(e.BodyHTML, "<pre><code") || !strings.Contains(e.BodyHTML, "<h2") {
+			t.Errorf("%s: el HTML no tiene bloques de código o títulos", e.ID)
+		}
+	}
+	if exs[0].LessonID != "pa-01" || exs[0].Title != "Tu primera skill: saludo" {
+		t.Errorf("ej-skill-saludo: %+v", exs[0])
+	}
 }
 
 func TestFrontMatterErrors(t *testing.T) {

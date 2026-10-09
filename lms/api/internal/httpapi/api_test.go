@@ -3,24 +3,26 @@ package httpapi
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/davrv93/jmd/lms/api/internal/auth"
 	"github.com/davrv93/jmd/lms/api/internal/content"
 	"github.com/davrv93/jmd/lms/api/internal/store"
 )
 
-// fixture: un curso con una sesión publicada, una en borrador y una tarea.
+// fixture: un curso con una sesión publicada, una en borrador, una tarea y dos ejemplos.
 func writeFixture(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	course := filepath.Join(dir, "courses", "curso")
-	for _, d := range []string{"lessons", "assignments", "materials"} {
+	for _, d := range []string{"lessons", "assignments", "materials", "examples"} {
 		if err := os.MkdirAll(filepath.Join(course, d), 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -76,6 +78,27 @@ rubric:
     levels: [{title: no, points: 0}, {title: sí, points: 10}]
 ---
 Enunciado.
+`,
+		// sin «published»: queda publicado
+		"examples/e1.md": `---
+id: e1
+title: Ejemplo publicado
+summary: Una línea
+tags: [skills, git]
+level: intermedio
+lesson: l1
+repo: {url: https://github.com/x/ej, ref: v1}
+order: 1
+---
+Corre ` + "`jmd status`" + `.
+`,
+		"examples/e2.md": `---
+id: e2
+title: Ejemplo en borrador
+published: false
+order: 2
+---
+secreto
 `,
 	}
 	for name, body := range files {
@@ -476,5 +499,112 @@ func TestOIDCReusesLocalAccount(t *testing.T) {
 	u2, err := s.upsertOIDC(t.Context(), c2)
 	if err != nil || u2.ID != "kc-456" || u2.Roles[0] != "student" {
 		t.Fatalf("cuenta nueva: %+v %v", u2, err)
+	}
+}
+
+func TestExamples(t *testing.T) {
+	e := newEnv(t)
+	tok := e.register("ana@x.test")
+	ptok := e.login("profe@x.test", "profe1234")
+
+	r := e.call("GET", "/api/v1/courses/curso/examples", tok, false, nil, "")
+	if r.code != 200 || len(r.list) != 1 {
+		t.Fatalf("el alumno solo ve el publicado: %d %s", r.code, r.raw)
+	}
+	ex := r.list[0]
+	if ex["id"] != "e1" || ex["level"] != "intermedio" || ex["published"] != true || ex["lesson_id"] != "l1" ||
+		ex["lesson_title"] != "Sesión publicada" || ex["summary"] != "Una línea" || len(ex["tags"].([]any)) != 2 ||
+		ex["repo"].(map[string]any)["ref"] != "v1" {
+		t.Fatalf("campos del ejemplo: %s", r.raw)
+	}
+	if _, ok := ex["content_html"]; ok {
+		t.Fatalf("la lista no lleva el HTML: %s", r.raw)
+	}
+	r = e.call("GET", "/api/v1/courses/curso/examples", ptok, false, nil, "")
+	if r.code != 200 || len(r.list) != 2 || r.list[1]["id"] != "e2" || r.list[1]["repo"] != nil || r.list[1]["level"] != "básico" {
+		t.Fatalf("el instructor ve los dos, en orden: %s", r.raw)
+	}
+	if r = e.call("GET", "/api/v1/courses/nada/examples", tok, false, nil, ""); r.code != 404 || errCode(r) != "not_found" {
+		t.Fatalf("curso inexistente: %d %s", r.code, r.raw)
+	}
+
+	r = e.call("GET", "/api/v1/examples/e1", tok, false, nil, "")
+	if r.code != 200 || !strings.Contains(r.body["content_html"].(string), "<code>jmd status</code>") ||
+		r.body["course"].(map[string]any)["slug"] != "curso" || r.body["prev"] != "" || r.body["next"] != "" {
+		t.Fatalf("ejemplo para el alumno: %d %s", r.code, r.raw)
+	}
+	r = e.call("GET", "/api/v1/examples/e1", ptok, false, nil, "")
+	if r.code != 200 || r.body["next"] != "e2" {
+		t.Fatalf("el instructor tiene siguiente: %s", r.raw)
+	}
+	r = e.call("GET", "/api/v1/examples/e2", ptok, false, nil, "")
+	if r.code != 200 || r.body["prev"] != "e1" || r.body["published"] != false || r.body["lesson_id"] != "" {
+		t.Fatalf("borrador para el instructor: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/examples/e2", tok, false, nil, ""); r.code != 404 || errCode(r) != "not_found" {
+		t.Fatalf("borrador para el alumno: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/examples/nope", ptok, false, nil, ""); r.code != 404 || errCode(r) != "not_found" {
+		t.Fatalf("ejemplo inexistente: %d %s", r.code, r.raw)
+	}
+
+	// examples_total cuenta lo que ve cada uno.
+	if r = e.call("GET", "/api/v1/courses/curso", tok, false, nil, ""); r.body["examples_total"].(float64) != 1 {
+		t.Fatalf("examples_total del alumno: %s", r.raw)
+	}
+	if r = e.call("GET", "/api/v1/courses", ptok, false, nil, ""); r.list[0]["examples_total"].(float64) != 2 {
+		t.Fatalf("examples_total del instructor: %s", r.raw)
+	}
+
+	// Fuera de la cohorte, ni la lista ni el detalle.
+	u, _ := e.db.UserByEmail(t.Context(), "ana@x.test")
+	_ = e.db.UpdateUserRoles(t.Context(), u.ID, []string{"student"}, []string{"c9"})
+	if r = e.call("GET", "/api/v1/examples/e1", tok, false, nil, ""); r.code != 404 {
+		t.Fatalf("ejemplo de otro curso: %d", r.code)
+	}
+}
+
+// Las páginas con parámetro que no se prerenderizaron caen en /<sección>/_/.
+func TestStaticShellFallback(t *testing.T) {
+	web := fstest.MapFS{
+		"index.html":               {Data: []byte("inicio")},
+		"404.html":                 {Data: []byte("no está")},
+		"lessons/_/index.html":     {Data: []byte("shell de sesiones")},
+		"lessons/_/q-data.json":    {Data: []byte(`{"shell":true,"href":"/lessons/_/"}`)},
+		"lessons/pa-01/index.html": {Data: []byte("pa-01 prerenderizada")},
+	}
+	h := (&Server{Web: web}).Handler()
+	get := func(p string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest("GET", p, nil))
+		return w
+	}
+	body := func(w *httptest.ResponseRecorder) string { b, _ := io.ReadAll(w.Result().Body); return string(b) }
+
+	w := get("/lessons/pa-99/")
+	if w.Code != 200 || body(w) != "shell de sesiones" || !strings.HasPrefix(w.Header().Get("Content-Type"), "text/html") ||
+		w.Header().Get("Cache-Control") != "no-cache" {
+		t.Fatalf("shell: %d %q %v", w.Code, body(w), w.Header())
+	}
+	w = get("/lessons/pa-99")
+	if w.Code != 301 || w.Header().Get("Location") != "/lessons/pa-99/" {
+		t.Fatalf("redirección: %d %v", w.Code, w.Header())
+	}
+	w = get("/lessons/pa-99/q-data.json")
+	// La ruta genérica serializada se cambia por la pedida (si no, Qwik la pone en la barra).
+	if w.Code != 200 || body(w) != `{"shell":true,"href":"/lessons/pa-99/"}` || !strings.HasPrefix(w.Header().Get("Content-Type"), "application/json") {
+		t.Fatalf("q-data del shell: %d %q %v", w.Code, body(w), w.Header())
+	}
+	if w = get("/lessons/pa-01/"); w.Code != 200 || body(w) != "pa-01 prerenderizada" {
+		t.Fatalf("la prerenderizada manda: %d %q", w.Code, body(w))
+	}
+	if w = get("/nope/x/"); w.Code != 404 || body(w) != "no está" {
+		t.Fatalf("sección sin shell: %d %q", w.Code, body(w))
+	}
+	if w = get("/examples/x/"); w.Code != 404 {
+		t.Fatalf("sección sin _ en el build: %d", w.Code)
+	}
+	if w = get("/lessons/a/b/"); w.Code != 404 {
+		t.Fatalf("dos segmentos: %d", w.Code)
 	}
 }

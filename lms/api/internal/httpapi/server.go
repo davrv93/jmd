@@ -2,7 +2,9 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"log/slog"
@@ -91,7 +93,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/grades", s.authed(s.grades))
 	mux.Handle("POST /api/v1/lessons/{id}/questions", s.authed(s.createQuestion))
 
-	// Añadidos (ver docs/CONTRATO_CAMBIOS.md): progreso del ciclo, hilos, enlaces, calificación.
+	// Añadidos (ver docs/CONTRATO_CAMBIOS.md): progreso del ciclo, hilos, enlaces, calificación, ejemplos.
 	mux.Handle("GET /api/v1/lessons/{id}/progress", s.authed(s.progress))
 	mux.Handle("PUT /api/v1/lessons/{id}/progress/{step}", s.authed(s.setProgress))
 	mux.Handle("GET /api/v1/lessons/{id}/questions", s.authed(s.questions))
@@ -102,6 +104,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/assignments/{id}/submissions", s.authed(s.listSubmissions))
 	mux.Handle("POST /api/v1/submissions/{id}/grade", s.authed(s.staff(s.gradeSubmission)))
 	mux.Handle("GET /api/v1/courses/{id}/progress", s.authed(s.staff(s.courseProgress)))
+	mux.Handle("GET /api/v1/courses/{id}/examples", s.authed(s.courseExamples))
+	mux.Handle("GET /api/v1/examples/{id}", s.authed(s.example))
 	mux.Handle("GET /api/v1/admin/users", s.authed(s.admin(s.users)))
 	mux.Handle("PUT /api/v1/admin/users/{id}", s.authed(s.admin(s.updateUser)))
 	mux.Handle("POST /api/v1/admin/reload", s.authed(s.admin(s.reload)))
@@ -273,7 +277,33 @@ func clientIP(r *http.Request) string {
 
 // --- front estático ------------------------------------------------------------------------
 
+// jsonString codifica s como cadena JSON (con comillas), apta también dentro de <script>.
+func jsonString(s string) []byte {
+	b, _ := json.Marshal(s)
+	return b
+}
+
+// shellSections son las rutas con parámetro: el front solo prerenderiza /<sección>/_/.
+var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true}
+
+// shellFor da el archivo genérico (<sección>/_/index.html o q-data.json) para /<sección>/<x>/ y
+// /<sección>/<x>/q-data.json; "" si la ruta no es de ese tipo. p viene limpia (path.Clean).
+func shellFor(p string, slash bool) string {
+	seg := strings.Split(strings.TrimPrefix(p, "/"), "/")
+	if len(seg) < 2 || !shellSections[seg[0]] || seg[1] == "" || seg[1] == "_" {
+		return ""
+	}
+	switch {
+	case len(seg) == 2 && slash:
+		return seg[0] + "/_/index.html"
+	case len(seg) == 3 && seg[2] == "q-data.json":
+		return seg[0] + "/_/q-data.json"
+	}
+	return ""
+}
+
 // static sirve el build de Qwik: /ruta/ → /ruta/index.html; /build/* con caché larga.
+// Las páginas con parámetro que no se prerenderizaron caen en /<sección>/_/ (F5 y contenido nuevo).
 func (s *Server) static() http.Handler {
 	files := http.FS(s.Web)
 	fileServer := http.FileServer(files)
@@ -290,9 +320,26 @@ func (s *Server) static() http.Handler {
 				http.Redirect(w, r, p+"/", http.StatusMovedPermanently)
 				return
 			}
+			if shell := shellFor(p, true); shell != "" {
+				if _, err := fs.Stat(s.Web, shell); err == nil {
+					http.Redirect(w, r, p+"/", http.StatusMovedPermanently)
+					return
+				}
+			}
 		}
 		if _, err := fs.Stat(s.Web, strings.TrimPrefix(strings.TrimSuffix(p, "/")+"/index.html", "/")); err != nil {
 			if _, err := fs.Stat(s.Web, strings.TrimPrefix(p, "/")); err != nil {
+				if shell := shellFor(p, strings.HasSuffix(r.URL.Path, "/")); shell != "" {
+					if f, err := fs.ReadFile(s.Web, shell); err == nil {
+						// La página genérica lleva serializada su ruta ("/lessons/_/"); Qwik la usa como
+						// URL de la página y, en la navegación sin recarga, la escribiría en la barra.
+						// Se cambia por la ruta pedida, escapada como cadena JSON.
+						f = bytes.ReplaceAll(f, []byte(`"/`+path.Dir(shell)+`/"`), jsonString(path.Dir(strings.TrimSuffix(p, "/q-data.json")+"/x")+"/"))
+						// ServeContent toma el tipo del nombre (text/html o application/json).
+						http.ServeContent(w, r, path.Base(shell), time.Time{}, bytes.NewReader(f))
+						return
+					}
+				}
 				if f, err := fs.ReadFile(s.Web, "404.html"); err == nil {
 					w.Header().Set("Content-Type", "text/html; charset=utf-8")
 					w.WriteHeader(404)

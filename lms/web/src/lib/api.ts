@@ -53,6 +53,7 @@ export interface CourseSummary {
   description: string;
   lessons_total: number;
   lessons_published: number;
+  examples_total?: number;
 }
 export interface LessonSummary {
   id: string;
@@ -81,6 +82,24 @@ export interface Course {
   role: string;
   modules: { id: string; title: string; lessons: LessonSummary[] }[];
   assignments: AssignmentSummary[];
+  examples_total?: number;
+}
+export interface ExampleSummary {
+  id: string;
+  title: string;
+  summary: string;
+  tags: string[];
+  level: string;
+  lesson_id: string;
+  lesson_title: string;
+  repo: { url: string; ref: string } | null;
+  published: boolean;
+}
+export interface Example extends ExampleSummary {
+  content_html: string;
+  course: { id: string; slug: string; title: string };
+  prev: string;
+  next: string;
 }
 export interface Material {
   id: string;
@@ -217,6 +236,8 @@ export const api = {
     req<{ id: string; url: string }>("POST", `/api/v1/lessons/${encodeURIComponent(lesson)}/questions`, b),
   answer: (q: string, body_md: string) => req<Question>("POST", `/api/v1/questions/${encodeURIComponent(q)}/answers`, { body_md }),
   resolve: (q: string, resolved: boolean) => req<Question>("POST", `/api/v1/questions/${encodeURIComponent(q)}/resolve`, { resolved }),
+  examples: (course: string) => req<ExampleSummary[]>("GET", `/api/v1/courses/${encodeURIComponent(course)}/examples`),
+  example: (id: string) => req<Example>("GET", `/api/v1/examples/${encodeURIComponent(id)}`),
   courseProgress: (id: string) => req<CourseProgress>("GET", `/api/v1/courses/${encodeURIComponent(id)}/progress`),
 };
 
@@ -240,28 +261,34 @@ export function fmtDate(iso: string | null | undefined, withTime = true): string
   return d.toLocaleString("es-PE", withTime ? { dateStyle: "medium", timeStyle: "short" } : { dateStyle: "medium" });
 }
 
-export const TOOLS: Record<string, { icon: string; label: string }> = {
-  zoom: { icon: "🎥", label: "Zoom" },
-  lectura: { icon: "📖", label: "Lectura" },
-  vscode: { icon: "🧩", label: "VS Code" },
-  docker: { icon: "🐳", label: "Docker" },
-  terminal: { icon: "⌨️", label: "Terminal" },
-  jmd: { icon: "🛰️", label: "jmd" },
-  "claude-code": { icon: "🤖", label: "Claude Code" },
-  opencode: { icon: "🤖", label: "OpenCode" },
-  git: { icon: "🌿", label: "git" },
-  lms: { icon: "🎓", label: "LMS" },
+export const TOOLS: Record<string, string> = {
+  zoom: "Zoom", lectura: "Lectura", vscode: "VS Code", docker: "Docker", terminal: "Terminal", jmd: "jmd",
+  "claude-code": "Claude Code", opencode: "OpenCode", git: "git", lms: "LMS",
 };
 
 export const KINDS: Record<string, string> = {
   link: "enlace", doc: "documentación", repo: "repositorio", video: "vídeo", slides: "diapositivas", pdf: "PDF", note: "nota", file: "adjunto", zip: "adjunto .zip", pptx: "PowerPoint",
 };
 
-export const STATUS: Record<string, { label: string; cls: string }> = {
-  pending: { label: "pendiente", cls: "" },
-  overdue: { label: "vencida", cls: "bad" },
-  queued: { label: "entregada · en cola", cls: "warn" },
-  running: { label: "revisando", cls: "warn" },
-  graded: { label: "calificada", cls: "ok" },
-  failed: { label: "falló", cls: "bad" },
+export const STATUS: Record<string, { label: string; cls: string; icon: string }> = {
+  pending: { label: "Pendiente", cls: "", icon: "circle" },
+  overdue: { label: "Vencida", cls: "bad", icon: "alert" },
+  queued: { label: "Entregada", cls: "warn", icon: "send" },
+  running: { label: "Revisando", cls: "warn", icon: "clock" },
+  graded: { label: "Calificada", cls: "ok", icon: "checkCircle" },
+  failed: { label: "Falló", cls: "bad", icon: "alert" },
 };
+
+export const LEVEL: Record<string, string> = { básico: "", intermedio: "accent", avanzado: "gold" };
+
+/** Fecha relativa corta: «en 3 días», «hace 2 h». */
+export function rel(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const diff = new Date(iso).getTime() - Date.now();
+  const abs = Math.abs(diff);
+  const f = (n: number, u: string) => (diff >= 0 ? `en ${n} ${u}` : `hace ${n} ${u}`);
+  if (abs < 3600e3) return f(Math.max(1, Math.round(abs / 60e3)), "min");
+  if (abs < 86400e3) return f(Math.round(abs / 3600e3), "h");
+  const d = Math.round(abs / 86400e3);
+  return f(d, d === 1 ? "día" : "días");
+}

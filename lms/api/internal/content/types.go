@@ -1,4 +1,4 @@
-// Package content carga los cursos, sesiones y tareas desde archivos (YAML + Markdown).
+// Package content carga los cursos, sesiones, tareas y ejemplos desde archivos (YAML + Markdown).
 //
 // El contenido es la fuente de verdad del temario y se versiona con git: el instructor deja el
 // avance y las tareas haciendo commit. Nada de esto va a la base de datos; ahí solo quedan los
@@ -103,6 +103,26 @@ type Assignment struct {
 	DescriptionMD   string `yaml:"-" json:"description_md"`
 	DescriptionHTML string `yaml:"-" json:"description_html"`
 }
+
+// Example es un ejemplo práctico del curso: front matter + cuerpo en Markdown (ya en HTML).
+type Example struct {
+	ID        string   `yaml:"id" json:"id"`
+	Title     string   `yaml:"title" json:"title"`
+	Summary   string   `yaml:"summary" json:"summary"`
+	Tags      []string `yaml:"tags" json:"tags"`
+	Level     string   `yaml:"level" json:"level"`      // básico · intermedio · avanzado
+	LessonID  string   `yaml:"lesson" json:"lesson_id"` // opcional
+	Repo      *Repo    `yaml:"repo" json:"repo"`
+	Published bool     `yaml:"published" json:"published"` // true si falta la clave
+	Order     int      `yaml:"order" json:"order"`         // 0 = sin orden (van al final, por título)
+
+	CourseID string `yaml:"-" json:"course_id"`
+	BodyMD   string `yaml:"-" json:"-"`
+	BodyHTML string `yaml:"-" json:"content_html"`
+}
+
+// Niveles válidos de un ejemplo.
+var exampleLevels = map[string]bool{"básico": true, "intermedio": true, "avanzado": true}
 
 // RubricCriterion es un criterio con sus niveles y puntos.
 type RubricCriterion struct {
