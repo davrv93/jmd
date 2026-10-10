@@ -29,19 +29,21 @@ type Server struct {
 	DefaultCohort string     // cohorte de quien se registra con el código
 	PublicURL     string     // https://lms.<dominio> (para las URLs de las preguntas)
 	SessionTTL    time.Duration
-	Web           fs.FS      // build del front; nil = solo API
+	Web           fs.FS          // build del front; nil = solo API
 	Runner        *runner.Runner // ejecuta código de los alumnos; nil/deshabilitado = sin /run
-	TermImage     string          // imagen de la shell interactiva del estudio (vacío = por defecto)
-	LLM           LLMConfig       // gateway OpenAI-compatible para /generate
+	TermImage     string         // imagen de la shell interactiva del estudio (vacío = por defecto)
+	LLM           LLMConfig      // valores iniciales (entorno) del gateway de IA; manda lo guardado en la base
 
 	login     *limiter
+	llm       *llmCache
 	runLimit  *limiter
 	termSlots *slots
 }
 
 // LLMConfig apunta a un endpoint OpenAI-compatible (el gateway de la clase) para generar landings.
+// Son los valores de arranque (LMS_LLM_*); lo que el instructor guarda desde el panel los sustituye.
 type LLMConfig struct {
-	URL   string // p. ej. https://gateway/v1/chat/completions
+	URL   string // endpoint COMPLETO de chat, p. ej. https://gateway/v1/chat/completions
 	Key   string
 	Model string // p. ej. auto
 }
@@ -87,6 +89,9 @@ func (s *Server) Handler() http.Handler {
 	if s.termSlots == nil {
 		s.termSlots = newSlots()
 	}
+	if s.llm == nil {
+		s.llm = &llmCache{}
+	}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/v1/health", func(w http.ResponseWriter, r *http.Request) {
@@ -128,6 +133,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/run", s.authed(s.run))
 	mux.Handle("GET /api/v1/term", s.authed(s.term))
 	mux.Handle("POST /api/v1/generate", s.authed(s.generate))
+	mux.Handle("GET /api/v1/llm/status", s.authed(s.llmStatus))
+	mux.Handle("GET /api/v1/admin/llm", s.authed(s.admin(s.adminLLMGet)))
+	mux.Handle("PUT /api/v1/admin/llm", s.authed(s.admin(s.adminLLMPut)))
+	mux.Handle("POST /api/v1/admin/llm/test", s.authed(s.admin(s.adminLLMTest)))
 	mux.Handle("GET /api/v1/admin/users", s.authed(s.admin(s.users)))
 	mux.Handle("PUT /api/v1/admin/users/{id}", s.authed(s.admin(s.updateUser)))
 	mux.Handle("POST /api/v1/admin/reload", s.authed(s.admin(s.reload)))

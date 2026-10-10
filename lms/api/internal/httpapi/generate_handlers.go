@@ -39,9 +39,15 @@ Devuelve SOLO el documento HTML completo (desde <!doctype html> hasta </html>), 
 y sin vallas de código.`
 
 // generate: POST /api/v1/generate {prompt} → {html}. Llama a un endpoint OpenAI-compatible
-// (el gateway de la clase). Si no está configurado, responde 503.
+// (el gateway de la clase) con la configuración vigente (panel del instructor o, si no se guardó
+// nada, entorno). Si está desactivada o sin URL, responde 503.
 func (s *Server) generate(w http.ResponseWriter, r *http.Request, p *Principal) {
-	if s.LLM.URL == "" {
+	cfg, err := s.llmConfig(r.Context())
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	if !cfg.Activa() {
 		writeErr(w, 503, "unavailable", "el gateway de IA no está configurado en este servidor")
 		return
 	}
@@ -62,7 +68,7 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, p *Principal) 
 		writeErr(w, 429, "rate_limited", "demasiadas generaciones seguidas, espera un momento")
 		return
 	}
-	html, err := s.llamarLLM(r.Context(), in.Prompt)
+	html, err := llamarLLM(r.Context(), cfg, in.Prompt)
 	if err != nil {
 		writeErr(w, 502, "upstream", "el gateway falló: "+err.Error())
 		return
@@ -75,11 +81,11 @@ type chatMsg struct {
 	Content string `json:"content"`
 }
 
-func (s *Server) llamarLLM(ctx context.Context, prompt string) (string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
+func llamarLLM(ctx context.Context, cfg llmSettings, prompt string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 180*time.Second)
 	defer cancel()
 	body, _ := json.Marshal(map[string]any{
-		"model":       s.LLM.Model,
+		"model":       cfg.Model,
 		"temperature": 0.4,
 		"max_tokens":  8000,
 		"messages": []chatMsg{
@@ -87,13 +93,13 @@ func (s *Server) llamarLLM(ctx context.Context, prompt string) (string, error) {
 			{Role: "user", Content: prompt},
 		},
 	})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.LLM.URL, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.URL, bytes.NewReader(body))
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if s.LLM.Key != "" {
-		req.Header.Set("Authorization", "Bearer "+s.LLM.Key)
+	if cfg.Key != "" {
+		req.Header.Set("Authorization", "Bearer "+cfg.Key)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -102,7 +108,7 @@ func (s *Server) llamarLLM(ctx context.Context, prompt string) (string, error) {
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("respondió %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+		return "", fmt.Errorf("respondió %d: %s", resp.StatusCode, recortar(sinClave(strings.TrimSpace(string(raw)), cfg.Key)))
 	}
 	var out struct {
 		Choices []struct {
@@ -124,14 +130,54 @@ func (s *Server) llamarLLM(ctx context.Context, prompt string) (string, error) {
 	return html, nil
 }
 
-// extraerHTML quita las vallas ```html ... ``` si el modelo las puso.
-func extraerHTML(s string) string {
-	s = strings.TrimSpace(s)
-	if strings.HasPrefix(s, "```") {
-		if i := strings.IndexByte(s, '\n'); i >= 0 {
-			s = s[i+1:]
+// limpiarRazonamiento quita los bloques <think>…</think> que algunos modelos (Qwen, DeepSeek)
+// anteponen a la respuesta. Si la etiqueta quedó sin cerrar, se descarta lo que hay delante.
+func limpiarRazonamiento(s string) string {
+	for {
+		i := strings.Index(s, "<think>")
+		if i < 0 {
+			break
 		}
-		s = strings.TrimSuffix(strings.TrimSpace(s), "```")
+		j := strings.Index(s[i:], "</think>")
+		if j < 0 {
+			s = s[:i]
+			break
+		}
+		s = s[:i] + s[i+j+len("</think>"):]
+	}
+	return s
+}
+
+// extraerHTML saca el documento de la respuesta del modelo: limpia el razonamiento, se queda con
+// el bloque ```html … ``` si viene envuelto (aunque haya texto alrededor) y, si no hay vallas,
+// recorta desde <!doctype o <html hasta </html>.
+func extraerHTML(s string) string {
+	s = strings.TrimSpace(limpiarRazonamiento(s))
+	if i := strings.Index(s, "```"); i >= 0 {
+		rest := s[i+3:]
+		if nl := strings.IndexByte(rest, '\n'); nl >= 0 {
+			lang := strings.ToLower(strings.TrimSpace(rest[:nl]))
+			if lang == "" || lang == "html" || lang == "htm" || lang == "xml" {
+				rest = rest[nl+1:]
+				if j := strings.Index(rest, "```"); j >= 0 {
+					rest = rest[:j]
+				}
+				s = rest
+			}
+		}
+	}
+	s = strings.TrimSpace(s)
+	low := strings.ToLower(s)
+	start := strings.Index(low, "<!doctype")
+	if start < 0 {
+		start = strings.Index(low, "<html")
+	}
+	if start > 0 {
+		s = s[start:]
+		low = low[start:]
+	}
+	if end := strings.LastIndex(low, "</html>"); end >= 0 {
+		s = s[:end+len("</html>")]
 	}
 	return strings.TrimSpace(s)
 }

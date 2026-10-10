@@ -5,6 +5,7 @@ import { SessionContext } from "~/lib/session";
 import { setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
 import { Empty, ErrorState, Loading } from "~/components/ui";
+import { IaConfig } from "~/components/ia-config";
 
 export default component$(() => {
   const session = useContext(SessionContext);
@@ -49,6 +50,12 @@ export default component$(() => {
           </Link>
         ))}
       </div>
+      {session.me?.roles.includes("admin") && (
+        <>
+          <div class="section-t"><Icon name="sparkles" /> Inteligencia artificial</div>
+          <IaConfig />
+        </>
+      )}
       <div class="section-t"><Icon name="info" /> Cómo publicar</div>
       <div class="card sm muted">
         El temario vive en <code>lms/content/courses/&lt;curso&gt;/</code>: <code>lessons/</code>, <code>assignments/</code> y <code>examples/</code>, en Markdown con

@@ -56,8 +56,11 @@ func TestRealContent(t *testing.T) {
 			t.Errorf("material %s sin URL https: %q", m.ID, m.URL)
 		}
 	}
-	// Ejemplos: los siete, en el orden de «order», ligados a la clase 1 y con HTML.
-	want := []string{"ej-skill-saludo", "ej-skill-commit", "ej-mcp-config", "ej-parametros", "ej-skills-guia", "ej-opencode-guia", "ej-runner"}
+	// Ejemplos: los diecisiete, en el orden de «order», ligados a su clase y con HTML.
+	want := []string{"ej-skill-saludo", "ej-skill-commit", "ej-mcp-config", "ej-parametros", "ej-skills-guia", "ej-opencode-guia", "ej-runner",
+		"ej-skill-piedra", "ej-plan-y-obra", "ej-corpus-faq", "ej-flyer-texto-real", "ej-diagnostico-maquina",
+		"ej-wireframe-gris", "ej-afiliar-whatsapp", "ej-webhook-a-chat", "ej-herramienta-y-mcp", "ej-compose-asistente"}
+	lecciones := map[string]bool{"pa-01": true, "pa-02": true, "pa-03": true}
 	exs := cat.Examples(c.ID)
 	if len(exs) != len(want) {
 		t.Fatalf("ejemplos: %d, quería %d", len(exs), len(want))
@@ -66,7 +69,7 @@ func TestRealContent(t *testing.T) {
 		if e.ID != want[i] || cat.Example(e.ID) != e {
 			t.Errorf("ejemplo %d: %q, quería %q", i, e.ID, want[i])
 		}
-		if e.LessonID != "" && e.LessonID != "pa-01" {
+		if e.LessonID != "" && !lecciones[e.LessonID] {
 			t.Errorf("%s: sesión %q", e.ID, e.LessonID)
 		}
 		if !e.Published || e.Summary == "" || len(e.Tags) == 0 || !exampleLevels[e.Level] {

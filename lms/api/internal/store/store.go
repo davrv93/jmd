@@ -93,6 +93,11 @@ CREATE TABLE IF NOT EXISTS questions (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS questions_lesson ON questions(lesson_id, created_at);
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS answers (
   id TEXT PRIMARY KEY,
   question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
@@ -610,4 +615,23 @@ func (d *DB) UnansweredCount(ctx context.Context) (map[string]int, error) {
 		out[id] = n
 	}
 	return out, rows.Err()
+}
+
+// --- ajustes -------------------------------------------------------------------------------
+
+// Setting devuelve el valor guardado para una clave; ErrNotFound si nunca se guardó.
+func (d *DB) Setting(ctx context.Context, key string) (string, error) {
+	var v string
+	err := d.sql.QueryRowContext(ctx, "SELECT value FROM settings WHERE key = ?", key).Scan(&v)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return v, err
+}
+
+// SetSetting guarda (o reemplaza) el valor de una clave.
+func (d *DB) SetSetting(ctx context.Context, key, value string) error {
+	_, err := d.sql.ExecContext(ctx, `INSERT INTO settings (key, value, updated_at) VALUES (?,?,?)
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`, key, value, now())
+	return err
 }

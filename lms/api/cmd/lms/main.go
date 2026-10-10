@@ -12,8 +12,10 @@
 //	LMS_RUNNER          docker | podman para ejecutar código; vacío = deshabilitado
 //	LMS_RUNNER_TIMEOUT  tope por ejecución (p. ej. 15s, 1m); por defecto 15s
 //	LMS_TERM_IMAGE      imagen de la shell interactiva del estudio (por defecto python:3.12-alpine)
-//	LMS_LLM_URL         endpoint OpenAI-compatible para generar landings; vacío = deshabilitado
+//	LMS_LLM_URL         endpoint OpenAI-compatible (chat/completions) para generar landings; vacío = deshabilitado
 //	LMS_LLM_KEY / LMS_LLM_MODEL   clave y modelo del gateway (modelo por defecto «auto»)
+//	                    Las tres son solo el valor inicial: lo que el instructor guarda en el panel
+//	                    (Instructor > Inteligencia artificial) queda en la base y manda sobre ellas.
 //	OIDC_ISSUER / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET / OIDC_AUDIENCE   Keycloak (opcional)
 package main
 
@@ -110,7 +112,7 @@ func run() error {
 	if srv.LLM.URL != "" {
 		slog.Info("generación por IA activa", "url", srv.LLM.URL, "model", srv.LLM.Model)
 	} else {
-		slog.Info("generación por IA desactivada (define LMS_LLM_URL para activarla)")
+		slog.Info("generación por IA sin valor inicial (configúrala desde el panel del instructor o con LMS_LLM_URL)")
 	}
 	if iss := os.Getenv("OIDC_ISSUER"); iss != "" {
 		o, err := auth.NewOIDC(ctx, auth.OIDCConfig{

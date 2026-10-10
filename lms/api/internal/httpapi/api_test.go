@@ -608,3 +608,127 @@ func TestStaticShellFallback(t *testing.T) {
 		t.Fatalf("dos segmentos: %d", w.Code)
 	}
 }
+
+// La IA del Estudio se configura desde el panel: lo guardado manda sobre el entorno, la clave
+// nunca vuelve entera y, desactivada, /generate responde 503.
+func TestLLMSettings(t *testing.T) {
+	e := newEnv(t)
+	tok := e.register("ana@x.test")
+	ptok := e.login("profe@x.test", "profe1234")
+
+	// Sin nada guardado ni entorno: desactivada para todos y 503 al generar.
+	r := e.call("GET", "/api/v1/llm/status", tok, false, nil, "")
+	if r.code != 200 || r.body["enabled"] != false {
+		t.Fatalf("status inicial: %d %s", r.code, r.raw)
+	}
+	if r = e.call("POST", "/api/v1/generate", tok, false, map[string]string{"prompt": "una landing"}, ""); r.code != 503 {
+		t.Fatalf("generate sin configurar: %d %s", r.code, r.raw)
+	}
+	// Solo el admin toca la configuración.
+	if r = e.call("GET", "/api/v1/admin/llm", tok, false, nil, ""); r.code != 403 {
+		t.Fatalf("alumno leyendo la config: %d", r.code)
+	}
+	r = e.call("GET", "/api/v1/admin/llm", ptok, false, nil, "")
+	if r.code != 200 || r.body["key_set"] != false || r.body["url"] != "" || r.body["model"] != "auto" {
+		t.Fatalf("config vacía: %d %s", r.code, r.raw)
+	}
+	// URL inválida y activar sin URL se rechazan.
+	if r = e.call("PUT", "/api/v1/admin/llm", ptok, false, map[string]any{"url": "ftp://x", "model": "m", "enabled": true}, ""); r.code != 400 {
+		t.Fatalf("url inválida: %d %s", r.code, r.raw)
+	}
+	if r = e.call("PUT", "/api/v1/admin/llm", ptok, false, map[string]any{"url": "", "model": "m", "enabled": true}, ""); r.code != 400 {
+		t.Fatalf("activar sin url: %d %s", r.code, r.raw)
+	}
+
+	// Un modelo falso que contesta con <think> y vallas, para probar la ruta completa.
+	var gotAuth string
+	fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		gotAuth = req.Header.Get("Authorization")
+		var in struct {
+			Model    string    `json:"model"`
+			Messages []chatMsg `json:"messages"`
+		}
+		_ = json.NewDecoder(req.Body).Decode(&in)
+		content := "<think>pienso</think>\nAquí va:\n```html\n<!doctype html><html><body>hola</body></html>\n```\nListo."
+		if len(in.Messages) == 1 { // la prueba de conexión
+			content = "ok"
+		}
+		writeJSON(w, 200, map[string]any{"model": in.Model, "choices": []map[string]any{{"message": map[string]string{"role": "assistant", "content": content}}}})
+	}))
+	t.Cleanup(fake.Close)
+
+	r = e.call("PUT", "/api/v1/admin/llm", ptok, false, map[string]any{"url": fake.URL + "/v1/chat/completions", "model": "qwen", "enabled": true, "key": "sk-secreta-1234"}, "")
+	if r.code != 200 || r.body["key_set"] != true || r.body["key_hint"] != "…1234" || r.body["enabled"] != true {
+		t.Fatalf("guardar: %d %s", r.code, r.raw)
+	}
+	if strings.Contains(string(r.raw), "secreta") {
+		t.Fatalf("la clave no debe salir: %s", r.raw)
+	}
+	r = e.call("GET", "/api/v1/admin/llm", ptok, false, nil, "")
+	if r.code != 200 || r.body["key_hint"] != "…1234" || r.body["model"] != "qwen" || strings.Contains(string(r.raw), "secreta") {
+		t.Fatalf("leer tras guardar: %d %s", r.code, r.raw)
+	}
+	r = e.call("GET", "/api/v1/llm/status", tok, false, nil, "")
+	if r.code != 200 || r.body["enabled"] != true || r.body["model"] != "qwen" || r.body["url"] != nil {
+		t.Fatalf("status para el alumno: %d %s", r.code, r.raw)
+	}
+	// Probar conexión con lo guardado y con una clave distinta en el cuerpo.
+	r = e.call("POST", "/api/v1/admin/llm/test", ptok, false, map[string]any{}, "")
+	if r.code != 200 || r.body["ok"] != true || r.body["status"].(float64) != 200 || r.body["model"] != "qwen" || r.body["detail"] != "ok" {
+		t.Fatalf("test: %d %s", r.code, r.raw)
+	}
+	if gotAuth != "Bearer sk-secreta-1234" {
+		t.Fatalf("la prueba debe usar la clave guardada: %q", gotAuth)
+	}
+	e.call("POST", "/api/v1/admin/llm/test", ptok, false, map[string]any{"key": "otra"}, "")
+	if gotAuth != "Bearer otra" {
+		t.Fatalf("la prueba debe usar la clave del cuerpo si viene: %q", gotAuth)
+	}
+	// Generar: la config vigente llega al handler y la respuesta se limpia de <think> y vallas.
+	r = e.call("POST", "/api/v1/generate", tok, false, map[string]string{"prompt": "una landing"}, "")
+	if r.code != 200 || r.body["html"] != "<!doctype html><html><body>hola</body></html>" {
+		t.Fatalf("generate: %d %s", r.code, r.raw)
+	}
+	// Guardar sin clave conserva la anterior; desactivar deja 503 sin reiniciar.
+	r = e.call("PUT", "/api/v1/admin/llm", ptok, false, map[string]any{"url": fake.URL + "/v1/chat/completions", "model": "qwen", "enabled": false, "key": ""}, "")
+	if r.code != 200 || r.body["key_hint"] != "…1234" || r.body["enabled"] != false {
+		t.Fatalf("desactivar: %d %s", r.code, r.raw)
+	}
+	if r = e.call("POST", "/api/v1/generate", tok, false, map[string]string{"prompt": "una landing"}, ""); r.code != 503 {
+		t.Fatalf("generate desactivado: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/llm/status", tok, false, nil, ""); r.body["enabled"] != false {
+		t.Fatalf("status desactivado: %s", r.raw)
+	}
+	// Lo guardado sobrevive al caché: otro Server sobre la misma base lee la configuración.
+	s2 := &Server{DB: e.db}
+	cfg, err := s2.llmConfig(t.Context())
+	if err != nil || cfg.Key != "sk-secreta-1234" || cfg.Enabled || cfg.Model != "qwen" {
+		t.Fatalf("config desde la base: %+v %v", cfg, err)
+	}
+	// Y el entorno solo vale como valor inicial.
+	s3 := &Server{DB: func() *store.DB {
+		d, _ := store.Open(filepath.Join(t.TempDir(), "x.db"))
+		t.Cleanup(func() { d.Close() })
+		return d
+	}(),
+		LLM: LLMConfig{URL: "https://env.test/v1/chat/completions", Key: "k", Model: "auto"}}
+	if cfg, _ = s3.llmConfig(t.Context()); !cfg.Enabled || cfg.URL != "https://env.test/v1/chat/completions" {
+		t.Fatalf("entorno como inicial: %+v", cfg)
+	}
+}
+
+func TestExtraerHTML(t *testing.T) {
+	cases := map[string]string{
+		"<!doctype html><html></html>":                                             "<!doctype html><html></html>",
+		"```html\n<!doctype html><html></html>\n```":                               "<!doctype html><html></html>",
+		"<think>a\nb</think>\nTexto previo\n```\n<html><body>x</body></html>\n```": "<html><body>x</body></html>",
+		"Claro, aquí tienes:\n<!DOCTYPE html><html></html>\nEspero que sirva.":     "<!DOCTYPE html><html></html>",
+		"<think>sin cerrar": "",
+	}
+	for in, want := range cases {
+		if got := extraerHTML(in); got != want {
+			t.Errorf("extraerHTML(%q) = %q, quería %q", in, got, want)
+		}
+	}
+}

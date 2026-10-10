@@ -214,6 +214,24 @@ export interface Question {
   created_at: string;
   answers: Answer[];
 }
+export interface LlmStatus {
+  enabled: boolean;
+  model: string;
+}
+export interface LlmConfig {
+  url: string;
+  model: string;
+  enabled: boolean;
+  key_set: boolean;
+  key_hint: string;
+}
+export interface LlmTest {
+  ok: boolean;
+  status: number;
+  ms: number;
+  model: string;
+  detail: string;
+}
 export interface CourseProgress {
   course_id: string;
   lessons: { id: string; title: string; steps: number }[];
@@ -248,6 +266,11 @@ export const api = {
   run: (language: string, code: string) => req<RunResult>("POST", "/api/v1/run", { language, code }),
   generate: (prompt: string) => req<{ html: string }>("POST", "/api/v1/generate", { prompt }),
   courseProgress: (id: string) => req<CourseProgress>("GET", `/api/v1/courses/${encodeURIComponent(id)}/progress`),
+  // IA del Estudio: estado para cualquier usuario; configuración y prueba solo para el admin.
+  llmStatus: () => req<LlmStatus>("GET", "/api/v1/llm/status"),
+  llmConfig: () => req<LlmConfig>("GET", "/api/v1/admin/llm"),
+  saveLlm: (b: { url: string; model: string; enabled: boolean; key?: string }) => req<LlmConfig>("PUT", "/api/v1/admin/llm", b),
+  testLlm: (b: { url?: string; model?: string; key?: string }) => req<LlmTest>("POST", "/api/v1/admin/llm/test", b),
 };
 
 /** Si el API dice 401, manda al login conservando a dónde iba. */

@@ -1,9 +1,10 @@
-import { component$, Slot, useSignal, $, useVisibleTask$ } from "@builder.io/qwik";
+import { component$, useSignal, $, useVisibleTask$ } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 import { Link } from "@builder.io/qwik-city";
 import { api, ApiError, errMsg, requireLogin } from "~/lib/api";
 import { Terminal } from "~/components/terminal";
 import { Icon } from "~/components/icon";
+import { Help } from "~/components/help-tip";
 
 const PROMPT_DEFAULT = `Hazme una landing editorial (skill landing-editorial) para una juguetería de
 barrio llamada PoohToys.
@@ -15,9 +16,10 @@ barrio llamada PoohToys.
   madera, primera infancia), cifras, cómo comprar y cierre con «Pedir por WhatsApp».
 - Devuelve un único index.html completo, sin librerías externas.`;
 
-// Estado del gateway de IA. Se comprueba al cargar con una sonda sin efectos: un POST a /generate
-// con prompt vacío contesta 503 si el gateway no está configurado y 400 (prompt corto) si lo está,
-// sin llegar a llamar al modelo ni gastar el límite de generaciones. Luego lo actualiza cada Generar.
+// Estado del gateway de IA. Se lee de GET /api/v1/llm/status (lo que el instructor guardó en el
+// panel). Si el servidor es viejo y no tiene esa ruta, queda la sonda de respaldo: un POST a
+// /generate con prompt vacío contesta 503 si no está configurado y 400 (prompt corto) si lo está,
+// sin llamar al modelo ni gastar el límite de generaciones. Luego lo actualiza cada Generar.
 type IaState = "idle" | "busy" | "ok" | "warn";
 const IA_LABEL: Record<IaState, string> = {
   idle: "IA: por comprobar",
@@ -26,29 +28,6 @@ const IA_LABEL: Record<IaState, string> = {
   warn: "IA no conectada",
 };
 const IA_ICON: Record<IaState, string> = { idle: "plug", busy: "loader", ok: "checkCircle", warn: "plugOff" };
-
-/** Botón de ayuda con popover corto: abre al pasar, al enfocar o al pulsar. */
-const Help = component$((props: { title: string; left?: boolean }) => {
-  const open = useSignal(false);
-  return (
-    <span class={`studio-help ${open.value ? "open" : ""} ${props.left ? "left" : ""}`}>
-      <button
-        type="button"
-        class="studio-help__btn"
-        aria-label={props.title}
-        title={props.title}
-        aria-expanded={open.value}
-        onClick$={() => (open.value = !open.value)}
-        onBlur$={() => (open.value = false)}
-      >
-        <Icon name="help" size={16} />
-      </button>
-      <div class="studio-tip" role="tooltip">
-        <Slot />
-      </div>
-    </span>
-  );
-});
 
 export default component$(() => {
   const prompt = useSignal(PROMPT_DEFAULT);
@@ -66,6 +45,18 @@ export default component$(() => {
   useVisibleTask$(async () => {
     document.title = "Estudio de landing · JMD";
     ia.value = "busy";
+    try {
+      const st = await api.llmStatus();
+      ia.value = st.enabled ? "ok" : "warn";
+      return;
+    } catch (e) {
+      if (requireLogin(e)) return;
+      if (!(e instanceof ApiError && e.status === 404)) {
+        ia.value = "idle";
+        return;
+      }
+    }
+    // Respaldo para servidores sin /llm/status.
     try {
       await api.generate("");
       ia.value = "ok";
