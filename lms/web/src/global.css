@@ -267,3 +267,89 @@ table.t td { padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertic
 
 @media (prefers-reduced-motion: reduce) { .polvo, .brilla, .skel { animation: none; } .traza.dibuja { animation: none; stroke-dashoffset: 0; } }
 @media (max-width: 40rem) { html { font-size: 14.5px; } .brand small { display: none; } .page { padding-top: .8rem; } }
+
+/* Estudio de landing (rediseño): cabecera de una línea con estado de la IA, rejilla 40/60, visor con
+   segmento Vista/HTML, terminal plegada y nota del skill. Prefijo .studio- en todo. */
+.studio-head { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin: .2rem 0 .9rem; }
+.studio-head h1 { margin: 0; font-size: 1.25rem; line-height: 1.2; }
+.studio-head .studio-sub { margin: 0; color: var(--muted); font-size: .88rem; flex: 1 1 14rem; min-width: 0; }
+.studio-head .studio-right { display: flex; align-items: center; gap: .35rem; margin-left: auto; }
+.studio-state { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 650; padding: .2rem .6rem .2rem .5rem; border-radius: 999px; border: 1px solid var(--line2); background: var(--s2); color: var(--muted); white-space: nowrap; transition: background .2s, color .2s, border-color .2s; }
+.studio-state.ok { background: var(--ok-bg); color: var(--ok); border-color: rgba(23,128,61,.35); }
+.studio-state.warn { background: var(--warn-bg); color: var(--warn); border-color: rgba(180,83,9,.35); }
+.studio-state.busy .ico { animation: studio-gira 1s linear infinite; }
+
+/* Ayuda: botón redondo con popover corto, abre al pasar, al enfocar o al pulsar. */
+.studio-help { position: relative; display: inline-flex; }
+.studio-help__btn { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 1px solid transparent; background: none; color: var(--faint); cursor: pointer; padding: 0; transition: color .15s, background .15s, border-color .15s; }
+.studio-help__btn:hover, .studio-help__btn[aria-expanded="true"] { color: var(--fg); background: var(--s2); border-color: var(--line); }
+.studio-tip { position: absolute; top: calc(100% + 6px); right: 0; z-index: 25; width: min(21rem, 86vw); background: var(--s1); border: 1px solid var(--line2); border-radius: var(--r2); box-shadow: var(--shadow); padding: .6rem .75rem; font-size: .82rem; color: var(--muted); line-height: 1.45; opacity: 0; visibility: hidden; transform: translateY(-4px); transition: opacity .18s, transform .18s, visibility .18s; }
+.studio-tip b { color: var(--fg); } .studio-tip p { margin: 0; } .studio-tip p + p { margin-top: .35rem; }
+.studio-help:hover .studio-tip, .studio-help:focus-within .studio-tip, .studio-help.open .studio-tip { opacity: 1; visibility: visible; transform: none; }
+.studio-help.left .studio-tip { right: auto; left: 0; }
+
+/* Rejilla 40/60 en escritorio, una columna en móvil. */
+.studio-grid { display: grid; gap: .8rem; grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+@media (min-width: 62rem) { .studio-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); } }
+.studio-col { display: grid; gap: .8rem; min-width: 0; } .studio-col > *, .studio-grid > * { min-width: 0; }
+.studio-card { display: flex; flex-direction: column; background: var(--s1); border: 1px solid var(--line); border-radius: var(--r2); padding: .7rem .8rem; box-shadow: 0 1px 2px rgba(22,21,29,.04); }
+.studio-card__bar { display: flex; align-items: center; gap: .4rem; min-height: 28px; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); font-weight: 650; margin-bottom: .5rem; }
+.studio-card__bar .studio-right { margin-left: auto; display: flex; align-items: center; gap: .3rem; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.studio-prompt { display: block; width: 100%; height: 15.5rem; resize: vertical; font-family: var(--mono); font-size: .82rem; line-height: 1.5; margin: 0; }
+.studio-actions { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin-top: .55rem; }
+.studio-actions .btn { transition: filter .15s, background .15s, border-color .15s, transform .15s; }
+.studio-actions .btn:active:not(:disabled) { transform: translateY(1px); }
+.studio-spin { animation: studio-gira 1s linear infinite; }
+@keyframes studio-gira { to { transform: rotate(360deg); } }
+
+/* Franja de aviso: una línea, icono y texto; ámbar para aviso, rojo solo para error. */
+.studio-strip { display: flex; align-items: center; gap: .45rem; margin-top: .55rem; padding: .4rem .6rem; border-radius: 7px; font-size: .82rem; line-height: 1.3; background: var(--warn-bg); color: var(--warn); border: 1px solid rgba(180,83,9,.25); animation: studio-entra .2s ease-out; }
+.studio-strip.bad { background: var(--bad-bg); color: var(--bad); border-color: rgba(192,38,38,.25); }
+.studio-strip .ico { flex: none; } .studio-strip span { min-width: 0; }
+@keyframes studio-entra { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+
+/* Visor: segmento Vista/HTML, iframe o editor de HTML a la misma altura. */
+.studio-seg { display: inline-flex; padding: 2px; gap: 2px; border-radius: 8px; background: var(--s2); border: 1px solid var(--line); }
+.studio-seg button { display: inline-flex; align-items: center; gap: .35rem; font: inherit; font-size: .82rem; font-weight: 600; padding: .25rem .65rem; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; transition: background .18s, color .18s, box-shadow .18s; }
+.studio-seg button:hover { color: var(--fg); }
+.studio-seg button[aria-selected="true"] { background: var(--s1); color: var(--fg); box-shadow: 0 1px 2px rgba(22,21,29,.12); }
+.studio-view { position: relative; flex: 1; min-height: 26rem; border: 1px solid var(--line2); border-radius: var(--r); background: #fff; overflow: hidden; }
+.studio-frame { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+.studio-html { width: 100%; height: 100%; border: 0; border-radius: 0; resize: none; font-family: var(--mono); font-size: .8rem; line-height: 1.45; padding: .6rem .7rem; }
+.studio-html:focus-visible { outline-offset: -2px; }
+.studio-view .studio-empty { height: 100%; display: grid; place-content: center; justify-items: center; gap: .5rem; text-align: center; color: var(--muted); font-size: .88rem; background: radial-gradient(rgba(22,21,29,.09) 1px, transparent 1.2px) 0 0 / 18px 18px; }
+.studio-empty__ico { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--s2); color: var(--faint); border: 1px solid var(--line); }
+.studio-skel { position: absolute; inset: 0; padding: 1.4rem 1.6rem; display: grid; gap: .8rem; align-content: start; background: var(--s1); }
+.studio-skel i { display: block; height: .9rem; border-radius: 5px; background: linear-gradient(90deg, var(--s2) 0%, var(--s3) 50%, var(--s2) 100%); background-size: 200% 100%; animation: brillo 1.3s linear infinite; }
+.studio-skel i.h { height: 2.2rem; width: 55%; margin-bottom: .4rem; } .studio-skel i.b { height: 6rem; }
+.studio-icons { display: inline-flex; gap: .15rem; }
+.studio-icons .icon-btn { width: 28px; height: 28px; transition: color .15s, background .15s, border-color .15s; }
+.studio-icons .icon-btn:disabled { opacity: .4; cursor: default; background: none; border-color: transparent; }
+.studio-icons .icon-btn.ok { color: var(--ok); }
+
+/* Terminal plegada: 320 px al abrir. */
+.studio-panel { background: var(--s1); border: 1px solid var(--line); border-radius: var(--r2); box-shadow: 0 1px 2px rgba(22,21,29,.04); overflow: visible; }
+.studio-panel__sum { display: flex; align-items: center; gap: .3rem; padding: .25rem .5rem .25rem .3rem; border-radius: var(--r2); }
+.studio-panel__tgl { flex: 1; min-width: 0; display: flex; align-items: center; gap: .45rem; padding: .35rem .5rem; font: inherit; font-size: .84rem; font-weight: 600; color: var(--fg); background: none; border: 0; border-radius: 7px; cursor: pointer; text-align: left; transition: background .15s; }
+.studio-panel__tgl:hover { background: var(--s2); }
+.studio-panel__tgl .ico { color: var(--muted); } .studio-panel__tgl .studio-chev { margin-left: auto; color: var(--faint); transition: transform .2s; }
+.studio-panel.open .studio-panel__sum { border-radius: var(--r2) var(--r2) 0 0; border-bottom: 1px solid var(--line); }
+.studio-panel.open .studio-chev { transform: rotate(180deg); }
+.studio-panel__body { padding: .5rem; min-width: 0; overflow: hidden; }
+.studio-panel__body .term { height: 320px; border-radius: var(--r); }
+.studio-panel .studio-help__btn { width: 22px; height: 22px; }
+.studio-panel .studio-tip { text-align: left; font-weight: 500; }
+
+/* Nota del skill: pequeña, dos frases, enlace. */
+.studio-note { display: flex; flex-direction: row; gap: .6rem; align-items: flex-start; padding: .6rem .8rem; font-size: .84rem; color: var(--muted); }
+.studio-note .lead-ico { width: 28px; height: 28px; border-radius: 7px; } .studio-note p { margin: 0; line-height: 1.45; } .studio-note b { color: var(--fg); }
+.studio-note a { white-space: nowrap; }
+
+@media (max-width: 40rem) {
+  .studio-head { gap: .45rem; } .studio-head .studio-sub { flex-basis: 100%; order: 9; }
+  .studio-prompt { height: 11rem; } .studio-view { min-height: 20rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-spin, .studio-state.busy .ico, .studio-skel i, .studio-strip { animation: none; }
+  .studio-tip, .studio-seg button, .studio-state, .studio-actions .btn, .studio-chev, .studio-panel__tgl, .studio-help__btn { transition: none; }
+}
