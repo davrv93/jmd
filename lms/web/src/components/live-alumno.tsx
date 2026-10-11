@@ -170,9 +170,10 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
           </div>
         )}
         {panel.value === "ayuda" && (
-          <div class="live-panel-vista live-ayuda">
+          <div class="live-panel-vista live-ayuda" key={`ayuda-${modo.value === "libre" && local.value ? local.value : escena.value}`}>
             {(() => {
-              const e = props.escenas?.find((x) => x.id === efectiva);
+              const actualId = modo.value === "libre" && local.value ? local.value : escena.value; // leer las señales aquí para que el panel se repinte
+              const e = props.escenas?.find((x) => x.id === actualId);
               if (!e) return <p class="live-vacio">Esta escena no tiene ayuda.</p>;
               return (
                 <>
