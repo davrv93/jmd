@@ -30,6 +30,10 @@
 7. **Medición del efecto de caveman y RTK.** El gateway ya devuelve `orchestrator` y tokens por respuesta y los guarda por `sub`. El LMS consulta `/admin/api/usage?sub=` y muestra, por alumno, tokens de entrada y salida de hoy, porcentaje de su cuota y una marca cada vez que activó caveman o RTK (el contenedor avisa por un hook al LMS). Así el gráfico muestra la caída de tokens después de activarlos.
 8. **«Lo logré» = progreso del ciclo.** El botón escribe `PUT /api/v1/lessons/pa-02/progress/<paso>` con `done: true` más `evidencia` opcional (captura automática del visor o el último comando). La insignia de la clase 2 se emite con `solo_con_progreso` y un umbral configurable (por defecto 6 de 9 pasos).
 
+9. **Ningún modelo de IA corre en el EC2.** Chat, voz a texto e imagen corren en la laptop del alumno (Ollama, faster-whisper, sd-turbo) y, si una laptop no puede, en un proveedor remoto por el gateway con el token personal del alumno: modelos chinos gratis o de muy bajo costo por OpenRouter para chat (DeepSeek V4.1 Flash, Qwen3, GLM Flash, Kimi K2, MiniMax), y proveedores OpenAI-compatibles añadidos al gateway para imagen (Zhipu CogView, Alibaba Wan o Qwen-Image, SiliconFlow) y voz (SiliconFlow SenseVoice, Groq Whisper). Nunca una instancia compartida de whisper o sd-turbo en el servidor, ni diez.
+10. **El guion manda.** El contenido del LIVE está escena por escena en `docs/GUION_LIVE_SESION2.md` (12 escenas E01 a E12, con lo que se ve, qué animación y con qué herramienta, qué hace el instructor, qué hace el alumno, qué valida la compuerta y el respaldo). Las tareas de la fase 2 implementan ese guion, no otro.
+11. **Compuerta de avance.** «Siguiente» no cambia de escena a ciegas: muestra al instructor quién cumplió la escena (por «Lo logré» o por evidencia automática), quién falta y su último evento, y le da tres salidas: esperar, pasar igual o mandar ayuda. El umbral por escena vive en `escena.yaml` (por defecto 80 %).
+
 ## Restricción dura: casi nada de RAM
 
 El servidor tiene 3,8 GB y Keycloak ya se lleva 500 MB. Todo lo que corra en el LIVE, en el servidor y en el navegador del alumno, se elige por consumo mínimo. Regla: **ningún proceso por alumno que pase de 40 MB en reposo**, y nada que compile o empaquete en el servidor durante la clase.
@@ -75,6 +79,10 @@ Cada tarea cabe en una jornada o menos, tiene criterio de aceptación verificabl
 | 1.3 | Página `/live/pa-02/` a pantalla completa (Fullscreen API) con dos vistas: **control** (instructor: lista de escenas, anterior/siguiente, cronómetro, «mostrar a todos», contador de conectados y de «Lo logré» por paso) y **alumno** (la escena actual, paneles plegables de terminal, visor e IA, botón «Lo logré») | Qwik | Captura de las dos vistas; teclado: flechas y espacio cambian escena en control; Escape sale de pantalla completa sin perder la sesión | pendiente |
 | 1.4 | Presencia: cada alumno manda un latido cada 15 s; el control muestra quién está conectado y en qué escena mira | Go, Qwik | Lista de presentes con retardo máximo de 20 s | pendiente |
 | 1.5 | Modo «libre»: el instructor puede soltar el control para que cada alumno navegue a su ritmo, y volver a tomarlo | Go, Qwik | Interruptor en control; el alumno ve el aviso | pendiente |
+| 1.6 | Compuerta de avance: al pulsar «Siguiente», `GET /api/v1/live/{lesson}/compuerta` devuelve por alumno {cumplio: bool, motivo: lo_logre|evidencia|ninguno, ultimo_evento, hace_s}; el control muestra cumplidos, faltantes y el porcentaje contra el umbral de `escena.yaml`; botones Esperar / Pasar igual / Mandar ayuda; «Pasar igual» queda registrado | Go, Qwik | Con 10 alumnos y 7 cumplidos, «Siguiente» muestra 3 nombres y no avanza hasta elegir; test del cálculo del umbral | pendiente |
+| 1.7 | Semáforo por alumno en el control: verde (cumplió), ámbar (actividad en los últimos 2 min: terminal, agente o visor), rojo (sin actividad o 3 errores seguidos en la terminal), gris (desconectado); los eventos los manda el panel del alumno cada vez que ocurren | Go, Qwik | Simular cada estado con Playwright y ver el color correcto | pendiente |
+| 1.8 | «Mandar ayuda»: abre la terminal o el agente del alumno en solo lectura (si lo permitió al entrar) o le envía un mensaje que aparece en su panel; «Mensaje a todos» con una línea | Go, Qwik | El alumno ve el mensaje en menos de 2 s; sin permiso, el instructor solo ve el resumen | pendiente |
+| 1.9 | Emparejar alumnos al azar para la escena de pruebas (E11) y mostrar a cada uno con quién le toca y la URL del visor del compañero | Go, Qwik | 10 alumnos → 5 pares; impar → un trío | pendiente |
 
 ### Fase 2 · Escenas HTML vivas de la clase 2 (3 días)
 
@@ -82,11 +90,11 @@ Cada tarea cabe en una jornada o menos, tiene criterio de aceptación verificabl
 |---|---|---|---|---|
 | 2.1 | Formato de escena: carpeta `content/.../live/pa-02/`, `escena.yaml` por escena (id, titulo, fase, paso, duracion_min, lo_logre: bool, evidencia: ninguna, captura, comando) y cargador en Go con recarga en caliente | Go, contenido | `GET /api/v1/live/pa-02/escenas` lista 12 escenas con su fase | pendiente |
 | 2.2 | Plantilla base de escena: fondo del tema (cielo con constelaciones), cabecera con fase y número, cuerpo, pie con «Lo logré»; sin CDN; respeta `prefers-reduced-motion` | contenido | Una escena de prueba renderiza en claro y oscuro a 1920×1080 y 1366×768 | pendiente |
-| 2.3 | Escenas de **Experiencia** (3): «Edge AI en tu laptop» (animación PinePaper de datos que no salen de la laptop), «Instala los skills» (terminal guiada), «Construye el asistente» (plan de trabajo vivo con obra) | contenido | Cada escena con animación de entrada coreografiada según `motion-design-skill` (tabla de duraciones y easing) | pendiente |
-| 2.4 | Escenas de **Reflexión** (2): «Voz y flyer: qué entendió el modelo» (bloque de datos editables), «Mide tu consumo» (gráfico de tokens del alumno en vivo, antes y después de caveman y RTK) | contenido, Qwik | El gráfico lee `/api/v1/mi-uso` y se actualiza cada 10 s | pendiente |
-| 2.5 | Escenas de **Conceptos** (4): «Qué es Edge AI», «Skills y modo piedra», «Plan con criterios verificables», «Niveles de imagen por máquina», cada una con un wireframe generado con `wireframe-skill` convertido a ilustración animada (PinePaper, modo código, SVG) | contenido | Texto de cada concepto en una frase, una analogía y un diagrama animado; sin párrafos de más de 3 líneas | pendiente |
-| 2.6 | Escenas de **Aplicación** (3): «Probar y medir» (guion de 3 tareas), «Tu flyer» (visor con la imagen generada), «Cierre: tu insignia» (vista previa de la insignia 02 que se enciende al cumplir el umbral) | contenido | «Lo logré» en cada una registra progreso | pendiente |
-| 2.7 | Ensayo completo con cronómetro: 120 minutos, 12 escenas, tiempos por escena anotados en `escena.yaml` | contenido | Ensayo grabado; ninguna escena pasa de 12 min | pendiente |
+| 2.3 | Escenas E01 a E03 del guion (Bienvenida con constelaciones y Tecnosito en 3D; Edge AI en una frase con los dos caminos animados; Tu laptop decide con la tabla de niveles y el diagnóstico) | contenido | Cada una renderiza según su ficha del guion; E01 incrusta la escena Three.js del osito sin servidor; E03 detecta el nivel elegido en «Mi IA» como evidencia | pendiente |
+| 2.4 | Escenas E04 a E06 (Skills como constelación con antes y después de piedra; Mide tu consumo con el gráfico vivo de tokens y las marcas de piedra y RTK; Plan con criterios con el kanban que se parte en 6) | contenido, Qwik | E05 lee `/api/v1/mi-uso` cada 10 s; E04 toma como evidencia una skill propia en la cuenta; E06 detecta `PLAN_TRABAJO.md` | pendiente |
+| 2.5 | Escenas E07 a E10, la construcción del asistente (Chat con el diagrama navegador → backend → modelo local o remoto; Avatar 3D con osito y robot cambiando de ánimo; Voz con la onda que se vuelve texto; Imagen y flyer con las tres piezas que encajan) | contenido | Evidencias automáticas: `POST /api/chat 200`, `POST /api/stt 200` y la imagen en el visor; cada escena muestra el comando exacto y la línea de exportación para el modo remoto | pendiente |
+| 2.6 | Escenas E11 y E12 (Probar y medir con pares al azar y la tabla de tiempos reales; Tu insignia que se enciende al cumplir 6 de 9 pasos y la tarea 2) | contenido, Qwik | E11 llena la tabla desde los logs recogidos; E12 refleja la emisión automática al cerrar | pendiente |
+| 2.7 | Ensayo completo con cronómetro: 105 minutos de escenas más 15 de margen según la tabla del guion; tiempos y umbral de compuerta por escena anotados en `escena.yaml`; capturas estáticas de respaldo de cada escena | contenido | Ensayo grabado; ninguna escena pasa de su tiempo más 3 min | pendiente |
 
 ### Fase 3 · Terminal y contenedor de aula por alumno (3 días)
 
@@ -140,6 +148,9 @@ Decisión: en la laptop el alumno sigue con OpenCode y su token personal del gat
 | 5.2 | «Mi IA» para el alumno: modelo elegido entre los permitidos, token personal regenerable, clave propia opcional, consumo de hoy | Qwik, Go | Cambiar de modelo en la UI cambia lo que usa `opencode` en el contenedor | pendiente |
 | 5.3 | `GET /api/v1/mi-uso`: tokens de entrada y salida, peticiones, porcentaje de cuota, marcas de caveman y RTK, serie de los últimos 60 min; fuente: telemetría del gateway por `sub` | Go, gateway | Coincide con el Panel del gateway con diferencia menor al 2 % | pendiente |
 | 5.4 | Vista del instructor: tabla de consumo por alumno en vivo, alumnos al 80 % de cuota en ámbar, al 100 % en rojo, botón «dar 20 % más» | Qwik, Go | Captura; el botón amplía la cuota en el gateway | pendiente |
+| 5.6 | Proveedores remotos de respaldo en el gateway: añadir como proveedores OpenAI-compatibles los de imagen (Zhipu CogView, Alibaba Wan o Qwen-Image, SiliconFlow) y de voz (SiliconFlow SenseVoice, Groq Whisper) con `POST /v1/images/generations` y `POST /v1/audio/transcriptions` traducidos al formato de cada uno; cuota y costo por alumno igual que el chat; verificación la víspera con `jmd provider <n> test` | gateway | Un alumno sin GPU genera una imagen y transcribe un audio por el gateway con su token; costo mostrado en «Mi uso» | pendiente |
+| 5.7 | Modo remoto en el asistente del alumno: el backend del osito acepta `OSITO_OLLAMA_URL`, `OSITO_STT_URL` y `OSITO_IMAGEN_URL` apuntando al gateway con el token personal; «Mi IA» muestra las tres líneas de exportación listas para copiar y un botón «usar remoto» que las escribe en `/trabajo/.env` del contenedor | Go, Qwik, osito | Cambiar a remoto y volver a local sin reinstalar nada; `GET /api/salud` del osito dice qué usa | pendiente |
+| 5.8 | Lista blanca inicial de modelos chinos gratis o baratos (DeepSeek V4.1 Flash, Qwen3, GLM Flash, Kimi K2, MiniMax) con precio por millón visible en el selector; verificación automática diaria de que responden | gateway, Qwik | Selector con precio; los que no respondieron en la prueba del día salen en gris | pendiente |
 | 5.5 | Chat de IA dentro del LIVE (opcional, si sobra tiempo): caja de prompt que usa el token del alumno contra el gateway, con el modelo elegido, para quien no quiera la terminal | Qwik | Respuesta en la UI con tokens contados | pendiente |
 
 ### Fase 5b · Skills por alumno, aisladas y adaptadas a su modelo (2 días)
@@ -192,7 +203,7 @@ Reglas duras de esta fase:
 | 3 | 4, 5, 5b | Visor con React y Vue en caliente; consumo por alumno en vivo con marcas de caveman y RTK; skills propias aisladas y adaptadas al modelo de cada alumno |
 | 4 | 6, 7 | «Lo logré», insignia automática, ensayo general |
 
-Total estimado: 23 a 25 jornadas de desarrollo, más el ensayo.
+Total estimado: 26 a 28 jornadas de desarrollo, más el ensayo.
 
 ## Riesgos y mitigación
 
@@ -207,6 +218,8 @@ Total estimado: 23 a 25 jornadas de desarrollo, más el ensayo.
 | Una skill escrita para Claude no funciona con un modelo pequeño | El alumno cree que las skills no sirven | Variante por modelo generada y montada automáticamente (5b.5); «Probar» en la terminal antes de guardar |
 | PinePaper en modo Puppeteer lanza Chrome sin sandbox | Riesgo en la máquina del instructor | Usar modo `code`; las escenas se generan en la Mac del instructor, nunca en el servidor |
 | Internet del aula cae | Escenas sin animación, IA sin respuesta | Escenas autocontenidas sin CDN; el LMS sigue sirviendo local; terminal y visor funcionan sin salir del servidor |
+| Varias laptops no pueden con whisper o sd-turbo | Alumnos frenados en E09 y E10 | Proveedores remotos por el gateway con un selector; nunca instancias en el EC2 |
+| El instructor avanza y deja gente atrás | Alumnos perdidos desde E07 | Compuerta de avance con umbral por escena y «Mandar ayuda» |
 | SSE detrás de nginx con buffering | Escenas que llegan tarde | `proxy_buffering off` y `X-Accel-Buffering: no` en la ruta del stream; probado en 7.2 |
 
 ## Fuera de alcance en esta versión
