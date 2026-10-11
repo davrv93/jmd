@@ -1,4 +1,4 @@
-import { $, component$, useContext, useSignal, useVisibleTask$ } from "@builder.io/qwik";
+import { $, component$, type QRL, useContext, useSignal, useVisibleTask$ } from "@builder.io/qwik";
 import { api, errMsg, requireLogin, type CompuertaLive, type LiveEstado, type PresenteLive } from "~/lib/api";
 import { SessionContext, toast } from "~/lib/session";
 import { Icon } from "~/components/icon";
@@ -10,7 +10,7 @@ const etiquetaSemaforo = (c: string) =>
 
 // LiveControl: la mesa del instructor del LIVE. Lista de escenas, anterior/siguiente,
 // mostrar/ocultar, iniciar/cerrar, conectados y cronómetro de la escena.
-export const LiveControl = component$((props: { lesson: string; estado: LiveEstado; escenas: { id: string; titulo: string; fase: string; duracion_min: number; compuerta?: string }[]; conectados: number; presentes: PresenteLive[] }) => {
+export const LiveControl = component$((props: { lesson: string; estado: LiveEstado; escenas: { id: string; titulo: string; fase: string; duracion_min: number; compuerta?: string }[]; conectados: number; presentes: PresenteLive[]; onVista$?: QRL<(alumno: boolean) => void> }) => {
   const session = useContext(SessionContext);
   const escenaActual = useSignal(props.estado.escena);
   const visible = useSignal(props.estado.visible);
@@ -278,6 +278,11 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
               </button>
             ))}
           </span>
+        )}
+        {props.onVista$ && (
+          <button type="button" class="btn ghost sm" aria-label="Ver la clase como la ve un alumno" title="Terminal, visor y agente con tu cuenta" onClick$={() => props.onVista$?.(true)}>
+            <Icon name="eye" size={14} /> Ver como alumno
+          </button>
         )}
         <span class="chip" title="Conectados al stream">
           <Icon name="users" size={13} /> {props.conectados}

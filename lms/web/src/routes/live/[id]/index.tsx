@@ -1,4 +1,4 @@
-import { component$, useContext, useStore, useVisibleTask$ } from "@builder.io/qwik";
+import { $, component$, useContext, useStore, useVisibleTask$ } from "@builder.io/qwik";
 import { type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
 import { api, errMsg, requireLogin, type EscenaLive, type LiveEstado, type Me, type ParejaLive, type PresenteLive } from "~/lib/api";
 import { abrirStream } from "~/lib/live";
@@ -20,11 +20,12 @@ interface LiveState {
   aviso: string; // mensaje dirigido a este alumno
   pareja: ParejaLive | null;
   skillNueva: string; // skill creada desde la terminal que aún no está en la cuenta
+  vistaAlumno: boolean; // el instructor mira la clase como la ve un alumno (terminal, visor, agente)
 }
 
 export default component$(() => {
   const session = useContext(SessionContext);
-  const st = useStore<LiveState>({ me: null, estado: null, escenas: [], error: "", conectados: 0, presentes: [], aviso: "", pareja: null, skillNueva: "" });
+  const st = useStore<LiveState>({ me: null, estado: null, escenas: [], error: "", conectados: 0, presentes: [], aviso: "", pareja: null, skillNueva: "", vistaAlumno: false });
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async ({ track }) => {
@@ -51,6 +52,11 @@ export default component$(() => {
       return;
     }
     st.conectados = st.estado.conectados;
+    try {
+      st.vistaAlumno = sessionStorage.getItem("lms.live.alumno") === "1" || new URLSearchParams(location.search).get("vista") === "alumno";
+    } catch {
+      /* sin almacenamiento: vista de instructor */
+    }
     try {
       const pj = await api.livePareja(id);
       st.pareja = pj.con.length ? pj : null;
@@ -82,9 +88,23 @@ export default component$(() => {
   if (st.error) return <ErrorState message={st.error} />;
   if (!st.estado || !st.me) return <Loading />;
 
+  const staff = isStaff(st.me);
+  const cambiarVista = $((alumno: boolean) => {
+    st.vistaAlumno = alumno;
+    try {
+      sessionStorage.setItem("lms.live.alumno", alumno ? "1" : "0");
+    } catch {
+      /* la elección dura solo esta pantalla */
+    }
+  });
+
   return (
     <div class="live">
-      {isStaff(st.me) ? <LiveControl lesson={id} estado={st.estado} escenas={st.escenas} conectados={st.conectados} presentes={st.presentes} /> : <LiveAlumno lesson={id} estado={st.estado} aviso={st.aviso} pareja={st.pareja} escenas={st.escenas} skillNueva={st.skillNueva} />}
+      {staff && !st.vistaAlumno ? (
+        <LiveControl lesson={id} estado={st.estado} escenas={st.escenas} conectados={st.conectados} presentes={st.presentes} onVista$={cambiarVista} />
+      ) : (
+        <LiveAlumno lesson={id} estado={st.estado} aviso={st.aviso} pareja={st.pareja} escenas={st.escenas} skillNueva={st.skillNueva} staff={staff} onVista$={cambiarVista} />
+      )}
     </div>
   );
 });

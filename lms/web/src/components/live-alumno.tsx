@@ -1,4 +1,4 @@
-import { $, component$, useContext, useSignal, useStore, useVisibleTask$ } from "@builder.io/qwik";
+import { $, component$, type QRL, useContext, useSignal, useStore, useVisibleTask$ } from "@builder.io/qwik";
 import { api, type EscenaLive, type LiveEstado, type ParejaLive } from "~/lib/api";
 import { SessionContext, toast } from "~/lib/session";
 import { Icon } from "~/components/icon";
@@ -10,7 +10,7 @@ import { avisarEscena, temaActual, urlEscena } from "~/lib/live";
 
 // LiveAlumno: la pantalla del alumno del LIVE. La escena actual a pantalla completa,
 // cortina cuando el instructor la oculta, aviso en modo libre y panel de ayuda mínima.
-export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstado; aviso?: string; pareja?: ParejaLive | null; escenas?: EscenaLive[]; skillNueva?: string }) => {
+export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstado; aviso?: string; pareja?: ParejaLive | null; escenas?: EscenaLive[]; skillNueva?: string; staff?: boolean; onVista$?: QRL<(alumno: boolean) => void> }) => {
   const session = useContext(SessionContext);
   const escena = useSignal(props.estado.escena);
   const visible = useSignal(props.estado.visible);
@@ -298,6 +298,11 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
             <span class="live-prueba-n">{prueba.nombre}</span>
             <ChipPrueba estado={prueba.estado} />
           </span>
+        )}
+        {props.staff && props.onVista$ && (
+          <button type="button" class="btn sm" aria-label="Volver al control del instructor" onClick$={() => props.onVista$?.(false)}>
+            <Icon name="chevronLeft" size={14} /> Volver al control
+          </button>
         )}
         <span class="grow" />
         <button type="button" class="btn sm" aria-label={completa.value ? "Salir de pantalla completa" : "Pantalla completa"} onClick$={alternar}>
