@@ -44,15 +44,31 @@ materials:                       # enlaces publicados; kind: link · video · sl
   - {id: ppt, title: Diapositivas, kind: slides, file: materials/clase-01.pptx, slides_dir: materials/clase-01-diapositivas}
   # adjunto para descargar (kind: zip · file): se sirve con su nombre de archivo
   - {id: zip, title: skills.zip, kind: zip, file: materials/skills.zip}
-cycle:                           # ciclo de aprendizaje: pasos con su herramienta y su comprobación
+cycle:                           # ciclo de aprendizaje (Kolb): pasos con su herramienta y su comprobación
   - id: ver
     title: Ver la clase
     tool: zoom                   # zoom · vscode · docker · terminal · jmd · claude-code · opencode · git · lms
+    phase: experiencia           # fase del ciclo de Kolb (ver abajo); si falta, se deduce
     description: …
     check: "jmd status"          # comando (o evidencia) que demuestra que el paso está hecho
 ---
 Cuerpo en Markdown: «## Avance», los conceptos, «## Tareas»…
 ```
+
+### Ciclo de aprendizaje (Kolb)
+
+Cada sesión se recorre con el ciclo de aprendizaje experiencial de Kolb, en cuatro fases. La UI
+agrupa los pasos por fase y muestra el avance de cada una:
+
+| `phase` | Fase | Qué se hace |
+| --- | --- | --- |
+| `experiencia` | 1 · Experiencia concreta | Vivir la clase: ver, instalar, ejecutar, construir. |
+| `reflexion` | 2 · Observación reflexiva | Mirar qué pasó: revisar, probar y preguntar. |
+| `conceptualizacion` | 3 · Conceptualización abstracta | Entender el porqué: leer, escribir el plan o la skill. |
+| `experimentacion` | 4 · Experimentación activa | Aplicarlo en real: entregar, desplegar. |
+
+`phase` es opcional: si se omite, el front la deduce del `tool` y el orden (`web/src/lib/kolb.ts`).
+Ponla siempre que quieras mandar sobre esa deducción.
 
 ## Tarea (`assignments/*.md`)
 

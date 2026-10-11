@@ -85,6 +85,43 @@ export const Ring = component$((props: { pct: number; size?: number; label?: str
   );
 });
 
+/** Anillo del ciclo de Kolb: cuatro arcos, uno por fase, con el progreso global en el centro. */
+export const CycleRing = component$((props: { phases: { token: string; done: number; total: number }[]; size?: number; label?: string }) => {
+  const s = props.size ?? 52;
+  const r = (s - 5) / 2;
+  const c = 2 * Math.PI * r;
+  const seg = c / props.phases.length;
+  const done = props.phases.reduce((a, p) => a + p.done, 0);
+  const total = props.phases.reduce((a, p) => a + p.total, 0);
+  const pct = total ? Math.round((100 * done) / total) : 0;
+  return (
+    <span class="cycle-ring" style={`width:${s}px;height:${s}px`} title={props.label ?? `${pct}% del ciclo`} aria-label={`${pct}% del ciclo de aprendizaje`}>
+      <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} aria-hidden="true">
+        <circle cx={s / 2} cy={s / 2} r={r} class="cr-bg" />
+        {props.phases.map((p, i) => {
+          const frac = p.total ? Math.min(1, p.done / p.total) : 0;
+          const gap = seg * 0.07;
+          const len = (seg - gap) * frac;
+          return (
+            <circle
+              key={i}
+              cx={s / 2}
+              cy={s / 2}
+              r={r}
+              class="cr-seg"
+              style={`stroke:var(--ph-${p.token})`}
+              stroke-dasharray={`${len} ${c - len}`}
+              stroke-dashoffset={-(i * seg + gap / 2)}
+              transform={`rotate(-90 ${s / 2} ${s / 2})`}
+            />
+          );
+        })}
+      </svg>
+      <span class="cr-txt">{pct}%</span>
+    </span>
+  );
+});
+
 export const Bar = component$((props: { pct: number }) => (
   <span class="bar" role="progressbar" aria-valuenow={Math.round(props.pct)} aria-valuemin={0} aria-valuemax={100}>
     <i style={`width:${Math.max(0, Math.min(100, props.pct))}%`} />

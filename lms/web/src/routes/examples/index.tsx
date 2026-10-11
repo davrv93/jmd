@@ -28,7 +28,7 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async ({ cleanup }) => {
     session.help = "ejemplos";
-    setTitle("Ejemplos");
+    setTitle("Prácticas");
     q.value = getParam("q");
     tag.value = getParam("tag");
     level.value = getParam("nivel");
@@ -56,8 +56,9 @@ export default component$(() => {
   return (
     <>
       <div class="head">
+        <span class="lead-ico gold" style="width:46px;height:46px"><Icon name="sparkles" size={22} /></span>
         <div class="grow">
-          <h1>Ejemplos</h1>
+          <h1>Prácticas</h1>
           <p>Casos prácticos con código listo para copiar. Cada uno indica la sesión con la que va.</p>
         </div>
       </div>
@@ -65,10 +66,10 @@ export default component$(() => {
       {!st.error && st.list === null && <Loading lines={5} />}
       {st.list && (
         <>
-          <div class="row" style="margin-bottom:.6rem">
+          <div class="toolbar" role="search">
             <span class="field-ico grow" style="min-width:14rem;max-width:26rem">
               <Icon name="search" />
-              <input id="buscar" type="search" placeholder="Buscar ejemplos  ( / )" value={q.value} onInput$={(_, el) => ((q.value = el.value), setParams({ q: el.value }))} />
+              <input id="buscar" type="search" placeholder="Buscar prácticas  ( / )" value={q.value} onInput$={(_, el) => ((q.value = el.value), setParams({ q: el.value }))} />
             </span>
             <Chip on={!level.value} onClick$={() => ((level.value = ""), setParams({ nivel: "" }))}>Todos los niveles</Chip>
             {NIVELES.map((n) => (
@@ -76,37 +77,40 @@ export default component$(() => {
             ))}
           </div>
           {tags.length > 0 && (
-            <div class="row" style="margin-bottom:1rem">
-              <span class="xs faint"><Icon name="tag" size={12} /> Etiquetas</span>
+            <div class="toolbar" style="margin-top:-.5rem">
+              <span class="lbl"><Icon name="tag" size={12} /> Etiquetas</span>
               {tags.map((t) => (
                 <Chip key={t} on={tag.value === t} onClick$={() => ((tag.value = tag.value === t ? "" : t), setParams({ tag: tag.value }))}>{t}</Chip>
               ))}
             </div>
           )}
           {all.length === 0 ? (
-            <Empty icon="sparkles" title="Todavía no hay ejemplos" text="El instructor los irá publicando; aparecerán aquí." />
+            <Empty icon="sparkles" title="Todavía no hay prácticas" text="El instructor las irá publicando; aparecerán aquí." />
           ) : shown.length === 0 ? (
             <Empty icon="search" title="Nada coincide" text="Prueba con otra palabra o quita algún filtro." />
           ) : (
-            <div class="grid">
-              {shown.map((e) => (
-                <Link key={e.id} class="card" href={`/examples/${e.id}/`} style="display:flex;flex-direction:column;gap:.45rem">
-                  <div class="row" style="flex-wrap:nowrap">
-                    <span class="lead-ico"><Icon name="sparkles" /></span>
-                    <b class="grow">{e.title}</b>
-                    {!e.published && <span class="badge warn"><Icon name="lock" size={11} /></span>}
-                  </div>
-                  <p class="sm muted" style="margin:0;flex:1">{e.summary}</p>
-                  <div class="row">
-                    <span class={`badge ${LEVEL[e.level] ?? ""}`}>{e.level}</span>
-                    {e.tags.map((t) => (
-                      <span key={t} class="badge">{t}</span>
-                    ))}
-                  </div>
-                  {e.lesson_title && <div class="xs faint"><Icon name="book" size={12} /> {e.lesson_title}</div>}
-                </Link>
-              ))}
-            </div>
+            <>
+              <div class="section-t" style="margin-top:.4rem"><Icon name="sparkles" /> {shown.length} {shown.length === 1 ? "práctica" : "prácticas"}</div>
+              <div class="grid">
+                {shown.map((e) => (
+                  <Link key={e.id} class="card" href={`/examples/${e.id}/`} style="display:flex;flex-direction:column;gap:.45rem">
+                    <div class="row" style="flex-wrap:nowrap">
+                      <span class="lead-ico"><Icon name="sparkles" /></span>
+                      <b class="grow">{e.title}</b>
+                      {!e.published && <span class="badge warn"><Icon name="lock" size={11} /></span>}
+                    </div>
+                    <p class="sm muted" style="margin:0;flex:1">{e.summary}</p>
+                    <div class="row">
+                      <span class={`badge ${LEVEL[e.level] ?? ""}`}>{e.level}</span>
+                      {e.tags.map((t) => (
+                        <span key={t} class="badge">{t}</span>
+                      ))}
+                    </div>
+                    {e.lesson_title && <div class="xs faint"><Icon name="book" size={12} /> {e.lesson_title}</div>}
+                  </Link>
+                ))}
+              </div>
+            </>
           )}
         </>
       )}
@@ -114,4 +118,4 @@ export default component$(() => {
   );
 });
 
-export const head: DocumentHead = { title: "Ejemplos" };
+export const head: DocumentHead = { title: "Prácticas" };

@@ -3,10 +3,11 @@ import { Link, type DocumentHead } from "@builder.io/qwik-city";
 import { api, errMsg, fmtDate, rel, requireLogin, STATUS, type AssignmentSummary, type Course } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
 import { loadLast, setTitle, type LastSeen } from "~/lib/url";
+import { PHASES } from "~/lib/kolb";
 import { Icon } from "~/components/icon";
 import { Empty, ErrorState, Loading, Ring, Status } from "~/components/ui";
 
-// Inicio: continuar, cursos con su avance y próximas entregas.
+// Inicio: cómo aprendes, continuar, cursos con su avance y próximas entregas.
 export default component$(() => {
   const session = useContext(SessionContext);
   const st = useStore<{ courses: Course[] | null; error: string; last: LastSeen | null }>({ courses: null, error: "", last: null });
@@ -24,7 +25,7 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async ({ track }) => {
     session.help = "inicio";
-    setTitle("Inicio");
+    setTitle("Aprender");
     track(() => session.loaded);
     if (!session.loaded) return;
     if (session.me) st.last = loadLast(session.me.id);
@@ -60,8 +61,8 @@ export default component$(() => {
     <>
       <div class="head">
         <div class="grow">
-          <h1>{first ? `Hola, ${first}` : "Inicio"}</h1>
-          <p>Tu avance, lo que sigue y lo que tienes por entregar.</p>
+          <h1>{first ? `Hola, ${first}` : "Aprender"}</h1>
+          <p>Aprendes con el ciclo de Kolb: vives la clase, reflexionas, entiendes el porqué y lo aplicas.</p>
         </div>
       </div>
 
@@ -84,6 +85,20 @@ export default component$(() => {
               </span>
             </Link>
           )}
+
+          <div class="section-t"><Icon name="cycle" /> Así aprendes</div>
+          <div class="ph-track" style="margin-bottom:1.2rem">
+            {PHASES.map((p) => (
+              <div class="ph-card" data-ph={p.token} key={p.id}>
+                <div class="ph-card__h">
+                  <span class="ph-ico"><Icon name={p.icon} size={16} /></span>
+                  <span class="ph-n">Fase {p.n}</span>
+                </div>
+                <div class="ph-t">{p.short}</div>
+                <div class="ph-sub">{p.description}</div>
+              </div>
+            ))}
+          </div>
 
           <div class="split">
             <section>
@@ -136,8 +151,8 @@ export default component$(() => {
               )}
               <div class="section-t"><Icon name="zap" /> Atajos</div>
               <div class="list">
-                <Link class="item" href="/examples/"><span class="lead-ico"><Icon name="sparkles" /></span><span class="grow t sm">Ejemplos con código</span><Icon name="chevronRight" /></Link>
-                <Link class="item" href="/links/"><span class="lead-ico"><Icon name="link" /></span><span class="grow t sm">Enlaces publicados</span><Icon name="chevronRight" /></Link>
+                <Link class="item" href="/examples/"><span class="lead-ico"><Icon name="sparkles" /></span><span class="grow t sm">Prácticas con código</span><Icon name="chevronRight" /></Link>
+                <Link class="item" href="/links/"><span class="lead-ico"><Icon name="link" /></span><span class="grow t sm">Recursos publicados</span><Icon name="chevronRight" /></Link>
                 <Link class="item" href="/grades/"><span class="lead-ico"><Icon name="award" /></span><span class="grow t sm">Mis notas</span><Icon name="chevronRight" /></Link>
               </div>
             </aside>
@@ -148,4 +163,4 @@ export default component$(() => {
   );
 });
 
-export const head: DocumentHead = { title: "Inicio" };
+export const head: DocumentHead = { title: "Aprender" };

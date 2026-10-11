@@ -25,7 +25,7 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async ({ cleanup }) => {
     session.help = "enlaces";
-    setTitle("Enlaces");
+    setTitle("Recursos");
     q.value = getParam("q");
     kind.value = getParam("tipo");
     const onKey = (e: KeyboardEvent) => {
@@ -49,8 +49,9 @@ export default component$(() => {
   return (
     <>
       <div class="head">
+        <span class="lead-ico gold" style="width:46px;height:46px"><Icon name="link" size={22} /></span>
         <div class="grow">
-          <h1>Enlaces</h1>
+          <h1>Recursos</h1>
           <p>Todo lo que el instructor publicó en las sesiones: documentación, descargas, repositorios y grabaciones.</p>
         </div>
       </div>
@@ -58,10 +59,10 @@ export default component$(() => {
       {!st.error && st.list === null && <Loading lines={5} />}
       {st.list && (
         <>
-          <div class="row" style="margin-bottom:.9rem">
+          <div class="toolbar" role="search">
             <span class="field-ico grow" style="min-width:14rem;max-width:26rem">
               <Icon name="search" />
-              <input id="buscar" type="search" placeholder="Buscar enlaces  ( / )" value={q.value} onInput$={(_, el) => ((q.value = el.value), setParams({ q: el.value }))} />
+              <input id="buscar" type="search" placeholder="Buscar recursos  ( / )" value={q.value} onInput$={(_, el) => ((q.value = el.value), setParams({ q: el.value }))} />
             </span>
             <Chip on={!kind.value} onClick$={() => ((kind.value = ""), setParams({ tipo: "" }))}>Todos · {all.length}</Chip>
             {kinds.map((k) => (
@@ -99,4 +100,4 @@ export default component$(() => {
   );
 });
 
-export const head: DocumentHead = { title: "Enlaces" };
+export const head: DocumentHead = { title: "Recursos" };

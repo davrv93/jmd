@@ -113,6 +113,9 @@ export interface CycleStep {
   id: string;
   title: string;
   tool: string;
+  /** Fase del ciclo de Kolb: experiencia · reflexion · conceptualizacion · experimentacion.
+   *  Opcional en el contenido; si falta, se deduce con kolb.ts. */
+  phase?: string;
   description: string;
   check: string;
 }

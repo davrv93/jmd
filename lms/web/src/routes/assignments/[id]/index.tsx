@@ -84,7 +84,7 @@ export default component$(() => {
 
   return (
     <>
-      <Crumbs items={[{ href: "/courses/", label: "Inicio" }, { href: `/courses/${a.course_id}/?tab=tareas`, label: "Tareas" }, { label: a.title }]} />
+      <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { href: `/courses/${a.course_id}/?tab=tareas`, label: "Tareas" }, { label: a.title }]} />
       <div class="head">
         <span class="lead-ico gold" style="width:46px;height:46px"><Icon name="task" size={22} /></span>
         <div class="grow">

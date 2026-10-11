@@ -80,10 +80,15 @@ type Material struct {
 }
 
 // CycleStep es un paso del ciclo de aprendizaje: qué hacer, con qué herramienta y cómo comprobarlo.
+//
+// Phase sitúa el paso en una de las cuatro fases del ciclo de Kolb (aprendizaje experiencial):
+// experiencia · reflexion · conceptualizacion · experimentacion. Si se omite en el contenido,
+// el front la deduce del orden y la herramienta (ver web/src/lib/kolb.ts).
 type CycleStep struct {
 	ID          string `yaml:"id" json:"id"`
 	Title       string `yaml:"title" json:"title"`
 	Tool        string `yaml:"tool" json:"tool"`
+	Phase       string `yaml:"phase" json:"phase,omitempty"`
 	Description string `yaml:"description" json:"description"`
 	Check       string `yaml:"check" json:"check"`
 }

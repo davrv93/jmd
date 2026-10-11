@@ -78,56 +78,67 @@ cycle:
   - id: ver
     title: Ver la clase
     tool: zoom
+    phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten la terminal de VS Code abierta y el teléfono de pruebas del equipo a mano.
     check: Has visto la clase completa (o la grabación)
   - id: wireframe
     title: Wireframe de 3 pantallas
     tool: opencode
+    phase: conceptualizacion
     description: Con los skills ux-flujos y ui-componentes, pide al agente un wireframe en gris de tres pantallas (bandeja, conversación, estado del número) y un FLUJOS.md con el flujo feliz y dos de error.
     check: Existen WIREFRAME.html y FLUJOS.md
   - id: bandeja
     title: Panel Bandeja
     tool: opencode
+    phase: experiencia
     description: Pasa el wireframe a UI con diseno-visual y accesibilidad. Abre el panel en el navegador y estrecha la ventana hasta 393 px.
     check: El panel se ve a 393 px sin desborde horizontal
   - id: evolution
     title: Levantar Evolution API
     tool: docker
+    phase: experiencia
     description: En la carpeta de Evolution, `docker compose up -d`. Tarda un minuto la primera vez porque crea la base de datos.
     check: docker compose ps muestra evolution en verde
   - id: afiliar
     title: Afiliar el número
     tool: terminal
+    phase: experiencia
     description: Crea la instancia del equipo, pide el QR y escanéalo con el teléfono de pruebas desde «Dispositivos vinculados».
     check: QR escaneado, instancia conectada (connectionState responde open)
   - id: webhook
     title: Webhook recibido
     tool: terminal
+    phase: experiencia
     description: Registra el webhook hacia http://host.docker.internal:8766/api/whatsapp/webhook y escribe «hola» desde el segundo teléfono.
     check: El log del backend muestra el JSON del primer mensaje
   - id: bot
     title: Bot respondiendo
     tool: opencode
+    phase: experiencia
     description: Con plan-de-trabajo y obra, pide al agente las dos rutas nuevas (webhook y eventos SSE) y el interruptor humano/bot. Prueba con mensajes reales.
     check: 3 mensajes reales respondidos y visibles en la bandeja
   - id: pruebas
     title: Probar
     tool: terminal
+    phase: reflexion
     description: Guion de 3 mensajes con un teléfono real, curl con el JSON grabado contra el webhook y medición de latencia de mensaje a respuesta.
     check: Hoja de hallazgos y latencia p50/p95 anotadas
   - id: desplegar
     title: Desplegar
     tool: docker
+    phase: experimentacion
     description: docker compose con el backend y Evolution API, secretos en .env fuera de git, `docker compose config` antes de `up -d`.
     check: curl a /api/salud en verde y un mensaje real respondido
   - id: preguntar
     title: Preguntar o responder
     tool: lms
+    phase: reflexion
     description: Publica al menos una pregunta sobre la clase en este LMS (abajo) o responde una de un compañero.
     check: Tu pregunta aparece en el hilo de la sesión
   - id: entregar
     title: Entregar la tarea 3
     tool: git
+    phase: experimentacion
     description: Sube el repositorio clase-03 con el enlace al video, las capturas y REFLEXION.md, y entrégalo desde el LMS (URL + commit).
     check: La entrega aparece en «Mis notas» con estado en cola
 ---

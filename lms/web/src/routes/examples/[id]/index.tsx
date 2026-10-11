@@ -33,7 +33,7 @@ export default component$(() => {
   if (!e) return <Loading lines={6} />;
   return (
     <>
-      <Crumbs items={[{ href: "/examples/", label: "Ejemplos" }, { label: e.title }]} />
+      <Crumbs items={[{ href: "/examples/", label: "Prácticas" }, { label: e.title }]} />
       <div class="head">
         <span class="lead-ico" style="width:46px;height:46px"><Icon name="sparkles" size={22} /></span>
         <div class="grow">
@@ -63,4 +63,4 @@ export default component$(() => {
 
 export const onStaticGenerate: StaticGenerateHandler = async () => ({ params: [{ id: "_" }] });
 
-export const head: DocumentHead = { title: "Ejemplo" };
+export const head: DocumentHead = { title: "Práctica" };

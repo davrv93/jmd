@@ -94,46 +94,55 @@ cycle:
   - id: ver
     title: Ver la clase
     tool: zoom
+    phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten abierta la carpeta del taller en VS Code y una terminal lista.
     check: Has visto la clase completa (o la grabación)
   - id: relevar
     title: Relevar tu máquina
     tool: terminal
+    phase: experiencia
     description: Descomprime taller-agentico.zip, crea el entorno virtual, instala los requisitos y corre el diagnóstico. Anota el nivel de imagen que te toca.
     check: "python osito/backend/diagnostico.py imprime tu nivel máximo de imagen"
   - id: ollama
     title: Instalar Ollama y bajar qwen3:1.7b
     tool: terminal
+    phase: experiencia
     description: Instala Ollama desde ollama.com y descarga el modelo de chat la noche anterior, nunca en el aula.
     check: "ollama list muestra qwen3:1.7b"
   - id: skills
     title: Instalar los skills
     tool: terminal
+    phase: experiencia
     description: Dentro de la carpeta del taller, corre el instalador. Copia los 14 skills y genera AGENTS.md y prompts/ para tu herramienta.
     check: "bash instalar.sh termina con «Skills encontrados : 14»"
   - id: plan
     title: Escribir el plan de trabajo
     tool: opencode
+    phase: conceptualizacion
     description: Activa el modo piedra y pide a tu agente, con el skill plan-de-trabajo, un PLAN_TRABAJO.md con seis tareas y criterio de aceptación sí o no.
     check: Existe PLAN_TRABAJO.md con 6 tareas
   - id: construir
     title: Construir con la obra en vivo
     tool: opencode
+    phase: experiencia
     description: Inicia la obra con las seis tareas, abre obra.html y deja que el agente ejecute el plan marcando cada paso cuando esté verificado.
     check: Obra al 100 %
   - id: voz-imagen
     title: Probar voz e imagen
     tool: terminal
+    phase: reflexion
     description: Dicta una pregunta por micrófono y pide un flyer con fecha, hora y precio. Revisa los datos extraídos y corrige uno a propósito.
     check: Captura del flyer con los datos correctos
   - id: preguntar
     title: Preguntar o responder
     tool: lms
+    phase: reflexion
     description: Publica al menos una pregunta sobre la clase en este LMS o responde una de un compañero.
     check: Tu pregunta aparece en el hilo de la sesión
   - id: entregar
     title: Entregar la tarea 2
     tool: git
+    phase: experimentacion
     description: Sube el repositorio clase-02 con faq.json, capturas/ y REFLEXION.md y entrégalo desde el LMS (URL + commit).
     check: La entrega aparece en «Mis notas» con estado en cola
 ---

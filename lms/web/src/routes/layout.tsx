@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "@builder.io/qwik-city";
 import { api, ApiError } from "~/lib/api";
 import { SessionContext, initials, isStaff, type Session } from "~/lib/session";
 import { HELP, SHORTCUTS } from "~/lib/help";
+import { PHASES } from "~/lib/kolb";
 import { cielo } from "~/lib/constelacion";
 import { Icon } from "~/components/icon";
 
@@ -11,11 +12,12 @@ import { Icon } from "~/components/icon";
 const CIELO = cielo({ semilla: 41, estrellas: 120, constelaciones: 7, letras: [{ x: 1130, y: 730, escala: 0.5 }] });
 const MARCA = `<svg class="mark" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1.5 14.1 9.9 22.5 12 14.1 14.1 12 22.5 9.9 14.1 1.5 12 9.9 9.9z"/></svg>`;
 
+// Navegación principal: aprender primero, después las herramientas y el cierre.
 const NAV = [
-  { href: "/courses/", label: "Inicio", icon: "home", match: ["/courses/", "/lessons/"] },
-  { href: "/studio/", label: "Estudio", icon: "sparkles", match: ["/studio/"] },
-  { href: "/examples/", label: "Ejemplos", icon: "sparkles", match: ["/examples/"] },
-  { href: "/links/", label: "Enlaces", icon: "link", match: ["/links/"] },
+  { href: "/courses/", label: "Aprender", icon: "home", match: ["/courses/", "/lessons/"] },
+  { href: "/examples/", label: "Prácticas", icon: "sparkles", match: ["/examples/"] },
+  { href: "/links/", label: "Recursos", icon: "link", match: ["/links/"] },
+  { href: "/studio/", label: "Estudio", icon: "wand", match: ["/studio/"] },
   { href: "/grades/", label: "Notas", icon: "award", match: ["/grades/", "/assignments/"] },
 ];
 
@@ -165,6 +167,18 @@ export default component$(() => {
                 ))}
               </ul>
             )}
+            <div class="section-t"><Icon name="cycle" /> Ciclo de aprendizaje (Kolb)</div>
+            <p class="sm muted" style="margin:.2rem 0 .5rem">
+              Cada sesión se recorre en cuatro fases. Marca cada paso al terminarlo y tu avance queda guardado.
+            </p>
+            <div class="cycle-legend" style="padding-left:.1rem">
+              {PHASES.map((p) => (
+                <span key={p.id} data-ph={p.token}>
+                  <i />
+                  <span class="ct"><b>{p.n}. {p.short}</b> · {p.verb}</span>
+                </span>
+              ))}
+            </div>
             <div class="section-t"><Icon name="keyboard" /> Atajos</div>
             <div class="keys">
               {SHORTCUTS.map(([k, d]) => (

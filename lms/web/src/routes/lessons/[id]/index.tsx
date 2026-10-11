@@ -3,8 +3,9 @@ import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from
 import { api, errMsg, fmtDate, KINDS, rel, requireLogin, TOOLS, type Course, type Lesson, type Material, type Question } from "~/lib/api";
 import { SessionContext, isStaff, toast } from "~/lib/session";
 import { getParam, pathId, saveLast, setParams, setTitle } from "~/lib/url";
+import { groupByPhase } from "~/lib/kolb";
 import { Icon, KIND_ICON, TOOL_ICON } from "~/components/icon";
-import { Chip, Copy, Crumbs, Empty, ErrorState, lessonState, Loading, Ring, Tabs } from "~/components/ui";
+import { Bar, Chip, Copy, Crumbs, CycleRing, Empty, ErrorState, lessonState, Loading, Tabs } from "~/components/ui";
 import { Slides } from "~/components/slides";
 import { Prose } from "~/components/prose";
 
@@ -21,7 +22,7 @@ export default component$(() => {
   const loc = useLocation();
   const session = useContext(SessionContext);
   const st = useStore<{ l: Lesson | null; c: Course | null; qs: Question[]; error: string; busy: string }>({ l: null, c: null, qs: [], error: "", busy: "" });
-  const tab = useSignal("resumen");
+  const tab = useSignal("ruta");
   const outlineOpen = useSignal(false);
   const ask = useStore({ open: false, body: "", objective: "", minute: "", sending: false });
   const qFilter = useSignal("todas");
@@ -49,14 +50,14 @@ export default component$(() => {
     session.help = "sesion";
     if (!session.loaded) return;
     st.l = null;
-    tab.value = getParam("tab") || "resumen";
+    tab.value = getParam("tab") || "ruta";
     outlineOpen.value = false;
     await load();
   });
 
   const select = $((id: string) => {
     tab.value = id;
-    setParams({ tab: id === "resumen" ? "" : id, s: "" });
+    setParams({ tab: id === "ruta" ? "" : id, s: "" });
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
@@ -127,20 +128,22 @@ export default component$(() => {
   // Valores primitivos: al marcar un paso cambia el objeto progress entero y así todo se repinta.
   const done = l.progress.done;
   const totalSteps = l.progress.total;
-  const pct = totalSteps ? (100 * done) / totalSteps : 0;
   const state = lessonState(done, totalSteps, l.published);
+  const group = groupByPhase(l.cycle, l.progress.steps);
+  const ringPhases = group.map((g) => ({ token: g.phase.token, done: g.done, total: g.total }));
   const deck = l.materials.find((m) => (m.slides?.length ?? 0) > 0);
   const downloads = l.materials.filter((m) => m === deck || (m.kind === "pdf" && /diapositiva/i.test(m.title)));
   const nextStep = l.cycle.find((s) => !l.progress.steps[s.id]);
+  const nextGroup = nextStep ? group.find((g) => g.steps.some((s) => s.step.id === nextStep.id)) : null;
   const open = st.qs.filter((q) => !q.resolved).length;
   const qs = st.qs.filter((q) => (qFilter.value === "abiertas" ? !q.resolved : qFilter.value === "mias" ? q.user_id === me?.id : true));
   const objTitle = (id: string) => l.objectives.find((o) => o.id === id)?.title ?? id;
+  const phasesWithSteps = group.filter((g) => g.total > 0);
 
   const tabs = [
-    { id: "resumen", label: "Resumen", icon: "info" },
+    { id: "ruta", label: "Mi ruta", icon: "cycle", count: totalSteps - done },
     ...(deck ? [{ id: "diapositivas", label: "Diapositivas", icon: "slides", count: deck.slides?.length }] : []),
     { id: "contenido", label: "Contenido", icon: "book" },
-    { id: "ciclo", label: "Ciclo", icon: "cycle", count: totalSteps - done },
     { id: "materiales", label: "Materiales", icon: "clip", count: l.materials.length },
     { id: "preguntas", label: "Preguntas", icon: "chat", count: open },
     ...(l.assignments.length ? [{ id: "tareas", label: "Tareas", icon: "task", count: l.assignments.length }] : []),
@@ -160,6 +163,30 @@ export default component$(() => {
         </span>
         <Icon name={ADJUNTO.has(m.kind) ? "download" : "external"} class="faint" />
       </a>
+    );
+  };
+
+  const stepRow = (s: Lesson["cycle"][number]) => {
+    const ok = !!l.progress.steps[s.id];
+    return (
+      <div class={`step ${ok ? "done" : ""}`} key={s.id}>
+        <button type="button" class={`check ${ok ? "on" : ""}`} aria-pressed={ok} aria-label={`${ok ? "Desmarcar" : "Marcar"}: ${s.title}`} disabled={st.busy === s.id} onClick$={() => toggle(s.id, !ok)}>
+          {ok && <Icon name="check" size={14} />}
+        </button>
+        <div>
+          <div class="row">
+            <span class="t" style="font-weight:650">{s.title}</span>
+            <span class="badge"><Icon name={TOOL_ICON[s.tool] ?? "zap"} size={12} /> {TOOLS[s.tool] ?? s.tool}</span>
+          </div>
+          <div class="sm muted" style="margin-top:.2rem">{s.description}</div>
+          {s.check && (
+            <div class="xs" style="margin-top:.35rem">
+              <span class="faint">Comprobación: </span>
+              <code>{s.check}</code>
+            </div>
+          )}
+        </div>
+      </div>
     );
   };
 
@@ -194,9 +221,9 @@ export default component$(() => {
       </aside>
 
       <article style="min-width:0">
-        <Crumbs items={[{ href: "/courses/", label: "Inicio" }, { href: `/courses/${l.course.slug}/`, label: l.course.title }, { label: l.module.title }]} />
+        <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { href: `/courses/${l.course.slug}/`, label: l.course.title }, { label: l.module.title }]} />
         <div class="head">
-          <Ring pct={pct} size={52} />
+          <CycleRing phases={ringPhases} size={56} />
           <div class="grow">
             <h1>{l.title}</h1>
             <div class="row sm muted" style="margin-top:.35rem;gap:.8rem">
@@ -210,7 +237,7 @@ export default component$(() => {
 
         <Tabs tabs={tabs} active={tab.value} onSelect$={select} />
 
-        {tab.value === "resumen" && (
+        {tab.value === "ruta" && (
           <div class="split">
             <div class="stack">
               <section class="card">
@@ -224,33 +251,43 @@ export default component$(() => {
                   ))}
                 </div>
               </section>
+
+              <p class="sm muted" style="margin:0">
+                Recorres la sesión con el <b>ciclo de aprendizaje</b>: vívela, reflexiona, entiende el porqué y aplícala. Marca cada paso al terminarlo.
+              </p>
+
+              {phasesWithSteps.map((g) => (
+                <section class="ph-sec" data-ph={g.phase.token} key={g.phase.id} aria-labelledby={`ph-${g.phase.id}`}>
+                  <div class="ph-sec__h">
+                    <span class="ph-ico"><Icon name={g.phase.icon} size={16} /></span>
+                    <div class="grow">
+                      <div class="ph-n">Fase {g.phase.n} · {g.phase.name}</div>
+                      <h3 id={`ph-${g.phase.id}`}>{g.phase.short} <span class="ph-sub">— {g.phase.verb}</span></h3>
+                    </div>
+                    <span class="ph-prog" style="min-width:8rem">
+                      <Bar pct={g.total ? (100 * g.done) / g.total : 0} />
+                      <b>{g.done}/{g.total}</b>
+                    </span>
+                  </div>
+                  <p class="sm muted" style="margin:0">{g.phase.description}</p>
+                  <div class="steps">{g.steps.map((s) => stepRow(s.step))}</div>
+                </section>
+              ))}
+
               {nextStep ? (
                 <section class="card row" style="gap:.8rem;flex-wrap:nowrap">
-                  <span class="lead-ico gold"><Icon name={TOOL_ICON[nextStep.tool] ?? "zap"} /></span>
+                  <span class="lead-ico" data-ph={nextGroup?.phase.token ?? "ec"}><Icon name={TOOL_ICON[nextStep.tool] ?? "zap"} /></span>
                   <span class="grow">
-                    <div class="xs faint">Siguiente paso del ciclo</div>
+                    <div class="xs faint">Siguiente paso · {nextGroup?.phase.short}</div>
                     <b>{nextStep.title}</b>
                     <div class="sm muted">{nextStep.description}</div>
                   </span>
-                  <button type="button" class="btn sm" onClick$={() => select("ciclo")}>
-                    Ir al ciclo <Icon name="chevronRight" size={14} />
-                  </button>
                 </section>
               ) : (
                 <section class="card row" style="gap:.8rem">
                   <span class="lead-ico" style="color:var(--ok)"><Icon name="checkCircle" /></span>
-                  <span class="grow"><b>Ciclo completo</b><div class="sm muted">Hiciste todos los pasos de esta sesión.</div></span>
+                  <span class="grow"><b>Ciclo completo</b><div class="sm muted">Hiciste los cuatro pasos del ciclo en esta sesión.</div></span>
                   {l.next && <Link class="btn sm" href={`/lessons/${l.next}/`}>Siguiente sesión <Icon name="chevronRight" size={14} /></Link>}
-                </section>
-              )}
-              {l.repo && (
-                <section class="card">
-                  <div class="section-t" style="margin-top:0"><Icon name="git" /> Código de la sesión</div>
-                  <div class="row">
-                    <a class="btn ghost sm" href={l.repo.url} target="_blank" rel="noopener"><Icon name="external" size={14} /> {l.repo.url.replace(/^https?:\/\//, "")} · {l.repo.ref}</a>
-                  </div>
-                  <div class="hint" style="margin-top:.5rem">Clonarlo con los materiales, desde la terminal:</div>
-                  <Copy text={l.open_command} />
                 </section>
               )}
             </div>
@@ -267,6 +304,16 @@ export default component$(() => {
                 <div class="fact"><div class="k">Preguntas</div><div class="v">{st.qs.length}{open ? <span class="xs warn"> · {open} abiertas</span> : ""}</div></div>
                 {l.assignments[0]?.due_at && <div class="fact"><div class="k">Entrega</div><div class="v sm" title={fmtDate(l.assignments[0].due_at)}>{rel(l.assignments[0].due_at)}</div></div>}
               </div>
+              {l.repo && (
+                <section class="card">
+                  <div class="section-t" style="margin-top:0"><Icon name="git" /> Código de la sesión</div>
+                  <div class="row">
+                    <a class="btn ghost sm" href={l.repo.url} target="_blank" rel="noopener"><Icon name="external" size={14} /> {l.repo.url.replace(/^https?:\/\//, "")} · {l.repo.ref}</a>
+                  </div>
+                  <div class="hint" style="margin-top:.5rem">Clonarlo con los materiales, desde la terminal:</div>
+                  <Copy text={l.open_command} />
+                </section>
+              )}
               {deck && (
                 <button type="button" class="card row" style="width:100%;text-align:left;cursor:pointer;color:inherit;font:inherit" onClick$={() => select("diapositivas")}>
                   <img src={deck.slides![0]} alt="" width={96} height={54} style="border-radius:5px;border:1px solid var(--line)" />
@@ -282,40 +329,6 @@ export default component$(() => {
 
         {tab.value === "contenido" &&
           (l.content_html.trim() ? <Prose html={l.content_html} toc /> : <Empty icon="book" title="Sin contenido escrito" text="Esta sesión no tiene texto todavía; revisa las diapositivas y los materiales." />)}
-
-        {tab.value === "ciclo" && (
-          <>
-            <p class="sm muted" style="margin-top:0">
-              Cada paso tiene su herramienta y una comprobación. Márcalo cuando lo termines: tu avance queda guardado y el instructor lo ve.
-            </p>
-            <div class="steps">
-              {l.cycle.map((s, n) => {
-                const ok = !!l.progress.steps[s.id];
-                return (
-                  <div class={`step ${ok ? "done" : ""}`} key={s.id}>
-                    <button type="button" class={`check ${ok ? "on" : ""}`} aria-pressed={ok} aria-label={`${ok ? "Desmarcar" : "Marcar"}: ${s.title}`} disabled={st.busy === s.id} onClick$={() => toggle(s.id, !ok)}>
-                      {ok && <Icon name="check" size={14} />}
-                    </button>
-                    <div>
-                      <div class="row">
-                        <span class="xs faint">{n + 1}.</span>
-                        <span class="t" style="font-weight:650">{s.title}</span>
-                        <span class="badge"><Icon name={TOOL_ICON[s.tool] ?? "zap"} size={12} /> {TOOLS[s.tool] ?? s.tool}</span>
-                      </div>
-                      <div class="sm muted" style="margin-top:.2rem">{s.description}</div>
-                      {s.check && (
-                        <div class="xs" style="margin-top:.35rem">
-                          <span class="faint">Comprobación: </span>
-                          <code>{s.check}</code>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
 
         {tab.value === "materiales" &&
           (l.materials.length === 0 ? (

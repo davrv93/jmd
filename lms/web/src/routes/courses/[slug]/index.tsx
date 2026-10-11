@@ -3,6 +3,7 @@ import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from
 import { api, errMsg, fmtDate, LEVEL, rel, requireLogin, STATUS, type Course, type ExampleSummary } from "~/lib/api";
 import { SessionContext, isStaff } from "~/lib/session";
 import { getParam, pathId, setParams, setTitle } from "~/lib/url";
+import { PHASES } from "~/lib/kolb";
 import { Icon } from "~/components/icon";
 import { Crumbs, Empty, ErrorState, lessonState, Loading, Ring, Status, Tabs } from "~/components/ui";
 
@@ -53,7 +54,7 @@ export default component$(() => {
 
   return (
     <>
-      <Crumbs items={[{ href: "/courses/", label: "Inicio" }, { label: c.title }]} />
+      <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { label: c.title }]} />
       <div class="head">
         <Ring pct={t ? (100 * d) / t : 0} size={58} />
         <div class="grow">
@@ -80,7 +81,7 @@ export default component$(() => {
         tabs={[
           { id: "temario", label: "Temario", icon: "layers", count: lessons.length },
           { id: "tareas", label: "Tareas", icon: "task", count: c.assignments.length },
-          { id: "ejemplos", label: "Ejemplos", icon: "sparkles", count: st.ex?.length ?? 0 },
+          { id: "ejemplos", label: "Prácticas", icon: "sparkles", count: st.ex?.length ?? 0 },
         ]}
       />
 
@@ -89,6 +90,20 @@ export default component$(() => {
           <Empty icon="layers" title="Sin sesiones todavía" text="El instructor publicará aquí las sesiones del curso." />
         ) : (
           <div class="stack">
+            <div class="section-t" style="margin-top:.2rem"><Icon name="cycle" /> Cada sesión sigue estas fases</div>
+            <div class="ph-track" style="margin-bottom:.4rem">
+              {PHASES.map((p) => (
+                <div class="ph-card" data-ph={p.token} key={p.id}>
+                  <div class="ph-card__h">
+                    <span class="ph-ico"><Icon name={p.icon} size={15} /></span>
+                    <span class="ph-n">Fase {p.n}</span>
+                  </div>
+                  <div class="ph-t">{p.short}</div>
+                  <div class="ph-sub">{p.verb} · {p.description}</div>
+                </div>
+              ))}
+            </div>
+
             {c.modules.map((m) => {
               const ls = m.lessons.filter((l) => l.published || staff);
               return (
@@ -150,7 +165,7 @@ export default component$(() => {
         (st.ex === null ? (
           <Loading lines={3} />
         ) : st.ex.length === 0 ? (
-          <Empty icon="sparkles" title="Sin ejemplos todavía" text="Aquí aparecerán casos prácticos con código para copiar." />
+          <Empty icon="sparkles" title="Sin prácticas todavía" text="Aquí aparecerán casos prácticos con código para copiar." />
         ) : (
           <div class="grid">
             {st.ex.map((e) => (

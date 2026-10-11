@@ -117,41 +117,49 @@ cycle:
   - id: ver
     title: Ver la clase
     tool: zoom
+    phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten a mano la terminal de VS Code para ir haciendo lo mismo.
     check: Has visto la clase completa (o la grabación)
   - id: vscode
     title: Instalar VS Code
     tool: vscode
+    phase: experiencia
     description: Instala Visual Studio Code y abre una terminal dentro (Ctrl+ñ / Ctrl+`). En Windows, instala también la extensión WSL si vas a trabajar en Ubuntu.
     check: code --version
   - id: docker
     title: Instalar Docker
     tool: docker
+    phase: experiencia
     description: Docker Desktop (Windows y macOS) o Docker Engine (Linux). Reinicia la sesión y comprueba que el demonio responde.
     check: docker run --rm hello-world
   - id: opencode
     title: Instalar OpenCode y conectarlo al gateway
     tool: opencode
+    phase: experiencia
     description: Instala OpenCode, configúralo como proveedor propio apuntando al gateway de la clase y elige un modelo.
     check: opencode (arranca) y responde una pregunta
   - id: practicar
     title: Practicar con el agente
     tool: terminal
+    phase: reflexion
     description: En una carpeta vacía, pide a OpenCode «crea un script que imprima la fecha y la hora en español» y mira qué archivos crea y qué comandos ejecuta antes de aceptar.
     check: El script existe y corre
   - id: skill
     title: Escribir tu primera skill
     tool: opencode
+    phase: conceptualizacion
     description: Crea `.opencode/skills/saludo/SKILL.md` con `name` y `description` en el front matter y una instrucción corta. Pídele al agente que la use.
     check: El agente responde usando tu skill
   - id: preguntar
     title: Preguntar o responder
     tool: lms
+    phase: reflexion
     description: Publica al menos una pregunta sobre la clase en este LMS (abajo) o responde una de un compañero.
     check: Tu pregunta aparece en el hilo de la sesión
   - id: entregar
     title: Entregar la tarea 1
     tool: git
+    phase: experimentacion
     description: Sube tu evidencia a un repositorio y entrégalo desde el LMS (URL + commit).
     check: La entrega aparece en «Mis notas» con estado en cola
 ---

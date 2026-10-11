@@ -7,28 +7,30 @@ export interface HelpTopic {
 
 export const HELP: Record<string, HelpTopic> = {
   inicio: {
-    title: "Inicio",
+    title: "Aprender",
     points: [
+      "Aprendes con el ciclo de Kolb: experiencia, reflexión, conceptos y aplicación.",
       "«Continuar» te lleva a la última sesión que abriste en este navegador.",
-      "Cada curso muestra tu avance: pasos del ciclo de aprendizaje que marcaste como hechos.",
+      "Cada curso muestra tu avance: pasos del ciclo que marcaste como hechos.",
       "«Próximas entregas» lista las tareas pendientes, la más cercana primero.",
     ],
   },
   curso: {
     title: "Curso",
     points: [
+      "Cada sesión recorre las cuatro fases del ciclo de Kolb; aquí ves la ruta completa.",
       "Temario: módulos y sesiones. El círculo indica el estado: vacío = sin empezar, a medias = en curso, check = completada.",
       "Tareas: estado de cada entrega y su nota.",
-      "Ejemplos: código listo para copiar, relacionado con las sesiones.",
+      "Prácticas: código listo para copiar, relacionado con las sesiones.",
     ],
   },
   sesion: {
     title: "Sesión",
     points: [
-      "Las pestañas agrupan la sesión: resumen, diapositivas, contenido, ciclo, materiales, preguntas y tareas.",
+      "«Mi ruta» organiza la sesión en las cuatro fases del ciclo de Kolb; el resto de pestañas son apoyo: diapositivas, contenido, materiales, preguntas y tareas.",
+      "Marca cada paso del ciclo cuando lo completes; el instructor ve tu avance.",
       "La pestaña y la diapositiva quedan en la URL: F5 te deja donde estabas y puedes compartir el enlace.",
       "Diapositivas: flechas ← → para avanzar, F para pantalla completa.",
-      "Ciclo: marca cada paso cuando lo completes; el instructor ve tu avance.",
       "Preguntas: pega el error completo; también desde la terminal con jmd ask.",
     ],
   },
@@ -49,10 +51,10 @@ export const HELP: Record<string, HelpTopic> = {
       "También en la terminal: jmd grades.",
     ],
   },
-  enlaces: { title: "Enlaces", points: ["Todo lo publicado en las sesiones.", "Filtra por tipo o busca por texto; el filtro queda en la URL."] },
+  enlaces: { title: "Recursos", points: ["Todo lo publicado en las sesiones.", "Filtra por tipo o busca por texto; el filtro queda en la URL."] },
   ejemplos: {
-    title: "Ejemplos",
-    points: ["Casos prácticos con código para copiar.", "Filtra por nivel o etiqueta; cada ejemplo indica la sesión con la que va."],
+    title: "Prácticas",
+    points: ["Casos prácticos con código para copiar.", "Filtra por nivel o etiqueta; cada práctica indica la sesión con la que va."],
   },
   instructor: {
     title: "Instructor",
