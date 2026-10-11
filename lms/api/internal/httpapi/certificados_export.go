@@ -163,6 +163,30 @@ func (s *Server) exportBadgrCSV(w http.ResponseWriter, r *http.Request, p *Princ
 	servirCSV(w, nombre+"-badgr.csv", []string{"Identifier", "First Name", "Last Name", "Narrative", "Evidence Narrative", "Evidence URL", "Issue Date", "Expiration Date"}, filas)
 }
 
+// exportAccredibleCSV: GET /api/v1/admin/certificados/export-accredible.csv?course=&lesson=.
+// Cabeceras según el ejemplo de la guía de carga por hoja de cálculo de Accredible
+// (Recipient Name, Recipient Email, Issued on); el resto son atributos personalizados que el
+// panel permite mapear al subir. Accredible entrega su propia plantilla por grupo: si difiere,
+// se mapean las columnas al importar.
+func (s *Server) exportAccredibleCSV(w http.ResponseWriter, r *http.Request, p *Principal) {
+	list, users, nombre, ok := s.exportFilas(w, r)
+	if !ok {
+		return
+	}
+	filas := make([][]string, 0, len(list))
+	for _, c := range list {
+		v := s.certView(c, false)
+		u := users[c.UserID]
+		email, full := "", str(v["alumno"])
+		if u != nil {
+			email, full = u.Email, u.Name
+		}
+		filas = append(filas, []string{full, email, c.EmitidoEn.UTC().Format("2006-01-02"), c.ID,
+			str(v["url_verificar"]), str(v["url_insignia_png"])})
+	}
+	servirCSV(w, nombre+"-accredible.csv", []string{"Recipient Name", "Recipient Email", "Issued on", "Credential Code", "Verification URL", "Badge Image URL"}, filas)
+}
+
 func str(v any) string {
 	s, _ := v.(string)
 	return s

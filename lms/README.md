@@ -74,7 +74,7 @@ cd lms/web && npm run build                    # typecheck + lint + build estát
 cd lms/web && PLAYWRIGHT_CHROMIUM=/ruta/a/chrome node ../scripts/e2e.mjs http://localhost:8080
 ```
 
-## Insignias por clase y publicación en Credly/Badgr
+## Insignias por clase y publicación en Credly, Badgr o Accredible
 
 Además del certificado del curso, cada clase tiene su **insignia de clase** (microcredencial):
 un certificado con `lesson_id`, tipo participación o aprobación, 2 horas por defecto y título
@@ -121,6 +121,25 @@ Pasos manuales en la plataforma (una sola vez por clase):
 3. **Importar el CSV** de esa clase (en Credly, la plantilla descargada de la cuenta con los
    datos del genérico; en Badgr, `export-badgr.csv` y emparejar columnas en la pantalla de
    importación).
+
+### Accredible
+
+- `GET /api/v1/admin/certificados/export-accredible.csv?course=&lesson=` · columnas
+  `Recipient Name, Recipient Email, Issued on, Credential Code, Verification URL, Badge Image
+  URL`. Las tres primeras son las del ejemplo de la guía de carga por hoja de cálculo de
+  Accredible; las otras tres se mapean como atributos personalizados en la pantalla de
+  importación (Accredible descarga una plantilla por grupo y deja emparejar columnas; si su
+  plantilla trae otros nombres, se eligen al subir). Fecha `YYYY-MM-DD`.
+- `lms/scripts/accredible.py` · emite por la API: crea el grupo (`POST issuer/groups`) y una
+  credencial por fila (`POST credentials` con `recipient`, `issued_on` y `custom_attributes`),
+  con `Authorization: Token token="<clave>"` contra `https://api.accredible.com/v1/`.
+  Endpoints y cuerpos tomados del SDK oficial `accredible/acms-php-api` (verificado el
+  11-10-2026); `--simular` muestra las llamadas sin enviarlas. La imagen de la insignia se
+  asigna al grupo desde el panel de Accredible (editor de diseños), no por la API.
+- Pasos: crear la cuenta emisora en Accredible (su prueba cubre pocos destinatarios; el acceso a la
+  API puede ser un complemento de pago, confirmarlo con ellos) → crear un **grupo por clase** con
+  el nombre de la clase y la URL de criterios → en el diseño de la insignia subir el PNG de
+  `/api/v1/insignias/<curso>/<clase>.png` → importar el CSV o correr el guion.
 
 No hace falta ninguna plataforma para que las credenciales valgan: ya son Open Badges 3.0
 verificables por sí mismas (JSON + JWT firmado + lista de revocación). Un alumno puede importar
