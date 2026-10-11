@@ -112,6 +112,7 @@ export const LiveVisor = component$((props: { lesson: string; escena: string; su
           key={`${url}#${recarga.value}`}
           ref={marco}
           class={`visor-frame visor-${tam.value}`}
+          allow="microphone; clipboard-write"
           sandbox="allow-scripts allow-same-origin allow-forms"
           title="Visor"
           src={`${url}${url.includes("?") ? "&" : "?"}r=${recarga.value}`}

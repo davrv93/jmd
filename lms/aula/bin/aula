@@ -8,6 +8,8 @@ case "${1:-}" in
   iniciar)
     if vivo; then echo "ya arrancado"; exit 0; fi
     [ -d /trabajo/osito ] || cp -R /opt/osito /trabajo/osito
+    # Página de entrada del visor: lleva al asistente. Si el alumno crea su propio index.html, manda el suyo.
+    [ -e /trabajo/index.html ] || printf '%s' '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=osito/frontend/index.html"><a href="osito/frontend/index.html">Abrir mi asistente</a>' > /trabajo/index.html
     cd /trabajo/osito || exit 1
     OSITO_PERFIL="${OSITO_PERFIL:-nube}" OSITO_PUERTO="${OSITO_PUERTO:-8766}" \
       /opt/venv/bin/python -m uvicorn backend.app:app --host 0.0.0.0 --port "${OSITO_PUERTO:-8766}" \

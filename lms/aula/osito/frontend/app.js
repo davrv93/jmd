@@ -7,7 +7,9 @@ import { crearRobot } from './robot.js';
 const PARAMS_URL = new URLSearchParams(location.search);
 const AVATAR = PARAMS_URL.get('avatar') === 'osito' ? 'osito' : 'robot';
 const NOMBRE_OSITO = (PARAMS_URL.get('nombre') || '').trim().slice(0, 40) || 'Robo';
-const BASE = location.origin;
+// Dentro del visor del LIVE (/vista/<alumno>/...) la API se alcanza por el relé del LMS: /vista/<alumno>/api/...
+const VISTA = (location.pathname.match(/^\/vista\/[^/]+/) || [''])[0];
+const BASE = location.origin + VISTA;
 const OBRA_URL = 'http://localhost:8787/obra.html?compacto=1';
 // Sobreescribible con ?obra=http://localhost:8797 (se toma la base y se añade /obra.html?compacto=1).
 const URL_OBRA = (() => {
@@ -653,7 +655,8 @@ async function generarImagen(prompt, estilo, tipo = 'auto', calidad = 'buena') {
       body: JSON.stringify({ prompt, estilo, tipo, calidad }),
     }, TIEMPO_IMAGEN_MS);
     aviso.remove();
-    const url = new URL(r.url, BASE).href;
+    // En el visor las imágenes se leen como archivos de /trabajo/osito/imagenes; en local, del propio servidor.
+    const url = BASE + (VISTA ? '/osito' : '') + r.url;
     const div = document.createElement('div');
     div.className = 'burbuja osito';
     const img = document.createElement('img');
