@@ -27,14 +27,18 @@ type Server struct {
 	DB            *store.DB
 	OIDC          *auth.OIDC // nil si no hay Keycloak configurado
 	InviteCode    string     // vacío = sin registro propio
-	DefaultCohort string     // cohorte de quien se registra con el código
-	PublicURL     string     // https://lms.<dominio> (para las URLs de las preguntas)
-	SessionTTL    time.Duration
-	Web           fs.FS          // build del front; nil = solo API
-	Runner        *runner.Runner // ejecuta código de los alumnos; nil/deshabilitado = sin /run
-	TermImage     string         // imagen de la shell interactiva del estudio (vacío = por defecto)
-	LLM           LLMConfig      // valores iniciales (entorno) del gateway de IA; manda lo guardado en la base
-	DataDir       string         // carpeta de datos (clave de firma de insignias badge-key.json); vacío = clave efímera
+	DefaultCohort string
+	// Ventana de cohorte: hasta CohortUntil, quien se registra o entra por primera vez recibe CohortWindow
+	// en vez de DefaultCohort (p. ej. «los que ingresen hasta las 5 pm van al Grupo 3»).
+	CohortWindow string
+	CohortUntil  time.Time // cohorte de quien se registra con el código
+	PublicURL    string    // https://lms.<dominio> (para las URLs de las preguntas)
+	SessionTTL   time.Duration
+	Web          fs.FS          // build del front; nil = solo API
+	Runner       *runner.Runner // ejecuta código de los alumnos; nil/deshabilitado = sin /run
+	TermImage    string         // imagen de la shell interactiva del estudio (vacío = por defecto)
+	LLM          LLMConfig      // valores iniciales (entorno) del gateway de IA; manda lo guardado en la base
+	DataDir      string         // carpeta de datos (clave de firma de insignias badge-key.json); vacío = clave efímera
 
 	login     *limiter
 	llm       *llmCache
@@ -329,6 +333,14 @@ func fromUser(u *store.User, hash string, cookie bool) *Principal {
 		Provider: u.Provider, tokenHash: hash, viaCookie: cookie}
 }
 
+// cohorteNueva es la cohorte que recibe una cuenta nueva ahora mismo.
+func (s *Server) cohorteNueva(now time.Time) string {
+	if s.CohortWindow != "" && !s.CohortUntil.IsZero() && now.Before(s.CohortUntil) {
+		return s.CohortWindow
+	}
+	return s.DefaultCohort
+}
+
 func (s *Server) upsertOIDC(ctx context.Context, c *auth.Claims) (*store.User, error) {
 	roles := auth.NormalizeRoles(c.RealmAccess.Roles)
 	if len(roles) == 0 {
@@ -348,6 +360,12 @@ func (s *Server) upsertOIDC(ctx context.Context, c *auth.Claims) (*store.User, e
 		}
 		prev.Roles, prev.Cohorts = roles, cohorts
 		return prev, nil
+	}
+	if len(cohorts) == 0 {
+		// Cuenta nueva sin grupos en el realm: entra a la cohorte que toque ahora.
+		if c0 := s.cohorteNueva(time.Now()); c0 != "" {
+			cohorts = []string{c0}
+		}
 	}
 	u := &store.User{ID: c.Sub, Email: c.Email, Name: name, Roles: roles, Cohorts: cohorts}
 	if err := s.DB.UpsertOIDCUser(ctx, u); err != nil {

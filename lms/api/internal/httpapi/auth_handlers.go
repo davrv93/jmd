@@ -102,8 +102,8 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u := &store.User{Email: in.Email, Name: in.Name, PasswordHash: hash, Roles: []string{"student"}, Cohorts: []string{}}
-	if s.DefaultCohort != "" {
-		u.Cohorts = []string{s.DefaultCohort}
+	if c0 := s.cohorteNueva(time.Now()); c0 != "" {
+		u.Cohorts = []string{c0}
 	}
 	if err := s.DB.CreateUser(r.Context(), u); err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") {

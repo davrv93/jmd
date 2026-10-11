@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/davrv93/jmd/lms/api/internal/auth"
 	"github.com/davrv93/jmd/lms/api/internal/content"
@@ -1027,5 +1028,43 @@ func TestBadgeKeyPersiste(t *testing.T) {
 	}
 	if k3, _ := loadOrCreateBadgeKey(""); k3 == nil || k3.Pub.Equal(k1.Pub) {
 		t.Fatal("sin DataDir debe haber clave efímera distinta")
+	}
+}
+
+// La ventana de cohorte manda mientras no venza; después vuelve la cohorte por defecto.
+func TestCohorteNueva(t *testing.T) {
+	ahora := time.Now()
+	s := &Server{DefaultCohort: "base", CohortWindow: "grupo-3", CohortUntil: ahora.Add(time.Hour)}
+	if got := s.cohorteNueva(ahora); got != "grupo-3" {
+		t.Errorf("dentro de la ventana: %q", got)
+	}
+	if got := s.cohorteNueva(ahora.Add(2 * time.Hour)); got != "base" {
+		t.Errorf("vencida: %q", got)
+	}
+	if got := (&Server{DefaultCohort: "base", CohortWindow: "grupo-3"}).cohorteNueva(ahora); got != "base" {
+		t.Errorf("sin fecha de vencimiento no hay ventana: %q", got)
+	}
+	if got := (&Server{}).cohorteNueva(ahora); got != "" {
+		t.Errorf("sin nada: %q", got)
+	}
+}
+
+// Un registro dentro de la ventana queda en la cohorte de la ventana.
+func TestRegistroEnVentana(t *testing.T) {
+	e := newEnv(t)
+	e.s.CohortWindow, e.s.CohortUntil = "grupo-3", time.Now().Add(time.Hour)
+	r := e.call("POST", "/api/v1/auth/register", "", false, map[string]string{"email": "nuevo@x.test", "name": "Nuevo", "password": "nuevo-1234", "invite_code": "abc"}, "")
+	if r.code != 201 {
+		t.Fatalf("registro: %d %s", r.code, r.raw)
+	}
+	u, _ := e.db.UserByEmail(t.Context(), "nuevo@x.test")
+	if len(u.Cohorts) != 1 || u.Cohorts[0] != "grupo-3" {
+		t.Errorf("cohortes: %v", u.Cohorts)
+	}
+	e.s.CohortUntil = time.Now().Add(-time.Minute)
+	e.call("POST", "/api/v1/auth/register", "", false, map[string]string{"email": "tarde@x.test", "name": "Tarde", "password": "tarde-1234", "invite_code": "abc"}, "")
+	u2, _ := e.db.UserByEmail(t.Context(), "tarde@x.test")
+	if len(u2.Cohorts) != 1 || u2.Cohorts[0] != "c1" {
+		t.Errorf("tras vencer debe tomar la cohorte por defecto: %v", u2.Cohorts)
 	}
 }

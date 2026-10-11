@@ -22,6 +22,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -92,6 +93,7 @@ func run() error {
 		DB:            db,
 		InviteCode:    os.Getenv("LMS_INVITE_CODE"),
 		DefaultCohort: os.Getenv("LMS_COHORT"),
+		CohortWindow:  os.Getenv("LMS_COHORT_VENTANA"),
 		PublicURL:     strings.TrimRight(env("LMS_PUBLIC_URL", "http://localhost:8080"), "/"),
 		Web:           webdist.FS(),
 		DataDir:       dataDir,
@@ -105,6 +107,14 @@ func run() error {
 			Key:   os.Getenv("LMS_LLM_KEY"),
 			Model: env("LMS_LLM_MODEL", "auto"),
 		},
+	}
+	if h := os.Getenv("LMS_COHORT_HASTA"); h != "" {
+		t, err := time.Parse(time.RFC3339, h)
+		if err != nil {
+			return fmt.Errorf("LMS_COHORT_HASTA no es una fecha RFC 3339: %w", err)
+		}
+		srv.CohortUntil = t
+		slog.Info("ventana de cohorte", "cohorte", srv.CohortWindow, "hasta", t.Format(time.RFC3339))
 	}
 	if srv.Runner.Available() && os.Getenv("LMS_AULA_IMAGE") != "" {
 		a := &aula.Aula{Runtime: srv.Runner.Runtime, Imagen: os.Getenv("LMS_AULA_IMAGE"), Red: os.Getenv("LMS_AULA_RED"), Token: os.Getenv("LMS_AULA_TOKEN")}
