@@ -2,6 +2,13 @@ import { $, component$, useSignal, useStore, useVisibleTask$, type Signal } from
 import { api } from "~/lib/api";
 import { Icon } from "~/components/icon";
 
+export interface EstadoProyectos {
+  lista: { ruta: string; nombre: string; mod: number }[];
+  conocidas: string[]; // rutas vistas antes: lo que no esté aquí es un proyecto nuevo
+  cargada: boolean; // ya se leyó la lista al menos una vez
+  manual: boolean; // el alumno eligió o escribió una ruta: no se le cambia sola
+}
+
 interface Consola {
   nivel: string;
   mensaje: string;
@@ -11,12 +18,13 @@ interface Consola {
 
 // LiveVisor: el visor del alumno. Muestra lo que guarda en /trabajo (servido por el LMS, sin instalar
 // nada), se recarga solo cuando el contenido cambia y enseña los errores de la página con archivo y línea.
-export const LiveVisor = component$((props: { lesson: string; escena: string; sub: string; ruta: Signal<string> }) => {
+export const LiveVisor = component$((props: { lesson: string; escena: string; sub: string; ruta: Signal<string>; proy: EstadoProyectos }) => {
   const ruta = props.ruta; // vive en el panel: sobrevive al cambiar de pestaña
   const tam = useSignal<"movil" | "tablet" | "escritorio">("escritorio");
   const recarga = useSignal(0);
   const marco = useSignal<HTMLIFrameElement>();
   const consola = useStore<{ items: Consola[]; abierta: boolean }>({ items: [], abierta: false });
+  const proy = props.proy; // vive en el panel: sobrevive al cambiar de pestaña
   const escenaRef = useSignal(props.escena);
   escenaRef.value = props.escena;
 
@@ -30,15 +38,30 @@ export const LiveVisor = component$((props: { lesson: string; escena: string; su
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(({ cleanup }) => {
     let ultima = "";
+    let alMontar = true; // al abrir el panel siempre se relee la lista de proyectos
     const sondear = async () => {
       if (document.hidden) return;
       try {
         const v = (await api.vistaVersion()).version;
-        if (ultima && v && v !== ultima) {
+        const cambio = !!ultima && !!v && v !== ultima;
+        if (cambio) {
           recarga.value++;
           consola.items = [];
         }
         if (v) ultima = v;
+        // Proyectos: al entrar y cada vez que algo cambia. Un proyecto nuevo se abre solo si no elegiste otro a mano.
+        if (alMontar || cambio) {
+          const lista = (await api.vistaProyectos()) ?? [];
+          const nuevos = lista.filter((x) => !proy.conocidas.includes(x.ruta));
+          proy.lista = lista;
+          if (proy.cargada && nuevos.length > 0 && !proy.manual) {
+            ruta.value = nuevos[0].ruta;
+            recarga.value++;
+          }
+          proy.conocidas = lista.map((x) => x.ruta);
+          proy.cargada = true;
+          alMontar = false;
+        }
       } catch {
         /* sin conexión: se reintenta */
       }
@@ -73,6 +96,26 @@ export const LiveVisor = component$((props: { lesson: string; escena: string; su
   return (
     <div class="visor">
       <div class="visor-barra">
+        {proy.lista.length > 0 && (
+          <select
+            class="visor-proy"
+            aria-label="Proyecto a mostrar"
+            onChange$={(_, el) => {
+              if (el.value) {
+                proy.manual = true;
+                ruta.value = el.value;
+                recarga.value++;
+              }
+            }}
+          >
+            <option value="">Proyectos…</option>
+            {proy.lista.map((x) => (
+              <option key={x.ruta} value={x.ruta} selected={ruta.value === x.ruta}>
+                {x.nombre}
+              </option>
+            ))}
+          </select>
+        )}
         <input
           type="text"
           class="visor-ruta"
@@ -80,6 +123,7 @@ export const LiveVisor = component$((props: { lesson: string; escena: string; su
           placeholder="index.html"
           value={ruta.value}
           onChange$={(_, el) => {
+            proy.manual = true;
             ruta.value = el.value.replace(/^\/+/, "");
             recarga.value++;
           }}

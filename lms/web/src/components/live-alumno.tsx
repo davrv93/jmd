@@ -3,7 +3,7 @@ import { api, type EscenaLive, type LiveEstado, type ParejaLive } from "~/lib/ap
 import { SessionContext, toast } from "~/lib/session";
 import { Icon } from "~/components/icon";
 import { Terminal } from "~/components/terminal";
-import { LiveVisor } from "~/components/live-visor";
+import { LiveVisor, type EstadoProyectos } from "~/components/live-visor";
 import { ChipPrueba, MisSkills, type PruebaSkill } from "~/components/mis-skills";
 import { Copy } from "~/components/ui";
 import { avisarEscena, temaActual, urlEscena } from "~/lib/live";
@@ -20,6 +20,7 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
   const completa = useSignal(false);
   const tema = useSignal("");
   const rutaVisor = useSignal("");
+  const proyVisor = useStore<EstadoProyectos>({ lista: [], conocidas: [], cargada: false, manual: false });
   const logres = useStore<{ ids: string[] }>({ ids: [] }); // escenas donde ya pulsé «Lo logré»
   const deshacerDe = useSignal(""); // escena que aún se puede deshacer (10 s)
   const panel = useSignal<"" | "terminal" | "visor" | "agente" | "skills" | "ayuda">("");
@@ -192,7 +193,7 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
         )}
         {panel.value === "visor" && session.me && (
           <div class="live-panel-vista live-panel-visor">
-            <LiveVisor lesson={props.lesson} escena={modo.value === "libre" && local.value ? local.value : escena.value} sub={session.me.id} ruta={rutaVisor} />
+            <LiveVisor lesson={props.lesson} escena={modo.value === "libre" && local.value ? local.value : escena.value} sub={session.me.id} ruta={rutaVisor} proy={proyVisor} />
           </div>
         )}
         {skillsAbierta.value && (

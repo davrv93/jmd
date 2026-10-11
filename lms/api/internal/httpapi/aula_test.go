@@ -103,6 +103,9 @@ func (a *aulaFalsa) Leer(_ context.Context, _, ruta string, _ int64) ([]byte, er
 	return nil, aula.ErrNoExiste
 }
 func (a *aulaFalsa) Version(context.Context, string) (string, error) { return "v1", nil }
+func (a *aulaFalsa) Proyectos(context.Context, string) ([]aula.Proyecto, error) {
+	return []aula.Proyecto{{Ruta: "veterinaria/index.html", Nombre: "veterinaria", Mod: 2}, {Ruta: "osito/frontend/index.html", Nombre: "Mi asistente (Robo)", Mod: 1}}, nil
+}
 func (a *aulaFalsa) Dial(ctx context.Context, _ string, _ int) (net.Conn, error) {
 	if a.destino == "" {
 		return nil, errors.New("connection refused")

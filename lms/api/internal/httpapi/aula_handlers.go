@@ -22,6 +22,7 @@ type AulaMotor interface {
 	Listar(ctx context.Context) ([]string, error)
 	Leer(ctx context.Context, nombre, ruta string, max int64) ([]byte, error)
 	Version(ctx context.Context, nombre string) (string, error)
+	Proyectos(ctx context.Context, nombre string) ([]aula.Proyecto, error)
 	Dial(ctx context.Context, userID string, puerto int) (net.Conn, error)
 }
 

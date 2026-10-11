@@ -13,6 +13,7 @@ import (
 	"io"
 	"net"
 	"os/exec"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -284,3 +285,42 @@ func (c *conexionExec) RemoteAddr() net.Addr               { return direccionExe
 func (c *conexionExec) SetDeadline(t time.Time) error      { return nil }
 func (c *conexionExec) SetReadDeadline(t time.Time) error  { return nil }
 func (c *conexionExec) SetWriteDeadline(t time.Time) error { return nil }
+
+// Proyecto es una carpeta de /trabajo con un index.html que el visor puede mostrar.
+type Proyecto struct {
+	Ruta   string `json:"ruta"`   // relativa a /trabajo, p. ej. "veterinaria/index.html"
+	Nombre string `json:"nombre"` // para mostrar
+	Mod    int64  `json:"mod"`    // última modificación (segundos Unix)
+}
+
+// Proyectos lista, del más reciente al más antiguo, las carpetas de /trabajo (hasta 3 niveles) que tienen
+// un index.html: lo que el alumno va creando. El asistente («osito/frontend») va con su nombre propio y el
+// resto de /trabajo/osito no cuenta. El index.html de la raíz es solo la puerta al asistente y no se lista.
+func (a *Aula) Proyectos(ctx context.Context, nombre string) ([]Proyecto, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	script := `find /trabajo -maxdepth 3 -name index.html \( -path '*/node_modules' -o -path '*/.git' \) -prune -o -name index.html -not -path '/trabajo/osito/*' -not -path '/trabajo/index.html' -exec stat -c '%Y %n' {} + 2>/dev/null; [ -f /trabajo/osito/frontend/index.html ] && stat -c '%Y %n' /trabajo/osito/frontend/index.html`
+	out, _ := a.exec(ctx, "exec", nombre, "sh", "-c", script)
+	var res []Proyecto
+	for _, l := range strings.Split(out, "\n") {
+		campos := strings.SplitN(strings.TrimSpace(l), " ", 2)
+		if len(campos) != 2 || !strings.HasPrefix(campos[1], "/trabajo/") {
+			continue
+		}
+		var mod int64
+		if _, err := fmt.Sscan(campos[0], &mod); err != nil {
+			continue
+		}
+		ruta := strings.TrimPrefix(campos[1], "/trabajo/")
+		nom := strings.TrimSuffix(strings.TrimSuffix(ruta, "index.html"), "/")
+		if ruta == "osito/frontend/index.html" {
+			nom = "Mi asistente (Robo)"
+		}
+		if nom == "" {
+			nom = ruta
+		}
+		res = append(res, Proyecto{Ruta: ruta, Nombre: nom, Mod: mod})
+	}
+	sort.Slice(res, func(i, j int) bool { return res[i].Mod > res[j].Mod })
+	return res, nil
+}

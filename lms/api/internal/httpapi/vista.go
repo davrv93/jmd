@@ -150,6 +150,25 @@ func (s *Server) vistaVersion(w http.ResponseWriter, r *http.Request, p *Princip
 	writeJSON(w, 200, map[string]any{"version": v, "t": time.Now().UTC().Format(time.RFC3339)})
 }
 
+// vistaProyectos: GET /api/v1/vista/proyectos (el propio alumno) y /api/v1/vista/{sub}/proyectos (personal).
+func (s *Server) vistaProyectos(w http.ResponseWriter, r *http.Request, p *Principal) {
+	sub := r.PathValue("sub")
+	if sub == "" {
+		sub = p.ID
+	}
+	if !vistaAcceso(w, p, sub) {
+		return
+	}
+	if !s.aulaListo(w) {
+		return
+	}
+	lista, err := s.Aula.Proyectos(r.Context(), aula.Nombre(sub))
+	if err != nil || lista == nil {
+		lista = []aula.Proyecto{}
+	}
+	writeJSON(w, 200, lista)
+}
+
 // restoPermitido: lo único del asistente que el visor puede alcanzar.
 func restoPermitido(resto string) bool {
 	switch resto {

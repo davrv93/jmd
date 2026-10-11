@@ -354,6 +354,7 @@ export const api = {
     req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/latido`, { escena }),
   liveEvento: (lesson: string, tipo: "terminal" | "agente" | "visor" | "error", detalle = "") =>
     req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/evento`, { tipo, detalle }),
+  vistaProyectos: () => req<{ ruta: string; nombre: string; mod: number }[]>("GET", "/api/v1/vista/proyectos"),
   vistaVersion: () => req<{ version: string; t: string }>("GET", "/api/v1/vista/version"),
   liveEvidencia: (lesson: string, escena: string, tipo: "microfono" | "flyer" | "hallazgo" | "captura", detalle = "") =>
     req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/evidencia`, { escena, tipo, detalle }),

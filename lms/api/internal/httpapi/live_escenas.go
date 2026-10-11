@@ -110,8 +110,12 @@ func (s *Server) liveEscenaArchivo(w http.ResponseWriter, r *http.Request, p *Pr
 // liveComunArchivo: GET /api/v1/live/{lesson}/comun/{archivo} (autenticado). Archivos compartidos
 // por todas las escenas de la lección (Three.js, avatares).
 func (s *Server) liveComunArchivo(w http.ResponseWriter, r *http.Request, p *Principal) {
-	l := s.liveLeccion(w, r, p)
+	// Son librerías compartidas (Three.js, avatares), no contenido de la clase: se sirven a cualquier
+	// sesión iniciada aunque la lección sea de otro grupo. El asistente de cada aula las pide por el id
+	// de una lección fija, y los alumnos de otro grupo no pueden «ver» esa lección.
+	l := s.Content.Get().Lesson(r.PathValue("lesson"))
 	if l == nil {
+		notFound(w, "la lección")
 		return
 	}
 	servirArchivoEscena(w, s.Content.Get().ComunDir(l.ID), r.PathValue("archivo"))

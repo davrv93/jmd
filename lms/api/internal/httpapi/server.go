@@ -158,6 +158,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/aula/apagar", s.authed(s.aulaApagar))
 	mux.Handle("GET /vista/{sub}/{ruta...}", s.authed(s.vistaServir))
 	mux.Handle("GET /api/v1/vista/version", s.authed(s.vistaVersion))
+	mux.Handle("GET /api/v1/vista/proyectos", s.authed(s.vistaProyectos))
+	mux.Handle("GET /api/v1/vista/{sub}/proyectos", s.authed(s.vistaProyectos))
 	mux.Handle("GET /api/v1/vista/{sub}/version", s.authed(s.vistaVersion))
 	mux.Handle("GET /vista/{sub}/api/{resto...}", s.authed(s.vistaAPI))
 	mux.Handle("POST /vista/{sub}/api/{resto...}", s.authed(s.vistaAPI))

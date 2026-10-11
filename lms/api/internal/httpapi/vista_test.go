@@ -147,3 +147,14 @@ func TestVistaApiUpgrade400(t *testing.T) {
 }
 
 var _ = aula.Nombre
+
+func TestVistaProyectos(t *testing.T) {
+	e, ana, beto, idAna, _ := vistaEnv(t, &aulaFalsa{})
+	r := e.call("GET", "/api/v1/vista/proyectos", ana, false, nil, "")
+	if r.code != 200 || len(r.list) != 2 || r.list[0]["ruta"] != "veterinaria/index.html" {
+		t.Fatalf("propios: %d %s", r.code, r.raw)
+	}
+	if o := e.call("GET", "/api/v1/vista/"+idAna+"/proyectos", beto, false, nil, ""); o.code != 403 {
+		t.Errorf("ajenos: %d", o.code)
+	}
+}
