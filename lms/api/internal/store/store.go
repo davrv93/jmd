@@ -295,6 +295,18 @@ func (d *DB) Users(ctx context.Context) ([]*User, error) {
 	return out, rows.Err()
 }
 
+// UpdateUserName cambia el nombre visible (el que sale en certificados e insignias nuevas).
+func (d *DB) UpdateUserName(ctx context.Context, id, name string) error {
+	res, err := d.sql.ExecContext(ctx, "UPDATE users SET name = ? WHERE id = ?", name, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // UpdateUserRoles cambia roles y cohortes.
 func (d *DB) UpdateUserRoles(ctx context.Context, id string, roles, cohorts []string) error {
 	res, err := d.sql.ExecContext(ctx, "UPDATE users SET roles = ?, cohorts = ? WHERE id = ?", jsonList(roles), jsonList(cohorts), id)
