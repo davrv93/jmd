@@ -3,7 +3,7 @@ import { Link, type DocumentHead } from "@builder.io/qwik-city";
 import { api, errMsg, fmtDate, rel, requireLogin, STATUS, type AssignmentSummary, type Course } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
 import { loadLast, setTitle, type LastSeen } from "~/lib/url";
-import { PHASES } from "~/lib/kolb";
+import { modToken, PHASES } from "~/lib/kolb";
 import { Icon } from "~/components/icon";
 import { Empty, ErrorState, Loading, Ring, Status } from "~/components/ui";
 
@@ -59,33 +59,29 @@ export default component$(() => {
 
   return (
     <>
-      <div class="head">
-        <div class="grow">
-          <h1>{first ? `Hola, ${first}` : "Aprender"}</h1>
+      <section class="welcome" aria-labelledby="hola">
+        <span class="welcome-ico" aria-hidden="true"><Icon name="grad" size={26} /></span>
+        <div class="welcome-txt">
+          <h1 id="hola">{first ? `Hola, ${first}` : "Aprender"}</h1>
           <p>Aprendes con el ciclo de Kolb: vives la clase, reflexionas, entiendes el porqué y lo aplicas.</p>
         </div>
-      </div>
+        {st.courses && cont && (
+          <Link class="welcome-next" href={`/lessons/${cont.lesson}/`}>
+            <span class="lead-ico"><Icon name="play" size={18} /></span>
+            <span class="grow">
+              <span class="xs">{st.last ? "Continuar donde lo dejaste" : "Empieza por aquí"} · {cont.courseTitle}</span>
+              <b>{cont.title}</b>
+            </span>
+            <span class="btn sm">Continuar <Icon name="chevronRight" size={14} /></span>
+          </Link>
+        )}
+      </section>
 
       {st.error && <ErrorState message={st.error} retry$={load} />}
       {!st.error && st.courses === null && <Loading lines={3} />}
 
       {st.courses && (
         <>
-          {cont && (
-            <Link class="card row" href={`/lessons/${cont.lesson}/`} style="gap:.9rem;margin-bottom:1rem">
-              <span class="lead-ico gold" style="width:42px;height:42px">
-                <Icon name="play" size={20} />
-              </span>
-              <span class="grow">
-                <span class="xs faint">{st.last ? "Continuar donde lo dejaste" : "Empieza por aquí"} · {cont.courseTitle}</span>
-                <div style="font-weight:650">{cont.title}</div>
-              </span>
-              <span class="btn sm">
-                Continuar <Icon name="chevronRight" size={14} />
-              </span>
-            </Link>
-          )}
-
           <div class="section-t"><Icon name="cycle" /> Así aprendes</div>
           <div class="ph-track" style="margin-bottom:1.2rem">
             {PHASES.map((p) => (
@@ -111,7 +107,7 @@ export default component$(() => {
                   const lessons = c.modules.flatMap((m) => m.lessons).filter((l) => l.published);
                   const done = lessons.filter((l) => l.steps > 0 && l.steps_done >= l.steps).length;
                   return (
-                    <Link key={c.id} class="card" href={`/courses/${c.slug}/`}>
+                    <Link key={c.id} class="card" href={`/courses/${c.slug}/`} data-ph={modToken(0)} style="border-left:5px solid var(--ph)">
                       <div class="row" style="gap:.9rem;align-items:flex-start">
                         <Ring pct={pct(c)} size={50} />
                         <div class="grow">
@@ -139,7 +135,7 @@ export default component$(() => {
                 <div class="list">
                   {pending.slice(0, 6).map((a) => (
                     <Link key={a.id} class="item" href={`/assignments/${a.id}/`}>
-                      <span class="lead-ico"><Icon name="task" /></span>
+                      <span class="lead-ico" data-k="zip"><Icon name="task" /></span>
                       <span class="grow">
                         <div class="t sm">{a.title}</div>
                         <div class="d" title={fmtDate(a.due_at)}>{a.due_at ? `Vence ${rel(a.due_at)}` : "Sin fecha límite"}</div>
@@ -151,9 +147,9 @@ export default component$(() => {
               )}
               <div class="section-t"><Icon name="zap" /> Atajos</div>
               <div class="list">
-                <Link class="item" href="/examples/"><span class="lead-ico"><Icon name="sparkles" /></span><span class="grow t sm">Prácticas con código</span><Icon name="chevronRight" /></Link>
-                <Link class="item" href="/links/"><span class="lead-ico"><Icon name="link" /></span><span class="grow t sm">Recursos publicados</span><Icon name="chevronRight" /></Link>
-                <Link class="item" href="/grades/"><span class="lead-ico"><Icon name="award" /></span><span class="grow t sm">Mis notas</span><Icon name="chevronRight" /></Link>
+                <Link class="item" href="/examples/"><span class="lead-ico" data-ph="ea"><Icon name="sparkles" /></span><span class="grow t sm">Prácticas con código</span><Icon name="chevronRight" class="faint" /></Link>
+                <Link class="item" href="/links/"><span class="lead-ico" data-ph="or"><Icon name="link" /></span><span class="grow t sm">Recursos publicados</span><Icon name="chevronRight" class="faint" /></Link>
+                <Link class="item" href="/grades/"><span class="lead-ico" data-ph="ca"><Icon name="award" /></span><span class="grow t sm">Mis notas</span><Icon name="chevronRight" class="faint" /></Link>
               </div>
             </aside>
           </div>

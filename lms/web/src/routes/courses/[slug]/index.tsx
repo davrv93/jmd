@@ -3,7 +3,7 @@ import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from
 import { api, errMsg, fmtDate, LEVEL, rel, requireLogin, STATUS, type Course, type ExampleSummary } from "~/lib/api";
 import { SessionContext, isStaff } from "~/lib/session";
 import { getParam, pathId, setParams, setTitle } from "~/lib/url";
-import { PHASE_BY_ID, PHASES } from "~/lib/kolb";
+import { modToken, PHASE_BY_ID, PHASES } from "~/lib/kolb";
 import { Icon } from "~/components/icon";
 import { Crumbs, Empty, ErrorState, lessonState, Loading, Ring, Status, Tabs } from "~/components/ui";
 
@@ -104,10 +104,10 @@ export default component$(() => {
               ))}
             </div>
 
-            {c.modules.map((m) => {
+            {c.modules.map((m, mi) => {
               const ls = m.lessons.filter((l) => l.published || staff);
               return (
-                <section key={m.id}>
+                <section key={m.id} data-ph={modToken(mi)}>
                   <div class="section-t"><Icon name="layers" /> {m.title}</div>
                   {ls.length === 0 ? (
                     <p class="sm faint">Sin sesiones publicadas todavía.</p>
@@ -116,7 +116,7 @@ export default component$(() => {
                       {ls.map((l, i) => {
                         const s = lessonState(l.steps_done, l.steps, l.published);
                         return (
-                          <Link key={l.id} class="item" href={`/lessons/${l.id}/`}>
+                          <Link key={l.id} class="item franja" href={`/lessons/${l.id}/`}>
                             <span class={s.cls} data-tip={s.label}><Icon name={s.icon} size={20} /></span>
                             <span class="grow">
                               <div class="t">{l.title}</div>

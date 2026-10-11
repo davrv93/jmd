@@ -17,6 +17,10 @@ const LETRAS: Record<string, P[][]> = {
 // Vértices donde florece una arayashiki en vez de una estrella.
 const FLORES = new Set(["100,34", "30,192", "258,132", "196,40", "320,40", "380,40", "512,150"]);
 
+// Tono de cada estrella: índigo, oro o teal (la paleta del LMS), elegido de forma determinista.
+const TONOS = ["indigo", "oro", "teal"];
+const tono = (r: () => number) => TONOS[r() < 0.5 ? 0 : r() < 0.6 ? 1 : 2];
+
 function rng(seed: number) {
   let s = seed >>> 0;
   return () => {
@@ -70,8 +74,8 @@ function astro(x: number, y: number, r: number, d: number): string {
   return `<path class="astro brilla" style="--d:${d}s" d="M${x} ${y - r}L${x + k} ${y - k}L${x + r} ${y}L${x + k} ${y + k}L${x} ${y + r}L${x - k} ${y + k}L${x - r} ${y}L${x - k} ${y - k}Z"/>`;
 }
 
-export function jmd(opts: { x?: number; y?: number; escala?: number; dibujar?: boolean; flores?: boolean } = {}): string {
-  const { x = 0, y = 0, escala = 1, dibujar = false, flores = false } = opts;
+export function jmd(opts: { x?: number; y?: number; escala?: number; dibujar?: boolean; flores?: boolean; clase?: string } = {}): string {
+  const { x = 0, y = 0, escala = 1, dibujar = false, flores = false, clase = "" } = opts;
   const lineas: string[] = [];
   const nodos = new Map<string, P>();
   let n = 0;
@@ -87,9 +91,9 @@ export function jmd(opts: { x?: number; y?: number; escala?: number; dibujar?: b
       ? flores
         ? flor(a, b, 22, (i * 0.7) % 6.28, "flor brilla")
         : astro(a, b, 11, (i % 5) * 0.6)
-      : `<circle class="estrella brilla" style="--d:${(i % 7) * 0.4}s" cx="${a}" cy="${b}" r="3.2"/>`,
+      : `<circle class="estrella ${TONOS[i % 3]} brilla" style="--d:${(i % 7) * 0.4}s" cx="${a}" cy="${b}" r="3.2"/>`,
   );
-  return `<g transform="translate(${x} ${y}) scale(${escala})">${lineas.join("")}${puntos.join("")}</g>`;
+  return `<g${clase ? ` class="${clase}"` : ""} transform="translate(${x} ${y}) scale(${escala})">${lineas.join("")}${puntos.join("")}</g>`;
 }
 
 // Constelación: una polilínea de 3–5 estrellas unidas por trazos finos. Es lo que da al cielo su
@@ -105,21 +109,53 @@ function constelacion(r: () => number, ancho: number, alto: number): string {
   }
   const d = pts.map(([a, b], i) => `${i ? "L" : "M"}${a.toFixed(0)} ${b.toFixed(0)}`).join(" ");
   const linea = `<path class="traza tenue" d="${d}"/>`;
-  const nodos = pts.map(([a, b]) => `<circle class="estrella" cx="${a.toFixed(0)}" cy="${b.toFixed(0)}" r="1.6"/>`).join("");
+  const nodos = pts.map(([a, b], i) => `<circle class="estrella ${tono(r)}${i % 2 ? " brilla" : ""}" style="--d:${(r() * 5).toFixed(1)}s" cx="${a.toFixed(0)}" cy="${b.toFixed(0)}" r="${(1.8 + r() * 1.2).toFixed(1)}"/>`).join("");
   return linea + nodos;
+}
+
+// Libro abierto como constelación: lomo central y dos páginas con el borde superior curvado,
+// vértices como estrellas unidas por trazos finos y un par de «renglones» punteados por página.
+// Caja base de 180 × 90 centrada en el lomo; `escala` y `rot` lo colocan en el cielo.
+export function libro(x: number, y: number, escala = 1, rot = 0): string {
+  const A: P = [0, -4], B: P = [0, 68];
+  const L1: P = [-84, -22], L2: P = [-88, 54], R1: P = [84, -22], R2: P = [88, 54];
+  const curva = (p: P, c: P, q: P) => `M${p[0]} ${p[1]} Q${c[0]} ${c[1]} ${q[0]} ${q[1]}`;
+  const recta = (p: P, q: P) => `M${p[0]} ${p[1]} L${q[0]} ${q[1]}`;
+  const trazos = [
+    recta(A, B), // lomo
+    curva(L1, [-44, -34], A), curva(A, [44, -34], R1), // bordes superiores
+    curva(L2, [-44, 60], B), curva(B, [44, 60], R2), // bordes inferiores
+    recta(L1, L2), recta(R1, R2), // cantos exteriores
+  ].map((d) => `<path class="traza libro" d="${d}"/>`);
+  const renglones = [
+    [-70, 6, -16, 12], [-70, 24, -16, 30], [-72, 42, -22, 47],
+    [16, 12, 70, 6], [16, 30, 70, 24], [22, 47, 72, 42],
+  ].map(([a, b, c, d]) => `<path class="traza renglon" d="M${a} ${b} L${c} ${d}"/>`);
+  const vertices: P[] = [A, B, L1, L2, R1, R2, [-44, -30], [44, -30]];
+  const puntos = vertices.map(([a, b], i) =>
+    i < 2
+      ? astro(a, b, 7, i * 1.3)
+      : `<circle class="estrella ${TONOS[i % 3]} brilla" style="--d:${(i * 0.7).toFixed(1)}s" cx="${a}" cy="${b}" r="3"/>`,
+  );
+  return `<g class="libro-g" transform="translate(${x} ${y}) rotate(${rot}) scale(${escala})">${trazos.join("")}${renglones.join("")}${puntos.join("")}</g>`;
 }
 
 // Cielo completo: estrellas sueltas, unas constelaciones y una o varias JMD. Flores, pétalos y
 // trono de loto son opcionales (los usa la PPT); el LMS va sobrio, solo con estrellas y trazos.
-export function cielo(opts: { ancho?: number; alto?: number; semilla?: number; estrellas?: number; constelaciones?: number; flores?: number; petalos?: number; trono?: { x: number; y: number; r: number }; letras?: { x: number; y: number; escala: number; dibujar?: boolean; flores?: boolean }[] } = {}): string {
-  const { ancho = 1600, alto = 1000, semilla = 40, estrellas = 140, constelaciones = 6, flores = 0, petalos = 0, trono, letras = [] } = opts;
+export function cielo(opts: { ancho?: number; alto?: number; semilla?: number; estrellas?: number; constelaciones?: number; flores?: number; petalos?: number; trono?: { x: number; y: number; r: number }; libros?: { x: number; y: number; escala?: number; rot?: number }[]; letras?: { x: number; y: number; escala: number; dibujar?: boolean; flores?: boolean; clase?: string }[] } = {}): string {
+  const { ancho = 1600, alto = 1000, semilla = 40, estrellas = 140, constelaciones = 6, flores = 0, petalos = 0, trono, libros = [], letras = [] } = opts;
   const r = rng(semilla);
   const out: string[] = [];
   for (let i = 0; i < constelaciones; i++) out.push(constelacion(r, ancho, alto));
+  // Polvo de estrellas: la mayoría diminutas y quietas; una de cada tres parpadea despacio y una
+  // de cada ocho es algo mayor. El color sale de la paleta, no del gris.
   for (let i = 0; i < estrellas; i++) {
-    const rad = r() < 0.12 ? 1.8 : 0.6 + r();
-    out.push(`<circle class="polvo" style="--d:${(r() * 6).toFixed(1)}s" cx="${(r() * ancho).toFixed(0)}" cy="${(r() * alto).toFixed(0)}" r="${rad.toFixed(1)}"/>`);
+    const grande = r() < 0.12;
+    const rad = grande ? 1.7 + r() * 0.9 : 0.6 + r() * 0.8;
+    const cls = `polvo ${tono(r)}${i % 3 === 0 ? " brilla" : ""}${grande ? " mayor" : ""}`;
+    out.push(`<circle class="${cls}" style="--d:${(r() * 6).toFixed(1)}s" cx="${(r() * ancho).toFixed(0)}" cy="${(r() * alto).toFixed(0)}" r="${rad.toFixed(1)}"/>`);
   }
+  for (const b of libros) out.push(libro(b.x, b.y, b.escala ?? 1, b.rot ?? 0));
   if (trono) out.push(lotoTrono(trono.x, trono.y, trono.r));
   for (let i = 0; i < petalos; i++) {
     out.push(petaloCae(+(r() * ancho).toFixed(0), +(r() * alto).toFixed(0), 7 + r() * 9, r() * 360, r() * 14));
@@ -147,6 +183,9 @@ export const ESTILO_SVG = `
 .polvo{fill:${PALETA.blanco};opacity:.55}
 .traza{fill:none;stroke:${PALETA.lila};stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
 .estrella{fill:${PALETA.blanco}}
+.estrella.oro,.polvo.oro{fill:${PALETA.oro}}
+.estrella.teal,.polvo.teal{fill:#7fe0d2}
+.traza.libro{opacity:.6}.traza.renglon{opacity:.3;stroke-dasharray:3 5}
 .flor .p1{fill:${PALETA.azulFlor};fill-opacity:.9;stroke:${PALETA.lila};stroke-width:.5}
 .flor .p2{fill:#e4d8ff;fill-opacity:.95;stroke:${PALETA.lila};stroke-width:.4}
 .flor .nucleo{fill:${PALETA.oro}}

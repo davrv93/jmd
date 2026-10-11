@@ -135,6 +135,13 @@ export function groupByPhase(steps: CycleStep[], doneMap?: Record<string, string
     });
 }
 
+/** Color de un módulo del curso: recorre la paleta de las fases según su posición (0 = índigo,
+ *  1 = teal, 2 = oro, 3 = rosa…). Se aplica con data-ph en tarjetas y franjas de sesión. */
+export const MOD_TOKENS = ["ec", "or", "ca", "ea"];
+export function modToken(index: number): string {
+  return MOD_TOKENS[((index % MOD_TOKENS.length) + MOD_TOKENS.length) % MOD_TOKENS.length];
+}
+
 /** Porcentaje global de un ciclo (pasos hechos / totales). */
 export function cyclePct(done: number, total: number): number {
   return total > 0 ? Math.round((100 * done) / total) : 0;

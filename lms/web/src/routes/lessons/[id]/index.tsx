@@ -3,19 +3,19 @@ import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from
 import { api, errMsg, fmtDate, KINDS, rel, requireLogin, TOOLS, type Course, type Lesson, type Material, type Question } from "~/lib/api";
 import { SessionContext, isStaff, toast } from "~/lib/session";
 import { getParam, pathId, saveLast, setParams, setTitle } from "~/lib/url";
-import { groupByPhase } from "~/lib/kolb";
+import { groupByPhase, modToken } from "~/lib/kolb";
 import { Icon, KIND_ICON, TOOL_ICON } from "~/components/icon";
 import { Bar, Chip, Copy, Crumbs, CycleRing, Empty, ErrorState, lessonState, Loading, Tabs } from "~/components/ui";
 import { Slides } from "~/components/slides";
 import { Prose } from "~/components/prose";
 
 const ADJUNTO = new Set(["zip", "file", "pptx"]);
-const GRUPOS: { title: string; icon: string; kinds: string[] }[] = [
-  { title: "Diapositivas y documentos", icon: "file", kinds: ["slides", "pdf", "doc", "note", "pptx"] },
-  { title: "Adjuntos para descargar", icon: "box", kinds: ["zip", "file"] },
-  { title: "Repositorios", icon: "git", kinds: ["repo"] },
-  { title: "Vídeos", icon: "video", kinds: ["video"] },
-  { title: "Enlaces", icon: "globe", kinds: ["link"] },
+const GRUPOS: { title: string; icon: string; k: string; kinds: string[] }[] = [
+  { title: "Diapositivas y documentos", icon: "file", k: "slides", kinds: ["slides", "pdf", "doc", "note", "pptx"] },
+  { title: "Adjuntos para descargar", icon: "box", k: "zip", kinds: ["zip", "file"] },
+  { title: "Repositorios", icon: "git", k: "repo", kinds: ["repo"] },
+  { title: "Vídeos", icon: "video", k: "video", kinds: ["video"] },
+  { title: "Enlaces", icon: "globe", k: "link", kinds: ["link"] },
 ];
 
 export default component$(() => {
@@ -139,6 +139,7 @@ export default component$(() => {
   const qs = st.qs.filter((q) => (qFilter.value === "abiertas" ? !q.resolved : qFilter.value === "mias" ? q.user_id === me?.id : true));
   const objTitle = (id: string) => l.objectives.find((o) => o.id === id)?.title ?? id;
   const phasesWithSteps = group.filter((g) => g.total > 0);
+  const modIndex = Math.max(0, st.c?.modules.findIndex((m) => m.id === l.module.id) ?? 0);
 
   const tabs = [
     { id: "ruta", label: "Mi ruta", icon: "cycle", count: totalSteps - done },
@@ -152,7 +153,7 @@ export default component$(() => {
   const matRow = (m: Material) => {
     const dl = ADJUNTO.has(m.kind) || m.kind === "pdf";
     return (
-      <a key={m.id} class="item" href={m.url} target={dl ? undefined : "_blank"} rel="noopener" download={ADJUNTO.has(m.kind) || undefined}>
+      <a key={m.id} class="item" data-k={m.kind} href={m.url} target={dl ? undefined : "_blank"} rel="noopener" download={ADJUNTO.has(m.kind) || undefined}>
         <span class="lead-ico"><Icon name={KIND_ICON[m.kind] ?? "link"} /></span>
         <span class="grow">
           <div class="t sm">{m.title}</div>
@@ -222,7 +223,7 @@ export default component$(() => {
 
       <article style="min-width:0">
         <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { href: `/courses/${l.course.slug}/`, label: l.course.title }, { label: l.module.title }]} />
-        <div class="head">
+        <div class="head card" data-ph={modToken(modIndex)}>
           <CycleRing phases={ringPhases} size={56} />
           <div class="grow">
             <h1>{l.title}</h1>
@@ -337,7 +338,7 @@ export default component$(() => {
             GRUPOS.map((g) => {
               const ms = l.materials.filter((m) => g.kinds.includes(m.kind));
               return ms.length ? (
-                <section key={g.title}>
+                <section key={g.title} data-k={g.k}>
                   <div class="section-t"><Icon name={g.icon} /> {g.title}</div>
                   <div class="list">{ms.map(matRow)}</div>
                 </section>
