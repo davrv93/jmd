@@ -2,7 +2,7 @@
 id: g3-tarea-03
 title: Tarea 3 · Tu asistente responde por WhatsApp
 lesson: g3-03
-due_at: 2026-10-29T23:59:00-05:00
+due_at: 2026-10-21T23:59:00-05:00
 max_score: 20
 autograde: false
 objective_ids: [g3-03-o2, g3-03-o3]

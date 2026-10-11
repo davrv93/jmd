@@ -1,5 +1,6 @@
 ---
 id: g3-02
+starts_at: 2026-10-13T20:00:00-05:00
 title: "Grupo 3 · Clase 2 · Construir un asistente con skills, plan de trabajo y Edge AI"
 published: true
 objectives:
@@ -460,4 +461,4 @@ En una frase: la próxima clase el asistente atiende por WhatsApp, y dos cosas s
 
 - Tarea 2: añade 10 preguntas nuevas a `faq.json`, prueba 3 por voz y guarda las capturas en `capturas/`.
 - Escribe `REFLEXION.md` con 5 líneas y sube todo al repositorio `clase-02`.
-- Entrégalo desde la tarea 2 del LMS (URL + commit) antes del 22-10-2026 a las 23:59.
+- Entrégalo desde la tarea 2 del LMS (URL + commit) antes del 20-10-2026 a las 23:59.

@@ -1,5 +1,6 @@
 ---
 id: g3-01
+starts_at: 2026-10-11T16:00:00-05:00
 title: "Grupo 3 · Clase 1 · Instalar las herramientas y entender qué hay detrás"
 published: true
 objectives:
@@ -174,7 +175,7 @@ Hoy dejas tu máquina lista para trabajar con un agente de programación durante
 Instalas VS Code, Docker y OpenCode, y conectas OpenCode al gateway de la clase.
 Después pones nombre a las piezas: agente, proveedor, modelo, parámetros, contexto, MCP y skills.
 Al final tendrás el agente respondiendo en tu terminal y tu primera skill escrita por ti.
-La clase se dictó el 08-10-2026: sirve de repaso si la viste y de guía si la ves grabada.
+La clase se dicta el domingo 11-10-2026 de 4 a 6 pm: sirve de guía en vivo y de repaso si la ves grabada.
 
 ### El ciclo de esta clase
 
@@ -459,4 +460,4 @@ Si el script falla, pégale el error completo: arreglarlo también es parte del 
 
 - Tarea 1: instala VS Code, Docker y OpenCode, conecta el gateway y escribe la skill `saludo`.
 - Entrega el repositorio `clase-01` con `EVIDENCIA.md` y `.opencode/skills/saludo/SKILL.md`. En `EVIDENCIA.md` pega las tres comprobaciones y una captura de OpenCode respondiendo.
-- Entrégalo desde la tarea 1 del LMS (URL + commit) antes del 15-10-2026 a las 23:59.
+- Entrégalo desde la tarea 1 del LMS (URL + commit) antes del 18-10-2026 a las 23:59.

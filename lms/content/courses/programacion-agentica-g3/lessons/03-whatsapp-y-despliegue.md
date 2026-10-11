@@ -1,5 +1,6 @@
 ---
 id: g3-03
+starts_at: 2026-10-14T20:00:00-05:00
 title: "Grupo 3 · Clase 3 · Llevar el asistente a WhatsApp: wireframe, UI, desarrollo, pruebas y despliegue"
 published: true
 objectives:

@@ -2,7 +2,7 @@
 id: g3-tarea-02
 title: "Tarea 2 · Amplía el corpus de tu asistente y pruébalo por voz"
 lesson: g3-02
-due_at: 2026-10-22T23:59:00-05:00
+due_at: 2026-10-20T23:59:00-05:00
 max_score: 20
 autograde: false
 objective_ids: [g3-02-o3, g3-02-o4]

@@ -2,7 +2,7 @@
 id: g3-tarea-01
 title: Tarea 1 · Tu entorno listo y tu primera skill
 lesson: g3-01
-due_at: 2026-10-15T23:59:00-05:00
+due_at: 2026-10-18T23:59:00-05:00
 max_score: 20
 autograde: false
 objective_ids: [g3-01-o1, g3-01-o3]
