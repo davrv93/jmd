@@ -33,9 +33,12 @@ type Server struct {
 	Runner        *runner.Runner // ejecuta código de los alumnos; nil/deshabilitado = sin /run
 	TermImage     string         // imagen de la shell interactiva del estudio (vacío = por defecto)
 	LLM           LLMConfig      // valores iniciales (entorno) del gateway de IA; manda lo guardado en la base
+	DataDir       string         // carpeta de datos (clave de firma de insignias badge-key.json); vacío = clave efímera
 
 	login     *limiter
 	llm       *llmCache
+	cert      *certCache
+	badge     *badgeKeyCache
 	runLimit  *limiter
 	termSlots *slots
 }
@@ -137,6 +140,22 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/admin/llm", s.authed(s.admin(s.adminLLMGet)))
 	mux.Handle("PUT /api/v1/admin/llm", s.authed(s.admin(s.adminLLMPut)))
 	mux.Handle("POST /api/v1/admin/llm/test", s.authed(s.admin(s.adminLLMTest)))
+	// Certificados verificables e insignias Open Badges 3.0 (ver certificados.go y badges.go).
+	mux.Handle("GET /api/v1/admin/certificados/config", s.authed(s.admin(s.adminCertConfigGet)))
+	mux.Handle("PUT /api/v1/admin/certificados/config", s.authed(s.admin(s.adminCertConfigPut)))
+	mux.Handle("GET /api/v1/admin/certificados/muestra.pdf", s.authed(s.admin(s.muestraPDF)))
+	mux.Handle("POST /api/v1/admin/certificados", s.authed(s.staff(s.emitirCertificado)))
+	mux.Handle("GET /api/v1/admin/certificados", s.authed(s.staff(s.listarCertificados)))
+	mux.Handle("POST /api/v1/admin/certificados/{codigo}/anular", s.authed(s.admin(s.anularCertificado)))
+	mux.Handle("GET /api/v1/certificados", s.authed(s.misCertificados))
+	// Públicos: quien tiene el código puede verificar y descargar; nunca llevan datos privados.
+	mux.HandleFunc("GET /api/v1/verificar/{codigo}", s.verificar)
+	mux.HandleFunc("GET /api/v1/certificados/{codigo}/pdf", s.certificadoPDF)
+	mux.HandleFunc("GET /api/v1/certificados/{codigo}/badge.json", s.badgeJSON)
+	mux.HandleFunc("GET /api/v1/certificados/{codigo}/badge.jwt", s.badgeJWT)
+	mux.HandleFunc("GET /api/v1/emisor.json", s.emisorJSON)
+	mux.HandleFunc("GET /api/v1/insignias/{archivo}", s.insignia)
+	mux.HandleFunc("GET /.well-known/jwks.json", s.jwks)
 	mux.Handle("GET /api/v1/admin/users", s.authed(s.admin(s.users)))
 	mux.Handle("PUT /api/v1/admin/users/{id}", s.authed(s.admin(s.updateUser)))
 	mux.Handle("POST /api/v1/admin/reload", s.authed(s.admin(s.reload)))
@@ -315,7 +334,7 @@ func jsonString(s string) []byte {
 }
 
 // shellSections son las rutas con parámetro: el front solo prerenderiza /<sección>/_/.
-var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true}
+var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true, "verificar": true}
 
 // shellFor da el archivo genérico (<sección>/_/index.html o q-data.json) para /<sección>/<x>/ y
 // /<sección>/<x>/q-data.json; "" si la ruta no es de ese tipo. p viene limpia (path.Clean).

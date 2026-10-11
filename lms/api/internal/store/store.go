@@ -98,6 +98,20 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL DEFAULT '',
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS certificates (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  course_id TEXT NOT NULL,
+  tipo TEXT NOT NULL,
+  horas INTEGER NOT NULL DEFAULT 0,
+  nota TEXT NOT NULL DEFAULT '',
+  emitido_por TEXT NOT NULL,
+  emitido_en TEXT NOT NULL,
+  anulado_en TEXT,
+  snapshot_json TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS certificates_user ON certificates(user_id, emitido_en);
+CREATE INDEX IF NOT EXISTS certificates_course ON certificates(course_id, emitido_en);
 CREATE TABLE IF NOT EXISTS answers (
   id TEXT PRIMARY KEY,
   question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
@@ -634,4 +648,114 @@ func (d *DB) SetSetting(ctx context.Context, key, value string) error {
 	_, err := d.sql.ExecContext(ctx, `INSERT INTO settings (key, value, updated_at) VALUES (?,?,?)
 		ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`, key, value, now())
 	return err
+}
+
+// --- certificados --------------------------------------------------------------------------
+
+// Certificate es un certificado emitido a un alumno por un curso. ID es el código público
+// (CD-AAAA-XXXXXX). Snapshot congela los datos tal y como estaban al emitir.
+type Certificate struct {
+	ID         string
+	UserID     string
+	CourseID   string
+	Tipo       string // participacion | aprobacion
+	Horas      int
+	Nota       string
+	EmitidoPor string
+	EmitidoEn  time.Time
+	AnuladoEn  *time.Time
+	Snapshot   string // JSON
+}
+
+// Anulado dice si el certificado fue revocado.
+func (c *Certificate) Anulado() bool { return c.AnuladoEn != nil }
+
+const certCols = "id, user_id, course_id, tipo, horas, nota, emitido_por, emitido_en, anulado_en, snapshot_json"
+
+func scanCertificate(row interface{ Scan(...any) error }) (*Certificate, error) {
+	var c Certificate
+	var emitido string
+	var anulado sql.NullString
+	if err := row.Scan(&c.ID, &c.UserID, &c.CourseID, &c.Tipo, &c.Horas, &c.Nota, &c.EmitidoPor, &emitido, &anulado, &c.Snapshot); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	c.EmitidoEn = parseTime(emitido)
+	if anulado.Valid {
+		t := parseTime(anulado.String)
+		c.AnuladoEn = &t
+	}
+	return &c, nil
+}
+
+// ErrDuplicate indica que la clave primaria ya existe.
+var ErrDuplicate = errors.New("duplicado")
+
+// CreateCertificate inserta un certificado con el id (código) ya puesto.
+func (d *DB) CreateCertificate(ctx context.Context, c *Certificate) error {
+	if c.EmitidoEn.IsZero() {
+		c.EmitidoEn = time.Now().UTC()
+	}
+	if c.Snapshot == "" {
+		c.Snapshot = "{}"
+	}
+	_, err := d.sql.ExecContext(ctx, "INSERT INTO certificates (id, user_id, course_id, tipo, horas, nota, emitido_por, emitido_en, snapshot_json) VALUES (?,?,?,?,?,?,?,?,?)",
+		c.ID, c.UserID, c.CourseID, c.Tipo, c.Horas, c.Nota, c.EmitidoPor, c.EmitidoEn.Format(time.RFC3339), c.Snapshot)
+	if err != nil && strings.Contains(err.Error(), "UNIQUE") {
+		return ErrDuplicate
+	}
+	return err
+}
+
+// Certificate busca por código.
+func (d *DB) Certificate(ctx context.Context, id string) (*Certificate, error) {
+	return scanCertificate(d.sql.QueryRowContext(ctx, "SELECT "+certCols+" FROM certificates WHERE id = ?", id))
+}
+
+// ActiveCertificate devuelve el certificado vigente (no anulado) de un alumno en un curso.
+func (d *DB) ActiveCertificate(ctx context.Context, userID, courseID string) (*Certificate, error) {
+	return scanCertificate(d.sql.QueryRowContext(ctx, "SELECT "+certCols+" FROM certificates WHERE user_id = ? AND course_id = ? AND anulado_en IS NULL ORDER BY emitido_en DESC LIMIT 1", userID, courseID))
+}
+
+// Certificates lista certificados: por curso (courseID) y/o por alumno (userID); vacío = sin filtro.
+func (d *DB) Certificates(ctx context.Context, courseID, userID string) ([]*Certificate, error) {
+	q := "SELECT " + certCols + " FROM certificates WHERE 1=1"
+	var args []any
+	if courseID != "" {
+		q += " AND course_id = ?"
+		args = append(args, courseID)
+	}
+	if userID != "" {
+		q += " AND user_id = ?"
+		args = append(args, userID)
+	}
+	q += " ORDER BY emitido_en DESC"
+	rows, err := d.sql.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []*Certificate{}
+	for rows.Next() {
+		c, err := scanCertificate(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// RevokeCertificate anula un certificado; ErrNotFound si no existe o ya estaba anulado.
+func (d *DB) RevokeCertificate(ctx context.Context, id string) error {
+	res, err := d.sql.ExecContext(ctx, "UPDATE certificates SET anulado_en = ? WHERE id = ? AND anulado_en IS NULL", now(), id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
 }

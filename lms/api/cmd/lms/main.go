@@ -3,7 +3,7 @@
 // Configuración por variables de entorno (ver lms/.env.example):
 //
 //	LMS_ADDR            :8080
-//	LMS_DATA_DIR        ./data            (lms.db)
+//	LMS_DATA_DIR        ./data            (lms.db y badge-key.json, clave Ed25519 de las insignias)
 //	LMS_CONTENT_DIR     ../content        cursos, sesiones y tareas (YAML + Markdown)
 //	LMS_PUBLIC_URL      http://localhost:8080
 //	LMS_ADMIN_EMAIL / LMS_ADMIN_PASSWORD / LMS_ADMIN_NAME   cuenta del instructor (se crea si no existe)
@@ -93,6 +93,7 @@ func run() error {
 		DefaultCohort: os.Getenv("LMS_COHORT"),
 		PublicURL:     strings.TrimRight(env("LMS_PUBLIC_URL", "http://localhost:8080"), "/"),
 		Web:           webdist.FS(),
+		DataDir:       dataDir,
 		Runner: &runner.Runner{
 			Runtime: os.Getenv("LMS_RUNNER"), // "docker" o "podman"; vacío = deshabilitado
 			Timeout: runner.ParseTimeout(os.Getenv("LMS_RUNNER_TIMEOUT")),

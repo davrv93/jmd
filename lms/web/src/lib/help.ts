@@ -40,7 +40,15 @@ export const HELP: Record<string, HelpTopic> = {
       "Puedes entregar varias veces: cuenta la última. El estado cambia a «calificada» cuando el instructor pone nota.",
     ],
   },
-  notas: { title: "Notas", points: ["Todas tus entregas con su estado, nota y comentarios.", "También en la terminal: jmd grades."] },
+  notas: {
+    title: "Notas",
+    points: [
+      "Todas tus entregas con su estado, nota y comentarios.",
+      "Mis certificados: cada uno tiene un código público; cualquiera puede verificarlo en /verificar/ sin iniciar sesión.",
+      "La insignia digital (Open Badges 3.0) se descarga en JSON o firmada en JWT, y se puede añadir a LinkedIn.",
+      "También en la terminal: jmd grades.",
+    ],
+  },
   enlaces: { title: "Enlaces", points: ["Todo lo publicado en las sesiones.", "Filtra por tipo o busca por texto; el filtro queda en la URL."] },
   ejemplos: {
     title: "Ejemplos",
@@ -52,6 +60,7 @@ export const HELP: Record<string, HelpTopic> = {
       "El temario vive en lms/content: sesiones, tareas y ejemplos en Markdown. Al hacer commit y desplegar, el servidor lo recarga solo.",
       "Avance: pasos del ciclo hechos por alumno y sesión.",
       "Para calificar, abre la tarea y ve a la pestaña «Calificar».",
+      "Certificados: desde el avance del curso, «Emitir certificado» por alumno. Solo un certificado vigente por alumno y curso; el admin puede anularlo.",
     ],
   },
 };

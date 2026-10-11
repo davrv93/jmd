@@ -1,17 +1,21 @@
 import { component$, useContext, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, type DocumentHead } from "@builder.io/qwik-city";
-import { api, errMsg, fmtDate, rel, requireLogin, STATUS, type Grade } from "~/lib/api";
-import { SessionContext } from "~/lib/session";
+import { api, CERT_TIPO, errMsg, fmtDate, rel, requireLogin, STATUS, type Certificate, type Grade } from "~/lib/api";
+import { SessionContext, toast } from "~/lib/session";
 import { setTitle } from "~/lib/url";
+import { Icon } from "~/components/icon";
 import { Empty, ErrorState, Loading, Status } from "~/components/ui";
+import { BadgeActions } from "~/components/cert-badge";
 
 export default component$(() => {
   const session = useContext(SessionContext);
-  const st = useStore<{ list: Grade[] | null; error: string }>({ list: null, error: "" });
+  const st = useStore<{ list: Grade[] | null; certs: Certificate[]; error: string }>({ list: null, certs: [], error: "" });
   const load = $(async () => {
     st.error = "";
     try {
-      st.list = await api.grades();
+      const [list, certs] = await Promise.all([api.grades(), api.misCertificados().catch(() => [] as Certificate[])]);
+      st.list = list;
+      st.certs = certs;
     } catch (e) {
       if (!requireLogin(e)) st.error = errMsg(e);
     }
@@ -21,6 +25,14 @@ export default component$(() => {
     session.help = "notas";
     setTitle("Mis notas");
     await load();
+  });
+  const copiar = $(async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast(session, "Enlace copiado");
+    } catch {
+      toast(session, "No se pudo copiar; usa el enlace «Ver en línea»", "bad");
+    }
   });
 
   const list = st.list ?? [];
@@ -67,6 +79,51 @@ export default component$(() => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          <div class="section-t" id="certificados"><Icon name="award" /> Mis certificados</div>
+          {st.certs.length === 0 ? (
+            <div class="card sm muted">
+              Cuando el instructor te emita un certificado aparecerá aquí, con su código público para verificarlo y su insignia digital.
+            </div>
+          ) : (
+            <div class="cert-grid">
+              {st.certs.map((c) => (
+                <div key={c.codigo} class={`card cert-item${c.estado === "anulado" ? " muted" : ""}`} data-cert={c.codigo}>
+                  <div class="cert-head">
+                    <span class="lead-ico gold"><Icon name={c.estado === "anulado" ? "ban" : "award"} /></span>
+                    <span class="grow">
+                      <b>{c.curso}</b>
+                      <div class="xs muted">
+                        {CERT_TIPO[c.tipo ?? ""] ?? c.tipo} · {c.horas} h · {fmtDate(c.emitido_en, false)}
+                      </div>
+                    </span>
+                    {c.estado === "anulado" ? <span class="badge bad">Anulado</span> : <span class="badge ok">Válido</span>}
+                  </div>
+                  <div class="row" style="gap:.4rem">
+                    <span class="cert-code">{c.codigo}</span>
+                    <button type="button" class="icon-btn" title="Copiar enlace de verificación" aria-label="Copiar enlace" onClick$={() => copiar(c.url_verificar ?? "")}>
+                      <Icon name="copy" size={14} />
+                    </button>
+                  </div>
+                  <div class="cert-actions">
+                    <a class="btn ghost" href={c.url_verificar} target="_blank" rel="noopener"><Icon name="shieldCheck" size={13} /> Ver en línea</a>
+                    <a class="btn ghost" href={c.url_pdf} target="_blank" rel="noopener"><Icon name="download" size={13} /> Descargar PDF</a>
+                  </div>
+                  {c.estado === "valido" && (
+                    <div class="cert-badge-row">
+                      <img src={c.url_insignia} alt="" width={46} height={46} loading="lazy" />
+                      <span class="grow">Insignia digital Open Badges 3.0</span>
+                    </div>
+                  )}
+                  {c.estado === "valido" && (
+                    <div class="cert-actions">
+                      <BadgeActions c={c} small />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </>

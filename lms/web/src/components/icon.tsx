@@ -63,6 +63,12 @@ const P: Record<string, string> = {
   plugOff: '<path d="M12 22v-5M9 8V2M15 8V2M18 8v5a6 6 0 0 1-12 0V8zM3 3l18 18"/>',
   chevronUp: '<path d="m18 15-6-6-6 6"/>',
   wand: '<path d="m15 4 1 1M3 21l11-11M14.5 6.5 17.5 9.5M6 3l.9 2.1L9 6l-2.1.9L6 9l-.9-2.1L3 6l2.1-.9zM19 13l.6 1.4L21 15l-1.4.6L19 17l-.6-1.4L17 15l1.4-.6z"/>',
+  // Certificados e insignias.
+  qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v3M17 21h4M14 21h.01M21 21h.01"/>',
+  shieldCheck: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+  badge: '<path d="M12 2l8.7 5v10L12 22l-8.7-5V7z"/><path d="m9.5 10-2 2 2 2M14.5 10l2 2-2 2"/>',
+  share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>',
   fileCode: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M10 13l-2 2 2 2M14 13l2 2-2 2"/>',
 };
 

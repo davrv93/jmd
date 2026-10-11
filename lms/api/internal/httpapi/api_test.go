@@ -2,6 +2,10 @@ package httpapi
 
 import (
 	"bytes"
+	"crypto/ed25519"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -572,6 +576,7 @@ func TestStaticShellFallback(t *testing.T) {
 		"lessons/_/index.html":     {Data: []byte("shell de sesiones")},
 		"lessons/_/q-data.json":    {Data: []byte(`{"shell":true,"href":"/lessons/_/"}`)},
 		"lessons/pa-01/index.html": {Data: []byte("pa-01 prerenderizada")},
+		"verificar/_/index.html":   {Data: []byte("shell de verificar")},
 	}
 	h := (&Server{Web: web}).Handler()
 	get := func(p string) *httptest.ResponseRecorder {
@@ -606,6 +611,9 @@ func TestStaticShellFallback(t *testing.T) {
 	}
 	if w = get("/lessons/a/b/"); w.Code != 404 {
 		t.Fatalf("dos segmentos: %d", w.Code)
+	}
+	if w = get("/verificar/CD-2026-ABCDEF/"); w.Code != 200 || body(w) != "shell de verificar" {
+		t.Fatalf("shell de verificar: %d %q", w.Code, body(w))
 	}
 }
 
@@ -730,5 +738,290 @@ func TestExtraerHTML(t *testing.T) {
 		if got := extraerHTML(in); got != want {
 			t.Errorf("extraerHTML(%q) = %q, quería %q", in, got, want)
 		}
+	}
+}
+
+// Certificados verificables: emisión por el personal, un vigente por alumno y curso, el alumno solo
+// ve los suyos, verificación y PDF públicos, anulación solo del admin y RUC validado.
+func TestCertificados(t *testing.T) {
+	e := newEnv(t)
+	ptok := e.login("profe@x.test", "profe1234")
+	ana := e.register("ana@x.test")
+	beto := e.register("beto@x.test")
+	var anaID string
+	if r := e.call("GET", "/api/v1/me", ana, false, nil, ""); r.code == 200 {
+		anaID = r.body["id"].(string)
+	}
+
+	// Configuración: por defecto y RUC inválido.
+	r := e.call("GET", "/api/v1/admin/certificados/config", ptok, false, nil, "")
+	if r.code != 200 || r.body["emisor"] != "Consultoría Digital" || r.body["ruc"] != "10732672546" || r.body["instructor"] != "Profe" || r.body["url"] != "http://lms.test" {
+		t.Fatalf("config por defecto: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/admin/certificados/config", ana, false, nil, ""); r.code != 403 {
+		t.Fatalf("config como alumno: %d", r.code)
+	}
+	r = e.call("PUT", "/api/v1/admin/certificados/config", ptok, false, map[string]any{"emisor": "CD", "ruc": "123", "instructor": "Profe", "cargo": "", "url": "http://lms.test"}, "")
+	if r.code != 400 || errCode(r) != "bad_request" {
+		t.Fatalf("RUC inválido: %d %s", r.code, r.raw)
+	}
+	r = e.call("PUT", "/api/v1/admin/certificados/config", ptok, false, map[string]any{"emisor": "Consultoría Digital", "ruc": "10732672546", "instructor": "Samuel Roncal", "cargo": "Instructor principal", "url": "http://lms.test"}, "")
+	if r.code != 200 || r.body["instructor"] != "Samuel Roncal" || r.body["cargo"] != "Instructor principal" {
+		t.Fatalf("guardar config: %d %s", r.code, r.raw)
+	}
+
+	// Emitir: alumno no puede; el personal sí; duplicado 409 con el código.
+	if r = e.call("POST", "/api/v1/admin/certificados", ana, false, map[string]any{"user_id": anaID, "course_id": "curso", "tipo": "participacion"}, ""); r.code != 403 {
+		t.Fatalf("emitir como alumno: %d", r.code)
+	}
+	if r = e.call("POST", "/api/v1/admin/certificados", ptok, false, map[string]any{"user_id": anaID, "course_id": "curso", "tipo": "otro"}, ""); r.code != 400 {
+		t.Fatalf("tipo inválido: %d %s", r.code, r.raw)
+	}
+	r = e.call("POST", "/api/v1/admin/certificados", ptok, false, map[string]any{"user_id": anaID, "course_id": "curso", "tipo": "aprobacion", "horas": 8, "nota": "Excelente"}, "")
+	if r.code != 201 {
+		t.Fatalf("emitir: %d %s", r.code, r.raw)
+	}
+	code, _ := r.body["codigo"].(string)
+	if !reCode.MatchString(code) || strings.ContainsAny(code[8:], "O0I1") {
+		t.Fatalf("código con formato raro: %q", code)
+	}
+	if r.body["alumno"] != "Alumno" || r.body["curso"] != "Curso de prueba" || r.body["horas"].(float64) != 8 || r.body["instructor"] != "Samuel Roncal" || r.body["estado"] != "valido" {
+		t.Fatalf("ficha emitida: %s", r.raw)
+	}
+	r = e.call("POST", "/api/v1/admin/certificados", ptok, false, map[string]any{"user_id": anaID, "course_id": "curso", "tipo": "participacion"}, "")
+	if r.code != 409 || errCode(r) != "ya_emitido" || r.body["codigo"] != code {
+		t.Fatalf("duplicado: %d %s", r.code, r.raw)
+	}
+	// El snapshot congela los datos: cambiar el instructor después no toca el certificado.
+	e.call("PUT", "/api/v1/admin/certificados/config", ptok, false, map[string]any{"emisor": "Consultoría Digital", "ruc": "10732672546", "instructor": "Otra Persona", "cargo": "", "url": "http://lms.test"}, "")
+
+	// Listas: el personal por curso; el alumno solo los suyos.
+	if r = e.call("GET", "/api/v1/admin/certificados?course=curso", ptok, false, nil, ""); r.code != 200 || len(r.list) != 1 || r.list[0]["nota"] != "Excelente" {
+		t.Fatalf("lista del personal: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/certificados", ana, false, nil, ""); r.code != 200 || len(r.list) != 1 || r.list[0]["codigo"] != code {
+		t.Fatalf("mis certificados (ana): %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/certificados", beto, false, nil, ""); r.code != 200 || len(r.list) != 0 {
+		t.Fatalf("mis certificados (beto) debería estar vacía: %d %s", r.code, r.raw)
+	}
+
+	// Verificación pública: válido, sin datos privados; minúsculas valen; inexistente.
+	r = e.call("GET", "/api/v1/verificar/"+strings.ToLower(code), "", false, nil, "")
+	if r.code != 200 || r.body["estado"] != "valido" || r.body["alumno"] != "Alumno" || r.body["instructor"] != "Samuel Roncal" || r.body["tipo"] != "aprobacion" {
+		t.Fatalf("verificar válido: %d %s", r.code, r.raw)
+	}
+	for _, k := range []string{"email", "nota", "user_id", "emitido_por"} {
+		if _, ok := r.body[k]; ok {
+			t.Fatalf("la verificación pública expone %q: %s", k, r.raw)
+		}
+	}
+	if strings.Contains(string(r.raw), "ana@x.test") {
+		t.Fatalf("la verificación pública lleva el email: %s", r.raw)
+	}
+	if r = e.call("GET", "/api/v1/verificar/CD-2026-ZZZZZZ", "", false, nil, ""); r.code != 200 || r.body["estado"] != "no_existe" {
+		t.Fatalf("verificar inexistente: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/verificar/basura", "", false, nil, ""); r.code != 200 || r.body["estado"] != "no_existe" {
+		t.Fatalf("verificar basura: %d %s", r.code, r.raw)
+	}
+
+	// PDF público.
+	r = e.call("GET", "/api/v1/certificados/"+code+"/pdf", "", false, nil, "")
+	if r.code != 200 || r.hdr.Get("Content-Type") != "application/pdf" || !bytes.HasPrefix(r.raw, []byte("%PDF")) {
+		t.Fatalf("pdf: %d %q %d bytes", r.code, r.hdr.Get("Content-Type"), len(r.raw))
+	}
+	if r = e.call("GET", "/api/v1/certificados/CD-2026-ZZZZZZ/pdf", "", false, nil, ""); r.code != 404 {
+		t.Fatalf("pdf inexistente: %d", r.code)
+	}
+	// Muestra (admin).
+	if r = e.call("GET", "/api/v1/admin/certificados/muestra.pdf", ptok, false, nil, ""); r.code != 200 || !bytes.HasPrefix(r.raw, []byte("%PDF")) {
+		t.Fatalf("muestra: %d", r.code)
+	}
+	if out := os.Getenv("LMS_PDF_OUT"); out != "" {
+		_ = os.WriteFile(out, r.raw, 0o644)
+	}
+	if r = e.call("GET", "/api/v1/admin/certificados/muestra.pdf", ana, false, nil, ""); r.code != 403 {
+		t.Fatalf("muestra como alumno: %d", r.code)
+	}
+
+	// Anular: solo admin; luego verificar dice anulado y el PDF sigue saliendo (con sello).
+	if r = e.call("POST", "/api/v1/admin/certificados/"+code+"/anular", ana, false, map[string]any{}, ""); r.code != 403 {
+		t.Fatalf("anular como alumno: %d", r.code)
+	}
+	if r = e.call("POST", "/api/v1/admin/certificados/"+code+"/anular", ptok, false, map[string]any{}, ""); r.code != 200 || r.body["estado"] != "anulado" {
+		t.Fatalf("anular: %d %s", r.code, r.raw)
+	}
+	if r = e.call("POST", "/api/v1/admin/certificados/"+code+"/anular", ptok, false, map[string]any{}, ""); r.code != 409 {
+		t.Fatalf("anular dos veces: %d", r.code)
+	}
+	r = e.call("GET", "/api/v1/verificar/"+code, "", false, nil, "")
+	if r.code != 200 || r.body["estado"] != "anulado" || r.body["anulado_en"] == nil {
+		t.Fatalf("verificar anulado: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/certificados/"+code+"/pdf", "", false, nil, ""); r.code != 200 {
+		t.Fatalf("pdf anulado: %d", r.code)
+	}
+	// Tras anular se puede emitir otro al mismo alumno.
+	if r = e.call("POST", "/api/v1/admin/certificados", ptok, false, map[string]any{"user_id": anaID, "course_id": "curso", "tipo": "participacion"}, ""); r.code != 201 || r.body["horas"].(float64) != 6 {
+		t.Fatalf("reemitir: %d %s", r.code, r.raw)
+	}
+}
+
+// Insignias Open Badges 3.0: perfil del emisor, logro JSON y SVG, credencial por certificado con
+// identidad hasheada, VC-JWT que verifica con la clave de jwks.json y 410 al anular.
+func TestOpenBadges(t *testing.T) {
+	e := newEnv(t)
+	ptok := e.login("profe@x.test", "profe1234")
+	ana := e.register("ana@x.test")
+	var anaID string
+	if r := e.call("GET", "/api/v1/me", ana, false, nil, ""); r.code == 200 {
+		anaID = r.body["id"].(string)
+	}
+	r := e.call("GET", "/api/v1/emisor.json", "", false, nil, "")
+	if r.code != 200 || r.body["type"] != "Profile" || r.body["id"] != "http://lms.test/api/v1/emisor.json" || r.body["name"] != "Consultoría Digital" {
+		t.Fatalf("emisor.json: %d %s", r.code, r.raw)
+	}
+	if ctx, _ := r.body["@context"].([]any); len(ctx) != 2 || ctx[1] != "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json" {
+		t.Fatalf("contexto OB3: %s", r.raw)
+	}
+	r = e.call("GET", "/api/v1/insignias/curso.json", "", false, nil, "")
+	if r.code != 200 || r.body["name"] != "Curso de prueba" || r.body["creator"] != "http://lms.test/api/v1/emisor.json" {
+		t.Fatalf("insignia json: %d %s", r.code, r.raw)
+	}
+	if img, _ := r.body["image"].(map[string]any); img["id"] != "http://lms.test/api/v1/insignias/curso.svg" {
+		t.Fatalf("imagen del logro: %s", r.raw)
+	}
+	r = e.call("GET", "/api/v1/insignias/curso.svg", "", false, nil, "")
+	if r.code != 200 || !strings.HasPrefix(r.hdr.Get("Content-Type"), "image/svg+xml") || !strings.Contains(string(r.raw), "<polygon") || !strings.Contains(string(r.raw), "&lt;/&gt;") || !strings.Contains(string(r.raw), "Curso de prueba") {
+		t.Fatalf("insignia svg: %d %s", r.code, r.raw[:min(len(r.raw), 200)])
+	}
+	if r = e.call("GET", "/api/v1/insignias/nada.svg", "", false, nil, ""); r.code != 404 {
+		t.Fatalf("insignia de curso inexistente: %d", r.code)
+	}
+	// Texto escapado en el SVG.
+	if svg := insigniaSVG(`Curso <b>"x"</b> & más`, "Emisor & Co"); strings.Contains(svg, "<b>") || !strings.Contains(svg, "&amp;") {
+		t.Fatalf("svg sin escapar: %s", svg)
+	}
+
+	// Credencial de un certificado válido.
+	r = e.call("POST", "/api/v1/admin/certificados", ptok, false, map[string]any{"user_id": anaID, "course_id": "curso", "tipo": "aprobacion"}, "")
+	if r.code != 201 {
+		t.Fatalf("emitir: %d %s", r.code, r.raw)
+	}
+	code := r.body["codigo"].(string)
+	r = e.call("GET", "/api/v1/certificados/"+code+"/badge.json", "", false, nil, "")
+	if r.code != 200 {
+		t.Fatalf("badge.json: %d %s", r.code, r.raw)
+	}
+	types, _ := r.body["type"].([]any)
+	if len(types) != 2 || types[1] != "OpenBadgeCredential" || r.body["id"] != "http://lms.test/api/v1/certificados/"+code+"/badge.json" {
+		t.Fatalf("tipo de la credencial: %s", r.raw)
+	}
+	if strings.Contains(string(r.raw), "ana@x.test") {
+		t.Fatalf("la credencial revela el email: %s", r.raw)
+	}
+	subj := r.body["credentialSubject"].(map[string]any)
+	ids := subj["identifier"].([]any)
+	id0 := ids[0].(map[string]any)
+	hash, _ := id0["identityHash"].(string)
+	salt, _ := id0["salt"].(string)
+	if id0["hashed"] != true || !strings.HasPrefix(hash, "sha256$") || salt == "" {
+		t.Fatalf("identidad: %v", id0)
+	}
+	sum := sha256.Sum256([]byte("ana@x.test" + salt))
+	if hash != "sha256$"+hex.EncodeToString(sum[:]) {
+		t.Fatalf("el hash no cuadra con sha256(email+salt): %s", hash)
+	}
+	if ach := subj["achievement"].(map[string]any); ach["name"] != "Curso de prueba" {
+		t.Fatalf("logro embebido: %v", ach)
+	}
+	if st := r.body["credentialStatus"].(map[string]any); st["type"] != "1EdTechRevocationList" {
+		t.Fatalf("estado: %v", st)
+	}
+
+	// JWT firmado que verifica con la clave pública de jwks.json.
+	r = e.call("GET", "/api/v1/certificados/"+code+"/badge.jwt", "", false, nil, "")
+	if r.code != 200 || r.hdr.Get("Content-Type") != "application/jwt" {
+		t.Fatalf("badge.jwt: %d %q", r.code, r.hdr.Get("Content-Type"))
+	}
+	parts := strings.Split(strings.TrimSpace(string(r.raw)), ".")
+	if len(parts) != 3 {
+		t.Fatalf("jwt con %d partes", len(parts))
+	}
+	hb, _ := base64.RawURLEncoding.DecodeString(parts[0])
+	var hdr map[string]any
+	_ = json.Unmarshal(hb, &hdr)
+	if hdr["alg"] != "EdDSA" || hdr["typ"] != "JWT" || hdr["kid"] == "" {
+		t.Fatalf("cabecera jwt: %s", hb)
+	}
+	r2 := e.call("GET", "/.well-known/jwks.json", "", false, nil, "")
+	keys, _ := r2.body["keys"].([]any)
+	if r2.code != 200 || len(keys) != 1 {
+		t.Fatalf("jwks: %d %s", r2.code, r2.raw)
+	}
+	jwk := keys[0].(map[string]any)
+	if jwk["kty"] != "OKP" || jwk["crv"] != "Ed25519" || jwk["kid"] != hdr["kid"] {
+		t.Fatalf("jwk: %v", jwk)
+	}
+	pub, err := base64.RawURLEncoding.DecodeString(jwk["x"].(string))
+	if err != nil || len(pub) != ed25519.PublicKeySize {
+		t.Fatalf("x del jwk: %v", err)
+	}
+	sig, _ := base64.RawURLEncoding.DecodeString(parts[2])
+	if !ed25519.Verify(ed25519.PublicKey(pub), []byte(parts[0]+"."+parts[1]), sig) {
+		t.Fatal("la firma del JWT no verifica con la clave pública")
+	}
+	pb, _ := base64.RawURLEncoding.DecodeString(parts[1])
+	var payload map[string]any
+	_ = json.Unmarshal(pb, &payload)
+	if payload["iss"] != "http://lms.test/api/v1/emisor.json" || payload["sub"] != code || payload["jti"] != "http://lms.test/api/v1/certificados/"+code+"/badge.json" {
+		t.Fatalf("payload jwt: %s", pb)
+	}
+	if vc, _ := payload["vc"].(map[string]any); vc["name"] == nil {
+		t.Fatalf("vc en el payload: %s", pb)
+	}
+	// La firma cambia si se altera el payload.
+	if ed25519.Verify(ed25519.PublicKey(pub), []byte(parts[0]+"."+parts[1]+"x"), sig) {
+		t.Fatal("una firma alterada no debería verificar")
+	}
+
+	// Anulado → 410 en JSON y JWT, y aparece en la lista de revocación.
+	if r = e.call("POST", "/api/v1/admin/certificados/"+code+"/anular", ptok, false, map[string]any{}, ""); r.code != 200 {
+		t.Fatalf("anular: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/certificados/"+code+"/badge.json", "", false, nil, ""); r.code != 410 || r.body["estado"] != "anulado" {
+		t.Fatalf("badge anulado: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/certificados/"+code+"/badge.jwt", "", false, nil, ""); r.code != 410 {
+		t.Fatalf("jwt anulado: %d", r.code)
+	}
+	r = e.call("GET", "/api/v1/insignias/revocados.json", "", false, nil, "")
+	rev, _ := r.body["revokedCredentials"].([]any)
+	if r.code != 200 || r.body["type"] != "1EdTechRevocationList" || len(rev) != 1 || rev[0].(map[string]any)["id"] != "http://lms.test/api/v1/certificados/"+code+"/badge.json" {
+		t.Fatalf("revocados: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/certificados/CD-2026-ZZZZZZ/badge.json", "", false, nil, ""); r.code != 404 {
+		t.Fatalf("badge inexistente: %d", r.code)
+	}
+}
+
+// La clave de firma se guarda en DataDir con permisos 0600 y se reutiliza entre arranques.
+func TestBadgeKeyPersiste(t *testing.T) {
+	dir := t.TempDir()
+	k1, err := loadOrCreateBadgeKey(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, err := os.Stat(filepath.Join(dir, "badge-key.json"))
+	if err != nil || st.Mode().Perm() != 0o600 {
+		t.Fatalf("permisos de badge-key.json: %v %v", err, st)
+	}
+	k2, err := loadOrCreateBadgeKey(dir)
+	if err != nil || !k1.Pub.Equal(k2.Pub) || k1.Kid != k2.Kid {
+		t.Fatalf("la clave no se reutilizó: %v", err)
+	}
+	if k3, _ := loadOrCreateBadgeKey(""); k3 == nil || k3.Pub.Equal(k1.Pub) {
+		t.Fatal("sin DataDir debe haber clave efímera distinta")
 	}
 }

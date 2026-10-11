@@ -232,6 +232,39 @@ export interface LlmTest {
   model: string;
   detail: string;
 }
+export interface CertConfig {
+  emisor: string;
+  ruc: string;
+  instructor: string;
+  cargo: string;
+  url: string;
+}
+/** Ficha de un certificado. La verificación pública (estado no_existe) solo trae codigo y estado. */
+export interface Certificate {
+  codigo: string;
+  estado: "valido" | "anulado" | "no_existe";
+  alumno?: string;
+  curso?: string;
+  course_id?: string;
+  tipo?: "participacion" | "aprobacion";
+  tipo_texto?: string;
+  horas?: number;
+  emisor?: string;
+  ruc?: string;
+  instructor?: string;
+  cargo?: string;
+  emitido_en?: string;
+  anulado_en?: string | null;
+  url_verificar?: string;
+  url_pdf?: string;
+  url_badge?: string;
+  url_badge_jwt?: string;
+  url_insignia?: string;
+  // Solo personal o el propio alumno.
+  user_id?: string;
+  nota?: string;
+  emitido_por?: string;
+}
 export interface CourseProgress {
   course_id: string;
   lessons: { id: string; title: string; steps: number }[];
@@ -271,7 +304,34 @@ export const api = {
   llmConfig: () => req<LlmConfig>("GET", "/api/v1/admin/llm"),
   saveLlm: (b: { url: string; model: string; enabled: boolean; key?: string }) => req<LlmConfig>("PUT", "/api/v1/admin/llm", b),
   testLlm: (b: { url?: string; model?: string; key?: string }) => req<LlmTest>("POST", "/api/v1/admin/llm/test", b),
+  // Certificados: ajustes del emisor (admin), emisión y lista (personal), los míos (alumno) y
+  // verificación pública sin sesión.
+  certConfig: () => req<CertConfig>("GET", "/api/v1/admin/certificados/config"),
+  saveCertConfig: (b: CertConfig) => req<CertConfig>("PUT", "/api/v1/admin/certificados/config", b),
+  certificados: (course: string) => req<Certificate[]>("GET", `/api/v1/admin/certificados?course=${encodeURIComponent(course)}`),
+  emitirCertificado: (b: { user_id: string; course_id: string; tipo: string; horas: number; nota?: string }) =>
+    req<Certificate>("POST", "/api/v1/admin/certificados", b),
+  anularCertificado: (codigo: string) => req<Certificate>("POST", `/api/v1/admin/certificados/${encodeURIComponent(codigo)}/anular`, {}),
+  misCertificados: () => req<Certificate[]>("GET", "/api/v1/certificados"),
+  verificar: (codigo: string) => req<Certificate>("GET", `/api/v1/verificar/${encodeURIComponent(codigo)}`),
 };
+
+/** Enlace «Añadir a LinkedIn» (sección Licencias y certificaciones) con los datos del certificado. */
+export function linkedinAddUrl(c: Certificate): string {
+  const d = c.emitido_en ? new Date(c.emitido_en) : new Date();
+  const p = new URLSearchParams({
+    startTask: "CERTIFICATION_NAME",
+    name: c.curso ?? "",
+    organizationName: c.emisor ?? "",
+    issueYear: String(d.getFullYear()),
+    issueMonth: String(d.getMonth() + 1),
+    certUrl: c.url_verificar ?? "",
+    certId: c.codigo,
+  });
+  return `https://www.linkedin.com/profile/add?${p.toString()}`;
+}
+
+export const CERT_TIPO: Record<string, string> = { participacion: "Participación", aprobacion: "Aprobación" };
 
 /** Si el API dice 401, manda al login conservando a dónde iba. */
 export function requireLogin(e: unknown): boolean {
