@@ -3,10 +3,10 @@ import { crearEscena, crearOsito, COLORES_LED } from './osito.js';
 import { crearRobot } from './robot.js';
 
 // ---- Configuración ----
-// ?avatar=robot elige el robotito (por defecto el osito); ?nombre=... cambia el nombre mostrado.
+// ?avatar=osito elige el osito (por defecto el robot); ?nombre=... cambia el nombre mostrado.
 const PARAMS_URL = new URLSearchParams(location.search);
-const AVATAR = PARAMS_URL.get('avatar') === 'robot' ? 'robot' : 'osito';
-const NOMBRE_OSITO = (PARAMS_URL.get('nombre') || '').trim().slice(0, 40) || 'Tecnosito';
+const AVATAR = PARAMS_URL.get('avatar') === 'osito' ? 'osito' : 'robot';
+const NOMBRE_OSITO = (PARAMS_URL.get('nombre') || '').trim().slice(0, 40) || 'Robo';
 const BASE = location.origin;
 const OBRA_URL = 'http://localhost:8787/obra.html?compacto=1';
 // Sobreescribible con ?obra=http://localhost:8797 (se toma la base y se añade /obra.html?compacto=1).
@@ -666,7 +666,7 @@ async function generarImagen(prompt, estilo, tipo = 'auto', calidad = 'buena') {
     texto.textContent = `${motorLegible(r.motor)} · ${Number(r.segundos || 0).toFixed(1)} s`;
     const desc = document.createElement('a');
     desc.href = url;
-    desc.download = `tecnosito-${Date.now()}.png`;
+    desc.download = `robo-${Date.now()}.png`;
     desc.target = '_blank';
     desc.rel = 'noopener';
     desc.setAttribute('aria-label', 'Descargar imagen');

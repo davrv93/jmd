@@ -88,8 +88,8 @@ class PeticionImagen(BaseModel):
 def api_chat(peticion: PeticionChat):
     historial = [t.model_dump() for t in peticion.historial]
     try:
-        texto, animo = motores.chat_ollama(peticion.mensaje, historial)
-        return {"texto": texto, "animo": animo, "fuente": "ollama"}
+        texto, animo = motores.chat_llm(peticion.mensaje, historial)
+        return {"texto": texto, "animo": animo, "fuente": "nube" if motores.PERFIL == "nube" else "ollama"}
     except motores.ErrorOllama as e:
         log.warning("ollama no respondio (%s); uso FAQ", e)
     try:
@@ -142,13 +142,15 @@ def api_imagen(peticion: PeticionImagen):
 @app.get("/api/salud")
 def api_salud():
     return {
-        "ollama": motores.ollama_disponible(),
+        "ollama": motores.ollama_disponible() if motores.PERFIL != "nube" else False,
+        "llm": motores.llm_disponible(),
+        "perfil": motores.PERFIL,
         "whisper": motores.whisper_importable(),
         "imagen": motores.motor_imagen(),
         "motores_imagen": motores.imagen.disponibles(),
         "maquina": motores.imagen.capacidad(),
         "tope_imagen": motores.imagen.tope_por_capacidad(),
-        "modelo": motores.MODELO,
+        "modelo": motores.MODELO_NUBE if motores.PERFIL == "nube" else motores.MODELO,
     }
 
 

@@ -101,6 +101,25 @@ models:
     cost: 2
     deployments:
       - {provider: gemini, model: "gemini-2.5-pro"}
+  qwen-flash:
+    # Chat de la clase: muy barato (US$0,03 entrada / 0,13 salida por millón en OpenRouter, 11-10-2026).
+    capabilities: [text, code, tools, json]
+    context: 1000000
+    cost: 1
+    deployments:
+      - {provider: openrouter, model: "qwen/qwen3.7-flash"}
+  deepseek-flash:
+    capabilities: [text, code, tools, json, reasoning]
+    context: 1048576
+    cost: 1
+    deployments:
+      - {provider: openrouter, model: "deepseek/deepseek-v4-flash-0731"}
+  glm-flash:
+    capabilities: [text, code, tools, json]
+    context: 200000
+    cost: 1
+    deployments:
+      - {provider: openrouter, model: "z-ai/glm-4.7-flash"}
   free-auto:
     # Router de modelos gratis de OpenRouter: último recurso.
     capabilities: [text, code, tools, json, image]
@@ -114,6 +133,10 @@ models:
 # `chain` es el orden por defecto; el aprendizaje lo reordena con la telemetría.
 # ---------------------------------------------------------------------------
 agents:
+  clase:
+    description: Chat del modo LIVE con modelos chinos baratos (Qwen, DeepSeek, GLM)
+    chain: [qwen-flash, deepseek-flash, glm-flash]
+    priority: cost
   general:
     description: Conversación y tareas simples
     chain: [gemini-flash-lite, nemotron-super, inkling, free-auto]

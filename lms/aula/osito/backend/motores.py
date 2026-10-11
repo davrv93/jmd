@@ -32,7 +32,12 @@ RUTA_FAQ = AQUI / "faq.json"
 
 OLLAMA_URL = os.environ.get("OSITO_OLLAMA_URL", "http://localhost:11434").rstrip("/")
 MODELO = os.environ.get("OSITO_MODELO", "qwen3:1.7b")
-NOMBRE = os.environ.get("OSITO_NOMBRE", "Tecnosito")
+NOMBRE = os.environ.get("OSITO_NOMBRE", "Robo")
+# Perfil «nube» (aula del modo LIVE): el chat va al gateway de IA de la clase, sin modelos locales.
+PERFIL = os.environ.get("OSITO_PERFIL", "local")
+GATEWAY_URL = os.environ.get("JMD_URL", "http://ai-orchestrator:4000").rstrip("/")
+GATEWAY_TOKEN = os.environ.get("OSITO_TOKEN", "")
+MODELO_NUBE = os.environ.get("OSITO_MODELO_NUBE", "clase")
 WHISPER_TAM = os.environ.get("OSITO_WHISPER", "small")
 # fastembed no soporta intfloat/multilingual-e5-small; este es el multilingue mas cercano.
 EMBED_MODELO = os.environ.get("OSITO_EMBED", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -49,7 +54,7 @@ ESTILOS = {
                 "subtle grid, crisp edges, high detail"),
 }
 
-SYSTEM_PROMPT = f"""Eres {NOMBRE}, un osito asistente tierno y tecnologico de un taller de programacion agentica.
+SYSTEM_PROMPT = f"""Eres {NOMBRE}, un robot asistente amable y curioso de un taller de programacion agentica.
 Respondes en espanol peruano, calido y cercano, con frases cortas: maximo tres frases.
 No uses emojis. Se honesto: si no sabes algo, di que no lo sabes.
 Termina SIEMPRE tu respuesta con una ultima linea exactamente asi:
@@ -75,6 +80,20 @@ def ollama_disponible(timeout: float = 2.0) -> bool:
         return MODELO in nombres or f"{MODELO}:latest" in nombres
     except Exception:
         return False
+
+
+def nube_disponible(timeout: float = 2.0) -> bool:
+    """El gateway de la clase responde y hay token."""
+    if not GATEWAY_TOKEN:
+        return False
+    try:
+        return httpx.get(f"{GATEWAY_URL}/health", timeout=timeout).status_code == 200
+    except Exception:
+        return False
+
+
+def llm_disponible() -> bool:
+    return nube_disponible() if PERFIL == "nube" else ollama_disponible()
 
 
 def separar_animo(texto: str) -> tuple[str, str]:
@@ -116,6 +135,38 @@ def chat_ollama(mensaje: str, historial: list[dict]) -> tuple[str, str]:
     if not contenido.strip():
         raise ErrorOllama("respuesta vacia")
     return separar_animo(contenido)
+
+
+def chat_nube(mensaje: str, historial: list[dict]) -> tuple[str, str]:
+    """Chat por el gateway de la clase (formato OpenAI). Razonamiento apagado: responde en un par de segundos."""
+    mensajes = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for turno in historial[-8:]:
+        rol = "user" if turno.get("rol") == "usuario" else "assistant"
+        mensajes.append({"role": rol, "content": str(turno.get("texto", ""))})
+    mensajes.append({"role": "user", "content": mensaje})
+    cuerpo = {
+        "model": MODELO_NUBE,
+        "messages": mensajes,
+        "temperature": 0.7,
+        "max_tokens": 300,
+        "reasoning": {"enabled": False},
+    }
+    if not GATEWAY_TOKEN:
+        raise ErrorOllama("falta el token del gateway (OSITO_TOKEN)")
+    try:
+        r = httpx.post(f"{GATEWAY_URL}/v1/chat/completions", json=cuerpo, timeout=45.0,
+                       headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"})
+        r.raise_for_status()
+        contenido = r.json()["choices"][0]["message"].get("content") or ""
+    except (httpx.HTTPError, ValueError, KeyError, IndexError) as e:
+        raise ErrorOllama(f"{type(e).__name__}: {e}") from e
+    if not contenido.strip():
+        raise ErrorOllama("respuesta vacia")
+    return separar_animo(contenido)
+
+
+def chat_llm(mensaje: str, historial: list[dict]) -> tuple[str, str]:
+    return chat_nube(mensaje, historial) if PERFIL == "nube" else chat_ollama(mensaje, historial)
 
 
 # ---------------------------------------------------------------- faq por embeddings

@@ -107,7 +107,7 @@ func run() error {
 		},
 	}
 	if srv.Runner.Available() && os.Getenv("LMS_AULA_IMAGE") != "" {
-		a := &aula.Aula{Runtime: srv.Runner.Runtime, Imagen: os.Getenv("LMS_AULA_IMAGE"), Red: os.Getenv("LMS_AULA_RED")}
+		a := &aula.Aula{Runtime: srv.Runner.Runtime, Imagen: os.Getenv("LMS_AULA_IMAGE"), Red: os.Getenv("LMS_AULA_RED"), Token: os.Getenv("LMS_AULA_TOKEN")}
 		if err := a.AsegurarRed(ctx, os.Getenv("LMS_AULA_GATEWAY")); err != nil {
 			slog.Warn("el aula no pudo preparar su red", "err", err)
 		}

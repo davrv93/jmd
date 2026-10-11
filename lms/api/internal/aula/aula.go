@@ -19,6 +19,7 @@ type Aula struct {
 	Runtime string // "docker" o "podman"
 	Imagen  string // por defecto jmd/aula:latest
 	Red     string // red interna del aula; por defecto aula_net
+	Token   string // token del gateway de IA que recibe el asistente (OSITO_TOKEN); vacío = sin IA en la nube
 
 	// run permite sustituir la ejecución del binario en las pruebas.
 	run func(ctx context.Context, args ...string) (string, error)
@@ -51,7 +52,7 @@ func Volumen(userID string) string { return "trabajo-" + sufijo(userID) }
 
 // Args devuelve los argumentos exactos de «docker run» del contenedor del alumno.
 func (a *Aula) Args(userID string) []string {
-	return []string{
+	args := []string{
 		"run", "-d", "--name", Nombre(userID), "--hostname", "aula",
 		"--memory", "192m", "--memory-swap", "192m", "--cpus", "0.5", "--pids-limit", "96",
 		"--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--read-only",
@@ -61,8 +62,11 @@ func (a *Aula) Args(userID string) []string {
 		"--network", a.red(),
 		"-e", "HOME=/home/alumno", "-e", "JMD_URL=http://ai-orchestrator:4000",
 		"--user", "10001:10001", "--workdir", "/trabajo",
-		a.imagen(), "sleep", "2147483647",
 	}
+	if a.Token != "" {
+		args = append(args, "-e", "OSITO_TOKEN="+a.Token, "-e", "JMD_TOKEN="+a.Token)
+	}
+	return append(args, a.imagen(), "sleep", "2147483647")
 }
 
 func (a *Aula) exec(ctx context.Context, args ...string) (string, error) {
