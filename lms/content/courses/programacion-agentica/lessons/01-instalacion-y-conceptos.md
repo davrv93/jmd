@@ -17,6 +17,11 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: pa-01-instalador
+    title: "Instalador de todo el curso (Windows, macOS, Linux)"
+    kind: repo
+    url: https://github.com/davrv93/jmd/tree/main/instalador
+    objective_ids: [pa-01-o1]
   - id: pa-01-ppt
     title: Diapositivas de la clase 1 (PowerPoint)
     kind: slides
