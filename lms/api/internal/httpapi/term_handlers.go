@@ -84,6 +84,19 @@ func (s *Server) term(w http.ResponseWriter, r *http.Request, p *Principal) {
 			return
 		}
 		tocarAula(p.ID)
+		// Mientras la terminal siga abierta el aula cuenta como en uso (si no, se apagaría a los 15 min).
+		go func() {
+			t := time.NewTicker(time.Minute)
+			defer t.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					tocarAula(p.ID)
+				}
+			}
+		}()
 		cmd = sh.ShellCmd(ctx, p.ID)
 	} else {
 		var name string

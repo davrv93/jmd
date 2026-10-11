@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
@@ -150,6 +151,7 @@ func (s *Server) liveCerrar(w http.ResponseWriter, r *http.Request, p *Principal
 		return
 	}
 	s.pararPresencia(l.ID)
+	go s.borrarAulas(context.Background()) // al cerrar la clase se retiran los contenedores; /trabajo se conserva
 	s.live.publish(l.ID, "cierre", liveView(sv, s.live.count(l.ID)))
 	writeJSON(w, 200, liveView(sv, s.live.count(l.ID)))
 }

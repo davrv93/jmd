@@ -144,3 +144,64 @@ func (s *Server) aulaApagar(w http.ResponseWriter, r *http.Request, p *Principal
 	}
 	writeJSON(w, 200, map[string]any{"estado": "parado"})
 }
+
+// aulaInactividad: pasado este tiempo sin uso (terminal, visor, asistente), el contenedor se detiene.
+const aulaInactividad = 15 * time.Minute
+
+// apagarInactivos detiene el contenedor de quien lleva más de limite sin usar su aula y devuelve los nombres
+// detenidos. El volumen /trabajo se conserva: al volver, «iniciar» lo arranca con todo donde lo dejó.
+func (s *Server) apagarInactivos(ctx context.Context, ahora time.Time, limite time.Duration) []string {
+	if s.Aula == nil {
+		return nil
+	}
+	var vencidos []string
+	ultimoUsoAula.Lock()
+	for id, t := range ultimoUsoAula.t {
+		if ahora.Sub(t) > limite {
+			vencidos = append(vencidos, id)
+			delete(ultimoUsoAula.t, id)
+		}
+	}
+	ultimoUsoAula.Unlock()
+	parados := []string{}
+	for _, id := range vencidos {
+		nombre := aula.Nombre(id)
+		if err := s.Aula.Parar(ctx, nombre); err == nil {
+			parados = append(parados, nombre)
+		}
+	}
+	return parados
+}
+
+// VigilarAulas revisa cada minuto qué aulas llevan tiempo sin uso. Se detiene con ctx.
+func (s *Server) VigilarAulas(ctx context.Context) {
+	go func() {
+		t := time.NewTicker(time.Minute)
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case ahora := <-t.C:
+				s.apagarInactivos(ctx, ahora, aulaInactividad)
+			}
+		}
+	}()
+}
+
+// borrarAulas elimina todos los contenedores de aula (al cerrar el LIVE). Los volúmenes se conservan.
+func (s *Server) borrarAulas(ctx context.Context) {
+	if s.Aula == nil {
+		return
+	}
+	nombres, err := s.Aula.Listar(ctx)
+	if err != nil {
+		return
+	}
+	for _, n := range nombres {
+		_ = s.Aula.Borrar(ctx, n)
+	}
+	ultimoUsoAula.Lock()
+	ultimoUsoAula.t = map[string]time.Time{}
+	ultimoUsoAula.Unlock()
+}

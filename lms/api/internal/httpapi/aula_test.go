@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/davrv93/jmd/lms/api/internal/aula"
 )
@@ -104,4 +105,21 @@ func TestAulaIniciarReutiliza(t *testing.T) {
 		t.Errorf("estado: %s", r.raw)
 	}
 	_ = aula.Nombre
+}
+
+// Quien lleva más del límite sin usar su aula se detiene; los demás siguen.
+func TestAulaApagaInactivos(t *testing.T) {
+	f := &aulaFalsa{}
+	s := &Server{Aula: f}
+	ahora := time.Now().UTC()
+	ultimoUsoAula.Lock()
+	ultimoUsoAula.t = map[string]time.Time{"viejo": ahora.Add(-20 * time.Minute), "fresco": ahora.Add(-2 * time.Minute)}
+	ultimoUsoAula.Unlock()
+	parados := s.apagarInactivos(context.Background(), ahora, 15*time.Minute)
+	if len(parados) != 1 || parados[0] != aula.Nombre("viejo") {
+		t.Fatalf("parados: %v", parados)
+	}
+	if usoAula("fresco") == "" || usoAula("viejo") != "" {
+		t.Errorf("solo el vencido sale de la lista")
+	}
 }
