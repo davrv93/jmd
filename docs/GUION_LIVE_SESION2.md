@@ -4,19 +4,19 @@
 
 ## Qué corre dónde (regla de oro)
 
-El servidor del LMS no ejecuta ningún modelo. Nada de whisper, sd-turbo ni Ollama en el EC2: una sola instancia de cada uno para diez alumnos no escala y diez instancias no caben. Los modelos corren en la laptop de cada alumno (eso es Edge AI y es la lección) o, si una laptop no puede, en un proveedor remoto barato por OpenRouter, uno por alumno con su propio token del gateway.
+Una sola consola: la del LIVE. El alumno no instala nada para la clase. Su asistente corre en su contenedor del servidor en **modo nube**: sin modelos locales, con chat, voz e imagen por el gateway o por su navegador. El servidor no ejecuta ningún modelo de IA. Edge AI local (Ollama, whisper, sd-turbo en la laptop) se ve en vivo en la laptop del instructor y es la tarea 2 de cada alumno con el instalador del curso.
 
 | Pieza | Dónde corre | Respaldo si falla | Nunca |
 |---|---|---|---|
 | LMS, LIVE, sincronía, terminal, visor, métricas | EC2 | Nada: es lo único que depende del servidor | Modelos |
 | Gateway `ai-orchestrator` con la clave de OpenRouter | EC2 (30 MB) | Clave propia del alumno en OpenRouter | Claves en las laptops |
-| Chat del asistente (texto) | Ollama en la laptop, `qwen3:1.7b` | OpenRouter: modelo chino gratis o barato, elegido en la lista blanca | Ollama en el EC2 |
-| Avatar 3D (Three.js) | Navegador del alumno | No falla: es solo JS en el navegador | Render en servidor |
-| Voz a texto | `faster-whisper small` en la laptop (CPU) | API de transcripción barata por el gateway (ver tabla) | whisper en el EC2 |
-| Generación de imágenes | sd-turbo o sdxl-turbo en la laptop según su diagnóstico | API de imagen barata por el gateway (ver tabla); modo demo con Pillow si no hay nada | difusión en el EC2 |
-| Agente que escribe el código (OpenCode) | Laptop, con token personal del gateway | `jmd` embebido en el LIVE (contenedor Alpine de 128 MB) | OpenCode en el EC2 |
-| Terminal que se ve en el LIVE | La laptop del alumno, conectada con `jmd live <código>` (una conexión saliente, sin abrir puertos) | Contenedor Alpine del servidor | Túneles públicos |
-| Visor que se ve en el LIVE | El servidor sirve la carpeta de trabajo que `jmd live` sincroniza; las llamadas a la API del asistente se relevan a la laptop | Contenedor Alpine del servidor | Procesos de render en el EC2 |
+| Backend del asistente (FastAPI, modo nube, 50 a 80 MB) | Contenedor del alumno en el EC2 | Reiniciar el contenedor con un clic | torch, whisper o diffusers en el servidor |
+| Chat del asistente | OpenRouter por el gateway: modelo chino gratis o barato de la lista blanca | Segundo modelo de la cadena | Ollama en el EC2 |
+| Avatar 3D (Three.js) y voz sintetizada | Navegador del alumno | No falla: es solo JS | Render en servidor |
+| Voz a texto | Web Speech API del navegador (Chrome), gratis | SenseVoice o Groq Whisper por el gateway | whisper en el EC2 |
+| Generación de imágenes | SiliconFlow (FLUX schnell o Kolors) o Zhipu CogView por el gateway | Modo demo con Pillow | difusión en el EC2 |
+| Agente que escribe el código | `jmd` embebido en el LIVE, en el contenedor del alumno | Terminal del LIVE con `jmd chat` | OpenCode en el EC2; binarios en la laptop |
+| Terminal y visor | Contenedor del alumno; el LMS sirve `/trabajo` como estático y reenvía `/api` al asistente del contenedor | Nada más que hacer | Túneles o puentes desde la laptop |
 
 ### Proveedores remotos de respaldo (por OpenRouter, lista blanca del gateway)
 
@@ -60,9 +60,9 @@ Cada escena indica: fase del ciclo, duración, qué se ve (y con qué herramient
 ### E03 · Tu laptop decide · Experiencia · 8 min
 - **Se ve:** tabla animada de niveles de imagen (rápida, buena, máxima) con las tres máquinas típicas del grupo iluminándose según su hardware; abajo, el comando `python osito/backend/diagnostico.py` en grande.
 - **Instructor:** pide correr el diagnóstico en la terminal del LIVE o en la laptop. Lee en voz alta dos resultados distintos.
-- **Alumno:** en su laptop escribe `jmd live <código>` (el código está en pantalla) y elige qué comparte; desde ese momento su terminal y su visor aparecen dentro del LIVE. Luego corre el diagnóstico, elige en «Mi IA» el nivel que le dio y el modelo de chat (Ollama local o remoto de la lista).
-- **Compuerta:** 80 % conectados por `jmd live` y con nivel elegido (el panel lo detecta solo, sin «Lo logré»). Quien no pueda conectar su laptop usa el contenedor del servidor con un clic.
-- **Respaldo:** sin GPU y sin Ollama → remoto en «Mi IA» con un clic.
+- **Alumno:** abre la terminal del LIVE (su contenedor ya está creado), corre el diagnóstico para saber qué podría su laptop en casa, y elige en «Mi IA» el modelo de chat de la lista blanca y el proveedor de imagen. En clase todo es remoto; el nivel local es dato para la tarea.
+- **Compuerta:** 80 % con terminal abierta y modelo elegido (el panel lo detecta solo, sin «Lo logré»).
+- **Respaldo:** si un modelo de la lista no responde, el gateway pasa al siguiente de la cadena.
 
 ### E04 · Skills y modo piedra · Experiencia · 10 min
 - **Se ve:** los 14 skills como constelación: cada estrella es un skill, al pasar el control se enciende y muestra su descripción en una línea. Al centro, el skill `piedra` con un antes y después animado: una respuesta larga que se comprime en tres líneas (PinePaper: texto que colapsa, motion «squash» de 400 ms).
@@ -86,9 +86,9 @@ Cada escena indica: fase del ciclo, duración, qué se ve (y con qué herramient
 ### E07 · Construir 1: el chat · Experiencia · 15 min
 - **Se ve:** diagrama animado de tres cajas: navegador → backend FastAPI → modelo (Ollama en la laptop o gateway remoto). Al llegar la respuesta, el osito pasa a «hablando» y aparece el subtítulo. Debajo, los comandos: `bash osito/arrancar.sh` y la URL.
 - **Instructor:** arranca su asistente, escribe «hola», muestra la respuesta y el chip de salud. Explica el respaldo por embeddings cuando no hay modelo.
-- **Alumno:** descomprime `taller-agentico.zip` (de Materiales), arranca el backend, abre la URL, escribe su primera pregunta; carga su corpus en `faq.json` con una pregunta de su dominio.
+- **Alumno:** en la terminal del LIVE, `cd /trabajo/osito && bash arrancar.sh` (ya está el código y el perfil nube), abre el visor, escribe su primera pregunta; carga su corpus en `faq.json` con una pregunta de su dominio.
 - **Compuerta:** 80 % «Lo logré» con evidencia: captura del chat respondiendo (el visor la toma) o el log del backend con `POST /api/chat 200`.
-- **Respaldo:** sin Ollama, «Mi IA» en remoto: el backend del osito lee `OSITO_OLLAMA_URL` apuntando al gateway con el token del alumno (el LMS muestra la línea exacta de exportación).
+- **Respaldo:** si el gateway no responde, el backend cae al respaldo por embeddings con el corpus del alumno (la lección del «no estoy seguro»).
 
 ### E08 · Construir 2: el avatar 3D · Experiencia · 10 min
 - **Se ve:** el osito en 3D y el robot, lado a lado, cambiando de ánimo al compás de la escena (feliz, pensando, sorprendido). Texto: «Todo esto corre en tu navegador: cero servidor». Botones de ánimo que el instructor pulsa y se replican en las pantallas.
@@ -97,16 +97,16 @@ Cada escena indica: fase del ciclo, duración, qué se ve (y con qué herramient
 - **Compuerta:** 70 % «Lo logré» (es la escena más libre).
 
 ### E09 · Construir 3: la voz · Experiencia · 10 min
-- **Se ve:** onda de audio que entra al micrófono, pasa por un bloque «whisper, en tu laptop» y sale como texto en el campo antes de enviarse. Principio UX en grande: «muestra lo que escuchó antes de actuar». PinePaper: la onda se convierte en letras.
+- **Se ve:** onda de audio que entra al micrófono, pasa por un bloque «reconocimiento de voz» (en clase, el del navegador; en casa, whisper en tu laptop) y sale como texto en el campo antes de enviarse. Principio UX en grande: «muestra lo que escuchó antes de actuar». PinePaper: la onda se convierte en letras.
 - **Instructor:** dicta una pregunta, enseña el texto reconocido y lo corrige antes de enviar.
-- **Alumno:** pulsa el micrófono, dicta, corrige, envía. Si su laptop tarda más de 60 s, cambia a transcripción remota en «Mi IA».
-- **Compuerta:** 80 % «Lo logré» con evidencia: `POST /api/stt 200` en el log.
-- **Respaldo:** Chrome solo da micrófono en `localhost`; si alguien abrió por IP, el panel se lo dice.
+- **Alumno:** pulsa el micrófono en el visor, dicta, corrige, envía. El reconocimiento lo hace su navegador; si Chrome no lo tiene, el visor manda el audio al gateway.
+- **Compuerta:** 80 % «Lo logré» con evidencia: un mensaje enviado desde el micrófono (el visor lo marca) o `POST /api/stt 200` en el log.
+- **Respaldo:** el visor va por `https://jmd-learn.online`, así que Chrome da el micrófono sin problema.
 
 ### E10 · Construir 4: la imagen y el flyer · Experiencia · 15 min
 - **Se ve:** tres piezas que se arman como un rompecabezas: «el LLM extrae los datos», «el modelo de difusión pinta el fondo», «el código escribe el texto». Al encajar, aparece un flyer real de la clase. Debajo, el bloque «Datos del flyer» editable.
 - **Instructor:** pide un flyer de un evento de ventas, muestra el resultado, cambia un dato a propósito y regenera. Explica por qué el modelo de difusión no escribe.
-- **Alumno:** genera su flyer en el nivel que le tocó (rápida, buena o máxima); revisa los datos; cambia uno; regenera. Quien no tenga modelo local usa el proveedor de imagen remoto o el modo demo.
+- **Alumno:** genera su flyer con el proveedor de imagen remoto elegido en «Mi IA»; revisa los datos; cambia uno; regenera. Los niveles rápida, buena y máxima son para la tarea en casa.
 - **Compuerta:** 80 % «Lo logré» con evidencia: la imagen en el visor.
 - **Respaldo:** modo demo con Pillow siempre funciona; la lección se entiende igual.
 
@@ -144,12 +144,12 @@ Cada escena indica: fase del ciclo, duración, qué se ve (y con qué herramient
 
 | Escena | Señal | Fuente |
 |---|---|---|
-| E03 | laptop conectada por `jmd live`; nivel de imagen y modelo elegidos | puente `jmd live`; ajustes de «Mi IA» |
+| E03 | terminal abierta; modelo y proveedor elegidos | contenedor; ajustes de «Mi IA» |
 | E04 | skill propia creada; respuesta con piedra | tabla `skills`; telemetría del gateway |
 | E05 | caída de tokens tras piedra y RTK | telemetría por `sub` |
-| E06 | `PLAN_TRABAJO.md` existe | volumen `/trabajo` o repo local vía `jmd` |
-| E07 | `POST /api/chat 200` | log del backend del osito enviado por `jmd live` |
-| E09 | `POST /api/stt 200` | mismo log |
+| E06 | `PLAN_TRABAJO.md` existe | volumen `/trabajo` del contenedor |
+| E07 | `POST /api/chat 200` | log del backend del osito en el contenedor |
+| E09 | mensaje enviado por micrófono o `POST /api/stt 200` | visor; mismo log |
 | E10 | imagen generada | captura del visor |
 | E11 | hallazgo con severidad | formulario del panel |
 
@@ -158,9 +158,9 @@ Cada escena indica: fase del ciclo, duración, qué se ve (y con qué herramient
 1. Gateway encendido con la clave de OpenRouter; lista blanca de modelos verificada la víspera con `jmd provider openrouter test`; 10 USD cargados para subir la cuota de los `:free`.
 2. Proveedor de imagen y de voz remotos probados con un alumno de prueba.
 3. Las 12 escenas ensayadas con cronómetro; capturas estáticas de respaldo de cada una.
-4. Contenedores de aula creados de antemano para los 10 alumnos (así no se espera en E03).
+4. Contenedores de aula creados de antemano para los 10 alumnos, con el código del asistente en `/trabajo/osito` y el perfil nube configurado (así no se espera en E03).
 5. Keycloak apagado si el servidor está por debajo de 800 MB disponibles; cuentas locales repartidas.
-6. Mensaje a los alumnos la noche anterior: `taller-agentico.zip` descargado, Ollama con `qwen3:1.7b`, modelo de imagen de su nivel, corpus en `faq.json`.
+6. Mensaje a los alumnos la noche anterior: traer su corpus en `faq.json` (10 preguntas de su dominio) y tener Chrome actualizado. Nada que instalar para la clase; lo local es la tarea 2.
 
 ## Qué no se hace en esta clase
 

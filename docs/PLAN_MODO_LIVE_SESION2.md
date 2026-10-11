@@ -30,11 +30,12 @@
 7. **Medición del efecto de caveman y RTK.** El gateway ya devuelve `orchestrator` y tokens por respuesta y los guarda por `sub`. El LMS consulta `/admin/api/usage?sub=` y muestra, por alumno, tokens de entrada y salida de hoy, porcentaje de su cuota y una marca cada vez que activó caveman o RTK (el contenedor avisa por un hook al LMS). Así el gráfico muestra la caída de tokens después de activarlos.
 8. **«Lo logré» = progreso del ciclo.** El botón escribe `PUT /api/v1/lessons/pa-02/progress/<paso>` con `done: true` más `evidencia` opcional (captura automática del visor o el último comando). La insignia de la clase 2 se emite con `solo_con_progreso` y un umbral configurable (por defecto 6 de 9 pasos).
 
-9. **Ningún modelo de IA corre en el EC2.** Chat, voz a texto e imagen corren en la laptop del alumno (Ollama, faster-whisper, sd-turbo) y, si una laptop no puede, en un proveedor remoto por el gateway con el token personal del alumno: modelos chinos gratis o de muy bajo costo por OpenRouter para chat (DeepSeek V4.1 Flash, Qwen3, GLM Flash, Kimi K2, MiniMax), y proveedores OpenAI-compatibles añadidos al gateway para imagen (Zhipu CogView, Alibaba Wan o Qwen-Image, SiliconFlow) y voz (SiliconFlow SenseVoice, Groq Whisper). Nunca una instancia compartida de whisper o sd-turbo en el servidor, ni diez.
+9. **Una sola consola: la del LIVE.** El alumno no instala nada para la clase. Todo lo que ejecuta ocurre en su contenedor del servidor y lo ve en el panel del LIVE: terminal, agente `jmd` embebido, el backend del asistente en modo nube y el visor. Nada de binarios en las laptops (ni `jmd`, ni `jmd live`): se evita el riesgo de arquitecturas, antivirus y permisos. Edge AI local se ve en vivo en la laptop del instructor y queda como tarea 2 con el instalador del curso.
+9b. **La IA del LIVE es remota y barata; en el EC2 no corre ningún modelo.** El backend del asistente en el contenedor arranca con `OSITO_PERFIL=nube`: sin torch, sin whisper, sin diffusers (imagen de 200 MB, 50 a 80 MB de RAM). Chat por el gateway con modelos chinos gratis o de muy bajo costo por OpenRouter (DeepSeek V4.1 Flash, Qwen3, GLM Flash, Kimi K2, MiniMax); voz a texto con el reconocimiento del navegador del alumno (Web Speech API, gratis, cero servidor) y, como respaldo, SenseVoice o Groq Whisper por el gateway; imágenes por SiliconFlow (FLUX schnell o Kolors) o Zhipu CogView por el gateway, con el modo demo de Pillow si no hay cuota. El avatar 3D y la voz sintetizada ya corren en el navegador.
 10. **El guion manda.** El contenido del LIVE está escena por escena en `docs/GUION_LIVE_SESION2.md` (12 escenas E01 a E12, con lo que se ve, qué animación y con qué herramienta, qué hace el instructor, qué hace el alumno, qué valida la compuerta y el respaldo). Las tareas de la fase 2 implementan ese guion, no otro.
 11. **Compuerta de avance.** «Siguiente» no cambia de escena a ciegas: muestra al instructor quién cumplió la escena (por «Lo logré» o por evidencia automática), quién falta y su último evento, y le da tres salidas: esperar, pasar igual o mandar ayuda. El umbral por escena vive en `escena.yaml` (por defecto 80 %).
 
-12. **La laptop del alumno entra al LIVE con `jmd live`; el visor se sirve desde el servidor.** Como los modelos corren en la laptop, el LIVE tiene que ver la laptop. `jmd live <código-de-sesión>` abre desde la laptop una sola conexión saliente al LMS (SSE para recibir, HTTPS para enviar; sin abrir puertos ni túneles) y por ella pasan: la **terminal local** (un pty de la laptop dibujado en el panel), la **sincronización de la carpeta de trabajo** al servidor (el LMS la sirve como estático en `/vista/{sub}/`, así el visor es del servidor: URL estable, visible aunque la laptop duerma, igual para todos), el **relé de la API** del asistente (`/vista/{sub}/api/…` viaja a `localhost:8766` de la laptop y vuelve: la pantalla sale del servidor, los modelos corren en la laptop) y las **evidencias** (log, salud, archivos). El contenedor Alpine del servidor queda como respaldo para quien llegue sin laptop útil. RAM en el servidor por alumno: la de servir archivos, casi nada.
+12. **El visor se sirve desde el servidor, sin puente.** El LMS sirve como estático la carpeta `/trabajo` del contenedor del alumno en `/vista/{sub}/` y reenvía `/vista/{sub}/api/…` al backend del asistente que corre en ese mismo contenedor (puerto interno 8766). Todo del lado del servidor, nada que instalar, nada que abrir en la laptop.
 
 ## Restricción dura: casi nada de RAM
 
@@ -46,7 +47,9 @@ El servidor tiene 3,8 GB y Keycloak ya se lleva 500 MB. Todo lo que corra en el 
 | Compresión de salida | `rtk` (Rust, 5 MB) | Nada que sustituir; ya es mínimo |
 | Respuestas cortas | La **skill** caveman (texto, 0 MB) y el estilo caveman del gateway (`style` por petición) | El proxy `caveman` de Node (CLI con engine) |
 | Imagen del contenedor de aula | Alpine con `sh`, `curl`, `git`, `python3`, `php` (opcional), `jmd`, `rtk`, skills; menos de 150 MB; límite de 128 MB de RAM y 0,5 CPU por contenedor | Ubuntu con Node, Rust y Go (2,5 GB de imagen, 700 MB de RAM con un dev server) |
-| Visor de proyectos | El propio LMS sirve **archivos estáticos** desde el volumen `/trabajo` del alumno (`GET /vista/{sub}/…`), sin proceso en el contenedor; recarga por sondeo cada 2 s | Dev servers de Vite, `ng serve`, HMR por WebSocket (150 a 400 MB cada uno) |
+| Visor de proyectos | El propio LMS sirve **archivos estáticos** desde el volumen `/trabajo` del alumno (`GET /vista/{sub}/…`) y reenvía `/api` al asistente del contenedor; recarga por sondeo cada 2 s | Dev servers de Vite, `ng serve`, HMR por WebSocket (150 a 400 MB cada uno) |
+| Asistente del alumno (backend) | FastAPI en modo nube dentro del contenedor, 50 a 80 MB, sin torch; chat, voz e imagen por el gateway o el navegador | faster-whisper (500 MB) y sd-turbo (5 GB) en el servidor |
+| Voz a texto en clase | Web Speech API del navegador del alumno (0 MB en el servidor) | whisper en el EC2 |
 | React, Vue, Preact en clase | **Sin bundler**: `importmap` + módulos ES desde `esm.sh`, JSX con `htm` o Preact; Vue con `vue.esm-browser.js`; todo corre en el navegador del alumno, 0 MB en el servidor | `npm create vite`, Angular CLI, Next |
 | Angular, Rust, Go, TSX con bundler | Se demuestran en la laptop del alumno con su OpenCode local y se muestra el resultado exportado (`dist/`) subido al visor | Compilar en el servidor |
 | PHP y Python | `php -S` (20 MB) y `python3 -m http.server` (10 MB) solo si la escena lo pide y se apagan al cambiar de escena | Flask, Django, Laravel |
@@ -55,7 +58,7 @@ El servidor tiene 3,8 GB y Keycloak ya se lleva 500 MB. Todo lo que corra en el 
 | Terminal | Shell `sh` del contenedor por el WebSocket ya existente (3 MB) | `ttyd`, `code-server`, Jupyter |
 | Keycloak durante la clase | Cuentas locales para los 10 alumnos (contraseñas repartidas antes); Keycloak apagado durante el LIVE si hace falta la memoria | Mantener SSO y Keycloak (500 MB) |
 
-Presupuesto por alumno en reposo: contenedor 8 MB + shell 3 MB + `rtk` 0 (solo al ejecutar) = **≈ 12 MB**; en uso con `jmd` respondiendo: **≈ 40 MB**. Diez alumnos: 120 MB en reposo, 400 MB en pico. LMS ≈ 60 MB, gateway ≈ 30 MB. Total en pico menor a 1 GB. Cabe en el servidor actual sin subir la instancia, con Keycloak apagado o no, y se mide en la fase 0.4.
+Presupuesto por alumno: contenedor 8 MB + shell 3 MB + asistente en modo nube 50 a 80 MB + `jmd` 10 a 25 MB mientras responde = **≈ 90 MB en pico**. Diez alumnos: ≈ 0,9 GB en pico. LMS ≈ 60 MB, gateway ≈ 30 MB. Total ≈ 1 GB. En el servidor actual cabe con Keycloak apagado; la alternativa segura es subir la instancia a 8 GB solo las 3 horas de la clase (centavos). Se decide con la medición de la fase 0.4.
 
 Lo que se gana además: sin Node en el servidor no hay `npm install` en clase, no hay descargas de 300 MB por alumno y no hay dependencias que se rompan a mitad de sesión.
 
@@ -102,8 +105,8 @@ Cada tarea cabe en una jornada o menos, tiene criterio de aceptación verificabl
 
 | # | Tarea | Dónde | Criterio | Estado |
 |---|---|---|---|---|
-| 3.1 | Imagen `jmd/aula` mínima: Alpine con `sh`, `curl`, `git`, `python3`, `php` (opcional), `jmd`, `rtk` con hooks, la skill caveman y los 14 skills del taller, `AGENTS.md` de arranque; usuario sin privilegios; sin socket de Docker; sin Node | infra | `docker run jmd/aula jmd --version && rtk --version` responde; imagen de menos de 150 MB; contenedor en reposo por debajo de 12 MB de RAM | pendiente |
-| 3.2 | Ciclo de vida: `POST /api/v1/aula/iniciar` crea o reutiliza `curso-<sub>` con límites (0,5 CPU, 128 MB, `--pids-limit 64`, sin red salvo el gateway), volumen `/trabajo` por alumno; apagado tras 15 min sin uso; borrado al cerrar el LIVE | Go, infra | 10 contenedores a la vez por debajo de 450 MB sumados en pico, medido con `docker stats` | pendiente |
+| 3.1 | Imagen `jmd/aula`: Alpine con `sh`, `curl`, `git`, `python3` y las dependencias del backend del asistente en modo nube (fastapi, uvicorn, httpx, pillow, numpy; sin torch, whisper ni diffusers), `php` opcional, `jmd`, `rtk` con hooks, la skill caveman y los 14 skills del taller, `AGENTS.md` de arranque; usuario sin privilegios; sin socket de Docker; sin Node | infra | `docker run jmd/aula sh -c 'jmd --version && rtk --version && python3 -c "import fastapi, PIL"'` responde; imagen de menos de 220 MB; contenedor en reposo por debajo de 15 MB, con el backend del asistente arrancado por debajo de 90 MB | pendiente |
+| 3.2 | Ciclo de vida: `POST /api/v1/aula/iniciar` crea o reutiliza `curso-<sub>` con límites (0,5 CPU, 192 MB, `--pids-limit 96`, red solo hacia el gateway y los proveedores remotos por lista blanca), volumen `/trabajo` por alumno; el backend del asistente se arranca con `OSITO_PERFIL=nube` dentro del contenedor y se apaga tras 15 min sin uso; borrado al cerrar el LIVE | Go, infra | 10 contenedores con el asistente arrancado por debajo de 1 GB sumados en pico (`docker stats`); medir en 0.4 y decidir si el día de la clase se sube la instancia a 8 GB durante 3 horas (costo de centavos) | pendiente |
 | 3.3 | Terminal: reutilizar `terminal.tsx` y `/api/v1/term` apuntando al contenedor del alumno; pestañas (hasta 3), copiar y pegar, tamaño de letra, tema claro y oscuro, reconexión | Qwik, Go | Abrir, cerrar y reabrir sin perder la sesión del shell | pendiente |
 | 3.4 | Ayuda integrada: panel lateral con los comandos de la escena actual (copiar con un clic), «qué significa este error» para los 15 errores más comunes, y enlace a la clase | Qwik | Captura; cada escena define sus comandos en `escena.yaml` | pendiente |
 | 3.5 | Inyección de credenciales: al crear el contenedor, el LMS escribe `~/.config/jmd/tokens.json` con el token personal del alumno y el modelo elegido; nunca la clave de OpenRouter. Para la laptop del alumno, «Mi IA» muestra el bloque de `opencode.json` listo para copiar | Go | Dentro del contenedor, `jmd ask` responde por el gateway; la clave central no aparece en ningún archivo | pendiente |
@@ -133,28 +136,15 @@ Cada tarea cabe en una jornada o menos, tiene criterio de aceptación verificabl
 
 Decisión: en la laptop el alumno sigue con OpenCode y su token personal del gateway; en el LIVE, el agente es `jmd` embebido (panel «Agente») más la terminal, los dos dentro del mismo contenedor de poca RAM. Lo que el alumno ve en el panel (contexto, tokens, costo, tareas, MCP, reintentos) es lo mismo que le da OpenCode en la laptop, dibujado por el LMS. Las métricas de tokens, costo y cuota del LIVE salen del gateway, así que valen para los dos clientes.
 
-### Fase 3c · Puente laptop ↔ LIVE con `jmd live` (3 días)
+### Fase 3c · (retirada) Puente laptop ↔ LIVE
 
-Es lo que hace posible «todo en la laptop, todo visto en el LIVE». Sin esto, el alumno tendría que salir del LIVE para trabajar.
-
-| # | Tarea | Dónde | Criterio | Estado |
-|---|---|---|---|---|
-| 3c.1 | `jmd live <código>`: inicia sesión con el token del alumno, abre `GET /api/v1/live/{lesson}/laptop/stream` (SSE, recibe órdenes) y envía por `POST /api/v1/live/{lesson}/laptop/eventos`; reconexión con backoff; `Ctrl-C` cierra limpio; menos de 15 MB de RAM | jmd (Rust) | Conectar, desconectar la red 20 s, reconectar sin perder la sesión | pendiente |
-| 3c.2 | Terminal local por el puente: `jmd live` abre un pty (`sh` o `zsh` en Mac y Linux, PowerShell o WSL en Windows) y lo multiplexa por la conexión; el LMS lo expone al panel del alumno por el mismo WebSocket que la terminal del contenedor (`/api/v1/term?origen=laptop`) | jmd, Go, Qwik | Escribir `ls` en el panel del LIVE lista la carpeta de la laptop; latencia menor a 150 ms en red local | pendiente |
-| 3c.3 | Visor servido por el servidor: `jmd live` sincroniza la carpeta de trabajo del alumno al volumen `/trabajo/<sub>` del servidor (envío inicial y luego cada cambio, con exclusiones `.git`, `node_modules`, `.venv`, `imagenes/*.png` de más de 2 MB; tope 50 MB por alumno) y el LMS la sirve como estático en `GET /vista/{sub}/…`. Así el visor vive en el servidor: URL estable, el instructor lo abre aunque la laptop duerma, todos ven lo mismo, y el servidor no ejecuta nada, solo sirve archivos | jmd, Go | Guardar un archivo en la laptop se refleja en el visor en menos de 3 s; `du` del volumen por alumno nunca pasa de 50 MB; `/vista/<otro sub>/` da 403 | pendiente |
-| 3c.3b | Relé de API al laptop: lo que el frontend del alumno pida bajo `/vista/{sub}/api/…` (chat, voz, imagen, salud, estado) el LMS lo reenvía por el puente a `http://localhost:8766/api/…` de su laptop y devuelve la respuesta; límite 10 MB (las imágenes generadas) y 180 s de espera; sin WebSocket. Resultado: la pantalla se sirve desde el servidor y los modelos siguen corriendo en la laptop | jmd, Go | Desde otra máquina, el chat del alumno responde y la imagen generada aparece en el visor; en el EC2 no hay ningún proceso de modelo (`ps` lo confirma) | pendiente |
-| 3c.4 | Evidencias desde la laptop: `jmd live` manda cada 5 s `GET http://localhost:8766/api/salud` del osito, las últimas 20 líneas del log del backend (ruta configurable) y la lista de archivos de la carpeta de trabajo; el LMS las usa para las compuertas de E03, E06, E07, E09 y E10 sin que el alumno marque nada | jmd, Go | Al responder el chat en la laptop, el semáforo del instructor pasa a verde en menos de 10 s | pendiente |
-| 3c.5 | Permisos y privacidad: al conectar, `jmd live` pregunta qué comparte (terminal, visor, evidencias) y el panel del alumno lo muestra con interruptores; el instructor solo ve la terminal y el visor si el alumno lo permitió; nada se graba | jmd, Go, Qwik | Con «terminal: no», el botón «ver» del instructor sale deshabilitado; test | pendiente |
-| 3c.6 | Instalación y arranque en un paso: el instalador del curso deja `jmd`; en E03 el alumno pega `jmd live ABC123` (código que muestra el instructor en pantalla); si no tiene `jmd`, el panel ofrece el contenedor del servidor como respaldo con un clic | instalador, Qwik | Un alumno con laptop limpia entra al LIVE con su terminal local en menos de 2 min | pendiente |
-| 3c.7 | Windows: el pty con ConPTY; WSL detectado y ofrecido; `localhost:8766` de WSL alcanzable desde `jmd live` en Windows (misma máquina) | jmd | Probado en una VM de Windows 11 con y sin WSL | pendiente |
-
-Regla: la terminal y el visor «del LIVE» son, por defecto, los de la laptop del alumno vía `jmd live`. El contenedor Alpine del servidor solo aparece como respaldo.
+Retirada por decisión del instructor: la única consola es la del LIVE y no se instalan binarios en las laptops. Queda documentada en el historial de git (commit 0a4c818) por si más adelante se quiere ofrecer a alumnos avanzados como opción.
 
 ### Fase 4 · Visor de proyectos (2 días)
 
 | # | Tarea | Dónde | Criterio | Estado |
 |---|---|---|---|---|
-| 4.1 | Visor estático autenticado `GET /vista/{sub}/{ruta…}` que sirve el volumen `/trabajo/<sub>` desde el LMS (sin proceso en el contenedor), alimentado por `jmd live` (3c.3) o por el contenedor de respaldo, con recarga por sondeo cada 2 s cuando cambia un archivo; `GET /vista/{sub}/api/…` se relé al laptop (3c.3b) o al contenedor | Go | Un `index.html` con React por `importmap` y otro con Vue muestran el cambio en menos de 3 s sin ningún proceso en el contenedor | pendiente |
+| 4.1 | Visor autenticado `GET /vista/{sub}/{ruta…}`: sirve el volumen `/trabajo/<sub>` del contenedor como estático desde el LMS, con recarga por sondeo cada 2 s; `GET/POST /vista/{sub}/api/…` se reenvía al backend del asistente del contenedor (`curso-<sub>:8766`) con 10 MB y 180 s de tope, sin WebSocket; `sub` validado contra la sesión | Go | Desde otro navegador, el asistente del alumno responde y la imagen generada aparece en el visor; `/vista/<otro sub>/` da 403 | pendiente |
 | 4.2 | Plantillas sin bundler: `aula nuevo html|react-esm|vue-esm|preact-htm|php|python-static` crea un proyecto que corre en el navegador con `importmap` (React, Vue y Preact desde esm.sh) o con `php -S` / `python3 -m http.server` que se apagan solos al cambiar de escena | imagen | Las 6 plantillas se ven en el visor en menos de 10 s; el contenedor no pasa de 40 MB con una abierta | pendiente |
 | 4.3 | Visor en la UI: iframe `sandbox`, barra con URL, recargar, abrir en pestaña, tamaños móvil, tablet y escritorio, captura para evidencia de «Lo logré» | Qwik | Captura guardada como evidencia y visible en la vista del instructor | pendiente |
 | 4.4 | Consola del visor: errores de la página en un panel (inyección de un pequeño script por el proxy solo en `text/html`) | Go, Qwik | Un `throw` en la app aparece en el panel con línea y archivo | pendiente |
@@ -168,7 +158,7 @@ Regla: la terminal y el visor «del LIVE» son, por defecto, los de la laptop de
 | 5.3 | `GET /api/v1/mi-uso`: tokens de entrada y salida, peticiones, porcentaje de cuota, marcas de caveman y RTK, serie de los últimos 60 min; fuente: telemetría del gateway por `sub` | Go, gateway | Coincide con el Panel del gateway con diferencia menor al 2 % | pendiente |
 | 5.4 | Vista del instructor: tabla de consumo por alumno en vivo, alumnos al 80 % de cuota en ámbar, al 100 % en rojo, botón «dar 20 % más» | Qwik, Go | Captura; el botón amplía la cuota en el gateway | pendiente |
 | 5.6 | Proveedores remotos de respaldo en el gateway: añadir como proveedores OpenAI-compatibles los de imagen (Zhipu CogView, Alibaba Wan o Qwen-Image, SiliconFlow) y de voz (SiliconFlow SenseVoice, Groq Whisper) con `POST /v1/images/generations` y `POST /v1/audio/transcriptions` traducidos al formato de cada uno; cuota y costo por alumno igual que el chat; verificación la víspera con `jmd provider <n> test` | gateway | Un alumno sin GPU genera una imagen y transcribe un audio por el gateway con su token; costo mostrado en «Mi uso» | pendiente |
-| 5.7 | Modo remoto en el asistente del alumno: el backend del osito acepta `OSITO_OLLAMA_URL`, `OSITO_STT_URL` y `OSITO_IMAGEN_URL` apuntando al gateway con el token personal; «Mi IA» muestra las tres líneas de exportación listas para copiar y un botón «usar remoto» que las escribe en `/trabajo/.env` del contenedor | Go, Qwik, osito | Cambiar a remoto y volver a local sin reinstalar nada; `GET /api/salud` del osito dice qué usa | pendiente |
+| 5.7 | Perfil nube del asistente (`OSITO_PERFIL=nube`): el backend del osito usa `OSITO_OLLAMA_URL` (chat por el gateway), `OSITO_STT_URL` (transcripción por el gateway; por defecto el frontend usa Web Speech del navegador y solo manda audio si el alumno lo pide) y `OSITO_IMAGEN_URL` (imagen por el gateway, demo con Pillow si falla), con el token personal inyectado por el LMS; `GET /api/salud` dice qué usa cada pieza | osito, Go | En el contenedor, chat, voz e imagen responden sin torch instalado; `pip list` no contiene torch | pendiente |
 | 5.8 | Lista blanca inicial de modelos chinos gratis o baratos (DeepSeek V4.1 Flash, Qwen3, GLM Flash, Kimi K2, MiniMax) con precio por millón visible en el selector; verificación automática diaria de que responden | gateway, Qwik | Selector con precio; los que no respondieron en la prueba del día salen en gris | pendiente |
 | 5.5 | Chat de IA dentro del LIVE (opcional, si sobra tiempo): caja de prompt que usa el token del alumno contra el gateway, con el modelo elegido, para quien no quiera la terminal | Qwik | Respuesta en la UI con tokens contados | pendiente |
 
@@ -218,11 +208,11 @@ Reglas duras de esta fase:
 | Semana | Fases | Entregable demostrable |
 |---|---|---|
 | 1 | 0, 1, 2 (parte) | Instructor y alumnos sincronizados viendo 3 escenas con animación |
-| 2 | 2 (resto), 3, 3b, 3c | Clase completa en escenas; cada alumno con su terminal (laptop por `jmd live` o contenedor), `jmd` con tokens, costo y reintentos visibles |
+| 2 | 2 (resto), 3, 3b | Clase completa en escenas; cada alumno con su terminal y su asistente en modo nube en el contenedor, `jmd` con tokens, costo y reintentos visibles |
 | 3 | 4, 5, 5b | Visor con React y Vue en caliente; consumo por alumno en vivo con marcas de caveman y RTK; skills propias aisladas y adaptadas al modelo de cada alumno |
 | 4 | 6, 7 | «Lo logré», insignia automática, ensayo general |
 
-Total estimado: 29 a 31 jornadas de desarrollo, más el ensayo.
+Total estimado: 27 a 29 jornadas de desarrollo, más el ensayo.
 
 ## Riesgos y mitigación
 
@@ -237,14 +227,17 @@ Total estimado: 29 a 31 jornadas de desarrollo, más el ensayo.
 | Una skill escrita para Claude no funciona con un modelo pequeño | El alumno cree que las skills no sirven | Variante por modelo generada y montada automáticamente (5b.5); «Probar» en la terminal antes de guardar |
 | PinePaper en modo Puppeteer lanza Chrome sin sandbox | Riesgo en la máquina del instructor | Usar modo `code`; las escenas se generan en la Mac del instructor, nunca en el servidor |
 | Internet del aula cae | Escenas sin animación, IA sin respuesta | Escenas autocontenidas sin CDN; el LMS sigue sirviendo local; terminal y visor funcionan sin salir del servidor |
-| Varias laptops no pueden con whisper o sd-turbo | Alumnos frenados en E09 y E10 | Proveedores remotos por el gateway con un selector; nunca instancias en el EC2 |
+| Varias laptops no pueden con whisper o sd-turbo | Alumnos frenados en E09 y E10 | En el LIVE todo es remoto o del navegador: voz por Web Speech, imagen por SiliconFlow o Zhipu, chat por OpenRouter; lo local es tarea en casa |
+| Un binario `jmd` falla en la laptop de un alumno (arquitectura, antivirus, permisos) | Alumno fuera de la clase | No hay binarios en las laptops: la única consola es la del LIVE; `jmd` solo corre dentro del contenedor del servidor |
+| Los proveedores remotos gratis se agotan en plena clase | Chat, voz o imagen sin respuesta | Cadena de respaldo en el gateway (dos proveedores por función), 10 USD cargados en OpenRouter, modo demo de Pillow para imagen, Web Speech para voz |
 | El instructor avanza y deja gente atrás | Alumnos perdidos desde E07 | Compuerta de avance con umbral por escena y «Mandar ayuda» |
 | SSE detrás de nginx con buffering | Escenas que llegan tarde | `proxy_buffering off` y `X-Accel-Buffering: no` en la ruta del stream; probado en 7.2 |
 
 ## Fuera de alcance en esta versión
 
 - Compilar o empaquetar en el servidor (Vite, Angular CLI, Rust, Go, TSX con bundler): se hace en la laptop del alumno y se sube el resultado al visor.
-- OpenCode dentro del contenedor de aula: el agente del contenedor es `jmd`; OpenCode vive en la laptop.
+- OpenCode dentro del contenedor de aula: el agente del contenedor es `jmd`; OpenCode vive en la laptop para la tarea.
+- Binarios o instaladores en las laptops durante el LIVE; lo local (Ollama, whisper, sd-turbo) es la tarea 2 con el instalador del curso.
 - Vídeo del instructor dentro del LIVE (se sigue usando Zoom o la sala física).
 - Edición colaborativa del mismo archivo entre alumnos.
 - Modo LIVE para las clases 1 y 3 (se crea el formato general; las escenas de esas clases se escriben después).
