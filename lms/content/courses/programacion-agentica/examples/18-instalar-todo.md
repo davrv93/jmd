@@ -6,7 +6,7 @@ tags: [instalación, prerrequisitos, opencode, docker]
 level: básico
 lesson: pa-01
 phase: experiencia
-order: 0
+order: 1
 ---
 En la primera clase se perdió mucho tiempo instalando herramienta por herramienta. Este
 instalador lo hace todo de una vez, salta lo que ya tengas y al final te enseña una tabla con

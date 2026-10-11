@@ -167,6 +167,28 @@ CREATE TABLE IF NOT EXISTS answers (
   body_md TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS live_sessions (
+  lesson_id TEXT PRIMARY KEY,
+  estado TEXT NOT NULL DEFAULT 'preparando',
+  escena TEXT NOT NULL DEFAULT '',
+  paso TEXT NOT NULL DEFAULT '',
+  visible INTEGER NOT NULL DEFAULT 1,
+  modo TEXT NOT NULL DEFAULT 'guiado',
+  mensaje TEXT NOT NULL DEFAULT '',
+  iniciada_por TEXT NOT NULL DEFAULT '',
+  iniciada_en TEXT,
+  cerrada_en TEXT,
+  actualizada_en TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS live_evidencias (
+  user_id TEXT NOT NULL,
+  lesson_id TEXT NOT NULL,
+  escena TEXT NOT NULL,
+  tipo TEXT NOT NULL,
+  detalle TEXT NOT NULL DEFAULT '',
+  t TEXT NOT NULL,
+  PRIMARY KEY (user_id, lesson_id, escena, tipo)
+);
 `
 
 // NewID genera un id aleatorio no adivinable (32 hex).
@@ -691,6 +713,24 @@ func (d *DB) UnansweredCount(ctx context.Context) (map[string]int, error) {
 	return out, rows.Err()
 }
 
+// --- evidencias del LIVE ---------------------------------------------------------------------
+
+// PonerEvidencia registra que el alumno cumplió la escena (por el detector o por el visor). Es
+// idempotente: repetir el mismo tipo no cambia nada.
+func (d *DB) PonerEvidencia(ctx context.Context, userID, lessonID, escena, tipo, detalle string) error {
+	_, err := d.sql.ExecContext(ctx, "INSERT OR IGNORE INTO live_evidencias (user_id, lesson_id, escena, tipo, detalle, t) VALUES (?,?,?,?,?,?)",
+		userID, lessonID, escena, tipo, detalle, now())
+	return err
+}
+
+// EvidenciaExiste dice si el alumno tiene alguna evidencia en la escena.
+func (d *DB) EvidenciaExiste(ctx context.Context, userID, lessonID, escena string) (bool, error) {
+	var n int
+	err := d.sql.QueryRowContext(ctx, "SELECT COUNT(*) FROM live_evidencias WHERE user_id = ? AND lesson_id = ? AND escena = ?",
+		userID, lessonID, escena).Scan(&n)
+	return n > 0, err
+}
+
 // --- ajustes -------------------------------------------------------------------------------
 
 // Setting devuelve el valor guardado para una clave; ErrNotFound si nunca se guardó.
@@ -836,4 +876,73 @@ func (d *DB) RevokeCertificate(ctx context.Context, id string) error {
 		return ErrNotFound
 	}
 	return nil
+}
+
+// --- live ----------------------------------------------------------------------------------
+
+// LiveSession es el estado del modo LIVE de una clase (una fila por lección).
+type LiveSession struct {
+	LessonID      string
+	Estado        string
+	Escena        string
+	Paso          string
+	Visible       bool
+	Modo          string
+	Mensaje       string
+	IniciadaPor   string
+	IniciadaEn    *time.Time
+	CerradaEn     *time.Time
+	ActualizadaEn time.Time
+}
+
+const liveCols = "lesson_id, estado, escena, paso, visible, modo, mensaje, iniciada_por, iniciada_en, cerrada_en, actualizada_en"
+
+func scanLive(row interface{ Scan(...any) error }) (*LiveSession, error) {
+	var s LiveSession
+	var visible int
+	var iniciada, cerrada, actualizada sql.NullString
+	if err := row.Scan(&s.LessonID, &s.Estado, &s.Escena, &s.Paso, &visible, &s.Modo, &s.Mensaje, &s.IniciadaPor, &iniciada, &cerrada, &actualizada); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	s.Visible = visible == 1
+	if iniciada.Valid {
+		t := parseTime(iniciada.String)
+		s.IniciadaEn = &t
+	}
+	if cerrada.Valid {
+		t := parseTime(cerrada.String)
+		s.CerradaEn = &t
+	}
+	s.ActualizadaEn = parseTime(actualizada.String)
+	return &s, nil
+}
+
+// LiveSession devuelve el estado del LIVE de una lección; ErrNotFound si nunca se inició.
+func (d *DB) LiveSession(ctx context.Context, lessonID string) (*LiveSession, error) {
+	return scanLive(d.sql.QueryRowContext(ctx, "SELECT "+liveCols+" FROM live_sessions WHERE lesson_id = ?", lessonID))
+}
+
+// UpsertLiveSession guarda el estado del LIVE (crea o actualiza la fila de la lección).
+func (d *DB) UpsertLiveSession(ctx context.Context, s *LiveSession) error {
+	s.ActualizadaEn = time.Now().UTC()
+	v := 0
+	if s.Visible {
+		v = 1
+	}
+	var iniciada, cerrada any
+	if s.IniciadaEn != nil {
+		iniciada = s.IniciadaEn.Format(time.RFC3339)
+	}
+	if s.CerradaEn != nil {
+		cerrada = s.CerradaEn.Format(time.RFC3339)
+	}
+	_, err := d.sql.ExecContext(ctx, `INSERT INTO live_sessions (`+liveCols+`) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+		ON CONFLICT(lesson_id) DO UPDATE SET estado=excluded.estado, escena=excluded.escena, paso=excluded.paso,
+		visible=excluded.visible, modo=excluded.modo, mensaje=excluded.mensaje, iniciada_por=excluded.iniciada_por,
+		iniciada_en=excluded.iniciada_en, cerrada_en=excluded.cerrada_en, actualizada_en=excluded.actualizada_en`,
+		s.LessonID, s.Estado, s.Escena, s.Paso, v, s.Modo, s.Mensaje, s.IniciadaPor, iniciada, cerrada, s.ActualizadaEn.Format(time.RFC3339))
+	return err
 }

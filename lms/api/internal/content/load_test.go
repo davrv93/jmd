@@ -26,7 +26,7 @@ func TestRealContent(t *testing.T) {
 	if len(l.Objectives) < 3 || len(l.Cycle) < 5 || len(l.Materials) < 10 {
 		t.Fatalf("clase 1 incompleta: %d objetivos, %d pasos, %d materiales", len(l.Objectives), len(l.Cycle), len(l.Materials))
 	}
-	for _, want := range []string{"Qué es Docker", "Qué es VS Code", "agente de IA", "proveedor", "Qué es un modelo", "parámetros", "RTK", "caveman", "MCP", "skill"} {
+	for _, want := range []string{"VS Code", "Docker", "agente", "proveedor", "modelo", "parámetros", "RTK", "caveman", "MCP", "skill"} {
 		if !strings.Contains(l.BodyMD, want) {
 			t.Errorf("la clase 1 no menciona %q", want)
 		}
@@ -56,8 +56,8 @@ func TestRealContent(t *testing.T) {
 			t.Errorf("material %s sin URL https: %q", m.ID, m.URL)
 		}
 	}
-	// Ejemplos: los diecisiete, en el orden de «order», ligados a su clase y con HTML.
-	want := []string{"ej-skill-saludo", "ej-skill-commit", "ej-mcp-config", "ej-parametros", "ej-skills-guia", "ej-opencode-guia", "ej-runner",
+	// Ejemplos: los dieciocho, en el orden de «order», ligados a su clase y con HTML.
+	want := []string{"ej-instalar-todo", "ej-skill-saludo", "ej-skill-commit", "ej-mcp-config", "ej-parametros", "ej-skills-guia", "ej-opencode-guia", "ej-runner",
 		"ej-skill-piedra", "ej-plan-y-obra", "ej-corpus-faq", "ej-flyer-texto-real", "ej-diagnostico-maquina",
 		"ej-wireframe-gris", "ej-afiliar-whatsapp", "ej-webhook-a-chat", "ej-herramienta-y-mcp", "ej-compose-asistente"}
 	lecciones := map[string]bool{"pa-01": true, "pa-02": true, "pa-03": true}
@@ -79,8 +79,11 @@ func TestRealContent(t *testing.T) {
 			t.Errorf("%s: el HTML no tiene bloques de código o títulos", e.ID)
 		}
 	}
-	if exs[0].LessonID != "pa-01" || exs[0].Title != "Tu primera skill en OpenCode" {
-		t.Errorf("ej-skill-saludo: %+v", exs[0])
+	if exs[0].LessonID != "pa-01" || exs[0].Title != "Instala todo con un comando" {
+		t.Errorf("ej-instalar-todo debe ir primero: %+v", exs[0])
+	}
+	if exs[1].LessonID != "pa-01" || exs[1].Title != "Tu primera skill en OpenCode" {
+		t.Errorf("ej-skill-saludo debe ir segundo: %+v", exs[1])
 	}
 }
 

@@ -72,7 +72,7 @@ CONTEXTO FIJO · Modo LIVE clase 2 · repo /Users/david.roncal/Documents/jmd
 
 ### 1.4 Capturas
 
-Con Playwright (ya está `playwright-core` en `lms/web`) contra el LMS en `http://localhost:8095`:
+Con Playwright (`lms/scripts/_pw.mjs` resuelve `playwright-core`; no está en `lms/web`; importa de ahí, no lo instales) contra el LMS en `http://localhost:8095`:
 
 ```
 cd /Users/david.roncal/Documents/jmd/lms/web && PLAYWRIGHT_CHROMIUM="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" node ../scripts/captura.mjs <url> <ancho>x<alto> <ruta-png> [light|dark]
@@ -96,6 +96,10 @@ COMANDOS DE VERIFICACIÓN (comando → salida real, recortada a 20 líneas):
 PENDIENTE O BLOQUEADO:
 - <nada | qué falta y por qué, con la ruta o el error literal>
 ```
+
+> Decisión del instructor (11-10): el avatar de la clase es el ROBOT, nunca el osito. Las escenas y textos visibles dicen «robot»; las rutas técnicas `/trabajo/osito/…` se conservan.
+
+> Regla de pruebas Go: el contenido vive fuera del módulo, así que la caché de `go test` no ve sus cambios. Corre siempre `go test -count=1 ./internal/content`.
 
 ## 2. Mapa de dependencias
 
@@ -308,13 +312,13 @@ Objetivo (una frase): Crear `lms/scripts/captura.mjs` que entra con un usuario, 
 Lee antes (rutas exactas): lms/scripts/e2e.mjs · lms/web/src/root.tsx (clave `lms.tema` en localStorage)
 Crea / modifica (rutas exactas, nada más): lms/scripts/captura.mjs · docs/capturas-live/.gitkeep
 Pasos:
-1. Copiar el arranque de `e2e.mjs` (import de `playwright-core`, `PLAYWRIGHT_CHROMIUM`, `--no-sandbox`).
+1. Copiar el arranque de `lms/scripts/captura.mjs` (import desde `./_pw.mjs`, `PLAYWRIGHT_CHROMIUM`, `--no-sandbox`).
 2. Argumentos: `url`, `WxH`, `ruta.png`, `light|dark` (opcional); variables `LMS_EMAIL`, `LMS_PASSWORD` (por defecto `instructor@local.test` / `local-1234`).
 3. Entrar por `POST /api/v1/auth/login` con `page.request`, poner la cookie `lms_session` con el token, `localStorage.setItem("lms.tema", tema)`, `page.goto(url)`, esperar `networkidle`, `page.screenshot({path, fullPage:false})`.
 Verifica (comando exacto → salida esperada):
 - `cd $R/lms/web && PLAYWRIGHT_CHROMIUM="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" node ../scripts/captura.mjs http://localhost:8095/courses/ 1366x768 $R/docs/capturas-live/T-0.6-cursos-1366x768-dark.png dark && test -s $R/docs/capturas-live/T-0.6-cursos-1366x768-dark.png && echo LISTO` → `LISTO`
 Hecho significa (sí/no): el PNG existe, pesa más de 10 KB y muestra la lista de cursos en tema oscuro.
-No hagas: añadir `playwright` (ya está `playwright-core`); escribir el token en el PNG o en logs.
+No hagas: añadir `playwright` (usa `_pw.mjs`); escribir el token en el PNG o en logs.
 
 ### T-0.7 · Medición de RAM con 10 contenedores Alpine
 Depende de: T-0.2  ·  Turnos: 1  ·  Riesgo: medio

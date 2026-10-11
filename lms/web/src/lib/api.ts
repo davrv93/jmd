@@ -334,7 +334,84 @@ export const api = {
   anularCertificado: (codigo: string) => req<Certificate>("POST", `/api/v1/admin/certificados/${encodeURIComponent(codigo)}/anular`, {}),
   misCertificados: () => req<Certificate[]>("GET", "/api/v1/certificados"),
   verificar: (codigo: string) => req<Certificate>("GET", `/api/v1/verificar/${encodeURIComponent(codigo)}`),
+  // Modo LIVE de una clase: estado, control del instructor y lectura del alumno.
+  liveEstado: (lesson: string) => req<LiveEstado>("GET", `/api/v1/live/${encodeURIComponent(lesson)}`),
+  liveIniciar: (lesson: string) => req<LiveEstado>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/iniciar`, {}),
+  liveCerrar: (lesson: string) => req<LiveEstado>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/cerrar`, {}),
+  liveEscenas: (lesson: string) => req<EscenaLive[]>("GET", `/api/v1/live/${encodeURIComponent(lesson)}/escenas`),
+  liveEscena: (lesson: string, escena: string, visible: boolean, extra?: { parametro?: string }) =>
+    req<LiveEstado>("PUT", `/api/v1/live/${encodeURIComponent(lesson)}/escena`, { escena, visible, ...extra }),
+  liveCompuerta: (lesson: string) => req<CompuertaLive>("GET", `/api/v1/live/${encodeURIComponent(lesson)}/compuerta`),
+  livePasarIgual: (lesson: string, escena: string) =>
+    req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/pasar-igual`, { escena }),
+  liveMensaje: (lesson: string, texto: string, para = "todos") =>
+    req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/mensaje`, { texto, para }),
+  liveEmparejar: (lesson: string) =>
+    req<{ grupos: { Sub: string; Nombre: string }[][] }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/emparejar`, {}),
+  livePareja: (lesson: string) => req<ParejaLive>("GET", `/api/v1/live/${encodeURIComponent(lesson)}/pareja`),
+  liveLatido: (lesson: string, escena: string) =>
+    req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/latido`, { escena }),
+  liveEvento: (lesson: string, tipo: "terminal" | "agente" | "visor" | "error", detalle = "") =>
+    req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/evento`, { tipo, detalle }),
+  liveModo: (lesson: string, modo: "guiado" | "libre") =>
+    req<LiveEstado>("PUT", `/api/v1/live/${encodeURIComponent(lesson)}/modo`, { modo }),
 };
+
+// Alumno conectado, tal como lo ve el instructor en el evento `presencia`.
+export interface PresenteLive {
+  sub: string;
+  nombre: string;
+  escena: string;
+  visto: string;
+  semaforo: "verde" | "ambar" | "rojo" | "gris";
+}
+
+// Con quién le toca al alumno (evento `pareja` y GET /pareja).
+export interface ParejaLive {
+  con: { sub: string; nombre: string }[];
+  vista: string;
+}
+
+// Compuerta de avance (GET /api/v1/live/{lesson}/compuerta): quién cumplió la escena actual.
+export interface CompuertaLive {
+  escena: string;
+  umbral_pct: number;
+  pct: number;
+  pasa: boolean;
+  cumplieron: { sub: string; nombre: string; motivo: "lo_logre" | "evidencia" }[];
+  faltan: { sub: string; nombre: string; ultimo_evento: string; hace_s: number }[];
+}
+
+// Escena del modo LIVE (GET /api/v1/live/{lesson}/escenas): lo que declara su escena.yaml.
+export interface EscenaLive {
+  id: string;
+  titulo: string;
+  fase: string;
+  paso: string;
+  duracion_min: number;
+  lo_logre: boolean;
+  evidencia: string;
+  umbral_pct: number;
+  compuerta: string;
+  comandos: { titulo: string; cmd: string }[] | null;
+  tareas: { id: string; titulo: string }[] | null;
+  orden: number;
+}
+
+// Estado del modo LIVE de una lección (GET /api/v1/live/{lesson} y evento «estado» del stream).
+export interface LiveEstado {
+  lesson_id: string;
+  estado: "preparando" | "en_vivo" | "cerrada";
+  escena: string;
+  paso: string;
+  visible: boolean;
+  modo: "guiado" | "libre";
+  mensaje: string;
+  parametro?: string; // parámetro libre que el instructor manda a la escena (p. ej. el ánimo del avatar)
+  iniciada_en: string | null;
+  conectados: number;
+  t: string;
+}
 
 /** URL del CSV de exportación (personal): formato «generico» o «badgr» (Canvas Credentials). */
 export function exportCsvUrl(course: string, lesson: string, formato: "generico" | "badgr" = "generico"): string {

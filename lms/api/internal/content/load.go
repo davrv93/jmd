@@ -28,6 +28,7 @@ type Catalog struct {
 	courses     []*Course
 	courseByID  map[string]*Course
 	lessons     map[string]*Lesson
+	escenas     map[string][]*Escena
 	assignments map[string]*Assignment
 	// assignmentsByCourse conserva el orden de los archivos.
 	assignmentsByCourse map[string][]*Assignment
@@ -49,6 +50,7 @@ func Load(dir string) (*Catalog, error) {
 	c := &Catalog{
 		courseByID:          map[string]*Course{},
 		lessons:             map[string]*Lesson{},
+		escenas:             map[string][]*Escena{},
 		assignments:         map[string]*Assignment{},
 		assignmentsByCourse: map[string][]*Assignment{},
 		examples:            map[string]*Example{},
@@ -148,6 +150,17 @@ func loadCourse(dir string, c *Catalog) (*Course, error) {
 	for id, l := range lessons {
 		if !placed[id] {
 			slog.Warn("sesión sin módulo (no se publica)", "lesson", id, "file", l.SourceRel)
+		}
+	}
+
+	// Escenas del modo LIVE: live/<lección>/<NN-nombre>/escena.yaml + escena.html.
+	for id, l := range lessons {
+		es, err := loadEscenas(dir, id, l)
+		if err != nil {
+			return nil, fmt.Errorf("escenas de %s: %w", id, err)
+		}
+		if len(es) > 0 {
+			c.escenas[id] = es
 		}
 	}
 

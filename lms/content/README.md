@@ -106,3 +106,35 @@ order: 1                         # opcional; primero por order, luego por títul
 ---
 Cuerpo en Markdown, con bloques de código que se puedan copiar y ejecutar.
 ```
+
+## Escenas del modo LIVE (`live/<lección>/<NN-nombre>/`)
+
+Cada escena es una carpeta con `escena.yaml` (metadatos) y `escena.html` (la animación). El orden
+lo da el prefijo numérico de la carpeta. `live/_plantilla/` es el punto de partida: cópiala y cambia
+el contenido. `live/_comun/` guarda lo que comparten todas las escenas (Three.js, avatares); se
+sirve en `/api/v1/live/<lección>/comun/<archivo>`. Una escena con `oculta: true` no aparece en la
+lista del instructor (sirve de referencia o de prueba). El contenido se recarga solo cada 5 s.
+
+```yaml
+id: 03-tu-laptop            # igual al nombre de la carpeta
+titulo: Tu laptop y la IA local
+fase: experiencia           # experiencia | reflexion | conceptualizacion | experimentacion
+paso: relevar               # paso de la clase al que cuenta; "" si ninguno
+duracion_min: 8
+lo_logre: false             # muestra el botón «Lo logré» al alumno
+evidencia: automatica       # ninguna | automatica | captura
+umbral_pct: 80              # % de alumnos que debe completar para abrir la compuerta
+compuerta: evidencia        # ninguna | presentes | evidencia | lo_logre
+comandos:                   # lo que el alumno copia en su terminal
+  - { titulo: Diagnóstico, cmd: "python3 /trabajo/osito/backend/diagnostico.py" }
+respaldo: captura.png       # imagen si el navegador no tiene WebGL
+oculta: false
+```
+
+Reglas de `escena.html`: todo inline (sin CDN ni fuentes externas), menos de 300 elementos y
+1 MB, animación con CSS o SVG, y legible por completo con `prefers-reduced-motion`. Solo se
+pueden pedir archivos `.js .mjs .json .png .webp .svg .woff2` de su carpeta o de `_comun`.
+La escena recibe el tema con `?tema=dark|light` y el estado con
+`postMessage({tipo:"estado", estado})` (valida `event.origin`). Para probarla:
+`node lms/scripts/captura.mjs`. Al editar contenido fuera del módulo Go, corre los tests con
+`go test -count=1 ./internal/content` (sin `-count=1` la caché de Go no ve el cambio).

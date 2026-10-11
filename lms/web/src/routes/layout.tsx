@@ -133,13 +133,14 @@ export default component$(() => {
 
   const path = loc.url.pathname;
   const isLogin = path === "/";
+  const isLive = path.startsWith("/live/");
   const help = HELP[session.help];
   const me = session.me;
 
   return (
     <>
       <div class={`cielo${isLogin ? "" : " tenue"}`} dangerouslySetInnerHTML={CIELO} />
-      <header class="top">
+      <header class="top" style={isLive ? "display:none" : undefined} aria-hidden={isLive ? "true" : undefined}>
         <div class="in">
           <Link class="brand" href={me ? "/courses/" : "/"}>
             <span style="display:inline-flex" dangerouslySetInnerHTML={MARCA} />
@@ -209,7 +210,7 @@ export default component$(() => {
           )}
         </div>
       </header>
-      <main class="page">
+      <main class={isLive ? "page live-page" : "page"}>
         <Slot />
       </main>
 

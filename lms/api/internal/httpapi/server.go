@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/davrv93/jmd/lms/api/internal/auth"
@@ -41,6 +42,11 @@ type Server struct {
 	badge     *badgeKeyCache
 	runLimit  *limiter
 	termSlots *slots
+	live      *liveHub
+	presencia *presencia
+	presMu    sync.Mutex
+	parejas   map[string][][]alumnoLive // lección → grupos del último emparejado (en memoria)
+	presStop  map[string]func()         // lección → detener la difusión de presencia
 }
 
 // LLMConfig apunta a un endpoint OpenAI-compatible (el gateway de la clase) para generar landings.
@@ -92,6 +98,12 @@ func (s *Server) Handler() http.Handler {
 	if s.termSlots == nil {
 		s.termSlots = newSlots()
 	}
+	if s.live == nil {
+		s.live = newLiveHub()
+	}
+	if s.presencia == nil {
+		s.presencia = newPresencia()
+	}
 	if s.llm == nil {
 		s.llm = &llmCache{}
 	}
@@ -135,6 +147,24 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/examples/{id}", s.authed(s.example))
 	mux.Handle("POST /api/v1/run", s.authed(s.run))
 	mux.Handle("GET /api/v1/term", s.authed(s.term))
+	// Modo LIVE (ver live_handlers.go y docs/PLAN_MODO_LIVE_SESION2.md).
+	mux.Handle("GET /api/v1/live/{lesson}", s.authed(s.liveGet))
+	mux.Handle("GET /api/v1/live/{lesson}/stream", s.authed(s.liveStream))
+	mux.Handle("GET /api/v1/live/{lesson}/escenas", s.authed(s.liveEscenasLista))
+	mux.Handle("GET /api/v1/live/{lesson}/escenas/{id}/html", s.authed(s.liveEscenaHTML))
+	mux.Handle("GET /api/v1/live/{lesson}/escenas/{id}/{archivo}", s.authed(s.liveEscenaArchivo))
+	mux.Handle("GET /api/v1/live/{lesson}/comun/{archivo}", s.authed(s.liveComunArchivo))
+	mux.Handle("POST /api/v1/live/{lesson}/iniciar", s.authed(s.staff(s.liveIniciar)))
+	mux.Handle("POST /api/v1/live/{lesson}/cerrar", s.authed(s.staff(s.liveCerrar)))
+	mux.Handle("POST /api/v1/live/{lesson}/latido", s.authed(s.liveLatido))
+	mux.Handle("POST /api/v1/live/{lesson}/evento", s.authed(s.liveEvento))
+	mux.Handle("POST /api/v1/live/{lesson}/mensaje", s.authed(s.staff(s.liveMensaje)))
+	mux.Handle("POST /api/v1/live/{lesson}/emparejar", s.authed(s.staff(s.liveEmparejar)))
+	mux.Handle("GET /api/v1/live/{lesson}/pareja", s.authed(s.liveParejaGet))
+	mux.Handle("PUT /api/v1/live/{lesson}/escena", s.authed(s.staff(s.liveEscenaPut)))
+	mux.Handle("PUT /api/v1/live/{lesson}/modo", s.authed(s.staff(s.liveModoPut)))
+	mux.Handle("GET /api/v1/live/{lesson}/compuerta", s.authed(s.staff(s.liveCompuerta)))
+	mux.Handle("POST /api/v1/live/{lesson}/pasar-igual", s.authed(s.staff(s.livePasarIgual)))
 	mux.Handle("POST /api/v1/generate", s.authed(s.generate))
 	mux.Handle("GET /api/v1/llm/status", s.authed(s.llmStatus))
 	mux.Handle("GET /api/v1/admin/llm", s.authed(s.admin(s.adminLLMGet)))
@@ -339,7 +369,7 @@ func jsonString(s string) []byte {
 }
 
 // shellSections son las rutas con parámetro: el front solo prerenderiza /<sección>/_/.
-var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true, "verificar": true}
+var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true, "verificar": true, "live": true}
 
 // shellFor da el archivo genérico (<sección>/_/index.html o q-data.json) para /<sección>/<x>/ y
 // /<sección>/<x>/q-data.json; "" si la ruta no es de ese tipo. p viene limpia (path.Clean).

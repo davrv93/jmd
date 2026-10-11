@@ -1,6 +1,6 @@
 # Guion del LIVE · Clase 2 · Construir tu asistente con Edge AI
 
-**Duración:** 120 minutos. **Formato:** el instructor tiene los controles; los alumnos ven la misma escena a pantalla completa y trabajan en su panel (terminal, agente, visor). **Resultado:** cada alumno sale con Tecnosito corriendo en su laptop: avatar 3D, chat con modelo local o remoto, voz a texto y generación de imágenes, y con la insignia de la clase 2.
+**Duración:** 120 minutos. **Formato:** el instructor tiene los controles; los alumnos ven la misma escena a pantalla completa y trabajan en su panel (terminal, agente, visor). **Resultado:** cada alumno sale con su asistente robot corriendo: avatar 3D, chat con modelo local o remoto, voz a texto y generación de imágenes, y con la insignia de la clase 2.
 
 ## Qué corre dónde (regla de oro)
 
@@ -45,11 +45,11 @@ Regla de clase: cada alumno prueba primero en su laptop. Solo cambia a remoto si
 Cada escena indica: fase del ciclo, duración, qué se ve (y con qué herramienta se genera la animación), qué hace el instructor, qué hace el alumno, qué valida la compuerta y el respaldo si falla. Las animaciones son SVG con `animate` y CSS, menos de 300 nodos y 1 MB por escena, generadas con **PinePaper MCP en modo código**; los diagramas de conceptos nacen como wireframes con **wireframe-skill** y se ilustran; la coreografía (orden, duración, easing) sigue **motion-design-skill**: entradas de 300 a 500 ms con ease-out, nada que se mueva mientras el alumno lee, y todo apagado con `prefers-reduced-motion`.
 
 ### E01 · Bienvenida · Experiencia · 5 min
-- **Se ve:** el cielo del LMS con las constelaciones de libros y las letras JMD que se encienden una a una; luego aparece Tecnosito en 3D (la escena de Three.js incrustada, 0 MB en el servidor) saludando. Debajo, la frase «Hoy construyes tu asistente». PinePaper: trazo de las constelaciones punto a punto en 4 s.
+- **Se ve:** el cielo del LMS con las constelaciones de libros y las letras JMD que se encienden una a una; luego aparece el robot asistente en 3D (la escena de Three.js incrustada, 0 MB en el servidor) saludando. Debajo, la frase «Hoy construyes tu asistente». PinePaper: trazo de las constelaciones punto a punto en 4 s.
 - **Instructor:** da la bienvenida, muestra el panel del alumno (terminal, agente, visor, «Lo logré»), pide a todos entrar a pantalla completa.
 - **Alumno:** entra al LIVE, marca «Estoy aquí» (primer «Lo logré»).
 - **Compuerta:** 100 % presentes. Quien falte, se le manda el enlace por WhatsApp.
-- **Respaldo:** si Three.js no carga en un navegador viejo, la escena muestra la captura estática del osito.
+- **Respaldo:** si Three.js no carga en un navegador viejo, la escena muestra la captura estática del robot.
 
 ### E02 · Edge AI en una frase · Conceptos · 5 min
 - **Se ve:** animación de dos caminos: un prompt que viaja a una nube y vuelve (lento, con un contador de dinero) y el mismo prompt que se queda dentro de una laptop (rápido, contador en 0). Wireframe de dos columnas convertido en ilustración; PinePaper anima el viaje del paquete. Texto: «Edge AI: el modelo corre en tu máquina. Sin nube, sin costo por consulta, tus datos no salen».
@@ -84,14 +84,14 @@ Cada escena indica: fase del ciclo, duración, qué se ve (y con qué herramient
 - **Compuerta:** 80 % con plan generado (evidencia: el archivo existe en `/trabajo` o en el repo local; el panel lo detecta).
 
 ### E07 · Construir 1: el chat · Experiencia · 15 min
-- **Se ve:** diagrama animado de tres cajas: navegador → backend FastAPI → modelo (Ollama en la laptop o gateway remoto). Al llegar la respuesta, el osito pasa a «hablando» y aparece el subtítulo. Debajo, los comandos: `bash osito/arrancar.sh` y la URL.
+- **Se ve:** diagrama animado de tres cajas: navegador → backend FastAPI → modelo (Ollama en la laptop o gateway remoto). Al llegar la respuesta, el robot pasa a «hablando» y aparece el subtítulo. Debajo, los comandos: `bash osito/arrancar.sh` y la URL.
 - **Instructor:** arranca su asistente, escribe «hola», muestra la respuesta y el chip de salud. Explica el respaldo por embeddings cuando no hay modelo.
 - **Alumno:** en la terminal del LIVE, `cd /trabajo/osito && bash arrancar.sh` (ya está el código y el perfil nube), abre el visor, escribe su primera pregunta; carga su corpus en `faq.json` con una pregunta de su dominio.
 - **Compuerta:** 80 % «Lo logré» con evidencia: captura del chat respondiendo (el visor la toma) o el log del backend con `POST /api/chat 200`.
 - **Respaldo:** si el gateway no responde, el backend cae al respaldo por embeddings con el corpus del alumno (la lección del «no estoy seguro»).
 
 ### E08 · Construir 2: el avatar 3D · Experiencia · 10 min
-- **Se ve:** el osito en 3D y el robot, lado a lado, cambiando de ánimo al compás de la escena (feliz, pensando, sorprendido). Texto: «Todo esto corre en tu navegador: cero servidor». Botones de ánimo que el instructor pulsa y se replican en las pantallas.
+- **Se ve:** el robot en 3D cambiando de ánimo al compás de la escena (feliz, pensando, sorprendido). Texto: «Todo esto corre en tu navegador: cero servidor». Botones de ánimo que el instructor pulsa y se replican en las pantallas.
 - **Instructor:** muestra `?avatar=robot&nombre=…`, cambia ánimos, explica que la boca se sincroniza con la voz del navegador.
 - **Alumno:** elige avatar y nombre, cambia el saludo, prueba los ánimos; pide al agente un cambio pequeño (color del LED, nombre, un ánimo nuevo) con el skill `diseno-visual`.
 - **Compuerta:** 70 % «Lo logré» (es la escena más libre).
@@ -148,7 +148,7 @@ Cada escena indica: fase del ciclo, duración, qué se ve (y con qué herramient
 | E04 | skill propia creada; respuesta con piedra | tabla `skills`; telemetría del gateway |
 | E05 | caída de tokens tras piedra y RTK | telemetría por `sub` |
 | E06 | `PLAN_TRABAJO.md` existe | volumen `/trabajo` del contenedor |
-| E07 | `POST /api/chat 200` | log del backend del osito en el contenedor |
+| E07 | `POST /api/chat 200` | log del backend del asistente en el contenedor |
 | E09 | mensaje enviado por micrófono o `POST /api/stt 200` | visor; mismo log |
 | E10 | imagen generada | captura del visor |
 | E11 | hallazgo con severidad | formulario del panel |
