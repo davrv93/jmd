@@ -353,6 +353,9 @@ export const api = {
     req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/latido`, { escena }),
   liveEvento: (lesson: string, tipo: "terminal" | "agente" | "visor" | "error", detalle = "") =>
     req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/evento`, { tipo, detalle }),
+  vistaVersion: () => req<{ version: string; t: string }>("GET", "/api/v1/vista/version"),
+  liveEvidencia: (lesson: string, escena: string, tipo: "microfono" | "flyer" | "hallazgo" | "captura", detalle = "") =>
+    req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/evidencia`, { escena, tipo, detalle }),
   liveModo: (lesson: string, modo: "guiado" | "libre") =>
     req<LiveEstado>("PUT", `/api/v1/live/${encodeURIComponent(lesson)}/modo`, { modo }),
 };

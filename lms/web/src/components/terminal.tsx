@@ -51,10 +51,13 @@ export const Terminal = component$(() => {
       fit.fit();
       sendSize();
     };
+    const alFoco = () => term.focus();
     addEventListener("resize", onResize);
+    addEventListener("pjg-term-foco", alFoco);
 
     cleanup(() => {
       removeEventListener("resize", onResize);
+      removeEventListener("pjg-term-foco", alFoco);
       try {
         ws.close();
       } catch {

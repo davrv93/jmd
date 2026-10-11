@@ -9,8 +9,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -165,3 +168,99 @@ func (a *Aula) AsegurarRed(ctx context.Context, gateway string) error {
 func (a *Aula) ShellCmd(ctx context.Context, userID string) *exec.Cmd {
 	return exec.CommandContext(ctx, a.Runtime, "exec", "-it", "-e", "TERM=xterm-256color", "-w", "/trabajo", Nombre(userID), "sh")
 }
+
+// Errores de Leer.
+var (
+	ErrNoExiste = errors.New("el archivo no existe")
+	ErrGrande   = errors.New("el archivo es demasiado grande")
+)
+
+// Leer devuelve el contenido de un archivo de /trabajo del alumno (ruta relativa a /trabajo, ya validada
+// por el llamador). Falla con ErrNoExiste si no es un archivo y con ErrGrande si pasa de max bytes.
+func (a *Aula) Leer(ctx context.Context, nombre, ruta string, max int64) ([]byte, error) {
+	if a.run != nil {
+		out, err := a.run(ctx, "leer", nombre, ruta)
+		if err != nil {
+			return nil, ErrNoExiste
+		}
+		return []byte(out), nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	script := `f="/trabajo/$1"; test -f "$f" || exit 3; s=$(stat -c %s "$f"); [ "$s" -le "$2" ] || exit 4; cat "$f"`
+	cmd := exec.CommandContext(ctx, a.Runtime, "exec", nombre, "sh", "-c", script, "--", ruta, fmt.Sprint(max))
+	out, err := cmd.Output()
+	if err != nil {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
+			switch ee.ExitCode() {
+			case 3:
+				return nil, ErrNoExiste
+			case 4:
+				return nil, ErrGrande
+			}
+		}
+		return nil, err
+	}
+	return out, nil
+}
+
+// Version es una huella corta del contenido de /trabajo (fechas y nombres), sin contar logs ni cachés.
+// Cambia cuando el alumno guarda un archivo: el visor la sondea para recargarse solo.
+func (a *Aula) Version(ctx context.Context, nombre string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	script := `find /trabajo \( -name '*.log' -o -name __pycache__ -o -name .git -o -name node_modules \) -prune -o -type f -exec stat -c '%Y %n' {} + 2>/dev/null | sort | md5sum | cut -c1-12`
+	out, err := a.exec(ctx, "exec", nombre, "sh", "-c", script)
+	return strings.TrimSpace(out), err
+}
+
+// Dial abre una conexión TCP al puerto del contenedor del alumno SIN depender de la red: lanza
+// «exec -i nc 127.0.0.1 <puerto>» dentro del contenedor y usa su entrada y salida como conexión. Así el
+// LMS funciona igual si corre en el host o en un contenedor, y el aula puede seguir en una red interna.
+func (a *Aula) Dial(ctx context.Context, userID string, puerto int) (net.Conn, error) {
+	cmd := exec.Command(a.Runtime, "exec", "-i", Nombre(userID), "nc", "127.0.0.1", fmt.Sprint(puerto))
+	in, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+	return &conexionExec{cmd: cmd, in: in, out: out}, nil
+}
+
+// conexionExec adapta un proceso a net.Conn. No soporta plazos: el llamador usa cierres con contexto.
+type conexionExec struct {
+	cmd  *exec.Cmd
+	in   io.WriteCloser
+	out  io.ReadCloser
+	once sync.Once
+}
+
+type direccionExec struct{}
+
+func (direccionExec) Network() string { return "exec" }
+func (direccionExec) String() string  { return "aula" }
+
+func (c *conexionExec) Read(p []byte) (int, error)  { return c.out.Read(p) }
+func (c *conexionExec) Write(p []byte) (int, error) { return c.in.Write(p) }
+func (c *conexionExec) Close() error {
+	c.once.Do(func() {
+		_ = c.in.Close()
+		if c.cmd.Process != nil {
+			_ = c.cmd.Process.Kill()
+		}
+		go func() { _ = c.cmd.Wait() }()
+	})
+	return nil
+}
+func (c *conexionExec) LocalAddr() net.Addr                { return direccionExec{} }
+func (c *conexionExec) RemoteAddr() net.Addr               { return direccionExec{} }
+func (c *conexionExec) SetDeadline(t time.Time) error      { return nil }
+func (c *conexionExec) SetReadDeadline(t time.Time) error  { return nil }
+func (c *conexionExec) SetWriteDeadline(t time.Time) error { return nil }

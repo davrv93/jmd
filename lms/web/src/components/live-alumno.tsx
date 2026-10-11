@@ -3,6 +3,7 @@ import { api, type EscenaLive, type LiveEstado, type ParejaLive } from "~/lib/ap
 import { SessionContext, toast } from "~/lib/session";
 import { Icon } from "~/components/icon";
 import { Terminal } from "~/components/terminal";
+import { LiveVisor } from "~/components/live-visor";
 import { Copy } from "~/components/ui";
 import { avisarEscena, temaActual, urlEscena } from "~/lib/live";
 
@@ -17,6 +18,7 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
   const local = useSignal(""); // escena local en modo libre
   const completa = useSignal(false);
   const tema = useSignal("");
+  const rutaVisor = useSignal("");
   const panel = useSignal<"" | "terminal" | "visor" | "agente" | "ayuda">("");
   const termAbierta = useSignal(false); // la terminal se queda montada al cambiar de pestaña
   const marco = useSignal<HTMLIFrameElement>();
@@ -67,7 +69,10 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
     panel.value = panel.value === p ? "" : p;
     if (panel.value === "terminal") termAbierta.value = true;
     // El terminal se reajusta al tamaño de su caja con el evento resize.
-    setTimeout(() => window.dispatchEvent(new Event("resize")), 60);
+    setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+      if (panel.value === "terminal") window.dispatchEvent(new Event("pjg-term-foco"));
+    }, 60);
   });
 
   const mostrar = $((on: boolean) => {
@@ -153,12 +158,9 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
             <Terminal />
           </div>
         )}
-        {panel.value === "visor" && (
-          <div class="live-panel-vista live-panel-vacio">
-            <Icon name="eye" size={22} />
-            <p>
-              <b>Aquí verás tu asistente.</b> Cuando lo arranques en la terminal, el visor lo muestra en vivo, sin instalar nada.
-            </p>
+        {panel.value === "visor" && session.me && (
+          <div class="live-panel-vista live-panel-visor">
+            <LiveVisor lesson={props.lesson} escena={modo.value === "libre" && local.value ? local.value : escena.value} sub={session.me.id} ruta={rutaVisor} />
           </div>
         )}
         {panel.value === "agente" && (

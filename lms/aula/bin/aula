@@ -23,8 +23,31 @@ case "${1:-}" in
   estado)
     if vivo; then echo "arrancado"; else echo "parado"; fi
     ;;
+  nuevo)
+    # aula nuevo <plantilla> [carpeta]: copia una plantilla a /trabajo sin pisar lo que ya existe.
+    plantilla="${2:-}"
+    [ -n "$plantilla" ] || { echo "uso: aula nuevo html|react-esm|vue-esm|preact-htm|php|python-static [carpeta]" >&2; exit 2; }
+    [ -d "/opt/plantillas/$plantilla" ] || { echo "no existe la plantilla: $plantilla" >&2; exit 2; }
+    destino="/trabajo/${3:-$plantilla}"
+    if [ -e "$destino" ]; then echo "ya existe $destino; no se toca" >&2; exit 1; fi
+    cp -R "/opt/plantillas/$plantilla" "$destino"
+    echo "creado $destino"
+    case "$plantilla" in
+      php)
+        if command -v php >/dev/null 2>&1; then
+          (cd "$destino" && timeout 900 php -S 0.0.0.0:8767 >/dev/null 2>&1 &)
+          echo "servidor en el puerto 8767 (se apaga solo en 15 min)"
+        else
+          echo "esta aula no trae PHP: usa la plantilla python-static o html" >&2
+        fi ;;
+      python-static)
+        (cd "$destino" && timeout 900 python3 -m http.server 8767 >/dev/null 2>&1 &)
+        echo "servidor en el puerto 8767 (se apaga solo en 15 min)" ;;
+      *) echo "ábrela en el panel Visor: /vista/<tú>/$(basename "$destino")/" ;;
+    esac
+    ;;
   *)
-    echo "uso: aula iniciar | parar | estado" >&2
+    echo "uso: aula iniciar | parar | estado | nuevo <plantilla> [carpeta]" >&2
     exit 2
     ;;
 esac

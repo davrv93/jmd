@@ -2,6 +2,8 @@ package httpapi
 
 import (
 	"context"
+	"errors"
+	"net"
 	"strings"
 	"sync"
 	"testing"
@@ -14,6 +16,8 @@ type aulaFalsa struct {
 	mu        sync.Mutex
 	corriendo map[string]bool
 	asistente bool
+	archivos  map[string][]byte
+	destino   string // host:puerto al que Dial conecta (un httptest)
 }
 
 func (a *aulaFalsa) Crear(_ context.Context, id string) (bool, error) {
@@ -51,6 +55,22 @@ func (a *aulaFalsa) Exec(_ context.Context, _ string, cmd ...string) (string, er
 func (a *aulaFalsa) Parar(_ context.Context, _ string) error  { return nil }
 func (a *aulaFalsa) Borrar(_ context.Context, _ string) error { return nil }
 func (a *aulaFalsa) Listar(context.Context) ([]string, error) { return nil, nil }
+
+// Archivos y destino de red del falso, para las pruebas del visor.
+func (a *aulaFalsa) Leer(_ context.Context, _, ruta string, _ int64) ([]byte, error) {
+	if b, ok := a.archivos[ruta]; ok {
+		return b, nil
+	}
+	return nil, aula.ErrNoExiste
+}
+func (a *aulaFalsa) Version(context.Context, string) (string, error) { return "v1", nil }
+func (a *aulaFalsa) Dial(ctx context.Context, _ string, _ int) (net.Conn, error) {
+	if a.destino == "" {
+		return nil, errors.New("connection refused")
+	}
+	var d net.Dialer
+	return d.DialContext(ctx, "tcp", a.destino)
+}
 
 func TestAulaSinMotor503(t *testing.T) {
 	e := newEnv(t)

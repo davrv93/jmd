@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -18,6 +19,9 @@ type AulaMotor interface {
 	Parar(ctx context.Context, nombre string) error
 	Borrar(ctx context.Context, nombre string) error
 	Listar(ctx context.Context) ([]string, error)
+	Leer(ctx context.Context, nombre, ruta string, max int64) ([]byte, error)
+	Version(ctx context.Context, nombre string) (string, error)
+	Dial(ctx context.Context, userID string, puerto int) (net.Conn, error)
 }
 
 // ultimoUsoAula guarda, en memoria, cuándo usó cada alumno su aula (para el apagado por inactividad).

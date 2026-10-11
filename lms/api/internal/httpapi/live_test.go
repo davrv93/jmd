@@ -489,3 +489,29 @@ func TestLiveMensajeDirigido(t *testing.T) {
 	default:
 	}
 }
+
+// La evidencia valida el tipo y la escena, y alimenta la compuerta; el instructor no cuenta.
+func TestLiveEvidencia(t *testing.T) {
+	e := newEnvEscenas(t)
+	profe := e.login("profe@x.test", "profe1234")
+	e.call("POST", "/api/v1/auth/register", "", false, map[string]string{"email": "ana@x.test", "name": "Ana", "password": "ana-1234", "invite_code": "abc"}, "")
+	ana := e.login("ana@x.test", "ana-1234")
+	if r := e.call("POST", "/api/v1/live/l1/evidencia", ana, false, map[string]any{"escena": "02-dos", "tipo": "hackeo"}, ""); r.code != 400 {
+		t.Errorf("tipo inválido: %d", r.code)
+	}
+	if r := e.call("POST", "/api/v1/live/l1/evidencia", ana, false, map[string]any{"escena": "99-no", "tipo": "microfono"}, ""); r.code != 404 {
+		t.Errorf("escena inexistente: %d", r.code)
+	}
+	if r := e.call("POST", "/api/v1/live/l1/evidencia", ana, false, map[string]any{"escena": "02-dos", "tipo": "microfono", "detalle": "x"}, ""); r.code != 200 {
+		t.Fatalf("evidencia: %d %s", r.code, r.raw)
+	}
+	us, _ := e.db.UserByEmail(t.Context(), "ana@x.test")
+	if ok, _ := e.db.EvidenciaExiste(t.Context(), us.ID, "l1", "02-dos"); !ok {
+		t.Errorf("debe quedar guardada")
+	}
+	e.call("POST", "/api/v1/live/l1/evidencia", profe, false, map[string]any{"escena": "02-dos", "tipo": "microfono"}, "")
+	pu, _ := e.db.UserByEmail(t.Context(), "profe@x.test")
+	if ok, _ := e.db.EvidenciaExiste(t.Context(), pu.ID, "l1", "02-dos"); ok {
+		t.Errorf("el instructor no debe quedar como alumno")
+	}
+}
