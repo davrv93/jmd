@@ -1,0 +1,30 @@
+#!/bin/sh
+# aula: arranque del asistente del alumno dentro de su contenedor.
+# Uso: aula iniciar | parar | estado
+PID=/tmp/osito.pid
+vivo() { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; }
+
+case "${1:-}" in
+  iniciar)
+    if vivo; then echo "ya arrancado"; exit 0; fi
+    [ -d /trabajo/osito ] || cp -R /opt/osito /trabajo/osito
+    cd /trabajo/osito || exit 1
+    OSITO_PERFIL="${OSITO_PERFIL:-nube}" OSITO_PUERTO="${OSITO_PUERTO:-8766}" \
+      /opt/venv/bin/python -m uvicorn backend.app:app --host 0.0.0.0 --port "${OSITO_PUERTO:-8766}" \
+      >> /trabajo/osito.log 2>&1 &
+    echo $! > "$PID"
+    echo "arrancado"
+    ;;
+  parar)
+    if vivo; then kill "$(cat "$PID")"; fi
+    rm -f "$PID"
+    echo "parado"
+    ;;
+  estado)
+    if vivo; then echo "arrancado"; else echo "parado"; fi
+    ;;
+  *)
+    echo "uso: aula iniciar | parar | estado" >&2
+    exit 2
+    ;;
+esac

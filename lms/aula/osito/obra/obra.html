@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Obra en vivo</title>
+<style>
+  :root {
+    --fondo: #0f1222;
+    --tarjeta: #171b2f;
+    --tarjeta-2: #1d2238;
+    --borde: rgba(232, 235, 245, 0.08);
+    --texto: #e8ebf5;
+    --texto-2: #a9b0c9;
+    --texto-3: #727a98;
+    --rosa: #ffb3d9;
+    --celeste: #9ad5ff;
+    --verde: #a8f0c6;
+    --rojo: #ff9aa8;
+    --radio: 18px;
+    --transicion: 600ms ease-out;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: -1;
+    background:
+      radial-gradient(60vw 40vh at 10% 0%, rgba(255, 179, 217, 0.10), transparent 60%),
+      radial-gradient(50vw 40vh at 100% 100%, rgba(154, 213, 255, 0.10), transparent 60%);
+    pointer-events: none;
+  }
+
+  .marco {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 24px 16px 40px;
+  }
+  @media (min-width: 900px) { .marco { padding: 48px 24px 64px; } }
+
+  .tarjeta {
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 20px 18px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  }
+  @media (min-width: 900px) { .tarjeta { padding: 32px 36px; } }
+
+  .cabecera {
+    display: flex; flex-wrap: wrap; align-items: flex-end;
+    justify-content: space-between; gap: 8px 16px;
+    margin-bottom: 18px;
+  }
+  .etiqueta {
+    text-transform: uppercase; letter-spacing: 0.14em;
+    font-size: 11px; color: var(--texto-3); font-weight: 600;
+  }
+  h1 {
+    margin: 2px 0 0; font-size: clamp(26px, 5vw, 40px);
+    font-weight: 700; letter-spacing: -0.02em; line-height: 1.1;
+  }
+  .fase {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--tarjeta-2); border: 1px solid var(--borde);
+    border-radius: 999px; padding: 6px 14px;
+    color: var(--celeste); font-weight: 600; font-size: 14px;
+  }
+  .fase .punto { width: 8px; height: 8px; border-radius: 50%; background: var(--celeste); }
+
+  .progreso { margin: 8px 0 26px; }
+  .progreso-cab {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .pct {
+    font-size: clamp(34px, 7vw, 56px); font-weight: 800;
+    letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+    background: linear-gradient(90deg, var(--rosa), var(--celeste));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .barra {
+    height: 18px; border-radius: 999px; overflow: hidden;
+    background: var(--tarjeta-2); border: 1px solid var(--borde);
+  }
+  .barra > i {
+    display: block; height: 100%; width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--rosa), var(--celeste));
+    transition: width var(--transicion);
+    position: relative;
+  }
+  .barra > i::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+    background-size: 200% 100%;
+    animation: brillo 2.4s linear infinite;
+  }
+  @keyframes brillo { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 6px 18px;
+    color: var(--texto-3); font-size: 13px; margin-top: 8px;
+  }
+
+  .linea { list-style: none; margin: 0; padding: 0; position: relative; }
+  .linea::before {
+    content: ""; position: absolute; left: 11px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--borde);
+  }
+  .paso {
+    display: grid; grid-template-columns: 24px 1fr auto; gap: 0 14px;
+    align-items: start; padding: 10px 0; position: relative;
+  }
+  .icono {
+    width: 24px; height: 24px; display: grid; place-items: center;
+    position: relative; z-index: 1;
+  }
+  .icono svg { width: 24px; height: 24px; display: block; }
+  .icono.hecho { color: var(--verde); }
+  .icono.en_curso { color: var(--rosa); }
+  .icono.pendiente { color: var(--texto-3); }
+  .icono.error { color: var(--rojo); }
+  .icono.en_curso::before {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid var(--rosa);
+    animation: pulso 1.6s ease-out infinite;
+  }
+  @keyframes pulso {
+    0%   { transform: scale(0.8); opacity: 0.9; }
+    100% { transform: scale(1.9); opacity: 0; }
+  }
+  .texto { font-size: 16px; padding-top: 1px; }
+  .paso.pendiente .texto { color: var(--texto-2); }
+  .paso.hecho .texto { color: var(--texto-2); }
+  .paso.en_curso .texto { color: var(--texto); font-weight: 600; }
+  .paso.error .texto { color: var(--rojo); }
+  .hora {
+    color: var(--texto-3); font-size: 13px; font-variant-numeric: tabular-nums;
+    padding-top: 3px; min-width: 42px; text-align: right;
+  }
+  .paso.en_curso .hora { color: var(--rosa); }
+
+  .pie {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px;
+    margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--borde);
+    color: var(--texto-3); font-size: 13px;
+  }
+  .pie .modo { display: inline-flex; align-items: center; gap: 8px; color: var(--rosa); font-weight: 600; }
+  .pie .modo svg { width: 16px; height: 16px; }
+  .aviso { color: var(--rojo); }
+  .vacio { color: var(--texto-3); padding: 14px 0; text-align: center; }
+
+  /* ----- modo compacto: franja de 56 px para iframe ----- */
+  body.compacto { min-height: 0; height: 56px; overflow: hidden; background: var(--tarjeta); }
+  body.compacto::before { display: none; }
+  .franja {
+    display: none; height: 56px; align-items: center; gap: 14px;
+    padding: 0 14px; border-bottom: 1px solid var(--borde);
+  }
+  body.compacto .franja { display: flex; }
+  body.compacto .marco { display: none; }
+  .franja .nombre { font-weight: 700; white-space: nowrap; font-size: 14px; }
+  .franja .fasec { color: var(--celeste); font-size: 12px; white-space: nowrap; }
+  .franja .barra { flex: 1 1 120px; height: 10px; min-width: 60px; }
+  .franja .pctc { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 14px; min-width: 42px; text-align: right; }
+  .franja .actual {
+    flex: 2 1 160px; display: inline-flex; align-items: center; gap: 8px;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px;
+    color: var(--texto-2);
+  }
+  .franja .actual .icono { width: 16px; height: 16px; flex: none; }
+  .franja .actual .icono svg { width: 16px; height: 16px; }
+  .franja .actual span { overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 560px) {
+    .franja .fasec, .franja .nombre { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .barra > i { transition: none; }
+    .barra > i::after, .icono.en_curso::before { animation: none; }
+    .icono.en_curso::before { opacity: 0.6; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="franja" aria-live="polite">
+  <span class="nombre" id="c-nombre">Obra</span>
+  <span class="fasec" id="c-fase"></span>
+  <div class="barra" aria-hidden="true"><i id="c-barra"></i></div>
+  <span class="pctc" id="c-pct">0%</span>
+  <span class="actual" id="c-actual"></span>
+</div>
+
+<main class="marco">
+  <section class="tarjeta">
+    <header class="cabecera">
+      <div>
+        <div class="etiqueta">Proyecto en construccion</div>
+        <h1 id="nombre">Obra</h1>
+      </div>
+      <div class="fase"><span class="punto"></span><span id="fase">-</span></div>
+    </header>
+
+    <div class="progreso">
+      <div class="progreso-cab">
+        <span class="etiqueta">Avance</span>
+        <span class="pct" id="pct">0%</span>
+      </div>
+      <div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="barra-rol">
+        <i id="barra"></i>
+      </div>
+      <div class="meta">
+        <span id="resumen"></span>
+        <span id="hace">actualizado hace -</span>
+      </div>
+    </div>
+
+    <ol class="linea" id="linea"></ol>
+
+    <footer class="pie">
+      <span class="modo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/>
+        </svg>
+        modo construccion
+      </span>
+      <span id="estado-red">leyendo estado.json cada 2 s</span>
+    </footer>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var INTERVALO = 2000;
+  var params = new URLSearchParams(location.search);
+  var compacto = params.get("compacto") === "1";
+  if (compacto) document.body.classList.add("compacto");
+
+  var origen = params.get("estado") || "estado.json";
+  var ultimoOk = null;
+  var ultimoActualizado = null;
+
+  var ICONOS = {
+    hecho: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" stroke="none" opacity="0.18"/><path d="M7.5 12.5l3 3 6-7"/></svg>',
+    en_curso: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>',
+    pendiente: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>',
+    error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" stroke="none" opacity="0.18"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>'
+  };
+  var NOMBRE_ESTADO = { hecho: "hecho", en_curso: "en curso", pendiente: "pendiente", error: "error" };
+
+  function $(id) { return document.getElementById(id); }
+
+  function limpiarEstado(e) {
+    return ICONOS.hasOwnProperty(e) ? e : "pendiente";
+  }
+
+  function limitar(n) {
+    n = Number(n) || 0;
+    return Math.max(0, Math.min(100, Math.round(n)));
+  }
+
+  function textoNodo(valor) {
+    return document.createTextNode(String(valor == null ? "" : valor));
+  }
+
+  function pasoActual(pasos) {
+    var i;
+    for (i = 0; i < pasos.length; i++) if (pasos[i].estado === "en_curso") return pasos[i];
+    for (i = 0; i < pasos.length; i++) if (pasos[i].estado === "error") return pasos[i];
+    for (i = 0; i < pasos.length; i++) if (pasos[i].estado === "pendiente") return pasos[i];
+    return pasos.length ? pasos[pasos.length - 1] : null;
+  }
+
+  function pintar(datos) {
+    var pasos = Array.isArray(datos.pasos) ? datos.pasos : [];
+    var pct = limitar(datos.pct);
+    var nombre = datos.proyecto || "Obra";
+    var fase = datos.fase || "-";
+
+    document.title = nombre + " - " + pct + "% - Obra en vivo";
+
+    // pantalla completa
+    $("nombre").textContent = nombre;
+    $("fase").textContent = fase;
+    $("pct").textContent = pct + "%";
+    $("barra").style.width = pct + "%";
+    $("barra-rol").setAttribute("aria-valuenow", String(pct));
+
+    var hechos = 0, errores = 0;
+    pasos.forEach(function (p) {
+      if (p.estado === "hecho") hechos++;
+      if (p.estado === "error") errores++;
+    });
+    var resumen = hechos + " de " + pasos.length + " pasos";
+    if (errores) resumen += " - " + errores + (errores === 1 ? " error" : " errores");
+    $("resumen").textContent = resumen;
+
+    var linea = $("linea");
+    linea.textContent = "";
+    if (!pasos.length) {
+      var vacio = document.createElement("li");
+      vacio.className = "vacio";
+      vacio.appendChild(textoNodo("Sin pasos todavia. Inicia la obra con obra.py iniciar."));
+      linea.appendChild(vacio);
+    }
+    pasos.forEach(function (p) {
+      var estado = limpiarEstado(p.estado);
+      var li = document.createElement("li");
+      li.className = "paso " + estado;
+
+      var icono = document.createElement("span");
+      icono.className = "icono " + estado;
+      icono.innerHTML = ICONOS[estado];
+      icono.setAttribute("title", NOMBRE_ESTADO[estado]);
+
+      var texto = document.createElement("span");
+      texto.className = "texto";
+      texto.appendChild(textoNodo(p.texto));
+
+      var hora = document.createElement("span");
+      hora.className = "hora";
+      hora.appendChild(textoNodo(p.hora || ""));
+
+      li.appendChild(icono); li.appendChild(texto); li.appendChild(hora);
+      linea.appendChild(li);
+    });
+
+    // franja compacta
+    $("c-nombre").textContent = nombre;
+    $("c-fase").textContent = fase;
+    $("c-pct").textContent = pct + "%";
+    $("c-barra").style.width = pct + "%";
+    var actual = pasoActual(pasos);
+    var cont = $("c-actual");
+    cont.textContent = "";
+    if (actual) {
+      var e = limpiarEstado(actual.estado);
+      var ic = document.createElement("span");
+      ic.className = "icono " + e;
+      ic.innerHTML = ICONOS[e];
+      var sp = document.createElement("span");
+      sp.appendChild(textoNodo(actual.texto));
+      cont.appendChild(ic); cont.appendChild(sp);
+    }
+
+    ultimoActualizado = datos.actualizado ? new Date(datos.actualizado) : null;
+    if (ultimoActualizado && isNaN(ultimoActualizado.getTime())) ultimoActualizado = null;
+    pintarHace();
+  }
+
+  function pintarHace() {
+    var el = $("hace");
+    if (!ultimoActualizado) { el.textContent = "actualizado hace -"; return; }
+    var seg = Math.max(0, Math.round((Date.now() - ultimoActualizado.getTime()) / 1000));
+    var texto;
+    if (seg < 60) texto = seg + " s";
+    else if (seg < 3600) texto = Math.floor(seg / 60) + " min";
+    else texto = Math.floor(seg / 3600) + " h";
+    el.textContent = "actualizado hace " + texto;
+  }
+
+  function leer() {
+    fetch(origen, { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (datos) {
+        pintar(datos);
+        ultimoOk = Date.now();
+        $("estado-red").textContent = "leyendo estado.json cada 2 s";
+        $("estado-red").classList.remove("aviso");
+      })
+      .catch(function (err) {
+        var el = $("estado-red");
+        el.textContent = "sin conexion con estado.json (" + err.message + ")";
+        el.classList.add("aviso");
+      });
+  }
+
+  leer();
+  setInterval(leer, INTERVALO);
+  setInterval(pintarHace, 1000);
+})();
+</script>
+</body>
+</html>

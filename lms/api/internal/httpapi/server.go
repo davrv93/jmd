@@ -42,6 +42,7 @@ type Server struct {
 	badge     *badgeKeyCache
 	runLimit  *limiter
 	termSlots *slots
+	Aula      AulaMotor // nil = sin aula configurada (503)
 	live      *liveHub
 	presencia *presencia
 	presMu    sync.Mutex
@@ -147,6 +148,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/examples/{id}", s.authed(s.example))
 	mux.Handle("POST /api/v1/run", s.authed(s.run))
 	mux.Handle("GET /api/v1/term", s.authed(s.term))
+	mux.Handle("POST /api/v1/aula/iniciar", s.authed(s.aulaIniciar))
+	mux.Handle("GET /api/v1/aula", s.authed(s.aulaEstado))
+	mux.Handle("POST /api/v1/aula/asistente", s.authed(s.aulaAsistente))
+	mux.Handle("POST /api/v1/aula/apagar", s.authed(s.aulaApagar))
 	// Modo LIVE (ver live_handlers.go y docs/PLAN_MODO_LIVE_SESION2.md).
 	mux.Handle("GET /api/v1/live/{lesson}", s.authed(s.liveGet))
 	mux.Handle("GET /api/v1/live/{lesson}/stream", s.authed(s.liveStream))

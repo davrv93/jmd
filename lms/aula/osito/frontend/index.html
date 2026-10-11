@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tecnosito</title>
+  <meta name="description" content="Asistente virtual con avatar 3D: un osito tierno y tecnológico con voz, estados de ánimo y chat." />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0f1222" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="estilos.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='16' cy='16' r='10' fill='%23c99a6b'/%3E%3Ccircle cx='48' cy='16' r='10' fill='%23c99a6b'/%3E%3Ccircle cx='32' cy='36' r='24' fill='%23c99a6b'/%3E%3Cellipse cx='32' cy='44' rx='11' ry='8' fill='%23f1dcc3'/%3E%3Ccircle cx='23' cy='32' r='3.5' fill='%231a1026'/%3E%3Ccircle cx='41' cy='32' r='3.5' fill='%231a1026'/%3E%3Cellipse cx='32' cy='41' rx='3.5' ry='2.5' fill='%232b1d22'/%3E%3C/svg%3E" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/",
+      "animejs": "https://cdnjs.cloudflare.com/ajax/libs/animejs/4.4.1/anime.esm.min.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- Bokeh pastel de fondo -->
+  <div class="bokeh" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <header class="cabecera">
+    <div class="marca">
+      <span class="marca-icono" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="28" height="28"><circle cx="16" cy="16" r="10" fill="#c99a6b"/><circle cx="48" cy="16" r="10" fill="#c99a6b"/><circle cx="32" cy="36" r="24" fill="#c99a6b"/><ellipse cx="32" cy="44" rx="11" ry="8" fill="#f1dcc3"/><circle cx="23" cy="32" r="3.5" fill="#1a1026"/><circle cx="41" cy="32" r="3.5" fill="#1a1026"/><ellipse cx="32" cy="41" rx="3.5" ry="2.5" fill="#2b1d22"/></svg>
+      </span>
+      <h1 id="nombre-osito">Tecnosito</h1>
+      <span class="chip chip-animo" id="chip-animo" aria-live="polite" aria-label="Ánimo actual">
+        <span class="punto" aria-hidden="true"></span><span id="chip-animo-texto">neutral</span>
+      </span>
+      <span class="chip chip-aviso" id="chip-sin-backend" hidden>sin backend</span>
+    </div>
+
+    <div class="cabecera-der">
+      <div class="salud-contenedor">
+        <div class="chip chip-salud" id="chip-salud" role="status" tabindex="0" aria-label="Salud del servidor" aria-describedby="popover-salud">
+          <span class="salud-item" data-salud="ollama"><span class="punto" aria-hidden="true"></span>Ollama</span>
+          <span class="salud-item" data-salud="whisper"><span class="punto" aria-hidden="true"></span>Whisper</span>
+          <span class="salud-item" data-salud="imagen"><span class="punto" aria-hidden="true"></span>Imagen</span>
+        </div>
+        <div class="popover popover-salud" id="popover-salud" role="tooltip" hidden>
+          <dl class="ficha" id="ficha-salud"></dl>
+        </div>
+      </div>
+      <button class="boton-icono" id="btn-obra" type="button" aria-label="Mostrar u ocultar el panel Obra" aria-expanded="false" hidden>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="boton-icono" id="btn-ajustes" type="button" aria-label="Ajustes" aria-expanded="false" aria-controls="popover-ajustes">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="boton-icono" id="btn-silencio" type="button" aria-label="Silenciar voz" aria-pressed="false">
+        <svg class="ico-voz-on" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg class="ico-voz-off" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <!-- Ajustes -->
+    <div class="popover" id="popover-ajustes" hidden>
+      <h2 class="popover-titulo">Ajustes</h2>
+      <label class="ajuste">
+        <input type="checkbox" id="ajuste-enviar-al-soltar" />
+        <span>Enviar al soltar el micrófono</span>
+        <small>Si está apagado, verás primero el texto reconocido y lo envías tú.</small>
+      </label>
+      <label class="ajuste">
+        <input type="checkbox" id="ajuste-leer-subtitulos" checked />
+        <span>Leer en voz alta lo que responde</span>
+      </label>
+      <label class="ajuste ajuste-rango">
+        <span>Velocidad de voz <output id="salida-velocidad">1.0</output></span>
+        <input type="range" id="ajuste-velocidad" min="0.7" max="1.4" step="0.05" value="1" />
+      </label>
+      <button type="button" class="boton-texto boton-diagnostico" id="btn-diagnostico" aria-expanded="false" aria-controls="diagnostico">Diagnóstico</button>
+      <div class="diagnostico" id="diagnostico" hidden>
+        <dl class="ficha" id="ficha-diagnostico"></dl>
+        <p class="campo-etiqueta">Motores de imagen</p>
+        <ul class="motores" id="lista-motores" aria-label="Motores de imagen"></ul>
+      </div>
+    </div>
+  </header>
+
+  <main class="principal">
+    <section class="escena" aria-label="Avatar 3D de Tecnosito">
+      <canvas id="lienzo" aria-hidden="true"></canvas>
+      <div class="escena-pie">
+        <div class="animo-rapido" role="group" aria-label="Probar ánimos del osito">
+          <button type="button" class="chip chip-boton" data-animo="feliz">Feliz</button>
+          <button type="button" class="chip chip-boton" data-animo="pensando">Pensando</button>
+          <button type="button" class="chip chip-boton" data-animo="sorprendido">Sorprendido</button>
+          <button type="button" class="chip chip-boton" data-animo="triste">Triste</button>
+          <button type="button" class="chip chip-boton" data-animo="emocionado">Emocionado</button>
+          <button type="button" class="chip chip-boton" data-animo="dormido">Dormido</button>
+        </div>
+      </div>
+      <p class="sin-webgl" id="sin-webgl" hidden>Tu navegador no puede mostrar el osito en 3D, pero el chat funciona igual.</p>
+    </section>
+
+    <aside class="chat vidrio" aria-label="Conversación con Tecnosito">
+      <details class="obra" id="panel-obra" hidden>
+        <summary>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Obra en construcción
+        </summary>
+        <iframe id="iframe-obra" title="Estado de la obra" referrerpolicy="no-referrer"></iframe>
+      </details>
+
+      <div class="mensajes" id="mensajes" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+      <div class="progreso" id="progreso" hidden aria-hidden="true"><span></span></div>
+
+      <!-- Popover para generar imagen -->
+      <div class="popover popover-imagen" id="popover-imagen" hidden>
+        <h2 class="popover-titulo">Generar imagen</h2>
+        <label class="campo-etiqueta" for="imagen-prompt">Describe la imagen</label>
+        <textarea id="imagen-prompt" rows="2" placeholder="Un osito programador con audífonos neón..."></textarea>
+        <div class="estilos" role="radiogroup" aria-label="Estilo">
+          <label class="chip chip-radio"><input type="radio" name="estilo" value="kawaii" checked /><span>Kawaii</span></label>
+          <label class="chip chip-radio"><input type="radio" name="estilo" value="profesional" /><span>Profesional</span></label>
+          <label class="chip chip-radio"><input type="radio" name="estilo" value="tecnico" /><span>Técnico</span></label>
+        </div>
+        <div class="estilos" role="radiogroup" aria-label="Tipo de imagen">
+          <label class="chip chip-radio"><input type="radio" name="tipo" value="auto" checked /><span>Auto</span></label>
+          <label class="chip chip-radio"><input type="radio" name="tipo" value="ilustracion" /><span>Ilustración</span></label>
+          <label class="chip chip-radio"><input type="radio" name="tipo" value="flyer" /><span>Flyer con texto</span></label>
+        </div>
+        <div class="estilos" role="radiogroup" aria-label="Calidad" id="grupo-calidad">
+          <label class="chip chip-radio" data-motor="sd-turbo"><input type="radio" name="calidad" value="rapida" /><span>Rápida</span><span class="punto-motor" aria-hidden="true" hidden></span></label>
+          <label class="chip chip-radio" data-motor="sdxl-turbo"><input type="radio" name="calidad" value="buena" checked /><span>Buena</span><span class="punto-motor" aria-hidden="true" hidden></span></label>
+          <label class="chip chip-radio" data-motor="flux2-klein"><input type="radio" name="calidad" value="maxima" /><span>Máxima</span><span class="punto-motor" aria-hidden="true" hidden></span></label>
+        </div>
+        <div class="popover-acciones">
+          <button type="button" class="boton-texto" id="btn-imagen-cancelar">Cancelar</button>
+          <button type="button" class="boton-texto boton-primario" id="btn-imagen-generar">Generar</button>
+        </div>
+      </div>
+
+      <form class="barra" id="form-chat" autocomplete="off">
+        <label class="visualmente-oculto" for="entrada">Escribe tu mensaje</label>
+        <input id="entrada" name="mensaje" type="text" placeholder="Escríbele a Tecnosito..." maxlength="2000" />
+        <button class="boton-icono boton-mic" id="btn-mic" type="button" aria-label="Hablar por micrófono" aria-pressed="false">
+          <span class="anillo" aria-hidden="true"></span>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="boton-icono" id="btn-imagen" type="button" aria-label="Generar una imagen" aria-expanded="false" aria-controls="popover-imagen">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="10" r="1.6" fill="currentColor"/><path d="M4 17l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="boton-icono boton-enviar" id="btn-enviar" type="submit" aria-label="Enviar mensaje">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 12l16-8-5 8 5 8-16-8zm0 0h11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+    </aside>
+  </main>
+
+  <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

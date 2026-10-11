@@ -117,7 +117,11 @@ type env struct {
 	t   *testing.T
 	srv *httptest.Server
 	db  *store.DB
+	s   *Server
 }
+
+// setAula inyecta un motor de aula falso (el Handler ya comparte el puntero del Server).
+func (e *env) setAula(m AulaMotor) { e.s.Aula = m }
 
 func newEnv(t *testing.T) *env {
 	t.Helper()
@@ -138,7 +142,7 @@ func newEnv(t *testing.T) *env {
 	if err := db.CreateUser(t.Context(), &store.User{Email: "profe@x.test", Name: "Profe", PasswordHash: hash, Roles: []string{"admin", "instructor"}}); err != nil {
 		t.Fatal(err)
 	}
-	return &env{t: t, srv: srv, db: db}
+	return &env{t: t, srv: srv, db: db, s: s}
 }
 
 type resp struct {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -34,6 +35,11 @@ func (s *slots) release(key string) {
 	s.mu.Lock()
 	delete(s.has, key)
 	s.mu.Unlock()
+}
+
+// aulaShell la cumple el motor real del aula: arma el «exec -it» al contenedor del alumno.
+type aulaShell interface {
+	ShellCmd(ctx context.Context, userID string) *exec.Cmd
 }
 
 type termResize struct {
@@ -69,8 +75,21 @@ func (s *Server) term(w http.ResponseWriter, r *http.Request, p *Principal) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer cancel()
 
-	cmd, name := s.Runner.ShellCmd(ctx, s.TermImage)
-	defer s.Runner.Kill(name)
+	// Con el aula configurada, la terminal entra al contenedor propio del alumno (con /trabajo, jmd y
+	// sus skills); si no, abre la shell aislada de siempre.
+	var cmd *exec.Cmd
+	if sh, ok := s.Aula.(aulaShell); ok && s.Aula != nil {
+		if _, err := s.Aula.Crear(ctx, p.ID); err != nil {
+			_ = conn.Close(websocket.StatusInternalError, "no se pudo abrir tu aula")
+			return
+		}
+		tocarAula(p.ID)
+		cmd = sh.ShellCmd(ctx, p.ID)
+	} else {
+		var name string
+		cmd, name = s.Runner.ShellCmd(ctx, s.TermImage)
+		defer s.Runner.Kill(name)
+	}
 
 	f, err := pty.Start(cmd)
 	if err != nil {

@@ -31,6 +31,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/davrv93/jmd/lms/api/internal/aula"
 	"github.com/davrv93/jmd/lms/api/internal/auth"
 	"github.com/davrv93/jmd/lms/api/internal/content"
 	"github.com/davrv93/jmd/lms/api/internal/httpapi"
@@ -104,6 +105,14 @@ func run() error {
 			Key:   os.Getenv("LMS_LLM_KEY"),
 			Model: env("LMS_LLM_MODEL", "auto"),
 		},
+	}
+	if srv.Runner.Available() && os.Getenv("LMS_AULA_IMAGE") != "" {
+		a := &aula.Aula{Runtime: srv.Runner.Runtime, Imagen: os.Getenv("LMS_AULA_IMAGE"), Red: os.Getenv("LMS_AULA_RED")}
+		if err := a.AsegurarRed(ctx, os.Getenv("LMS_AULA_GATEWAY")); err != nil {
+			slog.Warn("el aula no pudo preparar su red", "err", err)
+		}
+		srv.Aula = a
+		slog.Info("aula por alumno activa", "imagen", a.Imagen)
 	}
 	if srv.Runner.Available() {
 		slog.Info("runner de código activo", "runtime", srv.Runner.Runtime, "timeout", srv.Runner.Timeout)
