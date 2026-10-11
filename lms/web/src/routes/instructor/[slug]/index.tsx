@@ -1,6 +1,6 @@
 import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
-import { api, errMsg, fmtDate, rel, requireLogin, STATUS, type Certificate, type Course, type CourseProgress } from "~/lib/api";
+import { api, errMsg, exportCsvUrl, fmtDate, insigniaPngUrl, rel, requireLogin, STATUS, type Certificate, type Course, type CourseProgress } from "~/lib/api";
 import { SessionContext, toast } from "~/lib/session";
 import { getParam, pathId, setParams, setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
@@ -18,11 +18,25 @@ interface EmitForm {
   anulando: boolean;
 }
 
+// Formulario en línea de emisión en lote de una insignia de clase (se abre en la fila de la clase).
+interface LoteForm {
+  lesson: string; // id de la clase con el formulario abierto; "" = cerrado
+  tipo: "participacion" | "aprobacion";
+  horas: number;
+  soloProgreso: boolean;
+  busy: boolean;
+  error: string;
+}
+
 export default component$(() => {
   const loc = useLocation();
   const session = useContext(SessionContext);
-  const st = useStore<{ c: Course | null; p: CourseProgress | null; error: string; certs: Record<string, Certificate> }>({ c: null, p: null, error: "", certs: {} });
+  // certs: certificado del curso por alumno. clase: insignias de clase, por clase y alumno.
+  const st = useStore<{ c: Course | null; p: CourseProgress | null; error: string; certs: Record<string, Certificate>; clase: Record<string, Record<string, Certificate>> }>({
+    c: null, p: null, error: "", certs: {}, clase: {},
+  });
   const em = useStore<EmitForm>({ user: "", tipo: "participacion", horas: 6, nota: "", busy: false, error: "", confirmAnular: "", anulando: false });
+  const lote = useStore<LoteForm>({ lesson: "", tipo: "participacion", horas: 2, soloProgreso: true, busy: false, error: "" });
   const tab = useSignal("avance");
   const q = useSignal("");
   const load = $(async () => {
@@ -33,8 +47,14 @@ export default component$(() => {
       st.c = c;
       st.p = p;
       const map: Record<string, Certificate> = {};
-      for (const x of certs) if (x.estado === "valido" && x.user_id) map[x.user_id] = x;
+      const clase: Record<string, Record<string, Certificate>> = {};
+      for (const x of certs) {
+        if (x.estado !== "valido" || !x.user_id) continue;
+        if (x.ambito === "clase" && x.lesson_id) (clase[x.lesson_id] ??= {})[x.user_id] = x;
+        else map[x.user_id] = x;
+      }
       st.certs = map;
+      st.clase = clase;
       setTitle(`Avance · ${c.title}`);
     } catch (e) {
       if (!requireLogin(e)) st.error = errMsg(e);
@@ -90,6 +110,37 @@ export default component$(() => {
     }
   });
 
+  const abrirLote = $((lessonId: string) => {
+    lote.lesson = lote.lesson === lessonId ? "" : lessonId;
+    lote.tipo = "participacion";
+    lote.horas = 2;
+    lote.soloProgreso = true;
+    lote.error = "";
+  });
+  const emitirLote = $(async () => {
+    if (!st.c || !lote.lesson) return;
+    lote.busy = true;
+    lote.error = "";
+    try {
+      const r = await api.emitirLote({ course_id: st.c.id, lesson_id: lote.lesson, tipo: lote.tipo, horas: lote.horas, solo_con_progreso: lote.soloProgreso });
+      if (r.emitidos.length) {
+        // Recarga solo la lista de certificados para pintar los chips nuevos.
+        const certs = await api.certificados(st.c.id);
+        const clase: Record<string, Record<string, Certificate>> = {};
+        for (const x of certs) if (x.estado === "valido" && x.user_id && x.ambito === "clase" && x.lesson_id) (clase[x.lesson_id] ??= {})[x.user_id] = x;
+        st.clase = clase;
+      }
+      const n = r.emitidos.length;
+      const m = r.omitidos.length;
+      lote.lesson = "";
+      toast(session, n ? `Insignias emitidas: ${n}${m ? ` (omitidas ${m})` : ""}` : `Nadie nuevo: ${m} ${m === 1 ? "omitido" : "omitidos"}`, n ? "ok" : "info");
+    } catch (e) {
+      if (!requireLogin(e)) lote.error = errMsg(e);
+    } finally {
+      lote.busy = false;
+    }
+  });
+
   if (st.error) return <ErrorState message={st.error} retry$={load} />;
   if (!st.c || !st.p) return <Loading lines={6} />;
   const { c, p } = st;
@@ -127,6 +178,66 @@ export default component$(() => {
           <Empty icon="users" title="Todavía no hay alumnos en la cohorte" />
         ) : (
           <>
+            <div class="section-t" id="insignias-clase">
+              <Icon name="badge" /> Insignias por clase
+              <span class="xs muted" style="font-weight:400;margin-left:.4rem">una microcredencial Open Badges por clase; se emiten en lote y se exportan a Credly o Badgr</span>
+            </div>
+            <div class="ins-list" data-testid="insignias-clase">
+              {p.lessons.map((l, i) => {
+                const num = i + 1;
+                const tienen = Object.keys(st.clase[l.id] ?? {}).length;
+                const abierto = lote.lesson === l.id;
+                return (
+                  <div key={l.id} class="card ins-row" data-lesson={l.id}>
+                    <img src={insigniaPngUrl(c.id, l.id)} alt={`Insignia de la clase ${num}`} width={56} height={56} loading="lazy" />
+                    <div class="grow" style="min-width:12rem">
+                      <div class="ins-t">{l.title}</div>
+                      <div class="xs muted">
+                        <b class={tienen ? "ok" : ""}>{tienen}</b> de {p.students.length} {p.students.length === 1 ? "alumno la tiene" : "alumnos la tienen"}
+                      </div>
+                    </div>
+                    <div class="ins-acts">
+                      <button type="button" class={`btn sm${abierto ? " ghost" : ""}`} onClick$={() => abrirLote(l.id)} aria-expanded={abierto}>
+                        <Icon name="users" size={13} /> Emitir a todos
+                      </button>
+                      <a class="btn ghost sm" href={exportCsvUrl(c.id, l.id)} download title="CSV genérico (UTF-8 con BOM)">
+                        <Icon name="download" size={13} /> Exportar CSV
+                      </a>
+                      <a class="btn ghost sm" href={exportCsvUrl(c.id, l.id, "badgr")} download title="Columnas de la carga masiva de Canvas Credentials / Badgr">
+                        <Icon name="download" size={13} /> CSV Badgr
+                      </a>
+                    </div>
+                    {abierto && (
+                      <form class="cert-inline" preventdefault:submit onSubmit$={emitirLote} aria-busy={lote.busy} aria-label={`Emitir la insignia de la clase ${num} a todos`}>
+                        <div>
+                          <label for={`lt-${l.id}`}>Tipo</label>
+                          <select id={`lt-${l.id}`} value={lote.tipo} onChange$={(_, el) => (lote.tipo = el.value as LoteForm["tipo"])}>
+                            <option value="participacion">Participación</option>
+                            <option value="aprobacion">Aprobación</option>
+                          </select>
+                        </div>
+                        <div style="width:5.5rem;min-width:5.5rem">
+                          <label for={`lh-${l.id}`}>Horas</label>
+                          <input id={`lh-${l.id}`} type="number" min={1} max={2000} value={lote.horas} onInput$={(_, el) => (lote.horas = Number(el.value) || 0)} />
+                        </div>
+                        <label class="chk">
+                          <input type="checkbox" checked={lote.soloProgreso} onChange$={(_, el) => (lote.soloProgreso = el.checked)} />
+                          Solo a quienes marcaron progreso en la clase
+                        </label>
+                        <div class="row" style="margin-left:auto">
+                          <button type="submit" class="btn sm" disabled={lote.busy || lote.horas < 1}>
+                            {lote.busy ? <Icon name="loader" size={13} class="studio-spin" /> : <Icon name="badge" size={13} />} Confirmar: emitir a {p.students.length - tienen}
+                          </button>
+                          <button type="button" class="btn ghost sm" onClick$={() => (lote.lesson = "")}>Cancelar</button>
+                        </div>
+                        {lote.error && <div class="xs bad" role="alert" style="flex-basis:100%">{lote.error}</div>}
+                      </form>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
             <span class="field-ico" style="display:block;max-width:22rem;margin-bottom:.7rem">
               <Icon name="search" />
               <input type="search" placeholder="Buscar alumno" value={q.value} onInput$={(_, el) => (q.value = el.value)} />
@@ -218,6 +329,18 @@ export default component$(() => {
                             <button type="button" class="btn ghost sm" onClick$={() => abrir(s.id)}>
                               <Icon name="award" size={13} /> Emitir certificado
                             </button>
+                          )}
+                          {p.lessons.some((l) => st.clase[l.id]?.[s.id]) && (
+                            <div class="chips-clase" aria-label="Insignias de clase">
+                              {p.lessons.map((l, i) => {
+                                const ic = st.clase[l.id]?.[s.id];
+                                return ic ? (
+                                  <a key={l.id} class="chip on" href={ic.url_verificar} target="_blank" rel="noopener" title={`${ic.clase} · ${ic.codigo}`} data-cert={ic.codigo}>
+                                    <img src={insigniaPngUrl(c.id, l.id)} alt="" width={16} height={16} loading="lazy" /> {String(i + 1).padStart(2, "0")}
+                                  </a>
+                                ) : null;
+                              })}
+                            </div>
                           )}
                         </td>
                       </tr>

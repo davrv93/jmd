@@ -34,7 +34,54 @@ func Open(path string) (*DB, error) {
 		db.Close()
 		return nil, fmt.Errorf("esquema: %w", err)
 	}
+	if err := migrate(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migración: %w", err)
+	}
 	return &DB{sql: db}, nil
+}
+
+// migrate añade columnas que el CREATE TABLE IF NOT EXISTS no crea en bases ya existentes.
+// Cada entrada es idempotente: solo se aplica si la columna falta.
+func migrate(db *sql.DB) error {
+	adds := []struct{ table, column, ddl string }{
+		// Insignias por clase (10-2026): vacío = certificado del curso completo.
+		{"certificates", "lesson_id", "ALTER TABLE certificates ADD COLUMN lesson_id TEXT NOT NULL DEFAULT ''"},
+	}
+	for _, a := range adds {
+		has, err := hasColumn(db, a.table, a.column)
+		if err != nil {
+			return err
+		}
+		if has {
+			continue
+		}
+		if _, err := db.Exec(a.ddl); err != nil {
+			return fmt.Errorf("%s.%s: %w", a.table, a.column, err)
+		}
+	}
+	return nil
+}
+
+func hasColumn(db *sql.DB, table, column string) (bool, error) {
+	rows, err := db.Query("PRAGMA table_info(" + table + ")")
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name, typ string
+		var notnull, pk int
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); err != nil {
+			return false, err
+		}
+		if name == column {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
 }
 
 // Close cierra la conexión.
@@ -108,7 +155,8 @@ CREATE TABLE IF NOT EXISTS certificates (
   emitido_por TEXT NOT NULL,
   emitido_en TEXT NOT NULL,
   anulado_en TEXT,
-  snapshot_json TEXT NOT NULL DEFAULT '{}'
+  snapshot_json TEXT NOT NULL DEFAULT '{}',
+  lesson_id TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS certificates_user ON certificates(user_id, emitido_en);
 CREATE INDEX IF NOT EXISTS certificates_course ON certificates(course_id, emitido_en);
@@ -653,11 +701,13 @@ func (d *DB) SetSetting(ctx context.Context, key, value string) error {
 // --- certificados --------------------------------------------------------------------------
 
 // Certificate es un certificado emitido a un alumno por un curso. ID es el código público
-// (CD-AAAA-XXXXXX). Snapshot congela los datos tal y como estaban al emitir.
+// (CD-AAAA-XXXXXX). Snapshot congela los datos tal y como estaban al emitir. LessonID vacío es
+// el certificado del curso completo; con valor, una insignia de clase (microcredencial).
 type Certificate struct {
 	ID         string
 	UserID     string
 	CourseID   string
+	LessonID   string
 	Tipo       string // participacion | aprobacion
 	Horas      int
 	Nota       string
@@ -670,13 +720,13 @@ type Certificate struct {
 // Anulado dice si el certificado fue revocado.
 func (c *Certificate) Anulado() bool { return c.AnuladoEn != nil }
 
-const certCols = "id, user_id, course_id, tipo, horas, nota, emitido_por, emitido_en, anulado_en, snapshot_json"
+const certCols = "id, user_id, course_id, tipo, horas, nota, emitido_por, emitido_en, anulado_en, snapshot_json, lesson_id"
 
 func scanCertificate(row interface{ Scan(...any) error }) (*Certificate, error) {
 	var c Certificate
 	var emitido string
 	var anulado sql.NullString
-	if err := row.Scan(&c.ID, &c.UserID, &c.CourseID, &c.Tipo, &c.Horas, &c.Nota, &c.EmitidoPor, &emitido, &anulado, &c.Snapshot); err != nil {
+	if err := row.Scan(&c.ID, &c.UserID, &c.CourseID, &c.Tipo, &c.Horas, &c.Nota, &c.EmitidoPor, &emitido, &anulado, &c.Snapshot, &c.LessonID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -701,8 +751,8 @@ func (d *DB) CreateCertificate(ctx context.Context, c *Certificate) error {
 	if c.Snapshot == "" {
 		c.Snapshot = "{}"
 	}
-	_, err := d.sql.ExecContext(ctx, "INSERT INTO certificates (id, user_id, course_id, tipo, horas, nota, emitido_por, emitido_en, snapshot_json) VALUES (?,?,?,?,?,?,?,?,?)",
-		c.ID, c.UserID, c.CourseID, c.Tipo, c.Horas, c.Nota, c.EmitidoPor, c.EmitidoEn.Format(time.RFC3339), c.Snapshot)
+	_, err := d.sql.ExecContext(ctx, "INSERT INTO certificates (id, user_id, course_id, tipo, horas, nota, emitido_por, emitido_en, snapshot_json, lesson_id) VALUES (?,?,?,?,?,?,?,?,?,?)",
+		c.ID, c.UserID, c.CourseID, c.Tipo, c.Horas, c.Nota, c.EmitidoPor, c.EmitidoEn.Format(time.RFC3339), c.Snapshot, c.LessonID)
 	if err != nil && strings.Contains(err.Error(), "UNIQUE") {
 		return ErrDuplicate
 	}
@@ -714,9 +764,21 @@ func (d *DB) Certificate(ctx context.Context, id string) (*Certificate, error) {
 	return scanCertificate(d.sql.QueryRowContext(ctx, "SELECT "+certCols+" FROM certificates WHERE id = ?", id))
 }
 
-// ActiveCertificate devuelve el certificado vigente (no anulado) de un alumno en un curso.
-func (d *DB) ActiveCertificate(ctx context.Context, userID, courseID string) (*Certificate, error) {
-	return scanCertificate(d.sql.QueryRowContext(ctx, "SELECT "+certCols+" FROM certificates WHERE user_id = ? AND course_id = ? AND anulado_en IS NULL ORDER BY emitido_en DESC LIMIT 1", userID, courseID))
+// ActiveCertificate devuelve el certificado vigente (no anulado) de un alumno en un curso y, si
+// lessonID no está vacío, en esa clase (lessonID vacío = el certificado del curso completo).
+func (d *DB) ActiveCertificate(ctx context.Context, userID, courseID, lessonID string) (*Certificate, error) {
+	return scanCertificate(d.sql.QueryRowContext(ctx, "SELECT "+certCols+" FROM certificates WHERE user_id = ? AND course_id = ? AND lesson_id = ? AND anulado_en IS NULL ORDER BY emitido_en DESC LIMIT 1", userID, courseID, lessonID))
+}
+
+// CertificatesClase lista los certificados de un curso con un ámbito concreto: lessonID vacío
+// son los del curso completo; con valor, las insignias de esa clase.
+func (d *DB) CertificatesClase(ctx context.Context, courseID, lessonID string) ([]*Certificate, error) {
+	rows, err := d.sql.QueryContext(ctx, "SELECT "+certCols+" FROM certificates WHERE course_id = ? AND lesson_id = ? ORDER BY emitido_en DESC", courseID, lessonID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanCertificates(rows)
 }
 
 // Certificates lista certificados: por curso (courseID) y/o por alumno (userID); vacío = sin filtro.
@@ -737,6 +799,10 @@ func (d *DB) Certificates(ctx context.Context, courseID, userID string) ([]*Cert
 		return nil, err
 	}
 	defer rows.Close()
+	return scanCertificates(rows)
+}
+
+func scanCertificates(rows *sql.Rows) ([]*Certificate, error) {
 	out := []*Certificate{}
 	for rows.Next() {
 		c, err := scanCertificate(rows)

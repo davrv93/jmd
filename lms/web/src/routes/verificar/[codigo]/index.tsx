@@ -29,18 +29,20 @@ export default component$(() => {
   if (st.error) return <ErrorState message={st.error} retry$={load} />;
   if (!st.c) return <Loading lines={5} />;
   const c = st.c;
+  const esClase = c.ambito === "clase";
+  const pieza = esClase ? "Insignia" : "Certificado";
   const seal =
     c.estado === "valido"
-      ? { cls: "ok", icon: "shieldCheck", label: "Certificado válido" }
+      ? { cls: "ok", icon: "shieldCheck", label: `${pieza} ${esClase ? "válida" : "válido"}` }
       : c.estado === "anulado"
-        ? { cls: "bad", icon: "ban", label: "Certificado anulado" }
+        ? { cls: "bad", icon: "ban", label: `${pieza} ${esClase ? "anulada" : "anulado"}` }
         : { cls: "", icon: "help", label: "No encontrado" };
 
   return (
     <div class="verify">
       <div class="head" style="margin-bottom:.4rem">
         <div class="grow">
-          <h1>Verificación de certificado</h1>
+          <h1>{esClase ? "Verificación de insignia de clase" : "Verificación de certificado"}</h1>
           <p>
             Código <span class="cert-code">{c.codigo}</span>
           </p>
@@ -64,10 +66,22 @@ export default component$(() => {
       ) : (
         <>
           <div class="card verify-card">
-            <div class="xs faint" style="text-transform:uppercase;letter-spacing:.05em">Certificado {c.tipo_texto}</div>
+            <div class="xs faint" style="text-transform:uppercase;letter-spacing:.05em" data-ambito={c.ambito ?? "curso"}>
+              {esClase ? `Insignia de clase · ${c.clase ?? ""}` : `Certificado ${c.tipo_texto}`}
+            </div>
             <h2>{c.alumno}</h2>
-            <div class="muted sm" style="margin-top:.35rem">por haber completado el curso</div>
-            <div class="verify-course">{c.curso}</div>
+            {esClase ? (
+              <>
+                <div class="muted sm" style="margin-top:.35rem">por haber completado la {(c.clase ?? "").replace(/^Clase/, "clase")}</div>
+                <div class="muted sm">del curso</div>
+                <div class="verify-course">{c.curso}</div>
+              </>
+            ) : (
+              <>
+                <div class="muted sm" style="margin-top:.35rem">por haber completado el curso</div>
+                <div class="verify-course">{c.curso}</div>
+              </>
+            )}
             <dl class="verify-dl">
               <dt>Tipo</dt>
               <dd>{CERT_TIPO[c.tipo ?? ""] ?? c.tipo}</dd>
@@ -99,7 +113,7 @@ export default component$(() => {
             {c.estado === "anulado" && (
               <div class="studio-strip bad" role="alert">
                 <Icon name="alert" size={15} />
-                <span>Este certificado fue anulado por el emisor y ya no es válido. El PDF se descarga con el sello de anulado.</span>
+                <span>{esClase ? "Esta insignia fue anulada por el emisor y ya no es válida." : "Este certificado fue anulado por el emisor y ya no es válido."} El PDF se descarga con el sello de anulado.</span>
               </div>
             )}
           </div>
@@ -110,7 +124,7 @@ export default component$(() => {
                 <Icon name="badge" /> Insignia digital
               </div>
               <div class="card verify-badge" id="insignia">
-                <img src={c.url_insignia} alt={`Insignia del curso ${c.curso}`} width={144} height={144} loading="lazy" />
+                <img src={c.url_insignia_png ?? c.url_insignia} alt={esClase ? `Insignia de la ${c.clase ?? "clase"}` : `Insignia del curso ${c.curso}`} width={144} height={144} loading="lazy" />
                 <div>
                   <p>
                     Credencial verificable según el modelo de datos <b>Open Badges 3.0</b> (1EdTech). El JSON lleva el logro y la identidad del

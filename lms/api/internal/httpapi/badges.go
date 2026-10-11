@@ -176,7 +176,8 @@ func (s *Server) emisorJSON(w http.ResponseWriter, r *http.Request) {
 	publicJSON(w, s.emisorProfile(cfg))
 }
 
-// achievement arma el logro OB3 de un curso.
+// achievement arma el logro OB3 de un curso. La imagen es el PNG (lo que aceptan Credly y
+// Badgr); el SVG sigue disponible en la misma ruta con extensión .svg.
 func (s *Server) achievement(cfg certSettings, c *content.Course) map[string]any {
 	desc := strings.TrimSpace(c.Description)
 	if desc == "" {
@@ -188,13 +189,99 @@ func (s *Server) achievement(cfg certSettings, c *content.Course) map[string]any
 		"name":        c.Title,
 		"description": desc,
 		"criteria":    map[string]any{"id": cfg.URL + "/courses/" + c.Slug + "/", "narrative": "Completar las sesiones y aprobar las tareas del curso"},
-		"image":       map[string]any{"id": cfg.URL + "/api/v1/insignias/" + c.ID + ".svg", "type": "Image"},
+		"image":       map[string]any{"id": cfg.URL + "/api/v1/insignias/" + c.ID + ".png", "type": "Image"},
 		"creator":     s.emisorID(cfg),
 	}
 }
 
-// insignia: GET /api/v1/insignias/{archivo}: <curso>.json (Achievement), <curso>.svg (imagen) o
-// revocados.json (lista de revocación).
+// achievementClase arma el logro OB3 de una clase (microcredencial): criterios = asistir y
+// completar el ciclo de aprendizaje de la clase; alignment con los objetivos de la clase.
+func (s *Server) achievementClase(cfg certSettings, c *content.Course, l *content.Lesson, num int) map[string]any {
+	nombre := tituloClase(num, l.Title)
+	desc := fmt.Sprintf("Clase %d del curso %s.", num, c.Title)
+	if len(l.Objectives) > 0 {
+		var objs []string
+		for _, o := range l.Objectives {
+			objs = append(objs, strings.TrimRight(strings.TrimSpace(o.Title), "."))
+		}
+		desc += " Objetivos: " + strings.Join(objs, "; ") + "."
+	}
+	base := cfg.URL + "/api/v1/insignias/" + c.ID + "/" + l.ID
+	a := map[string]any{
+		"id":          base + ".json",
+		"type":        []string{"Achievement"},
+		"name":        nombre,
+		"description": desc,
+		"criteria": map[string]any{
+			"id":        cfg.URL + "/courses/" + c.Slug + "/",
+			"narrative": fmt.Sprintf("Asistir a la clase %d (en vivo o grabación) y completar los %d pasos del ciclo de aprendizaje de la clase en el LMS", num, len(l.Cycle)),
+		},
+		"image":   map[string]any{"id": base + ".png", "type": "Image"},
+		"creator": s.emisorID(cfg),
+	}
+	if len(l.Objectives) > 0 {
+		var al []map[string]any
+		for _, o := range l.Objectives {
+			al = append(al, map[string]any{"type": []string{"Alignment"}, "targetName": o.Title, "targetUrl": cfg.URL + "/lessons/" + l.ID + "/#" + o.ID})
+		}
+		a["alignment"] = al
+	}
+	return a
+}
+
+// insigniaClase: GET /api/v1/insignias/{course}/{archivo}: <clase>.json (Achievement de la
+// clase), <clase>.svg o <clase>.png.
+func (s *Server) insigniaClase(w http.ResponseWriter, r *http.Request) {
+	cfg, err := s.certConfig(r.Context())
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	c := s.Content.Get().Course(r.PathValue("course"))
+	archivo := r.PathValue("archivo")
+	id, ext := archivo, ""
+	if i := strings.LastIndexByte(archivo, '.'); i > 0 {
+		id, ext = archivo[:i], archivo[i+1:]
+	}
+	if c == nil {
+		notFound(w, "la insignia")
+		return
+	}
+	l, num := lessonEnCurso(c, id)
+	if l == nil {
+		notFound(w, "la insignia")
+		return
+	}
+	switch ext {
+	case "json":
+		a := s.achievementClase(cfg, c, l, num)
+		a["@context"] = obContext
+		publicJSON(w, a)
+	case "svg":
+		servirSVG(w, insigniaClaseSVG(num, l.Title, cfg.Emisor))
+	case "png":
+		servirPNG(w, insigniaPNGData{Curso: c.Title, Emisor: cfg.Emisor, ClaseNum: num, Clase: tituloSinPrefijo(l.Title)}, fmt.Sprintf("insignia-%s-clase-%02d.png", c.ID, num))
+	default:
+		notFound(w, "la insignia")
+	}
+}
+
+func servirSVG(w http.ResponseWriter, svg string) {
+	w.Header().Set("Content-Type", "image/svg+xml; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'")
+	w.WriteHeader(200)
+	_, _ = w.Write([]byte(svg))
+}
+
+// tituloSinPrefijo quita el «Clase N ·» inicial del título de una clase.
+func tituloSinPrefijo(t string) string {
+	return rePrefijoClase.ReplaceAllString(strings.TrimSpace(t), "")
+}
+
+// insignia: GET /api/v1/insignias/{archivo}: <curso>.json (Achievement), <curso>.svg o
+// <curso>.png (imagen) o revocados.json (lista de revocación).
 func (s *Server) insignia(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cfg, err := s.certConfig(ctx)
@@ -222,12 +309,9 @@ func (s *Server) insignia(w http.ResponseWriter, r *http.Request) {
 		a["@context"] = obContext
 		publicJSON(w, a)
 	case "svg":
-		w.Header().Set("Content-Type", "image/svg+xml; charset=utf-8")
-		w.Header().Set("Cache-Control", "public, max-age=3600")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(insigniaSVG(c.Title, cfg.Emisor)))
+		servirSVG(w, insigniaSVG(c.Title, cfg.Emisor))
+	case "png":
+		servirPNG(w, insigniaPNGData{Curso: c.Title, Emisor: cfg.Emisor}, "insignia-"+c.ID+".png")
 	default:
 		notFound(w, "la insignia")
 	}
@@ -258,11 +342,25 @@ func (s *Server) revocados(w http.ResponseWriter, ctx context.Context, cfg certS
 // insigniaSVG dibuja la insignia hexagonal 600x600: degradado azul→morado, borde blanco, símbolo
 // </> al centro, nombre corto del curso (dos líneas) y el emisor abajo. Todo el texto va escapado.
 func insigniaSVG(curso, emisor string) string {
-	l1, l2 := nombreCorto(curso)
+	return insigniaSVGBase("Insignia: "+curso+" · "+emisor, 0, curso, emisor)
+}
+
+// insigniaClaseSVG es la misma insignia con el número de clase grande («01») y el título corto
+// de la clase en dos líneas.
+func insigniaClaseSVG(num int, titulo, emisor string) string {
+	t := tituloSinPrefijo(titulo)
+	return insigniaSVGBase(fmt.Sprintf("Insignia de clase %d: %s · %s", num, t, emisor), num, t, emisor)
+}
+
+func insigniaSVGBase(label string, num int, nombre, emisor string) string {
+	l1, l2 := "", ""
+	if num == 0 {
+		l1, l2 = nombreCorto(nombre)
+	}
 	esc := html.EscapeString
 	var b strings.Builder
 	b.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" role="img" aria-label="`)
-	b.WriteString(esc("Insignia: " + curso + " · " + emisor))
+	b.WriteString(esc(label))
 	b.WriteString(`">`)
 	b.WriteString(`<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f4fbf"/><stop offset="1" stop-color="#6d28d9"/></linearGradient></defs>`)
 	// Hexágono (vértices arriba y abajo) con borde blanco doble.
@@ -279,45 +377,76 @@ func insigniaSVG(curso, emisor string) string {
 	b.WriteString(`<polygon points="` + hex(290) + `" fill="url(#g)"/>`)
 	b.WriteString(`<polygon points="` + hex(268) + `" fill="none" stroke="#ffffff" stroke-width="10"/>`)
 	b.WriteString(`<polygon points="` + hex(250) + `" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="2"/>`)
-	// Símbolo central.
-	b.WriteString(`<text x="300" y="268" text-anchor="middle" font-family="Menlo, Consolas, 'Courier New', monospace" font-weight="700" font-size="128" fill="#ffffff">&lt;/&gt;</text>`)
-	// Nombre del curso (hasta dos líneas) y emisor.
-	y := 352
-	if l2 == "" {
-		y = 366
+	const sans = `font-family="Inter, Helvetica, Arial, sans-serif"`
+	if num == 0 {
+		// Símbolo central y nombre del curso (hasta dos líneas).
+		b.WriteString(`<text x="300" y="268" text-anchor="middle" font-family="Menlo, Consolas, 'Courier New', monospace" font-weight="700" font-size="128" fill="#ffffff">&lt;/&gt;</text>`)
+		y := 352
+		if l2 == "" {
+			y = 366
+		}
+		b.WriteString(fmt.Sprintf(`<text x="300" y="%d" text-anchor="middle" %s font-weight="700" font-size="40" fill="#ffffff">%s</text>`, y, sans, esc(l1)))
+		if l2 != "" {
+			b.WriteString(fmt.Sprintf(`<text x="300" y="%d" text-anchor="middle" %s font-weight="700" font-size="40" fill="#ffffff">%s</text>`, y+46, sans, esc(l2)))
+		}
+	} else {
+		// «CLASE», el número grande y el título corto de la clase.
+		b.WriteString(fmt.Sprintf(`<text x="300" y="160" text-anchor="middle" %s font-weight="500" font-size="24" letter-spacing="6" fill="#ffffff" fill-opacity=".85">CLASE</text>`, sans))
+		b.WriteString(fmt.Sprintf(`<text x="300" y="300" text-anchor="middle" %s font-weight="800" font-size="168" letter-spacing="-6" fill="#ffffff">%02d</text>`, sans, num))
+		ls := partirLineas(nombre, 24, 3)
+		y := 352 + (3-len(ls))*12
+		for i, l := range ls {
+			b.WriteString(fmt.Sprintf(`<text x="300" y="%d" text-anchor="middle" %s font-weight="700" font-size="28" fill="#ffffff">%s</text>`, y+i*34, sans, esc(l)))
+		}
 	}
-	b.WriteString(fmt.Sprintf(`<text x="300" y="%d" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="700" font-size="40" fill="#ffffff">%s</text>`, y, esc(l1)))
-	if l2 != "" {
-		b.WriteString(fmt.Sprintf(`<text x="300" y="%d" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="700" font-size="40" fill="#ffffff">%s</text>`, y+46, esc(l2)))
+	ySep, yEm, yOB := 440, 472, 502
+	if num != 0 {
+		ySep, yEm, yOB = 446, 476, 503
 	}
-	b.WriteString(`<line x1="230" y1="440" x2="370" y2="440" stroke="#ffffff" stroke-opacity=".6" stroke-width="2"/>`)
-	b.WriteString(fmt.Sprintf(`<text x="300" y="472" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="600" font-size="21" letter-spacing="1.5" fill="#ffffff">%s</text>`, esc(strings.ToUpper(recortarRunas(emisor, 24)))))
-	b.WriteString(`<text x="300" y="502" text-anchor="middle" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="16" fill="#ffffff" fill-opacity=".75">open badges 3.0</text>`)
+	b.WriteString(fmt.Sprintf(`<line x1="230" y1="%d" x2="370" y2="%d" stroke="#ffffff" stroke-opacity=".6" stroke-width="2"/>`, ySep, ySep))
+	b.WriteString(fmt.Sprintf(`<text x="300" y="%d" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="600" font-size="21" letter-spacing="1.5" fill="#ffffff">%s</text>`, yEm, esc(strings.ToUpper(recortarRunas(emisor, 24)))))
+	b.WriteString(fmt.Sprintf(`<text x="300" y="%d" text-anchor="middle" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="16" fill="#ffffff" fill-opacity=".75">open badges 3.0</text>`, yOB))
 	b.WriteString(`</svg>`)
 	return b.String()
 }
 
 // nombreCorto quita el paréntesis final del título y lo parte en dos líneas de ~18 caracteres.
 func nombreCorto(titulo string) (string, string) {
+	ls := partirLineas(titulo, 18, 2)
+	l1, l2 := "", ""
+	if len(ls) > 0 {
+		l1 = ls[0]
+	}
+	if len(ls) > 1 {
+		l2 = ls[1]
+	}
+	return l1, l2
+}
+
+// partirLineas quita el paréntesis final del título («(vibecoding)») y, si hay un subtítulo tras
+// «:» con una parte principal suficientemente larga, se queda con la principal; luego reparte las
+// palabras en hasta n líneas de ~max caracteres y marca con «…» lo que no cabe.
+func partirLineas(titulo string, max, n int) []string {
 	t := strings.TrimSpace(titulo)
 	if i := strings.Index(t, " ("); i > 0 {
 		t = t[:i]
 	}
-	words := strings.Fields(t)
-	const max = 18
-	var l1, l2 string
-	for _, w := range words {
-		switch {
-		case l1 == "" || len([]rune(l1+" "+w)) <= max:
-			l1 = strings.TrimSpace(l1 + " " + w)
-		case l2 == "" || len([]rune(l2+" "+w)) <= max:
-			l2 = strings.TrimSpace(l2 + " " + w)
-		default:
-			l2 = recortarRunas(l2, max-1) + "…"
-			return l1, l2
-		}
+	if i := strings.Index(t, ":"); i >= 12 && len([]rune(t)) > max*n {
+		t = strings.TrimSpace(t[:i])
 	}
-	return l1, l2
+	var out []string
+	for _, w := range strings.Fields(t) {
+		if len(out) > 0 && len([]rune(out[len(out)-1]+" "+w)) <= max {
+			out[len(out)-1] += " " + w
+			continue
+		}
+		if len(out) == n {
+			out[n-1] = strings.TrimRight(recortarRunas(out[n-1], max-1), " ,;:") + "…"
+			return out
+		}
+		out = append(out, w)
+	}
+	return out
 }
 
 func recortarRunas(s string, n int) string {
@@ -326,6 +455,11 @@ func recortarRunas(s string, n int) string {
 		return s
 	}
 	return string(r[:n])
+}
+
+func lessonExiste(c *content.Course, id string) bool {
+	l, _ := lessonEnCurso(c, id)
+	return l != nil
 }
 
 // --- credencial por certificado -------------------------------------------------------------
@@ -380,14 +514,27 @@ func (s *Server) credential(cfg certSettings, c *store.Certificate, u *store.Use
 	sn := parseSnapshot(c)
 	course := s.Content.Get().Course(c.CourseID)
 	var ach map[string]any
-	if course != nil {
+	switch {
+	case c.LessonID != "" && course != nil && lessonExiste(course, c.LessonID):
+		l, num := lessonEnCurso(course, c.LessonID)
+		ach = s.achievementClase(cfg, course, l, num)
+	case c.LessonID != "":
+		// La clase ya no está en el temario: se reconstruye el logro desde el snapshot.
+		base := cfg.URL + "/api/v1/insignias/" + c.CourseID + "/" + c.LessonID
+		ach = map[string]any{
+			"id": base + ".json", "type": []string{"Achievement"}, "name": sn.Clase,
+			"description": fmt.Sprintf("Clase %d del curso %s.", sn.ClaseNum, sn.Curso),
+			"criteria":    map[string]any{"narrative": fmt.Sprintf("Asistir a la clase %d y completar el ciclo de aprendizaje de la clase", sn.ClaseNum)},
+			"image":       map[string]any{"id": base + ".png", "type": "Image"}, "creator": s.emisorID(cfg),
+		}
+	case course != nil:
 		ach = s.achievement(cfg, course)
-	} else {
+	default:
 		// El curso ya no está en el temario: se reconstruye el logro desde el snapshot.
 		ach = map[string]any{
 			"id": cfg.URL + "/api/v1/insignias/" + c.CourseID + ".json", "type": []string{"Achievement"}, "name": sn.Curso,
 			"description": "Curso " + sn.Curso, "criteria": map[string]any{"narrative": "Completar las sesiones y aprobar las tareas del curso"},
-			"image": map[string]any{"id": cfg.URL + "/api/v1/insignias/" + c.CourseID + ".svg", "type": "Image"}, "creator": s.emisorID(cfg),
+			"image": map[string]any{"id": cfg.URL + "/api/v1/insignias/" + c.CourseID + ".png", "type": "Image"}, "creator": s.emisorID(cfg),
 		}
 	}
 	salt := sn.Salt
@@ -399,13 +546,17 @@ func (s *Server) credential(cfg certSettings, c *store.Certificate, u *store.Use
 	if nombre == "" {
 		nombre = "certificado"
 	}
+	nombreVC := "Certificado " + nombre + " · " + sn.Curso
+	if c.LessonID != "" {
+		nombreVC = "Insignia de clase · " + sn.Clase + " · " + sn.Curso
+	}
 	return map[string]any{
 		"@context":  obContext,
 		"id":        s.credentialID(cfg, c.ID),
 		"type":      []string{"VerifiableCredential", "OpenBadgeCredential"},
 		"issuer":    map[string]any{"id": s.emisorID(cfg), "type": "Profile", "name": cfg.Emisor, "url": cfg.URL},
 		"validFrom": c.EmitidoEn.UTC().Format(time.RFC3339),
-		"name":      "Certificado " + nombre + " · " + sn.Curso,
+		"name":      nombreVC,
 		"credentialSubject": map[string]any{
 			"type": []string{"AchievementSubject"},
 			"identifier": []map[string]any{{

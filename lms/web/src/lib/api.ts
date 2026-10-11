@@ -265,10 +265,23 @@ export interface Certificate {
   url_badge?: string;
   url_badge_jwt?: string;
   url_insignia?: string;
+  url_insignia_png?: string;
+  // Ámbito: «curso» (certificado del curso completo) o «clase» (insignia de clase).
+  ambito?: "curso" | "clase";
+  lesson_id?: string;
+  clase?: string; // «Clase 1 · …»
+  clase_num?: number;
   // Solo personal o el propio alumno.
   user_id?: string;
   nota?: string;
   emitido_por?: string;
+}
+/** Resultado de una emisión en lote. */
+export interface LoteResult {
+  course_id: string;
+  lesson_id: string;
+  emitidos: { codigo: string; alumno: string; user_id: string; email: string }[];
+  omitidos: { alumno: string; user_id: string; email: string; motivo: string; codigo?: string }[];
 }
 export interface CourseProgress {
   course_id: string;
@@ -314,19 +327,32 @@ export const api = {
   certConfig: () => req<CertConfig>("GET", "/api/v1/admin/certificados/config"),
   saveCertConfig: (b: CertConfig) => req<CertConfig>("PUT", "/api/v1/admin/certificados/config", b),
   certificados: (course: string) => req<Certificate[]>("GET", `/api/v1/admin/certificados?course=${encodeURIComponent(course)}`),
-  emitirCertificado: (b: { user_id: string; course_id: string; tipo: string; horas: number; nota?: string }) =>
+  emitirCertificado: (b: { user_id: string; course_id: string; lesson_id?: string; tipo: string; horas: number; nota?: string }) =>
     req<Certificate>("POST", "/api/v1/admin/certificados", b),
+  emitirLote: (b: { course_id: string; lesson_id?: string; tipo: string; horas: number; nota?: string; solo_con_progreso: boolean }) =>
+    req<LoteResult>("POST", "/api/v1/admin/certificados/lote", b),
   anularCertificado: (codigo: string) => req<Certificate>("POST", `/api/v1/admin/certificados/${encodeURIComponent(codigo)}/anular`, {}),
   misCertificados: () => req<Certificate[]>("GET", "/api/v1/certificados"),
   verificar: (codigo: string) => req<Certificate>("GET", `/api/v1/verificar/${encodeURIComponent(codigo)}`),
 };
+
+/** URL del CSV de exportación (personal): formato «generico» o «badgr» (Canvas Credentials). */
+export function exportCsvUrl(course: string, lesson: string, formato: "generico" | "badgr" = "generico"): string {
+  const f = formato === "badgr" ? "export-badgr.csv" : "export.csv";
+  return `/api/v1/admin/certificados/${f}?course=${encodeURIComponent(course)}&lesson=${encodeURIComponent(lesson)}`;
+}
+
+/** PNG 600x600 de la insignia del curso o, con lesson, de la clase. */
+export function insigniaPngUrl(course: string, lesson?: string): string {
+  return `/api/v1/insignias/${encodeURIComponent(course)}${lesson ? `/${encodeURIComponent(lesson)}` : ""}.png`;
+}
 
 /** Enlace «Añadir a LinkedIn» (sección Licencias y certificaciones) con los datos del certificado. */
 export function linkedinAddUrl(c: Certificate): string {
   const d = c.emitido_en ? new Date(c.emitido_en) : new Date();
   const p = new URLSearchParams({
     startTask: "CERTIFICATION_NAME",
-    name: c.curso ?? "",
+    name: c.ambito === "clase" && c.clase ? `${c.clase} · ${c.curso ?? ""}` : (c.curso ?? ""),
     organizationName: c.emisor ?? "",
     issueYear: String(d.getFullYear()),
     issueMonth: String(d.getMonth() + 1),

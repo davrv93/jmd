@@ -889,8 +889,8 @@ func TestOpenBadges(t *testing.T) {
 	if r.code != 200 || r.body["name"] != "Curso de prueba" || r.body["creator"] != "http://lms.test/api/v1/emisor.json" {
 		t.Fatalf("insignia json: %d %s", r.code, r.raw)
 	}
-	if img, _ := r.body["image"].(map[string]any); img["id"] != "http://lms.test/api/v1/insignias/curso.svg" {
-		t.Fatalf("imagen del logro: %s", r.raw)
+	if img, _ := r.body["image"].(map[string]any); img["id"] != "http://lms.test/api/v1/insignias/curso.png" {
+		t.Fatalf("imagen del logro (debe ser el PNG): %s", r.raw)
 	}
 	r = e.call("GET", "/api/v1/insignias/curso.svg", "", false, nil, "")
 	if r.code != 200 || !strings.HasPrefix(r.hdr.Get("Content-Type"), "image/svg+xml") || !strings.Contains(string(r.raw), "<polygon") || !strings.Contains(string(r.raw), "&lt;/&gt;") || !strings.Contains(string(r.raw), "Curso de prueba") {

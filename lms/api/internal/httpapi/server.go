@@ -145,7 +145,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("PUT /api/v1/admin/certificados/config", s.authed(s.admin(s.adminCertConfigPut)))
 	mux.Handle("GET /api/v1/admin/certificados/muestra.pdf", s.authed(s.admin(s.muestraPDF)))
 	mux.Handle("POST /api/v1/admin/certificados", s.authed(s.staff(s.emitirCertificado)))
+	mux.Handle("POST /api/v1/admin/certificados/lote", s.authed(s.staff(s.emitirLote)))
 	mux.Handle("GET /api/v1/admin/certificados", s.authed(s.staff(s.listarCertificados)))
+	mux.Handle("GET /api/v1/admin/certificados/export.csv", s.authed(s.staff(s.exportCSV)))
+	mux.Handle("GET /api/v1/admin/certificados/export-badgr.csv", s.authed(s.staff(s.exportBadgrCSV)))
 	mux.Handle("POST /api/v1/admin/certificados/{codigo}/anular", s.authed(s.admin(s.anularCertificado)))
 	mux.Handle("GET /api/v1/certificados", s.authed(s.misCertificados))
 	// Públicos: quien tiene el código puede verificar y descargar; nunca llevan datos privados.
@@ -155,6 +158,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/certificados/{codigo}/badge.jwt", s.badgeJWT)
 	mux.HandleFunc("GET /api/v1/emisor.json", s.emisorJSON)
 	mux.HandleFunc("GET /api/v1/insignias/{archivo}", s.insignia)
+	mux.HandleFunc("GET /api/v1/insignias/{course}/{archivo}", s.insigniaClase)
 	mux.HandleFunc("GET /.well-known/jwks.json", s.jwks)
 	mux.Handle("GET /api/v1/admin/users", s.authed(s.admin(s.users)))
 	mux.Handle("PUT /api/v1/admin/users/{id}", s.authed(s.admin(s.updateUser)))

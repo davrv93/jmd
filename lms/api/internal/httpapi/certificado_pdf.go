@@ -26,7 +26,13 @@ type certPDFData struct {
 	Anulado                     bool
 	Base                        string // URL pública base, sin barra final
 	Muestra                     bool   // marca de agua «MUESTRA»
+
+	// Insignia de clase: número y título («Clase 1 · …»). ClaseNum 0 = certificado del curso.
+	Clase    string
+	ClaseNum int
 }
+
+func (d certPDFData) esClase() bool { return d.ClaseNum > 0 }
 
 type rgb struct{ r, g, b int }
 
@@ -59,7 +65,11 @@ func renderCertPDF(d certPDFData) ([]byte, error) {
 	tr := pdf.UnicodeTranslatorFromDescriptor("cp1252")
 	pdf.SetAutoPageBreak(false, 0)
 	pdf.SetMargins(0, 0, 0)
-	pdf.SetTitle(tr("Certificado "+d.Codigo), false)
+	docTitulo := "Certificado "
+	if d.esClase() {
+		docTitulo = "Constancia "
+	}
+	pdf.SetTitle(tr(docTitulo+d.Codigo), false)
 	pdf.SetAuthor(tr(d.Emisor), false)
 	pdf.SetSubject(tr(d.Alumno+" · "+d.Curso), false)
 	pdf.AddPage()
@@ -115,21 +125,37 @@ func renderCertPDF(d certPDFData) ([]byte, error) {
 	pdf.SetFont("Courier", "", 9)
 	pdf.Text(x0, 26, tr("// certificado verificable · "+d.Codigo))
 
-	// Título con espaciado entre letras y subtítulo.
+	// Título con espaciado entre letras y subtítulo. Una insignia de clase es una CONSTANCIA y
+	// lleva debajo «de la clase N · título»; el resto de la pieza no cambia.
 	text(colAzul)
 	pdf.SetFont("Helvetica", "B", 34)
-	espaciado(pdf, x0, 49, tr("CERTIFICADO"), 2.4)
+	titulo := "CERTIFICADO"
+	if d.esClase() {
+		titulo = "CONSTANCIA"
+	}
+	espaciado(pdf, x0, 49, tr(titulo), 2.4)
 	text(colGris)
 	pdf.SetFont("Helvetica", "", 15)
 	pdf.Text(x0, 59, tr(tiposCert[d.Tipo]))
+	yCodigo, ySep := 68.0, 73.0
+	if d.esClase() {
+		text(colMorado)
+		clase := "de la " + minusculaInicial(d.Clase)
+		ajustaFuente(pdf, "Helvetica", "B", 11.5, 8, tr(clase), ancho)
+		pdf.Text(x0, 66, tr(clase))
+		yCodigo, ySep = 72, 75
+	}
 
 	// Línea de código decorativa con los datos reales.
 	text(colGrisCl)
 	pdf.SetFont("Courier", "", 9.5)
 	linea := fmt.Sprintf(`const certificado = { alumno: "%s", curso: "%s" };`, d.Alumno, d.Curso)
-	pdf.Text(x0, 68, tr(recortarAncho(pdf, tr, linea, ancho)))
+	if d.esClase() {
+		linea = fmt.Sprintf(`const constancia = { alumno: "%s", clase: "%02d", curso: "%s" };`, d.Alumno, d.ClaseNum, d.Curso)
+	}
+	pdf.Text(x0, yCodigo, tr(recortarAncho(pdf, tr, linea, ancho)))
 	draw(colLinea)
-	pdf.Line(x0, 73, x0+ancho, 73)
+	pdf.Line(x0, ySep, x0+ancho, ySep)
 
 	// Alumno.
 	text(colGrisCl)
@@ -142,7 +168,11 @@ func renderCertPDF(d certPDFData) ([]byte, error) {
 	// Curso.
 	text(colGris)
 	pdf.SetFont("Helvetica", "", 12)
-	pdf.Text(x0, 119, tr("por haber completado el curso"))
+	completado := "por haber completado el curso"
+	if d.esClase() {
+		completado = fmt.Sprintf("por haber completado la clase %d del curso", d.ClaseNum)
+	}
+	pdf.Text(x0, 119, tr(completado))
 	text(colMorado)
 	ajustaFuente(pdf, "Helvetica", "B", 18, 11, tr(d.Curso), ancho)
 	pdf.Text(x0, 129, tr(d.Curso))
@@ -288,6 +318,15 @@ func recortarAncho(pdf *fpdf.Fpdf, tr func(string) string, s string, ancho float
 		}
 	}
 	return s
+}
+
+// minusculaInicial pone en minúscula la primera letra («Clase 1 · X» → «clase 1 · X»).
+func minusculaInicial(s string) string {
+	r := []rune(s)
+	if len(r) == 0 {
+		return s
+	}
+	return strings.ToLower(string(r[0])) + string(r[1:])
 }
 
 func sinEsquema(u string) string {

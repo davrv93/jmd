@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davrv93/jmd/lms/api/internal/content"
 	"github.com/davrv93/jmd/lms/api/internal/store"
 )
 
@@ -32,6 +33,7 @@ const (
 	defaultCertEmisor = "Consultoría Digital"
 	defaultCertRUC    = "10732672546"
 	defaultCertHoras  = 6
+	defaultClaseHoras = 2 // horas por defecto de una insignia de clase
 )
 
 // certSettings es la configuración vigente del emisor.
@@ -185,6 +187,11 @@ type certSnapshot struct {
 	Horas      int    `json:"horas"`
 	URL        string `json:"url"`
 	Salt       string `json:"salt"` // sal del hash de identidad de la insignia (Open Badges)
+
+	// Insignia de clase (lesson_id no vacío): número de orden en el curso y título de la clase.
+	LessonID string `json:"lesson_id,omitempty"`
+	ClaseNum int    `json:"clase_num,omitempty"`
+	Clase    string `json:"clase,omitempty"`
 }
 
 func parseSnapshot(c *store.Certificate) certSnapshot {
@@ -225,46 +232,152 @@ func normCode(raw string) string {
 
 var tiposCert = map[string]string{"participacion": "de participación", "aprobacion": "de aprobación"}
 
-// emitirCertificado: POST /api/v1/admin/certificados {user_id, course_id, tipo, horas, nota?}.
-// 409 si el alumno ya tiene uno vigente en ese curso (devuelve el código existente).
-func (s *Server) emitirCertificado(w http.ResponseWriter, r *http.Request, p *Principal) {
-	var in struct {
-		UserID   string `json:"user_id"`
-		CourseID string `json:"course_id"`
-		Tipo     string `json:"tipo"`
-		Horas    *int   `json:"horas"`
-		Nota     string `json:"nota"`
+// certIn son los parámetros de emisión comunes al alta individual y al lote.
+type certIn struct {
+	CourseID string `json:"course_id"`
+	LessonID string `json:"lesson_id"` // vacío = certificado del curso completo
+	Tipo     string `json:"tipo"`
+	Horas    *int   `json:"horas"`
+	Nota     string `json:"nota"`
+}
+
+// certAmbito es lo que se emite: el curso y, si es insignia de clase, la clase y su número.
+type certAmbito struct {
+	Curso *content.Course
+	Clase *content.Lesson // nil = curso completo
+	Num   int             // número de orden de la clase en el curso (1..n)
+}
+
+func (a certAmbito) lessonID() string {
+	if a.Clase == nil {
+		return ""
 	}
-	if !readJSON(w, r, &in) {
-		return
-	}
+	return a.Clase.ID
+}
+
+// validarCertIn normaliza tipo/horas/nota y resuelve curso y clase. Devuelve el mensaje de error
+// para 400 y el código 404 ("el curso"/"la clase") cuando no existen.
+func (s *Server) validarCertIn(in *certIn) (certAmbito, int, string) {
 	in.Tipo = strings.TrimSpace(in.Tipo)
 	if in.Tipo == "" {
 		in.Tipo = "participacion"
 	}
 	if _, ok := tiposCert[in.Tipo]; !ok {
-		badRequest(w, "tipo: participacion o aprobacion")
-		return
+		return certAmbito{}, 400, "tipo: participacion o aprobacion"
+	}
+	in.Nota = strings.TrimSpace(in.Nota)
+	if len([]rune(in.Nota)) > 200 {
+		return certAmbito{}, 400, "nota: 200 caracteres como mucho"
+	}
+	c := s.Content.Get().Course(strings.TrimSpace(in.CourseID))
+	if c == nil {
+		return certAmbito{}, 404, "el curso"
+	}
+	a := certAmbito{Curso: c}
+	in.LessonID = strings.TrimSpace(in.LessonID)
+	if in.LessonID != "" {
+		a.Clase, a.Num = lessonEnCurso(c, in.LessonID)
+		if a.Clase == nil {
+			return certAmbito{}, 404, "la clase"
+		}
 	}
 	horas := defaultCertHoras
+	if a.Clase != nil {
+		horas = defaultClaseHoras
+	}
 	if in.Horas != nil {
 		horas = *in.Horas
 	}
 	if horas < 1 || horas > 2000 {
-		badRequest(w, "horas: entre 1 y 2000")
+		return certAmbito{}, 400, "horas: entre 1 y 2000"
+	}
+	in.Horas = &horas
+	return a, 0, ""
+}
+
+// lessonEnCurso busca la clase dentro del curso y devuelve su número de orden (1..n).
+func lessonEnCurso(c *content.Course, lessonID string) (*content.Lesson, int) {
+	n := 0
+	for _, m := range c.Modules {
+		for _, l := range m.Lessons {
+			n++
+			if l.ID == lessonID {
+				return l, n
+			}
+		}
+	}
+	return nil, 0
+}
+
+var rePrefijoClase = regexp.MustCompile(`^(?i)(clase|sesi[oó]n)\s*[0-9]+\s*[·:.-]\s*`)
+
+// tituloClase arma «Clase N · <título>» sin duplicar el prefijo si el título ya lo trae.
+func tituloClase(num int, titulo string) string {
+	t := rePrefijoClase.ReplaceAllString(strings.TrimSpace(titulo), "")
+	return fmt.Sprintf("Clase %d · %s", num, t)
+}
+
+// errYaEmitido: el alumno ya tiene un certificado vigente en ese ámbito.
+type errYaEmitido struct{ Codigo string }
+
+func (e errYaEmitido) Error() string { return "ya emitido: " + e.Codigo }
+
+// emitir crea el certificado para un alumno en el ámbito dado. Comprueba la unicidad por
+// (alumno, curso, clase), congela el snapshot y reintenta el código si colisiona.
+func (s *Server) emitir(ctx context.Context, u *store.User, a certAmbito, in certIn, p *Principal) (*store.Certificate, error) {
+	if prev, err := s.DB.ActiveCertificate(ctx, u.ID, a.Curso.ID, a.lessonID()); err == nil {
+		return prev, errYaEmitido{prev.ID}
+	} else if !errors.Is(err, store.ErrNotFound) {
+		return nil, err
+	}
+	cfg, err := s.certConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var salt [16]byte
+	_, _ = rand.Read(salt[:])
+	sn := certSnapshot{Alumno: u.Name, Curso: a.Curso.Title, CursoSlug: a.Curso.Slug, Emisor: cfg.Emisor, RUC: cfg.RUC,
+		Instructor: cfg.Instructor, Cargo: cfg.Cargo, Horas: *in.Horas, URL: cfg.URL, Salt: hex.EncodeToString(salt[:])}
+	if a.Clase != nil {
+		sn.LessonID, sn.ClaseNum, sn.Clase = a.Clase.ID, a.Num, tituloClase(a.Num, a.Clase.Title)
+	}
+	snb, _ := json.Marshal(sn)
+	var cert *store.Certificate
+	for i := 0; i < 5; i++ {
+		cert = &store.Certificate{ID: newCertCode(time.Now().UTC().Year()), UserID: u.ID, CourseID: a.Curso.ID, LessonID: a.lessonID(),
+			Tipo: in.Tipo, Horas: *in.Horas, Nota: in.Nota, EmitidoPor: p.ID, Snapshot: string(snb)}
+		err = s.DB.CreateCertificate(ctx, cert)
+		if !errors.Is(err, store.ErrDuplicate) {
+			break
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return cert, nil
+}
+
+// emitirCertificado: POST /api/v1/admin/certificados {user_id, course_id, lesson_id?, tipo, horas, nota?}.
+// Con lesson_id emite una insignia de clase (horas por defecto 2). 409 si el alumno ya tiene uno
+// vigente en ese ámbito (devuelve el código existente).
+func (s *Server) emitirCertificado(w http.ResponseWriter, r *http.Request, p *Principal) {
+	var in struct {
+		UserID string `json:"user_id"`
+		certIn
+	}
+	if !readJSON(w, r, &in) {
 		return
 	}
-	in.Nota = strings.TrimSpace(in.Nota)
-	if len([]rune(in.Nota)) > 200 {
-		badRequest(w, "nota: 200 caracteres como mucho")
+	a, code, msg := s.validarCertIn(&in.certIn)
+	switch code {
+	case 400:
+		badRequest(w, msg)
+		return
+	case 404:
+		notFound(w, msg)
 		return
 	}
 	ctx := r.Context()
-	c := s.Content.Get().Course(in.CourseID)
-	if c == nil {
-		notFound(w, "el curso")
-		return
-	}
 	u, err := s.DB.UserByID(ctx, in.UserID)
 	if errors.Is(err, store.ErrNotFound) {
 		notFound(w, "el alumno")
@@ -274,40 +387,116 @@ func (s *Server) emitirCertificado(w http.ResponseWriter, r *http.Request, p *Pr
 		internal(w, err)
 		return
 	}
-	if prev, err := s.DB.ActiveCertificate(ctx, u.ID, c.ID); err == nil {
+	cert, err := s.emitir(ctx, u, a, in.certIn, p)
+	var ya errYaEmitido
+	if errors.As(err, &ya) {
 		var e apiError
-		e.Error.Code, e.Error.Message = "ya_emitido", "el alumno ya tiene el certificado "+prev.ID+" en este curso"
-		writeJSON(w, 409, map[string]any{"error": e.Error, "codigo": prev.ID})
-		return
-	} else if !errors.Is(err, store.ErrNotFound) {
-		internal(w, err)
+		e.Error.Code, e.Error.Message = "ya_emitido", "el alumno ya tiene el certificado "+ya.Codigo+" en este "+ambitoTexto(a)
+		writeJSON(w, 409, map[string]any{"error": e.Error, "codigo": ya.Codigo})
 		return
 	}
-	cfg, err := s.certConfig(ctx)
 	if err != nil {
 		internal(w, err)
 		return
 	}
-	var salt [16]byte
-	_, _ = rand.Read(salt[:])
-	sn := certSnapshot{Alumno: u.Name, Curso: c.Title, CursoSlug: c.Slug, Emisor: cfg.Emisor, RUC: cfg.RUC,
-		Instructor: cfg.Instructor, Cargo: cfg.Cargo, Horas: horas, URL: cfg.URL, Salt: hex.EncodeToString(salt[:])}
-	snb, _ := json.Marshal(sn)
-	var cert *store.Certificate
-	for i := 0; i < 5; i++ {
-		cert = &store.Certificate{ID: newCertCode(time.Now().UTC().Year()), UserID: u.ID, CourseID: c.ID, Tipo: in.Tipo,
-			Horas: horas, Nota: in.Nota, EmitidoPor: p.ID, Snapshot: string(snb)}
-		err = s.DB.CreateCertificate(ctx, cert)
-		if !errors.Is(err, store.ErrDuplicate) {
-			break
+	slog.Info("certificado emitido", "codigo", cert.ID, "alumno", u.Email, "curso", a.Curso.ID, "clase", a.lessonID(), "tipo", in.Tipo, "por", p.Email)
+	writeJSON(w, 201, s.certView(cert, true))
+}
+
+func ambitoTexto(a certAmbito) string {
+	if a.Clase != nil {
+		return "clase"
+	}
+	return "curso"
+}
+
+// emitirLote: POST /api/v1/admin/certificados/lote {course_id, lesson_id?, tipo, horas?, nota?,
+// solo_con_progreso}. Emite a todos los alumnos (rol student) de las cohortes del curso que aún
+// no tengan uno vigente en ese ámbito. Con solo_con_progreso, solo a quienes tengan al menos un
+// paso del ciclo marcado en la clase (o en alguna clase del curso, si es el certificado del curso).
+func (s *Server) emitirLote(w http.ResponseWriter, r *http.Request, p *Principal) {
+	var in struct {
+		certIn
+		SoloConProgreso bool `json:"solo_con_progreso"`
+	}
+	if !readJSON(w, r, &in) {
+		return
+	}
+	a, code, msg := s.validarCertIn(&in.certIn)
+	switch code {
+	case 400:
+		badRequest(w, msg)
+		return
+	case 404:
+		notFound(w, msg)
+		return
+	}
+	ctx := r.Context()
+	users, err := s.DB.Users(ctx)
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	var progreso map[string]map[string]int
+	if in.SoloConProgreso {
+		var ids []string
+		if a.Clase != nil {
+			ids = []string{a.Clase.ID}
+		} else {
+			for _, m := range a.Curso.Modules {
+				for _, l := range m.Lessons {
+					ids = append(ids, l.ID)
+				}
+			}
+		}
+		if progreso, err = s.DB.ProgressByUser(ctx, ids); err != nil {
+			internal(w, err)
+			return
 		}
 	}
-	if err != nil {
-		internal(w, err)
-		return
+	type emitido struct {
+		Codigo string `json:"codigo"`
+		Alumno string `json:"alumno"`
+		UserID string `json:"user_id"`
+		Email  string `json:"email"`
 	}
-	slog.Info("certificado emitido", "codigo", cert.ID, "alumno", u.Email, "curso", c.ID, "tipo", in.Tipo, "por", p.Email)
-	writeJSON(w, 201, s.certView(cert, true))
+	type omitido struct {
+		Alumno string `json:"alumno"`
+		UserID string `json:"user_id"`
+		Email  string `json:"email"`
+		Motivo string `json:"motivo"`
+		Codigo string `json:"codigo,omitempty"`
+	}
+	emitidos, omitidos := []emitido{}, []omitido{}
+	for _, u := range users {
+		if !u.HasRole("student") || !s.canSeeCourse(&Principal{Roles: u.Roles, Cohorts: u.Cohorts}, a.Curso) {
+			continue
+		}
+		if in.SoloConProgreso {
+			n := 0
+			for _, k := range progreso[u.ID] {
+				n += k
+			}
+			if n == 0 {
+				omitidos = append(omitidos, omitido{Alumno: u.Name, UserID: u.ID, Email: u.Email, Motivo: "sin progreso en la " + ambitoTexto(a)})
+				continue
+			}
+		}
+		cert, err := s.emitir(ctx, u, a, in.certIn, p)
+		var ya errYaEmitido
+		if errors.As(err, &ya) {
+			omitidos = append(omitidos, omitido{Alumno: u.Name, UserID: u.ID, Email: u.Email, Motivo: "ya tiene uno vigente", Codigo: ya.Codigo})
+			continue
+		}
+		if err != nil {
+			internal(w, err)
+			return
+		}
+		emitidos = append(emitidos, emitido{Codigo: cert.ID, Alumno: u.Name, UserID: u.ID, Email: u.Email})
+	}
+	slog.Info("certificados emitidos en lote", "por", p.Email, "curso", a.Curso.ID, "clase", a.lessonID(), "tipo", in.Tipo,
+		"horas", *in.Horas, "solo_con_progreso", in.SoloConProgreso, "emitidos", len(emitidos), "omitidos", len(omitidos))
+	writeJSON(w, 200, map[string]any{"course_id": a.Curso.ID, "lesson_id": a.lessonID(), "emitidos": emitidos, "omitidos": omitidos})
 }
 
 // certView arma la ficha de un certificado. priv añade user_id, email, nota y emitido_por (solo
@@ -324,13 +513,20 @@ func (s *Server) certView(c *store.Certificate, priv bool) map[string]any {
 		estado = "anulado"
 		anulado = c.AnuladoEn.UTC().Format(time.RFC3339)
 	}
+	insignia := base + "/api/v1/insignias/" + c.CourseID
+	ambito := "curso"
+	if c.LessonID != "" {
+		insignia += "/" + c.LessonID
+		ambito = "clase"
+	}
 	out := map[string]any{
 		"codigo": c.ID, "estado": estado, "alumno": sn.Alumno, "curso": sn.Curso, "course_id": c.CourseID,
+		"ambito": ambito, "lesson_id": c.LessonID, "clase": sn.Clase, "clase_num": sn.ClaseNum,
 		"tipo": c.Tipo, "tipo_texto": tiposCert[c.Tipo], "horas": sn.Horas, "emisor": sn.Emisor, "ruc": sn.RUC,
 		"instructor": sn.Instructor, "cargo": sn.Cargo, "emitido_en": c.EmitidoEn.UTC().Format(time.RFC3339), "anulado_en": anulado,
 		"url_verificar": base + "/verificar/" + c.ID + "/", "url_pdf": base + "/api/v1/certificados/" + c.ID + "/pdf",
 		"url_badge": base + "/api/v1/certificados/" + c.ID + "/badge.json", "url_badge_jwt": base + "/api/v1/certificados/" + c.ID + "/badge.jwt",
-		"url_insignia": base + "/api/v1/insignias/" + c.CourseID + ".svg",
+		"url_insignia": insignia + ".svg", "url_insignia_png": insignia + ".png",
 	}
 	if priv {
 		out["user_id"], out["nota"], out["emitido_por"] = c.UserID, c.Nota, c.EmitidoPor
@@ -447,6 +643,7 @@ func (s *Server) certificadoPDF(w http.ResponseWriter, r *http.Request) {
 	pdf, err := renderCertPDF(certPDFData{
 		Codigo: c.ID, Alumno: sn.Alumno, Curso: sn.Curso, Tipo: c.Tipo, Horas: sn.Horas, Emisor: sn.Emisor, RUC: sn.RUC,
 		Instructor: sn.Instructor, Cargo: sn.Cargo, EmitidoEn: c.EmitidoEn, Anulado: c.Anulado(), Base: base,
+		Clase: sn.Clase, ClaseNum: sn.ClaseNum,
 	})
 	if err != nil {
 		internal(w, err)

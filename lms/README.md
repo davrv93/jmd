@@ -74,6 +74,59 @@ cd lms/web && npm run build                    # typecheck + lint + build estát
 cd lms/web && PLAYWRIGHT_CHROMIUM=/ruta/a/chrome node ../scripts/e2e.mjs http://localhost:8080
 ```
 
+## Insignias por clase y publicación en Credly/Badgr
+
+Además del certificado del curso, cada clase tiene su **insignia de clase** (microcredencial):
+un certificado con `lesson_id`, tipo participación o aprobación, 2 horas por defecto y título
+«Clase N · …». Se emite una por alumno desde el avance del curso o **en lote** a toda la cohorte
+(`POST /api/v1/admin/certificados/lote`, con la opción «solo a quienes marcaron progreso»). El
+PDF de una insignia de clase dice CONSTANCIA; el código (`CD-AAAA-XXXXXX`), la verificación
+pública y la credencial Open Badges 3.0 son los mismos que en el certificado del curso.
+
+Lo que exporta el LMS por clase (público, sin sesión):
+
+- `GET /api/v1/insignias/<curso>/<clase>.png` · imagen 600x600 (hexágono con el número de la
+  clase). Es la que piden Credly y Badgr al crear la plantilla. También `.svg` y, para el curso,
+  `/api/v1/insignias/<curso>.png`.
+- `GET /api/v1/insignias/<curso>/<clase>.json` · el logro (Achievement OB3) con los criterios
+  («asistir y completar el ciclo de la clase») y `alignment` con los objetivos de la clase.
+- Por alumno: `badge.json` (OpenBadgeCredential), `badge.jwt` (firmada, verificable con
+  `/.well-known/jwks.json`) y la ficha `/verificar/<codigo>/`.
+
+Y para el personal, el CSV de carga masiva (`?course=<curso>&lesson=<clase>`; sin `lesson`
+exporta los certificados del curso; `lesson=*`, todo):
+
+- `GET /api/v1/admin/certificados/export.csv` · genérico, UTF-8 con BOM (Excel):
+  `codigo, nombre, apellido, email, insignia, emitido_en (YYYY-MM-DD), url_verificacion,
+  url_evidencia, url_insignia_png`.
+- `GET /api/v1/admin/certificados/export-badgr.csv` · columnas de la carga masiva de **Canvas
+  Credentials / Badgr** tal como las lista su ayuda (`Identifier, First Name, Last Name,
+  Narrative, Evidence Narrative, Evidence URL, Issue Date, Expiration Date`; el plan gratuito
+  admite 50 filas por archivo). Fuente verificada el 11-10-2026:
+  https://community.instructure.com/t5/Canvas-Badges/Awarding-badges-to-a-group-of-recipients-in-bulk/ta-p/528741
+  (a ella redirige support.badgr.com). El formato de `Issue Date` no aparece en el texto de la
+  página; se envía `YYYY-MM-DD` y, si la plataforma lo rechaza, basta cambiar la columna.
+- **No hay `export-credly.csv`**: la plantilla oficial de Credly
+  (support.credly.com, artículo 360021221471) responde 403 sin sesión y no se verificó, así que
+  no se inventan cabeceras. Credly solo acepta su propia plantilla descargada desde la cuenta;
+  copia ahí las columnas del CSV genérico (nombre, apellido, correo, fecha).
+
+Pasos manuales en la plataforma (una sola vez por clase):
+
+1. Crear la **organización emisora**. Credly exige cuenta de organización (de pago en general);
+   Badgr / Canvas Credentials tiene emisor gratuito.
+2. Crear una **plantilla de insignia por clase**: subir el PNG de la clase, pegar el nombre
+   («Clase 1 · Instalar las herramientas…»), la descripción (la del `.json`) y la URL de
+   criterios `<base>/courses/programacion-agentica/`.
+3. **Importar el CSV** de esa clase (en Credly, la plantilla descargada de la cuenta con los
+   datos del genérico; en Badgr, `export-badgr.csv` y emparejar columnas en la pantalla de
+   importación).
+
+No hace falta ninguna plataforma para que las credenciales valgan: ya son Open Badges 3.0
+verificables por sí mismas (JSON + JWT firmado + lista de revocación). Un alumno puede importar
+el `badge.json` a una mochila como Badgr Backpack o añadir la insignia a LinkedIn con el botón de
+«Mis insignias», que enlaza a la ficha pública de verificación.
+
 ## Documentación
 
 - [`docs/CONTRATO.md`](../docs/CONTRATO.md): contrato con `jmd` (copia literal).
