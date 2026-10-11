@@ -5,6 +5,7 @@ summary: El LMS ejecuta Python, Node, Bash y Go en un contenedor aislado; cómo 
 tags: [lms, runner]
 level: básico
 lesson: pa-01
+phase: experiencia
 order: 7
 ---
 Algunos bloques de este LMS se pueden **editar y ejecutar** sin instalar nada: corren en un

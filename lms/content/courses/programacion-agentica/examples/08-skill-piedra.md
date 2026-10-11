@@ -5,6 +5,7 @@ summary: Activar y apagar el modo piedra, ver tres respuestas antes y después, 
 tags: [skills, piedra, tokens, opencode, claude-code]
 level: básico
 lesson: pa-02
+phase: conceptualizacion
 order: 8
 ---
 **Piedra** es una de las 14 skills del taller. Cambia **cómo responde** el agente, no cómo

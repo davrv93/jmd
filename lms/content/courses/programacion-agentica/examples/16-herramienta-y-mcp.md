@@ -5,6 +5,7 @@ summary: Una función consultar_stock(codigo) que el agente puede llamar, y la m
 tags: [mcp, herramientas, conceptos]
 level: básico
 lesson: pa-03
+phase: conceptualizacion
 order: 16
 ---
 Este ejemplo **no se instala**. Es para leerlo y entender dos palabras que se repiten todo el

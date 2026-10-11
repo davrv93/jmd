@@ -182,7 +182,22 @@ Orden de la sesión (2 horas):
 
 ---
 
-## 1. Qué es Edge AI y por qué nos importa
+## El ciclo de esta clase
+
+Esta sesión se recorre con el **ciclo de aprendizaje**. Las secciones no van en el orden de las
+fases —la clase alterna construir y entender—, así que el título de cada una lleva su fase al
+final:
+
+| Fase | En esta clase |
+|---|---|
+| **1 · Experiencia** | Secciones 2, 3, 6 y 7: preparas la máquina, instalas los skills, levantas la obra y construyes el asistente. |
+| **2 · Reflexión** | Secciones 8 y 9: pruebas voz e imagen, y mides. |
+| **3 · Conceptos** | Secciones 1, 4 y 5: qué es Edge AI, el modo piedra y el plan de trabajo. |
+| **4 · Aplicación** | «Tareas»: entregas el repositorio `clase-02`. |
+
+---
+
+## 1. Qué es Edge AI y por qué nos importa · Conceptos
 
 **Edge AI** es correr los modelos de inteligencia artificial **en el propio equipo**, no en un
 servidor ajeno. El texto que escribes, el audio que grabas y la imagen que generas no salen de
@@ -218,7 +233,7 @@ en la sección 8.
 
 ---
 
-## 2. Preparar tu laptop
+## 2. Preparar tu laptop · Experiencia
 
 ### Descomprimir y crear el entorno
 
@@ -307,7 +322,7 @@ El ejemplo **«Qué nivel de imagen le toca a tu laptop»** tiene la tabla de de
 
 ---
 
-## 3. Los 14 skills del taller
+## 3. Los 14 skills del taller · Experiencia
 
 En la clase 1 escribiste una skill de dos líneas. Hoy instalas catorce que escribió el
 instructor para este taller. Cada una es una carpeta con su `SKILL.md`, con una **versión
@@ -381,7 +396,7 @@ es lo que vale una skill.
 
 ---
 
-## 4. Modo piedra
+## 4. Modo piedra · Conceptos
 
 **Piedra** es una skill que cambia **cómo responde** el agente, no cómo piensa ni cómo escribe
 código. Quita saludos, conectores, repeticiones y artículos; deja cifras, rutas, comandos y
@@ -416,7 +431,7 @@ Detalle en el ejemplo **«Modo piedra: respuestas cortas que ahorran tokens»**.
 
 ---
 
-## 5. Plan de trabajo con tareas verificables
+## 5. Plan de trabajo con tareas verificables · Conceptos
 
 Un pedido vago («hazme un asistente para la tienda») no se le da a un agente tal cual. Se
 convierte en un **plan de trabajo**: una tabla de tareas cortas donde cada una tiene un
@@ -477,7 +492,7 @@ hace en silencio.
 
 ---
 
-## 6. Obra en vivo
+## 6. Obra en vivo · Experiencia
 
 Mientras el agente trabaja, tú no deberías tener que leer su terminal para saber cómo va. La
 **obra** es una pantalla que muestra el proyecto «en construcción»: nombre, fase, barra de
@@ -554,7 +569,7 @@ Detalle en el ejemplo **«Plan de trabajo y obra en vivo»**.
 
 ---
 
-## 7. Construir: el asistente Tecnosito
+## 7. Construir: el asistente Tecnosito · Experiencia
 
 ### Qué hace
 
@@ -668,7 +683,7 @@ Detalle en el ejemplo **«Tu corpus en faq.json»**.
 
 ---
 
-## 8. Voz y flyers
+## 8. Voz y flyers · Reflexión
 
 ### Micrófono a texto
 
@@ -730,7 +745,7 @@ Detalle en el ejemplo **«Un flyer con texto real: LLM + difusión + Pillow»**.
 
 ---
 
-## 9. Probar y medir
+## 9. Probar y medir · Reflexión
 
 Un asistente que «a ti te funciona» no está probado. Hoy pruebas el de **otro equipo**, cinco
 minutos, con un guion fijo, y ellos prueban el tuyo.
@@ -776,7 +791,7 @@ memoria: con modelos en la GPU dio 157 MB donde había 4,97 GB.
 
 ---
 
-## 10. Si algo falla
+## 10. Si algo falla · Apoyo
 
 - **Ollama no responde:** el asistente cae al respaldo por embeddings y el chip de salud se pone
   gris. Puedes seguir. Comprueba con `ollama list` y `curl -s http://localhost:11434/api/tags`.
@@ -803,7 +818,7 @@ completo y la salida de `python osito/backend/diagnostico.py`.
 
 ---
 
-## Tareas
+## Tareas · Aplicación
 
 **Tarea 2 · Amplía el corpus de tu asistente y pruébalo por voz** (fecha límite: ver «Tareas»
 del curso, 20 puntos). El enunciado completo y la rúbrica están en la tarea. Resumen:

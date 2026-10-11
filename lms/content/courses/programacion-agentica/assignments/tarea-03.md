@@ -24,6 +24,11 @@ rubric:
       - {title: Concreta, con ejemplos de lo que aceptaste y lo que no, points: 4}
 ---
 
+## Fase del ciclo · Aplicación
+
+Esta tarea cierra el ciclo de la clase 3: es la **aplicación** (desplegar y probar en real). La
+`REFLEXION.md` es la vuelta de **reflexión** que entregas por escrito; las dos cuentan en la nota.
+
 ## Qué entregar
 
 Un repositorio git (GitHub, GitLab o Forgejo, público o con acceso para el instructor) llamado

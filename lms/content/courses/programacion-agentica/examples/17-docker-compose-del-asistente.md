@@ -5,6 +5,7 @@ summary: Un compose.yaml con el backend, Evolution API, Postgres y Redis; el .en
 tags: [docker, compose, despliegue, evolution-api]
 level: intermedio
 lesson: pa-03
+phase: experimentacion
 order: 17
 ---
 Desplegar es sincronizar, hornear, levantar y comprobar. Aquí el asistente y Evolution API

@@ -24,6 +24,12 @@ rubric:
       - {title: Concreta, con ejemplos de lo que pasó, points: 4}
 ---
 
+## Fase del ciclo · Aplicación
+
+Esta tarea cierra el ciclo de la clase 2: es la **aplicación** de lo que construiste y probaste.
+Las pruebas por voz son la **reflexión** —miras qué entendió el asistente y qué no—; las dos
+cuentan en la nota.
+
 ## Qué entregar
 
 Un repositorio git (GitHub, GitLab o Forgejo, público o con acceso para el instructor) llamado

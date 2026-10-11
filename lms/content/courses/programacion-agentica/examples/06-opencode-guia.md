@@ -5,6 +5,7 @@ summary: Instalar, conectar al gateway, elegir modelo, reglas, skills, MCP y los
 tags: [opencode, guía]
 level: básico
 lesson: pa-01
+phase: conceptualizacion
 order: 6
 ---
 **OpenCode** es el agente de programación de terminal que usamos todo el curso. Esta guía reúne

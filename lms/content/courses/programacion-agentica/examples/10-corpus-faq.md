@@ -5,6 +5,7 @@ summary: El formato exacto del corpus del asistente, cómo probarlo con curl y q
 tags: [faq, embeddings, edge-ai, curl]
 level: básico
 lesson: pa-02
+phase: experiencia
 order: 10
 ---
 `osito/backend/faq.json` es la memoria de tu dominio y el respaldo del asistente cuando Ollama no

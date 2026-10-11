@@ -5,6 +5,7 @@ summary: Correr diagnostico.py, leer su salida, decidir el nivel con la tabla y 
 tags: [edge-ai, imagenes-locales, relevar-maquinas, gpu]
 level: básico
 lesson: pa-02
+phase: experiencia
 order: 12
 ---
 No existe «una máquina cualquiera»: existen la tuya y la de tus compañeros, y cada una aguanta un

@@ -3,7 +3,7 @@ import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from
 import { api, errMsg, fmtDate, LEVEL, rel, requireLogin, STATUS, type Course, type ExampleSummary } from "~/lib/api";
 import { SessionContext, isStaff } from "~/lib/session";
 import { getParam, pathId, setParams, setTitle } from "~/lib/url";
-import { PHASES } from "~/lib/kolb";
+import { PHASE_BY_ID, PHASES } from "~/lib/kolb";
 import { Icon } from "~/components/icon";
 import { Crumbs, Empty, ErrorState, lessonState, Loading, Ring, Status, Tabs } from "~/components/ui";
 
@@ -176,6 +176,11 @@ export default component$(() => {
                 </div>
                 <p class="sm muted" style="margin:0 0 .5rem">{e.summary}</p>
                 <div class="row">
+                  {e.phase && PHASE_BY_ID[e.phase] && (
+                    <span class="badge ph" data-ph={PHASE_BY_ID[e.phase].token}>
+                      <Icon name={PHASE_BY_ID[e.phase].icon} size={11} /> {PHASE_BY_ID[e.phase].short}
+                    </span>
+                  )}
                   <span class={`badge ${LEVEL[e.level] ?? ""}`}>{e.level}</span>
                   {e.tags.map((tg) => (
                     <span key={tg} class="badge"><Icon name="tag" size={11} /> {tg}</span>

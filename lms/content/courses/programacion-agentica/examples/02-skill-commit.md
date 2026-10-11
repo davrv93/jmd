@@ -5,6 +5,7 @@ summary: El agente escribe el mensaje de commit con Conventional Commits y un ho
 tags: [skills, git]
 level: intermedio
 lesson: pa-01
+phase: conceptualizacion
 order: 2
 ---
 La skill le dice al agente **cómo** escribir el mensaje; un hook `commit-msg` comprueba que lo

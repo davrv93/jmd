@@ -5,6 +5,7 @@ summary: Levantar Evolution API con Docker, crear la instancia, escanear el QR y
 tags: [whatsapp, evolution-api, docker, webhook]
 level: básico
 lesson: pa-03
+phase: experiencia
 order: 14
 ---
 Evolution API corre en Docker en tu laptop y se conecta a WhatsApp como un «dispositivo

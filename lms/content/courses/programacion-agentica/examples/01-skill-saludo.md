@@ -5,6 +5,7 @@ summary: Una skill mínima, de la carpeta vacía a verla funcionar en OpenCode.
 tags: [skills, opencode]
 level: básico
 lesson: pa-01
+phase: conceptualizacion
 order: 1
 ---
 Una skill es una carpeta con un `SKILL.md`. El agente lee siempre el `name` y la `description`;

@@ -111,15 +111,18 @@ type Assignment struct {
 
 // Example es un ejemplo práctico del curso: front matter + cuerpo en Markdown (ya en HTML).
 type Example struct {
-	ID        string   `yaml:"id" json:"id"`
-	Title     string   `yaml:"title" json:"title"`
-	Summary   string   `yaml:"summary" json:"summary"`
-	Tags      []string `yaml:"tags" json:"tags"`
-	Level     string   `yaml:"level" json:"level"`      // básico · intermedio · avanzado
-	LessonID  string   `yaml:"lesson" json:"lesson_id"` // opcional
-	Repo      *Repo    `yaml:"repo" json:"repo"`
-	Published bool     `yaml:"published" json:"published"` // true si falta la clave
-	Order     int      `yaml:"order" json:"order"`         // 0 = sin orden (van al final, por título)
+	ID       string   `yaml:"id" json:"id"`
+	Title    string   `yaml:"title" json:"title"`
+	Summary  string   `yaml:"summary" json:"summary"`
+	Tags     []string `yaml:"tags" json:"tags"`
+	Level    string   `yaml:"level" json:"level"`      // básico · intermedio · avanzado
+	LessonID string   `yaml:"lesson" json:"lesson_id"` // opcional
+	// Phase sitúa el ejemplo en una fase del ciclo de Kolb (experiencia · reflexion ·
+	// conceptualizacion · experimentacion). Opcional.
+	Phase     string `yaml:"phase" json:"phase,omitempty"`
+	Repo      *Repo  `yaml:"repo" json:"repo"`
+	Published bool   `yaml:"published" json:"published"` // true si falta la clave
+	Order     int    `yaml:"order" json:"order"`         // 0 = sin orden (van al final, por título)
 
 	CourseID string `yaml:"-" json:"course_id"`
 	BodyMD   string `yaml:"-" json:"-"`

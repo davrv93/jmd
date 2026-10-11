@@ -183,7 +183,24 @@ Orden de la sesión:
 
 ---
 
-## 1. VS Code
+## El ciclo de esta clase
+
+Esta sesión se recorre con el **ciclo de aprendizaje**. Cada bloque del texto pertenece a una
+fase, y el título lo dice al final:
+
+| Fase | En esta clase |
+|---|---|
+| **1 · Experiencia** | Secciones 1–3: instalas VS Code, Docker y OpenCode, y conectas el agente al gateway. |
+| **2 · Reflexión** | «Practica y reflexiona»: miras trabajar al agente y publicas tu pregunta. |
+| **3 · Conceptos** | Secciones 4–7: agente, proveedor, modelo, parámetros, contexto, MCP y skills. |
+| **4 · Aplicación** | «Tareas»: dejas la evidencia en tu repositorio y la entregas. |
+
+La primera vuelta (experiencia) no exige entenderlo todo; la segunda (conceptos) le pone nombre a
+lo que ya hiciste; la última (aplicación) es la tarea.
+
+---
+
+## 1. VS Code · Experiencia
 
 ### Qué es VS Code
 
@@ -217,7 +234,7 @@ Extensiones recomendadas para el curso: **WSL** (solo Windows), **Docker** y **G
 
 ---
 
-## 2. Docker
+## 2. Docker · Experiencia
 
 ### Qué es Docker
 
@@ -273,7 +290,7 @@ docker compose up -d --build    # o: podman compose up -d --build
 
 ---
 
-## 3. OpenCode: instalar y conectar al gateway
+## 3. OpenCode: instalar y conectar al gateway · Experiencia
 
 ### Qué es OpenCode
 
@@ -356,7 +373,25 @@ en `AGENTS.md` (lo vemos en la Clase 2).
 
 ---
 
-## 4. Conceptos: agente, proveedor, modelo, parámetros
+## Practica y reflexiona · Reflexión
+
+Antes de seguir, **mira trabajar al agente**. En una carpeta vacía, pídele a OpenCode:
+
+> «Crea un script que imprima la fecha y la hora en español.»
+
+No aceptes nada sin leer antes qué hace:
+
+1. **Qué archivos crea** y si los enseña antes de escribirlos.
+2. **Qué comandos ejecuta** y si te los pide o los lanza solo.
+3. **Si comprueba** el resultado (corre el script) o se queda a medias.
+
+Anota en dos líneas qué te sorprendió y qué no. Después publica tu primera pregunta en la pestaña
+**Preguntas** de esta sesión —vale cualquier duda, con el error completo— o responde la de un
+compañero. Eso también cuenta en el ciclo.
+
+---
+
+## 4. Conceptos: agente, proveedor, modelo, parámetros · Conceptos
 
 ### Qué es un agente de IA
 
@@ -444,7 +479,7 @@ proveedores se pueden probar en el **Ejemplo 4** de esta sesión, que llama al g
 
 ---
 
-## 5. Ahorrar contexto: reglas y estilos
+## 5. Ahorrar contexto: reglas y estilos · Conceptos
 
 Un agente gasta tokens en dos direcciones: lo que **le entra** (tu prompt, los archivos que lee,
 la salida de cada comando) y lo que **sale** (sus respuestas). Con cuotas gratuitas, eso es lo
@@ -490,7 +525,7 @@ El gateway ofrece lo mismo para cualquier cliente con un estilo configurable; si
 
 ---
 
-## 6. Qué es MCP
+## 6. Qué es MCP · Conceptos
 
 **MCP** (*Model Context Protocol*) es un **protocolo abierto** para conectar un agente con
 **herramientas y datos externos** de forma estándar. Antes, cada agente integraba cada servicio a
@@ -530,7 +565,7 @@ materiales de una sesión, entregar una tarea y publicar una pregunta sin salir 
 
 ---
 
-## 7. Qué es una skill
+## 7. Qué es una skill · Conceptos
 
 Una **skill** es una **carpeta con un `SKILL.md`** que enseña al agente a hacer algo concreto:
 cómo trabaja tu equipo, cómo se despliega este proyecto, cómo se escribe un informe en tu
@@ -635,7 +670,7 @@ OpenCode + el skill **landing-editorial** y pégalo en la pestaña «HTML» del 
 
 ---
 
-## Tareas
+## Tareas · Aplicación
 
 **Tarea 1 · Tu entorno listo y tu primera skill** (fecha límite: ver «Tareas» del curso).
 El enunciado completo y la rúbrica están en la tarea. Resumen:

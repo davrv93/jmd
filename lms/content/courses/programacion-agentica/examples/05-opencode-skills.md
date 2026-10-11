@@ -5,6 +5,7 @@ summary: Dónde viven, cómo se cargan, cómo se escriben bien y cómo usarlas p
 tags: [skills, opencode]
 level: intermedio
 lesson: pa-01
+phase: conceptualizacion
 order: 5
 ---
 Una skill es **contexto bajo demanda**: el agente ve el nombre y la descripción de todas tus

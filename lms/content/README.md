@@ -99,6 +99,7 @@ summary: Una línea para la lista
 tags: [skills, claude-code]
 level: básico                    # básico · intermedio · avanzado (por defecto básico)
 lesson: pa-01                    # opcional; la sesión debe existir en el curso
+phase: conceptualizacion         # opcional; fase del ciclo de Kolb a la que pertenece el ejemplo
 repo: {url: https://github.com/…, ref: main}   # opcional
 published: true                  # si falta, publicado; false = solo lo ve el instructor
 order: 1                         # opcional; primero por order, luego por título (sin order, al final)

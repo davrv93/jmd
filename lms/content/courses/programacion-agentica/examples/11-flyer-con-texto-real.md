@@ -5,6 +5,7 @@ summary: Por qué un modelo de difusión no escribe, cómo se reparte el trabajo
 tags: [imagenes-locales, difusion, flyer, edge-ai, curl]
 level: intermedio
 lesson: pa-02
+phase: experiencia
 order: 11
 ---
 Pide a sd-turbo «un cartel que diga Liquidación 20 %» y te devuelve un cartel con garabatos que

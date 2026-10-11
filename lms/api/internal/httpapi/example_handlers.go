@@ -31,7 +31,7 @@ func (s *Server) visibleExamples(p *Principal, courseID string) []*content.Examp
 	return out
 }
 
-// exampleView: {id, title, summary, tags, level, lesson_id, lesson_title, repo, published}.
+// exampleView: {id, title, summary, tags, level, phase, lesson_id, lesson_title, repo, published}.
 func (s *Server) exampleView(e *content.Example) map[string]any {
 	var lessonTitle string
 	if l := s.Content.Get().Lesson(e.LessonID); l != nil {
@@ -39,7 +39,7 @@ func (s *Server) exampleView(e *content.Example) map[string]any {
 	}
 	return map[string]any{
 		"id": e.ID, "title": e.Title, "summary": e.Summary, "tags": e.Tags, "level": e.Level,
-		"lesson_id": e.LessonID, "lesson_title": lessonTitle, "repo": e.Repo, "published": e.Published,
+		"phase": e.Phase, "lesson_id": e.LessonID, "lesson_title": lessonTitle, "repo": e.Repo, "published": e.Published,
 	}
 }
 

@@ -5,6 +5,7 @@ summary: El JSON que manda Evolution, una ruta FastAPI mínima que lo filtra, ll
 tags: [whatsapp, fastapi, webhook, evolution-api]
 level: intermedio
 lesson: pa-03
+phase: experiencia
 order: 15
 ---
 La ruta `/api/whatsapp/webhook` es el puente: recibe lo que Evolution API le manda, decide si hay

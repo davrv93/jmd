@@ -5,6 +5,7 @@ summary: Dos llamadas al mismo modelo, con temperature 0.1 y 1.0, y un max_token
 tags: [modelos, parámetros]
 level: básico
 lesson: pa-01
+phase: conceptualizacion
 order: 4
 ---
 Los parámetros de generación van **en cada petición**. Lo más rápido para verlos es llamar al

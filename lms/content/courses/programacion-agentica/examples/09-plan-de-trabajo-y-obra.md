@@ -5,6 +5,7 @@ summary: Un PLAN_TRABAJO.md de seis tareas con criterio sí o no, y la pantalla 
 tags: [plan-de-trabajo, obra-en-vivo, skills, opencode]
 level: básico
 lesson: pa-02
+phase: conceptualizacion
 order: 9
 ---
 Dos skills trabajan juntas: `plan-de-trabajo` convierte el pedido en tareas que se pueden

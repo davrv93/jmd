@@ -3,6 +3,7 @@ import { Link, type DocumentHead } from "@builder.io/qwik-city";
 import { api, errMsg, LEVEL, requireLogin, type ExampleSummary } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
 import { getParam, setParams, setTitle } from "~/lib/url";
+import { PHASE_BY_ID } from "~/lib/kolb";
 import { Icon } from "~/components/icon";
 import { Chip, Empty, ErrorState, Loading } from "~/components/ui";
 
@@ -101,6 +102,11 @@ export default component$(() => {
                     </div>
                     <p class="sm muted" style="margin:0;flex:1">{e.summary}</p>
                     <div class="row">
+                      {e.phase && PHASE_BY_ID[e.phase] && (
+                        <span class="badge ph" data-ph={PHASE_BY_ID[e.phase].token}>
+                          <Icon name={PHASE_BY_ID[e.phase].icon} size={11} /> {PHASE_BY_ID[e.phase].short}
+                        </span>
+                      )}
                       <span class={`badge ${LEVEL[e.level] ?? ""}`}>{e.level}</span>
                       {e.tags.map((t) => (
                         <span key={t} class="badge">{t}</span>

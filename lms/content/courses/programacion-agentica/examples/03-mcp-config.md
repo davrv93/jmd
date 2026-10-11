@@ -5,6 +5,7 @@ summary: Un servidor MCP local (stdio) y uno remoto (HTTP) en opencode.json, y c
 tags: [mcp, opencode]
 level: intermedio
 lesson: pa-01
+phase: conceptualizacion
 order: 3
 ---
 Un servidor MCP se escribe una vez y lo usa cualquier cliente. Aquí registras dos en OpenCode:

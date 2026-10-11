@@ -168,7 +168,21 @@ Siete bloques, dos horas:
 
 ---
 
-## 1. La arquitectura en una frase
+## El ciclo de esta clase
+
+Esta sesión se recorre con el **ciclo de aprendizaje**. Las secciones no van en el orden de las
+fases; el título de cada una lleva su fase al final:
+
+| Fase | En esta clase |
+|---|---|
+| **1 · Experiencia** | Secciones 4, 5 y 6: pasas el wireframe a UI, afilias el número y conectas el webhook al chat. |
+| **2 · Reflexión** | Sección 8: pruebas tres mensajes reales y mides la latencia. |
+| **3 · Conceptos** | Secciones 1, 2, 3 y 7: la arquitectura, las reglas de WhatsApp, el wireframe y MCP. |
+| **4 · Aplicación** | Sección 9 y «Tareas»: despliegas y entregas. |
+
+---
+
+## 1. La arquitectura en una frase · Conceptos
 
 **Un contenedor recibe los mensajes de WhatsApp y los reenvía a tu backend; tu backend pregunta al
 modelo local, responde al cliente y avisa a la bandeja.** No hay nada fuera de tu laptop: ni
@@ -229,7 +243,7 @@ clase 2). Si lo arrancas en otro puerto, cambia la URL.
 
 ---
 
-## 2. Reglas de uso de WhatsApp en clase
+## 2. Reglas de uso de WhatsApp en clase · Conceptos
 
 WhatsApp no es un entorno de pruebas. Un número bloqueado no se recupera en clase. Cuatro reglas:
 
@@ -245,7 +259,7 @@ Trae dos teléfonos: el de pruebas, que se afilia, y otro que le escribe.
 
 ---
 
-## 3. Wireframe en gris
+## 3. Wireframe en gris · Conceptos
 
 ### Qué es
 
@@ -303,7 +317,7 @@ que lo recorte. El **Ejemplo 13** trae la plantilla de `FLUJOS.md` y una lista d
 
 ---
 
-## 4. De wireframe a UI
+## 4. De wireframe a UI · Experiencia
 
 Con la estructura decidida, el agente la viste. Tres skills, en este orden:
 
@@ -357,7 +371,7 @@ el bloque 6.
 
 ---
 
-## 5. Afiliar el número
+## 5. Afiliar el número · Experiencia
 
 ### Levantar Evolution API
 
@@ -477,7 +491,7 @@ El **Ejemplo 14** repite este bloque como receta copiable.
 
 ---
 
-## 6. Del webhook al chat
+## 6. Del webhook al chat · Experiencia
 
 ### Qué trae el JSON
 
@@ -609,7 +623,7 @@ disculpa al cliente y un evento de error a la bandeja, nunca silencio.
 
 ---
 
-## 7. Herramientas y MCP, en 10 líneas
+## 7. Herramientas y MCP, en 10 líneas · Conceptos
 
 1. Una **herramienta** es una función que el agente puede llamar: `consultar_stock(codigo)`.
 2. El modelo no la ejecuta. Dice «quiero llamar a `consultar_stock` con `A-102`».
@@ -628,7 +642,7 @@ disculpa al cliente y un evento de error a la bandeja, nunca silencio.
 
 ---
 
-## 8. Probar
+## 8. Probar · Reflexión
 
 ### Con un teléfono real: guion de tres mensajes
 
@@ -685,7 +699,7 @@ ollama run qwen3:1.7b --verbose "¿Tienen stock del producto A-102?" 2>&1 | grep
 
 ---
 
-## 9. Desplegar
+## 9. Desplegar · Aplicación
 
 Desplegar es **sincronizar, hornear, levantar y comprobar**. Nunca solo hacer commit.
 
@@ -758,7 +772,7 @@ docker compose stop        # nunca `down -v`: borra la sesión y tendrías que v
 
 ---
 
-## 10. Si algo falla
+## 10. Si algo falla · Apoyo
 
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
@@ -777,7 +791,7 @@ docker compose stop        # nunca `down -v`: borra la sesión y tendrías que v
 
 ---
 
-## Tareas
+## Tareas · Aplicación
 
 **Tarea 3 · Tu asistente responde por WhatsApp** (vence el 29-10-2026, 20 puntos). El
 enunciado completo y la rúbrica están en la tarea. Resumen:

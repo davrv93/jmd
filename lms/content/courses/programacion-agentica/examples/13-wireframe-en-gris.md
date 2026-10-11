@@ -5,6 +5,7 @@ summary: Qué pedirle al agente, la plantilla de FLUJOS.md con flujo feliz y dos
 tags: [ux, wireframe, skills]
 level: básico
 lesson: pa-03
+phase: conceptualizacion
 order: 13
 ---
 Un wireframe es la pantalla en cajas grises con etiquetas. Decide **qué hay y en qué orden**, no

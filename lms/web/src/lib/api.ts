@@ -90,6 +90,8 @@ export interface ExampleSummary {
   summary: string;
   tags: string[];
   level: string;
+  /** Fase del ciclo de Kolb a la que pertenece el ejemplo (opcional). */
+  phase?: string;
   lesson_id: string;
   lesson_title: string;
   repo: { url: string; ref: string } | null;
