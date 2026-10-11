@@ -15,6 +15,7 @@ El servidor del LMS no ejecuta ningún modelo. Nada de whisper, sd-turbo ni Olla
 | Voz a texto | `faster-whisper small` en la laptop (CPU) | API de transcripción barata por el gateway (ver tabla) | whisper en el EC2 |
 | Generación de imágenes | sd-turbo o sdxl-turbo en la laptop según su diagnóstico | API de imagen barata por el gateway (ver tabla); modo demo con Pillow si no hay nada | difusión en el EC2 |
 | Agente que escribe el código (OpenCode) | Laptop, con token personal del gateway | `jmd` embebido en el LIVE (contenedor Alpine de 128 MB) | OpenCode en el EC2 |
+| Terminal y visor que se ven en el LIVE | La laptop del alumno, conectada con `jmd live <código>` (una conexión saliente, sin abrir puertos) | Contenedor Alpine del servidor | Túneles públicos |
 
 ### Proveedores remotos de respaldo (por OpenRouter, lista blanca del gateway)
 
@@ -58,8 +59,8 @@ Cada escena indica: fase del ciclo, duración, qué se ve (y con qué herramient
 ### E03 · Tu laptop decide · Experiencia · 8 min
 - **Se ve:** tabla animada de niveles de imagen (rápida, buena, máxima) con las tres máquinas típicas del grupo iluminándose según su hardware; abajo, el comando `python osito/backend/diagnostico.py` en grande.
 - **Instructor:** pide correr el diagnóstico en la terminal del LIVE o en la laptop. Lee en voz alta dos resultados distintos.
-- **Alumno:** corre el diagnóstico, elige en «Mi IA» el nivel que le dio y el modelo de chat (Ollama local o remoto de la lista).
-- **Compuerta:** 80 % con nivel elegido (el panel lo detecta solo, sin «Lo logré»).
+- **Alumno:** en su laptop escribe `jmd live <código>` (el código está en pantalla) y elige qué comparte; desde ese momento su terminal y su visor aparecen dentro del LIVE. Luego corre el diagnóstico, elige en «Mi IA» el nivel que le dio y el modelo de chat (Ollama local o remoto de la lista).
+- **Compuerta:** 80 % conectados por `jmd live` y con nivel elegido (el panel lo detecta solo, sin «Lo logré»). Quien no pueda conectar su laptop usa el contenedor del servidor con un clic.
 - **Respaldo:** sin GPU y sin Ollama → remoto en «Mi IA» con un clic.
 
 ### E04 · Skills y modo piedra · Experiencia · 10 min
@@ -142,11 +143,11 @@ Cada escena indica: fase del ciclo, duración, qué se ve (y con qué herramient
 
 | Escena | Señal | Fuente |
 |---|---|---|
-| E03 | nivel de imagen y modelo elegidos | ajustes de «Mi IA» |
+| E03 | laptop conectada por `jmd live`; nivel de imagen y modelo elegidos | puente `jmd live`; ajustes de «Mi IA» |
 | E04 | skill propia creada; respuesta con piedra | tabla `skills`; telemetría del gateway |
 | E05 | caída de tokens tras piedra y RTK | telemetría por `sub` |
 | E06 | `PLAN_TRABAJO.md` existe | volumen `/trabajo` o repo local vía `jmd` |
-| E07 | `POST /api/chat 200` | log del backend del osito enviado por `jmd` o por el instalador |
+| E07 | `POST /api/chat 200` | log del backend del osito enviado por `jmd live` |
 | E09 | `POST /api/stt 200` | mismo log |
 | E10 | imagen generada | captura del visor |
 | E11 | hallazgo con severidad | formulario del panel |

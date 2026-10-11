@@ -34,6 +34,8 @@
 10. **El guion manda.** El contenido del LIVE está escena por escena en `docs/GUION_LIVE_SESION2.md` (12 escenas E01 a E12, con lo que se ve, qué animación y con qué herramienta, qué hace el instructor, qué hace el alumno, qué valida la compuerta y el respaldo). Las tareas de la fase 2 implementan ese guion, no otro.
 11. **Compuerta de avance.** «Siguiente» no cambia de escena a ciegas: muestra al instructor quién cumplió la escena (por «Lo logré» o por evidencia automática), quién falta y su último evento, y le da tres salidas: esperar, pasar igual o mandar ayuda. El umbral por escena vive en `escena.yaml` (por defecto 80 %).
 
+12. **La laptop del alumno entra al LIVE con `jmd live`.** Como los modelos corren en la laptop, el panel del LIVE tiene que ver la laptop, no solo el contenedor del servidor. `jmd live <código-de-sesión>` abre desde la laptop una sola conexión saliente al LMS (SSE para recibir, HTTPS para enviar; sin abrir puertos ni túneles) y por ella pasan tres cosas: la **terminal local** (un pty de la laptop dibujado en el panel), el **visor local** (lo que sirve `localhost:8766`, el asistente del alumno, reenviado por esa misma conexión y mostrado en el iframe del LIVE) y las **evidencias** (log del backend del osito, `GET /api/salud`, archivos de `/trabajo`). El contenedor Alpine del servidor queda como respaldo para quien llegue sin laptop útil. RAM en el servidor: cero por alumno conectado por `jmd live`; solo el relé.
+
 ## Restricción dura: casi nada de RAM
 
 El servidor tiene 3,8 GB y Keycloak ya se lleva 500 MB. Todo lo que corra en el LIVE, en el servidor y en el navegador del alumno, se elige por consumo mínimo. Regla: **ningún proceso por alumno que pase de 40 MB en reposo**, y nada que compile o empaquete en el servidor durante la clase.
@@ -131,6 +133,22 @@ Cada tarea cabe en una jornada o menos, tiene criterio de aceptación verificabl
 
 Decisión: en la laptop el alumno sigue con OpenCode y su token personal del gateway; en el LIVE, el agente es `jmd` embebido (panel «Agente») más la terminal, los dos dentro del mismo contenedor de poca RAM. Lo que el alumno ve en el panel (contexto, tokens, costo, tareas, MCP, reintentos) es lo mismo que le da OpenCode en la laptop, dibujado por el LMS. Las métricas de tokens, costo y cuota del LIVE salen del gateway, así que valen para los dos clientes.
 
+### Fase 3c · Puente laptop ↔ LIVE con `jmd live` (3 días)
+
+Es lo que hace posible «todo en la laptop, todo visto en el LIVE». Sin esto, el alumno tendría que salir del LIVE para trabajar.
+
+| # | Tarea | Dónde | Criterio | Estado |
+|---|---|---|---|---|
+| 3c.1 | `jmd live <código>`: inicia sesión con el token del alumno, abre `GET /api/v1/live/{lesson}/laptop/stream` (SSE, recibe órdenes) y envía por `POST /api/v1/live/{lesson}/laptop/eventos`; reconexión con backoff; `Ctrl-C` cierra limpio; menos de 15 MB de RAM | jmd (Rust) | Conectar, desconectar la red 20 s, reconectar sin perder la sesión | pendiente |
+| 3c.2 | Terminal local por el puente: `jmd live` abre un pty (`sh` o `zsh` en Mac y Linux, PowerShell o WSL en Windows) y lo multiplexa por la conexión; el LMS lo expone al panel del alumno por el mismo WebSocket que la terminal del contenedor (`/api/v1/term?origen=laptop`) | jmd, Go, Qwik | Escribir `ls` en el panel del LIVE lista la carpeta de la laptop; latencia menor a 150 ms en red local | pendiente |
+| 3c.3 | Visor local por el puente: el LMS pide `GET /vista/{sub}/local/…` y `jmd live` lo resuelve contra `http://localhost:8766` (o el puerto que diga `jmd live --vista 5173`) y devuelve cuerpo y cabeceras; límite 5 MB por respuesta; solo `text/*`, `application/javascript`, `application/json`, `image/*`, `font/*`; sin WebSocket (el HMR no pasa; se usa recarga por sondeo) | jmd, Go | El asistente del alumno se ve en el iframe del LIVE desde otra máquina; un `curl` a `/vista/<otro sub>/local/` da 403 | pendiente |
+| 3c.4 | Evidencias desde la laptop: `jmd live` manda cada 5 s `GET http://localhost:8766/api/salud` del osito, las últimas 20 líneas del log del backend (ruta configurable) y la lista de archivos de la carpeta de trabajo; el LMS las usa para las compuertas de E03, E06, E07, E09 y E10 sin que el alumno marque nada | jmd, Go | Al responder el chat en la laptop, el semáforo del instructor pasa a verde en menos de 10 s | pendiente |
+| 3c.5 | Permisos y privacidad: al conectar, `jmd live` pregunta qué comparte (terminal, visor, evidencias) y el panel del alumno lo muestra con interruptores; el instructor solo ve la terminal y el visor si el alumno lo permitió; nada se graba | jmd, Go, Qwik | Con «terminal: no», el botón «ver» del instructor sale deshabilitado; test | pendiente |
+| 3c.6 | Instalación y arranque en un paso: el instalador del curso deja `jmd`; en E03 el alumno pega `jmd live ABC123` (código que muestra el instructor en pantalla); si no tiene `jmd`, el panel ofrece el contenedor del servidor como respaldo con un clic | instalador, Qwik | Un alumno con laptop limpia entra al LIVE con su terminal local en menos de 2 min | pendiente |
+| 3c.7 | Windows: el pty con ConPTY; WSL detectado y ofrecido; `localhost:8766` de WSL alcanzable desde `jmd live` en Windows (misma máquina) | jmd | Probado en una VM de Windows 11 con y sin WSL | pendiente |
+
+Regla: la terminal y el visor «del LIVE» son, por defecto, los de la laptop del alumno vía `jmd live`. El contenedor Alpine del servidor solo aparece como respaldo.
+
 ### Fase 4 · Visor de proyectos (2 días)
 
 | # | Tarea | Dónde | Criterio | Estado |
@@ -199,11 +217,11 @@ Reglas duras de esta fase:
 | Semana | Fases | Entregable demostrable |
 |---|---|---|
 | 1 | 0, 1, 2 (parte) | Instructor y alumnos sincronizados viendo 3 escenas con animación |
-| 2 | 2 (resto), 3, 3b | Clase completa en escenas; cada alumno con su terminal, `jmd` con tokens, costo y reintentos visibles |
+| 2 | 2 (resto), 3, 3b, 3c | Clase completa en escenas; cada alumno con su terminal (laptop por `jmd live` o contenedor), `jmd` con tokens, costo y reintentos visibles |
 | 3 | 4, 5, 5b | Visor con React y Vue en caliente; consumo por alumno en vivo con marcas de caveman y RTK; skills propias aisladas y adaptadas al modelo de cada alumno |
 | 4 | 6, 7 | «Lo logré», insignia automática, ensayo general |
 
-Total estimado: 26 a 28 jornadas de desarrollo, más el ensayo.
+Total estimado: 29 a 31 jornadas de desarrollo, más el ensayo.
 
 ## Riesgos y mitigación
 
