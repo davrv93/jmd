@@ -81,7 +81,7 @@ export default component$(() => {
 
   return (
     <div class="live">
-      {isStaff(st.me) ? <LiveControl lesson={id} estado={st.estado} escenas={st.escenas} conectados={st.conectados} presentes={st.presentes} /> : <LiveAlumno lesson={id} estado={st.estado} aviso={st.aviso} pareja={st.pareja} />}
+      {isStaff(st.me) ? <LiveControl lesson={id} estado={st.estado} escenas={st.escenas} conectados={st.conectados} presentes={st.presentes} /> : <LiveAlumno lesson={id} estado={st.estado} aviso={st.aviso} pareja={st.pareja} escenas={st.escenas} />}
     </div>
   );
 });

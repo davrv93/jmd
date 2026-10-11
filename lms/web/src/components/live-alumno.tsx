@@ -1,12 +1,14 @@
 import { $, component$, useContext, useSignal, useVisibleTask$ } from "@builder.io/qwik";
-import { api, type LiveEstado, type ParejaLive } from "~/lib/api";
+import { api, type EscenaLive, type LiveEstado, type ParejaLive } from "~/lib/api";
 import { SessionContext, toast } from "~/lib/session";
 import { Icon } from "~/components/icon";
+import { Terminal } from "~/components/terminal";
+import { Copy } from "~/components/ui";
 import { avisarEscena, temaActual, urlEscena } from "~/lib/live";
 
 // LiveAlumno: la pantalla del alumno del LIVE. La escena actual a pantalla completa,
 // cortina cuando el instructor la oculta, aviso en modo libre y panel de ayuda mínima.
-export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstado; aviso?: string; pareja?: ParejaLive | null }) => {
+export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstado; aviso?: string; pareja?: ParejaLive | null; escenas?: EscenaLive[] }) => {
   const session = useContext(SessionContext);
   const escena = useSignal(props.estado.escena);
   const visible = useSignal(props.estado.visible);
@@ -15,6 +17,8 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
   const local = useSignal(""); // escena local en modo libre
   const completa = useSignal(false);
   const tema = useSignal("");
+  const panel = useSignal<"" | "terminal" | "visor" | "agente" | "ayuda">("");
+  const termAbierta = useSignal(false); // la terminal se queda montada al cambiar de pestaña
   const marco = useSignal<HTMLIFrameElement>();
 
   // Sigue el stream: cada evento estado actualiza escena/cortina/modo/aviso.
@@ -57,6 +61,13 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
     enviar();
     const t = setInterval(enviar, 15000);
     cleanup(() => clearInterval(t));
+  });
+
+  const abrir = $((p: "terminal" | "visor" | "agente" | "ayuda") => {
+    panel.value = panel.value === p ? "" : p;
+    if (panel.value === "terminal") termAbierta.value = true;
+    // El terminal se reajusta al tamaño de su caja con el evento resize.
+    setTimeout(() => window.dispatchEvent(new Event("resize")), 60);
   });
 
   const mostrar = $((on: boolean) => {
@@ -136,19 +147,89 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
           </button>
         </div>
       )}
+      <div class={`live-panel${panel.value ? " abierto" : ""}`} hidden={!panel.value} aria-label="Panel de trabajo">
+        {termAbierta.value && (
+          <div class="live-panel-vista" hidden={panel.value !== "terminal"}>
+            <Terminal />
+          </div>
+        )}
+        {panel.value === "visor" && (
+          <div class="live-panel-vista live-panel-vacio">
+            <Icon name="eye" size={22} />
+            <p>
+              <b>Aquí verás tu asistente.</b> Cuando lo arranques en la terminal, el visor lo muestra en vivo, sin instalar nada.
+            </p>
+          </div>
+        )}
+        {panel.value === "agente" && (
+          <div class="live-panel-vista live-panel-vacio">
+            <Icon name="sparkles" size={22} />
+            <p>
+              <b>Tu agente de código.</b> Escríbele lo que quieres cambiar. En la terminal también puedes usar <code>jmd chat</code>.
+            </p>
+          </div>
+        )}
+        {panel.value === "ayuda" && (
+          <div class="live-panel-vista live-ayuda">
+            {(() => {
+              const e = props.escenas?.find((x) => x.id === efectiva);
+              if (!e) return <p class="live-vacio">Esta escena no tiene ayuda.</p>;
+              return (
+                <>
+                  <h3>{e.titulo}</h3>
+                  {e.comandos && e.comandos.some((c) => c.cmd) && (
+                    <div class="live-ayuda-cmds">
+                      <b>Comandos de esta escena</b>
+                      {e.comandos
+                        .filter((c) => c.cmd)
+                        .map((c) => (
+                          <div key={c.titulo}>
+                            <span class="live-ayuda-t">{c.titulo}</span>
+                            <Copy text={c.cmd} />
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                  {e.tareas && e.tareas.length > 0 && (
+                    <div>
+                      <b>Tareas</b>
+                      <ul>
+                        {e.tareas.map((t) => (
+                          <li key={t.id}>{t.titulo}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {(!e.comandos || !e.comandos.some((c) => c.cmd)) && (!e.tareas || e.tareas.length === 0) && (
+                    <p class="live-vacio">Mira la escena y sigue al instructor. No tienes nada que escribir.</p>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        )}
+      </div>
       <footer class="live-paneles" aria-label="Paneles del alumno">
-        <button type="button" class="btn ghost sm" aria-label="Terminal" aria-expanded="false">
-          Terminal
-        </button>
-        <button type="button" class="btn ghost sm" aria-label="Visor" aria-expanded="false">
-          Visor
-        </button>
-        <button type="button" class="btn ghost sm" aria-label="Agente" aria-expanded="false">
-          Agente
-        </button>
-        <button type="button" class="btn ghost sm" aria-label="Ayuda" aria-expanded="false">
-          Ayuda
-        </button>
+        {(
+          [
+            ["terminal", "Terminal", "terminal"],
+            ["visor", "Visor", "eye"],
+            ["agente", "Agente", "sparkles"],
+            ["ayuda", "Ayuda", "help"],
+          ] as const
+        ).map(([id, nombre, icono]) => (
+          <button
+            key={id}
+            type="button"
+            class="btn ghost sm"
+            aria-label={nombre}
+            aria-expanded={panel.value === id}
+            aria-pressed={panel.value === id}
+            onClick$={() => abrir(id)}
+          >
+            <Icon name={icono} size={14} /> {nombre}
+          </button>
+        ))}
         <span class="grow" />
         <button type="button" class="btn sm" aria-label={completa.value ? "Salir de pantalla completa" : "Pantalla completa"} onClick$={alternar}>
           <Icon name="expand" size={14} /> {completa.value ? "Salir" : "Pantalla completa"}

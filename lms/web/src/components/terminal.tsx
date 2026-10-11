@@ -30,12 +30,19 @@ export const Terminal = component$(() => {
     const sendSize = () => {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ cols: term.cols, rows: term.rows }));
     };
+    let abrio = false;
     ws.onopen = () => {
+      abrio = true;
       sendSize();
       term.focus();
     };
     ws.onmessage = (ev) => term.write(ev.data instanceof ArrayBuffer ? new Uint8Array(ev.data) : String(ev.data));
-    ws.onclose = () => term.writeln("\r\n\x1b[33m[sesión cerrada — recarga para abrir otra]\x1b[0m");
+    ws.onclose = () =>
+      term.writeln(
+        abrio
+          ? "\r\n\x1b[33m[sesión cerrada — recarga para abrir otra]\x1b[0m"
+          : "\r\n\x1b[33m[el terminal no está disponible en este servidor, o ya tienes otro abierto]\x1b[0m",
+      );
     term.onData((d) => {
       if (ws.readyState === WebSocket.OPEN) ws.send(enc.encode(d));
     });
