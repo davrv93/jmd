@@ -84,6 +84,7 @@ func (s *Server) term(w http.ResponseWriter, r *http.Request, p *Principal) {
 			return
 		}
 		tocarAula(p.ID)
+		go s.montarSkills(context.Background(), p.ID) // sus skills propias, por si la terminal creó el aula
 		// Mientras la terminal siga abierta el aula cuenta como en uso (si no, se apagaría a los 15 min).
 		go func() {
 			t := time.NewTicker(time.Minute)

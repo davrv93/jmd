@@ -104,7 +104,7 @@ Cuando ejecutes comandos:
 Prohibido sin mi confirmación escrita: `rm -rf`, `git reset --hard`, `git push --force`, `docker compose down`, `DROP`, `TRUNCATE`.
 ```
 
-## Aprendido en la demo Tecnosito (10-10-2026)
+## Aprendido en la demo Robo (10-10-2026)
 
 - Rutas absolutas en cada comando, sin excepción. Un agente escribió por error en el README de otro proyecto (`SILA-IA/web`) porque un `cd` encadenado dentro de un comando largo lo dejó parado en otra carpeta. El principio 5 no es estilo: es lo único que evita escribir donde no toca.
 - Antes de arrancar un servidor, comprueba el puerto: `lsof -i :8765 | tail -n +2 | head -3`. En la Mac del docente 8765 lo ocupaba `jev-style serve` y 8787 el proxy de caveman; se usaron 8766 y 8797. Un puerto ocupado no siempre falla ruidoso: a veces sirve la app equivocada.

@@ -227,7 +227,7 @@ Ilustración Lottie con `lottie-web` 5.13.0 (pausa cuando no está en pantalla):
 </script>
 ```
 
-## Aprendido en la demo Tecnosito (10-10-2026)
+## Aprendido en la demo Robo (10-10-2026)
 
 - Un modelo de difusión local no escribe texto legible: sd-turbo produjo letras inventadas en el flyer. La tipografía (etiqueta, título con sombra, chips de fecha, hora y lugar, descripción, pie e insignia de precio) la compone Pillow a 1080x1350 sobre un fondo que el modelo pinta "sin letras ni pantallas". Los datos los extrae el LLM local (`qwen3:1.7b`) en JSON y un regex manda sobre fecha, hora y precio porque el modelo pequeño a veces los altera; también inventó "PHP para Dummies" hasta que la instrucción prohibió marcas y apodos. Detalle y fragmentos en `imagenes-locales`.
 - Los modelos FLUX obedecen tanto el prompt positivo que "código brillante" produce letras. Pide objetos, luces y formas; nunca cosas que lleven texto (pantallas, carteles, pizarras).

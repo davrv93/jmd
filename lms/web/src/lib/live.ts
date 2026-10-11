@@ -1,7 +1,7 @@
 // Cliente SSE del modo LIVE: abre el stream de una lección y reparte los eventos.
 // En error cierra y reabre con espera creciente (1, 2, 4, 8 s; tope 8 s).
 
-const EVENTOS = ["estado", "presencia", "logre", "mensaje", "pareja", "cierre"] as const;
+const EVENTOS = ["estado", "presencia", "logre", "mensaje", "pareja", "cierre", "skill_nueva"] as const;
 
 export type EventoLive = (typeof EVENTOS)[number];
 

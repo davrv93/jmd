@@ -361,7 +361,39 @@ export const api = {
   liveLogres: (lesson: string) => req<{ escenas: string[] }>("GET", `/api/v1/live/${encodeURIComponent(lesson)}/logre`),
   liveModo: (lesson: string, modo: "guiado" | "libre") =>
     req<LiveEstado>("PUT", `/api/v1/live/${encodeURIComponent(lesson)}/modo`, { modo }),
+  // Skills del alumno: cada cuenta guarda las suyas; las del curso son de solo lectura.
+  misSkills: () => req<SkillResumen[]>("GET", "/api/v1/mis-skills"),
+  miSkill: (nombre: string) => req<Skill>("GET", `/api/v1/mis-skills/${encodeURIComponent(nombre)}`),
+  crearSkill: (cuerpo: string, modelo_destino: string) => req<Skill>("POST", "/api/v1/mis-skills", { cuerpo, modelo_destino }),
+  saveSkill: (nombre: string, cuerpo: string, modelo_destino: string) =>
+    req<Skill>("PUT", `/api/v1/mis-skills/${encodeURIComponent(nombre)}`, { cuerpo, modelo_destino }),
+  deleteSkill: (nombre: string) => req<null>("DELETE", `/api/v1/mis-skills/${encodeURIComponent(nombre)}`, {}), // con cookie, las escrituras exigen JSON
+  skillsCurso: () => req<SkillCurso[]>("GET", "/api/v1/skills-curso"),
+  copiarSkill: (nombre: string, nuevo_nombre?: string) =>
+    req<Skill>("POST", `/api/v1/mis-skills/${encodeURIComponent(nombre)}/copiar`, nuevo_nombre ? { nuevo_nombre } : {}),
+  skillsDetectadas: () => req<{ nombres: string[] }>("GET", "/api/v1/mis-skills/detectadas"),
+  importarSkill: (nombre: string) => req<Skill>("POST", "/api/v1/mis-skills/importar", { nombre }),
 };
+
+// Skill del alumno (GET /api/v1/mis-skills): la lista trae el resumen; el detalle, cuerpo y variantes.
+export interface SkillResumen {
+  nombre: string;
+  descripcion: string;
+  modelo_destino: string;
+  version: number;
+  origen: "propia" | "copiada" | "importada";
+  compartida: boolean;
+  actualizada_en: string;
+}
+export interface Skill extends SkillResumen {
+  cuerpo: string;
+  variantes: Record<string, string>;
+}
+export interface SkillCurso {
+  nombre: string;
+  descripcion: string;
+  cuerpo: string;
+}
 
 // Alumno conectado, tal como lo ve el instructor en el evento `presencia`.
 export interface PresenteLive {

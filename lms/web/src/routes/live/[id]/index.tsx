@@ -19,11 +19,12 @@ interface LiveState {
   presentes: PresenteLive[];
   aviso: string; // mensaje dirigido a este alumno
   pareja: ParejaLive | null;
+  skillNueva: string; // skill creada desde la terminal que aún no está en la cuenta
 }
 
 export default component$(() => {
   const session = useContext(SessionContext);
-  const st = useStore<LiveState>({ me: null, estado: null, escenas: [], error: "", conectados: 0, presentes: [], aviso: "", pareja: null });
+  const st = useStore<LiveState>({ me: null, estado: null, escenas: [], error: "", conectados: 0, presentes: [], aviso: "", pareja: null, skillNueva: "" });
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async ({ track }) => {
@@ -62,6 +63,8 @@ export default component$(() => {
         st.conectados = st.estado.conectados;
       } else if (evento === "mensaje" && data && typeof data.texto === "string") {
         st.aviso = data.texto;
+      } else if (evento === "skill_nueva" && data && typeof data.nombre === "string") {
+        st.skillNueva = `${data.nombre}:${Date.now()}`;
       } else if (evento === "pareja" && data) {
         st.pareja = (data as ParejaLive).con?.length ? (data as ParejaLive) : null;
       } else if (evento === "presencia" && data) {
@@ -81,7 +84,7 @@ export default component$(() => {
 
   return (
     <div class="live">
-      {isStaff(st.me) ? <LiveControl lesson={id} estado={st.estado} escenas={st.escenas} conectados={st.conectados} presentes={st.presentes} /> : <LiveAlumno lesson={id} estado={st.estado} aviso={st.aviso} pareja={st.pareja} escenas={st.escenas} />}
+      {isStaff(st.me) ? <LiveControl lesson={id} estado={st.estado} escenas={st.escenas} conectados={st.conectados} presentes={st.presentes} /> : <LiveAlumno lesson={id} estado={st.estado} aviso={st.aviso} pareja={st.pareja} escenas={st.escenas} skillNueva={st.skillNueva} />}
     </div>
   );
 });

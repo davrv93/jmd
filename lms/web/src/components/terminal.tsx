@@ -31,12 +31,24 @@ export const Terminal = component$(() => {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ cols: term.cols, rows: term.rows }));
     };
     let abrio = false;
+    // Texto que otras partes de la pantalla (p. ej. «Probar» de Mis skills) piden escribir en la terminal.
+    // Va en una cola global para que no se pierda si la terminal aún está conectando.
+    const cola = window as unknown as { __pjgTermCola?: string[] };
+    const volcar = () => {
+      while (cola.__pjgTermCola?.length && ws.readyState === WebSocket.OPEN) ws.send(enc.encode(cola.__pjgTermCola.shift()!));
+    };
+    const dec = new TextDecoder();
     ws.onopen = () => {
       abrio = true;
       sendSize();
       term.focus();
+      setTimeout(volcar, 700); // deja que la shell muestre su prompt antes de escribirle
     };
-    ws.onmessage = (ev) => term.write(ev.data instanceof ArrayBuffer ? new Uint8Array(ev.data) : String(ev.data));
+    ws.onmessage = (ev) => {
+      term.write(ev.data instanceof ArrayBuffer ? new Uint8Array(ev.data) : String(ev.data));
+      // Lo que sale por la terminal, para quien necesite mirarlo (p. ej. saber si el agente cargó una skill).
+      dispatchEvent(new CustomEvent("pjg-term-salida", { detail: ev.data instanceof ArrayBuffer ? dec.decode(ev.data, { stream: true }) : String(ev.data) }));
+    };
     ws.onclose = () =>
       term.writeln(
         abrio
@@ -54,10 +66,12 @@ export const Terminal = component$(() => {
     const alFoco = () => term.focus();
     addEventListener("resize", onResize);
     addEventListener("pjg-term-foco", alFoco);
+    addEventListener("pjg-term-escribir", volcar);
 
     cleanup(() => {
       removeEventListener("resize", onResize);
       removeEventListener("pjg-term-foco", alFoco);
+      removeEventListener("pjg-term-escribir", volcar);
       try {
         ws.close();
       } catch {

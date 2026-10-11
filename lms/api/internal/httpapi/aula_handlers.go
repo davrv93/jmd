@@ -16,6 +16,7 @@ type AulaMotor interface {
 	Crear(ctx context.Context, userID string) (bool, error)
 	Estado(ctx context.Context, userID string) string
 	Exec(ctx context.Context, nombre string, cmd ...string) (string, error)
+	ExecStdin(ctx context.Context, nombre, script string, stdin []byte) (string, error)
 	Parar(ctx context.Context, nombre string) error
 	Borrar(ctx context.Context, nombre string) error
 	Listar(ctx context.Context) ([]string, error)
@@ -80,6 +81,7 @@ func (s *Server) aulaIniciar(w http.ResponseWriter, r *http.Request, p *Principa
 		return
 	}
 	tocarAula(p.ID)
+	s.montarSkills(r.Context(), p.ID)
 	writeJSON(w, 200, map[string]any{
 		"contenedor": aula.Nombre(p.ID), "reutilizado": reutilizado, "asistente": s.estadoAsistente(r.Context(), p.ID),
 	})
@@ -175,6 +177,7 @@ func (s *Server) apagarInactivos(ctx context.Context, ahora time.Time, limite ti
 
 // VigilarAulas revisa cada minuto qué aulas llevan tiempo sin uso. Se detiene con ctx.
 func (s *Server) VigilarAulas(ctx context.Context) {
+	s.vigilarSkills(ctx)
 	go func() {
 		t := time.NewTicker(time.Minute)
 		defer t.Stop()

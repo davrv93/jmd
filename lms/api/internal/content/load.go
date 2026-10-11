@@ -29,6 +29,7 @@ type Catalog struct {
 	courseByID  map[string]*Course
 	lessons     map[string]*Lesson
 	escenas     map[string][]*Escena
+	skillsCurso map[string][]*SkillCurso
 	assignments map[string]*Assignment
 	// assignmentsByCourse conserva el orden de los archivos.
 	assignmentsByCourse map[string][]*Assignment
@@ -51,6 +52,7 @@ func Load(dir string) (*Catalog, error) {
 		courseByID:          map[string]*Course{},
 		lessons:             map[string]*Lesson{},
 		escenas:             map[string][]*Escena{},
+		skillsCurso:         map[string][]*SkillCurso{},
 		assignments:         map[string]*Assignment{},
 		assignmentsByCourse: map[string][]*Assignment{},
 		examples:            map[string]*Example{},
@@ -162,6 +164,10 @@ func loadCourse(dir string, c *Catalog) (*Course, error) {
 		if len(es) > 0 {
 			c.escenas[id] = es
 		}
+	}
+
+	if sk := loadSkillsCurso(dir); len(sk) > 0 {
+		c.skillsCurso[course.ID] = sk
 	}
 
 	files, _ = filepath.Glob(filepath.Join(dir, "assignments", "*.md"))

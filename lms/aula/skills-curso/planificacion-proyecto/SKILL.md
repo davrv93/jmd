@@ -124,7 +124,7 @@ Leyenda de tallas: S = hasta medio día · M = 1 a 2 días · L = 3 a 5 días.
 Convertir en `PLAN_TRABAJO.md` con el skill `plan-de-trabajo`.
 ```
 
-## Aprendido en la demo Tecnosito (10-10-2026)
+## Aprendido en la demo Robo (10-10-2026)
 
 - Si el proyecto corre modelos en la máquina del usuario, la pregunta 7 ("¿qué infraestructura hay?") se responde máquina por máquina: sistema operativo, RAM, GPU y VRAM de cada una. En el taller había RTX 5060 8 GB, RTX 3050 4 GB en Ubuntu, RX 5700 XT con 32 GB, Radeon 780M integrada y un i5 sin GPU conocida: cinco niveles distintos para el mismo entregable. El skill `relevar-maquinas` tiene la plantilla y la tabla; el relevamiento es un entregable de la Fase 0, no un supuesto.
 - Riesgos de entorno nuevos con mitigación concreta: "la red del aula no aguanta las descargas (5 × 2,4 GB)" se mitiga descargando la noche anterior o repartiendo por USB, responsable el docente; "AMD en Windows no tiene ROCm" se mitiga asignando nivel de CPU de antemano y avisando al alumno.

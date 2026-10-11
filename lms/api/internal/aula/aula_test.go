@@ -7,6 +7,16 @@ import (
 	"testing"
 )
 
+func TestArgsAulaClaveDeJmd(t *testing.T) {
+	j := strings.Join((&Aula{Token: "gw-prueba"}).Args("u1"), " ")
+	if !strings.Contains(j, "JMD_API_KEY=gw-prueba") {
+		t.Errorf("jmd lee JMD_API_KEY: %s", j)
+	}
+	if strings.Contains(strings.Join((&Aula{}).Args("u1"), " "), "JMD_API_KEY") {
+		t.Error("sin token no hay clave")
+	}
+}
+
 func TestArgsAula(t *testing.T) {
 	a := &Aula{}
 	j := strings.Join(a.Args("u1"), " ")

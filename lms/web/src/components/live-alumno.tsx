@@ -4,12 +4,13 @@ import { SessionContext, toast } from "~/lib/session";
 import { Icon } from "~/components/icon";
 import { Terminal } from "~/components/terminal";
 import { LiveVisor } from "~/components/live-visor";
+import { ChipPrueba, MisSkills, type PruebaSkill } from "~/components/mis-skills";
 import { Copy } from "~/components/ui";
 import { avisarEscena, temaActual, urlEscena } from "~/lib/live";
 
 // LiveAlumno: la pantalla del alumno del LIVE. La escena actual a pantalla completa,
 // cortina cuando el instructor la oculta, aviso en modo libre y panel de ayuda mínima.
-export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstado; aviso?: string; pareja?: ParejaLive | null; escenas?: EscenaLive[] }) => {
+export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstado; aviso?: string; pareja?: ParejaLive | null; escenas?: EscenaLive[]; skillNueva?: string }) => {
   const session = useContext(SessionContext);
   const escena = useSignal(props.estado.escena);
   const visible = useSignal(props.estado.visible);
@@ -21,8 +22,10 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
   const rutaVisor = useSignal("");
   const logres = useStore<{ ids: string[] }>({ ids: [] }); // escenas donde ya pulsé «Lo logré»
   const deshacerDe = useSignal(""); // escena que aún se puede deshacer (10 s)
-  const panel = useSignal<"" | "terminal" | "visor" | "agente" | "ayuda">("");
+  const panel = useSignal<"" | "terminal" | "visor" | "agente" | "skills" | "ayuda">("");
   const termAbierta = useSignal(false); // la terminal se queda montada al cambiar de pestaña
+  const skillsAbierta = useSignal(false); // «Mis skills» también: sigue atenta a la prueba aunque cambies de pestaña
+  const prueba = useStore<PruebaSkill>({ estado: "", nombre: "", desde: 0 });
   const marco = useSignal<HTMLIFrameElement>();
 
   // Sigue el stream: cada evento estado actualiza escena/cortina/modo/aviso.
@@ -88,14 +91,20 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
     }
   });
 
-  const abrir = $((p: "terminal" | "visor" | "agente" | "ayuda") => {
+  const abrir = $((p: "terminal" | "visor" | "agente" | "skills" | "ayuda") => {
     panel.value = panel.value === p ? "" : p;
     if (panel.value === "terminal") termAbierta.value = true;
+    if (panel.value === "skills") skillsAbierta.value = true;
     // El terminal se reajusta al tamaño de su caja con el evento resize.
     setTimeout(() => {
       window.dispatchEvent(new Event("resize"));
       if (panel.value === "terminal") window.dispatchEvent(new Event("pjg-term-foco"));
     }, 60);
+  });
+
+  // Abre un panel sin cerrarlo si ya estaba abierto (lo usa «Probar» de Mis skills para ir a la terminal).
+  const irA = $((p: "terminal") => {
+    if (panel.value !== p) abrir(p);
   });
 
   const mostrar = $((on: boolean) => {
@@ -186,6 +195,11 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
             <LiveVisor lesson={props.lesson} escena={modo.value === "libre" && local.value ? local.value : escena.value} sub={session.me.id} ruta={rutaVisor} />
           </div>
         )}
+        {skillsAbierta.value && (
+          <div class="live-panel-vista live-panel-skills" hidden={panel.value !== "skills"}>
+            <MisSkills prueba={prueba} onIr$={irA} nueva={props.skillNueva} />
+          </div>
+        )}
         {panel.value === "agente" && (
           <div class="live-panel-vista live-panel-vacio">
             <Icon name="sparkles" size={22} />
@@ -241,6 +255,7 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
             ["terminal", "Terminal", "terminal"],
             ["visor", "Visor", "eye"],
             ["agente", "Agente", "sparkles"],
+            ["skills", "Mis skills", "wand"],
             ["ayuda", "Ayuda", "help"],
           ] as const
         ).map(([id, nombre, icono]) => (
@@ -278,6 +293,12 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
             </button>
           );
         })()}
+        {prueba.estado && (
+          <span class="live-prueba">
+            <span class="live-prueba-n">{prueba.nombre}</span>
+            <ChipPrueba estado={prueba.estado} />
+          </span>
+        )}
         <span class="grow" />
         <button type="button" class="btn sm" aria-label={completa.value ? "Salir de pantalla completa" : "Pantalla completa"} onClick$={alternar}>
           <Icon name="expand" size={14} /> {completa.value ? "Salir" : "Pantalla completa"}

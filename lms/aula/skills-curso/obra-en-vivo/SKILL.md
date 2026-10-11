@@ -33,7 +33,7 @@ pregunta): el coste de mantener el estado no compensa.
    empezar, con los textos del plan de trabajo. Durante la obra se avanza por
    ella; solo se anaden pasos si aparece trabajo que el plan no previo.
 3. **Textos para personas.** En espanol, 60 caracteres como maximo, sin jerga
-   ni nombres de archivo. "Voz del osito", no "integrar TTS en voz.js".
+   ni nombres de archivo. "Voz del robot", no "integrar TTS en voz.js".
 4. **El alumno manda la pantalla, el agente manda el estado.** El agente nunca
    edita `estado.json` a mano ni toca `obra.html`; usa `obra.py`.
 5. **Un solo estado por proyecto.** Si hay dos agentes a la vez, cada uno con
@@ -48,9 +48,9 @@ o exporta `OBRA_ESTADO`.
 ### Al empezar un plan
 
 ```bash
-python3 obra/obra.py iniciar "Osito" --pasos \
-  "Plan de trabajo" "Esqueleto 3D del osito" "Estados de animo" \
-  "Animaciones de animo" "Voz del osito" "Microfono a texto" \
+python3 obra/obra.py iniciar "Robo" --pasos \
+  "Plan de trabajo" "Esqueleto 3D del robot" "Estados de animo" \
+  "Animaciones de animo" "Voz del robot" "Microfono a texto" \
   "Imagenes y fondos" "Pruebas de punta a punta"
 python3 obra/obra.py servir --puerto 8787 &
 ```
@@ -142,7 +142,7 @@ Al terminar:
 `obra/statusline.sh` imprime una sola linea:
 
 ```
-Osito | Frontend | ████░░░░░░░░ 40% | Animaciones de animo
+Robo | Frontend | ████░░░░░░░░ 40% | Animaciones de animo
 ```
 
 En `~/.claude/settings.json`:
@@ -163,7 +163,7 @@ existe, imprime una linea vacia y no rompe la status line.
 ### Franja compacta dentro de otra app
 
 `obra.html?compacto=1` muestra solo barra y paso actual en 56 px de alto.
-Para incrustarla como status bar en el frontend del osito (u otra app):
+Para incrustarla como status bar en el frontend del robot (u otra app):
 
 ```html
 <iframe src="http://localhost:8787/obra.html?compacto=1"
@@ -185,7 +185,7 @@ Esquema de `estado.json` (no cambiarlo: otras herramientas lo leen):
 
 ```json
 {
-  "proyecto": "Osito", "fase": "Frontend", "pct": 40,
+  "proyecto": "Robo", "fase": "Frontend", "pct": 40,
   "actualizado": "2026-10-10T15:00:00",
   "pasos": [{"hora": "15:00", "texto": "Esqueleto del avatar", "estado": "hecho"}]
 }
@@ -193,12 +193,12 @@ Esquema de `estado.json` (no cambiarlo: otras herramientas lo leen):
 
 Estados validos: `hecho`, `en_curso`, `pendiente`, `error`.
 
-## Aprendido en la demo Tecnosito (10-10-2026)
+## Aprendido en la demo Robo (10-10-2026)
 
 - Un `<iframe loading="lazy">` dentro de un elemento `hidden` tarda unos 3 s en disparar `load`, y un tiempo límite de 3 s lo daba por muerto y escondía la franja. Si la franja compacta va dentro de un panel oculto, quita `loading="lazy"` o espera más de 3 s antes de declararla caída.
 - `obra.py paso` duplicaba un paso ya hecho si el texto coincidía (por ejemplo al repetir el cierre de la misma tarea). Corregido: busca primero entre pendientes y, si no hay, reabre el paso hecho o en error con ese texto en vez de añadir otro. Si en una obra aparecen dos pasos iguales, es `obra.py` viejo.
 - Para capturar la obra, Playwright con `waitUntil: 'networkidle'` nunca llega porque la página sondea `estado.json` cada 2 s: usa `'load'` y espera después. `chrome --headless --screenshot` captura antes de que termine la transición CSS de la barra (600 ms): usa Playwright con una espera explícita.
-- En la Mac del docente 8787 estaba ocupado por otro proceso; se sirvió en 8797 y el osito leyó la obra con `?obra=http://localhost:8797`. Comprueba el puerto con `lsof -i :8787` antes de `servir`.
+- En la Mac del docente 8787 estaba ocupado por otro proceso; se sirvió en 8797 y el robot leyó la obra con `?obra=http://localhost:8797`. Comprueba el puerto con `lsof -i :8787` antes de `servir`.
 
 ## Version corta para modelos pequenos
 

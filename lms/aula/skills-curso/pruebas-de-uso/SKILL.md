@@ -129,7 +129,7 @@ SUS promedio: [valor] (mín [ ], máx [ ]).
 Fecha prevista: [ ]. Correcciones a aplicar antes: [IDs del PLAN_TRABAJO].
 ```
 
-## Aprendido en la demo Tecnosito (10-10-2026)
+## Aprendido en la demo Robo (10-10-2026)
 
 - En un flyer generado con un LLM local, el dato alterado es el hallazgo de severidad 4: el modelo cambió la hora y adornó el título ("PHP para Dummies") sin que nada avisara. La pantalla muestra ahora los datos extraídos (título, fecha, hora, precio, lugar) junto a la imagen para que el usuario corrija un campo y regenere.
 - Tarea de prueba que vale la pena: "Pide un flyer para tu taller del domingo 11 a las 6 pm a S/ 100". Mide si el usuario detecta un dato alterado por el LLM antes de compartir el flyer, igual que en voz se mide si detecta una transcripción errónea. Si no lo detecta, la severidad es 4 aunque la imagen sea bonita.

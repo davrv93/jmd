@@ -201,7 +201,7 @@ Equipo de prueba: [modelo de celular / laptop / servidor, RAM, red]
 - [métrica]: [valor actual] frente a [umbral] → [ID en PLAN_TRABAJO]
 ```
 
-## Aprendido en la demo Tecnosito (10-10-2026)
+## Aprendido en la demo Robo (10-10-2026)
 
 Cifras medidas en una Mac Apple Silicon de 24 GB. Sirven de referencia, no de umbral universal.
 

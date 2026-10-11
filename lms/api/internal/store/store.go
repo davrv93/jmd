@@ -189,6 +189,7 @@ CREATE TABLE IF NOT EXISTS live_evidencias (
   t TEXT NOT NULL,
   PRIMARY KEY (user_id, lesson_id, escena, tipo)
 );
+CREATE TABLE IF NOT EXISTS skills (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, nombre TEXT NOT NULL, descripcion TEXT NOT NULL DEFAULT '', cuerpo TEXT NOT NULL, modelo_destino TEXT NOT NULL DEFAULT 'generico', variantes_json TEXT NOT NULL DEFAULT '{}', version INTEGER NOT NULL DEFAULT 1, origen TEXT NOT NULL DEFAULT 'propia', compartida INTEGER NOT NULL DEFAULT 0, creada_en TEXT NOT NULL, actualizada_en TEXT NOT NULL, UNIQUE (user_id, nombre));
 `
 
 // NewID genera un id aleatorio no adivinable (32 hex).

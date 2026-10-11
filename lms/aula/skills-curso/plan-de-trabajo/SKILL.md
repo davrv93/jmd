@@ -111,7 +111,7 @@ Hito: [qué se muestra, a quién, en cuántos minutos]
 - [ítem y por qué no entra ahora]
 ```
 
-## Aprendido en la demo Tecnosito (10-10-2026)
+## Aprendido en la demo Robo (10-10-2026)
 
 - Antes de repartir tareas entre varios agentes, cierra el contrato: una tabla con cada ruta de API, su JSON de entrada y de salida, y el esquema de `estado.json`. Esa tabla es la tarea F1-T1 y las demás dependen de ella. Cinco agentes en paralelo terminaron la demo sin pisarse porque el contrato de cinco rutas existía antes de arrancar.
 - Cada agente trabaja con rutas absolutas y dentro de su carpeta. Uno escribió en el README de otro proyecto por un `cd` encadenado en un comando largo. El plan anota la carpeta raíz de cada agente.

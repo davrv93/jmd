@@ -4,6 +4,7 @@
 package aula
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -64,10 +65,15 @@ func (a *Aula) Args(userID string) []string {
 		"-v", Volumen(userID) + ":/trabajo",
 		"--network", a.red(),
 		"-e", "HOME=/home/alumno", "-e", "JMD_URL=http://ai-orchestrator:4000",
+		// jmd ve, desde cualquier carpeta, las skills propias (que el LMS escribe en /trabajo/skills) y las del
+		// curso. Las del curso no pueden ir en ~/.config/jmd/skills: el home es un tmpfs y tapa el enlace
+		// que trae la imagen.
+		"-e", "JMD_SKILLS=/trabajo/skills:/opt/skills-curso",
 		"--user", "10001:10001", "--workdir", "/trabajo",
 	}
 	if a.Token != "" {
-		args = append(args, "-e", "OSITO_TOKEN="+a.Token, "-e", "JMD_TOKEN="+a.Token)
+		// jmd lee la clave de JMD_API_KEY; el asistente, OSITO_TOKEN.
+		args = append(args, "-e", "OSITO_TOKEN="+a.Token, "-e", "JMD_TOKEN="+a.Token, "-e", "JMD_API_KEY="+a.Token)
 	}
 	return append(args, a.imagen(), "sleep", "2147483647")
 }
@@ -119,6 +125,20 @@ func (a *Aula) Exec(ctx context.Context, nombre string, cmd ...string) (string, 
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	return a.exec(ctx, "exec", nombre, "sh", "-c", strings.Join(cmd, " "))
+}
+
+// ExecStdin ejecuta un script de shell dentro del contenedor y le pasa stdin (para escribir archivos
+// sin interpolar su contenido en la línea de comandos). Tope de 20 s.
+func (a *Aula) ExecStdin(ctx context.Context, nombre, script string, stdin []byte) (string, error) {
+	if a.run != nil {
+		return a.run(ctx, "exec-stdin", nombre, script, string(stdin))
+	}
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, a.Runtime, "exec", "-i", nombre, "sh", "-c", script)
+	cmd.Stdin = bytes.NewReader(stdin)
+	out, err := cmd.CombinedOutput()
+	return strings.TrimSpace(string(out)), err
 }
 
 // Parar detiene el contenedor sin borrarlo: el volumen /trabajo se conserva.

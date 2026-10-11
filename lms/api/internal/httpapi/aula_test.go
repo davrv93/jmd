@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -19,6 +20,10 @@ type aulaFalsa struct {
 	asistente bool
 	archivos  map[string][]byte
 	destino   string // host:puerto al que Dial conecta (un httptest)
+
+	// Skills montadas: contenedor → ruta (/trabajo/skills/<nombre>/SKILL.md) → contenido.
+	montadas map[string]map[string]string
+	execs    []string // todo lo que pasó por Exec (para comprobar «aula parar; aula iniciar», etc.)
 }
 
 func (a *aulaFalsa) Crear(_ context.Context, id string) (bool, error) {
@@ -39,9 +44,42 @@ func (a *aulaFalsa) Estado(_ context.Context, id string) string {
 	}
 	return "ninguno"
 }
-func (a *aulaFalsa) Exec(_ context.Context, _ string, cmd ...string) (string, error) {
+
+var reKeep = regexp.MustCompile(`keep="([^"]*)"`)
+
+var reEscribe = regexp.MustCompile(`d=(/trabajo/skills/[a-z0-9-]+)`)
+
+// ExecStdin del falso entiende el script de montaje: guarda el stdin como SKILL.md de esa carpeta.
+func (a *aulaFalsa) ExecStdin(_ context.Context, nombre, script string, stdin []byte) (string, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	if a.montadas == nil {
+		a.montadas = map[string]map[string]string{}
+	}
+	if a.montadas[nombre] == nil {
+		a.montadas[nombre] = map[string]string{}
+	}
+	if m := reEscribe.FindStringSubmatch(script); m != nil {
+		a.montadas[nombre][m[1]+"/SKILL.md"] = string(stdin)
+	}
+	return "", nil
+}
+
+func (a *aulaFalsa) Exec(_ context.Context, nombre string, cmd ...string) (string, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.execs = append(a.execs, strings.Join(cmd, " "))
+	if m := reKeep.FindStringSubmatch(strings.Join(cmd, " ")); m != nil {
+		// limpieza: se quedan solo las del «keep»; las demás montadas se borran
+		keep := " " + m[1] + " "
+		for ruta := range a.montadas[nombre] {
+			n := strings.TrimSuffix(strings.TrimPrefix(ruta, "/trabajo/skills/"), "/SKILL.md")
+			if !strings.Contains(keep, " "+n+" ") {
+				delete(a.montadas[nombre], ruta)
+			}
+		}
+		return "", nil
+	}
 	switch strings.Join(cmd, " ") {
 	case "aula iniciar":
 		a.asistente = true

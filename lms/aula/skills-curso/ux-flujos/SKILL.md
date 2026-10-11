@@ -178,7 +178,7 @@ Eco de comprensión del asistente antes de actuar (HTML de la burbuja de confirm
 </li>
 ```
 
-## Aprendido en la demo Tecnosito (10-10-2026)
+## Aprendido en la demo Robo (10-10-2026)
 
 - El eco de comprensión aplica también a lo generado, no solo a lo escuchado. Cuando el flyer sale de un JSON extraído por el LLM, la pantalla muestra esos datos (título, fecha, hora, precio, lugar, ponente) debajo de la imagen con "Corregir" por campo, y regenera solo el flyer, sin repetir el pedido entero. Un modelo pequeño altera horas y adorna títulos; el usuario tiene que verlo antes de compartir.
 - Los datos duros no se le confían al modelo: fecha, hora y precio se extraen con regex y mandan sobre el JSON. El flujo lo dice: "Tomé la fecha y la hora de tu mensaje; el título lo propuse yo".
