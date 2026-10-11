@@ -67,6 +67,13 @@ sudo docker network inspect aula_net --format '{{range .Containers}}{{.Name}} {{
 Entra como un alumno de prueba a `https://jmd-learn.online/live/pa-02/`: abre Terminal, escribe `aula iniciar` y
 `curl -s localhost:8766/api/salud` (debe decir `"llm":true,"perfil":"nube"`). Prueba el chat desde el panel Visor.
 
+### 2.4 Lecciones del despliegue del 11-10-2026
+
+- **No uses `umask 077` en la misma sesión del `git pull`:** las carpetas nuevas quedan en 700 y el LMS (usuario 10001) no puede leer `lms/content`; el contenedor entra en bucle de reinicio. Si pasa: `chmod -R go+rX lms docs src ui tests instalador` y `sudo docker restart lms`.
+- **El gateway copia su configuración semilla desde el binario**, no desde el repo. Para que existan los modelos `qwen-flash`, `imagen-flash` y el agente `clase`: `sudo docker cp config.yaml ai-orchestrator:/data/config.yaml`, `sudo docker exec -u root ai-orchestrator chown aio /data/config.yaml` y `sudo docker restart ai-orchestrator`.
+- **`.env` con líneas duplicadas** (la plantilla trae `GATEWAY_API_KEYS=` vacío): al leer una clave con `grep | cut` usa `tail -1`.
+- La imagen del aula se construye con el constructor clásico: no uses `TARGETARCH` (ya corregido con `uname -m`).
+
 ## 3. Antes de la clase (ensayo)
 
 1. Instructor: abrir `https://jmd-learn.online/live/pa-02/` y pulsar «Iniciar LIVE». Entrar con dos alumnos de prueba.
