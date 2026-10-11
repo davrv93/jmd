@@ -15,7 +15,8 @@ El servidor del LMS no ejecuta ningún modelo. Nada de whisper, sd-turbo ni Olla
 | Voz a texto | `faster-whisper small` en la laptop (CPU) | API de transcripción barata por el gateway (ver tabla) | whisper en el EC2 |
 | Generación de imágenes | sd-turbo o sdxl-turbo en la laptop según su diagnóstico | API de imagen barata por el gateway (ver tabla); modo demo con Pillow si no hay nada | difusión en el EC2 |
 | Agente que escribe el código (OpenCode) | Laptop, con token personal del gateway | `jmd` embebido en el LIVE (contenedor Alpine de 128 MB) | OpenCode en el EC2 |
-| Terminal y visor que se ven en el LIVE | La laptop del alumno, conectada con `jmd live <código>` (una conexión saliente, sin abrir puertos) | Contenedor Alpine del servidor | Túneles públicos |
+| Terminal que se ve en el LIVE | La laptop del alumno, conectada con `jmd live <código>` (una conexión saliente, sin abrir puertos) | Contenedor Alpine del servidor | Túneles públicos |
+| Visor que se ve en el LIVE | El servidor sirve la carpeta de trabajo que `jmd live` sincroniza; las llamadas a la API del asistente se relevan a la laptop | Contenedor Alpine del servidor | Procesos de render en el EC2 |
 
 ### Proveedores remotos de respaldo (por OpenRouter, lista blanca del gateway)
 
