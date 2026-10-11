@@ -247,3 +247,22 @@ func readJSONAllowEmpty(w http.ResponseWriter, r *http.Request, v any) bool {
 	}
 	return readJSON(w, r, v)
 }
+
+// liveActivas: GET /api/v1/live (autenticado). Las clases con el LIVE en marcha que el usuario puede ver;
+// el LMS lo consulta cada pocos segundos para mostrar «Clase en vivo · Entrar» en cualquier pantalla.
+func (s *Server) liveActivas(w http.ResponseWriter, r *http.Request, p *Principal) {
+	ids, err := s.DB.LivesActivas(r.Context())
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	out := []map[string]any{}
+	for _, id := range ids {
+		l := s.Content.Get().Lesson(id)
+		if l == nil || s.visibleLesson(p, l) == nil {
+			continue
+		}
+		out = append(out, map[string]any{"lesson_id": l.ID, "titulo": l.Title})
+	}
+	writeJSON(w, 200, out)
+}

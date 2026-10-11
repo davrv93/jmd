@@ -1,3 +1,4 @@
+import { LiveAviso } from "~/components/live-entrada";
 import { component$, Fragment, Slot, useContextProvider, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, useLocation, useNavigate } from "@builder.io/qwik-city";
 import { api, ApiError } from "~/lib/api";
@@ -210,6 +211,7 @@ export default component$(() => {
           )}
         </div>
       </header>
+      {!isLive && !isLogin && me && <LiveAviso />}
       <main class={isLive ? "page live-page" : "page"}>
         <Slot />
       </main>

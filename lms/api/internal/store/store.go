@@ -968,6 +968,24 @@ func (d *DB) LiveSession(ctx context.Context, lessonID string) (*LiveSession, er
 	return scanLive(d.sql.QueryRowContext(ctx, "SELECT "+liveCols+" FROM live_sessions WHERE lesson_id = ?", lessonID))
 }
 
+// LivesActivas devuelve los ids de las lecciones con el LIVE en marcha.
+func (d *DB) LivesActivas(ctx context.Context) ([]string, error) {
+	rows, err := d.sql.QueryContext(ctx, "SELECT lesson_id FROM live_sessions WHERE estado = 'en_vivo' ORDER BY actualizada_en DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
+}
+
 // UpsertLiveSession guarda el estado del LIVE (crea o actualiza la fila de la lección).
 func (d *DB) UpsertLiveSession(ctx context.Context, s *LiveSession) error {
 	s.ActualizadaEn = time.Now().UTC()

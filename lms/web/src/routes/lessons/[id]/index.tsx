@@ -1,3 +1,4 @@
+import { LiveEntrada } from "~/components/live-entrada";
 import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
 import { api, errMsg, fmtDate, KINDS, rel, requireLogin, TOOLS, type Course, type Lesson, type Material, type Question } from "~/lib/api";
@@ -223,6 +224,7 @@ export default component$(() => {
 
       <article style="min-width:0">
         <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { href: `/courses/${l.course.slug}/`, label: l.course.title }, { label: l.module.title }]} />
+        <LiveEntrada lesson={l.id} staff={isStaff(session.me)} />
         <div class="head card" data-ph={modToken(modIndex)}>
           <CycleRing phases={ringPhases} size={56} />
           <div class="grow">

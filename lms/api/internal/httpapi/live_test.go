@@ -540,3 +540,24 @@ func TestLiveLogre(t *testing.T) {
 		t.Errorf("deshacer: %v", hs)
 	}
 }
+
+// Solo aparecen las clases con el LIVE en marcha.
+func TestLiveActivas(t *testing.T) {
+	e := newEnvEscenas(t)
+	profe := e.login("profe@x.test", "profe1234")
+	if r := e.call("GET", "/api/v1/live", profe, false, nil, ""); r.code != 200 || len(r.list) != 0 {
+		t.Fatalf("sin LIVE: %d %s", r.code, r.raw)
+	}
+	e.call("POST", "/api/v1/live/l1/iniciar", profe, false, map[string]any{}, "")
+	r := e.call("GET", "/api/v1/live", profe, false, nil, "")
+	if len(r.list) != 1 || r.list[0]["lesson_id"] != "l1" {
+		t.Fatalf("con LIVE: %s", r.raw)
+	}
+	e.call("POST", "/api/v1/live/l1/cerrar", profe, false, map[string]any{}, "")
+	if r := e.call("GET", "/api/v1/live", profe, false, nil, ""); len(r.list) != 0 {
+		t.Errorf("cerrado: %s", r.raw)
+	}
+	if r := e.call("GET", "/api/v1/live", "", false, nil, ""); r.code != 401 {
+		t.Errorf("sin sesión: %d", r.code)
+	}
+}

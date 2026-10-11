@@ -335,6 +335,7 @@ export const api = {
   misCertificados: () => req<Certificate[]>("GET", "/api/v1/certificados"),
   verificar: (codigo: string) => req<Certificate>("GET", `/api/v1/verificar/${encodeURIComponent(codigo)}`),
   // Modo LIVE de una clase: estado, control del instructor y lectura del alumno.
+  liveActivas: () => req<{ lesson_id: string; titulo: string }[]>("GET", "/api/v1/live"),
   liveEstado: (lesson: string) => req<LiveEstado>("GET", `/api/v1/live/${encodeURIComponent(lesson)}`),
   liveIniciar: (lesson: string) => req<LiveEstado>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/iniciar`, {}),
   liveCerrar: (lesson: string) => req<LiveEstado>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/cerrar`, {}),

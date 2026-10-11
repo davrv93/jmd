@@ -238,11 +238,12 @@ def componer(datos: dict, fondo, estilo: str, ruta: Path) -> None:
     for valor in (datos.get("fecha"), datos.get("hora"), datos.get("lugar")):
         if not valor:
             continue
-        w = _chip(d, (cx, y), valor, f_chip, relleno_chip, blanco)
-        cx += w + 14
-        if cx > ANCHO - m - 220:
+        ancho_chip = int(d.textlength(valor, font=f_chip)) + 52
+        if cx > x and cx + ancho_chip > ANCHO - m - 48:  # no cabe en la linea: baja a la siguiente
             cx = x
             y += 78
+        w = _chip(d, (cx, y), valor, f_chip, relleno_chip, blanco)
+        cx += w + 14
     y += 100
 
     # Zona inferior: insignia de precio a la derecha; ponente y contacto a la izquierda, alineados con ella
@@ -267,7 +268,7 @@ def componer(datos: dict, fondo, estilo: str, ruta: Path) -> None:
     lineas_pie = []
     if datos.get("ponente"):
         lineas_pie.append(f"Dicta: {datos['ponente']}")
-    lineas_pie.append(datos.get("contacto") or "Cupos limitados. Reserva tu lugar.")
+    lineas_pie.append(datos.get("contacto") or "Cupos limitados")
     f_pie = motores._fuente(30)
     y_pie = py0 + 18
     for linea in lineas_pie[:2]:
