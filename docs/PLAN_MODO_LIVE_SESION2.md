@@ -99,7 +99,7 @@ Cada tarea cabe en una jornada o menos, tiene criterio de aceptación verificabl
 | 3.5 | Inyección de credenciales: al crear el contenedor, el LMS escribe `~/.config/jmd/tokens.json` con el token personal del alumno y el modelo elegido; nunca la clave de OpenRouter. Para la laptop del alumno, «Mi IA» muestra el bloque de `opencode.json` listo para copiar | Go | Dentro del contenedor, `jmd ask` responde por el gateway; la clave central no aparece en ningún archivo | pendiente |
 | 3.6 | Interruptores en la UI: «Activar caveman» enciende la skill y el estilo caveman del gateway para ese alumno; «Activar RTK» ejecuta `rtk init -g --auto-patch` en el contenedor; ambos avisan al LMS para marcar el momento en el gráfico de tokens | Qwik, Go, gateway | El gráfico muestra la marca; `rtk gain` dentro del contenedor coincide con el ahorro mostrado | pendiente |
 
-### Fase 3b · `jmd` apto para clase (2,5 días)
+### Fase 3b · `jmd` apto para clase y embebido en el LIVE (5 días)
 
 `jmd` ya tiene lista de tareas (`todo_write`, `/todos`), herramientas de shell y archivos, MCP (`/mcp`, `/tools`) y skills. Le faltan tres cosas que OpenCode sí muestra y que el alumno necesita para entender lo que pasa: contexto y tokens, costo, y una respuesta clara cuando el gateway reintenta. Sin esto, el alumno ve una pantalla quieta y cree que se colgó.
 
@@ -111,7 +111,17 @@ Cada tarea cabe en una jornada o menos, tiene criterio de aceptación verificabl
 | 3b.4 | Panel MCP y tareas en el LIVE: el LMS muestra, por alumno, la lista de tareas del chat (`todo_write` se replica al LMS por un hook de `jmd`) y los servidores MCP conectados, en el panel lateral junto a la terminal | jmd, Go, Qwik | El instructor ve las tareas de cada alumno avanzar en vivo | pendiente |
 | 3b.5 | Prueba de aula con 5 alumnos usando solo `jmd` en el contenedor durante 30 min: tareas de varios pasos, una skill, un MCP, un modelo `:free` saturado a propósito | personas | Sin cuelgues; todos saben en todo momento qué está haciendo el agente (encuesta de 3 preguntas) | pendiente |
 
-Decisión: **OpenCode sigue siendo el agente principal, en la laptop del alumno**, con el token personal del gateway; ahí el alumno tiene la ventana de contexto, el panel de MCP y las tareas que ya conoce de la clase 1, y la RAM es suya. `jmd` en el contenedor es el respaldo para quien llegue con la laptop sin OpenCode o sin memoria, y la vía para que la terminal del LIVE tenga un agente. Las métricas de tokens, costo y cuota del LIVE salen del gateway, así que valen para los dos clientes.
+**`jmd` embebido en el LIVE.** Además de la terminal, el LIVE lleva un panel de chat propio alimentado por `jmd` corriendo dentro del contenedor del alumno. Es la misma lógica de `jmd` (herramientas, tareas, MCP, skills) con una interfaz web que el LMS dibuja: así el alumno tiene en pantalla, sin salir del LIVE, lo que OpenCode le da en la laptop.
+
+| # | Tarea | Dónde | Criterio | Estado |
+|---|---|---|---|---|
+| 3b.6 | `jmd serve --embed`: `jmd` expone en el contenedor un servidor local HTTP+SSE (puerto 7700, solo loopback) con `POST /turno` (prompt, modelo, perfil), `GET /eventos` (stream: texto por tokens, llamada a herramienta pedida, resultado, tarea actualizada, estado MCP, uso de tokens y costo, progreso de reintentos, fin), `POST /confirmar` (sí, no, siempre), `POST /cancelar`, `GET /estado` (contexto %, tokens, costo, modelo, skills cargadas, MCP) y `POST /skills/recargar`. Un proceso por alumno, menor a 25 MB en reposo | jmd (Rust) | `curl` contra el puerto dentro del contenedor recorre un turno completo con una herramienta y una tarea; prueba de integración en Rust | pendiente |
+| 3b.7 | Proxy del LMS `GET/POST /api/v1/aula/jmd/{…}` → `curso-<sub>:7700`, autenticado por la sesión del alumno, con SSE pasante y sin búfer | Go | Dos alumnos no pueden verse el chat; test 403; el stream llega en menos de 200 ms | pendiente |
+| 3b.8 | Panel «Agente» en el LIVE (Qwik): historial con streaming, bloques de herramienta con botones Sí / No / Siempre, panel de tareas con estados (igual al de OpenCode), panel MCP (servidores, herramientas, estado), barra inferior con contexto %, tokens del turno y de la sesión, costo, modelo activo y selector de modelo (lista blanca), botón Cancelar visible mientras responde, línea viva de reintentos; `/skill nombre` y `/proto` disponibles como atajos; tema claro y oscuro; atajos de teclado | Qwik | Captura de un turno con herramienta, tarea y reintento; el alumno nunca ve la pantalla quieta más de 5 s | pendiente |
+| 3b.9 | Puente agente ↔ visor ↔ terminal: cuando el agente escribe en `/trabajo`, el visor se recarga; «Abrir en terminal» ejecuta el comando propuesto en la terminal del LIVE; «Lo logré» puede adjuntar el último turno como evidencia | Qwik, Go | Pedir «crea index.html con un contador en Preact» y verlo en el visor sin tocar la terminal | pendiente |
+| 3b.10 | Replicación al instructor: tareas, tokens y modelo de cada alumno llegan al panel de control por el mismo stream (resumen cada 5 s); el instructor puede «ver el chat» de un alumno en solo lectura si el alumno lo permite | Go, Qwik | Matriz de alumnos con tareas y tokens en vivo; permiso por alumno respetado | pendiente |
+
+Decisión: en la laptop el alumno sigue con OpenCode y su token personal del gateway; en el LIVE, el agente es `jmd` embebido (panel «Agente») más la terminal, los dos dentro del mismo contenedor de poca RAM. Lo que el alumno ve en el panel (contexto, tokens, costo, tareas, MCP, reintentos) es lo mismo que le da OpenCode en la laptop, dibujado por el LMS. Las métricas de tokens, costo y cuota del LIVE salen del gateway, así que valen para los dos clientes.
 
 ### Fase 4 · Visor de proyectos (2 días)
 
@@ -182,7 +192,7 @@ Reglas duras de esta fase:
 | 3 | 4, 5, 5b | Visor con React y Vue en caliente; consumo por alumno en vivo con marcas de caveman y RTK; skills propias aisladas y adaptadas al modelo de cada alumno |
 | 4 | 6, 7 | «Lo logré», insignia automática, ensayo general |
 
-Total estimado: 20 a 22 jornadas de desarrollo, más el ensayo.
+Total estimado: 23 a 25 jornadas de desarrollo, más el ensayo.
 
 ## Riesgos y mitigación
 
