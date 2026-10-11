@@ -731,6 +731,48 @@ func (d *DB) EvidenciaExiste(ctx context.Context, userID, lessonID, escena strin
 	return n > 0, err
 }
 
+// EvidenciaTipos devuelve los tipos de evidencia del alumno en una escena (vacío si ninguno).
+func (d *DB) EvidenciaTipos(ctx context.Context, userID, lessonID, escena string) ([]string, error) {
+	rows, err := d.sql.QueryContext(ctx, "SELECT tipo FROM live_evidencias WHERE user_id = ? AND lesson_id = ? AND escena = ? ORDER BY tipo", userID, lessonID, escena)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var t string
+		if err := rows.Scan(&t); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// QuitarEvidencia borra una evidencia concreta (para «deshacer» el Lo logré).
+func (d *DB) QuitarEvidencia(ctx context.Context, userID, lessonID, escena, tipo string) error {
+	_, err := d.sql.ExecContext(ctx, "DELETE FROM live_evidencias WHERE user_id = ? AND lesson_id = ? AND escena = ? AND tipo = ?", userID, lessonID, escena, tipo)
+	return err
+}
+
+// EscenasConEvidencia lista las escenas donde el alumno tiene una evidencia de ese tipo.
+func (d *DB) EscenasConEvidencia(ctx context.Context, userID, lessonID, tipo string) ([]string, error) {
+	rows, err := d.sql.QueryContext(ctx, "SELECT escena FROM live_evidencias WHERE user_id = ? AND lesson_id = ? AND tipo = ? ORDER BY escena", userID, lessonID, tipo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []string{}
+	for rows.Next() {
+		var e string
+		if err := rows.Scan(&e); err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
 // --- ajustes -------------------------------------------------------------------------------
 
 // Setting devuelve el valor guardado para una clave; ErrNotFound si nunca se guardó.

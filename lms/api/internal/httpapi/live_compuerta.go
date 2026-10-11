@@ -142,16 +142,15 @@ func (s *Server) motivosCumplidos(ctx context.Context, lesson string, subs []str
 			out[sub] = "evidencia"
 			continue
 		}
-		if esc != nil && esc.LoLogre && esc.Paso != "" {
-			if prog, err := s.DB.Progress(ctx, sub, lesson); err == nil {
-				if _, ok := prog[esc.Paso]; ok {
-					out[sub] = "lo_logre"
-					continue
-				}
-			}
+		tipos, err := s.DB.EvidenciaTipos(ctx, sub, lesson, sv.Escena)
+		if err != nil || len(tipos) == 0 {
+			continue
 		}
-		if ok, err := s.DB.EvidenciaExiste(ctx, sub, lesson, sv.Escena); err == nil && ok {
-			out[sub] = "evidencia"
+		out[sub] = "evidencia"
+		for _, t := range tipos {
+			if t == "logre" {
+				out[sub] = "lo_logre"
+			}
 		}
 	}
 	return out

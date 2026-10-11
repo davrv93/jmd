@@ -515,3 +515,28 @@ func TestLiveEvidencia(t *testing.T) {
 		t.Errorf("el instructor no debe quedar como alumno")
 	}
 }
+
+// «Lo logré» deja la evidencia, marca el paso, cuenta en la compuerta y se puede deshacer.
+func TestLiveLogre(t *testing.T) {
+	e := newEnvEscenas(t)
+	e.call("POST", "/api/v1/auth/register", "", false, map[string]string{"email": "ana@x.test", "name": "Ana", "password": "ana-1234", "invite_code": "abc"}, "")
+	ana := e.login("ana@x.test", "ana-1234")
+	if r := e.call("POST", "/api/v1/live/l1/logre", ana, false, map[string]any{"escena": "99-no", "hecho": true}, ""); r.code != 404 {
+		t.Errorf("escena inexistente: %d", r.code)
+	}
+	if r := e.call("POST", "/api/v1/live/l1/logre", ana, false, map[string]any{"escena": "02-dos", "hecho": true}, ""); r.code != 200 {
+		t.Fatalf("logré: %d %s", r.code, r.raw)
+	}
+	r := e.call("GET", "/api/v1/live/l1/logre", ana, false, nil, "")
+	if hs, _ := r.body["escenas"].([]any); len(hs) != 1 || hs[0] != "02-dos" {
+		t.Errorf("lista: %s", r.raw)
+	}
+	us, _ := e.db.UserByEmail(t.Context(), "ana@x.test")
+	if tipos, _ := e.db.EvidenciaTipos(t.Context(), us.ID, "l1", "02-dos"); len(tipos) != 1 || tipos[0] != "logre" {
+		t.Errorf("evidencia: %v", tipos)
+	}
+	e.call("POST", "/api/v1/live/l1/logre", ana, false, map[string]any{"escena": "02-dos", "hecho": false}, "")
+	if hs, _ := e.call("GET", "/api/v1/live/l1/logre", ana, false, nil, "").body["escenas"].([]any); len(hs) != 0 {
+		t.Errorf("deshacer: %v", hs)
+	}
+}

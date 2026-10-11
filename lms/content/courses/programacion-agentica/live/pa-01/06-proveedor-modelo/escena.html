@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E06 · Proveedor, modelo y parámetros</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<style>
+/* ---- Tokens (los mismos del LMS) ---- */
+:root {
+  --bg: #eef0ff; --bg2: #f6f0fb; --bg3: #fbf6ee; --s1: #ffffff; --s2: #f4f3fb; --s3: #ebeaf6;
+  --fg: #16151d; --muted: #5c5966; --line: rgba(60,52,140,.13); --line2: rgba(60,52,140,.24);
+  --accent: #5a49d6; --accent-2: #7b6cf0; --accent-bg: rgba(90,73,214,.11); --on-accent: #ffffff;
+  --gold: #7d5700; --gold-bg: rgba(125,87,0,.13);
+  --ok: #136a33; --ok-bg: rgba(19,106,51,.12); --warn: #984407; --warn-bg: rgba(152,68,7,.12);
+  --bad: #b11f1f; --bad-bg: rgba(177,31,31,.10); --info: #1d4ed8; --info-bg: rgba(29,78,216,.10);
+  --ph-ec: #5a49d6; --ph-ec-bg: rgba(90,73,214,.11);
+  --ph-or: #0b5f58; --ph-or-bg: rgba(11,95,88,.12);
+  --ph-ca: #7d5700; --ph-ca-bg: rgba(125,87,0,.13);
+  --ph-ea: #a4185c; --ph-ea-bg: rgba(164,24,92,.11);
+  --est: #5a49d6; --est-g: #9d8cff; --est-o: #c08a12;
+  --card-shadow: 0 1px 2px rgba(60,52,140,.06), 0 10px 28px -12px rgba(90,73,214,.28);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --cielo: .55;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="light"]) {
+    --bg: #12112a; --bg2: #171533; --bg3: #1b1731; --s1: #1d1b38; --s2: #252347; --s3: #2e2b55;
+    --fg: #ecebf7; --muted: #b7b4cc; --line: rgba(190,185,255,.13); --line2: rgba(190,185,255,.26);
+    --accent: #a99cff; --accent-2: #c3b9ff; --accent-bg: rgba(169,156,255,.16); --on-accent: #14122b;
+    --gold: #e9bd52; --gold-bg: rgba(233,189,82,.16);
+    --ok: #4fd37a; --ok-bg: rgba(79,211,122,.15); --warn: #f4ac5c; --warn-bg: rgba(244,172,92,.15);
+    --bad: #ff7b7b; --bad-bg: rgba(255,123,123,.14); --info: #85b4ff; --info-bg: rgba(133,180,255,.15);
+    --ph-ec: #a99cff; --ph-ec-bg: rgba(169,156,255,.15);
+    --ph-or: #4fd1c5; --ph-or-bg: rgba(79,209,197,.15);
+    --ph-ca: #e9bd52; --ph-ca-bg: rgba(233,189,82,.15);
+    --ph-ea: #f27cb8; --ph-ea-bg: rgba(242,124,184,.15);
+    --est: #c3b9ff; --est-g: #8e7dff; --est-o: #e9bd52;
+    --card-shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -12px rgba(0,0,0,.6);
+    --cielo: .95; color-scheme: dark;
+  }
+}
+:root[data-tema="dark"] {
+  --bg: #12112a; --bg2: #171533; --bg3: #1b1731; --s1: #1d1b38; --s2: #252347; --s3: #2e2b55;
+  --fg: #ecebf7; --muted: #b7b4cc; --line: rgba(190,185,255,.13); --line2: rgba(190,185,255,.26);
+  --accent: #a99cff; --accent-2: #c3b9ff; --accent-bg: rgba(169,156,255,.16); --on-accent: #14122b;
+  --gold: #e9bd52; --gold-bg: rgba(233,189,82,.16);
+  --ok: #4fd37a; --ok-bg: rgba(79,211,122,.15); --warn: #f4ac5c; --warn-bg: rgba(244,172,92,.15);
+  --bad: #ff7b7b; --bad-bg: rgba(255,123,123,.14); --info: #85b4ff; --info-bg: rgba(133,180,255,.15);
+  --ph-ec: #a99cff; --ph-ec-bg: rgba(169,156,255,.15);
+  --ph-or: #4fd1c5; --ph-or-bg: rgba(79,209,197,.15);
+  --ph-ca: #e9bd52; --ph-ca-bg: rgba(233,189,82,.15);
+  --ph-ea: #f27cb8; --ph-ea-bg: rgba(242,124,184,.15);
+  --est: #c3b9ff; --est-g: #8e7dff; --est-o: #e9bd52;
+  --card-shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -12px rgba(0,0,0,.6);
+  --cielo: .95; color-scheme: dark;
+}
+
+/* ---- Base ---- */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; } /* si no, display:grid o flex le ganan al atributo */
+html, body { margin: 0; height: 100%; }
+body {
+  font: 400 clamp(15px, calc(1.2vw + .5vh), 30px)/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--fg);
+  background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 55%, var(--bg3) 100%);
+  overflow: hidden;
+}
+.esc { position: relative; min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; padding: 2.2vh 3.2vw 2vh; gap: 2vh; }
+
+/* ---- Cielo de fondo (decorativo, 0 JS) ---- */
+.esc-cielo { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: var(--cielo); }
+.esc-cielo .e { fill: var(--est); }
+.esc-cielo .eg { fill: var(--est-g); }
+.esc-cielo .eo { fill: var(--est-o); }
+.esc-cielo .t { fill: none; stroke: var(--est); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo 4s ease-out .3s forwards; }
+.esc-cielo .tb { fill: none; stroke: var(--est-g); stroke-width: 1.4; stroke-linecap: round; opacity: .5; stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo 5s ease-out .8s forwards; }
+.esc-cielo .p { animation: esc-parpadeo 5s ease-in-out infinite; animation-delay: var(--p, 0s); }
+.esc > * { position: relative; z-index: 1; }
+
+/* ---- Cabecera, cuerpo y pie ---- */
+.esc-cab { display: flex; align-items: center; gap: 1vw; }
+.esc-fase { --c: var(--ph-ec); --cb: var(--ph-ec-bg); display: inline-flex; align-items: center; gap: .5em; padding: .3em .9em; border-radius: 999px; font-weight: 700; font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--c); background: var(--cb); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.esc-fase::before { content: ""; width: .55em; height: .55em; border-radius: 50%; background: var(--c); }
+.esc-fase[data-ph="ec"] { --c: var(--ph-ec); --cb: var(--ph-ec-bg); }
+.esc-fase[data-ph="or"] { --c: var(--ph-or); --cb: var(--ph-or-bg); }
+.esc-fase[data-ph="ca"] { --c: var(--ph-ca); --cb: var(--ph-ca-bg); }
+.esc-fase[data-ph="ea"] { --c: var(--ph-ea); --cb: var(--ph-ea-bg); }
+.esc-num { margin-left: auto; font: 700 .8em var(--mono); color: var(--muted); letter-spacing: .12em; }
+.esc-cuerpo { min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 2.2vh; }
+.esc-pie { font-size: .62em; color: var(--muted); display: flex; align-items: center; gap: .6em; }
+.esc-pie::before { content: ""; width: 1.6em; height: 2px; background: var(--line2); }
+
+/* ---- Tipografía y piezas reutilizables ---- */
+.esc-titulo { margin: 0; font-size: 2.3em; line-height: 1.08; font-weight: 800; letter-spacing: -.02em; }
+.esc-titulo em { font-style: normal; background: linear-gradient(100deg, var(--accent), var(--est-g)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.esc-sub { margin: 0; font-size: 1.15em; color: var(--muted); max-width: 46em; }
+.esc-big { font-size: 3.4em; font-weight: 800; line-height: 1; letter-spacing: -.03em; }
+.esc-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: 1em 1.2em; box-shadow: var(--card-shadow); }
+.esc-card h3 { margin: 0 0 .3em; font-size: 1em; }
+.esc-card p { margin: 0; color: var(--muted); font-size: .88em; }
+.esc-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4vw; align-items: stretch; }
+.esc-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2vw; align-items: stretch; }
+.esc-fila { display: flex; align-items: center; gap: 1.2vw; flex-wrap: wrap; }
+.esc-chip { display: inline-flex; align-items: center; gap: .4em; padding: .25em .75em; border-radius: 999px; font-size: .72em; font-weight: 700; background: var(--accent-bg); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.esc-chip.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.esc-chip.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.esc-chip.bad { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
+.esc-cmd { margin: 0; font: 600 .78em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .8em; padding: .8em 1.1em; overflow: hidden; white-space: pre-wrap; border: 1px solid rgba(190,185,255,.22); }
+.esc-cmd .p { color: #8e7dff; user-select: none; }
+.esc-cmd .c { color: #7f7aa8; }
+.esc-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .55em; }
+.esc-lista li { display: flex; gap: .7em; align-items: baseline; }
+.esc-lista li::before { content: ""; flex: none; width: .55em; height: .55em; border-radius: 50%; background: var(--accent); transform: translateY(-.05em); }
+.esc-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.esc-svg text { font-family: inherit; fill: var(--fg); }
+
+/* ---- Animaciones (solo transform, opacity y dashoffset; 300-500 ms, ease-out) ---- */
+@keyframes esc-entra { from { opacity: 0; transform: translateY(1.2vh); } to { opacity: 1; transform: none; } }
+@keyframes esc-pop { 0% { opacity: 0; transform: scale(.82); } 60% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes esc-trazo { to { stroke-dashoffset: 0; } }
+@keyframes esc-flota { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.1vh); } }
+@keyframes esc-pulso { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes esc-parpadeo { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@keyframes esc-viaja { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.a-in   { animation: esc-entra .45s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0s); }
+.a-pop  { animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; animation-delay: var(--d, 0s); transform-origin: center; transform-box: fill-box; }
+.a-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo var(--t, .9s) ease-out forwards; animation-delay: var(--d, 0s); }
+.a-flota { animation: esc-flota 4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.a-pulso { animation: esc-pulso 2.4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+/* Para SVG con pathLength="1": <path class="a-draw" pathLength="1" ...> */
+
+/* Apaga TODO el movimiento: cada pieza queda en su estado final, legible. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .a-draw, .esc-cielo .t, .esc-cielo .tb { stroke-dashoffset: 0 !important; }
+}
+</style>
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .4); }
+.esc-titulo { font-size: 1.85em; }
+.s6-trio .esc-card { display: grid; grid-template-columns: auto 1fr; gap: .2em 1em; align-items: center; }
+.s6-ic { grid-row: span 3; width: 3.1em; height: 3.1em; }
+.s6-ic * { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.s6-ic .f { fill: var(--accent-bg); }
+.s6-trio h3 { display: flex; gap: .5em; align-items: baseline; flex-wrap: wrap; font-size: 1.15em; margin: 0; }
+.s6-trio h3 small { font-size: .62em; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
+.s6-trio p { font-size: .82em; }
+.s6-ej { font: 700 .72em var(--mono); color: var(--accent); }
+.s6-pie { margin: 0; font-size: .8em; color: var(--muted); }
+.s6-pie .m { font: 700 .95em var(--mono); color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .5em; padding: .1em .5em; }
+.s6-pie b { color: var(--fg); }
+.s6-pan { display: grid; gap: .3em; align-content: start; }
+.s6-pan h3 { margin: 0; font-size: 1em; }
+.s6-pan .sub { margin: 0; font-size: .78em; color: var(--muted); }
+.s6-svg text { font-size: 17px; }
+.s6-svg .mono { font-family: var(--mono); font-weight: 700; fill: var(--accent); font-size: 18px; }
+.s6-svg .fin { fill: var(--muted); font-size: 16px; }
+.s6-svg .cap { fill: var(--muted); font-size: 16px; font-style: italic; }
+.s6-svg .pista { fill: var(--s3); }
+.s6-svg .relleno { fill: var(--accent); transform-box: fill-box; transform-origin: 0 50%; transform: scaleX(.115); }
+.s6-svg .perilla { fill: var(--s1); stroke: var(--accent); stroke-width: 4; transform: translateX(0); }
+.s6-svg .ca, .s6-svg .cb { opacity: 0; }
+.s6-svg .ca { opacity: 1; }
+.s6-svg .k1 { animation: s6-k1 11s ease-in-out 3.2s infinite; }
+.s6-svg .r1 { animation: s6-r1 11s ease-in-out 3.2s infinite; }
+.s6-svg .k2 { animation: s6-k2 11s ease-in-out 3.2s infinite; }
+.s6-svg .r2 { animation: s6-r2 11s ease-in-out 3.2s infinite; }
+.s6-svg .a1 { animation: s6-lo1 11s step-end 3.2s infinite; }
+.s6-svg .b1 { animation: s6-hi1 11s step-end 3.2s infinite; }
+.s6-svg .a2 { animation: s6-lo2 11s step-end 3.2s infinite; }
+.s6-svg .b2 { animation: s6-hi2 11s step-end 3.2s infinite; }
+@keyframes s6-k1 { 0%, 6% { transform: translateX(0); } 20%, 38% { transform: translateX(400px); } 48%, 100% { transform: translateX(0); } }
+@keyframes s6-r1 { 0%, 6% { transform: scaleX(.115); } 20%, 38% { transform: scaleX(.885); } 48%, 100% { transform: scaleX(.115); } }
+@keyframes s6-k2 { 0%, 52% { transform: translateX(0); } 66%, 86% { transform: translateX(400px); } 96%, 100% { transform: translateX(0); } }
+@keyframes s6-r2 { 0%, 52% { transform: scaleX(.115); } 66%, 86% { transform: scaleX(.885); } 96%, 100% { transform: scaleX(.115); } }
+@keyframes s6-lo1 { 0% { opacity: 1; } 12% { opacity: 0; } 44% { opacity: 1; } }
+@keyframes s6-hi1 { 0% { opacity: 0; } 12% { opacity: 1; } 44% { opacity: 0; } }
+@keyframes s6-lo2 { 0% { opacity: 1; } 58% { opacity: 0; } 92% { opacity: 1; } }
+@keyframes s6-hi2 { 0% { opacity: 0; } 58% { opacity: 1; } 92% { opacity: 0; } }
+.s6-svg .mesa { fill: var(--s3); stroke: var(--line2); stroke-width: 2; }
+.s6-svg .pata { stroke: var(--line2); stroke-width: 6; stroke-linecap: round; }
+.s6-svg .hoja { fill: var(--s1); stroke: var(--accent); stroke-width: 2.5; }
+.s6-svg .hoja.v { stroke: var(--warn); stroke-dasharray: 6 5; }
+.s6-svg .cae { transform-box: fill-box; transform-origin: 0 100%; transform: rotate(30deg); animation: s6-cae .7s cubic-bezier(.5,0,.9,.6) 4.4s both; }
+@keyframes s6-cae { from { transform: rotate(0deg); } }
+.s6-svg .ht { font-size: 13.5px; text-anchor: middle; font-weight: 700; }
+.s6-svg .avi { fill: var(--warn); font-size: 17px; font-weight: 800; text-anchor: middle; }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">E06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Tres piezas: <em>proveedor, modelo y parámetros</em></h1>
+    <div class="esc-grid-3 s6-trio">
+      <article class="esc-card a-in" style="--d:.3s">
+        <svg class="s6-ic" viewBox="0 0 48 48" aria-hidden="true"><path class="f" d="M6 18 L10 8 H38 L42 18 Z"/><path d="M8 18 V40 H40 V18 M20 40 V28 H28 V40"/></svg>
+        <h3>Proveedor <small>la tienda</small></h3>
+        <p>Quien te vende el modelo: URL, clave y cuota.</p>
+        <span class="s6-ej">clase</span>
+      </article>
+      <article class="esc-card a-in" style="--d:.45s">
+        <svg class="s6-ic" viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="11" y="11" width="26" height="26" rx="5"/><path d="M18 5 V11 M30 5 V11 M18 37 V43 M30 37 V43 M5 18 H11 M5 30 H11 M37 18 H43 M37 30 H43"/><rect x="19" y="19" width="10" height="10" rx="2"/></svg>
+        <h3>Modelo <small>el producto</small></h3>
+        <p>El cerebro que lee tu texto y responde.</p>
+        <span class="s6-ej">auto</span>
+      </article>
+      <article class="esc-card a-in" style="--d:.6s">
+        <svg class="s6-ic" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 12 H40 M8 24 H40 M8 36 H40"/><circle class="f" cx="16" cy="12" r="4.5"/><circle class="f" cx="32" cy="24" r="4.5"/><circle class="f" cx="22" cy="36" r="4.5"/></svg>
+        <h3>Parámetros <small>los controles</small></h3>
+        <p>Perillas que cambian cómo responde el mismo modelo.</p>
+        <span class="s6-ej">temperature · max_tokens</span>
+      </article>
+    </div>
+    <p class="s6-pie a-in" style="--d:.9s">En OpenCode, <span class="m">clase/auto</span> se lee <b>proveedor/modelo</b>: a la izquierda quién lo sirve, a la derecha qué cerebro responde.</p>
+    <div class="esc-grid-2">
+      <section class="esc-card s6-pan a-in" style="--d:1.3s">
+        <h3>Dos perillas del mismo modelo</h3>
+        <svg class="esc-svg s6-svg" viewBox="0 0 520 200" role="img" aria-label="Deslizadores animados: temperature de preciso a creativo y max_tokens de respuesta corta a larga">
+          <text class="mono" x="0" y="22">temperature</text>
+          <text class="fin" x="0" y="52">preciso</text><text class="fin" x="520" y="52" text-anchor="end">creativo</text>
+          <rect class="pista" x="0" y="70" width="520" height="10" rx="5"/>
+          <rect class="relleno r1" x="0" y="70" width="520" height="10" rx="5"/>
+          <circle class="perilla k1" cx="60" cy="75" r="15"/>
+          <g class="cap" text-anchor="end"><text class="a1" x="520" y="22">casi siempre la misma respuesta</text><text class="b1" x="520" y="22" style="opacity:0">respuestas más variadas</text></g>
+          <text class="mono" x="0" y="124">max_tokens</text>
+          <text class="fin" x="0" y="154">corta</text><text class="fin" x="520" y="154" text-anchor="end">larga</text>
+          <rect class="pista" x="0" y="172" width="520" height="10" rx="5"/>
+          <rect class="relleno r2" x="0" y="172" width="520" height="10" rx="5"/>
+          <circle class="perilla k2" cx="60" cy="177" r="15"/>
+          <g class="cap" text-anchor="end"><text class="a2" x="520" y="124">se corta enseguida</text><text class="b2" x="520" y="124" style="opacity:0">puede explayarse</text></g>
+        </svg>
+      </section>
+      <section class="esc-card s6-pan a-in" style="--d:1.5s">
+        <h3>El contexto: una mesa con espacio limitado</h3>
+        <svg class="esc-svg s6-svg" viewBox="0 36 520 164" role="img" aria-label="Una mesa con cuatro hojas: pedido, archivos, salidas y respuestas; una quinta hoja se cae por el borde">
+          <rect class="mesa" x="4" y="152" width="394" height="16" rx="6"/>
+          <path class="pata" d="M30 168 V196 M372 168 V196"/>
+          <g class="a-pop" style="--d:2.4s"><rect class="hoja" x="12" y="62" width="86" height="90" rx="6"/><text class="ht" x="55" y="100">tu pedido</text><path class="a-draw" pathLength="1" style="--d:2.7s;--t:.3s" d="M24 114 H86 M24 126 H70 M24 138 H82" stroke="var(--line2)" stroke-width="3" stroke-linecap="round" fill="none"/></g>
+          <g class="a-pop" style="--d:2.8s"><rect class="hoja" x="104" y="62" width="86" height="90" rx="6"/><text class="ht" x="147" y="100">archivos</text><path class="a-draw" pathLength="1" style="--d:3.1s;--t:.3s" d="M116 114 H178 M116 126 H162 M116 138 H174" stroke="var(--line2)" stroke-width="3" stroke-linecap="round" fill="none"/></g>
+          <g class="a-pop" style="--d:3.2s"><rect class="hoja" x="196" y="62" width="86" height="90" rx="6"/><text class="ht" x="239" y="100">salidas</text><path class="a-draw" pathLength="1" style="--d:3.5s;--t:.3s" d="M208 114 H270 M208 126 H254 M208 138 H266" stroke="var(--line2)" stroke-width="3" stroke-linecap="round" fill="none"/></g>
+          <g class="a-pop" style="--d:3.6s"><rect class="hoja" x="288" y="62" width="86" height="90" rx="6"/><text class="ht" x="331" y="100">respuestas</text><path class="a-draw" pathLength="1" style="--d:3.9s;--t:.3s" d="M300 114 H362 M300 126 H346 M300 138 H358" stroke="var(--line2)" stroke-width="3" stroke-linecap="round" fill="none"/></g>
+          <rect class="hoja v cae" x="398" y="64" width="70" height="88" rx="6"/>
+          <text class="avi a-in" style="--d:5.2s" x="472" y="62">se cae</text>
+        </svg>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Sigue la explicación del instructor</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

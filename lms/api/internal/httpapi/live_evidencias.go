@@ -41,3 +41,74 @@ func (s *Server) liveEvidencia(w http.ResponseWriter, r *http.Request, p *Princi
 	}
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
+
+// liveLogre: POST /api/v1/live/{lesson}/logre {"escena","hecho":true|false}. «Lo logré» del alumno: deja
+// la evidencia «logre» de la escena, marca el paso del ciclo (para la insignia) y avisa al instructor.
+// hecho=false deshace (la UI lo ofrece durante 10 s).
+func (s *Server) liveLogre(w http.ResponseWriter, r *http.Request, p *Principal) {
+	l := s.liveLeccion(w, r, p)
+	if l == nil {
+		return
+	}
+	var in struct {
+		Escena string `json:"escena"`
+		Hecho  bool   `json:"hecho"`
+	}
+	if !readJSON(w, r, &in) {
+		return
+	}
+	cat := s.Content.Get()
+	esc := cat.Escena(l.ID, in.Escena)
+	if esc == nil {
+		notFound(w, "la escena")
+		return
+	}
+	if p.Staff() {
+		writeJSON(w, 200, map[string]any{"ok": true}) // el instructor no cuenta como alumno
+		return
+	}
+	ctx := r.Context()
+	if in.Hecho {
+		if err := s.DB.PonerEvidencia(ctx, p.ID, l.ID, in.Escena, "logre", ""); err != nil {
+			internal(w, err)
+			return
+		}
+		if esc.Paso != "" {
+			_ = s.DB.SetProgress(ctx, p.ID, l.ID, esc.Paso, true)
+		}
+	} else {
+		if err := s.DB.QuitarEvidencia(ctx, p.ID, l.ID, in.Escena, "logre"); err != nil {
+			internal(w, err)
+			return
+		}
+		// El paso solo se desmarca si ninguna otra escena con ese paso sigue con «Lo logré».
+		if esc.Paso != "" {
+			otra := false
+			hechas, _ := s.DB.EscenasConEvidencia(ctx, p.ID, l.ID, "logre")
+			for _, id := range hechas {
+				if e := cat.Escena(l.ID, id); e != nil && e.Paso == esc.Paso {
+					otra = true
+				}
+			}
+			if !otra {
+				_ = s.DB.SetProgress(ctx, p.ID, l.ID, esc.Paso, false)
+			}
+		}
+	}
+	s.live.publishStaff(l.ID, "logre", map[string]any{"sub": p.ID, "nombre": p.Name, "escena": in.Escena, "hecho": in.Hecho})
+	writeJSON(w, 200, map[string]any{"ok": true})
+}
+
+// liveLogres: GET /api/v1/live/{lesson}/logre → {"escenas":[...]} donde el alumno ya pulsó «Lo logré».
+func (s *Server) liveLogres(w http.ResponseWriter, r *http.Request, p *Principal) {
+	l := s.liveLeccion(w, r, p)
+	if l == nil {
+		return
+	}
+	hechas, err := s.DB.EscenasConEvidencia(r.Context(), p.ID, l.ID, "logre")
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	writeJSON(w, 200, map[string]any{"escenas": hechas})
+}

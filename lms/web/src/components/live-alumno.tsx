@@ -1,4 +1,4 @@
-import { $, component$, useContext, useSignal, useVisibleTask$ } from "@builder.io/qwik";
+import { $, component$, useContext, useSignal, useStore, useVisibleTask$ } from "@builder.io/qwik";
 import { api, type EscenaLive, type LiveEstado, type ParejaLive } from "~/lib/api";
 import { SessionContext, toast } from "~/lib/session";
 import { Icon } from "~/components/icon";
@@ -19,6 +19,8 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
   const completa = useSignal(false);
   const tema = useSignal("");
   const rutaVisor = useSignal("");
+  const logres = useStore<{ ids: string[] }>({ ids: [] }); // escenas donde ya pulsé «Lo logré»
+  const deshacerDe = useSignal(""); // escena que aún se puede deshacer (10 s)
   const panel = useSignal<"" | "terminal" | "visor" | "agente" | "ayuda">("");
   const termAbierta = useSignal(false); // la terminal se queda montada al cambiar de pestaña
   const marco = useSignal<HTMLIFrameElement>();
@@ -63,6 +65,27 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
     enviar();
     const t = setInterval(enviar, 15000);
     cleanup(() => clearInterval(t));
+  });
+
+  // Lo que ya logré, al entrar o recargar.
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(async () => {
+    try {
+      logres.ids = (await api.liveLogres(props.lesson)).escenas ?? [];
+    } catch {
+      /* sin lista: se ve como no hecho */
+    }
+  });
+
+  const logre = $(async (id: string, hecho: boolean) => {
+    try {
+      await api.liveLogre(props.lesson, id, hecho);
+      logres.ids = hecho ? [...logres.ids.filter((x) => x !== id), id] : logres.ids.filter((x) => x !== id);
+      deshacerDe.value = hecho ? id : "";
+      if (hecho) setTimeout(() => (deshacerDe.value === id ? (deshacerDe.value = "") : null), 10000);
+    } catch {
+      toast(session, "No se pudo anotar. Intenta otra vez.", "bad");
+    }
   });
 
   const abrir = $((p: "terminal" | "visor" | "agente" | "ayuda") => {
@@ -233,6 +256,28 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
             <Icon name={icono} size={14} /> {nombre}
           </button>
         ))}
+        {(() => {
+          const id = modo.value === "libre" && local.value ? local.value : escena.value;
+          const e = props.escenas?.find((x) => x.id === id);
+          if (!e || !e.lo_logre) return null;
+          if (logres.ids.includes(id)) {
+            return (
+              <span class="live-logrado" role="status">
+                <Icon name="check" size={14} /> ¡Anotado!
+                {deshacerDe.value === id && (
+                  <button type="button" class="btn ghost sm" onClick$={() => logre(id, false)}>
+                    Deshacer
+                  </button>
+                )}
+              </span>
+            );
+          }
+          return (
+            <button type="button" class="btn sm ok" onClick$={() => logre(id, true)}>
+              <Icon name="check" size={14} /> Lo logré
+            </button>
+          );
+        })()}
         <span class="grow" />
         <button type="button" class="btn sm" aria-label={completa.value ? "Salir de pantalla completa" : "Pantalla completa"} onClick$={alternar}>
           <Icon name="expand" size={14} /> {completa.value ? "Salir" : "Pantalla completa"}
