@@ -146,12 +146,51 @@ def en_cache(nombre: str) -> bool:
         return False
 
 
+# --- perfil nube (aula del modo LIVE): el fondo lo pinta un modelo remoto por el gateway de la clase ---
+PERFIL = os.environ.get("OSITO_PERFIL", "local")
+GATEWAY_URL = os.environ.get("JMD_URL", "http://ai-orchestrator:4000").rstrip("/")
+GATEWAY_TOKEN = os.environ.get("OSITO_TOKEN", "")
+MODELO_IMAGEN_NUBE = os.environ.get("OSITO_MODELO_IMAGEN", "imagen-flash")
+
+
+def nube_activa() -> bool:
+    return PERFIL == "nube" and bool(GATEWAY_TOKEN)
+
+
+def generar_nube(prompt: str, orientacion: str = "cuadrado"):
+    """Imagen PIL pedida al gateway (modelo de imagen remoto). Lanza RuntimeError si no llega una imagen."""
+    import base64
+    import io
+
+    import httpx
+    from PIL import Image
+
+    forma = {"vertical": "vertical 4:5", "horizontal": "horizontal 16:9"}.get(orientacion, "cuadrado 1:1")
+    cuerpo = {
+        "model": MODELO_IMAGEN_NUBE,
+        "modalities": ["image", "text"],
+        "messages": [{"role": "user", "content": f"{prompt}. Formato {forma}. Sin ningun texto ni letras en la imagen."}],
+    }
+    r = httpx.post(f"{GATEWAY_URL}/v1/chat/completions", json=cuerpo, timeout=120.0,
+                   headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"})
+    r.raise_for_status()
+    imagenes = r.json()["choices"][0]["message"].get("images") or []
+    if not imagenes:
+        raise RuntimeError("el modelo remoto no devolvio imagen")
+    url = imagenes[0]["image_url"]["url"]
+    return Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1]))).convert("RGB")
+
+
 def disponibles() -> list[str]:
+    if nube_activa():
+        return ["nube"]
     return [n for n in ORDEN if en_cache(n)]
 
 
 def resolver(calidad: str = "buena") -> str:
     """Devuelve el motor que se usara para esa calidad, cayendo al mas liviano disponible."""
+    if nube_activa():
+        return "nube"
     if MODO == "demo":
         return "demo"
     if MODO in MOTORES:
@@ -236,6 +275,8 @@ def _pipeline(nombre: str, **kw):
 
 def generar(nombre: str, prompt: str, orientacion: str = "cuadrado", semilla: int | None = None):
     """Devuelve una imagen PIL. Lanza RuntimeError si el motor no produce nada valido."""
+    if nombre == "nube":
+        return generar_nube(prompt, orientacion)
     m = MOTORES[nombre]
     ancho, alto = m[orientacion]
     pasos = PASOS_EXTRA or m["pasos"]

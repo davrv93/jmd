@@ -88,5 +88,6 @@ Quitar `LMS_AULA_IMAGE` del `.env` apaga el aula sin tocar nada más (el termina
 ## 5. Pendiente conocido
 
 - Todos los alumnos usan la misma clave del gateway; los tokens por alumno y la cuota individual (fase 5) no están hechos.
-- Generación de imágenes en la nube y transcripción por servidor: no están; la voz usa el reconocimiento del navegador.
+- **Imágenes en la nube:** funcionan por el gateway (modelo `imagen-flash` = Gemini 3.1 Flash Lite Image por OpenRouter, ya probado: un flyer tarda unos 10 s y cuesta unos 0,034 USD por imagen). Con el tope de 5 USD de la clave alcanzan unas 100 imágenes: conviene que cada alumno genere pocas en clase. No hay modelos de imagen chinos en OpenRouter.
+- **Transcripción por servidor:** no está; la voz usa el reconocimiento del navegador (Chrome sobre https).
 - `rtk` solo se probó en arm64 (falla por glibc); en amd64 usa el binario musl, sin probar.

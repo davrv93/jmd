@@ -165,6 +165,29 @@ def chat_nube(mensaje: str, historial: list[dict]) -> tuple[str, str]:
     return separar_animo(contenido)
 
 
+def json_nube(sistema: str, usuario: str) -> dict:
+    """Pide al gateway una respuesta JSON (extraccion de datos). Razonamiento apagado y temperatura baja."""
+    if not GATEWAY_TOKEN:
+        raise ErrorOllama("falta el token del gateway (OSITO_TOKEN)")
+    cuerpo = {
+        "model": MODELO_NUBE,
+        "messages": [{"role": "system", "content": sistema}, {"role": "user", "content": usuario}],
+        "temperature": 0.1,
+        "max_tokens": 500,
+        "reasoning": {"enabled": False},
+        "response_format": {"type": "json_object"},
+    }
+    r = httpx.post(f"{GATEWAY_URL}/v1/chat/completions", json=cuerpo, timeout=45.0,
+                   headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"})
+    r.raise_for_status()
+    texto = r.json()["choices"][0]["message"].get("content") or "{}"
+    texto = RE_THINK.sub("", texto).strip()
+    if texto.startswith("```"):
+        texto = texto.strip("`")
+        texto = texto[4:] if texto.lower().startswith("json") else texto
+    return json.loads(texto)
+
+
 def chat_llm(mensaje: str, historial: list[dict]) -> tuple[str, str]:
     return chat_nube(mensaje, historial) if PERFIL == "nube" else chat_ollama(mensaje, historial)
 
@@ -318,7 +341,7 @@ def _fuente(tam: int):
     from PIL import ImageFont
 
     for ruta in ("/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
-                 "/System/Library/Fonts/Helvetica.ttc", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
+                 "/System/Library/Fonts/Helvetica.ttc", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"):
         if os.path.exists(ruta):
             try:
                 return ImageFont.truetype(ruta, tam)

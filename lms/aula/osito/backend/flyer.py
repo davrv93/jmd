@@ -68,32 +68,35 @@ def _extraer_regex(prompt: str) -> dict:
 def extraer_datos(prompt: str) -> tuple[dict, str]:
     """Devuelve (datos, fuente) con fuente en {ollama, regex}."""
     base = _extraer_regex(prompt)
-    if not motores.ollama_disponible():
+    if not motores.llm_disponible():
         return base, "regex"
     instrucciones = (
         "Extrae los datos de un flyer a partir del pedido del usuario. Responde SOLO un JSON con estas claves: "
         + ", ".join(CAMPOS)
         + ". Reglas: titulo de 2 a 5 palabras en espanol con el tema literal del pedido, por ejemplo 'Taller de PHP en vivo'; "
-          "nunca agregues marcas, apodos ni palabras como Dummies; subtitulo de una linea que diga que es (taller, curso, "
-          "charla) y para quien; descripcion: una frase de maximo 90 caracteres sobre que aprendera el asistente; fecha como 'Domingo 11 de octubre'; hora como "
-          "'6:00 pm'; precio como 'S/ 100' (o 'Gratis'); lugar si lo menciona (si no, 'En linea'); ponente si lo "
+          "nunca agregues marcas, apodos ni palabras como Dummies; subtitulo de una linea de MAXIMO 36 caracteres que diga que es (taller, curso, "
+          "charla, venta) y para quien; descripcion: una frase de maximo 90 caracteres sobre que aprendera el asistente; fecha como 'Domingo 11 de octubre'; hora como "
+          "'6:00 pm'; precio MUY corto, de maximo 14 caracteres, como 'S/ 100', 'Gratis' o 'Desde S/ 5'; lugar si lo menciona (si no, 'En linea'); ponente si lo "
           "menciona (si no, cadena vacia); contacto si lo menciona (si no, cadena vacia); tema_visual: una frase en "
           "INGLES de 8 a 15 palabras describiendo una ilustracion de fondo SIN personas, SIN pantallas, SIN codigo y "
           "SIN letras (usa objetos, luces, formas y colores que evoquen el tema). Si un dato no esta en el pedido, deja cadena vacia. No inventes fechas ni precios."
     )
-    cuerpo = {
-        "model": motores.MODELO,
-        "messages": [{"role": "system", "content": instrucciones}, {"role": "user", "content": prompt}],
-        "stream": False,
-        "format": "json",
-        "options": {"temperature": 0.1, "num_predict": 300},
-    }
-    if motores.MODELO.startswith("qwen3"):
-        cuerpo["think"] = False
     try:
-        r = httpx.post(f"{motores.OLLAMA_URL}/api/chat", json=cuerpo, timeout=60.0)
-        r.raise_for_status()
-        crudo = json.loads(r.json().get("message", {}).get("content", "{}"))
+        if motores.PERFIL == "nube":
+            crudo = motores.json_nube(instrucciones, prompt)
+        else:
+            cuerpo = {
+                "model": motores.MODELO,
+                "messages": [{"role": "system", "content": instrucciones}, {"role": "user", "content": prompt}],
+                "stream": False,
+                "format": "json",
+                "options": {"temperature": 0.1, "num_predict": 300},
+            }
+            if motores.MODELO.startswith("qwen3"):
+                cuerpo["think"] = False
+            r = httpx.post(f"{motores.OLLAMA_URL}/api/chat", json=cuerpo, timeout=60.0)
+            r.raise_for_status()
+            crudo = json.loads(r.json().get("message", {}).get("content", "{}"))
     except (httpx.HTTPError, ValueError) as e:
         log.warning("extraccion por ollama fallo (%s); uso regex", e)
         return base, "regex"
@@ -107,7 +110,7 @@ def extraer_datos(prompt: str) -> tuple[dict, str]:
             datos[k] = base[k]
     if not datos["lugar"]:
         datos["lugar"] = "En linea"
-    return datos, "ollama"
+    return datos, "nube" if motores.PERFIL == "nube" else "ollama"
 
 
 # ---------------------------------------------------------------- 2. fondo
@@ -211,8 +214,8 @@ def componer(datos: dict, fondo, estilo: str, ruta: Path) -> None:
 
     # Etiqueta superior
     etiqueta = (datos.get("subtitulo") or "Evento de programacion").upper()
-    if len(etiqueta) > 46:
-        etiqueta = etiqueta[:44] + "..."
+    if len(etiqueta) > 38:
+        etiqueta = etiqueta[:36].rstrip() + "..."
     _chip(d, (m, m), etiqueta, motores._fuente(26), oscuro + (200,), acento, alto=56, pad=22)
 
     # Titulo
@@ -244,14 +247,20 @@ def componer(datos: dict, fondo, estilo: str, ruta: Path) -> None:
 
     # Zona inferior: insignia de precio a la derecha; ponente y contacto a la izquierda, alineados con ella
     precio = datos.get("precio") or ""
-    f_precio, f_peq = motores._fuente(64), motores._fuente(24)
+    f_peq = motores._fuente(24)
     alto_insignia = 128
+    tam_precio = 64
+    f_precio = motores._fuente(tam_precio)
+    # El precio nunca ocupa mas de la mitad del ancho: si es largo, se achica la letra para no tapar el pie.
+    while precio and tam_precio > 36 and d.textlength(precio, font=f_precio) + 72 > ANCHO * 0.5:
+        tam_precio -= 4
+        f_precio = motores._fuente(tam_precio)
     ancho_insignia = (int(d.textlength(precio, font=f_precio)) + 72) if precio else 0
     px0 = ANCHO - m - 48 - ancho_insignia
     py0 = ALTO - m - 48 - alto_insignia
     if precio:
         d.rounded_rectangle((px0, py0, px0 + ancho_insignia, py0 + alto_insignia), radius=28, fill=acento)
-        d.text((px0 + 36, py0 + 30), "INVERSION", font=f_peq, fill=oscuro)
+        d.text((px0 + 36, py0 + 30), "PRECIO", font=f_peq, fill=oscuro)
         d.text((px0 + 36, py0 + 58), precio, font=f_precio, fill=oscuro)
     ancho_izq = (px0 - 32 - x) if precio else ancho_texto
 

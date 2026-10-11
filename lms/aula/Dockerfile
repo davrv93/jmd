@@ -11,7 +11,7 @@ RUN apk add --no-cache curl tar && mkdir -p /out \
  && chmod +x /out/rtk
 
 FROM docker.io/library/alpine:3.22
-RUN apk add --no-cache curl git python3 py3-pip ca-certificates gcompat libgcc \
+RUN apk add --no-cache curl git python3 py3-pip ca-certificates gcompat libgcc font-dejavu \
  && adduser -D -u 10001 -h /home/alumno alumno \
  && mkdir -p /trabajo /opt/skills-curso /opt/osito /home/alumno/.config/jmd \
  && chown -R alumno:alumno /trabajo /home/alumno
