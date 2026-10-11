@@ -4,9 +4,8 @@ ARG JMD_IMAGE=localhost/ai-orchestrator:latest
 FROM ${JMD_IMAGE} AS jmd
 
 FROM docker.io/library/alpine:3.22 AS rtk
-ARG TARGETARCH
 RUN apk add --no-cache curl tar && mkdir -p /out \
- && case "$TARGETARCH" in amd64) T=x86_64-unknown-linux-musl;; arm64) T=aarch64-unknown-linux-gnu;; *) echo "arquitectura no soportada: $TARGETARCH" >&2; exit 1;; esac \
+ && case "$(uname -m)" in x86_64) T=x86_64-unknown-linux-musl;; aarch64|arm64) T=aarch64-unknown-linux-gnu;; *) echo "arquitectura no soportada: $(uname -m)" >&2; exit 1;; esac \
  && curl -fsSL "https://github.com/rtk-ai/rtk/releases/latest/download/rtk-${T}.tar.gz" | tar -xz -C /out \
  && chmod +x /out/rtk
 
