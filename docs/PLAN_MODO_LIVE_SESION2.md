@@ -95,6 +95,28 @@ Cada tarea cabe en una jornada o menos, tiene criterio de aceptación verificabl
 | 5.4 | Vista del instructor: tabla de consumo por alumno en vivo, alumnos al 80 % de cuota en ámbar, al 100 % en rojo, botón «dar 20 % más» | Qwik, Go | Captura; el botón amplía la cuota en el gateway | pendiente |
 | 5.5 | Chat de IA dentro del LIVE (opcional, si sobra tiempo): caja de prompt que usa el token del alumno contra el gateway, con el modelo elegido, para quien no quiera la terminal | Qwik | Respuesta en la UI con tokens contados | pendiente |
 
+### Fase 5b · Skills por alumno, aisladas y adaptadas a su modelo (2 días)
+
+Cada alumno escribe y usa sus propias skills sin ver las de los demás, y cada skill se guarda en la versión que entiende el modelo que ese alumno eligió. El LMS lleva el inventario y el contenedor las monta.
+
+| # | Tarea | Dónde | Criterio | Estado |
+|---|---|---|---|---|
+| 5b.1 | Modelo `skills` en SQLite: id, user_id, nombre (slug), descripcion, cuerpo (SKILL.md completo), modelo_destino, version, origen (propia, del curso, copiada), creada_en, actualizada_en. Unicidad por (user_id, nombre). Las del curso (las 14) tienen user_id vacío y son de solo lectura | Go | Migración y test de store; un alumno no puede leer ni borrar una skill de otro (test 403) | pendiente |
+| 5b.2 | Rutas: `GET/POST /api/v1/mis-skills`, `GET/PUT/DELETE /api/v1/mis-skills/{nombre}`, `POST /api/v1/mis-skills/{nombre}/copiar` (desde una del curso), `GET /api/v1/skills-curso` (las 14, lectura) | Go | Crear, editar y borrar solo lo propio; validación del front matter (name, description obligatorios, name = slug) | pendiente |
+| 5b.3 | Montaje aislado en el contenedor: al crear `curso-<sub>` el LMS escribe las skills del alumno en `/home/alumno/.config/opencode/skills/<nombre>/SKILL.md` y `/home/alumno/.claude/skills/`, y las 14 del curso en `/opt/skills-curso/` (solo lectura, enlazadas); cambios desde la UI se sincronizan al contenedor en menos de 5 s; cambios hechos desde la terminal (`skills/` del proyecto) se detectan y se ofrecen para guardar en el LMS | Go, imagen | Dos alumnos con skills del mismo nombre no se ven entre sí; `ls ~/.config/opencode/skills` en cada contenedor lista solo las suyas más las del curso | pendiente |
+| 5b.4 | Editor de skills en el LIVE: panel «Mis skills» con lista, editor con plantilla (front matter, Cuándo usar, Procedimiento, Reglas duras, Lista de comprobación, Versión corta), vista previa, botón «Probar» que lanza en la terminal `opencode` con un prompt que la dispare y muestra si el agente la cargó | Qwik | Crear una skill desde la UI y verla responder en la terminal en menos de 1 min | pendiente |
+| 5b.5 | Especialización por modelo: cada skill guarda una versión por `modelo_destino` (claude, gpt-codex, deepseek, glm, nemotron, ollama-pequeno…) siguiendo `skills/_perfiles/MODELOS.md`; al guardar, el LMS genera automáticamente la variante del modelo elegido por el alumno (longitud, estilo de instrucciones, formato de salida: completa para Claude y GPT, lista numerada explícita para DeepSeek y GLM, system prompt con rol para Nemotron, «versión corta» de 25 líneas para modelos de 1 a 4B) y monta solo esa; si el alumno cambia de modelo en «Mi IA», se regenera y se vuelve a montar | Go, Qwik | Misma skill en un alumno con `nemotron-ultra` y otro con `laguna`: los SKILL.md montados difieren según el perfil; test con dos perfiles | pendiente |
+| 5b.6 | Generación asistida: botón «Adaptar a mi modelo» que pide al gateway (con el token del alumno, modelo `cheap`) reescribir la skill al perfil destino usando las reglas de `MODELOS.md` como instrucción; el alumno revisa el diff y acepta | Go, Qwik, gateway | Diff visible antes de guardar; el consumo se descuenta de la cuota del alumno y aparece en «Mi uso» | pendiente |
+| 5b.7 | Paquete personal: «Descargar mis skills» (zip con `instalar.sh` que las copia a `~/.claude/skills` y `~/.config/opencode/skills` en la laptop del alumno) y «Compartir con el instructor» (solo lectura, para calificar la tarea 2) | Go, Qwik | Zip descargado instala en una Mac limpia; el instructor ve la skill compartida en su panel | pendiente |
+| 5b.8 | Vista del instructor: inventario de skills por alumno (cuántas, cuáles, modelo destino, última edición) y botón «ver» en solo lectura; nunca edición | Qwik, Go | Captura de la matriz; intento de edición desde instructor devuelve 403 | pendiente |
+
+Reglas duras de esta fase:
+
+- Una skill vive en la cuenta de su autor; ni el instructor ni otro alumno pueden editarla. Compartir es siempre de solo lectura y por acción explícita del alumno.
+- Las 14 skills del curso se montan como solo lectura; para modificarlas el alumno las copia a su cuenta y edita la copia.
+- Lo que se monta en el contenedor es siempre la variante del modelo activo del alumno, nunca la genérica, para que el agente reciba instrucciones que su modelo sigue bien.
+- La escena «Instala los skills» de la fase 2 pasa a usar este panel en vez del zip: el alumno crea su primera skill propia en vivo y la ve funcionar.
+
 ### Fase 6 · «Lo logré», plan de trabajo e insignia (1,5 días)
 
 | # | Tarea | Dónde | Criterio | Estado |
@@ -120,10 +142,10 @@ Cada tarea cabe en una jornada o menos, tiene criterio de aceptación verificabl
 |---|---|---|
 | 1 | 0, 1, 2 (parte) | Instructor y alumnos sincronizados viendo 3 escenas con animación |
 | 2 | 2 (resto), 3 | Clase completa en escenas; cada alumno con su terminal y su IA en el contenedor |
-| 3 | 4, 5 | Visor con React y Vue en caliente; consumo por alumno en vivo con marcas de caveman y RTK |
+| 3 | 4, 5, 5b | Visor con React y Vue en caliente; consumo por alumno en vivo con marcas de caveman y RTK; skills propias aisladas y adaptadas al modelo de cada alumno |
 | 4 | 6, 7 | «Lo logré», insignia automática, ensayo general |
 
-Total estimado: 16 a 17 jornadas de desarrollo, más el ensayo.
+Total estimado: 18 a 19 jornadas de desarrollo, más el ensayo.
 
 ## Riesgos y mitigación
 
@@ -133,6 +155,8 @@ Total estimado: 16 a 17 jornadas de desarrollo, más el ensayo.
 | Los modelos `:free` de OpenRouter cambian de nombre o se agotan (50 peticiones por día por clave sin créditos) | Alumnos sin IA a mitad de clase | Verificar la víspera; cargar 10 USD en la clave para subir a 1000 peticiones por día; cadena `auto` con respaldo; cuota por alumno para que nadie agote la de todos |
 | Un alumno pega la clave central en su código y la sube a GitHub | Clave filtrada | La clave nunca sale del gateway; los alumnos solo tienen tokens personales revocables |
 | Proxy del visor expone el contenedor de otro alumno | Fuga entre alumnos | Ruta `/vista/{sub}` validada contra la sesión; test que lo cubra |
+| Skills de un alumno visibles o editables por otro | Fuga de trabajo y plagio | Skills por `user_id` con pruebas de 403; montaje por contenedor, nunca carpeta compartida |
+| Una skill escrita para Claude no funciona con un modelo pequeño | El alumno cree que las skills no sirven | Variante por modelo generada y montada automáticamente (5b.5); «Probar» en la terminal antes de guardar |
 | PinePaper en modo Puppeteer lanza Chrome sin sandbox | Riesgo en la máquina del instructor | Usar modo `code`; las escenas se generan en la Mac del instructor, nunca en el servidor |
 | Internet del aula cae | Escenas sin animación, IA sin respuesta | Escenas autocontenidas sin CDN; el LMS sigue sirviendo local; terminal y visor funcionan sin salir del servidor |
 | SSE detrás de nginx con buffering | Escenas que llegan tarde | `proxy_buffering off` y `X-Accel-Buffering: no` en la ruta del stream; probado en 7.2 |
