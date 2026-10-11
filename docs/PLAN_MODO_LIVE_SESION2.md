@@ -99,6 +99,20 @@ Cada tarea cabe en una jornada o menos, tiene criterio de aceptación verificabl
 | 3.5 | Inyección de credenciales: al crear el contenedor, el LMS escribe `~/.config/jmd/tokens.json` con el token personal del alumno y el modelo elegido; nunca la clave de OpenRouter. Para la laptop del alumno, «Mi IA» muestra el bloque de `opencode.json` listo para copiar | Go | Dentro del contenedor, `jmd ask` responde por el gateway; la clave central no aparece en ningún archivo | pendiente |
 | 3.6 | Interruptores en la UI: «Activar caveman» enciende la skill y el estilo caveman del gateway para ese alumno; «Activar RTK» ejecuta `rtk init -g --auto-patch` en el contenedor; ambos avisan al LMS para marcar el momento en el gráfico de tokens | Qwik, Go, gateway | El gráfico muestra la marca; `rtk gain` dentro del contenedor coincide con el ahorro mostrado | pendiente |
 
+### Fase 3b · `jmd` apto para clase (2,5 días)
+
+`jmd` ya tiene lista de tareas (`todo_write`, `/todos`), herramientas de shell y archivos, MCP (`/mcp`, `/tools`) y skills. Le faltan tres cosas que OpenCode sí muestra y que el alumno necesita para entender lo que pasa: contexto y tokens, costo, y una respuesta clara cuando el gateway reintenta. Sin esto, el alumno ve una pantalla quieta y cree que se colgó.
+
+| # | Tarea | Dónde | Criterio | Estado |
+|---|---|---|---|---|
+| 3b.1 | Barra de estado del chat: tokens de entrada y salida del turno y acumulados de la sesión, contexto usado en % (estimado por bytes/4 sobre la ventana del modelo activo, o `/v1/messages/count_tokens` del gateway cuando esté), modelo y proveedor reales (del campo `orchestrator` de cada respuesta) | jmd (Rust) | La barra cambia tras cada respuesta; con `jmd chat --json` sale lo mismo en JSON | pendiente |
+| 3b.2 | Costo: el gateway devuelve `x-orchestrator-cost-usd` por respuesta (precio del modelo desde `/models` de OpenRouter, 0 para los `:free`) y el acumulado del día por `sub`; `jmd` lo muestra en la barra y `jmd whoami` el total y el saldo de la clave central (`GET /key` de OpenRouter) | gateway, jmd | Un turno con un modelo de pago muestra centavos; con `:free` muestra 0 y la cuota diaria restante | pendiente |
+| 3b.3 | Reintentos visibles y cancelables: el gateway emite eventos de progreso por streaming (`intentando nemotron-ultra`, `429, espero 20 s`, `cambio a laguna`); `jmd` los pinta en una línea viva; `Ctrl-C` cancela el turno y el gateway aborta la cadena; tiempo máximo por turno configurable (60 s en clase) con `priority: speed` y máximo 2 intentos por cadena | gateway, jmd | Simular un 429 y una caída: el alumno ve qué pasa y puede cancelar en menos de 1 s; nunca una pantalla quieta más de 5 s | pendiente |
+| 3b.4 | Panel MCP y tareas en el LIVE: el LMS muestra, por alumno, la lista de tareas del chat (`todo_write` se replica al LMS por un hook de `jmd`) y los servidores MCP conectados, en el panel lateral junto a la terminal | jmd, Go, Qwik | El instructor ve las tareas de cada alumno avanzar en vivo | pendiente |
+| 3b.5 | Prueba de aula con 5 alumnos usando solo `jmd` en el contenedor durante 30 min: tareas de varios pasos, una skill, un MCP, un modelo `:free` saturado a propósito | personas | Sin cuelgues; todos saben en todo momento qué está haciendo el agente (encuesta de 3 preguntas) | pendiente |
+
+Decisión: **OpenCode sigue siendo el agente principal, en la laptop del alumno**, con el token personal del gateway; ahí el alumno tiene la ventana de contexto, el panel de MCP y las tareas que ya conoce de la clase 1, y la RAM es suya. `jmd` en el contenedor es el respaldo para quien llegue con la laptop sin OpenCode o sin memoria, y la vía para que la terminal del LIVE tenga un agente. Las métricas de tokens, costo y cuota del LIVE salen del gateway, así que valen para los dos clientes.
+
 ### Fase 4 · Visor de proyectos (2 días)
 
 | # | Tarea | Dónde | Criterio | Estado |
@@ -164,11 +178,11 @@ Reglas duras de esta fase:
 | Semana | Fases | Entregable demostrable |
 |---|---|---|
 | 1 | 0, 1, 2 (parte) | Instructor y alumnos sincronizados viendo 3 escenas con animación |
-| 2 | 2 (resto), 3 | Clase completa en escenas; cada alumno con su terminal y su IA en el contenedor |
+| 2 | 2 (resto), 3, 3b | Clase completa en escenas; cada alumno con su terminal, `jmd` con tokens, costo y reintentos visibles |
 | 3 | 4, 5, 5b | Visor con React y Vue en caliente; consumo por alumno en vivo con marcas de caveman y RTK; skills propias aisladas y adaptadas al modelo de cada alumno |
 | 4 | 6, 7 | «Lo logré», insignia automática, ensayo general |
 
-Total estimado: 18 a 19 jornadas de desarrollo, más el ensayo.
+Total estimado: 20 a 22 jornadas de desarrollo, más el ensayo.
 
 ## Riesgos y mitigación
 
@@ -176,6 +190,7 @@ Total estimado: 18 a 19 jornadas de desarrollo, más el ensayo.
 |---|---|---|
 | El servidor de 3,8 GB se queda sin memoria con 10 alumnos | Terminales lentas o caídas en plena clase | Restricción de RAM de arriba: contenedores Alpine de 128 MB sin Node, `jmd` en vez de OpenCode, visor estático, SSE; medir en la fase 0.4; Keycloak apagado durante el LIVE si hace falta |
 | Los modelos `:free` de OpenRouter cambian de nombre o se agotan (50 peticiones por día por clave sin créditos) | Alumnos sin IA a mitad de clase | Verificar la víspera; cargar 10 USD en la clave para subir a 1000 peticiones por día; cadena `auto` con respaldo; cuota por alumno para que nadie agote la de todos |
+| `jmd` se queda quieto mientras el gateway reintenta | El alumno cree que se colgó y repite el pedido | Fase 3b.3: eventos de progreso, cancelación con Ctrl-C, 60 s máximo por turno y 2 intentos en clase |
 | Un alumno pega la clave central en su código y la sube a GitHub | Clave filtrada | La clave nunca sale del gateway; los alumnos solo tienen tokens personales revocables |
 | Proxy del visor expone el contenedor de otro alumno | Fuga entre alumnos | Ruta `/vista/{sub}` validada contra la sesión; test que lo cubra |
 | Skills de un alumno visibles o editables por otro | Fuga de trabajo y plagio | Skills por `user_id` con pruebas de 403; montaje por contenedor, nunca carpeta compartida |
