@@ -23,7 +23,7 @@ COPY osito /opt/osito
 COPY plantillas /opt/plantillas
 COPY AGENTS.md /home/alumno/AGENTS.md
 COPY bin/aula /usr/local/bin/aula
-RUN chmod -R a+rX /opt/osito /opt/skills-curso /opt/plantillas && chmod +x /usr/local/bin/aula && ln -s /opt/skills-curso /home/alumno/.config/jmd/skills && chown -R alumno:alumno /home/alumno
+RUN chmod -R a+rX /opt/osito /opt/skills-curso /opt/plantillas /home/alumno/AGENTS.md && chmod 0755 /usr/local/bin/aula && ln -s /opt/skills-curso /home/alumno/.config/jmd/skills && chown -R alumno:alumno /home/alumno
 ENV HOME=/home/alumno PATH=/opt/venv/bin:/usr/local/bin:/usr/bin:/bin TERM=xterm-256color \
     JMD_URL=http://ai-orchestrator:4000 OSITO_PERFIL=nube OSITO_PUERTO=8766 PYTHONDONTWRITEBYTECODE=1
 USER alumno
