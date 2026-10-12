@@ -7,7 +7,16 @@ vivo() { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; }
 case "${1:-}" in
   iniciar)
     if vivo; then echo "ya arrancado"; exit 0; fi
-    [ -d /trabajo/osito ] || cp -R /opt/osito /trabajo/osito
+    # Huella del árbol del asistente (sin cachés, imágenes ni la propia marca).
+    huella() { (cd "$1" && find . -type f ! -path './__pycache__/*' ! -path '*/__pycache__/*' ! -path './imagenes/*' ! -name .base ! -name '*.pyc' | sort | xargs sha256sum | sha256sum | cut -d' ' -f1); }
+    if [ ! -d /trabajo/osito ]; then
+      cp -R /opt/osito /trabajo/osito
+      huella /opt/osito > /trabajo/osito/.base
+    elif [ -f /trabajo/osito/.base ] && [ "$(cat /trabajo/osito/.base)" = "$(huella /trabajo/osito)" ] && [ "$(cat /trabajo/osito/.base)" != "$(huella /opt/osito)" ]; then
+      # El alumno no lo tocó y la imagen trae una versión nueva: se actualiza sola.
+      rm -rf /trabajo/osito && cp -R /opt/osito /trabajo/osito && huella /opt/osito > /trabajo/osito/.base
+      echo "asistente actualizado a la versión nueva"
+    fi
     # Página de entrada del visor: lleva al asistente. Si el alumno crea su propio index.html, manda el suyo.
     [ -e /trabajo/index.html ] || printf '%s' '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=osito/frontend/index.html"><a href="osito/frontend/index.html">Abrir mi asistente</a>' > /trabajo/index.html
     cd /trabajo/osito || exit 1
