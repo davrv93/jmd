@@ -7,6 +7,7 @@ import { LiveVisor, type EstadoProyectos } from "~/components/live-visor";
 import { ChipPrueba, MisSkills, type PruebaSkill } from "~/components/mis-skills";
 import { Copy } from "~/components/ui";
 import { avisarEscena, temaActual, urlEscena } from "~/lib/live";
+import { contar, moneda } from "~/lib/mario";
 
 // LiveAlumno: la pantalla del alumno del LIVE. La escena actual a pantalla completa,
 // cortina cuando el instructor la oculta, aviso en modo libre y panel de ayuda mínima.
@@ -22,6 +23,7 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
   const rutaVisor = useSignal("");
   const proyVisor = useStore<EstadoProyectos>({ lista: [], conocidas: [], cargada: false, manual: false });
   const logres = useStore<{ ids: string[] }>({ ids: [] }); // escenas donde ya pulsé «Lo logré»
+  const puntaje = useStore({ total: 0, mostrado: 0, golpe: 0, suma: 100 }); // puntaje acumulado y el golpe de la animación
   const deshacerDe = useSignal(""); // escena que aún se puede deshacer (10 s)
   const panel = useSignal<"" | "terminal" | "visor" | "agente" | "skills" | "ayuda">("");
   const termAbierta = useSignal(false); // la terminal se queda montada al cambiar de pestaña
@@ -75,7 +77,10 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
-      logres.ids = (await api.liveLogres(props.lesson)).escenas ?? [];
+      const r = await api.liveLogres(props.lesson);
+      logres.ids = r.escenas ?? [];
+      puntaje.total = puntaje.mostrado = r.puntos ?? 0;
+      puntaje.suma = r.suma ?? 100;
     } catch {
       /* sin lista: se ve como no hecho */
     }
@@ -83,7 +88,16 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
 
   const logre = $(async (id: string, hecho: boolean) => {
     try {
-      await api.liveLogre(props.lesson, id, hecho);
+      const r = await api.liveLogre(props.lesson, id, hecho);
+      if (r.puntos !== undefined) {
+        puntaje.total = r.puntos;
+        puntaje.suma = r.suma ?? puntaje.suma;
+        if (hecho) {
+          puntaje.golpe++; // dispara el bloque, la moneda y el conteo
+          moneda();
+          contar(puntaje);
+        } else puntaje.mostrado = r.puntos;
+      }
       logres.ids = hecho ? [...logres.ids.filter((x) => x !== id), id] : logres.ids.filter((x) => x !== id);
       deshacerDe.value = hecho ? id : "";
       if (hecho) setTimeout(() => (deshacerDe.value === id ? (deshacerDe.value = "") : null), 10000);
@@ -306,10 +320,28 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
           </button>
         )}
         <span class="grow" />
+        {puntaje.total > 0 && (
+          <span class="mario-score" role="status" aria-label={`Puntaje acumulado: ${puntaje.total}`} key={`s${puntaje.golpe}`}>
+            <span class="mario-score-moneda" aria-hidden="true" />
+            <span class="mario-score-x">×</span>
+            <span class="mario-score-n">{String(puntaje.mostrado).padStart(6, "0")}</span>
+          </span>
+        )}
         <button type="button" class="btn sm" aria-label={completa.value ? "Salir de pantalla completa" : "Pantalla completa"} onClick$={alternar}>
           <Icon name="expand" size={14} /> {completa.value ? "Salir" : "Pantalla completa"}
         </button>
       </footer>
+      {puntaje.golpe > 0 && (
+        <div class="mario-escena" key={`g${puntaje.golpe}`} aria-hidden="true">
+          <div class="mario-bloque">?</div>
+          <div class="mario-moneda" />
+          <div class="mario-mas">+{puntaje.suma}</div>
+          <i class="mario-chispa c1" />
+          <i class="mario-chispa c2" />
+          <i class="mario-chispa c3" />
+          <i class="mario-chispa c4" />
+        </div>
+      )}
     </div>
   );
 });

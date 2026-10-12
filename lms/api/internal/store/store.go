@@ -756,6 +756,13 @@ func (d *DB) QuitarEvidencia(ctx context.Context, userID, lessonID, escena, tipo
 	return err
 }
 
+// ContarEvidencias cuenta las evidencias de un tipo que el alumno tiene en todas las sesiones.
+func (d *DB) ContarEvidencias(ctx context.Context, userID, tipo string) (int, error) {
+	var n int
+	err := d.sql.QueryRowContext(ctx, "SELECT COUNT(*) FROM live_evidencias WHERE user_id = ? AND tipo = ?", userID, tipo).Scan(&n)
+	return n, err
+}
+
 // EscenasConEvidencia lista las escenas donde el alumno tiene una evidencia de ese tipo.
 func (d *DB) EscenasConEvidencia(ctx context.Context, userID, lessonID, tipo string) ([]string, error) {
 	rows, err := d.sql.QueryContext(ctx, "SELECT escena FROM live_evidencias WHERE user_id = ? AND lesson_id = ? AND tipo = ? ORDER BY escena", userID, lessonID, tipo)

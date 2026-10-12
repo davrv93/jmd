@@ -152,7 +152,7 @@ cycle:
 Hoy construyes un asistente de ventas que corre entero en tu laptop, sin nube.
 Conversa con un modelo local, te escucha por el micrófono y genera un flyer de oferta.
 Tu agente escribe el código. Tú le das skills, un plan de trabajo y verificas cada paso.
-Al final tendrás el asistente respondiendo preguntas de tu tienda, con voz y con flyer.
+Al final tendrás el asistente respondiendo preguntas de tu tienda y con flyer (la voz es opcional: la enciendes tú).
 Y una hoja de pruebas hecha con otro equipo, con tiempos medidos.
 
 ### El ciclo de esta clase
@@ -229,7 +229,7 @@ Hoy corren tres modelos en tu máquina: Ollama para el texto, whisper para la vo
 Ollama no genera imágenes. Un modelo de lenguaje produce texto; las imágenes las hace otro tipo de modelo.
 
 **Qué vas a hacer**
-1. Mira la demo del instructor: pregunta por voz, respuesta hablada, flyer generado.
+1. Mira la demo del instructor: pregunta por micrófono, respuesta en texto (la voz se enciende con el parlante), flyer generado.
 2. Comprueba que tu modelo de chat responde:
    ```bash
    ollama run qwen3:1.7b "Di hola en una frase"
@@ -340,7 +340,7 @@ Si la barra avanza más rápido de lo que tú comprobaste, frena al agente: «re
 
 En una frase: arrancas el asistente y tu agente ejecuta el plan, una tarea a la vez.
 
-El asistente vive en la carpeta `osito/`: un avatar 3D que conversa, escucha, habla y genera imágenes.
+El asistente vive en la carpeta `osito/`: un avatar 3D que conversa, escucha y genera imágenes. La voz (opcional) la activas tú con el parlante: arranca apagada.
 El backend es Python (FastAPI) y sirve también la pantalla. Su memoria de tu tienda es `osito/backend/faq.json`.
 Cada entrada de ese archivo tiene varias formas de la pregunta, una respuesta y un ánimo:
 

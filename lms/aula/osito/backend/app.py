@@ -16,7 +16,7 @@ from pathlib import Path
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -139,6 +139,19 @@ def api_imagen(peticion: PeticionImagen):
         return JSONResponse({"error": f"no pude generar la imagen: {e}"}, status_code=502)
 
 
+class PeticionVoz(BaseModel):
+    texto: str = Field(min_length=1, max_length=700)
+
+
+@app.post("/api/voz")
+def api_voz(peticion: PeticionVoz):
+    """Voz local (Piper, en el servidor de la clase). Es opcional: la UI cae a la del navegador si falla."""
+    try:
+        return Response(motores.imagen.voz_servidor(peticion.texto), media_type="audio/wav")
+    except Exception as e:
+        return JSONResponse({"error": f"sin voz del servidor: {e}"}, status_code=503)
+
+
 @app.get("/api/salud")
 def api_salud():
     return {
@@ -150,6 +163,7 @@ def api_salud():
         "motores_imagen": motores.imagen.disponibles(),
         "maquina": motores.imagen.capacidad(),
         "tope_imagen": motores.imagen.tope_por_capacidad(),
+        "voz_servidor": motores.imagen.servicio_activo(),
         "modelo": motores.MODELO_NUBE if motores.PERFIL == "nube" else motores.MODELO,
     }
 

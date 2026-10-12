@@ -109,6 +109,8 @@ def capacidad() -> dict:
 
 def tope_por_capacidad() -> str:
     """Motor mas pesado que esta maquina puede correr con holgura."""
+    if nube_activa():
+        return "flux2-klein"  # la nube hace de «máxima»
     c = capacidad()
     try:
         import mflux  # noqa: F401
@@ -157,6 +159,42 @@ def nube_activa() -> bool:
     return PERFIL == "nube" and bool(GATEWAY_TOKEN)
 
 
+# Servicio de imagen local de la clase (sd-turbo en el servidor): «rápida» y «buena» salen de ahí; «máxima»
+# (y cualquier fallo o cola llena) cae al modelo de la nube. Vacío = solo nube.
+SERVICIO_URL = os.environ.get("OSITO_IMAGEN_URL", "http://imagen:8000" if PERFIL == "nube" else "").rstrip("/")
+_servicio = {"t": 0.0, "ok": False}
+
+
+def servicio_activo() -> bool:
+    if not (nube_activa() and SERVICIO_URL):
+        return False
+    if time.time() - _servicio["t"] > 10:
+        import httpx
+
+        try:
+            ok = httpx.get(f"{SERVICIO_URL}/salud", timeout=2.0).status_code == 200
+            if ok:  # que el modelo ya esté cargado cuando llegue el primer pedido
+                httpx.post(f"{SERVICIO_URL}/calentar", timeout=2.0, headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"})
+        except Exception:
+            ok = False
+        _servicio.update(t=time.time(), ok=ok)
+    return _servicio["ok"]
+
+
+def generar_servicio(prompt: str, orientacion: str, calidad: str):
+    """Imagen PIL del servicio local; RuntimeError si no la entrega (cola llena, caído, imagen negra)."""
+    import io
+
+    import httpx
+    from PIL import Image
+
+    r = httpx.post(f"{SERVICIO_URL}/generar", timeout=300.0, headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"},
+                   json={"prompt": f"{prompt}. No text, no letters.", "orientacion": orientacion, "calidad": calidad})
+    if r.status_code != 200:
+        raise RuntimeError(f"el servicio de imagen contesto {r.status_code}")
+    return Image.open(io.BytesIO(r.content)).convert("RGB")
+
+
 def generar_nube(prompt: str, orientacion: str = "cuadrado"):
     """Imagen PIL pedida al gateway (modelo de imagen remoto). Lanza RuntimeError si no llega una imagen."""
     import base64
@@ -183,13 +221,16 @@ def generar_nube(prompt: str, orientacion: str = "cuadrado"):
 
 def disponibles() -> list[str]:
     if nube_activa():
-        return ["nube"]
+        # Con el servicio local: rápida y buena (sd-turbo baja/media) más la máxima de la nube.
+        return ["sd-turbo", "sdxl-turbo", "flux2-klein"] if servicio_activo() else ["nube"]
     return [n for n in ORDEN if en_cache(n)]
 
 
 def resolver(calidad: str = "buena") -> str:
     """Devuelve el motor que se usara para esa calidad, cayendo al mas liviano disponible."""
     if nube_activa():
+        if servicio_activo() and calidad in ("rapida", "buena"):
+            return "local-baja" if calidad == "rapida" else "local-media"
         return "nube"
     if MODO == "demo":
         return "demo"
@@ -277,6 +318,12 @@ def generar(nombre: str, prompt: str, orientacion: str = "cuadrado", semilla: in
     """Devuelve una imagen PIL. Lanza RuntimeError si el motor no produce nada valido."""
     if nombre == "nube":
         return generar_nube(prompt, orientacion)
+    if nombre in ("local-baja", "local-media"):
+        try:
+            return generar_servicio(prompt, orientacion, "baja" if nombre == "local-baja" else "media")
+        except Exception as e:
+            log.warning("imagen local no disponible (%s); uso la nube", e)
+            return generar_nube(prompt, orientacion)
     m = MOTORES[nombre]
     ancho, alto = m[orientacion]
     pasos = PASOS_EXTRA or m["pasos"]
@@ -300,3 +347,15 @@ def generar(nombre: str, prompt: str, orientacion: str = "cuadrado", semilla: in
             return img
         log.warning("%s devolvio imagen negra en %s (%s); reintento", nombre, device, args)
     raise RuntimeError(f"{nombre} no produjo imagen valida")
+
+
+def voz_servidor(texto: str) -> bytes:
+    """WAV con la voz local del servicio de la clase (Piper). RuntimeError si no está disponible."""
+    import httpx
+
+    if not servicio_activo():
+        raise RuntimeError("sin servicio de voz")
+    r = httpx.post(f"{SERVICIO_URL}/voz", json={"texto": texto}, timeout=30.0, headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"})
+    if r.status_code != 200:
+        raise RuntimeError(f"el servicio de voz contesto {r.status_code}")
+    return r.content

@@ -359,8 +359,8 @@ export const api = {
   liveEvidencia: (lesson: string, escena: string, tipo: "microfono" | "flyer" | "hallazgo" | "captura", detalle = "") =>
     req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/evidencia`, { escena, tipo, detalle }),
   liveLogre: (lesson: string, escena: string, hecho: boolean) =>
-    req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/logre`, { escena, hecho }),
-  liveLogres: (lesson: string) => req<{ escenas: string[] }>("GET", `/api/v1/live/${encodeURIComponent(lesson)}/logre`),
+    req<{ ok: boolean; puntos?: number; suma?: number }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/logre`, { escena, hecho }),
+  liveLogres: (lesson: string) => req<{ escenas: string[]; puntos?: number; suma?: number }>("GET", `/api/v1/live/${encodeURIComponent(lesson)}/logre`),
   liveModo: (lesson: string, modo: "guiado" | "libre") =>
     req<LiveEstado>("PUT", `/api/v1/live/${encodeURIComponent(lesson)}/modo`, { modo }),
   // Skills del alumno: cada cuenta guarda las suyas; las del curso son de solo lectura.

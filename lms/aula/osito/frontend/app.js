@@ -110,11 +110,12 @@ el.entrada.placeholder = `Escríbele a ${NOMBRE_OSITO}...`;
 // ---- Preferencias (localStorage es solo comodidad; puede fallar) ----
 const prefs = leerPrefs();
 function leerPrefs() {
-  const base = { silencio: false, enviarAlSoltar: false, leer: true, velocidad: 1 };
-  try { return { ...base, ...JSON.parse(localStorage.getItem('tecnosito.prefs') || '{}') }; } catch { return base; }
+  // La voz arranca APAGADA: quien la quiere pulsa el parlante (o la activa en Ajustes).
+  const base = { silencio: true, enviarAlSoltar: false, leer: true, velocidad: 1, motorVoz: 'servidor' };
+  try { return { ...base, ...JSON.parse(localStorage.getItem('robo.prefs') || '{}') }; } catch { return base; }
 }
 function guardarPrefs() {
-  try { localStorage.setItem('tecnosito.prefs', JSON.stringify(prefs)); } catch { /* sin almacenamiento */ }
+  try { localStorage.setItem('robo.prefs', JSON.stringify(prefs)); } catch { /* sin almacenamiento */ }
 }
 
 // ---- anime.js opcional (si no carga, quedan las transiciones CSS) ----
@@ -134,6 +135,7 @@ const estado = {
   ultimaInteraccion: performance.now(),
   dormido: false,
   voz: null,
+  vozServidor: false,
   animoActual: 'neutral',
   calidadElegida: false,
 };
@@ -256,7 +258,10 @@ function elegirVoz() {
   if (!('speechSynthesis' in window)) return null;
   const voces = speechSynthesis.getVoices();
   if (!voces.length) return null;
-  const buscar = (pref) => voces.find((v) => v.lang.replace('_', '-').toLowerCase().startsWith(pref));
+  // Las voces «Natural» de Edge y «Google» de Chrome suenan mucho menos robóticas que las de sistema.
+  const natural = (v) => /natural|online|google/i.test(v.name);
+  const buscar = (pref) => voces.find((v) => natural(v) && v.lang.replace('_', '-').toLowerCase().startsWith(pref))
+    || voces.find((v) => v.lang.replace('_', '-').toLowerCase().startsWith(pref));
   return buscar('es-pe') || buscar('es-mx') || buscar('es-es') || buscar('es') || null;
 }
 if ('speechSynthesis' in window) {
@@ -276,6 +281,38 @@ function decir(texto, animoFinal = 'neutral', opciones = {}) {
   const empezar = () => { setAnimo('hablando'); osito?.hablar(estimadoMs); b?.classList.add('hablando'); };
   const terminar = () => { b?.classList.remove('hablando'); osito?.hablar(0); setAnimo(animoFinal); };
 
+  const quiereVoz = !prefs.silencio && prefs.leer;
+  if (quiereVoz && prefs.motorVoz === 'servidor' && estado.vozServidor) {
+    hablarServidor(texto, estimadoMs, empezar, terminar).then((ok) => {
+      if (!ok) hablarNavegador(texto, estimadoMs, empezar, terminar);
+    });
+    return;
+  }
+  hablarNavegador(texto, estimadoMs, empezar, terminar);
+}
+
+let audioActual = null;
+/** Voz local del servidor (Piper): un WAV por respuesta. Devuelve false si no pudo, para caer a la del navegador. */
+async function hablarServidor(texto, estimadoMs, empezar, terminar) {
+  try {
+    const r = await fetch(BASE + '/api/voz', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: texto.slice(0, 700) }) });
+    if (!r.ok) return false;
+    const url = URL.createObjectURL(await r.blob());
+    audioActual?.pause();
+    const a = new Audio(url);
+    audioActual = a;
+    a.playbackRate = prefs.velocidad;
+    a.onended = a.onerror = () => { URL.revokeObjectURL(url); terminar(); };
+    await a.play();
+    empezar();
+    osito?.hablar(((a.duration || estimadoMs / 1000) * 1000) / prefs.velocidad);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function hablarNavegador(texto, estimadoMs, empezar, terminar) {
   const puedeHablar = 'speechSynthesis' in window && !prefs.silencio && prefs.leer;
   if (!puedeHablar) {
     // Sin voz: la boca se mueve el tiempo estimado de lectura.
@@ -345,7 +382,19 @@ async function consultarSalud() {
     marcarSinBackend(true);
   }
 }
+/** En el aula de la clase las calidades salen de un servicio del servidor (sd-turbo) y de la nube. */
+function adaptarAula(s) {
+  if (s.perfil !== 'nube') return;
+  const et = { 'sd-turbo': 'Rápida · local (sd-turbo, baja)', 'sdxl-turbo': 'Buena · local (sd-turbo, media)', 'flux2-klein': 'Máxima · nube (Gemini)' };
+  for (const m of MOTORES) if (et[m.id]) m.etiqueta = et[m.id];
+  ESPERA_POR_CALIDAD.rapida = 'Dibujando en calidad rápida... unos 10 s (si hay cola, un poco más).';
+  ESPERA_POR_CALIDAD.buena = 'Dibujando en calidad buena... unos 20 s (si hay cola, un poco más).';
+  ESPERA_POR_CALIDAD.maxima = 'Dibujando en calidad máxima... unos 15 s.';
+}
 function pintarSalud(s) {
+  adaptarAula(s);
+  estado.vozServidor = !!s.voz_servidor;
+  $('#ajuste-motor-voz').hidden = !estado.vozServidor;
   const item = (clave) => el.chipSalud.querySelector(`[data-salud="${clave}"]`);
   item('ollama').classList.toggle('ok', !!s.ollama);
   item('whisper').classList.toggle('ok', !!s.whisper);
@@ -755,14 +804,18 @@ function bloqueDatosFlyer(r, estilo, calidad) {
 // ---- Silencio y ajustes ----
 function pintarSilencio() {
   el.btnSilencio.setAttribute('aria-pressed', String(prefs.silencio));
-  el.btnSilencio.setAttribute('aria-label', prefs.silencio ? 'Activar voz' : 'Silenciar voz');
+  el.btnSilencio.setAttribute('aria-label', prefs.silencio ? 'Activar voz (apagada)' : 'Silenciar voz');
+  el.btnSilencio.title = prefs.silencio ? 'La voz está apagada: pulsa para activarla' : 'La voz está activa: pulsa para apagarla';
 }
 el.btnSilencio.addEventListener('click', () => {
   prefs.silencio = !prefs.silencio;
   guardarPrefs();
   pintarSilencio();
-  if (prefs.silencio && 'speechSynthesis' in window) speechSynthesis.cancel();
-  toast(prefs.silencio ? 'Voz silenciada. Seguirás leyendo los subtítulos.' : 'Voz activada.');
+  if (prefs.silencio) {
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    audioActual?.pause();
+  }
+  toast(prefs.silencio ? 'Voz apagada. Seguirás leyendo los subtítulos.' : 'Voz activada: Robo te hablará.');
 });
 pintarSilencio();
 
@@ -776,6 +829,9 @@ el.ajusteLeer.checked = prefs.leer;
 el.ajusteVelocidad.value = String(prefs.velocidad);
 el.salidaVelocidad.value = prefs.velocidad.toFixed(1);
 el.ajusteEnviarAlSoltar.addEventListener('change', () => { prefs.enviarAlSoltar = el.ajusteEnviarAlSoltar.checked; guardarPrefs(); });
+const selVoz = $('#ajuste-voz-motor');
+selVoz.value = prefs.motorVoz;
+selVoz.addEventListener('change', () => { prefs.motorVoz = selVoz.value; guardarPrefs(); });
 el.ajusteLeer.addEventListener('change', () => { prefs.leer = el.ajusteLeer.checked; guardarPrefs(); });
 el.ajusteVelocidad.addEventListener('input', () => {
   prefs.velocidad = Number(el.ajusteVelocidad.value);

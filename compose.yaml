@@ -71,6 +71,30 @@ services:
       # - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
 
+  # Imágenes locales para las aulas del LIVE (sd-turbo en CPU, calidades baja y media). Se enciende con
+  #   docker compose --profile imagen up -d --build imagen
+  # y se llega desde las aulas como http://imagen:8000 (red aula_net). Pide ~2,5 GB de RAM mientras genera y
+  # los suelta tras 10 minutos sin pedidos; ver lms/imagen/app.py.
+  imagen:
+    profiles: ["imagen"]
+    build: ./lms/imagen
+    image: jmd/imagen:latest
+    container_name: imagen
+    mem_limit: 3g
+    environment:
+      IMAGEN_TOKEN: ${LMS_AULA_TOKEN:-}
+      IMAGEN_REPOSO: ${IMAGEN_REPOSO:-300}
+    volumes:
+      - imagen_modelos:/modelos
+    networks: [default, aula_net]
+    restart: unless-stopped
+
+networks:
+  aula_net:
+    external: true
+    name: aula_net
+
 volumes:
   aio_data:
   lms_data:
+  imagen_modelos:

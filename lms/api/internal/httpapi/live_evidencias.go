@@ -1,6 +1,9 @@
 package httpapi
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+)
 
 // tiposEvidencia: lo único que un alumno puede declarar desde su visor o su panel.
 var tiposEvidencia = map[string]bool{"microfono": true, "flyer": true, "hallazgo": true, "captura": true}
@@ -96,7 +99,15 @@ func (s *Server) liveLogre(w http.ResponseWriter, r *http.Request, p *Principal)
 		}
 	}
 	s.live.publishStaff(l.ID, "logre", map[string]any{"sub": p.ID, "nombre": p.Name, "escena": in.Escena, "hecho": in.Hecho})
-	writeJSON(w, 200, map[string]any{"ok": true})
+	writeJSON(w, 200, map[string]any{"ok": true, "puntos": s.puntosLogre(ctx, p.ID), "suma": puntosPorLogre})
+}
+
+// puntosPorLogre es lo que vale cada «Lo logré»; el puntaje acumulado del alumno es la suma de todas sus sesiones.
+const puntosPorLogre = 100
+
+func (s *Server) puntosLogre(ctx context.Context, userID string) int {
+	n, _ := s.DB.ContarEvidencias(ctx, userID, "logre")
+	return n * puntosPorLogre
 }
 
 // liveLogres: GET /api/v1/live/{lesson}/logre → {"escenas":[...]} donde el alumno ya pulsó «Lo logré».
@@ -110,5 +121,5 @@ func (s *Server) liveLogres(w http.ResponseWriter, r *http.Request, p *Principal
 		internal(w, err)
 		return
 	}
-	writeJSON(w, 200, map[string]any{"escenas": hechas})
+	writeJSON(w, 200, map[string]any{"escenas": hechas, "puntos": s.puntosLogre(r.Context(), p.ID), "suma": puntosPorLogre})
 }
