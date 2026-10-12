@@ -26,7 +26,7 @@ TOKEN = os.environ.get("IMAGEN_TOKEN", "")
 REPO = os.environ.get("IMAGEN_REPO", "stabilityai/sd-turbo")
 REPOSO = int(os.environ.get("IMAGEN_REPOSO", "1800"))
 LISTO = os.environ.get("IMAGEN_LISTO", "/modelos/sd-turbo-bf16")
-COLA_MAX = int(os.environ.get("IMAGEN_COLA", "6"))
+COLA_MAX = int(os.environ.get("IMAGEN_COLA", "14"))
 CALIDADES = {"baja": (1, 384), "media": (2, 512)}  # (pasos, lado mayor)
 # «máxima»: FLUX.1 schnell en Cloudflare Workers AI (capa gratuita: 10 000 neurons al día). La cuenta y el token
 # viven solo aquí, nunca en las aulas. Sin ellos la calidad máxima no se ofrece y el aula usa Gemini.
@@ -34,7 +34,7 @@ CF_CUENTA = os.environ.get("CF_ACCOUNT_ID", "")
 CF_TOKEN = os.environ.get("CF_API_TOKEN", "")
 CF_MODELO = os.environ.get("CF_MODELO", "@cf/black-forest-labs/flux-1-schnell")
 CF_PASOS = int(os.environ.get("CF_PASOS", "3"))
-_cf_cupo = threading.Semaphore(3)
+_cf_cupo = threading.Semaphore(5)
 CF_TOPE = float(os.environ.get("CF_NEURONS_DIA", "9800"))  # capa gratuita: 10 000 neurons/día (se reinicia 00:00 UTC)
 _cf_uso = {"dia": "", "neurons": 0.0}
 
