@@ -5,7 +5,7 @@
 
 Una sola petición a la vez (la CPU es de todos) con cola corta; si la cola se llena responde 429 y el
 cliente cae al motor de la nube. El modelo se carga al primer uso y se suelta tras IMAGEN_REPOSO segundos
-sin pedidos, para devolver ~2,5 GB al servidor.
+sin pedidos, para devolver ~2,5 GB al servidor (por defecto 30 min: en clase se queda cargado).
 """
 
 import gc
@@ -24,7 +24,8 @@ logging.basicConfig(level=logging.INFO)
 
 TOKEN = os.environ.get("IMAGEN_TOKEN", "")
 REPO = os.environ.get("IMAGEN_REPO", "stabilityai/sd-turbo")
-REPOSO = int(os.environ.get("IMAGEN_REPOSO", "600"))
+REPOSO = int(os.environ.get("IMAGEN_REPOSO", "1800"))
+LISTO = os.environ.get("IMAGEN_LISTO", "/modelos/sd-turbo-bf16")
 COLA_MAX = int(os.environ.get("IMAGEN_COLA", "6"))
 CALIDADES = {"baja": (1, 384), "media": (2, 512)}  # (pasos, lado mayor)
 VOZ_DEFECTO = os.environ.get("IMAGEN_VOZ", "es_MX-claude-high")
@@ -46,7 +47,16 @@ def _cargar():
 
     t0 = time.time()
     torch.set_num_threads(int(os.environ.get("IMAGEN_HILOS", "2")))
-    _pipe = AutoPipelineForText2Image.from_pretrained(REPO, variant="fp16", torch_dtype=torch.bfloat16, low_cpu_mem_usage=True)
+    # Copia ya convertida a bf16: cargarla evita convertir fp16 -> bf16 en cada arranque en frío (de ~45 s a pocos segundos).
+    if os.path.isdir(LISTO):
+        _pipe = AutoPipelineForText2Image.from_pretrained(LISTO, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True)
+    else:
+        _pipe = AutoPipelineForText2Image.from_pretrained(REPO, variant="fp16", torch_dtype=torch.bfloat16, low_cpu_mem_usage=True)
+        try:
+            _pipe.save_pretrained(LISTO + ".tmp", safe_serialization=True)
+            os.rename(LISTO + ".tmp", LISTO)
+        except Exception as e:  # sin escribir la copia seguimos igual
+            log.warning("no se guardó la copia bf16: %s", e)
     _pipe.set_progress_bar_config(disable=True)
     log.info("modelo cargado en %.1fs", time.time() - t0)
 
@@ -66,6 +76,18 @@ def _soltar_si_ocioso():
 
 
 threading.Thread(target=_soltar_si_ocioso, daemon=True).start()
+
+
+def _precalentar():
+    global _ultimo
+    _ultimo = time.time()
+    with _cpu:
+        if _pipe is None:
+            _cargar()
+
+
+# Al arrancar el contenedor el modelo ya empieza a cargarse: la primera imagen de la clase no espera.
+threading.Thread(target=_precalentar, daemon=True).start()
 
 
 class Pedido(BaseModel):
