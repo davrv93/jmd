@@ -33,7 +33,7 @@ var mimeVista = map[string]string{
 
 // cspVista: la página del alumno corre en el origen del LMS, así que se acota: sus propios archivos y esm.sh.
 const cspVista = "default-src 'self' https://esm.sh; script-src 'self' 'unsafe-inline' https://esm.sh; " +
-	"style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'self'"
+	"style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'self'"
 
 // scriptConsola avisa al panel de los errores de la página (T-4.6). Solo se inserta en HTML.
 const scriptConsola = `<script>window.addEventListener("error",function(e){parent.postMessage({tipo:"consola",nivel:"error",mensaje:String(e.message),archivo:e.filename,linea:e.lineno},location.origin)});window.addEventListener("unhandledrejection",function(e){parent.postMessage({tipo:"consola",nivel:"error",mensaje:String(e.reason)},location.origin)});</script>`
@@ -172,7 +172,7 @@ func (s *Server) vistaProyectos(w http.ResponseWriter, r *http.Request, p *Princ
 // restoPermitido: lo único del asistente que el visor puede alcanzar.
 func restoPermitido(resto string) bool {
 	switch resto {
-	case "chat", "stt", "imagen", "salud", "estado":
+	case "chat", "stt", "imagen", "voz", "salud", "estado":
 		return true
 	}
 	return strings.HasPrefix(resto, "imagenes/") && content.SafeRel(strings.TrimPrefix(resto, "imagenes/"))

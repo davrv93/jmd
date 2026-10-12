@@ -1,6 +1,6 @@
 # jmd/aula
 
-Imagen del contenedor que recibe cada alumno en el modo LIVE: shell, `jmd`, `rtk`, los 14 skills del curso
+Imagen del contenedor que recibe cada alumno en el modo LIVE: shell, `jmd`, `rtk`, los 21 skills del curso (14 del taller y 7 `s2-robo-*` para construir a Robo), la plantilla `plan-robo`
 y el código del asistente en modo nube. Sin Node, sin modelos y sin el socket de Docker.
 
 Construir para el servidor (amd64; hacerlo en el servidor, no en el Mac):

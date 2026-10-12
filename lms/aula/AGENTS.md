@@ -8,3 +8,4 @@
 - Pega solo comandos que entiendas. Si algo falla, copia el error completo y pregúntale al agente.
 - No guardes claves ni contraseñas en archivos.
 - Si tu terminal se cierra, ábrela de nuevo: tus archivos siguen aquí.
+- Para construir tu propio robot (Robo): `aula nuevo plan-robo`, abre `/trabajo/plan-robo/PROMPT_ARMAR_ROBO.md` y pega el prompt a tu agente. Los skills `s2-robo-*` le explican cada pieza.

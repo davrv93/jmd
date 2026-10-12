@@ -56,10 +56,10 @@ func TestRealContent(t *testing.T) {
 			t.Errorf("material %s sin URL https: %q", m.ID, m.URL)
 		}
 	}
-	// Ejemplos: los dieciocho, en el orden de «order», ligados a su clase y con HTML.
+	// Ejemplos: los diecinueve, en el orden de «order», ligados a su clase y con HTML.
 	want := []string{"ej-instalar-todo", "ej-skill-saludo", "ej-skill-commit", "ej-mcp-config", "ej-parametros", "ej-skills-guia", "ej-opencode-guia", "ej-runner",
 		"ej-skill-piedra", "ej-plan-y-obra", "ej-corpus-faq", "ej-flyer-texto-real", "ej-diagnostico-maquina",
-		"ej-wireframe-gris", "ej-afiliar-whatsapp", "ej-webhook-a-chat", "ej-herramienta-y-mcp", "ej-compose-asistente"}
+		"ej-wireframe-gris", "ej-afiliar-whatsapp", "ej-webhook-a-chat", "ej-herramienta-y-mcp", "ej-compose-asistente", "ej-plan-robo"}
 	lecciones := map[string]bool{"pa-01": true, "pa-02": true, "pa-03": true}
 	exs := cat.Examples(c.ID)
 	if len(exs) != len(want) {

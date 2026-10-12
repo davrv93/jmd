@@ -34,6 +34,16 @@ materials:
     kind: zip
     file: materials/skills-taller.zip
     objective_ids: [pa-02-o1]
+  - id: pa-02-plan-robo
+    title: Plan de trabajo de Robo (plantilla para personalizar)
+    kind: doc
+    file: materials/plan-robo/PLAN_TRABAJO.md
+    objective_ids: [pa-02-o1, pa-02-o2]
+  - id: pa-02-prompt-robo
+    title: Prompt para armar tu Robo desde cero (se pega a jmd)
+    kind: doc
+    file: materials/plan-robo/PROMPT_ARMAR_ROBO.md
+    objective_ids: [pa-02-o2]
   - id: pa-02-capturas
     title: "Capturas de referencia: chatbot, robot, flyers, obra en vivo"
     kind: slides
@@ -307,6 +317,22 @@ Las seis tareas de hoy, de 15 minutos cada una:
 **Qué vas a ver:** Un archivo con una tabla de seis filas: ID, tarea, criterio y estado. Todas en `pendiente`.
 
 **Si falla:** Si el agente escribe más de seis tareas, pídele que las junte. Si borra una, pídele que la devuelva: nunca se renumeran.
+
+### En el aula del LIVE: tu plan ya está escrito
+
+Si trabajas en el aula del LIVE, no hace falta escribir el plan desde cero: ya existe uno para construir Robo, el asistente de esta clase. Tú lo personalizas y tu agente lo ejecuta.
+
+**Qué vas a hacer**
+1. En la terminal del aula:
+   ```sh
+   aula nuevo plan-robo
+   ```
+2. Abre `plan-robo` en el visor. También puedes descargar «Plan de trabajo de Robo» y el prompt en Materiales, o ver el ejemplo «Plan de trabajo de Robo».
+3. Abre `jmd` y pega el prompt que está al inicio del plan. El agente te hace 6 preguntas sobre tu negocio, reescribe `PLAN_TRABAJO.md` con tus datos y lo construye tarea por tarea con los skills `s2-robo-*` (chat, avatar, voz, imagen, flyer y pruebas).
+
+**Qué vas a ver:** `grep -c '<<[A-Z0-9_]*>>' /trabajo/plan-robo/PLAN_TRABAJO.md` imprime `0` (ningún marcador sin llenar) y cada tarea termina con su criterio en verde.
+
+**Si falla:** Si `aula nuevo plan-robo` dice «no existe la plantilla», tu aula es anterior a esta clase: pide al instructor que la reinicie. Si `jmd` no encuentra los skills `s2-*`, escribe `/skill s2-robo-aula` y revisa el nombre.
 
 ## 4. La obra: ver el avance en pantalla · Experiencia
 

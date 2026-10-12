@@ -36,7 +36,7 @@ def check(name, base, email, pw):
     print(f"  ejemplos: {len(xs)} con phase: {len(withph)}")
     from collections import Counter
     print("   fases:", dict(Counter(x.get("phase") for x in xs)))
-    ok &= len(xs) == 17 and len(withph) == 17
+    ok &= len(xs) == 19 and len(withph) == 19
     print("  RESULTADO:", "OK" if ok else "FALLO")
     return ok
 
