@@ -6,6 +6,9 @@ vivo() { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; }
 
 case "${1:-}" in
   iniciar)
+    # Un solo «iniciar» a la vez: el visor y la terminal pueden pedirlo juntos y uno pisaría la copia del otro.
+    n=0; until mkdir /tmp/.aula-iniciar 2>/dev/null; do n=$((n+1)); [ "$n" -gt 60 ] && { rmdir /tmp/.aula-iniciar 2>/dev/null; break; }; sleep 0.5; done
+    trap 'rmdir /tmp/.aula-iniciar 2>/dev/null' EXIT
     if vivo; then echo "ya arrancado"; exit 0; fi
     # Huella del árbol del asistente (sin cachés, imágenes ni la propia marca).
     huella() { (cd "$1" && find . -type f ! -path './__pycache__/*' ! -path '*/__pycache__/*' ! -path './imagenes/*' ! -name .base ! -name '*.pyc' | sort | xargs sha256sum | sha256sum | cut -d' ' -f1); }

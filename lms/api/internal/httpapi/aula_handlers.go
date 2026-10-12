@@ -2,6 +2,8 @@ package httpapi
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -128,8 +130,10 @@ func (s *Server) aulaAsistente(w http.ResponseWriter, r *http.Request, p *Princi
 		writeErr(w, 409, "sin_aula", "primero inicia tu aula")
 		return
 	}
-	if _, err := s.Aula.Exec(r.Context(), aula.Nombre(p.ID), cmd); err != nil {
-		internal(w, err)
+	if out, err := s.Aula.Exec(r.Context(), aula.Nombre(p.ID), cmd); err != nil {
+		// Con la salida del comando se ve por qué falló (antes solo decía «exit status 1»).
+		slog.Warn("aula: el asistente no respondió", "cmd", cmd, "salida", out, "err", err)
+		writeErr(w, 500, "asistente_fallo", fmt.Sprintf("no se pudo ejecutar «%s»: %s", cmd, strings.TrimSpace(out)))
 		return
 	}
 	tocarAula(p.ID)
