@@ -181,6 +181,35 @@ def servicio_activo() -> bool:
     return _servicio["ok"]
 
 
+_ingles: dict[str, str] = {}
+
+
+def a_ingles(prompt: str) -> str:
+    """Prompt de imagen en inglés: sd-turbo entiende casi solo inglés (en español dibuja cosas incoherentes).
+    Lo reescribe el modelo de texto de la clase; si falla, se usa el original."""
+    if prompt in _ingles:
+        return _ingles[prompt]
+    try:
+        import httpx
+
+        r = httpx.post(
+            f"{GATEWAY_URL}/v1/chat/completions", timeout=20.0, headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"},
+            json={"model": os.environ.get("OSITO_MODELO_NUBE", "clase"), "max_tokens": 120, "temperature": 0.2, "messages": [
+                {"role": "system", "content": "You write prompts for a Stable Diffusion image model. Translate the user's request into one "
+                 "concrete English prompt (max 60 words): the main subject first, then setting, style, lighting. Keep any English part as is. "
+                 "No text or letters in the image. Reply with the prompt only."},
+                {"role": "user", "content": prompt}]})
+        texto = r.json()["choices"][0]["message"]["content"].strip().strip('"')
+        if 3 <= len(texto) <= 500:
+            if len(_ingles) > 200:
+                _ingles.clear()
+            _ingles[prompt] = texto
+            return texto
+    except Exception as e:
+        log.warning("no pude traducir el prompt (%s); uso el original", e)
+    return prompt
+
+
 def generar_servicio(prompt: str, orientacion: str, calidad: str):
     """Imagen PIL del servicio local; RuntimeError si no la entrega (cola llena, caído, imagen negra)."""
     import io
@@ -189,7 +218,7 @@ def generar_servicio(prompt: str, orientacion: str, calidad: str):
     from PIL import Image
 
     r = httpx.post(f"{SERVICIO_URL}/generar", timeout=300.0, headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"},
-                   json={"prompt": f"{prompt}. No text, no letters.", "orientacion": orientacion, "calidad": calidad})
+                   json={"prompt": f"{a_ingles(prompt)}. No text, no letters.", "orientacion": orientacion, "calidad": calidad})
     if r.status_code != 200:
         raise RuntimeError(f"el servicio de imagen contesto {r.status_code}")
     return Image.open(io.BytesIO(r.content)).convert("RGB")
