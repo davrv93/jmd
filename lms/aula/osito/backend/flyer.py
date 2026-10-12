@@ -118,8 +118,8 @@ def extraer_datos(prompt: str) -> tuple[dict, str]:
 
 def _fondo_sd(tema_visual: str, estilo: str, motor: str):
     prompt = (
-        f"{tema_visual}, poster key visual, beautiful artistic background, purely visual without any writing, "
-        f"composition with calm empty space in the lower half, {motores.ESTILOS[estilo]}"
+        f"{motores.sujeto_para(motor, tema_visual)}, poster background, purely visual without any writing, "
+        f"composition with calm empty space in the lower half, {motores.estilo_para(motor, estilo)}"
     )
     return motores.imagen.generar(motor, prompt, "vertical")
 

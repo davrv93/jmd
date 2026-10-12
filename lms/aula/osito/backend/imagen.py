@@ -195,9 +195,10 @@ def a_ingles(prompt: str) -> str:
         r = httpx.post(
             f"{GATEWAY_URL}/v1/chat/completions", timeout=20.0, headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"},
             json={"model": os.environ.get("OSITO_MODELO_NUBE", "clase"), "max_tokens": 160, "temperature": 0.2, "reasoning": {"enabled": False}, "messages": [
-                {"role": "system", "content": "You write prompts for a Stable Diffusion image model. Translate the user's request into one "
-                 "concrete English prompt (max 60 words): the main subject first, then setting, style, lighting. Keep any English part as is. "
-                 "No text or letters in the image. Reply with the prompt only."},
+                {"role": "system", "content": "You write prompts for a Stable Diffusion image model. Translate the user's request into ONE short, concrete English "
+                 "description of what is in the image: main subject first, then setting (max 25 words). Do not add art-style words "
+                 "(no 'professional', 'cinematic', 'illustration', 'detailed'): style is added later. Keep any English part as is. "
+                 "No text or letters in the image. Reply with the description only."},
                 {"role": "user", "content": prompt}]})
         texto = (r.json()["choices"][0]["message"].get("content") or "").strip().strip('"')
         if 3 <= len(texto) <= 500:
@@ -218,7 +219,7 @@ def generar_servicio(prompt: str, orientacion: str, calidad: str):
     from PIL import Image
 
     r = httpx.post(f"{SERVICIO_URL}/generar", timeout=300.0, headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"},
-                   json={"prompt": f"{a_ingles(prompt)}. No text, no letters.", "orientacion": orientacion, "calidad": calidad})
+                   json={"prompt": f"{prompt}. No text, no letters.", "orientacion": orientacion, "calidad": calidad})
     if r.status_code != 200:
         raise RuntimeError(f"el servicio de imagen contesto {r.status_code}")
     return Image.open(io.BytesIO(r.content)).convert("RGB")

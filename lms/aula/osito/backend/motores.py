@@ -321,12 +321,30 @@ def transcribir(ruta: str) -> dict:
 
 
 
+# sd-turbo (1-2 pasos) se estropea con estilos largos de sdxl («award winning, trending on behance»): para
+# los motores locales de la clase el estilo va corto y la escena se describe primero.
+ESTILOS_LOCAL = {
+    "profesional": "professional photo, natural light, sharp focus, clean composition",
+    "kawaii": "cute kawaii illustration, pastel colors, soft rounded shapes",
+    "tecnico": "isometric technical illustration, teal palette, clean lines",
+}
+
+
+def sujeto_para(motor: str, texto: str) -> str:
+    """Lo que hay en la imagen, en inglés para los motores locales (sd-turbo no entiende español)."""
+    return imagen.a_ingles(texto) if motor.startswith("local-") else texto
+
+
+def estilo_para(motor: str, estilo: str) -> str:
+    return ESTILOS_LOCAL[estilo] if motor.startswith("local-") else ESTILOS[estilo]
+
+
 def motor_imagen(calidad: str = "buena") -> str:
     return imagen.resolver(calidad)
 
 
 def _imagen_sd(prompt: str, estilo: str, ruta: Path, motor: str) -> None:
-    img = imagen.generar(motor, f"{prompt}, {ESTILOS[estilo]}", "cuadrado")
+    img = imagen.generar(motor, f"{sujeto_para(motor, prompt)}, {estilo_para(motor, estilo)}", "cuadrado")
     img.save(ruta, "PNG")
 
 
