@@ -164,6 +164,7 @@ def api_salud():
         "maquina": motores.imagen.capacidad(),
         "tope_imagen": motores.imagen.tope_por_capacidad(),
         "voz_servidor": motores.imagen.servicio_activo(),
+        "maxima_servicio": motores.imagen.maxima_servicio(),
         "modelo": motores.MODELO_NUBE if motores.PERFIL == "nube" else motores.MODELO,
     }
 

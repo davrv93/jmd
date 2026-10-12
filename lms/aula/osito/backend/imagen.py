@@ -162,7 +162,7 @@ def nube_activa() -> bool:
 # Servicio de imagen local de la clase (sd-turbo en el servidor): «rápida» y «buena» salen de ahí; «máxima»
 # (y cualquier fallo o cola llena) cae al modelo de la nube. Vacío = solo nube.
 SERVICIO_URL = os.environ.get("OSITO_IMAGEN_URL", "http://imagen:8000" if PERFIL == "nube" else "").rstrip("/")
-_servicio = {"t": 0.0, "ok": False}
+_servicio = {"t": 0.0, "ok": False, "maxima": False}
 
 
 def servicio_activo() -> bool:
@@ -172,7 +172,9 @@ def servicio_activo() -> bool:
         import httpx
 
         try:
-            ok = httpx.get(f"{SERVICIO_URL}/salud", timeout=2.0).status_code == 200
+            h = httpx.get(f"{SERVICIO_URL}/salud", timeout=2.0)
+            ok = h.status_code == 200
+            _servicio["maxima"] = ok and bool(h.json().get("maxima"))
             if ok:  # que el modelo ya esté cargado cuando llegue el primer pedido
                 httpx.post(f"{SERVICIO_URL}/calentar", timeout=2.0, headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"})
         except Exception:
@@ -209,6 +211,11 @@ def a_ingles(prompt: str) -> str:
     except Exception as e:
         log.warning("no pude traducir el prompt (%s); uso el original", e)
     return prompt
+
+
+def maxima_servicio() -> bool:
+    """¿El servicio de la clase ofrece la calidad máxima (FLUX en Cloudflare)? Si no, «máxima» es Gemini."""
+    return servicio_activo() and _servicio["maxima"]
 
 
 def generar_servicio(prompt: str, orientacion: str, calidad: str):
@@ -261,6 +268,8 @@ def resolver(calidad: str = "buena") -> str:
     if nube_activa():
         if servicio_activo() and calidad in ("rapida", "buena"):
             return "local-baja" if calidad == "rapida" else "local-media"
+        if calidad == "maxima" and maxima_servicio():
+            return "local-maxima"
         return "nube"
     if MODO == "demo":
         return "demo"
@@ -348,9 +357,9 @@ def generar(nombre: str, prompt: str, orientacion: str = "cuadrado", semilla: in
     """Devuelve una imagen PIL. Lanza RuntimeError si el motor no produce nada valido."""
     if nombre == "nube":
         return generar_nube(prompt, orientacion)
-    if nombre in ("local-baja", "local-media"):
+    if nombre in ("local-baja", "local-media", "local-maxima"):
         try:
-            return generar_servicio(prompt, orientacion, "baja" if nombre == "local-baja" else "media")
+            return generar_servicio(prompt, orientacion, {"local-baja": "baja", "local-media": "media"}.get(nombre, "maxima"))
         except Exception as e:
             log.warning("imagen local no disponible (%s); uso la nube", e)
             return generar_nube(prompt, orientacion)

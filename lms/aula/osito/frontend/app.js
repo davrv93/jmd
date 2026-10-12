@@ -385,11 +385,11 @@ async function consultarSalud() {
 /** En el aula de la clase las calidades salen de un servicio del servidor (sd-turbo) y de la nube. */
 function adaptarAula(s) {
   if (s.perfil !== 'nube') return;
-  const et = { 'sd-turbo': 'Rápida · local (sd-turbo, baja)', 'sdxl-turbo': 'Buena · local (sd-turbo, media)', 'flux2-klein': 'Máxima · nube (Gemini)' };
+  const et = { 'sd-turbo': 'Rápida · local (sd-turbo, baja)', 'sdxl-turbo': 'Buena · local (sd-turbo, media)', 'flux2-klein': s.maxima_servicio ? 'Máxima · FLUX (Cloudflare)' : 'Máxima · nube (Gemini)' };
   for (const m of MOTORES) if (et[m.id]) m.etiqueta = et[m.id];
   ESPERA_POR_CALIDAD.rapida = 'Dibujando en calidad rápida... unos 10 s (si hay cola, un poco más).';
   ESPERA_POR_CALIDAD.buena = 'Dibujando en calidad buena... unos 20 s (si hay cola, un poco más).';
-  ESPERA_POR_CALIDAD.maxima = 'Dibujando en calidad máxima... unos 15 s.';
+  ESPERA_POR_CALIDAD.maxima = s.maxima_servicio ? 'Dibujando en calidad máxima... unos 5-10 s.' : 'Dibujando en calidad máxima... unos 15 s.';
 }
 function pintarSalud(s) {
   adaptarAula(s);

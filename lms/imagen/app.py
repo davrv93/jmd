@@ -28,6 +28,13 @@ REPOSO = int(os.environ.get("IMAGEN_REPOSO", "1800"))
 LISTO = os.environ.get("IMAGEN_LISTO", "/modelos/sd-turbo-bf16")
 COLA_MAX = int(os.environ.get("IMAGEN_COLA", "6"))
 CALIDADES = {"baja": (1, 384), "media": (2, 512)}  # (pasos, lado mayor)
+# «máxima»: FLUX.1 schnell en Cloudflare Workers AI (capa gratuita: 10 000 neurons al día). La cuenta y el token
+# viven solo aquí, nunca en las aulas. Sin ellos la calidad máxima no se ofrece y el aula usa Gemini.
+CF_CUENTA = os.environ.get("CF_ACCOUNT_ID", "")
+CF_TOKEN = os.environ.get("CF_API_TOKEN", "")
+CF_MODELO = os.environ.get("CF_MODELO", "@cf/black-forest-labs/flux-1-schnell")
+CF_PASOS = int(os.environ.get("CF_PASOS", "4"))
+_cf_cupo = threading.Semaphore(3)
 VOZ_DEFECTO = os.environ.get("IMAGEN_VOZ", "es_MX-claude-high")
 VOCES = {VOZ_DEFECTO}
 FORMAS = {"cuadrado": (1.0, 1.0), "vertical": (0.8, 1.0), "horizontal": (1.0, 0.5625)}
@@ -134,7 +141,45 @@ def voz(p: PedidoVoz, authorization: str = Header(default="")):
 
 @app.get("/salud")
 def salud():
-    return {"ok": True, "cargado": _pipe is not None, "cola": _en_cola}
+    return {"ok": True, "cargado": _pipe is not None, "cola": _en_cola, "maxima": bool(CF_CUENTA and CF_TOKEN)}
+
+
+def _cloudflare(p: "Pedido") -> Response:
+    """FLUX.1 schnell por la API REST de Cloudflare. 429 cuando el cupo diario se acaba (el cliente cae a Gemini)."""
+    import base64
+
+    import httpx
+    from PIL import Image
+
+    if not (CF_CUENTA and CF_TOKEN):
+        raise HTTPException(503, "calidad máxima no configurada")
+    if not _cf_cupo.acquire(blocking=False):
+        raise HTTPException(429, "cola llena")
+    try:
+        r = httpx.post(f"https://api.cloudflare.com/client/v4/accounts/{CF_CUENTA}/ai/run/{CF_MODELO}", timeout=90.0,
+                       headers={"Authorization": f"Bearer {CF_TOKEN}"}, json={"prompt": p.prompt, "steps": CF_PASOS})
+    finally:
+        _cf_cupo.release()
+    if r.status_code in (429, 403) or (r.status_code >= 400 and "neurons" in r.text.lower()):
+        log.warning("cloudflare: cupo o permiso (%s) %s", r.status_code, r.text[:200])
+        raise HTTPException(429, "cupo de Cloudflare agotado")
+    if r.status_code != 200:
+        log.warning("cloudflare %s %s", r.status_code, r.text[:300])
+        raise HTTPException(502, "cloudflare")
+    ct = r.headers.get("content-type", "")
+    crudo = r.content if ct.startswith("image/") else base64.b64decode(r.json()["result"]["image"])
+    img = Image.open(io.BytesIO(crudo)).convert("RGB")
+    # FLUX entrega cuadrado: se recorta al formato pedido.
+    fa, fh = FORMAS.get(p.orientacion, FORMAS["cuadrado"])
+    w, h = img.size
+    if fa != fh:
+        nw, nh = (int(h * fa / fh), h) if fa / fh < w / h else (w, int(w * fh / fa))
+        img = img.crop(((w - nw) // 2, (h - nh) // 2, (w - nw) // 2 + nw, (h - nh) // 2 + nh))
+    img.thumbnail((1024, 1024))
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", quality=90)
+    log.info("maxima (cloudflare) %dx%d", *img.size)
+    return Response(buf.getvalue(), media_type="image/jpeg")
 
 
 @app.post("/calentar")
@@ -162,6 +207,8 @@ def generar(p: Pedido, authorization: str = Header(default="")):
         raise HTTPException(401, "token")
     if not p.prompt.strip() or len(p.prompt) > 1000:
         raise HTTPException(400, "prompt vacío o demasiado largo")
+    if p.calidad == "maxima":
+        return _cloudflare(p)
     pasos, lado = CALIDADES.get(p.calidad, CALIDADES["media"])
     ancho, alto = _dimensiones(p.orientacion, lado)
     with _estado:
