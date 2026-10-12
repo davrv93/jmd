@@ -26,13 +26,13 @@ TOKEN = os.environ.get("IMAGEN_TOKEN", "")
 REPOSO = int(os.environ.get("IMAGEN_REPOSO", "1800"))
 # Dos modelos locales: sd-turbo (rápido, 1-2 pasos) y DreamShaper 8 con LCM (SD 1.5 afinado: dibuja personajes
 # coherentes y estilo anime; 4 pasos). «media» usa IMAGEN_MEDIA (sd-turbo | dreamshaper). DreamShaper dibuja mejor personajes pero en este servidor
-# (2 vCPU) tardó 25-100 s y con colores muy saturados: por eso el valor por defecto es sd-turbo.
+# (2 vCPU) tardó 25-100 s y con colores muy saturados: el instructor lo eligió igualmente (acepta esperar); IMAGEN_MEDIA=sd-turbo vuelve al rápido.
 MODELOS = {
     "sd-turbo": {"repo": "stabilityai/sd-turbo", "variant": "fp16", "guidance": 0.0},
     "dreamshaper": {"repo": "Lykon/dreamshaper-8-lcm", "variant": None, "guidance": 1.0},
 }
 COLA_MAX = int(os.environ.get("IMAGEN_COLA", "14"))
-_MEDIA = os.environ.get("IMAGEN_MEDIA", "sd-turbo")
+_MEDIA = os.environ.get("IMAGEN_MEDIA", "dreamshaper")
 # calidad -> (modelo, pasos, lado mayor)
 CALIDADES = {"baja": ("sd-turbo", 1, 384), "media": (_MEDIA, 4, 512) if _MEDIA == "dreamshaper" else ("sd-turbo", 2, 512)}
 # «máxima»: FLUX.1 schnell en Cloudflare Workers AI (capa gratuita: 10 000 neurons al día). La cuenta y el token
