@@ -35,6 +35,15 @@ CF_TOKEN = os.environ.get("CF_API_TOKEN", "")
 CF_MODELO = os.environ.get("CF_MODELO", "@cf/black-forest-labs/flux-1-schnell")
 CF_PASOS = int(os.environ.get("CF_PASOS", "4"))
 _cf_cupo = threading.Semaphore(3)
+CF_TOPE = float(os.environ.get("CF_NEURONS_DIA", "9800"))  # capa gratuita: 10 000 neurons/día (se reinicia 00:00 UTC)
+_cf_uso = {"dia": "", "neurons": 0.0}
+
+
+def _cf_gastado() -> float:
+    hoy = time.strftime("%Y-%m-%d", time.gmtime())
+    if _cf_uso["dia"] != hoy:
+        _cf_uso.update(dia=hoy, neurons=0.0)
+    return _cf_uso["neurons"]
 VOZ_DEFECTO = os.environ.get("IMAGEN_VOZ", "es_MX-claude-high")
 VOCES = {VOZ_DEFECTO}
 FORMAS = {"cuadrado": (1.0, 1.0), "vertical": (0.8, 1.0), "horizontal": (1.0, 0.5625)}
@@ -141,7 +150,7 @@ def voz(p: PedidoVoz, authorization: str = Header(default="")):
 
 @app.get("/salud")
 def salud():
-    return {"ok": True, "cargado": _pipe is not None, "cola": _en_cola, "maxima": bool(CF_CUENTA and CF_TOKEN)}
+    return {"ok": True, "cargado": _pipe is not None, "cola": _en_cola, "maxima": bool(CF_CUENTA and CF_TOKEN) and _cf_gastado() < CF_TOPE, "neurons_hoy": round(_cf_gastado())}
 
 
 def _cloudflare(p: "Pedido") -> Response:
@@ -153,11 +162,16 @@ def _cloudflare(p: "Pedido") -> Response:
 
     if not (CF_CUENTA and CF_TOKEN):
         raise HTTPException(503, "calidad máxima no configurada")
+    if _cf_gastado() >= CF_TOPE:
+        raise HTTPException(429, "cupo diario de Cloudflare agotado")
     if not _cf_cupo.acquire(blocking=False):
         raise HTTPException(429, "cola llena")
     try:
-        r = httpx.post(f"https://api.cloudflare.com/client/v4/accounts/{CF_CUENTA}/ai/run/{CF_MODELO}", timeout=90.0,
-                       headers={"Authorization": f"Bearer {CF_TOKEN}"}, json={"prompt": p.prompt, "steps": CF_PASOS})
+        for intento in (1, 2):  # a veces falla con «Cog prediction failed» (409/8007): se reintenta una vez
+            r = httpx.post(f"https://api.cloudflare.com/client/v4/accounts/{CF_CUENTA}/ai/run/{CF_MODELO}", timeout=90.0,
+                           headers={"Authorization": f"Bearer {CF_TOKEN}"}, json={"prompt": p.prompt, "steps": CF_PASOS})
+            if r.status_code != 409:
+                break
     finally:
         _cf_cupo.release()
     if r.status_code in (429, 403) or (r.status_code >= 400 and "neurons" in r.text.lower()):
@@ -167,7 +181,12 @@ def _cloudflare(p: "Pedido") -> Response:
         log.warning("cloudflare %s %s", r.status_code, r.text[:300])
         raise HTTPException(502, "cloudflare")
     ct = r.headers.get("content-type", "")
-    crudo = r.content if ct.startswith("image/") else base64.b64decode(r.json()["result"]["image"])
+    if ct.startswith("image/"):
+        crudo = r.content
+    else:
+        res = r.json()["result"]
+        crudo = base64.b64decode(res["image"])
+        _cf_uso["neurons"] = _cf_gastado() + float((res.get("usage") or {}).get("neurons", 173))
     img = Image.open(io.BytesIO(crudo)).convert("RGB")
     # FLUX entrega cuadrado: se recorta al formato pedido.
     fa, fh = FORMAS.get(p.orientacion, FORMAS["cuadrado"])
