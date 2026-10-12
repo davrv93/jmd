@@ -23,11 +23,17 @@ log = logging.getLogger("imagen")
 logging.basicConfig(level=logging.INFO)
 
 TOKEN = os.environ.get("IMAGEN_TOKEN", "")
-REPO = os.environ.get("IMAGEN_REPO", "stabilityai/sd-turbo")
 REPOSO = int(os.environ.get("IMAGEN_REPOSO", "1800"))
-LISTO = os.environ.get("IMAGEN_LISTO", "/modelos/sd-turbo-bf16")
+# Dos modelos locales: sd-turbo (rápido, 1-2 pasos) y DreamShaper 8 con LCM (SD 1.5 afinado: dibuja personajes
+# coherentes y estilo anime; 4 pasos). «media» usa IMAGEN_MEDIA (dreamshaper | sd-turbo).
+MODELOS = {
+    "sd-turbo": {"repo": "stabilityai/sd-turbo", "variant": "fp16", "guidance": 0.0},
+    "dreamshaper": {"repo": "Lykon/dreamshaper-8-lcm", "variant": None, "guidance": 1.0},
+}
 COLA_MAX = int(os.environ.get("IMAGEN_COLA", "14"))
-CALIDADES = {"baja": (1, 384), "media": (2, 512)}  # (pasos, lado mayor)
+_MEDIA = os.environ.get("IMAGEN_MEDIA", "dreamshaper")
+# calidad -> (modelo, pasos, lado mayor)
+CALIDADES = {"baja": ("sd-turbo", 1, 384), "media": (_MEDIA, 4, 512) if _MEDIA == "dreamshaper" else ("sd-turbo", 2, 512)}
 # «máxima»: FLUX.1 schnell en Cloudflare Workers AI (capa gratuita: 10 000 neurons al día). La cuenta y el token
 # viven solo aquí, nunca en las aulas. Sin ellos la calidad máxima no se ofrece y el aula usa Gemini.
 CF_CUENTA = os.environ.get("CF_ACCOUNT_ID", "")
@@ -51,42 +57,48 @@ FORMAS = {"cuadrado": (1.0, 1.0), "vertical": (0.8, 1.0), "horizontal": (1.0, 0.
 app = FastAPI(title="imagen")
 _cpu = threading.Lock()
 _estado = threading.Lock()
-_pipe = None
+_pipes: dict = {}  # nombre -> pipeline cargado
 _ultimo = 0.0
 _en_cola = 0
 
 
-def _cargar():
-    global _pipe
+def _cargar(nombre: str):
     import torch
     from diffusers import AutoPipelineForText2Image
 
+    if nombre in _pipes:
+        return _pipes[nombre]
+    m = MODELOS[nombre]
+    listo = f"/modelos/{nombre}-bf16"
     t0 = time.time()
     torch.set_num_threads(int(os.environ.get("IMAGEN_HILOS", "2")))
-    # Copia ya convertida a bf16: cargarla evita convertir fp16 -> bf16 en cada arranque en frío (de ~45 s a pocos segundos).
-    if os.path.isdir(LISTO):
-        _pipe = AutoPipelineForText2Image.from_pretrained(LISTO, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True)
+    # Copia ya convertida a bf16: cargarla evita convertir en cada arranque en frío (de ~45 s a pocos segundos).
+    if os.path.isdir(listo):
+        pipe = AutoPipelineForText2Image.from_pretrained(listo, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True)
     else:
-        _pipe = AutoPipelineForText2Image.from_pretrained(REPO, variant="fp16", torch_dtype=torch.bfloat16, low_cpu_mem_usage=True)
+        kw = {"variant": m["variant"]} if m["variant"] else {}
+        pipe = AutoPipelineForText2Image.from_pretrained(m["repo"], torch_dtype=torch.bfloat16, low_cpu_mem_usage=True,
+                                                         safety_checker=None, **kw)
         try:
-            _pipe.save_pretrained(LISTO + ".tmp", safe_serialization=True)
-            os.rename(LISTO + ".tmp", LISTO)
+            pipe.save_pretrained(listo + ".tmp", safe_serialization=True)
+            os.rename(listo + ".tmp", listo)
         except Exception as e:  # sin escribir la copia seguimos igual
             log.warning("no se guardó la copia bf16: %s", e)
-    _pipe.set_progress_bar_config(disable=True)
-    log.info("modelo cargado en %.1fs", time.time() - t0)
+    pipe.set_progress_bar_config(disable=True)
+    _pipes[nombre] = pipe
+    log.info("modelo %s cargado en %.1fs", nombre, time.time() - t0)
+    return pipe
 
 
 def _soltar_si_ocioso():
-    global _pipe
     while True:
         time.sleep(30)
         with _estado:
-            if _pipe is not None and time.time() - _ultimo > REPOSO and _cpu.acquire(blocking=False):
+            if _pipes and time.time() - _ultimo > REPOSO and _cpu.acquire(blocking=False):
                 try:
-                    _pipe = None
+                    _pipes.clear()
                     gc.collect()
-                    log.info("modelo descargado por reposo")
+                    log.info("modelos descargados por reposo")
                 finally:
                     _cpu.release()
 
@@ -97,9 +109,9 @@ threading.Thread(target=_soltar_si_ocioso, daemon=True).start()
 def _precalentar():
     global _ultimo
     _ultimo = time.time()
-    with _cpu:
-        if _pipe is None:
-            _cargar()
+    for nombre in dict.fromkeys(m for m, _, _ in CALIDADES.values()):
+        with _cpu:
+            _cargar(nombre)
 
 
 # Al arrancar el contenedor el modelo ya empieza a cargarse: la primera imagen de la clase no espera.
@@ -150,7 +162,7 @@ def voz(p: PedidoVoz, authorization: str = Header(default="")):
 
 @app.get("/salud")
 def salud():
-    return {"ok": True, "cargado": _pipe is not None, "cola": _en_cola, "maxima": bool(CF_CUENTA and CF_TOKEN) and _cf_gastado() < CF_TOPE, "neurons_hoy": round(_cf_gastado())}
+    return {"ok": True, "cargado": sorted(_pipes), "cola": _en_cola, "maxima": bool(CF_CUENTA and CF_TOKEN) and _cf_gastado() < CF_TOPE, "neurons_hoy": round(_cf_gastado())}
 
 
 def _cloudflare(p: "Pedido") -> Response:
@@ -210,13 +222,14 @@ def calentar(authorization: str = Header(default="")):
     _ultimo = time.time()
 
     def _tarea():
-        with _cpu:
-            if _pipe is None:
-                _cargar()
+        for nombre in dict.fromkeys(m for m, _, _ in CALIDADES.values()):
+            with _cpu:
+                _cargar(nombre)
 
-    if _pipe is None:
+    faltan = [m for m, _, _ in CALIDADES.values() if m not in _pipes]
+    if faltan:
         threading.Thread(target=_tarea, daemon=True).start()
-    return {"ok": True, "cargado": _pipe is not None}
+    return {"ok": True, "cargado": sorted(_pipes)}
 
 
 @app.post("/generar")
@@ -228,7 +241,7 @@ def generar(p: Pedido, authorization: str = Header(default="")):
         raise HTTPException(400, "prompt vacío o demasiado largo")
     if p.calidad == "maxima":
         return _cloudflare(p)
-    pasos, lado = CALIDADES.get(p.calidad, CALIDADES["media"])
+    modelo, pasos, lado = CALIDADES.get(p.calidad, CALIDADES["media"])
     ancho, alto = _dimensiones(p.orientacion, lado)
     with _estado:
         if _en_cola >= COLA_MAX:
@@ -239,12 +252,11 @@ def generar(p: Pedido, authorization: str = Header(default="")):
             import numpy as np
             import torch
 
-            if _pipe is None:
-                _cargar()
+            pipe = _cargar(modelo)
             gen = torch.Generator(device="cpu").manual_seed(p.semilla if p.semilla is not None else int(time.time()) % 100000)
             t0 = time.time()
-            img = _pipe(p.prompt, num_inference_steps=pasos, guidance_scale=0.0, width=ancho, height=alto, generator=gen).images[0]
-            log.info("%s %dx%d en %.1fs", p.calidad, ancho, alto, time.time() - t0)
+            img = pipe(p.prompt, num_inference_steps=pasos, guidance_scale=MODELOS[modelo]["guidance"], width=ancho, height=alto, generator=gen).images[0]
+            log.info("%s/%s %dx%d en %.1fs", p.calidad, modelo, ancho, alto, time.time() - t0)
             if np.asarray(img).max() <= 8:
                 raise HTTPException(502, "imagen negra")
             _ultimo = time.time()
