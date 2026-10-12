@@ -194,12 +194,12 @@ def a_ingles(prompt: str) -> str:
 
         r = httpx.post(
             f"{GATEWAY_URL}/v1/chat/completions", timeout=20.0, headers={"Authorization": f"Bearer {GATEWAY_TOKEN}"},
-            json={"model": os.environ.get("OSITO_MODELO_NUBE", "clase"), "max_tokens": 120, "temperature": 0.2, "messages": [
+            json={"model": os.environ.get("OSITO_MODELO_NUBE", "clase"), "max_tokens": 160, "temperature": 0.2, "reasoning": {"enabled": False}, "messages": [
                 {"role": "system", "content": "You write prompts for a Stable Diffusion image model. Translate the user's request into one "
                  "concrete English prompt (max 60 words): the main subject first, then setting, style, lighting. Keep any English part as is. "
                  "No text or letters in the image. Reply with the prompt only."},
                 {"role": "user", "content": prompt}]})
-        texto = r.json()["choices"][0]["message"]["content"].strip().strip('"')
+        texto = (r.json()["choices"][0]["message"].get("content") or "").strip().strip('"')
         if 3 <= len(texto) <= 500:
             if len(_ingles) > 200:
                 _ingles.clear()
