@@ -21,6 +21,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -117,7 +119,8 @@ func run() error {
 		slog.Info("ventana de cohorte", "cohorte", srv.CohortWindow, "hasta", t.Format(time.RFC3339))
 	}
 	if srv.Runner.Available() && os.Getenv("LMS_AULA_IMAGE") != "" {
-		a := &aula.Aula{Runtime: srv.Runner.Runtime, Imagen: os.Getenv("LMS_AULA_IMAGE"), Red: os.Getenv("LMS_AULA_RED"), Token: os.Getenv("LMS_AULA_TOKEN")}
+		a := &aula.Aula{Runtime: srv.Runner.Runtime, Imagen: os.Getenv("LMS_AULA_IMAGE"), Red: os.Getenv("LMS_AULA_RED"), Token: os.Getenv("LMS_AULA_TOKEN"), Memoria: os.Getenv("LMS_AULA_MEMORIA")}
+		a.Clase = claseDesdeEntorno(dataDir)
 		if err := a.AsegurarRed(ctx, os.Getenv("LMS_AULA_GATEWAY")); err != nil {
 			slog.Warn("el aula no pudo preparar su red", "err", err)
 		}
@@ -165,6 +168,53 @@ func run() error {
 }
 
 // bootstrapAdmin crea la cuenta del instructor (admin + instructor) si LMS_ADMIN_EMAIL está definida.
+// claseDesdeEntorno arma los servicios de la clase 3 (base y WhatsApp por alumno). Sin LMS_AULA_PG ni
+// LMS_EVO_URL devuelve nil y el aula se crea como siempre. La GLOBAL_API_KEY (LMS_EVO_KEY) se queda aquí.
+func claseDesdeEntorno(dataDir string) *aula.Clase {
+	c := &aula.Clase{
+		PG: os.Getenv("LMS_AULA_PG"), EvoURL: os.Getenv("LMS_EVO_URL"), EvoKey: os.Getenv("LMS_EVO_KEY"),
+		EvoURLAula: os.Getenv("LMS_AULA_EVO_URL"), Proxy: os.Getenv("LMS_AULA_PROXY"),
+	}
+	if c.PG == "" && c.EvoURL == "" && c.Proxy == "" {
+		slog.Info("clase 3 sin configurar (LMS_AULA_PG, LMS_EVO_URL, LMS_EVO_KEY): las aulas no llevan base ni WhatsApp")
+		return nil
+	}
+	if c.EvoURL != "" && c.EvoKey == "" {
+		slog.Warn("LMS_EVO_URL sin LMS_EVO_KEY: las aulas no tendrán WhatsApp")
+	}
+	secreto, err := secretoClase(dataDir)
+	if err != nil {
+		slog.Warn("clase 3: sin semilla de credenciales; las aulas no llevan base ni WhatsApp", "err", err)
+		return &aula.Clase{Proxy: c.Proxy}
+	}
+	c.Secreto = secreto
+	slog.Info("clase 3 activa", "base_por_alumno", c.PGActivo(), "whatsapp_por_alumno", c.EvoActivo(), "proxy_npm", c.Proxy != "")
+	return c
+}
+
+// secretoClase devuelve la semilla de las credenciales por alumno: LMS_AULA_SECRETO o, si falta, una
+// aleatoria guardada en <datos>/aula-secreto (0600) la primera vez. Si se pierde, las claves cambian: el
+// LMS las reescribe en aula-pg al recrear cada aula, pero las instancias de WhatsApp quedarían con el token
+// viejo (habría que borrarlas en evogo-clase). Respáldala con lms.db.
+func secretoClase(dataDir string) ([]byte, error) {
+	if s := os.Getenv("LMS_AULA_SECRETO"); s != "" {
+		return []byte(s), nil
+	}
+	ruta := filepath.Join(dataDir, "aula-secreto")
+	if b, err := os.ReadFile(ruta); err == nil && len(strings.TrimSpace(string(b))) >= 32 {
+		return []byte(strings.TrimSpace(string(b))), nil
+	}
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return nil, err
+	}
+	s := hex.EncodeToString(buf)
+	if err := os.WriteFile(ruta, []byte(s+"\n"), 0o600); err != nil {
+		return nil, err
+	}
+	return []byte(s), nil
+}
+
 func bootstrapAdmin(ctx context.Context, db *store.DB) error {
 	email, pw := os.Getenv("LMS_ADMIN_EMAIL"), os.Getenv("LMS_ADMIN_PASSWORD")
 	if email == "" {

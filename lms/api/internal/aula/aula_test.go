@@ -20,7 +20,7 @@ func TestArgsAulaClaveDeJmd(t *testing.T) {
 func TestArgsAula(t *testing.T) {
 	a := &Aula{}
 	j := strings.Join(a.Args("u1"), " ")
-	for _, quiere := range []string{"--memory 192m", "--memory-swap 192m", "--pids-limit 96", "--read-only", "--cap-drop ALL", "--network aula_net", "--user 10001:10001", "jmd/aula:latest sleep"} {
+	for _, quiere := range []string{"--memory 384m", "--memory-swap 384m", "--pids-limit 96", "--read-only", "--cap-drop ALL", "--network aula_net", "--user 10001:10001", "jmd/aula:latest sleep"} {
 		if !strings.Contains(j, quiere) {
 			t.Errorf("falta %q en %s", quiere, j)
 		}
@@ -40,21 +40,25 @@ func TestArgsAula(t *testing.T) {
 func TestCrearReutiliza(t *testing.T) {
 	estado := "ninguno"
 	var llamadas []string
-	a := &Aula{run: func(_ context.Context, args ...string) (string, error) {
+	a := &Aula{}
+	a.run = func(_ context.Context, args ...string) (string, error) {
 		llamadas = append(llamadas, args[0])
 		switch args[0] {
 		case "inspect":
 			if estado == "ninguno" {
 				return "Error: No such object", errors.New("no existe")
 			}
-			return map[string]string{"corriendo": "true", "parado": "false"}[estado], nil
+			if args[2] == "{{.State.Running}}" {
+				return map[string]string{"corriendo": "true", "parado": "false"}[estado], nil
+			}
+			return map[string]string{"corriendo": "true", "parado": "false"}[estado] + " " + a.Firma("u1"), nil
 		case "run":
 			estado = "corriendo"
 		case "start":
 			estado = "corriendo"
 		}
 		return "", nil
-	}}
+	}
 	ctx := context.Background()
 	if re, err := a.Crear(ctx, "u1"); err != nil || re {
 		t.Fatalf("primera vez: re=%v err=%v", re, err)

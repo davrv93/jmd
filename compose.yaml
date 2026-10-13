@@ -62,6 +62,18 @@ services:
       LMS_AULA_RED: ${LMS_AULA_RED:-}
       LMS_AULA_GATEWAY: ${LMS_AULA_GATEWAY:-}
       LMS_AULA_TOKEN: ${LMS_AULA_TOKEN:-}
+      # Tope de RAM de cada aula (vacío = 384m; ver lms/aula/README.md).
+      LMS_AULA_MEMORIA: ${LMS_AULA_MEMORIA:-}
+      # Clase 3 (WhatsApp, perfil «clase» más abajo). Vacías = las aulas se crean sin base ni WhatsApp.
+      # LMS_AULA_PG: contenedor de Postgres que el LMS administra con «docker exec … psql» (una base y un rol por alumno).
+      LMS_AULA_PG: ${LMS_AULA_PG:-}
+      # Evolution Go visto desde el LMS y su GLOBAL_API_KEY, que NUNCA entra a las aulas.
+      LMS_EVO_URL: ${LMS_EVO_URL:-}
+      LMS_EVO_KEY: ${LMS_EVO_KEY:-}
+      # Salida a internet de las aulas, solo al registro de npm (bun install).
+      LMS_AULA_PROXY: ${LMS_AULA_PROXY:-}
+      # Semilla de las credenciales por alumno; vacía = una aleatoria en lms_data/aula-secreto.
+      LMS_AULA_SECRETO: ${LMS_AULA_SECRETO:-}
     volumes:
       - lms_data:/data
       # El temario se lee de aquí: edita lms/content, haz commit, y se recarga solo.
@@ -92,6 +104,72 @@ services:
     networks: [default, aula_net]
     restart: unless-stopped
 
+  # Clase 3 (chatbot de WhatsApp con Bun + Elysia + PostgreSQL). Se enciende con
+  #   docker compose --profile clase up -d --build aula-pg evogo-clase npm-proxy
+  # Los tres viven en aula_net (interna) para que las aulas los alcancen por nombre; evogo-clase y npm-proxy
+  # están además en la red del compose, que es su salida a internet (WhatsApp y el registro de npm).
+
+  # Postgres de las aulas: una base y un rol por alumno (los crea el LMS) y las dos de evolution-go
+  # (evogo_auth, evogo_users, con su rol «evogo»; ver lms/clase/initdb-evogo.sh, solo en el primer arranque).
+  aula-pg:
+    profiles: ["clase"]
+    image: docker.io/library/postgres:16-alpine
+    container_name: aula-pg
+    # Cada conexión ~3-4 MiB y el «sql» de Bun abre 10 por alumno: 13 alumnos x 15 (tope por rol) + evolution-go
+    # caben en 250 y ~0,9 GB en el peor caso. Las ociosas de los alumnos se cierran a los 10 min.
+    mem_limit: 1g
+    command: ["postgres", "-c", "max_connections=250", "-c", "shared_buffers=64MB", "-c", "work_mem=2MB"]
+    environment:
+      POSTGRES_PASSWORD: ${AULA_PG_PASSWORD:-}
+      EVOGO_DB_PASSWORD: ${EVOGO_DB_PASSWORD:-}
+    volumes:
+      - aula_pg_data:/var/lib/postgresql/data
+      - ./lms/clase/initdb-evogo.sh:/docker-entrypoint-initdb.d/10-evogo.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks: [aula_net]
+    restart: unless-stopped
+
+  # Evolution Go compartido: una instancia por alumno (la crea el LMS con LMS_EVO_KEY). Sin webhook global:
+  # cada instancia entrega a http://<contenedor-del-aula>:8766/api/webhook (lo fija «aula whatsapp»).
+  evogo-clase:
+    profiles: ["clase"]
+    image: importking/evogo:latest
+    container_name: evogo-clase
+    mem_limit: 512m
+    depends_on:
+      aula-pg:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: "8080"
+      GLOBAL_API_KEY: ${LMS_EVO_KEY:-}
+      POSTGRES_AUTH_DB: postgres://evogo:${EVOGO_DB_PASSWORD:-}@aula-pg:5432/evogo_auth?sslmode=disable
+      POSTGRES_USERS_DB: postgres://evogo:${EVOGO_DB_PASSWORD:-}@aula-pg:5432/evogo_users?sslmode=disable
+      DATABASE_SAVE_MESSAGES: "false"
+      CONNECT_ON_STARTUP: "true"
+      WEBHOOK_FILES: "false"
+      EVOLUTION_OPERATOR_EMAIL: ${EVOLUTION_OPERATOR_EMAIL:-}
+      CLIENT_NAME: JMD-Clase
+      LOGTYPE: console
+    volumes:
+      - evogo_clase_data:/app/dbdata
+    networks: [default, aula_net]
+    restart: unless-stopped
+
+  # Única salida a internet de las aulas: CONNECT al 443 de registry.npmjs.org y nada más (lms/clase/npm-proxy).
+  npm-proxy:
+    profiles: ["clase"]
+    build: ./lms/clase/npm-proxy
+    image: jmd/npm-proxy:latest
+    container_name: npm-proxy
+    mem_limit: 32m
+    networks: [default, aula_net]
+    restart: unless-stopped
+
 networks:
   aula_net:
     external: true
@@ -101,3 +179,5 @@ volumes:
   aio_data:
   lms_data:
   imagen_modelos:
+  aula_pg_data:
+  evogo_clase_data:

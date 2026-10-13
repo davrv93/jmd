@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os/exec"
 	"sort"
@@ -25,9 +26,30 @@ type Aula struct {
 	Imagen  string // por defecto jmd/aula:latest
 	Red     string // red interna del aula; por defecto aula_net
 	Token   string // token del gateway de IA que recibe el asistente (OSITO_TOKEN); vacío = sin IA en la nube
+	Memoria string // tope de RAM (y de RAM+swap) del contenedor; por defecto MemoriaPorDefecto
+	Clase   *Clase // base de Postgres e instancia de WhatsApp por alumno (clase 3); nil = sin ellas
 
 	// run permite sustituir la ejecución del binario en las pruebas.
 	run func(ctx context.Context, args ...string) (string, error)
+
+	candados sync.Map // userID → *sync.Mutex: un solo Crear a la vez por alumno (visor y terminal llegan juntos)
+}
+
+// MemoriaPorDefecto: el asistente (~45 MiB) más un backend Bun + Elysia (~25-40 MiB) y su «bun install»
+// (pico de 150 MiB con caché de archivos incluida) caben en 192 MiB, pero justos, y los tmpfs de /tmp y del
+// home (hasta 96 MiB) cuentan en el mismo tope. 384 MiB deja aire: con 13 alumnos son 5 GB de tope en un
+// servidor de 8 GB, y el uso real ronda los 120 MiB por aula (medido el 13-10-2026, ver lms/aula/README.md).
+const MemoriaPorDefecto = "384m"
+
+// EtiquetaFirma marca cada contenedor con la huella de sus argumentos: si la configuración cambia (otra
+// memoria, las variables de la clase 3), el aula se recrea sola la próxima vez que el alumno la abre.
+const EtiquetaFirma = "jmd.aula.firma"
+
+func (a *Aula) memoria() string {
+	if a.Memoria == "" {
+		return MemoriaPorDefecto
+	}
+	return a.Memoria
 }
 
 func (a *Aula) imagen() string {
@@ -57,9 +79,26 @@ func Volumen(userID string) string { return "trabajo-" + sufijo(userID) }
 
 // Args devuelve los argumentos exactos de «docker run» del contenedor del alumno.
 func (a *Aula) Args(userID string) []string {
+	args := a.argsSinFirma(userID)
+	// La etiqueta va antes de la imagen (los tres últimos son imagen y «sleep N»).
+	n := len(args) - 3
+	return append(append(args[:n:n], "--label", EtiquetaFirma+"="+firmaDe(args)), args[n:]...)
+}
+
+// Firma es la huella de la configuración actual del aula del alumno (la que lleva su etiqueta).
+func (a *Aula) Firma(userID string) string { return firmaDe(a.argsSinFirma(userID)) }
+
+func firmaDe(args []string) string {
+	h := sha256.Sum256([]byte(strings.Join(args, "\x00")))
+	return hex.EncodeToString(h[:])[:16]
+}
+
+func (a *Aula) argsSinFirma(userID string) []string {
+	mem := a.memoria()
 	args := []string{
 		"run", "-d", "--name", Nombre(userID), "--hostname", "aula",
-		"--memory", "192m", "--memory-swap", "192m", "--cpus", "0.5", "--pids-limit", "96",
+		// pids: asistente + «bun install» + Bun sirviendo llegaron a 24 (medido): 96 sobra.
+		"--memory", mem, "--memory-swap", mem, "--cpus", "0.5", "--pids-limit", "96",
 		"--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--read-only",
 		"--tmpfs", "/tmp:rw,exec,size=64m",
 		"--tmpfs", "/home/alumno:rw,size=32m,uid=10001,gid=10001",
@@ -76,6 +115,7 @@ func (a *Aula) Args(userID string) []string {
 		// jmd lee la clave de JMD_API_KEY; el asistente, OSITO_TOKEN.
 		args = append(args, "-e", "OSITO_TOKEN="+a.Token, "-e", "JMD_TOKEN="+a.Token, "-e", "JMD_API_KEY="+a.Token)
 	}
+	args = append(args, a.Clase.entorno(userID)...)
 	return append(args, a.imagen(), "sleep", "2147483647")
 }
 
@@ -87,23 +127,71 @@ func (a *Aula) exec(ctx context.Context, args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-// Crear deja corriendo el contenedor del alumno. Devuelve true si ya existía y se reutilizó.
+// Crear deja corriendo el contenedor del alumno. Devuelve true si ya existía y se reutilizó (también
+// cuando se recrea por un cambio de configuración: su /trabajo es el mismo).
 func (a *Aula) Crear(ctx context.Context, userID string) (bool, error) {
+	c, _ := a.candados.LoadOrStore(userID, &sync.Mutex{})
+	mu := c.(*sync.Mutex)
+	mu.Lock()
+	defer mu.Unlock()
+
 	nombre := Nombre(userID)
-	out, err := a.exec(ctx, "inspect", "-f", "{{.State.Running}}", nombre)
+	args := a.Args(userID)
+	firma := a.Firma(userID)
+	out, err := a.exec(ctx, "inspect", "-f", `{{.State.Running}} {{index .Config.Labels "`+EtiquetaFirma+`"}}`, nombre)
+	reutilizado := false
 	if err == nil {
-		if out == "true" {
+		campos := strings.Fields(out)
+		if len(campos) == 2 && campos[1] == firma {
+			if campos[0] == "true" {
+				return true, nil
+			}
+			a.prepararClase(ctx, userID)
+			if o, err := a.exec(ctx, "start", nombre); err != nil {
+				return false, fmt.Errorf("no se pudo arrancar el aula: %s", o)
+			}
 			return true, nil
 		}
-		if o, err := a.exec(ctx, "start", nombre); err != nil {
-			return false, fmt.Errorf("no se pudo arrancar el aula: %s", o)
+		// Aula de antes del último cambio (otra memoria, sin las variables de la clase 3): se recrea con la
+		// configuración nueva. El volumen /trabajo no se toca.
+		slog.Info("aula: se recrea con la configuración nueva", "contenedor", nombre)
+		if o, err := a.exec(ctx, "rm", "-f", nombre); err != nil {
+			return false, fmt.Errorf("no se pudo renovar el aula: %s", o)
 		}
-		return true, nil
+		reutilizado = true
 	}
-	if o, err := a.exec(ctx, a.Args(userID)...); err != nil {
+	a.prepararClase(ctx, userID)
+	if o, err := a.exec(ctx, args...); err != nil {
 		return false, fmt.Errorf("no se pudo crear el aula: %s", o)
 	}
-	return false, nil
+	return reutilizado, nil
+}
+
+// prepararClase crea, si faltan, la base de Postgres y la instancia de Evolution Go del alumno. Un fallo
+// se registra y no impide el aula: quien no esté en la clase 3 no debe notar nada.
+func (a *Aula) prepararClase(ctx context.Context, userID string) {
+	c := a.Clase
+	if c.PGActivo() {
+		pctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		if out, err := a.ExecStdin(pctx, c.PG, scriptPG, []byte(c.sqlBase(userID))); err != nil {
+			slog.Warn("aula: no se pudo preparar la base del alumno", "contenedor", Nombre(userID), "salida", out, "err", err)
+		}
+		cancel()
+	}
+	if c.EvoActivo() {
+		if err := c.asegurarInstancia(ctx, userID); err != nil {
+			slog.Warn("aula: no se pudo preparar la instancia de WhatsApp", "contenedor", Nombre(userID), "err", err)
+			return
+		}
+		// Las bases de evolution-go viven en el mismo aula-pg: ahí se deja el webhook sin arrancar WhatsApp.
+		if c.PGActivo() {
+			pctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+			if out, err := a.ExecStdin(pctx, c.PG, scriptPGEvo, []byte(sqlWebhook(userID))); err != nil {
+				slog.Warn("aula: no se pudo fijar el webhook de WhatsApp", "contenedor", Nombre(userID), "salida", out, "err", err)
+			}
+			cancel()
+		}
+	}
 }
 
 // Estado devuelve "corriendo", "parado" o "ninguno".

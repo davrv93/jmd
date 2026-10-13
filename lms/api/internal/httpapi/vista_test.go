@@ -107,8 +107,81 @@ func TestVistaApiReenvia(t *testing.T) {
 	if r.code != 200 || r.body["texto"] != "hola" {
 		t.Fatalf("reenvío: %d %s", r.code, r.raw)
 	}
-	if n := e.call("POST", "/vista/"+idAna+"/api/secreto", ana, false, map[string]any{}, ""); n.code != 404 {
-		t.Errorf("fuera de la lista blanca: %d", n.code)
+}
+
+// Clase 3: el backend del alumno (Bun + Elysia en el 8766) recibe cualquier ruta bajo /api/ y cualquier
+// método de escritura del dueño; el personal solo mira; nada de «..».
+func TestVistaApiBackendDelAlumno(t *testing.T) {
+	var vistos []string
+	back := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		vistos = append(vistos, r.Method+" "+r.URL.RequestURI())
+		if r.Header.Get("Cookie") != "" || r.Header.Get("Authorization") != "" {
+			t.Errorf("las credenciales del LMS no llegan al aula: %v", r.Header)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ruta":"` + r.URL.Path + `"}`))
+	}))
+	defer back.Close()
+	e, ana, beto, idAna, _ := vistaEnv(t, &aulaFalsa{destino: back.Listener.Addr().String()})
+	base := "/vista/" + idAna + "/api/"
+	for _, c := range []struct{ metodo, ruta string }{
+		{"GET", "mensajes?desde=3"}, {"POST", "mensajes"}, {"GET", "whatsapp/qr"}, {"PUT", "mensajes/7"},
+		{"PATCH", "mensajes/7"}, {"DELETE", "mensajes/7"}, {"POST", "webhook"},
+	} {
+		var cuerpo any
+		if c.metodo != "GET" && c.metodo != "DELETE" {
+			cuerpo = map[string]any{"texto": "hola"}
+		}
+		r := e.call(c.metodo, base+c.ruta, ana, false, cuerpo, "")
+		if quiere := "/api/" + strings.SplitN(c.ruta, "?", 2)[0]; r.code != 200 || r.body["ruta"] != quiere {
+			t.Errorf("%s %s: %d %s", c.metodo, c.ruta, r.code, r.raw)
+		}
+	}
+	if len(vistos) == 0 || vistos[0] != "GET /api/mensajes?desde=3" {
+		t.Errorf("la consulta debe pasar tal cual: %v", vistos)
+	}
+	// El personal mira (GET) pero no escribe; otro alumno, nada.
+	profe := e.login("profe@x.test", "profe1234")
+	if r := e.call("GET", base+"whatsapp/qr", profe, false, nil, ""); r.code != 200 {
+		t.Errorf("el personal puede mirar: %d", r.code)
+	}
+	for _, m := range []string{"POST", "PUT", "PATCH", "DELETE"} {
+		if r := e.call(m, base+"mensajes", profe, false, map[string]any{}, ""); r.code != 403 {
+			t.Errorf("personal %s: %d", m, r.code)
+		}
+	}
+	if r := e.call("GET", base+"mensajes", beto, false, nil, ""); r.code != 403 {
+		t.Errorf("otro alumno: %d", r.code)
+	}
+	// Rutas sucias: nunca llegan al aula. («a//b» y «./x» sin codificar los limpia el mux con una redirección.)
+	antes := len(vistos)
+	for _, ruta := range []string{"%2e%2e/secreto", "a/%2e%2e/%2e%2e/x", "a%2f%2fb", "%2e/x", "a%5cb", "%00"} {
+		r := e.call("POST", base+ruta, ana, false, map[string]any{}, "")
+		if r.code == 200 {
+			t.Errorf("%q no debe reenviarse: %d %s", ruta, r.code, r.raw)
+		}
+	}
+	if len(vistos) != antes {
+		t.Errorf("una ruta sucia llegó al aula: %v", vistos[antes:])
+	}
+	for _, ruta := range []string{"x", "a/b.json"} {
+		if !restoPermitido(ruta) {
+			t.Errorf("%q debe pasar", ruta)
+		}
+	}
+	for _, ruta := range []string{"", "..", "../x", "a/../b", "/x", "a//b", "a\\b", "a\x00b", strings.Repeat("a", 600)} {
+		if restoPermitido(ruta) {
+			t.Errorf("%q no debe pasar", ruta)
+		}
+	}
+}
+
+// La CSP deja al front (Lit desde esm.sh) llamar a su /vista/<sub>/api y mostrar el QR como data: o png.
+func TestVistaCSPClase3(t *testing.T) {
+	for _, quiere := range []string{"script-src 'self' 'unsafe-inline' https://esm.sh", "connect-src 'self'", "img-src 'self' data: blob:"} {
+		if !strings.Contains(cspVista, quiere) {
+			t.Errorf("CSP sin %q: %s", quiere, cspVista)
+		}
 	}
 }
 

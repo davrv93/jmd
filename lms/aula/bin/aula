@@ -1,6 +1,6 @@
 #!/bin/sh
 # aula: arranque del asistente del alumno dentro de su contenedor.
-# Uso: aula iniciar | parar | estado
+# Uso: aula iniciar | parar | estado | nuevo <plantilla> | whatsapp | db
 PID=/tmp/osito.pid
 vivo() { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; }
 
@@ -60,8 +60,85 @@ case "${1:-}" in
       *) echo "ábrela en el panel Visor: /vista/<tú>/$(basename "$destino")/" ;;
     esac
     ;;
+  whatsapp)
+    # Estado de la instancia de WhatsApp del alumno y, si no está vinculada, el QR en /trabajo/qr.png.
+    if [ -z "${EVO_URL:-}" ] || [ -z "${EVO_TOKEN:-}" ]; then
+      echo "Tu aula no tiene WhatsApp configurado (faltan EVO_URL y EVO_TOKEN)." >&2
+      echo "Cierra la terminal y vuelve a entrar al LIVE: el aula se renueva sola. Si sigue igual, avisa al instructor." >&2
+      exit 1
+    fi
+    exec /opt/venv/bin/python - <<'PY'
+import base64, json, os, sys, time, urllib.request, urllib.error
+
+url, token = os.environ["EVO_URL"].rstrip("/"), os.environ["EVO_TOKEN"]
+inst, webhook = os.environ.get("EVO_INSTANCE", "?"), os.environ.get("EVO_WEBHOOK", "")
+qr_png = "/trabajo/qr.png"
+
+def pedir(metodo, ruta, cuerpo=None, espera=20):
+    datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
+    req = urllib.request.Request(url + ruta, data=datos, method=metodo,
+                                 headers={"apikey": token, "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=espera) as r:
+            return json.loads(r.read() or b"{}")
+    except urllib.error.HTTPError as e:
+        cuerpo = e.read().decode(errors="replace")[:200]
+        if e.code in (401, 403, 404):
+            sys.exit(f"Evolution Go no reconoce tu instancia ({e.code}): {cuerpo}\nAvisa al instructor.")
+        sys.exit(f"Evolution Go respondió {e.code}: {cuerpo}")
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        sys.exit(f"Evolution Go no responde en {url}: {e}")
+
+def estado():
+    d = pedir("GET", "/instance/status").get("data") or {}
+    return bool(d.get("Connected")), bool(d.get("LoggedIn")), d.get("Name") or ""
+
+conectado, vinculado, nombre = estado()
+print(f"instancia: {inst}")
+print(f"conectada: {'sí' if conectado else 'no'} · vinculada: {'sí' if vinculado else 'no'}" + (f" · {nombre}" if nombre else ""))
+print(f"webhook:   {webhook or '(sin EVO_WEBHOOK)'}")
+# connect guarda el webhook; si la sesión ya corre, solo actualiza la configuración (no la reinicia).
+pedir("POST", "/instance/connect", {"webhookUrl": webhook, "subscribe": ["MESSAGE"]})
+if vinculado:
+    print("Tu WhatsApp ya está vinculado. Los mensajes llegan a tu backend en el puerto 8766: POST /api/webhook")
+    sys.exit(0)
+
+print("Escanea el QR con WhatsApp > Dispositivos vinculados > Vincular un dispositivo.")
+print("Ábrelo en el Visor: qr.png (se renueva cada pocos segundos; Ctrl+C para salir).")
+ultimo, fin = None, time.time() + 150
+while time.time() < fin:
+    d = pedir("GET", "/instance/qr", espera=30).get("data") or {}
+    q = d.get("qrcode") or ""
+    if q.startswith("data:image") and "," in q and q != ultimo:
+        with open(qr_png + ".tmp", "wb") as f:
+            f.write(base64.b64decode(q.split(",", 1)[1]))
+        os.replace(qr_png + ".tmp", qr_png)
+        ultimo = q
+        print(f"QR nuevo en {qr_png} ({time.strftime('%H:%M:%S')})", flush=True)
+    time.sleep(4)
+    if estado()[1]:
+        print("¡Vinculado! Ya puedes recibir y enviar mensajes.")
+        try:
+            os.remove(qr_png)
+        except OSError:
+            pass
+        sys.exit(0)
+print("El QR caducó sin escanearse. Vuelve a correr: aula whatsapp")
+sys.exit(1)
+PY
+    ;;
+  db)
+    # Abre la base del alumno. Sin psql, muestra la URL sin la clave.
+    if [ -z "${DATABASE_URL:-}" ]; then
+      echo "Tu aula no tiene base de datos (falta DATABASE_URL). Cierra la terminal y vuelve a entrar al LIVE." >&2
+      exit 1
+    fi
+    shift
+    if command -v psql >/dev/null 2>&1; then exec psql "$DATABASE_URL" "$@"; fi
+    echo "$DATABASE_URL" | sed 's#://\([^:]*\):[^@]*@#://\1:****@#'
+    ;;
   *)
-    echo "uso: aula iniciar | parar | estado | nuevo <plantilla> [carpeta]" >&2
+    echo "uso: aula iniciar | parar | estado | nuevo <plantilla> [carpeta] | whatsapp | db" >&2
     exit 2
     ;;
 esac

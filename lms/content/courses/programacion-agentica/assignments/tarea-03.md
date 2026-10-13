@@ -54,14 +54,15 @@ Un repositorio git (GitHub, GitLab o Forgejo, público o con acceso para el inst
 3. **`REFLEXION.md`** (10 líneas): qué hizo el agente solo, qué hubo que corregirle (con un
    ejemplo concreto: qué propuso y qué cambiaste) y qué aprendiste del curso.
 
-Opcional, suma a la evidencia pero no a la nota: `FLUJOS.md`, `WIREFRAME.html`,
-`pruebas/webhook-hola.json` y `MEDICIONES.md` de la clase.
+Opcional, suma a la evidencia pero no a la nota: `FLUJOS.md`, `wireframe/index.html`,
+`prototipo/index.html`, `PRUEBAS_DE_USO.md` y la salida de `bun test pruebas/` de tu aula
+(ábrelos en el visor y cópialos; el código `.ts` puedes pegarlo desde la terminal con `cat`).
 
 ## Lo que no va en el repositorio
 
-- **`.env`** con la `AUTHENTICATION_API_KEY` o cualquier otra clave. Sube `.env.example` con los
-  nombres y sin valores. Si subes una clave por error, cámbiala en Evolution y haz un commit
-  nuevo; la clave vieja sigue en el historial.
+- Ninguna clave: ni `EVO_TOKEN`, ni `OSITO_TOKEN`, ni `DATABASE_URL`, ni un `.env`. Si subes una
+  por error, avisa al instructor para que la cambie; la clave vieja sigue en el historial.
+- `node_modules/`.
 - Números de teléfono personales ni capturas con conversaciones de personas que no sean del
   curso.
 

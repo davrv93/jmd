@@ -169,16 +169,17 @@ func (s *Server) vistaProyectos(w http.ResponseWriter, r *http.Request, p *Princ
 	writeJSON(w, 200, lista)
 }
 
-// restoPermitido: lo único del asistente que el visor puede alcanzar.
+// restoPermitido: cualquier ruta bajo /api/ del puerto 8766 del aula (el asistente o, en la clase 3, el
+// backend Bun del alumno), siempre que sea relativa y limpia: sin «..», «.», barras dobles, «\\» ni NUL.
 func restoPermitido(resto string) bool {
-	switch resto {
-	case "chat", "stt", "imagen", "voz", "salud", "estado":
-		return true
-	}
-	return strings.HasPrefix(resto, "imagenes/") && content.SafeRel(strings.TrimPrefix(resto, "imagenes/"))
+	return !strings.ContainsRune(resto, 0) && len(resto) <= 512 && content.SafeRel(resto)
 }
 
-// vistaAPI: GET|POST /vista/{sub}/api/{resto...}. Reenvía al asistente del contenedor del alumno.
+// metodosVista: lo que el dueño puede mandar a su backend. El personal solo GET.
+var metodosVista = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete}
+
+// vistaAPI: GET|POST|PUT|PATCH|DELETE /vista/{sub}/api/{resto...}. Reenvía al puerto 8766 del contenedor del
+// alumno (su asistente o su propio backend). Solo el dueño escribe; el personal solo mira (GET).
 func (s *Server) vistaAPI(w http.ResponseWriter, r *http.Request, p *Principal) {
 	sub := r.PathValue("sub")
 	if !vistaAcceso(w, p, sub) {
@@ -189,7 +190,7 @@ func (s *Server) vistaAPI(w http.ResponseWriter, r *http.Request, p *Principal) 
 	}
 	// El personal puede mirar (GET) pero nunca actuar en nombre del alumno.
 	if r.Method != http.MethodGet && sub != p.ID {
-		writeErr(w, 403, "forbidden", "solo el dueño puede enviar al asistente")
+		writeErr(w, 403, "forbidden", "solo el dueño puede enviar a su aula")
 		return
 	}
 	if r.Header.Get("Upgrade") != "" {
@@ -219,7 +220,7 @@ func (s *Server) vistaAPI(w http.ResponseWriter, r *http.Request, p *Principal) 
 		},
 		FlushInterval: -1,
 		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
-			writeErr(w, 503, "asistente_apagado", "Arranca tu asistente desde la terminal: aula iniciar")
+			writeErr(w, 503, "asistente_apagado", "Nada escucha en el puerto 8766 de tu aula: arranca tu asistente (aula iniciar) o tu backend")
 		},
 	}
 	proxy.ServeHTTP(w, r)

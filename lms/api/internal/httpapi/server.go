@@ -161,8 +161,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/vista/proyectos", s.authed(s.vistaProyectos))
 	mux.Handle("GET /api/v1/vista/{sub}/proyectos", s.authed(s.vistaProyectos))
 	mux.Handle("GET /api/v1/vista/{sub}/version", s.authed(s.vistaVersion))
-	mux.Handle("GET /vista/{sub}/api/{resto...}", s.authed(s.vistaAPI))
-	mux.Handle("POST /vista/{sub}/api/{resto...}", s.authed(s.vistaAPI))
+	for _, m := range metodosVista {
+		mux.Handle(m+" /vista/{sub}/api/{resto...}", s.authed(s.vistaAPI))
+	}
 	// Modo LIVE (ver live_handlers.go y docs/PLAN_MODO_LIVE_SESION2.md).
 	mux.Handle("GET /api/v1/live", s.authed(s.liveActivas))
 	mux.Handle("GET /api/v1/live/{lesson}", s.authed(s.liveGet))

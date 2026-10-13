@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plan del chatbot de WhatsApp</title>
+  <style>
+    :root { --marca: #0f766e; --fondo: #f6f7f9; --panel: #fff; --texto: #1c2227; --borde: #d7dde2; color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) { :root { --fondo: #12171b; --panel: #1b2227; --texto: #e6ebee; --borde: #2f3a41; } }
+    body { font-family: system-ui, sans-serif; max-width: 62rem; margin: 0 auto; padding: 1rem; line-height: 1.45; background: var(--fondo); color: var(--texto); }
+    header { display: flex; align-items: center; gap: .75rem; }
+    header img { width: 48px; height: 48px; }
+    h1 { font-size: 1.4rem; margin: 0; }
+    nav { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
+    button { padding: .45rem .9rem; font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--borde); background: var(--panel); color: inherit; }
+    button[aria-pressed="true"] { background: var(--marca); border-color: var(--marca); color: #fff; }
+    button:focus-visible { outline: 3px solid var(--marca); outline-offset: 2px; }
+    pre { white-space: pre-wrap; word-break: break-word; font: .9rem/1.45 ui-monospace, Menlo, Consolas, monospace; background: var(--panel); border: 1px solid var(--borde); padding: 1rem; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <header><img src="recursos/logo-bot.svg" alt=""><h1>Plan de trabajo del chatbot de WhatsApp</h1></header>
+  <p>Pega el prompt a tu agente (<code>jmd</code>) para personalizar el plan y construir en <code>/trabajo/chatbot</code>. Cuando el agente cambie un archivo, pulsa «Actualizar».</p>
+  <nav aria-label="Documento">
+    <button data-archivo="PLAN_TRABAJO.md" aria-pressed="true">Plan</button>
+    <button data-archivo="PROMPT_ARMAR_CHATBOT.md" aria-pressed="false">Prompt</button>
+    <button data-archivo="INDICACIONES.md" aria-pressed="false">Indicaciones</button>
+    <button id="recargar">Actualizar</button>
+  </nav>
+  <pre id="texto" aria-live="polite">Cargando…</pre>
+  <script>
+    let archivo = "PLAN_TRABAJO.md";
+    const texto = document.getElementById("texto");
+    async function cargar() {
+      try {
+        const r = await fetch(archivo + "?t=" + Date.now());
+        texto.textContent = r.ok ? await r.text() : "No encuentro " + archivo + " (error " + r.status + ").";
+      } catch (e) { texto.textContent = "No pude leer " + archivo + ": " + e.message; }
+    }
+    document.querySelectorAll("button[data-archivo]").forEach((b) => b.onclick = () => {
+      archivo = b.dataset.archivo;
+      document.querySelectorAll("button[data-archivo]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      cargar();
+    });
+    document.getElementById("recargar").onclick = cargar;
+    cargar();
+  </script>
+</body>
+</html>

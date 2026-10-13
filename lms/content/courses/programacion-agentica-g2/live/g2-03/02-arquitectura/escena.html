@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E02 · La arquitectura en una imagen</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<style>
+/* ---- Tokens (los mismos del LMS) ---- */
+:root {
+  --bg: #eef0ff; --bg2: #f6f0fb; --bg3: #fbf6ee; --s1: #ffffff; --s2: #f4f3fb; --s3: #ebeaf6;
+  --fg: #16151d; --muted: #5c5966; --line: rgba(60,52,140,.13); --line2: rgba(60,52,140,.24);
+  --accent: #5a49d6; --accent-2: #7b6cf0; --accent-bg: rgba(90,73,214,.11); --on-accent: #ffffff;
+  --gold: #7d5700; --gold-bg: rgba(125,87,0,.13);
+  --ok: #136a33; --ok-bg: rgba(19,106,51,.12); --warn: #984407; --warn-bg: rgba(152,68,7,.12);
+  --bad: #b11f1f; --bad-bg: rgba(177,31,31,.10); --info: #1d4ed8; --info-bg: rgba(29,78,216,.10);
+  --ph-ec: #5a49d6; --ph-ec-bg: rgba(90,73,214,.11);
+  --ph-or: #0b5f58; --ph-or-bg: rgba(11,95,88,.12);
+  --ph-ca: #7d5700; --ph-ca-bg: rgba(125,87,0,.13);
+  --ph-ea: #a4185c; --ph-ea-bg: rgba(164,24,92,.11);
+  --est: #5a49d6; --est-g: #9d8cff; --est-o: #c08a12;
+  --card-shadow: 0 1px 2px rgba(60,52,140,.06), 0 10px 28px -12px rgba(90,73,214,.28);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --cielo: .55;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="light"]) {
+    --bg: #12112a; --bg2: #171533; --bg3: #1b1731; --s1: #1d1b38; --s2: #252347; --s3: #2e2b55;
+    --fg: #ecebf7; --muted: #b7b4cc; --line: rgba(190,185,255,.13); --line2: rgba(190,185,255,.26);
+    --accent: #a99cff; --accent-2: #c3b9ff; --accent-bg: rgba(169,156,255,.16); --on-accent: #14122b;
+    --gold: #e9bd52; --gold-bg: rgba(233,189,82,.16);
+    --ok: #4fd37a; --ok-bg: rgba(79,211,122,.15); --warn: #f4ac5c; --warn-bg: rgba(244,172,92,.15);
+    --bad: #ff7b7b; --bad-bg: rgba(255,123,123,.14); --info: #85b4ff; --info-bg: rgba(133,180,255,.15);
+    --ph-ec: #a99cff; --ph-ec-bg: rgba(169,156,255,.15);
+    --ph-or: #4fd1c5; --ph-or-bg: rgba(79,209,197,.15);
+    --ph-ca: #e9bd52; --ph-ca-bg: rgba(233,189,82,.15);
+    --ph-ea: #f27cb8; --ph-ea-bg: rgba(242,124,184,.15);
+    --est: #c3b9ff; --est-g: #8e7dff; --est-o: #e9bd52;
+    --card-shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -12px rgba(0,0,0,.6);
+    --cielo: .95; color-scheme: dark;
+  }
+}
+:root[data-tema="dark"] {
+  --bg: #12112a; --bg2: #171533; --bg3: #1b1731; --s1: #1d1b38; --s2: #252347; --s3: #2e2b55;
+  --fg: #ecebf7; --muted: #b7b4cc; --line: rgba(190,185,255,.13); --line2: rgba(190,185,255,.26);
+  --accent: #a99cff; --accent-2: #c3b9ff; --accent-bg: rgba(169,156,255,.16); --on-accent: #14122b;
+  --gold: #e9bd52; --gold-bg: rgba(233,189,82,.16);
+  --ok: #4fd37a; --ok-bg: rgba(79,211,122,.15); --warn: #f4ac5c; --warn-bg: rgba(244,172,92,.15);
+  --bad: #ff7b7b; --bad-bg: rgba(255,123,123,.14); --info: #85b4ff; --info-bg: rgba(133,180,255,.15);
+  --ph-ec: #a99cff; --ph-ec-bg: rgba(169,156,255,.15);
+  --ph-or: #4fd1c5; --ph-or-bg: rgba(79,209,197,.15);
+  --ph-ca: #e9bd52; --ph-ca-bg: rgba(233,189,82,.15);
+  --ph-ea: #f27cb8; --ph-ea-bg: rgba(242,124,184,.15);
+  --est: #c3b9ff; --est-g: #8e7dff; --est-o: #e9bd52;
+  --card-shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -12px rgba(0,0,0,.6);
+  --cielo: .95; color-scheme: dark;
+}
+
+/* ---- Base ---- */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; } /* si no, display:grid o flex le ganan al atributo */
+html, body { margin: 0; height: 100%; }
+body {
+  font: 400 clamp(15px, calc(1.2vw + .5vh), 30px)/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--fg);
+  background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 55%, var(--bg3) 100%);
+  overflow: hidden;
+}
+.esc { position: relative; min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; padding: 2.2vh 3.2vw 2vh; gap: 2vh; }
+
+/* ---- Cielo de fondo (decorativo, 0 JS) ---- */
+.esc-cielo { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: var(--cielo); }
+.esc-cielo .e { fill: var(--est); }
+.esc-cielo .eg { fill: var(--est-g); }
+.esc-cielo .eo { fill: var(--est-o); }
+.esc-cielo .t { fill: none; stroke: var(--est); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo 4s ease-out .3s forwards; }
+.esc-cielo .tb { fill: none; stroke: var(--est-g); stroke-width: 1.4; stroke-linecap: round; opacity: .5; stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo 5s ease-out .8s forwards; }
+.esc-cielo .p { animation: esc-parpadeo 5s ease-in-out infinite; animation-delay: var(--p, 0s); }
+.esc > * { position: relative; z-index: 1; }
+
+/* ---- Cabecera, cuerpo y pie ---- */
+.esc-cab { display: flex; align-items: center; gap: 1vw; }
+.esc-fase { --c: var(--ph-ec); --cb: var(--ph-ec-bg); display: inline-flex; align-items: center; gap: .5em; padding: .3em .9em; border-radius: 999px; font-weight: 700; font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--c); background: var(--cb); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.esc-fase::before { content: ""; width: .55em; height: .55em; border-radius: 50%; background: var(--c); }
+.esc-fase[data-ph="ec"] { --c: var(--ph-ec); --cb: var(--ph-ec-bg); }
+.esc-fase[data-ph="or"] { --c: var(--ph-or); --cb: var(--ph-or-bg); }
+.esc-fase[data-ph="ca"] { --c: var(--ph-ca); --cb: var(--ph-ca-bg); }
+.esc-fase[data-ph="ea"] { --c: var(--ph-ea); --cb: var(--ph-ea-bg); }
+.esc-num { margin-left: auto; font: 700 .8em var(--mono); color: var(--muted); letter-spacing: .12em; }
+.esc-cuerpo { min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 2.2vh; }
+.esc-pie { font-size: .62em; color: var(--muted); display: flex; align-items: center; gap: .6em; }
+.esc-pie::before { content: ""; width: 1.6em; height: 2px; background: var(--line2); }
+
+/* ---- Tipografía y piezas reutilizables ---- */
+.esc-titulo { margin: 0; font-size: 2.3em; line-height: 1.08; font-weight: 800; letter-spacing: -.02em; }
+.esc-titulo em { font-style: normal; background: linear-gradient(100deg, var(--accent), var(--est-g)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.esc-sub { margin: 0; font-size: 1.15em; color: var(--muted); max-width: 46em; }
+.esc-big { font-size: 3.4em; font-weight: 800; line-height: 1; letter-spacing: -.03em; }
+.esc-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: 1em 1.2em; box-shadow: var(--card-shadow); }
+.esc-card h3 { margin: 0 0 .3em; font-size: 1em; }
+.esc-card p { margin: 0; color: var(--muted); font-size: .88em; }
+.esc-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4vw; align-items: stretch; }
+.esc-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2vw; align-items: stretch; }
+.esc-fila { display: flex; align-items: center; gap: 1.2vw; flex-wrap: wrap; }
+.esc-chip { display: inline-flex; align-items: center; gap: .4em; padding: .25em .75em; border-radius: 999px; font-size: .72em; font-weight: 700; background: var(--accent-bg); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.esc-chip.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.esc-chip.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.esc-chip.bad { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
+.esc-cmd { margin: 0; font: 600 .78em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .8em; padding: .8em 1.1em; overflow: hidden; white-space: pre-wrap; border: 1px solid rgba(190,185,255,.22); }
+.esc-cmd .p { color: #8e7dff; user-select: none; }
+.esc-cmd .c { color: #7f7aa8; }
+.esc-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .55em; }
+.esc-lista li { display: flex; gap: .7em; align-items: baseline; }
+.esc-lista li::before { content: ""; flex: none; width: .55em; height: .55em; border-radius: 50%; background: var(--accent); transform: translateY(-.05em); }
+.esc-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.esc-svg text { font-family: inherit; fill: var(--fg); }
+
+/* ---- Animaciones (solo transform, opacity y dashoffset; 300-500 ms, ease-out) ---- */
+@keyframes esc-entra { from { opacity: 0; transform: translateY(1.2vh); } to { opacity: 1; transform: none; } }
+@keyframes esc-pop { 0% { opacity: 0; transform: scale(.82); } 60% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes esc-trazo { to { stroke-dashoffset: 0; } }
+@keyframes esc-flota { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.1vh); } }
+@keyframes esc-pulso { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes esc-parpadeo { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@keyframes esc-viaja { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.a-in   { animation: esc-entra .45s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0s); }
+.a-pop  { animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; animation-delay: var(--d, 0s); transform-origin: center; transform-box: fill-box; }
+.a-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo var(--t, .9s) ease-out forwards; animation-delay: var(--d, 0s); }
+.a-flota { animation: esc-flota 4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.a-pulso { animation: esc-pulso 2.4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+/* Para SVG con pathLength="1": <path class="a-draw" pathLength="1" ...> */
+
+/* Apaga TODO el movimiento: cada pieza queda en su estado final, legible. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .a-draw, .esc-cielo .t, .esc-cielo .tb { stroke-dashoffset: 0 !important; }
+}
+</style>
+<style id="esc-propio">
+
+/* ---- Común de la clase 3 (chatbot de WhatsApp) ---- */
+:root { --wa: #0b7a40; --wa-bg: rgba(11,122,64,.12); --wa-cab: #0b7a40; --burb: #d9fdd3; --burb-fg: #10291a; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) { --wa: #4ade80; --wa-bg: rgba(74,222,128,.15); --wa-cab: #166c3f; --burb: #1d5a39; --burb-fg: #e6ffef; } }
+:root[data-tema="dark"] { --wa: #4ade80; --wa-bg: rgba(74,222,128,.15); --wa-cab: #166c3f; --burb: #1d5a39; --burb-fg: #e6ffef; }
+.esc-chip.wa { background: var(--wa-bg); color: var(--wa); border-color: color-mix(in srgb, var(--wa) 30%, transparent); }
+.esc-svg text.m { fill: var(--muted); }
+.esc-svg text.ac { fill: var(--accent); }
+.esc-svg text.ok { fill: var(--ok); }
+.esc-svg text.wa { fill: var(--wa); }
+.esc-svg text.mono { font-family: var(--mono); }
+.esc-svg text.b { font-weight: 700; }
+.nodo { fill: var(--s1); stroke: var(--line2); stroke-width: 2.5; }
+.nodo.ac { stroke: var(--accent); }
+.nodo.wa { stroke: var(--wa); }
+.carril { fill: none; stroke: var(--line2); stroke-width: 3; stroke-linecap: round; }
+.carril.ac { stroke: var(--accent); }
+.carril.wa { stroke: var(--wa); }
+.punta { fill: var(--line2); }
+.punta.ac { fill: var(--accent); }
+.punta.wa { fill: var(--wa); }
+.tel { fill: var(--s1); stroke: var(--fg); stroke-width: 6; }
+.tel-pant { fill: var(--s2); }
+.tel-cab { fill: var(--wa-cab); }
+.esc-svg text.tel-t { fill: #fff; font-weight: 700; }
+.bu-in { fill: var(--s1); stroke: var(--line2); stroke-width: 1.5; }
+.bu-out { fill: var(--burb); }
+.esc-svg text.bo { fill: var(--burb-fg); }
+.gris { fill: var(--s3); }
+.gris2 { fill: var(--line2); }
+.marco { fill: var(--s1); stroke: var(--line2); stroke-width: 2.5; }
+.c3-cmd { font-size: .74em; }
+.c3-cmd .ok { color: #7ef0a4; }
+.c3-cmd .no { color: #ff9b9b; }
+.c3-cmd .w { color: #ffd479; }
+
+.a2-svg { max-height: 54vh; }
+.esc-svg .pk rect { fill: var(--accent); }
+.esc-svg .pk.res rect { fill: var(--wa); }
+.esc-svg .pk text { fill: #fff; font-weight: 700; }
+@keyframes a2-viaja { 0% { opacity: 0; transform: translateX(0); } 14% { opacity: 1; } 86% { opacity: 1; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
+.pk { opacity: 0; animation: a2-viaja .8s linear both; animation-delay: var(--d); }
+.a2-pasos .esc-card { display: grid; grid-template-columns: auto 1fr; gap: .2em .8em; align-items: center; }
+.a2-pasos b { grid-row: span 2; display: grid; place-items: center; width: 1.9em; height: 1.9em; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font-size: 1em; }
+.a2-pasos .wa b { background: var(--wa-bg); color: var(--wa); }
+.a2-pasos h3 { margin: 0; }
+
+/* ---- Teléfono (390 px): una columna y se puede desplazar ---- */
+@media (max-width: 760px) {
+  html, body { height: auto; }
+  body { overflow: visible; }
+  .esc { padding: 14px 16px; gap: 14px; }
+  .esc-titulo { font-size: 1.7em; }
+  .esc-sub { font-size: 1em; }
+  .esc-grid-2, .esc-grid-3, .c3-col { grid-template-columns: 1fr !important; gap: 12px; }
+  .c3-cmd { font-size: .7em; }
+}
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Grupo 2 · E02</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Un mensaje, <em>ida y vuelta</em></h1>
+    <svg class="esc-svg a2-svg" viewBox="0 0 1600 560" role="img" aria-label="Arquitectura: el teléfono escribe por WhatsApp; Evolution Go lo recibe y avisa por webhook al backend Elysia en el puerto 8766; Elysia guarda en PostgreSQL y pregunta al modelo clase; la respuesta vuelve con POST /send/text a Evolution Go y al teléfono; la bandeja Lit la consulta cada 2 segundos.">
+      <g class="a-pop" style="--d:.2s"><rect class="nodo wa" x="20" y="170" width="230" height="220" rx="22"/>
+        <rect x="111" y="200" width="48" height="80" rx="10" fill="none" stroke="var(--wa)" stroke-width="4"/>
+        <text x="135" y="322" font-size="28" text-anchor="middle" class="b">WhatsApp</text>
+        <text class="m" x="135" y="356" font-size="21" text-anchor="middle">el cliente</text></g>
+      <g class="a-pop" style="--d:.35s"><rect class="nodo wa" x="360" y="170" width="270" height="220" rx="22"/>
+        <text x="495" y="236" font-size="30" text-anchor="middle" class="b">Evolution Go</text>
+        <text class="m" x="495" y="272" font-size="21" text-anchor="middle">tu número, por QR</text>
+        <text class="wa mono" x="495" y="340" font-size="20" text-anchor="middle">aula whatsapp</text></g>
+      <g class="a-pop" style="--d:.5s"><rect class="nodo ac" x="740" y="150" width="300" height="260" rx="22"/>
+        <text x="890" y="216" font-size="32" text-anchor="middle" class="b">Elysia</text>
+        <text class="m" x="890" y="252" font-size="21" text-anchor="middle">Bun · puerto 8766</text>
+        <text class="ac mono" x="890" y="330" font-size="20" text-anchor="middle">POST /api/webhook</text></g>
+      <g class="a-pop" style="--d:.65s"><rect class="nodo" x="1160" y="10" width="420" height="140" rx="22"/>
+        <text x="1370" y="70" font-size="28" text-anchor="middle" class="b">Modelo «clase»</text>
+        <text class="m" x="1370" y="106" font-size="21" text-anchor="middle">responde como tu negocio</text></g>
+      <g class="a-pop" style="--d:.75s"><rect class="nodo" x="1160" y="210" width="420" height="140" rx="22"/>
+        <text x="1370" y="270" font-size="28" text-anchor="middle" class="b">PostgreSQL</text>
+        <text class="m mono" x="1370" y="306" font-size="18" text-anchor="middle">contactos · conversaciones · mensajes</text></g>
+      <g class="a-pop" style="--d:.85s"><rect class="nodo ac" x="1160" y="410" width="420" height="140" rx="22"/>
+        <text x="1370" y="470" font-size="28" text-anchor="middle" class="b">Bandeja Lit</text>
+        <text class="m" x="1370" y="506" font-size="21" text-anchor="middle">la ves en el visor</text></g>
+
+      <path class="carril ac a-draw" pathLength="1" style="--d:1s;--t:.4s" d="M254 230 H346"/><path class="punta ac a-in" style="--d:1.3s" d="M360 230 l-16 -9 v18 z"/>
+      <path class="carril ac a-draw" pathLength="1" style="--d:1.1s;--t:.4s" d="M634 230 H726"/><path class="punta ac a-in" style="--d:1.4s" d="M740 230 l-16 -9 v18 z"/>
+      <path class="carril wa a-draw" pathLength="1" style="--d:1.2s;--t:.4s" d="M736 330 H644"/><path class="punta wa a-in" style="--d:1.5s" d="M630 330 l16 -9 v18 z"/>
+      <path class="carril wa a-draw" pathLength="1" style="--d:1.3s;--t:.4s" d="M356 330 H264"/><path class="punta wa a-in" style="--d:1.6s" d="M250 330 l16 -9 v18 z"/>
+      <path class="carril a-draw" pathLength="1" style="--d:1.4s;--t:.5s" d="M1044 200 C1100 200 1100 80 1146 80"/><path class="punta a-in" style="--d:1.8s" d="M1160 80 l-16 -9 v18 z"/>
+      <path class="carril a-draw" pathLength="1" style="--d:1.5s;--t:.4s" d="M1044 280 H1146"/><path class="punta a-in" style="--d:1.8s" d="M1160 280 l-16 -9 v18 z"/>
+      <path class="carril ac a-draw" pathLength="1" style="--d:1.6s;--t:.5s" d="M1044 360 C1100 360 1100 480 1146 480"/><path class="punta ac a-in" style="--d:1.9s" d="M1160 480 l-16 -9 v18 z"/>
+      <text class="a-in mono ac" style="--d:1.4s" x="685" y="212" font-size="18" text-anchor="middle">webhook</text>
+      <text class="a-in mono wa" style="--d:1.6s" x="685" y="372" font-size="18" text-anchor="middle">/send/text</text>
+      <text class="a-in m" style="--d:1.8s" x="1082" y="130" font-size="18" text-anchor="middle">pregunta</text>
+      <text class="a-in m" style="--d:1.8s" x="1100" y="268" font-size="18" text-anchor="middle">guarda</text>
+      <text class="a-in mono ac" style="--d:1.9s" x="1068" y="446" font-size="18" text-anchor="middle">cada 2 s</text>
+
+      <g transform="translate(254,230)"><g class="pk" style="--dx:92px;--d:2.2s"><rect x="-38" y="-16" width="76" height="32" rx="16"/><text x="0" y="7" text-anchor="middle" font-size="19">hola</text></g></g>
+      <g transform="translate(634,230)"><g class="pk" style="--dx:92px;--d:2.9s"><rect x="-38" y="-16" width="76" height="32" rx="16"/><text x="0" y="7" text-anchor="middle" font-size="19">hola</text></g></g>
+      <g transform="translate(736,330)"><g class="pk res" style="--dx:-92px;--d:3.8s"><rect x="-44" y="-16" width="88" height="32" rx="16"/><text x="0" y="7" text-anchor="middle" font-size="19">¡hola!</text></g></g>
+      <g transform="translate(356,330)"><g class="pk res" style="--dx:-92px;--d:4.5s"><rect x="-44" y="-16" width="88" height="32" rx="16"/><text x="0" y="7" text-anchor="middle" font-size="19">¡hola!</text></g></g>
+    </svg>
+    <div class="esc-grid-3 a2-pasos">
+      <div class="esc-card a-in" style="--d:2s"><b>1</b><h3>Entra</h3><p>Evolution Go avisa a tu back por webhook.</p></div>
+      <div class="esc-card a-in" style="--d:2.15s"><b>2</b><h3>Piensa</h3><p>Elysia guarda en Postgres y pregunta al modelo.</p></div>
+      <div class="esc-card wa a-in" style="--d:2.3s"><b>3</b><h3>Sale</h3><p>/send/text responde; la bandeja lo ve en 2 s.</p></div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Sigue la explicación del instructor</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
