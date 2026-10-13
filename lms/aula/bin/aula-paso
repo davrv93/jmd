@@ -1,0 +1,152 @@
+#!/bin/sh
+# aula paso: el chatbot de la clase 3, un paso a la vez. Cada paso es UN comando: el agente (jmd) hace la
+# tarea con su skill s3-* y luego se comprueba sola. Nada que pegar.
+#
+#   aula paso            muestra el paso actual y qué hacer
+#   aula paso hacer      el agente hace el paso y se comprueba; si sale bien, pasa al siguiente
+#   aula paso ver        solo la comprobación del paso actual
+#   aula paso siguiente | anterior | <número> | lista | reiniciar
+
+PLAN=/trabajo/plan-chatbot
+BOT=/trabajo/chatbot
+ESTADO=$PLAN/.paso
+DATOS=$PLAN/mis-datos.txt
+TOTAL=10
+
+[ -d "$PLAN" ] || cp -R /opt/plantillas/plan-chatbot "$PLAN"
+[ -f "$ESTADO" ] || echo 0 > "$ESTADO"
+N=$(cat "$ESTADO" 2>/dev/null || echo 0)
+
+v() { printf '\033[32m%s\033[0m\n' "$*"; }
+r() { printf '\033[31m%s\033[0m\n' "$*"; }
+a() { printf '\033[33m%s\033[0m\n' "$*"; }
+b() { printf '\033[1m%s\033[0m\n' "$*"; }
+
+datos() { [ -f "$DATOS" ] && tr '\n' ' ' < "$DATOS"; }
+
+# titulo <n>
+titulo() {
+  case "$1" in
+    0) echo "Tus datos: nombre del bot, negocio, tono, color y una pregunta frecuente" ;;
+    1) echo "Preparar la carpeta del chatbot" ;;
+    2) echo "Wireframe en gris y flujos" ;;
+    3) echo "Prototipo navegable con tu color" ;;
+    4) echo "Base de datos (PostgreSQL)" ;;
+    5) echo "Backend Bun + Elysia en el puerto 8766" ;;
+    6) echo "Vincular WhatsApp con el QR" ;;
+    7) echo "La bandeja en Lit" ;;
+    8) echo "El bot responde (integración)" ;;
+    9) echo "Pruebas automáticas (bun test)" ;;
+    10) echo "Prueba de uso con un compañero" ;;
+    *) echo "¡Terminaste!" ;;
+  esac
+}
+
+# pedido <n>: lo que se le pide al agente (una sola línea, con tus datos)
+pedido() {
+  D="Mis datos: $(datos)"
+  case "$1" in
+    1) echo "/skill s3-chatbot-aula Crea $BOT con package.json, chatbot.sh, api.js e index.html con mi color, y copia $PLAN/recursos y $PLAN/pruebas dentro de $BOT. No arranques nada todavía. $D" ;;
+    2) echo "/skill s3-wireframe Escribe $BOT/FLUJOS.md (flujo feliz y 3 errores, cada uno con un título que empiece por '## Error') y $BOT/wireframe/index.html con 3 pantallas marcadas con data-pantalla, solo en gris. $D" ;;
+    3) echo "/skill s3-prototipo Pasa el wireframe a $BOT/prototipo/index.html, navegable con enlaces #, con mi color y mi pregunta frecuente como ejemplo. $D" ;;
+    4) echo "/skill s3-postgres Crea $BOT/db.ts con migrar() idempotente (tablas contactos, conversaciones, mensajes; max: 3 conexiones) y corre la migración dos veces. $D" ;;
+    5) echo "/skill s3-back-elysia Crea $BOT/negocio.json con mis datos, un bot.ts mínimo y $BOT/servidor.ts; arráncalo con: sh $BOT/chatbot.sh reiniciar. Comprueba con curl localhost:8766/api/salud. $D" ;;
+    6) echo "/skill s3-whatsapp-qr Crea $BOT/evo.ts (estado, qr, enviar con \$EVO_URL y \$EVO_TOKEN) y $BOT/bot-qr.js. No llames a /instance/connect. $D" ;;
+    7) echo "/skill s3-front-lit Crea $BOT/app.js, bot-bandeja.js y bot-chat.js con Lit desde esm.sh y mi color, y pon bot-qr en la cabecera de $BOT/index.html. $D" ;;
+    8) echo "/skill s3-integracion Reemplaza $BOT/bot.ts para que el webhook guarde el mensaje, responda con el modelo clase usando negocio.json y lo envíe por /send/text, con toma humana por conversación; luego: sh $BOT/chatbot.sh reiniciar. $D" ;;
+    9) echo "/skill s3-pruebas-playwright Crea $BOT/pruebas/api.test.ts con pruebas de la API y córrelas con: cd $BOT && bun test pruebas/. $D" ;;
+    10) echo "/skill s3-pruebas-uso Prepara $BOT/PRUEBAS_DE_USO.md con 3 tareas para un compañero, una tabla de tiempos (p50 y p95) y espacio para hallazgos con severidad. $D" ;;
+  esac
+}
+
+# comprobar <n>: 0 si el paso está bien
+comprobar() {
+  case "$1" in
+    0) [ -s "$DATOS" ] ;;
+    1) test -f $BOT/chatbot.sh && test -f $BOT/package.json && test -d $BOT/pruebas && psql "$DATABASE_URL" -tAc 'select 1' >/dev/null 2>&1 ;;
+    2) [ "$(grep -c 'data-pantalla' $BOT/wireframe/index.html 2>/dev/null)" -ge 3 ] && [ "$(grep -c '^## Error' $BOT/FLUJOS.md 2>/dev/null)" -ge 1 ] ;;
+    3) [ "$(grep -o 'href="#' $BOT/prototipo/index.html 2>/dev/null | wc -l)" -ge 4 ] ;;
+    4) [ "$(psql "$DATABASE_URL" -tAc "select count(*) from information_schema.tables where table_name in ('contactos','conversaciones','mensajes')" 2>/dev/null)" = "3" ] ;;
+    5) curl -s -m 5 localhost:8766/api/salud | grep -q '"db":true' ;;
+    6) test -f $BOT/evo.ts && curl -s -m 5 -H "apikey: $EVO_TOKEN" "$EVO_URL/instance/status" | grep -q '"LoggedIn":true' ;;
+    7) test -f $BOT/app.js && grep -qi 'lit' $BOT/app.js ;;
+    8) curl -s -m 5 -o /dev/null -X POST localhost:8766/api/webhook -H 'Content-Type: application/json' --data-binary @$BOT/pruebas/webhook-hola.json \
+         && sleep 2 && curl -s -m 5 localhost:8766/api/conversaciones | grep -q '000000000001' ;;
+    9) (cd $BOT && bun test pruebas/ >/tmp/bun-test.log 2>&1) ;;
+    10) test -s $BOT/PRUEBAS_DE_USO.md ;;
+    *) true ;;
+  esac
+}
+
+pista() {
+  case "$1" in
+    1) echo "Si falla: revisa que existan $BOT/chatbot.sh y $BOT/pruebas (ls $BOT)." ;;
+    2|3) echo "Si falla: ábrelo en el Visor (chatbot/wireframe o chatbot/prototipo) y vuelve a intentar: aula paso hacer" ;;
+    4) echo "Si falla: aula db -c '\\dt' muestra las tablas que hay." ;;
+    5) echo "Si falla: sh $BOT/chatbot.sh log   (los últimos errores del backend)" ;;
+    6) echo "Falta vincular: escribe  aula whatsapp  , abre qr.png en el Visor y escanéalo desde WhatsApp > Dispositivos vinculados. Luego: aula paso ver" ;;
+    7) echo "Ábrelo en el Visor (carpeta chatbot) y pulsa «Móvil» para verlo como en el celular." ;;
+    8) echo "Si falla: sh $BOT/chatbot.sh log ; y prueba escribiendo desde OTRO teléfono a tu número de pruebas." ;;
+    9) echo "Si falla: tail -n 30 /tmp/bun-test.log" ;;
+    10) echo "Haz la prueba con un compañero y anota los tiempos en $BOT/PRUEBAS_DE_USO.md" ;;
+  esac
+}
+
+mostrar() {
+  echo
+  b "Paso $N de $TOTAL · $(titulo "$N")"
+  if [ "$N" -gt "$TOTAL" ]; then v "Tu chatbot está listo. Muéstralo en el Visor (carpeta chatbot) y pulsa «Lo logré»."; return; fi
+  if [ "$N" = 0 ]; then echo "Escribe:  aula paso hacer   y responde 5 preguntas cortas."; return; fi
+  [ "$N" = 6 ] && a "Este paso tiene una parte tuya: después de «aula paso hacer», escribe  aula whatsapp  y escanea el QR."
+  echo "El agente hará esto por ti (con su skill):"
+  echo "  $(pedido "$N" | sed 's/ Mis datos:.*//')"
+  echo
+  echo "Escribe:  aula paso hacer"
+}
+
+hacer() {
+  if [ "$N" = 0 ]; then
+    printf 'Nombre de tu bot: '; read -r NB
+    printf 'Tu negocio (una frase): '; read -r NE
+    printf 'Tono (ej. cercano y breve): '; read -r TO
+    printf 'Color principal (ej. #2f6bff): '; read -r CO
+    printf 'Una pregunta frecuente de tus clientes: '; read -r PR
+    printf 'Su respuesta: '; read -r RE
+    printf 'NOMBRE_DEL_BOT=%s\nNEGOCIO=%s\nTONO=%s\nCOLOR=%s\nPREGUNTA_1=%s\nRESPUESTA_1=%s\n' "$NB" "$NE" "$TO" "$CO" "$PR" "$RE" > "$DATOS"
+    v "✓ Datos guardados en $DATOS"
+    N=1; echo $N > "$ESTADO"; mostrar; return
+  fi
+  [ "$N" -gt "$TOTAL" ] && { mostrar; return; }
+  mkdir -p "$BOT"
+  b "Paso $N · $(titulo "$N") — el agente está trabajando (1 a 3 min)…"
+  jmd chat --auto "$(pedido "$N")"
+  ver
+}
+
+ver() {
+  echo
+  if comprobar "$N"; then
+    v "✓ Paso $N listo: $(titulo "$N")"
+    N=$((N + 1)); echo $N > "$ESTADO"
+    mostrar
+  else
+    r "✗ Todavía no: $(titulo "$N")"
+    pista "$N"
+    echo "Puedes repetir:  aula paso hacer   (el agente corrige lo que falte)  ·  o saltarlo:  aula paso siguiente"
+  fi
+}
+
+case "${1:-}" in
+  "") mostrar ;;
+  hacer) hacer ;;
+  ver|comprobar) ver ;;
+  siguiente) N=$((N + 1)); echo $N > "$ESTADO"; mostrar ;;
+  anterior) [ "$N" -gt 0 ] && N=$((N - 1)); echo $N > "$ESTADO"; mostrar ;;
+  reiniciar) echo 0 > "$ESTADO"; N=0; mostrar ;;
+  lista)
+    i=0; while [ $i -le $TOTAL ]; do
+      if [ $i -lt "$N" ]; then m="✓"; elif [ $i = "$N" ]; then m="→"; else m=" "; fi
+      echo " $m $i. $(titulo $i)"; i=$((i + 1)); done ;;
+  [0-9]|[0-9][0-9]) N=$1; echo $N > "$ESTADO"; mostrar ;;
+  *) echo "uso: aula paso [hacer | ver | siguiente | anterior | <número> | lista | reiniciar]" >&2; exit 2 ;;
+esac

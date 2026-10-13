@@ -1,6 +1,6 @@
 #!/bin/sh
 # aula: arranque del asistente del alumno dentro de su contenedor.
-# Uso: aula iniciar | parar | estado | nuevo <plantilla> | whatsapp | db
+# Uso: aula iniciar | parar | estado | nuevo <plantilla> | paso | whatsapp | db
 PID=/tmp/osito.pid
 vivo() { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; }
 
@@ -59,6 +59,10 @@ case "${1:-}" in
         echo "servidor en el puerto 8767 (se apaga solo en 15 min)" ;;
       *) echo "ábrela en el panel Visor: /vista/<tú>/$(basename "$destino")/" ;;
     esac
+    ;;
+  paso)
+    # Clase 3 paso a paso: un comando por paso, el agente hace la tarea y se comprueba sola.
+    shift; exec /usr/local/bin/aula-paso "$@"
     ;;
   whatsapp)
     # Estado de la instancia de WhatsApp del alumno y, si no está vinculada, el QR en /trabajo/qr.png.
