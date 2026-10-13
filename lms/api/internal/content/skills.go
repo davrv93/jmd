@@ -41,10 +41,19 @@ func loadSkillsCurso(dir string) []*SkillCurso {
 
 // SkillsCurso devuelve las skills del curso (courseID vacío = las de todos los cursos), por nombre.
 func (c *Catalog) SkillsCurso(courseID string) []*SkillCurso {
+	// Los cursos de cada grupo (Grupo 2, Grupo 3…) son copias del original con las mismas skills: sin
+	// curso concreto se lista cada nombre una sola vez (la primera que aparece), no una por copia.
 	var out []*SkillCurso
+	vistas := map[string]bool{}
 	for _, co := range c.courses {
 		if courseID == "" || co.ID == courseID {
-			out = append(out, c.skillsCurso[co.ID]...)
+			for _, sk := range c.skillsCurso[co.ID] {
+				if courseID == "" && vistas[sk.Nombre] {
+					continue
+				}
+				vistas[sk.Nombre] = true
+				out = append(out, sk)
+			}
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Nombre < out[j].Nombre })
