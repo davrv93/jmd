@@ -13,27 +13,33 @@ import (
 	"github.com/creack/pty"
 )
 
-// slots limita cuántos terminales puede tener abiertos cada usuario (uno).
+// slots limita cuántos terminales puede tener abiertos cada usuario a la vez (maxTermPorUsuario).
+// Antes era uno solo: una pestaña colgada (red caída sin cerrar el WebSocket) dejaba al alumno sin
+// terminal hasta reiniciar el LMS.
+const maxTermPorUsuario = 10
+
 type slots struct {
 	mu  sync.Mutex
-	has map[string]bool
+	has map[string]int
 }
 
-func newSlots() *slots { return &slots{has: map[string]bool{}} }
+func newSlots() *slots { return &slots{has: map[string]int{}} }
 
 func (s *slots) acquire(key string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.has[key] {
+	if s.has[key] >= maxTermPorUsuario {
 		return false
 	}
-	s.has[key] = true
+	s.has[key]++
 	return true
 }
 
 func (s *slots) release(key string) {
 	s.mu.Lock()
-	delete(s.has, key)
+	if s.has[key]--; s.has[key] <= 0 {
+		delete(s.has, key)
+	}
 	s.mu.Unlock()
 }
 
