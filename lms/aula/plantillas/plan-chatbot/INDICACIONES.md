@@ -4,6 +4,19 @@ Hoy construyes, dentro de tu aula, un chatbot que atiende por WhatsApp: el clien
 
 Stack: front en **Lit** (sin build), backend en **Bun + Elysia**, base **PostgreSQL**, WhatsApp con **Evolution Go**. Todo ya está instalado en tu aula.
 
+## Lo más simple: paso a paso
+
+En la terminal del aula, un comando por paso. El agente hace la tarea con su skill y luego se comprueba sola:
+
+```sh
+aula paso          # qué toca ahora
+aula paso hacer    # el agente lo hace y se comprueba; si sale bien, pasa al siguiente
+aula paso lista    # todos los pasos y dónde vas
+```
+
+El paso 0 te hace 5 preguntas sobre tu negocio. En el paso 6 (WhatsApp) te toca escanear el QR: `aula whatsapp`.
+Si un paso no sale, repite `aula paso hacer` (el agente corrige lo que falte) o sáltalo con `aula paso siguiente`.
+
 ## 1. Cómo entras
 
 1. Entra al LMS, abre la clase 3 y pulsa «Abrir mi aula». Tienes una terminal y el panel «Visor».

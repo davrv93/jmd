@@ -20,3 +20,5 @@
 - `aula db`: abre `psql` en tu base (`DATABASE_URL`). Sal con `\q`.
 - El front llama a la API con rutas `/vista/<tú>/api/...` (usa `pedir()` de `api.js`). Pruebas: `cd /trabajo/chatbot && bun test pruebas/`.
 - WhatsApp: solo el número de pruebas del equipo; el bot avisa que es un bot y solo responde a quien le escribe. Nunca imprimas `EVO_TOKEN`, `OSITO_TOKEN` ni `DATABASE_URL`.
+
+- Clase 3 paso a paso: `aula paso` (qué toca), `aula paso hacer` (lo hace el agente con su skill s3-* y se comprueba), `aula paso lista`.
