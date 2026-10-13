@@ -1,7 +1,7 @@
 ---
 id: pa-03
 title: "Clase 3 · Tu chatbot de WhatsApp: wireframe, prototipo, Lit, Bun + Elysia, PostgreSQL y pruebas"
-starts_at: 2026-10-22T19:00:00-05:00
+starts_at: 2026-10-13T19:00:00-05:00
 published: true
 objectives:
   - id: pa-03-o1
