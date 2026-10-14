@@ -36,7 +36,7 @@ const NAV = [
   { href: "/examples/", label: "Prácticas", icon: "sparkles", match: ["/examples/"] },
   { href: "/links/", label: "Recursos", icon: "link", match: ["/links/"] },
   { href: "/studio/", label: "Estudio", icon: "wand", match: ["/studio/"] },
-  { href: "/grades/", label: "Notas", icon: "award", match: ["/grades/", "/assignments/"] },
+  { href: "/grades/", label: "Logros", icon: "award", match: ["/grades/", "/assignments/"] },
 ];
 
 export default component$(() => {
@@ -190,7 +190,7 @@ export default component$(() => {
                       ))}
                     </div>
                   </div>
-                  <Link href="/grades/" onClick$={() => (menu.value = false)}><Icon name="award" /> Mis notas</Link>
+                  <Link href="/grades/" onClick$={() => (menu.value = false)}><Icon name="award" /> Mis logros</Link>
                   <button type="button" onClick$={() => ((session.helpOpen = true), (menu.value = false))}><Icon name="keyboard" /> Ayuda y atajos</button>
                   <button type="button" onClick$={() => ((menu.value = false), logout())}><Icon name="logout" /> Salir</button>
                   <div class="tema" role="group" aria-label="Tema de la interfaz">

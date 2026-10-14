@@ -1,3 +1,4 @@
+import { AhoraClase } from "~/components/ahora";
 import { LiveEntrada } from "~/components/live-entrada";
 import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
@@ -134,8 +135,6 @@ export default component$(() => {
   const ringPhases = group.map((g) => ({ token: g.phase.token, done: g.done, total: g.total }));
   const deck = l.materials.find((m) => (m.slides?.length ?? 0) > 0);
   const downloads = l.materials.filter((m) => m === deck || (m.kind === "pdf" && /diapositiva/i.test(m.title)));
-  const nextStep = l.cycle.find((s) => !l.progress.steps[s.id]);
-  const nextGroup = nextStep ? group.find((g) => g.steps.some((s) => s.step.id === nextStep.id)) : null;
   const open = st.qs.filter((q) => !q.resolved).length;
   const qs = st.qs.filter((q) => (qFilter.value === "abiertas" ? !q.resolved : qFilter.value === "mias" ? q.user_id === me?.id : true));
   const objTitle = (id: string) => l.objectives.find((o) => o.id === id)?.title ?? id;
@@ -224,7 +223,6 @@ export default component$(() => {
 
       <article style="min-width:0">
         <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { href: `/courses/${l.course.slug}/`, label: l.course.title }, { label: l.module.title }]} />
-        <LiveEntrada lesson={l.id} staff={isStaff(session.me)} />
         <div class="head card" data-ph={modToken(modIndex)}>
           <CycleRing phases={ringPhases} size={56} />
           <div class="grow">
@@ -237,6 +235,9 @@ export default component$(() => {
             </div>
           </div>
         </div>
+
+        <AhoraClase l={l} ocupado={st.busy} onLogre$={(id: string) => toggle(id, true)} />
+        <LiveEntrada lesson={l.id} staff={isStaff(session.me)} />
 
         <Tabs tabs={tabs} active={tab.value} onSelect$={select} />
 
@@ -254,10 +255,6 @@ export default component$(() => {
                   ))}
                 </div>
               </section>
-
-              <p class="sm muted" style="margin:0">
-                Recorres la sesión con el <b>ciclo de aprendizaje</b>: vívela, reflexiona, entiende el porqué y aplícala. Marca cada paso al terminarlo.
-              </p>
 
               {phasesWithSteps.map((g) => (
                 <section class="ph-sec" data-ph={g.phase.token} key={g.phase.id} aria-labelledby={`ph-${g.phase.id}`}>
@@ -277,22 +274,6 @@ export default component$(() => {
                 </section>
               ))}
 
-              {nextStep ? (
-                <section class="card row" style="gap:.8rem;flex-wrap:nowrap">
-                  <span class="lead-ico" data-ph={nextGroup?.phase.token ?? "ec"}><Icon name={TOOL_ICON[nextStep.tool] ?? "zap"} /></span>
-                  <span class="grow">
-                    <div class="xs faint">Siguiente paso · {nextGroup?.phase.short}</div>
-                    <b>{nextStep.title}</b>
-                    <div class="sm muted">{nextStep.description}</div>
-                  </span>
-                </section>
-              ) : (
-                <section class="card row" style="gap:.8rem">
-                  <span class="lead-ico" style="color:var(--ok)"><Icon name="checkCircle" /></span>
-                  <span class="grow"><b>Ciclo completo</b><div class="sm muted">Hiciste los cuatro pasos del ciclo en esta sesión.</div></span>
-                  {l.next && <Link class="btn sm" href={`/lessons/${l.next}/`}>Siguiente sesión <Icon name="chevronRight" size={14} /></Link>}
-                </section>
-              )}
             </div>
             <aside class="stack">
               {l.recording && (
@@ -301,12 +282,14 @@ export default component$(() => {
                 </a>
               )}
               {l.recording?.passcode && <div class="hint">Código: <code>{l.recording.passcode}</code></div>}
-              <div class="facts">
-                <div class="fact"><div class="k">Módulo</div><div class="v sm">{l.module.title.replace(/^Módulo \d+ · /, "")}</div></div>
-                <div class="fact"><div class="k">Materiales</div><div class="v">{l.materials.length}</div></div>
-                <div class="fact"><div class="k">Preguntas</div><div class="v">{st.qs.length}{open ? <span class="xs warn"> · {open} abiertas</span> : ""}</div></div>
-                {l.assignments[0]?.due_at && <div class="fact"><div class="k">Entrega</div><div class="v sm" title={fmtDate(l.assignments[0].due_at)}>{rel(l.assignments[0].due_at)}</div></div>}
-              </div>
+              {l.assignments.map((a) => (
+                <Link key={a.id} class="card" href={`/assignments/${a.id}/`} data-testid="proyecto-clase">
+                  <div class="xs faint" style="font-weight:700;text-transform:uppercase;letter-spacing:.06em">Proyecto de esta clase</div>
+                  <b style="display:block;margin:.2rem 0">{a.title}</b>
+                  {a.due_at && <div class="sm muted" title={fmtDate(a.due_at)}>Vence {rel(a.due_at)}</div>}
+                  <div class="sm" style="margin-top:.4rem;color:var(--accent);font-weight:650">Ver rúbrica y entregar</div>
+                </Link>
+              ))}
               {l.repo && (
                 <section class="card">
                   <div class="section-t" style="margin-top:0"><Icon name="git" /> Código de la sesión</div>

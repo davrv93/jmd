@@ -1,22 +1,61 @@
 import { component$, useContext, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, type DocumentHead } from "@builder.io/qwik-city";
-import { api, errMsg, fmtDate, rel, requireLogin, STATUS, type AssignmentSummary, type Course } from "~/lib/api";
+import { api, errMsg, fmtDate, rel, requireLogin, STATUS, type AssignmentSummary, type Course, type LessonSummary } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
-import { loadLast, setTitle, type LastSeen } from "~/lib/url";
-import { modToken, PHASES } from "~/lib/kolb";
+import { setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
 import { Empty, ErrorState, Loading, Ring, Status } from "~/components/ui";
+import { Ahora, pasoActual, type PasoActual } from "~/components/ahora";
 
-// Inicio: cómo aprendes, continuar, cursos con su avance y próximas entregas.
+// Mi aprendizaje (inicio). Sigue el patrón del LMS: arriba «Ahora» (el siguiente paso de verdad, con
+// su comprobación), luego lo que viene esta semana y tu ruta. El método (las fases) se explica en
+// Ayuda; aquí solo se ve como el punto de color de cada paso.
+
+interface AhoraInicio {
+  curso: Course;
+  leccion: LessonSummary;
+  paso: PasoActual | null;
+}
+
+interface Semana {
+  tipo: "clase" | "tarea";
+  fecha: string;
+  titulo: string;
+  detalle: string;
+  href: string;
+  estado?: string;
+}
+
+const DIA = new Intl.DateTimeFormat("es-PE", { day: "numeric", timeZone: "America/Lima" });
+const MES = new Intl.DateTimeFormat("es-PE", { month: "short", timeZone: "America/Lima" });
+const HORA = new Intl.DateTimeFormat("es-PE", { hour: "numeric", minute: "2-digit", timeZone: "America/Lima" });
+
+/** La clase en la que va el alumno: la primera publicada sin terminar (o la última publicada). */
+function claseActual(c: Course): LessonSummary | null {
+  const ls = c.modules.flatMap((m) => m.lessons).filter((l) => l.published);
+  return ls.find((l) => l.steps > 0 && l.steps_done < l.steps) ?? ls[ls.length - 1] ?? null;
+}
+
 export default component$(() => {
   const session = useContext(SessionContext);
-  const st = useStore<{ courses: Course[] | null; error: string; last: LastSeen | null; faltaCert: boolean }>({ courses: null, error: "", last: null, faltaCert: false });
+  const st = useStore<{ courses: Course[] | null; error: string; faltaCert: boolean; ahora: AhoraInicio | null }>({
+    courses: null,
+    error: "",
+    faltaCert: false,
+    ahora: null,
+  });
 
   const load = $(async () => {
     st.error = "";
     try {
       const list = await api.courses();
       st.courses = await Promise.all(list.map((c) => api.course(c.slug)));
+      const c = st.courses[0];
+      const l = c ? claseActual(c) : null;
+      if (c && l) {
+        const det = await api.lesson(l.id).catch(() => null);
+        st.ahora = { curso: c, leccion: l, paso: det ? pasoActual(det) : null };
+      }
     } catch (e) {
       if (!requireLogin(e)) st.error = errMsg(e);
     }
@@ -28,7 +67,6 @@ export default component$(() => {
     setTitle("Aprender");
     track(() => session.loaded);
     if (!session.loaded) return;
-    if (session.me) st.last = loadLast(session.me.id);
     // Aviso para alumnos que aún no confirmaron su nombre y correo para el certificado.
     if (session.me?.roles.includes("student")) api.misDatosCert().then((d) => (st.faltaCert = !d.completo)).catch(() => undefined);
     await load();
@@ -43,41 +81,67 @@ export default component$(() => {
     }
     return t ? (100 * d) / t : 0;
   };
-  // Siguiente sesión sin completar de cada curso (para «Continuar» si no hay historial).
-  const nextLesson = (c: Course) => {
-    for (const m of c.modules) for (const l of m.lessons) if (l.published && l.steps_done < l.steps) return l;
-    return c.modules[0]?.lessons[0];
-  };
-  const pending: (AssignmentSummary & { course: string })[] = [];
-  for (const c of st.courses ?? [])
-    for (const a of c.assignments) if (a.status === "pending" || a.status === "overdue") pending.push({ ...a, course: c.title });
-  pending.sort((a, b) => (a.due_at ?? "9").localeCompare(b.due_at ?? "9"));
+
+  // Esta semana: clases en vivo de los próximos 7 días y tareas pendientes, por fecha.
+  const ahoraMs = Date.now();
+  const semana: Semana[] = [];
+  const pendientes: (AssignmentSummary & { course: string })[] = [];
+  for (const c of st.courses ?? []) {
+    for (const m of c.modules)
+      for (const l of m.lessons)
+        if (l.published && l.starts_at) {
+          const t = Date.parse(l.starts_at);
+          if (t > ahoraMs - 3 * 3600e3 && t < ahoraMs + 7 * 86400e3) {
+            const [num, ...resto] = l.title.split(" · ");
+            semana.push({ tipo: "clase", fecha: l.starts_at, titulo: `${num} en vivo`, detalle: `${resto.join(" · ") || l.title} · ${HORA.format(new Date(t))}`, href: `/lessons/${l.id}/` });
+          }
+        }
+    for (const a of c.assignments)
+      if (a.status === "pending" || a.status === "overdue") {
+        pendientes.push({ ...a, course: c.title });
+        semana.push({ tipo: "tarea", fecha: a.due_at ?? "9999", titulo: a.title, detalle: a.due_at ? `Vence ${rel(a.due_at)} · ${a.max_score} puntos` : "Sin fecha límite", href: `/assignments/${a.id}/`, estado: a.status });
+      }
+  }
+  semana.sort((a, b) => a.fecha.localeCompare(b.fecha));
 
   const first = session.me?.name.split(" ")[0] ?? "";
-  const cont = st.last ?? (st.courses?.[0] ? (() => {
-    const l = nextLesson(st.courses![0]);
-    return l ? { lesson: l.id, title: l.title, course: st.courses![0].slug, courseTitle: st.courses![0].title, at: 0 } : null;
-  })() : null);
+  const ah = st.ahora;
+  const rutaCurso = ah?.curso ?? st.courses?.[0];
+  const ruta = rutaCurso ? rutaCurso.modules.flatMap((m) => m.lessons).filter((l) => l.published) : [];
+  const numClase = (t: string) => t.split(" · ")[0];
 
   return (
     <>
-      <section class="welcome" aria-labelledby="hola">
-        <span class="welcome-ico" aria-hidden="true"><Icon name="grad" size={26} /></span>
-        <div class="welcome-txt">
-          <h1 id="hola">{first ? `Hola, ${first}` : "Aprender"}</h1>
-          <p>Aprendes con el ciclo de Kolb: vives la clase, reflexionas, entiendes el porqué y lo aplicas.</p>
-        </div>
-        {st.courses && cont && (
-          <Link class="welcome-next" href={`/lessons/${cont.lesson}/`}>
-            <span class="lead-ico"><Icon name="play" size={18} /></span>
-            <span class="grow">
-              <span class="xs">{st.last ? "Continuar donde lo dejaste" : "Empieza por aquí"} · {cont.courseTitle}</span>
-              <b>{cont.title}</b>
-            </span>
-            <span class="btn sm">Continuar <Icon name="chevronRight" size={14} /></span>
-          </Link>
-        )}
-      </section>
+      <div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:1rem">
+        <h1 style="margin:0">{first ? `Hola, ${first}` : "Aprender"}</h1>
+        {rutaCurso && <span class="muted">{rutaCurso.title}</span>}
+      </div>
+
+      {st.error && <ErrorState message={st.error} retry$={load} />}
+      {!st.error && st.courses === null && <Loading lines={3} />}
+
+      {ah && ah.paso && (
+        <Ahora
+          etiqueta={`Ahora · ${numClase(ah.leccion.title)} · paso ${ah.paso.n} de ${ah.paso.total} · ${ah.paso.fase.short}`}
+          fase={ah.paso.fase.token}
+          titulo={ah.paso.step.title}
+          descripcion={ah.paso.step.description}
+          check={ah.paso.step.check}
+          accion="Continuar el paso"
+          href={`/lessons/${ah.leccion.id}/`}
+          avance={`${numClase(ah.leccion.title)}: ${ah.paso.hechos} de ${ah.paso.total} pasos`}
+          pct={ah.paso.total ? (100 * ah.paso.hechos) / ah.paso.total : 0}
+        />
+      )}
+      {ah && !ah.paso && (
+        <Ahora
+          etiqueta="Ahora"
+          titulo={pendientes.length ? `Entrega: ${pendientes[0].title}` : "Vas al día: terminaste las clases publicadas"}
+          descripcion={pendientes.length ? "Hiciste todos los pasos de las clases publicadas. Falta tu proyecto." : "Cuando el instructor publique la siguiente clase, aparecerá aquí."}
+          accion={pendientes.length ? "Ir al proyecto" : "Ver mis logros"}
+          href={pendientes.length ? `/assignments/${pendientes[0].id}/` : "/grades/"}
+        />
+      )}
 
       {st.faltaCert && (
         <Link class="card row datos-cert-aviso" href="/grades/" data-testid="aviso-datos-certificado">
@@ -86,86 +150,92 @@ export default component$(() => {
             <b>Confirma tus datos para el certificado</b>
             <div class="xs muted">Tu nombre completo tal como saldrá impreso y el correo donde lo recibirás. Toma un minuto.</div>
           </span>
-          <span class="btn sm">Completar <Icon name="chevronRight" size={14} /></span>
+          <span class="btn sm gold">Completar <Icon name="chevronRight" size={14} /></span>
         </Link>
       )}
 
-      {st.error && <ErrorState message={st.error} retry$={load} />}
-      {!st.error && st.courses === null && <Loading lines={3} />}
-
       {st.courses && (
         <>
-          <div class="section-t"><Icon name="cycle" /> Así aprendes</div>
-          <div class="ph-track" style="margin-bottom:1.2rem">
-            {PHASES.map((p) => (
-              <div class="ph-card" data-ph={p.token} key={p.id}>
-                <div class="ph-card__h">
-                  <span class="ph-ico"><Icon name={p.icon} size={16} /></span>
-                  <span class="ph-n">Fase {p.n}</span>
-                </div>
-                <div class="ph-t">{p.short}</div>
-                <div class="ph-sub">{p.description}</div>
-              </div>
-            ))}
-          </div>
-
           <div class="split">
-            <section>
-              <div class="section-t"><Icon name="book" /> Mis cursos</div>
-              {st.courses.length === 0 && (
-                <Empty icon="book" title="Todavía no estás en ningún curso" text="Pide al instructor que te añada a la cohorte; aparecerá aquí." />
+            <section aria-labelledby="semana-t">
+              <h2 id="semana-t" class="h2-sec">Esta semana</h2>
+              {semana.length === 0 ? (
+                <Empty icon="checkCircle" title="Nada pendiente esta semana" text="Cuando haya una clase en vivo o una entrega cerca, aparecerá aquí." />
+              ) : (
+                <div class="semana" data-testid="esta-semana">
+                  {semana.slice(0, 6).map((s) => {
+                    const d = new Date(s.fecha);
+                    const valida = !isNaN(d.getTime());
+                    return (
+                      <Link key={s.tipo + s.href} class="it" href={s.href}>
+                        <span class="dia">
+                          {valida ? (
+                            <>
+                              <b>{DIA.format(d)}</b>
+                              <span>{MES.format(d).replace(".", "")}</span>
+                            </>
+                          ) : (
+                            <Icon name="task" />
+                          )}
+                        </span>
+                        <span class="grow" style="min-width:0">
+                          <b>{s.titulo}</b>
+                          <div class="sm muted" title={valida ? fmtDate(s.fecha) : undefined}>{s.detalle}</div>
+                        </span>
+                        {s.estado ? <Status s={STATUS[s.estado] ?? STATUS.pending} /> : <span class="badge accent"><Icon name="video" size={12} /> En vivo</span>}
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
-              <div class="stack">
-                {st.courses.map((c) => {
-                  const lessons = c.modules.flatMap((m) => m.lessons).filter((l) => l.published);
-                  const done = lessons.filter((l) => l.steps > 0 && l.steps_done >= l.steps).length;
-                  return (
-                    <Link key={c.id} class="card" href={`/courses/${c.slug}/`} data-ph={modToken(0)} style="border-left:5px solid var(--ph)">
-                      <div class="row" style="gap:.9rem;align-items:flex-start">
-                        <Ring pct={pct(c)} size={50} />
-                        <div class="grow">
-                          <div style="font-weight:700;font-size:1.02rem">{c.title}</div>
-                          <p class="sm muted" style="margin:.2rem 0 .5rem">{c.description}</p>
-                          <div class="row xs muted" style="gap:.9rem">
-                            <span><Icon name="layers" size={13} /> {c.modules.length} {c.modules.length === 1 ? "módulo" : "módulos"}</span>
-                            <span><Icon name="checkCircle" size={13} /> {done}/{lessons.length} sesiones completadas</span>
-                            <span><Icon name="task" size={13} /> {c.assignments.length} tareas</span>
-                            {!!c.examples_total && <span><Icon name="sparkles" size={13} /> {c.examples_total} ejemplos</span>}
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
             </section>
 
-            <aside>
-              <div class="section-t"><Icon name="calendar" /> Próximas entregas</div>
-              {pending.length === 0 ? (
-                <Empty icon="checkCircle" title="Nada pendiente" text="Cuando haya una tarea por entregar, aparecerá aquí." />
-              ) : (
-                <div class="list">
-                  {pending.slice(0, 6).map((a) => (
-                    <Link key={a.id} class="item" href={`/assignments/${a.id}/`}>
-                      <span class="lead-ico" data-k="zip"><Icon name="task" /></span>
-                      <span class="grow">
-                        <div class="t sm">{a.title}</div>
-                        <div class="d" title={fmtDate(a.due_at)}>{a.due_at ? `Vence ${rel(a.due_at)}` : "Sin fecha límite"}</div>
-                      </span>
-                      <Status s={STATUS[a.status] ?? STATUS.pending} />
-                    </Link>
-                  ))}
-                </div>
-              )}
-              <div class="section-t"><Icon name="zap" /> Atajos</div>
-              <div class="list">
-                <Link class="item" href="/examples/"><span class="lead-ico" data-ph="ea"><Icon name="sparkles" /></span><span class="grow t sm">Prácticas con código</span><Icon name="chevronRight" class="faint" /></Link>
-                <Link class="item" href="/links/"><span class="lead-ico" data-ph="or"><Icon name="link" /></span><span class="grow t sm">Recursos publicados</span><Icon name="chevronRight" class="faint" /></Link>
-                <Link class="item" href="/grades/"><span class="lead-ico" data-ph="ca"><Icon name="award" /></span><span class="grow t sm">Mis notas</span><Icon name="chevronRight" class="faint" /></Link>
+            <aside aria-labelledby="cursos-t">
+              <h2 id="cursos-t" class="h2-sec">Mis cursos</h2>
+              {st.courses.length === 0 && <Empty icon="book" title="Todavía no estás en ningún curso" text="Pide al instructor que te añada a tu grupo; aparecerá aquí." />}
+              <div class="stack">
+                {st.courses.map((c) => (
+                  <Link key={c.id} class="card row" href={`/courses/${c.slug}/`} style="gap:.9rem;flex-wrap:nowrap">
+                    <Ring pct={pct(c)} size={46} />
+                    <span class="grow" style="min-width:0">
+                      <b>{c.title}</b>
+                      <div class="xs muted">
+                        {c.modules.flatMap((m) => m.lessons).filter((l) => l.published).length} clases · {c.assignments.length} proyectos
+                      </div>
+                    </span>
+                    <Icon name="chevronRight" class="faint" />
+                  </Link>
+                ))}
               </div>
             </aside>
           </div>
+
+          {ruta.length > 0 && (
+            <section aria-labelledby="ruta-t" style="margin-top:1.6rem">
+              <h2 id="ruta-t" class="h2-sec">Tu ruta</h2>
+              <ol class="ruta" data-testid="tu-ruta">
+                {ruta.map((l) => {
+                  const hecha = l.steps > 0 && l.steps_done >= l.steps;
+                  const actual = ah?.leccion.id === l.id && !hecha;
+                  const f = l.starts_at ? new Date(l.starts_at) : null;
+                  return (
+                    <li key={l.id}>
+                      <Link href={`/lessons/${l.id}/`} class={actual ? "actual" : ""} aria-current={actual ? "step" : undefined}>
+                        <span class={`est${hecha ? " ok" : actual ? " on" : ""}`}>
+                          {hecha ? "Hecha" : actual ? "En curso" : "Próxima"}
+                          {f ? ` · ${DIA.format(f)} ${MES.format(f).replace(".", "")}` : ""}
+                        </span>
+                        <b>{l.title}</b>
+                        <span class="sm muted">
+                          {l.steps_done} de {l.steps} pasos
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          )}
         </>
       )}
     </>

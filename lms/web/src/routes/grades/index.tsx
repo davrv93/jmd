@@ -25,7 +25,7 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     session.help = "notas";
-    setTitle("Mis notas");
+    setTitle("Logros");
     await load();
   });
   const copiar = $(async (url: string) => {
@@ -48,8 +48,8 @@ export default component$(() => {
       <div class="head">
         <span class="lead-ico gold" style="width:46px;height:46px"><Icon name="award" size={22} /></span>
         <div class="grow">
-          <h1>Mis notas</h1>
-          <p>Tus entregas con su estado, nota y comentarios, tus certificados y tus insignias por clase. En la terminal: <code>jmd grades</code>.</p>
+          <h1>Logros</h1>
+          <p>Lo que aprobaste (tus proyectos con su nota y comentarios), tus certificados y las habilidades que demostraste en cada clase. En la terminal: <code>jmd grades</code>.</p>
         </div>
       </div>
       {st.error && <ErrorState message={st.error} retry$={load} />}
@@ -61,9 +61,9 @@ export default component$(() => {
             active={tab.value}
             onSelect$={$((id) => (tab.value = id))}
             tabs={[
-              { id: "notas", label: "Notas", icon: "task", count: list.length },
+              { id: "notas", label: "Evaluaciones", icon: "task", count: list.length },
               { id: "certificados", label: "Certificados", icon: "award", count: cursoCerts.length },
-              { id: "insignias", label: "Mis insignias", icon: "badge", count: insignias.length },
+              { id: "insignias", label: "Habilidades (insignias)", icon: "badge", count: insignias.length },
             ]}
           />
 
@@ -189,4 +189,4 @@ export default component$(() => {
   );
 });
 
-export const head: DocumentHead = { title: "Mis notas" };
+export const head: DocumentHead = { title: "Logros" };

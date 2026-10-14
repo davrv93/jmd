@@ -3,14 +3,15 @@ import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from
 import { api, errMsg, fmtDate, LEVEL, rel, requireLogin, STATUS, type Course, type ExampleSummary } from "~/lib/api";
 import { SessionContext, isStaff } from "~/lib/session";
 import { getParam, pathId, setParams, setTitle } from "~/lib/url";
-import { modToken, PHASE_BY_ID, PHASES } from "~/lib/kolb";
+import { modToken, PHASE_BY_ID } from "~/lib/kolb";
 import { Icon } from "~/components/icon";
 import { Crumbs, Empty, ErrorState, lessonState, Loading, Ring, Status, Tabs } from "~/components/ui";
+import { Ahora, pasoActual, type PasoActual } from "~/components/ahora";
 
 export default component$(() => {
   const loc = useLocation();
   const session = useContext(SessionContext);
-  const st = useStore<{ c: Course | null; ex: ExampleSummary[] | null; error: string }>({ c: null, ex: null, error: "" });
+  const st = useStore<{ c: Course | null; ex: ExampleSummary[] | null; error: string; paso: PasoActual | null }>({ c: null, ex: null, error: "", paso: null });
   const tab = useSignal("temario");
 
   const load = $(async () => {
@@ -20,6 +21,9 @@ export default component$(() => {
       st.c = await api.course(slug);
       setTitle(st.c.title);
       st.ex = await api.examples(st.c.id).catch(() => []);
+      // «Ahora»: el primer paso sin hacer de la clase en curso.
+      const cur = st.c.modules.flatMap((m) => m.lessons).find((l) => l.published && l.steps_done < l.steps);
+      st.paso = cur ? await api.lesson(cur.id).then(pasoActual).catch(() => null) : null;
     } catch (e) {
       if (!requireLogin(e)) st.error = errMsg(e);
     }
@@ -67,13 +71,24 @@ export default component$(() => {
               <Icon name="users" size={14} /> Avance de alumnos
             </Link>
           )}
-          {next && (
+          {next && !st.paso && (
             <Link class="btn" href={`/lessons/${next.id}/`}>
-              <Icon name="play" size={15} /> {d > 0 ? "Continuar" : "Empezar"}
+              <Icon name="play" size={15} /> {d > 0 ? "Repasar" : "Empezar"}
             </Link>
           )}
         </div>
       </div>
+
+      {st.paso && next && (
+        <Ahora
+          compacto
+          etiqueta={`Ahora · ${next.title.split(" · ")[0]} · paso ${st.paso.n} de ${st.paso.total}`}
+          fase={st.paso.fase.token}
+          titulo={st.paso.step.title}
+          accion={d > 0 ? "Continuar" : "Empezar"}
+          href={`/lessons/${next.id}/`}
+        />
+      )}
 
       <Tabs
         active={tab.value}
@@ -90,20 +105,6 @@ export default component$(() => {
           <Empty icon="layers" title="Sin sesiones todavía" text="El instructor publicará aquí las sesiones del curso." />
         ) : (
           <div class="stack">
-            <div class="section-t" style="margin-top:.2rem"><Icon name="cycle" /> Cada sesión sigue estas fases</div>
-            <div class="ph-track" style="margin-bottom:.4rem">
-              {PHASES.map((p) => (
-                <div class="ph-card" data-ph={p.token} key={p.id}>
-                  <div class="ph-card__h">
-                    <span class="ph-ico"><Icon name={p.icon} size={15} /></span>
-                    <span class="ph-n">Fase {p.n}</span>
-                  </div>
-                  <div class="ph-t">{p.short}</div>
-                  <div class="ph-sub">{p.verb} · {p.description}</div>
-                </div>
-              ))}
-            </div>
-
             {c.modules.map((m, mi) => {
               const ls = m.lessons.filter((l) => l.published || staff);
               return (

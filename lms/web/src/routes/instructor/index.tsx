@@ -62,7 +62,7 @@ export default component$(() => {
       <div class="section-t"><Icon name="award" /> Datos para certificados</div>
       <div class="card row" style="gap:.8rem;flex-wrap:wrap;max-width:46rem">
         <span class="grow sm muted">
-          Nombre completo y correo que cada alumno confirmó en <b>Mis notas</b>. Los pendientes salen primero. El certificado usa ese nombre al emitirse.
+          Nombre completo y correo que cada alumno confirmó en <b>Logros</b>. Los pendientes salen primero. El certificado usa ese nombre al emitirse.
         </span>
         <a class="btn ghost" href={datosCertCsvUrl()} download>
           <Icon name="download" size={14} /> Descargar CSV

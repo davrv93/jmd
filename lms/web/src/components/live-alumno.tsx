@@ -185,7 +185,12 @@ export const LiveAlumno = component$((props: { lesson: string; estado: LiveEstad
             src={urlEscena(props.lesson, efectiva, tema.value)}
           />
         ) : (
-          <p class="live-vacio">Esperando la primera escena…</p>
+          <div class="live-vacio" data-testid="live-vacio">
+            <b>La clase en vivo aún no empieza</b>
+            <span>Cuando el instructor la inicie, la primera escena aparecerá aquí sola; no hace falta recargar.</span>
+            <span>Mientras tanto: abre la <b>Terminal</b> de abajo y comprueba que tu entorno responde, o revisa los pasos de la clase.</span>
+            <a class="btn ghost sm" href={`/lessons/${props.lesson}/`}>Ver los pasos de la clase</a>
+          </div>
         )}
       </div>
       {!visible.value && <div class="live-cortina">El instructor está preparando la siguiente escena</div>}

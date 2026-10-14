@@ -6,6 +6,7 @@ import { getParam, pathId, setParams, setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
 import { Copy, Crumbs, Empty, ErrorState, Loading, Status, Tabs } from "~/components/ui";
 import { Prose } from "~/components/prose";
+import { Ahora } from "~/components/ahora";
 
 export default component$(() => {
   const loc = useLocation();
@@ -81,6 +82,10 @@ export default component$(() => {
   const delivered = a.my_submissions.length > 0;
   const graded = a.my_submissions.some((s) => s.status === "graded");
   const best = a.my_submissions.find((s) => s.score != null);
+  const ultima = a.my_submissions[0];
+  const vencida = !!a.due_at && Date.parse(a.due_at) < Date.now();
+  const porCalificar = st.all.filter((s) => s.status !== "graded").length;
+  const maxRubrica = a.rubric.reduce((n, c) => n + Math.max(0, ...c.levels.map((l) => l.points)), 0);
 
   return (
     <>
@@ -111,19 +116,65 @@ export default component$(() => {
         <span class={graded ? "done" : delivered ? "on" : ""}><Icon name={graded ? "checkCircle" : "circle"} size={14} /> Calificada</span>
       </div>
 
+      {staff ? (
+        porCalificar > 0 && (
+          <Ahora compacto etiqueta="Ahora · instructor" titulo={`${porCalificar} ${porCalificar === 1 ? "entrega espera" : "entregas esperan"} tu nota`} accion="Calificar" onAccion$={() => select("calificar")} />
+        )
+      ) : !delivered ? (
+        <Ahora
+          etiqueta={`Ahora · proyecto${a.due_at ? ` · vence ${rel(a.due_at)}` : ""}`}
+          titulo="Entrega tu repositorio"
+          descripcion={a.rubric.length ? `Antes de entregar, revisa la rúbrica: ${a.rubric.length} criterios, ${maxRubrica} puntos.` : "Lee el enunciado y entrega la URL del repositorio y el commit."}
+          accion="Entregar"
+          onAccion$={() => select("entregar")}
+        />
+      ) : !graded ? (
+        <Ahora
+          etiqueta="Entregada · en revisión"
+          titulo="Tu entrega está en cola para calificar"
+          descripcion={`Cuenta el commit ${ultima.commit_sha.slice(0, 7)}. Si subes cambios, vuelve a entregar.`}
+          accion="Ver mi entrega"
+          onAccion$={() => select("entregas")}
+        />
+      ) : (
+        <Ahora
+          etiqueta="Calificada"
+          titulo={`Tienes ${best?.score ?? "—"} de ${best?.max_score ?? a.max_score}`}
+          descripcion={best?.feedback_md || "Sin comentarios del instructor."}
+          accion={vencida ? "Ver comentarios" : "Mejorar y reenviar"}
+          onAccion$={() => select(vencida ? "entregas" : "entregar")}
+        />
+      )}
+
       <Tabs
         active={tab.value}
         onSelect$={select}
         tabs={[
-          { id: "enunciado", label: "Enunciado", icon: "file" },
-          ...(a.rubric.length ? [{ id: "rubrica", label: "Rúbrica", icon: "award" }] : []),
+          { id: "enunciado", label: a.rubric.length ? "Enunciado y rúbrica" : "Enunciado", icon: "file" },
           { id: "entregar", label: "Entregar", icon: "send" },
           { id: "entregas", label: "Mis entregas", icon: "clock", count: a.my_submissions.length },
           ...(staff ? [{ id: "calificar", label: "Calificar", icon: "users", count: st.all.filter((s) => s.status !== "graded").length }] : []),
         ]}
       />
 
-      {tab.value === "enunciado" && <Prose html={a.description_html} />}
+      {tab.value === "enunciado" &&
+        (a.rubric.length === 0 ? (
+          <Prose html={a.description_html} />
+        ) : (
+          <div class="tarea-split">
+            <Prose html={a.description_html} />
+            <aside class="rubrica-lateral" aria-labelledby="rub-t" data-testid="rubrica-lateral">
+              <h2 id="rub-t" class="h2-sec" style="margin:0">Rúbrica · {maxRubrica} puntos</h2>
+              <p class="sm muted" style="margin:0 0 .4rem">Así se califica. Apunta al nivel más alto de cada criterio.</p>
+              {a.rubric.map((c) => (
+                <div class="crit" key={c.criterion}>
+                  <b class="sm">{c.criterion}</b>
+                  <div class="lv">{c.levels.map((lv) => `${lv.points} ${lv.title.toLowerCase()}`).join(" · ")}</div>
+                </div>
+              ))}
+            </aside>
+          </div>
+        ))}
 
       {tab.value === "rubrica" && (
         <div class="list">
