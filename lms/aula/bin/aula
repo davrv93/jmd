@@ -107,26 +107,45 @@ if vinculado:
     print("Tu WhatsApp ya está vinculado. Los mensajes llegan a tu backend en el puerto 8766: POST /api/webhook")
     sys.exit(0)
 
-print("Escanea el QR con WhatsApp > Dispositivos vinculados > Vincular un dispositivo.")
-print("Ábrelo en el Visor: qr.png (se renueva cada pocos segundos; Ctrl+C para salir).")
-ultimo, fin = None, time.time() + 150
+def pintar(code):
+    """El QR en la propia terminal (y una copia en /trabajo/qr.png para el Visor)."""
+    try:
+        import qrcode
+        q = qrcode.QRCode(border=2, error_correction=qrcode.constants.ERROR_CORRECT_L)
+        q.add_data(code)
+        q.make(fit=True)
+        sys.stdout.write("\033[2J\033[H")
+        q.print_ascii(invert=True)
+    except Exception as e:  # sin la librería: solo el PNG
+        print(f"(no pude dibujar el QR aquí: {e}; ábrelo en el Visor: qr.png)")
+    print(f"Instancia: {inst} · QR de las {time.strftime('%H:%M:%S')} (cambia cada ~20 s)")
+    print("WhatsApp > Dispositivos vinculados > Vincular un dispositivo, y apunta la cámara aquí.")
+    print("Si no entra, agranda la terminal (Pantalla completa) o abre qr.png en el Visor. Ctrl+C para salir.", flush=True)
+
+# Ojo con el fork: pedir /instance/qr con la sesión YA vinculada reinicia el cliente y rompe el
+# emparejamiento. Por eso se mira el estado cada 2 s y el QR solo se pide si NO está vinculado y el
+# anterior ya tiene ~15 s.
+ultimo, pedido, fin = None, 0.0, time.time() + 180
 while time.time() < fin:
-    d = pedir("GET", "/instance/qr", espera=30).get("data") or {}
-    q = d.get("qrcode") or ""
-    if q.startswith("data:image") and "," in q and q != ultimo:
-        with open(qr_png + ".tmp", "wb") as f:
-            f.write(base64.b64decode(q.split(",", 1)[1]))
-        os.replace(qr_png + ".tmp", qr_png)
-        ultimo = q
-        print(f"QR nuevo en {qr_png} ({time.strftime('%H:%M:%S')})", flush=True)
-    time.sleep(4)
     if estado()[1]:
-        print("¡Vinculado! Ya puedes recibir y enviar mensajes.")
+        print("\n¡Vinculado! Ya puedes recibir y enviar mensajes. Tus mensajes llegan a POST /api/webhook en el 8766.")
         try:
             os.remove(qr_png)
         except OSError:
             pass
         sys.exit(0)
+    if time.time() - pedido >= 15 or ultimo is None:
+        d = pedir("GET", "/instance/qr", espera=30).get("data") or {}
+        pedido = time.time()
+        code, png = d.get("code") or "", d.get("qrcode") or ""
+        if png.startswith("data:image") and "," in png:
+            with open(qr_png + ".tmp", "wb") as f:
+                f.write(base64.b64decode(png.split(",", 1)[1]))
+            os.replace(qr_png + ".tmp", qr_png)
+        if code and code != ultimo:
+            ultimo = code
+            pintar(code)
+    time.sleep(2)
 print("El QR caducó sin escanearse. Vuelve a correr: aula whatsapp")
 sys.exit(1)
 PY
