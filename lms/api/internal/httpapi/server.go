@@ -417,7 +417,7 @@ func jsonString(s string) []byte {
 }
 
 // shellSections son las rutas con parámetro: el front solo prerenderiza /<sección>/_/.
-var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true, "verificar": true, "live": true, "links": true}
+var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true, "verificar": true, "live": true, "links": true, "projects": true}
 
 // shellFor da el archivo genérico (<sección>/_/index.html o q-data.json) para /<sección>/<x>/ y
 // /<sección>/<x>/q-data.json; "" si la ruta no es de ese tipo. p viene limpia (path.Clean).
