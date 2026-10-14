@@ -1,7 +1,7 @@
 ---
 id: pa-02
 title: "Clase 2 · Construir un asistente con skills, plan de trabajo y Edge AI"
-starts_at: 2026-10-15T19:00:00-05:00
+starts_at: 2026-10-11T19:00:00-05:00
 published: true
 objectives:
   - id: pa-02-o1
