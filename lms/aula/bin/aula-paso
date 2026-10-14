@@ -119,7 +119,10 @@ hacer() {
   [ "$N" -gt "$TOTAL" ] && { mostrar; return; }
   mkdir -p "$BOT"
   b "Paso $N · $(titulo "$N") — el agente está trabajando (1 a 3 min)…"
-  jmd chat --auto "$(pedido "$N")"
+  # Tope de 5 min: si el modelo se enreda, la clase no se queda esperando; la comprobación dice qué falta.
+  timeout 300 jmd chat --auto "$(pedido "$N")" || a "(el agente se detuvo; compruebo lo que dejó hecho)"
+  # Pasos con backend: lo (re)arranca aula paso, no depende de que el agente lo haga.
+  case "$N" in 5|8) [ -f "$BOT/chatbot.sh" ] && [ -f "$BOT/servidor.ts" ] && { b "Arrancando tu backend…"; sh "$BOT/chatbot.sh" reiniciar; sleep 2; } ;; esac
   ver
 }
 
