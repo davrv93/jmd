@@ -1,6 +1,6 @@
 import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
-import { api, errMsg, fmtDate, rel, requireLogin, STATUS, type Assignment, type Submission } from "~/lib/api";
+import { api, errMsg, fmtDate, rel, requireLogin, STATUS, type Assignment, type CriterioCalificado, type Submission } from "~/lib/api";
 import { SessionContext, isStaff, toast } from "~/lib/session";
 import { getParam, pathId, setParams, setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
@@ -14,7 +14,7 @@ export default component$(() => {
   const st = useStore<{ a: Assignment | null; all: Submission[]; error: string; sending: boolean }>({ a: null, all: [], error: "", sending: false });
   const form = useStore({ repo_url: "", commit_sha: "", notes: "" });
   const tab = useSignal("enunciado");
-  const grading = useStore<Record<string, { score: string; feedback: string }>>({});
+  const grading = useStore<Record<string, { score: string; feedback: string; niveles: number[]; notas: string[] }>>({});
 
   const load = $(async () => {
     st.error = "";
@@ -62,17 +62,38 @@ export default component$(() => {
     }
   });
 
-  const grade = $(async (sid: string, fallback: { score: string; feedback: string }) => {
+  const grade = $(async (sid: string, fallback: { score: string; feedback: string; niveles: number[]; notas: string[] }) => {
     const g = grading[sid] ?? fallback;
-    if (!st.a || g.score === "") return;
+    if (!st.a) return;
+    const porCriterio = st.a.rubric.length > 0 && g.niveles.length === st.a.rubric.length && g.niveles.every((n) => n >= 0);
+    if (!porCriterio && g.score === "") return;
     try {
-      await api.grade(sid, parseFloat(g.score), g.feedback);
+      await api.grade(sid, porCriterio ? 0 : parseFloat(g.score), g.feedback, porCriterio ? g.niveles.map((nivel, i) => ({ nivel, nota: g.notas[i] ?? "" })) : undefined);
       await load();
       toast(session, "Nota guardada");
     } catch (e) {
       if (!requireLogin(e)) toast(session, errMsg(e), "bad");
     }
   });
+
+  // Cada criterio calificado: logrado (nivel más alto) o por mejorar, con lo que falta para lograrlo.
+  const rubricaCal = (rub: CriterioCalificado[]) => (
+    <div class="crit-cal" data-testid="rubrica-calificada">
+      {rub.map((c) => {
+        const ok = c.puntos >= c.max;
+        return (
+          <div key={c.criterio} class="crit-cal__it">
+            <span class={`badge ${ok ? "ok" : "warn"}`}>{ok ? "Logrado" : "Por mejorar"} · {c.puntos}/{c.max}</span>
+            <div class="grow" style="min-width:0">
+              <b class="sm">{c.criterio}</b>
+              <div class="sm muted">{c.titulo}{c.nota ? ` — ${c.nota}` : ""}</div>
+              {!ok && <div class="crit-cal__falta"><b>Para llegar a {c.max}:</b> {c.mejor}</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 
   if (st.error) return <ErrorState message={st.error} retry$={load} />;
   const a = st.a;
@@ -89,7 +110,7 @@ export default component$(() => {
 
   return (
     <>
-      <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { href: `/courses/${a.course_id}/?tab=tareas`, label: "Tareas" }, { label: a.title }]} />
+      <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { href: "/projects/", label: "Proyectos" }, { label: a.title }]} />
       <div class="head">
         <span class="lead-ico gold" style="width:46px;height:46px"><Icon name="task" size={22} /></span>
         <div class="grow">
@@ -140,7 +161,11 @@ export default component$(() => {
         <Ahora
           etiqueta="Calificada"
           titulo={`Tienes ${best?.score ?? "—"} de ${best?.max_score ?? a.max_score}`}
-          descripcion={best?.feedback_md || "Sin comentarios del instructor."}
+          descripcion={
+            best?.rubrica?.length
+              ? `${best.rubrica.filter((c) => c.puntos >= c.max).length} de ${best.rubrica.length} criterios logrados${best.rubrica.some((c) => c.puntos < c.max) ? ` · por mejorar: ${best.rubrica.filter((c) => c.puntos < c.max).map((c) => c.criterio.split(" (")[0]).join(", ")}` : ""}.${best.feedback_md ? ` ${best.feedback_md}` : ""}`
+              : best?.feedback_md || "Sin comentarios del instructor."
+          }
           accion={vencida ? "Ver comentarios" : "Mejorar y reenviar"}
           onAccion$={() => select(vencida ? "entregas" : "entregar")}
         />
@@ -245,6 +270,7 @@ export default component$(() => {
                   </div>
                   <div class="d" title={fmtDate(s.created_at)}>{rel(s.created_at)}</div>
                   {s.feedback_md && <div class="sm" style="white-space:pre-wrap;margin-top:.35rem;padding:.5rem .65rem;background:var(--s2);border-radius:6px">{s.feedback_md}</div>}
+                  {s.rubrica && s.rubrica.length > 0 && rubricaCal(s.rubrica)}
                 </span>
                 {s.score != null && <span class="badge ok">{s.score}/{s.max_score}</span>}
                 <Status s={STATUS[s.status] ?? STATUS.pending} />
@@ -260,7 +286,14 @@ export default component$(() => {
         ) : (
           <div class="stack">
             {st.all.map((s) => {
-              const g = grading[s.id] ?? { score: s.score != null ? String(s.score) : "", feedback: s.feedback_md };
+              const g = grading[s.id] ?? {
+                score: s.score != null ? String(s.score) : "",
+                feedback: s.feedback_md,
+                niveles: a.rubric.map((_, i) => s.rubrica?.[i]?.nivel ?? -1),
+                notas: a.rubric.map((_, i) => s.rubrica?.[i]?.nota ?? ""),
+              };
+              const total = g.niveles.reduce((n, lv, i) => n + (lv >= 0 ? a.rubric[i].levels[lv].points : 0), 0);
+              const completa = a.rubric.length > 0 && g.niveles.every((n) => n >= 0);
               return (
                 <div class="card" key={s.id}>
                   <div class="row">
@@ -272,16 +305,54 @@ export default component$(() => {
                     <a href={s.repo_url} target="_blank" rel="noopener">{s.repo_url}</a> @ <code>{s.commit_sha.slice(0, 7)}</code>
                     {s.notes && <div class="muted" style="white-space:pre-wrap">{s.notes}</div>}
                   </div>
+                  {a.rubric.length > 0 && (
+                    <div class="calif-rubrica" data-testid="calificar-rubrica">
+                      {a.rubric.map((c, i) => (
+                        <div key={c.criterion} class="calif-crit">
+                          <label for={`cr-${s.id}-${i}`} style="margin-top:0">{c.criterion}</label>
+                          <div class="row" style="flex-wrap:nowrap">
+                            <select
+                              id={`cr-${s.id}-${i}`}
+                              value={String(g.niveles[i])}
+                              onChange$={(_, el) => {
+                                const niveles = [...g.niveles];
+                                niveles[i] = parseInt(el.value, 10);
+                                grading[s.id] = { ...g, niveles };
+                              }}
+                            >
+                              <option value="-1">Elige un nivel…</option>
+                              {c.levels.map((lv, j) => (
+                                <option key={lv.title} value={String(j)}>{`${lv.points} · ${lv.title}`}</option>
+                              ))}
+                            </select>
+                            <input
+                              aria-label={`Comentario sobre «${c.criterion}»`}
+                              placeholder="Comentario (opcional)"
+                              value={g.notas[i]}
+                              onInput$={(_, el) => {
+                                const notas = [...g.notas];
+                                notas[i] = el.value;
+                                grading[s.id] = { ...g, notas };
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <div class="sm"><b>Total: {total} / {s.max_score}</b>{!completa && <span class="muted"> · falta elegir algún nivel</span>}</div>
+                    </div>
+                  )}
                   <div class="row" style="margin-top:.6rem;align-items:flex-end">
-                    <span style="width:7rem">
-                      <label style="margin-top:0">Nota / {s.max_score}</label>
-                      <input type="number" min="0" max={s.max_score} step="0.5" value={g.score} onInput$={(_, el) => (grading[s.id] = { ...g, score: el.value })} />
-                    </span>
+                    {a.rubric.length === 0 && (
+                      <span style="width:7rem">
+                        <label style="margin-top:0">Nota / {s.max_score}</label>
+                        <input type="number" min="0" max={s.max_score} step="0.5" value={g.score} onInput$={(_, el) => (grading[s.id] = { ...g, score: el.value })} />
+                      </span>
+                    )}
                     <span class="grow" style="min-width:14rem">
                       <label style="margin-top:0">Comentarios</label>
                       <input value={g.feedback} onInput$={(_, el) => (grading[s.id] = { ...g, feedback: el.value })} />
                     </span>
-                    <button type="button" class="btn" onClick$={() => grade(s.id, g)}><Icon name="check" size={14} /> Guardar</button>
+                    <button type="button" class="btn" disabled={a.rubric.length > 0 && !completa} onClick$={() => grade(s.id, g)}><Icon name="check" size={14} /> Guardar</button>
                   </div>
                 </div>
               );

@@ -105,6 +105,36 @@ export default component$(() => {
           <Empty icon="layers" title="Sin sesiones todavía" text="El instructor publicará aquí las sesiones del curso." />
         ) : (
           <div class="stack">
+            {(c.proyecto_final || c.requisitos?.length || c.dedicacion) && (
+              <div class="ficha" data-testid="ficha-curso">
+                {c.proyecto_final && (
+                  <section class="ficha-proy" aria-labelledby="proy-t">
+                    <span class="lead-ico"><Icon name="target" /></span>
+                    <div>
+                      <h2 id="proy-t" class="h2-sec" style="margin:0 0 .25rem">El proyecto que serás capaz de construir</h2>
+                      <p style="margin:0">{c.proyecto_final}</p>
+                    </div>
+                  </section>
+                )}
+                {(c.requisitos?.length || c.dedicacion) && (
+                  <section class="ficha-req" aria-labelledby="req-t">
+                    <h2 id="req-t" class="h2-sec" style="margin:0 0 .3rem">Antes de empezar</h2>
+                    {c.requisitos && c.requisitos.length > 0 && (
+                      <ul>
+                        {c.requisitos.map((r) => (
+                          <li key={r}>{r}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {c.dedicacion && (
+                      <p class="sm" style="margin:.4rem 0 0">
+                        <b>Dedicación:</b> {c.dedicacion}
+                      </p>
+                    )}
+                  </section>
+                )}
+              </div>
+            )}
             {c.modules.map((m, mi) => {
               const ls = m.lessons.filter((l) => l.published || staff);
               return (
@@ -127,6 +157,13 @@ export default component$(() => {
                                 <span><Icon name="target" size={12} /> {l.objectives} objetivos</span>
                                 <span><Icon name="cycle" size={12} /> {l.steps_done}/{l.steps} pasos</span>
                               </div>
+                              {l.objetivos && l.objetivos.length > 0 && (
+                                <ul class="obj-lista" aria-label="Al terminar podrás">
+                                  {l.objetivos.map((o) => (
+                                    <li key={o}>{o}</li>
+                                  ))}
+                                </ul>
+                              )}
                             </span>
                             {!l.published && <span class="badge warn"><Icon name="lock" size={12} /> borrador</span>}
                             <Icon name="chevronRight" class="faint" />

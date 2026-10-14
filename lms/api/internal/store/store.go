@@ -47,6 +47,8 @@ func migrate(db *sql.DB) error {
 	adds := []struct{ table, column, ddl string }{
 		// Insignias por clase (10-2026): vacío = certificado del curso completo.
 		{"certificates", "lesson_id", "ALTER TABLE certificates ADD COLUMN lesson_id TEXT NOT NULL DEFAULT ''"},
+		// Calificación por criterio de la rúbrica (10-2026): JSON con el nivel de cada criterio.
+		{"submissions", "rubric_json", "ALTER TABLE submissions ADD COLUMN rubric_json TEXT NOT NULL DEFAULT ''"},
 	}
 	for _, a := range adds {
 		has, err := hasColumn(db, a.table, a.column)
@@ -467,16 +469,17 @@ type Submission struct {
 	FeedbackMD   string
 	CreatedAt    time.Time
 	GradedAt     *time.Time
+	RubricJSON   string // calificación por criterio (JSON); vacío = solo nota global
 }
 
-const subCols = "id, assignment_id, user_id, repo_url, commit_sha, notes, status, score, max_score, feedback_md, created_at, graded_at"
+const subCols = "id, assignment_id, user_id, repo_url, commit_sha, notes, status, score, max_score, feedback_md, created_at, graded_at, rubric_json"
 
 func scanSubmission(row interface{ Scan(...any) error }) (*Submission, error) {
 	var s Submission
 	var score sql.NullFloat64
 	var created string
 	var graded sql.NullString
-	if err := row.Scan(&s.ID, &s.AssignmentID, &s.UserID, &s.RepoURL, &s.CommitSHA, &s.Notes, &s.Status, &score, &s.MaxScore, &s.FeedbackMD, &created, &graded); err != nil {
+	if err := row.Scan(&s.ID, &s.AssignmentID, &s.UserID, &s.RepoURL, &s.CommitSHA, &s.Notes, &s.Status, &score, &s.MaxScore, &s.FeedbackMD, &created, &graded, &s.RubricJSON); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -557,9 +560,9 @@ func (d *DB) LatestSubmissions(ctx context.Context, userID string) (map[string]*
 }
 
 // GradeSubmission pone nota y comentarios.
-func (d *DB) GradeSubmission(ctx context.Context, id string, score float64, feedback string) error {
-	res, err := d.sql.ExecContext(ctx, "UPDATE submissions SET status = 'graded', score = ?, feedback_md = ?, graded_at = ? WHERE id = ?",
-		score, feedback, now(), id)
+func (d *DB) GradeSubmission(ctx context.Context, id string, score float64, feedback, rubricJSON string) error {
+	res, err := d.sql.ExecContext(ctx, "UPDATE submissions SET status = 'graded', score = ?, feedback_md = ?, rubric_json = ?, graded_at = ? WHERE id = ?",
+		score, feedback, rubricJSON, now(), id)
 	if err != nil {
 		return err
 	}

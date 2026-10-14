@@ -88,9 +88,13 @@ func (s *Server) course(w http.ResponseWriter, r *http.Request, p *Principal) {
 			if !l.Published && !p.Staff() {
 				continue
 			}
+			objetivos := make([]string, 0, len(l.Objectives))
+			for _, o := range l.Objectives {
+				objetivos = append(objetivos, o.Title)
+			}
 			lessons = append(lessons, map[string]any{
 				"id": l.ID, "title": l.Title, "starts_at": l.StartsAt, "published": l.Published,
-				"objectives": len(l.Objectives), "steps": len(l.Cycle), "steps_done": done[l.ID],
+				"objectives": len(l.Objectives), "objetivos": objetivos, "steps": len(l.Cycle), "steps_done": done[l.ID],
 			})
 		}
 		modules = append(modules, map[string]any{"id": m.ID, "title": m.Title, "lessons": lessons})
@@ -103,6 +107,7 @@ func (s *Server) course(w http.ResponseWriter, r *http.Request, p *Principal) {
 	writeJSON(w, 200, map[string]any{
 		"id": c.ID, "slug": c.Slug, "title": c.Title, "description": c.Description, "role": roleIn(p),
 		"modules": modules, "assignments": assignments, "examples_total": len(s.visibleExamples(p, c.ID)),
+		"proyecto_final": c.ProyectoFinal, "requisitos": c.Requisitos, "dedicacion": c.Dedicacion,
 	})
 }
 

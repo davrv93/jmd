@@ -36,6 +36,8 @@ func writeFixture(t *testing.T) string {
 		"course.yaml": `id: curso
 title: Curso de prueba
 cohorts: [c1]
+proyecto_final: Un chatbot que responde por WhatsApp
+requisitos: [Una laptop, Una cuenta de GitHub]
 modules:
   - id: m1
     title: Módulo 1

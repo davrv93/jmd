@@ -33,10 +33,10 @@ const MARCA = `<svg class="mark" width="18" height="18" viewBox="0 0 24 24" aria
 // Navegación principal: aprender primero, después las herramientas y el cierre.
 const NAV = [
   { href: "/courses/", label: "Aprender", icon: "home", match: ["/courses/", "/lessons/"] },
-  { href: "/examples/", label: "Prácticas", icon: "sparkles", match: ["/examples/"] },
+  { href: "/projects/", label: "Proyectos", icon: "task", match: ["/projects/", "/assignments/", "/examples/"] },
   { href: "/links/", label: "Recursos", icon: "link", match: ["/links/"] },
   { href: "/studio/", label: "Estudio", icon: "wand", match: ["/studio/"] },
-  { href: "/grades/", label: "Logros", icon: "award", match: ["/grades/", "/assignments/"] },
+  { href: "/grades/", label: "Logros", icon: "award", match: ["/grades/"] },
 ];
 
 export default component$(() => {
@@ -103,7 +103,7 @@ export default component$(() => {
         return;
       }
       if (Date.now() - g < 1200) {
-        const to = { i: "/courses/", e: "/examples/", n: "/grades/", l: "/links/" }[e.key];
+        const to = { i: "/courses/", p: "/projects/", e: "/examples/", n: "/grades/", l: "/links/" }[e.key];
         if (to) nav(to);
         g = 0;
       }

@@ -15,6 +15,12 @@ type Course struct {
 	Description string   `yaml:"description" json:"description"`
 	Cohorts     []string `yaml:"cohorts" json:"cohorts"`
 	Modules     []Module `yaml:"modules" json:"modules"`
+
+	// Ficha del curso (opcionales): el proyecto que el alumno será capaz de construir, lo que
+	// necesita antes de empezar y la dedicación esperada. Vacíos = la ficha no los muestra.
+	ProyectoFinal string   `yaml:"proyecto_final" json:"proyecto_final,omitempty"`
+	Requisitos    []string `yaml:"requisitos" json:"requisitos,omitempty"`
+	Dedicacion    string   `yaml:"dedicacion" json:"dedicacion,omitempty"`
 }
 
 // Module agrupa sesiones. En el YAML lleva los ids; Lessons se rellena al cargar.

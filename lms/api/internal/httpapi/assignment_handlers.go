@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -23,6 +24,7 @@ func subView(sub *store.Submission) map[string]any {
 		"id": sub.ID, "assignment_id": sub.AssignmentID, "user_id": sub.UserID, "status": sub.Status,
 		"repo_url": sub.RepoURL, "commit_sha": sub.CommitSHA, "notes": sub.Notes,
 		"score": sub.Score, "max_score": sub.MaxScore, "feedback_md": sub.FeedbackMD, "checks": []any{},
+		"rubrica": rubricaView(sub.RubricJSON),
 		"created_at": sub.CreatedAt.UTC().Format(time.RFC3339), "graded_at": graded,
 	}
 }
@@ -216,7 +218,30 @@ func (s *Server) listSubmissions(w http.ResponseWriter, r *http.Request, p *Prin
 	writeJSON(w, 200, out)
 }
 
-// gradeSubmission (personal): nota manual con comentarios.
+// criterioCalificado es un criterio de la rúbrica con el nivel que puso el instructor. Se guarda
+// con el título y los puntos de ese momento: si la rúbrica cambia después, la nota no se mueve.
+type criterioCalificado struct {
+	Criterio string  `json:"criterio"`
+	Nivel    int     `json:"nivel"`
+	Titulo   string  `json:"titulo"`
+	Puntos   float64 `json:"puntos"`
+	Max      float64 `json:"max"`
+	// Mejor es el nivel más alto del criterio: lo que falta para lograrlo («Para llegar a…»).
+	Mejor string `json:"mejor"`
+	Nota  string `json:"nota,omitempty"`
+}
+
+func rubricaView(js string) []criterioCalificado {
+	out := []criterioCalificado{}
+	if js != "" {
+		_ = json.Unmarshal([]byte(js), &out)
+	}
+	return out
+}
+
+// gradeSubmission (personal): nota con comentarios. Con «criterios» (uno por criterio de la
+// rúbrica, en orden: el índice del nivel y una nota opcional) la nota es la suma de los niveles y
+// el alumno ve qué logró y qué le falta; sin ellos, la nota global de siempre.
 func (s *Server) gradeSubmission(w http.ResponseWriter, r *http.Request, p *Principal) {
 	sub, err := s.DB.Submission(r.Context(), r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
@@ -230,15 +255,52 @@ func (s *Server) gradeSubmission(w http.ResponseWriter, r *http.Request, p *Prin
 	var in struct {
 		Score      float64 `json:"score"`
 		FeedbackMD string  `json:"feedback_md"`
+		Criterios  []struct {
+			Nivel int    `json:"nivel"`
+			Nota  string `json:"nota"`
+		} `json:"criterios"`
 	}
 	if !readJSON(w, r, &in) {
 		return
+	}
+	rubricJSON := ""
+	if len(in.Criterios) > 0 {
+		a := s.Content.Get().Assignment(sub.AssignmentID)
+		if a == nil || len(a.Rubric) == 0 {
+			badRequest(w, "esta tarea no tiene rúbrica")
+			return
+		}
+		if len(in.Criterios) != len(a.Rubric) {
+			badRequest(w, "hace falta un nivel por cada criterio de la rúbrica")
+			return
+		}
+		cal := make([]criterioCalificado, 0, len(a.Rubric))
+		total := 0.0
+		for i, c := range a.Rubric {
+			n := in.Criterios[i].Nivel
+			if n < 0 || n >= len(c.Levels) {
+				badRequest(w, "nivel fuera de rango en «"+c.Criterion+"»")
+				return
+			}
+			mejor := c.Levels[0]
+			for _, lv := range c.Levels {
+				if lv.Points > mejor.Points {
+					mejor = lv
+				}
+			}
+			cal = append(cal, criterioCalificado{Criterio: c.Criterion, Nivel: n, Titulo: c.Levels[n].Title, Puntos: c.Levels[n].Points,
+				Max: mejor.Points, Mejor: mejor.Title, Nota: strings.TrimSpace(in.Criterios[i].Nota)})
+			total += c.Levels[n].Points
+		}
+		b, _ := json.Marshal(cal)
+		rubricJSON = string(b)
+		in.Score = total
 	}
 	if in.Score < 0 || (sub.MaxScore > 0 && in.Score > sub.MaxScore) {
 		badRequest(w, "score fuera de rango")
 		return
 	}
-	if err := s.DB.GradeSubmission(r.Context(), sub.ID, in.Score, in.FeedbackMD); err != nil {
+	if err := s.DB.GradeSubmission(r.Context(), sub.ID, in.Score, in.FeedbackMD, rubricJSON); err != nil {
 		internal(w, err)
 		return
 	}
@@ -272,7 +334,7 @@ func (s *Server) grades(w http.ResponseWriter, r *http.Request, p *Principal) {
 			out = append(out, map[string]any{
 				"assignment_id": a.ID, "title": a.Title, "course_id": c.ID, "status": sub.Status,
 				"score": sub.Score, "max_score": sub.MaxScore, "graded_at": graded, "feedback_md": sub.FeedbackMD,
-				"submission_id": sub.ID,
+				"submission_id": sub.ID, "rubrica": rubricaView(sub.RubricJSON),
 			})
 		}
 	}

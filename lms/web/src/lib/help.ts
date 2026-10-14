@@ -70,7 +70,8 @@ export const HELP: Record<string, HelpTopic> = {
 export const SHORTCUTS: [string, string][] = [
   ["?", "Abrir o cerrar esta ayuda"],
   ["g i", "Ir a Inicio"],
-  ["g e", "Ir a Ejemplos"],
+  ["g p", "Ir a Proyectos"],
+  ["g e", "Ir a Prácticas"],
   ["g n", "Ir a Notas"],
   ["/", "Buscar (en Ejemplos y Enlaces)"],
   ["← →", "Diapositiva anterior / siguiente"],

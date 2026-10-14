@@ -61,6 +61,8 @@ export interface LessonSummary {
   starts_at: string | null;
   published: boolean;
   objectives: number;
+  /** Títulos de los objetivos («Al terminar podrás…»). */
+  objetivos?: string[];
   steps: number;
   steps_done: number;
 }
@@ -83,6 +85,10 @@ export interface Course {
   modules: { id: string; title: string; lessons: LessonSummary[] }[];
   assignments: AssignmentSummary[];
   examples_total?: number;
+  /** Ficha del curso (opcionales en el contenido). */
+  proyecto_final?: string;
+  requisitos?: string[];
+  dedicacion?: string;
 }
 export interface ExampleSummary {
   id: string;
@@ -159,6 +165,18 @@ export interface Submission {
   feedback_md: string;
   created_at: string;
   graded_at: string | null;
+  /** Calificación por criterio de la rúbrica (vacía = solo nota global). */
+  rubrica?: CriterioCalificado[];
+}
+export interface CriterioCalificado {
+  criterio: string;
+  nivel: number;
+  titulo: string;
+  puntos: number;
+  max: number;
+  /** Título del nivel más alto: lo que falta para lograr el criterio. */
+  mejor: string;
+  nota?: string;
 }
 export interface Assignment {
   id: string;
@@ -185,6 +203,7 @@ export interface Grade {
   max_score: number;
   graded_at: string | null;
   feedback_md: string;
+  rubrica?: CriterioCalificado[];
 }
 export interface RunResult {
   stdout: string;
@@ -305,7 +324,8 @@ export const api = {
   submit: (id: string, b: { repo_url: string; commit_sha: string; notes?: string }) =>
     req<{ id: string; status: string }>("POST", `/api/v1/assignments/${encodeURIComponent(id)}/submissions`, b),
   submissions: (id: string) => req<Submission[]>("GET", `/api/v1/assignments/${encodeURIComponent(id)}/submissions`),
-  grade: (id: string, score: number, feedback_md: string) => req<Submission>("POST", `/api/v1/submissions/${encodeURIComponent(id)}/grade`, { score, feedback_md }),
+  grade: (id: string, score: number, feedback_md: string, criterios?: { nivel: number; nota?: string }[]) =>
+    req<Submission>("POST", `/api/v1/submissions/${encodeURIComponent(id)}/grade`, { score, feedback_md, ...(criterios ? { criterios } : {}) }),
   grades: (course?: string) => req<Grade[]>("GET", `/api/v1/grades${course ? `?course=${encodeURIComponent(course)}` : ""}`),
   questions: (lesson: string) => req<Question[]>("GET", `/api/v1/lessons/${encodeURIComponent(lesson)}/questions`),
   ask: (lesson: string, b: { body_md: string; objective_id?: string; video_ts?: number }) =>
