@@ -123,23 +123,23 @@ export default component$(() => {
         <div class="rec-cursos" data-testid="recursos-cursos">
           {resumen.map((r) => (
             <Link key={r.c.id} class="card rec-curso-card" href={`/links/${encodeURIComponent(r.c.slug)}/`}>
-              <b>{r.c.title}</b>
-              <span class="sm muted">
+              <b style="display:block">{r.c.title}</b>
+              <span class="sm muted" style="display:block">
                 {r.sesiones} {r.sesiones === 1 ? "sesión" : "sesiones"} · {r.recursos} recursos
               </span>
-              <span class="rec-barra" aria-hidden="true">
+              <span class="rec-barra" aria-hidden="true" style="display:flex;margin:.5rem 0 .4rem">
                 {r.porTipo.map((x) => (
                   <i key={x.id} data-k={x.id} style={`flex:${x.n}`} title={`${x.label}: ${x.n}`} />
                 ))}
               </span>
-              <span class="row xs muted" style="gap:.3rem .7rem">
+              <span class="row xs muted" style="gap:.3rem .7rem;margin-bottom:.5rem">
                 {r.porTipo.map((x) => (
                   <span key={x.id}>
                     {x.label} {x.n}
                   </span>
                 ))}
               </span>
-              <span class="sm" style="color:var(--accent);font-weight:650">
+              <span class="sm" style="display:block;color:var(--accent);font-weight:650">
                 Ver recursos por sesión <Icon name="chevronRight" size={13} />
               </span>
             </Link>
