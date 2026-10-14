@@ -85,6 +85,14 @@ export default component$(() => {
   // Esta semana: clases en vivo de los próximos 7 días y tareas pendientes, por fecha.
   const ahoraMs = Date.now();
   const semana: Semana[] = [];
+  // Con varios cursos (el instructor ve los tres grupos), cada fila dice de qué grupo es.
+  const varios = (st.courses?.length ?? 0) > 1;
+  const grupoDe = (c: Course) => (varios ? `${c.title.includes(" · ") ? c.title.split(" · ").slice(1).join(" · ") : c.title} · ` : "");
+  const partes = (titulo: string) => {
+    const seg = titulo.split(" · ");
+    const i = seg.findIndex((s) => /^Clase \d+/.test(s));
+    return i < 0 ? { num: seg[0], resto: seg.slice(1).join(" · ") } : { num: seg[i], resto: seg.slice(i + 1).join(" · ") };
+  };
   const pendientes: (AssignmentSummary & { course: string })[] = [];
   for (const c of st.courses ?? []) {
     for (const m of c.modules)
@@ -92,14 +100,14 @@ export default component$(() => {
         if (l.published && l.starts_at) {
           const t = Date.parse(l.starts_at);
           if (t > ahoraMs - 3 * 3600e3 && t < ahoraMs + 7 * 86400e3) {
-            const [num, ...resto] = l.title.split(" · ");
-            semana.push({ tipo: "clase", fecha: l.starts_at, titulo: `${num} en vivo`, detalle: `${resto.join(" · ") || l.title} · ${HORA.format(new Date(t))}`, href: `/lessons/${l.id}/` });
+            const { num, resto } = partes(l.title);
+            semana.push({ tipo: "clase", fecha: l.starts_at, titulo: `${num} en vivo`, detalle: `${grupoDe(c)}${resto || l.title} · ${HORA.format(new Date(t))}`, href: `/lessons/${l.id}/` });
           }
         }
     for (const a of c.assignments)
       if (a.status === "pending" || a.status === "overdue") {
         pendientes.push({ ...a, course: c.title });
-        semana.push({ tipo: "tarea", fecha: a.due_at ?? "9999", titulo: a.title, detalle: a.due_at ? `Vence ${rel(a.due_at)} · ${a.max_score} puntos` : "Sin fecha límite", href: `/assignments/${a.id}/`, estado: a.status });
+        semana.push({ tipo: "tarea", fecha: a.due_at ?? "9999", titulo: a.title, detalle: `${grupoDe(c)}${a.due_at ? `Vence ${rel(a.due_at)} · ${a.max_score} puntos` : "Sin fecha límite"}`, href: `/assignments/${a.id}/`, estado: a.status });
       }
   }
   semana.sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -156,7 +164,7 @@ export default component$(() => {
 
       {st.courses && (
         <>
-          <div class="split">
+          <div class="inicio-cols">
             <section aria-labelledby="semana-t">
               <h2 id="semana-t" class="h2-sec">Esta semana</h2>
               {semana.length === 0 ? (
