@@ -139,6 +139,17 @@ export default component$(() => {
   for (const l of shown) (grupos[l.lesson_id] ??= []).push(l);
   const ordenGrupos = Object.keys(grupos).sort((a, b) => (st.clases[a]?.num ?? 99) - (st.clases[b]?.num ?? 99));
   const nAbiertos = Object.values(abiertos).filter(Boolean).length;
+  // Primero por grupo (cada grupo es su propio curso) y, dentro, por sesión.
+  const cursosMap = new Map<string, { id: string; titulo: string; sesiones: string[]; n: number }>();
+  for (const id of ordenGrupos) {
+    const it = grupos[id][0];
+    const k = it.course_id || "_";
+    if (!cursosMap.has(k)) cursosMap.set(k, { id: k, titulo: it.course_title || "Curso", sesiones: [], n: 0 });
+    const g = cursosMap.get(k)!;
+    g.sesiones.push(id);
+    g.n += grupos[id].length;
+  }
+  const porCurso = [...cursosMap.values()].sort((a, b) => a.titulo.localeCompare(b.titulo, "es"));
 
   return (
     <>
@@ -146,7 +157,7 @@ export default component$(() => {
         <span class="lead-ico" data-ph="or"><Icon name="link" size={22} /></span>
         <div class="grow">
           <h1>Recursos</h1>
-          <p>Todo lo que el instructor publicó, agrupado por clase: enlaces, documentación, repositorios, PDF, descargas, diapositivas y grabaciones.</p>
+          <p>Todo lo que el instructor publicó, agrupado por grupo y por sesión: enlaces, documentación, repositorios, PDF, descargas, diapositivas y grabaciones.</p>
         </div>
       </div>
       {st.error && <ErrorState message={st.error} retry$={load} />}
@@ -185,7 +196,14 @@ export default component$(() => {
           {shown.length === 0 ? (
             <Empty icon="search" title="Nada coincide" text="Prueba con otra palabra o quita el filtro de tipo." />
           ) : (
-            ordenGrupos.map((lessonId) => {
+            porCurso.map((cur) => (
+              <section key={cur.id} class="rec-curso" aria-labelledby={`rec-curso-${cur.id}`} data-testid="recursos-grupo">
+                {porCurso.length > 1 && (
+                  <h2 class="rec-curso__t" id={`rec-curso-${cur.id}`}>
+                    {cur.titulo} <span class="sm muted">· {cur.sesiones.length} {cur.sesiones.length === 1 ? "sesión" : "sesiones"} · {cur.n} recursos</span>
+                  </h2>
+                )}
+            {cur.sesiones.map((lessonId) => {
               const items = grupos[lessonId];
               const clase = st.clases[lessonId];
               const open = filtrando || !!abiertos[lessonId];
@@ -258,7 +276,9 @@ export default component$(() => {
                   </div>
                 </section>
               );
-            })
+            })}
+              </section>
+            ))
           )}
         </>
       )}
