@@ -213,6 +213,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/admin/certificados/export-accredible.csv", s.authed(s.staff(s.exportAccredibleCSV)))
 	mux.Handle("POST /api/v1/admin/certificados/{codigo}/anular", s.authed(s.admin(s.anularCertificado)))
 	mux.Handle("GET /api/v1/certificados", s.authed(s.misCertificados))
+	mux.Handle("GET /api/v1/mis-datos-certificado", s.authed(s.misDatosCertificado))
+	mux.Handle("PUT /api/v1/mis-datos-certificado", s.authed(s.guardarDatosCertificado))
+	mux.Handle("GET /api/v1/admin/certificados/datos.csv", s.authed(s.staff(s.exportDatosCertificado)))
 	// Públicos: quien tiene el código puede verificar y descargar; nunca llevan datos privados.
 	mux.HandleFunc("GET /api/v1/verificar/{codigo}", s.verificar)
 	mux.HandleFunc("GET /api/v1/certificados/{codigo}/pdf", s.certificadoPDF)

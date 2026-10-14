@@ -145,6 +145,14 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL DEFAULT '',
   updated_at TEXT NOT NULL
 );
+-- Nombre completo y correo que el alumno confirma para su certificado (10-2026). El nombre va al
+-- certificado al emitirlo; el correo es donde lo recibe. Uno por alumno.
+CREATE TABLE IF NOT EXISTS datos_certificado (
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  nombre TEXT NOT NULL,
+  correo TEXT NOT NULL,
+  actualizado_en TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS certificates (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -1013,4 +1021,59 @@ func (d *DB) UpsertLiveSession(ctx context.Context, s *LiveSession) error {
 		iniciada_en=excluded.iniciada_en, cerrada_en=excluded.cerrada_en, actualizada_en=excluded.actualizada_en`,
 		s.LessonID, s.Estado, s.Escena, s.Paso, v, s.Modo, s.Mensaje, s.IniciadaPor, iniciada, cerrada, s.ActualizadaEn.Format(time.RFC3339))
 	return err
+}
+
+// --- datos para el certificado ----------------------------------------------------------------
+
+// DatosCertificado es el nombre completo y el correo que el alumno confirma para su certificado.
+type DatosCertificado struct {
+	UserID        string
+	Nombre        string
+	Correo        string
+	ActualizadoEn time.Time
+}
+
+// DatosCertificado devuelve los datos del alumno o ErrNotFound si aún no los llenó.
+func (d *DB) DatosCertificado(ctx context.Context, userID string) (*DatosCertificado, error) {
+	var dc DatosCertificado
+	var act string
+	err := d.sql.QueryRowContext(ctx, "SELECT user_id, nombre, correo, actualizado_en FROM datos_certificado WHERE user_id = ?", userID).
+		Scan(&dc.UserID, &dc.Nombre, &dc.Correo, &act)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	dc.ActualizadoEn, _ = time.Parse(time.RFC3339, act)
+	return &dc, nil
+}
+
+// SetDatosCertificado crea o reemplaza los datos del alumno.
+func (d *DB) SetDatosCertificado(ctx context.Context, dc *DatosCertificado) error {
+	dc.ActualizadoEn = time.Now().UTC()
+	_, err := d.sql.ExecContext(ctx, `INSERT INTO datos_certificado (user_id, nombre, correo, actualizado_en) VALUES (?,?,?,?)
+		ON CONFLICT(user_id) DO UPDATE SET nombre = excluded.nombre, correo = excluded.correo, actualizado_en = excluded.actualizado_en`,
+		dc.UserID, dc.Nombre, dc.Correo, dc.ActualizadoEn.Format(time.RFC3339))
+	return err
+}
+
+// TodosDatosCertificado devuelve los datos de todos los alumnos que los llenaron, por user_id.
+func (d *DB) TodosDatosCertificado(ctx context.Context) (map[string]*DatosCertificado, error) {
+	rows, err := d.sql.QueryContext(ctx, "SELECT user_id, nombre, correo, actualizado_en FROM datos_certificado")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]*DatosCertificado{}
+	for rows.Next() {
+		var dc DatosCertificado
+		var act string
+		if err := rows.Scan(&dc.UserID, &dc.Nombre, &dc.Correo, &act); err != nil {
+			return nil, err
+		}
+		dc.ActualizadoEn, _ = time.Parse(time.RFC3339, act)
+		out[dc.UserID] = &dc
+	}
+	return out, rows.Err()
 }

@@ -1,6 +1,6 @@
 import { component$, useContext, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, type DocumentHead } from "@builder.io/qwik-city";
-import { api, errMsg, requireLogin, type CourseSummary } from "~/lib/api";
+import { api, datosCertCsvUrl, errMsg, requireLogin, type CourseSummary } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
 import { setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
@@ -59,6 +59,15 @@ export default component$(() => {
           <CertConfig />
         </>
       )}
+      <div class="section-t"><Icon name="award" /> Datos para certificados</div>
+      <div class="card row" style="gap:.8rem;flex-wrap:wrap;max-width:46rem">
+        <span class="grow sm muted">
+          Nombre completo y correo que cada alumno confirmó en <b>Mis notas</b>. Los pendientes salen primero. El certificado usa ese nombre al emitirse.
+        </span>
+        <a class="btn ghost" href={datosCertCsvUrl()} download>
+          <Icon name="download" size={14} /> Descargar CSV
+        </a>
+      </div>
       <div class="section-t"><Icon name="info" /> Cómo publicar</div>
       <div class="card sm muted">
         El temario vive en <code>lms/content/courses/&lt;curso&gt;/</code>: <code>lessons/</code>, <code>assignments/</code> y <code>examples/</code>, en Markdown con

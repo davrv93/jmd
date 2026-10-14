@@ -10,7 +10,7 @@ import { Empty, ErrorState, Loading, Ring, Status } from "~/components/ui";
 // Inicio: cómo aprendes, continuar, cursos con su avance y próximas entregas.
 export default component$(() => {
   const session = useContext(SessionContext);
-  const st = useStore<{ courses: Course[] | null; error: string; last: LastSeen | null }>({ courses: null, error: "", last: null });
+  const st = useStore<{ courses: Course[] | null; error: string; last: LastSeen | null; faltaCert: boolean }>({ courses: null, error: "", last: null, faltaCert: false });
 
   const load = $(async () => {
     st.error = "";
@@ -29,6 +29,8 @@ export default component$(() => {
     track(() => session.loaded);
     if (!session.loaded) return;
     if (session.me) st.last = loadLast(session.me.id);
+    // Aviso para alumnos que aún no confirmaron su nombre y correo para el certificado.
+    if (session.me?.roles.includes("student")) api.misDatosCert().then((d) => (st.faltaCert = !d.completo)).catch(() => undefined);
     await load();
   });
 
@@ -76,6 +78,17 @@ export default component$(() => {
           </Link>
         )}
       </section>
+
+      {st.faltaCert && (
+        <Link class="card row datos-cert-aviso" href="/grades/" data-testid="aviso-datos-certificado">
+          <span class="lead-ico gold"><Icon name="award" /></span>
+          <span class="grow">
+            <b>Confirma tus datos para el certificado</b>
+            <div class="xs muted">Tu nombre completo tal como saldrá impreso y el correo donde lo recibirás. Toma un minuto.</div>
+          </span>
+          <span class="btn sm">Completar <Icon name="chevronRight" size={14} /></span>
+        </Link>
+      )}
 
       {st.error && <ErrorState message={st.error} retry$={load} />}
       {!st.error && st.courses === null && <Loading lines={3} />}

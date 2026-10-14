@@ -336,7 +336,7 @@ func (s *Server) emitir(ctx context.Context, u *store.User, a certAmbito, in cer
 	}
 	var salt [16]byte
 	_, _ = rand.Read(salt[:])
-	sn := certSnapshot{Alumno: u.Name, Curso: a.Curso.Title, CursoSlug: a.Curso.Slug, Emisor: cfg.Emisor, RUC: cfg.RUC,
+	sn := certSnapshot{Alumno: s.nombreCertificado(ctx, u), Curso: a.Curso.Title, CursoSlug: a.Curso.Slug, Emisor: cfg.Emisor, RUC: cfg.RUC,
 		Instructor: cfg.Instructor, Cargo: cfg.Cargo, Horas: *in.Horas, URL: cfg.URL, Salt: hex.EncodeToString(salt[:])}
 	if a.Clase != nil {
 		sn.LessonID, sn.ClaseNum, sn.Clase = a.Clase.ID, a.Num, tituloClase(a.Num, a.Clase.Title)

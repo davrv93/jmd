@@ -333,6 +333,9 @@ export const api = {
     req<LoteResult>("POST", "/api/v1/admin/certificados/lote", b),
   anularCertificado: (codigo: string) => req<Certificate>("POST", `/api/v1/admin/certificados/${encodeURIComponent(codigo)}/anular`, {}),
   misCertificados: () => req<Certificate[]>("GET", "/api/v1/certificados"),
+  // Nombre completo y correo que el alumno confirma para su certificado.
+  misDatosCert: () => req<DatosCert>("GET", "/api/v1/mis-datos-certificado"),
+  guardarDatosCert: (b: { nombre: string; correo: string }) => req<DatosCert>("PUT", "/api/v1/mis-datos-certificado", b),
   verificar: (codigo: string) => req<Certificate>("GET", `/api/v1/verificar/${encodeURIComponent(codigo)}`),
   // Modo LIVE de una clase: estado, control del instructor y lectura del alumno.
   liveActivas: () => req<{ lesson_id: string; titulo: string }[]>("GET", "/api/v1/live"),
@@ -451,6 +454,20 @@ export interface LiveEstado {
   iniciada_en: string | null;
   conectados: number;
   t: string;
+}
+
+export interface DatosCert {
+  nombre: string;
+  correo: string;
+  completo: boolean;
+  actualizado_en?: string;
+  sugerido_nombre: string;
+  sugerido_correo: string;
+}
+
+/** URL del CSV con el nombre completo y el correo de cada alumno para su certificado (personal). */
+export function datosCertCsvUrl(cohort = ""): string {
+  return "/api/v1/admin/certificados/datos.csv" + (cohort ? `?cohort=${encodeURIComponent(cohort)}` : "");
 }
 
 /** URL del CSV de exportación (personal): formato «generico» o «badgr» (Canvas Credentials). */

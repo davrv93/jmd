@@ -6,6 +6,7 @@ import { setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
 import { Empty, ErrorState, Loading, Status, Tabs } from "~/components/ui";
 import { BadgeActions } from "~/components/cert-badge";
+import { DatosCertificado } from "~/components/datos-certificado";
 
 export default component$(() => {
   const session = useContext(SessionContext);
@@ -55,6 +56,7 @@ export default component$(() => {
       {!st.error && st.list === null && <Loading lines={4} />}
       {st.list && (
         <>
+          <DatosCertificado />
           <Tabs
             active={tab.value}
             onSelect$={$((id) => (tab.value = id))}
