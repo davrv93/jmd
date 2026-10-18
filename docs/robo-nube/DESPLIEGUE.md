@@ -2,6 +2,8 @@
 
 > **Nada de esto se ha ejecutado en el servidor.** Requiere la aprobación del usuario. Todo lo de abajo está probado en local en el Mac con los mismos archivos: nginx 1.29 con el mismo snippet, el binario real del gateway, el servicio STT, el de imagen sin torch y Keycloak/Cloudflare simulados.
 
+> **Estado (17-10-2026, ~22:00 Lima): DESPLEGADO.** Pasos 1-6 aplicados en el EC2. Respaldos: `~/gateway-config-antes-nube.yaml`, `~/jmd-learn.nginx.antes-nube`, imagen `jmd/imagen:antes-nube`. Ojo: el `.env` del servidor tiene `ADMIN_TOKEN` dos veces (la primera vacía); docker usa la última, por eso los comandos llevan `tail -1`.
+
 ## Qué se publica
 
 | Ruta pública | Va a | Quién entra |
@@ -70,7 +72,7 @@ Activa la validación de los access tokens de Keycloak y los tokens personales `
 
 ```sh
 cd ~/jmd
-ADMIN=$(grep '^ADMIN_TOKEN=' .env | cut -d= -f2-)
+ADMIN=$(grep '^ADMIN_TOKEN=' .env | tail -1 | cut -d= -f2-)
 umask 077
 curl -sf -H "Authorization: Bearer $ADMIN" http://127.0.0.1:4000/admin/api/config.yaml > ~/gateway-config-antes-nube.yaml   # respaldo (puede traer claves: 600)
 python3 - <<'PY'
@@ -165,7 +167,7 @@ El contador de neurons y los topes por alumno viven en memoria: un reinicio del 
 sudo cp ~/jmd-learn.nginx.antes-nube /etc/nginx/sites-enabled/jmd-learn && sudo rm -f /etc/nginx/conf.d/aula-nube-zonas.conf
 sudo nginx -t && sudo systemctl reload nginx
 # gateway
-ADMIN=$(grep '^ADMIN_TOKEN=' ~/jmd/.env | cut -d= -f2-); curl -sf -X PUT -H "Authorization: Bearer $ADMIN" --data-binary @$HOME/gateway-config-antes-nube.yaml http://127.0.0.1:4000/admin/api/config.yaml; unset ADMIN
+ADMIN=$(grep '^ADMIN_TOKEN=' ~/jmd/.env | tail -1 | cut -d= -f2-); curl -sf -X PUT -H "Authorization: Bearer $ADMIN" --data-binary @$HOME/gateway-config-antes-nube.yaml http://127.0.0.1:4000/admin/api/config.yaml; unset ADMIN
 # stt
 cd ~/jmd && sudo docker compose --profile stt stop stt && sudo docker compose --profile stt rm -f stt
 # imagen
