@@ -6,6 +6,12 @@
 Una sola petición a la vez (la CPU es de todos) con cola corta; si la cola se llena responde 429 y el
 cliente cae al motor de la nube. El modelo se carga al primer uso y se suelta tras IMAGEN_REPOSO segundos
 sin pedidos, para devolver ~2,5 GB al servidor (por defecto 30 min: en clase se queda cargado).
+
+Desde fuera (kit robo-local-nube, por la ruta pública /aula-nube/imagen/ del nginx, que pone la cabecera
+X-Aula-Nube) solo existe la calidad «maxima» (Cloudflare) y la voz: «baja» y «media» responden 422
+«calidad_no_disponible», /calentar no carga nada y /salud lo dice en «calidades». Así ningún alumno desde su
+casa despierta sd-turbo (2,5 GB) en el servidor. El token es el personal del alumno (ver nube.py), con tope
+diario por alumno. IMAGEN_LOCAL=0 apaga sd-turbo también para las aulas (deja solo la nube y la voz).
 """
 
 import gc
@@ -19,11 +25,18 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+import nube
+
 log = logging.getLogger("imagen")
 logging.basicConfig(level=logging.INFO)
 
 TOKEN = os.environ.get("IMAGEN_TOKEN", "")
 REPOSO = int(os.environ.get("IMAGEN_REPOSO", "1800"))
+# 0 = sin sd-turbo (ni carga al arrancar ni calidades baja/media): solo Cloudflare y la voz.
+LOCAL = os.environ.get("IMAGEN_LOCAL", "1") != "0"
+# Topes diarios por alumno de la nube (0 = sin tope). El cupo de Cloudflare es de toda la clase.
+MAXIMA_POR_ALUMNO = int(os.environ.get("IMAGEN_MAXIMA_POR_ALUMNO", "15"))
+VOZ_POR_ALUMNO = int(os.environ.get("IMAGEN_VOZ_POR_ALUMNO", "300"))
 # Dos modelos locales: sd-turbo (rápido, 1-2 pasos) y DreamShaper 8 con LCM (SD 1.5 afinado: dibuja personajes
 # coherentes y estilo anime; 4 pasos). «media» usa IMAGEN_MEDIA (sd-turbo | dreamshaper). DreamShaper dibuja mejor personajes pero en este servidor
 # (2 vCPU) tardó 25-100 s y con colores muy saturados: el instructor lo eligió igualmente (acepta esperar); IMAGEN_MEDIA=sd-turbo vuelve al rápido.
@@ -40,6 +53,7 @@ CALIDADES = {"baja": ("sd-turbo", 1, 384), "media": (_MEDIA, 4, 512) if _MEDIA =
 CF_CUENTA = os.environ.get("CF_ACCOUNT_ID", "")
 CF_TOKEN = os.environ.get("CF_API_TOKEN", "")
 CF_MODELO = os.environ.get("CF_MODELO", "@cf/black-forest-labs/flux-1-schnell")
+CF_API = os.environ.get("CF_API_BASE", "https://api.cloudflare.com/client/v4").rstrip("/")
 CF_PASOS = int(os.environ.get("CF_PASOS", "3"))
 _cf_cupo = threading.Semaphore(5)
 CF_TOPE = float(os.environ.get("CF_NEURONS_DIA", "9800"))  # capa gratuita: 10 000 neurons/día (se reinicia 00:00 UTC)
@@ -52,6 +66,7 @@ def _cf_gastado() -> float:
         _cf_uso.update(dia=hoy, neurons=0.0)
     return _cf_uso["neurons"]
 VOZ_DEFECTO = os.environ.get("IMAGEN_VOZ", "es_MX-claude-high")
+VOCES_DIR = os.environ.get("IMAGEN_VOCES", "/voces")
 VOCES = {VOZ_DEFECTO}
 FORMAS = {"cuadrado": (1.0, 1.0), "vertical": (0.8, 1.0), "horizontal": (1.0, 0.5625)}
 
@@ -109,6 +124,8 @@ threading.Thread(target=_soltar_si_ocioso, daemon=True).start()
 
 def _precalentar():
     global _ultimo
+    if not LOCAL:
+        return
     _ultimo = time.time()
     for nombre in dict.fromkeys(m for m, _, _ in CALIDADES.values()):
         with _cpu:
@@ -140,11 +157,27 @@ class PedidoVoz(BaseModel):
 _voces: dict = {}
 
 
-@app.post("/voz")
-def voz(p: PedidoVoz, authorization: str = Header(default="")):
-    """Texto a voz con Piper (WAV). Es liviano (<1 s por frase) y no pasa por la cola de imágenes."""
+def _autorizar(authorization: str, x_aula_nube: str | None, que: str = "", tope: int = 0) -> str | None:
+    """Aulas: token de la clase. Nube: token personal del alumno (y su tope diario de `que`)."""
+    if nube.es_externo(x_aula_nube):
+        sub = nube.alumno(authorization)
+        if que:
+            nube.contar(sub, que, tope)
+        return sub
     if TOKEN and authorization != f"Bearer {TOKEN}":
         raise HTTPException(401, "token")
+    return None
+
+
+def _no_disponible(calidad: str) -> HTTPException:
+    return HTTPException(422, {"codigo": "calidad_no_disponible", "calidad": calidad,
+                               "mensaje": f"La calidad «{calidad}» no está disponible en esta versión: solo «maxima» (FLUX en la nube del curso)."})
+
+
+@app.post("/voz")
+def voz(p: PedidoVoz, authorization: str = Header(default=""), x_aula_nube: str | None = Header(default=None)):
+    """Texto a voz con Piper (WAV). Es liviano (<1 s por frase) y no pasa por la cola de imágenes."""
+    _autorizar(authorization, x_aula_nube, "frases de voz", VOZ_POR_ALUMNO)
     texto = p.texto.strip()
     if not texto or len(texto) > 700:
         raise HTTPException(400, "texto vacío o demasiado largo")
@@ -154,7 +187,7 @@ def voz(p: PedidoVoz, authorization: str = Header(default="")):
     from piper import PiperVoice
 
     if nombre not in _voces:
-        _voces[nombre] = PiperVoice.load(f"/voces/{nombre}.onnx")
+        _voces[nombre] = PiperVoice.load(f"{VOCES_DIR}/{nombre}.onnx")
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:
         _voces[nombre].synthesize_wav(texto, w)
@@ -162,8 +195,12 @@ def voz(p: PedidoVoz, authorization: str = Header(default="")):
 
 
 @app.get("/salud")
-def salud():
-    return {"ok": True, "cargado": sorted(_pipes), "cola": _en_cola, "maxima": bool(CF_CUENTA and CF_TOKEN) and _cf_gastado() < CF_TOPE, "neurons_hoy": round(_cf_gastado())}
+def salud(x_aula_nube: str | None = Header(default=None)):
+    maxima = bool(CF_CUENTA and CF_TOKEN) and _cf_gastado() < CF_TOPE
+    local = LOCAL and not nube.es_externo(x_aula_nube)
+    return {"ok": True, "cargado": sorted(_pipes), "cola": _en_cola, "maxima": maxima, "neurons_hoy": round(_cf_gastado()),
+            "calidades": {"baja": local, "media": local, "maxima": maxima},
+            "voz": os.path.isfile(f"{VOCES_DIR}/{VOZ_DEFECTO}.onnx")}
 
 
 def _cloudflare(p: "Pedido") -> Response:
@@ -176,12 +213,12 @@ def _cloudflare(p: "Pedido") -> Response:
     if not (CF_CUENTA and CF_TOKEN):
         raise HTTPException(503, "calidad máxima no configurada")
     if _cf_gastado() >= CF_TOPE:
-        raise HTTPException(429, "cupo diario de Cloudflare agotado")
+        raise HTTPException(429, "cupo diario de Cloudflare agotado (se reinicia a las 00:00 UTC, 19:00 en Lima)")
     if not _cf_cupo.acquire(blocking=False):
         raise HTTPException(429, "cola llena")
     try:
         for intento in (1, 2):  # a veces falla con «Cog prediction failed» (409/8007): se reintenta una vez
-            r = httpx.post(f"https://api.cloudflare.com/client/v4/accounts/{CF_CUENTA}/ai/run/{CF_MODELO}", timeout=90.0,
+            r = httpx.post(f"{CF_API}/accounts/{CF_CUENTA}/ai/run/{CF_MODELO}", timeout=90.0,
                            headers={"Authorization": f"Bearer {CF_TOKEN}"}, json={"prompt": p.prompt, "steps": CF_PASOS})
             if r.status_code != 409:
                 break
@@ -189,7 +226,9 @@ def _cloudflare(p: "Pedido") -> Response:
         _cf_cupo.release()
     if r.status_code in (429, 403) or (r.status_code >= 400 and "neurons" in r.text.lower()):
         log.warning("cloudflare: cupo o permiso (%s) %s", r.status_code, r.text[:200])
-        raise HTTPException(429, "cupo de Cloudflare agotado")
+        if r.status_code == 429 or "neurons" in r.text.lower():
+            _cf_uso["neurons"] = max(_cf_gastado(), CF_TOPE)  # el resto del día /salud dice «maxima»: false
+        raise HTTPException(429, "cupo diario de Cloudflare agotado (se reinicia a las 00:00 UTC, 19:00 en Lima)")
     if r.status_code != 200:
         log.warning("cloudflare %s %s", r.status_code, r.text[:300])
         raise HTTPException(502, "cloudflare")
@@ -215,10 +254,11 @@ def _cloudflare(p: "Pedido") -> Response:
 
 
 @app.post("/calentar")
-def calentar(authorization: str = Header(default="")):
+def calentar(authorization: str = Header(default=""), x_aula_nube: str | None = Header(default=None)):
     """Carga el modelo en segundo plano: la primera imagen de la clase no espera el minuto de carga."""
-    if TOKEN and authorization != f"Bearer {TOKEN}":
-        raise HTTPException(401, "token")
+    _autorizar(authorization, x_aula_nube)
+    if nube.es_externo(x_aula_nube) or not LOCAL:
+        return {"ok": True, "cargado": [], "nube": "sin modelos locales: solo «maxima»"}
     global _ultimo
     _ultimo = time.time()
 
@@ -234,14 +274,20 @@ def calentar(authorization: str = Header(default="")):
 
 
 @app.post("/generar")
-def generar(p: Pedido, authorization: str = Header(default="")):
+def generar(p: Pedido, authorization: str = Header(default=""), x_aula_nube: str | None = Header(default=None)):
     global _en_cola, _ultimo
-    if TOKEN and authorization != f"Bearer {TOKEN}":
-        raise HTTPException(401, "token")
+    externo = nube.es_externo(x_aula_nube)
+    sub = _autorizar(authorization, x_aula_nube)
     if not p.prompt.strip() or len(p.prompt) > 1000:
         raise HTTPException(400, "prompt vacío o demasiado largo")
+    if externo and p.calidad != "maxima":
+        raise _no_disponible(p.calidad)
     if p.calidad == "maxima":
+        if externo:
+            nube.contar(sub, "imágenes en calidad máxima", MAXIMA_POR_ALUMNO)
         return _cloudflare(p)
+    if not LOCAL:
+        raise _no_disponible(p.calidad)
     modelo, pasos, lado = CALIDADES.get(p.calidad, CALIDADES["media"])
     ancho, alto = _dimensiones(p.orientacion, lado)
     with _estado:

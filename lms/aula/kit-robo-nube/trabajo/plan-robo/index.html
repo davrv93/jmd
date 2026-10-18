@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plan de trabajo de Robo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 62rem; margin: 1.5rem auto; padding: 0 1rem; line-height: 1.45; }
+    nav { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    button { padding: .45rem .9rem; font-size: 1rem; cursor: pointer; }
+    pre { white-space: pre-wrap; word-break: break-word; font: .9rem/1.45 ui-monospace, Menlo, Consolas, monospace; background: #f4f5f8; color: #1b1d2a; padding: 1rem; border-radius: 8px; }
+    @media (prefers-color-scheme: dark) { pre { background: #1b1d2a; color: #e8eaf4; } }
+  </style>
+</head>
+<body>
+  <h1>Plan de trabajo de Robo</h1>
+  <p>Este es tu plan. Pega el prompt a tu agente (<code>jmd</code>, OpenCode o Claude Code) para personalizarlo y construir. Cuando el agente lo cambie, pulsa «Actualizar».</p>
+  <nav>
+    <button id="plan">Ver el plan</button>
+    <button id="prompt">Ver el prompt</button>
+    <button id="recargar">Actualizar</button>
+  </nav>
+  <pre id="texto">Cargando...</pre>
+  <script>
+    let archivo = "PLAN_TRABAJO.md";
+    async function cargar() {
+      try {
+        const r = await fetch(archivo + "?t=" + Date.now());
+        document.getElementById("texto").textContent = r.ok ? await r.text() : "No encuentro " + archivo + " (error " + r.status + ").";
+      } catch (e) { document.getElementById("texto").textContent = "No pude leer " + archivo + ": " + e.message; }
+    }
+    document.getElementById("plan").onclick = () => { archivo = "PLAN_TRABAJO.md"; cargar(); };
+    document.getElementById("prompt").onclick = () => { archivo = "PROMPT_ARMAR_ROBO.md"; cargar(); };
+    document.getElementById("recargar").onclick = cargar;
+    cargar();
+  </script>
+</body>
+</html>

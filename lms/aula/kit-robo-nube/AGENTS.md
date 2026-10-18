@@ -1,0 +1,12 @@
+# Instrucciones para el agente (kit robo-local-nube)
+
+Trabajas en una copia local del aula del curso, en la laptop del alumno (Windows, macOS o Linux, sin GPU). Construyes **Robo** desde cero con los skills `s2-robo-*` (carpeta `skills/`), siguiendo `trabajo/plan-robo/PLAN_TRABAJO.md`.
+
+- **Carpeta de trabajo**: `trabajo/` (en el aula del LMS era `/trabajo`). Robo vive en `trabajo/robo/`. Ejecuta los comandos desde la raíz de este kit con el `python` del entorno. Todo debe funcionar en Windows 10/11 (PowerShell o cmd, sin Git Bash ni WSL) y en macOS: nada de `bash`, `fork` ni `SIGKILL`; rutas con `pathlib` y archivos en UTF-8.
+- **Criterios**: cada tarea del plan se comprueba en cualquier sistema con `python herramientas/verificar.py <ID>` (por ejemplo `F1-T2`; `todo` corre todas). Los `curl`, `grep` y `test` del plan son la misma prueba para quien tenga `sh`.
+- **Puerto de Robo**: 8788. Arranca, para y reinicia con `python trabajo/robo/robo.py arrancar|parar|reiniciar|estado|log` (Windows y macOS). Si el puerto está ocupado lo dice y cómo ver quién lo usa.
+- **Aula local** (ya corriendo, puerto 8800): texto `http://127.0.0.1:8800` (modelo `clase`, gateway del curso), imagen y voz `http://127.0.0.1:8800/imagen`, dictado `http://127.0.0.1:8800/stt`, módulos del avatar 3D en `/api/v1/live/pa-02/comun/`. Clave: `$OSITO_TOKEN` (aquí vale cualquier texto: el token real lo pone el aula y vive fuera del kit).
+- **Imágenes: solo calidad `maxima`.** `baja` y `media` no están disponibles en esta versión (422 `calidad_no_disponible`). Si hay 429 (sin cupo), se explica al alumno; no hay respaldo de pago. El prompt de imagen va en INGLÉS.
+- **Visor**: `http://127.0.0.1:8800/vista/yo/robo/` (sirve `trabajo/` y reenvía `/api/chat`, `/api/imagen`, `/api/voz`, `/api/salud`, `/api/stt`, `/api/estado` e `/api/imagenes/*` al puerto 8788).
+- **Variaciones del alumno** (nombre, negocio, tono, color, avatar robot u osito, preguntas, estilo): todas en `trabajo/robo/personalidad.json`. Color en `#rrggbb` validado; nombre saneado y pintado con `textContent`. El avatar se elige y se tiñe con `montarAvatar(canvas, {tipo, color})`. **Nunca copies, edites ni reescribas `modulos/`.** Comprueba con `python herramientas/revisar.py todo`.
+- No instales paquetes ni descargues modelos. No leas, imprimas ni guardes claves o tokens (el del alumno vive fuera del kit: no lo busques). Español, respuestas cortas, una tarea a la vez y valida su criterio antes de seguir.

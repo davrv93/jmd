@@ -93,14 +93,51 @@ services:
     image: jmd/imagen:latest
     container_name: imagen
     mem_limit: 3g
+    # Solo en loopback: el nginx del host lo publica en /aula-nube/imagen/ para el kit robo-local-nube
+    # (lms/nginx/aula-nube.conf), donde solo se ofrece «maxima» y la voz.
+    ports:
+      - "127.0.0.1:${IMAGEN_PORT:-18600}:8000"
     environment:
       IMAGEN_TOKEN: ${LMS_AULA_TOKEN:-}
       CF_ACCOUNT_ID: ${CF_ACCOUNT_ID:-}
       CF_API_TOKEN: ${CF_API_TOKEN:-}
       IMAGEN_MEDIA: ${IMAGEN_MEDIA:-dreamshaper}
       IMAGEN_REPOSO: ${IMAGEN_REPOSO:-1800}
+      # 0 = sin sd-turbo: solo Cloudflare y la voz (devuelve ~2,5 GB si la clase no usa baja/media).
+      IMAGEN_LOCAL: ${IMAGEN_LOCAL:-1}
+      # Kit robo-local-nube: el gateway valida los tokens personales; tope diario de «maxima» por alumno.
+      NUBE_GATEWAY_URL: http://ai-orchestrator:4000
+      IMAGEN_MAXIMA_POR_ALUMNO: ${IMAGEN_MAXIMA_POR_ALUMNO:-15}
+      CF_NEURONS_DIA: ${CF_NEURONS_DIA:-9800}
     volumes:
       - imagen_modelos:/modelos
+    networks: [default, aula_net]
+    restart: unless-stopped
+
+  # Voz a texto (faster-whisper int8, sin torch) para el dictado de Robo: aulas (http://stt:8000) y kit
+  # robo-local-nube (/aula-nube/stt por nginx). Se enciende con
+  #   docker compose --profile stt up -d --build stt
+  # Modelo «base»: ~380 MB de pico mientras transcribe, ~150 MB en reposo (lo suelta tras STT_REPOSO s sin uso).
+  # «small» entiende mejor pero pide ~820 MB y tarda ~4x: STT_MODELO=small y STT_MEMORIA=1g.
+  stt:
+    profiles: ["stt"]
+    build: ./lms/stt
+    image: jmd/stt:latest
+    container_name: stt
+    mem_limit: ${STT_MEMORIA:-600m}
+    cpus: 1.5
+    ports:
+      - "127.0.0.1:${STT_PORT:-18610}:8000"
+    environment:
+      STT_TOKEN: ${LMS_AULA_TOKEN:-}
+      STT_MODELO: ${STT_MODELO:-base}
+      STT_REPOSO: ${STT_REPOSO:-300}
+      STT_HILOS: ${STT_HILOS:-2}
+      STT_COLA: ${STT_COLA:-6}
+      STT_POR_ALUMNO_DIA: ${STT_POR_ALUMNO_DIA:-300}
+      NUBE_GATEWAY_URL: http://ai-orchestrator:4000
+    volumes:
+      - stt_modelos:/modelos
     networks: [default, aula_net]
     restart: unless-stopped
 
@@ -179,5 +216,6 @@ volumes:
   aio_data:
   lms_data:
   imagen_modelos:
+  stt_modelos:
   aula_pg_data:
   evogo_clase_data:
