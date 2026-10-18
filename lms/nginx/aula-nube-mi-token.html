@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi token del curso</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --ink:#1f2330; --ink2:#5a6170; --acento:#4b40b0; --suave:#f2f0fb; --linea:#e3e1ea; --ok:#1f7a4d; --mal:#a3322b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); background: #f7f6f2; }
+  main { max-width: 640px; margin: 6vh auto; padding: 0 16px; }
+  .tarjeta { background: #fff; border: 1px solid var(--linea); border-radius: 14px; padding: 24px; box-shadow: 0 8px 28px -18px rgba(0,0,0,.25); }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  p { margin: 8px 0; color: var(--ink2); }
+  button, .boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 10px; border: 0; background: var(--acento); color: #fff; font: 600 16px/1 inherit; cursor: pointer; text-decoration: none; }
+  button[disabled] { opacity: .6; cursor: default; }
+  .secundario { background: var(--suave); color: var(--acento); }
+  .codigo { font: 700 28px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .12em; background: var(--suave); padding: 12px 16px; border-radius: 10px; display: inline-block; margin: 6px 0; }
+  input { width: 100%; font: 14px ui-monospace, Menlo, Consolas, monospace; padding: 12px; border: 1px solid var(--linea); border-radius: 10px; margin: 8px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; }
+  td { border: 1px solid var(--linea); padding: 8px 10px; vertical-align: top; }
+  td:first-child { font-weight: 600; width: 34%; background: var(--suave); }
+  code { font: 14px ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }
+  .ok { color: var(--ok); font-weight: 600; }
+  .mal { color: var(--mal); font-weight: 600; }
+  .oculto { display: none; }
+  .fila { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+</style>
+</head>
+<body>
+<main>
+  <div class="tarjeta">
+    <h1>Mi token del curso</h1>
+    <p>Entra con tu cuenta del curso (la del LMS) y copia tu token personal para pegarlo en <b>JMDesign Studio</b>. Vale 30 días y es solo tuyo: no lo compartas.</p>
+
+    <div id="paso1">
+      <button id="entrar">Entrar con mi cuenta del curso</button>
+    </div>
+
+    <div id="paso2" class="oculto">
+      <p>1. Abre el inicio de sesión y entra con tu cuenta:</p>
+      <p><a id="enlace" class="boton" target="_blank" rel="noopener">Abrir inicio de sesión</a></p>
+      <p>2. Si te pide un código, escribe:</p>
+      <div id="codigo" class="codigo"></div>
+      <p id="espera">Esperando a que confirmes…</p>
+    </div>
+
+    <div id="paso3" class="oculto">
+      <p class="ok">Listo. Este es tu token:</p>
+      <input id="token" readonly aria-label="Tu token personal">
+      <div class="fila"><button id="copiar">Copiar token</button><span id="copiado" class="ok"></span></div>
+      <p style="margin-top:16px">En JMDesign: icono de la <b>llave</b> → <b>Gateway del curso</b>:</p>
+      <table>
+        <tr><td>Clave de API</td><td>pega el token y pulsa <b>Guardar</b></td></tr>
+        <tr><td>Modelo</td><td><code>coding</code></td></tr>
+        <tr><td>URL del endpoint</td><td><code>https://jmd-learn.online/aula-nube/v1/chat/completions</code></td></tr>
+      </table>
+      <p>Si lo pierdes, vuelve a esta página y saca otro.</p>
+    </div>
+
+    <p id="error" class="mal oculto"></p>
+  </div>
+</main>
+<script>
+(function () {
+  // Inicio de sesión de dispositivo contra el Keycloak del curso (mismo dominio: sin CORS) y canje por un
+  // token personal del gateway. El token solo se muestra en esta página: no se guarda en el navegador.
+  var ISSUER = "/kc/realms/lms/protocol/openid-connect";
+  var CLIENTE = "jmd-cli";
+  var $ = function (id) { return document.getElementById(id); };
+  function mostrar(id) { ["paso1", "paso2", "paso3"].forEach(function (p) { $(p).classList.toggle("oculto", p !== id); }); }
+  function fallo(msg) { var e = $("error"); e.textContent = msg; e.classList.remove("oculto"); $("entrar").disabled = false; mostrar("paso1"); }
+  function form(o) { return Object.keys(o).map(function (k) { return encodeURIComponent(k) + "=" + encodeURIComponent(o[k]); }).join("&"); }
+  function post(url, cuerpo) {
+    return fetch(url, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: form(cuerpo) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, j: j }; }); });
+  }
+  var espera = function (ms) { return new Promise(function (res) { setTimeout(res, ms); }); };
+
+  $("entrar").addEventListener("click", function () {
+    $("error").classList.add("oculto");
+    $("entrar").disabled = true;
+    post(ISSUER + "/auth/device", { client_id: CLIENTE, scope: "openid profile email ai:use" }).then(function (r) {
+      if (r.status !== 200 || !r.j.device_code) throw new Error("El inicio de sesión del curso no respondió (HTTP " + r.status + ").");
+      var d = r.j;
+      var enlace = d.verification_uri_complete || d.verification_uri;
+      $("enlace").href = enlace;
+      $("codigo").textContent = d.user_code;
+      mostrar("paso2");
+      try { window.open(enlace, "_blank", "noopener"); } catch (e) {}
+      var intervalo = (d.interval || 5) * 1000, limite = Date.now() + (d.expires_in || 600) * 1000;
+      var sondear = function () {
+        if (Date.now() > limite) throw new Error("Se acabó el tiempo para confirmar. Vuelve a intentarlo.");
+        return espera(intervalo).then(function () {
+          return post(ISSUER + "/token", { grant_type: "urn:ietf:params:oauth:grant-type:device_code", device_code: d.device_code, client_id: CLIENTE });
+        }).then(function (t) {
+          if (t.status === 200 && t.j.access_token) return t.j.access_token;
+          var err = t.j.error || "";
+          if (err === "authorization_pending") return sondear();
+          if (err === "slow_down") { intervalo += 5000; return sondear(); }
+          if (err === "access_denied") throw new Error("Cancelaste el inicio de sesión.");
+          throw new Error("El inicio de sesión falló (" + (err || t.status) + ").");
+        });
+      };
+      return sondear();
+    }).then(function (acceso) {
+      $("espera").textContent = "Confirmado. Pidiendo tu token…";
+      return fetch("/aula-nube/v1/auth/exchange", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + acceso, "Content-Type": "application/json" },
+        body: JSON.stringify({ label: "JMDesign (página mi-token)" })
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if ((r.status !== 200 && r.status !== 201) || !j.token) throw new Error("El gateway no emitió tu token: " + ((j.error && j.error.message) || ("HTTP " + r.status)));
+          return j.token;
+        });
+      });
+    }).then(function (token) {
+      $("token").value = token;
+      mostrar("paso3");
+    }).catch(function (e) { fallo(e.message || String(e)); });
+  });
+
+  $("copiar").addEventListener("click", function () {
+    var t = $("token");
+    t.select();
+    var listo = function () { $("copiado").textContent = "Copiado"; setTimeout(function () { $("copiado").textContent = ""; }, 2500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(listo, function () { document.execCommand("copy"); listo(); });
+    else { document.execCommand("copy"); listo(); }
+  });
+})();
+</script>
+</body>
+</html>
