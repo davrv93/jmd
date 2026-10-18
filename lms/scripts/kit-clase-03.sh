@@ -43,7 +43,7 @@ find "$R" -exec touch -t "$FECHA" {} +
 SALIDA="$CURSO/materials/clase-03-kit.zip"
 rm -f "$SALIDA"
 (cd "$TMP" && find clase-03-kit -type f | LC_ALL=C sort | TZ=UTC zip -q -X -D "$SALIDA" -@)
-for g in programacion-agentica-g2 programacion-agentica-g3; do
+for g in programacion-agentica-g2 programacion-agentica-g3 programacion-agentica-g5; do
   cp "$SALIDA" "$LMS/content/courses/$g/materials/clase-03-kit.zip"
   mkdir -p "$LMS/content/courses/$g/materials/plan-chatbot"
   cp "$CURSO/materials/plan-chatbot/"*.md "$LMS/content/courses/$g/materials/plan-chatbot/"
