@@ -276,7 +276,6 @@ def calentar(authorization: str = Header(default=""), x_aula_nube: str | None = 
     return {"ok": True, "cargado": sorted(_pipes)}
 
 
-@app.post("/generar")
 def _aula_de(request: Request) -> str | None:
     """Nombre del contenedor de aula que pide (curso-<alumno>), por DNS inverso de Docker en aula_net.
     None para el propio servidor (127.0.0.1: scripts del profesor), que no lleva tope."""
@@ -290,6 +289,7 @@ def _aula_de(request: Request) -> str | None:
     return "aula:" + (nombre or ip)
 
 
+@app.post("/generar")
 def generar(p: Pedido, request: Request, authorization: str = Header(default=""), x_aula_nube: str | None = Header(default=None)):
     global _en_cola, _ultimo
     externo = nube.es_externo(x_aula_nube)
