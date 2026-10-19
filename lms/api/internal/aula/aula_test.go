@@ -74,3 +74,41 @@ func TestCrearReutiliza(t *testing.T) {
 		t.Errorf("estado: %s", got)
 	}
 }
+
+// Un aula parada con una imagen anterior a la última reconstrucción se recrea; corriendo, se respeta.
+func TestCrearRenuevaImagenVieja(t *testing.T) {
+	corriendo, imagenSuya := false, "sha256:vieja"
+	var llamadas []string
+	a := &Aula{}
+	a.run = func(_ context.Context, args ...string) (string, error) {
+		llamadas = append(llamadas, strings.Join(args[:2], " "))
+		switch {
+		case args[0] == "inspect" && args[2] == "{{.Image}}":
+			return imagenSuya, nil
+		case args[0] == "inspect":
+			return map[bool]string{true: "true", false: "false"}[corriendo] + " " + a.Firma("u1"), nil
+		case args[0] == "image":
+			return "sha256:nueva", nil
+		case args[0] == "run":
+			corriendo, imagenSuya = true, "sha256:nueva"
+		}
+		return "", nil
+	}
+	ctx := context.Background()
+	corriendo = true
+	if re, _ := a.Crear(ctx, "u1"); !re || strings.Contains(strings.Join(llamadas, ","), "rm") {
+		t.Fatalf("corriendo no se toca aunque la imagen sea vieja: %v", llamadas)
+	}
+	corriendo, llamadas = false, nil
+	if re, err := a.Crear(ctx, "u1"); err != nil || !re {
+		t.Fatalf("re=%v err=%v", re, err)
+	}
+	j := strings.Join(llamadas, ",")
+	if !strings.Contains(j, "rm -f") || !strings.Contains(j, "run -d") || strings.Contains(j, "start") {
+		t.Fatalf("parada con imagen vieja debe recrearse: %v", llamadas)
+	}
+	corriendo, llamadas = false, nil
+	if _, _ = a.Crear(ctx, "u1"); !strings.Contains(strings.Join(llamadas, ","), "start") {
+		t.Fatalf("parada con la imagen al día solo arranca: %v", llamadas)
+	}
+}

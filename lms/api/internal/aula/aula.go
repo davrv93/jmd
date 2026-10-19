@@ -146,14 +146,19 @@ func (a *Aula) Crear(ctx context.Context, userID string) (bool, error) {
 			if campos[0] == "true" {
 				return true, nil
 			}
-			a.prepararClase(ctx, userID)
-			if o, err := a.exec(ctx, "start", nombre); err != nil {
-				return false, fmt.Errorf("no se pudo arrancar el aula: %s", o)
+			if !a.imagenVieja(ctx, nombre) {
+				a.prepararClase(ctx, userID)
+				if o, err := a.exec(ctx, "start", nombre); err != nil {
+					return false, fmt.Errorf("no se pudo arrancar el aula: %s", o)
+				}
+				return true, nil
 			}
-			return true, nil
+			// Parada y con una imagen anterior a la última reconstrucción de jmd/aula: la firma no lo
+			// ve (lleva el nombre de la imagen, no su id), así que sin esto el alumno seguiría con las
+			// skills viejas para siempre. Se recrea como abajo.
 		}
-		// Aula de antes del último cambio (otra memoria, sin las variables de la clase 3): se recrea con la
-		// configuración nueva. El volumen /trabajo no se toca.
+		// Aula de antes del último cambio (otra memoria, sin las variables de la clase 3, otra imagen): se
+		// recrea con la configuración nueva. El volumen /trabajo no se toca.
 		slog.Info("aula: se recrea con la configuración nueva", "contenedor", nombre)
 		if o, err := a.exec(ctx, "rm", "-f", nombre); err != nil {
 			return false, fmt.Errorf("no se pudo renovar el aula: %s", o)
@@ -234,6 +239,20 @@ func (a *Aula) ExecStdin(ctx context.Context, nombre, script string, stdin []byt
 func (a *Aula) Parar(ctx context.Context, nombre string) error {
 	_, err := a.exec(ctx, "stop", "-t", "2", nombre)
 	return err
+}
+
+// imagenVieja dice si el contenedor (parado) usa otra imagen que la que hoy tiene la etiqueta del aula.
+// Ante cualquier duda (error, respuesta rara) dice que no: es mejor arrancar el aula que recrearla.
+func (a *Aula) imagenVieja(ctx context.Context, nombre string) bool {
+	suya, err := a.exec(ctx, "inspect", "-f", "{{.Image}}", nombre)
+	if err != nil || !strings.HasPrefix(suya, "sha256:") {
+		return false
+	}
+	actual, err := a.exec(ctx, "image", "inspect", "-f", "{{.Id}}", a.imagen())
+	if err != nil || !strings.HasPrefix(actual, "sha256:") {
+		return false
+	}
+	return suya != actual
 }
 
 // Borrar elimina el contenedor. Nunca borra el volumen del alumno.
