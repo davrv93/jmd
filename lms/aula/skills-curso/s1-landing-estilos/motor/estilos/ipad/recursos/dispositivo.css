@@ -1,0 +1,118 @@
+/* Dispositivo genérico en CSS 3D (tableta + teclado-funda), sin logos. Marcado: dispositivo.mjs.
+   Todo se mide en em: 1em = 1 % del ancho del dispositivo, así escala entero con --disp-ancho.
+   Variables (en .disp):  --abre 0…1 · --luz 0…1 · --gira · --escala · --alza (em) · --disp-ancho · --disp-camara · --disp-angulo
+   Variante .disp-flotante: la tableta se eleva --flota sobre la bisagra, sostenida por un panel (como un teclado flotante).
+   Por defecto está abierto y con las teclas encendidas: sin JavaScript o con «reducir movimiento»
+   se ve en su estado final. */
+.disp {
+  --disp-ancho: 640px;
+  --abre: 1;
+  --luz: 1;
+  --gira: 0deg;
+  --escala: 1;
+  --alza: 0em;                 /* desplazamiento vertical del conjunto */
+  --disp-camara: -3deg;        /* inclinación de la tableta hacia la cámara */
+  --disp-angulo: 106deg;       /* apertura del teclado: la pantalla queda reclinada, como en la foto de producto */
+  --disp-marco: #2c2c2f;       /* canto de aluminio */
+  --disp-funda: #232326;
+  --disp-tecla: #141416;
+  position: relative;
+  width: var(--disp-ancho);
+  max-width: 100%;
+  font-size: calc(var(--disp-ancho) / 100);
+  --flota: 0em;
+  height: calc(100em + var(--flota));
+  perspective: 720em;
+  perspective-origin: 50% 42%;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.disp-cuerpo {
+  position: absolute; top: calc(2em + var(--flota)); left: 0; right: 0; height: 70em;
+  transform-style: preserve-3d; transform-origin: 50% 100%;
+  transform: translateY(var(--alza)) rotateX(var(--disp-camara)) rotateY(var(--gira)) scale(var(--escala));
+}
+
+/* Tableta: marco negro, canto de aluminio y pantalla que se «despierta» al abrir */
+.disp-tableta {
+  position: absolute; inset: 0; padding: 2.1em; border-radius: 4.8em; background: #050506;
+  box-shadow: 0 0 0 0.32em var(--disp-marco), 0 0 0 0.42em #111113, inset 0 0 0 0.14em #000, 0 -0.5em 3em -1em rgba(255, 255, 255, 0.08), 0 calc(var(--flota) * var(--abre) * 0.3) calc(var(--flota) * var(--abre) * 0.6) rgba(0, 0, 0, 0.7);
+  transform: translateY(calc(var(--flota) * var(--abre) * -1)) translateZ(calc(var(--flota) * var(--abre) * 0.35));
+}
+/* Panel que sostiene la tableta en la variante flotante: se ve en el hueco bajo ella */
+.disp-soporte { display: none; }
+.disp-flotante { --flota: 9em; }
+.disp-flotante .disp-soporte {
+  display: block; position: absolute; left: 7%; right: 7%; bottom: 0; height: calc(var(--flota) * var(--abre) + 30em);
+  border-radius: 2.4em 2.4em 1.2em 1.2em; transform-origin: 50% 100%; transform: translateZ(-0.4em);
+  background:
+    linear-gradient(180deg, transparent calc(100% - 4.2em), rgba(0, 0, 0, 0.55) calc(100% - 4.2em), rgba(0, 0, 0, 0.55) calc(100% - 3.9em), rgba(255, 255, 255, 0.07) calc(100% - 3.8em), transparent calc(100% - 3.4em)),
+    linear-gradient(180deg, #121214 0%, #1c1c1f 60%, #2b2b2f 100%);
+  box-shadow: inset 0 -0.2em 0 rgba(255, 255, 255, 0.14), inset 0 0 0 0.1em rgba(255, 255, 255, 0.05);
+}
+.disp-pantalla {
+  position: relative; height: 100%; overflow: hidden; border-radius: 2.8em;
+  background: radial-gradient(80% 90% at 30% 20%, #3a4a6b, transparent 60%), radial-gradient(70% 80% at 80% 90%, #4b3a5a, transparent 60%), #0b0b10;
+  filter: brightness(calc(0.18 + 0.82 * var(--abre)));
+}
+.disp-pantalla figure, .disp-pantalla img { width: 100%; height: 100%; margin: 0; }
+.disp-pantalla img { object-fit: cover; border-radius: 0; }
+.disp-reflejo { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(118deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.03) 34%, rgba(255, 255, 255, 0) 34.5%), linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%); }
+.disp-camara { position: absolute; top: 0.72em; left: 50%; width: 0.66em; height: 0.66em; margin-left: -0.33em; border-radius: 50%; background: #16161a; box-shadow: inset 0 0 0 0.14em #0a0a0c, 0 0 0.2em rgba(70, 90, 140, 0.4); }
+
+/* Teclado-funda: gira sobre el borde inferior de la tableta. Cerrado (0) tapa la pantalla. */
+.disp-teclado {
+  position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: 50% 100%;
+  transform: translateZ(0.6em) rotateX(calc(var(--abre) * var(--disp-angulo) * -1));
+}
+.disp-dorso, .disp-cara { position: absolute; inset: 0; border-radius: 4.8em; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.disp-dorso {
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(255, 255, 255, 0.2), transparent 55%),
+    linear-gradient(180deg, #38383d 0%, var(--disp-funda) 32%, #19191b 100%);
+  box-shadow: inset 0 0.2em 0 rgba(255, 255, 255, 0.24), 0 -0.6em 4em -1em rgba(255, 255, 255, 0.1), inset 0 0 0 0.12em rgba(255, 255, 255, 0.05), inset 0 -0.6em 1.4em rgba(0, 0, 0, 0.55);
+}
+.disp-cara {
+  transform: rotateX(180deg); display: grid; grid-template-rows: auto 1fr; justify-items: center; gap: 3.2em;
+  padding: 5.2em 6.2em 4em; background: linear-gradient(180deg, #1c1c1f, #19191b 60%, #161618);
+  box-shadow: inset 0 0 0 0.14em rgba(255, 255, 255, 0.05), inset 0 0.3em 2em rgba(0, 0, 0, 0.5);
+  filter: brightness(calc(0.55 + 0.45 * var(--abre)));
+}
+.disp-teclas {
+  display: grid; gap: 0.85em; width: 100%; padding: 0.9em; border-radius: 1.6em;
+  background: radial-gradient(70% 90% at 46% 100%, rgba(255, 255, 255, calc(var(--luz) * 0.12)), transparent 72%), #0c0c0d;
+}
+.disp-fila { display: flex; gap: 0.85em; height: 6.2em; }
+.disp-flechas { flex: var(--u) 1 0; display: grid; grid-template-rows: 1fr 1fr; gap: 0.3em; }
+.disp-k {
+  --l: clamp(0, calc((var(--luz) - var(--d, 0)) * 5), 1);
+  flex: var(--u, 1) 1 0; min-width: 0; display: grid; place-items: center; border-radius: 1em; font-style: normal;
+  background: linear-gradient(180deg, #1a1a1c, var(--disp-tecla));
+  box-shadow: inset 0 0.12em 0 rgba(255, 255, 255, 0.07), 0 0.16em 0 rgba(0, 0, 0, 0.7),
+    0 0 calc(var(--l) * 1.4em) rgba(255, 255, 255, calc(var(--l) * 0.34));
+}
+.disp-k::after {
+  content: attr(data-k); font-size: 2.2em; font-weight: 500; line-height: 1;
+  color: rgba(255, 255, 255, calc(0.14 + var(--l) * 0.82));
+  text-shadow: 0 0 calc(var(--l) * 0.35em) rgba(255, 255, 255, calc(var(--l) * 0.85));
+}
+.disp-k-mod::after { font-size: 1.45em; letter-spacing: 0.02em; }
+.disp-trackpad {
+  width: 41%; height: 100%; border-radius: 1.8em;
+  background: linear-gradient(180deg, #222225, #1b1b1d);
+  box-shadow: inset 0 0 0 0.12em rgba(255, 255, 255, 0.07), inset 0 0.16em 0 rgba(255, 255, 255, 0.06);
+}
+/* Grosor del borde libre (se ve de frente con el teclado abierto) */
+.disp-canto {
+  position: absolute; top: 0; left: 3.6em; right: 3.6em; height: 1.5em; transform-origin: 50% 0; transform: rotateX(90deg);
+  border-radius: 0 0 1.2em 1.2em; background: linear-gradient(180deg, #3a3a3e, #1c1c1f 60%, #111);
+}
+
+/* Suelo: charco de luz cenital y sombra de contacto bajo el dispositivo */
+.disp-suelo {
+  position: absolute; z-index: -1; left: -14%; right: -14%; top: calc(56em + var(--alza) + var(--abre) * 24em); height: 26em; pointer-events: none;
+  background:
+    radial-gradient(38% 22% at 50% 42%, rgba(0, 0, 0, 0.9), transparent 100%),
+    radial-gradient(50% 50% at 50% 45%, rgba(255, 255, 255, 0.075), transparent 72%);
+}
