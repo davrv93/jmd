@@ -10,6 +10,10 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
+// Los ejemplos traen sus imágenes fijas en motor/ejemplos/recursos/: si el alumno copia solo el JSON a
+// su carpeta, el «archivo» relativo se busca también ahí.
+const EJEMPLOS = path.join(path.dirname(new URL(import.meta.url).pathname), 'ejemplos');
+
 const FORMAS = { cuadrado: [1, 1], horizontal: [3, 2], vertical: [2, 3] };
 
 function marcador(clave, im, estilo) {
@@ -93,8 +97,9 @@ export async function prepararImagenes({ negocio, estilo, negocioRuta, salida, m
     const alt = im.descripcion || '';
     // 1) Archivo entregado por el cliente o recurso ya generado
     if (im.archivo) {
-      const origen = path.isAbsolute(im.archivo) ? im.archivo : path.join(base, im.archivo);
-      if (fs.existsSync(origen)) {
+      const candidatos = path.isAbsolute(im.archivo) ? [im.archivo] : [path.join(base, im.archivo), path.join(EJEMPLOS, im.archivo)];
+      const origen = candidatos.find((c) => fs.existsSync(c));
+      if (origen) {
         const ext = path.extname(origen) || '.jpg';
         fs.copyFileSync(origen, path.join(salida, 'img', clave + ext));
         mapa[clave] = { src: `img/${clave}${ext}`, alt, orientacion };
