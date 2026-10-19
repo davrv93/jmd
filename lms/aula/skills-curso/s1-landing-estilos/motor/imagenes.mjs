@@ -42,14 +42,16 @@ function credencialesCloudflare() {
 
 // FLUX en Workers AI devuelve JPEG cuadrado en base64. El recorte al formato lo hace el CSS
 // (object-fit: cover), así que se guarda tal cual: más resolución para los recortes de cada estilo.
-async function generarCloudflare(cf, prompt, semilla) {
+async function generarCloudflare(cf, prompt) {
   const modelo = process.env.CF_MODELO || '@cf/black-forest-labs/flux-1-schnell';
   const pasos = parseInt(process.env.CF_PASOS || '6', 10);
   for (let intento = 1; intento <= 3; intento++) {
     const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cf.cuenta}/ai/run/${modelo}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${cf.token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, steps: pasos, seed: semilla }),
+      // FLUX schnell en Workers AI no acepta «seed» (responde 400): cada llamada sale distinta, y la
+      // «semilla» del JSON solo cambia la huella de la caché, que es lo que hace que la imagen se rehaga.
+      body: JSON.stringify({ prompt, steps: pasos }),
       signal: AbortSignal.timeout(120000),
     });
     if (r.status === 409 && intento < 3) continue; // «Cog prediction failed»: se reintenta
@@ -115,7 +117,7 @@ export async function prepararImagenes({ negocio, estilo, negocioRuta, salida, m
     if (!fs.existsSync(enCache) && modo !== 'no' && motor) {
       try {
         fs.mkdirSync(cache, { recursive: true });
-        const datos = motor === 'cloudflare' ? await generarCloudflare(cf, prompt, semilla) : await generarServicio(url, token, prompt, orientacion, semilla);
+        const datos = motor === 'cloudflare' ? await generarCloudflare(cf, prompt) : await generarServicio(url, token, prompt, orientacion, semilla);
         fs.writeFileSync(enCache, datos);
         registro(`  imagen ${clave} generada (${motor})`);
       } catch (e) {
