@@ -1,7 +1,7 @@
 import { $, component$, useContext, useStore, useVisibleTask$ } from "@builder.io/qwik";
 import { type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
 import { api, errMsg, requireLogin, type EscenaLive, type LiveEstado, type Me, type ParejaLive, type PresenteLive } from "~/lib/api";
-import { abrirStream } from "~/lib/live";
+import { abrirStream, type ConexionLive } from "~/lib/live";
 import { SessionContext, isStaff } from "~/lib/session";
 import { pathId, setTitle } from "~/lib/url";
 import { ErrorState, Loading } from "~/components/ui";
@@ -21,11 +21,12 @@ interface LiveState {
   pareja: ParejaLive | null;
   skillNueva: string; // skill creada desde la terminal que aún no está en la cuenta
   vistaAlumno: boolean; // el instructor mira la clase como la ve un alumno (terminal, visor, agente)
+  conexion: ConexionLive; // estado del stream, para la barra de estado del alumno
 }
 
 export default component$(() => {
   const session = useContext(SessionContext);
-  const st = useStore<LiveState>({ me: null, estado: null, escenas: [], error: "", conectados: 0, presentes: [], aviso: "", pareja: null, skillNueva: "", vistaAlumno: false });
+  const st = useStore<LiveState>({ me: null, estado: null, escenas: [], error: "", conectados: 0, presentes: [], aviso: "", pareja: null, skillNueva: "", vistaAlumno: false, conexion: "conectando" });
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async ({ track }) => {
@@ -81,7 +82,7 @@ export default component$(() => {
           st.conectados = data.conectados;
         }
       }
-    });
+    }, (c) => (st.conexion = c));
   });
 
   const id = pathId("live");
@@ -103,7 +104,7 @@ export default component$(() => {
       {staff && !st.vistaAlumno ? (
         <LiveControl lesson={id} estado={st.estado} escenas={st.escenas} conectados={st.conectados} presentes={st.presentes} onVista$={cambiarVista} />
       ) : (
-        <LiveAlumno lesson={id} estado={st.estado} aviso={st.aviso} pareja={st.pareja} escenas={st.escenas} skillNueva={st.skillNueva} staff={staff} onVista$={cambiarVista} />
+        <LiveAlumno lesson={id} estado={st.estado} aviso={st.aviso} pareja={st.pareja} escenas={st.escenas} skillNueva={st.skillNueva} staff={staff} onVista$={cambiarVista} conexion={st.conexion} conectados={st.conectados} />
       )}
     </div>
   );

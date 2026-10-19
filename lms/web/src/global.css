@@ -442,8 +442,16 @@ table.t td { padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertic
 .studio__prompt { min-height: 13rem; font-family: var(--mono); font-size: .85rem; line-height: 1.5; }
 .studio__html { min-height: 30rem; width: 100%; font-family: var(--mono); font-size: .82rem; line-height: 1.45; }
 .studio__frame { width: 100%; height: 34rem; border: 1px solid var(--line2); border-radius: var(--r2); background: #fff; }
-.term { height: 24rem; border-radius: var(--r2); overflow: hidden; border: 1px solid var(--line2); background: #16151d; padding: .4rem; }
+.term { height: 24rem; display: flex; flex-direction: column; border-radius: var(--r2); overflow: hidden; overflow: clip; border: 1px solid var(--line2); background: #16151d; padding: .4rem; }
+/* xterm se monta en .term-host, sin relleno: el FitAddon mide el alto del padre sin restarle el padding. */
+.term-host { flex: 1 1 auto; min-width: 0; min-height: 0; }
 .term .xterm { height: 100%; }
+/* xterm.css deja el fondo del viewport en negro: bajo la última fila se veía una franja. Mismo color del tema. */
+.term .xterm .xterm-viewport { background-color: #16151d; }
+/* La regla general «textarea { min-height: 6rem }» alcanzaba al textarea oculto de xterm (una fila de alto):
+   al escribir en la última fila, el navegador desplazaba la caja para mostrarlo y las primeras filas
+   quedaban cortadas arriba. Con overflow: clip la caja ya no se puede desplazar. */
+.term .xterm .xterm-helper-textarea { min-height: 0; }
 
 @media (prefers-reduced-motion: reduce) { .polvo, .brilla, .skel, .astro { animation: none; } .traza.dibuja { animation: none; stroke-dashoffset: 0; } .rec-chev, a.card { transition: none; } }
 @media (max-width: 40rem) { html { font-size: 14.5px; } .brand small { display: none; } .page { padding-top: .8rem; } }
@@ -689,7 +697,7 @@ table.t td { padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertic
 .ins-item .cert-actions .btn { padding: .26rem .55rem; font-size: .8rem; }
 
 /* Modo LIVE (fase 1 del plan): control del instructor y pantalla del alumno */
-.live { height: 100dvh; display: flex; flex-direction: column; }
+.live { height: var(--lv-vh, 100dvh); display: flex; flex-direction: column; }
 .live-control { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .live-main { flex: 1; display: grid; grid-template-columns: 16rem 1fr; gap: .8rem; padding: .8rem; min-height: 0; }
 .live-escenas { display: grid; gap: .4rem; align-content: start; overflow: auto; }
@@ -705,13 +713,13 @@ table.t td { padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertic
 .live-reloj { display: inline-flex; align-items: center; gap: .35rem; font-variant-numeric: tabular-nums; font-size: .85rem; color: var(--muted); }
 .live-reloj.pasado { color: var(--warn); }
 .live-alumno { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.live-alumno .live-escena { flex: 1; padding: .4rem; }
 .live-cortina { position: fixed; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 88%, transparent); color: var(--fg); font-size: 1.1rem; z-index: 30; text-align: center; padding: 1rem; }
 .live-libre { text-align: center; color: var(--warn); font-size: .85rem; padding: .3rem; }
 .live-nav-local { display: flex; justify-content: center; gap: .6rem; padding: .3rem; }
-.live-aviso { position: fixed; top: .8rem; left: 50%; transform: translateX(-50%); background: var(--info-bg, rgba(29,78,216,.1)); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-s, 10px); padding: .5rem .9rem; display: flex; gap: .6rem; align-items: center; z-index: 40; max-width: min(90vw, 40rem); }
+/* Mensaje del instructor: fondo sólido (va encima de la escena y de la terminal) y franja informativa. */
+.live-aviso { position: fixed; top: .8rem; left: 50%; transform: translateX(-50%); background: var(--s1); color: var(--fg); border: 1px solid var(--line2); border-left: 4px solid var(--info); border-radius: var(--r-s, 10px); padding: .55rem .6rem .55rem .85rem; display: flex; gap: .6rem; align-items: center; z-index: 70; max-width: min(calc(100vw - 2rem), 40rem); box-shadow: var(--shadow); font-size: .92rem; }
+.live-aviso > .ico { color: var(--info); flex: none; }
 .live-aviso-x { background: none; border: 0; color: var(--muted); cursor: pointer; padding: .2rem; }
-.live-paneles { display: flex; align-items: center; gap: .5rem; border-top: 1px solid var(--line); padding: .5rem .8rem; flex-wrap: wrap; }
 @media (max-width: 60rem) { .live-main { grid-template-columns: 1fr; } .live-escenas { max-height: 9rem; } }
 @media (prefers-reduced-motion: reduce) { .live-frame, .live-cortina, .live-aviso { transition: none; } }
 .page.live-page { max-width: none; padding: 0; margin: 0; }
@@ -736,21 +744,11 @@ table.t td { padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertic
 .live-msg input { width: 14rem; max-width: 40vw; padding: .3rem .5rem; border: 1px solid var(--line); border-radius: var(--r-s, 10px); background: var(--s1); color: var(--fg); font-size: .82rem; }
 .live-pareja { text-align: center; padding: .4rem; background: var(--s2); font-size: .88rem; }
 
-.live-panel { border-top: 1px solid var(--line); background: var(--s1); height: 42dvh; min-height: 12rem; display: flex; }
-.live-panel[hidden] { display: none; }
-.live-panel-vista { flex: 1; min-width: 0; overflow: auto; padding: .5rem; display: flex; flex-direction: column; }
-.live-panel-vista[hidden] { display: none; }
-.live-panel .term { height: 100%; min-height: 10rem; flex: 1; }
-.live-panel-vacio { align-items: center; justify-content: center; text-align: center; gap: .5rem; color: var(--muted); font-size: .9rem; }
-.live-panel-vacio p { max-width: 34rem; margin: 0; }
 .live-ayuda { gap: .6rem; font-size: .88rem; }
 .live-ayuda h3 { margin: 0; font-size: 1rem; }
 .live-ayuda-cmds { display: grid; gap: .35rem; }
 .live-ayuda-t { display: block; color: var(--muted); font-size: .78rem; }
 .live-ayuda ul { margin: .25rem 0 0; padding-left: 1.2rem; }
-.live-alumno .live-escena { min-height: 8rem; }
-.live-paneles .btn[aria-pressed="true"] { border-color: var(--accent); background: var(--s2); }
-.live-panel-visor { padding: 0; }
 .visor { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .visor-barra { display: flex; align-items: center; gap: .4rem; padding: .35rem .5rem; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .visor-ruta { flex: 1; min-width: 8rem; padding: .3rem .5rem; border: 1px solid var(--line); border-radius: var(--r-s, 10px); background: var(--s1); color: var(--fg); font: inherit; font-size: .82rem; }
@@ -768,7 +766,6 @@ table.t td { padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertic
 .live-logrado { display: inline-flex; align-items: center; gap: .4rem; color: var(--ok); font-size: .85rem; font-weight: 600; }
 
 /* Mis skills (panel del LIVE): lista a la izquierda, editor a la derecha. */
-.live-panel-skills { padding: 0; }
 .skills { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(13rem, 17rem) 1fr; }
 .skills-lado { border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 .skills-acciones { display: flex; gap: .35rem; padding: .45rem; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
@@ -968,3 +965,179 @@ body { background: var(--liso); }
 /* Inicio: agenda y cursos en dos columnas iguales. */
 .inicio-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6rem 2rem; align-items: start; }
 @media (max-width: 52rem) { .inicio-cols { grid-template-columns: 1fr; } }
+
+/* ── LIVE del alumno con forma de editor ─────────────────────────────────────────────────────────
+   Escritorio (≥ 1100 px): barra de actividad a la izquierda, ayuda en una barra lateral, la escena
+   en el centro y el panel de trabajo (Terminal, Visor, Agente, Mis skills) a la derecha o abajo, con
+   un divisor que se arrastra; abajo, una barra de estado fina. Por debajo de 1100 px, cada vista a
+   pantalla completa con las pestañas abajo. Prefijo .lv- (components/live-alumno.tsx). */
+:root { --lv-barra-bg: var(--ahora-bg); --lv-barra-fg: #ffffff; --lv-barra-suave: #d9d5e6; --lv-term-bg: #16151d; }
+.live-alumno.lv { display: grid; grid-template-columns: auto auto minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "act lado zona" "estado estado estado"; background: var(--s1); color: var(--fg); overflow: hidden; overflow: clip; }
+
+/* Barra de actividad: iconos con su nombre al pasar o al enfocar; una franja marca la vista abierta. */
+.lv-act { grid-area: act; display: flex; min-height: 0; background: var(--s2); border-right: 1px solid var(--line); z-index: 6; }
+.lv.sin-act .lv-act { display: none; }
+.lv-act-barra { display: flex; flex-direction: column; width: 48px; padding: 4px 0; }
+.lv-act-btn { position: relative; display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; transition: color .12s; }
+.lv-act-btn::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2px; border-radius: 0 2px 2px 0; background: transparent; }
+.lv-act-btn:hover, .lv-act-btn[aria-pressed="true"] { color: var(--fg); }
+.lv-act-btn[aria-pressed="true"]::before { background: var(--accent); }
+.lv-act-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -6px; border-radius: 10px; }
+.lv-act-et { display: none; }
+.lv-act-btn[data-tip]:hover::after, .lv-act-btn[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; left: calc(100% + 6px); top: 50%; bottom: auto; transform: translateY(-50%); background: var(--tip-bg); color: var(--tip-fg); font-size: .76rem; font-weight: 600; line-height: 1.2; padding: .32rem .55rem; border-radius: 5px; white-space: nowrap; z-index: 60; pointer-events: none; box-shadow: var(--shadow-xs); }
+
+/* Barra lateral: la ayuda de la escena (comandos para copiar, tareas) y los atajos. */
+.lv-lado { grid-area: lado; width: 17.5rem; display: flex; flex-direction: column; min-height: 0; background: var(--s1); border-right: 1px solid var(--line); }
+.lv-lado[hidden] { display: none; }
+.lv-lado-cab { flex: none; display: flex; align-items: center; gap: .4rem; height: 36px; padding: 0 .35rem 0 .9rem; }
+.lv-lado-cab h2 { flex: 1; min-width: 0; margin: 0; font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv-lado-cuerpo { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; padding: .3rem .9rem 1rem; }
+.lv-lado .live-vacio { margin: .2rem 0; padding: .8rem .9rem; max-width: none; border-radius: var(--r); font-size: .85rem; }
+/* Comandos largos: en la barra lateral se parten en varias líneas y el botón de copiar queda a la vista. */
+.lv-lado .live-ayuda-cmds { grid-template-columns: minmax(0, 1fr); }
+.lv-lado .live-ayuda-cmds > div, .lv-lado-cuerpo > * { min-width: 0; }
+.lv-lado .cmd { display: flex; align-items: flex-start; width: 100%; padding: .3rem .2rem .3rem .55rem; }
+.lv-lado .cmd code { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; overflow: visible; font-size: .8rem; line-height: 1.45; }
+.lv-atajos { margin-top: auto; padding-top: .9rem; border-top: 1px solid var(--line); }
+.lv-atajos h3 { margin: 0 0 .5rem; font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.lv-atajos dl { display: grid; grid-template-columns: auto 1fr; gap: .4rem .6rem; margin: 0; font-size: .8rem; align-items: baseline; }
+.lv-atajos dt, .lv-atajos dd { margin: 0; } .lv-atajos dd { color: var(--muted); }
+
+/* Zona de trabajo: la escena y el panel, en fila (panel a la derecha) o en columna (panel abajo). */
+.lv-zona { grid-area: zona; position: relative; display: flex; min-width: 0; min-height: 0; }
+.lv.pos-abajo .lv-zona { flex-direction: column; }
+.lv-escena { position: relative; flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--s1); }
+.lv-escena-cab { flex: none; display: flex; align-items: stretch; gap: .3rem; height: 36px; padding-right: .35rem; min-width: 0; background: var(--s2); border-bottom: 1px solid var(--line); }
+.lv-escena-cab > .lv-ico-btn { align-self: center; margin-left: .3rem; }
+.lv-escena-tab { display: flex; align-items: center; gap: .45rem; min-width: 0; max-width: min(30rem, 60%); padding: 0 .9rem; margin-bottom: -1px; background: var(--s1); border-right: 1px solid var(--line); box-shadow: inset 0 2px 0 var(--accent); font-size: .84rem; }
+.lv-escena-tab .ico { color: var(--accent); }
+.lv-escena-n { font: 700 .72rem/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.lv-escena-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.lv-escena-acc { margin-left: auto; display: flex; align-items: center; gap: .4rem; flex: none; }
+.lv .live-nav-local { display: flex; align-items: center; gap: .1rem; padding: 0; flex: none; }
+.lv .live-libre { margin-right: .2rem; padding: .12rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; background: var(--warn-bg); color: var(--warn); }
+.lv-volver { margin-left: .3rem; }
+.lv .live-logrado { font-size: .84rem; }
+.lv .live-pareja { flex: none; margin: 0; display: flex; align-items: center; justify-content: center; gap: .4rem; padding: .35rem .8rem; font-size: .84rem; background: var(--accent-bg); border-bottom: 1px solid var(--line); }
+.lv-escena-cuerpo { position: relative; flex: 1; min-height: 0; display: flex; overflow: hidden; overflow: clip; }
+.lv .lv-marco { flex: 1; width: 100%; height: 100%; border: 0; border-radius: 0; display: block; background: var(--s1); }
+.lv-escena-cuerpo > .live-vacio { margin: auto; }
+/* La cortina tapa solo la escena: la terminal y el visor siguen a mano. */
+.lv .live-cortina { position: absolute; z-index: 5; }
+.lv .mario-escena { position: absolute; bottom: 3rem; }
+/* El mensaje del instructor baja bajo las cabeceras: no tapa «Lo logré» ni las pestañas del panel. */
+.lv .live-aviso { top: 44px; }
+
+/* Botón de icono de las barras (cerrar, mover, maximizar, pantalla completa). */
+.lv-ico-btn { display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; }
+.lv-ico-btn:hover:not(:disabled) { background: var(--s3); color: var(--fg); }
+.lv-ico-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); }
+.lv-ico-btn:disabled { opacity: .4; cursor: default; }
+.lv-ico-btn:focus-visible { outline-offset: -2px; }
+
+/* Divisor: 4 px de agarre sobre el borde del panel; se ilumina al pasar, al enfocar y al arrastrar. */
+.lv-div { position: relative; z-index: 4; flex: 0 0 4px; margin: 0 -2px; cursor: col-resize; touch-action: none; background: transparent; transition: background-color .1s .12s; }
+.lv.pos-abajo .lv-div { margin: -2px 0; cursor: row-resize; }
+.lv-div[hidden] { display: none; }
+.lv-div:hover, .lv-div:focus-visible, .lv.arrastrando .lv-div { background: var(--accent); }
+.lv-div:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 0; }
+.lv.arrastrando { user-select: none; -webkit-user-select: none; }
+.lv.arrastrando iframe { pointer-events: none; }
+.lv.arrastrando.pos-derecha { cursor: col-resize; } .lv.arrastrando.pos-abajo { cursor: row-resize; }
+
+/* Panel de trabajo: pestañas como las del panel de un editor y acciones a la derecha. */
+.lv-panel { display: flex; flex-direction: column; flex: 0 0 var(--lv-derecha); min-width: 340px; max-width: calc(100% - 300px); min-height: 0; background: var(--s1); border-left: 1px solid var(--line2); container: lvpanel / inline-size; }
+.lv.pos-abajo .lv-panel { flex-basis: var(--lv-abajo); min-width: 0; max-width: none; min-height: 140px; max-height: calc(100% - 120px); border-left: 0; border-top: 1px solid var(--line2); }
+.lv-panel[hidden] { display: none; }
+.lv.max .lv-escena, .lv.max .lv-div { display: none; }
+.lv.max .lv-panel { flex: 1 1 auto; max-width: none; max-height: none; border: 0; }
+.lv-panel-cab { flex: none; display: flex; align-items: center; gap: .3rem; height: 36px; padding: 0 .35rem 0 .45rem; min-width: 0; border-bottom: 1px solid var(--line); }
+.lv-tabs { display: flex; align-self: stretch; gap: .1rem; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.lv-tabs::-webkit-scrollbar { display: none; }
+.lv-tab { display: inline-flex; align-items: center; gap: .4rem; padding: 0 .6rem; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); font: inherit; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; cursor: pointer; }
+.lv-tab:hover, .lv-tab[aria-selected="true"] { color: var(--fg); }
+.lv-tab[aria-selected="true"] { border-bottom-color: var(--accent); }
+.lv-tab[aria-selected="true"] .ico { color: var(--accent); }
+.lv-tab:focus-visible { outline-offset: -3px; }
+.lv-tab-corto { display: none; }
+/* Panel estrecho: pestañas sin icono y «Skills» en vez de «Mis skills», para que quepan las cuatro. */
+@container lvpanel (max-width: 34rem) {
+  .lv-tab { gap: 0; padding: 0 .45rem; letter-spacing: .04em; }
+  .lv-tab .ico, .lv-tab-largo { display: none; }
+  .lv-tab-corto { display: inline; }
+}
+.lv-panel-titulo { display: none; }
+.lv-panel-acc { display: flex; align-items: center; gap: .1rem; flex: none; }
+.lv-tp { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+.lv-tp[hidden] { display: none; }
+/* La terminal llena su pestaña de borde a borde; el FitAddon la reajusta con cada cambio de tamaño. */
+.lv-tp-terminal { background: var(--lv-term-bg); }
+.lv-tp-terminal .term { flex: 1 1 0; height: auto; min-height: 0; border: 0; border-radius: 0; padding: .45rem .25rem .25rem .7rem; }
+.lv-tp-agente { align-items: center; justify-content: center; gap: .75rem; padding: 1.5rem; text-align: center; color: var(--muted); font-size: .9rem; }
+.lv-tp-agente p { max-width: 30rem; margin: 0; }
+.lv-tp-agente b { color: var(--fg); }
+.lv-agente-ico { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-bg); color: var(--accent); }
+
+/* Barra de estado: fina, grafito en los dos temas; conexión y escena a la izquierda, tu semáforo, la
+   compuerta y el puntaje a la derecha. Los colores de los puntos son los claros: van sobre fondo oscuro. */
+.lv-estado { grid-area: estado; display: flex; align-items: stretch; height: 24px; min-width: 0; padding: 0 .2rem; background: var(--lv-barra-bg); color: var(--lv-barra-fg); font-size: .75rem; line-height: 1; white-space: nowrap; overflow-x: clip; z-index: 6; }
+.lv-ei { display: inline-flex; align-items: center; gap: .35rem; flex: none; min-width: 0; padding: 0 .55rem; color: inherit; }
+.lv-estado button.lv-ei { font: inherit; border: 0; background: none; cursor: pointer; }
+.lv-estado button.lv-ei:hover { background: rgba(255,255,255,.13); }
+.lv-estado :focus-visible { outline: 2px solid #ffffff; outline-offset: -2px; border-radius: 3px; }
+.lv-estado button.lv-ei-control { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.lv-estado button.lv-ei-control:hover { background: var(--accent); filter: brightness(1.1); }
+.lv-estado button.lv-ei-falta { color: #f6c46a; font-weight: 600; }
+.lv-ei-escena { flex: 0 1 auto; overflow: hidden; }
+.lv-ei-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--lv-barra-suave); }
+.lv-hueco { flex: 1 1 0; min-width: .4rem; }
+.lv-punto { width: 8px; height: 8px; flex: none; border-radius: 50%; background: #9f9cb5; }
+.lv-punto.verde { background: #4fd37a; box-shadow: 0 0 0 3px rgba(79,211,122,.22); }
+.lv-punto.ambar { background: #f4ac5c; }
+.lv-estado .semaforo { width: 9px; height: 9px; opacity: 1; }
+.lv-estado .semaforo.verde { background: #4fd37a; } .lv-estado .semaforo.ambar { background: #f4ac5c; }
+.lv-estado .semaforo.rojo { background: #ff7b7b; } .lv-estado .semaforo.gris { background: #9f9cb5; }
+.lv-estado .badge { background: rgba(255,255,255,.14); color: #ffffff; }
+.lv-estado .live-prueba-n { color: var(--lv-barra-suave); }
+.lv-estado .mario-score { align-self: center; flex: none; height: 18px; margin: 0 .25rem 0 .2rem; padding: 0 .45rem; gap: .3rem; font-size: .72rem; border-width: 1px; border-radius: 4px; }
+.lv-estado .mario-score-moneda { width: .48rem; height: .7rem; border-width: 1.5px; }
+
+.lv-solo-movil { display: none !important; }
+
+/* Tablet y teléfono: una vista a la vez, a pantalla completa; las pestañas van abajo, al alcance del
+   pulgar, y la barra de estado encima de ellas. */
+@media (max-width: 1099.98px) {
+  .live-alumno.lv { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto auto; grid-template-areas: "zona" "estado" "act"; }
+  .lv-solo-escritorio { display: none !important; }
+  .lv-solo-movil { display: inline-flex !important; }
+  .lv.sin-act .lv-act { display: flex; }
+  .lv-act { border-right: 0; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  .lv-act-barra { flex-direction: row; width: 100%; padding: 0; }
+  .lv-act-btn { flex: 1 1 0; width: auto; min-width: 0; height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+  .lv-act-btn .ico { width: 21px; height: 21px; }
+  .lv-act-btn::before { left: 24%; right: 24%; top: 0; bottom: auto; width: auto; height: 2px; border-radius: 0 0 2px 2px; }
+  .lv-act-btn[aria-pressed="true"] { color: var(--accent); }
+  .lv-act-et { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: .68rem; font-weight: 600; line-height: 1; }
+  .lv-act-btn[data-tip]:hover::after, .lv-act-btn[data-tip]:focus-visible::after { display: none; }
+  .lv-lado { grid-area: zona; width: auto; border-right: 0; z-index: 7; }
+  .lv-lado-cab { height: 46px; padding-left: 1rem; border-bottom: 1px solid var(--line); }
+  .lv-lado-cab h2 { font-size: .8rem; }
+  .lv-lado-cuerpo { padding: .7rem 1rem 1.2rem; }
+  .lv-panel, .lv.pos-abajo .lv-panel { position: absolute; inset: 0; z-index: 5; flex: none; min-width: 0; max-width: none; min-height: 0; max-height: none; border: 0; }
+  .lv-panel-cab { height: 46px; padding: 0 .35rem 0 1rem; }
+  .lv-tabs { display: none; }
+  .lv-panel-titulo { display: block; flex: 1; min-width: 0; margin: 0; font-size: .95rem; font-weight: 700; }
+  .lv-ico-btn { width: 38px; height: 38px; }
+  .lv-escena-cab { height: 46px; background: var(--s1); }
+  .lv-escena-tab { flex: 1 1 auto; max-width: none; padding: 0 .5rem 0 1rem; margin-bottom: 0; background: transparent; border-right: 0; box-shadow: none; }
+  .lv-ocultable { display: none; }
+  .lv-estado { height: 26px; }
+  .lv .mario-escena { bottom: 2rem; }
+  .lv .live-aviso { top: 54px; }
+}
+@media (max-width: 30rem) {
+  .lv-ocultable-xs, .lv .live-libre, .lv-escena-n { display: none; }
+  .lv-escena-tab { padding: 0 .4rem 0 .8rem; }
+  .lv-escena-acc { gap: .2rem; }
+}
+@media (prefers-reduced-motion: reduce) { .lv-act-btn, .lv-div { transition: none; } }

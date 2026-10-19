@@ -78,6 +78,13 @@ const P: Record<string, string> = {
   save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8"/>',
   edit: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  // Mesa de trabajo del alumno en el LIVE (estilo editor): escena, panel a la derecha o abajo, maximizar.
+  escena: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4M10 7.5v5l4.2-2.5z"/>',
+  panelDerecha: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/>',
+  panelAbajo: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15h18"/>',
+  panelIzquierda: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
+  maximizar: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
+  restaurar: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
 };
 
 export type IconName = keyof typeof P;

@@ -1,11 +1,14 @@
 // Cliente SSE del modo LIVE: abre el stream de una lección y reparte los eventos.
-// En error cierra y reabre con espera creciente (1, 2, 4, 8 s; tope 8 s).
+// En error cierra y reabre con espera creciente (1, 2, 4, 8 s; tope 8 s). `alCambiar`, si se pasa,
+// recibe el estado de la conexión para mostrarlo (barra de estado del alumno).
 
 const EVENTOS = ["estado", "presencia", "logre", "mensaje", "pareja", "cierre", "skill_nueva"] as const;
 
 export type EventoLive = (typeof EVENTOS)[number];
 
-export function abrirStream(lesson: string, on: (evento: string, data: any) => void): () => void {
+export type ConexionLive = "conectando" | "conectado" | "reconectando";
+
+export function abrirStream(lesson: string, on: (evento: string, data: any) => void, alCambiar?: (c: ConexionLive) => void): () => void {
   let fuente: EventSource | null = null;
   let cerrado = false;
   let reintento = 0;
@@ -14,9 +17,11 @@ export function abrirStream(lesson: string, on: (evento: string, data: any) => v
   const conectar = () => {
     if (cerrado) return;
     fuente = new EventSource(`/api/v1/live/${encodeURIComponent(lesson)}/stream`);
+    fuente.onopen = () => alCambiar?.("conectado");
     for (const nombre of EVENTOS) {
       fuente.addEventListener(nombre, (e: MessageEvent) => {
         reintento = 0; // un evento en limpio borra la espera acumulada
+        alCambiar?.("conectado");
         let data: any = null;
         try {
           data = e.data ? JSON.parse(e.data) : null;
@@ -30,6 +35,7 @@ export function abrirStream(lesson: string, on: (evento: string, data: any) => v
       fuente?.close();
       fuente = null;
       if (cerrado) return;
+      alCambiar?.("reconectando");
       const espera = [1000, 2000, 4000, 8000][Math.min(reintento, 3)];
       reintento++;
       temporizador = setTimeout(conectar, espera);

@@ -21,7 +21,6 @@ export const Terminal = component$(() => {
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(el);
-    fit.fit();
 
     const proto = location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`${proto}://${location.host}/api/v1/term`);
@@ -30,6 +29,30 @@ export const Terminal = component$(() => {
     const sendSize = () => {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ cols: term.cols, rows: term.rows }));
     };
+
+    // Columnas y filas a la medida exacta de la caja (la caja no lleva relleno: el FitAddon mide el alto
+    // del padre sin restarle el padding, y con relleno la última fila quedaba cortada). Con la caja oculta
+    // (otra pestaña, panel cerrado) no se toca nada: al volver a verse, el observador la reajusta.
+    let cols = 0;
+    let rows = 0;
+    let pendiente = 0;
+    const ajustar = () => {
+      pendiente = 0;
+      if (!el.clientWidth || !el.clientHeight) return;
+      fit.fit();
+      if (term.cols !== cols || term.rows !== rows) {
+        cols = term.cols;
+        rows = term.rows;
+        sendSize();
+      }
+    };
+    const pedirAjuste = () => {
+      if (!pendiente) pendiente = requestAnimationFrame(ajustar);
+    };
+    // El panel se redimensiona sin que cambie la ventana (divisor, posición, maximizar): se mira la caja.
+    const observador = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(pedirAjuste);
+    observador?.observe(el);
+    ajustar();
     let abrio = false;
     // Texto que otras partes de la pantalla (p. ej. «Probar» de Mis skills) piden escribir en la terminal.
     // Va en una cola global para que no se pierda si la terminal aún está conectando.
@@ -40,6 +63,7 @@ export const Terminal = component$(() => {
     const dec = new TextDecoder();
     ws.onopen = () => {
       abrio = true;
+      ajustar();
       sendSize();
       term.focus();
       setTimeout(volcar, 700); // deja que la shell muestre su prompt antes de escribirle
@@ -59,17 +83,18 @@ export const Terminal = component$(() => {
       if (ws.readyState === WebSocket.OPEN) ws.send(enc.encode(d));
     });
 
-    const onResize = () => {
-      fit.fit();
-      sendSize();
+    const alFoco = () => {
+      pedirAjuste();
+      term.focus();
     };
-    const alFoco = () => term.focus();
-    addEventListener("resize", onResize);
+    addEventListener("resize", pedirAjuste);
     addEventListener("pjg-term-foco", alFoco);
     addEventListener("pjg-term-escribir", volcar);
 
     cleanup(() => {
-      removeEventListener("resize", onResize);
+      observador?.disconnect();
+      if (pendiente) cancelAnimationFrame(pendiente);
+      removeEventListener("resize", pedirAjuste);
       removeEventListener("pjg-term-foco", alFoco);
       removeEventListener("pjg-term-escribir", volcar);
       try {
@@ -81,5 +106,9 @@ export const Terminal = component$(() => {
     });
   });
 
-  return <div ref={ref} class="term" aria-label="Terminal" />;
+  return (
+    <div class="term" aria-label="Terminal">
+      <div ref={ref} class="term-host" />
+    </div>
+  );
 });
