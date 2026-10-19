@@ -49,7 +49,7 @@ def personalidad() -> list[str]:
         fallos.append(f"nombre «{nombre}»: 1 a 24 caracteres, letras, números, espacio, punto, guion; sin comillas ni etiquetas")
     if not isinstance(d.get("color"), str) or not COLOR.match(d["color"]):
         fallos.append(f"color «{d.get('color')}»: debe ser hexadecimal #rrggbb (p. ej. #2f6bff)")
-    if d.get("avatar") not in AVATARES:
+    if ((d.get("avatar") or {}).get("tipo") if isinstance(d.get("avatar"), dict) else d.get("avatar")) not in AVATARES:
         fallos.append(f"avatar «{d.get('avatar')}»: robot u osito")
     for campo, tope in (("negocio", 120), ("tono", 60), ("estilo_imagen", 200)):
         v = d.get(campo, "")
@@ -69,7 +69,7 @@ def personalidad() -> list[str]:
         if "hue-rotate" in js or "hue-rotate" in html:
             fallos.append("el color va por montarAvatar({color}), no con filter: hue-rotate")
     if not fallos:
-        print(f"personalidad ok: {nombre} · {d['avatar']} · {d['color'].lower()} · tono «{d['tono']}»")
+        print(f"personalidad ok: {nombre} · {((d.get("avatar") or {}).get("tipo") if isinstance(d.get("avatar"), dict) else d.get("avatar"))} · {d['color'].lower()} · tono «{d['tono']}»")
     return fallos
 
 

@@ -2,11 +2,21 @@
 
 Mismo plan y mismas skills que en el aula del LMS, pero en tu laptop: **Windows 10/11 o Mac** (también Linux), sin GPU. **No instalas modelos ni paquetes pesados**: el texto, las imágenes, el dictado y la voz los pone la nube del curso. Solo necesitas internet, Python y tu cuenta del curso. En Windows **no** hace falta Git Bash ni WSL.
 
-## Qué necesitas
+## Con JMDesign Studio (lo más fácil: sin instalar Python)
+
+JMDesign Studio trae su propio Python con todo lo que usa el kit. No hace falta instalar Python ni ejecutar `iniciar.bat`:
+
+1. Abre JMDesign Studio → **Plan de trabajo** → **Abrir** y elige esta carpeta (la que tiene `modulos/` y `aula_local.py`).
+2. Pulsa **«Arrancar el aula»**. Si es la primera vez, se abre tu navegador: **entra con tu cuenta del curso** (la del LMS) y confirma.
+3. Sigue con «Personalizar» y «Construir». Tu robot se ve en http://127.0.0.1:8800/vista/yo/robo/.
+
+Al cerrar JMDesign se apagan el aula y tu robot. Si prefieres tu terminal y tu agente, sigue con los pasos de abajo: `iniciar.*` y `entorno.*` usan también el Python de JMDesign si está instalado (Windows 7/8: JMDesign no trae Python; instálalo o usa otro equipo).
+
+## Sin JMDesign: qué necesitas
 
 | | Windows 10/11 | Mac |
 |---|---|---|
-| Python 3.10 o más nuevo | `winget install Python.Python.3.12` o python.org (marca «Add python.exe to PATH») | python.org o `brew install python@3.12` |
+| Python 3.10 o más nuevo (no hace falta si tienes JMDesign Studio) | `winget install Python.Python.3.12` o python.org (marca «Add python.exe to PATH») | python.org o `brew install python@3.12` |
 | Tu cuenta del curso | la del LMS | la del LMS |
 | Un agente de terminal | `jmd`, OpenCode o Claude Code | `jmd`, OpenCode o Claude Code |
 | Navegador | Chrome o Edge | Chrome |
@@ -21,7 +31,7 @@ Mismo plan y mismas skills que en el aula del LMS, pero en tu laptop: **Windows 
 | 4. Abre tu agente y pega el prompt | El de `trabajo\plan-robo\PROMPT_ARMAR_ROBO.md` | El de `trabajo/plan-robo/PROMPT_ARMAR_ROBO.md` |
 | 5. Mira tu robot | http://127.0.0.1:8800/vista/yo/robo/ | http://127.0.0.1:8800/vista/yo/robo/ |
 
-En el paso 2, la primera vez se instala lo mínimo (~45 MB, un minuto) y se abre tu navegador para que **entres con tu cuenta del curso**: confirma y vuelve a la ventana. Tu token personal queda guardado fuera de esta carpeta, solo para tu usuario (Windows: `%APPDATA%\jmd-robo`; Mac: `~/.config/jmd-robo`). No lo copies a ningún archivo.
+En el paso 2, la primera vez (sin JMDesign) se instala lo mínimo (~45 MB, un minuto) y se abre tu navegador para que **entres con tu cuenta del curso**: confirma y vuelve a la ventana. Tu token personal queda guardado fuera de esta carpeta, solo para tu usuario (Windows: `%APPDATA%\jmd-robo`; Mac: `~/.config/jmd-robo`). No lo copies a ningún archivo.
 
 En el paso 4 el agente te hace 6 preguntas (nombre, negocio, tono, color y avatar robot u osito, tus tres preguntas frecuentes, estilo y flyer), personaliza el plan y construye a tu robot tarea por tarea en `trabajo/robo/`. Cada tarea se comprueba igual en los dos sistemas: `python herramientas/verificar.py F1-T2` (o `todo`).
 

@@ -48,7 +48,7 @@ TIPOS = {".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": 
          ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg",
          ".jpeg": "image/jpeg", ".webp": "image/webp", ".wav": "audio/wav", ".md": "text/plain; charset=utf-8",
          ".txt": "text/plain; charset=utf-8"}
-REINTENTO = "sh iniciar.sh --token  (Windows: iniciar.bat --token)"
+REINTENTO = "JMDesign: Plan de trabajo, «Entrar con otra cuenta»; sin JMDesign: sh iniciar.sh --token  (Windows: iniciar.bat --token)"
 
 log = logging.getLogger("aula_local")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

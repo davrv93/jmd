@@ -10,5 +10,14 @@ export STT_URL="http://127.0.0.1:8800/stt"        # dictado por servidor
 #   jmd: JMD_URL y JMD_API_KEY (abajo, solo si no los tenías) · OpenCode/otros OpenAI: OPENAI_BASE_URL
 [ -z "$JMD_URL" ] && export JMD_URL="http://127.0.0.1:8800"
 [ -z "$JMD_API_KEY" ] && export JMD_API_KEY="local"
-if [ -f "$AQUI/.venv/bin/activate" ]; then . "$AQUI/.venv/bin/activate"; elif [ -f "$AQUI/.venv/Scripts/activate" ]; then . "$AQUI/.venv/Scripts/activate"; fi
+# Python: el incluido con JMDesign (ya trae los paquetes) si está; si no, el .venv de iniciar.sh.
+_jpy="${JMDESIGN_PYTHON:-}"
+for _f in "$HOME/Library/Application Support/com.jmdesign.studio/python.txt" "${XDG_CONFIG_HOME:-$HOME/.config}/com.jmdesign.studio/python.txt"; do
+  [ -z "$_jpy" ] && [ -f "$_f" ] && _jpy="$(head -n 1 "$_f")"
+done
+if [ -n "$_jpy" ] && [ -x "$_jpy" ]; then
+  export PATH="$(dirname "$_jpy"):$PATH"   # python y python3 son el de JMDesign
+  echo "Python incluido con JMDesign: $_jpy"
+elif [ -f "$AQUI/.venv/bin/activate" ]; then . "$AQUI/.venv/bin/activate"; elif [ -f "$AQUI/.venv/Scripts/activate" ]; then . "$AQUI/.venv/Scripts/activate"; fi
+unset _jpy _f
 cd "$AQUI" && echo "Listo. Estás en $AQUI. Abre tu agente y pega el prompt de trabajo/plan-robo/PROMPT_ARMAR_ROBO.md"
