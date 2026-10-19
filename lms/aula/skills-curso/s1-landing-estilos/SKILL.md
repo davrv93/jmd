@@ -65,6 +65,7 @@ Los estilos están **inspirados en** esas estéticas: no usan logos, nombres de 
 - `descripcion` en español es también el texto alternativo (accesibilidad): descríbela de verdad.
 - Si una imagen sale mal, cambia su `"semilla"` (un entero cualquiera) y vuelve a construir: solo esa imagen se rehace.
 - **Motor de imagen**: en el aula, el servicio de la clase en calidad «máxima» (FLUX en la nube) con `$OSITO_TOKEN`; ya está configurado. Fuera del aula, FLUX directo en Cloudflare con `CF_ACCOUNT_ID` y `CF_API_TOKEN` (en el entorno o en `~/.config/jmd-landings/cloudflare.env`). Sin ninguno de los dos, el sitio se construye igual con marcadores «imagen pendiente».
+- **Tope: 5 imágenes por alumno al día** (se reinicia a las 19:00 en Lima). Solo cuentan las que se generan: las de la caché `.imagenes/` y las que tienen `archivo` no gastan. Por eso, antes de generar, revisa los textos con `--imagenes no`, pide solo las imágenes que el sitio de verdad usa, construye **un** estilo a la vez (cada estilo cambia el prompt y con `--todos` serían 8 veces más) y fija las buenas. Si el tope se acaba, el motor lo dice y deja marcadores «imagen pendiente».
 - **Fija las imágenes buenas** para no regenerarlas (ni gastar cupo):
   ```bash
   bun /opt/skills-curso/s1-landing-estilos/motor/recursos.mjs negocio.json
@@ -85,6 +86,7 @@ Los estilos están **inspirados en** esas estéticas: no usan logos, nombres de 
 |---|---|---|
 | `El JSON del negocio tiene problemas` | Campo que falta o mal escrito | Lee la lista: dice el campo exacto |
 | `imagen pendiente` en el sitio | Sin servicio de imagen o cupo agotado | Reintenta después o usa `archivo` |
+| `Llegaste a tu tope de hoy (5)…` | Ya generaste tus 5 imágenes del día | Usa las ya generadas (`archivo`), fotos del cliente, o espera a las 19:00 |
 | Una palabra resaltada no se ve | `*asterisco*` sin cerrar | Revisa los pares de `*` |
 | La sección no aparece en el menú | Falta `"menu"` | Agrega `"menu": "Texto corto"` |
 | El estilo Express no muestra todas las secciones | Es una sola pantalla a propósito | Usa otro estilo si el cliente quiere más contenido |

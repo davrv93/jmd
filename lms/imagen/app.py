@@ -18,10 +18,11 @@ import gc
 import io
 import logging
 import os
+import socket
 import threading
 import time
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -34,8 +35,10 @@ TOKEN = os.environ.get("IMAGEN_TOKEN", "")
 REPOSO = int(os.environ.get("IMAGEN_REPOSO", "1800"))
 # 0 = sin sd-turbo (ni carga al arrancar ni calidades baja/media): solo Cloudflare y la voz.
 LOCAL = os.environ.get("IMAGEN_LOCAL", "1") != "0"
-# Topes diarios por alumno de la nube (0 = sin tope). El cupo de Cloudflare es de toda la clase.
-MAXIMA_POR_ALUMNO = int(os.environ.get("IMAGEN_MAXIMA_POR_ALUMNO", "15"))
+# Topes diarios por alumno (0 = sin tope). El cupo de Cloudflare es de toda la clase: con 2 pasos FLUX gasta
+# ~90 neurons por imagen, así que 9800 al día alcanzan para ~100 imágenes; 5 por alumno lo reparte.
+# La nube cuenta por token personal; las aulas, por contenedor (todas comparten el token de la clase).
+MAXIMA_POR_ALUMNO = int(os.environ.get("IMAGEN_MAXIMA_POR_ALUMNO", "5"))
 VOZ_POR_ALUMNO = int(os.environ.get("IMAGEN_VOZ_POR_ALUMNO", "300"))
 # Dos modelos locales: sd-turbo (rápido, 1-2 pasos) y DreamShaper 8 con LCM (SD 1.5 afinado: dibuja personajes
 # coherentes y estilo anime; 4 pasos). «media» usa IMAGEN_MEDIA (sd-turbo | dreamshaper). DreamShaper dibuja mejor personajes pero en este servidor
@@ -54,7 +57,7 @@ CF_CUENTA = os.environ.get("CF_ACCOUNT_ID", "")
 CF_TOKEN = os.environ.get("CF_API_TOKEN", "")
 CF_MODELO = os.environ.get("CF_MODELO", "@cf/black-forest-labs/flux-1-schnell")
 CF_API = os.environ.get("CF_API_BASE", "https://api.cloudflare.com/client/v4").rstrip("/")
-CF_PASOS = int(os.environ.get("CF_PASOS", "3"))
+CF_PASOS = int(os.environ.get("CF_PASOS", "2"))
 _cf_cupo = threading.Semaphore(5)
 CF_TOPE = float(os.environ.get("CF_NEURONS_DIA", "9800"))  # capa gratuita: 10 000 neurons/día (se reinicia 00:00 UTC)
 _cf_uso = {"dia": "", "neurons": 0.0}
@@ -274,7 +277,20 @@ def calentar(authorization: str = Header(default=""), x_aula_nube: str | None = 
 
 
 @app.post("/generar")
-def generar(p: Pedido, authorization: str = Header(default=""), x_aula_nube: str | None = Header(default=None)):
+def _aula_de(request: Request) -> str | None:
+    """Nombre del contenedor de aula que pide (curso-<alumno>), por DNS inverso de Docker en aula_net.
+    None para el propio servidor (127.0.0.1: scripts del profesor), que no lleva tope."""
+    ip = request.client.host if request.client else ""
+    if not ip or ip.startswith("127."):
+        return None
+    try:
+        nombre = socket.gethostbyaddr(ip)[0].split(".")[0]
+    except OSError:
+        nombre = ""
+    return "aula:" + (nombre or ip)
+
+
+def generar(p: Pedido, request: Request, authorization: str = Header(default=""), x_aula_nube: str | None = Header(default=None)):
     global _en_cola, _ultimo
     externo = nube.es_externo(x_aula_nube)
     sub = _autorizar(authorization, x_aula_nube)
@@ -283,8 +299,9 @@ def generar(p: Pedido, authorization: str = Header(default=""), x_aula_nube: str
     if externo and p.calidad != "maxima":
         raise _no_disponible(p.calidad)
     if p.calidad == "maxima":
-        if externo:
-            nube.contar(sub, "imágenes en calidad máxima", MAXIMA_POR_ALUMNO)
+        quien = sub if externo else _aula_de(request)
+        if quien:
+            nube.contar(quien, "imágenes en calidad máxima", MAXIMA_POR_ALUMNO)
         return _cloudflare(p)
     if not LOCAL:
         raise _no_disponible(p.calidad)

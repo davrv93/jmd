@@ -66,7 +66,12 @@ async function generarServicio(url, token, prompt, orientacion, semilla) {
     body: JSON.stringify({ prompt, orientacion, calidad: 'maxima', semilla }),
     signal: AbortSignal.timeout(300000),
   });
-  if (r.status === 429) throw new Error('cupo diario de la calidad máxima agotado');
+  if (r.status === 429) {
+    // Tope de 5 imágenes por alumno al día, o cupo de la clase agotado: el servidor dice cuál.
+    const d = await r.json().catch(() => ({}));
+    const msj = (d.detail && (d.detail.mensaje || d.detail)) || 'cupo diario de imágenes agotado';
+    throw Object.assign(new Error(typeof msj === 'string' ? msj : 'cupo diario de imágenes agotado'), { cupo: true });
+  }
   if (!r.ok) throw new Error(`servicio de imagen respondió ${r.status}`);
   return Buffer.from(await r.arrayBuffer());
 }
@@ -81,7 +86,7 @@ export async function prepararImagenes({ negocio, estilo, negocioRuta, salida, m
   fs.mkdirSync(path.join(salida, 'img'), { recursive: true });
   const mapa = {};
   let avisado = false;
-  const motor = cf ? 'cloudflare' : token ? 'servicio' : null;
+  let motor = cf ? 'cloudflare' : token ? 'servicio' : null;
 
   for (const [clave, im] of Object.entries(imgs)) {
     const orientacion = im.orientacion || 'horizontal';
@@ -111,6 +116,7 @@ export async function prepararImagenes({ negocio, estilo, negocioRuta, salida, m
       } catch (e) {
         if (!avisado) registro(`  aviso: no se pudo generar imágenes (${e.message}); uso marcadores`);
         avisado = true;
+        if (e.cupo) motor = null; // sin cupo no tiene sentido pedir las demás
       }
     } else if (!motor && modo !== 'no' && !avisado) {
       registro('  aviso: sin credenciales de Cloudflare ni token del servicio de imagen; uso marcadores');
