@@ -369,6 +369,9 @@ func (s *Server) emitirCertificado(w http.ResponseWriter, r *http.Request, p *Pr
 		return
 	}
 	a, code, msg := s.validarCertIn(&in.certIn)
+	if code == 0 && !s.canSeeCourse(p, a.Curso) {
+		code, msg = 404, "el curso"
+	}
 	switch code {
 	case 400:
 		badRequest(w, msg)
@@ -379,7 +382,7 @@ func (s *Server) emitirCertificado(w http.ResponseWriter, r *http.Request, p *Pr
 	}
 	ctx := r.Context()
 	u, err := s.DB.UserByID(ctx, in.UserID)
-	if errors.Is(err, store.ErrNotFound) {
+	if errors.Is(err, store.ErrNotFound) || (err == nil && !p.Is("admin") && !s.canSeeCourse(&Principal{Roles: u.Roles, Cohorts: u.Cohorts}, a.Curso)) {
 		notFound(w, "el alumno")
 		return
 	}
@@ -423,6 +426,9 @@ func (s *Server) emitirLote(w http.ResponseWriter, r *http.Request, p *Principal
 		return
 	}
 	a, code, msg := s.validarCertIn(&in.certIn)
+	if code == 0 && !s.canSeeCourse(p, a.Curso) {
+		code, msg = 404, "el curso"
+	}
 	switch code {
 	case 400:
 		badRequest(w, msg)
@@ -548,7 +554,11 @@ func (s *Server) listarCertificados(w http.ResponseWriter, r *http.Request, p *P
 		return
 	}
 	out := make([]map[string]any, 0, len(list))
+	cat := s.Content.Get()
 	for _, c := range list {
+		if cu := cat.Course(c.CourseID); !p.Is("admin") && (cu == nil || !s.canSeeCourse(p, cu)) {
+			continue // un instructor solo ve los certificados de los cursos de sus grupos
+		}
 		out = append(out, s.certView(c, true))
 	}
 	writeJSON(w, 200, out)

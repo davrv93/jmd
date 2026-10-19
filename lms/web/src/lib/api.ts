@@ -308,8 +308,18 @@ export interface CourseProgress {
   students: { id: string; name: string; email: string; cohorts: string[]; lessons: Record<string, number> | null }[];
 }
 
+export interface Inscripcion {
+  grupo: string;
+  nombre: string;
+  cursos: { id: string; slug: string; title: string; description: string; requisitos?: string[]; proyecto_final?: string; fechas: string[] }[];
+}
+
 export const api = {
   config: () => req<AuthConfig>("GET", "/api/v1/auth/config"),
+  inscripcion: (grupo: string) => req<Inscripcion>("GET", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`),
+  inscribirse: (grupo: string, b: { name: string; email: string; password: string }) =>
+    req<{ token: string; user: Me; cursos: string[] }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`, b),
+  unirse: (grupo: string) => req<{ grupo: string; cohorts: string[]; cursos: string[] }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}/unirme`, {}),
   login: (email: string, password: string) => req<{ token: string; user: Me }>("POST", "/api/v1/auth/login", { email, password, label: "web" }),
   register: (b: { email: string; name: string; password: string; invite_code: string }) => req<{ token: string; user: Me }>("POST", "/api/v1/auth/register", b),
   logout: () => req<{ ok: boolean; end_session_url?: string }>("POST", "/api/v1/auth/logout", {}),

@@ -32,6 +32,9 @@ type Server struct {
 	// en vez de DefaultCohort (p. ej. «los que ingresen hasta las 5 pm van al Grupo 3»).
 	CohortWindow string
 	CohortUntil  time.Time // cohorte de quien se registra con el código
+	// Inscripcion son los grupos con inscripción abierta por enlace (/inscripcion/<grupo>): la URL es
+	// la invitación, sin código. Vacío = ninguno.
+	Inscripcion []string
 	PublicURL    string    // https://lms.<dominio> (para las URLs de las preguntas)
 	SessionTTL   time.Duration
 	Web          fs.FS          // build del front; nil = solo API
@@ -120,6 +123,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/auth/config", s.authConfig)
 	mux.HandleFunc("POST /api/v1/auth/login", s.loginLocal)
 	mux.HandleFunc("POST /api/v1/auth/register", s.register)
+	mux.HandleFunc("GET /api/v1/inscripcion/{grupo}", s.inscripcionInfo)
+	mux.HandleFunc("POST /api/v1/inscripcion/{grupo}", s.inscribirse)
+	mux.Handle("POST /api/v1/inscripcion/{grupo}/unirme", s.authed(s.unirseAGrupo))
 	mux.Handle("POST /api/v1/auth/logout", s.authed(s.logout))
 	mux.HandleFunc("GET /auth/oidc/start", s.oidcStart)
 	mux.HandleFunc("GET /auth/oidc/callback", s.oidcCallback)
@@ -417,7 +423,7 @@ func jsonString(s string) []byte {
 }
 
 // shellSections son las rutas con parámetro: el front solo prerenderiza /<sección>/_/.
-var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true, "verificar": true, "live": true, "links": true, "projects": true}
+var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true, "verificar": true, "live": true, "links": true, "projects": true, "inscripcion": true}
 
 // shellFor da el archivo genérico (<sección>/_/index.html o q-data.json) para /<sección>/<x>/ y
 // /<sección>/<x>/q-data.json; "" si la ruta no es de ese tipo. p viene limpia (path.Clean).

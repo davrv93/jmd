@@ -28,10 +28,10 @@ import (
 const bomUTF8 = "\xEF\xBB\xBF"
 
 // exportFilas resuelve los filtros y devuelve los certificados vigentes con su usuario.
-func (s *Server) exportFilas(w http.ResponseWriter, r *http.Request) ([]*store.Certificate, map[string]*store.User, string, bool) {
+func (s *Server) exportFilas(w http.ResponseWriter, r *http.Request, p *Principal) ([]*store.Certificate, map[string]*store.User, string, bool) {
 	q := r.URL.Query()
 	c := s.Content.Get().Course(strings.TrimSpace(q.Get("course")))
-	if c == nil {
+	if c == nil || !s.canSeeCourse(p, c) {
 		badRequest(w, "course: id o slug de un curso existente")
 		return nil, nil, "", false
 	}
@@ -108,7 +108,7 @@ func servirCSV(w http.ResponseWriter, nombre string, cab []string, filas [][]str
 
 // exportCSV: GET /api/v1/admin/certificados/export.csv?course=&lesson= (genérico).
 func (s *Server) exportCSV(w http.ResponseWriter, r *http.Request, p *Principal) {
-	list, users, nombre, ok := s.exportFilas(w, r)
+	list, users, nombre, ok := s.exportFilas(w, r, p)
 	if !ok {
 		return
 	}
@@ -135,7 +135,7 @@ func (s *Server) exportCSV(w http.ResponseWriter, r *http.Request, p *Principal)
 // columnas de la carga masiva de Canvas Credentials / Badgr. La evidencia es la ficha pública
 // de verificación; la narrativa lleva el código y las horas.
 func (s *Server) exportBadgrCSV(w http.ResponseWriter, r *http.Request, p *Principal) {
-	list, users, nombre, ok := s.exportFilas(w, r)
+	list, users, nombre, ok := s.exportFilas(w, r, p)
 	if !ok {
 		return
 	}
@@ -169,7 +169,7 @@ func (s *Server) exportBadgrCSV(w http.ResponseWriter, r *http.Request, p *Princ
 // panel permite mapear al subir. Accredible entrega su propia plantilla por grupo: si difiere,
 // se mapean las columnas al importar.
 func (s *Server) exportAccredibleCSV(w http.ResponseWriter, r *http.Request, p *Principal) {
-	list, users, nombre, ok := s.exportFilas(w, r)
+	list, users, nombre, ok := s.exportFilas(w, r, p)
 	if !ok {
 		return
 	}

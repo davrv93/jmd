@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"mime"
 	"net/http"
 	"os"
@@ -12,9 +13,10 @@ import (
 	"github.com/davrv93/jmd/lms/api/internal/content"
 )
 
-// canSeeCourse: el personal ve todo; el alumno, los cursos de su cohorte (o sin cohortes).
+// canSeeCourse: el admin ve todo; el instructor y el alumno, los cursos de sus grupos (cohortes)
+// y los que no tienen grupo. Así un instructor del Grupo 4 no ve los grupos anteriores.
 func (s *Server) canSeeCourse(p *Principal, c *content.Course) bool {
-	if p.Staff() || len(c.Cohorts) == 0 {
+	if p.Is("admin") || len(c.Cohorts) == 0 {
 		return true
 	}
 	for _, mine := range p.Cohorts {
@@ -302,7 +304,7 @@ func (s *Server) setProgress(w http.ResponseWriter, r *http.Request, p *Principa
 // courseProgress (personal): avance de cada alumno por sesión.
 func (s *Server) courseProgress(w http.ResponseWriter, r *http.Request, p *Principal) {
 	c := s.Content.Get().Course(r.PathValue("id"))
-	if c == nil {
+	if c == nil || !s.canSeeCourse(p, c) {
 		notFound(w, "el curso")
 		return
 	}
@@ -389,4 +391,27 @@ func (s *Server) courseFile(w http.ResponseWriter, r *http.Request, p *Principal
 		w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filepath.Base(rel)}))
 	}
 	http.ServeFile(w, r, full)
+}
+
+// compartenGrupo dice si dos listas de cohortes tienen alguna en común.
+func compartenGrupo(a, b []string) bool {
+	for _, x := range a {
+		if contiene(b, x) {
+			return true
+		}
+	}
+	return false
+}
+
+// puedeVerAlumno: el propio alumno, el admin o un instructor que comparte grupo con él (para el
+// Visor de su aula y sus datos). Un instructor de un grupo no ve a los alumnos de otro.
+func (s *Server) puedeVerAlumno(ctx context.Context, p *Principal, userID string) bool {
+	if userID == p.ID || p.Is("admin") {
+		return true
+	}
+	if !p.Staff() {
+		return false
+	}
+	u, err := s.DB.UserByID(ctx, userID)
+	return err == nil && compartenGrupo(p.Cohorts, u.Cohorts)
 }

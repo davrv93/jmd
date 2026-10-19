@@ -116,6 +116,9 @@ func (s *Server) exportDatosCertificado(w http.ResponseWriter, r *http.Request, 
 		if cohort != "" && !contiene(u.Cohorts, cohort) {
 			continue
 		}
+		if !p.Is("admin") && !compartenGrupo(p.Cohorts, u.Cohorts) {
+			continue // un instructor solo exporta a los alumnos de sus grupos
+		}
 		f := fila{estado: "pendiente", nombreCuenta: u.Name, emailCuenta: u.Email, grupos: strings.Join(u.Cohorts, " ")}
 		if dc := datos[u.ID]; dc != nil {
 			f.estado, f.nombre, f.correo = "listo", dc.Nombre, dc.Correo

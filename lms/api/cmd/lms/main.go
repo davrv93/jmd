@@ -9,6 +9,7 @@
 //	LMS_ADMIN_EMAIL / LMS_ADMIN_PASSWORD / LMS_ADMIN_NAME   cuenta del instructor (se crea si no existe)
 //	LMS_INVITE_CODE     código para que los alumnos se registren (vacío = sin registro)
 //	LMS_COHORT          cohorte de quien se registra (p. ej. cohorte-2026-2)
+//	LMS_INSCRIPCION     grupos con inscripción abierta por enlace /inscripcion/<grupo> (p. ej. grupo-4; varios con comas)
 //	LMS_RUNNER          docker | podman para ejecutar código; vacío = deshabilitado
 //	LMS_RUNNER_TIMEOUT  tope por ejecución (p. ej. 15s, 1m); por defecto 15s
 //	LMS_TERM_IMAGE      imagen de la shell interactiva del estudio (por defecto python:3.12-alpine)
@@ -96,6 +97,7 @@ func run() error {
 		InviteCode:    os.Getenv("LMS_INVITE_CODE"),
 		DefaultCohort: os.Getenv("LMS_COHORT"),
 		CohortWindow:  os.Getenv("LMS_COHORT_VENTANA"),
+		Inscripcion:   listaEntorno("LMS_INSCRIPCION"),
 		PublicURL:     strings.TrimRight(env("LMS_PUBLIC_URL", "http://localhost:8080"), "/"),
 		Web:           webdist.FS(),
 		DataDir:       dataDir,
@@ -239,4 +241,15 @@ func bootstrapAdmin(ctx context.Context, db *store.DB) error {
 	}
 	slog.Info("cuenta del instructor creada", "email", u.Email)
 	return nil
+}
+
+// listaEntorno lee una lista separada por comas («grupo-4, grupo-6»), sin vacíos.
+func listaEntorno(k string) []string {
+	var out []string
+	for _, x := range strings.Split(os.Getenv(k), ",") {
+		if x = strings.TrimSpace(x); x != "" {
+			out = append(out, x)
+		}
+	}
+	return out
 }

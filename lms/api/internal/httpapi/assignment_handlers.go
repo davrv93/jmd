@@ -169,7 +169,7 @@ func (s *Server) createSubmission(w http.ResponseWriter, r *http.Request, p *Pri
 // submission: contrato GET /api/v1/submissions/{id}; la ve su autor o el personal.
 func (s *Server) submission(w http.ResponseWriter, r *http.Request, p *Principal) {
 	sub, err := s.DB.Submission(r.Context(), r.PathValue("id"))
-	if errors.Is(err, store.ErrNotFound) || (err == nil && sub.UserID != p.ID && !p.Staff()) {
+	if errors.Is(err, store.ErrNotFound) || (err == nil && sub.UserID != p.ID && (!p.Staff() || s.visibleAssignment(p, sub.AssignmentID) == nil)) {
 		notFound(w, "la entrega")
 		return
 	}
@@ -244,7 +244,7 @@ func rubricaView(js string) []criterioCalificado {
 // el alumno ve qué logró y qué le falta; sin ellos, la nota global de siempre.
 func (s *Server) gradeSubmission(w http.ResponseWriter, r *http.Request, p *Principal) {
 	sub, err := s.DB.Submission(r.Context(), r.PathValue("id"))
-	if errors.Is(err, store.ErrNotFound) {
+	if errors.Is(err, store.ErrNotFound) || (err == nil && s.visibleAssignment(p, sub.AssignmentID) == nil) {
 		notFound(w, "la entrega")
 		return
 	}

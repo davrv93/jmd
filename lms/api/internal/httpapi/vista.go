@@ -47,9 +47,9 @@ func inyectarConsola(html []byte) []byte {
 	return []byte(scriptConsola + s)
 }
 
-// vistaAcceso valida que el que pregunta sea el dueño (o el personal) y devuelve el sub del dueño.
-func vistaAcceso(w http.ResponseWriter, p *Principal, sub string) bool {
-	if sub != p.ID && !p.Staff() {
+// vistaAcceso valida que el que pregunta sea el dueño, el admin o un instructor de su grupo.
+func (s *Server) vistaAcceso(w http.ResponseWriter, r *http.Request, p *Principal, sub string) bool {
+	if !s.puedeVerAlumno(r.Context(), p, sub) {
 		writeErr(w, 403, "forbidden", "ese visor es de otra persona")
 		return false
 	}
@@ -74,7 +74,7 @@ func vistaRuta(raw string) (string, bool) {
 // vistaServir: GET /vista/{sub}/{ruta...}.
 func (s *Server) vistaServir(w http.ResponseWriter, r *http.Request, p *Principal) {
 	sub := r.PathValue("sub")
-	if !vistaAcceso(w, p, sub) {
+	if !s.vistaAcceso(w, r, p, sub) {
 		return
 	}
 	if !s.aulaListo(w) {
@@ -136,7 +136,7 @@ func (s *Server) vistaVersion(w http.ResponseWriter, r *http.Request, p *Princip
 	if sub == "" {
 		sub = p.ID
 	}
-	if !vistaAcceso(w, p, sub) {
+	if !s.vistaAcceso(w, r, p, sub) {
 		return
 	}
 	if !s.aulaListo(w) {
@@ -156,7 +156,7 @@ func (s *Server) vistaProyectos(w http.ResponseWriter, r *http.Request, p *Princ
 	if sub == "" {
 		sub = p.ID
 	}
-	if !vistaAcceso(w, p, sub) {
+	if !s.vistaAcceso(w, r, p, sub) {
 		return
 	}
 	if !s.aulaListo(w) {
@@ -182,7 +182,7 @@ var metodosVista = []string{http.MethodGet, http.MethodPost, http.MethodPut, htt
 // alumno (su asistente o su propio backend). Solo el dueño escribe; el personal solo mira (GET).
 func (s *Server) vistaAPI(w http.ResponseWriter, r *http.Request, p *Principal) {
 	sub := r.PathValue("sub")
-	if !vistaAcceso(w, p, sub) {
+	if !s.vistaAcceso(w, r, p, sub) {
 		return
 	}
 	if !s.aulaListo(w) {
