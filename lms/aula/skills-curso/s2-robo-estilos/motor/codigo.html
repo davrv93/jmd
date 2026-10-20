@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mi código · herramientas.py</title>
+<style>
+:root { --fondo:#0b0f1a; --panel:#121a2b; --borde:#24304d; --texto:#e6ecff; --tenue:#8a96b8; --verde:#39ff88; --rojo:#ff6b6b; --ambar:#ffd166; --azul:#7aa2ff;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace; }
+* { box-sizing:border-box; }
+html,body { height:100%; margin:0; }
+body { background:var(--fondo); color:var(--texto); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; display:grid; grid-template-rows:auto 1fr auto; }
+header { display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid var(--borde); flex-wrap:wrap; }
+header h1 { font-size:16px; margin:0; font-family:var(--mono); }
+header h1 b { color:var(--verde); }
+.boton { background:var(--verde); color:#04140b; border:0; border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer; font-size:14px; }
+.boton.sec { background:transparent; color:var(--texto); border:1px solid var(--borde); }
+.estado { font-family:var(--mono); font-size:13px; color:var(--tenue); margin-left:auto; }
+.estado.ok { color:var(--verde); } .estado.mal { color:var(--rojo); }
+main { display:grid; grid-template-columns:1fr minmax(280px,34%); min-height:0; }
+.editor { display:grid; grid-template-columns:auto 1fr; min-height:0; overflow:auto; background:#0a0e18; }
+.lineas { font-family:var(--mono); font-size:14px; line-height:1.55; color:#4b577a; text-align:right; padding:12px 8px 12px 12px; user-select:none; white-space:pre; }
+.lineas .err { color:var(--rojo); font-weight:700; }
+textarea { font-family:var(--mono); font-size:14px; line-height:1.55; background:transparent; color:var(--texto); border:0; outline:0; resize:none;
+  padding:12px 16px 40px 8px; white-space:pre; overflow:hidden; tab-size:4; min-height:100%; caret-color:var(--verde); }
+aside { border-left:1px solid var(--borde); display:flex; flex-direction:column; min-height:0; background:var(--panel); }
+aside h2 { font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--tenue); margin:14px 16px 8px; }
+.prueba { display:flex; gap:8px; padding:0 16px; }
+.prueba input { flex:1; min-width:0; background:#0a0e18; color:var(--texto); border:1px solid var(--borde); border-radius:8px; padding:8px 10px; font-size:14px; }
+.respuestas { flex:1; overflow:auto; padding:12px 16px; display:flex; flex-direction:column; gap:10px; }
+.r { border:1px solid var(--borde); border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.4; }
+.r small { display:block; font-family:var(--mono); font-size:12px; margin-top:6px; color:var(--tenue); }
+.r.tuyo { border-color:var(--verde); } .r.tuyo small { color:var(--verde); }
+.r.error { border-color:var(--rojo); } .r.error small { color:var(--rojo); }
+.r.yo { align-self:flex-end; color:var(--ambar); border-color:#5a4a1e; }
+.ayuda { font-size:13px; color:var(--tenue); padding:10px 16px 14px; border-top:1px solid var(--borde); line-height:1.45; }
+.ayuda code { font-family:var(--mono); color:var(--azul); }
+footer { font-size:12px; color:var(--tenue); padding:6px 16px; border-top:1px solid var(--borde); font-family:var(--mono); }
+@media (max-width: 760px) { main { grid-template-columns:1fr; grid-template-rows:60% 40%; } aside { border-left:0; border-top:1px solid var(--borde); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚙ <b>herramientas.py</b> · el código de tu Robo</h1>
+  <button class="boton" id="guardar" type="button">Guardar <span style="opacity:.6">Ctrl+S</span></button>
+  <a class="boton sec" href="index.html" style="text-decoration:none">Ver a Robo</a>
+  <span class="estado" id="estado">cargando…</span>
+</header>
+<main>
+  <div class="editor"><div class="lineas" id="lineas" aria-hidden="true">1</div><textarea id="codigo" spellcheck="false" aria-label="Código de herramientas.py"></textarea></div>
+  <aside>
+    <h2>Prueba tu código</h2>
+    <form class="prueba" id="form"><input id="msg" placeholder="Ej.: ¿qué hora es?" autocomplete="off"><button class="boton" type="submit">Enviar</button></form>
+    <div class="respuestas" id="respuestas" aria-live="polite"></div>
+    <div class="ayuda">Cada función con <code>@herramienta("palabra")</code> responde cuando el mensaje trae esa palabra. Guarda y pregunta: no hace falta reiniciar. Si respondió tu código verás <code>⚙ tu código: funcion()</code>.</div>
+  </aside>
+</main>
+<footer id="pie">Tab = 4 espacios · en Python la sangría importa</footer>
+<script>
+const VISTA = (location.pathname.match(/^\/vista\/[^/]+/) || [''])[0];
+const BASE = location.origin + VISTA;
+const $ = (id) => document.getElementById(id);
+const ta = $('codigo'), lin = $('lineas'), est = $('estado');
+let lineaError = 0, guardado = '';
+
+function pintarLineas() {
+  const n = ta.value.split('\n').length;
+  let s = '';
+  for (let i = 1; i <= n; i++) s += (i === lineaError ? '<span class="err">' + i + '</span>' : i) + '\n';
+  lin.innerHTML = s;
+  ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px';
+}
+function estado(txt, clase) { est.textContent = txt; est.className = 'estado ' + (clase || ''); }
+async function cargar() {
+  try {
+    const r = await fetch(BASE + '/api/codigo');
+    if (!r.ok) throw new Error(r.status === 503 ? 'Robo está apagado: corre  sh /trabajo/mi-robo/robo.sh arrancar' : 'HTTP ' + r.status);
+    const d = await r.json();
+    ta.value = guardado = d.codigo; pintarLineas(); estado('listo', 'ok');
+  } catch (e) { estado(e.message, 'mal'); }
+}
+async function guardar() {
+  estado('guardando…');
+  try {
+    const r = await fetch(BASE + '/api/codigo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: ta.value }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) { lineaError = 0; guardado = ta.value; estado('✓ guardado · ahora pruébalo →', 'ok'); }
+    else { lineaError = d.linea || 0; estado('✗ ' + (d.error || d.detail || 'no se pudo guardar'), 'mal'); }
+  } catch (e) { estado('✗ ' + e.message, 'mal'); }
+  pintarLineas();
+}
+function burbuja(texto, clase, pie) {
+  const div = document.createElement('div'); div.className = 'r ' + clase; div.textContent = texto;
+  if (pie) { const s = document.createElement('small'); s.textContent = pie; div.appendChild(s); }
+  $('respuestas').prepend(div);
+}
+$('form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const m = $('msg').value.trim(); if (!m) return;
+  if (ta.value !== guardado) await guardar();
+  burbuja(m, 'yo'); $('msg').value = '';
+  try {
+    const r = await fetch(BASE + '/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mensaje: m, historial: [] }) });
+    const d = await r.json();
+    const texto = String(d.texto || d.error || '…').replace(/\s*ANIMO\s*:\s*\w+\s*$/i, '');
+    if (d.fuente === 'herramienta' && d.herramienta === 'error') { burbuja(texto, 'error', '✗ tu código falló'); const m2 = texto.match(/línea (\d+)/); lineaError = m2 ? +m2[1] : 0; pintarLineas(); }
+    else if (d.fuente === 'herramienta') burbuja(texto, 'tuyo', '⚙ tu código: ' + d.herramienta + '()');
+    else burbuja(texto, '', d.fuente === 'faq' ? 'respuesta de tus preguntas frecuentes' : 'respuesta de la IA');
+  } catch (e) { burbuja('No pude hablar con Robo: ' + e.message, 'error'); }
+});
+ta.addEventListener('input', () => { if (lineaError) lineaError = 0; pintarLineas(); estado(ta.value === guardado ? 'listo' : '● sin guardar'); });
+ta.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); guardar(); return; }
+  if (e.key === 'Tab') { e.preventDefault(); const i = ta.selectionStart; ta.setRangeText('    ', i, ta.selectionEnd, 'end'); pintarLineas(); }
+  if (e.key === 'Enter') { // mantiene la sangría de la línea anterior (y suma 4 tras «:»)
+    const i = ta.selectionStart, antes = ta.value.slice(0, i), linea = antes.slice(antes.lastIndexOf('\n') + 1);
+    let sang = (linea.match(/^ */) || [''])[0]; if (/:\s*$/.test(linea)) sang += '    ';
+    e.preventDefault(); ta.setRangeText('\n' + sang, i, ta.selectionEnd, 'end'); pintarLineas();
+  }
+});
+$('guardar').addEventListener('click', guardar);
+cargar();
+</script>
+</body>
+</html>
