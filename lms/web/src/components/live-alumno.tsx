@@ -126,6 +126,9 @@ export const LiveAlumno = component$(
     const barraAct = useSignal<HTMLDivElement>();
     const listaTabs = useSignal<HTMLDivElement>();
     const btnLogre = useSignal<HTMLButtonElement>();
+    // Visor desacoplado: ventana flotante (centrada la primera vez) que se arrastra por su barra y se
+    // redimensiona por la esquina; así la escena, la terminal y el visor se ven a la vez.
+    const flot = useStore({ on: false, x: 0, y: 0, w: 0, h: 0, moviendo: false });
 
     // Sigue el stream: cada evento estado actualiza escena/cortina/modo/aviso.
     // eslint-disable-next-line qwik/no-use-visible-task
@@ -287,6 +290,64 @@ export const LiveAlumno = component$(
 
     const alternarMax = $(() => {
       disp.max = !disp.max;
+    });
+
+    // Visor flotante. La primera vez se centra en la ventana; luego recuerda dónde lo dejaste.
+    const ajustarFlot = $(() => {
+      const W = window.innerWidth, H = window.innerHeight;
+      flot.w = Math.max(320, Math.min(flot.w || Math.min(1100, Math.round(W * 0.62)), W - 16));
+      flot.h = Math.max(240, Math.min(flot.h || Math.min(780, Math.round(H * 0.7)), H - 16));
+      if (!flot.x && !flot.y) {
+        flot.x = Math.round((W - flot.w) / 2);
+        flot.y = Math.round((H - flot.h) / 2);
+      }
+      flot.x = Math.max(8 - flot.w + 120, Math.min(flot.x, W - 120));
+      flot.y = Math.max(8, Math.min(flot.y, H - 48));
+    });
+    const desacoplar = $(async () => {
+      await ajustarFlot();
+      flot.on = true;
+      if (panel.value === "visor") await abrirPestana("terminal", false);
+    });
+    const acoplar = $(async () => {
+      flot.on = false;
+      await abrirPestana("visor");
+    });
+    const centrarFlot = $(async () => {
+      flot.x = 0; flot.y = 0;
+      await ajustarFlot();
+    });
+    const moverFlot = $((ev: PointerEvent) => {
+      if (ev.button !== 0 || (ev.target as HTMLElement).closest("button, a")) return;
+      const x0 = ev.clientX - flot.x, y0 = ev.clientY - flot.y;
+      flot.moviendo = true;
+      const mover = (e: PointerEvent) => {
+        flot.x = Math.round(e.clientX - x0);
+        flot.y = Math.max(0, Math.round(e.clientY - y0));
+      };
+      const soltar = () => {
+        flot.moviendo = false;
+        window.removeEventListener("pointermove", mover);
+        window.removeEventListener("pointerup", soltar);
+      };
+      window.addEventListener("pointermove", mover);
+      window.addEventListener("pointerup", soltar);
+    });
+    const redimFlot = $((ev: PointerEvent) => {
+      if (ev.button !== 0) return;
+      const x0 = ev.clientX, y0 = ev.clientY, w0 = flot.w, h0 = flot.h;
+      flot.moviendo = true;
+      const mover = (e: PointerEvent) => {
+        flot.w = Math.max(320, Math.round(w0 + e.clientX - x0));
+        flot.h = Math.max(240, Math.round(h0 + e.clientY - y0));
+      };
+      const soltar = () => {
+        flot.moviendo = false;
+        window.removeEventListener("pointermove", mover);
+        window.removeEventListener("pointerup", soltar);
+      };
+      window.addEventListener("pointermove", mover);
+      window.addEventListener("pointerup", soltar);
     });
 
     // Lleva a «Lo logré»: muestra la escena y pone el foco en el botón (no lo pulsa).
@@ -834,6 +895,11 @@ export const LiveAlumno = component$(
               </div>
               <h2 class="lv-panel-titulo">{nombrePestana}</h2>
               <div class="lv-panel-acc">
+                {panel.value === "visor" && !flot.on && (
+                  <button type="button" class="lv-ico-btn lv-solo-escritorio" aria-label="Desacoplar el visor en una ventana flotante" title="Desacoplar el visor: ventana flotante en el medio" onClick$={desacoplar}>
+                    <Icon name="external" size={16} />
+                  </button>
+                )}
                 <button
                   type="button"
                   class="lv-ico-btn lv-solo-escritorio"
@@ -862,7 +928,15 @@ export const LiveAlumno = component$(
               {termAbierta.value && <Terminal />}
             </div>
             <div id="lv-tp-visor" role="tabpanel" aria-labelledby="lv-tab-visor" class="lv-tp lv-tp-visor" hidden={panel.value !== "visor"}>
-              {panel.value === "visor" && session.me && <LiveVisor lesson={props.lesson} escena={efectiva} sub={session.me.id} ruta={rutaVisor} proy={proyVisor} />}
+              {panel.value === "visor" && session.me && !flot.on && <LiveVisor lesson={props.lesson} escena={efectiva} sub={session.me.id} ruta={rutaVisor} proy={proyVisor} />}
+              {panel.value === "visor" && flot.on && (
+                <div class="lv-flot-aviso">
+                  <p>El visor está en una ventana flotante.</p>
+                  <button type="button" class="btn ghost sm" onClick$={acoplar}>
+                    <Icon name="panelDerecha" size={14} /> Acoplarlo aquí
+                  </button>
+                </div>
+              )}
             </div>
             <div id="lv-tp-agente" role="tabpanel" aria-labelledby="lv-tab-agente" class="lv-tp lv-tp-agente" tabIndex={0} hidden={panel.value !== "agente"}>
               <span class="lv-agente-ico">
@@ -948,6 +1022,33 @@ export const LiveAlumno = component$(
             </span>
           </span>
         </footer>
+
+        {flot.on && session.me && (
+          <section
+            class={["lv-flot", flot.moviendo ? "moviendo" : ""].join(" ")}
+            role="dialog"
+            aria-label="Visor flotante"
+            style={`left:${flot.x}px;top:${flot.y}px;width:${flot.w}px;height:${flot.h}px`}
+          >
+            <header class="lv-flot-cab" onPointerDown$={moverFlot} onDblClick$={centrarFlot} title="Arrastra para moverlo. Doble clic: al centro.">
+              <Icon name="eye" size={14} />
+              <span class="lv-flot-titulo">Visor</span>
+              <button type="button" class="lv-ico-btn" aria-label="Centrar el visor" title="Al centro" onClick$={centrarFlot}>
+                <Icon name="target" size={15} />
+              </button>
+              <button type="button" class="lv-ico-btn" aria-label="Acoplar el visor al panel" title="Acoplar al panel" onClick$={acoplar}>
+                <Icon name="panelDerecha" size={15} />
+              </button>
+              <button type="button" class="lv-ico-btn" aria-label="Cerrar el visor flotante" title="Cerrar" onClick$={() => (flot.on = false)}>
+                <Icon name="x" size={15} />
+              </button>
+            </header>
+            <div class="lv-flot-cuerpo">
+              <LiveVisor lesson={props.lesson} escena={efectiva} sub={session.me.id} ruta={rutaVisor} proy={proyVisor} />
+            </div>
+            <span class="lv-flot-esquina" aria-hidden="true" preventdefault:pointerdown onPointerDown$={redimFlot} />
+          </section>
+        )}
       </div>
     );
   },
