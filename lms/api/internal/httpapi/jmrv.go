@@ -39,6 +39,8 @@ func (s *Server) jmrvProxy(w http.ResponseWriter, r *http.Request, p *Principal)
 	}
 	destino.RawQuery = r.URL.RawQuery
 	r.Body = http.MaxBytesReader(w, r.Body, maxJMRVBody)
+	// El middleware general pone DENY; aquí el iframe es del mismo origen.
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			pr.Out.URL = destino
