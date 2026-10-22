@@ -39,9 +39,11 @@ COPY plantillas /opt/plantillas
 COPY AGENTS.md /home/alumno/AGENTS.md
 COPY bin/aula /usr/local/bin/aula
 COPY bin/aula-paso /usr/local/bin/aula-paso
-RUN chmod -R a+rX /opt/osito /opt/skills-curso /opt/plantillas /home/alumno/AGENTS.md && chmod 0755 /usr/local/bin/aula /usr/local/bin/aula-paso && ln -s bun /usr/local/bin/bunx && chmod -R a+rX /node_modules && ln -s /opt/skills-curso /home/alumno/.config/jmd/skills && chown -R alumno:alumno /home/alumno
+COPY bin/jmrv /usr/local/bin/jmrv
+RUN chmod -R a+rX /opt/osito /opt/skills-curso /opt/plantillas /home/alumno/AGENTS.md && chmod 0755 /usr/local/bin/aula /usr/local/bin/aula-paso /usr/local/bin/jmrv && ln -s bun /usr/local/bin/bunx && chmod -R a+rX /node_modules && ln -s /opt/skills-curso /home/alumno/.config/jmd/skills && chown -R alumno:alumno /home/alumno
 ENV HOME=/home/alumno PATH=/opt/venv/bin:/usr/local/bin:/usr/bin:/bin TERM=xterm-256color \
     JMD_URL=http://ai-orchestrator:4000 OSITO_PERFIL=nube OSITO_PUERTO=8766 PYTHONDONTWRITEBYTECODE=1 \
+    JMRV_URL=http://jmrv:8790 \
     BUN_INSTALL_CACHE_DIR=/trabajo/.bun-cache DO_NOT_TRACK=1
 USER alumno
 WORKDIR /trabajo

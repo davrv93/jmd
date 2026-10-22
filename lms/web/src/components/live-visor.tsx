@@ -22,6 +22,9 @@ export const LiveVisor = component$((props: { lesson: string; escena: string; su
   const ruta = props.ruta; // vive en el panel: sobrevive al cambiar de pestaña
   const tam = useSignal<"movil" | "tablet" | "escritorio">("escritorio");
   const recarga = useSignal(0);
+  // Fuente del marco: tu carpeta o el Image Studio. JMRV es una app viva:
+  // el sondeo de /trabajo no lo toca (abajo se salta cuando fuente es jmrv).
+  const fuente = useSignal<"trabajo" | "jmrv">("trabajo");
   const marco = useSignal<HTMLIFrameElement>();
   const consola = useStore<{ items: Consola[]; abierta: boolean }>({ items: [], abierta: false });
   const proy = props.proy; // vive en el panel: sobrevive al cambiar de pestaña
@@ -41,6 +44,7 @@ export const LiveVisor = component$((props: { lesson: string; escena: string; su
     let alMontar = true; // al abrir el panel siempre se relee la lista de proyectos
     const sondear = async () => {
       if (document.hidden) return;
+      if (fuente.value === "jmrv") return; // JMRV es una app viva: no se recarga por sondeo
       try {
         const v = (await api.vistaVersion()).version;
         const cambio = !!ultima && !!v && v !== ultima;
@@ -92,11 +96,21 @@ export const LiveVisor = component$((props: { lesson: string; escena: string; su
 
   const base = `/vista/${encodeURIComponent(props.sub)}/`;
   const url = `${base}${ruta.value}`;
+  const jmrvUrl = "/jmrv/";
 
   return (
     <div class="visor">
       <div class="visor-barra">
-        {proy.lista.length > 0 && (
+        <span class="visor-tam" role="radiogroup" aria-label="Fuente del visor">
+          {( [["trabajo", "Mi trabajo"], ["jmrv", "Imágenes IA"]] as const ).map(([id, nombre]) => (
+            <button key={id} type="button" class="btn ghost sm" role="radio" aria-checked={fuente.value === id} aria-pressed={fuente.value === id} onClick$={() => (fuente.value = id)}>
+              {nombre}
+            </button>
+          ))}
+        </span>
+        {fuente.value === "trabajo" && (
+          <>
+            {proy.lista.length > 0 && (
           <select
             class="visor-proy"
             aria-label="Proyecto a mostrar"
@@ -150,19 +164,36 @@ export const LiveVisor = component$((props: { lesson: string; escena: string; su
         <button type="button" class="btn ghost sm" aria-expanded={consola.abierta} onClick$={() => (consola.abierta = !consola.abierta)}>
           Consola{consola.items.length > 0 ? ` (${consola.items.length})` : ""}
         </button>
+          </>
+        )}
+        {fuente.value === "jmrv" && (
+          <a class="btn ghost sm" href={jmrvUrl} target="_blank" rel="noopener" aria-label="Abrir JMRV en una pestaña nueva">
+            <Icon name="external" size={14} />
+          </a>
+        )}
       </div>
       <div class="visor-lienzo">
-        <iframe
-          key={`${url}#${recarga.value}`}
-          ref={marco}
-          class={`visor-frame visor-${tam.value}`}
-          allow="microphone; clipboard-write"
-          sandbox="allow-scripts allow-same-origin allow-forms"
-          title="Visor"
-          src={`${url}${url.includes("?") ? "&" : "?"}r=${recarga.value}`}
-        />
+        {fuente.value === "jmrv" ? (
+          <iframe
+            class="visor-frame visor-escritorio"
+            allow="microphone; clipboard-write"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+            title="JMRV · Image Studio"
+            src={jmrvUrl}
+          />
+        ) : (
+          <iframe
+            key={`${url}#${recarga.value}`}
+            ref={marco}
+            class={`visor-frame visor-${tam.value}`}
+            allow="microphone; clipboard-write"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+            title="Visor"
+            src={`${url}${url.includes("?") ? "&" : "?"}r=${recarga.value}`}
+          />
+        )}
       </div>
-      {consola.abierta && (
+      {fuente.value === "trabajo" && consola.abierta && (
         <div class="visor-consola" aria-label="Consola de la página">
           {consola.items.length === 0 ? (
             <p class="live-vacio">Sin errores. Si algo falla en tu página, aparece aquí con el archivo y la línea.</p>

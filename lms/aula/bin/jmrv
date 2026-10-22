@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""jmrv "prompt de la imagen" [--size 1024x1024] [--model flux]
+
+Genera una imagen con el Image Studio (JMRV) del curso y la guarda en
+/trabajo/jmrv/. Funciona sin internet: habla con el servicio interno.
+El resultado se ve en el panel Visor (fuente: tu carpeta).
+"""
+
+import json
+import os
+import sys
+import time
+import urllib.request
+
+BASE = os.environ.get("JMRV_URL", "http://jmrv:8790").rstrip("/")
+SALIDA = "/trabajo/jmrv"
+
+
+def post(path, payload, timeout=300):
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(BASE + path, data=data, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def bajar(url, timeout=300):
+    if url.startswith("outputs/"):
+        url = BASE + "/" + url
+    elif url.startswith("/"):
+        url = BASE + url
+    req = urllib.request.Request(url)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def main(argv):
+    size, model, prompt = "1024x1024", "flux", None
+    resto = []
+    it = iter(argv)
+    for a in it:
+        if a == "--size":
+            size = next(it, size)
+        elif a == "--model":
+            model = next(it, model)
+        elif a in ("-h", "--help"):
+            print(__doc__.strip())
+            return 0
+        else:
+            resto.append(a)
+    prompt = " ".join(resto).strip()
+    if not prompt:
+        print('uso: jmrv "prompt de la imagen" [--size 1024x1024] [--model flux]', file=sys.stderr)
+        return 2
+    os.makedirs(SALIDA, exist_ok=True)
+    try:
+        r = post("/api/generate", {"prompt": prompt, "model": model, "size": size})
+    except Exception as e:  # noqa: BLE001 - mensaje llano para el alumno
+        print(f"no se pudo generar: {e}", file=sys.stderr)
+        return 1
+    entry = r.get("entry") or {}
+    url = entry.get("url") or ""
+    nombre = (entry.get("file") or f"jmrv-{int(time.time())}.jpg").split("/")[-1]
+    destino = os.path.join(SALIDA, nombre)
+    try:
+        with open(destino, "wb") as f:
+            f.write(bajar(url))
+    except Exception as e:  # noqa: BLE001
+        print(f"se generó pero no se pudo guardar: {e}", file=sys.stderr)
+        return 1
+    print(f"guardada en jmrv/{nombre} — mírala en el panel Visor")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
