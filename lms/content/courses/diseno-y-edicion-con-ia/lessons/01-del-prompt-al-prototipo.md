@@ -25,6 +25,11 @@ materials:
     file: materials/clase-01-diapositivas.pptx
     slides_dir: materials/clase-01-diapositivas
     objective_ids: [de-01-o1, de-01-o2, de-01-o3, de-01-o4]
+  - id: de-01-diapositivas-pdf
+    title: Diapositivas de la sesión 1 (PDF)
+    kind: pdf
+    file: materials/clase-01-diapositivas.pdf
+    objective_ids: [de-01-o1, de-01-o2, de-01-o3, de-01-o4]
   - id: de-01-temario
     title: Programa del taller (PDF, v2)
     kind: pdf
