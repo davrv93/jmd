@@ -136,10 +136,10 @@ CF_IMAGE_MODELS: list[dict[str, Any]] = [
         "image_input": False,
         "accepts_size": False,
         "fixed_size": "1024x1024",
-        "steps": 16,
+        "steps": 4,
         "per_tile": 4.80,
         "per_step": 9.60,
-        "note": "el más barato (~173 neuronas por 1024²)",
+        "note": "el más barato (~43 neuronas por 1024²)",
     },
     {
         "id": "@cf/black-forest-labs/flux-2-klein-4b",
