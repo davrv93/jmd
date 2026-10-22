@@ -79,14 +79,16 @@ export default component$(() => {
   const curso = info.cursos[0];
   const entrar = `/?next=${encodeURIComponent(`/inscripcion/${info.grupo}/`)}`;
 
+  const titulo = curso.title.split(" · ");
   return (
-    <>
-      <section class="hero">
-        <p class="xs muted" style="letter-spacing:.14em;text-transform:uppercase;margin:0">Inscripción · {info.nombre}</p>
-        <h1>{curso.title.split(" · ")[0]}</h1>
-        {curso.description && <p class="muted">{curso.description}</p>}
+    <div class="hte">
+      <section class="hte-hero">
+        <p class="hte-eyebrow">Inscripción · {info.nombre}</p>
+        <h1 class="hte-title">{titulo[0]} {titulo.length > 1 && <span class="neon">!</span>}</h1>
+        {titulo.length > 1 && <p class="hte-sub">{titulo.slice(1).join(" · ")}</p>}
+        {curso.description && <p class="hte-desc">{curso.description}</p>}
         {curso.fechas.length > 0 && (
-          <ul class="sm" style="list-style:none;padding:0;margin:.8rem 0 0">
+          <ul class="hte-fechas">
             {curso.fechas.map((f, i) => (
               <li key={f}>
                 <Icon name="calendar" size={13} /> Clase {i + 1}: {FECHA.format(new Date(f))}
@@ -148,7 +150,7 @@ export default component$(() => {
           </p>
         )}
       </div>
-    </>
+    </div>
   );
 });
 
