@@ -36,7 +36,8 @@ export default component$(() => {
   const err = useSignal("");
   const errBad = useSignal(false);
   const busy = useSignal(false);
-  const vista = useSignal<"ver" | "html">("ver");
+  const vista = useSignal<"ver" | "html" | "imagenes">("ver");
+  const jmrvVisto = useSignal(false);
   const copiado = useSignal(false);
   const ia = useSignal<IaState>("idle");
   const termOpen = useSignal(false);
@@ -232,6 +233,9 @@ export default component$(() => {
               <button type="button" role="tab" aria-selected={vista.value === "html"} onClick$={verHtml}>
                 <Icon name="code" size={14} /> HTML
               </button>
+              <button type="button" role="tab" aria-selected={vista.value === "imagenes"} onClick$={() => { jmrvVisto.value = true; vista.value = "imagenes"; }}>
+                <Icon name="sparkles" size={14} /> Imágenes IA
+              </button>
             </div>
             <div class="studio-right">
               {hayHtml && <span class="xs faint">{kb} KB</span>}
@@ -244,7 +248,15 @@ export default component$(() => {
           </div>
 
           <div class="studio-view">
-            {busy.value ? (
+            {jmrvVisto.value && (
+              <iframe
+                class="studio-frame"
+                style={{ display: vista.value === "imagenes" ? "block" : "none" }}
+                title="JMRV · imágenes IA"
+                src="/jmrv/"
+              />
+            )}
+            {vista.value !== "imagenes" && (busy.value ? (
               <div class="studio-skel" aria-busy="true" aria-label="Generando la landing">
                 <i class="h" />
                 <i style="width:80%" />
@@ -271,7 +283,7 @@ export default component$(() => {
                 </span>
                 <span>Pulsa <b>Generar</b> o pega tu HTML en la pestaña HTML.</span>
               </div>
-            )}
+            ))}
           </div>
 
           {vista.value === "html" && !busy.value && (

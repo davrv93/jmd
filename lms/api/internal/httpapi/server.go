@@ -42,6 +42,7 @@ type Server struct {
 	TermImage    string         // imagen de la shell interactiva del estudio (vacío = por defecto)
 	LLM          LLMConfig      // valores iniciales (entorno) del gateway de IA; manda lo guardado en la base
 	DataDir      string         // carpeta de datos (clave de firma de insignias badge-key.json); vacío = clave efímera
+	JmrvURL      string         // base del Image Studio (http://jmrv:8790); vacío = sin JMRV (503)
 
 	login     *limiter
 	llm       *llmCache
@@ -158,6 +159,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/examples/{id}", s.authed(s.example))
 	mux.Handle("POST /api/v1/run", s.authed(s.run))
 	mux.Handle("GET /api/v1/term", s.authed(s.term))
+	// JMRV embebido: el Image Studio detrás de la sesión del LMS (ver jmrv.go).
+	mux.Handle("/jmrv/", s.authed(s.jmrvProxy))
 	mux.Handle("POST /api/v1/aula/iniciar", s.authed(s.aulaIniciar))
 	mux.Handle("GET /api/v1/aula", s.authed(s.aulaEstado))
 	mux.Handle("POST /api/v1/aula/asistente", s.authed(s.aulaAsistente))

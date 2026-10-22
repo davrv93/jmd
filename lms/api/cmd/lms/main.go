@@ -106,6 +106,7 @@ func run() error {
 			Timeout: runner.ParseTimeout(os.Getenv("LMS_RUNNER_TIMEOUT")),
 		},
 		TermImage: os.Getenv("LMS_TERM_IMAGE"),
+		JmrvURL:   strings.TrimRight(os.Getenv("LMS_JMRV_URL"), "/"),
 		LLM: httpapi.LLMConfig{
 			URL:   os.Getenv("LMS_LLM_URL"),
 			Key:   os.Getenv("LMS_LLM_KEY"),

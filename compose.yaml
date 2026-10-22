@@ -74,6 +74,8 @@ services:
       LMS_EVO_KEY: ${LMS_EVO_KEY:-}
       # Salida a internet de las aulas, solo al registro de npm (bun install).
       LMS_AULA_PROXY: ${LMS_AULA_PROXY:-}
+      # JMRV embebido en el visor del Estudio (vacío = 503; ver lms/jmrv/).
+      LMS_JMRV_URL: ${LMS_JMRV_URL:-http://jmrv:8790}
       # Semilla de las credenciales por alumno; vacía = una aleatoria en lms_data/aula-secreto.
       LMS_AULA_SECRETO: ${LMS_AULA_SECRETO:-}
     volumes:
@@ -83,6 +85,25 @@ services:
       # AVISO DE SEGURIDAD: montar el socket de Docker da control del host a quien lo tenga.
       # Descoméntalo SOLO si vas a usar el runner, y mejor en una máquina/VM dedicada al runner.
       # - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+  # JMRV · Image Studio (genera imagen con IA y video por cuadros). Vive detrás
+  # del LMS: el front lo muestra embebido en el visor (/jmrv/ → este servicio).
+  # Las claves entran por entorno (servidor) y nunca van al repo.
+  jmrv:
+    build: ./lms/jmrv
+    image: localhost/jmrv:latest
+    container_name: jmrv
+    environment:
+      JMRV_HOST: 0.0.0.0
+      JMRV_PORT: 8790
+      POLLINATIONS_API_KEY: ${JMRV_POLLINATIONS_API_KEY:-${POLLINATIONS_API_KEY:-}}
+      POLLINATIONS_PUBLIC_KEY: ${JMRV_POLLINATIONS_PUBLIC_KEY:-${POLLINATIONS_PUBLIC_KEY:-}}
+      CLOUDFLARE_TOKEN: ${JMRV_CLOUDFLARE_TOKEN:-${CLOUDFLARE_TOKEN:-}}
+      CLOUDFLARE_ACCOUNT_ID: ${JMRV_CLOUDFLARE_ACCOUNT_ID:-${CLOUDFLARE_ACCOUNT_ID:-}}
+    volumes:
+      - jmrv_data:/app/outputs
+    networks: [default]
     restart: unless-stopped
 
   # Imágenes locales para las aulas del LIVE (sd-turbo en CPU, calidades baja y media). Se enciende con
@@ -219,6 +240,7 @@ networks:
 volumes:
   aio_data:
   lms_data:
+  jmrv_data:
   imagen_modelos:
   stt_modelos:
   aula_pg_data:
