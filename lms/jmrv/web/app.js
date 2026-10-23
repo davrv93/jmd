@@ -159,6 +159,7 @@ async function generate() {
     guidance_scale: parseFloat($("guidance").value), nologo: $("nologo").checked,
     private: $("private").checked, nofeed: $("nofeed").checked, safe: $("safe").checked,
     background: $("background").value, image: null,
+    ...envioPrompt(),
   };
   S.busy = true; setError(""); setStatus("Generando…", "busy");
   $("generateBtn").classList.add("loading"); $("generateBtn").disabled = true;
@@ -171,9 +172,11 @@ async function generate() {
 function showResult(entry) {
   S.current = entry;
   const img = $("result"); img.src = entry.url; img.hidden = false;
+  img.title = entry.prompt_original ? "Original: " + entry.prompt_original : (entry.prompt || "");
   $("emptyState").classList.add("hidden");
   ["downloadBtn", "copyBtn", "cutoutBtn", "fullscreenBtn", "reuseBtn", "localAnimBtn"].forEach((id) => ($(id).disabled = false));
   $("stageMeta2").textContent = `${entry.model} · ${entry.size || "—"} · ${entry.elapsed_s ?? "?"}s · ${entry.created_at}`;
+  $("stageMetaOriginal").textContent = entry.prompt_original ? "Original: " + entry.prompt_original : "";
 }
 async function loadHistory() {
   const { items } = await api("/api/history");
@@ -181,11 +184,12 @@ async function loadHistory() {
   for (const item of items) {
     const div = document.createElement("div");
     div.className = "gallery-item";
-    div.innerHTML = `<img loading="lazy" src="${item.url}" alt=""><span class="tag">${esc(item.model || "")} · ${esc(item.created_at || "")}</span>`;
+    div.innerHTML = `<img loading="lazy" src="${item.url}" alt="" title="${esc(item.prompt_original ? "Original: " + item.prompt_original : (item.prompt || ""))}"><span class="tag">${esc(item.model || "")} · ${esc(item.created_at || "")}${item.prompt_original ? " · ES" : ""}</span>`;
     div.addEventListener("click", () => {
       showResult(item);
-      if (item.prompt && item.model !== "rembg") {
-        $("prompt").value = item.prompt; $("negative").value = item.negative_prompt || ""; $("model").value = item.model;
+      if ((item.prompt_original || item.prompt) && item.model !== "rembg") {
+        $("prompt").value = item.prompt_original || item.prompt; $("negative").value = item.negative_prompt || ""; $("model").value = item.model;
+        markPromptDirty();
       }
     });
     gallery.appendChild(div);
@@ -245,11 +249,11 @@ const SHEET_LABEL_ES = {
   turn: "Girar", crouch: "Agacharse", wave: "Saludar", "camera-in": "Zoom in", "camera-out": "Zoom out",
   "pan-left": "Paneo izq.", "pan-right": "Paneo der.", shake: "Sacudir", custom: "Libre",
 };
-let sheetState = [{ action: "hold", delta: "" }];
+let sheetState = [{ action: "hold", delta: "", es: "" }];
 const sheetCount = () => Math.min(60, Math.max(2, parseInt($("framesCount").value, 10) || 6));
 function syncSheetCount() {
   const n = sheetCount();
-  while (sheetState.length < n) sheetState.push({ action: "hold", delta: "" });
+  while (sheetState.length < n) sheetState.push({ action: "hold", delta: "", es: "" });
   if (sheetState.length > n) sheetState.length = n;
 }
 function renderSheet() {
@@ -259,7 +263,7 @@ function renderSheet() {
     row.className = "sheet-row";
     const opts = Object.keys(SHEET_LABEL_ES).map((k) => `<option value="${k}"${beat.action === k ? " selected" : ""}>${SHEET_LABEL_ES[k]}</option>`).join("");
     row.innerHTML = `<span class="mono beat-n">${i + 1}</span><select class="beat-action">${opts}</select>
-      <input class="beat-delta" type="text" value="${esc(beat.delta)}" placeholder="${SHEET_PRESETS[beat.action] || "qué cambia"}" />
+      <input class="beat-delta" type="text" value="${esc(beat.delta)}" title="${esc(beat.es ? "Original: " + beat.es : "qué cambia")}" placeholder="${SHEET_PRESETS[beat.action] || "qué cambia"}" />
       <button class="beat-del" type="button">×</button>`;
     row.querySelector(".beat-action").addEventListener("change", (e) => { beat.action = e.target.value; renderSheet(); });
     row.querySelector(".beat-delta").addEventListener("input", (e) => (beat.delta = e.target.value));
@@ -271,6 +275,50 @@ function renderSheet() {
   });
 }
 const readSheet = () => { syncSheetCount(); return sheetState.map((b) => ({ action: b.action, delta: b.delta.trim() })); };
+/* ══════════════════════════════════════════════════════════════ traducir (Gemini) */
+S.promptEN = "";
+S.promptES = "";
+async function translatePrompt() {
+  const original = $("prompt").value.trim();
+  if (!original) { setError("Escribe el prompt primero."); return; }
+  const btn = $("translateBtn"); btn.disabled = true;
+  try {
+    const r = await api("/api/translate", { method: "POST", body: JSON.stringify({ text: original }) });
+    S.promptEN = r.translated; S.promptES = original;
+    $("enPreview").value = r.translated;
+    $("enPreviewWrap").classList.remove("hidden");
+    setError("");
+  } catch (err) { setError(err.message); } finally { btn.disabled = false; }
+}
+function markPromptDirty() {
+  // Si edita el original después de traducir, el EN queda obsoleto: se suelta.
+  if (!S.promptEN) return;
+  S.promptEN = ""; S.promptES = "";
+  $("enPreview").value = "";
+  $("enPreviewWrap").classList.add("hidden");
+}
+async function autoDeltas() {
+  syncSheetCount();
+  const conTexto = sheetState.map((b, i) => ({ b, i })).filter(({ b }) => b.delta.trim());
+  if (!conTexto.length) { setError("Escribe los deltas primero."); return; }
+  const btn = $("autoDeltas"); btn.disabled = true;
+  try {
+    const r = await api("/api/translate", { method: "POST", body: JSON.stringify({ text: conTexto.map(({ b }) => b.delta.trim()).join("\n") }) });
+    const lines = r.translated.split("\n");
+    conTexto.forEach(({ b }, k) => { if (!b.es) b.es = b.delta.trim(); b.delta = (lines[k] || "").trim() || b.delta; });
+    renderSheet();
+    setError("");
+  } catch (err) { setError(err.message); } finally { btn.disabled = false; }
+}
+const envioPrompt = () => {
+  const original = $("prompt").value.trim();
+  if (S.promptEN && S.promptES) return { prompt: S.promptEN, prompt_original: S.promptES };
+  return { prompt: original, prompt_original: null };
+};
+const envioDeltasOriginales = () => {
+  const l = sheetState.map((b) => (b.es || "").trim());
+  return l.some(Boolean) ? l : null;
+};
 async function autoSheet() {
   const prompt = $("prompt").value.trim();
   if (!prompt) { setError("Escribe un prompt."); return; }
@@ -302,6 +350,7 @@ async function startSequence() {
     provider: $("framesProvider").value, model: $("framesModel").value,
     size: $("sizeChips").querySelector(".chip.active").dataset.size, quality: $("quality").value || null,
     seed: $("seed").value ? parseInt($("seed").value, 10) : null, negative_prompt: $("negative").value.trim() || null,
+    ...envioPrompt(), deltas_original: envioDeltasOriginales(),
     background: $("background").value, anchor: $("anchor").value, frames: count,
     nologo: $("nologo").checked, private: $("private").checked, nofeed: $("nofeed").checked, cutout: $("framesCutout").checked,
   };
@@ -754,8 +803,11 @@ $("enhanceBtn").addEventListener("click", async () => {
 $("framesCount").addEventListener("change", () => { syncSheetCount(); renderSheet(); });
 $("framesCount").addEventListener("input", updateDurHint);
 $("framesFps").addEventListener("change", updateDurHint);
-$("addBeat").addEventListener("click", () => { sheetState.push({ action: "hold", delta: "" }); $("framesCount").value = sheetState.length; renderSheet(); });
+$("addBeat").addEventListener("click", () => { sheetState.push({ action: "hold", delta: "", es: "" }); $("framesCount").value = sheetState.length; renderSheet(); });
 $("autoSheet").addEventListener("click", autoSheet);
+$("autoDeltas").addEventListener("click", autoDeltas);
+$("translateBtn").addEventListener("click", translatePrompt);
+$("prompt").addEventListener("input", markPromptDirty);
 $("refreshBase").addEventListener("click", () => loadHistory());
 $("sequenceBtn").addEventListener("click", startSequence);
 $("openFrames").addEventListener("click", async () => { if (S.job) { await loadProjects(); openProject(S.job); } });

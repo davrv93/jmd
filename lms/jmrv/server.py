@@ -32,6 +32,16 @@ API_KEY = os.getenv("POLLINATIONS_API_KEY", "").strip()
 PUBLIC_KEY = os.getenv("POLLINATIONS_PUBLIC_KEY", "").strip()
 CF_TOKEN = os.getenv("CLOUDFLARE_TOKEN", "").strip()
 CF_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+# Cuenta pagada de Cloudflare: la cuota gratuita diaria ya no manda; si se
+# acaba, Workers AI factura el excedente en vez de cortar. Solo cambia lo que
+# se muestra (el 4006 real se sigue respetando venga de donde venga).
+# Cuenta pagada de Cloudflare: la cuota gratuita diaria ya no manda; si se
+# acaba, Workers AI factura el excedente en vez de cortar. Solo cambia lo que
+# se muestra (el 4006 real se sigue respetando venga de donde venga).
+CF_PAID = os.getenv("CLOUDFLARE_PAID", "").strip().lower() in ("1", "true", "si", "yes")
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite").strip() or "gemini-2.5-flash-lite"
 PORT = int(os.getenv("JMRV_PORT", "8765"))
 
 OUTPUTS.mkdir(parents=True, exist_ok=True)
@@ -337,6 +347,29 @@ def _fit_ref(data: bytes, max_side: int = 511) -> bytes:
     return out.getvalue()
 
 
+def _cf_post(url, headers, data=None, files=None, payload=None, intentos=3):
+    """POST a Workers AI con reintentos: un 429 o un corte de red es límite de
+    velocidad, NO falta de saldo. Se reintenta (2s, 6s, 18s) antes de rendirse."""
+    espera = 2.0
+    ultimo = None
+    for _ in range(intentos):
+        try:
+            resp = requests.post(
+                url, data=data, files=files, json=payload, headers=headers, timeout=300
+            )
+        except requests.RequestException as exc:
+            ultimo = exc
+        else:
+            if resp.status_code != 429:
+                return resp
+            ultimo = resp
+        time.sleep(espera)
+        espera *= 3
+    if isinstance(ultimo, requests.Response):
+        return ultimo
+    raise ultimo
+
+
 def _cf_run(
     model: str,
     prompt: str,
@@ -373,15 +406,15 @@ def _cf_run(
                 files.append((f"{prefix}{i}", (f"ref{i}.jpg", _fit_ref(blob), "image/jpeg")))
             else:
                 files.append(("image", (f"ref{i}.jpg", blob, "image/jpeg")))
-        resp = requests.post(
-            url, data=data, files=files, headers={"Authorization": f"Bearer {CF_TOKEN}"}, timeout=300
+        resp = _cf_post(
+            url, data=data, files=files, headers={"Authorization": f"Bearer {CF_TOKEN}"}
         )
     else:
         payload: dict[str, Any] = {"prompt": prompt}
         if steps:
             payload["steps"] = steps
-        resp = requests.post(
-            url, json=payload, headers={"Authorization": f"Bearer {CF_TOKEN}"}, timeout=300
+        resp = _cf_post(
+            url, payload=payload, headers={"Authorization": f"Bearer {CF_TOKEN}"}
         )
 
     if resp.headers.get("content-type", "").startswith("image/"):
@@ -394,7 +427,19 @@ def _cf_run(
         errors = data_json.get("errors") or [{"message": resp.text[:200]}]
         code = errors[0].get("code")
         message = errors[0].get("message", "error")
-        if code in (4006, 429) or "daily" in message.lower():
+        if code == 429 or resp.status_code == 429:
+            # Límite de VELOCIDAD (reintentos ya agotados), no de saldo ni de
+            # cuota: al pulsar Continuar sigue donde quedó.
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "error": "rate_limited",
+                    "balance": max(0.0, CF_FREE_NEURONS_DAILY - _cf_neurons_today()["neurons"]),
+                    "message": f"Límite de velocidad de Cloudflare (temporal, no es saldo): {message}. Espera unos segundos y pulsa Continuar.",
+                    "topup": "https://dash.cloudflare.com/",
+                },
+            )
+        if code == 4006 or "daily" in message.lower():
             raise HTTPException(
                 status_code=402,
                 detail={
@@ -443,6 +488,9 @@ class GenerateRequest(BaseModel):
     background: str = "auto"  # auto | white | green  (solid backdrop for later cutout)
     provider: str = "pollinations"  # pollinations | cloudflare
     steps: Optional[int] = None
+    # Lo que el usuario escribió originalmente (p. ej. en español): se guarda y
+    # se muestra siempre; `prompt` lleva lo que se envió al modelo (p. ej. inglés).
+    prompt_original: Optional[str] = None
 
 
 class RemoveBgRequest(BaseModel):
@@ -707,6 +755,9 @@ class FramesRequest(BaseModel):
     nofeed: bool = True
     cutout: bool = False
     provider: str = "pollinations"  # pollinations | cloudflare
+    # Ver GenerateRequest.prompt_original. Para la hoja: `deltas_original`
+    # guarda el delta original de cada cuadro, en el mismo orden.
+    deltas_original: Optional[list[str]] = None
 
 
 JOBS: dict[str, dict[str, Any]] = {}
@@ -906,6 +957,20 @@ def _sheet_deltas(req: FramesRequest, count: int) -> list[tuple[str, str]]:
     return [("", ln) for ln in _motion_lines(req.motion, count)]
 
 
+def _pon_original_cuadro(entry: dict[str, Any], req: "FramesRequest", i: int) -> None:
+    """Guarda en el cuadro lo que el usuario escribió originalmente.
+
+    Si el prompt/deltas se tradujeron (p. ej. español → inglés con Gemini),
+    aquí queda el texto original para mostrarlo siempre en la UI.
+    """
+    base = (req.prompt_original or "").strip()
+    deltas = req.deltas_original or []
+    original = deltas[i].strip() if i < len(deltas) and deltas[i] else ""
+    if not base and not original:
+        return
+    entry["prompt_original"] = f"{base}. {original}".strip(". ") if base else original
+
+
 def _beat_fragment(action: str, delta: str) -> str:
     if delta:
         return delta
@@ -1073,6 +1138,7 @@ def _run_sequence(job_id: str, req: FramesRequest, start: int = 0) -> None:
                 "frame": i + 1,
                 "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
             }
+            _pon_original_cuadro(entry, req, i)
             entries = [e for e in entries if e.get("frame") != i + 1]
             entries.append(entry)
             entries.sort(key=lambda e: e.get("frame", 0))
@@ -1648,6 +1714,7 @@ def balance() -> dict[str, Any]:
         "free_generation": sorted(FREE_GENERATION),
         "cloudflare": {
             "configured": bool(CF_TOKEN and CF_ACCOUNT_ID),
+            "paid": CF_PAID,
             "account_id": CF_ACCOUNT_ID,
             "date": neurons["date"],
             "neurons_today": neurons["neurons"],
@@ -1819,6 +1886,8 @@ def generate(req: GenerateRequest) -> dict[str, Any]:
         "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "elapsed_s": round(time.time() - started, 2),
     }
+    if req.prompt_original:
+        entry["prompt_original"] = req.prompt_original
     _store(entry)
     return entry
 
@@ -1845,6 +1914,49 @@ def enhance(payload: dict[str, Any]) -> dict[str, Any]:
         except (json.JSONDecodeError, IndexError, KeyError):
             pass
     return {"prompt": str(text).strip()}
+
+
+@app.post("/api/translate")
+def translate(payload: dict[str, Any]) -> dict[str, Any]:
+    """Traduce un prompt al inglés con Gemini Flash Lite, sin tocar nada más.
+
+    Devuelve {original, translated, model}. El original SIEMPRE viaja de vuelta
+    para que la UI lo muestre y lo guarde junto al resultado: nunca se pierde
+    lo que el usuario escribió.
+    """
+    text = str(payload.get("text", "") or "").strip()
+    target = str(payload.get("target", "en") or "en").strip().lower()
+    if not text:
+        raise HTTPException(status_code=400, detail="Texto vacío")
+    if not GEMINI_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Falta GEMINI_API_KEY en el .env para traducir con Gemini",
+        )
+    instruction = (
+        "Translate the following image-generation prompt to English. "
+        "Keep every concrete detail (subject, composition, lens, lighting, palette, "
+        "materials, mood, technical terms). Do NOT add, remove or reinterpret anything. "
+        "Preserve line breaks exactly: translate line by line. "
+        "Reply with ONLY the translation, no preamble, no quotes.\n\n" + text
+        if target == "en"
+        else text
+    )
+    try:
+        resp = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+            params={"key": GEMINI_API_KEY},
+            json={"contents": [{"parts": [{"text": instruction}]}]},
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        translated = (
+            data["candidates"][0]["content"]["parts"][0]["text"]
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"No se pudo traducir con Gemini: {exc}") from exc
+    return {"original": text, "translated": str(translated).strip(), "model": GEMINI_MODEL}
 
 
 @app.get("/api/history")
