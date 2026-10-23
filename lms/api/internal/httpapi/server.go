@@ -127,6 +127,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/inscripcion/{grupo}", s.inscripcionInfo)
 	mux.HandleFunc("POST /api/v1/inscripcion/{grupo}", s.inscribirse)
 	mux.Handle("POST /api/v1/inscripcion/{grupo}/unirme", s.authed(s.unirseAGrupo))
+	// Sorteo de cupos (ver sorteo.go): página pública + sorteo del staff.
+	mux.HandleFunc("GET /api/v1/sorteo/{id}", s.sorteoInfo)
+	mux.HandleFunc("POST /api/v1/sorteo/{id}/participar", s.sorteoParticipar)
+	mux.Handle("POST /api/v1/sorteo/{id}/sortear", s.authed(s.staff(s.sorteoSortear)))
 	mux.Handle("POST /api/v1/auth/logout", s.authed(s.logout))
 	mux.HandleFunc("GET /auth/oidc/start", s.oidcStart)
 	mux.HandleFunc("GET /auth/oidc/callback", s.oidcCallback)

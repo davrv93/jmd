@@ -308,6 +308,20 @@ export interface CourseProgress {
   students: { id: string; name: string; email: string; cohorts: string[]; lessons: Record<string, number> | null }[];
 }
 
+export interface Sorteo {
+  id: string;
+  titulo: string;
+  subtitulo: string;
+  descripcion: string;
+  flyer: string;
+  max_ganadores: number;
+  inicia: string;
+  termina: string;
+  abierto: boolean;
+  participantes: number;
+  ganadores: { nombre: string; correo: string; posicion: number }[];
+  quedan: number;
+}
 export interface Inscripcion {
   grupo: string;
   nombre: string;
@@ -320,6 +334,11 @@ export const api = {
   inscribirse: (grupo: string, b: { name: string; email: string; password: string }) =>
     req<{ token: string; user: Me; cursos: string[] }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`, b),
   unirse: (grupo: string) => req<{ grupo: string; cohorts: string[]; cursos: string[] }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}/unirme`, {}),
+  sorteo: (id: string) => req<Sorteo>("GET", `/api/v1/sorteo/${encodeURIComponent(id)}`),
+  participarSorteo: (id: string, email: string) =>
+    req<{ ok: boolean; participantes: number }>("POST", `/api/v1/sorteo/${encodeURIComponent(id)}/participar`, { email }),
+  sortear: (id: string, cantidad?: number) =>
+    req<{ ganadores: { nombre: string; correo: string; posicion: number }[]; quedan: number }>("POST", `/api/v1/sorteo/${encodeURIComponent(id)}/sortear`, { cantidad: cantidad || 0 }),
   login: (email: string, password: string) => req<{ token: string; user: Me }>("POST", "/api/v1/auth/login", { email, password, label: "web" }),
   register: (b: { email: string; name: string; password: string; invite_code: string }) => req<{ token: string; user: Me }>("POST", "/api/v1/auth/register", b),
   logout: () => req<{ ok: boolean; end_session_url?: string }>("POST", "/api/v1/auth/logout", {}),

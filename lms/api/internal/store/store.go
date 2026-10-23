@@ -177,6 +177,24 @@ CREATE TABLE IF NOT EXISTS answers (
   body_md TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+-- Sorteo de cupos (10-2026): un correo participa una vez; como máximo
+-- MaxGanadores ganan en la ventana. Los ganadores entran a la cohorte premio.
+CREATE TABLE IF NOT EXISTS sorteo_participantes (
+  sorteo_id TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  creada_en TEXT NOT NULL,
+  PRIMARY KEY (sorteo_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS sorteo_ganadores (
+  sorteo_id TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  nombre TEXT NOT NULL DEFAULT '',
+  posicion INTEGER NOT NULL,
+  sorteado_en TEXT NOT NULL,
+  PRIMARY KEY (sorteo_id, user_id)
+);
 CREATE TABLE IF NOT EXISTS live_sessions (
   lesson_id TEXT PRIMARY KEY,
   estado TEXT NOT NULL DEFAULT 'preparando',
