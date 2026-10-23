@@ -1,6 +1,6 @@
 import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
-import { api, ApiError, errMsg, type Inscripcion } from "~/lib/api";
+import { api, ApiError, errMsg, type Inscripcion, type SorteoAviso } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
 import { pathId, setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
@@ -20,6 +20,10 @@ export default component$(() => {
   const error = useSignal("");
   const yaTiene = useSignal(false);
   const busy = useSignal(false);
+  // Si el curso tiene sorteo, el cupo queda jugado AHÍ MISMO con el número
+  // aleatorio: primero se muestra el número y recién después se entra al curso.
+  const sorteoAviso = useSignal<SorteoAviso | null>(null);
+  const cursosPend = useSignal<string[]>([]);
 
   const load = $(async () => {
     st.error = "";
@@ -48,7 +52,12 @@ export default component$(() => {
     try {
       const r = await api.inscribirse(st.grupo, { name: form.name, email: form.email, password: form.password });
       session.me = r.user;
-      await irAlCurso(r.cursos);
+      if (r.sorteo) {
+        sorteoAviso.value = r.sorteo;
+        cursosPend.value = r.cursos;
+      } else {
+        await irAlCurso(r.cursos);
+      }
     } catch (e) {
       yaTiene.value = e instanceof ApiError && e.code === "ya_registrado";
       error.value = errMsg(e);
@@ -63,7 +72,12 @@ export default component$(() => {
     try {
       const r = await api.unirse(st.grupo);
       if (session.me) session.me = { ...session.me, cohorts: r.cohorts };
-      await irAlCurso(r.cursos);
+      if (r.sorteo) {
+        sorteoAviso.value = r.sorteo;
+        cursosPend.value = r.cursos;
+      } else {
+        await irAlCurso(r.cursos);
+      }
     } catch (e) {
       error.value = errMsg(e);
     } finally {
@@ -99,7 +113,21 @@ export default component$(() => {
       </section>
       <div class="login">
         <div class="card" style="padding:1.1rem 1.2rem">
-          {dentro ? (
+          {sorteoAviso.value ? (
+            <div style={{ margin: 0 }}>
+              <p class="sm" style={{ marginTop: 0 }}>
+                ¡Listo! Te anotaste en el sorteo con tu cupo del <b>{sorteoAviso.value.titulo}</b>.
+              </p>
+              <div style={{ border: "1.5px dashed var(--line, #dde4ec)", borderRadius: 12, padding: ".9rem 1rem", margin: ".6rem 0", textAlign: "center" }}>
+                <p class="xs muted" style={{ margin: 0, letterSpacing: ".14em", textTransform: "uppercase" }}>Tu número de sorteo</p>
+                <p style={{ margin: ".25rem 0 0", fontSize: "2.6rem", fontWeight: 800, lineHeight: 1 }}>{sorteoAviso.value.numero}</p>
+                <p class="xs muted" style={{ margin: ".35rem 0 0" }}>Se fijó al anotarte y no cambia: si ganas, es tu número.</p>
+              </div>
+              <button type="button" class="btn" style={{ width: "100%", justifyContent: "center" }} onClick$={() => irAlCurso(cursosPend.value)}>
+                Ir al curso
+              </button>
+            </div>
+          ) : dentro ? (
             <>
               <p style="margin-top:0">
                 Ya estás en el <b>{info.nombre}</b>, {me!.name.split(" ")[0]}.

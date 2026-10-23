@@ -127,7 +127,13 @@ func (s *Server) inscribirse(w http.ResponseWriter, r *http.Request) {
 		internal(w, err)
 		return
 	}
-	writeJSON(w, 201, map[string]any{"token": tok, "user": fromUser(u, "", false), "cursos": s.slugsDelGrupo(g)})
+	cursos := s.slugsDelGrupo(g)
+	resp := map[string]any{"token": tok, "user": fromUser(u, "", false), "cursos": cursos}
+	// Sorteo del curso: el cupo queda jugado aquí mismo, con su número aleatorio.
+	if auto := s.sorteosAutomaticos(r.Context(), cursos, u.ID, u.Email); auto != nil {
+		resp["sorteo"] = auto
+	}
+	writeJSON(w, 201, resp)
 }
 
 // unirseAGrupo: POST /api/v1/inscripcion/{grupo}/unirme (con sesión) suma el grupo a la cuenta.
@@ -149,7 +155,13 @@ func (s *Server) unirseAGrupo(w http.ResponseWriter, r *http.Request, p *Princip
 			return
 		}
 	}
-	writeJSON(w, 200, map[string]any{"grupo": g, "cohorts": cohorts, "cursos": s.slugsDelGrupo(g)})
+	cursos := s.slugsDelGrupo(g)
+	resp := map[string]any{"grupo": g, "cohorts": cohorts, "cursos": cursos}
+	// Al sumarse al grupo también queda jugado el sorteo del curso (con su número).
+	if auto := s.sorteosAutomaticos(r.Context(), cursos, p.ID, p.Email); auto != nil {
+		resp["sorteo"] = auto
+	}
+	writeJSON(w, 200, resp)
 }
 
 // slugsDelGrupo: a dónde mandar al alumno al terminar (el primer curso del grupo).

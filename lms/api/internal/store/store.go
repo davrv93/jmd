@@ -49,6 +49,9 @@ func migrate(db *sql.DB) error {
 		{"certificates", "lesson_id", "ALTER TABLE certificates ADD COLUMN lesson_id TEXT NOT NULL DEFAULT ''"},
 		// Calificación por criterio de la rúbrica (10-2026): JSON con el nivel de cada criterio.
 		{"submissions", "rubric_json", "ALTER TABLE submissions ADD COLUMN rubric_json TEXT NOT NULL DEFAULT ''"},
+		// Número de rifa: se asigna ALEATORIO al participar y no cambia (10-2026).
+		{"sorteo_participantes", "numero", "ALTER TABLE sorteo_participantes ADD COLUMN numero INTEGER"},
+		{"sorteo_ganadores", "numero", "ALTER TABLE sorteo_ganadores ADD COLUMN numero INTEGER"},
 	}
 	for _, a := range adds {
 		has, err := hasColumn(db, a.table, a.column)
@@ -61,6 +64,14 @@ func migrate(db *sql.DB) error {
 		if _, err := db.Exec(a.ddl); err != nil {
 			return fmt.Errorf("%s.%s: %w", a.table, a.column, err)
 		}
+	}
+	// El índice del número de rifa va AQUÍ y no en el schema: en una base ya
+	// existente la columna «numero» recién se creó en los adds de arriba.
+	// Parcial (WHERE numero IS NOT NULL): las filas viejas sin número no lo
+	// bloquean; las nuevas no pueden repetirlo dentro del mismo sorteo.
+	if _, err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS sorteo_participantes_numero
+		ON sorteo_participantes (sorteo_id, numero) WHERE numero IS NOT NULL`); err != nil {
+		return fmt.Errorf("índice sorteo numero: %w", err)
 	}
 	return nil
 }
@@ -184,6 +195,7 @@ CREATE TABLE IF NOT EXISTS sorteo_participantes (
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   creada_en TEXT NOT NULL,
+  numero INTEGER,
   PRIMARY KEY (sorteo_id, user_id)
 );
 CREATE TABLE IF NOT EXISTS sorteo_ganadores (
@@ -193,6 +205,7 @@ CREATE TABLE IF NOT EXISTS sorteo_ganadores (
   nombre TEXT NOT NULL DEFAULT '',
   posicion INTEGER NOT NULL,
   sorteado_en TEXT NOT NULL,
+  numero INTEGER,
   PRIMARY KEY (sorteo_id, user_id)
 );
 CREATE TABLE IF NOT EXISTS live_sessions (

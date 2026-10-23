@@ -19,6 +19,7 @@ export default component$(() => {
   const mal = useSignal(false);
   const busy = useSignal(false);
   const ya = useSignal(false);
+  const numero = useSignal<number | null>(null); // tu número de rifa, fijo desde el registro
 
   const load = $(async () => {
     st.error = "";
@@ -40,15 +41,25 @@ export default component$(() => {
     msg.value = "";
     mal.value = false;
     ya.value = false;
+    numero.value = null;
     busy.value = true;
     try {
       const r = await api.participarSorteo(pathId("sorteo"), email.value.trim());
       ya.value = true;
+      numero.value = r.numero ?? null;
       if (st.info) st.info = { ...st.info, participantes: r.participantes };
-      msg.value = "¡Listo! Ya estás participando con ese correo. Guarda esta página para ver a los ganadores.";
+      msg.value = "¡Listo! Ya estás participando. Guarda esta página para ver a los ganadores.";
     } catch (e) {
-      mal.value = true;
-      msg.value = errMsg(e);
+      const extra = e instanceof ApiError ? (e.extra as { numero?: number } | null) : null;
+      if (e instanceof ApiError && e.status === 409 && extra?.numero) {
+        // Ya jugaba: se le devuelve SU número, el mismo desde que se anotó.
+        ya.value = true;
+        numero.value = extra.numero;
+        msg.value = "Ya estabas participando con ese correo.";
+      } else {
+        mal.value = true;
+        msg.value = errMsg(e);
+      }
     } finally {
       busy.value = false;
     }
@@ -88,9 +99,18 @@ export default component$(() => {
         <div class="card" style="padding:1.1rem 1.2rem">
           <img src={info.flyer} alt={`Flyer: ${info.titulo}`} style="width:100%;border-radius:12px;display:block;margin-bottom:1rem" loading="lazy" />
           {ya.value ? (
-            <p class="sm" role="status" style="margin-top:0">
-              ¡Ya estás dentro! Comparte el sorteo; los ganadores salen aquí mismo.
-            </p>
+            <div style="margin-top:0">
+              {numero.value !== null && (
+                <div style="border:1.5px dashed var(--line, #dde4ec); border-radius:12px; padding:.9rem 1rem; margin:.2rem 0 .7rem; text-align:center">
+                  <p class="xs muted" style="margin:0; letter-spacing:.14em; text-transform:uppercase">Tu número de sorteo</p>
+                  <p style="margin:.25rem 0 0; font-size:2.6rem; font-weight:800; line-height:1">{numero.value}</p>
+                  <p class="xs muted" style="margin:.35rem 0 0">Se fijó al anotarte y no cambia: los ganadores salen por número.</p>
+                </div>
+              )}
+              <p class="sm" role="status" style="margin:0">
+                ¡Ya estás dentro! Comparte el sorteo; los ganadores salen aquí mismo.
+              </p>
+            </div>
           ) : info.abierto ? (
             <form preventdefault:submit onSubmit$={participar}>
               <label for="sorteo-email">Correo con el que te registraste al curso</label>
@@ -133,7 +153,7 @@ export default component$(() => {
             <ul class="sm" style="list-style:none;padding:0;margin:0;display:grid;gap:.3rem">
               {info.ganadores.map((g) => (
                 <li key={g.posicion}>
-                  <b>{g.posicion}.</b> {g.nombre} <span class="muted">{g.correo}</span>
+                  <b>{g.posicion}.</b> <code>#{g.numero}</code> {g.nombre} <span class="muted">{g.correo}</span>
                 </li>
               ))}
             </ul>

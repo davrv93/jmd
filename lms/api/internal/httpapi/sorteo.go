@@ -1,8 +1,10 @@
 package httpapi
 
 import (
+	"context"
 	"math/rand"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -92,7 +94,8 @@ func (s *Server) sorteoInfo(w http.ResponseWriter, r *http.Request) {
 	abierto := sorteoAbierto(def, ahora) && len(gans) < def.MaxGanadores
 	pubs := []map[string]any{}
 	for _, g := range gans {
-		pubs = append(pubs, map[string]any{"nombre": sorteoNombre(g.Nombre), "correo": correoMascarado(g.Email), "posicion": g.Posicion})
+		pubs = append(pubs, map[string]any{"nombre": sorteoNombre(g.Nombre), "correo": correoMascarado(g.Email),
+			"posicion": g.Posicion, "numero": g.Numero})
 	}
 	writeJSON(w, 200, map[string]any{
 		"id": def.ID, "titulo": def.Titulo, "subtitulo": def.Subtitulo, "descripcion": def.Descripcion,
@@ -131,16 +134,46 @@ func (s *Server) sorteoParticipar(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "sin_registro", "ese correo no está registrado en ningún curso: regístrate primero y vuelve")
 		return
 	}
-	if err := s.DB.SorteoParticipar(r.Context(), def.ID, u.ID, u.Email); err != nil {
+	numero, err := s.DB.SorteoParticipar(r.Context(), def.ID, u.ID, u.Email)
+	if err != nil {
 		if store.YaInscrito(err) {
-			writeErr(w, 409, "ya_participa", "ese correo ya está participando: cada correo juega una vez")
+			// Ya jugaba: se le devuelve SU número (el mismo desde que se anotó).
+			writeJSON(w, 409, map[string]any{
+				"error": map[string]any{"code": "ya_participa",
+					"message": "ese correo ya está participando: cada correo juega una vez"},
+				"numero": s.DB.SorteoNumeroDe(r.Context(), def.ID, u.ID),
+			})
 			return
 		}
 		internal(w, err)
 		return
 	}
 	part, _ := s.DB.SorteoParticipantes(r.Context(), def.ID)
-	writeJSON(w, 201, map[string]any{"ok": true, "participantes": len(part)})
+	writeJSON(w, 201, map[string]any{"ok": true, "participantes": len(part), "numero": numero})
+}
+
+// sorteosAutomaticos: al inscribirse (o al unirse) al grupo, el cupo del sorteo
+// del curso queda jugado con su número aleatorio, sin botón extra. Devuelve el
+// sorteo aplicado (para que la respuesta lo avise) o nil. Nunca rompe la
+// inscripción: cualquier fallo se ignora.
+func (s *Server) sorteosAutomaticos(ctx context.Context, cursos []string, userID, email string) map[string]any {
+	for _, def := range sorteos {
+		if !slices.Contains(cursos, def.CursoID) || !sorteoAbierto(def, time.Now()) {
+			continue
+		}
+		if gans, err := s.DB.SorteoGanadores(ctx, def.ID); err == nil && len(gans) >= def.MaxGanadores {
+			continue
+		}
+		numero, err := s.DB.SorteoParticipar(ctx, def.ID, userID, email)
+		if err != nil && !store.YaInscrito(err) {
+			continue
+		}
+		if numero == 0 {
+			numero = s.DB.SorteoNumeroDe(ctx, def.ID, userID)
+		}
+		return map[string]any{"id": def.ID, "titulo": def.Titulo, "numero": numero}
+	}
+	return nil
 }
 
 // sorteoSortear: POST /api/v1/sorteo/{id}/sortear (staff) {cantidad?} → elige al
@@ -197,7 +230,7 @@ func (s *Server) sorteoSortear(w http.ResponseWriter, r *http.Request, p *Princi
 	salieron := []map[string]any{}
 	for i, c := range bolsa[:n] {
 		pos := len(gans) + i + 1
-		if err := s.DB.SorteoAgregarGanador(r.Context(), def.ID, c.UserID, c.Email, c.Nombre, pos); err != nil {
+		if err := s.DB.SorteoAgregarGanador(r.Context(), def.ID, c.UserID, c.Email, c.Nombre, pos, c.Numero); err != nil {
 			internal(w, err)
 			return
 		}
@@ -219,7 +252,8 @@ func (s *Server) sorteoSortear(w http.ResponseWriter, r *http.Request, p *Princi
 			}
 			_ = u
 		}
-		salieron = append(salieron, map[string]any{"nombre": sorteoNombre(c.Nombre), "correo": correoMascarado(c.Email), "posicion": pos})
+		salieron = append(salieron, map[string]any{"nombre": sorteoNombre(c.Nombre), "correo": correoMascarado(c.Email),
+			"posicion": pos, "numero": c.Numero})
 	}
 	writeJSON(w, 200, map[string]any{"ganadores": salieron, "quedan": max(0, def.MaxGanadores-(len(gans)+len(salieron)))})
 }

@@ -5,6 +5,8 @@ export class ApiError extends Error {
     public status: number,
     public code: string,
     message: string,
+    // cuerpo completo de la respuesta (p. ej. {numero} del sorteo en un 409)
+    public extra: unknown = null,
   ) {
     super(message);
   }
@@ -26,7 +28,7 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
   }
   if (!res.ok) {
     const e = data?.error ?? {};
-    throw new ApiError(res.status, e.code ?? "error", e.message ?? `HTTP ${res.status}`);
+    throw new ApiError(res.status, e.code ?? "error", e.message ?? `HTTP ${res.status}`, data);
   }
   return data as T;
 }
@@ -319,8 +321,15 @@ export interface Sorteo {
   termina: string;
   abierto: boolean;
   participantes: number;
-  ganadores: { nombre: string; correo: string; posicion: number }[];
+  ganadores: { nombre: string; correo: string; posicion: number; numero: number }[];
   quedan: number;
+}
+
+// Aviso de sorteo que la inscripción devuelve cuando el cupo queda jugado ahí mismo.
+export interface SorteoAviso {
+  id: string;
+  titulo: string;
+  numero: number;
 }
 export interface Inscripcion {
   grupo: string;
@@ -332,13 +341,13 @@ export const api = {
   config: () => req<AuthConfig>("GET", "/api/v1/auth/config"),
   inscripcion: (grupo: string) => req<Inscripcion>("GET", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`),
   inscribirse: (grupo: string, b: { name: string; email: string; password: string }) =>
-    req<{ token: string; user: Me; cursos: string[] }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`, b),
-  unirse: (grupo: string) => req<{ grupo: string; cohorts: string[]; cursos: string[] }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}/unirme`, {}),
+    req<{ token: string; user: Me; cursos: string[]; sorteo?: SorteoAviso }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`, b),
+  unirse: (grupo: string) => req<{ grupo: string; cohorts: string[]; cursos: string[]; sorteo?: SorteoAviso }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}/unirme`, {}),
   sorteo: (id: string) => req<Sorteo>("GET", `/api/v1/sorteo/${encodeURIComponent(id)}`),
   participarSorteo: (id: string, email: string) =>
-    req<{ ok: boolean; participantes: number }>("POST", `/api/v1/sorteo/${encodeURIComponent(id)}/participar`, { email }),
+    req<{ ok: boolean; participantes: number; numero?: number }>("POST", `/api/v1/sorteo/${encodeURIComponent(id)}/participar`, { email }),
   sortear: (id: string, cantidad?: number) =>
-    req<{ ganadores: { nombre: string; correo: string; posicion: number }[]; quedan: number }>("POST", `/api/v1/sorteo/${encodeURIComponent(id)}/sortear`, { cantidad: cantidad || 0 }),
+    req<{ ganadores: { nombre: string; correo: string; posicion: number; numero: number }[]; quedan: number }>("POST", `/api/v1/sorteo/${encodeURIComponent(id)}/sortear`, { cantidad: cantidad || 0 }),
   login: (email: string, password: string) => req<{ token: string; user: Me }>("POST", "/api/v1/auth/login", { email, password, label: "web" }),
   register: (b: { email: string; name: string; password: string; invite_code: string }) => req<{ token: string; user: Me }>("POST", "/api/v1/auth/register", b),
   logout: () => req<{ ok: boolean; end_session_url?: string }>("POST", "/api/v1/auth/logout", {}),
