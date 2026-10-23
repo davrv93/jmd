@@ -36,7 +36,7 @@ var sorteos = map[string]Sorteo{
 		Titulo:       "⚡ Menos tokens. Más poder",
 		Subtitulo:    "Potencia tus agentes con RTK, Cortex, Graphify y Caveman",
 		Descripcion:  "Sorteo de 6 cupos para el taller nuevo. Participa con el correo con el que te registraste en los cursos. Solo se puede ganar una vez y el sorteo cierra en 4 días.",
-		Flyer:        "/sorteo-flyer.jpg",
+		Flyer:        "/sorteo-potencia.jpg",
 		CursoID:      "potencia-agentes",
 		Cohorte:      "potencia-agentes-1",
 		MaxGanadores: 6,
