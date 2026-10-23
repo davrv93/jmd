@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Construir: ejecuta el prompt de Willie · Taller S1</title>
-<!-- Escena generada desde live/_plantilla; estilos propios solo en #esc-propio. -->
+<title>Construir · el asistente paso a paso</title>
 <style>
 /* ---- Tokens (los mismos del LMS) ---- */
 :root {
@@ -138,24 +137,37 @@ body {
 }
 </style>
 <style id="esc-propio">
-/* Tokens del estilo «Difícil de explicar» */
-:root { --tinta: #14122b; --hueso: #FBF7F0; --p1: #F4C2CF; --p2: #F7D1A6; --p3: #EFE6A4; --p4: #BDE6CC; --p5: #BDD7F3; --p6: #D6C5F0; }
-.willie { display: block; width: 100%; height: auto; }
-.tarjeta { background: var(--p1); border-radius: 1.2em; padding: 1em; display: grid; place-items: center; box-shadow: var(--card-shadow); }
-.tinta { background: var(--tinta); color: var(--hueso); }
-.esc-grid-2.lado { grid-template-columns: 1.1fr .9fr; }
-.nota { font-size: .72em; color: var(--muted); margin: 0; }
-@keyframes cortes6 { 0%, 100% { background-color: var(--p1); } 16.6% { background-color: var(--p2); } 33.3% { background-color: var(--p3); } 50% { background-color: var(--p4); } 66.6% { background-color: var(--p5); } 83.3% { background-color: var(--p6); } }
-@keyframes gira { to { transform: rotate(360deg); } }
-
-.constr { grid-template-columns: 1fr 1fr; align-items: start; }
-.pasos { counter-reset: paso; display: grid; gap: .9vh; }
-.pasos .esc-card { display: grid; grid-template-columns: auto 1fr; gap: .9em; align-items: center; padding: .7em 1em; }
-.pasos .esc-card::before { counter-increment: paso; content: counter(paso); font: 800 1.2em var(--mono); color: var(--on-accent); background: var(--accent); width: 1.7em; height: 1.7em; border-radius: 50%; display: grid; place-items: center; }
-.pasos p { color: var(--fg); font-size: .9em; }
-.constr .esc-cmd { font-size: .74em; }
-.constr .tarjeta { margin-top: 1vh; background: var(--p4); padding: .6em; }
-.constr .tarjeta .willie { width: 22%; }
+/* Escena 10: el asistente construye la pieza paso a paso; el visor muestra la vista previa real de cada paso. */
+.c10 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4vw; align-items: start; }
+.visor { position: relative; aspect-ratio: 16/9; border-radius: 1em; overflow: hidden; background: #14122b; border: 1px solid var(--line2); box-shadow: var(--card-shadow); }
+.visor img, .visor .panel { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
+.visor .panel { display: grid; place-content: center; padding: 2em; color: #FBF7F0; font: 600 .68em/1.45 var(--mono); white-space: pre-wrap; }
+.visor .panel b { color: #EFE6A4; font-weight: 700; }
+.visor .panel .ok { color: #BDE6CC; }
+.visor .marca { position: absolute; left: 1em; top: 1em; padding: .35em .8em; border-radius: 999px; background: #EFE6A4; color: #14122b; font: 700 .62em var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: 0; }
+.pasos { display: grid; gap: .38em; }
+.paso { display: grid; grid-template-columns: 1.8em 1fr; gap: .6em; align-items: start; padding: .42em .75em; border-radius: .9em; background: var(--s1); border: 1px solid var(--line); opacity: .55; transform: translateX(0); }
+.paso b { display: grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font: 800 .9em var(--mono); }
+.paso h3 { margin: 0; font-size: .8em; }
+.paso p { margin: .1em 0 0; color: var(--muted); font-size: .66em; line-height: 1.35; }
+.paso code { font: 600 .9em var(--mono); background: var(--s3); padding: 0 .35em; border-radius: .3em; }
+.mini { display: none; }
+/* Ciclo de 36 s: seis pasos de 6 s. Todo con steps(), al pulso: el corte cae en el compás. */
+@media (prefers-reduced-motion: no-preference) {
+  .visor > .v { animation: v-ciclo 36s steps(1, end) infinite; animation-delay: calc(var(--i) * -6s - 30s); }
+  .visor > .marca { animation: v-ciclo 36s steps(1, end) infinite; animation-delay: calc(var(--i) * -6s - 30s); }
+  .paso { animation: p-ciclo 36s steps(1, end) infinite; animation-delay: calc(var(--i) * -6s - 30s); }
+}
+@keyframes v-ciclo { 0%, 16.6% { opacity: 1; } 16.7%, 100% { opacity: 0; } }
+@keyframes p-ciclo { 0%, 16.6% { opacity: 1; transform: translateX(.4em); background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 45%, transparent); } 16.7%, 100% { opacity: .55; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .c10 { grid-template-columns: 1fr; }
+  .visor { display: none; }
+  .pasos { grid-template-columns: repeat(3, 1fr); gap: .6em; }
+  .paso { opacity: 1; grid-template-columns: 1fr; padding: .6em .8em; }
+  .paso b { margin-bottom: .3em; }
+  .mini { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: .5em; margin-top: .4em; border: 1px solid var(--line); }
+}
 </style>
 </head>
 <body>
@@ -188,27 +200,44 @@ body {
   </header>
 
   <main class="esc-cuerpo">
-    <h1 class="esc-titulo a-in">Construir: <em>ejecuta el prompt</em> de Willie</h1>
-    <p class="esc-sub a-in" style="--d:.1s">Tu agente escribe el código. Tú le das el pedido completo y compruebas el resultado.</p>
-    <div class="esc-grid-2 constr">
-      <div class="pasos">
-        <div class="esc-card a-in" style="--d:.2s"><p>Copia <b>willie.svg</b> a una carpeta vacía (Materiales → Pieza Willie).</p></div>
-        <div class="esc-card a-in" style="--d:.35s"><p>Pega el prompt completo (Materiales → Prompt para ejecutar).</p></div>
-        <div class="esc-card a-in" style="--d:.5s"><p>Abre <b>willie/index.html</b> y dale a Reproducir.</p></div>
-        <div class="esc-card a-in" style="--d:.65s"><p>Abre <b>index.html?t=7</b>: el paneo queda quieto a mitad.</p></div>
+    <h1 class="esc-titulo a-in">Construir: <em>el asistente</em>, paso a paso</h1>
+    <p class="esc-sub a-in" style="--d:.1s">Tú pegas el pedido; el agente carga las skills, propone el plan y escribe la pieza. Esto es lo que debes ver en cada paso.</p>
+    <div class="c10 a-in" style="--d:.2s">
+      <div class="visor" aria-label="Vista previa del paso activo">
+        <div class="v panel" style="--i:0"><b>Tú → agente</b>
+Rol: Eres animador 2D y desarrollador front-end. Solo HTML, CSS y SVG.
+Contexto: Taller; público que no programa; visor del aula y teléfono.
+Tarea: Crea willie/index.html, pieza de 20 s con Willie al timón…
+Límites: Solo el diseño de 1928. Sin CDN. Ningún corte &lt; 0,25 s.
+Formato: Un HTML; escenas con data-start y data-duration.
+Comprobación: ?t=7 muestra el paneo a mitad, quieto; dura 20,0 s.</div>
+        <div class="v panel" style="--i:1"><b>Agente</b>
+→ Skill "pedido-seis-partes"
+→ Skill "animacion-abierta"
+Pedido completo: seis partes, nada en corchetes.
+Plan · 9 escenas en la rejilla de 120 bpm:
+  1 encendido 0–2 · 2 título 2–4 · 3 ráfaga 4–6 · 4 cámara 6–10
+  5 profundidad 10–13 · 6 salto 13–16 · 7 pregunta · 8 ¡No! · 9 créditos
+<span class="ok">¿Escribo willie/index.html? (s/n/a)</span></div>
+        <img class="v" style="--i:2" src="p3.webp" alt="Escena 1 de la pieza: pantalla encendiéndose con el comando escrito">
+        <img class="v" style="--i:3" src="p4.webp" alt="Escena 4: plano general del vapor a mitad del paneo, Willie al timón">
+        <img class="v" style="--i:4" src="p5.webp" alt="Escena 6: Willie en el aire describiendo el arco del salto">
+        <img class="v" style="--i:5" src="p6.webp" alt="Escena 8: la palabra NO en grande sobre fondo rosa">
+        <span class="marca" style="--i:0">1 · el pedido</span><span class="marca" style="--i:1">2 · skills y plan</span><span class="marca" style="--i:2">3 · ?t=1.5</span><span class="marca" style="--i:3">4 · ?t=7.5</span><span class="marca" style="--i:4">5 · ?t=13.9</span><span class="marca" style="--i:5">6 · ?t=18.5</span>
       </div>
-      <div class="a-in" style="--d:.4s">
-        <pre class="esc-cmd"><span class="c"># versión corta del pedido (modelos pequeños)</span>
-Tarea: crea willie/index.html, pieza de 20 s con la silueta willie.svg al pulso de 120 bpm.
-Límites: sin CDN, cortes de 0,25 s o más, sin destellos, un solo reloj.
-Comprobación: ?t=7 queda quieto a mitad del paneo; dura 20,0 s.</pre>
-        <div class="tarjeta"><svg class="willie" viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#14122b" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path fill="#fff" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="timon" style="transform-origin:9px 31px;transform-box:view-box"><path fill="#14122b" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg></div>
-      </div>
+      <ol class="pasos esc-lista" style="list-style:none">
+        <li class="paso" style="--i:0"><b>1</b><div><h3>Pegas el pedido</h3><p>Carpeta vacía con <code>willie.svg</code>. Pegas el prompt de Materiales entero, con sus seis partes.</p></div></li>
+        <li class="paso" style="--i:1"><b>2</b><div><h3>El agente carga las skills y propone el plan</h3><p>Verás <code>→Skill "pedido-seis-partes"</code> y <code>→Skill "animacion-abierta"</code>, luego nueve escenas con su segundo. Responde <code>s</code>.</p></div></li>
+        <li class="paso" style="--i:2"><b>3</b><div><h3>Escribe index.html y lo abres</h3><p>Fondo tinta y botón Reproducir. <code>?t=1.5</code>: la pantalla se enciende y el comando se escribe.</p><img class="mini" src="p3.webp" alt=""></div></li>
+        <li class="paso" style="--i:3"><b>4</b><div><h3>Compruebas la cámara</h3><p><code>?t=7.5</code>: plano general del vapor a mitad del paneo, quieto. Es la comprobación del pedido.</p><img class="mini" src="p4.webp" alt=""></div></li>
+        <li class="paso" style="--i:4"><b>5</b><div><h3>Compruebas los principios</h3><p><code>?t=13.9</code>: Willie en el aire, en el arco del salto; <code>?t=14.9</code>: aplastado al caer.</p><img class="mini" src="p5.webp" alt=""></div></li>
+        <li class="paso" style="--i:5"><b>6</b><div><h3>Reproduces entero</h3><p>Dura 20,0 s y termina en «¡No!» con los créditos. Si algo falla, segundo pedido: dónde, qué, cámbialo, solo eso.</p><img class="mini" src="p6.webp" alt=""></div></li>
+      </ol>
     </div>
   </main>
 
   <footer class="esc-pie">
-    <span class="esc-nota">Cuando se vea, pulsa «Lo logré» y sube la captura</span>
+    <span class="esc-nota">Cuando tu ?t=7.5 se vea como el del visor, pulsa «Lo logré» y sube la captura</span>
   </footer>
 </div>
 
