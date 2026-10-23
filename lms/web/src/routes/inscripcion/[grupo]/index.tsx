@@ -2,7 +2,7 @@ import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from 
 import { useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
 import { api, ApiError, errMsg, type Inscripcion, type SorteoAviso } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
-import { pathId, setTitle } from "~/lib/url";
+import { getParam, pathId, setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
 import { ErrorState, Loading } from "~/components/ui";
 
@@ -27,12 +27,11 @@ export default component$(() => {
 
   // Enlaces personalizados: /inscripcion/<grupo>/?nombre=Ana+Torres&correo=ana@x.com
   // (lo que reparte el instructor; el alumno solo confirma y crea su clave).
+  // getParam() lee de `location`: en estas rutas loc.url devuelve la plantilla.
   // eslint-disable-next-line qwik/no-use-visible-task
-  useVisibleTask$(({ track }) => {
-    track(() => loc.url.search);
-    const q = loc.url.searchParams;
-    const nombre = (q.get("nombre") || "").trim();
-    const correo = (q.get("correo") || "").trim();
+  useVisibleTask$(() => {
+    const nombre = getParam("nombre").trim();
+    const correo = getParam("correo").trim();
     if (nombre && !form.name) form.name = nombre;
     if (correo && !form.email) form.email = correo;
   });

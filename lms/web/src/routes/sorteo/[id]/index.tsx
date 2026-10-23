@@ -2,7 +2,7 @@ import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from 
 import { useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
 import { api, ApiError, errMsg, type Sorteo } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
-import { pathId, setTitle } from "~/lib/url";
+import { getParam, pathId, setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
 import { ErrorState, Loading } from "~/components/ui";
 
@@ -23,12 +23,9 @@ export default component$(() => {
   const copiado = useSignal(false);              // «enlace copiado» del bloque de compartir
   // Enlace personalizado del ganador: /sorteo/<id>/?ganador=Junior%20Cercado
   // La página le pone su nombre al anuncio; el enlace es el que comparte en redes.
+  // Se lee de `location` (getParam) y no de loc.url: estas rutas se generan como
+  // /sorteo/_/ y loc.url devuelve esa plantilla, sin el query real.
   const ganador = useSignal("");
-  // eslint-disable-next-line qwik/no-use-visible-task
-  useVisibleTask$(({ track }) => {
-    track(() => loc.url.search);
-    ganador.value = (loc.url.searchParams.get("ganador") || "").trim().slice(0, 60);
-  });
 
   const load = $(async () => {
     st.error = "";
@@ -43,6 +40,7 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async ({ track }) => {
     track(() => loc.url.pathname);
+    ganador.value = getParam("ganador").trim().slice(0, 60);
     await load();
   });
 
@@ -106,6 +104,24 @@ export default component$(() => {
 
   return (
     <div class="hte">
+      {ganador.value && (
+        /* Anuncio personalizado del ganador: lo primero que se ve al abrir su enlace. */
+        <div style={{ gridColumn: "1 / -1", border: "1.5px solid #ffd23f", borderRadius: 14, padding: "1rem 1.2rem", textAlign: "center", background: "rgba(255,210,63,.08)", marginBottom: ".4rem" }}>
+          <p style={{ margin: 0, fontSize: ".72rem", letterSpacing: ".16em", textTransform: "uppercase", color: "#ffd23f", fontWeight: 700 }}>
+            Ganador del sorteo
+          </p>
+          <p style={{ margin: ".3rem 0 0", fontSize: "1.7rem", fontWeight: 800, lineHeight: 1.12 }}>
+            🎉 ¡{ganador.value}, ganaste un cupo!
+          </p>
+          {info.fechas_texto && <p style={{ margin: ".5rem 0 0", fontSize: ".95rem" }}><b>{info.fechas_texto}</b></p>}
+          {info.whatsapp_bonito && (
+            <p style={{ margin: ".3rem 0 0", fontSize: ".95rem" }}>
+              Para inscribirte, envía un mensaje al <b>WhatsApp {info.whatsapp_bonito}</b>.
+            </p>
+          )}
+          <p class="xs muted" style={{ margin: ".55rem 0 0" }}>Comparte este anuncio en tus redes 👇</p>
+        </div>
+      )}
       <section class="hte-hero">
         <p class="hte-eyebrow">Sorteo · {info.quedan > 0 ? `quedan ${info.quedan} de ${info.max_ganadores}` : "completo"}</p>
         <h1 class="hte-title">{info.titulo}</h1>
@@ -165,20 +181,6 @@ export default component$(() => {
             <p class={`sm row ${mal.value ? "bad" : ""}`} style="flex-wrap:nowrap;margin-top:.6rem" role="status">{msg.value}</p>
           )}
         </div>
-        {ganador.value && (
-          <div class="card" style="margin-top:.9rem;padding:1rem 1.2rem;text-align:center">
-            <p class="xs muted" style="margin:0;letter-spacing:.14em;text-transform:uppercase">Ganador del sorteo</p>
-            <p style="margin:.25rem 0 0;font-size:1.5rem;font-weight:800;line-height:1.15">🎉 ¡{ganador.value}, ganaste un cupo!</p>
-            {info.fechas_texto && <p class="sm" style="margin:.5rem 0 0"><b>{info.fechas_texto}</b></p>}
-            {info.whatsapp_bonito && (
-              <p class="sm" style="margin:.35rem 0 0">
-                Para inscribirte, envía un mensaje al <b>WhatsApp {info.whatsapp_bonito}</b>.
-              </p>
-            )}
-            <p class="xs muted" style="margin:.6rem 0 0">Comparte este anuncio en tus redes 👇</p>
-          </div>
-        )}
-
         {info.ganadores.length > 0 && (
           <div class="card" style="margin-top:.9rem;padding:1rem 1.2rem">
             <p style="margin:0 0 .5rem;font-weight:700">Ganadores</p>
