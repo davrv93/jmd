@@ -40,6 +40,26 @@ materials:
     kind: zip
     file: materials/willie/index.html
     objective_ids: [de-01-o3, de-01-o4]
+  - id: de-01-willie-timon
+    title: "Pieza «Willie al timón», fiel al fotograma de 1928 (HTML; ?t=6 la deja quieta; ?base=willie-base.png usa tu imagen de FLUX)"
+    kind: zip
+    file: materials/willie/willie-timon.html
+    objective_ids: [de-01-o3, de-01-o4]
+  - id: de-01-willie-1928
+    title: "willie-1928.svg · dibujo vectorial del fotograma (respaldo si FLUX no responde)"
+    kind: zip
+    file: materials/willie/willie-1928.svg
+    objective_ids: [de-01-o3, de-01-o4]
+  - id: de-01-prompt-flux
+    title: "Versión guiada con FLUX en Cloudflare: imagen base y pedido para animarla"
+    kind: doc
+    file: materials/willie/PROMPT_FLUX.md
+    objective_ids: [de-01-o1, de-01-o2, de-01-o4]
+  - id: de-01-flux-script
+    title: "flux-willie.mjs · genera la imagen base con FLUX.1 schnell (clave en variables de entorno)"
+    kind: zip
+    file: materials/willie/flux-willie.mjs
+    objective_ids: [de-01-o2, de-01-o4]
   - id: de-01-prompt
     title: Prompt para ejecutar (seis partes)
     kind: doc

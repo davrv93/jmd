@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Willie al timón · silbando · 16 s</title>
+<!--
+  WILLIE AL TIMÓN · versión fiel al fotograma de 1928 (dominio público). Taller «¿Difícil de explicar? ¡No!».
+  Un solo reloj (t). Escenas: 01 plano general 0–4 · 02 travelling a plano medio 4–8 · 03 actuación 8–14 · 04 iris out 14–16.
+  Actuación al pulso de 120 bpm: balanceo de cadera (2 s), cabeza en contrafase con retraso de una corchea, silbido con
+  nota en cada negra, pie que marca la negra, timón que gira medio giro y vuelve, cola que se mece.
+  ?t=6 fija y pausa · ?render=1 sin controles · ?base=willie-base.png usa una imagen generada con FLUX como fondo.
+  Dibujo vectorial propio (SVG) del diseño de 1928: gorra, sin guantes, ojos de pastel, pantalón claro con dos botones.
+-->
+<style>
+:root { --tinta:#111; --hueso:#e9e7e2; --t:0; }
+*,*::before,*::after { box-sizing:border-box }
+html,body { margin:0; height:100%; background:#0a0a0a; color:var(--hueso); font:15px system-ui,sans-serif }
+body { display:grid; grid-template-rows:1fr auto; min-height:100vh; overflow:hidden }
+.escenario { display:grid; place-items:center; overflow:hidden }
+.lienzo { position:relative; width:1200px; height:1000px; overflow:hidden; background:#000; transform-origin:center }
+.mundo { position:absolute; inset:0; transform-origin:0 0 }
+.mundo svg, .mundo img { position:absolute; inset:0; width:100%; height:100%; display:block }
+#base { display:none; object-fit:cover; filter:grayscale(1) contrast(1.05) }
+.lienzo.con-base #base { display:block }
+.lienzo.con-base #dibujo { display:none }
+.notas { position:absolute; inset:0; pointer-events:none }
+.nota { position:absolute; left:0; top:0; width:26px; height:26px; border-radius:50%; background:var(--tinta); opacity:0 }
+.nota::after { content:""; position:absolute; left:20px; top:-26px; width:6px; height:38px; background:var(--tinta); border-radius:3px }
+.iris { position:absolute; inset:0; background:#000; -webkit-mask:radial-gradient(circle at 60% 40%, transparent calc(var(--r) * 1%), #000 calc(var(--r) * 1% + 1px)); mask:radial-gradient(circle at 60% 40%, transparent calc(var(--r) * 1%), #000 calc(var(--r) * 1% + 1px)); --r:120 }
+.marca { position:absolute; left:28px; top:24px; padding:8px 14px; background:var(--tinta); color:var(--hueso); font:700 20px/1 ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase; opacity:.9 }
+.controles { display:flex; gap:12px; align-items:center; padding:10px 18px; background:#141414; border-top:1px solid #333 }
+.controles button { font:700 14px system-ui; padding:9px 14px; border-radius:999px; border:2px solid var(--hueso); background:transparent; color:var(--hueso); cursor:pointer }
+.controles .primario { background:var(--hueso); color:#111 }
+.tiempo { font:700 14px ui-monospace,monospace }
+body.render .controles { display:none } body.render { grid-template-rows:1fr }
+body.quieto .lienzo { transform:none !important }
+.aviso { display:none; position:absolute; left:28px; bottom:24px; padding:8px 14px; background:var(--tinta); color:var(--hueso); font:600 16px system-ui }
+body.quieto .aviso { display:block }
+</style>
+</head>
+<body>
+<main class="escenario">
+  <div class="lienzo" id="lienzo">
+    <div class="mundo" id="mundo">
+      <img id="base" alt="Imagen base generada con FLUX" src="">
+      <svg id="dibujo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1000"><defs><filter id="grano" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".18"/></feComponentTransfer></filter><radialGradient id="vineta" cx="50%" cy="50%" r="70%"><stop offset="60%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".5"/></radialGradient></defs><rect width="1200" height="1000" fill="#e9e7e2"/><path d="M0 300 C 200 250 420 280 600 240 C 800 200 1000 260 1200 220 L1200 420 L0 420 Z" fill="#d9d6cf"/><path d="M0 300 C 200 250 420 280 600 240 C 800 200 1000 260 1200 220" fill="none" stroke="#111" stroke-width="5"/><rect x="0" y="420" width="1200" height="90" fill="#9a9792"/><path d="M0 470 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><path d="M110 484 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><path d="M220 470 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><path d="M330 484 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><path d="M440 470 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><path d="M550 484 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><path d="M660 470 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><path d="M770 484 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><path d="M880 470 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><path d="M990 484 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><path d="M1100 470 q 28 -12 55 0 t 55 0" fill="none" stroke="#111" stroke-width="4" opacity=".55"/><rect x="0" y="505" width="1200" height="26" fill="#d9d6cf" stroke="#111" stroke-width="6"/><rect x="60" y="120" width="46" height="600" fill="#d9d6cf" stroke="#111" stroke-width="6"/><rect x="1090" y="120" width="46" height="600" fill="#d9d6cf" stroke="#111" stroke-width="6"/><path d="M83 130 C 300 230 700 260 1113 130" fill="none" stroke="#111" stroke-width="12" stroke-linecap="round"/><path d="M83 130 C 300 230 700 260 1113 130" fill="none" stroke="#d9d6cf" stroke-width="5" stroke-dasharray="14 18"/><rect x="0" y="720" width="1200" height="280" fill="#d9d6cf"/><path d="M0 720 L1200 720" stroke="#111" stroke-width="7"/><path d="M30 722 L-600 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M125 722 L-400 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M220 722 L-200 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M315 722 L0 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M410 722 L200 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M505 722 L400 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M600 722 L600 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M695 722 L800 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M790 722 L1000 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M885 722 L1200 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M980 722 L1400 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M1075 722 L1600 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M1170 722 L1800 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M1265 722 L2000 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M1360 722 L2200 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M1455 722 L2400 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M1550 722 L2600 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M1645 722 L2800 1000" stroke="#111" stroke-width="3" opacity=".7"/><path d="M0 800 L1200 800" stroke="#111" stroke-width="3" opacity=".6"/><path d="M0 890 L1200 890" stroke="#111" stroke-width="3" opacity=".6"/><g id="salvavidas"><circle cx="1040" cy="610" r="78" fill="#e9e7e2" stroke="#111" stroke-width="7"/><circle cx="1040" cy="610" r="34" fill="#d9d6cf" stroke="#111" stroke-width="7"/><path d="M1086.218794434942 641.619978510122 L1104.376177962955 654.0421129248127" stroke="#111" stroke-width="22" stroke-linecap="butt"/><path d="M1007.0439374337006 655.275798613897 L994.096912854083 673.062719497928" stroke="#111" stroke-width="22" stroke-linecap="butt"/><path d="M992.5063982242172 580.3291761091243 L973.8481975265881 568.6727810091376" stroke="#111" stroke-width="22" stroke-linecap="butt"/><path d="M1071.044962826033 563.3930232354616 L1083.2411982219746 545.0831395065356" stroke="#111" stroke-width="22" stroke-linecap="butt"/></g><rect x="314" y="480" width="52" height="300" fill="#3a3835" stroke="#111" stroke-width="6"/><g id="timon" transform-origin="340 480"><line x1="340" y1="480" x2="637" y2="480" stroke="#111" stroke-width="22" stroke-linecap="round"/><line x1="583" y1="480" x2="637" y2="480" stroke="#111" stroke-width="40" stroke-linecap="round"/><line x1="587" y1="480" x2="631" y2="480" stroke="#9a9792" stroke-width="20" stroke-linecap="round"/><line x1="340" y1="480" x2="550" y2="690" stroke="#111" stroke-width="22" stroke-linecap="round"/><line x1="512" y1="652" x2="550" y2="690" stroke="#111" stroke-width="40" stroke-linecap="round"/><line x1="515" y1="655" x2="546" y2="686" stroke="#9a9792" stroke-width="20" stroke-linecap="round"/><line x1="340" y1="480" x2="340" y2="777" stroke="#111" stroke-width="22" stroke-linecap="round"/><line x1="340" y1="723" x2="340" y2="777" stroke="#111" stroke-width="40" stroke-linecap="round"/><line x1="340" y1="727" x2="340" y2="771" stroke="#9a9792" stroke-width="20" stroke-linecap="round"/><line x1="340" y1="480" x2="130" y2="690" stroke="#111" stroke-width="22" stroke-linecap="round"/><line x1="168" y1="652" x2="130" y2="690" stroke="#111" stroke-width="40" stroke-linecap="round"/><line x1="165" y1="655" x2="134" y2="686" stroke="#9a9792" stroke-width="20" stroke-linecap="round"/><line x1="340" y1="480" x2="43" y2="480" stroke="#111" stroke-width="22" stroke-linecap="round"/><line x1="97" y1="480" x2="43" y2="480" stroke="#111" stroke-width="40" stroke-linecap="round"/><line x1="93" y1="480" x2="49" y2="480" stroke="#9a9792" stroke-width="20" stroke-linecap="round"/><line x1="340" y1="480" x2="130" y2="270" stroke="#111" stroke-width="22" stroke-linecap="round"/><line x1="168" y1="308" x2="130" y2="270" stroke="#111" stroke-width="40" stroke-linecap="round"/><line x1="165" y1="305" x2="134" y2="274" stroke="#9a9792" stroke-width="20" stroke-linecap="round"/><line x1="340" y1="480" x2="340" y2="183" stroke="#111" stroke-width="22" stroke-linecap="round"/><line x1="340" y1="237" x2="340" y2="183" stroke="#111" stroke-width="40" stroke-linecap="round"/><line x1="340" y1="233" x2="340" y2="189" stroke="#9a9792" stroke-width="20" stroke-linecap="round"/><line x1="340" y1="480" x2="550" y2="270" stroke="#111" stroke-width="22" stroke-linecap="round"/><line x1="512" y1="308" x2="550" y2="270" stroke="#111" stroke-width="40" stroke-linecap="round"/><line x1="515" y1="305" x2="546" y2="274" stroke="#9a9792" stroke-width="20" stroke-linecap="round"/><circle cx="340" cy="480" r="235" fill="none" stroke="#111" stroke-width="44"/><circle cx="340" cy="480" r="235" fill="none" stroke="#3a3835" stroke-width="24"/><circle cx="340" cy="480" r="211" fill="none" stroke="#111" stroke-width="4"/><circle cx="340" cy="480" r="48" fill="#3a3835" stroke="#111" stroke-width="8"/><circle cx="340" cy="480" r="16" fill="#111"/></g><g id="willie" transform-origin="760 860"><path id="cola" d="M835 585 C 905 585 945 640 912 700 C 892 735 925 760 965 745" fill="none" stroke="#111" stroke-width="12" stroke-linecap="round"/><path d="M735 640 C 705 700 672 760 650 820" stroke="#111" stroke-width="28" stroke-linecap="round" fill="none"/><path d="M795 640 C 805 700 812 760 805 825" stroke="#111" stroke-width="28" stroke-linecap="round" fill="none"/><g id="zapato-i"><path d="M560 830 C 540 880 600 900 680 885 C 700 880 700 850 690 830 C 660 805 580 805 560 830 Z" fill="#e9e7e2" stroke="#111" stroke-width="8"/><path d="M640 830 L648 870" stroke="#111" stroke-width="5"/></g><g id="zapato-d" transform-origin="800 870"><path d="M745 845 C 725 890 795 905 875 890 C 900 885 900 850 885 835 C 855 815 765 815 745 845 Z" fill="#e9e7e2" stroke="#111" stroke-width="8"/><path d="M825 840 L831 880" stroke="#111" stroke-width="5"/></g><path id="pantalon" d="M668 520 C 645 580 655 640 700 655 C 760 672 835 662 852 625 C 868 585 858 535 838 515 C 798 492 712 492 668 520 Z" fill="#e9e7e2" stroke="#111" stroke-width="8"/><circle cx="728" cy="590" r="13" fill="#111"/><circle cx="788" cy="590" r="13" fill="#111"/><path id="torso" d="M722 405 C 672 430 668 490 690 520 C 730 545 815 540 838 515 C 858 480 832 425 795 405 C 772 394 745 394 722 405 Z" fill="#111"/><path id="brazo-a" d="M715 440 C 660 380 600 320 548 276" fill="none" stroke="#111" stroke-width="30" stroke-linecap="round"/><path id="brazo-b" d="M705 480 C 680 490 660 486 634 480" fill="none" stroke="#111" stroke-width="30" stroke-linecap="round"/><g id="mano-a"><circle cx="548" cy="276" r="30" fill="#111"/><circle cx="526" cy="262" r="12" fill="#111"/><circle cx="524" cy="290" r="12" fill="#111"/></g><g id="mano-b"><circle cx="634" cy="480" r="30" fill="#111"/><circle cx="612" cy="466" r="12" fill="#111"/><circle cx="610" cy="494" r="12" fill="#111"/></g><g id="cabeza" transform-origin="740 400"><circle cx="655" cy="205" r="62" fill="#111"/><circle cx="822" cy="218" r="62" fill="#111"/><circle cx="738" cy="305" r="100" fill="#111"/><path id="cara" d="M672 250 C 700 236 760 236 800 262 C 822 300 820 350 788 384 C 760 412 712 420 680 412 C 650 404 622 390 598 372 C 568 352 552 340 556 326 C 562 310 610 300 640 290 C 652 274 660 258 672 250 Z" fill="#e9e7e2" stroke="#111" stroke-width="6"/><ellipse cx="566" cy="328" rx="26" ry="18" fill="#111"/><path id="boca" d="M612 362 C 650 400 712 404 760 372 C 730 420 660 420 612 362 Z" fill="#111"/><path id="lengua" d="M648 388 C 672 404 710 402 736 384 C 712 410 668 410 648 388 Z" fill="#3a3835"/><path d="M612 362 C 650 400 712 404 760 372" fill="none" stroke="#111" stroke-width="6"/><ellipse cx="700" cy="300" rx="16" ry="36" fill="#111"/><path d="M700 266 L712 282 L700 288 Z" fill="#e9e7e2"/><ellipse cx="752" cy="298" rx="18" ry="38" fill="#111"/><path d="M752 262 L765 278 L752 284 Z" fill="#e9e7e2"/><g id="gorra" transform="rotate(-14 770 215)"><path d="M708 198 L838 198 C 852 198 858 214 853 230 L703 230 C 696 214 696 198 708 198 Z" fill="#e9e7e2" stroke="#111" stroke-width="7"/><rect x="698" y="226" width="160" height="22" rx="6" fill="#111"/><path d="M716 195 C 750 178 806 178 842 195" fill="none" stroke="#111" stroke-width="7"/></g></g></g><rect width="1200" height="1000" filter="url(#grano)" opacity=".7"/><rect width="1200" height="1000" fill="url(#vineta)"/></svg>
+      <div class="notas" id="notas"><i class="nota"></i><i class="nota"></i><i class="nota"></i><i class="nota"></i></div>
+    </div>
+    <div class="iris" id="iris"></div>
+    <span class="marca" id="marca">Plano general</span>
+    <span class="aviso">Reducir movimiento activo: la pieza se muestra quieta en el plano medio.</span>
+  </div>
+</main>
+<footer class="controles">
+  <button class="primario" id="btn-play" type="button">Reproducir</button>
+  <button id="btn-reset" type="button">Reiniciar</button>
+  <span class="tiempo" id="tiempo">0,0 s / 16,0 s</span>
+</footer>
+<script>
+(function(){
+  "use strict";
+  var DUR=16, NEGRA=.5, q=new URLSearchParams(location.search);
+  var lienzo=document.getElementById("lienzo"), mundo=document.getElementById("mundo");
+  var reducido=matchMedia("(prefers-reduced-motion: reduce)").matches, quieto=reducido && q.get("storyboard")!=="0";
+  if(q.get("render")==="1") document.body.classList.add("render");
+  var base=q.get("base"); if(base && /^[\w.-]+\.(png|webp|jpg)$/.test(base)){ document.getElementById("base").src=base; lienzo.classList.add("con-base"); }
+  var $=function(id){return document.getElementById(id)};
+  var piezas={willie:$("willie"),cabeza:$("cabeza"),zd:$("zapato-d"),timon:$("timon"),cola:$("cola"),boca:$("boca"),lengua:$("lengua"),ba:$("brazo-a"),bb:$("brazo-b"),ma:$("mano-a"),mb:$("mano-b")};
+  var notas=document.querySelectorAll(".nota");
+  function ease(x){return x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2} function c01(x){return x<0?0:x>1?1:x}
+  function tr(el,s){ if(el) el.setAttribute("transform",s); }
+  var CX=340, CY=480, RH=291;
+  function manos(ang){ // las manos agarran los puños del timón (k=7 y k=0) y los brazos las siguen
+    var a1=-Math.PI/4+ang, a2=0+ang;
+    var x1=CX+RH*Math.cos(a1), y1=CY+RH*Math.sin(a1), x2=CX+RH*Math.cos(a2), y2=CY+RH*Math.sin(a2);
+    if(piezas.ba) piezas.ba.setAttribute("d","M715 440 C 660 390 "+((715+x1)/2)+" "+((440+y1)/2-40)+" "+x1+" "+y1);
+    if(piezas.bb) piezas.bb.setAttribute("d","M705 480 C 680 492 "+((705+x2)/2)+" "+((480+y2)/2+10)+" "+x2+" "+y2);
+    tr(piezas.ma,"translate("+(x1-548)+" "+(y1-276)+")"); tr(piezas.mb,"translate("+(x2-634)+" "+(y2-480)+")");
+  }
+  function pinta(t){
+    var beat=(t%NEGRA)/NEGRA, cad=Math.sin(t*Math.PI); // ciclo de cadera de 2 s
+    var marca=$("marca"), iris=$("iris");
+    // cámara
+    var p1=ease(c01((t-4)/4)); if(quieto) p1=1; var z=1+p1*0.7, tx=-p1*440, ty=-p1*250;
+    mundo.style.transform="translate("+tx+"px,"+ty+"px) scale("+z+") rotate("+(quieto?0:cad*1.2)+"deg)";
+    marca.textContent = t<4?"Plano general · 0–4 s":t<8?"Travelling →  plano medio · 4–8 s":t<14?"Plano medio · actuación al pulso":"Iris out";
+    iris.style.setProperty("--r", t<1?String(ease(c01(t/1))*120):t>14?String((1-ease(c01((t-14)/1.6)))*120):"120");
+    if(quieto){ iris.style.setProperty("--r","120"); marca.textContent="Storyboard · plano medio"; }
+    // actuación
+    var cadera=quieto?0:cad*3, cab=quieto?0:-Math.sin((t-.25)*Math.PI)*4;
+    tr(piezas.willie,"rotate("+cadera+" 760 860)");
+    tr(piezas.cabeza,"rotate("+cab+" 740 400)");
+    var tim = t<10?0:t<12?ease(c01((t-10)/2))*-40:ease(1-c01((t-12)/2))*-40; if(quieto) tim=-20;
+    tr(piezas.timon,"rotate("+tim+" "+CX+" "+CY+")"); manos(tim*Math.PI/180);
+    var pie=quieto?0:(beat<.3?-18*(1-beat/.3):0); tr(piezas.zd,"rotate("+pie+" 800 870)");
+    tr(piezas.cola,"rotate("+(quieto?0:Math.sin(t*Math.PI*2)*6)+" 835 585)");
+    // boca: «o» del silbido en la primera corchea de cada negra, sonrisa el resto
+    var silba = !quieto && beat<.5;
+    if(piezas.boca) piezas.boca.setAttribute("d", silba? "M660 372 C 660 352 700 352 700 372 C 700 392 660 392 660 372 Z" : "M612 362 C 650 400 712 404 760 372 C 730 420 660 420 612 362 Z");
+    if(piezas.lengua) piezas.lengua.style.display = silba?"none":"";
+    // notas: una por negra, 4 en vuelo, viajan en arco 1,5 s
+    var k0=Math.floor(t/NEGRA);
+    for(var i=0;i<notas.length;i++){ var kk=k0-i, t0=kk*NEGRA, u=(t-t0)/1.5; var vis=(t>=8 && t<14.5 && u>=0 && u<1 && !quieto);
+      notas[i].style.opacity=vis?String(1-u):"0";
+      notas[i].style.transform="translate("+(690-u*260)+"px,"+(360-Math.sin(u*Math.PI)*170-u*40)+"px) rotate("+(u*40-20)+"deg) scale("+(0.8+u*.6)+")"; }
+    var el=$("tiempo"); if(el) el.textContent=t.toFixed(1).replace(".",",")+" s / 16,0 s";
+  }
+  var t=0, playing=false, last=0;
+  function seek(x){ t=Math.max(0,Math.min(DUR,x)); pinta(t); }
+  function pausa(){ playing=false; $("btn-play").textContent="Reproducir"; }
+  function play(){ if(t>=DUR) t=0; playing=true; last=performance.now(); $("btn-play").textContent="Pausa"; requestAnimationFrame(paso); }
+  function paso(now){ if(!playing) return; t+=(now-last)/1000; last=now; if(t>=DUR){t=DUR; pinta(t); pausa(); return;} pinta(t); requestAnimationFrame(paso); }
+  function escala(){ if(quieto) return; var cab=document.body.classList.contains("render")?0:document.querySelector(".controles").offsetHeight; lienzo.style.transform="scale("+Math.min(innerWidth/1200,(innerHeight-cab)/1000)+")"; }
+  $("btn-play").addEventListener("click",function(){playing?pausa():play()}); $("btn-reset").addEventListener("click",function(){pausa();seek(0)});
+  addEventListener("keydown",function(e){ if(e.code==="Space"){e.preventDefault();playing?pausa():play();} if(e.key==="ArrowRight"){pausa();seek(t+.25);} if(e.key==="ArrowLeft"){pausa();seek(t-.25);} });
+  addEventListener("resize",escala); if(quieto) document.body.classList.add("quieto"); escala();
+  var t0=parseFloat(q.get("t")); seek(isNaN(t0)?(quieto?10:0):t0);
+  window.willie={seek:seek,play:play,pausa:pausa,duracion:DUR};
+})();
+</script>
+</body>
+</html>
