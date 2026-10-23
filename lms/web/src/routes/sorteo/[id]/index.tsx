@@ -21,6 +21,14 @@ export default component$(() => {
   const ya = useSignal(false);
   const numero = useSignal<number | null>(null); // tu número de rifa, fijo desde el registro
   const copiado = useSignal(false);              // «enlace copiado» del bloque de compartir
+  // Enlace personalizado del ganador: /sorteo/<id>/?ganador=Junior%20Cercado
+  // La página le pone su nombre al anuncio; el enlace es el que comparte en redes.
+  const ganador = useSignal("");
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(({ track }) => {
+    track(() => loc.url.search);
+    ganador.value = (loc.url.searchParams.get("ganador") || "").trim().slice(0, 60);
+  });
 
   const load = $(async () => {
     st.error = "";
@@ -89,6 +97,7 @@ export default component$(() => {
   // Compartir: se arma con la URL real de la página (cliente) y el título del taller.
   const urlPagina = loc.url.href;
   const textoCompartir = [
+    ganador.value ? `¡${ganador.value} ganó un cupo!` : "",
     `${info.titulo} · ${info.subtitulo}`,
     info.fechas_texto || "",
     info.whatsapp_bonito ? `Inscríbete por WhatsApp al ${info.whatsapp_bonito}.` : "",
@@ -156,6 +165,20 @@ export default component$(() => {
             <p class={`sm row ${mal.value ? "bad" : ""}`} style="flex-wrap:nowrap;margin-top:.6rem" role="status">{msg.value}</p>
           )}
         </div>
+        {ganador.value && (
+          <div class="card" style="margin-top:.9rem;padding:1rem 1.2rem;text-align:center">
+            <p class="xs muted" style="margin:0;letter-spacing:.14em;text-transform:uppercase">Ganador del sorteo</p>
+            <p style="margin:.25rem 0 0;font-size:1.5rem;font-weight:800;line-height:1.15">🎉 ¡{ganador.value}, ganaste un cupo!</p>
+            {info.fechas_texto && <p class="sm" style="margin:.5rem 0 0"><b>{info.fechas_texto}</b></p>}
+            {info.whatsapp_bonito && (
+              <p class="sm" style="margin:.35rem 0 0">
+                Para inscribirte, envía un mensaje al <b>WhatsApp {info.whatsapp_bonito}</b>.
+              </p>
+            )}
+            <p class="xs muted" style="margin:.6rem 0 0">Comparte este anuncio en tus redes 👇</p>
+          </div>
+        )}
+
         {info.ganadores.length > 0 && (
           <div class="card" style="margin-top:.9rem;padding:1rem 1.2rem">
             <p style="margin:0 0 .5rem;font-weight:700">Ganadores</p>
