@@ -325,6 +325,12 @@ export interface Sorteo {
   quedan: number;
   /** Enlace de registro que ofrece la página («¡Inscríbete ya!»); "" si no hay. */
   inscripcion?: string;
+  /** Vía de inscripción por WhatsApp: número (solo dígitos), el mismo en bonito y el enlace wa.me. */
+  whatsapp?: string;
+  whatsapp_bonito?: string;
+  whatsapp_url?: string;
+  /** El horario del taller, ya redactado (p. ej. «Clases 8, 10 y 11 de noviembre · 9:30 a 10:45 pm»). */
+  fechas_texto?: string;
 }
 
 // Aviso de sorteo que la inscripción devuelve cuando el cupo queda jugado ahí mismo.

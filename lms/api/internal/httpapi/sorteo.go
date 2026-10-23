@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -29,6 +30,12 @@ type Sorteo struct {
 	// InscripcionGrupo: grupo cuya inscripción por enlace se ofrece en la
 	// página del sorteo («¡Inscríbete ya!»). Vacío = sin botón.
 	InscripcionGrupo string
+	// WhatsApp (solo dígitos con código de país) y el texto que se prellena al
+	// abrir el chat: la vía de inscripción que anuncia el sorteo.
+	WhatsApp      string
+	WhatsAppTexto string
+	// FechasTexto: el horario del taller tal como se anuncia (una línea).
+	FechasTexto string
 	MaxGanadores int
 	Inicia       time.Time
 	Termina      time.Time
@@ -41,11 +48,14 @@ var sorteos = map[string]Sorteo{
 		ID:           "potencia-agentes",
 		Titulo:       "⚡ Menos tokens. Más poder",
 		Subtitulo:    "Potencia tus agentes con RTK, Cortex, Graphify y Caveman",
-		Descripcion:  "Sorteo de 6 cupos para el taller nuevo. Participa con el correo con el que te registraste en los cursos. Solo se puede ganar una vez y el sorteo cierra en 4 días.",
+		Descripcion:  "Tres clases en vivo: 8, 10 y 11 de noviembre, de 9:30 a 10:45 pm. Potencia tus agentes con RTK, Cortex, Graphify y Caveman. Para inscribirte, envía un mensaje al WhatsApp 986 149 476 y te damos tu cupo.",
 		Flyer:        "/sorteo-potencia.jpg",
 		CursoID:      "potencia-agentes",
 		Cohorte:      "potencia-agentes-1",
 		InscripcionGrupo: "potencia-agentes-1",
+		WhatsApp:      "51986149476",
+		WhatsAppTexto: "Hola, quiero inscribirme al taller ⚡ Menos tokens. Más poder (8, 10 y 11 de noviembre, 9:30–10:45 pm).",
+		FechasTexto:  "Clases 8, 10 y 11 de noviembre · 9:30 a 10:45 pm",
 		MaxGanadores: 6,
 		Inicia:       time.Date(2026, 10, 22, 0, 0, 0, 0, lima),
 		Termina:      time.Date(2026, 10, 26, 23, 59, 59, 0, lima),
@@ -109,7 +119,37 @@ func (s *Server) sorteoInfo(w http.ResponseWriter, r *http.Request) {
 		"abierto": abierto, "participantes": len(part), "ganadores": pubs,
 		"quedan": max(0, def.MaxGanadores-len(gans)),
 		"inscripcion": inscripcionURL(def),
+		"whatsapp": whatsappVisible(def),
+		"whatsapp_bonito": waBonito(def.WhatsApp),
+		"whatsapp_url": whatsappURL(def),
+		"fechas_texto": def.FechasTexto,
 	})
+}
+
+// kind: solo los dígitos del número, tal como se muestra/apunta.
+func whatsappVisible(def Sorteo) string {
+	return def.WhatsApp
+}
+
+// whatsappURL: enlace wa.me con el texto ya escrito (vacío si no hay número).
+func whatsappURL(def Sorteo) string {
+	if def.WhatsApp == "" {
+		return ""
+	}
+	u := "https://wa.me/" + def.WhatsApp
+	if def.WhatsAppTexto != "" {
+		u += "?text=" + url.QueryEscape(def.WhatsAppTexto)
+	}
+	return u
+}
+
+// waBonito: "51986149476" → "986 149 476" (para escribirlo en el anuncio).
+func waBonito(numero string) string {
+	d := strings.TrimPrefix(numero, "51")
+	if len(d) == 9 {
+		return d[:3] + " " + d[3:6] + " " + d[6:]
+	}
+	return numero
 }
 
 // inscripcionURL: el enlace de registro que ofrece la página del sorteo.

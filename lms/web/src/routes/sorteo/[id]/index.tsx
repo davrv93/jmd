@@ -88,7 +88,11 @@ export default component$(() => {
   const soyStaff = !!session.me && session.me.roles.some((x) => x === "admin" || x === "instructor");
   // Compartir: se arma con la URL real de la página (cliente) y el título del taller.
   const urlPagina = loc.url.href;
-  const textoCompartir = `${info.titulo} · ${info.subtitulo}`;
+  const textoCompartir = [
+    `${info.titulo} · ${info.subtitulo}`,
+    info.fechas_texto || "",
+    info.whatsapp_bonito ? `Inscríbete por WhatsApp al ${info.whatsapp_bonito}.` : "",
+  ].filter(Boolean).join(" — ");
   const enc = (x: string) => encodeURIComponent(x);
 
   return (
@@ -167,10 +171,26 @@ export default component$(() => {
 
         {/* CTA + compartir: lo pequeño que se comparte en redes. */}
         <div class="card" style="margin-top:.9rem;padding:1rem 1.2rem">
-          {info.inscripcion && (
+          {info.whatsapp_url ? (
+            <>
+              <a class="btn" href={info.whatsapp_url} target="_blank" rel="noopener"
+                 style="width:100%;justify-content:center;display:inline-flex;text-decoration:none">
+                ⚡ ¡Inscríbete ya!
+              </a>
+              <p class="sm" style="margin:.6rem 0 0;text-align:center">
+                {info.fechas_texto ? <><b>{info.fechas_texto}</b><br /></> : null}
+                Envía un mensaje al <b>WhatsApp {info.whatsapp_bonito}</b> y te damos tu cupo.
+              </p>
+            </>
+          ) : info.inscripcion ? (
             <a class="btn" href={info.inscripcion} style="width:100%;justify-content:center;display:inline-flex;text-decoration:none;margin-bottom:.7rem">
               ⚡ ¡Inscríbete ya!
             </a>
+          ) : null}
+          {info.whatsapp_url && info.inscripcion && (
+            <p class="xs muted" style="margin:.5rem 0 0;text-align:center">
+              ¿Prefieres hacerlo tú? <a href={info.inscripcion}>Regístrate aquí</a>.
+            </p>
           )}
           <p class="xs muted" style="margin:0 0 .5rem;letter-spacing:.14em;text-transform:uppercase;text-align:center">
             Comparte en tus redes sociales
