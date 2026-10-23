@@ -330,6 +330,7 @@ export interface SorteoAviso {
   id: string;
   titulo: string;
   numero: number;
+  ganador?: boolean;
 }
 export interface Inscripcion {
   grupo: string;

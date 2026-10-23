@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"slices"
@@ -107,7 +108,8 @@ func (s *Server) sorteoInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 // sorteoParticipar: POST /api/v1/sorteo/{id}/participar {email} → anota una vez.
-// El correo debe existir en la plataforma (es con el que se registró al curso).
+// CUALQUIER correo participa: no hace falta tener cuenta ni estar inscrito. Si
+// el correo sí tiene cuenta se guarda su nombre y, si gana, entra solo al curso.
 func (s *Server) sorteoParticipar(w http.ResponseWriter, r *http.Request) {
 	def, ok := sorteos[strings.TrimSpace(r.PathValue("id"))]
 	if !ok {
@@ -116,6 +118,10 @@ func (s *Server) sorteoParticipar(w http.ResponseWriter, r *http.Request) {
 	}
 	if !sorteoAbierto(def, time.Now()) {
 		writeErr(w, 410, "cerrado", "el sorteo ya cerró")
+		return
+	}
+	if !s.login.allow("sorteo:" + clientIP(r)) {
+		writeErr(w, 429, "rate_limited", "demasiados intentos desde esta conexión; espera un minuto")
 		return
 	}
 	var in struct {
@@ -129,19 +135,18 @@ func (s *Server) sorteoParticipar(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, "escribe un correo válido")
 		return
 	}
-	u, err := s.DB.UserByEmail(r.Context(), in.Email)
-	if err != nil {
-		writeErr(w, 404, "sin_registro", "ese correo no está registrado en ningún curso: regístrate primero y vuelve")
-		return
+	userID := ""
+	if u, err := s.DB.UserByEmail(r.Context(), in.Email); err == nil {
+		userID = u.ID
 	}
-	numero, err := s.DB.SorteoParticipar(r.Context(), def.ID, u.ID, u.Email)
+	numero, err := s.DB.SorteoParticipar(r.Context(), def.ID, in.Email, userID)
 	if err != nil {
 		if store.YaInscrito(err) {
 			// Ya jugaba: se le devuelve SU número (el mismo desde que se anotó).
 			writeJSON(w, 409, map[string]any{
 				"error": map[string]any{"code": "ya_participa",
 					"message": "ese correo ya está participando: cada correo juega una vez"},
-				"numero": s.DB.SorteoNumeroDe(r.Context(), def.ID, u.ID),
+				"numero": s.DB.SorteoNumeroPorEmail(r.Context(), def.ID, in.Email),
 			})
 			return
 		}
@@ -161,19 +166,48 @@ func (s *Server) sorteosAutomaticos(ctx context.Context, cursos []string, userID
 		if !slices.Contains(cursos, def.CursoID) || !sorteoAbierto(def, time.Now()) {
 			continue
 		}
+		// Ganó antes de tener cuenta: al entrar ahora se le entrega el premio,
+		// aunque el sorteo ya tenga todos sus cupos repartidos.
+		if gano, numero := s.DB.SorteoPremioPendiente(ctx, def.ID, email); gano {
+			if userID != "" {
+				s.darCohorte(ctx, userID, def.Cohorte)
+			}
+			return map[string]any{"id": def.ID, "titulo": def.Titulo, "numero": numero, "ganador": true}
+		}
 		if gans, err := s.DB.SorteoGanadores(ctx, def.ID); err == nil && len(gans) >= def.MaxGanadores {
 			continue
 		}
-		numero, err := s.DB.SorteoParticipar(ctx, def.ID, userID, email)
+		numero, err := s.DB.SorteoParticipar(ctx, def.ID, email, userID)
 		if err != nil && !store.YaInscrito(err) {
 			continue
 		}
 		if numero == 0 {
-			numero = s.DB.SorteoNumeroDe(ctx, def.ID, userID)
+			numero = s.DB.SorteoNumeroPorEmail(ctx, def.ID, email)
 		}
 		return map[string]any{"id": def.ID, "titulo": def.Titulo, "numero": numero}
 	}
 	return nil
+}
+
+// darCohorte suma una cohorte al usuario sin quitarle las que ya tenía.
+func (s *Server) darCohorte(ctx context.Context, userID, cohorte string) {
+	if userID == "" || cohorte == "" {
+		return
+	}
+	u, err := s.DB.UserByID(ctx, userID)
+	if err != nil {
+		return
+	}
+	for _, c := range u.Cohorts {
+		if c == cohorte {
+			return
+		}
+	}
+	roles := u.Roles
+	if len(roles) == 0 {
+		roles = []string{"student"}
+	}
+	_ = s.DB.UpdateUserRoles(ctx, userID, roles, append(slices.Clone(u.Cohorts), cohorte))
 }
 
 // sorteoSortear: POST /api/v1/sorteo/{id}/sortear (staff) {cantidad?} → elige al
@@ -201,16 +235,16 @@ func (s *Server) sorteoSortear(w http.ResponseWriter, r *http.Request, p *Princi
 	}
 	restan := def.MaxGanadores - len(gans)
 	if restan <= 0 {
-		writeErr(w, 409, "completo", "ya salieron los 6 ganadores")
+		writeErr(w, 409, "completo", fmt.Sprintf("ya salieron los %d ganadores", def.MaxGanadores))
 		return
 	}
 	ya := map[string]bool{}
 	for _, g := range gans {
-		ya[g.UserID] = true
+		ya[g.Email] = true
 	}
 	var bolsa []store.SorteoParticipante
 	for _, c := range part {
-		if !ya[c.UserID] {
+		if !ya[c.Email] {
 			bolsa = append(bolsa, c)
 		}
 	}
@@ -230,29 +264,18 @@ func (s *Server) sorteoSortear(w http.ResponseWriter, r *http.Request, p *Princi
 	salieron := []map[string]any{}
 	for i, c := range bolsa[:n] {
 		pos := len(gans) + i + 1
-		if err := s.DB.SorteoAgregarGanador(r.Context(), def.ID, c.UserID, c.Email, c.Nombre, pos, c.Numero); err != nil {
+		// El nombre del premio: el de su cuenta si la tiene (participó con correo a secas).
+		nombre := c.Nombre
+		if err := s.DB.SorteoAgregarGanador(r.Context(), def.ID, c.Email, nombre, pos, c.Numero); err != nil {
 			internal(w, err)
 			return
 		}
 		// El premio entra solo: suma la cohorte sin quitar las que ya tenía.
-		if u, err := s.DB.UserByID(r.Context(), c.UserID); err == nil {
-			cohorts := u.Cohorts
-			tiene := false
-			for _, k := range cohorts {
-				if k == def.Cohorte {
-					tiene = true
-				}
-			}
-			if !tiene {
-				roles := u.Roles
-				if len(roles) == 0 {
-					roles = []string{"student"}
-				}
-				_ = s.DB.UpdateUserRoles(r.Context(), c.UserID, roles, append(cohorts, def.Cohorte))
-			}
-			_ = u
+		// Quien participó sin cuenta la recibe al inscribirse con ese correo.
+		if u, err := s.DB.UserByEmail(r.Context(), c.Email); err == nil && u != nil {
+			s.darCohorte(r.Context(), u.ID, def.Cohorte)
 		}
-		salieron = append(salieron, map[string]any{"nombre": sorteoNombre(c.Nombre), "correo": correoMascarado(c.Email),
+		salieron = append(salieron, map[string]any{"nombre": sorteoNombre(nombre), "correo": correoMascarado(c.Email),
 			"posicion": pos, "numero": c.Numero})
 	}
 	writeJSON(w, 200, map[string]any{"ganadores": salieron, "quedan": max(0, def.MaxGanadores-(len(gans)+len(salieron)))})

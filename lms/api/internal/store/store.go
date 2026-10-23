@@ -49,9 +49,6 @@ func migrate(db *sql.DB) error {
 		{"certificates", "lesson_id", "ALTER TABLE certificates ADD COLUMN lesson_id TEXT NOT NULL DEFAULT ''"},
 		// Calificación por criterio de la rúbrica (10-2026): JSON con el nivel de cada criterio.
 		{"submissions", "rubric_json", "ALTER TABLE submissions ADD COLUMN rubric_json TEXT NOT NULL DEFAULT ''"},
-		// Número de rifa: se asigna ALEATORIO al participar y no cambia (10-2026).
-		{"sorteo_participantes", "numero", "ALTER TABLE sorteo_participantes ADD COLUMN numero INTEGER"},
-		{"sorteo_ganadores", "numero", "ALTER TABLE sorteo_ganadores ADD COLUMN numero INTEGER"},
 	}
 	for _, a := range adds {
 		has, err := hasColumn(db, a.table, a.column)
@@ -69,11 +66,57 @@ func migrate(db *sql.DB) error {
 	// existente la columna «numero» recién se creó en los adds de arriba.
 	// Parcial (WHERE numero IS NOT NULL): las filas viejas sin número no lo
 	// bloquean; las nuevas no pueden repetirlo dentro del mismo sorteo.
-	if _, err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS sorteo_participantes_numero
-		ON sorteo_participantes (sorteo_id, numero) WHERE numero IS NOT NULL`); err != nil {
-		return fmt.Errorf("índice sorteo numero: %w", err)
+	if _, err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS sorteo_jugadas_numero
+		ON sorteo_jugadas (sorteo_id, numero) WHERE numero IS NOT NULL`); err != nil {
+		return fmt.Errorf("índice sorteo jugadas: %w", err)
+	}
+	if _, err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS sorteo_premios_numero
+		ON sorteo_premios (sorteo_id, numero) WHERE numero IS NOT NULL`); err != nil {
+		return fmt.Errorf("índice sorteo premios: %w", err)
+	}
+	// Copia única e idempotente de las tablas viejas del sorteo (clave por
+	// user_id) a las nuevas (clave por correo). INSERT OR IGNORE: repetirlo en
+	// cada arranque no duplica ni pisa lo que el servidor ya escribió.
+	if ok, err := tableExists(db, "sorteo_participantes"); err != nil {
+		return err
+	} else if ok {
+		// La columna «numero» existe si ya corrió el deploy que la añadió; si no,
+		// se copia NULL y el backfill le da número al abrir.
+		numExpr := "NULL"
+		if has, err := hasColumn(db, "sorteo_participantes", "numero"); err != nil {
+			return err
+		} else if has {
+			numExpr = "numero"
+		}
+		if _, err := db.Exec(`INSERT OR IGNORE INTO sorteo_jugadas (sorteo_id, email, user_id, numero, creada_en)
+			SELECT sorteo_id, lower(trim(email)), COALESCE(user_id,''), ` + numExpr + `, creada_en
+			FROM sorteo_participantes WHERE trim(COALESCE(email,'')) <> ''`); err != nil {
+			return fmt.Errorf("copiar participantes del sorteo: %w", err)
+		}
+	}
+	if ok, err := tableExists(db, "sorteo_ganadores"); err != nil {
+		return err
+	} else if ok {
+		numExpr := "NULL"
+		if has, err := hasColumn(db, "sorteo_ganadores", "numero"); err != nil {
+			return err
+		} else if has {
+			numExpr = "numero"
+		}
+		if _, err := db.Exec(`INSERT OR IGNORE INTO sorteo_premios (sorteo_id, email, nombre, numero, posicion, sorteado_en)
+			SELECT sorteo_id, lower(trim(email)), nombre, ` + numExpr + `, posicion, sorteado_en
+			FROM sorteo_ganadores WHERE trim(COALESCE(email,'')) <> ''`); err != nil {
+			return fmt.Errorf("copiar ganadores del sorteo: %w", err)
+		}
 	}
 	return nil
+}
+
+// tableExists dice si la tabla (o vista) existe en esta base.
+func tableExists(db *sql.DB, nombre string) (bool, error) {
+	var n int
+	err := db.QueryRow(`SELECT count(*) FROM sqlite_master WHERE type IN ('table','view') AND name = ?`, nombre).Scan(&n)
+	return n > 0, err
 }
 
 func hasColumn(db *sql.DB, table, column string) (bool, error) {
@@ -190,23 +233,26 @@ CREATE TABLE IF NOT EXISTS answers (
 );
 -- Sorteo de cupos (10-2026): un correo participa una vez; como máximo
 -- MaxGanadores ganan en la ventana. Los ganadores entran a la cohorte premio.
-CREATE TABLE IF NOT EXISTS sorteo_participantes (
+-- Sorteo de cupos (10-2026): participa CUALQUIER correo, con cuenta o sin
+-- ella. El número se sortea al anotarse y no cambia. Las tablas viejas
+-- (sorteo_participantes/sorteo_ganadores, con clave por user_id) se copian en
+-- migrate() y quedan solo como respaldo.
+CREATE TABLE IF NOT EXISTS sorteo_jugadas (
   sorteo_id TEXT NOT NULL,
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
-  creada_en TEXT NOT NULL,
+  user_id TEXT NOT NULL DEFAULT '',
   numero INTEGER,
-  PRIMARY KEY (sorteo_id, user_id)
+  creada_en TEXT NOT NULL,
+  PRIMARY KEY (sorteo_id, email)
 );
-CREATE TABLE IF NOT EXISTS sorteo_ganadores (
+CREATE TABLE IF NOT EXISTS sorteo_premios (
   sorteo_id TEXT NOT NULL,
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   nombre TEXT NOT NULL DEFAULT '',
+  numero INTEGER,
   posicion INTEGER NOT NULL,
   sorteado_en TEXT NOT NULL,
-  numero INTEGER,
-  PRIMARY KEY (sorteo_id, user_id)
+  PRIMARY KEY (sorteo_id, email)
 );
 CREATE TABLE IF NOT EXISTS live_sessions (
   lesson_id TEXT PRIMARY KEY,

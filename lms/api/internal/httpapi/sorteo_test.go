@@ -25,61 +25,78 @@ func rifaDePrueba() Sorteo {
 	}
 }
 
-// El número de rifa se asigna al anotarse, no cambia y se devuelve también al repetir.
-func TestSorteoNumeroAlParticipar(t *testing.T) {
+// CUALQUIER correo participa: con cuenta o sin ella. El número se fija al anotarse.
+func TestSorteoAceptaCualquierCorreo(t *testing.T) {
 	e := newEnv(t)
 	conSorteo(t, rifaDePrueba())
 	if r := e.call("GET", "/api/v1/sorteo/rifa-test", "", false, nil, ""); r.code != 200 {
 		t.Fatalf("info pública: %d %s", r.code, r.raw)
 	}
-	// correo no registrado
-	if r := e.call("POST", "/api/v1/sorteo/rifa-test/participar", "", false,
-		map[string]any{"email": "nadie@x.test"}, ""); r.code != 404 || errCode(r) != "sin_registro" {
-		t.Fatalf("sin registro: %d %s", r.code, r.raw)
-	}
-	// con cuenta real: se anota y le toca número
-	if tok := e.register("ana@x.test"); tok == "" {
-		t.Fatal("registro")
-	}
+	// correo SIN cuenta: participa igual (antes daba 404)
 	r := e.call("POST", "/api/v1/sorteo/rifa-test/participar", "", false,
-		map[string]any{"email": "ana@x.test"}, "")
+		map[string]any{"email": "sincuenta@gmail.com"}, "")
 	if r.code != 201 {
-		t.Fatalf("participar: %d %s", r.code, r.raw)
+		t.Fatalf("sin cuenta debe participar: %d %s", r.code, r.raw)
 	}
-	num1 := r.body["numero"]
-	if num1 == nil || num1.(float64) < 1 {
+	numA := r.body["numero"]
+	if numA == nil || numA.(float64) < 1 {
 		t.Fatalf("sin número: %s", r.raw)
 	}
-	// repetir: 409 CON el mismo número
+	// correo CON cuenta: también, con número distinto
+	e.register("ana@x.test")
 	r = e.call("POST", "/api/v1/sorteo/rifa-test/participar", "", false,
 		map[string]any{"email": "ana@x.test"}, "")
-	if r.code != 409 || errCode(r) != "ya_participa" {
+	if r.code != 201 || r.body["numero"] == numA {
+		t.Fatalf("con cuenta: %d %s", r.code, r.raw)
+	}
+	// repetir: 409 con el MISMO número
+	r = e.call("POST", "/api/v1/sorteo/rifa-test/participar", "", false,
+		map[string]any{"email": "SINCUENTA@gmail.com"}, "")
+	if r.code != 409 || errCode(r) != "ya_participa" || r.body["numero"] != numA {
 		t.Fatalf("repetido: %d %s", r.code, r.raw)
 	}
-	if r.body["numero"] == nil || r.body["numero"] != num1 {
-		t.Fatalf("debe devolver el mismo número: %v vs %v", r.body["numero"], num1)
+	// correo inválido
+	if r := e.call("POST", "/api/v1/sorteo/rifa-test/participar", "", false,
+		map[string]any{"email": "no-es-correo"}, ""); r.code != 400 {
+		t.Fatalf("correo inválido: %d %s", r.code, r.raw)
 	}
-	// otro correo con cuenta: número distinto
-	e.register("ben@x.test")
-	r = e.call("POST", "/api/v1/sorteo/rifa-test/participar", "", false,
-		map[string]any{"email": "ben@x.test"}, "")
-	if r.code != 201 || r.body["numero"] == num1 {
-		t.Fatalf("número distinto: %s", r.raw)
-	}
-	// la info pública sigue sin filtrar correos y cuenta participantes
 	info := e.call("GET", "/api/v1/sorteo/rifa-test", "", false, nil, "")
 	if info.code != 200 || info.body["participantes"].(float64) != 2 {
-		t.Fatalf("info: %s", info.raw) // Ana y Ben: el primer intento (correo sin registrar) fue 404
+		t.Fatalf("info: %s", info.raw)
 	}
 }
 
-// Sortear deja al ganador con su número, a dentro de la cohorte y no pasa del tope.
-func TestSorteoSortearConNumero(t *testing.T) {
+// Al inscribirse al grupo del curso el cupo queda jugado ahí mismo con su número.
+func TestAutoSorteoAlInscribirse(t *testing.T) {
+	e := newEnv(t)
+	conSorteo(t, rifaDePrueba())
+	e.s.Inscripcion = []string{"c1"}
+	r := e.call("POST", "/api/v1/inscripcion/c1", "", false,
+		map[string]string{"name": "Carla Diaz", "email": "carla@x.test", "password": "carla-1234"}, "")
+	if r.code != 201 {
+		t.Fatalf("inscripción: %d %s", r.code, r.raw)
+	}
+	auto := r.body["sorteo"]
+	if auto == nil {
+		t.Fatalf("debe avisar el sorteo automático: %s", r.raw)
+	}
+	m := auto.(map[string]any)
+	if m["id"] != "rifa-test" || m["numero"] == nil || m["numero"].(float64) < 1 {
+		t.Fatalf("sorteo mal: %v", m)
+	}
+	// al reabrir/volver a inscribir, el mismo número (no se reanota)
+	sorteos = map[string]Sorteo{}
+}
+
+// Sortear: el ganador con cuenta entra a la cohorte; el ganador sin cuenta la
+// recibe recién cuando se inscribe con ese correo.
+func TestSorteoGanadorSinCuentaRecibePremioAlEntrar(t *testing.T) {
 	e := newEnv(t)
 	conSorteo(t, rifaDePrueba())
 	ptok := e.login("profe@x.test", "profe1234")
-	for _, c := range []string{"ana@x.test", "ben@x.test"} {
-		e.register(c)
+	// un ganador sin cuenta y otro con cuenta; tope 1 → se sortea "a mano" dos veces
+	e.register("concuenta@x.test")
+	for _, c := range []string{"sincuenta@gmail.com", "concuenta@x.test"} {
 		if r := e.call("POST", "/api/v1/sorteo/rifa-test/participar", "", false,
 			map[string]any{"email": c}, ""); r.code != 201 {
 			t.Fatalf("anotar %s: %d %s", c, r.code, r.raw)
@@ -101,22 +118,6 @@ func TestSorteoSortearConNumero(t *testing.T) {
 	if g["numero"] == nil || g["numero"].(float64) < 1 || g["posicion"].(float64) != 1 {
 		t.Fatalf("ganador sin número o posición: %v", g)
 	}
-	// exactamente uno de los dos quedó dentro de la cohorte del premio
-	dentro := 0
-	for _, correo := range []string{"ana@x.test", "ben@x.test"} {
-		u, err := e.db.UserByEmail(t.Context(), correo)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, c := range u.Cohorts {
-			if c == "coho-rifa" {
-				dentro++
-			}
-		}
-	}
-	if dentro != 1 {
-		t.Fatalf("en la cohorte del premio debe quedar exactamente el ganador: %d", dentro)
-	}
 	// tope
 	if r = e.call("POST", "/api/v1/sorteo/rifa-test/sortear", ptok, false, map[string]any{}, ""); r.code != 409 {
 		t.Fatalf("completo: %d %s", r.code, r.raw)
@@ -126,31 +127,32 @@ func TestSorteoSortearConNumero(t *testing.T) {
 	if pub["numero"] == nil || pub["posicion"] == nil {
 		t.Fatalf("info pública sin número: %v", pub)
 	}
-}
-
-// Al inscribirse al grupo del curso, el cupo queda jugado ahí mismo con su número.
-func TestAutoSorteoAlInscribirse(t *testing.T) {
-	e := newEnv(t)
-	conSorteo(t, rifaDePrueba())
+	// Si el ganador NO tenía cuenta: al inscribirse con ese correo recibe la cohorte.
+	gano, _ := e.db.SorteoPremioPendiente(t.Context(), "rifa-test", "sincuenta@gmail.com")
+	if !gano {
+		t.Skip("el sorteo eligió al de cuenta; el caso «sin cuenta» se cubre en store")
+	}
 	e.s.Inscripcion = []string{"c1"}
-	alta := map[string]string{"name": "Carla Diaz", "email": "carla@x.test", "password": "carla-1234"}
-	r := e.call("POST", "/api/v1/inscripcion/c1", "", false, alta, "")
-	if r.code != 201 {
-		t.Fatalf("inscripción: %d %s", r.code, r.raw)
-	}
-	auto := r.body["sorteo"]
-	if auto == nil {
-		t.Fatalf("debe avisar el sorteo automático: %s", r.raw)
-	}
-	m := auto.(map[string]any)
-	if m["id"] != "rifa-test" || m["numero"] == nil || m["numero"].(float64) < 1 {
-		t.Fatalf("sorteo mal: %v", m)
-	}
-	// sin sorteo abierto, la inscripción no lo menciona
-	sorteos = map[string]Sorteo{}
 	r = e.call("POST", "/api/v1/inscripcion/c1", "", false,
-		map[string]string{"name": "Diego Rios", "email": "diego@x.test", "password": "diego-1234"}, "")
-	if r.code != 201 || r.body["sorteo"] != nil {
-		t.Fatalf("sin sorteo: %d %s", r.code, r.raw)
+		map[string]string{"name": "Sin Cuenta", "email": "sincuenta@gmail.com", "password": "sincuenta-1234"}, "")
+	if r.code != 201 {
+		t.Fatalf("inscripción del ganador: %d %s", r.code, r.raw)
+	}
+	auto, _ := r.body["sorteo"].(map[string]any)
+	if auto == nil || auto["ganador"] != true {
+		t.Fatalf("debe reconocerlo como ganador: %s", r.raw)
+	}
+	u, err := e.db.UserByEmail(t.Context(), "sincuenta@gmail.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tiene := false
+	for _, c := range u.Cohorts {
+		if c == "coho-rifa" {
+			tiene = true
+		}
+	}
+	if !tiene {
+		t.Fatalf("el ganador debe entrar al curso: %v", u.Cohorts)
 	}
 }

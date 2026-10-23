@@ -2,28 +2,27 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"math/rand/v2"
 	"strings"
 	"time"
 )
 
-// Sorteo: rifa de cupos de un curso nuevo. Participa quien ya tiene cuenta
-// (el correo debe existir en users); al anotarse recibe un NÚMERO aleatorio
-// que no cambia — el sorteo se hace sobre esos números, fijados desde el
-// registro. Los ganadores entran a la cohorte del premio. Tablas en store.go.
+// Sorteo: rifa de cupos. Participa CUALQUIER correo — con cuenta o sin ella
+// (no es requisito estar inscrito). Al anotarse recibe un NÚMERO aleatorio que
+// no cambia; el sorteo se hace sobre esos números, fijados desde el registro.
+// Los ganadores con cuenta entran a la cohorte del premio; los que no tienen
+// cuenta la reciben al inscribirse después con ese mismo correo.
 
 type SorteoParticipante struct {
-	UserID   string
 	Email    string
-	Nombre   string
-	Numero   int // 0 = aún sin asignar (el backfill lo completa)
+	Nombre   string // de users si ese correo tiene cuenta; "" si no
+	Numero   int    // 0 = aún sin asignar (el backfill lo completa)
+	UserID   string // "" = participó sin cuenta
 	CreadaEn time.Time
 }
 
 type SorteoGanador struct {
-	UserID   string
 	Email    string
 	Nombre   string
 	Numero   int
@@ -42,81 +41,118 @@ func YaInscrito(err error) bool {
 	return ok
 }
 
-// SorteoParticipar anota al usuario y le asigna su número de rifa (aleatorio,
-// único dentro del sorteo; se reintentan las colisiones). Devuelve el número.
-func (d *DB) SorteoParticipar(ctx context.Context, sorteoID, userID, email string) (int, error) {
-	correo := strings.ToLower(strings.TrimSpace(email))
-	creada := time.Now().UTC().Format(time.RFC3339)
-	for intento := 0; intento < 16; intento++ {
-		numero := rand.IntN(9999) + 1
-		_, err := d.sql.ExecContext(ctx,
-			`INSERT INTO sorteo_participantes (sorteo_id, user_id, email, numero, creada_en) VALUES (?,?,?,?,?)`,
-			sorteoID, userID, correo, numero, creada)
-		if err == nil {
-			return numero, nil
+func correoClave(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
+// numerosUsados devuelve los números ya tomados en el sorteo (jugadas y premios).
+func (d *DB) numerosUsados(ctx context.Context, sorteoID string) (map[int]bool, error) {
+	usados := map[int]bool{}
+	for _, q := range []string{
+		`SELECT numero FROM sorteo_jugadas WHERE sorteo_id = ? AND numero IS NOT NULL`,
+		`SELECT numero FROM sorteo_premios WHERE sorteo_id = ? AND numero IS NOT NULL`,
+	} {
+		rows, err := d.sql.QueryContext(ctx, q, sorteoID)
+		if err != nil {
+			return nil, err
 		}
-		msg := err.Error()
-		if strings.Contains(msg, "UNIQUE") {
-			if strings.Contains(msg, "user_id") {
-				return 0, yaInscrito{"ese correo ya participa en este sorteo"}
+		for rows.Next() {
+			var n int
+			if rows.Scan(&n) == nil {
+				usados[n] = true
 			}
-			continue // número tomado: otro
+		}
+		rows.Close()
+	}
+	return usados, nil
+}
+
+// numeroLibre elige un número aleatorio (1–9999) que no esté tomado.
+func (d *DB) numeroLibre(ctx context.Context, sorteoID string) (int, error) {
+	usados, err := d.numerosUsados(ctx, sorteoID)
+	if err != nil {
+		return 0, err
+	}
+	for intento := 0; intento < 200; intento++ {
+		n := rand.IntN(9999) + 1
+		if !usados[n] {
+			return n, nil
+		}
+	}
+	return 0, errors.New("no quedan números libres en este sorteo")
+}
+
+// SorteoParticipar anota un correo y le da su número de rifa (único y estable).
+// `userID` es opcional: "" cuando participa alguien sin cuenta.
+func (d *DB) SorteoParticipar(ctx context.Context, sorteoID, email, userID string) (int, error) {
+	correo := correoClave(email)
+	if correo == "" {
+		return 0, errors.New("correo vacío")
+	}
+	if n := d.SorteoNumeroPorEmail(ctx, sorteoID, correo); n > 0 {
+		return 0, yaInscrito{"ese correo ya participa en este sorteo"}
+	}
+	numero, err := d.numeroLibre(ctx, sorteoID)
+	if err != nil {
+		return 0, err
+	}
+	_, err = d.sql.ExecContext(ctx,
+		`INSERT INTO sorteo_jugadas (sorteo_id, email, user_id, numero, creada_en) VALUES (?,?,?,?,?)`,
+		sorteoID, correo, userID, numero, time.Now().UTC().Format(time.RFC3339))
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE") || strings.Contains(err.Error(), "PRIMARY") {
+			return 0, yaInscrito{"ese correo ya participa en este sorteo"}
 		}
 		return 0, err
 	}
-	return 0, errors.New("no se pudo asignar un número de rifa")
+	return numero, nil
 }
 
-// SorteoNumeroDe el número de quien ya participa (0 si no está).
-func (d *DB) SorteoNumeroDe(ctx context.Context, sorteoID, userID string) int {
-	var n sql.NullInt64
-	_ = d.sql.QueryRowContext(ctx,
-		`SELECT numero FROM sorteo_participantes WHERE sorteo_id = ? AND user_id = ?`,
-		sorteoID, userID).Scan(&n)
-	if n.Valid {
-		return int(n.Int64)
+// SorteoNumeroPorEmail el número de ese correo (0 si no participa).
+func (d *DB) SorteoNumeroPorEmail(ctx context.Context, sorteoID, email string) int {
+	var n int
+	err := d.sql.QueryRowContext(ctx,
+		`SELECT COALESCE(numero,0) FROM sorteo_jugadas WHERE sorteo_id = ? AND email = ?`,
+		sorteoID, correoClave(email)).Scan(&n)
+	if err != nil {
+		return 0
 	}
-	return 0
+	return n
 }
 
-// sorteoBackfill completa los números que falten (filas de antes del cambio).
-// Se hace en la lectura: es una sola corrida y después no hay NULL.
+// sorteoBackfill completa los números que falten (filas migradas sin número).
 func (d *DB) sorteoBackfill(ctx context.Context, sorteoID string) {
 	rows, err := d.sql.QueryContext(ctx,
-		`SELECT user_id FROM sorteo_participantes WHERE sorteo_id = ? AND (numero IS NULL OR numero = 0)`, sorteoID)
+		`SELECT email FROM sorteo_jugadas WHERE sorteo_id = ? AND (numero IS NULL OR numero = 0)`, sorteoID)
 	if err != nil {
 		return
 	}
 	var faltan []string
 	for rows.Next() {
-		var id string
-		if rows.Scan(&id) == nil {
-			faltan = append(faltan, id)
+		var e string
+		if rows.Scan(&e) == nil {
+			faltan = append(faltan, e)
 		}
 	}
 	rows.Close()
-	for _, uid := range faltan {
-		for intento := 0; intento < 16; intento++ {
-			numero := rand.IntN(9999) + 1
-			_, err := d.sql.ExecContext(ctx,
-				`UPDATE sorteo_participantes SET numero = ? WHERE sorteo_id = ? AND user_id = ? AND (numero IS NULL OR numero = 0)`,
-				numero, sorteoID, uid)
-			if err == nil || strings.Contains(err.Error(), "no rows") {
-				break
-			}
-			if strings.Contains(err.Error(), "UNIQUE") && !strings.Contains(err.Error(), "user_id") {
-				continue
-			}
-			break
+	for _, correo := range faltan {
+		n, err := d.numeroLibre(ctx, sorteoID)
+		if err != nil {
+			return
 		}
+		_, _ = d.sql.ExecContext(ctx,
+			`UPDATE sorteo_jugadas SET numero = ? WHERE sorteo_id = ? AND email = ? AND (numero IS NULL OR numero = 0)`,
+			n, sorteoID, correo)
 	}
 }
 
-// SorteoParticipantes los anotados (con nombre y número), en orden de llegada.
+// SorteoParticipantes los anotados, con el nombre de su cuenta si la tienen.
 func (d *DB) SorteoParticipantes(ctx context.Context, sorteoID string) ([]SorteoParticipante, error) {
 	d.sorteoBackfill(ctx, sorteoID)
-	rows, err := d.sql.QueryContext(ctx, `SELECT p.user_id, p.email, COALESCE(u.name,''), COALESCE(p.numero,0), p.creada_en
-		FROM sorteo_participantes p LEFT JOIN users u ON u.id = p.user_id WHERE p.sorteo_id = ? ORDER BY p.creada_en`, sorteoID)
+	rows, err := d.sql.QueryContext(ctx,
+		`SELECT j.email, COALESCE(u.name,''), COALESCE(j.numero,0), j.user_id, j.creada_en
+		 FROM sorteo_jugadas j LEFT JOIN users u ON lower(u.email) = j.email
+		 WHERE j.sorteo_id = ? ORDER BY j.creada_en`, sorteoID)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +161,7 @@ func (d *DB) SorteoParticipantes(ctx context.Context, sorteoID string) ([]Sorteo
 	for rows.Next() {
 		var p SorteoParticipante
 		var creada string
-		if err := rows.Scan(&p.UserID, &p.Email, &p.Nombre, &p.Numero, &creada); err != nil {
+		if err := rows.Scan(&p.Email, &p.Nombre, &p.Numero, &p.UserID, &creada); err != nil {
 			return nil, err
 		}
 		p.CreadaEn, _ = time.Parse(time.RFC3339, creada)
@@ -136,8 +172,9 @@ func (d *DB) SorteoParticipantes(ctx context.Context, sorteoID string) ([]Sorteo
 
 // SorteoGanadores los ya sorteados, por posición.
 func (d *DB) SorteoGanadores(ctx context.Context, sorteoID string) ([]SorteoGanador, error) {
-	rows, err := d.sql.QueryContext(ctx, `SELECT user_id, email, nombre, COALESCE(numero,0), posicion, sorteado_en
-		FROM sorteo_ganadores WHERE sorteo_id = ? ORDER BY posicion`, sorteoID)
+	rows, err := d.sql.QueryContext(ctx,
+		`SELECT email, nombre, COALESCE(numero,0), posicion, sorteado_en
+		 FROM sorteo_premios WHERE sorteo_id = ? ORDER BY posicion`, sorteoID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +183,7 @@ func (d *DB) SorteoGanadores(ctx context.Context, sorteoID string) ([]SorteoGana
 	for rows.Next() {
 		var g SorteoGanador
 		var cuando string
-		if err := rows.Scan(&g.UserID, &g.Email, &g.Nombre, &g.Numero, &g.Posicion, &cuando); err != nil {
+		if err := rows.Scan(&g.Email, &g.Nombre, &g.Numero, &g.Posicion, &cuando); err != nil {
 			return nil, err
 		}
 		g.Sorteado, _ = time.Parse(time.RFC3339, cuando)
@@ -155,11 +192,24 @@ func (d *DB) SorteoGanadores(ctx context.Context, sorteoID string) ([]SorteoGana
 	return out, rows.Err()
 }
 
+// SorteoPremioPendiente dice si ese correo ya ganó (y con qué número). Sirve
+// para entregarle la cohorte cuando se inscriba después sin haber tenido cuenta.
+func (d *DB) SorteoPremioPendiente(ctx context.Context, sorteoID, email string) (bool, int) {
+	var n int
+	err := d.sql.QueryRowContext(ctx,
+		`SELECT COALESCE(numero,0) FROM sorteo_premios WHERE sorteo_id = ? AND email = ?`,
+		sorteoID, correoClave(email)).Scan(&n)
+	if err != nil {
+		return false, 0
+	}
+	return true, n
+}
+
 // SorteoAgregarGanador registra al ganador en su posición (con su número).
-func (d *DB) SorteoAgregarGanador(ctx context.Context, sorteoID, userID, email, nombre string, posicion, numero int) error {
+func (d *DB) SorteoAgregarGanador(ctx context.Context, sorteoID, email, nombre string, posicion, numero int) error {
 	_, err := d.sql.ExecContext(ctx,
-		`INSERT INTO sorteo_ganadores (sorteo_id, user_id, email, nombre, posicion, numero, sorteado_en) VALUES (?,?,?,?,?,?,?)`,
-		sorteoID, userID, email, nombre, posicion, numero, time.Now().UTC().Format(time.RFC3339))
+		`INSERT INTO sorteo_premios (sorteo_id, email, nombre, numero, posicion, sorteado_en) VALUES (?,?,?,?,?,?)`,
+		sorteoID, correoClave(email), nombre, numero, posicion, time.Now().UTC().Format(time.RFC3339))
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") || strings.Contains(err.Error(), "PRIMARY") {
 			return nil // ya estaba: no duplica

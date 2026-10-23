@@ -113,7 +113,7 @@ export default component$(() => {
             </div>
           ) : info.abierto ? (
             <form preventdefault:submit onSubmit$={participar}>
-              <label for="sorteo-email">Correo con el que te registraste al curso</label>
+              <label for="sorteo-email">Tu correo</label>
               <input
                 id="sorteo-email"
                 type="email"
@@ -123,7 +123,7 @@ export default component$(() => {
                 value={email.value}
                 onInput$={(_, el) => (email.value = el.value)}
               />
-              <div class="hint">Uno por correo: si ya participas, te lo decimos.</div>
+              <div class="hint">Escribe tu correo y participa: no hace falta tener cuenta. Uno por correo.</div>
               {msg.value && (
                 <p class={`sm row ${mal.value ? "bad" : ""}`} style="flex-wrap:nowrap" role={mal.value ? "alert" : "status"}>
                   {!mal.value && <Icon name="checkCircle" size={13} />} {msg.value}

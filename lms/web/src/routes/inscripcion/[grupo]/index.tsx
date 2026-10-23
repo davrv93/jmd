@@ -116,7 +116,9 @@ export default component$(() => {
           {sorteoAviso.value ? (
             <div style={{ margin: 0 }}>
               <p class="sm" style={{ marginTop: 0 }}>
-                ¡Listo! Te anotaste en el sorteo con tu cupo del <b>{sorteoAviso.value.titulo}</b>.
+                {sorteoAviso.value.ganador
+                  ? <>¡Ganaste el sorteo del <b>{sorteoAviso.value.titulo}</b>! Tu cupo ya está en esta cuenta.</>
+                  : <>¡Listo! Te anotaste en el sorteo con tu cupo del <b>{sorteoAviso.value.titulo}</b>.</>}
               </p>
               <div style={{ border: "1.5px dashed var(--line, #dde4ec)", borderRadius: 12, padding: ".9rem 1rem", margin: ".6rem 0", textAlign: "center" }}>
                 <p class="xs muted" style={{ margin: 0, letterSpacing: ".14em", textTransform: "uppercase" }}>Tu número de sorteo</p>
