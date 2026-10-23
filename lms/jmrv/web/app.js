@@ -328,7 +328,7 @@ function pollSequence(job_id) {
     if (job.state === "running" || job.state === "queued") return;
     clearInterval(S.jobTimer);
     S.busy = false; $("sequenceBtn").classList.remove("loading"); $("sequenceBtn").disabled = false; $("resumeSeq").disabled = true;
-    if (job.state === "paused") { setStatus("Pausada por saldo", "err"); $("resumeSeq").disabled = false; setError("Pausada por saldo — pulsa «Continuar»."); return; }
+    if (job.state === "paused") { setStatus("Pausada por saldo", "err"); $("resumeSeq").disabled = false; const m = typeof job.error === "string" ? job.error : job.error?.message; setError("Pausada por saldo — pulsa «Continuar»." + (m ? " Motivo: " + m : "")); return; }
     if (job.state === "error") { setStatus("Error", "err"); setError(typeof job.error === "string" ? job.error : job.error?.message || "Fallo"); $("resumeSeq").disabled = false; return; }
     setStatus("Secuencia lista", "done");
     $("exportMp4").disabled = false; $("exportGif").disabled = false; $("openFrames").disabled = false;
@@ -719,7 +719,7 @@ function pollLegacy(id, done) {
     if (job.state === "running" || job.state === "queued") return;
     clearInterval(t); $("exProgress").classList.add("hidden");
     if (job.state === "error") { setError(typeof job.error === "string" ? job.error : "Fallo"); return; }
-    if (job.state === "paused") { setError("Pausada por saldo."); return; }
+    if (job.state === "paused") { const m = typeof job.error === "string" ? job.error : job.error?.message; setError("Pausada por saldo." + (m ? " Motivo: " + m : "")); return; }
     done(job);
   }, 2000);
 }
@@ -879,6 +879,12 @@ function renderFrameModels() {
   setKeyPill(!!key_configured);
   const bal = await api("/api/balance").catch(() => null);
   if (bal) showBalance(bal);
+  // Cloudflare por defecto cuando hay credenciales: es gratis y evita
+  // arrancar secuencias de pago sin pollen (pausa a mitad).
+  if (S.cfConfigured) {
+    setProvider("cloudflare");
+    $("framesProvider").value = "cloudflare";
+  }
   renderFrameModels();
   const params = new URLSearchParams(location.search);
   const openId = params.get("project") || (location.hash.startsWith("#p=") ? location.hash.slice(3) : "");

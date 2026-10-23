@@ -83,6 +83,37 @@ MEASURED_COST: dict[str, float] = {
 FREE_GENERATION = {"flux"}
 
 
+def _falla_por_saldo(provider: str, model: str) -> None:
+    """402 ANTES de gastar: con pollen ~0 y modelo de pago no se empieza.
+
+    Evita la "pausa por saldo" a mitad de secuencia: si no hay con qué pagar
+    ni el primer cuadro, se dice de frente y se sugiere Cloudflare.
+    """
+    if provider == "cloudflare" or not BALANCE.get("known"):
+        return
+    if model in FREE_GENERATION:
+        return
+    try:
+        saldo = float(BALANCE.get("balance") or 0.0)
+    except (TypeError, ValueError):
+        return
+    if saldo >= 0.001:
+        return
+    libres = max(0.0, CF_FREE_NEURONS_DAILY - float(_cf_neurons_today().get("neurons") or 0.0))
+    raise HTTPException(
+        status_code=402,
+        detail={
+            "error": "insufficient_balance",
+            "balance": saldo,
+            "message": (
+                f"Sin pollen (saldo {saldo}): cambia el proveedor a Cloudflare "
+                f"(te quedan {libres:.0f} neuronas hoy) o recarga pollen."
+            ),
+            "topup": BALANCE.get("topup"),
+        },
+    )
+
+
 def _pollinations_error(exc: Exception, fallback: str) -> HTTPException:
     """Turn a Pollinations failure into an actionable HTTP error."""
     response = getattr(exc, "response", None)
@@ -1499,6 +1530,7 @@ def create_frames(req: FramesRequest) -> dict[str, Any]:
     """Start a frame sequence job (runs in background)."""
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt vacío")
+    _falla_por_saldo(req.provider, req.model)
     if req.base_image:
         _load_base_image(req.base_image)  # fail fast: 404 before the job starts
     job_id = f"seq-{int(time.time())}-{uuid.uuid4().hex[:6]}"
@@ -1690,6 +1722,7 @@ def generate(req: GenerateRequest) -> dict[str, Any]:
     """Generate an image and persist it under outputs/."""
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt vacío")
+    _falla_por_saldo(req.provider, req.model)
 
     prompt = req.prompt
     if req.background == "white":
