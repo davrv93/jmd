@@ -41,7 +41,7 @@ CF_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
 CF_PAID = os.getenv("CLOUDFLARE_PAID", "").strip().lower() in ("1", "true", "si", "yes")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite").strip() or "gemini-2.5-flash-lite"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest").strip() or "gemini-flash-lite-latest"
 PORT = int(os.getenv("JMRV_PORT", "8765"))
 
 OUTPUTS.mkdir(parents=True, exist_ok=True)
