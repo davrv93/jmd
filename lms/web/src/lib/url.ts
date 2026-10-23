@@ -6,6 +6,14 @@ export function getParam(name: string): string {
   return new URLSearchParams(location.search).get(name) ?? "";
 }
 
+/** La URL real del navegador. `useLocation().url` de Qwik devuelve la plantilla
+ * (/sorteo/_/) en las páginas dinámicas: para enlaces públicos (compartir en
+ * redes, copiar) hay que usar esta. "" durante el prerender. */
+export function urlActual(): string {
+  if (typeof location === "undefined") return "";
+  return location.href;
+}
+
 export function setParams(values: Record<string, string | number | null | undefined>) {
   if (typeof location === "undefined") return;
   const u = new URL(location.href);

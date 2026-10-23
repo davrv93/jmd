@@ -2,7 +2,7 @@ import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from 
 import { useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
 import { api, ApiError, errMsg, type Sorteo } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
-import { getParam, pathId, setTitle } from "~/lib/url";
+import { getParam, pathId, setTitle, urlActual } from "~/lib/url";
 import { Icon } from "~/components/icon";
 import { ErrorState, Loading } from "~/components/ui";
 
@@ -26,6 +26,8 @@ export default component$(() => {
   // Se lee de `location` (getParam) y no de loc.url: estas rutas se generan como
   // /sorteo/_/ y loc.url devuelve esa plantilla, sin el query real.
   const ganador = useSignal("");
+  // URL real para compartir: la pone el navegador (loc.url trae la plantilla).
+  const urlPagina = useSignal("");
 
   const load = $(async () => {
     st.error = "";
@@ -41,6 +43,7 @@ export default component$(() => {
   useVisibleTask$(async ({ track }) => {
     track(() => loc.url.pathname);
     ganador.value = getParam("ganador").trim().slice(0, 60);
+    urlPagina.value = urlActual();
     await load();
   });
 
@@ -93,7 +96,7 @@ export default component$(() => {
   const info = st.info;
   const soyStaff = !!session.me && session.me.roles.some((x) => x === "admin" || x === "instructor");
   // Compartir: se arma con la URL real de la página (cliente) y el título del taller.
-  const urlPagina = loc.url.href;
+  const url = urlPagina.value;   // "" durante el prerender: el bloque de compartir espera
   const textoCompartir = [
     ganador.value ? `¡${ganador.value} ganó un cupo!` : "",
     `${info.titulo} · ${info.subtitulo}`,
@@ -221,26 +224,26 @@ export default component$(() => {
             Comparte en tus redes sociales
           </p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-            <a class="btn ghost sm" style="text-decoration:none"
-               href={`https://wa.me/?text=${enc(textoCompartir + " " + urlPagina)}`} target="_blank" rel="noopener">
+            <a class="btn ghost sm" style="text-decoration:none" aria-disabled={!url}
+               href={`https://wa.me/?text=${enc(textoCompartir + " " + url)}`} target="_blank" rel="noopener">
               WhatsApp
             </a>
-            <a class="btn ghost sm" style="text-decoration:none"
-               href={`https://twitter.com/intent/tweet?text=${enc(textoCompartir)}&url=${enc(urlPagina)}`} target="_blank" rel="noopener">
+            <a class="btn ghost sm" style="text-decoration:none" aria-disabled={!url}
+               href={`https://twitter.com/intent/tweet?text=${enc(textoCompartir)}&url=${enc(url)}`} target="_blank" rel="noopener">
               X
             </a>
-            <a class="btn ghost sm" style="text-decoration:none"
-               href={`https://www.facebook.com/sharer/sharer.php?u=${enc(urlPagina)}`} target="_blank" rel="noopener">
+            <a class="btn ghost sm" style="text-decoration:none" aria-disabled={!url}
+               href={`https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`} target="_blank" rel="noopener">
               Facebook
             </a>
-            <a class="btn ghost sm" style="text-decoration:none"
-               href={`https://www.linkedin.com/sharing/share-offsite/?url=${enc(urlPagina)}`} target="_blank" rel="noopener">
+            <a class="btn ghost sm" style="text-decoration:none" aria-disabled={!url}
+               href={`https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}`} target="_blank" rel="noopener">
               LinkedIn
             </a>
-            <button type="button" class="btn ghost sm"
+            <button type="button" class="btn ghost sm" disabled={!url}
                     onClick$={$(async () => {
                       try {
-                        await navigator.clipboard.writeText(urlPagina);
+                        await navigator.clipboard.writeText(url);
                         copiado.value = true;
                         setTimeout(() => (copiado.value = false), 1800);
                       } catch { /* sin portapapeles */ }
@@ -248,6 +251,7 @@ export default component$(() => {
               {copiado.value ? "¡Copiado!" : "Copiar enlace"}
             </button>
           </div>
+          {!url && <p class="xs muted" style="margin:.4rem 0 0;text-align:center">Preparando el enlace…</p>}
         </div>
       </div>
     </div>
@@ -256,4 +260,28 @@ export default component$(() => {
 
 export const onStaticGenerate: StaticGenerateHandler = async () => ({ params: [{ id: "_" }] });
 
-export const head: DocumentHead = { title: "Sorteo" };
+// Vista previa al compartir en redes: WhatsApp, Facebook, X y LinkedIn leen
+// estas etiquetas del HTML. La URL de la imagen va ABSOLUTA (lo exigen los
+// rastreadores) y apunta al dominio público de esta instalación.
+const TITULO_REDES = "⚡ Menos tokens. Más poder · Potencia tus agentes";
+const DESCRIPCION_REDES =
+  "Tres clases en vivo: 8, 10 y 11 de noviembre, de 9:30 a 10:45 pm. " +
+  "Potencia tus agentes con RTK, Cortex, Graphify y Caveman. Inscríbete por WhatsApp al 986 149 476.";
+const IMAGEN_REDES = "https://jmd-learn.online/sorteo-potencia.jpg";
+
+export const head: DocumentHead = {
+  title: TITULO_REDES,
+  meta: [
+    { property: "og:type", content: "website" },
+    { property: "og:site_name", content: "JMD · Programación agéntica" },
+    { property: "og:title", content: TITULO_REDES },
+    { property: "og:description", content: DESCRIPCION_REDES },
+    { property: "og:image", content: IMAGEN_REDES },
+    { property: "og:image:width", content: "1024" },
+    { property: "og:image:height", content: "1536" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: TITULO_REDES },
+    { name: "twitter:description", content: DESCRIPCION_REDES },
+    { name: "twitter:image", content: IMAGEN_REDES },
+  ],
+};
