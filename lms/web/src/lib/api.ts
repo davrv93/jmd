@@ -323,6 +323,8 @@ export interface Sorteo {
   participantes: number;
   ganadores: { nombre: string; correo: string; posicion: number; numero: number }[];
   quedan: number;
+  /** Enlace de registro que ofrece la página («¡Inscríbete ya!»); "" si no hay. */
+  inscripcion?: string;
 }
 
 // Aviso de sorteo que la inscripción devuelve cuando el cupo queda jugado ahí mismo.

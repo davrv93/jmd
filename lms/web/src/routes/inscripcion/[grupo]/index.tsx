@@ -25,6 +25,18 @@ export default component$(() => {
   const sorteoAviso = useSignal<SorteoAviso | null>(null);
   const cursosPend = useSignal<string[]>([]);
 
+  // Enlaces personalizados: /inscripcion/<grupo>/?nombre=Ana+Torres&correo=ana@x.com
+  // (lo que reparte el instructor; el alumno solo confirma y crea su clave).
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(({ track }) => {
+    track(() => loc.url.search);
+    const q = loc.url.searchParams;
+    const nombre = (q.get("nombre") || "").trim();
+    const correo = (q.get("correo") || "").trim();
+    if (nombre && !form.name) form.name = nombre;
+    if (correo && !form.email) form.email = correo;
+  });
+
   const load = $(async () => {
     st.error = "";
     st.grupo = pathId("inscripcion");

@@ -20,6 +20,7 @@ export default component$(() => {
   const busy = useSignal(false);
   const ya = useSignal(false);
   const numero = useSignal<number | null>(null); // tu número de rifa, fijo desde el registro
+  const copiado = useSignal(false);              // «enlace copiado» del bloque de compartir
 
   const load = $(async () => {
     st.error = "";
@@ -85,6 +86,10 @@ export default component$(() => {
   if (!st.info || !session.loaded) return <Loading lines={6} />;
   const info = st.info;
   const soyStaff = !!session.me && session.me.roles.some((x) => x === "admin" || x === "instructor");
+  // Compartir: se arma con la URL real de la página (cliente) y el título del taller.
+  const urlPagina = loc.url.href;
+  const textoCompartir = `${info.titulo} · ${info.subtitulo}`;
+  const enc = (x: string) => encodeURIComponent(x);
 
   return (
     <div class="hte">
@@ -159,6 +164,46 @@ export default component$(() => {
             </ul>
           </div>
         )}
+
+        {/* CTA + compartir: lo pequeño que se comparte en redes. */}
+        <div class="card" style="margin-top:.9rem;padding:1rem 1.2rem">
+          {info.inscripcion && (
+            <a class="btn" href={info.inscripcion} style="width:100%;justify-content:center;display:inline-flex;text-decoration:none;margin-bottom:.7rem">
+              ⚡ ¡Inscríbete ya!
+            </a>
+          )}
+          <p class="xs muted" style="margin:0 0 .5rem;letter-spacing:.14em;text-transform:uppercase;text-align:center">
+            Comparte en tus redes sociales
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+            <a class="btn ghost sm" style="text-decoration:none"
+               href={`https://wa.me/?text=${enc(textoCompartir + " " + urlPagina)}`} target="_blank" rel="noopener">
+              WhatsApp
+            </a>
+            <a class="btn ghost sm" style="text-decoration:none"
+               href={`https://twitter.com/intent/tweet?text=${enc(textoCompartir)}&url=${enc(urlPagina)}`} target="_blank" rel="noopener">
+              X
+            </a>
+            <a class="btn ghost sm" style="text-decoration:none"
+               href={`https://www.facebook.com/sharer/sharer.php?u=${enc(urlPagina)}`} target="_blank" rel="noopener">
+              Facebook
+            </a>
+            <a class="btn ghost sm" style="text-decoration:none"
+               href={`https://www.linkedin.com/sharing/share-offsite/?url=${enc(urlPagina)}`} target="_blank" rel="noopener">
+              LinkedIn
+            </a>
+            <button type="button" class="btn ghost sm"
+                    onClick$={$(async () => {
+                      try {
+                        await navigator.clipboard.writeText(urlPagina);
+                        copiado.value = true;
+                        setTimeout(() => (copiado.value = false), 1800);
+                      } catch { /* sin portapapeles */ }
+                    })}>
+              {copiado.value ? "¡Copiado!" : "Copiar enlace"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

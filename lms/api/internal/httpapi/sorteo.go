@@ -26,6 +26,9 @@ type Sorteo struct {
 	Flyer        string // ruta pública del flyer
 	CursoID      string
 	Cohorte      string
+	// InscripcionGrupo: grupo cuya inscripción por enlace se ofrece en la
+	// página del sorteo («¡Inscríbete ya!»). Vacío = sin botón.
+	InscripcionGrupo string
 	MaxGanadores int
 	Inicia       time.Time
 	Termina      time.Time
@@ -42,6 +45,7 @@ var sorteos = map[string]Sorteo{
 		Flyer:        "/sorteo-potencia.jpg",
 		CursoID:      "potencia-agentes",
 		Cohorte:      "potencia-agentes-1",
+		InscripcionGrupo: "potencia-agentes-1",
 		MaxGanadores: 6,
 		Inicia:       time.Date(2026, 10, 22, 0, 0, 0, 0, lima),
 		Termina:      time.Date(2026, 10, 26, 23, 59, 59, 0, lima),
@@ -104,7 +108,16 @@ func (s *Server) sorteoInfo(w http.ResponseWriter, r *http.Request) {
 		"inicia": def.Inicia.Format("2006-01-02"), "termina": def.Termina.Format("2006-01-02"),
 		"abierto": abierto, "participantes": len(part), "ganadores": pubs,
 		"quedan": max(0, def.MaxGanadores-len(gans)),
+		"inscripcion": inscripcionURL(def),
 	})
+}
+
+// inscripcionURL: el enlace de registro que ofrece la página del sorteo.
+func inscripcionURL(def Sorteo) string {
+	if def.InscripcionGrupo == "" {
+		return ""
+	}
+	return "/inscripcion/" + def.InscripcionGrupo + "/"
 }
 
 // sorteoParticipar: POST /api/v1/sorteo/{id}/participar {email} → anota una vez.
