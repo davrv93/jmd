@@ -156,3 +156,57 @@ func TestSorteoGanadorSinCuentaRecibePremioAlEntrar(t *testing.T) {
 		t.Fatalf("el ganador debe entrar al curso: %v", u.Cohorts)
 	}
 }
+
+// La consulta de ticket (link de consolación) distingue ganador, no ganador y desconocido.
+func TestSorteoTicket(t *testing.T) {
+	e := newEnv(t)
+	conSorteo(t, rifaDePrueba())
+	for _, c := range []string{"gana@gmail.com", "pierde@gmail.com"} {
+		if r := e.call("POST", "/api/v1/sorteo/rifa-test/participar", "", false,
+			map[string]any{"email": c}, ""); r.code != 201 {
+			t.Fatalf("anotar %s: %d %s", c, r.code, r.raw)
+		}
+	}
+	ptok := e.login("profe@x.test", "profe1234")
+	if r := e.call("POST", "/api/v1/sorteo/rifa-test/sortear", ptok, false, map[string]any{}, ""); r.code != 200 {
+		t.Fatalf("sortear: %d %s", r.code, r.raw)
+	}
+	ps, _ := e.db.SorteoParticipantes(t.Context(), "rifa-test")
+	if len(ps) != 2 {
+		t.Fatalf("participantes: %+v", ps)
+	}
+	gano, perdio := ps[0], ps[1]
+	if ok, _ := e.db.SorteoPremioPendiente(t.Context(), "rifa-test", perdio.Email); ok {
+		gano, perdio = perdio, gano
+	}
+	r := e.call("GET", "/api/v1/sorteo/rifa-test/ticket/"+itoa(gano.Numero), "", false, nil, "")
+	if r.code != 200 || r.body["estado"] != "ganador" || r.body["numero"].(float64) != float64(gano.Numero) {
+		t.Fatalf("ticket del ganador: %d %s", r.code, r.raw)
+	}
+	r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/"+itoa(perdio.Numero), "", false, nil, "")
+	if r.code != 200 || r.body["estado"] != "no_ganador" {
+		t.Fatalf("ticket del que no ganó: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/1", "", false, nil, ""); r.code != 404 || errCode(r) != "no_existe" {
+		t.Fatalf("número desconocido: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/99999", "", false, nil, ""); r.code != 400 {
+		t.Fatalf("fuera de rango: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/abc", "", false, nil, ""); r.code != 400 {
+		t.Fatalf("no numérico: %d %s", r.code, r.raw)
+	}
+}
+
+// itoa para no importar strconv solo por el test.
+func itoa(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	s := ""
+	for n > 0 {
+		s = string(rune('0'+n%10)) + s
+		n /= 10
+	}
+	return s
+}

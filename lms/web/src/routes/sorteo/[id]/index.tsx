@@ -1,6 +1,6 @@
 import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
-import { api, ApiError, errMsg, type Sorteo } from "~/lib/api";
+import { api, ApiError, errMsg, type Sorteo, type TicketSorteo } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
 import { getParam, pathId, setTitle, urlActual } from "~/lib/url";
 import { Icon } from "~/components/icon";
@@ -28,6 +28,29 @@ export default component$(() => {
   const ganador = useSignal("");
   // URL real para compartir: la pone el navegador (loc.url trae la plantilla).
   const urlPagina = useSignal("");
+  // Consulta de ticket (link de consolación): el número que escriben y qué fue.
+  const ticket = useSignal("");
+  const resultado = useSignal<TicketSorteo | null>(null);
+  const ticketErr = useSignal("");
+  const chequeando = useSignal(false);
+
+  const consultarTicket = $((valor: string) => {
+    const limpio = String(valor || "").replace(/[^0-9]/g, "").slice(0, 4);
+    ticket.value = limpio;
+    ticketErr.value = "";
+    resultado.value = null;
+    if (!limpio) return;
+    chequeando.value = true;
+    api
+      .ticketSorteo(pathId("sorteo"), Number(limpio))
+      .then((r) => (resultado.value = r))
+      .catch((e) => {
+        ticketErr.value = e instanceof ApiError && e.status === 404
+          ? `El número ${limpio} no participó en el sorteo. Revisa tu ticket.`
+          : errMsg(e);
+      })
+      .finally(() => (chequeando.value = false));
+  });
 
   const load = $(async () => {
     st.error = "";
@@ -44,6 +67,9 @@ export default component$(() => {
     track(() => loc.url.pathname);
     ganador.value = getParam("ganador").trim().slice(0, 60);
     urlPagina.value = urlActual();
+    // Link de consolación: ?ticket=1234 consulta solo al abrir.
+    const t = getParam("ticket").trim();
+    if (t) await consultarTicket(t);
     await load();
   });
 
@@ -104,6 +130,10 @@ export default component$(() => {
     info.whatsapp_bonito ? `Inscríbete por WhatsApp al ${info.whatsapp_bonito}.` : "",
   ].filter(Boolean).join(" — ");
   const enc = (x: string) => encodeURIComponent(x);
+  // WhatsApp con el cupón del 20% ya escrito (link de consolación).
+  const waCupon = info.whatsapp
+    ? `https://wa.me/${info.whatsapp}?text=${enc(`Hola, no gané el sorteo. Quiero usar el 20% de descuento (cupón MENOSTOKENS20) en el taller ⚡ Menos tokens. Más poder.`)}`
+    : "";
 
   return (
     <div class="hte">
@@ -196,6 +226,64 @@ export default component$(() => {
             </ul>
           </div>
         )}
+
+        {/* Consulta de ticket: el «link de consolación» (?ticket=1234 lo llena solo). */}
+        <div class="card" style="margin-top:.9rem;padding:1rem 1.2rem">
+          <p style="margin:0 0 .5rem;font-weight:700">¿Participaste? Consulta tu número</p>
+          <form preventdefault:submit onSubmit$={() => consultarTicket(ticket.value)}>
+            <label class="sr" for="ticket-num">Número de tu ticket</label>
+            <div style="display:flex;gap:8px">
+              <input
+                id="ticket-num"
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="Ej. 4964"
+                value={ticket.value}
+                onInput$={(_, el) => {
+                  ticket.value = el.value.replace(/[^0-9]/g, "").slice(0, 4);
+                }}
+                style="flex:1;min-width:0"
+              />
+              <button type="submit" class="btn" disabled={chequeando.value || !ticket.value}>
+                {chequeando.value ? "Buscando…" : "Ver mi resultado"}
+              </button>
+            </div>
+          </form>
+          {ticketErr.value && (
+            <p class="sm bad" role="alert" style="margin:.6rem 0 0">{ticketErr.value}</p>
+          )}
+          {resultado.value?.estado === "ganador" && (
+            <div style="border:1.5px solid #ffd23f;border-radius:12px;padding:.9rem 1rem;margin:.7rem 0 0;background:rgba(255,210,63,.08);text-align:center">
+              <p style="margin:0;font-size:1.2rem;font-weight:800">
+                🎉 ¡Tu número {resultado.value.numero} salió!{resultado.value.nombre ? `, ${resultado.value.nombre}` : ""}
+              </p>
+              <p class="sm" style="margin:.5rem 0 0">Escribe al WhatsApp para asegurar tu cupo.</p>
+              {waCupon && <a class="btn" href={waCupon} target="_blank" rel="noopener" style="justify-content:center;display:inline-flex;text-decoration:none;margin-top:.6rem">Escribir por WhatsApp</a>}
+            </div>
+          )}
+          {resultado.value?.estado === "no_ganador" && (
+            <div style="border:1.5px solid #3fffd2;border-radius:12px;padding:.9rem 1rem;margin:.7rem 0 0;background:rgba(63,255,210,.07)">
+              <p style="margin:0;font-size:1.25rem;font-weight:800">¡PERO te damos 20% de descuento!</p>
+              <p class="sm" style="margin:.5rem 0 0">
+                Tu número <b>{resultado.value.numero}</b> no salió esta vez, pero no te vas con las manos vacías.
+              </p>
+              <p class="sm" style="margin:.5rem 0 0">
+                Aprenderás cómo <b>alargar tus sesiones de IA</b>: sácale provecho a
+                <b> Claude</b>, <b>GPT</b>, <b>OpenCode</b> y más <b>sin recargar extra</b>.
+              </p>
+              <p class="sm" style="margin:.6rem 0 0">
+                Tu cupón: <code>MENOSTOKENS20</code>
+              </p>
+              {waCupon && (
+                <a class="btn" href={waCupon} target="_blank" rel="noopener" style="justify-content:center;display:inline-flex;text-decoration:none;margin-top:.7rem">
+                  Usar mi 20% por WhatsApp
+                </a>
+              )}
+              {info.fechas_texto && <p class="xs muted" style="margin:.5rem 0 0">{info.fechas_texto}</p>}
+            </div>
+          )}
+        </div>
 
         {/* CTA + compartir: lo pequeño que se comparte en redes. */}
         <div class="card" style="margin-top:.9rem;padding:1rem 1.2rem">

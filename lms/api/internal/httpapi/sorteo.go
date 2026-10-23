@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -126,7 +127,36 @@ func (s *Server) sorteoInfo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// kind: solo los dígitos del número, tal como se muestra/apunta.
+// sorteoTicket: GET /api/v1/sorteo/{id}/ticket/{numero} (público) → qué fue de
+// ese número. Da pie al «link de consolación»: quien no ganó ve su mensaje.
+func (s *Server) sorteoTicket(w http.ResponseWriter, r *http.Request) {
+	def, ok := sorteos[strings.TrimSpace(r.PathValue("id"))]
+	if !ok {
+		notFound(w, "ese sorteo no existe")
+		return
+	}
+	if !s.login.allow("ticket:" + clientIP(r)) {
+		writeErr(w, 429, "rate_limited", "demasiadas consultas desde esta conexión; espera un minuto")
+		return
+	}
+	numero, err := strconv.Atoi(strings.TrimSpace(r.PathValue("numero")))
+	if err != nil || numero < 1 || numero > 9999 {
+		badRequest(w, "escribe el número de tu ticket (del 1 al 9999)")
+		return
+	}
+	estado, nombre := s.DB.SorteoEstadoNumero(r.Context(), def.ID, numero)
+	if estado == "" {
+		writeErr(w, 404, "no_existe", "ese número no participó en este sorteo")
+		return
+	}
+	resp := map[string]any{"estado": estado, "numero": numero}
+	if estado == "ganador" && nombre != "" {
+		resp["nombre"] = sorteoNombre(nombre)
+	}
+	writeJSON(w, 200, resp)
+}
+
+// whatsappVisible: solo los dígitos del número, tal como se muestra/apunta.
 func whatsappVisible(def Sorteo) string {
 	return def.WhatsApp
 }

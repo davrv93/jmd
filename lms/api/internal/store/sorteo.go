@@ -205,6 +205,22 @@ func (d *DB) SorteoPremioPendiente(ctx context.Context, sorteoID, email string) 
 	return true, n
 }
 
+// SorteoEstadoNumero: qué fue de un número de ticket. "ganador" (con el nombre),
+// "no_ganador" o "" si ese número no participó.
+func (d *DB) SorteoEstadoNumero(ctx context.Context, sorteoID string, numero int) (string, string) {
+	var nombre string
+	if err := d.sql.QueryRowContext(ctx,
+		`SELECT nombre FROM sorteo_premios WHERE sorteo_id = ? AND numero = ?`, sorteoID, numero).Scan(&nombre); err == nil {
+		return "ganador", nombre
+	}
+	var n int
+	if err := d.sql.QueryRowContext(ctx,
+		`SELECT COALESCE(numero,0) FROM sorteo_jugadas WHERE sorteo_id = ? AND numero = ?`, sorteoID, numero).Scan(&n); err == nil {
+		return "no_ganador", ""
+	}
+	return "", ""
+}
+
 // SorteoAgregarGanador registra al ganador en su posición (con su número).
 func (d *DB) SorteoAgregarGanador(ctx context.Context, sorteoID, email, nombre string, posicion, numero int) error {
 	_, err := d.sql.ExecContext(ctx,
