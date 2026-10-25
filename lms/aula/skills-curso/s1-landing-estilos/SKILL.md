@@ -72,6 +72,24 @@ Los estilos están **inspirados en** esas estéticas: no usan logos, nombres de 
   ```
   Las guarda en `recursos/negocio/` y escribe `"archivo"` en el JSON.
 
+## Sin IA (sin cuota o sin gateway): reglas programadas
+
+Si el agente no responde (cuota agotada, gateway caído), la landing sale igual. El motor trae un
+extractor por reglas que lee el texto del cliente y arma `negocio.json` sin ningún modelo:
+
+```bash
+cd /trabajo/landing
+cat > cliente.txt   # pega el texto del cliente y cierra con Ctrl+D
+bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --salida negocio.json
+bun /opt/skills-curso/s1-landing-estilos/motor/construir.mjs --negocio negocio.json --estilo apple --imagenes no
+```
+
+Saca nombre, rubro, ciudad, dirección, WhatsApp, correo, horario, servicios (viñetas o lista tras
+«ofrecemos/servicios»), precios «S/ 25», promoción y preguntas «¿…?». Lo que no encuentra lo deja
+fuera o como `[completar]` y lo avisa: revisa el JSON antes de construir. Los textos creativos (lema,
+título) quedan genéricos; si luego vuelve la IA, pídele solo «mejora hero.titulo y hero.subtitulo
+de negocio.json sin cambiar los datos». Con `--imagenes no` el sitio lleva marcadores en vez de fotos.
+
 ## Verificación antes de entregar
 
 - [ ] `construir.mjs` termina con `OK` y sin avisos de validación.
