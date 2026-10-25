@@ -85,7 +85,7 @@ export default component$(() => {
                 </>
               )}
               <label for="email" style={cfg.v?.oidc ? "" : "margin-top:0"}>Correo</label>
-              <input id="email" type="email" required autoComplete="username" placeholder="nombre.apellido@jmd-learn.online" value={form.email} onInput$={(_, el) => (form.email = el.value)} />
+              <input id="email" type="text" inputMode="email" required autoComplete="username" placeholder="correo o usuario" value={form.email} onInput$={(_, el) => (form.email = el.value)} />
               <label for="password">Contraseña</label>
               <input id="password" type="password" required minLength={8} autoComplete={mode.value === "login" ? "current-password" : "new-password"} value={form.password} onInput$={(_, el) => (form.password = el.value)} />
               {mode.value === "register" && (
