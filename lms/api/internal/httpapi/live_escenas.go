@@ -12,7 +12,7 @@ import (
 // cspEscena: lo único que una escena puede hacer. Todo inline y del mismo origen; sin CDN, sin
 // formularios y sin cargar nada de fuera. Las escenas son contenido nuestro, pero el iframe
 // también se usa para vistas de proyectos de alumnos (fase 4), así que se parte de lo mínimo.
-const cspEscena = "default-src 'none'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; " +
+const cspEscena = "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; " +
 	"img-src data: 'self'; font-src data:; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'"
 
 // liveEscenasLista: GET /api/v1/live/{lesson}/escenas (autenticado). Las escenas visibles de la
@@ -58,6 +58,7 @@ func (s *Server) liveEscenaHTML(w http.ResponseWriter, r *http.Request, p *Princ
 var extsEscena = map[string]string{
 	".js":    "text/javascript; charset=utf-8",
 	".mjs":   "text/javascript; charset=utf-8",
+	".css":   "text/css; charset=utf-8",
 	".json":  "application/json; charset=utf-8",
 	".png":   "image/png",
 	".webp":  "image/webp",

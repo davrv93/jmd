@@ -171,110 +171,61 @@ cycle:
 
 ## Avance de la clase
 
-Hoy dejas tu máquina lista para trabajar con un agente de programación durante todo el curso.
-Instalas VS Code, Docker y OpenCode, y conectas OpenCode al gateway de la clase.
-Después pones nombre a las piezas: agente, proveedor, modelo, parámetros, contexto, MCP y skills.
-Al final tendrás el agente respondiendo en tu terminal y tu primera skill escrita por ti.
-La clase se dicta el domingo 25-10-2026 de 7:30 a 9:30 pm: sirve de guía en vivo y de repaso si la ves grabada.
+Hoy dejas tu máquina lista para trabajar con un agente de programación: instalas VS Code, Docker
+y OpenCode, conectas OpenCode al gateway de la clase y escribes tu primera skill. Al final le pones
+nombre a las piezas: agente, proveedor, modelo, parámetros, contexto, MCP y skills.
 
-### El ciclo de esta clase
+Clase en vivo: domingo 25-10-2026, 7:30 a 9:30 pm. Si algo falla, no te quedes atrás: pega el
+error completo en el hilo de la sesión y sigue con el siguiente paso.
 
-Esta sesión se recorre con el **ciclo de aprendizaje**. El título de cada sección lleva su fase al final.
-
-| Fase | En esta clase |
-|---|---|
-| **1 · Experiencia** | Secciones 1 a 3: instalas VS Code, Docker y OpenCode, y conectas el agente al gateway. |
-| **2 · Reflexión** | Sección 8: miras trabajar al agente y publicas tu pregunta. |
-| **3 · Conceptos** | Secciones 4 a 7: agente, proveedor, modelo, parámetros, contexto, MCP y skills. |
-| **4 · Aplicación** | «Tareas»: dejas la evidencia en tu repositorio y la entregas. |
-
-### Bloques de la clase
-
-- 1 · Instalar VS Code.
-- 2 · Instalar Docker.
-- 3 · Instalar OpenCode y conectarlo al gateway.
-- 4 · Conceptos: agente, proveedor, modelo y parámetros.
-- 5 · Ahorrar contexto: `AGENTS.md`, RTK y caveman.
-- 6 · MCP.
-- 7 · Skills y tu primera skill.
-- 8 · Practica y reflexiona, y tareas.
-
-Si algo no te funciona, no te quedes atrás. Publica el error completo en el hilo de la sesión.
+| Bloque | Qué haces | Comprobación |
+|---|---|---|
+| 1 · VS Code | Instalar y abrir la terminal | `code --version` |
+| 2 · Docker | Instalar y correr un contenedor | `docker run --rm hello-world` |
+| 3 · OpenCode | Instalar y conectar al gateway | `/models` muestra `clase/auto` |
+| 4 · Skill | Escribir `saludo` | El agente responde con tu skill |
+| 5 · Práctica | Pedir un script y revisarlo antes de aceptar | `python3 fecha.py` imprime la fecha |
+| 6 · Conceptos | Poner nombre a las piezas | Las «Palabras de hoy» |
 
 ## 1. VS Code · Experiencia
 
-En una frase: VS Code es el editor donde escribes, abres la terminal y revisas lo que el agente cambia.
+El editor del curso: terminal integrada, paleta de comandos y panel de Git, donde ves cada cambio del agente antes de aceptarlo.
 
-Es gratuito y arranca rápido. Lo que le falta se añade con extensiones.
-Para el curso importan tres cosas: la terminal integrada, la paleta de comandos y el panel de Git.
-En ese panel verás cada archivo que el agente crea o cambia, con su diff, antes de aceptarlo.
-
-**Qué vas a hacer**
-1. Descarga el instalador (enlace en Materiales) y ejecútalo.
-   - Windows: elige *User Installer* de 64 bits y marca «Agregar al PATH». Instala también la extensión **WSL**.
-   - Mac: descomprime el `.zip` y arrastra la aplicación a *Aplicaciones*.
-   - Linux: instala el `.deb` o el `.rpm`, o corre `snap install code --classic`.
-2. Abre VS Code y abre la terminal integrada: `Ctrl+ñ` (teclado español), `` Ctrl+` `` (inglés) o *Terminal → New Terminal*.
-3. Mac: abre la paleta con `Cmd+Shift+P` y ejecuta *Shell Command: Install 'code' command in PATH*.
-4. Comprueba desde la terminal:
+1. Instala desde el enlace de Materiales. Windows: *User Installer* 64 bits, marca «Agregar al PATH» e instala la extensión **WSL**. Mac: arrastra la app a *Aplicaciones* y ejecuta en la paleta (`Cmd+Shift+P`) *Shell Command: Install 'code' command in PATH*.
+2. Abre la terminal integrada: `Ctrl+ñ` (teclado español) o `` Ctrl+` ``.
+3. Comprueba:
    ```bash
    code --version
    ```
-5. Windows con WSL: abre tu carpeta de trabajo con el botón verde «WSL: Ubuntu», abajo a la izquierda.
 
-**Qué vas a ver:** `code --version` imprime tres líneas: la versión, un código largo y la arquitectura.
-
-**Si falla:** Si dice «comando no encontrado», cierra la terminal y ábrela de nuevo. En Mac, repite el paso 3.
+**Si falla:** «comando no encontrado» → cierra la terminal y ábrela de nuevo; en Mac repite el paso 1.
 
 ## 2. Docker · Experiencia
 
-En una frase: Docker empaqueta un programa con todo lo que necesita y lo corre igual en cualquier máquina.
+Docker corre programas empaquetados con todo lo que necesitan, igual en cualquier máquina. En el curso levanta el gateway y, más adelante, el aula de tu chatbot.
 
-Analogía: una imagen es la receta ya cocinada; un contenedor es esa receta servida en un plato.
-Puedes servir varios platos de la misma receta y tirarlos sin ensuciar tu sistema.
-En el curso sirve para levantar el gateway con un comando y, más adelante, para ejecutar código aislado.
-
-**Qué vas a hacer**
-1. Instala Docker (enlaces en Materiales).
-   - Windows: en PowerShell como administrador corre `wsl --install`, reinicia e instala **Docker Desktop** con «Use WSL 2 based engine».
-   - Mac: instala **Docker Desktop** con la versión que corresponde a tu procesador.
-   - Linux: instala **Docker Engine** con la guía oficial y corre `sudo usermod -aG docker $USER`.
-2. Windows: en *Settings → Resources → WSL integration* activa tu Ubuntu. Linux: cierra la sesión y vuelve a entrar.
-3. Comprueba desde la terminal:
+1. Windows: en PowerShell como administrador, `wsl --install`, reinicia e instala **Docker Desktop** con «Use WSL 2 based engine»; en *Settings → Resources → WSL integration* activa tu Ubuntu. Mac: **Docker Desktop** de tu procesador. Linux: **Docker Engine** y `sudo usermod -aG docker $USER`, luego cierra y abre sesión.
+2. Comprueba:
    ```bash
-   docker --version
    docker run --rm hello-world
    ```
-4. Opcional: levanta el gateway tú mismo con el repositorio del curso (lo tienes en Materiales):
-   ```bash
-   git clone https://github.com/davrv93/jmd && cd jmd
-   cp .env.example .env
-   docker compose up -d --build
-   ```
 
-**Qué vas a ver:** `hello-world` imprime «Hello from Docker!». Si levantaste el gateway, su panel responde en `http://localhost:4000/ui/`.
-
-**Si falla:** Si dice «Cannot connect to the Docker daemon», abre Docker Desktop y espera a que arranque. En Linux, revisa que volviste a entrar en la sesión.
+**Si falla:** «Cannot connect to the Docker daemon» → abre Docker Desktop y espera a que arranque.
 
 ## 3. OpenCode y el gateway de la clase · Experiencia
 
-En una frase: OpenCode es el agente que usarás todo el curso; el gateway es el servidor que le presta el modelo.
+OpenCode es el agente: lee y escribe archivos, ejecuta comandos y habla con el modelo. No trae modelo propio: lo apuntas al gateway de la clase, que elige el modelo y lleva las cuotas. El instructor te da la URL y tu clave en el hilo de la sesión.
 
-OpenCode corre en la terminal. Lee y escribe archivos, ejecuta comandos y habla con el modelo que le configures.
-No trae modelo propio: en clase lo apuntas al gateway, que elige el modelo por ti y lleva las cuotas.
-El instructor te da dos datos en clase: la URL exacta del gateway y tu clave personal.
-
-**Qué vas a hacer**
-1. Instala OpenCode. Necesitas Node.js 18 o superior:
+1. Instala (necesitas Node.js 18 o superior):
    ```bash
    npm i -g opencode-ai
    opencode --version
    ```
-2. Guarda tu clave en una variable de entorno para no escribirla en ningún archivo:
+2. Guarda la clave en una variable, nunca en un archivo:
    ```bash
    export GATEWAY_API_KEY="la-clave-que-te-dio-el-instructor"
    ```
-3. Crea `opencode.json` en tu carpeta de trabajo con este contenido. Cambia `baseURL` por la URL de clase:
+3. Crea `opencode.json` en tu carpeta de trabajo (cambia `baseURL` por la URL de clase):
    ```json
    {
      "$schema": "https://opencode.ai/config.json",
@@ -282,122 +233,26 @@ El instructor te da dos datos en clase: la URL exacta del gateway y tu clave per
        "clase": {
          "npm": "@ai-sdk/openai-compatible",
          "name": "Gateway de la clase",
-         "options": {
-           "baseURL": "https://URL-DEL-GATEWAY/v1",
-           "apiKey": "{env:GATEWAY_API_KEY}"
-         },
+         "options": { "baseURL": "https://URL-DEL-GATEWAY/v1", "apiKey": "{env:GATEWAY_API_KEY}" },
          "models": { "auto": { "name": "auto (lo elige el gateway)" } }
        }
      },
      "model": "clase/auto"
    }
    ```
-4. Arranca el agente en esa carpeta y comprueba el modelo:
-   ```bash
-   opencode
-   ```
-   Dentro escribe `/models` y busca `clase/auto`.
-5. Hazle una pregunta corta: «¿qué archivos hay en esta carpeta?». Sal con `/exit`.
+4. Arranca `opencode` en esa carpeta, escribe `/models` y busca `clase/auto`. Pregúntale «¿qué archivos hay en esta carpeta?» y sal con `/exit`.
 
-**Qué vas a ver:** `/models` lista `clase/auto`. El agente responde a tu pregunta y te muestra el comando que ejecutó.
+**Si falla:** `401` → la clave está mal copiada o la variable no existe en esa terminal. `ECONNREFUSED` → la URL está mal: cópiala del hilo.
 
-**Si falla:** Si responde «401» o «unauthorized», la clave está mal copiada o la variable no existe en esa terminal.
-Si dice «ECONNREFUSED», la URL del gateway está mal: cópiala del hilo de la sesión.
+## 4. Tu primera skill · Conceptos
 
-## 4. Conceptos: agente, proveedor, modelo y parámetros · Conceptos
+Una skill es una carpeta con un `SKILL.md`. El agente lee solo el título de cada una al arrancar y abre la ficha completa cuando tu pedido encaja con la descripción: contexto bajo demanda. Van en `.opencode/skills/<nombre>/` (proyecto) o en `~/.config/opencode/skills/<nombre>/` (usuario).
 
-En una frase: ya instalaste las piezas; ahora les pones nombre para saber de qué hablas.
-
-**Agente.** Un programa que pone un modelo en un bucle: decide, usa una herramienta, mira el resultado y repite.
-Analogía: un empleado nuevo que sigue tus instrucciones y usa las herramientas de la oficina. OpenCode es uno.
-
-**Proveedor.** La empresa que aloja el modelo y lo expone por una API con URL, clave, cuota y precio.
-Analogía: la empresa que te vende el modelo. Hoy tu proveedor es el gateway de la clase.
-
-**Modelo.** La red neuronal entrenada que recibe texto y devuelve texto. Lee y cobra en tokens: trozos de palabra.
-Analogía: el cerebro que alquilas por minutos. Cambias de cerebro sin cambiar de agente.
-
-**Parámetros.** Perillas que viajan en cada petición y cambian cómo responde el mismo modelo.
-Analogía: las perillas de una radio. `temperature` dice cuánto improvisa; `max_tokens`, cuánto puede hablar.
-
-Dos avisos. «Parámetros del modelo» también significa su tamaño en pesos («70 B»); no son estas perillas.
-Y cuando pides el modelo `auto`, el gateway elige: si uno falla por cuota, pasa al siguiente.
-
-**Qué vas a ver:** En OpenCode, `/models` muestra `proveedor/modelo`: a la izquierda quién lo sirve, a la derecha qué cerebro responde.
-
-**Si falla:** Si confundes proveedor y modelo, sigue el camino: tu agente llama al proveedor y el proveedor pone el modelo.
-
-## 5. Ahorrar contexto: AGENTS.md, RTK y caveman · Conceptos
-
-En una frase: cada token que entra o sale gasta cuota; hoy aprendes tres formas de gastar menos.
-
-El agente gasta en dos direcciones: lo que lee (tu pedido, archivos, salida de comandos) y lo que escribe.
-`AGENTS.md` evita que redescubra tu proyecto en cada sesión. RTK recorta la salida de los comandos. caveman acorta las respuestas.
-
-**Qué vas a hacer**
-1. Dentro de OpenCode, en una carpeta con código, crea las reglas del proyecto:
-   ```text
-   /init
-   ```
-2. Abre el `AGENTS.md` que creó y añade dos líneas: cómo se arranca y cómo se prueba tu proyecto.
-3. Instala RTK para comprimir la salida de los comandos antes de que llegue al modelo:
-   ```bash
-   brew install rtk                                   # Mac
-   cargo install --git https://github.com/rtk-ai/rtk  # Windows con WSL o Linux, con Rust instalado
-   ```
-4. Después de una sesión de trabajo, mira cuánto ahorró:
-   ```bash
-   rtk gain
-   ```
-5. Instala caveman (enlace en Materiales): copia su carpeta a `~/.config/opencode/skills/caveman/` y pídele al agente «responde como caveman».
-
-**Qué vas a ver:** Un `AGENTS.md` nuevo en la raíz. `rtk gain` imprime los tokens ahorrados. Con caveman, el agente deja saludos y relleno.
-
-**Si falla:** Si `cargo` no existe, instala Rust desde rustup.rs y abre otra terminal.
-Si tienes caveman y el estilo corto del gateway a la vez, quita uno: se recorta dos veces.
-
-## 6. MCP · Conceptos
-
-En una frase: MCP es el enchufe estándar para conectar tu agente con herramientas y datos de fuera.
-
-Analogía: antes cada aparato traía su propio cargador; MCP es el cargador universal.
-Un servidor MCP expone herramientas (funciones), recursos (datos) y prompts (plantillas). Cualquier agente compatible los usa.
-Hay dos transportes: `local` arranca el servidor en tu máquina; `remote` habla con uno en internet.
-
-**Qué vas a hacer**
-1. Mira la demostración: el agente lista cursos y entrega una tarea desde la terminal, sin abrir el navegador.
-2. Abre tu `opencode.json`. Los servidores van en una clave `mcp`, al mismo nivel que `provider`.
-3. Lee este ejemplo. No lo instales hoy; solo identifica `type`, `command` y `enabled`:
-   ```json
-   "mcp": {
-     "archivos": {
-       "type": "local",
-       "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "."],
-       "enabled": true
-     },
-     "lms": { "type": "remote", "url": "https://URL-DEL-LMS/mcp", "enabled": true }
-   }
-   ```
-4. Anota una herramienta que te gustaría darle a tu agente y compártela en el hilo de la sesión.
-
-**Qué vas a ver:** En la demostración, el agente usa herramientas que no vienen de serie: `list_courses`, `submit_assignment`. Eso es MCP.
-
-**Si falla:** Si `opencode.json` deja de cargar, revisa comas y llaves. Un JSON roto apaga toda la configuración.
-
-## 7. Skills y tu primera skill · Conceptos
-
-En una frase: una skill es una carpeta con un `SKILL.md` que enseña al agente a hacer algo concreto.
-
-Analogía: una ficha de instrucciones en un cajón. El agente lee solo el título de cada ficha al arrancar.
-Cuando tu pedido encaja con la descripción, abre la ficha completa. Es contexto bajo demanda.
-Viven en `.opencode/skills/<nombre>/SKILL.md` (proyecto) o en `~/.config/opencode/skills/<nombre>/SKILL.md` (usuario).
-
-**Qué vas a hacer**
-1. En tu carpeta de trabajo crea la carpeta de la skill:
+1. Crea la carpeta:
    ```bash
    mkdir -p .opencode/skills/saludo
    ```
-2. Crea `.opencode/skills/saludo/SKILL.md` con este contenido:
+2. Crea `.opencode/skills/saludo/SKILL.md`:
    ```markdown
    ---
    name: saludo
@@ -407,57 +262,52 @@ Viven en `.opencode/skills/<nombre>/SKILL.md` (proyecto) o en `~/.config/opencod
    1. Un saludo con el nombre.
    2. La clase de hoy, leída de `clases.md` si existe; si no, di que no hay archivo.
    ```
-3. Arranca `opencode` en esa carpeta y escribe: `salúdame`.
-4. Instala la skill grande `landing-editorial` desde `skills.zip` (lo tienes en Materiales):
-   ```bash
-   unzip skills.zip -d ~/.config/opencode/skills/
-   ```
-5. Abre `~/.config/opencode/skills/landing-editorial/SKILL.md` y mira cómo solo apunta a `references/`.
-6. Pide en OpenCode: «hazme una landing editorial para una cafetería» y observa qué referencias lee.
+3. Arranca `opencode` en esa carpeta y escribe `salúdame`.
 
-**Qué vas a ver:** El agente te pregunta el nombre y responde en dos líneas. Con `landing-editorial`, lee archivos de `references/` antes de escribir el `index.html`.
+**Si falla:** el agente no usa la skill → revisa que `name` coincide con la carpeta y que `description` dice cuándo usarla. Reinicia `opencode`: las skills se leen al arrancar.
 
-**Si falla:** Si no usa tu skill, revisa que `name` coincide con la carpeta y que `description` dice cuándo usarla.
-Reinicia `opencode`: las skills se leen al arrancar.
+## 5. Practica: el agente propone, tú decides · Reflexión
 
-## 8. Practica y reflexiona · Reflexión
+Trabaja siempre en git: si el agente rompe algo, vuelves atrás con un comando. Lee el diff antes de aceptar.
 
-En una frase: antes de cerrar, miras trabajar al agente sin aceptar nada a ciegas.
-
-La regla del curso: el agente propone, tú decides. Lee el diff antes de aceptar.
-Trabaja siempre en git: si el agente rompe algo, vuelves atrás con un comando.
-
-**Qué vas a hacer**
-1. Crea una carpeta vacía, inicia git y arranca el agente:
+1. Carpeta nueva con git y el agente dentro:
    ```bash
    mkdir practica-01 && cd practica-01 && git init
    opencode
    ```
 2. Pídele: «Crea un script que imprima la fecha y la hora en español.»
-3. Antes de aceptar, mira qué archivos crea, qué comandos quiere ejecutar y si prueba el resultado.
-4. Corre el script tú mismo y anota en dos líneas qué te sorprendió y qué no.
-5. Publica una pregunta en la pestaña **Preguntas** de esta sesión, o responde la de un compañero.
+3. Antes de aceptar, mira qué archivos crea y qué comandos quiere ejecutar. Luego córrelo tú:
+   ```bash
+   python3 fecha.py
+   ```
+4. Publica una pregunta en la pestaña **Preguntas** de esta sesión, o responde la de un compañero.
 
-**Qué vas a ver:** Un archivo nuevo, el comando que lo ejecuta y la fecha de hoy en español. Tu pregunta aparece en el hilo.
+**Si falla:** el script da error → pégale el error completo al agente; arreglarlo es parte del ejercicio.
 
-**Si falla:** Si el agente ejecuta sin preguntar, pídele que te muestre cada comando antes de lanzarlo.
-Si el script falla, pégale el error completo: arreglarlo también es parte del ejercicio.
+## 6. Las piezas, con nombre · Conceptos
+
+| Pieza | Qué es | Analogía |
+|---|---|---|
+| **Agente** | Pone un modelo en un bucle: decide, usa una herramienta, mira el resultado y repite | Un empleado nuevo con las herramientas de la oficina |
+| **Proveedor** | Quien aloja el modelo y lo sirve por una API con clave, cuota y precio | La empresa que te alquila el cerebro |
+| **Modelo** | La red entrenada que recibe texto y devuelve texto; lee y cobra en **tokens** | El cerebro; se cambia sin cambiar de agente |
+| **Parámetros** | Perillas de cada petición: `temperature` (cuánto improvisa), `max_tokens` (cuánto habla) | Las perillas de una radio |
+| **Gateway** | El servidor de la clase: elige el modelo y, si uno falla por cuota, pasa al siguiente | La central telefónica |
+| **Contexto** | Todo lo que el modelo tiene delante en una petición; se gasta en tokens | La mesa de trabajo: lo que no cabe, no se ve |
+| **MCP** | El enchufe estándar para darle al agente herramientas y datos de fuera | El cargador universal |
+
+**Ahorrar contexto.** El agente gasta en lo que lee y en lo que escribe. Tres hábitos: `/init` dentro de OpenCode crea `AGENTS.md` para que no redescubra tu proyecto cada vez; RTK recorta la salida de los comandos (`rtk gain` muestra lo ahorrado); caveman acorta las respuestas. Hoy basta con `/init`; RTK y caveman están en Materiales.
+
+**MCP, en demostración.** Verás al agente listar cursos y entregar una tarea sin abrir el navegador: herramientas que no vienen de serie (`list_courses`, `submit_assignment`). En `opencode.json` van bajo la clave `mcp`; hoy no lo instalas, solo identifica `type`, `command` y `enabled`.
+
+**Cuando no hay cuota.** El gateway de la clase prueba varios modelos en orden, primero los de pago, luego los gratuitos y, si todos fallan, un modelo pequeño que corre en el propio servidor de la clase. Responde más lento y más corto, pero la clase no se detiene.
 
 ## Palabras de hoy · Conceptos
 
-- **Agente**: programa que pone un modelo en un bucle con herramientas y actúa sobre tu proyecto.
-- **Proveedor**: quien aloja el modelo y te lo sirve por una API con clave y cuota.
-- **Modelo**: la red entrenada que recibe texto y devuelve texto.
-- **Token**: la unidad en la que el modelo lee, escribe y cobra; unos tres cuartos de palabra.
-- **Parámetros de generación**: perillas de cada petición, como `temperature` y `max_tokens`.
-- **Gateway**: el servidor de la clase que elige el modelo, reparte la cuota y recibe tu clave.
-- **Contexto**: todo lo que el modelo tiene delante en una petición; se gasta en tokens.
-- **AGENTS.md**: las reglas del proyecto que OpenCode lee al arrancar.
-- **MCP**: protocolo estándar para dar al agente herramientas y datos externos.
-- **Skill**: carpeta con `SKILL.md` que el agente carga cuando tu pedido encaja con su descripción.
+Agente · Proveedor · Modelo · Token · Parámetros de generación · Gateway · Contexto · `AGENTS.md` · MCP · Skill. Cada una está definida en la tabla de arriba o en los bloques 4 y 6.
 
 ## Tareas · Aplicación
 
-- Tarea 1: instala VS Code, Docker y OpenCode, conecta el gateway y escribe la skill `saludo`.
-- Entrega el repositorio `clase-01` con `EVIDENCIA.md` y `.opencode/skills/saludo/SKILL.md`. En `EVIDENCIA.md` pega las tres comprobaciones y una captura de OpenCode respondiendo.
-- Entrégalo desde la tarea 1 del LMS (URL + commit) antes del 18-10-2026 a las 23:59.
+- Tarea 1: VS Code, Docker y OpenCode instalados, el gateway conectado y la skill `saludo` escrita.
+- Entrega el repositorio `clase-01` con `EVIDENCIA.md` (las tres comprobaciones y una captura de OpenCode respondiendo) y `.opencode/skills/saludo/SKILL.md`.
+- Entrégala desde la tarea 1 del LMS (URL + commit) antes de la clase 2, el martes 27-10-2026 a las 7:30 pm.
