@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hala Madrid · Python gratis</title>
+<meta name="description" content="Escribe HALA MADRID y entra gratis al curso «Python: de cero a tu API». Jueves 12, 19 y 26 de noviembre, 7:30 p. m.">
+<meta property="og:title" content="Hoy ganó el Madrid, ganó el fútbol">
+<meta property="og:description" content="Escribe HALA MADRID y entra gratis al curso de Python: FastAPI, Django, Swagger y Docker.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Landing de inscripción del curso gratis de Python (grupo python-api-1 del LMS).
+   Paso 1: escribir HALA MADRID. Paso 2: nombre y correo. La cuenta se crea con
+   POST /api/v1/inscripcion/python-api-1 y la contraseña se genera aquí y se muestra al alumno. */
+:root { --noche: #0b1626; --panel: #12233a; --borde: #24405f; --oro: #f2c14e; --amarillo: #ffd43b; --azul-c: #7fb3e6; --texto: #f3f6fb; --suave: #a8b8cc; --verde: #49cc90; --rojo: #ff6b6b;
+        --display: 'Anton', Impact, 'Arial Narrow', sans-serif; --cuerpo: 'Space Grotesk', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace; color-scheme: dark; }
+* { box-sizing: border-box; margin: 0; }
+html { background: var(--noche); }
+body { min-height: 100vh; background: radial-gradient(ellipse 120% 50% at 50% 0%, #2a1a5a 0%, var(--noche) 62%) no-repeat, var(--noche); color: var(--texto); font-family: var(--cuerpo);
+       padding: max(28px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(36px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); }
+main { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+.marcador { font-family: var(--mono); font-weight: 700; font-size: 13px; letter-spacing: .18em; color: var(--oro); display: flex; align-items: center; gap: 10px; }
+.marcador i { width: 10px; height: 10px; border-radius: 50%; background: #ff3b3b; }
+h1 { font-family: var(--display); font-weight: 400; text-transform: uppercase; line-height: 1.05; font-size: clamp(54px, 15vw, 92px); letter-spacing: .005em; }
+h1 span { display: block; color: var(--oro); }
+.bajada { font-size: 18px; line-height: 1.45; color: var(--suave); }
+.bajada b { color: var(--texto); }
+.tarjeta { background: var(--panel); border: 2px solid var(--borde); border-radius: 22px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.curso h2 { font-size: 46px; line-height: .95; letter-spacing: -.04em; color: var(--amarillo); }
+.curso h3 { font-size: 24px; line-height: 1.1; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips span { padding: 6px 11px; border-radius: 9px; border: 2px solid var(--borde); font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--azul-c); }
+.fila { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 16px; }
+.fila b { font-size: 18px; }
+.gratis { display: inline-block; padding: 4px 10px; border-radius: 8px; background: var(--amarillo); color: var(--noche); font-weight: 700; }
+label { display: block; font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: .14em; color: var(--suave); margin-bottom: 7px; text-transform: uppercase; }
+input { width: 100%; padding: 15px 16px; border-radius: 14px; border: 2px solid var(--borde); background: #0a1322; color: var(--texto); font: 500 18px var(--cuerpo); }
+input:focus { outline: none; border-color: var(--oro); box-shadow: 0 0 0 4px #f2c14e33; }
+#clave { font-family: var(--mono); font-weight: 700; font-size: 24px; letter-spacing: .04em; text-transform: uppercase; text-align: center; }
+button, .boton { display: inline-flex; justify-content: center; align-items: center; gap: 8px; width: 100%; padding: 16px; border: 0; border-radius: 999px; background: var(--amarillo); color: var(--noche); font: 700 18px var(--cuerpo); cursor: pointer; text-decoration: none; }
+button:disabled { opacity: .55; cursor: wait; }
+button:focus-visible, .boton:focus-visible { outline: 3px solid var(--texto); outline-offset: 3px; }
+.sec { background: transparent; border: 2px solid var(--borde); color: var(--texto); }
+.msg { font-size: 15px; line-height: 1.4; min-height: 1.4em; }
+.msg.err { color: var(--rojo); }
+.ok { color: var(--verde); font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 13px; }
+.cred { background: #0a1322; border: 2px dashed var(--oro); border-radius: 14px; padding: 14px 16px; font-family: var(--mono); font-size: 16px; line-height: 1.7; word-break: break-all; }
+.cred b { color: var(--amarillo); }
+.pie { font-size: 13px; color: #ffffff70; text-align: center; line-height: 1.5; }
+.pie b { color: var(--suave); }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: no-preference) { .paso { animation: entra .35s ease-out; } @keyframes entra { from { opacity: 0; transform: translateY(10px); } } }
+</style>
+</head>
+<body>
+<main>
+  <p class="marcador"><i></i>FINAL · NOCHE DE FÚTBOL</p>
+  <h1>Hoy ganó el Madrid, <span>ganó el fútbol.</span></h1>
+  <p class="bajada">Y para celebrarlo, el curso de Python va <b>gratis</b>. Escribe la clave y quedas inscrito.</p>
+
+  <section class="tarjeta curso" aria-label="El curso">
+    <h2>Python</h2>
+    <h3>de cero a tu API</h3>
+    <div class="chips"><span>venv</span><span>Docker</span><span>FastAPI</span><span>Django</span><span>Swagger</span><span>Gunicorn</span></div>
+    <div class="fila"><span><b>Jueves 12, 19 y 26 nov</b><br>7:30 – 9:30 p. m. (hora de Lima)</span><span><span class="gratis">GRATIS</span><br><small>certificado opcional S/ 15</small></span></div>
+  </section>
+
+  <!-- paso 1: la clave -->
+  <form class="tarjeta paso" id="p1" autocomplete="off">
+    <div><label for="clave">Escribe la clave</label><input id="clave" name="clave" placeholder="HALA MADRID" autocapitalize="characters" spellcheck="false" required></div>
+    <button type="submit">Desbloquear inscripción</button>
+    <p class="msg err" id="m1" role="alert"></p>
+  </form>
+
+  <!-- paso 2: nombre y correo -->
+  <form class="tarjeta paso" id="p2" hidden>
+    <p class="ok">✓ CLAVE CORRECTA · ¡HALA MADRID!</p>
+    <div><label for="nombre">Nombre y apellido</label><input id="nombre" name="nombre" autocomplete="name" placeholder="Ej.: Ana Torres" required></div>
+    <div><label for="correo">Correo</label><input id="correo" name="correo" type="email" autocomplete="email" inputmode="email" placeholder="tucorreo@gmail.com" required></div>
+    <button type="submit" id="enviar">Inscribirme gratis</button>
+    <p class="msg err" id="m2" role="alert"></p>
+  </form>
+
+  <!-- paso 3: listo -->
+  <section class="tarjeta paso" id="p3" hidden aria-live="polite">
+    <p class="ok">✓ QUEDASTE INSCRITO</p>
+    <p style="font-size: 18px; line-height: 1.45">Ya tienes tu cuenta en el aula virtual. Guarda estos datos para entrar a las clases:</p>
+    <p class="cred">Correo: <b id="c-correo"></b><br>Contraseña: <b id="c-clave"></b></p>
+    <button type="button" class="sec" id="copiar">Copiar mis datos</button>
+    <a class="boton" href="/courses/python-api/">Entrar al curso</a>
+    <p class="msg" id="m3"></p>
+  </section>
+
+  <!-- ya tenía cuenta -->
+  <section class="tarjeta paso" id="p4" hidden>
+    <p class="ok" style="color: var(--oro)">YA TIENES CUENTA CON ESE CORREO</p>
+    <p style="font-size: 17px; line-height: 1.45">Entra con tu contraseña de siempre y pulsa <b>Unirme</b> para sumarte al curso de Python.</p>
+    <a class="boton" href="/inscripcion/python-api-1/">Entrar y unirme</a>
+  </section>
+
+  <p class="pie">Informes por WhatsApp: <b>986 149 476</b><br>Curso independiente de JMD Learning. Sin afiliación con ningún club.</p>
+</main>
+<script>
+const GRUPO = 'python-api-1';
+const $ = (id) => document.getElementById(id);
+const normal = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+// Contraseña legible: sin 0/O ni 1/l, en tres bloques. 12 caracteres al azar.
+function generarClave() {
+  const abc = 'abcdefghjkmnpqrstuvwxyz23456789';
+  const r = new Uint32Array(12); crypto.getRandomValues(r);
+  const s = Array.from(r, (n) => abc[n % abc.length]).join('');
+  return `${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8)}`;
+}
+$('p1').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (normal($('clave').value) === 'HALAMADRID') {
+    $('p1').hidden = true; $('p2').hidden = false; $('nombre').focus();
+  } else {
+    $('m1').textContent = 'Esa no es la clave. Escribe HALA MADRID.';
+  }
+});
+$('p2').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('nombre').value.trim().replace(/\s+/g, ' ');
+  const email = $('correo').value.trim().toLowerCase();
+  $('m2').textContent = '';
+  if (name.split(' ').length < 2) { $('m2').textContent = 'Escribe tu nombre y tu apellido.'; $('nombre').focus(); return; }
+  const password = generarClave();
+  $('enviar').disabled = true; $('enviar').textContent = 'Inscribiendo…';
+  try {
+    const r = await fetch(`/api/v1/inscripcion/${GRUPO}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name, email, password }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 201) {
+      $('c-correo').textContent = email; $('c-clave').textContent = password;
+      $('p2').hidden = true; $('p3').hidden = false;
+      return;
+    }
+    if (r.status === 409) { $('p2').hidden = true; $('p4').hidden = false; return; }
+    if (r.status === 429) { $('m2').textContent = 'Muchos intentos seguidos. Espera un minuto y vuelve a intentarlo.'; return; }
+    if (r.status === 404) { $('m2').textContent = 'La inscripción está cerrada por ahora. Escríbenos al 986 149 476.'; return; }
+    const m = j && j.error && j.error.message;
+    $('m2').textContent = m ? m.charAt(0).toUpperCase() + m.slice(1) + '.' : 'No se pudo inscribir. Inténtalo de nuevo.';
+  } catch {
+    $('m2').textContent = 'Sin conexión. Revisa tu internet e inténtalo de nuevo.';
+  } finally {
+    $('enviar').disabled = false; $('enviar').textContent = 'Inscribirme gratis';
+  }
+});
+$('copiar').addEventListener('click', async () => {
+  const t = `Curso Python · jmd-learn.online\nCorreo: ${$('c-correo').textContent}\nContraseña: ${$('c-clave').textContent}`;
+  try { await navigator.clipboard.writeText(t); $('m3').textContent = 'Copiado. Pégalo en tus notas o en un chat contigo mismo.'; }
+  catch { $('m3').textContent = 'No se pudo copiar: toma una captura de pantalla.'; }
+});
+</script>
+</body>
+</html>
