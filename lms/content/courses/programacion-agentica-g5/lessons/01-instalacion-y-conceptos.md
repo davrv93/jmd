@@ -308,21 +308,16 @@ Trabaja siempre en git: si el agente rompe algo, vuelves atrás con un comando. 
 
 **Cuando no hay cuota.** El gateway de la clase prueba varios modelos en orden, primero los de pago, luego los gratuitos y, si todos fallan, un modelo pequeño que corre en el propio servidor de la clase. Responde más lento y más corto, pero la clase no se detiene.
 
-## 7. Landing sin IA: reglas y modelo local · Aplicación
+## 7. Landing sin IA · Aplicación
 
-En la terminal del aula del LIVE, la landing de un cliente sale con tres comandos y sin ningún proveedor externo: las reglas sacan los datos del texto y un modelo pequeño del servidor de la clase, si está, redacta los títulos.
+En el LIVE, escena **E10**, la landing de un cliente sale sin ningún proveedor externo: reglas programadas sacan los datos del texto y el motor arma el sitio.
 
-1. Crea la carpeta y guarda el texto del cliente (el bloque termina solo al llegar a `FIN`; no hace falta Ctrl+D):
-   ```bash
-   mkdir -p /trabajo/landing && cd /trabajo/landing
-   cat > cliente.txt <<'FIN'
-   pega aquí el texto del cliente, con todas sus líneas
-   FIN
-   ```
-2. `bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --modelo auto --salida negocio.json`
-3. `bun /opt/skills-curso/s1-landing-estilos/motor/construir.mjs --negocio negocio.json --estilo apple --imagenes no` y ábrelo en el Visor.
+1. Pega en el cuadro de la escena lo que te escribió el cliente (o pulsa «poner un ejemplo»).
+2. Elige el estilo.
+3. Pulsa **Copiar comando**, pégalo en la terminal del aula y pulsa Enter.
+4. Abre `/trabajo/landing/sitio-<estilo>/index.html` en el Visor.
 
-**Si falla:** `negocio.whatsapp` vacío → el texto no traía un número de 9 dígitos; escríbelo en el JSON y vuelve a construir.
+**Si falla:** sale `[completar]` → el cliente no dio ese dato (nombre, WhatsApp de 9 dígitos, lista de servicios): agrégalo al texto en el cuadro y vuelve a copiar.
 
 ## Palabras de hoy · Conceptos
 

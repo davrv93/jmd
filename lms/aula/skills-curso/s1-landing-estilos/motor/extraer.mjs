@@ -312,6 +312,8 @@ export function extraer(textoBruto, opciones = {}) {
     }
   }
   if (!nombre) { nombre = capital(rubro) || '[completar]'; avisos.push('No encontré el nombre del negocio: lo puse como «' + nombre + '».'); }
+  // «se llama Pollos Don Lucho en Arequipa»: «en <ciudad>» al final no es parte del nombre
+  nombre = nombre.replace(/\s+en\s+([A-ZÁÉÍÓÚÑ][\wáéíóúñ ]*)$/, (m, c) => (buscarCiudad(c) ? '' : m));
   nombre = nombrePropio(nombre.replace(/\s+(es el nombre|y|que|en)$/i, ''));
 
   const lema = primero(t, [/(?:lema|eslogan|slogan|nos diferencia|lo nuestro es|nos caracteriza|nuestro lema es|frase)\s*(?:es|:)?\s*"?([^\n.;"]{4,70})"?/i], 70, sinRuido);
@@ -361,8 +363,8 @@ export function extraer(textoBruto, opciones = {}) {
     nombreP = capital(limpiar(nombreP).replace(/^(?:precios?|tarifas?|cobramos|desde|a|por|el|la|los|las|y|e|cuesta|sale|est[aá] a|est[aá] en|:)\s+/i, '').replace(/\s+(?:a|por|desde|cuesta|sale|est[aá] a|est[aá] en)$/i, ''));
     if (nombreP.length >= 3 && !/^(antes|normal|precio|total|solo|desde)$/i.test(nombreP) && !precios.some((p) => p.nombre === nombreP)) precios.push({ nombre: nombreP, precio });
   };
-  for (const m of textoSinPromo.matchAll(/([A-Za-zÁÉÍÓÚáéíóúñÑ][^\n,;:()]{2,40}?)(?:\s+(?:a|por|desde|cuesta|sale|est[aá] a|est[aá] en)|\s*:)?\s*S\/\.?\s*(\d+(?:[.,]\d{2})?)/gi)) agregarPrecio(m[1], precioTexto(m[2]));
-  for (const m of textoSinPromo.matchAll(/([A-Za-zÁÉÍÓÚáéíóúñÑ][^\n,;:()]{2,40}?)\s+(?:a|por|desde|cuesta|sale|est[aá] a|est[aá] en)\s+(\d+(?:[.,]\d{2})?)\s*soles\b/gi)) agregarPrecio(m[1], precioTexto(m[2]));
+  for (const m of textoSinPromo.matchAll(/((?:\d+\/\d+ )?[A-Za-zÁÉÍÓÚáéíóúñÑ][^\n,;:()]{2,40}?)(?:\s+(?:a|por|desde|cuesta|sale|est[aá] a|est[aá] en)|\s*:)?\s*S\/\.?\s*(\d+(?:[.,]\d{2})?)/gi)) agregarPrecio(m[1], precioTexto(m[2]));
+  for (const m of textoSinPromo.matchAll(/((?:\d+\/\d+ )?[A-Za-zÁÉÍÓÚáéíóúñÑ][^\n,;:()]{2,40}?)\s+(?:a|por|desde|cuesta|sale|est[aá] a|est[aá] en)\s+(\d+(?:[.,]\d{2})?)\s*soles\b/gi)) agregarPrecio(m[1], precioTexto(m[2]));
   // ---- promoción
   let oferta = null;
   const mOf = /(?:promo(?:ci[oó]n)?|oferta|descuento)\s*:?\s*([^\n]+)/i.exec(texto);
@@ -539,6 +541,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const opt = (k) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : undefined; };
   if (!archivo) { console.error('Uso: bun motor/extraer.mjs cliente.txt [--estilo apple] [--salida negocio.json] [--modelo auto|qwen-landing|no]'); process.exit(2); }
   const texto = archivo === '-' ? fs.readFileSync(0, 'utf8') : fs.readFileSync(archivo, 'utf8');
+  if (texto.trim().length < 15) {
+    console.error(`${archivo} está vacío o casi vacío: no hay texto del cliente que leer.\nCopia el comando de la escena con el texto ya pegado en el cuadro (o escribe el texto en el archivo) y vuelve a correrlo.`);
+    process.exit(1);
+  }
   const { negocio, avisos, modelo, tomados } = await extraerConModelo(texto, { estilo: opt('estilo'), modo: opt('modelo') || 'auto' });
   const json = JSON.stringify(negocio, null, 2);
   const salida = opt('salida');

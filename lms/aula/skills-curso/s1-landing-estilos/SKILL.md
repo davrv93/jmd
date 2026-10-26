@@ -79,7 +79,9 @@ extractor por reglas que lee el texto del cliente y arma `negocio.json` sin ning
 
 ```bash
 cd /trabajo/landing
-cat > cliente.txt   # pega el texto del cliente y cierra con Ctrl+D
+cat > cliente.txt <<'FIN_CLIENTE'
+(el texto del cliente, tal cual)
+FIN_CLIENTE
 bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --salida negocio.json --modelo no
 bun /opt/skills-curso/s1-landing-estilos/motor/construir.mjs --negocio negocio.json --estilo apple --imagenes no
 ```
