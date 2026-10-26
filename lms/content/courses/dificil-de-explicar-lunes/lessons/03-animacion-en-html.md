@@ -133,6 +133,7 @@ Clase en vivo: lunes 9-11-2026, 9:15 a 10:45 pm. Kit: <https://jmd-learn.online/
 | 7 · 3D | Tres planos en `03-three.html` | Ubicas la `z` de cada plano |
 | 8 · Personaje | Tu SVG en `04-personaje.html` | Aparece y sigue la paleta |
 | 9 · Agua | Tu regla en `05-agua.html` | Se nota el cambio |
+| · Prompts | Pedidos en vivo en las escenas 5, 6, 8 y 9 | Tres pedidos aplicados y uno copiado al agente |
 | 10 · Pieza | Dos ejemplos tuyos + capturas | Tarea 3 |
 
 ## 1. Qué hay dentro · Experiencia
@@ -165,7 +166,13 @@ léelo entero, cambia una cosa, recarga, mira.
 **Si falla:** el Visor no carga los dibujos → abre la copia pública en
 <https://jmd-learn.online/steamboat/> y edita en tu carpeta.
 
-## 4. Los cinco ejemplos · Aplicación
+## 3b. La mesa de prompts del LIVE · Aplicación
+
+En las escenas de colores, notas, personaje y agua hay un cuadro: escribe en tus palabras lo que quieres («gorro azul y zapatos dorados», «que las notas sean corazones más grandes», «que el pájaro se pose en el gorro», «mucha lluvia») y pulsa Enter. Un intérprete local lo aplica al instante, sin cuota ni modelo. Debajo hay sugerencias: tócalas para probarlas y verás cómo cambian según lo que escribes.
+
+Lo que la escena no sabe hacer, se lo pides al agente: el botón **Copiar para el agente** arma tu pedido en seis partes; pégalo en la terminal del aula con `jmd chat`. Así practicas las dos cosas: cambiar en vivo y pedir bien.
+
+## 4. Los siete ejemplos · Aplicación
 
 | Ejemplo | Qué tocas | La API que usa |
 |---|---|---|
@@ -174,6 +181,8 @@ léelo entero, cambia una cosa, recarga, mira.
 | `03-three.html` | La `z` de cada plano, la cámara, un objeto 3D | `s.celdaSVG(k)` como textura |
 | `04-personaje.html` | Tu SVG con `estilo1928()`, otro vuelo en `VUELOS` | `s.agregarPersonaje({...})`, `s.datos.cajas[celda]` |
 | `05-agua.html` | `CUBIERTA`, el tope, qué pasa al 80 % | `s.toca([x, y])`, `s.capa` |
+| `06-volumen.html` | Una pose en `volumen/escena.js`; la cámara | `crearVisor()`, `renderSVG()` |
+| `07-webgl.html` | La luz en el *fragment shader* de `volumen/webgl.js` | `crearVisorWebGL()` |
 
 Reglas del estilo de 1928 para tu personaje: formas redondas, tinta gruesa y uniforme, ojos
 grandes con pupila, brazos y piernas de manguera (sin codos ni rodillas), manos con cuatro dedos.

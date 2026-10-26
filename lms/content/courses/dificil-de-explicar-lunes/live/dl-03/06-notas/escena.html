@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>E06 · Notas que salen de la boca</title>
 <!-- Escena del modo LIVE (sesión 3, grupo de los lunes). Estilos comunes en ../../_comun/escena.css; propios en #esc-propio. -->
-<link rel="stylesheet" href="../../_comun/escena.css">
+<link rel="stylesheet" href="../../comun/escena.css">
 <style id="esc-propio">
 .mk { border: 3px solid var(--fg); border-radius: .6em; overflow: hidden; background: #000; box-shadow: var(--card-shadow); }
 .mk svg { display: block; }
@@ -37,7 +37,8 @@ iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg
   e.style.left = p.x + 'px'; e.style.top = p.y + 'px';
   escena.appendChild(e);          <span class="c">// y CSS la anima</span>
 });</pre>
-        <p class="nota a-in" style="--d:.3s">52 notas medidas del audio: <code>n.hz</code> (agudo o grave), <code>n.fuerza</code> (0–1) y <code>n.boca</code>. Ejercicio en <code>02-notas.html</code>: cambia el símbolo, el color según el tono o la animación <code>@keyframes subir</code>. En esta escena el audio va mudo; en tu copia suena.</p>
+        <div id="taller" class="a-in" style="--d:.3s"></div>
+        <p class="nota a-in" style="--d:.4s">52 notas medidas del audio: <code>n.hz</code> (agudo o grave), <code>n.fuerza</code> (0–1) y <code>n.boca</code>. En tu copia: <code>02-notas.html</code>, cambia el símbolo, el color según el tono o <code>@keyframes subir</code>.</p>
       </div>
     </section>
   </main>
@@ -46,11 +47,17 @@ iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg
 <script type="module">
 import { crearSteamboat } from '/steamboat/kit.js';
 const mk = document.getElementById('mk'); const s = await crearSteamboat(mk);
-const SIM = ['♪', '♫', '♬']; let k = 0;
-s.alNota(n => { const p = s.aPantalla(n.boca); const e = document.createElement('span'); e.className = 'n'; e.textContent = SIM[k++ % 3];
-  const t = Math.min(1, Math.max(0, (n.hz - 800) / 2200)); e.style.cssText = `left:${p.x}px;top:${p.y}px;--tam:${22 + 30 * n.fuerza}px;--col:hsl(${45 - 45 * t} 95% ${55 + 20 * t}%)`;
+let SIM = ['♪', '♫', '♬'], k = 0, tam = 1, vel = 1, colorFijo = null;
+s.alNota(n => { const p = s.aPantalla(n.boca); const e = document.createElement('span'); e.className = 'n'; e.textContent = SIM[k++ % SIM.length];
+  const t = Math.min(1, Math.max(0, (n.hz - 800) / 2200)); e.style.cssText = `left:${p.x}px;top:${p.y}px;--tam:${(22 + 30 * n.fuerza) * tam}px;--col:${colorFijo || `hsl(${45 - 45 * t} 95% ${55 + 20 * t}%)`};animation-duration:${1.8 / vel}s`;
   mk.appendChild(e); e.addEventListener('animationend', () => e.remove()); });
 s.reproducir();
+import('../../comun/taller.js').then(({ montarTaller }) => montarTaller(document.getElementById('taller'), {
+  escena: 'notas', archivo: 'ejemplos/02-notas.html',
+  acciones: { simbolo: (v) => { SIM = [v]; }, tamano: (f) => { tam = f; }, velocidad: (f) => { vel = f; }, colorNota: (c) => { colorFijo = c; },
+    colores: (c) => s.colores(c), pausa: (p) => (p ? s.pausar() : s.reproducir()) },
+  sugerencias: ['que las notas sean corazones', 'notas estrellas más grandes', 'notas rojas', 'que suban más lento', 'notas más rápidas', 'notas 🎵', 'notas flores pequeñas', 'gorro azul'],
+}));
 </script>
 </body>
 </html>
