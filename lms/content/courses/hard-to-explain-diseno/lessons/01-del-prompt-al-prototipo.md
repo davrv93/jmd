@@ -178,6 +178,12 @@ cycle:
     phase: experimentacion
     description: Escribe el mensaje de tu pieza en una frase, un storyboard de cuatro escenas y pídesela al agente con las seis partes.
     check: Tu index.html con 4 escenas reproduce de principio a fin
+  - id: landing-sin-ia
+    title: Landing sin IA (reglas y modelo local)
+    tool: terminal
+    phase: experimentacion
+    description: Con la cuota agotada o sin gateway, saca negocio.json con el extractor por reglas (y el modelo local si está) y construye el sitio con --imagenes no.
+    check: El sitio abre en el Visor con los datos correctos del cliente
   - id: entregar
     title: Entregar la tarea 1
     tool: git
@@ -494,6 +500,16 @@ seis partes.
 
 **Si falla:** Si no tienes un negocio, anima el nombre del taller o un dato que quieras explicar.
 Mejor cuatro escenas bien hechas que diez.
+
+## Si la IA no responde: landing por reglas · Aplicación
+
+La cuota se acaba o el gateway se cae: la landing sale igual, con tres comandos y sin ningún proveedor externo.
+
+1. Pega el texto del cliente en `/trabajo/landing/cliente.txt`.
+2. Saca el JSON: `bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --modelo auto --salida negocio.json`. Las reglas ponen los datos (nombre, WhatsApp, horario, servicios, precios); el modelo pequeño del servidor de la clase, si está, solo redacta los títulos. Lo que falte queda como `[completar]`.
+3. Construye: `bun /opt/skills-curso/s1-landing-estilos/motor/construir.mjs --negocio negocio.json --estilo apple --imagenes no` y ábrelo en el Visor.
+
+**Si falla:** `negocio.whatsapp` vacío → el texto no traía un número de 9 dígitos; escríbelo en el JSON y vuelve a construir.
 
 ## Tareas
 
