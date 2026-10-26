@@ -17,6 +17,7 @@ iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg
 
 .esc-cmd { font-size: .62em; }
 .esc-grid-2 > * { min-width: 0; } .esc-titulo { overflow-wrap: anywhere; }
+.esc-cmd b { color: #ffd34d; font-weight: 700; } .esc-cmd b::before { content: ""; display: inline-block; width: .8em; height: .8em; border-radius: .2em; background: var(--sw); margin-right: .35em; vertical-align: -.05em; border: 1px solid rgba(255,255,255,.4); } .esc-cmd b.vivo { animation: vivo .8s ease-out; } @keyframes vivo { 0% { background: rgba(255,211,77,.45); } 100% { background: transparent; } }
 </style>
 </head>
 <body>
@@ -32,12 +33,12 @@ iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg
       <div>
         <h1 class="esc-titulo a-in" style="--d:.1s">Una paleta: <em>una variable por parte</em></h1>
         <div class="esc-fila a-in" id="chips" style="--d:.2s"></div>
-        <pre class="esc-cmd a-in" style="--d:.3s">#escena {
-  --tinta: #121212;   --cara: #ffe7c2;
-  --gorro: #2f5fa8;   --visera: #1c3a6b;
-  --pantalon: #d6452f;
-  --zapatos: #f2a65a; --cuerpo: #121212;
-  --orejas: #121212;  --guantes: #121212;
+        <pre class="esc-cmd a-in" style="--d:.3s" id="codigo">#escena {
+  --tinta: <b data-p="tinta"></b>;   --cara: <b data-p="cara"></b>;
+  --gorro: <b data-p="gorro"></b>;   --visera: <b data-p="visera"></b>;
+  --pantalon: <b data-p="pantalon"></b>;
+  --zapatos: <b data-p="zapatos"></b>; --cuerpo: <b data-p="cuerpo"></b>;
+  --orejas: <b data-p="orejas"></b>;  --guantes: <b data-p="guantes"></b>;
 }</pre>
         <div id="taller" class="a-in" style="--d:.4s"></div>
         <p class="nota a-in" style="--d:.5s">Regla de 1928: la tinta siempre es la más oscura; cara, pantalón y zapatos claros, para que el contorno se lea. En tu copia: <code>ejemplos/01-colores.html</code>, <code>PALETAS</code>.</p>
@@ -50,11 +51,16 @@ iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg
 import { crearSteamboat } from '/steamboat/kit.js';
 const s = await crearSteamboat(document.getElementById('mk'));
 const P = { Clásico: { tinta: '#121212', cara: '#ffe7c2', gorro: '#2f5fa8', visera: '#1c3a6b', orejas: '#121212', guantes: '#121212', pantalon: '#d6452f', zapatos: '#f2a65a', cuerpo: '#121212', otros: '#ffe7c2' }, Pastel: { tinta: '#2b2340', cara: '#fff3e0', gorro: '#bdd7f3', visera: '#6c5b9e', orejas: '#2b2340', guantes: '#2b2340', pantalon: '#f4c2cf', zapatos: '#efe6a4', cuerpo: '#6c5b9e', otros: '#fff3e0' }, Neón: { tinta: '#0a0014', cara: '#e9ff70', gorro: '#00e5ff', visera: '#7a2bff', orejas: '#ff2bd6', guantes: '#0a0014', pantalon: '#7a2bff', zapatos: '#ff2bd6', cuerpo: '#1a0033', otros: '#e9ff70' }, '1928': { tinta: '#121212', cara: '#bebebe', gorro: '#bebebe', visera: '#121212', orejas: '#121212', guantes: '#121212', pantalon: '#bebebe', zapatos: '#a8a8a8', cuerpo: '#121212', otros: '#bebebe' } }; const caja = document.getElementById('chips');
-for (const n of Object.keys(P)) { const b = document.createElement('button'); b.className = 'esc-chip'; b.textContent = n; b.style.cursor = 'pointer'; b.onclick = () => s.colores(P[n]); caja.appendChild(b); }
-s.colores(P.Clásico); s.reproducir();
+function codigo() {   // el bloque CSS muestra los colores que están puestos ahora mismo
+  const c = s.coloresActuales();
+  for (const b of document.querySelectorAll('#codigo b')) { const v = c[b.dataset.p] || ''; if (b.textContent !== v) { b.textContent = v; b.style.setProperty('--sw', v); b.classList.remove('vivo'); void b.offsetWidth; b.classList.add('vivo'); } }
+}
+const pinta = (c) => { s.colores(c); codigo(); };
+for (const n of Object.keys(P)) { const b = document.createElement('button'); b.className = 'esc-chip'; b.textContent = n; b.style.cursor = 'pointer'; b.onclick = () => pinta(P[n]); caja.appendChild(b); }
+pinta(P.Clásico); s.reproducir();
 import('../../comun/taller.js').then(({ montarTaller }) => montarTaller(document.getElementById('taller'), {
   escena: 'colores', archivo: 'ejemplos/01-colores.html',
-  acciones: { colores: (c) => s.colores(c), pausa: (p) => (p ? s.pausar() : s.reproducir()), vaiven: (v) => s.opciones({ vaiven: v }) },
+  acciones: { colores: (c) => pinta(c), pausa: (p) => (p ? s.pausar() : s.reproducir()), vaiven: (v) => s.opciones({ vaiven: v }) },
   sugerencias: ['gorro azul y zapatos dorados', 'pantalón verde', 'paleta neón', 'paleta pastel', 'blanco y negro', 'cara rosa', 'manos blancas', 'todo oscuro', 'gorro #ff2bd6', 'cámara fija'],
 }));
 </script>

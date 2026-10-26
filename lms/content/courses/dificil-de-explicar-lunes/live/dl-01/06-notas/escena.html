@@ -17,6 +17,7 @@ iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg
 .mk .n { position: absolute; pointer-events: none; font: 700 var(--tam, 34px)/1 Georgia, serif; color: var(--col, #ffd34d); text-shadow: 2px 2px 0 #000; transform: translate(-50%, -50%); animation: subir 1.8s cubic-bezier(.2,.7,.3,1) forwards; }
 @keyframes subir { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.4) } 15% { opacity: 1; transform: translate(-50%,-50%) scale(1.1) } 100% { opacity: 0; transform: translate(calc(-50% - 70px), calc(-50% - 160px)) scale(.9) } }
 .esc-grid-2 > * { min-width: 0; } .esc-titulo { overflow-wrap: anywhere; }
+.esc-cmd b { color: #ffd34d; font-weight: 700; } .esc-cmd b.vivo { animation: vivo .8s ease-out; } @keyframes vivo { 0% { background: rgba(255,211,77,.45); } 100% { background: transparent; } }
 </style>
 </head>
 <body>
@@ -31,11 +32,15 @@ iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg
       <div class="mk a-in" id="mk" style="position:relative"></div>
       <div>
         <h1 class="esc-titulo a-in" style="--d:.1s">El kit avisa en <em>cada nota</em> del silbido</h1>
-        <pre class="esc-cmd a-in" style="--d:.2s">s.alNota(n =&gt; {
+        <pre class="esc-cmd a-in" style="--d:.2s" id="codigo">s.alNota(n =&gt; {
   const p = s.aPantalla(n.boca);   <span class="c">// boca → píxeles</span>
   const e = document.createElement('span');
-  e.className = 'nota'; e.textContent = '♪';
+  e.className = 'nota';
+  e.textContent = <b id="k-sim">'♪'</b>;
   e.style.left = p.x + 'px'; e.style.top = p.y + 'px';
+  e.style.fontSize = <b id="k-tam">(22 + 30 * n.fuerza)</b> + 'px';
+  e.style.color = <b id="k-col">colorPorTono(n.hz)</b>;
+  e.style.animationDuration = <b id="k-vel">'1.8s'</b>;
   escena.appendChild(e);          <span class="c">// y CSS la anima</span>
 });</pre>
         <div id="taller" class="a-in" style="--d:.3s"></div>
@@ -49,13 +54,21 @@ iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg
 import { crearSteamboat } from '/steamboat/kit.js';
 const mk = document.getElementById('mk'); const s = await crearSteamboat(mk);
 let SIM = ['♪', '♫', '♬'], k = 0, tam = 1, vel = 1, colorFijo = null;
+const $k = (id) => document.getElementById(id);
+function codigo() {   // el bloque de código muestra lo que está aplicado ahora mismo
+  $k('k-sim').textContent = SIM.length === 1 ? `'${SIM[0]}'` : "'♪'";
+  $k('k-tam').textContent = tam === 1 ? '(22 + 30 * n.fuerza)' : `${tam} * (22 + 30 * n.fuerza)`;
+  $k('k-col').textContent = colorFijo ? `'${colorFijo}'` : 'colorPorTono(n.hz)';
+  $k('k-vel').textContent = `'${(1.8 / vel).toFixed(1)}s'`;
+  for (const id of ['k-sim', 'k-tam', 'k-col', 'k-vel']) { $k(id).classList.remove('vivo'); void $k(id).offsetWidth; $k(id).classList.add('vivo'); }
+}
 s.alNota(n => { const p = s.aPantalla(n.boca); const e = document.createElement('span'); e.className = 'n'; e.textContent = SIM[k++ % SIM.length];
   const t = Math.min(1, Math.max(0, (n.hz - 800) / 2200)); e.style.cssText = `left:${p.x}px;top:${p.y}px;--tam:${(22 + 30 * n.fuerza) * tam}px;--col:${colorFijo || `hsl(${45 - 45 * t} 95% ${55 + 20 * t}%)`};animation-duration:${1.8 / vel}s`;
   mk.appendChild(e); e.addEventListener('animationend', () => e.remove()); });
-s.reproducir();
+s.colores({ tinta: '#121212', cara: '#ffe7c2', gorro: '#2f5fa8', visera: '#1c3a6b', orejas: '#121212', guantes: '#121212', pantalon: '#d6452f', zapatos: '#f2a65a', cuerpo: '#121212', otros: '#ffe7c2' }); codigo(); s.reproducir();
 import('../../comun/taller.js').then(({ montarTaller }) => montarTaller(document.getElementById('taller'), {
   escena: 'notas', archivo: 'ejemplos/02-notas.html',
-  acciones: { simbolo: (v) => { SIM = [v]; }, tamano: (f) => { tam = f; }, velocidad: (f) => { vel = f; }, colorNota: (c) => { colorFijo = c; },
+  acciones: { simbolo: (v) => { SIM = [v]; codigo(); }, tamano: (f) => { tam = f; codigo(); }, velocidad: (f) => { vel = f; codigo(); }, colorNota: (c) => { colorFijo = c; codigo(); },
     colores: (c) => s.colores(c), pausa: (p) => (p ? s.pausar() : s.reproducir()) },
   sugerencias: ['que las notas sean corazones', 'notas estrellas más grandes', 'notas rojas', 'que suban más lento', 'notas más rápidas', 'notas 🎵', 'notas flores pequeñas', 'gorro azul'],
 }));
