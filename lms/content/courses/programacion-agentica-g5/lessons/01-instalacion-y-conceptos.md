@@ -312,7 +312,13 @@ Trabaja siempre en git: si el agente rompe algo, vuelves atrás con un comando. 
 
 En la terminal del aula del LIVE, la landing de un cliente sale con tres comandos y sin ningún proveedor externo: las reglas sacan los datos del texto y un modelo pequeño del servidor de la clase, si está, redacta los títulos.
 
-1. Pega el texto del cliente: `mkdir -p /trabajo/landing && cd /trabajo/landing && cat > cliente.txt` (cierra con `Ctrl+D`).
+1. Crea la carpeta y guarda el texto del cliente (el bloque termina solo al llegar a `FIN`; no hace falta Ctrl+D):
+   ```bash
+   mkdir -p /trabajo/landing && cd /trabajo/landing
+   cat > cliente.txt <<'FIN'
+   pega aquí el texto del cliente, con todas sus líneas
+   FIN
+   ```
 2. `bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --modelo auto --salida negocio.json`
 3. `bun /opt/skills-curso/s1-landing-estilos/motor/construir.mjs --negocio negocio.json --estilo apple --imagenes no` y ábrelo en el Visor.
 
