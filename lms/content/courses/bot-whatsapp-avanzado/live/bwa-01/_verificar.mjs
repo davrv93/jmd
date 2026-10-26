@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Verifica las escenas de la clase extra g5-04 (Node, sin dependencias):
-//   node live/g5-04/_verificar.mjs
+// Verifica las escenas de la clase extra bwa-01 (Node, sin dependencias):
+//   node live/bwa-01/_verificar.mjs
 // Para cada carpeta NN-nombre: escena.yaml con los campos obligatorios y una fase válida; escena.html sin
 // http:// ni https://, menos de 300 elementos (se cuentan las etiquetas de apertura como aproximación),
 // menos de 1 MB, con el enlace ../../comun/escena.css y con prefers-reduced-motion.

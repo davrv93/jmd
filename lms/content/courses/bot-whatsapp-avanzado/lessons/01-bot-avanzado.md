@@ -1,13 +1,14 @@
 ---
-id: g5-04
-title: "Grupo 5 · Clase extra · El bot avanzado: modelo local, motor de decisiones y embeddings"
-published: false
+id: bwa-01
+title: "Clase 1 · El bot avanzado: modelo local, motor de decisiones y embeddings"
+published: true
+starts_at: 2026-10-25T21:30:00-05:00
 objectives:
-  - id: g5-04-o1
+  - id: bwa-01-o1
     title: Instalar un modelo de lenguaje local, elegir cuantización y contexto, y calcular la RAM que necesita
-  - id: g5-04-o2
+  - id: bwa-01-o2
     title: Explicar por qué el código decide y el modelo solo redacta, y leer una tabla de decisión con hechos y acciones
-  - id: g5-04-o3
+  - id: bwa-01-o3
     title: Medir tokens por segundo en CPU y GPU y entender qué son los embeddings y para qué sirven en un bot
 recording:
   url: ""
@@ -16,36 +17,36 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
-  - id: g5-04-m1
+  - id: bwa-01-m1
     title: Ollama · descargar e instalar (Windows, macOS, Linux)
     kind: link
     url: https://ollama.com/download
-    objective_ids: [g5-04-o1, g5-04-o3]
-  - id: g5-04-m2
+    objective_ids: [bwa-01-o1, bwa-01-o3]
+  - id: bwa-01-m2
     title: Qwen3 en Ollama (0.6B, 1.7B, 4B y sus cuantizaciones)
     kind: link
     url: https://ollama.com/library/qwen3
-    objective_ids: [g5-04-o1]
-  - id: g5-04-m3
+    objective_ids: [bwa-01-o1]
+  - id: bwa-01-m3
     title: llama.cpp · el motor que corre los GGUF en CPU y GPU
     kind: repo
     url: https://github.com/ggml-org/llama.cpp
-    objective_ids: [g5-04-o1, g5-04-o3]
-  - id: g5-04-m4
+    objective_ids: [bwa-01-o1, bwa-01-o3]
+  - id: bwa-01-m4
     title: multilingual-e5-small · el modelo de embeddings del bot de referencia
     kind: doc
     url: https://huggingface.co/intfloat/multilingual-e5-small
-    objective_ids: [g5-04-o3]
-  - id: g5-04-m5
+    objective_ids: [bwa-01-o3]
+  - id: bwa-01-m5
     title: LettuceDetect · detector de alucinaciones (verifica si una frase se apoya en el contexto)
     kind: repo
     url: https://github.com/KRLabsOrg/LettuceDetect
-    objective_ids: [g5-04-o2]
-  - id: g5-04-m6
+    objective_ids: [bwa-01-o2]
+  - id: bwa-01-m6
     title: scikit-learn · regresión logística (la que clasifica sobre los embeddings)
     kind: doc
     url: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
-    objective_ids: [g5-04-o3]
+    objective_ids: [bwa-01-o3]
 cycle:
   - id: ver
     title: Ver la clase
