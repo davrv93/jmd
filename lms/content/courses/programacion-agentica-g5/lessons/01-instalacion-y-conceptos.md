@@ -155,6 +155,12 @@ cycle:
     phase: conceptualizacion
     description: Crea `.opencode/skills/saludo/SKILL.md` con `name` y `description` en el front matter y una instrucción corta. Pídele al agente que la use.
     check: El agente responde usando tu skill
+  - id: landing-sin-ia
+    title: Landing sin IA (reglas y modelo local)
+    tool: terminal
+    phase: experimentacion
+    description: En la terminal del aula, saca negocio.json del texto de un cliente con el extractor por reglas (y el modelo local si está) y construye el sitio con --imagenes no.
+    check: El sitio abre en el Visor con los datos correctos del cliente
   - id: preguntar
     title: Preguntar o responder
     tool: lms
@@ -301,6 +307,16 @@ Trabaja siempre en git: si el agente rompe algo, vuelves atrás con un comando. 
 **MCP, en demostración.** Verás al agente listar cursos y entregar una tarea sin abrir el navegador: herramientas que no vienen de serie (`list_courses`, `submit_assignment`). En `opencode.json` van bajo la clave `mcp`; hoy no lo instalas, solo identifica `type`, `command` y `enabled`.
 
 **Cuando no hay cuota.** El gateway de la clase prueba varios modelos en orden, primero los de pago, luego los gratuitos y, si todos fallan, un modelo pequeño que corre en el propio servidor de la clase. Responde más lento y más corto, pero la clase no se detiene.
+
+## 7. Landing sin IA: reglas y modelo local · Aplicación
+
+En la terminal del aula del LIVE, la landing de un cliente sale con tres comandos y sin ningún proveedor externo: las reglas sacan los datos del texto y un modelo pequeño del servidor de la clase, si está, redacta los títulos.
+
+1. Pega el texto del cliente: `mkdir -p /trabajo/landing && cd /trabajo/landing && cat > cliente.txt` (cierra con `Ctrl+D`).
+2. `bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --modelo auto --salida negocio.json`
+3. `bun /opt/skills-curso/s1-landing-estilos/motor/construir.mjs --negocio negocio.json --estilo apple --imagenes no` y ábrelo en el Visor.
+
+**Si falla:** `negocio.whatsapp` vacío → el texto no traía un número de 9 dígitos; escríbelo en el JSON y vuelve a construir.
 
 ## Palabras de hoy · Conceptos
 

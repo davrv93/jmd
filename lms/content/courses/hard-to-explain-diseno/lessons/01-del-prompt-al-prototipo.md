@@ -178,12 +178,6 @@ cycle:
     phase: experimentacion
     description: Escribe el mensaje de tu pieza en una frase, un storyboard de cuatro escenas y pídesela al agente con las seis partes.
     check: Tu index.html con 4 escenas reproduce de principio a fin
-  - id: landing-sin-ia
-    title: Landing sin IA (reglas y modelo local)
-    tool: terminal
-    phase: experimentacion
-    description: Con la cuota agotada o sin gateway, saca negocio.json con el extractor por reglas (y el modelo local si está) y construye el sitio con --imagenes no.
-    check: El sitio abre en el Visor con los datos correctos del cliente
   - id: entregar
     title: Entregar la tarea 1
     tool: git
