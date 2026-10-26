@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorteo del Grupo 5</title>
+<meta name="description" content="Sorteo en vivo del Grupo 5 · Programación agéntica: 3 finalistas y un único ganador, con azar comprobable.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/sorteo.css">
+</head>
+<body>
+<div class="cinta">
+  <div class="barra">
+    <span class="pastilla"><span class="rec"></span>CINTA 05 · <span id="tc">00:00:00:00</span></span>
+    <span class="pastilla grupo">GRUPO 5 · PROGRAMACIÓN AGÉNTICA</span>
+    <button class="boton-sonido" id="sonido" type="button" aria-pressed="false">♪ SONIDO: NO</button>
+  </div>
+
+  <header class="cabecera">
+    <img class="mickey-chico" id="mickey-chico" alt="" width="150" height="150">
+    <div>
+      <span class="kicker">DIFÍCIL DE EXPLICAR</span>
+      <h1 id="titulo">El gran sorteo</h1>
+      <p>De todos, 3 finalistas. De los 3, un único ganador.</p>
+    </div>
+  </header>
+
+  <main class="escenario" id="escenario" aria-live="polite">
+    <div class="aviso" id="aviso"><span class="paso">CARGANDO…</span></div>
+    <ul class="lista" id="lista"></ul>
+    <section id="zona-finalistas" hidden>
+      <div class="finalistas" id="finalistas"></div>
+    </section>
+    <section class="aleatorio" id="aleatorio" hidden>
+      <div class="mickey-caja" id="mickey-caja">
+        <img class="mickey" id="mickey" alt="Mickey de 1928 en 8 bits" width="320" height="320">
+        <span class="bocadillo" id="bocadillo">¿QUIÉN SERÁ?</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:clamp(14px,3vh,40px);min-width:0;width:100%">
+        <div class="finalistas" id="finalistas2"></div>
+        <div class="ganador-cartel" id="cartel" hidden>
+          <span class="sello">★ ¡GANADOR! ★</span>
+          <span class="nombre" id="nombre-ganador"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <details class="comprobar" id="comprobar">
+      <summary>¿Cómo sé que es al azar? Compruébalo aquí</summary>
+      <p>Al cerrar la lista se publicaron las huellas SHA-256 de dos semillas secretas y de la lista. La ronda 1 revela la primera semilla (de ella salen los 3 finalistas) y la ronda 2 la segunda (de ella sale el ganador). Tu navegador lo recalcula: nadie, ni el organizador, sabe el resultado antes de cada ronda.</p>
+      <div id="huellas" class="huella"></div>
+      <ul id="checks"></ul>
+    </details>
+    <span class="creditos">Mickey de <i>Steamboat Willie</i> (1928), de dominio público, dibujado en píxeles. Estética del taller «Difícil de explicar».</span>
+  </footer>
+</div>
+
+<script type="module">
+import { api, esperar, pad, escapar, corta, verificar, alternarSonido, sonidoActivo, tono, fanfarria } from "./static/comun.js";
+import { mickey } from "./static/mickey.js";
+
+const $ = (id) => document.getElementById(id);
+const PASO = { abierto: ["LISTA ABIERTA", "cielo"], cerrado: ["LISTA CERRADA", "limon"], finalistas: ["RONDA 1 · FINALISTAS", "menta"], ganador: ["RONDA 2 · GANADOR", "rosa"] };
+
+// ---- cinta: código de tiempo a 24 cuadros
+const t0 = performance.now();
+setInterval(() => {
+  const s = (performance.now() - t0) / 1000;
+  $("tc").textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(Math.floor(s) % 60)}:${pad(Math.floor(s * 24) % 24)}`;
+}, 1000 / 24);
+
+// ---- sonido
+const bSon = $("sonido");
+const pintarSon = () => { bSon.setAttribute("aria-pressed", sonidoActivo()); bSon.textContent = sonidoActivo() ? "♪ SONIDO: SÍ" : "♪ SONIDO: NO"; };
+bSon.onclick = () => { alternarSonido(); pintarSon(); tono(660, 0.1); };
+pintarSon();
+
+// ---- Mickey: parpadeo de reposo
+let mirada = 0, gesto = null;
+function pintarMickey(opc = {}) {
+  const o = { mirada, ojos: "abiertos", boca: "sonrisa", ...(gesto || {}), ...opc };
+  $("mickey").src = mickey(o);
+  $("mickey-chico").src = mickey({ ...o, mirada: 0 });
+}
+pintarMickey();
+(async function parpadeo() {
+  for (;;) {
+    await esperar(2600 + Math.random() * 2200);
+    if (gesto) continue;
+    pintarMickey({ ojos: "cerrados" });
+    await esperar(140);
+    pintarMickey();
+  }
+})();
+
+// ---- pintado
+let ultimo = null, animando = false;
+
+function fichas(e, { numeros = true, finalistas = [] } = {}) {
+  const elegidos = new Set(finalistas.map((f) => f.numero));
+  $("lista").classList.toggle("compacta", e.lista.length > 24 || e.fase === "finalistas");
+  $("lista").innerHTML = e.lista.length
+    ? e.lista.map((p) => `<li class="ficha${elegidos.has(p.numero) ? " elegida" : ""}" data-n="${p.numero}">${numeros ? `<span class="num">${pad(p.numero)}</span>` : ""}<span class="nom">${escapar(p.nombre)}</span></li>`).join("")
+    : `<li class="aviso">Todavía no hay inscritos en la lista.</li>`;
+}
+
+function tarjetas(cont, lista, { vacias = false } = {}) {
+  cont.innerHTML = [0, 1, 2].slice(0, Math.max(lista.length, vacias ? 3 : 0)).map((i) => {
+    const p = lista[i];
+    return `<article class="tarjeta${p ? "" : " vacia"}" data-i="${i}"><span class="eti">FINALISTA ${i + 1}</span><span class="nom${p ? " entra" : ""}">${p ? escapar(p.nombre) : "?"}</span><span class="num">${p ? "Nº " + pad(p.numero) : "· · ·"}</span></article>`;
+  }).join("");
+}
+
+function aviso(e) {
+  const [txt, tono] = PASO[e.fase] || ["…", "cielo"];
+  const n = e.lista.length;
+  const extra = {
+    abierto: `${n} participante${n === 1 ? "" : "s"} · la lista se actualiza sola desde el LMS`,
+    cerrado: `${n} participantes · huellas publicadas · listos para la ronda 1`,
+    finalistas: `3 finalistas de ${n} · lo siguiente: el aleatorio de Mickey`,
+    ganador: `1 ganador entre 3 finalistas`,
+  }[e.fase] || "";
+  $("aviso").innerHTML = `<span class="paso" data-tono="${tono}">${txt}</span><span>${extra}</span>`;
+}
+
+async function pintarHuellas(e) {
+  $("huellas").innerHTML = e.huellaLista
+    ? `Lista: ${e.huellaLista}<br>Semilla 1: ${e.compromiso1}<br>Semilla 2: ${e.compromiso2}${e.reaperturas ? `<br>Reaperturas de la lista: ${e.reaperturas}` : ""}${e.semilla1 ? `<br>Semilla 1 revelada: ${e.semilla1}` : ""}${e.semilla2 ? `<br>Semilla 2 revelada: ${e.semilla2}` : ""}`
+    : "Las huellas se publican cuando se cierra la lista.";
+  const v = await verificar(e).catch(() => []);
+  $("checks").innerHTML = v.map(([ok, t]) => `<li class="${ok ? "ok" : "mal"}">${ok ? "✔" : "✘"} ${escapar(t)}</li>`).join("");
+}
+
+function pintar(e) {
+  $("titulo").textContent = "El gran sorteo";
+  aviso(e);
+  const enGanador = e.fase === "ganador";
+  $("lista").hidden = enGanador;
+  $("zona-finalistas").hidden = e.fase !== "finalistas";
+  $("aleatorio").hidden = !enGanador;
+  fichas(e, { numeros: e.fase !== "abierto", finalistas: e.finalistas || [] });
+  if (e.fase === "finalistas") tarjetas($("finalistas"), e.finalistas);
+  if (enGanador) {
+    tarjetas($("finalistas2"), e.finalistas);
+    marcarGanador(e, false);
+  } else {
+    gesto = null; mirada = 0; pintarMickey();
+    $("cartel").hidden = true;
+  }
+  pintarHuellas(e);
+}
+
+function marcarGanador(e, fiesta) {
+  const i = e.finalistas.findIndex((f) => f.numero === e.ganador.numero);
+  document.querySelectorAll("#finalistas2 .tarjeta").forEach((t, j) => { t.classList.remove("foco"); t.classList.toggle("gana", j === i); t.classList.toggle("pierde", j !== i); });
+  $("nombre-ganador").textContent = e.ganador.nombre;
+  $("cartel").hidden = false;
+  $("bocadillo").textContent = "¡YA ESTÁ!";
+  $("mickey-caja").classList.remove("gira");
+  gesto = { ojos: "cerrados", boca: "abierta" };
+  mirada = 0;
+  pintarMickey();
+  if (fiesta) { confeti(); fanfarria(); }
+}
+
+function confeti() {
+  const capa = document.createElement("div");
+  capa.className = "confeti";
+  const colores = ["#ff3f9b", "#ffe680", "#9fd8ff", "#b8ead0", "#cbbcff", "#ffc9a8", "#1e2230"];
+  for (let i = 0; i < 140; i++) {
+    const c = document.createElement("i");
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.background = colores[i % colores.length];
+    c.style.setProperty("--dx", (Math.random() * 30 - 15) + "vw");
+    c.style.setProperty("--r", Math.round(Math.random() * 4) * 90 + "deg");
+    c.style.animationDuration = 2.4 + Math.random() * 2.6 + "s";
+    c.style.animationDelay = Math.random() * 0.9 + "s";
+    capa.appendChild(c);
+  }
+  document.body.appendChild(capa);
+  setTimeout(() => capa.remove(), 7000);
+}
+
+// ---- ronda 1: el cursor salta entre los nombres y se detiene en cada finalista
+async function animarRonda1(e) {
+  aviso({ ...e, fase: "cerrado" });
+  $("aviso").innerHTML = `<span class="paso" data-tono="menta">RONDA 1</span><span>Barajando a los ${e.lista.length} participantes…</span>`;
+  fichas(e, { numeros: true });
+  $("zona-finalistas").hidden = false;
+  $("aleatorio").hidden = true;
+  tarjetas($("finalistas"), [], { vacias: true });
+  const elegidos = [];
+  for (let k = 0; k < e.finalistas.length; k++) {
+    const meta = e.finalistas[k].numero;
+    const libres = () => [...document.querySelectorAll("#lista .ficha")].filter((f) => !f.classList.contains("elegida"));
+    const pasos = k === 0 ? 30 : 20;
+    let previo = null;
+    for (let s = 0; s < pasos; s++) {
+      const cand = libres();
+      let f = cand[Math.floor(Math.random() * cand.length)];
+      if (s === pasos - 1) f = document.querySelector(`#lista .ficha[data-n="${meta}"]`);
+      if (previo) previo.classList.remove("foco");
+      f.classList.add("foco");
+      previo = f;
+      tono(520 + (s % 6) * 70, 0.05, 0.025, "square");
+      await esperar(55 + 380 * Math.pow(s / pasos, 2.4));
+    }
+    previo.classList.remove("foco");
+    previo.classList.add("elegida");
+    elegidos.push(e.finalistas[k]);
+    tarjetas($("finalistas"), elegidos, { vacias: true });
+    tono(784, 0.18, 0.04); tono(1046.5, 0.25, 0.035, "triangle", 0.12);
+    await esperar(900);
+  }
+  await esperar(500);
+}
+
+// ---- ronda 2: el aleatorio de Mickey (mira a cada finalista y se detiene en el ganador)
+async function animarRonda2(e) {
+  $("lista").hidden = true;
+  $("zona-finalistas").hidden = true;
+  $("aleatorio").hidden = false;
+  $("cartel").hidden = true;
+  $("aviso").innerHTML = `<span class="paso" data-tono="rosa">RONDA 2</span><span>El aleatorio de Mickey elige entre los 3 finalistas…</span>`;
+  tarjetas($("finalistas2"), e.finalistas);
+  const cartas = [...document.querySelectorAll("#finalistas2 .tarjeta")];
+  const n = cartas.length;
+  const meta = e.finalistas.findIndex((f) => f.numero === e.ganador.numero);
+  let i = Math.floor(Math.random() * n);
+  let pasos = 30 + Math.floor(Math.random() * 6);
+  while ((i + pasos) % n !== meta) pasos++;
+  $("bocadillo").textContent = "¿QUIÉN SERÁ?";
+  $("mickey-caja").classList.add("gira");
+  const mov = matchMedia("(max-width: 760px)").matches ? [0, 0, 0] : [-1, 0, 1];
+  for (let s = 1; s <= pasos; s++) {
+    i = (i + 1) % n;
+    cartas.forEach((c, j) => c.classList.toggle("foco", j === i));
+    mirada = n === 3 ? mov[i] : i === 0 ? -1 : 1;
+    gesto = { boca: s % 2 ? "abierta" : "sonrisa" };
+    $("mickey-caja").style.setProperty("--giro", `${s * 15}deg`);
+    pintarMickey();
+    tono([392, 523.25, 659.25][i % 3], 0.07, 0.03, "square");
+    await esperar(60 + 520 * Math.pow(s / pasos, 2.6));
+  }
+  $("bocadillo").textContent = "¡ESTE!";
+  await esperar(700);
+  marcarGanador(e, true);
+  aviso(e);
+}
+
+const ORDEN = { abierto: 0, cerrado: 1, finalistas: 2, ganador: 3 };
+async function ciclo() {
+  let e;
+  try { e = await api("api/estado"); } catch { return; }
+  if (animando) return;
+  const antes = ultimo;
+  ultimo = e;
+  const nueva = !antes || antes.edicion !== e.edicion;
+  if (!nueva && antes.fase === "cerrado" && e.fase === "finalistas") {
+    animando = true;
+    try { await animarRonda1(e); } finally { animando = false; }
+  } else if (!nueva && (antes.fase === "finalistas" || antes.fase === "cerrado") && e.fase === "ganador") {
+    animando = true;
+    try {
+      if (antes.fase === "cerrado") await animarRonda1(e);
+      await animarRonda2(e);
+    } finally { animando = false; }
+    pintarHuellas(e);
+    return;
+  }
+  if (!antes || JSON.stringify(antes) !== JSON.stringify(e) || nueva) pintar(e);
+}
+ciclo();
+setInterval(ciclo, 1200);
+</script>
+</body>
+</html>

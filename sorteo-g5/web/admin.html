@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin del sorteo G5</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/sorteo.css">
+</head>
+<body class="admin">
+<main>
+  <header class="cabecera">
+    <img class="mickey-chico" id="mickey-chico" alt="" width="96" height="96" style="width:84px">
+    <div>
+      <span class="kicker">ADMIN · DIFÍCIL DE EXPLICAR</span>
+      <h1 style="font-size:clamp(32px,5vw,64px)">Sorteo del Grupo 5</h1>
+    </div>
+  </header>
+
+  <section class="panel" id="entrar">
+    <h2>Entrar</h2>
+    <form class="fila" id="form-clave">
+      <input class="campo" id="clave" type="password" autocomplete="current-password" placeholder="Clave del organizador" required>
+      <button class="btn prim" type="submit">Entrar</button>
+    </form>
+    <p class="mensaje" id="msg-clave"></p>
+  </section>
+
+  <div id="trabajo" hidden style="display:grid;gap:18px">
+    <section class="panel">
+      <h2>Estado: <span id="fase"></span></h2>
+      <p id="resumen"></p>
+      <p class="huella" id="huellas"></p>
+      <div class="fila" style="margin-top:12px">
+        <a class="btn azul" href="./" target="_blank" rel="noopener">Abrir la pantalla ↗</a>
+        <button class="btn prim" id="b-cerrar">1 · Cerrar lista y publicar huellas</button>
+        <button class="btn" id="b-reabrir">Reabrir lista</button>
+        <button class="btn verde" id="b-r1">2 · Ronda 1: 3 finalistas</button>
+        <button class="btn verde" id="b-r2">3 · Ronda 2: aleatorio de Mickey</button>
+        <button class="btn peligro" id="b-reiniciar">Reiniciar sorteo</button>
+      </div>
+      <p class="mensaje" id="msg"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Participantes (<span id="n"></span>)</h2>
+      <p id="sinc" class="huella"></p>
+      <form class="fila" id="form-agregar" style="margin:10px 0">
+        <input class="campo" id="nuevo" placeholder="Añadir a alguien que no está en el LMS" maxlength="60">
+        <button class="btn" type="submit">Añadir</button>
+      </form>
+      <ul class="personas" id="personas"></ul>
+    </section>
+  </div>
+</main>
+
+<div class="modal-fondo" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-tit">
+    <h3 id="m-tit"></h3>
+    <p id="m-txt"></p>
+    <div class="fila"><button class="btn prim" id="m-si">Sí</button><button class="btn" id="m-no">Cancelar</button></div>
+  </div>
+</div>
+
+<script type="module">
+import { api, escapar, pad } from "./static/comun.js";
+import { mickey } from "./static/mickey.js";
+const $ = (id) => document.getElementById(id);
+$("mickey-chico").src = mickey({});
+let clave = "";
+try { clave = sessionStorage.getItem("sorteo-g5-clave") || ""; } catch {}
+const pedir = (ruta, cuerpo) => api(ruta, { method: cuerpo === undefined ? "GET" : "POST", headers: { "X-Clave": clave }, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
+
+function confirmar(titulo, texto, peligro = false) {
+  return new Promise((fin) => {
+    $("m-tit").textContent = titulo; $("m-txt").textContent = texto;
+    $("m-si").className = "btn " + (peligro ? "peligro" : "prim");
+    $("modal").hidden = false; $("m-si").focus();
+    const cerrar = (v) => { $("modal").hidden = true; document.removeEventListener("keydown", tecla); fin(v); };
+    const tecla = (ev) => { if (ev.key === "Escape") cerrar(false); };
+    document.addEventListener("keydown", tecla);
+    $("m-si").onclick = () => cerrar(true);
+    $("m-no").onclick = () => cerrar(false);
+  });
+}
+const msg = (t, tipo = "ok") => { $("msg").textContent = t; $("msg").className = "mensaje " + tipo; };
+
+const FASE = { abierto: "lista abierta", cerrado: "lista cerrada (huellas publicadas)", finalistas: "ronda 1 hecha: 3 finalistas", ganador: "ronda 2 hecha: hay ganador" };
+function pintar(e) {
+  $("entrar").hidden = true; $("trabajo").hidden = false;
+  $("fase").textContent = FASE[e.fase] || e.fase;
+  const n = e.lista.length;
+  $("n").textContent = n;
+  let r = `Edición ${e.edicion}. ${n} participantes en la lista${e.fase === "abierto" ? " (aún se puede cambiar)" : " congelada"}.`;
+  if (e.finalistas) r += ` Finalistas: ${e.finalistas.map((f) => `${pad(f.numero)} ${f.nombre}`).join(" · ")}.`;
+  if (e.ganador) r += ` Ganador: ${pad(e.ganador.numero)} ${e.ganador.nombre}.`;
+  $("resumen").textContent = r;
+  $("huellas").textContent = e.huellaLista ? `Huella lista ${e.huellaLista} · semilla 1 ${e.compromiso1.slice(0, 16)}… · semilla 2 ${e.compromiso2.slice(0, 16)}…` : "";
+  $("sinc").textContent = e.sincEn ? `Última lectura del LMS: ${new Date(e.sincEn).toLocaleString("es-PE", { timeZone: "America/Lima" })} (cada minuto mientras la lista está abierta).` : "Aún no ha llegado la lista del LMS.";
+  $("b-cerrar").disabled = e.fase !== "abierto";
+  $("b-reabrir").disabled = e.fase !== "cerrado";
+  $("b-r1").disabled = e.fase !== "cerrado";
+  $("b-r2").disabled = e.fase !== "finalistas";
+  const abierta = e.fase === "abierto";
+  $("form-agregar").hidden = !abierta;
+  $("personas").innerHTML = (e.personas || []).map((p) => `<li class="${p.excluido ? "fuera" : ""}"><span>${escapar(p.nombre)} <span class="origen">· ${p.origen === "lms" ? "LMS" : "añadido a mano"}</span></span>${abierta ? `<button class="btn" data-id="${escapar(p.id)}" data-fuera="${!p.excluido}">${p.excluido ? "Volver a incluir" : p.origen === "lms" ? "Excluir" : "Quitar"}</button>` : ""}</li>`).join("") || "<li>Sin participantes todavía.</li>";
+}
+
+async function cargar() {
+  try { pintar(await pedir("api/admin/estado")); }
+  catch (err) { $("entrar").hidden = false; $("trabajo").hidden = true; if (clave) $("msg-clave").textContent = err.message; $("msg-clave").className = "mensaje error"; }
+}
+$("form-clave").onsubmit = (ev) => { ev.preventDefault(); clave = $("clave").value; try { sessionStorage.setItem("sorteo-g5-clave", clave); } catch {} cargar(); };
+$("form-agregar").onsubmit = async (ev) => { ev.preventDefault(); try { pintar(await pedir("api/admin/agregar", { nombre: $("nuevo").value })); $("nuevo").value = ""; msg("Añadido."); } catch (err) { msg(err.message, "error"); } };
+$("personas").onclick = async (ev) => {
+  const b = ev.target.closest("button[data-id]"); if (!b) return;
+  try { pintar(await pedir("api/admin/excluir", { id: b.dataset.id, excluido: b.dataset.fuera === "true" })); msg("Lista actualizada."); } catch (err) { msg(err.message, "error"); }
+};
+const accion = (id, ruta, titulo, texto, peligro, hecho) => { $(id).onclick = async () => {
+  if (!(await confirmar(titulo, texto, peligro))) return;
+  try { pintar(await pedir(ruta, {})); msg(hecho); } catch (err) { msg(err.message, "error"); }
+}; };
+accion("b-cerrar", "api/admin/cerrar", "¿Cerrar la lista?", "Se congela la lista, se numeran los participantes y se publican las huellas de las dos semillas. Después ya no entra nadie más.", false, "Lista cerrada. Huellas publicadas en la pantalla.");
+accion("b-reabrir", "api/admin/reabrir", "¿Reabrir la lista?", "Se descartan las semillas y la reapertura queda a la vista en la pantalla.", false, "Lista reabierta.");
+accion("b-r1", "api/admin/ronda1", "¿Lanzar la ronda 1?", "Se revela la semilla 1 y la pantalla elige a los 3 finalistas.", false, "Ronda 1 lanzada: mira la pantalla.");
+accion("b-r2", "api/admin/ronda2", "¿Lanzar la ronda 2?", "Se revela la semilla 2 y el aleatorio de Mickey elige al único ganador.", false, "Ronda 2 lanzada: mira la pantalla.");
+accion("b-reiniciar", "api/admin/reiniciar", "¿Reiniciar el sorteo?", "Vuelve a «lista abierta» con la misma lista y descarta semillas y resultados. Úsalo solo para empezar de nuevo.", true, "Sorteo reiniciado.");
+cargar();
+setInterval(() => { if (clave && $("modal").hidden) cargar(); }, 5000);
+</script>
+</body>
+</html>
