@@ -75,20 +75,62 @@ Los estilos están **inspirados en** esas estéticas: no usan logos, nombres de 
 ## Sin IA (sin cuota o sin gateway): reglas programadas
 
 Si el agente no responde (cuota agotada, gateway caído), la landing sale igual. El motor trae un
-extractor por reglas que lee el texto del cliente y arma `negocio.json` sin ningún modelo:
+extractor por reglas que lee el texto del cliente y arma `negocio.json` sin ningún modelo. Tres comandos:
 
 ```bash
 cd /trabajo/landing
 cat > cliente.txt   # pega el texto del cliente y cierra con Ctrl+D
-bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --salida negocio.json
+bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --salida negocio.json --modelo no
 bun /opt/skills-curso/s1-landing-estilos/motor/construir.mjs --negocio negocio.json --estilo apple --imagenes no
 ```
 
-Saca nombre, rubro, ciudad, dirección, WhatsApp, correo, horario, servicios (viñetas o lista tras
-«ofrecemos/servicios»), precios «S/ 25», promoción y preguntas «¿…?». Lo que no encuentra lo deja
-fuera o como `[completar]` y lo avisa: revisa el JSON antes de construir. Los textos creativos (lema,
-título) quedan genéricos; si luego vuelve la IA, pídele solo «mejora hero.titulo y hero.subtitulo
-de negocio.json sin cambiar los datos». Con `--imagenes no` el sitio lleva marcadores en vez de fotos.
+Qué saca: **nombre**, **rubro** (catálogo de 127 giros del Perú con sinónimos y sin tilde: «botica» →
+farmacia, «cebichería» → cevichería, «gym» → gimnasio, «barber» → barbería…), **ciudad** (también por
+distrito: Miraflores → Lima), **dirección**, **WhatsApp** (con +51, guiones o pegado), correo, horario,
+**servicios** (viñetas `-`, `•`, `✅`, `1.`, o la lista tras «ofrecemos», «servicios:», «Carta:»…),
+**precios** «S/ 25» o «a 25 soles», promoción, lema y preguntas «¿…?». Cada giro trae su palabra de menú
+(Carta, Productos, Tratamientos, Cursos, Propiedades…), un título genérico que no afirma hechos y la
+descripción de la imagen principal. Lo que no encuentra lo deja fuera o como `[completar]` y lo avisa:
+revisa el JSON antes de construir. Con `--imagenes no` el sitio lleva marcadores en vez de fotos.
+
+**Con el modelo de la clase** (cuando el gateway responde): si en el aula están `JMD_URL` y
+`JMD_API_KEY`, quita `--modelo no` (o pon `--modelo qwen-landing`) y `extraer.mjs` pide al modelo
+pequeño de la clase **solo la redacción**: `hero.titulo`, `hero.subtitulo`, `hero.antetitulo`, el lema
+(si el cliente dio uno) y el texto de los servicios a los que el cliente no puso descripción. Los
+**hechos** (nombre, WhatsApp, teléfono, correo, dirección, horario, ciudad, lista de servicios, precios,
+oferta) salen **siempre** de las reglas. Un texto del modelo con un número que no está en el escrito del
+cliente se descarta. Si el modelo falla, tarda más de 60 s o no devuelve JSON, sigue solo con reglas y lo
+dice en stderr. `--modelo auto` (por defecto) usa el modelo solo si las dos variables existen.
+
+**Resultados sobre el banco de 100 giros** (`motor/pruebas/giros-100.jsonl`: un texto por giro, en 8
+formas de escribir —WhatsApp corrido, correo, notas con viñetas, todo en minúsculas, con emojis,
+telegrama sin presentación, lista numerada, lista escueta—, con y sin precios, horario, dirección,
+promoción y preguntas). Se corre con `bun motor/pruebas/probar-extraer.mjs`; construye los 100 sitios
+con `--imagenes no` rotando los 8 estilos en una carpeta temporal que borra al final (0,3 s en total).
+
+| Métrica | Antes (v1, 70 palabras de rubro) | Ahora | Meta |
+|---|---|---|---|
+| JSON válido | 100/100 | 100/100 | 100 |
+| Construcción OK (8 estilos) | — | 100/100 | 100 |
+| Nombre | 88 | 100 | ≥ 98 |
+| WhatsApp | 100 | 100 | ≥ 98 |
+| Rubro (canónico) | 21 | 100 | ≥ 95 |
+| Ciudad | 81 | 100 | — |
+| Servicios exactos | 59 | 100 | ≥ 80 |
+| Sin precios inventados | 100 | 100 | 100 |
+| Dirección / horario / lema | 56 / 85 / 97 | 100 / 100 / 100 | — |
+| Precios exactos / oferta | 57 / 99 | 100 / 100 | — |
+
+(«Antes» es la primera versión del extractor sobre este mismo banco; en rubro fallaba porque devolvía la
+palabra tal cual —«botica», no «farmacia»— y le faltaba la mayoría de los giros. En v1 los precios
+iban en `items`, que el motor no dibuja; ahora van en `planes` y salen en el sitio.)
+
+Límites conocidos: una lista en minúsculas unida con «y» («corte, barba y cejas») deja los dos últimos
+juntos; los servicios tienen que venir en viñetas o tras una palabra clave («ofrecemos», «servicios:»,
+el nombre de la sección); un rubro fuera del catálogo se avisa y queda como lo escribió el cliente.
+Para regenerar el banco: `bun motor/pruebas/generar-banco.mjs` (determinista). La mezcla con el modelo se
+prueba sin red con `bun motor/pruebas/probar-mezcla.mjs` (gateway falso en localhost: JSON bueno, basura,
+cifra inventada, lento y error 500).
 
 ## Verificación antes de entregar
 
