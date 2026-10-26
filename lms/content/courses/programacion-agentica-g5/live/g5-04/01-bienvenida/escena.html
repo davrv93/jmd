@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Bienvenida: tres piezas, no un modelo más grande</title>
+<!--
+  Escena del modo LIVE (clase extra g5-04). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: tres interruptores apagan una pieza del bot y el diagrama y el resultado cambian.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .35); }
+.esc-titulo { font-size: 1.5em; }
+.s4-btn { font: 700 .74em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .65em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); transition: transform .15s, background .15s, color .15s; }
+.s4-btn:hover { transform: translateY(-1px); }
+.s4-btn[aria-pressed="true"] { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.s4-btn[aria-pressed="false"] { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+.s4-et { font-size: .66em; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+.s4-b1 { display: grid; grid-template-columns: 1.45fr 1fr; gap: 2vw; align-items: stretch; min-height: 0; }
+.s4-diag { padding: .9em 1.1em .6em; display: grid; gap: .4em; }
+.s4-diag svg { max-height: 38vh; }
+.s4-diag text { font-size: 20px; font-weight: 700; }
+.s4-diag text.m { fill: var(--muted); font-weight: 500; font-size: 17px; }
+.s4-nodo rect { fill: var(--s1); stroke: var(--line2); stroke-width: 3; transition: opacity .3s, stroke .3s; }
+.s4-nodo.ac rect { stroke: var(--accent); }
+.s4-nodo.ok rect { stroke: var(--ok); }
+.s4-nodo.g rect { stroke: var(--gold); }
+.s4-nodo.off { opacity: .28; }
+.s4-nodo.off rect { stroke-dasharray: 8 8; }
+.s4-fl { fill: none; stroke: var(--line2); stroke-width: 3; marker-end: url(#s4-p); }
+.s4-fl.ac { stroke: var(--accent); }
+.s4-pq { fill: var(--line2); }
+.s4-msg { fill: var(--s3); }
+.s4-der { display: grid; gap: 1vh; align-content: center; font-size: .9em; }
+.s4-pieza { display: grid; grid-template-columns: 1fr auto; gap: .2em 1em; align-items: center; padding: .7em 1.1em; }
+.s4-pieza h3 { margin: 0; font-size: .95em; }
+.s4-pieza p { grid-column: 1 / -1; margin: 0; }
+.s4-pieza .s4-btn { min-width: 6.5em; }
+.s4-res { padding: .8em 1.1em; border-left: 5px solid var(--accent); transition: border-color .3s; }
+.s4-res.mal { border-left-color: var(--bad); }
+.s4-res p { margin: 0; color: var(--fg); font-size: .9em; }
+.s4-res b { color: var(--accent); }
+.s4-res.mal b { color: var(--bad); }
+.s4-ruta { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5em; }
+.s4-ruta li { display: inline-flex; align-items: center; gap: .5em; padding: .28em .8em .28em .3em; border-radius: 999px; background: var(--s1); border: 1px solid var(--line); font-weight: 700; font-size: .72em; }
+.s4-ruta b { display: grid; place-items: center; width: 1.65em; height: 1.65em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .82em; }
+@keyframes s4-viaja { 0% { opacity: 0; transform: translateX(0); } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; transform: translateX(860px); } }
+.s4-pk { animation: s4-viaja 6s linear infinite; }
+.s4-pk circle { fill: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .s4-pk { animation: none !important; opacity: 0; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 5 · Extra · E01</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <span class="esc-chip a-in">Clase extra · El bot avanzado</span>
+      <h1 class="esc-titulo a-in" style="--d:.1s">Un bot avanzado no es un modelo más grande: <em>son tres piezas</em></h1>
+      <p class="esc-sub a-in" style="--d:.2s">Apaga una pieza y mira qué se rompe. Los modelos proponen; el código decide.</p>
+    </div>
+    <div class="s4-b1">
+      <section class="esc-card s4-diag a-in" style="--d:.3s" aria-label="Diagrama: cómo pasa un mensaje por las tres piezas">
+        <span class="s4-et">Qué pasa con un mensaje</span>
+        <svg class="esc-svg" viewBox="0 0 1000 420" role="img" aria-label="Mensaje, comprensión, motor de decisiones, modelo local, compuerta y respuesta, unidos por flechas">
+          <defs><marker id="s4-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="s4-pq" d="M0 0 L10 5 L0 10 Z"/></marker></defs>
+          <g class="s4-nodo" id="n-msg"><rect class="s4-msg" x="20" y="150" width="150" height="90" rx="18"/><text x="95" y="188" text-anchor="middle">Mensaje</text><text class="m" x="95" y="216" text-anchor="middle">«cuánto está?»</text></g>
+          <path class="s4-fl" d="M172 195 L218 195"/>
+          <g class="s4-nodo ok" id="n-comp"><rect x="222" y="130" width="190" height="130" rx="18"/><text x="317" y="172" text-anchor="middle">Comprensión</text><text class="m" x="317" y="200" text-anchor="middle">e5 + regresión</text><text class="m" x="317" y="226" text-anchor="middle">→ pide: precio</text></g>
+          <path class="s4-fl" d="M414 195 L460 195"/>
+          <g class="s4-nodo ac" id="n-motor"><rect x="464" y="110" width="210" height="170" rx="18"/><text x="569" y="152" text-anchor="middle">Motor de</text><text x="569" y="178" text-anchor="middle">decisiones</text><text class="m" x="569" y="210" text-anchor="middle">hechos → fila → acción</text><text class="m" x="569" y="238" text-anchor="middle">datos del catálogo</text></g>
+          <path class="s4-fl" d="M676 195 L722 195"/>
+          <g class="s4-nodo g" id="n-modelo"><rect x="726" y="130" width="190" height="130" rx="18"/><text x="821" y="172" text-anchor="middle">Modelo local</text><text class="m" x="821" y="200" text-anchor="middle">Qwen3 en tu CPU</text><text class="m" x="821" y="226" text-anchor="middle">solo la forma</text></g>
+          <path class="s4-fl" d="M821 262 L821 300"/>
+          <g class="s4-nodo ok" id="n-comp2"><rect x="700" y="304" width="242" height="90" rx="18"/><text x="821" y="340" text-anchor="middle">Compuerta factual</text><text class="m" x="821" y="368" text-anchor="middle">¿algún dato nuevo? → fuera</text></g>
+          <path class="s4-fl" d="M698 349 L80 349 L80 262"/>
+          <text class="m" x="390" y="340" text-anchor="middle" id="t-resp">Respuesta: «El Polo básico está a S/ 35» · ≈ 3 s en 2 vCPU</text>
+          <g class="s4-pk" aria-hidden="true"><circle cx="95" cy="195" r="9"/></g>
+        </svg>
+      </section>
+      <aside class="s4-der">
+        <div class="esc-card s4-pieza a-in" style="--d:.4s">
+          <h3>Modelo local</h3><button type="button" class="s4-btn" data-pieza="modelo" aria-pressed="true">Encendido</button>
+          <p>Corre en tu máquina sin API ni cuota. Redacta o elige entre variantes. No decide nada.</p>
+        </div>
+        <div class="esc-card s4-pieza a-in" style="--d:.5s">
+          <h3>Motor de decisiones</h3><button type="button" class="s4-btn" data-pieza="motor" aria-pressed="true">Encendido</button>
+          <p>Lee el mensaje una vez, saca hechos con nombre y aplica una tabla: fila que dispara → acción.</p>
+        </div>
+        <div class="esc-card s4-pieza a-in" style="--d:.6s">
+          <h3>Comprensión (embeddings)</h3><button type="button" class="s4-btn" data-pieza="comp" aria-pressed="true">Encendido</button>
+          <p>Convierte la frase en un vector y una regresión logística dice qué pide: precio, envío, talla…</p>
+        </div>
+        <div class="esc-card s4-res a-in" id="res" style="--d:.7s"><p id="res-t"><b>Las tres encendidas.</b> Hechos → fila de la tabla → plantilla con datos del catálogo → el modelo elige la forma → compuerta → respuesta correcta en ≈ 3 s en 2 vCPU; 6 de cada 10 turnos ni llaman al modelo.</p></div>
+      </aside>
+    </div>
+    <ol class="s4-ruta a-in" style="--d:.8s" aria-label="La ruta de hoy">
+      <li><b>1</b>Tres piezas</li><li><b>2</b>Instalar un modelo local</li><li><b>3</b>Motor de decisiones</li><li><b>4</b>CPU y GPU</li><li><b>5</b>Embeddings</li><li><b>6</b>Pregunta y tarea</li>
+    </ol>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando puedas nombrar las tres piezas sin mirar</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var on = { modelo: true, motor: true, comp: true };
+  var NODOS = { modelo: ["n-modelo", "n-comp2"], motor: ["n-motor"], comp: ["n-comp"] };
+  var TXT = {
+    modelo: "<b>Sin modelo local:</b> el bot sigue funcionando con los textos base de las plantillas, correctos pero siempre iguales. O pagas una API por cada mensaje y dependes de su cuota.",
+    motor: "<b>Sin motor:</b> el modelo decide solo. Suena bien, pero inventa precio y talla, promete descuentos que no existen y nadie deriva al cliente a una persona.",
+    comp: "<b>Sin comprensión:</b> las reglas solas detectan el 66 % de lo que pide el cliente. «Ya pagué» con otras palabras se pierde 7 de cada 8 veces."
+  };
+  var res = document.getElementById("res"), rt = document.getElementById("res-t"), tr = document.getElementById("t-resp");
+  function pintar() {
+    var apagadas = Object.keys(on).filter(function (k) { return !on[k]; });
+    Object.keys(NODOS).forEach(function (k) {
+      NODOS[k].forEach(function (id) { document.getElementById(id).classList.toggle("off", !on[k]); });
+    });
+    if (!apagadas.length) {
+      res.classList.remove("mal");
+      rt.innerHTML = "<b>Las tres encendidas.</b> Hechos → fila de la tabla → plantilla con datos del catálogo → el modelo elige la forma → compuerta → respuesta correcta en ≈ 3 s en 2 vCPU; 6 de cada 10 turnos ni llaman al modelo.";
+      tr.textContent = "Respuesta: «El Polo básico está a S/ 35» · ≈ 3 s en 2 vCPU";
+      return;
+    }
+    res.classList.toggle("mal", !on.motor);
+    rt.innerHTML = apagadas.map(function (k) { return TXT[k]; }).join(" ");
+    tr.textContent = !on.motor ? "Respuesta: «¡Está a S/ 29,90 con 20 % de descuento!» (inventado)" :
+      !on.modelo ? "Respuesta: «El Polo básico está a S/ 35.» (texto base, siempre igual)" :
+      "Respuesta: «¿Me repites qué necesitas?» (no entendió el pedido)";
+  }
+  document.querySelectorAll("[data-pieza]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var k = b.getAttribute("data-pieza");
+      on[k] = !on[k];
+      b.setAttribute("aria-pressed", on[k] ? "true" : "false");
+      b.textContent = on[k] ? "Encendido" : "Apagado";
+      pintar();
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Simulador: instalar un modelo local</title>
+<!--
+  Escena del modo LIVE (clase extra g5-04). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: el alumno elige modelo, cuantización, contexto, temperatura y cómputo; la RAM se calcula al vuelo
+  (pesos × bytes por parámetro + caché KV del contexto + motor) y una descarga simulada termina en una prueba.
+  Nada se guarda en el servidor.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.4em; }
+.s4-btn { font: 700 .74em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.s4-btn:hover { transform: translateY(-1px); }
+.s4-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); padding: .8em 1.4em; font-size: .82em; }
+.s4-btn.pri:disabled { opacity: .5; cursor: wait; transform: none; }
+.s4-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.s4-et { font-size: .64em; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.s4-seg { display: flex; gap: .35em; flex-wrap: wrap; }
+.s4-ctrl { display: grid; gap: .3em; }
+.s4-ctrl select { font: inherit; font-size: .8em; padding: .45em .7em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); min-width: 0; width: 100%; }
+.s4-ctrl input[type=range] { accent-color: var(--accent); width: 100%; margin: .2em 0 0; }
+.s4-ctrl .v { font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.s4-b2 { display: grid; grid-template-columns: 1.05fr 1.25fr; gap: 1.6vw; min-height: 0; font-size: .9em; }
+.s4-conf { padding: .9em 1.1em; display: grid; gap: 1.1vh; align-content: start; }
+.s4-der { display: grid; gap: 1.2vh; align-content: start; }
+.s4-ram { padding: .8em 1.1em; display: grid; gap: .5em; }
+.s4-ram-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 1em; }
+.s4-ram-tot { font-size: 1.9em; font-weight: 800; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--accent); }
+.s4-ram-tot.mal { color: var(--bad); }
+.s4-barra { position: relative; height: 1.5em; border-radius: .5em; background: var(--s3); overflow: hidden; display: flex; }
+.s4-barra i { display: block; height: 100%; transition: width .4s cubic-bezier(.2,.7,.2,1); }
+.s4-barra .p { background: var(--accent); }
+.s4-barra .k { background: var(--gold); }
+.s4-barra .b { background: var(--muted); }
+.s4-marcas { position: relative; height: 1.5em; font-size: .62em; color: var(--muted); }
+.s4-marcas span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; padding-top: .3em; border-left: 2px dashed var(--line2); padding-left: .3em; }
+.s4-ley { display: flex; gap: 1.2em; font-size: .68em; color: var(--muted); flex-wrap: wrap; }
+.s4-ley i { display: inline-block; width: .9em; height: .9em; border-radius: .25em; vertical-align: -.1em; margin-right: .35em; }
+.s4-desc { padding: .8em 1.1em; display: grid; gap: .5em; }
+.s4-prog { height: .9em; border-radius: 99px; background: var(--s3); overflow: hidden; }
+.s4-prog i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--est-g)); border-radius: 99px; transition: width .25s linear; }
+.s4-log { margin: 0; font: 600 .68em/1.5 var(--mono); color: var(--fg); min-height: 4em; white-space: pre-wrap; }
+.s4-log .ok { color: var(--ok); } .s4-log .no { color: var(--bad); } .s4-log .m { color: var(--muted); }
+.s4-var { padding: .6em .9em; border-top: 1px solid var(--line); margin-top: .2em; }
+.s4-var h3 { margin: 0 0 .25em; font-size: .95em; }
+.s4-var p { margin: 0; font-size: .82em; color: var(--muted); }
+.s4-var p b { color: var(--fg); }
+.s4-logro { display: none; }
+.s4-logro.ver { display: inline-flex; animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 5 · Extra · E02</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Instala un modelo local <em>sin romper nada</em>: primero aquí, luego en tu laptop</h1>
+      <p class="esc-sub a-in" style="--d:.1s">Elige modelo, cuantización y contexto. La RAM se calcula al vuelo: pesos + caché del contexto + el motor.</p>
+    </div>
+    <div class="s4-b2">
+      <section class="esc-card s4-conf a-in" style="--d:.2s" aria-label="Configuración del modelo">
+        <div class="s4-ctrl"><span class="s4-et">Modelo</span>
+          <select id="modelo" aria-label="Modelo">
+            <option value="q06">Qwen3-0.6B · base pequeño</option>
+            <option value="q17">Qwen3-1.7B · base mediano</option>
+            <option value="q4">Qwen3-4B · base grande</option>
+            <option value="jdec">jev-style decision · clasifica y elige acción (sobre 0.6B)</option>
+            <option value="jreal">jev realizador · elige variantes, no inventa (sobre 1.7B)</option>
+            <option value="jver">jev verificador · NLI + detector de alucinaciones</option>
+          </select>
+        </div>
+        <div class="s4-ctrl"><span class="s4-et">Cuantización</span>
+          <div class="s4-seg" id="cuant"><button type="button" class="s4-btn" data-v="q4" aria-pressed="false">Q4_K_M · ≈ 4,6 bits</button><button type="button" class="s4-btn" data-v="q8" aria-pressed="true">Q8_0 · ≈ 8,5 bits</button></div>
+        </div>
+        <div class="s4-ctrl"><span class="s4-et">Contexto (tokens)</span>
+          <div class="s4-seg" id="ctx"><button type="button" class="s4-btn" data-v="2048" aria-pressed="false">2k</button><button type="button" class="s4-btn" data-v="4096" aria-pressed="true">4k</button><button type="button" class="s4-btn" data-v="8192" aria-pressed="false">8k</button></div>
+        </div>
+        <div class="s4-ctrl"><span class="s4-et">Temperatura · <span class="v" id="temp-v">0,3</span></span>
+          <input type="range" id="temp" min="0" max="1.5" step="0.1" value="0.3" aria-label="Temperatura">
+        </div>
+        <div class="s4-ctrl"><span class="s4-et">Cómputo</span>
+          <div class="s4-seg" id="comp"><button type="button" class="s4-btn" data-v="cpu2" aria-pressed="true">2 hilos CPU · servidor de clase</button><button type="button" class="s4-btn" data-v="cpu8" aria-pressed="false">8 hilos CPU · laptop</button><button type="button" class="s4-btn" data-v="gpu" aria-pressed="false">GPU 4 GB</button></div>
+        </div>
+        <div class="esc-fila"><button type="button" class="s4-btn pri" id="ir">Descargar e instalar</button><span class="esc-chip ok s4-logro" id="logro">Instalación simulada completa · pulsa «Lo logré»</span></div>
+        <div class="s4-var">
+          <h3 id="v-n">Qwen3-0.6B · base pequeño</h3>
+          <p id="v-d"><b>Qué es:</b> el modelo pequeño tal cual, redacta frases cortas y clasifica aceptablemente. <b>Úsalo cuando</b> solo hay CPU y 2 GiB: es el que corre hoy en el gateway de la clase.</p>
+        </div>
+      </section>
+      <aside class="s4-der">
+        <div class="esc-card s4-ram a-in" style="--d:.3s">
+          <div class="s4-ram-cab"><span class="s4-et">RAM necesaria</span><span class="s4-ram-tot" id="ram-t">1,36 GB</span></div>
+          <div class="s4-barra" aria-hidden="true"><i class="p" id="b-p"></i><i class="k" id="b-k"></i><i class="b" id="b-b"></i></div>
+          <div class="s4-marcas" aria-hidden="true"><span style="left:40%">2 GiB · servidor de clase</span><span style="left:80%">4 GB · VRAM laptop</span></div>
+          <div class="s4-ley"><span><i style="background:var(--accent)"></i>Pesos <b id="l-p">0,64 GB</b></span><span><i style="background:var(--gold)"></i>Caché KV <b id="l-k">0,47 GB</b></span><span><i style="background:var(--muted)"></i>Motor <b>0,25 GB</b></span></div>
+          <p class="s4-log m" id="ram-f" style="min-height:0">0,6 B parámetros × 1,06 bytes + 4 096 tokens × 112 KB por token + 0,25 GB</p>
+        </div>
+        <div class="esc-card s4-desc a-in" style="--d:.4s">
+          <div class="s4-ram-cab"><span class="s4-et">Descarga e instalación</span><span class="esc-chip" id="estado">lista</span></div>
+          <div class="s4-prog" aria-hidden="true"><i id="prog"></i></div>
+          <pre class="s4-log" id="log"><span class="m">Configura y pulsa «Descargar e instalar». La descarga es simulada: la real pesa lo que dicen los pesos.</span></pre>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Cifras aproximadas: 0.6B Q8 en 2 vCPU midió 14 tokens/s y 1,3 a 1,5 GB en el servidor de clase</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  // params en miles de millones; capas, cabezas KV y tamaño de cabeza según la ficha pública de Qwen3.
+  var MODELOS = {
+    q06: { n: "Qwen3-0.6B · base pequeño", p: 0.6, capas: 28, kv: 8, hd: 128,
+      d: "<b>Qué es:</b> el modelo pequeño tal cual, redacta frases cortas y clasifica aceptablemente. <b>Úsalo cuando</b> solo hay CPU y 2 GiB: es el que corre hoy en el gateway de la clase." },
+    q17: { n: "Qwen3-1.7B · base mediano", p: 1.7, capas: 28, kv: 8, hd: 128,
+      d: "<b>Qué es:</b> redacta mejor y sigue instrucciones JSON con menos errores. <b>Úsalo cuando</b> tienes 8 GB de RAM o una GPU pequeña; en 2 vCPU va a 6-8 tokens/s." },
+    q4: { n: "Qwen3-4B · base grande", p: 4.0, capas: 36, kv: 8, hd: 128,
+      d: "<b>Qué es:</b> razona y redacta claramente mejor, pero pesa 2,3 GB en Q4. <b>Úsalo cuando</b> tienes GPU; en CPU de 2 hilos no cabe ni rinde." },
+    jdec: { n: "jev-style decision · sobre Qwen3-0.6B", p: 0.6, capas: 28, kv: 8, hd: 128,
+      d: "<b>Qué es:</b> el mismo 0.6B con un trabajo acotado: clasifica la intención y propone UNA de cuatro acciones en JSON. No redacta nada. <b>Úsalo cuando</b> una regla de la tabla duda; si él también duda, mandan las reglas." },
+    jreal: { n: "jev realizador · sobre Qwen3-1.7B", p: 1.7, capas: 28, kv: 8, hd: 128,
+      d: "<b>Qué es:</b> solo elige entre variantes de plantilla o reescribe conservando los tokens §PRODUCTO_x§; nunca inventa un hecho. <b>Úsalo cuando</b> quieres que el bot no suene siempre igual sin soltarle los datos." },
+    jver: { n: "jev verificador · NLI + detector", p: 0.5, capas: 24, kv: 12, hd: 64,
+      d: "<b>Qué es:</b> un modelo de inferencia (NLI) más un detector tipo LettuceDetect: por cada frase dice si se apoya en los datos. <b>Úsalo cuando</b> necesitas una segunda compuerta antes de enviar, o para auditar lo ya enviado." }
+  };
+  var BPP = { q4: 0.58, q8: 1.06 };                 // bytes por parámetro (GGUF, con el sobrepeso del formato)
+  var CAP = { cpu2: 2.0, cpu8: 8.0, gpu: 4.0 };      // GiB disponibles en cada cómputo
+  var BW = { cpu2: 8.9, cpu8: 20, gpu: 55 };         // GB/s efectivos: 8,9 sale de 14 tok/s × 0,64 GB (medido en 2 vCPU)
+  var est = { modelo: "q06", cuant: "q8", ctx: 4096, comp: "cpu2", temp: 0.3, corriendo: false };
+  var GB = function (x) { return x.toFixed(2).replace(".", ",") + " GB"; };
+
+  function ram() {
+    var m = MODELOS[est.modelo];
+    var pesos = m.p * BPP[est.cuant];
+    var kvTok = 2 * m.capas * m.kv * m.hd * 2;               // bytes por token (K y V en fp16)
+    var kv = est.ctx * kvTok / 1e9;
+    return { pesos: pesos, kv: kv, kvTok: kvTok, base: 0.25, total: pesos + kv + 0.25 };
+  }
+  function pintar() {
+    var m = MODELOS[est.modelo], r = ram(), esc = 5;      // la barra representa 5 GB
+    $("ram-t").textContent = GB(r.total);
+    $("ram-t").classList.toggle("mal", r.total > CAP[est.comp]);
+    $("b-p").style.width = Math.min(100, r.pesos / esc * 100) + "%";
+    $("b-k").style.width = Math.min(100, r.kv / esc * 100) + "%";
+    $("b-b").style.width = Math.min(100, r.base / esc * 100) + "%";
+    $("l-p").textContent = GB(r.pesos); $("l-k").textContent = GB(r.kv);
+    $("ram-f").textContent = m.p.toFixed(1).replace(".", ",") + " B parámetros × " + BPP[est.cuant].toFixed(2).replace(".", ",") + " bytes + " +
+      String(est.ctx).replace(/\B(?=(\d{3})+$)/, " ") + " tokens × " + Math.round(r.kvTok / 1024) + " KB por token + 0,25 GB del motor";
+    $("v-n").textContent = m.n; $("v-d").innerHTML = m.d;
+    $("temp-v").textContent = est.temp.toFixed(1).replace(".", ",");
+  }
+  function seg(id, k, conv) {
+    $(id).addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return;
+      est[k] = conv ? conv(b.getAttribute("data-v")) : b.getAttribute("data-v");
+      $(id).querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      pintar();
+    });
+  }
+  seg("cuant", "cuant"); seg("ctx", "ctx", Number); seg("comp", "comp");
+  $("modelo").addEventListener("change", function () { est.modelo = this.value; pintar(); });
+  $("temp").addEventListener("input", function () { est.temp = Number(this.value); pintar(); });
+
+  function instalar() {
+    if (est.corriendo) return;
+    est.corriendo = true; $("ir").disabled = true; $("logro").classList.remove("ver");
+    var m = MODELOS[est.modelo], r = ram(), log = $("log"), prog = $("prog"), estado = $("estado");
+    var MB = Math.round(r.pesos * 1000), vel = 45 + Math.round(Math.random() * 50), t0 = Date.now(), dur = 2600 + Math.random() * 900;
+    estado.textContent = "descargando"; estado.className = "esc-chip";
+    log.innerHTML = "";
+    var linea = function (html) { var s = document.createElement("span"); s.innerHTML = html + "\n"; log.appendChild(s); };
+    linea("<span class='m'>$ ollama pull " + m.n.split(" ·")[0].toLowerCase() + "   # simulado</span>");
+    var l1 = document.createElement("span"); log.appendChild(l1);
+    var tick = setInterval(function () {
+      var f = Math.min(1, (Date.now() - t0) / dur);
+      prog.style.width = (f * 70).toFixed(0) + "%";
+      l1.textContent = "pulling " + Math.round(MB * f) + " MB / " + MB + " MB  ·  " + vel + " MB/s\n";
+      if (f >= 1) { clearInterval(tick); paso2(); }
+    }, 90);
+    function paso2() {
+      linea("<span class='ok'>✓</span> verificando sha256 … ok");
+      estado.textContent = "cargando pesos";
+      setTimeout(function () {
+        prog.style.width = "85%";
+        if (r.total > CAP[est.comp]) {
+          prog.style.width = "100%";
+          linea("<span class='no'>✗ sin memoria:</span> necesita " + GB(r.total) + " y hay " + CAP[est.comp].toFixed(1).replace(".", ",") + " GiB. Baja la cuantización (Q4), el contexto o el modelo.");
+          estado.textContent = "no cabe"; estado.className = "esc-chip bad"; fin(); return;
+        }
+        linea("<span class='ok'>✓</span> pesos en memoria: " + GB(r.pesos) + " + caché KV " + GB(r.kv) + " (contexto " + est.ctx + ")");
+        var tps = Math.min(est.comp === "gpu" ? 110 : 60, BW[est.comp] / r.pesos);
+        if (est.comp === "cpu2" && r.total > 1.6) { tps *= 0.6; linea("<span class='m'>aviso: junto a Postgres y nginx quedan ~1,6 GiB; el sistema empieza a usar swap y baja el ritmo</span>"); }
+        estado.textContent = "probando";
+        setTimeout(function () {
+          prog.style.width = "100%";
+          var sal = est.modelo === "jdec" ? '{"accion":"responder_precio","confianza":0.91}' :
+            est.modelo === "jver" ? '{"frase":"está a §PRECIO_a1§","apoyada":true}' :
+            est.modelo === "jreal" ? '{"inicio":2,"cuerpo":0,"emoji":1}' :
+            (est.temp > 1 ? "«¡Hola! Soy tu asistente de ventas y me encanta ayudarte con prendas de temporada…» (temperatura alta: más largo y menos fiable)" : "«Hola, soy el asistente de la tienda. ¿Qué buscas?»");
+          linea("<span class='ok'>✓</span> prueba «hola» → " + sal);
+          linea("<span class='ok'>≈ " + tps.toFixed(0) + " tokens/s</span> generando · temperatura " + est.temp.toFixed(1).replace(".", ",") + " · " + (est.comp === "gpu" ? "GPU" : est.comp === "cpu8" ? "8 hilos" : "2 hilos"));
+          estado.textContent = "instalado"; estado.className = "esc-chip ok";
+          $("logro").classList.add("ver"); fin();
+        }, 700);
+      }, 600);
+    }
+    function fin() { est.corriendo = false; $("ir").disabled = false; }
+  }
+  $("ir").addEventListener("click", instalar);
+  pintar();
+})();
+</script>
+</body>
+</html>
