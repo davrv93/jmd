@@ -111,7 +111,7 @@ func (s *Server) sorteoInfo(w http.ResponseWriter, r *http.Request) {
 	pubs := []map[string]any{}
 	for _, g := range gans {
 		pubs = append(pubs, map[string]any{"nombre": sorteoNombre(g.Nombre), "correo": correoMascarado(g.Email),
-			"posicion": g.Posicion, "numero": g.Numero})
+			"posicion": g.Posicion, "numero": g.Numero, "codigo": store.SorteoCodigo(def.ID, g.Email)})
 	}
 	writeJSON(w, 200, map[string]any{
 		"id": def.ID, "titulo": def.Titulo, "subtitulo": def.Subtitulo, "descripcion": def.Descripcion,
@@ -127,8 +127,9 @@ func (s *Server) sorteoInfo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// sorteoTicket: GET /api/v1/sorteo/{id}/ticket/{numero} (público) → qué fue de
-// ese número. Da pie al «link de consolación»: quien no ganó ve su mensaje.
+// sorteoTicket: GET /api/v1/sorteo/{id}/ticket/{valor} (público) → qué fue de ese
+// ticket. `valor` es el número (4964) o el código de varios caracteres
+// (MT-7Q4XZP). Da pie al «link de consolación»: quien no ganó ve su mensaje.
 func (s *Server) sorteoTicket(w http.ResponseWriter, r *http.Request) {
 	def, ok := sorteos[strings.TrimSpace(r.PathValue("id"))]
 	if !ok {
@@ -139,17 +140,24 @@ func (s *Server) sorteoTicket(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 429, "rate_limited", "demasiadas consultas desde esta conexión; espera un minuto")
 		return
 	}
-	numero, err := strconv.Atoi(strings.TrimSpace(r.PathValue("numero")))
-	if err != nil || numero < 1 || numero > 9999 {
-		badRequest(w, "escribe el número de tu ticket (del 1 al 9999)")
+	valor := strings.TrimSpace(r.PathValue("valor"))
+	numero := 0
+	if n, err := strconv.Atoi(valor); err == nil {
+		if n < 1 || n > 9999 {
+			badRequest(w, "escribe el número de tu ticket (del 1 al 9999) o tu código")
+			return
+		}
+		numero = n
+	} else {
+		// Código de varios caracteres: se busca entre los anotados.
+		numero = s.DB.SorteoNumeroPorCodigo(r.Context(), def.ID, valor)
+	}
+	estado, nombre, email := s.DB.SorteoEstadoNumero(r.Context(), def.ID, numero)
+	if estado == "" || email == "" {
+		writeErr(w, 404, "no_existe", "ese ticket no participó en este sorteo")
 		return
 	}
-	estado, nombre := s.DB.SorteoEstadoNumero(r.Context(), def.ID, numero)
-	if estado == "" {
-		writeErr(w, 404, "no_existe", "ese número no participó en este sorteo")
-		return
-	}
-	resp := map[string]any{"estado": estado, "numero": numero}
+	resp := map[string]any{"estado": estado, "numero": numero, "codigo": store.SorteoCodigo(def.ID, email)}
 	if estado == "ganador" && nombre != "" {
 		resp["nombre"] = sorteoNombre(nombre)
 	}
@@ -230,6 +238,7 @@ func (s *Server) sorteoParticipar(w http.ResponseWriter, r *http.Request) {
 				"error": map[string]any{"code": "ya_participa",
 					"message": "ese correo ya está participando: cada correo juega una vez"},
 				"numero": s.DB.SorteoNumeroPorEmail(r.Context(), def.ID, in.Email),
+				"codigo": store.SorteoCodigo(def.ID, in.Email),
 			})
 			return
 		}
@@ -237,7 +246,8 @@ func (s *Server) sorteoParticipar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	part, _ := s.DB.SorteoParticipantes(r.Context(), def.ID)
-	writeJSON(w, 201, map[string]any{"ok": true, "participantes": len(part), "numero": numero})
+	writeJSON(w, 201, map[string]any{"ok": true, "participantes": len(part), "numero": numero,
+		"codigo": store.SorteoCodigo(def.ID, in.Email)})
 }
 
 // sorteosAutomaticos: al inscribirse (o al unirse) al grupo, el cupo del sorteo
@@ -255,7 +265,8 @@ func (s *Server) sorteosAutomaticos(ctx context.Context, cursos []string, userID
 			if userID != "" {
 				s.darCohorte(ctx, userID, def.Cohorte)
 			}
-			return map[string]any{"id": def.ID, "titulo": def.Titulo, "numero": numero, "ganador": true}
+			return map[string]any{"id": def.ID, "titulo": def.Titulo, "numero": numero,
+				"codigo": store.SorteoCodigo(def.ID, email), "ganador": true}
 		}
 		if gans, err := s.DB.SorteoGanadores(ctx, def.ID); err == nil && len(gans) >= def.MaxGanadores {
 			continue
@@ -267,7 +278,8 @@ func (s *Server) sorteosAutomaticos(ctx context.Context, cursos []string, userID
 		if numero == 0 {
 			numero = s.DB.SorteoNumeroPorEmail(ctx, def.ID, email)
 		}
-		return map[string]any{"id": def.ID, "titulo": def.Titulo, "numero": numero}
+		return map[string]any{"id": def.ID, "titulo": def.Titulo, "numero": numero,
+			"codigo": store.SorteoCodigo(def.ID, email)}
 	}
 	return nil
 }

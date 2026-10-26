@@ -1,8 +1,11 @@
 package httpapi
 
 import (
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/davrv93/jmd/lms/api/internal/store"
 )
 
 // conSorteo registra un sorteo de prueba en el mapa global y lo restaura al salir.
@@ -187,14 +190,30 @@ func TestSorteoTicket(t *testing.T) {
 	if r.code != 200 || r.body["estado"] != "no_ganador" {
 		t.Fatalf("ticket del que no ganó: %d %s", r.code, r.raw)
 	}
+	// El mismo ticket por su CÓDIGO de varios caracteres (con y sin prefijo).
+	cod := store.SorteoCodigo("rifa-test", gano.Email)
+	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/"+cod, "", false, nil, ""); r.code != 200 || r.body["estado"] != "ganador" || r.body["codigo"] != cod {
+		t.Fatalf("ticket por código: %d %s", r.code, r.raw)
+	}
+	sinPrefijo := strings.ToLower(strings.TrimPrefix(cod, "MT-"))
+	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/"+sinPrefijo, "", false, nil, ""); r.code != 200 || r.body["estado"] != "ganador" {
+		t.Fatalf("código sin prefijo y en minúsculas: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/"+store.SorteoCodigo("rifa-test", perdio.Email), "", false, nil, ""); r.code != 200 || r.body["estado"] != "no_ganador" {
+		t.Fatalf("código del que no ganó: %d %s", r.code, r.raw)
+	}
+	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/MT-999999", "", false, nil, ""); r.code != 404 || errCode(r) != "no_existe" {
+		t.Fatalf("código inexistente: %d %s", r.code, r.raw)
+	}
+	// un número que nadie tiene
 	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/1", "", false, nil, ""); r.code != 404 || errCode(r) != "no_existe" {
 		t.Fatalf("número desconocido: %d %s", r.code, r.raw)
 	}
 	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/99999", "", false, nil, ""); r.code != 400 {
 		t.Fatalf("fuera de rango: %d %s", r.code, r.raw)
 	}
-	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/abc", "", false, nil, ""); r.code != 400 {
-		t.Fatalf("no numérico: %d %s", r.code, r.raw)
+	if r = e.call("GET", "/api/v1/sorteo/rifa-test/ticket/abc", "", false, nil, ""); r.code != 404 || errCode(r) != "no_existe" {
+		t.Fatalf("texto que no es un código válido: %d %s", r.code, r.raw)
 	}
 }
 

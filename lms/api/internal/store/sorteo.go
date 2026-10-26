@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"math/rand/v2"
 	"strings"
@@ -205,20 +206,79 @@ func (d *DB) SorteoPremioPendiente(ctx context.Context, sorteoID, email string) 
 	return true, n
 }
 
-// SorteoEstadoNumero: qué fue de un número de ticket. "ganador" (con el nombre),
-// "no_ganador" o "" si ese número no participó.
-func (d *DB) SorteoEstadoNumero(ctx context.Context, sorteoID string, numero int) (string, string) {
-	var nombre string
+// SorteoEstadoNumero: qué fue de un número de ticket. "ganador" (con el nombre y
+// el correo), "no_ganador" o "" si ese número no participó.
+func (d *DB) SorteoEstadoNumero(ctx context.Context, sorteoID string, numero int) (estado, nombre, email string) {
 	if err := d.sql.QueryRowContext(ctx,
-		`SELECT nombre FROM sorteo_premios WHERE sorteo_id = ? AND numero = ?`, sorteoID, numero).Scan(&nombre); err == nil {
-		return "ganador", nombre
+		`SELECT nombre, email FROM sorteo_premios WHERE sorteo_id = ? AND numero = ?`, sorteoID, numero).Scan(&nombre, &email); err == nil {
+		return "ganador", nombre, email
 	}
 	var n int
 	if err := d.sql.QueryRowContext(ctx,
 		`SELECT COALESCE(numero,0) FROM sorteo_jugadas WHERE sorteo_id = ? AND numero = ?`, sorteoID, numero).Scan(&n); err == nil {
-		return "no_ganador", ""
+		var correo string
+		_ = d.sql.QueryRowContext(ctx,
+			`SELECT email FROM sorteo_jugadas WHERE sorteo_id = ? AND numero = ?`, sorteoID, numero).Scan(&correo)
+		return "no_ganador", "", correo
 	}
-	return "", ""
+	return "", "", ""
+}
+
+// alfabetoCodigo deja fuera los caracteres que se confunden al dictar o copiar
+// a mano (0/O, 1/I, 5/S, 8/B, L, Z).
+const alfabetoCodigo = "234679ACDEFGHJKMNPQRTUVWXY"
+
+const largoCodigo = 6
+
+// SorteoCodigo: el código de ticket del anotado, estable y de varios caracteres
+// (MT-XXXXXX). Se deriva del sorteo y del correo, así que NO se guarda: sale
+// igual siempre, incluso para quienes ya estaban anotados antes de existir.
+func SorteoCodigo(sorteoID, email string) string {
+	suma := sha256.Sum256([]byte("jmd-ticket|" + sorteoID + "|" + correoClave(email)))
+	codigo := make([]byte, 0, 3+largoCodigo)
+	codigo = append(codigo, 'M', 'T', '-')
+	for i := 0; i < largoCodigo; i++ {
+		codigo = append(codigo, alfabetoCodigo[int(suma[i])%len(alfabetoCodigo)])
+	}
+	return string(codigo)
+}
+
+// normalizaCodigo deja solo letras y dígitos en mayúsculas y quita el prefijo
+// MT, para que «mt 7q4xzp», «MT-7Q4XZP» y «7Q4XZP» sean el mismo código.
+func normalizaCodigo(codigo string) string {
+	var b strings.Builder
+	for _, r := range strings.ToUpper(strings.TrimSpace(codigo)) {
+		if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+		}
+	}
+	return strings.TrimPrefix(b.String(), "MT")
+}
+
+// SorteoNumeroPorCodigo: el número del anotado cuyo código coincide con el
+// escrito (0 si ninguno). Como el código se calcula, se compara contra todos.
+func (d *DB) SorteoNumeroPorCodigo(ctx context.Context, sorteoID, codigo string) int {
+	querido := normalizaCodigo(codigo)
+	if len(querido) != largoCodigo {
+		return 0
+	}
+	rows, err := d.sql.QueryContext(ctx,
+		`SELECT email, COALESCE(numero,0) FROM sorteo_jugadas WHERE sorteo_id = ?`, sorteoID)
+	if err != nil {
+		return 0
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var email string
+		var n int
+		if rows.Scan(&email, &n) != nil {
+			continue
+		}
+		if normalizaCodigo(SorteoCodigo(sorteoID, email)) == querido {
+			return n
+		}
+	}
+	return 0
 }
 
 // SorteoAgregarGanador registra al ganador en su posición (con su número).

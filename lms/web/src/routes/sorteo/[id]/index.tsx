@@ -20,6 +20,7 @@ export default component$(() => {
   const busy = useSignal(false);
   const ya = useSignal(false);
   const numero = useSignal<number | null>(null); // tu número de rifa, fijo desde el registro
+  const codigo = useSignal<string | null>(null); // tu código de ticket (MT-XXXXXX), también fijo
   const copiado = useSignal(false);              // «enlace copiado» del bloque de compartir
   // Enlace personalizado del ganador: /sorteo/<id>/?ganador=Junior%20Cercado
   // La página le pone su nombre al anuncio; el enlace es el que comparte en redes.
@@ -35,18 +36,19 @@ export default component$(() => {
   const chequeando = useSignal(false);
 
   const consultarTicket = $((valor: string) => {
-    const limpio = String(valor || "").replace(/[^0-9]/g, "").slice(0, 4);
+    // Acepta el número (4964) o el código de varios caracteres (MT-7Q4XZP).
+    const limpio = String(valor || "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 9);
     ticket.value = limpio;
     ticketErr.value = "";
     resultado.value = null;
     if (!limpio) return;
     chequeando.value = true;
     api
-      .ticketSorteo(pathId("sorteo"), Number(limpio))
+      .ticketSorteo(pathId("sorteo"), limpio)
       .then((r) => (resultado.value = r))
       .catch((e) => {
         ticketErr.value = e instanceof ApiError && e.status === 404
-          ? `El número ${limpio} no participó en el sorteo. Revisa tu ticket.`
+          ? `El ticket ${limpio} no participó en el sorteo. Revisa tu número o tu código.`
           : errMsg(e);
       })
       .finally(() => (chequeando.value = false));
@@ -78,19 +80,22 @@ export default component$(() => {
     mal.value = false;
     ya.value = false;
     numero.value = null;
+    codigo.value = null;
     busy.value = true;
     try {
       const r = await api.participarSorteo(pathId("sorteo"), email.value.trim());
       ya.value = true;
       numero.value = r.numero ?? null;
+      codigo.value = r.codigo ?? null;
       if (st.info) st.info = { ...st.info, participantes: r.participantes };
       msg.value = "¡Listo! Ya estás participando. Guarda esta página para ver a los ganadores.";
     } catch (e) {
-      const extra = e instanceof ApiError ? (e.extra as { numero?: number } | null) : null;
+      const extra = e instanceof ApiError ? (e.extra as { numero?: number; codigo?: string } | null) : null;
       if (e instanceof ApiError && e.status === 409 && extra?.numero) {
         // Ya jugaba: se le devuelve SU número, el mismo desde que se anotó.
         ya.value = true;
         numero.value = extra.numero;
+        codigo.value = extra.codigo ?? null;
         msg.value = "Ya estabas participando con ese correo.";
       } else {
         mal.value = true;
@@ -171,7 +176,14 @@ export default component$(() => {
                 <div style="border:1.5px dashed var(--line, #dde4ec); border-radius:12px; padding:.9rem 1rem; margin:.2rem 0 .7rem; text-align:center">
                   <p class="xs muted" style="margin:0; letter-spacing:.14em; text-transform:uppercase">Tu número de sorteo</p>
                   <p style="margin:.25rem 0 0; font-size:2.6rem; font-weight:800; line-height:1">{numero.value}</p>
-                  <p class="xs muted" style="margin:.35rem 0 0">Se fijó al anotarte y no cambia: los ganadores salen por número.</p>
+                  {codigo.value && (
+                    <p style="margin:.5rem 0 0">
+                      Código de tu ticket: <code style="font-size:1.05rem;font-weight:700">{codigo.value}</code>
+                    </p>
+                  )}
+                  <p class="xs muted" style="margin:.35rem 0 0">
+                    Se fijaron al anotarte y no cambian: los ganadores salen por número. Guarda tu código para consultar tu resultado.
+                  </p>
                 </div>
               )}
               <p class="sm" role="status" style="margin:0">
@@ -221,6 +233,7 @@ export default component$(() => {
               {info.ganadores.map((g) => (
                 <li key={g.posicion}>
                   <b>{g.posicion}.</b> <code>#{g.numero}</code> {g.nombre} <span class="muted">{g.correo}</span>
+                  {g.codigo && <> · <span class="muted">código <code>{g.codigo}</code></span></>}
                 </li>
               ))}
             </ul>
@@ -229,19 +242,21 @@ export default component$(() => {
 
         {/* Consulta de ticket: el «link de consolación» (?ticket=1234 lo llena solo). */}
         <div class="card" style="margin-top:.9rem;padding:1rem 1.2rem">
-          <p style="margin:0 0 .5rem;font-weight:700">¿Participaste? Consulta tu número</p>
+          <p style="margin:0 0 .5rem;font-weight:700">¿Participaste? Consulta tu número o tu código</p>
           <form preventdefault:submit onSubmit$={() => consultarTicket(ticket.value)}>
-            <label class="sr" for="ticket-num">Número de tu ticket</label>
+            <label class="sr" for="ticket-num">Número o código de tu ticket</label>
             <div style="display:flex;gap:8px">
               <input
                 id="ticket-num"
                 type="text"
-                inputMode="numeric"
-                maxLength={4}
-                placeholder="Ej. 4964"
+                maxLength={9}
+                placeholder="Ej. 4964 o MT-7Q4XZP"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellcheck={false}
                 value={ticket.value}
                 onInput$={(_, el) => {
-                  ticket.value = el.value.replace(/[^0-9]/g, "").slice(0, 4);
+                  ticket.value = el.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 9);
                 }}
                 style="flex:1;min-width:0"
               />
@@ -258,6 +273,9 @@ export default component$(() => {
               <p style="margin:0;font-size:1.2rem;font-weight:800">
                 🎉 ¡Tu número {resultado.value.numero} salió!{resultado.value.nombre ? `, ${resultado.value.nombre}` : ""}
               </p>
+              {resultado.value.codigo && (
+                <p class="sm" style="margin:.4rem 0 0">Código de tu ticket: <code>{resultado.value.codigo}</code></p>
+              )}
               <p class="sm" style="margin:.5rem 0 0">Escribe al WhatsApp para asegurar tu cupo.</p>
               {waCupon && <a class="btn" href={waCupon} target="_blank" rel="noopener" style="justify-content:center;display:inline-flex;text-decoration:none;margin-top:.6rem">Escribir por WhatsApp</a>}
             </div>
@@ -266,7 +284,7 @@ export default component$(() => {
             <div style="border:1.5px solid #3fffd2;border-radius:12px;padding:.9rem 1rem;margin:.7rem 0 0;background:rgba(63,255,210,.07)">
               <p style="margin:0;font-size:1.25rem;font-weight:800">¡PERO te damos 20% de descuento!</p>
               <p class="sm" style="margin:.5rem 0 0">
-                Tu número <b>{resultado.value.numero}</b> no salió esta vez, pero no te vas con las manos vacías.
+                Tu ticket <b>{resultado.value.codigo || `#${resultado.value.numero}`}</b> no salió esta vez, pero no te vas con las manos vacías.
               </p>
               <p class="sm" style="margin:.5rem 0 0">
                 Aprenderás cómo <b>alargar tus sesiones de IA</b>: sácale provecho a

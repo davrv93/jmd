@@ -321,7 +321,7 @@ export interface Sorteo {
   termina: string;
   abierto: boolean;
   participantes: number;
-  ganadores: { nombre: string; correo: string; posicion: number; numero: number }[];
+  ganadores: { nombre: string; correo: string; posicion: number; numero: number; codigo?: string }[];
   quedan: number;
   /** Enlace de registro que ofrece la página («¡Inscríbete ya!»); "" si no hay. */
   inscripcion?: string;
@@ -338,6 +338,8 @@ export interface SorteoAviso {
   id: string;
   titulo: string;
   numero: number;
+  /** Código de varios caracteres del ticket (MT-XXXXXX), estable desde que se anotó. */
+  codigo?: string;
   ganador?: boolean;
 }
 export interface Inscripcion {
@@ -349,6 +351,8 @@ export interface Inscripcion {
 export interface TicketSorteo {
   estado: "ganador" | "no_ganador";
   numero: number;
+  /** Código de varios caracteres del ticket (MT-XXXXXX). */
+  codigo?: string;
   nombre?: string;
 }
 
@@ -359,13 +363,14 @@ export const api = {
     req<{ token: string; user: Me; cursos: string[]; sorteo?: SorteoAviso }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`, b),
   unirse: (grupo: string) => req<{ grupo: string; cohorts: string[]; cursos: string[]; sorteo?: SorteoAviso }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}/unirme`, {}),
   sorteo: (id: string) => req<Sorteo>("GET", `/api/v1/sorteo/${encodeURIComponent(id)}`),
-  /** Qué fue de un número de ticket: ganador / no_ganador (404 si no participó). */
-  ticketSorteo: (id: string, numero: number) =>
-    req<TicketSorteo>("GET", `/api/v1/sorteo/${encodeURIComponent(id)}/ticket/${numero}`),
+  /** Qué fue de un ticket: número (4964) o código de varios caracteres (MT-7Q4XZP).
+   *  Responde ganador / no_ganador; 404 si ese ticket no participó. */
+  ticketSorteo: (id: string, valor: string | number) =>
+    req<TicketSorteo>("GET", `/api/v1/sorteo/${encodeURIComponent(id)}/ticket/${encodeURIComponent(String(valor))}`),
   participarSorteo: (id: string, email: string) =>
-    req<{ ok: boolean; participantes: number; numero?: number }>("POST", `/api/v1/sorteo/${encodeURIComponent(id)}/participar`, { email }),
+    req<{ ok: boolean; participantes: number; numero?: number; codigo?: string }>("POST", `/api/v1/sorteo/${encodeURIComponent(id)}/participar`, { email }),
   sortear: (id: string, cantidad?: number) =>
-    req<{ ganadores: { nombre: string; correo: string; posicion: number; numero: number }[]; quedan: number }>("POST", `/api/v1/sorteo/${encodeURIComponent(id)}/sortear`, { cantidad: cantidad || 0 }),
+    req<{ ganadores: { nombre: string; correo: string; posicion: number; numero: number; codigo?: string }[]; quedan: number }>("POST", `/api/v1/sorteo/${encodeURIComponent(id)}/sortear`, { cantidad: cantidad || 0 }),
   login: (email: string, password: string) => req<{ token: string; user: Me }>("POST", "/api/v1/auth/login", { email, password, label: "web" }),
   register: (b: { email: string; name: string; password: string; invite_code: string }) => req<{ token: string; user: Me }>("POST", "/api/v1/auth/register", b),
   logout: () => req<{ ok: boolean; end_session_url?: string }>("POST", "/api/v1/auth/logout", {}),

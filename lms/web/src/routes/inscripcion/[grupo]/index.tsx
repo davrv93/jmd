@@ -134,7 +134,10 @@ export default component$(() => {
               <div style={{ border: "1.5px dashed var(--line, #dde4ec)", borderRadius: 12, padding: ".9rem 1rem", margin: ".6rem 0", textAlign: "center" }}>
                 <p class="xs muted" style={{ margin: 0, letterSpacing: ".14em", textTransform: "uppercase" }}>Tu número de sorteo</p>
                 <p style={{ margin: ".25rem 0 0", fontSize: "2.6rem", fontWeight: 800, lineHeight: 1 }}>{sorteoAviso.value.numero}</p>
-                <p class="xs muted" style={{ margin: ".35rem 0 0" }}>Se fijó al anotarte y no cambia: si ganas, es tu número.</p>
+                {sorteoAviso.value.codigo && (
+                  <p style={{ margin: ".5rem 0 0" }}>Código de tu ticket: <code style="font-size:1.05rem;font-weight:700">{sorteoAviso.value.codigo}</code></p>
+                )}
+                <p class="xs muted" style={{ margin: ".35rem 0 0" }}>Se fijaron al anotarte y no cambian: si ganas, es tu número.</p>
               </div>
               <button type="button" class="btn" style={{ width: "100%", justifyContent: "center" }} onClick$={() => irAlCurso(cursosPend.value)}>
                 Ir al curso
