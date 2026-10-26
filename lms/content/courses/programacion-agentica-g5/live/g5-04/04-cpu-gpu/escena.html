@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · CPU y GPU, graficado</title>
+<!--
+  Escena del modo LIVE (clase extra g5-04). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: modelo, cuantización, contexto, clientes a la vez y tamaño del mensaje; se grafican tokens/s, uso,
+  RAM y latencia en tres máquinas (2 vCPU sin GPU, laptop con GPU de 4 GB, GPU de servidor) y la cola de mensajes.
+  Las cifras son APROXIMADAS: el ancla medida es Qwen3-0.6B Q8_0 en 2 vCPU (14 tok/s, 120 tok/s de prompt, 1,3 GB).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .25); }
+.esc-titulo { font-size: 1.3em; }
+.s4-btn { font: 700 .7em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.s4-btn:hover { transform: translateY(-1px); }
+.s4-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.s4-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.s4-et { font-size: .62em; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.s4-seg { display: flex; gap: .3em; flex-wrap: wrap; }
+.s4-ctrl { display: grid; gap: .25em; }
+.s4-ctrl input[type=range] { accent-color: var(--accent); width: 100%; margin: 0; }
+.s4-ctrl .v { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.s4-b4 { display: grid; grid-template-columns: .9fr 2.4fr; gap: 1.3vw; min-height: 0; align-items: start; font-size: .9em; }
+.s4-conf { padding: .8em 1em; display: grid; gap: .9vh; }
+.s4-maq { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vw; }
+.s4-m { padding: .7em .9em; display: grid; gap: .45em; align-content: start; }
+.s4-m h3 { margin: 0; font-size: .92em; display: flex; justify-content: space-between; align-items: baseline; gap: .5em; }
+.s4-m h3 small { font-size: .68em; color: var(--muted); font-weight: 600; }
+.s4-met { display: grid; grid-template-columns: 6.2em 1fr 4.6em; gap: .5em; align-items: center; font-size: .72em; }
+.s4-met span:first-child { color: var(--muted); font-weight: 700; }
+.s4-met .b { height: .75em; border-radius: 99px; background: var(--s3); overflow: hidden; }
+.s4-met .b i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .4s cubic-bezier(.2,.7,.2,1); }
+.s4-met .b i.g { background: var(--gold); } .s4-met .b i.r { background: var(--bad); } .s4-met .b i.ok { background: var(--ok); }
+.s4-met em { font-style: normal; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.s4-m.nocabe .s4-met em { color: var(--muted); }
+.s4-m .esc-chip { justify-self: start; font-size: .62em; }
+.s4-cola { padding: .7em 1em; display: grid; gap: .35em; }
+.s4-cola svg { max-height: 12vh; }
+.s4-cola text { font-size: 17px; fill: var(--muted); font-weight: 700; }
+.s4-cola .pr { fill: var(--gold); } .s4-cola .ge { fill: var(--accent); } .s4-cola .esp { fill: var(--s3); }
+.s4-cola .lim { stroke: var(--bad); stroke-width: 2; stroke-dasharray: 6 5; }
+.s4-msj { margin: 0; font-size: .95em; font-weight: 700; padding-left: .7em; border-left: 4px solid var(--accent); }
+.s4-msj em { font-style: normal; color: var(--accent); }
+.s4-caso { font-size: .66em; }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Grupo 5 · Extra · E04</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="esc-fila" style="justify-content:space-between">
+      <h1 class="esc-titulo a-in">CPU y GPU, <em>graficado</em>: el servidor de clase no tiene GPU</h1>
+      <div class="esc-fila a-in" style="--d:.1s"><span class="esc-chip warn s4-caso" id="caso">Un cliente, mensaje corto</span><button type="button" class="s4-btn pri" id="otro">Otro caso</button></div>
+    </div>
+    <div class="s4-b4">
+      <section class="esc-card s4-conf a-in" style="--d:.2s" aria-label="Controles">
+        <div class="s4-ctrl"><span class="s4-et">Modelo</span><div class="s4-seg" id="modelo"><button type="button" class="s4-btn" data-v="0.6" aria-pressed="true">0.6B</button><button type="button" class="s4-btn" data-v="1.7" aria-pressed="false">1.7B</button><button type="button" class="s4-btn" data-v="4" aria-pressed="false">4B</button></div></div>
+        <div class="s4-ctrl"><span class="s4-et">Cuantización</span><div class="s4-seg" id="cuant"><button type="button" class="s4-btn" data-v="q4" aria-pressed="false">Q4_K_M</button><button type="button" class="s4-btn" data-v="q8" aria-pressed="true">Q8_0</button></div></div>
+        <div class="s4-ctrl"><span class="s4-et">Contexto</span><div class="s4-seg" id="ctx"><button type="button" class="s4-btn" data-v="2048" aria-pressed="false">2k</button><button type="button" class="s4-btn" data-v="4096" aria-pressed="true">4k</button><button type="button" class="s4-btn" data-v="8192" aria-pressed="false">8k</button></div></div>
+        <div class="s4-ctrl"><span class="s4-et">Clientes a la vez · <b class="v" id="n-v">1</b></span><input type="range" id="n" min="1" max="16" step="1" value="1" aria-label="Clientes a la vez"></div>
+        <div class="s4-ctrl"><span class="s4-et">Tokens del mensaje · <b class="v" id="tok-v">60</b></span><input type="range" id="tok" min="50" max="2000" step="50" value="60" aria-label="Tokens del mensaje"></div>
+        <div class="s4-ctrl"><span class="s4-et">Motor de decisiones</span><div class="s4-seg"><button type="button" class="s4-btn" id="motor" aria-pressed="false">Con motor: solo 4 de cada 10 turnos llaman al modelo</button></div></div>
+      </section>
+      <section class="s4-maq" aria-label="Tres máquinas">
+        <div class="esc-card s4-m a-in" style="--d:.25s" id="m0">
+          <h3>2 vCPU, sin GPU <small>EC2 de clase · 2 GiB</small></h3>
+          <div class="s4-met"><span>tokens/s</span><div class="b"><i></i></div><em>14</em></div>
+          <div class="s4-met"><span>lee prompt</span><div class="b"><i class="g"></i></div><em>120 t/s</em></div>
+          <div class="s4-met"><span>uso CPU</span><div class="b"><i class="ok"></i></div><em>100 %</em></div>
+          <div class="s4-met"><span>RAM</span><div class="b"><i></i></div><em>1,4 GB</em></div>
+          <div class="s4-met"><span>1.º cliente</span><div class="b"><i class="g"></i></div><em>6,2 s</em></div>
+          <div class="s4-met"><span>último</span><div class="b"><i class="r"></i></div><em>6,2 s</em></div>
+          <span class="esc-chip ok">cabe</span>
+        </div>
+        <div class="esc-card s4-m a-in" style="--d:.35s" id="m1">
+          <h3>Laptop con GPU <small>RTX 3050 · 4 GB VRAM</small></h3>
+          <div class="s4-met"><span>tokens/s</span><div class="b"><i></i></div><em>86</em></div>
+          <div class="s4-met"><span>lee prompt</span><div class="b"><i class="g"></i></div><em>3 000 t/s</em></div>
+          <div class="s4-met"><span>uso GPU</span><div class="b"><i class="ok"></i></div><em>25 %</em></div>
+          <div class="s4-met"><span>VRAM</span><div class="b"><i></i></div><em>1,4 GB</em></div>
+          <div class="s4-met"><span>1.º cliente</span><div class="b"><i class="g"></i></div><em>1,1 s</em></div>
+          <div class="s4-met"><span>último</span><div class="b"><i class="r"></i></div><em>1,1 s</em></div>
+          <span class="esc-chip ok">cabe</span>
+        </div>
+        <div class="esc-card s4-m a-in" style="--d:.45s" id="m2">
+          <h3>GPU de servidor <small>24 GB VRAM</small></h3>
+          <div class="s4-met"><span>tokens/s</span><div class="b"><i></i></div><em>180</em></div>
+          <div class="s4-met"><span>lee prompt</span><div class="b"><i class="g"></i></div><em>12 000 t/s</em></div>
+          <div class="s4-met"><span>uso GPU</span><div class="b"><i class="ok"></i></div><em>6 %</em></div>
+          <div class="s4-met"><span>VRAM</span><div class="b"><i></i></div><em>1,4 GB</em></div>
+          <div class="s4-met"><span>1.º cliente</span><div class="b"><i class="g"></i></div><em>0,5 s</em></div>
+          <div class="s4-met"><span>último</span><div class="b"><i class="r"></i></div><em>0,5 s</em></div>
+          <span class="esc-chip ok">cabe</span>
+        </div>
+      </section>
+    </div>
+    <section class="esc-card s4-cola a-in" style="--d:.55s" aria-label="La cola de mensajes en cada máquina">
+      <div class="esc-fila" style="justify-content:space-between"><span class="s4-et">Cola · barra = un cliente · amarillo lee el prompt, morado genera · línea roja = 10 s, lo que aguanta alguien en WhatsApp</span><span class="s4-et" id="llam">llamadas al modelo: 1 de 1</span></div>
+      <svg class="esc-svg" id="cola" viewBox="0 0 1200 200" role="img" aria-label="Diagrama de Gantt de la cola de mensajes en las tres máquinas"></svg>
+    </section>
+    <p class="s4-msj a-in" id="msj" style="--d:.7s">Un cliente solo: la CPU responde en <em>6 s</em>. La GPU está casi ociosa.</p>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Cifras aproximadas · ancla medida: Qwen3-0.6B Q8_0 en 2 vCPU = 14 tok/s, 120 tok/s de prompt, 1,3-1,5 GB</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var BPP = { q4: 0.58, q8: 1.06 };
+  var ARQ = { "0.6": { capas: 28, kv: 8, hd: 128 }, "1.7": { capas: 28, kv: 8, hd: 128 }, "4": { capas: 36, kv: 8, hd: 128 } };
+  // bw: GB/s efectivos leyendo pesos (generar está limitado por memoria). 8,9 = 14 tok/s × 0,64 GB (medido).
+  // tope: tokens/s máximos (los modelos chicos no aprovechan toda la GPU). pr: tokens/s de prompt para 0.6B (∝ 1/params).
+  // lote: cuántos clientes atiende a la vez. cap: memoria disponible para el modelo.
+  var MAQ = [
+    { bw: 8.9, tope: 14, pr: 120, lote: 1, cap: 1.6, nom: "CPU" },
+    { bw: 55, tope: 110, pr: 3000, lote: 4, cap: 4.0, nom: "GPU 4 GB" },
+    { bw: 450, tope: 180, pr: 12000, lote: 16, cap: 24, nom: "GPU 24 GB" }
+  ];
+  var CASOS = [
+    { n: "Un cliente, mensaje corto", c: 1, t: 60 }, { n: "Llegan 8 alumnos a la vez", c: 8, t: 120 },
+    { n: "Mensaje de 2.000 tokens", c: 1, t: 2000 }, { n: "Hora punta: 16 clientes", c: 16, t: 150 },
+    { n: "Cuatro clientes y un modelo grande", c: 4, t: 200, m: "4", q: "q4" }, { n: "Dos clientes, contexto largo", c: 2, t: 900, x: 8192 }
+  ];
+  var est = { m: "0.6", q: "q8", x: 4096, n: 1, tok: 60, motor: false, caso: 0 };
+  var f1 = function (v) { return (Math.round(v * 10) / 10).toFixed(1).replace(".", ","); };
+  var miles = function (n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); };
+
+  function calc(mq) {
+    var p = Number(est.m), a = ARQ[est.m];
+    var pesos = p * BPP[est.q], kvTok = 2 * a.capas * a.kv * a.hd * 2;
+    var sec = Math.min(est.n, mq.lote);                                // secuencias en memoria a la vez
+    var ram = pesos + est.x * kvTok / 1e9 * sec + 0.25;
+    var cabe = ram <= mq.cap;
+    var gen = Math.min(mq.tope, mq.bw / pesos) * (mq.lote > 1 ? Math.pow(sec, -0.12) : 1);   // el lote frena un poco a cada uno
+    var pr = mq.pr * 0.6 / p;
+    // Sin motor: el catálogo viaja en el prompt (≈ 600 tokens) y el modelo redacta toda la respuesta (≈ 80 tokens).
+    // Con motor: 4 de cada 10 turnos llaman al modelo, con plantilla + tokens (≈ 150) y una elección corta (≈ 25 tokens).
+    var llamadas = est.motor ? Math.ceil(est.n * 0.4) : est.n;
+    var prompt = est.tok + (est.motor ? 150 : 600), salida = est.motor ? 25 : 80;
+    var tPr = prompt / pr, tGe = salida / gen, t1 = tPr + tGe;
+    var rondas = Math.ceil(llamadas / mq.lote);
+    var uso = mq.lote === 1 ? 100 : Math.min(100, Math.round(Math.min(llamadas, mq.lote) / mq.lote * 100));
+    return { pesos: pesos, ram: ram, cabe: cabe, gen: gen, pr: pr, t1: t1, tPr: tPr, tGe: tGe, ult: rondas * t1, rondas: rondas, llamadas: llamadas, uso: uso, lote: mq.lote };
+  }
+  function met(card, i, w, txt, clase) {
+    var m = card.querySelectorAll(".s4-met")[i];
+    var b = m.querySelector("i"); b.style.width = Math.max(0, Math.min(100, w)) + "%";
+    if (clase) b.className = clase;
+    m.querySelector("em").textContent = txt;
+  }
+  function pintar() {
+    $("n-v").textContent = est.n; $("tok-v").textContent = miles(est.tok);
+    var res = MAQ.map(calc);
+    res.forEach(function (r, i) {
+      var card = $("m" + i), mq = MAQ[i];
+      card.classList.toggle("nocabe", !r.cabe);
+      met(card, 0, r.gen / 180 * 100, r.cabe ? Math.round(r.gen) : "—");
+      met(card, 1, Math.log10(r.pr) / 4.1 * 100, r.cabe ? miles(r.pr) + " t/s" : "—");
+      met(card, 2, r.cabe ? r.uso : 0, r.cabe ? r.uso + " %" : "—");
+      met(card, 3, r.ram / mq.cap * 100, f1(r.ram) + " GB", r.cabe ? "" : "r");
+      met(card, 4, Math.min(100, r.t1 / 10 * 100), r.cabe ? f1(r.t1) + " s" : "—", "g");
+      met(card, 5, Math.min(100, r.ult / 10 * 100), r.cabe ? f1(r.ult) + " s" : "—", r.cabe && r.ult <= 10 ? "ok" : "r");
+      var ch = card.querySelector(".esc-chip");
+      ch.textContent = !r.cabe ? "no cabe: " + f1(r.ram) + " GB > " + f1(mq.cap) + " GB" : r.ult > 10 ? "cola: el último espera " + f1(r.ult) + " s" : "cabe y responde a tiempo";
+      ch.className = "esc-chip " + (!r.cabe ? "bad" : r.ult > 10 ? "warn" : "ok");
+    });
+    $("llam").textContent = "llamadas al modelo: " + res[0].llamadas + " de " + est.n + (est.motor ? " · el resto se resuelve con tabla y plantilla" : "");
+    cola(res);
+    var c = res[0], g = res[1];
+    var txt;
+    if (!c.cabe) txt = "Este modelo <em>no cabe</em> en 2 GiB: en el servidor de clase solo entra el 0.6B (o el 1.7B en Q4 con contexto corto, justo).";
+    else if (est.n === 1 && est.tok >= 1500) txt = "Un mensaje de " + miles(est.tok) + " tokens: en CPU, solo <em>leer el prompt</em> cuesta " + f1(c.tPr) + " s. La GPU lo lee en " + f1(g.tPr) + " s.";
+    else if (est.n >= 8 && !est.motor) txt = "La CPU atiende de uno en uno: el cliente " + est.n + " espera <em>" + f1(c.ult) + " s</em>. La GPU de 4 GB atiende 4 a la vez y el último espera " + f1(g.ult) + " s. Prueba «con motor».";
+    else if (est.n >= 8 && est.motor) txt = "Con motor, solo " + c.llamadas + " de " + est.n + " turnos llaman al modelo y con prompts cortos: el último espera <em>" + f1(c.ult) + " s</em> en la misma CPU.";
+    else if (est.n === 1) txt = "Un cliente solo: la CPU responde en <em>" + f1(c.t1) + " s</em>. La GPU está casi ociosa (" + g.uso + " % de uso).";
+    else txt = est.n + " clientes: en CPU el último espera <em>" + f1(c.ult) + " s</em>; en la GPU de laptop, " + f1(g.ult) + " s.";
+    $("msj").innerHTML = txt;
+  }
+  function cola(res) {
+    var svg = $("cola"); svg.textContent = "";
+    var NS = "http://www.w3.org/2000/svg", W = 1200, X0 = 150, X1 = 1180, TMAX = Math.max(12, Math.min(60, Math.max.apply(null, res.map(function (r) { return r.cabe ? r.ult : 0; })) * 1.05));
+    var sx = function (t) { return X0 + (X1 - X0) * Math.min(t, TMAX) / TMAX; };
+    var mk = function (tag, at) { var e = document.createElementNS(NS, tag); Object.keys(at).forEach(function (k) { e.setAttribute(k, at[k]); }); svg.appendChild(e); return e; };
+    var txt = function (x, y, s, a) { var t = mk("text", { x: x, y: y, "text-anchor": a || "start" }); t.textContent = s; return t; };
+    res.forEach(function (r, i) {
+      var y = 14 + i * 60, h = 44;
+      txt(0, y + 28, MAQ[i].nom);
+      if (!r.cabe) { txt(X0, y + 28, "no cabe en memoria"); return; }
+      var n = r.llamadas, filas = Math.min(n, r.lote), alto = (h - 2 * (filas - 1)) / filas;
+      for (var k = 0; k < n; k++) {
+        var ronda = Math.floor(k / r.lote), fila = k % r.lote, t0 = ronda * r.t1, yy = y + fila * (alto + 2);
+        if (t0 > TMAX) break;
+        mk("rect", { class: "pr", x: sx(t0), y: yy, width: Math.max(2, sx(t0 + r.tPr) - sx(t0)), height: alto, rx: 3 });
+        mk("rect", { class: "ge", x: sx(t0 + r.tPr), y: yy, width: Math.max(2, sx(t0 + r.t1) - sx(t0 + r.tPr)), height: alto, rx: 3 });
+      }
+    });
+    var xl = sx(10); mk("line", { class: "lim", x1: xl, x2: xl, y1: 4, y2: 186 }); txt(xl + 6, 198, "10 s");
+    txt(X0, 198, "0 s"); txt(X1, 198, Math.round(TMAX) + " s", "end");
+  }
+  function seg(id, k, conv) {
+    $(id).addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return;
+      est[k] = conv ? conv(b.getAttribute("data-v")) : b.getAttribute("data-v");
+      marcar(id, est[k]); pintar();
+    });
+  }
+  function marcar(id, v) { $(id).querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x.getAttribute("data-v")) === String(v) ? "true" : "false"); }); }
+  seg("modelo", "m"); seg("cuant", "q"); seg("ctx", "x", Number);
+  $("n").addEventListener("input", function () { est.n = Number(this.value); pintar(); });
+  $("tok").addEventListener("input", function () { est.tok = Number(this.value); pintar(); });
+  $("motor").addEventListener("click", function () { est.motor = !est.motor; this.setAttribute("aria-pressed", est.motor ? "true" : "false"); pintar(); });
+  $("otro").addEventListener("click", function () {
+    var i; do { i = Math.floor(Math.random() * CASOS.length); } while (i === est.caso);
+    est.caso = i; var c = CASOS[i];
+    est.n = c.c; est.tok = Math.max(50, Math.round((c.t * (0.85 + Math.random() * 0.3)) / 50) * 50);
+    est.m = c.m || "0.6"; est.q = c.q || "q8"; est.x = c.x || 4096;
+    $("n").value = est.n; $("tok").value = est.tok; marcar("modelo", est.m); marcar("cuant", est.q); marcar("ctx", est.x);
+    $("caso").textContent = c.n; pintar();
+  });
+  pintar();
+})();
+</script>
+</body>
+</html>

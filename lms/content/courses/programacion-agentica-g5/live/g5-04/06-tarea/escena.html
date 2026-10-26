@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Pregunta, tarea e insignia</title>
+<!--
+  Escena del modo LIVE (clase extra g5-04). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Sigue el patrón de g5-02/12-insignia: si el servidor responde, el avance real manda; si no, queda el ejemplo.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .5); }
+.s4-b6 { display: grid; grid-template-columns: .7fr 1.3fr; gap: 2vw; align-items: center; min-height: 0; }
+.s4-ins { display: grid; place-items: center; }
+.s4-ins svg { width: 100%; height: auto; max-height: 48vh; overflow: visible; }
+.s4-ins .aro { fill: none; stroke: var(--accent); stroke-width: 10; }
+.s4-ins .aro2 { fill: none; stroke: var(--gold); stroke-width: 4; stroke-dasharray: 14 10; }
+.s4-ins .fondo { fill: var(--s1); stroke: var(--line2); stroke-width: 3; }
+.s4-ins .pieza { fill: var(--s2); stroke: var(--accent); stroke-width: 5; }
+.s4-ins .pieza.g { stroke: var(--gold); } .s4-ins .pieza.k { stroke: var(--ok); }
+.s4-ins text { fill: var(--fg); font-weight: 800; text-anchor: middle; }
+.s4-ins text.m { fill: var(--muted); font-weight: 700; }
+.s4-ins .badge { transform-origin: 300px 300px; }
+.s4-6.apagada .badge { filter: grayscale(1); opacity: .42; }
+.s4-6.go:not(.apagada) .badge { animation: s4-enciende .7s ease-out 1.2s both; }
+.s4-6.go:not(.apagada) .aro2 { animation: s4-gira 14s linear infinite; transform-origin: 300px 300px; }
+@keyframes s4-enciende { from { filter: grayscale(1); opacity: .42; } to { filter: none; opacity: 1; } }
+@keyframes s4-gira { to { transform: rotate(360deg); } }
+.s4-der { display: grid; gap: 1vh; align-content: center; }
+.s4-card { padding: .55em 1.1em; }
+.s4-card h2 { margin: 0 0 .4em; font-size: .7em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: .7em; }
+.s4-prog { display: grid; grid-template-columns: auto 1fr; gap: .2em 1.4em; align-items: center; }
+.s4-prog .n { font-size: 2em; font-weight: 800; line-height: 1; letter-spacing: -.03em; }
+.s4-prog .n small { font-size: .38em; font-weight: 700; color: var(--muted); letter-spacing: 0; }
+.s4-pips { display: flex; gap: .4em; }
+.s4-pips i { flex: 1; height: .7em; border-radius: .35em; background: var(--s3); position: relative; }
+.s4-pips i.ok { background: var(--accent); }
+.s4-pips i.umbral::after { content: ""; position: absolute; right: -.28em; top: -.35em; bottom: -.35em; width: 2px; background: var(--gold); }
+.s4-estado { grid-column: 1 / -1; font-size: .78em; color: var(--muted); }
+.s4-estado b { color: var(--ok); }
+.s4-6.apagada .s4-estado b { color: var(--warn); }
+.s4-preg { margin: 0; font-size: 1.05em; font-weight: 700; padding-left: .7em; border-left: 4px solid var(--accent); }
+.s4-preg em { font-style: normal; color: var(--accent); }
+.s4-pasos { margin: 0; padding: 0; list-style: none; display: grid; gap: .35em; counter-reset: p; }
+.s4-pasos li { display: grid; grid-template-columns: 1.6em 1fr; gap: .6em; align-items: baseline; font-size: .82em; }
+.s4-pasos li::before { counter-increment: p; content: counter(p); display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font-weight: 800; font-size: .85em; }
+.s4-pasos code { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.s4-rec { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vw; }
+.s4-rec h3 { margin: 0 0 .2em; font-size: .9em; }
+.s4-rec p { margin: 0; font-size: .74em; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .s4-6 .badge, .s4-6 .aro2 { animation: none !important; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Aplicación</span>
+    <span class="esc-num">Grupo 5 · Extra · E06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="s4-6" id="raiz">
+      <h1 class="esc-titulo a-in">Pregunta, tarea e <em>insignia</em></h1>
+      <div class="s4-b6">
+        <div class="s4-ins a-in" style="--d:.2s">
+          <svg viewBox="0 0 600 600" role="img" aria-label="Insignia de la clase extra: tres piezas unidas en un aro">
+            <g class="badge">
+              <circle class="aro2" cx="300" cy="300" r="282"/>
+              <circle class="fondo" cx="300" cy="300" r="250"/>
+              <circle class="aro" cx="300" cy="300" r="250"/>
+              <rect class="pieza k" x="110" y="250" width="140" height="100" rx="18"/>
+              <text x="180" y="292" font-size="22">e5</text><text class="m" x="180" y="322" font-size="16">comprensión</text>
+              <rect class="pieza" x="230" y="120" width="140" height="100" rx="18"/>
+              <text x="300" y="162" font-size="22">tabla</text><text class="m" x="300" y="192" font-size="16">motor</text>
+              <rect class="pieza g" x="350" y="250" width="140" height="100" rx="18"/>
+              <text x="420" y="292" font-size="22">Qwen3</text><text class="m" x="420" y="322" font-size="16">modelo local</text>
+              <path d="M250 300 L350 300 M300 220 L300 250" fill="none" stroke="var(--line2)" stroke-width="5" stroke-linecap="round"/>
+              <text x="300" y="420" font-size="30">Bot avanzado</text>
+              <text class="m" x="300" y="455" font-size="18">clase extra · grupo 5</text>
+            </g>
+          </svg>
+        </div>
+        <div class="s4-der">
+          <div class="esc-card s4-card a-in" id="progreso" data-fuente="/api/v1/lessons/g5-04/progress" style="--d:.3s">
+            <h2>Tu avance <span class="esc-chip warn" id="prog-tag">ejemplo</span></h2>
+            <div class="s4-prog">
+              <div class="n"><span id="p-done">5</span> <small>de <span id="p-total">7</span> pasos</small></div>
+              <div class="s4-pips" id="p-pips"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok umbral"></i><i></i><i></i></div>
+              <div class="s4-estado" id="p-estado"><b>Insignia encendida.</b> El umbral es 5 de 7 pasos.</div>
+            </div>
+          </div>
+          <div class="esc-card s4-card a-in" style="--d:.45s">
+            <h2>Pregunta para el hilo de la sesión</h2>
+            <p class="s4-preg">En <em>tu</em> bot, ¿qué debería decidir el código y qué el modelo? Da un ejemplo de cada uno.</p>
+          </div>
+          <div class="esc-card s4-card a-in" style="--d:.6s">
+            <h2>Tarea extra · se entrega desde el LMS</h2>
+            <ol class="s4-pasos">
+              <li><span>Instala Ollama y baja el modelo pequeño: <code>ollama pull qwen3:0.6b</code></span></li>
+              <li><span>Mide: <code>ollama run qwen3:0.6b --verbose "…" 2&gt; medicion.txt</code> y anota <code>eval rate</code> y la RAM de <code>ollama ps</code></span></li>
+              <li><span>Sube <code>medicion.txt</code> y <code>EVIDENCIA.md</code> (tokens/s, RAM, tu procesador y el caso en que el motor se equivocó) a tu repo <code>clase-extra</code> y entrega URL + commit</span></li>
+            </ol>
+          </div>
+          <div class="s4-rec">
+            <div class="esc-card s4-card a-in" style="--d:.7s"><h3>Modelo local</h3><p>Pesos × bytes + caché KV + motor. Q8 de 0.6B: 1,3 GB y 14 tok/s en 2 vCPU.</p></div>
+            <div class="esc-card s4-card a-in" style="--d:.8s"><h3>Motor</h3><p>Hechos con nombre → fila → acción. El modelo propone; el código decide.</p></div>
+            <div class="esc-card s4-card a-in" style="--d:.9s"><h3>Embeddings</h3><p>Frases con el mismo sentido caen cerca. e5 + regresión: de 66 % a 78 %.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Sigue la explicación del instructor</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+/* Si el servidor responde, el avance real manda; si falla, queda el ejemplo ya encendido. */
+(function () {
+  var raiz = document.getElementById("raiz"), UMBRAL = 5, ido = false;
+  function ir() { if (!ido) { ido = true; raiz.classList.add("go"); } }
+  function pintar(j) {
+    var done = +j.done, total = +j.total;
+    if (!(done >= 0) || !(total > 0)) return;
+    document.getElementById("p-done").textContent = done;
+    document.getElementById("p-total").textContent = total;
+    var p = document.getElementById("p-pips"); p.textContent = "";
+    for (var k = 0; k < total; k++) { var i = document.createElement("i"); if (k < done) i.className = "ok"; if (k === UMBRAL - 1) i.className += " umbral"; p.appendChild(i); }
+    var tag = document.getElementById("prog-tag"); tag.textContent = "datos reales"; tag.className = "esc-chip ok";
+    var e = document.getElementById("p-estado"), falta = UMBRAL - done;
+    if (done >= UMBRAL) { raiz.classList.remove("apagada"); e.innerHTML = "<b>Insignia encendida.</b> El umbral es " + UMBRAL + " de " + total + " pasos."; }
+    else { raiz.classList.add("apagada"); e.innerHTML = "<b>Te " + (falta === 1 ? "falta 1 paso" : "faltan " + falta + " pasos") + "</b> para encender la insignia."; }
+  }
+  function traer(id, fn, fin) {
+    try { fetch(document.getElementById(id).getAttribute("data-fuente"), { credentials: "same-origin" })
+      .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) fn(j); }).catch(function () {}).then(fin); } catch (e) { if (fin) fin(); }
+  }
+  traer("progreso", pintar, ir); setTimeout(ir, 1500);
+})();
+</script>
+</body>
+</html>

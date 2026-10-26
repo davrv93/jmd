@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · El motor de decisiones: hechos, tabla y acción</title>
+<!--
+  Escena del modo LIVE (clase extra g5-04). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: «Otro caso» trae un mensaje de cliente al azar; se ven los hechos detectados, la fila de la tabla que
+  dispara, la acción y el porqué. «Sin motor» muestra lo que diría el modelo solo (hechos inventados en rojo).
+  El alumno marca si la decisión fue correcta y se acumula el acuerdo con el criterio del instructor. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .25); }
+.esc-titulo { font-size: 1.3em; }
+.s4-btn { font: 700 .72em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.s4-btn:hover { transform: translateY(-1px); }
+.s4-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.s4-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.s4-btn.ok { color: var(--ok); border-color: var(--ok); } .s4-btn.no { color: var(--bad); border-color: var(--bad); }
+.s4-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.s4-et { font-size: .62em; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+.s4-cab3 { display: grid; grid-template-columns: 1fr auto; gap: 1.2vw; align-items: center; }
+.s4-msj { display: flex; align-items: center; gap: .8em; }
+.s4-bur { position: relative; background: var(--s1); border: 1px solid var(--line2); border-radius: 1em 1em 1em .25em; padding: .55em 1em; font-size: 1.05em; font-weight: 600; box-shadow: var(--card-shadow); min-width: 14em; }
+.s4-bur small { display: block; font-size: .62em; color: var(--muted); font-weight: 600; }
+.s4-b3 { display: grid; grid-template-columns: .8fr 1.7fr 1fr; gap: 1.2vw; min-height: 0; align-items: stretch; }
+.s4-col { padding: .7em 1em; display: grid; gap: .5em; align-content: start; min-width: 0; }
+.s4-hechos { display: flex; flex-wrap: wrap; gap: .4em; }
+.s4-hechos .esc-chip { font-size: .66em; }
+.s4-hechos .esc-chip.off { opacity: .4; text-decoration: line-through; }
+.s4-tabla { margin: 0; padding: 0; list-style: none; display: grid; gap: .14em; font-size: .64em; line-height: 1.3; }
+.s4-tabla li { display: grid; grid-template-columns: 8.6em 1fr 9.8em; gap: .6em; padding: .16em .6em; border-radius: .5em; border: 1px solid transparent; color: var(--muted); transition: background .25s, border-color .25s; }
+.s4-tabla li b { color: var(--fg); font-family: var(--mono); font-weight: 700; }
+.s4-tabla li em { font-style: normal; font-weight: 700; text-align: right; }
+.s4-tabla li.gana { background: var(--accent-bg); border-color: var(--accent); color: var(--fg); }
+.s4-tabla li.gana em { color: var(--accent); }
+.s4-tabla li.tapada { text-decoration: line-through; opacity: .55; }
+.s4-tabla li.grupo { display: block; padding: .3em 0 0; font-size: .85em; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.s4-acc { font-size: 1.25em; font-weight: 800; letter-spacing: -.01em; color: var(--accent); line-height: 1.15; }
+.s4-acc.bad { color: var(--bad); }
+.s4-por { margin: 0; font-size: .78em; color: var(--muted); }
+.s4-resp { margin: 0; padding: .6em .9em; border-radius: .8em .8em .25em .8em; background: var(--ok-bg); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); font-size: .85em; }
+.s4-resp.sin { background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 35%, transparent); }
+.s4-resp mark { background: var(--bad); color: #fff; border-radius: .3em; padding: 0 .3em; font-weight: 700; }
+.s4-modo { display: flex; gap: .35em; }
+.s4-eval { display: grid; grid-template-columns: auto auto 1fr; gap: .8em; align-items: center; padding: .55em 1em; }
+.s4-eval p { margin: 0; font-size: .8em; }
+.s4-eval p b { color: var(--accent); }
+.s4-eval .crit { color: var(--muted); font-size: .74em; }
+.s4-acu { font-size: 1.4em; font-weight: 800; font-variant-numeric: tabular-nums; }
+.s4-acu small { font-size: .5em; color: var(--muted); font-weight: 700; }
+.s4-logro { display: none; }
+.s4-logro.ver { display: inline-flex; animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+.s4-nuevo { animation: esc-entra .35s cubic-bezier(.2,.7,.2,1) both; }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptos</span>
+    <span class="esc-num">Grupo 5 · Extra · E03</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="s4-cab3">
+      <div>
+        <h1 class="esc-titulo a-in">El motor de decisiones: <em>hechos → fila → acción</em></h1>
+        <div class="s4-msj a-in" style="--d:.1s"><div class="s4-bur" id="bur"><small>Cliente · Tienda Sol (polos, casacas, zapatillas)</small><span id="msj">Hola buenas</span></div></div>
+      </div>
+      <div class="esc-fila a-in" style="--d:.2s">
+        <div class="s4-modo" role="radiogroup" aria-label="Modo"><button type="button" class="s4-btn" id="m-con" aria-pressed="true">Con motor</button><button type="button" class="s4-btn" id="m-sin" aria-pressed="false">Sin motor</button></div>
+        <button type="button" class="s4-btn pri" id="otro">Otro caso</button>
+      </div>
+    </div>
+    <div class="s4-b3">
+      <section class="esc-card s4-col a-in" style="--d:.25s" aria-label="Hechos detectados">
+        <span class="s4-et">1 · Hechos (se lee una sola vez)</span>
+        <div class="s4-hechos" id="hechos"></div>
+        <p class="s4-por" id="hechos-n">Cada hecho sale de una regex, de la intención del clasificador o de la comprensión entrenada.</p>
+      </section>
+      <section class="esc-card s4-col a-in" style="--d:.35s" aria-label="Tabla de decisión">
+        <span class="s4-et">2 · Tabla: la fila que dispara</span>
+        <ol class="s4-tabla" id="tabla">
+          <li class="grupo">encabezado · gana la primera</li>
+          <li data-r="groseria"><b>groseria</b><span>insulto con confianza alta</span><em>callar y avisar</em></li>
+          <li data-r="pide_humano"><b>pide_humano</b><span>pide hablar con alguien</span><em>derivar</em></li>
+          <li data-r="cancela"><b>cancela</b><span>«ya no quiero», cancela</span><em>cerrar sin preguntar</em></li>
+          <li data-r="foto"><b>foto_sin_texto</b><span>llega una imagen y nada más</span><em>preguntar</em></li>
+          <li data-r="fuera"><b>fuera_de_giro</b><span>pregunta ajena a la tienda o una cuenta</span><em>responder corto</em></li>
+          <li data-r="saludo"><b>saludo</b><span>saluda y nada más</span><em>saludar y preguntar</em></li>
+          <li class="grupo">datos · se colectan (hasta 3)</li>
+          <li data-r="envio"><b>envio</b><span>habla de envío · tapa a <b>precio</b></span><em>responder catálogo</em></li>
+          <li data-r="precio"><b>precio</b><span>pregunta el precio de un producto</span><em>responder catálogo</em></li>
+          <li data-r="tallas"><b>tallas</b><span>pregunta talla o stock</span><em>responder catálogo</em></li>
+          <li data-r="objecion"><b>objecion</b><span>«muy caro» sin pedir rebaja</span><em>recomendar</em></li>
+          <li class="grupo">acuse y respaldo</li>
+          <li data-r="despedida"><b>despedida</b><span>se despide</span><em>acusar, sin pregunta</em></li>
+          <li data-r="ambiguo"><b>ambiguo</b><span>ninguna fila disparó</span><em>preguntar</em></li>
+        </ol>
+      </section>
+      <section class="esc-card s4-col a-in" style="--d:.45s" aria-label="Acción y respuesta">
+        <span class="s4-et">3 · Acción</span>
+        <div class="s4-acc" id="acc">Responder saludo + preguntar</div>
+        <p class="s4-por" id="por">Solo hay saludo; la plantilla SALUDO lleva la pregunta de código «¿qué buscas?».</p>
+        <span class="s4-et" id="resp-et">Respuesta con motor · datos del catálogo</span>
+        <p class="s4-resp" id="resp">¡Hola! Soy Sol, el asistente de la tienda 😊 ¿Qué estás buscando hoy?</p>
+      </section>
+    </div>
+    <div class="esc-card s4-eval a-in" style="--d:.55s">
+      <div class="s4-acu"><span id="acu">0</span><small> de <span id="tot">0</span> · <span id="pct">—</span></small></div>
+      <div class="s4-modo"><button type="button" class="s4-btn ok" id="bien">Decidió bien</button><button type="button" class="s4-btn no" id="mal">Decidió mal</button></div>
+      <p id="crit">¿El motor decidió bien este caso? Marca y compara con el criterio del instructor. <span class="esc-chip ok s4-logro" id="logro">8 casos y ≥ 80 % · pulsa «Lo logré»</span></p>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Dos de los casos existen porque el motor se equivocó de verdad: descúbrelos</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  // Catálogo genérico: Polo básico S/ 35 (S, M, L) · Casaca Urbana S/ 129 (M, L) · Zapatillas Runner S/ 189 (38-42).
+  // Envío Lima S/ 10 en 24-48 h · pago Yape, Plin o tarjeta. Los textos «sin motor» marcan con [[ ]] lo inventado.
+  // crit: "bien" = el motor decidió bien según el instructor; "mal" = caso real en que la tabla falló y hubo que corregirla.
+  var CASOS = [
+    { m: "Hola buenas", h: ["saludo", "sin_pregunta"], r: ["saludo"], a: "Responder saludo + preguntar", p: "Solo hay saludo; la plantilla SALUDO lleva la pregunta de código «¿qué buscas?».",
+      con: "¡Hola! Soy Sol, el asistente de la tienda 😊 ¿Qué estás buscando hoy?", sin: "¡Hola! Bienvenido a Tienda Sol, [[hoy tenemos 20 % de descuento]] en polos. ¿Te muestro?", crit: "bien", n: "Correcto: saludar y preguntar, sin inventar promociones." },
+    { m: "cuanto esta el polo básico?", h: ["pregunta", "pregunta_precio", "producto: Polo básico"], r: ["precio"], a: "Responder precio del catálogo", p: "pregunta_precio con producto en foco → fila precio; el precio sale del catálogo, no del modelo.",
+      con: "El Polo básico está a S/ 35. Lo tenemos en S, M y L. ¿Te lo separo?", sin: "El polo básico cuesta [[S/ 29,90]] y viene en [[tallas XS a XXL]].", crit: "bien", n: "Correcto: dato del catálogo y la pregunta de cierre del código." },
+    { m: "y el envío a Lima cuánto cuesta?", h: ["pregunta", "pregunta_precio", "habla_envio"], r: ["envio"], tapa: ["precio"], a: "Responder envío (tapa a precio)", p: "Disparan envio y precio; EXCLUYE dice que «¿cuánto el envío?» no pregunta el precio de la prenda.",
+      con: "El envío en Lima cuesta S/ 10 y llega en 24 a 48 horas.", sin: "El envío es [[gratis por compras mayores a S/ 100]] y llega [[mañana mismo]].", crit: "bien", n: "Correcto: la exclusión evita responder el precio del polo." },
+    { m: "tienen la casaca en talla S?", h: ["pregunta", "pide_tallas", "producto: Casaca Urbana"], r: ["tallas"], a: "Responder tallas con stock", p: "pide_tallas con producto en foco → fila tallas; el stock se consulta en vivo.",
+      con: "La Casaca Urbana la tenemos en M y L; en S no por ahora. ¿Te sirve la M?", sin: "¡Sí! Tenemos la casaca en [[S, M, L y XL]], ¿cuál te mando?", crit: "bien", n: "Correcto: dice la verdad del stock y ofrece la alternativa." },
+    { m: "uff muy caro", h: ["objecion_precio", "no pide_rebaja"], r: ["objecion"], a: "Recomendar la opción más económica", p: "Objeción sin pedir rebaja → no se inventa descuento; se recomienda lo más barato de la línea.",
+      con: "Entiendo. Dentro de la misma línea, el Polo básico está a S/ 35. ¿Te lo muestro?", sin: "Te puedo dar [[un 15 % de descuento]] si lo llevas hoy 😉", crit: "bien", n: "Correcto: un descuento lo autoriza el dueño, no el modelo." },
+    { m: "ya no quiero nada gracias", h: ["cancela", "despide"], r: ["cancela"], tapa: ["despedida"], a: "Cerrar sin preguntar", p: "cancela gana en encabezado y marca sin_pregunta: a quien se va no se le empuja.",
+      con: "Listo, sin problema. Si más adelante necesitas algo, aquí estamos 😊", sin: "¿Seguro? [[Te guardo el pedido 24 horas]] y [[te aviso cuando haya promoción]].", crit: "bien", n: "Correcto: cerrar sin insistir." },
+    { m: "quiero hablar con una persona", h: ["pide_humano"], r: ["pide_humano"], a: "Derivar a una persona", p: "pide_humano es encabezado de alta prioridad: el bot se calla y avisa al equipo.",
+      con: "Claro, te paso con una persona del equipo. Te escribe en unos minutos.", sin: "Yo te puedo ayudar con todo, no necesitas a nadie más 😊 [[Soy una asesora real]].", crit: "bien", n: "Correcto: nunca se le niega una persona a quien la pide." },
+    { m: "[imagen sin texto]", h: ["foto_sin_texto", "sin intención"], r: ["foto"], a: "Preguntar qué quiere saber", p: "No hay texto ni intención; preguntar es más barato que adivinar qué hay en la foto.",
+      con: "Recibí tu foto. ¿Qué quieres saber: precio, talla o si lo tenemos?", sin: "¡Qué linda [[casaca roja]]! La tenemos a [[S/ 99]], ¿te la separo?", crit: "bien", n: "Correcto: el modelo de texto no ve la foto, pero igual «describe»." },
+    { m: "eres una basura inútil", h: ["groseria", "confianza 0,93"], r: ["groseria"], a: "Callar y avisar a una persona", p: "Insulto con confianza alta y sin duda ni apuro → se calla; una persona revisa.",
+      con: "(sin respuesta; aviso a una persona del equipo)", sin: "Lamento que te sientas así. [[Te ofrezco un cupón de S/ 20]] para compensarte.", crit: "bien", n: "Correcto: callar también es una acción." },
+    { m: "cuánto es 189 por 2?", h: ["pregunta", "pide_cuenta"], r: ["fuera"], a: "Responder corto y volver al giro", p: "Una cuenta es fuera_de_giro: se contesta corto y se vuelve a la tienda.",
+      con: "Eso te lo dejo a la calculadora 😊 Si quieres, te digo el precio de las zapatillas.", sin: "189 × 2 = [[387]]. Y [[si llevas dos pares te hago precio]] 😉", crit: "bien", n: "Correcto: un modelo pequeño también se equivoca sumando." },
+    { m: "mmm", h: ["(ningún hecho)"], r: ["ambiguo"], a: "Preguntar una aclaración", p: "Ninguna fila disparó: el respaldo pregunta en vez de suponer.",
+      con: "¿Te ayudo con algo del catálogo: polos, casacas o zapatillas?", sin: "¡Perfecto! [[Entonces te confirmo el pedido]] 🙌", crit: "bien", n: "Correcto: ante la duda, preguntar." },
+    { m: "gracias, hasta luego", h: ["despide"], r: ["despedida"], a: "Acusar, sin pregunta", p: "Despedida → acuse corto y nada de preguntas.",
+      con: "¡Gracias a ti! Que tengas buen día.", sin: "¡Hasta luego! [[Recuerda que el envío es gratis]] 🚚", crit: "bien", n: "Correcto." },
+    { m: "me llega mañana si pago hoy?", h: ["pregunta", "habla_envio", "pide_pago"], r: ["envio"], a: "Responder envío y pago (colectar)", p: "Dos datos de la tienda: se colectan los dos en una sola respuesta.",
+      con: "En Lima llega en 24 a 48 horas desde que confirmas el pago. Pagas con Yape, Plin o tarjeta.", sin: "[[Sí, mañana sin falta]] 😊 Pagas por Yape [[al 999 999 999]].", crit: "bien", n: "Correcto: no promete lo que el catálogo no garantiza." },
+    { m: "cuánto cuesta el polo? no me digas talla todavía", h: ["pregunta", "pregunta_precio", "pide_tallas (por «talla»)", "producto: Polo básico"], r: ["precio", "tallas"], a: "Responder precio y tallas", p: "La regex de tallas disparó con la palabra «talla» y se colectó. Hacía falta la regla «no me digas…».",
+      con: "El Polo básico está a S/ 35. Lo tenemos en S, M y L. ¿Te lo separo?", sin: "Cuesta [[S/ 39]] y [[solo queda talla M]].", crit: "mal", n: "Mal: el cliente pidió que NO le digan talla. Se arregló con RE_NO_QUIERE: lo que niega no se le dice." },
+    { m: "hola, buenas tardes", h: ["saludo", "despide (comprensión: parece «gracias, buenas tardes»)"], r: ["saludo", "despedida"], a: "Saludar… y despedirse", p: "La comprensión entrenada marcó «despedida» por el parecido con «gracias, buenas tardes» y el acuse se sumó.",
+      con: "¡Hola! Soy Sol, el asistente de la tienda 😊 ¿Qué buscas? ¡Que tengas buen día!", sin: "¡Buenas tardes! [[Hoy cerramos a las 6]], ¿qué necesitas?", crit: "mal", n: "Mal: saludar y despedirse a la vez. Se arregló con una excepción: un saludo con «buenas tardes» no es despedida." }
+  ];
+  var est = { i: -1, sin: false, marcado: false, acu: 0, tot: 0, usados: [] };
+  function otro() {
+    var libres = CASOS.map(function (_, i) { return i; }).filter(function (i) { return est.usados.indexOf(i) < 0 && i !== est.i; });
+    if (!libres.length) { est.usados = []; libres = CASOS.map(function (_, i) { return i; }).filter(function (i) { return i !== est.i; }); }
+    est.i = libres[Math.floor(Math.random() * libres.length)];
+    est.usados.push(est.i); est.marcado = false;
+    pintar(true);
+  }
+  function pintar(nuevo) {
+    var c = CASOS[est.i];
+    $("msj").textContent = c.m;
+    var h = $("hechos"); h.textContent = "";
+    c.h.forEach(function (x) { var s = document.createElement("span"); s.className = "esc-chip" + (x.charAt(0) === "(" ? " warn" : ""); s.textContent = x; h.appendChild(s); });
+    document.querySelectorAll("#tabla li[data-r]").forEach(function (li) {
+      var r = li.getAttribute("data-r");
+      li.classList.toggle("gana", !est.sin && c.r.indexOf(r) >= 0);
+      li.classList.toggle("tapada", !est.sin && !!c.tapa && c.tapa.indexOf(r) >= 0);
+    });
+    $("acc").textContent = est.sin ? "El modelo decide y redacta solo" : c.a;
+    $("acc").classList.toggle("bad", est.sin);
+    $("por").textContent = est.sin ? "Sin hechos ni tabla: una respuesta plausible, con el catálogo en el prompt y sin compuerta. Lo rojo no está en el catálogo." : c.p;
+    $("resp-et").textContent = est.sin ? "Respuesta sin motor · hechos inventados en rojo" : "Respuesta con motor · datos del catálogo";
+    var r = $("resp"); r.classList.toggle("sin", est.sin);
+    r.innerHTML = est.sin ? c.sin.replace(/</g, "&lt;").replace(/\[\[(.+?)\]\]/g, "<mark>$1</mark>") : c.con.replace(/</g, "&lt;");
+    $("bien").disabled = $("mal").disabled = est.marcado;
+    if (nuevo) {
+      $("crit").textContent = "¿El motor decidió bien este caso? Marca y compara con el criterio del instructor.";
+      [$("bur"), $("acc"), r].forEach(function (el) { el.classList.remove("s4-nuevo"); void el.offsetWidth; el.classList.add("s4-nuevo"); });
+    }
+  }
+  function marcar(dijo) {
+    if (est.marcado || est.i < 0) return;
+    var c = CASOS[est.i], ok = dijo === c.crit;
+    est.marcado = true; est.tot++; if (ok) est.acu++;
+    $("acu").textContent = est.acu; $("tot").textContent = est.tot;
+    var pct = Math.round(est.acu / est.tot * 100); $("pct").textContent = pct + " % de acuerdo";
+    $("crit").innerHTML = "<b>" + (ok ? "Coincides con el instructor." : "El instructor opina distinto.") + "</b> <span class='crit'>" + c.n.replace(/</g, "&lt;") + "</span>";
+    $("bien").disabled = $("mal").disabled = true;
+    if (est.tot >= 8 && pct >= 80) { var l = document.createElement("span"); l.className = "esc-chip ok s4-logro ver"; l.textContent = "8 casos y ≥ 80 % · pulsa «Lo logré»"; $("crit").appendChild(document.createTextNode(" ")); $("crit").appendChild(l); }
+  }
+  $("otro").addEventListener("click", otro);
+  $("bien").addEventListener("click", function () { marcar("bien"); });
+  $("mal").addEventListener("click", function () { marcar("mal"); });
+  function modo(sin) { est.sin = sin; $("m-con").setAttribute("aria-pressed", sin ? "false" : "true"); $("m-sin").setAttribute("aria-pressed", sin ? "true" : "false"); pintar(false); }
+  $("m-con").addEventListener("click", function () { modo(false); });
+  $("m-sin").addEventListener("click", function () { modo(true); });
+  est.i = 0; est.usados = [0]; pintar(false);
+})();
+</script>
+</body>
+</html>
