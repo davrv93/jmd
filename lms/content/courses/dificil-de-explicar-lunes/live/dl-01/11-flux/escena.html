@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E11 · Genera tu imagen con FLUX</title>
+<!-- Escena del modo LIVE (sesión 1, grupo de los lunes). Estilos comunes en ../../comun/escena.css; propios en #esc-propio. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-grid-2.lado { grid-template-columns: 1.05fr .95fr; align-items: start; }
+.nota { font-size: .72em; color: var(--muted); margin: 0; }
+.esc-lista li { display: block; position: relative; padding-left: 1.25em; }
+.esc-lista li::before { position: absolute; left: 0; top: .5em; }
+.paso { display: flex; gap: .6em; align-items: baseline; margin: 0 0 .35em; font-weight: 700; }
+.paso i { font-style: normal; display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .8em; flex: none; }
+textarea#prompt { width: 100%; height: 16vh; resize: none; font: .8em/1.45 inherit; padding: .7em .8em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+textarea#prompt:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.grupo { margin-top: .7vh; }
+.grupo b { font-size: .72em; color: var(--muted); display: block; margin-bottom: .25em; }
+.chips { display: flex; flex-wrap: wrap; gap: .35em; }
+.chips button { font: 600 .68em/1 system-ui, sans-serif; padding: .5em .8em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+#copiar { width: 100%; font: 700 1em/1 system-ui, sans-serif; padding: .9em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; box-shadow: var(--card-shadow); margin-top: .6vh; }
+#copiar.ok { background: var(--ok); }
+pre#cmd { max-height: 14vh; overflow: auto; font-size: .6em; margin: .6em 0 0; white-space: pre-wrap; word-break: break-word; }
+.cuenta { font-size: .72em; color: var(--muted); margin: .4em 0 0; }
+.sello { display: inline-block; background: var(--warn-bg); color: var(--warn); border-radius: .6em; padding: .25em .7em; font-size: .72em; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Aplicación</span>
+    <span class="esc-num">LUNES · S1 · E11</span>
+  </header>
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Tu imagen de 1928 con <em>FLUX</em>: escribe, elige, copia</h1>
+    <section class="esc-grid-2 lado">
+      <div>
+        <p class="paso a-in" style="--d:.1s"><i>1</i> Describe la imagen (en inglés sale mejor; en español también funciona)</p>
+        <textarea id="prompt" class="a-in" style="--d:.15s" spellcheck="false" aria-label="Tu prompt"></textarea>
+        <div class="grupo a-in" style="--d:.2s"><b>2 · Estilo</b><div class="chips" id="estilo"></div></div>
+        <div class="grupo a-in" style="--d:.25s"><b>3 · Encuadre</b><div class="chips" id="encuadre"></div></div>
+        <div class="grupo a-in" style="--d:.3s"><b>Ideas rápidas</b><div class="chips" id="ideas"></div></div>
+      </div>
+      <div>
+        <p class="paso a-in" style="--d:.2s"><i>4</i> Copia, pega en la terminal y espera unos 10 s</p>
+        <button id="copiar" class="a-in" type="button" style="--d:.25s">Copiar comando</button>
+        <pre class="esc-cmd a-in" id="cmd" style="--d:.3s"></pre>
+        <p class="cuenta a-in" style="--d:.35s">Luego abre <code id="ruta">/trabajo/flux/imagen-1.png</code> en el Visor. Cada comando guarda una imagen nueva (<code>imagen-1</code>, <code>-2</code>…). <span class="sello">tope: 5 imágenes por persona hoy</span></p>
+        <ul class="esc-lista a-in" style="--d:.4s">
+          <li><b>Qué pasa por dentro:</b> el comando manda tu texto al servicio de imagen de la clase; FLUX, un modelo de difusión en la nube, lo convierte en píxeles en 2 pasos.</li>
+          <li><b>Reglas de 1928:</b> blanco y negro, formas redondas, tinta gruesa, ojos con pupila, brazos de manguera. Lo que no pidas, el modelo lo inventa.</li>
+          <li><b>Si sale raro:</b> cambia una sola cosa del prompt y vuelve a generar. Compara las dos.</li>
+        </ul>
+        <p class="nota a-in" style="--d:.45s">Lo logré = tu imagen abre en el Visor. Guarda la que más te guste: la usarás como personaje en la escena del pájaro.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Steamboat Willie (1928) es de dominio público · kit en jmd-learn.online/steamboat/</footer>
+</div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const ta = $('prompt'), cmd = $('cmd'), btn = $('copiar');
+  const ESTILOS = [
+    ['1928 en tinta', '1928 black and white cartoon, rubber hose style, round shapes, thick ink outlines, cream paper, film grain'],
+    ['color plano', 'flat color cartoon, 1930s animation cel, bold outlines, limited palette'],
+    ['acuarela', 'soft watercolor illustration, paper texture, gentle colors'],
+    ['pixel art', '8-bit pixel art, 32 colors, crisp pixels'],
+    ['línea clara', 'clean line art, ligne claire, flat pastel colors'],
+  ];
+  const ENCUADRES = [['horizontal', 'horizontal'], ['cuadrado', 'cuadrado'], ['vertical', 'vertical']];
+  const IDEAS = [
+    'a cartoon mouse whistling at a steamboat wheel',
+    'a cartoon cat playing a xylophone made of pots',
+    'a cartoon bird singing on a ship rail',
+    'a steamboat on a river at sunrise',
+    'un ratón de dibujo animado tocando un ukelele en la cubierta',
+    'a cartoon parrot wearing a sailor hat',
+  ];
+  let estilo = ESTILOS[0][1], encuadre = 'horizontal', n = 1;
+  const guardar = (k, v) => { try { localStorage.setItem('e11-' + k, v); } catch (e) {} };
+  const leer = (k) => { try { return localStorage.getItem('e11-' + k); } catch (e) { return null; } };
+  function chips(caja, lista, elegido, al) {
+    caja.innerHTML = '';
+    for (const [nombre, valor] of lista) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = nombre;
+      b.setAttribute('aria-pressed', String(valor === elegido()));
+      b.onclick = () => { al(valor); chips(caja, lista, elegido, al); pintar(); };
+      caja.appendChild(b);
+    }
+  }
+  function ideas() {
+    const caja = $('ideas'); caja.innerHTML = '';
+    for (const i of IDEAS) { const b = document.createElement('button'); b.type = 'button'; b.textContent = i; b.onclick = () => { ta.value = i; guardar('p', i); pintar(); ta.focus(); }; caja.appendChild(b); }
+  }
+  function prompt() {
+    return (ta.value.trim() || IDEAS[0]) + ', ' + estilo;
+  }
+  function comando() {
+    const json = JSON.stringify({ prompt: prompt(), calidad: 'maxima', orientacion: encuadre });
+    return `mkdir -p /trabajo/flux && cd /trabajo/flux && curl -s -X POST "\${IMAGEN_URL:-http://imagen:8000}/generar" -H "Authorization: Bearer $OSITO_TOKEN" -H "Content-Type: application/json" -o imagen-${n}.png -d @- <<'FIN_PROMPT'\n${json}\nFIN_PROMPT\nls -la imagen-${n}.png\n`;
+  }
+  function pintar() { cmd.textContent = comando(); $('ruta').textContent = `/trabajo/flux/imagen-${n}.png`; }
+  async function copiar(t) {
+    try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+    try { await window.parent.navigator.clipboard.writeText(t); return true; } catch (e) {}
+    const a = document.createElement('textarea'); a.value = t; a.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(a); a.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} a.remove(); return ok;
+  }
+  btn.onclick = async () => {
+    const ok = await copiar(comando());
+    btn.textContent = ok ? `✓ Copiado (imagen-${n}): pégalo en la terminal` : 'No pude copiar: selecciona el texto de abajo';
+    btn.classList.toggle('ok', ok);
+    if (ok) { n++; guardar('n', String(n)); }
+    setTimeout(() => { btn.textContent = 'Copiar comando'; btn.classList.remove('ok'); pintar(); }, 3000);
+  };
+  ta.oninput = () => { guardar('p', ta.value); pintar(); };
+  const p0 = leer('p'); ta.value = p0 !== null ? p0 : IDEAS[0];
+  n = Math.max(1, parseInt(leer('n') || '1', 10) || 1);
+  chips($('estilo'), ESTILOS, () => estilo, (v) => { estilo = v; });
+  chips($('encuadre'), ENCUADRES, () => encuadre, (v) => { encuadre = v; });
+  ideas(); pintar();
+})();
+</script>
+</body>
+</html>

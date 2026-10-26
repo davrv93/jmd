@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E09 · Agua en el bote: la página reacciona</title>
+<!-- Escena del modo LIVE (sesión 3, grupo de los lunes). Estilos comunes en ../../_comun/escena.css; propios en #esc-propio. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.mk { border: 3px solid var(--fg); border-radius: .6em; overflow: hidden; background: #000; box-shadow: var(--card-shadow); }
+.mk svg { display: block; }
+.esc-grid-2.lado { grid-template-columns: 1.15fr .85fr; align-items: center; }
+.nota { font-size: .72em; color: var(--muted); margin: 0; }
+.esc-lista li { display: block; position: relative; padding-left: 1.25em; }
+.esc-lista li::before { position: absolute; left: 0; top: .5em; }
+iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg); border-radius: .6em; background: #000; }
+
+.mk.hundiendo { animation: bal 2.2s ease-in-out infinite alternate; } @keyframes bal { from { transform: rotate(-1.5deg); } to { transform: rotate(1.5deg); } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Aplicación</span>
+    <span class="esc-num">LUNES · S1 · E09</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <section class="esc-grid-2 lado">
+      <div class="mk a-in" id="mk" style="position:relative"></div>
+      <div>
+        <h1 class="esc-titulo a-in" style="--d:.1s">Cada gota pregunta: ¿<em>toco</em> a Mickey?</h1>
+        <div id="taller" class="a-in" style="--d:.2s"></div>
+        <div class="esc-fila a-in" style="--d:.3s"><span class="esc-chip" id="nivel">Agua en el bote: 0 %</span><span class="esc-chip warn" id="aviso" hidden>¡Se hunde!</span></div>
+        <ul class="esc-lista a-in" style="--d:.4s">
+          <li><code>s.toca([x, y])</code> mira la silueta del dibujo actual: si toca, salpica y Mickey se moja.</li>
+          <li>Si llega a la cubierta, entra al bote: sube el nivel, con olas. Al 80 % la página reacciona. Haz clic en la escena: un balde.</li>
+        </ul>
+        <p class="nota a-in" style="--d:.5s">En tu copia (<code>05-agua.html</code>): cambia qué pasa al 80 %, haz que el pájaro huya de la lluvia o que las notas floten.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Steamboat Willie (1928) es de dominio público · kit en jmd-learn.online/steamboat/</footer>
+</div>
+
+<script type="module">
+import { crearSteamboat, COLORES_1928 } from '/steamboat/kit.js';
+const mk = document.getElementById('mk');
+const s = await crearSteamboat(mk);
+const D = s.datos, NS = 'http://www.w3.org/2000/svg';
+const el = (t, a, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); (p || s.capa).appendChild(e); return e; };
+const charco = el('path', { fill: '#3b8ad8', 'fill-opacity': .55 }), gotas = el('path', { stroke: '#9cd0ff', 'stroke-width': 4, 'stroke-linecap': 'round', fill: 'none' }), salpica = el('path', { fill: '#dff1ff' });
+const CUBIERTA = 1500, TOPE = 1180; let nivel = 0, mojado = 0, lluvia = 18, colorAgua = '#3b8ad8';
+let gotasVivas = [], chispas = [], celda = 0;
+s.alCuadro(i => celda = i.celda);
+const nuevaGota = (x = Math.random() * D.ancho, y = -20) => gotasVivas.push({ x, y, vx: -2 + Math.random() * 4, vy: 26 + Math.random() * 16, l: 30 + Math.random() * 40 });
+const chispa = (x, y, n, f) => { for (let i = 0; i < n; i++) chispas.push({ x, y, vx: (Math.random() - .5) * f, vy: -Math.random() * f, vida: 1 }); };
+const sup = () => CUBIERTA - (CUBIERTA - TOPE) * nivel;
+const mezcla = (a, b, u) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const A = p(a), B = p(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * u).toString(16).padStart(2, '0')).join(''); };
+const base = { cara: COLORES_1928.cara, pantalon: COLORES_1928.pantalon, zapatos: COLORES_1928.zapatos };
+let ultimo = performance.now();
+function paso(ahora) {
+  const dt = Math.min(0.05, (ahora - ultimo) / 1000); ultimo = ahora; const agua = sup();
+  for (let i = 0; i < lluvia * dt * 4; i++) nuevaGota();
+  const d = [];
+  gotasVivas = gotasVivas.filter(g => { g.x += g.vx; g.y += g.vy;
+    if (s.toca([g.x, g.y])) { chispa(g.x, g.y, 4, 14); mojado = Math.min(1, mojado + 0.004); return false; }
+    if (g.y >= agua) { chispa(g.x, agua, 3, 10); nivel = Math.min(1, nivel + 0.0012); return false; }
+    d.push(`M${g.x.toFixed(0)} ${g.y.toFixed(0)}l${(g.vx * 0.8).toFixed(0)} ${(-g.l * 0.6).toFixed(0)}`); return true; });
+  gotas.setAttribute('d', d.join(''));
+  const c = [];
+  chispas = chispas.filter(p => { p.vy += 1.2; p.x += p.vx; p.y += p.vy; p.vida -= dt * 2.2; const r = (4 * p.vida).toFixed(1);
+    if (p.vida > 0) c.push(`M${p.x.toFixed(0)} ${p.y.toFixed(0)}m-${r} 0a${r} ${r} 0 1 0 ${(8 * p.vida).toFixed(1)} 0a${r} ${r} 0 1 0 -${(8 * p.vida).toFixed(1)} 0`); return p.vida > 0; });
+  salpica.setAttribute('d', c.join(''));
+  if (nivel > 0) { let p = `M0 ${D.alto}L0 ${agua}`; for (let x = 0; x <= D.ancho; x += 60) p += `L${x} ${(agua + 10 * Math.sin(x / 120 + ahora / 300)).toFixed(0)}`; charco.setAttribute('d', p + `L${D.ancho} ${D.alto}Z`); } else charco.setAttribute('d', '');
+  charco.setAttribute('fill', colorAgua);
+  s.colores({ cara: mezcla(base.cara, '#a9d1f0', mojado), pantalon: mezcla(base.pantalon, '#8fc0ea', mojado), zapatos: mezcla(base.zapatos, '#7fb0dc', mojado) });
+  mojado = Math.max(0, mojado - dt * 0.02);
+  document.getElementById('nivel').textContent = `Agua en el bote: ${Math.round(nivel * 100)} %` + (mojado > .5 ? ' · Mickey empapado' : '');
+  document.getElementById('aviso').hidden = nivel <= 0.8; mk.classList.toggle('hundiendo', nivel > 0.8);
+  requestAnimationFrame(paso);
+}
+requestAnimationFrame(paso);
+s.svg.addEventListener('pointerdown', e => { const r = s.svg.getBoundingClientRect(); const x = (e.clientX - r.left) * D.ancho / r.width, y = (e.clientY - r.top) * D.alto / r.height; for (let i = 0; i < 40; i++) nuevaGota(x + (Math.random() - .5) * 160, y + Math.random() * 40); });
+s.reproducir();
+import('../../comun/taller.js').then(({ montarTaller }) => montarTaller(document.getElementById('taller'), {
+  escena: 'agua', archivo: 'ejemplos/05-agua.html',
+  acciones: { lluvia: (v) => { lluvia = v; }, nivel: (v) => { nivel = v; }, balde: () => { const [x, y, w] = D.cajas[celda]; for (let i = 0; i < 60; i++) nuevaGota(x + Math.random() * w, y - 100); },
+    colorAgua: (c) => { colorAgua = c; }, colores: (c) => { Object.assign(base, c); s.colores(c); }, pausa: (p) => (p ? s.pausar() : s.reproducir()) },
+  sugerencias: ['mucha lluvia', 'poca lluvia', 'que no llueva', 'un balde sobre Mickey', 'agua al 90 %', 'vacía el bote', 'agua verde', 'gorro amarillo'],
+}));
+</script>
+</body>
+</html>

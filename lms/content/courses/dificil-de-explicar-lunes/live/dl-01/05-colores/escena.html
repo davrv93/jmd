@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E05 · Colores: cinco variables CSS</title>
+<!-- Escena del modo LIVE (sesión 3, grupo de los lunes). Estilos comunes en ../../_comun/escena.css; propios en #esc-propio. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.mk { border: 3px solid var(--fg); border-radius: .6em; overflow: hidden; background: #000; box-shadow: var(--card-shadow); }
+.mk svg { display: block; }
+.esc-grid-2.lado { grid-template-columns: 1.15fr .85fr; align-items: center; }
+.nota { font-size: .72em; color: var(--muted); margin: 0; }
+.esc-lista li { display: block; position: relative; padding-left: 1.25em; }
+.esc-lista li::before { position: absolute; left: 0; top: .5em; }
+iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg); border-radius: .6em; background: #000; }
+
+.esc-cmd { font-size: .62em; }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Aplicación</span>
+    <span class="esc-num">LUNES · S1 · E05</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <section class="esc-grid-2 lado">
+      <div class="mk a-in" id="mk"></div>
+      <div>
+        <h1 class="esc-titulo a-in" style="--d:.1s">Una paleta: <em>una variable por parte</em></h1>
+        <div class="esc-fila a-in" id="chips" style="--d:.2s"></div>
+        <pre class="esc-cmd a-in" style="--d:.3s">#escena {
+  --tinta: #121212;   --cara: #ffe7c2;
+  --gorro: #2f5fa8;   --visera: #1c3a6b;
+  --pantalon: #d6452f;
+  --zapatos: #f2a65a; --cuerpo: #121212;
+  --orejas: #121212;  --guantes: #121212;
+}</pre>
+        <div id="taller" class="a-in" style="--d:.4s"></div>
+        <p class="nota a-in" style="--d:.5s">Regla de 1928: la tinta siempre es la más oscura; cara, pantalón y zapatos claros, para que el contorno se lea. En tu copia: <code>ejemplos/01-colores.html</code>, <code>PALETAS</code>.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Steamboat Willie (1928) es de dominio público · kit en jmd-learn.online/steamboat/</footer>
+</div>
+<script type="module">
+import { crearSteamboat } from '/steamboat/kit.js';
+const s = await crearSteamboat(document.getElementById('mk'));
+const P = { Clásico: { tinta: '#121212', cara: '#ffe7c2', gorro: '#2f5fa8', visera: '#1c3a6b', orejas: '#121212', guantes: '#121212', pantalon: '#d6452f', zapatos: '#f2a65a', cuerpo: '#121212', otros: '#ffe7c2' }, Pastel: { tinta: '#2b2340', cara: '#fff3e0', gorro: '#bdd7f3', visera: '#6c5b9e', orejas: '#2b2340', guantes: '#2b2340', pantalon: '#f4c2cf', zapatos: '#efe6a4', cuerpo: '#6c5b9e', otros: '#fff3e0' }, Neón: { tinta: '#0a0014', cara: '#e9ff70', gorro: '#00e5ff', visera: '#7a2bff', orejas: '#ff2bd6', guantes: '#0a0014', pantalon: '#7a2bff', zapatos: '#ff2bd6', cuerpo: '#1a0033', otros: '#e9ff70' }, '1928': { tinta: '#121212', cara: '#bebebe', gorro: '#bebebe', visera: '#121212', orejas: '#121212', guantes: '#121212', pantalon: '#bebebe', zapatos: '#a8a8a8', cuerpo: '#121212', otros: '#bebebe' } }; const caja = document.getElementById('chips');
+for (const n of Object.keys(P)) { const b = document.createElement('button'); b.className = 'esc-chip'; b.textContent = n; b.style.cursor = 'pointer'; b.onclick = () => s.colores(P[n]); caja.appendChild(b); }
+s.colores(P.Clásico); s.reproducir();
+import('../../comun/taller.js').then(({ montarTaller }) => montarTaller(document.getElementById('taller'), {
+  escena: 'colores', archivo: 'ejemplos/01-colores.html',
+  acciones: { colores: (c) => s.colores(c), pausa: (p) => (p ? s.pausar() : s.reproducir()), vaiven: (v) => s.opciones({ vaiven: v }) },
+  sugerencias: ['gorro azul y zapatos dorados', 'pantalón verde', 'paleta neón', 'paleta pastel', 'blanco y negro', 'cara rosa', 'manos blancas', 'todo oscuro', 'gorro #ff2bd6', 'cámara fija'],
+}));
+</script>
+</body>
+</html>

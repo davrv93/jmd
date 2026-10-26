@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E03 · Por qué no cansa: la hoja de tiempos</title>
+<!-- Escena del modo LIVE (sesión 3, grupo de los lunes). Estilos comunes en ../../_comun/escena.css; propios en #esc-propio. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.mk { border: 3px solid var(--fg); border-radius: .6em; overflow: hidden; background: #000; box-shadow: var(--card-shadow); }
+.mk svg { display: block; }
+.esc-grid-2.lado { grid-template-columns: 1.15fr .85fr; align-items: center; }
+.nota { font-size: .72em; color: var(--muted); margin: 0; }
+.esc-lista li { display: block; position: relative; padding-left: 1.25em; }
+.esc-lista li::before { position: absolute; left: 0; top: .5em; }
+iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg); border-radius: .6em; background: #000; }
+
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">LUNES · S1 · E03</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">311 cuadros, 192 dibujos: se anima <em>«a dos»</em></h1>
+    <p class="esc-sub a-in" style="--d:.1s">Cada barra es un dibujo; su ancho, cuántos cuadros dura. El film corre a 24 por segundo, pero el animador dibujó uno de cada dos cuadros casi siempre: 105 dibujos duran 2 cuadros, 80 duran 1 (cuando el movimiento es rápido) y 7 duran 3.</p>
+    <svg class="esc-svg a-in" id="hoja" viewBox="0 0 1000 110" style="--d:.2s"></svg>
+    <section class="esc-grid-3 a-in" style="--d:.3s">
+      <div class="esc-card"><h3>Rápido = «a uno»</h3><p>Cuando Mickey tira del silbato, cada cuadro es un dibujo nuevo: el ojo pide más información.</p></div>
+      <div class="esc-card"><h3>Tranquilo = «a dos»</h3><p>Silbando a gusto, un dibujo cada dos cuadros basta: 12 dibujos por segundo se leen fluidos.</p></div>
+      <div class="esc-card"><h3>El reloj es el audio</h3><p>En el kit, el cuadro que se muestra sale del segundo del audio, así imagen y silbido no se separan nunca.</p></div>
+    </section>
+  </main>
+  <footer class="esc-pie">Steamboat Willie (1928) es de dominio público · kit en jmd-learn.online/steamboat/</footer>
+</div>
+<script type="module">
+import { crearSteamboat } from '/steamboat/kit.js';
+const r = await fetch('/steamboat/datos/escena.json'); const D = await r.json();
+const svg = document.getElementById('hoja'); const m = D.celdaDeCuadro; let x = 0; const w = 1000 / m.length;
+let i = 0; while (i < m.length) { let j = i; while (j < m.length && m[j] === m[i]) j++; const n = j - i;
+  const c = n === 1 ? 'var(--warn)' : n === 2 ? 'var(--accent)' : 'var(--ok)';
+  svg.insertAdjacentHTML('beforeend', `<rect x="${(i * w).toFixed(1)}" y="${30 - n * 8}" width="${(n * w - 0.6).toFixed(1)}" height="${n * 8 + 50}" fill="${c}" opacity=".85"><animate attributeName="opacity" values=".2;.85" begin="${(i / m.length * 6).toFixed(2)}s" dur=".3s" fill="freeze"/></rect>`);
+  i = j; }
+svg.insertAdjacentHTML('beforeend', '<text x="0" y="104" font-size="12">0 s</text><text x="960" y="104" font-size="12">12,8 s</text>');
+</script>
+</body>
+</html>

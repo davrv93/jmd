@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E08 · Un personaje más, del mismo estilo</title>
+<!-- Escena del modo LIVE (sesión 3, grupo de los lunes). Estilos comunes en ../../_comun/escena.css; propios en #esc-propio. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.mk { border: 3px solid var(--fg); border-radius: .6em; overflow: hidden; background: #000; box-shadow: var(--card-shadow); }
+.mk svg { display: block; }
+.esc-grid-2.lado { grid-template-columns: 1.15fr .85fr; align-items: center; }
+.nota { font-size: .72em; color: var(--muted); margin: 0; }
+.esc-lista li { display: block; position: relative; padding-left: 1.25em; }
+.esc-lista li::before { position: absolute; left: 0; top: .5em; }
+iframe.demo { width: 100%; aspect-ratio: 2308 / 1700; border: 3px solid var(--fg); border-radius: .6em; background: #000; }
+
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Aplicación</span>
+    <span class="esc-num">LUNES · S1 · E08</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <section class="esc-grid-2 lado">
+      <div class="mk a-in" id="mk"></div>
+      <div>
+        <h1 class="esc-titulo a-in" style="--d:.1s">Dibuja con las <em>reglas de 1928</em> y entra en la escena</h1>
+        <ul class="esc-lista a-in" style="--d:.2s">
+          <li>Formas redondas, tinta gruesa y uniforme, ojos grandes con pupila, brazos y piernas de manguera. Sin degradados ni sombras.</li>
+          <li>Rellenos en negro, blanco y grises: <code>estilo1928(svg)</code> los cambia por las clases <code>t0…t4</code>, y tu personaje sigue la paleta de Mickey.</li>
+          <li><code>s.agregarPersonaje({ cuadros, ancho, alto, fps, posicion })</code>: <code>posicion</code> puede ser una función del tiempo, o seguir a Mickey con <code>s.datos.cajas[celda]</code>.</li>
+        </ul>
+        <div id="taller" class="a-in" style="--d:.3s"></div>
+        <p class="nota a-in" style="--d:.4s">En tu copia (<code>04-personaje.html</code>): pega tu SVG y pulsa «Añadir»; luego invéntale otro vuelo en <code>VUELOS</code>.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Steamboat Willie (1928) es de dominio público · kit en jmd-learn.online/steamboat/</footer>
+</div>
+<script type="module">
+import { crearSteamboat } from '/steamboat/kit.js';
+import { PAJARO } from '/steamboat/personajes/pajaro.js';
+const s = await crearSteamboat(document.getElementById('mk')); let celda = 0; s.alCuadro(i => celda = i.celda);
+const VUELOS = {
+  cabeza: () => { const [x, y, w] = s.datos.cajas[celda]; return [x + w * 0.62, y - 70]; },
+  cruza: (t) => { const u = (t / s.duracion) % 1; return [2500 - 2700 * u, 420 + 90 * Math.sin(u * 14)]; },
+  ronda: (t) => { const [bx, by] = s.datos.boca[celda]; return [bx - 160 + 150 * Math.cos(t * 3), by - 40 + 90 * Math.sin(t * 3)]; },
+};
+const pajaro = s.agregarPersonaje({ ...PAJARO, escala: 3.2, volteado: true, posicion: VUELOS.cabeza });
+import('../../comun/taller.js').then(({ montarTaller }) => montarTaller(document.getElementById('taller'), {
+  escena: 'personaje', archivo: 'ejemplos/04-personaje.html',
+  acciones: { vuelo: (v) => { pajaro.posicion = VUELOS[v]; pajaro.volteado = v !== 'cruza'; }, escala: (f) => { pajaro.escala = Math.max(1, Math.min(8, pajaro.escala * f)); },
+    volteado: () => { pajaro.volteado = !pajaro.volteado; }, colorPajaro: (c) => s.colores({ cara: c }), colores: (c) => s.colores(c), pausa: (p) => (p ? s.pausar() : s.reproducir()) },
+  sugerencias: ['que el pájaro cruce la escena', 'que se pose en el gorro', 'que ronde la boca', 'pájaro más grande', 'pájaro más pequeño', 'que el pájaro mire al otro lado', 'pájaro azul', 'gorro rojo'],
+}));
+s.colores({ tinta: '#14122b', cara: '#ffe7c2', gorro: '#5a2a82', visera: '#14122b', orejas: '#14122b', guantes: '#14122b', pantalon: '#d6452f', zapatos: '#f2a65a', cuerpo: '#14122b', otros: '#ffe7c2' }); s.reproducir();
+</script>
+</body>
+</html>
