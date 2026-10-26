@@ -70,6 +70,12 @@ cycle:
     phase: experimentacion
     description: Publica la landing en su URL y abre el botón de WhatsApp desde tu teléfono.
     check: La URL abre en otro teléfono y WhatsApp llega al número del negocio
+  - id: landing-sin-ia
+    title: Landing sin IA (reglas y modelo local)
+    tool: terminal
+    phase: experimentacion
+    description: Con la cuota agotada o sin gateway, saca negocio.json con el extractor por reglas (y el modelo local si está) y construye el sitio con --imagenes no.
+    check: El sitio abre en el Visor con los datos correctos del cliente
   - id: entregar
     title: Entregar la tarea 2
     tool: lms
@@ -132,6 +138,16 @@ ni manos.
 
 En una frase: construir, revisar en el visor, probar en tu teléfono y compartir el enlace para que
 otra persona cumpla la tarea.
+
+## 6. Si la IA no responde: landing por reglas · Aplicación
+
+La cuota se acaba o el gateway se cae: la landing sale igual. El motor de la skill trae un extractor por reglas y un modelo pequeño que vive en el servidor de la clase; ninguno usa un proveedor externo.
+
+1. Pega el texto del cliente en `/trabajo/landing/cliente.txt`.
+2. Saca el JSON: `bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --modelo auto --salida negocio.json`. Las reglas ponen los datos (nombre, WhatsApp, horario, servicios, precios); el modelo local, si está, solo redacta los títulos. Lo que falte queda como `[completar]`.
+3. Construye: `bun /opt/skills-curso/s1-landing-estilos/motor/construir.mjs --negocio negocio.json --estilo apple --imagenes no` y ábrelo en el Visor.
+
+**Si falla:** `negocio.whatsapp` vacío → el texto no traía un número de 9 dígitos; escríbelo en el JSON y vuelve a construir.
 
 ## Tareas
 

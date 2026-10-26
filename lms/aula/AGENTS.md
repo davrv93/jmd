@@ -5,6 +5,10 @@
 - El asistente corre en el puerto 8766 en modo nube. Míralo en el panel «Visor».
 - No hay internet desde esta terminal, solo el gateway de IA de la clase.
 - Tus skills están en `~/.config/jmd/skills`. Pídele al agente: `jmd chat "/skill plan-de-trabajo ..."`.
+- **Landing sin IA** (si el agente no responde o se acabó la cuota): pega el texto del cliente en `/trabajo/landing/cliente.txt` y corre
+  `bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --modelo auto --salida negocio.json` y luego
+  `bun /opt/skills-curso/s1-landing-estilos/motor/construir.mjs --negocio negocio.json --estilo apple --imagenes no`.
+  Las reglas sacan los datos del texto; si el modelo pequeño de la clase está disponible, redacta los títulos. Nunca inventa precios ni teléfonos.
 - Pega solo comandos que entiendas. Si algo falla, copia el error completo y pregúntale al agente.
 - No guardes claves ni contraseñas en archivos.
 - Si tu terminal se cierra, ábrela de nuevo: tus archivos siguen aquí.
