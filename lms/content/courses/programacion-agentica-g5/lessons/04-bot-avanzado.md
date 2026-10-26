@@ -1,7 +1,7 @@
 ---
 id: g5-04
 title: "Grupo 5 · Clase extra · El bot avanzado: modelo local, motor de decisiones y embeddings"
-published: false
+published: true
 objectives:
   - id: g5-04-o1
     title: Instalar un modelo de lenguaje local, elegir cuantización y contexto, y calcular la RAM que necesita
