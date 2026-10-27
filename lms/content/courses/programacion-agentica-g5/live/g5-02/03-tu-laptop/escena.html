@@ -43,6 +43,32 @@
 .tl-aviso em { font-style: normal; color: var(--accent); }
 .tl-nota { font-size: .62em; color: var(--muted); margin: 0; }
 
+/* Encuesta «¿Qué máquina tienes en casa?» + voto del grupo */
+.tl-dos { display: grid; grid-template-columns: 1.55fr 1fr; gap: 1.2vw; align-items: stretch; min-width: 0; }
+.tl-tabla { padding: .8em .9em; gap: .4vh .5vw; }
+.tl-tabla [data-fila].tl-sel { outline: 2px solid var(--accent); outline-offset: -1px; box-shadow: 0 0 0 .25em var(--accent-bg); }
+.tl-tabla .tl-h[data-fila].tl-sel { background: var(--accent-bg); }
+.tl-enc { display: grid; gap: .55em; align-content: start; padding: .8em .95em; min-width: 0; }
+.tl-enc h3 { margin: 0; font-size: .95em; }
+.tl-chips { display: flex; flex-wrap: wrap; gap: .4em; }
+.tl-chips button { font: 700 .72em/1 system-ui, sans-serif; padding: .55em .85em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; transition: border-color .2s ease-out, background .2s ease-out, color .2s ease-out; }
+.tl-chips button:hover { border-color: var(--accent); color: var(--accent); }
+.tl-chips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.tl-chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tl-res { margin: 0; font-size: .8em; color: var(--muted); min-height: 1.4em; }
+.tl-res b { color: var(--accent); font-size: 1.15em; }
+.tl-res.max b { color: var(--ok); }
+.tl-barras { display: grid; gap: .3em; margin-top: .1em; }
+.tl-barras .tl-tot { font: 600 .62em var(--mono); color: var(--muted); }
+.tl-b { display: grid; grid-template-columns: 7.5em 1fr 2.8em; gap: .5em; align-items: center; font-size: .66em; }
+.tl-b span { color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-b i { display: block; height: .7em; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.tl-b b { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--est-g)); transition: width .4s cubic-bezier(.2,.7,.2,1); }
+.tl-b.mia b { background: linear-gradient(90deg, var(--ok), var(--accent)); }
+.tl-b em { font: 700 .95em var(--mono); font-style: normal; text-align: right; color: var(--fg); }
+.tl-cmd { font-size: 1.1em; }
+.tl-aviso { font-size: .95em; }
+
 </style>
 </head>
 <body>
@@ -77,27 +103,48 @@
   <main class="esc-cuerpo">
     <div class="tl-cuerpo">
       <h1 class="esc-titulo a-in">Tu laptop <em>decide</em> el nivel de imagen</h1>
-      <div class="esc-card tl-tabla a-in" style="--d:.2s" role="table" aria-label="Niveles de imagen y máquinas típicas">
+      <div class="tl-dos a-in" style="--d:.2s">
+      <div class="esc-card tl-tabla" role="table" aria-label="Niveles de imagen y máquinas típicas">
           <div class="tl-vacio"></div>
           <div class="tl-m"><b class="tl-nivel">Rápida<small>sd-turbo</small></b><span class="esc-chip">2,4 GB · 1,4 a 2,3 s</span></div>
           <div class="tl-m"><b class="tl-nivel">Buena<small>sdxl-turbo</small></b><span class="esc-chip">7 GB · 7 s</span></div>
           <div class="tl-m"><b class="tl-nivel">Máxima<small>FLUX.2 Klein 4 bits</small></b><span class="esc-chip">4,6 GB · 45 s por flyer</span></div>
-          <div class="tl-h tl-fila-in" style="--d:1.2s"><b>Sin GPU</b><span>Portátil con CPU</span></div>
-          <div class="tl-c si" style="--d:1.6s">Cabe</div>
-          <div class="tl-c no tl-fila-in" style="--d:1.2s">No cabe</div>
-          <div class="tl-c no tl-fila-in" style="--d:1.2s">No cabe</div>
-          <div class="tl-h tl-fila-in" style="--d:2.4s"><b>GPU de 4 a 8 GB</b><span>NVIDIA con CUDA</span></div>
-          <div class="tl-c si" style="--d:2.8s">Cabe</div>
-          <div class="tl-c si" style="--d:3.2s">Cabe, desde 6 GB</div>
-          <div class="tl-c no tl-fila-in" style="--d:2.4s">No cabe</div>
-          <div class="tl-h tl-fila-in" style="--d:3.6s"><b>Mac Apple Silicon</b><span>Memoria unificada</span></div>
-          <div class="tl-c si" style="--d:4.0s">Cabe</div>
-          <div class="tl-c si" style="--d:4.4s">Cabe, con 16 GB</div>
-          <div class="tl-c si" style="--d:4.8s">Cabe, con 24 GB</div>
+          <div class="tl-h tl-fila-in" data-fila="sin-gpu" style="--d:1.2s"><b>Sin GPU</b><span>Portátil con CPU</span></div>
+          <div class="tl-c si" data-fila="sin-gpu" style="--d:1.6s">Cabe</div>
+          <div class="tl-c no tl-fila-in" data-fila="sin-gpu" style="--d:1.2s">No cabe</div>
+          <div class="tl-c no tl-fila-in" data-fila="sin-gpu" style="--d:1.2s">No cabe</div>
+          <div class="tl-h tl-fila-in" data-fila="gpu-4-8" style="--d:2.4s"><b>GPU de 4 a 8 GB</b><span>NVIDIA con CUDA</span></div>
+          <div class="tl-c si" data-fila="gpu-4-8" style="--d:2.8s">Cabe</div>
+          <div class="tl-c si" data-fila="gpu-4-8" style="--d:3.2s">Cabe, desde 6 GB</div>
+          <div class="tl-c no tl-fila-in" data-fila="gpu-4-8" style="--d:2.4s">No cabe</div>
+          <div class="tl-h tl-fila-in" data-fila="mac" style="--d:3.6s"><b>Mac Apple Silicon</b><span>Memoria unificada</span></div>
+          <div class="tl-c si" data-fila="mac" style="--d:4.0s">Cabe</div>
+          <div class="tl-c si" data-fila="mac" style="--d:4.4s">Cabe, con 16 GB</div>
+          <div class="tl-c si" data-fila="mac" style="--d:4.8s">Cabe, con 24 GB</div>
+      </div>
+      <div class="esc-card tl-enc" id="tl-enc">
+        <h3>¿Qué máquina tienes en casa?</h3>
+        <div class="tl-chips" role="group" aria-label="Tu máquina">
+          <button type="button" data-op="sin-gpu" data-fila="sin-gpu" data-nivel="Rápida" aria-pressed="false">Sin GPU</button>
+          <button type="button" data-op="gpu-4-8" data-fila="gpu-4-8" data-nivel="Buena" aria-pressed="false">GPU 4–8 GB</button>
+          <button type="button" data-op="mac-16" data-fila="mac" data-nivel="Buena" aria-pressed="false">Mac 16 GB</button>
+          <button type="button" data-op="mac-24" data-fila="mac" data-nivel="Máxima" aria-pressed="false">Mac 24 GB o más</button>
+          <button type="button" data-op="no-se" data-fila="" data-nivel="Rápida" aria-pressed="false">No sé</button>
+        </div>
+        <p class="tl-res" id="tl-res" aria-live="polite">Elige una opción: te digo tu nivel.</p>
+        <div class="tl-barras" id="tl-barras" hidden aria-label="Votos del grupo">
+          <span class="tl-tot" id="tl-tot">El grupo · 0 votos</span>
+          <div class="tl-b" data-op="sin-gpu"><span>Sin GPU</span><i><b></b></i><em>0 %</em></div>
+          <div class="tl-b" data-op="gpu-4-8"><span>GPU 4–8 GB</span><i><b></b></i><em>0 %</em></div>
+          <div class="tl-b" data-op="mac-16"><span>Mac 16 GB</span><i><b></b></i><em>0 %</em></div>
+          <div class="tl-b" data-op="mac-24"><span>Mac 24 GB+</span><i><b></b></i><em>0 %</em></div>
+          <div class="tl-b" data-op="no-se"><span>No sé</span><i><b></b></i><em>0 %</em></div>
+        </div>
+      </div>
       </div>
       <p class="tl-nota a-in" style="--d:.5s">Tiempos medidos por imagen; el nivel máximo se midió en una Mac de 24 GB.</p>
       <pre class="esc-cmd tl-cmd a-in" style="--d:4.8s"><span class="p">$ </span>python3 /trabajo/osito/backend/diagnostico.py</pre>
-      <p class="tl-aviso a-in" style="--d:5.1s">En clase todo es remoto; <em>tu nivel local es el dato para la tarea 2</em>.</p>
+      <p class="tl-aviso a-in" style="--d:5.1s">El diagnóstico corre en el <em>aula remota</em>, no en tu laptop; tu nivel de casa es el dato para la tarea 2.</p>
     </div>
   </main>
 
@@ -115,5 +162,68 @@
   } catch (e) {}
 })();
 </script>
+<script>
+/* Encuesta: guarda la máquina en localStorage, resalta la fila de la tabla, dice el nivel y vota al grupo. */
+(function () {
+  var CLAVE = "g5-02-maquina", ESCENA = "03-tu-laptop";
+  var leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "g5-02";
+  var chips = Array.prototype.slice.call(document.querySelectorAll("#tl-enc .tl-chips button"));
+  var res = document.getElementById("tl-res"), barras = document.getElementById("tl-barras"), tot = document.getElementById("tl-tot");
+  var celdas = Array.prototype.slice.call(document.querySelectorAll(".tl-tabla [data-fila]"));
+  var elegida = "";
+  function leerGuardado() { try { return localStorage.getItem(CLAVE) || ""; } catch (e) { return ""; } }
+  function guardar(op) { try { localStorage.setItem(CLAVE, op); } catch (e) {} }
+  function pintarEleccion(op) {
+    elegida = op;
+    var btn = null;
+    chips.forEach(function (b) { var es = b.getAttribute("data-op") === op; b.setAttribute("aria-pressed", String(es)); if (es) btn = b; });
+    if (!btn) return;
+    var fila = btn.getAttribute("data-fila"), nivel = btn.getAttribute("data-nivel");
+    celdas.forEach(function (c) { c.classList.toggle("tl-sel", !!fila && c.getAttribute("data-fila") === fila); });
+    res.classList.toggle("max", nivel === "Máxima");
+    res.innerHTML = op === "no-se"
+      ? "Tu nivel: <b>Rápida</b> · empieza por Rápida y sube cuando sepas tu máquina."
+      : "Tu nivel: <b>" + nivel + "</b>" + (nivel === "Buena" && op === "mac-16" ? " · Máxima pide 24 GB" : "") + ".";
+    barras.querySelectorAll(".tl-b").forEach(function (f) { f.classList.toggle("mia", f.getAttribute("data-op") === op); });
+  }
+  function votar(op) {
+    try {
+      fetch("/api/v1/live/" + leccion + "/voto", {
+        method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ escena: ESCENA, opcion: op })
+      }).then(function () { leerVotos(); }).catch(function () {});
+    } catch (e) {}
+  }
+  function pintarVotos(d) {
+    var total = d && +d.total || 0, ops = (d && d.opciones) || {};
+    barras.hidden = false;
+    tot.textContent = "El grupo · " + total + (total === 1 ? " voto" : " votos");
+    barras.querySelectorAll(".tl-b").forEach(function (f) {
+      var n = +ops[f.getAttribute("data-op")] || 0, pct = total ? Math.round(n * 100 / total) : 0;
+      f.querySelector("b").style.width = pct + "%";
+      f.querySelector("em").textContent = pct + " %";
+    });
+  }
+  function leerVotos() {
+    try {
+      fetch("/api/v1/live/" + leccion + "/votos?escena=" + ESCENA, { credentials: "same-origin" })
+        .then(function (r) { if (!r.ok) throw new Error("sin votos"); return r.json(); })
+        .then(pintarVotos)
+        .catch(function () { barras.hidden = true; });
+    } catch (e) { barras.hidden = true; }
+  }
+  chips.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var op = b.getAttribute("data-op");
+      guardar(op); pintarEleccion(op); votar(op);
+    });
+  });
+  var previa = leerGuardado();
+  if (previa) pintarEleccion(previa);
+  leerVotos();
+  setInterval(leerVotos, 5000);
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
 </body>
 </html>

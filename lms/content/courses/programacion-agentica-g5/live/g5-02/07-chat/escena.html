@@ -17,14 +17,13 @@
 <link rel="stylesheet" href="../../comun/escena.css">
 <style id="esc-propio">
 
-.ch-svg { max-height: 46vh; }
+/* Diagrama compacto: navegador → FastAPI → modelo, ida y vuelta */
 .esc-svg text.m { fill: var(--muted); }
 .esc-svg text.ac { fill: var(--accent); }
 .esc-svg text.ok { fill: var(--ok); }
 .esc-svg text.mono { font-family: var(--mono); }
-.nodo { fill: var(--s1); stroke: var(--line2); stroke-width: 2.5; }
-.nodo.vivo { stroke: var(--accent); }
-.carril { fill: none; stroke: var(--line2); stroke-width: 3; stroke-linecap: round; }
+.nodo { fill: var(--s1); stroke: var(--line2); stroke-width: 2; }
+.carril { fill: none; stroke: var(--line2); stroke-width: 2.5; stroke-linecap: round; }
 .carril.res { stroke: var(--ok); opacity: .7; }
 .punta { fill: var(--line2); }
 .punta.res { fill: var(--ok); opacity: .7; }
@@ -32,41 +31,61 @@
 .pk.res rect { fill: var(--ok); }
 .esc-svg .pk text { fill: var(--on-accent); font-weight: 700; }
 .pk.res text { fill: #04210f; }
-.salud { fill: var(--ok-bg); stroke: var(--ok); stroke-width: 1.5; }
+.salud { fill: var(--ok-bg); stroke: var(--ok); stroke-width: 1.2; }
 .log { fill: #14122b; }
 .esc-svg text.logt { fill: #7ef0a4; font-family: var(--mono); font-weight: 700; }
-.alt { fill: none; stroke: var(--line2); stroke-width: 2; stroke-dasharray: 7 6; }
-.rb { fill: color-mix(in srgb, var(--accent) 16%, var(--s1)); stroke: var(--accent); stroke-width: 3; }
-.rb-visor { fill: #14122b; stroke: var(--accent); stroke-width: 2.5; }
-.rb-ojo { fill: #7fe3ff; }
-.rb-boca { fill: none; stroke: #7fe3ff; stroke-width: 3.5; stroke-linecap: round; }
-.rb-abierta { fill: #7fe3ff; transform-box: fill-box; transform-origin: center; }
-.sub-barra { fill: var(--s2); stroke: var(--line); stroke-width: 1.5; }
-
+.alt { fill: none; stroke: var(--line2); stroke-width: 1.5; stroke-dasharray: 6 5; }
 @keyframes ch-viaja { 0% { opacity: 0; transform: translateX(0); } 14% { opacity: 1; } 86% { opacity: 1; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
 @keyframes ch-piensa { 0%, 100% { opacity: 0; } 8%, 90% { opacity: 1; } }
-@keyframes ch-led { 0%, 27% { fill: var(--accent); } 31%, 90% { fill: var(--warn); } 95%, 100% { fill: var(--ok); } }
-@keyframes ch-boca-c { 0%, 92% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes ch-boca-a { 0%, 92% { opacity: 0; } 100% { opacity: 1; } }
-@keyframes ch-habla { from { transform: scaleY(1); } to { transform: scaleY(.45); } }
-@keyframes ch-aparece { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes ch-log { from { opacity: 0; } to { opacity: 1; } }
-
 .pk { opacity: 0; animation: ch-viaja .7s linear both; animation-delay: var(--d); }
-.piensa { animation: ch-piensa 3.6s ease-in-out 1.5s both; }
-.led { fill: var(--ok); animation: ch-led 5.4s linear both; }
-.boca-c { opacity: 0; animation: ch-boca-c 5.4s linear both; }
-.boca-a { animation: ch-boca-a 5.4s linear both, ch-habla .4s ease-in-out 5.1s 8 alternate; }
-.subt { animation: ch-aparece .5s cubic-bezier(.2,.7,.2,1) 5.1s backwards; }
+.piensa { animation: ch-piensa .9s ease-in-out 2.9s both; }
 .logl { animation: ch-log .3s ease-out 4.3s backwards; }
 
-.ch-abajo { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.6vw; align-items: stretch; }
-.ch-izq { display: grid; gap: 1.2vh; align-content: start; }
-.ch-nota { margin: 0; font-size: .85em; display: flex; gap: .6em; align-items: center; flex-wrap: wrap; }
-.ch-nota b { font-family: var(--mono); color: var(--accent); }
-.ch-resp { border-left: 5px solid var(--warn); display: grid; align-content: center; gap: .3em; }
-.ch-resp strong { font-size: .95em; }
-.ch-resp p { font-size: .8em; }
+/* Cabecera de la escena: título, avance y cronómetro */
+.esc-cuerpo { gap: 1.3vh; justify-content: start; }
+.ch-tit { font-size: 1.6em; }
+.ch-top { display: grid; grid-template-columns: 1fr auto; gap: 1.6vw; align-items: center; }
+.ch-prog { display: grid; gap: .35em; }
+.ch-prog span { font-size: .8em; font-weight: 700; }
+.ch-prog span b { color: var(--accent); }
+.ch-prog span.listo b { color: var(--ok); }
+.ch-prog i { display: block; height: .6em; border-radius: 999px; background: var(--s3); border: 1px solid var(--line); overflow: hidden; }
+.ch-prog b.ch-fill { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--est-g)); transition: width .4s cubic-bezier(.2,.7,.2,1); }
+.ch-crono { display: flex; align-items: center; gap: .6em; }
+.ch-crono small { font: 600 .62em var(--mono); color: var(--muted); }
+.ch-crono output { font: 800 1.45em/1 var(--mono); letter-spacing: .04em; padding: .22em .5em; border-radius: .45em; background: var(--s1); border: 1px solid var(--line2); min-width: 4.3em; text-align: center; color: var(--fg); transition: color .3s ease-out, background .3s ease-out, border-color .3s ease-out; }
+.ch-crono.ambar output { color: var(--warn); border-color: var(--warn); background: var(--warn-bg); }
+.ch-crono.rojo output { color: var(--bad); border-color: var(--bad); background: var(--bad-bg); animation: esc-pulso 1.2s ease-in-out infinite; }
+.ch-crono button { font: 700 .72em system-ui, sans-serif; padding: .6em 1.1em; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.ch-crono button.sec { background: var(--s1); color: var(--muted); border-color: var(--line2); padding: .6em .8em; }
+.ch-crono button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Stepper de 4 pasos */
+.ch-dos { display: grid; grid-template-columns: 1.3fr 1fr; gap: 1.4vw; align-items: start; min-width: 0; }
+.ch-pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: .9vh; min-width: 0; }
+.ch-paso { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "n t h" "n c c"; gap: .3em .7em; align-items: center; padding: .5em .8em; background: var(--s1); border: 1px solid var(--line); border-radius: .9em; box-shadow: var(--card-shadow); min-width: 0; transition: border-color .25s ease-out, box-shadow .25s ease-out; }
+.ch-paso.actual { border-color: var(--accent); box-shadow: 0 0 0 .2em var(--accent-bg), var(--card-shadow); }
+.ch-paso.hecho { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.ch-n { grid-area: n; width: 1.7em; height: 1.7em; border-radius: 50%; display: grid; place-items: center; font: 800 .85em var(--mono); background: var(--s3); color: var(--muted); align-self: start; }
+.ch-paso.actual .ch-n { background: var(--accent); color: var(--on-accent); }
+.ch-paso.hecho .ch-n { background: var(--ok); color: #fff; }
+.ch-t { grid-area: t; font-weight: 700; font-size: .85em; min-width: 0; }
+.ch-t small { font-weight: 600; color: var(--muted); font-size: .8em; margin-left: .4em; }
+.ch-h { grid-area: h; display: inline-flex; align-items: center; gap: .4em; font: 700 .64em system-ui, sans-serif; color: var(--muted); cursor: pointer; padding: .35em .75em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s2); user-select: none; white-space: nowrap; }
+.ch-h input { accent-color: var(--ok); margin: 0; width: 1em; height: 1em; cursor: pointer; }
+.ch-paso.hecho .ch-h { color: var(--ok); border-color: var(--ok); background: var(--ok-bg); }
+.ch-c { grid-area: c; display: grid; gap: .4vh; min-width: 0; }
+.ch-c pre.esc-cmd { font-size: .62em; padding: .5em .9em; line-height: 1.45; }
+
+/* Columna derecha: diagrama + avisos */
+.ch-der { display: grid; gap: 1vh; min-width: 0; }
+.ch-svg { max-height: 30vh; }
+.ch-resp { border-left: 5px solid var(--warn); display: grid; gap: .25em; padding: .7em 1em; }
+.ch-resp strong { font-size: .82em; }
+.ch-resp p { font-size: .74em; }
+.ch-compuerta { margin: 0; font-size: .74em; color: var(--muted); display: flex; gap: .5em; align-items: center; flex-wrap: wrap; }
+.ch-compuerta code { font: 700 .95em var(--mono); color: var(--ok); }
 
 </style>
 </head>
@@ -100,72 +119,71 @@
   </header>
 
   <main class="esc-cuerpo">
-    <h1 class="esc-titulo a-in">Tu primer chat: una pregunta que <em>viaja</em> y vuelve</h1>
-    <svg class="esc-svg ch-svg" viewBox="0 0 1600 340" role="img" aria-label="Diagrama: el navegador envía la pregunta al backend FastAPI, que la reenvía al modelo; la respuesta vuelve y el robot la muestra como subtítulo (la voz es opcional).">
-      <!-- Cajas -->
-      <g class="a-pop" style="--d:.3s"><rect class="nodo" x="20" y="10" width="400" height="320" rx="22"/><text x="44" y="52" font-size="28" font-weight="700">Navegador</text></g>
-      <g class="a-pop" style="--d:.45s"><rect class="nodo" x="640" y="10" width="320" height="320" rx="22"/>
-        <text x="800" y="52" font-size="28" font-weight="700" text-anchor="middle">Backend FastAPI</text>
-        <text class="m" x="800" y="86" font-size="22" text-anchor="middle">puerto 8766</text>
-        <rect class="salud" x="715" y="106" width="170" height="38" rx="19"/><text class="ok" x="800" y="132" font-size="22" font-weight="700" text-anchor="middle">salud: ok</text>
-        <g class="logl"><rect class="log" x="660" y="176" width="280" height="56" rx="12"/>
-        <text class="logt" x="800" y="212" font-size="21" text-anchor="middle">POST /api/chat 200</text></g>
-        <text class="m" x="800" y="270" font-size="21" text-anchor="middle">esta línea la cuenta</text>
-        <text class="m" x="800" y="298" font-size="21" text-anchor="middle">la compuerta</text>
-      </g>
-      <g class="a-pop" style="--d:.6s"><rect class="nodo" x="1180" y="10" width="400" height="320" rx="22"/>
-        <text x="1380" y="52" font-size="28" font-weight="700" text-anchor="middle">Modelo</text>
-        <text class="ac" x="1380" y="110" font-size="30" font-weight="800" text-anchor="middle">OpenRouter</text>
-        <text class="m" x="1380" y="144" font-size="22" text-anchor="middle">por el gateway de la clase</text>
-        <rect class="alt" x="1215" y="190" width="330" height="54" rx="27"/>
-        <text class="m" x="1380" y="225" font-size="22" text-anchor="middle">En casa: Ollama local</text>
-        <g class="piensa" style="animation-delay:2.9s;animation-duration:.9s"><circle cx="1340" cy="292" r="7" fill="var(--warn)"/><circle cx="1380" cy="292" r="7" fill="var(--warn)"/><circle cx="1420" cy="292" r="7" fill="var(--warn)"/></g>
-      </g>
-
-      <!-- Carriles: pregunta (arriba, acento) y respuesta (abajo, verde) -->
-      <path class="carril a-draw" pathLength="1" style="--d:.9s;--t:.5s" d="M424 130 H626"/><path class="punta a-in" style="--d:1.2s" d="M640 130 l-16 -9 v18 z"/>
-      <path class="carril res a-draw" pathLength="1" style="--d:1s;--t:.5s" d="M636 206 H434"/><path class="punta res a-in" style="--d:1.3s" d="M420 206 l16 -9 v18 z"/>
-      <path class="carril a-draw" pathLength="1" style="--d:1.1s;--t:.5s" d="M964 130 H1166"/><path class="punta a-in" style="--d:1.4s" d="M1180 130 l-16 -9 v18 z"/>
-      <path class="carril res a-draw" pathLength="1" style="--d:1.2s;--t:.5s" d="M1176 206 H974"/><path class="punta res a-in" style="--d:1.5s" d="M960 206 l16 -9 v18 z"/>
-      <text class="a-in mono" style="--d:1.3s" x="530" y="106" font-size="19" text-anchor="middle">POST /api/chat</text>
-      <text class="a-in m" style="--d:1.4s" x="530" y="246" font-size="21" text-anchor="middle">200 + texto</text>
-      <text class="a-in" style="--d:1.5s" x="1070" y="106" font-size="21" text-anchor="middle">pregunta</text>
-      <text class="a-in m" style="--d:1.6s" x="1070" y="246" font-size="21" text-anchor="middle">respuesta</text>
-
-      <!-- Mensaje que viaja (protagonista): ida y vuelta -->
-      <g transform="translate(424,130)"><g class="pk" style="--dx:212px;--d:1.5s"><rect x="-44" y="-17" width="88" height="34" rx="17"/><text x="0" y="8" text-anchor="middle" font-size="22">hola</text></g></g>
-      <g transform="translate(964,130)"><g class="pk" style="--dx:212px;--d:2.2s"><rect x="-44" y="-17" width="88" height="34" rx="17"/><text x="0" y="8" text-anchor="middle" font-size="22">hola</text></g></g>
-      <g transform="translate(1176,206)"><g class="pk res" style="--dx:-212px;--d:3.6s"><rect x="-44" y="-17" width="88" height="34" rx="17"/><text x="0" y="8" text-anchor="middle" font-size="22">¡hola!</text></g></g>
-      <g transform="translate(636,206)"><g class="pk res" style="--dx:-212px;--d:4.3s"><rect x="-44" y="-17" width="88" height="34" rx="17"/><text x="0" y="8" text-anchor="middle" font-size="22">¡hola!</text></g></g>
-
-      <!-- Robot sencillo en SVG -->
-      <g class="a-in" style="--d:.8s">
-        <path class="rb" d="M220 98 V80" fill="none"/><circle class="led" cx="220" cy="72" r="8"/>
-        <rect class="rb" x="158" y="122" width="12" height="30" rx="6"/><rect class="rb" x="270" y="122" width="12" height="30" rx="6"/>
-        <ellipse class="rb" cx="174" cy="216" rx="12" ry="22"/><ellipse class="rb" cx="266" cy="216" rx="12" ry="22"/>
-        <rect class="rb" x="182" y="184" width="76" height="66" rx="26"/>
-        <rect class="rb" x="164" y="96" width="112" height="84" rx="28"/>
-        <rect class="rb-visor" x="178" y="108" width="84" height="56" rx="20"/>
-        <circle class="rb-ojo" cx="203" cy="129" r="7"/><circle class="rb-ojo" cx="237" cy="129" r="7"/>
-        <path class="rb-boca boca-c" d="M207 146 Q220 154 233 146"/>
-        <ellipse class="rb-abierta boca-a" cx="220" cy="148" rx="9" ry="6"/>
-        <circle class="led" cx="220" cy="217" r="9"/>
-        <g class="piensa"><circle cx="292" cy="78" r="5" fill="var(--warn)"/><circle cx="310" cy="64" r="7" fill="var(--warn)"/><circle cx="334" cy="48" r="9" fill="var(--warn)"/></g>
-      </g>
-      <rect class="sub-barra a-in" style="--d:.9s" x="40" y="262" width="360" height="52" rx="12"/>
-      <text class="subt" x="220" y="296" font-size="24" font-weight="600" text-anchor="middle">Hola, soy Robo</text>
-    </svg>
-    <div class="ch-abajo a-in" style="--d:1.6s">
-      <div class="ch-izq">
-        <pre class="esc-cmd"><span class="c"># tu negocio va en asistente.json</span>
-<span class="p">$ </span>python3 …/construir.py --asistente asistente.json --estilo neon
-<span class="p">$ </span>sh /trabajo/mi-robo/robo.sh reiniciar</pre>
-        <p class="ch-nota"><span class="esc-chip">Visor</span><span>Abre <b>mi-robo/neon/index.html</b>: es tu Robo, con tu nombre y tus respuestas</span></p>
+    <h1 class="esc-titulo ch-tit a-in">Tu primer chat: una pregunta que <em>viaja</em> y vuelve · 4 pasos, 15 minutos</h1>
+    <div class="ch-top a-in" style="--d:.1s">
+      <div class="ch-prog" aria-live="polite">
+        <span id="ch-prog-txt">Vas en el paso <b>1/4</b></span>
+        <i><b class="ch-fill" id="ch-fill"></b></i>
       </div>
-      <div class="esc-card ch-resp">
-        <strong>Si el modelo no responde, el asistente dice «No estoy seguro de eso todavía».</strong>
-        <p>Eso es correcto, no un error: contesta con tu faq.json por embeddings.</p>
+      <div class="ch-crono" id="ch-crono" role="timer" aria-label="Cronómetro de la actividad">
+        <small>tiempo</small>
+        <output id="ch-reloj">15:00</output>
+        <button type="button" id="ch-ini">Iniciar</button>
+        <button type="button" id="ch-reset" class="sec" title="Volver a 15:00" aria-label="Reiniciar el cronómetro" hidden>↺</button>
       </div>
+    </div>
+    <div class="ch-dos a-in" style="--d:.2s">
+      <ol class="ch-pasos" id="ch-pasos">
+        <li class="ch-paso" data-paso="0">
+          <span class="ch-n">1</span>
+          <span class="ch-t">Copia el asistente de ejemplo <small>cafetería → asistente.json</small></span>
+          <label class="ch-h"><input type="checkbox"> ✓ hecho</label>
+          <div class="ch-c"><pre class="esc-cmd"><span class="p">$ </span>mkdir -p /trabajo/negocio &amp;&amp; cd /trabajo/negocio &amp;&amp; cp /opt/skills-curso/s2-robo-estilos/motor/ejemplos/cafeteria.json asistente.json</pre></div>
+        </li>
+        <li class="ch-paso" data-paso="1">
+          <span class="ch-n">2</span>
+          <span class="ch-t">Construye tu Robo <small>con el estilo neon</small></span>
+          <label class="ch-h"><input type="checkbox"> ✓ hecho</label>
+          <div class="ch-c"><pre class="esc-cmd"><span class="p">$ </span>cd /trabajo/negocio &amp;&amp; python3 /opt/skills-curso/s2-robo-estilos/motor/construir.py --asistente asistente.json --estilo neon</pre></div>
+        </li>
+        <li class="ch-paso" data-paso="2">
+          <span class="ch-n">3</span>
+          <span class="ch-t">Arráncalo <small>y comprueba la salud en el puerto 8766</small></span>
+          <label class="ch-h"><input type="checkbox"> ✓ hecho</label>
+          <div class="ch-c">
+            <pre class="esc-cmd"><span class="p">$ </span>sh /trabajo/mi-robo/robo.sh reiniciar</pre>
+            <pre class="esc-cmd"><span class="p">$ </span>curl -s localhost:8766/api/salud</pre>
+          </div>
+        </li>
+        <li class="ch-paso" data-paso="3">
+          <span class="ch-n">4</span>
+          <span class="ch-t">Ábrelo en el Visor <small>es tu Robo, con tu nombre y tus respuestas</small></span>
+          <label class="ch-h"><input type="checkbox"> ✓ hecho</label>
+          <div class="ch-c"><pre class="esc-cmd"><span class="c"># en el Visor del aula, abre:</span>
+mi-robo/neon/index.html</pre></div>
+        </li>
+      </ol>
+      <aside class="ch-der">
+        <svg class="esc-svg ch-svg" viewBox="0 0 640 200" role="img" aria-label="Diagrama: el navegador envía la pregunta al backend FastAPI, que la reenvía al modelo; la respuesta vuelve al navegador.">
+          <g class="a-pop" style="--d:.3s"><rect class="nodo" x="8" y="8" width="170" height="130" rx="14"/><text x="93" y="38" font-size="19" font-weight="700" text-anchor="middle">Navegador</text><text class="m" x="93" y="64" font-size="14" text-anchor="middle">tu Robo en el Visor</text><text class="m" x="93" y="118" font-size="13" text-anchor="middle">escribe «hola»</text></g>
+          <g class="a-pop" style="--d:.45s"><rect class="nodo" x="235" y="8" width="170" height="130" rx="14"/><text x="320" y="38" font-size="19" font-weight="700" text-anchor="middle">Backend FastAPI</text><text class="m" x="320" y="60" font-size="14" text-anchor="middle">puerto 8766</text><rect class="salud" x="270" y="70" width="100" height="24" rx="12"/><text class="ok" x="320" y="87" font-size="14" font-weight="700" text-anchor="middle">salud: ok</text><g class="logl"><rect class="log" x="246" y="104" width="148" height="26" rx="7"/><text class="logt" x="320" y="122" font-size="13" text-anchor="middle">POST /api/chat 200</text></g></g>
+          <g class="a-pop" style="--d:.6s"><rect class="nodo" x="462" y="8" width="170" height="130" rx="14"/><text x="547" y="38" font-size="19" font-weight="700" text-anchor="middle">Modelo</text><text class="ac" x="547" y="66" font-size="19" font-weight="800" text-anchor="middle">OpenRouter</text><text class="m" x="547" y="86" font-size="13" text-anchor="middle">por el gateway de la clase</text><rect class="alt" x="480" y="98" width="134" height="26" rx="13"/><text class="m" x="547" y="116" font-size="13" text-anchor="middle">En casa: Ollama local</text><g class="piensa"><circle cx="530" cy="150" r="4" fill="var(--warn)"/><circle cx="547" cy="150" r="4" fill="var(--warn)"/><circle cx="564" cy="150" r="4" fill="var(--warn)"/></g></g>
+          <path class="carril a-draw" pathLength="1" style="--d:.9s;--t:.5s" d="M182 60 H224"/><path class="punta a-in" style="--d:1.2s" d="M235 60 l-11 -6 v12 z"/>
+          <path class="carril res a-draw" pathLength="1" style="--d:1s;--t:.5s" d="M231 96 H189"/><path class="punta res a-in" style="--d:1.3s" d="M178 96 l11 -6 v12 z"/>
+          <path class="carril a-draw" pathLength="1" style="--d:1.1s;--t:.5s" d="M409 60 H451"/><path class="punta a-in" style="--d:1.4s" d="M462 60 l-11 -6 v12 z"/>
+          <path class="carril res a-draw" pathLength="1" style="--d:1.2s;--t:.5s" d="M458 96 H416"/><path class="punta res a-in" style="--d:1.5s" d="M405 96 l11 -6 v12 z"/>
+          <g transform="translate(182,60)"><g class="pk" style="--dx:50px;--d:1.5s"><rect x="-22" y="-10" width="44" height="20" rx="10"/><text x="0" y="5" text-anchor="middle" font-size="12">hola</text></g></g>
+          <g transform="translate(409,60)"><g class="pk" style="--dx:50px;--d:2.2s"><rect x="-22" y="-10" width="44" height="20" rx="10"/><text x="0" y="5" text-anchor="middle" font-size="12">hola</text></g></g>
+          <g transform="translate(458,96)"><g class="pk res" style="--dx:-50px;--d:3.6s"><rect x="-24" y="-10" width="48" height="20" rx="10"/><text x="0" y="5" text-anchor="middle" font-size="12">¡hola!</text></g></g>
+          <g transform="translate(231,96)"><g class="pk res" style="--dx:-50px;--d:4.3s"><rect x="-24" y="-10" width="48" height="20" rx="10"/><text x="0" y="5" text-anchor="middle" font-size="12">¡hola!</text></g></g>
+          <text class="a-in m" style="--d:1.6s" x="320" y="170" font-size="14" text-anchor="middle">pregunta arriba (POST /api/chat) · respuesta abajo (200 + texto)</text>
+        </svg>
+        <p class="ch-compuerta a-in" style="--d:1.7s"><span class="esc-chip ok">compuerta</span><span>La línea <code>POST /api/chat 200</code> del backend es la que cuenta: una pregunta respondida.</span></p>
+        <div class="esc-card ch-resp a-in" style="--d:1.8s">
+          <strong>Si el modelo no responde, el asistente dice «No estoy seguro de eso todavía».</strong>
+          <p>Eso es correcto, no un error: contesta con tu faq.json por embeddings.</p>
+        </div>
+      </aside>
     </div>
   </main>
 
@@ -183,5 +201,65 @@
   } catch (e) {}
 })();
 </script>
+<script>
+/* Stepper: casillas «hecho» en localStorage, barra «Vas en el paso k/4» y cronómetro de 15 minutos. */
+(function () {
+  var K_PASOS = "g5-02-chat-pasos", K_CRONO = "g5-02-chat-crono", TOTAL = 4, DURACION = 15 * 60, AMBAR = 3 * 60;
+  var pasos = Array.prototype.slice.call(document.querySelectorAll("#ch-pasos .ch-paso"));
+  var txt = document.getElementById("ch-prog-txt"), fill = document.getElementById("ch-fill");
+  function leer(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function guardar(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  var hechos = [];
+  try { hechos = JSON.parse(leer(K_PASOS) || "[]"); } catch (e) { hechos = []; }
+  if (!Array.isArray(hechos)) hechos = [];
+  while (hechos.length < TOTAL) hechos.push(false);
+  function pintar() {
+    var n = 0, actual = -1;
+    pasos.forEach(function (li, i) {
+      var h = !!hechos[i];
+      li.classList.toggle("hecho", h);
+      li.querySelector("input").checked = h;
+      if (h) n++; else if (actual < 0) actual = i;
+    });
+    pasos.forEach(function (li, i) { li.classList.toggle("actual", i === actual); });
+    txt.classList.toggle("listo", n === TOTAL);
+    txt.innerHTML = n === TOTAL ? "<b>4/4 · ¡Listo!</b> Pulsa «Lo logré» en el panel" : "Vas en el paso <b>" + (actual + 1) + "/4</b>" + (n ? " · " + n + " hecho" + (n === 1 ? "" : "s") : "");
+    fill.style.width = (n * 100 / TOTAL) + "%";
+  }
+  pasos.forEach(function (li, i) {
+    li.querySelector("input").addEventListener("change", function (e) {
+      hechos[i] = e.target.checked;
+      guardar(K_PASOS, JSON.stringify(hechos));
+      pintar();
+    });
+  });
+  pintar();
+
+  /* Cronómetro: guarda el instante de inicio; ámbar a los 12 min (quedan 3), rojo al llegar a 0. */
+  var crono = document.getElementById("ch-crono"), reloj = document.getElementById("ch-reloj");
+  var bIni = document.getElementById("ch-ini"), bReset = document.getElementById("ch-reset");
+  var inicio = +leer(K_CRONO) || 0, timer = 0;
+  function dosCifras(n) { return (n < 10 ? "0" : "") + n; }
+  function tic() {
+    if (!inicio) { reloj.textContent = "15:00"; crono.classList.remove("ambar", "rojo"); bIni.hidden = false; bReset.hidden = true; return; }
+    var resta = DURACION - Math.floor((Date.now() - inicio) / 1000);
+    if (resta < 0) resta = 0;
+    reloj.textContent = dosCifras(Math.floor(resta / 60)) + ":" + dosCifras(resta % 60);
+    crono.classList.toggle("rojo", resta === 0);
+    crono.classList.toggle("ambar", resta > 0 && resta <= AMBAR);
+    bIni.hidden = true; bReset.hidden = false;
+    if (resta === 0) { clearInterval(timer); timer = 0; }
+  }
+  function arrancar() {
+    inicio = Date.now(); guardar(K_CRONO, String(inicio));
+    clearInterval(timer); timer = setInterval(tic, 1000); tic();
+  }
+  bIni.addEventListener("click", arrancar);
+  bReset.addEventListener("click", function () { inicio = 0; guardar(K_CRONO, null); clearInterval(timer); timer = 0; tic(); });
+  if (inicio) timer = setInterval(tic, 1000);
+  tic();
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
 </body>
 </html>

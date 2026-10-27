@@ -15,26 +15,54 @@
   Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
 -->
 <link rel="stylesheet" href="../../comun/escena.css">
-<style>
-  .av-codigo { font-size: clamp(14px, 1.5vw, 20px); text-align: left; margin: 14px 0 6px; }
-</style>
 <style id="esc-propio">
 
-.av-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 2.4vw; align-items: center; min-height: 0; }
-.av-texto { display: grid; gap: 2.4vh; align-content: center; }
-.av-lienzo { position: relative; width: 100%; height: 62vh; border-radius: 1.2em; background: radial-gradient(120% 90% at 50% 100%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%), var(--s1); border: 1px solid var(--line); box-shadow: var(--card-shadow); overflow: hidden; }
+.esc-cuerpo { justify-content: start; }
+.av-fila { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.6vw; align-items: start; min-height: 0; min-width: 0; }
+.av-texto, .av-der { display: grid; gap: 1.1vh; align-content: start; min-width: 0; }
+.esc-titulo { font-size: 1.45em; }
+.esc-sub { font-size: .88em; }
+.av-lienzo { position: relative; width: 100%; height: 26vh; border-radius: 1.2em; background: radial-gradient(120% 90% at 50% 100%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%), var(--s1); border: 1px solid var(--line); box-shadow: var(--card-shadow); overflow: hidden; }
 .av-lienzo canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.av-respaldo { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 1em; color: var(--muted); }
+.av-respaldo { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 1em; color: var(--muted); font-size: .8em; }
 .av-nombre { position: absolute; left: .9em; bottom: .8em; z-index: 2; }
-.av-barra { display: flex; align-items: center; gap: 1.2vw; flex-wrap: wrap; }
-.av-botones { display: flex; gap: .6em; flex-wrap: wrap; }
-.av-botones button { font: inherit; font-size: .8em; font-weight: 700; padding: .45em 1.2em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+
+/* Votación: «¿Qué estilo eliges para tu Robo?» */
+.av-voto { display: grid; gap: .45em; padding: .7em 1em; }
+.av-voto h3 { margin: 0; font-size: .95em; }
+.av-botones { display: flex; gap: .5em; flex-wrap: wrap; }
+.av-botones button { font: 700 .74em/1 system-ui, sans-serif; padding: .55em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; gap: .45em; transition: border-color .2s ease-out, background .2s ease-out, color .2s ease-out; }
+.av-botones button i { width: .8em; height: .8em; border-radius: 50%; background: var(--sw); border: 1px solid rgba(0,0,0,.25); }
 .av-botones button:hover { border-color: var(--accent); color: var(--accent); }
 .av-botones button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .av-botones button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.av-etq { font-size: .72em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.av-cero { margin: 0; font-size: .85em; color: var(--muted); }
+.av-elegido { margin: 0; font-size: .78em; color: var(--muted); min-height: 1.3em; }
+.av-elegido b { color: var(--accent); }
+.av-barras { display: grid; gap: .28em; }
+.av-barras .av-tot { font: 600 .62em var(--mono); color: var(--muted); }
+.av-b { display: grid; grid-template-columns: 5.5em 1fr 2.8em; gap: .5em; align-items: center; font-size: .66em; }
+.av-b span { color: var(--muted); font-weight: 600; }
+.av-b i { display: block; height: .7em; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.av-b b { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--est-g)); transition: width .4s cubic-bezier(.2,.7,.2,1); }
+.av-b.mia b { background: linear-gradient(90deg, var(--ok), var(--accent)); }
+.av-b em { font: 700 .95em var(--mono); font-style: normal; text-align: right; color: var(--fg); }
+.av-cmd { font-size: .6em; }
+.av-cmd .arg { color: #7ef0a4; font-weight: 800; }
+
+/* Tu código: herramientas.py armado con dos campos */
+.av-herr { display: grid; gap: .4em; padding: .7em 1em; }
+.av-herr h3 { margin: 0; font-size: .92em; display: flex; justify-content: space-between; gap: .6em; align-items: baseline; flex-wrap: wrap; }
+.av-herr h3 small { font: 600 .66em var(--mono); color: var(--muted); }
+.av-campos { display: grid; grid-template-columns: 1fr 1.4fr; gap: .5em; }
+.av-campos label { display: grid; gap: .2em; font: 600 .62em system-ui, sans-serif; color: var(--muted); min-width: 0; }
+.av-campos input { font: 600 1.15em var(--mono); padding: .4em .6em; border-radius: .5em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); min-width: 0; width: 100%; }
+.av-campos input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.av-py { font-size: .62em; }
+.av-py .k { color: #8e7dff; font-weight: 800; }
+.av-py .s { color: #7ef0a4; }
+.av-cero { margin: 0; font-size: .74em; color: var(--muted); }
 .av-cero b { color: var(--ok); }
+.av-log { font-size: .56em; }
 
 </style>
 </head>
@@ -74,23 +102,47 @@
     <div class="av-fila">
       <div class="av-texto">
         <h1 class="esc-titulo a-in">Tu Robo, tu estilo, <em>tu código</em></h1>
-        <p class="esc-sub a-in" style="--d:.15s">Cambia de piel con <strong>--todos</strong> y prográmale una respuesta en Python.</p>
-        <pre class="esc-cmd a-in av-codigo" style="--d:.25s"><span class="c"># mi-robo/codigo.html · herramientas.py</span>
-<span class="p">@</span>herramienta("horario", "abren")
-<span class="p">def</span> horario(mensaje):
-    <span class="p">return</span> "Abrimos de 9 a 6"</pre>
-        <p class="av-cero a-in" style="--d:.35s">Ctrl+S y pregunta «¿a qué hora abren?» → <strong>⚙ tu código: horario()</strong></p>
-        <div class="av-botones a-in" style="--d:.3s" role="group" aria-label="Ánimo del robot">
-          <button type="button" data-animo="feliz" aria-pressed="false">Feliz</button>
-          <button type="button" data-animo="pensando" aria-pressed="false">Pensando</button>
-          <button type="button" data-animo="sorprendido" aria-pressed="false">Sorprendido</button>
+        <p class="esc-sub a-in" style="--d:.15s">Elige una piel con <strong>--estilo</strong> y prográmale una respuesta en Python.</p>
+        <div class="esc-card av-voto a-in" id="av-voto" style="--d:.25s">
+          <h3>¿Qué estilo eliges para tu Robo?</h3>
+          <div class="av-botones" role="group" aria-label="Estilo del Robo">
+            <button type="button" data-op="neon" aria-pressed="false" style="--sw:#39ff88" title="Retro arcade: pantalla CRT, verde fósforo, letra de terminal"><i></i>neon</button>
+            <button type="button" data-op="claro" aria-pressed="false" style="--sw:#3b7dd8" title="Blanco, aire, azul de marca, sombras suaves"><i></i>claro</button>
+            <button type="button" data-op="atardecer" aria-pressed="false" style="--sw:#ff5fa2" title="Magenta, naranja y violeta de playa al anochecer"><i></i>atardecer</button>
+            <button type="button" data-op="cabina" aria-pressed="false" style="--sw:#2fd4ff" title="HUD cian sobre azul profundo, cuadrícula técnica"><i></i>cabina</button>
+          </div>
+          <p class="av-elegido" id="av-elegido" aria-live="polite">Elige un estilo: el comando de abajo se arma solo.</p>
+          <div class="av-barras" id="av-barras" hidden aria-label="Votos del grupo">
+            <span class="av-tot" id="av-tot">El grupo · 0 votos</span>
+            <div class="av-b" data-op="neon"><span>neon</span><i><b></b></i><em>0 %</em></div>
+            <div class="av-b" data-op="claro"><span>claro</span><i><b></b></i><em>0 %</em></div>
+            <div class="av-b" data-op="atardecer"><span>atardecer</span><i><b></b></i><em>0 %</em></div>
+            <div class="av-b" data-op="cabina"><span>cabina</span><i><b></b></i><em>0 %</em></div>
+          </div>
         </div>
-        <p class="av-cero a-in" style="--d:.4s">El instructor cambia el ánimo y se replica en tu pantalla.</p>
+        <pre class="esc-cmd av-cmd a-in" id="av-cmd" style="--d:.3s"><span class="c"># arma tu Robo con el estilo elegido</span>
+<span class="p">$ </span>cd /trabajo/negocio &amp;&amp; python3 /opt/skills-curso/s2-robo-estilos/motor/construir.py --asistente asistente.json --estilo <span class="arg" id="av-arg">neon</span></pre>
+        <pre class="esc-cmd av-cmd a-in" style="--d:.35s"><span class="c"># o arma los 4 y compáralos en el visor: mi-robo/index.html</span>
+<span class="p">$ </span>cd /trabajo/negocio &amp;&amp; python3 /opt/skills-curso/s2-robo-estilos/motor/construir.py --asistente asistente.json --todos</pre>
       </div>
-      <div class="av-lienzo a-in" style="--d:.2s">
-        <canvas id="lienzo" aria-label="Robot en 3D"></canvas>
-        <div class="av-respaldo" id="respaldo" hidden>Tu navegador no muestra 3D (WebGL). Mira la pantalla del instructor.</div>
-        <span class="esc-chip av-nombre">Robot</span>
+      <div class="av-der">
+        <div class="av-lienzo a-in" style="--d:.2s">
+          <canvas id="lienzo" aria-label="Robot en 3D"></canvas>
+          <div class="av-respaldo" id="respaldo" hidden>Tu navegador no muestra 3D (WebGL). Mira la pantalla del instructor.</div>
+          <span class="esc-chip av-nombre" id="av-nombre">Robo</span>
+        </div>
+        <div class="esc-card av-herr a-in" style="--d:.3s">
+          <h3>Programa a tu Robo <small>Visor → mi-robo/codigo.html · herramientas.py</small></h3>
+          <div class="av-campos">
+            <label>tu palabra clave <input type="text" id="av-palabra" value="horario" placeholder="horario, abren" autocomplete="off" spellcheck="false"></label>
+            <label>tu respuesta <input type="text" id="av-resp" value="Abrimos de 9 a 6" placeholder="Abrimos de 9 a 6" autocomplete="off"></label>
+          </div>
+          <pre class="esc-cmd av-py" id="av-py"></pre>
+          <p class="av-cero">Pégalo al final del archivo, Ctrl+S y pregunta con tu palabra → <b>⚙ tu código: <span id="av-fn">horario</span>()</b></p>
+          <pre class="esc-cmd av-log"><span class="c"># ver tu código en la terminal · si falla, el error exacto:</span>
+<span class="p">$ </span>cat /trabajo/mi-robo/backend/herramientas.py
+<span class="p">$ </span>tail -n 20 /trabajo/mi-robo.log</pre>
+        </div>
       </div>
     </div>
   </main>
@@ -115,18 +167,17 @@ const avs = [];
 const av = montarAvatar(document.getElementById("lienzo"), "robot");
 if (!av.soportado) document.getElementById("respaldo").hidden = false;
 else { av.saludar(); avs.push(av); }
-const botones = [...document.querySelectorAll("[data-animo]")];
 function animo(a) {
   if (!ANIMOS.includes(a)) return;
   for (const av of avs) av.setAnimo(a);
-  for (const b of botones) b.setAttribute("aria-pressed", String(b.dataset.animo === a));
 }
 // Intro: el robot cambia de ánimo al compás de la escena (se corta si alguien interviene).
 let manual = false;
 const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (quieto) animo("feliz");
 else for (const [a, ms] of [["feliz", 1200], ["pensando", 2900], ["sorprendido", 4400], ["feliz", 5800]]) setTimeout(() => { if (!manual) animo(a); }, ms);
-for (const b of botones) b.addEventListener("click", () => { manual = true; animo(b.dataset.animo); });
+// Al elegir un estilo, el robot se sorprende y vuelve a sonreír.
+addEventListener("g5-estilo", () => { manual = true; animo("sorprendido"); setTimeout(() => animo("feliz"), 1400); });
 // El panel del LIVE reenvía cada «estado» al iframe: aplica estado.parametro al robot.
 addEventListener("message", (e) => {
   if (e.origin !== location.origin || !e.data || e.data.tipo !== "estado") return;
@@ -134,5 +185,100 @@ addEventListener("message", (e) => {
   if (typeof a === "string" && ANIMOS.includes(a)) { manual = true; animo(a); }
 });
 </script>
+<script>
+/* Votación del estilo: localStorage, comando con --estilo, voto al grupo y barras cada 5 s. */
+(function () {
+  var CLAVE = "g5-02-estilo", ESCENA = "08-avatar";
+  var leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "g5-02";
+  var botones = Array.prototype.slice.call(document.querySelectorAll("#av-voto .av-botones button"));
+  var elegido = document.getElementById("av-elegido"), arg = document.getElementById("av-arg"), nombre = document.getElementById("av-nombre");
+  var barras = document.getElementById("av-barras"), tot = document.getElementById("av-tot");
+  function leer() { try { return localStorage.getItem(CLAVE) || ""; } catch (e) { return ""; } }
+  function guardar(op) { try { localStorage.setItem(CLAVE, op); } catch (e) {} }
+  function pintarEleccion(op) {
+    var btn = null;
+    botones.forEach(function (b) { var es = b.getAttribute("data-op") === op; b.setAttribute("aria-pressed", String(es)); if (es) btn = b; });
+    if (!btn) return;
+    arg.textContent = op;
+    nombre.textContent = "Robo · " + op;
+    elegido.innerHTML = "Tu estilo: <b>" + op + "</b> · copia el comando y ábrelo en el visor: mi-robo/" + op + "/index.html";
+    barras.querySelectorAll(".av-b").forEach(function (f) { f.classList.toggle("mia", f.getAttribute("data-op") === op); });
+  }
+  function votar(op) {
+    try {
+      fetch("/api/v1/live/" + leccion + "/voto", {
+        method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ escena: ESCENA, opcion: op })
+      }).then(function () { leerVotos(); }).catch(function () {});
+    } catch (e) {}
+  }
+  function pintarVotos(d) {
+    var total = d && +d.total || 0, ops = (d && d.opciones) || {};
+    barras.hidden = false;
+    tot.textContent = "El grupo · " + total + (total === 1 ? " voto" : " votos");
+    barras.querySelectorAll(".av-b").forEach(function (f) {
+      var n = +ops[f.getAttribute("data-op")] || 0, pct = total ? Math.round(n * 100 / total) : 0;
+      f.querySelector("b").style.width = pct + "%";
+      f.querySelector("em").textContent = pct + " %";
+    });
+  }
+  function leerVotos() {
+    try {
+      fetch("/api/v1/live/" + leccion + "/votos?escena=" + ESCENA, { credentials: "same-origin" })
+        .then(function (r) { if (!r.ok) throw new Error("sin votos"); return r.json(); })
+        .then(pintarVotos)
+        .catch(function () { barras.hidden = true; });
+    } catch (e) { barras.hidden = true; }
+  }
+  botones.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var op = b.getAttribute("data-op");
+      guardar(op); pintarEleccion(op); votar(op);
+      try { dispatchEvent(new CustomEvent("g5-estilo", { detail: op })); } catch (e) {}
+    });
+  });
+  var previo = leer();
+  if (previo) pintarEleccion(previo);
+  leerVotos();
+  setInterval(leerVotos, 5000);
+})();
+
+/* Snippet de herramientas.py: dos campos arman la función con @herramienta(...), como en la plantilla del skill. */
+(function () {
+  var CLAVE = "g5-02-herramienta";
+  var inPal = document.getElementById("av-palabra"), inResp = document.getElementById("av-resp");
+  var pre = document.getElementById("av-py"), fn = document.getElementById("av-fn");
+  function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function identificador(t) {
+    var id = String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    if (!id) id = "mi_herramienta";
+    if (/^[0-9]/.test(id)) id = "h_" + id;
+    return id;
+  }
+  function py(t) { return '"' + String(t).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'; }
+  function armar() {
+    var palabras = inPal.value.split(",").map(function (p) { return p.trim(); }).filter(Boolean);
+    if (!palabras.length) palabras = ["horario"];
+    var resp = inResp.value.trim() || "Abrimos de 9 a 6";
+    var nombre = identificador(palabras[0]);
+    fn.textContent = nombre;
+    pre.innerHTML =
+      '<span class="c"># herramientas.py · responde a ' + esc(palabras.map(function (p) { return "«" + p + "»"; }).join(" o ")) + '</span>\n' +
+      '<span class="k">@</span>herramienta(' + palabras.map(function (p) { return '<span class="s">' + esc(py(p)) + '</span>'; }).join(", ") + ')\n' +
+      '<span class="k">def</span> ' + esc(nombre) + '(mensaje):\n' +
+      '    <span class="k">return</span> <span class="s">' + esc(py(resp)) + '</span>';
+    try { localStorage.setItem(CLAVE, JSON.stringify({ palabra: inPal.value, respuesta: inResp.value })); } catch (e) {}
+  }
+  try {
+    var g = JSON.parse(localStorage.getItem(CLAVE) || "null");
+    if (g && typeof g.palabra === "string" && g.palabra.trim()) inPal.value = g.palabra;
+    if (g && typeof g.respuesta === "string" && g.respuesta.trim()) inResp.value = g.respuesta;
+  } catch (e) {}
+  inPal.addEventListener("input", armar);
+  inResp.addEventListener("input", armar);
+  armar();
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
 </body>
 </html>
