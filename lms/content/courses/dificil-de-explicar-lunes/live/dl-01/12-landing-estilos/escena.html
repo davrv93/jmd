@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>E12 · Landing con estilo</title>
-<!-- Escena generada desde live/_plantilla; estilos propios solo en #esc-propio. -->
+<!-- Escena generada desde live/_plantilla; estilos propios solo en #esc-propio. Sin comandos: el prompt va al chat de jmd. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <style id="esc-propio">
 .esc-grid-2 > * { min-width: 0; } .esc-titulo { overflow-wrap: anywhere; }
@@ -39,7 +39,7 @@ pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; w
     <span class="esc-num">LUNES · S1 · E12</span>
     <span class="esc-fase">Experimentación</span>
     <h1 class="esc-titulo">Landing con estilo: el mismo negocio en 8 diseños</h1>
-    <p class="esc-sub">Sin IA y sin cuota: reglas sacan los datos del cliente y el motor arma el sitio en el diseño que elijas aquí. Cambiar de diseño es cambiar un parámetro.</p>
+    <p class="esc-sub">Pegas el texto del cliente, eliges el diseño, copias el prompt y lo pegas en el chat de <code>jmd</code>. Sin archivos ni comandos: el agente arma la landing. Cambiar de diseño es volver a pedirlo.</p>
   </header>
 
   <section class="esc-grid-2 s2">
@@ -50,15 +50,15 @@ pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; w
         <div class="fila"><span id="cuenta"></span> · <button class="lnk" id="ejemplo" type="button">ejemplo: el taller</button> · <button class="lnk" id="ejemplo2" type="button">ejemplo: pollería</button> · <button class="lnk" id="borrar" type="button">borrar</button></div>
       </div>
       <div class="bloque">
-        <p class="paso"><i>3</i> Copia y pégalo en la terminal (Enter)</p>
-        <button id="copiar" type="button">Copiar comando</button>
+        <p class="paso"><i>3</i> Copia el prompt y pégalo en el chat de <code>jmd</code> (Enter)</p>
+        <button id="copiar" type="button">Copiar prompt</button>
         <ol class="despues">
-          <li>Espera el <code>OK</code> (un segundo).</li>
+          <li>El agente usa el skill de landing y te dice la ruta al terminar.</li>
           <li>Abre <code id="ruta">/trabajo/landing/sitio-dificil/index.html</code> en el Visor.</li>
-          <li>Elige <b>otro diseño</b>, copia de nuevo: mismo contenido, otra landing. Compara las dos.</li>
-          <li>Si sale <code>[completar]</code>, el cliente no dio ese dato: agrégalo al texto y vuelve a copiar.</li>
+          <li>Elige <b>otro diseño</b>, copia y pega de nuevo: mismo contenido, otra landing. Compara las dos.</li>
+          <li>Si sale <code>[completar]</code>, el cliente no dio ese dato: agrégalo al texto y vuelve a pedirlo.</li>
         </ol>
-        <pre class="esc-cmd" id="cmd" aria-label="Comando que se copia"></pre>
+        <pre class="esc-cmd" id="cmd" aria-label="Prompt que se copia"></pre>
       </div>
     </div>
     <div>
@@ -67,13 +67,12 @@ pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; w
         <div class="estilos" id="estilos" role="group" aria-label="Diseño"></div>
         <p class="eleg" id="eleg"></p>
       </div>
-      <p class="nota">Lo logré = tu landing abre en el Visor en el diseño que elegiste. Los diseños están <i>inspirados</i> en esas estéticas: sin logos ni fuentes de marca.</p>
+      <p class="nota">Lo logré = tu landing abre en el Visor en el diseño que elegiste. También puedes escribir el prompt a tu manera: lo que importa es el texto del cliente y el nombre del diseño. Los diseños están <i>inspirados</i> en esas estéticas: sin logos ni fuentes de marca.</p>
     </div>
   </section>
 </main>
 <script>
 (() => {
-  const MOTOR = '/opt/skills-curso/s1-landing-estilos/motor';
   const ESTILOS = [
     ['dificil',   'Difícil de explicar', 'Tinta y pasteles, titular en collage de recortes, pixel art, cinta con código de tiempo', 'Talleres, eventos, marcas creativas o nostálgicas', '#f2c6d0'],
     ['apple',     'Apple',               'Blanco, aire, titulares enormes, bento, imagen que crece con el scroll, galería horizontal', 'Productos premium, tecnología, servicios limpios', '#f5f5f7'],
@@ -103,7 +102,6 @@ pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; w
     '- Delivery gratis en Cayma',
     'Pedidos por WhatsApp al 987 654 321.'
   ].join('\n');
-  const FIN = 'FIN_CLIENTE';
   const $ = (id) => document.getElementById(id);
   const texto = $('texto'), cmd = $('cmd'), btn = $('copiar');
   let estilo = 'dificil';
@@ -123,12 +121,11 @@ pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; w
   }
 
   function comando() {
-    const limpio = texto.value.replace(/\r/g, '').split('\n')
-      .filter((l) => l.trim() !== FIN).map((l) => l.replace(/\s+$/, '')).join('\n').trim();
-    return 'mkdir -p /trabajo/landing && cd /trabajo/landing && cat > cliente.txt <<\'' + FIN + '\'\n' +
-      (limpio || '(pega aquí el texto del cliente)') + '\n' + FIN + '\n' +
-      'bun ' + MOTOR + '/extraer.mjs cliente.txt --salida negocio.json && ' +
-      'bun ' + MOTOR + '/construir.mjs --negocio negocio.json --estilo ' + estilo + ' --imagenes no\n';
+    const limpio = texto.value.replace(/\r/g, '').split('\n').map((l) => l.replace(/\s+$/, '')).join('\n').trim();
+    const e = ESTILOS.find((x) => x[0] === estilo);
+    return 'Hazme la landing de este negocio con el estilo ' + e[1] + ' (--estilo ' + estilo + '), sin imágenes generadas, ' +
+      'y guárdala en /trabajo/landing/sitio-' + estilo + '. No inventes datos: lo que falte déjalo en [completar]. ' +
+      'Al terminar dime la ruta del index.html.\n\nTexto del cliente:\n' + (limpio || '(pega aquí el texto del cliente)') + '\n';
   }
 
   function pintar() {
@@ -157,10 +154,10 @@ pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; w
 
   btn.onclick = async () => {
     const ok = await copiar(comando());
-    btn.textContent = ok ? '✓ Copiado: pégalo en la terminal' : 'No pude copiar: selecciona el texto de abajo';
+    btn.textContent = ok ? '✓ Copiado: pégalo en el chat de jmd' : 'No pude copiar: selecciona el texto de abajo';
     btn.classList.toggle('ok', ok);
     if (!ok) { const r = document.createRange(); r.selectNodeContents(cmd); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
-    setTimeout(() => { btn.textContent = 'Copiar comando'; btn.classList.remove('ok'); }, 3500);
+    setTimeout(() => { btn.textContent = 'Copiar prompt'; btn.classList.remove('ok'); }, 3500);
   };
   texto.oninput = () => { guardar('texto', texto.value); pintar(); };
   $('ejemplo').onclick = () => { texto.value = EJEMPLO; guardar('texto', EJEMPLO); pintar(); texto.focus(); };

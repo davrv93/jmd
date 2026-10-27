@@ -115,7 +115,7 @@ cycle:
     title: Landing con estilo
     tool: jmd
     phase: experimentacion
-    description: Pega el texto de un cliente, elige uno de los 8 diseños desde la escena (Apple, Huawei, nova 5T, Express, Inmersivo, iPad, Difícil de explicar, Atardecer Neón) y el motor arma la landing sin IA.
+    description: Pega el texto de un cliente, elige uno de los 8 diseños desde la escena (Apple, Huawei, nova 5T, Express, Inmersivo, iPad, Difícil de explicar, Atardecer Neón), copia el prompt y pégalo en el chat de jmd. Sin archivos ni comandos.
     check: Tu landing abre en el Visor en el estilo que elegiste
   - id: cierre
     title: Cierre del taller
