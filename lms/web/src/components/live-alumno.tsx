@@ -138,7 +138,8 @@ export const LiveAlumno = component$(
       visible.value = props.estado.visible;
       modo.value = props.estado.modo;
       mensaje.value = props.estado.mensaje;
-      local.value = "";
+      // En modo guiado la escena del instructor arrastra a todos; en libre cada uno sigue donde estaba.
+      if (props.estado.modo !== "libre") local.value = "";
     });
 
     // Un mensaje dirigido al alumno se muestra igual que el de todos y se apaga solo a los 30 s.
@@ -163,7 +164,7 @@ export const LiveAlumno = component$(
     // Latido: cada 15 s dice al instructor que sigo aquí y en qué escena (el servidor olvida a los de 40 s).
     // eslint-disable-next-line qwik/no-use-visible-task
     useVisibleTask$(({ track, cleanup }) => {
-      const esc = track(() => (modo.value === "libre" && local.value ? local.value : escena.value));
+      const esc = track(() => local.value || escena.value);
       const enviar = () => {
         api.liveLatido(props.lesson, esc).catch(() => undefined);
       };
@@ -562,7 +563,8 @@ export const LiveAlumno = component$(
     });
 
     const lista = props.escenas ?? [];
-    const efectiva = modo.value === "libre" && local.value ? local.value : escena.value;
+    // El alumno siempre puede adelantar o retroceder por su cuenta; «A la del instructor» lo devuelve.
+    const efectiva = local.value || escena.value;
     const idx = lista.findIndex((x) => x.id === efectiva);
     const actual = idx >= 0 ? lista[idx] : undefined;
     // Lo que se pinta de la escena va en valores sueltos: un {actual.titulo} en el JSX quedaba atado al objeto
@@ -575,7 +577,7 @@ export const LiveAlumno = component$(
     const numero = actual ? `${idx + 1}/${lista.length}` : "";
     const logrado = !!actual && logres.ids.includes(aid);
 
-    // En modo libre las flechas recorren las escenas de la clase sin mover al resto.
+    // Las flechas y los botones recorren las escenas de la clase sin mover al resto.
     const paso = (dir: 1 | -1) => {
       if (lista.length === 0) return escena.value;
       const i = idx < 0 ? 0 : Math.min(lista.length - 1, Math.max(0, idx + dir));
@@ -756,11 +758,13 @@ export const LiveAlumno = component$(
                 {numero && <span class="lv-escena-n">{numero}</span>}
                 <span class="lv-escena-t">{titulo || efectiva || "Esperando la primera escena"}</span>
               </div>
-              {modo.value === "libre" && (
+              {lista.length > 0 && (
                 <div class="live-nav-local" role="group" aria-label="Avanza a tu ritmo">
-                  <span class="live-libre" title="Modo libre: avanza a tu ritmo con las flechas">
-                    Libre
-                  </span>
+                  {modo.value === "libre" && (
+                    <span class="live-libre" title="Modo libre: avanza a tu ritmo con las flechas">
+                      Libre
+                    </span>
+                  )}
                   <button type="button" class="lv-ico-btn" aria-label="Escena anterior" title="Escena anterior" disabled={anterior === efectiva} onClick$={() => (local.value = anterior)}>
                     <Icon name="chevronLeft" size={16} />
                   </button>
@@ -974,6 +978,23 @@ export const LiveAlumno = component$(
           <span class="lv-ei lv-ocultable" title={modo.value === "libre" ? "Modo libre: avanzas a tu ritmo" : "Modo guiado: la escena la pone el instructor"}>
             {modo.value === "libre" ? "Modo libre" : "Modo guiado"}
           </span>
+          {lista.length > 0 && (
+            <span class="lv-ei lv-ei-nav" role="group" aria-label="Adelantar o retroceder la escena">
+              <button type="button" class="lv-nav-btn" aria-label="Escena anterior" title="Escena anterior" disabled={anterior === efectiva} onClick$={() => (local.value = anterior)}>
+                <Icon name="chevronLeft" size={13} />
+                <span class="lv-ocultable">Anterior</span>
+              </button>
+              <button type="button" class="lv-nav-btn" aria-label="Escena siguiente" title="Escena siguiente" disabled={siguiente === efectiva} onClick$={() => (local.value = siguiente)}>
+                <span class="lv-ocultable">Siguiente</span>
+                <Icon name="chevronRight" size={13} />
+              </button>
+              {local.value && local.value !== escena.value && (
+                <button type="button" class="lv-nav-btn lv-nav-volver" title="Volver a la escena que muestra el instructor" onClick$={() => (local.value = "")}>
+                  A la del instructor
+                </button>
+              )}
+            </span>
+          )}
           {props.conectados !== undefined && props.conectados > 0 && (
             <span class="lv-ei lv-ocultable" title="Conectados a la clase" aria-label={`${props.conectados} conectados a la clase`}>
               <Icon name="users" size={13} />
