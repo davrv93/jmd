@@ -99,7 +99,7 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
         <details class="paso" id="p4">
           <summary><i>4</i> Generar y comparar <small id="r4"></small></summary>
           <div>
-            <p class="nota">Pulsa <b>Generar aquí</b>. La base y la variación quedan lado a lado a la derecha. ¿Cambió solo lo que pediste?</p>
+            <p class="nota">Pulsa <b>Generar aquí</b>. La base se crea con FLUX; la variación se hace <b>editando esa misma imagen</b> (un modelo de edición vía OpenRouter), así el personaje y el encuadre se conservan y cambia solo lo pedido. Quedan lado a lado. ¿Cambió solo eso?</p>
             <ul class="reglas">
               <li><b>Una cosa por vez.</b> Dos cambios a la vez no se pueden comparar.</li>
               <li><b>Concreto gana.</b> «un gato naranja con sombrero rojo» > «un gato bonito».</li>
@@ -233,7 +233,12 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
     btn.disabled = true; btn.textContent = 'Generando… (FLUX, unos 10 s)'; aviso.textContent = '';
     const t0 = performance.now();
     try {
-      const r = await fetch(`/api/v1/live/${leccion}/imagen`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt(), orientacion: 'horizontal' }) });
+      // Variación: si ya hay base, se edita LA MISMA imagen (modelo de edición vía OpenRouter) y cambia solo lo pedido.
+      const baseImg = document.querySelector('#g-base img');
+      const conBase = !esBase() && baseImg && baseImg.src.startsWith('data:');
+      const cambio = conBase ? [partes().v ? `${TIPOS[est.tipo][0].replace('reemplaza ', '').replace('añade ', 'añadir ')}: ${partes().v}` : '', PALETAS[est.paleta][1] ? `color: ${PALETAS[est.paleta][1]}` : ''].filter(Boolean).join('; ') : '';
+      btn.textContent = conBase ? 'Editando la base… (unos 15 s)' : 'Generando… (FLUX, unos 10 s)';
+      const r = await fetch(`/api/v1/live/${leccion}/imagen`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(conBase ? { prompt: prompt(), orientacion: 'horizontal', base: baseImg.src, cambio } : { prompt: prompt(), orientacion: 'horizontal' }) });
       if (!r.ok) {
         let msg = `error ${r.status}`;
         try { const j = await r.json(); msg = (j.error && (j.error.message || j.error.mensaje)) || j.message || j.mensaje || msg; } catch (e) {}
@@ -242,7 +247,7 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
       const blob = await r.blob();
       const data = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
       const fig = $(hueco); fig.innerHTML = `<img alt=""><figcaption></figcaption>`;
-      fig.querySelector('img').src = data; fig.querySelector('figcaption').textContent = (esBase() ? 'base · ' : (variacion() ? est.tipo + ' · ' : '') + (est.paleta ? PALETAS[est.paleta][0] + ' · ' : '')) + prompt().slice(0, 60);
+      fig.querySelector('img').src = data; fig.querySelector('figcaption').textContent = (esBase() ? 'base · ' : (conBase ? 'misma base + ' : '') + (variacion() ? est.tipo + ' · ' : '') + (est.paleta ? PALETAS[est.paleta][0] + ' · ' : '')) + prompt().slice(0, 60);
       est.usados = Math.min(20, est.usados + 1);
       const li = document.createElement('li'); li.textContent = `${nombreArchivo()} ← ${prompt().slice(0, 70)}… (${((performance.now() - t0) / 1000).toFixed(1)} s)`; $('hist').appendChild(li);
       btn.classList.add('ok'); btn.textContent = `✓ Lista en ${((performance.now() - t0) / 1000).toFixed(1)} s`;
