@@ -3,43 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>E11 · Genera con FLUX: base y variaciones</title>
+<title>E11 · FLUX: la receta del prompt, una base y variaciones</title>
 <!-- Escena del modo LIVE (sesión 1, grupo de los lunes). Estilos comunes en ../../comun/escena.css; propios en #esc-propio. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <style id="esc-propio">
 .esc-grid-2.lado { grid-template-columns: 1.1fr .9fr; align-items: start; }
 .esc-grid-2 > * { min-width: 0; } .esc-titulo { overflow-wrap: anywhere; }
 .nota { font-size: .72em; color: var(--muted); margin: 0; }
-/* ---- secuencia anidada: pasos que se abren uno dentro del otro ---- */
-.sec { display: grid; gap: .5em; }
+.sec { display: grid; gap: .45em; }
 .paso { border: 1px solid var(--line); border-radius: .9em; background: var(--s1); box-shadow: var(--card-shadow); overflow: hidden; }
-.paso > summary { list-style: none; cursor: pointer; display: flex; gap: .7em; align-items: center; padding: .6em .9em; font-weight: 700; font-size: .9em; }
+.paso > summary { list-style: none; cursor: pointer; display: flex; gap: .7em; align-items: center; padding: .55em .9em; font-weight: 700; font-size: .9em; }
 .paso > summary::-webkit-details-marker { display: none; }
 .paso > summary i { font-style: normal; display: inline-grid; place-items: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--s3); color: var(--muted); font-size: .8em; flex: none; }
 .paso[open] > summary i, .paso.hecho > summary i { background: var(--accent); color: var(--on-accent); }
-.paso.hecho > summary i::after { content: "✓"; }
-.paso.hecho > summary i { font-size: .7em; }
-.paso > summary small { font-weight: 400; color: var(--muted); margin-left: auto; font-size: .78em; }
-.paso > div { padding: .3em .9em .9em; border-top: 1px solid var(--line); }
-.chips { display: flex; flex-wrap: wrap; gap: .35em; margin: .4em 0; }
-.chips button { font: 600 .7em/1 system-ui, sans-serif; padding: .5em .8em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.paso > summary small { font-weight: 400; color: var(--muted); margin-left: auto; font-size: .76em; text-align: right; }
+.paso > div { padding: .3em .9em .8em; border-top: 1px solid var(--line); }
+.receta { display: grid; grid-template-columns: auto 1fr; gap: .35em .6em; align-items: center; margin: .4em 0; }
+.receta label { font-size: .74em; font-weight: 700; }
+.receta label small { display: block; font-weight: 400; color: var(--muted); }
+.receta input { width: 100%; font: .8em/1.3 inherit; padding: .4em .6em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+.receta input:focus, .paso input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.chips { display: flex; flex-wrap: wrap; gap: .35em; margin: .35em 0; }
+.chips button { font: 600 .68em/1 system-ui, sans-serif; padding: .48em .75em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
 .chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .chips button.col::before { content: ""; display: inline-block; width: .8em; height: .8em; border-radius: 50%; background: var(--sw); margin-right: .4em; vertical-align: -.08em; border: 1px solid rgba(0,0,0,.25); }
-.paso input[type=text] { width: 100%; font: .8em/1.4 inherit; padding: .5em .7em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); margin-top: .3em; }
-.paso input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.frag { font: .7em/1.4 var(--mono); color: var(--muted); margin: .3em 0 0; }
+.chips .t { font-size: .66em; color: var(--muted); align-self: center; }
+.paso input[type=text].propia { width: 100%; font: .8em/1.3 inherit; padding: .45em .7em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); margin-top: .25em; }
+.frag { font: .68em/1.4 var(--mono); color: var(--muted); margin: .3em 0 0; }
 .frag b { color: var(--accent); font-weight: 600; }
-/* ---- lado derecho: el prompt compuesto y el comando ---- */
-.prompt { font: .76em/1.5 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .8em; padding: .7em .9em; margin: 0; white-space: pre-wrap; word-break: break-word; }
-.prompt .b { color: var(--fg); } .prompt .v { color: var(--accent); font-weight: 700; } .prompt .c { color: var(--warn); font-weight: 700; }
+.reglas { margin: .2em 0 0; padding-left: 1.1em; font-size: .72em; color: var(--muted); }
+.reglas li { margin: .12em 0; } .reglas b { color: var(--fg); }
+.prompt { font: .78em/1.5 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .8em; padding: .7em .9em; margin: 0; white-space: pre-wrap; word-break: break-word; }
+.prompt .s { color: var(--fg); font-weight: 700; } .prompt .a { color: var(--info); } .prompt .l { color: var(--ok); } .prompt .v { color: var(--accent); font-weight: 700; } .prompt .c { color: var(--warn); font-weight: 700; } .prompt .e { color: var(--muted); }
+.leyenda { display: flex; flex-wrap: wrap; gap: .6em; font-size: .66em; color: var(--muted); margin: .35em 0 0; }
+.leyenda b { font-weight: 700; } .leyenda .s { color: var(--fg); } .leyenda .a { color: var(--info); } .leyenda .l { color: var(--ok); } .leyenda .v { color: var(--accent); } .leyenda .c { color: var(--warn); }
 #copiar { width: 100%; font: 700 .95em/1 system-ui, sans-serif; padding: .85em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; box-shadow: var(--card-shadow); margin-top: .6vh; }
-#copiar.ok { background: var(--ok); }
-pre#cmd { max-height: 11vh; overflow: auto; font-size: .56em; margin: .5em 0 0; white-space: pre-wrap; word-break: break-word; }
+#copiar.ok { background: var(--ok); } #copiar:disabled { opacity: .5; cursor: not-allowed; }
+pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; white-space: pre-wrap; word-break: break-word; }
 .cuota { display: flex; gap: .3em; align-items: center; font-size: .72em; color: var(--muted); margin: .5em 0 0; }
 .cuota i { width: 1.1em; height: 1.1em; border-radius: .25em; background: var(--s3); border: 1px solid var(--line2); display: inline-block; }
 .cuota i.usado { background: var(--accent); border-color: var(--accent); }
-.hist { font-size: .7em; color: var(--muted); margin: .4em 0 0; padding-left: 1.1em; }
-.hist li { margin: .15em 0; }
+.hist { font-size: .7em; color: var(--muted); margin: .3em 0 0; padding-left: 1.1em; } .hist li { margin: .12em 0; }
 </style>
 </head>
 <body>
@@ -49,28 +53,35 @@ pre#cmd { max-height: 11vh; overflow: auto; font-size: .56em; margin: .5em 0 0; 
     <span class="esc-num">LUNES · S1 · E11</span>
   </header>
   <main class="esc-cuerpo">
-    <h1 class="esc-titulo a-in">Una <em>imagen base</em> y variaciones de a una: personaje, escena, objeto, color</h1>
+    <h1 class="esc-titulo a-in">La receta del prompt: <em>quién, qué hace, dónde, cómo se ve</em>. Una base y variaciones de a una</h1>
     <section class="esc-grid-2 lado">
       <div class="sec a-in" style="--d:.1s">
         <details class="paso" id="p1" open>
-          <summary><i>1</i> La base <small id="r1">elige una</small></summary>
+          <summary><i>1</i> La base: tu receta en español <small id="r1">llena las cuatro partes</small></summary>
           <div>
-            <p class="nota">Todo parte de la misma base. Primero generas la base tal cual; después, cada variación cambia <b>una sola cosa</b>. Así ves qué hace cada palabra.</p>
-            <div class="chips" id="bases"></div>
+            <p class="nota">Un prompt es una frase con cuatro partes. <b>Lo que no dices, el modelo lo inventa.</b> Escribe en español, concreto y corto; nada de «bonito» o «increíble».</p>
+            <div class="chips" id="ejemplos"><span class="t">Ejemplos:</span></div>
+            <div class="receta">
+              <label>Quién o qué<small>el sujeto</small></label><input id="sujeto" type="text" placeholder="un gato pirata con parche">
+              <label>Qué hace<small>la acción</small></label><input id="accion" type="text" placeholder="toca el ukelele">
+              <label>Dónde<small>el lugar y la hora</small></label><input id="lugar" type="text" placeholder="en la cubierta de un barco, al amanecer">
+              <label>Cómo se ve<small>el estilo (elige uno)</small></label><div class="chips" id="estilos" style="margin:0"></div>
+            </div>
             <p class="frag" id="f1"></p>
           </div>
         </details>
         <details class="paso" id="p2">
-          <summary><i>2</i> Variación <small id="r2">personaje · escena · objeto</small></summary>
+          <summary><i>2</i> Una variación <small id="r2">cambia una sola parte</small></summary>
           <div>
+            <p class="nota">Primero genera la base. Luego cambia <b>una</b> parte y genera otra vez: así ves qué mueve cada palabra.</p>
             <div class="chips" id="tipos"></div>
             <div class="chips" id="opciones"></div>
-            <input type="text" id="propia" placeholder="…o escribe la tuya (en inglés sale mejor)">
+            <input type="text" id="propia" class="propia" placeholder="…o escribe la tuya, en español">
             <p class="frag" id="f2"></p>
           </div>
         </details>
         <details class="paso" id="p3">
-          <summary><i>3</i> Color <small id="r3">blanco y negro de 1928</small></summary>
+          <summary><i>3</i> Color <small id="r3"></small></summary>
           <div>
             <div class="chips" id="paletas"></div>
             <p class="frag" id="f3"></p>
@@ -79,49 +90,68 @@ pre#cmd { max-height: 11vh; overflow: auto; font-size: .56em; margin: .5em 0 0; 
         <details class="paso" id="p4">
           <summary><i>4</i> Generar y comparar <small id="r4"></small></summary>
           <div>
-            <p class="nota">Copia el comando, pégalo en la terminal del aula y espera ~10 s. Abre la imagen en el Visor <b>al lado de la base</b>. ¿Cambió solo lo que pediste? Si no, vuelve al paso que falló y ajusta una palabra.</p>
+            <p class="nota">Copia el comando, pégalo en la terminal del aula y espera ~10 s. Abre la imagen en el Visor <b>al lado de la base</b>. ¿Cambió solo lo que pediste?</p>
+            <ul class="reglas">
+              <li><b>Una cosa por vez.</b> Dos cambios a la vez no se pueden comparar.</li>
+              <li><b>Concreto gana.</b> «un gato naranja con sombrero rojo» > «un gato bonito».</li>
+              <li><b>Sin texto dentro de la imagen.</b> FLUX escribe mal las letras; el texto va en tu HTML.</li>
+              <li><b>Si sale raro:</b> quita una palabra, no agregues tres.</li>
+            </ul>
             <ul class="hist" id="hist"></ul>
           </div>
         </details>
       </div>
       <div class="a-in" style="--d:.2s">
         <pre class="prompt" id="prompt"></pre>
+        <p class="leyenda"><b class="s">■ quién</b> <b class="a">■ qué hace</b> <b class="l">■ dónde</b> <b class="v">■ variación</b> <b class="c">■ color</b> <b>■ estilo</b></p>
         <button id="copiar" type="button">Copiar comando</button>
         <pre class="esc-cmd" id="cmd"></pre>
         <div class="cuota" id="cuota"><span>Tu cupo de hoy:</span></div>
-        <p class="nota" style="margin-top:.5em">La imagen queda en <code id="ruta">/trabajo/flux/base.png</code>. El servicio de la clase manda tu texto a FLUX (difusión en la nube, 2 pasos). <b>Lo logré</b> = la base y al menos una variación abiertas en el Visor.</p>
+        <p class="nota" style="margin-top:.5em">La imagen queda en <code id="ruta">/trabajo/flux/base.png</code>. El servicio de la clase manda tu texto a FLUX (difusión en la nube). En español funciona; si una palabra no la entiende, prueba la misma en inglés. <b>Lo logré</b> = la base y una variación abiertas en el Visor.</p>
       </div>
     </section>
   </main>
-  <footer class="esc-pie">Steamboat Willie (1928) es de dominio público · kit en jmd-learn.online/steamboat/</footer>
+  <footer class="esc-pie">Kit en jmd-learn.online/steamboat/ · el cupo de imágenes es de la clase: 5 por persona hoy</footer>
 </div>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  // ---- La base: un sujeto fijo, un encuadre fijo y el estilo de 1928. Cada chip es un prompt completo.
-  const BASES = [
-    ['Mickey al timón', 'a cartoon mouse whistling at the wheel of a steamboat', 'horizontal'],
-    ['El barco', 'a small cartoon steamboat on a river, smoke from the funnel', 'horizontal'],
-    ['Retrato', 'portrait of a cartoon mouse with a sailor cap, big round ears', 'cuadrado'],
+  // ---- ejemplos de receta completa (en español)
+  const EJEMPLOS = [
+    ['Mickey al timón', 'un ratón de dibujo animado de 1928', 'silba al timón', 'en la cubierta de un barco de vapor', 0],
+    ['gato pirata', 'un gato pirata con parche', 'toca el ukelele', 'en la cubierta de un barco, al amanecer', 1],
+    ['robot panadero', 'un robot redondo de hojalata', 'saca pan del horno', 'en una panadería pequeña', 4],
+    ['taza de café', 'una taza de café humeante', 'sobre una mesa de madera', 'junto a una ventana con lluvia', 2],
+    ['perro astronauta', 'un perro con traje de astronauta', 'flota con una pelota', 'en el espacio, con la Tierra detrás', 3],
+    ['vendedora de flores', 'una señora con sombrero grande', 'ordena flores', 'en un puesto de mercado por la mañana', 1],
   ];
-  const ESTILO_BASE = 'rubber hose style, round shapes, thick ink outlines, cream paper, film grain';
-  // ---- Variaciones: cada una cambia UNA cosa de la base. {tipo: [[etiqueta, cláusula], …]}
+  // ---- estilos: etiqueta en español, cláusula en inglés (al modelo le rinde más)
+  const ESTILOS = [
+    ['dibujo de 1928', '1928 black and white cartoon, rubber hose style, round shapes, thick ink outlines, cream paper, film grain'],
+    ['color plano', 'flat color cartoon, bold outlines, limited palette, 1930s animation cel'],
+    ['acuarela', 'soft watercolor illustration, paper texture, gentle light'],
+    ['pixel art', '8-bit pixel art, 32 colors, crisp pixels'],
+    ['línea clara', 'clean line art, ligne claire, flat pastel colors'],
+    ['foto', 'photograph, 50mm lens, natural light, shallow depth of field'],
+  ];
+  // ---- variaciones: cada tipo reemplaza o añade UNA parte
   const TIPOS = {
-    personaje: [['un gato', 'but the character is a cartoon cat'], ['un pato', 'but the character is a cartoon duck'], ['un pájaro', 'but the character is a cartoon bird'], ['un perro', 'but the character is a cartoon dog'], ['un robot', 'but the character is a tin robot with round joints'], ['dos personajes', 'and a second small cartoon character beside it']],
-    escena:    [['amanecer en el río', 'the scene is a river at sunrise'], ['tormenta', 'the scene is a stormy sea with big waves and rain'], ['puerto de noche', 'the scene is a harbor at night with lanterns'], ['selva', 'the scene is a jungle river with palm trees'], ['ciudad', 'the scene is a 1920s city skyline behind'], ['nieve', 'the scene is a frozen lake with snow']],
-    objeto:    [['un ukelele', 'holding a ukulele instead'], ['una bandera', 'holding a big flag'], ['un sombrero de copa', 'wearing a tall top hat'], ['gafas', 'wearing round glasses'], ['un helado', 'holding an ice cream cone'], ['un paraguas', 'holding an open umbrella']],
+    personaje: ['reemplaza «quién»', [['un gato', 'un gato'], ['un pato', 'un pato'], ['un pájaro', 'un pájaro pequeño'], ['un robot', 'un robot de hojalata'], ['una niña', 'una niña con trenzas'], ['un pulpo', 'un pulpo sonriente']]],
+    accion:    ['reemplaza «qué hace»', [['baila', 'baila'], ['duerme', 'duerme'], ['corre', 'corre asustado'], ['canta', 'canta con los ojos cerrados'], ['pinta', 'pinta un cuadro'], ['saluda', 'saluda con la mano']]],
+    escena:    ['reemplaza «dónde»', [['río al amanecer', 'en un río al amanecer'], ['tormenta', 'en un mar con tormenta y olas grandes'], ['puerto de noche', 'en un puerto de noche con faroles'], ['selva', 'en un río de selva con palmeras'], ['ciudad', 'frente a una ciudad de 1920'], ['nieve', 'en un lago helado con nieve']]],
+    objeto:    ['añade «con…»', [['un ukelele', 'con un ukelele'], ['una bandera', 'con una bandera grande'], ['sombrero de copa', 'con sombrero de copa'], ['gafas', 'con gafas redondas'], ['un helado', 'con un helado'], ['un paraguas', 'con un paraguas abierto']]],
   };
   const PALETAS = [
-    ['1928 B/N', 'black and white', '#bebebe'], ['color plano', 'flat colors: red shorts, blue cap, yellow shoes, cream face', '#d6452f'],
-    ['pastel', 'soft pastel colors, pink and mint and lavender', '#f4c2cf'], ['neón', 'neon colors on dark background, cyan and magenta', '#00e5ff'],
-    ['sepia', 'sepia tones, old photograph', '#b89a72'], ['acuarela', 'soft watercolor washes, paper texture', '#9cd0ff'],
+    ['como el estilo', '', '#bebebe'], ['blanco y negro', 'en blanco y negro', '#8d8d8d'], ['color plano', 'colores planos: rojo, azul, amarillo', '#d6452f'],
+    ['pastel', 'colores pastel: rosa, menta y lavanda', '#f4c2cf'], ['neón', 'colores neón sobre fondo oscuro: cian y magenta', '#00e5ff'],
+    ['sepia', 'tonos sepia, foto antigua', '#b89a72'], ['cálido', 'colores cálidos: naranja, dorado y rojo', '#f2a65a'], ['frío', 'colores fríos: azul, celeste y violeta', '#4aa3df'],
   ];
-  const est = { base: 0, tipo: 'personaje', opcion: null, propia: '', paleta: 0, n: 0, usados: 0 };
-  const guardar = () => { try { localStorage.setItem('e11', JSON.stringify(est)); } catch (e) {} };
-  try { Object.assign(est, JSON.parse(localStorage.getItem('e11') || '{}')); } catch (e) {}
+  const est = { sujeto: '', accion: '', lugar: '', estilo: 0, tipo: 'personaje', opcion: null, propia: '', paleta: 0, usados: 0 };
+  const guardar = () => { try { localStorage.setItem('e11v2', JSON.stringify(est)); } catch (e) {} };
+  try { Object.assign(est, JSON.parse(localStorage.getItem('e11v2') || '{}')); } catch (e) {}
 
-  function chips(caja, lista, activo, al, col = false) {
-    caja.innerHTML = '';
+  function chips(caja, lista, activo, al, col = false, keep = false) {
+    if (!keep) caja.innerHTML = ''; else caja.querySelectorAll('button').forEach((b) => b.remove());
     lista.forEach((it, i) => {
       const b = document.createElement('button'); b.type = 'button'; b.textContent = it[0];
       if (col) { b.classList.add('col'); b.style.setProperty('--sw', it[2]); }
@@ -130,35 +160,46 @@ pre#cmd { max-height: 11vh; overflow: auto; font-size: .56em; margin: .5em 0 0; 
       caja.appendChild(b);
     });
   }
-  const variacion = () => est.propia.trim() || (est.opcion !== null && TIPOS[est.tipo][est.opcion] ? TIPOS[est.tipo][est.opcion][1] : '');
+  const variacion = () => est.propia.trim() || (est.opcion !== null && TIPOS[est.tipo][1][est.opcion] ? TIPOS[est.tipo][1][est.opcion][1] : '');
+  const baseLista = () => est.sujeto.trim() && est.accion.trim() && est.lugar.trim();
   const esBase = () => !variacion() && est.paleta === 0;
-  function prompt() {
-    const b = BASES[est.base];
-    return [b[1], variacion(), PALETAS[est.paleta][1], ESTILO_BASE].filter(Boolean).join(', ');
+  function partes() {
+    // la variación reemplaza la parte que le toca; «objeto» se añade al sujeto
+    let s = est.sujeto.trim(), a = est.accion.trim(), l = est.lugar.trim(), v = variacion();
+    if (v) { if (est.tipo === 'personaje') s = v; else if (est.tipo === 'accion') a = v; else if (est.tipo === 'escena') l = v; else s = s + ' ' + v; }
+    return { s, a, l, v, c: PALETAS[est.paleta][1], e: ESTILOS[est.estilo][1] };
   }
+  function prompt() { const p = partes(); return [[p.s, p.a, p.l].filter(Boolean).join(' '), p.c, p.e].filter(Boolean).join(', '); }
   function nombreArchivo() {
     if (esBase()) return 'base.png';
-    const t = est.propia.trim() ? 'propia' : (est.opcion !== null ? est.tipo + '-' + (est.opcion + 1) : 'base');
-    return `${t}${est.paleta ? '-' + PALETAS[est.paleta][0].replace(/\W+/g, '') : ''}.png`;
+    const t = est.propia.trim() ? est.tipo + '-propia' : (est.opcion !== null ? est.tipo + '-' + (est.opcion + 1) : 'base');
+    return `${t}${est.paleta ? '-' + PALETAS[est.paleta][0].normalize('NFD').replace(/[^a-z]/gi, '') : ''}.png`;
   }
   function comando() {
-    const json = JSON.stringify({ prompt: prompt(), calidad: 'maxima', orientacion: BASES[est.base][2] });
+    const json = JSON.stringify({ prompt: prompt(), calidad: 'maxima', orientacion: 'horizontal' });
     return `mkdir -p /trabajo/flux && cd /trabajo/flux && curl -s -X POST "\${IMAGEN_URL:-http://imagen:8000}/generar" -H "Authorization: Bearer $OSITO_TOKEN" -H "Content-Type: application/json" -o ${nombreArchivo()} -d @- <<'FIN_PROMPT'\n${json}\nFIN_PROMPT\nls -la ${nombreArchivo()}\n`;
   }
+  const esc = (t) => t.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
   function pintar() {
-    chips($('bases'), BASES, (i) => i === est.base, (i) => { est.base = i; });
+    chips($('ejemplos'), EJEMPLOS, () => false, (i) => { const e = EJEMPLOS[i]; est.sujeto = e[1]; est.accion = e[2]; est.lugar = e[3]; est.estilo = e[4]; $('sujeto').value = e[1]; $('accion').value = e[2]; $('lugar').value = e[3]; }, false, true);
+    chips($('estilos'), ESTILOS, (i) => i === est.estilo, (i) => { est.estilo = i; });
     chips($('tipos'), Object.keys(TIPOS).map((t) => [t]), (i) => Object.keys(TIPOS)[i] === est.tipo, (i) => { est.tipo = Object.keys(TIPOS)[i]; est.opcion = null; });
-    chips($('opciones'), TIPOS[est.tipo], (i) => i === est.opcion, (i) => { est.opcion = est.opcion === i ? null : i; est.propia = ''; $('propia').value = ''; });
+    chips($('opciones'), TIPOS[est.tipo][1], (i) => i === est.opcion, (i) => { est.opcion = est.opcion === i ? null : i; est.propia = ''; $('propia').value = ''; });
     chips($('paletas'), PALETAS, (i) => i === est.paleta, (i) => { est.paleta = i; }, true);
-    const b = BASES[est.base], v = variacion(), c = PALETAS[est.paleta];
-    $('f1').innerHTML = `<b>base:</b> ${b[1]}`;
-    $('f2').innerHTML = v ? `<b>+ ${est.tipo}:</b> ${v}` : 'sin variación: se genera la base tal cual';
-    $('f3').innerHTML = `<b>+ color:</b> ${c[1]}`;
-    $('r1').textContent = b[0]; $('r2').textContent = v ? (est.propia.trim() ? 'la tuya' : TIPOS[est.tipo][est.opcion][0]) : 'ninguna (base pura)'; $('r3').textContent = c[0];
-    $('r4').textContent = esBase() ? 'primero la base' : 'una cosa cambiada';
-    $('prompt').innerHTML = `<span class="b">${b[1]}</span>${v ? `, <span class="v">${v}</span>` : ''}, <span class="c">${c[1]}</span>, ${ESTILO_BASE}`;
-    $('cmd').textContent = comando(); $('ruta').textContent = '/trabajo/flux/' + nombreArchivo();
-    $('p1').classList.toggle('hecho', true); $('p2').classList.toggle('hecho', !!v); $('p3').classList.toggle('hecho', est.paleta > 0);
+    const p = partes(), ok = baseLista();
+    $('f1').innerHTML = ok ? `<b>base:</b> ${esc(est.sujeto)} ${esc(est.accion)} ${esc(est.lugar)} · <b>estilo:</b> ${ESTILOS[est.estilo][0]}` : 'faltan partes: quién, qué hace, dónde';
+    $('f2').innerHTML = p.v ? `<b>${TIPOS[est.tipo][0]}:</b> ${esc(p.v)}` : 'sin variación: se genera la base tal cual';
+    $('f3').innerHTML = p.c ? `<b>+ color:</b> ${p.c}` : 'el color lo decide el estilo';
+    $('r1').textContent = ok ? est.sujeto.trim().slice(0, 28) : 'llena las cuatro partes';
+    $('r2').textContent = p.v ? (est.propia.trim() ? 'la tuya' : TIPOS[est.tipo][1][est.opcion][0]) : 'ninguna (base pura)';
+    $('r3').textContent = PALETAS[est.paleta][0]; $('r4').textContent = esBase() ? 'primero la base' : 'una cosa cambiada';
+    $('prompt').innerHTML = ok
+      ? `<span class="s">${esc(p.s)}</span> <span class="a">${esc(p.a)}</span> <span class="l">${esc(p.l)}</span>${p.c ? `, <span class="c">${esc(p.c)}</span>` : ''}, <span class="e">${p.e}</span>`
+      : '<span class="e">(escribe las cuatro partes de la base y aquí aparece tu prompt)</span>';
+    if (p.v) $('prompt').innerHTML = $('prompt').innerHTML.replace(esc(p.v), `<span class="v">${esc(p.v)}</span>`);
+    $('cmd').textContent = ok ? comando() : ''; $('ruta').textContent = '/trabajo/flux/' + nombreArchivo();
+    $('copiar').disabled = !ok;
+    $('p1').classList.toggle('hecho', ok); $('p2').classList.toggle('hecho', !!p.v); $('p3').classList.toggle('hecho', est.paleta > 0);
     $('cuota').innerHTML = '<span>Tu cupo de hoy:</span>' + Array.from({ length: 5 }, (_, i) => `<i class="${i < est.usados ? 'usado' : ''}"></i>`).join('') + `<span>${Math.max(0, 5 - est.usados)} por generar</span>`;
     guardar();
   }
@@ -172,15 +213,11 @@ pre#cmd { max-height: 11vh; overflow: auto; font-size: .56em; margin: .5em 0 0; 
     const ok = await copiar(comando()); const btn = $('copiar');
     btn.textContent = ok ? `✓ Copiado → ${nombreArchivo()}: pégalo en la terminal` : 'No pude copiar: selecciona el texto de abajo';
     btn.classList.toggle('ok', ok);
-    if (ok) {
-      est.usados = Math.min(5, est.usados + 1);
-      const li = document.createElement('li'); li.textContent = `${nombreArchivo()} ← ${esBase() ? 'base' : (variacion() ? est.tipo : '') + (est.paleta ? ' + ' + PALETAS[est.paleta][0] : '')}`; $('hist').appendChild(li);
-      $('p4').open = true;
-    }
+    if (ok) { est.usados = Math.min(5, est.usados + 1); const li = document.createElement('li'); li.textContent = `${nombreArchivo()} ← ${prompt().slice(0, 70)}…`; $('hist').appendChild(li); $('p4').open = true; }
     setTimeout(() => { btn.textContent = 'Copiar comando'; btn.classList.remove('ok'); pintar(); }, 3000);
   };
+  for (const id of ['sujeto', 'accion', 'lugar']) { $(id).value = est[id]; $(id).oninput = (e) => { est[id] = e.target.value; pintar(); }; }
   $('propia').value = est.propia; $('propia').oninput = (e) => { est.propia = e.target.value; est.opcion = null; pintar(); };
-  // abrir un paso cierra los demás (secuencia): el alumno sigue el orden sin perderse
   for (const id of ['p1', 'p2', 'p3', 'p4']) $(id).addEventListener('toggle', (e) => { if (e.target.open) for (const o of ['p1', 'p2', 'p3', 'p4']) if (o !== id) $(o).open = false; });
   pintar();
 })();

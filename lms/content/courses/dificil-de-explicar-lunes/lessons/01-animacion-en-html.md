@@ -179,16 +179,16 @@ En las escenas de colores, notas, personaje y agua hay un cuadro: escribe en tus
 
 Lo que la escena no sabe hacer, se lo pides al agente: el botón **Copiar para el agente** arma tu pedido en seis partes; pégalo en la terminal del aula con `jmd chat`. Así practicas las dos cosas: cambiar en vivo y pedir bien.
 
-## 3c. FLUX: una imagen base y variaciones de a una · Aplicación
+## 3c. FLUX: la receta del prompt · Aplicación
 
-En la escena **E11** la generación sigue una secuencia, paso dentro de paso:
+En la escena **E11** aprendes a pedir una imagen con método, en español y de cualquier cosa (un personaje, un objeto, una escena):
 
-1. **La base.** Un sujeto fijo (Mickey al timón, el barco o un retrato) con el estilo de 1928. Se genera primero, tal cual: es la referencia.
-2. **Una variación.** Cambias una sola cosa: el **personaje** (un gato, un pato, un robot…), la **escena** (amanecer en el río, tormenta, puerto de noche…) o un **objeto** (un ukelele, una bandera, gafas…). O escribes la tuya.
-3. **El color.** Blanco y negro de 1928, color plano, pastel, neón, sepia o acuarela.
-4. **Generar y comparar.** Copias el comando, lo pegas en la terminal y abres la imagen en el Visor **al lado de la base**. La pregunta es siempre la misma: ¿cambió solo lo que pedí?
+1. **La base: la receta de cuatro partes.** *Quién o qué* (el sujeto), *qué hace* (la acción), *dónde* (lugar y hora) y *cómo se ve* (el estilo: dibujo de 1928, color plano, acuarela, pixel art, línea clara o foto). Lo que no dices, el modelo lo inventa. Concreto y corto: «un gato naranja con sombrero rojo», no «un gato bonito». Hay ejemplos listos para cargar y cambiar.
+2. **Una variación.** Primero generas la base tal cual. Después cambias **una sola parte**: el personaje, la acción, el lugar, o añades un objeto («con un ukelele»). Una por vez, o no se puede comparar.
+3. **El color.** Blanco y negro, color plano, pastel, neón, sepia, cálido, frío; o el que decide el estilo.
+4. **Generar y comparar.** El comando va a la terminal del aula; la imagen queda en `/trabajo/flux/` con nombre propio (`base.png`, `escena-2-neon.png`). Se abre en el Visor **al lado de la base**: ¿cambió solo lo que pedí?
 
-El prompt completo se ve a la derecha con la base, la variación y el color en colores distintos; cada imagen se guarda con nombre propio (`base.png`, `personaje-2-neon.png`…). Tope: **5 imágenes por persona** al día; la escena lleva la cuenta. Lo que FLUX no respeta (cambia más de una cosa, se va del estilo) es la lección: una palabra de más mueve toda la imagen.
+El prompt completo aparece a la derecha con cada parte en un color. Reglas que se repiten en clase: una cosa por vez; concreto gana; nada de texto dentro de la imagen (FLUX escribe mal las letras; el texto va en el HTML); si sale raro, quita una palabra en vez de agregar tres. En español funciona; si una palabra no la entiende, se prueba en inglés. Tope: **5 imágenes por persona** al día; la escena lleva la cuenta.
 
 ## 4. Los siete ejemplos · Aplicación
 
