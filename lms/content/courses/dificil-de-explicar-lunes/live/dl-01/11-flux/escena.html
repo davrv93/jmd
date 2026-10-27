@@ -127,7 +127,7 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
       </div>
     </section>
   </main>
-  <footer class="esc-pie">Kit en jmd-learn.online/steamboat/ · el cupo de imágenes es de la clase: 5 por persona hoy</footer>
+  <footer class="esc-pie">Kit en jmd-learn.online/steamboat/ · el cupo de imágenes es de la clase: 20 por persona hoy</footer>
 </div>
 <script>
 (() => {
@@ -216,7 +216,7 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
     $('cmd').textContent = ok ? comando() : ''; $('ruta').textContent = '/trabajo/flux/' + nombreArchivo();
     $('copiar').disabled = !ok; if (!$('generar').textContent.startsWith('Generando')) $('generar').disabled = !ok;
     $('p1').classList.toggle('hecho', ok); $('p2').classList.toggle('hecho', !!p.v); $('p3').classList.toggle('hecho', est.paleta > 0);
-    $('cuota').innerHTML = '<span>Tu cupo de hoy:</span>' + Array.from({ length: 5 }, (_, i) => `<i class="${i < est.usados ? 'usado' : ''}"></i>`).join('') + `<span>${Math.max(0, 5 - est.usados)} por generar</span>`;
+    $('cuota').innerHTML = '<span>Tu cupo de hoy:</span>' + Array.from({ length: 20 }, (_, i) => `<i class="${i < est.usados ? 'usado' : ''}"></i>`).join('') + `<span>${Math.max(0, 20 - est.usados)} por generar</span>`;
     guardar();
   }
   async function copiar(t) {
@@ -237,13 +237,13 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
       if (!r.ok) {
         let msg = `error ${r.status}`;
         try { const j = await r.json(); msg = (j.error && (j.error.message || j.error.mensaje)) || j.message || j.mensaje || msg; } catch (e) {}
-        throw new Error(r.status === 429 ? 'Se acabó tu cupo de hoy (5 imágenes). Compara las que ya tienes.' : msg);
+        throw new Error(r.status === 429 ? 'Se acabó tu cupo de hoy (20 imágenes). Compara las que ya tienes.' : msg);
       }
       const blob = await r.blob();
       const data = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
       const fig = $(hueco); fig.innerHTML = `<img alt=""><figcaption></figcaption>`;
       fig.querySelector('img').src = data; fig.querySelector('figcaption').textContent = (esBase() ? 'base · ' : (variacion() ? est.tipo + ' · ' : '') + (est.paleta ? PALETAS[est.paleta][0] + ' · ' : '')) + prompt().slice(0, 60);
-      est.usados = Math.min(5, est.usados + 1);
+      est.usados = Math.min(20, est.usados + 1);
       const li = document.createElement('li'); li.textContent = `${nombreArchivo()} ← ${prompt().slice(0, 70)}… (${((performance.now() - t0) / 1000).toFixed(1)} s)`; $('hist').appendChild(li);
       btn.classList.add('ok'); btn.textContent = `✓ Lista en ${((performance.now() - t0) / 1000).toFixed(1)} s`;
       if (esBase()) { $('p2').open = true; } else { $('p4').open = true; }
@@ -258,7 +258,7 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
     const ok = await copiar(comando()); const btn = $('copiar');
     btn.textContent = ok ? `✓ Copiado → ${nombreArchivo()}: pégalo en la terminal` : 'No pude copiar: selecciona el texto de abajo';
     btn.classList.toggle('ok', ok);
-    if (ok) { est.usados = Math.min(5, est.usados + 1); const li = document.createElement('li'); li.textContent = `${nombreArchivo()} ← ${prompt().slice(0, 70)}…`; $('hist').appendChild(li); $('p4').open = true; }
+    if (ok) { est.usados = Math.min(20, est.usados + 1); const li = document.createElement('li'); li.textContent = `${nombreArchivo()} ← ${prompt().slice(0, 70)}…`; $('hist').appendChild(li); $('p4').open = true; }
     setTimeout(() => { btn.textContent = 'Copiar comando'; btn.classList.remove('ok'); pintar(); }, 3000);
   };
   for (const id of ['sujeto', 'accion', 'lugar']) { $(id).value = est[id]; $(id).oninput = (e) => { est[id] = e.target.value; pintar(); }; }

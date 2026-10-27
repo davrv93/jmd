@@ -91,7 +91,7 @@ cycle:
     title: Un personaje tuyo (opcional)
     tool: jmd
     phase: experimentacion
-    description: En tu copia del kit, 04-personaje.html: pega tu SVG y dale un vuelo.
+    description: "En tu copia del kit (04-personaje.html): pega tu SVG y dale un vuelo."
     check: Tu personaje aparece en la escena y sigue la paleta
   - id: agua
     title: Agua en el bote
@@ -103,7 +103,7 @@ cycle:
     title: Tu imagen con FLUX
     tool: jmd
     phase: experimentacion
-    description: Escribe un prompt en la escena, elige estilo y encuadre, copia el comando y genera la imagen en tu aula (tope 5 por persona).
+    description: Escribe un prompt en la escena, elige estilo y encuadre, copia el comando y genera la imagen en tu aula (tope 20 por persona).
     check: Tu imagen abre en el Visor
   - id: tu-pieza
     title: Tu pieza y la entrega
@@ -188,7 +188,7 @@ En la escena **E11** aprendes a pedir una imagen con método, en español y de c
 3. **El color.** Blanco y negro, color plano, pastel, neón, sepia, cálido, frío; o el que decide el estilo.
 4. **Generar y comparar.** El botón **Generar aquí** manda el prompt desde la misma escena (sin terminal) y en unos segundos aparecen la base y la variación **lado a lado**: ¿cambió solo lo que pedí? Para guardar una imagen: clic derecho → «Guardar imagen». Si prefieres la terminal, el mismo pedido está plegado como comando.
 
-El prompt completo aparece a la derecha con cada parte en un color. Reglas que se repiten en clase: una cosa por vez; concreto gana; nada de texto dentro de la imagen (FLUX escribe mal las letras; el texto va en el HTML); si sale raro, quita una palabra en vez de agregar tres. En español funciona; si una palabra no la entiende, se prueba en inglés. Tope: **5 imágenes por persona** al día; la escena lleva la cuenta.
+El prompt completo aparece a la derecha con cada parte en un color. Reglas que se repiten en clase: una cosa por vez; concreto gana; nada de texto dentro de la imagen (FLUX escribe mal las letras; el texto va en el HTML); si sale raro, quita una palabra en vez de agregar tres. En español funciona; si una palabra no la entiende, se prueba en inglés. Tope: **20 imágenes por persona** al día; la escena lleva la cuenta.
 
 ## 4. Los siete ejemplos · Aplicación
 
