@@ -190,6 +190,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/cerrar", s.authed(s.staff(s.liveCerrar)))
 	mux.Handle("POST /api/v1/live/{lesson}/latido", s.authed(s.liveLatido))
 	mux.Handle("POST /api/v1/live/{lesson}/evento", s.authed(s.liveEvento))
+	mux.Handle("POST /api/v1/live/{lesson}/imagen", s.authed(s.liveImagen))
 	mux.Handle("POST /api/v1/live/{lesson}/evidencia", s.authed(s.liveEvidencia))
 	mux.Handle("POST /api/v1/live/{lesson}/logre", s.authed(s.liveLogre))
 	mux.Handle("GET /api/v1/live/{lesson}/logre", s.authed(s.liveLogres))

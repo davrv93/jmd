@@ -44,6 +44,15 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
 .cuota i { width: 1.1em; height: 1.1em; border-radius: .25em; background: var(--s3); border: 1px solid var(--line2); display: inline-block; }
 .cuota i.usado { background: var(--accent); border-color: var(--accent); }
 .hist { font-size: .7em; color: var(--muted); margin: .3em 0 0; padding-left: 1.1em; } .hist li { margin: .12em 0; }
+.galeria { display: grid; grid-template-columns: 1fr 1fr; gap: .5em; margin-top: .6vh; }
+.galeria figure { margin: 0; border: 1px solid var(--line); border-radius: .8em; overflow: hidden; background: var(--s2); min-height: 9vh; display: grid; grid-template-rows: 1fr auto; }
+.galeria img { width: 100%; height: auto; display: block; }
+.galeria figcaption { font-size: .66em; color: var(--muted); padding: .35em .6em; }
+.galeria .vacia { display: grid; place-items: center; font-size: .7em; color: var(--muted); padding: 1em; text-align: center; }
+#generar { width: 100%; font: 700 .95em/1 system-ui, sans-serif; padding: .85em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; box-shadow: var(--card-shadow); margin-top: .6vh; }
+#generar:disabled { opacity: .55; cursor: wait; } #generar.ok { background: var(--ok); } #generar.mal { background: var(--bad); }
+#copiar { background: var(--s3); color: var(--fg); border: 1px solid var(--line2); box-shadow: none; font-size: .78em; padding: .6em; }
+.aviso { font-size: .72em; color: var(--bad); margin: .35em 0 0; min-height: 1em; }
 </style>
 </head>
 <body>
@@ -90,7 +99,7 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
         <details class="paso" id="p4">
           <summary><i>4</i> Generar y comparar <small id="r4"></small></summary>
           <div>
-            <p class="nota">Copia el comando, pégalo en la terminal del aula y espera ~10 s. Abre la imagen en el Visor <b>al lado de la base</b>. ¿Cambió solo lo que pediste?</p>
+            <p class="nota">Pulsa <b>Generar aquí</b>. La base y la variación quedan lado a lado a la derecha. ¿Cambió solo lo que pediste?</p>
             <ul class="reglas">
               <li><b>Una cosa por vez.</b> Dos cambios a la vez no se pueden comparar.</li>
               <li><b>Concreto gana.</b> «un gato naranja con sombrero rojo» > «un gato bonito».</li>
@@ -104,10 +113,17 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
       <div class="a-in" style="--d:.2s">
         <pre class="prompt" id="prompt"></pre>
         <p class="leyenda"><b class="s">■ quién</b> <b class="a">■ qué hace</b> <b class="l">■ dónde</b> <b class="v">■ variación</b> <b class="c">■ color</b> <b>■ estilo</b></p>
+        <button id="generar" type="button">Generar aquí (~10 s)</button>
+        <p class="aviso" id="aviso"></p>
+        <div class="galeria">
+          <figure id="g-base"><div class="vacia">La base aparece aquí</div><figcaption>base</figcaption></figure>
+          <figure id="g-var"><div class="vacia">La variación aparece aquí</div><figcaption>variación</figcaption></figure>
+        </div>
+        <details><summary class="nota" style="cursor:pointer">Sin el LIVE: el mismo pedido desde la terminal del aula</summary>
         <button id="copiar" type="button">Copiar comando</button>
-        <pre class="esc-cmd" id="cmd"></pre>
+        <pre class="esc-cmd" id="cmd"></pre></details>
         <div class="cuota" id="cuota"><span>Tu cupo de hoy:</span></div>
-        <p class="nota" style="margin-top:.5em">La imagen queda en <code id="ruta">/trabajo/flux/base.png</code>. El servicio de la clase manda tu texto a FLUX (difusión en la nube). En español funciona; si una palabra no la entiende, prueba la misma en inglés. <b>Lo logré</b> = la base y una variación abiertas en el Visor.</p>
+        <p class="nota" style="margin-top:.5em">El LMS manda tu texto al servicio de imagen de la clase y FLUX (difusión en la nube) lo convierte en píxeles. En español funciona; si una palabra no la entiende, prueba la misma en inglés. Para guardar: clic derecho sobre la imagen → «Guardar imagen». <b>Lo logré</b> = la base y una variación, lado a lado. <code id="ruta" hidden></code></p>
       </div>
     </section>
   </main>
@@ -198,7 +214,7 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
       : '<span class="e">(escribe las cuatro partes de la base y aquí aparece tu prompt)</span>';
     if (p.v) $('prompt').innerHTML = $('prompt').innerHTML.replace(esc(p.v), `<span class="v">${esc(p.v)}</span>`);
     $('cmd').textContent = ok ? comando() : ''; $('ruta').textContent = '/trabajo/flux/' + nombreArchivo();
-    $('copiar').disabled = !ok;
+    $('copiar').disabled = !ok; if (!$('generar').textContent.startsWith('Generando')) $('generar').disabled = !ok;
     $('p1').classList.toggle('hecho', ok); $('p2').classList.toggle('hecho', !!p.v); $('p3').classList.toggle('hecho', est.paleta > 0);
     $('cuota').innerHTML = '<span>Tu cupo de hoy:</span>' + Array.from({ length: 5 }, (_, i) => `<i class="${i < est.usados ? 'usado' : ''}"></i>`).join('') + `<span>${Math.max(0, 5 - est.usados)} por generar</span>`;
     guardar();
@@ -209,6 +225,35 @@ pre#cmd { max-height: 9vh; overflow: auto; font-size: .54em; margin: .5em 0 0; w
     const a = document.createElement('textarea'); a.value = t; a.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(a); a.select();
     let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} a.remove(); return ok;
   }
+  const leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || 'dl-01';
+  async function generar() {
+    const btn = $('generar'), aviso = $('aviso');
+    if (!baseLista() || btn.disabled) return;
+    const hueco = esBase() ? 'g-base' : 'g-var';
+    btn.disabled = true; btn.textContent = 'Generando… (FLUX, unos 10 s)'; aviso.textContent = '';
+    const t0 = performance.now();
+    try {
+      const r = await fetch(`/api/v1/live/${leccion}/imagen`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt(), orientacion: 'horizontal' }) });
+      if (!r.ok) {
+        let msg = `error ${r.status}`;
+        try { const j = await r.json(); msg = (j.error && (j.error.message || j.error.mensaje)) || j.message || j.mensaje || msg; } catch (e) {}
+        throw new Error(r.status === 429 ? 'Se acabó tu cupo de hoy (5 imágenes). Compara las que ya tienes.' : msg);
+      }
+      const blob = await r.blob();
+      const data = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
+      const fig = $(hueco); fig.innerHTML = `<img alt=""><figcaption></figcaption>`;
+      fig.querySelector('img').src = data; fig.querySelector('figcaption').textContent = (esBase() ? 'base · ' : (variacion() ? est.tipo + ' · ' : '') + (est.paleta ? PALETAS[est.paleta][0] + ' · ' : '')) + prompt().slice(0, 60);
+      est.usados = Math.min(5, est.usados + 1);
+      const li = document.createElement('li'); li.textContent = `${nombreArchivo()} ← ${prompt().slice(0, 70)}… (${((performance.now() - t0) / 1000).toFixed(1)} s)`; $('hist').appendChild(li);
+      btn.classList.add('ok'); btn.textContent = `✓ Lista en ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+      if (esBase()) { $('p2').open = true; } else { $('p4').open = true; }
+    } catch (e) {
+      aviso.textContent = e.message || 'No se pudo generar';
+      btn.classList.add('mal'); btn.textContent = 'No se pudo: prueba de nuevo';
+    }
+    setTimeout(() => { btn.classList.remove('ok', 'mal'); btn.disabled = false; btn.textContent = 'Generar aquí (~10 s)'; pintar(); }, 2500);
+  }
+  $('generar').onclick = generar;
   $('copiar').onclick = async () => {
     const ok = await copiar(comando()); const btn = $('copiar');
     btn.textContent = ok ? `✓ Copiado → ${nombreArchivo()}: pégalo en la terminal` : 'No pude copiar: selecciona el texto de abajo';

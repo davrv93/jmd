@@ -286,6 +286,11 @@ def _aula_de(request: Request) -> str | None:
         nombre = socket.gethostbyaddr(ip)[0].split(".")[0]
     except OSError:
         nombre = ""
+    # El LMS genera en nombre del alumno (escenas del LIVE): manda X-Alumno y el tope se cuenta por alumno,
+    # no por el contenedor del LMS. Solo se acepta del propio LMS.
+    alumno = (request.headers.get("x-alumno") or "").strip()[:80]
+    if nombre == "lms" and alumno:
+        return "lms:" + alumno
     return "aula:" + (nombre or ip)
 
 
