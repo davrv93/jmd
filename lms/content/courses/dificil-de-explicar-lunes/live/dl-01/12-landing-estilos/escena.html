@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E12 · Landing con estilo</title>
+<!-- Escena generada desde live/_plantilla; estilos propios solo en #esc-propio. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-grid-2 > * { min-width: 0; } .esc-titulo { overflow-wrap: anywhere; }
+.s2 { grid-template-columns: 1fr 1fr; align-items: start; gap: 1.6vw; }
+.paso { display: flex; gap: .6em; align-items: baseline; margin: 0 0 .35em; font-weight: 700; }
+.paso i { font-style: normal; display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .8em; flex: none; }
+.bloque { margin-bottom: 1.2vh; }
+textarea#texto { width: 100%; height: 22vh; resize: none; font: .76em/1.4 var(--mono); padding: .7em .8em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+textarea#texto:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fila { display: flex; gap: .5em; align-items: center; margin-top: .4em; font-size: .72em; color: var(--muted); }
+.lnk { background: none; border: 0; color: var(--accent); text-decoration: underline; cursor: pointer; padding: 0; font: inherit; }
+.estilos { display: grid; grid-template-columns: 1fr 1fr; gap: .45em; }
+.estilos button { text-align: left; font: .7em/1.25 system-ui, sans-serif; padding: .55em .7em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; display: grid; gap: .15em; }
+.estilos button b { font-size: 1.1em; display: flex; align-items: center; gap: .45em; }
+.estilos button b::before { content: ''; width: 1.1em; height: 1.1em; border-radius: .3em; background: var(--sw); flex: none; border: 1px solid rgba(0,0,0,.15); }
+.estilos button small { color: var(--muted); }
+.estilos button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.estilos button[aria-pressed="true"] small { color: inherit; opacity: .85; }
+#copiar { width: 100%; font: 700 1em/1 system-ui, sans-serif; padding: .9em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; box-shadow: var(--card-shadow); }
+#copiar.ok { background: var(--ok); }
+.despues { font-size: .76em; margin: .6em 0 0; padding-left: 1.2em; }
+.despues li { margin: .2em 0; }
+.nota { font-size: .7em; color: var(--muted); margin: .8vh 0 0; }
+pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; white-space: pre-wrap; word-break: break-word; }
+.eleg { font-size: .78em; margin: .5em 0 0; padding: .6em .8em; border-radius: .7em; background: var(--s1); border: 1px solid var(--line2); }
+.eleg b { color: var(--accent); }
+</style>
+</head>
+<body>
+<main class="esc-cuerpo" data-ph="ec">
+  <header class="esc-cabecera">
+    <span class="esc-num">LUNES · S1 · E12</span>
+    <span class="esc-fase">Experimentación</span>
+    <h1 class="esc-titulo">Landing con estilo: el mismo negocio en 8 diseños</h1>
+    <p class="esc-sub">Sin IA y sin cuota: reglas sacan los datos del cliente y el motor arma el sitio en el diseño que elijas aquí. Cambiar de diseño es cambiar un parámetro.</p>
+  </header>
+
+  <section class="esc-grid-2 s2">
+    <div>
+      <div class="bloque">
+        <p class="paso"><i>1</i> Pega lo que te escribió el cliente (o usa el ejemplo del taller)</p>
+        <textarea id="texto" spellcheck="false" aria-label="Texto del cliente"></textarea>
+        <div class="fila"><span id="cuenta"></span> · <button class="lnk" id="ejemplo" type="button">ejemplo: el taller</button> · <button class="lnk" id="ejemplo2" type="button">ejemplo: pollería</button> · <button class="lnk" id="borrar" type="button">borrar</button></div>
+      </div>
+      <div class="bloque">
+        <p class="paso"><i>3</i> Copia y pégalo en la terminal (Enter)</p>
+        <button id="copiar" type="button">Copiar comando</button>
+        <ol class="despues">
+          <li>Espera el <code>OK</code> (un segundo).</li>
+          <li>Abre <code id="ruta">/trabajo/landing/sitio-dificil/index.html</code> en el Visor.</li>
+          <li>Elige <b>otro diseño</b>, copia de nuevo: mismo contenido, otra landing. Compara las dos.</li>
+          <li>Si sale <code>[completar]</code>, el cliente no dio ese dato: agrégalo al texto y vuelve a copiar.</li>
+        </ol>
+        <pre class="esc-cmd" id="cmd" aria-label="Comando que se copia"></pre>
+      </div>
+    </div>
+    <div>
+      <div class="bloque">
+        <p class="paso"><i>2</i> Elige el diseño</p>
+        <div class="estilos" id="estilos" role="group" aria-label="Diseño"></div>
+        <p class="eleg" id="eleg"></p>
+      </div>
+      <p class="nota">Lo logré = tu landing abre en el Visor en el diseño que elegiste. Los diseños están <i>inspirados</i> en esas estéticas: sin logos ni fuentes de marca.</p>
+    </div>
+  </section>
+</main>
+<script>
+(() => {
+  const MOTOR = '/opt/skills-curso/s1-landing-estilos/motor';
+  const ESTILOS = [
+    ['dificil',   'Difícil de explicar', 'Tinta y pasteles, titular en collage de recortes, pixel art, cinta con código de tiempo', 'Talleres, eventos, marcas creativas o nostálgicas', '#f2c6d0'],
+    ['apple',     'Apple',               'Blanco, aire, titulares enormes, bento, imagen que crece con el scroll, galería horizontal', 'Productos premium, tecnología, servicios limpios', '#f5f5f7'],
+    ['huawei',    'Huawei',              'Oscuro premium, letra fina, degradado plateado, producto con halo, cifras como ficha técnica', 'Tecnología, clínicas modernas, alta gama', '#1c1c1e'],
+    ['nova5t',    'nova 5T',             'Juvenil y vibrante, degradados aurora, selector de color, tarjetas que se inclinan', 'Público joven, moda, apps, academias', '#7c4dff'],
+    ['express',   'Express',             'Una sola pantalla: oferta, precio grande, tres razones y WhatsApp. Sin JavaScript', 'Promociones, negocios de barrio, campañas pagadas', '#ffd400'],
+    ['inmersivo', 'Inmersivo',           'Capítulos a pantalla completa con foto a sangre, serif con carácter, índice lateral', 'Gastronomía, turismo, inmobiliarias, marcas con historia', '#5b3a1e'],
+    ['ipad',      'iPad Magic Keyboard', 'Producto flotando en negro; una tablet con teclado se despliega con el scroll', 'Productos físicos, accesorios, lanzamientos', '#0a0a0a'],
+    ['gta6',      'Atardecer Neón',      'El nombre gigante es una máscara que se abre con el scroll, polaroids, palmeras, sol a franjas', 'Bares, discotecas, eventos nocturnos, marcas de playa', '#ff5fa2'],
+  ];
+  const EJEMPLO = [
+    'Hola, soy ilustradora y doy el taller Difícil de Explicar en Lima.',
+    'Es un taller de animación e imágenes con IA, los lunes de 9 a 11 pm por Zoom.',
+    'Ofrecemos:',
+    '- Taller completo de 3 sesiones S/ 120',
+    '- Sesión suelta S/ 50',
+    '- Grabaciones y kit de Steamboat incluidos',
+    'Inscripciones por WhatsApp al 987 654 321.'
+  ].join('\n');
+  const EJEMPLO2 = [
+    'Hola, tengo una pollería que se llama Pollos Don Lucho en Arequipa.',
+    'Estamos en Av. Ejército 512, Cayma.',
+    'Atendemos de lunes a domingo de 12 m a 10 pm.',
+    'Ofrecemos:',
+    '- Pollo a la brasa entero S/ 62',
+    '- 1/4 de pollo con papas S/ 18',
+    '- Delivery gratis en Cayma',
+    'Pedidos por WhatsApp al 987 654 321.'
+  ].join('\n');
+  const FIN = 'FIN_CLIENTE';
+  const $ = (id) => document.getElementById(id);
+  const texto = $('texto'), cmd = $('cmd'), btn = $('copiar');
+  let estilo = 'dificil';
+  const guardar = (k, v) => { try { localStorage.setItem('e12l-' + k, v); } catch (e) {} };
+  const leer = (k) => { try { return localStorage.getItem('e12l-' + k); } catch (e) { return null; } };
+
+  const caja = $('estilos');
+  for (const [id, nombre, como, rubros, sw] of ESTILOS) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.e = id; b.style.setProperty('--sw', sw);
+    b.innerHTML = '<b></b><small></small>';
+    b.querySelector('b').textContent = nombre;
+    b.querySelector('small').textContent = como;
+    b.title = rubros;
+    b.onclick = () => { estilo = id; guardar('estilo', id); pintar(); };
+    caja.appendChild(b);
+  }
+
+  function comando() {
+    const limpio = texto.value.replace(/\r/g, '').split('\n')
+      .filter((l) => l.trim() !== FIN).map((l) => l.replace(/\s+$/, '')).join('\n').trim();
+    return 'mkdir -p /trabajo/landing && cd /trabajo/landing && cat > cliente.txt <<\'' + FIN + '\'\n' +
+      (limpio || '(pega aquí el texto del cliente)') + '\n' + FIN + '\n' +
+      'bun ' + MOTOR + '/extraer.mjs cliente.txt --salida negocio.json && ' +
+      'bun ' + MOTOR + '/construir.mjs --negocio negocio.json --estilo ' + estilo + ' --imagenes no\n';
+  }
+
+  function pintar() {
+    for (const b of caja.children) b.setAttribute('aria-pressed', String(b.dataset.e === estilo));
+    const e = ESTILOS.find((x) => x[0] === estilo);
+    $('eleg').innerHTML = 'Elegiste <b></b> · <code>--estilo ' + estilo + '</code> · va bien para: <span></span>';
+    $('eleg').querySelector('b').textContent = e[1];
+    $('eleg').querySelector('span').textContent = e[3].toLowerCase();
+    cmd.textContent = comando();
+    $('ruta').textContent = '/trabajo/landing/sitio-' + estilo + '/index.html';
+    const n = texto.value.trim().length;
+    $('cuenta').textContent = n ? n + ' caracteres' : 'vacío: pega el texto o usa un ejemplo';
+    btn.disabled = n < 15;
+    btn.style.opacity = n < 15 ? .5 : 1;
+  }
+
+  async function copiar(t) {
+    try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+    try { await window.parent.navigator.clipboard.writeText(t); return true; } catch (e) {}
+    const a = document.createElement('textarea');
+    a.value = t; a.style.position = 'fixed'; a.style.opacity = '0';
+    document.body.appendChild(a); a.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    a.remove(); return ok;
+  }
+
+  btn.onclick = async () => {
+    const ok = await copiar(comando());
+    btn.textContent = ok ? '✓ Copiado: pégalo en la terminal' : 'No pude copiar: selecciona el texto de abajo';
+    btn.classList.toggle('ok', ok);
+    if (!ok) { const r = document.createRange(); r.selectNodeContents(cmd); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+    setTimeout(() => { btn.textContent = 'Copiar comando'; btn.classList.remove('ok'); }, 3500);
+  };
+  texto.oninput = () => { guardar('texto', texto.value); pintar(); };
+  $('ejemplo').onclick = () => { texto.value = EJEMPLO; guardar('texto', EJEMPLO); pintar(); texto.focus(); };
+  $('ejemplo2').onclick = () => { texto.value = EJEMPLO2; guardar('texto', EJEMPLO2); pintar(); texto.focus(); };
+  $('borrar').onclick = () => { texto.value = ''; guardar('texto', ''); pintar(); texto.focus(); };
+
+  const t0 = leer('texto'), e0 = leer('estilo');
+  texto.value = t0 !== null ? t0 : EJEMPLO;
+  if (e0 && ESTILOS.some((x) => x[0] === e0)) estilo = e0;
+  pintar();
+})();
+</script>
+</body>
+</html>
