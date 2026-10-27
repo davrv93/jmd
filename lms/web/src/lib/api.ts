@@ -447,6 +447,11 @@ export const api = {
   liveLogres: (lesson: string) => req<{ escenas: string[]; puntos?: number; suma?: number }>("GET", `/api/v1/live/${encodeURIComponent(lesson)}/logre`),
   liveModo: (lesson: string, modo: "guiado" | "libre") =>
     req<LiveEstado>("PUT", `/api/v1/live/${encodeURIComponent(lesson)}/modo`, { modo }),
+  // Votos y muro de una escena del LIVE (en memoria en el servidor; el instructor los puede vaciar).
+  liveVotosReiniciar: (lesson: string, escena: string) =>
+    req<{ total: number }>("DELETE", `/api/v1/live/${encodeURIComponent(lesson)}/votos?escena=${encodeURIComponent(escena)}`),
+  liveMuroVaciar: (lesson: string, escena: string) =>
+    req<{ entradas: unknown[] }>("DELETE", `/api/v1/live/${encodeURIComponent(lesson)}/muro?escena=${encodeURIComponent(escena)}`),
   // Skills del alumno: cada cuenta guarda las suyas; las del curso son de solo lectura.
   misSkills: () => req<SkillResumen[]>("GET", "/api/v1/mis-skills"),
   miSkill: (nombre: string) => req<Skill>("GET", `/api/v1/mis-skills/${encodeURIComponent(nombre)}`),

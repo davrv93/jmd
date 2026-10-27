@@ -253,6 +253,59 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
             <Icon name="send" size={14} />
           </button>
         </form>
+        <span class="live-modo" role="group" aria-label="Modo de la clase" title="Guiado: tu escena arrastra a todos. Libre: cada uno avanza a su ritmo (siempre pueden ver la lista y volver a la tuya).">
+          {(["guiado", "libre"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              class="btn ghost sm"
+              aria-pressed={props.estado.modo === m}
+              onClick$={async () => {
+                try {
+                  await api.liveModo(props.lesson, m);
+                } catch (e) {
+                  if (!requireLogin(e)) toast(session, errMsg(e), "bad");
+                }
+              }}
+            >
+              {m === "guiado" ? "Guiado" : "Libre"}
+            </button>
+          ))}
+        </span>
+        {actual && (
+          <span class="live-reinicios" role="group" aria-label="Votos y muro de esta escena">
+            <button
+              type="button"
+              class="btn ghost sm"
+              title="Borra los votos de esta escena (empieza en cero)"
+              onClick$={async () => {
+                try {
+                  await api.liveVotosReiniciar(props.lesson, actual.id);
+                  toast(session, "Votos de la escena en cero", "ok");
+                } catch (e) {
+                  if (!requireLogin(e)) toast(session, errMsg(e), "bad");
+                }
+              }}
+            >
+              Reiniciar votos
+            </button>
+            <button
+              type="button"
+              class="btn ghost sm"
+              title="Vacía el muro del grupo de esta escena"
+              onClick$={async () => {
+                try {
+                  await api.liveMuroVaciar(props.lesson, actual.id);
+                  toast(session, "Muro de la escena vacío", "ok");
+                } catch (e) {
+                  if (!requireLogin(e)) toast(session, errMsg(e), "bad");
+                }
+              }}
+            >
+              Vaciar muro
+            </button>
+          </span>
+        )}
         {actual?.id === "11-probar-medir" && (
           <button type="button" class="btn ghost sm" onClick$={emparejar}>
             <Icon name="users" size={14} /> Emparejar
