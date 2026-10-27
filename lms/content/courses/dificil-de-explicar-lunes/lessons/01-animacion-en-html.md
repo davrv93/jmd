@@ -179,13 +179,16 @@ En las escenas de colores, notas, personaje y agua hay un cuadro: escribe en tus
 
 Lo que la escena no sabe hacer, se lo pides al agente: el botón **Copiar para el agente** arma tu pedido en seis partes; pégalo en la terminal del aula con `jmd chat`. Así practicas las dos cosas: cambiar en vivo y pedir bien.
 
-## 3c. Tu imagen con FLUX · Aplicación
+## 3c. FLUX: una imagen base y variaciones de a una · Aplicación
 
-En la escena **E11** escribes qué imagen quieres, eliges un estilo (1928 en tinta, color plano, acuarela, pixel art, línea clara) y un encuadre, y pulsas **Copiar comando**. Pégalo en la terminal del aula: el comando manda tu texto al servicio de imagen de la clase, donde FLUX (un modelo de difusión en la nube) lo convierte en píxeles en 2 pasos; la imagen queda en `/trabajo/flux/imagen-N.png` y la abres en el Visor.
+En la escena **E11** la generación sigue una secuencia, paso dentro de paso:
 
-- Tope: **5 imágenes por persona** al día (se reinicia a las 7 pm). Cambia una sola cosa del prompt entre intento e intento y compara.
-- Reglas del estilo de 1928 para que FLUX no se vaya: blanco y negro, formas redondas, tinta gruesa, ojos con pupila, brazos de manguera.
-- Guarda tu mejor imagen: la usarás como personaje en la escena del pájaro (`04-personaje.html`, botón «Añadir»; recórtala a SVG con `estilo1928()` o úsala como `<image>`).
+1. **La base.** Un sujeto fijo (Mickey al timón, el barco o un retrato) con el estilo de 1928. Se genera primero, tal cual: es la referencia.
+2. **Una variación.** Cambias una sola cosa: el **personaje** (un gato, un pato, un robot…), la **escena** (amanecer en el río, tormenta, puerto de noche…) o un **objeto** (un ukelele, una bandera, gafas…). O escribes la tuya.
+3. **El color.** Blanco y negro de 1928, color plano, pastel, neón, sepia o acuarela.
+4. **Generar y comparar.** Copias el comando, lo pegas en la terminal y abres la imagen en el Visor **al lado de la base**. La pregunta es siempre la misma: ¿cambió solo lo que pedí?
+
+El prompt completo se ve a la derecha con la base, la variación y el color en colores distintos; cada imagen se guarda con nombre propio (`base.png`, `personaje-2-neon.png`…). Tope: **5 imágenes por persona** al día; la escena lleva la cuenta. Lo que FLUX no respeta (cambia más de una cosa, se va del estilo) es la lección: una palabra de más mueve toda la imagen.
 
 ## 4. Los siete ejemplos · Aplicación
 
