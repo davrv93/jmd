@@ -20,9 +20,10 @@ const PESTANAS: readonly (readonly [Pestana, string, string, string])[] = [
 const esPestana = (x: unknown): x is Pestana => PESTANAS.some(([id]) => id === x);
 
 // Barra de actividad: la escena, las cuatro pestañas y la ayuda de la escena (barra lateral).
-type Actividad = "escena" | Pestana | "ayuda";
+type Actividad = "escena" | "escenas" | Pestana | "ayuda";
 const ACTIVIDAD: readonly (readonly [Actividad, string, string, string])[] = [
   ["escena", "Escena", "Escena", "escena"],
+  ["escenas", "Todas las escenas", "Lista", "layers"],
   ["terminal", "Terminal", "Terminal", "terminal"],
   ["visor", "Visor", "Visor", "eye"],
   ["agente", "Agente", "Agente", "sparkles"],
@@ -111,7 +112,8 @@ export const LiveAlumno = component$(
     const deshacerDe = useSignal(""); // escena que aún se puede deshacer (10 s)
     const panel = useSignal<"" | Pestana>(""); // pestaña abierta del panel; "" = panel cerrado
     const ultima = useSignal<Pestana>("terminal"); // la que abre Ctrl/Cmd+J
-    const ayuda = useSignal(false); // barra lateral de ayuda
+    const ayuda = useSignal(false); // barra lateral (ayuda o lista de escenas)
+    const ladoEscenas = useSignal(false); // la barra lateral muestra la lista de escenas en vez de la ayuda
     const termAbierta = useSignal(false); // la terminal se queda montada al cambiar de pestaña
     const skillsAbierta = useSignal(false); // «Mis skills» también: sigue atenta a la prueba aunque cambies de pestaña
     const prueba = useStore<PruebaSkill>({ estado: "", nombre: "", desde: 0 });
@@ -689,7 +691,7 @@ export const LiveAlumno = component$(
         <nav class="lv-act" aria-label="Barra de actividad">
           <div ref={barraAct} class="lv-act-barra" role="toolbar" aria-label="Vistas de la clase" aria-orientation={movil.value ? "horizontal" : "vertical"}>
             {ACTIVIDAD.map(([id, nombre, corto, icono], i) => {
-              const activo = id === "escena" ? escenaVisible : id === "ayuda" ? ayuda.value : panel.value === id;
+              const activo = id === "escena" ? escenaVisible : id === "ayuda" ? ayuda.value && !ladoEscenas.value : id === "escenas" ? ayuda.value && ladoEscenas.value : panel.value === id;
               const tip = id === "terminal" ? `${nombre} (${tecla.terminal})` : nombre;
               return (
                 <button
@@ -702,9 +704,19 @@ export const LiveAlumno = component$(
                   tabIndex={i === 0 ? 0 : -1}
                   aria-label={nombre}
                   aria-pressed={activo}
-                  aria-controls={id === "escena" ? "lv-escena" : id === "ayuda" ? "lv-lado" : "lv-panel"}
+                  aria-controls={id === "escena" ? "lv-escena" : id === "ayuda" || id === "escenas" ? "lv-lado" : "lv-panel"}
                   aria-keyshortcuts={id === "terminal" ? (mac.value ? "Control+` Meta+`" : "Control+`") : undefined}
-                  onClick$={() => (id === "escena" ? verEscena() : id === "ayuda" ? alternarAyuda() : alternar(id))}
+                  onClick$={() => {
+                    if (id === "escena") return verEscena();
+                    if (id === "ayuda" || id === "escenas") {
+                      const lista = id === "escenas";
+                      if (ayuda.value && ladoEscenas.value === lista) return alternarAyuda();
+                      ladoEscenas.value = lista;
+                      if (!ayuda.value) alternarAyuda();
+                      return;
+                    }
+                    alternar(id);
+                  }}
                 >
                   <Icon name={icono} size={22} />
                   <span class="lv-act-et" aria-hidden="true">
@@ -718,11 +730,37 @@ export const LiveAlumno = component$(
 
         <aside id="lv-lado" class="lv-lado" hidden={!ayuda.value} aria-labelledby="lv-lado-t">
           <div class="lv-lado-cab">
-            <h2 id="lv-lado-t">Ayuda de la escena</h2>
+            <h2 id="lv-lado-t">{ladoEscenas.value ? "Todas las escenas" : "Ayuda de la escena"}</h2>
             <button type="button" class="lv-ico-btn" aria-label="Cerrar la ayuda" title="Cerrar la ayuda" onClick$={() => (ayuda.value = false)}>
               <Icon name="x" size={16} />
             </button>
           </div>
+          {ladoEscenas.value ? (
+            <div class="lv-lado-cuerpo lv-lista-escenas">
+              <p class="lv-lista-nota">Toca una para verla; «A la del instructor» te devuelve a la de la clase.</p>
+              <div class="live-escenas" role="list">
+                {lista.map((e, i) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    class="live-escena"
+                    role="listitem"
+                    aria-current={e.id === efectiva ? "true" : undefined}
+                    title={e.id === escena.value ? "La escena que muestra el instructor" : undefined}
+                    onClick$={() => (local.value = e.id === escena.value ? "" : e.id)}
+                  >
+                    <span class="live-escena-num">{i + 1}</span>
+                    <span class="live-escena-titulo">{e.titulo}</span>
+                    {e.id === escena.value && <Icon name="escena" size={14} />}
+                  </button>
+                ))}
+              </div>
+              <a class="btn ghost sm lv-salir-lado" href={`/lessons/${props.lesson}/`}>
+                <Icon name="logout" size={14} />
+                Salir del LIVE
+              </a>
+            </div>
+          ) : (
           <div class="lv-lado-cuerpo live-ayuda" key={`ayuda-${efectiva}`}>
             {ayudaEscena}
             <section class="lv-atajos" aria-labelledby="lv-atajos-t">
@@ -743,6 +781,8 @@ export const LiveAlumno = component$(
               </dl>
             </section>
           </div>
+          )}
+        
         </aside>
 
         <div ref={zona} class="lv-zona">
@@ -966,6 +1006,10 @@ export const LiveAlumno = component$(
               Control
             </button>
           )}
+          <a class="lv-ei lv-ei-salir" href={`/lessons/${props.lesson}/`} title="Salir del modo LIVE y volver a la lección">
+            <Icon name="logout" size={13} />
+            <span class="lv-ocultable">Salir del LIVE</span>
+          </a>
           <span class="lv-ei lv-con" role="status" title={con.det}>
             <i class={`lv-punto ${con.cls}`} aria-hidden="true" />
             {con.txt}

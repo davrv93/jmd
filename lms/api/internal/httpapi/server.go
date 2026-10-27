@@ -35,14 +35,14 @@ type Server struct {
 	// Inscripcion son los grupos con inscripción abierta por enlace (/inscripcion/<grupo>): la URL es
 	// la invitación, sin código. Vacío = ninguno.
 	Inscripcion []string
-	PublicURL    string    // https://lms.<dominio> (para las URLs de las preguntas)
-	SessionTTL   time.Duration
-	Web          fs.FS          // build del front; nil = solo API
-	Runner       *runner.Runner // ejecuta código de los alumnos; nil/deshabilitado = sin /run
-	TermImage    string         // imagen de la shell interactiva del estudio (vacío = por defecto)
-	LLM          LLMConfig      // valores iniciales (entorno) del gateway de IA; manda lo guardado en la base
-	DataDir      string         // carpeta de datos (clave de firma de insignias badge-key.json); vacío = clave efímera
-	JmrvURL      string         // base del Image Studio (http://jmrv:8790); vacío = sin JMRV (503)
+	PublicURL   string // https://lms.<dominio> (para las URLs de las preguntas)
+	SessionTTL  time.Duration
+	Web         fs.FS          // build del front; nil = solo API
+	Runner      *runner.Runner // ejecuta código de los alumnos; nil/deshabilitado = sin /run
+	TermImage   string         // imagen de la shell interactiva del estudio (vacío = por defecto)
+	LLM         LLMConfig      // valores iniciales (entorno) del gateway de IA; manda lo guardado en la base
+	DataDir     string         // carpeta de datos (clave de firma de insignias badge-key.json); vacío = clave efímera
+	JmrvURL     string         // base del Image Studio (http://jmrv:8790); vacío = sin JMRV (503)
 
 	login     *limiter
 	llm       *llmCache
@@ -191,6 +191,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/latido", s.authed(s.liveLatido))
 	mux.Handle("POST /api/v1/live/{lesson}/evento", s.authed(s.liveEvento))
 	mux.Handle("POST /api/v1/live/{lesson}/imagen", s.authed(s.liveImagen))
+	mux.Handle("POST /api/v1/live/{lesson}/voto", s.authed(s.liveVoto))
+	mux.Handle("GET /api/v1/live/{lesson}/votos", s.authed(s.liveVotos))
+	mux.Handle("DELETE /api/v1/live/{lesson}/votos", s.authed(s.staff(s.liveVotosReiniciar)))
 	mux.Handle("POST /api/v1/live/{lesson}/evidencia", s.authed(s.liveEvidencia))
 	mux.Handle("POST /api/v1/live/{lesson}/logre", s.authed(s.liveLogre))
 	mux.Handle("GET /api/v1/live/{lesson}/logre", s.authed(s.liveLogres))
