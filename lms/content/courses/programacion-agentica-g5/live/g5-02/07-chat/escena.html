@@ -77,6 +77,11 @@
 .ch-paso.hecho .ch-h { color: var(--ok); border-color: var(--ok); background: var(--ok-bg); }
 .ch-c { grid-area: c; display: grid; gap: .4vh; min-width: 0; }
 .ch-c pre.esc-cmd { font-size: .62em; padding: .5em .9em; line-height: 1.45; }
+.ch-c pre.esc-cmd.ch-hd { max-height: 12vh; overflow: auto; } /* el heredoc con TU asistente.json: se desplaza, el botón copia todo */
+.ch-nota { margin: 0; font-size: .68em; color: var(--warn); font-weight: 600; }
+.ch-c details { font-size: .68em; color: var(--muted); }
+.ch-c details summary { cursor: pointer; font-weight: 600; }
+.ch-c details pre.esc-cmd { font-size: .9em; margin-top: .3em; }
 
 /* Columna derecha: diagrama + avisos */
 .ch-der { display: grid; gap: 1vh; min-width: 0; }
@@ -136,9 +141,13 @@
       <ol class="ch-pasos" id="ch-pasos">
         <li class="ch-paso" data-paso="0">
           <span class="ch-n">1</span>
-          <span class="ch-t">Copia el asistente de ejemplo <small>cafetería → asistente.json</small></span>
+          <span class="ch-t">Tu asistente.json <small>lo armaste en la escena anterior</small></span>
           <label class="ch-h"><input type="checkbox"> ✓ hecho</label>
-          <div class="ch-c"><pre class="esc-cmd"><span class="p">$ </span>mkdir -p /trabajo/negocio &amp;&amp; cd /trabajo/negocio &amp;&amp; cp /opt/skills-curso/s2-robo-estilos/motor/ejemplos/cafeteria.json asistente.json</pre></div>
+          <div class="ch-c">
+            <pre class="esc-cmd" id="ch-cmd1"><span class="p">$ </span>mkdir -p /trabajo/negocio &amp;&amp; cd /trabajo/negocio &amp;&amp; cp /opt/skills-curso/s2-robo-estilos/motor/ejemplos/cafeteria.json asistente.json</pre>
+            <p class="ch-nota" id="ch-nota1">¿Aún no diseñaste el tuyo? Vuelve a «Diseña tu Robo» · mientras, este es el ejemplo de la cafetería.</p>
+            <details id="ch-alt1" hidden><summary>¿Prefieres el ejemplo de la cafetería? Alternativa</summary><pre class="esc-cmd"><span class="p">$ </span>mkdir -p /trabajo/negocio &amp;&amp; cd /trabajo/negocio &amp;&amp; cp /opt/skills-curso/s2-robo-estilos/motor/ejemplos/cafeteria.json asistente.json</pre></details>
+          </div>
         </li>
         <li class="ch-paso" data-paso="1">
           <span class="ch-n">2</span>
@@ -157,7 +166,7 @@
         </li>
         <li class="ch-paso" data-paso="3">
           <span class="ch-n">4</span>
-          <span class="ch-t">Ábrelo en el Visor <small>es tu Robo, con tu nombre y tus respuestas</small></span>
+          <span class="ch-t">Ábrelo en el Visor <small id="ch-t4">es tu Robo, con tu nombre y tus respuestas</small></span>
           <label class="ch-h"><input type="checkbox"> ✓ hecho</label>
           <div class="ch-c"><pre class="esc-cmd"><span class="c"># en el Visor del aula, abre:</span>
 mi-robo/neon/index.html</pre></div>
@@ -258,6 +267,27 @@ mi-robo/neon/index.html</pre></div>
   bReset.addEventListener("click", function () { inicio = 0; guardar(K_CRONO, null); clearInterval(timer); timer = 0; tic(); });
   if (inicio) timer = setInterval(tic, 1000);
   tic();
+})();
+</script>
+<script>
+/* Paso 1 con TU asistente.json: si «Diseña tu Robo» (06b) dejó g5-02-asistente completo, el comando es el heredoc con ese JSON
+   (el mismo que arma 06b) y la cafetería queda como alternativa plegada; si no, se muestra la cafetería y la nota para volver. */
+(function () {
+  var a = null;
+  try { a = JSON.parse(localStorage.getItem("g5-02-asistente") || "null"); } catch (e) { a = null; }
+  function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  var ok = a && typeof a === "object" && typeof a.nombre === "string" && a.nombre.trim() && a.negocio && typeof a.negocio === "object" &&
+    String(a.negocio.nombre || "").trim() && String(a.negocio.rubro || "").trim() && String(a.saludo || "").trim() &&
+    Array.isArray(a.preguntas_frecuentes) && a.preguntas_frecuentes.some(function (p) { return p && Array.isArray(p.preguntas) && p.preguntas.length && String(p.respuesta || "").trim(); });
+  if (!ok) return;
+  var cmd = "mkdir -p /trabajo/negocio && cd /trabajo/negocio && cat > asistente.json <<'FIN_ROBO'\n" + JSON.stringify(a, null, 2) + "\nFIN_ROBO\n" +
+    "python3 -c \"import json;json.load(open('asistente.json'));print('asistente.json OK')\"";
+  var pre = document.getElementById("ch-cmd1");
+  pre.classList.add("ch-hd");
+  pre.innerHTML = '<span class="p">$ </span>' + esc(cmd);
+  document.getElementById("ch-nota1").hidden = true;
+  document.getElementById("ch-alt1").hidden = false;
+  document.getElementById("ch-t4").textContent = "«" + a.nombre.trim() + "» te espera, con tu nombre y tus respuestas";
 })();
 </script>
 <script src="../../comun/copiar.js"></script>

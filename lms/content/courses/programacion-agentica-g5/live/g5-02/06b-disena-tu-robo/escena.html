@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E06b · Diseña tu Robo con tus palabras</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas; el CSS común va en ../../comun/escena.css), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+
+  MESA CREATIVA: el alumno escribe su Robo con sus palabras y la escena arma el asistente.json REAL del skill
+  s2-robo-estilos (mismo formato que motor/asistente.plantilla.json). Todo queda en localStorage «g5-02-asistente»
+  (el JSON del asistente, que leen las escenas 07 y 08) y «g5-02-asistente-borrador» (lo escrito, aunque esté a medias).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+
+.esc-cuerpo { gap: 1.1vh; justify-content: start; }
+.rb-tit { font-size: 1.3em; display: flex; align-items: baseline; gap: .6em; flex-wrap: wrap; }
+.rb-tit small { font-size: .55em; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.rb-dos { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.2vw; align-items: start; min-width: 0; }
+
+/* Formulario: campos compactos, etiquetas pequeñas, chips de sugerencia */
+.rb-form { display: grid; gap: .45em; padding: .6em .9em; min-width: 0; }
+.rb-cab { display: flex; align-items: center; justify-content: space-between; gap: .6em; flex-wrap: wrap; }
+.rb-cab h3 { margin: 0; font-size: .9em; }
+.rb-cab h3 small { font: 600 .7em system-ui, sans-serif; color: var(--muted); margin-left: .4em; }
+.rb-btn { font: 700 .62em system-ui, sans-serif; padding: .5em .95em; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; white-space: nowrap; }
+.rb-btn.sec { background: var(--s2); color: var(--muted); border-color: var(--line2); }
+.rb-btn:hover { filter: brightness(1.08); }
+.rb-btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+.rb-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rb-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: .45em .7em; min-width: 0; }
+.rb-form label, .rb-campo { display: grid; gap: .18em; min-width: 0; }
+.rb-lab, .rb-form label > span:first-child { font: 700 .6em system-ui, sans-serif; color: var(--muted); display: flex; gap: .5em; align-items: baseline; flex-wrap: wrap; }
+.rb-lab small, .rb-form label > span:first-child small { font-weight: 600; font-size: .92em; color: var(--muted); opacity: .8; }
+.rb-lab em { font-style: normal; color: var(--bad); font-weight: 700; }
+.rb-form input[type="text"] { font: 600 .7em system-ui, sans-serif; padding: .36em .6em; border-radius: .5em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); min-width: 0; width: 100%; }
+.rb-form input[type="text"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rb-form input[type="text"].mal { border-color: var(--bad); background: var(--bad-bg); }
+.rb-chips { display: flex; gap: .35em; flex-wrap: wrap; }
+.rb-chips button { font: 700 .58em/1 system-ui, sans-serif; padding: .45em .8em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; transition: border-color .2s ease-out, background .2s ease-out, color .2s ease-out; }
+.rb-chips button:hover { border-color: var(--accent); color: var(--accent); }
+.rb-chips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.rb-chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rb-preg { display: grid; gap: .32em; padding: .45em .7em .55em; border-radius: .7em; border: 1px dashed var(--line2); background: color-mix(in srgb, var(--s2) 55%, transparent); }
+.rb-tabs { display: flex; align-items: center; gap: .35em; }
+.rb-tabs button { font: 800 .6em var(--mono); padding: .4em .7em; border-radius: .5em; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; display: inline-flex; gap: .35em; align-items: center; }
+.rb-tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.rb-tabs button.lista::after { content: "✓"; color: var(--ok); }
+.rb-tabs button[aria-selected="true"].lista::after { color: var(--on-accent); }
+.rb-tabs button.mal { border-color: var(--bad); color: var(--bad); }
+.rb-tabs button.mal::after { content: "!"; }
+.rb-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rb-tabs .rb-lab { margin-left: .4em; }
+.rb-animo { display: flex; align-items: center; gap: .6em; }
+.rb-colores { display: flex; gap: .8em; align-items: end; }
+.rb-colores label { display: grid; gap: .18em; }
+.rb-form input[type="color"] { width: 3.4em; height: 1.7em; padding: 0 .1em; border-radius: .45em; border: 1px solid var(--line2); background: var(--s2); cursor: pointer; }
+
+/* Columna derecha: tarjeta del Robo + JSON en vivo, dos salidas copiables y el muro del grupo */
+.rb-der { display: grid; gap: .55em; min-width: 0; align-content: start; }
+.rb-prev { display: grid; grid-template-columns: 1fr 1.15fr; gap: .6em; min-width: 0; }
+.rb-tarjeta { --pr: #5a49d6; --ac: #9d8cff; position: relative; display: grid; gap: .25em; align-content: start; padding: .7em .85em; border-radius: .9em; min-width: 0; min-height: 7.2em; color: #fff; background: linear-gradient(145deg, var(--pr), color-mix(in srgb, var(--pr) 60%, #14122b)); border: 1px solid var(--ac); box-shadow: var(--card-shadow); transition: background .3s ease-out, border-color .3s ease-out; overflow: hidden; }
+.rb-tarjeta::before { content: ""; position: absolute; right: -2em; top: -2em; width: 6em; height: 6em; border-radius: 50%; background: var(--ac); opacity: .35; }
+.rb-tarjeta .rb-cara { font-size: 1.3em; line-height: 1; }
+.rb-tarjeta b { font-size: .95em; line-height: 1.1; color: var(--ac); letter-spacing: -.01em; word-break: break-word; }
+.rb-tarjeta small { font-size: .58em; opacity: .85; line-height: 1.25; }
+.rb-tarjeta p { margin: .1em 0 0; font-size: .64em; line-height: 1.3; opacity: .95; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.rb-tarjeta .rb-pers { font-size: .56em; opacity: .8; font-style: italic; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rb-json { margin: 0; font: 600 .5em/1.35 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .8em; padding: .7em .9em; white-space: pre-wrap; word-break: break-word; border: 1px solid rgba(190,185,255,.22); max-height: 15vh; overflow: auto; }
+.rb-json .k { color: #c3b9ff; }
+.rb-salida { display: grid; gap: .2em; min-width: 0; }
+.rb-salida .rb-lab b { color: var(--accent); font-family: var(--mono); }
+.rb-cmd { font-size: .54em; line-height: 1.4; padding: .6em .9em; max-height: 12vh; overflow: auto; }
+.rb-cmd.corto { max-height: 8vh; }
+.cp-btn:disabled { opacity: .35; cursor: not-allowed; }
+.rb-muro { display: grid; gap: .35em; padding: .55em .9em; }
+.rb-muro-cab { display: flex; align-items: center; gap: .6em; flex-wrap: wrap; }
+.rb-muro-cab h3 { margin: 0; font-size: .82em; }
+.rb-muro-cab small { font: 600 .58em system-ui, sans-serif; color: var(--muted); }
+.rb-muro-cab .rb-btn { margin-left: auto; }
+.rb-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .2em; max-height: 10vh; overflow: auto; }
+.rb-lista li { font-size: .62em; line-height: 1.3; padding: .25em .6em; border-radius: .5em; background: var(--s2); border: 1px solid var(--line); display: flex; gap: .5em; align-items: baseline; }
+.rb-lista li b { color: var(--accent); white-space: nowrap; }
+.rb-lista li.mia { border-color: var(--accent); background: var(--accent-bg); }
+.rb-lista li.vacio { color: var(--muted); background: transparent; border-style: dashed; }
+
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 5 · E06b</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo rb-tit a-in">Diseña tu Robo con <em>tus palabras</em> <small>lo que escribas aquí es el asistente.json real que arma el skill s2-robo-estilos · solo datos reales</small></h1>
+    <div class="rb-dos a-in" style="--d:.12s">
+      <section class="esc-card rb-form" id="rb-form" aria-label="Tu Robo">
+        <div class="rb-cab">
+          <h3>Tu negocio, tu Robo <small>campos en rojo = faltan</small></h3>
+          <div class="esc-fila" style="gap:.4em">
+            <button type="button" class="rb-btn sec" id="rb-ejemplo" title="Carga motor/ejemplos/cafeteria.json como muestra; luego cámbialo por lo tuyo">Ejemplo: cafetería</button>
+            <button type="button" class="rb-btn sec" id="rb-vaciar" title="Borra todo lo escrito">Vaciar</button>
+          </div>
+        </div>
+        <div class="rb-g2">
+          <label><span>nombre del Robo <small>hasta 24 letras</small></span><input type="text" id="rb-nombre" maxlength="24" placeholder="Barista" autocomplete="off"></label>
+          <label><span>nombre del negocio</span><input type="text" id="rb-negocio" placeholder="Café La Esquina" autocomplete="off"></label>
+          <label><span>rubro <small>a qué se dedica, en pocas palabras</small></span><input type="text" id="rb-rubro" placeholder="cafetería de especialidad en Miraflores" autocomplete="off"></label>
+          <label><span>WhatsApp <small>solo dígitos: 51 + tu número</small></span><input type="text" id="rb-whatsapp" inputmode="numeric" maxlength="11" placeholder="51986149476" autocomplete="off"></label>
+        </div>
+        <div class="rb-campo">
+          <span class="rb-lab">personalidad <small>cómo habla, en una o dos frases · toca una sugerencia y edítala</small></span>
+          <div class="rb-chips" id="rb-pers-chips" role="group" aria-label="Sugerencias de personalidad">
+            <button type="button" data-v="Cálido y con humor. Explica simple, sin tecnicismos.">cálido y con humor</button>
+            <button type="button" data-v="Formal y preciso. Responde corto y sin rodeos.">formal y preciso</button>
+            <button type="button" data-v="Juvenil y rápido. Directo al punto, con energía.">juvenil y rápido</button>
+            <button type="button" data-v="Paciente, explica todo paso a paso y confirma que se entendió.">paciente, explica todo</button>
+          </div>
+          <input type="text" id="rb-pers" placeholder="Amable y directo. Explica simple, sin tecnicismos." autocomplete="off">
+        </div>
+        <label class="rb-campo"><span class="rb-lab">saludo <small>lo primero que dice · se propone con tu nombre y tu negocio, cámbialo a tu gusto</small></span><input type="text" id="rb-saludo" placeholder="¡Hola! Soy Barista, de Café La Esquina. ¿En qué te ayudo?" autocomplete="off"></label>
+        <div class="rb-preg">
+          <div class="rb-tabs" role="tablist" aria-label="Preguntas frecuentes">
+            <button type="button" role="tab" data-i="0" aria-selected="true">P1</button>
+            <button type="button" role="tab" data-i="1" aria-selected="false">P2</button>
+            <button type="button" role="tab" data-i="2" aria-selected="false">P3</button>
+            <span class="rb-lab">preguntas frecuentes <small>3 cosas que te preguntan siempre · con la respuesta real</small></span>
+          </div>
+          <label><span>formas de preguntar <small>separadas por coma</small></span><input type="text" id="rb-p-formas" placeholder="donde estan, direccion, como llego" autocomplete="off"></label>
+          <label><span>respuesta</span><input type="text" id="rb-p-resp" placeholder="Estamos en Av. Larco 345, Miraflores, a media cuadra del parque." autocomplete="off"></label>
+          <div class="rb-animo">
+            <span class="rb-lab">ánimo del robot al responder</span>
+            <div class="rb-chips" id="rb-animo-chips" role="group" aria-label="Ánimo">
+              <button type="button" data-v="feliz" aria-pressed="true">feliz</button>
+              <button type="button" data-v="emocionado" aria-pressed="false">emocionado</button>
+              <button type="button" data-v="serio" aria-pressed="false">serio</button>
+              <button type="button" data-v="pensativo" aria-pressed="false">pensativo</button>
+            </div>
+          </div>
+        </div>
+        <div class="rb-g2">
+          <label><span>una regla <small>un límite del asistente</small></span><input type="text" id="rb-regla" placeholder="Nunca prometas descuentos que no estén en esta lista." autocomplete="off"></label>
+          <div class="rb-colores">
+            <label><span class="rb-lab">color primario</span><input type="color" id="rb-primario" value="#5a49d6"></label>
+            <label><span class="rb-lab">acento</span><input type="color" id="rb-acento" value="#9d8cff"></label>
+            <span class="rb-lab"><small>pintan al robot</small></span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="rb-der">
+        <div class="rb-prev">
+          <div class="rb-tarjeta" id="rb-tarjeta" aria-live="polite">
+            <span class="rb-cara" aria-hidden="true">🤖</span>
+            <b id="rb-t-nombre">Tu Robo</b>
+            <small id="rb-t-negocio">tu negocio · rubro</small>
+            <p id="rb-t-saludo">«Escribe arriba y aquí aparece lo que dirá al abrir.»</p>
+            <span class="rb-pers" id="rb-t-pers"></span>
+          </div>
+          <pre class="rb-json" id="rb-json" aria-label="asistente.json en vivo"></pre>
+        </div>
+        <div class="rb-salida">
+          <span class="rb-lab"><b>a</b> pégalo en la terminal: crea /trabajo/negocio/asistente.json <em id="rb-estado"></em></span>
+          <pre class="esc-cmd rb-cmd" id="rb-cmd"></pre>
+        </div>
+        <div class="rb-salida">
+          <span class="rb-lab"><b>b</b> o pídeselo a jmd con este prompt</span>
+          <pre class="esc-cmd rb-cmd corto" id="rb-prompt"></pre>
+        </div>
+        <div class="esc-card rb-muro">
+          <div class="rb-muro-cab">
+            <h3>El grupo</h3>
+            <small id="rb-pub-estado">tu Robo y su saludo, para que todos lo vean</small>
+            <button type="button" class="rb-btn" id="rb-publicar" disabled>Publicar en el muro del grupo</button>
+          </div>
+          <ul class="rb-lista" id="rb-muro" hidden></ul>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Evidencia: una captura de tu tarjeta · Pulsa «Lo logré» en el panel cuando termines</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+<script>
+/* Mesa creativa: lo que escribe el alumno → asistente.json (formato de s2-robo-estilos/motor/asistente.plantilla.json),
+   tarjeta en vivo, comando con heredoc para la terminal, prompt para jmd y muro del grupo. */
+(function () {
+  var K = "g5-02-asistente", KB = "g5-02-asistente-borrador", ESCENA = "06b-disena-tu-robo";
+  var leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "g5-02";
+  var ANIMOS = ["feliz", "emocionado", "serio", "pensativo"];
+  /* Copia de motor/ejemplos/cafeteria.json del skill (la escena corre en un iframe y no puede leer /opt). */
+  var EJEMPLO = {
+    nombre: "Barista",
+    negocio: { nombre: "Café La Esquina", rubro: "cafetería de especialidad en Miraflores", whatsapp: "51986149476" },
+    personalidad: "Cálido, con humor suave de barista. Recomienda según el antojo del cliente.",
+    saludo: "¡Hola! Soy Barista, de Café La Esquina. ¿Te recomiendo un café o te cuento el horario?",
+    preguntas_frecuentes: [
+      { preguntas: ["donde estan", "direccion", "como llego"], respuesta: "Estamos en Av. Larco 345, Miraflores, a media cuadra del parque.", animo: "feliz" },
+      { preguntas: ["que cafes tienen", "carta", "menu"], respuesta: "Espresso, americano, capuchino, flat white y cold brew. El de la casa es el flat white con leche de avena.", animo: "emocionado" },
+      { preguntas: ["tienen delivery", "hacen envios"], respuesta: "Sí, por Rappi y PedidosYa, de 8 a.m. a 8 p.m.", animo: "feliz" }
+    ],
+    reglas: ["Si preguntan por precios, di que la carta con precios se envía por WhatsApp."],
+    marca: { primario: "#8b5a2b", acento: "#ffcf8a" }
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function leer(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function guardar(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+
+  function vacio() {
+    return { nombre: "", negocio: "", rubro: "", whatsapp: "", personalidad: "", saludo: "", saludoProp: "",
+      preguntas: [{ formas: "", respuesta: "", animo: "feliz" }, { formas: "", respuesta: "", animo: "feliz" }, { formas: "", respuesta: "", animo: "feliz" }],
+      regla: "", primario: "#5a49d6", acento: "#9d8cff", tab: 0 };
+  }
+  var est = vacio();
+
+  /* Borrador guardado; si no hay, hidrata desde un asistente.json previo (por si lo dejó otra sesión). */
+  function cargar() {
+    var b = null;
+    try { b = JSON.parse(leer(KB) || "null"); } catch (e) { b = null; }
+    if (b && typeof b === "object") {
+      var v = vacio();
+      Object.keys(v).forEach(function (k) { if (k in b) v[k] = b[k]; });
+      if (!Array.isArray(v.preguntas)) v.preguntas = vacio().preguntas;
+      while (v.preguntas.length < 3) v.preguntas.push({ formas: "", respuesta: "", animo: "feliz" });
+      v.preguntas = v.preguntas.slice(0, 3).map(function (p) { return { formas: String(p.formas || ""), respuesta: String(p.respuesta || ""), animo: ANIMOS.indexOf(p.animo) >= 0 ? p.animo : "feliz" }; });
+      v.tab = Math.min(2, Math.max(0, +v.tab || 0));
+      est = v; return;
+    }
+    var a = null;
+    try { a = JSON.parse(leer(K) || "null"); } catch (e) { a = null; }
+    if (a && typeof a === "object") desdeAsistente(a);
+  }
+  function desdeAsistente(a) {
+    var v = vacio();
+    v.nombre = String(a.nombre || "");
+    v.negocio = String(a.negocio && a.negocio.nombre || "");
+    v.rubro = String(a.negocio && a.negocio.rubro || "");
+    v.whatsapp = String(a.negocio && a.negocio.whatsapp || "").replace(/\D/g, "");
+    v.personalidad = String(a.personalidad || "");
+    v.saludo = String(a.saludo || "");
+    (Array.isArray(a.preguntas_frecuentes) ? a.preguntas_frecuentes : []).slice(0, 3).forEach(function (p, i) {
+      v.preguntas[i] = { formas: (Array.isArray(p.preguntas) ? p.preguntas : []).join(", "), respuesta: String(p.respuesta || ""), animo: ANIMOS.indexOf(p.animo) >= 0 ? p.animo : "feliz" };
+    });
+    v.regla = String(Array.isArray(a.reglas) && a.reglas[0] || "");
+    if (a.marca && /^#[0-9a-f]{6}$/i.test(a.marca.primario || "")) v.primario = a.marca.primario;
+    if (a.marca && /^#[0-9a-f]{6}$/i.test(a.marca.acento || "")) v.acento = a.marca.acento;
+    est = v;
+  }
+
+  function lista(t) { return String(t).split(",").map(function (p) { return p.trim(); }).filter(Boolean); }
+  /* El asistente.json que se escribe y la lista de lo que falta para que sirva. */
+  function armar() {
+    var pf = [];
+    est.preguntas.forEach(function (p) {
+      var f = lista(p.formas), r = p.respuesta.trim();
+      if (f.length && r) pf.push({ preguntas: f, respuesta: r, animo: p.animo });
+    });
+    var obj = {
+      nombre: est.nombre.trim(),
+      negocio: { nombre: est.negocio.trim(), rubro: est.rubro.trim(), whatsapp: est.whatsapp.replace(/\D/g, "") },
+      personalidad: est.personalidad.trim(),
+      saludo: est.saludo.trim(),
+      preguntas_frecuentes: pf,
+      reglas: est.regla.trim() ? [est.regla.trim()] : [],
+      marca: { primario: est.primario, acento: est.acento }
+    };
+    var faltan = [];
+    if (!obj.nombre) faltan.push("nombre del Robo");
+    if (!obj.negocio.nombre) faltan.push("negocio");
+    if (!obj.negocio.rubro) faltan.push("rubro");
+    if (!obj.saludo) faltan.push("saludo");
+    if (!pf.length) faltan.push("1 pregunta con respuesta");
+    var waMal = obj.negocio.whatsapp !== "" && !/^51\d{9}$/.test(obj.negocio.whatsapp);
+    return { obj: obj, faltan: faltan, waMal: waMal };
+  }
+  function jsonBonito(obj) { return JSON.stringify(obj, null, 2); }
+  function comando(obj) {
+    return "mkdir -p /trabajo/negocio && cd /trabajo/negocio && cat > asistente.json <<'FIN_ROBO'\n" + jsonBonito(obj) + "\nFIN_ROBO\n" +
+      "python3 -c \"import json;json.load(open('asistente.json'));print('asistente.json OK')\"";
+  }
+  function prompt(obj) {
+    return "Arma mi Robo con el skill s2-robo-estilos usando este asistente.json: " + JSON.stringify(obj) + ", estilo neon, en /trabajo/negocio. No inventes datos.";
+  }
+  function textoMuro(obj) {
+    var t = obj.nombre + " · " + obj.negocio.nombre + ": «" + obj.saludo + "»";
+    var rs = Array.from(t);
+    return rs.length > 200 ? rs.slice(0, 199).join("") + "…" : t;
+  }
+  function hayAlgo() {
+    return !!(est.nombre || est.negocio || est.rubro || est.whatsapp || est.personalidad || est.saludo || est.regla ||
+      est.preguntas.some(function (p) { return p.formas || p.respuesta; }));
+  }
+
+  /* Pinta el formulario desde el estado (al cargar, al cambiar de pestaña y al cargar el ejemplo). */
+  var campos = { nombre: "rb-nombre", negocio: "rb-negocio", rubro: "rb-rubro", whatsapp: "rb-whatsapp", personalidad: "rb-pers", saludo: "rb-saludo", regla: "rb-regla" };
+  function pintarForm() {
+    Object.keys(campos).forEach(function (k) { if ($(campos[k]).value !== est[k]) $(campos[k]).value = est[k]; });
+    $("rb-primario").value = est.primario; $("rb-acento").value = est.acento;
+    var p = est.preguntas[est.tab];
+    if ($("rb-p-formas").value !== p.formas) $("rb-p-formas").value = p.formas;
+    if ($("rb-p-resp").value !== p.respuesta) $("rb-p-resp").value = p.respuesta;
+    tabs.forEach(function (b, i) { b.setAttribute("aria-selected", String(i === est.tab)); });
+    animoChips.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-v") === p.animo)); });
+    persChips.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-v") === est.personalidad)); });
+  }
+
+  var btnCmd = null;
+  function pintar() {
+    var r = armar(), obj = r.obj, marcar = hayAlgo(), completo = !r.faltan.length;
+    /* rojo en los obligatorios vacíos y en el WhatsApp mal escrito */
+    $("rb-nombre").classList.toggle("mal", marcar && !obj.nombre);
+    $("rb-negocio").classList.toggle("mal", marcar && !obj.negocio.nombre);
+    $("rb-rubro").classList.toggle("mal", marcar && !obj.negocio.rubro);
+    $("rb-saludo").classList.toggle("mal", marcar && !obj.saludo);
+    $("rb-whatsapp").classList.toggle("mal", r.waMal);
+    var ninguna = !obj.preguntas_frecuentes.length;
+    est.preguntas.forEach(function (p, i) {
+      var f = lista(p.formas).length > 0, re = !!p.respuesta.trim();
+      var lista_ = f && re, mal = (f !== re) || (ninguna && marcar && i === 0);
+      tabs[i].classList.toggle("lista", lista_);
+      tabs[i].classList.toggle("mal", mal);
+      if (i === est.tab) {
+        $("rb-p-formas").classList.toggle("mal", mal && !f);
+        $("rb-p-resp").classList.toggle("mal", mal && !re);
+      }
+    });
+    /* tarjeta */
+    var tj = $("rb-tarjeta");
+    tj.style.setProperty("--pr", est.primario); tj.style.setProperty("--ac", est.acento);
+    $("rb-t-nombre").textContent = obj.nombre || "Tu Robo";
+    $("rb-t-negocio").textContent = (obj.negocio.nombre || "tu negocio") + " · " + (obj.negocio.rubro || "rubro") + (obj.negocio.whatsapp && !r.waMal ? " · WhatsApp " + obj.negocio.whatsapp : "");
+    $("rb-t-saludo").textContent = "«" + (obj.saludo || "Escribe arriba y aquí aparece lo que dirá al abrir.") + "»";
+    $("rb-t-pers").textContent = obj.personalidad;
+    /* JSON y salidas */
+    $("rb-json").textContent = jsonBonito(obj);
+    var cmd = $("rb-cmd");
+    cmd.innerHTML = '<span class="p">$ </span>' + esc(comando(obj));
+    $("rb-prompt").textContent = prompt(obj);
+    var estado = $("rb-estado");
+    estado.textContent = completo ? "" : "· faltan: " + r.faltan.join(", ") + (r.waMal ? " · WhatsApp: 11 dígitos que empiecen por 51" : "");
+    if (completo && r.waMal) estado.textContent = "· WhatsApp: 11 dígitos que empiecen por 51 (o déjalo vacío)";
+    if (!btnCmd) { var env = cmd.closest(".cp-env"); btnCmd = env ? env.querySelector(".cp-btn") : null; }
+    if (btnCmd) { btnCmd.disabled = !completo; btnCmd.title = completo ? "" : "Completa los campos en rojo"; }
+    $("rb-publicar").disabled = !completo;
+    /* guarda: el asistente (lo leen 07 y 08) y el borrador tal cual */
+    guardar(K, JSON.stringify(obj));
+    guardar(KB, JSON.stringify(est));
+  }
+
+  /* Saludo propuesto con el nombre y el negocio; deja de proponerse en cuanto el alumno lo edita. */
+  function proponerSaludo() {
+    var n = est.nombre.trim(), g = est.negocio.trim();
+    var prop = n && g ? "¡Hola! Soy " + n + ", de " + g + ". ¿En qué te ayudo?" : "";
+    if (!est.saludo.trim() || est.saludo === est.saludoProp) { est.saludo = prop; $("rb-saludo").value = prop; }
+    est.saludoProp = prop;
+  }
+
+  /* Enlaces del formulario */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".rb-tabs button[role=tab]"));
+  var animoChips = Array.prototype.slice.call(document.querySelectorAll("#rb-animo-chips button"));
+  var persChips = Array.prototype.slice.call(document.querySelectorAll("#rb-pers-chips button"));
+  Object.keys(campos).forEach(function (k) {
+    $(campos[k]).addEventListener("input", function (e) {
+      var v = e.target.value;
+      if (k === "whatsapp") { v = v.replace(/\D/g, "").slice(0, 11); if (v !== e.target.value) e.target.value = v; }
+      est[k] = v;
+      if (k === "nombre" || k === "negocio") proponerSaludo();
+      if (k === "saludo") est.saludoProp = v === est.saludoProp ? v : "";
+      if (k === "personalidad") persChips.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-v") === v)); });
+      pintar();
+    });
+  });
+  ["rb-primario", "rb-acento"].forEach(function (id) {
+    $(id).addEventListener("input", function (e) { est[id === "rb-primario" ? "primario" : "acento"] = e.target.value; pintar(); });
+  });
+  persChips.forEach(function (b) {
+    b.addEventListener("click", function () {
+      est.personalidad = b.getAttribute("data-v"); $("rb-pers").value = est.personalidad;
+      persChips.forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+      pintar(); $("rb-pers").focus();
+    });
+  });
+  tabs.forEach(function (b, i) { b.addEventListener("click", function () { est.tab = i; pintarForm(); pintar(); $("rb-p-formas").focus(); }); });
+  $("rb-p-formas").addEventListener("input", function (e) { est.preguntas[est.tab].formas = e.target.value; pintar(); });
+  $("rb-p-resp").addEventListener("input", function (e) { est.preguntas[est.tab].respuesta = e.target.value; pintar(); });
+  animoChips.forEach(function (b) {
+    b.addEventListener("click", function () {
+      est.preguntas[est.tab].animo = b.getAttribute("data-v");
+      animoChips.forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+      pintar();
+    });
+  });
+  $("rb-ejemplo").addEventListener("click", function () { desdeAsistente(EJEMPLO); est.saludoProp = ""; pintarForm(); pintar(); });
+  $("rb-vaciar").addEventListener("click", function () { est = vacio(); guardar(K, null); guardar(KB, null); pintarForm(); pintar(); $("rb-nombre").focus(); });
+
+  /* Muro del grupo: publica «Robo · negocio: «saludo»» y lee el muro cada 5 s. Si el API no responde, no se muestra nada. */
+  var muro = $("rb-muro"), pubEstado = $("rb-pub-estado");
+  function pintarMuro(d) {
+    var ents = d && Array.isArray(d.entradas) ? d.entradas : [];
+    muro.hidden = false;
+    if (!ents.length) { muro.innerHTML = '<li class="vacio">Nadie publicó todavía: sé el primero.</li>'; return; }
+    muro.innerHTML = ents.map(function (e) {
+      return '<li class="' + (e.mia ? "mia" : "") + '"><b>' + esc(e.nombre || "alguien") + '</b><span>' + esc(e.texto || "") + "</span></li>";
+    }).join("");
+  }
+  function leerMuro() {
+    try {
+      fetch("/api/v1/live/" + leccion + "/muro?escena=" + ESCENA, { credentials: "same-origin" })
+        .then(function (r) { if (!r.ok) throw new Error("sin muro"); return r.json(); })
+        .then(pintarMuro)
+        .catch(function () { muro.hidden = true; });
+    } catch (e) { muro.hidden = true; }
+  }
+  $("rb-publicar").addEventListener("click", function () {
+    var r = armar();
+    if (r.faltan.length) return;
+    pubEstado.textContent = "publicando…";
+    try {
+      fetch("/api/v1/live/" + leccion + "/muro", {
+        method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ escena: ESCENA, texto: textoMuro(r.obj) })
+      }).then(function (res) { if (!res.ok) throw new Error("no"); return res.json(); })
+        .then(function (d) { pubEstado.textContent = "✓ publicado · vuelve a pulsar si cambias el saludo"; pintarMuro(d); })
+        .catch(function () { pubEstado.textContent = "no se pudo publicar (¿sesión del LMS?)"; });
+    } catch (e) { pubEstado.textContent = "no se pudo publicar"; }
+  });
+
+  if (window.copiarMontar) window.copiarMontar(); /* copiar.js espera a DOMContentLoaded; aquí ya hace falta el botón para deshabilitarlo */
+  cargar();
+  pintarForm();
+  pintar();
+  leerMuro();
+  setInterval(leerMuro, 5000);
+})();
+</script>
+</body>
+</html>
