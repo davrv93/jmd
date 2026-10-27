@@ -20,7 +20,7 @@
 .esc-cielo { opacity: calc(var(--cielo) * .35); }
 .e12 { display: grid; gap: 1.6vh; }
 .e12-titulo { font-size: 1.6em; }
-.e12-cols { height: 64vh; min-height: 0; display: grid; grid-template-columns: .62fr 1.38fr; gap: 2vw; align-items: center; }
+.e12-cols { height: 66vh; min-height: 0; display: grid; grid-template-columns: .62fr 1.38fr; gap: 2vw; align-items: center; }
 .e12-ins { height: 100%; min-height: 0; display: grid; place-items: center; }
 .e12-ins svg { height: 100%; width: auto; max-width: 100%; overflow: visible; }
 .e12:not(.go) .e12-ins svg { visibility: hidden; }
@@ -42,6 +42,19 @@
 .e12-card h2 .esc-chip { font-size: .9em; }
 .e12-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; }
 .e12-dos.arriba { grid-template-columns: .68fr 1.32fr; }
+.e12-tres { display: grid; grid-template-columns: .9fr .85fr 1.25fr; gap: 1.2vw; align-items: start; }
+/* Muro del grupo: «¿Qué te llevas? con tus palabras» (mismo aspecto en las escenas 10, 11 y 12) */
+.muro-form { display: flex; gap: .4em; align-items: center; }
+.muro-input { flex: 1; min-width: 0; font: 500 .72em/1.3 system-ui, sans-serif; color: var(--fg); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .35em .6em; }
+.muro-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.muro-cab { font-size: .6em; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; gap: .6em; align-items: center; margin-top: .4em; }
+.muro-cab i { font-style: normal; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.muro-lista { list-style: none; margin: .25em 0 0; padding: 0; display: grid; gap: .2em; max-height: 4em; overflow: auto; font-size: .62em; }
+.muro-lista li { display: flex; gap: .5em; align-items: baseline; padding: .2em .55em; border-radius: .5em; background: var(--s2); border: 1px solid var(--line); min-width: 0; }
+.muro-lista li b { flex: none; color: var(--accent); }
+.muro-lista li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.muro-lista li.mia { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.muro-lista li.vacio { color: var(--muted); font-style: italic; }
 .e12-prog { display: grid; grid-template-columns: auto 1fr; gap: .1em 1em; align-items: center; }
 .e12-prog .n { font-size: 2em; font-weight: 800; line-height: 1; letter-spacing: -.03em; }
 .e12-prog .n small { font-size: .38em; font-weight: 700; color: var(--muted); letter-spacing: 0; }
@@ -115,7 +128,7 @@
     <div class="e12" id="e12">
       <div>
         <h1 class="esc-titulo e12-titulo a-in">Tu insignia de la <em>clase 2</em></h1>
-        <p class="esc-sub a-in" style="--d:.15s">Se enciende cuando completas 6 de los 9 pasos del ciclo. Antes de irte: tu plan, dos chips de encuesta y el recordatorio de la tarea.</p>
+        <p class="esc-sub a-in" style="--d:.15s">Se enciende con 6 de los 9 pasos del ciclo. Antes de irte: tu plan, la encuesta con tus palabras y la tarea.</p>
       </div>
       <div class="e12-cols">
         <div class="e12-ins">
@@ -178,7 +191,7 @@
           </div>
           <div class="e12-card" style="--d:.6s">
             <h2>Encuesta de salida</h2>
-            <div class="e12-dos">
+            <div class="e12-tres">
               <div>
                 <div class="e12-grupo" style="margin:0 0 .25em">¿Qué te llevas de hoy?</div>
                 <div class="e12-chips" id="llevas" role="group" aria-label="Qué te llevas">
@@ -194,6 +207,12 @@
                   <button type="button" class="e12-chip num" data-dif="1">1</button><button type="button" class="e12-chip num" data-dif="2">2</button><button type="button" class="e12-chip num" data-dif="3">3</button><button type="button" class="e12-chip num" data-dif="4">4</button><button type="button" class="e12-chip num" data-dif="5">5</button>
                 </div>
                 <div class="e12-grupo" id="dif-grupo">Se guarda en este navegador.</div>
+              </div>
+              <div>
+                <div class="e12-grupo" style="margin:0 0 .25em">¿Qué te llevas? Con tus palabras · lo ve el grupo</div>
+                <div class="muro-form"><input id="muro-input" class="muro-input" maxlength="160" autocomplete="off" placeholder="Hoy me llevo…" aria-label="Qué te llevas, con tus palabras"><button type="button" class="e12-btn muro-pub" id="muro-pub" style="margin:0">Publicar</button></div>
+                <div class="muro-cab" id="muro-cab" hidden>El grupo <i></i></div>
+                <ul class="muro-lista" id="muro-lista" hidden aria-label="Lo que se lleva el grupo"></ul>
               </div>
             </div>
           </div>
@@ -293,6 +312,45 @@
   if (salida.llevas) pintarChips("llevas", "data-opcion", salida.llevas);
   if (salida.dificultad) { pintarChips("dificultad", "data-dif", salida.dificultad); $("dif-grupo").textContent = "Anotado: " + salida.dificultad + " de 5."; }
   votos(); setInterval(votos, 5000);
+
+  /* ---- Muro del grupo (/live/<leccion>/muro, escena 12-insignia): cada 5 s; si el endpoint no existe, no se muestra ---- */
+  function muroMontar(escena, lista, cab) {
+    var url = "/api/v1/live/" + leccion + "/muro";
+    function pintar(j) {
+      var en = (j && Array.isArray(j.entradas)) ? j.entradas : null;
+      if (!en) { lista.hidden = true; cab.hidden = true; return; }
+      lista.hidden = false; cab.hidden = false; lista.textContent = "";
+      cab.querySelector("i").textContent = en.length ? en.length + (en.length === 1 ? " voz" : " voces") : "";
+      if (!en.length) { var li0 = document.createElement("li"); li0.className = "vacio"; li0.textContent = "Aún nadie publicó. Sé el primero."; lista.appendChild(li0); return; }
+      en.forEach(function (e) {
+        var li = document.createElement("li"); if (e.mia) li.className = "mia";
+        var b = document.createElement("b"); b.textContent = e.mia ? "Tú" : (e.nombre || "alguien");
+        var sp = document.createElement("span"); sp.textContent = e.texto || ""; li.title = e.texto || "";
+        li.appendChild(b); li.appendChild(sp); lista.appendChild(li);
+      });
+    }
+    function traer() {
+      try { fetch(url + "?escena=" + escena, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(pintar).catch(function () { pintar(null); }); }
+      catch (e) { pintar(null); }
+    }
+    function publicar(texto) {
+      return fetch(url, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ escena: escena, texto: texto }) })
+        .then(function (r) { if (!r.ok) throw new Error("" + r.status); return r.json(); }).then(pintar);
+    }
+    traer(); setInterval(traer, 5000);
+    return { publicar: publicar };
+  }
+  function aviso(btn, txt) { var o = btn.textContent; btn.textContent = txt; btn.disabled = true; setTimeout(function () { btn.textContent = o; btn.disabled = false; }, 1400); }
+  var K_M = "g5-02-muro", muroIn = $("muro-input"), muro = muroMontar("12-insignia", $("muro-lista"), $("muro-cab"));
+  muroIn.value = leer(K_M)["12-insignia"] || "";
+  function publicarMuro() {
+    var b = $("muro-pub"), t = muroIn.value.replace(/\s+/g, " ").trim().slice(0, 160);
+    if (b.disabled) return;
+    b.disabled = true;
+    muro.publicar(t).then(function () { var m = leer(K_M); m["12-insignia"] = t; guardar(K_M, m); aviso(b, t ? "Publicado" : "Borrado"); }, function () { aviso(b, "No se pudo"); });
+  }
+  $("muro-pub").addEventListener("click", publicarMuro);
+  muroIn.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); publicarMuro(); } });
 
   /* ---- Recordatorio de la tarea 2 (texto de lessons/02 · «Tareas · Aplicación») ---- */
   var TAREA2 = "Tarea 2 · Clase 2 (Programación agéntica, grupo 5)\n" +

@@ -318,6 +318,14 @@ Las seis tareas de hoy, de 15 minutos cada una:
 
 **Si falla:** Si el agente escribe más de seis tareas, pídele que las junte. Si borra una, pídele que la devuelva: nunca se renumeran.
 
+### En el LIVE: «Diseña tu Robo con tus palabras»
+
+Antes del plan, la escena **Diseña tu Robo** es una mesa en blanco: nombre del Robo, tu negocio,
+su personalidad, el saludo y tres preguntas con **tus** respuestas. La escena arma el `asistente.json`
+real y te da dos salidas: el comando para la terminal (`cat > asistente.json`) o el prompt para `jmd`.
+Nada viene precargado: el ejemplo de la cafetería es solo un botón para ver el formato. Al final
+publicas tu Robo en el **muro del grupo** y ves los de los demás.
+
 ### En el aula del LIVE: tu plan ya está escrito
 
 Si trabajas en el aula del LIVE, no hace falta escribir el plan desde cero: ya existe uno para construir Robo, el asistente de esta clase. Tú lo personalizas y tu agente lo ejecuta.

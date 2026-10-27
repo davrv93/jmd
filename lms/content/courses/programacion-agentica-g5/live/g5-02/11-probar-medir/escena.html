@@ -52,12 +52,28 @@
 .e11-crono.run b { color: var(--warn); animation: esc-pulso 1.2s ease-in-out infinite; }
 .e11-txt { grid-column: 2 / -1; font: 500 .74em/1.3 system-ui, sans-serif; color: var(--fg); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .3em .55em; resize: none; width: 100%; height: 2.3em; }
 .e11-txt:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.e11-leyenda { display: flex; gap: 1.4em; flex-wrap: wrap; font-size: .7em; color: var(--muted); align-items: center; animation: esc-entra .45s ease-out both; animation-delay: .9s; }
+.e11-leyenda { display: flex; gap: 1.1em; flex-wrap: wrap; font-size: .62em; color: var(--muted); align-items: center; animation: esc-entra .45s ease-out both; animation-delay: .9s; }
 .e11-leyenda span { display: inline-flex; align-items: center; gap: .45em; }
 .e11-leyenda i { width: .8em; height: .8em; border-radius: 50%; background: var(--c); }
 .e11-leyenda b { color: var(--fg); }
 .e11-leyenda em { font-style: normal; margin-left: auto; }
 .c1 { --c: var(--info); } .c2 { --c: var(--gold); } .c3 { --c: var(--warn); } .c4 { --c: var(--bad); }
+/* Muro del grupo: la respuesta más graciosa o más rara (mismo aspecto en las escenas 10, 11 y 12) */
+.e11-muro { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; align-items: start; animation: esc-entra .45s ease-out both; animation-delay: 1s; }
+.e11-muro > div { background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .5em .9em; box-shadow: var(--card-shadow); display: grid; gap: .35em; min-width: 0; }
+.e11-muro label { font-size: .66em; font-weight: 700; color: var(--fg); }
+.e11-muro label small { display: block; font-weight: 500; color: var(--muted); }
+.muro-form { display: flex; gap: .5em; align-items: center; }
+.muro-input { flex: 1; min-width: 0; font: 500 .74em/1.3 system-ui, sans-serif; color: var(--fg); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .35em .6em; }
+.muro-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.muro-cab { font-size: .62em; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; gap: .6em; align-items: center; }
+.muro-cab i { font-style: normal; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.muro-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .25em; max-height: 4.4em; overflow: auto; font-size: .64em; }
+.muro-lista li { display: flex; gap: .5em; align-items: baseline; padding: .25em .6em; border-radius: .5em; background: var(--s2); border: 1px solid var(--line); min-width: 0; }
+.muro-lista li b { flex: none; color: var(--accent); }
+.muro-lista li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.muro-lista li.mia { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.muro-lista li.vacio { color: var(--muted); font-style: italic; }
 
 </style>
 </head>
@@ -140,6 +156,17 @@
       <span class="c4"><i></i><b>4 Crítico</b> se rompe o no responde</span>
       <em>Si no hubo fallo, marca la casilla y deja la severidad vacía.</em>
     </div>
+
+    <div class="e11-muro">
+      <div>
+        <label for="muro-input">La respuesta más graciosa o más rara que te dio el Robo de tu pareja <small>Una frase, hasta 160 caracteres. Todos la ven.</small></label>
+        <div class="muro-form"><input id="muro-input" class="muro-input" maxlength="160" autocomplete="off" placeholder="«Me dijo que…»"><button type="button" class="e11-btn muro-pub" id="muro-pub">Publicar</button></div>
+      </div>
+      <div>
+        <div class="muro-cab" id="muro-cab" hidden>El grupo <i></i></div>
+        <ul class="muro-lista" id="muro-lista" hidden aria-label="Respuestas del grupo"></ul>
+      </div>
+    </div>
   </main>
 
   <footer class="esc-pie">
@@ -217,6 +244,44 @@
     pintarOk(); pintarSev(); pintarReloj();
     setInterval(function () { if (corriendo[id]) pintarReloj(); }, 500);
   });
+
+  /* ---- Muro del grupo (/live/<leccion>/muro, escena 11-probar-medir): cada 5 s; si el endpoint no existe, no se muestra ---- */
+  function muroMontar(escena, lista, cab) {
+    var url = "/api/v1/live/" + leccion + "/muro";
+    function pintar(j) {
+      var en = (j && Array.isArray(j.entradas)) ? j.entradas : null;
+      if (!en) { lista.hidden = true; cab.hidden = true; return; }
+      lista.hidden = false; cab.hidden = false; lista.textContent = "";
+      cab.querySelector("i").textContent = en.length ? en.length + (en.length === 1 ? " respuesta" : " respuestas") : "";
+      if (!en.length) { var li0 = document.createElement("li"); li0.className = "vacio"; li0.textContent = "Aún nadie publicó. Sé el primero."; lista.appendChild(li0); return; }
+      en.forEach(function (e) {
+        var li = document.createElement("li"); if (e.mia) li.className = "mia";
+        var b = document.createElement("b"); b.textContent = e.mia ? "Tú" : (e.nombre || "alguien");
+        var sp = document.createElement("span"); sp.textContent = e.texto || ""; li.title = e.texto || "";
+        li.appendChild(b); li.appendChild(sp); lista.appendChild(li);
+      });
+    }
+    function traer() {
+      try { fetch(url + "?escena=" + escena, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(pintar).catch(function () { pintar(null); }); }
+      catch (e) { pintar(null); }
+    }
+    function publicar(texto) {
+      return fetch(url, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ escena: escena, texto: texto }) })
+        .then(function (r) { if (!r.ok) throw new Error("" + r.status); return r.json(); }).then(pintar);
+    }
+    traer(); setInterval(traer, 5000);
+    return { publicar: publicar };
+  }
+  var K_M = "g5-02-muro", muroIn = $("muro-input"), muro = muroMontar("11-probar-medir", $("muro-lista"), $("muro-cab"));
+  muroIn.value = leer(K_M)["11-probar-medir"] || "";
+  function publicarMuro() {
+    var b = $("muro-pub"), t = muroIn.value.replace(/\s+/g, " ").trim().slice(0, 160);
+    if (b.disabled) return;
+    b.disabled = true;
+    muro.publicar(t).then(function () { var m = leer(K_M); m["11-probar-medir"] = t; guardar(K_M, m); aviso(b, t ? "Publicado" : "Borrado"); }, function () { aviso(b, "No se pudo"); });
+  }
+  $("muro-pub").addEventListener("click", publicarMuro);
+  muroIn.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); publicarMuro(); } });
 })();
 </script>
 <script>
