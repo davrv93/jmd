@@ -88,10 +88,10 @@ cycle:
     description: Cielo, barco y Mickey a distinta profundidad; el dibujo como textura; las notas como sprites.
     check: Identificas en 03-three.html la línea que fija la profundidad de cada plano
   - id: personaje
-    title: Un personaje tuyo
+    title: Un personaje tuyo (opcional)
     tool: jmd
     phase: experimentacion
-    description: Dibújalo con las reglas de 1928, pégalo en 04-personaje.html y dale un vuelo.
+    description: En tu copia del kit, 04-personaje.html: pega tu SVG y dale un vuelo.
     check: Tu personaje aparece en la escena y sigue la paleta
   - id: agua
     title: Agua en el bote
@@ -139,7 +139,7 @@ Clase en vivo: lunes 26-10-2026, 9:15 a 10:45 pm. Kit: <https://jmd-learn.online
 | 7 · 3D | Tres planos en `03-three.html` | Ubicas la `z` de cada plano |
 | 8 · Personaje | Tu SVG en `04-personaje.html` | Aparece y sigue la paleta |
 | 9 · Agua | Tu regla en `05-agua.html` | Se nota el cambio |
-| · Prompts | Pedidos en vivo en las escenas 5, 6, 8 y 9 | Tres pedidos aplicados y uno copiado al agente |
+| · Prompts | Pedidos en vivo en las escenas 5, 6 y 9 | Tres pedidos aplicados y uno copiado al agente |
 | 10 · FLUX | Tu prompt, tu estilo, tu imagen | Abre en el Visor |
 | 11 · Pieza | Dos ejemplos tuyos + capturas | Tarea 1 |
 
@@ -186,7 +186,7 @@ En la escena **E11** aprendes a pedir una imagen con método, en español y de c
 1. **La base: la receta de cuatro partes.** *Quién o qué* (el sujeto), *qué hace* (la acción), *dónde* (lugar y hora) y *cómo se ve* (el estilo: dibujo de 1928, color plano, acuarela, pixel art, línea clara o foto). Lo que no dices, el modelo lo inventa. Concreto y corto: «un gato naranja con sombrero rojo», no «un gato bonito». Hay ejemplos listos para cargar y cambiar.
 2. **Una variación.** Primero generas la base tal cual. Después cambias **una sola parte**: el personaje, la acción, el lugar, o añades un objeto («con un ukelele»). Una por vez, o no se puede comparar.
 3. **El color.** Blanco y negro, color plano, pastel, neón, sepia, cálido, frío; o el que decide el estilo.
-4. **Generar y comparar.** El comando va a la terminal del aula; la imagen queda en `/trabajo/flux/` con nombre propio (`base.png`, `escena-2-neon.png`). Se abre en el Visor **al lado de la base**: ¿cambió solo lo que pedí?
+4. **Generar y comparar.** El botón **Generar aquí** manda el prompt desde la misma escena (sin terminal) y en unos segundos aparecen la base y la variación **lado a lado**: ¿cambió solo lo que pedí? Para guardar una imagen: clic derecho → «Guardar imagen». Si prefieres la terminal, el mismo pedido está plegado como comando.
 
 El prompt completo aparece a la derecha con cada parte en un color. Reglas que se repiten en clase: una cosa por vez; concreto gana; nada de texto dentro de la imagen (FLUX escribe mal las letras; el texto va en el HTML); si sale raro, quita una palabra en vez de agregar tres. En español funciona; si una palabra no la entiende, se prueba en inglés. Tope: **5 imágenes por persona** al día; la escena lleva la cuenta.
 
