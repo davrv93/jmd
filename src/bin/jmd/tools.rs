@@ -9,6 +9,40 @@ use std::time::Duration;
 /// Tope de salida que se le devuelve al modelo (el resto se resume).
 const MAX_OUT: usize = 16_000;
 
+/// RTK (rtk-ai/rtk) en el PATH: se mira una vez. `JMD_RTK=0` lo apaga.
+fn hay_rtk() -> bool {
+    static HAY: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *HAY.get_or_init(|| {
+        !cfg!(windows)
+            && std::env::var("JMD_RTK").map_or(true, |v| v != "0")
+            && std::env::var_os("PATH").is_some_and(|p| std::env::split_paths(&p).any(|d| d.join("rtk").is_file()))
+    })
+}
+
+/// Decide si se usa lo que devolvió `rtk rewrite`. Los códigos 0 y 3 traen reescritura (3 = «pide permiso
+/// al anfitrión»: aquí el permiso ya lo dio /auto o la persona). Nunca `rtk read`: filtra el contenido de los
+/// archivos y el modelo necesita el texto exacto para editarlos.
+fn aceptar_reescritura(original: &str, codigo: Option<i32>, salida: &str) -> Option<String> {
+    let r = salida.trim();
+    if !matches!(codigo, Some(0) | Some(3)) || r.is_empty() || r == original.trim() || r.contains("rtk read") {
+        return None;
+    }
+    Some(r.to_string())
+}
+
+/// Como el hook de RTK para Claude Code: `git status` → `rtk git status`, `ls -la` → `rtk ls -la`,
+/// `pip install x` → `rtk pip install x`. La salida llega compacta al modelo y gasta menos contexto. Sin
+/// RTK, sin equivalente o si RTK tarda o falla, el comando va tal cual.
+async fn con_rtk(command: &str) -> Option<String> {
+    if !hay_rtk() {
+        return None;
+    }
+    let mut c = tokio::process::Command::new("rtk");
+    c.arg("rewrite").arg(command).stdin(std::process::Stdio::null()).kill_on_drop(true);
+    let out = tokio::time::timeout(Duration::from_secs(3), c.output()).await.ok()?.ok()?;
+    aceptar_reescritura(command, out.status.code(), &String::from_utf8_lossy(&out.stdout))
+}
+
 pub fn shell_name() -> &'static str {
     if cfg!(windows) { "PowerShell" } else { "sh" }
 }
@@ -158,6 +192,8 @@ async fn shell(args: &Value) -> (String, bool) {
         return (format!("La carpeta {} no existe. Créala antes (p. ej. con mkdir) o usa otra.", cwd.display()), true);
     }
     let secs = args["timeout"].as_u64().unwrap_or(120).clamp(1, 900);
+    let rtk = con_rtk(command).await;
+    let command = rtk.as_deref().unwrap_or(command);
     let mut cmd = if cfg!(windows) {
         let mut c = tokio::process::Command::new("powershell");
         c.args(["-NoProfile", "-NonInteractive", "-Command", command]);
@@ -186,7 +222,8 @@ async fn shell(args: &Value) -> (String, bool) {
             }
             let code = out.status.code().map(|c| c.to_string()).unwrap_or_else(|| "señal".into());
             let ok = out.status.success();
-            (format!("código de salida: {code}\n{}", clip(&text)), !ok)
+            let via = if rtk.is_some() { format!(" (salida compactada: {command})") } else { String::new() };
+            (format!("código de salida: {code}{via}\n{}", clip(&text)), !ok)
         }
     }
 }
@@ -212,6 +249,20 @@ pub fn preview(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reescritura_de_rtk() {
+        assert_eq!(aceptar_reescritura("git status", Some(3), "rtk git status\n").as_deref(), Some("rtk git status"));
+        assert_eq!(aceptar_reescritura("ls -la", Some(0), "rtk ls -la").as_deref(), Some("rtk ls -la"));
+        // Sin equivalente, denegado o sin salida: tal cual.
+        assert_eq!(aceptar_reescritura("npm install three", Some(1), ""), None);
+        assert_eq!(aceptar_reescritura("rm -rf x", Some(2), "bloqueado"), None);
+        assert_eq!(aceptar_reescritura("git status", None, "rtk git status"), None);
+        assert_eq!(aceptar_reescritura("rtk git status", Some(0), "rtk git status"), None);
+        // Leer archivos, nunca filtrado.
+        assert_eq!(aceptar_reescritura("cat robo3d/index.html", Some(3), "rtk read robo3d/index.html"), None);
+        assert_eq!(aceptar_reescritura("git diff && cat a.js", Some(3), "rtk git diff && rtk read a.js"), None);
+    }
 
     #[tokio::test]
     async fn shell_write_read_list() {
