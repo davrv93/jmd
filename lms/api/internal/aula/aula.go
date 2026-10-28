@@ -97,6 +97,10 @@ func (a *Aula) argsSinFirma(userID string) []string {
 	mem := a.memoria()
 	args := []string{
 		"run", "-d", "--name", Nombre(userID), "--hostname", "aula",
+		// --init: el PID 1 es «sleep», que no recoge a los hijos huérfanos; cada «bun» que el agente deja en
+		// segundo plano y muere quedaba zombi, contaba en --pids-limit y a los 96 «docker exec» fallaba con
+		// «unable to spawn stage-2: Resource temporarily unavailable» (27-10-2026, 91 zombis en un aula).
+		"--init",
 		// pids: asistente + «bun install» + Bun sirviendo llegaron a 24 (medido): 96 sobra.
 		"--memory", mem, "--memory-swap", mem, "--cpus", "0.5", "--pids-limit", "96",
 		"--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--read-only",

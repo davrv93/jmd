@@ -20,7 +20,7 @@ func TestArgsAulaClaveDeJmd(t *testing.T) {
 func TestArgsAula(t *testing.T) {
 	a := &Aula{}
 	j := strings.Join(a.Args("u1"), " ")
-	for _, quiere := range []string{"--memory 384m", "--memory-swap 384m", "--pids-limit 96", "--read-only", "--cap-drop ALL", "--network aula_net", "--user 10001:10001", "jmd/aula:latest sleep"} {
+	for _, quiere := range []string{"--memory 384m", "--memory-swap 384m", "--pids-limit 96", "--init", "--read-only", "--cap-drop ALL", "--network aula_net", "--user 10001:10001", "jmd/aula:latest sleep"} {
 		if !strings.Contains(j, quiere) {
 			t.Errorf("falta %q en %s", quiere, j)
 		}
