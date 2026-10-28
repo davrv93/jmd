@@ -20,7 +20,7 @@ func TestArgsAulaClaveDeJmd(t *testing.T) {
 func TestArgsAula(t *testing.T) {
 	a := &Aula{}
 	j := strings.Join(a.Args("u1"), " ")
-	for _, quiere := range []string{"--memory 384m", "--memory-swap 384m", "--pids-limit 96", "--init", "--read-only", "--cap-drop ALL", "--network aula_net", "--user 10001:10001", "jmd/aula:latest sleep"} {
+	for _, quiere := range []string{"--memory 384m", "--memory-swap 384m", "--pids-limit 256", "--init", "--read-only", "--cap-drop ALL", "--network aula_net", "--user 10001:10001", "jmd/aula:latest sleep"} {
 		if !strings.Contains(j, quiere) {
 			t.Errorf("falta %q en %s", quiere, j)
 		}
@@ -110,5 +110,44 @@ func TestCrearRenuevaImagenVieja(t *testing.T) {
 	corriendo, llamadas = false, nil
 	if _, _ = a.Crear(ctx, "u1"); !strings.Contains(strings.Join(llamadas, ","), "start") {
 		t.Fatalf("parada con la imagen al día solo arranca: %v", llamadas)
+	}
+}
+
+// Version: la carpeta va como argumento ($1), nunca dentro del script; se saltan cachés y logs.
+func TestVersionDir(t *testing.T) {
+	var vistos [][]string
+	a := &Aula{}
+	a.run = func(_ context.Context, args ...string) (string, error) {
+		vistos = append(vistos, args)
+		return "abc123def456.aaaaaa.bbbbbb\n", nil
+	}
+	ctx := context.Background()
+	v, err := a.Version(ctx, "curso-x", "veterinaria")
+	if err != nil || v != "abc123def456.aaaaaa.bbbbbb" {
+		t.Fatalf("version: %q %v", v, err)
+	}
+	args := vistos[0]
+	if args[0] != "exec" || args[1] != "curso-x" || args[len(args)-2] != "--" || args[len(args)-1] != "veterinaria" {
+		t.Errorf("argumentos: %v", args)
+	}
+	script := args[len(args)-3]
+	if strings.Contains(script, "veterinaria") {
+		t.Errorf("la carpeta no va dentro del script")
+	}
+	for _, quiere := range []string{".bun-cache", ".cache", ".npm", "node_modules", ".git", "__pycache__", "'*.log'", "-prune"} {
+		if !strings.Contains(script, quiere) {
+			t.Errorf("el script debe saltarse %s", quiere)
+		}
+	}
+	if _, err := a.Version(ctx, "curso-x", ""); err != nil || vistos[1][len(vistos[1])-1] != "" {
+		t.Errorf("sin carpeta = todo /trabajo: %v %v", err, vistos[1])
+	}
+	for _, mala := range []string{"..", ".", "a/b", "../etc", "a b", "$(id)", "x;y", strings.Repeat("a", 200)} {
+		if _, err := a.Version(ctx, "curso-x", mala); !errors.Is(err, ErrDir) {
+			t.Errorf("%q debe rechazarse: %v", mala, err)
+		}
+	}
+	if len(vistos) != 2 {
+		t.Errorf("una carpeta mala no llega a ejecutar nada: %d", len(vistos))
 	}
 }

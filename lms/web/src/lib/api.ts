@@ -439,7 +439,8 @@ export const api = {
   liveEvento: (lesson: string, tipo: "terminal" | "agente" | "visor" | "error", detalle = "") =>
     req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/evento`, { tipo, detalle }),
   vistaProyectos: () => req<{ ruta: string; nombre: string; mod: number }[]>("GET", "/api/v1/vista/proyectos"),
-  vistaVersion: () => req<{ version: string; t: string }>("GET", "/api/v1/vista/version"),
+  // dir: carpeta (un segmento) del proyecto que se mira; vacío = todo /trabajo.
+  vistaVersion: (dir = "") => req<{ version: string; t: string }>("GET", "/api/v1/vista/version" + (dir ? `?dir=${encodeURIComponent(dir)}` : "")),
   liveEvidencia: (lesson: string, escena: string, tipo: "microfono" | "flyer" | "hallazgo" | "captura", detalle = "") =>
     req<{ ok: boolean }>("POST", `/api/v1/live/${encodeURIComponent(lesson)}/evidencia`, { escena, tipo, detalle }),
   liveLogre: (lesson: string, escena: string, hecho: boolean) =>

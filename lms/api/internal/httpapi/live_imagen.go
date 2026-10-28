@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/davrv93/jmd/lms/api/internal/aula"
 )
 
 // liveImagen: POST /api/v1/live/{lesson}/imagen {"prompt":"…","orientacion":"horizontal|cuadrado|vertical"}.
@@ -28,6 +30,7 @@ func (s *Server) liveImagen(w http.ResponseWriter, r *http.Request, p *Principal
 		Base        string `json:"base"`      // data:image/…;base64,… de la imagen base; con ella la variación la hace OpenRouter
 		Cambio      string `json:"cambio"`    // lo único que debe cambiar respecto a la base (en español)
 		ConTexto    bool   `json:"con_texto"` // el cambio es escribir este texto sobre la base (flyer terminado)
+		Guardar     bool   `json:"guardar"`   // además se copia al aula en /trabajo/robo3d/imagenes/
 	}
 	// la imagen base en base64 pasa del límite general de readJSON
 	r.Body = http.MaxBytesReader(w, r.Body, 8<<20)
@@ -106,10 +109,36 @@ func (s *Server) liveImagen(w http.ResponseWriter, r *http.Request, p *Principal
 	if ct == "" {
 		ct = "image/jpeg"
 	}
+	if in.Guardar && s.Aula != nil {
+		if ruta := s.guardarImagenAula(r.Context(), p.ID, ct, datos); ruta != "" {
+			w.Header().Set("X-Guardada", ruta)
+		}
+	}
 	w.Header().Set("Content-Type", ct)
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(200)
 	_, _ = w.Write(datos)
+}
+
+// guardarImagenAula copia la imagen a /trabajo/robo3d/imagenes/imagen-<n>.<ext> del alumno y devuelve la
+// ruta relativa a /trabajo (vacía si no se pudo: la imagen igual se muestra en la escena).
+func (s *Server) guardarImagenAula(ctx context.Context, userID, ct string, datos []byte) string {
+	ext := "jpg"
+	if strings.Contains(ct, "png") {
+		ext = "png"
+	} else if strings.Contains(ct, "webp") {
+		ext = "webp"
+	}
+	if _, err := s.Aula.Crear(ctx, userID); err != nil {
+		return ""
+	}
+	script := `d=/trabajo/robo3d/imagenes; mkdir -p "$d" && n=1; while [ -e "$d/imagen-$n.` + ext + `" ]; do n=$((n+1)); done; ` +
+		`cat > "$d/imagen-$n.` + ext + `" && echo "robo3d/imagenes/imagen-$n.` + ext + `"`
+	out, err := s.Aula.ExecStdin(ctx, aula.Nombre(userID), script, datos)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
 }
 
 // liveImagenVariacion: la variación se hace SOBRE la imagen base con un modelo de edición de imágenes vía

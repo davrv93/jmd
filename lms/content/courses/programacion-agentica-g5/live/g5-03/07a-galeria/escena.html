@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E07 · Galería: los prompts del grupo</title>
+<!--
+  Cierre: cada alumno publica su prompt (o su mejor frase, hasta 200 caracteres) en el muro del grupo
+  (POST/GET /live/<lección>/muro, escena 07a-galeria) y lee los de los demás. El muro se refresca cada 5 s.
+  El borrador sale del laboratorio (localStorage g5-03-prompt-robot / g5-03-prompt-mejora).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/laboratorio.css">
+<script src="../../comun/laboratorio.js"></script>
+<style id="esc-propio">
+.esc-titulo { font-size: 1.8em; }
+.esc-sub { font-size: .9em; }
+.gl { font-size: .78em; display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 1.2em; align-items: start; }
+.gl-fuente { display: flex; gap: .4em; flex-wrap: wrap; margin-bottom: .5em; }
+.gl-muro { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15em, 1fr)); gap: .7em; }
+.gl-muro li { background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .7em .85em; box-shadow: var(--card-shadow); display: grid; gap: .35em; animation: esc-entra .4s ease-out both; }
+.gl-muro li.mia { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--s1)); }
+.gl-muro li b { font-size: .9em; color: var(--accent); }
+.gl-muro li p { margin: 0; font-size: .95em; line-height: 1.4; }
+.gl-vacio { color: var(--muted); }
+.gl-preg { margin: 0; padding-left: 1.2em; display: grid; gap: .3em; font-size: .92em; }
+@media (max-width: 900px) { .gl { grid-template-columns: 1fr; font-size: .92em; } }
+@media (max-width: 600px) { .gl { font-size: 1em; } .esc-titulo { font-size: 1.55em; } body.lb-scroll .esc { padding: 12px 16px 16px; } }
+</style>
+</head>
+<body class="lb-scroll">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 742 L168 690 L236 728 L296 654"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="742" r="3.5"/><circle class="eg" cx="168" cy="690" r="4.5"/><circle class="e" cx="236" cy="728" r="3"/><circle class="eo" cx="296" cy="654" r="5"/>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/>
+    <circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+  </g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Grupo 5 · E07</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Galería: <em>los prompts</em> del grupo</h1>
+      <p class="esc-sub a-in" style="--d:.1s">Mismo encargo, prompts distintos, robots distintos. Comparte el tuyo y lee los demás: ahí se aprende el criterio.</p>
+    </div>
+    <div class="gl">
+      <div class="lb-col">
+        <section class="lb-caja lb-editor">
+          <label class="lb-lab" for="gl-txt">Tu prompt o su mejor frase <small id="gl-cuenta">0/200</small></label>
+          <div class="gl-fuente">
+            <button type="button" class="lb-btn sec" data-k="g5-03-prompt-robot">Traer mi prompt del robot</button>
+            <button type="button" class="lb-btn sec" data-k="g5-03-prompt-mejora">Traer el de mejora</button>
+          </div>
+          <textarea id="gl-txt" rows="5" maxlength="200" placeholder="Si es largo, quédate con la frase que más cambió el resultado."></textarea>
+          <div class="lb-herr">
+            <button type="button" class="lb-btn" id="gl-pub">Publicar en el muro</button>
+            <button type="button" class="lb-btn sec" id="gl-quitar" hidden>Quitar el mío</button>
+          </div>
+          <p class="lb-estado" id="gl-est" aria-live="polite"></p>
+        </section>
+        <section class="lb-caja">
+          <h2>Al leer los demás</h2>
+          <ol class="gl-preg">
+            <li>¿Qué hueco llenó distinto que tú (motor, animación, cómo comprobar)?</li>
+            <li>¿Qué frase te robarías para tu próximo prompt?</li>
+            <li>¿Cuál dice mejor cómo saber que funciona?</li>
+          </ol>
+        </section>
+      </div>
+      <section>
+        <h2 class="lb-lab" style="margin:0 0 .5em;font-size:.8em;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">El muro <small id="gl-n"></small></h2>
+        <ul class="gl-muro" id="gl-muro"><li class="gl-vacio">Cargando el muro…</li></ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">El muro dura lo que dura la clase · Publicar otra vez reemplaza tu entrada</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var ESCENA = "07a-galeria", txt = $("gl-txt"), est = $("gl-est"), firma = "";
+  function recortar(s) { s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > 200 ? s.slice(0, 199) + "…" : s; }
+  function contar() { $("gl-cuenta").textContent = txt.value.length + "/200"; }
+  txt.addEventListener("input", contar);
+  txt.value = recortar(Lab.leer("g5-03-prompt-robot") || ""); contar();
+  document.querySelectorAll(".gl-fuente button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var v = Lab.leer(b.dataset.k);
+      if (!v) { est.textContent = "No encontré ese prompt en este navegador: escríbelo aquí."; return; }
+      txt.value = recortar(v); contar(); est.textContent = txt.value.length >= 200 ? "Era largo: lo recorté. Quédate con lo mejor." : "";
+    });
+  });
+  function pintar(lista) {
+    var f = JSON.stringify(lista); if (f === firma) return; firma = f;
+    $("gl-n").textContent = lista.length ? "· " + lista.length + (lista.length === 1 ? " prompt" : " prompts") : "";
+    $("gl-quitar").hidden = !lista.some(function (e) { return e.mia; });
+    $("gl-muro").innerHTML = lista.length ? lista.map(function (e) {
+      return '<li' + (e.mia ? ' class="mia"' : '') + '><b>' + Lab.esc(e.nombre) + (e.mia ? " · tú" : "") + '</b><p>' + Lab.esc(e.texto) + '</p></li>';
+    }).join("") : '<li class="gl-vacio">Aún nadie publicó. ¡Sé el primero!</li>';
+  }
+  function cargar() { if (document.hidden) return; Lab.muro.leer(ESCENA).then(pintar, function () { if (!firma) $("gl-muro").innerHTML = '<li class="gl-vacio">El muro no está disponible ahora.</li>'; }); }
+  function publicar(texto) {
+    $("gl-pub").disabled = true;
+    return Lab.muro.publicar(ESCENA, texto).then(function (l) { pintar(l); est.textContent = texto ? "¡Publicado! Mira qué hicieron los demás." : "Quitado del muro."; },
+      function (e) { est.textContent = Lab.mensaje(e, "publicar"); }).then(function () { $("gl-pub").disabled = false; });
+  }
+  $("gl-pub").addEventListener("click", function () {
+    var t = recortar(txt.value);
+    if (Lab.palabras(t) < 4) { est.textContent = "Escribe al menos una frase completa."; return; }
+    publicar(t);
+  });
+  $("gl-quitar").addEventListener("click", function () { publicar(""); });
+  cargar(); setInterval(cargar, 5000);
+})();
+</script>
+</body>
+</html>

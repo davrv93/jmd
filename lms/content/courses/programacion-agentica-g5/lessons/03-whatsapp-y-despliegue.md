@@ -4,6 +4,8 @@ starts_at: 2026-10-28T19:30:00-05:00
 title: "Grupo 5 · Clase 3 · Tu chatbot de WhatsApp: wireframe, prototipo, Lit, Bun + Elysia, PostgreSQL y pruebas"
 published: true
 objectives:
+  - id: g5-03-o6
+    title: "Escribir TU prompt (sin copiar) para que tu agente convierta tu Robo de la sesión 2 en un robot 3D, y que ese mismo robot conteste por WhatsApp"
   - id: g5-03-o1
     title: "Diseñar antes de programar: flujos con sus errores, wireframe en gris y prototipo navegable de la bandeja"
   - id: g5-03-o2
@@ -111,6 +113,30 @@ cycle:
     phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten tu aula abierta en el LMS y los dos teléfonos a mano (el de pruebas y otro que le escribe).
     check: Has visto la clase completa (o la grabación)
+  - id: robo3d
+    title: Tu Robo en 3D con tu prompt
+    tool: lms
+    phase: experiencia
+    description: "En el LIVE, escribe TU prompt (Three.js, p5.js, SVG o Canvas) para que tu agente construya tu Robo en 3D leyendo el asistente.json de la sesión 2. Califícalo y envíalo cuando esté «listo»."
+    check: "robo3d/index.html se abre en el Visor y muestra a tu Robo"
+  - id: mejora
+    title: "Mejora: voz, oído y ánimo"
+    tool: lms
+    phase: experimentacion
+    description: "Un segundo prompt tuyo: que el robot hable sus respuestas (/api/voz), te escuche (/api/stt o dictado), cambie según el «animo» y use tus colores de marca."
+    check: El robot del Visor responde con voz y su ánimo se nota
+  - id: imagen-voz
+    title: Imagen con FLUX y voz
+    tool: lms
+    phase: experimentacion
+    description: "Genera con FLUX el escenario de tu robot (queda en robo3d/imagenes/) y prueba el dictado y la voz del servidor."
+    check: Hay al menos una imagen en robo3d/imagenes/
+  - id: whatsapp
+    title: Tu Robo en WhatsApp
+    tool: lms
+    phase: experimentacion
+    description: "Vincula tu WhatsApp con el QR del LIVE y escribe tu prompt para que el mismo robot conteste por WhatsApp: avisa que es un bot, solo responde a quien le escribe y nunca inventa."
+    check: Le escribes a tu número desde otro celular y tu robot responde
   - id: plan
     title: Plan personalizado
     tool: jmd
@@ -168,6 +194,8 @@ cycle:
 ---
 
 ## Avance de la clase
+
+**En vivo:** tu Robo de la sesión 2 cobra vida en 3D con un prompt que escribes tú (lo califican reglas + IA y lo construye tu agente), y luego ese mismo robot contesta por WhatsApp desde tu número vinculado con Evolution Go. Sin comandos para copiar: hoy se entrena el criterio.
 
 Hoy construyes, dentro de tu aula, un chatbot que atiende por WhatsApp.
 Un cliente escribe al número de pruebas del equipo, el modelo «clase» le responde con los datos de tu negocio

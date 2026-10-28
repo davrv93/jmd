@@ -163,6 +163,23 @@ export const LiveAlumno = component$(
       avisarEscena(marco.value, props.estado);
     });
 
+    // La escena pide abrir el Visor en una ruta ({tipo:"abrir-visor", ruta:"robo3d/index.html"}): sesión 3 del G5.
+    // eslint-disable-next-line qwik/no-use-visible-task
+    useVisibleTask$(({ cleanup }) => {
+      const alRecibir = (e: MessageEvent) => {
+        if (e.origin !== location.origin || !marco.value || e.source !== marco.value.contentWindow) return;
+        const d = e.data;
+        if (!d || d.tipo !== "abrir-visor" || typeof d.ruta !== "string") return;
+        const ruta = d.ruta.replace(/^\/+/, "").slice(0, 200);
+        if (!/^[\w.\-/]+$/.test(ruta) || ruta.includes("..")) return;
+        rutaVisor.value = ruta;
+        proyVisor.manual = true;
+        abrirPestana("visor", false);
+      };
+      window.addEventListener("message", alRecibir);
+      cleanup(() => window.removeEventListener("message", alRecibir));
+    });
+
     // Latido: cada 15 s dice al instructor que sigo aquí y en qué escena (el servidor olvida a los de 40 s).
     // eslint-disable-next-line qwik/no-use-visible-task
     useVisibleTask$(({ track, cleanup }) => {

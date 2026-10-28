@@ -22,8 +22,9 @@ type aulaFalsa struct {
 	destino   string // host:puerto al que Dial conecta (un httptest)
 
 	// Skills montadas: contenedor → ruta (/trabajo/skills/<nombre>/SKILL.md) → contenido.
-	montadas map[string]map[string]string
-	execs    []string // todo lo que pasó por Exec (para comprobar «aula parar; aula iniciar», etc.)
+	montadas   map[string]map[string]string
+	execs      []string // todo lo que pasó por Exec (para comprobar «aula parar; aula iniciar», etc.)
+	dirVersion string   // última carpeta pedida a Version
 }
 
 func (a *aulaFalsa) Crear(_ context.Context, id string) (bool, error) {
@@ -102,7 +103,12 @@ func (a *aulaFalsa) Leer(_ context.Context, _, ruta string, _ int64) ([]byte, er
 	}
 	return nil, aula.ErrNoExiste
 }
-func (a *aulaFalsa) Version(context.Context, string) (string, error) { return "v1", nil }
+func (a *aulaFalsa) Version(_ context.Context, _, dir string) (string, error) {
+	a.mu.Lock()
+	a.dirVersion = dir
+	a.mu.Unlock()
+	return "v1", nil
+}
 func (a *aulaFalsa) Proyectos(context.Context, string) ([]aula.Proyecto, error) {
 	return []aula.Proyecto{{Ruta: "veterinaria/index.html", Nombre: "veterinaria", Mod: 2}, {Ruta: "osito/frontend/index.html", Nombre: "Mi asistente (Robo)", Mod: 1}}, nil
 }

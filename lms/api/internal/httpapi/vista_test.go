@@ -114,6 +114,27 @@ func TestVistaVersion(t *testing.T) {
 	}
 }
 
+// ?dir= acota la huella al proyecto que se mira; solo un segmento limpio.
+func TestVistaVersionDir(t *testing.T) {
+	f := &aulaFalsa{}
+	e, ana, _, idAna, _ := vistaEnv(t, f)
+	if r := e.call("GET", "/api/v1/vista/version?dir=veterinaria", ana, false, nil, ""); r.code != 200 || f.dirVersion != "veterinaria" {
+		t.Errorf("dir propia: %d %q %s", r.code, f.dirVersion, r.raw)
+	}
+	if r := e.call("GET", "/api/v1/vista/"+idAna+"/version?dir=mi-app_1.0", ana, false, nil, ""); r.code != 200 || f.dirVersion != "mi-app_1.0" {
+		t.Errorf("dir con sub: %d %q", r.code, f.dirVersion)
+	}
+	if r := e.call("GET", "/api/v1/vista/version", ana, false, nil, ""); r.code != 200 || f.dirVersion != "" {
+		t.Errorf("sin dir = todo /trabajo: %d %q", r.code, f.dirVersion)
+	}
+	for _, mala := range []string{"..", ".", "a/b", "a%2Fb", "%2E%2E", "a%20b", "x%3Brm", "%24%28id%29"} {
+		f.dirVersion = "sin-llamar"
+		if r := e.call("GET", "/api/v1/vista/version?dir="+mala, ana, false, nil, ""); r.code != 400 || f.dirVersion != "sin-llamar" {
+			t.Errorf("dir %q debe dar 400 sin llegar al aula: %d %q", mala, r.code, f.dirVersion)
+		}
+	}
+}
+
 func TestVistaApiReenvia(t *testing.T) {
 	asist := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/chat" || r.Method != "POST" {

@@ -4,6 +4,7 @@
 package aula
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -101,8 +102,9 @@ func (a *Aula) argsSinFirma(userID string) []string {
 		// segundo plano y muere quedaba zombi, contaba en --pids-limit y a los 96 «docker exec» fallaba con
 		// «unable to spawn stage-2: Resource temporarily unavailable» (27-10-2026, 91 zombis en un aula).
 		"--init",
-		// pids: asistente + «bun install» + Bun sirviendo llegaron a 24 (medido): 96 sobra.
-		"--memory", mem, "--memory-swap", mem, "--cpus", "0.5", "--pids-limit", "96",
+		// pids: asistente + «bun install» + Bun sirviendo llegaron a 24 (medido), pero en la clase 2 del G5 el agente
+		// con sus herramientas, el visor y la terminal tocaron el tope de 96. 256 deja aire; la memoria sigue topada.
+		"--memory", mem, "--memory-swap", mem, "--cpus", "0.5", "--pids-limit", "256",
 		"--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--read-only",
 		"--tmpfs", "/tmp:rw,exec,size=64m",
 		"--tmpfs", "/home/alumno:rw,size=32m,uid=10001,gid=10001",
@@ -239,6 +241,31 @@ func (a *Aula) ExecStdin(ctx context.Context, nombre, script string, stdin []byt
 	return strings.TrimSpace(string(out)), err
 }
 
+// ExecStream ejecuta un script de shell dentro del contenedor (en /trabajo), le pasa stdin y entrega la
+// salida (stdout y stderr juntos) línea a línea mientras corre. El tope lo pone ctx.
+func (a *Aula) ExecStream(ctx context.Context, nombre, script string, stdin []byte, linea func(string)) error {
+	cmd := exec.CommandContext(ctx, a.Runtime, "exec", "-i", "-w", "/trabajo", nombre, "sh", "-c", script)
+	cmd.Stdin = bytes.NewReader(stdin)
+	pr, pw := io.Pipe()
+	cmd.Stdout, cmd.Stderr = pw, pw
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	fin := make(chan error, 1)
+	go func() {
+		err := cmd.Wait()
+		_ = pw.Close()
+		fin <- err
+	}()
+	sc := bufio.NewScanner(pr)
+	sc.Buffer(make([]byte, 64<<10), 1<<20)
+	for sc.Scan() {
+		linea(sc.Text())
+	}
+	_, _ = io.Copy(io.Discard, pr) // una línea de más de 1 MB: se descarta el resto para no trabar al proceso
+	return <-fin
+}
+
 // Parar detiene el contenedor sin borrarlo: el volumen /trabajo se conserva.
 func (a *Aula) Parar(ctx context.Context, nombre string) error {
 	_, err := a.exec(ctx, "stop", "-t", "2", nombre)
@@ -337,13 +364,42 @@ func (a *Aula) Leer(ctx context.Context, nombre, ruta string, max int64) ([]byte
 	return out, nil
 }
 
-// Version es una huella corta del contenido de /trabajo (fechas y nombres), sin contar logs ni cachés.
-// Cambia cuando el alumno guarda un archivo: el visor la sondea para recargarse solo.
-func (a *Aula) Version(ctx context.Context, nombre string) (string, error) {
+// ErrDir: la carpeta pedida a Version no es un solo segmento limpio.
+var ErrDir = errors.New("carpeta no válida")
+
+// DirValido: un solo segmento de ruta con letras, dígitos, «.», «_» o «-»; nada de «/», «.» ni «..».
+func DirValido(dir string) bool {
+	if dir == "" || dir == "." || dir == ".." || len(dir) > 128 {
+		return false
+	}
+	for _, c := range dir {
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '.' || c == '_' || c == '-') {
+			return false
+		}
+	}
+	return true
+}
+
+// versionScript: «base.css.proy». base = huella de fechas, tamaños y nombres de los archivos de la
+// carpeta (sin .css); css = la de los .css (si solo cambia esta, el visor cambia las hojas sin recargar);
+// proy = la lista de index.html de /trabajo (cambia cuando aparece un proyecto nuevo, aunque se mire otro).
+// Se saltan logs, cachés y dependencias: escribir en .bun-cache no debe recargar la página.
+const versionScript = `cd /trabajo 2>/dev/null || exit 0; d=.; [ -n "$1" ] && d="./$1"
+l=$(find "$d" \( -name '*.log' -o -name __pycache__ -o -name .git -o -name node_modules -o -name .bun-cache -o -name .cache -o -name .npm \) -prune -o -type f -exec stat -c '%Y %s %n' {} + 2>/dev/null | sort)
+b=$(printf '%s\n' "$l" | grep -v '\.css$' | md5sum | cut -c1-12)
+c=$(printf '%s\n' "$l" | grep '\.css$' | md5sum | cut -c1-6)
+p=$(find . -maxdepth 3 \( -name node_modules -o -name .git -o -name .bun-cache -o -name .cache -o -name .npm \) -prune -o -name index.html -print 2>/dev/null | sort | md5sum | cut -c1-6)
+echo "$b.$c.$p"`
+
+// Version es una huella corta del contenido de /trabajo/<dir> (o de todo /trabajo si dir está vacío),
+// sin contar logs ni cachés. Cambia cuando el alumno guarda un archivo: el visor la sondea para refrescarse.
+func (a *Aula) Version(ctx context.Context, nombre, dir string) (string, error) {
+	if dir != "" && !DirValido(dir) {
+		return "", ErrDir
+	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	script := `find /trabajo \( -name '*.log' -o -name __pycache__ -o -name .git -o -name node_modules \) -prune -o -type f -exec stat -c '%Y %n' {} + 2>/dev/null | sort | md5sum | cut -c1-12`
-	out, err := a.exec(ctx, "exec", nombre, "sh", "-c", script)
+	out, err := a.exec(ctx, "exec", nombre, "sh", "-c", versionScript, "--", dir)
 	return strings.TrimSpace(out), err
 }
 

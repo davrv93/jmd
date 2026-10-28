@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E03 · Laboratorio: tu prompt construye tu Robo 3D</title>
+<!--
+  Corazón de la clase 3 del G5. El alumno ESCRIBE (o dicta) su propio prompt; no hay prompt para copiar ni
+  comandos. Se califica con POST /live/<lección>/prompt (reglas + IA) y, cuando está «listo», se envía a su
+  agente con POST /live/<lección>/agente (NDJSON). El agente deja /trabajo/robo3d/index.html y el Visor lo
+  muestra. Todo el laboratorio vive en ../../comun/laboratorio.js (también lo usa la escena de mejora).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/laboratorio.css">
+<script src="../../comun/laboratorio.js"></script>
+<style id="esc-propio">
+.esc-titulo { font-size: 1.75em; }
+.esc-sub { font-size: .9em; }
+@media (max-width: 600px) { .esc-titulo { font-size: 1.55em; } .esc-sub { font-size: .95em; } }
+</style>
+</head>
+<body class="lb-scroll">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 742 L168 690 L236 728 L296 654"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="742" r="3.5"/><circle class="eg" cx="168" cy="690" r="4.5"/><circle class="e" cx="236" cy="728" r="3"/><circle class="eo" cx="296" cy="654" r="5"/>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/>
+    <circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+  </g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 5 · E03</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Laboratorio: <em>tu prompt</em> construye tu Robo 3D</h1>
+      <p class="esc-sub a-in" style="--d:.1s">Tú decides qué pedir; la IA te califica; tu agente lo construye. Si no sabes explicarlo, el agente tampoco sabrá hacerlo.</p>
+    </div>
+    <div id="lab"></div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Cuando veas a tu Robo en el Visor (robo3d/index.html), pulsa «Lo logré» en el panel</span>
+  </footer>
+</div>
+
+<script>
+Lab.laboratorio(document.getElementById("lab"), {
+  tipo: "robot",
+  clave: "g5-03-prompt-robot",
+  contexto: true,
+  agente: true,
+  ruta: "robo3d/index.html",
+  patron: 'Haz un robot <span class="lb-hueco"><b>______</b><small>¿qué estilo?</small></span> con <span class="lb-hueco"><b>______</b><small>¿con qué se dibuja?</small></span> ' +
+    'que lea <span class="lb-hueco"><b>______</b><small>¿qué archivo?</small></span> y responda <span class="lb-hueco"><b>______</b><small>¿qué y cómo?</small></span>. ' +
+    'Guárdalo en <span class="lb-hueco"><b>______</b><small>¿qué carpeta?</small></span>. Que <span class="lb-hueco"><b>______</b><small>¿qué animación?</small></span>. ' +
+    'Comprueba que <span class="lb-hueco"><b>______</b><small>¿cómo sabrás que funciona?</small></span>.',
+  ojo: '<b>No hay prompt para copiar.</b> Empieza con algo como «haz un robot renderizado con Three.js que lea la personalidad que configuraste y las preguntas que ya tenías…» y sigue con TUS decisiones: cómo se ve, qué hace al abrir, qué pasa si alguien le escribe.',
+  ideasTitulo: "¿Con qué se dibuja?",
+  ideasNota: "solo te informa: elige tú y nómbralo en tu prompt",
+  ideas: [
+    { nombre: "Three.js", rec: true, pro: "3D de verdad: luces, sombras y una cámara que gira. El más vistoso." },
+    { nombre: "p5.js", pro: "Dibujo creativo con muy poco código; ideal si te gusta experimentar." },
+    { nombre: "SVG + CSS", pro: "Vectores nítidos y animaciones livianas; se ve perfecto en el celular." },
+    { nombre: "Canvas 2D", pro: "JavaScript puro, sin librerías: control total, pixel por pixel." }
+  ],
+  placeholder: "Haz un robot… (escribe o dicta con tus palabras)",
+  agenteNota: "trabaja solo dentro de tu aula, sin que copies nada",
+  exitoTitulo: "¡Tu Robo cobró vida!",
+  exitoNota: "¿Algo no te convence? Eso es tu siguiente prompt: lo afinas en la escena de <b>Mejora</b>."
+});
+</script>
+</body>
+</html>

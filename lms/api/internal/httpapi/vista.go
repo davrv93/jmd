@@ -152,7 +152,13 @@ func (s *Server) vistaVersion(w http.ResponseWriter, r *http.Request, p *Princip
 	if !s.aulaListo(w) {
 		return
 	}
-	v, err := s.Aula.Version(r.Context(), aula.Nombre(sub))
+	// ?dir=<carpeta>: la huella solo de ese proyecto (un segmento). Vacío = todo /trabajo.
+	dir := r.URL.Query().Get("dir")
+	if dir != "" && !aula.DirValido(dir) {
+		badRequest(w, "dir debe ser una sola carpeta (letras, números, . _ -)")
+		return
+	}
+	v, err := s.Aula.Version(r.Context(), aula.Nombre(sub), dir)
 	if err != nil {
 		writeJSON(w, 200, map[string]any{"version": "", "t": time.Now().UTC().Format(time.RFC3339)})
 		return
