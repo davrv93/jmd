@@ -34,6 +34,7 @@ export function montarAvatar(canvas, tipo = "osito", animoInicial = "neutral") {
     avatar: av,
     setAnimo: (a) => av.setAnimo(a),
     saludar: () => av.saludar && av.saludar(),
+    setPiel: (piel) => av.setPiel && av.setPiel(piel),
     detener() {
       vivo = false;
       removeEventListener("resize", alRedimensionar);

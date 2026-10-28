@@ -205,8 +205,17 @@ let manual = false;
 const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (quieto) animo("feliz");
 else for (const [a, ms] of [["feliz", 1200], ["pensando", 2900], ["sorprendido", 4400], ["feliz", 5800]]) setTimeout(() => { if (!manual) animo(a); }, ms);
-// Al elegir un estilo, el robot se sorprende y vuelve a sonreír.
-addEventListener("g5-estilo", () => { manual = true; animo("sorprendido"); setTimeout(() => animo("feliz"), 1400); });
+// Pieles del robot con los colores de cada estilo de s2-robo-estilos (estilo.css).
+const PIELES = {
+  neon:      { carcasa: 0x123d24, acento: 0x39ff88, visor: 0x020a05, ojo: 0x39ff88, rubor: 0xffd400 },
+  claro:     { carcasa: 0xf4f6fb, acento: 0x0a84ff, visor: 0x162040, ojo: 0x6fe3ff, rubor: 0x8fb8ff },
+  atardecer: { carcasa: 0xffd9e8, acento: 0xff3d8b, visor: 0x1a0b2e, ojo: 0xffb347, rubor: 0xff7ab6 },
+  cabina:    { carcasa: 0x0c2f4d, acento: 0x00b3ff, visor: 0x020b16, ojo: 0x5ff4ff, rubor: 0x5ff4ff },
+};
+function piel(op) { if (PIELES[op]) for (const av of avs) av.setPiel(PIELES[op]); }
+try { piel(localStorage.getItem("g5-02-estilo")); } catch (e) {}
+// Al elegir un estilo, el robot cambia de piel, se sorprende y vuelve a sonreír.
+addEventListener("g5-estilo", (e) => { manual = true; piel(e.detail); animo("sorprendido"); setTimeout(() => animo("feliz"), 1400); });
 // El panel del LIVE reenvía cada «estado» al iframe: aplica estado.parametro al robot.
 addEventListener("message", (e) => {
   if (e.origin !== location.origin || !e.data || e.data.tipo !== "estado") return;

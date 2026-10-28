@@ -505,6 +505,21 @@ export function crearRobot(scene) {
     },
   };
 
+  /** Cambia la piel: {carcasa, acento, visor, ojo, rubor} en hex numérico; lo que falte queda igual. */
+  api.setPiel = (piel = {}) => {
+    const pintar = (m, c) => {
+      if (c == null) return;
+      m.color.setHex(c);
+      if (m.emissive) m.emissive.setHex(c);
+    };
+    pintar(matCarcasa, piel.carcasa);
+    pintar(matAzul, piel.acento);
+    pintar(matVisor, piel.visor);
+    for (const m of [matOjo, matCorazon, matBoca]) pintar(m, piel.ojo);
+    for (const g of ojos) pintar(g.userData.halo.material, piel.ojo);
+    pintar(matRubor, piel.rubor);
+  };
+
   aplicarPose('neutral');
   return api;
 }
