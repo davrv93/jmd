@@ -73,7 +73,29 @@ func TestVistaSirveIndex(t *testing.T) {
 	}
 }
 
+func TestVistaRutaCarpetaYTrabajo(t *testing.T) {
+	casos := map[string]string{
+		"":                              "index.html",
+		"mesa-ayuda":                    "mesa-ayuda/index.html",
+		"trabajo/mesa-ayuda":            "mesa-ayuda/index.html",
+		"/trabajo/mesa-ayuda/public/":   "mesa-ayuda/public/index.html",
+		"trabajo":                       "index.html",
+		"mesa-ayuda/public/kanban.html": "mesa-ayuda/public/kanban.html",
+	}
+	for in, want := range casos {
+		if got, ok := vistaRuta(in); !ok || got != want {
+			t.Errorf("vistaRuta(%q) = %q, %v; quiero %q", in, got, ok, want)
+		}
+	}
+	if _, ok := vistaRuta("trabajo/../etc/passwd"); ok {
+		t.Error("«..» debe rechazarse")
+	}
+}
+
 func TestVistaInyectaConsola(t *testing.T) {
+	if got := string(inyectarConsola([]byte("<p>x</p>"))); !strings.Contains(got, `u.indexOf("/api/")===0?b+u:u`) {
+		t.Errorf("falta el reenvío de /api/ al visor: %s", got)
+	}
 	if got := string(inyectarConsola([]byte("<html><head></head><body></body></html>"))); strings.Count(got, "<script>") != 1 || strings.Index(got, "<script>") > strings.Index(got, "</head>") {
 		t.Errorf("antes de </head>: %s", got)
 	}

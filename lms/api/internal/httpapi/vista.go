@@ -35,8 +35,10 @@ var mimeVista = map[string]string{
 const cspVista = "default-src 'self' https://esm.sh; script-src 'self' 'unsafe-inline' https://esm.sh; " +
 	"style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'self'"
 
-// scriptConsola avisa al panel de los errores de la página (T-4.6). Solo se inserta en HTML.
-const scriptConsola = `<script>window.addEventListener("error",function(e){parent.postMessage({tipo:"consola",nivel:"error",mensaje:String(e.message),archivo:e.filename,linea:e.lineno},location.origin)});window.addEventListener("unhandledrejection",function(e){parent.postMessage({tipo:"consola",nivel:"error",mensaje:String(e.reason)},location.origin)});</script>`
+// scriptConsola avisa al panel de los errores de la página (T-4.6) y lleva las llamadas a «/api/…» (fetch,
+// XMLHttpRequest, EventSource) a «/vista/<tú>/api/…»: los agentes escriben fetch("/api/x") como en localhost y,
+// sin esto, en el visor esa llamada cae en el LMS y no en el puerto 8766 del aula. Solo se inserta en HTML.
+const scriptConsola = `<script>(function(){var b=location.pathname.split("/").slice(0,3).join("/"),o=location.origin;function f(u){if(typeof u!=="string")return u;if(u.indexOf(o+"/api/")===0)u=u.slice(o.length);return u.indexOf("/api/")===0?b+u:u}var F=window.fetch;if(F)window.fetch=function(i,c){if(typeof i==="string")i=f(i);else if(i&&i.url&&i.url.indexOf(o+"/api/")===0)i=new Request(b+i.url.slice(o.length),i);return F.call(this,i,c)};var X=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=f(u);return X.apply(this,arguments)};var E=window.EventSource;if(E){window.EventSource=function(u,c){return new E(f(u),c)};window.EventSource.prototype=E.prototype}})();window.addEventListener("error",function(e){parent.postMessage({tipo:"consola",nivel:"error",mensaje:String(e.message),archivo:e.filename,linea:e.lineno},location.origin)});window.addEventListener("unhandledrejection",function(e){parent.postMessage({tipo:"consola",nivel:"error",mensaje:String(e.reason)},location.origin)});</script>`
 
 // inyectarConsola pone scriptConsola antes de </head>, o al inicio si no hay cabecera.
 func inyectarConsola(html []byte) []byte {
@@ -56,10 +58,18 @@ func (s *Server) vistaAcceso(w http.ResponseWriter, r *http.Request, p *Principa
 	return true
 }
 
-// vistaRuta normaliza la ruta pedida. Vacía o terminada en / es index.html. ok=false si es peligrosa.
+// vistaRuta normaliza la ruta pedida. Vacía, terminada en / o sin extensión (una carpeta) es su index.html;
+// un «trabajo/» al inicio sobra porque el visor ya parte de /trabajo. ok=false si es peligrosa.
 func vistaRuta(raw string) (string, bool) {
 	if strings.ContainsRune(raw, 0) || strings.Contains(raw, "..") {
 		return "", false
+	}
+	raw = strings.TrimPrefix(strings.TrimPrefix(raw, "/"), "trabajo/")
+	if raw == "trabajo" {
+		raw = ""
+	}
+	if raw != "" && !strings.HasSuffix(raw, "/") && path.Ext(raw) == "" {
+		raw += "/"
 	}
 	if raw == "" || strings.HasSuffix(raw, "/") {
 		raw += "index.html"
