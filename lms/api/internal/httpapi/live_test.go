@@ -195,7 +195,7 @@ func newEnvEscenas(t *testing.T) *env {
 	if err := db.CreateUser(t.Context(), &store.User{Email: "profe@x.test", Name: "Profe", PasswordHash: hash, Roles: []string{"admin", "instructor"}}); err != nil {
 		t.Fatal(err)
 	}
-	return &env{t: t, srv: srv, db: db}
+	return &env{t: t, srv: srv, db: db, s: s}
 }
 
 // La lista sale en orden con los defaults aplicados; el HTML sale con CSP y SAMEORIGIN; una escena
