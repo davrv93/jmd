@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Témpano IA</title>
+<!--
+  Juego de apertura de la clase 3. Cartel en estilo cómic punk (trama de puntos, contorno negro,
+  rojo, azul y amarillo) con el juego Témpano IA embebido del mismo origen (/tempano-ia/).
+  El nombre del alumno sale de /api/v1/me y se le sugiere al juego con ?n=; el alumno confirma.
+  Pensada para modo libre: cada alumno juega a su ritmo. El instructor puede proyectar el ranking.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+:root { --tinta: #111; --rojo: #e8322f; --azul: #1d4fd8; --amarillo: #ffd21a; --papel: #fff6dc; }
+body { background:
+    radial-gradient(var(--rojo) 18%, transparent 21%) 0 0 / 14px 14px,
+    radial-gradient(var(--rojo) 18%, transparent 21%) 7px 7px / 14px 14px,
+    var(--papel); color: var(--tinta); }
+.tp { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(300px, 34%) 1fr; gap: clamp(10px, 1.6vw, 28px); padding: clamp(10px, 1.6vw, 28px); }
+.tp-cartel { position: relative; display: flex; flex-direction: column; gap: clamp(8px, 1.2vh, 18px); min-height: 0;
+  background: var(--azul); border: 5px solid var(--tinta); box-shadow: 10px 10px 0 var(--tinta); padding: clamp(14px, 2vw, 32px);
+  clip-path: polygon(0 0, 100% 1.5%, 98.5% 100%, 1.5% 98%); color: #fff; overflow: hidden; }
+.tp-cartel::before { content: ""; position: absolute; inset: 0; background: radial-gradient(rgba(255,255,255,.18) 20%, transparent 23%) 0 0 / 10px 10px; pointer-events: none; }
+.tp-grupo { position: relative; align-self: flex-start; font: 800 clamp(11px, .9vw, 17px)/1 var(--mono); letter-spacing: .14em; background: var(--amarillo); color: var(--tinta);
+  border: 3px solid var(--tinta); padding: .45em .8em; transform: rotate(-2deg); }
+.tp-titulo { position: relative; margin: 0; font: italic 900 clamp(46px, 6.4vw, 128px)/.86 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: -.04em;
+  color: #fff; -webkit-text-stroke: 4px var(--tinta); paint-order: stroke fill; text-shadow: 6px 6px 0 var(--rojo), 11px 11px 0 var(--tinta); text-transform: uppercase; }
+.tp-titulo span { display: block; color: var(--amarillo); }
+.tp-grito { position: relative; display: flex; flex-wrap: wrap; gap: .3em; font: italic 900 clamp(20px, 2.3vw, 46px)/1 system-ui, sans-serif; text-transform: uppercase; }
+.tp-grito b { background: var(--amarillo); color: var(--tinta); border: 4px solid var(--tinta); padding: .12em .35em; box-shadow: 5px 5px 0 var(--tinta); }
+.tp-grito b:nth-child(1) { transform: rotate(-6deg); background: var(--rojo); color: #fff; }
+.tp-grito b:nth-child(2) { transform: rotate(3deg); }
+.tp-grito b:nth-child(3) { transform: rotate(-2deg); background: #fff; }
+.tp-reglas { position: relative; margin: 0; padding: 0; list-style: none; display: grid; gap: .5em; font-size: clamp(14px, 1.15vw, 23px); line-height: 1.25; }
+.tp-reglas li { background: #fff; color: var(--tinta); border: 3px solid var(--tinta); padding: .45em .7em; box-shadow: 4px 4px 0 var(--tinta); }
+.tp-reglas li:nth-child(even) { transform: rotate(.8deg); }
+.tp-reglas b { color: var(--rojo); }
+.tp-pie { position: relative; margin-top: auto; padding-right: clamp(100px, 10vw, 190px); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tp-btn { font: 800 clamp(13px, 1vw, 19px)/1 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .03em; cursor: pointer;
+  background: var(--amarillo); color: var(--tinta); border: 4px solid var(--tinta); padding: .6em .9em; box-shadow: 5px 5px 0 var(--tinta); }
+.tp-btn[aria-pressed="true"] { background: #fff; }
+.tp-btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--tinta); }
+.tp-url { font: 700 clamp(12px, .95vw, 18px)/1.2 var(--mono); color: #fff; }
+.tp-juego { position: relative; min-height: 0; border: 5px solid var(--tinta); box-shadow: 10px 10px 0 var(--tinta); background: #0b1d3a; overflow: hidden; }
+.tp-juego iframe { display: block; width: 100%; height: 100%; border: 0; }
+.tp-pum { position: absolute; z-index: 2; top: -6px; right: 18px; font: italic 900 clamp(18px, 1.8vw, 34px)/1 system-ui, sans-serif; background: var(--rojo); color: #fff;
+  border: 4px solid var(--tinta); padding: .2em .5em; transform: rotate(5deg); box-shadow: 4px 4px 0 var(--tinta); pointer-events: none; animation: pum 1.4s ease-in-out infinite; }
+@keyframes pum { 50% { transform: rotate(5deg) scale(1.08); } }
+.tp-osito { position: absolute; right: -18px; bottom: -14px; width: clamp(110px, 11vw, 210px); transform: rotate(-8deg); pointer-events: none; }
+@media (max-width: 900px), (max-aspect-ratio: 1/1) {
+  .tp { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .tp-reglas, .tp-osito, .tp-url { display: none; }
+  .tp-titulo { font-size: clamp(34px, 9vw, 64px); }
+  .tp-titulo span { display: inline; }
+  .tp-cartel { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .tp-pie { margin-top: 0; padding-right: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .tp-pum { animation: none; } }
+</style>
+</head>
+<body>
+<div class="tp">
+  <section class="tp-cartel" aria-label="Témpano IA">
+    <span class="tp-grupo">GRUPO 5 · CLASE 3 · APERTURA</span>
+    <h1 class="tp-titulo">Témpano <span>IA!</span></h1>
+    <div class="tp-grito" aria-label="Fight, go, let's go"><b>Fight!</b><b>Go!</b><b>Let's go!</b></div>
+    <ul class="tp-reglas">
+      <li><b>Empuja</b> a los otros ositos al agua. Gana el último en el hielo.</li>
+      <li>El témpano <b>se rompe</b>: no te quedes en el borde.</li>
+      <li>¿Te caíste? Responde la <b>pregunta de rescate</b> y vuelves.</li>
+      <li>Flechas o WASD + <b>Espacio</b> para embestir. En el celular, joystick y botón.</li>
+    </ul>
+    <div class="tp-pie">
+      <button type="button" class="tp-btn" id="tp-ver" aria-pressed="false">Ver ranking</button>
+      <span class="tp-url">jmd-learn.online/tempano-ia</span>
+    </div>
+    <svg class="tp-osito" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+      <g stroke="#111" stroke-width="4" stroke-linejoin="round">
+        <circle cx="34" cy="30" r="13" fill="#fff"/><circle cx="86" cy="30" r="13" fill="#fff"/>
+        <ellipse cx="60" cy="88" rx="38" ry="28" fill="#fff"/>
+        <circle cx="60" cy="52" r="32" fill="#fff"/>
+        <path d="M30 74 Q60 92 90 74 L92 84 Q60 102 28 84 Z" fill="#e8322f"/>
+      </g>
+      <circle cx="49" cy="50" r="4.5" fill="#111"/><circle cx="71" cy="50" r="4.5" fill="#111"/>
+      <ellipse cx="60" cy="62" rx="7" ry="5" fill="#111"/>
+      <path d="M40 40 l14 5 M80 40 l-14 5" stroke="#111" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+  </section>
+  <section class="tp-juego">
+    <span class="tp-pum" aria-hidden="true">¡PUM!</span>
+    <iframe id="tp-marco" title="Juego Témpano IA" src="/tempano-ia/" allow="autoplay"></iframe>
+  </section>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light (el cartel tiene paleta propia de cómic; solo se respeta para el CSS común). */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+/* Nombre del alumno para sugerirlo en el juego; si falla, el juego lo pide como siempre. */
+(function () {
+  var marco = document.getElementById("tp-marco"), ver = document.getElementById("tp-ver");
+  var juego = "/tempano-ia/";
+  fetch("/api/v1/me", { credentials: "same-origin", cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (me) {
+      if (me && me.name) { juego = "/tempano-ia/?n=" + encodeURIComponent(me.name); if (ver.getAttribute("aria-pressed") !== "true") marco.src = juego; }
+    })
+    .catch(function () {});
+  ver.addEventListener("click", function () {
+    var rk = ver.getAttribute("aria-pressed") !== "true";
+    ver.setAttribute("aria-pressed", String(rk));
+    ver.textContent = rk ? "Volver al juego" : "Ver ranking";
+    marco.src = rk ? "/tempano-ia/ranking" : juego;
+  });
+})();
+</script>
+</body>
+</html>
