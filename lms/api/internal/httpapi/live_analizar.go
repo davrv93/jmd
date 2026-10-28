@@ -11,9 +11,10 @@ import (
 	"time"
 )
 
-// liveAnalizar: POST /api/v1/live/{lesson}/analizar {"oido":"…","dicho":"…"}.
-// La escena de voz manda lo que entendió el reconocedor del navegador (oido) y, si el alumno la escribió,
-// la frase que quiso decir (dicho). El LMS le pide a un modelo vía OpenRouter (OPENROUTER_API_KEY; modelo
+// liveAnalizar: POST /api/v1/live/{lesson}/analizar {"oido":"…","dicho":"…","audio":"<WAV en base64>"}.
+// La escena de voz manda lo que entendió el reconocedor del navegador (oido), si el alumno la escribió,
+// la frase que quiso decir (dicho) y, si lo grabó, el audio (respaldo cuando el navegador no reconoce voz;
+// el modelo lo oye y transcribe). El LMS le pide a un modelo vía OpenRouter (OPENROUTER_API_KEY; modelo
 // LMS_ANALISIS_MODELO, por defecto google/gemini-2.5-flash) que corrija la transcripción, señale qué palabras
 // confundió, deduzca la intención y responda como Robo. Devuelve el JSON del modelo más "motor".
 func (s *Server) liveAnalizar(w http.ResponseWriter, r *http.Request, p *Principal) {
@@ -24,13 +25,18 @@ func (s *Server) liveAnalizar(w http.ResponseWriter, r *http.Request, p *Princip
 	var in struct {
 		Oido  string `json:"oido"`
 		Dicho string `json:"dicho"`
+		Audio string `json:"audio"`
 	}
-	if !readJSON(w, r, &in) {
+	// el audio (WAV de 16 kHz, hasta ~25 s) no cabe en el límite general de readJSON
+	r.Body = http.MaxBytesReader(w, r.Body, 2<<20)
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeErr(w, 400, "cuerpo_invalido", "no se pudo leer el pedido (¿audio de más de 25 s?)")
 		return
 	}
 	in.Oido, in.Dicho = strings.TrimSpace(in.Oido), strings.TrimSpace(in.Dicho)
-	if in.Oido == "" || len(in.Oido) > 600 || len(in.Dicho) > 600 {
-		writeErr(w, 400, "texto_invalido", "el texto dictado no puede estar vacío ni pasar de 600 caracteres")
+	in.Audio = strings.TrimPrefix(in.Audio, "data:audio/wav;base64,")
+	if (in.Oido == "" && in.Audio == "") || len(in.Oido) > 600 || len(in.Dicho) > 600 {
+		writeErr(w, 400, "texto_invalido", "manda el texto dictado (hasta 600 caracteres) o el audio grabado")
 		return
 	}
 	key := strings.TrimSpace(os.Getenv("OPENROUTER_API_KEY"))
@@ -50,19 +56,28 @@ func (s *Server) liveAnalizar(w http.ResponseWriter, r *http.Request, p *Princip
 		`"precision" (entero 0-100: qué tanto acertó el reconocedor), ` +
 		`"intencion" (qué pide la persona, en pocas palabras), ` +
 		`"respuesta" (lo que Robo le contestaría, una o dos frases cortas y amables; si falta un dato del negocio dilo sin inventarlo), ` +
-		`"consejo" (un consejo corto para dictar mejor la próxima vez). Sin texto fuera del JSON.`
+		`"consejo" (un consejo corto para dictar mejor la próxima vez). ` +
+		`Si recibes audio, agrega "transcripcion" (lo que tú oyes en el audio, palabra por palabra) y compara con lo que entendió el reconocedor; ` +
+		`si no hubo reconocedor, toma tu transcripción como lo entendido. Sin texto fuera del JSON.`
 	usuario := "Lo que entendió el reconocedor: «" + in.Oido + "»"
+	if in.Oido == "" {
+		usuario = "El reconocedor del navegador no entendió nada; solo hay audio."
+	}
 	if in.Dicho != "" {
 		usuario += "\nLo que la persona quiso decir: «" + in.Dicho + "»"
+	}
+	contenido := []map[string]any{{"type": "text", "text": usuario}}
+	if in.Audio != "" {
+		contenido = append(contenido, map[string]any{"type": "input_audio", "input_audio": map[string]string{"data": in.Audio, "format": "wav"}})
 	}
 	cuerpo, _ := json.Marshal(map[string]any{
 		"model":           modelo,
 		"temperature":     0.2,
 		"max_tokens":      600,
 		"response_format": map[string]string{"type": "json_object"},
-		"messages": []map[string]string{
+		"messages": []map[string]any{
 			{"role": "system", "content": sistema},
-			{"role": "user", "content": usuario},
+			{"role": "user", "content": contenido},
 		},
 	})
 	ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)

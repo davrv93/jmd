@@ -232,49 +232,89 @@
   $("vz-dicho").addEventListener("input", acierto); $("vz-oido").addEventListener("input", acierto);
   acierto();
 
-  /* ---- Dictado: pide el micrófono y usa el reconocedor del navegador (Chrome/Edge) ---- */
+  /* ---- Dictado: pide el micrófono, graba el audio (respaldo) y usa el reconocedor del navegador si existe ---- */
   var Reco = window.SpeechRecognition || window.webkitSpeechRecognition, reco = null, oyendo = false, base = "";
+  var flujo = null, grabadora = null, trozos = [], audioWav = "", tope = null;
   function estadoMic(t) { $("vz-mic-estado").textContent = t; }
   function pintarMic() { $("vz-mic").setAttribute("aria-pressed", oyendo ? "true" : "false"); $("vz-mic").querySelector("span").textContent = oyendo ? "Detener" : "Dictar"; }
   function marcar(n) { pasos["p" + n] = true; guardar("g5-02-voz-pasos", pasos); var b = document.querySelector('#vz-pasos [data-paso="' + n + '"]'); if (b) b.setAttribute("aria-pressed", "true"); }
-  function permiso() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.resolve();
-    return navigator.mediaDevices.getUserMedia({ audio: true }).then(function (st) { st.getTracks().forEach(function (t) { t.stop(); }); });
+  /* Audio grabado → WAV mono de 16 kHz en base64 (lo que acepta OpenRouter como input_audio). */
+  function aWav(blob) {
+    return blob.arrayBuffer().then(function (buf) {
+      var Ctx = window.AudioContext || window.webkitAudioContext, ctx = new Ctx();
+      return new Promise(function (ok, mal) { ctx.decodeAudioData(buf, ok, mal); }).then(function (ab) {
+        ctx.close();
+        var n = Math.ceil(ab.duration * 16000), off = new OfflineAudioContext(1, n, 16000), src = off.createBufferSource();
+        src.buffer = ab; src.connect(off.destination); src.start();
+        return off.startRendering();
+      });
+    }).then(function (ab) {
+      var d = ab.getChannelData(0), out = new DataView(new ArrayBuffer(44 + d.length * 2));
+      function txt(o, t) { for (var k = 0; k < t.length; k++) out.setUint8(o + k, t.charCodeAt(k)); }
+      txt(0, "RIFF"); out.setUint32(4, 36 + d.length * 2, true); txt(8, "WAVEfmt "); out.setUint32(16, 16, true);
+      out.setUint16(20, 1, true); out.setUint16(22, 1, true); out.setUint32(24, 16000, true); out.setUint32(28, 32000, true);
+      out.setUint16(32, 2, true); out.setUint16(34, 16, true); txt(36, "data"); out.setUint32(40, d.length * 2, true);
+      for (var k = 0; k < d.length; k++) { var v = Math.max(-1, Math.min(1, d[k])); out.setInt16(44 + k * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
+      var bytes = new Uint8Array(out.buffer), bin = "";
+      for (var k2 = 0; k2 < bytes.length; k2 += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(k2, k2 + 0x8000));
+      return btoa(bin);
+    });
+  }
+  function terminar() {
+    oyendo = false; pintarMic(); clearTimeout(tope);
+    if (reco) { try { reco.stop(); } catch (e) {} }
+    if (grabadora && grabadora.state !== "inactive") grabadora.stop();
   }
   function empezar() {
-    if (!Reco) { estadoMic("Este navegador no trae reconocedor de voz: abre la clase en Chrome o escribe la frase."); return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { estadoMic("Este navegador no da el micrófono: escribe la frase."); return; }
     estadoMic("Pidiendo permiso del micrófono…");
-    permiso().then(function () {
-      reco = new Reco(); reco.lang = "es-PE"; reco.interimResults = true; reco.continuous = true;
-      base = $("vz-oido").value.trim(); base = base ? base + " " : "";
-      reco.onresult = function (e) {
-        var fin = "", parcial = "";
-        for (var i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) fin += e.results[i][0].transcript; else parcial += e.results[i][0].transcript; }
-        if (fin) base += fin.trim() + " ";
-        $("vz-oido").value = (base + parcial).trim(); acierto();
-      };
-      reco.onerror = function (e) {
-        var m = { "not-allowed": "Permiso de micrófono denegado: actívalo en el candado de la barra de direcciones.", "no-speech": "No se oyó nada: acércate al micrófono y vuelve a intentar.", "network": "El reconocedor necesita internet (Chrome lo hace en la nube)." }[e.error];
-        estadoMic(m || "El reconocedor falló: " + e.error);
-      };
-      reco.onend = function () { oyendo = false; pintarMic(); if ($("vz-oido").value.trim()) { marcar(1); estadoMic("Listo. Revisa el texto y pulsa «Analizar con IA»."); } };
-      reco.start(); oyendo = true; pintarMic(); estadoMic("Te escucho… habla y pulsa «Detener» al terminar.");
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (st) {
+      flujo = st; trozos = []; audioWav = "";
+      if (window.MediaRecorder) {
+        grabadora = new MediaRecorder(st);
+        grabadora.ondataavailable = function (e) { if (e.data && e.data.size) trozos.push(e.data); };
+        grabadora.onstop = function () {
+          st.getTracks().forEach(function (t) { t.stop(); });
+          if (!trozos.length) return;
+          aWav(new Blob(trozos, { type: grabadora.mimeType })).then(function (b64) {
+            audioWav = b64; marcar(1);
+            estadoMic(($("vz-oido").value.trim() ? "Listo. " : "Tu navegador no transcribió, pero grabé tu voz: ") + "pulsa «Analizar con IA» (la IA también oye el audio).");
+          }, function () { estadoMic("No se pudo convertir el audio: escribe la frase y analiza."); });
+        };
+        grabadora.start();
+      }
+      if (Reco) {
+        reco = new Reco(); reco.lang = "es-PE"; reco.interimResults = true; reco.continuous = true;
+        base = $("vz-oido").value.trim(); base = base ? base + " " : "";
+        reco.onresult = function (e) {
+          var fin = "", parcial = "";
+          for (var i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) fin += e.results[i][0].transcript; else parcial += e.results[i][0].transcript; }
+          if (fin) base += fin.trim() + " ";
+          $("vz-oido").value = (base + parcial).trim(); acierto();
+        };
+        reco.onerror = function (e) { if (e.error !== "no-speech" && e.error !== "aborted") estadoMic("El reconocedor del navegador falló (" + e.error + "); sigo grabando: la IA oirá el audio."); };
+        reco.onend = function () { reco = null; };
+        try { reco.start(); } catch (e) { reco = null; }
+      }
+      oyendo = true; pintarMic(); tope = setTimeout(terminar, 25000);
+      estadoMic((Reco ? "Te escucho" : "Grabando (tu navegador no transcribe; lo hará la IA)") + "… pulsa «Detener» al terminar (máx. 25 s).");
     }, function () { estadoMic("Permiso de micrófono denegado: actívalo en el candado de la barra de direcciones y vuelve a pulsar «Dictar»."); });
   }
-  $("vz-mic").addEventListener("click", function () { if (oyendo && reco) reco.stop(); else empezar(); });
+  $("vz-mic").addEventListener("click", function () { if (oyendo) terminar(); else empezar(); });
 
   /* ---- Análisis con IA: POST /api/v1/live/<lección>/analizar ---- */
   function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function leccion() { var m = location.pathname.match(/\/live\/([^/]+)\//); return m ? m[1] : "g5-02"; }
   $("vz-analizar").addEventListener("click", function () {
     var b = this, oido = $("vz-oido").value.trim(), caja = $("vz-ia");
-    if (!oido) { $("vz-detalle").textContent = "Primero dicta o escribe la frase."; return; }
+    if (!oido && !audioWav) { $("vz-detalle").textContent = "Primero dicta o escribe la frase."; return; }
     b.disabled = true; b.textContent = "Analizando…"; marcar(2);
-    fetch("/api/v1/live/" + leccion() + "/analizar", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oido: oido, dicho: $("vz-dicho").value.trim() }) })
+    fetch("/api/v1/live/" + leccion() + "/analizar", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oido: oido, dicho: $("vz-dicho").value.trim(), audio: audioWav }) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error((j.error && (j.error.message || j.error)) || j.message || ("HTTP " + r.status)); return j; }); })
       .then(function (a) {
         var errs = (a.errores || []).map(function (x) { return '<span class="err">' + esc(x.oyo) + "</span> → <b>" + esc(x.era) + "</b>" + (x.por_que ? " <small>(" + esc(x.por_que) + ")</small>" : ""); }).join(" · ");
-        caja.innerHTML = "<p><b>Corregido:</b> " + esc(a.corregido) + (a.precision != null ? " <small>· acierto según la IA: " + esc(a.precision) + " %</small>" : "") + "</p>" +
+        if (a.transcripcion && !$("vz-oido").value.trim()) { $("vz-oido").value = a.transcripcion; acierto(); }
+        caja.innerHTML = (a.transcripcion ? "<p><b>La IA oyó:</b> " + esc(a.transcripcion) + "</p>" : "") + "<p><b>Corregido:</b> " + esc(a.corregido) + (a.precision != null ? " <small>· acierto según la IA: " + esc(a.precision) + " %</small>" : "") + "</p>" +
           (errs ? "<p><b>Confundió:</b> " + errs + "</p>" : "<p><b>Confundió:</b> nada, lo entendió bien.</p>") +
           "<p><b>Intención:</b> " + esc(a.intencion) + "</p><p><b>Robo responde:</b> " + esc(a.respuesta) + "</p>" +
           (a.consejo ? "<p><small>Consejo: " + esc(a.consejo) + " · " + esc(a.motor) + "</small></p>" : "");
