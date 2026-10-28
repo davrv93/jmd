@@ -198,11 +198,16 @@ func (s *Server) livePrompt(w http.ResponseWriter, r *http.Request, p *Principal
 // scriptPuenteOsito: en el G5 el Robo de la sesión 2 quedó en /trabajo/osito (el asistente del aula), no en
 // /trabajo/mi-robo con su negocio/asistente.json. Si falta asistente.json y existe osito, lo arma desde su
 // faq.json (mismo formato) y la personalidad de motores.py, para que la sesión 3 parta del robot del alumno
-// y no del ejemplo de la cafetería. Nunca pisa un asistente.json que ya exista.
-const scriptPuenteOsito = `[ -f /trabajo/negocio/asistente.json ] && exit 0
+// y no del ejemplo de la cafetería. Nunca pisa un asistente.json que ya exista. Si el aula no tiene ningún
+// Robo (el alumno no arrancó la sesión 2), «aula iniciar» le crea el base en /trabajo/osito y lo deja
+// corriendo en el 8766, así el robot 3D conversa; ese asistente.json lleva origen «osito-nuevo».
+const scriptPuenteOsito = `ORIGEN=osito
+if [ ! -d /trabajo/osito ] && [ ! -d /trabajo/mi-robo ]; then aula iniciar >/dev/null 2>&1 || true; ORIGEN=osito-nuevo; fi
+[ -f /trabajo/negocio/asistente.json ] && exit 0
 [ -f /trabajo/osito/backend/faq.json ] || exit 0
+export ORIGEN
 mkdir -p /trabajo/negocio && /opt/venv/bin/python - <<'PY'
-import json, pathlib, re
+import json, os, pathlib, re
 b = pathlib.Path("/trabajo/osito/backend")
 faq = json.loads((b / "faq.json").read_text(encoding="utf-8"))
 m = (b / "motores.py").read_text(encoding="utf-8") if (b / "motores.py").exists() else ""
@@ -216,7 +221,7 @@ a = {"nombre": nombre,
      "preguntas_frecuentes": faq if isinstance(faq, list) else [],
      "reglas": ["Si no sabes algo, dilo: no inventes."],
      "marca": {"primario": "#3b5bdb", "acento": "#ffd166"},
-     "origen": "osito"}
+     "origen": os.environ.get("ORIGEN", "osito")}
 t = pathlib.Path("/trabajo/negocio/asistente.json.tmp")
 t.write_text(json.dumps(a, ensure_ascii=False, indent=2), encoding="utf-8")
 t.replace("/trabajo/negocio/asistente.json")
@@ -238,6 +243,75 @@ func (s *Server) robotDe(ctx context.Context, nombre string) string {
 		return "/trabajo/mi-robo"
 	}
 	return "/trabajo/osito"
+}
+
+// scriptSubirRobo escribe el asistente.json que llega por stdin y arma con él /trabajo/mi-robo (skill
+// s2-robo-estilos, estilo neon); si arma, deja ese backend en el 8766 en lugar del osito base.
+const scriptSubirRobo = `mkdir -p /trabajo/negocio && cat > /trabajo/negocio/asistente.json.tmp &&
+mv /trabajo/negocio/asistente.json.tmp /trabajo/negocio/asistente.json && echo ESCRITO
+cd /trabajo/negocio && python3 /opt/skills-curso/s2-robo-estilos/motor/construir.py --asistente asistente.json --estilo neon >/tmp/construir-robo.log 2>&1 &&
+{ aula parar >/dev/null 2>&1; sh /trabajo/mi-robo/robo.sh reiniciar >/dev/null 2>&1; echo ARMADO; }
+true`
+
+// liveMiRoboSubir: POST /api/v1/live/{lesson}/mi-robo {"asistente": {...}}. En la sesión 2 la escena «Diseña tu
+// Robo» dejó el asistente.json en el navegador (localStorage g5-02-asistente) y casi nadie lo pasó al aula. Las
+// escenas de la sesión 3 lo mandan aquí: se escribe en negocio/asistente.json solo si no hay uno o si el que hay
+// lo armó el LMS desde osito (nunca pisa uno del alumno), se arma mi-robo y se responde como el GET.
+func (s *Server) liveMiRoboSubir(w http.ResponseWriter, r *http.Request, p *Principal) {
+	if s.liveLeccion(w, r, p) == nil || !s.aulaListo(w) {
+		return
+	}
+	var in struct {
+		Asistente map[string]any `json:"asistente"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil || in.Asistente == nil {
+		writeErr(w, 400, "asistente_invalido", "no llegó un asistente.json válido")
+		return
+	}
+	n, _ := in.Asistente["nombre"].(string)
+	if strings.TrimSpace(n) == "" || len([]rune(n)) > 60 {
+		writeErr(w, 400, "asistente_invalido", "a tu asistente le falta el nombre")
+		return
+	}
+	if f, ok := in.Asistente["preguntas_frecuentes"]; ok {
+		if _, lista := f.([]any); !lista {
+			writeErr(w, 400, "asistente_invalido", "preguntas_frecuentes debe ser una lista")
+			return
+		}
+	}
+	if _, err := s.Aula.Crear(r.Context(), p.ID); err != nil {
+		internal(w, err)
+		return
+	}
+	tocarAula(p.ID)
+	nombre := aula.Nombre(p.ID)
+	if raw, err := s.Aula.Leer(r.Context(), nombre, "negocio/asistente.json", 256<<10); err == nil {
+		var o struct {
+			Origen string `json:"origen"`
+		}
+		if json.Unmarshal(raw, &o) != nil || !strings.HasPrefix(o.Origen, "osito") {
+			writeErr(w, 409, "ya_tienes_asistente", "ya tienes tu asistente.json en el aula: no lo piso")
+			return
+		}
+	} else if !errors.Is(err, aula.ErrNoExiste) {
+		internal(w, err)
+		return
+	}
+	in.Asistente["origen"] = "sesion-2"
+	datos, _ := json.MarshalIndent(in.Asistente, "", "  ")
+	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
+	defer cancel()
+	out, err := s.Aula.ExecStdin(ctx, nombre, scriptSubirRobo, datos)
+	if err != nil || !strings.Contains(out, "ESCRITO") {
+		slog.Warn("subir robo", "aula", nombre, "err", err, "salida", strings.TrimSpace(out))
+		writeErr(w, 502, "no_se_guardo", "no se pudo guardar tu Robo en el aula; intenta otra vez")
+		return
+	}
+	if !strings.Contains(out, "ARMADO") {
+		slog.Info("subir robo: asistente.json guardado sin armar mi-robo", "aula", nombre)
+	}
+	s.liveMiRobo(w, r, p)
 }
 
 // liveMiRobo: GET /api/v1/live/{lesson}/mi-robo. Lo que el alumno configuró en la sesión 2.

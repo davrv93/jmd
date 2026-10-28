@@ -194,6 +194,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/analizar", s.authed(s.liveAnalizar))
 	// Sesión 3 del G5: prompt del alumno → reglas + Gemini → su agente en el aula (ver live_prompt.go y live_agente.go).
 	mux.Handle("GET /api/v1/live/{lesson}/mi-robo", s.authed(s.liveMiRobo))
+	mux.Handle("POST /api/v1/live/{lesson}/mi-robo", s.authed(s.liveMiRoboSubir))
 	mux.Handle("POST /api/v1/live/{lesson}/prompt", s.authed(s.livePrompt))
 	mux.Handle("POST /api/v1/live/{lesson}/agente", s.authed(s.liveAgentePost))
 	mux.Handle("GET /api/v1/live/{lesson}/agente", s.authed(s.liveAgenteGet))

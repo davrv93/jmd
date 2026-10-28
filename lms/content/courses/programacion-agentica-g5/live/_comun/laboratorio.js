@@ -13,7 +13,8 @@
 //   Lab.pedir(ruta, {method, body}) → Response (lanza Error con .status y .code)
 //   Lab.pedirJSON(ruta, opt) → objeto
 //   Lab.mensaje(err, que) → texto amable en español
-//   Lab.miRobo() → GET mi-robo (una sola vez por página)
+//   Lab.miRobo() → mi-robo (una sola vez por página); si el navegador guarda el Robo de la sesión 2
+//                  (localStorage g5-02-asistente), primero lo sube al aula con POST
 //   Lab.dictado({boton, campo, estado}) → 🎤 Web Speech (es-PE); respaldo: grabar → WAV 16 kHz → transcribir
 //   Lab.botonVoz(boton, () => texto, estado) → 🔊 voz del servidor; respaldo: speechSynthesis
 //   Lab.calificar(texto, tipo) → POST prompt
@@ -91,9 +92,20 @@
     return "No se pudo " + (que || "completar") + ". Vuelve a intentar.";
   }
 
+  // El Robo que el alumno diseñó en la sesión 2 quedó en este navegador; el LMS lo escribe en su aula si allí no hay
+  // uno suyo (409 = ya tiene el suyo: se usa ese).
+  function roboDelNavegador() {
+    var a = null;
+    try { a = JSON.parse(localStorage.getItem("g5-02-asistente") || "null"); } catch (e) { a = null; }
+    return a && typeof a === "object" && typeof a.nombre === "string" && a.nombre.trim() ? a : null;
+  }
   var miRoboP = null;
   function miRobo() {
-    if (!miRoboP) miRoboP = pedirJSON("/mi-robo").catch(function (e) { miRoboP = null; throw e; });
+    if (!miRoboP) {
+      var a = roboDelNavegador();
+      var subir = a ? pedirJSON("/mi-robo", { method: "POST", body: { asistente: a } }).catch(function () { return null; }) : Promise.resolve(null);
+      miRoboP = subir.then(function (d) { return d || pedirJSON("/mi-robo"); }).catch(function (e) { miRoboP = null; throw e; });
+    }
     return miRoboP;
   }
 
