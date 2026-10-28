@@ -46,7 +46,19 @@
 .vz-regla { text-align: center; padding: .4em 1em; border-radius: 1em; background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); font-size: 1.3em; font-weight: 800; letter-spacing: -.01em; }
 .vz-regla em { font-style: normal; color: var(--accent); }
 .esc-titulo { font-size: 1.6em; }
-.esc-svg { max-height: 30vh; }
+.esc-svg { max-height: 22vh; }
+.vz-mic-fila { display: flex; align-items: center; gap: .7em; min-width: 0; }
+.vz-mic { font: 800 .8em system-ui, sans-serif; display: inline-flex; align-items: center; gap: .5em; padding: .5em 1.2em; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; white-space: nowrap; }
+.vz-mic i { width: .7em; height: .7em; border-radius: 50%; background: currentColor; }
+.vz-mic[aria-pressed="true"] { background: #e5484d; border-color: #e5484d; color: #fff; }
+.vz-mic[aria-pressed="true"] i { animation: vz-latido 1s ease-in-out infinite; }
+@keyframes vz-latido { 50% { transform: scale(.55); opacity: .5; } }
+.vz-ia { font-size: .7em; display: grid; gap: .3em; padding: .5em .8em; border-radius: .7em; background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.vz-ia p { margin: 0; }
+.vz-ia b { color: var(--accent); }
+.vz-ia .err { color: #e5484d; text-decoration: line-through; }
+.vz-ia small { color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .vz-mic[aria-pressed="true"] i { animation: none; } }
 .vz-abajo { display: grid; grid-template-columns: 1fr 1.15fr; gap: 1.6vw; align-items: stretch; }
 .vz-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .6em 1em; box-shadow: var(--card-shadow); display: grid; gap: .45em; align-content: start; min-width: 0; }
 .vz-card h2 { margin: 0; font-size: .66em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -148,13 +160,18 @@
         <span class="vz-dato">En clase el visor va por <b>https</b>: Chrome da el micrófono sin problema. Los pasos se guardan en este navegador.</span>
       </div>
       <div class="vz-card a-in" style="--d:2.1s">
-        <h2>¿Cuánto acertó el reconocedor?</h2>
+        <h2>Dicta aquí y analízalo con IA</h2>
+        <div class="vz-mic-fila">
+          <button type="button" class="vz-mic" id="vz-mic" aria-pressed="false"><i aria-hidden="true"></i><span>Dictar</span></button>
+          <span class="vz-dato" id="vz-mic-estado">Pulsa «Dictar»: el navegador te pedirá permiso para usar el micrófono.</span>
+        </div>
         <div class="vz-acierto">
-          <label class="vz-campo">Lo que dijiste<input id="vz-dicho" placeholder="¿Cuánto cuesta el flyer?" autocomplete="off"></label>
-          <label class="vz-campo">Pega lo que entendió el reconocedor<input id="vz-oido" placeholder="cuanto cuesta el flayer" autocomplete="off"></label>
+          <label class="vz-campo">Lo que entendió el reconocedor (corrígelo si quieres)<input id="vz-oido" placeholder="cuanto cuesta el flayer" autocomplete="off"></label>
+          <label class="vz-campo">Lo que quisiste decir (opcional)<input id="vz-dicho" placeholder="¿Cuánto cuesta el flyer?" autocomplete="off"></label>
           <div class="vz-pct"><span id="vz-pct">—</span><small>palabras acertadas</small></div>
         </div>
-        <span class="vz-dato" id="vz-detalle">Escribe las dos frases: se compara palabra por palabra, sin tildes ni mayúsculas.</span>
+        <div class="vz-mic-fila"><button type="button" class="vz-btn" id="vz-analizar">Analizar con IA</button><span class="vz-dato" id="vz-detalle">Dicta o escribe una frase y pulsa «Analizar con IA».</span></div>
+        <div class="vz-ia" id="vz-ia" hidden aria-live="polite"></div>
       </div>
     </div>
   </main>
@@ -214,6 +231,58 @@
   if (prev.oido) $("vz-oido").value = prev.oido;
   $("vz-dicho").addEventListener("input", acierto); $("vz-oido").addEventListener("input", acierto);
   acierto();
+
+  /* ---- Dictado: pide el micrófono y usa el reconocedor del navegador (Chrome/Edge) ---- */
+  var Reco = window.SpeechRecognition || window.webkitSpeechRecognition, reco = null, oyendo = false, base = "";
+  function estadoMic(t) { $("vz-mic-estado").textContent = t; }
+  function pintarMic() { $("vz-mic").setAttribute("aria-pressed", oyendo ? "true" : "false"); $("vz-mic").querySelector("span").textContent = oyendo ? "Detener" : "Dictar"; }
+  function marcar(n) { pasos["p" + n] = true; guardar("g5-02-voz-pasos", pasos); var b = document.querySelector('#vz-pasos [data-paso="' + n + '"]'); if (b) b.setAttribute("aria-pressed", "true"); }
+  function permiso() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.resolve();
+    return navigator.mediaDevices.getUserMedia({ audio: true }).then(function (st) { st.getTracks().forEach(function (t) { t.stop(); }); });
+  }
+  function empezar() {
+    if (!Reco) { estadoMic("Este navegador no trae reconocedor de voz: abre la clase en Chrome o escribe la frase."); return; }
+    estadoMic("Pidiendo permiso del micrófono…");
+    permiso().then(function () {
+      reco = new Reco(); reco.lang = "es-PE"; reco.interimResults = true; reco.continuous = true;
+      base = $("vz-oido").value.trim(); base = base ? base + " " : "";
+      reco.onresult = function (e) {
+        var fin = "", parcial = "";
+        for (var i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) fin += e.results[i][0].transcript; else parcial += e.results[i][0].transcript; }
+        if (fin) base += fin.trim() + " ";
+        $("vz-oido").value = (base + parcial).trim(); acierto();
+      };
+      reco.onerror = function (e) {
+        var m = { "not-allowed": "Permiso de micrófono denegado: actívalo en el candado de la barra de direcciones.", "no-speech": "No se oyó nada: acércate al micrófono y vuelve a intentar.", "network": "El reconocedor necesita internet (Chrome lo hace en la nube)." }[e.error];
+        estadoMic(m || "El reconocedor falló: " + e.error);
+      };
+      reco.onend = function () { oyendo = false; pintarMic(); if ($("vz-oido").value.trim()) { marcar(1); estadoMic("Listo. Revisa el texto y pulsa «Analizar con IA»."); } };
+      reco.start(); oyendo = true; pintarMic(); estadoMic("Te escucho… habla y pulsa «Detener» al terminar.");
+    }, function () { estadoMic("Permiso de micrófono denegado: actívalo en el candado de la barra de direcciones y vuelve a pulsar «Dictar»."); });
+  }
+  $("vz-mic").addEventListener("click", function () { if (oyendo && reco) reco.stop(); else empezar(); });
+
+  /* ---- Análisis con IA: POST /api/v1/live/<lección>/analizar ---- */
+  function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function leccion() { var m = location.pathname.match(/\/live\/([^/]+)\//); return m ? m[1] : "g5-02"; }
+  $("vz-analizar").addEventListener("click", function () {
+    var b = this, oido = $("vz-oido").value.trim(), caja = $("vz-ia");
+    if (!oido) { $("vz-detalle").textContent = "Primero dicta o escribe la frase."; return; }
+    b.disabled = true; b.textContent = "Analizando…"; marcar(2);
+    fetch("/api/v1/live/" + leccion() + "/analizar", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oido: oido, dicho: $("vz-dicho").value.trim() }) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error((j.error && (j.error.message || j.error)) || j.message || ("HTTP " + r.status)); return j; }); })
+      .then(function (a) {
+        var errs = (a.errores || []).map(function (x) { return '<span class="err">' + esc(x.oyo) + "</span> → <b>" + esc(x.era) + "</b>" + (x.por_que ? " <small>(" + esc(x.por_que) + ")</small>" : ""); }).join(" · ");
+        caja.innerHTML = "<p><b>Corregido:</b> " + esc(a.corregido) + (a.precision != null ? " <small>· acierto según la IA: " + esc(a.precision) + " %</small>" : "") + "</p>" +
+          (errs ? "<p><b>Confundió:</b> " + errs + "</p>" : "<p><b>Confundió:</b> nada, lo entendió bien.</p>") +
+          "<p><b>Intención:</b> " + esc(a.intencion) + "</p><p><b>Robo responde:</b> " + esc(a.respuesta) + "</p>" +
+          (a.consejo ? "<p><small>Consejo: " + esc(a.consejo) + " · " + esc(a.motor) + "</small></p>" : "");
+        caja.hidden = false; marcar(3);
+        $("vz-detalle").textContent = "Análisis listo.";
+      }, function (e) { caja.hidden = true; $("vz-detalle").textContent = "No se pudo analizar: " + e.message; })
+      .then(function () { b.disabled = false; b.textContent = "Analizar con IA"; });
+  });
 })();
 </script>
 <script>

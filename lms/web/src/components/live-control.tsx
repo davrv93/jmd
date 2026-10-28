@@ -202,6 +202,7 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
               class="live-frame"
               onLoad$={() => avisarEscena(marco.value, props.estado)}
               sandbox="allow-scripts allow-same-origin"
+              allow="microphone; clipboard-write"
               title="Vista previa"
               src={urlEscena(props.lesson, escenaActual.value, tema.value, !visible.value)}
             />

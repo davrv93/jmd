@@ -866,6 +866,7 @@ export const LiveAlumno = component$(
                   class="live-frame lv-marco"
                   onLoad$={() => avisarEscena(marco.value, props.estado)}
                   sandbox="allow-scripts allow-same-origin"
+                  allow="microphone; clipboard-write"
                   title="Escena"
                   src={urlEscena(props.lesson, efectiva, tema.value)}
                 />
