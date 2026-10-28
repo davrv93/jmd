@@ -100,12 +100,18 @@ func (c *Clase) entorno(userID string) []string {
 		)
 	}
 	if c.Proxy != "" {
-		// Solo HTTPS: el registro de npm. Lo interno (http://) nunca pasa por el proxy.
-		sin := "localhost,127.0.0.1,ai-orchestrator,imagen,evogo-clase,aula-pg"
+		// Salida a internet por npm-proxy, HTTP y HTTPS, en mayúsculas y minúsculas (curl solo lee
+		// «http_proxy» en minúsculas). Lo interno de aula_net va en NO_PROXY: con HTTP_PROXY puesto, un
+		// nombre que falte ahí (p. ej. jmrv) iría al proxy y fallaría.
+		sin := "localhost,127.0.0.1,::1,aula," + Nombre(userID) +
+			",ai-orchestrator,imagen,evogo-clase,aula-pg,jmrv,lms,npm-proxy"
 		if h := c.pgHost(); h != "" && h != "aula-pg" {
 			sin += "," + h
 		}
-		e = append(e, "-e", "HTTPS_PROXY="+c.Proxy, "-e", "https_proxy="+c.Proxy, "-e", "NO_PROXY="+sin, "-e", "no_proxy="+sin)
+		e = append(e,
+			"-e", "HTTPS_PROXY="+c.Proxy, "-e", "https_proxy="+c.Proxy,
+			"-e", "HTTP_PROXY="+c.Proxy, "-e", "http_proxy="+c.Proxy,
+			"-e", "NO_PROXY="+sin, "-e", "no_proxy="+sin)
 	}
 	return e
 }

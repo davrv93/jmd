@@ -31,7 +31,8 @@ Dentro del aula (si el LMS tiene configurado el perfil `clase`, ver `docs/DEPLOY
 | `EVO_TOKEN` | token de SU instancia (la GLOBAL_API_KEY nunca entra al aula) |
 | `EVO_INSTANCE` | nombre de la instancia (= nombre del contenedor, `curso-<hash>`) |
 | `EVO_WEBHOOK` | `http://curso-<hash>:8766/api/webhook`: donde Evolution Go entrega los mensajes |
-| `HTTPS_PROXY` | `http://npm-proxy:8888`: la única salida a internet, solo a `registry.npmjs.org` |
+| `HTTPS_PROXY`, `HTTP_PROXY` (y en minúsculas) | `http://npm-proxy:8888`: la única salida a internet; hoy abre todo (`lms/clase/npm-proxy/permitidos`) |
+| `NO_PROXY` | lo interno de `aula_net` (ai-orchestrator, imagen, evogo-clase, aula-pg, jmrv, lms, npm-proxy, el propio `curso-<hash>`) |
 | `BUN_INSTALL_CACHE_DIR` | `/trabajo/.bun-cache` (el home es un tmpfs de 32 MB) |
 
 - El webhook (`EVO_WEBHOOK`, evento `MESSAGE`) lo deja guardado el LMS al crear el aula, escribiendo en la base de

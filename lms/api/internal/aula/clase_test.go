@@ -251,3 +251,22 @@ func TestCrearConServiciosCaidos(t *testing.T) {
 		t.Fatalf("evolution sin red: %v", err)
 	}
 }
+
+// Con proxy, el aula sale a internet por HTTP y HTTPS (mayúsculas y minúsculas) y lo interno no pasa por él.
+func TestArgsClaseProxy(t *testing.T) {
+	a := &Aula{Clase: &Clase{Proxy: "http://npm-proxy:8888"}}
+	j := strings.Join(a.Args("u1"), " ")
+	for _, v := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"} {
+		if !strings.Contains(j, v+"=http://npm-proxy:8888") {
+			t.Errorf("falta %s en %s", v, j)
+		}
+	}
+	for _, interno := range []string{"ai-orchestrator", "imagen", "evogo-clase", "aula-pg", "jmrv", "lms", "npm-proxy", Nombre("u1")} {
+		if !strings.Contains(j, "NO_PROXY=") || !strings.Contains(j, ","+interno) {
+			t.Errorf("%s debe ir en NO_PROXY: %s", interno, j)
+		}
+	}
+	if j2 := strings.Join((&Aula{Clase: &Clase{}}).Args("u1"), " "); strings.Contains(j2, "PROXY") {
+		t.Errorf("sin LMS_AULA_PROXY no debe haber proxy: %s", j2)
+	}
+}
