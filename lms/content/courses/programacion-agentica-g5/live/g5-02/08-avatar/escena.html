@@ -83,6 +83,26 @@
 .av-muro-lista li b { color: var(--accent); white-space: nowrap; }
 .av-muro-lista li.mia { border-color: var(--accent); background: var(--accent-bg); }
 .av-muro-lista li.vacio { color: var(--muted); background: transparent; border-style: dashed; }
+.av-muro-lista li[data-i] { cursor: pointer; }
+.av-muro-lista li[data-i]:hover { border-color: var(--accent); }
+.av-muro-lista li[data-i]::after { content: "ver 🤖"; margin-left: auto; font-size: .85em; color: var(--accent); white-space: nowrap; }
+.av-ver { font: 700 .58em system-ui, sans-serif; margin-left: auto; padding: .3em .8em; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); cursor: pointer; }
+
+/* Galería: cada Robo del muro en un modal, en 3D con la piel de su estilo */
+.av-gal { width: min(92vw, 760px); border: 1px solid var(--line2); border-radius: 1.2em; padding: 0; background: var(--s1); color: var(--fg); box-shadow: 0 30px 80px rgba(0,0,0,.35); }
+.av-gal::backdrop { background: rgba(10,10,25,.55); backdrop-filter: blur(3px); }
+.av-gal-lienzo { position: relative; height: min(52vh, 420px); background: radial-gradient(120% 90% at 50% 100%, color-mix(in srgb, var(--gal, var(--accent)) 30%, transparent), transparent 70%), var(--s2); }
+.av-gal-lienzo canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.av-gal-pie { display: grid; gap: .3em; padding: .8em 1.2em 1em; }
+.av-gal-pie h4 { margin: 0; font-size: 1.1em; }
+.av-gal-pie h4 small { font: 600 .6em system-ui, sans-serif; color: var(--muted); margin-left: .4em; }
+.av-gal-pie p { margin: 0; font-size: 1em; }
+.av-gal-nav { display: flex; align-items: center; gap: .5em; }
+.av-gal-nav span { font: 600 .7em var(--mono); color: var(--muted); margin-right: auto; }
+.av-gal-nav button { font: 700 .75em system-ui, sans-serif; padding: .45em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; }
+.av-gal-nav button:hover { border-color: var(--accent); color: var(--accent); }
+.av-gal-x { position: absolute; top: .6em; right: .6em; z-index: 1; font: 700 .9em system-ui, sans-serif; width: 2em; height: 2em; border-radius: 50%; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.av-gal-estilo { position: absolute; left: .8em; bottom: .7em; z-index: 1; }
 
 </style>
 </head>
@@ -145,13 +165,25 @@
         <pre class="esc-cmd av-cmd a-in" style="--d:.35s"><span class="c"># o arma los 4 y compáralos en el visor: mi-robo/index.html</span>
 <span class="p">$ </span>cd /trabajo/negocio &amp;&amp; python3 /opt/skills-curso/s2-robo-estilos/motor/construir.py --asistente asistente.json --todos</pre>
         <div class="esc-card av-muro a-in" style="--d:.4s">
-          <div class="av-muro-cab"><h3>Presenta tu Robo al grupo</h3><small>pregúntale algo en el visor y pega aquí una respuesta que te guste</small></div>
+          <div class="av-muro-cab"><h3>Presenta tu Robo al grupo</h3><small>pregúntale algo en el visor y pega aquí una respuesta que te guste</small><button type="button" class="av-ver" id="av-ver">Ver los Robos 🤖</button></div>
           <div class="av-muro-fila">
             <input type="text" id="av-muro-frase" placeholder="una frase de tu Robo que te guste" maxlength="150" autocomplete="off">
             <button type="button" id="av-publicar" disabled>Publicar</button>
           </div>
           <p class="av-muro-estado" id="av-muro-estado"></p>
           <ul class="av-muro-lista" id="av-muro" hidden aria-label="El grupo"></ul>
+          <dialog class="av-gal" id="av-gal" aria-label="Los Robos del grupo">
+            <div class="av-gal-lienzo">
+              <canvas id="gal-lienzo" aria-label="Robo del grupo en 3D"></canvas>
+              <button type="button" class="av-gal-x" id="gal-x" aria-label="Cerrar">✕</button>
+              <span class="esc-chip av-gal-estilo" id="gal-estilo">estilo</span>
+            </div>
+            <div class="av-gal-pie">
+              <h4 id="gal-robo">Robo<small id="gal-alumno"></small></h4>
+              <p id="gal-frase"></p>
+              <div class="av-gal-nav"><span id="gal-pos">1 / 1</span><button type="button" id="gal-ant">← Anterior</button><button type="button" id="gal-sig">Siguiente →</button></div>
+            </div>
+          </dialog>
         </div>
       </div>
       <div class="av-der">
@@ -215,6 +247,43 @@ const PIELES = {
 function piel(op) { if (PIELES[op]) for (const av of avs) av.setPiel(PIELES[op]); }
 try { piel(localStorage.getItem("g5-02-estilo")); } catch (e) {}
 // Al elegir un estilo, el robot cambia de piel, se sorprende y vuelve a sonreír.
+// Galería del muro: un segundo robot en el modal; se monta al abrirlo por primera vez (el canvas ya tiene tamaño).
+const gal = document.getElementById("av-gal");
+let galAv = null, galI = 0;
+const COLOR_ESTILO = { neon: "#39ff88", claro: "#0a84ff", atardecer: "#ff3d8b", cabina: "#00b3ff" };
+function leerRobo(e) {
+  const m = String(e.texto || "").match(/^(.*?)(?: \((neon|claro|atardecer|cabina)\))?: «([\s\S]*)»$/);
+  return m ? { robo: m[1], estilo: m[2] || "claro", frase: m[3], alumno: e.nombre || "" } : { robo: "Robo", estilo: "claro", frase: e.texto || "", alumno: e.nombre || "" };
+}
+function verRobo(i) {
+  const ents = window.robosDelMuro || [];
+  if (!ents.length) return;
+  galI = (i + ents.length) % ents.length;
+  const r = leerRobo(ents[galI]);
+  document.getElementById("gal-robo").firstChild.textContent = r.robo;
+  document.getElementById("gal-alumno").textContent = r.alumno ? "de " + r.alumno : "";
+  document.getElementById("gal-frase").textContent = "«" + r.frase + "»";
+  document.getElementById("gal-estilo").textContent = "Robo · " + r.estilo;
+  document.getElementById("gal-pos").textContent = (galI + 1) + " / " + ents.length;
+  gal.style.setProperty("--gal", COLOR_ESTILO[r.estilo] || "");
+  if (!gal.open) gal.showModal();
+  if (!galAv) {
+    galAv = montarAvatar(document.getElementById("gal-lienzo"), "robot");
+    if (!galAv.soportado) galAv = null;
+  }
+  if (galAv) {
+    if (PIELES[r.estilo]) galAv.setPiel(PIELES[r.estilo]);
+    galAv.saludar(); galAv.setAnimo("sorprendido"); setTimeout(() => galAv && galAv.setAnimo("feliz"), 900);
+    dispatchEvent(new Event("resize"));
+  }
+}
+addEventListener("g5-ver-robo", (e) => verRobo(e.detail));
+document.getElementById("gal-ant").addEventListener("click", () => verRobo(galI - 1));
+document.getElementById("gal-sig").addEventListener("click", () => verRobo(galI + 1));
+document.getElementById("gal-x").addEventListener("click", () => gal.close());
+gal.addEventListener("click", (e) => { if (e.target === gal) gal.close(); });
+gal.addEventListener("keydown", (e) => { if (e.key === "ArrowLeft") verRobo(galI - 1); if (e.key === "ArrowRight") verRobo(galI + 1); });
+document.getElementById("av-ver").addEventListener("click", () => verRobo(0));
 addEventListener("g5-estilo", (e) => { manual = true; piel(e.detail); animo("sorprendido"); setTimeout(() => animo("feliz"), 1400); });
 // El panel del LIVE reenvía cada «estado» al iframe: aplica estado.parametro al robot.
 addEventListener("message", (e) => {
@@ -301,8 +370,13 @@ addEventListener("message", (e) => {
     var ents = d && Array.isArray(d.entradas) ? d.entradas : [];
     lista.hidden = false;
     if (!ents.length) { lista.innerHTML = '<li class="vacio">Nadie presentó su Robo todavía: sé el primero.</li>'; return; }
-    lista.innerHTML = ents.map(function (e) { return '<li class="' + (e.mia ? "mia" : "") + '"><b>' + esc(e.nombre || "alguien") + "</b><span>" + esc(e.texto || "") + "</span></li>"; }).join("");
+    window.robosDelMuro = ents;
+    lista.innerHTML = ents.map(function (e, i) { return '<li data-i="' + i + '" title="Ver este Robo" class="' + (e.mia ? "mia" : "") + '"><b>' + esc(e.nombre || "alguien") + "</b><span>" + esc(e.texto || "") + "</span></li>"; }).join("");
   }
+  lista.addEventListener("click", function (ev) {
+    var li = ev.target.closest && ev.target.closest("li[data-i]");
+    if (li) dispatchEvent(new CustomEvent("g5-ver-robo", { detail: +li.getAttribute("data-i") }));
+  });
   function leer() {
     try {
       fetch("/api/v1/live/" + leccion + "/muro?escena=" + ESCENA, { credentials: "same-origin" })
