@@ -25,10 +25,14 @@ func (s *Server) liveImagen(w http.ResponseWriter, r *http.Request, p *Principal
 	var in struct {
 		Prompt      string `json:"prompt"`
 		Orientacion string `json:"orientacion"`
-		Base        string `json:"base"`   // data:image/…;base64,… de la imagen base; con ella la variación la hace OpenRouter
-		Cambio      string `json:"cambio"` // lo único que debe cambiar respecto a la base (en español)
+		Base        string `json:"base"`      // data:image/…;base64,… de la imagen base; con ella la variación la hace OpenRouter
+		Cambio      string `json:"cambio"`    // lo único que debe cambiar respecto a la base (en español)
+		ConTexto    bool   `json:"con_texto"` // el cambio es escribir este texto sobre la base (flyer terminado)
 	}
-	if !readJSON(w, r, &in) {
+	// la imagen base en base64 pasa del límite general de readJSON
+	r.Body = http.MaxBytesReader(w, r.Body, 8<<20)
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeErr(w, 400, "cuerpo_invalido", "no se pudo leer el pedido (¿imagen base de más de 8 MB?)")
 		return
 	}
 	in.Prompt = strings.TrimSpace(in.Prompt)
@@ -37,7 +41,7 @@ func (s *Server) liveImagen(w http.ResponseWriter, r *http.Request, p *Principal
 		return
 	}
 	if in.Base != "" {
-		s.liveImagenVariacion(w, r, p, in.Base, in.Cambio, in.Prompt)
+		s.liveImagenVariacion(w, r, p, in.Base, in.Cambio, in.Prompt, in.ConTexto)
 		return
 	}
 	switch in.Orientacion {
@@ -111,7 +115,7 @@ func (s *Server) liveImagen(w http.ResponseWriter, r *http.Request, p *Principal
 // liveImagenVariacion: la variación se hace SOBRE la imagen base con un modelo de edición de imágenes vía
 // OpenRouter (OPENROUTER_API_KEY; modelo LMS_IMAGEN_MODELO, por defecto google/gemini-2.5-flash-image).
 // Así el personaje, el encuadre y el estilo se conservan y cambia solo lo pedido. Devuelve image/png.
-func (s *Server) liveImagenVariacion(w http.ResponseWriter, r *http.Request, p *Principal, base, cambio, prompt string) {
+func (s *Server) liveImagenVariacion(w http.ResponseWriter, r *http.Request, p *Principal, base, cambio, prompt string, conTexto bool) {
 	key := strings.TrimSpace(os.Getenv("OPENROUTER_API_KEY"))
 	if key == "" {
 		writeErr(w, 503, "sin_openrouter", "el servidor no tiene OPENROUTER_API_KEY: la variación con imagen base no está disponible")
@@ -131,7 +135,12 @@ func (s *Server) liveImagenVariacion(w http.ResponseWriter, r *http.Request, p *
 	}
 	instr := "Edita esta imagen. Conserva exactamente el mismo personaje (o sujeto), su diseño, proporciones, encuadre, estilo de dibujo y paleta. " +
 		"Cambia solo esto: " + cambio + ". No agregues texto ni letras. Devuelve una sola imagen con la misma orientación."
-	if cambio == "" {
+	if conTexto && cambio != "" {
+		instr = "Convierte esta imagen en un flyer terminado. Conserva el fondo, su estilo, su composición y su paleta. " +
+			"Escribe encima, en español y con la ortografía exacta (respeta tildes, mayúsculas, signos y números), solo este texto: " + cambio + ". " +
+			"Letras grandes y legibles, con buen contraste sobre el fondo y jerarquía clara: título arriba y grande, precio destacado. " +
+			"No inventes otras palabras, ni marcas, ni textos de relleno. Devuelve una sola imagen vertical."
+	} else if cambio == "" {
 		instr = "Vuelve a dibujar esta imagen conservando el personaje, el encuadre y el estilo, siguiendo esta descripción: " + prompt + ". No agregues texto ni letras."
 	}
 	cuerpo, _ := json.Marshal(map[string]any{

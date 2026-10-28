@@ -31,6 +31,7 @@
 .e10-flyer { height: 100%; display: grid; grid-template-rows: 1fr auto; place-items: center; gap: .5em; min-height: 0; min-width: 0; }
 .e10-flyer svg { height: 100%; max-height: 100%; width: auto; max-width: 100%; min-height: 0; border-radius: .8em; box-shadow: 0 18px 40px -14px rgba(20,18,60,.55); animation: e10-revela .5s cubic-bezier(.2,.8,.3,1.1) both; animation-delay: 2s; }
 #flyer.con-fondo #f-deco { opacity: .3; }
+#flyer.ia-texto > :not(defs):not(#f-fondo) { display: none; }
 #flyer.pintando #f-velo { animation: e10-latido 1s ease-in-out infinite; }
 .e10-leyenda { display: flex; gap: .3em; flex-wrap: wrap; justify-content: center; animation: esc-entra .45s ease-out both; animation-delay: 2.4s; }
 .e10-leyenda .esc-chip { font-size: .58em; padding: .2em .6em; }
@@ -160,7 +161,8 @@
             <button type="button" class="e10-estilo" data-en="watercolor painting, soft washes, paper texture">acuarela</button>
             <button type="button" class="e10-estilo" data-en="kraft paper texture, handmade craft look, warm brown tones">papel kraft</button>
           </div>
-          <div class="e10-acc"><button type="button" class="e10-btn fuerte" id="gen-fondo">Generar fondo con FLUX</button><b class="e10-t" id="gen-tiempo" aria-live="polite"></b><span class="e10-msg" id="gen-msg"></span></div>
+          <div class="e10-acc"><button type="button" class="e10-btn fuerte" id="gen-fondo">1 · Generar fondo con FLUX</button><b class="e10-t" id="gen-tiempo" aria-live="polite"></b><span class="e10-msg" id="gen-msg"></span></div>
+          <div class="e10-acc"><button type="button" class="e10-btn fuerte" id="ia-texto" disabled title="Gemini escribe el título, la fecha, la hora y el precio sobre tu fondo">2 · Ponerle el texto con IA</button><button type="button" class="e10-btn" id="ia-volver" hidden>Ver con el texto del código</button><b class="e10-t" id="ia-tiempo" aria-live="polite"></b><span class="e10-msg" id="ia-msg"></span></div>
           <div class="e10-nota">Maqueta para decidir. El flyer final con la imagen lo arma tu Robo en el aula con el skill <code>s2-robo-flyer</code>.</div>
         </div>
         <div class="e10-card" style="--d:1.4s">
@@ -271,10 +273,41 @@
           im.setAttribute("href", data); im.style.display = ""; $("f-velo").style.display = ""; svg.classList.add("con-fondo");
           flux.n = Math.min(TOPE, flux.n + 1); guardar(K_FLUX, flux); usos();
           ultimo = { estilo: est.es, seg: seg(ms) };
+          fondoFlux = data; svg.classList.remove("ia-texto"); $("ia-texto").disabled = false; $("ia-volver").hidden = true; $("ia-msg").textContent = ""; $("ia-tiempo").textContent = "";
           fin(ultimo.seg + " s");
         })
         .catch(function (e) { fin(e && e.message ? e.message : "No se pudo", true); });
     } catch (e) { fin("No se pudo", true); }
+  });
+
+  /* ---- Texto con IA: el fondo de FLUX va como imagen base a Gemini (OpenRouter), que escribe los datos encima.
+     Así se compara con el texto que pone el código: la IA a veces se equivoca en una letra o un número. ---- */
+  var fondoFlux = "", flyerIA = "";
+  $("ia-texto").addEventListener("click", function () {
+    var b = this, t = $("ia-tiempo"), msg = $("ia-msg"), svg = $("flyer");
+    if (!fondoFlux || b.disabled) return;
+    var datos = "título «" + v("d-titulo", "Gran oferta") + "», fecha «" + v("d-fecha", "") + "», hora «" + v("d-hora", "") + "», precio «" + v("d-precio", "") + "»" +
+      (v("d-negocio", "") ? " y, pequeño abajo, el negocio «" + v("d-negocio", "") + "»" : "");
+    b.disabled = true; b.textContent = "Escribiendo…"; msg.textContent = ""; svg.classList.add("pintando"); t.className = "e10-t run";
+    var t0 = performance.now(), rel = setInterval(function () { t.textContent = seg(performance.now() - t0) + " s"; }, 100);
+    function fin(txt, mal) { clearInterval(rel); svg.classList.remove("pintando"); t.className = "e10-t"; b.disabled = false; b.textContent = "2 · Ponerle el texto con IA"; if (mal) { msg.textContent = txt; t.textContent = ""; } else t.textContent = txt; }
+    fetch("/api/v1/live/" + leccion + "/imagen", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: prompt(), base: fondoFlux, cambio: datos, con_texto: true }) })
+      .then(function (r) {
+        if (!r.ok) return r.json().catch(function () { return {}; }).then(function (j) { var e = (j && j.error) || {}; throw new Error(e.message || ("error " + r.status)); });
+        return r.blob();
+      })
+      .then(function (blob) { return new Promise(function (res, rej) { var fr = new FileReader(); fr.onload = function () { res(fr.result); }; fr.onerror = rej; fr.readAsDataURL(blob); }); })
+      .then(function (data) {
+        flyerIA = data; $("f-fondo").setAttribute("href", data); svg.classList.add("ia-texto"); $("ia-volver").hidden = false;
+        fin(seg(performance.now() - t0) + " s · revisa cada letra");
+      })
+      .catch(function (e) { fin(e && e.message ? e.message : "No se pudo", true); });
+  });
+  $("ia-volver").addEventListener("click", function () {
+    var svg = $("flyer"), con = svg.classList.toggle("ia-texto");
+    $("f-fondo").setAttribute("href", con ? flyerIA : fondoFlux);
+    this.textContent = con ? "Ver con el texto del código" : "Ver con el texto de la IA";
   });
 
   /* ---- Pedido al agente: los cuatro datos y el estilo en una frase para pegar en `jmd` ---- */
