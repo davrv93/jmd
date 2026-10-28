@@ -7,6 +7,7 @@
 <!--
   Lo que el agente va a leer: GET /live/<lección>/mi-robo (resumen de /trabajo/negocio/asistente.json).
   Tarjeta pintada con SUS colores, su saludo en voz (POST voz, respaldo speechSynthesis) y las preguntas.
+  Si no hay asistente.json pero sí /trabajo/osito (el Robo del G5 en la sesión 2), el LMS lo arma desde osito (origen «osito»).
   Si no hay asistente.json (existe:false) se explica que el agente partirá del ejemplo de la cafetería.
 -->
 <link rel="stylesheet" href="../../comun/escena.css">
@@ -104,8 +105,11 @@
   Lab.miRobo().then(function (d) {
     var a = (d && d.asistente) || {}, m = a.marca || {};
     estado.innerHTML =
-      item(d.existe, d.existe ? "Tienes tu <code>asistente.json</code> de la sesión 2." : "No hay <code>asistente.json</code>: el agente usará el ejemplo de la cafetería.") +
-      item(d.mi_robo, d.mi_robo ? "Tu backend <code>mi-robo</code> está en tu aula: el robot 3D podrá conversar (<code>/api/chat</code>) y hablar (<code>/api/voz</code>)." : "No encontré <code>/trabajo/mi-robo</code>: el robot se verá, pero quizá no converse. Avísale al instructor.") +
+      // origen "osito": el LMS armó asistente.json desde el Robo de la sesión 2 en /trabajo/osito (no hay que rehacer nada).
+      item(d.existe, !d.existe ? "No hay <code>asistente.json</code>: el agente usará el ejemplo de la cafetería."
+        : d.asistente && d.asistente.origen === "osito" ? "Tu Robo de la sesión 2 (<code>/trabajo/osito</code>) quedó en <code>negocio/asistente.json</code>: su personalidad y sus " + (d.asistente.total_preguntas || 0) + " preguntas. Puedes cambiarlo en tu prompt."
+        : "Tienes tu <code>asistente.json</code> de la sesión 2.") +
+      item(d.mi_robo, d.mi_robo ? "El backend de tu Robo está en tu aula: el robot 3D podrá conversar (<code>/api/chat</code>) y hablar (<code>/api/voz</code>)." : "No encontré el backend de tu Robo: el robot se verá, pero quizá no converse. Avísale al instructor.") +
       item(d.robo3d, d.robo3d ? "Ya existe <code>robo3d/index.html</code>: tu próximo prompt puede mejorarlo o rehacerlo." : "Aún no hay <code>robo3d/</code>: lo construirá tu agente con tu prompt.");
     if (!d.existe) {
       ficha.style.setProperty("--pr", "#8b5a2b"); ficha.style.setProperty("--ac", "#ffcf8a");

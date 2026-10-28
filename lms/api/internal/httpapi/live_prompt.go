@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -194,6 +195,51 @@ func (s *Server) livePrompt(w http.ResponseWriter, r *http.Request, p *Principal
 	writeJSON(w, 200, res)
 }
 
+// scriptPuenteOsito: en el G5 el Robo de la sesión 2 quedó en /trabajo/osito (el asistente del aula), no en
+// /trabajo/mi-robo con su negocio/asistente.json. Si falta asistente.json y existe osito, lo arma desde su
+// faq.json (mismo formato) y la personalidad de motores.py, para que la sesión 3 parta del robot del alumno
+// y no del ejemplo de la cafetería. Nunca pisa un asistente.json que ya exista.
+const scriptPuenteOsito = `[ -f /trabajo/negocio/asistente.json ] && exit 0
+[ -f /trabajo/osito/backend/faq.json ] || exit 0
+mkdir -p /trabajo/negocio && /opt/venv/bin/python - <<'PY'
+import json, pathlib, re
+b = pathlib.Path("/trabajo/osito/backend")
+faq = json.loads((b / "faq.json").read_text(encoding="utf-8"))
+m = (b / "motores.py").read_text(encoding="utf-8") if (b / "motores.py").exists() else ""
+n = re.search(r'NOMBRE\s*=\s*os\.environ\.get\(\s*"OSITO_NOMBRE"\s*,\s*"([^"]+)"', m)
+nombre = n.group(1) if n else "Robo"
+p = re.search(r'SYSTEM_PROMPT\s*=\s*f?"""(.*?)"""', m, re.S)
+pers = p.group(1).replace("{NOMBRE}", nombre).split("Termina SIEMPRE")[0].strip() if p else "Amable y curioso."
+a = {"nombre": nombre,
+     "negocio": {"nombre": "Taller de programación agéntica", "rubro": "asistente del curso", "whatsapp": ""},
+     "personalidad": pers, "saludo": "¡Hola! Soy " + nombre + ". ¿Qué quieres saber del taller?",
+     "preguntas_frecuentes": faq if isinstance(faq, list) else [],
+     "reglas": ["Si no sabes algo, dilo: no inventes."],
+     "marca": {"primario": "#3b5bdb", "acento": "#ffd166"},
+     "origen": "osito"}
+t = pathlib.Path("/trabajo/negocio/asistente.json.tmp")
+t.write_text(json.dumps(a, ensure_ascii=False, indent=2), encoding="utf-8")
+t.replace("/trabajo/negocio/asistente.json")
+print("PUENTE_OK")
+PY`
+
+// puenteOsito arma negocio/asistente.json desde /trabajo/osito si hace falta (ver scriptPuenteOsito).
+func (s *Server) puenteOsito(ctx context.Context, nombre string) {
+	if out, err := s.Aula.Exec(ctx, nombre, scriptPuenteOsito); err != nil {
+		slog.Warn("puente osito", "aula", nombre, "err", err, "salida", strings.TrimSpace(out))
+	}
+}
+
+// robotDe: carpeta del backend del Robo de la sesión 2 en el aula: /trabajo/mi-robo (skill s2-robo-estilos) o,
+// si no existe, /trabajo/osito (el asistente que arranca «aula iniciar»).
+func (s *Server) robotDe(ctx context.Context, nombre string) string {
+	out, _ := s.Aula.Exec(ctx, nombre, `test -d /trabajo/mi-robo && echo mi-robo || echo osito`)
+	if strings.TrimSpace(out) == "mi-robo" {
+		return "/trabajo/mi-robo"
+	}
+	return "/trabajo/osito"
+}
+
 // liveMiRobo: GET /api/v1/live/{lesson}/mi-robo. Lo que el alumno configuró en la sesión 2.
 func (s *Server) liveMiRobo(w http.ResponseWriter, r *http.Request, p *Principal) {
 	if s.liveLeccion(w, r, p) == nil || !s.aulaListo(w) {
@@ -205,6 +251,7 @@ func (s *Server) liveMiRobo(w http.ResponseWriter, r *http.Request, p *Principal
 	}
 	tocarAula(p.ID)
 	nombre := aula.Nombre(p.ID)
+	s.puenteOsito(r.Context(), nombre)
 	res := map[string]any{"existe": false}
 	raw, err := s.Aula.Leer(r.Context(), nombre, "negocio/asistente.json", 256<<10)
 	if err == nil {
@@ -219,7 +266,8 @@ func (s *Server) liveMiRobo(w http.ResponseWriter, r *http.Request, p *Principal
 			FAQ          []struct {
 				Preguntas []string `json:"preguntas"`
 			} `json:"preguntas_frecuentes"`
-			Marca map[string]string `json:"marca"`
+			Marca  map[string]string `json:"marca"`
+			Origen string            `json:"origen"`
 		}
 		if json.Unmarshal(raw, &a) == nil {
 			preg := []string{}
@@ -230,7 +278,7 @@ func (s *Server) liveMiRobo(w http.ResponseWriter, r *http.Request, p *Principal
 			}
 			res["existe"] = true
 			res["asistente"] = map[string]any{"nombre": a.Nombre, "negocio": a.Negocio, "personalidad": a.Personalidad,
-				"saludo": a.Saludo, "preguntas": preg, "total_preguntas": len(a.FAQ), "marca": a.Marca}
+				"saludo": a.Saludo, "preguntas": preg, "total_preguntas": len(a.FAQ), "marca": a.Marca, "origen": a.Origen}
 		} else {
 			res["error"] = "tu asistente.json no es JSON válido: el agente puede arreglarlo si se lo pides"
 		}
@@ -238,7 +286,7 @@ func (s *Server) liveMiRobo(w http.ResponseWriter, r *http.Request, p *Principal
 		internal(w, err)
 		return
 	}
-	out, _ := s.Aula.Exec(r.Context(), nombre, `test -f /trabajo/robo3d/index.html && echo R; test -d /trabajo/mi-robo && echo M; true`)
+	out, _ := s.Aula.Exec(r.Context(), nombre, `test -f /trabajo/robo3d/index.html && echo R; { test -d /trabajo/mi-robo || test -f /trabajo/osito/backend/app.py; } && echo M; true`)
 	res["robo3d"] = strings.Contains(out, "R")
 	res["mi_robo"] = strings.Contains(out, "M")
 	w.Header().Set("Cache-Control", "no-store")

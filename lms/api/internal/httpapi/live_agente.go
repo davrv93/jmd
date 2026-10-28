@@ -85,6 +85,11 @@ func limpiarLinea(l string) string {
 
 // armarPedido junta las reglas del curso con el prompt del alumno, tal cual lo escribió.
 func armarPedido(tipo, nombre, texto string) string {
+	return armarPedidoEn(tipo, nombre, texto, "/trabajo/mi-robo")
+}
+
+// armarPedidoEn es armarPedido con la carpeta del backend del robot (mi-robo u osito).
+func armarPedidoEn(tipo, nombre, texto, robot string) string {
 	modo := "Construye el robot desde cero en /trabajo/robo3d (si ya existe, reemplázalo por lo que pide el alumno)."
 	if tipo == "mejora" {
 		modo = "El robot YA existe en /trabajo/robo3d: modifícalo, no lo borres ni empieces de cero; conserva lo que funciona."
@@ -98,6 +103,7 @@ func armarPedido(tipo, nombre, texto string) string {
 	}
 	r := strings.ReplaceAll(base, "{{ALUMNO}}", nombre)
 	r = strings.ReplaceAll(r, "{{MODO}}", modo)
+	r = strings.ReplaceAll(r, "{{ROBOT}}", robot)
 	return r + "\n\n--- PEDIDO DEL ALUMNO (escrito por él, respétalo) ---\n" + texto + "\n--- FIN DEL PEDIDO ---\n"
 }
 
@@ -154,12 +160,14 @@ func (s *Server) liveAgentePost(w http.ResponseWriter, r *http.Request, p *Princ
 	tocarAula(p.ID)
 	s.montarSkills(r.Context(), p.ID)
 	nombre := aula.Nombre(p.ID)
-	pedido := armarPedido(in.Tipo, p.Name, in.Texto)
-	go s.correrAgente(st, c, nombre, p.ID, pedido, in.Tipo)
+	s.puenteOsito(r.Context(), nombre)
+	robot := s.robotDe(r.Context(), nombre)
+	pedido := armarPedidoEn(in.Tipo, p.Name, in.Texto, robot)
+	go s.correrAgente(st, c, nombre, p.ID, pedido, in.Tipo, robot)
 	s.liveAgenteSeguir(w, r, c)
 }
 
-func (s *Server) correrAgente(st ExecStreamer, c *corridaAgente, nombre, userID, pedido, tipo string) {
+func (s *Server) correrAgente(st ExecStreamer, c *corridaAgente, nombre, userID, pedido, tipo, robot string) {
 	ctx, cancel := context.WithTimeout(context.Background(), agenteTope+30*time.Second)
 	defer cancel()
 	// el pedido va por stdin: así no se interpreta nada de lo que escribió el alumno
@@ -186,7 +194,7 @@ func (s *Server) correrAgente(st ExecStreamer, c *corridaAgente, nombre, userID,
 	defer cancel2()
 	carpeta := "robo3d"
 	if tipo == "whatsapp" {
-		carpeta = "mi-robo/backend"
+		carpeta = strings.TrimPrefix(robot, "/trabajo/") + "/backend"
 	}
 	out, _ := s.Aula.Exec(ctx2, nombre, `cd /trabajo && find `+carpeta+` -maxdepth 2 -type f ! -name '*.log' ! -name '*.pyc' 2>/dev/null | sort | head -n 30`)
 	var archivos []string
@@ -200,14 +208,19 @@ func (s *Server) correrAgente(st ExecStreamer, c *corridaAgente, nombre, userID,
 		listo = listo || a == "robo3d/index.html"
 	}
 	// el backend de la sesión 2 responde /api/chat, /api/voz y /api/stt a la página 3D
-	arr, _ := s.Aula.Exec(ctx2, nombre, `if [ -f /trabajo/mi-robo/robo.sh ]; then sh /trabajo/mi-robo/robo.sh reiniciar 2>&1 | tail -n 1; else aula iniciar 2>&1 | tail -n 1; fi`)
+	// con WhatsApp el backend cambió: osito se reinicia (aula iniciar no relanza si ya corre)
+	reiniciar := `aula iniciar 2>&1 | tail -n 1`
+	if tipo == "whatsapp" {
+		reiniciar = `aula parar >/dev/null 2>&1; aula iniciar 2>&1 | tail -n 1`
+	}
+	arr, _ := s.Aula.Exec(ctx2, nombre, `if [ -f /trabajo/mi-robo/robo.sh ]; then sh /trabajo/mi-robo/robo.sh reiniciar 2>&1 | tail -n 1; else `+reiniciar+`; fi`)
 	if strings.TrimSpace(arr) != "" {
 		c.agregar("▶ backend de tu robot: " + strings.TrimSpace(arr))
 	}
 	ruta := map[bool]string{true: "robo3d/index.html"}[listo]
 	if tipo == "whatsapp" {
 		// listo = el backend importa sin errores y tiene la ruta del webhook
-		chk, _ := s.Aula.Exec(ctx2, nombre, `cd /trabajo/mi-robo 2>/dev/null && grep -q "/api/webhook" backend/*.py && /opt/venv/bin/python -c "import backend.app" >/dev/null 2>&1 && echo WEBHOOK_OK`)
+		chk, _ := s.Aula.Exec(ctx2, nombre, `cd `+robot+` 2>/dev/null && grep -q "/api/webhook" backend/*.py && /opt/venv/bin/python -c "import backend.app" >/dev/null 2>&1 && echo WEBHOOK_OK`)
 		listo, ruta = strings.Contains(chk, "WEBHOOK_OK"), ""
 		if !listo {
 			c.agregar("✗ tu backend no quedó con /api/webhook o no importa sin errores: revisa lo que dijo tu agente")

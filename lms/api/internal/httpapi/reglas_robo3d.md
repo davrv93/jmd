@@ -22,7 +22,7 @@ que el alumno abre en su Visor como «robo3d/index.html». Reglas técnicas, no 
 4. El robot reacciona al "animo" (feliz, pensando, sorprendido…) con una animación visible. Que se vea bien en
    celular (canvas al ancho de la ventana, resize) y en escritorio. Texto en español.
 5. No arranques servidores, no abras puertos y no dejes procesos en segundo plano (el aula tiene tope de procesos):
-   el LMS arranca el backend del robot cuando terminas. No toques /trabajo/mi-robo ni otras carpetas.
+   el LMS arranca el backend del robot cuando terminas. No toques {{ROBOT}} ni otras carpetas.
 6. Escribe los archivos con tus herramientas. Si hay imágenes en /trabajo/robo3d/imagenes/ y el pedido las
    menciona, úsalas con ruta relativa ("imagenes/…").
 7. Antes de terminar: comprueba que /trabajo/robo3d/index.html existe y que cada import apunta a https://esm.sh.
