@@ -16,6 +16,10 @@ Formato del webhook (Evolution Go, fork whatsmeow), ejemplo real:
 - Evolution reintenta: descarta un Info.ID que ya atendiste (guarda los últimos 500 en memoria).
 Enviar: POST $EVO_URL/send/text con cabeceras {"apikey": EVO_TOKEN, "Content-Type":"application/json"} y cuerpo
 {"number": N, "text": T}; N = solo los dígitos si el chat termina en "@s.whatsapp.net", si no (p. ej. "@lid") el JID completo.
+Imágenes o audios: POST $EVO_URL/send/media {"number": N, "url": U, "type": "image"} (Evolution descarga U). U debe ser
+"http://" + EVO_INSTANCE + ":8766/imagenes/<archivo>": así ve Evolution tu aula. Nunca «aula», «localhost» ni una IP
+(todas las aulas se llaman «aula» por dentro y la IP cambia). No pruebes /send/* con números falsos: Evolution se queda
+esperando a WhatsApp; comprueba solo que U responde 200 con el tipo de imagen correcto.
 
 Cómo construirlo (Python, en {{ROBOT}}/backend/app.py; los skills /opt/skills-curso/s3-whatsapp-qr y
 s3-integracion tienen el mismo flujo en TypeScript, léelos si dudas):
