@@ -6,8 +6,8 @@ explicar? ¡No! · Diseño y edición con IA». Se añade sólo E02; E01 y el se
 
 ## Qué hace el alumno
 
-Entra con su cuenta del LMS. Hay 20 plazas, más espectadores y la cuenta del
-instructor (sin ocupar plaza). La partida comparte reloj y clasificación.
+Entra con su cuenta del LMS. Hay 20 plazas de alumnos y una adicional para el instructor, que también
+puede responder y golpear sin perder los controles de la partida. La partida comparte reloj y clasificación.
 Son diez rondas de 29 segundos: 14 para una pregunta, 10 para destreza y 5
 para la explicación. Total de juego: 4 min 50 s; bloque de taller: 10 min con
 entrada, reglas y reflexión.
@@ -21,8 +21,9 @@ entrada, reglas y reflexión.
   no hay un único objeto que prive de turno a los otros diecinueve alumnos.
 - Puntero o tacto; teclado con flechas y espacio al enfocar la arena.
 
-El instructor abre o cierra la partida desde la escena. Su proyector muestra
-blancos de demostración, sin puntaje, y los cinco primeros puestos. Puede abrir
+El instructor abre o cierra la partida desde la escena. Al iniciarla entra
+a jugar automáticamente y su proyector muestra su blanco y su puntaje real.
+También puede pulsar «Entrar y jugar» en una partida ya iniciada. Puede abrir
 otra partida. Las cuentas ya conocidas se reconectan con sus puntos; un jugador
 21 mira como espectador. Una nueva partida libera plazas inactivas de más de
 45 s y pone los puntajes a cero.
@@ -78,6 +79,12 @@ nativos. Cumple la CSP de las escenas sin añadir permisos ni relajar cabeceras.
 - Una partida/ronda vieja, acción fuera de fase, blanco repetido o golpe que
   no toca el blanco no suma. El cliente nunca envía puntaje.
 
+Al pulsar una respuesta sin haberse inscrito, la escena solicita primero
+`unirse` y después envía esa respuesta para la partida y ronda que el alumno
+estaba viendo. `iniciar` inscribe automáticamente al instructor si su plaza
+está disponible; `unirse` admite tanto alumnos como instructor. La respuesta
+GET informa `instructores` e incluye la condición `instructor` en `yo`.
+
 El banco es privado en Go y sólo revela la respuesta durante explicación o
 cierre. Las rutas comprueban visibilidad de la lección y existencia de E02; no
 habilitan el juego en otras lecciones. La cuenta pública de juego es `pN`, no
@@ -86,7 +93,7 @@ el identificador privado del usuario. Se usa el nombre corto existente del LMS.
 Los puntos son del juego: no se guardan como notas ni sustituyen la entrega
 o el «Lo logré» del LIVE.
 
-Estado acotado en memoria de una instancia Go: veinte participantes, diez
+Estado acotado en memoria de una instancia Go: veinte alumnos más un instructor, diez
 respuestas y ocho blancos por ronda. Un mutex serializa las operaciones. No
 hay migración ni proceso de simulación. Reiniciar el LMS pierde la partida;
 varias réplicas independientes no comparten este estado. Esta decisión sigue
@@ -137,3 +144,30 @@ ssh -i ~/Downloads/curdilmer.pem ubuntu@3.151.56.55
 No se cambia E01, `lms/render`, otras clases ni la configuración del LIVE
 encendido. Después del despliegue, el instructor elige E02 y pulsa «Iniciar
 10 rondas» cuando los alumnos estén dentro.
+
+
+## Corrección: instructor jugador y prueba con API real
+
+La versión inicial excluía al instructor y deshabilitaba sus respuestas y sus
+golpes. La prueba con API simulada comprobaba esa exclusión en lugar de detectar
+el problema de uso. Ahora el instructor dispone de plaza adicional, entra al
+iniciar y juega con las mismas validaciones que el alumnado. Los estudiantes
+pueden entrar con el botón o al elegir su primera respuesta.
+
+La integración real usa dos sesiones temporales, cookies reales, la CSP y un
+iframe del mismo origen; llama al servidor Go sin `page.route`. El reloj se
+adelanta únicamente dentro del fixture para recorrer las fases. Toca hongos y
+globos localizando sus píxeles en el canvas: las colisiones y los puntos los
+valida el servidor. También comprueba que fallar el blanco o repetir una
+respuesta no suma y que el instructor conserva el control de cierre.
+
+```sh
+cd lms/api
+LMS_REPASO_BROWSER_QA=1 LMS_REPASO_QA_DIR=/tmp/jmd-repaso-real \
+  go test ./internal/httpapi/ -run 'TestRepaso' -count=1 -v
+```
+
+`live_repaso_browser_test.go` no registra rutas ni credenciales en producción.
+La cuenta de instructor y la del alumno pertenecen sólo al fixture que se
+elimina al terminar. Node y Playwright son requisitos únicamente de esta prueba
+opcional, no del binario del LMS. Evidencia real en `qa/de-02-pum/real/`.

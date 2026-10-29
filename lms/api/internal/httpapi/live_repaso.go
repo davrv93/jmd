@@ -50,6 +50,7 @@ type repasoAlumno struct {
 	Puntos     int    `json:"puntos"`
 	Aciertos   int    `json:"aciertos"`
 	Golpes     int    `json:"golpes"`
+	Instructor bool   `json:"instructor"`
 	visto      time.Time
 	respuestas map[int]int
 	golpes     map[int]map[int]bool
@@ -92,16 +93,33 @@ func (a *repasoArena) fase(now time.Time) (string, int, int64) {
 	}
 	return "explicacion", ronda, start + repasoRondaMS
 }
+func (a *repasoArena) plazas() (alumnos, instructores int) {
+	for _, j := range a.jugadores {
+		if j.Instructor {
+			instructores++
+		} else {
+			alumnos++
+		}
+	}
+	return
+}
 func (a *repasoArena) unir(sub, nombre string, now time.Time) (*repasoAlumno, error) {
+	return a.unirComo(sub, nombre, false, now)
+}
+func (a *repasoArena) unirComo(sub, nombre string, instructor bool, now time.Time) (*repasoAlumno, error) {
 	if j := a.jugadores[sub]; j != nil {
 		j.visto = now
 		return j, nil
 	}
-	if len(a.jugadores) >= repasoMax {
+	alumnos, profes := a.plazas()
+	if !instructor && alumnos >= repasoMax {
 		return nil, noVale("Las 20 plazas están ocupadas. Puedes seguir como espectador.")
 	}
+	if instructor && profes >= 1 {
+		return nil, noVale("Otra cuenta de instructor ya ocupa la plaza de juego.")
+	}
 	a.secuencia++
-	j := &repasoAlumno{ID: fmt.Sprintf("p%d", a.secuencia), Nombre: nombre, visto: now, respuestas: map[int]int{}, golpes: map[int]map[int]bool{}, intentos: map[int64]int{}}
+	j := &repasoAlumno{ID: fmt.Sprintf("p%d", a.secuencia), Nombre: nombre, Instructor: instructor, visto: now, respuestas: map[int]int{}, golpes: map[int]map[int]bool{}, intentos: map[int64]int{}}
 	a.jugadores[sub] = j
 	return j, nil
 }
@@ -235,7 +253,7 @@ func (a *repasoArena) vista(sub string, staff bool, now time.Time) map[string]an
 			hitSlots = append(hitSlots, s)
 		}
 		sort.Ints(hitSlots)
-		yo = map[string]any{"id": p.ID, "puntos": p.Puntos, "aciertos": p.Aciertos, "golpes": p.Golpes, "respuesta": elegida, "slots": hitSlots, "semilla": semillaRepaso(p.ID, ronda)}
+		yo = map[string]any{"id": p.ID, "puntos": p.Puntos, "aciertos": p.Aciertos, "golpes": p.Golpes, "respuesta": elegida, "slots": hitSlots, "semilla": semillaRepaso(p.ID, ronda), "instructor": p.Instructor}
 		for i, t := range tabla {
 			if t["id"] == p.ID {
 				puesto = i + 1
@@ -245,7 +263,8 @@ func (a *repasoArena) vista(sub string, staff bool, now time.Time) map[string]an
 	if !staff && len(tabla) > 5 {
 		tabla = tabla[:5]
 	}
-	v := map[string]any{"partida": a.partida, "ahora_ms": now.UnixMilli(), "fase": fase, "ronda": ronda, "rondas": len(repasoBanco), "vence_ms": vence, "staff": staff, "capacidad": repasoMax, "inscritos": len(a.jugadores), "conectados": conectados, "yo": yo, "puesto": puesto, "tabla": tabla}
+	alumnos, profesores := a.plazas()
+	v := map[string]any{"instructores": profesores, "partida": a.partida, "ahora_ms": now.UnixMilli(), "fase": fase, "ronda": ronda, "rondas": len(repasoBanco), "vence_ms": vence, "staff": staff, "capacidad": repasoMax, "inscritos": alumnos, "conectados": conectados, "yo": yo, "puesto": puesto, "tabla": tabla}
 	if fase != "sala" {
 		q := repasoBanco[ronda]
 		v["pregunta"] = map[string]any{"texto": q.Texto, "opciones": q.Opciones}
@@ -302,6 +321,8 @@ func (s *Server) liveRepasoPost(w http.ResponseWriter, r *http.Request, p *Princ
 			return
 		}
 		if in.Accion == "iniciar" {
+			// El instructor puede dirigir y jugar. Su plaza no desplaza a los 20 alumnos.
+			_, _ = a.unirComo(p.ID, nombreMuro(p), true, now)
 			a.partida = fmt.Sprintf("%d", now.UnixNano())
 			a.inicio = now
 			a.cerrado = false
@@ -324,11 +345,7 @@ func (s *Server) liveRepasoPost(w http.ResponseWriter, r *http.Request, p *Princ
 			}
 		}
 	case "unirse":
-		if p.Staff() {
-			badRequest(w, "el instructor dirige como espectador")
-			return
-		}
-		if _, err := a.unir(p.ID, nombreMuro(p), now); err != nil {
+		if _, err := a.unirComo(p.ID, nombreMuro(p), p.Staff(), now); err != nil {
 			writeErr(w, 409, "sala_llena", err.Error())
 			return
 		}

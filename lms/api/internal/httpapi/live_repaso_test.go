@@ -142,7 +142,7 @@ func TestRepasoGlobosYTolerancia(t *testing.T) {
 		t.Fatal("falta limitar spam")
 	}
 }
-func TestRepasoHTTPPermisosYContenido(t *testing.T) {
+func newEnvRepaso(t *testing.T) *env {
 	e := newEnvEscenas(t)
 	dir := writeFixture(t)
 	// Fixture aislado con la lección real; no se modifican otros cursos.
@@ -176,6 +176,10 @@ func TestRepasoHTTPPermisosYContenido(t *testing.T) {
 		t.Fatal(err)
 	}
 	e.s.Content = cs
+	return e
+}
+func TestRepasoHTTPPermisosYContenido(t *testing.T) {
+	e := newEnvRepaso(t)
 	profe := e.login("profe@x.test", "profe1234")
 	e.call("POST", "/api/v1/auth/register", "", false, map[string]string{"email": "juega@x.test", "name": "Juega", "password": "juega-1234", "invite_code": "abc"}, "")
 	student := e.login("juega@x.test", "juega-1234")
@@ -192,6 +196,15 @@ func TestRepasoHTTPPermisosYContenido(t *testing.T) {
 	r := e.call("POST", url, profe, false, map[string]any{"accion": "iniciar"}, "")
 	if r.code != 200 || r.body["fase"] != "pregunta" {
 		t.Fatal("iniciar", r.code, r.raw)
+	}
+	if r.body["yo"] == nil {
+		t.Fatal("el instructor debe entrar al iniciar")
+	}
+	if v := e.call("POST", url, profe, false, map[string]any{"accion": "unirse"}, ""); v.code != 200 {
+		t.Fatal("el instructor también puede unirse", v.code)
+	}
+	if v := e.call("POST", url, profe, false, map[string]any{"accion": "responder", "partida": r.body["partida"], "ronda": 0, "respuesta": repasoBanco[0].Buena}, ""); v.code != 200 {
+		t.Fatal("el instructor no pudo responder", v.code)
 	}
 	if _, ok := r.body["correcta"]; ok {
 		t.Fatal("filtra respuesta")
@@ -211,5 +224,41 @@ func TestRepasoHTTPPermisosYContenido(t *testing.T) {
 	}
 	if r = e.call("POST", url, profe, false, map[string]any{"accion": "terminar"}, ""); r.code != 200 || r.body["fase"] != "final" {
 		t.Fatal("cerrar", r.raw)
+	}
+}
+
+func TestRepasoInstructorConSalaLlena(t *testing.T) {
+	a := nuevoRepaso()
+	now := time.Unix(5000, 0)
+	a.inicio = now
+	for i := 0; i < 20; i++ {
+		if _, err := a.unir(fmt.Sprint(i), "Alumno", now); err != nil {
+			t.Fatal(err)
+		}
+	}
+	prof, err := a.unirComo("profe", "Instructor", true, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(a.jugadores) != 21 || !prof.Instructor {
+		t.Fatal("el instructor debe tener una plaza adicional")
+	}
+	if alumnos, profes := a.plazas(); alumnos != 20 || profes != 1 {
+		t.Fatal("cupo incorrecto", alumnos, profes)
+	}
+	if _, err = a.unirComo("otro-profe", "Otro instructor", true, now); err == nil {
+		t.Fatal("cupo de instructor sin límite")
+	}
+	answer := repasoJugada{Accion: "responder", Partida: a.partida, Ronda: 0, Respuesta: enteroRepaso(repasoBanco[0].Buena)}
+	if err = a.jugar(prof, answer, now); err != nil {
+		t.Fatal(err)
+	}
+	at := now.Add(14500 * time.Millisecond)
+	x, y := blancoRepaso(semillaRepaso(prof.ID, 0), 0, 0, .4)
+	if err = a.jugar(prof, repasoJugada{Accion: "golpear", Partida: a.partida, Ronda: 0, Slot: 0, X: x, Y: y, AtMS: at.UnixMilli()}, at); err != nil {
+		t.Fatal(err)
+	}
+	if prof.Puntos != 105 || prof.Golpes != 1 {
+		t.Fatal("el instructor no suma", prof.Puntos, prof.Golpes)
 	}
 }
