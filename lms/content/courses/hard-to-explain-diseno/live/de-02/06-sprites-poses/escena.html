@@ -50,7 +50,7 @@
   <main class="esc-cuerpo">
     <div>
       <h1 class="esc-titulo">Una imagen no es un sprite: <em>el corte lo hace el código</em></h1>
-      <p class="esc-sub">El modelo dibuja ocho zorros. El juego necesita ocho números: la misma altura, la misma base y el mismo hocico.</p>
+      <p class="esc-sub">El modelo dibuja ocho zorros. El juego necesita ocho números: la misma cabeza, el mismo hocico y las patas libres para correr.</p>
     </div>
 
     <div class="esc-card tablero">
@@ -76,15 +76,15 @@
       <div class="tarjeta">
         <h3><i>2</i> Lo que pide el juego</h3>
         <div class="cifras">
-          <span class="cifra ok">alto 143</span>
-          <span class="cifra ok">base y=156</span>
-          <span class="cifra ok">hocico x=308</span>
+          <span class="cifra ok">alto 151–177</span>
+          <span class="cifra ok">cabeza y=10</span>
+          <span class="cifra ok">hocico x=310</span>
         </div>
-        <p>La caja de la pose y <b>un punto de ancla</b>. Con eso el dibujo se queda quieto aunque la cola cambie de forma.</p>
+        <p>La caja de la pose y <b>un punto de ancla</b>: la cabeza y el hocico. Las patas se mueven ±13 px; el cuerpo no salta.</p>
       </div>
       <div class="tarjeta">
         <h3><i>3</i> El camino que sí</h3>
-        <p><b>Una</b> pose canónica → <b>ocho ediciones</b> sobre esa misma imagen → recorte, altura normalizada y ancla. Una sola imagen con ocho poses nunca da consistencia <em>y</em> movimiento.</p>
+        <p><b>Una</b> pose canónica → <b>ocho ediciones</b> sobre esa misma imagen → recorte y ancla en la cabeza y el hocico. Una sola imagen con ocho poses nunca da consistencia <em>y</em> movimiento.</p>
       </div>
     </div>
   </main>
@@ -127,7 +127,10 @@
     ctx.clearRect(0, 0, AN, AL);
     ctx.font = '600 13px system-ui, sans-serif';
     const anchoA = H.w * S, altoA = H.h * S;
-    const anchoB = A.w * S, altoB = A.h * S;
+    const mediaA = H.celdas.reduce((n, c) => n + (c.bx1 - c.bx0), 0) / H.celdas.length;
+    const mediaB = A.tiles.reduce((n, t) => n + (t.bx1 - t.bx0), 0) / A.tiles.length;
+    const SB = S * mediaA / mediaB;
+    const anchoB = A.w * SB, altoB = A.h * SB;
     const totalA = 8 * anchoA + 7 * 8, totalB = 8 * anchoB + 7 * 8;
     const xA = (AN - totalA) / 2, xB = (AN - totalB) / 2;
 
@@ -152,9 +155,9 @@
 
     // ---- tira B
     ctx.fillStyle = '#8a879a';
-    ctx.fillText('2 · Las mismas poses en un atlas con ancla (hocico + base)', 14, 152);
+    ctx.fillText('2 · Las mismas poses en un atlas anclado por cabeza y hocico', 14, 152);
     if (atlas) {
-      const ay = A.tiles[0].ay * S;
+      const ay = A.tiles[0].ay * SB;
       for (let i = 0; i < 8; i++) {
         const t = A.tiles[i];
         const dx = xB + i * (anchoB + 8), dy = 162;
@@ -174,7 +177,7 @@
 
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.fillStyle = '#c8402f'; ctx.fillText('■ una base distinta en cada pose', 14, AL - 22);
-    ctx.fillStyle = '#0b5f58'; ctx.fillText('■ una sola base para las ocho', 300, AL - 22);
+    ctx.fillStyle = '#0b5f58'; ctx.fillText('■ cabeza quieta: solo se mueven las patas', 300, AL - 22);
     ctx.fillStyle = '#5a49d6'; ctx.fillText(`▢ frame ${iA + 1} de 8`, 560, AL - 22);
   }
 

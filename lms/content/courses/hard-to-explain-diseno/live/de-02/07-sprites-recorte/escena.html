@@ -73,7 +73,7 @@
           <canvas id="anclas" aria-label="La misma animación anclada por el centro y por el hocico"></canvas>
           <div class="mandos">
             <label><input type="radio" name="ancla" value="centro"> ancla: centro de la caja</label>
-            <label><input type="radio" name="ancla" value="hocico" checked> ancla: hocico + base</label>
+            <label><input type="radio" name="ancla" value="cabeza" checked> ancla: cabeza + hocico</label>
             <span class="sep"></span>
             <span class="cifra ok" id="desvio">desvío 0 px</span>
           </div>
@@ -91,7 +91,7 @@
 
         <details class="paso">
           <summary><i>3</i> Se ancla lo que no se mueve</summary>
-          <div><p>La cola cambia de forma en cada pose: si anclas por el centro de la caja, el cuerpo se corre. Ancla por el <b>hocico</b> y por la <b>base de las patas</b>.</p></div>
+          <div><p>La cola y las patas cambian de forma en cada pose: si anclas por el centro de la caja, el cuerpo se corre 10 px. Ancla por la <b>cabeza</b> y por el <b>hocico</b>.</p></div>
         </details>
       </div>
     </div>
@@ -175,9 +175,9 @@
 
   // ---- la misma animación con dos anclas distintas
   const A = SPR.atlas, tiles = A.tiles;
-  const S = 0.62, X = AN2 * .60, Y = AL2 - 20;
+  const S = 0.58, X = AN2 * .58, CABEZA = 20;
   const imgA = new Image();
-  let modo = 'hocico', frameA = 0, ultimo = performance.now(), acum = 0;
+  let modo = 'cabeza', frameA = 0, ultimo = performance.now(), acum = 0;
   imgA.onload = () => pintarAnclas(0);
   imgA.src = 'atlas.png';
 
@@ -191,18 +191,20 @@
     }
     cta.clearRect(0, 0, AN2, AL2);
     cta.strokeStyle = 'rgba(90,73,214,.5)'; cta.setLineDash([4, 4]); cta.lineWidth = 1;
+    const lineaPies = CABEZA + (A.tiles[0].ay - A.tiles[0].by0) * S;
     cta.beginPath(); cta.moveTo(X, 6); cta.lineTo(X, AL2 - 4); cta.stroke();
-    cta.beginPath(); cta.moveTo(6, Y); cta.lineTo(AN2 - 6, Y); cta.stroke();
+    cta.beginPath(); cta.moveTo(6, lineaPies); cta.lineTo(AN2 - 6, lineaPies); cta.stroke();
     cta.setLineDash([]);
 
     if (imgA.complete && imgA.naturalWidth) {
       const t = tiles[frameA];
-      const dx = modo === 'hocico' ? X - t.ax * S : X - ((t.bx0 + t.bx1) / 2) * S;
-      cta.drawImage(imgA, t.x, t.y, t.w, t.h, dx, Y - t.ay * S, t.w * S, t.h * S);
+      const dx = modo === 'cabeza' ? X - t.ax * S : X - ((t.bx0 + t.bx1) / 2) * S;
+      const dy = modo === 'cabeza' ? CABEZA - t.by0 * S : CABEZA + 4 - ((t.by0 + t.by1) / 2) * S;
+      cta.drawImage(imgA, t.x, t.y, t.w, t.h, dx, dy, t.w * S, t.h * S);
     }
 
     cta.fillStyle = '#5a49d6'; cta.font = '700 11px system-ui, sans-serif';
-    cta.fillText(modo === 'hocico' ? 'hocico fijo' : 'centro de la caja fijo', 8, 16);
+    cta.fillText(modo === 'cabeza' ? 'cabeza fija' : 'centro de la caja fijo', 8, 16);
     cta.fillStyle = '#8a879a'; cta.font = '600 10px system-ui, sans-serif';
     cta.fillText(`frame ${frameA + 1}/8`, AN2 - 62, 16);
   }
@@ -218,8 +220,8 @@
   for (const r of document.querySelectorAll('input[name=ancla]')) {
     r.onchange = () => {
       modo = r.value;
-      $('desvio').textContent = modo === 'hocico' ? 'desvío 0 px' : `desvío ${desvio} px`;
-      $('desvio').className = 'cifra ' + (modo === 'hocico' ? 'ok' : 'mal');
+      $('desvio').textContent = modo === 'cabeza' ? 'desvío 0 px' : `desvío ${desvio} px`;
+      $('desvio').className = 'cifra ' + (modo === 'cabeza' ? 'ok' : 'mal');
     };
   }
 })();

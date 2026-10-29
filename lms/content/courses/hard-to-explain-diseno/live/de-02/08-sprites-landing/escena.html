@@ -108,18 +108,18 @@
   medir();
 
   // ---- comprobaciones reales sobre el atlas
-  const altos = A.tiles.map(t => t.by1 - t.by0);
-  const bases = A.tiles.map(t => t.ay);
+  const cabezas = A.tiles.map(t => t.by0);
+  const patas = A.tiles.map(t => t.by1);
   const hocicos = A.tiles.map(t => t.ax);
   const unicos = (v) => new Set(v).size === 1;
   const filas = [
-    ['Alto igual en las ocho', `${Math.min(...altos)} px`, unicos(altos)],
-    ['Misma base para todas', `y = ${bases[0]}`, unicos(bases)],
     ['Mismo hocico', `x = ${hocicos[0]}`, unicos(hocicos)],
-    ['Ninguna pose toca el borde', '13 px de margen', A.tiles.every(t => t.bx1 < t.w - 6 && t.ay < t.h - 2)],
+    ['Cabeza a la misma altura', `y = ${cabezas[0]}`, unicos(cabezas)],
+    ['Las patas se mueven', `${Math.min(...patas)}–${Math.max(...patas)} px`, null],
+    ['Ninguna pose toca el borde', `${A.w - Math.max(...A.tiles.map(t => t.bx1))} px de margen`, A.tiles.every(t => t.bx1 < t.w - 4 && t.by1 < t.h - 2)],
   ];
   $('chequeo').innerHTML = filas.map(([k, v, ok]) =>
-    `<li><span class="tick">${ok ? '✓' : '·'}</span><span><b>${k}</b> · ${v}</span></li>`).join('');
+    `<li><span class="tick">${ok === true ? '✓' : ok === false ? '·' : '→'}</span><span><b>${k}</b> · ${v}</span></li>`).join('');
 
   // ---- la landing de mentira
   const img = new Image();
@@ -181,7 +181,7 @@
     if (listo) {
       const f = Math.floor(t * fps) % 8;
       const tile = A.tiles[f];
-      const s = 0.45;
+      const s = 0.42;
       const w = A.w * s, h = A.h * s;
       x += vel * dt;
       if (x > AN - 20) x = -w + 20;
