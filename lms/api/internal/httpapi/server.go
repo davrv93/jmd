@@ -55,6 +55,7 @@ type Server struct {
 	runLimit  *limiter
 	termSlots *slots
 	Aula      AulaMotor // nil = sin aula configurada (503)
+	repaso    *repasoArena
 	live      *liveHub
 	presencia *presencia
 	presMu    sync.Mutex
@@ -119,6 +120,9 @@ func (s *Server) Handler() http.Handler {
 	}
 	if s.llm == nil {
 		s.llm = &llmCache{}
+	}
+	if s.repaso == nil {
+		s.repaso = nuevoRepaso()
 	}
 	mux := http.NewServeMux()
 
@@ -218,6 +222,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/muro", s.authed(s.liveMuroPost))
 	mux.Handle("GET /api/v1/live/{lesson}/muro", s.authed(s.liveMuroGet))
 	mux.Handle("DELETE /api/v1/live/{lesson}/muro", s.authed(s.staff(s.liveMuroBorrar)))
+	mux.Handle("GET /api/v1/live/{lesson}/repaso", s.authed(s.liveRepasoGet))
+	mux.Handle("POST /api/v1/live/{lesson}/repaso", s.authed(s.liveRepasoPost))
 	mux.Handle("GET /api/v1/live/{lesson}/juego", s.authed(s.liveJuegoGet))
 	mux.Handle("POST /api/v1/live/{lesson}/juego", s.authed(s.liveJuegoPost)) // reiniciar/terminar: solo staff (ver live_juego.go)
 	mux.Handle("POST /api/v1/live/{lesson}/evidencia", s.authed(s.liveEvidencia))
