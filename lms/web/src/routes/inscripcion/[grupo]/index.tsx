@@ -1,6 +1,6 @@
 import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
-import { api, ApiError, errMsg, type Inscripcion, type SorteoAviso } from "~/lib/api";
+import { api, ApiError, errMsg, type Inscripcion, type PendientePago, type SorteoAviso } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
 import { getParam, pathId, setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
@@ -24,6 +24,8 @@ export default component$(() => {
   // aleatorio: primero se muestra el número y recién después se entra al curso.
   const sorteoAviso = useSignal<SorteoAviso | null>(null);
   const cursosPend = useSignal<string[]>([]);
+  // Vacantes gratuitas agotadas: la cuenta queda creada y se coordina el pago por WhatsApp.
+  const pago = useSignal<PendientePago | null>(null);
 
   // Enlaces personalizados: /inscripcion/<grupo>/?nombre=Ana+Torres&correo=ana@x.com
   // (lo que reparte el instructor; el alumno solo confirma y crea su clave).
@@ -63,7 +65,9 @@ export default component$(() => {
     try {
       const r = await api.inscribirse(st.grupo, { name: form.name, email: form.email, password: form.password });
       session.me = r.user;
-      if (r.sorteo) {
+      if (r.pendiente_pago) {
+        pago.value = r;
+      } else if (r.sorteo) {
         sorteoAviso.value = r.sorteo;
         cursosPend.value = r.cursos;
       } else {
@@ -83,7 +87,9 @@ export default component$(() => {
     try {
       const r = await api.unirse(st.grupo);
       if (session.me) session.me = { ...session.me, cohorts: r.cohorts };
-      if (r.sorteo) {
+      if (r.pendiente_pago) {
+        pago.value = r;
+      } else if (r.sorteo) {
         sorteoAviso.value = r.sorteo;
         cursosPend.value = r.cursos;
       } else {
@@ -101,6 +107,11 @@ export default component$(() => {
   const info = st.info;
   const me = session.me;
   const dentro = !!me && me.cohorts.includes(info.grupo);
+  const pendiente = !!me && !dentro && me.cohorts.includes(`${info.grupo}-pago`);
+  const cupos = info.cupos;
+  const waGeneral = info.whatsapp
+    ? `https://wa.me/${info.whatsapp}?text=${encodeURIComponent(`Hola, quiero inscribirme al ${info.nombre} de Programación agéntica y coordinar el pago.`)}`
+    : "";
   const curso = info.cursos[0];
   const entrar = `/?next=${encodeURIComponent(`/inscripcion/${info.grupo}/`)}`;
 
@@ -121,10 +132,29 @@ export default component$(() => {
             ))}
           </ul>
         )}
+        {cupos && (
+          <p class="hte-cupos" role="status" style={{ marginTop: ".9rem", fontWeight: 700 }}>
+            {cupos.quedan > 0
+              ? <>🎟️ Quedan <b>{cupos.quedan}</b> de {cupos.total} vacantes gratuitas</>
+              : <>Las {cupos.total} vacantes gratuitas ya se ocuparon. Puedes inscribirte: para completar tu inscripción envía un WhatsApp y coordina el pago.</>}
+          </p>
+        )}
       </section>
       <div class="login">
         <div class="card" style="padding:1.1rem 1.2rem">
-          {sorteoAviso.value ? (
+          {pago.value || pendiente ? (
+            <div style={{ margin: 0 }}>
+              <p style={{ marginTop: 0 }}>
+                <b>Tu cuenta ya está creada.</b> {pago.value?.mensaje || `Las vacantes gratuitas del ${info.nombre} ya se ocuparon. Para completar tu inscripción envía un WhatsApp y coordina el pago.`}
+              </p>
+              <p class="sm muted">Cuando se confirme tu pago, el curso aparece en tu cuenta. Entras con tu correo y la contraseña que acabas de crear.</p>
+              {(pago.value?.whatsapp || waGeneral) && (
+                <a class="btn" style={{ width: "100%", justifyContent: "center", background: "#25d366", borderColor: "#25d366" }} href={pago.value?.whatsapp || waGeneral} target="_blank" rel="noopener">
+                  Enviar WhatsApp y coordinar el pago
+                </a>
+              )}
+            </div>
+          ) : sorteoAviso.value ? (
             <div style={{ margin: 0 }}>
               <p class="sm" style={{ marginTop: 0 }}>
                 {sorteoAviso.value.ganador

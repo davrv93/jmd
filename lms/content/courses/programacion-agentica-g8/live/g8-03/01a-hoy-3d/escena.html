@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E01 · Hoy: tu Robo cobra vida en 3D, con TU prompt</title>
+<!--
+  Bienvenida de la clase 3 del G8 (nueva). El objetivo del día y la regla: criterio antes que magia.
+  Sin JS de red: solo el tema. Compuerta «presentes»: el «Lo logré» dice que estás en la clase.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.h3-col { display: grid; grid-template-columns: 1.25fr .75fr; gap: 3vw; align-items: center; }
+.h3-txt { display: grid; gap: 2vh; align-content: center; justify-items: start; }
+.h3-ruta { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .55em 1.4em; font-size: .9em; }
+.h3-ruta li { display: flex; align-items: center; gap: .6em; font-weight: 700; }
+.h3-ruta b { flex: none; display: grid; place-items: center; width: 1.65em; height: 1.65em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .82em; }
+.h3-ruta small { font-weight: 500; color: var(--muted); }
+.h3-regla { display: grid; gap: .4em; border-left: 4px solid var(--accent); padding: .6em 1em; background: var(--s1); border-radius: 0 1em 1em 0; box-shadow: var(--card-shadow); font-size: .86em; }
+.h3-regla strong { font-size: 1.25em; letter-spacing: -.01em; }
+.h3-regla strong em { font-style: normal; color: var(--accent); }
+.h3-regla p { margin: 0; color: var(--muted); }
+.h3-robo { width: 100%; max-height: 64vh; }
+.h3-robo .cab { fill: var(--accent); }
+.h3-robo .cab2 { fill: color-mix(in srgb, var(--accent) 70%, #14122b); }
+.h3-robo .cab3 { fill: color-mix(in srgb, var(--accent) 45%, #ffffff); }
+.h3-robo .ojo { fill: #fff; }
+.h3-robo .pupila { fill: #14122b; animation: h3-mira 5s ease-in-out infinite; }
+.h3-robo .ant { stroke: var(--fg); stroke-width: 5; stroke-linecap: round; fill: none; }
+.h3-robo .luz { fill: var(--est-o); animation: esc-pulso 1.8s ease-in-out infinite; }
+.h3-robo .sombra { fill: var(--fg); opacity: .12; }
+.h3-robo .malla { fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .35; }
+.h3-robo .burbuja { fill: var(--s1); stroke: var(--line2); stroke-width: 2; }
+.h3-robo text { fill: var(--fg); font: 700 22px system-ui, sans-serif; }
+.h3-robo text.m { fill: var(--muted); font-weight: 600; font-size: 17px; }
+.h3-flota { animation: esc-flota 4s ease-in-out infinite; transform-box: fill-box; }
+@keyframes h3-mira { 0%, 40%, 100% { transform: translateX(0); } 50%, 70% { transform: translateX(6px); } 80% { transform: translateX(-5px); } }
+@media (max-width: 760px) {
+  html, body { height: auto; }
+  body { overflow: visible; }
+  .esc { padding: 14px 16px; gap: 14px; }
+  .esc-titulo { font-size: 1.7em; }
+  .esc-sub { font-size: 1em; }
+  .h3-col { grid-template-columns: 1fr; gap: 12px; }
+  .h3-robo { max-height: 34vh; order: -1; }
+  .h3-ruta { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .h3-robo .pupila, .h3-flota { animation: none; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 742 L168 690 L236 728 L296 654"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="742" r="3.5"/><circle class="eg" cx="168" cy="690" r="4.5"/><circle class="e" cx="236" cy="728" r="3"/><circle class="eo" cx="296" cy="654" r="5"/>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/>
+    <circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+  </g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 8 · E01</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="h3-col">
+      <div class="h3-txt">
+        <span class="esc-chip a-in">Clase 3 · Programación agéntica</span>
+        <h1 class="esc-titulo a-in" style="--d:.1s">Hoy tu Robo <em>cobra vida en 3D</em>, con TU prompt</h1>
+        <p class="esc-sub a-in" style="--d:.2s">El Robo que configuraste en la sesión 2 sale de la pantalla plana: tú escribes el encargo, una IA lo califica y tu agente lo construye. Sin comandos que copiar.</p>
+        <ol class="h3-ruta" aria-label="La ruta de hoy">
+          <li class="a-in" style="--d:.4s"><b>1</b><span>Tu Robo de la sesión 2 <small>· lo que ya sabe</small></span></li>
+          <li class="a-in" style="--d:.5s"><b>2</b><span>Laboratorio de prompt <small>· tú lo escribes</small></span></li>
+          <li class="a-in" style="--d:.6s"><b>3</b><span>Tu agente lo construye <small>· lo ves en el Visor</small></span></li>
+          <li class="a-in" style="--d:.7s"><b>4</b><span>Mejora <small>· voz, oído y ánimo</small></span></li>
+          <li class="a-in" style="--d:.8s"><b>5</b><span>Imagen con FLUX <small>· su escenario</small></span></li>
+          <li class="a-in" style="--d:.9s"><b>6</b><span>Voz ↔ texto <small>· cómo funciona</small></span></li>
+        </ol>
+        <div class="h3-regla a-in" style="--d:1.1s">
+          <strong><em>Criterio</em> &gt; magia</strong>
+          <p>Un buen prompt dice <b>qué</b> quieres, <b>con qué</b>, <b>dónde</b> se guarda y <b>cómo compruebas</b> que funciona. La IA te da una nota y una pregunta; la decisión es tuya.</p>
+        </div>
+      </div>
+      <svg class="esc-svg h3-robo a-in" style="--d:.3s" viewBox="0 0 420 520" role="img" aria-label="Un robot en 3D que flota sobre una malla y dice: hola, ¿qué me pides hoy?">
+        <ellipse class="sombra" cx="210" cy="470" rx="120" ry="18"/>
+        <path class="malla" d="M40 470 L380 470 M70 450 L350 450 M100 432 L320 432 M90 490 L330 490 M210 420 L210 505 M140 425 L110 505 M280 425 L310 505"/>
+        <g class="h3-flota">
+          <path class="ant" d="M210 112 L210 72"/>
+          <circle class="luz" cx="210" cy="62" r="12"/>
+          <!-- cabeza en 3D: frente, lado y tapa -->
+          <path class="cab3" d="M110 130 L210 100 L320 126 L224 158 Z"/>
+          <path class="cab2" d="M224 158 L320 126 L320 236 L224 270 Z"/>
+          <path class="cab" d="M110 130 L224 158 L224 270 L110 240 Z"/>
+          <ellipse class="ojo" cx="146" cy="190" rx="18" ry="22"/><ellipse class="ojo" cx="196" cy="200" rx="18" ry="22"/>
+          <circle class="pupila" cx="148" cy="194" r="8"/><circle class="pupila" cx="198" cy="204" r="8"/>
+          <path d="M140 236 Q170 252 204 244" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <!-- cuerpo -->
+          <path class="cab3" d="M134 288 L218 306 L298 284 L214 268 Z"/>
+          <path class="cab2" d="M218 306 L298 284 L298 380 L218 404 Z"/>
+          <path class="cab" d="M134 288 L218 306 L218 404 L134 384 Z"/>
+          <circle class="luz" cx="176" cy="342" r="10" style="animation-delay:.6s"/>
+        </g>
+        <g class="a-in" style="--d:1.4s">
+          <path class="burbuja" d="M236 20 h170 a14 14 0 0 1 14 14 v50 a14 14 0 0 1 -14 14 h-120 l-22 22 l2 -22 h-30 a14 14 0 0 1 -14 -14 v-50 a14 14 0 0 1 14 -14 z" transform="translate(-14 0)"/>
+          <text x="236" y="54">¡Hola! ¿Qué</text>
+          <text class="m" x="236" y="80">me pides hoy?</text>
+        </g>
+      </svg>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» para decir que estás en la clase</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

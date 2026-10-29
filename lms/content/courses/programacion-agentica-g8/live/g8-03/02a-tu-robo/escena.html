@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E02 · Tu Robo de la sesión 2</title>
+<!--
+  Lo que el agente va a leer: GET /live/<lección>/mi-robo (resumen de /trabajo/negocio/asistente.json).
+  Tarjeta pintada con SUS colores, su saludo en voz (POST voz, respaldo speechSynthesis) y las preguntas.
+  Si no hay asistente.json pero sí /trabajo/osito (el Robo del G8 en la sesión 2), el LMS lo arma desde osito (origen «osito»).
+  Si no hay asistente.json (existe:false) se explica que el agente partirá del ejemplo de la cafetería.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/laboratorio.css">
+<script src="../../comun/laboratorio.js"></script>
+<style id="esc-propio">
+.esc-titulo { font-size: 1.85em; }
+.esc-sub { font-size: .92em; }
+.tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.4em; align-items: start; font-size: .8em; }
+.tr-ficha { --pr: #5a49d6; --ac: #9d8cff; position: relative; overflow: hidden; color: #fff; border-radius: 1.2em; padding: 1.1em 1.3em; display: grid; gap: .55em;
+  background: linear-gradient(145deg, var(--pr), color-mix(in srgb, var(--pr) 55%, #14122b)); border: 2px solid var(--ac); box-shadow: var(--card-shadow); }
+.tr-ficha::after { content: ""; position: absolute; right: -2.5em; top: -2.5em; width: 9em; height: 9em; border-radius: 50%; background: var(--ac); opacity: .22; }
+.tr-cab { display: flex; align-items: center; gap: .7em; position: relative; z-index: 1; }
+.tr-cara { font-size: 2.4em; line-height: 1; animation: esc-flota 4s ease-in-out infinite; }
+.tr-cab b { font-size: 1.5em; line-height: 1.05; display: block; }
+.tr-cab small { opacity: .85; }
+.tr-ficha p { margin: 0; position: relative; z-index: 1; }
+.tr-saludo { font-size: 1.12em; font-weight: 700; }
+.tr-pers { font-style: italic; opacity: .9; }
+.tr-chips { display: flex; flex-wrap: wrap; gap: .35em; position: relative; z-index: 1; }
+.tr-chips span { background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: .15em .7em; font-size: .86em; }
+.tr-colores { display: flex; gap: .5em; align-items: center; font-size: .86em; position: relative; z-index: 1; }
+.tr-colores i { width: 1.3em; height: 1.3em; border-radius: .35em; border: 2px solid rgba(255,255,255,.7); display: inline-block; }
+.tr-ficha .lb-btn { position: relative; z-index: 1; justify-self: start; background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.55); color: #fff; }
+.tr-ficha .lb-estado { color: rgba(255,255,255,.85); position: relative; z-index: 1; }
+.tr-estado { list-style: none; margin: 0; padding: 0; display: grid; gap: .45em; }
+.tr-estado li { display: flex; gap: .6em; align-items: baseline; }
+.tr-estado li i { font-style: normal; font-weight: 800; }
+.tr-estado .si i { color: var(--ok); }
+.tr-estado .no i { color: var(--warn); }
+.tr-piensa { display: grid; gap: .5em; }
+.tr-piensa ol { margin: 0; padding-left: 1.3em; display: grid; gap: .35em; }
+.tr-piensa strong { color: var(--accent); }
+.tr-cargando { color: var(--muted); }
+@media (max-width: 900px) { .tr { grid-template-columns: 1fr; font-size: .95em; } }
+@media (max-width: 600px) { body.lb-scroll .esc { padding: 12px 16px 16px; } .tr { font-size: 1em; } .esc-titulo { font-size: 1.55em; } }
+@media (prefers-reduced-motion: reduce) { .tr-cara { animation: none; } }
+</style>
+</head>
+<body class="lb-scroll">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 742 L168 690 L236 728 L296 654"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="742" r="3.5"/><circle class="eg" cx="168" cy="690" r="4.5"/><circle class="e" cx="236" cy="728" r="3"/><circle class="eo" cx="296" cy="654" r="5"/>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/>
+    <circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+  </g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Grupo 8 · E02</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Tu Robo de la sesión 2: <em>lo que tu agente va a leer</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Esto salió de tu <code>/trabajo/negocio/asistente.json</code>. No tienes que repetirlo en el prompt: basta con pedir que lo lea. Lo que sí decides tú es qué hacer con ello.</p>
+    </div>
+    <div class="tr">
+      <section class="tr-ficha" id="tr-ficha" aria-live="polite">
+        <p class="tr-cargando">Leyendo tu asistente.json…</p>
+      </section>
+      <div class="lb-col">
+        <section class="lb-caja">
+          <h2>Tu aula</h2>
+          <ul class="tr-estado" id="tr-estado"><li class="tr-cargando">Revisando…</li></ul>
+        </section>
+        <section class="lb-caja tr-piensa">
+          <h2>Piénsalo antes de escribir</h2>
+          <ol>
+            <li>¿Qué de tu Robo debe <strong>verse</strong> en 3D? ¿Sus colores, su cara, su nombre?</li>
+            <li>¿Qué hace <strong>al abrir</strong> la página? ¿Saluda? ¿Muestra tus preguntas como botones?</li>
+            <li>¿Qué pasa cuando alguien le <strong>escribe</strong>? ¿Dónde aparece la respuesta?</li>
+            <li>¿Cómo vas a <strong>comprobar</strong> que funciona?</li>
+          </ol>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Tus respuestas a estas cuatro preguntas son los huecos de tu prompt en la escena siguiente</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var esc = Lab.esc, ficha = document.getElementById("tr-ficha"), estado = document.getElementById("tr-estado");
+  function color(c, def) { return /^#[0-9a-f]{3,8}$/i.test(String(c || "")) ? c : def; }
+  function item(ok, t) { return '<li class="' + (ok ? "si" : "no") + '"><i aria-hidden="true">' + (ok ? "✓" : "•") + '</i><span>' + t + '</span></li>'; }
+  Lab.miRobo().then(function (d) {
+    var a = (d && d.asistente) || {}, m = a.marca || {};
+    estado.innerHTML =
+      // origen "osito": el LMS armó asistente.json desde el Robo de la sesión 2 en /trabajo/osito (no hay que rehacer nada).
+      item(d.existe, !d.existe ? "No hay <code>asistente.json</code>: el agente usará el ejemplo de la cafetería."
+        : d.asistente && d.asistente.origen === "sesion-2" ? "Tu Robo de «Diseña tu Robo» (sesión 2) ya está en tu aula: <code>negocio/asistente.json</code>."
+        : d.asistente && d.asistente.origen === "osito" ? "Tu Robo de la sesión 2 (<code>/trabajo/osito</code>) quedó en <code>negocio/asistente.json</code>: su personalidad y sus " + (d.asistente.total_preguntas || 0) + " preguntas. Puedes cambiarlo en tu prompt."
+        : d.asistente && d.asistente.origen === "osito-nuevo" ? "No encontré un Robo tuyo de la sesión 2: te dejé el <b>Robo base del taller</b> con " + (d.asistente.total_preguntas || 0) + " preguntas. En tu prompt dale tu nombre, tu negocio y tu forma de hablar."
+        : "Tienes tu <code>asistente.json</code> de la sesión 2.") +
+      item(d.mi_robo, d.mi_robo ? "El backend de tu Robo está en tu aula: el robot 3D podrá conversar (<code>/api/chat</code>) y hablar (<code>/api/voz</code>)." : "No encontré el backend de tu Robo: el robot se verá, pero quizá no converse. Avísale al instructor.") +
+      item(d.robo3d, d.robo3d ? "Ya existe <code>robo3d/index.html</code>: tu próximo prompt puede mejorarlo o rehacerlo." : "Aún no hay <code>robo3d/</code>: lo construirá tu agente con tu prompt.");
+    if (!d.existe) {
+      ficha.style.setProperty("--pr", "#8b5a2b"); ficha.style.setProperty("--ac", "#ffcf8a");
+      ficha.innerHTML = '<div class="tr-cab"><span class="tr-cara" aria-hidden="true">☕</span><div><b>Barista</b><small>Café La Esquina · el ejemplo</small></div></div>' +
+        '<p>No encontré tu Robo de la sesión 2. <b>No pasa nada:</b> tu agente partirá del ejemplo de la cafetería.</p>' +
+        '<p class="tr-pers">Si quieres que sea TU negocio, descríbelo en tu prompt: cómo se llama, a qué se dedica, cómo habla y qué te preguntan siempre.</p>';
+      return;
+    }
+    ficha.style.setProperty("--pr", color(m.primario, "#5a49d6"));
+    ficha.style.setProperty("--ac", color(m.acento, "#9d8cff"));
+    var preg = Array.isArray(a.preguntas) ? a.preguntas : [];
+    var neg = a.negocio || {};
+    ficha.innerHTML =
+      '<div class="tr-cab"><span class="tr-cara" aria-hidden="true">🤖</span><div><b>' + esc(a.nombre || "Tu Robo") + '</b><small>' + esc([neg.nombre, neg.rubro].filter(Boolean).join(" · ")) + '</small></div></div>' +
+      (a.saludo ? '<p class="tr-saludo">«' + esc(a.saludo) + '»</p>' : '') +
+      (a.personalidad ? '<p class="tr-pers">' + esc(a.personalidad) + '</p>' : '') +
+      (preg.length ? '<div class="tr-chips" aria-label="Preguntas que ya sabe responder">' + preg.map(function (p) { return '<span>' + esc(p) + '</span>'; }).join("") + '</div>' : '') +
+      '<p><small>' + (a.total_preguntas || preg.length) + ' preguntas frecuentes</small></p>' +
+      '<div class="tr-colores"><i style="background:' + esc(color(m.primario, "#5a49d6")) + '"></i><i style="background:' + esc(color(m.acento, "#9d8cff")) + '"></i> tus colores: ' + esc(m.primario || "—") + ' y ' + esc(m.acento || "—") + '</div>' +
+      (a.saludo ? '<button type="button" class="lb-btn" id="tr-oir" aria-pressed="false">🔊 <span>Escuchar su saludo</span></button><p class="lb-estado" id="tr-oir-est" aria-live="polite"></p>' : '');
+    var b = document.getElementById("tr-oir");
+    if (b) { b.dataset.etiqueta = "Escuchar su saludo"; Lab.botonVoz(b, function () { return a.saludo; }, document.getElementById("tr-oir-est")); }
+  }, function (e) {
+    ficha.innerHTML = '<p>' + esc(Lab.mensaje(e, "leer tu asistente.json")) + '</p><p class="tr-pers">Igual puedes seguir: en tu prompt describe tu negocio y cómo habla tu Robo.</p>';
+    estado.innerHTML = item(false, "No pude revisar tu aula ahora.");
+  });
+})();
+</script>
+</body>
+</html>

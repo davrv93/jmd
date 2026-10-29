@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E09 · Construir 3: la voz</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas; el CSS común va en ../../comun/escena.css), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+
+.esc-svg text.m { fill: var(--muted); }
+.esc-svg text.ac { fill: var(--accent); }
+.esc-svg text.mono { font-family: var(--mono); }
+.nodo { fill: var(--s1); stroke: var(--line2); stroke-width: 2.5; }
+.motor { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 2.5; }
+.casa { fill: none; stroke: var(--line2); stroke-width: 2; stroke-dasharray: 7 6; }
+.carril { fill: none; stroke: var(--line2); stroke-width: 3; stroke-linecap: round; }
+.punta { fill: var(--line2); }
+.mic { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 3.5; stroke-linecap: round; }
+.mic-l { fill: none; stroke: var(--accent); stroke-width: 3.5; stroke-linecap: round; }
+.barra { fill: var(--accent); transform-box: fill-box; transform-origin: center; }
+.barra.w { animation: vz-onda .42s ease-in-out infinite alternate; animation-delay: var(--w, 0s); animation-iteration-count: 7; }
+.slot-b { fill: var(--accent); opacity: 0; transform-box: fill-box; transform-origin: center; animation: vz-barra .3s ease-in forwards; animation-delay: var(--d); animation-fill-mode: both; }
+.slot-t { font-family: var(--mono); font-weight: 700; font-size: 30px; fill: var(--fg); animation: vz-letra .32s cubic-bezier(.2,.8,.3,1.2) both; animation-delay: var(--d); transform-box: fill-box; transform-origin: center; }
+.campo { fill: var(--s1); stroke: var(--line2); stroke-width: 2.5; }
+.paso-r { fill: var(--s2); stroke: var(--line2); stroke-width: 2.5; }
+.esc-svg text.paso-t { fill: var(--fg); font-weight: 800; }
+.esc-svg text.paso-n { fill: var(--accent); font-weight: 800; }
+.cursor { fill: var(--accent); animation: vz-cursor 1s steps(2, start) 4.8s 4; }
+
+@keyframes vz-onda { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
+@keyframes vz-barra { 0% { opacity: .9; transform: scaleY(1); } 100% { opacity: 0; transform: scaleY(.1); } }
+@keyframes vz-letra { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes vz-cursor { to { opacity: 0; } }
+.slot-b { opacity: 0; }
+
+.vz-regla { text-align: center; padding: .4em 1em; border-radius: 1em; background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); font-size: 1.3em; font-weight: 800; letter-spacing: -.01em; }
+.vz-regla em { font-style: normal; color: var(--accent); }
+.esc-titulo { font-size: 1.6em; }
+.esc-svg { max-height: 22vh; }
+.vz-mic-fila { display: flex; align-items: center; gap: .7em; min-width: 0; }
+.vz-mic { font: 800 .8em system-ui, sans-serif; display: inline-flex; align-items: center; gap: .5em; padding: .5em 1.2em; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; white-space: nowrap; }
+.vz-mic i { width: .7em; height: .7em; border-radius: 50%; background: currentColor; }
+.vz-mic[aria-pressed="true"] { background: #e5484d; border-color: #e5484d; color: #fff; }
+.vz-mic[aria-pressed="true"] i { animation: vz-latido 1s ease-in-out infinite; }
+@keyframes vz-latido { 50% { transform: scale(.55); opacity: .5; } }
+.vz-ia { font-size: .7em; display: grid; gap: .3em; padding: .5em .8em; border-radius: .7em; background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.vz-ia p { margin: 0; }
+.vz-ia b { color: var(--accent); }
+.vz-ia .err { color: #e5484d; text-decoration: line-through; }
+.vz-ia small { color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .vz-mic[aria-pressed="true"] i { animation: none; } }
+.vz-abajo { display: grid; grid-template-columns: 1fr 1.15fr; gap: 1.6vw; align-items: stretch; }
+.vz-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .6em 1em; box-shadow: var(--card-shadow); display: grid; gap: .45em; align-content: start; min-width: 0; }
+.vz-card h2 { margin: 0; font-size: .66em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.vz-ruta { display: flex; align-items: center; gap: .5em; flex-wrap: wrap; font-size: .78em; }
+.vz-ruta code { font: 600 1em var(--mono); color: var(--fg); background: var(--s2); border: 1px solid var(--line); border-radius: .4em; padding: .15em .55em; }
+.vz-btn { font: 700 .7em system-ui, sans-serif; color: var(--accent); background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 999px; padding: .35em .9em; cursor: pointer; line-height: 1.2; }
+.vz-btn:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.vz-btn:disabled { opacity: .5; cursor: default; }
+.vz-estilos { display: flex; gap: .35em; flex-wrap: wrap; align-items: center; font-size: .7em; color: var(--muted); }
+.vz-estilos button { font: 700 .95em system-ui, sans-serif; color: var(--fg); background: var(--s2); border: 1px solid var(--line2); border-radius: 999px; padding: .2em .7em; cursor: pointer; }
+.vz-estilos button.on { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.vz-pasos { display: flex; gap: .5em 1.2em; flex-wrap: wrap; }
+.vz-paso { display: inline-flex; align-items: center; gap: .5em; font-size: .8em; font-weight: 700; cursor: pointer; background: none; border: 0; padding: 0; color: inherit; font-family: inherit; }
+.vz-paso i { font-style: normal; display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--s2); border: 2px solid var(--line2); color: var(--muted); font-size: .85em; transition: background .2s, transform .2s; }
+.vz-paso[aria-pressed="true"] i { background: var(--ok); border-color: var(--ok); color: var(--on-accent); transform: scale(1.08); }
+.vz-paso[aria-pressed="true"] { color: var(--ok); }
+.vz-dato { font-size: .68em; color: var(--muted); }
+.vz-dato b { color: var(--ok); }
+.vz-acierto { display: grid; grid-template-columns: 1fr 1fr auto; gap: .6em; align-items: end; }
+.vz-campo { display: grid; gap: .15em; font-size: .62em; font-weight: 700; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.vz-campo input { font: 500 1.35em system-ui, sans-serif; color: var(--fg); background: var(--s2); border: 1px solid var(--line2); border-radius: .5em; padding: .35em .6em; width: 100%; min-width: 0; text-transform: none; letter-spacing: 0; }
+.vz-campo input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.vz-pct { font-size: 1.9em; font-weight: 800; line-height: 1; letter-spacing: -.03em; color: var(--accent); min-width: 3em; text-align: right; font-variant-numeric: tabular-nums; }
+.vz-pct small { display: block; font-size: .36em; font-weight: 700; color: var(--muted); letter-spacing: 0; text-align: right; }
+
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 8 · E09</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Tu voz se vuelve <em>texto</em> y tú lo revisas</h1>
+    <svg class="esc-svg" viewBox="0 0 1600 340" role="img" aria-label="Diagrama: tu voz entra al micrófono como onda, pasa por el reconocimiento de voz y sale como texto editable en el campo, antes de enviarse.">
+      <!-- 1. Micrófono y onda -->
+      <g class="a-in" style="--d:.2s">
+        <rect class="mic" x="40" y="118" width="46" height="84" rx="23"/>
+        <path class="mic-l" d="M26 176 Q26 226 63 226 Q100 226 100 176 M63 226 V256 M42 256 H84"/>
+      </g>
+      <rect class="barra w" style="--w:0.0s" x="134" y="150" width="10" height="40" rx="5"/><rect class="barra w" style="--w:0.07s" x="158" y="134" width="10" height="72" rx="5"/><rect class="barra w" style="--w:0.14s" x="182" y="144" width="10" height="52" rx="5"/><rect class="barra w" style="--w:0.21s" x="206" y="122" width="10" height="96" rx="5"/><rect class="barra w" style="--w:0.28s" x="230" y="138" width="10" height="64" rx="5"/><rect class="barra w" style="--w:0.35s" x="254" y="152" width="10" height="36" rx="5"/><rect class="barra w" style="--w:0.42s" x="278" y="128" width="10" height="84" rx="5"/><rect class="barra w" style="--w:0.49s" x="302" y="141" width="10" height="58" rx="5"/><rect class="barra w" style="--w:0.56s" x="326" y="120" width="10" height="100" rx="5"/><rect class="barra w" style="--w:0.63s" x="350" y="148" width="10" height="44" rx="5"/><rect class="barra w" style="--w:0.7s" x="374" y="132" width="10" height="76" rx="5"/><rect class="barra w" style="--w:0.77s" x="398" y="145" width="10" height="50" rx="5"/>
+      <text class="a-in m" style="--d:.5s" x="270" y="300" font-size="24" text-anchor="middle">tu voz (onda)</text>
+      <!-- 2. Reconocimiento de voz -->
+      <path class="carril a-draw" pathLength="1" style="--d:.8s;--t:.4s" d="M440 170 H514"/><path class="punta a-in" style="--d:1.1s" d="M530 170 l-16 -9 v18 z"/>
+      <g class="a-pop" style="--d:.9s">
+        <rect class="nodo" x="540" y="20" width="400" height="300" rx="22"/>
+        <text x="740" y="68" font-size="29" font-weight="800" text-anchor="middle">Reconocimiento de voz</text>
+        <rect class="motor" x="566" y="100" width="348" height="84" rx="14"/>
+        <text class="ac" x="740" y="134" font-size="23" font-weight="800" text-anchor="middle">EN CLASE</text>
+        <text x="740" y="166" font-size="23" text-anchor="middle">el de tu navegador (Chrome)</text>
+        <rect class="casa" x="566" y="208" width="348" height="84" rx="14"/>
+        <text class="m" x="740" y="242" font-size="23" font-weight="800" text-anchor="middle">EN CASA</text>
+        <text class="m" x="740" y="274" font-size="23" text-anchor="middle">whisper en tu laptop</text>
+      </g>
+      <!-- 3. Texto en el campo -->
+      <path class="carril a-draw" pathLength="1" style="--d:1.2s;--t:.4s" d="M944 170 H978"/><path class="punta a-in" style="--d:1.5s" d="M994 170 l-16 -9 v18 z"/>
+      <text class="a-in m" style="--d:1.3s" x="1000" y="60" font-size="24"><tspan class="paso-n">3 ·</tspan> Revisa lo que entendió (todavía no se envió)</text>
+      <rect class="campo a-in" style="--d:1.3s" x="1000" y="90" width="580" height="164" rx="18"/>
+      <rect class="slot-b" style="--d:2.4s" x="1067" y="159" width="8" height="26" rx="4"/><text class="slot-t" style="--d:2.4s" x="1071" y="182" text-anchor="middle">¿</text><rect class="slot-b" style="--d:2.485s" x="1086" y="150" width="8" height="44" rx="4"/><text class="slot-t" style="--d:2.485s" x="1090" y="182" text-anchor="middle">C</text><rect class="slot-b" style="--d:2.57s" x="1105" y="157" width="8" height="30" rx="4"/><text class="slot-t" style="--d:2.57s" x="1109" y="182" text-anchor="middle">u</text><rect class="slot-b" style="--d:2.655s" x="1124" y="143" width="8" height="58" rx="4"/><text class="slot-t" style="--d:2.655s" x="1128" y="182" text-anchor="middle">á</text><rect class="slot-b" style="--d:2.74s" x="1143" y="154" width="8" height="36" rx="4"/><text class="slot-t" style="--d:2.74s" x="1147" y="182" text-anchor="middle">n</text><rect class="slot-b" style="--d:2.825s" x="1162" y="161" width="8" height="22" rx="4"/><text class="slot-t" style="--d:2.825s" x="1166" y="182" text-anchor="middle">t</text><rect class="slot-b" style="--d:2.91s" x="1181" y="147" width="8" height="50" rx="4"/><text class="slot-t" style="--d:2.91s" x="1185" y="182" text-anchor="middle">o</text><rect class="slot-b" style="--d:3.08s" x="1219" y="142" width="8" height="60" rx="4"/><text class="slot-t" style="--d:3.08s" x="1223" y="182" text-anchor="middle">c</text><rect class="slot-b" style="--d:3.165s" x="1238" y="158" width="8" height="28" rx="4"/><text class="slot-t" style="--d:3.165s" x="1242" y="182" text-anchor="middle">u</text><rect class="slot-b" style="--d:3.25s" x="1257" y="149" width="8" height="46" rx="4"/><text class="slot-t" style="--d:3.25s" x="1261" y="182" text-anchor="middle">e</text><rect class="slot-b" style="--d:3.335s" x="1276" y="153" width="8" height="38" rx="4"/><text class="slot-t" style="--d:3.335s" x="1280" y="182" text-anchor="middle">s</text><rect class="slot-b" style="--d:3.42s" x="1295" y="145" width="8" height="54" rx="4"/><text class="slot-t" style="--d:3.42s" x="1299" y="182" text-anchor="middle">t</text><rect class="slot-b" style="--d:3.505s" x="1314" y="160" width="8" height="24" rx="4"/><text class="slot-t" style="--d:3.505s" x="1318" y="182" text-anchor="middle">a</text><rect class="slot-b" style="--d:3.675s" x="1352" y="144" width="8" height="56" rx="4"/><text class="slot-t" style="--d:3.675s" x="1356" y="182" text-anchor="middle">e</text><rect class="slot-b" style="--d:3.76s" x="1371" y="156" width="8" height="32" rx="4"/><text class="slot-t" style="--d:3.76s" x="1375" y="182" text-anchor="middle">l</text><rect class="slot-b" style="--d:3.93s" x="1409" y="159" width="8" height="26" rx="4"/><text class="slot-t" style="--d:3.93s" x="1413" y="182" text-anchor="middle">f</text><rect class="slot-b" style="--d:4.015s" x="1428" y="146" width="8" height="52" rx="4"/><text class="slot-t" style="--d:4.015s" x="1432" y="182" text-anchor="middle">l</text><rect class="slot-b" style="--d:4.1s" x="1447" y="154" width="8" height="36" rx="4"/><text class="slot-t" style="--d:4.1s" x="1451" y="182" text-anchor="middle">y</text><rect class="slot-b" style="--d:4.185s" x="1466" y="150" width="8" height="44" rx="4"/><text class="slot-t" style="--d:4.185s" x="1470" y="182" text-anchor="middle">e</text><rect class="slot-b" style="--d:4.27s" x="1485" y="157" width="8" height="30" rx="4"/><text class="slot-t" style="--d:4.27s" x="1489" y="182" text-anchor="middle">r</text><rect class="slot-b" style="--d:4.355s" x="1504" y="143" width="8" height="58" rx="4"/><text class="slot-t" style="--d:4.355s" x="1508" y="182" text-anchor="middle">?</text>
+      <rect class="cursor" x="1519" y="146" width="3.5" height="52" rx="1.5"/>
+      <text class="a-in m" style="--d:1.5s" x="1000" y="298" font-size="24">Corrige lo que esté mal y recién pasa al paso 4</text>
+      <g class="a-pop" style="--d:5.2s"><rect class="paso-r" x="1420" y="270" width="160" height="48" rx="24"/><text class="paso-t" x="1500" y="302" font-size="24" text-anchor="middle"><tspan class="paso-n">4 ·</tspan> Envía</text></g>
+    </svg>
+    <div class="vz-regla a-in" style="--d:1.7s">Muestra lo que escuchó <em>antes de actuar</em></div>
+    <div class="vz-abajo">
+      <div class="vz-card a-in" style="--d:1.9s">
+        <h2>Qué abrir y qué marcar</h2>
+        <div class="vz-ruta"><span>Abre en el Visor:</span><code id="vz-ruta">mi-robo/neon/index.html</code><button type="button" class="vz-btn" id="copiar-ruta">Copiar ruta</button></div>
+        <div class="vz-estilos" id="vz-estilos"><span>tu estilo:</span><button type="button" class="on" data-estilo="neon">neon</button><button type="button" data-estilo="claro">claro</button><button type="button" data-estilo="atardecer">atardecer</button><button type="button" data-estilo="cabina">cabina</button></div>
+        <div class="vz-pasos" id="vz-pasos" role="group" aria-label="Pasos de la prueba de voz">
+          <button type="button" class="vz-paso" data-paso="1" aria-pressed="false"><i>1</i>Dicté en el visor (botón Mic)</button>
+          <button type="button" class="vz-paso" data-paso="2" aria-pressed="false"><i>2</i>Corregí el texto</button>
+          <button type="button" class="vz-paso" data-paso="3" aria-pressed="false"><i>3</i>Envié y Robo respondió</button>
+        </div>
+        <span class="vz-dato">En clase el visor va por <b>https</b>: Chrome da el micrófono sin problema. Los pasos se guardan en este navegador.</span>
+      </div>
+      <div class="vz-card a-in" style="--d:2.1s">
+        <h2>Dicta aquí y analízalo con IA</h2>
+        <div class="vz-mic-fila">
+          <button type="button" class="vz-mic" id="vz-mic" aria-pressed="false"><i aria-hidden="true"></i><span>Dictar</span></button>
+          <span class="vz-dato" id="vz-mic-estado">Pulsa «Dictar»: el navegador te pedirá permiso para usar el micrófono.</span>
+        </div>
+        <div class="vz-acierto">
+          <label class="vz-campo">Lo que entendió el reconocedor (corrígelo si quieres)<input id="vz-oido" placeholder="cuanto cuesta el flayer" autocomplete="off"></label>
+          <label class="vz-campo">Lo que quisiste decir (opcional)<input id="vz-dicho" placeholder="¿Cuánto cuesta el flyer?" autocomplete="off"></label>
+          <div class="vz-pct"><span id="vz-pct">—</span><small>palabras acertadas</small></div>
+        </div>
+        <div class="vz-mic-fila"><button type="button" class="vz-btn" id="vz-analizar">Analizar con IA</button><span class="vz-dato" id="vz-detalle">Dicta o escribe una frase y pulsa «Analizar con IA».</span></div>
+        <div class="vz-ia" id="vz-ia" hidden aria-live="polite"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando termines</span>
+  </footer>
+</div>
+
+<script>
+/* Ruta del Visor por estilo (botón Copiar ruta), checklist de 3 pasos (localStorage g8-02-voz-pasos) y % de palabras
+   acertadas entre lo dicho y lo que entendió el reconocedor (localStorage g8-02-voz-acierto). */
+(function () {
+  function $(id) { return document.getElementById(id); }
+  function leer(k) { try { return JSON.parse(localStorage.getItem(k) || "{}") || {}; } catch (e) { return {}; } }
+  function guardar(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function copiar(t) { try { return Promise.resolve(window.copiarTexto ? window.copiarTexto(t) : navigator.clipboard.writeText(t)); } catch (e) { return Promise.reject(e); } }
+  function aviso(b, t) { var o = b.textContent; b.textContent = t; b.disabled = true; setTimeout(function () { b.textContent = o; b.disabled = false; }, 1400); }
+
+  /* ---- Ruta por estilo ---- */
+  var pasos = leer("g8-02-voz-pasos"), estilo = pasos.estilo || "neon";
+  function ruta() { return "mi-robo/" + estilo + "/index.html"; }
+  function pintarEstilo() {
+    $("vz-ruta").textContent = ruta();
+    Array.prototype.forEach.call(document.querySelectorAll("#vz-estilos button"), function (b) { b.classList.toggle("on", b.getAttribute("data-estilo") === estilo); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#vz-estilos button"), function (b) {
+    b.addEventListener("click", function () { estilo = b.getAttribute("data-estilo"); pasos.estilo = estilo; guardar("g8-02-voz-pasos", pasos); pintarEstilo(); });
+  });
+  $("copiar-ruta").addEventListener("click", function () { var b = this; copiar(ruta()).then(function () { aviso(b, "Copiada"); }, function () { aviso(b, "No se pudo"); }); });
+  pintarEstilo();
+
+  /* ---- Checklist ---- */
+  Array.prototype.forEach.call(document.querySelectorAll("#vz-pasos .vz-paso"), function (b) {
+    var k = "p" + b.getAttribute("data-paso");
+    b.setAttribute("aria-pressed", pasos[k] ? "true" : "false");
+    b.addEventListener("click", function () { pasos[k] = !pasos[k]; b.setAttribute("aria-pressed", pasos[k] ? "true" : "false"); guardar("g8-02-voz-pasos", pasos); });
+  });
+
+  /* ---- % de palabras acertadas ---- */
+  function palabras(t) {
+    return String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9ñ\s]/g, " ").split(/\s+/).filter(Boolean);
+  }
+  function acierto() {
+    var d = palabras($("vz-dicho").value), o = palabras($("vz-oido").value), det = $("vz-detalle");
+    guardar("g8-02-voz-acierto", { dicho: $("vz-dicho").value, oido: $("vz-oido").value });
+    if (!d.length || !o.length) { $("vz-pct").textContent = "—"; det.textContent = "Escribe las dos frases: se compara palabra por palabra, sin tildes ni mayúsculas."; return; }
+    var bolsa = {}; o.forEach(function (w) { bolsa[w] = (bolsa[w] || 0) + 1; });
+    var ok = 0, mal = [];
+    d.forEach(function (w) { if (bolsa[w] > 0) { bolsa[w]--; ok++; } else { mal.push(w); } });
+    var pct = Math.round(ok / d.length * 100);
+    $("vz-pct").textContent = pct + " %";
+    det.textContent = ok + " de " + d.length + " palabras" + (mal.length ? " · no entendió: " + mal.slice(0, 6).join(", ") + (mal.length > 6 ? "…" : "") : " · todas bien");
+  }
+  var prev = leer("g8-02-voz-acierto");
+  if (prev.dicho) $("vz-dicho").value = prev.dicho;
+  if (prev.oido) $("vz-oido").value = prev.oido;
+  $("vz-dicho").addEventListener("input", acierto); $("vz-oido").addEventListener("input", acierto);
+  acierto();
+
+  /* ---- Dictado: pide el micrófono, graba el audio (respaldo) y usa el reconocedor del navegador si existe ---- */
+  var Reco = window.SpeechRecognition || window.webkitSpeechRecognition, reco = null, oyendo = false, base = "";
+  var flujo = null, grabadora = null, trozos = [], audioWav = "", tope = null;
+  function estadoMic(t) { $("vz-mic-estado").textContent = t; }
+  function pintarMic() { $("vz-mic").setAttribute("aria-pressed", oyendo ? "true" : "false"); $("vz-mic").querySelector("span").textContent = oyendo ? "Detener" : "Dictar"; }
+  function marcar(n) { pasos["p" + n] = true; guardar("g8-02-voz-pasos", pasos); var b = document.querySelector('#vz-pasos [data-paso="' + n + '"]'); if (b) b.setAttribute("aria-pressed", "true"); }
+  /* Audio grabado → WAV mono de 16 kHz en base64 (lo que acepta OpenRouter como input_audio). */
+  function aWav(blob) {
+    return blob.arrayBuffer().then(function (buf) {
+      var Ctx = window.AudioContext || window.webkitAudioContext, ctx = new Ctx();
+      return new Promise(function (ok, mal) { ctx.decodeAudioData(buf, ok, mal); }).then(function (ab) {
+        ctx.close();
+        var n = Math.ceil(ab.duration * 16000), off = new OfflineAudioContext(1, n, 16000), src = off.createBufferSource();
+        src.buffer = ab; src.connect(off.destination); src.start();
+        return off.startRendering();
+      });
+    }).then(function (ab) {
+      var d = ab.getChannelData(0), out = new DataView(new ArrayBuffer(44 + d.length * 2));
+      function txt(o, t) { for (var k = 0; k < t.length; k++) out.setUint8(o + k, t.charCodeAt(k)); }
+      txt(0, "RIFF"); out.setUint32(4, 36 + d.length * 2, true); txt(8, "WAVEfmt "); out.setUint32(16, 16, true);
+      out.setUint16(20, 1, true); out.setUint16(22, 1, true); out.setUint32(24, 16000, true); out.setUint32(28, 32000, true);
+      out.setUint16(32, 2, true); out.setUint16(34, 16, true); txt(36, "data"); out.setUint32(40, d.length * 2, true);
+      for (var k = 0; k < d.length; k++) { var v = Math.max(-1, Math.min(1, d[k])); out.setInt16(44 + k * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
+      var bytes = new Uint8Array(out.buffer), bin = "";
+      for (var k2 = 0; k2 < bytes.length; k2 += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(k2, k2 + 0x8000));
+      return btoa(bin);
+    });
+  }
+  function terminar() {
+    oyendo = false; pintarMic(); clearTimeout(tope);
+    if (reco) { try { reco.stop(); } catch (e) {} }
+    if (grabadora && grabadora.state !== "inactive") grabadora.stop();
+  }
+  function empezar() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { estadoMic("Este navegador no da el micrófono: escribe la frase."); return; }
+    estadoMic("Pidiendo permiso del micrófono…");
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (st) {
+      flujo = st; trozos = []; audioWav = "";
+      if (window.MediaRecorder) {
+        grabadora = new MediaRecorder(st);
+        grabadora.ondataavailable = function (e) { if (e.data && e.data.size) trozos.push(e.data); };
+        grabadora.onstop = function () {
+          st.getTracks().forEach(function (t) { t.stop(); });
+          if (!trozos.length) return;
+          aWav(new Blob(trozos, { type: grabadora.mimeType })).then(function (b64) {
+            audioWav = b64; marcar(1);
+            estadoMic(($("vz-oido").value.trim() ? "Listo. " : "Tu navegador no transcribió, pero grabé tu voz: ") + "pulsa «Analizar con IA» (la IA también oye el audio).");
+          }, function () { estadoMic("No se pudo convertir el audio: escribe la frase y analiza."); });
+        };
+        grabadora.start();
+      }
+      if (Reco) {
+        reco = new Reco(); reco.lang = "es-PE"; reco.interimResults = true; reco.continuous = true;
+        base = $("vz-oido").value.trim(); base = base ? base + " " : "";
+        reco.onresult = function (e) {
+          var fin = "", parcial = "";
+          for (var i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) fin += e.results[i][0].transcript; else parcial += e.results[i][0].transcript; }
+          if (fin) base += fin.trim() + " ";
+          $("vz-oido").value = (base + parcial).trim(); acierto();
+        };
+        reco.onerror = function (e) { if (e.error !== "no-speech" && e.error !== "aborted") estadoMic("El reconocedor del navegador falló (" + e.error + "); sigo grabando: la IA oirá el audio."); };
+        reco.onend = function () { reco = null; };
+        try { reco.start(); } catch (e) { reco = null; }
+      }
+      oyendo = true; pintarMic(); tope = setTimeout(terminar, 25000);
+      estadoMic((Reco ? "Te escucho" : "Grabando (tu navegador no transcribe; lo hará la IA)") + "… pulsa «Detener» al terminar (máx. 25 s).");
+    }, function () { estadoMic("Permiso de micrófono denegado: actívalo en el candado de la barra de direcciones y vuelve a pulsar «Dictar»."); });
+  }
+  $("vz-mic").addEventListener("click", function () { if (oyendo) terminar(); else empezar(); });
+
+  /* ---- Análisis con IA: POST /api/v1/live/<lección>/analizar ---- */
+  function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function leccion() { var m = location.pathname.match(/\/live\/([^/]+)\//); return m ? m[1] : "g8-02"; }
+  $("vz-analizar").addEventListener("click", function () {
+    var b = this, oido = $("vz-oido").value.trim(), caja = $("vz-ia");
+    if (!oido && !audioWav) { $("vz-detalle").textContent = "Primero dicta o escribe la frase."; return; }
+    b.disabled = true; b.textContent = "Analizando…"; marcar(2);
+    fetch("/api/v1/live/" + leccion() + "/analizar", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oido: oido, dicho: $("vz-dicho").value.trim(), audio: audioWav }) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error((j.error && (j.error.message || j.error)) || j.message || ("HTTP " + r.status)); return j; }); })
+      .then(function (a) {
+        var errs = (a.errores || []).map(function (x) { return '<span class="err">' + esc(x.oyo) + "</span> → <b>" + esc(x.era) + "</b>" + (x.por_que ? " <small>(" + esc(x.por_que) + ")</small>" : ""); }).join(" · ");
+        if (a.transcripcion && !$("vz-oido").value.trim()) { $("vz-oido").value = a.transcripcion; acierto(); }
+        caja.innerHTML = (a.transcripcion ? "<p><b>La IA oyó:</b> " + esc(a.transcripcion) + "</p>" : "") + "<p><b>Corregido:</b> " + esc(a.corregido) + (a.precision != null ? " <small>· acierto según la IA: " + esc(a.precision) + " %</small>" : "") + "</p>" +
+          (errs ? "<p><b>Confundió:</b> " + errs + "</p>" : "<p><b>Confundió:</b> nada, lo entendió bien.</p>") +
+          "<p><b>Intención:</b> " + esc(a.intencion) + "</p><p><b>Robo responde:</b> " + esc(a.respuesta) + "</p>" +
+          (a.consejo ? "<p><small>Consejo: " + esc(a.consejo) + " · " + esc(a.motor) + "</small></p>" : "");
+        caja.hidden = false; marcar(3);
+        $("vz-detalle").textContent = "Análisis listo.";
+      }, function (e) { caja.hidden = true; $("vz-detalle").textContent = "No se pudo analizar: " + e.message; })
+      .then(function () { b.disabled = false; b.textContent = "Analizar con IA"; });
+  });
+})();
+</script>
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

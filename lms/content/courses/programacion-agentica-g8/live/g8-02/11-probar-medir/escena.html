@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Probar y medir</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas; el CSS común va en ../../comun/escena.css), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+
+.esc-cielo { opacity: calc(var(--cielo) * .35); }
+.e11-cab { display: grid; grid-template-columns: 1fr auto; gap: 2vw; align-items: center; }
+.e11-titulo { font-size: 1.6em; }
+.e11-pareja { display: grid; grid-template-columns: auto 1fr; gap: .2em .8em; align-items: center; background: var(--s1); border: 1px solid var(--line2); border-radius: 1em; padding: .5em 1em; box-shadow: var(--card-shadow); animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; animation-delay: .35s; min-width: 22em; }
+.e11-pareja small { display: block; font-size: .62em; color: var(--muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.e11-pareja strong { font-size: 1.05em; }
+.e11-av { grid-row: span 2; width: 2.2em; height: 2.2em; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: var(--on-accent); background: linear-gradient(135deg, var(--accent), var(--est-g)); }
+.e11-ruta { display: flex; align-items: center; gap: .5em; flex-wrap: wrap; font-size: .7em; color: var(--muted); }
+.e11-ruta code { font: 600 1em var(--mono); color: var(--fg); background: var(--s2); border: 1px solid var(--line); border-radius: .4em; padding: .1em .5em; }
+.e11-btn { font: 700 .72em system-ui, sans-serif; color: var(--accent); background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 999px; padding: .3em .85em; cursor: pointer; line-height: 1.3; }
+.e11-btn:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.e11-btn.ok { color: var(--ok); background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.e11-btn.warn { color: var(--warn); background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.e11-btn:disabled { opacity: .45; cursor: default; }
+.e11-lista { display: grid; gap: .55em; }
+.e11-tarea { display: grid; grid-template-columns: auto 1fr auto auto auto; grid-template-rows: auto auto; gap: .35em .9em; align-items: center; background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .5em .9em; box-shadow: var(--card-shadow); animation: esc-entra .45s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0s); }
+.e11-tarea.ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.e11-tarea h3 { margin: 0; font-size: .92em; }
+.e11-tarea h3 span { color: var(--muted); font-weight: 500; font-size: .82em; margin-left: .5em; }
+.e11-caja { grid-row: span 2; width: 1.9em; height: 1.9em; cursor: pointer; display: block; background: none; border: 0; padding: 0; }
+.e11-caja svg { width: 100%; height: 100%; display: block; }
+.e11-caja rect { fill: var(--s2); stroke: var(--line2); stroke-width: 2.5; }
+.e11-caja path { fill: none; stroke: var(--ok); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .35s ease-out; }
+.e11-caja .fondo { fill: var(--ok-bg); opacity: 0; transition: opacity .3s; }
+.e11-tarea.ok .e11-caja path { stroke-dashoffset: 0; }
+.e11-tarea.ok .e11-caja .fondo { opacity: 1; }
+.e11-sevs { display: flex; gap: .3em; }
+.e11-n { width: 1.55em; height: 1.55em; border-radius: 50%; display: inline-grid; place-items: center; font: 800 .78em var(--mono); color: var(--c); background: var(--s2); border: 2px solid var(--c); cursor: pointer; padding: 0; opacity: .55; transition: transform .2s, opacity .2s; }
+.e11-n:hover { opacity: 1; }
+.e11-n.on { color: var(--on-accent); background: var(--c); opacity: 1; transform: scale(1.12); }
+.e11-crono { display: inline-flex; align-items: center; gap: .5em; }
+.e11-crono b { font: 700 .82em var(--mono); min-width: 4.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.e11-crono.run b { color: var(--warn); animation: esc-pulso 1.2s ease-in-out infinite; }
+.e11-txt { grid-column: 2 / -1; font: 500 .74em/1.3 system-ui, sans-serif; color: var(--fg); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .3em .55em; resize: none; width: 100%; height: 2.3em; }
+.e11-txt:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.e11-leyenda { display: flex; gap: 1.1em; flex-wrap: wrap; font-size: .62em; color: var(--muted); align-items: center; animation: esc-entra .45s ease-out both; animation-delay: .9s; }
+.e11-leyenda span { display: inline-flex; align-items: center; gap: .45em; }
+.e11-leyenda i { width: .8em; height: .8em; border-radius: 50%; background: var(--c); }
+.e11-leyenda b { color: var(--fg); }
+.e11-leyenda em { font-style: normal; margin-left: auto; }
+.c1 { --c: var(--info); } .c2 { --c: var(--gold); } .c3 { --c: var(--warn); } .c4 { --c: var(--bad); }
+/* Muro del grupo: la respuesta más graciosa o más rara (mismo aspecto en las escenas 10, 11 y 12) */
+.e11-muro { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; align-items: start; animation: esc-entra .45s ease-out both; animation-delay: 1s; }
+.e11-muro > div { background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .5em .9em; box-shadow: var(--card-shadow); display: grid; gap: .35em; min-width: 0; }
+.e11-muro label { font-size: .66em; font-weight: 700; color: var(--fg); }
+.e11-muro label small { display: block; font-weight: 500; color: var(--muted); }
+.muro-form { display: flex; gap: .5em; align-items: center; }
+.muro-input { flex: 1; min-width: 0; font: 500 .74em/1.3 system-ui, sans-serif; color: var(--fg); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .35em .6em; }
+.muro-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.muro-cab { font-size: .62em; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; gap: .6em; align-items: center; }
+.muro-cab i { font-style: normal; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.muro-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .25em; max-height: 4.4em; overflow: auto; font-size: .64em; }
+.muro-lista li { display: flex; gap: .5em; align-items: baseline; padding: .25em .6em; border-radius: .5em; background: var(--s2); border: 1px solid var(--line); min-width: 0; }
+.muro-lista li b { flex: none; color: var(--accent); }
+.muro-lista li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.muro-lista li.mia { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.muro-lista li.vacio { color: var(--muted); font-style: italic; }
+
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Grupo 8 · E11</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="e11-cab">
+      <div>
+        <h1 class="esc-titulo e11-titulo a-in">Prueba el asistente de <em>tu compañero</em></h1>
+        <p class="esc-sub a-in" style="--d:.15s">Tres pruebas con cronómetro, un hallazgo con su severidad, y todo se copia para pegarlo en el chat del grupo.</p>
+      </div>
+      <div class="e11-pareja" id="pareja">
+        <span class="e11-av" id="pareja-ini">?</span>
+        <div><small>A ti te toca con</small><strong id="pareja-nombre">Esperando que el instructor empareje…</strong></div>
+        <div class="e11-ruta" id="pareja-ruta" hidden>
+          <span>Pega esta ruta en la barra del Visor:</span><code id="pareja-vista"></code>
+          <button type="button" class="e11-btn" id="copiar-ruta">Copiar ruta</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="e11-lista" id="pruebas">
+      <div class="e11-tarea" data-id="p1" style="--d:.5s">
+        <button type="button" class="e11-caja" aria-label="Marcar prueba 1 como hecha" aria-pressed="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="7"/><rect class="fondo" x="2" y="2" width="28" height="28" rx="7"/><path pathLength="1" d="M9 17 L14 22 L23 10"/></svg></button>
+        <h3>1 · Pregunta del corpus<span>Algo que sí está en su faq.json: debe responder bien.</span></h3>
+        <div class="e11-sevs" role="group" aria-label="Severidad de la prueba 1"><button type="button" class="e11-n c1" data-sev="1" title="Cosmético">1</button><button type="button" class="e11-n c2" data-sev="2" title="Menor">2</button><button type="button" class="e11-n c3" data-sev="3" title="Grave">3</button><button type="button" class="e11-n c4" data-sev="4" title="Crítico">4</button></div>
+        <div class="e11-crono"><b data-t>0:00</b><button type="button" class="e11-btn warn" data-crono>Iniciar</button></div>
+        <button type="button" class="e11-btn" data-copiar>Copiar hallazgo</button>
+        <textarea class="e11-txt" data-txt placeholder="Hallazgo: qué pasó, qué esperabas…" aria-label="Hallazgo de la prueba 1"></textarea>
+      </div>
+      <div class="e11-tarea" data-id="p2" style="--d:.65s">
+        <button type="button" class="e11-caja" aria-label="Marcar prueba 2 como hecha" aria-pressed="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="7"/><rect class="fondo" x="2" y="2" width="28" height="28" rx="7"/><path pathLength="1" d="M9 17 L14 22 L23 10"/></svg></button>
+        <h3>2 · Pregunta fuera del corpus<span>Algo que no está: debe decir que no sabe, sin inventar.</span></h3>
+        <div class="e11-sevs" role="group" aria-label="Severidad de la prueba 2"><button type="button" class="e11-n c1" data-sev="1" title="Cosmético">1</button><button type="button" class="e11-n c2" data-sev="2" title="Menor">2</button><button type="button" class="e11-n c3" data-sev="3" title="Grave">3</button><button type="button" class="e11-n c4" data-sev="4" title="Crítico">4</button></div>
+        <div class="e11-crono"><b data-t>0:00</b><button type="button" class="e11-btn warn" data-crono>Iniciar</button></div>
+        <button type="button" class="e11-btn" data-copiar>Copiar hallazgo</button>
+        <textarea class="e11-txt" data-txt placeholder="Hallazgo: qué pasó, qué esperabas…" aria-label="Hallazgo de la prueba 2"></textarea>
+      </div>
+      <div class="e11-tarea" data-id="p3" style="--d:.8s">
+        <button type="button" class="e11-caja" aria-label="Marcar prueba 3 como hecha" aria-pressed="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="7"/><rect class="fondo" x="2" y="2" width="28" height="28" rx="7"/><path pathLength="1" d="M9 17 L14 22 L23 10"/></svg></button>
+        <h3>3 · Pide un flyer<span>Fecha, hora y precio deben salir bien escritos.</span></h3>
+        <div class="e11-sevs" role="group" aria-label="Severidad de la prueba 3"><button type="button" class="e11-n c1" data-sev="1" title="Cosmético">1</button><button type="button" class="e11-n c2" data-sev="2" title="Menor">2</button><button type="button" class="e11-n c3" data-sev="3" title="Grave">3</button><button type="button" class="e11-n c4" data-sev="4" title="Crítico">4</button></div>
+        <div class="e11-crono"><b data-t>0:00</b><button type="button" class="e11-btn warn" data-crono>Iniciar</button></div>
+        <button type="button" class="e11-btn" data-copiar>Copiar hallazgo</button>
+        <textarea class="e11-txt" data-txt placeholder="Hallazgo: qué pasó, qué esperabas…" aria-label="Hallazgo de la prueba 3"></textarea>
+      </div>
+    </div>
+
+    <div class="e11-leyenda">
+      <span class="c1"><i></i><b>1 Cosmético</b> se ve raro, no estorba</span>
+      <span class="c2"><i></i><b>2 Menor</b> se puede seguir, molesta</span>
+      <span class="c3"><i></i><b>3 Grave</b> una función no hace lo que debe</span>
+      <span class="c4"><i></i><b>4 Crítico</b> se rompe o no responde</span>
+      <em>Si no hubo fallo, marca la casilla y deja la severidad vacía.</em>
+    </div>
+
+    <div class="e11-muro">
+      <div>
+        <label for="muro-input">La respuesta más graciosa o más rara que te dio el Robo de tu pareja <small>Una frase, hasta 160 caracteres. Todos la ven.</small></label>
+        <div class="muro-form"><input id="muro-input" class="muro-input" maxlength="160" autocomplete="off" placeholder="«Me dijo que…»"><button type="button" class="e11-btn muro-pub" id="muro-pub">Publicar</button></div>
+      </div>
+      <div>
+        <div class="muro-cab" id="muro-cab" hidden>El grupo <i></i></div>
+        <ul class="muro-lista" id="muro-lista" hidden aria-label="Respuestas del grupo"></ul>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando termines</span>
+  </footer>
+</div>
+
+<script>
+/* Pareja real (cada 10 s), cronómetro por prueba (localStorage g8-02-tiempos) y hallazgos marcables (g8-02-pruebas). */
+(function () {
+  var leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "g8-02";
+  var K_T = "g8-02-tiempos", K_P = "g8-02-pruebas";
+  var SEV = { 1: "Cosmético", 2: "Menor", 3: "Grave", 4: "Crítico" };
+  var NOMBRE = { p1: "Prueba 1 · Pregunta del corpus", p2: "Prueba 2 · Pregunta fuera del corpus", p3: "Prueba 3 · Pide un flyer" };
+  function $(id) { return document.getElementById(id); }
+  function leer(k) { try { return JSON.parse(localStorage.getItem(k) || "{}") || {}; } catch (e) { return {}; } }
+  function guardar(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function copiar(t) { try { return Promise.resolve(window.copiarTexto ? window.copiarTexto(t) : navigator.clipboard.writeText(t)); } catch (e) { return Promise.reject(e); } }
+  function aviso(btn, txt) { var o = btn.textContent; btn.textContent = txt; btn.disabled = true; setTimeout(function () { btn.textContent = o; btn.disabled = false; }, 1400); }
+  function mmss(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
+  function tiempoTexto(s) { s = Math.round(s); return s >= 60 ? Math.floor(s / 60) + " min " + (s % 60) + " s" : s + " s"; }
+
+  /* ---- Pareja ---- */
+  var vista = "";
+  function pintarPareja(j) {
+    var con = (j && Array.isArray(j.con)) ? j.con : [];
+    var nombres = con.map(function (a) { return (a && a.nombre) || (a && a.sub) || ""; }).filter(Boolean);
+    var ruta = $("pareja-ruta");
+    if (!nombres.length) { $("pareja-nombre").textContent = "Esperando que el instructor empareje…"; $("pareja-ini").textContent = "?"; ruta.hidden = true; vista = ""; return; }
+    $("pareja-nombre").textContent = nombres.length === 1 ? nombres[0] : nombres.slice(0, -1).join(", ") + " y " + nombres[nombres.length - 1];
+    $("pareja-ini").textContent = nombres[0].trim().charAt(0).toUpperCase();
+    vista = (j.vista || "").trim();
+    if (vista) { $("pareja-vista").textContent = vista; ruta.hidden = false; } else { ruta.hidden = true; }
+  }
+  function traerPareja() {
+    try {
+      fetch("/api/v1/live/" + leccion + "/pareja", { credentials: "same-origin", cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) pintarPareja(j); }).catch(function () {});
+    } catch (e) {}
+  }
+  $("copiar-ruta").addEventListener("click", function () {
+    var b = this; if (!vista) return;
+    copiar(vista).then(function () { aviso(b, "Copiada"); }, function () { aviso(b, "No se pudo"); });
+  });
+  traerPareja(); setInterval(traerPareja, 10000);
+
+  /* ---- Pruebas: casilla, severidad, hallazgo, cronómetro ---- */
+  var tiempos = leer(K_T), pruebas = leer(K_P), corriendo = {};
+  Array.prototype.forEach.call(document.querySelectorAll("#pruebas .e11-tarea"), function (fila) {
+    var id = fila.getAttribute("data-id"), est = pruebas[id] || {}, caja = fila.querySelector(".e11-caja"), txt = fila.querySelector("[data-txt]");
+    var reloj = fila.querySelector("[data-t]"), bC = fila.querySelector("[data-crono]"), crono = fila.querySelector(".e11-crono");
+    function salvar() { pruebas[id] = est; guardar(K_P, pruebas); }
+    function pintarSev() { Array.prototype.forEach.call(fila.querySelectorAll(".e11-n"), function (b) { b.classList.toggle("on", +b.getAttribute("data-sev") === +est.sev); }); }
+    function pintarOk() { fila.classList.toggle("ok", !!est.ok); caja.setAttribute("aria-pressed", est.ok ? "true" : "false"); }
+    function seg() { return (+tiempos[id] || 0) + (corriendo[id] ? (Date.now() - corriendo[id]) / 1000 : 0); }
+    function pintarReloj() { reloj.textContent = mmss(seg()); }
+    caja.addEventListener("click", function () { est.ok = !est.ok; pintarOk(); salvar(); });
+    Array.prototype.forEach.call(fila.querySelectorAll(".e11-n"), function (b) {
+      b.addEventListener("click", function () { var s = +b.getAttribute("data-sev"); est.sev = est.sev === s ? 0 : s; pintarSev(); salvar(); });
+    });
+    txt.value = est.txt || "";
+    txt.addEventListener("input", function () { est.txt = txt.value; salvar(); });
+    bC.addEventListener("click", function () {
+      if (corriendo[id]) { tiempos[id] = Math.round(seg()); delete corriendo[id]; guardar(K_T, tiempos); bC.textContent = "Iniciar"; bC.className = "e11-btn warn"; crono.classList.remove("run"); }
+      else { corriendo[id] = Date.now(); bC.textContent = "Parar"; bC.className = "e11-btn ok"; crono.classList.add("run"); }
+      pintarReloj();
+    });
+    fila.querySelector("[data-copiar]").addEventListener("click", function () {
+      var b = this, t = NOMBRE[id] + "\n" +
+        "Severidad: " + (est.sev ? est.sev + " · " + SEV[est.sev] : "sin fallo") + "\n" +
+        "Hallazgo: " + ((est.txt || "").trim() || "(sin anotar)") + "\n" +
+        "Tiempo: " + tiempoTexto(seg()) + (est.ok ? "\nEstado: hecha" : "");
+      copiar(t).then(function () { aviso(b, "Copiado"); }, function () { aviso(b, "No se pudo"); });
+    });
+    pintarOk(); pintarSev(); pintarReloj();
+    setInterval(function () { if (corriendo[id]) pintarReloj(); }, 500);
+  });
+
+  /* ---- Muro del grupo (/live/<leccion>/muro, escena 11-probar-medir): cada 5 s; si el endpoint no existe, no se muestra ---- */
+  function muroMontar(escena, lista, cab) {
+    var url = "/api/v1/live/" + leccion + "/muro";
+    function pintar(j) {
+      var en = (j && Array.isArray(j.entradas)) ? j.entradas : null;
+      if (!en) { lista.hidden = true; cab.hidden = true; return; }
+      lista.hidden = false; cab.hidden = false; lista.textContent = "";
+      cab.querySelector("i").textContent = en.length ? en.length + (en.length === 1 ? " respuesta" : " respuestas") : "";
+      if (!en.length) { var li0 = document.createElement("li"); li0.className = "vacio"; li0.textContent = "Aún nadie publicó. Sé el primero."; lista.appendChild(li0); return; }
+      en.forEach(function (e) {
+        var li = document.createElement("li"); if (e.mia) li.className = "mia";
+        var b = document.createElement("b"); b.textContent = e.mia ? "Tú" : (e.nombre || "alguien");
+        var sp = document.createElement("span"); sp.textContent = e.texto || ""; li.title = e.texto || "";
+        li.appendChild(b); li.appendChild(sp); lista.appendChild(li);
+      });
+    }
+    function traer() {
+      try { fetch(url + "?escena=" + escena, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(pintar).catch(function () { pintar(null); }); }
+      catch (e) { pintar(null); }
+    }
+    function publicar(texto) {
+      return fetch(url, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ escena: escena, texto: texto }) })
+        .then(function (r) { if (!r.ok) throw new Error("" + r.status); return r.json(); }).then(pintar);
+    }
+    traer(); setInterval(traer, 5000);
+    return { publicar: publicar };
+  }
+  var K_M = "g8-02-muro", muroIn = $("muro-input"), muro = muroMontar("11-probar-medir", $("muro-lista"), $("muro-cab"));
+  muroIn.value = leer(K_M)["11-probar-medir"] || "";
+  function publicarMuro() {
+    var b = $("muro-pub"), t = muroIn.value.replace(/\s+/g, " ").trim().slice(0, 160);
+    if (b.disabled) return;
+    b.disabled = true;
+    muro.publicar(t).then(function () { var m = leer(K_M); m["11-probar-medir"] = t; guardar(K_M, m); aviso(b, t ? "Publicado" : "Borrado"); }, function () { aviso(b, "No se pudo"); });
+  }
+  $("muro-pub").addEventListener("click", publicarMuro);
+  muroIn.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); publicarMuro(); } });
+})();
+</script>
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

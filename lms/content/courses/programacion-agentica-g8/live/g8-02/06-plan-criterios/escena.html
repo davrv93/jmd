@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan de trabajo con criterios</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas; el CSS común va en ../../comun/escena.css), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .22); }
+.esc-titulo { font-size: 1.45em; }
+.s6-cab .esc-sub { font-size: .92em; }
+.s6-cab { display: grid; grid-template-columns: 1fr auto; gap: 2vw; align-items: center; }
+.s6-vaga-c { display: flex; align-items: center; gap: .7em; padding: .5em .9em; opacity: .75; }
+.s6-vaga-c small { font-size: .62em; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+.s6-vaga-c b { font-size: 1em; line-height: 1.15; }
+.s6-tablero { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1vw; align-items: stretch; }
+.s6-col { background: var(--s2); border: 1px solid var(--line); border-radius: 1em; padding: .45em; display: flex; flex-direction: column; gap: .3em; min-height: 0; }
+.s6-col h2 { margin: 0; display: flex; justify-content: space-between; align-items: center; font-size: .78em; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 0 .2em; }
+.s6-cuenta { min-width: 1.6em; text-align: center; border-radius: 99px; background: var(--s3); padding: .05em .5em; }
+.s6-haz h2 { color: var(--warn); }
+.s6-hecho h2 { color: var(--ok); }
+.s6-t { background: var(--s1); border: 1px solid var(--line); border-radius: .8em; padding: .3em .65em; box-shadow: var(--card-shadow); display: grid; gap: .12em; cursor: pointer; text-align: left; font: inherit; color: inherit; width: 100%; transition: transform .2s ease-out, border-color .2s; animation: esc-entra .45s cubic-bezier(.2,.7,.2,1) var(--d, 0s) both; }
+.s6-t:hover { transform: translateY(-2px); border-color: var(--line2); }
+.s6-t:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.s6-t1 { display: flex; align-items: center; gap: .55em; font-size: .76em; line-height: 1.15; }
+.s6-n { flex: none; width: 1.5em; height: 1.5em; border-radius: 50%; display: grid; place-items: center; background: var(--accent-bg); color: var(--accent); font: 800 .85em var(--mono); }
+.s6-crit { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .5em; font-size: .56em; line-height: 1.2; color: var(--muted); border-top: 1px dashed var(--line2); padding-top: .25em; }
+.s6-luz { width: .8em; height: .8em; border-radius: 50%; background: var(--muted); opacity: .5; }
+.s6-sn { font-weight: 800; font-size: .95em; padding: .1em .55em; border-radius: 99px; background: var(--s3); color: var(--muted); white-space: nowrap; }
+.s6-t.s6-ok .s6-luz { background: var(--ok); opacity: 1; }
+.s6-t.s6-ok .s6-sn { background: var(--ok-bg); color: var(--ok); }
+.s6-t.s6-ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.s6-t.s6-go .s6-luz { background: var(--warn); opacity: 1; animation: esc-pulso 2.4s ease-in-out infinite; }
+.s6-t.s6-go .s6-sn { background: var(--warn-bg); color: var(--warn); }
+.s6-pie { display: grid; grid-template-columns: 1fr auto; gap: 1.6vw; align-items: center; }
+.s6-cmd { font-size: .66em; }
+.s6-regla { margin: 0; font-size: 1.25em; font-weight: 800; letter-spacing: -.02em; text-align: right; }
+.s6-regla em { font-style: normal; color: var(--accent); border-bottom: 4px solid var(--gold); }
+.s6-regla small { display: block; font-size: .5em; font-weight: 600; color: var(--muted); }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Grupo 8 · E06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="s6-cab">
+      <div>
+        <h1 class="esc-titulo a-in">De una tarea vaga a <em>seis que se pueden probar</em></h1>
+        <p class="esc-sub a-in" style="--d:.15s">Un clic mueve cada tarjeta: Pendiente → Haciendo → Hecho. Se guarda en este navegador.</p>
+      </div>
+      <div class="s6-vaga-c esc-card a-in" style="--d:.2s" aria-label="Tarea vaga de partida"><small>Tarea vaga</small><b>«Haz el asistente»</b><span class="esc-chip warn">¿cómo sé que terminé?</span></div>
+    </div>
+    <div class="s6-tablero" id="tablero" role="group" aria-label="Tablero con las seis tareas">
+        <div class="s6-col s6-pend a-in" style="--d:.4s" data-estado="pendiente">
+          <h2><span>Pendiente</span><span class="s6-cuenta">0</span></h2>
+        </div>
+        <div class="s6-col s6-haz a-in" style="--d:.5s" data-estado="haciendo">
+          <h2><span>Haciendo</span><span class="s6-cuenta">0</span></h2>
+        </div>
+        <div class="s6-col s6-hecho a-in" style="--d:.6s" data-estado="hecho">
+          <h2><span>Hecho</span><span class="s6-cuenta">0</span></h2>
+        </div>
+    </div>
+    <div class="s6-pie a-in" style="--d:.9s">
+      <pre class="esc-cmd s6-cmd"><span class="p">$ </span>jmd chat "/skill plan-de-trabajo crea PLAN_TRABAJO.md con 6 tareas verificables para mi asistente"</pre>
+      <p class="s6-regla">Ninguna tarea <em>sin forma de probarla</em><small>Pide el plan al agente con el comando de la izquierda y compáralo con el tablero.</small></p>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando termines</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+/* Kanban clicable: las seis tareas del escena.yaml; cada clic avanza Pendiente → Haciendo → Hecho (y vuelve a Pendiente).
+   Se guarda en localStorage g8-02-plan como {t1:"hecho", t2:"haciendo", ...}; la escena 12 lo lee para pintar k/6. */
+(function () {
+  var K = "g8-02-plan";
+  var TAREAS = [
+    { id: "t1", titulo: "Cargar el corpus", crit: "faq.json tiene 10 preguntas y carga sin error" },
+    { id: "t2", titulo: "Nombre, saludo y ánimo", crit: "El asistente saluda por su nombre y cambia de ánimo" },
+    { id: "t3", titulo: "Tres preguntas del dominio", crit: "Responde 3 preguntas de tu faq.json con su respuesta" },
+    { id: "t4", titulo: "Micrófono", crit: "Una frase hablada llega como texto al chat" },
+    { id: "t5", titulo: "Flyer", crit: "Se genera un flyer con el texto que pediste" },
+    { id: "t6", titulo: "Pruebas de uso", crit: "Un compañero lo usa sin ayuda y anotas un hallazgo" }
+  ];
+  var ESTADOS = ["pendiente", "haciendo", "hecho"], ETIQ = { pendiente: "Aún no", haciendo: "Probando", hecho: "Sí" }, CLASE = { pendiente: "", haciendo: "s6-go", hecho: "s6-ok" };
+  var plan = {};
+  try { plan = JSON.parse(localStorage.getItem(K) || "{}") || {}; } catch (e) { plan = {}; }
+  function guardar() { try { localStorage.setItem(K, JSON.stringify(plan)); } catch (e) {} }
+  function estadoDe(id) { return ESTADOS.indexOf(plan[id]) >= 0 ? plan[id] : "pendiente"; }
+  var cols = {};
+  Array.prototype.forEach.call(document.querySelectorAll("#tablero .s6-col"), function (c) { cols[c.getAttribute("data-estado")] = c; });
+  function tarjeta(t, i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "s6-t"; b.setAttribute("data-id", t.id); b.style.setProperty("--d", (0.7 + i * 0.1) + "s");
+    var l1 = document.createElement("div"); l1.className = "s6-t1";
+    var n = document.createElement("span"); n.className = "s6-n"; n.textContent = String(i + 1);
+    var tt = document.createElement("b"); tt.textContent = t.titulo;
+    l1.appendChild(n); l1.appendChild(tt);
+    var cr = document.createElement("div"); cr.className = "s6-crit";
+    var luz = document.createElement("span"); luz.className = "s6-luz"; luz.setAttribute("aria-hidden", "true");
+    var tx = document.createElement("span"); tx.className = "s6-txt"; tx.textContent = t.crit;
+    var sn = document.createElement("span"); sn.className = "s6-sn";
+    cr.appendChild(luz); cr.appendChild(tx); cr.appendChild(sn);
+    b.appendChild(l1); b.appendChild(cr);
+    b.addEventListener("click", function () {
+      var e = ESTADOS[(ESTADOS.indexOf(estadoDe(t.id)) + 1) % ESTADOS.length];
+      plan[t.id] = e; guardar(); colocar(b, t.id); contar();
+    });
+    return b;
+  }
+  function colocar(b, id) {
+    var e = estadoDe(id);
+    b.className = "s6-t " + CLASE[e]; b.querySelector(".s6-sn").textContent = ETIQ[e];
+    b.setAttribute("aria-label", b.querySelector(".s6-t1 b").textContent + " · " + e + " · clic para avanzar");
+    cols[e].appendChild(b);
+  }
+  function contar() {
+    ESTADOS.forEach(function (e) { cols[e].querySelector(".s6-cuenta").textContent = String(cols[e].querySelectorAll(".s6-t").length); });
+  }
+  TAREAS.forEach(function (t, i) { colocar(tarjeta(t, i), t.id); });
+  contar();
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

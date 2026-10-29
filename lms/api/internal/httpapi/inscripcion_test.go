@@ -115,3 +115,49 @@ func TestInstructorSoloSusGrupos(t *testing.T) {
 		t.Error("el admin ve a cualquier alumno")
 	}
 }
+
+// Con vacantes gratuitas: las primeras entran al grupo; agotadas, la cuenta queda en «<grupo>-pago» (sin el curso)
+// y se le pide coordinar el pago por WhatsApp. Lo mismo para quien ya tiene cuenta y pulsa «Unirme».
+func TestInscripcionCuposGratis(t *testing.T) {
+	e := newEnv(t)
+	e.s.Inscripcion = []string{"c1"}
+	e.s.CuposGratis = map[string]int{"c1": 2}
+	e.s.WhatsAppPago = "51986149476"
+	r := e.call("GET", "/api/v1/inscripcion/c1", "", false, nil, "")
+	if c, _ := r.body["cupos"].(map[string]any); r.code != 200 || c["quedan"].(float64) != 2 || r.body["whatsapp"] != "51986149476" {
+		t.Fatalf("info con cupos: %d %s", r.code, r.raw)
+	}
+	for i, correo := range []string{"a@x.test", "b@x.test"} {
+		if r = e.call("POST", "/api/v1/inscripcion/c1", "", false, map[string]string{"name": "Alumno Gratis", "email": correo, "password": "clave-1234"}, ""); r.code != 201 || r.body["pendiente_pago"] != nil {
+			t.Fatalf("vacante %d: %d %s", i+1, r.code, r.raw)
+		}
+	}
+	r = e.call("POST", "/api/v1/inscripcion/c1", "", false, map[string]string{"name": "Carla Pago", "email": "c@x.test", "password": "clave-1234"}, "")
+	if r.code != 201 || r.body["pendiente_pago"] != true || r.body["token"] == nil {
+		t.Fatalf("tercera, pendiente: %d %s", r.code, r.raw)
+	}
+	if wa, _ := r.body["whatsapp"].(string); wa == "" || wa[:len("https://wa.me/51986149476?text=")] != "https://wa.me/51986149476?text=" {
+		t.Fatalf("enlace de WhatsApp: %v", r.body["whatsapp"])
+	}
+	u, _ := e.db.UserByEmail(t.Context(), "c@x.test")
+	if !slices.Equal(u.Cohorts, []string{"c1-pago"}) {
+		t.Fatalf("pendiente queda fuera del grupo: %v", u.Cohorts)
+	}
+	if r = e.call("GET", "/api/v1/courses", r.body["token"].(string), false, nil, ""); r.code != 200 || len(r.list) != 0 {
+		t.Fatalf("pendiente no ve el curso: %s", r.raw)
+	}
+	if r = e.call("GET", "/api/v1/inscripcion/c1", "", false, nil, ""); r.body["cupos"].(map[string]any)["quedan"].(float64) != 0 {
+		t.Fatalf("agotadas: %s", r.raw)
+	}
+	// Cuenta vieja que pulsa «Unirme» con las vacantes agotadas: también pendiente.
+	tok := e.register("viejo@x.test")
+	viejo, _ := e.db.UserByEmail(t.Context(), "viejo@x.test")
+	_ = e.db.UpdateUserRoles(t.Context(), viejo.ID, []string{"student"}, []string{"grupo-2"})
+	if r = e.call("POST", "/api/v1/inscripcion/c1/unirme", tok, false, nil, ""); r.code != 200 || r.body["pendiente_pago"] != true {
+		t.Fatalf("unirme agotado: %d %s", r.code, r.raw)
+	}
+	v, _ := e.db.UserByEmail(t.Context(), "viejo@x.test")
+	if !slices.Contains(v.Cohorts, "c1-pago") || slices.Contains(v.Cohorts, "c1") {
+		t.Fatalf("unirme pendiente: %v", v.Cohorts)
+	}
+}

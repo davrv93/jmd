@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E05 · OpenCode y el gateway</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas; el CSS común va en ../../comun/escena.css), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .45); }
+.esc-titulo { font-size: 1.9em; }
+.s5-svg { max-width: 100%; }
+.s5-svg .caja { fill: var(--s1); stroke: var(--line2); stroke-width: 2; }
+.s5-svg .gw { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 3; }
+.s5-svg .glow { fill: none; stroke: var(--accent); stroke-width: 6; opacity: 0; }
+.s5-svg .t1 { font-size: 27px; font-weight: 800; }
+.s5-svg .t2 { font-size: 20px; fill: var(--muted); }
+.s5-svg .mono { font-family: var(--mono); font-weight: 700; fill: var(--accent); }
+.s5-svg .flecha { fill: none; stroke: var(--accent); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+.s5-svg .vuelta { fill: none; stroke: var(--muted); stroke-width: 2.5; stroke-dasharray: 8 7; stroke-linecap: round; opacity: .8; }
+.s5-svg .vuelta-p { fill: none; stroke: var(--muted); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.s5-svg .et { font-size: 20px; font-weight: 700; text-anchor: middle; }
+.s5-svg .et.k { fill: var(--warn); }
+.s5-svg .pk { fill: var(--accent); opacity: 0; }
+.s5-svg .pk.r { fill: var(--ok); }
+.s5-svg .p1 { animation: s5-p1 7s ease-in-out 3.2s infinite; }
+.s5-svg .p2 { animation: s5-p2 7s ease-in-out 3.2s infinite; }
+.s5-svg .p3 { animation: s5-p3 7s ease-in-out 3.2s infinite; }
+.s5-svg .g1 { animation: s5-g1 7s ease-in-out 3.2s infinite; }
+.s5-svg .g2 { animation: s5-g2 7s ease-in-out 3.2s infinite; }
+@keyframes s5-p1 { 0% { opacity: 0; transform: translateX(0); } 3% { opacity: 1; } 22% { opacity: 1; transform: translateX(150px); } 25%, 100% { opacity: 0; transform: translateX(150px); } }
+@keyframes s5-p2 { 0%, 38% { opacity: 0; transform: translateX(0); } 41% { opacity: 1; } 60% { opacity: 1; transform: translateX(150px); } 63%, 100% { opacity: 0; transform: translateX(150px); } }
+@keyframes s5-p3 { 0%, 78% { opacity: 0; transform: translateX(0); } 81% { opacity: 1; } 97% { opacity: 1; transform: translateX(-750px); } 100% { opacity: 0; transform: translateX(-750px); } }
+@keyframes s5-g1 { 0%, 22% { opacity: 0; } 28%, 36% { opacity: .9; } 44%, 100% { opacity: 0; } }
+@keyframes s5-g2 { 0%, 60% { opacity: 0; } 66%, 74% { opacity: .9; } 82%, 100% { opacity: 0; } }
+.s5-fila { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.4vw; align-items: stretch; }
+.s5-fila .esc-cmd { font-size: .8em; }
+.s5-fila .l { display: block; animation: esc-entra .4s cubic-bezier(.2,.7,.2,1) var(--d) both; }
+.s5-fila .esc-cmd .c { color: #9a95c4; }
+.s5-fila .esc-cmd .k { color: #f4ac5c; }
+.s5-json { display: grid; gap: .5em; align-content: start; }
+.s5-json h3 { margin: 0; font-size: .95em; display: flex; justify-content: space-between; gap: .6em; align-items: center; }
+.s5-json .esc-cmd { font-size: .72em; }
+.s5-json .esc-chip { white-space: normal; line-height: 1.3; border-radius: .8em; background: linear-gradient(var(--warn-bg), var(--warn-bg)), var(--s1); }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 8 · E05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">OpenCode es la ventana; el gateway, <em>la puerta a los modelos</em></h1>
+    <svg class="esc-svg s5-svg" viewBox="0 0 1000 190" role="img" aria-label="Flujo: tu laptop con OpenCode envía la pregunta con tu clave personal al gateway de la clase, que la manda al modelo; la respuesta vuelve por el mismo camino">
+      <g class="a-in" style="--d:.3s">
+        <rect class="caja" x="1" y="10" width="249" height="115" rx="16"/>
+        <text class="t1" x="22" y="48">Tu laptop</text>
+        <text class="t2" x="22" y="76">OpenCode, el agente</text>
+        <rect x="22" y="88" width="150" height="26" rx="6" fill="#14122b"/>
+        <text x="34" y="107" font-size="18" font-family="ui-monospace,Menlo,Consolas,monospace" font-weight="700" style="fill:#e9e6ff">&gt; hola</text>
+      </g>
+      <g class="a-in" style="--d:.9s">
+        <rect class="gw" x="400" y="10" width="200" height="115" rx="16"/>
+        <rect class="glow g1" x="400" y="10" width="200" height="115" rx="16"/>
+        <text class="t1" x="500" y="48" text-anchor="middle">Gateway</text>
+        <text class="t2" x="500" y="76" text-anchor="middle">de la clase</text>
+        <text class="t2" x="500" y="106" text-anchor="middle">una sola puerta</text>
+      </g>
+      <g class="a-in" style="--d:1.5s">
+        <rect class="caja" x="750" y="10" width="250" height="115" rx="16"/>
+        <rect class="glow g2" x="750" y="10" width="250" height="115" rx="16"/>
+        <text class="t1" x="772" y="48">Modelo</text>
+        <text class="t2" x="772" y="76">lo elige el gateway</text>
+        <text class="t2 mono" x="772" y="106">clase/auto</text>
+      </g>
+      <path class="flecha a-draw" pathLength="1" style="--d:.7s;--t:.4s" d="M254 67 H394 M382 57 L394 67 L382 77"/>
+      <path class="flecha a-draw" pathLength="1" style="--d:1.3s;--t:.4s" d="M604 67 H744 M732 57 L744 67 L732 77"/>
+      <text class="et a-in" style="--d:1s" x="325" y="52">pregunta</text>
+      <text class="et k a-in" style="--d:1s" x="325" y="100">+ tu clave</text>
+      <text class="et a-in" style="--d:1.6s" x="675" y="52">al modelo</text>
+      <path class="vuelta a-in" style="--d:2s" d="M875 128 V150 H125 V128"/>
+      <path class="vuelta-p a-in" style="--d:2s" d="M115 138 L125 128 L135 138"/>
+      <text class="et t2 a-in" style="--d:2.1s" x="500" y="182">la respuesta vuelve por el mismo camino</text>
+      <circle class="pk p1" cx="254" cy="67" r="9"/>
+      <circle class="pk p2" cx="604" cy="67" r="9"/>
+      <circle class="pk r p3" cx="875" cy="150" r="9"/>
+    </svg>
+    <div class="s5-fila">
+      <pre class="esc-cmd"><span class="l" style="--d:2.5s"><span class="p">$ </span>npm i -g opencode-ai    <span class="c"># instalar (Node 18+)</span></span><span class="l" style="--d:2.9s"><span class="p">$ </span>opencode --version      <span class="c"># comprobar</span></span><span class="l" style="--d:3.3s"><span class="p">$ </span>export GATEWAY_API_KEY="<span class="k">tu clave personal</span>"</span><span class="l" style="--d:3.7s"><span class="p">$ </span>opencode                <span class="c"># abrir el agente</span></span><span class="l" style="--d:4.1s"><span class="p">&gt; </span>hola                    <span class="c"># tu primera pregunta</span></span></pre>
+      <div class="esc-card s5-json a-in" style="--d:4.5s">
+        <h3>Dónde van la URL y la clave <span class="esc-chip">opencode.json</span></h3>
+        <pre class="esc-cmd">"baseURL": "URL-DEL-GATEWAY/v1",   <span class="c">// la URL de clase</span>
+"apiKey":  "{env:GATEWAY_API_KEY}" <span class="c">// la clave, no aquí</span></pre>
+        <span class="esc-chip warn">Tu clave vive en una variable de entorno, nunca escrita en el archivo</span>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando termines</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

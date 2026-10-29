@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E07 · Datos y API: Postgres + Elysia</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas; el CSS común va en ../../comun/escena.css), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+
+/* ---- Común de la clase 3 (chatbot de WhatsApp) ---- */
+:root { --wa: #0b7a40; --wa-bg: rgba(11,122,64,.12); --wa-cab: #0b7a40; --burb: #d9fdd3; --burb-fg: #10291a; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) { --wa: #4ade80; --wa-bg: rgba(74,222,128,.15); --wa-cab: #166c3f; --burb: #1d5a39; --burb-fg: #e6ffef; } }
+:root[data-tema="dark"] { --wa: #4ade80; --wa-bg: rgba(74,222,128,.15); --wa-cab: #166c3f; --burb: #1d5a39; --burb-fg: #e6ffef; }
+.esc-chip.wa { background: var(--wa-bg); color: var(--wa); border-color: color-mix(in srgb, var(--wa) 30%, transparent); }
+.esc-svg text.m { fill: var(--muted); }
+.esc-svg text.ac { fill: var(--accent); }
+.esc-svg text.ok { fill: var(--ok); }
+.esc-svg text.wa { fill: var(--wa); }
+.esc-svg text.mono { font-family: var(--mono); }
+.esc-svg text.b { font-weight: 700; }
+.nodo { fill: var(--s1); stroke: var(--line2); stroke-width: 2.5; }
+.nodo.ac { stroke: var(--accent); }
+.nodo.wa { stroke: var(--wa); }
+.carril { fill: none; stroke: var(--line2); stroke-width: 3; stroke-linecap: round; }
+.carril.ac { stroke: var(--accent); }
+.carril.wa { stroke: var(--wa); }
+.punta { fill: var(--line2); }
+.punta.ac { fill: var(--accent); }
+.punta.wa { fill: var(--wa); }
+.tel { fill: var(--s1); stroke: var(--fg); stroke-width: 6; }
+.tel-pant { fill: var(--s2); }
+.tel-cab { fill: var(--wa-cab); }
+.esc-svg text.tel-t { fill: #fff; font-weight: 700; }
+.bu-in { fill: var(--s1); stroke: var(--line2); stroke-width: 1.5; }
+.bu-out { fill: var(--burb); }
+.esc-svg text.bo { fill: var(--burb-fg); }
+.gris { fill: var(--s3); }
+.gris2 { fill: var(--line2); }
+.marco { fill: var(--s1); stroke: var(--line2); stroke-width: 2.5; }
+.c3-cmd { font-size: .74em; }
+.c3-cmd .ok { color: #7ef0a4; }
+.c3-cmd .no { color: #ff9b9b; }
+.c3-cmd .w { color: #ffd479; }
+
+.b7 { display: grid; grid-template-columns: 1fr 1fr; gap: 2vw; align-items: center; }
+.b7-rutas { gap: .4em !important; }
+.b7-rutas { list-style: none; margin: 0; padding: 0; display: grid; gap: .5em; }
+.b7-rutas li { display: grid; grid-template-columns: 3.8em auto 1fr; gap: .6em; align-items: center; font-size: .74em; }
+.b7-rutas code { font: 700 .92em var(--mono); }
+.b7-rutas small { color: var(--muted); font-size: .9em; text-align: right; }
+.b7-m { text-align: center; font: 800 .74em var(--mono); padding: .25em 0; border-radius: .4em; background: var(--accent-bg); color: var(--accent); }
+.b7-m.post { background: var(--wa-bg); color: var(--wa); }
+.b7-svg { max-height: 42vh; }
+.b7-cab { fill: var(--accent); }
+.b7-cab.wa { fill: var(--wa); }
+.esc-svg text.b7-ct { fill: #fff; font-weight: 800; font-family: var(--mono); }
+.esc-svg text.b7-c { font-family: var(--mono); }
+.b7-abajo { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; align-items: start; }
+@media (max-width: 760px) { .b7-rutas li { grid-template-columns: 4em 1fr; } .b7-rutas small { grid-column: 2; text-align: left; } }
+
+/* ---- Teléfono (390 px): una columna y se puede desplazar ---- */
+@media (max-width: 760px) {
+  html, body { height: auto; }
+  body { overflow: visible; }
+  .esc { padding: 14px 16px; gap: 14px; }
+  .esc-titulo { font-size: 1.7em; }
+  .esc-sub { font-size: 1em; }
+  .esc-grid-2, .esc-grid-3, .c3-col { grid-template-columns: 1fr !important; gap: 12px; }
+  .c3-cmd { font-size: .7em; }
+}
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 8 · E07</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in"><em>Elysia</em> recibe, <em>Postgres</em> recuerda</h1>
+    <div class="b7 c3-col">
+      <div class="esc-card a-in" style="--d:.2s">
+        <h3>Rutas · Bun + Elysia en :8766</h3>
+        <ul class="b7-rutas">
+          <li class="a-in" style="--d:0.4s"><span class="b7-m get">GET</span><code>/api/salud</code><small>¿todo vivo?</small></li>
+          <li class="a-in" style="--d:0.5s"><span class="b7-m post">POST</span><code>/api/webhook</code><small>entra un mensaje</small></li>
+          <li class="a-in" style="--d:0.6s"><span class="b7-m get">GET</span><code>/api/conversaciones</code><small>la bandeja</small></li>
+          <li class="a-in" style="--d:0.7s"><span class="b7-m get">GET</span><code>/api/mensajes</code><small>un chat</small></li>
+          <li class="a-in" style="--d:0.8s"><span class="b7-m post">POST</span><code>/api/conversaciones/:id/modo</code><small>bot o persona</small></li>
+          <li class="a-in" style="--d:0.9s"><span class="b7-m post">POST</span><code>/api/enviar</code><small>responde una persona</small></li>
+          <li class="a-in" style="--d:1.0s"><span class="b7-m get">GET</span><code>/api/whatsapp/estado</code><small>¿número vinculado?</small></li>
+        </ul>
+      </div>
+      <svg class="esc-svg b7-svg" viewBox="0 0 760 350" role="img" aria-label="Tres tablas en PostgreSQL: contactos (id, jid, nombre); conversaciones (id, contacto_id, modo bot o humano, no_leidos); mensajes (id, conversacion_id, wa_id único, autor, texto). Un contacto tiene una conversación y una conversación tiene muchos mensajes.">
+        <g class="a-pop" style="--d:0.5s">
+          <rect class="nodo" x="0" y="20" width="230" height="180" rx="16"/>
+          <path class="b7-cab" d="M0 36 a16 16 0 0 1 16 -16 h198 a16 16 0 0 1 16 16 v34 h-230 z"/>
+          <text class="b7-ct" x="16" y="56" font-size="21">contactos</text>
+          <text class="b7-c" x="16" y="104" font-size="19">id</text>
+          <text class="b7-c" x="16" y="142" font-size="19">jid</text>
+          <text class="b7-c" x="16" y="180" font-size="19">nombre</text>
+        </g>
+        <g class="a-pop" style="--d:0.65s">
+          <rect class="nodo" x="265" y="20" width="230" height="218" rx="16"/>
+          <path class="b7-cab" d="M265 36 a16 16 0 0 1 16 -16 h198 a16 16 0 0 1 16 16 v34 h-230 z"/>
+          <text class="b7-ct" x="281" y="56" font-size="21">conversaciones</text>
+          <text class="b7-c" x="281" y="104" font-size="19">id</text>
+          <text class="b7-c" x="281" y="142" font-size="19">contacto_id</text>
+          <text class="b7-c" x="281" y="180" font-size="19">modo</text>
+          <text class="b7-c" x="281" y="218" font-size="19">no_leidos</text>
+        </g>
+        <g class="a-pop" style="--d:0.8s">
+          <rect class="nodo" x="530" y="20" width="230" height="256" rx="16"/>
+          <path class="b7-cab wa" d="M530 36 a16 16 0 0 1 16 -16 h198 a16 16 0 0 1 16 16 v34 h-230 z"/>
+          <text class="b7-ct" x="546" y="56" font-size="21">mensajes</text>
+          <text class="b7-c" x="546" y="104" font-size="19">id</text>
+          <text class="b7-c" x="546" y="142" font-size="19">conversacion_id</text>
+          <text class="b7-c" x="546" y="180" font-size="19">wa_id</text>
+          <text class="b7-c" x="546" y="218" font-size="19">autor</text>
+          <text class="b7-c" x="546" y="256" font-size="19">texto</text>
+        </g>
+        <path class="carril ac a-draw" pathLength="1" style="--d:1s" d="M230 98 H248 V136 H265"/>
+        <path class="carril ac a-draw" pathLength="1" style="--d:1.1s" d="M495 98 H513 V136 H530"/>
+        <text class="a-in ac b" style="--d:1.2s" x="236" y="88" font-size="18">1</text><text class="a-in ac b" style="--d:1.2s" x="252" y="160" font-size="18">1</text>
+        <text class="a-in ac b" style="--d:1.3s" x="501" y="88" font-size="18">1</text><text class="a-in ac b" style="--d:1.3s" x="517" y="160" font-size="18">n</text>
+        <text class="m b7-c" x="482" y="180" font-size="15" text-anchor="end">bot|humano</text>
+        <text class="m b7-c" x="745" y="180" font-size="15" text-anchor="end">único</text>
+        <text class="m" x="380" y="330" font-size="18" text-anchor="middle">wa_id único: si Evolution reintenta, no se duplica</text>
+      </svg>
+    </div>
+    <div class="b7-abajo c3-col a-in" style="--d:1s">
+      <pre class="esc-cmd c3-cmd"><span class="p">$ </span>curl -s localhost:8766/api/salud
+<span class="ok">{"db":true,"llm":true,"whatsapp":true}</span></pre>
+      <pre class="esc-cmd c3-cmd"><span class="c"># «hola» desde OTRO teléfono</span>
+<span class="p">$ </span>curl -s localhost:8766/api/conversaciones
+<span class="ok">[{"nombre":"Ana","modo":"bot","ultimo":"hola"}]</span></pre>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando termines</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

@@ -346,7 +346,12 @@ export interface Inscripcion {
   grupo: string;
   nombre: string;
   cursos: { id: string; slug: string; title: string; description: string; requisitos?: string[]; proyecto_final?: string; fechas: string[] }[];
+  /** Vacantes gratuitas del grupo (si el grupo las tiene). Agotadas, la inscripción queda pendiente de pago. */
+  cupos?: { total: number; ocupados: number; quedan: number };
+  whatsapp?: string;
 }
+/** Respuesta de inscribirse/unirse cuando ya no quedaban vacantes gratuitas. */
+export interface PendientePago { pendiente_pago?: boolean; mensaje?: string; whatsapp?: string }
 
 export interface TicketSorteo {
   estado: "ganador" | "no_ganador";
@@ -360,8 +365,8 @@ export const api = {
   config: () => req<AuthConfig>("GET", "/api/v1/auth/config"),
   inscripcion: (grupo: string) => req<Inscripcion>("GET", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`),
   inscribirse: (grupo: string, b: { name: string; email: string; password: string }) =>
-    req<{ token: string; user: Me; cursos: string[]; sorteo?: SorteoAviso }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`, b),
-  unirse: (grupo: string) => req<{ grupo: string; cohorts: string[]; cursos: string[]; sorteo?: SorteoAviso }>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}/unirme`, {}),
+    req<{ token: string; user: Me; cursos: string[]; sorteo?: SorteoAviso } & PendientePago>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`, b),
+  unirse: (grupo: string) => req<{ grupo: string; cohorts: string[]; cursos: string[]; sorteo?: SorteoAviso } & PendientePago>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}/unirme`, {}),
   sorteo: (id: string) => req<Sorteo>("GET", `/api/v1/sorteo/${encodeURIComponent(id)}`),
   /** Qué fue de un ticket: número (4964) o código de varios caracteres (MT-7Q4XZP).
    *  Responde ganador / no_ganador; 404 si ese ticket no participó. */

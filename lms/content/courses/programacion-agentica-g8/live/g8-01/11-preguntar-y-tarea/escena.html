@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Pregunta y tarea 1</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas; el CSS común va en ../../comun/escena.css), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+
+.esc-titulo { font-size: 2.1em; }
+.esc-cielo { opacity: calc(var(--cielo) * .35); }
+.e11 { display: grid; gap: 2.4vh; }
+.e11-tareas { display: grid; grid-template-columns: 1fr 1fr; gap: 2vw; align-items: stretch; }
+.e11-t { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; box-shadow: var(--card-shadow); padding: 1em 1.3em 1.1em; display: flex; gap: 1em; align-items: flex-start; }
+.e11-t > div { display: grid; gap: .35em; min-width: 0; }
+.e11-t .n { flex: none; width: 2em; height: 2em; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--accent); color: var(--on-accent); }
+.e11-t h2 { margin: 0; font-size: 1.15em; line-height: 1.2; }
+.e11-t p { margin: 0; color: var(--muted); font-size: .85em; }
+.e11-t ul { margin: .2em 0 0; padding: 0; list-style: none; display: grid; gap: .25em; font-size: .78em; }
+.e11-t li { display: flex; gap: .6em; align-items: baseline; }
+.e11-t li::before { content: ""; flex: none; width: .5em; height: .5em; border-radius: 50%; background: var(--ok); transform: translateY(-.05em); }
+.e11-t code { font: 700 .95em var(--mono); color: var(--accent); }
+.e11-fecha .esc-chip { white-space: nowrap; }
+.e11-fecha { display: inline-flex; gap: .5em; align-items: center; margin-top: .3em; }
+.e11-ej h2 { margin: 0 0 .5em; font-size: .78em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.e11-ej .esc-grid-3 { gap: 1.4vw; }
+.e11-q { position: relative; background: var(--s2); border: 1px solid var(--line2); border-radius: 1em 1em 1em .2em; padding: .8em 1em; display: grid; gap: .55em; align-content: space-between; animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; animation-delay: var(--d, 0s); }
+.e11-q p { margin: 0; font-size: .92em; line-height: 1.35; }
+.e11-q p code { font: 700 .92em var(--mono); color: var(--accent); }
+.e11-q .esc-chip { justify-self: start; font-size: .62em; }
+
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Grupo 8 · E11</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="e11">
+      <h1 class="esc-titulo a-in">Pregunta y <em>tarea 1</em></h1>
+      <div class="e11-tareas">
+        <div class="e11-t a-in" style="--d:.2s">
+          <span class="n">1</span>
+          <div><h2>Publica una pregunta o responde una</h2>
+          <p>En la pestaña Preguntas de esta sesión del LMS.</p>
+          <ul><li>Una pregunta de la clase</li><li>O la respuesta a un compañero</li><li>Si algo falla, pega el error completo</li></ul></div>
+        </div>
+        <div class="e11-t a-in" style="--d:.4s">
+          <span class="n">2</span>
+          <div><h2>Entrega la tarea 1</h2>
+          <p>Repositorio <code>clase-01</code> con la evidencia y tu skill. En el LMS pega la URL y el commit.</p>
+          <ul><li><code>EVIDENCIA.md</code> y <code>REFLEXION.md</code></li><li><code>.opencode/skills/saludo/SKILL.md</code></li></ul>
+          <div class="e11-fecha"><span class="esc-chip warn">Entrega hasta el 18-10-2026, 23:59</span></div></div>
+        </div>
+      </div>
+      <div class="e11-ej">
+        <h2 class="a-in" style="--d:.9s">Tres ejemplos de buena pregunta</h2>
+        <div class="esc-grid-3">
+          <div class="e11-q" style="--d:1.2s"><p>Me sale «command not found: opencode». Reinicié la terminal. ¿Qué reviso en el PATH?</p><span class="esc-chip ok">Lleva el error completo</span></div>
+          <div class="e11-q" style="--d:1.6s"><p>¿Cuándo conviene una skill y cuándo basta con las reglas de <code>AGENTS.md</code>?</p><span class="esc-chip ok">Una duda concreta</span></div>
+          <div class="e11-q" style="--d:2s"><p>El agente quiso ejecutar un comando que no esperaba. ¿Cómo hago que me muestre cada uno antes?</p><span class="esc-chip ok">Cuenta lo que viste</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando termines</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

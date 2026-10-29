@@ -35,14 +35,18 @@ type Server struct {
 	// Inscripcion son los grupos con inscripción abierta por enlace (/inscripcion/<grupo>): la URL es
 	// la invitación, sin código. Vacío = ninguno.
 	Inscripcion []string
-	PublicURL   string // https://lms.<dominio> (para las URLs de las preguntas)
-	SessionTTL  time.Duration
-	Web         fs.FS          // build del front; nil = solo API
-	Runner      *runner.Runner // ejecuta código de los alumnos; nil/deshabilitado = sin /run
-	TermImage   string         // imagen de la shell interactiva del estudio (vacío = por defecto)
-	LLM         LLMConfig      // valores iniciales (entorno) del gateway de IA; manda lo guardado en la base
-	DataDir     string         // carpeta de datos (clave de firma de insignias badge-key.json); vacío = clave efímera
-	JmrvURL     string         // base del Image Studio (http://jmrv:8790); vacío = sin JMRV (503)
+	// CuposGratis: vacantes gratuitas por grupo (LMS_INSCRIPCION_CUPOS=grupo-8:7). Agotadas, quien se inscribe
+	// queda en «<grupo>-pago» (sin acceso al curso) y se le pide coordinar el pago por WhatsApp (WhatsAppPago).
+	CuposGratis  map[string]int
+	WhatsAppPago string
+	PublicURL    string // https://lms.<dominio> (para las URLs de las preguntas)
+	SessionTTL   time.Duration
+	Web          fs.FS          // build del front; nil = solo API
+	Runner       *runner.Runner // ejecuta código de los alumnos; nil/deshabilitado = sin /run
+	TermImage    string         // imagen de la shell interactiva del estudio (vacío = por defecto)
+	LLM          LLMConfig      // valores iniciales (entorno) del gateway de IA; manda lo guardado en la base
+	DataDir      string         // carpeta de datos (clave de firma de insignias badge-key.json); vacío = clave efímera
+	JmrvURL      string         // base del Image Studio (http://jmrv:8790); vacío = sin JMRV (503)
 
 	login     *limiter
 	llm       *llmCache

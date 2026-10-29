@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E11 · Pruebas de uso con un teléfono real</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas; el CSS común va en ../../comun/escena.css), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+
+/* ---- Común de la clase 3 (chatbot de WhatsApp) ---- */
+:root { --wa: #0b7a40; --wa-bg: rgba(11,122,64,.12); --wa-cab: #0b7a40; --burb: #d9fdd3; --burb-fg: #10291a; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) { --wa: #4ade80; --wa-bg: rgba(74,222,128,.15); --wa-cab: #166c3f; --burb: #1d5a39; --burb-fg: #e6ffef; } }
+:root[data-tema="dark"] { --wa: #4ade80; --wa-bg: rgba(74,222,128,.15); --wa-cab: #166c3f; --burb: #1d5a39; --burb-fg: #e6ffef; }
+.esc-chip.wa { background: var(--wa-bg); color: var(--wa); border-color: color-mix(in srgb, var(--wa) 30%, transparent); }
+.esc-svg text.m { fill: var(--muted); }
+.esc-svg text.ac { fill: var(--accent); }
+.esc-svg text.ok { fill: var(--ok); }
+.esc-svg text.wa { fill: var(--wa); }
+.esc-svg text.mono { font-family: var(--mono); }
+.esc-svg text.b { font-weight: 700; }
+.nodo { fill: var(--s1); stroke: var(--line2); stroke-width: 2.5; }
+.nodo.ac { stroke: var(--accent); }
+.nodo.wa { stroke: var(--wa); }
+.carril { fill: none; stroke: var(--line2); stroke-width: 3; stroke-linecap: round; }
+.carril.ac { stroke: var(--accent); }
+.carril.wa { stroke: var(--wa); }
+.punta { fill: var(--line2); }
+.punta.ac { fill: var(--accent); }
+.punta.wa { fill: var(--wa); }
+.tel { fill: var(--s1); stroke: var(--fg); stroke-width: 6; }
+.tel-pant { fill: var(--s2); }
+.tel-cab { fill: var(--wa-cab); }
+.esc-svg text.tel-t { fill: #fff; font-weight: 700; }
+.bu-in { fill: var(--s1); stroke: var(--line2); stroke-width: 1.5; }
+.bu-out { fill: var(--burb); }
+.esc-svg text.bo { fill: var(--burb-fg); }
+.gris { fill: var(--s3); }
+.gris2 { fill: var(--line2); }
+.marco { fill: var(--s1); stroke: var(--line2); stroke-width: 2.5; }
+.c3-cmd { font-size: .74em; }
+.c3-cmd .ok { color: #7ef0a4; }
+.c3-cmd .no { color: #ff9b9b; }
+.c3-cmd .w { color: #ffd479; }
+
+.u11 { display: grid; grid-template-columns: .55fr 1.45fr; gap: 2.6vw; align-items: center; }
+.u11-tel { height: 64vh; width: auto; max-width: 100%; justify-self: center; }
+.u11-der { display: grid; gap: 1.6vh; }
+.u11-tabla { width: 100%; border-collapse: collapse; font-size: .8em; }
+.u11-tabla th { text-align: left; font-size: .78em; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: .3em .5em; border-bottom: 2px solid var(--line2); }
+.u11-tabla td { padding: .42em .5em; border-bottom: 1px solid var(--line); }
+.u11-tabla td:nth-child(2), .u11-tabla th:nth-child(2) { text-align: right; font-family: var(--mono); }
+.u11-humano { border-left: 5px solid var(--wa); }
+@media (max-width: 760px) { .u11-tel { height: auto; width: 70%; } }
+
+/* ---- Teléfono (390 px): una columna y se puede desplazar ---- */
+@media (max-width: 760px) {
+  html, body { height: auto; }
+  body { overflow: visible; }
+  .esc { padding: 14px 16px; gap: 14px; }
+  .esc-titulo { font-size: 1.7em; }
+  .esc-sub { font-size: 1em; }
+  .esc-grid-2, .esc-grid-3, .c3-col { grid-template-columns: 1fr !important; gap: 12px; }
+  .c3-cmd { font-size: .7em; }
+}
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Grupo 8 · E11</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Prueba de uso: <em>otra persona</em>, su teléfono</h1>
+    <div class="u11 c3-col">
+      <svg class="esc-svg u11-tel a-in" style="--d:.2s" viewBox="0 0 380 640" role="img" aria-label="Guion de tres tareas con un teléfono real: una pregunta que el negocio sabe, una que no sabe y pedir hablar con una persona.">
+        <rect class="tel" x="10" y="10" width="360" height="620" rx="48"/>
+        <rect class="tel-pant" x="26" y="26" width="328" height="588" rx="34"/>
+        <path class="tel-cab" d="M26 60 a34 34 0 0 1 34 -34 h260 a34 34 0 0 1 34 34 v54 h-328 z"/>
+        <text class="tel-t" x="60" y="94" font-size="22">Tienda Sol</text>
+        <g class="a-in" style="--d:.5s"><rect class="bu-in" x="44" y="134" width="226" height="44" rx="14"/><text x="62" y="163" font-size="18">¿Atienden domingos?</text></g>
+        <g class="a-in" style="--d:.9s"><rect class="bu-out" x="110" y="188" width="226" height="70" rx="14"/><text class="bo" x="126" y="217" font-size="18">Soy un bot. Sí, de</text><text class="bo" x="126" y="242" font-size="18">10 a 2 de la tarde.</text></g>
+        <g class="a-in" style="--d:1.4s"><rect class="bu-in" x="44" y="270" width="200" height="44" rx="14"/><text x="62" y="299" font-size="18">¿Venden laptops?</text></g>
+        <g class="a-in" style="--d:1.8s"><rect class="bu-out" x="110" y="324" width="226" height="70" rx="14"/><text class="bo" x="126" y="353" font-size="18">No lo sé. ¿Te paso</text><text class="bo" x="126" y="378" font-size="18">con una persona?</text></g>
+        <g class="a-in" style="--d:2.3s"><rect class="bu-in" x="44" y="406" width="250" height="70" rx="14"/><text x="62" y="435" font-size="18">Quiero hablar con</text><text x="62" y="460" font-size="18">una persona</text></g>
+        <g class="a-in" style="--d:2.7s"><rect class="bu-out" x="110" y="488" width="226" height="70" rx="14"/><text class="bo" x="126" y="517" font-size="18">Listo, te atiende</text><text class="bo" x="126" y="542" font-size="18">alguien del equipo.</text></g>
+      </svg>
+      <div class="u11-der">
+        <div class="esc-card a-in" style="--d:.6s">
+          <h3>PRUEBAS_DE_USO.md</h3>
+          <table class="u11-tabla">
+            <thead><tr><th>Tarea</th><th>Seg.</th><th>Severidad</th></tr></thead>
+            <tbody>
+              <tr><td>Algo que el negocio sabe</td><td>1,8</td><td><span class="esc-chip ok">—</span></td></tr>
+              <tr><td>Algo que NO sabe</td><td>2,3</td><td><span class="esc-chip warn">2 · dudó</span></td></tr>
+              <tr><td>Pedir una persona</td><td>1,5</td><td><span class="esc-chip ok">—</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="esc-fila a-in" style="--d:1s"><span class="esc-chip">10 tiempos: p50 = el 5.º</span><span class="esc-chip">p95 = el 10.º</span><span class="esc-chip bad">severidad 4 = no se muestra</span></div>
+        <div class="esc-card u11-humano a-in" style="--d:1.2s"><h3>Tú solo miras y anotas</h3><p>Persona de otro equipo, su teléfono, sin ayuda. Al final: UNA mejora, la más importante.</p></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando termines</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

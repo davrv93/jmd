@@ -1,0 +1,29 @@
+id: 06b-disena-tu-robo
+titulo: "Diseña tu Robo con tus palabras"
+fase: experiencia
+paso: plan
+duracion_min: 10
+lo_logre: true
+evidencia: captura
+umbral_pct: 70
+compuerta: lo_logre
+oculta: false
+comandos:
+  - titulo: "Crea tu asistente.json (la escena arma este comando con TUS datos; este es el ejemplo de la cafetería)"
+    cmd: |
+      mkdir -p /trabajo/negocio && cd /trabajo/negocio && cat > asistente.json <<'FIN_ROBO'
+      {
+        "nombre": "Barista",
+        "negocio": {"nombre": "Café La Esquina", "rubro": "cafetería de especialidad en Miraflores", "whatsapp": "51986149476"},
+        "personalidad": "Cálido, con humor suave de barista. Recomienda según el antojo del cliente.",
+        "saludo": "¡Hola! Soy Barista, de Café La Esquina. ¿Te recomiendo un café o te cuento el horario?",
+        "preguntas_frecuentes": [
+          {"preguntas": ["donde estan", "direccion", "como llego"], "respuesta": "Estamos en Av. Larco 345, Miraflores, a media cuadra del parque.", "animo": "feliz"}
+        ],
+        "reglas": ["Si preguntan por precios, di que la carta con precios se envía por WhatsApp."],
+        "marca": {"primario": "#8b5a2b", "acento": "#ffcf8a"}
+      }
+      FIN_ROBO
+      python3 -c "import json;json.load(open('asistente.json'));print('asistente.json OK')"
+  - {titulo: "Ver lo que quedó escrito", cmd: "cat /trabajo/negocio/asistente.json"}
+  - {titulo: "Comprobar que es JSON válido", cmd: "cd /trabajo/negocio && python3 -c \"import json;json.load(open('asistente.json'));print('asistente.json OK')\""}

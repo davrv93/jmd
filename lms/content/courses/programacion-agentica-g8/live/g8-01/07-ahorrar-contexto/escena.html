@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Ahorrar contexto</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas; el CSS común va en ../../comun/escena.css), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .2); }
+.esc-titulo { font-size: 1.75em; max-width: 34em; text-wrap: balance; }
+.esc-sub { font-size: 1em; }
+.esc-cuerpo { gap: 1.8vh; }
+.v7 { display: grid; grid-template-columns: .62fr 2fr; gap: 2.4vw; align-items: center; min-height: 0; }
+.v7-vaso { display: flex; flex-direction: column; align-items: center; gap: .5em; min-width: 0; }
+#v7-svg { max-height: 50vh; width: auto; max-width: 100%; }
+.v7-borde { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linejoin: round; }
+.v7-liq { animation: v7-nivel 5.2s cubic-bezier(.45,.05,.3,1) .3s both; transform: translateY(268px); }
+.v7-liq rect { fill: var(--ok); opacity: .55; animation: v7-color 5.2s linear .3s both; }
+.v7-liq .v7-sup { opacity: .6; }
+.v7-ant { stroke: var(--warn); stroke-width: 2; stroke-dasharray: 7 6; fill: none; }
+.esc-svg .v7-t-ant { font-size: 17px; fill: var(--warn); font-weight: 700; }
+.esc-svg .v7-t-des { font-size: 17px; fill: var(--ok); font-weight: 700; }
+.v7-marca path { stroke: var(--line2); stroke-width: 2; fill: none; }
+.v7-marca text { font-size: 17px; fill: var(--muted); }
+.v7-pie-vaso { margin: 0; font-size: .7em; color: var(--muted); display: flex; align-items: center; gap: .6em; flex-wrap: wrap; justify-content: center; text-align: center; }
+.v7-pie-vaso b { color: var(--fg); font-weight: 700; }
+.v7-filas { display: grid; gap: 1.5vh; min-width: 0; }
+.v7-enc { display: flex; align-items: center; gap: .8em; font-weight: 700; font-size: .85em; color: var(--muted); letter-spacing: .02em; }
+.v7-fila { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.6vw; align-items: center; padding: .7em 1.1em; }
+.v7-izq h3 { display: flex; align-items: center; gap: .6em; font-size: 1.05em; }
+.v7-n { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font: 800 .8em var(--mono); }
+.v7-izq p { font-size: .76em; }
+.v7-cmd { display: inline-block; margin-top: .5em; padding: .3em .8em; font-size: .62em; }
+.v7-der { display: grid; gap: .5em; }
+.v7-b { display: grid; grid-template-columns: 4.6em 1fr 3.6em; align-items: center; gap: .6em; font-size: .72em; }
+.v7-et { color: var(--muted); font-weight: 600; }
+.v7-pista { height: .9em; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.v7-rel { display: block; height: 100%; min-width: 3%; border-radius: 999px; transform-origin: left; animation: v7-barra .5s cubic-bezier(.2,.7,.2,1) var(--d, 0s) both; }
+.v7-antes { background: var(--muted); }
+.v7-desp { background: var(--ok); }
+.v7-num { font-family: var(--mono); text-align: right; font-size: .95em; }
+@keyframes v7-nivel {
+  0% { transform: translateY(358px); }
+  23% { transform: translateY(32px); }
+  33% { transform: translateY(32px); }
+  44% { transform: translateY(132px); }
+  62% { transform: translateY(132px); }
+  73% { transform: translateY(212px); }
+  86% { transform: translateY(212px); }
+  96%, 100% { transform: translateY(268px); }
+}
+@keyframes v7-color {
+  0%, 33% { fill: var(--warn); }
+  44%, 62% { fill: var(--accent); }
+  73%, 100% { fill: var(--ok); }
+}
+@keyframes v7-barra { from { transform: scaleX(0); } to { transform: none; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Grupo 8 · E07</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Ahorrar contexto: tres ayudas que <em>vacían el vaso</em></h1>
+    <p class="esc-sub a-in" style="--d:.12s">Todo lo que el agente lee y escribe ocupa sitio. Si el vaso se llena, gastas cuota y se pierde el hilo.</p>
+    <div class="v7">
+      <section class="v7-vaso a-in" style="--d:.25s" aria-label="Un vaso que se llena y se vacía con cada ayuda">
+        <svg class="esc-svg" id="v7-svg" viewBox="0 0 300 400" role="img" aria-label="Vaso de contexto: se llena y baja con cada ayuda">
+          <defs><clipPath id="v7-clip"><path d="M26 28 L186 28 L170 360 Q169 374 155 374 L57 374 Q43 374 42 360 Z"/></clipPath></defs>
+          <g clip-path="url(#v7-clip)"><g class="v7-liq"><rect x="0" y="28" width="220" height="360"/><rect class="v7-sup" x="0" y="28" width="220" height="7"/></g></g>
+          <path class="v7-borde a-draw" pathLength="1" style="--d:.3s;--t:.8s" d="M26 28 L186 28 L170 360 Q169 374 155 374 L57 374 Q43 374 42 360 Z"/>
+          <g class="v7-marca"><path d="M200 36 H214 M200 200 H214 M200 366 H214"/>
+            <text x="224" y="42">lleno</text><text x="224" y="206">mitad</text><text x="224" y="372">vacío</text></g>
+          <g class="a-in" style="--d:2s"><path class="v7-ant" d="M32 60 H180"/><text class="v7-t-ant" x="192" y="66">antes</text></g>
+          <g class="a-in" style="--d:4.9s"><text class="v7-t-des" x="182" y="302">después</text></g>
+        </svg>
+        <p class="v7-pie-vaso"><b>Ventana de contexto</b> <span class="esc-chip warn">ejemplo</span></p>
+      </section>
+      <section class="v7-filas" id="v7-datos" data-fuente="/api/v1/mi-uso/ahorro" aria-label="Tres ayudas y los tokens que ahorran">
+        <div class="v7-enc a-in" style="--d:.4s"><span>Tokens por tarea</span><span class="esc-chip warn" id="v7-estado">ejemplo</span></div>
+        <article class="esc-card v7-fila a-in" style="--d:1.9s" data-id="agents">
+          <div class="v7-izq"><h3><span class="v7-n">1</span>AGENTS.md</h3><p>Las reglas fijas del proyecto: el agente no lo redescubre cada vez.</p><pre class="esc-cmd v7-cmd"><span class="p">&gt; </span>/init</pre></div>
+          <div class="v7-der">
+            <div class="v7-b"><span class="v7-et">antes</span><span class="v7-pista"><i class="v7-rel v7-antes" style="width:60%;--d:2.1s"></i></span><b class="v7-num">4 200</b></div>
+            <div class="v7-b"><span class="v7-et">después</span><span class="v7-pista"><i class="v7-rel v7-desp" style="width:13%;--d:2.4s"></i></span><b class="v7-num">900</b></div>
+          </div>
+        </article>
+        <article class="esc-card v7-fila a-in" style="--d:3.4s" data-id="rtk">
+          <div class="v7-izq"><h3><span class="v7-n">2</span>RTK</h3><p>Recorta la salida de los comandos antes de que llegue al modelo.</p><pre class="esc-cmd v7-cmd"><span class="p">$ </span>rtk gain</pre></div>
+          <div class="v7-der">
+            <div class="v7-b"><span class="v7-et">antes</span><span class="v7-pista"><i class="v7-rel v7-antes" style="width:97%;--d:3.6s"></i></span><b class="v7-num">6 800</b></div>
+            <div class="v7-b"><span class="v7-et">después</span><span class="v7-pista"><i class="v7-rel v7-desp" style="width:20%;--d:3.9s"></i></span><b class="v7-num">1 400</b></div>
+          </div>
+        </article>
+        <article class="esc-card v7-fila a-in" style="--d:4.6s" data-id="caveman">
+          <div class="v7-izq"><h3><span class="v7-n">3</span>caveman</h3><p>Respuestas cortas: sin saludos ni relleno.</p><pre class="esc-cmd v7-cmd"><span class="p">&gt; </span>responde como caveman</pre></div>
+          <div class="v7-der">
+            <div class="v7-b"><span class="v7-et">antes</span><span class="v7-pista"><i class="v7-rel v7-antes" style="width:9%;--d:4.8s"></i></span><b class="v7-num">650</b></div>
+            <div class="v7-b"><span class="v7-et">después</span><span class="v7-pista"><i class="v7-rel v7-desp" style="width:3%;--d:5.1s"></i></span><b class="v7-num">190</b></div>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Sigue la explicación del instructor</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  /* Datos de ejemplo en pantalla; si el LMS responde con cifras reales, se reemplazan. */
+  var cont = document.getElementById("v7-datos");
+  if (!cont || !window.fetch) return;
+  var fuente = cont.getAttribute("data-fuente");
+  var miles = function (n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); };
+  var MAX = 7000;
+  function usar(j) {
+    if (!j || typeof j !== "object") return;
+    var hubo = false;
+    ["agents", "rtk", "caveman"].forEach(function (id) {
+      var d = j[id], f = cont.querySelector('[data-id="' + id + '"]');
+      if (!d || !f || !(d.antes > 0) || !(d.despues >= 0)) return;
+      var a = f.querySelector(".v7-antes"), b = f.querySelector(".v7-desp"), n = f.querySelectorAll(".v7-num");
+      a.style.width = Math.min(100, d.antes / MAX * 100).toFixed(1) + "%";
+      b.style.width = Math.min(100, d.despues / MAX * 100).toFixed(1) + "%";
+      n[0].textContent = miles(d.antes); n[1].textContent = miles(d.despues);
+      hubo = true;
+    });
+    if (hubo) {
+      var e = document.getElementById("v7-estado");
+      e.textContent = "tus datos"; e.className = "esc-chip ok";
+    }
+  }
+  try {
+    fetch(fuente, { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(usar)
+      .catch(function () {});
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

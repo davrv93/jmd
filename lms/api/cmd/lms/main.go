@@ -31,6 +31,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -98,6 +99,8 @@ func run() error {
 		DefaultCohort: os.Getenv("LMS_COHORT"),
 		CohortWindow:  os.Getenv("LMS_COHORT_VENTANA"),
 		Inscripcion:   listaEntorno("LMS_INSCRIPCION"),
+		CuposGratis:   cuposEntorno("LMS_INSCRIPCION_CUPOS"),
+		WhatsAppPago:  strings.TrimSpace(os.Getenv("LMS_INSCRIPCION_WHATSAPP")),
 		PublicURL:     strings.TrimRight(env("LMS_PUBLIC_URL", "http://localhost:8080"), "/"),
 		Web:           webdist.FS(),
 		DataDir:       dataDir,
@@ -246,6 +249,18 @@ func bootstrapAdmin(ctx context.Context, db *store.DB) error {
 }
 
 // listaEntorno lee una lista separada por comas («grupo-4, grupo-6»), sin vacíos.
+// cuposEntorno: «grupo-8:7,grupo-9:10» → {grupo-8: 7, grupo-9: 10}.
+func cuposEntorno(k string) map[string]int {
+	out := map[string]int{}
+	for _, x := range listaEntorno(k) {
+		g, n, ok := strings.Cut(x, ":")
+		if v, err := strconv.Atoi(strings.TrimSpace(n)); ok && err == nil && v >= 0 {
+			out[strings.TrimSpace(g)] = v
+		}
+	}
+	return out
+}
+
 func listaEntorno(k string) []string {
 	var out []string
 	for _, x := range strings.Split(os.Getenv(k), ",") {

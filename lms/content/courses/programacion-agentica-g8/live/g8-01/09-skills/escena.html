@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Skills y tu primera skill</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas; el CSS común va en ../../comun/escena.css), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .2); }
+.esc-titulo { font-size: 1.7em; max-width: 36em; text-wrap: balance; }
+.esc-cuerpo { gap: 1.6vh; }
+.v9 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 2.2vw; align-items: start; min-height: 0; }
+.v9-izq, .v9-der { display: flex; flex-direction: column; gap: 1.4vh; min-width: 0; }
+.v9-arbol { padding: .55em 1em; font: 700 .86em/1.6 var(--mono); display: flex; flex-wrap: wrap; align-items: center; gap: .2em .7em; }
+.v9-n { display: inline-block; color: var(--fg); }
+.v9-n:not(:last-child)::after { content: "›"; margin-left: .7em; color: var(--muted); }
+.v9-arch { color: var(--gold); background: var(--gold-bg); border-radius: .5em; padding: 0 .6em; font-weight: 800; }
+.v9-ed { padding: .8em 1.1em; display: grid; gap: .35em; background: #14122b; border-color: rgba(190,185,255,.22); }
+.v9-l { display: flex; align-items: baseline; justify-content: space-between; gap: 1em; animation: v9-escribe .5s steps(14, end) var(--d, 0s) both; }
+.v9-l code { font: 600 .8em/1.5 var(--mono); color: #e9e6ff; min-width: 0; }
+.v9-l .k { color: #9d8cff; }
+.v9-l .esc-chip { flex: none; font-size: .62em; background: rgba(169,156,255,.16); color: #c3b9ff; border-color: rgba(195,185,255,.3); animation: esc-entra .4s ease-out calc(var(--d, 0s) + .45s) both; }
+.v9-caj { padding: .8em 1em; display: grid; gap: .5em; }
+.v9-cab { margin: 0 0 .1em; font-size: .86em; font-weight: 700; color: var(--muted); }
+.v9-fi { display: flex; flex-direction: column; padding: .4em .8em; border: 1px dashed var(--line2); border-radius: .6em; background: var(--s2); opacity: .75; }
+.v9-fi b { font: 700 .92em var(--mono); }
+.v9-fi span { font-size: .76em; color: var(--muted); }
+.v9-nueva { border: 2px solid var(--gold); background: var(--gold-bg); opacity: 1; animation-name: esc-pop; box-shadow: 0 0 0 .35em var(--gold-bg); }
+.v9-nueva b { color: var(--gold); }
+.v9-nueva span { color: var(--fg); }
+.v9-flecha { margin: 0; font-size: .86em; color: var(--muted); display: flex; gap: .6em; align-items: center; }
+.v9-fl { font-size: 1.5em; color: var(--accent); font-weight: 800; line-height: 1; }
+.v9-cmd { font-size: .78em; }
+@keyframes v9-escribe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Grupo 8 · E09</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Tu primera skill: una ficha que el agente <em>abre cuando la necesita</em></h1>
+    <div class="v9">
+      <section class="v9-izq">
+        <div class="esc-card v9-arbol a-in" style="--d:.2s" aria-label="Carpeta de la skill">
+          <span class="v9-n a-in" style="--d:.3s">.opencode/</span><span class="v9-n a-in" style="--d:.5s">skills/</span><span class="v9-n a-in" style="--d:.7s">saludo/</span><span class="v9-n v9-arch a-pop" style="--d:.9s">SKILL.md</span>
+        </div>
+        <div class="esc-card v9-ed a-in" style="--d:1s" aria-label="Contenido de SKILL.md">
+          <div class="v9-l v9-l1" style="--d:1.3s"><code>---</code></div>
+          <div class="v9-l v9-l2" style="--d:1.75s"><code><span class="k">name:</span> saludo</code><span class="esc-chip">el mismo nombre que la carpeta</span></div>
+          <div class="v9-l v9-l3" style="--d:2.2s"><code><span class="k">description:</span> Saluda al alumno por su nombre y le dice qué clase toca. Úsala cuando pidan «salúdame» o «qué toca hoy».</code><span class="esc-chip">cuándo usarla</span></div>
+          <div class="v9-l v9-l4" style="--d:2.9s"><code>---</code></div>
+          <div class="v9-l v9-l5" style="--d:3.3s"><code>Pregunta el nombre si no lo sabes. Responde en español, en dos líneas:</code><span class="esc-chip">qué hacer</span></div>
+          <div class="v9-l v9-l6" style="--d:3.75s"><code>1. Un saludo con el nombre.</code></div>
+          <div class="v9-l v9-l7" style="--d:4.1s"><code>2. La clase de hoy, leída de clases.md si existe; si no, di que no hay archivo.</code></div>
+        </div>
+      </section>
+      <section class="v9-der">
+        <div class="esc-card v9-caj a-in" style="--d:1.2s" aria-label="Las fichas que el agente conoce al arrancar">
+          <p class="v9-cab">Al arrancar, el agente solo lee el título de cada ficha</p>
+          <div class="v9-fi"><b>otra-skill</b><span>descripción corta de otra ficha</span></div>
+          <div class="v9-fi v9-nueva a-pop" style="--d:4.6s"><b>saludo</b><span>Saluda al alumno… Úsala cuando pidan «salúdame»</span></div>
+          <div class="v9-fi"><b>otra-skill</b><span>descripción corta de otra ficha</span></div>
+        </div>
+        <p class="v9-flecha a-in" style="--d:5s"><span class="v9-fl">↓</span> tu pedido encaja con la descripción: abre la ficha completa</p>
+        <pre class="esc-cmd v9-cmd a-in" style="--d:5.4s"><span class="p">$ </span>mkdir -p .opencode/skills/saludo
+<span class="p">$ </span>opencode
+<span class="p">&gt; </span>salúdame
+<span class="c"># pregunta tu nombre y responde en dos líneas</span></pre>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando termines</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

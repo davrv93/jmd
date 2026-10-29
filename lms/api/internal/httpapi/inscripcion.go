@@ -1,10 +1,13 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/davrv93/jmd/lms/api/internal/auth"
 	"github.com/davrv93/jmd/lms/api/internal/content"
@@ -56,7 +59,65 @@ func (s *Server) inscripcionInfo(w http.ResponseWriter, r *http.Request) {
 		out = append(out, map[string]any{"id": c.ID, "slug": c.Slug, "title": c.Title, "description": c.Description,
 			"requisitos": c.Requisitos, "proyecto_final": c.ProyectoFinal, "fechas": fechas})
 	}
-	writeJSON(w, 200, map[string]any{"grupo": g, "nombre": nombreGrupo(g), "cursos": out})
+	resp := map[string]any{"grupo": g, "nombre": nombreGrupo(g), "cursos": out}
+	if total, ok := s.CuposGratis[g]; ok {
+		ocupados, err := s.ocupados(r.Context(), g)
+		if err != nil {
+			internal(w, err)
+			return
+		}
+		resp["cupos"] = map[string]any{"total": total, "ocupados": ocupados, "quedan": max(0, total-ocupados)}
+		if s.WhatsAppPago != "" {
+			resp["whatsapp"] = s.WhatsAppPago
+		}
+	}
+	writeJSON(w, 200, resp)
+}
+
+// cuposMu serializa «contar vacantes + crear la cuenta»: dos inscripciones a la vez no se llevan la última.
+var cuposMu sync.Mutex
+
+// ocupados: cuentas que ya están dentro del grupo (las pendientes de pago van en «<grupo>-pago» y no cuentan).
+func (s *Server) ocupados(ctx context.Context, g string) (int, error) {
+	us, err := s.DB.Users(ctx)
+	if err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, u := range us {
+		// El personal asignado al grupo (instructor, admin) no ocupa vacante.
+		if slices.Contains(u.Cohorts, g) && !slices.Contains(u.Roles, "admin") && !slices.Contains(u.Roles, "instructor") {
+			n++
+		}
+	}
+	return n, nil
+}
+
+// cohorteDeIngreso: el grupo mismo mientras haya vacante gratuita; si no, «<grupo>-pago» (pendiente).
+func (s *Server) cohorteDeIngreso(ctx context.Context, g string) (string, bool, error) {
+	total, ok := s.CuposGratis[g]
+	if !ok {
+		return g, false, nil
+	}
+	n, err := s.ocupados(ctx, g)
+	if err != nil {
+		return "", false, err
+	}
+	if n < total {
+		return g, false, nil
+	}
+	return g + "-pago", true, nil
+}
+
+// avisoPago: lo que ve quien llegó cuando ya no quedaban vacantes gratuitas.
+func (s *Server) avisoPago(g, nombre, email string) map[string]any {
+	out := map[string]any{"pendiente_pago": true,
+		"mensaje": "Las vacantes gratuitas del " + nombreGrupo(g) + " ya se ocuparon. Para completar tu inscripción envía un WhatsApp y coordina el pago."}
+	if s.WhatsAppPago != "" {
+		texto := "Hola, me inscribí al " + nombreGrupo(g) + " de Programación agéntica (" + nombre + ", " + email + ") y quiero coordinar el pago."
+		out["whatsapp"] = "https://wa.me/" + s.WhatsAppPago + "?text=" + url.QueryEscape(texto)
+	}
+	return out
 }
 
 // nombreGrupo: «grupo-4» → «Grupo 4».
@@ -113,7 +174,14 @@ func (s *Server) inscribirse(w http.ResponseWriter, r *http.Request) {
 		internal(w, err)
 		return
 	}
-	u := &store.User{Email: in.Email, Name: in.Name, PasswordHash: hash, Roles: []string{"student"}, Cohorts: []string{g}}
+	cuposMu.Lock()
+	defer cuposMu.Unlock()
+	cohorte, pendiente, err := s.cohorteDeIngreso(r.Context(), g)
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	u := &store.User{Email: in.Email, Name: in.Name, PasswordHash: hash, Roles: []string{"student"}, Cohorts: []string{cohorte}}
 	if err := s.DB.CreateUser(r.Context(), u); err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") {
 			writeErr(w, 409, "ya_registrado", "ya hay una cuenta con ese correo: entra con ella y únete al "+nombreGrupo(g))
@@ -125,6 +193,12 @@ func (s *Server) inscribirse(w http.ResponseWriter, r *http.Request) {
 	tok, err := s.startSession(w, r, u, "web")
 	if err != nil {
 		internal(w, err)
+		return
+	}
+	if pendiente {
+		resp := s.avisoPago(g, in.Name, in.Email)
+		resp["token"], resp["user"], resp["cursos"] = tok, fromUser(u, "", false), []string{}
+		writeJSON(w, 201, resp)
 		return
 	}
 	cursos := s.slugsDelGrupo(g)
@@ -144,8 +218,18 @@ func (s *Server) unirseAGrupo(w http.ResponseWriter, r *http.Request, p *Princip
 		return
 	}
 	cohorts := p.Cohorts
+	cuposMu.Lock()
+	defer cuposMu.Unlock()
+	cohorte, pendiente := g, false
 	if !slices.Contains(cohorts, g) {
-		cohorts = append(slices.Clone(cohorts), g)
+		var err error
+		if cohorte, pendiente, err = s.cohorteDeIngreso(r.Context(), g); err != nil {
+			internal(w, err)
+			return
+		}
+	}
+	if !slices.Contains(cohorts, g) && !slices.Contains(cohorts, cohorte) {
+		cohorts = append(slices.Clone(cohorts), cohorte)
 		roles := p.Roles
 		if len(roles) == 0 {
 			roles = []string{"student"}
@@ -154,6 +238,12 @@ func (s *Server) unirseAGrupo(w http.ResponseWriter, r *http.Request, p *Princip
 			internal(w, err)
 			return
 		}
+	}
+	if pendiente || slices.Contains(cohorts, g+"-pago") && !slices.Contains(cohorts, g) {
+		resp := s.avisoPago(g, p.Name, p.Email)
+		resp["grupo"], resp["cohorts"], resp["cursos"] = g, cohorts, []string{}
+		writeJSON(w, 200, resp)
+		return
 	}
 	cursos := s.slugsDelGrupo(g)
 	resp := map[string]any{"grupo": g, "cohorts": cohorts, "cursos": cursos}
