@@ -98,3 +98,12 @@ partitura de prueba sintetizada, **no una respuesta de Gemini**. Las pruebas
 acreditan el funcionamiento del reproductor, no la calidad compositiva de una
 respuesta futura del modelo. Escuchar y decidir qué acompaña el mensaje es
 parte del ejercicio del alumno.
+
+
+## E09 · Música con Lyria
+
+`09-musica-con-lyria` añade un pedido editable y una práctica de generación de audio en Gemini. El alumno copia el enlace y el pedido, abre otra pestaña, activa **Subidas y herramientas → Crear música**, escucha y descarga **solo audio (MP3)**. No usa el sintetizador local ni llama APIs de pago desde el LMS. El enlace se copia porque el iframe no permite ventanas emergentes. No requiere cambios de servidor ni permisos nuevos.
+
+El pedido solicita un clip instrumental con instrumentos naturales para acompañar el video. La evidencia es una captura de la pista y una frase que justifique la elección. La cuenta debe ser compatible, mayor de 18 años y tener Conservar la actividad activado; hay límites de generación. Si la herramienta no está disponible, revisar esos requisitos en Gemini.
+
+Ruta y formatos verificados el 29-10-2026 en la [ayuda oficial de Google](https://support.google.com/gemini/answer/16901237?hl=es). No se promete que un pedido garantice un timbre o una composición exactos.
