@@ -20,6 +20,9 @@ Imágenes o audios: POST $EVO_URL/send/media {"number": N, "url": U, "type": "im
 "http://" + EVO_INSTANCE + ":8766/imagenes/<archivo>": así ve Evolution tu aula. Nunca «aula», «localhost» ni una IP
 (todas las aulas se llaman «aula» por dentro y la IP cambia). No pruebes /send/* con números falsos: Evolution se queda
 esperando a WhatsApp; comprueba solo que U responde 200 con el tipo de imagen correcto.
+Notas de voz o imágenes que te mandan: POST $EVO_URL/message/downloadmedia con {"message": <data.Message del webhook,
+tal cual>} → {"data": {"base64": "data:audio/ogg;base64,…"}}. No hay otras rutas de media en este Evolution Go.
+Nunca envíes mensajes reales en tus pruebas: simula el envío.
 
 Cómo construirlo (Python, en {{ROBOT}}/backend/app.py; los skills /opt/skills-curso/s3-whatsapp-qr y
 s3-integracion tienen el mismo flujo en TypeScript, léelos si dudas):
