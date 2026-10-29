@@ -64,6 +64,12 @@ cycle:
     phase: experimentacion
     description: "Una pose canónica de tu mascota, ocho ediciones sobre esa misma imagen y un atlas recortado con el hocico y la base como ancla. En el LIVE el recorte y el ancla se calculan en vivo, sin GPU."
     check: El atlas se reproduce a 12 fps en tu landing y el cuerpo no tiembla
+  - id: musica
+    title: "Música con Flash Lite: intención, partitura y sonido"
+    tool: jmd
+    phase: experiencia
+    description: "Describe la música de tu pieza, pide a Gemini Flash Lite una partitura de datos y escúchala con el sintetizador del navegador. Ajusta el pulso y descarga el WAV, sin GPU."
+    check: "Tu partitura suena, puedes explicar qué cambió al ajustar los BPM y tienes tu WAV"
   - id: contenido
     title: Del escrito del cliente al contenido
     tool: jmd
