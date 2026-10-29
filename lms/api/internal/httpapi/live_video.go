@@ -16,9 +16,10 @@ import (
 // servicio render de la clase (RENDER_URL, por defecto http://render:8000; ver lms/render) con el token de
 // la clase (LMS_AULA_TOKEN) y X-Alumno. El servicio guarda la cola, el tope diario y qué video es de quién.
 //
-//   POST /api/v1/live/{lesson}/video            {frase1, frase2, marca, contacto, color} → 202 {id, estado, posicion, espera_s}
+//   POST /api/v1/live/{lesson}/video            {frase1, frase2, marca, contacto, color, cielo, acento, efectos, narracion, voz} → 202 {id, estado, posicion, espera_s}
 //   GET  /api/v1/live/{lesson}/video/{id}       → el estado
 //   GET  /api/v1/live/{lesson}/video/{id}/mp4   → el MP4 (con Range, para que <video> pueda adelantar)
+//   POST /api/v1/live/{lesson}/video/ideas      {idea, marca} → tres variaciones del guion (Gemini; si falla, fijas)
 
 var idVideo = regexp.MustCompile(`^[a-f0-9]{16}$`)
 
@@ -62,11 +63,16 @@ func (s *Server) liveVideoCrear(w http.ResponseWriter, r *http.Request, p *Princ
 		return
 	}
 	var in struct {
-		Frase1   string `json:"frase1"`
-		Frase2   string `json:"frase2"`
-		Marca    string `json:"marca"`
-		Contacto string `json:"contacto"`
-		Color    string `json:"color"`
+		Frase1    string          `json:"frase1"`
+		Frase2    string          `json:"frase2"`
+		Marca     string          `json:"marca"`
+		Contacto  string          `json:"contacto"`
+		Color     string          `json:"color"`
+		Cielo     string          `json:"cielo"`
+		Acento    string          `json:"acento"`
+		Efectos   map[string]bool `json:"efectos"`
+		Narracion string          `json:"narracion"`
+		Voz       string          `json:"voz"`
 	}
 	if !readJSON(w, r, &in) {
 		return
@@ -156,4 +162,102 @@ func (s *Server) liveVideoMP4(w http.ResponseWriter, r *http.Request, p *Princip
 	}
 	w.WriteHeader(resp.StatusCode)
 	_, _ = io.Copy(w, resp.Body)
+}
+
+// ---------- variaciones del guion con IA ----------
+
+const sistemaIdeasVideo = `Eres guionista de videos verticales de 9 segundos para el estado de WhatsApp de un pequeño negocio.
+El video muestra una flor bajo una tormenta que luego florece al sol: la tormenta es el problema del cliente y la flor es la solución del negocio.
+Con la idea y el nombre del negocio que te den, escribe exactamente 3 variaciones con estilos distintos: "Inspirador", "Directo" y "Divertido".
+Reglas: español neutro y correcto (tildes y signos); no inventes precios, cifras, premios ni testimonios; nada de emojis.
+frase1: el problema, máximo 55 caracteres, termina en "…". frase2: la solución, empieza con "…", máximo 55 caracteres.
+narracion: una o dos oraciones que se leen en voz alta en 7 segundos (máximo 22 palabras) y nombran el negocio.
+flor: blanca | rosada | amarilla | lila | coral | celeste. cielo: dorado | rosa | celeste | noche. acento: verde | amarillo | rosa | celeste | blanco.
+Responde solo JSON: {"variaciones":[{"estilo":"…","frase1":"…","frase2":"…","narracion":"…","flor":"…","cielo":"…","acento":"…"}]}`
+
+type variacionVideo struct {
+	Estilo    string `json:"estilo"`
+	Frase1    string `json:"frase1"`
+	Frase2    string `json:"frase2"`
+	Narracion string `json:"narracion"`
+	Flor      string `json:"flor"`
+	Cielo     string `json:"cielo"`
+	Acento    string `json:"acento"`
+}
+
+func recorte(s string, max int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if r := []rune(s); len(r) > max {
+		return string(r[:max])
+	}
+	return s
+}
+
+func elegir(v string, opciones []string, defecto string) string {
+	for _, o := range opciones {
+		if v == o {
+			return v
+		}
+	}
+	return defecto
+}
+
+// ideasFijas: si Gemini no responde, la clase sigue con tres variaciones armadas con la idea del alumno.
+func ideasFijas(idea, marca string) []variacionVideo {
+	if marca == "" {
+		marca = "tu negocio"
+	}
+	return []variacionVideo{
+		{"Inspirador", "Cuando todo parece cuesta arriba…", "…cada buena decisión florece", "Cuando todo parece cuesta arriba, cada buena decisión florece. " + marca + " te acompaña.", "blanca", "dorado", "verde"},
+		{"Directo", "¿Sin tiempo para atender a todos?…", "…" + recorte(marca, 30) + " lo resuelve", recorte(idea, 90) + ". " + marca + " lo resuelve por ti.", "amarilla", "celeste", "amarillo"},
+		{"Divertido", "Tu día parece una tormenta…", "…y de pronto sale el sol", "Si tu día parece una tormenta, tranquilo: con " + marca + " sale el sol.", "rosada", "rosa", "rosa"},
+	}
+}
+
+// liveVideoIdeas: POST /api/v1/live/{lesson}/video/ideas {"idea","marca"} → {"variaciones":[3], "modelo"}.
+func (s *Server) liveVideoIdeas(w http.ResponseWriter, r *http.Request, p *Principal) {
+	if s.liveLeccion(w, r, p) == nil {
+		return
+	}
+	var in struct {
+		Idea  string `json:"idea"`
+		Marca string `json:"marca"`
+	}
+	if !readJSON(w, r, &in) {
+		return
+	}
+	in.Idea, in.Marca = recorte(in.Idea, 240), recorte(in.Marca, 28)
+	if len([]rune(in.Idea)) < 8 {
+		writeErr(w, 400, "idea_corta", "cuéntame tu idea en una frase: qué haces y qué problema resuelves")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+	defer cancel()
+	pedido := "Idea: " + in.Idea + "\nNegocio: " + in.Marca
+	out, modelo, err := geminiJSON(ctx, sistemaIdeasVideo, []geminiParte{{Texto: pedido}}, 900)
+	var vs []variacionVideo
+	if err == nil {
+		if crudo, e := json.Marshal(out["variaciones"]); e == nil {
+			_ = json.Unmarshal(crudo, &vs)
+		}
+	}
+	limpias := make([]variacionVideo, 0, 3)
+	for _, v := range vs {
+		v.Frase1, v.Frase2, v.Narracion = recorte(v.Frase1, 60), recorte(v.Frase2, 60), recorte(v.Narracion, 160)
+		if v.Frase1 == "" || v.Frase2 == "" {
+			continue
+		}
+		v.Estilo = recorte(v.Estilo, 20)
+		v.Flor = elegir(v.Flor, []string{"blanca", "rosada", "amarilla", "lila", "coral", "celeste"}, "blanca")
+		v.Cielo = elegir(v.Cielo, []string{"dorado", "rosa", "celeste", "noche"}, "dorado")
+		v.Acento = elegir(v.Acento, []string{"verde", "amarillo", "rosa", "celeste", "blanco"}, "verde")
+		limpias = append(limpias, v)
+		if len(limpias) == 3 {
+			break
+		}
+	}
+	if len(limpias) == 0 {
+		limpias, modelo = ideasFijas(in.Idea, in.Marca), "plantilla"
+	}
+	writeJSON(w, 200, map[string]any{"variaciones": limpias, "modelo": modelo})
 }

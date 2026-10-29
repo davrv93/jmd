@@ -199,6 +199,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/evento", s.authed(s.liveEvento))
 	mux.Handle("POST /api/v1/live/{lesson}/imagen", s.authed(s.liveImagen))
 	mux.Handle("POST /api/v1/live/{lesson}/video", s.authed(s.liveVideoCrear))
+	mux.Handle("POST /api/v1/live/{lesson}/video/ideas", s.authed(s.liveVideoIdeas))
 	mux.Handle("GET /api/v1/live/{lesson}/video/{id}", s.authed(s.liveVideoEstado))
 	mux.Handle("GET /api/v1/live/{lesson}/video/{id}/mp4", s.authed(s.liveVideoMP4))
 	mux.Handle("POST /api/v1/live/{lesson}/analizar", s.authed(s.liveAnalizar))
