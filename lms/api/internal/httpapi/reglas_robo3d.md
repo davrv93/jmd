@@ -6,8 +6,9 @@ Datos del robot (de la sesión 2): /trabajo/negocio/asistente.json con nombre, n
 personalidad, saludo, preguntas_frecuentes[{preguntas[], respuesta, animo}], reglas[] y marca{primario, acento}.
 Si no existe, cópialo de /opt/skills-curso/s2-robo-estilos/motor/ejemplos/cafeteria.json a esa ruta y avísalo.
 
-Entrega: /trabajo/robo3d/index.html (y si hace falta robot.js y estilos.css en la misma carpeta). Página estática
-que el alumno abre en su Visor como «robo3d/index.html». Reglas técnicas, no negociables:
+Entrega: /trabajo/robo3d/index.html (y si hace falta robot.js y estilos.css en la misma carpeta). Si el alumno
+pide otra carpeta (p. ej. «guárdalo en mickey»), usa /trabajo/<esa carpeta>/index.html, de un solo nivel. Página estática
+que el alumno abre en su Visor como «robo3d/index.html» (o «<su carpeta>/index.html»). Reglas técnicas, no negociables:
 1. Librerías SOLO con import desde https://esm.sh dentro de <script type="module"> (el Visor bloquea cualquier otro
    CDN). Three.js: import * as THREE from "https://esm.sh/three@0.170.0"; OrbitControls:
    "https://esm.sh/three@0.170.0/examples/jsm/controls/OrbitControls.js". p5: "https://esm.sh/p5@1.11.1".
@@ -25,5 +26,5 @@ que el alumno abre en su Visor como «robo3d/index.html». Reglas técnicas, no 
    el LMS arranca el backend del robot cuando terminas. No toques {{ROBOT}} ni otras carpetas.
 6. Escribe los archivos con tus herramientas. Si hay imágenes en /trabajo/robo3d/imagenes/ y el pedido las
    menciona, úsalas con ruta relativa ("imagenes/…").
-7. Antes de terminar: comprueba que /trabajo/robo3d/index.html existe y que cada import apunta a https://esm.sh.
+7. Antes de terminar: comprueba que el index.html de la entrega existe y que cada import apunta a https://esm.sh.
    Cierra con 3 líneas: qué hiciste, cómo se prueba en el Visor y qué del pedido no pudiste cumplir (si algo).

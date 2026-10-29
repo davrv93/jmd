@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"regexp"
@@ -253,6 +254,88 @@ cd /trabajo/negocio && python3 /opt/skills-curso/s2-robo-estilos/motor/construir
 { aula parar >/dev/null 2>&1; sh /trabajo/mi-robo/robo.sh reiniciar >/dev/null 2>&1; echo ARMADO; }
 true`
 
+// limpiarAsistente deja el asistente.json del navegador dentro de lo que acepta construir.py de s2-robo-estilos
+// (si no, se rechaza entero y el robot habla con la personalidad genérica): ánimos de la lista, textos con su
+// tope, colores en hexadecimal, WhatsApp solo con dígitos y al menos una pregunta con respuesta.
+func limpiarAsistente(a map[string]any) {
+	animos := map[string]bool{"emocionado": true, "feliz": true, "neutral": true, "pensando": true, "sorprendido": true, "triste": true}
+	texto := func(v any, tope int, def string) string {
+		s, _ := v.(string)
+		s = strings.TrimSpace(s)
+		if s == "" {
+			s = def
+		}
+		if r := []rune(s); len(r) > tope {
+			s = strings.TrimSpace(string(r[:tope]))
+		}
+		return s
+	}
+	a["nombre"] = texto(a["nombre"], 24, "Mi Robo")
+	neg, _ := a["negocio"].(map[string]any)
+	if neg == nil {
+		neg = map[string]any{}
+	}
+	neg["nombre"] = texto(neg["nombre"], 60, "Mi negocio")
+	neg["rubro"] = texto(neg["rubro"], 80, "negocio")
+	if wa := regexp.MustCompile(`\D`).ReplaceAllString(fmt.Sprint(neg["whatsapp"]), ""); len(wa) >= 9 && len(wa) <= 15 {
+		neg["whatsapp"] = wa
+	} else {
+		neg["whatsapp"] = ""
+	}
+	a["negocio"] = neg
+	a["personalidad"] = texto(a["personalidad"], 400, "Amable y servicial.")
+	a["saludo"] = texto(a["saludo"], 220, "¡Hola! Soy "+a["nombre"].(string)+". ¿En qué te ayudo?")
+	faq := []any{}
+	lista, _ := a["preguntas_frecuentes"].([]any)
+	for _, x := range lista {
+		f, ok := x.(map[string]any)
+		if !ok {
+			continue
+		}
+		var preg []any
+		if ps, ok := f["preguntas"].([]any); ok {
+			for _, p := range ps {
+				if s, ok := p.(string); ok && strings.TrimSpace(s) != "" {
+					preg = append(preg, strings.TrimSpace(s))
+				}
+			}
+		} else if s, ok := f["pregunta"].(string); ok && strings.TrimSpace(s) != "" {
+			preg = []any{strings.TrimSpace(s)}
+		}
+		resp := texto(f["respuesta"], 500, "")
+		if len(preg) == 0 || resp == "" {
+			continue
+		}
+		animo, _ := f["animo"].(string)
+		if !animos[animo] {
+			animo = "neutral"
+		}
+		faq = append(faq, map[string]any{"preguntas": preg, "respuesta": resp, "animo": animo})
+	}
+	if len(faq) == 0 {
+		faq = append(faq, map[string]any{"preguntas": []any{"hola"}, "respuesta": a["saludo"], "animo": "feliz"})
+	}
+	a["preguntas_frecuentes"] = faq
+	hex := regexp.MustCompile(`^#[0-9a-fA-F]{3,8}$`)
+	marca, _ := a["marca"].(map[string]any)
+	limpia := map[string]any{}
+	for _, k := range []string{"primario", "acento"} {
+		if s, ok := marca[k].(string); ok && hex.MatchString(s) {
+			limpia[k] = s
+		}
+	}
+	a["marca"] = limpia
+	reglas := []any{}
+	if rs, ok := a["reglas"].([]any); ok {
+		for _, r := range rs {
+			if s, ok := r.(string); ok && strings.TrimSpace(s) != "" {
+				reglas = append(reglas, strings.TrimSpace(s))
+			}
+		}
+	}
+	a["reglas"] = reglas
+}
+
 // liveMiRoboSubir: POST /api/v1/live/{lesson}/mi-robo {"asistente": {...}}. En la sesión 2 la escena «Diseña tu
 // Robo» dejó el asistente.json en el navegador (localStorage g5-02-asistente) y casi nadie lo pasó al aula. Las
 // escenas de la sesión 3 lo mandan aquí: se escribe en negocio/asistente.json solo si no hay uno o si el que hay
@@ -290,7 +373,10 @@ func (s *Server) liveMiRoboSubir(w http.ResponseWriter, r *http.Request, p *Prin
 		var o struct {
 			Origen string `json:"origen"`
 		}
-		if json.Unmarshal(raw, &o) != nil || !strings.HasPrefix(o.Origen, "osito") {
+		// Se reescribe si lo armó el LMS (osito*) o si vino del navegador y mi-robo no llegó a armarse.
+		mr, _ := s.Aula.Exec(r.Context(), nombre, `test -d /trabajo/mi-robo && echo SI`)
+		propio := json.Unmarshal(raw, &o) != nil || !(strings.HasPrefix(o.Origen, "osito") || (o.Origen == "sesion-2" && !strings.Contains(mr, "SI")))
+		if propio {
 			writeErr(w, 409, "ya_tienes_asistente", "ya tienes tu asistente.json en el aula: no lo piso")
 			return
 		}
@@ -298,6 +384,7 @@ func (s *Server) liveMiRoboSubir(w http.ResponseWriter, r *http.Request, p *Prin
 		internal(w, err)
 		return
 	}
+	limpiarAsistente(in.Asistente)
 	in.Asistente["origen"] = "sesion-2"
 	datos, _ := json.MarshalIndent(in.Asistente, "", "  ")
 	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)

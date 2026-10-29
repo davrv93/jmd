@@ -171,7 +171,7 @@ func (s *Server) correrAgente(st ExecStreamer, c *corridaAgente, nombre, userID,
 	ctx, cancel := context.WithTimeout(context.Background(), agenteTope+30*time.Second)
 	defer cancel()
 	// el pedido va por stdin: así no se interpreta nada de lo que escribió el alumno
-	script := `P=$(cat); cd /trabajo && mkdir -p robo3d && timeout ` + itoaDur(agenteTope) + ` jmd chat --auto "$P" 2>&1; echo "__fin $?"`
+	script := `P=$(cat); cd /trabajo && mkdir -p robo3d && touch /tmp/.agente-inicio && timeout ` + itoaDur(agenteTope) + ` jmd chat --auto "$P" 2>&1; echo "__fin $?"`
 	codigo := ""
 	err := st.ExecStream(ctx, nombre, script, []byte(pedido), func(l string) {
 		l = limpiarLinea(l)
@@ -192,9 +192,13 @@ func (s *Server) correrAgente(st ExecStreamer, c *corridaAgente, nombre, userID,
 	}
 	ctx2, cancel2 := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel2()
+	// El robot va en robo3d/ salvo que el alumno pida otra carpeta (p. ej. «guárdalo en mickey»): vale el
+	// index.html que el agente escribió en esta corrida, con robo3d primero.
 	carpeta := "robo3d"
 	if tipo == "whatsapp" {
 		carpeta = strings.TrimPrefix(robot, "/trabajo/") + "/backend"
+	} else if nuevo, _ := s.Aula.Exec(ctx2, nombre, scriptIndexNuevo); strings.TrimSpace(nuevo) != "" {
+		carpeta = strings.TrimSpace(nuevo)
 	}
 	out, _ := s.Aula.Exec(ctx2, nombre, `cd /trabajo && find `+carpeta+` -maxdepth 2 -type f ! -name '*.log' ! -name '*.pyc' 2>/dev/null | sort | head -n 30`)
 	var archivos []string
@@ -205,7 +209,7 @@ func (s *Server) correrAgente(st ExecStreamer, c *corridaAgente, nombre, userID,
 	}
 	listo := false
 	for _, a := range archivos {
-		listo = listo || a == "robo3d/index.html"
+		listo = listo || a == carpeta+"/index.html"
 	}
 	// el backend de la sesión 2 responde /api/chat, /api/voz y /api/stt a la página 3D
 	// con WhatsApp el backend cambió: osito se reinicia (aula iniciar no relanza si ya corre)
@@ -217,7 +221,7 @@ func (s *Server) correrAgente(st ExecStreamer, c *corridaAgente, nombre, userID,
 	if strings.TrimSpace(arr) != "" {
 		c.agregar("▶ backend de tu robot: " + strings.TrimSpace(arr))
 	}
-	ruta := map[bool]string{true: "robo3d/index.html"}[listo]
+	ruta := map[bool]string{true: carpeta + "/index.html"}[listo]
 	if tipo == "whatsapp" {
 		// listo = el backend importa sin errores y tiene la ruta del webhook
 		chk, _ := s.Aula.Exec(ctx2, nombre, `cd `+robot+` 2>/dev/null && grep -q "/api/webhook" backend/*.py && /opt/venv/bin/python -c "import backend.app" >/dev/null 2>&1 && echo WEBHOOK_OK`)
@@ -230,6 +234,13 @@ func (s *Server) correrAgente(st ExecStreamer, c *corridaAgente, nombre, userID,
 	}
 	c.terminar(listo, ruta, archivos)
 }
+
+// scriptIndexNuevo: carpeta (relativa a /trabajo, hasta 2 niveles) del index.html que el agente escribió en
+// esta corrida; robo3d si está entre ellas. Fuera quedan el Robo de la sesión 2 y lo que no es del alumno.
+const scriptIndexNuevo = `cd /trabajo 2>/dev/null && [ -f /tmp/.agente-inicio ] || exit 0
+l=$(find . -maxdepth 3 -name index.html -newer /tmp/.agente-inicio ! -path './osito/*' ! -path './mi-robo/*' ! -path './skills/*' ! -path '*/node_modules/*' 2>/dev/null | sed 's|^\./||; s|/index.html$||' | grep -v '^index.html$')
+printf '%s\n' "$l" | grep -qx robo3d && { echo robo3d; exit 0; }
+printf '%s\n' "$l" | grep -v '^$' | head -n 1`
 
 func itoaDur(d time.Duration) string { return strconv.Itoa(int(d.Seconds())) }
 
