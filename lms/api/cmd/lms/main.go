@@ -128,6 +128,7 @@ func run() error {
 			slog.Warn("el aula no pudo preparar su red", "err", err)
 		}
 		srv.Aula = a
+		srv.CargarAulasVivas(ctx, os.Getenv("LMS_AULAS_VIVAS"))
 		srv.VigilarAulas(ctx)
 		slog.Info("aula por alumno activa", "imagen", a.Imagen)
 	}

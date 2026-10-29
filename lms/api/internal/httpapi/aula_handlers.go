@@ -155,6 +155,30 @@ func (s *Server) aulaApagar(w http.ResponseWriter, r *http.Request, p *Principal
 // aulaInactividad: pasado este tiempo sin uso (terminal, visor, asistente), el contenedor se detiene.
 const aulaInactividad = 15 * time.Minute
 
+// AulasVivas: cuentas (ID de usuario) cuya aula nunca se apaga por inactividad: su robot de WhatsApp atiende
+// aunque nadie tenga el LIVE abierto. Viene de LMS_AULAS_VIVAS (IDs o emails separados por coma; los emails
+// se resuelven a ID al arrancar).
+var AulasVivas = map[string]bool{}
+
+func aulaViva(id string) bool { return AulasVivas[id] }
+
+// CargarAulasVivas resuelve LMS_AULAS_VIVAS: cada entrada es un ID de usuario o un email del LMS.
+func (s *Server) CargarAulasVivas(ctx context.Context, lista string) {
+	for _, e := range strings.Split(lista, ",") {
+		if e = strings.TrimSpace(e); e == "" {
+			continue
+		}
+		if u, err := s.DB.UserByEmail(ctx, e); err == nil && u != nil {
+			AulasVivas[u.ID] = true
+		} else {
+			AulasVivas[e] = true
+		}
+	}
+	if len(AulasVivas) > 0 {
+		slog.Info("aulas que nunca se apagan por inactividad", "cuentas", len(AulasVivas))
+	}
+}
+
 // apagarInactivos detiene el contenedor de quien lleva más de limite sin usar su aula y devuelve los nombres
 // detenidos. El volumen /trabajo se conserva: al volver, «iniciar» lo arranca con todo donde lo dejó.
 func (s *Server) apagarInactivos(ctx context.Context, ahora time.Time, limite time.Duration) []string {
@@ -164,6 +188,9 @@ func (s *Server) apagarInactivos(ctx context.Context, ahora time.Time, limite ti
 	var vencidos []string
 	ultimoUsoAula.Lock()
 	for id, t := range ultimoUsoAula.t {
+		if aulaViva(id) {
+			continue
+		}
 		if ahora.Sub(t) > limite {
 			vencidos = append(vencidos, id)
 			delete(ultimoUsoAula.t, id)

@@ -160,11 +160,13 @@ func TestAulaApagaInactivos(t *testing.T) {
 	s := &Server{Aula: f}
 	ahora := time.Now().UTC()
 	ultimoUsoAula.Lock()
-	ultimoUsoAula.t = map[string]time.Time{"viejo": ahora.Add(-20 * time.Minute), "fresco": ahora.Add(-2 * time.Minute)}
+	ultimoUsoAula.t = map[string]time.Time{"viejo": ahora.Add(-20 * time.Minute), "fresco": ahora.Add(-2 * time.Minute), "siempre": ahora.Add(-3 * time.Hour)}
 	ultimoUsoAula.Unlock()
+	AulasVivas = map[string]bool{"siempre": true}
+	defer func() { AulasVivas = map[string]bool{} }()
 	parados := s.apagarInactivos(context.Background(), ahora, 15*time.Minute)
 	if len(parados) != 1 || parados[0] != aula.Nombre("viejo") {
-		t.Fatalf("parados: %v", parados)
+		t.Fatalf("parados: %v (el aula «siempre» nunca se apaga)", parados)
 	}
 	if usoAula("fresco") == "" || usoAula("viejo") != "" {
 		t.Errorf("solo el vencido sale de la lista")
