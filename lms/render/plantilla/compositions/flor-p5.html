@@ -1,0 +1,284 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; pointer-events: none; }
+    #florp5-caja { position: absolute; inset: 0; }
+    #florp5-caja canvas { width: 100% !important; height: 100% !important; }
+  </style>
+  <div id="root" data-composition-id="florp5" data-width="720" data-height="1280" data-start="0" data-duration="25">
+    <div id="florp5-caja" data-layout-ignore></div>
+  </div>
+  <script type="module">
+    import p5 from "https://cdn.jsdelivr.net/npm/p5@1.11.1/+esm";
+
+    // La misma cosmos de flor3d.html, pero dibujada sólo con p5 en 2D (sin WebGL): el modelo 3D se
+    // proyecta a mano y se pinta de atrás hacia adelante. Pensado para servidores sin GPU.
+    // Variables: motor_flor (p5 | three; con three esta capa no dibuja), flor_desfase (segundos que se
+    // suman al reloj: la plantilla de alumnos empieza en la tormenta), flor_escala (lienzo más chico) y
+    // flor_color (hex de la punta de los pétalos). Se dibuja siempre en coordenadas de 1080 × 1920.
+    const VAR = (window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables()) || {};
+    const ACTIVO = (VAR.motor_flor || "p5") !== "three", DESFASE = +VAR.flor_desfase || 0, ESCALA = +VAR.flor_escala || 1;
+    const hexRgb = (h) => (/^#[0-9a-f]{6}$/i.test(h || "") ? [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) : [248, 248, 242]);
+    const PUNTA = hexRgb(VAR.flor_color);
+    const W = 1080, H = 1920, T0 = 4.85, T1 = 12.85;
+    const lim = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+    const suave = (u) => { u = lim(u); return u * u * (3 - 2 * u); };
+    const tramo = (t, a, b) => suave((t - a) / (b - a));
+    const campana = (t, a, b) => Math.sin(Math.PI * lim((t - a) / (b - a)));
+    const mezcla = (a, b, u) => a + (b - a) * u;
+    const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], suma = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+    const esc = (a, k) => [a[0] * k, a[1] * k, a[2] * k], punto = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    const cruz = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    const norm = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+    const lerp3 = (a, b, u) => [mezcla(a[0], b[0], u), mezcla(a[1], b[1], u), mezcla(a[2], b[2], u)];
+    function mulberry32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+    const RAFAGAS = [5.85, 6.3, 6.72];
+    const rafaga = (t) => (t < 7.1 ? RAFAGAS.reduce((a, k) => a + Math.exp(-Math.pow((t - k) / 0.17, 2)), 0) : 0);
+    const marchito = (t) => (t < 6.95 ? tramo(t, 5.15, 6.6) : 1 - tramo(t, 6.95, 8.5));
+    const sol = (t) => tramo(t, 7.15, 8.4);
+
+    // ---------- cámara: proyección perspectiva hecha a mano ----------
+    const F = (H / 2) / Math.tan((15 * Math.PI) / 180);
+    let cPos, cR, cU, cF;
+    function camara(pos, mira) { cPos = pos; cF = norm(sub(mira, pos)); cR = norm(cruz(cF, [0, 1, 0])); cU = cruz(cR, cF); }
+    function proyectar(p) { const d = sub(p, cPos), z = punto(d, cF); return [W / 2 + (punto(d, cR) / z) * F, H / 2 - (punto(d, cU) / z) * F, z]; }
+
+    // ---------- flor: mismos parámetros que la versión Three.js ----------
+    const L = 0.64, AN = 0.42, R0 = 0.165, NU = 12, NV = 26, NPET = 8, RC = 0.17, NFL = 520;
+    const R = mulberry32(77), jit = [];
+    for (let k = 0; k < NPET; k++) jit.push([(R() - 0.5) * 0.12, 0.9 + R() * 0.2, R() * 6.28, (k % 2) * 0.012]);
+    const medio = (v) => 0.5 * (0.15 + 0.85 * Math.pow(Math.sin((Math.PI / 2) * Math.min(1, v / 0.68)), 0.72));
+    const tope = (u) => { const x = u + 0.5; return 1 - 0.07 * Math.pow(1 - Math.sin(Math.PI * x), 1.6) - 0.05 * (Math.exp(-Math.pow((x - 1 / 3) / 0.03, 2)) + Math.exp(-Math.pow((x - 2 / 3) / 0.03, 2))); };
+    function petaloLocal(k, t, M, G, out) {
+      const [dj, sj, fj, zj] = jit[k], a = (k * Math.PI * 2) / NPET + dj, ca = Math.cos(a), sa = Math.sin(a);
+      const aleteo = G * 0.32 * Math.sin(t * 21 + fj) * (0.5 + M) + 0.03 * Math.sin(t * 2.1 + fj);
+      const th0 = 0.18 - 0.75 * M + aleteo, ka = -0.32 - 1.25 * M * sj, copa = 0.14 + 0.1 * M;
+      for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
+        const u = i / NU - 0.5, v = (j / NV) * tope(u), w = u * 2, th = th0 + ka * v;
+        let r = (Math.sin(th) - Math.sin(th0)) / ka, z = (Math.cos(th0) - Math.cos(th)) / ka; r *= L; z *= L;
+        const ancho = medio(v) * AN * 2 * (1 - 0.06 * M);
+        const off = copa * w * w * ancho * 0.5 + 0.004 * Math.cos(w * Math.PI * 5.5) * Math.min(1, v * 3) + 0.01 * Math.sin(w * 3.3 + v * 7 + fj) * v + M * 0.01 * Math.sin(w * 7 + v * 11 + fj) * v;
+        const across = u * ancho, rr = R0 + r - Math.sin(th) * off, zz = z + Math.cos(th) * off + zj;
+        out[j * (NU + 1) + i] = [ca * rr - sa * across, sa * rr + ca * across, zz];
+      }
+    }
+    const flosculos = [];
+    for (let i = 0; i < NFL; i++) {
+      const fr = Math.sqrt((i + 0.5) / NFL), r = RC * fr, an = i * 2.39996323;
+      flosculos.push({ p: [r * Math.cos(an), r * Math.sin(an), 0.075 * (1 - fr * fr) + 0.012], n: norm([r * Math.cos(an) * 2.2, r * Math.sin(an) * 2.2, 1]), fr, antera: fr >= 0.62 && R() < 0.7 });
+    }
+    function catmull(P, t) {
+      const n = P.length - 1, s = Math.min(n - 1e-6, t * n), i = Math.floor(s), u = s - i;
+      const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(n, i + 2)];
+      return [0, 1, 2].map((c) => 0.5 * (2 * p1[c] + (-p0[c] + p2[c]) * u + (2 * p0[c] - 5 * p1[c] + 4 * p2[c] - p3[c]) * u * u + (-p0[c] + 3 * p1[c] - 3 * p2[c] + p3[c]) * u * u * u));
+    }
+    const hojas = [[0.3, 0.2, 0.75], [0.46, 2.6, 0.62], [0.6, 4.4, 0.5]];
+    const gotas = []; for (let i = 0; i < 70; i++) gotas.push([Math.floor(R() * NPET), 1 + Math.floor(R() * (NU - 1)), 8 + Math.floor(R() * (NV - 10)), 3 + R() * 5, R()]);
+
+    let tAhora = 0, listo;
+    const promesa = new Promise((ok) => (listo = ok));
+    new p5((s) => {
+      let cieloT, cieloO, pradoSeco, pradoVerde, frenteSeco, frenteVerde;
+      s.setup = () => {
+        s.pixelDensity(1); s.createCanvas(Math.round(W * ESCALA), Math.round(H * ESCALA)); s.noLoop(); s.noiseSeed(1029); s.randomSeed(1029);
+        // Cielos a media resolución y desenfocados una sola vez.
+        const CW = 540, CH = 960;
+        cieloT = s.createGraphics(CW, CH); cieloT.pixelDensity(1); cieloT.loadPixels();
+        for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
+          let f = 0, a = 0.5, q = 0.004; for (let k = 0; k < 5; k++) { f += a * s.noise(x * q + 10, y * q * 1.6 + 20); a *= 0.5; q *= 2; }
+          const o = (y * CW + x) * 4, base = mezcla(46, 112, Math.pow(y / CH, 1.3)), nube = (f - 0.45) * 120;
+          cieloT.pixels[o] = base + nube * 0.9; cieloT.pixels[o + 1] = base + 6 + nube * 0.95; cieloT.pixels[o + 2] = base + 14 + nube; cieloT.pixels[o + 3] = 255;
+        }
+        cieloT.updatePixels();
+        cieloO = s.createGraphics(CW, CH); cieloO.pixelDensity(1);
+        const co = cieloO.drawingContext, go = co.createLinearGradient(0, 0, 0, CH);
+        go.addColorStop(0, "#9db8cf"); go.addColorStop(0.3, "#e9dcb4"); go.addColorStop(0.58, "#e4c98c"); go.addColorStop(0.8, "#8f9a5c"); go.addColorStop(1, "#4c5a30");
+        co.fillStyle = go; co.fillRect(0, 0, CW, CH);
+        const disco = (c, x, y, r, rgb, a) => { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(0.7, `rgba(${rgb},${a * 0.8})`); g.addColorStop(1, `rgba(${rgb},0)`); c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r); };
+        const gs = co.createRadialGradient(450, 140, 0, 450, 140, 420); gs.addColorStop(0, "rgba(255,244,214,1)"); gs.addColorStop(0.3, "rgba(255,226,160,0.75)"); gs.addColorStop(1, "rgba(255,210,140,0)");
+        co.fillStyle = gs; co.fillRect(0, 0, CW, CH);
+        for (let i = 0; i < 120; i++) disco(co, s.random(CW), CH * (0.5 + 0.5 * s.random()), s.random(14, 60), `${60 + (s.random(50) | 0)},${92 + (s.random(60) | 0)},${34 + (s.random(24) | 0)}`, s.random(0.25, 0.6));
+        for (let i = 0; i < 30; i++) disco(co, 240 + s.random(272), s.random(CH * 0.45), s.random(5, 18), "255,242,210", s.random(0.15, 0.35));
+        // Prado lejano y pasto cercano, pintados brizna a brizna y desenfocados (profundidad de campo horneada).
+        const prado = (seco, desenfoque, n, y0, y1, alto0, alto1, grueso) => {
+          const g = s.createGraphics(W, 1100), c = g.drawingContext; g.pixelDensity(1); s.randomSeed(seco ? 5 : 5);
+          for (let i = 0; i < n; i++) {
+            const prof = s.random(), y = mezcla(y0, y1, prof), x = s.random(-40, W + 40), h = mezcla(alto0, alto1, prof) * s.random(0.6, 1.2), inc = s.random(-0.35, 0.45), tono = s.random();
+            c.strokeStyle = seco ? `rgb(${(mezcla(105, 160, tono) * mezcla(0.6, 1, prof)) | 0},${(mezcla(96, 144, tono) * mezcla(0.6, 1, prof)) | 0},${(mezcla(70, 102, tono) * mezcla(0.6, 1, prof)) | 0})`
+                                 : `rgb(${(mezcla(40, 86, tono) * mezcla(0.6, 1, prof)) | 0},${(mezcla(76, 132, tono) * mezcla(0.6, 1, prof)) | 0},${(mezcla(22, 40, tono) * mezcla(0.6, 1, prof)) | 0})`;
+            c.lineWidth = grueso * mezcla(0.6, 1.4, prof); c.lineCap = "round";
+            c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + inc * h * 0.3, y - h * 0.6, x + inc * h, y - h); c.stroke();
+          }
+          const b = s.createGraphics(W, 1100); b.pixelDensity(1); b.drawingContext.filter = `blur(${desenfoque}px)`; b.drawingContext.drawImage(g.elt, 0, 0); g.remove(); return b;
+        };
+        pradoSeco = prado(true, 5, 3200, 300, 1100, 60, 420, 3); pradoVerde = prado(false, 5, 3200, 300, 1100, 60, 420, 3);
+        frenteSeco = prado(true, 16, 90, 900, 1100, 500, 900, 16); frenteVerde = prado(false, 16, 90, 900, 1100, 500, 900, 16);
+        listo();
+      };
+
+      const PET = Array.from({ length: NPET }, () => new Array((NU + 1) * (NV + 1)));
+      s.draw = () => {
+        const t = tAhora + DESFASE, c = s.drawingContext;
+        c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, s.width, s.height);
+        if (!ACTIVO || t < T0 - 0.05 || t >= T1) return;
+        c.setTransform(ESCALA, 0, 0, ESCALA, 0, 0);
+        const M = marchito(t), G = rafaga(t), S = sol(t);
+        // fondos
+        c.globalAlpha = 1; c.drawImage(cieloT.elt, -20, -20, W + 40, H + 40);
+        if (S > 0) { c.globalAlpha = S; c.drawImage(cieloO.elt, -20, -20, W + 40, H + 40); c.globalAlpha = 1; }
+        const verde = tramo(t, 7.2, 8.6), mece = Math.sin(t * 1.3) * 6 + G * 18;
+        c.drawImage(pradoSeco.elt, mece * 0.3, H - 1100 + 120); if (verde > 0) { c.globalAlpha = verde; c.drawImage(pradoVerde.elt, mece * 0.3, H - 1100 + 120); c.globalAlpha = 1; }
+
+        // cámara (mismo recorrido que la versión Three.js)
+        const sw = 0.05 * Math.sin(t * 1.3) + G * 0.16 * (0.7 + 0.3 * Math.sin(t * 9));
+        const P = [[0, -0.05, 0], [0.03, 1.0, 0.02], [0.06 + sw * 0.5 + M * 0.12, 2.0 - M * 0.05, 0.03], [0.1 + sw + M * 0.32, 2.95 - M * 0.32, 0.06 + M * 0.12]];
+        const cab = catmull(P, 1), tan = norm(sub(cab, catmull(P, 0.98)));
+        let dir = norm([0.12 + 0.6 * tan[0], 0.42, 1]);
+        const ang = M * 1.05 + G * 0.12 * Math.sin(t * 8), cy = Math.cos(ang), sy = Math.sin(ang);
+        dir = [dir[0], dir[1] * cy - dir[2] * sy, dir[1] * sy + dir[2] * cy];
+        const av = tramo(t, T0, 11.8), ida = tramo(t, 11.85, 12.8), sac = (1 - S) * 0.012 * (Math.sin(t * 13) + Math.sin(t * 7.3)) * (0.4 + G);
+        let pos = [mezcla(0.75, -0.4, av), mezcla(1.85, 2.05, av), mezcla(6.6, 5.2, av)], mira = [mezcla(0.15, 0.1, av), mezcla(2.72, 2.8, av), 0];
+        const dentro = suma(cab, esc(dir, 1.0)); pos = lerp3(pos, dentro, ida * ida); pos[0] += sac; pos[1] += sac * 0.7; mira = lerp3(mira, cab, ida);
+        camara(pos, mira);
+
+        // base de la cabeza (mismo giro que Object3D.lookAt + rotateZ)
+        const zc = dir, xc0 = norm(cruz([0, 1, 0], zc)), yc0 = cruz(zc, xc0), rol = 0.22 + 0.04 * Math.sin(t * 1.1);
+        const xc = suma(esc(xc0, Math.cos(rol)), esc(yc0, Math.sin(rol))), yc = suma(esc(xc0, -Math.sin(rol)), esc(yc0, Math.cos(rol)));
+        const mundo = (q) => suma(cab, suma(suma(esc(xc, q[0]), esc(yc, q[1])), esc(zc, q[2])));
+
+        // luz
+        const Lz = norm(lerp3(norm([-3, 6, 4]), norm([4, 7.5, -1.5]), S)), amb = mezcla(0.42, 0.5, S), kd = mezcla(0.58, 0.72, S), kt = mezcla(0.05, 0.55, S);
+        const luzCol = [mezcla(0.78, 1.06, S), mezcla(0.82, 0.98, S), mezcla(0.9, 0.86, S)];
+        const sombrear = (n, base, aDentro) => {
+          const v = norm(sub(cPos, aDentro)); const nf = punto(n, v) < 0 ? esc(n, -1) : n;
+          const d = Math.max(0, punto(nf, Lz)), tr = Math.max(0, -punto(nf, Lz)), k = amb + kd * d + kt * tr;
+          return base.map((b, i) => Math.min(255, b * k * luzCol[i]) | 0);
+        };
+
+        // tallo y hojas
+        c.lineCap = "round";
+        let previo = proyectar(catmull(P, 0));
+        for (let i = 1; i <= 40; i++) {
+          const q = catmull(P, i / 40), pr = proyectar(q), rad = 0.025 * (1 - 0.38 * (i / 40)), ancho = Math.max(1, (rad * 2 * F) / pr[2]);
+          c.strokeStyle = `rgb(${(58 * luzCol[0]) | 0},${(82 * luzCol[1]) | 0},${(40 * luzCol[2]) | 0})`; c.lineWidth = ancho;
+          c.beginPath(); c.moveTo(previo[0], previo[1]); c.lineTo(pr[0], pr[1]); c.stroke();
+          c.strokeStyle = `rgba(190,215,140,${0.35 * (0.4 + S * 0.6)})`; c.lineWidth = ancho * 0.25;
+          c.beginPath(); c.moveTo(previo[0] + ancho * 0.22, previo[1]); c.lineTo(pr[0] + ancho * 0.22, pr[1]); c.stroke();
+          previo = pr;
+        }
+        for (const [f, giro, largo] of hojas) {
+          const a0 = catmull(P, f), inc = -0.25 - 0.55 * M - G * 0.15 * Math.sin(t * 7 + giro), ry = giro;
+          const hoja = (x, y, z) => { const X = x * Math.cos(inc) - y * Math.sin(inc), Y = x * Math.sin(inc) + y * Math.cos(inc); return suma(a0, [X * Math.cos(ry) + z * Math.sin(ry), Y, -X * Math.sin(ry) + z * Math.cos(ry)]); };
+          const raq = (u) => [largo * u, 0.08 * u - 0.14 * u * u, 0];
+          c.strokeStyle = `rgb(${(62 * luzCol[0]) | 0},${(88 * luzCol[1]) | 0},${(44 * luzCol[2]) | 0})`;
+          c.lineWidth = 2.4; c.beginPath(); for (let i = 0; i <= 12; i++) { const pr = proyectar(hoja(...raq(i / 12))); i ? c.lineTo(pr[0], pr[1]) : c.moveTo(pr[0], pr[1]); } c.stroke();
+          c.lineWidth = 1.6;
+          for (let k = 1; k <= 13; k++) for (const lado of [-1, 1]) {
+            const ff = k / 14, b = raq(ff), l = largo * 0.38 * (1 - ff * 0.6) * (0.85 + 0.3 * Math.sin(k * 2.1 + lado));
+            c.beginPath(); for (let i = 0; i <= 6; i++) { const u = i / 6, pr = proyectar(hoja(b[0] + l * 0.8 * u, b[1] + 0.05 * u - 0.14 * u * u, lado * l * 0.95 * Math.sin((u * Math.PI) / 2))); i ? c.lineTo(pr[0], pr[1]) : c.moveTo(pr[0], pr[1]); } c.stroke();
+          }
+        }
+
+        // pétalos: proyectar, ordenar por profundidad y pintar cuadro a cuadro con sombreado de Lambert + translucidez
+        const tinte = [mezcla(0.8, 0.96, S), mezcla(0.79, 0.95, S), mezcla(0.75, 0.9, S)];
+        const orden = [];
+        for (let k = 0; k < NPET; k++) {
+          petaloLocal(k, t, M, G, PET[k]);
+          const pw = PET[k].map(mundo), pp = pw.map(proyectar); PET[k].w = pw; PET[k].p = pp;
+          orden.push([k, pp.reduce((a, q) => a + q[2], 0) / pp.length]);
+        }
+        orden.sort((a, b) => b[1] - a[1]);
+        for (const [k] of orden) {
+          const pw = PET[k].w, pp = PET[k].p, quads = [];
+          for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++) {
+            const a = j * (NU + 1) + i, b = a + 1, d = a + NU + 1, e = d + 1;
+            quads.push([a, b, e, d, (pp[a][2] + pp[e][2]) / 2, j]);
+          }
+          quads.sort((x, y) => y[4] - x[4]);
+          const ix = (i, j) => Math.max(0, Math.min(NV, j)) * (NU + 1) + Math.max(0, Math.min(NU, i));
+          const nv = pw.map((_, q) => { const i = q % (NU + 1), j = (q / (NU + 1)) | 0; return norm(cruz(sub(pw[ix(i + 1, j)], pw[ix(i - 1, j)]), sub(pw[ix(i, j + 1)], pw[ix(i, j - 1)]))); });
+          for (const [a, b, e, d, , j] of quads) {
+            const n = norm(suma(suma(nv[a], nv[b]), suma(nv[d], nv[e]))), v = j / NV;
+            const alb = v < 0.1 ? [214, 220, 140] : v < 0.2 ? PUNTA.map((x, i) => mezcla([236, 238, 206][i], x, 0.4)) : PUNTA;
+            const base = alb.map((x, i) => x * tinte[i] * (v < 0.08 ? 0.85 : 1));
+            const col = sombrear(n, base, pw[a]);
+            c.fillStyle = c.strokeStyle = `rgb(${col[0]},${col[1]},${col[2]})`; c.lineWidth = 0.9;
+            c.beginPath(); c.moveTo(pp[a][0], pp[a][1]); c.lineTo(pp[b][0], pp[b][1]); c.lineTo(pp[e][0], pp[e][1]); c.lineTo(pp[d][0], pp[d][1]); c.closePath(); c.fill(); c.stroke();
+          }
+          // venas
+          c.lineWidth = 1.1; c.strokeStyle = `rgba(120,118,98,${0.16 + 0.06 * (1 - S)})`;
+          for (let i = 1; i < NU; i++) { c.beginPath(); for (let j = 0; j <= NV; j++) { const q = pp[j * (NU + 1) + i]; j ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]); } c.stroke(); }
+          // gotas de lluvia
+          const eg = (1 - tramo(t, 11.6, 12.0));
+          for (const [kk, iu, iv, rad, rr] of gotas) {
+            if (kk !== k) continue; const e = tramo(t, 7.15 + rr * 0.6, 7.45 + rr * 0.6) * eg; if (e <= 0) continue;
+            const q = pp[iv * (NU + 1) + iu], r = ((0.004 + rad * 0.0015) * e * F) / q[2];
+            const g = c.createRadialGradient(q[0] - r * 0.3, q[1] - r * 0.3, 0, q[0], q[1], r);
+            g.addColorStop(0, "rgba(255,255,255,0.95)"); g.addColorStop(0.35, "rgba(235,240,235,0.35)"); g.addColorStop(0.85, "rgba(90,100,90,0.35)"); g.addColorStop(1, "rgba(90,100,90,0)");
+            c.fillStyle = g; c.beginPath(); c.arc(q[0], q[1], r, 0, 7); c.fill();
+          }
+        }
+
+        // centro: cúpula y 520 flósculos
+        const cen = proyectar(mundo([0, 0, 0.02])), rcen = (RC * 1.05 * F) / cen[2];
+        c.fillStyle = `rgb(${(120 * luzCol[0]) | 0},${(82 * luzCol[1]) | 0},${(20 * luzCol[2]) | 0})`; c.beginPath(); c.arc(cen[0], cen[1], rcen, 0, 7); c.fill();
+        const fl = flosculos.map((f) => { const w = mundo(f.p); return [f, w, proyectar(w)]; }).sort((a, b) => b[2][2] - a[2][2]);
+        for (const [f, w, pr] of fl) {
+          const nW = norm(suma(suma(esc(xc, f.n[0]), esc(yc, f.n[1])), esc(zc, f.n[2])));
+          const base = f.fr < 0.62 ? [mezcla(140, 220, f.fr / 0.62), mezcla(158, 168, f.fr / 0.62), mezcla(30, 20, f.fr / 0.62)] : [245, 176, 26];
+          const col = sombrear(nW, base, w), r = ((f.fr < 0.62 ? 0.0115 : 0.0135) * F) / pr[2];
+          c.fillStyle = `rgb(${col[0]},${col[1]},${col[2]})`; c.beginPath(); c.arc(pr[0], pr[1], r, 0, 7); c.fill();
+          if (f.antera) { c.fillStyle = "rgba(80,42,12,0.9)"; c.beginPath(); c.arc(pr[0] + r * 0.2, pr[1] - r * 0.2, r * 0.45, 0, 7); c.fill(); }
+        }
+
+        // pasto cercano desenfocado por delante
+        const mf = Math.sin(t * 1.7) * 10 + G * 30;
+        c.drawImage(frenteSeco.elt, mf, H - 1100 + 160); if (verde > 0) { c.globalAlpha = verde; c.drawImage(frenteVerde.elt, mf, H - 1100 + 160); c.globalAlpha = 1; }
+
+        // clima, luz, grano y viñeta (igual que flor3d.html)
+        s.randomSeed(11);
+        const polvo = campana(t, 5.2, 7.25) * (0.5 + 0.5 * lim(G));
+        for (let i = 0; i < 320; i++) {
+          const x0 = s.random(-500, W), y0 = s.random(H), v = s.random(900, 2200), lg = s.random(20, 90), d = s.random();
+          const x = ((x0 + v * (t - 5.2)) % (W + 600)) - 100, y = y0 + 70 * (s.noise(i * 0.13, t * 0.7) - 0.5) + 0.1 * (x - x0);
+          s.stroke(205, 196, 176, 150 * polvo * d); s.strokeWeight(0.8 + 2.4 * d); s.line(x, y, x - lg * (0.5 + d), y - lg * 0.1);
+        }
+        const ll = campana(t, 6.9, 8.05);
+        for (let i = 0; i < 420; i++) {
+          const x0 = s.random(-300, W + 200), y0 = s.random(-H, H), v = s.random(2800, 4200), d = s.random();
+          const y = (((y0 + v * (t - 6.9)) % (H + 400)) + H + 400) % (H + 400) - 200, x = x0 + 0.14 * y;
+          s.stroke(214, 230, 245, (40 + 90 * d) * ll); s.strokeWeight(0.8 + 1.8 * d); s.line(x, y, x - 9 * (0.6 + d), y - 70 * (0.6 + d));
+        }
+        const so = S * (1 - tramo(t, 12.2, 12.8));
+        if (so > 0) {
+          s.noStroke();
+          for (let k = 0; k < 7; k++) {
+            const a = 2.0 + k * 0.1 + 0.025 * Math.sin(t * 0.5 + k), lg = 2800, g = c.createLinearGradient(1150, -150, 1150 + Math.cos(a) * lg, -150 + Math.sin(a) * lg);
+            g.addColorStop(0, `rgba(255,236,190,${0.16 * so})`); g.addColorStop(1, "rgba(255,236,190,0)"); c.fillStyle = g;
+            c.beginPath(); c.moveTo(1150, -150); c.lineTo(1150 + Math.cos(a - 0.03) * lg, -150 + Math.sin(a - 0.03) * lg); c.lineTo(1150 + Math.cos(a + 0.03) * lg, -150 + Math.sin(a + 0.03) * lg); c.fill();
+          }
+          for (let i = 0; i < 70; i++) {
+            const x = (s.random(W) + 120 * (s.noise(i, t * 0.2) - 0.5) + 30 * (t - 8) + W) % W, y = (s.random(H) - 22 * (t - 8) + 80 * (s.noise(i + 40, t * 0.2) - 0.5) + H) % H, d = s.random();
+            s.fill(255, 240, 205, 120 * so * d); s.circle(x, y, 2 + 5 * d * d);
+          }
+        }
+        const vg = c.createRadialGradient(W / 2, H * 0.45, H * 0.32, W / 2, H * 0.5, H * 0.78);
+        vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, `rgba(0,0,0,${0.42 - 0.12 * S})`); c.fillStyle = vg; c.fillRect(0, 0, W, H);
+        s.randomSeed(Math.floor(t * 30)); s.noStroke();
+        for (let i = 0, n = Math.round(5200 * ESCALA * ESCALA); i < n; i++) { s.fill(s.random() < 0.5 ? 0 : 255, 13); s.rect(s.random(W), s.random(H), 2, 2); }
+        s.canvas.style.opacity = String(tramo(t, T0, T0 + 0.45));
+      };
+      s.dibujarEn = (t) => { tAhora = t; s.redraw(); };
+      window.__florp5 = s;
+    }, document.getElementById("florp5-caja"));
+
+    window.__hf = window.__hf || {};
+    window.__hf.buildReady = window.__hf.buildReady || {};
+    window.__hf.buildReady["florp5"] = promesa.then(() => {
+      const reloj = { t: 0 }, tl = gsap.timeline({ paused: true });
+      tl.fromTo(reloj, { t: 0 }, { t: 25, duration: 25, ease: "none", onUpdate: () => window.__florp5.dibujarEn(reloj.t) }, 0);
+      window.addEventListener("hf-seek", (e) => window.__florp5.dibujarEn(e.detail.time));
+      window.__timelines["florp5"] = tl;
+    });
+  </script>
+</template>

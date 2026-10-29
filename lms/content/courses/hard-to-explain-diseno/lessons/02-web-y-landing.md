@@ -46,6 +46,12 @@ cycle:
     phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten a mano el texto de tu cliente o de tu negocio.
     check: Has visto la clase completa (o la grabación)
+  - id: video
+    title: Tu primer video hecho con código
+    tool: lms
+    phase: experiencia
+    description: "En la escena del LIVE escribe el problema y la solución de tu negocio, elige el color de tu flor y pide el video. El servidor lo dibuja con p5.js y lo graba con HyperFrames, sin GPU."
+    check: Tienes tu MP4 de 9 s y lo subiste a tu estado de WhatsApp
   - id: contenido
     title: Del escrito del cliente al contenido
     tool: jmd

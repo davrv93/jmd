@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu primer video hecho con código · Taller S2</title>
+<!-- Escena del modo LIVE (sesión 2, grupo de los jueves). Estilos comunes en ../../comun/escena.css; propios en #esc-propio.
+     El video lo arma el servicio render de la clase (lms/render): p5.js dibuja cada cuadro y HyperFrames lo graba en MP4, sin GPU. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-grid-2.lado { grid-template-columns: 1.25fr .75fr; align-items: start; }
+.esc-titulo { font-size: 1.75em; }
+.esc-cuerpo { gap: 1.6vh; }
+.esc-grid-2 > * { min-width: 0; } .esc-titulo { overflow-wrap: anywhere; }
+.nota { font-size: .74em; color: var(--muted); margin: 0; }
+.nota b { color: var(--fg); }
+.sec { display: grid; gap: .5em; }
+.tarjeta { border: 1px solid var(--line); border-radius: .9em; background: var(--s1); box-shadow: var(--card-shadow); padding: .55em .9em; display: grid; gap: .35em; }
+.tarjeta h2 { margin: 0; font-size: .86em; display: flex; gap: .6em; align-items: center; }
+.tarjeta h2 i { font-style: normal; display: inline-grid; place-items: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .8em; flex: none; }
+.receta { display: grid; grid-template-columns: auto 1fr; gap: .35em .6em; align-items: center; }
+.receta label { font-size: .72em; font-weight: 700; }
+.receta label small { display: block; font-weight: 400; color: var(--muted); }
+.receta input { width: 100%; font: .8em/1.3 inherit; padding: .42em .6em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+.receta input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.chips { display: flex; flex-wrap: wrap; gap: .35em; }
+.chips button { font: 600 .66em/1.2 system-ui, sans-serif; padding: .45em .75em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; text-align: left; }
+.chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chips button.col::before { content: ""; display: inline-block; width: .85em; height: .85em; border-radius: 50%; background: var(--sw); margin-right: .4em; vertical-align: -.1em; border: 1px solid rgba(0,0,0,.25); }
+.chips .t { font-size: .64em; color: var(--muted); align-self: center; }
+#renderizar { width: 100%; font: 700 .9em/1 system-ui, sans-serif; padding: .7em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; box-shadow: var(--card-shadow); }
+#renderizar:disabled { opacity: .55; cursor: wait; }
+.estado { font-size: .74em; color: var(--muted); margin: 0; min-height: 1.3em; }
+.estado.mal { color: var(--bad); } .estado.ok { color: var(--ok); font-weight: 700; }
+.barra { height: .45em; border-radius: 99px; background: var(--s3); overflow: hidden; }
+.barra i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--est-g)); transition: width .6s ease-out; }
+.dentro { font-size: .72em; color: var(--muted); }
+.dentro summary { cursor: pointer; font-weight: 700; color: var(--fg); }
+.dentro ol { margin: .4em 0 0; padding-left: 1.2em; display: grid; gap: .25em; }
+.dentro pre { margin: .35em 0 0; font: .9em/1.45 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .6em; padding: .55em .7em; white-space: pre-wrap; }
+.tel { height: min(66vh, 34em); max-width: 100%; margin: 0 auto; aspect-ratio: 9 / 16; border-radius: 1.6em; background: #10231A; padding: .45em; box-shadow: var(--card-shadow); }
+.pantalla { position: relative; width: 100%; height: 100%; border-radius: 1.25em; overflow: hidden; background: linear-gradient(#3b4148, #6c7177 60%, #8a7a55); }
+.pantalla video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
+.previa { position: absolute; inset: 0; display: grid; grid-template-rows: auto 1fr auto; padding: 1.2em .9em; text-align: center; color: #fff; }
+.previa .f { font-weight: 800; font-size: .9em; line-height: 1.15; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
+.previa .flor { align-self: center; justify-self: center; width: 46%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, #e8a21a 0 22%, transparent 23%), conic-gradient(from 10deg, var(--pet) 0 10%, transparent 10% 12.5%, var(--pet) 12.5% 22.5%, transparent 22.5% 25%, var(--pet) 25% 35%, transparent 35% 37.5%, var(--pet) 37.5% 47.5%, transparent 47.5% 50%, var(--pet) 50% 60%, transparent 60% 62.5%, var(--pet) 62.5% 72.5%, transparent 72.5% 75%, var(--pet) 75% 85%, transparent 85% 87.5%, var(--pet) 87.5% 97.5%, transparent 97.5%);
+  -webkit-mask: radial-gradient(circle, #000 66%, transparent 67%); mask: radial-gradient(circle, #000 66%, transparent 67%); opacity: .9; }
+.previa .m { font-weight: 800; font-size: .85em; background: rgba(255,255,255,.92); color: #10231A; border-radius: .6em; padding: .45em .5em; }
+.previa .m small { display: block; font-weight: 700; font-size: .78em; color: #0B6B45; }
+.acciones { display: flex; gap: .5em; justify-content: center; margin-top: .6em; flex-wrap: wrap; }
+.acciones a, .acciones button { font: 700 .74em/1 system-ui, sans-serif; padding: .65em 1em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; text-decoration: none; }
+.acciones a.prim { background: var(--ok); color: #fff; border-color: var(--ok); }
+[hidden] { display: none !important; }
+@media (max-width: 760px) { .esc-grid-2.lado { grid-template-columns: 1fr; } .receta { grid-template-columns: 1fr; } .tel { height: 72vh; } .esc-titulo { font-size: 1.5em; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">JUEVES · S2 · E01</span>
+  </header>
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Tu primer video hecho con código: <em>p5.js dibuja, HyperFrames graba</em></h1>
+    <section class="esc-grid-2 lado">
+      <div class="sec a-in" style="--d:.1s">
+        <p class="nota">Una flor aguanta la tormenta y florece. <b>Tú pones las frases y tu marca</b>; el servidor, <b>sin tarjeta de video</b>, dibuja cada cuadro con p5.js y HyperFrames lo graba en un MP4 vertical de 9 s para tu estado de WhatsApp.</p>
+        <div class="tarjeta">
+          <h2><i>1</i> Las dos frases: el problema y la solución</h2>
+          <div class="chips" id="ideas"><span class="t">Ideas:</span></div>
+          <div class="receta">
+            <label for="frase1">En la tormenta<small>el problema, máx. 60</small></label><input id="frase1" type="text" maxlength="60" placeholder="Sin clientes, sin tiempo, todo a mano…">
+            <label for="frase2">Cuando florece<small>tu solución, máx. 60</small></label><input id="frase2" type="text" maxlength="60" placeholder="…con un bot en WhatsApp, tu negocio florece">
+          </div>
+        </div>
+        <div class="tarjeta">
+          <h2><i>2</i> Tu firma y el color de tu flor</h2>
+          <div class="receta">
+            <label for="marca">Tu negocio<small>o tu nombre, máx. 28</small></label><input id="marca" type="text" maxlength="28" placeholder="Café La Esquina">
+            <label for="contacto">Contacto<small>opcional, máx. 40</small></label><input id="contacto" type="text" maxlength="40" placeholder="WhatsApp 999 888 777">
+          </div>
+          <div class="chips" id="colores"><span class="t">Flor:</span></div>
+        </div>
+        <button id="renderizar" type="button">Renderizar mi video en el servidor (~40 s)</button>
+        <div class="barra" aria-hidden="true"><i id="barra"></i></div>
+        <p class="estado" id="estado" role="status"></p>
+        <details class="dentro">
+          <summary>¿Qué pasa por dentro?</summary>
+          <ol>
+            <li><b>p5.js</b> calcula la flor en 3D (8 pétalos que se doblan con el viento, 520 flósculos en espiral) y la pinta en 2D, de atrás hacia adelante.</li>
+            <li><b>HyperFrames</b> abre esa página en un Chrome sin pantalla, la detiene en cada instante y saca una foto: 216 fotos para 9 s a 24 cuadros por segundo.</li>
+            <li><b>ffmpeg</b> une las fotos y la música en un MP4. Todo corre en la CPU del servidor, en fila: un video a la vez.</li>
+          </ol>
+          <pre>// p5.js: cada pétalo es una malla que se dobla
+const angulo = th0 + curvatura * v;   // marchita = más curvatura
+x = R0 + (sin(angulo) - sin(th0)) / curvatura;
+
+&lt;!-- HyperFrames: cada pieza dice cuándo aparece --&gt;
+&lt;h1 class="clip" data-start="0.45" data-duration="2.3"&gt;tu frase&lt;/h1&gt;</pre>
+        </details>
+      </div>
+      <div class="a-in" style="--d:.2s">
+        <div class="tel">
+          <div class="pantalla" id="pantalla">
+            <div class="previa" id="previa">
+              <div class="f" id="pf1"></div>
+              <div class="flor" id="pflor"></div>
+              <div class="m"><span id="pm"></span><small id="pc"></small></div>
+            </div>
+            <video id="video" controls playsinline loop hidden></video>
+          </div>
+        </div>
+        <div class="acciones" id="acciones" hidden>
+          <a class="prim" id="descargar" href="#" download>Descargar MP4</a>
+          <button type="button" id="otra">Hacer otra versión</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Cuando tengas tu MP4, súbelo a tu estado de WhatsApp y pulsa «Lo logré» en el panel</footer>
+</div>
+<script>
+(() => {
+  const leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || 'de-02';
+  const base = `/api/v1/live/${leccion}/video`;
+  const CLAVE = `video-p5-${leccion}`;
+  const $ = (id) => document.getElementById(id);
+  const IDEAS = [
+    ['Sin clientes, sin tiempo, todo a mano…', '…con un bot en WhatsApp, tu negocio florece'],
+    ['Mensajes sin responder a medianoche…', '…tu asistente contesta por ti'],
+    ['Mil ideas y ninguna publicada…', '…una landing hoy, clientes mañana'],
+    ['Pedidos anotados en papelitos…', '…todo ordenado en un solo lugar'],
+  ];
+  const COLORES = { blanca: '#f8f8f2', rosada: '#f7b8cf', amarilla: '#ffd85c', lila: '#c9b3f2', coral: '#ff9d7a', celeste: '#a9d8f5' };
+  let color = 'blanca';
+
+  IDEAS.forEach(([a, b], i) => {
+    const bt = document.createElement('button'); bt.type = 'button'; bt.textContent = `${i + 1}. ${a.replace(/…$/, '')}`;
+    bt.onclick = () => { $('frase1').value = a; $('frase2').value = b; previa(); };
+    $('ideas').appendChild(bt);
+  });
+  Object.entries(COLORES).forEach(([nombre, hex]) => {
+    const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'col'; bt.textContent = nombre;
+    bt.style.setProperty('--sw', hex); bt.setAttribute('aria-pressed', String(nombre === color));
+    bt.onclick = () => { color = nombre; [...$('colores').querySelectorAll('button')].forEach((b) => b.setAttribute('aria-pressed', String(b === bt))); previa(); };
+    $('colores').appendChild(bt);
+  });
+
+  const valor = (id) => $(id).value.trim() || $(id).placeholder;
+  function previa() {
+    $('pf1').textContent = valor('frase1');
+    $('pm').textContent = valor('marca');
+    $('pc').textContent = $('contacto').value.trim();
+    $('pflor').style.setProperty('--pet', COLORES[color]);
+  }
+  ['frase1', 'frase2', 'marca', 'contacto'].forEach((id) => $(id).addEventListener('input', previa));
+  previa();
+
+  const estado = (txt, clase = '') => { $('estado').textContent = txt; $('estado').className = 'estado ' + clase; };
+  let reloj = null, inicio = 0, estimado = 40;
+
+  function mostrar(id) {
+    const v = $('video');
+    v.src = `${base}/${id}/mp4`; v.hidden = false; $('previa').hidden = true; v.play().catch(() => {});
+    $('descargar').href = `${base}/${id}/mp4?descargar=1`; $('acciones').hidden = false;
+  }
+
+  async function seguir(id) {
+    clearTimeout(reloj);
+    let r;
+    try { r = await fetch(`${base}/${id}`, { credentials: 'same-origin', cache: 'no-store' }); } catch { reloj = setTimeout(() => seguir(id), 3000); return; }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { estado(d.mensaje || 'No encontré tu video. Vuelve a renderizar.', 'mal'); localStorage.removeItem(CLAVE); $('renderizar').disabled = false; return; }
+    const pasados = (Date.now() - inicio) / 1000;
+    if (d.estado === 'en_cola') {
+      estimado = Math.max(estimado, d.espera_s || 40);
+      estado(`En la fila: hay ${d.posicion - 1} video${d.posicion === 2 ? '' : 's'} antes que el tuyo. Listo en unos ${Math.max(5, Math.round(estimado - pasados))} s.`);
+    } else if (d.estado === 'renderizando') {
+      estado('Dibujando tu flor cuadro a cuadro…');
+    } else if (d.estado === 'listo') {
+      $('barra').style.width = '100%'; estado(`¡Listo! Tu video se renderizó en ${d.segundos} s, sin GPU.`, 'ok');
+      $('renderizar').disabled = false; $('renderizar').textContent = 'Renderizar otra versión'; mostrar(id); return;
+    } else {
+      estado(d.error || 'El render falló. Prueba de nuevo.', 'mal'); localStorage.removeItem(CLAVE); $('renderizar').disabled = false; return;
+    }
+    $('barra').style.width = `${Math.min(95, (pasados / estimado) * 100)}%`;
+    reloj = setTimeout(() => seguir(id), 2000);
+  }
+
+  $('renderizar').onclick = async () => {
+    $('renderizar').disabled = true; $('barra').style.width = '3%'; estado('Enviando tu pedido al servidor…');
+    $('video').hidden = true; $('video').removeAttribute('src'); $('previa').hidden = false; $('acciones').hidden = true;
+    const cuerpo = { frase1: $('frase1').value.trim(), frase2: $('frase2').value.trim(), marca: $('marca').value.trim(), contacto: $('contacto').value.trim(), color };
+    try {
+      const r = await fetch(base, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { estado(d.mensaje || `No se pudo (${r.status}).`, 'mal'); $('renderizar').disabled = false; return; }
+      inicio = Date.now(); estimado = d.espera_s || 40; localStorage.setItem(CLAVE, JSON.stringify({ id: d.id, inicio }));
+      seguir(d.id);
+    } catch { estado('Sin conexión con el servidor. Prueba de nuevo.', 'mal'); $('renderizar').disabled = false; }
+  };
+  $('otra').onclick = () => { $('video').pause(); $('video').hidden = true; $('previa').hidden = false; $('acciones').hidden = true; $('barra').style.width = '0'; estado(''); $('frase1').focus(); };
+
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE) || 'null');
+    if (g && g.id) { inicio = g.inicio || Date.now(); $('renderizar').disabled = true; seguir(g.id); }
+  } catch {}
+})();
+</script>
+</body>
+</html>

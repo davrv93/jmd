@@ -153,6 +153,24 @@ services:
     networks: [default, aula_net]
     restart: unless-stopped
 
+  # Videos de alumnos con HyperFrames + p5.js, sin GPU (lms/render). El LMS lo llama como http://render:8000
+  # desde la escena LIVE; renderiza de a uno y con la CPU limitada para no frenar las aulas. Se enciende con
+  #   docker compose --profile render up -d --build render
+  render:
+    profiles: ["render"]
+    build: ./lms/render
+    image: jmd/render:latest
+    container_name: render
+    cpus: ${RENDER_CPUS:-1.4}
+    mem_limit: 3g
+    environment:
+      RENDER_TOKEN: ${LMS_AULA_TOKEN:-}
+      RENDER_MAX_POR_ALUMNO: ${RENDER_MAX_POR_ALUMNO:-5}
+      RENDER_PARALELO: ${RENDER_PARALELO:-1}
+    volumes:
+      - render_trabajos:/trabajos
+    restart: unless-stopped
+
   # Voz a texto (faster-whisper int8, sin torch) para el dictado de Robo: aulas (http://stt:8000) y kit
   # robo-local-nube (/aula-nube/stt por nginx). Se enciende con
   #   docker compose --profile stt up -d --build stt
@@ -257,6 +275,7 @@ volumes:
   lms_data:
   jmrv_data:
   imagen_modelos:
+  render_trabajos:
   stt_modelos:
   aula_pg_data:
   evogo_clase_data:
