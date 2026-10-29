@@ -38,7 +38,7 @@ const cspVista = "default-src 'self' https://esm.sh; script-src 'self' 'unsafe-i
 // scriptConsola avisa al panel de los errores de la página (T-4.6) y lleva las llamadas a «/api/…» (fetch,
 // XMLHttpRequest, EventSource) a «/vista/<tú>/api/…»: los agentes escriben fetch("/api/x") como en localhost y,
 // sin esto, en el visor esa llamada cae en el LMS y no en el puerto 8766 del aula. Solo se inserta en HTML.
-const scriptConsola = `<script>(function(){var b=location.pathname.split("/").slice(0,3).join("/"),o=location.origin;function f(u){if(typeof u!=="string")return u;if(u.indexOf(o+"/api/")===0)u=u.slice(o.length);return u.indexOf("/api/")===0?b+u:u}var F=window.fetch;if(F)window.fetch=function(i,c){if(typeof i==="string")i=f(i);else if(i&&i.url&&i.url.indexOf(o+"/api/")===0)i=new Request(b+i.url.slice(o.length),i);return F.call(this,i,c)};var X=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=f(u);return X.apply(this,arguments)};var E=window.EventSource;if(E){window.EventSource=function(u,c){return new E(f(u),c)};window.EventSource.prototype=E.prototype}})();window.addEventListener("error",function(e){parent.postMessage({tipo:"consola",nivel:"error",mensaje:String(e.message),archivo:e.filename,linea:e.lineno},location.origin)});window.addEventListener("unhandledrejection",function(e){parent.postMessage({tipo:"consola",nivel:"error",mensaje:String(e.reason)},location.origin)});</script>`
+const scriptConsola = `<script>(function(){var b=location.pathname.split("/").slice(0,3).join("/"),o=location.origin,R=/^\/(api|imagenes)\//;function f(u){if(typeof u!=="string")return u;if(u.indexOf(o+"/")===0&&R.test(u.slice(o.length)))u=u.slice(o.length);return R.test(u)?b+u:u}var F=window.fetch;if(F)window.fetch=function(i,c){if(typeof i==="string")i=f(i);else if(i&&i.url){var g=f(i.url);if(g!==i.url)i=new Request(g,i)}return F.call(this,i,c)};var X=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=f(u);return X.apply(this,arguments)};var E=window.EventSource;if(E){window.EventSource=function(u,c){return new E(f(u),c)};window.EventSource.prototype=E.prototype}var D=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,"src");if(D&&D.set)Object.defineProperty(HTMLImageElement.prototype,"src",{configurable:true,enumerable:D.enumerable,get:D.get,set:function(v){D.set.call(this,f(v))}})})();window.addEventListener("error",function(e){parent.postMessage({tipo:"consola",nivel:"error",mensaje:String(e.message),archivo:e.filename,linea:e.lineno},location.origin)});window.addEventListener("unhandledrejection",function(e){parent.postMessage({tipo:"consola",nivel:"error",mensaje:String(e.reason)},location.origin)});</script>`
 
 // inyectarConsola pone scriptConsola antes de </head>, o al inicio si no hay cabecera.
 func inyectarConsola(html []byte) []byte {
@@ -89,6 +89,19 @@ func (s *Server) vistaServir(w http.ResponseWriter, r *http.Request, p *Principa
 	}
 	if !s.aulaListo(w) {
 		return
+	}
+	// Lo que el agente escribe cambia en cada corrida: «api/chat» relativo desde una carpeta, una URL armada con la
+	// carpeta de la página o la imagen /imagenes/x.png del backend. Si la ruta pasa por «api/» va al backend; si pasa
+	// por «imagenes/» y no hay tal archivo en /trabajo, también (el backend sirve sus imágenes).
+	if destino, ok := rutaBackend(r.PathValue("ruta")); ok {
+		if strings.HasPrefix(destino, "/api/") {
+			s.vistaReenviar(w, r, p, sub, destino)
+			return
+		}
+		if _, err := s.Aula.Leer(r.Context(), aula.Nombre(sub), r.PathValue("ruta"), 1); errors.Is(err, aula.ErrNoExiste) {
+			s.vistaReenviar(w, r, p, sub, destino)
+			return
+		}
 	}
 	ruta, ok := vistaRuta(r.PathValue("ruta"))
 	if !ok {
@@ -218,11 +231,56 @@ func (s *Server) vistaAPI(w http.ResponseWriter, r *http.Request, p *Principal) 
 		notFound(w, "la ruta")
 		return
 	}
+	s.vistaReenviar(w, r, p, sub, "/api/"+resto)
+}
+
+// vistaAnidada: PUT|POST|PATCH|DELETE /vista/{sub}/{ruta...} cuando la ruta pasa por «api/» más abajo (p. ej.
+// /vista/<tú>/mickey/api/chat, de un fetch("api/chat") relativo): va al mismo backend que /vista/<tú>/api/chat.
+func (s *Server) vistaAnidada(w http.ResponseWriter, r *http.Request, p *Principal) {
+	sub := r.PathValue("sub")
+	if !s.vistaAcceso(w, r, p, sub) || !s.aulaListo(w) {
+		return
+	}
+	destino, ok := rutaBackend(r.PathValue("ruta"))
+	if !ok || !strings.HasPrefix(destino, "/api/") {
+		notFound(w, "la ruta")
+		return
+	}
+	s.vistaReenviar(w, r, p, sub, destino)
+}
+
+// rutaBackend: si la ruta pedida (relativa a /vista/<sub>/) pasa por un segmento «api» o «imagenes» con algo
+// detrás, la ruta equivalente en el backend del aula (/api/… o /imagenes/…). Lo de antes del segmento se ignora.
+func rutaBackend(ruta string) (string, bool) {
+	partes := strings.Split(ruta, "/")
+	for i := 0; i < len(partes)-1; i++ {
+		if partes[i] == "api" || partes[i] == "imagenes" {
+			resto := strings.Join(partes[i+1:], "/")
+			if !restoPermitido(resto) {
+				return "", false
+			}
+			return "/" + partes[i] + "/" + resto, true
+		}
+	}
+	return "", false
+}
+
+// vistaReenviar lleva la petición al puerto 8766 del aula del alumno (destino = /api/… o /imagenes/…). Solo el
+// dueño escribe; el personal solo mira (GET).
+func (s *Server) vistaReenviar(w http.ResponseWriter, r *http.Request, p *Principal, sub, destino string) {
+	if r.Method != http.MethodGet && sub != p.ID {
+		writeErr(w, 403, "forbidden", "solo el dueño puede enviar a su aula")
+		return
+	}
+	if r.Header.Get("Upgrade") != "" {
+		writeErr(w, 400, "sin_websocket", "el visor no admite WebSocket")
+		return
+	}
 	tocarAula(sub)
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
-			pr.Out.URL = &url.URL{Scheme: "http", Host: "asistente", Path: "/api/" + resto, RawQuery: pr.In.URL.RawQuery}
+			pr.Out.URL = &url.URL{Scheme: "http", Host: "asistente", Path: destino, RawQuery: pr.In.URL.RawQuery}
 			pr.Out.Host = "asistente"
 			pr.Out.Header.Del("Cookie")
 			pr.Out.Header.Del("Authorization")

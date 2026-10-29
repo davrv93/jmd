@@ -177,6 +177,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/vista/{sub}/version", s.authed(s.vistaVersion))
 	for _, m := range metodosVista {
 		mux.Handle(m+" /vista/{sub}/api/{resto...}", s.authed(s.vistaAPI))
+		if m != http.MethodGet { // GET ya lo atiende vistaServir, que también reenvía «…/api/…»
+			mux.Handle(m+" /vista/{sub}/{ruta...}", s.authed(s.vistaAnidada))
+		}
 	}
 	// Modo LIVE (ver live_handlers.go y docs/PLAN_MODO_LIVE_SESION2.md).
 	mux.Handle("GET /api/v1/live", s.authed(s.liveActivas))

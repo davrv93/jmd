@@ -93,7 +93,7 @@ func TestVistaRutaCarpetaYTrabajo(t *testing.T) {
 }
 
 func TestVistaInyectaConsola(t *testing.T) {
-	if got := string(inyectarConsola([]byte("<p>x</p>"))); !strings.Contains(got, `u.indexOf("/api/")===0?b+u:u`) {
+	if got := string(inyectarConsola([]byte("<p>x</p>"))); !strings.Contains(got, `return R.test(u)?b+u:u`) || !strings.Contains(got, `R=/^\/(api|imagenes)\//`) {
 		t.Errorf("falta el reenvío de /api/ al visor: %s", got)
 	}
 	if got := string(inyectarConsola([]byte("<html><head></head><body></body></html>"))); strings.Count(got, "<script>") != 1 || strings.Index(got, "<script>") > strings.Index(got, "</head>") {
@@ -272,5 +272,43 @@ func TestVistaProyectos(t *testing.T) {
 	}
 	if o := e.call("GET", "/api/v1/vista/"+idAna+"/proyectos", beto, false, nil, ""); o.code != 403 {
 		t.Errorf("ajenos: %d", o.code)
+	}
+}
+
+// Lo que el agente escribe cambia cada vez: «api/chat» relativo desde una carpeta, la URL armada con la carpeta de
+// la página o la imagen del backend. Todo llega al 8766 del aula; una imagen que sí es archivo se sirve como archivo.
+func TestVistaRutasAnidadas(t *testing.T) {
+	for ruta, quiere := range map[string]string{
+		"mickey/api/chat": "/api/chat", "api/chat": "/api/chat", "a/b/api/x/y": "/api/x/y",
+		"imagenes/f.png": "/imagenes/f.png", "mickey/imagenes/f.png": "/imagenes/f.png",
+	} {
+		if got, ok := rutaBackend(ruta); !ok || got != quiere {
+			t.Errorf("%q → %q %v (quería %q)", ruta, got, ok, quiere)
+		}
+	}
+	for _, ruta := range []string{"mickey/index.html", "api", "mickey/api", "mi-api/x", "api/../x", "api/a//b"} {
+		if got, ok := rutaBackend(ruta); ok {
+			t.Errorf("%q no debe ir al backend: %q", ruta, got)
+		}
+	}
+	var vistos []string
+	back := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		vistos = append(vistos, r.Method+" "+r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ruta":"` + r.URL.Path + `"}`))
+	}))
+	defer back.Close()
+	e, ana, _, idAna, _ := vistaEnv(t, &aulaFalsa{destino: back.Listener.Addr().String()})
+	if r := e.call("POST", "/vista/"+idAna+"/mickey/api/chat", ana, false, map[string]any{"mensaje": "hola"}, ""); r.code != 200 || r.body["ruta"] != "/api/chat" {
+		t.Fatalf("POST anidado: %d %s", r.code, r.raw)
+	}
+	if r := e.call("GET", "/vista/"+idAna+"/mickey/api/salud", ana, false, nil, ""); r.code != 200 || r.body["ruta"] != "/api/salud" {
+		t.Fatalf("GET anidado: %d %s", r.code, r.raw)
+	}
+	if r := e.call("GET", "/vista/"+idAna+"/imagenes/f.png", ana, false, nil, ""); r.code != 200 || r.body["ruta"] != "/imagenes/f.png" {
+		t.Fatalf("imagen del backend: %d %s", r.code, r.raw)
+	}
+	if r := e.call("POST", "/vista/"+idAna+"/mickey/index.html", ana, false, map[string]any{}, ""); r.code != 404 {
+		t.Fatalf("POST a un archivo: %d", r.code)
 	}
 }

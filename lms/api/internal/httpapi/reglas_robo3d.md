@@ -18,7 +18,10 @@ que el alumno abre en su Visor como «robo3d/index.html» (o «<su carpeta>/inde
    SVG y Canvas 2D no necesitan librería. Nada de npm install, bundlers ni node (no hay node en el aula).
 2. La página lee los datos con fetch("../negocio/asistente.json") (ruta relativa) y usa nombre, saludo,
    personalidad, preguntas y colores de marca. Nada de datos inventados: si falta algo, se muestra vacío.
-3. Chat: POST "/api/chat" con {"mensaje": texto, "historial": [{"rol":"usuario|asistente","texto":"…"}]} →
+3. El backend del robot se llama con rutas que empiezan con "/api/" escritas tal cual (fetch("/api/chat")): no
+   armes la URL con location ni con la carpeta de la página; el Visor la lleva al backend. Si /api/imagen devuelve
+   {"url": "/imagenes/…"}, úsala tal cual en img.src.
+   Chat: POST "/api/chat" con {"mensaje": texto, "historial": [{"rol":"usuario|asistente","texto":"…"}]} →
    {"texto","animo"}. Si falla, responde con la pregunta frecuente más parecida (palabras en común con
    "preguntas") y si no hay, con el saludo. Voz: POST "/api/voz" {"texto"} → audio/wav (si falla, speechSynthesis
    con voz es-*). Micrófono: webkitSpeechRecognition con lang "es-PE" (si no existe, oculta el botón).
