@@ -25,6 +25,20 @@ var reglasRobo3D string
 //go:embed reglas_whatsapp.md
 var reglasWhatsApp string
 
+// roboAPI es el módulo con el que las páginas del alumno hablan con el backend de su Robo (chat, voz, imagen,
+// dictado). Lo que escribe el agente cambia en cada corrida; esta pieza no: el LMS la deja en el aula y las
+// reglas piden copiarla e importarla en vez de escribir fetch a mano.
+//
+//go:embed robo_api.js
+var roboAPI []byte
+
+// dejarRoboAPI escribe /trabajo/negocio/robo-api.js (siempre la versión del LMS).
+func (s *Server) dejarRoboAPI(ctx context.Context, nombre string) {
+	if out, err := s.Aula.ExecStdin(ctx, nombre, `mkdir -p /trabajo/negocio && cat > /trabajo/negocio/robo-api.js.tmp && mv /trabajo/negocio/robo-api.js.tmp /trabajo/negocio/robo-api.js`, roboAPI); err != nil {
+		slog.Warn("robo-api.js", "aula", nombre, "err", err, "salida", strings.TrimSpace(out))
+	}
+}
+
 const agenteTope = 8 * time.Minute
 
 type corridaAgente struct {
@@ -161,6 +175,7 @@ func (s *Server) liveAgentePost(w http.ResponseWriter, r *http.Request, p *Princ
 	s.montarSkills(r.Context(), p.ID)
 	nombre := aula.Nombre(p.ID)
 	s.puenteOsito(r.Context(), nombre)
+	s.dejarRoboAPI(r.Context(), nombre)
 	robot := s.robotDe(r.Context(), nombre)
 	pedido := armarPedidoEn(in.Tipo, p.Name, in.Texto, robot)
 	go s.correrAgente(st, c, nombre, p.ID, pedido, in.Tipo, robot)

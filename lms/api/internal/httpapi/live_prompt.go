@@ -413,6 +413,7 @@ func (s *Server) liveMiRobo(w http.ResponseWriter, r *http.Request, p *Principal
 	tocarAula(p.ID)
 	nombre := aula.Nombre(p.ID)
 	s.puenteOsito(r.Context(), nombre)
+	s.dejarRoboAPI(r.Context(), nombre)
 	res := map[string]any{"existe": false}
 	raw, err := s.Aula.Leer(r.Context(), nombre, "negocio/asistente.json", 256<<10)
 	if err == nil {
