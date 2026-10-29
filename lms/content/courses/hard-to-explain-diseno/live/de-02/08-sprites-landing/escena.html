@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu mascota corre en la landing · Taller S2</title>
+<!-- Escena del modo LIVE (sesión 2, grupo de los jueves). Simula la landing ya publicada con el zorro animándose en
+     canvas 2D a partir de atlas.png (8 tiles de 256×130, alfa, ancla en x=243 / y=119). Sin GPU y sin peticiones. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-titulo { font-size: 1.5em; }
+.esc-sub { font-size: .9em; }
+.esc-cuerpo { gap: 1.2vh; justify-content: center; }
+.esc-grid-2 { align-items: start; }
+.demo { padding: .7em .8em; display: grid; gap: .55em; }
+.demo canvas { width: 100%; max-width: 640px; margin: 0 auto; height: auto; display: block; border-radius: .6em; }
+.mandos { display: flex; flex-wrap: wrap; align-items: center; gap: .45em .9em; font-size: .74em; }
+.mandos label { display: flex; align-items: center; gap: .45em; color: var(--muted); font-weight: 600; }
+.mandos input[type=range] { width: 7.5em; accent-color: var(--accent); }
+.mandos output { font: 700 .95em var(--mono); color: var(--fg); }
+.lado { display: grid; gap: .55em; align-content: start; }
+.pedido { padding: .7em .9em; display: grid; gap: .5em; }
+.pedido h3 { margin: 0; font-size: .86em; }
+.pedido p { margin: 0; font-size: .76em; color: var(--muted); }
+.pedido .esc-cmd { font-size: .66em; max-height: none; }
+.pedido button { font: 700 .86em/1 system-ui, sans-serif; padding: .6em 1em; border: 0; border-radius: .7em; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.pedido button.ok { background: var(--ok); }
+.chequeo { display: grid; gap: .3em; margin: 0; padding: 0; list-style: none; }
+.chequeo li { display: flex; gap: .55em; align-items: baseline; font-size: .76em; color: var(--muted); }
+.chequeo li b { color: var(--fg); }
+.chequeo .tick { color: var(--ok); font-weight: 800; flex: none; }
+.logre { display: flex; align-items: center; gap: .6em; }
+.logre button { font: 700 .8em/1 system-ui, sans-serif; padding: .55em .9em; border-radius: .65em; border: 1px solid var(--ok); background: var(--ok-bg); color: var(--ok); cursor: pointer; }
+.logre button[aria-pressed="true"] { background: var(--ok); color: #fff; }
+@media (max-width: 760px) {
+  body { overflow-y: auto; }
+  .esc-titulo { font-size: 1.15em; }
+  .esc-grid-2 { grid-template-columns: 1fr; }
+  .pedido .esc-cmd { font-size: .6em; max-height: 6.2em; overflow: auto; }
+  .pedido p { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">JUEVES · S2 · E08</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo">Tu mascota corre en la landing, <em>sin un solo video</em></h1>
+      <p class="esc-sub">Ocho PNG y cuarenta líneas de canvas: la misma landing se mueve igual en un teléfono de gama baja.</p>
+    </div>
+
+    <div class="esc-grid-2">
+      <div class="esc-card demo">
+        <canvas id="cv" aria-label="Landing de ejemplo con el zorro corriendo"></canvas>
+        <div class="mandos">
+          <label>fps <input id="fps" type="range" min="6" max="24" value="12"><output id="fps-v">12</output></label>
+          <label>velocidad <input id="vel" type="range" min="0" max="240" value="90"><output id="vel-v">90</output></label>
+          <label><input id="espejo" type="checkbox"> Mirar a la izquierda</label>
+        </div>
+      </div>
+
+      <div class="lado">
+        <div class="esc-card pedido">
+          <h3>El pedido, tal cual, para tu agente</h3>
+          <p>Cópialo y pégalo en el aula. Cambia «zorro» por tu mascota.</p>
+          <pre class="esc-cmd" id="txt">Generá el atlas de mi mascota (un zorro) para la landing:
+1) una pose canónica de perfil, sobre verde #00FF00, sin sombra ni línea de suelo;
+2) ocho ediciones de esa misma imagen, una por pose de carrera, todas del mismo tamaño;
+3) recortá cada pose, normalizá la altura y anclá por el hocico y la base;
+4) guardá atlas.png y atlas.json con x, y, w, h, ax, ay.</pre>
+          <button id="copiar" type="button">Copiar pedido</button>
+        </div>
+
+        <div class="esc-card pedido">
+          <h3>Antes de decir que está listo</h3>
+          <ul class="chequeo" id="chequeo"></ul>
+          <div class="logre">
+            <button id="logre" type="button" aria-pressed="false">Lo logré</button>
+            <span class="esc-chip" id="chip">mide y comprueba</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">El visor de la landing es canvas 2D: se ve igual en el proyector y en tu teléfono</footer>
+</div>
+
+<script src="datos.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const cv = $('cv'), ctx = cv.getContext('2d');
+  const AN = 640, AL = 330;
+  const { atlas: A } = SPR;
+
+  function medir() {
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = AN * dpr; cv.height = AL * dpr;
+    cv.style.aspectRatio = AN + ' / ' + AL;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  medir();
+
+  // ---- comprobaciones reales sobre el atlas
+  const altos = A.tiles.map(t => t.by1 - t.by0);
+  const bases = A.tiles.map(t => t.ay);
+  const hocicos = A.tiles.map(t => t.ax);
+  const unicos = (v) => new Set(v).size === 1;
+  const filas = [
+    ['Alto igual en las ocho', `${Math.min(...altos)} px`, unicos(altos)],
+    ['Misma base para todas', `y = ${bases[0]}`, unicos(bases)],
+    ['Mismo hocico', `x = ${hocicos[0]}`, unicos(hocicos)],
+    ['Ninguna pose toca el borde', '13 px de margen', A.tiles.every(t => t.bx1 < t.w - 6 && t.ay < t.h - 2)],
+  ];
+  $('chequeo').innerHTML = filas.map(([k, v, ok]) =>
+    `<li><span class="tick">${ok ? '✓' : '·'}</span><span><b>${k}</b> · ${v}</span></li>`).join('');
+
+  // ---- la landing de mentira
+  const img = new Image();
+  let listo = false;
+  img.onload = () => { listo = true; };
+  img.src = 'atlas.png';
+
+  let t0 = performance.now(), x = 90;
+  let fps = 12, vel = 90, espejo = false;
+
+  function redondo(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function pintar(ms) {
+    const dt = Math.min(64, ms - t0) / 1000; t0 = ms;
+    const t = ms / 1000;
+
+    ctx.clearRect(0, 0, AN, AL);
+    // ventana
+    ctx.fillStyle = '#ffffff';
+    redondo(10, 8, AN - 20, AL - 18, 10); ctx.fill();
+    ctx.strokeStyle = 'rgba(60,52,140,.16)'; ctx.lineWidth = 1; ctx.stroke();
+    // barra
+    ctx.fillStyle = '#f2f0f8';
+    redondo(10, 8, AN - 20, 26, 10); ctx.fill();
+    ctx.fillStyle = '#f2f0f8'; ctx.fillRect(10, 24, AN - 20, 10);
+    ['#e05c5c', '#e0b25c', '#5cc27a'].forEach((c, i) => {
+      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(26 + i * 14, 21, 4, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.fillStyle = '#8a879a'; ctx.font = '600 10px system-ui, sans-serif';
+    ctx.fillText('tu-negocio.pe', 78, 25);
+
+    // contenido
+    ctx.fillStyle = '#16151d'; ctx.font = '800 22px system-ui, sans-serif';
+    ctx.fillText('Tu negocio, en una', 34, 82);
+    ctx.fillText('landing que se mueve', 34, 110);
+    ctx.fillStyle = '#5c5966'; ctx.font = '400 12px system-ui, sans-serif';
+    ctx.fillText('Sin video, sin plugins: ocho dibujos y un poco de código.', 34, 132);
+
+    // botón
+    ctx.fillStyle = '#136a33';
+    redondo(34, 148, 178, 34, 8); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '700 12px system-ui, sans-serif';
+    ctx.fillText('Escríbenos por WhatsApp', 50, 170);
+
+    // suelo
+    const suelo = 262;
+    ctx.strokeStyle = 'rgba(60,52,140,.18)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(24, suelo + .5); ctx.lineTo(AN - 24, suelo + .5); ctx.stroke();
+
+    // el zorro
+    if (listo) {
+      const f = Math.floor(t * fps) % 8;
+      const tile = A.tiles[f];
+      const s = 0.45;
+      const w = A.w * s, h = A.h * s;
+      x += vel * dt;
+      if (x > AN - 20) x = -w + 20;
+      ctx.save();
+      ctx.translate(x, suelo);
+      if (espejo) ctx.scale(-1, 1);
+      ctx.drawImage(img, tile.x, tile.y, tile.w, tile.h, -w / 2, -tile.ay * s, w, h);
+      ctx.restore();
+    }
+
+    // pista del frame
+    ctx.fillStyle = '#8a879a'; ctx.font = '600 10px system-ui, sans-serif';
+    ctx.fillText(`frame ${(Math.floor(t * fps) % 8) + 1}/8 · ${fps} fps`, AN - 108, AL - 12);
+
+    requestAnimationFrame(pintar);
+  }
+  requestAnimationFrame(pintar);
+
+  $('fps').oninput = (e) => { fps = +e.target.value; $('fps-v').textContent = fps; };
+  $('vel').oninput = (e) => { vel = +e.target.value; $('vel-v').textContent = vel; };
+  $('espejo').onchange = (e) => { espejo = e.target.checked; };
+
+  // ---- copiar el pedido
+  async function copiar(texto) {
+    try { await navigator.clipboard.writeText(texto); return true; } catch (_) {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = texto; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;left:-9999px';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); ta.remove(); return ok;
+    } catch (_) { return false; }
+  }
+  $('copiar').onclick = async (e) => {
+    const ok = await copiar($('txt').textContent.trim());
+    e.target.textContent = ok ? '✓ Copiado: pégalo en el aula' : 'No pude copiar: selecciona el texto';
+    e.target.classList.toggle('ok', ok);
+    setTimeout(() => { e.target.textContent = 'Copiar pedido'; e.target.classList.remove('ok'); }, 2600);
+  };
+
+  $('logre').onclick = (e) => {
+    const on = e.target.getAttribute('aria-pressed') !== 'true';
+    e.target.setAttribute('aria-pressed', String(on));
+    e.target.textContent = on ? '✓ Lo logré' : 'Lo logré';
+    $('chip').textContent = on ? 'mascota en la landing' : 'mide y comprueba';
+    $('chip').className = 'esc-chip' + (on ? ' ok' : '');
+  };
+})();
+</script>
+</body>
+</html>

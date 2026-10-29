@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La imagen no es un sprite · Taller S2</title>
+<!-- Escena del modo LIVE (sesión 2, grupo de los jueves). Estilos comunes en ../../comun/escena.css; propios en #esc-propio.
+     Datos reales del experimento: hoja.webp = las 8 poses que devolvió un solo prompt; atlas.png = el mismo zorro pasado
+     por canónico + 8 ediciones + recorte y anclaje. Las dos tiras se dibujan a la misma escala a propósito. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-titulo { font-size: 1.45em; }
+.esc-sub { font-size: .88em; max-width: 60em; }
+.esc-cuerpo { gap: 1.1vh; justify-content: center; }
+.tablero { padding: .6em .8em .5em; display: grid; gap: .3em; }
+.tablero canvas { width: 100%; height: auto; display: block; }
+.barra { display: flex; align-items: center; gap: .7em; font-size: .7em; }
+.barra button { font: 700 .95em/1 system-ui, sans-serif; padding: .45em .85em; border-radius: .55em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; }
+.barra button:hover { background: var(--accent-bg); }
+.barra .dato { color: var(--muted); font-variant-numeric: tabular-nums; }
+.tarjetas { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9vw; }
+.tarjeta { background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .6em .85em; box-shadow: var(--card-shadow); display: grid; gap: .4em; align-content: start; }
+.aviso-movil { display: none; margin: 0; font-size: .78em; color: var(--muted); }
+.tarjeta h3 { margin: 0; font-size: .82em; display: flex; gap: .5em; align-items: center; }
+.tarjeta h3 i { font-style: normal; display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .8em; }
+.tarjeta p { margin: 0; font-size: .74em; color: var(--muted); line-height: 1.35; }
+.tarjeta p b { color: var(--fg); }
+.cifras { display: flex; flex-wrap: wrap; gap: .3em; }
+.cifra { font: 700 .68em/1 var(--mono); padding: .32em .55em; border-radius: .4em; background: var(--s2); border: 1px solid var(--line); }
+.cifra.mal { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
+.cifra.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+@media (max-width: 760px) {
+  body { overflow-y: auto; }
+  .tablero { display: none; }
+  .aviso-movil { display: block; }
+  .esc-titulo { font-size: 1.18em; }
+  .esc-sub { font-size: .78em; }
+  .tarjetas { grid-template-columns: 1fr; gap: .4em; }
+  .tarjeta p { font-size: .7em; }
+}
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">JUEVES · S2 · E06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo">Una imagen no es un sprite: <em>el corte lo hace el código</em></h1>
+      <p class="esc-sub">El modelo dibuja ocho zorros. El juego necesita ocho números: la misma altura, la misma base y el mismo hocico.</p>
+    </div>
+
+    <div class="esc-card tablero">
+      <canvas id="cv" aria-label="Comparación entre cortar por rejilla y usar un atlas anclado"></canvas>
+      <div class="barra">
+        <button id="play" type="button">Pausar</button>
+        <button id="paso" type="button">Frame +1</button>
+        <span class="dato" id="dato">midiendo…</span>
+      </div>
+    </div>
+
+    <p class="aviso-movil">La comparación de las dos tiras se ve en el proyector; aquí van los números.</p>
+
+    <div class="tarjetas">
+      <div class="tarjeta">
+        <h3><i>1</i> Un solo prompt</h3>
+        <div class="cifras">
+          <span class="cifra mal">alto 132–155</span>
+          <span class="cifra mal">base 190–238</span>
+        </div>
+        <p>Mismo zorro, distinto tamaño y distinto piso. La cola <b>cruza el borde de la celda</b>: el corte rectangular la amputa.</p>
+      </div>
+      <div class="tarjeta">
+        <h3><i>2</i> Lo que pide el juego</h3>
+        <div class="cifras">
+          <span class="cifra ok">alto 143</span>
+          <span class="cifra ok">base y=156</span>
+          <span class="cifra ok">hocico x=308</span>
+        </div>
+        <p>La caja de la pose y <b>un punto de ancla</b>. Con eso el dibujo se queda quieto aunque la cola cambie de forma.</p>
+      </div>
+      <div class="tarjeta">
+        <h3><i>3</i> El camino que sí</h3>
+        <p><b>Una</b> pose canónica → <b>ocho ediciones</b> sobre esa misma imagen → recorte, altura normalizada y ancla. Una sola imagen con ocho poses nunca da consistencia <em>y</em> movimiento.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">Taller «¿Difícil de explicar? ¡No!» · sesión 2 · todo se dibuja con canvas 2D: sin GPU y sin librerías</footer>
+</div>
+
+<script src="datos.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const cv = $('cv'), ctx = cv.getContext('2d');
+  const AN = 1180, AL = 292, S = .42;          // S: misma escala en las dos tiras
+  const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let jugando = !quieto, frame = 0, acum = 0, ultimo = performance.now();
+  let hoja = null, atlas = null, cargadas = 0;
+
+  function medir() {
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = AN * dpr; cv.height = AL * dpr;
+    cv.style.aspectRatio = AN + ' / ' + AL;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  medir();
+  addEventListener('resize', () => { medir(); pintar(); });
+
+  const H = SPR.hoja, A = SPR.atlas;
+  const imgHoja = new Image(); imgHoja.onload = () => { hoja = imgHoja; listo(); }; imgHoja.src = 'hoja.webp';
+  const imgAtlas = new Image(); imgAtlas.onload = () => { atlas = imgAtlas; listo(); }; imgAtlas.src = 'atlas.png';
+  function listo() { if (++cargadas === 2) { dato(); pintar(); } }
+
+  function dato() {
+    const bases = H.celdas.map(c => c.by1), altos = H.celdas.map(c => c.alto);
+    const salto = Math.round((Math.max(...bases) - Math.min(...bases)) * S);
+    const dif = Math.round((Math.max(...altos) - Math.min(...altos)) * S);
+    $('dato').textContent = `en pantalla la base salta ${salto} px · el alto cambia ${dif} px`;
+  }
+
+  function pintar() {
+    ctx.clearRect(0, 0, AN, AL);
+    ctx.font = '600 13px system-ui, sans-serif';
+    const anchoA = H.w * S, altoA = H.h * S;
+    const anchoB = A.w * S, altoB = A.h * S;
+    const totalA = 8 * anchoA + 7 * 8, totalB = 8 * anchoB + 7 * 8;
+    const xA = (AN - totalA) / 2, xB = (AN - totalB) / 2;
+
+    // ---- tira A
+    ctx.fillStyle = '#8a879a';
+    ctx.fillText('1 · Ocho poses cortadas por una rejilla exacta', 14, 18);
+    if (hoja) {
+      for (let i = 0; i < 8; i++) {
+        const c = H.celdas[i];
+        const dx = xA + i * (anchoA + 8), dy = 28;
+        ctx.save(); ctx.beginPath(); ctx.rect(dx, dy, anchoA, altoA); ctx.clip();
+        ctx.drawImage(hoja, c.cx, c.cy, H.w, H.h, dx, dy, anchoA, altoA);
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(200,64,47,.5)'; ctx.setLineDash([3, 4]); ctx.lineWidth = 1;
+        ctx.strokeRect(dx + .5, dy + .5, anchoA - 1, altoA - 1);
+        ctx.setLineDash([]);
+        const base = dy + c.by1 * S;
+        ctx.strokeStyle = '#c8402f'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(dx, base); ctx.lineTo(dx + anchoA, base); ctx.stroke();
+      }
+    }
+
+    // ---- tira B
+    ctx.fillStyle = '#8a879a';
+    ctx.fillText('2 · Las mismas poses en un atlas con ancla (hocico + base)', 14, 152);
+    if (atlas) {
+      const ay = A.tiles[0].ay * S;
+      for (let i = 0; i < 8; i++) {
+        const t = A.tiles[i];
+        const dx = xB + i * (anchoB + 8), dy = 162;
+        ctx.drawImage(atlas, t.x, t.y, t.w, t.h, dx, dy, anchoB, altoB);
+        ctx.strokeStyle = 'rgba(11,95,88,.28)'; ctx.lineWidth = 1;
+        ctx.strokeRect(dx + .5, dy + .5, anchoB - 1, altoB - 1);
+      }
+      ctx.strokeStyle = '#0b5f58'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(xB, 162 + ay); ctx.lineTo(xB + totalB - 8, 162 + ay); ctx.stroke();
+    }
+
+    // ---- frame activo
+    const iA = frame % 8;
+    ctx.strokeStyle = '#5a49d6'; ctx.lineWidth = 3;
+    ctx.strokeRect(xA + iA * (anchoA + 8) - 2, 26, anchoA + 4, altoA + 4);
+    if (atlas) ctx.strokeRect(xB + iA * (anchoB + 8) - 2, 160, anchoB + 4, altoB + 4);
+
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.fillStyle = '#c8402f'; ctx.fillText('■ una base distinta en cada pose', 14, AL - 22);
+    ctx.fillStyle = '#0b5f58'; ctx.fillText('■ una sola base para las ocho', 300, AL - 22);
+    ctx.fillStyle = '#5a49d6'; ctx.fillText(`▢ frame ${iA + 1} de 8`, 560, AL - 22);
+  }
+
+  function bucle(t) {
+    const dt = Math.min(90, t - ultimo) / 1000;
+    ultimo = t;
+    if (jugando) {
+      acum += dt;
+      if (acum >= 1 / 12) { acum = 0; frame = (frame + 1) % 8; pintar(); }
+    }
+    requestAnimationFrame(bucle);
+  }
+  requestAnimationFrame(bucle);
+
+  $('play').onclick = (e) => { jugando = !jugando; e.target.textContent = jugando ? 'Pausar' : 'Seguir'; };
+  $('paso').onclick = () => { jugando = false; $('play').textContent = 'Seguir'; frame = (frame + 1) % 8; pintar(); };
+})();
+</script>
+</body>
+</html>

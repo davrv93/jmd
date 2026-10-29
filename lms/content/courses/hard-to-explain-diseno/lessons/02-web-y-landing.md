@@ -58,6 +58,12 @@ cycle:
     phase: reflexion
     description: "Diez rondas compartidas para 20 alumnos: responde sobre el pedido en seis partes, cámara y animación; después golpea hongos o revienta globos. El concepto vale 100 puntos y la destreza hasta 40."
     check: "Terminas el repaso y puedes explicar una idea que aplicarás en el pedido de tu landing"
+  - id: sprites
+    title: Tu mascota en sprites, sin dibujar frame por frame
+    tool: jmd
+    phase: experimentacion
+    description: "Una pose canónica de tu mascota, ocho ediciones sobre esa misma imagen y un atlas recortado con el hocico y la base como ancla. En el LIVE el recorte y el ancla se calculan en vivo, sin GPU."
+    check: El atlas se reproduce a 12 fps en tu landing y el cuerpo no tiembla
   - id: contenido
     title: Del escrito del cliente al contenido
     tool: jmd
