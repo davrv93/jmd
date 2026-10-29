@@ -14,6 +14,7 @@ que el alumno abre en su Visor como «robo3d/index.html» (o «<su carpeta>/inde
    "https://esm.sh/three@0.170.0/examples/jsm/controls/OrbitControls.js". p5 NO va con import (usa eval y el Visor
    lo bloquea con EvalError): cárgalo como script clásico <script src="https://esm.sh/p5@1.11.1/lib/p5.min.js?raw"></script>
    y úsalo en modo instancia: new p5((s) => { s.setup = …; s.draw = … }).
+   p5 NO trae star(), polygon() ni heart() (salen en sus ejemplos): si los usas, defínelos tú.
    SVG y Canvas 2D no necesitan librería. Nada de npm install, bundlers ni node (no hay node en el aula).
 2. La página lee los datos con fetch("../negocio/asistente.json") (ruta relativa) y usa nombre, saludo,
    personalidad, preguntas y colores de marca. Nada de datos inventados: si falta algo, se muestra vacío.
