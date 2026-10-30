@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -242,7 +243,17 @@ func (s *Server) liveSprite(w http.ResponseWriter, r *http.Request, p *Principal
 
 	hoja, neuronas, err := cfHoja(ctx, in.Animal, poses)
 	if err != nil {
-		writeErr(w, 502, "motor_error", "no se pudo dibujar la hoja: "+err.Error())
+		// el error del modelo trae identificadores y nombres de campos: se traduce a algo que
+		// se pueda leer en clase, y el detalle queda en el log del servidor.
+		slog.Warn("sprite: fallo el modelo", "err", err)
+		msg := "el modelo de imagen no respondió; prueba otra vez"
+		switch {
+		case strings.Contains(err.Error(), "capacity"), strings.Contains(err.Error(), "429"):
+			msg = "el modelo está ocupado; espera unos segundos y prueba otra vez"
+		case strings.Contains(err.Error(), "multipart"), strings.Contains(err.Error(), "Bad input"):
+			msg = "el modelo rechazó el pedido; prueba otra vez"
+		}
+		writeErr(w, 502, "motor_error", msg)
 		return
 	}
 	writeJSON(w, 200, map[string]any{
