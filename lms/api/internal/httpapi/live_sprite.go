@@ -155,7 +155,7 @@ func cfHoja(ctx context.Context, animal string, poses []string) (string, float64
 		"Flat cel shading, pure solid green #00FF00 background, wide green space between the six drawings, " +
 		"no grid lines, no text, no shadow."
 	cuerpo, _ := json.Marshal(map[string]any{"prompt": prompt, "steps": 4})
-	return cfPedido(ctx, "@cf/black-forest-labs/flux-1-schnell", bytes.NewReader(cuerpo), "application/json")
+	return cfPedido(ctx, "@cf/black-forest-labs/flux-2-klein-4b", bytes.NewReader(cuerpo), "application/json")
 }
 
 // cfPose: la misma mascota en otra pose, con la imagen canónica como referencia (FLUX.2 klein).
