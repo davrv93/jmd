@@ -182,22 +182,44 @@
     return { canvas: c, caja: { x0, y0, x1, y1 } };
   }
 
-  // corta una hoja en columnas × filas y devuelve cada celda limpia
-  function cortar(im, cols, filas) {
+  // Corta una hoja detectando la rejilla por los huecos de tinta (no por división exacta):
+  // el modelo a veces dibuja 3x3 aunque le pidas 3x2, y una rejilla fija rompe las celdas.
+  function cortar(im, colsPedidas, filasPedidas) {
     const hoja = limpiar(im);
-    const w = hoja.caja.x1 - hoja.caja.x0 + 1, h = hoja.caja.y1 - hoja.caja.y0 + 1;
-    const cw = w / cols, ch = h / filas;
-    const items = [];
-    for (let r = 0; r < filas; r++) for (let c = 0; c < cols; c++) {
-      const celda = document.createElement('canvas');
-      celda.width = Math.round(cw); celda.height = Math.round(ch);
-      celda.getContext('2d').drawImage(hoja.canvas,
-        hoja.caja.x0 + c * cw, hoja.caja.y0 + r * ch, cw, ch, 0, 0, celda.width, celda.height);
-      const limpia = limpiar(celda);
-      if (limpia.caja.x1 > limpia.caja.x0) items.push(limpia);
+    const { x0, y0, x1, y1 } = hoja.caja;
+    const ancho = x1 - x0 + 1, alto = y1 - y0 + 1;
+    const g = hoja.canvas.getContext('2d', { willReadFrequently: true });
+    const d = g.getImageData(x0, y0, ancho, alto).data;
+    const col = new Array(ancho).fill(0), fil = new Array(alto).fill(0);
+    for (let y = 0; y < alto; y++) for (let x = 0; x < ancho; x++) {
+      if (d[(y * ancho + x) * 4 + 3] > 40) { col[x]++; fil[y]++; }
     }
-    if (!items.length) throw new Error('las celdas salieron vacías: revisa columnas y filas');
-    return items;
+    const huecos = (perfil, minimo) => {
+      const cortes = []; let i = 0;
+      const umbral = Math.max(2, perfil.reduce((a, b) => Math.max(a, b), 0) * 0.015);
+      while (i < perfil.length) {
+        if (perfil[i] <= umbral) { let j = i; while (j < perfil.length && perfil[j] <= umbral) j++; if (j - i >= minimo) cortes.push((i + j) / 2); i = j; }
+        else i++;
+      }
+      return cortes;
+    };
+    const cx = huecos(col, Math.max(6, ancho * 0.02));
+    const cy = huecos(fil, Math.max(6, alto * 0.02));
+    const xs = [0, ...cx, ancho], ys = [0, ...cy, alto];
+    const items = [];
+    for (let r = 0; r < ys.length - 1; r++) for (let c = 0; c < xs.length - 1; c++) {
+      const w = xs[c + 1] - xs[c], h = ys[r + 1] - ys[r];
+      if (w < 12 || h < 12) continue;
+      const celda = document.createElement('canvas');
+      celda.width = Math.round(w); celda.height = Math.round(h);
+      celda.getContext('2d').drawImage(hoja.canvas, x0 + xs[c], y0 + ys[r], w, h, 0, 0, celda.width, celda.height);
+      const limpia = limpiar(celda);
+      if (limpia.caja.x1 - limpia.caja.x0 > 8 && limpia.caja.y1 - limpia.caja.y0 > 8) items.push(limpia);
+    }
+    if (!items.length) throw new Error('no encontré dibujos separados en esa hoja');
+    // si salieron más celdas de las pedidas, se recortan a las primeras (orden de lectura)
+    const tope = Math.max(1, (colsPedidas || 3) * (filasPedidas || 2));
+    return items.slice(0, tope);
   }
 
   // ---------- atlas: altura común, hocico a la derecha, cabeza arriba

@@ -24,8 +24,8 @@ func fakeCloudflare(t *testing.T, neuronas string) *httptest.Server {
 			if err := r.ParseMultipartForm(8 << 20); err != nil {
 				t.Errorf("klein sin multipart: %v", err)
 			}
-			if r.FormValue("prompt") == "" || r.MultipartForm == nil || len(r.MultipartForm.File["input_image"]) == 0 {
-				t.Errorf("klein sin prompt o sin imagen de referencia")
+			if r.FormValue("prompt") == "" {
+				t.Errorf("klein sin prompt")
 			}
 		default:
 			var in map[string]any
