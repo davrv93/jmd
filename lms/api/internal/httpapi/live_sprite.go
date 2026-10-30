@@ -154,8 +154,14 @@ func cfHoja(ctx context.Context, animal string, poses []string) (string, float64
 		"thick outline, same size), full body, side view. Six poses: " + strings.Join(poses, ", ") + ". " +
 		"Flat cel shading, pure solid green #00FF00 background, wide green space between the six drawings, " +
 		"no grid lines, no text, no shadow."
-	cuerpo, _ := json.Marshal(map[string]any{"prompt": prompt, "steps": 4})
-	return cfPedido(ctx, "@cf/black-forest-labs/flux-2-klein-4b", bytes.NewReader(cuerpo), "application/json")
+	// klein solo acepta multipart (incluso para texto a imagen)
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	_ = mw.WriteField("prompt", prompt)
+	if err := mw.Close(); err != nil {
+		return "", 0, err
+	}
+	return cfPedido(ctx, "@cf/black-forest-labs/flux-2-klein-4b", &buf, mw.FormDataContentType())
 }
 
 // cfPose: la misma mascota en otra pose, con la imagen canónica como referencia (FLUX.2 klein).
