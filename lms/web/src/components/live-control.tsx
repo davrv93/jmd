@@ -201,7 +201,7 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
               ref={marco}
               class="live-frame"
               onLoad$={() => avisarEscena(marco.value, props.estado)}
-              sandbox={props.lesson === "de-02" && escenaActual.value === "05-escucha-y-descarga" ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin"}
+              sandbox={props.lesson === "de-02" && ["05-escucha-y-descarga", "09-musica-con-lyria"].includes(escenaActual.value) ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin"}
               allow="microphone; clipboard-write"
               title="Vista previa"
               src={urlEscena(props.lesson, escenaActual.value, tema.value, !visible.value)}

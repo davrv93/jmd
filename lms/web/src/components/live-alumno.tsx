@@ -882,7 +882,7 @@ export const LiveAlumno = component$(
                   ref={marco}
                   class="live-frame lv-marco"
                   onLoad$={() => avisarEscena(marco.value, props.estado)}
-                  sandbox={props.lesson === "de-02" && efectiva === "05-escucha-y-descarga" ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin"}
+                  sandbox={props.lesson === "de-02" && ["05-escucha-y-descarga", "09-musica-con-lyria"].includes(efectiva) ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin"}
                   allow="microphone; clipboard-write"
                   title="Escena"
                   src={urlEscena(props.lesson, efectiva, tema.value)}

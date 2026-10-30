@@ -100,10 +100,25 @@ respuesta futura del modelo. Escuchar y decidir qué acompaña el mensaje es
 parte del ejercicio del alumno.
 
 
-## E09 · Música con Lyria
+## E09 · Música con Lyria dentro del LMS
 
-`09-musica-con-lyria` añade un pedido editable y una práctica de generación de audio en Gemini. El alumno copia el enlace y el pedido, abre otra pestaña, activa **Subidas y herramientas → Crear música**, escucha y descarga **solo audio (MP3)**. No usa el sintetizador local ni llama APIs de pago desde el LMS. El enlace se copia porque el iframe no permite ventanas emergentes. No requiere cambios de servidor ni permisos nuevos.
+`09-musica-con-lyria` permite editar el pedido, **Generar con Lyria**, reproducir y descargar el MP3 en la misma ficha. Se usa `google/lyria-3-clip-preview` mediante OpenRouter, con la clave `OPENROUTER_API_KEY` del servidor. No requiere cuentas de Gemini de los alumnos ni expone la clave al navegador.
 
-El pedido solicita un clip instrumental con instrumentos naturales para acompañar el video. La evidencia es una captura de la pista y una frase que justifique la elección. La cuenta debe ser compatible, mayor de 18 años y tener Conservar la actividad activado; hay límites de generación. Si la herramienta no está disponible, revisar esos requisitos en Gemini.
+- `POST /api/v1/live/de-02/musica` recibe `{prompt}` y devuelve 202 `{id, estado}`.
+- `GET /api/v1/live/de-02/musica/{id}` consulta el trabajo.
+- `GET /api/v1/live/de-02/musica/{id}/mp3` reproduce con Range; `?descargar=1` descarga.
 
-Ruta y formatos verificados el 29-10-2026 en la [ayuda oficial de Google](https://support.google.com/gemini/answer/16901237?hl=es). No se promete que un pedido garantice un timbre o una composición exactos.
+Las rutas requieren autenticación y acceso a la lección. Cada trabajo pertenece exclusivamente a su usuario y lección; también puede generar el instructor. Se admite un trabajo pendiente por persona y tres intentos diarios por usuario (día UTC). Cuotas y pistas se mantienen en memoria: se reinician al reiniciar el servidor. Las pistas expiran a las dos horas, con máximo 60 trabajos retenidos y 8 MiB de audio por trabajo. No hay reintentos automáticos con coste. El navegador recuerda el ID en sessionStorage para consultar sin generar otra pista.
+
+El servidor reúne el audio base64 del stream SSE de OpenRouter, comprueba finalización y cabecera MP3 y sirve el audio por el mismo origen. La CSP se conserva; se habilita `allow-downloads` solo para E09 y E05, tanto en alumno como en instructor. No requiere GPU local. Esta integración sí requiere reconstruir y desplegar el LMS.
+
+El [catálogo oficial de OpenRouter](https://openrouter.ai/google/lyria-3-clip-preview) indica clips de 30 segundos por US$0,04. Protocolo: [salida de audio y streaming](https://openrouter.ai/docs/guides/overview/multimodal/audio). Verificado el 29-10-2026. Los 20 alumnos con tres intentos cada uno sumarían US$2,40 a esa tarifa, sin contar pruebas ni instructor.
+
+### Validación de la integración
+
+- Generación real en OpenRouter: MP3 de 744658 bytes, respuesta en 8 segundos; duración decodificada 30,772 s. Una generación de prueba.
+- `go test ./internal/content/ ./internal/httpapi/`: incluye proveedor simulado, SSE truncado, formato inválido, autenticación, acceso privado, Range, descarga, límite y recuperación de trabajo pendiente.
+- `npm run build` en `lms/web`: compilación, tipos y lint; advertencia preexistente de dimensiones de imagen en sorteo.
+- `node lms/scripts/probar-lyria.mjs /ruta/a/pista.mp3`: API simulada, sandbox/CSP reales; copia, error de cuota, generación, reproducción del MP3 real, descarga idéntica y recuperación al recargar. Capturas 1440×810 y 390×844, con controles desplegados, en `docs/qa/de-02-musica/09-lyria-*`.
+
+El MP3 de QA no se incorpora al repositorio. Sin argumento MP3, el script verifica el flujo y las capturas sin comprobar decodificación/descarga.
