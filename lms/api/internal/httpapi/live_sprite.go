@@ -150,10 +150,10 @@ func cfPedido(ctx context.Context, modelo string, cuerpo io.Reader, tipo string)
 // las seis poses en la MISMA imagen, no en seis llamadas.
 func cfHoja(ctx context.Context, animal string, poses []string) (string, float64, error) {
 	prompt := "Sprite sheet for a 2D game: exactly 2 rows and 3 columns, six drawings of THE SAME cute " +
-		"cartoon character, identical design in every cell (same head, same colours, same thick outline, " +
-		"same size), full body. The character is " + animal + ". Six poses: " + strings.Join(poses, "; ") +
-		". Flat cel shading, pure solid green #00FF00 background, wide green space between the six " +
-		"drawings, no grid lines, no text, no shadow."
+		"cartoon character: " + animal + ", identical design in every cell (same head, same colours, same " +
+		"thick outline, same size), full body, side view. Six poses: " + strings.Join(poses, ", ") + ". " +
+		"Flat cel shading, pure solid green #00FF00 background, wide green space between the six drawings, " +
+		"no grid lines, no text, no shadow."
 	cuerpo, _ := json.Marshal(map[string]any{"prompt": prompt, "steps": 4})
 	return cfPedido(ctx, "@cf/black-forest-labs/flux-1-schnell", bytes.NewReader(cuerpo), "application/json")
 }
