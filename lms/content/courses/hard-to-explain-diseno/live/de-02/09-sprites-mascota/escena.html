@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu mascota, tus seis poses · Taller S2</title>
+<!-- Escena del modo LIVE (sesión 2, grupo de los jueves).
+     Dos caminos para llegar al mismo atlas:
+       A) generar: POST /api/v1/live/{lección}/sprite → FLUX.1 schnell dibuja la mascota y FLUX.2 klein
+          hace las seis poses con esa imagen como referencia (cuota y presupuesto en el servidor).
+       B) subir: tu hoja de sprites (PNG/WebP) y el navegador la corta y la ancla.
+     Todo el recorte, la normalización y el anclaje ocurren aquí, en canvas 2D: sin GPU y sin enviar nada. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-titulo { font-size: 1.4em; }
+.esc-sub { font-size: .86em; max-width: 62em; }
+.esc-cuerpo { gap: 1vh; justify-content: flex-start; }
+.pestanas { display: flex; gap: .4em; }
+.pestanas button { font: 700 .78em/1 system-ui, sans-serif; padding: .55em .9em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; }
+.pestanas button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.panel { display: grid; grid-template-columns: 1.05fr .95fr; gap: 1.2vw; align-items: start; }
+.form { display: grid; gap: .45em; }
+.form label { font-size: .7em; font-weight: 700; color: var(--muted); display: grid; gap: .2em; }
+.form input[type=text] { width: 100%; font: inherit; font-size: .8em; padding: .4em .6em; border-radius: .5em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+.poses { display: grid; grid-template-columns: 1fr 1fr; gap: .35em; }
+.poses label span { font-weight: 600; color: var(--muted); font-size: .92em; }
+.boton { font: 700 .85em/1 system-ui, sans-serif; padding: .7em 1em; border: 0; border-radius: .7em; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.boton:disabled { opacity: .5; cursor: wait; }
+.boton.sec { background: var(--s2); color: var(--fg); border: 1px solid var(--line2); }
+.estado { font-size: .72em; color: var(--muted); margin: 0; min-height: 1.3em; }
+.estado.ok { color: var(--ok); font-weight: 700; }
+.estado.mal { color: var(--bad); font-weight: 700; }
+.vista { display: grid; gap: .5em; }
+.vista canvas { width: 100%; height: auto; display: block; border-radius: .7em; background: var(--s3); }
+.acciones { display: flex; gap: .5em; flex-wrap: wrap; }
+.acciones a, .acciones button { font: 700 .78em/1 system-ui, sans-serif; padding: .55em .9em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); text-decoration: none; cursor: pointer; }
+.acciones a { border-color: var(--ok); color: var(--ok); }
+.suelto { font-size: .68em; color: var(--muted); margin: 0; }
+@media (max-width: 760px) {
+  body { overflow-y: auto; }
+  .esc-cuerpo { gap: .6vh; }
+  .esc-sub { display: none; }
+  .panel { grid-template-columns: 1fr; }
+  .poses { grid-template-columns: 1fr; }
+  .esc-titulo { font-size: 1.12em; }
+}
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">JUEVES · S2 · E09</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo">Tu mascota, tus <em>seis poses</em></h1>
+      <p class="esc-sub">Escribe el animalito y las poses, o sube tu hoja ya dibujada. El código recorta, alinea y arma el atlas.</p>
+    </div>
+
+    <div class="pestanas" role="tablist">
+      <button id="t-gen" role="tab" aria-selected="true">Generar con IA</button>
+      <button id="t-sub" role="tab" aria-selected="false">Subir mi hoja</button>
+    </div>
+
+    <div class="panel">
+      <div class="esc-card" id="panel-gen">
+        <div class="form">
+          <label>Tu mascota
+            <input type="text" id="animal" value="un zorro naranja con bufanda azul" maxlength="240">
+          </label>
+          <div class="poses" id="poses"></div>
+          <div class="acciones">
+            <button class="boton" id="generar">Generar 6 poses</button>
+            <button class="boton sec" id="otra" hidden>Otra mascota</button>
+          </div>
+          <p class="estado" id="estado">6 poses por alumno y por día. La mascota es gratis; cada pose gasta ~105 neuronas.</p>
+        </div>
+      </div>
+
+      <div class="esc-card" id="panel-sub" hidden>
+        <div class="form">
+          <label>Tu hoja de sprites (PNG o WebP, con los frames en fila o en rejilla)
+            <input type="file" id="archivo" accept="image/png,image/webp,image/jpeg">
+          </label>
+          <div class="poses">
+            <label>Columnas <input type="text" id="cols" value="4" inputmode="numeric"></label>
+            <label>Filas <input type="text" id="filas" value="2" inputmode="numeric"></label>
+          </div>
+          <div class="acciones"><button class="boton" id="recortar">Recortar y animar</button></div>
+          <p class="estado" id="estado2">El fondo se quita solo si es blanco o verde plano. Si tu hoja ya tiene alfa, se respeta.</p>
+        </div>
+      </div>
+
+      <div class="esc-card vista">
+        <canvas id="cv" width="620" height="260"></canvas>
+        <div class="acciones">
+          <button id="pausa">Pausar</button>
+          <a id="descargar" hidden download="atlas.png">Descargar atlas</a>
+        </div>
+        <p class="suelto" id="detalle">Todavía no hay atlas. Genera tus poses o sube tu hoja.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">Recorte por alfa, altura normalizada y ancla en cabeza y hocico: canvas 2D, sin GPU</footer>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || 'de-02';
+  const SUGERENCIAS = [
+    'corriendo con las patas estiradas', 'sentado mirando al frente',
+    'saltando con las patas recogidas', 'caminando despacio',
+    'parado en dos patas, saludando', 'durmiendo hecho un ovillo',
+  ];
+
+  // ---------- formulario de poses
+  const caja = $('poses');
+  SUGERENCIAS.forEach((s, i) => {
+    const l = document.createElement('label');
+    l.innerHTML = `<span>Pose ${i + 1}</span>`;
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.value = s; inp.maxLength = 240;
+    l.appendChild(inp); caja.appendChild(l);
+  });
+
+  for (const [a, b] of [['t-gen', 'panel-gen'], ['t-sub', 'panel-sub']]) {
+    $(a).onclick = () => {
+      const activo = a === 't-gen';
+      $('t-gen').setAttribute('aria-selected', String(activo));
+      $('t-sub').setAttribute('aria-selected', String(!activo));
+      $('panel-gen').hidden = !activo;
+      $('panel-sub').hidden = activo;
+    };
+  }
+
+  // ---------- lienzo
+  const cv = $('cv'), ctx = cv.getContext('2d');
+  const AN = 620, AL = 260;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = AN * dpr; cv.height = AL * dpr;
+  cv.style.aspectRatio = AN + ' / ' + AL;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  let atlas = null, TW = 0, TH = 0, frames = [], frame = 0, jugando = true, ultimo = performance.now(), acum = 0;
+
+  // ---------- fondo fuera y caja del dibujo
+  function limpiar(src) {
+    const w = src.width, h = src.height;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(src, 0, 0);
+    const d = g.getImageData(0, 0, w, h), p = d.data;
+    const esq = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]].map(([x, y]) => {
+      const o = (y * w + x) * 4; return [p[o], p[o + 1], p[o + 2], p[o + 3]];
+    });
+    const yaTieneAlfa = esq.every(e => e[3] < 8);
+    const r = Math.round(esq.reduce((a, e) => a + e[0], 0) / 4);
+    const v = Math.round(esq.reduce((a, e) => a + e[1], 0) / 4);
+    const b = Math.round(esq.reduce((a, e) => a + e[2], 0) / 4);
+    const verde = v > 90 && v - r > 50 && v - b > 50;
+    if (!yaTieneAlfa) {
+      const tol = verde ? 130 : 42;
+      for (let i = 0; i < p.length; i += 4) {
+        const dist = Math.abs(p[i] - r) + Math.abs(p[i + 1] - v) + Math.abs(p[i + 2] - b);
+        if (dist < tol) { p[i + 3] = 0; continue; }
+        if (verde && p[i + 1] > p[i] && p[i + 1] > p[i + 2]) p[i + 1] = Math.max(p[i], p[i + 2]);
+      }
+      g.putImageData(d, 0, 0);
+    }
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (p[(y * w + x) * 4 + 3] > 16) {
+        if (x < x0) x0 = x; if (x > x1) x1 = x;
+        if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+    }
+    if (x1 < 0) throw new Error('no encontré el dibujo en esa imagen');
+    return { canvas: c, caja: { x0, y0, x1, y1 } };
+  }
+
+  // ---------- atlas: altura común, hocico a la derecha, cabeza arriba
+  function armar(items) {
+    const alturas = items.map(i => i.caja.y1 - i.caja.y0 + 1).sort((a, b) => a - b);
+    const objetivo = alturas[Math.floor(alturas.length / 2)];
+    const piezas = items.map(({ canvas, caja }) => {
+      const w = caja.x1 - caja.x0 + 1, h = caja.y1 - caja.y0 + 1;
+      const esc = objetivo / h;
+      const c2 = document.createElement('canvas');
+      c2.width = Math.max(1, Math.round(w * esc)); c2.height = objetivo;
+      c2.getContext('2d').drawImage(canvas, caja.x0, caja.y0, w, h, 0, 0, c2.width, objetivo);
+      return c2;
+    });
+    const margen = 10;
+    TW = Math.max(...piezas.map(p => p.width)) + margen * 2;
+    TH = objetivo + margen * 2;
+    atlas = document.createElement('canvas');
+    atlas.width = TW * piezas.length; atlas.height = TH;
+    const a = atlas.getContext('2d');
+    frames = piezas.map((p, i) => {
+      a.drawImage(p, i * TW + TW - margen - p.width, margen);
+      return { x: i * TW, ax: TW - margen, ay: TH - margen };
+    });
+    frame = 0;
+    $('descargar').href = atlas.toDataURL('image/png');
+    $('descargar').hidden = false;
+    $('detalle').textContent = `${piezas.length} poses · tile ${TW}×${TH} px · alto ${objetivo} px · hocico a ${TW - margen}, base a ${TH - margen}`;
+  }
+
+  function pintar() {
+    ctx.clearRect(0, 0, AN, AL);
+    const suelo = AL - 34;
+    ctx.strokeStyle = 'rgba(60,52,140,.20)'; ctx.setLineDash([4, 5]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(18, suelo + .5); ctx.lineTo(AN - 18, suelo + .5); ctx.stroke();
+    ctx.setLineDash([]);
+    if (atlas && frames.length) {
+      const f = frames[frame % frames.length];
+      const s = Math.min(1.25, (AL - 70) / TH);
+      ctx.drawImage(atlas, f.x, 0, TW, TH, AN / 2 - f.ax * s, suelo - f.ay * s, TW * s, TH * s);
+    }
+    ctx.fillStyle = '#8a879a'; ctx.font = '600 11px system-ui, sans-serif';
+    ctx.fillText(frames.length ? `pose ${(frame % frames.length) + 1} de ${frames.length}` : 'sin atlas todavía', 18, 22);
+  }
+
+  function bucle(t) {
+    const dt = Math.min(100, t - ultimo) / 1000; ultimo = t;
+    if (jugando && frames.length) {
+      acum += dt;
+      if (acum >= 1 / 12) { acum = 0; frame = (frame + 1) % frames.length; }
+    }
+    pintar(); requestAnimationFrame(bucle);
+  }
+  requestAnimationFrame(bucle);
+  $('pausa').onclick = (e) => { jugando = !jugando; e.target.textContent = jugando ? 'Pausar' : 'Seguir'; };
+
+  // ---------- A: generar con IA
+  $('generar').onclick = async (e) => {
+    const boton = e.target, est = $('estado');
+    const animal = $('animal').value.trim();
+    const poses = [...document.querySelectorAll('#poses input')].map(i => i.value.trim()).filter(Boolean);
+    if (animal.length < 3) { est.textContent = 'Escribe cómo es tu mascota.'; est.className = 'estado mal'; return; }
+    if (!poses.length) { est.textContent = 'Escribe al menos una pose.'; est.className = 'estado mal'; return; }
+    boton.disabled = true; est.className = 'estado';
+    est.textContent = `Dibujando la mascota y ${poses.length} poses… puede tardar un minuto.`;
+    try {
+      const r = await fetch(`/api/v1/live/${encodeURIComponent(leccion)}/sprite`, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ animal, poses }),
+      });
+      const datos = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error((datos.error && datos.error.message) || `el servidor respondió ${r.status}`);
+      const urls = (datos.poses || []).slice(0, 6);   // la mascota es la referencia, no una pose
+      const imgs = await Promise.all(urls.map(u => new Promise((ok, mal) => {
+        const im = new Image(); im.onload = () => ok(im); im.onerror = mal; im.src = u;
+      })));
+      const items = imgs.map(limpiar);
+      armar(items);
+      est.className = 'estado ok';
+      est.textContent = `Listo: ${datos.poses.length} poses · ${Math.round(datos.neuronas)} neuronas · $${(datos.coste || 0).toFixed(3)} · te quedan ${datos.restantes} hoy`;
+      $('otra').hidden = false;
+    } catch (err) {
+      est.className = 'estado mal';
+      est.textContent = String(err.message || err);
+    } finally { boton.disabled = false; }
+  };
+  $('otra').onclick = () => $('generar').click();
+
+  // ---------- B: subir la hoja
+  $('recortar').onclick = async () => {
+    const est = $('estado2'), f = $('archivo').files && $('archivo').files[0];
+    if (!f) { est.textContent = 'Elige un archivo primero.'; est.className = 'estado mal'; return; }
+    const cols = Math.max(1, Math.min(8, parseInt($('cols').value, 10) || 4));
+    const filas = Math.max(1, Math.min(4, parseInt($('filas').value, 10) || 2));
+    try {
+      const dataUrl = await new Promise((ok, mal) => {
+        const lector = new FileReader();
+        lector.onload = () => ok(lector.result);   // data: (la CSP no permite blob:)
+        lector.onerror = mal;
+        lector.readAsDataURL(f);
+      });
+      const im = await new Promise((ok, mal) => {
+        const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = dataUrl;
+      });
+      const hoja = limpiar(im);
+      const w = hoja.caja.x1 - hoja.caja.x0 + 1, h = hoja.caja.y1 - hoja.caja.y0 + 1;
+      const cw = w / cols, ch = h / filas;
+      const items = [];
+      for (let r = 0; r < filas; r++) for (let c = 0; c < cols; c++) {
+        const celda = document.createElement('canvas');
+        celda.width = Math.round(cw); celda.height = Math.round(ch);
+        celda.getContext('2d').drawImage(hoja.canvas,
+          hoja.caja.x0 + c * cw, hoja.caja.y0 + r * ch, cw, ch, 0, 0, celda.width, celda.height);
+        const limpia = limpiar(celda);
+        if (limpia.caja.x1 > limpia.caja.x0) items.push(limpia);
+      }
+      if (!items.length) throw new Error('las celdas salieron vacías: revisa columnas y filas');
+      armar(items);
+      est.className = 'estado ok';
+      est.textContent = `Listo: ${items.length} frames recortados de tu hoja.`;
+    } catch (err) {
+      est.className = 'estado mal';
+      est.textContent = String(err.message || err);
+    }
+  };
+})();
+</script>
+</body>
+</html>
