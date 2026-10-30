@@ -79,6 +79,9 @@ func spriteBase() string {
 	}
 	cuenta := strings.TrimSpace(os.Getenv("CLOUDFLARE_ACCOUNT_ID"))
 	if cuenta == "" {
+		cuenta = strings.TrimSpace(os.Getenv("CF_ACCOUNT_ID"))
+	}
+	if cuenta == "" {
 		return ""
 	}
 	return "https://api.cloudflare.com/client/v4/accounts/" + cuenta + "/ai/run/"
