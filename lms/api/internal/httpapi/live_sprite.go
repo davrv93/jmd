@@ -42,9 +42,12 @@ var spriteUso = struct {
 func spriteDia() string { return time.Now().UTC().Format("2006-01-02") }
 
 func spriteTope(alumno string, poses int) (restantes int, ok bool) {
-	max := 6
-	if v, err := strconv.Atoi(os.Getenv("SPRITE_POSES_POR_ALUMNO")); err == nil && v > 0 {
-		max = v
+	max := 2
+	for _, nombre := range []string{"SPRITE_HOJAS_POR_ALUMNO", "SPRITE_POSES_POR_ALUMNO"} {
+		if v, err := strconv.Atoi(os.Getenv(nombre)); err == nil && v > 0 {
+			max = v
+			break
+		}
 	}
 	dia := spriteDia()
 	clave := alumno + "|" + dia
@@ -142,12 +145,16 @@ func cfPedido(ctx context.Context, modelo string, cuerpo io.Reader, tipo string)
 	return "data:" + mime + ";base64," + out.Result.Image, neuronas, nil
 }
 
-// cfCanonica: la mascota, texto a imagen (FLUX.1 schnell, 2 pasos).
-func cfCanonica(ctx context.Context, animal string) (string, float64, error) {
-	prompt := "A cute cartoon mascot for a landing page: " + animal + ". Full body, side view, " +
-		"flat cel shading, thick clean outline, simple shapes. Pure solid green #00FF00 background, " +
-		"no shadow, no ground, no scenery, no text."
-	cuerpo, _ := json.Marshal(map[string]any{"prompt": prompt, "steps": 2})
+// cfHoja: una sola generación con las seis poses en rejilla 3x2. Medido: FLUX.2 klein no usa la
+// imagen de referencia (la ignora aunque se mande), así que la consistencia se consigue dibujando
+// las seis poses en la MISMA imagen, no en seis llamadas.
+func cfHoja(ctx context.Context, animal string, poses []string) (string, float64, error) {
+	prompt := "Sprite sheet for a 2D game: exactly 2 rows and 3 columns, six drawings of THE SAME cute " +
+		"cartoon character, identical design in every cell (same head, same colours, same thick outline, " +
+		"same size), full body. The character is " + animal + ". Six poses: " + strings.Join(poses, "; ") +
+		". Flat cel shading, pure solid green #00FF00 background, wide green space between the six " +
+		"drawings, no grid lines, no text, no shadow."
+	cuerpo, _ := json.Marshal(map[string]any{"prompt": prompt, "steps": 4})
 	return cfPedido(ctx, "@cf/black-forest-labs/flux-1-schnell", bytes.NewReader(cuerpo), "application/json")
 }
 
@@ -181,11 +188,10 @@ func (s *Server) liveSprite(w http.ResponseWriter, r *http.Request, p *Principal
 	if l == nil {
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, 12<<20)
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var in struct {
 		Animal string   `json:"animal"`
 		Poses  []string `json:"poses"`
-		Base   string   `json:"base"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		writeErr(w, 400, "cuerpo_invalido", "no se pudo leer el pedido")
@@ -196,65 +202,45 @@ func (s *Server) liveSprite(w http.ResponseWriter, r *http.Request, p *Principal
 		writeErr(w, 400, "animal_invalido", "describe tu mascota en una frase corta (máximo 240 caracteres)")
 		return
 	}
-	poses := make([]string, 0, len(in.Poses))
+	poses := make([]string, 0, 6)
 	for _, p := range in.Poses {
 		if v := strings.TrimSpace(p); v != "" {
-			if len(v) > 240 {
-				v = v[:240]
+			if len(v) > 120 {
+				v = v[:120]
 			}
 			poses = append(poses, v)
 		}
 	}
-	if len(poses) == 0 || len(poses) > 6 {
-		writeErr(w, 400, "poses_invalidas", "pide entre 1 y 6 poses")
+	if len(poses) == 0 {
+		writeErr(w, 400, "poses_invalidas", "pide al menos una pose")
 		return
 	}
-	if in.Base != "" && !strings.HasPrefix(in.Base, "data:image/") {
-		writeErr(w, 400, "base_invalida", "la mascota base debe venir como data:image/…;base64")
-		return
+	if len(poses) > 6 {
+		poses = poses[:6]
 	}
 	if cfToken() == "" || spriteBase() == "" {
 		writeErr(w, 503, "sin_cloudflare", "el servidor no tiene CLOUDFLARE_TOKEN y CLOUDFLARE_ACCOUNT_ID")
 		return
 	}
-	restantes, ok := spriteTope(p.ID, len(poses))
+	restantes, ok := spriteTope(p.ID, 1)
 	if !ok {
-		writeErr(w, 429, "cupo_agotado", "ya usaste tus poses de hoy: vuelve mañana o usa tu propia hoja")
+		writeErr(w, 429, "cupo_agotado", "ya usaste tus hojas de hoy: usa la de ejemplo o vuelve mañana")
 		return
 	}
-	if !spritePresupuesto(neuronasPose * float64(len(poses)+1)) {
+	if !spritePresupuesto(neuronasPose) {
 		writeErr(w, 429, "sin_presupuesto", "la clase llegó a su tope de imágenes por hoy")
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), 180*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
 	defer cancel()
 
-	base := in.Base
-	total := 0.0
-	if base == "" {
-		var n float64
-		var err error
-		base, n, err = cfCanonica(ctx, in.Animal)
-		if err != nil {
-			writeErr(w, 502, "motor_error", "no se pudo dibujar la mascota: "+err.Error())
-			return
-		}
-		total += n
+	hoja, neuronas, err := cfHoja(ctx, in.Animal, poses)
+	if err != nil {
+		writeErr(w, 502, "motor_error", "no se pudo dibujar la hoja: "+err.Error())
+		return
 	}
-
-	salida := make([]string, 0, len(poses))
-	for _, pose := range poses {
-		img, n, err := cfPose(ctx, base, pose)
-		if err != nil {
-			writeErr(w, 502, "motor_error", "no se pudo dibujar una pose: "+err.Error())
-			return
-		}
-		total += n
-		salida = append(salida, img)
-	}
-	coste := total * precioNeurona
 	writeJSON(w, 200, map[string]any{
-		"base": base, "poses": salida, "neuronas": total,
-		"coste": coste, "restantes": restantes,
+		"hoja": hoja, "poses": len(poses), "neuronas": neuronas,
+		"coste": neuronas * precioNeurona, "restantes": restantes,
 	})
 }

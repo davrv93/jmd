@@ -46,7 +46,7 @@ func TestLiveSpriteGeneraBaseYPoses(t *testing.T) {
 	t.Setenv("SPRITE_BASE_URL", srv.URL)
 	t.Setenv("CLOUDFLARE_TOKEN", "prueba")
 	t.Setenv("CLOUDFLARE_ACCOUNT_ID", "cuenta")
-	t.Setenv("SPRITE_POSES_POR_ALUMNO", "6")
+	t.Setenv("SPRITE_HOJAS_POR_ALUMNO", "2")
 	t.Setenv("SPRITE_NEURONAS_DIA", "100000")
 	spriteUso.Lock()
 	spriteUso.porAlumno = map[string]int{}
@@ -62,26 +62,23 @@ func TestLiveSpriteGeneraBaseYPoses(t *testing.T) {
 	if r.code != 200 {
 		t.Fatalf("sprite: %d %s", r.code, r.raw)
 	}
-	poses, _ := r.body["poses"].([]any)
-	if len(poses) != 6 {
-		t.Fatalf("poses: %d", len(poses))
+	hoja, _ := r.body["hoja"].(string)
+	if !strings.HasPrefix(hoja, "data:image/png;base64,") {
+		t.Fatalf("hoja rara: %.40s", hoja)
 	}
-	base, _ := r.body["base"].(string)
-	if !strings.HasPrefix(base, "data:image/png;base64,") {
-		t.Fatalf("base rara: %.40s", base)
-	}
-	for _, p := range poses {
-		if s, _ := p.(string); !strings.HasPrefix(s, "data:image/") {
-			t.Fatalf("pose rara: %.40s", s)
-		}
+	if n, _ := r.body["poses"].(float64); n != 6 {
+		t.Fatalf("poses pedidas: %v", r.body["poses"])
 	}
 	if n, _ := r.body["neuronas"].(float64); n <= 0 {
 		t.Fatalf("neuronas: %v", r.body["neuronas"])
 	}
 
-	// La segunda llamada ya no cabe en el tope de 6 poses por alumno y día.
+	// El tope por defecto son 2 hojas por alumno y día: la tercera ya no cabe.
+	if r := e.call("POST", "/api/v1/live/l1/sprite", ana, false, pedido, ""); r.code != 200 {
+		t.Fatalf("segunda hoja: %d %s", r.code, r.raw)
+	}
 	if r := e.call("POST", "/api/v1/live/l1/sprite", ana, false, pedido, ""); r.code != 429 {
-		t.Fatalf("segunda llamada: %d %s", r.code, r.raw)
+		t.Fatalf("tercera hoja: %d %s", r.code, r.raw)
 	}
 }
 
@@ -111,9 +108,10 @@ func TestLiveSpriteRechazaPedidoVacio(t *testing.T) {
 		map[string]any{"animal": "  ", "poses": []string{}}, ""); r.code != 400 {
 		t.Fatalf("animal vacío: %d %s", r.code, r.raw)
 	}
+	// Siete poses se recortan a seis; sin credenciales responde 503, no 400.
 	if r := e.call("POST", "/api/v1/live/l1/sprite", ana, false,
-		map[string]any{"animal": "un gato", "poses": []string{"a", "b", "c", "d", "e", "f", "g"}}, ""); r.code != 400 {
-		t.Fatalf("siete poses: %d %s", r.code, r.raw)
+		map[string]any{"animal": "un gato", "poses": []string{"a", "b", "c", "d", "e", "f", "g"}}, ""); r.code == 400 {
+		t.Fatalf("siete poses no debería ser 400: %s", r.raw)
 	}
 }
 
