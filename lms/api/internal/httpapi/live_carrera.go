@@ -67,6 +67,19 @@ func (s *sala) puesto(ahora time.Time, c *corredor) int {
 	return p
 }
 
+// todosLlegaron: la manga cierra sola cuando cada anotado tiene su tiempo de meta.
+func (s *sala) todosLlegaron() bool {
+	if len(s.Corredor) == 0 {
+		return false
+	}
+	for _, c := range s.Corredor {
+		if c.FinMs == 0 {
+			return false
+		}
+	}
+	return true
+}
+
 // mejor: primero quien llegó antes; si nadie llegó, quien va más lejos.
 func mejor(a, b *corredor, ahora time.Time) bool {
 	switch {
@@ -98,6 +111,9 @@ func (s *Server) liveCarreraEstado(w http.ResponseWriter, r *http.Request, p *Pr
 			faltan = 0
 		}
 	}
+	if sala.Estado == "corre" && sala.todosLlegaron() {
+		sala.Estado = "fin"
+	}
 	lista := make([]*corredor, 0, len(sala.Corredor))
 	for _, c := range sala.Corredor {
 		copia := *c
@@ -109,6 +125,7 @@ func (s *Server) liveCarreraEstado(w http.ResponseWriter, r *http.Request, p *Pr
 		"estado": sala.Estado, "faltan_ms": faltan, "seed": sala.Seed,
 		"largo": sala.Largo, "ahora_ms": ahora.UnixMilli(),
 		"salida_ms": sala.Salida.UnixMilli(), "corredores": lista, "yo": p.ID,
+		"staff": p.Staff(),
 	})
 }
 
@@ -195,6 +212,9 @@ func (s *Server) liveCarreraFin(w http.ResponseWriter, r *http.Request, p *Princ
 		if c.Dist < sala.Largo {
 			c.Dist = sala.Largo
 		}
+	}
+	if sala.todosLlegaron() {
+		sala.Estado = "fin"
 	}
 	writeJSON(w, 200, map[string]any{"puesto": sala.puesto(time.Now(), c), "de": len(sala.Corredor)})
 }

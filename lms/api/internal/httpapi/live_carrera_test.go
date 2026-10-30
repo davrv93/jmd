@@ -67,6 +67,22 @@ func TestLiveCarreraVs(t *testing.T) {
 		t.Fatalf("quien llegó debe ir primero: %v", primero)
 	}
 
+	// el estado dice quién es staff y la manga cierra sola cuando llegaron todos
+	if r := e.call("POST", "/api/v1/live/l1/carrera/fin", luis, false, map[string]any{"ms": 39200}, ""); r.code != 200 {
+		t.Fatalf("fin luis: %d %s", r.code, r.raw)
+	}
+	r = e.call("GET", "/api/v1/live/l1/carrera", luis, false, nil, "")
+	if r.body["estado"] != "fin" {
+		t.Fatalf("estado tras llegar todos: %v", r.body["estado"])
+	}
+	if r.body["staff"] != false {
+		t.Fatalf("staff de alumno: %v", r.body["staff"])
+	}
+	r = e.call("GET", "/api/v1/live/l1/carrera", profe, false, nil, "")
+	if r.body["staff"] != true {
+		t.Fatalf("staff de profe: %v", r.body["staff"])
+	}
+
 	// reiniciar deja el vestíbulo vacío
 	if r := e.call("POST", "/api/v1/live/l1/carrera/reiniciar", profe, false, map[string]any{}, ""); r.code != 200 {
 		t.Fatalf("reiniciar: %d %s", r.code, r.raw)
