@@ -135,6 +135,7 @@
   let estado = 'lobby', yo = null, lista = [], salidaEn = 0, seed = 1, largo = 840;
   const ninja = { dist: 0, y: 0, vy: 0, suelo: true, estado: 'RUN', frame: 0, golpe: 0, invul: 0, golpes: 0 };
   let obstaculos = [], polvo = [], destello = 0, t = 0, corriendo = false, llegada = 0;
+  let saltos = 0, saltoT = 0;
 
   async function pedir(ruta, cuerpo) {
     const r = await fetch(api(ruta), {
@@ -147,6 +148,7 @@
 
   function reiniciar() {
     Object.assign(ninja, { dist: 0, y: 0, vy: 0, suelo: true, estado: 'RUN', frame: 0, golpe: 0, invul: 0, golpes: 0 });
+    saltos = 0; saltoT = 0;
     obstaculos = []; polvo = []; destello = 0; t = 0; llegada = 0;
   }
   reiniciar();
@@ -221,8 +223,15 @@
   // ---------- juego
   function saltar() {
     despertarAudio();
-    if (estado !== 'corre' || !corriendo || !ninja.suelo) return;
-    ninja.vy = -640; ninja.suelo = false; ninja.estado = 'SALTO'; son('salto', .5);
+    if (estado !== 'corre' || !corriendo) return;
+    if (ninja.golpe > 0) return;                       // aturdido no salta
+    if (ninja.suelo) { saltos = 1; }                    // primer salto
+    else if (saltos < 2) { saltos = 2; }                // segundo, en el aire
+    else return;
+    ninja.vy = saltos === 1 ? -640 : -520;
+    ninja.suelo = false; ninja.estado = 'SALTO'; saltoT = 0;
+    son('salto', saltos === 1 ? .5 : .38);
+    for (let i = 0; i < 5; i++) polvo.push({ x: 190 + Math.random() * 30, y: SUELO - 6, vx: -60 - Math.random() * 90, vy: -40 - Math.random() * 60, vida: .45 });
   }
   addEventListener('keydown', (e) => {
     if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) { e.preventDefault(); saltar(); }
@@ -239,8 +248,8 @@
     ninja.dist += ((Math.min(430, 250 + t * 3.2) * factor) / 10) * dt;
 
     if (!ninja.suelo) {
-      ninja.vy += 1750 * dt; ninja.y += ninja.vy * dt;
-      if (ninja.y >= 0) { ninja.y = 0; ninja.vy = 0; ninja.suelo = true; if (ninja.estado === 'SALTO') ninja.estado = 'RUN'; son('aterrizaje', .3); }
+      ninja.vy += 1750 * dt; ninja.y += ninja.vy * dt; saltoT += dt;
+      if (ninja.y >= 0) { ninja.y = 0; ninja.vy = 0; ninja.suelo = true; saltos = 0; if (ninja.estado === 'SALTO') ninja.estado = 'RUN'; son('aterrizaje', .3); }
     }
     ninja.frame += dt * 12;
 
@@ -299,14 +308,13 @@
     }
   }
 
-  function pintaNinja(id, dist, y, frame, est, alfa, escala) {
+  function pintaNinja(id, dist, y, idx, alfa, escala) {
     const im = img[id] || img.joven;
     if (!im || !im.complete || !im.naturalWidth) return;
     const TILE = Math.round(im.width / 14), ALTO2 = im.height;
-    const idx = est === 'SALTO' ? 8 + Math.min(5, Math.floor(frame)) : Math.floor(frame) % 8;
     const w = TILE * escala, h = ALTO2 * escala;
     ctx.globalAlpha = alfa;
-    ctx.drawImage(im, idx * TILE, 0, TILE, ALTO2, 150 + (dist - ninja.dist) * 6, SUELO - h + y, w, h);
+    ctx.drawImage(im, (idx % 14) * TILE, 0, TILE, ALTO2, 150 + (dist - ninja.dist) * 6, SUELO - h + y, w, h);
     ctx.globalAlpha = 1;
   }
 
@@ -320,13 +328,15 @@
       if (im && im.complete) ctx.drawImage(im, x, SUELO - alto + 10, (im.width / im.height) * alto, alto);
     }
     lista.filter(c => c.id !== yo).slice(0, 4).forEach((c, i) => {
-      pintaNinja(c.avatar, c.dist, -8 - i * 14, t * 12, 'RUN', .5, .36);
+      pintaNinja(c.avatar, c.dist, -8 - i * 14, Math.floor(t * 12) % 8, .5, .36);
     });
     // halo detrás del corredor: el traje es negro y el fondo también
     const luz = ctx.createRadialGradient(210, SUELO - 60, 10, 210, SUELO - 60, 150);
     luz.addColorStop(0, 'rgba(255,236,170,.22)'); luz.addColorStop(1, 'rgba(255,236,170,0)');
     ctx.fillStyle = luz; ctx.fillRect(40, SUELO - 220, 340, 260);
-    pintaNinja(avatar, ninja.dist, ninja.y, ninja.frame, ninja.estado, 1, .52);
+    const idxSalto = Math.min(5, Math.floor(saltoT / 0.125));   // 0.75 s para los 6 frames
+    const idx = ninja.suelo ? Math.floor(ninja.frame) % 8 : 8 + idxSalto;
+    pintaNinja(avatar, ninja.dist, ninja.y, idx, 1, .52);
     for (const p of polvo) {
       ctx.globalAlpha = Math.max(0, Math.min(1, p.vida * 1.6));
       ctx.fillStyle = '#cdbba8';
