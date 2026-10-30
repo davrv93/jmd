@@ -1,6 +1,9 @@
 package httpapi
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestLiveCarreraVs(t *testing.T) {
 	e := newEnv(t)
@@ -81,6 +84,16 @@ func TestLiveCarreraVs(t *testing.T) {
 	r = e.call("GET", "/api/v1/live/l1/carrera", profe, false, nil, "")
 	if r.body["staff"] != true {
 		t.Fatalf("staff de profe: %v", r.body["staff"])
+	}
+
+	// límite duro: una sala sin nadie que termine se cierra a los 60 s y no deja la escena colgada
+	salas.Lock()
+	salas.m["l1"] = &sala{Corredor: map[string]*corredor{
+		ana: {ID: ana, Nombre: "Ana", Avatar: "joven", Dist: 120},
+	}, Estado: "corre", Salida: time.Now().Add(-61 * time.Second), Largo: 840}
+	salas.Unlock()
+	if r := e.call("GET", "/api/v1/live/l1/carrera", ana, false, nil, ""); r.body["estado"] != "fin" {
+		t.Fatalf("corte a 60 s: %v", r.body["estado"])
 	}
 
 	// reiniciar deja el vestíbulo vacío

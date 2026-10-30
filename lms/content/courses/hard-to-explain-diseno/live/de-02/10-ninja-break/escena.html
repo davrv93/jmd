@@ -17,6 +17,7 @@
 .esc-cuerpo { gap: .8vh; justify-content: center; }
 .marco { position: relative; }
 .marco canvas { width: 100%; height: auto; display: block; border-radius: .9em; background: #0d1020; touch-action: manipulation; }
+.sala { position: absolute; right: .7em; bottom: .7em; font-size: .62em; padding: .5em .8em; }
 .hud { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: .7em .9em; pointer-events: none; font: 800 .8em/1 system-ui, sans-serif; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
 .hud .marca { background: rgba(0,0,0,.32); border-radius: 99px; padding: .35em .8em; letter-spacing: .05em; }
 .panel { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 1em; border-radius: .9em; background: rgba(10,12,26,.78); color: #fff; overflow-y: auto; }
@@ -63,6 +64,7 @@
         <span class="marca" id="tiempo">vestíbulo</span>
         <span class="marca" id="puesto" role="status" aria-live="polite">—</span>
       </div>
+      <button class="boton sec sala" id="reiniciar-corre" hidden>Reiniciar sala</button>
       <div class="panel" id="panel">
         <div>
           <h2 id="panel-titulo">Elige tu ninja</h2>
@@ -211,7 +213,25 @@
     seed = datos.seed || seed; largo = datos.largo || largo;
     lista = datos.corredores || [];
     if (estado === 'cuenta') salidaEn = datos.salida_ms;
+    // Recarga a media carrera: retomo mi corredor en vez de quedarme mirando una pista quieta.
+    if (!yo && datos.yo && lista.some((c) => c.id === datos.yo)) yo = datos.yo;
+    if (estado === 'corre' && !corriendo && yo) retomar(datos);
     pintaPanel();
+  }
+
+  // Retoma una carrera ya salida: recupera mi distancia del servidor y rehace la pista
+  // con la misma semilla, para no arrancar de cero ni con obstáculos detrás.
+  function retomar(datos) {
+    const mio = (datos.corredores || []).find((c) => c.id === yo);
+    if (!mio || mio.fin_ms > 0) return;
+    sembrar(seed);
+    ninja.dist = Math.min(largo, mio.dist || 0);
+    t = Math.max(0, (Date.now() - (datos.salida_ms || Date.now())) / 1000);
+    Object.assign(ninja, { y: 0, vy: 0, suelo: true, frame: 0, saltoT: 0, golpe: 0, hitT: 0, invul: 0 });
+    obstaculos = []; polvo = []; llegada = 0; destello = 0;
+    let cola = 35;
+    while (cola < ninja.dist + 180) { crearObstaculo(cola); cola = obstaculos[obstaculos.length - 1].x; }
+    corriendo = true;
   }
 
   function esStaff() { return staff; }
@@ -221,6 +241,7 @@
     const orden = tabla();
     $('iniciar').hidden = !(esStaff() && estado === 'lobby');
     $('reiniciar').hidden = !(esStaff() && estado === 'fin');
+    $('reiniciar-corre').hidden = !(esStaff() && estado === 'corre');
     // clasificación dentro del panel (solo cuando hay carrera en marcha o terminada)
     const cl = $('clasificacion');
     cl.innerHTML = '';
@@ -273,12 +294,14 @@
     reiniciar(); salidaEn = datos.salida_ms; estado = 'cuenta'; seed = datos.seed; sembrar(seed); son('cuenta_regresiva');
     pintaPanel();
   };
-  $('reiniciar').onclick = async () => {
+  async function reiniciarSala() {
     const { ok } = await pedir('/reiniciar', {});
     if (!ok) return;
-    yo = null; reiniciar(); lista = []; estado = 'lobby'; staff = false;
+    yo = null; reiniciar(); lista = []; estado = 'lobby'; staff = false; corriendo = false;
     refrescar();
-  };
+  }
+  $('reiniciar').onclick = reiniciarSala;
+  $('reiniciar-corre').onclick = reiniciarSala;
 
   setInterval(() => { if (estado !== 'corre' && !llegada) refrescar(); }, 1500);
   setInterval(async () => {
@@ -286,6 +309,9 @@
     const { datos } = await pedir('');
     lista = datos.corredores || lista;
     staff = datos.staff !== undefined ? !!datos.staff : staff;
+    // El corte a 60 s lo pone el servidor: la pista se detiene y se muestra el resultado.
+    if (datos.estado === 'fin' && !llegada) { estado = 'fin'; corriendo = false; pintaPanel(); }
+    else if (datos.estado === 'corre' && !corriendo && !llegada && yo) retomar(datos);
     if (yo) await pedir('/paso', { dist: Math.round(ninja.dist), golpes: ninja.golpes });
   }, 700);
 

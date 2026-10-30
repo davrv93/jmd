@@ -111,6 +111,12 @@ func (s *Server) liveCarreraEstado(w http.ResponseWriter, r *http.Request, p *Pr
 			faltan = 0
 		}
 	}
+	// Límite duro del guion: a los 60 s se cierra la manga aunque falten corredores
+	// (se clasifican por distancia válida). Sin esto, una pestaña cerrada deja la sala
+	// en «corre» para siempre y la escena se ve congelada.
+	if sala.Estado == "corre" && !sala.Salida.IsZero() && ahora.Sub(sala.Salida) > 60*time.Second {
+		sala.Estado = "fin"
+	}
 	if sala.Estado == "corre" && sala.todosLlegaron() {
 		sala.Estado = "fin"
 	}
