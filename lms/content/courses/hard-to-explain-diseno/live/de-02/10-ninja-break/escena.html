@@ -3,32 +3,35 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ninja Race · recreo · Taller S2</title>
-<!-- Escena de recreo (sesión 2). Un botón, cuarenta segundos.
-     Los 14 frames (8 de carrera + 6 de salto) salen de la lámina ninja_joven.png del kit:
-     recortados por rejilla, limpiados de fondo y anclados por los pies (pivot bottom-center).
-     Todo canvas 2D, sin librerías ni peticiones. -->
+<title>Ninja Race · versus · Taller S2</title>
+<!-- Carrera versus del recreo (sesión 2). El servidor guarda quién corre y su avance; cada cliente
+     simula su ninja y manda su distancia. Los sonidos del kit van dentro de sonidos.js como base64 y
+     se reproducen con WebAudio: la CSP de escenas no permite data: en media ni sirve .wav. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <style id="esc-propio">
-.esc-titulo { font-size: 1.45em; }
-.esc-sub { font-size: .86em; }
+.esc-titulo { font-size: 1.4em; }
+.esc-sub { font-size: .84em; }
 .esc-cuerpo { gap: .8vh; justify-content: center; }
 .marco { position: relative; }
 .marco canvas { width: 100%; height: auto; display: block; border-radius: .9em; background: #0d1020; }
-.hud { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: .7em .9em; pointer-events: none; font: 800 .82em/1 system-ui, sans-serif; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
-.hud .marca { background: rgba(0,0,0,.28); border-radius: 99px; padding: .35em .8em; letter-spacing: .06em; }
-.capa { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 1em; border-radius: .9em; background: rgba(10,12,26,.72); color: #fff; backdrop-filter: blur(3px); }
-.capa h2 { margin: 0 0 .3em; font-size: 1.6em; }
-.capa p { margin: 0 0 .9em; font-size: .86em; opacity: .85; max-width: 30em; }
-.capa .grande { font: 800 2.4em/1 var(--mono); color: #7CF0A8; }
+.hud { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: .7em .9em; pointer-events: none; font: 800 .8em/1 system-ui, sans-serif; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+.hud .marca { background: rgba(0,0,0,.32); border-radius: 99px; padding: .35em .8em; letter-spacing: .05em; }
+.panel { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 1em; border-radius: .9em; background: rgba(10,12,26,.78); color: #fff; }
+.panel h2 { margin: 0 0 .3em; font-size: 1.5em; }
+.panel p { margin: 0 0 .9em; font-size: .84em; opacity: .85; max-width: 32em; }
+.avatares { display: flex; gap: .4em; justify-content: center; flex-wrap: wrap; margin-bottom: .8em; }
+.avatares button { width: 3.1em; height: 3.5em; border-radius: .6em; border: 2px solid transparent; background: rgba(255,255,255,.08); cursor: pointer; padding: 0; overflow: hidden; }
+.avatares button img { width: 100%; height: 100%; object-fit: contain; }
+.avatares button[aria-pressed="true"] { border-color: #7CF0A8; background: rgba(124,240,168,.18); }
 .boton { font: 800 .9em/1 system-ui, sans-serif; padding: .85em 1.4em; border: 0; border-radius: .7em; background: #7CF0A8; color: #10231A; cursor: pointer; }
-.boton.sec { background: rgba(255,255,255,.14); color: #fff; }
+.boton.sec { background: rgba(255,255,255,.16); color: #fff; }
 .acciones { display: flex; gap: .5em; flex-wrap: wrap; justify-content: center; }
 .salto { display: none; }
 @media (max-width: 760px) {
   body { overflow-y: auto; }
   .esc-sub { display: none; }
   .salto { display: block; width: 100%; margin-top: .5em; font: 800 1.1em/1 system-ui, sans-serif; padding: 1em; border: 0; border-radius: .8em; background: #7CF0A8; color: #10231A; }
+  .avatares button { width: 2.5em; height: 2.9em; }
 }
 </style>
 </head>
@@ -41,23 +44,24 @@
 
   <main class="esc-cuerpo">
     <div>
-      <h1 class="esc-titulo">Recreo: <em>cuarenta segundos, un botón</em></h1>
-      <p class="esc-sub">Espacio o toca la pantalla para saltar. Cada roca esquivada suma; cada golpe te frena.</p>
+      <h1 class="esc-titulo">Ninja Race: <em>versus de la clase</em></h1>
+      <p class="esc-sub">Elige ninja y salta con espacio o un toque. Gana quien cruce primero la meta.</p>
     </div>
 
     <div class="marco">
       <canvas id="cv"></canvas>
       <div class="hud">
-        <span class="marca" id="tiempo">40.0 s</span>
-        <span class="marca" id="puntos">0 pts · 0 m</span>
+        <span class="marca" id="tiempo">vestíbulo</span>
+        <span class="marca" id="puesto">—</span>
       </div>
-      <div class="capa" id="capa">
+      <div class="panel" id="panel">
         <div>
-          <h2 id="capa-titulo">¿Corres?</h2>
-          <p id="capa-texto">Cuarenta segundos. Salta las rocas con espacio, clic o un toque.</p>
+          <h2 id="panel-titulo">Elige tu ninja</h2>
+          <p id="panel-texto">Cuando el instructor dé la salida, corren todos a la vez.</p>
+          <div class="avatares" id="avatares"></div>
           <div class="acciones">
-            <button class="boton" id="empezar">Empezar</button>
-            <button class="boton sec" id="repetir" hidden>Otra vez</button>
+            <button class="boton" id="unirme">Unirme</button>
+            <button class="boton sec" id="iniciar" hidden>Dar la salida</button>
           </div>
         </div>
       </div>
@@ -65,198 +69,311 @@
     <button class="salto" id="salto">SALTAR</button>
   </main>
 
-  <footer class="esc-pie">14 frames del kit: 8 de carrera y 6 de salto, anclados por los pies · canvas 2D, sin GPU</footer>
+  <footer class="esc-pie">Seis ninjas del kit · 8 frames de carrera y 6 de salto · sonido del kit · canvas 2D</footer>
 </div>
 
+<script src="sonidos.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
+  const leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || 'de-02';
+  const api = (ruta) => `/api/v1/live/${encodeURIComponent(leccion)}/carrera${ruta}`;
+
   const cv = $('cv'), ctx = cv.getContext('2d');
-  const AN = 900, AL = 400, SUELO = 330, TOPE = 40;
+  const AN = 900, AL = 400, SUELO = 318;
   const dpr = Math.min(2, devicePixelRatio || 1);
   cv.width = AN * dpr; cv.height = AL * dpr;
   cv.style.aspectRatio = AN + ' / ' + AL;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.imageSmoothingEnabled = false;
 
-  const imgNinja = new Image(); imgNinja.src = 'ninja.webp';
+  // ---------- sonido: base64 → AudioBuffer (sin fetch ni data:)
+  let actx = null; const buf = {};
+  function despertarAudio() {
+    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; } }
+    if (actx.state === 'suspended') actx.resume();
+    for (const n of Object.keys(window.SONIDOS || {})) precargar(n);
+  }
+  function precargar(n) {
+    if (buf[n] || !actx || !window.SONIDOS || !window.SONIDOS[n]) return;
+    try {
+      const b = atob(window.SONIDOS[n]);
+      const u = new Uint8Array(b.length);
+      for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+      actx.decodeAudioData(u.buffer, (d) => { buf[n] = d; }, () => {});
+    } catch (_) {}
+  }
+  function son(n, vol = .55) {
+    if (!actx || !buf[n]) return;
+    const s = actx.createBufferSource(); s.buffer = buf[n];
+    const g = actx.createGain(); g.gain.value = vol;
+    s.connect(g); g.connect(actx.destination); s.start();
+  }
+
+  // ---------- avatares
+  const AVATARES = ['joven', 'sabio', 'chunin', 'renegado', 'espiral', 'plata'];
+  const img = {}; let avatar = 'joven';
+  for (const a of AVATARES) { const i = new Image(); i.src = `n_${a}.webp`; img[a] = i; }
   const imgRoca = new Image(); imgRoca.src = 'piedra_pequena.webp';
   const imgTronco = new Image(); imgTronco.src = 'tronco.webp';
-  const TILE = 216, ALTO = 204, ESC = 0.52;
 
-  const G = { v0: -640, g: 1750, velIni: 250, velMax: 430, tGolpe: 0.7, invul: 0.9 };
-  let fase = 'espera', t = 0, cuenta = 0, puntos = 0, metros = 0, rocas = 0;
-  let camX = 0, vel = G.velIni, destello = 0, record = +(localStorage.getItem('ninja-record') || 0);
-  const ninja = { y: 0, vy: 0, suelo: true, estado: 'RUN', frame: 0, golpe: 0, invul: 0 };
-  let obstaculos = [], polvo = [], proximo = 1.2;
+  const caja = $('avatares');
+  for (const a of AVATARES) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.title = a;
+    b.setAttribute('aria-pressed', String(a === avatar));
+    const i = document.createElement('img'); i.src = `a_${a}.webp`; i.alt = a;
+    b.appendChild(i);
+    b.onclick = () => {
+      avatar = a; despertarAudio();
+      for (const o of caja.children) o.setAttribute('aria-pressed', String(o === b));
+    };
+    caja.appendChild(b);
+  }
+
+  // ---------- estado
+  let estado = 'lobby', yo = null, lista = [], salidaEn = 0, seed = 1, largo = 840;
+  const ninja = { dist: 0, y: 0, vy: 0, suelo: true, estado: 'RUN', frame: 0, golpe: 0, invul: 0, golpes: 0 };
+  let obstaculos = [], polvo = [], destello = 0, t = 0, corriendo = false, llegada = 0;
+
+  async function pedir(ruta, cuerpo) {
+    const r = await fetch(api(ruta), {
+      method: cuerpo ? 'POST' : 'GET', credentials: 'same-origin',
+      headers: cuerpo ? { 'Content-Type': 'application/json' } : {},
+      body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+    });
+    return { ok: r.ok, datos: await r.json().catch(() => ({})) };
+  }
 
   function reiniciar() {
-    t = 0; puntos = 0; metros = 0; rocas = 0; camX = 0; vel = G.velIni;
-    destello = 0; obstaculos = []; polvo = []; proximo = 1.2;
-    Object.assign(ninja, { y: 0, vy: 0, suelo: true, estado: 'RUN', frame: 0, golpe: 0, invul: 0 });
+    Object.assign(ninja, { dist: 0, y: 0, vy: 0, suelo: true, estado: 'RUN', frame: 0, golpe: 0, invul: 0, golpes: 0 });
+    obstaculos = []; polvo = []; destello = 0; t = 0; llegada = 0;
+  }
+  reiniciar();
+
+  let rnd = () => Math.random();
+  function sembrar(s) {
+    let x = (s || 1) % 2147483647 || 1;
+    rnd = () => { x = (x * 48271) % 2147483647; return x / 2147483647; };
   }
 
-  function empezar() {
-    reiniciar(); fase = 'cuenta'; cuenta = 3.0;
-    $('capa').hidden = true;
+  async function refrescar() {
+    const { datos } = await pedir('');
+    if (!datos || !datos.estado) return;
+    estado = datos.estado;
+    seed = datos.seed || seed; largo = datos.largo || largo;
+    lista = datos.corredores || [];
+    if (estado === 'cuenta') salidaEn = datos.salida_ms;
+    pintaPanel();
   }
 
-  function saltar() {
-    if (fase === 'espera' || fase === 'fin') return empezar();
-    if (fase !== 'corre' || !ninja.suelo) return;
-    ninja.vy = G.v0; ninja.suelo = false; ninja.estado = 'SALTO';
-    for (let i = 0; i < 6; i++) {
-      polvo.push({ x: camX + 60 + Math.random() * 30, y: SUELO - 4, vx: -40 - Math.random() * 100, vy: -20 - Math.random() * 70, vida: .5 });
+  function pintaPanel() {
+    const n = lista.length;
+    if (estado === 'lobby') {
+      $('panel').hidden = false;
+      $('panel-titulo').textContent = yo ? `Vestíbulo · ${n} anotados` : 'Elige tu ninja';
+      $('panel-texto').textContent = yo
+        ? 'Esperando la salida. Puedes cambiarte de ninja hasta que arranque.'
+        : 'Cuando el instructor dé la salida, corren todos a la vez.';
+      $('unirme').hidden = !!yo;
+      $('iniciar').hidden = !(yo || n > 0);
+      $('tiempo').textContent = 'vestíbulo';
+    } else if (estado === 'cuenta') {
+      $('panel').hidden = false;
+      $('panel-titulo').textContent = '¡Preparados!';
+      $('panel-texto').textContent = 'La salida es para todos al mismo tiempo.';
+      $('unirme').hidden = true; $('iniciar').hidden = true;
+    } else if (estado === 'corre') {
+      $('panel').hidden = true;
+    } else if (estado === 'fin') {
+      $('panel').hidden = false;
+      const puesto = lista.findIndex(c => c.id === yo) + 1;
+      $('panel-titulo').textContent = puesto === 1 ? '¡Ganaste!' : `${puesto || '—'}º puesto`;
+      $('panel-texto').textContent = `${llegada ? llegada.toFixed(1) + ' s · ' : ''}${ninja.golpes} golpes · ${Math.round(ninja.dist)} m`;
+      $('iniciar').hidden = false;
+      $('unirme').hidden = true;
     }
   }
 
-  function terminar() {
-    fase = 'fin';
-    if (puntos > record) { record = puntos; localStorage.setItem('ninja-record', String(record)); }
-    $('capa').hidden = false;
-    $('capa-titulo').innerHTML = puntos > 0 ? `<span class="grande">${puntos}</span> pts` : 'Se acabó';
-    $('capa-texto').textContent = `${metros} m · ${rocas} rocas esquivadas · récord ${record} pts`;
-    $('empezar').hidden = true;
-    $('repetir').hidden = false;
-  }
+  $('unirme').onclick = async () => {
+    despertarAudio();
+    const { ok, datos } = await pedir('/unir', { avatar });
+    if (!ok) { $('panel-texto').textContent = (datos.error && datos.error.message) || 'no se pudo entrar'; return; }
+    yo = datos.id;
+    refrescar();
+  };
+  $('iniciar').onclick = async () => {
+    despertarAudio();
+    const { ok, datos } = await pedir('/iniciar', {});
+    if (!ok) { $('panel-texto').textContent = 'Solo el instructor puede dar la salida.'; return; }
+    reiniciar(); salidaEn = datos.salida_ms; estado = 'cuenta'; seed = datos.seed; sembrar(seed); son('cuenta_regresiva');
+    pintaPanel();
+  };
 
+  setInterval(() => { if (estado !== 'corre') refrescar(); }, 1500);
+  setInterval(async () => {
+    if (estado !== 'corre') return;
+    const { datos } = await pedir('');
+    lista = datos.corredores || lista;
+    if (yo) await pedir('/paso', { dist: Math.round(ninja.dist), golpes: ninja.golpes });
+  }, 700);
+
+  // ---------- juego
+  function saltar() {
+    despertarAudio();
+    if (estado !== 'corre' || !corriendo || !ninja.suelo) return;
+    ninja.vy = -640; ninja.suelo = false; ninja.estado = 'SALTO'; son('salto', .5);
+  }
   addEventListener('keydown', (e) => {
     if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) { e.preventDefault(); saltar(); }
-    else if (e.key === 'Enter' && fase !== 'corre') empezar();
   });
   cv.addEventListener('pointerdown', saltar);
   $('salto').addEventListener('pointerdown', saltar);
-  $('empezar').onclick = empezar;
-  $('repetir').onclick = empezar;
 
   function paso(dt) {
     t += dt;
-    if (t >= TOPE) return terminar();
-
-    const factor = ninja.estado === 'HIT' ? .45 : 1;
-    vel = Math.min(G.velMax, G.velIni + t * 3.2);
-    camX += vel * factor * dt;
-    metros = Math.floor(camX / 10);
-
-    if (!ninja.suelo) {
-      ninja.vy += G.g * dt;
-      ninja.y += ninja.vy * dt;
-      if (ninja.y >= 0) { ninja.y = 0; ninja.vy = 0; ninja.suelo = true; if (ninja.estado === 'SALTO') ninja.estado = 'RUN'; }
-    }
-    ninja.frame += dt * 12;
     if (ninja.golpe > 0) { ninja.golpe -= dt; if (ninja.golpe <= 0) ninja.estado = ninja.suelo ? 'RUN' : 'SALTO'; }
     if (ninja.invul > 0) ninja.invul -= dt;
 
-    if (t >= proximo) {
-      const roca = Math.random() < .7;
-      const img = roca ? imgRoca : imgTronco;
-      const alto = roca ? 64 : 52;
-      obstaculos.push({ x: camX + AN - 110, w: (img.width / img.height) * alto, h: alto, sube: roca ? 10 : 6, img, golpeada: false, contada: false });
-      proximo = t + 1.15 + Math.random() * .7;
-    }
-    obstaculos = obstaculos.filter(o => o.x - camX > -260);
+    const factor = ninja.estado === 'HIT' ? .45 : 1;
+    ninja.dist += ((Math.min(430, 250 + t * 3.2) * factor) / 10) * dt;
 
-    // hitbox del cuerpo, no del dibujo
+    if (!ninja.suelo) {
+      ninja.vy += 1750 * dt; ninja.y += ninja.vy * dt;
+      if (ninja.y >= 0) { ninja.y = 0; ninja.vy = 0; ninja.suelo = true; if (ninja.estado === 'SALTO') ninja.estado = 'RUN'; son('aterrizaje', .3); }
+    }
+    ninja.frame += dt * 12;
+
+    const ultimo = obstaculos.length ? obstaculos[obstaculos.length - 1].x : 0;
+    if (ultimo < ninja.dist + 700) {
+      const x = Math.max(ultimo + 55, ninja.dist + 480 + rnd() * 260);
+      obstaculos.push({ x, tipo: rnd() < .7 ? 'roca' : 'tronco', golpeada: false });
+    }
     const nb = { l: 176, r: 232, t: SUELO - 74 + ninja.y, b: SUELO - 4 + ninja.y };
     for (const o of obstaculos) {
-      const ox = o.x - camX;
-      if (!o.golpeada && ninja.invul <= 0) {
-        const ob = { l: ox + 8, r: ox + o.w - 8, t: SUELO + o.sube - o.h + 6, b: SUELO + o.sube };
-        if (nb.l < ob.r && nb.r > ob.l && nb.t < ob.b && nb.b > ob.t) {
-          o.golpeada = true; ninja.golpe = G.tGolpe; ninja.invul = G.invul;
-          ninja.estado = 'HIT'; destello = .18;
-          for (let i = 0; i < 12; i++) {
-            polvo.push({ x: camX + ox + Math.random() * 24, y: SUELO - 8, vx: -70 - Math.random() * 130, vy: -70 - Math.random() * 90, vida: .6 });
-          }
-        }
+      const x = 150 + (o.x - ninja.dist) * 6;
+      const alto = o.tipo === 'roca' ? 64 : 52;
+      const ancho = o.tipo === 'roca' ? 120 : 175;
+      const ob = { l: x + 6, r: x + ancho - 6, t: SUELO - alto + 8, b: SUELO + 6 };
+      if (!o.golpeada && ninja.invul <= 0 && nb.l < ob.r && nb.r > ob.l && nb.t < ob.b && nb.b > ob.t) {
+        o.golpeada = true; ninja.golpe = .7; ninja.invul = .9; ninja.golpes++;
+        ninja.estado = 'HIT'; destello = .18; son('colision', .5);
+        for (let i = 0; i < 10; i++) polvo.push({ x: 190 + Math.random() * 30, y: SUELO - 6, vx: -70 - Math.random() * 120, vy: -60 - Math.random() * 90, vida: .6 });
       }
-      if (!o.contada && ox + o.w < 176) { o.contada = true; if (!o.golpeada) { rocas++; puntos += 5; } }
     }
-
-    if (destello > 0) destello -= dt;
+    obstaculos = obstaculos.filter(o => o.x > ninja.dist - 300);
     for (const p of polvo) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 240 * dt; p.vida -= dt; }
     polvo = polvo.filter(p => p.vida > 0);
+    if (destello > 0) destello -= dt;
 
-    $('tiempo').textContent = (TOPE - t).toFixed(1) + ' s';
-    $('puntos').textContent = `${puntos + metros} pts · ${metros} m`;
+    if (ninja.dist >= largo && !llegada) {
+      llegada = t; corriendo = false; son('meta', .6);
+      pedir('/fin', { ms: Math.round(t * 1000) }).then(() => { estado = 'fin'; return refrescar(); }).then(() => pintaPanel());
+    }
   }
 
-  function fondo() {
+  function fondo(camX) {
     const g = ctx.createLinearGradient(0, 0, 0, SUELO);
     g.addColorStop(0, '#0f1430'); g.addColorStop(.6, '#2b2f55'); g.addColorStop(1, '#5d4a5c');
     ctx.fillStyle = g; ctx.fillRect(0, 0, AN, SUELO);
     ctx.fillStyle = 'rgba(255,242,205,.9)';
-    ctx.beginPath(); ctx.arc(770, 78, 28, 0, Math.PI * 2); ctx.fill();
-
+    ctx.beginPath(); ctx.arc(770, 76, 26, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#181d38';
     for (let i = -1; i < 7; i++) {
       const x = i * 300 - ((camX * .18) % 300);
-      ctx.beginPath(); ctx.moveTo(x, SUELO); ctx.lineTo(x + 130, 180); ctx.lineTo(x + 260, SUELO); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x, SUELO); ctx.lineTo(x + 130, 175); ctx.lineTo(x + 260, SUELO); ctx.closePath(); ctx.fill();
     }
     ctx.fillStyle = '#111834';
     for (let i = -1; i < 13; i++) {
       const x = i * 140 - ((camX * .45) % 140);
-      ctx.fillRect(x + 44, 246, 10, SUELO - 246);
-      ctx.beginPath(); ctx.moveTo(x + 16, 248); ctx.lineTo(x + 49, 198); ctx.lineTo(x + 82, 248); ctx.closePath(); ctx.fill();
+      ctx.fillRect(x + 44, 240, 10, SUELO - 240);
+      ctx.beginPath(); ctx.moveTo(x + 16, 242); ctx.lineTo(x + 49, 194); ctx.lineTo(x + 82, 242); ctx.closePath(); ctx.fill();
     }
     ctx.fillStyle = '#0a0d1c'; ctx.fillRect(0, SUELO, AN, AL - SUELO);
     ctx.strokeStyle = 'rgba(124,240,168,.35)'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(0, SUELO + .5); ctx.lineTo(AN, SUELO + .5); ctx.stroke();
     ctx.strokeStyle = 'rgba(124,240,168,.16)'; ctx.lineWidth = 3;
     for (let i = -1; i < 32; i++) {
-      const x = i * 64 - (camX % 64);
+      const x = i * 64 - ((camX * 10) % 64);
       ctx.beginPath(); ctx.moveTo(x, SUELO + 16); ctx.lineTo(x + 30, SUELO + 16); ctx.stroke();
     }
   }
 
+  function pintaNinja(id, dist, y, frame, est, alfa, escala) {
+    const im = img[id] || img.joven;
+    if (!im || !im.complete || !im.naturalWidth) return;
+    const TILE = Math.round(im.width / 14), ALTO2 = im.height;
+    const idx = est === 'SALTO' ? 8 + Math.min(5, Math.floor(frame)) : Math.floor(frame) % 8;
+    const w = TILE * escala, h = ALTO2 * escala;
+    ctx.globalAlpha = alfa;
+    ctx.drawImage(im, idx * TILE, 0, TILE, ALTO2, 150 + (dist - ninja.dist) * 6, SUELO - h + y, w, h);
+    ctx.globalAlpha = 1;
+  }
+
   function pintar() {
-    fondo();
+    fondo(ninja.dist * 10);
     for (const o of obstaculos) {
-      const x = o.x - camX;
-      if (x < -300 || x > AN + 40) continue;
-      ctx.drawImage(o.img, x, SUELO + o.sube - o.h, o.w, o.h);
+      const x = 150 + (o.x - ninja.dist) * 6;
+      if (x < -220 || x > AN + 60) continue;
+      const im = o.tipo === 'roca' ? imgRoca : imgTronco;
+      const alto = o.tipo === 'roca' ? 64 : 52;
+      if (im && im.complete) ctx.drawImage(im, x, SUELO - alto + 10, (im.width / im.height) * alto, alto);
     }
+    lista.filter(c => c.id !== yo).slice(0, 4).forEach((c, i) => {
+      pintaNinja(c.avatar, c.dist, -8 - i * 14, t * 12, 'RUN', .5, .36);
+    });
+    // halo detrás del corredor: el traje es negro y el fondo también
+    const luz = ctx.createRadialGradient(210, SUELO - 60, 10, 210, SUELO - 60, 150);
+    luz.addColorStop(0, 'rgba(255,236,170,.22)'); luz.addColorStop(1, 'rgba(255,236,170,0)');
+    ctx.fillStyle = luz; ctx.fillRect(40, SUELO - 220, 340, 260);
+    pintaNinja(avatar, ninja.dist, ninja.y, ninja.frame, ninja.estado, 1, .52);
     for (const p of polvo) {
       ctx.globalAlpha = Math.max(0, Math.min(1, p.vida * 1.6));
       ctx.fillStyle = '#cdbba8';
-      ctx.beginPath(); ctx.arc(p.x - camX, p.y, 2 + (0.6 - p.vida) * 14, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2 + (.6 - p.vida) * 14, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
-
-    if (imgNinja.complete && imgNinja.naturalWidth) {
-      const idx = ninja.estado === 'SALTO'
-        ? 8 + Math.min(5, Math.floor((Math.abs(ninja.vy) / Math.abs(G.v0)) * 5.5))
-        : Math.floor(ninja.frame) % 8;
-      const w = TILE * ESC, h = ALTO * ESC;
-      if (!(ninja.estado === 'HIT' && Math.floor(t * 16) % 2 === 0)) {
-        ctx.drawImage(imgNinja, idx * TILE, 0, TILE, ALTO, 150, SUELO - h + ninja.y, w, h);
-      }
-    }
-
-    if (fase === 'cuenta') {
-      ctx.fillStyle = 'rgba(8,10,22,.5)'; ctx.fillRect(0, 0, AN, AL);
-      ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-      ctx.font = '800 92px system-ui, sans-serif';
-      ctx.fillText(cuenta > 0.35 ? String(Math.ceil(cuenta - 0.2)) : '¡YA!', AN / 2, AL / 2 + 26);
-      ctx.textAlign = 'left';
-    }
     if (destello > 0) { ctx.fillStyle = `rgba(255,90,90,${destello * 2.2})`; ctx.fillRect(0, 0, AN, AL); }
+
+    if (lista.length > 1 && (estado === 'corre' || estado === 'fin')) {
+      const top = lista.slice(0, 5);
+      ctx.fillStyle = 'rgba(10,12,26,.55)';
+      ctx.fillRect(AN - 216, 50, 202, 20 + top.length * 19);
+      ctx.font = '700 12px system-ui, sans-serif';
+      top.forEach((c, i) => {
+        ctx.fillStyle = c.id === yo ? '#7CF0A8' : '#fff';
+        ctx.fillText(`${i + 1}. ${String(c.nombre || 'Ninja').slice(0, 13)} · ${Math.round(c.dist)} m`, AN - 206, 68 + i * 19);
+      });
+    }
   }
 
   let previo = performance.now() / 1000;
   function bucle() {
     const ahora = performance.now() / 1000;
     const dt = Math.min(.05, ahora - previo); previo = ahora;
-    if (fase === 'cuenta') {
-      cuenta -= dt;
-      if (cuenta <= 0) { fase = 'corre'; t = 0; }
-      $('tiempo').textContent = TOPE.toFixed(1) + ' s';
-    } else if (fase === 'corre') paso(dt);
+
+    if (estado === 'cuenta') {
+      const falta = (salidaEn - Date.now()) / 1000;
+      $('tiempo').textContent = falta > 0 ? `sale en ${Math.ceil(falta)}` : '¡YA!';
+      if (falta <= 0 && !corriendo) {
+        reiniciar(); sembrar(seed); corriendo = true; estado = 'corre';
+        son('salida', .5);
+        $('panel').hidden = true;
+      }
+    }
+    if (estado === 'corre' && corriendo) {
+      paso(dt);
+      $('tiempo').textContent = `${Math.round(ninja.dist)} / ${largo} m`;
+      const delante = lista.filter(c => c.id !== yo && (c.fin_ms > 0 || c.dist > ninja.dist)).length;
+      $('puesto').textContent = `${delante + 1}º de ${Math.max(1, lista.length)}`;
+    }
     pintar();
     requestAnimationFrame(bucle);
   }
   requestAnimationFrame(bucle);
-  $('tiempo').textContent = TOPE.toFixed(1) + ' s';
+
+  despertarAudio();
+  refrescar();
 })();
 </script>
 </body>
