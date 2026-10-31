@@ -7,7 +7,7 @@
 <!--
   Escena del modo LIVE (DeepSeek Harness, sesión dh-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
   animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
-  Interacción: secuencia de capturas reales de dsh 0.2.1-rc.5 con globos que señalan dónde hacer clic (anterior/siguiente o flechas), tabla de errores y diferencias con la documentación. La clave nunca se escribe aquí.
+  Interacción: pestaña «En tu aula» (3 pasos con aula dsh, salida de terminal rotulada como ilustración) y secuencia de capturas reales de dsh 0.2.1-rc.5 con globos que señalan dónde hacer clic (anterior/siguiente o flechas), tabla de errores y diferencias con la documentación. La clave nunca se escribe aquí.
 -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <style id="esc-propio">
@@ -49,6 +49,19 @@ body { font-size: clamp(16px, calc(1.28vw + .52vh), 32px); }
 .x-aviso { padding: .5em .9em; border-radius: .8em; background: var(--bad-bg); border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent); color: var(--fg); font-size: .78em; }
 .x-aviso b { color: var(--bad); }
 [data-v][hidden] { display: none !important; }
+.x-aula { display: grid; grid-template-columns: 1.05fr 1fr; gap: 1.4vw; align-items: start; }
+.x-aula > * { min-width: 0; }
+.x-aula .x-esq, .x-aula .x-rb { white-space: normal; }
+.x-a3 { margin: 0; padding: 0; list-style: none; display: grid; gap: .55em; }
+.x-a3 li { display: grid; grid-template-columns: 1.9em 1fr; gap: .7em; align-items: start; padding: .55em .8em; border-radius: .8em; background: var(--s1); border: 1px solid var(--line); box-shadow: var(--card-shadow); font-size: .8em; line-height: 1.3; }
+.x-a3 .n { display: grid; place-items: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--gold-bg); color: var(--gold); font-weight: 900; }
+.x-a3 b.cm { display: table; font: 700 1.02em var(--mono); background: var(--s3); padding: .08em .45em; border-radius: .35em; margin-bottom: .15em; }
+.x-a3 small { display: block; color: var(--muted); font-size: .88em; }
+.x-tterm { padding: .9em 1.1em; border-radius: .8em; background: #14122b; color: #e9e6ff; font: 600 .62em/1.5 var(--mono); white-space: pre-wrap; margin: 0; }
+.x-tterm .c { color: #8b87b8; } .x-tterm .p { color: #8e7dff; } .x-tterm b { color: #ffd27a; }
+.x-aula .x-falla { font-size: .72em; }
+.x-otros { font-size: .7em; line-height: 1.4; margin: 0; }
+.x-otros code { font: 600 .95em var(--mono); background: var(--s3); padding: .05em .35em; border-radius: .3em; }
 
 .esc { padding: 1.5vh 3vw 1.2vh; gap: 1vh; }
 .x-cab4 { display: flex; align-items: center; justify-content: space-between; gap: 1.5vw; flex-wrap: wrap; }
@@ -106,13 +119,39 @@ body { font-size: clamp(16px, calc(1.28vw + .52vh), 32px); }
     <div class="x-cab4">
       <h1 class="esc-titulo a-in">DeepSeek Harness: <em>del comando al primer prompt</em></h1>
       <div class="x-tabs" role="tablist" aria-label="Vistas">
-        <button type="button" class="x-tab" role="tab" data-vista="rec" aria-selected="true">Recorrido</button>
+        <button type="button" class="x-tab" role="tab" data-vista="aula" aria-selected="true">En tu aula · 3 pasos</button>
+        <button type="button" class="x-tab" role="tab" data-vista="rec" aria-selected="false">Recorrido con capturas</button>
         <button type="button" class="x-tab" role="tab" data-vista="err" aria-selected="false">Si falla: 401 · 402 · 429</button>
         <button type="button" class="x-tab" role="tab" data-vista="dif" aria-selected="false">Guía vs lo que verás</button>
       </div>
     </div>
 
-    <div class="x-rec" data-v="rec">
+    <div class="x-aula" data-v="aula">
+      <div class="x-vder">
+        <span class="x-rb">RUTA B · tu aula del LIVE: Node 24 y dsh 0.2.1-rc.5 ya instalados. No instalas nada en tu laptop</span>
+        <ol class="x-a3">
+          <li><span class="n">1</span><span><b class="cm">aula dsh clave</b>Pega tu API key desde tu gestor: no se ve al escribir. Queda solo en la memoria del aula (si el aula se reinicia, la vuelves a pegar); nunca en <code>/trabajo</code>.<small>Para borrarla: aula dsh olvidar</small></span></li>
+          <li><span class="n">2</span><span><b class="cm">aula dsh web</b>Arranca la interfaz web de dsh (unos segundos) en tu carpeta de trabajo y te imprime tu enlace.<small>Para pararla: aula dsh web parar · para ver qué hay: aula dsh estado</small></span></li>
+          <li><span class="n">3</span><span><b style="display:block">Abre el enlace en tu navegador</b>Es tuyo: lo abren solo tú y el instructor; no lo compartas. Verás la MISMA interfaz del recorrido con capturas: <b>Continue</b>, eliges modelo y escribes tu primer prompt.<small>La clave ya entró en el paso 1: no la pegues en la web. «Upload Session Log» viene apagado en el aula.</small></span></li>
+        </ol>
+      </div>
+      <div class="x-vizq">
+        <pre class="x-tterm" aria-label="Ilustración de la terminal del aula"><span class="p">$</span> <b>aula dsh clave</b>
+Pega tu API key de DeepSeek (no se ve al escribir) y pulsa Enter:
+Clave guardada para esta aula (solo en memoria del aula: se pierde si se reinicia; nunca va a /trabajo).
+Siguiente paso: aula dsh "describe tu tarea"   o   aula dsh web
+<span class="p">$</span> <b>aula dsh web</b>
+Arrancando la interfaz web de dsh … (espacio de trabajo: /trabajo/sistema)
+Lista. Abre este enlace en tu navegador (lleva tu acceso; no lo compartas):
+  jmd-learn.online/dsh/&lt;tú&gt;/?…
+Para ver su estado: aula dsh estado · para pararla: aula dsh web parar</pre>
+        <span class="x-esq">ilustración · no es una captura (el enlace real empieza por https y lleva tu acceso)</span>
+        <p class="x-otros">dsh trabaja en <code>/trabajo/sistema</code> (lo crea <code>aula sistema &lt;id&gt;</code>, escena 5) o en <code>/trabajo</code> si aún no lo tienes: tras la escena 5, <code>aula dsh web parar</code> y <code>aula dsh web</code>. Sin web: <code>aula dsh "tarea"</code> responde en la terminal con un resumen de uso.</p>
+        <div class="x-falla"><b>Si falla</b>«Aún no me diste tu clave» → paso 1. 401 → clave mal copiada: <code>aula dsh clave</code> otra vez. «Sin salida a internet por el proxy» o «esta aula no tiene la interfaz web» → cierra la terminal, vuelve a entrar al LIVE y, si sigue, avisa al instructor.</div>
+      </div>
+    </div>
+
+    <div class="x-rec" data-v="rec" hidden>
       <div class="x-vizq">
         <div class="x-vf" id="vf" aria-label="Captura de DeepSeek Harness">
           <img class="x-vi" id="vi" alt="" hidden>
@@ -132,7 +171,7 @@ body { font-size: clamp(16px, calc(1.28vw + .52vh), 32px); }
         </div>
       </div>
       <div class="x-vder">
-        <span class="x-rb">RUTA B: en el aula no corre dsh. Mira el recorrido y sigue; lo harás en tu laptop</span>
+        <span class="x-ra">RUTA A · tu laptop (Node 24.9+). En el aula es la misma interfaz desde el paso 2, sin pegar la clave</span>
         <h2 id="vt-t"></h2>
         <ol class="x-pasos" id="vt-h"></ol>
         <div class="x-ver"><b>Qué deberías ver</b><span id="vt-v"></span></div>
@@ -162,7 +201,7 @@ body { font-size: clamp(16px, calc(1.28vw + .52vh), 32px); }
   </main>
 
   <footer class="esc-pie">
-    <span class="esc-nota">Pulsa «Lo logré» cuando dsh abra en tu laptop con tu clave en Settings → Models (en el aula no corre dsh: mira el recorrido y sigue)</span>
+    <span class="esc-nota">Pulsa «Lo logré» cuando tu dsh abra y «Select model» muestre modelos: en el aula con aula dsh clave y aula dsh web; en tu laptop con npx y tu clave en Settings → Models</span>
   </footer>
 </div>
 
@@ -190,18 +229,18 @@ function pestanas(alCambiar) {
 (function () {
   var IMG = "../../comun/img/";
   var PASOS = [
-    { t: "Abre dsh con npx", term: true,
+    { t: "Laptop: abre dsh con npx", term: true,
       h: ["Comprueba <code>node -v</code>: debe ser v24.9 o mayor.", "En una carpeta de pruebas ejecuta <code>npx @deepseek-ai/dsh web</code>.", "No cierres la terminal: la primera vez tarda 5 a 6 minutos."],
-      v: "El navegador abre dsh en 127.0.0.1:3080. Para detenerlo: Ctrl+C en esa terminal.",
+      v: "El navegador abre dsh en 127.0.0.1:3080. Para detenerlo: Ctrl+C en esa terminal. (En el aula este paso es <code>aula dsh web</code>: pestaña «En tu aula».)",
       f: "«command not found: npx» → falta Node. Errores raros al arrancar → Node por debajo de 24.9. Si no abre solo, copia la dirección que imprime (lleva un token: no la compartas)." },
     { t: "Aviso de preview", img: "dsh-01-aviso-preview.webp", foco: [50, 52], z: 2, pins: [[64.7, 68, "Pulsa Continue", "t"]],
       h: ["Lee el aviso: DeepSeek Harness está en preview.", "Pulsa <b>Continue</b>."],
       v: "El aviso «Preview Notice» con un solo botón, Continue.",
-      f: "La página queda en blanco → recarga con F5; si sigue, mira la terminal: debe estar corriendo." },
+      f: "La página queda en blanco → recarga con F5; si sigue, mira la terminal: debe estar corriendo (en el aula: <code>aula dsh estado</code>)." },
     { t: "Get started: Add API Key", img: "dsh-02-inicio-get-started.webp", foco: [50, 55], z: 2.4, pins: [[51.9, 57, "Add API Key", "b"]],
       h: ["Aparece el diálogo <b>Get started</b>.", "Elige <b>Add API Key</b>. (Sign in es otra vía; en el curso usamos clave de API.)"],
       v: "Un diálogo con dos botones: Add API Key y Sign in.",
-      f: "¿Cerraste el diálogo? Lo mismo se hace en More → Settings → Models (paso 6)." },
+      f: "¿Cerraste el diálogo? Lo mismo se hace en More → Settings → Models (paso 6). En el aula la clave ya entró con <code>aula dsh clave</code>: si ves este diálogo, elige Configure later." },
     { t: "Add an API key (campo vacío)", img: "dsh-03-add-api-key.webp", foco: [50, 50], z: 2, pins: [[50, 53.6, "Aquí pegas tu clave, en TU dsh", "t"]],
       h: ["Haz clic en el campo <b>API key</b>.", "Pega tu clave desde tu gestor de contraseñas.", "<b>Configure later</b> lo deja para después."],
       v: "El campo vacío y el botón Save and continue apagado hasta que escribas algo.",
@@ -223,7 +262,7 @@ function pestanas(alCambiar) {
       v: "La tarjeta DeepSeek con el campo lleno. En la captura, clave de relleno.",
       f: "No pasa nada tras Apply → revisa saldo (402) y la clave (401) en la pestaña «Si falla»." },
     { t: "Settings → General: Upload Session Log", img: "dsh-08-settings-privacidad-log.webp", foco: [58, 75], z: 2, pins: [[74.7, 81.4, "Upload Session Log", "t"]], decide: true,
-      h: ["Abre <b>General</b> y baja hasta «Upload Session Log…».", "Viene <b>activado</b> por defecto: envía el registro de tus sesiones a DeepSeek para mejorar sus modelos.", "Decide tú. En clase nadie te lo exige."],
+      h: ["Abre <b>General</b> y baja hasta «Upload Session Log…».", "En tu laptop viene <b>activado</b> por defecto: envía el registro de tus sesiones a DeepSeek para mejorar sus modelos. Decide tú.", "En el aula viene <b>apagado</b> por configuración y no se puede encender."],
       v: "Un interruptor encendido junto a «Help improve DeepSeek models and products».",
       f: "No lo encuentras: está al final de General, junto a «Current version»." },
     { t: "Elegir el espacio de trabajo", img: "dsh-09-menu-workspace.webp", foco: [40, 52], z: 2.2, pins: [[38.75, 46.7, "Default workspace ▾", "t"], [38.6, 55.6, "Add workspace…", "r"]],
@@ -246,7 +285,7 @@ function pestanas(alCambiar) {
     ["Elige «Choose workspace»: sin carpeta elegida el cuadro de texto no se activa.", "Ya existe un «Default workspace» y el cuadro está activo. «Choose workspace» solo sale si falla crear ese espacio."],
     ["La clave se pone en Settings → Models.", "Al abrir sale primero un diálogo «Get started» con Add API Key y Sign in."],
     ["«Add workspace…» abre el selector de carpetas del sistema operativo.", "No pudimos capturar esa ventana nativa: verifica en tu pantalla que la carpeta quede elegida."],
-    ["Node 24.9 o mayor.", "Lo probamos con Node 26.4; con 24.2 (por debajo del mínimo) no. Mantente en 24.9 o más."]
+    ["Node 24.9 o mayor.", "En tu laptop lo probamos con Node 26.4; con 24.2 (por debajo del mínimo) no. Mantente en 24.9 o más. En el aula ya viene Node 24 con dsh."]
   ];
 
   var vf = $("#vf"), vi = $("#vi"), vt = $("#vt"), vp = $("#vp"), paso = 0, cerca = true;

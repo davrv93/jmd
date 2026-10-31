@@ -1,5 +1,7 @@
 # Kit «Foto del sistema» (para tu laptop)
 
+> **En el aula del LIVE no necesitas este kit:** ya trae `dsh`, la skill (`/opt/skills-curso/foto-del-sistema/`) y `aula sistema foto`. Este kit es para la Ruta A, cuando trabajas en tu laptop.
+
 Con este kit tomas la **foto** de un sistema web de práctica —un inventario verificable y reproducible— y la usas con tu agente (DeepSeek Harness) para **describir el sistema por roles y auditar su seguridad** sin releer todo el código.
 
 ## Qué trae

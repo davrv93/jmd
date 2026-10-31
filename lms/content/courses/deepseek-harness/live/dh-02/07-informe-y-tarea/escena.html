@@ -122,7 +122,7 @@
   </main>
 
   <footer class="esc-pie">
-    <span class="esc-nota">Ruta A: tus dos corridas con dsh. Ruta B (aula): practica el informe con el ejemplo y mide la foto con <code>time aula sistema foto</code>; entrega el repo desde el LMS (URL + commit). Las cifras del ejemplo son inventadas.</span>
+    <span class="esc-nota">Tus dos corridas con dsh: en el aula (Ruta B) copia las cifras del RESUMEN DE USO de <code>aula dsh "…"</code>; en tu laptop (Ruta A), de jq y time. Entrega el repo desde el LMS (URL + commit). Las cifras del ejemplo son inventadas.</span>
   </footer>
 </div>
 
@@ -157,7 +157,7 @@
   var fmt = function (n) { return String(Math.round(n * 10) / 10).replace(/\B(?=(\d{3})+(?!\d))/g, " "); };
   function rel(a, b) { if (a === null || b === null || a === 0) return "—"; var r = b / a; return r < 1 ? (Math.round((1 - r) * 100)) + " % menos" : (r > 1 ? (Math.round((r - 1) * 100)) + " % más" : "igual"); }
   function informe() {
-    var L = ["# Informe de consumo · <id de tu sistema>", "", "Tarea de referencia: Describe qué puede hacer cada rol de mi sistema.", "Modelo y hora de las corridas (Lima): <modelo> · <hora A> y <hora B> (según la guía, el precio pico empieza ~20:00 Lima: verifícalo y compara tokens, no dólares)", "Huella global de la foto: <12 primeros caracteres>", "", "## Ficha base (corrida A)", "", "- Cómo la corrí: copia sin foto ni AGENTS.md · npx @deepseek-ai/dsh --profile headless --json", "- De dónde salió cada número: Usage (clave <nombre>), A.jsonl (jq) y time", "", "## Tabla A/B", "", "| Medida | A · sin foto | B · con foto | B frente a A |", "|---|---|---|---|"];
+    var L = ["# Informe de consumo · <id de tu sistema>", "", "Tarea de referencia: Describe qué puede hacer cada rol de mi sistema.", "Modelo y hora de las corridas (Lima): <modelo> · <hora A> y <hora B> (según la guía, el precio pico empieza ~20:00 Lima: verifícalo y compara tokens, no dólares)", "Huella global de la foto: <12 primeros caracteres>", "", "## Ficha base (corrida A)", "", "- Cómo la corrí: sin foto ni AGENTS.md · <aula: aula dsh \"…\" | laptop: npx @deepseek-ai/dsh --profile headless --json>", "- De dónde salió cada número: Usage (clave <nombre>) y <aula: RESUMEN DE USO de aula dsh | laptop: A.jsonl con jq y time>", "", "## Tabla A/B", "", "| Medida | A · sin foto | B · con foto | B frente a A |", "|---|---|---|---|"];
     var tot = { a: null, b: null };
     MED.forEach(function (m) { var a = num("a-" + m[0]), b = num("b-" + m[0]); L.push("| " + m[1] + " | " + (a === null ? "—" : fmt(a)) + " | " + (b === null ? "—" : fmt(b)) + " | " + rel(a, b) + " |"); });
     var aa = num("a-ha"), af = num("a-hf"), ba = num("b-ha"), bf = num("b-hf");
@@ -176,11 +176,11 @@
   }
   function rutina() {
     return ["# Rutina de consumo reproducible", "", "Sistema: <id> · Tarea: describir qué puede hacer cada rol. Alguien de tu equipo debe poder seguirla sin ti.", "",
-      "1. Foto al día: `node skills/foto-del-sistema/motor/foto.mjs .` (si la huella global cambió, la foto vieja ya no vale).",
-      "2. Medir: `time npx @deepseek-ai/dsh --profile headless --json \"<tarea>\" > docs/medicion/B.jsonl`",
+      "1. Foto al día: `aula sistema foto` en el aula o `node skills/foto-del-sistema/motor/foto.mjs .` en la laptop (si la huella global cambió, la foto vieja ya no vale).",
+      "2. Medir: en el aula `aula dsh \"<tarea>\" | tee docs/medicion/B.txt` (trae el RESUMEN DE USO); en la laptop `time npx @deepseek-ai/dsh --profile headless --json \"<tarea>\" > docs/medicion/B.jsonl`",
       "3. Leer poco: el agente lee AGENTS.md y FOTO/FOTO.md y abre solo fragmentos (`sed -n 'a,bp' archivo`), máximo <N> aperturas.",
       "4. Calidad: aplicar los 5 criterios; si baja alguno, el ahorro no cuenta.",
-      "5. Anotar: sumar el uso con jq y actualizar docs/INFORME_CONSUMO.md (tabla A/B y huella).", "",
+      "5. Anotar: copiar el RESUMEN DE USO (aula) o sumar el uso con jq (laptop) y actualizar docs/INFORME_CONSUMO.md (tabla A/B y huella).", "",
       "Prohibido en esta rutina: abrir todo js/ «por si acaso», repetir una llamada «para estar seguro» sin una comprobación nueva."].join("\n");
   }
   function gen() { q("out").value = tab === 1 ? informe() : rutina(); if (tab === 2) informe(); }

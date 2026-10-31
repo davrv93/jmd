@@ -1,10 +1,16 @@
 package aula
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"net"
+	"os/exec"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestArgsAulaClaveDeJmd(t *testing.T) {
@@ -149,5 +155,101 @@ func TestVersionDir(t *testing.T) {
 	}
 	if len(vistos) != 2 {
 		t.Errorf("una carpeta mala no llega a ejecutar nada: %d", len(vistos))
+	}
+}
+
+// AULA_SUB, AULA_DSH_URL y AULA_DSH_HOST solo con LMS_PUBLIC_URL definida; y entran en la firma (recrean el aula).
+func TestArgsAulaEntornoDsh(t *testing.T) {
+	sin := &Aula{}
+	if j := strings.Join(sin.Args("u1"), " "); strings.Contains(j, "AULA_") {
+		t.Errorf("sin PublicURL no hay variables AULA_*: %s", j)
+	}
+	a := &Aula{PublicURL: "https://jmd-learn.online/"}
+	j := strings.Join(a.Args("u1"), " ")
+	for _, quiere := range []string{"-e AULA_SUB=u1", "-e AULA_DSH_URL=https://jmd-learn.online/dsh/u1/", "-e AULA_DSH_HOST=jmd-learn.online"} {
+		if !strings.Contains(j, quiere) {
+			t.Errorf("falta %q en %s", quiere, j)
+		}
+	}
+	if !strings.HasSuffix(j, "jmd/aula:latest sleep 2147483647") || !strings.Contains(j, "--label "+EtiquetaFirma+"="+a.Firma("u1")) {
+		t.Errorf("imagen y firma siguen al final: %s", j)
+	}
+	if a.Firma("u1") == sin.Firma("u1") {
+		t.Errorf("la firma debe cambiar al definir PublicURL")
+	}
+	if h := strings.Join((&Aula{PublicURL: "http://localhost:8080"}).Args("u1"), " "); !strings.Contains(h, "AULA_DSH_HOST=localhost:8080") {
+		t.Errorf("host con puerto: %s", h)
+	}
+	if m := strings.Join((&Aula{PublicURL: "no-es-url"}).Args("u1"), " "); strings.Contains(m, "AULA_") {
+		t.Errorf("URL inválida: nada: %s", m)
+	}
+}
+
+// El relé de Dial debe salir cuando el servidor cierra aunque su entrada siga abierta (el nc de busybox no lo
+// hacía y el WebSocket de dsh quedaba colgado), y pasar el cierre de la entrada como semicierre.
+func TestRelayAula(t *testing.T) {
+	py, err := exec.LookPath("python3")
+	if err != nil {
+		t.Skip("sin python3 en esta máquina")
+	}
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	puerto := fmt.Sprint(ln.Addr().(*net.TCPAddr).Port)
+	correr := func(t *testing.T, cerrarEntrada bool, entrada string) (string, time.Duration) {
+		cmd := exec.Command(py, "-I", "-S", "-c", RelayAula, puerto)
+		in, _ := cmd.StdinPipe()
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		if err := cmd.Start(); err != nil {
+			t.Fatal(err)
+		}
+		defer in.Close()
+		_, _ = io.WriteString(in, entrada)
+		if cerrarEntrada {
+			in.Close()
+		}
+		t0 := time.Now()
+		hecho := make(chan error, 1)
+		go func() { hecho <- cmd.Wait() }()
+		select {
+		case err := <-hecho:
+			if err != nil {
+				t.Fatalf("el relé falló: %v", err)
+			}
+		case <-time.After(5 * time.Second):
+			_ = cmd.Process.Kill()
+			t.Fatal("el relé no salió tras cerrar el servidor (entrada abierta)")
+		}
+		return out.String(), time.Since(t0)
+	}
+
+	// 1) El servidor escribe y cierra; la entrada del relé sigue abierta: debe salir igual.
+	go func() {
+		c, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		_, _ = io.WriteString(c, "hola")
+		c.Close()
+	}()
+	if got, _ := correr(t, false, ""); got != "hola" {
+		t.Fatalf("servidor que cierra: %q", got)
+	}
+
+	// 2) Semicierre: el relé manda «abc», cierra su entrada; el servidor lee hasta EOF, contesta y cierra.
+	go func() {
+		c, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		b, _ := io.ReadAll(c)
+		_, _ = io.WriteString(c, string(b)+"-fin")
+		c.Close()
+	}()
+	if got, _ := correr(t, true, "abc"); got != "abc-fin" {
+		t.Fatalf("semicierre: %q", got)
 	}
 }

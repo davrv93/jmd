@@ -14,6 +14,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"net/url"
 	"os/exec"
 	"sort"
 	"strings"
@@ -29,6 +30,10 @@ type Aula struct {
 	Token   string // token del gateway de IA que recibe el asistente (OSITO_TOKEN); vacío = sin IA en la nube
 	Memoria string // tope de RAM (y de RAM+swap) del contenedor; por defecto MemoriaPorDefecto
 	Clase   *Clase // base de Postgres e instancia de WhatsApp por alumno (clase 3); nil = sin ellas
+	// PublicURL es LMS_PUBLIC_URL tal como lo definió el operador (vacío = no definida). Si está, el aula recibe
+	// AULA_SUB, AULA_DSH_URL y AULA_DSH_HOST para que «aula dsh web» sepa bajo qué dirección pública lo
+	// publica el LMS (/dsh/<sub>/). Entra en la firma: definirla o cambiarla recrea las aulas.
+	PublicURL string
 
 	// run permite sustituir la ejecución del binario en las pruebas.
 	run func(ctx context.Context, args ...string) (string, error)
@@ -121,8 +126,27 @@ func (a *Aula) argsSinFirma(userID string) []string {
 		// jmd lee la clave de JMD_API_KEY; el asistente, OSITO_TOKEN.
 		args = append(args, "-e", "OSITO_TOKEN="+a.Token, "-e", "JMD_TOKEN="+a.Token, "-e", "JMD_API_KEY="+a.Token)
 	}
+	args = append(args, a.entornoDsh(userID)...)
 	args = append(args, a.Clase.entorno(userID)...)
 	return append(args, a.imagen(), "sleep", "2147483647")
+}
+
+// entornoDsh: las variables con las que «aula dsh web» arma --public-url y --trusted-host. Solo si PublicURL
+// está definida y es una URL con host.
+func (a *Aula) entornoDsh(userID string) []string {
+	base := strings.TrimRight(strings.TrimSpace(a.PublicURL), "/")
+	if base == "" {
+		return nil
+	}
+	u, err := url.Parse(base)
+	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+		return nil
+	}
+	return []string{
+		"-e", "AULA_SUB=" + userID,
+		"-e", "AULA_DSH_URL=" + base + "/dsh/" + url.PathEscape(userID) + "/",
+		"-e", "AULA_DSH_HOST=" + u.Host,
+	}
 }
 
 func (a *Aula) exec(ctx context.Context, args ...string) (string, error) {
@@ -404,10 +428,16 @@ func (a *Aula) Version(ctx context.Context, nombre, dir string) (string, error) 
 }
 
 // Dial abre una conexión TCP al puerto del contenedor del alumno SIN depender de la red: lanza
-// «exec -i nc 127.0.0.1 <puerto>» dentro del contenedor y usa su entrada y salida como conexión. Así el
+// «exec -i python3 -c <RelayAula> <puerto>» dentro del contenedor y usa su entrada y salida como conexión. Así el
 // LMS funciona igual si corre en el host o en un contenedor, y el aula puede seguir en una red interna.
+//
+// No es «nc»: el nc de busybox 1.37 (Alpine) NO sale cuando el servidor cierra mientras su stdin sigue abierto
+// (se queda en CLOSE_WAIT hasta que se cierra la entrada). Con nc, si dsh moría o cerraba un WebSocket, el LMS no
+// veía EOF y el navegador se quedaba con el socket abierto para siempre (medido en el e2e del 31-10-2026: dsh caído
+// y la interfaz «Deep diving» sin error). El relé sale en cuanto el servidor cierra; el cierre de la entrada se
+// pasa como semicierre (shutdown SHUT_WR), igual que nc. python3 viene en jmd/aula (el asistente lo usa).
 func (a *Aula) Dial(ctx context.Context, userID string, puerto int) (net.Conn, error) {
-	cmd := exec.Command(a.Runtime, "exec", "-i", Nombre(userID), "nc", "127.0.0.1", fmt.Sprint(puerto))
+	cmd := exec.Command(a.Runtime, "exec", "-i", Nombre(userID), "python3", "-I", "-S", "-c", RelayAula, fmt.Sprint(puerto))
 	in, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err
@@ -421,6 +451,24 @@ func (a *Aula) Dial(ctx context.Context, userID string, puerto int) (net.Conn, e
 	}
 	return &conexionExec{cmd: cmd, in: in, out: out}, nil
 }
+
+// RelayAula: relé stdin/stdout <-> 127.0.0.1:<argv[1]> (ver Dial). Sale con el EOF del servidor; el EOF de la
+// entrada solo cierra la mitad de escritura. Exportado para probarlo sin contenedor.
+const RelayAula = `import os,socket,select,sys
+s=socket.create_connection(("127.0.0.1",int(sys.argv[1])))
+f=[0,s]
+while 1:
+ for x in select.select(f,[],[])[0]:
+  if x==0:
+   b=os.read(0,65536)
+   if b: s.sendall(b)
+   else: s.shutdown(socket.SHUT_WR); f.remove(0)
+  else:
+   b=s.recv(65536)
+   if not b: sys.exit(0)
+   v=memoryview(b)
+   while v: v=v[os.write(1,v):]
+`
 
 // conexionExec adapta un proceso a net.Conn. No soporta plazos: el llamador usa cierres con contexto.
 type conexionExec struct {

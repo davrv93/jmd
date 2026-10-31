@@ -136,7 +136,30 @@ Fuente: `https://api-docs.deepseek.com/quick_start/pricing`. Moneda: **USD** por
 
 `dsh` es un entorno de agente (preview) de DeepSeek. El repositorio incluye un `SAFETY.md` que dice que es **software experimental, sin auditoría de seguridad**, que puede ejecutar código y comandos generados por el modelo y que conviene usarlo con mínimos privilegios y mejor en un entorno desechable.
 
-### 4.1 Instalar / abrir
+### En el aula del LIVE (Ruta B: no instalas nada)
+
+El aula del LIVE de cada alumno ya trae **Node 24 y `dsh` 0.2.1-rc.5** y sale a internet solo por el proxy de la clase
+(puertos 80 y 443). Para usar `dsh` en clase no hace falta instalar nada en la laptop. La clave sigue siendo **la tuya**
+(tu cuenta y tu saldo de DeepSeek): créala y recárgala con los bloques 1 a 3.
+
+En la terminal del aula:
+
+| Comando | Qué hace |
+|---|---|
+| `aula sistema <id>` | Copia tu sistema de práctica a `/trabajo/sistema` (ahí trabaja `dsh`; sin él, en `/trabajo`). |
+| `aula dsh clave` | Pide tu API key **sin mostrarla**. Queda solo en la memoria del aula: se borra al reiniciarla. Nunca en `/trabajo` ni en un chat. |
+| `aula dsh olvidar` | Borra la clave del aula. |
+| `aula dsh "tarea"` | Corre una tarea (perfil headless) y muestra la respuesta y un **RESUMEN DE USO**: tokens de entrada (caché acierto y fallo), salida, llamadas al modelo, herramientas y duración. |
+| `aula dsh` | Modo interactivo `dsh> `: cada línea es una tarea; al salir, el uso total de la sesión. |
+| `aula dsh web` | Abre la **interfaz web** de `dsh` y te imprime tu enlace (`https://jmd-learn.online/dsh/<tú>/?…`). Solo lo abren tú y el instructor: no lo compartas. Es la misma interfaz de las capturas de 4.2 a 4.4, pero la clave ya entró con `aula dsh clave`: no la pegues en Settings. |
+| `aula dsh web parar` | Apaga la interfaz web (si cambias de sistema o de clave, párala y vuelve a abrirla). |
+| `aula dsh estado` | Versión, si hay clave, si hay salida a internet y si la web está arrancada. |
+
+«Upload Session Log» viene **apagado** en el aula por configuración. Si falla: «Aún no me diste tu clave» → `aula dsh clave`;
+401 → clave mal copiada; 402 → sin saldo; «sin salida a internet por el proxy» o «esta aula no tiene la interfaz web» →
+cierra la terminal, vuelve a entrar al LIVE y, si sigue, avisa al instructor.
+
+### 4.1 Instalar / abrir (en tu laptop, Ruta A)
 
 **Requisitos (publicados)**: Node.js **>= 24.9.0** (campo `engines` de `apps/cli/package.json`). El README dice «Install Node.js, then run».
 
@@ -197,7 +220,7 @@ Fuente: `https://api-docs.deepseek.com/quick_start/pricing`. Moneda: **USD** por
 
 **Ojo con una carpeta vacía:** el prompt oficial resume «el repositorio»; en una carpeta vacía no hay nada que resumir. Para la práctica, abre una carpeta con algo de contenido de prueba (nunca con datos reales de clientes o contraseñas).
 
-**Privacidad:** en **Settings → General** hay un interruptor «**Upload Session Log when using the official model API – Help improve DeepSeek models and products**» que **venía activado** en mi ejecución (`dsh-08-settings-privacidad-log.webp`). Decide si lo dejas así antes de usarlo con código o datos que no quieras compartir.
+**Privacidad:** en **Settings → General** hay un interruptor «**Upload Session Log when using the official model API – Help improve DeepSeek models and products**» que **venía activado** en mi ejecución (`dsh-08-settings-privacidad-log.webp`). Decide si lo dejas así antes de usarlo con código o datos que no quieras compartir. En el aula del LIVE viene apagado por configuración.
 
 **Si falla**: «Select model» sin opciones → falta clave válida; 401/402/429 → ver abajo.
 

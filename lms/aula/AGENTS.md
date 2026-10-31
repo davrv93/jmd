@@ -3,7 +3,7 @@
 - Tu trabajo vive en `/trabajo`. Lo que guardes ahí se queda hasta que termine la clase.
 - El código de tu asistente está en `/trabajo/osito`. Para arrancarlo: `aula iniciar`. Para pararlo: `aula parar`.
 - El asistente corre en el puerto 8766 en modo nube. Míralo en el panel «Visor».
-- No hay internet desde esta terminal, solo el gateway de IA de la clase.
+- Esta terminal no tiene internet directo: sale solo por el proxy de la clase (`HTTPS_PROXY`, puertos 80 y 443) y habla con el gateway de IA de la clase. Programas como `curl`, `bun install` o `dsh` ya usan el proxy solos; lo que no respete `HTTPS_PROXY` no tendrá salida.
 - Tus skills están en `~/.config/jmd/skills`. Pídele al agente: `jmd chat "/skill plan-de-trabajo ..."`.
 - **Landing sin IA** (si el agente no responde o se acabó la cuota): guarda el texto del cliente con `cat > /trabajo/landing/cliente.txt <<'FIN'` … `FIN` (termina solo en `FIN`, sin Ctrl+D) y corre
   `bun /opt/skills-curso/s1-landing-estilos/motor/extraer.mjs cliente.txt --modelo auto --salida negocio.json` y luego
@@ -29,10 +29,21 @@
 
 ## DeepSeek Harness: tu sistema de práctica
 
-Tu tarea es **documentar y auditar** un sistema web ya hecho (no construirlo). Tres comandos:
+Tu tarea es **documentar y auditar** un sistema web ya hecho (no construirlo). Tres comandos para preparar el material:
 
 - `aula sistema`: lista los 15 sistemas (id, rubro, roles).
 - `aula sistema <id>`: copia el que elijas a `/trabajo/sistema` (no pisa uno existente), con su `AGENTS.md` y la carpeta `docs/` para tus entregables. Míralo en el panel Visor: `/vista/<tú>/sistema/`.
 - `aula sistema foto`: toma la «foto» (inventario verificable) y la deja en `/trabajo/sistema/FOTO/` (`FOTO.md`, `FOTO.json`, `hashes.txt`).
 
 Luego dile a tu agente: «Lee `AGENTS.md` y `FOTO/FOTO.md` y sigue la skill `foto-del-sistema`». Tus entregables van en `/trabajo/sistema/docs/`. Sin la foto leída, el agente no debe leer el código a ciegas; todo lo que afirme lleva `archivo:línea` o dice «por verificar». Si algo falla (no hay sistemas, la foto da error), copia el mensaje completo y avisa al instructor.
+
+### Usar DeepSeek Harness (`dsh`) aquí mismo
+
+`dsh` ya está instalado en el aula (versión fija, con Node). Funciona con **tu propia API key de DeepSeek** y llega a DeepSeek por el proxy de la clase; el consumo se descuenta de TU cuenta.
+
+1. `aula dsh clave`: te pide la API key (no se ve al escribir). Solo queda en la memoria del aula: si el aula se reinicia, la vuelves a pegar. `aula dsh olvidar` la borra.
+2. `aula dsh "describe tu tarea"`: `dsh` trabaja en `/trabajo/sistema` (o en `/trabajo` si aún no copiaste un sistema) y te muestra la respuesta y un **resumen de uso** (tokens de entrada con caché acierto/fallo, tokens de salida, llamadas y duración). Sin texto, `aula dsh` abre un modo simple donde cada línea es una tarea nueva.
+3. `aula dsh web`: arranca la interfaz web de `dsh` y te imprime el enlace para abrirla en el navegador (el enlace trae tu acceso: no lo compartas). `aula dsh web parar` la apaga.
+4. `aula dsh estado`: te dice si hay clave, si hay salida a internet y si la web está arrancada.
+
+**Cuida tu clave:** nunca la pegues en un chat, en un archivo de `/trabajo` ni en un `.env` de `/trabajo` (el Visor muestra `/trabajo` como página web). Pégala solo con `aula dsh clave`. Una tarea de `dsh` puede gastar muchos tokens: empieza con tareas pequeñas y mira el resumen de uso.

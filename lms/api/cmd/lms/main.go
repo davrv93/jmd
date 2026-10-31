@@ -6,6 +6,9 @@
 //	LMS_DATA_DIR        ./data            (lms.db y badge-key.json, clave Ed25519 de las insignias)
 //	LMS_CONTENT_DIR     ../content        cursos, sesiones y tareas (YAML + Markdown)
 //	LMS_PUBLIC_URL      http://localhost:8080
+//	                    Si está definida de forma explícita, cada aula recibe AULA_SUB, AULA_DSH_URL (<url>/dsh/<sub>/) y
+//	                    AULA_DSH_HOST (host[:puerto]) para «aula dsh web»; el LMS publica ese dsh en /dsh/<sub>/ (puerto 3080
+//	                    del aula; ver internal/httpapi/dsh.go). Definirla o cambiarla RECREA las aulas la próxima vez que se abran.
 //	LMS_ADMIN_EMAIL / LMS_ADMIN_PASSWORD / LMS_ADMIN_NAME   cuenta del instructor (se crea si no existe)
 //	LMS_INVITE_CODE     código para que los alumnos se registren (vacío = sin registro)
 //	LMS_COHORT          cohorte de quien se registra (p. ej. cohorte-2026-2)
@@ -125,7 +128,7 @@ func run() error {
 		slog.Info("ventana de cohorte", "cohorte", srv.CohortWindow, "hasta", t.Format(time.RFC3339))
 	}
 	if srv.Runner.Available() && os.Getenv("LMS_AULA_IMAGE") != "" {
-		a := &aula.Aula{Runtime: srv.Runner.Runtime, Imagen: os.Getenv("LMS_AULA_IMAGE"), Red: os.Getenv("LMS_AULA_RED"), Token: os.Getenv("LMS_AULA_TOKEN"), Memoria: os.Getenv("LMS_AULA_MEMORIA")}
+		a := &aula.Aula{Runtime: srv.Runner.Runtime, Imagen: os.Getenv("LMS_AULA_IMAGE"), Red: os.Getenv("LMS_AULA_RED"), Token: os.Getenv("LMS_AULA_TOKEN"), Memoria: os.Getenv("LMS_AULA_MEMORIA"), PublicURL: os.Getenv("LMS_PUBLIC_URL")}
 		a.Clase = claseDesdeEntorno(dataDir)
 		if err := a.AsegurarRed(ctx, os.Getenv("LMS_AULA_GATEWAY")); err != nil {
 			slog.Warn("el aula no pudo preparar su red", "err", err)

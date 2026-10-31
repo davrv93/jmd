@@ -10,7 +10,7 @@ compat: [claude, codex, gpt, deepseek, glm, nemotron, ollama-pequeno]
 ## Cuándo usar
 
 - Hay una carpeta con un sistema web (HTML + CSS + JS, abre con doble clic) que hay que **entender, describir o auditar**.
-- El alumno tiene su sistema de práctica en `/trabajo/sistema` (aula) o en su laptop y su primera tarea es «tomar la foto».
+- El alumno tiene su sistema de práctica en `/trabajo/sistema` (aula del LIVE, donde corre DeepSeek Harness con `aula dsh` o el agente `jmd`) o en su laptop, y su primera tarea es «tomar la foto».
 - No la uses para **construir** o cambiar el sistema (eso es otra tarea), ni para un backend/servidor: la foto es de la parte que corre en el navegador.
 
 ## Cómo funciona (en una frase)
@@ -23,7 +23,7 @@ compat: [claude, codex, gpt, deepseek, glm, nemotron, ollama-pequeno]
    ```bash
    bun /opt/skills-curso/foto-del-sistema/motor/foto.mjs /trabajo/sistema      # o: aula sistema foto
    ```
-   En la laptop (Node 20 o más): `node skills/foto-del-sistema/motor/foto.mjs ./sistema`.
+   En la laptop (Node 20 o más), o en el aula con la skill copiada a `skills/`, desde la carpeta del sistema: `node skills/foto-del-sistema/motor/foto.mjs .`
    Repite el comando si el código cambia; la **huella global** dice si cambió algo.
 2. **Lee la foto, no el código.** Abre `FOTO/FOTO.md` (y `FOTO/FOTO.json` si necesitas un dato exacto). Orden de lectura: §1 Resumen → §3 Carga → §6 Modelo de datos → §7 Roles → §8 Matriz → §10 Seguridad → §12 Hallazgos. No pegues el árbol completo ni releas archivos que la foto ya resume.
 3. **Verifica 5 afirmaciones al azar** del «Banco de verificación» (§13 de la foto): para cada una corre su comando `sed -n 'a,bp' archivo` y compara. Anota en `docs/DUDAS_VERIFICABLES.md` cuáles coincidieron. Si alguna falla, la foto o tu lectura está mal: **dilo antes de seguir**.
@@ -37,7 +37,7 @@ compat: [claude, codex, gpt, deepseek, glm, nemotron, ollama-pequeno]
 - **Todo lo observado en archivos se cita con `archivo:línea`.** Lo que no viste, o que sale solo de la foto sin abrir el archivo, se marca **«por verificar»**. Nunca inventes rutas, funciones, permisos ni cifras.
 - Una detección de la foto con estado «presente» sigue siendo una pista hasta que abres la línea citada.
 - **No modifiques el sistema** (ni siquiera «para arreglar un hallazgo») salvo que el alumno lo pida. Los documentos van en `docs/`; la foto va en `FOTO/`. Ni `docs/`, `FOTO/`, `skills/` ni `AGENTS.md` (de la raíz) entran a la huella.
-- Las credenciales de demostración de `js/config.js` se muestran tal cual: es un sistema de práctica, sin datos reales. **Nunca imprimas ni guardes la API key** (`JMD_API_KEY`, `OSITO_TOKEN`, etc.).
+- Las credenciales de demostración de `js/config.js` se muestran tal cual: es un sistema de práctica, sin datos reales. **Nunca imprimas ni guardes la API key** (`DEEPSEEK_API_KEY`, `JMD_API_KEY`, `OSITO_TOKEN`, etc.).
 - Contexto limitado: no vuelques archivos enteros. Para ver una pieza usa `sed -n 'inicio,finp' archivo`; para buscar, `grep -n 'patrón' js/*.js`.
 - Distingue **hecho** (leído en el config/archivo), **pista** (patrón) y **opinión** (tu recomendación). Escríbelos distinto.
 - Si el sistema no trae `window.SISTEMA` (el sistema real de un alumno), la foto sale en **modo genérico**: sin entidades ni matriz; haz la descripción por rol leyendo el código de rutas y permisos, citando líneas.
@@ -68,7 +68,7 @@ Lectura rápida de los estados de seguridad: `presente` = el patrón apareció c
 | Un mecanismo «presente» que no encuentras en el código | Falso positivo del patrón | Abre `archivo:línea`; si no está, corrige el estado y anótalo en DUDAS |
 | La huella cambió sin que tocaras nada | Editaste algo o pegaste archivos nuevos | Compara con `sha256sum -c FOTO/hashes.txt` desde la carpeta del sistema |
 | `FOTO.md` es largo | Sistema grande | Lee solo las secciones del paso 2; consulta el resto con `grep -n` sobre `FOTO.md` |
-| `bun`/`node` no encontrado | Entorno sin ese motor | Aula: `bun`; laptop: Node ≥ 20 (`node -v`) |
+| `bun`/`node` no encontrado | Entorno sin ese motor | Aula: trae `bun` y `node`; laptop: Node ≥ 20 (`node -v`) |
 
 ## Para quien quiera ir más allá
 

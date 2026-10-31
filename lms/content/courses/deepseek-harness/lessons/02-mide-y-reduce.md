@@ -65,7 +65,7 @@ materials:
     url: https://support.apple.com/guide/activity-monitor/welcome/mac
     objective_ids: [dh-02-o1]
   - id: dh-02-m10
-    title: jq · manual (para sumar el uso por paso)
+    title: jq · manual (para sumar el uso por paso en tu laptop; en el aula no hace falta)
     kind: doc
     url: https://jqlang.org/manual/
     objective_ids: [dh-02-o1]
@@ -85,20 +85,20 @@ cycle:
     title: Saber de dónde sale cada número
     tool: lms
     phase: experiencia
-    description: "En la escena 2 lee la página de uso de ejemplo, resuelve los cuatro ejercicios y llena la ficha de seis campos."
+    description: "En la escena 2 lee la página de uso de ejemplo y el RESUMEN DE USO del aula, resuelve los cuatro ejercicios y llena la ficha de seis campos."
     check: "3 de 4 ejercicios bien y la ficha con sus 6 campos"
   - id: corrida-a
     title: "Corrida A: sin foto"
     tool: terminal
     phase: experiencia
-    description: "Recorre la simulación de la escena 3; luego, en tu laptop, copia tu sistema sin FOTO ni AGENTS.md y corre dsh con --json."
-    check: "Existen docs/medicion/A.jsonl y A.md, y A.md cita archivo:línea"
+    description: "Recorre la simulación de la escena 3; luego corre la tarea sin FOTO ni AGENTS.md: en tu aula, apártalos y usa aula dsh \"…\" | tee; en tu laptop, una copia limpia y dsh con --json."
+    check: "Existe docs/medicion/A.txt (aula: respuesta + resumen de uso) o A.jsonl y A.md (laptop), y la respuesta cita archivo:línea"
   - id: corrida-b
     title: "Corrida B: con foto"
     tool: terminal
     phase: reflexion
-    description: "Estima en la escena 4; luego corre B en la carpeta de tu sistema, con FOTO y AGENTS.md, y compara con A."
-    check: "Existen docs/medicion/B.jsonl y B.md, y tienes A y B en una tabla"
+    description: "Estima en la escena 4; luego corre B en la carpeta de tu sistema, con FOTO y AGENTS.md (en el aula, aula dsh \"…\" en /trabajo/sistema), y compara con A."
+    check: "Existe docs/medicion/B.txt (aula) o B.jsonl y B.md (laptop), y tienes A y B en una tabla"
   - id: calidad
     title: Calidad primero
     tool: lms
@@ -137,10 +137,12 @@ Tarea de referencia: «describe qué puede hacer cada rol de mi sistema».
 
 ## Antes de la clase
 
-1. Node ≥ 24.9 y `npx @deepseek-ai/dsh web` abierto una vez; saldo en tu cuenta.
-2. Tu sistema con `FOTO/` y `AGENTS.md` (sesión 1) y el kit de Materiales.
-3. Una clave solo para medir (`curso-medicion`): así Usage muestra solo tu tarea.
-4. Opcional: `jq` (en Windows, WSL o Git Bash).
+1. Saldo en tu cuenta de DeepSeek y tu clave a mano (en tu gestor).
+2. Ruta B · tu aula: tu sistema en `/trabajo/sistema` con `FOTO/`, `AGENTS.md` y `skills/` (sesión 1). Al entrar,
+   `aula dsh clave` (la clave se borra si el aula se reinicia). No necesitas instalar nada ni `jq`.
+3. Ruta A · tu laptop (opcional): Node ≥ 24.9, `npx @deepseek-ai/dsh web` abierto una vez, el kit de Materiales y
+   `jq` (en Windows, WSL o Git Bash).
+4. Una clave solo para medir (`curso-medicion`): así Usage muestra solo tu tarea.
 
 ## 1 · Tres monedas
 
@@ -157,12 +159,15 @@ Tarea de referencia: «describe qué puede hacer cada rol de mi sistema».
 **Objetivo:** saber de dónde sale cada número y anotar tu corrida base.
 
 1. En «Plataforma · Usage» resuelve los cuatro ejercicios (esquema con cifras de ejemplo).
-2. En «dsh», mira `--json` y el `jq` que suma el uso por paso.
-3. En «time», mira la salida real de `/usr/bin/time -l`.
-4. Llena la ficha: tarea, comando, tiempo, llamadas, tokens y CPU/RAM.
+2. En «Aula · resumen», mira qué imprime `aula dsh "tarea"`: la respuesta y un **RESUMEN DE USO** con entrada
+   (caché acierto y fallo), salida, llamadas al modelo, herramientas y duración. Ya viene sumado: no hace falta `jq`.
+   `aula dsh` a secas abre el modo `dsh> ` y, al salir, suma el uso de toda la sesión.
+3. En «Laptop · --json», mira `--json` y el `jq` que suma el uso por paso.
+4. En «time», mira la salida real de `/usr/bin/time -l`.
+5. Llena la ficha: tarea, comando, tiempo, llamadas, tokens y CPU/RAM (el resumen del aula no mide CPU/RAM).
 
 **Qué deberías ver:** la ficha con 6 campos; entrada = acierto + fallo de caché.
-**Si falla:** el perfil headless **no lee la clave guardada en Settings**: exporta `DEEPSEEK_API_KEY`. El precio pico (según la guía, ~20:00 Lima) es el doble: compara tokens, no dólares.
+**Si falla:** en el aula, «Aún no me diste tu clave» → `aula dsh clave`. En la laptop, el perfil headless **no lee la clave guardada en Settings**: exporta `DEEPSEEK_API_KEY`. El precio pico (según la guía, ~20:00 Lima) es el doble: compara tokens, no dólares.
 
 ## 3 · Corrida A, sin foto
 
@@ -226,7 +231,9 @@ Tarea de referencia: «describe qué puede hacer cada rol de mi sistema».
 
 ## Tarea
 
-- Corre A (copia sin foto) y B (con foto) sobre **tu** sistema y guarda `docs/medicion/A.jsonl`, `A.md`, `B.jsonl` y `B.md`.
+- Corre A (sin foto) y B (con foto) sobre **tu** sistema. En el aula guarda lo que imprime `aula dsh "…" | tee` en
+  `docs/medicion/A.txt` y `B.txt` (respuesta + resumen de uso); en la laptop, `A.jsonl`, `A.md`, `B.jsonl` y `B.md`.
+  En las dos rutas, cruza los tokens con el panel **Usage** de la plataforma.
 - Escribe `docs/INFORME_CONSUMO.md`: ficha, tabla A/B, 5 criterios y conclusión honesta. Si B gastó más o la calidad bajó, dilo.
 - Escribe `docs/RUTINA.md`: cinco pasos que otra persona repita sin ti.
 - Haz `git add docs/ && git commit -m "sesión 2: consumo medido A/B y rutina"` y entrega URL + commit desde el LMS.

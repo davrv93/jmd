@@ -1,8 +1,229 @@
 #!/bin/sh
 # aula: arranque del asistente del alumno dentro de su contenedor.
-# Uso: aula iniciar | parar | estado | nuevo <plantilla> | paso | whatsapp | db | sistema [id|foto]
+# Uso: aula iniciar | parar | estado | nuevo <plantilla> | paso | whatsapp | db | sistema [id|foto] | dsh [clave|olvidar|web|estado|"tarea"]
 PID=/tmp/osito.pid
 vivo() { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; }
+
+# ---- DeepSeek Harness (aula dsh) -------------------------------------------------------------------------------
+# La clave vive SOLO en $HOME/.aula-dsh/clave (0600, dentro del tmpfs del home: se pierde al reiniciar el aula).
+# Nunca en /trabajo: el Visor sirve /trabajo como archivos estáticos. aula la lee y la pone en el entorno del
+# proceso hijo (DEEPSEEK_API_KEY); no sale en la línea de comandos ni en pantalla. dsh headless solo lee la clave
+# del entorno / .env (ignora la guardada en Ajustes), así que este camino sirve igual para la CLI y para la web.
+DSH_DIR="$HOME/.aula-dsh"
+DSH_CLAVE="$DSH_DIR/clave"
+DSH_PID=/tmp/aula-dsh-web.pid
+DSH_LOG=/tmp/aula-dsh-web.log
+DSH_URLF=/tmp/aula-dsh-web.url
+DSH_PUERTO=3080
+DSH_PARCHE=/opt/dsh-aula.patch.yml
+DSH_USO=/usr/local/lib/aula-dsh-uso.mjs
+
+dsh_espacio() { if [ -d /trabajo/sistema ]; then echo /trabajo/sistema; else echo /trabajo; fi; }
+dsh_vivo() { [ -f "$DSH_PID" ] && kill -0 "$(cat "$DSH_PID")" 2>/dev/null; }
+
+dsh_listo() {
+  if command -v dsh >/dev/null 2>&1 && command -v node >/dev/null 2>&1; then return 0; fi
+  echo "Esta aula no trae dsh (falta Node o dsh en la imagen). Cierra la terminal y vuelve a entrar al LIVE: el aula se renueva sola." >&2
+  echo "Si sigue igual, avisa al instructor." >&2
+  return 1
+}
+
+# Imprime la clave por stdout para capturarla con $(...); nunca la mandes a pantalla.
+dsh_clave_valor() {
+  if [ -n "${DEEPSEEK_API_KEY:-}" ]; then printf '%s' "$DEEPSEEK_API_KEY"; return 0; fi
+  if [ -r "$DSH_CLAVE" ]; then
+    IFS= read -r dsh_k < "$DSH_CLAVE" || true
+    if [ -n "$dsh_k" ]; then printf '%s' "$dsh_k"; return 0; fi
+  fi
+  return 1
+}
+
+dsh_pedir_clave() {
+  if [ ! -t 0 ]; then
+    echo "Necesito una terminal para pedirte la clave sin que se vea. Ábrela en el panel Terminal y corre: aula dsh clave" >&2
+    return 1
+  fi
+  # El eco se apaga ANTES del aviso: si no, una clave pegada justo al salir el aviso se vería (medido en el e2e).
+  dsh_old=$(stty -g 2>/dev/null) || dsh_old=""
+  if [ -n "$dsh_old" ]; then
+    stty -echo 2>/dev/null
+    trap 'stty "$dsh_old" 2>/dev/null; echo >&2; exit 130' INT TERM
+  fi
+  printf 'Pega tu API key de DeepSeek (no se ve al escribir) y pulsa Enter: ' >&2
+  IFS= read -r dsh_k || dsh_k=""
+  if [ -n "$dsh_old" ]; then stty "$dsh_old" 2>/dev/null; trap - INT TERM; fi
+  echo >&2
+  dsh_k=$(printf '%s' "$dsh_k" | tr -d '[:space:]')
+  dsh_k=${dsh_k#DEEPSEEK_API_KEY=}
+  if [ -z "$dsh_k" ]; then echo "No escribiste nada. Vuelve a correr: aula dsh clave" >&2; dsh_k=""; return 1; fi
+  case "$dsh_k" in
+    *[!A-Za-z0-9._-]*) echo "Esa clave tiene caracteres raros (¿pegaste comillas o texto de más?). Vuelve a correr: aula dsh clave" >&2; dsh_k=""; return 1 ;;
+  esac
+  case "$dsh_k" in sk-*) ;; *) echo "Aviso: las claves de DeepSeek empiezan por «sk-»; la guardo igual." >&2 ;; esac
+  ( umask 077; mkdir -p "$DSH_DIR" && printf '%s\n' "$dsh_k" > "$DSH_CLAVE" ) || { echo "No pude guardar la clave en $DSH_DIR." >&2; dsh_k=""; return 1; }
+  chmod 700 "$DSH_DIR" 2>/dev/null; chmod 600 "$DSH_CLAVE" 2>/dev/null
+  dsh_k=""
+  echo "Clave guardada para esta aula (solo en memoria del aula: se pierde si se reinicia; nunca va a /trabajo)."
+  if dsh_vivo; then echo "La interfaz web ya estaba arrancada con la clave anterior: aula dsh web parar && aula dsh web"; fi
+  echo "Siguiente paso: aula dsh \"describe tu tarea\"   o   aula dsh web"
+}
+
+dsh_olvidar() {
+  rm -f "$DSH_CLAVE" 2>/dev/null
+  echo "Clave borrada de esta aula."
+  if dsh_vivo; then echo "Ojo: la interfaz web sigue en marcha con la clave en su memoria. Páralo: aula dsh web parar"; fi
+}
+
+dsh_diagnostico() {
+  # $1 = archivo con el stderr de dsh
+  if grep -q -E 'AUTH|401|Authentication' "$1" 2>/dev/null; then
+    echo "DeepSeek rechazó tu clave (401). Revisa que esté completa y vigente; para cambiarla: aula dsh clave" >&2
+  elif grep -q -i -E 'ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET|fetch failed|proxy|network|socket' "$1" 2>/dev/null; then
+    echo "No hubo salida a internet por el proxy de la clase (HTTPS_PROXY=${HTTPS_PROXY:-sin definir}). Avisa al instructor." >&2
+  elif grep -q -E '402|Insufficient|balance' "$1" 2>/dev/null; then
+    echo "Tu cuenta de DeepSeek no tiene saldo (402). Recarga saldo en platform.deepseek.com." >&2
+  fi
+  grep '^dsh:' "$1" 2>/dev/null | head -n 3 >&2
+}
+
+# Una tarea headless; suma su uso al archivo de totales $DSH_TOT si existe esa variable.
+dsh_tarea() {
+  dsh_listo || return 1
+  dsh_kk=$(dsh_clave_valor) || { echo "Aún no me diste tu clave de DeepSeek. Primero: aula dsh clave" >&2; return 1; }
+  dsh_ws=$(dsh_espacio)
+  dsh_err=$(mktemp /tmp/aula-dsh-err.XXXXXX) || return 1
+  dsh_st=$(mktemp /tmp/aula-dsh-st.XXXXXX) || return 1
+  echo "dsh trabaja en $dsh_ws … (puede tardar un minuto; Ctrl+C para cancelar)" >&2
+  (
+    cd "$dsh_ws" || exit 1
+    export DEEPSEEK_API_KEY="$dsh_kk" DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
+    dsh --profile headless --patch "$DSH_PARCHE" --json "$1" 2>"$dsh_err"
+    echo $? > "$dsh_st"
+  ) | node "$DSH_USO" "${DSH_TOT:-}"
+  dsh_kk=""
+  dsh_rc=$(cat "$dsh_st" 2>/dev/null); dsh_rc=${dsh_rc:-1}
+  if [ "$dsh_rc" != 0 ]; then dsh_diagnostico "$dsh_err"; fi
+  rm -f "$dsh_err" "$dsh_st"
+  return "$dsh_rc"
+}
+
+dsh_interactivo() {
+  dsh_listo || return 1
+  dsh_clave_valor >/dev/null || { echo "Aún no me diste tu clave de DeepSeek. Primero: aula dsh clave" >&2; return 1; }
+  DSH_TOT=$(mktemp /tmp/aula-dsh-uso.XXXXXX) || return 1
+  rm -f "$DSH_TOT"
+  export DSH_TOT
+  echo "dsh (modo simple) en $(dsh_espacio). Cada línea es una tarea NUEVA e independiente (no recuerda la anterior)."
+  echo "Escribe «salir» (o Ctrl+D) para terminar; al salir verás el uso total de la sesión."
+  while printf 'dsh> ' >&2 && IFS= read -r dsh_linea; do
+    case "$dsh_linea" in
+      salir|exit|quit|:q) break ;;
+      *[![:space:]]*) dsh_tarea "$dsh_linea" || true ;;
+    esac
+  done
+  echo
+  node "$DSH_USO" --total "$DSH_TOT"
+  rm -f "$DSH_TOT"
+}
+
+dsh_web_url() { if [ -s "$DSH_URLF" ]; then cat "$DSH_URLF"; fi; }
+
+dsh_estado() {
+  if command -v dsh >/dev/null 2>&1; then echo "dsh:        $(dsh --version 2>/dev/null) (Node $(node -v 2>/dev/null))"; else echo "dsh:        no está en esta imagen"; fi
+  if dsh_clave_valor >/dev/null; then echo "clave:      guardada (no se muestra)"; else echo "clave:      falta  ->  aula dsh clave"; fi
+  echo "espacio:    $(dsh_espacio)"
+  if [ -n "${HTTPS_PROXY:-}" ]; then echo "internet:   por el proxy de la clase ($HTTPS_PROXY)"; else echo "internet:   SIN proxy definido (HTTPS_PROXY): dsh no podrá llegar a DeepSeek"; fi
+  if dsh_vivo; then
+    echo "web:        arrancada (pid $(cat "$DSH_PID"))"
+    echo "enlace:     $(dsh_web_url)"
+  elif [ -n "${AULA_DSH_URL:-}" ]; then
+    echo "web:        parada  ->  aula dsh web"
+  else
+    echo "web:        no disponible en esta aula (faltan AULA_DSH_URL y AULA_DSH_HOST); usa la terminal: aula dsh \"tarea\""
+  fi
+}
+
+dsh_web_parar() {
+  if dsh_vivo; then
+    dsh_p=$(cat "$DSH_PID")
+    kill "$dsh_p" 2>/dev/null
+    dsh_n=0; while kill -0 "$dsh_p" 2>/dev/null && [ "$dsh_n" -lt 20 ]; do dsh_n=$((dsh_n+1)); sleep 0.25; done
+    kill -9 "$dsh_p" 2>/dev/null
+    echo "interfaz web de dsh parada"
+  else
+    echo "la interfaz web de dsh no estaba arrancada"
+  fi
+  rm -f "$DSH_PID" "$DSH_URLF"
+}
+
+dsh_web() {
+  dsh_listo || return 1
+  if [ -z "${AULA_DSH_URL:-}" ] || [ -z "${AULA_DSH_HOST:-}" ]; then
+    echo "Esta aula no tiene la interfaz web de dsh (faltan AULA_DSH_URL y AULA_DSH_HOST)." >&2
+    echo "Cierra la terminal y vuelve a entrar al LIVE: el aula se renueva sola. Si sigue igual, avisa al instructor." >&2
+    echo "Mientras tanto puedes usar dsh en la terminal: aula dsh \"tu tarea\"" >&2
+    return 1
+  fi
+  # Un solo arranque a la vez (la terminal y el visor pueden pedirlo juntos).
+  dsh_n=0; until mkdir /tmp/.aula-dsh-web 2>/dev/null; do dsh_n=$((dsh_n+1)); [ "$dsh_n" -gt 60 ] && { rmdir /tmp/.aula-dsh-web 2>/dev/null; break; }; sleep 0.5; done
+  trap 'rmdir /tmp/.aula-dsh-web 2>/dev/null' EXIT
+  if dsh_vivo; then
+    echo "La interfaz web de dsh ya estaba arrancada. Ábrela con este enlace (no lo compartas):"
+    echo "  $(dsh_web_url)"
+    return 0
+  fi
+  rm -f "$DSH_PID" "$DSH_URLF"
+  dsh_kk=$(dsh_clave_valor) || { echo "Aún no me diste tu clave de DeepSeek. Primero: aula dsh clave  (y luego aula dsh web)" >&2; return 1; }
+  # Solo en 127.0.0.1: el LMS llega por «exec nc 127.0.0.1 3080» dentro del aula (Aula.Dial), no por la red.
+  # En la IP del contenedor el LMS no lo alcanzaba (502) y las demás aulas de la misma red sí veían el puerto.
+  dsh_ip=127.0.0.1
+  dsh_ws=$(dsh_espacio)
+  ( umask 077; : > "$DSH_LOG" )
+  (
+    cd "$dsh_ws" || exit 1
+    export DEEPSEEK_API_KEY="$dsh_kk" DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
+    exec nohup dsh --profile web --patch "$DSH_PARCHE" --no-open --port "$DSH_PUERTO" --host "$dsh_ip" \
+      --public-url "$AULA_DSH_URL" --trusted-host "$AULA_DSH_HOST" </dev/null >> "$DSH_LOG" 2>&1
+  ) &
+  dsh_p=$!
+  ( umask 077; echo "$dsh_p" > "$DSH_PID" )
+  dsh_kk=""
+  echo "Arrancando la interfaz web de dsh … (espacio de trabajo: $dsh_ws)"
+  dsh_n=0; dsh_url=""
+  while [ "$dsh_n" -lt 120 ]; do
+    if ! kill -0 "$dsh_p" 2>/dev/null; then
+      echo "dsh web se cerró al arrancar. Lo último que dijo:" >&2
+      tail -n 8 "$DSH_LOG" >&2
+      rm -f "$DSH_PID"
+      return 1
+    fi
+    dsh_url=$(sed -n 's#^dsh web: \(https\{0,1\}://[^ ]*\)$#\1#p' "$DSH_LOG" | tail -n 1)
+    if [ -n "$dsh_url" ] && [ "$(curl -s -o /dev/null -w '%{http_code}' "http://$dsh_ip:$DSH_PUERTO/" 2>/dev/null)" != 000 ]; then break; fi
+    dsh_url=""; dsh_n=$((dsh_n+1)); sleep 0.5
+  done
+  if [ -z "$dsh_url" ]; then
+    echo "dsh web no respondió en 60 s. Lo último que dijo:" >&2
+    tail -n 8 "$DSH_LOG" >&2
+    echo "Prueba: aula dsh web parar && aula dsh web   (si sigue igual, avisa al instructor)" >&2
+    return 1
+  fi
+  ( umask 077; printf '%s\n' "$dsh_url" > "$DSH_URLF" )
+  echo "Lista. Abre este enlace en tu navegador (lleva tu acceso; no lo compartas):"
+  echo "  $dsh_url"
+  echo "Para ver su estado: aula dsh estado · para pararla: aula dsh web parar"
+}
+
+dsh_ayuda() {
+  cat <<'AYUDA'
+aula dsh clave            guarda tu API key de DeepSeek (se escribe sin eco; solo vive en la memoria del aula)
+aula dsh olvidar          borra la clave del aula
+aula dsh "tarea"          dsh hace la tarea en /trabajo/sistema (o /trabajo) y te da la respuesta y el uso de tokens
+aula dsh                  modo simple: cada línea que escribas es una tarea (salir para terminar)
+aula dsh web              arranca la interfaz web de dsh y te da el enlace para abrirla
+aula dsh web parar        para la interfaz web
+aula dsh estado           qué hay: versión, clave, internet, interfaz web
+AYUDA
+}
 
 case "${1:-}" in
   iniciar)
@@ -209,8 +430,27 @@ PY
         ;;
     esac
     ;;
+  dsh)
+    # DeepSeek Harness dentro del aula (Node + dsh vienen en la imagen). Ver «aula dsh ayuda».
+    shift
+    case "$#:${1:-}" in
+      0:)               dsh_interactivo ;;
+      1:clave)          dsh_pedir_clave ;;
+      1:olvidar)        dsh_olvidar ;;
+      1:estado)         dsh_estado ;;
+      1:ayuda|1:-h|1:--help) dsh_ayuda ;;
+      1:web)            dsh_web ;;
+      2:web)
+        case "$2" in
+          parar) dsh_web_parar ;;
+          *)     echo "uso: aula dsh web | aula dsh web parar" >&2; exit 2 ;;
+        esac ;;
+      *)                dsh_tarea "$*" ;;
+    esac
+    exit $?
+    ;;
   *)
-    echo "uso: aula iniciar | parar | estado | nuevo <plantilla> [carpeta] | whatsapp | db | sistema [id|foto]" >&2
+    echo "uso: aula iniciar | parar | estado | nuevo <plantilla> [carpeta] | whatsapp | db | sistema [id|foto] | dsh [clave|olvidar|web|estado|\"tarea\"]" >&2
     exit 2
     ;;
 esac

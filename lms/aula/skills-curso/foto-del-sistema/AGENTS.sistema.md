@@ -5,12 +5,14 @@ Esta carpeta es un **sistema web de práctica** (HTML/CSS/JS, abre con doble cli
 ## Antes de leer código, toma la foto
 
 ```bash
-aula sistema foto                                          # aula (jmd)
+aula sistema foto                                          # aula del LIVE (dsh o jmd)
 bun /opt/skills-curso/foto-del-sistema/motor/foto.mjs .    # aula, a mano
-node skills/foto-del-sistema/motor/foto.mjs .              # laptop con DeepSeek Harness (Node 20+)
+node skills/foto-del-sistema/motor/foto.mjs .              # laptop o aula, con la skill copiada en skills/ (Node 20+)
 ```
 
-Deja `FOTO/FOTO.md`, `FOTO/FOTO.json` y `FOTO/hashes.txt`. **Lee `FOTO/FOTO.md` primero.** Si tu entorno no tiene «skills», lee `skills/foto-del-sistema/SKILL.md` y sigue su procedimiento.
+Deja `FOTO/FOTO.md`, `FOTO/FOTO.json` y `FOTO/hashes.txt`. **Lee `FOTO/FOTO.md` primero.** Si tu entorno no tiene «skills», lee `skills/foto-del-sistema/SKILL.md` (en el aula, si no está copiada: `/opt/skills-curso/foto-del-sistema/SKILL.md`) y sigue su procedimiento.
+
+Dónde corres: en el **aula del LIVE** (DeepSeek Harness lanzado con `aula dsh`, o el agente `jmd`), con el sistema en `/trabajo/sistema`; o en la **laptop** del alumno (DeepSeek Harness con `npx`). En los dos casos la API key es del alumno.
 
 ## Reglas
 
@@ -19,7 +21,7 @@ Deja `FOTO/FOTO.md`, `FOTO/FOTO.json` y `FOTO/hashes.txt`. **Lee `FOTO/FOTO.md` 
 3. **No inventes.** Rutas, funciones, permisos, cifras y comportamientos salen del código o de una prueba. Si no los verificaste, escribe **«por verificar»**.
 4. **Hecho, pista, opinión.** Hecho = lo leíste en el archivo. Pista = lo dice la foto por patrón (regex). Opinión = tu recomendación. No los mezcles.
 5. **No modifiques el sistema** salvo que el alumno lo pida expresamente. Tus escritos van en `docs/`; la foto va en `FOTO/`.
-6. **Seguridad:** nunca imprimas, copies ni guardes la API key ni tokens (`JMD_API_KEY`, `OSITO_TOKEN`, `EVO_TOKEN`, `DATABASE_URL`). Las claves de demostración del sistema sí se muestran: son de práctica.
+6. **Seguridad:** nunca imprimas, copies ni guardes la API key ni tokens (`DEEPSEEK_API_KEY`, `JMD_API_KEY`, `OSITO_TOKEN`, `EVO_TOKEN`, `DATABASE_URL`); no leas `~/.aula-dsh/` ni `~/.dsh/`. Las claves de demostración del sistema sí se muestran: son de práctica.
 
 ## Límites de contexto
 

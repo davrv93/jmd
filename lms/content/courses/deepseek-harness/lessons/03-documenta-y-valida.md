@@ -150,12 +150,16 @@ Ya tienes tu sistema y su foto (sesión 1) y sabes medir (sesión 2). Hoy entreg
 | 6 · Mantener | Comparas dos fotos | 4 de 5 documentos |
 | 7 · Entrega | Cierras el paquete | Entrega en «Mis notas» |
 
-**Ruta A:** tu laptop, con dsh y tu clave. **Ruta B:** el aula, sin internet: `aula sistema foto`, el Visor y el agente `jmd`.
+**Ruta B · tu aula del LIVE:** todo instalado. dsh con tu clave (`aula dsh clave`, luego `aula dsh web` o
+`aula dsh "…"`), `aula sistema foto` y el Visor para usar el sistema. **Ruta A · tu laptop:** dsh con `npx`, tu
+clave y el kit.
 
 ## Antes de la clase
 
 - [ ] Tu sistema abre y tienes su `FOTO/` de la sesión 1.
-- [ ] Descargaste el kit y las cuatro plantillas de Materiales.
+- [ ] Tienes las cuatro plantillas: en el aula, en `skills/foto-del-sistema/motor/plantillas/` (o en
+  `/opt/skills-curso/foto-del-sistema/motor/plantillas/`); en tu laptop, en el kit de Materiales.
+- [ ] En el aula, vuelve a poner tu clave con `aula dsh clave` si el aula se reinició.
 - [ ] Sabes qué usuario entra a cada rol (`LEEME.txt`).
 
 ## 1 · Cuatro entregables

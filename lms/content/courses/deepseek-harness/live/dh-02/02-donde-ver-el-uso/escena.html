@@ -7,7 +7,8 @@
 <!--
   Escena del modo LIVE (DeepSeek Harness, sesión dh-02). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
   animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
-  Interacción: tres pestañas (plataforma como ESQUEMA, dsh, time real), cuatro ejercicios de lectura de una página de uso
+  Interacción: cuatro pestañas (plataforma como ESQUEMA, resumen de uso del aula como ILUSTRACIÓN con el formato real de
+  aula-dsh-uso.mjs, dsh en la laptop, time real), cuatro ejercicios de lectura de una página de uso
   con cifras de ejemplo y la ficha de la corrida base (6 campos) que genera texto. Nada se guarda.
 -->
 <link rel="stylesheet" href="../../comun/escena.css">
@@ -94,8 +95,9 @@
       <section class="e2-izq a-in" style="--d:.1s">
         <div class="s2-tabs" role="tablist" aria-label="Dónde se mide">
           <button type="button" class="s2-tab" role="tab" id="tb1" aria-selected="true" aria-controls="p1">Plataforma · Usage</button>
-          <button type="button" class="s2-tab" role="tab" id="tb2" aria-selected="false" aria-controls="p2">dsh · terminal</button>
-          <button type="button" class="s2-tab" role="tab" id="tb3" aria-selected="false" aria-controls="p3">time · tu máquina</button>
+          <button type="button" class="s2-tab" role="tab" id="tb4" aria-selected="false" aria-controls="p4">Aula · resumen</button>
+          <button type="button" class="s2-tab" role="tab" id="tb2" aria-selected="false" aria-controls="p2">Laptop · --json</button>
+          <button type="button" class="s2-tab" role="tab" id="tb3" aria-selected="false" aria-controls="p3">time</button>
         </div>
         <div class="esc-card e2-pan" id="p1" role="tabpanel" aria-labelledby="tb1">
           <div class="e2-esq"><span class="esc-chip warn">Esquema ilustrativo · cifras de ejemplo</span><span class="s2-nota">Filtros de Usage según el FAQ: «Time» y «API Key». Columnas exactas: verifica en tu pantalla.</span></div>
@@ -108,6 +110,23 @@
             <div class="op" id="q-op"></div>
             <div class="e2-fb" id="q-fb" aria-live="polite"></div>
           </div>
+        </div>
+        <div class="esc-card e2-pan" id="p4" role="tabpanel" aria-labelledby="tb4" hidden>
+          <div class="e2-esq"><span class="esc-chip warn">Ilustración · formato real, cifras de ejemplo</span><span class="s2-nota">En tu aula, <b>aula dsh "tarea"</b> ya suma el uso: no necesitas jq.</span></div>
+          <pre class="e2-cod"><span class="c"># en la terminal de tu aula, dentro de /trabajo/sistema (la clave ya la guardaste con aula dsh clave)</span>
+$ aula dsh "TAREA" | tee /trabajo/A.txt
+dsh trabaja en /trabajo/sistema … (puede tardar un minuto; Ctrl+C para cancelar)
+  · &lt;herramienta&gt; &lt;archivo o comando&gt;      <span class="c"># una línea por herramienta que usa</span>
+
+── RESPUESTA ──
+&lt;lo que respondió dsh&gt;
+
+── RESUMEN DE USO ──
+  Entrada:  634,276 tokens  (caché acierto 561,226 · caché fallo 73,050 · 88% de acierto)
+  Salida:   2,700 tokens
+  Llamadas: 16 al modelo · 15 herramientas
+  Duración: 312 s</pre>
+          <p class="s2-nota"><b>Entrada</b> = acierto + fallo, igual que en Usage. Las cifras de ejemplo son las de la tabla de la primera pestaña. <b>aula dsh</b> a secas abre el modo <code>dsh&gt;</code>: cada línea es una tarea y, al salir, ves el <b>USO DE LA SESIÓN</b> sumado. CPU/RAM no salen aquí: el resumen solo cuenta tokens, llamadas y tiempo.</p>
         </div>
         <div class="esc-card e2-pan" id="p2" role="tabpanel" aria-labelledby="tb2" hidden>
           <div class="e2-dsh">
@@ -154,7 +173,7 @@ $ /usr/bin/time -v node skills/foto-del-sistema/motor/foto.mjs .</pre>
   </main>
 
   <footer class="esc-pie">
-    <span class="esc-nota">Pulsa «Lo logré» con 3 de 4 ejercicios bien y la ficha con sus 6 campos. En el aula (Ruta B) practica con el esquema y con <code>time aula sistema foto</code>; los tokens reales se miden en tu laptop con tu clave.</span>
+    <span class="esc-nota">Pulsa «Lo logré» con 3 de 4 ejercicios bien y la ficha con sus 6 campos. En el aula (Ruta B), tiempo, llamadas y tokens salen del RESUMEN DE USO de <code>aula dsh "…"</code>; compáralos con Usage (filtro por tu API key).</span>
   </footer>
 </div>
 
@@ -171,9 +190,9 @@ $ /usr/bin/time -v node skills/foto-del-sistema/motor/foto.mjs .</pre>
 (function () {
   var q = function (id) { return document.getElementById(id); };
   /* Pestañas */
-  ["1", "2", "3"].forEach(function (n) {
+  ["1", "4", "2", "3"].forEach(function (n) {
     q("tb" + n).addEventListener("click", function () {
-      ["1", "2", "3"].forEach(function (m) { q("tb" + m).setAttribute("aria-selected", m === n ? "true" : "false"); q("p" + m).hidden = m !== n; });
+      ["1", "4", "2", "3"].forEach(function (m) { q("tb" + m).setAttribute("aria-selected", m === n ? "true" : "false"); q("p" + m).hidden = m !== n; });
     });
   });
   /* Tabla de uso de ejemplo: las filas 08:11 a 08:19 son «tu corrida» */
@@ -193,7 +212,7 @@ $ /usr/bin/time -v node skills/foto-del-sistema/motor/foto.mjs .</pre>
     { t: "1. Tu corrida fue de 08:10 a 08:20 (filas resaltadas). ¿Cuántos tokens de entrada fueron caché ACIERTO (hit)?", num: true, ans: SUMA[0], ex: "Suma solo las filas del periodo: " + fmt(SUMA[0]) + "." },
     { t: "2. ¿Y cuántos fueron caché FALLO (miss)?", num: true, ans: SUMA[1], ex: "Suma del periodo: " + fmt(SUMA[1]) + ". El fallo es el precio normal de entrada." },
     { t: "3. Para tu ficha, ¿cuántos tokens de ENTRADA tuvo la corrida?", op: [fmt(SUMA[0]), fmt(SUMA[1]), fmt(SUMA[0] + SUMA[1]) + " (acierto + fallo)"], ans: 2, ex: "La entrada facturable es acierto + fallo = " + fmt(SUMA[0] + SUMA[1]) + "." },
-    { t: "4. ¿Qué parte del consumo de tu tarea NO aparece en esta página?", op: ["Los tokens de salida", "La CPU y la RAM de tu laptop", "Los tokens con caché acierto"], ans: 1, ex: "Usage solo conoce tokens. CPU y RAM se miden en tu máquina." }
+    { t: "4. ¿Qué parte del consumo de tu tarea NO aparece en esta página?", op: ["Los tokens de salida", "La CPU y la RAM de tu máquina", "Los tokens con caché acierto"], ans: 1, ex: "Usage solo conoce tokens. CPU y RAM se miden en la máquina donde corre dsh." }
   ];
   var ix = 0, bien = 0, resuelto = [];
   function pinta() {

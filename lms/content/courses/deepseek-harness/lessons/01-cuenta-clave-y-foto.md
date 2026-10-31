@@ -7,7 +7,7 @@ objectives:
   - id: dh-01-o1
     title: Crear tu cuenta de la plataforma de DeepSeek, ver tu saldo y guardar una API key en un gestor de contraseñas sin pegarla en ningún chat
   - id: dh-01-o2
-    title: Abrir DeepSeek Harness (dsh) con npx, poner la clave en Settings → Models y decidir sobre «Upload Session Log»
+    title: Abrir DeepSeek Harness (dsh) con tu clave, en tu aula del LIVE (aula dsh clave y aula dsh web) o en tu laptop (npx y Settings → Models), y decidir sobre «Upload Session Log»
   - id: dh-01-o3
     title: Elegir uno de los 15 sistemas de práctica, usarlo con dos roles y tomar su foto (FOTO/FOTO.md, FOTO.json y hashes.txt)
   - id: dh-01-o4
@@ -30,7 +30,7 @@ materials:
     file: materials/guia-deepseek-cuenta-recarga-api.md
     objective_ids: [dh-01-o1, dh-01-o2]
   - id: dh-01-kit
-    title: Kit «Foto del sistema» (skill, AGENTS.sistema.md y foto.mjs; para tu laptop)
+    title: Kit «Foto del sistema» (skill, AGENTS.sistema.md y foto.mjs; para tu laptop, Ruta A; el aula ya lo trae)
     kind: zip
     file: materials/kit-foto-del-sistema.zip
     objective_ids: [dh-01-o3, dh-01-o4]
@@ -115,7 +115,7 @@ materials:
     url: https://github.com/deepseek-ai/deepseek-harness
     objective_ids: [dh-01-o2]
   - id: dh-01-m-node
-    title: Node.js · descarga (dsh pide 24.9 o más)
+    title: "Node.js · descarga (solo para tu laptop, Ruta A: dsh pide 24.9 o más; el aula ya lo trae)"
     kind: link
     url: https://nodejs.org/
     objective_ids: [dh-01-o2]
@@ -140,7 +140,7 @@ cycle:
     tool: zoom
     phase: experiencia
     description: Asiste en vivo (martes 17 de noviembre, 7:30 pm) o mira la grabación. En la escena 1 marca tu lista previa.
-    check: Tienes Node 24.9 o más, npx ya corrido y un gestor de contraseñas
+    check: Abriste la terminal de tu aula del LIVE y tienes un gestor de contraseñas
   - id: cuenta
     title: Crear la cuenta y ver el saldo
     tool: lms
@@ -157,13 +157,13 @@ cycle:
     title: Abrir dsh y poner la clave
     tool: terminal
     phase: experiencia
-    description: "Sigue la escena 4. En tu laptop: npx @deepseek-ai/dsh web, clave en Settings → Models y decisión sobre Upload Session Log."
-    check: dsh abre en 127.0.0.1:3080 y «Select model» muestra modelos con tu clave
+    description: "Sigue la escena 4. En tu aula: aula dsh clave, aula dsh web y abre tu enlace. En tu laptop: npx @deepseek-ai/dsh web, clave en Settings → Models y decisión sobre Upload Session Log."
+    check: Tu dsh abre (tu enlace del aula o 127.0.0.1:3080) y «Select model» muestra modelos con tu clave
   - id: sistema
     title: Elegir tu sistema y usarlo
     tool: lms
     phase: reflexion
-    description: "En la escena 5 elige tu sistema. Ruta A: descomprime su zip. Ruta B: aula sistema <id> y el Visor. Entra con dos roles."
+    description: "En la escena 5 elige tu sistema. Ruta B: aula sistema <id> y úsalo en el Visor. Ruta A: descomprime su zip. Entra con dos roles."
     check: Elegiste tu sistema y lo abriste con al menos dos roles
   - id: foto
     title: Tomar y leer la foto
@@ -175,7 +175,7 @@ cycle:
     title: Dar reglas a tu agente
     tool: terminal
     phase: reflexion
-    description: En la escena 7 mira las seis reglas de AGENTS.md. Copia AGENTS.md y la skill a tu sistema y pide la foto a tu agente.
+    description: En la escena 7 mira las seis reglas de AGENTS.md. Deja AGENTS.md y la skill en tu sistema (en el aula, AGENTS.md ya está y la skill se copia de /opt/skills-curso) y pide la foto a dsh.
     check: AGENTS.md y skills/foto-del-sistema están en la carpeta de tu sistema
   - id: preguntar
     title: Preguntar o responder
@@ -193,28 +193,36 @@ cycle:
 
 ## Avance de la clase
 
-Hoy dejas todo listo para trabajar: tu cuenta, tu clave, dsh abierto y **la foto de tu sistema**.
+Hoy dejas todo listo para trabajar: tu cuenta, tu clave, dsh abierto con ella y **la foto de tu sistema**.
 DeepSeek Harness está en **developer preview**: si tu pantalla difiere, manda la documentación oficial.
 
 | Bloque | Qué haces | Comprobación |
 |---|---|---|
-| 1 · Mapa del día | Marcas tu lista previa | Node, npx y gestor listos |
+| 1 · Mapa del día | Marcas tu lista previa | Aula abierta y gestor listo |
 | 2 · Cuenta y saldo | Recorres los esquemas | Ves tu saldo |
 | 3 · API key | Juegas «dónde SÍ y dónde NO» | 8 de 8 y clave solo en tu gestor |
-| 4 · Abrir dsh | Sigues las capturas reales | Select model con tu clave |
+| 4 · Abrir dsh | `aula dsh clave` y `aula dsh web` (o npx en tu laptop) | Select model con tu clave |
 | 5 · Tu sistema | Eliges 1 de 15 y lo usas | Dos roles probados |
 | 6 · La foto | Clasificas y tomas la tuya | FOTO/ con 3 archivos |
 | 7 · AGENTS.md y tarea | Ves las 6 reglas | Skill y AGENTS.md en tu carpeta |
 
-Dos rutas: **Ruta A** es tu laptop (dsh, tu clave, el zip de tu sistema). **Ruta B** es el aula, sin internet:
-ahí no corre dsh, pero sí el sistema, el Visor y el agente `jmd` con la skill.
+Dos rutas, las dos completas:
+
+- **Ruta B · tu aula del LIVE** (la de la clase): todo instalado. El aula sale a internet solo por el proxy de la
+  clase y trae Node 24 y dsh 0.2.1-rc.5: no instalas nada en tu laptop. `aula sistema <id>` → `aula dsh clave` →
+  `aula dsh web` (o `aula dsh "tarea"` en la terminal). El sistema se usa en el Visor: `/vista/<tú>/sistema/`.
+- **Ruta A · tu laptop** (para trabajar en casa): dsh con `npx @deepseek-ai/dsh web` (Node 24.9 o más), el zip de
+  tu sistema y el kit.
+
+En las dos, la clave es **la tuya** (tu cuenta y tu saldo en DeepSeek).
 
 ## Antes de la clase
 
-- [ ] `node -v` dice v24.9.0 o mayor.
-- [ ] Corriste `npx @deepseek-ai/dsh web` una vez (la primera tarda 5 a 6 minutos).
+- [ ] Sabes entrar a tu aula del LIVE y abrir su terminal (ahí ya están Node 24 y dsh).
 - [ ] Tienes un gestor de contraseñas.
-- [ ] Descargaste el kit y el zip de tu sistema (cuando lo elijas, en la escena 5).
+- [ ] Tienes con qué recargar saldo en DeepSeek (nadie paga en vivo).
+- [ ] Opcional, Ruta A: `node -v` dice v24.9.0 o mayor y corriste `npx @deepseek-ai/dsh web` una vez (la primera
+  tarda 5 a 6 minutos); el kit y el zip de tu sistema los bajas en la escena 5.
 
 ## 2 · Cuenta y saldo
 
@@ -240,22 +248,35 @@ Mínimo de recarga, Visa/Mastercard de Perú y Yape/Plin: **verifica en tu panta
 
 ## 4 · Abrir dsh
 
-**Objetivo:** dsh abierto con tu clave (solo Ruta A).
+**Objetivo:** dsh abierto con tu clave.
+
+**En tu aula (Ruta B), tres pasos:**
+
+1. `aula dsh clave`: pega tu API key (no se ve al escribir). Queda solo en la memoria del aula; si el aula se
+   reinicia, la vuelves a pegar. `aula dsh olvidar` la borra.
+2. `aula dsh web`: arranca la interfaz web de dsh e imprime tu enlace (`https://jmd-learn.online/dsh/<tú>/?…`).
+3. Abre el enlace: es la misma interfaz de las capturas. Solo lo abren tú y el instructor; no lo compartas.
+
+«Upload Session Log» viene **apagado** en el aula. Sin web: `aula dsh "tarea"` responde en la terminal con un
+resumen de uso, y `aula dsh` a secas abre un modo `dsh> ` donde cada línea es una tarea. `aula dsh estado` te dice
+qué hay; `aula dsh web parar` la apaga.
+
+**En tu laptop (Ruta A):**
 
 1. `npx @deepseek-ai/dsh web` → **Continue**.
 2. **Add API Key**, o More → Settings → Models → **Apply**.
-3. Decide sobre **Upload Session Log** (viene activado).
+3. Decide sobre **Upload Session Log** (en la laptop viene activado).
 4. **Add workspace…** y elige la carpeta de tu sistema.
 5. Primer prompt: `Summarize this repository and identify its main packages.`
 
-**Qué deberías ver:** el agente responde y pide aprobar acciones. **Si falla:** 401 clave mala · 402 sin saldo · 429 demasiadas peticiones.
+**Qué deberías ver:** el agente responde y pide aprobar acciones. **Si falla:** 401 clave mala · 402 sin saldo · 429 demasiadas peticiones. En el aula, «sin salida a internet por el proxy» → avisa al instructor.
 
 ## 5 · Tu sistema
 
 **Objetivo:** elegir uno de los 15 y conocerlo por dentro.
 
 1. Filtra por rubro o rol y elige el tuyo.
-2. Ruta A: zip de Materiales. Ruta B: `aula sistema <id>`.
+2. Ruta B: `aula sistema <id>` (y, si ya abriste la web de dsh, `aula dsh web parar` y `aula dsh web` para que trabaje en `/trabajo/sistema`). Ruta A: zip de Materiales.
 3. Entra con dos roles y compara el menú.
 
 **Qué deberías ver:** el mismo sistema con menús distintos por rol. **Si falla:** no entra → revisa `LEEME.txt` (usuarios y claves de demostración).
@@ -274,9 +295,11 @@ Mínimo de recarga, Visa/Mastercard de Perú y Yape/Plin: **verifica en tu panta
 
 **Objetivo:** que tu agente lea la foto primero y no invente.
 
-1. Ruta A: copia `skills/` y `AGENTS.md` del kit a tu sistema.
-2. Dile a dsh: «Lee AGENTS.md y skills/foto-del-sistema/SKILL.md».
-3. Ruta B: `jmd` ya trae la skill.
+1. Ruta B: `AGENTS.md` ya está; copia la skill con
+   `mkdir -p /trabajo/sistema/skills && cp -R /opt/skills-curso/foto-del-sistema /trabajo/sistema/skills/`.
+   Ruta A: copia `skills/` y `AGENTS.md` del kit a tu sistema.
+2. Dile a dsh (web o `aula dsh "…"`): «Lee AGENTS.md y skills/foto-del-sistema/SKILL.md».
+3. El agente `jmd` del aula también trae la skill, por si te quedas sin saldo.
 
 **Qué deberías ver:** el agente abre `FOTO/FOTO.md` antes que el código y cita `archivo:línea`. **Si falla:** inventa rutas → recuérdale la regla «no inventes».
 

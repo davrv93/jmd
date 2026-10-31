@@ -174,6 +174,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/term", s.authed(s.term))
 	// JMRV embebido: el Image Studio detrás de la sesión del LMS (ver jmrv.go).
 	mux.Handle("/jmrv/", s.authed(s.jmrvProxy))
+	// DeepSeek Harness del aula (puerto 3080): todos los métodos y WebSocket; autentica dentro (ver dsh.go).
+	mux.HandleFunc("/dsh/{sub}/{ruta...}", s.dshProxy)
 	mux.Handle("POST /api/v1/aula/iniciar", s.authed(s.aulaIniciar))
 	mux.Handle("GET /api/v1/aula", s.authed(s.aulaEstado))
 	mux.Handle("POST /api/v1/aula/asistente", s.authed(s.aulaAsistente))
