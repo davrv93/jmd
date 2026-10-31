@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Acota el contexto: cuatro palancas y un freno</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-02). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: deslizadores (archivos, líneas de salida, alcance de la búsqueda, turnos) y dos interruptores (resumen
+  reutilizado, «revisa todo otra vez»). La estimación de tokens y tiempo cambia en vivo frente a una referencia fija.
+  Modelo didáctico de relaciones; no son cifras de DeepSeek. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .35); }
+.esc-titulo { font-size: 1.4em; }
+.d4-b { display: grid; grid-template-columns: 1fr 1.15fr; gap: 1.8vw; align-items: stretch; min-height: 0; }
+.d4-pal { padding: .8em 1.1em; display: grid; gap: .55em; align-content: start; }
+.d4-pal h3 { font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; gap: .6em; align-items: center; }
+.d4-r { display: grid; grid-template-columns: 10em 1fr 5.5em; gap: .7em; align-items: center; font-size: .8em; }
+.d4-r label { font-weight: 700; }
+.d4-r label small { display: block; font-weight: 500; color: var(--muted); font-size: .82em; }
+.d4-r input[type=range] { width: 100%; accent-color: var(--accent); }
+.d4-r output { font-family: var(--mono); font-weight: 700; text-align: right; }
+.d4-sw { display: grid; grid-template-columns: 10em 1fr; gap: .7em; align-items: center; font-size: .8em; }
+.d4-sw label { font-weight: 700; } .d4-sw label small { display: block; font-weight: 500; color: var(--muted); font-size: .82em; }
+.d4-tog { font: 700 .9em/1 system-ui, sans-serif; padding: .5em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; justify-self: start; }
+.d4-tog[aria-pressed="true"] { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.d4-tog[aria-pressed="false"] { background: var(--s2); color: var(--muted); }
+.d4-tog.freno[aria-pressed="true"] { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+.d4-der { display: grid; gap: 1vh; align-content: start; }
+.d4-cmp { padding: .8em 1.1em; display: grid; gap: .5em; }
+.d4-cmp h3 { font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.d4-fila { display: grid; grid-template-columns: 6.5em 1fr 4.5em; gap: .7em; align-items: center; font-size: .78em; }
+.d4-fila b { font-family: var(--mono); text-align: right; }
+.d4-bar { display: flex; height: 1.5em; border-radius: .5em; overflow: hidden; background: var(--s3); }
+.d4-bar i { display: block; height: 100%; transition: flex-basis .35s ease-out; flex: 0 0 0; }
+.d4-bar .i1 { background: var(--muted); } .d4-bar .i2 { background: var(--ph-ea); } .d4-bar .i3 { background: var(--ph-or); } .d4-bar .i4 { background: var(--accent-2); } .d4-bar .i5 { background: var(--bad); }
+.d4-leg { display: flex; flex-wrap: wrap; gap: .4em 1em; font-size: .68em; color: var(--muted); }
+.d4-leg span::before { content: ""; display: inline-block; width: .8em; height: .8em; border-radius: .2em; margin-right: .4em; vertical-align: -.1em; background: var(--c); }
+.d4-kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.d4-kpi div { background: var(--s2); border-radius: .6em; padding: .45em .7em; }
+.d4-kpi b { display: block; font-size: 1.3em; font-family: var(--mono); letter-spacing: -.02em; }
+.d4-kpi span { font-size: .62em; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+.d4-kpi b.ok { color: var(--ok); } .d4-kpi b.bad { color: var(--bad); }
+.d4-est { margin: 0; padding: .7em 1em; border-radius: .7em; background: var(--s2); font-size: .84em; border-left: 5px solid var(--accent); }
+.d4-est.bad { border-left-color: var(--bad); } .d4-est.ok { border-left-color: var(--ok); }
+.d4-est b { color: var(--accent); } .d4-est.bad b { color: var(--bad); } .d4-est.ok b { color: var(--ok); }
+@media (prefers-reduced-motion: reduce) { .d4-bar i { transition: none; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptos</span>
+    <span class="esc-num">DeepSeek Harness · S2 · E04</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="a-in">
+      <h1 class="esc-titulo">Acota el contexto: <em>cuatro palancas</em> y un freno</h1>
+      <p class="esc-sub">La tarea necesita 3 archivos para salir bien. Baja el contexto a la mitad de la referencia sin dejarlos fuera.</p>
+    </div>
+    <div class="d4-b">
+      <section class="esc-card d4-pal a-in" style="--d:.15s" aria-label="Palancas">
+        <h3>Palancas <span class="esc-chip warn">modelo de relaciones, no cifras de DeepSeek</span></h3>
+        <div class="d4-r"><label for="p-arch">Archivos incluidos<small>completos, en el contexto</small></label><input type="range" id="p-arch" min="0" max="12" value="8"><output id="o-arch">8</output></div>
+        <div class="d4-r"><label for="p-lin">Líneas de salida<small>por comando (head/tail)</small></label><input type="range" id="p-lin" min="10" max="500" step="10" value="500"><output id="o-lin">500</output></div>
+        <div class="d4-r"><label for="p-alc">Alcance del grep<small>archivo · carpeta · repo · con node_modules</small></label><input type="range" id="p-alc" min="0" max="3" value="3"><output id="o-alc">todo</output></div>
+        <div class="d4-r"><label for="p-tur">Turnos en la conversación<small>una responsabilidad = menos turnos</small></label><input type="range" id="p-tur" min="1" max="8" value="6"><output id="o-tur">6</output></div>
+        <div class="d4-sw"><label>Resumen revisado<small>20 líneas en vez de entender 3 archivos más</small></label><button type="button" class="d4-tog" id="p-res" aria-pressed="false">Apagado</button></div>
+        <div class="d4-sw"><label>El freno: «revisa todo otra vez»<small>dos llamadas extra con todo el contexto</small></label><button type="button" class="d4-tog freno" id="p-rev" aria-pressed="true">Encendido</button></div>
+      </section>
+      <aside class="d4-der a-in" style="--d:.3s">
+        <div class="esc-card d4-cmp">
+          <h3>Tokens de entrada por tarea · referencia frente a ahora</h3>
+          <div class="d4-fila"><span>Referencia</span><div class="d4-bar" id="b-ref"><i class="i1"></i><i class="i2"></i><i class="i3"></i><i class="i4"></i><i class="i5"></i></div><b id="k-ref">0</b></div>
+          <div class="d4-fila"><span>Ahora</span><div class="d4-bar" id="b-now"><i class="i1"></i><i class="i2"></i><i class="i3"></i><i class="i4"></i><i class="i5"></i></div><b id="k-now">0</b></div>
+          <div class="d4-leg"><span style="--c:var(--muted)">instrucciones + resumen</span><span style="--c:var(--ph-ea)">archivos</span><span style="--c:var(--ph-or)">salidas de comandos</span><span style="--c:var(--accent-2)">historial reenviado</span><span style="--c:var(--bad)">revisión extra</span></div>
+          <div class="d4-kpi">
+            <div><b id="k-pct">100 %</b><span>de la referencia</span></div>
+            <div><b id="k-t">0 s</b><span>tiempo estimado</span></div>
+            <div><b id="k-cal">—</b><span>calidad esperada</span></div>
+          </div>
+        </div>
+        <p class="d4-est" id="est"><b>Referencia:</b> 8 archivos, 500 líneas por comando, grep en todo, 6 turnos, sin resumen y con «revisa todo». Mueve una palanca a la vez y mira qué franja se achica.</p>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando llegues al 50 % o menos con la calidad en verde</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var q = function (id) { return document.getElementById(id); };
+  var ALC = ["archivo", "carpeta", "repo", "todo"], GREP = [5, 40, 200, 900], GREPT = [.3, 2, 6, 20];
+  var REF = { arch: 8, lin: 500, alc: 3, tur: 6, res: false, rev: true };
+  var est = { arch: 8, lin: 500, alc: 3, tur: 6, res: false, rev: true };
+  function calc(s) {
+    var inst = 400 + (s.res ? 350 : 0);
+    var arch = s.arch * 800;
+    var sal = (Math.min(GREP[s.alc], s.lin) + Math.min(120, s.lin)) * 12;
+    var ctx1 = inst + arch + sal, hist = 0;
+    for (var t = 2; t <= s.tur; t++) hist += (t - 1) * 600;
+    var base = ctx1 * s.tur + hist;
+    var rev = s.rev ? 2 * (ctx1 + s.tur * 600) : 0;
+    var partes = [inst * s.tur, arch * s.tur, sal * s.tur, hist, rev];
+    var total = base + rev, llamadas = s.tur + (s.rev ? 2 : 0);
+    var tiempo = GREPT[s.alc] + 4 + llamadas * 1.5 + total / 5000;
+    var calidad = s.arch >= (s.res ? 3 : 6);
+    return { total: total, partes: partes, tiempo: tiempo, calidad: calidad, llamadas: llamadas };
+  }
+  var R = calc(REF), MAX = R.total;
+  function k(n) { return (n / 1000).toFixed(1).replace(".", ",") + " k"; }
+  function barra(id, r) {
+    var is = q(id).children;
+    for (var i = 0; i < is.length; i++) is[i].style.flexBasis = (r.partes[i] / MAX * 100) + "%";
+  }
+  function pintar() {
+    q("o-arch").textContent = est.arch; q("o-lin").textContent = est.lin; q("o-alc").textContent = ALC[est.alc]; q("o-tur").textContent = est.tur;
+    var A = calc(est), pct = Math.round(A.total * 100 / R.total);
+    barra("b-ref", R); barra("b-now", A);
+    q("k-ref").textContent = k(R.total); q("k-now").textContent = k(A.total);
+    q("k-pct").textContent = pct + " %"; q("k-pct").className = pct <= 50 ? "ok" : "";
+    q("k-t").textContent = Math.round(A.tiempo) + " s"; 
+    q("k-cal").textContent = A.calidad ? "completa" : "incompleta"; q("k-cal").className = A.calidad ? "ok" : "bad";
+    var e = q("est");
+    if (!A.calidad) { e.className = "d4-est bad"; e.innerHTML = "<b>Respuesta incompleta.</b> Con " + est.arch + " archivos " + (est.res ? "el resumen no alcanza: la tarea edita 3 archivos y los necesita dentro." : "y sin resumen el agente no entiende el módulo: necesita 6, o 3 más un resumen revisado.") + " El contexto bajó, pero esto no es ahorro: es otra tarea."; }
+    else if (pct <= 50) { e.className = "d4-est ok"; e.innerHTML = "<b>" + pct + " % de la referencia con la calidad completa.</b> " + A.llamadas + " llamadas, unos " + Math.round(A.tiempo) + " s. Anota qué palancas moviste: eso es el borrador de tu rutina. Pulsa «Lo logré»."; }
+    else { e.className = "d4-est"; e.innerHTML = "<b>" + pct + " % de la referencia.</b> " + pista(A); }
+  }
+  function pista(A) {
+    var p = A.partes, i = p.indexOf(Math.max.apply(null, p));
+    return ["las instrucciones pesan poco; mira otra franja.", "los archivos son la franja más grande: incluye solo los que la tarea toca, o enciende el resumen.", "las salidas de comandos mandan: recorta líneas y el alcance del grep.", "el historial reenviado es lo que más pesa: menos turnos, una responsabilidad por tarea.", "la revisión extra duplica la cuenta: verifica con la prueba pertinente, no con «revisa todo»."][i];
+  }
+  ["arch", "lin", "alc", "tur"].forEach(function (n) { q("p-" + n).addEventListener("input", function (ev) { est[n] = parseInt(ev.target.value, 10); pintar(); }); });
+  [["res", "Encendido", "Apagado"], ["rev", "Encendido", "Apagado"]].forEach(function (d) {
+    var b = q("p-" + d[0]);
+    b.addEventListener("click", function () { est[d[0]] = !est[d[0]]; b.setAttribute("aria-pressed", est[d[0]] ? "true" : "false"); b.textContent = est[d[0]] ? d[1] : d[2]; pintar(); });
+  });
+  pintar();
+})();
+</script>
+</body>
+</html>

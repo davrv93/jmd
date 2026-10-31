@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · AGENTS.md: instrucciones para que el agente no relea todo</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: casillas para armar las instrucciones del proyecto; a la derecha se arma el AGENTS.md y dos barras
+  comparan cuánto lee el agente antes de empezar una tarea sin instrucciones y con las tuyas. Tres casillas son trampa:
+  inflan el contexto en vez de ahorrarlo. Cifras aproximadas, para ver la forma del ahorro. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.3em; }
+.s5-et { font-size: .62em; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.s5-b5 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.4vw; min-height: 0; align-items: stretch; }
+.s5-col { padding: .7em 1em; display: grid; gap: .5em; align-content: start; min-width: 0; }
+.s5-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; }
+.s5-lista label { display: grid; grid-template-columns: auto 1fr auto; gap: .7em; align-items: center; padding: .4em .8em; border-radius: .7em; border: 1px solid var(--line); background: var(--s1); cursor: pointer; font-size: .76em; line-height: 1.3; transition: border-color .15s, background .15s; }
+.s5-lista label:hover { border-color: var(--accent); }
+.s5-lista input { width: 1.1em; height: 1.1em; accent-color: var(--accent); margin: 0; }
+.s5-lista label.on { border-color: var(--accent); background: var(--accent-bg); }
+.s5-lista label.on.trampa { border-color: var(--bad); background: var(--bad-bg); }
+.s5-lista code { font: 600 .9em var(--mono); background: var(--s3); padding: 0 .3em; border-radius: .3em; }
+.s5-lista .ef { font: 700 .82em var(--mono); color: var(--ok); white-space: nowrap; }
+.s5-lista .ef.mas { color: var(--bad); } .s5-lista .ef.cal { color: var(--gold); }
+.s5-med { display: grid; gap: .25em; }
+.s5-fila { display: grid; grid-template-columns: 9em 1fr auto; gap: .7em; align-items: center; font-size: .74em; }
+.s5-fila b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.s5-barra { height: 1em; border-radius: .5em; background: var(--s3); overflow: hidden; position: relative; }
+.s5-barra i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, var(--warn), var(--bad)); width: 100%; transition: width .4s cubic-bezier(.2,.7,.2,1); }
+.s5-barra.con i { background: linear-gradient(90deg, var(--accent), var(--est-g)); }
+.s5-barra i.inst { background: var(--gold); left: auto; right: 0; width: 0; }
+.s5-nota { margin: 0; font-size: .7em; color: var(--muted); }
+.s5-nota b { color: var(--accent); }
+.s5-nota.alerta b { color: var(--bad); }
+.s5-md { margin: 0; font: 600 .62em/1.45 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .8em; padding: .7em 1em; white-space: pre-wrap; max-height: 36vh; overflow: hidden; border: 1px solid rgba(190,185,255,.22); }
+.s5-md .h { color: #8e7dff; } .s5-md .c { color: #7f7aa8; } .s5-md .x { color: #ff9b9b; }
+.s5-pant { display: flex; gap: .5em; align-items: center; font-size: .7em; color: var(--muted); }
+.s5-pant b { font-variant-numeric: tabular-nums; }
+.s5-pant .esc-chip { font-size: .9em; }
+.s5-logro { display: none; }
+.s5-logro.ver { display: inline-flex; animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">DeepSeek Harness · S1 · E05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Instrucciones del proyecto: <em>lo que el agente no debería tener que redescubrir</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Marca lo que irías a <code>AGENTS.md</code> de tienda-sol. Mira cuánto baja (o sube) la lectura previa de cada tarea. Tres casillas son trampa.</p>
+    </div>
+    <div class="s5-b5">
+      <section class="esc-card s5-col a-in" style="--d:.2s" aria-label="Casillas para armar AGENTS.md">
+        <span class="s5-et">¿Qué va en AGENTS.md? · −ahorra · +infla · ◆ calidad</span>
+        <ul class="s5-lista" id="lista"></ul>
+      </section>
+      <aside class="esc-card s5-col a-in" style="--d:.3s" aria-label="Resultado">
+        <span class="s5-et">Lectura previa de una tarea típica (antes de hacer nada)</span>
+        <div class="s5-med">
+          <div class="s5-fila"><span>Sin instrucciones</span><div class="s5-barra" aria-hidden="true"><i></i></div><b id="sin">14,2 k tokens</b></div>
+          <div class="s5-fila"><span>Con tu AGENTS.md</span><div class="s5-barra con" aria-hidden="true"><i id="con-b"></i><i class="inst" id="inst-b"></i></div><b id="con">14,2 k tokens</b></div>
+          <p class="s5-nota" id="nota">Sin instrucciones el agente lista el árbol, abre README, package.json y 6 archivos para ubicarse. En cada tarea. <b>Marca casillas.</b></p>
+        </div>
+        <div class="s5-pant"><span>Tu AGENTS.md: <b id="lin">0</b> líneas · <b id="tam">0</b> tokens</span><span class="esc-chip" id="pant">cabe en una pantalla</span><span class="esc-chip ok s5-logro" id="logro">5 o más útiles y ninguna trampa · pulsa «Lo logré»</span></div>
+        <pre class="s5-md" id="md"><span class="c"># AGENTS.md (vacío) · marca casillas a la izquierda</span></pre>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">AGENTS.md es un formato abierto; comprueba en la documentación de dsh qué archivo lee y, si no, empieza cada sesión con «Lee AGENTS.md antes de empezar»</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var BASE = 14200;
+  // ahorro: tokens que el agente deja de leer · tam: tokens que ocupa la sección en AGENTS.md · lin: líneas
+  // tipo: util | cal (solo calidad, no ahorra) | trampa (infla)
+  var ITEMS = [
+    { t: "Cómo arrancar y probar: <code>npm start</code>, <code>npm test</code>, <code>npm run migrar</code>", ahorro: 900, tam: 40, lin: 4, tipo: "util", md: "## Arrancar y probar\n- npm start · npm test · npm run migrar\n- Postgres local: DATABASE_URL en .env (ver .env.example)" },
+    { t: "Mapa de carpetas en 6 líneas: rutas = HTTP, servicios = reglas, db.js = pg, bin = migraciones, test", ahorro: 4500, tam: 90, lin: 7, tipo: "util", md: "## Mapa\n- src/rutas/      HTTP (express.Router)\n- src/servicios/  reglas: stock, igv, sunat\n- src/db.js       conexión pg\n- bin/migrar.js   aplica migraciones/*.sql\n- test/           node --test" },
+    { t: "Puntos de entrada: <code>src/server.js</code>, <code>bin/migrar.js</code>, <code>Dockerfile</code>", ahorro: 1200, tam: 35, lin: 3, tipo: "util", md: "## Entradas\n- src/server.js (app.listen) · bin/migrar.js · Dockerfile CMD" },
+    { t: "Dónde vive la verdad: IGV en <code>servicios/igv.js</code>; pagos en <code>rutas/pagos.js</code>; <code>sunat.js</code> no se usa (por verificar)", ahorro: 2500, tam: 60, lin: 4, tipo: "util", md: "## Dónde está la verdad\n- IGV: src/servicios/igv.js (const IGV)\n- Pagos: src/rutas/pagos.js\n- servicios/sunat.js: nadie lo importa (por verificar antes de tocar)" },
+    { t: "Qué no tocar: migraciones ya aplicadas, <code>.env</code>, <code>package-lock.json</code>", ahorro: 0, tam: 35, lin: 3, tipo: "cal", md: "## No tocar\n- migraciones/ ya aplicadas (crea una nueva) · .env · package-lock.json" },
+    { t: "Cómo verificar un cambio: <code>npm test</code> y levantar + <code>GET /salud</code>", ahorro: 400, tam: 35, lin: 3, tipo: "util", md: "## Verificar\n- npm test en verde · npm start y GET /salud responde 200" },
+    { t: "Convenciones: nombres en español, sin dependencias nuevas sin preguntar", ahorro: 0, tam: 30, lin: 2, tipo: "cal", md: "## Convenciones\n- Nombres en español · ninguna dependencia nueva sin preguntar" },
+    { t: "Regla: cita archivo y línea en cada afirmación; si no lo viste, di «por verificar»", ahorro: 0, tam: 30, lin: 2, tipo: "cal", md: "## Cómo responder\n- Cita archivo:línea. Lo que no viste en un archivo, márcalo «por verificar»." },
+    { t: "Pegar el README completo (1.800 palabras)", ahorro: 2400, tam: 2400, lin: 60, tipo: "trampa", md: "## README\n(1.800 palabras pegadas: historia, capturas, FAQ...)" },
+    { t: "El árbol completo de archivos (240 entradas)", ahorro: 400, tam: 3100, lin: 240, tipo: "trampa", md: "## Árbol\n(240 líneas de rutas que un ls da en 400 tokens)" },
+    { t: "Historia del proyecto y por qué se eligió Express en 2019", ahorro: 0, tam: 800, lin: 18, tipo: "trampa", md: "## Historia\n(por qué Express, qué pasó con el equipo anterior...)" }
+  ];
+  var orden = ITEMS.map(function (_, i) { return i; });
+  for (var i = orden.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = orden[i]; orden[i] = orden[j]; orden[j] = t; }
+  var ul = $("lista"), sel = {};
+  orden.forEach(function (i) {
+    var it = ITEMS[i];
+    var lab = document.createElement("label"); if (it.tipo === "trampa") lab.className = "trampa";
+    var inp = document.createElement("input"); inp.type = "checkbox";
+    var s = document.createElement("span"); s.innerHTML = it.t;
+    var ef = document.createElement("span"); ef.className = "ef";
+    if (it.tipo === "trampa") { ef.textContent = "+" + fmt(it.tam - it.ahorro); ef.className += " mas"; }
+    else if (it.tipo === "cal") { ef.textContent = "◆ calidad"; ef.className += " cal"; }
+    else ef.textContent = "−" + fmt(it.ahorro);
+    inp.addEventListener("change", function () { sel[i] = inp.checked; lab.classList.toggle("on", inp.checked); pintar(); });
+    lab.appendChild(inp); lab.appendChild(s); lab.appendChild(ef); ul.appendChild(lab);
+  });
+  function fmt(n) { return n >= 1000 ? (n / 1000).toFixed(1).replace(".", ",") + " k" : String(n); }
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function pintar() {
+    var ahorro = 0, tam = 0, lin = 0, utiles = 0, trampas = 0, md = "";
+    ITEMS.forEach(function (it, i) {
+      if (!sel[i]) return;
+      ahorro += it.ahorro; tam += it.tam; lin += it.lin + 1;
+      if (it.tipo === "trampa") trampas++; else utiles++;
+      var cls = it.tipo === "trampa" ? "x" : "h";
+      md += "<span class='" + cls + "'>" + esc(it.md.split("\n")[0]) + "</span>\n" + esc(it.md.split("\n").slice(1).join("\n")) + "\n\n";
+    });
+    var con = Math.max(0, BASE - ahorro) + tam;
+    $("con").textContent = fmt(con) + " tokens";
+    $("con-b").style.width = Math.min(100, Math.max(0, BASE - ahorro) / BASE * 100) + "%";
+    $("inst-b").style.width = Math.min(100, tam / BASE * 100) + "%";
+    $("lin").textContent = lin; $("tam").textContent = fmt(tam);
+    var pant = $("pant"); var cabe = lin <= 40; pant.textContent = cabe ? "cabe en una pantalla" : "ya no cabe en una pantalla"; pant.className = "esc-chip " + (cabe ? "ok" : "bad");
+    $("md").innerHTML = md ? "<span class='c'># AGENTS.md · tienda-sol</span>\n\n" + md : "<span class='c'># AGENTS.md (vacío) · marca casillas a la izquierda</span>";
+    var nota = $("nota"), ratio = Math.round((1 - con / BASE) * 100);
+    if (!utiles && !trampas) { nota.className = "s5-nota"; nota.innerHTML = "Sin instrucciones el agente lista el árbol, abre README, package.json y 6 archivos para ubicarse. En cada tarea. <b>Marca casillas.</b>"; }
+    else if (trampas) { nota.className = "s5-nota alerta"; nota.innerHTML = "<b>Ojo:</b> pegar lo que el agente puede leer solo no ahorra: lo lee igual, pero ahora también va en cada tarea. Las instrucciones dicen lo que <b>no</b> se ve en los archivos."; }
+    else if (ratio > 0) { nota.className = "s5-nota"; nota.innerHTML = "Lectura previa <b>" + ratio + " % menor</b> en cada tarea, y el agente arranca sabiendo dónde está la verdad. En la sesión 2 lo mides de verdad."; }
+    else { nota.className = "s5-nota"; nota.innerHTML = "Esto no ahorra lectura, pero evita daños y respuestas sin ruta: <b>calidad</b>. Suma también las casillas que ahorran."; }
+    $("logro").classList.toggle("ver", utiles >= 5 && trampas === 0);
+  }
+  pintar();
+})();
+</script>
+</body>
+</html>

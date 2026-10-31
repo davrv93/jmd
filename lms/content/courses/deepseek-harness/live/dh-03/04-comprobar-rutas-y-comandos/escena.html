@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Comprobar rutas y comandos: la guía se ejecuta</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-03). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Nada se guarda: cada recarga vuelve al inicio.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.35em; }
+.d3-b4 { display: grid; grid-template-columns: 1.35fr .65fr; gap: 1.6vw; align-items: start; min-height: 0; }
+.d3-guia { padding: .7em 1em; display: grid; gap: .4em; }
+.d3-guia h3 { margin: 0 0 .2em; font: 700 .7em var(--mono); color: var(--muted); letter-spacing: .08em; display: flex; justify-content: space-between; align-items: center; }
+.d3-run { font: 700 .95em system-ui, sans-serif; padding: .4em 1em; border-radius: 999px; border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.d3-ln { display: grid; grid-template-columns: 1.6em 1fr auto; gap: .3em .7em; align-items: center; padding: .35em .6em; border-radius: .6em; background: var(--s2); border-left: 4px solid var(--line2); font-size: .8em; }
+.d3-ln.ok { border-left-color: var(--ok); } .d3-ln.bad { border-left-color: var(--bad); } .d3-ln.obs { border-left-color: var(--warn); } .d3-ln.pend { border-left-color: var(--gold); }
+.d3-ln .n { font: 700 .8em var(--mono); color: var(--muted); }
+.d3-ln code { font: 600 .9em var(--mono); color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.d3-ln .res { font: 600 .74em var(--mono); white-space: nowrap; }
+.d3-ln.ok .res { color: var(--ok); } .d3-ln.bad .res { color: var(--bad); } .d3-ln.obs .res { color: var(--warn); } .d3-ln.pend .res { color: var(--gold); }
+.d3-ln select { grid-column: 2 / -1; font: 600 .78em var(--mono); padding: .3em .5em; border-radius: .5em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); max-width: 100%; }
+.d3-ln .por { grid-column: 2 / -1; margin: 0; font-size: .82em; color: var(--muted); }
+.d3-lat { display: grid; gap: 1vh; }
+.d3-cont { padding: .7em 1em; display: grid; grid-template-columns: repeat(4, 1fr); gap: .4em; text-align: center; }
+.d3-cont div { padding: .4em .2em; border-radius: .6em; background: var(--s2); }
+.d3-cont .n { display: block; font-size: 1.5em; font-weight: 800; line-height: 1; }
+.d3-cont small { font-size: .62em; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.d3-cont .ok .n { color: var(--ok); } .d3-cont .bad .n { color: var(--bad); } .d3-cont .obs .n { color: var(--warn); } .d3-cont .pend .n { color: var(--gold); }
+.d3-regla { padding: .7em 1em; }
+.d3-regla h3 { margin: 0 0 .3em; font-size: .8em; }
+.d3-regla ul { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; font-size: .76em; color: var(--muted); }
+.d3-regla li::before { content: "→ "; color: var(--accent); font-weight: 800; }
+.d3-term { margin: 0; font: 600 .68em/1.45 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .6em .9em; white-space: pre-wrap; min-height: 6em; border: 1px solid rgba(190,185,255,.22); }
+.d3-term .p { color: #8e7dff; } .d3-term .e { color: #ff9b9b; } .d3-term .w { color: #f4ac5c; } .d3-term .g { color: #7fe3a5; }
+@media (prefers-reduced-motion: reduce) { .d3-anim { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Aplicación</span>
+    <span class="esc-num">Documenta y valida · E04</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Comprobar <em>rutas y comandos</em>: la guía se ejecuta, no se lee</h1>
+      <p class="esc-sub a-in" style="--d:.1s">Esta guía de instalación la escribió el agente para <code>tienda-sol</code>. Ejecútala línea por línea en el simulador, corrige lo que falle y deja en «pendiente» lo que no puedas confirmar.</p>
+    </div>
+    <div class="d3-b4">
+      <section class="esc-card d3-guia a-in" style="--d:.2s" aria-label="Guía de instalación">
+        <h3>EJECUCION.md · instalación local <button type="button" class="d3-run" id="run-todo">▶ Ejecutar todo</button></h3>
+        <div id="lineas"></div>
+      </section>
+      <aside class="d3-lat">
+        <div class="esc-card d3-cont a-in" style="--d:.3s" aria-label="Contadores">
+          <div class="ok"><span class="n" id="k-ok">0</span><small>ok</small></div>
+          <div class="bad"><span class="n" id="k-bad">0</span><small>ruta</small></div>
+          <div class="obs"><span class="n" id="k-obs">0</span><small>obsoleto</small></div>
+          <div class="pend"><span class="n" id="k-pend">0</span><small>pendiente</small></div>
+        </div>
+        <pre class="d3-term a-in" id="term" style="--d:.4s" aria-live="polite"><span class="p">$</span> esperando…</pre>
+        <div class="esc-card d3-regla a-in" style="--d:.5s">
+          <h3>Regla de la guía validada</h3>
+          <ul>
+            <li>Cada comando se corrió hoy, en un clon limpio, y se anota la fecha.</li>
+            <li>Una ruta que no existe no se «arregla de memoria»: se busca con <code>ls</code> o <code>find</code>.</li>
+            <li>Lo que no se pudo probar lleva <code>[PENDIENTE: motivo]</code>, visible, no escondido.</li>
+            <li>Un comando obsoleto se reemplaza por el vigente y se cita de dónde salió.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota" id="pie-nota">Pulsa «Lo logré» cuando las 8 líneas estén en ok o en pendiente con motivo (ninguna en rojo ni naranja)</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  // Cada línea: comando, estado al ejecutar (ok | bad=ruta no existe | obs=obsoleto), salida, opciones de corrección [texto, estado resultante, por qué].
+  var L = [
+    { cmd: "cd tienda-sol", st: "ok", out: "" },
+    { cmd: "cp .env.sample .env", st: "bad", out: "cp: .env.sample: No such file or directory",
+      ops: [["cp .env.example .env", "ok", "El archivo real se llama .env.example: lo dice el árbol del repo."], ["cp env.txt .env", "bad", "Tampoco existe. No adivines: lista la carpeta."], ["[PENDIENTE: confirmar nombre del archivo de entorno]", "pend", "Aceptable si no puedes mirar el repo; pero aquí sí puedes."]] },
+    { cmd: "npm install", st: "ok", out: "added 64 packages in 3s" },
+    { cmd: "docker-compose up -d postgres", st: "obs", out: "docker-compose: command not found  (Compose v1 fue retirado; v2 es un subcomando de docker)",
+      ops: [["docker compose up -d postgres", "ok", "Compose v2 va como subcomando: docker compose, sin guion."], ["docker run postgres", "bad", "Arranca un contenedor suelto sin la base, el usuario ni el puerto del compose."], ["[PENDIENTE: confirmar versión de Compose]", "pend", "Honesto, pero el mensaje de error ya te lo confirmó."]] },
+    { cmd: "psql $DATABASE_URL -f db/schema.sql", st: "bad", out: "psql: error: db/schema.sql: No such file or directory",
+      ops: [["psql \"$DATABASE_URL\" -f schema.sql", "ok", "schema.sql está en la raíz del repo, no en db/. Y la URL va entre comillas."], ["psql $DATABASE_URL -f src/schema.sql", "bad", "src/ tiene server.js, db.js y pedidos.js. Nada más."], ["[PENDIENTE: ubicar schema.sql]", "pend", "Mejor que inventar una ruta; pero el árbol lo muestra."]] },
+    { cmd: "npm start", st: "ok", out: "tienda-sol escuchando en :3000" },
+    { cmd: "curl localhost:3000/api/productos", st: "bad", out: "Cannot GET /api/productos  (404)",
+      ops: [["curl localhost:3000/productos", "ok", "server.js registra app.get('/productos'): sin el prefijo /api."], ["curl localhost:3000/products", "bad", "Está en español en el código. La ruta se copia del archivo, no se traduce."], ["[PENDIENTE: confirmar prefijo de la API]", "pend", "Aceptable; el código te lo diría en dos segundos."]] },
+    { cmd: "npm run lint", st: "obs", out: "npm ERR! Missing script: \"lint\"",
+      ops: [["[PENDIENTE: no hay lint configurado; decidir herramienta]", "pend", "Correcto: no existe y no te toca inventarlo. Queda visible como deuda."], ["npx eslint .", "bad", "ESLint no está instalado ni configurado en el repo. Fallaría en limpio."], ["quitar la línea sin decir nada", "obs", "Si desaparece sin rastro, el siguiente la vuelve a escribir. Las ausencias también se documentan."]] }
+  ];
+  var ET = { ok: "ok", bad: "ruta no existe", obs: "comando obsoleto", pend: "pendiente" };
+  var cont = document.getElementById("lineas"), term = document.getElementById("term"), estado = [];
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  L.forEach(function (l, i) {
+    var d = document.createElement("div"); d.className = "d3-ln"; d.id = "ln" + i;
+    d.innerHTML = '<span class="n">' + (i + 1) + '</span><code>' + esc(l.cmd) + '</code><button type="button" class="res" data-i="' + i + '">▶ ejecutar</button>';
+    cont.appendChild(d);
+  });
+  function contar() {
+    var k = { ok: 0, bad: 0, obs: 0, pend: 0 }; estado.forEach(function (s) { if (s) k[s]++; });
+    Object.keys(k).forEach(function (x) { document.getElementById("k-" + x).textContent = k[x]; });
+    var hechos = estado.filter(Boolean).length;
+    if (hechos === L.length && !k.bad && !k.obs) document.getElementById("pie-nota").textContent = "Guía validada: " + k.ok + " ok y " + k.pend + " pendiente(s) con motivo. Pulsa «Lo logré» en el panel.";
+  }
+  function terminal(cmd, out, st, por) {
+    var cls = st === "ok" ? "g" : st === "pend" ? "w" : "e";
+    term.innerHTML = '<span class="p">$</span> ' + esc(cmd) + "\n" + (out ? '<span class="' + cls + '">' + esc(out) + "</span>\n" : "") + '<span class="p">→</span> ' + ET[st] + (por ? "\n\n" + esc(por) : "");
+  }
+  function ejecutar(i, cmd, st, out, por) {
+    var l = L[i], d = document.getElementById("ln" + i);
+    estado[i] = st; d.className = "d3-ln " + st;
+    d.querySelector("code").textContent = cmd;
+    var r = d.querySelector(".res"); r.textContent = ET[st]; r.disabled = true;
+    var old = d.querySelector("select"); if (old) old.remove(); var p = d.querySelector(".por"); if (p) p.remove();
+    if (st !== "ok" && st !== "pend" && l.ops) {
+      var s = document.createElement("select"); s.setAttribute("aria-label", "Corrección de la línea " + (i + 1));
+      var o0 = document.createElement("option"); o0.textContent = "¿Cómo lo corriges? Elige y se vuelve a ejecutar…"; o0.disabled = true; o0.selected = true; s.appendChild(o0);
+      l.ops.slice().sort(function () { return (i * 7919) % 3 - 1; }).forEach(function (op, j) { var o = document.createElement("option"); o.value = l.ops.indexOf(op); o.textContent = op[0]; s.appendChild(o); });
+      s.addEventListener("change", function () { var op = l.ops[+s.value]; ejecutar(i, op[0], op[1], op[1] === "ok" ? "ok" : op[1] === "pend" ? "anotado en EJECUCION.md como pendiente" : (op[1] === "bad" ? "No such file or directory" : "sigue sin resolverse"), op[2]); });
+      d.appendChild(s);
+    }
+    terminal(cmd, out, st, por); contar();
+  }
+  cont.addEventListener("click", function (e) {
+    var b = e.target.closest("button.res"); if (!b || b.disabled) return;
+    var i = +b.getAttribute("data-i"), l = L[i]; ejecutar(i, l.cmd, l.st, l.out, null);
+  });
+  document.getElementById("run-todo").addEventListener("click", function () {
+    var i = 0; (function paso() { if (i >= L.length) return; if (!estado[i]) ejecutar(i, L[i].cmd, L[i].st, L[i].out, null); i++; setTimeout(paso, 220); })();
+  });
+})();
+</script>
+</body>
+</html>

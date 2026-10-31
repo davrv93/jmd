@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · ¿Qué cuesta un agente? Tres monedas, tres medidores</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-02). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: dos botones corren la misma tarea simulada «amplia» y «acotada»; los tres medidores (tiempo, tokens,
+  CPU) se llenan paso a paso. Los números son relaciones didácticas, no cifras de DeepSeek. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .35); }
+.esc-titulo { font-size: 1.5em; }
+.d1-b { display: grid; grid-template-columns: 1.15fr 1fr; gap: 2vw; align-items: stretch; min-height: 0; }
+.d1-med { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vw; }
+.d1-g { padding: .7em .9em .6em; display: grid; justify-items: center; gap: .1em; text-align: center; }
+.d1-g h3 { font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.d1-g svg { width: 78%; height: auto; overflow: visible; }
+.d1-g .f { fill: none; stroke: var(--s3); stroke-width: 14; stroke-linecap: round; }
+.d1-g .v { fill: none; stroke: var(--c, var(--accent)); stroke-width: 14; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .5s ease-out; }
+.d1-g .n { font-size: 1.5em; font-weight: 800; line-height: 1; letter-spacing: -.03em; margin-top: -.9em; }
+.d1-g .n small { font-size: .45em; color: var(--muted); font-weight: 700; }
+.d1-g .q { font-size: .68em; color: var(--muted); }
+.d1-g.api { --c: var(--ph-ea); } .d1-g.loc { --c: var(--ph-or); } .d1-g.tu { --c: var(--gold); }
+.d1-g .quien { font-size: .62em; font-weight: 800; padding: .15em .7em; border-radius: 999px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); margin-top: .3em; }
+.d1-der { display: grid; grid-template-rows: auto 1fr auto; gap: 1vh; min-height: 0; }
+.d1-btns { display: flex; gap: .6em; flex-wrap: wrap; }
+.d1-btn { font: 700 .74em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .7em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); transition: transform .15s; }
+.d1-btn:hover { transform: translateY(-1px); }
+.d1-btn.pri { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.d1-btn[disabled] { opacity: .5; cursor: default; }
+.d1-pasos { padding: .6em .9em; overflow: hidden; }
+.d1-pasos h3 { font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: .4em; }
+.d1-ol { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; }
+.d1-ol li { display: grid; grid-template-columns: 1.5em 1fr auto; gap: .6em; align-items: center; font-size: .78em; padding: .3em .5em; border-radius: .5em; background: var(--s2); animation: esc-entra .4s ease-out both; }
+.d1-ol li i { display: grid; place-items: center; width: 1.4em; height: 1.4em; border-radius: 50%; font-style: normal; font-weight: 800; font-size: .85em; background: var(--accent-bg); color: var(--accent); }
+.d1-ol li .t { font-size: .85em; font-weight: 800; padding: .1em .6em; border-radius: 999px; }
+.d1-ol li .t.api { color: var(--ph-ea); background: var(--ph-ea-bg); }
+.d1-ol li .t.loc { color: var(--ph-or); background: var(--ph-or-bg); }
+.d1-ol li .m { font-size: .8em; color: var(--muted); grid-column: 2 / -1; }
+.d1-vacio { font-size: .82em; color: var(--muted); margin: 0; }
+.d1-res { padding: .7em 1em; border-left: 5px solid var(--accent); font-size: .86em; }
+.d1-res p { margin: 0; color: var(--fg); }
+.d1-res b { color: var(--accent); }
+.d1-ruta { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5em; }
+.d1-ruta li { display: inline-flex; align-items: center; gap: .5em; padding: .28em .8em .28em .3em; border-radius: 999px; background: var(--s1); border: 1px solid var(--line); font-weight: 700; font-size: .72em; }
+.d1-ruta b { display: grid; place-items: center; width: 1.65em; height: 1.65em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .82em; }
+@media (prefers-reduced-motion: reduce) { .d1-g .v { transition: none; } .d1-ol li { animation: none; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">DeepSeek Harness · S2 · E01</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="a-in">
+      <h1 class="esc-titulo">¿Qué cuesta <em>un agente</em>? Tres monedas, no una</h1>
+      <p class="esc-sub">La misma tarea gasta tokens que cobra la API, CPU y RAM de tu máquina, y tiempo tuyo. Solo una de las tres aparece en la factura.</p>
+    </div>
+    <div class="d1-b">
+      <section class="d1-med a-in" style="--d:.15s" aria-label="Medidores">
+        <div class="esc-card d1-g tu">
+          <h3>Tiempo</h3>
+          <svg viewBox="0 0 200 120" aria-hidden="true"><path class="f" d="M20 110 A80 80 0 0 1 180 110"/><path class="v" id="g-t" pathLength="1" d="M20 110 A80 80 0 0 1 180 110"/></svg>
+          <div class="n"><span id="n-t">0</span> <small>s</small></div>
+          <div class="q">lo esperas tú</div><span class="quien">tu reloj</span>
+        </div>
+        <div class="esc-card d1-g api">
+          <h3>Tokens</h3>
+          <svg viewBox="0 0 200 120" aria-hidden="true"><path class="f" d="M20 110 A80 80 0 0 1 180 110"/><path class="v" id="g-k" pathLength="1" d="M20 110 A80 80 0 0 1 180 110"/></svg>
+          <div class="n"><span id="n-k">0</span> <small>k</small></div>
+          <div class="q" id="q-k">entrada 0 k · salida 0 k</div><span class="quien">la API lo cobra</span>
+        </div>
+        <div class="esc-card d1-g loc">
+          <h3>CPU pico</h3>
+          <svg viewBox="0 0 200 120" aria-hidden="true"><path class="f" d="M20 110 A80 80 0 0 1 180 110"/><path class="v" id="g-c" pathLength="1" d="M20 110 A80 80 0 0 1 180 110"/></svg>
+          <div class="n"><span id="n-c">0</span> <small>%</small></div>
+          <div class="q" id="q-c">RAM 0 MB del proceso</div><span class="quien">tu máquina</span>
+        </div>
+      </section>
+      <aside class="d1-der a-in" style="--d:.3s">
+        <div class="d1-btns">
+          <button type="button" class="d1-btn pri" id="b-amplia">Correr la tarea «amplia»</button>
+          <button type="button" class="d1-btn" id="b-acotada">Correr la misma tarea «acotada»</button>
+        </div>
+        <div class="esc-card d1-pasos">
+          <h3>Pasos del agente <span class="esc-chip warn">simulación</span></h3>
+          <p class="d1-vacio" id="vacio">Pulsa un botón. La tarea es la misma: «agrega validación de correo al registro y corre las pruebas».</p>
+          <ol class="d1-ol" id="pasos"></ol>
+        </div>
+        <div class="esc-card d1-res" id="res"><p id="res-t"><b>Tres medidores, tres monedas.</b> El tiempo lo pagas tú; los tokens, la cuenta de la API; la CPU y la RAM, tu laptop. Hoy aprendes a medir las tres por separado.</p></div>
+      </aside>
+    </div>
+    <ol class="d1-ruta a-in" style="--d:.5s" aria-label="La ruta de hoy">
+      <li><b>1</b>Tres monedas</li><li><b>2</b>Tarea de referencia</li><li><b>3</b>API o tu máquina</li><li><b>4</b>Acotar el contexto</li><li><b>5</b>Antes y después</li><li><b>6</b>Pregunta y entrega</li>
+    </ol>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando puedas decir cuál de las tres monedas aparece en la factura y cuáles no</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  // Pasos simulados: [nombre, tipo api|loc, tokens entrada (k), tokens salida (k), segundos, cpu %, nota]
+  var AMPLIA = [
+    ["Lee las instrucciones del proyecto", "api", 1.2, 0.1, 2, 6, "1,2 k de entrada: entra siempre"],
+    ["Abre 8 archivos completos", "api", 9.6, 0.2, 6, 8, "cada archivo completo es entrada que se cobra"],
+    ["grep en todo el repo, incluido node_modules", "loc", 0, 0, 14, 96, "ni un token; 14 s y todos los núcleos"],
+    ["Pasa 500 líneas de salida al modelo", "api", 6.0, 0.1, 5, 7, "la salida de un comando vuelve a ser entrada"],
+    ["Corre toda la suite de pruebas", "loc", 0, 0, 9, 82, "CPU y RAM de tu máquina, cero tokens"],
+    ["Redacta la respuesta y el diff", "api", 0.4, 1.5, 7, 5, "salida: la más cara por token"]
+  ];
+  var ACOTADA = [
+    ["Lee instrucciones + resumen revisado del módulo", "api", 1.6, 0.1, 2, 6, "un resumen de 20 líneas en vez de 6 archivos"],
+    ["Abre los 3 archivos que la tarea toca", "api", 3.6, 0.2, 3, 8, "los necesarios, no la carpeta"],
+    ["grep solo en src/ con --include=*.py", "loc", 0, 0, 2, 41, "mismo hallazgo, 2 s"],
+    ["Pasa 40 líneas de salida (| head -40)", "api", 0.5, 0.1, 2, 7, "lo que no se imprime no entra"],
+    ["Corre solo las pruebas del módulo", "loc", 0, 0, 3, 64, "la comprobación pertinente, no todo"],
+    ["Redacta la respuesta y el diff", "api", 0.3, 1.2, 5, 5, "la salida casi no cambia: el trabajo es el mismo"]
+  ];
+  var MAXT = 60, MAXK = 25, RAM = { api: 120, loc: 480 };
+  var q = function (id) { return document.getElementById(id); };
+  var ol = q("pasos"), vacio = q("vacio"), rt = q("res-t"), b1 = q("b-amplia"), b2 = q("b-acotada");
+  var lento = !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var timers = [];
+  function medidor(id, frac) { q(id).style.strokeDashoffset = String(Math.max(0, 1 - Math.min(1, frac))); }
+  function fmt(n) { return (Math.round(n * 10) / 10).toString().replace(".", ","); }
+  function pintar(acc) {
+    q("n-t").textContent = fmt(acc.t); medidor("g-t", acc.t / MAXT);
+    q("n-k").textContent = fmt(acc.ki + acc.ko); medidor("g-k", (acc.ki + acc.ko) / MAXK);
+    q("q-k").textContent = "entrada " + fmt(acc.ki) + " k · salida " + fmt(acc.ko) + " k";
+    q("n-c").textContent = acc.c; medidor("g-c", acc.c / 100);
+    q("q-c").textContent = "RAM " + acc.ram + " MB del proceso";
+  }
+  function fila(i, p) {
+    var li = document.createElement("li");
+    var n = document.createElement("i"); n.textContent = i + 1;
+    var s = document.createElement("span"); s.textContent = p[0];
+    var t = document.createElement("span"); t.className = "t " + p[1]; t.textContent = p[1] === "api" ? "API" : "local";
+    var m = document.createElement("span"); m.className = "m"; m.textContent = p[6];
+    li.appendChild(n); li.appendChild(s); li.appendChild(t); li.appendChild(m);
+    return li;
+  }
+  function correr(pasos, nombre) {
+    timers.forEach(clearTimeout); timers = [];
+    ol.textContent = ""; vacio.hidden = true; b1.disabled = b2.disabled = true;
+    var acc = { t: 0, ki: 0, ko: 0, c: 0, ram: 0 };
+    pintar(acc);
+    pasos.forEach(function (p, i) {
+      var f = function () {
+        ol.appendChild(fila(i, p));
+        acc.t += p[4]; acc.ki += p[2]; acc.ko += p[3]; acc.c = Math.max(acc.c, p[5]); acc.ram = Math.max(acc.ram, RAM[p[1]]);
+        pintar(acc);
+        if (i === pasos.length - 1) fin(acc, nombre);
+      };
+      if (lento) timers.push(setTimeout(f, 650 * (i + 1))); else f();
+    });
+  }
+  function fin(acc, nombre) {
+    b1.disabled = b2.disabled = false;
+    var api = fmt(acc.ki + acc.ko);
+    rt.innerHTML = "<b>Tarea «" + nombre + "»:</b> " + fmt(acc.t) + " s de tu reloj · " + api + " k tokens en la factura (entrada " + fmt(acc.ki) + " k, salida " + fmt(acc.ko) + " k) · CPU pico " + acc.c + " % y " + acc.ram + " MB de tu máquina. " +
+      (nombre === "amplia" ? "Mira qué pasos pusieron los tokens y cuáles la CPU: no son los mismos. Ahora corre la acotada." :
+       "Misma instrucción, mismo diff al final. La diferencia no es un porcentaje que valga para tu repo: en la escena 2 lo mides con tu tarea.");
+  }
+  b1.addEventListener("click", function () { correr(AMPLIA, "amplia"); });
+  b2.addEventListener("click", function () { correr(ACOTADA, "acotada"); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Recorrer el repo por etapas: observado o por verificar</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción en tres etapas sobre el repo de ejemplo «tienda-sol»: (1) el alumno marca en el árbol los puntos de
+  entrada y «Revelar» muestra la evidencia; (2) se revelan componentes y dependencias (solo flechas vistas en un import);
+  (3) diez afirmaciones que el alumno marca como «observado en archivo» o «por verificar»; acuerdo ≥ 80 %. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .25); }
+.esc-titulo { font-size: 1.3em; }
+.s4-btn { font: 700 .72em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.s4-btn:hover { transform: translateY(-1px); }
+.s4-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.s4-btn.ok { color: var(--ok); border-color: var(--ok); } .s4-btn.wa { color: var(--warn); border-color: var(--warn); }
+.s4-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.s4-et { font-size: .62em; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+.s4-b4 { display: grid; grid-template-columns: .85fr 1.5fr; gap: 1.2vw; min-height: 0; align-items: stretch; }
+.s4-col { padding: .7em 1em; display: grid; gap: .5em; align-content: start; min-width: 0; }
+.s4-arbol { margin: 0; padding: 0; list-style: none; font: 600 .68em/1.45 var(--mono); display: grid; gap: .08em; }
+.s4-arbol li { display: flex; align-items: center; gap: .5em; padding: .1em .5em; border-radius: .4em; border: 1px solid transparent; white-space: nowrap; }
+.s4-arbol li.d { color: var(--muted); }
+.s4-arbol li.f { cursor: pointer; }
+.s4-arbol li.f:hover { background: var(--s2); }
+.s4-arbol li.sel { border-color: var(--accent); background: var(--accent-bg); }
+.s4-arbol li.ent { border-color: var(--ok); background: var(--ok-bg); }
+.s4-arbol li.no { border-color: var(--bad); background: var(--bad-bg); text-decoration: line-through; }
+.s4-arbol li.ent.perdido { border-style: dashed; }
+.s4-arbol li .ind { color: var(--line2); }
+.s4-arbol li .ev { margin-left: auto; font-size: .85em; color: var(--ok); font-weight: 700; white-space: normal; text-align: right; max-width: 55%; }
+.s4-arbol li.no .ev { color: var(--bad); }
+.s4-etapas { display: flex; gap: .4em; }
+.s4-etapas span { padding: .25em .7em; border-radius: 999px; font-size: .66em; font-weight: 700; background: var(--s2); color: var(--muted); border: 1px solid var(--line); }
+.s4-etapas span.on { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.s4-etapas span.hecha { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.s4-panel { display: none; gap: .5em; }
+.s4-panel.ver { display: grid; animation: esc-entra .35s both; }
+.s4-comp { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.s4-comp div { padding: .5em .8em; border-radius: .7em; background: var(--s2); border: 1px solid var(--line); font-size: .72em; }
+.s4-comp b { display: block; color: var(--accent); margin-bottom: .15em; }
+.s4-comp code { font: 600 .9em var(--mono); color: var(--muted); }
+.s4-deps { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: .25em .9em; font: 600 .66em/1.4 var(--mono); }
+.s4-deps li { display: flex; gap: .4em; align-items: baseline; padding: .12em .5em; border-radius: .4em; background: var(--s1); border: 1px solid var(--line); }
+.s4-deps li::before { content: "→"; color: var(--accent); }
+.s4-deps li.muerto { border-color: var(--warn); } .s4-deps li.muerto::before { content: "∅"; color: var(--warn); }
+.s4-deps li em { font-style: normal; color: var(--muted); font-family: system-ui, sans-serif; font-weight: 500; margin-left: auto; }
+.s4-afir { padding: .6em .9em; border-radius: .8em; background: var(--s1); border: 1px solid var(--line2); display: grid; gap: .4em; }
+.s4-afir p { margin: 0; font-size: 1.02em; font-weight: 700; }
+.s4-afir p small { display: block; font-size: .64em; color: var(--muted); font-weight: 600; }
+.s4-fb { margin: 0; font-size: .76em; color: var(--muted); min-height: 2.5em; padding-left: .7em; border-left: 4px solid var(--line2); }
+.s4-fb.ok { border-left-color: var(--ok); color: var(--fg); } .s4-fb.mal { border-left-color: var(--bad); color: var(--fg); }
+.s4-fb code { font: 600 .9em var(--mono); background: var(--s3); padding: 0 .3em; border-radius: .3em; }
+.s4-acu { font-size: 1.3em; font-weight: 800; font-variant-numeric: tabular-nums; }
+.s4-acu small { font-size: .5em; color: var(--muted); font-weight: 700; }
+.s4-logro { display: none; }
+.s4-logro.ver { display: inline-flex; animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptos</span>
+    <span class="esc-num">DeepSeek Harness · S1 · E04</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="esc-fila" style="justify-content: space-between">
+      <div>
+        <h1 class="esc-titulo a-in">Recorre <em>tienda-sol</em> por etapas: entradas, componentes, dependencias… y qué es verdad</h1>
+        <p class="esc-sub a-in" style="--d:.1s">Un repo de ejemplo (API de una tienda en Node). Cada afirmación es «observado en archivo» (hay ruta y línea) o «por verificar» (exige correr, probar o preguntar).</p>
+      </div>
+      <div class="s4-etapas a-in" style="--d:.2s"><span class="on" id="e1">1 · Entradas</span><span id="e2">2 · Componentes y dependencias</span><span id="e3">3 · Afirmaciones</span></div>
+    </div>
+    <div class="s4-b4">
+      <section class="esc-card s4-col a-in" style="--d:.25s" aria-label="Árbol del repositorio tienda-sol">
+        <span class="s4-et">Árbol · pulsa los archivos por donde arranca algo</span>
+        <ul class="s4-arbol" id="arbol"></ul>
+        <div class="esc-fila"><button type="button" class="s4-btn pri" id="rev">Revelar entradas</button><span class="esc-chip" id="e1-res" hidden>—</span></div>
+      </section>
+      <aside class="esc-card s4-col a-in" style="--d:.35s" aria-label="Etapas 2 y 3">
+        <div class="s4-panel ver" id="pan1">
+          <span class="s4-et">Etapa 1 · Puntos de entrada</span>
+          <p class="s4-fb">¿Por dónde arranca el sistema? Busca manifiestos con <code>scripts</code>, un <code>Dockerfile</code>, una carpeta <code>bin/</code> y el archivo que llama a <code>listen</code>. Marca los que creas y pulsa «Revelar entradas». Un archivo que define cosas pero nadie ejecuta directo <b>no</b> es una entrada.</p>
+        </div>
+        <div class="s4-panel" id="pan2">
+          <span class="s4-et">Etapa 2 · Componentes (qué hace cada carpeta)</span>
+          <div class="s4-comp">
+            <div><b>src/rutas</b>HTTP: ventas, productos, pagos. <code>express.Router()</code></div>
+            <div><b>src/servicios</b>Reglas: stock, IGV, SUNAT. Sin HTTP ni SQL.</div>
+            <div><b>src/db.js + migraciones/</b>Conexión <code>pg</code> y SQL versionado.</div>
+          </div>
+          <span class="s4-et">Dependencias · solo flechas vistas en un <code>import</code> o en el manifiesto</span>
+          <ul class="s4-deps">
+            <li>server.js → app.js → rutas/*.js</li>
+            <li>rutas/ventas.js → servicios/stock.js, servicios/igv.js, db.js</li>
+            <li>rutas/pagos.js → db.js</li>
+            <li>bin/migrar.js → db.js, migraciones/*.sql</li>
+            <li>externas: express, pg <em>package.json dependencies</em></li>
+            <li class="muerto">servicios/sunat.js <em>ningún archivo lo importa</em></li>
+          </ul>
+          <div class="esc-fila"><button type="button" class="s4-btn pri" id="ir3">Ir a las afirmaciones</button></div>
+        </div>
+        <div class="s4-panel" id="pan3">
+          <span class="s4-et">Etapa 3 · ¿Observado en archivo o por verificar?</span>
+          <div class="s4-afir"><p id="af-t">…<small id="af-s"></small></p>
+            <div class="esc-fila"><button type="button" class="s4-btn ok" id="b-obs">Observado en archivo</button><button type="button" class="s4-btn wa" id="b-ver">Por verificar</button><button type="button" class="s4-btn" id="b-sig" disabled>Siguiente</button></div>
+            <p class="s4-fb" id="fb">Si puedes dar ruta y línea, es observado. Si confirmarlo exige correr, probar o preguntar, es por verificar.</p>
+          </div>
+          <div class="esc-fila"><span class="s4-acu"><span id="acu">0</span><small> de <span id="tot">0</span> · <span id="pct">—</span></small></span><span class="esc-chip ok s4-logro" id="logro">10 afirmaciones y ≥ 80 % · pulsa «Lo logré»</span></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Que exista servicios/sunat.js no significa que alguien lo llame: los repos tienen código muerto y README que prometen</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  // Árbol: n = nivel; d = carpeta; ent = punto de entrada con su evidencia; no = evidencia de por qué NO lo es (si lo marcan).
+  var ARBOL = [
+    { t: "tienda-sol/", n: 0, d: true },
+    { t: "package.json", n: 1, ent: '"start": "node src/server.js" · "migrar": "node bin/migrar.js"' },
+    { t: "README.md", n: 1, no: "describe; no ejecuta nada" },
+    { t: "Dockerfile", n: 1, ent: 'CMD ["node", "src/server.js"]' },
+    { t: ".env.example", n: 1, no: "variables de ejemplo; no es código" },
+    { t: "bin/", n: 1, d: true },
+    { t: "migrar.js", n: 2, ent: "#!/usr/bin/env node · aplica migraciones/*.sql" },
+    { t: "src/", n: 1, d: true },
+    { t: "server.js", n: 2, ent: "app.listen(process.env.PORT || 3000)" },
+    { t: "app.js", n: 2, no: "define la app; la ejecuta server.js" },
+    { t: "db.js", n: 2, no: "exporta la conexión pg" },
+    { t: "rutas/", n: 2, d: true },
+    { t: "ventas.js", n: 3, no: "Router; lo monta app.js" },
+    { t: "productos.js", n: 3, no: "Router; lo monta app.js" },
+    { t: "pagos.js", n: 3, no: "Router; lo monta app.js" },
+    { t: "servicios/", n: 2, d: true },
+    { t: "stock.js", n: 3, no: "funciones; las llama ventas.js" },
+    { t: "igv.js", n: 3, no: "const IGV = 0.18; función calcular()" },
+    { t: "sunat.js", n: 3, no: "enviar(); nadie lo importa" },
+    { t: "test/", n: 1, d: true },
+    { t: "igv.test.js", n: 2, no: "lo corre npm test, no arranca el sistema" },
+    { t: "ventas.test.js", n: 2, no: "lo corre npm test" },
+    { t: "migraciones/", n: 1, d: true },
+    { t: "001-inicial.sql", n: 2, no: "SQL; lo aplica bin/migrar.js" },
+    { t: "002-pagos.sql", n: 2, no: "SQL; lo aplica bin/migrar.js" }
+  ];
+  // Afirmaciones: k = "obs" (observado en archivo) | "ver" (por verificar); e = explicación con la ruta.
+  var AFIR = [
+    { t: "El servidor arranca con node src/server.js.", k: "obs", e: "package.json → scripts.start y Dockerfile → CMD dicen exactamente eso." },
+    { t: "La API escucha en el puerto 3000.", k: "ver", e: "src/server.js dice process.env.PORT || 3000: el puerto real lo pone el entorno. Se verifica mirando el .env o el despliegue." },
+    { t: "La base de datos es PostgreSQL.", k: "obs", e: "src/db.js importa pg y .env.example trae DATABASE_URL=postgres://…" },
+    { t: "En producción las migraciones ya están aplicadas.", k: "ver", e: "Ningún archivo dice qué se aplicó en producción. Se verifica consultando esa base, no leyendo el repo." },
+    { t: "El IGV es 18 %.", k: "obs", e: "src/servicios/igv.js:3 → const IGV = 0.18." },
+    { t: "Las pruebas cubren el cálculo del IGV.", k: "ver", e: "Existe test/igv.test.js, pero qué cubre y si pasa solo se sabe corriendo npm test." },
+    { t: "La ruta de ventas llama a descontar() de servicios/stock.js.", k: "obs", e: "src/rutas/ventas.js importa stock.js y la llamada descontar() está en el archivo." },
+    { t: "Las boletas se envían a SUNAT.", k: "ver", e: "servicios/sunat.js tiene enviar(), pero ningún archivo lo importa. Puede ser código muerto: hay que preguntar o probar." },
+    { t: "express y pg son las dependencias de ejecución.", k: "obs", e: "package.json → dependencies tiene exactamente esas dos." },
+    { t: "Los pagos con Yape funcionan.", k: "ver", e: "rutas/pagos.js existe; «funciona» solo se verifica probando contra el proveedor." }
+  ];
+  var sel = {}, revelado = false, i = -1, acu = 0, tot = 0, marcado = false;
+  var ul = $("arbol");
+  ARBOL.forEach(function (n, idx) {
+    var li = document.createElement("li"); li.className = n.d ? "d" : "f";
+    var ind = document.createElement("span"); ind.className = "ind"; ind.textContent = "│ ".repeat(n.n); li.appendChild(ind);
+    li.appendChild(document.createTextNode(n.t));
+    if (!n.d) li.addEventListener("click", function () { if (revelado) return; sel[idx] = !sel[idx]; li.classList.toggle("sel", !!sel[idx]); });
+    li.setAttribute("data-i", idx); ul.appendChild(li);
+  });
+  $("rev").addEventListener("click", function () {
+    if (revelado) return; revelado = true;
+    var bien = 0, falsos = 0, total = 0;
+    ul.querySelectorAll("li").forEach(function (li) {
+      var n = ARBOL[+li.getAttribute("data-i")]; if (n.d) return;
+      var marc = !!sel[li.getAttribute("data-i")];
+      li.classList.remove("sel");
+      if (n.ent) { total++; li.classList.add("ent"); if (marc) bien++; else li.classList.add("perdido"); var ev = document.createElement("span"); ev.className = "ev"; ev.textContent = n.ent; li.appendChild(ev); }
+      else if (marc) { falsos++; li.classList.add("no"); var ev2 = document.createElement("span"); ev2.className = "ev"; ev2.textContent = n.no; li.appendChild(ev2); }
+    });
+    var r = $("e1-res"); r.hidden = false; r.textContent = bien + " de " + total + " entradas · " + falsos + " falsas";
+    r.className = "esc-chip " + (bien === total && falsos === 0 ? "ok" : "warn");
+    $("rev").disabled = true;
+    $("e1").className = "hecha"; $("e2").className = "on";
+    $("pan1").classList.remove("ver"); $("pan2").classList.add("ver");
+  });
+  $("ir3").addEventListener("click", function () {
+    $("e2").className = "hecha"; $("e3").className = "on";
+    $("pan2").classList.remove("ver"); $("pan3").classList.add("ver");
+    siguiente();
+  });
+  function siguiente() {
+    i++; marcado = false;
+    if (i >= AFIR.length) { $("af-t").firstChild.textContent = "Fin: " + AFIR.length + " afirmaciones."; $("af-s").textContent = ""; $("b-obs").disabled = $("b-ver").disabled = $("b-sig").disabled = true; return; }
+    $("af-t").firstChild.textContent = AFIR[i].t; $("af-s").textContent = "Afirmación " + (i + 1) + " de " + AFIR.length;
+    $("b-obs").disabled = $("b-ver").disabled = false; $("b-sig").disabled = true;
+    var fb = $("fb"); fb.className = "s4-fb"; fb.textContent = "Si puedes dar ruta y línea, es observado. Si confirmarlo exige correr, probar o preguntar, es por verificar.";
+  }
+  function marcar(k) {
+    if (marcado || i < 0 || i >= AFIR.length) return;
+    marcado = true; tot++; var ok = k === AFIR[i].k; if (ok) acu++;
+    var fb = $("fb"); fb.className = "s4-fb " + (ok ? "ok" : "mal");
+    fb.textContent = (ok ? "Coincides con el instructor. " : "El instructor opina distinto: es «" + (AFIR[i].k === "obs" ? "observado en archivo" : "por verificar") + "». ") + AFIR[i].e;
+    $("acu").textContent = acu; $("tot").textContent = tot;
+    var pct = Math.round(acu / tot * 100); $("pct").textContent = pct + " % de acuerdo";
+    $("b-obs").disabled = $("b-ver").disabled = true; $("b-sig").disabled = false;
+    if (tot >= AFIR.length && pct >= 80) $("logro").classList.add("ver");
+  }
+  $("b-obs").addEventListener("click", function () { marcar("obs"); });
+  $("b-ver").addEventListener("click", function () { marcar("ver"); });
+  $("b-sig").addEventListener("click", siguiente);
+})();
+</script>
+</body>
+</html>

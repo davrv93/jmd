@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Cambió el código: qué documento se revisa</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-03). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Nada se guarda: cada recarga vuelve al inicio.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.2em; }
+.esc-sub { font-size: .95em; }
+.esc-cuerpo { gap: 1.2vh; justify-content: start; }
+.d3-b5 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw 1.6vw; align-items: start; min-height: 0; }
+.d3-diff { padding: .7em 1em; display: grid; gap: .5em; }
+.d3-diff h3 { margin: 0; font: 700 .7em var(--mono); color: var(--muted); letter-spacing: .08em; }
+.d3-diff pre { margin: 0; font: 600 .6em/1.4 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .6em .9em; white-space: pre-wrap; border: 1px solid rgba(190,185,255,.22); }
+.d3-diff .m { color: #7fe3a5; } .d3-diff .q { color: #ff9b9b; } .d3-diff .h { color: #8e7dff; }
+.d3-docs { padding: .6em 1em; display: grid; gap: .3em; }
+.d3-docs h3 { margin: 0; font: 700 .7em var(--mono); color: var(--muted); letter-spacing: .08em; display: flex; justify-content: space-between; align-items: center; }
+.d3-doc { display: grid; grid-template-columns: auto 1fr auto; gap: .2em .7em; align-items: center; text-align: left; font: inherit; font-size: .74em; padding: .3em .7em; border-radius: .6em; border: 1px solid var(--line); background: var(--s2); color: var(--fg); cursor: pointer; }
+.d3-doc i { width: 1.1em; height: 1.1em; border-radius: .3em; border: 2px solid var(--line2); display: grid; place-items: center; font-style: normal; font-size: .8em; font-weight: 800; }
+.d3-doc[aria-pressed="true"] i { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.d3-doc b { font-family: var(--mono); font-size: .92em; }
+.d3-doc small { color: var(--muted); font-size: .85em; }
+.d3-doc .v { font-size: .78em; font-weight: 800; }
+.d3-doc.bien { border-color: var(--ok); } .d3-doc.bien .v { color: var(--ok); }
+.d3-doc.mal { border-color: var(--bad); } .d3-doc.mal .v { color: var(--bad); }
+.d3-doc .por { grid-column: 2 / -1; font-size: .85em; color: var(--muted); }
+.d3-eval { font: 700 .72em system-ui, sans-serif; padding: .45em 1em; border-radius: 999px; border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.d3-proc { padding: .55em 1em; display: grid; gap: .4em; grid-column: 1 / -1; }
+.d3-proc h3 { margin: 0; font-size: .8em; display: flex; justify-content: space-between; align-items: center; }
+.d3-proc h3 span { font-size: .85em; color: var(--muted); font-weight: 600; }
+.d3-pasos { display: flex; flex-wrap: wrap; gap: .45em; }
+.d3-paso { font: 600 .66em/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .4em .7em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; text-align: left; max-width: 17em; }
+.d3-paso:hover { border-color: var(--accent); }
+.d3-paso:disabled { opacity: .35; cursor: default; }
+.d3-paso.tiembla { animation: d3-tiembla .35s; border-color: var(--bad); }
+@keyframes d3-tiembla { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.d3-orden { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: .45em; counter-reset: s; }
+.d3-orden li { display: grid; grid-template-columns: 1.5em 1fr; gap: .4em; align-items: start; font-size: .64em; padding: .35em .5em; border-radius: .6em; background: var(--s3); min-height: 2.9em; color: var(--muted); }
+.d3-orden li::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 1.45em; height: 1.45em; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font-weight: 800; }
+.d3-orden li.on { background: var(--ok-bg); color: var(--fg); font-weight: 600; } .d3-orden li.on::before { background: var(--ok); color: #fff; }
+@media (prefers-reduced-motion: reduce) { .d3-anim { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptos</span>
+    <span class="esc-num">Documenta y valida · E05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Cambió el código: <em>¿qué documento se revisa?</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Llega este diff a <code>tienda-sol</code>. Marca los documentos que necesitan revisión, evalúa, y luego arma el procedimiento de 5 pasos que acompaña a cada cambio.</p>
+    </div>
+    <div class="d3-b5">
+      <section class="esc-card d3-diff a-in" style="--d:.2s" aria-label="Resumen del diff">
+        <h3>git diff --stat · feat: validar stock al crear pedido</h3>
+<pre><span class="h">src/pedidos.js</span>      | +9 −1
+<span class="q">-  // TODO: validar stock</span>
+<span class="m">+  const { rows } = await pool.query('SELECT stock FROM productos WHERE sku=$1', [sku]);</span>
+<span class="m">+  if (!rows[0] || rows[0].stock - cant &lt; MINIMO) throw new Error('stock insuficiente');</span>
+<span class="h">src/server.js</span>       | +4
+<span class="m">+  app.get('/pedidos/:id', async (req, res) => res.json(await verPedido(req.params.id)));</span>
+<span class="m">+  app.use((err, req, res, next) => res.status(409).json({ error: err.message }));</span>
+<span class="h">.env.example</span>        | +1
+<span class="m">+STOCK_MINIMO=0</span></pre>
+      </section>
+      <section class="esc-card d3-docs a-in" style="--d:.3s" aria-label="Documentos del paquete">
+        <h3>docs/ · ¿cuáles se revisan? <button type="button" class="d3-eval" id="eval">Evaluar</button></h3>
+        <div id="docs"></div>
+      </section>
+      <section class="esc-card d3-proc a-in" style="--d:.4s" aria-label="Procedimiento de revisión">
+        <h3>Procedimiento de revisión · pulsa los pasos en orden <span id="proc-estado">0 de 5</span></h3>
+        <div class="d3-pasos" id="pasos"></div>
+        <ol class="d3-orden" id="orden"><li></li><li></li><li></li><li></li><li></li></ol>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota" id="pie-nota">Pulsa «Lo logré» cuando aciertes los documentos (5 de 6 o más) y el procedimiento quede en orden</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var DOCS = [
+    ["README.md", "instalación y configuración", true, "Hay una variable nueva (STOCK_MINIMO) en .env.example: la tabla de configuración del README queda incompleta."],
+    ["ARQUITECTURA.md", "mapa de componentes", false, "Mismos componentes: server, pedidos, db, postgres. Ningún módulo nuevo, ninguna dependencia nueva."],
+    ["FLUJOS.md", "flujo de pedido en Mermaid", true, "El flujo de pedido ahora tiene un paso (consultar stock) y una salida nueva (409). El diagrama miente si no se toca."],
+    ["API.md", "rutas y respuestas", true, "Ruta nueva GET /pedidos/:id y respuesta 409 en POST /pedidos."],
+    ["DIAGNOSTICO.md", "errores conocidos y qué hacer", true, "Aparece un error nuevo para el usuario: «stock insuficiente». Quien lo vea debe saber qué significa y cómo ajustarlo."],
+    ["DECISIONES.md", "decisiones técnicas (ADR)", false, "No cambia una decisión de arquitectura: misma base, mismo framework, misma forma de validar. Es una regla de negocio y va en FLUJOS."]
+  ];
+  var PASOS = [
+    "Leer el diff y listar los módulos tocados (archivo por archivo)",
+    "Cruzar módulos con documentos usando la tabla módulo → documento",
+    "Pedir al agente el borrador del cambio citando archivo y línea",
+    "Ejecutar los comandos y rutas que el borrador menciona",
+    "Marcar supuestos y pendientes, anotar fecha y commit de la revisión"
+  ];
+  var docs = document.getElementById("docs");
+  DOCS.forEach(function (d, i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "d3-doc"; b.setAttribute("aria-pressed", "false"); b.setAttribute("data-i", i);
+    b.innerHTML = "<i></i><span><b>" + d[0] + "</b> <small>· " + d[1] + "</small></span><span class=\"v\"></span>";
+    b.addEventListener("click", function () { if (b.classList.contains("bien") || b.classList.contains("mal")) return; var on = b.getAttribute("aria-pressed") === "true"; b.setAttribute("aria-pressed", on ? "false" : "true"); b.querySelector("i").textContent = on ? "" : "✓"; });
+    docs.appendChild(b);
+  });
+  var aciertosDocs = 0;
+  document.getElementById("eval").addEventListener("click", function () {
+    aciertosDocs = 0;
+    docs.querySelectorAll(".d3-doc").forEach(function (b) {
+      var d = DOCS[+b.getAttribute("data-i")], marcado = b.getAttribute("aria-pressed") === "true", bien = marcado === d[2];
+      if (bien) aciertosDocs++;
+      b.classList.remove("bien", "mal"); b.classList.add(bien ? "bien" : "mal");
+      b.querySelector(".v").textContent = (d[2] ? "SE REVISA" : "NO CAMBIA") + (bien ? " ✓" : " ✗");
+      if (!b.querySelector(".por")) { var p = document.createElement("span"); p.className = "por"; p.textContent = d[3]; b.appendChild(p); }
+    });
+    this.textContent = aciertosDocs + " de 6 · reiniciar"; this.id = "reini";
+    this.addEventListener("click", function () { location.reload(); }, { once: true });
+    pie();
+  });
+  var pasos = document.getElementById("pasos"), orden = document.getElementById("orden").children, sig = 0;
+  var barajado = PASOS.map(function (p, i) { return i; }).sort(function (a, b) { return ((a * 5 + 3) % 7) - ((b * 5 + 3) % 7); });
+  barajado.forEach(function (i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "d3-paso"; b.textContent = PASOS[i];
+    b.addEventListener("click", function () {
+      if (i !== sig) { b.classList.remove("tiembla"); void b.offsetWidth; b.classList.add("tiembla"); return; }
+      b.disabled = true; orden[sig].textContent = PASOS[i]; orden[sig].classList.add("on"); sig++;
+      document.getElementById("proc-estado").textContent = sig + " de 5" + (sig === 5 ? " · listo: cópialo a docs/REVISION.md" : "");
+      pie();
+    });
+    pasos.appendChild(b);
+  });
+  function pie() {
+    if (sig === 5 && aciertosDocs >= 5) document.getElementById("pie-nota").textContent = "Documentos " + aciertosDocs + "/6 y procedimiento en orden: pulsa «Lo logré» en el panel.";
+  }
+})();
+</script>
+</body>
+</html>

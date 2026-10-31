@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Pregunta, entrega e insignia</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-02). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Sigue el patrón de bwa-01/06-tarea: si el servidor responde, el avance real manda; si no, queda el ejemplo.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .5); }
+.d6-b { display: grid; grid-template-columns: .7fr 1.3fr; gap: 2vw; align-items: center; min-height: 0; }
+.d6-ins { display: grid; place-items: center; }
+.d6-ins svg { width: 100%; height: auto; max-height: 48vh; overflow: visible; }
+.d6-ins .aro { fill: none; stroke: var(--accent); stroke-width: 10; }
+.d6-ins .aro2 { fill: none; stroke: var(--gold); stroke-width: 4; stroke-dasharray: 14 10; }
+.d6-ins .fondo { fill: var(--s1); stroke: var(--line2); stroke-width: 3; }
+.d6-ins .f { fill: none; stroke: var(--s3); stroke-width: 22; stroke-linecap: round; }
+.d6-ins .v { fill: none; stroke-width: 22; stroke-linecap: round; }
+.d6-ins .v.t { stroke: var(--gold); } .d6-ins .v.k { stroke: var(--ph-ea); } .d6-ins .v.c { stroke: var(--ph-or); }
+.d6-ins text { fill: var(--fg); font-weight: 800; text-anchor: middle; }
+.d6-ins text.m { fill: var(--muted); font-weight: 700; }
+.d6-ins .badge { transform-origin: 300px 300px; }
+.d6-6.apagada .badge { filter: grayscale(1); opacity: .42; }
+.d6-6.go:not(.apagada) .badge { animation: d6-enciende .7s ease-out 1.2s both; }
+.d6-6.go:not(.apagada) .aro2 { animation: d6-gira 14s linear infinite; transform-origin: 300px 300px; }
+@keyframes d6-enciende { from { filter: grayscale(1); opacity: .42; } to { filter: none; opacity: 1; } }
+@keyframes d6-gira { to { transform: rotate(360deg); } }
+.d6-der { display: grid; gap: 1vh; align-content: center; }
+.d6-card { padding: .55em 1.1em; }
+.d6-card h2 { margin: 0 0 .4em; font-size: .7em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: .7em; }
+.d6-prog { display: grid; grid-template-columns: auto 1fr; gap: .2em 1.4em; align-items: center; }
+.d6-prog .n { font-size: 2em; font-weight: 800; line-height: 1; letter-spacing: -.03em; }
+.d6-prog .n small { font-size: .38em; font-weight: 700; color: var(--muted); letter-spacing: 0; }
+.d6-pips { display: flex; gap: .4em; }
+.d6-pips i { flex: 1; height: .7em; border-radius: .35em; background: var(--s3); position: relative; }
+.d6-pips i.ok { background: var(--accent); }
+.d6-pips i.umbral::after { content: ""; position: absolute; right: -.28em; top: -.35em; bottom: -.35em; width: 2px; background: var(--gold); }
+.d6-estado { grid-column: 1 / -1; font-size: .78em; color: var(--muted); }
+.d6-estado b { color: var(--ok); }
+.d6-6.apagada .d6-estado b { color: var(--warn); }
+.d6-preg { margin: 0; font-size: 1.05em; font-weight: 700; padding-left: .7em; border-left: 4px solid var(--accent); }
+.d6-preg em { font-style: normal; color: var(--accent); }
+.d6-pasos { margin: 0; padding: 0; list-style: none; display: grid; gap: .35em; counter-reset: p; }
+.d6-pasos li { display: grid; grid-template-columns: 1.6em 1fr; gap: .6em; align-items: baseline; font-size: .82em; }
+.d6-pasos li::before { counter-increment: p; content: counter(p); display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font-weight: 800; font-size: .85em; }
+.d6-pasos code { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.d6-rec { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vw; }
+.d6-rec h3 { margin: 0 0 .2em; font-size: .9em; }
+.d6-rec p { margin: 0; font-size: .74em; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .d6-6 .badge, .d6-6 .aro2 { animation: none !important; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">DeepSeek Harness · S2 · E06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="d6-6" id="raiz">
+      <div class="d6-b">
+        <div class="d6-ins a-in">
+          <svg viewBox="0 0 600 600" aria-label="Insignia: Mide y reduce">
+            <circle class="aro2" cx="300" cy="300" r="282"/>
+            <g class="badge">
+              <circle class="fondo" cx="300" cy="300" r="256"/>
+              <circle class="aro" cx="300" cy="300" r="236"/>
+              <path class="f" d="M150 330 A150 150 0 0 1 450 330"/>
+              <path class="v t" d="M150 330 A150 150 0 0 1 206 224"/>
+              <path class="v k" d="M222 210 A150 150 0 0 1 378 210"/>
+              <path class="v c" d="M394 224 A150 150 0 0 1 450 330"/>
+              <text x="300" y="362" font-size="24" class="m">tiempo · tokens · CPU</text>
+              <text x="300" y="400" font-size="34">Mide y reduce</text>
+              <text x="300" y="440" font-size="18" class="m">DeepSeek Harness · sesión 2</text>
+            </g>
+          </svg>
+        </div>
+        <div class="d6-der">
+          <div class="esc-card d6-card a-in" id="progreso" data-fuente="/api/v1/lessons/dh-02/progress" style="--d:.3s">
+            <h2>Tu avance <span class="esc-chip warn" id="prog-tag">ejemplo</span></h2>
+            <div class="d6-prog">
+              <div class="n"><span id="p-done">5</span> <small>de <span id="p-total">7</span> pasos</small></div>
+              <div class="d6-pips" id="p-pips"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok umbral"></i><i></i><i></i></div>
+              <div class="d6-estado" id="p-estado"><b>Insignia encendida.</b> El umbral es 5 de 7 pasos.</div>
+            </div>
+          </div>
+          <div class="esc-card d6-card a-in" style="--d:.45s">
+            <h2>Pregunta para el hilo de la sesión</h2>
+            <p class="d6-preg">En <em>tu</em> tarea de referencia, ¿qué paso gastó más y en qué moneda: tokens, CPU o tiempo? ¿Qué palanca lo baja?</p>
+          </div>
+          <div class="esc-card d6-card a-in" style="--d:.6s">
+            <h2>Tarea · se entrega desde el LMS</h2>
+            <ol class="d6-pasos">
+              <li><span>Corre la tarea de referencia dos veces, sin y con tu rutina: <code>time dsh --profile headless "…" &gt; antes.md</code> y lo mismo a <code>despues.md</code>; anota el uso de tu clave antes y después de cada una</span></li>
+              <li><span>Escribe <code>INFORME.md</code> con la tabla antes/después y los criterios marcados (el esqueleto sale de la escena 5) y <code>RUTINA.md</code> con los pasos exactos para repetirla</span></li>
+              <li><span>Sube los cuatro archivos a tu repo y entrega URL + commit. Si algún criterio bajó, dilo: un dato honesto vale más que un porcentaje</span></li>
+            </ol>
+          </div>
+          <div class="d6-rec">
+            <div class="esc-card d6-card a-in" style="--d:.7s"><h3>Tres monedas</h3><p>Tokens (API), CPU y RAM (tu máquina), tiempo (tú). Solo la primera sale en la factura.</p></div>
+            <div class="esc-card d6-card a-in" style="--d:.8s"><h3>Cuatro palancas</h3><p>Archivos justos, salidas recortadas, búsqueda acotada, una responsabilidad por tarea. Freno: no «revises todo».</p></div>
+            <div class="esc-card d6-card a-in" style="--d:.9s"><h3>Misma vara</h3><p>Criterios iguales antes y después. Si la calidad baja, no hubo ahorro. El porcentaje es tuyo, medido.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Sigue la explicación del instructor</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+/* Si el servidor responde, el avance real manda; si falla, queda el ejemplo ya encendido. */
+(function () {
+  var raiz = document.getElementById("raiz"), UMBRAL = 5, ido = false;
+  function ir() { if (!ido) { ido = true; raiz.classList.add("go"); } }
+  function pintar(j) {
+    var done = +j.done, total = +j.total;
+    if (!(done >= 0) || !(total > 0)) return;
+    document.getElementById("p-done").textContent = done;
+    document.getElementById("p-total").textContent = total;
+    var p = document.getElementById("p-pips"); p.textContent = "";
+    for (var k = 0; k < total; k++) { var i = document.createElement("i"); if (k < done) i.className = "ok"; if (k === UMBRAL - 1) i.className += " umbral"; p.appendChild(i); }
+    var tag = document.getElementById("prog-tag"); tag.textContent = "datos reales"; tag.className = "esc-chip ok";
+    var e = document.getElementById("p-estado"), falta = UMBRAL - done;
+    if (done >= UMBRAL) { raiz.classList.remove("apagada"); e.innerHTML = "<b>Insignia encendida.</b> El umbral es " + UMBRAL + " de " + total + " pasos."; }
+    else { raiz.classList.add("apagada"); e.innerHTML = "<b>Te " + (falta === 1 ? "falta 1 paso" : "faltan " + falta + " pasos") + "</b> para encender la insignia."; }
+  }
+  function traer(id, fn, fin) {
+    try { fetch(document.getElementById(id).getAttribute("data-fuente"), { credentials: "same-origin" })
+      .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) fn(j); }).catch(function () {}).then(fin); } catch (e) { if (fin) fin(); }
+  }
+  traer("progreso", pintar, ir); setTimeout(ir, 1500);
+})();
+</script>
+</body>
+</html>

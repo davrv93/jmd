@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Antes y después, con la misma vara</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-02). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: comparador de dos corridas (tiempo, llamadas, tokens) con la misma lista de criterios de calidad. Si un
+  criterio que cumplía «antes» falla «después», el ahorro se marca inválido. Genera el esqueleto de INFORME.md. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .35); }
+.esc-titulo { font-size: 1.4em; }
+.d5-b { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.8vw; align-items: stretch; min-height: 0; }
+.d5-izq { display: grid; gap: 1vh; align-content: start; }
+.d5-tab { padding: .7em 1em; }
+.d5-tab table { width: 100%; border-collapse: collapse; font-size: .78em; }
+.d5-tab th { text-align: left; font-size: .8em; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: .2em .4em; border-bottom: 1px solid var(--line2); }
+.d5-tab th.a { color: var(--ph-ea); } .d5-tab th.d { color: var(--ph-or); }
+.d5-tab td { padding: .22em .4em; border-bottom: 1px solid var(--line); }
+.d5-tab td:first-child { font-weight: 700; }
+.d5-tab input[type=number] { width: 6.5em; font: 700 .95em var(--mono); padding: .25em .5em; border-radius: .45em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); }
+.d5-tab td.dl { font-family: var(--mono); font-weight: 800; text-align: right; }
+.d5-tab td.dl.ok { color: var(--ok); } .d5-tab td.dl.bad { color: var(--bad); }
+.d5-tab input[type=checkbox] { width: 1.15em; height: 1.15em; accent-color: var(--accent); }
+.d5-tab td.c { text-align: center; }
+.d5-tab td.c.rompe { background: var(--bad-bg); }
+.d5-btns { display: flex; gap: .6em; flex-wrap: wrap; }
+.d5-btn { font: 700 .72em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .65em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); }
+.d5-btn.pri { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.d5-der { display: grid; grid-template-rows: auto 1fr; gap: 1vh; min-height: 0; }
+.d5-ver { padding: .8em 1.1em; border-left: 6px solid var(--line2); display: grid; grid-template-columns: auto 1fr; gap: .2em 1em; align-items: center; }
+.d5-ver.ok { border-left-color: var(--ok); } .d5-ver.bad { border-left-color: var(--bad); }
+.d5-ver .n { font-size: 1.9em; font-weight: 800; line-height: 1; letter-spacing: -.03em; }
+.d5-ver.ok .n { color: var(--ok); } .d5-ver.bad .n { color: var(--bad); }
+.d5-ver p { margin: 0; font-size: .84em; grid-column: 1 / -1; }
+.d5-ver p b { color: var(--fg); }
+.d5-inf { padding: .7em 1em; display: grid; grid-template-rows: auto 1fr; gap: .4em; min-height: 0; }
+.d5-inf h3 { font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; gap: .6em; align-items: center; }
+.d5-inf textarea { font: 500 .66em/1.45 var(--mono); background: #14122b; color: #e9e6ff; border: 1px solid rgba(190,185,255,.22); border-radius: .7em; padding: .8em 1em; resize: none; min-height: 14em; width: 100%; }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptos</span>
+    <span class="esc-num">DeepSeek Harness · S2 · E05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="a-in">
+      <h1 class="esc-titulo">Antes y después, <em>con la misma vara</em></h1>
+      <p class="esc-sub">Un ahorro con peor resultado no es ahorro: es otra tarea. Carga tus dos corridas y marca los mismos criterios en ambas.</p>
+    </div>
+    <div class="d5-b">
+      <section class="d5-izq a-in" style="--d:.15s">
+        <div class="esc-card d5-tab">
+          <table aria-label="Dos corridas">
+            <thead><tr><th>Medida</th><th class="a">Antes</th><th class="d">Después</th><th>Δ</th></tr></thead>
+            <tbody>
+              <tr><td>Tiempo (s)</td><td><input type="number" id="a-s" min="0" step="0.1"></td><td><input type="number" id="d-s" min="0" step="0.1"></td><td class="dl" id="x-s">—</td></tr>
+              <tr><td>Llamadas</td><td><input type="number" id="a-ll" min="0" step="1"></td><td><input type="number" id="d-ll" min="0" step="1"></td><td class="dl" id="x-ll">—</td></tr>
+              <tr><td>Tokens de entrada</td><td><input type="number" id="a-in" min="0" step="1"></td><td><input type="number" id="d-in" min="0" step="1"></td><td class="dl" id="x-in">—</td></tr>
+              <tr><td>Tokens de salida</td><td><input type="number" id="a-out" min="0" step="1"></td><td><input type="number" id="d-out" min="0" step="1"></td><td class="dl" id="x-out">—</td></tr>
+              <tr><td>CPU pico local (%)</td><td><input type="number" id="a-cpu" min="0" max="100" step="1"></td><td><input type="number" id="d-cpu" min="0" max="100" step="1"></td><td class="dl" id="x-cpu">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="esc-card d5-tab">
+          <table aria-label="Criterios de calidad, iguales para ambas">
+            <thead><tr><th>Criterio de calidad (el mismo para las dos)</th><th class="a">Antes</th><th class="d">Después</th></tr></thead>
+            <tbody id="crit"></tbody>
+          </table>
+        </div>
+        <div class="d5-btns">
+          <button type="button" class="d5-btn pri" id="b-ej">Cargar ejemplo válido</button>
+          <button type="button" class="d5-btn" id="b-tr">Cargar ejemplo con trampa</button>
+          <button type="button" class="d5-btn" id="b-lim">Limpiar para mis datos</button>
+        </div>
+      </section>
+      <aside class="d5-der a-in" style="--d:.3s">
+        <div class="esc-card d5-ver" id="ver">
+          <div class="n" id="v-n">—</div><div><span class="esc-chip" id="v-chip">sin datos</span></div>
+          <p id="v-t">Llena las dos columnas y marca los criterios. El veredicto compara la calidad primero y el consumo después.</p>
+        </div>
+        <div class="esc-card d5-inf">
+          <h3>Esqueleto de INFORME.md <span class="esc-chip">cópialo a tu repo</span></h3>
+          <textarea id="inf" readonly aria-label="Informe generado"># Informe de consumo · antes y después
+
+(sin datos todavía)</textarea>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando el veredicto sea «ahorro válido» con al menos 4 criterios marcados en ambas corridas</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var q = function (id) { return document.getElementById(id); };
+  var CRIT = ["Las pruebas del módulo pasan", "La respuesta cita archivos y funciones reales del repo", "Solo cambió lo que se pidió (sin cambios colaterales)", "Ningún comando ni ruta inventada", "Largo de la respuesta dentro de lo acordado"];
+  var MED = [["s", "Tiempo (s)", 1], ["ll", "Llamadas", 0], ["in", "Tokens de entrada", 0], ["out", "Tokens de salida", 0], ["cpu", "CPU pico local (%)", 0]];
+  var tb = q("crit");
+  CRIT.forEach(function (c, i) {
+    var tr = document.createElement("tr"), td = document.createElement("td"); td.textContent = c; tr.appendChild(td);
+    ["a", "d"].forEach(function (p) { var t = document.createElement("td"); t.className = "c"; var cb = document.createElement("input"); cb.type = "checkbox"; cb.id = p + "-c" + i; cb.addEventListener("change", calc); t.appendChild(cb); tr.appendChild(t); });
+    tb.appendChild(tr);
+  });
+  function num(id) { var v = parseFloat(q(id).value); return isNaN(v) ? null : v; }
+  function pct(a, d) { return a > 0 ? Math.round((d - a) * 100 / a) : null; }
+  function calc() {
+    var filas = [], completas = 0, rompe = [], ambos = 0;
+    MED.forEach(function (m) {
+      var a = num("a-" + m[0]), d = num("d-" + m[0]), x = q("x-" + m[0]);
+      if (a === null || d === null) { x.textContent = "—"; x.className = "dl"; filas.push(null); return; }
+      completas++;
+      var p = pct(a, d); x.textContent = p === null ? "—" : (p > 0 ? "+" : "") + p + " %"; x.className = "dl " + (p === null ? "" : p < 0 ? "ok" : p > 0 ? "bad" : "");
+      filas.push({ n: m[1], a: a, d: d, p: p });
+    });
+    CRIT.forEach(function (c, i) {
+      var a = q("a-c" + i).checked, d = q("d-c" + i).checked, td = q("d-c" + i).parentNode;
+      td.classList.toggle("rompe", a && !d);
+      if (a && !d) rompe.push(c);
+      if (a && d) ambos++;
+    });
+    var ver = q("ver"), vn = q("v-n"), vc = q("v-chip"), vt = q("v-t"), tok = filas[2], valido = false;
+    if (completas < 3) { ver.className = "esc-card d5-ver"; vn.textContent = "—"; vc.textContent = "sin datos"; vc.className = "esc-chip"; vt.textContent = "Faltan medidas: al menos tiempo, llamadas y tokens de entrada en ambas columnas."; }
+    else if (rompe.length) { ver.className = "esc-card d5-ver bad"; vn.textContent = "Ahorro inválido"; vc.textContent = "la calidad bajó"; vc.className = "esc-chip bad"; vt.innerHTML = "<b>Falló después lo que cumplía antes:</b> " + rompe.join("; ") + ". Aunque los tokens bajen, no es la misma tarea. Arregla la rutina y vuelve a correr."; }
+    else if (ambos < 4) { ver.className = "esc-card d5-ver"; vn.textContent = "Sin vara"; vc.textContent = "marca los criterios"; vc.className = "esc-chip warn"; vt.textContent = "Marca al menos 4 criterios cumplidos en ambas corridas. Sin la misma lista no hay comparación."; }
+    else {
+      var p = tok ? tok.p : null, sube = filas.some(function (f) { return f && f.p !== null && f.p > 0 && f.n !== "CPU pico local (%)"; });
+      valido = true; ver.className = "esc-card d5-ver ok"; vn.textContent = p === null ? "Calidad igual" : (p > 0 ? "+" : "") + p + " % de entrada"; vc.textContent = "ahorro válido · misma calidad"; vc.className = "esc-chip ok";
+      vt.innerHTML = "<b>Misma vara, " + ambos + " criterios en ambas.</b> " + (sube ? "Alguna medida subió: es un dato, anótalo y busca la palanca." : "Todas las medidas bajaron o quedaron igual.") + " Los porcentajes son tuyos, de esta tarea: no los generalices. Pulsa «Lo logré».";
+    }
+    informe(filas, valido, rompe, ambos);
+  }
+  function informe(filas, valido, rompe, ambos) {
+    var L = ["# Informe de consumo · antes y después", "", "Tarea de referencia: <descríbela igual que en la ficha>", "Repo y commit: <url> @ <sha>", "Comando: time dsh --profile headless \"<tarea>\"", "", "| Medida | Antes | Después | Δ |", "|---|---|---|---|"];
+    filas.forEach(function (f) { if (f) L.push("| " + f.n + " | " + f.a + " | " + f.d + " | " + (f.p === null ? "—" : (f.p > 0 ? "+" : "") + f.p + " %") + " |"); });
+    L.push("", "## Criterios de calidad (los mismos para ambas)", "");
+    CRIT.forEach(function (c, i) { L.push("- " + c + ": antes " + (q("a-c" + i).checked ? "sí" : "no") + " · después " + (q("d-c" + i).checked ? "sí" : "no")); });
+    L.push("", "## Veredicto", "", valido ? "Ahorro válido: " + ambos + " criterios cumplidos en ambas corridas; los porcentajes de arriba son medidos, no una promesa." : rompe.length ? "Ahorro inválido: después falló «" + rompe[0] + "», que antes cumplía." : "Pendiente: faltan medidas o criterios.", "", "## Qué cambió en la rutina", "", "- <archivos incluidos, resumen reutilizado, recortes de salida, alcance del grep, comprobación usada>");
+    q("inf").value = L.join("\n");
+  }
+  function cargar(v, ca, cd) {
+    MED.forEach(function (m, i) { q("a-" + m[0]).value = v[0][i]; q("d-" + m[0]).value = v[1][i]; });
+    CRIT.forEach(function (_, i) { q("a-c" + i).checked = ca[i]; q("d-c" + i).checked = cd[i]; });
+    calc();
+  }
+  q("b-ej").addEventListener("click", function () { cargar([[28.5, 6, 41900, 2350, 96], [14.2, 4, 17300, 1900, 58]], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]); });
+  q("b-tr").addEventListener("click", function () { cargar([[28.5, 6, 41900, 2350, 96], [9.8, 3, 9100, 1200, 40]], [1, 1, 1, 1, 1], [0, 1, 1, 1, 1]); });
+  q("b-lim").addEventListener("click", function () { MED.forEach(function (m) { q("a-" + m[0]).value = ""; q("d-" + m[0]).value = ""; }); CRIT.forEach(function (_, i) { q("a-c" + i).checked = false; q("d-c" + i).checked = false; }); calc(); });
+  document.querySelectorAll(".d5-tab input[type=number]").forEach(function (i) { i.addEventListener("input", calc); });
+  calc();
+})();
+</script>
+</body>
+</html>

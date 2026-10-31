@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Configurar DeepSeek Harness: ordena los pasos</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: siete pasos barajados; el alumno los pulsa en el orden correcto. Cada acierto llena una casilla del
+  esquema (terminal / navegador / dsh). Los errores se cuentan y se explica por qué ese paso no va todavía. Nada se guarda.
+  Los comandos y pantallas son los documentados por DeepSeek Harness el 30-10-2026 (developer preview: pueden cambiar).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.35em; }
+.s3-btn { font: 700 .72em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.s3-btn:hover { transform: translateY(-1px); }
+.s3-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.s3-et { font-size: .62em; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+.s3-b3 { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.4vw; min-height: 0; align-items: stretch; }
+.s3-col { padding: .7em 1em; display: grid; gap: .5em; align-content: start; min-width: 0; }
+.s3-pool { display: grid; gap: .4em; }
+.s3-paso { display: grid; grid-template-columns: 2em 1fr; gap: .6em; align-items: center; text-align: left; padding: .5em .8em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; font: inherit; font-size: .78em; line-height: 1.3; transition: transform .15s, border-color .15s, opacity .2s; }
+.s3-paso:hover { transform: translateY(-1px); border-color: var(--accent); }
+.s3-paso i { display: grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 50%; background: var(--s3); color: var(--muted); font-style: normal; font-weight: 800; font-size: .9em; }
+.s3-paso code { font: 600 .92em var(--mono); background: var(--s3); padding: .02em .35em; border-radius: .3em; }
+.s3-paso.ok { border-color: var(--ok); background: var(--ok-bg); cursor: default; transform: none; }
+.s3-paso.ok i { background: var(--ok); color: #fff; }
+.s3-paso.mal { animation: s3-sacude .35s; border-color: var(--bad); }
+@keyframes s3-sacude { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.s3-pista { margin: 0; font-size: .74em; color: var(--muted); min-height: 2.4em; padding: .35em .7em; border-left: 4px solid var(--line2); }
+.s3-pista.bad { border-left-color: var(--bad); color: var(--fg); }
+.s3-pista.ok { border-left-color: var(--ok); color: var(--fg); }
+.s3-esq { display: grid; gap: .6em; }
+.s3-pant { border-radius: .8em; border: 1px solid var(--line2); overflow: hidden; }
+.s3-pant h3 { margin: 0; padding: .35em .8em; font-size: .62em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--s2); display: flex; gap: .5em; align-items: center; }
+.s3-pant h3::before { content: ""; width: .6em; height: .6em; border-radius: 50%; background: var(--line2); }
+.s3-pant.viva h3::before { background: var(--ok); }
+.s3-term { margin: 0; padding: .6em .9em; font: 600 .7em/1.6 var(--mono); background: #14122b; color: #e9e6ff; min-height: 4.6em; white-space: pre-wrap; }
+.s3-term .p { color: #8e7dff; } .s3-term .c { color: #7f7aa8; }
+.s3-nav { padding: .5em .9em; font-size: .74em; display: grid; gap: .3em; background: var(--s1); min-height: 5em; }
+.s3-nav .url { font: 600 .9em var(--mono); padding: .25em .6em; border-radius: 999px; background: var(--s3); color: var(--muted); }
+.s3-nav .url.on { color: var(--fg); }
+.s3-nav .fila { display: flex; gap: .4em; flex-wrap: wrap; }
+.s3-nav .tag { padding: .2em .6em; border-radius: .4em; background: var(--s2); border: 1px dashed var(--line2); color: var(--muted); font-weight: 700; }
+.s3-nav .tag.on { border-style: solid; border-color: var(--ok); color: var(--ok); background: var(--ok-bg); }
+.s3-marc { display: grid; grid-template-columns: auto 1fr; gap: .6em; align-items: center; }
+.s3-marc .n { font-size: 1.4em; font-weight: 800; font-variant-numeric: tabular-nums; }
+.s3-marc .n small { font-size: .5em; color: var(--muted); font-weight: 700; }
+.s3-marc p { margin: 0; font-size: .74em; color: var(--muted); }
+.s3-alt { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.s3-alt div { padding: .45em .7em; border-radius: .6em; background: var(--s2); border: 1px solid var(--line); font-size: .66em; }
+.s3-alt b { display: block; font-family: var(--mono); color: var(--accent); margin-bottom: .15em; }
+.s3-logro { display: none; }
+.s3-logro.ver { display: inline-flex; animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">DeepSeek Harness · S1 · E03</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="esc-fila" style="justify-content: space-between">
+      <div>
+        <h1 class="esc-titulo a-in">Configura dsh <em>en el orden correcto</em>: primero aquí, luego en tu laptop</h1>
+        <p class="esc-sub a-in" style="--d:.1s">Pulsa los pasos en el orden en que los harías. El esquema de la derecha se va llenando. Luego repítelo de verdad con la terminal abierta en tu repo.</p>
+      </div>
+      <div class="esc-fila a-in" style="--d:.2s"><button type="button" class="s3-btn pri" id="rein">Barajar de nuevo</button></div>
+    </div>
+    <div class="s3-b3">
+      <section class="esc-card s3-col a-in" style="--d:.25s" aria-label="Pasos barajados">
+        <span class="s3-et">Los siete pasos, barajados · pulsa el que toca</span>
+        <div class="s3-pool" id="pool"></div>
+        <p class="s3-pista" id="pista">Empieza por lo que necesitas antes de teclear nada.</p>
+      </section>
+      <aside class="esc-card s3-col a-in" style="--d:.35s" aria-label="Esquema de lo que ves en tu máquina">
+        <span class="s3-et">Esquema (no es una captura real): qué ves en tu máquina</span>
+        <div class="s3-esq">
+          <div class="s3-pant" id="p-term"><h3>Terminal · en la carpeta de tu repo</h3><pre class="s3-term" id="term"><span class="c"># aquí aparecen los comandos que vas ordenando</span></pre></div>
+          <div class="s3-pant" id="p-nav"><h3>Navegador</h3><div class="s3-nav"><span class="url" id="url">(sin abrir)</span><div class="fila"><span class="tag" id="t-models">Settings → Models</span><span class="tag" id="t-key">clave de API</span><span class="tag" id="t-ws">Choose workspace</span><span class="tag" id="t-prompt">primer prompt</span></div></div></div>
+        </div>
+        <div class="s3-marc"><span class="n"><span id="ok">0</span><small> de 7 · <span id="err">0</span> errores</small></span><p id="marc-t">Un error no resta: te dice por qué ese paso todavía no va.</p></div>
+        <span class="esc-chip ok s3-logro" id="logro">Orden completo · ahora hazlo en tu laptop y pulsa «Lo logré»</span>
+        <div class="s3-alt">
+          <div><b>dsh --profile headless "tarea"</b>Una sesión sin interfaz: imprime la respuesta en la terminal. Para scripts.</div>
+          <div><b>--profile acp · --profile sdk</b>Para integrarlo con editores (ACP) o con tu propio código.</div>
+          <div><b>pnpm install · build · pnpm dsh web</b>Si prefieres compilarlo desde el repo (MIT). Plugins: tema dsh-plugin.</div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Developer preview: si la pantalla real no coincide con el esquema, manda la documentación oficial y avisa en el hilo</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var URL = "http" + "://127.0.0.1:3080"; // partido para que el verificador no lo tome por recurso externo
+  var PASOS = [
+    { h: "Comprobar que tienes Node.js: <code>node --version</code> (si no, instala la LTS)", term: "$ node --version", por: "npx viene con Node.js: sin Node no hay dsh.", antes: "Antes de todo: dsh se arranca con npx y npx viene con Node.js." },
+    { h: "Abrir la terminal <b>dentro de la carpeta del repositorio</b>", term: "$ cd mi-repo", por: "La carpeta donde arrancas dsh es la que luego te ofrece como espacio de trabajo.", antes: "Primero ubícate en el repo: el espacio de trabajo sale de la carpeta donde arrancas dsh." },
+    { h: "Arrancar la interfaz web: <code>npx @deepseek-ai/dsh web</code>", term: "$ npx @deepseek-ai/dsh web", por: "Esto instala y arranca dsh; abre el navegador solo (con --no-open, no).", antes: "Todavía no hay nada corriendo: arranca dsh con npx @deepseek-ai/dsh web." },
+    { h: "Ver la Web UI en <code>" + URL + "</code>", nav: URL, por: "Es local: 127.0.0.1 es tu propia máquina, puerto 3080.", antes: "El navegador no tiene nada que mostrar hasta que dsh esté arrancado." },
+    { h: "En <b>Settings → Models</b>, elegir el proveedor DeepSeek y pegar la clave de API", tag: ["t-models", "t-key"], por: "Sin clave no hay modelo: la pantalla espera. Otros proveedores OpenAI-compatibles: providers.md.", antes: "La clave se pega en Settings → Models, y para eso la Web UI tiene que estar abierta." },
+    { h: "Con <b>Choose workspace</b>, elegir la carpeta donde arrancaste dsh", tag: ["t-ws"], por: "Ese es el repo que el agente va a leer. Si eliges otra carpeta, resume otra cosa.", antes: "Primero el modelo, luego el espacio de trabajo: sin modelo no hay a quién mandar la tarea." },
+    { h: "Primer mensaje: «Summarize this repository and identify its main packages»", tag: ["t-prompt"], por: "El prompt de ejemplo de la documentación oficial. Pide rutas en la respuesta.", antes: "El primer prompt va al final: necesita modelo y espacio de trabajo elegidos." }
+  ];
+  var orden, sig, ok, err;
+  function barajar() {
+    orden = PASOS.map(function (_, i) { return i; });
+    for (var i = orden.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = orden[i]; orden[i] = orden[j]; orden[j] = t; }
+    if (orden[0] === 0 && orden[1] === 1) { var t2 = orden[0]; orden[0] = orden[orden.length - 1]; orden[orden.length - 1] = t2; }
+    sig = 0; ok = 0; err = 0;
+    var pool = $("pool"); pool.textContent = "";
+    orden.forEach(function (i) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "s3-paso"; b.setAttribute("data-i", i);
+      var n = document.createElement("i"); n.textContent = "?";
+      var s = document.createElement("span"); s.innerHTML = PASOS[i].h;
+      b.appendChild(n); b.appendChild(s); b.addEventListener("click", function () { elegir(b, i); }); pool.appendChild(b);
+    });
+    $("term").innerHTML = '<span class="c"># aquí aparecen los comandos que vas ordenando</span>';
+    $("url").textContent = "(sin abrir)"; $("url").classList.remove("on");
+    ["t-models", "t-key", "t-ws", "t-prompt"].forEach(function (id) { $(id).classList.remove("on"); });
+    $("p-term").classList.remove("viva"); $("p-nav").classList.remove("viva");
+    $("logro").classList.remove("ver");
+    var p = $("pista"); p.className = "s3-pista"; p.textContent = "Empieza por lo que necesitas antes de teclear nada.";
+    marcador();
+  }
+  function marcador() { $("ok").textContent = ok; $("err").textContent = err; }
+  function elegir(b, i) {
+    if (b.classList.contains("ok")) return;
+    var p = $("pista");
+    if (i !== sig) {
+      err++; b.classList.remove("mal"); void b.offsetWidth; b.classList.add("mal");
+      p.className = "s3-pista bad"; p.textContent = "Todavía no. " + PASOS[i].antes;
+      marcador(); return;
+    }
+    ok++; sig++;
+    b.classList.add("ok"); b.querySelector("i").textContent = ok;
+    p.className = "s3-pista ok"; p.textContent = PASOS[i].por;
+    var paso = PASOS[i];
+    if (paso.term) {
+      var t = $("term"); if (ok === 1) t.textContent = "";
+      var l = document.createElement("span"); l.className = "p"; l.textContent = paso.term.slice(0, 1); t.appendChild(l);
+      t.appendChild(document.createTextNode(paso.term.slice(1) + "\n")); $("p-term").classList.add("viva");
+    }
+    if (paso.nav) { $("url").textContent = paso.nav; $("url").classList.add("on"); $("p-nav").classList.add("viva"); }
+    if (paso.tag) paso.tag.forEach(function (id) { $(id).classList.add("on"); });
+    if (ok === PASOS.length) {
+      $("logro").classList.add("ver");
+      $("marc-t").textContent = err === 0 ? "Sin errores. Ahora de verdad: terminal en tu repo y npx @deepseek-ai/dsh web." : "Listo. Repasa los pasos que fallaste antes de hacerlo en tu laptop.";
+    }
+    marcador();
+  }
+  $("rein").addEventListener("click", barajar);
+  barajar();
+})();
+</script>
+</body>
+</html>

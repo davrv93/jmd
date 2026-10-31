@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Bienvenida: un agente son cuatro piezas, no una</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: cuatro interruptores apagan una pieza del agente (modelo, harness, herramientas, contexto) y el diagrama
+  y el resultado cambian. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .35); }
+.esc-titulo { font-size: 1.5em; }
+.s1-btn { font: 700 .74em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .65em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); transition: transform .15s, background .15s, color .15s; }
+.s1-btn:hover { transform: translateY(-1px); }
+.s1-btn[aria-pressed="true"] { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.s1-btn[aria-pressed="false"] { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+.s1-et { font-size: .66em; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+.s1-b1 { display: grid; grid-template-columns: 1.45fr 1fr; gap: 2vw; align-items: stretch; min-height: 0; }
+.esc-titulo { font-size: 1.9em; }
+.esc-cuerpo { gap: 1.4vh; }
+.s1-b1 svg { max-height: 44vh; }
+.s1-diag { padding: .9em 1.1em .6em; display: grid; gap: .4em; }
+.s1-diag svg { max-height: 40vh; }
+.s1-diag text { font-size: 20px; font-weight: 700; }
+.s1-diag text.m { fill: var(--muted); font-weight: 500; font-size: 17px; }
+.s1-nodo rect { fill: var(--s1); stroke: var(--line2); stroke-width: 3; transition: opacity .3s, stroke .3s; }
+.s1-nodo.ac rect { stroke: var(--accent); }
+.s1-nodo.ok rect { stroke: var(--ok); }
+.s1-nodo.g rect { stroke: var(--gold); }
+.s1-nodo.r rect { stroke: var(--ph-ea); }
+.s1-nodo.off { opacity: .28; }
+.s1-nodo.off rect { stroke-dasharray: 8 8; }
+.s1-arnes { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 14 10; opacity: .7; transition: opacity .3s; }
+.s1-arnes.off { opacity: .15; }
+.s1-fl { fill: none; stroke: var(--line2); stroke-width: 3; marker-end: url(#s1-p); }
+.s1-pq { fill: var(--line2); }
+.s1-msg { fill: var(--s3); }
+.s1-der { display: grid; gap: .9vh; align-content: center; font-size: .86em; }
+.s1-pieza { display: grid; grid-template-columns: 1fr auto; gap: .15em 1em; align-items: center; padding: .55em 1.1em; }
+.s1-pieza h3 { margin: 0; font-size: .95em; }
+.s1-pieza p { grid-column: 1 / -1; margin: 0; }
+.s1-pieza .s1-btn { min-width: 6.5em; }
+.s1-res { padding: .7em 1.1em; border-left: 5px solid var(--accent); transition: border-color .3s; }
+.s1-res.mal { border-left-color: var(--bad); }
+.s1-res p { margin: 0; color: var(--fg); font-size: .88em; }
+.s1-res b { color: var(--accent); }
+.s1-res.mal b { color: var(--bad); }
+.s1-ruta { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5em; }
+.s1-ruta li { display: inline-flex; align-items: center; gap: .5em; padding: .28em .8em .28em .3em; border-radius: 999px; background: var(--s1); border: 1px solid var(--line); font-weight: 700; font-size: .72em; }
+.s1-ruta b { display: grid; place-items: center; width: 1.65em; height: 1.65em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .82em; }
+@keyframes s1-viaja { 0% { opacity: 0; transform: translateX(0); } 8% { opacity: 1; } 92% { opacity: 1; } 100% { opacity: 0; transform: translateX(726px); } }
+.s1-pk { animation: s1-viaja 6s linear infinite; }
+.s1-pk circle { fill: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .s1-pk { animation: none !important; opacity: 0; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">DeepSeek Harness · S1 · E01</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <span class="esc-chip a-in">Sesión 1 · martes 17 de noviembre · 7:30 pm</span>
+      <h1 class="esc-titulo a-in" style="--d:.1s">Un agente no es «la IA»: <em>son cuatro piezas</em></h1>
+      <p class="esc-sub a-in" style="--d:.2s">Apaga una pieza y mira qué deja de funcionar. Hoy el agente no programa: entiende un sistema que ya existe.</p>
+    </div>
+    <div class="s1-b1">
+      <section class="esc-card s1-diag a-in" style="--d:.3s" aria-label="Diagrama: cómo pasa una tarea por las cuatro piezas">
+        <span class="s1-et">Qué pasa con una tarea</span>
+        <svg class="esc-svg" viewBox="0 0 1000 420" role="img" aria-label="Tarea, contexto, modelo, herramientas y archivos, envueltos por el harness y unidos por flechas">
+          <defs><marker id="s1-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="s1-pq" d="M0 0 L10 5 L0 10 Z"/></marker></defs>
+          <rect class="s1-arnes" id="n-arnes" x="200" y="70" width="760" height="330" rx="26"/>
+          <text class="m" x="580" y="60" text-anchor="middle" id="t-arnes">Harness (dsh): orquesta el bucle, ejecuta herramientas, pide aprobación, lleva el plan</text>
+          <g class="s1-nodo" id="n-msg"><rect class="s1-msg" x="20" y="150" width="150" height="90" rx="18"/><text x="95" y="188" text-anchor="middle">Tarea</text><text class="m" x="95" y="216" text-anchor="middle">«resume el repo»</text></g>
+          <path class="s1-fl" d="M172 195 L218 195"/>
+          <g class="s1-nodo r" id="n-ctx"><rect x="222" y="130" width="190" height="130" rx="18"/><text x="317" y="172" text-anchor="middle">Contexto</text><text class="m" x="317" y="200" text-anchor="middle">pedido + instrucciones</text><text class="m" x="317" y="226" text-anchor="middle">+ lo ya leído</text></g>
+          <path class="s1-fl" d="M414 195 L460 195"/>
+          <g class="s1-nodo ac" id="n-modelo"><rect x="464" y="110" width="210" height="170" rx="18"/><text x="569" y="152" text-anchor="middle">Modelo</text><text x="569" y="178" text-anchor="middle">DeepSeek</text><text class="m" x="569" y="210" text-anchor="middle">razona y decide</text><text class="m" x="569" y="238" text-anchor="middle">qué herramienta usar</text></g>
+          <path class="s1-fl" d="M676 195 L722 195"/>
+          <g class="s1-nodo ok" id="n-herr"><rect x="726" y="130" width="190" height="130" rx="18"/><text x="821" y="172" text-anchor="middle">Herramientas</text><text class="m" x="821" y="200" text-anchor="middle">leer · buscar · editar</text><text class="m" x="821" y="226" text-anchor="middle">correr · delegar</text></g>
+          <path class="s1-fl" d="M821 262 L821 300"/>
+          <g class="s1-nodo g" id="n-arch"><rect x="700" y="304" width="242" height="90" rx="18"/><text x="821" y="340" text-anchor="middle">Tu repositorio</text><text class="m" x="821" y="368" text-anchor="middle">archivos y terminal</text></g>
+          <path class="s1-fl" d="M698 349 L80 349 L80 262"/>
+          <text class="m" x="390" y="340" text-anchor="middle" id="t-resp">Resultado: «3 paquetes: api, web, shared · entrada en src/server.js:1» (con rutas)</text>
+          <g class="s1-pk" aria-hidden="true"><circle cx="95" cy="195" r="9"/></g>
+        </svg>
+      </section>
+      <aside class="s1-der">
+        <div class="esc-card s1-pieza a-in" style="--d:.4s">
+          <h3>Modelo</h3><button type="button" class="s1-btn" data-pieza="modelo" aria-pressed="true">Encendido</button>
+          <p>Razona y redacta a partir del contexto. Se elige en Settings → Models. No toca archivos por sí solo.</p>
+        </div>
+        <div class="esc-card s1-pieza a-in" style="--d:.5s">
+          <h3>Harness (dsh)</h3><button type="button" class="s1-btn" data-pieza="arnes" aria-pressed="true">Encendido</button>
+          <p>Envuelve al modelo: corre el bucle, ejecuta herramientas, pide aprobación según la política de permisos y mantiene el plan.</p>
+        </div>
+        <div class="esc-card s1-pieza a-in" style="--d:.6s">
+          <h3>Herramientas</h3><button type="button" class="s1-btn" data-pieza="herr" aria-pressed="true">Encendido</button>
+          <p>Leer y editar archivos, buscar, correr comandos, delegar. Son lo que conecta al modelo con tu repo.</p>
+        </div>
+        <div class="esc-card s1-pieza a-in" style="--d:.7s">
+          <h3>Contexto</h3><button type="button" class="s1-btn" data-pieza="ctx" aria-pressed="true">Encendido</button>
+          <p>Todo lo que el modelo tiene delante en cada llamada. Solo crece mientras dura la sesión.</p>
+        </div>
+        <div class="esc-card s1-res a-in" id="res" style="--d:.8s"><p id="res-t"><b>Las cuatro encendidas.</b> La tarea entra al contexto → el modelo decide leer → la herramienta abre archivos → el resultado vuelve al contexto → el modelo responde con rutas que puedes abrir.</p></div>
+      </aside>
+    </div>
+    <ol class="s1-ruta a-in" style="--d:.9s" aria-label="La ruta de hoy">
+      <li><b>1</b>Cuatro piezas</li><li><b>2</b>El bucle del agente</li><li><b>3</b>Configurar dsh</li><li><b>4</b>Recorrer el repo</li><li><b>5</b>AGENTS.md</li><li><b>6</b>Pregunta y tarea</li>
+    </ol>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando puedas nombrar las cuatro piezas y qué se rompe si falta cada una</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var on = { modelo: true, arnes: true, herr: true, ctx: true };
+  var NODOS = { modelo: ["n-modelo"], arnes: ["n-arnes"], herr: ["n-herr", "n-arch"], ctx: ["n-ctx"] };
+  var TXT = {
+    modelo: "<b>Sin modelo:</b> el harness abre, las herramientas están y ve la carpeta, pero nadie razona. Es la pantalla que espera cuando Settings → Models está vacío o la clave no vale.",
+    arnes: "<b>Sin harness:</b> tienes un chat. El modelo responde a lo que le pegas; no lee archivos, no corre comandos, no lleva un plan ni pide aprobación. El harness eres tú, copiando y pegando.",
+    herr: "<b>Sin herramientas:</b> el modelo opina sobre tu repo sin haberlo leído. Todo lo que diga de archivos y rutas es recuerdo de otros repos o invención.",
+    ctx: "<b>Sin contexto:</b> cada mensaje empieza de cero: el agente relee todo, repite preguntas y olvida el plan. Es lo que cuesta tokens y tiempo, y lo que medirás en la sesión 2."
+  };
+  var res = document.getElementById("res"), rt = document.getElementById("res-t"), tr = document.getElementById("t-resp");
+  var OK = "<b>Las cuatro encendidas.</b> La tarea entra al contexto → el modelo decide leer → la herramienta abre archivos → el resultado vuelve al contexto → el modelo responde con rutas que puedes abrir.";
+  function pintar() {
+    var apagadas = Object.keys(on).filter(function (k) { return !on[k]; });
+    Object.keys(NODOS).forEach(function (k) {
+      NODOS[k].forEach(function (id) { document.getElementById(id).classList.toggle("off", !on[k]); });
+    });
+    if (!apagadas.length) {
+      res.classList.remove("mal");
+      rt.innerHTML = OK;
+      tr.textContent = "Resultado: «3 paquetes: api, web, shared · entrada en src/server.js:1» (con rutas)";
+      return;
+    }
+    res.classList.add("mal");
+    rt.innerHTML = apagadas.map(function (k) { return TXT[k]; }).join(" ");
+    tr.textContent = !on.modelo ? "Resultado: (nada; la pantalla espera)" :
+      !on.herr ? "Resultado: «Parece un proyecto típico de Node con Express» (sin abrir un archivo)" :
+      !on.arnes ? "Resultado: «Pégame el package.json y te digo» (tú haces de harness)" :
+      "Resultado: «¿Qué repositorio?» (olvidó lo que acababa de leer)";
+  }
+  document.querySelectorAll("[data-pieza]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var k = b.getAttribute("data-pieza");
+      on[k] = !on[k];
+      b.setAttribute("aria-pressed", on[k] ? "true" : "false");
+      b.textContent = on[k] ? "Encendido" : "Apagado";
+      pintar();
+    });
+  });
+})();
+</script>
+</body>
+</html>

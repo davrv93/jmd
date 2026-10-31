@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Bienvenida: documentar es afirmar con evidencia</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-03). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Nada se guarda: cada recarga vuelve al inicio.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .4); }
+.esc-titulo { font-size: 1.5em; }
+.d3-b1 { display: grid; grid-template-columns: 1.1fr 1fr; gap: 2vw; align-items: stretch; min-height: 0; }
+.d3-readme { padding: .9em 1.1em; display: grid; gap: .5em; align-content: start; }
+.d3-readme h3 { font: 700 .72em var(--mono); color: var(--muted); letter-spacing: .08em; margin: 0; }
+.d3-afirma { display: grid; grid-template-columns: 1.7em 1fr; gap: .6em; align-items: start; text-align: left; font: inherit; font-size: .88em; padding: .6em .8em; border-radius: .7em; border: 1px solid var(--line); background: var(--s2); color: var(--fg); cursor: pointer; transition: transform .15s, border-color .15s; }
+.d3-afirma:hover { transform: translateX(3px); }
+.d3-afirma[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
+.d3-afirma b { display: grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .85em; }
+.d3-cartas { display: grid; grid-template-rows: repeat(3, 1fr); gap: 1vh; }
+.d3-carta { display: grid; grid-template-columns: auto 1fr; gap: .2em .9em; align-items: center; padding: .7em 1em; border-left: 5px solid var(--line2); transition: border-color .3s, opacity .3s; }
+.d3-carta h3 { margin: 0; font-size: .95em; }
+.d3-carta .d3-ico { font-size: 1.6em; width: 1.4em; text-align: center; }
+.d3-carta p { grid-column: 2; margin: 0; font-size: .8em; }
+.d3-carta .d3-ev { grid-column: 2; margin: 0; font: 600 .72em/1.4 var(--mono); color: var(--fg); background: var(--s3); border-radius: .5em; padding: .4em .7em; white-space: pre-wrap; min-height: 2.6em; }
+.d3-carta.si { border-left-color: var(--ok); }
+.d3-carta.no { border-left-color: var(--bad); opacity: .7; }
+.d3-carta.si .d3-ev { background: var(--ok-bg); }
+.d3-carta.no .d3-ev { background: var(--bad-bg); color: var(--bad); }
+.d3-veredicto { padding: .7em 1.1em; border-left: 5px solid var(--accent); }
+.d3-veredicto p { margin: 0; font-size: .9em; color: var(--fg); }
+.d3-veredicto b { color: var(--accent); }
+.d3-veredicto.ok { border-left-color: var(--ok); } .d3-veredicto.ok b { color: var(--ok); }
+.d3-veredicto.warn { border-left-color: var(--warn); } .d3-veredicto.warn b { color: var(--warn); }
+.d3-veredicto.bad { border-left-color: var(--bad); } .d3-veredicto.bad b { color: var(--bad); }
+.d3-ruta { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5em; }
+.d3-ruta li { display: inline-flex; align-items: center; gap: .5em; padding: .28em .8em .28em .3em; border-radius: 999px; background: var(--s1); border: 1px solid var(--line); font-weight: 700; font-size: .72em; }
+.d3-ruta b { display: grid; place-items: center; width: 1.65em; height: 1.65em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .82em; }
+@media (prefers-reduced-motion: reduce) { .d3-anim { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Documenta y valida · E01</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <span class="esc-chip a-in">Sesión 3 · Documenta y valida el sistema</span>
+      <h1 class="esc-titulo a-in" style="--d:.1s">Documentar es <em>afirmar con evidencia</em></h1>
+      <p class="esc-sub a-in" style="--d:.2s">Toca una afirmación del README y mira qué cartas la respaldan. Si falta una, no se escribe como hecho: se marca.</p>
+    </div>
+    <div class="d3-b1">
+      <section class="esc-card d3-readme a-in" style="--d:.3s" aria-label="Fragmento de README con tres afirmaciones">
+        <h3>README.md · tienda-sol</h3>
+        <button type="button" class="d3-afirma" data-i="0" aria-pressed="false"><b>1</b><span>«El servidor arranca con <code>npm start</code> y escucha en el puerto 3000.»</span></button>
+        <button type="button" class="d3-afirma" data-i="1" aria-pressed="false"><b>2</b><span>«Las pruebas corren con <code>npm test</code> y cubren el flujo de pedido.»</span></button>
+        <button type="button" class="d3-afirma" data-i="2" aria-pressed="false"><b>3</b><span>«Al crear un pedido se valida el stock antes de guardarlo.»</span></button>
+        <div class="esc-card d3-veredicto" id="veredicto"><p id="veredicto-t"><b>Elige una afirmación.</b> Tres cartas pueden respaldarla: el documento que la dice, el código que la hace y la prueba que lo demuestra.</p></div>
+      </section>
+      <aside class="d3-cartas">
+        <div class="esc-card d3-carta a-in" id="c-doc" style="--d:.4s"><span class="d3-ico">📄</span><h3>Documento</h3><p>Lo que afirma el texto. Solo, es una promesa.</p><pre class="d3-ev" id="ev-doc">—</pre></div>
+        <div class="esc-card d3-carta a-in" id="c-cod" style="--d:.5s"><span class="d3-ico">⌨️</span><h3>Código</h3><p>El archivo que lo hace. Se cita con ruta y línea.</p><pre class="d3-ev" id="ev-cod">—</pre></div>
+        <div class="esc-card d3-carta a-in" id="c-pru" style="--d:.6s"><span class="d3-ico">✅</span><h3>Prueba</h3><p>Un comando ejecutado hoy que lo demuestra.</p><pre class="d3-ev" id="ev-pru">—</pre></div>
+      </aside>
+    </div>
+    <ol class="d3-ruta a-in" style="--d:.8s" aria-label="La ruta de hoy">
+      <li><b>1</b>Afirmar con evidencia</li><li><b>2</b>¿Evidencia o invento?</li><li><b>3</b>Mermaid en vivo</li><li><b>4</b>Comprobar rutas y comandos</li><li><b>5</b>Revisión al cambiar</li><li><b>6</b>Tarea, certificado e insignia</li>
+    </ol>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota" id="pie-nota">Pulsa «Lo logré» en el panel cuando puedas decir qué carta le falta a la afirmación 3 y cómo se marca</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var CASOS = [
+    { doc: "README.md:12  «arranca con npm start y escucha en el puerto 3000»",
+      cod: "package.json:6  \"start\": \"node src/server.js\"\nsrc/server.js:4  const PORT = process.env.PORT || 3000;",
+      pru: "$ npm start\n  tienda-sol escuchando en :3000", si: [1, 1, 1], clase: "ok",
+      txt: "<b>Hecho respaldado.</b> Documento, código y prueba coinciden. Se escribe como hecho y se cita <code>src/server.js:4</code>." },
+    { doc: "README.md:20  «npm test cubre el flujo de pedido»",
+      cod: "package.json:7  \"test\": \"node --test\"\n(no hay carpeta test/ ni archivos *.test.js)",
+      pru: "$ npm test\n  ℹ tests 0 · pass 0 · fail 0", si: [1, 0, 0], clase: "warn",
+      txt: "<b>Supuesto.</b> El script existe, pero no hay pruebas que correr y la salida dice 0. Se marca <code>[SUPUESTO]</code> o <code>[PENDIENTE: escribir pruebas]</code>, nunca como hecho." },
+    { doc: "README.md:31  «se valida el stock antes de guardar»",
+      cod: "src/pedidos.js:18  // TODO: validar stock\nsrc/pedidos.js:19  await db.query('INSERT INTO pedidos …')",
+      pru: "$ curl -X POST :3000/pedidos -d '{\"sku\":\"X\",\"cant\":999}'\n  201 Created  (guardó 999 sin stock)", si: [1, 0, 0], clase: "bad",
+      txt: "<b>Inventado.</b> El código dice lo contrario: el TODO sigue ahí y la prueba guarda 999 unidades. Esa frase se borra del README y pasa a <code>DIAGNOSTICO.md</code> como riesgo conocido." }
+  ];
+  var ids = ["c-doc", "c-cod", "c-pru"], evs = ["ev-doc", "ev-cod", "ev-pru"], campos = ["doc", "cod", "pru"];
+  var ver = document.getElementById("veredicto"), vt = document.getElementById("veredicto-t");
+  var botones = document.querySelectorAll(".d3-afirma");
+  botones.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var c = CASOS[+b.getAttribute("data-i")];
+      botones.forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+      for (var k = 0; k < 3; k++) {
+        var el = document.getElementById(ids[k]);
+        el.classList.remove("si", "no"); el.classList.add(c.si[k] ? "si" : "no");
+        document.getElementById(evs[k]).textContent = c[campos[k]];
+      }
+      ver.className = "esc-card d3-veredicto " + c.clase; vt.innerHTML = c.txt;
+    });
+  });
+})();
+</script>
+</body>
+</html>

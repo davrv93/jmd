@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · ¿Quién lo paga? La API o tu máquina</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-02). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: 12 casos en orden aleatorio; el alumno dice quién paga (API, tu máquina o las dos) y ve el por qué.
+  El acuerdo con el criterio se calcula en vivo; el umbral es 80 %. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .4); }
+.esc-titulo { font-size: 1.4em; }
+.d3-b { display: grid; grid-template-columns: 1.3fr .9fr; gap: 1.8vw; align-items: stretch; min-height: 0; }
+.d3-caso { padding: 1em 1.2em; display: grid; gap: .7em; align-content: start; }
+.d3-caso h2 { margin: 0; font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: .7em; }
+.d3-txt { margin: 0; font-size: 1.25em; font-weight: 700; line-height: 1.3; min-height: 3.2em; }
+.d3-ops { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7em; }
+.d3-op { font: 800 .8em/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .9em .8em; border-radius: .8em; border: 2px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; display: grid; gap: .3em; justify-items: center; transition: transform .15s, border-color .15s; }
+.d3-op:hover { transform: translateY(-1px); }
+.d3-op small { font-weight: 600; color: var(--muted); font-size: .8em; }
+.d3-op[data-r="api"] { --c: var(--ph-ea); } .d3-op[data-r="loc"] { --c: var(--ph-or); } .d3-op[data-r="ambas"] { --c: var(--gold); }
+.d3-op.el { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--c); }
+.d3-op.bien { border-color: var(--ok); } .d3-op.mal { border-color: var(--bad); }
+.d3-op[disabled] { cursor: default; }
+.d3-por { margin: 0; padding: .7em 1em; border-radius: .7em; background: var(--s2); font-size: .86em; border-left: 5px solid var(--line2); min-height: 4.4em; }
+.d3-por.ok { border-left-color: var(--ok); } .d3-por.bad { border-left-color: var(--bad); }
+.d3-por b { color: var(--accent); }
+.d3-btn { font: 700 .74em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .7em 1.1em; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; justify-self: start; }
+.d3-btn[disabled] { opacity: .45; cursor: default; }
+.d3-der { display: grid; gap: 1vh; align-content: start; }
+.d3-marc { padding: .8em 1.1em; display: grid; grid-template-columns: auto 1fr; gap: .2em 1.2em; align-items: center; }
+.d3-marc .n { font-size: 2.2em; font-weight: 800; line-height: 1; letter-spacing: -.03em; }
+.d3-marc .n small { font-size: .38em; color: var(--muted); font-weight: 700; letter-spacing: 0; }
+.d3-pips { display: flex; gap: .3em; }
+.d3-pips i { flex: 1; height: .7em; border-radius: .35em; background: var(--s3); }
+.d3-pips i.ok { background: var(--ok); } .d3-pips i.bad { background: var(--bad); }
+.d3-est { grid-column: 1 / -1; font-size: .78em; color: var(--muted); }
+.d3-est b { color: var(--ok); }
+.d3-reg { padding: .7em 1.1em; }
+.d3-reg h3 { font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: .4em; }
+.d3-reg table { width: 100%; border-collapse: collapse; font-size: .74em; }
+.d3-reg td { padding: .25em .4em; border-bottom: 1px solid var(--line); vertical-align: top; }
+.d3-reg td:first-child { font-weight: 800; white-space: nowrap; }
+.d3-reg .api { color: var(--ph-ea); } .d3-reg .loc { color: var(--ph-or); } .d3-reg .ambas { color: var(--gold); }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">DeepSeek Harness · S2 · E03</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="a-in">
+      <h1 class="esc-titulo">¿Quién lo paga? <em>La API o tu máquina</em></h1>
+      <p class="esc-sub">La pregunta de fondo siempre es la misma: ¿esto entra al modelo o corre afuera? Clasifica los 12 casos.</p>
+    </div>
+    <div class="d3-b">
+      <section class="esc-card d3-caso a-in" style="--d:.15s" aria-label="Caso">
+        <h2>Caso <span id="c-n">1</span> de 12 <span class="esc-chip" id="c-chip">sin responder</span></h2>
+        <p class="d3-txt" id="c-txt">…</p>
+        <div class="d3-ops" role="group" aria-label="Quién lo paga">
+          <button type="button" class="d3-op" data-r="api">La API<small>tokens de entrada o salida</small></button>
+          <button type="button" class="d3-op" data-r="loc">Tu máquina<small>CPU, RAM, disco, tiempo</small></button>
+          <button type="button" class="d3-op" data-r="ambas">Las dos<small>corre afuera y luego entra</small></button>
+        </div>
+        <p class="d3-por" id="c-por">Elige una opción y verás el por qué del criterio del instructor.</p>
+        <button type="button" class="d3-btn" id="b-sig" disabled>Siguiente caso</button>
+      </section>
+      <aside class="d3-der a-in" style="--d:.3s">
+        <div class="esc-card d3-marc">
+          <div class="n"><span id="m-pct">0</span><small> % de acuerdo</small></div>
+          <div class="d3-pips" id="m-pips" aria-label="Aciertos por caso"></div>
+          <div class="d3-est" id="m-est">Umbral: 80 % (10 de 12). Dos casos están puestos para engañar.</div>
+        </div>
+        <div class="esc-card d3-reg">
+          <h3>Regla rápida</h3>
+          <table aria-label="Reglas">
+            <tr><td class="api">API</td><td>Lo que entra al contexto (archivos, salidas, historial) y lo que el modelo escribe o razona.</td></tr>
+            <tr><td class="loc">Tu máquina</td><td>Lo que una herramienta ejecuta: pruebas, compilación, búsqueda, el navegador de la Web UI.</td></tr>
+            <tr><td class="ambas">Las dos</td><td>Corre afuera y su resultado se le pasa al modelo. La parte local no la cobran; la salida sí.</td></tr>
+          </table>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando tu acuerdo llegue a 80 % con al menos 10 casos respondidos</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var CASOS = [
+    ["El agente abre un archivo de 2.000 líneas y lo mete completo en el contexto.", "api", "Abrir el archivo le cuesta a tu disco casi nada; las 2.000 líneas son tokens de entrada que cobra la API en esa llamada y en cada turno que las arrastre."],
+    ["Corre `npm test` (12 s, cuatro núcleos) y pasa las 400 líneas de salida al modelo.", "ambas", "Las pruebas corren en tu CPU; las 400 líneas vuelven a ser entrada. Con `| tail -40` la parte API se achica y la local no cambia."],
+    ["Corre `grep -r` en toda la raíz, con node_modules, tarda 20 s y solo pasa 5 coincidencias al modelo.", "loc", "El gasto grande es local: disco y CPU durante 20 s. Cinco coincidencias son unas decenas de tokens. Acotar el grep ahorra sobre todo en tu máquina."],
+    ["El modelo redacta 300 líneas de documentación.", "api", "Salida pura: lo que el modelo escribe se cobra por token y suele ser la columna más cara."],
+    ["El modelo «piensa» antes de contestar (tokens de razonamiento).", "api", "El razonamiento es salida del modelo aunque no la leas completa; lo cobra la API, no tu CPU."],
+    ["`go build ./...` sobre el proyecto para ver si compila.", "loc", "Compilar es trabajo de tu procesador y tu RAM; no entra ni un token mientras el agente no lea la salida."],
+    ["Un hilo de conversación con 30 turnos: en cada turno nuevo se reenvía todo el historial.", "api", "El historial es entrada otra vez en cada turno. La caché de contexto lo abarata (precio con caché frente a sin caché), pero no lo anula."],
+    ["Abrir la Web UI de dsh en el navegador y dejarla abierta toda la tarde.", "loc", "Node y el navegador ocupan RAM y algo de CPU en tu máquina. Sin tarea en marcha no hay tokens."],
+    ["Darle al agente un resumen revisado de 20 líneas en lugar de seis archivos.", "api", "Lo que cambia es la entrada: 20 líneas en vez de seis archivos. Tu máquina ni se entera; la factura sí."],
+    ["El agente levanta un contenedor Docker para probar el cambio.", "loc", "El contenedor vive en tu máquina: RAM y CPU. Si luego pasa los logs al modelo, esa parte sería API, pero levantarlo no."],
+    ["Contar los tokens de un texto con el tokenizador offline antes de enviarlo.", "loc", "El tokenizador corre local y no llama a nadie. Es la forma de estimar antes de pagar."],
+    ["El agente delega una subtarea a otro agente, que arranca con su propio contexto.", "api", "Otra conversación es otra entrada completa (instrucciones, archivos, plan). Casi nada de CPU; bastante factura si la subtarea no venía acotada."]
+  ];
+  var q = function (id) { return document.getElementById(id); };
+  var orden = CASOS.map(function (_, i) { return i; }).sort(function () { return Math.random() - .5; });
+  var idx = 0, resp = [], ops = document.querySelectorAll(".d3-op"), bsig = q("b-sig"), pips = q("m-pips");
+  var NOM = { api: "La API", loc: "Tu máquina", ambas: "Las dos" };
+  for (var k = 0; k < CASOS.length; k++) pips.appendChild(document.createElement("i"));
+  function mostrar() {
+    var c = CASOS[orden[idx]];
+    q("c-n").textContent = idx + 1; q("c-txt").textContent = c[0];
+    q("c-chip").textContent = "sin responder"; q("c-chip").className = "esc-chip";
+    q("c-por").textContent = "Elige una opción y verás el por qué del criterio del instructor."; q("c-por").className = "d3-por";
+    ops.forEach(function (b) { b.className = "d3-op"; b.disabled = false; });
+    bsig.disabled = true;
+  }
+  function marcador() {
+    var ok = resp.filter(Boolean).length, n = resp.length, pct = n ? Math.round(ok * 100 / n) : 0;
+    q("m-pct").textContent = pct;
+    var ps = pips.children; for (var i = 0; i < ps.length; i++) ps[i].className = i < n ? (resp[i] ? "ok" : "bad") : "";
+    var e = q("m-est");
+    if (n >= 10 && pct >= 80) e.innerHTML = "<b>Acuerdo " + pct + " % con " + n + " casos.</b> Umbral superado: pulsa «Lo logré».";
+    else if (n === CASOS.length) e.textContent = "Acuerdo " + pct + " % en 12 casos. Por debajo de 80 %: relee los «por qué» y vuelve a empezar (recarga la escena).";
+    else e.textContent = ok + " aciertos de " + n + ". Umbral: 80 % con al menos 10 casos respondidos.";
+  }
+  ops.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var c = CASOS[orden[idx]], r = b.getAttribute("data-r"), bien = r === c[1];
+      resp.push(bien);
+      ops.forEach(function (o) { o.disabled = true; if (o.getAttribute("data-r") === c[1]) o.classList.add("el", "bien"); });
+      if (!bien) b.classList.add("mal");
+      q("c-chip").textContent = bien ? "de acuerdo" : "criterio: " + NOM[c[1]]; q("c-chip").className = "esc-chip " + (bien ? "ok" : "bad");
+      q("c-por").innerHTML = "<b>" + NOM[c[1]] + ".</b> " + c[2]; q("c-por").className = "d3-por " + (bien ? "ok" : "bad");
+      bsig.disabled = idx >= CASOS.length - 1; marcador();
+      if (idx >= CASOS.length - 1) bsig.textContent = "Fin de los casos";
+    });
+  });
+  bsig.addEventListener("click", function () { if (idx < CASOS.length - 1) { idx++; mostrar(); } });
+  mostrar(); marcador();
+})();
+</script>
+</body>
+</html>
