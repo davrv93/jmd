@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · AGENTS.md, la skill y tu tarea</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: seis reglas de AGENTS.sistema.md que se voltean para ver qué pasa si faltan, cómo las usa cada ruta y la tarea con casillas. Los comandos son los reales del kit y del aula.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+body { font-size: clamp(16px, calc(1.28vw + .52vh), 32px); }
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.6em; }
+.esc-cuerpo { gap: 1.5vh; }
+.esc-card { padding: .65em 1em; }
+.x-btn { font: 700 .74em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .65em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); transition: transform .15s, background .15s; }
+.x-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.x-btn:disabled { opacity: .4; cursor: default; }
+.x-btn.pri { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-btn:focus-visible, .x-tab:focus-visible, .x-it:focus-visible, .x-chk:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.x-tabs { display: flex; gap: .5em; flex-wrap: wrap; align-items: center; }
+.x-tab { font: 700 .78em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; }
+.x-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-ra, .x-rb, .x-esq { display: inline-flex; align-items: center; gap: .35em; padding: .18em .7em; border-radius: 999px; font-size: .62em; font-weight: 800; letter-spacing: .04em; border: 1px solid; white-space: nowrap; }
+.x-ra { color: var(--accent); background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.x-rb { color: var(--gold); background: var(--gold-bg); border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+.x-esq { color: var(--warn); background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.x-real { color: var(--ok); background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.x-et { font-size: .62em; font-weight: 800; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.x-chk { display: grid; grid-template-columns: 1.5em 1fr; gap: .6em; align-items: start; text-align: left; font: inherit; color: var(--fg); background: transparent; border: 0; padding: .25em 0; cursor: pointer; width: 100%; }
+.x-chk i { width: 1.3em; height: 1.3em; border-radius: .3em; border: 2px solid var(--line2); background: var(--s1); display: grid; place-items: center; font-style: normal; font-weight: 900; color: transparent; font-size: .85em; transition: background .15s; }
+.x-chk[aria-checked="true"] i { background: var(--ok); border-color: var(--ok); color: #fff; }
+.x-chk span { font-size: .92em; line-height: 1.3; }
+.x-chk small { display: block; color: var(--muted); font-size: .86em; }
+.x-pasos { margin: 0; padding: 0; list-style: none; display: grid; gap: .45em; counter-reset: p; }
+.x-pasos li { display: grid; grid-template-columns: 1.6em 1fr; gap: .6em; align-items: baseline; font-size: .95em; line-height: 1.3; }
+.x-pasos li::before { counter-increment: p; content: counter(p); display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font-weight: 800; font-size: .85em; }
+.x-pasos code, .x-c { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.x-ver, .x-falla { padding: .45em .8em; border-radius: .7em; font-size: .82em; line-height: 1.35; }
+.x-ver { background: var(--ok-bg); border-left: 4px solid var(--ok); }
+.x-falla { background: var(--warn-bg); border-left: 4px solid var(--warn); }
+.x-ver b, .x-falla b { display: block; font-size: .85em; letter-spacing: .05em; text-transform: uppercase; }
+.x-ver b { color: var(--ok); } .x-falla b { color: var(--warn); }
+.x-estado { font-size: .74em; font-weight: 600; color: var(--muted); }
+.x-estado b { color: var(--ok); }
+.x-aviso { padding: .5em .9em; border-radius: .8em; background: var(--bad-bg); border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent); color: var(--fg); font-size: .78em; }
+.x-aviso b { color: var(--bad); }
+[data-v][hidden] { display: none !important; }
+
+.esc { padding: 1.5vh 3vw 1.2vh; gap: 1vh; }
+.x-cab7 { display: flex; align-items: center; justify-content: space-between; gap: 1.5vw; flex-wrap: wrap; }
+.x-cab7 .esc-titulo { font-size: 1.4em; }
+.x-reglas { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7vw; }
+.x-rg { text-align: left; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: 1em; padding: .6em .9em; cursor: pointer; display: grid; gap: .3em; align-content: start; min-height: 9.5em; box-shadow: var(--card-shadow); }
+.x-rg .n { font: 800 .7em var(--mono); color: var(--accent); }
+.x-rg b { font-size: .95em; line-height: 1.2; }
+.x-rg p { margin: 0; font-size: .78em; line-height: 1.35; color: var(--muted); }
+.x-rg .si { color: var(--bad); font-weight: 700; display: none; }
+.x-rg[aria-pressed="true"] { border-color: var(--bad); background: var(--bad-bg); }
+.x-rg[aria-pressed="true"] .si { display: block; }
+.x-rg[aria-pressed="true"] .dice { display: none; }
+.x-dos7 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4vw; align-items: start; }
+.x-dos7 .esc-cmd { font-size: .72em; margin: .3em 0; }
+.x-dos7 p { margin: .25em 0; font-size: .8em; line-height: 1.35; }
+.x-fl7 { display: flex; align-items: center; gap: .4em; flex-wrap: wrap; font-size: .76em; margin: .3em 0; }
+.x-fl7 span.n { padding: .25em .7em; border-radius: .6em; background: var(--s3); font: 700 .9em var(--mono); }
+.x-fl7 span.f { color: var(--accent); font-weight: 900; }
+.x-tar { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.4vw; align-items: start; }
+.x-tar h2 { margin: 0 0 .3em; font-size: .95em; }
+.x-tar .esc-cmd { font-size: .7em; margin: .3em 0; }
+.x-tar p { margin: .3em 0; font-size: .78em; line-height: 1.35; }
+@media (prefers-reduced-motion: reduce) { .x-btn, .x-tab { transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="700" cy="190" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:2.4s" cx="1500" cy="320" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:2.9s" cx="760" cy="840" r="1.6"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/><circle class="e p" style="--p:3.3s" cx="1210" cy="780" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Aplicación</span>
+    <span class="esc-num">DeepSeek Harness · S1 · E07</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="x-cab7">
+      <h1 class="esc-titulo a-in">AGENTS.md y la skill: <em>reglas para tu agente</em></h1>
+      <div class="x-tabs" role="tablist" aria-label="Vistas">
+        <button type="button" class="x-tab" role="tab" data-vista="reg" aria-selected="true">1 · Las 6 reglas</button>
+        <button type="button" class="x-tab" role="tab" data-vista="rut" aria-selected="false">2 · Cada ruta</button>
+        <button type="button" class="x-tab" role="tab" data-vista="tar" aria-selected="false">3 · Tu tarea</button>
+      </div>
+    </div>
+
+    <div data-v="reg">
+      <p class="x-obj" style="margin:0 0 .8vh;font-size:.95em;font-weight:700">Objetivo: entender qué evita cada regla. Toca una tarjeta para ver qué pasa <em>sin</em> ella.</p>
+      <div class="x-reglas" id="reglas"></div>
+    </div>
+
+    <div class="x-dos7" data-v="rut" hidden>
+      <section class="esc-card">
+        <span class="x-ra">RUTA A · tu laptop con dsh</span>
+        <div class="x-fl7"><span class="n">AGENTS.md</span><span class="f">→</span><span class="n">skills/…/SKILL.md</span><span class="f">→</span><span class="n">FOTO/</span></div>
+        <ol class="x-pasos">
+          <li><span>En dsh: <b>Add workspace…</b> y elige la carpeta de tu sistema (con <span class="x-c">AGENTS.md</span> y <span class="x-c">skills/</span> copiados del kit).</span></li>
+          <li><span>En tu laptop la skill es un archivo más: dile a dsh dónde está, en tu primer mensaje.</span></li>
+        </ol>
+        <pre class="esc-cmd">Lee AGENTS.md y skills/foto-del-sistema/SKILL.md.
+Toma la foto con node skills/foto-del-sistema/motor/foto.mjs .
+y sigue el procedimiento. Cita archivo:línea.</pre>
+        <p>Aprueba cada acción que pida dsh solo si la entiendes.</p>
+      </section>
+      <section class="esc-card">
+        <span class="x-rb">RUTA B · aula del LIVE</span>
+        <div class="x-fl7"><span class="n">aula sistema &lt;id&gt;</span><span class="f">→</span><span class="n">aula sistema foto</span><span class="f">→</span><span class="n">agente jmd</span></div>
+        <ol class="x-pasos">
+          <li><span><span class="x-c">aula sistema &lt;id&gt;</span> ya copió <span class="x-c">AGENTS.md</span> y creó <span class="x-c">docs/</span> en <span class="x-c">/trabajo/sistema</span>.</span></li>
+          <li><span>El agente <b>jmd</b> ya trae la skill <span class="x-c">foto-del-sistema</span>: no instalas nada.</span></li>
+        </ol>
+        <pre class="esc-cmd">Lee AGENTS.md y FOTO/FOTO.md y sigue
+la skill foto-del-sistema.</pre>
+        <p>Es lo que imprime <span class="x-c">aula sistema foto</span> al terminar.</p>
+      </section>
+    </div>
+
+    <div class="x-tar" data-v="tar" hidden>
+      <section class="esc-card">
+        <h2>Tarea · se entrega desde el LMS</h2>
+        <div id="ent" role="group" aria-label="Entregables"></div>
+        <p class="x-estado" id="ent-est"></p>
+        <p style="margin-top:.4em"><b>Pregunta para el hilo:</b> ¿qué afirmación de la foto resultó ser solo una pista cuando abriste el archivo?</p>
+      </section>
+      <section class="esc-card">
+        <h2>Comandos reales</h2>
+        <pre class="esc-cmd"><span class="c"># ejemplo (mueblería): un comando del banco de verificación, §13</span>
+sed -n '172,176p' js/config.js
+<span class="c"># ¿algo cambió desde la foto? (macOS: shasum -a 256 -c)</span>
+sha256sum -c FOTO/hashes.txt</pre>
+        <pre class="esc-cmd"><span class="c"># entrega por repositorio (URL + commit)</span>
+git add FOTO docs
+git commit -m "sesión 1: foto y 5 afirmaciones"
+git push
+<span class="c"># o por zip</span>
+zip -r entrega-s1.zip FOTO docs</pre>
+        <p>Sesión 2 (martes 24 de noviembre): mediremos cuánto gasta la misma tarea con y sin la foto. Trae tu sistema.</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando AGENTS.md y la skill estén en la carpeta de tu sistema y sepas qué entregas: FOTO/, DUDAS_VERIFICABLES.md y una captura</span>
+  </footer>
+</div>
+
+<script>
+/* Ayudas comunes: tema, selector corto y pestañas. */
+(function () {
+  try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {}
+})();
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function pestanas(alCambiar) {
+  var bs = $$("[data-vista]"), ps = $$("[data-v]");
+  function ir(id) {
+    bs.forEach(function (b) { b.setAttribute("aria-selected", b.getAttribute("data-vista") === id ? "true" : "false"); });
+    ps.forEach(function (p) { p.hidden = p.getAttribute("data-v") !== id; });
+    if (alCambiar) alCambiar(id);
+  }
+  bs.forEach(function (b) { b.addEventListener("click", function () { ir(b.getAttribute("data-vista")); }); });
+  return ir;
+}
+
+</script>
+<script>
+(function () {
+  var REG = [
+    ["Foto antes que código", "Lee FOTO/FOTO.md primero. Abre un archivo solo para comprobar algo concreto.", "El agente relee los archivos en cada tarea: más tokens y más tiempo. Lo mediremos en la sesión 2."],
+    ["Cita archivo:línea", "Todo lo que observas lleva su ruta y su línea, por ejemplo js/30-seguridad.js:47.", "No hay dónde comprobar. Una afirmación sin línea no se puede verificar."],
+    ["No inventes", "Rutas, funciones, permisos y cifras salen del código o de una prueba.", "Rellena con lo típico de otros sistemas: suena bien y puede ser falso."],
+    ["Hecho, pista, opinión", "Lo que no verificaste va marcado «por verificar». No mezcles los tres tipos.", "Una pista de regex se presenta como un hecho y la foto pasa de ayuda a juez."],
+    ["No toques el sistema", "Tus escritos van en docs/ y la foto en FOTO/. Cambiar el sistema solo si tú lo pides.", "El agente «arregla» lo que debía describir y la huella cambia sin que lo notes."],
+    ["No imprimas la clave", "Nunca imprimas, copies ni guardes la API key ni tokens. Las claves de demostración del sistema sí se muestran.", "La clave termina en un registro, un chat o git, y hay que revocarla."]
+  ];
+  var raiz = $("#reglas");
+  REG.forEach(function (r, i) {
+    var b = el("button", "x-rg"); b.type = "button"; b.setAttribute("aria-pressed", "false");
+    b.appendChild(el("span", "n", "REGLA " + (i + 1))); b.appendChild(el("b", null, r[0]));
+    b.appendChild(el("p", "dice", r[1])); b.appendChild(el("p", "si", "Sin ella: " + r[2]));
+    b.addEventListener("click", function () { b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true"); });
+    raiz.appendChild(b);
+  });
+  var ENT = [
+    ["FOTO/ de tu sistema", "FOTO.md, FOTO.json y hashes.txt"],
+    ["docs/DUDAS_VERIFICABLES.md", "5 afirmaciones del banco de verificación, cada una con su comando y si coincide"],
+    ["Una captura de tu sistema funcionando", "Abierto con un rol, sin tu clave de DeepSeek ni contraseñas a la vista"]
+  ];
+  var ent = $("#ent"), est = $("#ent-est");
+  function cuenta() {
+    var n = $$("[aria-checked=true]", ent).length;
+    est.innerHTML = n === 3 ? "<b>Las tres listas.</b> Entrega URL + commit (o el zip) desde el LMS." : n + " de 3 listas.";
+  }
+  ENT.forEach(function (it) {
+    var b = el("button", "x-chk"); b.type = "button"; b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false");
+    b.appendChild(el("i", null, "✓"));
+    var s = el("span"); s.innerHTML = "<b>" + it[0] + "</b><small>" + it[1] + "</small>"; b.appendChild(s);
+    b.addEventListener("click", function () { b.setAttribute("aria-checked", b.getAttribute("aria-checked") === "true" ? "false" : "true"); cuenta(); });
+    ent.appendChild(b);
+  });
+  cuenta();
+  pestanas();
+
+})();
+</script>
+</body>
+</html>

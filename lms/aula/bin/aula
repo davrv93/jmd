@@ -1,6 +1,6 @@
 #!/bin/sh
 # aula: arranque del asistente del alumno dentro de su contenedor.
-# Uso: aula iniciar | parar | estado | nuevo <plantilla> | paso | whatsapp | db
+# Uso: aula iniciar | parar | estado | nuevo <plantilla> | paso | whatsapp | db | sistema [id|foto]
 PID=/tmp/osito.pid
 vivo() { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; }
 
@@ -160,8 +160,57 @@ PY
     if command -v psql >/dev/null 2>&1; then exec psql "$DATABASE_URL" "$@"; fi
     echo "$DATABASE_URL" | sed 's#://\([^:]*\):[^@]*@#://\1:****@#'
     ;;
+  sistema)
+    # DeepSeek Harness: sistemas de práctica. «aula sistema» lista, «aula sistema <id>» copia uno a /trabajo/sistema,
+    # «aula sistema foto» toma la foto (inventario) del que tienes. Nunca pisa un /trabajo/sistema existente.
+    SP=/opt/sistemas-practica/dist
+    shift
+    case "${1:-}" in
+      "")
+        [ -f "$SP/indice.json" ] || { echo "Esta aula no trae los sistemas de práctica (falta $SP/indice.json). Avisa al instructor." >&2; exit 1; }
+        python3 - "$SP/indice.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+if isinstance(d, dict):
+    d = d.get("sistemas") or next((v for v in d.values() if isinstance(v, list)), [])
+def nombres(x):
+    return ", ".join(str(r.get("id") or r.get("nombre") or r) if isinstance(r, dict) else str(r) for r in (x or []))
+print("Sistemas de práctica (elige uno con: aula sistema <id>)\n")
+print("%-16s %-30s %s" % ("id", "rubro", "roles"))
+for s in d:
+    print("%-16s %-30s %s" % (str(s.get("id", "?"))[:16], str(s.get("rubro") or s.get("nombre") or "")[:30], nombres(s.get("roles"))))
+PY
+        echo
+        echo "Siguiente: aula sistema <id>   (copia el sistema a /trabajo/sistema)"
+        ;;
+      foto)
+        [ -d /trabajo/sistema ] || { echo "Aún no tienes sistema en /trabajo/sistema. Elige uno: aula sistema <id>" >&2; exit 1; }
+        bun /opt/skills-curso/foto-del-sistema/motor/foto.mjs /trabajo/sistema || exit 1
+        echo
+        echo "Foto en /trabajo/sistema/FOTO/ (FOTO.md, FOTO.json, hashes.txt)."
+        echo "Dile a tu agente: «Lee AGENTS.md y FOTO/FOTO.md y sigue la skill foto-del-sistema.»"
+        ;;
+      *)
+        id="$1"
+        case "$id" in *[!a-z0-9_-]*) echo "id no válido: $id (solo minúsculas, números, - y _)" >&2; exit 2 ;; esac
+        [ -d "$SP/$id" ] || { echo "no existe el sistema: $id (mira la lista con: aula sistema)" >&2; exit 2; }
+        if [ -e /trabajo/sistema ]; then
+          echo "ya existe /trabajo/sistema; no se toca. Si quieres empezar de cero, muévelo: mv /trabajo/sistema /trabajo/sistema-viejo" >&2
+          exit 1
+        fi
+        cp -R "$SP/$id" /trabajo/sistema || exit 1
+        if [ -f /opt/skills-curso/foto-del-sistema/AGENTS.sistema.md ]; then cp /opt/skills-curso/foto-del-sistema/AGENTS.sistema.md /trabajo/sistema/AGENTS.md; fi
+        mkdir -p /trabajo/sistema/docs
+        echo "creado /trabajo/sistema ($id)"
+        echo "  AGENTS.md  instrucciones para tu agente"
+        echo "  docs/      aquí van tus entregables"
+        echo "Ábrelo en el panel Visor: /vista/<tú>/sistema/"
+        echo "Siguiente paso: aula sistema foto"
+        ;;
+    esac
+    ;;
   *)
-    echo "uso: aula iniciar | parar | estado | nuevo <plantilla> [carpeta] | whatsapp | db" >&2
+    echo "uso: aula iniciar | parar | estado | nuevo <plantilla> [carpeta] | whatsapp | db | sistema [id|foto]" >&2
     exit 2
     ;;
 esac

@@ -36,11 +36,13 @@ COPY --from=bun /base/node_modules /node_modules
 COPY skills-curso /opt/skills-curso
 COPY osito /opt/osito
 COPY plantillas /opt/plantillas
+# Sistemas de práctica del curso DeepSeek Harness (15 SPA ya construidas: dist/<id>/ + indice.json). `aula sistema` los copia a /trabajo/sistema.
+COPY sistemas-practica/dist /opt/sistemas-practica/dist
 COPY AGENTS.md /home/alumno/AGENTS.md
 COPY bin/aula /usr/local/bin/aula
 COPY bin/aula-paso /usr/local/bin/aula-paso
 COPY bin/jmrv /usr/local/bin/jmrv
-RUN chmod -R a+rX /opt/osito /opt/skills-curso /opt/plantillas /home/alumno/AGENTS.md && chmod 0755 /usr/local/bin/aula /usr/local/bin/aula-paso /usr/local/bin/jmrv && ln -s bun /usr/local/bin/bunx && chmod -R a+rX /node_modules && ln -s /opt/skills-curso /home/alumno/.config/jmd/skills && chown -R alumno:alumno /home/alumno
+RUN chmod -R a+rX /opt/osito /opt/skills-curso /opt/plantillas /opt/sistemas-practica /home/alumno/AGENTS.md && chmod 0755 /usr/local/bin/aula /usr/local/bin/aula-paso /usr/local/bin/jmrv && ln -s bun /usr/local/bin/bunx && chmod -R a+rX /node_modules && ln -s /opt/skills-curso /home/alumno/.config/jmd/skills && chown -R alumno:alumno /home/alumno
 ENV HOME=/home/alumno PATH=/opt/venv/bin:/usr/local/bin:/usr/bin:/bin TERM=xterm-256color \
     JMD_URL=http://ai-orchestrator:4000 OSITO_PERFIL=nube OSITO_PUERTO=8766 PYTHONDONTWRITEBYTECODE=1 \
     JMRV_URL=http://jmrv:8790 \

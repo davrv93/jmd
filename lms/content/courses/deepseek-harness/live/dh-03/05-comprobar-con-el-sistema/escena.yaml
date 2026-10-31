@@ -1,0 +1,22 @@
+id: 05-comprobar-con-el-sistema
+titulo: "Comprueba cada afirmación contra el sistema"
+fase: experimentacion
+paso: comprobar
+duracion_min: 15
+lo_logre: true
+evidencia: ninguna
+umbral_pct: 80
+compuerta: lo_logre
+comandos:
+  - titulo: "Una línea de un archivo (la que cita el documento)"
+    cmd: "sed -n '165p' js/config.js"
+  - titulo: "¿Existe el componente que nombra el documento?"
+    cmd: "grep -n \"Almacen.importar\" js/*.js"
+  - titulo: "¿Existe el archivo o el script?"
+    cmd: "ls package.json"
+  - titulo: "Una cita que no existe no devuelve nada (código 1)"
+    cmd: "grep -n \"verificarRespaldo\" js/*.js; echo \"código: $?\""
+  - titulo: "Todas las citas archivo:línea de tus documentos que no existen"
+    cmd: "grep -ohE '(js|css)/[A-Za-z0-9_.-]+:[0-9]+|index\\.html:[0-9]+' docs/*.md | sort -u | while IFS=: read f n; do [ \"$(wc -l < \"$f\")\" -ge \"$n\" ] || echo \"NO EXISTE: $f:$n\"; done"
+  - titulo: "Volver a tomar la foto y comprobar los hashes"
+    cmd: "node skills/foto-del-sistema/motor/foto.mjs . && shasum -a 256 -c FOTO/hashes.txt"

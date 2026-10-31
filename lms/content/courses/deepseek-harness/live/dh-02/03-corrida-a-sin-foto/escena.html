@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Corrida A, sin foto</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-02). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: simulación de la corrida A. Cada llamada abre un archivo de dist/muebleria; el contexto se reenvía completo
+  y el gráfico apila lo ya enviado y lo nuevo. Tokens = caracteres ÷ 4 (estimación). Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc { padding-top: 1.6vh; padding-bottom: 1.4vh; gap: 1.2vh; }
+.esc-cuerpo { justify-content: flex-start; gap: 1.2vh; }
+.esc-titulo { font-size: 1.45em; }
+.esc-sub { font-size: .9em; max-width: 60em; }
+.s2-btn { font: 700 .72em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); }
+.s2-btn.pri { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.s2-btn[disabled] { opacity: .45; cursor: default; }
+.s2-btn:focus-visible, .s2-in:focus-visible, .s2-tab:focus-visible, select:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.s2-in { font: 700 .8em var(--mono); padding: .3em .55em; border-radius: .45em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); }
+.s2-tabs { display: flex; gap: .4em; flex-wrap: wrap; }
+.s2-tab { font: 700 .72em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .95em; border-radius: .7em .7em 0 0; border: 1px solid var(--line2); border-bottom: 0; background: var(--s2); color: var(--muted); cursor: pointer; }
+.s2-tab[aria-selected="true"] { background: var(--s1); color: var(--accent); }
+.s2-mono { font-family: var(--mono); }
+.s2-nota { font-size: .66em; color: var(--muted); }
+.s2-ok { color: var(--ok); } .s2-mal { color: var(--bad); }
+.s2-tbl { width: 100%; border-collapse: collapse; font-size: .74em; }
+.s2-tbl th { text-align: left; font-size: .82em; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: .25em .5em; border-bottom: 1px solid var(--line2); }
+.s2-tbl td { padding: .28em .5em; border-bottom: 1px solid var(--line); }
+.s2-tbl td.n { font-family: var(--mono); text-align: right; }
+.e3-b { display: grid; grid-template-columns: .85fr 1.5fr; gap: 1.2vw; min-height: 0; align-items: start; }
+.e3-arb { padding: .6em .8em; }
+.e3-arb h2, .e3-gra h2 { margin: 0 0 .25em; font-size: .78em; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; gap: .5em; align-items: center; justify-content: space-between; }
+.e3-arb ul { list-style: none; margin: 0; padding: 0; font: 600 .66em/1 var(--mono); }
+.e3-arb li { display: flex; justify-content: space-between; padding: .38em .4em; border-radius: .4em; color: var(--muted); }
+.e3-arb li.ab { color: var(--fg); background: var(--accent-bg); }
+.e3-arb li.nu { color: var(--fg); background: var(--warn-bg); box-shadow: inset 4px 0 0 var(--warn); }
+.e3-arb li span:last-child { opacity: .85; }
+.e3-gra { padding: .6em .8em; display: grid; gap: .4em; }
+.e3-gra svg { width: 100%; height: auto; display: block; }
+.e3-gra svg text { font-family: var(--mono); fill: var(--muted); font-size: 11px; }
+.e3-num { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5em; }
+.e3-num div { padding: .35em .6em; border-radius: .6em; background: var(--s2); border: 1px solid var(--line); }
+.e3-num small { display: block; font-size: .58em; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.e3-num b { font: 800 1.05em var(--mono); }
+.e3-num .gr b { color: var(--warn); }
+.e3-btns { display: flex; gap: .5em; flex-wrap: wrap; align-items: center; }
+.e3-btns label { font-size: .66em; color: var(--muted); display: flex; gap: .4em; align-items: center; }
+.e3-btns select { max-width: 11em; font: 700 1em system-ui, sans-serif; padding: .25em .4em; border-radius: .4em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); }
+.e3-pie { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.2vw; }
+.e3-q { padding: .5em .8em; display: grid; gap: .35em; }
+.e3-q p { margin: 0; font-size: .74em; font-weight: 600; }
+.e3-q .op { display: flex; gap: .4em; flex-wrap: wrap; }
+.e3-q .op button { font: 700 .66em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .5em .8em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.e3-q .op button:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.e3-rutas { padding: .5em .8em; font-size: .66em; display: grid; gap: .3em; }
+.e3-rutas p { margin: 0; color: var(--muted); }
+.e3-rutas b { color: var(--fg); }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/><circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/>
+    <circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/>
+    <circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/><circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/>
+  </g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">DeepSeek Harness · S2 · E03</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="a-in">
+      <h1 class="esc-titulo">Corrida A · <em>sin foto</em>: el agente lee el código</h1>
+      <p class="esc-sub">Tarea: «describe qué puede hacer cada rol». Cada archivo abierto se reenvía completo en las llamadas siguientes.</p>
+    </div>
+    <div class="e3-b">
+      <section class="esc-card e3-arb a-in" style="--d:.1s" aria-label="Archivos de dist/muebleria">
+        <h2><span>dist/muebleria</span><span class="esc-chip warn">simulación</span></h2>
+        <ul id="arb"></ul>
+      </section>
+      <section class="esc-card e3-gra a-in" style="--d:.2s" aria-label="Contexto por llamada">
+        <h2><span>Contexto enviado en cada llamada (tokens, estimación)</span></h2>
+        <svg id="gra" viewBox="0 0 720 250" role="img" aria-label="Barras: el contexto crece con cada llamada"></svg>
+        <div class="e3-num">
+          <div><small>Llamada</small><b id="n-ll">0 / 16</b></div>
+          <div><small>Lo leído (archivos)</small><b id="n-lei">0</b></div>
+          <div><small>Contexto ahora</small><b id="n-ctx">0</b></div>
+          <div class="gr"><small>Entrada facturada</small><b id="n-fac">0</b></div>
+        </div>
+        <div class="e3-btns">
+          <button type="button" class="s2-btn pri" id="sig">Siguiente llamada</button>
+          <button type="button" class="s2-btn" id="auto">Reproducir</button>
+          <button type="button" class="s2-btn" id="rei">Reiniciar</button>
+          <label>Costo de ejemplo
+            <select id="cach" aria-label="Modo de caché"><option value="0">sin caché</option><option value="1">caché de prefijo</option></select>
+          </label>
+          <b class="s2-mono" id="n-usd" style="font-size:.8em">US$ 0,000</b>
+        </div>
+      </section>
+    </div>
+    <div class="e3-pie">
+      <section class="esc-card e3-q a-in" style="--d:.3s" aria-label="Pregunta">
+        <p id="q-t">Llega hasta la llamada 16 para responder.</p>
+        <div class="op" id="q-op"></div>
+        <div class="s2-nota" id="q-fb" aria-live="polite"></div>
+      </section>
+      <section class="esc-card e3-rutas a-in" style="--d:.35s">
+        <p><b>Ruta A · tu laptop:</b> copia limpia sin FOTO ni AGENTS.md, corre dsh con <span class="s2-mono">--json</span> y suma el uso con <span class="s2-mono">jq</span> (comandos en el panel).</p>
+        <p><b>Ruta B · el aula:</b> no corre dsh ni informa tokens: usa este simulador y copia tu sistema con <span class="s2-mono">aula sistema &lt;id&gt;</span>. La medición real, en tu laptop.</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Simulación con relaciones (tokens ≈ caracteres ÷ 4; base 3 000, 80 por llamada y 1 500 de respuesta son supuestos). Costo: ejemplo con los precios publicados el 31-10-2026 (deepseek-flash, valle); verifica los vigentes. Las cifras reales las mides tú.</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var q = function (id) { return document.getElementById(id); };
+  var NS = "http://www.w3.org/2000/svg";
+  var BASE = 3000, LLAM = 80, FINAL = 1500, MAXY = 80000;
+  /* [nombre, tokens estimados = caracteres ÷ 4] */
+  var ITEMS = [["ls -R (listado)", 150], ["index.html", 339], ["LEEME.txt", 795], ["js/80-app.js", 5403], ["js/30-seguridad.js", 5941], ["js/config.js", 13442], ["js/60-vistas.js", 16380], ["js/40-datos.js", 6259], ["js/70-reportes.js", 1771], ["js/50-ui.js", 7714], ["js/20-almacen.js", 3078], ["js/00-util.js", 4124], ["js/35-auditoria.js", 1189], ["js/45-calculos.js", 847], ["js/10-sha256.js", 1418]];
+  var N = ITEMS.length + 1; // 16 llamadas
+  var fmt = function (n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); };
+  var ctx = [], c = BASE; for (var i = 0; i < N; i++) { ctx.push(c); if (i < ITEMS.length) c += ITEMS[i][1] + LLAM; }
+  var k = 0, timer = null;
+  var ul = q("arb");
+  ITEMS.forEach(function (it, i) {
+    var li = document.createElement("li"); li.id = "it" + i;
+    var a = document.createElement("span"); a.textContent = it[0]; var b = document.createElement("span"); b.textContent = fmt(it[1]);
+    li.appendChild(a); li.appendChild(b); ul.appendChild(li);
+  });
+  var svg = q("gra");
+  function el(tag, at) { var e = document.createElementNS(NS, tag); for (var p in at) e.setAttribute(p, at[p]); return e; }
+  var X0 = 52, W = 650, H = 200, Y0 = 8;
+  function dibuja() {
+    svg.innerHTML = "";
+    [0, 20000, 40000, 60000, 80000].forEach(function (v) {
+      var y = Y0 + H - v / MAXY * H;
+      svg.appendChild(el("line", { x1: X0, x2: X0 + W, y1: y, y2: y, stroke: "currentColor", "stroke-opacity": ".14" }));
+      var t = el("text", { x: X0 - 6, y: y + 4, "text-anchor": "end" }); t.textContent = v ? (v / 1000) + " mil" : "0"; svg.appendChild(t);
+    });
+    var bw = W / N;
+    for (var i = 0; i < k; i++) {
+      var prev = i ? ctx[i - 1] : 0, x = X0 + i * bw + 3, w = bw - 6;
+      var hp = prev / MAXY * H, hn = (ctx[i] - prev) / MAXY * H, yb = Y0 + H;
+      if (prev) svg.appendChild(el("rect", { x: x, y: yb - hp, width: w, height: hp, fill: "var(--accent-2)", opacity: ".45" }));
+      svg.appendChild(el("rect", { x: x, y: yb - hp - hn, width: w, height: hn, fill: "var(--accent)" }));
+    }
+    for (var j = 0; j < N; j++) { var t2 = el("text", { x: X0 + j * bw + bw / 2, y: Y0 + H + 16, "text-anchor": "middle" }); t2.textContent = j + 1; svg.appendChild(t2); }
+    var t3 = el("text", { x: X0 + W / 2, y: Y0 + H + 32, "text-anchor": "middle" }); t3.textContent = "llamada al modelo"; svg.appendChild(t3);
+    var l1 = el("rect", { x: X0 + 8, y: Y0 + 4, width: 10, height: 10, fill: "var(--accent-2)", opacity: ".45" }); svg.appendChild(l1);
+    var t4 = el("text", { x: X0 + 24, y: Y0 + 13 }); t4.textContent = "ya enviado antes (se vuelve a facturar)"; svg.appendChild(t4);
+    var l2 = el("rect", { x: X0 + 8, y: Y0 + 20, width: 10, height: 10, fill: "var(--accent)" }); svg.appendChild(l2);
+    var t5 = el("text", { x: X0 + 24, y: Y0 + 29 }); t5.textContent = "nuevo en esa llamada"; svg.appendChild(t5);
+  }
+  function estado() {
+    var lei = 0, fac = 0, miss = 0, hit = 0, out = 0, abiertos = Math.min(k - 1, ITEMS.length);
+    for (var i = 0; i < k; i++) {
+      fac += ctx[i]; var prev = i ? ctx[i - 1] : 0; hit += prev; miss += ctx[i] - prev; out += (i === N - 1) ? FINAL : LLAM;
+    }
+    for (var m = 1; m < abiertos; m++) lei += ITEMS[m][1]; // sin el ls
+    ITEMS.forEach(function (it, i) { q("it" + i).className = i < abiertos ? (i === abiertos - 1 ? "nu" : "ab") : ""; });
+    q("n-ll").textContent = k + " / " + N; q("n-lei").textContent = fmt(lei); q("n-ctx").textContent = k ? fmt(ctx[k - 1]) : "0"; q("n-fac").textContent = fmt(fac);
+    var usd = q("cach").value === "1" ? (miss * 0.15 + hit * 0.003 + out * 0.60) / 1e6 : (fac * 0.15 + out * 0.60) / 1e6;
+    q("n-usd").textContent = "US$ " + usd.toFixed(3).replace(".", ",");
+    q("sig").disabled = k >= N; if (k >= N) { parar(); pregunta(); }
+    dibuja();
+  }
+  function paso() { if (k < N) { k++; estado(); } }
+  function parar() { if (timer) { clearInterval(timer); timer = null; q("auto").textContent = "Reproducir"; } }
+  q("sig").addEventListener("click", paso);
+  q("auto").addEventListener("click", function () { if (timer) { parar(); } else { if (k >= N) k = 0; q("auto").textContent = "Pausar"; timer = setInterval(paso, 700); } });
+  q("rei").addEventListener("click", function () { parar(); k = 0; q("q-op").innerHTML = ""; q("q-t").textContent = "Llega hasta la llamada 16 para responder."; q("q-fb").textContent = ""; estado(); });
+  q("cach").addEventListener("change", estado);
+  /* Pregunta final */
+  var respondida = false;
+  function pregunta() {
+    if (q("q-op").children.length) return;
+    q("q-t").textContent = "Los archivos suman ≈ 69 mil tokens. ¿Cuánta entrada se facturó (la suma de los 16 contextos)?";
+    [["≈ 69 mil", 0], ["≈ 150 mil", 0], ["≈ 634 mil", 1]].forEach(function (o) {
+      var b = document.createElement("button"); b.type = "button"; b.textContent = o[0];
+      b.addEventListener("click", function () {
+        q("q-fb").textContent = o[1] ? "Bien: ≈ 9 veces lo leído. Cada archivo se paga una vez por cada llamada que sigue; por eso el costo crece más rápido que los pasos. Ahora ve a la corrida B." : "No: mira «Entrada facturada» en el contador. Se suma el contexto completo de cada llamada.";
+      });
+      q("q-op").appendChild(b);
+    });
+  }
+  k = 5; estado();
+})();
+</script>
+</body>
+</html>

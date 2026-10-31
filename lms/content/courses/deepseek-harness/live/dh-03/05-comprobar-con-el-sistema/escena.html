@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Comprueba cada afirmación contra el sistema</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dh-03 · Describe por roles, audita y valida). Sin recursos externos,
+  menos de 300 elementos y 1 MB, animaciones solo CSS, todo se apaga con prefers-reduced-motion. Legible a 1366x768.
+  Los datos de ejemplo salen de la foto real del sistema «muebleria». Nada se guarda: cada recarga vuelve al inicio.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc { padding: 1.8vh 2.6vw 1.6vh; gap: 1.4vh; }
+.esc-cuerpo { justify-content: flex-start; gap: 1.5vh; }
+.esc-titulo { font-size: 1.4em; }
+.esc-sub { font-size: .95em; }
+code, .s3-m { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; color: var(--fg); }
+.s3-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4vw; align-items: stretch; min-height: 0; }
+.s3-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .7em .95em; box-shadow: var(--card-shadow); min-height: 0; }
+.s3-card h3 { margin: 0 0 .3em; font-size: .95em; }
+.s3-h { margin: 0; font: 700 .68em var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.s3-tabs { display: flex; gap: .45em; flex-wrap: wrap; }
+.s3-tab { font: 700 .72em system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .42em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.s3-tab:hover { border-color: var(--accent); color: var(--accent); }
+.s3-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.s3-btn { white-space: nowrap; font: 700 .76em system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .5em 1.1em; border-radius: .7em; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.s3-btn.sec { background: var(--s1); color: var(--accent); }
+.s3-btn:disabled { opacity: .45; cursor: default; }
+.s3-btn:hover:not(:disabled) { filter: brightness(1.08); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.s3-term { margin: 0; font: 600 .74em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .6em .9em; white-space: pre-wrap; overflow: hidden; border: 1px solid rgba(190,185,255,.22); }
+.s3-term .p { color: #8e7dff; } .s3-term .c { color: #8e8ab8; } .s3-term .g { color: #6ee7a0; } .s3-term .r { color: #ff9b9b; } .s3-term .y { color: #f4d27a; }
+.s3-bd { display: inline-block; padding: .12em .65em; border-radius: 999px; font-size: .72em; font-weight: 800; border: 1px solid transparent; white-space: nowrap; }
+.s3-bd.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.s3-bd.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.s3-bd.bad { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, transparent); }
+.s3-bd.neu { background: var(--s3); color: var(--muted); border-color: var(--line2); }
+.s3-nota { margin: 0; font-size: .74em; color: var(--muted); }
+.s3-msg { margin: 0; padding: .5em .8em; border-left: 5px solid var(--accent); border-radius: .5em; background: var(--s2); font-size: .82em; }
+.s3-msg.ok { border-color: var(--ok); } .s3-msg.warn { border-color: var(--warn); } .s3-msg.bad { border-color: var(--bad); }
+.s3-msg b { color: var(--fg); }
+.s3-rutas { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; }
+.s3-ruta { padding: .5em .8em; border-radius: .8em; border: 1px dashed var(--line2); background: var(--s2); font-size: .78em; }
+.s3-ruta b { display: block; font-size: .95em; margin-bottom: .1em; }
+@media (prefers-reduced-motion: reduce) { .s3-anim { animation: none !important; transition: none !important; } }
+
+.s5-b { display: grid; grid-template-columns: 1.05fr .95fr; gap: 1.2vw; min-height: 0; }
+.s5-lista { display: grid; gap: .22em; }
+.s5-f { display: grid; grid-template-columns: 1.6em 1fr auto; gap: .55em; align-items: center; text-align: left; font: inherit; font-size: .78em; padding: .24em .55em; border-radius: .55em; border: 1px solid var(--line); background: var(--s2); color: var(--fg); cursor: pointer; width: 100%; }
+.s5-f:hover { border-color: var(--accent); }
+.s5-f.sel { border-color: var(--accent); background: var(--accent-bg); }
+.s5-f > span:first-child { font: 700 .9em var(--mono); color: var(--muted); }
+.s5-der { display: grid; gap: .45em; align-content: start; }
+.s5-claim { font-size: .88em; font-weight: 700; margin: 0; }
+.s5-nav { margin: 0; font-size: .76em; color: var(--muted); }
+.s5-acc { display: grid; gap: .35em; }
+.s5-acc button { text-align: left; font: 600 .76em/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .4em .7em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.s5-acc button:hover { border-color: var(--accent); }
+.s5-acc button.mal { border-color: var(--bad); background: var(--bad-bg); }
+.s5-res { display: flex; align-items: center; gap: .6em; flex-wrap: wrap; }
+.s5-pie { display: flex; align-items: center; gap: .8em; flex-wrap: wrap; font-size: .8em; }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Aplicación</span>
+    <span class="esc-num">Describe, audita y valida · E05</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">Comprueba cada afirmación: <em>la documentación se ejecuta</em></h1>
+    <p class="s3-msg a-in" style="--d:.1s">Un agente escribió este borrador «de memoria». <b>Comprueba</b> cada frase, luego <b>corrige</b> o <b>marca pendiente con motivo</b>.</p>
+    <div class="s5-b a-in" style="--d:.2s">
+      <section class="s3-card">
+        <p class="s3-h">docs/DESCRIPCION_POR_ROLES.md · borrador del agente (mueblería)</p>
+        <div class="s5-lista" id="lista"></div>
+      </section>
+      <section class="s3-card s5-der" id="der"></section>
+    </div>
+    <div class="s5-pie"><span class="s3-bd neu" id="cnt">0 de 12 resueltas</span><span class="s3-bd ok">ok</span><span class="s3-bd bad">no se encuentra</span><span class="s3-bd warn">desactualizado</span><span class="s3-nota">Comprobar de verdad: <code>grep -n</code> / <code>sed -n</code> · <code>node foto.mjs</code> · abrir la ruta <code>#/…</code></span></div>
+
+  </main>
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando resuelvas las 12 afirmaciones y aciertes 10 o más a la primera</span>
+  </footer>
+</div>
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+
+(function () {
+  var C = [
+    { t: "La lista de ventas está en #/ventas.", k: "ruta", cmd: "grep -n \"#/ventas\" js/*.js", out: "(sin salida · código 1)", nav: "En el navegador: index.html#/ventas → título «No encontrado».", r: "no",
+      o: [["Cambiar a #/o/ventas (las operaciones cuelgan de #/o/)", 1], ["Cambiar a #/e/ventas", 0], ["Cambiar a #/ventas/lista", 0]], w: "La foto (§5) lista #/o/ventas: las operaciones usan #/o/<operación>." },
+    { t: "El IGV es 18 % y vive en js/config.js:165.", k: "valor", cmd: "sed -n '165p' js/config.js | cut -c1-100", out: "      { id: 'igv', etiqueta: 'IGV', tipo: 'porcentaje', valor: 18, ayuda: 'Impuesto General a las Ve", r: "ok", o: [["Dejar tal cual", 1]], w: "Coincide: valor 18 en la línea 165." },
+    { t: "La comisión base del vendedor es 5 %.", k: "valor", cmd: "grep -n \"id: 'comisionBase'\" js/config.js | cut -c1-120", out: "167:      { id: 'comisionBase', etiqueta: 'Comisión base del vendedor', tipo: 'porcentaje', valor: 3, ayuda: 'Se usa cu", r: "des",
+      o: [["Corregir a 3 % y citar js/config.js:167", 1], ["Corregir a 4 %", 0], ["Dejar 5 % «porque el agente lo dijo»", 0]], w: "El config dice valor: 3. La frase quedó desactualizada o se inventó." },
+    { t: "El vendedor puede emitir ventas (js/config.js:397).", k: "rol", cmd: "sed -n '397p' js/config.js | grep -o \"emitir: \\[[^]]*\\]\"", out: "emitir: ['admin', 'vendedor']", r: "ok", o: [["Dejar tal cual", 1]], w: "vendedor está en emitir de la operación ventas." },
+    { t: "El vendedor puede eliminar clientes (js/config.js:224).", k: "rol", cmd: "sed -n '224p' js/config.js | grep -o \"eliminar: \\[[^]]*\\]\"", out: "eliminar: ['admin']", r: "des",
+      o: [["Corregir: NO puede; eliminar es solo de admin (js/config.js:224)", 1], ["Corregir: puede, pero con confirmación", 0], ["Corregir: puede eliminar los clientes que creó", 0]], w: "La línea citada dice lo contrario: solo admin elimina clientes." },
+    { t: "La guardia de rutas es App.guardia, en js/80-app.js:162.", k: "componente", cmd: "sed -n '162p' js/80-app.js", out: "  App.guardia = function (ruta) {", r: "ok", o: [["Dejar tal cual", 1]], w: "La línea 162 es exactamente la definición." },
+    { t: "Al restaurar un respaldo se llama a Almacen.verificarRespaldo.", k: "componente", cmd: "grep -n \"verificarRespaldo\" js/*.js", out: "(sin salida · código 1)", r: "no",
+      o: [["Cambiar a Almacen.importar (js/20-almacen.js:218)", 1], ["Cambiar a Almacen.restaurar", 0], ["Cambiar a Seg.respaldo", 0]], w: "Ese nombre no existe. La restauración valida en Almacen.importar (línea 218), verificada con grep -n." },
+    { t: "Las pruebas se corren con npm test.", k: "comando", cmd: "ls package.json", out: "ls: package.json: No such file or directory", r: "no",
+      o: [["Cambiar a npm run test:unit", 0], ["Borrar la línea y escribir [PENDIENTE: el sistema no trae pruebas automáticas]", 1], ["Dejarla: seguro funciona", 0]], w: "No hay package.json: no existe npm test. Lo honesto es marcarlo pendiente, no inventar otro script." },
+    { t: "La foto se toma con node foto.mjs.", k: "comando", cmd: "ls foto.mjs", out: "ls: foto.mjs: No such file or directory", r: "des",
+      o: [["Corregir a node skills/foto-del-sistema/motor/foto.mjs .", 1], ["Corregir a npm run foto", 0], ["Corregir a aula foto", 0]], w: "El comando existe, pero la ruta del script es la de la skill; en el aula es «aula sistema foto»." },
+    { t: "Existe el reporte #/r/ventas-por-mes.", k: "ruta", cmd: "grep -n \"id: 'ventas-por-mes'\" js/config.js", out: "(sin salida · código 1)", nav: "En el navegador: index.html#/r/ventas-por-mes → título «No encontrado».", r: "no",
+      o: [["Cambiar a #/r/ventas-mes (js/config.js:455)", 1], ["Cambiar a #/r/mensual", 0], ["Borrar el reporte del documento", 0]], w: "El id real es ventas-mes (línea 455); la foto §5 lo lista." },
+    { t: "El sistema funciona en Internet Explorer 11.", k: "otro", cmd: "grep -n \"IE11\" css/app.css", out: "4: * Compatible con IE11: sin variables CSS, sin rejillas (grid) y sin \"gap\".", r: "pend",
+      o: [["[PENDIENTE: no hay IE11 para probar; solo hay un comentario en el CSS]", 1], ["[PENDIENTE: me da pereza probarlo]", 0], ["Dejar «funciona»: lo dice un comentario", 0]], w: "Un comentario no es una prueba. Sin IE11 a mano, se marca pendiente con el motivo verdadero." },
+    { t: "El cliente lleva DNI (8) o RUC (11 dígitos), js/config.js:204.", k: "valor", cmd: "sed -n '204p' js/config.js | grep -o \"patron: '[^']*'\"", out: "patron: '^([0-9]{8}|[0-9]{11})$'", r: "ok", o: [["Dejar tal cual", 1]], w: "El patrón acepta 8 o 11 dígitos." }
+  ];
+  var NOM = { ok: "ok", no: "no se encuentra", des: "desactualizado", pend: "por verificar" }, CLS = { ok: "ok", no: "bad", des: "warn", pend: "neu" };
+  var est = C.map(function () { return { visto: false, hecho: false, fallo: false, texto: "" }; }), sel = 0;
+  var $ = function (i) { return document.getElementById(i); };
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function lista() {
+    var l = $("lista"); l.textContent = "";
+    C.forEach(function (c, i) {
+      var b = document.createElement("button"), s = est[i]; b.type = "button"; b.className = "s5-f" + (i === sel ? " sel" : "");
+      var a = document.createElement("span"); a.textContent = i + 1;
+      var t = document.createElement("span"); t.textContent = c.t;
+      var g = document.createElement("span"); g.className = "s3-bd " + (s.hecho ? "ok" : s.visto ? CLS[c.r] : "neu"); g.textContent = s.hecho ? "resuelta" : s.visto ? NOM[c.r] : "sin comprobar";
+      b.appendChild(a); b.appendChild(t); b.appendChild(g);
+      b.addEventListener("click", function () { sel = i; lista(); der(); });
+      l.appendChild(b);
+    });
+    var n = 0, p = 0; est.forEach(function (s) { if (s.hecho) { n++; if (!s.fallo) p++; } });
+    $("cnt").textContent = n + " de 12 resueltas · " + p + " a la primera";
+    $("cnt").className = "s3-bd " + (n === 12 ? (p >= 10 ? "ok" : "warn") : "neu");
+  }
+  function der() {
+    var c = C[sel], s = est[sel], d = $("der"), h = "";
+    h += "<p class='s3-h'>Afirmación " + (sel + 1) + " · tipo: " + c.k + "</p><p class='s5-claim'>«" + esc(c.t) + "»</p>";
+    if (!s.visto) { h += "<div class='s5-res'><button class='s3-btn' id='run' type='button'>Comprobar contra el sistema</button></div><p class='s3-nota'>Se «ejecuta» el comando real sobre la mueblería y se muestra su salida real.</p>"; d.innerHTML = h; $("run").addEventListener("click", function () { s.visto = true; lista(); der(); }); return; }
+    h += "<pre class='s3-term'><span class='p'>$ </span>" + esc(c.cmd) + "\n" + esc(c.out) + "</pre>";
+    if (c.nav) h += "<p class='s5-nav'>" + esc(c.nav) + "</p>";
+    h += "<div class='s5-res'><span class='s3-bd " + CLS[c.r] + "'>" + NOM[c.r] + "</span>" + (s.hecho ? "<span class='s3-bd ok'>resuelta</span>" : "") + "</div>";
+    if (s.hecho) { h += "<p class='s3-msg ok'><b>" + esc(s.texto) + "</b> " + esc(c.w) + "</p>"; d.innerHTML = h; return; }
+    h += "<p class='s3-nota'>" + (c.r === "ok" ? "Coincide: no se toca." : c.r === "pend" ? "No se puede comprobar con un comando: ¿qué haces?" : "No coincide: ¿cómo queda la frase?") + "</p><div class='s5-acc' id='acc'></div><p class='s3-msg warn' id='fb' hidden></p>";
+    d.innerHTML = h;
+    var acc = $("acc");
+    c.o.forEach(function (op) {
+      var b = document.createElement("button"); b.type = "button"; b.textContent = op[0];
+      b.addEventListener("click", function () {
+        if (op[1]) { s.hecho = true; s.texto = op[0]; lista(); der(); }
+        else { s.fallo = true; b.className = "mal"; $("fb").hidden = false; $("fb").innerHTML = "<b>Esa no.</b> Vuelve a leer la salida del comando: la corrección sale de lo que el sistema devolvió, no de lo que suena bien."; }
+      });
+      acc.appendChild(b);
+    });
+  }
+  lista(); der();
+})();
+
+</script>
+</body>
+</html>

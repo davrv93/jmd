@@ -26,3 +26,13 @@
 - WhatsApp: solo el número de pruebas del equipo; el bot avisa que es un bot y solo responde a quien le escribe. Nunca imprimas `EVO_TOKEN`, `OSITO_TOKEN` ni `DATABASE_URL`.
 
 - Clase 3 paso a paso: `aula paso` (qué toca), `aula paso hacer` (lo hace el agente con su skill s3-* y se comprueba), `aula paso lista`.
+
+## DeepSeek Harness: tu sistema de práctica
+
+Tu tarea es **documentar y auditar** un sistema web ya hecho (no construirlo). Tres comandos:
+
+- `aula sistema`: lista los 15 sistemas (id, rubro, roles).
+- `aula sistema <id>`: copia el que elijas a `/trabajo/sistema` (no pisa uno existente), con su `AGENTS.md` y la carpeta `docs/` para tus entregables. Míralo en el panel Visor: `/vista/<tú>/sistema/`.
+- `aula sistema foto`: toma la «foto» (inventario verificable) y la deja en `/trabajo/sistema/FOTO/` (`FOTO.md`, `FOTO.json`, `hashes.txt`).
+
+Luego dile a tu agente: «Lee `AGENTS.md` y `FOTO/FOTO.md` y sigue la skill `foto-del-sistema`». Tus entregables van en `/trabajo/sistema/docs/`. Sin la foto leída, el agente no debe leer el código a ciegas; todo lo que afirme lleva `archivo:línea` o dice «por verificar». Si algo falla (no hay sistemas, la foto da error), copia el mensaje completo y avisa al instructor.

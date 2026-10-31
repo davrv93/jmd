@@ -1,0 +1,18 @@
+id: 03-corrida-a-sin-foto
+titulo: "Corrida A, sin foto: el agente recorre el código"
+fase: experiencia
+paso: corrida-a
+duracion_min: 15
+lo_logre: true
+evidencia: ninguna
+umbral_pct: 80
+compuerta: lo_logre
+comandos:
+  - titulo: "Copia limpia del sistema, sin FOTO ni AGENTS.md (corrida A)"
+    cmd: "rm -rf /tmp/sistema-A && cp -R ~/mi-sistema /tmp/sistema-A && cd /tmp/sistema-A && rm -rf FOTO docs skills AGENTS.md"
+  - titulo: "Corrida A: recorre el código, con tiempo y eventos"
+    cmd: "time npx @deepseek-ai/dsh --profile headless --json \"Describe qué puede hacer cada rol de este sistema. Recorre el código archivo por archivo. Cita archivo:línea y marca «por verificar» lo que no hayas comprobado.\" > ../A.jsonl"
+  - titulo: "Sacar la respuesta de los eventos"
+    cmd: "jq -r 'select(.type==\"final\")|.text' ../A.jsonl > ../A.md"
+  - titulo: "En el aula (Ruta B): copiar tu sistema de práctica"
+    cmd: "aula sistema <id>"
