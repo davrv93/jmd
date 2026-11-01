@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="es" data-tema="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E05b · ¿Quién lo escribió?</title>
+<!--
+  PLANTILLA DE ESCENA DEL MODO LIVE
+  Copia este archivo a live/<lección>/<NN-nombre>/escena.html y cambia SOLO tres cosas:
+    1. <title>, la fase (data-ph y el texto de .esc-fase), el número (.esc-num).
+    2. El contenido de <main class="esc-cuerpo"> (usa las clases de abajo).
+    3. Estilos propios de la escena, dentro de <style id="esc-propio"> (nada fuera de ese bloque).
+  Reglas: sin recursos externos (nada de http, CDN, fuentes ni imágenes remotas), menos de 300
+  elementos y 1 MB, animaciones solo con CSS o SVG animado, y todo se apaga con prefers-reduced-motion.
+  Escala: se diseña a 1920x1080; el texto usa clamp() y se ve bien desde 1366x768.
+-->
+<style>
+/* ---- Tokens (los mismos del LMS) ---- */
+:root {
+  --bg: #eef0ff; --bg2: #f6f0fb; --bg3: #fbf6ee; --s1: #ffffff; --s2: #f4f3fb; --s3: #ebeaf6;
+  --fg: #16151d; --muted: #5c5966; --line: rgba(60,52,140,.13); --line2: rgba(60,52,140,.24);
+  --accent: #5a49d6; --accent-2: #7b6cf0; --accent-bg: rgba(90,73,214,.11); --on-accent: #ffffff;
+  --gold: #7d5700; --gold-bg: rgba(125,87,0,.13);
+  --ok: #136a33; --ok-bg: rgba(19,106,51,.12); --warn: #984407; --warn-bg: rgba(152,68,7,.12);
+  --bad: #b11f1f; --bad-bg: rgba(177,31,31,.10); --info: #1d4ed8; --info-bg: rgba(29,78,216,.10);
+  --ph-ec: #5a49d6; --ph-ec-bg: rgba(90,73,214,.11);
+  --ph-or: #0b5f58; --ph-or-bg: rgba(11,95,88,.12);
+  --ph-ca: #7d5700; --ph-ca-bg: rgba(125,87,0,.13);
+  --ph-ea: #a4185c; --ph-ea-bg: rgba(164,24,92,.11);
+  --est: #5a49d6; --est-g: #9d8cff; --est-o: #c08a12;
+  --card-shadow: 0 1px 2px rgba(60,52,140,.06), 0 10px 28px -12px rgba(90,73,214,.28);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --cielo: .55;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="light"]) {
+    --bg: #12112a; --bg2: #171533; --bg3: #1b1731; --s1: #1d1b38; --s2: #252347; --s3: #2e2b55;
+    --fg: #ecebf7; --muted: #b7b4cc; --line: rgba(190,185,255,.13); --line2: rgba(190,185,255,.26);
+    --accent: #a99cff; --accent-2: #c3b9ff; --accent-bg: rgba(169,156,255,.16); --on-accent: #14122b;
+    --gold: #e9bd52; --gold-bg: rgba(233,189,82,.16);
+    --ok: #4fd37a; --ok-bg: rgba(79,211,122,.15); --warn: #f4ac5c; --warn-bg: rgba(244,172,92,.15);
+    --bad: #ff7b7b; --bad-bg: rgba(255,123,123,.14); --info: #85b4ff; --info-bg: rgba(133,180,255,.15);
+    --ph-ec: #a99cff; --ph-ec-bg: rgba(169,156,255,.15);
+    --ph-or: #4fd1c5; --ph-or-bg: rgba(79,209,197,.15);
+    --ph-ca: #e9bd52; --ph-ca-bg: rgba(233,189,82,.15);
+    --ph-ea: #f27cb8; --ph-ea-bg: rgba(242,124,184,.15);
+    --est: #c3b9ff; --est-g: #8e7dff; --est-o: #e9bd52;
+    --card-shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -12px rgba(0,0,0,.6);
+    --cielo: .95; color-scheme: dark;
+  }
+}
+:root[data-tema="dark"] {
+  --bg: #12112a; --bg2: #171533; --bg3: #1b1731; --s1: #1d1b38; --s2: #252347; --s3: #2e2b55;
+  --fg: #ecebf7; --muted: #b7b4cc; --line: rgba(190,185,255,.13); --line2: rgba(190,185,255,.26);
+  --accent: #a99cff; --accent-2: #c3b9ff; --accent-bg: rgba(169,156,255,.16); --on-accent: #14122b;
+  --gold: #e9bd52; --gold-bg: rgba(233,189,82,.16);
+  --ok: #4fd37a; --ok-bg: rgba(79,211,122,.15); --warn: #f4ac5c; --warn-bg: rgba(244,172,92,.15);
+  --bad: #ff7b7b; --bad-bg: rgba(255,123,123,.14); --info: #85b4ff; --info-bg: rgba(133,180,255,.15);
+  --ph-ec: #a99cff; --ph-ec-bg: rgba(169,156,255,.15);
+  --ph-or: #4fd1c5; --ph-or-bg: rgba(79,209,197,.15);
+  --ph-ca: #e9bd52; --ph-ca-bg: rgba(233,189,82,.15);
+  --ph-ea: #f27cb8; --ph-ea-bg: rgba(242,124,184,.15);
+  --est: #c3b9ff; --est-g: #8e7dff; --est-o: #e9bd52;
+  --card-shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -12px rgba(0,0,0,.6);
+  --cielo: .95; color-scheme: dark;
+}
+
+/* ---- Base ---- */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; } /* si no, display:grid o flex le ganan al atributo */
+html, body { margin: 0; height: 100%; }
+body {
+  font: 400 clamp(15px, calc(1.2vw + .5vh), 30px)/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--fg);
+  background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 55%, var(--bg3) 100%);
+  overflow: hidden;
+}
+.esc { position: relative; min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; padding: 2.2vh 3.2vw 2vh; gap: 2vh; }
+
+/* ---- Cielo de fondo (decorativo, 0 JS) ---- */
+.esc-cielo { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: var(--cielo); }
+.esc-cielo .e { fill: var(--est); }
+.esc-cielo .eg { fill: var(--est-g); }
+.esc-cielo .eo { fill: var(--est-o); }
+.esc-cielo .t { fill: none; stroke: var(--est); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo 4s ease-out .3s forwards; }
+.esc-cielo .tb { fill: none; stroke: var(--est-g); stroke-width: 1.4; stroke-linecap: round; opacity: .5; stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo 5s ease-out .8s forwards; }
+.esc-cielo .p { animation: esc-parpadeo 5s ease-in-out infinite; animation-delay: var(--p, 0s); }
+.esc > * { position: relative; z-index: 1; }
+
+/* ---- Cabecera, cuerpo y pie ---- */
+.esc-cab { display: flex; align-items: center; gap: 1vw; }
+.esc-fase { --c: var(--ph-ec); --cb: var(--ph-ec-bg); display: inline-flex; align-items: center; gap: .5em; padding: .3em .9em; border-radius: 999px; font-weight: 700; font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--c); background: var(--cb); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.esc-fase::before { content: ""; width: .55em; height: .55em; border-radius: 50%; background: var(--c); }
+.esc-fase[data-ph="ec"] { --c: var(--ph-ec); --cb: var(--ph-ec-bg); }
+.esc-fase[data-ph="or"] { --c: var(--ph-or); --cb: var(--ph-or-bg); }
+.esc-fase[data-ph="ca"] { --c: var(--ph-ca); --cb: var(--ph-ca-bg); }
+.esc-fase[data-ph="ea"] { --c: var(--ph-ea); --cb: var(--ph-ea-bg); }
+.esc-num { margin-left: auto; font: 700 .8em var(--mono); color: var(--muted); letter-spacing: .12em; }
+.esc-cuerpo { min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 2.2vh; }
+.esc-pie { font-size: .62em; color: var(--muted); display: flex; align-items: center; gap: .6em; }
+.esc-pie::before { content: ""; width: 1.6em; height: 2px; background: var(--line2); }
+
+/* ---- Tipografía y piezas reutilizables ---- */
+.esc-titulo { margin: 0; font-size: 2.3em; line-height: 1.08; font-weight: 800; letter-spacing: -.02em; }
+.esc-titulo em { font-style: normal; background: linear-gradient(100deg, var(--accent), var(--est-g)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.esc-sub { margin: 0; font-size: 1.15em; color: var(--muted); max-width: 46em; }
+.esc-big { font-size: 3.4em; font-weight: 800; line-height: 1; letter-spacing: -.03em; }
+.esc-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: 1em 1.2em; box-shadow: var(--card-shadow); }
+.esc-card h3 { margin: 0 0 .3em; font-size: 1em; }
+.esc-card p { margin: 0; color: var(--muted); font-size: .88em; }
+.esc-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4vw; align-items: stretch; }
+.esc-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2vw; align-items: stretch; }
+.esc-fila { display: flex; align-items: center; gap: 1.2vw; flex-wrap: wrap; }
+.esc-chip { display: inline-flex; align-items: center; gap: .4em; padding: .25em .75em; border-radius: 999px; font-size: .72em; font-weight: 700; background: var(--accent-bg); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.esc-chip.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.esc-chip.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.esc-chip.bad { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
+.esc-cmd { margin: 0; font: 600 .78em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .8em; padding: .8em 1.1em; overflow: hidden; white-space: pre-wrap; border: 1px solid rgba(190,185,255,.22); }
+.esc-cmd .p { color: #8e7dff; user-select: none; }
+.esc-cmd .c { color: #7f7aa8; }
+.esc-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .55em; }
+.esc-lista li { display: flex; gap: .7em; align-items: baseline; }
+.esc-lista li::before { content: ""; flex: none; width: .55em; height: .55em; border-radius: 50%; background: var(--accent); transform: translateY(-.05em); }
+.esc-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.esc-svg text { font-family: inherit; fill: var(--fg); }
+
+/* ---- Animaciones (solo transform, opacity y dashoffset; 300-500 ms, ease-out) ---- */
+@keyframes esc-entra { from { opacity: 0; transform: translateY(1.2vh); } to { opacity: 1; transform: none; } }
+@keyframes esc-pop { 0% { opacity: 0; transform: scale(.82); } 60% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes esc-trazo { to { stroke-dashoffset: 0; } }
+@keyframes esc-flota { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.1vh); } }
+@keyframes esc-pulso { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes esc-parpadeo { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@keyframes esc-viaja { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.a-in   { animation: esc-entra .45s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0s); }
+.a-pop  { animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; animation-delay: var(--d, 0s); transform-origin: center; transform-box: fill-box; }
+.a-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo var(--t, .9s) ease-out forwards; animation-delay: var(--d, 0s); }
+.a-flota { animation: esc-flota 4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.a-pulso { animation: esc-pulso 2.4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+/* Para SVG con pathLength="1": <path class="a-draw" pathLength="1" ...> */
+
+/* Apaga TODO el movimiento: cada pieza queda en su estado final, legible. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .a-draw, .esc-cielo .t, .esc-cielo .tb { stroke-dashoffset: 0 !important; }
+}
+</style>
+<style id="esc-propio">
+/* Piel de cómic: la misma de «¡PUM!» y el juego de conceptos (papel, tinta, amarillo, rosa, cian). */
+:root, :root[data-tema="dark"] {
+  --papel: #fff8e9; --negro: #1b1918; --amarillo: #f6ee43; --rosa: #ff657a; --cian: #60deeb; --azul: #353ddd;
+  --fg: var(--negro); --muted: #615d55; --line: #d6cebe; --foco: #353ddd; color-scheme: light;
+}
+body { background: var(--papel) radial-gradient(circle, #efe3c4 1.4px, transparent 1.6px) 0 0 / 18px 18px; color: var(--negro); }
+.esc-cielo { display: none; }
+html, .esc { overflow-x: clip; }
+.esc-fase { border-radius: 0; color: var(--negro); background: var(--amarillo); border: 2px solid var(--negro); box-shadow: 2px 2px 0 var(--negro); }
+.esc-fase::before { background: var(--negro); }
+.esc-num { color: var(--negro); }
+.esc-pie { font: 700 .58em/1.3 var(--mono); color: var(--negro); }
+.esc-pie::before { background: var(--negro); }
+.esc-cuerpo { gap: 1.8vh; }
+
+.qe-cab { display: flex; align-items: end; justify-content: space-between; gap: 1em; flex-wrap: wrap; }
+.qe-titulo { margin: 0; font: 1000 clamp(1.8em, 3.8vw, 3em)/.9 Impact, "Arial Black", sans-serif; letter-spacing: -.03em; text-transform: uppercase; transform: rotate(-2deg); padding: .1em 0 .15em; }
+.qe-titulo span { display: inline-block; background: var(--negro); color: var(--amarillo); padding: .05em .25em .12em; transform: rotate(1.5deg); margin-left: .15em; }
+.qe-sello { border: 2px solid var(--negro); background: var(--cian); padding: .45em .9em; transform: rotate(3deg); font: 900 .7em/1.1 var(--mono); text-align: center; text-transform: uppercase; box-shadow: 4px 4px 0 var(--negro); }
+.qe-sello b { display: block; font: 900 2.4em/1 Impact, "Arial Black", sans-serif; letter-spacing: .02em; }
+
+.qe-dos { display: grid; grid-template-columns: 1.55fr 1fr; gap: 1.4vw; align-items: start; min-width: 0; }
+.qe-panel { background: var(--papel); border: 3px solid var(--negro); box-shadow: 6px 6px 0 var(--negro); padding: .9em 1em; min-width: 0; }
+.qe-frag { display: grid; gap: .7em; align-content: start; }
+.qe-pedido { margin: 0; font: 800 .78em/1.35 system-ui, sans-serif; }
+.qe-pedido::before { content: "EL PEDIDO"; display: inline-block; font: 900 .78em var(--mono); letter-spacing: .12em; background: var(--rosa); border: 2px solid var(--negro); padding: .15em .5em; margin-right: .6em; transform: rotate(-2deg); }
+.qe-codigo { margin: 0; font: 600 clamp(.56em, 1.05vw, .74em)/1.45 var(--mono); tab-size: 4; background: var(--negro); color: #fff8e9; border: 2px solid var(--negro); padding: .9em 1.1em; white-space: pre; overflow: auto; max-height: 40vh; box-shadow: inset 0 0 0 3px #2e2a27; }
+.qe-texto { position: relative; margin: .2em 0 1.1em; font: 700 1.02em/1.45 system-ui, sans-serif; padding: .9em 1.15em; background: #fff; border: 3px solid var(--negro); border-radius: 1.4em; white-space: pre-line; box-shadow: 4px 4px 0 var(--negro); }
+.qe-texto::after { content: ""; position: absolute; left: 2.2em; bottom: -1.05em; width: 1.4em; height: 1.1em; background: #fff; border: 3px solid var(--negro); border-top: 0; border-left: 0; transform: skewX(35deg); }
+
+.qe-voto { display: grid; gap: .65em; align-content: start; background: var(--amarillo); }
+.qe-voto h3 { margin: 0; font: 900 .72em var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.qe-chips { display: grid; gap: .55em; }
+.qe-chips button { font: 900 .86em/1.15 system-ui, sans-serif; text-align: left; padding: .6em .8em; border: 2px solid var(--negro); background: var(--papel); color: var(--negro); cursor: pointer; display: grid; grid-template-columns: auto 1fr; column-gap: .6em; align-items: center; box-shadow: 3px 3px 0 var(--negro); transition: transform .12s ease-out, box-shadow .12s ease-out; }
+.qe-chips button i { grid-row: span 2; font-style: normal; font-size: 1.6em; line-height: 1; }
+.qe-chips button small { font: 700 .74em var(--mono); color: var(--muted); }
+.qe-chips button:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--negro); }
+.qe-chips button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--negro); }
+.qe-chips button[aria-pressed="true"] { background: var(--cian); transform: rotate(-1deg); }
+.qe-chips button[aria-pressed="true"] small { color: var(--negro); }
+.qe-chips button:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
+.qe-chips button:disabled { cursor: default; opacity: .6; }
+.qe-chips button.qe-ok { opacity: 1; background: var(--rosa); transform: rotate(1deg) scale(1.03); }
+.qe-chips button.qe-ok small { color: var(--negro); }
+.qe-chips button[aria-pressed="true"]:disabled { opacity: 1; }
+
+.qe-barras { display: grid; gap: .35em; background: var(--papel); border: 2px solid var(--negro); padding: .5em .6em; }
+.qe-tot { font: 800 .6em var(--mono); }
+.qe-b { display: grid; grid-template-columns: 8.5em 1fr 2.8em; gap: .5em; align-items: center; font-size: .66em; }
+.qe-b span { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qe-b i { display: block; height: .85em; border: 2px solid var(--negro); background: #fff; overflow: hidden; }
+.qe-b b { display: block; height: 100%; width: 0; background: var(--cian); transition: width .45s cubic-bezier(.2,.7,.2,1); }
+.qe-b.qe-ok b { background: var(--rosa); }
+.qe-b em { font: 900 .95em var(--mono); font-style: normal; text-align: right; }
+.qe-puntos { margin: 0; font: 800 .74em var(--mono); }
+.qe-puntos b { background: var(--negro); color: var(--amarillo); padding: .05em .4em; }
+
+.qe-rev { position: relative; display: grid; grid-template-columns: auto 1fr; gap: .35em 1em; align-items: baseline; margin: 0; padding: .9em 1.2em .9em 6.4em; background: #fff; border: 3px solid var(--negro); box-shadow: 6px 6px 0 var(--negro); transform: rotate(-.6deg); animation: qe-golpe .45s cubic-bezier(.2,.8,.3,1.25) both; }
+.qe-rev dt { font: 900 .66em var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+.qe-rev dd { margin: 0; font: 600 .84em/1.35 system-ui, sans-serif; }
+.qe-rev .qe-autor { font: 900 1.05em/1.2 system-ui, sans-serif; }
+.qe-zas { position: absolute; left: -.9em; top: 50%; width: 6.4em; height: 6.4em; margin-top: -3.2em; display: grid; place-items: center; background: var(--rosa); color: var(--negro); font: 1000 1.15em/1 Impact, "Arial Black", sans-serif; letter-spacing: .02em; transform: rotate(-12deg);
+  clip-path: polygon(50% 0, 61% 22%, 85% 10%, 79% 35%, 100% 42%, 81% 57%, 95% 80%, 70% 75%, 62% 100%, 48% 81%, 30% 98%, 27% 74%, 3% 80%, 17% 58%, 0 40%, 22% 33%, 14% 9%, 38% 21%); }
+.qe-zas::before { content: ""; position: absolute; inset: 9%; z-index: -1; background: var(--amarillo); clip-path: inherit; }
+@keyframes qe-golpe { 0% { opacity: 0; transform: rotate(-4deg) scale(.85); } 70% { opacity: 1; transform: rotate(0) scale(1.03); } 100% { transform: rotate(-.6deg) scale(1); } }
+
+.qe-der { display: flex; align-items: center; gap: 1.4em; }
+.qe-control { display: flex; gap: .5em; align-items: center; justify-content: flex-end; }
+.qe-control button { font: 900 .7em/1.2 var(--mono); padding: .75em 1em; min-height: 44px; border: 2px solid var(--negro); background: var(--papel); color: var(--negro); cursor: pointer; box-shadow: 3px 3px 0 var(--negro); text-transform: uppercase; }
+.qe-control button.qe-prim { background: var(--amarillo); }
+.qe-control button:disabled { opacity: .45; cursor: default; }
+.qe-control button:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
+.qe-control span { display: none; }
+.qe-esquinas { width: 2.4em; height: 1em; background: repeating-conic-gradient(var(--negro) 0 25%, var(--papel) 0 50%) 0 0 / .7em .7em; }
+
+@media (max-width: 900px) {
+
+  .qe-der { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+  html, body { height: auto; } body { overflow: visible; }
+  .esc { min-height: 100dvh; }
+  .qe-dos { grid-template-columns: 1fr; }
+  .qe-rev { padding-left: 1.2em; padding-top: 4.4em; }
+  .qe-zas { left: auto; right: -.4em; top: -1.6em; margin-top: 0; width: 5em; height: 5em; }
+}
+@media (prefers-reduced-motion: reduce) { .qe-rev { animation: none; } .qe-chips button { transition: none; } }
+</style>
+</head>
+<body>
+<!-- Cielo: 3 constelaciones que se dibujan, un libro abierto trazado con estrellas y polvo que parpadea. -->
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838 M120 760 L124 836 C174 806 220 806 262 838 C304 806 350 806 400 836 L404 760"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/>
+    <circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/>
+    <circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/>
+    <circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/><circle class="eg p" style="--p:2.6s" cx="470" cy="330" r="1.5"/><circle class="e p" style="--p:1.3s" cx="1210" cy="400" r="1.6"/>
+    <circle class="eo p" style="--p:4.1s" cx="880" cy="560" r="1.5"/><circle class="e p" style="--p:.6s" cx="640" cy="620" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 6 · E05b</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="qe-cab a-in">
+      <h1 class="qe-titulo">¿Quién lo<span>escribió?</span></h1>
+      <div class="qe-der">
+        <div class="qe-control" id="qe-control" hidden title="Instructor: lo que pulses lo ven todos">
+          <button type="button" id="qe-ant">◀ Anterior</button>
+          <button type="button" class="qe-prim" id="qe-revelar">Revelar</button>
+          <button type="button" id="qe-sig">Siguiente ▶</button>
+          <span id="qe-modo"></span>
+        </div>
+        <div class="qe-sello">Ronda<b id="qe-ronda">1/6</b></div>
+      </div>
+    </div>
+    <div class="qe-dos a-in" style="--d:.15s">
+      <div class="qe-panel qe-frag">
+        <p class="qe-pedido" id="qe-pedido"></p>
+        <pre class="qe-codigo" id="qe-codigo" hidden></pre>
+        <blockquote class="qe-texto" id="qe-texto" hidden></blockquote>
+      </div>
+      <div class="qe-panel qe-voto">
+        <h3>¿Quién crees que lo escribió?</h3>
+        <div class="qe-chips" id="qe-chips" role="group" aria-label="Tu voto">
+          <button type="button" data-op="persona" aria-pressed="false"><i aria-hidden="true">🧑‍💻</i>Una persona<small>a mano, sin IA</small></button>
+          <button type="button" data-op="pequeno" aria-pressed="false"><i aria-hidden="true">🐜</i>Modelo pequeño<small>Qwen 3 · 1.7B · en una laptop</small></button>
+          <button type="button" data-op="grande" aria-pressed="false"><i aria-hidden="true">🐘</i>Modelo grande<small>Claude Opus 5.5 · en la nube</small></button>
+        </div>
+        <div class="qe-barras" id="qe-barras" aria-label="Votos del grupo">
+          <span class="qe-tot" id="qe-tot">El grupo · 0 votos</span>
+          <div class="qe-b" data-op="persona" hidden><span>Persona</span><i><b></b></i><em>0 %</em></div>
+          <div class="qe-b" data-op="pequeno" hidden><span>Modelo pequeño</span><i><b></b></i><em>0 %</em></div>
+          <div class="qe-b" data-op="grande" hidden><span>Modelo grande</span><i><b></b></i><em>0 %</em></div>
+        </div>
+        <p class="qe-puntos" id="qe-puntos" aria-live="polite"></p>
+      </div>
+    </div>
+    <dl class="qe-rev" id="qe-rev" hidden aria-live="polite">
+      <span class="qe-zas" id="qe-zas" aria-hidden="true">¡ZAS!</span>
+      <dt>Lo escribió</dt><dd class="qe-autor" id="qe-autor"></dd>
+      <dt>Costo</dt><dd id="qe-costo"></dd>
+      <dt>Moraleja</dt><dd id="qe-moraleja"></dd>
+    </dl>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Vota en cada ronda; el instructor revela la respuesta</span>
+  </footer>
+</div>
+
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+/* ¿Quién lo escribió?: 6 rondas. Cada alumno vota (persona, modelo pequeño, modelo grande) con el motor
+   de votos del LIVE; el instructor revela y avanza con el parámetro de la escena («r3», «r3-rev»), que
+   llega a todos por el estado del LIVE. Sin parámetro (repaso fuera de clase) cada uno avanza solo. */
+(function () {
+  var ESCENA = "05b-quien-lo-escribio";
+  var RONDAS = [
+    {
+      pedido: "Sin pedido: es un fragmento de un videojuego famoso.",
+      tipo: "codigo",
+      fragmento: "float Q_rsqrt( float number )\n{\n\tlong i;\n\tfloat x2, y;\n\tconst float threehalfs = 1.5F;\n\n\tx2 = number * 0.5F;\n\ty  = number;\n\ti  = * ( long * ) &y;                       // evil floating point bit level hacking\n\ti  = 0x5f3759df - ( i >> 1 );               // what the f***?\n\ty  = * ( float * ) &i;\n\ty  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration\n\n\treturn y;\n}",
+      autor: "persona",
+      quien: "Programadores de id Software · Quake III Arena (1999), código liberado con licencia GPL en 2005",
+      costo: "Horas de ingenio humano. La constante 0x5f3759df calcula 1/√x sin dividir; nadie la entendía a la primera.",
+      moraleja: "Los comentarios con humor y los trucos «mágicos» suelen delatar a una persona. Un modelo explica de más; una persona escribe «what the f***?»."
+    },
+    {
+      pedido: "Pedido: «Explica en 3 líneas qué es un agente de IA».",
+      tipo: "texto",
+      fragmento: "Un agente de IA es un programa o sistema que utiliza inteligencia artificial para realizar tareas específicas, como el aprendizaje automático, la comprensión de texto, la toma de decisiones o la generación de contenido.",
+      autor: "pequeno",
+      quien: "Qwen 3 · 1.7B, corriendo en una Mac con Ollama",
+      costo: "S/ 0: corre en tu máquina. 55 tokens en 0.5 s en una Mac M4 Pro (y se pidieron 3 líneas: dio una).",
+      moraleja: "Para explicar un concepto corto, un modelo pequeño en tu laptop ya alcanza: gratis, sin internet y sin mandar tus datos fuera."
+    },
+    {
+      pedido: "Pedido: «Escribe en Python una función que valide un RUC peruano».",
+      tipo: "codigo",
+      fragmento: "def ruc_valido(ruc: str) -> bool:\n    \"\"\"Valida un RUC peruano: 11 dígitos, prefijo 10/15/17/20 y dígito verificador.\"\"\"\n    ruc = ruc.strip()\n    if len(ruc) != 11 or not ruc.isdigit() or ruc[:2] not in {\"10\", \"15\", \"17\", \"20\"}:\n        return False\n    pesos = (5, 4, 3, 2, 7, 6, 5, 4, 3, 2)\n    suma = sum(int(d) * p for d, p in zip(ruc[:10], pesos))\n    verificador = (11 - suma % 11) % 10\n    return verificador == int(ruc[10])",
+      autor: "grande",
+      quien: "Claude Opus 5.5, el modelo grande con el que se preparó esta clase",
+      costo: "≈ 170 tokens de salida × $20 por millón ≈ $0,0034 (S/ 0,01). Probado con 20131312955 y 20100070970: los dos válidos.",
+      moraleja: "Reglas de negocio con trampa (el dígito verificador que da 10 u 11) son terreno del modelo grande: resolvió el caso borde en una línea."
+    },
+    {
+      pedido: "Sin pedido: es un mensaje de un foro de 1991 (en inglés, como se publicó).",
+      tipo: "texto",
+      fragmento: "Hello everybody out there using minix –\n\nI'm doing a (free) operating system (just a hobby, won't be big and professional like gnu) for 386(486) AT clones.\n\n«Hola a todos los que usan minix: estoy haciendo un sistema operativo (libre), solo un pasatiempo, no será grande ni profesional como gnu.»",
+      autor: "persona",
+      quien: "Linus Torvalds, en comp.os.minix, el 25 de agosto de 1991: el anuncio de Linux",
+      costo: "Gratis… y ese «pasatiempo» hoy corre en casi todos los servidores del mundo.",
+      moraleja: "La modestia, los paréntesis y la ironía involuntaria son muy humanos. Un modelo habría vendido el proyecto con viñetas."
+    },
+    {
+      pedido: "Pedido: «Escribe en JavaScript una función que sume los precios del carrito y aplique 10 % de descuento si el total pasa de 100».",
+      tipo: "codigo",
+      fragmento: "function sumarPrecioCarrito(mercado) {\n    let total = 0;\n    for (let i = 0; i < mercado.length; i++) {\n        total += mercado[i].precio;\n    }\n    if (total > 100) {\n        total -= total * 0.1;\n    }\n    return total;\n}",
+      autor: "pequeno",
+      quien: "Qwen 3 · 1.7B, corriendo en una Mac con Ollama",
+      costo: "S/ 0: corre en tu máquina. 82 tokens en 0.8 s en una Mac M4 Pro.",
+      moraleja: "Funciona en el caso feliz, pero ignora la cantidad de cada producto, llama «mercado» al carrito y suma en decimales en vez de céntimos. El modelo pequeño escribe código creíble que tú tienes que revisar."
+    },
+    {
+      pedido: "Pedido: un cliente escribe a la bodega por WhatsApp «¿tienen leche Gloria? ¿hasta qué hora atienden?». Responde como la bodega.",
+      tipo: "texto",
+      fragmento: "¡Hola! 👋 Sí, tenemos leche Gloria evaporada de 400 g a S/ 4.40.\nHoy atendemos hasta las 10 p. m.\n¿Quieres que te separemos algunas latas? Dinos cuántas y te las dejamos listas para recoger. 🛒",
+      autor: "grande",
+      quien: "Claude Opus 5.5, con el catálogo de la bodega en el contexto",
+      costo: "≈ 70 tokens de salida × $20 por millón ≈ $0,0014 (S/ 0,005) por mensaje; mil mensajes ≈ S/ 5.",
+      moraleja: "Para atender clientes, el modelo grande cuida el tono y cierra la venta. Lo que cuesta no es cada mensaje sino el contexto que le mandas en cada uno."
+    }
+  ];
+  var NOMBRES = { persona: "Una persona", pequeno: "Modelo pequeño", grande: "Modelo grande" };
+
+  var leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "g6-01";
+  var $ = function (id) { return document.getElementById(id); };
+  var chips = Array.prototype.slice.call(document.querySelectorAll("#qe-chips button"));
+  var barras = Array.prototype.slice.call(document.querySelectorAll("#qe-barras .qe-b"));
+  var estado = { ronda: 1, rev: false };
+  var sigueInstructor = false, esStaff = false, mia = "", conteo = null;
+  var CLAVE_VOTOS = "g6-01-quien-votos";
+
+  function misVotos() { try { return JSON.parse(localStorage.getItem(CLAVE_VOTOS) || "{}"); } catch (e) { return {}; } }
+  function guardarVoto(n, op) { var v = misVotos(); v[n] = op; try { localStorage.setItem(CLAVE_VOTOS, JSON.stringify(v)); } catch (e) {} }
+  function escenaVoto(n) { return "05b-quien-r" + n; }
+
+  function pintar() {
+    var r = RONDAS[estado.ronda - 1];
+    $("qe-ronda").textContent = estado.ronda + "/" + RONDAS.length;
+    $("qe-pedido").textContent = r.pedido.replace(/^(Pedido|Sin pedido): ?/, function (m, a) { return a === "Sin pedido" ? "Ninguno: " : ""; }).replace(/^./, function (x) { return x.toUpperCase(); });
+    var esCodigo = r.tipo === "codigo";
+    $("qe-codigo").hidden = !esCodigo;
+    $("qe-texto").hidden = esCodigo;
+    (esCodigo ? $("qe-codigo") : $("qe-texto")).textContent = r.fragmento;
+    chips.forEach(function (b) {
+      var op = b.getAttribute("data-op");
+      b.setAttribute("aria-pressed", String(op === mia));
+      b.disabled = estado.rev;
+      b.classList.toggle("qe-ok", estado.rev && op === r.autor);
+    });
+    $("qe-rev").hidden = !estado.rev;
+    if (estado.rev) {
+      $("qe-autor").textContent = NOMBRES[r.autor] + " · " + r.quien;
+      $("qe-costo").textContent = r.costo;
+      $("qe-moraleja").textContent = r.moraleja;
+      $("qe-zas").textContent = ["¡ZAS!", "¡PUM!", "¡BOOM!", "¡CRAC!", "¡PAF!", "¡TOMA!"][estado.ronda - 1];
+    }
+    pintarVotos();
+    pintarPuntos();
+    $("qe-ant").disabled = estado.ronda <= 1;
+    $("qe-sig").disabled = estado.ronda >= RONDAS.length;
+    $("qe-revelar").textContent = estado.rev ? "Ocultar" : "Revelar";
+  }
+
+  function pintarVotos() {
+    var total = conteo && +conteo.total || 0, ops = (conteo && conteo.opciones) || {};
+    var r = RONDAS[estado.ronda - 1];
+    $("qe-tot").textContent = "El grupo · " + total + (total === 1 ? " voto" : " votos") + (estado.rev ? "" : " · los % salen al revelar");
+    barras.forEach(function (f) {
+      var op = f.getAttribute("data-op"), n = +ops[op] || 0, pct = total ? Math.round(n * 100 / total) : 0;
+      f.hidden = !estado.rev;
+      f.classList.toggle("qe-ok", op === r.autor);
+      f.querySelector("b").style.width = pct + "%";
+      f.querySelector("em").textContent = pct + " %";
+    });
+  }
+
+  function pintarPuntos() {
+    var v = misVotos(), aciertos = 0, jugadas = 0;
+    var hasta = estado.rev ? estado.ronda : estado.ronda - 1;
+    for (var n = 1; n <= hasta; n++) {
+      if (v[n]) { jugadas++; if (v[n] === RONDAS[n - 1].autor) aciertos++; }
+    }
+    $("qe-puntos").innerHTML = jugadas ? "Llevas <b>" + aciertos + " de " + jugadas + "</b> aciertos." : "";
+  }
+
+  function leerVotos() {
+    var n = estado.ronda;
+    fetch("/api/v1/live/" + leccion + "/votos?escena=" + escenaVoto(n), { credentials: "same-origin" })
+      .then(function (r) { if (!r.ok) throw new Error("sin votos"); return r.json(); })
+      .then(function (d) {
+        if (n !== estado.ronda) return;
+        conteo = d; mia = d.mia || misVotos()[n] || "";
+        pintar();
+      })
+      .catch(function () {});
+  }
+
+  function votar(op) {
+    if (estado.rev) return;
+    var n = estado.ronda;
+    mia = op; guardarVoto(n, op); pintar();
+    fetch("/api/v1/live/" + leccion + "/voto", {
+      method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ escena: escenaVoto(n), opcion: op })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d && n === estado.ronda) { conteo = d; pintar(); } })
+      .catch(function () {});
+  }
+
+  function aplicar(ronda, rev) {
+    ronda = Math.max(1, Math.min(RONDAS.length, ronda));
+    var cambio = ronda !== estado.ronda;
+    estado.ronda = ronda; estado.rev = rev;
+    if (cambio) { conteo = null; mia = misVotos()[ronda] || ""; }
+    pintar();
+    if (cambio || rev) leerVotos();
+  }
+
+  function aplicarParametro(p) {
+    var m = /^r(\d+)(-rev)?$/.exec(p || "");
+    if (!m) return;
+    if (!sigueInstructor) { sigueInstructor = true; controles(); }
+    aplicar(+m[1], !!m[2]);
+  }
+
+  function mandar(ronda, rev) {
+    aplicar(ronda, rev);
+    if (!esStaff) return;
+    fetch("/api/v1/live/" + leccion + "/escena", {
+      method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ escena: ESCENA, parametro: "r" + estado.ronda + (estado.rev ? "-rev" : "") })
+    }).catch(function () {});
+  }
+
+  function controles() {
+    var ver = esStaff || !sigueInstructor;
+    $("qe-control").hidden = !ver;
+    $("qe-modo").textContent = esStaff ? "Instructor: lo que pulses lo ven todos." : "Repaso: avanzas a tu ritmo.";
+  }
+
+  chips.forEach(function (b) { b.addEventListener("click", function () { votar(b.getAttribute("data-op")); }); });
+  $("qe-ant").addEventListener("click", function () { mandar(estado.ronda - 1, false); });
+  $("qe-sig").addEventListener("click", function () { mandar(estado.ronda + 1, false); });
+  $("qe-revelar").addEventListener("click", function () { mandar(estado.ronda, !estado.rev); });
+
+  /* El panel del LIVE reenvía cada «estado» al iframe; además se consulta por si la escena va suelta. */
+  addEventListener("message", function (e) {
+    if (e.origin !== location.origin || !e.data || e.data.tipo !== "estado") return;
+    var s = e.data.estado || {};
+    if (!s.escena || s.escena === ESCENA) aplicarParametro(s.parametro);
+  });
+  function consultarEstado() {
+    fetch("/api/v1/live/" + leccion, { credentials: "same-origin" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (s) { if (s && s.escena === ESCENA) aplicarParametro(s.parametro); })
+      .catch(function () {});
+  }
+
+  fetch("/api/v1/me", { credentials: "same-origin" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (me) {
+      var roles = (me && me.roles) || [];
+      esStaff = roles.indexOf("instructor") >= 0 || roles.indexOf("admin") >= 0;
+      controles();
+    })
+    .catch(controles);
+
+  mia = misVotos()[1] || "";
+  pintar();
+  controles();
+  consultarEstado();
+  leerVotos();
+  setInterval(consultarEstado, 3000);
+  setInterval(leerVotos, 3000);
+})();
+</script>
+</body>
+</html>
