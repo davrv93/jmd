@@ -9,14 +9,14 @@ import (
 	"testing"
 )
 
-// Las 50 casillas de la ruleta: 1 de Requerimientos, 6 de 80 %, 18 de 70 % y 25 de 60 %.
+// Las 50 casillas: Requerimientos 1/12/14/13 y taller QA 4/6.
 func TestFranjas(t *testing.T) {
 	cuenta := map[string]int{}
 	for _, f := range franjas() {
 		cuenta[f]++
 	}
-	if cuenta["req100"] != 1 || cuenta["80"] != 6 || cuenta["70"] != 18 || cuenta["60"] != 25 {
-		t.Fatalf("franjas = %v, esperaba 1/6/18/25", cuenta)
+	if cuenta["req100"] != 1 || cuenta["req80"] != 12 || cuenta["req70"] != 14 || cuenta["req60"] != 13 || cuenta["qa80"] != 4 || cuenta["qa60"] != 6 {
+		t.Fatalf("franjas = %v, esperaba 1/12/14/13 + 4/6", cuenta)
 	}
 	for _, p := range premios {
 		if cuenta[p.ID] != p.Casillas {
@@ -46,23 +46,27 @@ func TestTopesYReproducible(t *testing.T) {
 		for _, tk := range tickets {
 			ent[tk.Premio]++
 			// solo se baja de banda, nunca se sube
-			orden := map[string]int{"req100": 0, "80": 1, "70": 2, "60": 3}
-			if orden[tk.Premio] < orden[tk.Banda] {
+			orden := map[string]int{"req100": 0, "req80": 1, "req70": 2, "req60": 3, "qa80": 10, "qa60": 11}
+			if orden[tk.Premio] < orden[tk.Banda] || (orden[tk.Premio] >= 10) != (orden[tk.Banda] >= 10) {
 				t.Fatalf("%s: banda %s entregó %s", semilla, tk.Banda, tk.Premio)
 			}
 		}
-		if ent["req100"] > 1 || ent["80"] > 6 || ent["req100"]+ent["80"]+ent["70"]+ent["60"] != totalNumeros {
+		total := 0
+		for _, n := range ent {
+			total += n
+		}
+		if ent["req100"] > 1 || ent["req80"] > 12 || ent["qa80"] > 4 || total != totalNumeros {
 			t.Fatalf("%s: entregados %v", semilla, ent)
 		}
 	}
-	if p := conTope("req100", map[string]int{"req100": 1}); p != "80" {
-		t.Fatalf("Requerimientos agotado → %s", p)
+	if p := conTope("req100", map[string]int{"req100": 1}); p != "req80" {
+		t.Fatalf("Requerimientos 100 agotado → %s", p)
 	}
-	if p := conTope("req100", map[string]int{"req100": 1, "80": 6}); p != "70" {
+	if p := conTope("req100", map[string]int{"req100": 1, "req80": 12}); p != "req70" {
 		t.Fatalf("dos bandas agotadas → %s", p)
 	}
-	if p := conTope("80", map[string]int{"80": 6}); p != "70" {
-		t.Fatalf("80 agotado → %s", p)
+	if p := conTope("qa80", map[string]int{"qa80": 4}); p != "qa60" {
+		t.Fatalf("QA 80 agotado → %s", p)
 	}
 }
 

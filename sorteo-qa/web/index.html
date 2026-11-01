@@ -19,7 +19,7 @@
     <div>
       <span class="kick">JMD LEARNING · SORTEO EN VIVO</span>
       <h1 class="marca">Sorteo <em>QA</em></h1>
-      <p class="sub">Agarra tu número del 1 al 50 y gira la ruleta al instante: <b class="oro">60 %</b>, <b class="oro">70 %</b> o el premio mayor de <b class="oro">80 %</b> en el taller <b>Automatización de pruebas y QA con inteligencia artificial</b> (S/ 100). Y una sola casilla: <b class="oro">100 % en Ingeniería de Requerimientos</b>.</p>
+      <p class="sub">Agarra tu número del 1 al 50 y gira la ruleta al instante. Casi todas las casillas son de <b>Ingeniería de Requerimientos</b> (S/ 40): <b class="oro">60 %</b>, <b class="oro">70 %</b>, <b class="oro">80 %</b> y una sola de <b class="oro">100 %</b>. Las otras, del taller <b>Automatización de pruebas y QA con IA</b> (S/ 100): <b class="oro">60 %</b> y <b class="oro">80 %</b>.</p>
     </div>
     <div class="chips">
       <span class="chip" id="chip-fase">Cargando…</span>
@@ -55,7 +55,7 @@
   <section class="panel" id="elegir" hidden>
     <h2 id="elegir-titulo">Agarra tu <span>número</span></h2>
     <p class="suave" id="elegir-texto">Toca un número libre. Apenas confirmes, la ruleta gira y ves tu premio.</p>
-    <div class="leyenda"><span><b class="libre"></b>Libre</span><span><b class="tomado" style="background:#ffd166"></b>Req. 100 %</span><span><b class="tomado" style="background:#8fd3c7"></b>80 %</span><span><b class="tomado" style="background:#a9c9f5"></b>70 %</span><span><b class="tomado" style="background:#e8e3f8"></b>60 %</span></div>
+    <div class="leyenda"><span><b class="libre"></b>Libre</span><span><b class="tomado" style="background:#ffd166"></b>Req 100</span><span><b class="tomado" style="background:#8fd3c7"></b>Req 80</span><span><b class="tomado" style="background:#a9c9f5"></b>Req 70</span><span><b class="tomado" style="background:#e8e3f8"></b>Req 60</span><span><b class="tomado" style="background:#ffb4a2"></b>QA 80</span><span><b class="tomado" style="background:#f6e7a9"></b>QA 60</span></div>
     <div class="tablero" id="tablero"></div>
     <form id="form" hidden>
       <p style="margin:16px 0 0;font-weight:800;font-size:18px">Número elegido: <span class="oro mono" id="form-num">—</span></p>
@@ -93,9 +93,9 @@
     <ul class="reglas">
       <li><b>Un número por persona</b>, con tu nombre y tu WhatsApp. El premio queda ligado a tu número: si recargas, lo vuelves a ver.</li>
       <li><b>Al azar de verdad.</b> La huella SHA-256 de la semilla secreta está publicada desde el inicio; al cerrar se revela y puedes comprobar cada premio en tu navegador.</li>
-      <li><b>Topes:</b> 1 cupón de 100 % en Requerimientos y 6 de 80 % en el taller QA. Si la ruleta cae en una banda agotada, el cupón baja a la siguiente (100 → 80 → 70 → 60).</li>
+      <li><b>Topes:</b> 1 cupón de 100 % y 12 de 80 % en Requerimientos; 4 de 80 % en el taller QA. Si la ruleta cae en una banda agotada, el cupón baja a la siguiente del mismo curso (Req 100 → 80 → 70 → 60 · QA 80 → 60).</li>
     </ul>
-    <div class="aviso"><b>El cupón es personal:</b> canjeable por el próximo grupo del curso o <b>regalable a un amigo</b>, con el mismo porcentaje. Ingeniería de Requerimientos: lunes 16, 23 y 30 de noviembre, 7:30 p. m.</div>
+    <div class="aviso"><b>El cupón es personal:</b> canjeable o <b>regalable a un amigo</b>, con el mismo porcentaje. Ingeniería de Requerimientos: elige tu grupo al canjear (lunes 16, 23 y 30 nov 7:30 pm · jueves 3, 10 y 17 dic 7:30 pm · domingos 6, 13 y 20 dic 10:00 am). Taller QA: Grupo 2, domingo 6 de diciembre, 2:00 a 6:00 p. m. (Lima).</div>
   </section>
 
   <!-- verificación -->
@@ -110,7 +110,7 @@
 </main>
 
 <script type="module">
-import { api, $, esc, dos, PREMIOS, pct, gajosPremios, precioCon, tokenLeer, tokenGuardar, comprobar, tablero, mapaPremios } from "./static/comun.js";
+import { api, $, esc, dos, PREMIOS, pct, GRUPOS, ENLACES_REQ, ENLACE_QA, gajosPremios, precioCon, tokenLeer, tokenGuardar, comprobar, tablero, mapaPremios } from "./static/comun.js";
 import { fondo } from "./static/fondo.js";
 import { ruleta } from "./static/ruleta.js";
 
@@ -127,8 +127,10 @@ function pintarFase() {
 
 function textoPremio(premio) {
   const p = PREMIOS[premio];
-  if (premio === "req100") return `Ingeniería de Requerimientos (lunes 16, 23 y 30 de noviembre, 7:30 p. m.) te queda <b>gratis</b>: S/ ${p.precio} → S/ 0.`;
-  return `${pct(premio)} % de descuento en el taller QA: S/ ${p.precio} → <b>S/ ${precioCon(premio)}</b>.`;
+  const enlaces = p.cadena === "req"
+    ? "<br>" + ENLACES_REQ.map((u, i) => `<a href="${u}" target="_blank" rel="noopener">Inscribirme al grupo ${i + 1}</a>`).join(" · ")
+    : `<br><a href="${ENLACE_QA}" target="_blank" rel="noopener">Inscribirme al Grupo 2 del taller QA</a>`;
+  return `${pct(premio)} % de descuento en ${p.curso === "taller QA" ? "el taller QA" : p.curso}: S/ ${p.precio} → <b>S/ ${precioCon(premio)}</b>${pct(premio) === 100 ? " (¡gratis!)" : ""}. ${GRUPOS[p.cadena]}${enlaces}`;
 }
 
 function pintarCanje(yo) {
@@ -151,7 +153,7 @@ async function pintarMio(animar) {
   if (animar) {
     rueda.dibujar(gajosPremios());
     $("#mi-titular").textContent = "Girando la ruleta…";
-    $("#mi-detalle").textContent = `Tu número es el ${dos(yo.numero)}. 1 casilla de Requerimientos, 6 de 80 %, 18 de 70 % y 25 de 60 %.`;
+    $("#mi-detalle").textContent = `Tu número es el ${dos(yo.numero)}. Requerimientos: 1 casilla de 100 %, 12 de 80 %, 14 de 70 % y 13 de 60 %; taller QA: 4 de 80 % y 6 de 60 %.`;
     fx.girar(true);
     await rueda.girarHasta(yo.casilla, { duracion: 6000 });
     fx.girar(false);
@@ -159,9 +161,7 @@ async function pintarMio(animar) {
   } else {
     rueda.dibujar(gajosPremios(), yo.casilla);
   }
-  $("#mi-titular").innerHTML = yo.premio === "req100"
-    ? `¡<span class="oro">100 %</span> en Ingeniería de Requerimientos!`
-    : `¡Ganaste <span class="oro">${pct(yo.premio)} %</span> de descuento en el taller QA!`;
+  $("#mi-titular").innerHTML = `¡Ganaste <span class="oro">${pct(yo.premio)} %</span> en ${PREMIOS[yo.premio].curso === "taller QA" ? "el taller QA" : "Ingeniería de Requerimientos"}!`;
   let extra = "";
   if (yo.banda !== yo.premio) extra = ` La ruleta cayó en «${PREMIOS[yo.banda].nombre}» (${pct(yo.banda)} %), pero esa banda ya se agotó: tu cupón es el siguiente.`;
   $("#mi-detalle").innerHTML = textoPremio(yo.premio) + extra;
@@ -181,7 +181,7 @@ function pintarElegir() {
 function pintarBandas() {
   $("#bandas").innerHTML = estado.premios.map((p) => {
     const quedan = p.tope ? estado.quedan[p.id] : null;
-    return `<div class="banda ${quedan === 0 ? "agotada" : ""}" style="--c:${p.color}"><b>${p.descuento} %</b><span>${esc(p.id === "req100" ? "Ingeniería de Requerimientos" : "Taller QA · " + p.nombre)} · ${p.casillas} de 50 casillas (${Math.round(p.casillas * 2)} %)</span>
+    return `<div class="banda ${quedan === 0 ? "agotada" : ""}" style="--c:${p.color}"><b>${p.descuento} %</b><span>${esc(p.curso === "Ingeniería de Requerimientos" ? "Ing. de Requerimientos" : "Taller QA")} · ${p.casillas} de 50 (${Math.round(p.casillas * 2)} %)</span>
       <span class="quedan">${p.tope ? (quedan === 0 ? "Agotado" : `Quedan ${quedan} de ${p.tope}`) : "Sin tope"} · S/ ${p.precio} → S/ ${precioCon(p.id)}</span></div>`;
   }).join("");
 }

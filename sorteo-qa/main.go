@@ -2,11 +2,11 @@
 // «Automatización de pruebas y QA con inteligencia artificial».
 //
 // Cada persona agarra un número libre del 1 al 50 (uno por persona) y ve su
-// premio al instante: la ruleta de 50 casillas (1 = 100 % en Ingeniería de
-// Requerimientos, 6 = 80 % en el taller QA, 18 = 70 %, 25 = 60 %) cae en la
-// casilla que dicta una semilla secreta: azar(semilla, "premio", número, 0, 50).
-// Hay tope de cupones (1 y 6 en las dos primeras bandas); cuando una banda se
-// agota, esos números pasan a la banda siguiente.
+// premio al instante: la ruleta de 50 casillas (Ingeniería de Requerimientos:
+// 1 de 100 %, 12 de 80 %, 14 de 70 % y 13 de 60 %; taller QA: 4 de 80 % y 6 de
+// 60 %) cae en la casilla que dicta una semilla secreta: azar(semilla,
+// "premio", número, 0, 50). Hay tope de cupones en las bandas altas; cuando una
+// se agota, esos números pasan a la siguiente de su mismo curso.
 //
 // La huella SHA-256 de la semilla se publica desde el principio; al cerrar la
 // inscripción se revela la semilla y cualquiera puede rehacer el sorteo en su
@@ -50,8 +50,9 @@ const (
 func init() { _ = mime.AddExtensionType(".js", "text/javascript; charset=utf-8") }
 
 // Premio: un descuento sobre un curso. Casillas dice cuántas de las 50 le
-// tocan en la ruleta; Tope, cuántos cupones hay como máximo (0 = sin tope).
-// El orden de la lista es el orden en que se baja de banda cuando se agota.
+// tocan en la ruleta; Tope, cuántos cupones hay como máximo (0 = sin tope);
+// Cadena agrupa los premios del mismo curso: si una banda se agota, se baja a
+// la siguiente de su cadena (Req 100 → 80 → 70 → 60; QA 80 → 60).
 type Premio struct {
 	ID        string `json:"id"`
 	Descuento int    `json:"descuento"`
@@ -60,36 +61,30 @@ type Premio struct {
 	Color     string `json:"color"`
 	Nombre    string `json:"nombre"`
 	Curso     string `json:"curso"`
+	Cadena    string `json:"cadena"`
 	Precio    int    `json:"precio"`
 }
 
 const cursoReq = "Ingeniería de Requerimientos"
 
 var premios = []Premio{
-	{ID: "req100", Descuento: 100, Casillas: 1, Tope: 1, Color: "#ffd166", Nombre: "Requerimientos gratis", Curso: cursoReq, Precio: 40},
-	{ID: "80", Descuento: 80, Casillas: 6, Tope: 6, Color: "#8fd3c7", Nombre: "Premio mayor", Curso: cursoTaller, Precio: precioTaller},
-	{ID: "70", Descuento: 70, Casillas: 18, Tope: 0, Color: "#a9c9f5", Nombre: "70 %", Curso: cursoTaller, Precio: precioTaller},
-	{ID: "60", Descuento: 60, Casillas: 25, Tope: 0, Color: "#e8e3f8", Nombre: "60 %", Curso: cursoTaller, Precio: precioTaller},
+	{ID: "req100", Descuento: 100, Casillas: 1, Tope: 1, Color: "#ffd166", Nombre: "Requerimientos gratis", Curso: cursoReq, Cadena: "req", Precio: 40},
+	{ID: "req80", Descuento: 80, Casillas: 12, Tope: 12, Color: "#8fd3c7", Nombre: "Requerimientos 80 %", Curso: cursoReq, Cadena: "req", Precio: 40},
+	{ID: "req70", Descuento: 70, Casillas: 14, Tope: 0, Color: "#a9c9f5", Nombre: "Requerimientos 70 %", Curso: cursoReq, Cadena: "req", Precio: 40},
+	{ID: "req60", Descuento: 60, Casillas: 13, Tope: 0, Color: "#e8e3f8", Nombre: "Requerimientos 60 %", Curso: cursoReq, Cadena: "req", Precio: 40},
+	{ID: "qa80", Descuento: 80, Casillas: 4, Tope: 4, Color: "#ffb4a2", Nombre: "Taller QA 80 %", Curso: cursoTaller, Cadena: "qa", Precio: precioTaller},
+	{ID: "qa60", Descuento: 60, Casillas: 6, Tope: 0, Color: "#f6e7a9", Nombre: "Taller QA 60 %", Curso: cursoTaller, Cadena: "qa", Precio: precioTaller},
 }
 
-// franjaDe: qué premio hay en la casilla i (0..49). La 0 es el 100 % en
-// Requerimientos; las de la forma 8k+4 (4, 12, 20, 28, 36 y 44), el 80 %; de
-// las 43 restantes, la k-ésima es 70 % cuando floor((k+1)·18/43) supera
-// floor(k·18/43) (18 casillas), y las otras 25 son 60 %. El navegador repite
-// la misma regla.
-func franjaDe(i int) string {
-	if i == 0 {
-		return "req100"
-	}
-	if i%8 == 4 {
-		return "80"
-	}
-	k := i - 1 - (i+3)/8 // cuántas casillas de 70/60 hay antes de la i
-	if (k+1)*18/43 > k*18/43 {
-		return "70"
-	}
-	return "60"
-}
+// patron: las 50 casillas de la ruleta, fijas e intercaladas por reparto
+// proporcional (A = req100, B = req80, C = req70, D = req60, E = qa80,
+// F = qa60). El navegador lleva la misma cadena.
+const patron = "ABCDEFCDBCDBFCDBECDBFCDBCDBCEFDCBDCBFDCBEDCBFDCBDC"
+
+var letraPremio = map[byte]string{'A': "req100", 'B': "req80", 'C': "req70", 'D': "req60", 'E': "qa80", 'F': "qa60"}
+
+// franjaDe: qué premio hay en la casilla i (0..49).
+func franjaDe(i int) string { return letraPremio[patron[i]] }
 
 func franjas() []string {
 	out := make([]string, casillas)
@@ -100,19 +95,20 @@ func franjas() []string {
 }
 
 // conTope: la banda que de verdad se entrega. Si la de la casilla ya llegó a
-// su tope, baja a la siguiente de la lista. entregados cuenta por banda.
+// su tope, baja a la siguiente de su misma cadena. entregados cuenta por banda.
 func conTope(banda string, entregados map[string]int) string {
 	for i, p := range premios {
 		if p.ID != banda {
 			continue
 		}
 		for j := i; j < len(premios); j++ {
-			if premios[j].Tope == 0 || entregados[premios[j].ID] < premios[j].Tope {
-				return premios[j].ID
+			q := premios[j]
+			if q.Cadena == p.Cadena && (q.Tope == 0 || entregados[q.ID] < q.Tope) {
+				return q.ID
 			}
 		}
 	}
-	return premios[len(premios)-1].ID
+	return banda
 }
 
 type Persona struct {

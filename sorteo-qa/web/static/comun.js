@@ -22,38 +22,41 @@ export const hora = (iso) => new Date(iso).toLocaleTimeString("es-PE", { timeZon
 export function tokenLeer() { try { return localStorage.getItem("sorteo-qa-t") || ""; } catch { return ""; } }
 export function tokenGuardar(t) { try { localStorage.setItem("sorteo-qa-t", t); } catch { /* sin almacenamiento */ } }
 
-// Los premios (mismo orden, colores y precios que el servidor). El orden es el
-// orden en que se baja de banda cuando una se agota.
+// Los premios (mismo orden, colores y precios que el servidor). Si una banda
+// se agota, se baja a la siguiente de su misma cadena.
+const GRUPOS_REQ = "Elige tu grupo al canjear: lunes 16, 23 y 30 nov 7:30 pm (grupo 1) · jueves 3, 10 y 17 dic 7:30 pm (grupo 2) · domingos 6, 13 y 20 dic 10:00 am (grupo 3)";
 export const PREMIOS = {
-  req100: { color: "#ffd166", nombre: "Requerimientos gratis", texto: "100 %", curso: "Ingeniería de Requerimientos", precio: 40, corto: "Req. 100 %" },
-  80: { color: "#8fd3c7", nombre: "Premio mayor", texto: "80 %", curso: "taller QA", precio: 100, corto: "80 %" },
-  70: { color: "#a9c9f5", nombre: "70 %", texto: "70 %", curso: "taller QA", precio: 100, corto: "70 %" },
-  60: { color: "#e8e3f8", nombre: "60 %", texto: "60 %", curso: "taller QA", precio: 100, corto: "60 %" },
+  req100: { color: "#ffd166", nombre: "Requerimientos gratis", corto: "Req 100", pct: 100, curso: "Ingeniería de Requerimientos", cadena: "req", precio: 40 },
+  req80: { color: "#8fd3c7", nombre: "Requerimientos 80 %", corto: "Req 80", pct: 80, curso: "Ingeniería de Requerimientos", cadena: "req", precio: 40 },
+  req70: { color: "#a9c9f5", nombre: "Requerimientos 70 %", corto: "Req 70", pct: 70, curso: "Ingeniería de Requerimientos", cadena: "req", precio: 40 },
+  req60: { color: "#e8e3f8", nombre: "Requerimientos 60 %", corto: "Req 60", pct: 60, curso: "Ingeniería de Requerimientos", cadena: "req", precio: 40 },
+  qa80: { color: "#ffb4a2", nombre: "Taller QA 80 %", corto: "QA 80", pct: 80, curso: "taller QA", cadena: "qa", precio: 100 },
+  qa60: { color: "#f6e7a9", nombre: "Taller QA 60 %", corto: "QA 60", pct: 60, curso: "taller QA", cadena: "qa", precio: 100 },
 };
-export const ORDEN = ["req100", "80", "70", "60"];
-export const pct = (id) => (id === "req100" ? 100 : Number(id));
+export const ORDEN = ["req100", "req80", "req70", "req60", "qa80", "qa60"];
+export const pct = (id) => PREMIOS[id].pct;
+export const GRUPOS = { req: GRUPOS_REQ, qa: "Taller QA · Grupo 2: domingo 6 de diciembre, 2:00 a 6:00 p. m. (Lima)." };
+export const ENLACE_QA = "https://jmd-learn.online/inscripcion/qa-ia-g2/";
+export const ENLACES_REQ = [1, 2, 3].map((n) => `https://jmd-learn.online/inscripcion/requerimientos-${n}/`);
 
-// La casilla i (0..49): la 0 es Requerimientos; las 8k+4, el 80 %; de las 43
-// restantes, la k-ésima es 70 % cuando floor((k+1)·18/43) > floor(k·18/43).
-// Igual que franjaDe en el servidor.
-export function franjaDe(i) {
-  if (i === 0) return "req100";
-  if (i % 8 === 4) return "80";
-  const k = i - 1 - Math.floor((i + 3) / 8);
-  return Math.floor(((k + 1) * 18) / 43) > Math.floor((k * 18) / 43) ? "70" : "60";
-}
+// Las 50 casillas, fijas e intercaladas (A = req100, B = req80, C = req70,
+// D = req60, E = qa80, F = qa60). Igual que «patron» en el servidor.
+const PATRON = "ABCDEFCDBCDBFCDBECDBFCDBCDBCEFDCBDCBFDCBEDCBFDCBDC";
+const LETRA = { A: "req100", B: "req80", C: "req70", D: "req60", E: "qa80", F: "qa60" };
+export function franjaDe(i) { return LETRA[PATRON[i]]; }
 export const FRANJAS = Array.from({ length: 50 }, (_, i) => franjaDe(i));
 
 // Gajos de la ruleta de premios (50 casillas).
 export const gajosPremios = () => FRANJAS.map((f) => ({ texto: PREMIOS[f].corto, color: PREMIOS[f].color }));
 
-// Con tope: si la banda ya se agotó, baja a la siguiente de la lista.
-export function conTope(banda, entregados, topes = { req100: 1, 80: 6 }) {
+// Con tope: si la banda ya se agotó, baja a la siguiente de su cadena.
+export function conTope(banda, entregados, topes = { req100: 1, req80: 12, qa80: 4 }) {
+  const cadena = PREMIOS[banda].cadena;
   for (let j = ORDEN.indexOf(banda); j < ORDEN.length; j++) {
     const b = ORDEN[j];
-    if (!topes[b] || (entregados[b] || 0) < topes[b]) return b;
+    if (PREMIOS[b].cadena === cadena && (!topes[b] || (entregados[b] || 0) < topes[b])) return b;
   }
-  return "60";
+  return banda;
 }
 
 export const precioCon = (id) => PREMIOS[id].precio * (100 - pct(id)) / 100;
