@@ -1,6 +1,6 @@
 ---
 id: g6-01
-starts_at: 2026-10-25T19:30:00-05:00
+starts_at: 2026-11-01T19:30:00-05:00
 title: "Grupo 6 · Clase 1 · Instalar las herramientas y entender qué hay detrás"
 published: true
 objectives:
@@ -175,7 +175,7 @@ Hoy dejas tu máquina lista para trabajar con un agente de programación durante
 Instalas VS Code, Docker y OpenCode, y conectas OpenCode al gateway de la clase.
 Después pones nombre a las piezas: agente, proveedor, modelo, parámetros, contexto, MCP y skills.
 Al final tendrás el agente respondiendo en tu terminal y tu primera skill escrita por ti.
-La clase se dicta el domingo 25-10-2026 de 7:30 a 9:30 pm: sirve de guía en vivo y de repaso si la ves grabada.
+La clase se dicta el domingo 01-11-2026 de 7:30 a 9:30 pm: sirve de guía en vivo y de repaso si la ves grabada.
 
 ### El ciclo de esta clase
 

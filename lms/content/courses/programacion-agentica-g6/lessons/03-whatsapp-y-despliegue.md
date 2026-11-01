@@ -1,6 +1,6 @@
 ---
 id: g6-03
-starts_at: 2026-10-28T19:30:00-05:00
+starts_at: 2026-11-04T19:30:00-05:00
 title: "Grupo 6 · Clase 3 · Tu chatbot de WhatsApp: wireframe, prototipo, Lit, Bun + Elysia, PostgreSQL y pruebas"
 published: true
 objectives:

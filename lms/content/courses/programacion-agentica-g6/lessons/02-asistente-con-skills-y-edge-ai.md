@@ -1,6 +1,6 @@
 ---
 id: g6-02
-starts_at: 2026-10-27T19:30:00-05:00
+starts_at: 2026-11-03T19:30:00-05:00
 title: "Grupo 6 · Clase 2 · Construir un asistente con skills, plan de trabajo y Edge AI"
 published: true
 objectives:
