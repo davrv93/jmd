@@ -147,7 +147,7 @@ El interruptor **Con bugs** cambia solo tu tienda; **Reiniciar mi tienda** no to
 
 ## 1 · 9:00 · De la experiencia al caso
 
-1. **Experiencia:** entra a la réplica LIVE 02, agrega Café Altomayo (S/ 17.01) y paga S/ 5. Cambia la cantidad a 2 para observar la promo doble.
+1. **Experiencia:** entra a la réplica LIVE 02, agrega Café Altomayo (S/ 17.01) y paga S/ 5. Luego vuelve al catálogo, agrega otro café y cambia la cantidad a 2 para observar la promo doble.
 2. **Reflexión:** compara lo que ingresaste con lo registrado. ¿Por qué las pruebas de API pueden pasar si el cobro en pantalla está mal?
 3. **Conceptualización:** en LIVE 03 distingue caso de uso y caso de prueba. Define semilla, pasos y resultado; organiza localizadores y acciones en un Page Object.
 4. **Experimentación:** escribe E2E-VEN-002: el pago insuficiente debe rechazarse. Completa seis filas de `docs/matriz.csv`. Usa `getByRole` y `getByLabel`.

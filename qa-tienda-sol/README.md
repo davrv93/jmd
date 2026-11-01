@@ -21,3 +21,5 @@ WEB_HOST=https://jmd-learn.online node comprobar-aislamiento.mjs
 
 Las pruebas crean dos tiendas propias y no tocan datos de otros alumnos.
 Para el kit: `BASE_URL=https://jmd-learn.online/tienda-sol/CODIGO npm test`; `BUGS=0` selecciona la variante corregida durante la semilla de cada prueba. Windows: configurar las variables con `$env:BASE_URL` y `$env:BUGS` en PowerShell.
+
+Después de actualizar el catálogo, `sudo python3 qa-tienda-sol/migrar-escena-preparacion.py` corrige solo una referencia antigua de qa-01 si sigue en estado preparando. La lleva a 01-descarga/ver; no modifica sesiones en vivo ni otras lecciones.

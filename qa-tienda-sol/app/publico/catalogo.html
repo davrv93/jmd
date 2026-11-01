@@ -74,8 +74,11 @@
         resumen.textContent = productos.length ? `${productos.length} productos` : 'No se encontraron productos';
       }
 
+      let ultimaBusqueda = 0;
       async function cargar(q = '') {
+        const peticion = ++ultimaBusqueda;
         const r = await api('/api/productos?q=' + encodeURIComponent(q));
+        if (peticion !== ultimaBusqueda) return; // No sobrescribir una búsqueda nueva con una respuesta antigua.
         if (r.ok) { productos = r.cuerpo; pintar(); }
         else resumen.textContent = r.cuerpo.error ?? 'No se pudo cargar el catálogo';
       }
