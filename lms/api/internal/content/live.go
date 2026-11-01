@@ -26,6 +26,8 @@ type Escena struct {
 	Tareas      []EscTarea `yaml:"tareas" json:"tareas"`
 	Respaldo    string     `yaml:"respaldo" json:"respaldo,omitempty"`
 	Oculta      bool       `yaml:"oculta" json:"oculta,omitempty"`
+	// Dsh muestra el botón «Abrir DeepSeek Harness» en la cabecera de la escena del LIVE (docs/BOTON_DEEPSEEK_HARNESS.md).
+	Dsh bool `yaml:"dsh" json:"dsh,omitempty"`
 
 	LessonID string `yaml:"-" json:"lesson_id"`
 	HTMLPath string `yaml:"-" json:"-"`

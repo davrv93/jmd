@@ -138,6 +138,7 @@ func run() error {
 		srv.VigilarAulas(ctx)
 		slog.Info("aula por alumno activa", "imagen", a.Imagen)
 	}
+	srv.IA = iaDesdeEntorno(dataDir, srv.PublicURL)
 	if srv.Runner.Available() {
 		slog.Info("runner de código activo", "runtime", srv.Runner.Runtime, "timeout", srv.Runner.Timeout)
 	} else {
@@ -200,6 +201,70 @@ func claseDesdeEntorno(dataDir string) *aula.Clase {
 	c.Secreto = secreto
 	slog.Info("clase 3 activa", "base_por_alumno", c.PGActivo(), "whatsapp_por_alumno", c.EvoActivo(), "proxy_npm", c.Proxy != "")
 	return c
+}
+
+// iaDesdeEntorno arma el relé de la «clave de la clase» de DeepSeek Harness (ver internal/httpapi/ia_rele.go):
+//
+//	LMS_IA_GLOBAL_COHORTES=atelecom-1,grupo-9:LMS_DEEPSEEK_API_KEY_G9   grupos con clave de la clase; sin «:VAR» usan
+//	LMS_DEEPSEEK_API_KEY                                                 la clave por defecto
+//	LMS_IA_TOPE_PETICIONES (600/día), LMS_IA_TOPE_TOKENS (4000000/día), LMS_IA_SIMULTANEAS (4) por alumno
+//	LMS_IA_URL_AULA (raíz del LMS vista desde el aula; por defecto LMS_PUBLIC_URL), LMS_IA_UPSTREAM
+//
+// Las claves se leen y se borran del entorno del proceso: no las heredan los «docker» que lanza el LMS.
+func iaDesdeEntorno(dataDir, publicURL string) *httpapi.IAConfig {
+	grupos := listaEntorno("LMS_IA_GLOBAL_COHORTES")
+	defecto := strings.TrimSpace(os.Getenv("LMS_DEEPSEEK_API_KEY"))
+	claves := map[string]string{}
+	vars := []string{"LMS_DEEPSEEK_API_KEY"}
+	for _, g := range grupos {
+		nombre, variable, conVar := strings.Cut(g, ":")
+		nombre = strings.TrimSpace(nombre)
+		clave := defecto
+		if conVar {
+			variable = strings.TrimSpace(variable)
+			clave = strings.TrimSpace(os.Getenv(variable))
+			vars = append(vars, variable)
+		}
+		if nombre == "" || clave == "" {
+			slog.Warn("relé de IA: grupo sin clave; se ignora", "grupo", nombre)
+			continue
+		}
+		claves[nombre] = clave
+	}
+	for _, v := range vars {
+		_ = os.Unsetenv(v)
+	}
+	if len(claves) == 0 {
+		if defecto != "" {
+			slog.Warn("LMS_DEEPSEEK_API_KEY sin LMS_IA_GLOBAL_COHORTES: ningún grupo usa la clave de la clase")
+		}
+		return nil
+	}
+	secreto, err := secretoClase(dataDir)
+	if err != nil {
+		slog.Warn("relé de IA: sin semilla para los tokens del aula; queda apagado", "err", err)
+		return nil
+	}
+	c := &httpapi.IAConfig{
+		Claves: claves, Secreto: secreto, Archivo: httpapi.ArchivoUso(dataDir),
+		Upstream: strings.TrimSpace(os.Getenv("LMS_IA_UPSTREAM")), URLAula: strings.TrimSpace(os.Getenv("LMS_IA_URL_AULA")),
+		TopePeticiones: enteroEntorno("LMS_IA_TOPE_PETICIONES"), TopeTokens: int64(enteroEntorno("LMS_IA_TOPE_TOKENS")),
+		Simultaneas: enteroEntorno("LMS_IA_SIMULTANEAS"),
+	}
+	gs := make([]string, 0, len(claves))
+	for g := range claves {
+		gs = append(gs, g)
+	}
+	slog.Info("relé de IA (clave de la clase) activo", "grupos", strings.Join(gs, ","), "base_aula", c.BaseAula(publicURL))
+	return c
+}
+
+func enteroEntorno(k string) int {
+	v, err := strconv.Atoi(strings.TrimSpace(os.Getenv(k)))
+	if err != nil || v < 0 {
+		return 0
+	}
+	return v
 }
 
 // secretoClase devuelve la semilla de las credenciales por alumno: LMS_AULA_SECRETO o, si falta, una

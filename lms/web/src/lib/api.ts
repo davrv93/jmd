@@ -363,6 +363,11 @@ export interface TicketSorteo {
 
 export const api = {
   config: () => req<AuthConfig>("GET", "/api/v1/auth/config"),
+  // Botón «Abrir DeepSeek Harness» (página /deepseek/).
+  dshEstado: () => req<DshEstado>("GET", "/api/v1/dsh"),
+  dshClave: (clave: string) => req<{ clave: DshEstado["clave"]; propia: boolean }>("POST", "/api/v1/dsh/clave", { clave }),
+  dshOlvidar: () => req<{ clave: DshEstado["clave"]; propia: boolean }>("POST", "/api/v1/dsh/olvidar", {}),
+  dshAbrir: () => req<{ url: string; modo: "propia" | "clase" }>("POST", "/api/v1/dsh/abrir", {}),
   inscripcion: (grupo: string) => req<Inscripcion>("GET", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`),
   inscribirse: (grupo: string, b: { name: string; email: string; password: string }) =>
     req<{ token: string; user: Me; cursos: string[]; sorteo?: SorteoAviso } & PendientePago>("POST", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`, b),
@@ -531,6 +536,17 @@ export interface EscenaLive {
   comandos: { titulo: string; cmd: string }[] | null;
   tareas: { id: string; titulo: string }[] | null;
   orden: number;
+  /** escena.yaml «dsh: true»: muestra el botón «Abrir DeepSeek Harness» (docs/BOTON_DEEPSEEK_HARNESS.md). */
+  dsh?: boolean;
+}
+
+/** GET /api/v1/dsh: qué clave usaría DeepSeek Harness en el aula (sin mostrarla). */
+export interface DshEstado {
+  aula: string;
+  clave: "propia" | "clase" | "ninguna";
+  propia: boolean;
+  clase: boolean;
+  web: boolean;
 }
 
 // Estado del modo LIVE de una lección (GET /api/v1/live/{lesson} y evento «estado» del stream).

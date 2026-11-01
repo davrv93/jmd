@@ -81,7 +81,8 @@ Qué hay dónde:
 | capa del aula | `/opt/dsh-aula.patch.yml` | session-log y OTLP apagados |
 | resumen de uso | `/usr/local/lib/aula-dsh-uso.mjs` | lo usa `aula dsh "tarea"` (lee `--json`, sin `jq`) |
 | comando | `aula dsh clave \| olvidar \| "tarea" \| web [parar] \| estado` | `bin/aula` |
-| estado en el aula | clave `~/.aula-dsh/clave` (0600), `DSH_HOME=~/.dsh`, `/tmp/aula-dsh-web.{pid,log,url}` | todo en tmpfs; nada en `/trabajo` (el Visor lo sirve) |
+| comandos del botón del LMS | `aula dsh clave -` (clave por stdin), `aula dsh rele - \| borrar`, `aula dsh modo`, `aula dsh abrir` | los usa el botón «Abrir DeepSeek Harness» (ver abajo) |
+| estado en el aula | clave `~/.aula-dsh/clave` o relé `~/.aula-dsh/rele` (0600), `DSH_HOME=~/.dsh`, `/tmp/aula-dsh-web.{pid,log,url,firma,modo}` | todo en tmpfs; nada en `/trabajo` (el Visor lo sirve) |
 
 Peso añadido a la imagen: node 122 MB + dsh 301 MB = ~423 MB en disco (~100 MB comprimido). Reconstruir:
 `docker build -t jmd/aula:latest lms/aula` (la etapa `dsh` baja ~250 MB de npm: 1 a 5 min según la red).
@@ -104,6 +105,16 @@ La clave de DeepSeek es del alumno (`aula dsh clave`, se pide sin eco). `dsh --p
 en Ajustes y lee solo `DEEPSEEK_API_KEY`, `<cwd>/.env` o `$DSH_HOME/.env`; por eso `aula` la guarda en `~/.aula-dsh/clave` (tmpfs
 del home, 0600, jamás en `/trabajo`) y la pone en el entorno del proceso hijo, sin pasarla por la línea de comandos. Límite: el
 agente de `dsh` corre en el mismo usuario y su shell hereda el entorno, así que puede leerla; es la clave del propio alumno.
+
+### Botón «Abrir DeepSeek Harness» (sin terminal)
+
+Para alumnos que no usan la terminal, el LIVE tiene un botón que hace todo esto solo: enciende el aula, guarda la clave
+(formulario del LMS, que la escribe por stdin con `aula dsh clave -`), corre `aula dsh abrir` (arranca o reutiliza
+`dsh web`; si cambió la clave lo reinicia: `/tmp/aula-dsh-web.firma` guarda la huella de la credencial, nunca la
+clave) y abre dsh en una pestaña nueva ya autenticado. Para los grupos con **clave de la clase**, al aula no entra la
+clave sino un token del aula y la URL del relé del LMS (`~/.aula-dsh/rele`; `aula` exporta `DEEPSEEK_BASE_URL` y
+`DEEPSEEK_SEARCH_BASE_URL` apuntando al LMS y el token como `DEEPSEEK_API_KEY`). Prioridad: clave propia > clave de la
+clase > formulario. Qué poner en una escena, variables, topes y seguridad: [`docs/BOTON_DEEPSEEK_HARNESS.md`](../../docs/BOTON_DEEPSEEK_HARNESS.md).
 
 ### Memoria con dsh
 

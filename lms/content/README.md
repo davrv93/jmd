@@ -129,6 +129,7 @@ comandos:                   # lo que el alumno copia en su terminal
   - { titulo: Diagnóstico, cmd: "python3 /trabajo/osito/backend/diagnostico.py" }
 respaldo: captura.png       # imagen si el navegador no tiene WebGL
 oculta: false
+dsh: false                  # true: botón «Abrir DeepSeek Harness» en la cabecera (docs/BOTON_DEEPSEEK_HARNESS.md)
 ```
 
 Reglas de `escena.html`: todo inline (sin CDN ni fuentes externas), menos de 300 elementos y

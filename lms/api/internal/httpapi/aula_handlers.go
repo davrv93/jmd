@@ -26,6 +26,10 @@ type AulaMotor interface {
 	Version(ctx context.Context, nombre, dir string) (string, error)
 	Proyectos(ctx context.Context, nombre string) ([]aula.Proyecto, error)
 	Dial(ctx context.Context, userID string, puerto int) (net.Conn, error)
+	// ExecTope: ExecStdin con otro tope de tiempo (stdin puede ser nil). Lo usa el botón de DeepSeek Harness.
+	ExecTope(ctx context.Context, nombre, script string, stdin []byte, tope time.Duration) (string, error)
+	// Inicio: State.StartedAt del aula si corre, o "". Firma el token del relé de IA (caduca al apagar el aula).
+	Inicio(ctx context.Context, userID string) string
 }
 
 // ultimoUsoAula guarda, en memoria, cuándo usó cada alumno su aula (para el apagado por inactividad).
@@ -149,6 +153,7 @@ func (s *Server) aulaApagar(w http.ResponseWriter, r *http.Request, p *Principal
 		internal(w, err)
 		return
 	}
+	s.IA.olvidarInicio(p.ID) // el token del relé de IA de esta aula deja de valer al instante
 	writeJSON(w, 200, map[string]any{"estado": "parado"})
 }
 
@@ -202,6 +207,7 @@ func (s *Server) apagarInactivos(ctx context.Context, ahora time.Time, limite ti
 		nombre := aula.Nombre(id)
 		if err := s.Aula.Parar(ctx, nombre); err == nil {
 			parados = append(parados, nombre)
+			s.IA.olvidarInicio(id)
 		}
 	}
 	return parados

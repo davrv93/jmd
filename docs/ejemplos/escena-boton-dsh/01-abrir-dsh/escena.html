@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abre DeepSeek Harness</title>
+<style>
+  :root { --fondo: #f6f7fb; --tarjeta: #fff; --texto: #1d2230; --suave: #5b6476; --acento: #4f5bd5; --sobre: #fff; --linea: #dde1ea; }
+  :root[data-tema="dark"] { --fondo: #12141b; --tarjeta: #1b1e28; --texto: #e9ecf3; --suave: #a3abbd; --acento: #8d96ff; --sobre: #10121a; --linea: #2c3142; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-tema="light"]) { --fondo: #12141b; --tarjeta: #1b1e28; --texto: #e9ecf3; --suave: #a3abbd; --acento: #8d96ff; --sobre: #10121a; --linea: #2c3142; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1.5rem; background: var(--fondo); color: var(--texto);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .tarjeta { max-width: 34rem; width: 100%; background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 14px; padding: 1.6rem 1.7rem; }
+  h1 { font-size: 1.45rem; margin: 0 0 .5rem; }
+  p { margin: .4rem 0; color: var(--suave); }
+  ol { margin: .8rem 0 1.2rem; padding-left: 1.2rem; }
+  li { margin: .3rem 0; }
+  .acciones { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+  button { font: inherit; font-weight: 650; border-radius: 9px; padding: .7rem 1.1rem; cursor: pointer; border: 1px solid var(--acento); }
+  .principal { background: var(--acento); color: var(--sobre); font-size: 1.05rem; }
+  .secundario { background: transparent; color: var(--texto); border-color: var(--linea); }
+  button:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  .principal:hover { filter: brightness(1.08); }
+  @media (prefers-reduced-motion: no-preference) { .principal { transition: filter .15s; } }
+</style>
+</head>
+<body>
+<main class="tarjeta">
+  <h1>Abre DeepSeek Harness</h1>
+  <p>Un clic y se abre en una pestaña nueva, listo para usar. No necesitas escribir comandos.</p>
+  <ol>
+    <li>Pulsa <b>Abrir DeepSeek Harness</b>.</li>
+    <li>Si te lo pide, pega tu clave de DeepSeek (solo la primera vez).</li>
+    <li>Cuando se abra, vuelve aquí y pulsa <b>Lo logré</b>.</li>
+  </ol>
+  <div class="acciones">
+    <!-- data-jmd-dsh="abrir" abre DeepSeek Harness; data-jmd-dsh="clave" abre solo «Mi clave». -->
+    <button type="button" class="principal" data-jmd-dsh="abrir">Abrir DeepSeek Harness</button>
+    <button type="button" class="secundario" data-jmd-dsh="clave">Mi clave</button>
+  </div>
+</main>
+<script>
+  // Tema del LMS (?tema=dark|light).
+  var tema = new URLSearchParams(location.search).get("tema");
+  if (tema) document.documentElement.setAttribute("data-tema", tema);
+  // El LIVE abre la pestaña: la escena va en un iframe sin permiso para abrir ventanas, así que solo avisa.
+  document.querySelectorAll("[data-jmd-dsh]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      parent.postMessage({ tipo: b.getAttribute("data-jmd-dsh") === "clave" ? "dsh-clave" : "abrir-dsh" }, location.origin);
+    });
+  });
+</script>
+</body>
+</html>

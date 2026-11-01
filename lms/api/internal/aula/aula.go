@@ -254,15 +254,38 @@ func (a *Aula) Exec(ctx context.Context, nombre string, cmd ...string) (string, 
 // ExecStdin ejecuta un script de shell dentro del contenedor y le pasa stdin (para escribir archivos
 // sin interpolar su contenido en la línea de comandos). Tope de 20 s.
 func (a *Aula) ExecStdin(ctx context.Context, nombre, script string, stdin []byte) (string, error) {
+	return a.ExecTope(ctx, nombre, script, stdin, 20*time.Second)
+}
+
+// ExecTope es ExecStdin con otro tope de tiempo (p. ej. «aula dsh abrir», que espera a que dsh web conteste).
+// stdin puede ser nil. Nada de stdin aparece en la línea de comandos del host.
+func (a *Aula) ExecTope(ctx context.Context, nombre, script string, stdin []byte, tope time.Duration) (string, error) {
 	if a.run != nil {
 		return a.run(ctx, "exec-stdin", nombre, script, string(stdin))
 	}
-	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, tope)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, a.Runtime, "exec", "-i", nombre, "sh", "-c", script)
 	cmd.Stdin = bytes.NewReader(stdin)
 	out, err := cmd.CombinedOutput()
 	return strings.TrimSpace(string(out)), err
+}
+
+// Inicio devuelve cuándo arrancó el contenedor del alumno (State.StartedAt) si está corriendo, o "" si no lo
+// está o no existe. Cambia cada vez que el aula se enciende o se recrea: el relé de IA del LMS lo usa para que el
+// token de un aula caduque solo al apagarla.
+func (a *Aula) Inicio(ctx context.Context, userID string) string {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	out, err := a.exec(ctx, "inspect", "-f", "{{.State.Running}} {{.State.StartedAt}}", Nombre(userID))
+	if err != nil {
+		return ""
+	}
+	corriendo, inicio, ok := strings.Cut(strings.TrimSpace(out), " ")
+	if !ok || corriendo != "true" || inicio == "" || strings.HasPrefix(inicio, "0001-") {
+		return ""
+	}
+	return inicio
 }
 
 // ExecStream ejecuta un script de shell dentro del contenedor (en /trabajo), le pasa stdin y entrega la

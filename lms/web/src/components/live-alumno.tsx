@@ -164,11 +164,20 @@ export const LiveAlumno = component$(
     });
 
     // La escena pide abrir el Visor en una ruta ({tipo:"abrir-visor", ruta:"robo3d/index.html"}): sesión 3 del G5.
+    // O abrir DeepSeek Harness en una pestaña nueva ({tipo:"abrir-dsh"}; {tipo:"dsh-clave"} abre solo la clave):
+    // el iframe no puede abrir pestañas (sandbox sin allow-popups), así que la abre el LIVE. El clic dentro de la
+    // escena activa también a la página padre, y window.open se llama aquí mismo, sin esperar a nada.
     // eslint-disable-next-line qwik/no-use-visible-task
     useVisibleTask$(({ cleanup }) => {
       const alRecibir = (e: MessageEvent) => {
         if (e.origin !== location.origin || !marco.value || e.source !== marco.value.contentWindow) return;
         const d = e.data;
+        if (d && (d.tipo === "abrir-dsh" || d.tipo === "dsh-clave")) {
+          const w = window.open(d.tipo === "dsh-clave" ? "/deepseek/?clave=1" : "/deepseek/", "_blank");
+          if (w) w.opener = null;
+          else toast(session, "Tu navegador bloqueó la pestaña nueva. Usa el botón «Abrir DeepSeek Harness» de arriba.", "bad");
+          return;
+        }
         if (!d || d.tipo !== "abrir-visor" || typeof d.ruta !== "string") return;
         const ruta = d.ruta.replace(/^\/+/, "").slice(0, 200);
         if (!/^[\w.\-/]+$/.test(ruta) || ruta.includes("..")) return;
@@ -593,6 +602,7 @@ export const LiveAlumno = component$(
     const compuerta = actual?.compuerta ?? "ninguna";
     const umbral = actual?.umbral_pct ?? 80;
     const conLogre = !!actual?.lo_logre;
+    const conDsh = !!actual?.dsh; // escena.yaml «dsh: true»
     const numero = actual ? `${idx + 1}/${lista.length}` : "";
     const logrado = !!actual && logres.ids.includes(aid);
 
@@ -836,6 +846,16 @@ export const LiveAlumno = component$(
                 </div>
               )}
               <div class="lv-escena-acc">
+                {conDsh && (
+                  <>
+                    <a class="btn sm lv-dsh" href="/deepseek/" target="_blank" rel="noopener" data-testid="abrir-dsh" title="Abre DeepSeek Harness en una pestaña nueva">
+                      <Icon name="sparkles" size={14} /> Abrir DeepSeek Harness
+                    </a>
+                    <a class="lv-ico-btn" href="/deepseek/?clave=1" target="_blank" rel="noopener" aria-label="Mi clave de DeepSeek" title="Mi clave de DeepSeek">
+                      <Icon name="lock" size={16} />
+                    </a>
+                  </>
+                )}
                 {conLogre &&
                   (logrado ? (
                     <span class="live-logrado" role="status">

@@ -47,12 +47,15 @@ type Server struct {
 	LLM          LLMConfig      // valores iniciales (entorno) del gateway de IA; manda lo guardado en la base
 	DataDir      string         // carpeta de datos (clave de firma de insignias badge-key.json); vacío = clave efímera
 	JmrvURL      string         // base del Image Studio (http://jmrv:8790); vacío = sin JMRV (503)
+	// IA: relé de la «clave de la clase» para DeepSeek Harness (ver ia_rele.go); nil = sin clave de la clase.
+	IA *IAConfig
 
 	login     *limiter
 	llm       *llmCache
 	cert      *certCache
 	badge     *badgeKeyCache
 	runLimit  *limiter
+	dshLimite *limiter // POST /api/v1/dsh/abrir por alumno
 	termSlots *slots
 	Aula      AulaMotor // nil = sin aula configurada (503)
 	repaso    *repasoArena
@@ -108,6 +111,9 @@ func (s *Server) Handler() http.Handler {
 	}
 	if s.runLimit == nil {
 		s.runLimit = newLimiter(20, time.Minute)
+	}
+	if s.dshLimite == nil {
+		s.dshLimite = newLimiter(10, time.Minute)
 	}
 	if s.termSlots == nil {
 		s.termSlots = newSlots()
@@ -176,6 +182,13 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/jmrv/", s.authed(s.jmrvProxy))
 	// DeepSeek Harness del aula (puerto 3080): todos los métodos y WebSocket; autentica dentro (ver dsh.go).
 	mux.HandleFunc("/dsh/{sub}/{ruta...}", s.dshProxy)
+	// Botón «Abrir DeepSeek Harness» del LIVE (dsh_boton.go) y relé de la clave de la clase (ia_rele.go).
+	mux.Handle("GET /api/v1/dsh", s.authed(s.dshEstado))
+	mux.Handle("POST /api/v1/dsh/clave", s.authed(s.dshGuardarClave))
+	mux.Handle("POST /api/v1/dsh/olvidar", s.authed(s.dshOlvidarClave))
+	mux.Handle("POST /api/v1/dsh/abrir", s.authed(s.dshAbrir))
+	mux.HandleFunc("/api/v1/ia/anthropic/{resto...}", s.iaRele) // sin sesión: token del aula (x-api-key)
+	mux.Handle("GET /api/v1/ia/uso", s.authed(s.staff(s.iaUsoHoy)))
 	mux.Handle("POST /api/v1/aula/iniciar", s.authed(s.aulaIniciar))
 	mux.Handle("GET /api/v1/aula", s.authed(s.aulaEstado))
 	mux.Handle("POST /api/v1/aula/asistente", s.authed(s.aulaAsistente))
