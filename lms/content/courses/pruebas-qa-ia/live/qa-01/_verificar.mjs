@@ -17,7 +17,7 @@ let fallos = 0;
 const minutos = [0,0,0,0,0,0];
 // Escenas de teoría de la primera versión (pedidas de vuelta el 01-11): tienen su propio diseño, sin la barra de
 // bloque ni la guía lateral. Aquí se declara a qué bloque de la agenda suman sus minutos.
-const TEORIA = { "01-escanea-tu-tienda": 1, "03-piramide-y-casos": 1, "04-page-object-model": 1, "06-semillas-y-flaky": 2, "08-navegadores-sin-interfaz": 3, "11-semilla-del-usuario": 4, "12-asi-lo-hace-una-botica": 4, "14-monitoreo-sla": 5, "15-robot-todo-el-dia": 5, "16-informe-de-pruebas": 6 , "18-qa-arena": 6 };
+const TEORIA = { "01-escanea-tu-tienda": 1, "03-piramide-y-casos": 1, "04-page-object-model": 1, "06-semillas-y-flaky": 2, "08-navegadores-sin-interfaz": 3, "11-semilla-del-usuario": 4, "12-asi-lo-hace-una-botica": 4, "14-monitoreo-sla": 5, "15-robot-todo-el-dia": 5, "17-informe-de-pruebas": 6 , "19-qa-arena": 6 , "16-de-cero-con-opencode": 5 , "09b-pogo-ia": 3 };
 
 function yamlPlano(txt) {
   // Lector mínimo: claves de primer nivel «clave: valor»; las listas (comandos) solo se detectan.
@@ -34,7 +34,9 @@ for (const d of carpetas) {
   const errores = [];
   // Las carpetas van ordenadas por su prefijo NN; se admiten huecos (el numerado final lo hace el instructor).
   const pos = carpetas.indexOf(d);
-  if (pos > 0 && carpetas[pos - 1].slice(0, 2) >= d.slice(0, 2)) errores.push('prefijo repetido o fuera de orden');
+  // Un sufijo de letra (09b-…) es un break intercalado que no altera la numeración.
+  const pref = (n) => /^\d\d[a-z]?/.exec(n)[0];
+  if (pos > 0 && pref(carpetas[pos - 1]) >= pref(d)) errores.push('prefijo repetido o fuera de orden');
   const ry = join(aqui, d, "escena.yaml"), rh = join(aqui, d, "escena.html");
   if (!existsSync(ry)) errores.push("falta escena.yaml");
   if (!existsSync(rh)) errores.push("falta escena.html");

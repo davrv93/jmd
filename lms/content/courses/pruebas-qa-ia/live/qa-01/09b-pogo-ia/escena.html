@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Pogo IA · Taller QA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<style>
+:root { --tinta:#111; --rojo:#e8322f; --azul:#1d4fd8; --amarillo:#ffd21a; --papel:#fff6dc; }
+body {
+  color:var(--tinta);
+  background:radial-gradient(var(--rojo) 18%,transparent 21%) 0 0/14px 14px,
+             radial-gradient(var(--rojo) 18%,transparent 21%) 7px 7px/14px 14px,var(--papel);
+}
+.pogo-live { position:fixed; inset:0; display:grid; grid-template-columns:minmax(280px,32%) 1fr;
+  gap:clamp(10px,1.4vw,24px); padding:clamp(10px,1.4vw,24px); }
+.cartel { position:relative; display:flex; flex-direction:column; gap:clamp(8px,1.1vh,16px); min-height:0;
+  padding:clamp(14px,1.8vw,28px); color:#fff; background:var(--azul); border:5px solid var(--tinta);
+  box-shadow:9px 9px 0 var(--tinta); clip-path:polygon(0 0,100% 1%,98.5% 100%,1% 98%); overflow:hidden; }
+.cartel::before { content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(rgba(255,255,255,.17) 19%,transparent 22%) 0 0/10px 10px; }
+.etiqueta,.titulo,.grito,.reglas,.pie { position:relative; }
+.etiqueta { align-self:flex-start; padding:.45em .75em; color:var(--tinta); background:var(--amarillo);
+  border:3px solid var(--tinta); font:800 clamp(10px,.85vw,15px)/1.1 ui-monospace,monospace;
+  letter-spacing:.1em; transform:rotate(-2deg); }
+.titulo { margin:0; color:white; font:italic 900 clamp(42px,5.5vw,100px)/.86 system-ui,sans-serif;
+  letter-spacing:-.05em; text-transform:uppercase; -webkit-text-stroke:3px var(--tinta); paint-order:stroke fill;
+  text-shadow:5px 5px 0 var(--rojo),9px 9px 0 var(--tinta); }
+.titulo span { display:block; color:var(--amarillo); }
+.grito { display:flex; flex-wrap:wrap; gap:7px; font:italic 900 clamp(17px,1.8vw,31px)/1 system-ui,sans-serif; text-transform:uppercase; }
+.grito b { padding:.16em .36em; color:var(--tinta); background:var(--amarillo); border:3px solid var(--tinta); box-shadow:3px 3px 0 var(--tinta); transform:rotate(-3deg); }
+.grito b:nth-child(2) { color:#fff; background:var(--rojo); transform:rotate(2deg); }
+.reglas { display:grid; gap:8px; margin:0; padding:0; list-style:none;
+  font:600 clamp(13px,1.05vw,19px)/1.25 system-ui,sans-serif; }
+.reglas li { padding:.48em .65em; color:var(--tinta); background:#fff; border:3px solid var(--tinta); box-shadow:3px 3px 0 var(--tinta); }
+.reglas li:nth-child(even) { transform:rotate(.6deg); }
+.reglas b { color:var(--rojo); }
+.pie { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:auto; }
+.boton { cursor:pointer; padding:.65em .9em; color:var(--tinta); background:var(--amarillo); border:4px solid var(--tinta);
+  box-shadow:4px 4px 0 var(--tinta); font:800 clamp(12px,.95vw,17px)/1 system-ui,sans-serif; text-transform:uppercase; }
+.boton[aria-pressed="true"] { color:var(--tinta); background:#fff; }
+.boton:active { transform:translate(2px,2px); box-shadow:2px 2px 0 var(--tinta); }
+.estado { min-height:1.2em; color:#fff; font:700 12px/1.25 system-ui,sans-serif; }
+.marco { position:relative; min-height:0; overflow:hidden; background:#0b1d3a; border:5px solid var(--tinta); box-shadow:9px 9px 0 var(--tinta); }
+.marco iframe { display:block; width:100%; height:100%; border:0; background:#fff6dc; }
+.boing { position:absolute; z-index:2; top:8px; right:16px; padding:.22em .5em; color:#fff; background:var(--rojo);
+  border:4px solid var(--tinta); box-shadow:4px 4px 0 var(--tinta); font:italic 900 clamp(16px,1.7vw,32px)/1 system-ui,sans-serif;
+  transform:rotate(4deg); pointer-events:none; }
+.cargando { position:absolute; inset:0; display:grid; place-items:center; padding:1rem; text-align:center; color:var(--tinta);
+  background:var(--amarillo); font:900 clamp(20px,4vw,42px)/1.1 system-ui,sans-serif; }
+.cargando[hidden] { display:none; }
+@media (max-width:900px),(max-aspect-ratio:1/1) {
+  .pogo-live { grid-template-columns:1fr; grid-template-rows:auto minmax(0,1fr); }
+  .cartel { flex-direction:row; flex-wrap:wrap; align-items:center; gap:8px 12px; }
+  .titulo { font-size:clamp(34px,8vw,62px); }
+  .titulo span { display:inline; }
+  .reglas { display:none; }
+  .pie { margin-top:0; }
+  .etiqueta { font-size:10px; }
+}
+@media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto !important; } }
+</style>
+</head>
+<body>
+<main class="pogo-live" aria-label="Pogo IA para el taller QA">
+  <section class="cartel" aria-labelledby="titulo">
+    <span class="etiqueta">QA CON IA · BREAK 10:25</span>
+    <h1 class="titulo" id="titulo">Pogo <span>IA!</span></h1>
+    <div class="grito" aria-label="Fight, Go, Let's go"><b>Fight!</b><b>Go!</b><b>Let's go!</b></div>
+    <ul class="reglas">
+      <li><b>Todos a la vez:</b> el servidor arma mesas de 3 compañeros + 1 robot; con 15 conectados salen 5 mesas en paralelo. Rebota y pinta tu color.</li>
+      <li>Flechas o <b>WASD</b> para girar; <b>Espacio</b> dispara el cohete. En móvil, cruz y 🚀.</li>
+      <li>Los chips activan preguntas y poderes. Gana quien pinte más casillas en cada ronda.</li>
+      <li>La sala LIVE tiene ranking propio. Los <b>3 primeros</b> del ranking se llevan +100, +60 y +30 en QA Arena.</li>
+    </ul>
+    <div class="pie">
+      <button type="button" class="boton" id="ver-ranking" aria-pressed="false">Ver ranking</button>
+      <span class="estado" id="estado" role="status">Cargando tu acceso…</span>
+    </div>
+  </section>
+  <section class="marco" aria-label="Juego Pogo IA">
+    <span class="boing" aria-hidden="true">¡BOING!</span>
+    <iframe id="juego" title="Pogo IA · sala LIVE del taller QA" allow="autoplay"></iframe>
+    <div class="cargando" id="cargando" role="status">Conectando a la sala Pogo IA…</div>
+  </section>
+</main>
+<script>
+(() => {
+  const frame = document.getElementById("juego");
+  const boton = document.getElementById("ver-ranking");
+  const estado = document.getElementById("estado");
+  const cargando = document.getElementById("cargando");
+  const juegoBase = "/pogo-ia/clase/?lms=1";
+  let juegoUrl = juegoBase;
+  let ranking = false;
+  frame.addEventListener("load", () => { cargando.hidden = true; });
+  fetch("/api/v1/me", { credentials: "same-origin", cache: "no-store" })
+    .then((r) => {
+      if (!r.ok) throw new Error("Inicia sesión en JMD Learning para unirte al LIVE.");
+      return r.json();
+    })
+    .then((me) => {
+      if (!me || !me.id || !me.name) throw new Error("No pudimos leer tu cuenta de JMD Learning.");
+      juegoUrl += "&n=" + encodeURIComponent(me.name) + "&u=" + encodeURIComponent(String(me.id));
+      estado.textContent = "Tu cuenta está lista. Dentro, toca «Jugar en vivo con la clase».";
+      frame.src = juegoUrl;
+    })
+    .catch((e) => {
+      estado.textContent = e.message || "No pudimos conectar tu cuenta; recarga el LIVE.";
+      cargando.textContent = estado.textContent;
+    });
+  boton.addEventListener("click", () => {
+    ranking = !ranking;
+    boton.setAttribute("aria-pressed", String(ranking));
+    boton.textContent = ranking ? "Volver al juego" : "Ver ranking";
+    cargando.hidden = false;
+    cargando.textContent = ranking ? "Cargando el ranking…" : "Volviendo al juego…";
+    frame.src = ranking ? "/pogo-ia/clase/ranking" : juegoUrl;
+  });
+})();
+</script>
+</body>
+</html>
