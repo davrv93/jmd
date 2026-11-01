@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pantalla · Ruleta de Requerimientos</title>
+<meta name="theme-color" content="#0d0b1f">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/estilo.css?v=1">
+<style>
+  main { max-width: 1500px; padding-top: 18px; }
+  .barra { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .dos { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+  @media (max-width: 900px) { .dos { grid-template-columns: 1fr; } }
+  .tablero .celda { font-size: clamp(14px, 2vw, 26px); }
+  .tablero .celda small { font-size: clamp(8px, .9vw, 12px); bottom: 5px; }
+  .rueda { width: min(100%, 46vh); }
+  .lista-gana { max-height: 34vh; overflow: auto; }
+</style>
+</head>
+<body>
+<canvas id="fondo" aria-hidden="true"></canvas>
+<main>
+  <div class="barra">
+    <div>
+      <span class="kick">JMD LEARNING · SORTEO EN VIVO</span>
+      <h1 class="marca" style="font-size:clamp(30px,4vw,54px)">Ruleta de <em>Ingeniería de Requerimientos</em> · cierre del curso</h1>
+    </div>
+    <div class="chips">
+      <span class="chip" id="chip-fase">Cargando…</span>
+      <button class="chip" id="btn-sonido" type="button" style="cursor:pointer;color:inherit">🔇 Activar sonido</button>
+    </div>
+  </div>
+  <div class="dos">
+    <section class="panel">
+      <div class="bandas" id="bandas"></div>
+      <div class="tablero" id="tablero" style="margin-top:16px"></div>
+    </section>
+    <section class="panel">
+      <div class="show">
+        <div class="rueda" style="margin:0 auto">
+          <div class="flecha" aria-hidden="true"></div>
+          <canvas id="rueda" aria-label="Ruleta de premios"></canvas>
+        </div>
+        <div class="ultimo" id="ultimo" style="--c:#ffc857">
+          <p class="num" id="u-num">Esperando al primer valiente…</p>
+          <p class="quien" id="u-quien"></p>
+          <p class="cuanto" id="u-cuanto"></p>
+        </div>
+      </div>
+      <ul class="lista-gana" id="ganadores"></ul>
+    </section>
+  </div>
+</main>
+<script type="module">
+import { api, $, esc, dos, PREMIOS, pct, gajosPremios, tablero, mapaPremios } from "./static/comun.js";
+import { fondo } from "./static/fondo.js";
+import { ruleta } from "./static/ruleta.js";
+const fx = fondo($("#fondo"));
+const rueda = ruleta($("#rueda"));
+let vistos = -1, cola = Promise.resolve(), audio = null;
+const sonido = { on: false };
+$("#btn-sonido").addEventListener("click", () => { sonido.on = !sonido.on; $("#btn-sonido").textContent = sonido.on ? "🔊 Sonido activo" : "🔇 Activar sonido"; });
+function tic() {
+  if (!sonido.on) return;
+  try {
+    audio = audio || new AudioContext();
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.frequency.value = 1400; o.type = "triangle";
+    g.gain.setValueAtTime(0.06, audio.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.05);
+    o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime + 0.06);
+  } catch { /* sin audio */ }
+}
+function ultimo(g, pre) {
+  const p = PREMIOS[g.premio];
+  $("#ultimo").style.setProperty("--c", p.color);
+  $("#u-num").textContent = pre ? `Número ${dos(g.numero)} · girando…` : `Número ${dos(g.numero)} · ${p.nombre}`;
+  $("#u-quien").textContent = g.nombre;
+  $("#u-cuanto").textContent = pre ? "" : `${pct(g.premio)} %`;
+}
+async function animar(g) {
+  rueda.dibujar(gajosPremios());
+  ultimo(g, true);
+  fx.girar(true);
+  await rueda.girarHasta(g.casilla, { alPasar: tic, duracion: 5200 });
+  fx.girar(false);
+  ultimo(g, false);
+  fx.rafaga();
+  await new Promise((ok) => setTimeout(ok, 1200));
+}
+async function cargar() {
+  let e;
+  try { e = await api("api/estado"); } catch { return; }
+  const chip = $("#chip-fase");
+  chip.className = "chip" + (e.fase === "inscripcion" ? " vivo" : "");
+  chip.textContent = e.fase === "inscripcion" ? `Abierto · ${e.ocupados.length} de 50 números` : "Cerrado ✓";
+  $("#bandas").innerHTML = e.premios.map((p) => `<div class="banda ${p.tope && e.quedan[p.id] === 0 ? "agotada" : ""}" style="--c:${p.color}"><b>${p.descuento} %</b><span>${esc(p.nombre)} · ${p.casillas} casillas</span><span class="quedan">${p.tope ? (e.quedan[p.id] === 0 ? "Agotado" : `Quedan ${e.quedan[p.id]} de ${p.tope}`) : "Sin tope"}</span></div>`).join("");
+  tablero($("#tablero"), { ocupados: mapaPremios(e) });
+  $("#ganadores").innerHTML = e.resultado.slice().reverse().map((x) => `<li style="--c:${PREMIOS[x.premio].color}"><span class="n">${dos(x.numero)}</span><span>${esc(x.nombre)}</span><span class="p">${PREMIOS[x.premio].corto}</span></li>`).join("");
+  const n = e.resultado.length;
+  if (vistos < 0) {
+    vistos = n;
+    if (n) { const g = e.resultado[n - 1]; rueda.dibujar(gajosPremios(), g.casilla); ultimo(g, false); } else rueda.dibujar(gajosPremios(), 0);
+    return;
+  }
+  for (; vistos < n; vistos++) { const g = e.resultado[vistos]; cola = cola.then(() => animar(g)).catch(() => {}); }
+}
+await cargar();
+setInterval(() => { if (!document.hidden) cargar(); }, 1500);
+</script>
+</body>
+</html>
