@@ -228,7 +228,7 @@ Obscura conserva el falso rojo por no disparar `change`; no se oculta ni se camb
 
 1. **Experiencia:** reúne la suite, la traza, la tabla de motores y la alerta.
 2. **Reflexión:** en LIVE 13 redacta una pregunta con ID, esperado y recibido; publícala en el hilo o responde a un compañero.
-3. **Conceptualización:** fija tu criterio de aceptación. **La IA propone; el runner decide.** Puedes usar Claude o GPT; estas escenas no hacen llamadas de IA. No se habilitó otro proveedor en el gateway ni se modificó Robo.
+3. **Conceptualización:** fija tu criterio de aceptación. **La IA propone; el runner decide.** Pídele a Claude el caso con POM y revisa sus localizadores; nunca aceptes una prueba que no viste fallar.
 4. **Experimentación:** revisa LIVE 14, sube tu carpeta de pruebas con `EVIDENCIA.md` y entrega **URL + commit** desde la tarea del LMS.
 
 **Lo logré:** la entrega aparece en Mis notas con estado En cola. **Si falla:** revisa URL y commit; la lista de LIVE no registra por sí sola una entrega.
