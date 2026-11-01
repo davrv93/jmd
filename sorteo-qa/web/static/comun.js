@@ -22,36 +22,41 @@ export const hora = (iso) => new Date(iso).toLocaleTimeString("es-PE", { timeZon
 export function tokenLeer() { try { return localStorage.getItem("sorteo-qa-t") || ""; } catch { return ""; } }
 export function tokenGuardar(t) { try { localStorage.setItem("sorteo-qa-t", t); } catch { /* sin almacenamiento */ } }
 
-// Los tres premios (mismo orden y colores que el servidor).
+// Los premios (mismo orden, colores y precios que el servidor). El orden es el
+// orden en que se baja de banda cuando una se agota.
 export const PREMIOS = {
-  100: { color: "#ffc857", nombre: "Oro", texto: "100 %" },
-  90: { color: "#d9dde6", nombre: "Plata", texto: "90 %" },
-  70: { color: "#d2905a", nombre: "Bronce", texto: "70 %" },
+  req100: { color: "#ffd166", nombre: "Requerimientos gratis", texto: "100 %", curso: "Ingeniería de Requerimientos", precio: 40, corto: "Req. 100 %" },
+  80: { color: "#8fd3c7", nombre: "Premio mayor", texto: "80 %", curso: "taller QA", precio: 100, corto: "80 %" },
+  70: { color: "#a9c9f5", nombre: "70 %", texto: "70 %", curso: "taller QA", precio: 100, corto: "70 %" },
+  60: { color: "#e8e3f8", nombre: "60 %", texto: "60 %", curso: "taller QA", precio: 100, corto: "60 %" },
 };
+export const ORDEN = ["req100", "80", "70", "60"];
+export const pct = (id) => (id === "req100" ? 100 : Number(id));
 
-// La casilla i (0..49) de la ruleta: oro en 0, 17 y 34; plata en las 3k+1
-// (menos 34 y 49); el resto, bronce. Igual que franjaDe en el servidor.
+// La casilla i (0..49): la 0 es Requerimientos; las 8k+4, el 80 %; de las 43
+// restantes, la k-ésima es 70 % cuando floor((k+1)·18/43) > floor(k·18/43).
+// Igual que franjaDe en el servidor.
 export function franjaDe(i) {
-  if (i % 17 === 0) return "100";
-  if (i % 3 === 1 && i !== 34 && i !== 49) return "90";
-  return "70";
+  if (i === 0) return "req100";
+  if (i % 8 === 4) return "80";
+  const k = i - 1 - Math.floor((i + 3) / 8);
+  return Math.floor(((k + 1) * 18) / 43) > Math.floor((k * 18) / 43) ? "70" : "60";
 }
 export const FRANJAS = Array.from({ length: 50 }, (_, i) => franjaDe(i));
 
 // Gajos de la ruleta de premios (50 casillas).
-export const gajosPremios = () => FRANJAS.map((f) => ({ texto: PREMIOS[f].texto, color: PREMIOS[f].color }));
+export const gajosPremios = () => FRANJAS.map((f) => ({ texto: PREMIOS[f].corto, color: PREMIOS[f].color }));
 
-// Con tope: si la banda ya se agotó, baja a la siguiente (100 → 90 → 70).
-export function conTope(banda, entregados, topes = { 100: 3, 90: 15 }) {
-  const orden = ["100", "90", "70"];
-  for (let j = orden.indexOf(banda); j < orden.length; j++) {
-    const b = orden[j];
+// Con tope: si la banda ya se agotó, baja a la siguiente de la lista.
+export function conTope(banda, entregados, topes = { req100: 1, 80: 6 }) {
+  for (let j = ORDEN.indexOf(banda); j < ORDEN.length; j++) {
+    const b = ORDEN[j];
     if (!topes[b] || (entregados[b] || 0) < topes[b]) return b;
   }
-  return "70";
+  return "60";
 }
 
-export const precioCon = (precio, premio) => precio * (100 - Number(premio)) / 100;
+export const precioCon = (id) => PREMIOS[id].precio * (100 - pct(id)) / 100;
 
 // ---------- comprobación ----------
 async function sha256Bytes(texto) {
@@ -97,7 +102,7 @@ export function tablero(el, o) {
     if (o.mio === n) cl.push("mio");
     if (o.elegido === n) cl.push("elegido");
     const libre = o.alElegir && !p;
-    html += `<button type="button" class="${cl.join(" ")}" data-n="${n}" ${libre ? "" : "tabindex=-1"} aria-label="Número ${n}${p ? ` (${p} %)` : ""}">${dos(n)}${p ? `<small>${p}%</small>` : ""}</button>`;
+    html += `<button type="button" class="${cl.join(" ")}" data-n="${n}" ${libre ? "" : "tabindex=-1"} aria-label="Número ${n}${p ? ` (${p} %)` : ""}">${dos(n)}${p ? `<small>${PREMIOS[p].corto}</small>` : ""}</button>`;
   }
   el.innerHTML = html;
   if (o.alElegir) {

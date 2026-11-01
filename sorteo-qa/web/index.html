@@ -19,7 +19,7 @@
     <div>
       <span class="kick">JMD LEARNING · SORTEO EN VIVO</span>
       <h1 class="marca">Sorteo <em>QA</em></h1>
-      <p class="sub">Agarra tu número del 1 al 50 y gira la ruleta al instante: <b class="oro">100 %</b>, <b class="oro">90 %</b> o <b class="oro">70 %</b> de descuento en el taller <b>Automatización de pruebas y QA con inteligencia artificial</b> (S/ 100).</p>
+      <p class="sub">Agarra tu número del 1 al 50 y gira la ruleta al instante: <b class="oro">60 %</b>, <b class="oro">70 %</b> o el premio mayor de <b class="oro">80 %</b> en el taller <b>Automatización de pruebas y QA con inteligencia artificial</b> (S/ 100). Y una sola casilla: <b class="oro">100 % en Ingeniería de Requerimientos</b>.</p>
     </div>
     <div class="chips">
       <span class="chip" id="chip-fase">Cargando…</span>
@@ -55,7 +55,7 @@
   <section class="panel" id="elegir" hidden>
     <h2 id="elegir-titulo">Agarra tu <span>número</span></h2>
     <p class="suave" id="elegir-texto">Toca un número libre. Apenas confirmes, la ruleta gira y ves tu premio.</p>
-    <div class="leyenda"><span><b class="libre"></b>Libre</span><span><b class="tomado" style="background:linear-gradient(135deg,#ffc857,#ffe5a3)"></b>Oro 100 %</span><span><b class="tomado" style="background:linear-gradient(135deg,#d9dde6,#fff)"></b>Plata 90 %</span><span><b class="tomado" style="background:linear-gradient(135deg,#d2905a,#f0bb8a)"></b>Bronce 70 %</span></div>
+    <div class="leyenda"><span><b class="libre"></b>Libre</span><span><b class="tomado" style="background:#ffd166"></b>Req. 100 %</span><span><b class="tomado" style="background:#8fd3c7"></b>80 %</span><span><b class="tomado" style="background:#a9c9f5"></b>70 %</span><span><b class="tomado" style="background:#e8e3f8"></b>60 %</span></div>
     <div class="tablero" id="tablero"></div>
     <form id="form" hidden>
       <p style="margin:16px 0 0;font-weight:800;font-size:18px">Número elegido: <span class="oro mono" id="form-num">—</span></p>
@@ -77,7 +77,7 @@
   <!-- premios -->
   <section class="panel">
     <h2>Los <span>premios</span></h2>
-    <p class="suave">La ruleta tiene 50 casillas. Cuando una banda se agota, esos números pasan a la siguiente.</p>
+    <p class="suave">La ruleta tiene 50 casillas. Cuando una banda con tope se agota, esos números pasan a la siguiente.</p>
     <div class="bandas" id="bandas"></div>
   </section>
 
@@ -93,9 +93,9 @@
     <ul class="reglas">
       <li><b>Un número por persona</b>, con tu nombre y tu WhatsApp. El premio queda ligado a tu número: si recargas, lo vuelves a ver.</li>
       <li><b>Al azar de verdad.</b> La huella SHA-256 de la semilla secreta está publicada desde el inicio; al cerrar se revela y puedes comprobar cada premio en tu navegador.</li>
-      <li><b>Topes:</b> 3 cupones de 100 % y 15 de 90 %. Si la ruleta cae en una banda agotada, el cupón baja a la siguiente.</li>
+      <li><b>Topes:</b> 1 cupón de 100 % en Requerimientos y 6 de 80 % en el taller QA. Si la ruleta cae en una banda agotada, el cupón baja a la siguiente (100 → 80 → 70 → 60).</li>
     </ul>
-    <div class="aviso"><b>El cupón es personal:</b> canjeable por el taller QA del próximo grupo o <b>regalable a un amigo</b>, con el mismo porcentaje.</div>
+    <div class="aviso"><b>El cupón es personal:</b> canjeable por el próximo grupo del curso o <b>regalable a un amigo</b>, con el mismo porcentaje. Ingeniería de Requerimientos: lunes 16, 23 y 30 de noviembre, 7:30 p. m.</div>
   </section>
 
   <!-- verificación -->
@@ -106,11 +106,11 @@
     <p id="verif-res" class="chico"></p>
   </section>
 
-  <p class="pie">Canjes por WhatsApp al <a href="https://wa.me/51986149476" target="_blank" rel="noopener">+51 986 149 476</a> · <a href="pantalla">Pantalla</a></p>
+  <p class="pie">Canjes por WhatsApp al <a href="https://wa.me/51986149476" target="_blank" rel="noopener">+51 986 149 476</a></p>
 </main>
 
 <script type="module">
-import { api, $, esc, dos, PREMIOS, gajosPremios, precioCon, tokenLeer, tokenGuardar, comprobar, tablero, mapaPremios } from "./static/comun.js";
+import { api, $, esc, dos, PREMIOS, pct, gajosPremios, precioCon, tokenLeer, tokenGuardar, comprobar, tablero, mapaPremios } from "./static/comun.js";
 import { fondo } from "./static/fondo.js";
 import { ruleta } from "./static/ruleta.js";
 
@@ -126,14 +126,16 @@ function pintarFase() {
 }
 
 function textoPremio(premio) {
-  return `${premio} % de descuento: el taller te queda en <b>S/ ${precioCon(estado.precio, premio)}</b>${premio === "100" ? " (¡gratis!)" : ""}.`;
+  const p = PREMIOS[premio];
+  if (premio === "req100") return `Ingeniería de Requerimientos (lunes 16, 23 y 30 de noviembre, 7:30 p. m.) te queda <b>gratis</b>: S/ ${p.precio} → S/ 0.`;
+  return `${pct(premio)} % de descuento en el taller QA: S/ ${p.precio} → <b>S/ ${precioCon(premio)}</b>.`;
 }
 
 function pintarCanje(yo) {
   $("#mi-canje").hidden = false;
   $("#mi-nombre").textContent = yo.nombre;
   $("#mi-numero").textContent = dos(yo.numero);
-  $("#btn-wa").href = "https://wa.me/51986149476?text=" + encodeURIComponent(`Hola, soy ${yo.nombre}. Gané ${yo.premio} % de descuento en el taller de QA con el número ${dos(yo.numero)} del Sorteo QA. Quiero canjear mi cupón.`);
+  $("#btn-wa").href = "https://wa.me/51986149476?text=" + encodeURIComponent(`Hola, soy ${yo.nombre}. Gané ${pct(yo.premio)} % de descuento en ${PREMIOS[yo.premio].curso === "taller QA" ? "el taller de QA" : PREMIOS[yo.premio].curso} con el número ${dos(yo.numero)} del Sorteo QA. Quiero canjear mi cupón.`);
   $("#regalo-num").textContent = dos(yo.numero);
   $("#regalo-nombre").textContent = yo.nombre;
 }
@@ -149,7 +151,7 @@ async function pintarMio(animar) {
   if (animar) {
     rueda.dibujar(gajosPremios());
     $("#mi-titular").textContent = "Girando la ruleta…";
-    $("#mi-detalle").textContent = `Tu número es el ${dos(yo.numero)}. 3 casillas de oro, 15 de plata y 32 de bronce.`;
+    $("#mi-detalle").textContent = `Tu número es el ${dos(yo.numero)}. 1 casilla de Requerimientos, 6 de 80 %, 18 de 70 % y 25 de 60 %.`;
     fx.girar(true);
     await rueda.girarHasta(yo.casilla, { duracion: 6000 });
     fx.girar(false);
@@ -157,9 +159,11 @@ async function pintarMio(animar) {
   } else {
     rueda.dibujar(gajosPremios(), yo.casilla);
   }
-  $("#mi-titular").innerHTML = `¡Ganaste <span style="color:${p.color}">${yo.premio} %</span> de descuento!`;
+  $("#mi-titular").innerHTML = yo.premio === "req100"
+    ? `¡<span class="oro">100 %</span> en Ingeniería de Requerimientos!`
+    : `¡Ganaste <span class="oro">${pct(yo.premio)} %</span> de descuento en el taller QA!`;
   let extra = "";
-  if (yo.banda !== yo.premio) extra = ` La ruleta cayó en ${PREMIOS[yo.banda].nombre.toLowerCase()} (${yo.banda} %), pero esa banda ya se agotó: tu cupón es el siguiente.`;
+  if (yo.banda !== yo.premio) extra = ` La ruleta cayó en «${PREMIOS[yo.banda].nombre}» (${pct(yo.banda)} %), pero esa banda ya se agotó: tu cupón es el siguiente.`;
   $("#mi-detalle").innerHTML = textoPremio(yo.premio) + extra;
   pintarCanje(yo);
 }
@@ -177,8 +181,8 @@ function pintarElegir() {
 function pintarBandas() {
   $("#bandas").innerHTML = estado.premios.map((p) => {
     const quedan = p.tope ? estado.quedan[p.id] : null;
-    return `<div class="banda ${quedan === 0 ? "agotada" : ""}" style="--c:${p.color}"><b>${p.descuento} %</b><span>${esc(p.nombre)} · ${p.casillas} de 50 casillas (${Math.round(p.casillas * 2)} %)</span>
-      <span class="quedan">${p.tope ? (quedan === 0 ? "Agotado" : `Quedan ${quedan} de ${p.tope}`) : "Sin tope"} · S/ 100 → S/ ${precioCon(100, p.id)}</span></div>`;
+    return `<div class="banda ${quedan === 0 ? "agotada" : ""}" style="--c:${p.color}"><b>${p.descuento} %</b><span>${esc(p.id === "req100" ? "Ingeniería de Requerimientos" : "Taller QA · " + p.nombre)} · ${p.casillas} de 50 casillas (${Math.round(p.casillas * 2)} %)</span>
+      <span class="quedan">${p.tope ? (quedan === 0 ? "Agotado" : `Quedan ${quedan} de ${p.tope}`) : "Sin tope"} · S/ ${p.precio} → S/ ${precioCon(p.id)}</span></div>`;
   }).join("");
 }
 
@@ -186,7 +190,7 @@ function pintarGanadores() {
   const g = estado.resultado;
   $("#ganadores-panel").hidden = !g.length;
   $("#gan-total").textContent = g.length ? `· ${g.length}` : "";
-  $("#ganadores").innerHTML = g.slice().reverse().map((x) => `<li style="--c:${PREMIOS[x.premio].color}"><span class="n">${dos(x.numero)}</span><span>${esc(x.nombre)}</span><span class="p">${x.premio} %</span></li>`).join("");
+  $("#ganadores").innerHTML = g.slice().reverse().map((x) => `<li style="--c:${PREMIOS[x.premio].color}"><span class="n">${dos(x.numero)}</span><span>${esc(x.nombre)}</span><span class="p">${PREMIOS[x.premio].corto}</span></li>`).join("");
 }
 
 async function cargar(animar = false) {

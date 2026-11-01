@@ -39,7 +39,7 @@
         <button class="btn" id="btn-cerrar" type="button">Cerrar la inscripción (revela la semilla)</button>
         <button class="btn sec" id="btn-reabrir" type="button">Reabrir (semilla nueva)</button>
         <button class="btn sec" id="btn-csv" type="button">⬇ Exportar CSV</button>
-        <a class="btn sec" href="pantalla" target="_blank" rel="noopener">Abrir la pantalla</a>
+        
       </div>
       <p class="error" id="error"></p>
       <p class="verif" id="huellas"></p>
@@ -88,14 +88,14 @@ const adm = (ruta, cuerpo) => api(ruta, cuerpo === undefined ? { headers: { "X-C
 function pintar(e) {
   $("#login").hidden = true; $("#panel").hidden = false;
   $("#fase").textContent = e.fase === "inscripcion" ? "inscripción abierta" : "cerrado";
-  $("#resumen").textContent = `${e.personasLista.length} de 50 números · oro ${e.entregados["100"]}/3 · plata ${e.entregados["90"]}/15 · bronce ${e.entregados["70"]}`;
+  $("#resumen").textContent = `${e.personasLista.length} de 50 números · Req. 100 % ${e.entregados["req100"]}/1 · 80 % ${e.entregados["80"]}/6 · 70 % ${e.entregados["70"]} · 60 % ${e.entregados["60"]}`;
   $("#btn-cerrar").hidden = e.fase !== "inscripcion";
   $("#btn-reabrir").hidden = e.fase !== "cerrado";
   $("#huellas").textContent = `Huella de la semilla: ${e.compromiso}` + (e.semilla ? ` · Semilla revelada: ${e.semilla}` : "");
   $("#total").textContent = e.personasLista.length ? `· ${e.personasLista.length}` : "";
   $("#personas").innerHTML = e.personasLista.map((p, i) => `
     <tr><td>${i + 1}</td><td class="mono">${dos(p.numero)}</td><td>${esc(p.nombre)}</td><td class="mono">${esc(p.telefono)}</td>
-      <td><b>${p.premio} %</b></td><td class="suave">${p.banda} %${p.banda !== p.premio ? " (tope)" : ""}</td><td class="mono">${hora(p.creadoEn)}</td></tr>`).join("")
+      <td><b>${p.premio}</b></td><td class="suave">${p.banda}${p.banda !== p.premio ? " (tope)" : ""}</td><td class="mono">${hora(p.creadoEn)}</td></tr>`).join("")
     || `<tr><td colspan="7" class="suave">Aún no hay nadie.</td></tr>`;
 }
 async function accion(ruta, cuerpo) {

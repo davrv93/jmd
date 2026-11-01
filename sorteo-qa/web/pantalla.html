@@ -31,7 +31,6 @@
     </div>
     <div class="chips">
       <span class="chip" id="chip-fase">Cargando…</span>
-      <span class="chip">jmd-learn.online/sorteo-qa</span>
       <button class="chip" id="btn-sonido" type="button" style="cursor:pointer;color:inherit">🔇 Activar sonido</button>
     </div>
   </div>
@@ -57,7 +56,7 @@
   </div>
 </main>
 <script type="module">
-import { api, $, esc, dos, PREMIOS, gajosPremios, precioCon, tablero, mapaPremios } from "./static/comun.js";
+import { api, $, esc, dos, PREMIOS, pct, gajosPremios, precioCon, tablero, mapaPremios } from "./static/comun.js";
 import { fondo } from "./static/fondo.js";
 import { ruleta } from "./static/ruleta.js";
 const fx = fondo($("#fondo"));
@@ -78,9 +77,9 @@ function tic() {
 function ultimo(g, pre) {
   const p = PREMIOS[g.premio];
   $("#ultimo").style.setProperty("--c", p.color);
-  $("#u-num").textContent = pre ? `Número ${dos(g.numero)} · girando…` : `Número ${dos(g.numero)} · ${p.nombre}`;
+  $("#u-num").textContent = pre ? `Número ${dos(g.numero)} · girando…` : `Número ${dos(g.numero)} · ${p.curso}`;
   $("#u-quien").textContent = g.nombre;
-  $("#u-cuanto").textContent = pre ? "" : `${g.premio} %`;
+  $("#u-cuanto").textContent = pre ? "" : `${pct(g.premio)} %`;
 }
 async function animar(g) {
   rueda.dibujar(gajosPremios());
@@ -98,9 +97,9 @@ async function cargar() {
   const chip = $("#chip-fase");
   chip.className = "chip" + (e.fase === "inscripcion" ? " vivo" : "");
   chip.textContent = e.fase === "inscripcion" ? `Abierto · ${e.ocupados.length} de 50 números` : "Cerrado ✓";
-  $("#bandas").innerHTML = e.premios.map((p) => `<div class="banda ${p.tope && e.quedan[p.id] === 0 ? "agotada" : ""}" style="--c:${p.color}"><b>${p.descuento} %</b><span>${esc(p.nombre)} · ${p.casillas} casillas</span><span class="quedan">${p.tope ? (e.quedan[p.id] === 0 ? "Agotado" : `Quedan ${e.quedan[p.id]} de ${p.tope}`) : "Sin tope"} · S/ ${precioCon(100, p.id)}</span></div>`).join("");
+  $("#bandas").innerHTML = e.premios.map((p) => `<div class="banda ${p.tope && e.quedan[p.id] === 0 ? "agotada" : ""}" style="--c:${p.color}"><b>${p.descuento} %</b><span>${esc(p.nombre)} · ${p.casillas} casillas</span><span class="quedan">${p.tope ? (e.quedan[p.id] === 0 ? "Agotado" : `Quedan ${e.quedan[p.id]} de ${p.tope}`) : "Sin tope"} · S/ ${p.precio} → S/ ${precioCon(p.id)}</span></div>`).join("");
   tablero($("#tablero"), { ocupados: mapaPremios(e) });
-  $("#ganadores").innerHTML = e.resultado.slice().reverse().map((x) => `<li style="--c:${PREMIOS[x.premio].color}"><span class="n">${dos(x.numero)}</span><span>${esc(x.nombre)}</span><span class="p">${x.premio} %</span></li>`).join("");
+  $("#ganadores").innerHTML = e.resultado.slice().reverse().map((x) => `<li style="--c:${PREMIOS[x.premio].color}"><span class="n">${dos(x.numero)}</span><span>${esc(x.nombre)}</span><span class="p">${PREMIOS[x.premio].corto}</span></li>`).join("");
   const n = e.resultado.length;
   if (vistos < 0) {
     vistos = n;
