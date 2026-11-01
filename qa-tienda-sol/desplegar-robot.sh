@@ -15,7 +15,9 @@ rsync -az --delete --exclude node_modules --exclude test-results --exclude playw
 ssh -i "$LLAVE" "$SERVIDOR" bash -s <<'REMOTO'
 set -euo pipefail
 cd ~/qa-taller-kit/robot
-PUERTO_ROBOT=18625 BASE_URL=https://jmd-learn.online/tienda-sol/ CADA_MIN=10 sudo -E docker compose up -d --build 2>&1 | tail -3
+# compose lee .env (sudo no conserva las variables del entorno).
+printf 'PUERTO_ROBOT=18625\nBASE_URL=https://jmd-learn.online/tienda-sol/\nCADA_MIN=10\n' > .env
+sudo docker compose up -d --build 2>&1 | tail -3
 if ! sudo test -e /etc/nginx/snippets/qa-robot.conf; then
   sudo tee /etc/nginx/snippets/qa-robot.conf >/dev/null <<'NGINX'
 # Robot de pruebas del taller QA: página de estado + reporte HTML (puerto 18625).
