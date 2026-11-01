@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Portal de resultados y trace</title>
+<!--
+  Escena del modo LIVE (taller qa-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: el portal arma la matriz módulo × caso desde un JSON con la forma del reporter JSON de Playwright.
+  Clic en una celda abre su reproducción paso a paso (como «npx playwright show-trace»): línea de tiempo de
+  acciones, pantalla antes/después dibujada en HTML, la petición de red y el error. Los dos casos en rojo son los
+  dos bugs (pago insuficiente aceptado; promo aplicada dos veces): llegar a su paso fallido los marca como
+  encontrados. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .2); }
+.esc { padding: 1.7vh 2.6vw 1.5vh; gap: 1.1vh; }
+.esc-cuerpo { gap: 1.1vh; }
+.esc-titulo { font-size: 1.25em; }
+.q-btn { font: 700 .62em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.q-btn:hover { transform: translateY(-1px); }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-et { font-size: .56em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.q-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: center; }
+
+.q-b6 { display: grid; grid-template-columns: .88fr 1.3fr; gap: 1.1vw; min-height: 0; }
+.q-portal { padding: .6em .85em; display: grid; gap: .45em; align-content: start; min-width: 0; }
+.q-res { display: flex; gap: .4em; flex-wrap: wrap; align-items: center; }
+.q-mat { display: grid; grid-template-columns: 5.4em repeat(4, 1fr); gap: .32em; font-size: .7em; align-items: center; }
+.q-mat .m { font-weight: 800; }
+.q-cel { font: 700 .92em/1.1 var(--mono); padding: .5em .3em; border-radius: .45em; border: 2px solid transparent; cursor: pointer; text-align: center; color: #fff; transition: transform .15s; }
+.q-cel:hover { transform: translateY(-1px); }
+.q-cel.passed { background: var(--ok); } .q-cel.failed { background: var(--bad); } .q-cel.skipped { background: var(--s3); color: var(--muted); }
+.q-cel.pend { background: var(--s2); color: var(--muted); }
+.q-cel.sel { border-color: var(--fg); box-shadow: 0 0 0 2px var(--s1) inset; }
+.q-cel.nuevo { animation: esc-pop .3s ease-out both; }
+.q-json { margin: 0; font: 600 .52em/1.45 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .6em; padding: .5em .7em; white-space: pre; overflow: hidden; border: 1px solid rgba(190,185,255,.22); }
+.q-json .k { color: #c3b9ff; } .q-json .s { color: #9fe0b0; } .q-json .r { color: #ff9b9b; }
+.q-bugs { display: grid; gap: .3em; }
+.q-bug { display: grid; grid-template-columns: 1.6em 1fr; gap: .5em; align-items: center; font-size: .62em; padding: .3em .6em; border-radius: .5em; background: var(--s2); }
+.q-bug i { font-style: normal; display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--s3); color: var(--muted); font-weight: 800; }
+.q-bug.ok i { background: var(--ok); color: #fff; }
+.q-bug b { color: var(--bad); }
+
+.q-tr { padding: .6em .85em; display: grid; gap: .45em; align-content: start; min-width: 0; }
+.q-trcab { display: grid; grid-template-columns: 1fr auto; gap: .2em .8em; align-items: center; }
+.q-trcab h2 { margin: 0; font: 800 .78em var(--mono); }
+.q-trcab .esc-fila { gap: .35em; }
+p.q-err { grid-column: 1 / -1; margin: 0; font: 600 .56em/1.4 var(--mono); padding: .35em .6em; border-radius: .45em; background: var(--bad-bg); color: var(--bad); white-space: pre-wrap; }
+p.q-err.ok { background: var(--ok-bg); color: var(--ok); }
+p.q-err.sk { background: var(--s2); color: var(--muted); }
+.q-linea { display: flex; gap: .25em; flex-wrap: wrap; }
+.q-paso { font: 700 .54em/1.2 var(--mono); padding: .35em .55em; border-radius: .4em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.q-paso.ok { border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+.q-paso.no { border-color: var(--bad); color: var(--bad); }
+.q-paso.act { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.q-paso.act.no { background: var(--bad); color: #fff; }
+.q-snaps { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+.q-snap { display: grid; gap: .2em; }
+.q-pos { font-size: .52em; border: 1px solid var(--line2); border-radius: .6em; overflow: hidden; background: #fff; color: #1d1b29; min-height: 15.5em; }
+.q-pos .bar { background: #5a49d6; color: #fff; font-weight: 800; padding: .4em .7em; display: flex; justify-content: space-between; }
+.q-pos .cu { padding: .6em .8em; display: grid; gap: .45em; }
+.q-pos .fld { display: grid; gap: .1em; }
+.q-pos .fld span { font-weight: 700; color: #5c5966; }
+.q-pos .in { border: 1px solid #c9c6dc; border-radius: .35em; padding: .3em .5em; min-height: 1.9em; font-family: var(--mono); }
+.q-pos .bt { justify-self: start; background: #5a49d6; color: #fff; border-radius: .4em; padding: .35em .9em; font-weight: 800; }
+.q-pos .bt.sec { background: #ece9fb; color: #3b2fa0; }
+.q-pos .prods { display: flex; gap: .35em; flex-wrap: wrap; }
+.q-pos .prod { border: 1px solid #c9c6dc; border-radius: .4em; padding: .25em .5em; font-weight: 700; }
+.q-pos .lin { display: flex; justify-content: space-between; font-family: var(--mono); border-bottom: 1px dashed #d8d5e8; padding-bottom: .2em; }
+.q-pos .tot { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.15em; }
+.q-pos .toast { border-radius: .4em; padding: .35em .6em; font-weight: 800; background: #e3f4e8; color: #136a33; }
+.q-pos .toast.err { background: #fbe4e4; color: #b11f1f; }
+.q-pos .hl { outline: 3px solid #e0115f; outline-offset: 2px; }
+.q-pos .vacio { color: #8a879a; font-style: italic; }
+.q-det { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+.q-det p { margin: 0; font: 600 .56em/1.4 var(--mono); padding: .35em .6em; border-radius: .45em; background: var(--s2); }
+.q-det p.red { background: var(--warn-bg); color: var(--warn); }
+.q-cmd { margin: 0; font: 600 .56em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .6em; padding: .45em .8em; white-space: pre; overflow: hidden; border: 1px solid rgba(190,185,255,.22); }
+.q-cmd .p { color: #8e7dff; } .q-cmd .c { color: #8f8ab8; }
+.q-logro { animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+@media (prefers-reduced-motion: reduce) { .q-cel.nuevo { animation: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">QA con IA · E06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="q-cab">
+      <h1 class="esc-titulo a-in">Portal de resultados y <em>reproducción paso a paso</em></h1>
+      <button type="button" class="q-btn pri a-in" style="--d:.1s" id="correr">Volver a correr</button>
+    </div>
+    <div class="q-b6">
+      <section class="esc-card q-portal a-in" style="--d:.15s" aria-label="Portal">
+        <span class="q-et">Portal · matriz módulo × caso · clic en una celda</span>
+        <div class="q-res" id="res"></div>
+        <div class="q-mat" id="mat"></div>
+        <span class="q-et">resultados.json (reporter JSON de Playwright, recortado)</span>
+        <pre class="q-json" id="json"></pre>
+        <div class="q-bugs">
+          <div class="q-bug" id="bug1"><i>1</i><span><b>Pago insuficiente aceptado:</b> acepta S/ 0,90 por una venta de S/ 1,80.</span></div>
+          <div class="q-bug" id="bug2"><i>2</i><span><b>Promo aplicada dos veces:</b> 10 % + 10 % con un doble clic.</span></div>
+        </div>
+      </section>
+      <section class="esc-card q-tr a-in" style="--d:.25s" aria-label="Reproducción del caso">
+        <div class="q-trcab">
+          <h2 id="tr-tit">venta.spec.ts › E2E-VEN-002 efectivo-insuficiente</h2>
+          <div class="esc-fila"><button type="button" class="q-btn" id="ant" aria-label="Paso anterior">◀</button><button type="button" class="q-btn pri" id="play">▶ Reproducir</button><button type="button" class="q-btn" id="sig" aria-label="Paso siguiente">▶</button></div>
+          <p class="q-err" id="tr-err"></p>
+        </div>
+        <div class="q-linea" id="linea"></div>
+        <div class="q-snaps">
+          <div class="q-snap"><span class="q-et">Antes</span><div class="q-pos" id="antes"></div></div>
+          <div class="q-snap"><span class="q-et">Después</span><div class="q-pos" id="despues"></div></div>
+        </div>
+        <div class="q-det"><p id="det-acc"></p><p id="det-red"></p></div>
+<pre class="q-cmd"><span class="p">$</span> npx playwright show-trace test-results/*VEN-002*/trace.zip   <span class="c"># esta misma vista, real</span>
+<span class="p">$</span> npx playwright show-report                                         <span class="c"># reporte HTML con el trace adjunto</span></pre>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota" id="pie">Un caso rojo sin su trace es una queja; con su trace es un bug que alguien puede arreglar</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Resultado de la corrida con la forma del reporter JSON de Playwright (suites → specs → tests → results).
+  var RESULTADOS = { suites: [
+    { title: "login.spec.ts", m: "Login", specs: [["E2E-LOG-001", "passed"], ["E2E-LOG-002", "passed"], ["E2E-LOG-003", "passed"], ["E2E-LOG-004", "skipped"]] },
+    { title: "catalogo.spec.ts", m: "Catálogo", specs: [["E2E-CAT-001", "passed"], ["E2E-CAT-002", "passed"], ["E2E-CAT-003", "passed"], ["E2E-CAT-004", "passed"]] },
+    { title: "venta.spec.ts", m: "Venta", specs: [["E2E-VEN-001", "passed"], ["E2E-VEN-002", "passed"], ["E2E-VEN-002", "failed"], ["E2E-VEN-003", "failed"]] },
+    { title: "caja.spec.ts", m: "Caja", specs: [["E2E-CAJ-001", "passed"], ["E2E-CAJ-002", "passed"], ["E2E-CAJ-003", "skipped"], ["E2E-CAJ-004", "passed"]] },
+    { title: "reporte.spec.ts", m: "Reporte", specs: [["E2E-REP-001", "passed"], ["E2E-REP-002", "passed"], ["E2E-REP-003", "skipped"], ["E2E-REP-004", "passed"]] }
+  ] };
+  $("json").innerHTML = '{ <span class="k">"suites"</span>: [ …, { <span class="k">"title"</span>: <span class="s">"venta.spec.ts"</span>, <span class="k">"specs"</span>: [ …,\n  { <span class="k">"title"</span>: <span class="s">"E2E-VEN-002 efectivo-insuficiente"</span>, <span class="k">"tests"</span>: [{ <span class="k">"results"</span>: [{\n    <span class="k">"status"</span>: <span class="r">"failed"</span>, <span class="k">"duration"</span>: 2140,\n    <span class="k">"attachments"</span>: [{ <span class="k">"name"</span>: <span class="s">"trace"</span>, <span class="k">"path"</span>: <span class="s">"…/trace.zip"</span> }] }] }] } … }';
+
+  // ---- Pantallas del POS dibujadas en HTML (estado → marcado). hl = elemento sobre el que actúa el paso.
+  function e(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function pos(s, hl) {
+    var h = function (k) { return hl === k ? " hl" : ""; };
+    if (!s) return '<div class="bar"><span>about:blank</span></div><div class="cu"><span class="vacio">(página en blanco)</span></div>';
+    if (s.p === "login") return '<div class="bar"><span>Tienda Sol</span><span>/login</span></div><div class="cu">' +
+      '<div class="fld"><span>Usuario</span><div class="in' + h("u") + '">' + e(s.u || "") + '</div></div>' +
+      '<div class="fld"><span>Clave</span><div class="in' + h("c") + '">' + e(s.c || "") + '</div></div>' +
+      '<div class="bt' + h("ing") + '">Ingresar</div></div>';
+    var lin = (s.items || []).map(function (i) { return '<div class="lin"><span>' + e(i[0]) + '</span><span>' + e(i[1]) + '</span></div>'; }).join("") || '<span class="vacio">sin productos</span>';
+    return '<div class="bar"><span>Tienda Sol · Caja</span><span>/venta</span></div><div class="cu">' +
+      '<div class="prods"><span class="prod' + h("agua") + '">Agua San Luis 625 ml</span><span class="prod' + h("cafe") + '">Café Altomayo 200 g</span></div>' + lin +
+      '<div class="tot' + h("tot") + '"><span>Total</span><span>S/ ' + e(s.t || "0,00") + '</span></div>' +
+      (s.promo ? '<div class="bt sec' + h("promo") + '">Aplicar promo 10 %</div>' : "") +
+      (s.ef !== undefined ? '<div class="fld"><span>Efectivo recibido</span><div class="in' + h("ef") + '">' + e(s.ef) + '</div></div><div class="bt' + h("cob") + '">Cobrar</div>' : "") +
+      (s.toast ? '<div class="toast' + (s.toastErr ? " err" : "") + h("toast") + '">' + e(s.toast) + '</div>' : "") + "</div>";
+  }
+  var L0 = { p: "login" }, L1 = { p: "login", u: "cajero" }, L2 = { p: "login", u: "cajero", c: "••••••••" };
+  var V0 = { p: "venta", ef: "" }, V1 = { p: "venta", items: [["Agua San Luis 625 ml", "1,80"]], t: "1,80", ef: "" };
+  var V2 = { p: "venta", items: [["Agua San Luis 625 ml", "1,80"]], t: "1,80", ef: "0.90" };
+  var V3 = { p: "venta", items: [["Agua San Luis 625 ml", "1,80"]], t: "1,80", ef: "", toast: "Venta registrada · vuelto S/ 0,00" };
+  var P0 = { p: "venta", promo: 1 }, P1 = { p: "venta", promo: 1, items: [["Café Altomayo 200 g", "18,90"]], t: "18,90" };
+  var P2 = { p: "venta", promo: 1, items: [["Café Altomayo 200 g", "18,90"], ["Promo 10 %", "−1,89"]], t: "17,01" };
+  var P3 = { p: "venta", promo: 1, items: [["Café Altomayo 200 g", "18,90"], ["Promo 10 %", "−1,89"], ["Promo 10 %", "−1,70"]], t: "15,31" };
+  var LOGIN = [
+    { a: "goto('/login')", ms: 310, s0: null, s1: L0 },
+    { a: "getByLabel('Usuario').fill('cajero')", ms: 42, s0: L0, s1: L1, hl: "u" },
+    { a: "getByLabel('Clave').fill('••••')", ms: 38, s0: L1, s1: L2, hl: "c" },
+    { a: "getByRole('button', { name: 'Ingresar' }).click()", ms: 260, s0: L2, s1: V0, hl: "ing", red: "POST /api/login → 200" }
+  ];
+  var TRAZAS = {
+    "E2E-VEN-002": { tit: "venta.spec.ts › E2E-VEN-002 efectivo-insuficiente", bug: 1, err: "Error: expect(getByRole('alert')).toHaveText('Efectivo insuficiente')\n  Esperado: «Efectivo insuficiente» · Recibido: «Venta registrada · vuelto S/ 0,00»",
+      pasos: LOGIN.concat([
+        { a: "getByText('Agua San Luis 625 ml').click()", ms: 55, s0: V0, s1: V1, hl: "agua" },
+        { a: "getByLabel('Efectivo recibido').fill('0.90')", ms: 40, s0: V1, s1: V2, hl: "ef" },
+        { a: "getByRole('button', { name: 'Cobrar' }).click()", ms: 190, s0: V2, s1: V3, hl: "cob", red: "POST /api/ventas { total: 1.80, pago: 1.80 } → 201  ← mandó pago = total", sosp: 1 },
+        { a: "expect(getByRole('alert')).toHaveText('Efectivo insuficiente')", ms: 5000, s0: V3, s1: V3, hl: "toast", falla: 1 }
+      ]) },
+    "E2E-VEN-003": { tit: "venta.spec.ts › E2E-VEN-003 promo-una-vez", bug: 2, err: "Error: expect(getByTestId('total')).toHaveText('S/ 17,01')\n  Esperado: «S/ 17,01» · Recibido: «S/ 15,31»",
+      pasos: [
+        { a: "goto('/venta')  // sesión guardada (storageState)", ms: 280, s0: null, s1: P0 },
+        { a: "getByText('Café Altomayo 200 g').click()", ms: 60, s0: P0, s1: P1, hl: "cafe" },
+        { a: "getByRole('button', { name: 'Aplicar promo 10 %' }).click()", ms: 120, s0: P1, s1: P2, hl: "promo", red: "POST /api/carrito/promo → 200" },
+        { a: "getByRole('button', { name: 'Aplicar promo 10 %' }).click()  // el doble clic del cajero", ms: 115, s0: P2, s1: P3, hl: "promo", red: "POST /api/carrito/promo → 200  ← la API no la rechaza", sosp: 1 },
+        { a: "expect(getByTestId('total')).toHaveText('S/ 17,01')", ms: 5000, s0: P3, s1: P3, hl: "tot", falla: 1 }
+      ] }
+  };
+  function trazaVerde(id, suite) {
+    return { tit: suite + " › " + id, err: "✓ pasó en " + (900 + (id.charCodeAt(7) * 37) % 1400) + " ms · " + (LOGIN.length + 1) + " pasos", ok: 1,
+      pasos: LOGIN.concat([{ a: "expect(page).toHaveURL('/venta')", ms: 12, s0: V0, s1: V0 }]) };
+  }
+  function trazaSalto(id, suite) { return { tit: suite + " › " + id, err: "Sin correr: test.fixme() — el caso existe pero aún no está listo. No cuenta como verde.", sk: 1, pasos: [] }; }
+
+  function etiqueta(a) {
+    if (/^expect/.test(a)) return "expect";
+    var acc = /\)\.(\w+)\(/.exec(a), nom = /name: '([^']*)'/.exec(a), arg = /^(\w+)\('([^']*)'/.exec(a);
+    var txt = nom ? nom[1] : arg ? arg[2] : "";
+    return (acc ? acc[1] : arg ? arg[1] : a.split("(")[0]) + (txt ? " «" + txt + "»" : "");
+  }
+  var est = { tr: null, i: 0, timer: null, halla: {} };
+  function abrir(t) {
+    clearInterval(est.timer); est.timer = null; $("play").textContent = "▶ Reproducir";
+    est.tr = t; est.i = 0;
+    $("tr-tit").textContent = t.tit;
+    var err = $("tr-err"); err.textContent = t.err; err.className = "q-err" + (t.ok ? " ok" : t.sk ? " sk" : "");
+    var lin = $("linea"); lin.textContent = "";
+    t.pasos.forEach(function (p, i) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "q-paso " + (p.falla ? "no" : "ok");
+      b.textContent = (i + 1) + " " + etiqueta(p.a) + (p.falla ? " ✗" : "");
+      b.title = p.a; b.addEventListener("click", function () { ir(i); }); lin.appendChild(b);
+    });
+    $("ant").disabled = $("sig").disabled = $("play").disabled = !t.pasos.length;
+    ir(0);
+  }
+  function ir(i) {
+    var t = est.tr; if (!t.pasos.length) { $("antes").innerHTML = $("despues").innerHTML = pos(null); $("det-acc").textContent = "—"; $("det-red").textContent = "—"; $("det-red").className = ""; return; }
+    est.i = Math.max(0, Math.min(t.pasos.length - 1, i));
+    var p = t.pasos[est.i];
+    document.querySelectorAll(".q-paso").forEach(function (b, k) { b.classList.toggle("act", k === est.i); });
+    $("antes").innerHTML = pos(p.s0, p.hl); $("despues").innerHTML = pos(p.s1, p.falla ? p.hl : null);
+    $("det-acc").textContent = (est.i + 1) + "/" + t.pasos.length + " · " + p.a + " · " + (p.falla ? "esperó " + p.ms + " ms y falló" : p.ms + " ms");
+    var red = $("det-red"); red.textContent = p.red ? "Red: " + p.red : "Red: —"; red.className = p.sosp ? "red" : "";
+    if (p.falla && t.bug && !est.halla[t.bug]) {
+      est.halla[t.bug] = 1; $("bug" + t.bug).classList.add("ok"); $("bug" + t.bug).querySelector("i").textContent = "✓";
+      if (est.halla[1] && est.halla[2]) $("pie").innerHTML = '<span class="esc-chip ok q-logro">Encontraste los 2 bugs en su trace · pulsa «Lo logré»</span>';
+    }
+  }
+  $("ant").addEventListener("click", function () { ir(est.i - 1); });
+  $("sig").addEventListener("click", function () { ir(est.i + 1); });
+  $("play").addEventListener("click", function () {
+    if (est.timer) { clearInterval(est.timer); est.timer = null; $("play").textContent = "▶ Reproducir"; return; }
+    if (est.i >= est.tr.pasos.length - 1) ir(0);
+    $("play").textContent = "❚❚ Pausa";
+    est.timer = setInterval(function () {
+      if (est.i >= est.tr.pasos.length - 1) { clearInterval(est.timer); est.timer = null; $("play").textContent = "▶ Reproducir"; return; }
+      ir(est.i + 1);
+    }, quieto ? 600 : 1100);
+  });
+
+  // ---- Matriz del portal.
+  var celdas = [];
+  function pintarMatriz(animar) {
+    var m = $("mat"); m.textContent = ""; celdas = [];
+    RESULTADOS.suites.forEach(function (s) {
+      var n = document.createElement("span"); n.className = "m"; n.textContent = s.m; m.appendChild(n);
+      s.specs.forEach(function (sp) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "q-cel " + (animar ? "pend" : sp[1]); b.textContent = sp[0].replace("CP-", "");
+        b.title = s.title + " › " + sp[0] + " · " + sp[1];
+        b.addEventListener("click", function () {
+          document.querySelectorAll(".q-cel").forEach(function (c) { c.classList.remove("sel"); }); b.classList.add("sel");
+          abrir(TRAZAS[sp[0]] || (sp[1] === "skipped" ? trazaSalto(sp[0], s.title) : trazaVerde(sp[0], s.title)));
+        });
+        m.appendChild(b); celdas.push([b, sp[1], sp[0]]);
+      });
+    });
+  }
+  function resumen(n) {
+    var c = { passed: 0, failed: 0, skipped: 0 };
+    celdas.slice(0, n).forEach(function (x) { c[x[1]]++; });
+    $("res").innerHTML = '<span class="esc-chip ok">' + c.passed + ' pasaron</span><span class="esc-chip bad">' + c.failed + ' fallaron</span><span class="esc-chip warn">' + c.skipped + ' sin correr</span><span class="q-et">' + celdas.length + " casos · 5 módulos</span>";
+  }
+  $("correr").addEventListener("click", function () {
+    pintarMatriz(true); resumen(0); $("correr").disabled = true;
+    celdas.forEach(function (x, k) {
+      setTimeout(function () { x[0].className = "q-cel nuevo " + x[1]; resumen(k + 1); if (k === celdas.length - 1) { $("correr").disabled = false; marcar("E2E-VEN-002"); } }, quieto ? 0 : 90 * k);
+    });
+  });
+  function marcar(id) { celdas.forEach(function (x) { x[0].classList.toggle("sel", x[2] === id); }); }
+  pintarMatriz(false); resumen(celdas.length); marcar("E2E-VEN-002");
+  abrir(TRAZAS["E2E-VEN-002"]);
+})();
+</script>
+</body>
+</html>
