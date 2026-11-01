@@ -156,8 +156,11 @@ type Servidor struct {
 	mu        sync.Mutex
 	e         Estado
 	archivo   string
-	clave     string
 	preguntas []Pregunta
+	lms       string                  // base del LMS (ARENA_LMS)
+	cacheMu   sync.Mutex              // caché de identidades por huella de cookie
+	cache     map[string]entradaCache // 60 s
+	sesiones  map[int]string          // jugador → última cookie válida (solo memoria)
 	porIP     map[string]int
 	oyentes   map[chan []byte]struct{}
 	ahora     func() time.Time
@@ -172,12 +175,12 @@ var lima = func() *time.Location {
 	return l
 }()
 
-func nuevoServidor(archivo, clave string) *Servidor {
+func nuevoServidor(archivo, lms string) *Servidor {
 	var pq []Pregunta
 	if err := json.Unmarshal(preguntasJSON, &pq); err != nil {
 		log.Fatalf("preguntas.json: %v", err)
 	}
-	s := &Servidor{archivo: archivo, clave: clave, preguntas: pq, porIP: map[string]int{}, oyentes: map[chan []byte]struct{}{}, ahora: func() time.Time { return time.Now().In(lima) }}
+	s := &Servidor{archivo: archivo, lms: lms, preguntas: pq, porIP: map[string]int{}, oyentes: map[chan []byte]struct{}{}, cache: map[string]entradaCache{}, sesiones: map[int]string{}, ahora: func() time.Time { return time.Now().In(lima) }}
 	s.e = estadoVacio()
 	if archivo != "" {
 		if b, err := os.ReadFile(archivo); err == nil {
@@ -347,6 +350,9 @@ func (s *Servidor) unirse(nombre, correo, ip string) (*Jugador, string) {
 		}
 	}
 	j := Jugador{ID: id, Nombre: nombre, Correo: correo, Token: nuevoToken(), IP: ip, CreadoEn: s.ahora(), Activo: true}
+	if correo != "" {
+		s.porIP[ip]-- // la identidad del LMS no cuenta para el tope por red
+	}
 	s.e.Jugadores = append(s.e.Jugadores, j)
 	s.porIP[ip]++
 	s.evento("entra", &s.e.Jugadores[len(s.e.Jugadores)-1], "¡"+nombre+" entra a la arena!", 0, 0)
@@ -647,9 +653,32 @@ func (s *Servidor) mio(j *Jugador) map[string]any {
 	return map[string]any{"id": j.ID, "nombre": j.Nombre, "puntos": j.Puntos, "puesto": puesto, "logros": estado, "pasos": pasosDe, "respuesta": resp}
 }
 
+// esAdmin: instructor o admin del LMS (en modo local, cualquiera).
 func (s *Servidor) esAdmin(r *http.Request) bool {
-	c := r.Header.Get("X-Clave")
-	return c != "" && subtle.ConstantTimeCompare([]byte(c), []byte(s.clave)) == 1
+	if s.local {
+		return true
+	}
+	id, _ := s.quienEs(r)
+	return id != nil && id.Staff()
+}
+
+// jugadorActual: en producción, el jugador cuyo correo es el de la sesión del LMS
+// (sin crearlo); en modo local, el de la cookie «arena».
+func (s *Servidor) jugadorActual(r *http.Request, token string) *Jugador {
+	if s.local {
+		return s.jugadorDe(token)
+	}
+	id, _ := s.quienEs(r)
+	if id == nil {
+		return nil
+	}
+	correo := strings.ToLower(strings.TrimSpace(id.Email))
+	for i := range s.e.Jugadores {
+		if j := &s.e.Jugadores[i]; j.Activo && j.Correo == correo {
+			return j
+		}
+	}
+	return nil
 }
 
 func (s *Servidor) rutas() http.Handler {
@@ -689,14 +718,43 @@ func (s *Servidor) rutas() http.Handler {
 		responder(w, 200, s.publico())
 	})
 	mux.HandleFunc("GET /api/yo", func(w http.ResponseWriter, r *http.Request) {
-		s.mu.Lock()
-		defer s.mu.Unlock()
-		j := s.jugadorDe(token(r))
-		if j == nil {
-			responder(w, 200, map[string]any{"jugador": nil})
+		if s.local {
+			s.mu.Lock()
+			defer s.mu.Unlock()
+			j := s.jugadorDe(token(r))
+			if j == nil {
+				responder(w, 200, map[string]any{"jugador": nil, "staff": false, "local": true})
+				return
+			}
+			responder(w, 200, map[string]any{"jugador": s.mio(j), "staff": false, "local": true})
 			return
 		}
-		responder(w, 200, map[string]any{"jugador": s.mio(j)})
+		id, cookie := s.quienEs(r)
+		if id == nil {
+			fallo(w, 401, "inicia sesión en el LMS")
+			return
+		}
+		if id.Staff() {
+			responder(w, 200, map[string]any{"jugador": nil, "staff": true, "nombre": id.Name})
+			return
+		}
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		nombre := strings.TrimSpace(id.Name)
+		if nombre == "" {
+			nombre, _, _ = strings.Cut(id.Email, "@")
+		}
+		antes := s.activos()
+		j, msg := s.unirse(nombre, id.Email, ipDe(r))
+		if msg != "" {
+			fallo(w, 409, msg)
+			return
+		}
+		s.sesiones[j.ID] = cookie
+		if s.activos() != antes {
+			s.guardar()
+		}
+		responder(w, 200, map[string]any{"jugador": s.mio(j), "staff": false})
 	})
 	mux.HandleFunc("POST /api/unirse", func(w http.ResponseWriter, r *http.Request) {
 		var in struct{ Nombre, Correo string }
@@ -704,17 +762,17 @@ func (s *Servidor) rutas() http.Handler {
 			fallo(w, 400, "Datos no válidos.")
 			return
 		}
-		s.mu.Lock()
-		defer s.mu.Unlock()
-		if in.Correo == "" && !s.local {
-			fallo(w, 400, "Entra desde el LMS para que la arena sepa quién eres.")
+		if !s.local {
+			fallo(w, 404, "La arena te reconoce por tu sesión del LMS: no hay alta manual.")
 			return
 		}
-		if j := s.jugadorDe(token(r)); j != nil && in.Correo == "" {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if j := s.jugadorDe(token(r)); j != nil {
 			responder(w, 200, map[string]any{"jugador": s.mio(j), "token": j.Token})
 			return
 		}
-		j, msg := s.unirse(in.Nombre, in.Correo, ipDe(r))
+		j, msg := s.unirse(in.Nombre, "", ipDe(r))
 		if msg != "" {
 			code := 400
 			if strings.HasPrefix(msg, "Arena llena") {
@@ -728,22 +786,27 @@ func (s *Servidor) rutas() http.Handler {
 		responder(w, 201, map[string]any{"jugador": s.mio(j), "token": j.Token})
 	})
 	mux.HandleFunc("POST /api/pasos", func(w http.ResponseWriter, r *http.Request) {
-		var in struct{ Pasos []string }
-		if err := leerJSON(r, &in); err != nil {
-			fallo(w, 400, "Datos no válidos.")
-			return
-		}
+		// El cliente no manda nada: el servidor lee el progreso del LMS con la cookie de la petición.
 		s.mu.Lock()
-		defer s.mu.Unlock()
-		j := s.jugadorDe(token(r))
+		j := s.jugadorActual(r, token(r))
 		if j == nil {
+			s.mu.Unlock()
 			fallo(w, 401, "Entra a la arena primero.")
 			return
 		}
-		if n := s.anotarPasos(j, in.Pasos); n > 0 {
-			s.guardar()
+		id := j.ID
+		s.mu.Unlock()
+		nuevos := 0
+		if _, cookie := s.quienEs(r); cookie != "" && !s.local {
+			nuevos = s.premiarPasos(id, cookie)
 		}
-		responder(w, 200, map[string]any{"jugador": s.mio(j)})
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if j := s.jugadorID(id); j != nil {
+			responder(w, 200, map[string]any{"jugador": s.mio(j), "nuevos": nuevos})
+			return
+		}
+		fallo(w, 404, "Ya no estás en la arena.")
 	})
 	mux.HandleFunc("POST /api/logro", func(w http.ResponseWriter, r *http.Request) {
 		var in struct{ ID string }
@@ -753,7 +816,7 @@ func (s *Servidor) rutas() http.Handler {
 		}
 		s.mu.Lock()
 		defer s.mu.Unlock()
-		j := s.jugadorDe(token(r))
+		j := s.jugadorActual(r, token(r))
 		if j == nil {
 			fallo(w, 401, "Entra a la arena primero.")
 			return
@@ -773,7 +836,7 @@ func (s *Servidor) rutas() http.Handler {
 		}
 		s.mu.Lock()
 		defer s.mu.Unlock()
-		j := s.jugadorDe(token(r))
+		j := s.jugadorActual(r, token(r))
 		if j == nil {
 			fallo(w, 401, "Entra a la arena primero.")
 			return
@@ -826,8 +889,7 @@ func (s *Servidor) rutas() http.Handler {
 	admin := func(f func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			if !s.esAdmin(r) {
-				time.Sleep(400 * time.Millisecond)
-				fallo(w, 401, "Clave incorrecta.")
+				fallo(w, 401, "Entra al LMS con tu cuenta de instructor.")
 				return
 			}
 			s.mu.Lock()
@@ -973,15 +1035,22 @@ func main() {
 	if datos == "" {
 		datos = "datos"
 	}
-	clave := os.Getenv("ARENA_CLAVE")
-	if len(clave) < 12 {
-		log.Fatal("ARENA_CLAVE debe tener al menos 12 caracteres")
+	lms := os.Getenv("ARENA_LMS")
+	if lms == "" {
+		lms = "https://jmd-learn.online"
 	}
 	if err := os.MkdirAll(datos, 0o700); err != nil {
 		log.Fatal(err)
 	}
-	s := nuevoServidor(filepath.Join(datos, "arena.json"), clave)
+	s := nuevoServidor(filepath.Join(datos, "arena.json"), lms)
 	s.local = os.Getenv("ARENA_LOCAL") == "1"
+	if !s.local {
+		go func() {
+			for range time.Tick(60 * time.Second) {
+				s.refrescarTodos()
+			}
+		}()
+	}
 	puerto := os.Getenv("PORT")
 	if puerto == "" {
 		puerto = "18630"
@@ -990,6 +1059,6 @@ func main() {
 		log.Fatal("PORT no válido")
 	}
 	srv := &http.Server{Addr: ":" + puerto, Handler: s.rutas(), ReadHeaderTimeout: 5 * time.Second}
-	log.Printf("QA Arena en :%s (%d héroes, %d preguntas, clave admin: %v, modo local: %v)", puerto, s.activos(), len(s.preguntas), clave != "", s.local)
+	log.Printf("QA Arena en :%s (%d héroes, %d preguntas, LMS %s, modo local: %v)", puerto, s.activos(), len(s.preguntas), lms, s.local)
 	log.Fatal(srv.ListenAndServe())
 }

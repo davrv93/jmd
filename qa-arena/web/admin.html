@@ -6,7 +6,8 @@
 <title>QA Arena · instructor</title>
 <link rel="stylesheet" href="static/comic.css?v=1">
 <style>
-  main { max-width: 1100px; margin: 0 auto; padding: 14px; display: grid; gap: 18px; grid-template-columns: 1.2fr 1fr; }
+  main { max-width: 1240px; margin: 0 auto; padding: 12px; display: grid; gap: 14px; grid-template-columns: 1.2fr 1fr; overflow-x: hidden; }
+  html, body { overflow-x: hidden; }
   main > section { min-width: 0; }
   .ancho { grid-column: 1 / -1; }
   .pend { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; border: 3px solid var(--negro); background: #fff; padding: 8px 10px; }
@@ -21,14 +22,14 @@
 </head>
 <body>
 <div class="cab" style="padding:12px 16px 6px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-  <h1 style="font-size:40px">QA Arena · instructor</h1>
-  <div><span id="clave-estado" class="etiqueta">sin clave</span> <a class="boton chico" href="show" target="_blank" style="font-size:16px;padding:6px 10px">Abrir show</a></div>
+  <h1 style="font-size:34px">QA Arena · instructor</h1>
+  <div><span id="clave-estado" class="etiqueta">…</span> <a class="boton chico" href="show" target="_blank" style="font-size:16px;padding:6px 10px">Abrir show</a></div>
 </div>
 <div class="tono"></div>
 <main>
   <section class="panel ancho" id="entrar" hidden>
-    <h2>Clave del instructor</h2>
-    <form class="fila"><input id="clave" type="password" autocomplete="current-password" placeholder="ARENA_CLAVE"><button type="submit">Entrar</button></form>
+    <h2>Solo instructores</h2>
+    <p style="margin:0">Entra al LMS con tu cuenta de instructor y vuelve a abrir esta página. La arena te reconoce por tu sesión, sin clave.</p>
   </section>
 
   <section class="panel">
@@ -64,20 +65,16 @@
 <script src="static/comun.js?v=1"></script>
 <script>
 const $ = (id) => document.getElementById(id); const A = window.Arena;
-let clave = new URLSearchParams(location.search).get('clave') || '';
-try { if (clave) sessionStorage.setItem('arena-clave', clave); else clave = sessionStorage.getItem('arena-clave') || ''; } catch { }
-if (new URLSearchParams(location.search).get('clave')) history.replaceState(null, '', location.pathname);
 let confirmarReinicio = false, estado = null;
 
 async function api(ruta, body, metodo) {
-  const r = await fetch(ruta, { method: metodo || (body ? 'POST' : 'GET'), headers: { 'content-type': 'application/json', 'X-Clave': clave }, body: body ? JSON.stringify(body) : undefined });
+  const r = await fetch(ruta, { method: metodo || (body ? 'POST' : 'GET'), credentials: 'include', headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   const j = r.headers.get('content-type')?.includes('json') ? await r.json() : null;
-  if (r.status === 401) { $('entrar').hidden = false; $('clave-estado').textContent = 'clave incorrecta'; $('clave-estado').className = 'etiqueta coral'; return null; }
+  if (r.status === 401) { $('entrar').hidden = false; $('clave-estado').textContent = 'sin permiso'; $('clave-estado').className = 'etiqueta coral'; return null; }
   if (!r.ok) { $('aviso').textContent = (j && j.error) || 'Error'; setTimeout(() => $('aviso').textContent = '', 3000); return null; }
-  $('entrar').hidden = true; $('clave-estado').textContent = 'clave OK'; $('clave-estado').className = 'etiqueta verde';
+  $('entrar').hidden = true; $('clave-estado').textContent = 'instructor'; $('clave-estado').className = 'etiqueta verde';
   return j;
 }
-$('entrar').querySelector('form').onsubmit = (e) => { e.preventDefault(); clave = $('clave').value; try { sessionStorage.setItem('arena-clave', clave); } catch { } cargar(); };
 
 function pintar(e) {
   if (!e) return; estado = e;
@@ -104,7 +101,7 @@ $('azar').onclick = async () => pintar(await api('api/admin/relampago', { accion
 $('parar').onclick = async () => pintar(await api('api/admin/relampago', { accion: 'parar' }));
 $('bug').onclick = async () => { const j = await api('api/admin/bug', { jugador: +$('bug-jugador').value, texto: $('bug-texto').value }); if (j) { $('bug-texto').value = ''; pintar(j); } };
 $('reiniciar').onclick = async () => { if (!confirmarReinicio) { confirmarReinicio = true; $('reiniciar').textContent = '¿Seguro? Pulsa otra vez'; setTimeout(() => { confirmarReinicio = false; $('reiniciar').textContent = 'Reiniciar arena'; }, 4000); return; } confirmarReinicio = false; $('reiniciar').textContent = 'Reiniciar arena'; pintar(await api('api/admin/reiniciar', {})); };
-$('csv').onclick = async () => { const r = await fetch('api/admin/csv', { headers: { 'X-Clave': clave } }); if (!r.ok) return; const b = await r.blob(); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'qa-arena.csv'; a.click(); };
+$('csv').onclick = async () => { const r = await fetch('api/admin/csv', { credentials: 'include' }); if (!r.ok) return; const b = await r.blob(); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'qa-arena.csv'; a.click(); };
 A.vivo(() => cargar());
 cargar();
 </script>

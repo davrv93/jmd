@@ -54,10 +54,12 @@
       <button role="tab" aria-selected="true" data-t="show">🏆 Show · tabla de héroes</button>
       <button role="tab" aria-selected="false" data-t="mio">⚡ Mis puntos y relámpagos</button>
       <button role="tab" aria-selected="false" data-t="reglas">📜 Reglas</button>
+      <button role="tab" aria-selected="false" data-t="admin" id="tab-admin" hidden>🛠 Admin</button>
       <a class="ar-link" style="margin-left:auto;font-size:.78em;padding:.45em .9em" href="/qa-arena/" target="_blank" rel="noopener">Abrir en otra pestaña ↗</a>
     </div>
     <div class="ar-marco on" id="t-show"><iframe src="/qa-arena/show" title="Show de QA Arena" loading="eager"></iframe></div>
     <div class="ar-marco" id="t-mio"><iframe title="Mis puntos en QA Arena" data-src="/qa-arena/"></iframe></div>
+    <div class="ar-marco" id="t-admin"><iframe title="Panel del instructor de QA Arena" data-src="/qa-arena/admin"></iframe></div>
     <div class="ar-b2" id="t-reglas" hidden>
       <section class="esc-card ar-cta a-in" aria-label="Cómo se juega">
         <ol class="ar-pasos">
@@ -84,9 +86,12 @@ document.querySelectorAll('.ar-tabs [role=tab]').forEach(b=>b.addEventListener('
   const t=b.dataset.t;
   document.getElementById('t-show').classList.toggle('on',t==='show');
   document.getElementById('t-mio').classList.toggle('on',t==='mio');
+  document.getElementById('t-admin').classList.toggle('on',t==='admin');
   document.getElementById('t-reglas').hidden=t!=='reglas';
-  const f=document.querySelector('#t-mio iframe'); if(t==='mio'&&!f.src){f.src=f.dataset.src;}
+  const f=document.querySelector('#t-'+t+' iframe'); if(f&&!f.src){f.src=f.dataset.src;}
 }));
+// La pestaña Admin solo aparece si la arena reconoce a un instructor por su sesión del LMS (mismo origen).
+fetch('/qa-arena/api/yo',{credentials:'include',cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.staff){document.getElementById('tab-admin').hidden=false;}}).catch(()=>{});
 </script>
 </body>
 </html>

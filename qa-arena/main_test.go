@@ -8,7 +8,7 @@ import (
 
 func servidorPrueba(t *testing.T) *Servidor {
 	t.Helper()
-	s := nuevoServidor("", "clave-de-prueba-larga")
+	s := nuevoServidor("", "")
 	base := time.Date(2026, 11, 1, 9, 0, 0, 0, lima)
 	s.ahora = func() time.Time { return base }
 	return s

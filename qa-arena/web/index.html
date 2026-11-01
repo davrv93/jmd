@@ -99,41 +99,23 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const A = window.Arena;
-let yo = null, estado = null, relTimer = null, ultimoEvento = 0, lmsYo = null, lmsIntentado = false;
+let yo = null, estado = null, relTimer = null, ultimoEvento = 0, staff = false, sinSesion = false;
 
-// Identidad: la da el LMS (misma origen, cookie de sesión). Staff no compite.
-async function desdeLMS() {
-  lmsIntentado = true;
-  try {
-    const r = await fetch('/api/v1/me', { credentials: 'include', cache: 'no-store' });
-    if (r.status === 200) lmsYo = await r.json(); else lmsYo = null;
-  } catch { lmsYo = null; }
-  if (lmsYo && (lmsYo.roles || []).some((x) => x === 'instructor' || x === 'admin')) {
-    $('lms-txt').textContent = ''; $('staff').hidden = false; $('lms').hidden = false; $('hub').hidden = true; return;
-  }
-  if (lmsYo) {
-    const nombre = (lmsYo.name || lmsYo.email.split('@')[0]).trim();
-    const r = await fetch('api/unirse', { method: 'POST', headers: cab(), body: JSON.stringify({ nombre, correo: lmsYo.email }) });
-    const j = await r.json();
-    if (r.ok) { try { localStorage.setItem('arena-token', j.token); } catch { } yo = j.jugador; pintarYo(); if (r.status === 201) A.onoma('¡ZAS!', '', 30, 20); sincronizarPasos(); return; }
-    $('lms-txt').textContent = j.error || 'No se pudo entrar.'; return;
-  }
-  if (estado && estado.local) { $('lms').hidden = true; $('unirse').hidden = !!yo; return; }
-  $('lms-txt').textContent = 'Para jugar, entra con tu cuenta del LMS y vuelve aquí.'; $('lms-link').hidden = false;
+// Identidad: la decide el servidor con la cookie del LMS (mismo origen). Aquí solo se pregunta «¿quién soy?».
+async function cargarYo() {
+  let tok = ''; try { tok = localStorage.getItem('arena-token') || ''; } catch { }
+  const r = await fetch('api/yo', { credentials: 'include', cache: 'no-store', headers: tok ? { 'X-Token': tok } : {} });
+  if (r.status === 401) { yo = null; sinSesion = true; pintarYo(); return; }
+  const j = await r.json(); yo = j.jugador; staff = !!j.staff; sinSesion = false; pintarYo();
 }
-
-// Pasos del ciclo marcados en el LMS → puntos en la arena (al cargar y cada 30 s).
+// Pasos del LMS → el servidor los lee y premia (al cargar y cada 30 s). El cliente no manda datos.
 async function sincronizarPasos() {
-  if (!yo || !lmsYo) return;
+  if (!yo || (estado && estado.local)) return;
   try {
-    const r = await fetch('/api/v1/lessons/qa-01/progress', { credentials: 'include', cache: 'no-store' });
-    if (!r.ok) return;
-    const p = await r.json();
-    const hechos = Object.entries(p.steps || {}).filter(([, v]) => v).map(([k]) => k);
     const antes = yo.puntos;
-    const r2 = await fetch('api/pasos', { method: 'POST', headers: cab(), body: JSON.stringify({ pasos: hechos }) });
-    const j = await r2.json();
-    if (r2.ok) { yo = j.jugador; if (yo.puntos > antes) A.onoma('¡VERDE!', 'verde'); pintarYo(); }
+    const r = await fetch('api/pasos', { method: 'POST', credentials: 'include', headers: cab(), body: '{}' });
+    if (!r.ok) return;
+    const j = await r.json(); yo = j.jugador; if (yo.puntos > antes) A.onoma('¡VERDE!', 'verde'); pintarYo();
   } catch { }
 }
 setInterval(sincronizarPasos, 30000);
@@ -150,17 +132,14 @@ $('unirse').querySelector('form').addEventListener('submit', async (e) => {
   yo = j.jugador; pintarYo(); A.onoma('¡ZAS!', '', 30, 20);
 });
 
-async function cargarYo() {
-  let tok = ''; try { tok = localStorage.getItem('arena-token') || ''; } catch { }
-  const r = await fetch('api/yo', { headers: tok ? { 'X-Token': tok } : {} });
-  const j = await r.json(); yo = j.jugador; pintarYo();
-}
 function cab() { let tok = ''; try { tok = localStorage.getItem('arena-token') || ''; } catch { } return { 'content-type': 'application/json', ...(tok ? { 'X-Token': tok } : {}) }; }
 
 function pintarYo() {
   $('hub').hidden = !yo;
-  if (yo) { $('lms').hidden = true; $('unirse').hidden = true; }
-  else if (lmsIntentado && estado && estado.local && !lmsYo) { $('lms').hidden = true; $('unirse').hidden = false; }
+  $('lms').hidden = !!yo; $('unirse').hidden = true; $('staff').hidden = !staff; $('lms-link').hidden = !sinSesion;
+  if (!yo && staff) $('lms-txt').textContent = '';
+  else if (!yo && sinSesion) $('lms-txt').textContent = 'Para jugar, entra con tu cuenta del LMS y vuelve aquí.';
+  else if (!yo && estado && estado.local) { $('lms').hidden = true; $('unirse').hidden = false; }
   if (!yo) return;
   $('mi-avatar').innerHTML = A.avatarSVG(yo.nombre); $('mi-nombre').textContent = yo.nombre;
   $('mi-puntos').textContent = yo.puntos; $('mi-puesto').textContent = yo.puesto || '–';
@@ -220,9 +199,9 @@ A.vivo((e) => {
   if (ultimoEvento && yo) nuevos.forEach((ev) => { if (ev.jugador === yo.id && ev.puntos) A.onoma(ev.tipo === 'bug' ? '¡BUG!' : ev.tipo === 'primero' ? '¡PRIMERO!' : '¡POW!', ev.tipo === 'bug' ? 'coral' : 'verde'); });
   if (e.eventos.length) ultimoEvento = e.eventos[e.eventos.length - 1].id;
   $('ticker').innerHTML = e.eventos.slice(-8).reverse().map((ev) => `<div><b>${A.hora(ev.en)}</b> ${A.esc(ev.nombre || '')} ${A.esc(ev.texto)} ${ev.puntos ? `<span class="chip ok">+${ev.puntos + (ev.bono || 0)}</span>` : ''}</div>`).join('');
-  if (yo) cargarYo(); else { pintarRelampago(); if (lmsIntentado && !lmsYo && e.local) { $('lms').hidden = true; $('unirse').hidden = false; } }
+  if (yo) cargarYo(); else { pintarRelampago(); pintarYo(); }
 });
-(async () => { await cargarYo(); if (!yo) await desdeLMS(); else { lmsYo = { email: '' }; try { const r = await fetch('/api/v1/me', { credentials: 'include' }); if (r.ok) { lmsYo = await r.json(); sincronizarPasos(); } } catch { } } })();
+(async () => { await cargarYo(); sincronizarPasos(); })();
 </script>
 </body>
 </html>

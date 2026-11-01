@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Despliega QA Arena en el EC2 3.151.56.55 (https://jmd-learn.online/qa-arena/, puerto 18630). No borra el estado.
 #   LLAVE=~/Downloads/curdilmer.pem ./desplegar.sh
-# La clave del instructor vive en /home/ubuntu/qa-arena.env (ARENA_CLAVE=...); si no existe, se genera y nunca se imprime.
+# Sin clave: el instructor se reconoce por su sesión del LMS (rol instructor/admin). ARENA_LMS apunta al LMS.
 # nginx: copia nginx.conf a /etc/nginx/snippets/qa-arena.conf y lo incluye en sites-enabled/jmd-learn si aún no está.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -14,14 +14,13 @@ scp -i "$LLAVE" /tmp/qa-arena-linux $H:qa-arena/build/arena
 scp -i "$LLAVE" Dockerfile nginx.conf $H:qa-arena/build/
 ssh -i "$LLAVE" $H bash -s <<'REMOTO'
 set -euo pipefail
-if [ ! -f ~/qa-arena.env ]; then (umask 077; echo "ARENA_CLAVE=$(openssl rand -hex 16)" > ~/qa-arena.env); echo "clave nueva en ~/qa-arena.env (cópiala con: grep -o '=.*' ~/qa-arena.env | cut -c2- | pbcopy desde tu Mac vía ssh)"; fi
 cd ~/qa-arena/build && chmod 755 arena
 sudo docker build -q -t qa-arena:1 . >/dev/null
 sudo docker volume create qa-arena-datos >/dev/null
 sudo docker rm -f qa-arena >/dev/null 2>&1 || true
 sudo docker run -d --name qa-arena --restart unless-stopped --memory=128m --memory-swap=160m --pids-limit=64 \
   --read-only --security-opt=no-new-privileges --cap-drop=ALL \
-  --env-file ~/qa-arena.env -v qa-arena-datos:/data -p 127.0.0.1:18630:18630 qa-arena:1 >/dev/null
+  -e ARENA_LMS=https://jmd-learn.online -v qa-arena-datos:/data -p 127.0.0.1:18630:18630 qa-arena:1 >/dev/null
 sudo chown 65534:65534 "$(sudo docker volume inspect qa-arena-datos -f '{{.Mountpoint}}')"
 if ! sudo test -e /etc/nginx/snippets/qa-arena.conf; then
   sudo install -m 644 nginx.conf /etc/nginx/snippets/qa-arena.conf
