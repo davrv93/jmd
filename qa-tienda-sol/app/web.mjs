@@ -26,10 +26,14 @@ createServer(async (req,res) => {
    codigo = randomBytes(16).toString('hex');
    tiendas.set(codigo,{uso:Date.now(),activas:0,handler:crearTienda({modo:'prueba'})});
   }
-  res.writeHead(302,{'location':`${raiz}/${codigo}/`,'set-cookie':`sol=${codigo}; Path=${raiz}/; HttpOnly; SameSite=Lax${process.env.SECURE_COOKIE === '1' ? '; Secure' : ''}; Max-Age=1800`});return res.end();
+  res.writeHead(302,{'location':`${raiz}/${codigo}/`,'set-cookie':`sol=${codigo}; Path=${raiz}/; HttpOnly; SameSite=Lax${process.env.SECURE_COOKIE === '1' ? '; Secure' : ''}; Max-Age=${Math.floor(TTL/1000)}`});return res.end();
  }
  const m = /^\/tienda-sol\/([a-f0-9]{32})(\/.*)?$/.exec(url.pathname);
- if (!m || !tiendas.has(m[1])) return json(res,410,{error:'Tienda vencida o inexistente. Abre /tienda-sol/ para crear la tuya.'});
+ if (!m || !tiendas.has(m[1])) {
+   // Un navegador recibe una tienda nueva en vez de un JSON de error; la API sigue viendo el 410.
+   if ((req.headers.accept||'').includes('text/html')) { res.writeHead(302,{'location':`${raiz}/?vencida=1`}); return res.end(); }
+   return json(res,410,{error:'Tienda vencida o inexistente. Abre /tienda-sol/ para crear la tuya.'});
+ }
  const t=tiendas.get(m[1]);
  if (!m[2]) {res.writeHead(302,{location:url.pathname+'/'});return res.end();}
  t.uso=Date.now();t.activas++;
