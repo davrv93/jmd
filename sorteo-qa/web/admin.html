@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel · Sorteo QA</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/estilo.css?v=1">
+<style>
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--borde); vertical-align: middle; }
+  th { color: var(--oro); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .tabla { overflow-x: auto; }
+  .acciones { display: flex; gap: 10px; flex-wrap: wrap; }
+  .acciones .btn { width: auto; margin-top: 10px; }
+</style>
+</head>
+<body>
+<main>
+  <span class="kick">PANEL DEL ORGANIZADOR</span>
+  <h1 class="marca" style="font-size:40px">Sorteo <em>QA</em></h1>
+
+  <section class="panel" id="login">
+    <label for="clave">Clave del panel</label>
+    <input id="clave" type="password" autocomplete="current-password">
+    <button class="btn" id="btn-entrar" type="button">Entrar</button>
+    <p class="error" id="login-error"></p>
+  </section>
+
+  <div id="panel" hidden>
+    <section class="panel">
+      <h2>Estado: <span id="fase"></span></h2>
+      <p class="suave" id="resumen"></p>
+      <div class="acciones">
+        <button class="btn" id="btn-cerrar" type="button">Cerrar la inscripción (revela la semilla)</button>
+        <button class="btn sec" id="btn-reabrir" type="button">Reabrir (semilla nueva)</button>
+        <button class="btn sec" id="btn-csv" type="button">⬇ Exportar CSV</button>
+        <a class="btn sec" href="pantalla" target="_blank" rel="noopener">Abrir la pantalla</a>
+      </div>
+      <p class="error" id="error"></p>
+      <p class="verif" id="huellas"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Ganadores <span id="total"></span></h2>
+      <div class="tabla"><table>
+        <thead><tr><th>#</th><th>Número</th><th>Nombre</th><th>WhatsApp</th><th>Premio</th><th>Ruleta</th><th>Hora</th></tr></thead>
+        <tbody id="personas"></tbody>
+      </table></div>
+    </section>
+
+    <section class="panel">
+      <h2>Anotar a <span>mano</span></h2>
+      <div class="fila">
+        <div><label for="a-num">Número</label><input id="a-num" type="number" min="1" max="50"></div>
+        <div><label for="a-nombre">Nombre y apellido</label><input id="a-nombre"></div>
+        <div><label for="a-tel">WhatsApp</label><input id="a-tel" type="tel"></div>
+      </div>
+      <button class="btn sec" id="btn-anotar" type="button">Anotar (gira al instante)</button>
+      <h3 style="margin-top:22px;font-size:18px">Corregir un nombre</h3>
+      <div class="fila">
+        <div><label for="c-num">Número</label><input id="c-num" type="number" min="1" max="50"></div>
+        <div><label for="c-nombre">Nombre corregido</label><input id="c-nombre"></div>
+      </div>
+      <button class="btn sec" id="btn-corregir" type="button">Corregir</button>
+      <label for="q-num" style="margin-top:20px">Liberar un número (borra a su dueño; solo con la inscripción abierta)</label>
+      <div class="fila"><input id="q-num" type="number" min="1" max="50"><button class="btn sec" id="btn-quitar" type="button" style="margin-top:0">Liberar</button></div>
+    </section>
+
+    <section class="panel">
+      <h2>Volver a <span>empezar</span></h2>
+      <p class="suave chico">Borra números, personas y premios, con semilla nueva. Úsalo solo para otra edición.</p>
+      <button class="btn sec" id="btn-reiniciar" type="button" style="width:auto">Reiniciar (escribe REINICIAR)</button>
+      <input id="confirmar" placeholder="REINICIAR" style="margin-top:8px;max-width:240px">
+    </section>
+  </div>
+</main>
+<script type="module">
+import { api, $, esc, dos, hora, BASE } from "./static/comun.js";
+let clave = "";
+try { clave = sessionStorage.getItem("sorteo-qa-clave") || ""; } catch { /* nada */ }
+const adm = (ruta, cuerpo) => api(ruta, cuerpo === undefined ? { headers: { "X-Clave": clave } } : { method: "POST", headers: { "X-Clave": clave }, body: JSON.stringify(cuerpo) });
+
+function pintar(e) {
+  $("#login").hidden = true; $("#panel").hidden = false;
+  $("#fase").textContent = e.fase === "inscripcion" ? "inscripción abierta" : "cerrado";
+  $("#resumen").textContent = `${e.personasLista.length} de 50 números · oro ${e.entregados["100"]}/3 · plata ${e.entregados["90"]}/15 · bronce ${e.entregados["70"]}`;
+  $("#btn-cerrar").hidden = e.fase !== "inscripcion";
+  $("#btn-reabrir").hidden = e.fase !== "cerrado";
+  $("#huellas").textContent = `Huella de la semilla: ${e.compromiso}` + (e.semilla ? ` · Semilla revelada: ${e.semilla}` : "");
+  $("#total").textContent = e.personasLista.length ? `· ${e.personasLista.length}` : "";
+  $("#personas").innerHTML = e.personasLista.map((p, i) => `
+    <tr><td>${i + 1}</td><td class="mono">${dos(p.numero)}</td><td>${esc(p.nombre)}</td><td class="mono">${esc(p.telefono)}</td>
+      <td><b>${p.premio} %</b></td><td class="suave">${p.banda} %${p.banda !== p.premio ? " (tope)" : ""}</td><td class="mono">${hora(p.creadoEn)}</td></tr>`).join("")
+    || `<tr><td colspan="7" class="suave">Aún no hay nadie.</td></tr>`;
+}
+async function accion(ruta, cuerpo) {
+  $("#error").textContent = "";
+  try { pintar(await adm(ruta, cuerpo)); } catch (ex) { $("#error").textContent = ex.message; }
+}
+async function entrar() {
+  try { pintar(await adm("api/admin/estado")); try { sessionStorage.setItem("sorteo-qa-clave", clave); } catch { /* nada */ } }
+  catch (ex) { $("#login-error").textContent = ex.message; }
+}
+$("#btn-entrar").addEventListener("click", () => { clave = $("#clave").value; entrar(); });
+$("#clave").addEventListener("keydown", (e) => { if (e.key === "Enter") { clave = $("#clave").value; entrar(); } });
+$("#btn-cerrar").addEventListener("click", () => accion("api/admin/cerrar", {}));
+$("#btn-reabrir").addEventListener("click", () => accion("api/admin/reabrir", {}));
+$("#btn-csv").addEventListener("click", async () => {
+  const r = await fetch(BASE + "api/admin/csv", { headers: { "X-Clave": clave } });
+  if (!r.ok) { $("#error").textContent = "No se pudo exportar."; return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(await r.blob()); a.download = "sorteo-qa.csv"; a.click();
+});
+$("#btn-anotar").addEventListener("click", () => accion("api/admin/anotar", { numero: +$("#a-num").value, nombre: $("#a-nombre").value, telefono: $("#a-tel").value }));
+$("#btn-corregir").addEventListener("click", () => accion("api/admin/renombrar", { numero: +$("#c-num").value, nombre: $("#c-nombre").value.trim() }));
+$("#btn-quitar").addEventListener("click", () => accion("api/admin/quitar", { numero: +$("#q-num").value }));
+$("#btn-reiniciar").addEventListener("click", () => {
+  if ($("#confirmar").value.trim() !== "REINICIAR") { $("#error").textContent = "Escribe REINICIAR para confirmar."; return; }
+  accion("api/admin/reiniciar", {});
+});
+if (clave) entrar();
+setInterval(() => { if (clave && !document.hidden && !$("#panel").hidden) adm("api/admin/estado").then(pintar).catch(() => {}); }, 5000);
+</script>
+</body>
+</html>

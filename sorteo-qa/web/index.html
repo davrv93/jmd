@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sorteo QA · descuentos en el taller de pruebas con IA · JMD Learning</title>
+<meta name="description" content="Agarra tu número del 1 al 50 y gira la ruleta: 100 %, 90 % o 70 % de descuento en el taller «Automatización de pruebas y QA con inteligencia artificial».">
+<meta name="theme-color" content="#0d0b1f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AF%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/estilo.css?v=1">
+</head>
+<body>
+<canvas id="fondo" aria-hidden="true"></canvas>
+<main>
+  <header class="cab">
+    <div>
+      <span class="kick">JMD LEARNING · SORTEO EN VIVO</span>
+      <h1 class="marca">Sorteo <em>QA</em></h1>
+      <p class="sub">Agarra tu número del 1 al 50 y gira la ruleta al instante: <b class="oro">100 %</b>, <b class="oro">90 %</b> o <b class="oro">70 %</b> de descuento en el taller <b>Automatización de pruebas y QA con inteligencia artificial</b> (S/ 100).</p>
+    </div>
+    <div class="chips">
+      <span class="chip" id="chip-fase">Cargando…</span>
+      <span class="chip" id="chip-numeros">— números</span>
+    </div>
+  </header>
+
+  <!-- mi resultado -->
+  <section class="panel" id="mi" hidden>
+    <h2>Tu <span>premio</span></h2>
+    <div class="show">
+      <div class="escenario">
+        <div class="rueda">
+          <div class="flecha" aria-hidden="true"></div>
+          <canvas id="rueda" aria-label="Ruleta de premios"></canvas>
+        </div>
+        <div class="lado">
+          <p class="titular" id="mi-titular">Girando…</p>
+          <p class="detalle" id="mi-detalle"></p>
+          <div id="mi-canje" hidden>
+            <p style="margin:14px 0 0"><b id="mi-nombre"></b> · número <b class="oro mono" id="mi-numero"></b></p>
+            <p class="chico suave" style="margin:6px 0 0">Para canjear: escribe por WhatsApp al <a href="https://wa.me/51986149476" target="_blank" rel="noopener">+51 986 149 476</a> con tu nombre y tu número. El cupón es personal: canjeable por el taller QA del próximo grupo o regalable a un amigo.</p>
+            <a class="btn sec" id="btn-wa" href="#" target="_blank" rel="noopener" style="width:auto">💬 Canjear por WhatsApp</a>
+            <button class="btn sec" id="btn-regalar" type="button" style="width:auto">🎁 Regalar a un amigo</button>
+            <p class="chico suave" id="regalo" hidden style="margin-top:8px">Pásale este mensaje a tu amigo: <i>«Te regalo mi cupón del Sorteo QA: número <b id="regalo-num"></b>, a nombre de <b id="regalo-nombre"></b>. Escribe al +51 986 149 476 para canjearlo».</i></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- elegir número -->
+  <section class="panel" id="elegir" hidden>
+    <h2 id="elegir-titulo">Agarra tu <span>número</span></h2>
+    <p class="suave" id="elegir-texto">Toca un número libre. Apenas confirmes, la ruleta gira y ves tu premio.</p>
+    <div class="leyenda"><span><b class="libre"></b>Libre</span><span><b class="tomado" style="background:linear-gradient(135deg,#ffc857,#ffe5a3)"></b>Oro 100 %</span><span><b class="tomado" style="background:linear-gradient(135deg,#d9dde6,#fff)"></b>Plata 90 %</span><span><b class="tomado" style="background:linear-gradient(135deg,#d2905a,#f0bb8a)"></b>Bronce 70 %</span></div>
+    <div class="tablero" id="tablero"></div>
+    <form id="form" hidden>
+      <p style="margin:16px 0 0;font-weight:800;font-size:18px">Número elegido: <span class="oro mono" id="form-num">—</span></p>
+      <div class="fila">
+        <div>
+          <label for="nombre">Tu nombre y apellido</label>
+          <input id="nombre" autocomplete="name" maxlength="40" placeholder="Ana Torres" required>
+        </div>
+        <div>
+          <label for="telefono">Tu WhatsApp (con código de país)</label>
+          <input id="telefono" type="tel" autocomplete="tel" maxlength="20" placeholder="51986149476" required>
+        </div>
+      </div>
+      <button class="btn" id="btn-elegir" type="submit">🎯 Girar con este número</button>
+    </form>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <!-- premios -->
+  <section class="panel">
+    <h2>Los <span>premios</span></h2>
+    <p class="suave">La ruleta tiene 50 casillas. Cuando una banda se agota, esos números pasan a la siguiente.</p>
+    <div class="bandas" id="bandas"></div>
+  </section>
+
+  <!-- ganadores -->
+  <section class="panel" id="ganadores-panel" hidden>
+    <h2>Los <span>ganadores</span> <span class="chico suave" id="gan-total"></span></h2>
+    <ul class="lista-gana" id="ganadores"></ul>
+  </section>
+
+  <!-- reglas -->
+  <section class="panel">
+    <h2>Reglas <span>claras</span></h2>
+    <ul class="reglas">
+      <li><b>Un número por persona</b>, con tu nombre y tu WhatsApp. El premio queda ligado a tu número: si recargas, lo vuelves a ver.</li>
+      <li><b>Al azar de verdad.</b> La huella SHA-256 de la semilla secreta está publicada desde el inicio; al cerrar se revela y puedes comprobar cada premio en tu navegador.</li>
+      <li><b>Topes:</b> 3 cupones de 100 % y 15 de 90 %. Si la ruleta cae en una banda agotada, el cupón baja a la siguiente.</li>
+    </ul>
+    <div class="aviso"><b>El cupón es personal:</b> canjeable por el taller QA del próximo grupo o <b>regalable a un amigo</b>, con el mismo porcentaje.</div>
+  </section>
+
+  <!-- verificación -->
+  <section class="panel" id="verif">
+    <h2>Comprueba que fue <span>al azar</span></h2>
+    <p class="verif" id="verif-datos"></p>
+    <button class="btn sec" id="btn-verif" type="button" style="width:auto" hidden>Comprobar en mi navegador</button>
+    <p id="verif-res" class="chico"></p>
+  </section>
+
+  <p class="pie">Canjes por WhatsApp al <a href="https://wa.me/51986149476" target="_blank" rel="noopener">+51 986 149 476</a> · <a href="pantalla">Pantalla</a></p>
+</main>
+
+<script type="module">
+import { api, $, esc, dos, PREMIOS, gajosPremios, precioCon, tokenLeer, tokenGuardar, comprobar, tablero, mapaPremios } from "./static/comun.js";
+import { fondo } from "./static/fondo.js";
+import { ruleta } from "./static/ruleta.js";
+
+const fx = fondo($("#fondo"));
+const rueda = ruleta($("#rueda"));
+let estado = null, elegido = null, mostrado = null;
+
+function pintarFase() {
+  const chip = $("#chip-fase");
+  chip.className = "chip" + (estado.fase === "inscripcion" ? " vivo" : "");
+  chip.textContent = estado.fase === "inscripcion" ? "Sorteo abierto · gira al elegir" : "Sorteo cerrado ✓";
+  $("#chip-numeros").textContent = `${estado.ocupados.length} de ${estado.total} números`;
+}
+
+function textoPremio(premio) {
+  return `${premio} % de descuento: el taller te queda en <b>S/ ${precioCon(estado.precio, premio)}</b>${premio === "100" ? " (¡gratis!)" : ""}.`;
+}
+
+function pintarCanje(yo) {
+  $("#mi-canje").hidden = false;
+  $("#mi-nombre").textContent = yo.nombre;
+  $("#mi-numero").textContent = dos(yo.numero);
+  $("#btn-wa").href = "https://wa.me/51986149476?text=" + encodeURIComponent(`Hola, soy ${yo.nombre}. Gané ${yo.premio} % de descuento en el taller de QA con el número ${dos(yo.numero)} del Sorteo QA. Quiero canjear mi cupón.`);
+  $("#regalo-num").textContent = dos(yo.numero);
+  $("#regalo-nombre").textContent = yo.nombre;
+}
+
+async function pintarMio(animar) {
+  const yo = estado.yo;
+  $("#mi").hidden = !yo;
+  if (!yo) return;
+  if (mostrado === yo.numero) return;
+  mostrado = yo.numero;
+  const p = PREMIOS[yo.premio];
+  $("#mi-titular").style.color = "";
+  if (animar) {
+    rueda.dibujar(gajosPremios());
+    $("#mi-titular").textContent = "Girando la ruleta…";
+    $("#mi-detalle").textContent = `Tu número es el ${dos(yo.numero)}. 3 casillas de oro, 15 de plata y 32 de bronce.`;
+    fx.girar(true);
+    await rueda.girarHasta(yo.casilla, { duracion: 6000 });
+    fx.girar(false);
+    fx.rafaga();
+  } else {
+    rueda.dibujar(gajosPremios(), yo.casilla);
+  }
+  $("#mi-titular").innerHTML = `¡Ganaste <span style="color:${p.color}">${yo.premio} %</span> de descuento!`;
+  let extra = "";
+  if (yo.banda !== yo.premio) extra = ` La ruleta cayó en ${PREMIOS[yo.banda].nombre.toLowerCase()} (${yo.banda} %), pero esa banda ya se agotó: tu cupón es el siguiente.`;
+  $("#mi-detalle").innerHTML = textoPremio(yo.premio) + extra;
+  pintarCanje(yo);
+}
+
+function pintarElegir() {
+  const abierto = estado.fase === "inscripcion" && !estado.yo;
+  $("#elegir").hidden = !abierto;
+  if (!abierto) return;
+  if (elegido && estado.ocupados.includes(elegido)) elegido = null;
+  tablero($("#tablero"), { ocupados: mapaPremios(estado), elegido, alElegir: (n) => { elegido = n; pintarElegir(); $("#form").scrollIntoView({ behavior: "smooth", block: "nearest" }); } });
+  $("#form").hidden = !elegido;
+  $("#form-num").textContent = elegido ? dos(elegido) : "—";
+}
+
+function pintarBandas() {
+  $("#bandas").innerHTML = estado.premios.map((p) => {
+    const quedan = p.tope ? estado.quedan[p.id] : null;
+    return `<div class="banda ${quedan === 0 ? "agotada" : ""}" style="--c:${p.color}"><b>${p.descuento} %</b><span>${esc(p.nombre)} · ${p.casillas} de 50 casillas (${Math.round(p.casillas * 2)} %)</span>
+      <span class="quedan">${p.tope ? (quedan === 0 ? "Agotado" : `Quedan ${quedan} de ${p.tope}`) : "Sin tope"} · S/ 100 → S/ ${precioCon(100, p.id)}</span></div>`;
+  }).join("");
+}
+
+function pintarGanadores() {
+  const g = estado.resultado;
+  $("#ganadores-panel").hidden = !g.length;
+  $("#gan-total").textContent = g.length ? `· ${g.length}` : "";
+  $("#ganadores").innerHTML = g.slice().reverse().map((x) => `<li style="--c:${PREMIOS[x.premio].color}"><span class="n">${dos(x.numero)}</span><span>${esc(x.nombre)}</span><span class="p">${x.premio} %</span></li>`).join("");
+}
+
+async function cargar(animar = false) {
+  try {
+    estado = await api("api/estado?t=" + encodeURIComponent(tokenLeer()));
+  } catch { return; }
+  pintarFase(); pintarBandas(); pintarElegir(); pintarGanadores();
+  await pintarMio(animar);
+  $("#verif-datos").textContent = estado.fase === "cerrado"
+    ? `Semilla revelada: ${estado.semilla} · Huella publicada: ${estado.compromiso}`
+    : `Huella SHA-256 de la semilla secreta (publicada desde el inicio): ${estado.compromiso}. La semilla se revela al cerrar.`;
+  $("#btn-verif").hidden = estado.fase !== "cerrado";
+}
+
+$("#form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("#btn-elegir");
+  $("#error").textContent = "";
+  btn.disabled = true;
+  try {
+    const r = await api("api/elegir", { method: "POST", body: JSON.stringify({ numero: elegido, nombre: $("#nombre").value, telefono: $("#telefono").value, t: tokenLeer() }) });
+    tokenGuardar(r.t);
+    elegido = null;
+    $("#elegir").hidden = true;
+    await cargar(true);
+    $("#mi").scrollIntoView({ behavior: "smooth" });
+  } catch (ex) {
+    $("#error").textContent = ex.message;
+    await cargar();
+  } finally { btn.disabled = false; }
+});
+
+$("#btn-regalar").addEventListener("click", () => { $("#regalo").hidden = !$("#regalo").hidden; });
+
+$("#btn-verif").addEventListener("click", async () => {
+  $("#verif-res").textContent = "Comprobando…";
+  const r = await comprobar(estado);
+  $("#verif-res").innerHTML = r.ok
+    ? `<span class="ok">✓ Todo cuadra: la semilla corresponde a la huella publicada y los ${r.pasos} premios salen idénticos.</span>`
+    : `<span class="error">${r.fallos.map(esc).join(" ")}</span>`;
+});
+
+await cargar();
+setInterval(() => { if (!document.hidden) cargar(); }, 3000);
+</script>
+</body>
+</html>
