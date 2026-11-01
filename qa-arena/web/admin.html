@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QA Arena · instructor</title>
+<link rel="stylesheet" href="static/comic.css?v=1">
+<style>
+  main { max-width: 1100px; margin: 0 auto; padding: 14px; display: grid; gap: 18px; grid-template-columns: 1.2fr 1fr; }
+  main > section { min-width: 0; }
+  .ancho { grid-column: 1 / -1; }
+  .pend { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; border: 3px solid var(--negro); background: #fff; padding: 8px 10px; }
+  .pend b { font-family: var(--titulo); font-weight: 400; text-transform: uppercase; font-size: 20px; }
+  .fila-j { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; align-items: center; padding: 4px 0; border-bottom: 2px dashed #ddd; font-size: 17px; }
+  .fila-j input { font-size: 16px; padding: 4px 8px; border-width: 2px; box-shadow: none; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  h2 { font-size: 26px; margin-bottom: 10px; }
+  .ok { color: var(--verde); } .mal { color: var(--coral); }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="cab" style="padding:12px 16px 6px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+  <h1 style="font-size:40px">QA Arena · instructor</h1>
+  <div><span id="clave-estado" class="etiqueta">sin clave</span> <a class="boton chico" href="show" target="_blank" style="font-size:16px;padding:6px 10px">Abrir show</a></div>
+</div>
+<div class="tono"></div>
+<main>
+  <section class="panel ancho" id="entrar" hidden>
+    <h2>Clave del instructor</h2>
+    <form class="fila"><input id="clave" type="password" autocomplete="current-password" placeholder="ARENA_CLAVE"><button type="submit">Entrar</button></form>
+  </section>
+
+  <section class="panel">
+    <h2>Cola de «Lo logré» <span class="chip" id="n-pend">0</span></h2>
+    <div class="lista" id="pendientes"></div>
+  </section>
+
+  <section class="panel cream">
+    <h2>⚡ Relámpago</h2>
+    <div id="rel-estado" class="muted" style="margin-bottom:8px"></div>
+    <select id="pregunta"></select>
+    <div class="grid2" style="margin-top:8px">
+      <button class="coral" id="lanzar">Lanzar</button>
+      <button class="blanco" id="azar">Al azar</button>
+      <button class="chico blanco" id="parar" style="grid-column:1/-1">Parar ahora</button>
+    </div>
+    <h2 style="margin-top:20px">🐞 Bug encontrado (+150)</h2>
+    <select id="bug-jugador"></select>
+    <input id="bug-texto" maxlength="140" placeholder="¿Qué bug encontró? (hasta 140 letras)" style="margin-top:8px">
+    <button class="verde" id="bug" style="margin-top:8px">Dar los 150</button>
+  </section>
+
+  <section class="panel ancho">
+    <h2>Héroes <span class="chip" id="n-jug">0</span></h2>
+    <div id="jugadores"></div>
+    <div class="fila" style="margin-top:12px;flex-wrap:wrap">
+      <button class="chico blanco" id="csv">Descargar CSV</button>
+      <button class="chico coral" id="reiniciar">Reiniciar arena</button>
+      <span class="aviso" id="aviso"></span>
+    </div>
+  </section>
+</main>
+<script src="static/comun.js?v=1"></script>
+<script>
+const $ = (id) => document.getElementById(id); const A = window.Arena;
+let clave = new URLSearchParams(location.search).get('clave') || '';
+try { if (clave) sessionStorage.setItem('arena-clave', clave); else clave = sessionStorage.getItem('arena-clave') || ''; } catch { }
+if (new URLSearchParams(location.search).get('clave')) history.replaceState(null, '', location.pathname);
+let confirmarReinicio = false, estado = null;
+
+async function api(ruta, body, metodo) {
+  const r = await fetch(ruta, { method: metodo || (body ? 'POST' : 'GET'), headers: { 'content-type': 'application/json', 'X-Clave': clave }, body: body ? JSON.stringify(body) : undefined });
+  const j = r.headers.get('content-type')?.includes('json') ? await r.json() : null;
+  if (r.status === 401) { $('entrar').hidden = false; $('clave-estado').textContent = 'clave incorrecta'; $('clave-estado').className = 'etiqueta coral'; return null; }
+  if (!r.ok) { $('aviso').textContent = (j && j.error) || 'Error'; setTimeout(() => $('aviso').textContent = '', 3000); return null; }
+  $('entrar').hidden = true; $('clave-estado').textContent = 'clave OK'; $('clave-estado').className = 'etiqueta verde';
+  return j;
+}
+$('entrar').querySelector('form').onsubmit = (e) => { e.preventDefault(); clave = $('clave').value; try { sessionStorage.setItem('arena-clave', clave); } catch { } cargar(); };
+
+function pintar(e) {
+  if (!e) return; estado = e;
+  $('n-pend').textContent = e.pendientesLista.length;
+  $('pendientes').innerHTML = e.pendientesLista.map((p) => `<div class="pend"><div><b>${A.esc(p.nombre)}</b><br>${A.esc(p.titulo)} <span class="muted">· sería ${p.puesto}.º${p.puesto <= 3 ? ' (bono +' + [50, 30, 20][p.puesto - 1] + ')' : ''} · ${A.hora(p.en)}</span></div>
+    <button class="verde chico" data-ok="1" data-id="${p.id}">✔</button><button class="coral chico" data-ok="0" data-id="${p.id}">✗</button></div>`).join('') || '<div class="muted">Nadie en la cola.</div>';
+  $('pendientes').querySelectorAll('button').forEach((b) => b.onclick = async () => { b.disabled = true; pintar(await api('api/admin/resolver', { id: +b.dataset.id, ok: b.dataset.ok === '1' })); });
+  const r = e.relampago;
+  $('rel-estado').textContent = r.texto === undefined ? 'Ninguna lanzada aún.' : r.activo ? `EN EL AIRE · ${Math.ceil(r.restanteMs / 1000)} s · respondieron ${r.respondieron}` : `Terminada: «${r.texto}» · ${(r.resultados || []).filter((x) => x.puntos > 0).length} acertaron`;
+  const sel = $('pregunta'); const antes = sel.value;
+  sel.innerHTML = e.preguntas.map((p) => `<option value="${p.i}">${p.usada ? '✓ ' : ''}${p.i + 1}. ${A.esc(p.texto)}</option>`).join('');
+  if (antes) sel.value = antes;
+  $('n-jug').textContent = e.jugadores;
+  const bugAntes = $('bug-jugador').value;
+  $('bug-jugador').innerHTML = e.tabla.map((f) => `<option value="${f.id}">${A.esc(f.nombre)} (${f.puntos})</option>`).join('');
+  if (bugAntes) $('bug-jugador').value = bugAntes;
+  $('jugadores').innerHTML = e.jugadoresLista.filter((j) => j.activo).map((j) => `<div class="fila-j"><span><b>${A.esc(j.nombre)}</b> · ${j.puntos} pts</span><input value="${A.esc(j.nombre)}" data-id="${j.id}" aria-label="Nuevo nombre"><button class="chico blanco" data-ren="${j.id}">Renombrar</button><button class="chico coral" data-quitar="${j.id}">Sacar</button></div>`).join('');
+  $('jugadores').querySelectorAll('[data-ren]').forEach((b) => b.onclick = async () => pintar(await api('api/admin/jugador', { id: +b.dataset.ren, nombre: $('jugadores').querySelector(`input[data-id="${b.dataset.ren}"]`).value })));
+  $('jugadores').querySelectorAll('[data-quitar]').forEach((b) => b.onclick = async () => pintar(await api('api/admin/jugador', { id: +b.dataset.quitar, quitar: true })));
+}
+async function cargar() { pintar(await api('api/admin/estado')); }
+$('lanzar').onclick = async () => pintar(await api('api/admin/relampago', { accion: 'lanzar', pregunta: +$('pregunta').value }));
+$('azar').onclick = async () => pintar(await api('api/admin/relampago', { accion: 'lanzar', pregunta: -1 }));
+$('parar').onclick = async () => pintar(await api('api/admin/relampago', { accion: 'parar' }));
+$('bug').onclick = async () => { const j = await api('api/admin/bug', { jugador: +$('bug-jugador').value, texto: $('bug-texto').value }); if (j) { $('bug-texto').value = ''; pintar(j); } };
+$('reiniciar').onclick = async () => { if (!confirmarReinicio) { confirmarReinicio = true; $('reiniciar').textContent = '¿Seguro? Pulsa otra vez'; setTimeout(() => { confirmarReinicio = false; $('reiniciar').textContent = 'Reiniciar arena'; }, 4000); return; } confirmarReinicio = false; $('reiniciar').textContent = 'Reiniciar arena'; pintar(await api('api/admin/reiniciar', {})); };
+$('csv').onclick = async () => { const r = await fetch('api/admin/csv', { headers: { 'X-Clave': clave } }); if (!r.ok) return; const b = await r.blob(); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'qa-arena.csv'; a.click(); };
+A.vivo(() => cargar());
+cargar();
+</script>
+</body>
+</html>

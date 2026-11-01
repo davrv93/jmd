@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QA Arena · tu héroe</title>
+<meta name="theme-color" content="#f7b500">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="static/comic.css?v=1">
+<style>
+  main { max-width: 560px; margin: 0 auto; padding: 14px 14px 60px; display: grid; gap: 18px; }
+  header { text-align: center; padding: 10px 0 4px; }
+  header h1 { font-size: clamp(40px, 12vw, 64px); }
+  .heroe { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: center; }
+  .heroe .avatar { width: 96px; height: 96px; }
+  .heroe .nombre { font-family: var(--titulo); font-size: 30px; text-transform: uppercase; line-height: 1; }
+  .opciones { display: grid; gap: 10px; }
+  .opciones button { text-align: left; font-family: var(--texto); font-weight: 700; text-transform: none; font-size: 19px; background: #fff; }
+  .opciones button.ok { background: var(--verde); color: #fff; } .opciones button.mal { background: var(--coral); color: #fff; }
+  .logro { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; border: 3px solid var(--negro); background: #fff; padding: 10px 12px; }
+  .logro.aprobado { background: #e6f9ee; } .logro.pendiente { background: var(--papel2); }
+  .logro b { font-family: var(--titulo); font-size: 20px; text-transform: uppercase; font-weight: 400; display: block; }
+  .logro small { color: var(--gris); }
+  .estado { font-family: var(--titulo); font-size: 18px; text-transform: uppercase; }
+  .ticker { font-size: 16px; display: grid; gap: 4px; }
+  .cuenta { font-family: var(--titulo); font-size: 44px; text-align: center; line-height: 1; }
+  #unirse form { display: grid; gap: 12px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <span class="etiqueta">Taller QA con IA · 1 nov</span>
+  <h1>QA Arena</h1>
+</header>
+<div class="tono"></div>
+<main>
+  <section id="lms" class="panel inclinado cream">
+    <span class="etiqueta mostaza">Entra a la arena</span>
+    <p id="lms-txt" style="margin:12px 0 0">Buscando tu sesión del LMS…</p>
+    <a class="boton" id="lms-link" href="/" hidden>Inicia sesión en el LMS</a>
+    <div id="staff" hidden style="display:grid;gap:10px;margin-top:10px">
+      <p style="margin:0">Hola, instructor. Tú no compites: tú repartes los puntos.</p>
+      <a class="boton" href="admin" target="_blank" rel="noopener">Panel del instructor</a>
+      <a class="boton blanco" href="show" target="_blank" rel="noopener">Abrir el show</a>
+    </div>
+    <p class="muted" style="margin:10px 0 0;font-size:15px"><span id="cupos"></span></p>
+  </section>
+  <section id="unirse" class="panel inclinado cream" hidden>
+    <span class="etiqueta mostaza">Modo local · entra con un nombre</span>
+    <form>
+      <p style="margin:12px 0 0">Tu nombre de héroe (2 a 24 letras). Te dibujamos la máscara.</p>
+      <input id="nombre" maxlength="24" autocomplete="nickname" placeholder="Ej.: Lucía QA" required>
+      <div class="fila"><div class="avatar" id="vista"></div><span class="muted" id="vista-txt">Así te verás en el show</span></div>
+      <button type="submit">¡Al ruedo!</button>
+      <div class="aviso" id="aviso"></div>
+      <p class="muted" style="margin:0;font-size:15px">Pide «Lo logré» en cada escena; el instructor lo aprueba y suman puntos. Los 3 primeros de cada logro ganan bono.</p>
+    </form>
+  </section>
+
+  <section id="hub" hidden style="display:grid;gap:18px">
+    <section class="panel heroe">
+      <div class="avatar" id="mi-avatar"></div>
+      <div>
+        <div class="nombre" id="mi-nombre"></div>
+        <div class="puntos"><span id="mi-puntos">0</span> pts</div>
+        <div class="muted">Puesto <b id="mi-puesto">–</b> de <span id="mi-total">0</span></div>
+      </div>
+    </section>
+
+    <section class="panel inclinado2" id="relampago" hidden>
+      <span class="etiqueta coral">⚡ Relámpago</span>
+      <div class="cuenta" id="rel-cuenta">20</div>
+      <div class="barra"><i id="rel-barra" style="width:100%"></i></div>
+      <p id="rel-texto" style="font-weight:700;font-size:21px"></p>
+      <div class="opciones" id="rel-opciones"></div>
+      <div class="aviso" id="rel-aviso"></div>
+      <p class="muted" id="rel-porque" style="margin:8px 0 0"></p>
+    </section>
+
+    <section class="panel">
+      <span class="etiqueta verde">Pasos del LMS · solos, sin aprobación</span>
+      <p class="muted" style="margin:8px 0 0;font-size:15px">Marca cada paso en tu sesión del LMS (la lista de la lección). Aquí se convierten en puntos: 100 por paso y bono a los 3 primeros.</p>
+      <ul class="lista" id="pasos" style="margin-top:10px"></ul>
+    </section>
+
+    <section class="panel">
+      <span class="etiqueta">Logros con aprobación del instructor</span>
+      <ul class="lista" id="logros" style="margin-top:12px"></ul>
+    </section>
+
+    <section class="panel cream">
+      <span class="etiqueta">Últimos golpes</span>
+      <div class="ticker" id="ticker" style="margin-top:10px"></div>
+    </section>
+  </section>
+</main>
+<script src="static/comun.js?v=1"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const A = window.Arena;
+let yo = null, estado = null, relTimer = null, ultimoEvento = 0, lmsYo = null, lmsIntentado = false;
+
+// Identidad: la da el LMS (misma origen, cookie de sesión). Staff no compite.
+async function desdeLMS() {
+  lmsIntentado = true;
+  try {
+    const r = await fetch('/api/v1/me', { credentials: 'include', cache: 'no-store' });
+    if (r.status === 200) lmsYo = await r.json(); else lmsYo = null;
+  } catch { lmsYo = null; }
+  if (lmsYo && (lmsYo.roles || []).some((x) => x === 'instructor' || x === 'admin')) {
+    $('lms-txt').textContent = ''; $('staff').hidden = false; $('lms').hidden = false; $('hub').hidden = true; return;
+  }
+  if (lmsYo) {
+    const nombre = (lmsYo.name || lmsYo.email.split('@')[0]).trim();
+    const r = await fetch('api/unirse', { method: 'POST', headers: cab(), body: JSON.stringify({ nombre, correo: lmsYo.email }) });
+    const j = await r.json();
+    if (r.ok) { try { localStorage.setItem('arena-token', j.token); } catch { } yo = j.jugador; pintarYo(); if (r.status === 201) A.onoma('¡ZAS!', '', 30, 20); sincronizarPasos(); return; }
+    $('lms-txt').textContent = j.error || 'No se pudo entrar.'; return;
+  }
+  if (estado && estado.local) { $('lms').hidden = true; $('unirse').hidden = !!yo; return; }
+  $('lms-txt').textContent = 'Para jugar, entra con tu cuenta del LMS y vuelve aquí.'; $('lms-link').hidden = false;
+}
+
+// Pasos del ciclo marcados en el LMS → puntos en la arena (al cargar y cada 30 s).
+async function sincronizarPasos() {
+  if (!yo || !lmsYo) return;
+  try {
+    const r = await fetch('/api/v1/lessons/qa-01/progress', { credentials: 'include', cache: 'no-store' });
+    if (!r.ok) return;
+    const p = await r.json();
+    const hechos = Object.entries(p.steps || {}).filter(([, v]) => v).map(([k]) => k);
+    const antes = yo.puntos;
+    const r2 = await fetch('api/pasos', { method: 'POST', headers: cab(), body: JSON.stringify({ pasos: hechos }) });
+    const j = await r2.json();
+    if (r2.ok) { yo = j.jugador; if (yo.puntos > antes) A.onoma('¡VERDE!', 'verde'); pintarYo(); }
+  } catch { }
+}
+setInterval(sincronizarPasos, 30000);
+
+const nombreIn = $('nombre');
+nombreIn.addEventListener('input', () => { $('vista').innerHTML = nombreIn.value.trim() ? A.avatarSVG(nombreIn.value.trim()) : ''; });
+
+$('unirse').querySelector('form').addEventListener('submit', async (e) => {
+  e.preventDefault(); $('aviso').textContent = '';
+  const r = await fetch('api/unirse', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ nombre: nombreIn.value }) });
+  const j = await r.json();
+  if (!r.ok) { $('aviso').textContent = j.error || 'No se pudo entrar.'; return; }
+  try { localStorage.setItem('arena-token', j.token); } catch { }
+  yo = j.jugador; pintarYo(); A.onoma('¡ZAS!', '', 30, 20);
+});
+
+async function cargarYo() {
+  let tok = ''; try { tok = localStorage.getItem('arena-token') || ''; } catch { }
+  const r = await fetch('api/yo', { headers: tok ? { 'X-Token': tok } : {} });
+  const j = await r.json(); yo = j.jugador; pintarYo();
+}
+function cab() { let tok = ''; try { tok = localStorage.getItem('arena-token') || ''; } catch { } return { 'content-type': 'application/json', ...(tok ? { 'X-Token': tok } : {}) }; }
+
+function pintarYo() {
+  $('hub').hidden = !yo;
+  if (yo) { $('lms').hidden = true; $('unirse').hidden = true; }
+  else if (lmsIntentado && estado && estado.local && !lmsYo) { $('lms').hidden = true; $('unirse').hidden = false; }
+  if (!yo) return;
+  $('mi-avatar').innerHTML = A.avatarSVG(yo.nombre); $('mi-nombre').textContent = yo.nombre;
+  $('mi-puntos').textContent = yo.puntos; $('mi-puesto').textContent = yo.puesto || '–';
+  pintarLogros(); pintarRelampago();
+}
+function pintarLogros() {
+  if (!estado || !yo) return;
+  $('pasos').innerHTML = estado.pasos.map((p) => {
+    const ok = (yo.pasos || []).includes(p.id);
+    return `<li class="logro ${ok ? 'aprobado' : ''}"><div><b>${A.esc(p.titulo)}</b><small>Paso «${p.id}» ${ok ? '· ✔ +100' : '· márcalo en el LMS'}</small></div>${ok ? '<span class="estado">✔</span>' : ''}</li>`;
+  }).join('');
+  $('logros').innerHTML = estado.logros.map((l) => {
+    const st = yo.logros[l.id] || '';
+    const txt = { aprobado: '✔ Aprobado', pendiente: '⏳ En la cola', rechazado: '↺ Todavía no' }[st] || '';
+    const btn = st === 'aprobado' ? '' : st === 'pendiente' ? '<span class="estado">⏳</span>' : `<button class="chico" data-logro="${l.id}">Lo logré</button>`;
+    return `<li class="logro ${st}"><div><b>${A.esc(l.titulo)}</b><small>Escena ${A.esc(l.escena)} · ${txt}</small></div>${btn}</li>`;
+  }).join('');
+  $('logros').querySelectorAll('button[data-logro]').forEach((b) => b.onclick = async () => {
+    b.disabled = true;
+    const r = await fetch('api/logro', { method: 'POST', headers: cab(), body: JSON.stringify({ id: b.dataset.logro }) });
+    const j = await r.json(); if (r.ok) { yo = j.jugador; pintarYo(); } else { b.disabled = false; alertar(j.error); }
+  });
+}
+function alertar(t) { $('aviso').textContent = t; $('rel-aviso').textContent = t; setTimeout(() => { $('rel-aviso').textContent = ''; }, 3000); }
+
+function pintarRelampago() {
+  const rel = estado && estado.relampago; const sec = $('relampago');
+  if (!rel || rel.texto === undefined) { sec.hidden = true; return; }
+  sec.hidden = false; $('rel-texto').textContent = rel.texto;
+  const mia = yo && yo.respuesta;
+  $('rel-opciones').innerHTML = rel.opciones.map((o, i) => {
+    let cls = ''; if (!rel.activo && rel.correcta === i) cls = 'ok'; else if (mia && mia.opcion === i && (!rel.activo && rel.correcta !== i)) cls = 'mal';
+    return `<button class="${cls}" data-op="${i}" ${(!rel.activo || mia) ? 'disabled' : ''}>${'ABCD'[i]}. ${A.esc(o)}</button>`;
+  }).join('');
+  $('rel-opciones').querySelectorAll('button').forEach((b) => b.onclick = async () => {
+    b.disabled = true;
+    const r = await fetch('api/responder', { method: 'POST', headers: cab(), body: JSON.stringify({ opcion: +b.dataset.op }) });
+    const j = await r.json();
+    if (r.ok) { yo = j.jugador; $('rel-aviso').textContent = j.puntos ? `¡+${j.puntos} pts!` : 'Respuesta enviada…'; if (j.puntos) A.onoma('¡POW!', 'verde', 25, 25); pintarYo(); }
+    else alertar(j.error);
+  });
+  $('rel-porque').textContent = rel.activo ? '' : (rel.porque || '');
+  if (!rel.activo && mia) $('rel-aviso').textContent = mia.puntos ? `Acertaste: +${mia.puntos} pts` : 'Esta vez no. La correcta está en verde.';
+  clearInterval(relTimer);
+  if (rel.activo) {
+    const fin = new Date(rel.fin).getTime();
+    const tic = () => { const ms = Math.max(0, fin - Date.now()); $('rel-cuenta').textContent = Math.ceil(ms / 1000); $('rel-barra').style.width = (ms / 200) + '%'; if (ms <= 0) clearInterval(relTimer); };
+    tic(); relTimer = setInterval(tic, 200);
+  } else { $('rel-cuenta').textContent = '✓'; $('rel-barra').style.width = '0%'; }
+}
+
+A.vivo((e) => {
+  estado = e;
+  $('cupos').textContent = `${e.jugadores} de ${e.maximo} héroes`;
+  $('mi-total').textContent = e.jugadores;
+  const nuevos = e.eventos.filter((ev) => ev.id > ultimoEvento);
+  if (ultimoEvento && yo) nuevos.forEach((ev) => { if (ev.jugador === yo.id && ev.puntos) A.onoma(ev.tipo === 'bug' ? '¡BUG!' : ev.tipo === 'primero' ? '¡PRIMERO!' : '¡POW!', ev.tipo === 'bug' ? 'coral' : 'verde'); });
+  if (e.eventos.length) ultimoEvento = e.eventos[e.eventos.length - 1].id;
+  $('ticker').innerHTML = e.eventos.slice(-8).reverse().map((ev) => `<div><b>${A.hora(ev.en)}</b> ${A.esc(ev.nombre || '')} ${A.esc(ev.texto)} ${ev.puntos ? `<span class="chip ok">+${ev.puntos + (ev.bono || 0)}</span>` : ''}</div>`).join('');
+  if (yo) cargarYo(); else { pintarRelampago(); if (lmsIntentado && !lmsYo && e.local) { $('lms').hidden = true; $('unirse').hidden = false; } }
+});
+(async () => { await cargarYo(); if (!yo) await desdeLMS(); else { lmsYo = { email: '' }; try { const r = await fetch('/api/v1/me', { credentials: 'include' }); if (r.ok) { lmsYo = await r.json(); sincronizarPasos(); } } catch { } } })();
+</script>
+</body>
+</html>

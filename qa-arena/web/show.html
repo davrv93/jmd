@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QA Arena · show</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="static/comic.css?v=1">
+<style>
+  body { overflow: hidden; height: 100vh; }
+  .cab { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 28px 8px; }
+  .cab h1 { font-size: clamp(40px, 5vw, 76px); }
+  .cab .sub { font-family: var(--titulo); text-transform: uppercase; font-size: 22px; }
+  .audio { display: flex; align-items: center; gap: 10px; }
+  .audio input[type=range] { width: 120px; border: 0; box-shadow: none; padding: 0; }
+  .cuerpo { display: grid; grid-template-columns: 1.35fr 1fr; gap: 22px; padding: 18px 28px; height: calc(100vh - 150px); }
+  .tira { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: minmax(0, 1fr); gap: 12px; max-height: calc(100% - 60px); }
+  .heroe { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; align-items: center; border: 4px solid var(--negro); background: #fff; padding: 8px 10px; box-shadow: 4px 4px 0 var(--negro); position: relative; min-width: 0; }
+  .heroe .avatar { width: 56px; height: 56px; }
+  .heroe .n { font-family: var(--titulo); text-transform: uppercase; font-size: 22px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .heroe .p { font-family: var(--titulo); font-size: 30px; }
+  .heroe .puesto { position: absolute; left: -12px; top: -12px; width: 34px; height: 34px; border: 3px solid var(--negro); background: var(--mostaza); font-family: var(--titulo); font-size: 20px; display: grid; place-items: center; border-radius: 50%; }
+  .heroe.top1 { background: var(--papel2); transform: rotate(-1deg); } .heroe.top1 .puesto { background: var(--coral); color: #fff; }
+  .heroe .dots { font-size: 12px; letter-spacing: 1px; color: var(--gris); }
+  .heroe .dots b { color: var(--verde); }
+  .col { display: grid; grid-template-rows: auto 1fr; gap: 18px; min-height: 0; }
+  .rel .cuenta { font-family: var(--titulo); font-size: 86px; line-height: 1; text-align: center; }
+  .rel p.q { font-size: 26px; font-weight: 700; margin: 8px 0; }
+  .rel .ops { display: grid; gap: 6px; }
+  .rel .ops div { border: 3px solid var(--negro); padding: 7px 10px; font-size: 20px; background: #fff; }
+  .rel .ops div.ok { background: var(--verde); color: #fff; font-weight: 700; }
+  .rel .gan { margin-top: 8px; font-size: 18px; }
+  .ticker { overflow: hidden; min-height: 0; }
+  .ticker div { font-size: 19px; padding: 5px 0; border-bottom: 2px dashed #ccc; }
+  .ticker b.h { font-family: var(--titulo); font-weight: 400; margin-right: 6px; }
+  .vacio { font-size: 22px; color: var(--gris); text-align: center; padding: 30px 0; }
+  .qr { font-size: 18px; }
+  @media (max-width: 1100px) { body { overflow: auto; height: auto; } .cuerpo { grid-template-columns: 1fr; height: auto; } .tira { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<div class="cab">
+  <div>
+    <span class="etiqueta">Taller QA con IA · domingo 1 de noviembre</span>
+    <h1>QA Arena</h1>
+  </div>
+  <div class="sub">Entra en <span style="background:var(--negro);color:#fff;padding:2px 10px">jmd-learn.online/qa-arena</span> · <span id="cupos"></span></div>
+  <div class="audio">
+    <button class="chico blanco" id="ska">♫ Ska</button>
+    <input type="range" id="vol" min="0" max="1" step="0.05" value="0.35" aria-label="Volumen">
+  </div>
+</div>
+<div class="tono"></div>
+<div class="cuerpo">
+  <section class="panel" style="min-height:0">
+    <span class="etiqueta mostaza">Tabla de héroes</span>
+    <div class="tira" id="tira" style="margin-top:14px"></div>
+    <div id="resto" style="margin-top:8px"></div>
+  </section>
+  <div class="col">
+    <section class="panel inclinado2 rel" id="rel">
+      <span class="etiqueta coral">⚡ Relámpago</span>
+      <div id="rel-cuerpo"><div class="vacio">Esperando la próxima pregunta…</div></div>
+    </section>
+    <section class="panel cream" style="min-height:0;display:grid;grid-template-rows:auto 1fr">
+      <span class="etiqueta">Últimos golpes</span>
+      <div class="ticker" id="ticker" style="margin-top:10px"></div>
+    </section>
+  </div>
+</div>
+<script src="static/comun.js?v=1"></script>
+<script>
+const $ = (id) => document.getElementById(id); const A = window.Arena;
+let ultimoEvento = 0, relTimer = null, primero = true;
+
+function pintar(e) {
+  $('cupos').textContent = `${e.jugadores}/${e.maximo} héroes`;
+  const n = e.pasos.length, tira = e.tabla.slice(0, e.enTira || 15), resto = e.tabla.slice(e.enTira || 15);
+  $('tira').innerHTML = tira.map((f) =>
+    `<div class="heroe ${f.puesto === 1 ? 'top1' : ''}"><span class="puesto">${f.puesto}</span><div class="avatar">${A.avatarSVG(f.nombre)}</div>
+     <div style="min-width:0"><div class="n">${A.esc(f.nombre)}</div><div class="dots">${e.pasos.map((p) => (f.pasos || []).includes(p.id) ? '<b>●</b>' : '○').join('')} ${(f.pasos || []).length}/${n} · ${f.logros.length}★</div></div>
+     <div class="p">${f.puntos}</div></div>`).join('') || '<div class="vacio" style="grid-column:1/-1">Aún no entra ningún héroe. Entra desde el LMS a jmd-learn.online/qa-arena</div>';
+  $('resto').innerHTML = resto.length ? resto.map((f) => `<span class="chip">${f.puesto}. ${A.esc(f.nombre)} <b>${f.puntos}</b></span>`).join(' ') : '';
+
+  const r = e.relampago;
+  if (r.texto !== undefined) {
+    const ops = r.opciones.map((o, i) => `<div class="${(!r.activo && r.correcta === i) ? 'ok' : ''}">${'ABCD'[i]}. ${A.esc(o)}</div>`).join('');
+    let pie = '';
+    if (!r.activo) {
+      const g = (r.resultados || []).filter((x) => x.puntos > 0);
+      pie = `<div class="gan">${g.length ? '¡Acertaron! ' + g.map((x) => `<span class="chip ok">${A.esc(x.nombre)} +${x.puntos}</span>`).join(' ') : 'Nadie acertó esta vez.'}<br><span class="muted">${A.esc(r.porque || '')}</span></div>`;
+    }
+    $('rel-cuerpo').innerHTML = `<div class="cuenta" id="rel-cuenta">${r.activo ? Math.ceil(r.restanteMs / 1000) : '✓'}</div><div class="barra"><i id="rel-barra" style="width:${r.activo ? r.restanteMs / 200 : 0}%"></i></div>
+      <p class="q">${A.esc(r.texto)}</p><div class="ops">${ops}</div><div class="muted" style="margin-top:6px">Respondieron: <b id="rel-n">${r.respondieron}</b> · pregunta ${r.numero}</div>${pie}`;
+    clearInterval(relTimer);
+    if (r.activo) {
+      const fin = Date.now() + r.restanteMs;
+      relTimer = setInterval(() => { const ms = Math.max(0, fin - Date.now()); const c = $('rel-cuenta'), b = $('rel-barra'); if (c) c.textContent = Math.ceil(ms / 1000); if (b) b.style.width = (ms / 200) + '%'; if (ms <= 0) clearInterval(relTimer); }, 200);
+    }
+  }
+
+  const nuevos = e.eventos.filter((ev) => ev.id > ultimoEvento);
+  if (!primero) nuevos.forEach((ev, i) => setTimeout(() => {
+    if (ev.tipo === 'bug') A.onoma('¡BUG!', 'coral'); else if (ev.tipo === 'primero') A.onoma('¡PRIMERO!', 'azul'); else if (ev.tipo === 'logro' || ev.tipo === 'paso') A.onoma('¡VERDE!', 'verde');
+    else if (ev.tipo === 'acierto') A.onoma('¡POW!', ''); else if (ev.tipo === 'relampago') A.onoma('¡ZAS!', 'coral'); else if (ev.tipo === 'entra') A.onoma('¡HOLA!', 'azul');
+  }, i * 350));
+  if (e.eventos.length) ultimoEvento = e.eventos[e.eventos.length - 1].id;
+  primero = false;
+  $('ticker').innerHTML = e.eventos.slice(-9).reverse().map((ev) => {
+    const sello = ev.tipo === 'primero' ? ' <span class="chip" style="background:var(--coral);color:#fff">¡PRIMERO!</span>' : ev.tipo === 'bug' ? ' <span class="chip" style="background:var(--coral);color:#fff">¡BUG!</span>' : '';
+    return `<div><b class="h">${A.hora(ev.en)}</b><b>${A.esc(ev.nombre || '')}</b> ${A.esc(ev.texto)}${ev.puntos ? ` <span class="chip ok">+${ev.puntos}${ev.bono ? ' +' + ev.bono : ''}</span>` : ''}${sello}</div>`;
+  }).join('');
+}
+A.vivo(pintar);
+
+// Ska sintetizado: 140 BPM, acordes a contratiempo, charles en corcheas, bombo en 1 y 3, bajo caminante. Apagado por defecto.
+let ac = null, master = null, sonando = false, paso = 0, siguiente = 0, timer = null;
+const BPM = 140, CORCHEA = 60 / BPM / 2;
+const ACORDES = [[0, 4, 7], [5, 9, 12], [7, 11, 14], [5, 9, 12]]; // I IV V IV en semitonos
+const BAJO = [0, 4, 7, 4, 5, 9, 12, 9, 7, 11, 14, 11, 5, 9, 12, 9];
+const f = (st) => 220 * Math.pow(2, st / 12);
+function nota(freq, t, dur, tipo, gain) { const o = ac.createOscillator(), g = ac.createGain(); o.type = tipo; o.frequency.value = freq; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g).connect(master); o.start(t); o.stop(t + dur + 0.02); }
+function ruido(t, dur, gain) { const n = ac.createBufferSource(), b = ac.createBuffer(1, ac.sampleRate * dur, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length); n.buffer = b; const g = ac.createGain(); g.gain.value = gain; const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 6000; n.connect(hp).connect(g).connect(master); n.start(t); }
+function programar() {
+  while (siguiente < ac.currentTime + 0.3) {
+    const i = paso % 16, compas = Math.floor(paso / 16) % 4, t = siguiente;
+    ruido(t, 0.05, i % 2 ? 0.25 : 0.4);
+    if (i % 8 === 0) { nota(55, t, 0.18, 'sine', 0.9); }
+    if (i % 2 === 1) ACORDES[compas].forEach((st) => nota(f(st + 12), t, 0.11, 'square', 0.07));
+    if (i % 2 === 0) nota(f(BAJO[(compas * 4 + (i / 2) % 4) % 16] - 24), t, 0.2, 'triangle', 0.5);
+    siguiente += CORCHEA; paso++;
+  }
+}
+$('ska').onclick = () => {
+  if (!ac) { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = +$('vol').value; master.connect(ac.destination); }
+  sonando = !sonando; $('ska').textContent = sonando ? '■ Ska' : '♫ Ska';
+  if (sonando) { ac.resume(); siguiente = ac.currentTime + 0.05; timer = setInterval(programar, 100); } else clearInterval(timer);
+};
+$('vol').oninput = () => { if (master) master.gain.value = +$('vol').value; };
+</script>
+</body>
+</html>

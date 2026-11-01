@@ -17,7 +17,7 @@ let fallos = 0;
 const minutos = [0,0,0,0,0,0];
 // Escenas de teoría de la primera versión (pedidas de vuelta el 01-11): tienen su propio diseño, sin la barra de
 // bloque ni la guía lateral. Aquí se declara a qué bloque de la agenda suman sus minutos.
-const TEORIA = { "01-escanea-tu-tienda": 1, "03-piramide-y-casos": 1, "04-page-object-model": 1, "06-semillas-y-flaky": 2, "08-navegadores-sin-interfaz": 3, "11-semilla-del-usuario": 4, "12-asi-lo-hace-una-botica": 4, "14-monitoreo-sla": 5, "15-robot-todo-el-dia": 5, "16-informe-de-pruebas": 6 };
+const TEORIA = { "01-escanea-tu-tienda": 1, "03-piramide-y-casos": 1, "04-page-object-model": 1, "06-semillas-y-flaky": 2, "08-navegadores-sin-interfaz": 3, "11-semilla-del-usuario": 4, "12-asi-lo-hace-una-botica": 4, "14-monitoreo-sla": 5, "15-robot-todo-el-dia": 5, "16-informe-de-pruebas": 6 , "18-qa-arena": 6 };
 
 function yamlPlano(txt) {
   // Lector mínimo: claves de primer nivel «clave: valor»; las listas (comandos) solo se detectan.
