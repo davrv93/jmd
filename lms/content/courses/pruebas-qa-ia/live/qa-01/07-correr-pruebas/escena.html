@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Haz que la prueba encuentre el bug</title>
+<!--
+  Escena del modo LIVE (taller qa-01). Plantilla «Consola + Qué pasa en el software» con sub-pasos (puntos ● ○ ○,
+  flechas ‹ › y teclas ← →). A la izquierda lo que el alumno escribe en Claude Code (o el comando sin IA) y lo que
+  responde, tomado de corridas reales del kit; a la derecha una réplica clara e interactiva del software que cambia
+  paso a paso. Sin recursos externos, menos de 300 elementos y 1 MB, todo se apaga con prefers-reduced-motion. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .25); }
+.esc { height: 100vh; min-height: 0; padding: 1.4vh 2.4vw 1.1vh; gap: .9vh; overflow: hidden; }
+.esc-cuerpo { gap: .8vh; justify-content: start; min-height: 0; }
+.esc-titulo { font-size: 1.32em; }
+.v-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: end; }
+.v-obj { margin: 0; font-size: .7em; color: var(--muted); } .v-obj b { color: var(--fg); }
+.v-bloque { font: 700 .62em var(--mono); color: var(--muted); letter-spacing: .06em; white-space: nowrap; }
+.v-dots { display: flex; align-items: center; gap: .6em; }
+.v-dots .q-btn { padding: .3em .75em; font-size: .8em; }
+.v-dotbar { display: flex; gap: .45em; }
+.v-dot { width: .85em; height: .85em; border-radius: 50%; border: 2px solid var(--accent); background: transparent; padding: 0; cursor: pointer; }
+.v-dot[aria-current="true"] { background: var(--accent); }
+.v-dots b { font-size: .78em; } .v-dots #sub-n { margin-left: auto; }
+.v-sub { display: grid; align-content: start; gap: .5em; }
+.v-b2 { display: grid; grid-template-columns: 45fr 55fr; gap: 1.1vw; min-height: 0; flex: 1; }
+.v-con, .v-soft { display: grid; grid-template-rows: auto minmax(0,1fr); gap: .45em; padding: .6em .9em .7em; min-width: 0; min-height: 0; overflow: hidden; }
+.v-et { font-size: .58em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: flex; align-items: center; gap: .6em; }
+.v-et .esc-chip { font-size: .95em; padding: .15em .6em; margin-left: auto; }
+.v-term { background: #14122b; color: #e9e6ff; border-radius: .7em; border: 1px solid rgba(190,185,255,.22); display: grid; grid-template-rows: auto 1fr auto; min-height: 0; overflow: hidden; }
+.v-term-cab { display: flex; align-items: center; gap: .5em; padding: .4em .8em; background: #1d1b38; font: 700 .62em var(--mono); color: #b7b4cc; border-bottom: 1px solid rgba(190,185,255,.14); }
+.v-term-cab i { width: .6em; height: .6em; border-radius: 50%; background: #ff5f57; display: inline-block; } .v-term-cab i+i { background: #febc2e; } .v-term-cab i+i+i { background: #28c840; }
+.v-term-cab span { margin-left: .4em; }
+.v-term pre { margin: 0; padding: .6em .9em; font: 500 .85em/1.45 var(--mono); white-space: pre-wrap; word-break: break-word; overflow: auto; min-height: 0; }
+.v-term pre .p { color: #8e7dff; } .v-term pre .u { color: #ffd166; } .v-term pre .k { color: #7fd1ff; } .v-term pre .c { color: #8a86b3; }
+.v-term pre .ok { color: #4fd37a; } .v-term pre .bad { color: #ff7b7b; } .v-term pre .w { color: #f4ac5c; } .v-term pre .d { color: #c3b9ff; }
+.v-term pre .cur { display: inline-block; width: .55em; height: 1em; background: #e9e6ff; vertical-align: text-bottom; animation: esc-parpadeo 1s steps(2) infinite; }
+.v-term-pie { display: flex; gap: .5em; align-items: center; padding: .45em .8em; border-top: 1px solid rgba(190,185,255,.14); background: #1d1b38; }
+.v-alt { font: 500 .6em/1.3 var(--mono); color: #b7b4cc; margin-left: auto; text-align: right; }
+.v-alt b { color: #ffd166; font-weight: 600; }
+.q-btn { font: 700 .66em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .95em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s; }
+.q-btn:hover { transform: translateY(-1px); } .q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.q-btn.ok { color: var(--ok); border-color: var(--ok); } .q-btn.no { color: var(--bad); border-color: var(--bad); }
+.q-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.v-soft-cuerpo { min-height: 0; overflow: auto; display: grid; align-content: start; gap: .5em; }
+.v-paso { transition: box-shadow .3s, background .3s; border-radius: .6em; }
+.v-paso.on { box-shadow: 0 0 0 3px var(--accent-bg), 0 0 0 5px var(--accent); background: var(--accent-bg); }
+.v-haz { display: grid; grid-template-columns: auto 1fr auto; gap: 1vw; align-items: center; padding: .45em 1em; flex: none; }
+.v-haz ol { margin: 0; padding: 0; list-style: none; display: flex; gap: 1.2vw; flex-wrap: wrap; font-size: .7em; }
+.v-haz ol li { display: flex; gap: .45em; align-items: baseline; }
+.v-haz ol li b { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .85em; flex: none; }
+.v-haz code { font: 600 .92em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.v-logre { font-size: .66em; display: flex; gap: .5em; align-items: center; background: var(--ok-bg); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); border-radius: 999px; padding: .3em .8em; font-weight: 700; white-space: nowrap; }
+.v-logre input { accent-color: var(--ok); }
+/* piezas de réplica (claras) */
+.s-win { background: #fffbf2; color: #1f2937; border: 1px solid #e5e7eb; border-radius: .6em; overflow: hidden; font-size: .72em; }
+.s-win .s-bar { background: #1f2937; color: #fff; padding: .45em .8em; display: flex; gap: .8em; align-items: center; font-weight: 700; }
+.s-win .s-bar span { color: #f59e0b; } .s-win .s-bar nav { margin-left: auto; display: flex; gap: .8em; font-weight: 500; font-size: .9em; }
+.s-win .s-bar nav a { color: #fff; text-decoration: none; cursor: pointer; } .s-win .s-bar nav a.cur { border-bottom: 2px solid #f59e0b; }
+.s-win .s-main { padding: .8em 1em; display: grid; gap: .5em; }
+.s-win h4 { margin: 0; font-size: 1.1em; }
+.s-win label { display: grid; gap: .15em; font-weight: 600; font-size: .9em; }
+.s-win input { width: 100%; padding: .4em .6em; font: inherit; border: 1px solid #d1d5db; border-radius: .4em; background: #fff; }
+.s-win .s-pri { background: #f59e0b; color: #1f1300; border: 0; border-radius: .4em; padding: .45em 1em; font: inherit; font-weight: 700; cursor: pointer; justify-self: start; }
+.s-win .s-sec { background: #fff; border: 1px solid #d1d5db; border-radius: .4em; padding: .3em .7em; font: inherit; font-size: .9em; cursor: pointer; }
+.s-win .s-err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: .4em; padding: .4em .6em; font-weight: 600; } .s-win .s-err:empty { display: none; }
+.s-win .s-ok { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: .4em; padding: .4em .6em; font-weight: 600; } .s-win .s-ok:empty { display: none; }
+.s-win table { width: 100%; border-collapse: collapse; font-size: .95em; } .s-win th, .s-win td { text-align: left; padding: .3em .4em; border-bottom: 1px solid #e5e7eb; } .s-win th { color: #6b7280; font-size: .85em; }
+.s-win .s-tot { display: flex; gap: 1.5em; align-items: end; } .s-win .s-tot b { font-size: 1.3em; }
+.v-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .25em; font-size: .68em; }
+.v-lista li { display: grid; grid-template-columns: 1.4em 1fr; gap: .5em; align-items: start; padding: .22em .5em; border-radius: .4em; border: 1px solid var(--line); background: var(--s1); }
+.v-lista li i { font-style: normal; font-weight: 800; color: var(--muted); } .v-lista li.ok i { color: var(--ok); } .v-lista li.bad i { color: var(--bad); }
+.v-lista li.bad { background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 35%, transparent); } .v-lista li.ok { background: var(--ok-bg); }
+.v-lista li small { display: block; font: 500 .85em var(--mono); color: var(--bad); white-space: pre-wrap; }
+.v-lista li[hidden] { display: none; }
+.v-code { margin: 0; font: 500 .66em/1.45 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .6em .8em; white-space: pre-wrap; color: var(--fg); overflow: auto; }
+.v-code .n { color: var(--ok); } .v-code .ph { color: var(--muted); font-style: italic; } .v-code .r { color: var(--bad); }
+.v-nota { margin: 0; font-size: .66em; color: var(--muted); } .v-nota b { color: var(--fg); }
+.v-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.v-kpi { background: var(--s2); border: 1px solid var(--line); border-radius: .6em; padding: .5em .7em; display: grid; gap: .15em; }
+.v-kpi .v-et { font-size: .52em; } .v-kpi b { font-size: 1.25em; line-height: 1.1; } .v-kpi small { font-size: .62em; color: var(--muted); }
+.v-kpi.ok { background: var(--ok-bg); } .v-kpi.ok b { color: var(--ok); } .v-kpi.bad { background: var(--bad-bg); } .v-kpi.bad b { color: var(--bad); }
+.v-tabs { display: flex; gap: .4em; } .v-tabs .q-btn { padding: .4em .8em; }
+@media (prefers-reduced-motion: reduce) { .v-term pre .cur { animation: none; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 780 L168 728 L236 764 L296 700"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="780" r="3.5"/><circle class="eg" cx="168" cy="728" r="4.5"/><circle class="e" cx="236" cy="764" r="3"/><circle class="eo" cx="296" cy="700" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="v-bloque">Bloque 2/6 · 9:45 hora de Lima</span>
+    <span class="esc-num">QA con IA · 07 / 17</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div class="v-cab">
+      <h1 class="esc-titulo a-in">Haz que la prueba <em>encuentre el bug</em></h1>
+      <p class="v-obj a-in" style="--d:.05s"><b>Objetivo</b> · Correr la suite: 3 rojos que son bugs reales; luego verla en verde con la tienda corregida.</p>
+    </div>
+    <div class="v-dots a-in" style="--d:.08s"><button type="button" class="q-btn" id="ant" aria-label="Paso anterior">‹</button><span class="v-dotbar"><button type="button" class="v-dot" data-i="0" aria-label="Paso 1" aria-current=true></button><button type="button" class="v-dot" data-i="1" aria-label="Paso 2"></button><button type="button" class="v-dot" data-i="2" aria-label="Paso 3"></button></span><b id="sub-tit"></b><span class="v-nota" id="sub-n"></span><button type="button" class="q-btn" id="sig" aria-label="Paso siguiente">›</button></div>
+    <div class="v-b2">
+      <section class="esc-card v-con a-in" style="--d:.1s" aria-label="Consola">
+        <span class="v-et">Consola · lo que escribes <span class="esc-chip">Claude Code</span></span>
+        <div class="v-term">
+          <div class="v-term-cab"><i></i><i></i><i></i><span id="cwd">❯ claude</span></div>
+          <pre id="con" aria-live="polite"></pre>
+          <div class="v-term-pie"><button type="button" class="q-btn pri" id="ejecutar">Ejecutar ▶</button><button type="button" class="q-btn" id="reiniciar">Reiniciar</button><span class="v-alt" id="alt"></span></div>
+        </div>
+      </section>
+      <section class="esc-card v-soft a-in" style="--d:.15s" aria-label="Qué pasa en el software">
+        <span class="v-et">Qué pasa en el software <span class="esc-chip ok" id="soft"></span></span>
+        <div class="v-soft-cuerpo"><div class="v-sub" data-i="0"><div class="v-g3" id="k-res"><div class="v-kpi ok" id="k-pass"><span class="v-et">Pasan</span><b id="n-pass">0</b><small>de 22</small></div><div class="v-kpi bad" id="k-fail"><span class="v-et">Fallan</span><b id="n-fail">0</b><small>rojo = bug real</small></div><div class="v-kpi" id="k-time"><span class="v-et">Tiempo</span><b id="n-time">—</b><small>cada rojo espera 5 s</small></div></div><ul class="v-lista" id="tests"><li data-k="api" id="t0"><i>·</i><span>API-SAL-001 /salud responde 200 con estado ok<small hidden></small></span></li><li data-k="api" id="t1"><i>·</i><span>API-LOG-001 login correcto devuelve un token<small hidden></small></span></li><li data-k="api" id="t2"><i>·</i><span>API-LOG-002 login con clave incorrecta devuelve 401<small hidden></small></span></li><li data-k="api" id="t3"><i>·</i><span>API-SEG-001 sin token no se ven los productos<small hidden></small></span></li><li data-k="api" id="t4"><i>·</i><span>API-VEN-001 el servidor rechaza efectivo insuficiente (422)<small hidden></small></span></li><li data-k="api" id="t5"><i>·</i><span>API-VEN-002 una venta descuenta el stock<small hidden></small></span></li><li data-k="api" id="t6"><i>·</i><span>API-VEN-003 no se vende un producto sin stock (422)<small hidden></small></span></li><li data-k="api" id="t7"><i>·</i><span>API-SEM-001 la semilla aleatoria es reproducible<small hidden></small></span></li><li data-k="e2e" id="t8"><i>·</i><span>E2E-LOG-001 el cajero ingresa con usuario y clave válidos<small hidden></small></span></li><li data-k="e2e" id="t9"><i>·</i><span>E2E-LOG-002 una clave incorrecta muestra un error<small hidden></small></span></li><li data-k="e2e" id="t10"><i>·</i><span>E2E-LOG-003 sin sesión, una página interna devuelve al login<small hidden></small></span></li><li data-k="e2e" id="t11"><i>·</i><span>E2E-CAT-001 la semilla carga 20 productos<small hidden></small></span></li><li data-k="e2e" id="t12"><i>·</i><span>E2E-CAT-002 buscar por nombre filtra el catálogo<small hidden></small></span></li><li data-k="e2e" id="t13"><i>·</i><span>E2E-CAT-003 una búsqueda sin coincidencias lo dice<small hidden></small></span></li><li data-k="e2e" id="t14"><i>·</i><span>E2E-CAT-004 un producto sin stock no se puede agregar<small hidden></small></span></li><li data-k="e2e" id="t15"><i>·</i><span>E2E-CAT-005 un producto vencido no se puede agregar<small hidden></small></span></li><li data-k="bad" id="t16"><i>·</i><span>E2E-VEN-001 una venta en efectivo calcula bien el total y el vuelto<small hidden>Expected: &quot;… Vuelto S/ 20.50&quot;  Received: &quot;Venta N° 1 registrada. Total S/ 29.50 · Vuelto S/ 0.00&quot;</small></span></li><li data-k="bad" id="t17"><i>·</i><span>E2E-VEN-002 si el efectivo no alcanza, la venta se rechaza<small hidden>Expected: &quot;&quot;  Received: &quot;Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00&quot;</small></span></li><li data-k="bad" id="t18"><i>·</i><span>E2E-VEN-003 la promo de 10 % se aplica una sola vez al cambiar la cantidad<small hidden>Expected: &quot;S/ 34.02&quot;  Received: &quot;S/ 30.62&quot;</small></span></li><li data-k="e2e" id="t19"><i>·</i><span>E2E-VEN-004 el vuelto se actualiza mientras se escribe el efectivo<small hidden></small></span></li><li data-k="e2e" id="t20"><i>·</i><span>E2E-REP-001 con semilla limpia el reporte está en cero<small hidden></small></span></li><li data-k="e2e" id="t21"><i>·</i><span>E2E-REP-002 el reporte suma las ventas registradas<small hidden></small></span></li></ul></div></div>
+      </section>
+    </div>
+    <div class="esc-card v-haz a-in" style="--d:.25s">
+      <span class="v-et">Hazlo tú · Tu acción</span>
+      <ol id="haz"></ol>
+      <label class="v-logre"><input type="checkbox"> <span id="logre"></span></label>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Antes · 06 · Pruebas inestables: semillas, esperas, aislamiento y reloj</span> <span style="margin-left:auto">Después · 08 · Navegadores sin interfaz: Chromium, Lightpanda y Obscura</span></footer>
+</div>
+<script>
+const SUBS=[{pasos:[{"t": "cmd", "s": "npm test", "on": "k-run"}, {"t": "out", "s": "Running 22 tests using 1 worker", "c": "c", "on": "k-api"}, {"t": "pausa", "ms": 500, "on": "k-e2e"}, {"t": "pausa", "ms": 500, "on": "k-bad"}, {"t": "out", "s": "  ✘ E2E-VEN-001 … calcula bien el total y el vuelto (5.4s)\n  ✘ E2E-VEN-002 si el efectivo no alcanza, la venta se rechaza (5.4s)\n  ✘ E2E-VEN-003 la promo de 10 % se aplica una sola vez (5.4s)", "c": "bad"}, {"t": "out", "s": "  3 failed\n  20 passed (21.5s)", "c": "w", "on": "k-res"}],inicio:["Primero la suite completa, después el porqué de cada rojo."],alt:"npm test",cwd:"qa-taller-kit/pruebas",soft:"npm test · 22 pruebas",titulo:"npm test · 3 rojos",haz:["En <code>pruebas/</code>: <code>npm test</code>.", "Cuenta los rojos y lee su <code>Received</code>."],logre:"tengo 3 rojos y 20 verdes"},{pasos:[{"t": "prompt", "s": "¿Por qué falla E2E-VEN-002? Explícamelo leyendo el Received. No cambies la aserción ni la prueba."}, {"t": "claude", "s": "Read test-results/…VEN-002…/error-context.md · Read app/publico/js/venta.js"}, {"t": "out", "s": "La prueba espera que no se registre nada y recibe «Venta N° 1 registrada…». En venta.js la bandera cobroExacto manda efectivo = total al servidor, así que el control del backend nunca se activa. Es un bug de la app, no de la prueba.", "c": "ok", "on": "t17"}],inicio:["Primero la suite completa, después el porqué de cada rojo."],alt:"npm test",cwd:"qa-taller-kit/pruebas",soft:"npm test · 22 pruebas",titulo:"Pregúntale a Claude por qué (sin tocar la aserción)",haz:["Pega el error de E2E-VEN-002 a Claude Code y pregunta por qué.", "Rechaza cualquier cambio a la aserción."],logre:"sé que el bug está en venta.js, no en la prueba"},{pasos:[{"t": "cmd", "s": "npm run test:corregido", "on": "k-fix"}, {"t": "out", "s": "  23 passed (4.6s)   ← la misma suite contra la tienda con BUGS=0", "c": "ok", "on": "k-verde"}],inicio:["Primero la suite completa, después el porqué de cada rojo."],alt:"npm test",cwd:"qa-taller-kit/pruebas",soft:"npm test · 22 pruebas",titulo:"La tienda corregida · todo verde",haz:["<code>npm run test:corregido</code>.", "Compara: misma prueba, otra app, otro color."],logre:"23 verdes con BUGS=0 sin cambiar ninguna aserción"}];
+
+const $=id=>document.getElementById(id);const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const con=$('con');let corriendo=false,parar=false,cur=0;const S=()=>SUBS[cur];
+function linea(cls,txt){const s=document.createElement('span');if(cls)s.className=cls;s.innerHTML=txt;con.appendChild(s);con.appendChild(document.createTextNode('\n'));con.scrollTop=con.scrollHeight;return s;}
+const dormir=ms=>new Promise(r=>setTimeout(r,RM?0:ms));
+async function tipear(pref,cls,txt){const s=linea('',pref);const t=document.createElement('span');t.className=cls;s.appendChild(t);const c=document.createElement('span');c.className='cur';s.appendChild(c);
+  if(RM){t.textContent=txt;}else{for(let i=0;i<txt.length;i++){t.textContent+=txt[i];con.scrollTop=con.scrollHeight;if(parar)break;await dormir(txt.length>90?8:18);}}c.remove();}
+function marcar(id){document.querySelectorAll('.v-paso.on').forEach(e=>e.classList.remove('on'));if(id){const e=$(id);if(e){e.classList.add('on');e.scrollIntoView({block:'nearest'});}}}
+async function ejecutar(){if(corriendo)return;corriendo=true;parar=false;$('ejecutar').disabled=true;con.textContent='';marcar(null);
+  for(const p of S().pasos){if(parar)break;
+    if(p.t==='prompt')await tipear('<span class="p">&gt; </span>','u',p.s);
+    else if(p.t==='cmd')await tipear('<span class="p">$ </span>','k',p.s);
+    else if(p.t==='claude'){await dormir(250);linea('d','<span class="c">⏺</span> '+esc(p.s));}
+    else if(p.t==='out')linea(p.c||'',esc(p.s));
+    else if(p.t==='html')linea(p.c||'',p.s);
+    else if(p.t==='pausa')await dormir(p.ms||600);
+    if(p.on){marcar(p.on);if(S().paso)S().paso(p.on);}
+    if(p.t!=='pausa')await dormir(p.ms||220);}
+  linea('c','— listo · pulsa «Reiniciar» para verlo otra vez');corriendo=false;$('ejecutar').disabled=false;}
+function inicio(){con.innerHTML=S().inicio.map(l=>'<span class="c">'+esc(l)+'</span>').join('\n')+'\n';}
+$('ejecutar').onclick=ejecutar;$('reiniciar').onclick=()=>{parar=true;corriendo=false;$('ejecutar').disabled=false;inicio();marcar(null);if(S().reiniciar)S().reiniciar();};
+function irSub(i){parar=true;corriendo=false;$('ejecutar').disabled=false;cur=(i+SUBS.length)%SUBS.length;const pn=S().panel??cur;document.querySelectorAll('.v-sub').forEach(d=>d.hidden=+d.dataset.i!==pn);document.querySelectorAll('.v-dot').forEach(d=>{if(+d.dataset.i===cur)d.setAttribute('aria-current','true');else d.removeAttribute('aria-current');});
+ $('sub-tit').textContent=S().titulo;$('sub-n').textContent=(cur+1)+' de '+SUBS.length;$('soft').textContent=S().soft;$('cwd').textContent='❯ claude · '+S().cwd;$('alt').innerHTML=S().alt?'Sin IA: <b>'+esc(S().alt)+'</b>':'';
+ $('haz').innerHTML=S().haz.map((h,k)=>'<li><b>'+(k+1)+'</b><span>'+h+'</span></li>').join('');$('logre').textContent='Lo logré: '+S().logre;inicio();marcar(null);}
+$('ant').onclick=()=>irSub(cur-1);$('sig').onclick=()=>irSub(cur+1);document.querySelectorAll('.v-dot').forEach(d=>d.onclick=()=>irSub(+d.dataset.i));
+addEventListener('keydown',e=>{if(e.target.matches('input,textarea'))return;if(e.key==='ArrowLeft')irSub(cur-1);if(e.key==='ArrowRight')irSub(cur+1);});
+
+(function(){window.paso=null;window.reiniciar=null;const li=[...document.querySelectorAll('#tests li')];function estado(f){let p=0,b=0;li.forEach(l=>{const k=l.dataset.k;const r=f(k);l.className=r||'';l.querySelector('i').textContent=r==='ok'?'✓':r==='bad'?'✘':'·';l.querySelector('small').hidden=r!=='bad';if(r==='ok')p++;if(r==='bad')b++;});$('n-pass').textContent=p;$('n-fail').textContent=b;}
+window.paso=id=>{if(id==='k-run'){estado(()=>'');$('n-time').textContent='…';}if(id==='k-api')estado(k=>k==='api'?'ok':'');if(id==='k-e2e')estado(k=>k!=='bad'?'ok':'');if(id==='k-bad'){estado(k=>k==='bad'?'bad':'ok');$('n-time').textContent='21.5 s';}
+ if(id==='k-fix'){estado(()=>'');$('n-time').textContent='…';}if(id==='k-verde'){estado(()=>'ok');$('n-time').textContent='4.6 s';$('n-pass').textContent='23';}};
+window.reiniciar=()=>{estado(()=>'');$('n-time').textContent='—';};window.reiniciar();
+SUBS[0].paso=window.paso;SUBS[0].reiniciar=window.reiniciar;})();
+SUBS[1].panel=0;SUBS[1].paso=SUBS[0].paso;SUBS[1].reiniciar=SUBS[0].reiniciar;SUBS[2].panel=0;SUBS[2].paso=SUBS[0].paso;SUBS[2].reiniciar=SUBS[0].reiniciar;
+irSub(0);
+</script>
+</body>
+</html>

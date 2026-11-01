@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Así lo hace una botica real</title>
+<!--
+  Escena del modo LIVE (taller qa-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Tres páginas internas (puntos ● ○ ○, botones ‹ › y flechas del teclado):
+   1 · el modal que ve la cajera cuando se rompe una pantalla y qué se adjunta al enviar la grabación;
+   2 · la vista de soporte: ticket con reproducción paso a paso (señala, no pulsa) y el spec generado;
+   3 · la batería en segundo plano: cola → contenedor con cerco → reporte spec a spec → panel, con «¿qué pasa si…?».
+  Todo sale del código real de un sistema de facturación para boticas (QaPlayback, ViewErrorBoundary, runner.mjs,
+  qa-matriz.sh, QaController); nombres de clientes quitados. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .2); }
+.esc { padding: 1.7vh 2.6vw 1.5vh; gap: 1vh; }
+.esc-cuerpo { gap: 1vh; justify-content: start; }
+.esc-titulo { font-size: 1.15em; }
+.q-et { font-size: .56em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.q-btn { font: 700 .62em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s; }
+.q-btn:hover { transform: translateY(-1px); }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.q-btn.bad { color: var(--bad); border-color: var(--bad); } .q-btn.ok { color: var(--ok); border-color: var(--ok); }
+.q-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.q-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: center; }
+.q-dots { display: flex; align-items: center; gap: .5em; }
+.q-dots button { width: 2em; height: 2em; border-radius: 50%; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); font: 700 .9em var(--mono); cursor: pointer; }
+.q-dots button[aria-current="true"] { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.q-dots .pg { font: 700 .62em var(--mono); color: var(--muted); letter-spacing: .1em; }
+.q-pag { display: none; min-height: 0; } .q-pag.on { display: grid; }
+.q-2 { grid-template-columns: 1.1fr 1fr; gap: 1.1vw; }
+.q-3 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1vw; min-height: 0; }
+.esc-card { padding: .7em 1em; display: grid; gap: .5em; align-content: start; min-width: 0; }
+.q-app { border: 1px solid var(--line2); border-radius: .7em; overflow: hidden; background: var(--s1); font-size: .72em; }
+.q-app .bar { display: flex; gap: 1em; align-items: center; padding: .5em .9em; background: var(--s2); border-bottom: 1px solid var(--line2); font-weight: 700; }
+.q-app .bar span { color: var(--muted); font-weight: 600; } .q-app .bar b { color: var(--accent); }
+.q-app .cuerpo { position: relative; padding: .9em; min-height: 12.5em; display: grid; gap: .5em; align-content: start; }
+.q-skel { height: .9em; border-radius: .3em; background: var(--s3); width: 70%; } .q-skel.c { width: 45%; } .q-skel.l { width: 90%; }
+.q-modal { position: absolute; inset: .6em 1.4em auto; background: var(--s1); border: 1px solid var(--line2); border-radius: .7em; box-shadow: var(--card-shadow); padding: .9em 1.1em; display: grid; gap: .45em; }
+.q-modal h3 { margin: 0; font-size: 1.1em; } .q-modal p { margin: 0; color: var(--muted); line-height: 1.35; }
+.q-modal .det { font: .85em var(--mono); color: var(--bad); background: var(--bad-bg); padding: .4em .6em; border-radius: .4em; word-break: break-all; }
+.q-modal .acc { display: flex; gap: .5em; flex-wrap: wrap; margin-top: .2em; }
+.q-adj { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; font-size: .68em; }
+.q-adj li { display: grid; grid-template-columns: 7.5em 1fr; gap: .6em; padding: .3em .6em; border-radius: .45em; background: var(--s2); }
+.q-adj li b { font-family: var(--mono); color: var(--accent); } .q-adj li.no b { color: var(--bad); } .q-adj li.no { opacity: .75; }
+.q-adj li.nuevo { outline: 1px solid var(--ok); }
+.q-pasos { margin: 0; padding: 0; list-style: none; display: grid; gap: .25em; font-size: .66em; }
+.q-pasos li { display: flex; gap: .5em; align-items: center; padding: .3em .6em; border-radius: .45em; border: 1px solid transparent; color: var(--muted); cursor: pointer; }
+.q-pasos li.on { background: var(--accent-bg); color: var(--fg); border-color: var(--accent); }
+.q-pasos li.mal { color: var(--bad); } .q-pasos li.mal.on { background: var(--bad-bg); border-color: var(--bad); }
+.q-vista { position: relative; border: 1px solid var(--line2); border-radius: .6em; background: var(--s1); min-height: 11em; padding: .8em; font-size: .7em; display: grid; gap: .45em; align-content: start; }
+.q-vista .el { padding: .35em .6em; border-radius: .4em; background: var(--s2); border: 1px solid var(--line2); width: max-content; position: relative; }
+.q-vista .el.in { min-width: 9em; font-family: var(--mono); }
+.q-vista .el.sel { outline: 3px solid var(--accent); outline-offset: 2px; }
+.q-vista .el.sel::after { content: ""; position: absolute; left: 50%; top: 50%; width: 1.4em; height: 1.4em; border-radius: 50%; border: 2px solid var(--accent); transform: translate(-50%, -50%); animation: onda .9s ease-out infinite; }
+@keyframes onda { from { opacity: .9; transform: translate(-50%,-50%) scale(.5); } to { opacity: 0; transform: translate(-50%,-50%) scale(2.2); } }
+.q-vista .err { color: var(--bad); font-weight: 700; } .q-vista .err.oculto { visibility: hidden; }
+.q-nota { font-size: .64em; color: var(--muted); margin: 0; line-height: 1.35; }
+.q-code { margin: 0; font: .6em/1.5 var(--mono); background: var(--s2); border: 1px solid var(--line2); border-radius: .5em; padding: .7em .9em; white-space: pre; overflow: hidden; }
+.q-code .k { color: var(--accent); } .q-code .s { color: var(--ok); } .q-code .c { color: var(--muted); }
+.q-flujo { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5em; align-items: stretch; }
+.q-paso { border: 1px solid var(--line2); border-radius: .6em; padding: .45em .6em; background: var(--s1); display: grid; gap: .2em; align-content: start; font-size: .64em; position: relative; }
+.q-paso b { font-size: 1.05em; } .q-paso span { color: var(--muted); line-height: 1.3; }
+.q-paso.on { border-color: var(--accent); background: var(--accent-bg); }
+.q-paso.mal { border-color: var(--bad); background: var(--bad-bg); }
+.q-paso .n { position: absolute; top: -.7em; left: .6em; font: 700 .75em var(--mono); background: var(--s2); border: 1px solid var(--line2); padding: 0 .5em; border-radius: 999px; }
+.q-topes { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: .3em .6em; font-size: .64em; }
+.q-topes li { display: grid; grid-template-columns: 1fr auto; gap: .5em; padding: .3em .6em; background: var(--s2); border-radius: .45em; }
+.q-topes li b { font-family: var(--mono); color: var(--accent); white-space: nowrap; }
+.q-topes li.off { opacity: .45; text-decoration: line-through; }
+.q-panel { border: 1px solid var(--line2); border-radius: .6em; background: var(--s1); padding: .6em .8em; display: grid; gap: .4em; font-size: .68em; }
+.q-barra { height: .8em; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.q-barra i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .5s; }
+.q-rep { display: flex; gap: 2px; height: 1.6em; }
+.q-rep i { flex: 1; border-radius: 2px; background: var(--s3); }
+.q-rep i.ok { background: var(--ok); } .q-rep i.falla { background: var(--bad); } .q-rep i.corre { background: var(--accent); animation: lat 1s infinite; }
+@keyframes lat { 50% { opacity: .4; } }
+.q-si { display: grid; gap: .35em; }
+.q-si button { text-align: left; }
+.q-veredicto { font-size: .7em; min-height: 2.6em; line-height: 1.35; margin: 0; padding: .5em .7em; border-radius: .5em; background: var(--s2); }
+.q-veredicto.bad { color: var(--bad); background: var(--bad-bg); } .q-veredicto.ok { color: var(--ok); background: var(--ok-bg); }
+.a-in { animation: in .5s both; animation-delay: var(--d, 0s); }
+@keyframes in { from { opacity: 0; transform: translateY(6px); } }
+@media (max-width: 1500px) { .esc-titulo { font-size: 1.02em; } .q-app .cuerpo { min-height: 11.5em; } .q-nota { font-size: .6em; } .q-paso { font-size: .6em; } .q-topes, .q-veredicto { font-size: .6em; } .q-si .q-btn { padding: .45em .8em; } }
+@media (prefers-reduced-motion: reduce) { .a-in, .q-vista .el.sel::after, .q-rep i.corre { animation: none !important; } .q-barra i, .q-btn { transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">QA con IA · E12</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="q-cab">
+      <h1 class="esc-titulo a-in" id="tit">Así lo hace una botica real: <em>el error se reproduce solo</em></h1>
+      <div class="q-dots" role="tablist" aria-label="Páginas de la escena">
+        <button type="button" class="q-btn" id="prev" aria-label="Anterior">‹</button>
+        <button type="button" data-p="0" aria-current="true" aria-label="Página 1">●</button>
+        <button type="button" data-p="1" aria-label="Página 2">○</button>
+        <button type="button" data-p="2" aria-label="Página 3">○</button>
+        <button type="button" class="q-btn" id="next" aria-label="Siguiente">›</button>
+        <span class="pg" id="pg">1 / 3</span>
+      </div>
+    </div>
+
+    <!-- ── Página 1 · lo que ve la cajera ─────────────────────────────── -->
+    <div class="q-pag q-2 on" id="p0">
+      <section class="esc-card a-in" aria-label="Lo que ve la cajera">
+        <span class="q-et">Lo que ve la cajera cuando se rompe una pantalla</span>
+        <div class="q-app">
+          <div class="bar"><b>☀ Botica</b><span>Caja</span><span>Ventas</span><span>Productos</span><span style="margin-left:auto">Sucursal Centro</span></div>
+          <div class="cuerpo">
+            <div class="q-skel"></div><div class="q-skel l"></div><div class="q-skel c"></div><div class="q-skel l"></div>
+            <div class="q-modal" role="dialog" aria-label="Ocurrió un error">
+              <h3>⚠️ Ocurrió un error al mostrar esta pantalla</h3>
+              <p>Puedes recargar o volver al inicio. Si nos dejas enviar la grabación, soporte podrá <b>reproducir exactamente</b> lo que pasó.</p>
+              <div class="det" id="det">TypeError: Cannot read properties of undefined (reading 'branch_id') · POST /api/cash/open → 422</div>
+              <div class="acc">
+                <button type="button" class="q-btn pri" id="b-enviar">Enviar la grabación a soporte</button>
+                <button type="button" class="q-btn" id="b-no">No, solo recargar</button>
+              </div>
+              <p style="font-size:.85em">Se adjunta lo de la lista de la derecha. Nunca tu clave ni datos de tarjeta. Se borra a los 30 días.</p>
+            </div>
+          </div>
+        </div>
+        <p class="q-nota" id="n0">En producción el límite de error (<code>ViewErrorBoundary</code>) deja el menú usable y muestra «Detalle para soporte». Lo que tú armaste hoy añade el botón: enviar la grabación con consentimiento.</p>
+      </section>
+      <section class="esc-card a-in" style="--d:.1s" aria-label="Qué se adjunta">
+        <span class="q-et">Qué viaja con la grabación (y qué no)</span>
+        <ul class="q-adj" id="adj">
+          <li><b>ruta</b><span>#/caja · vista «Apertura de caja»</span></li>
+          <li><b>sucursal</b><span>Centro (X-Branch-Id: 2) · rol cajera</span></li>
+          <li><b>semilla</b><span>estado al entrar: caja cerrada, turno sin abrir, terminal BOTICA-01</span></li>
+          <li><b>acciones</b><span>👆 «Abrir caja» → ⌨️ monto inicial «50» → 👆 «Confirmar»</span></li>
+          <li><b>petición</b><span>POST /api/cash/open → 422 · branch_id ausente</span></li>
+          <li><b>error JS</b><span>TypeError … reading 'branch_id' en CashView.jsx</span></li>
+          <li class="no"><b>clave</b><span>no se graba: el campo contraseña se enmascara como «•••»</span></li>
+          <li class="no"><b>tarjeta / DNI</b><span>no se graba: los campos marcados sensibles van vacíos</span></li>
+        </ul>
+        <p class="q-nota">Sin el «Sí» no se envía nada. El consentimiento dice qué se graba, para qué, cuánto tiempo y cómo se retira: eso pide la Ley 29733 de protección de datos personales.</p>
+        <p class="q-nota" id="ok0" hidden><b>Ticket #4821 creado.</b> Soporte lo abre en la página 2 ›</p>
+      </section>
+    </div>
+
+    <!-- ── Página 2 · lo que ve soporte ──────────────────────────────── -->
+    <div class="q-pag q-2" id="p1">
+      <section class="esc-card a-in" aria-label="Reproducción">
+        <div class="esc-fila" style="gap:.5em">
+          <span class="q-et">Ticket #4821 · reproducción paso a paso</span>
+          <span style="margin-left:auto"></span>
+          <button type="button" class="q-btn" id="r-prev">‹</button>
+          <button type="button" class="q-btn pri" id="r-play">▶ Reproducir</button>
+          <button type="button" class="q-btn" id="r-next">›</button>
+          <span class="q-et" id="r-pg">1 / 6</span>
+        </div>
+        <div class="q-3" style="display:grid;grid-template-columns:1fr 1.25fr">
+          <ul class="q-pasos" id="pasos"></ul>
+          <div class="q-vista" id="vista">
+            <div class="el" data-p="0">🧭 #/caja · Apertura de caja</div>
+            <div class="el" data-p="1">Abrir caja</div>
+            <div class="el in" data-p="2">Monto inicial: <span id="monto">—</span></div>
+            <div class="el" data-p="3">Confirmar</div>
+            <div class="el in" data-p="4">POST /api/cash/open → <span id="http">…</span></div>
+            <div class="err oculto" data-p="5" id="err">✗ Esperaba «Caja abierta»; llegó 422 branch_id ausente</div>
+          </div>
+        </div>
+        <p class="q-nota">Igual que el modal real (<code>QaPlayback</code>): carga la app en un iframe del mismo origen, navega a la vista del paso y <b>señala</b> el elemento con un anillo. No pulsa ni escribe: por eso puede abrirse sobre producción.</p>
+      </section>
+      <section class="esc-card a-in" style="--d:.1s" aria-label="Spec generado">
+        <span class="q-et">El spec que se generó del ticket (ya es un caso de la matriz)</span>
+<pre class="q-code"><span class="c">// specs/reproducir-4821.spec.ts · generado de la grabación</span>
+<span class="k">test</span>(<span class="s">'T-4821 abrir caja en sucursal Centro'</span>, <span class="k">async</span> ({ page, request }) =&gt; {
+  <span class="k">await</span> request.post(<span class="s">'/api/semilla'</span>, { data: semilla4821 });   <span class="c">// estado exacto</span>
+  <span class="k">await</span> page.goto(<span class="s">'/#/caja'</span>);
+  <span class="k">await</span> page.getByRole(<span class="s">'button'</span>, { name: <span class="s">'Abrir caja'</span> }).click();
+  <span class="k">await</span> page.getByLabel(<span class="s">'Monto inicial'</span>).fill(<span class="s">'50'</span>);
+  <span class="k">await</span> page.getByRole(<span class="s">'button'</span>, { name: <span class="s">'Confirmar'</span> }).click();
+  <span class="k">await</span> expect(page.getByText(<span class="s">'Caja abierta'</span>)).toBeVisible();   <span class="c">// ✗ hoy: 422</span>
+});</pre>
+        <ul class="q-adj">
+          <li><b>rojo hoy</b><span>reproduce el error del usuario sin que nadie lo describa</span></li>
+          <li><b>verde mañana</b><span>cuando desarrollo mande <code>branch_id</code>, la misma prueba lo confirma</span></li>
+          <li><b>para siempre</b><span>entra a <code>docs/matriz.csv</code> con el ID del ticket: si vuelve, la batería lo dice antes que el cliente</span></li>
+        </ul>
+        <p class="q-nota">Lo que de verdad había: el arnés no mandaba la cabecera <code>X-Branch-Id</code> y la caja nacía sin sucursal. La API decía 200 y la pantalla «No hay caja abierta». El spec lo dejó en rojo hasta el arreglo.</p>
+      </section>
+    </div>
+
+    <!-- ── Página 3 · la batería en segundo plano ────────────────────── -->
+    <div class="q-pag" id="p2" style="grid-template-columns:1fr;gap:.9vh">
+      <section class="esc-card a-in" aria-label="Flujo de la batería">
+        <div class="esc-fila" style="gap:.5em">
+          <span class="q-et">La batería corre en segundo plano · 14 specs · nadie espera mirando</span>
+          <span style="margin-left:auto"></span>
+          <button type="button" class="q-btn pri" id="b-correr">▶ Preparar y correr matriz</button>
+          <span class="q-et" id="fase">sin corrida</span>
+        </div>
+        <div class="q-flujo" id="flujo">
+          <div class="q-paso"><span class="n">1</span><b>Panel → 202</b><span>POST /qa/run deja <code>matriz.job</code> y vuelve enseguida. Si ya hay una, 409: te acoplas.</span></div>
+          <div class="q-paso"><span class="n">2</span><b>Vigilante del host</b><span>cron cada minuto + <code>flock</code>. Siembra <code>botica-qa</code> y copia los specs del canon.</span></div>
+          <div class="q-paso"><span class="n">3</span><b>Contenedor con cerco</b><span>Lightpanda, 400 MB, 1 CPU, 120 s por spec, 30 min en total.</span></div>
+          <div class="q-paso"><span class="n">4</span><b>Reporte spec a spec</b><span><code>report.json</code> se reescribe tras cada spec; lo que no llegó sale <code>no_ejecutado</code>.</span></div>
+          <div class="q-paso"><span class="n">5</span><b>Panel en vivo</b><span>SSE que cierra a los 45 s y sondeo cada 2,5 s. <code>qa:import</code> publica. ▶ reproduce cada rojo.</span></div>
+        </div>
+        <div class="q-panel">
+          <div class="esc-fila" style="gap:.6em"><b id="prog">0 de 14 specs</b><span class="q-et" id="tiempo">0:00</span><span style="margin-left:auto;font-family:var(--mono)" id="res">ok 0 · falla 0 · no ejecutado 14</span></div>
+          <div class="q-barra"><i id="barra"></i></div>
+          <div class="q-rep" id="rep" aria-label="Specs"></div>
+        </div>
+      </section>
+      <div class="q-3">
+        <section class="esc-card a-in" style="--d:.1s" aria-label="Los cinco topes">
+          <span class="q-et">Los cinco topes del cerco · apaga uno y mira qué pasa</span>
+          <ul class="q-topes" id="topes">
+            <li data-t="mem"><span>Memoria del contenedor</span><b>--memory=400m</b></li>
+            <li data-t="cpu"><span>CPU del contenedor</span><b>--cpus=1</b></li>
+            <li data-t="carga"><span>Carga previa de la máquina</span><b>loadavg &lt; 4,0</b></li>
+            <li data-t="spec"><span>Tiempo por spec</span><b>120 s</b></li>
+            <li data-t="total"><span>Tiempo total + rm -f</span><b>30 min</b></li>
+            <li data-t="inc"><span>Reporte incremental</span><b>spec a spec</b></li>
+          </ul>
+          <p class="q-nota">Medido el 18-09-2026: la matriz con Chrome sin cerco llevó la carga de una máquina de 2 vCPU a 16; 502 a clientes y SSH caído, con la botica cobrando. Con Lightpanda y cerco: 8 min 39 s completa, 1 min 20 s la tanda rápida.</p>
+        </section>
+        <section class="esc-card a-in" style="--d:.2s" aria-label="Qué pasa si">
+          <span class="q-et">¿Qué pasa si…? · elige y comprueba tu intuición</span>
+          <div class="q-si">
+            <button type="button" class="q-btn" data-si="0">… un spec se cuelga en el login y no hay tope por spec</button>
+            <button type="button" class="q-btn" data-si="1">… el tope global mata la corrida y el reporte se escribía al final</button>
+            <button type="button" class="q-btn" data-si="2">… la API devuelve 200 con una lista vacía</button>
+            <button type="button" class="q-btn" data-si="3">… dos pestañas dejan abierto el stream diez minutos</button>
+          </div>
+          <p class="q-veredicto" id="ver">Pulsa una opción. La respuesta sale de incidentes reales, con fecha.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota" id="pie">Un pendiente nunca se muestra como correcto · lo que corrió queda, lo que no corrió se dice</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── Paginación por puntos ───────────────────────────────────────── */
+  var TIT = [
+    'Así lo hace una botica real: <em>el error se reproduce solo</em>',
+    'Soporte lo ve paso a paso <em>y ya tiene la prueba</em>',
+    'La batería corre en segundo plano <em>y termina siempre</em>'
+  ];
+  var pag = 0;
+  function irA(n) {
+    pag = Math.max(0, Math.min(2, n));
+    for (var i = 0; i < 3; i++) $("p" + i).classList.toggle("on", i === pag);
+    document.querySelectorAll(".q-dots [data-p]").forEach(function (b) { b.setAttribute("aria-current", String(Number(b.dataset.p) === pag)); b.textContent = Number(b.dataset.p) === pag ? "●" : "○"; });
+    $("pg").textContent = (pag + 1) + " / 3";
+    $("tit").innerHTML = TIT[pag];
+    $("prev").disabled = pag === 0; $("next").disabled = pag === 2;
+  }
+  document.querySelectorAll(".q-dots [data-p]").forEach(function (b) { b.onclick = function () { irA(Number(b.dataset.p)); }; });
+  $("prev").onclick = function () { irA(pag - 1); };
+  $("next").onclick = function () { irA(pag + 1); };
+  document.addEventListener("keydown", function (e) {
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (e.key === "ArrowRight") irA(pag + 1);
+    if (e.key === "ArrowLeft") irA(pag - 1);
+  });
+
+  /* ── Página 1: enviar la grabación ───────────────────────────────── */
+  $("b-enviar").onclick = function () {
+    $("b-enviar").textContent = "✓ Enviado · ticket #4821";
+    $("b-enviar").disabled = true;
+    $("ok0").hidden = false;
+    document.querySelectorAll("#adj li:not(.no)").forEach(function (li, i) {
+      setTimeout(function () { li.classList.add("nuevo"); }, quieto ? 0 : 120 * i);
+    });
+    $("n0").textContent = "Lo que viajó es exactamente la lista de la derecha: ni más ni menos. Soporte recibe un ticket con la reproducción y un spec ya escrito.";
+  };
+  $("b-no").onclick = function () {
+    $("n0").textContent = "Sin «Sí» no viaja nada. Soporte solo tendrá el «Detalle para soporte» del error y tendrá que pedirle a la cajera que cuente qué hizo.";
+  };
+
+  /* ── Página 2: reproducción paso a paso (señala, no pulsa) ───────── */
+  var PASOS = [
+    { ic: "🧭", t: "Ir a #/caja · Apertura de caja" },
+    { ic: "👆", t: "Pulsar «Abrir caja»" },
+    { ic: "⌨️", t: "Escribir «50» en Monto inicial" },
+    { ic: "👆", t: "Pulsar «Confirmar»" },
+    { ic: "🔌", t: "POST /api/cash/open" },
+    { ic: "🔎", t: "Comprobar «Caja abierta» → ✗ llegó 422", mal: true }
+  ];
+  var ul = $("pasos"), idx = 0, timer = null;
+  PASOS.forEach(function (p, i) {
+    var li = document.createElement("li");
+    li.textContent = p.ic + " " + p.t;
+    if (p.mal) li.className = "mal";
+    li.onclick = function () { parar(); mostrar(i); };
+    ul.appendChild(li);
+  });
+  function mostrar(i) {
+    idx = Math.max(0, Math.min(PASOS.length - 1, i));
+    ul.querySelectorAll("li").forEach(function (li, k) { li.classList.toggle("on", k === idx); });
+    document.querySelectorAll("#vista .el").forEach(function (el) { el.classList.toggle("sel", Number(el.dataset.p) === idx); });
+    $("monto").textContent = idx >= 2 ? "50" : "—";
+    $("http").textContent = idx >= 4 ? "422" : "…";
+    $("err").classList.toggle("oculto", idx < 5);
+    $("r-pg").textContent = (idx + 1) + " / " + PASOS.length;
+    $("r-prev").disabled = idx === 0; $("r-next").disabled = idx === PASOS.length - 1;
+  }
+  function parar() { if (timer) { clearInterval(timer); timer = null; } $("r-play").textContent = "▶ Reproducir"; }
+  $("r-play").onclick = function () {
+    if (timer) { parar(); return; }
+    if (idx >= PASOS.length - 1) mostrar(0);
+    $("r-play").textContent = "⏸ Pausa";
+    timer = setInterval(function () { if (idx >= PASOS.length - 1) { parar(); return; } mostrar(idx + 1); }, quieto ? 400 : 1100);
+  };
+  $("r-prev").onclick = function () { parar(); mostrar(idx - 1); };
+  $("r-next").onclick = function () { parar(); mostrar(idx + 1); };
+  mostrar(0);
+
+  /* ── Página 3: la batería con cerco ──────────────────────────────── */
+  var N = 14, rep = $("rep"), celdas = [];
+  for (var i = 0; i < N; i++) { var c = document.createElement("i"); rep.appendChild(c); celdas.push(c); }
+  var topes = { mem: true, cpu: true, carga: true, spec: true, total: true, inc: true };
+  document.querySelectorAll("#topes li").forEach(function (li) {
+    li.style.cursor = "pointer";
+    li.onclick = function () { topes[li.dataset.t] = !topes[li.dataset.t]; li.classList.toggle("off", !topes[li.dataset.t]); };
+  });
+  var corriendo = null;
+  var FALLAN = { 6: true, 11: true }; // pos ×2 defectos del producto (E2E-BOT-008)
+  function pintar(hechos, ok, falla, seg, texto) {
+    $("prog").textContent = hechos + " de " + N + " specs";
+    $("barra").style.width = (hechos / N * 100) + "%";
+    $("res").textContent = "ok " + ok + " · falla " + falla + " · no ejecutado " + (N - hechos);
+    $("tiempo").textContent = Math.floor(seg / 60) + ":" + String(seg % 60).padStart(2, "0");
+    if (texto) $("fase").textContent = texto;
+  }
+  function marcarFlujo(n, mal) {
+    document.querySelectorAll("#flujo .q-paso").forEach(function (p, i) { p.classList.toggle("on", i === n && !mal); p.classList.toggle("mal", i === n && !!mal); });
+  }
+  $("b-correr").onclick = function () {
+    if (corriendo) return;
+    celdas.forEach(function (c) { c.className = ""; });
+    var hechos = 0, ok = 0, falla = 0, seg = 0, cuelga = 8; // el spec 9 se cuelga si no hay tope
+    var fases = ["encolado · el vigilante la toma en menos de un minuto", "sembrando botica-qa…", "corriendo la matriz (lightpanda)…"];
+    marcarFlujo(0); pintar(0, 0, 0, 0, fases[0]);
+    $("b-correr").disabled = true;
+    var t0 = Date.now();
+    if (!topes.carga) { marcarFlujo(2, true); pintar(0, 0, 0, 0, "arrancó con carga 6,7 · la web da 502 mientras corre"); }
+    corriendo = setInterval(function () {
+      seg += 37; // 14 specs ≈ 8 min 39 s
+      if (seg < 60) { marcarFlujo(1); pintar(0, 0, 0, seg, fases[1]); return; }
+      marcarFlujo(hechos === cuelga && !topes.spec ? 2 : (topes.inc ? 3 : 2), hechos === cuelga && !topes.spec);
+      if (hechos === cuelga && !topes.spec) {
+        celdas[hechos].className = "corre";
+        pintar(hechos, ok, falla, seg, "spec 9 colgado en el login… y el panel dice «corriendo…» para siempre");
+        if (seg > 60 * 30 && topes.total) {
+          clearInterval(corriendo); corriendo = null; $("b-correr").disabled = false;
+          marcarFlujo(4, !topes.inc);
+          if (topes.inc) pintar(hechos, ok, falla, 1800, "tope global: muerta a los 30 min · reporte parcial · 5 no ejecutados");
+          else { celdas.forEach(function (c) { c.className = ""; }); pintar(0, 0, 0, 1800, "tope global: muerta a los 30 min · «el runner no dejó reporte» · panel vacío"); }
+        }
+        return;
+      }
+      if (hechos < N) {
+        if (FALLAN[hechos]) { falla++; celdas[hechos].className = "falla"; } else { ok++; celdas[hechos].className = "ok"; }
+        hechos++;
+        pintar(hechos, ok, falla, seg, fases[2] + (topes.inc ? " · report.json reescrito" : ""));
+        if (hechos < N) celdas[hechos].className = "corre";
+      } else {
+        clearInterval(corriendo); corriendo = null; $("b-correr").disabled = false;
+        marcarFlujo(4); pintar(N, ok, falla, 519, "terminada en 8:39 · importada · ▶ en cada rojo");
+      }
+    }, quieto ? 120 : 260);
+  };
+  pintar(0, 0, 0, 0, "sin corrida");
+
+  var SI = [
+    ["bad", "Se queda ahí para siempre, con el panel diciendo «corriendo…». Por eso hay tope por spec: a los 120 s se anota «superó los 120 s», sale como error y se sigue con el siguiente."],
+    ["bad", "Diez specs corridos y el panel no enseña ninguno: el vigilante dice «el runner no dejó reporte». Con el reporte spec a spec, lo que corrió queda y lo que no corrió sale como no ejecutado, que es la verdad."],
+    ["bad", "Nadie se entera. No es error, nginx no lo rebota y la pantalla sale vacía con datos en la base. La matriz comprueba valores («el total es S/ 29.50»), no códigos de estado."],
+    ["ok", "Se vio el 20-09-2026: dos workers de PHP-FPM de cinco retenidos diez minutos y el backend dejó de atender ventas. Por eso el stream cierra a los 45 s y el panel reconecta: se pierde un parpadeo y se gana atender la caja."]
+  ];
+  document.querySelectorAll("[data-si]").forEach(function (b) {
+    b.onclick = function () {
+      document.querySelectorAll("[data-si]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      var r = SI[Number(b.dataset.si)];
+      $("ver").className = "q-veredicto " + r[0]; $("ver").textContent = r[1];
+    };
+  });
+})();
+</script>
+</body>
+</html>

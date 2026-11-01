@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Explica, informa y entrega</title>
+<!--
+  Escena del modo LIVE (taller qa-01). Plantilla «Consola + Qué pasa en el software» con sub-pasos (puntos ● ○ ○,
+  flechas ‹ › y teclas ← →). A la izquierda lo que el alumno escribe en Claude Code (o el comando sin IA) y lo que
+  responde, tomado de corridas reales del kit; a la derecha una réplica clara e interactiva del software que cambia
+  paso a paso. Sin recursos externos, menos de 300 elementos y 1 MB, todo se apaga con prefers-reduced-motion. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .25); }
+.esc { height: 100vh; min-height: 0; padding: 1.4vh 2.4vw 1.1vh; gap: .9vh; overflow: hidden; }
+.esc-cuerpo { gap: .8vh; justify-content: start; min-height: 0; }
+.esc-titulo { font-size: 1.32em; }
+.v-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: end; }
+.v-obj { margin: 0; font-size: .7em; color: var(--muted); } .v-obj b { color: var(--fg); }
+.v-bloque { font: 700 .62em var(--mono); color: var(--muted); letter-spacing: .06em; white-space: nowrap; }
+.v-dots { display: flex; align-items: center; gap: .6em; }
+.v-dots .q-btn { padding: .3em .75em; font-size: .8em; }
+.v-dotbar { display: flex; gap: .45em; }
+.v-dot { width: .85em; height: .85em; border-radius: 50%; border: 2px solid var(--accent); background: transparent; padding: 0; cursor: pointer; }
+.v-dot[aria-current="true"] { background: var(--accent); }
+.v-dots b { font-size: .78em; } .v-dots #sub-n { margin-left: auto; }
+.v-sub { display: grid; align-content: start; gap: .5em; }
+.v-b2 { display: grid; grid-template-columns: 45fr 55fr; gap: 1.1vw; min-height: 0; flex: 1; }
+.v-con, .v-soft { display: grid; grid-template-rows: auto minmax(0,1fr); gap: .45em; padding: .6em .9em .7em; min-width: 0; min-height: 0; overflow: hidden; }
+.v-et { font-size: .58em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: flex; align-items: center; gap: .6em; }
+.v-et .esc-chip { font-size: .95em; padding: .15em .6em; margin-left: auto; }
+.v-term { background: #14122b; color: #e9e6ff; border-radius: .7em; border: 1px solid rgba(190,185,255,.22); display: grid; grid-template-rows: auto 1fr auto; min-height: 0; overflow: hidden; }
+.v-term-cab { display: flex; align-items: center; gap: .5em; padding: .4em .8em; background: #1d1b38; font: 700 .62em var(--mono); color: #b7b4cc; border-bottom: 1px solid rgba(190,185,255,.14); }
+.v-term-cab i { width: .6em; height: .6em; border-radius: 50%; background: #ff5f57; display: inline-block; } .v-term-cab i+i { background: #febc2e; } .v-term-cab i+i+i { background: #28c840; }
+.v-term-cab span { margin-left: .4em; }
+.v-term pre { margin: 0; padding: .6em .9em; font: 500 .85em/1.45 var(--mono); white-space: pre-wrap; word-break: break-word; overflow: auto; min-height: 0; }
+.v-term pre .p { color: #8e7dff; } .v-term pre .u { color: #ffd166; } .v-term pre .k { color: #7fd1ff; } .v-term pre .c { color: #8a86b3; }
+.v-term pre .ok { color: #4fd37a; } .v-term pre .bad { color: #ff7b7b; } .v-term pre .w { color: #f4ac5c; } .v-term pre .d { color: #c3b9ff; }
+.v-term pre .cur { display: inline-block; width: .55em; height: 1em; background: #e9e6ff; vertical-align: text-bottom; animation: esc-parpadeo 1s steps(2) infinite; }
+.v-term-pie { display: flex; gap: .5em; align-items: center; padding: .45em .8em; border-top: 1px solid rgba(190,185,255,.14); background: #1d1b38; }
+.v-alt { font: 500 .6em/1.3 var(--mono); color: #b7b4cc; margin-left: auto; text-align: right; }
+.v-alt b { color: #ffd166; font-weight: 600; }
+.q-btn { font: 700 .66em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .95em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s; }
+.q-btn:hover { transform: translateY(-1px); } .q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.q-btn.ok { color: var(--ok); border-color: var(--ok); } .q-btn.no { color: var(--bad); border-color: var(--bad); }
+.q-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.v-soft-cuerpo { min-height: 0; overflow: auto; display: grid; align-content: start; gap: .5em; }
+.v-paso { transition: box-shadow .3s, background .3s; border-radius: .6em; }
+.v-paso.on { box-shadow: 0 0 0 3px var(--accent-bg), 0 0 0 5px var(--accent); background: var(--accent-bg); }
+.v-haz { display: grid; grid-template-columns: auto 1fr auto; gap: 1vw; align-items: center; padding: .45em 1em; flex: none; }
+.v-haz ol { margin: 0; padding: 0; list-style: none; display: flex; gap: 1.2vw; flex-wrap: wrap; font-size: .7em; }
+.v-haz ol li { display: flex; gap: .45em; align-items: baseline; }
+.v-haz ol li b { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .85em; flex: none; }
+.v-haz code { font: 600 .92em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.v-logre { font-size: .66em; display: flex; gap: .5em; align-items: center; background: var(--ok-bg); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); border-radius: 999px; padding: .3em .8em; font-weight: 700; white-space: nowrap; }
+.v-logre input { accent-color: var(--ok); }
+/* piezas de réplica (claras) */
+.s-win { background: #fffbf2; color: #1f2937; border: 1px solid #e5e7eb; border-radius: .6em; overflow: hidden; font-size: .72em; }
+.s-win .s-bar { background: #1f2937; color: #fff; padding: .45em .8em; display: flex; gap: .8em; align-items: center; font-weight: 700; }
+.s-win .s-bar span { color: #f59e0b; } .s-win .s-bar nav { margin-left: auto; display: flex; gap: .8em; font-weight: 500; font-size: .9em; }
+.s-win .s-bar nav a { color: #fff; text-decoration: none; cursor: pointer; } .s-win .s-bar nav a.cur { border-bottom: 2px solid #f59e0b; }
+.s-win .s-main { padding: .8em 1em; display: grid; gap: .5em; }
+.s-win h4 { margin: 0; font-size: 1.1em; }
+.s-win label { display: grid; gap: .15em; font-weight: 600; font-size: .9em; }
+.s-win input { width: 100%; padding: .4em .6em; font: inherit; border: 1px solid #d1d5db; border-radius: .4em; background: #fff; }
+.s-win .s-pri { background: #f59e0b; color: #1f1300; border: 0; border-radius: .4em; padding: .45em 1em; font: inherit; font-weight: 700; cursor: pointer; justify-self: start; }
+.s-win .s-sec { background: #fff; border: 1px solid #d1d5db; border-radius: .4em; padding: .3em .7em; font: inherit; font-size: .9em; cursor: pointer; }
+.s-win .s-err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: .4em; padding: .4em .6em; font-weight: 600; } .s-win .s-err:empty { display: none; }
+.s-win .s-ok { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: .4em; padding: .4em .6em; font-weight: 600; } .s-win .s-ok:empty { display: none; }
+.s-win table { width: 100%; border-collapse: collapse; font-size: .95em; } .s-win th, .s-win td { text-align: left; padding: .3em .4em; border-bottom: 1px solid #e5e7eb; } .s-win th { color: #6b7280; font-size: .85em; }
+.s-win .s-tot { display: flex; gap: 1.5em; align-items: end; } .s-win .s-tot b { font-size: 1.3em; }
+.v-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .25em; font-size: .68em; }
+.v-lista li { display: grid; grid-template-columns: 1.4em 1fr; gap: .5em; align-items: start; padding: .22em .5em; border-radius: .4em; border: 1px solid var(--line); background: var(--s1); }
+.v-lista li i { font-style: normal; font-weight: 800; color: var(--muted); } .v-lista li.ok i { color: var(--ok); } .v-lista li.bad i { color: var(--bad); }
+.v-lista li.bad { background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 35%, transparent); } .v-lista li.ok { background: var(--ok-bg); }
+.v-lista li small { display: block; font: 500 .85em var(--mono); color: var(--bad); white-space: pre-wrap; }
+.v-lista li[hidden] { display: none; }
+.v-code { margin: 0; font: 500 .66em/1.45 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .6em .8em; white-space: pre-wrap; color: var(--fg); overflow: auto; }
+.v-code .n { color: var(--ok); } .v-code .ph { color: var(--muted); font-style: italic; } .v-code .r { color: var(--bad); }
+.v-nota { margin: 0; font-size: .66em; color: var(--muted); } .v-nota b { color: var(--fg); }
+.v-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.v-kpi { background: var(--s2); border: 1px solid var(--line); border-radius: .6em; padding: .5em .7em; display: grid; gap: .15em; }
+.v-kpi .v-et { font-size: .52em; } .v-kpi b { font-size: 1.25em; line-height: 1.1; } .v-kpi small { font-size: .62em; color: var(--muted); }
+.v-kpi.ok { background: var(--ok-bg); } .v-kpi.ok b { color: var(--ok); } .v-kpi.bad { background: var(--bad-bg); } .v-kpi.bad b { color: var(--bad); }
+.v-tabs { display: flex; gap: .4em; } .v-tabs .q-btn { padding: .4em .8em; }
+@media (prefers-reduced-motion: reduce) { .v-term pre .cur { animation: none; } }
+.lms{display:grid;gap:.4em;background:var(--s1);border:1px solid var(--line);border-radius:.6em;padding:.6em .8em}.lms-cab{font-size:.68em;color:var(--muted)}.lms-l{display:grid;gap:.15em;font-size:.68em;font-weight:700}.lms-l input,.lms-l textarea{font:500 1em/1.4 system-ui,sans-serif;padding:.4em .6em;border:1px solid var(--line2);border-radius:.4em;background:var(--s2);color:var(--fg);width:100%;resize:vertical}.v-g2{display:grid;grid-template-columns:1fr 1fr;gap:.5em}.lms{display:grid;gap:.4em;background:var(--s1);border:1px solid var(--line);border-radius:.6em;padding:.6em .8em}.lms-cab{font-size:.68em;color:var(--muted)}.lms-l{display:grid;gap:.15em;font-size:.68em;font-weight:700}.lms-l input{font:500 1em/1.4 var(--mono);padding:.4em .6em;border:1px solid var(--line2);border-radius:.4em;background:var(--s2);color:var(--fg);width:100%}</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 780 L168 728 L236 764 L296 700"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="780" r="3.5"/><circle class="eg" cx="168" cy="728" r="4.5"/><circle class="e" cx="236" cy="764" r="3"/><circle class="eo" cx="296" cy="700" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="v-bloque">Bloque 6/6 · 12:45 hora de Lima</span>
+    <span class="esc-num">QA con IA · 17 / 17</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div class="v-cab">
+      <h1 class="esc-titulo a-in">Explica, informa <em>y entrega</em></h1>
+      <p class="v-obj a-in" style="--d:.05s"><b>Objetivo</b> · Publicar una pregunta con evidencia y entregar pruebas, portal, informe y EVIDENCIA.md desde el LMS.</p>
+    </div>
+    <div class="v-dots a-in" style="--d:.08s"><button type="button" class="q-btn" id="ant" aria-label="Paso anterior">‹</button><span class="v-dotbar"><button type="button" class="v-dot" data-i="0" aria-label="Paso 1" aria-current=true></button><button type="button" class="v-dot" data-i="1" aria-label="Paso 2"></button></span><b id="sub-tit"></b><span class="v-nota" id="sub-n"></span><button type="button" class="q-btn" id="sig" aria-label="Paso siguiente">›</button></div>
+    <div class="v-b2">
+      <section class="esc-card v-con a-in" style="--d:.1s" aria-label="Consola">
+        <span class="v-et">Consola · lo que escribes <span class="esc-chip">Claude Code</span></span>
+        <div class="v-term">
+          <div class="v-term-cab"><i></i><i></i><i></i><span id="cwd">❯ claude</span></div>
+          <pre id="con" aria-live="polite"></pre>
+          <div class="v-term-pie"><button type="button" class="q-btn pri" id="ejecutar">Ejecutar ▶</button><button type="button" class="q-btn" id="reiniciar">Reiniciar</button><span class="v-alt" id="alt"></span></div>
+        </div>
+      </section>
+      <section class="esc-card v-soft a-in" style="--d:.15s" aria-label="Qué pasa en el software">
+        <span class="v-et">Qué pasa en el software <span class="esc-chip ok" id="soft"></span></span>
+        <div class="v-soft-cuerpo"><div class="v-sub" data-i="0"><div class="lms v-paso" id="h-form"><div class="lms-cab">Hilo de la sesión · qa-01 · <b>Nueva publicación</b></div>
+<label class="lms-l v-paso" id="h-id">ID del caso<input id="h-in-id" placeholder="E2E-VEN-003"></label>
+<div class="v-g2"><label class="lms-l">Esperado<input id="h-in-esp" placeholder="S/ 34.02"></label><label class="lms-l">Recibido<input id="h-in-rec" placeholder="S/ 17.01"></label></div>
+<label class="lms-l v-paso" id="h-txt">Pregunta o respuesta<textarea id="h-in-txt" rows="4" placeholder="Qué hiciste, qué viste, qué dudas tienes…"></textarea></label>
+<div class="esc-fila"><button type="button" class="q-btn pri" id="h-pub">Publicar en el hilo</button><span class="v-nota" id="h-msg"></span></div></div>
+<div class="esc-card v-paso" id="h-regla" style="padding:.6em .9em"><b style="font-size:.78em">La IA propone; el runner decide.</b><p class="v-nota">Nunca aceptes una prueba que no viste fallar: rómpela a propósito, mírala en rojo y recién confía en su verde.</p></div></div><div class="v-sub" data-i="1" hidden><ul class="v-lista v-paso" id="e-ev">
+<li><i>☐</i><span><b>pruebas/</b> con specs y pages (POM) · E2E-VEN-002 visto en rojo y en verde</span></li>
+<li><i>☐</i><span><b>docs/matriz.csv</b> actualizada · estado de cada caso</span></li>
+<li><i>☐</i><span><b>portal/index.html</b> generado</span></li>
+<li><i>☐</i><span><b>informe-de-pruebas.docx</b> generado (escena 19)</span></li>
+<li><i>☐</i><span><b>EVIDENCIA.md</b>: tabla de motores, captura del portal y de la alerta</span></li></ul>
+<div class="lms v-paso" id="e-lms"><div class="lms-cab">Mis notas · Taller QA con IA · <b>Entrega</b></div><label class="lms-l">URL del repositorio<input id="e-url" placeholder="github.com/tu-usuario/qa-tienda-sol"></label><label class="lms-l">Commit<input id="e-commit" placeholder="7f3a2c1"></label><div class="esc-fila"><button type="button" class="q-btn pri" id="e-btn">Entregar</button><span class="esc-chip" id="e-est">sin entregar</span></div></div></div></div>
+      </section>
+    </div>
+    <div class="esc-card v-haz a-in" style="--d:.25s">
+      <span class="v-et">Hazlo tú · Tu acción</span>
+      <ol id="haz"></ol>
+      <label class="v-logre"><input type="checkbox"> <span id="logre"></span></label>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Antes · 16 · El informe de pruebas: lo que entrega QA</span> <span style="margin-left:auto">Después · Fin · 13:00</span></footer>
+</div>
+<script>
+const SUBS=[{pasos:[{"t": "prompt", "s": "Redacta una pregunta para el hilo de la clase sobre E2E-VEN-003 en Obscura: incluye ID, resultado esperado, recibido y mi duda sobre si es bug de la app o del motor. Máximo 5 líneas."}, {"t": "claude", "s": "Read playwright-report (obscura) · Read docs/motores-resultados.md", "on": "h-id"}, {"t": "out", "s": "Borrador listo (lo pegué en el formulario de la derecha). Revísalo: la evidencia es tuya, no mía.", "c": "ok", "on": "h-txt"}, {"t": "out", "s": "Regla de la casa: nunca aceptes una prueba que no viste fallar. Si Claude te entrega un spec en verde a la primera, rómpelo a propósito y mira el rojo.", "c": "w", "on": "h-regla"}],inicio:["Una buena pregunta de QA trae el caso, lo esperado y lo recibido. Claude te ayuda a redactarla; tú decides."],alt:"",cwd:"qa-taller-kit/pruebas",soft:"Hilo de la sesión en el LMS",titulo:"Pregunta con evidencia",haz:["Elige un rojo tuyo (o el de Obscura).", "Redacta con ID, esperado y recibido; Claude puede ayudarte con el borrador.", "Publícalo en el hilo real de la sesión o responde a un compañero."],logre:"mi pregunta en el hilo tiene ID, esperado y recibido"},{pasos:[{"t": "prompt", "s": "Escribe EVIDENCIA.md con: mi tabla de los tres motores, la captura del portal, la captura de la alerta y el nombre de mi informe-de-pruebas.docx. Luego dime qué comandos de git corro."}, {"t": "claude", "s": "Write EVIDENCIA.md", "on": "e-ev"}, {"t": "out", "s": "Listo. Comandos (desde la carpeta del kit):", "c": "ok"}, {"t": "cmd", "s": "git add pruebas docs portal/index.html informe-de-pruebas.docx EVIDENCIA.md", "on": "e-git"}, {"t": "cmd", "s": "git commit -m \"taller QA: E2E con POM, bug encontrado, portal, monitoreo e informe\""}, {"t": "out", "s": "[main 7f3a2c1] taller QA: E2E con POM, bug encontrado, portal, monitoreo e informe\n 14 files changed, 612 insertions(+)", "c": "c"}, {"t": "cmd", "s": "git push"}, {"t": "out", "s": "To github.com:tu-usuario/qa-tienda-sol.git\n   a1b2c3d..7f3a2c1  main -> main", "c": "ok", "on": "e-lms"}],inicio:["La entrega se revisa corriendo tus pruebas. Si no se pueden repetir, no existen."],alt:"",cwd:"qa-taller-kit",soft:"Mis notas · LMS",titulo:"Entrega URL + commit",haz:["Marca la lista: ¿tienes los 5 archivos?", "<code>git add … && git commit && git push</code>.", "En el LMS, tarea «Entregar»: URL + commit."],logre:"mi entrega aparece en «Mis notas» con estado en cola"}];
+
+const $=id=>document.getElementById(id);const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const con=$('con');let corriendo=false,parar=false,cur=0;const S=()=>SUBS[cur];
+function linea(cls,txt){const s=document.createElement('span');if(cls)s.className=cls;s.innerHTML=txt;con.appendChild(s);con.appendChild(document.createTextNode('\n'));con.scrollTop=con.scrollHeight;return s;}
+const dormir=ms=>new Promise(r=>setTimeout(r,RM?0:ms));
+async function tipear(pref,cls,txt){const s=linea('',pref);const t=document.createElement('span');t.className=cls;s.appendChild(t);const c=document.createElement('span');c.className='cur';s.appendChild(c);
+  if(RM){t.textContent=txt;}else{for(let i=0;i<txt.length;i++){t.textContent+=txt[i];con.scrollTop=con.scrollHeight;if(parar)break;await dormir(txt.length>90?8:18);}}c.remove();}
+function marcar(id){document.querySelectorAll('.v-paso.on').forEach(e=>e.classList.remove('on'));if(id){const e=$(id);if(e){e.classList.add('on');e.scrollIntoView({block:'nearest'});}}}
+async function ejecutar(){if(corriendo)return;corriendo=true;parar=false;$('ejecutar').disabled=true;con.textContent='';marcar(null);
+  for(const p of S().pasos){if(parar)break;
+    if(p.t==='prompt')await tipear('<span class="p">&gt; </span>','u',p.s);
+    else if(p.t==='cmd')await tipear('<span class="p">$ </span>','k',p.s);
+    else if(p.t==='claude'){await dormir(250);linea('d','<span class="c">⏺</span> '+esc(p.s));}
+    else if(p.t==='out')linea(p.c||'',esc(p.s));
+    else if(p.t==='html')linea(p.c||'',p.s);
+    else if(p.t==='pausa')await dormir(p.ms||600);
+    if(p.on){marcar(p.on);if(S().paso)S().paso(p.on);}
+    if(p.t!=='pausa')await dormir(p.ms||220);}
+  linea('c','— listo · pulsa «Reiniciar» para verlo otra vez');corriendo=false;$('ejecutar').disabled=false;}
+function inicio(){con.innerHTML=S().inicio.map(l=>'<span class="c">'+esc(l)+'</span>').join('\n')+'\n';}
+$('ejecutar').onclick=ejecutar;$('reiniciar').onclick=()=>{parar=true;corriendo=false;$('ejecutar').disabled=false;inicio();marcar(null);if(S().reiniciar)S().reiniciar();};
+function irSub(i){parar=true;corriendo=false;$('ejecutar').disabled=false;cur=(i+SUBS.length)%SUBS.length;const pn=S().panel??cur;document.querySelectorAll('.v-sub').forEach(d=>d.hidden=+d.dataset.i!==pn);document.querySelectorAll('.v-dot').forEach(d=>{if(+d.dataset.i===cur)d.setAttribute('aria-current','true');else d.removeAttribute('aria-current');});
+ $('sub-tit').textContent=S().titulo;$('sub-n').textContent=(cur+1)+' de '+SUBS.length;$('soft').textContent=S().soft;$('cwd').textContent='❯ claude · '+S().cwd;$('alt').innerHTML=S().alt?'Sin IA: <b>'+esc(S().alt)+'</b>':'';
+ $('haz').innerHTML=S().haz.map((h,k)=>'<li><b>'+(k+1)+'</b><span>'+h+'</span></li>').join('');$('logre').textContent='Lo logré: '+S().logre;inicio();marcar(null);}
+$('ant').onclick=()=>irSub(cur-1);$('sig').onclick=()=>irSub(cur+1);document.querySelectorAll('.v-dot').forEach(d=>d.onclick=()=>irSub(+d.dataset.i));
+addEventListener('keydown',e=>{if(e.target.matches('input,textarea'))return;if(e.key==='ArrowLeft')irSub(cur-1);if(e.key==='ArrowRight')irSub(cur+1);});
+
+(function(){window.paso=null;window.reiniciar=null;window.paso=id=>{if(id==='h-id'){$('h-in-id').value='E2E-VEN-003';$('h-in-esp').value='S/ 34.02';$('h-in-rec').value='S/ 17.01 (Obscura) · S/ 30.62 (Chromium con bugs)';}if(id==='h-txt')$('h-in-txt').value='Corrí E2E-VEN-003 en los tres motores. Con BUGS=0, Chromium y Lightpanda dan 34.02 y pasan; Obscura sigue en 17.01 y falla. Leí que Obscura no dispara change al salir del campo. ¿Es correcto decir que es un falso rojo del motor y no un bug de la app? ¿Cómo lo documento en el informe?';};
+$('h-pub').onclick=()=>{const ok=$('h-in-id').value.trim()&&$('h-in-esp').value.trim()&&$('h-in-rec').value.trim()&&$('h-in-txt').value.trim().length>20;$('h-msg').textContent=ok?'Así se ve una publicación con evidencia. Ahora ponla en el hilo real del LMS.':'Falta ID, esperado, recibido o el texto. Sin eso es una opinión.';};
+window.reiniciar=()=>{['h-in-id','h-in-esp','h-in-rec','h-in-txt'].forEach(i=>$(i).value='');$('h-msg').textContent='';};
+SUBS[0].paso=window.paso;SUBS[0].reiniciar=window.reiniciar;})();
+(function(){window.paso=null;window.reiniciar=null;const items=[...document.querySelectorAll('#e-ev li')];items.forEach(l=>l.onclick=()=>{l.classList.toggle('ok');l.querySelector('i').textContent=l.classList.contains('ok')?'✓':'☐';});
+window.paso=id=>{if(id==='e-ev')items.forEach(l=>{l.classList.add('ok');l.querySelector('i').textContent='✓';});if(id==='e-lms'){$('e-url').value='github.com/tu-usuario/qa-tienda-sol';$('e-commit').value='7f3a2c1';}};
+$('e-btn').onclick=()=>{const ok=$('e-url').value.trim()&&$('e-commit').value.trim();$('e-est').textContent=ok?'en cola · el instructor corre tus pruebas':'falta URL o commit';$('e-est').className='esc-chip '+(ok?'ok':'bad');};
+window.reiniciar=()=>{items.forEach(l=>{l.classList.remove('ok');l.querySelector('i').textContent='☐';});$('e-url').value='';$('e-commit').value='';$('e-est').textContent='sin entregar';$('e-est').className='esc-chip';};
+SUBS[1].paso=window.paso;SUBS[1].reiniciar=window.reiniciar;})();
+
+irSub(0);
+</script>
+</body>
+</html>

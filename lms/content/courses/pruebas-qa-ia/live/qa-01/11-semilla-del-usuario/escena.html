@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Reproduce exactamente el error del usuario</title>
+<!--
+  Escena del modo LIVE (taller qa-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: a la izquierda, el aviso de consentimiento tal como lo muestra Tienda Sol (app/publico/js/grabador.js)
+  y un mini punto de venta donde «la persona» cobra S/ 5 por un café de S/ 17.01 mientras la grabación se llena.
+  A la derecha, el reproductor (paso a paso) y la prueba Playwright generada desde la grabación. Un mini quiz pregunta
+  qué NO debe grabarse. Lo logras cuando reproduces la sesión y respondes el quiz. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .2); }
+.esc { padding: 1.7vh 2.6vw 1.5vh; gap: 1.1vh; }
+.esc-cuerpo { gap: 1.1vh; }
+.esc-titulo { font-size: 1.25em; }
+.u-btn { font: 700 .62em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.u-btn:hover { transform: translateY(-1px); }
+.u-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.u-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.u-btn.bien { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); } .u-btn.mal { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+.u-et { font-size: .56em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.u-b { display: grid; grid-template-columns: 1fr 1.15fr; gap: 1.1vw; min-height: 0; }
+.u-col { display: grid; gap: 1vh; align-content: start; min-width: 0; }
+/* consentimiento, igual que en la app */
+.u-con { background: #fff; color: #1d2433; border: 1px solid #e3c488; border-radius: .9em; padding: .8em 1em; font-size: .66em; line-height: 1.4; display: grid; gap: .35em; box-shadow: var(--card-shadow); }
+.u-con h2 { margin: 0; font-size: 1.3em; } .u-con ul { margin: 0; padding-left: 1.2em; } .u-con .acc { display: flex; gap: .6em; justify-content: flex-end; margin-top: .2em; }
+.u-con button { font: 600 1em system-ui, sans-serif; padding: .5em .9em; border-radius: .6em; border: 1px solid #c8ccd6; background: #fff; color: #1d2433; cursor: pointer; }
+.u-con button.si { background: #f5a623; border-color: #f5a623; }
+/* mini POS */
+.u-pos { background: #fffaf2; color: #1d2433; border: 1px solid #e5d9c3; border-radius: .9em; overflow: hidden; font-size: .66em; }
+.u-pos .barra { background: #171b28; color: #fff; padding: .5em .9em; display: flex; gap: .8em; align-items: center; font-weight: 700; }
+.u-pos .barra b { color: #f5a623; } .u-pos .grab { margin-left: auto; color: #ff9a93; font-size: .85em; display: none; } .u-pos .grab i { display: inline-block; width: .6em; height: .6em; border-radius: 50%; background: #d8322a; margin-right: .3em; }
+.u-pos .cuerpo { padding: .7em .9em; display: grid; gap: .5em; }
+.u-pos table { width: 100%; border-collapse: collapse; } .u-pos td, .u-pos th { padding: .3em .4em; border-bottom: 1px solid #eee3d0; text-align: left; } .u-pos .n { text-align: right; }
+.u-pos .cobro { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; align-items: end; }
+.u-pos label { display: grid; gap: .2em; font-weight: 600; } .u-pos input { font: inherit; padding: .4em .5em; border: 1px solid #c8ccd6; border-radius: .5em; width: 7em; }
+.u-pos .total b { font-size: 1.3em; } .u-pos .cobro > div > b { display: block; }
+.u-pos button.conf { font: 700 1em system-ui, sans-serif; padding: .5em .9em; border-radius: .6em; border: 0; background: #f5a623; cursor: pointer; }
+.u-pos .aviso { min-height: 1.3em; font-weight: 700; } .u-pos .aviso.ok { color: #1e7f3b; } .u-pos .aviso.bad { color: #b3261e; }
+/* grabación / reproductor */
+.u-log { margin: 0; padding: 0; list-style: none; font-size: .58em; display: grid; gap: .18em; max-height: 11.5em; overflow: auto; }
+.u-log li { display: grid; grid-template-columns: 3.2em 1fr; gap: .5em; padding: .2em .5em; border-radius: .4em; background: var(--s2); border: 1px solid transparent; }
+.u-log li b { font-family: var(--mono); color: var(--muted); font-weight: 600; } .u-log li.http span { color: var(--accent); } .u-log li.aviso span { color: var(--warn); font-weight: 700; }
+.u-log li[aria-current="step"] { border-color: var(--accent); background: var(--accent-bg); }
+.u-pant { background: var(--s2); border: 1px solid var(--line); border-radius: .6em; padding: .5em .7em; font-size: .6em; min-height: 3.6em; display: grid; gap: .2em; }
+.u-pant .res { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: .3em; padding: 0 .2em; }
+.u-spec { margin: 0; font: 600 .56em/1.45 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .7em .9em; white-space: pre-wrap; max-height: 12.5em; overflow: auto; }
+.u-spec .c { color: #9a93c9; } .u-spec .k { color: #ffd166; } .u-spec .s { color: #8be9a8; } .u-spec .e { color: #ff8e8e; }
+.u-quiz { display: flex; gap: .4em; flex-wrap: wrap; } .u-quiz .u-btn { font-size: .58em; }
+.u-msg { font-size: .64em; font-weight: 700; min-height: 1.3em; } .u-msg.ok { color: var(--ok); } .u-msg.bad { color: var(--bad); }
+@media (prefers-reduced-motion: reduce) { .u-btn { transition: none; } .u-btn:hover { transform: none; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">QA con IA · E11</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Reproduce <em>exactamente</em> el error del usuario, con su consentimiento</h1>
+    <div class="u-b">
+      <div class="u-col">
+        <section class="u-con a-in" id="con" role="dialog" aria-labelledby="con-t" style="--d:.1s">
+          <h2 id="con-t">¿Nos ayudas a reproducir errores?</h2>
+          <p>Si aceptas, <strong>grabamos esta sesión</strong> para que el equipo de calidad pueda ver exactamente lo que te pasó y corregirlo. Se guarda:</p>
+          <ul>
+            <li>tus clics y lo que escribes en el punto de venta (<strong>nunca la clave</strong>: se guarda como •••);</li>
+            <li>la pantalla tal como la viste antes de cada clic, los avisos que aparecieron;</li>
+            <li>las peticiones al servidor que fallaron y los errores de JavaScript.</li>
+          </ul>
+          <p>Se conserva <strong>24 horas</strong> en esta tienda y luego se borra. Puedes <strong>dejar de grabar</strong> cuando quieras con el botón de arriba. No se usa para nada más.</p>
+          <div class="acc"><button type="button" id="c-no">No, gracias</button><button type="button" class="si" id="c-si">Sí, grabar esta sesión</button></div>
+        </section>
+        <section class="u-pos a-in" style="--d:.2s" aria-label="Tienda Sol, punto de venta">
+          <div class="barra">☀ Tienda <b>Sol</b> · Venta <span class="grab" id="grab"><i></i>Grabando · <u>Dejar de grabar</u></span></div>
+          <div class="cuerpo">
+            <table aria-label="Carrito"><tr><th>Producto</th><th class="n">Precio</th><th>Cant.</th><th class="n">Subtotal</th></tr><tr><td>Café Altomayo 200 g <small>-10%</small></td><td class="n">S/ 17.01</td><td>1</td><td class="n">S/ 17.01</td></tr></table>
+            <div class="cobro">
+              <div class="total">Total<b>S/ 17.01</b></div>
+              <label>Efectivo recibido (S/) <input id="efectivo" type="number" min="0" step="0.10" value="" aria-label="Efectivo recibido (S/)"></label>
+              <div>Vuelto<b id="vuelto">S/ 0.00</b></div>
+              <div><button type="button" class="conf" id="confirmar">Confirmar venta</button></div>
+            </div>
+            <p class="aviso" id="aviso" role="status"></p>
+          </div>
+        </section>
+        <section class="esc-card a-in" style="--d:.3s" aria-label="Grabación">
+          <span class="u-et">Lo que se graba (la «semilla frontend»)</span>
+          <ul class="u-log" id="log"><li><b>—</b><span>Nada todavía. Primero la persona decide si acepta.</span></li></ul>
+        </section>
+      </div>
+      <div class="u-col">
+        <section class="esc-card a-in" style="--d:.25s" aria-label="Reproductor">
+          <div class="esc-fila">
+            <span class="u-et">QA · reproducir.html · paso a paso</span>
+            <span style="margin-left:auto"></span>
+            <button type="button" class="u-btn" id="r-ant" disabled>◀ Anterior</button>
+            <button type="button" class="u-btn" id="r-sig" disabled>Siguiente ▶</button>
+            <span class="u-et" id="r-paso">0 / 0</span>
+          </div>
+          <div class="u-pant" id="pant"><span>Lo que vio la persona aparece aquí, con el elemento del clic resaltado.</span></div>
+        </section>
+        <section class="esc-card a-in" style="--d:.35s" aria-label="Prueba generada">
+          <div class="esc-fila"><span class="u-et">reproducir-&lt;id&gt;.spec.ts · generado desde la grabación</span><span style="margin-left:auto"></span><button type="button" class="u-btn pri" id="gen" disabled>Generar prueba Playwright</button></div>
+          <pre class="u-spec" id="spec"><span class="c">// Primero graba una sesión y reprodúcela.</span></pre>
+        </section>
+        <section class="esc-card a-in" style="--d:.45s" aria-label="Quiz">
+          <span class="u-et">¿Qué NO debe grabarse nunca? (marca todo lo que corresponda)</span>
+          <div class="u-quiz">
+            <button type="button" class="u-btn" data-no="1">La contraseña</button>
+            <button type="button" class="u-btn" data-no="1">El número de tarjeta</button>
+            <button type="button" class="u-btn" data-no="1">El DNI del cliente</button>
+            <button type="button" class="u-btn" data-no="0">El clic en «Confirmar venta»</button>
+          </div>
+          <p class="u-msg" id="msg">Ley 29733: qué se graba, para qué, cuánto tiempo y cómo revocarlo. Identidades no; acciones y pantallas sí.</p>
+        </section>
+      </div>
+    </div>
+    <p class="esc-pie"><span class="esc-chip" id="chip">De «no puedo reproducirlo» a una prueba que falla hoy y pasa cuando lo arreglas</span></p>
+  </main>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let grabando = false, eventos = [], paso = -1, vendido = false, quizOk = 0, quizMal = false, generado = false;
+  const t0 = Date.now();
+  const sec = () => '+' + ((Date.now() - t0) / 1000).toFixed(1) + 's';
+  function ev(tipo, texto, pantalla) {
+    if (!grabando) return;
+    eventos.push({ tipo, texto, pantalla, t: sec() });
+    const li = document.createElement('li'); li.className = tipo; li.innerHTML = `<b>${sec()}</b><span>${texto}</span>`;
+    const log = $('log'); if (eventos.length === 1) log.replaceChildren(); log.append(li); log.scrollTop = 1e6;
+    $('r-sig').disabled = $('r-ant').disabled = false; $('r-paso').textContent = `0 / ${eventos.length}`;
+  }
+  const pantalla = (res) => `<span>☀ Tienda Sol · Venta</span><span>Café Altomayo 200 g · S/ 17.01 · cant. 1</span><span>Total <b>S/ 17.01</b> · Efectivo <span ${res === 'efectivo' ? 'class="res"' : ''}>S/ ${$('efectivo').value || '—'}</span> · Vuelto <b>${$('vuelto').textContent}</b></span><span><span ${res === 'confirmar' ? 'class="res"' : ''}>[Confirmar venta]</span> ${$('aviso').textContent}</span>`;
+  $('c-si').onclick = () => {
+    grabando = true; $('con').hidden = true; $('grab').style.display = 'inline';
+    ev('nav', 'Semilla: /venta.html · 1280×720 · es-PE · ' + new Date().toLocaleTimeString('es-PE', { hour12: false }), pantalla());
+    $('msg').className = 'u-msg'; $('msg').textContent = 'Ahora eres la cajera: escribe 5 en «Efectivo recibido» y confirma.';
+  };
+  $('c-no').onclick = () => { $('con').hidden = true; $('log').innerHTML = '<li><b>—</b><span>No se graba nada. La persona puede aceptar después desde el encabezado. Recarga la escena para probar el «Sí».</span></li>'; };
+  $('efectivo').addEventListener('input', () => { const e = Number($('efectivo').value || 0); $('vuelto').textContent = e >= 17.01 ? 'S/ ' + (e - 17.01).toFixed(2) : 'Falta S/ ' + (17.01 - e).toFixed(2); });
+  $('efectivo').addEventListener('change', () => ev('escribe', `Escribe «${$('efectivo').value}» en campo «Efectivo recibido (S/)»`, pantalla('efectivo')));
+  $('confirmar').onclick = () => {
+    const e = Number($('efectivo').value || 0);
+    ev('clic', 'Clic en button «Confirmar venta»', pantalla('confirmar'));
+    // el bug A de Tienda Sol: el POS manda pago = total, ignorando lo escrito
+    setTimeout(() => {
+      ev('http', `POST /api/ventas → 201 · enviado {"efectivo":17.01} · la persona escribió ${e}`, pantalla());
+      $('aviso').className = 'aviso ok'; $('aviso').textContent = 'Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00';
+      ev('aviso', 'Mensaje: «Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00»', pantalla());
+      vendido = true; $('gen').disabled = false; $('confirmar').disabled = true;
+      $('msg').className = 'u-msg bad'; $('msg').textContent = `Se registró la venta con S/ ${e}. La persona reporta «me cobró mal». Ahora QA: pulsa «Siguiente» y luego «Generar prueba».`;
+    }, 250);
+  };
+  function mostrar() {
+    const e = eventos[paso]; if (!e) return;
+    $('pant').innerHTML = e.pantalla; $('r-paso').textContent = `${paso + 1} / ${eventos.length}`;
+    document.querySelectorAll('#log li').forEach((li, i) => { if (i === paso) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current'); });
+  }
+  $('r-sig').onclick = () => { paso = Math.min(eventos.length - 1, paso + 1); mostrar(); };
+  $('r-ant').onclick = () => { paso = Math.max(0, paso - 1); mostrar(); };
+  $('gen').onclick = () => {
+    const e = $('efectivo').value || '0';
+    $('spec').innerHTML = `<span class="c">// Generado desde la sesión grabada con consentimiento de la persona.</span>
+<span class="k">test</span>(<span class="s">'reproducir sesión'</span>, <span class="k">async</span> ({ page, request }) => {
+  <span class="k">await</span> request.post(<span class="s">'/api/semilla'</span>);   <span class="c">// mismos datos</span>
+  <span class="k">await</span> page.goto(<span class="s">'/venta.html'</span>);
+  <span class="k">await</span> page.getByLabel(<span class="s">'Efectivo recibido (S/)'</span>).fill(<span class="s">'${e}'</span>);
+  <span class="k">await</span> page.getByRole(<span class="s">'button'</span>, { name: <span class="s">'Confirmar venta'</span> }).click();
+  <span class="c">// La persona escribió S/ ${e}, pero POST /api/ventas envió efectivo: 17.01.</span>
+  <span class="k">await</span> <span class="e">expect</span>(page.getByRole(<span class="s">'alert'</span>)).toHaveText(/Efectivo insuficiente/);
+  <span class="k">await</span> <span class="e">expect</span>(page.getByRole(<span class="s">'status'</span>).filter({ hasText: /Venta N°/ })).toHaveCount(0);
+});
+<span class="c">// npx playwright test specs/reproducir-*.spec.ts  → ROJO (reproduce el bug) · BUGS=0 → VERDE</span>`;
+    generado = true; logro();
+  };
+  document.querySelectorAll('.u-quiz .u-btn').forEach((b) => b.onclick = () => {
+    if (b.classList.contains('bien') || b.classList.contains('mal')) return;
+    const debeNo = b.dataset.no === '1';
+    b.classList.add(debeNo ? 'bien' : 'mal');
+    if (debeNo) quizOk++; else { quizMal = true; $('msg').className = 'u-msg bad'; $('msg').textContent = 'El clic en «Confirmar venta» SÍ se graba: es una acción, no una identidad. Sin él no puedes reproducir nada.'; }
+    if (quizOk === 3 && !quizMal) { $('msg').className = 'u-msg ok'; $('msg').textContent = 'Correcto: clave, tarjeta y DNI nunca. Acciones y pantallas, sí.'; }
+    logro();
+  });
+  function logro() {
+    if (generado && quizOk === 3) { $('chip').className = 'esc-chip ok'; $('chip').textContent = 'Lo logré: grabé con consentimiento, reproduje y generé la prueba · pulsa «Lo logré»'; }
+  }
+})();
+</script>
+</body>
+</html>

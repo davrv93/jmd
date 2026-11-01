@@ -17,7 +17,7 @@ let fallos = 0;
 const minutos = [0,0,0,0,0,0];
 // Escenas de teoría de la primera versión (pedidas de vuelta el 01-11): tienen su propio diseño, sin la barra de
 // bloque ni la guía lateral. Aquí se declara a qué bloque de la agenda suman sus minutos.
-const TEORIA = { "03-piramide-y-casos": 1, "04-page-object-model": 1, "07-semillas-y-flaky": 2, "09-navegadores-sin-interfaz": 3, "16-monitoreo-sla": 5 };
+const TEORIA = { "01-escanea-tu-tienda": 1, "03-piramide-y-casos": 1, "04-page-object-model": 1, "06-semillas-y-flaky": 2, "08-navegadores-sin-interfaz": 3, "11-semilla-del-usuario": 4, "12-asi-lo-hace-una-botica": 4, "14-monitoreo-sla": 5, "15-robot-todo-el-dia": 5, "16-informe-de-pruebas": 6 };
 
 function yamlPlano(txt) {
   // Lector mínimo: claves de primer nivel «clave: valor»; las listas (comandos) solo se detectan.
@@ -32,8 +32,9 @@ function yamlPlano(txt) {
 const carpetas = readdirSync(aqui).filter((d) => !d.startsWith("_") && statSync(join(aqui, d)).isDirectory()).sort();
 for (const d of carpetas) {
   const errores = [];
-  const numero = carpetas.indexOf(d) + 1;
-  if (!d.startsWith(String(numero).padStart(2, '0') + '-')) errores.push('secuencia numerada con un salto');
+  // Las carpetas van ordenadas por su prefijo NN; se admiten huecos (el numerado final lo hace el instructor).
+  const pos = carpetas.indexOf(d);
+  if (pos > 0 && carpetas[pos - 1].slice(0, 2) >= d.slice(0, 2)) errores.push('prefijo repetido o fuera de orden');
   const ry = join(aqui, d, "escena.yaml"), rh = join(aqui, d, "escena.html");
   if (!existsSync(ry)) errores.push("falta escena.yaml");
   if (!existsSync(rh)) errores.push("falta escena.html");
@@ -61,9 +62,11 @@ for (const d of carpetas) {
       const bloque = /Bloque ([1-6])\/6 · (9:00|9:45|10:30|11:15|12:00|12:45)/.exec(html);
       if (!bloque) errores.push('falta barra de bloque y hora');
       else minutos[Number(bloque[1])-1] += Number(y.duracion_min || 0);
-      for (const texto of ['Objetivo', 'Tu acción', 'Lo logré', 'Antes ·', 'Después ·', 'Experiencia', 'Reflexión', 'Concepto', 'Experimento']) {
+      for (const texto of ['Objetivo', 'Tu acción', 'Lo logré', 'Antes ·', 'Después ·']) {
         if (!html.includes(texto)) errores.push('falta «' + texto + '»');
       }
+      if (!/class="esc-fase" data-ph="(ec|or|ca|ea)"/.test(html)) errores.push('falta el chip de fase (Experiencia / Reflexión / Conceptualización / Experimentación)');
+      if (!html.includes('class="v-dot"')) errores.push('sin puntos de sub-paso (● ○ ○)');
     }
     if (/__(SALIDAS|REPORTE|TRACE|PORTAL|LATENCIA)__/.test(html)) errores.push('datos de réplica sin completar');
     if (/window\.(alert|confirm|prompt)\s*\(/.test(html)) errores.push('diálogo nativo');

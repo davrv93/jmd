@@ -44,6 +44,7 @@ const caos = {
 // ---------- almacén en memoria ----------
 let db;
 const sesiones = new Map(); // token -> usuario
+const grabaciones = new Map(); // id -> grabación de sesión (con consentimiento)
 
 function cargar(datos) {
   db = {
@@ -135,6 +136,42 @@ async function api(req, res, url) {
     if (typeof cuerpo.caida === 'boolean') caos.caida = cuerpo.caida;
     if (Number.isFinite(cuerpo.latenciaMs)) caos.latenciaMs = Math.min(5000, Math.max(0, cuerpo.latenciaMs));
     return enviarJson(res, 200, { ...caos });
+  }
+
+  // ---- grabaciones de sesión con consentimiento («semilla frontend») ----
+  // Solo las crea el navegador cuando la persona aceptó. En memoria, 24 h, máximo 20 por tienda.
+  if (pathname.startsWith('/api/sesiones')) {
+    const ahora = Date.now();
+    for (const [id, g] of grabaciones) if (ahora - g.creada > 24 * 3600_000) grabaciones.delete(id);
+    const m = /^\/api\/sesiones(?:\/([a-z0-9]{6,24}))?(\/eventos)?$/.exec(pathname);
+    if (!m) return enviarJson(res, 404, { error: 'Ruta no encontrada' });
+    if (metodo === 'POST' && !m[1]) {
+      const cuerpo = await leerCuerpo(req);
+      if (!cuerpo || !/^[a-z0-9]{6,24}$/.test(cuerpo.id ?? '')) return enviarJson(res, 400, { error: 'Grabación inválida' });
+      if (grabaciones.size >= 20) grabaciones.delete(grabaciones.keys().next().value);
+      grabaciones.set(cuerpo.id, { id: cuerpo.id, creada: ahora, semilla: cuerpo.semilla ?? {}, eventos: [] });
+      return enviarJson(res, 201, { ok: true, id: cuerpo.id });
+    }
+    if (metodo === 'POST' && m[1]) { // agrega eventos (también acepta /eventos)
+      const g = grabaciones.get(m[1]);
+      if (!g) return enviarJson(res, 404, { error: 'Grabación no encontrada' });
+      const cuerpo = await leerCuerpo(req);
+      const nuevos = Array.isArray(cuerpo?.eventos) ? cuerpo.eventos.slice(0, 300 - g.eventos.length) : [];
+      g.eventos.push(...nuevos);
+      return enviarJson(res, 200, { ok: true, eventos: g.eventos.length });
+    }
+    if (metodo === 'GET' && !m[1]) {
+      const lista = [...grabaciones.values()].map((g) => ({
+        id: g.id, creada: new Date(g.creada).toISOString(), pagina: g.semilla.pagina ?? '/', eventos: g.eventos.length,
+        huboError: g.eventos.some((e) => e.tipo === 'error' || (e.tipo === 'http' && e.estado >= 400) || (e.tipo === 'aviso' && e.role === 'alert')),
+      })).sort((a, b) => (a.creada < b.creada ? 1 : -1));
+      return enviarJson(res, 200, lista);
+    }
+    if (metodo === 'GET' && m[1] && !m[2]) {
+      const g = grabaciones.get(m[1]);
+      return g ? enviarJson(res, 200, g) : enviarJson(res, 404, { error: 'Grabación no encontrada' });
+    }
+    return enviarJson(res, 405, { error: 'Método no permitido' });
   }
 
   if (caos.caida) return enviarJson(res, 503, { error: 'Servicio no disponible' });

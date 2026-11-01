@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reproducir sesión · Tienda Sol (QA)</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .rep { display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: start; }
+    .rep .lista { display: grid; gap: 6px; }
+    .rep .lista button { text-align: left; font: 14px system-ui, sans-serif; padding: 8px 10px; border: 1px solid #d5d9e2; border-radius: 8px; background: #fff; cursor: pointer; }
+    .rep .lista button[aria-pressed="true"] { border-color: #f5a623; background: #fff6e5; }
+    .rep .lista .rojo { color: #b3261e; font-weight: 700; }
+    .linea { display: grid; gap: 4px; max-height: 420px; overflow: auto; }
+    .linea button { text-align: left; font: 13px/1.35 system-ui, sans-serif; padding: 6px 8px; border: 1px solid #e2e5ec; border-radius: 7px; background: #fff; cursor: pointer; }
+    .linea button[aria-current="step"] { border-color: #f5a623; background: #fff6e5; }
+    .linea .t { color: #6b7280; font-family: ui-monospace, monospace; font-size: 11px; margin-right: 6px; }
+    .linea .http { color: #1f6feb; } .linea .error, .linea .alerta { color: #b3261e; font-weight: 600; }
+    .visor { border: 1px solid #d5d9e2; border-radius: 10px; overflow: hidden; background: #fff; }
+    .visor iframe { width: 100%; height: 440px; border: 0; background: #fff; }
+    .visor .cab { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid #e2e5ec; font-size: 14px; background: #f7f8fb; }
+    .detalle { font: 13px/1.5 ui-monospace, monospace; white-space: pre-wrap; background: #f7f8fb; border: 1px solid #e2e5ec; border-radius: 8px; padding: 8px 10px; min-height: 48px; margin-top: 8px; }
+    pre.spec { font: 12px/1.45 ui-monospace, monospace; background: #171b28; color: #e9ecf5; padding: 12px; border-radius: 10px; max-height: 320px; overflow: auto; }
+    .semilla { font-size: 13px; color: #4b5563; }
+  </style>
+</head>
+<body>
+  <header><div class="barra"><div class="marca">☀ Tienda <span>Sol</span> · QA</div><span>Reproducción de sesiones grabadas con consentimiento</span></div></header>
+  <main>
+    <h1>Reproducir la sesión del usuario</h1>
+    <p class="semilla">Cada grabación guarda la <strong>semilla frontend</strong> (URL, pantalla, hora) y las acciones en orden. Elige una, recórrela paso a paso y genera la prueba Playwright que la repite exactamente.</p>
+    <div class="rep">
+      <section aria-labelledby="t-lista">
+        <h2 id="t-lista">Sesiones grabadas</h2>
+        <div id="lista" class="lista"><p class="vacio">Cargando…</p></div>
+        <h2 style="margin-top:16px">Acciones</h2>
+        <div id="linea" class="linea"></div>
+      </section>
+      <section aria-labelledby="t-visor">
+        <h2 id="t-visor">Lo que vio la persona</h2>
+        <div class="visor">
+          <div class="cab">
+            <button id="ant" type="button" class="secundario">◀ Anterior</button>
+            <button id="sig" type="button" class="secundario">Siguiente ▶</button>
+            <button id="play" type="button" class="secundario">▶ Reproducir</button>
+            <span id="paso" style="margin-left:auto"></span>
+          </div>
+          <iframe id="pantalla" title="Pantalla grabada" sandbox=""></iframe>
+        </div>
+        <div id="detalle" class="detalle">Elige una sesión.</div>
+        <p><button id="generar" type="button" class="primario" disabled>Generar prueba Playwright</button> <span id="gen-nota" class="semilla"></span></p>
+        <pre id="spec" class="spec" hidden></pre>
+      </section>
+    </div>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let sesion = null, i = 0, reproduciendo = null;
+    const hora = (t) => new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour12: false });
+
+    async function cargarLista() {
+      const r = await fetch('/api/sesiones'); const lista = await r.json();
+      $('lista').replaceChildren();
+      if (!lista.length) { $('lista').innerHTML = '<p class="vacio">Aún no hay grabaciones. Abre la tienda, acepta grabar y usa el POS.</p>'; return; }
+      for (const s of lista) {
+        const b = document.createElement('button'); b.type = 'button';
+        b.innerHTML = `<strong>${hora(s.creada)}</strong> · ${s.eventos} acciones · ${s.huboError ? '<span class="rojo">hubo error</span>' : 'sin error'}<br><small>${s.id} · empezó en ${s.pagina}</small>`;
+        b.onclick = () => abrir(s.id, b);
+        $('lista').append(b);
+      }
+    }
+    async function abrir(id, boton) {
+      document.querySelectorAll('#lista button').forEach((b) => b.setAttribute('aria-pressed', String(b === boton)));
+      sesion = await (await fetch('/api/sesiones/' + id)).json();
+      i = 0; pintarLinea(); mostrar(); $('generar').disabled = false; $('spec').hidden = true;
+    }
+    function descripcion(e) {
+      if (e.tipo === 'clic') return `Clic en ${nombreLoc(e.loc)}`;
+      if (e.tipo === 'escribe') return `Escribe «${e.valor}» en ${nombreLoc(e.loc)}`;
+      if (e.tipo === 'nav') return `Abre ${e.url}`;
+      if (e.tipo === 'http') return `${e.metodo} ${e.url} → ${e.estado}`;
+      if (e.tipo === 'aviso') return `${e.role === 'alert' ? 'Aviso de error' : 'Mensaje'}: «${e.texto}»`;
+      if (e.tipo === 'error') return `Error JS: ${e.mensaje}`;
+      if (e.tipo === 'fin') return `Fin: ${e.motivo}`;
+      return e.tipo;
+    }
+    function nombreLoc(l) {
+      if (!l) return '?';
+      if (l.tipo === 'role') return `${l.role} «${l.name}»`;
+      if (l.tipo === 'label') return `campo «${l.name}»`;
+      if (l.tipo === 'testid') return `testid «${l.valor}»`;
+      return `«${l.name}»`;
+    }
+    function pintarLinea() {
+      const cont = $('linea'); cont.replaceChildren();
+      const t0 = sesion.eventos[0]?.t ?? 0;
+      sesion.eventos.forEach((e, k) => {
+        const b = document.createElement('button'); b.type = 'button';
+        const clase = e.tipo === 'http' && e.estado >= 400 ? 'error' : (e.tipo === 'aviso' && e.role === 'alert' ? 'alerta' : e.tipo);
+        b.innerHTML = `<span class="t">+${((e.t - t0) / 1000).toFixed(1)}s</span><span class="${clase}">${descripcion(e)}</span>`;
+        b.onclick = () => { i = k; mostrar(); };
+        cont.append(b);
+      });
+    }
+    function mostrar() {
+      const e = sesion.eventos[i]; if (!e) return;
+      document.querySelectorAll('#linea button').forEach((b, k) => { if (k === i) { b.setAttribute('aria-current', 'step'); b.scrollIntoView({ block: 'nearest' }); } else b.removeAttribute('aria-current'); });
+      // Pantalla: la última captura disponible hasta este paso, con el elemento del clic resaltado.
+      let html = null; for (let k = i; k >= 0; k--) if (sesion.eventos[k].pantalla) { html = sesion.eventos[k].pantalla; break; }
+      if (html) {
+        const resalte = e.sel ? `<style>${e.sel}{outline:3px solid #f5a623!important;outline-offset:2px;box-shadow:0 0 0 6px rgba(245,166,35,.25)}</style>` : '';
+        $('pantalla').srcdoc = html.replace('</head>', `<base href="${location.origin}/">${resalte}</head>`);
+      }
+      $('paso').textContent = `${i + 1} / ${sesion.eventos.length}`;
+      const s = sesion.semilla;
+      $('detalle').textContent = `Semilla: ${s.pagina ?? '/'} · ${s.pantalla ? s.pantalla.ancho + '×' + s.pantalla.alto : ''} · ${s.hora ?? ''}\n` + descripcion(e) + (e.enviado ? `\nEnviado: ${e.enviado}` : '') + (e.recibido ? `\nRecibido: ${e.recibido}` : '');
+    }
+    $('ant').onclick = () => { i = Math.max(0, i - 1); mostrar(); };
+    $('sig').onclick = () => { i = Math.min(sesion.eventos.length - 1, i + 1); mostrar(); };
+    $('play').onclick = () => {
+      if (reproduciendo) { clearInterval(reproduciendo); reproduciendo = null; $('play').textContent = '▶ Reproducir'; return; }
+      i = 0; mostrar(); $('play').textContent = '❚❚ Pausa';
+      reproduciendo = setInterval(() => { if (i >= sesion.eventos.length - 1) { clearInterval(reproduciendo); reproduciendo = null; $('play').textContent = '▶ Reproducir'; return; } i++; mostrar(); }, 900);
+    };
+
+    // ---------- de la grabación a una prueba Playwright ----------
+    const q = (t) => "'" + String(t).split("'").join("\\'") + "'";
+    function locCodigo(l) {
+      if (l.tipo === 'testid') return `page.getByTestId(${q(l.valor)})`;
+      if (l.tipo === 'role') return `page.getByRole(${q(l.role)}, { name: ${q(l.name)} })`;
+      if (l.tipo === 'label') return `page.getByLabel(${q(l.name)})`;
+      return `page.getByText(${q(l.name)})`;
+    }
+    function generarSpec() {
+      const ev = sesion.eventos; const s = sesion.semilla;
+      const L = [];
+      L.push(`import { test, expect } from '@playwright/test';`);
+      L.push(`// Generado desde la sesión ${sesion.id}, grabada el ${s.hora ?? ''} con consentimiento de la persona.`);
+      L.push(`// Semilla frontend: empezó en ${s.pagina ?? '/'}, pantalla ${s.pantalla ? s.pantalla.ancho + '×' + s.pantalla.alto : '?'}, ${s.idioma ?? ''}.`);
+      L.push(`// La clave no se graba: usa la del usuario de prueba.`);
+      L.push(``);
+      L.push(`test('reproducir sesión ${sesion.id}', async ({ page, request }) => {`);
+      L.push(`  await page.addInitScript(() => localStorage.setItem('sol-grabar', 'no')); // no grabar durante la reproducción`);
+      L.push(`  await request.post('/api/semilla', { data: { bugs: process.env.BUGS !== '0' } }); // mismos datos que tenía la tienda; BUGS=0 prueba la versión corregida`);
+      if (s.pantalla) L.push(`  await page.setViewportSize({ width: ${s.pantalla.ancho}, height: ${s.pantalla.alto} });`);
+      L.push(`  await page.goto('${s.pagina ?? '/'}');`);
+      let escrituras = {}; let ultimaVenta = null; let avisoError = null; let ultimoStatus = null; let httpMalo = null;
+      for (const e of ev) {
+        if (e.tipo === 'escribe') {
+          const valor = e.loc.inputType === 'password' ? "process.env.CLAVE_PRUEBA ?? 'cajero123'" : q(e.valor);
+          L.push(`  await ${locCodigo(e.loc)}.fill(${valor});`);
+          escrituras[e.loc.name] = e.valor;
+        } else if (e.tipo === 'clic') {
+          if (e.loc.tipo === 'label') continue; // clic para enfocar un campo: lo cubre fill()
+          L.push(`  await ${locCodigo(e.loc)}.click();`);
+        } else if (e.tipo === 'http') {
+          if (/\/api\/ventas/.test(e.url) && e.metodo === 'POST') ultimaVenta = e;
+          if (e.estado >= 400) httpMalo = e;
+        } else if (e.tipo === 'aviso') {
+          if (e.role === 'alert') avisoError = e; else ultimoStatus = e;
+        }
+      }
+      L.push(``);
+      L.push(`  // ---- Lo que la persona vio (ajusta la aserción a lo que DEBÍA pasar) ----`);
+      const efectivoEscrito = Object.entries(escrituras).find(([k]) => /efectivo/i.test(k))?.[1];
+      let enviado = null; try { enviado = ultimaVenta && JSON.parse(ultimaVenta.enviado); } catch { /* sin cuerpo */ }
+      if (ultimaVenta && enviado && efectivoEscrito !== undefined && Number(enviado.efectivo) !== Number(efectivoEscrito)) {
+        L.push(`  // La persona escribió S/ ${efectivoEscrito}, pero POST /api/ventas envió efectivo: ${enviado.efectivo} (respuesta ${ultimaVenta.estado}).`);
+        L.push(`  // Lo esperado: con S/ ${efectivoEscrito} el POS debe rechazar la venta y avisar.`);
+        L.push(`  await expect(page.getByRole('alert')).toHaveText(/Efectivo insuficiente/);`);
+        L.push(`  await expect(page.getByRole('status').filter({ hasText: /Venta N°/ })).toHaveCount(0); // ninguna venta registrada`);
+      } else if (avisoError) {
+        L.push(`  await expect(page.getByRole('alert')).toHaveText(${JSON.stringify(avisoError.texto)});`);
+      } else if (httpMalo) {
+        L.push(`  // ${httpMalo.metodo} ${httpMalo.url} respondió ${httpMalo.estado}: ${httpMalo.recibido ?? ''}`);
+        L.push(`  await expect(page.getByRole('alert')).not.toHaveText('');`);
+      } else if (ultimoStatus) {
+        L.push(`  await expect(page.getByRole('status')).toHaveText(${JSON.stringify(ultimoStatus.texto)}); // lo que vio; cámbialo por lo esperado`);
+      } else {
+        L.push(`  // No se grabó ningún aviso: escribe aquí el expect de lo que debía pasar.`);
+      }
+      L.push(`});`);
+      return L.join('\n');
+    }
+    $('generar').onclick = () => {
+      const codigo = generarSpec();
+      $('spec').textContent = codigo; $('spec').hidden = false;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([codigo], { type: 'text/plain' }));
+      a.download = `reproducir-${sesion.id}.spec.ts`; a.click();
+      $('gen-nota').textContent = `Descargado reproducir-${sesion.id}.spec.ts → cópialo a pruebas/specs/ y corre: npx playwright test specs/reproducir-${sesion.id}.spec.ts --project=chromium`;
+    };
+    cargarLista();
+  </script>
+</body>
+</html>

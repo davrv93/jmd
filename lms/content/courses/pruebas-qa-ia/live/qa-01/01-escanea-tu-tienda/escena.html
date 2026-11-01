@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Abre tu Tienda Sol en la nube y escanéala con la IA</title>
+<!--
+  Escena del modo LIVE (taller qa-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Tres pasos con puntos (● ○ ○, flechas ‹ › y teclas ← →): 1) abre tu tienda en la nube y guarda tu código;
+  2) instala solo pruebas/; 3) escanea la tienda (réplica animada de scripts/escanear.mjs) y el prompt para
+  Claude Code con Playwright MCP. Nada se guarda. Las plantillas JS usan ⟨ ⟩ y .html las vuelve HTML.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .2); }
+.esc { padding: 1.6vh 2.6vw 1.4vh; gap: 1vh; }
+.esc-cuerpo { gap: 1vh; }
+.esc-titulo { font-size: 1.22em; }
+.q-btn { font: 700 .62em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .5em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.q-btn:hover { transform: translateY(-1px); }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-et { font-size: .56em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.q-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: center; }
+.q-dots { display: flex; align-items: center; gap: .4em; }
+.q-dots button { font: 700 .58em/1.1 system-ui, sans-serif; padding: .45em .75em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: .45em; }
+.q-dots button i { width: .75em; height: .75em; border-radius: 50%; background: var(--line2); display: inline-block; }
+.q-dots button[aria-current="step"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.q-dots button[aria-current="step"] i { background: var(--accent); }
+.q-dots button.hecho i { background: var(--ok); }
+.q-dots .q-fl { font-size: .8em; padding: .4em .6em; }
+.q-pag[hidden] { display: none !important; }
+.q-pag { display: grid; min-height: 0; }
+.q-b { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.1vw; min-height: 0; }
+.q-col { display: grid; gap: 1vh; align-content: start; min-width: 0; }
+.q-card { padding: .65em .95em; display: grid; gap: .45em; align-content: start; min-width: 0; }
+p.q-msg { margin: 0; font-size: .66em; color: var(--fg); line-height: 1.35; }
+p.q-msg b { color: var(--accent); }
+.q-code { margin: 0; font: 600 .6em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .55em .9em; white-space: pre-wrap; border: 1px solid rgba(190,185,255,.22); }
+.q-code .c { color: #8f8ab8; } .q-code .s { color: #9fe0b0; } .q-code .v { color: #f4ac5c; } .q-code .k { color: #c3b9ff; }
+/* réplica de la tienda en la nube */
+.q-nav { display: flex; align-items: center; gap: .6em; background: var(--s2); border: 1px solid var(--line2); border-radius: .6em .6em 0 0; padding: .4em .7em; font: 600 .6em var(--mono); }
+.q-nav i { width: .7em; height: .7em; border-radius: 50%; background: var(--line2); display: inline-block; }
+.q-url { flex: 1; background: var(--s1); border-radius: .4em; padding: .3em .6em; color: var(--fg); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.q-url b { color: var(--accent); }
+.q-tienda { background: #fffaf0; color: #1d2433; border: 1px solid var(--line2); border-top: 0; border-radius: 0 0 .6em .6em; padding: .8em 1em; display: grid; gap: .5em; font-size: .7em; }
+.q-tienda .cab { display: flex; justify-content: space-between; align-items: center; font-weight: 800; }
+.q-tienda .cab span { color: #f59e0b; }
+.q-tienda .login { background: #fff; border: 1px solid #e5e7eb; border-radius: .6em; padding: .7em .9em; display: grid; gap: .35em; max-width: 20em; margin: 0 auto; }
+.q-tienda .login b { font-size: 1.15em; }
+.q-tienda .campo { border: 1px solid #d1d5db; border-radius: .35em; padding: .3em .5em; background: #fff; color: #6b7280; }
+.q-tienda .boton { background: #f59e0b; color: #111; border-radius: .35em; padding: .35em .7em; font-weight: 800; text-align: center; }
+.q-cod { display: flex; gap: .5em; align-items: center; flex-wrap: wrap; }
+.q-cod code { font: 700 .62em var(--mono); background: var(--s2); padding: .3em .6em; border-radius: .4em; }
+.q-os { display: flex; gap: .35em; }
+.q-os button[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+/* réplica del escáner */
+.q-term { margin: 0; font: 600 .58em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .55em .9em; white-space: pre-wrap; min-height: 9.5em; max-height: 13em; overflow: auto; border: 1px solid rgba(190,185,255,.22); }
+.q-term .ok { color: #9fe0b0; } .q-term .p { color: #c3b9ff; } .q-term .m { color: #8f8ab8; }
+.q-pant { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4em; }
+.q-pant div { background: var(--s2); border: 1px solid var(--line2); border-radius: .6em; padding: .4em .6em; font-size: .62em; line-height: 1.25; opacity: .35; transition: opacity .3s, border-color .3s; }
+.q-pant div.on { opacity: 1; border-color: var(--ok); }
+.q-pant b { display: block; }
+.q-pant small { color: var(--muted); }
+.q-loc { margin: 0; padding: 0; list-style: none; display: grid; gap: .22em; font-size: .6em; max-height: 9.6em; overflow: auto; }
+.q-loc li { display: grid; grid-template-columns: 6.5em 1fr; gap: .5em; padding: .18em .5em; border-radius: .4em; background: var(--s2); }
+.q-loc li b { color: var(--muted); font-weight: 700; }
+.q-loc li code { font-family: var(--mono); color: var(--fg); }
+.q-loc li.bueno code { color: var(--ok); }
+.q-tabla { display: grid; grid-template-columns: 1.1fr .7fr 1.3fr; gap: .25em; font-size: .62em; }
+.q-tabla span { padding: .25em .5em; background: var(--s2); border-radius: .35em; }
+.q-tabla span.h { font-weight: 800; color: var(--muted); background: transparent; }
+.q-tabla span.si { color: var(--ok); } .q-tabla span.no { color: var(--bad); }
+.q-tabla a { color: var(--accent); }
+.q-logro { animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+@media (prefers-reduced-motion: reduce) { .q-logro, .q-btn, .q-pant div { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">QA con IA · E01</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="q-cab">
+      <h1 class="esc-titulo a-in">Abre <em>tu Tienda Sol</em> en la nube y escanéala con la IA</h1>
+      <nav class="q-dots" aria-label="Pasos de la escena ● ○ ○">
+        <button type="button" class="q-fl" id="d-ant" aria-label="Paso anterior">‹</button>
+        <button type="button" data-pag="0" aria-current="step"><i></i>1 · Tu tienda</button>
+        <button type="button" data-pag="1"><i></i>2 · Instala solo las pruebas</button>
+        <button type="button" data-pag="2"><i></i>3 · Escanea</button>
+        <button type="button" class="q-fl" id="d-sig" aria-label="Paso siguiente">›</button>
+      </nav>
+    </div>
+
+    <section class="q-pag" data-pag="0">
+      <div class="q-b">
+        <div class="q-col">
+          <section class="esc-card q-card a-in" aria-label="Tu tienda en la nube">
+            <div class="esc-fila"><span class="q-et">jmd-learn.online/tienda-sol/ · cada visitante recibe su propia tienda</span><a class="q-btn pri" style="margin-left:auto;text-decoration:none" href="/tienda-sol/" target="_blank" rel="noopener">Abrir mi tienda</a></div>
+            <div class="q-nav"><i></i><i></i><i></i><span class="q-url" id="url"></span><button type="button" class="q-btn" id="b-cod">Obtener mi código</button></div>
+            <div class="q-tienda">
+              <div class="cab">☀ Tienda <span>Sol</span><small id="chip-aislada">tu copia · aislada</small></div>
+              <div class="login"><b>Iniciar sesión</b><span class="q-et">Usuario</span><div class="campo">cajero</div><span class="q-et">Clave</span><div class="campo">••••••••</div><div class="boton">Ingresar</div></div>
+            </div>
+          </section>
+        </div>
+        <div class="q-col">
+          <section class="esc-card q-card a-in" style="--d:.1s" aria-label="Qué significa aislada">
+            <div class="esc-fila"><span class="q-et">Qué significa «aislada»</span></div>
+            <p class="q-msg"><b>Tu código es tu tienda.</b> Sus ventas, su semilla y sus bugs son solo tuyos. <code>Reiniciar mi tienda</code> y <code>/api/caos</code> actúan solo en la tuya: nadie puede tumbar la de otro.</p>
+            <p class="q-msg">Se borra tras <b>30 min sin actividad</b>. Si recibes <b>410</b>, abre <code>/tienda-sol/</code> otra vez y copia el código nuevo.</p>
+            <p class="q-msg">Viene <b>con bugs</b> a propósito (interruptor en el login). La app local (<code>app/</code>) queda como plan B sin internet.</p>
+          </section>
+          <section class="esc-card q-card a-in" style="--d:.2s" aria-label="Guarda tu URL">
+            <div class="esc-fila"><span class="q-et">Guarda tu URL en una variable (desde pruebas/)</span><div class="q-os" style="margin-left:auto"><button type="button" class="q-btn" data-os="mac" aria-pressed="true">Mac / Linux</button><button type="button" class="q-btn" data-os="win">Windows</button></div></div>
+            <pre class="q-code" id="var"></pre>
+            <p class="q-msg">Con <b>BASE_URL</b>, Playwright no levanta nada local: todas las pruebas apuntan a tu tienda de la nube.</p>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="q-pag" data-pag="1" hidden>
+      <div class="q-b">
+        <div class="q-col">
+          <section class="esc-card q-card a-in" aria-label="Instala solo las pruebas">
+            <div class="esc-fila"><span class="q-et">Dos comandos · solo la carpeta pruebas/ (≈ 150 MB con Chromium)</span></div>
+            <pre class="q-code"><span class="c"># descomprime qa-taller-kit.zip y abre una terminal ahí</span>
+<span class="k">cd</span> pruebas
+<span class="k">npm</span> install
+<span class="k">npx</span> playwright install chromium   <span class="c"># Linux: --with-deps</span>
+<span class="k">node</span> -v                           <span class="c"># v20, v22 o v24</span></pre>
+            <p class="q-msg"><b>Node 20 LTS</b> o más nuevo (nodejs.org) y Chrome. Docker Desktop es opcional (Lightpanda, Obscura, Grafana).</p>
+          </section>
+        </div>
+        <div class="q-col">
+          <section class="esc-card q-card a-in" style="--d:.1s" aria-label="Qué tiene versión web">
+            <div class="esc-fila"><span class="q-et">Qué corre en la nube y qué en tu laptop</span></div>
+            <div class="q-tabla"><span class="h">Herramienta</span><span class="h">¿Web?</span><span class="h">Dónde</span>
+              <span>Tienda Sol</span><span class="si">Sí</span><span><a href="/tienda-sol/" target="_blank" rel="noopener">/tienda-sol/</a> · tu código</span>
+              <span>Trace Viewer</span><span class="si">Sí</span><span>trace.playwright.dev</span>
+              <span>Grafana</span><span class="si">Sí · local</span><span>localhost:3001</span>
+              <span>Lightpanda / Obscura</span><span class="no">No</span><span>terminal · CDP 9222 / 9223</span>
+              <span>Pruebas (Playwright)</span><span class="no">No</span><span>tu laptop · <code>pruebas/</code></span></div>
+            <p class="q-msg">La app ya está arriba. Lo único que se instala es <b>el runner de pruebas</b>: así el taller empieza en minutos.</p>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="q-pag" data-pag="2" hidden>
+      <div class="q-b">
+        <div class="q-col">
+          <section class="esc-card q-card a-in" aria-label="Escanear la tienda">
+            <div class="esc-fila"><span class="q-et">npm run escanear · entra como cajero y recorre todas las pantallas</span><button type="button" class="q-btn pri" id="b-esc" style="margin-left:auto">Escanear</button></div>
+            <pre class="q-term" id="term"></pre>
+            <div class="q-pant" id="pant"></div>
+          </section>
+          <section class="esc-card q-card a-in" style="--d:.1s" aria-label="Con Claude Code">
+            <div class="esc-fila"><span class="q-et">Con Claude Code + Playwright MCP (la IA maneja el navegador)</span></div>
+            <pre class="q-code"><span class="k">claude</span> mcp add playwright -- npx @playwright/mcp@latest
+<span class="c">> Abre BASE_URL, entra como cajero/cajero123, recorre todas las pantallas y escribe
+> docs/mapa-tienda.md y un Page Object por pantalla con getByRole/getByLabel.
+> Luego genera los specs de docs/casos-de-uso.md. No cambies aserciones para que pasen.</span></pre>
+          </section>
+        </div>
+        <div class="q-col">
+          <section class="esc-card q-card a-in" style="--d:.15s" aria-label="Mapa y page objects">
+            <div class="esc-fila"><span class="q-et">docs/mapa-tienda.md · localizadores que vería una persona</span><span class="q-et" id="loc-et" style="margin-left:auto"></span></div>
+            <ul class="q-loc" id="loc"></ul>
+            <div class="esc-fila"><span class="q-et">pages/generado/VentaPage.ts · esqueleto (tú escribes los métodos)</span></div>
+            <pre class="q-code" id="po"><span class="c">// aparece al escanear</span></pre>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota" id="pie">Primero tu tienda, luego el runner, luego el mapa: no se escribe una prueba sin saber cómo se llama cada botón</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var h = function (t) { return String(t).replace(/⟨/g, "<").replace(/⟩/g, ">"); };
+  Object.defineProperty(Element.prototype, "html", { set: function (v) { this.innerHTML = h(v); }, get: function () { return this.innerHTML; }, configurable: true });
+  var HOST = "https:" + "//jmd-learn.online/tienda-sol/";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- dots ---------- */
+  var dotN = 0, N = 3, hecho = [false, false, false];
+  var NOTAS = ["Tu código es tu tienda: nadie te la tumba y tú no tumbas la de nadie",
+               "Solo se instala el runner: la app ya está arriba",
+               "No se escribe una prueba sin saber cómo se llama cada botón: el mapa primero"];
+  function irDot(n) {
+    dotN = (n + N) % N;
+    Array.prototype.forEach.call(document.querySelectorAll(".q-pag"), function (s) { s.hidden = Number(s.getAttribute("data-pag")) !== dotN; });
+    Array.prototype.forEach.call(document.querySelectorAll(".q-dots [data-pag]"), function (b) { if (Number(b.getAttribute("data-pag")) === dotN) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
+    if (dotN === 1) marcar(1);
+    if (!$("logro")) $("pie").textContent = NOTAS[dotN];
+  }
+  function marcar(i) { hecho[i] = true; document.querySelector('.q-dots [data-pag="' + i + '"]').classList.add("hecho"); logro(); }
+  Array.prototype.forEach.call(document.querySelectorAll(".q-dots [data-pag]"), function (b) { b.addEventListener("click", function () { irDot(Number(b.getAttribute("data-pag"))); }); });
+  $("d-ant").addEventListener("click", function () { irDot(dotN - 1); });
+  $("d-sig").addEventListener("click", function () { irDot(dotN + 1); });
+  document.addEventListener("keydown", function (e) { if (e.key === "ArrowRight") irDot(dotN + 1); else if (e.key === "ArrowLeft") irDot(dotN - 1); });
+
+  /* ---------- paso 1: código y variable ---------- */
+  var codigo = "";
+  function hex(n) { var s = ""; while (s.length < n) s += Math.floor(Math.random() * 16).toString(16); return s; }
+  function pintarVar() {
+    var os = document.querySelector(".q-os [aria-pressed='true']").getAttribute("data-os");
+    var c = codigo || "TU_CODIGO";
+    $("var").html = os === "win"
+      ? '⟨span class="c"⟩# PowerShell⟨/span⟩\n$env:BASE_URL=⟨span class="s"⟩"' + HOST + c + '"⟨/span⟩\nnpm test'
+      : '⟨span class="c"⟩# Mac / Linux⟨/span⟩\nexport BASE_URL=⟨span class="s"⟩' + HOST + c + '⟨/span⟩\nnpm test';
+  }
+  $("b-cod").addEventListener("click", function () {
+    codigo = hex(32);
+    $("url").html = HOST + "⟨b⟩" + codigo + "⟨/b⟩/";
+    $("chip-aislada").textContent = "tu copia · código " + codigo.slice(0, 6) + "… · aislada";
+    pintarVar(); marcar(0);
+    $("pie").textContent = "Ese código es tu tienda. Es privado: no lo compartas. En clase, el real sale al abrir /tienda-sol/";
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".q-os button"), function (b) {
+    b.addEventListener("click", function () { Array.prototype.forEach.call(document.querySelectorAll(".q-os button"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); }); pintarVar(); });
+  });
+  pintarVar();
+
+  /* ---------- paso 3: escáner (datos reales del escaneo del 01-11-2026 a la tienda pública) ---------- */
+  var PANT = [
+    { n: "login", t: "Iniciar sesión", e: 7, api: "POST /api/login" },
+    { n: "catalogo", t: "Catálogo", e: 50, api: "GET /api/productos" },
+    { n: "venta", t: "Venta", e: 11, api: "POST /api/ventas" },
+    { n: "reporte", t: "Reporte del día", e: 10, api: "GET /api/reporte" }
+  ];
+  var LOC = [
+    ["login", "textbox «Usuario»", "getByLabel('Usuario')", 1],
+    ["login", "button «Ingresar»", "getByRole('button', { name: 'Ingresar' })", 1],
+    ["login", "status", "locator('#sol-estado')", 0],
+    ["catalogo", "searchbox", "getByRole('searchbox', { name: 'Buscar producto' })", 1],
+    ["catalogo", "button", "getByRole('button', { name: 'Agregar Café Altomayo 200 g' })", 1],
+    ["catalogo", "link", "getByRole('link', { name: 'Venta (0)' })", 1],
+    ["venta", "spinbutton", "getByLabel('Efectivo recibido (S/)')", 1],
+    ["venta", "button", "getByRole('button', { name: 'Confirmar venta' })", 1],
+    ["venta", "status", "getByRole('status', { name: 'Total a pagar' })", 1],
+    ["reporte", "heading", "getByRole('heading', { name: 'Reporte del día' })", 1],
+    ["reporte", "status", "locator('#total-dia')", 0]
+  ];
+  var PO = '⟨span class="k"⟩export class⟨/span⟩ VentaPage {\n  readonly efectivo: Locator;   ⟨span class="c"⟩// spinbutton «Efectivo recibido (S/)»⟨/span⟩\n  readonly confirmar: Locator;  ⟨span class="c"⟩// button «Confirmar venta»⟨/span⟩\n  constructor(private readonly page: Page) {\n    this.efectivo = page.⟨span class="s"⟩getByLabel(\'Efectivo recibido (S/)\')⟨/span⟩;\n    this.confirmar = page.⟨span class="s"⟩getByRole(\'button\', { name: \'Confirmar venta\' })⟨/span⟩;\n  }\n  ⟨span class="c"⟩// TODO: async cobrar(efectivo: number) { … }⟨/span⟩\n}';
+  var lineaCmd = function () { return '⟨span class="p"⟩$⟨/span⟩ BASE_URL=' + HOST + '⟨span class="ok"⟩TU_CODIGO⟨/span⟩ npm run escanear'; };
+  $("term").html = lineaCmd();
+  $("url").html = HOST + " → redirige a tu código…";
+  var pantEl = $("pant");
+  PANT.forEach(function (p) { var d = document.createElement("div"); d.id = "p-" + p.n; d.html = "⟨b⟩" + p.n + "⟨/b⟩⟨small⟩" + p.t + "⟨/small⟩"; pantEl.appendChild(d); });
+  var corriendo = false;
+  $("b-esc").addEventListener("click", function () {
+    if (corriendo) return; corriendo = true;
+    var term = $("term"), loc = $("loc"); loc.html = ""; $("po").html = '⟨span class="c"⟩// aparece al escanear⟨/span⟩';
+    PANT.forEach(function (p) { $("p-" + p.n).classList.remove("on"); });
+    term.html = lineaCmd() + '\nEscaneando ' + HOST + '…/ …';
+    var i = 0, paso = reduce ? 0 : 550;
+    function sig() {
+      if (i < PANT.length) {
+        var p = PANT[i]; $("p-" + p.n).classList.add("on");
+        term.html = term.html + "\n  " + (p.n + "          ").slice(0, 10) + String(p.e).padStart(2) + " elementos · API: " + p.api;
+        LOC.filter(function (l) { return l[0] === p.n; }).forEach(function (l) {
+          var li = document.createElement("li"); li.className = l[3] ? "bueno" : ""; li.html = "⟨b⟩" + l[0] + " · " + l[1] + "⟨/b⟩⟨code⟩" + l[2] + "⟨/code⟩"; loc.appendChild(li);
+        });
+        $("loc-et").textContent = LOC.filter(function (l) { return PANT.slice(0, i + 1).some(function (q) { return q.n === l[0]; }); }).length + " de " + LOC.length + " localizadores de ejemplo";
+        if (p.n === "venta") $("po").html = PO;
+        i++; term.scrollTop = term.scrollHeight; setTimeout(sig, paso);
+      } else {
+        term.html = term.html + '\n⟨span class="ok"⟩Pantallas: 4 (login, catalogo, venta, reporte)\nEscrito: docs/mapa-tienda.md, docs/mapa-tienda.json y pruebas/pages/generado/*.ts⟨/span⟩';
+        term.scrollTop = term.scrollHeight; corriendo = false; marcar(2);
+      }
+    }
+    setTimeout(sig, paso);
+  });
+
+  function logro() {
+    if (hecho[0] && hecho[1] && hecho[2] && !$("logro")) {
+      $("pie").html = '⟨span class="esc-chip ok q-logro" id="logro"⟩Tengo mi código, el runner instalado y el mapa de mi tienda · pulsa «Lo logré»⟨/span⟩';
+    }
+  }
+})();
+</script>
+</body>
+</html>

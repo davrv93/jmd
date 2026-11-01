@@ -61,13 +61,13 @@ cycle:
     title: "Ver el taller"
     tool: zoom
     phase: experiencia
-    description: "Asiste en vivo o mira la grabación. Recorre las 19 escenas LIVE en orden, empezando por Descarga el software."
+    description: "Asiste en vivo o mira la grabación. Recorre las 17 escenas LIVE en orden, empezando por «Abre tu Tienda Sol en la nube»."
     check: "Has visto el taller completo (o la grabación)"
   - id: casos
     title: "De caso de uso a caso de prueba"
     tool: lms
     phase: conceptualizacion
-    description: "En la escena 03 completa un caso con semilla, pasos y resultado esperado. Amplía a seis casos en docs/matriz.csv."
+    description: "En la escena 05 completa un caso con semilla, pasos y resultado esperado. Amplía a seis casos en docs/matriz.csv."
     check: "Tu caso define semilla, pasos y un rechazo comprobable"
   - id: pom
     title: "Page Object Model"
@@ -103,13 +103,13 @@ cycle:
     title: "Preguntar o responder"
     tool: lms
     phase: reflexion
-    description: "En la escena 18 prepara una pregunta con ID, esperado y recibido; publícala en el hilo de la sesión o responde a un compañero."
+    description: "En la escena 17 prepara una pregunta con ID, esperado y recibido; publícala en el hilo de la sesión o responde a un compañero."
     check: "Tu pregunta aparece en el hilo de la sesión"
   - id: entregar
     title: "Entregar el proyecto"
     tool: git
     phase: experimentacion
-    description: "En la escena 19 revisa EVIDENCIA.md, sube tu carpeta de pruebas y entrega URL + commit desde la tarea del LMS."
+    description: "Genera informe-de-pruebas.docx con npm run informe (escena 16); en la escena 17 revisa EVIDENCIA.md, sube tu carpeta de pruebas con el informe y entrega URL + commit desde la tarea del LMS."
     check: "La entrega aparece en «Mis notas» con estado en cola"
 ---
 
@@ -121,23 +121,24 @@ Cada bloque recorre **experiencia → reflexión → conceptualización → expe
 
 | Bloque | Hora | Escenas | Lo logré |
 |---|---|---|---|
-| 1 · Preparación, casos y POM | 9:00 | 01–05 | Caso con semilla, pasos y resultado |
-| 2 · Grabador, semillas y pruebas | 9:45 | 06–08 | Tres rojos; luego todo verde |
-| 3 · Navegadores sin interfaz | 10:30 | 09–11 | Comparé resultado y causa |
-| 4 · Reporte, traza y portal | 11:15 | 12–14 | Seguí el POST del cobro |
-| 5 · Monitoreo, SLA y alertas | 12:00 | 15–17 | Disparé y resolví una alerta |
-| 6 · Pregunta y entrega | 12:45 | 18–19 | URL + commit en Mis notas |
+| 1 · Tu tienda en la nube, casos y POM | 9:00 | 01–05 | Caso con semilla, pasos y resultado |
+| 2 · Semillas y primeras pruebas | 9:45 | 06–07 | Tres rojos; luego todo verde |
+| 3 · Navegadores sin interfaz | 10:30 | 08–09 | Comparé resultado y causa |
+| 4 · Evidencia: traza, portal y el error exacto del usuario | 11:15 | 10–12 | Seguí el POST del cobro |
+| 5 · Monitoreo, alertas y robot 24/7 | 12:00 | 13–15 | Disparé y resolví una alerta |
+| 6 · Informe de pruebas y entrega | 12:45 | 16–17 | Informe Word + URL y commit en Mis notas |
 
 ## Antes de empezar
 
-1. Instala **Node 20 LTS** y **Chrome**. En LIVE 01 elige Windows, Mac o Linux para ver los enlaces y el tipo de instalador.
-2. Descarga **qa-taller-kit.zip** desde Materiales y extráelo. En `pruebas/`: `npm install` y `npx playwright install chromium`.
-3. Opcional: Docker Desktop para Lightpanda, Obscura y Grafana. Imágenes: `lightpanda/browser` y `h4ckf0r0day/obscura`.
-4. Abre [Tienda Sol web](/tienda-sol/) o levanta la local con `cd app` y `npm start`. Usuario: **cajero / cajero123**.
+1. **Abre tu Tienda Sol en la nube:** [jmd-learn.online/tienda-sol/](/tienda-sol/) te da una tienda propia con un código en la URL. Cópiala: es tu `BASE_URL`. Usuario: **cajero / cajero123**. No hay nada que descargar para usar la app.
+2. Instala **Node 20 LTS** y **Chrome**. Descarga **qa-taller-kit.zip** desde Materiales y extráelo. Solo se instala la carpeta de pruebas: en `pruebas/`, `npm install` y `npx playwright install chromium`.
+3. Guarda tu URL: `export BASE_URL=https://jmd-learn.online/tienda-sol/TU_CODIGO` (Windows: `$env:BASE_URL="…"`). Con esa variable todas las pruebas apuntan a tu tienda de la nube.
+4. **Escanea tu tienda:** `npm run escanear` recorre login, catálogo, venta y reporte y escribe `docs/mapa-tienda.md` (cada botón con su localizador) y esqueletos de Page Object en `pages/generado/`. LIVE 01 lo muestra paso a paso.
+5. Opcional: Docker Desktop para Lightpanda, Obscura y Grafana. Sin internet, la app local (`cd app` y `npm start`) es el plan B.
 
 | Recurso | Acceso web |
 |---|---|
-| Tienda Sol | Sí: `/tienda-sol/`; datos propios por código privado |
+| Tienda Sol | Sí: `/tienda-sol/`; tienda propia por código privado, es la que se prueba |
 | Trace Viewer | Sí: [trace.playwright.dev](https://trace.playwright.dev) |
 | Grafana | Sí: `http://localhost:3001`, después de levantar el monitoreo |
 | Lightpanda y Obscura | No: se ejecutan y conectan desde terminal |
@@ -147,7 +148,7 @@ El interruptor **Con bugs** cambia solo tu tienda; **Reiniciar mi tienda** no to
 
 ## 1 · 9:00 · De la experiencia al caso
 
-1. **Experiencia:** entra a la réplica LIVE 02, agrega Café Altomayo (S/ 17.01) y paga S/ 5. Luego vuelve al catálogo, agrega otro café y cambia la cantidad a 2 para observar la promo doble.
+1. **Experiencia:** abre tu tienda de la nube (o la réplica LIVE 02), agrega Café Altomayo (S/ 17.01) y paga S/ 5. Luego vuelve al catálogo, agrega otro café y cambia la cantidad a 2 para observar la promo doble.
 2. **Reflexión:** compara lo que ingresaste con lo registrado. ¿Por qué las pruebas de API pueden pasar si el cobro en pantalla está mal?
 3. **Conceptualización:** en LIVE 03 ubica cada caso en la pirámide de pruebas (unitaria, integración, E2E, monitoreo); en LIVE 04 provoca un rediseño y cuenta cuántas líneas cambian con y sin Page Object Model. En LIVE 05 distingue caso de uso y caso de prueba. Define semilla, pasos y resultado; organiza localizadores y acciones en un Page Object.
 4. **Experimentación:** escribe E2E-VEN-002: el pago insuficiente debe rechazarse. Completa seis filas de `docs/matriz.csv`. Usa `getByRole` y `getByLabel`.
@@ -156,8 +157,8 @@ El interruptor **Con bugs** cambia solo tu tienda; **Reiniciar mi tienda** no to
 
 ## 2 · 9:45 · Grabar, ejecutar y corregir
 
-1. **Experiencia:** en LIVE 06 pulsa Grabar y realiza el login y un clic. En tu equipo puedes ejecutar `npm run codegen` (la tienda local debe estar en 3000).
-2. **Reflexión:** lee el código y elimina acciones accidentales. En LIVE 07 corre la suite 10 veces con y sin semilla, esperas fijas y aislamiento: mira de dónde salen las pruebas inestables. Observa el mensaje de los casos rojos en LIVE 08.
+1. **Experiencia:** en LIVE 05 pulsa Grabar y realiza el login y un clic. En tu equipo puedes ejecutar `npm run codegen` (la tienda local debe estar en 3000).
+2. **Reflexión:** lee el código y elimina acciones accidentales. En LIVE 06 corre la suite 10 veces con y sin semilla, esperas fijas y aislamiento: mira de dónde salen las pruebas inestables. Observa el mensaje de los casos rojos en LIVE 07.
 3. **Conceptualización:** los localizadores viven en `pages/`, las reglas en `specs/` y la semilla en `fixtures.ts`. Usa aserciones que esperan el resultado visible; evita esperas fijas.
 4. **Experimentación:** desde `pruebas/`, ejecuta `npm test` y después `npm run test:corregido`. Crea primero tu referencia visual con `npm run test:visual:base`.
 
@@ -189,10 +190,10 @@ npm test
 
 ## 3 · 10:30 · Medir sin confundir las causas
 
-1. **Experiencia:** en LIVE 09 compara Chromium, Lightpanda y Obscura (qué soporta cada uno, cómo se conecta Playwright y cuál conviene para cada tarea). Luego, desde `motores/`, ejecuta `docker compose up -d`. Desde `pruebas/`, corre `npm run test:lightpanda` y `npm run test:obscura`.
-2. **Reflexión:** en LIVE 10 compara el valor recibido de VEN-003. S/ 30.62 significa descuento doble; S/ 17.01 en Obscura corregida significa que no recalculó.
+1. **Experiencia:** en LIVE 08 compara Chromium, Lightpanda y Obscura (qué soporta cada uno, cómo se conecta Playwright y cuál conviene para cada tarea). Luego, desde `motores/`, ejecuta `docker compose up -d`. Desde `pruebas/`, corre `npm run test:lightpanda` y `npm run test:obscura`.
+2. **Reflexión:** en LIVE 09 compara el valor recibido de VEN-003. S/ 30.62 significa descuento doble; S/ 17.01 en Obscura corregida significa que no recalculó.
 3. **Conceptualización:** CDP conecta Playwright con el motor. Lightpanda no dibuja y excluye la visual. Chromium es la referencia del navegador real.
-4. **Experimentación:** registra resultado, tiempo y RAM con `docker stats --no-stream taller-lightpanda taller-obscura`. En LIVE 11 elige el motor según la tarea.
+4. **Experimentación:** registra resultado, tiempo y RAM con `docker stats --no-stream taller-lightpanda taller-obscura`. En LIVE 09 elige el motor según la tarea.
 
 | Motor · medición previa del kit | Corregida | Tiempo | RAM pico |
 |---|---|---|---|
@@ -208,27 +209,34 @@ Obscura conserva el falso rojo por no disparar `change`; no se oculta ni se camb
 
 ## 4 · 11:15 · Del reporte a la traza
 
-1. **Experiencia:** filtra Fallaron en LIVE 12 o abre `npx playwright show-report` tras la suite.
-2. **Reflexión:** en LIVE 13 recorre las acciones y alterna el DOM real Antes/Después. Revisa Red y Error: el cajero ingresó 5, pero el POST envió 17.01.
+1. **Experiencia:** filtra Fallaron en LIVE 10 o abre `npx playwright show-report` tras la suite.
+2. **Reflexión:** en LIVE 10 recorre las acciones y alterna el DOM real Antes/Después. Revisa Red y Error: el cajero ingresó 5, pero el POST envió 17.01.
 3. **Conceptualización:** une ID del caso, semilla, acción, petición, respuesta y aserción. Una traza permite reconstruir un fallo; el reporte resume la suite.
-4. **Experimentación:** ejecuta `npm run portal` desde `pruebas/` y abre el archivo que indica la salida. Revisa la matriz en LIVE 14 y una `trace.zip` con `npx playwright show-trace RUTA_DE_LA_TRAZA`.
+4. **Experimentación:** ejecuta `npm run portal` desde `pruebas/` y abre el archivo que indica la salida. Luego, en LIVE 11, acepta la grabación en tu tienda, haz la venta de S/ 5, ábrela en `/reproducir.html` y genera el spec que reproduce exactamente ese error; en LIVE 12 mira cómo lo hace una botica real: el modal de soporte, la reproducción paso a paso y la batería corriendo en segundo plano con topes de memoria y tiempo. Revisa la matriz en LIVE 10 y una `trace.zip` con `npx playwright show-trace RUTA_DE_LA_TRAZA`.
 
 **Lo logré:** expliqué el bug con el caso y la petición, sin cambiar la aserción. **Si falla:** no hay traza → ejecuta `npm run test:traza`; los motores sin dibujo no generan capturas visuales.
 
 ## 5 · 12:00 · Observar, alertar y recuperar
 
-1. **Experiencia:** en LIVE 16 tumba y recupera un servicio simulado, mira la disponibilidad contra la tabla de SLA y ajusta la regla «caído durante X min» hasta que avise la caída real sin falsas alarmas. Luego levanta la tienda local en 3000. En `monitoreo/`, corre `docker compose up -d` y `node receptor.mjs` en otra terminal. Abre Grafana en `http://localhost:3001`.
-2. **Reflexión:** compara estado, latencia y disponibilidad en LIVE 15. ¿Una respuesta lenta significa caída? ¿Cuánto debería esperar la alerta?
+1. **Experiencia:** en LIVE 14 tumba y recupera un servicio simulado, mira la disponibilidad contra la tabla de SLA y ajusta la regla «caído durante X min» hasta que avise la caída real sin falsas alarmas. Luego levanta la tienda local en 3000. En `monitoreo/`, corre `docker compose up -d` y `node receptor.mjs` en otra terminal. Abre Grafana en `http://localhost:3001`.
+2. **Reflexión:** compara estado, latencia y disponibilidad en LIVE 13. ¿Una respuesta lenta significa caída? ¿Cuánto debería esperar la alerta?
 3. **Conceptualización:** blackbox sondea `/salud` cada 15 s; Prometheus guarda las muestras; Grafana evalúa cada 10 s y espera 1 min de caída continua. La entrega al webhook añade otra espera.
-4. **Experimentación:** provoca y recupera la caída de **tu tienda** con `/api/caos` según `monitoreo/README.md`; comprueba DISPARADA y RESUELTA en el receptor. LIVE 17 acelera el tiempo manualmente para practicar la misma regla.
+4. **Experimentación:** en LIVE 15 arma tu robot: `node robot/robot.mjs` corre la suite cada 10 minutos y publica su estado en una URL (laptop, Docker con Lightpanda o GitHub Actions + Pages). Luego provoca y recupera la caída de **tu tienda** con `/api/caos` según `monitoreo/README.md`; comprueba DISPARADA y RESUELTA en el receptor. LIVE 13 acelera el tiempo manualmente para practicar la misma regla.
 
 **Lo logré:** guardé una captura del tablero y el aviso recibido. **Si falla:** No data → espera dos sondeos y revisa el puerto 3000. Sin Docker, ejecuta `node vigia.mjs`. El taller usa el receptor local; no envía WhatsApp.
 
 ## 6 · 12:45 · Explicar y entregar
 
 1. **Experiencia:** reúne la suite, la traza, la tabla de motores y la alerta.
-2. **Reflexión:** en LIVE 18 redacta una pregunta con ID, esperado y recibido; publícala en el hilo o responde a un compañero.
+2. **Reflexión:** en LIVE 17 redacta una pregunta con ID, esperado y recibido; publícala en el hilo o responde a un compañero.
 3. **Conceptualización:** fija tu criterio de aceptación. **La IA propone; el runner decide.** Pídele a Claude el caso con POM y revisa sus localizadores; nunca aceptes una prueba que no viste fallar.
-4. **Experimentación:** revisa LIVE 19, sube tu carpeta de pruebas con `EVIDENCIA.md` y entrega **URL + commit** desde la tarea del LMS.
+4. **Experimentación:** escribe tu **informe de pruebas en Word**, el documento con el que QA cierra un ciclo. La herramienta pone las tablas; el juicio lo pones tú:
+   1. Desde `pruebas/`: `npm test` (deja `resultados/resultados.json`).
+   2. Abre `informe/datos.json`, tu hoja de trabajo: cada campo vacío trae un `_guia` con qué escribir y un ejemplo. Redacta objetivo, alcance, fuera de alcance, criterio de salida, riesgos, conclusión, recomendación y firma. Cita IDs (`E2E-VEN-002`, `DEF-01`) y cifras (23 ejecutados, 3 fallan).
+   3. `npm run informe` → `informe/informe-de-pruebas.docx`. Lo que no escribiste sale en amarillo como `[Completa: …]`.
+   4. `npm run informe:revisar`: la revisión del jefe de QA. Falla si quedan marcadores, si la conclusión no dice APTO / NO APTO o no cita cifras, o si un defecto Alta no aparece en la conclusión ni en la recomendación. Corrige y repite hasta el ✓.
+   5. Ábrelo y lee la sección 5 (tus 3 defectos con su traza) y la 9 (veredicto calculado NO APTO como pista; tu conclusión argumentada debajo). Repite con `npm run test:corregido` y mira cómo cambia.
+   LIVE 16 tiene tres pasos: qué va en cada sección, escribe tu informe (con la misma revisión) y decide apto o no apto. Un ejemplo completo: `informe/ejemplo-datos.json`; no lo copies, tus cifras salen de tu corrida.
+5. **Entrega:** revisa LIVE 17, sube tu carpeta de pruebas con `EVIDENCIA.md` y el `informe-de-pruebas.docx`, y entrega **URL + commit** desde la tarea del LMS.
 
 **Lo logré:** la entrega aparece en Mis notas con estado En cola. **Si falla:** revisa URL y commit; la lista de LIVE no registra por sí sola una entrega.
