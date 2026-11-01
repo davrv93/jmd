@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · De caso de uso a caso de prueba</title>
+<!--
+  Escena del modo LIVE (taller qa-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: «Otro caso de uso» trae un escenario de Tienda Sol al azar. El alumno arma el caso de prueba
+  eligiendo ID, precondición (semilla), pasos y resultado esperado, y lo ubica en la pirámide (clic en el nivel
+  o arrastrando la tarjeta). «Comprobar» compara con el criterio del instructor y acumula el acuerdo. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .25); }
+.esc { padding: 1.8vh 2.6vw 1.6vh; gap: 1.3vh; }
+.esc-cuerpo { gap: 1.3vh; }
+.esc-titulo { font-size: 1.3em; }
+.q-btn { font: 700 .68em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.q-btn:hover { transform: translateY(-1px); }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-et { font-size: .58em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.q-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: center; }
+
+.q-b2 { display: grid; grid-template-columns: .78fr 1.6fr; gap: 1.3vw; min-height: 0; }
+.q-pir { padding: .6em .8em; display: grid; gap: .3em; align-content: start; }
+.q-pir svg { width: 100%; height: auto; max-height: 52vh; display: block; }
+.q-niv { cursor: pointer; }
+.q-niv path { stroke: var(--s1); stroke-width: 4; transition: opacity .2s, transform .2s; }
+.q-niv text { fill: #fff; font-weight: 800; font-size: 20px; text-anchor: middle; pointer-events: none; }
+.q-niv text.m { font-weight: 600; font-size: 13px; opacity: .92; }
+.q-niv[data-n="mon"] path { fill: #a4185c; } .q-niv[data-n="e2e"] path { fill: #5a49d6; }
+.q-niv[data-n="int"] path { fill: #0b5f58; } .q-niv[data-n="unit"] path { fill: #7d5700; }
+.q-niv:hover path, .q-niv.sobre path { opacity: .82; }
+.q-niv:focus { outline: none; } .q-niv:focus-visible path { stroke: var(--gold); }
+.q-niv.sel path { stroke: var(--fg); stroke-width: 5; }
+.q-niv.bien path { stroke: var(--ok); stroke-width: 7; }
+.q-niv.mal path { stroke: var(--bad); stroke-width: 7; stroke-dasharray: 10 6; }
+.q-pir p { margin: 0; font-size: .62em; color: var(--muted); }
+.q-arma { padding: .65em 1em; display: grid; gap: .45em; align-content: start; min-width: 0; }
+.q-caso { display: flex; gap: .7em; align-items: center; padding: .5em .8em; border-radius: .8em; background: var(--accent-bg); border: 1px dashed var(--accent); cursor: grab; }
+.q-caso:active { cursor: grabbing; }
+.q-caso b { font-size: .85em; line-height: 1.25; }
+.q-caso .esc-chip { flex: none; font-size: .58em; }
+.q-fila { display: grid; grid-template-columns: 7.2em 1fr 1fr; gap: .45em; align-items: stretch; }
+.q-fila > span { font-size: .64em; font-weight: 800; color: var(--muted); align-self: center; line-height: 1.2; }
+.q-op { font: 600 .68em/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-align: left; padding: .45em .7em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: background .15s, border-color .15s; }
+.q-op.mono { font-family: var(--mono); }
+.q-op:hover { border-color: var(--accent); }
+.q-op[aria-pressed="true"] { background: var(--accent-bg); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.q-op.bien { background: var(--ok-bg); border-color: var(--ok); }
+.q-op.mal { background: var(--bad-bg); border-color: var(--bad); text-decoration: line-through; }
+.q-nivsel { display: flex; align-items: center; gap: .6em; font-size: .7em; }
+.q-nivsel b { color: var(--accent); }
+p.q-nota { margin: 0; font-size: .68em; padding: .4em .7em; border-left: 4px solid var(--accent); background: var(--s2); border-radius: 0 .5em .5em 0; min-height: 2.6em; }
+.q-code { margin: 0; font: 600 .6em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .55em .9em; white-space: pre-wrap; border: 1px solid rgba(190,185,255,.22); }
+.q-code .k { color: #c3b9ff; } .q-code .s { color: #9fe0b0; } .q-code .c { color: #8f8ab8; } .q-code .v { color: #f4ac5c; }
+.q-eval { display: grid; grid-template-columns: auto auto 1fr; gap: 1em; align-items: center; padding: .5em 1em; }
+.q-acu { font-size: 1.35em; font-weight: 800; font-variant-numeric: tabular-nums; }
+.q-acu small { font-size: .5em; color: var(--muted); font-weight: 700; }
+.q-eval p { margin: 0; font-size: .74em; }
+.q-logro { animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+.q-nuevo { animation: esc-entra .35s cubic-bezier(.2,.7,.2,1) both; }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 780 L168 728 L236 764 L296 700"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="780" r="3.5"/><circle class="eg" cx="168" cy="728" r="4.5"/><circle class="e" cx="236" cy="764" r="3"/><circle class="eo" cx="296" cy="700" r="5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">QA con IA · E03</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="q-cab">
+      <h1 class="esc-titulo a-in">Del <em>caso de uso</em> al caso de prueba, en el nivel que le toca</h1>
+      <button type="button" class="q-btn pri a-in" style="--d:.1s" id="otro">Otro caso de uso</button>
+    </div>
+    <div class="q-b2">
+      <section class="esc-card q-pir a-in" style="--d:.15s" aria-label="Pirámide de pruebas">
+        <span class="q-et">Pirámide de pruebas · clic o suelta aquí</span>
+        <svg viewBox="0 -6 400 378" role="group" aria-label="Niveles de la pirámide">
+          <g class="q-niv" data-n="mon" role="button" tabindex="0" aria-label="Monitoreo"><path d="M150 6 H250 A28 28 0 0 1 250 70 H150 A28 28 0 0 1 150 6 Z"/><text x="200" y="34" style="font-size:17px">Monitoreo</text><text class="m" x="200" y="55">producción · cada 15 s</text></g>
+          <g class="q-niv" data-n="e2e" role="button" tabindex="0" aria-label="E2E"><path d="M150 84 L250 84 L300 162 L100 162 Z"/><text x="200" y="122">E2E</text><text class="m" x="200" y="144">minutos · decenas</text></g>
+          <g class="q-niv" data-n="int" role="button" tabindex="0" aria-label="Integración"><path d="M96 168 L304 168 L356 250 L44 250 Z"/><text x="200" y="207">Integración</text><text class="m" x="200" y="229">segundos · cientos</text></g>
+          <g class="q-niv" data-n="unit" role="button" tabindex="0" aria-label="Unitarias"><path d="M40 256 L360 256 L398 366 L2 366 Z"/><text x="200" y="306">Unitarias</text><text class="m" x="200" y="330">milisegundos · miles</text></g>
+        </svg>
+        <p>Abajo: rápidas, baratas, muchas. Arriba: lentas, caras, pocas, pero ven lo que ve el usuario. El monitoreo prueba producción cada 15 s.</p>
+      </section>
+      <section class="esc-card q-arma a-in" style="--d:.25s" aria-label="Armar el caso de prueba">
+        <div class="q-caso" id="caso" draggable="true" title="Arrástrame a la pirámide"><span class="esc-chip">caso de uso</span><b id="uso">…</b></div>
+        <div class="q-fila"><span>ID</span><button type="button" class="q-op mono" data-c="id" data-k="0"></button><button type="button" class="q-op mono" data-c="id" data-k="1"></button></div>
+        <div class="q-fila"><span>Precondición (semilla)</span><button type="button" class="q-op" data-c="pre" data-k="0"></button><button type="button" class="q-op" data-c="pre" data-k="1"></button></div>
+        <div class="q-fila"><span>Pasos</span><button type="button" class="q-op" data-c="pasos" data-k="0"></button><button type="button" class="q-op" data-c="pasos" data-k="1"></button></div>
+        <div class="q-fila"><span>Resultado esperado</span><button type="button" class="q-op" data-c="res" data-k="0"></button><button type="button" class="q-op" data-c="res" data-k="1"></button></div>
+        <div class="q-nivsel"><span class="q-et">Nivel</span><span id="nivsel">elige en la pirámide</span><button type="button" class="q-btn pri" id="comprobar" style="margin-left:auto">Comprobar</button></div>
+        <pre class="q-code" id="ficha" aria-label="Así queda la ficha como prueba"></pre>
+        <p class="q-nota" id="nota">Un buen caso se puede repetir: datos fijos (semilla), pasos concretos y un resultado que se pueda verificar.</p>
+      </section>
+    </div>
+    <div class="esc-card q-eval a-in" style="--d:.35s">
+      <div class="q-acu"><span id="acu">0</span><small> de <span id="tot">0</span> decisiones · <span id="pct">—</span></small></div>
+      <span class="q-et"><span id="ncasos">0</span> casos</span>
+      <p id="crit">Cada caso tiene 5 decisiones: ID, precondición, pasos, resultado y nivel. Meta: 5 casos con ≥ 80 % de acuerdo con el instructor.</p>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">«Funciona bien» no es un resultado esperado: no se puede verificar</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var NIV = { unit: "Unitaria", int: "Integración", e2e: "E2E", mon: "Monitoreo" };
+  // Escenarios de Tienda Sol (los datos coinciden con la semilla del kit). res = esperado correcto; mal = esperado vago o equivocado.
+  var CASOS = [
+    { u: "Cobro una venta de S/ 1,80 y el cliente me da S/ 0,90", id: "E2E-VEN-002 efectivo-insuficiente", pre: "Semilla fija: usuario cajero; Agua San Luis 625 ml a S/ 1,80, stock 60", pasos: "Entrar como cajero → agregar el agua → efectivo 0,90 → Cobrar", res: "Alerta «Efectivo insuficiente»; no se crea la venta; stock sigue en 60", mal: "Se registra la venta con vuelto S/ −0,90", n: "e2e", por: "E2E: el error vive entre la pantalla y la API, como en la botica." },
+    { u: "Calcular el IGV (18 %) incluido en un total de S/ 118,00", id: "CP-UNI-IGV-01", pre: "Ninguna: es una función pura, sin base de datos", pasos: "Llamar igvIncluido(118)", res: "Devuelve IGV 18,00 y base 100,00", mal: "Devuelve un número mayor que cero", n: "unit", pura: 1, por: "Unitaria: una cuenta pura se prueba en milisegundos, sin navegador." },
+    { u: "La API guarda la venta y descuenta el stock en la base", id: "CP-INT-VEN-01", pre: "Base de prueba con semilla: Inca Kola 500 ml, stock 48", pasos: "POST /api/ventas con 2 Inca Kola → leer el producto", res: "Responde 201 y el stock queda en 46", mal: "Responde 200 aunque el stock no cambie", n: "int", por: "Integración: API + base juntas, sin pantalla." },
+    { u: "Con clave incorrecta, el login no deja entrar", id: "E2E-LOG-002 clave-incorrecta", pre: "Semilla: usuario cajero con clave cajero123", pasos: "Ir a /login → usuario cajero → clave «mala» → Ingresar", res: "Se ve «Usuario o clave incorrectos» y sigue en /login", mal: "Sale algún mensaje de error", n: "e2e", por: "E2E: es el recorrido que vive el usuario; uno o dos casos bastan." },
+    { u: "Café Altomayo tiene 10 % de promo: aplicarla una sola vez aunque se pulse dos veces", id: "E2E-VEN-003 promo-una-vez", pre: "Semilla: Café Altomayo 200 g a S/ 18,90 con promo 10 %", pasos: "Agregar el café → pulsar «Aplicar promo» dos veces", res: "Total S/ 17,01 (no S/ 15,31)", mal: "El total baja", n: "e2e", por: "E2E: el doble clic es de la pantalla. La regla del descuento merece además su unitaria." },
+    { u: "En producción, /salud debe responder siempre", id: "MON-SALUD-01", pre: "URL pública de producción y una sonda blackbox", pasos: "Sondear GET /salud cada 15 s", res: "200 en menos de 2 s; si falla 2 min seguidos, alerta", mal: "Abrir la página a mano cada mañana", n: "mon", por: "Monitoreo: no prueba código nuevo, vigila que lo de producción siga vivo." },
+    { u: "El reporte del día suma las ventas guardadas", id: "CP-INT-REP-01", pre: "Base con semilla: 3 ventas de hoy por S/ 2,50, S/ 4,90 y S/ 18,90", pasos: "GET /api/reportes/dia", res: "Total S/ 26,30 y 3 ventas", mal: "Total mayor que cero", n: "int", por: "Integración: la consulta a la base es lo que se prueba." },
+    { u: "El ticket muestra 1234.5 como «S/ 1 234,50»", id: "CP-UNI-FMT-02", pre: "Ninguna: es una función pura, sin base de datos", pasos: "Llamar formatearSoles(1234.5)", res: "Devuelve «S/ 1 234,50»", mal: "Devuelve un texto con el número", n: "unit", pura: 1, por: "Unitaria: formato puro, miles de casos en un segundo." },
+    { u: "Detergente Opal no tiene stock: no se debe poder vender", id: "E2E-CAT-004 sin-stock", pre: "Semilla: Detergente Opal 900 g con stock 0", pasos: "Entrar como cajero → buscar «Opal» → intentar agregar", res: "«Agregar» deshabilitado y etiqueta «Sin stock»", mal: "Se agrega y el stock queda en −1", n: "e2e", por: "E2E: lo que importa es que el cajero no pueda hacerlo desde la pantalla." },
+    { u: "La pasarela de pagos debe contestar rápido en producción", id: "MON-PAGOS-02", pre: "Endpoint público de la pasarela y umbral de 2 s", pasos: "Sondear cada minuto y medir la latencia", res: "Alerta si la latencia supera 2 s durante 5 min", mal: "Esperar a que un cliente reclame", n: "mon", por: "Monitoreo: latencia en producción, con regla de alerta." }
+  ];
+  var MAL_ID = ["prueba1", "test-nuevo-final", "caso de Juan", "verificar-todo-v2"];
+  var MAL_PRE = ["Los datos que haya en la base ese día", "Usar la venta que hizo el compañero ayer", "Base de producción con datos reales"];
+  var MAL_PASOS = ["Probar que funcione", "Hacer clic en todo y ver si falla", "Revisar a ojo, como siempre"];
+  var CAMPOS = ["id", "pre", "pasos", "res"];
+  var est = { i: -1, usados: [], buena: {}, elig: {}, nivel: null, hecho: false, acu: 0, tot: 0, casos: 0 };
+  var azar = function (a) { return a[Math.floor(Math.random() * a.length)]; };
+
+  function otro() {
+    var libres = CASOS.map(function (_, i) { return i; }).filter(function (i) { return est.usados.indexOf(i) < 0; });
+    if (!libres.length) { est.usados = []; libres = CASOS.map(function (_, i) { return i; }).filter(function (i) { return i !== est.i; }); }
+    est.i = azar(libres); est.usados.push(est.i);
+    var c = CASOS[est.i];
+    var malos = { id: azar(MAL_ID), pre: azar(c.pura ? [MAL_PRE[2], MAL_PRE[0]] : MAL_PRE), pasos: azar(MAL_PASOS), res: c.mal };
+    est.elig = {}; est.nivel = null; est.hecho = false;
+    $("uso").textContent = "«" + c.u + "»";
+    CAMPOS.forEach(function (k) {
+      est.buena[k] = Math.random() < .5 ? 0 : 1;
+      document.querySelectorAll('.q-op[data-c="' + k + '"]').forEach(function (b) {
+        var kk = +b.getAttribute("data-k");
+        b.textContent = kk === est.buena[k] ? c[k] : malos[k];
+        b.setAttribute("aria-pressed", "false"); b.classList.remove("bien", "mal");
+      });
+    });
+    document.querySelectorAll(".q-niv").forEach(function (g) { g.classList.remove("sel", "bien", "mal"); });
+    $("nivsel").textContent = "elige en la pirámide";
+    $("nota").textContent = "Elige una opción por fila y ubica el caso en la pirámide; luego «Comprobar».";
+    $("comprobar").disabled = false;
+    ficha();
+    var el = $("caso"); el.classList.remove("q-nuevo"); void el.offsetWidth; el.classList.add("q-nuevo");
+  }
+  function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function texto(k) {
+    if (!(k in est.elig)) return '<span class="v">¿…?</span>';
+    var b = document.querySelector('.q-op[data-c="' + k + '"][data-k="' + est.elig[k] + '"]');
+    return esc(b ? b.textContent : "");
+  }
+  function ficha() {
+    $("ficha").innerHTML = '<span class="k">test</span>(<span class="s">\'' + texto("id") + '\'</span>, <span class="k">async</span> ({ page }) =&gt; {\n' +
+      '  <span class="c">// Precondición:</span> ' + texto("pre") + '\n' +
+      '  <span class="c">// Pasos:</span> ' + texto("pasos") + '\n' +
+      '  <span class="c">// Esperado:</span> ' + texto("res") + '\n' +
+      '}); <span class="c">// nivel: ' + (est.nivel ? NIV[est.nivel] : "¿…?") + '</span>';
+  }
+  document.querySelectorAll(".q-op").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (est.hecho) return;
+      var k = b.getAttribute("data-c");
+      est.elig[k] = +b.getAttribute("data-k");
+      document.querySelectorAll('.q-op[data-c="' + k + '"]').forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+      ficha();
+    });
+  });
+  function elegirNivel(n) {
+    if (est.hecho || est.i < 0) return;
+    est.nivel = n;
+    document.querySelectorAll(".q-niv").forEach(function (g) { g.classList.toggle("sel", g.getAttribute("data-n") === n); });
+    $("nivsel").innerHTML = "<b>" + NIV[n] + "</b>";
+    ficha();
+  }
+  document.querySelectorAll(".q-niv").forEach(function (g) {
+    var n = g.getAttribute("data-n");
+    g.addEventListener("click", function () { elegirNivel(n); });
+    g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); elegirNivel(n); } });
+    g.addEventListener("dragover", function (e) { e.preventDefault(); g.classList.add("sobre"); });
+    g.addEventListener("dragleave", function () { g.classList.remove("sobre"); });
+    g.addEventListener("drop", function (e) { e.preventDefault(); g.classList.remove("sobre"); elegirNivel(n); });
+  });
+  $("caso").addEventListener("dragstart", function (e) { try { e.dataTransfer.setData("text/plain", "caso"); } catch (x) {} });
+
+  $("comprobar").addEventListener("click", function () {
+    if (est.hecho || est.i < 0) return;
+    var faltan = CAMPOS.filter(function (k) { return !(k in est.elig); }).length + (est.nivel ? 0 : 1);
+    if (faltan) { $("nota").textContent = "Te " + (faltan === 1 ? "falta 1 decisión" : "faltan " + faltan + " decisiones") + ": una opción por fila y el nivel."; return; }
+    var c = CASOS[est.i], ok = 0;
+    est.hecho = true; $("comprobar").disabled = true;
+    CAMPOS.forEach(function (k) {
+      var bien = est.elig[k] === est.buena[k]; if (bien) ok++;
+      document.querySelectorAll('.q-op[data-c="' + k + '"]').forEach(function (b) {
+        var kk = +b.getAttribute("data-k");
+        if (kk === est.buena[k]) b.classList.add("bien"); else if (kk === est.elig[k]) b.classList.add("mal");
+      });
+    });
+    var nivOk = est.nivel === c.n; if (nivOk) ok++;
+    document.querySelectorAll(".q-niv").forEach(function (g) {
+      var n = g.getAttribute("data-n"); g.classList.remove("sel");
+      if (n === c.n) g.classList.add("bien"); else if (n === est.nivel) g.classList.add("mal");
+    });
+    est.acu += ok; est.tot += 5; est.casos++;
+    var pct = Math.round(est.acu / est.tot * 100);
+    $("acu").textContent = est.acu; $("tot").textContent = est.tot; $("pct").textContent = pct + " % de acuerdo"; $("ncasos").textContent = est.casos;
+    $("nota").innerHTML = "<b>" + ok + " de 5.</b> " + c.por.replace(/</g, "&lt;");
+    var crit = $("crit");
+    if (est.casos >= 5 && pct >= 80) crit.innerHTML = '<span class="esc-chip ok q-logro">5 casos y ≥ 80 % · pulsa «Lo logré»</span>';
+    else crit.textContent = est.casos < 5 ? "Llevas " + est.casos + " de 5 casos. Pulsa «Otro caso de uso»." : "Ya tienes 5 casos; sigue hasta llegar a 80 % de acuerdo.";
+  });
+  $("otro").addEventListener("click", otro);
+  otro();
+})();
+</script>
+</body>
+</html>

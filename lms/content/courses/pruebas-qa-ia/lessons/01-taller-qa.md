@@ -61,7 +61,7 @@ cycle:
     title: "Ver el taller"
     tool: zoom
     phase: experiencia
-    description: "Asiste en vivo o mira la grabación. Recorre las 14 escenas LIVE en orden, empezando por Descarga el software."
+    description: "Asiste en vivo o mira la grabación. Recorre las 19 escenas LIVE en orden, empezando por Descarga el software."
     check: "Has visto el taller completo (o la grabación)"
   - id: casos
     title: "De caso de uso a caso de prueba"
@@ -103,13 +103,13 @@ cycle:
     title: "Preguntar o responder"
     tool: lms
     phase: reflexion
-    description: "En la escena 13 prepara una pregunta con ID, esperado y recibido; publícala en el hilo de la sesión o responde a un compañero."
+    description: "En la escena 18 prepara una pregunta con ID, esperado y recibido; publícala en el hilo de la sesión o responde a un compañero."
     check: "Tu pregunta aparece en el hilo de la sesión"
   - id: entregar
     title: "Entregar el proyecto"
     tool: git
     phase: experimentacion
-    description: "En la escena 14 revisa EVIDENCIA.md, sube tu carpeta de pruebas y entrega URL + commit desde la tarea del LMS."
+    description: "En la escena 19 revisa EVIDENCIA.md, sube tu carpeta de pruebas y entrega URL + commit desde la tarea del LMS."
     check: "La entrega aparece en «Mis notas» con estado en cola"
 ---
 
@@ -121,12 +121,12 @@ Cada bloque recorre **experiencia → reflexión → conceptualización → expe
 
 | Bloque | Hora | Escenas | Lo logré |
 |---|---|---|---|
-| 1 · Preparación, casos y POM | 9:00 | 01–03 | Caso con semilla, pasos y resultado |
-| 2 · Grabador y pruebas | 9:45 | 04–05 | Tres rojos; luego todo verde |
-| 3 · Motores | 10:30 | 06–07 | Comparé resultado y causa |
-| 4 · Reporte, traza y portal | 11:15 | 08–10 | Seguí el POST del cobro |
-| 5 · Monitoreo y alertas | 12:00 | 11–12 | Disparé y resolví una alerta |
-| 6 · Pregunta y entrega | 12:45 | 13–14 | URL + commit en Mis notas |
+| 1 · Preparación, casos y POM | 9:00 | 01–05 | Caso con semilla, pasos y resultado |
+| 2 · Grabador, semillas y pruebas | 9:45 | 06–08 | Tres rojos; luego todo verde |
+| 3 · Navegadores sin interfaz | 10:30 | 09–11 | Comparé resultado y causa |
+| 4 · Reporte, traza y portal | 11:15 | 12–14 | Seguí el POST del cobro |
+| 5 · Monitoreo, SLA y alertas | 12:00 | 15–17 | Disparé y resolví una alerta |
+| 6 · Pregunta y entrega | 12:45 | 18–19 | URL + commit en Mis notas |
 
 ## Antes de empezar
 
@@ -149,15 +149,15 @@ El interruptor **Con bugs** cambia solo tu tienda; **Reiniciar mi tienda** no to
 
 1. **Experiencia:** entra a la réplica LIVE 02, agrega Café Altomayo (S/ 17.01) y paga S/ 5. Luego vuelve al catálogo, agrega otro café y cambia la cantidad a 2 para observar la promo doble.
 2. **Reflexión:** compara lo que ingresaste con lo registrado. ¿Por qué las pruebas de API pueden pasar si el cobro en pantalla está mal?
-3. **Conceptualización:** en LIVE 03 distingue caso de uso y caso de prueba. Define semilla, pasos y resultado; organiza localizadores y acciones en un Page Object.
+3. **Conceptualización:** en LIVE 03 ubica cada caso en la pirámide de pruebas (unitaria, integración, E2E, monitoreo); en LIVE 04 provoca un rediseño y cuenta cuántas líneas cambian con y sin Page Object Model. En LIVE 05 distingue caso de uso y caso de prueba. Define semilla, pasos y resultado; organiza localizadores y acciones en un Page Object.
 4. **Experimentación:** escribe E2E-VEN-002: el pago insuficiente debe rechazarse. Completa seis filas de `docs/matriz.csv`. Usa `getByRole` y `getByLabel`.
 
 **Lo logré:** mi caso se puede repetir y no depende de otra prueba. **Si falla:** pulsa Reiniciar réplica y vuelve a ingresar; no necesitas instalar nada para LIVE 02.
 
 ## 2 · 9:45 · Grabar, ejecutar y corregir
 
-1. **Experiencia:** en LIVE 04 pulsa Grabar y realiza el login y un clic. En tu equipo puedes ejecutar `npm run codegen` (la tienda local debe estar en 3000).
-2. **Reflexión:** lee el código y elimina acciones accidentales. Observa el mensaje de los casos rojos en LIVE 05.
+1. **Experiencia:** en LIVE 06 pulsa Grabar y realiza el login y un clic. En tu equipo puedes ejecutar `npm run codegen` (la tienda local debe estar en 3000).
+2. **Reflexión:** lee el código y elimina acciones accidentales. En LIVE 07 corre la suite 10 veces con y sin semilla, esperas fijas y aislamiento: mira de dónde salen las pruebas inestables. Observa el mensaje de los casos rojos en LIVE 08.
 3. **Conceptualización:** los localizadores viven en `pages/`, las reglas en `specs/` y la semilla en `fixtures.ts`. Usa aserciones que esperan el resultado visible; evita esperas fijas.
 4. **Experimentación:** desde `pruebas/`, ejecuta `npm test` y después `npm run test:corregido`. Crea primero tu referencia visual con `npm run test:visual:base`.
 
@@ -189,10 +189,10 @@ npm test
 
 ## 3 · 10:30 · Medir sin confundir las causas
 
-1. **Experiencia:** desde `motores/`, ejecuta `docker compose up -d`. Desde `pruebas/`, corre `npm run test:lightpanda` y `npm run test:obscura`.
-2. **Reflexión:** en LIVE 06 compara el valor recibido de VEN-003. S/ 30.62 significa descuento doble; S/ 17.01 en Obscura corregida significa que no recalculó.
+1. **Experiencia:** en LIVE 09 compara Chromium, Lightpanda y Obscura (qué soporta cada uno, cómo se conecta Playwright y cuál conviene para cada tarea). Luego, desde `motores/`, ejecuta `docker compose up -d`. Desde `pruebas/`, corre `npm run test:lightpanda` y `npm run test:obscura`.
+2. **Reflexión:** en LIVE 10 compara el valor recibido de VEN-003. S/ 30.62 significa descuento doble; S/ 17.01 en Obscura corregida significa que no recalculó.
 3. **Conceptualización:** CDP conecta Playwright con el motor. Lightpanda no dibuja y excluye la visual. Chromium es la referencia del navegador real.
-4. **Experimentación:** registra resultado, tiempo y RAM con `docker stats --no-stream taller-lightpanda taller-obscura`. En LIVE 07 elige el motor según la tarea.
+4. **Experimentación:** registra resultado, tiempo y RAM con `docker stats --no-stream taller-lightpanda taller-obscura`. En LIVE 11 elige el motor según la tarea.
 
 | Motor · medición previa del kit | Corregida | Tiempo | RAM pico |
 |---|---|---|---|
@@ -208,27 +208,27 @@ Obscura conserva el falso rojo por no disparar `change`; no se oculta ni se camb
 
 ## 4 · 11:15 · Del reporte a la traza
 
-1. **Experiencia:** filtra Fallaron en LIVE 08 o abre `npx playwright show-report` tras la suite.
-2. **Reflexión:** en LIVE 09 recorre las acciones y alterna el DOM real Antes/Después. Revisa Red y Error: el cajero ingresó 5, pero el POST envió 17.01.
+1. **Experiencia:** filtra Fallaron en LIVE 12 o abre `npx playwright show-report` tras la suite.
+2. **Reflexión:** en LIVE 13 recorre las acciones y alterna el DOM real Antes/Después. Revisa Red y Error: el cajero ingresó 5, pero el POST envió 17.01.
 3. **Conceptualización:** une ID del caso, semilla, acción, petición, respuesta y aserción. Una traza permite reconstruir un fallo; el reporte resume la suite.
-4. **Experimentación:** ejecuta `npm run portal` desde `pruebas/` y abre el archivo que indica la salida. Revisa la matriz en LIVE 10 y una `trace.zip` con `npx playwright show-trace RUTA_DE_LA_TRAZA`.
+4. **Experimentación:** ejecuta `npm run portal` desde `pruebas/` y abre el archivo que indica la salida. Revisa la matriz en LIVE 14 y una `trace.zip` con `npx playwright show-trace RUTA_DE_LA_TRAZA`.
 
 **Lo logré:** expliqué el bug con el caso y la petición, sin cambiar la aserción. **Si falla:** no hay traza → ejecuta `npm run test:traza`; los motores sin dibujo no generan capturas visuales.
 
 ## 5 · 12:00 · Observar, alertar y recuperar
 
-1. **Experiencia:** levanta la tienda local en 3000. En `monitoreo/`, corre `docker compose up -d` y `node receptor.mjs` en otra terminal. Abre Grafana en `http://localhost:3001`.
-2. **Reflexión:** compara estado, latencia y disponibilidad en LIVE 11. ¿Una respuesta lenta significa caída? ¿Cuánto debería esperar la alerta?
+1. **Experiencia:** en LIVE 16 tumba y recupera un servicio simulado, mira la disponibilidad contra la tabla de SLA y ajusta la regla «caído durante X min» hasta que avise la caída real sin falsas alarmas. Luego levanta la tienda local en 3000. En `monitoreo/`, corre `docker compose up -d` y `node receptor.mjs` en otra terminal. Abre Grafana en `http://localhost:3001`.
+2. **Reflexión:** compara estado, latencia y disponibilidad en LIVE 15. ¿Una respuesta lenta significa caída? ¿Cuánto debería esperar la alerta?
 3. **Conceptualización:** blackbox sondea `/salud` cada 15 s; Prometheus guarda las muestras; Grafana evalúa cada 10 s y espera 1 min de caída continua. La entrega al webhook añade otra espera.
-4. **Experimentación:** provoca y recupera la caída de **tu tienda** con `/api/caos` según `monitoreo/README.md`; comprueba DISPARADA y RESUELTA en el receptor. LIVE 12 acelera el tiempo manualmente para practicar la misma regla.
+4. **Experimentación:** provoca y recupera la caída de **tu tienda** con `/api/caos` según `monitoreo/README.md`; comprueba DISPARADA y RESUELTA en el receptor. LIVE 17 acelera el tiempo manualmente para practicar la misma regla.
 
 **Lo logré:** guardé una captura del tablero y el aviso recibido. **Si falla:** No data → espera dos sondeos y revisa el puerto 3000. Sin Docker, ejecuta `node vigia.mjs`. El taller usa el receptor local; no envía WhatsApp.
 
 ## 6 · 12:45 · Explicar y entregar
 
 1. **Experiencia:** reúne la suite, la traza, la tabla de motores y la alerta.
-2. **Reflexión:** en LIVE 13 redacta una pregunta con ID, esperado y recibido; publícala en el hilo o responde a un compañero.
+2. **Reflexión:** en LIVE 18 redacta una pregunta con ID, esperado y recibido; publícala en el hilo o responde a un compañero.
 3. **Conceptualización:** fija tu criterio de aceptación. **La IA propone; el runner decide.** Pídele a Claude el caso con POM y revisa sus localizadores; nunca aceptes una prueba que no viste fallar.
-4. **Experimentación:** revisa LIVE 14, sube tu carpeta de pruebas con `EVIDENCIA.md` y entrega **URL + commit** desde la tarea del LMS.
+4. **Experimentación:** revisa LIVE 19, sube tu carpeta de pruebas con `EVIDENCIA.md` y entrega **URL + commit** desde la tarea del LMS.
 
 **Lo logré:** la entrega aparece en Mis notas con estado En cola. **Si falla:** revisa URL y commit; la lista de LIVE no registra por sí sola una entrega.

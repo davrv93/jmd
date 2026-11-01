@@ -15,6 +15,9 @@ const PASOS = ["ver", "casos", "pom", "pruebas", "motores", "portal", "monitoreo
 const OBLIG = ["id", "titulo", "fase", "paso", "duracion_min", "lo_logre", "evidencia", "compuerta"];
 let fallos = 0;
 const minutos = [0,0,0,0,0,0];
+// Escenas de teoría de la primera versión (pedidas de vuelta el 01-11): tienen su propio diseño, sin la barra de
+// bloque ni la guía lateral. Aquí se declara a qué bloque de la agenda suman sus minutos.
+const TEORIA = { "03-piramide-y-casos": 1, "04-page-object-model": 1, "07-semillas-y-flaky": 2, "09-navegadores-sin-interfaz": 3, "16-monitoreo-sla": 5 };
 
 function yamlPlano(txt) {
   // Lector mínimo: claves de primer nivel «clave: valor»; las listas (comandos) solo se detectan.
@@ -51,11 +54,16 @@ for (const d of carpetas) {
   if (existsSync(rh)) {
     const html = readFileSync(rh, "utf8");
     const bytes = Buffer.byteLength(html, "utf8");
-    const bloque = /Bloque ([1-6])\/6 · (9:00|9:45|10:30|11:15|12:00|12:45)/.exec(html);
-    if (!bloque) errores.push('falta barra de bloque y hora');
-    else minutos[Number(bloque[1])-1] += Number(y.duracion_min || 0);
-    for (const texto of ['Objetivo', 'Tu acción', 'Lo logré', 'Antes ·', 'Después ·', 'Experiencia', 'Reflexión', 'Concepto', 'Experimento']) {
-      if (!html.includes(texto)) errores.push('falta «' + texto + '»');
+    if (TEORIA[d]) {
+      minutos[TEORIA[d]-1] += Number(y.duracion_min || 0);
+      if (!html.includes('href="../../comun/escena.css"')) errores.push("no enlaza ../../comun/escena.css");
+    } else {
+      const bloque = /Bloque ([1-6])\/6 · (9:00|9:45|10:30|11:15|12:00|12:45)/.exec(html);
+      if (!bloque) errores.push('falta barra de bloque y hora');
+      else minutos[Number(bloque[1])-1] += Number(y.duracion_min || 0);
+      for (const texto of ['Objetivo', 'Tu acción', 'Lo logré', 'Antes ·', 'Después ·', 'Experiencia', 'Reflexión', 'Concepto', 'Experimento']) {
+        if (!html.includes(texto)) errores.push('falta «' + texto + '»');
+      }
     }
     if (/__(SALIDAS|REPORTE|TRACE|PORTAL|LATENCIA)__/.test(html)) errores.push('datos de réplica sin completar');
     if (/window\.(alert|confirm|prompt)\s*\(/.test(html)) errores.push('diálogo nativo');
