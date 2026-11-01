@@ -17,7 +17,8 @@ set -euo pipefail
 cd ~/qa-taller-kit/robot
 # compose lee .env (sudo no conserva las variables del entorno).
 printf 'PUERTO_ROBOT=18625\nBASE_URL=https://jmd-learn.online/tienda-sol/\nCADA_MIN=10\n' > .env
-sudo docker compose up -d --build 2>&1 | tail -3
+sudo docker rm -f qa-robot qa-robot-lightpanda >/dev/null 2>&1 || true   # versiones previas (Lightpanda) que ocupaban el puerto
+sudo docker compose up -d --build --remove-orphans 2>&1 | tail -3
 if ! sudo test -e /etc/nginx/snippets/qa-robot.conf; then
   sudo tee /etc/nginx/snippets/qa-robot.conf >/dev/null <<'NGINX'
 # Robot de pruebas del taller QA: página de estado + reporte HTML (puerto 18625).
