@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Willie, difícil de explicar · pieza de 20 s</title>
+<meta name="description" content="Pieza animada de 20 segundos escrita en HTML: un solo reloj, escenas con inicio y duración, cortes al pulso de 120 bpm. Willie (Steamboat Willie, 1928, dominio público) en el estilo «Difícil de explicar».">
+<!--
+  WILLIE, DIFÍCIL DE EXPLICAR · taller «¿Difícil de explicar? ¡No!» · sesión 1
+  Cómo está hecho (léelo como se lee un storyboard):
+    · Un solo reloj: la variable t, en segundos. Nada se anima por su cuenta.
+    · Cada escena es <section class="clip" data-start="s" data-duration="s">. Fuera de su ventana no se ve.
+      Dentro recibe --p (progreso 0..1), --pe (progreso con entrada y salida suaves), data-cut (corte actual
+      si declara data-cuts) y --q1..--qN (progreso suave de cada tramo si declara data-tramos).
+    · Pulso: 120 bpm. Compás = 2 s, negra = 0,5 s, corchea = 0,25 s. Todo corte cae en esa rejilla.
+    · ?t=7 fija el reloj en el segundo 7 y pausa. ?render=1 quita los controles (lo usa render.mjs).
+    · Con «reducir movimiento» se muestra el storyboard: cada escena quieta a mitad de camino.
+  Herramientas: HTML, CSS y SVG. Sin librerías, sin CDN, sin fuentes remotas. Se abre sin internet.
+  Willie es el diseño de 1928 (gorra, sin guantes, ojos de pastel, blanco y negro). No está afiliado a Disney.
+-->
+<style>
+:root {
+  --tinta: #14122b; --hueso: #FBF7F0;
+  --rosa: #F4C2CF; --melocoton: #F7D1A6; --limon: #EFE6A4; --menta: #BDE6CC; --cielo: #BDD7F3; --lila: #D6C5F0;
+  --p0: var(--rosa); --p1: var(--melocoton); --p2: var(--limon); --p3: var(--menta); --p4: var(--cielo); --p5: var(--lila);
+  --titulo: "Arial Black", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --t: 0; --beat: 0; --bob: 0;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--tinta); color: var(--hueso); font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { display: grid; grid-template-rows: 1fr auto; min-height: 100vh; overflow: hidden; }
+.escenario { position: relative; display: grid; place-items: center; overflow: hidden; }
+.lienzo { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--tinta); transform-origin: center; }
+.clip { position: absolute; inset: 0; display: none; overflow: hidden; }
+.clip.on { display: block; }
+.rotulo { position: absolute; left: 80px; bottom: 70px; margin: 0; font: 700 34px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--tinta); }
+.rotulo.claro { color: var(--hueso); }
+.willie { display: block; width: 440px; height: 480px; }
+.w-negro { fill: var(--tinta); } .w-blanco { fill: var(--hueso); }
+.w-timon { transform-origin: 9px 31px; transform-box: view-box; }
+
+/* ---- Controles ---- */
+.controles { display: flex; align-items: center; gap: 14px; padding: 12px 20px; background: #0e0d20; border-top: 1px solid rgba(251,247,240,.12); font-size: 15px; }
+.controles button { font: 700 15px/1 system-ui, sans-serif; padding: 10px 16px; border-radius: 999px; border: 2px solid var(--hueso); background: transparent; color: var(--hueso); cursor: pointer; }
+.controles button.primario { background: var(--limon); color: var(--tinta); border-color: var(--limon); }
+.controles button:focus-visible { outline: 3px solid var(--cielo); outline-offset: 2px; }
+.tiempo { font: 700 15px/1 var(--mono); min-width: 12ch; }
+.pulso { display: inline-flex; gap: 6px; margin-left: auto; }
+.pulso i { width: 12px; height: 12px; border-radius: 50%; background: rgba(251,247,240,.25); }
+.pulso i.on { background: var(--rosa); }
+.escena-actual { color: rgba(251,247,240,.7); font-size: 14px; }
+body.render .controles { display: none; }
+body.render { grid-template-rows: 1fr; }
+
+/* ---- E1 · encendido ---- */
+#e1 .crt { position: absolute; left: 50%; top: 50%; width: 1760px; height: 4px; background: var(--hueso); transform: translate(-50%, -50%) scaleX(var(--q1)) scaleY(calc(1 + var(--q2) * 260)); }
+#e1 .cmd { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; font: 700 44px/1.3 var(--mono); color: var(--tinta); white-space: nowrap; clip-path: inset(0 calc((1 - var(--q3)) * 100%) 0 0); opacity: calc(var(--q2)); }
+#e1 .cmd b { color: #7a1f4b; }
+#e1 .cmd::after { content: "▌"; opacity: calc(1 - var(--beat)); }
+
+/* ---- E2 y E7 · título letra a letra (collage) ---- */
+.collage { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 18px 10px; padding: 0 120px; }
+.collage .letra { --lk: clamp(0, calc(var(--p) * var(--n) - var(--i)), 1); display: inline-grid; place-items: center; width: 150px; height: 170px; font: 900 150px/1 var(--titulo); color: var(--tinta); background: var(--pc); transform: translateY(calc((1 - var(--lk)) * -140px)) rotate(calc(var(--rot) * (1 - var(--lk) * .6))); opacity: var(--lk); box-shadow: 0 10px 0 rgba(20,18,43,.18); }
+.collage .letra.chica { width: 108px; height: 124px; font-size: 104px; }
+.collage .esp { width: 60px; }
+.collage .p0 { --pc: var(--p0); --rot: -4deg; } .collage .p1 { --pc: var(--p1); --rot: 3deg; } .collage .p2 { --pc: var(--p2); --rot: -2deg; }
+.collage .p3 { --pc: var(--p3); --rot: 5deg; } .collage .p4 { --pc: var(--p4); --rot: -3deg; } .collage .p5 { --pc: var(--p5); --rot: 2deg; }
+#e2 { background: var(--tinta); }
+#e7 { background: var(--lila); }
+#e7 .collage .letra { background: var(--hueso); }
+#e7 .collage .letra:nth-child(3n) { background: var(--menta); }
+
+/* ---- E3 · ráfaga: 8 cortes de corchea, 4 tratamientos ---- */
+#e3 .cut { position: absolute; inset: 0; display: none; place-items: center; grid-template-columns: 1fr 1fr; padding: 0 160px; }
+#e3[data-cut="0"] .cut:nth-child(1), #e3[data-cut="1"] .cut:nth-child(2), #e3[data-cut="2"] .cut:nth-child(3), #e3[data-cut="3"] .cut:nth-child(4),
+#e3[data-cut="4"] .cut:nth-child(5), #e3[data-cut="5"] .cut:nth-child(6), #e3[data-cut="6"] .cut:nth-child(7), #e3[data-cut="7"] .cut:nth-child(8) { display: grid; }
+#e3 .cut h2 { margin: 0; font: 900 120px/1 var(--titulo); letter-spacing: -.02em; }
+#e3 .cut small { display: block; margin-top: 18px; font: 700 28px/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+#e3 .cut .willie { width: 520px; height: 560px; justify-self: center; }
+#e3 .t-plano .w-blanco { fill: var(--pc); }
+#e3 .t-puntos .willie { -webkit-mask-image: radial-gradient(circle, #000 36%, transparent 42%); mask-image: radial-gradient(circle, #000 36%, transparent 42%); -webkit-mask-size: 11.8px 11.6px; mask-size: 11.8px 11.6px; }
+#e3 .t-1bit { background: var(--hueso) !important; color: var(--tinta); }
+#e3 .t-moneda .w-negro { fill: var(--pc); } #e3 .t-moneda .w-blanco { fill: var(--tinta); }
+#e3 .t-moneda .willie { filter: drop-shadow(5px 0 0 var(--tinta)) drop-shadow(-5px 0 0 var(--tinta)) drop-shadow(0 5px 0 var(--tinta)) drop-shadow(0 -5px 0 var(--tinta)); }
+#e3 .c0 { --pc: var(--p0); background: var(--p0); color: var(--tinta); } #e3 .c1 { --pc: var(--p1); background: var(--p1); color: var(--tinta); }
+#e3 .c2 { --pc: var(--p2); background: var(--p2); color: var(--tinta); } #e3 .c3 { --pc: var(--p3); background: var(--p3); color: var(--tinta); }
+#e3 .c4 { --pc: var(--p4); background: var(--p4); color: var(--tinta); } #e3 .c5 { --pc: var(--p5); background: var(--p5); color: var(--tinta); }
+
+/* ---- E4 · cámara: el mundo se mueve, no la cámara ---- */
+#e4 { background: var(--cielo); }
+#e4 .mundo { position: absolute; left: 0; top: 0; width: 3400px; height: 1080px; transform-origin: 1800px 540px;
+  transform: translateX(calc(var(--q1) * -700px)) scale(calc(1 + var(--q2) * .9)); }
+#e4 .cielo { position: absolute; inset: 0 0 300px 0; background: var(--cielo); }
+#e4 .rio { position: absolute; left: 0; right: 0; bottom: 0; height: 300px; background: var(--menta); }
+#e4 .sol { position: absolute; left: 420px; top: 140px; width: 180px; height: 180px; background: var(--limon); }
+#e4 .nube { position: absolute; height: 60px; background: var(--hueso); }
+#e4 .barco { position: absolute; left: 1000px; top: 380px; width: 1280px; height: 720px; }
+#e4 .willie { position: absolute; left: 1740px; top: 560px; width: 160px; height: 175px; transform: translateY(calc(var(--bob) * -8px)); }
+#e4 .marca { position: absolute; left: 80px; top: 70px; display: flex; gap: 14px; }
+#e4 .marca span { font: 700 30px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; padding: 14px 20px; background: var(--tinta); color: var(--hueso); display: none; }
+#e4[data-cut="0"] .marca .m0, #e4[data-cut="1"] .marca .m1, #e4[data-cut="2"] .marca .m2, #e4[data-cut="3"] .marca .m2 { display: block; }
+.b-casco { fill: var(--tinta); } .b-cubierta { fill: var(--hueso); } .b-cabina { fill: var(--hueso); } .b-ventana { fill: var(--tinta); } .b-chimenea { fill: var(--tinta); } .b-nube { fill: var(--hueso); opacity: .9; }
+.b-aro { fill: none; stroke: var(--tinta); stroke-width: 10; } .b-rayo { fill: var(--tinta); }
+.b-rueda { transform-origin: 560px 265px; transform-box: view-box; transform: rotate(calc(var(--t) * 120deg)); }
+.b-humo { transform: translateY(calc(var(--bob) * -10px)); }
+
+/* ---- E5 · profundidad: tres capas, tres velocidades ---- */
+#e5 { background: var(--melocoton); }
+#e5 .capa { position: absolute; left: 0; top: 0; width: 2800px; height: 1080px; transform: translateX(calc(var(--pe) * -700px * var(--v))); }
+#e5 .fondo { --v: .2; } #e5 .medio { --v: .6; } #e5 .frente { --v: 1.2; }
+#e5 .nube { position: absolute; height: 70px; background: var(--hueso); }
+#e5 .barco { position: absolute; left: 700px; top: 430px; width: 1000px; height: 560px; }
+#e5 .willie { position: absolute; left: 1280px; top: 565px; width: 125px; height: 136px; transform: translateY(calc(var(--bob) * -8px)); }
+#e5 .ola { position: absolute; bottom: 0; left: 0; width: 2800px; height: 220px; background: repeating-linear-gradient(90deg, var(--menta) 0 160px, var(--cielo) 160px 320px); }
+#e5 .ola2 { height: 120px; background: repeating-linear-gradient(90deg, var(--tinta) 0 120px, transparent 120px 240px); opacity: .9; bottom: 120px; }
+#e5 .leyenda { position: absolute; right: 80px; top: 70px; margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+#e5 .leyenda li { font: 700 28px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 14px 20px; background: var(--tinta); color: var(--hueso); }
+
+/* ---- E6 · salto: anticipación, arco, aplastar y estirar ---- */
+#e6 { background: var(--limon); }
+#e6 .suelo { position: absolute; left: 0; right: 0; bottom: 200px; height: 16px; background: var(--tinta); }
+#e6 .willie { position: absolute; left: 560px; bottom: 216px; width: 420px; height: 458px; transform-origin: 50% 100%;
+  --sube: var(--q2); --baja: var(--q3);
+  --y: calc(var(--sube) * -420px + var(--baja) * 420px);
+  --x: calc((var(--sube) + var(--baja)) * 260px);
+  --sx: calc(1 + var(--q1) * .18 - var(--sube) * .28 + var(--baja) * .28 + var(--q4) * .2 - var(--q5) * .2);
+  --sy: calc(1 - var(--q1) * .16 + var(--sube) * .22 - var(--baja) * .22 - var(--q4) * .22 + var(--q5) * .22);
+  transform: translate(var(--x), var(--y)) scale(var(--sx), var(--sy)); }
+#e6 .w-timon { transform: rotate(calc(var(--t) * 240deg)); }
+#e6 .chips { position: absolute; right: 80px; top: 70px; display: grid; gap: 12px; }
+#e6 .chips span { font: 700 28px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 14px 20px; background: var(--tinta); color: var(--hueso); opacity: .25; }
+#e6[data-cut="0"] .k0, #e6[data-cut="1"] .k1, #e6[data-cut="2"] .k1, #e6[data-cut="3"] .k1, #e6[data-cut="4"] .k2, #e6[data-cut="5"] .k2, #e6[data-cut="6"] .k3, #e6[data-cut="7"] .k3, #e6[data-cut="8"] .k3, #e6[data-cut="9"] .k3, #e6[data-cut="10"] .k3, #e6[data-cut="11"] .k3 { opacity: 1; }
+#e6 .arco { position: absolute; left: 770px; bottom: 216px; width: 260px; height: 420px; border: 6px dashed rgba(20,18,43,.35); border-bottom: 0; border-radius: 260px 260px 0 0 / 420px 420px 0 0; opacity: calc(var(--q2) + var(--q3) - var(--q4)); }
+
+/* ---- E8 · ¡No! ---- */
+#e8.on { background: var(--rosa); display: grid; place-items: center; }
+#e8 h2 { margin: 0; font: 900 520px/1 var(--titulo); color: var(--tinta); letter-spacing: -.04em; transform: scale(calc(.7 + var(--q1) * .45 - var(--q2) * .15), calc(1.3 - var(--q1) * .45 + var(--q2) * .15)); }
+
+/* ---- E9 · créditos ---- */
+#e9.on { background: var(--tinta); display: grid; place-content: center; text-align: center; gap: 22px; }
+#e9 h2 { margin: 0; font: 900 64px/1.1 var(--titulo); color: var(--hueso); opacity: var(--q1); }
+#e9 p { margin: 0; font: 500 30px/1.4 system-ui, sans-serif; color: rgba(251,247,240,.85); opacity: var(--q2); }
+#e9 .willie { width: 160px; height: 175px; justify-self: center; opacity: var(--q1); }
+#e9 .willie .w-negro { fill: var(--hueso); } #e9 .willie .w-blanco { fill: var(--tinta); }
+
+/* ---- Storyboard (reducir movimiento o ?storyboard=1) ---- */
+body.quieto { overflow: auto; }
+body.quieto .escenario { display: block; padding: 28px; }
+body.quieto .lienzo { width: auto; height: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 22px; transform: none !important; overflow: visible; }
+body.quieto .clip, body.quieto #e8, body.quieto #e9 { display: block; position: relative; inset: auto; width: 1920px; height: 1080px; zoom: .22; border: 6px solid rgba(251,247,240,.25); }
+body.quieto .clip::after { content: attr(data-nombre) " · " attr(data-start) " s + " attr(data-duration) " s"; position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 40px; font: 700 54px/1 var(--mono); background: rgba(20,18,43,.85); color: var(--hueso); }
+body.quieto .controles .solo-video { display: none; }
+.aviso { display: none; margin: 0 0 18px; font-size: 18px; color: rgba(251,247,240,.85); }
+body.quieto .aviso { display: block; }
+</style>
+</head>
+<body>
+<main class="escenario">
+  <p class="aviso">Storyboard: tu sistema pide reducir el movimiento, así que cada escena se muestra quieta a mitad de camino. <a href="?storyboard=0" style="color:var(--limon)">Ver en movimiento</a>.</p>
+  <div class="lienzo" id="lienzo">
+
+    <section class="clip" id="e1" data-nombre="Encendido" data-start="0" data-duration="2" data-tramos="0.22,0.42">
+      <div class="crt"></div>
+      <p class="cmd">$ jmd willie <b>--estilo dificil-de-explicar</b></p>
+    </section>
+
+    <section class="clip" id="e2" data-nombre="Título letra a letra" data-start="2" data-duration="2" style="--n:8">
+      <div class="collage"><span class="letra p0" style="--i:0">W</span><span class="letra p1" style="--i:1">I</span><span class="letra p2" style="--i:2">L</span><span class="letra p3" style="--i:3">L</span><span class="letra p4" style="--i:4">I</span><span class="letra p5" style="--i:5">E</span></div>
+      <p class="rotulo claro">Collage · cae al pulso · corcheas de 0,25 s</p>
+    </section>
+
+    <section class="clip" id="e3" data-nombre="Ráfaga · 4 tratamientos" data-start="4" data-duration="2" data-cuts="8">
+      <div class="cut c0 t-plano"><div><h2>PLANO</h2><small>relleno · un trazo</small></div><svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg></div>
+      <div class="cut c3 t-puntos"><div><h2>PUNTOS</h2><small>un círculo por píxel</small></div><svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg></div>
+      <div class="cut c1 t-1bit"><div><h2>1 BIT</h2><small>tinta sobre hueso</small></div><svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg></div>
+      <div class="cut c4 t-moneda"><div><h2>MONEDA</h2><small>relleno pastel, borde tinta</small></div><svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg></div>
+      <div class="cut c5 t-plano"><div><h2>PLANO</h2><small>la misma silueta</small></div><svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg></div>
+      <div class="cut c2 t-puntos"><div><h2>PUNTOS</h2><small>sin redibujar</small></div><svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg></div>
+      <div class="cut c0 t-1bit"><div><h2>1 BIT</h2><small>ocho cortes · dos segundos</small></div><svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg></div>
+      <div class="cut c3 t-moneda"><div><h2>MONEDA</h2><small>ninguno menor de 0,25 s</small></div><svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg></div>
+    </section>
+
+    <section class="clip" id="e4" data-nombre="Cámara · paneo y zoom" data-start="6" data-duration="4" data-tramos="0.5,0.875" data-cuts="4">
+      <div class="mundo">
+        <div class="cielo"></div><div class="rio"></div><div class="sol"></div>
+        <div class="nube" style="left:200px;top:300px;width:260px"></div><div class="nube" style="left:900px;top:220px;width:340px"></div><div class="nube" style="left:1500px;top:330px;width:220px"></div><div class="nube" style="left:2900px;top:260px;width:300px"></div>
+        <svg class="barco" viewBox="0 0 640 360" shape-rendering="crispEdges" aria-hidden="true">
+  <rect x="40" y="250" width="560" height="70" rx="0" class="b-casco"/>
+  <rect x="20" y="240" width="600" height="18" class="b-cubierta"/>
+  <rect x="150" y="170" width="300" height="70" class="b-cabina"/>
+  <rect x="170" y="190" width="40" height="30" class="b-ventana"/><rect x="250" y="190" width="40" height="30" class="b-ventana"/><rect x="330" y="190" width="40" height="30" class="b-ventana"/>
+  <rect x="210" y="90" width="40" height="80" class="b-chimenea"/><rect x="330" y="90" width="40" height="80" class="b-chimenea"/>
+  <rect x="200" y="76" width="60" height="18" class="b-chimenea"/><rect x="320" y="76" width="60" height="18" class="b-chimenea"/>
+  <g class="b-humo"><rect x="214" y="40" width="30" height="30" class="b-nube"/><rect x="236" y="14" width="40" height="34" class="b-nube"/><rect x="340" y="36" width="26" height="26" class="b-nube"/><rect x="360" y="10" width="42" height="34" class="b-nube"/></g>
+  <g class="b-rueda"><circle cx="560" cy="265" r="52" class="b-aro"/><rect x="556" y="213" width="8" height="104" class="b-rayo"/><rect x="508" y="261" width="104" height="8" class="b-rayo"/><rect x="556" y="213" width="8" height="104" class="b-rayo" transform="rotate(45 560 265)"/><rect x="556" y="213" width="8" height="104" class="b-rayo" transform="rotate(-45 560 265)"/></g>
+</svg>
+        <svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg>
+      </div>
+      <div class="marca"><span class="m0">Plano general</span><span class="m1">Paneo →</span><span class="m2">Zoom · plano medio</span></div>
+      <p class="rotulo">La cámara no existe: se mueve el mundo</p>
+    </section>
+
+    <section class="clip" id="e5" data-nombre="Profundidad · multiplano" data-start="10" data-duration="3">
+      <div class="capa fondo"><div class="nube" style="left:150px;top:120px;width:380px"></div><div class="nube" style="left:900px;top:200px;width:300px"></div><div class="nube" style="left:1700px;top:110px;width:420px"></div><div class="nube" style="left:2400px;top:230px;width:260px"></div></div>
+      <div class="capa medio"><svg class="barco" viewBox="0 0 640 360" shape-rendering="crispEdges" aria-hidden="true">
+  <rect x="40" y="250" width="560" height="70" rx="0" class="b-casco"/>
+  <rect x="20" y="240" width="600" height="18" class="b-cubierta"/>
+  <rect x="150" y="170" width="300" height="70" class="b-cabina"/>
+  <rect x="170" y="190" width="40" height="30" class="b-ventana"/><rect x="250" y="190" width="40" height="30" class="b-ventana"/><rect x="330" y="190" width="40" height="30" class="b-ventana"/>
+  <rect x="210" y="90" width="40" height="80" class="b-chimenea"/><rect x="330" y="90" width="40" height="80" class="b-chimenea"/>
+  <rect x="200" y="76" width="60" height="18" class="b-chimenea"/><rect x="320" y="76" width="60" height="18" class="b-chimenea"/>
+  <g class="b-humo"><rect x="214" y="40" width="30" height="30" class="b-nube"/><rect x="236" y="14" width="40" height="34" class="b-nube"/><rect x="340" y="36" width="26" height="26" class="b-nube"/><rect x="360" y="10" width="42" height="34" class="b-nube"/></g>
+  <g class="b-rueda"><circle cx="560" cy="265" r="52" class="b-aro"/><rect x="556" y="213" width="8" height="104" class="b-rayo"/><rect x="508" y="261" width="104" height="8" class="b-rayo"/><rect x="556" y="213" width="8" height="104" class="b-rayo" transform="rotate(45 560 265)"/><rect x="556" y="213" width="8" height="104" class="b-rayo" transform="rotate(-45 560 265)"/></g>
+</svg><svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg></div>
+      <div class="capa frente"><div class="ola"></div><div class="ola ola2"></div></div>
+      <ul class="leyenda"><li>Fondo · ×0,2</li><li>Medio · ×0,6</li><li>Frente · ×1,2</li></ul>
+      <p class="rotulo">Tres capas, tres velocidades (Disney, 1937)</p>
+    </section>
+
+    <section class="clip" id="e6" data-nombre="Salto · aplastar y estirar" data-start="13" data-duration="3" data-tramos="0.0833,0.3333,0.5833,0.6667,0.8333" data-cuts="12">
+      <div class="suelo"></div>
+      <div class="arco"></div>
+      <svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg>
+      <div class="chips"><span class="k0">Anticipación</span><span class="k1">Arco</span><span class="k2">Aplastar y estirar</span><span class="k3">Acción secundaria</span></div>
+      <p class="rotulo">Thomas y Johnston, 1981 · el timón sigue girando</p>
+    </section>
+
+    <section class="clip" id="e7" data-nombre="Pregunta" data-start="16" data-duration="2" style="--n:16">
+      <div class="collage"><span class="letra chica p2" style="--i:0">¿</span><span class="letra chica p3" style="--i:1">D</span><span class="letra chica p4" style="--i:2">I</span><span class="letra chica p5" style="--i:3">F</span><span class="letra chica p0" style="--i:4">Í</span><span class="letra chica p1" style="--i:5">C</span><span class="letra chica p2" style="--i:6">I</span><span class="letra chica p3" style="--i:7">L</span><span class="esp"></span><span class="letra chica p4" style="--i:8">D</span><span class="letra chica p5" style="--i:9">E</span><span class="esp"></span><span class="letra chica p0" style="--i:10">E</span><span class="letra chica p1" style="--i:11">X</span><span class="letra chica p2" style="--i:12">P</span><span class="letra chica p3" style="--i:13">L</span><span class="letra chica p4" style="--i:14">I</span><span class="letra chica p5" style="--i:15">C</span><span class="letra chica p0" style="--i:16">A</span><span class="letra chica p1" style="--i:17">R</span><span class="letra chica p2" style="--i:18">?</span></div>
+    </section>
+
+    <section class="clip" id="e8" data-nombre="Respuesta" data-start="18" data-duration="1" data-tramos="0.3">
+      <h2>¡NO!</h2>
+    </section>
+
+    <section class="clip" id="e9" data-nombre="Créditos" data-start="19" data-duration="1" data-tramos="0.4">
+      <svg class="willie " viewBox="0 0 44 48" shape-rendering="crispEdges" aria-hidden="true" ><path class="w-negro" d="M10 5h5v1h-5zM18 5h9v1h-9zM29 5h5v1h-5zM9 6h7v1h-7zM18 6h9v1h-9zM28 6h7v1h-7zM8 7h28v1h-28zM8 8h10v1h-10zM28 8h8v1h-8zM8 9h9v1h-9zM21 9h15v1h-15zM8 10h9v1h-9zM18 10h8v1h-8zM27 10h9v1h-9zM8 11h28v1h-28zM9 12h26v1h-26zM10 13h24v1h-24zM14 14h5v1h-5zM20 14h4v1h-4zM25 14h5v1h-5zM14 15h4v1h-4zM20 15h3v1h-3zM24 15h1v1h-1zM26 15h4v1h-4zM13 16h5v1h-5zM21 16h2v1h-2zM26 16h5v1h-5zM13 17h5v1h-5zM26 17h5v1h-5zM13 18h5v1h-5zM26 18h5v1h-5zM13 19h4v1h-4zM21 19h2v1h-2zM27 19h4v1h-4zM14 20h2v1h-2zM21 20h2v1h-2zM28 20h2v1h-2zM14 21h2v1h-2zM28 21h2v1h-2zM15 22h2v1h-2zM18 22h1v1h-1zM26 22h3v1h-3zM15 23h3v1h-3zM19 23h10v1h-10zM16 24h5v1h-5zM23 24h5v1h-5zM18 25h8v1h-8zM18 26h8v1h-8zM17 27h10v1h-10zM10 28h2v1h-2zM13 28h15v1h-15zM9 29h21v1h-21zM9 30h4v1h-4zM16 30h15v1h-15zM10 31h2v1h-2zM16 31h12v1h-12zM29 31h3v1h-3zM33 31h2v1h-2zM16 32h3v1h-3zM21 32h2v1h-2zM25 32h3v1h-3zM30 32h6v1h-6zM16 33h3v1h-3zM21 33h2v1h-2zM25 33h3v1h-3zM30 33h4v1h-4zM35 33h1v1h-1zM16 34h12v1h-12zM30 34h6v1h-6zM17 35h10v1h-10zM30 35h5v1h-5zM18 36h8v1h-8zM28 36h3v1h-3zM18 37h8v1h-8zM18 38h3v1h-3zM23 38h3v1h-3zM18 39h3v1h-3zM23 39h3v1h-3zM18 40h3v1h-3zM23 40h3v1h-3zM18 41h3v1h-3zM23 41h3v1h-3zM16 42h5v1h-5zM23 42h5v1h-5zM15 43h15v1h-15zM14 44h16v1h-16zM15 45h15v1h-15zM16 46h5v1h-5zM24 46h4v1h-4z"/><path class="w-blanco" d="M18 8h10v1h-10zM19 14h1v1h-1zM24 14h1v1h-1zM18 15h2v1h-2zM23 15h1v1h-1zM25 15h1v1h-1zM18 16h3v1h-3zM23 16h3v1h-3zM18 17h8v1h-8zM18 18h8v1h-8zM17 19h4v1h-4zM23 19h4v1h-4zM16 20h5v1h-5zM23 20h5v1h-5zM16 21h12v1h-12zM17 22h1v1h-1zM19 22h7v1h-7zM18 23h1v1h-1zM21 24h2v1h-2zM19 32h2v1h-2zM23 32h2v1h-2zM19 33h2v1h-2zM23 33h2v1h-2z"/><g class="w-timon"><path class="w-negro" d="M5 24h8v1h-8zM4 25h2v1h-2zM8 25h1v1h-1zM12 25h2v1h-2zM3 26h2v1h-2zM8 26h2v1h-2zM13 26h2v1h-2zM2 27h2v1h-2zM5 27h1v1h-1zM9 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM2 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM2 29h1v1h-1zM7 29h2v1h-2zM2 30h1v1h-1zM7 30h2v1h-2zM15 30h1v1h-1zM2 31h8v1h-8zM12 31h4v1h-4zM2 32h1v1h-1zM7 32h4v1h-4zM15 32h1v1h-1zM2 33h1v1h-1zM6 33h1v1h-1zM9 33h1v1h-1zM11 33h1v1h-1zM15 33h1v1h-1zM2 34h2v1h-2zM5 34h1v1h-1zM9 34h1v1h-1zM12 34h1v1h-1zM14 34h2v1h-2zM3 35h2v1h-2zM9 35h1v1h-1zM13 35h2v1h-2zM4 36h2v1h-2zM9 36h1v1h-1zM12 36h2v1h-2zM5 37h8v1h-8z"/></g></svg>
+      <h2>Hecho con HTML, CSS y SVG · abierto y gratis</h2>
+      <p>Willie es el diseño de 1928 de Steamboat Willie, en dominio público. No está afiliado a Disney.<br>Taller «¿Difícil de explicar? ¡No!» · jmd-learn.online</p>
+    </section>
+
+  </div>
+</main>
+
+<footer class="controles" aria-label="Controles de la pieza">
+  <button class="primario solo-video" id="btn-play" type="button">Reproducir</button>
+  <button class="solo-video" id="btn-reset" type="button">Reiniciar</button>
+  <span class="tiempo solo-video" id="tiempo">0,0 s / 20,0 s</span>
+  <span class="escena-actual solo-video" id="escena"></span>
+  <span class="pulso solo-video" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var DUR = 20, BPM = 120, NEGRA = 60 / BPM;
+  var lienzo = document.getElementById("lienzo");
+  var clips = Array.prototype.slice.call(document.querySelectorAll(".clip"));
+  var q = new URLSearchParams(location.search);
+  var reducido = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var quieto = q.get("storyboard") === "1" || (reducido && q.get("storyboard") !== "0");
+  if (q.get("render") === "1") document.body.classList.add("render");
+
+  function easeInOut(x) { return x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; }
+  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+
+  var t = 0, playing = false, last = 0;
+
+  function pinta(tt) {
+    var root = document.documentElement.style;
+    root.setProperty("--t", tt.toFixed(4));
+    root.setProperty("--beat", ((tt % NEGRA) / NEGRA).toFixed(4));
+    root.setProperty("--bob", Math.sin(tt * Math.PI).toFixed(4));
+    var actual = "";
+    clips.forEach(function (c) {
+      var s = parseFloat(c.dataset.start), d = parseFloat(c.dataset.duration);
+      var on = tt >= s && tt < s + d;
+      if (quieto) { on = true; }
+      var p = quieto ? .5 : clamp01((tt - s) / d);
+      c.classList.toggle("on", on);
+      if (!on) return;
+      actual = c.dataset.nombre;
+      c.style.setProperty("--p", p.toFixed(4));
+      c.style.setProperty("--pe", easeInOut(p).toFixed(4));
+      if (c.dataset.cuts) c.dataset.cut = String(Math.min(parseInt(c.dataset.cuts, 10) - 1, Math.floor(p * parseInt(c.dataset.cuts, 10))));
+      if (c.dataset.tramos) {
+        var b = [0].concat(c.dataset.tramos.split(",").map(parseFloat)).concat([1]);
+        for (var i = 1; i < b.length; i++) {
+          c.style.setProperty("--q" + i, easeInOut(clamp01((p - b[i - 1]) / (b[i] - b[i - 1]))).toFixed(4));
+        }
+      }
+    });
+    var el = document.getElementById("tiempo");
+    if (el) el.textContent = tt.toFixed(1).replace(".", ",") + " s / 20,0 s";
+    var es = document.getElementById("escena");
+    if (es) es.textContent = actual ? "Escena: " + actual : "";
+    var puntos = document.querySelectorAll(".pulso i");
+    var n = Math.floor(tt / NEGRA) % 4;
+    for (var k = 0; k < puntos.length; k++) puntos[k].classList.toggle("on", k === n);
+  }
+
+  function seek(tt) { t = Math.max(0, Math.min(DUR, tt)); pinta(t); }
+  function pausa() { playing = false; var b = document.getElementById("btn-play"); if (b) b.textContent = "Reproducir"; }
+  function play() {
+    if (t >= DUR) t = 0;
+    playing = true; last = performance.now();
+    var b = document.getElementById("btn-play"); if (b) b.textContent = "Pausa";
+    requestAnimationFrame(paso);
+  }
+  function paso(now) {
+    if (!playing) return;
+    t += (now - last) / 1000; last = now;
+    if (t >= DUR) { t = DUR; pinta(t); pausa(); return; }
+    pinta(t); requestAnimationFrame(paso);
+  }
+
+  function escala() {
+    if (quieto) return;
+    var cab = document.body.classList.contains("render") ? 0 : document.querySelector(".controles").offsetHeight;
+    var k = Math.min(window.innerWidth / 1920, (window.innerHeight - cab) / 1080);
+    lienzo.style.transform = "scale(" + k + ")";
+  }
+
+  var bp = document.getElementById("btn-play"), br = document.getElementById("btn-reset");
+  if (bp) bp.addEventListener("click", function () { playing ? pausa() : play(); });
+  if (br) br.addEventListener("click", function () { pausa(); seek(0); });
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space") { e.preventDefault(); playing ? pausa() : play(); }
+    if (e.key === "ArrowRight") { pausa(); seek(t + .25); }
+    if (e.key === "ArrowLeft") { pausa(); seek(t - .25); }
+  });
+  window.addEventListener("resize", escala);
+
+  if (quieto) document.body.classList.add("quieto");
+  escala();
+  var t0 = parseFloat(q.get("t"));
+  seek(isNaN(t0) ? 0 : t0);
+  window.willie = { seek: seek, play: play, pausa: pausa, duracion: DUR, escenas: clips.map(function (c) { return { nombre: c.dataset.nombre, inicio: +c.dataset.start, duracion: +c.dataset.duration }; }) };
+})();
+</script>
+</body>
+</html>
