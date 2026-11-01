@@ -32,6 +32,9 @@
 .ar-trama { background-image: radial-gradient(#15120f 1px, transparent 1.2px); background-size: 9px 9px; }
 .ar-show { font-size: .72em; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .ar-link, .ar-v { transition: none; } }
+.ar-tabs{display:flex;gap:.5em;margin:.2em 0 .6em}.ar-tabs button{font:700 .78em/1 system-ui,sans-serif;padding:.55em 1.1em;border-radius:999px;border:1px solid var(--line2);background:var(--s1);color:var(--fg);cursor:pointer}.ar-tabs button[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.ar-marco{display:none;flex:1;min-height:0;border:1px solid var(--line2);border-radius:1em;overflow:hidden;background:#fff}.ar-marco.on{display:block}.ar-marco iframe{width:100%;height:100%;border:0;display:block}
+.esc-cuerpo{display:flex;flex-direction:column;min-height:0}.ar-b2[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -47,19 +50,24 @@
 
   <main class="esc-cuerpo">
     <h1 class="esc-titulo a-in">QA Arena: <em>tus puntos de hoy</em></h1>
-    <div class="ar-b2">
-      <section class="esc-card ar-cta a-in" style="--d:.1s" aria-label="Abrir QA Arena">
-        <a class="ar-link" href="/qa-arena/" target="_blank" rel="noopener">⚡ Abrir QA Arena</a>
-        <span class="ar-url">jmd-learn.online/qa-arena · entra con tu misma sesión del LMS</span>
+    <div class="ar-tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-t="show">🏆 Show · tabla de héroes</button>
+      <button role="tab" aria-selected="false" data-t="mio">⚡ Mis puntos y relámpagos</button>
+      <button role="tab" aria-selected="false" data-t="reglas">📜 Reglas</button>
+      <a class="ar-link" style="margin-left:auto;font-size:.78em;padding:.45em .9em" href="/qa-arena/" target="_blank" rel="noopener">Abrir en otra pestaña ↗</a>
+    </div>
+    <div class="ar-marco on" id="t-show"><iframe src="/qa-arena/show" title="Show de QA Arena" loading="eager"></iframe></div>
+    <div class="ar-marco" id="t-mio"><iframe title="Mis puntos en QA Arena" data-src="/qa-arena/"></iframe></div>
+    <div class="ar-b2" id="t-reglas" hidden>
+      <section class="esc-card ar-cta a-in" aria-label="Cómo se juega">
         <ol class="ar-pasos">
           <li><b>No tecleas nada:</b> la arena te reconoce por tu cuenta del LMS y te dibuja tu héroe de cómic.</li>
           <li><b>Marca los pasos</b> de esta lección en el LMS (la lista «ver, casos, pom…»): cada uno suma solo.</li>
           <li><b>Pide «Lo logré»</b> en la arena cuando termines una escena: el instructor lo aprueba.</li>
-          <li><b>Responde los relámpagos</b> desde tu celular: cuenta el acierto y la velocidad.</li>
+          <li><b>Responde los relámpagos</b> desde «Mis puntos» o desde tu celular: cuenta el acierto y la velocidad.</li>
         </ol>
-        <span class="ar-show">El show con la tabla de héroes lo comparte el instructor en Zoom.</span>
       </section>
-      <section class="ar-vinetas a-in" style="--d:.2s" aria-label="Reglas de puntos">
+      <section class="ar-vinetas a-in" aria-label="Reglas de puntos">
         <div class="ar-v verde"><span class="pts">+100</span><b>Paso del LMS</b>Cada paso del ciclo marcado en tu sesión. Sin esperar a nadie.</div>
         <div class="ar-v"><span class="pts">+100</span><b>Lo logré</b>El «Lo logré» de cada escena, aprobado por el instructor con un toque.</div>
         <div class="ar-v azul"><span class="pts">+50 +30 +20</span><b>¡Primero!</b>Los tres primeros en cada paso o logro se llevan bono. Rápido y bien.</div>
@@ -70,5 +78,15 @@
     <p class="esc-nota">Regla de la casa: la IA propone, el runner decide y <b>el instructor aprueba</b>. Nada de puntos por una prueba que no viste fallar.</p>
   </main>
 </div>
+<script>
+document.querySelectorAll('.ar-tabs [role=tab]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.ar-tabs [role=tab]').forEach(x=>x.setAttribute('aria-selected',x===b));
+  const t=b.dataset.t;
+  document.getElementById('t-show').classList.toggle('on',t==='show');
+  document.getElementById('t-mio').classList.toggle('on',t==='mio');
+  document.getElementById('t-reglas').hidden=t!=='reglas';
+  const f=document.querySelector('#t-mio iframe'); if(t==='mio'&&!f.src){f.src=f.dataset.src;}
+}));
+</script>
 </body>
 </html>
