@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reporte del día · Tienda Sol</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <header>
+    <div class="barra">
+      <div class="marca">☀ Tienda <span>Sol</span></div>
+      <span id="usuario-actual" aria-label="Usuario actual"></span>
+      <nav aria-label="Principal">
+        <a href="/catalogo.html">Catálogo</a>
+        <a href="/venta.html">Venta (<span id="contador-carrito">0</span>)</a>
+        <a href="/reporte.html" aria-current="page">Reporte</a>
+        <button id="boton-salir" type="button">Salir</button>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <h1>Reporte del día</h1>
+    <p class="vacio">Día: <span id="dia"></span></p>
+    <div class="metricas">
+      <section class="tarjeta"><span id="lbl-total">Total vendido</span><output id="total-vendido" class="cifra" aria-labelledby="lbl-total">—</output></section>
+      <section class="tarjeta"><span id="lbl-numero">Número de ventas</span><output id="numero-ventas" class="cifra" aria-labelledby="lbl-numero">—</output></section>
+    </div>
+    <h2>Ventas</h2>
+    <table aria-label="Ventas del día">
+      <thead><tr><th scope="col">N°</th><th scope="col">Hora</th><th scope="col">Cajero</th><th scope="col" class="num">Total</th><th scope="col" class="num">Efectivo</th><th scope="col" class="num">Vuelto</th></tr></thead>
+      <tbody id="filas"></tbody>
+    </table>
+  </main>
+  <script type="module">
+    import { api, soles, exigirSesion, iniciarCabecera } from '/js/comun.js';
+    if (exigirSesion()) {
+      iniciarCabecera();
+      (async () => {
+      const r = await api('/api/reporte');
+      if (r.ok) {
+        const rep = r.cuerpo;
+        document.getElementById('dia').textContent = rep.dia;
+        document.getElementById('total-vendido').textContent = soles(rep.totalVendido);
+        document.getElementById('numero-ventas').textContent = String(rep.numeroVentas);
+        const filas = document.getElementById('filas');
+        if (!rep.ventas.length) filas.innerHTML = '<tr><td colspan="6" class="vacio">Aún no hay ventas hoy</td></tr>';
+        for (const v of rep.ventas) {
+          const tr = document.createElement('tr');
+          const hora = new Date(v.fecha).toLocaleTimeString('es-PE', { timeZone: 'America/Lima' });
+          tr.innerHTML = `<td>${v.id}</td><td>${hora}</td><td>${v.cajero}</td><td class="num">${soles(v.total)}</td><td class="num">${soles(v.efectivo)}</td><td class="num">${soles(v.vuelto)}</td>`;
+          filas.append(tr);
+        }
+      }
+      })();
+    }
+  </script>
+</body>
+</html>

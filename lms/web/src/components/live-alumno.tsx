@@ -902,7 +902,7 @@ export const LiveAlumno = component$(
                   ref={marco}
                   class="live-frame lv-marco"
                   onLoad$={() => avisarEscena(marco.value, props.estado)}
-                  sandbox={props.lesson === "de-02" && ["05-escucha-y-descarga", "09-musica-con-lyria"].includes(efectiva) ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin"}
+                  sandbox={props.lesson === "qa-01" && efectiva === "01-descarga" ? "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" : props.lesson === "de-02" && ["05-escucha-y-descarga", "09-musica-con-lyria"].includes(efectiva) ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin"}
                   allow="microphone; clipboard-write"
                   title="Escena"
                   src={urlEscena(props.lesson, efectiva, tema.value)}

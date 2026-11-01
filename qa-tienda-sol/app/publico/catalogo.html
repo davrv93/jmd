@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo · Tienda Sol</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <header>
+    <div class="barra">
+      <div class="marca">☀ Tienda <span>Sol</span></div>
+      <span id="usuario-actual" aria-label="Usuario actual"></span>
+      <nav aria-label="Principal">
+        <a href="/catalogo.html" aria-current="page">Catálogo</a>
+        <a href="/venta.html">Venta (<span id="contador-carrito">0</span>)</a>
+        <a href="/reporte.html">Reporte</a>
+        <button id="boton-salir" type="button">Salir</button>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <h1>Catálogo</h1>
+    <form id="form-buscar" role="search" class="tarjeta">
+      <label for="buscar">Buscar producto</label>
+      <input id="buscar" type="search" placeholder="Ej.: Inca Kola, P004…" autocomplete="off">
+    </form>
+    <p id="resumen" role="status" class="vacio"></p>
+    <ul id="productos" class="productos" aria-label="Productos"></ul>
+  </main>
+  <script type="module">
+    import { api, soles, exigirSesion, iniciarCabecera, leerCarrito, guardarCarrito, redondear } from '/js/comun.js';
+    if (exigirSesion()) {
+      iniciarCabecera();
+      const lista = document.getElementById('productos');
+      const resumen = document.getElementById('resumen');
+      const buscar = document.getElementById('buscar');
+      let productos = [];
+
+      function agregar(p) {
+        const carrito = leerCarrito();
+        const item = carrito.find((i) => i.codigo === p.codigo);
+        if (item) item.cantidad += 1;
+        else carrito.push({ codigo: p.codigo, nombre: p.nombre, precioLista: p.precio, promo: p.promo, precio: redondear(p.precio * (1 - p.promo / 100)), cantidad: 1, stock: p.stock });
+        guardarCarrito(carrito);
+        resumen.textContent = `Agregado: ${p.nombre}`;
+      }
+
+      function pintar() {
+        lista.replaceChildren();
+        for (const p of productos) {
+          const li = document.createElement('li');
+          li.setAttribute('aria-label', p.nombre);
+          const agotado = p.stock <= 0;
+          const etiqueta = p.vencido ? '<span class="etiqueta mala">Vencido</span>'
+            : agotado ? '<span class="etiqueta mala">Agotado</span>'
+            : p.promo ? `<span class="etiqueta">Promo -${p.promo}%</span>` : '';
+          li.innerHTML = `
+            <span class="cat">${p.codigo} · ${p.categoria}</span>
+            <h2>${p.nombre}</h2>
+            <span class="precio">${p.promo ? `<del>${soles(p.precio)}</del>` : ''}${soles(p.precioFinal)}</span>
+            <span class="cat">Stock: ${p.stock}</span>
+            ${etiqueta}`;
+          const boton = document.createElement('button');
+          boton.className = 'secundario';
+          boton.type = 'button';
+          boton.textContent = 'Agregar';
+          boton.setAttribute('aria-label', `Agregar ${p.nombre}`);
+          boton.disabled = agotado || p.vencido;
+          boton.addEventListener('click', () => agregar(p));
+          li.append(boton);
+          lista.append(li);
+        }
+        resumen.textContent = productos.length ? `${productos.length} productos` : 'No se encontraron productos';
+      }
+
+      async function cargar(q = '') {
+        const r = await api('/api/productos?q=' + encodeURIComponent(q));
+        if (r.ok) { productos = r.cuerpo; pintar(); }
+        else resumen.textContent = r.cuerpo.error ?? 'No se pudo cargar el catálogo';
+      }
+
+      let espera;
+      buscar.addEventListener('input', () => { clearTimeout(espera); espera = setTimeout(() => cargar(buscar.value), 200); });
+      document.getElementById('form-buscar').addEventListener('submit', (e) => { e.preventDefault(); cargar(buscar.value); });
+      cargar();
+    }
+  </script>
+</body>
+</html>
