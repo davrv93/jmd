@@ -34,7 +34,7 @@ export const PREMIOS = {
   qa60: { color: "#f6e7a9", nombre: "Taller QA 60 %", corto: "QA 60", pct: 60, curso: "taller QA", cadena: "qa", precio: 100 },
 };
 export const ORDEN = ["req100", "req80", "req70", "req60", "qa80", "qa60"];
-export const pct = (id) => PREMIOS[id].pct;
+export const pct = (id) => PR(id).pct;
 export const GRUPOS = { req: GRUPOS_REQ, qa: "Taller QA · Grupo 2: domingo 6 de diciembre, 2:00 a 6:00 p. m. (Lima)." };
 export const ENLACE_QA = "https://jmd-learn.online/inscripcion/qa-ia-g2/";
 export const ENLACES_REQ = [1, 2, 3].map((n) => `https://jmd-learn.online/inscripcion/requerimientos-${n}/`);
@@ -47,19 +47,22 @@ export function franjaDe(i) { return LETRA[PATRON[i]]; }
 export const FRANJAS = Array.from({ length: 50 }, (_, i) => franjaDe(i));
 
 // Gajos de la ruleta de premios (50 casillas).
-export const gajosPremios = () => FRANJAS.map((f) => ({ texto: PREMIOS[f].corto, color: PREMIOS[f].color }));
+// Premios de versiones anteriores de esta misma instancia (60/70/80 del taller QA): no deben romper la página.
+const VIEJOS = { "60": "qa60", "70": "qa60", "80": "qa80", "100": "req100" };
+export const PR = (id) => PREMIOS[id] || PREMIOS[VIEJOS[id]] || { color: "#ddd", nombre: String(id), corto: String(id), pct: 0, curso: "", cadena: "", precio: 0 };
+export const gajosPremios = () => FRANJAS.map((f) => ({ texto: PR(f).corto, color: PR(f).color }));
 
 // Con tope: si la banda ya se agotó, baja a la siguiente de su cadena.
 export function conTope(banda, entregados, topes = { req100: 1, req80: 12, qa80: 4 }) {
-  const cadena = PREMIOS[banda].cadena;
+  const cadena = PR(banda).cadena;
   for (let j = ORDEN.indexOf(banda); j < ORDEN.length; j++) {
     const b = ORDEN[j];
-    if (PREMIOS[b].cadena === cadena && (!topes[b] || (entregados[b] || 0) < topes[b])) return b;
+    if (PR(b).cadena === cadena && (!topes[b] || (entregados[b] || 0) < topes[b])) return b;
   }
   return banda;
 }
 
-export const precioCon = (id) => PREMIOS[id].precio * (100 - pct(id)) / 100;
+export const precioCon = (id) => PR(id).precio * (100 - pct(id)) / 100;
 
 // ---------- comprobación ----------
 async function sha256Bytes(texto) {
@@ -105,7 +108,7 @@ export function tablero(el, o) {
     if (o.mio === n) cl.push("mio");
     if (o.elegido === n) cl.push("elegido");
     const libre = o.alElegir && !p;
-    html += `<button type="button" class="${cl.join(" ")}" data-n="${n}" ${libre ? "" : "tabindex=-1"} aria-label="Número ${n}${p ? ` (${p} %)` : ""}">${dos(n)}${p ? `<small>${PREMIOS[p].corto}</small>` : ""}</button>`;
+    html += `<button type="button" class="${cl.join(" ")}" data-n="${n}" ${libre ? "" : "tabindex=-1"} aria-label="Número ${n}${p ? ` (${p} %)` : ""}">${dos(n)}${p ? `<small>${PR(p).corto}</small>` : ""}</button>`;
   }
   el.innerHTML = html;
   if (o.alElegir) {

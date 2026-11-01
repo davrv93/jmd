@@ -110,7 +110,7 @@
 </main>
 
 <script type="module">
-import { api, $, esc, dos, PREMIOS, pct, GRUPOS, ENLACES_REQ, ENLACE_QA, gajosPremios, precioCon, tokenLeer, tokenGuardar, comprobar, tablero, mapaPremios } from "./static/comun.js";
+import { api, $, esc, dos, PREMIOS, PR, pct, GRUPOS, ENLACES_REQ, ENLACE_QA, gajosPremios, precioCon, tokenLeer, tokenGuardar, comprobar, tablero, mapaPremios } from "./static/comun.js";
 import { fondo } from "./static/fondo.js";
 import { ruleta } from "./static/ruleta.js";
 
@@ -126,7 +126,7 @@ function pintarFase() {
 }
 
 function textoPremio(premio) {
-  const p = PREMIOS[premio];
+  const p = PR(premio);
   const enlaces = p.cadena === "req"
     ? "<br>" + ENLACES_REQ.map((u, i) => `<a href="${u}" target="_blank" rel="noopener">Inscribirme al grupo ${i + 1}</a>`).join(" · ")
     : `<br><a href="${ENLACE_QA}" target="_blank" rel="noopener">Inscribirme al Grupo 2 del taller QA</a>`;
@@ -137,7 +137,7 @@ function pintarCanje(yo) {
   $("#mi-canje").hidden = false;
   $("#mi-nombre").textContent = yo.nombre;
   $("#mi-numero").textContent = dos(yo.numero);
-  $("#btn-wa").href = "https://wa.me/51986149476?text=" + encodeURIComponent(`Hola, soy ${yo.nombre}. Gané ${pct(yo.premio)} % de descuento en ${PREMIOS[yo.premio].curso === "taller QA" ? "el taller de QA" : PREMIOS[yo.premio].curso} con el número ${dos(yo.numero)} del Sorteo QA. Quiero canjear mi cupón.`);
+  $("#btn-wa").href = "https://wa.me/51986149476?text=" + encodeURIComponent(`Hola, soy ${yo.nombre}. Gané ${pct(yo.premio)} % de descuento en ${PR(yo.premio).curso === "taller QA" ? "el taller de QA" : PR(yo.premio).curso} con el número ${dos(yo.numero)} del Sorteo QA. Quiero canjear mi cupón.`);
   $("#regalo-num").textContent = dos(yo.numero);
   $("#regalo-nombre").textContent = yo.nombre;
 }
@@ -148,7 +148,7 @@ async function pintarMio(animar) {
   if (!yo) return;
   if (mostrado === yo.numero) return;
   mostrado = yo.numero;
-  const p = PREMIOS[yo.premio];
+  const p = PR(yo.premio);
   $("#mi-titular").style.color = "";
   if (animar) {
     rueda.dibujar(gajosPremios());
@@ -161,9 +161,9 @@ async function pintarMio(animar) {
   } else {
     rueda.dibujar(gajosPremios(), yo.casilla);
   }
-  $("#mi-titular").innerHTML = `¡Ganaste <span class="oro">${pct(yo.premio)} %</span> en ${PREMIOS[yo.premio].curso === "taller QA" ? "el taller QA" : "Ingeniería de Requerimientos"}!`;
+  $("#mi-titular").innerHTML = `¡Ganaste <span class="oro">${pct(yo.premio)} %</span> en ${PR(yo.premio).curso === "taller QA" ? "el taller QA" : "Ingeniería de Requerimientos"}!`;
   let extra = "";
-  if (yo.banda !== yo.premio) extra = ` La ruleta cayó en «${PREMIOS[yo.banda].nombre}» (${pct(yo.banda)} %), pero esa banda ya se agotó: tu cupón es el siguiente.`;
+  if (yo.banda !== yo.premio) extra = ` La ruleta cayó en «${PR(yo.banda).nombre}» (${pct(yo.banda)} %), pero esa banda ya se agotó: tu cupón es el siguiente.`;
   $("#mi-detalle").innerHTML = textoPremio(yo.premio) + extra;
   pintarCanje(yo);
 }
@@ -190,7 +190,7 @@ function pintarGanadores() {
   const g = estado.resultado;
   $("#ganadores-panel").hidden = !g.length;
   $("#gan-total").textContent = g.length ? `· ${g.length}` : "";
-  $("#ganadores").innerHTML = g.slice().reverse().map((x) => `<li style="--c:${PREMIOS[x.premio].color}"><span class="n">${dos(x.numero)}</span><span>${esc(x.nombre)}</span><span class="p">${PREMIOS[x.premio].corto}</span></li>`).join("");
+  $("#ganadores").innerHTML = g.slice().reverse().map((x) => `<li style="--c:${PR(x.premio).color}"><span class="n">${dos(x.numero)}</span><span>${esc(x.nombre)}</span><span class="p">${PR(x.premio).corto}</span></li>`).join("");
 }
 
 async function cargar(animar = false) {
