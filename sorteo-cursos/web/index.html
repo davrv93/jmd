@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ruleta de Cursos · JMD Learning</title>
+<meta name="description" content="Gira la ruleta y gana un cupón de 30, 40 o 50 % o el pack Lleva 6 cursos por S/ 100. Solo hoy.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --bg:#140f2e; --bg-2:#1d1744; --panel:#241c55; --line:#3b3178;
+  --fg:#f6f1ff; --muted:#b9aee0;
+  --gold:#f5c542; --gold-2:#ffdf7a; --coral:#ff6b6b; --mint:#4ee6b4; --sky:#6cb6ff; --violet:#b58cff;
+  --display:'Unbounded',system-ui,sans-serif; --body:'Manrope',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 50% -10%,#2b2168 0%,var(--bg) 60%) fixed;color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px;min-height:100vh}
+.wrap{max-width:720px;margin:0 auto;display:grid;gap:28px}
+header{text-align:center;display:grid;gap:8px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+h1{font-family:var(--display);font-weight:900;font-size:clamp(26px,6vw,40px);line-height:1.05;margin:0;text-wrap:balance}
+header p{margin:0;color:var(--muted);max-width:52ch;justify-self:center}
+.vence{display:inline-flex;gap:8px;align-items:center;justify-self:center;background:rgba(245,197,66,.12);border:1px solid rgba(245,197,66,.35);color:var(--gold-2);padding:6px 12px;border-radius:999px;font-size:13px;font-weight:600}
+.stage{position:relative;width:min(88vw,420px);aspect-ratio:1;max-width:100%;margin:0 auto}
+.pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:34px solid var(--gold);filter:drop-shadow(0 4px 6px rgba(0,0,0,.5));z-index:3}
+.pointer::after{content:"";position:absolute;left:-7px;top:-40px;width:14px;height:14px;border-radius:50%;background:var(--gold-2)}
+canvas.wheel{width:100%;height:100%;border-radius:50%;display:block;transition:transform 5.2s cubic-bezier(.12,.74,.08,1);box-shadow:0 0 0 10px #2d2466,0 0 0 13px var(--gold),0 24px 60px rgba(0,0,0,.55)}
+.hub{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff2b8,var(--gold) 55%,#b8891a);display:grid;place-items:center;font-family:var(--display);font-weight:900;font-size:13px;color:#2a1d00;box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:2}
+.bulbs{position:absolute;inset:-22px;border-radius:50%;pointer-events:none;z-index:1}
+.bulbs i{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--gold-2);box-shadow:0 0 10px var(--gold-2);margin:-5px}
+.spinning .bulbs i:nth-child(odd){animation:blink .35s steps(2) infinite}
+.spinning .bulbs i:nth-child(even){animation:blink .35s steps(2) infinite reverse}
+@keyframes blink{to{opacity:.25}}
+@media (prefers-reduced-motion:reduce){canvas.wheel{transition-duration:.6s}.bulbs i{animation:none!important}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}
+form{display:grid;gap:14px}
+.row{display:grid;gap:14px;grid-template-columns:1fr 1fr}
+@media (max-width:520px){.row{grid-template-columns:1fr}}
+label{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+input{font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg-2);color:var(--fg);min-width:0;width:100%}
+input:focus{outline:2px solid var(--gold);outline-offset:1px;border-color:var(--gold)}
+.btn{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.02em;padding:16px 20px;border-radius:14px;border:0;cursor:pointer;background:linear-gradient(180deg,var(--gold-2),var(--gold));color:#2a1d00;box-shadow:0 8px 0 #a37a12,0 14px 30px rgba(0,0,0,.4);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(5px);box-shadow:0 3px 0 #a37a12}
+.btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none;transform:none}
+.btn:focus-visible{outline:3px solid #fff}
+.ghost{font:inherit;font-weight:700;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
+.ghost:hover{border-color:var(--gold)}
+.err{color:var(--coral);font-size:14px;font-weight:600;min-height:1.4em;margin:0}
+.fine{color:var(--muted);font-size:13px;margin:0}
+.result{text-align:center;display:grid;gap:14px;border-color:var(--gold);background:linear-gradient(180deg,#2c2366,var(--panel))}
+.result .big{font-family:var(--display);font-weight:900;font-size:clamp(28px,7vw,46px);line-height:1;color:var(--gold-2);text-wrap:balance}
+.result .who{font-size:15px;color:var(--muted)}
+.code{font-family:var(--mono);font-weight:700;font-size:clamp(18px,5vw,26px);letter-spacing:.08em;background:var(--bg);border:1px dashed var(--gold);border-radius:12px;padding:12px 16px;display:inline-block;user-select:all}
+.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.wa{display:inline-flex;align-items:center;gap:8px;font:inherit;font-weight:800;padding:12px 18px;border-radius:12px;background:#25d366;color:#06301f;text-decoration:none}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--mint);color:#06301f;font-weight:700;padding:10px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:20}
+h2{font-family:var(--display);font-size:18px;font-weight:700;margin:0 0 4px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 14px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.c{background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:4px;min-width:0;border-left:4px solid var(--c)}
+.c .cat{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--c)}
+.c .n{font-weight:700;font-size:14.5px;line-height:1.25}
+.c .d{font-size:12.5px;color:var(--muted)}
+.c .p{font-family:var(--mono);font-size:13px;font-weight:700;margin-top:2px;display:flex;gap:8px;align-items:baseline}
+.c .p s{color:var(--muted);font-weight:500}
+.prizes{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.pz{border-radius:12px;padding:10px 12px;font-weight:700;text-align:center;background:var(--bg-2);border:1px solid var(--line)}
+.pz b{display:block;font-family:var(--display);font-size:20px;color:var(--c)}
+.pz span{font-size:12px;color:var(--muted);font-weight:500}
+.contador{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center}
+footer{text-align:center;color:var(--muted);font-size:12.5px}
+footer a{color:var(--muted)}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:15}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<canvas id="confetti" hidden></canvas>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">JMD Learning · Sorteo · Cursos con IA · nov–dic</div>
+    <h1>Gira y gana tu descuento</h1>
+    <p>Todos ganan. Escribe tu nombre y celular, gira la ruleta y llévate un cupón de 30 %, 40 % o 50 %, o el pack <strong>Lleva 6 cursos por S/ 100</strong>.</p>
+    <div class="vence">⏱ Cupón válido solo hoy, <span id="hoy"></span>, hasta las 11:59 p.m.</div>
+  </header>
+
+  <div class="stage" id="stage">
+    <div class="bulbs" id="bulbs"></div>
+    <div class="pointer"></div>
+    <canvas class="wheel" id="wheel" width="840" height="840" aria-label="Ruleta de premios"></canvas>
+    <div class="hub">GIRA</div>
+  </div>
+  <div class="contador" id="contador"></div>
+
+  <div class="card" id="formCard">
+    <form id="f" novalidate>
+      <div class="row">
+        <label>Nombre y apellido
+          <input id="nombre" name="nombre" autocomplete="name" placeholder="Ana Quispe" maxlength="40" required>
+        </label>
+        <label>Celular (9 dígitos)
+          <input id="celular" name="celular" inputmode="numeric" autocomplete="tel" placeholder="987654321" maxlength="15" required>
+        </label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <button class="btn" type="submit" id="spinBtn">🎰 Girar la ruleta</button>
+      <p class="fine">Un giro por celular. El cupón se canjea enviando tu código por WhatsApp. Usamos tu número solo para validar el cupón.</p>
+    </form>
+  </div>
+
+  <div class="card" id="cerrado" hidden>
+    <h2>El sorteo ya cerró</h2>
+    <p class="sub">Gracias por participar. Si ya giraste, tu cupón sigue en este mismo navegador.</p>
+  </div>
+
+  <div class="card result" id="result" hidden>
+    <div class="eyebrow" id="rEyebrow">¡Ganaste!</div>
+    <div class="big" id="rPrize"></div>
+    <div class="who" id="rWho"></div>
+    <div><span class="code" id="rCode"></span></div>
+    <p class="fine" id="rDesc"></p>
+    <div class="actions">
+      <a class="wa" id="waLink" href="#" target="_blank" rel="noopener">💬 Canjear por WhatsApp</a>
+      <button class="ghost" id="copyBtn" type="button">Copiar mensaje</button>
+      <button class="ghost" id="copyCode" type="button">Copiar código</button>
+    </div>
+    <p class="fine">Envía el mensaje antes de las 11:59 p.m. de hoy. Sin el código no se aplica el descuento.</p>
+  </div>
+
+  <section class="card">
+    <h2>Premios de la ruleta</h2>
+    <p class="sub">Todos los cupones aplican sobre el precio vigente de cualquier curso del catálogo. Un cupón por persona, no acumulable con el combo.</p>
+    <div class="prizes">
+      <div class="pz" style="--c:var(--sky)"><b>30 %</b><span>de descuento</span></div>
+      <div class="pz" style="--c:var(--mint)"><b>40 %</b><span>de descuento</span></div>
+      <div class="pz" style="--c:var(--coral)"><b>50 %</b><span>de descuento</span></div>
+      <div class="pz" style="--c:var(--gold)"><b>6 × S/ 100</b><span>Lleva 6 cursos</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Catálogo de cursos</h2>
+    <p class="sub">Elige el tuyo. Horario de Lima. Precios en soles.</p>
+    <div class="grid" id="catalogo"></div>
+  </section>
+
+  <footer>Sorteo promocional de JMD Learning. Un giro por número de celular. Cupones personales e intransferibles. Huella del sorteo: <span id="huella" class="mono"></span></footer>
+</div>
+
+<script>
+(function(){
+  var BASE = new URL(".", location.href).pathname.replace(/admin\/?$/, "");
+  var WHATSAPP = ""; // número del curso (sin +); si queda vacío, el botón abre WhatsApp sin destinatario
+  var SEG = [ // mismo orden que «patron» en el servidor: ADBACADB
+    {k:'D30', t:'30 %',     c:'#6cb6ff', fg:'#06203d'},
+    {k:'X6',  t:'6 × S/100',c:'#f5c542', fg:'#2a1d00'},
+    {k:'D40', t:'40 %',     c:'#4ee6b4', fg:'#06301f'},
+    {k:'D30', t:'30 %',     c:'#6cb6ff', fg:'#06203d'},
+    {k:'D50', t:'50 %',     c:'#ff6b6b', fg:'#3d0a0a'},
+    {k:'D30', t:'30 %',     c:'#6cb6ff', fg:'#06203d'},
+    {k:'X6',  t:'6 × S/100',c:'#f5c542', fg:'#2a1d00'},
+    {k:'D40', t:'40 %',     c:'#4ee6b4', fg:'#06301f'}
+  ];
+  var PRIZE = {
+    D30:{big:'30 % de descuento', desc:'Aplica sobre cualquier curso del catálogo.'},
+    D40:{big:'40 % de descuento', desc:'Aplica sobre cualquier curso del catálogo.'},
+    D50:{big:'50 % de descuento', desc:'El premio mayor. Aplica sobre cualquier curso del catálogo.'},
+    X6: {big:'Lleva 6 cursos por S/ 100', desc:'Elige 6 cursos del catálogo y paga S/ 100 en total.'}
+  };
+  var CURSOS = [
+    ['Requerimientos','Ingeniería de Requerimientos · módulos con IA','3 grupos · 16, 23 y 30 nov / 3, 10 y 17 dic / 6, 13 y 20 dic','S/ 25','S/ 40','var(--coral)'],
+    ['IA agéntica','DeepSeek Harness','mar 17, 24 nov y 1 dic · 7:30–9:00 p.m.','S/ 25','S/ 40','var(--violet)'],
+    ['Seguridad','Seguridad en codificación con IA','mié 18, 25 nov y 2 dic · 7:30–9:00 p.m.','S/ 25','S/ 40','var(--mint)'],
+    ['IA agéntica','Claude Code PRO','sáb 7, 14, 21 y 28 nov · 7:30–9:30 p.m.','S/ 100','','var(--violet)'],
+    ['IA agéntica','Programación agéntica (vibecoding)','8, 10 y 11 nov · 7:30–9:30 p.m.','S/ 100','','var(--violet)'],
+    ['Datos y backend','Python: de cero a tu API','jue 12, 19 y 26 nov · 7:30–9:30 p.m.','Gratis · cert. S/ 15','','var(--sky)'],
+    ['Datos y backend','Web scraping ético con IA','dom 8 nov · 3:00–6:00 p.m.','S/ 60','','var(--sky)'],
+    ['Diseño','¿Difícil de explicar? · Diseño con IA','dom 15, 22 y 29 nov · mañana 10:00 / tarde 5:30','S/ 100','','var(--coral)'],
+    ['IA agéntica','Bot de WhatsApp avanzado','dom 22 y 29 nov · 9:30–11:00 p.m.','S/ 60','','var(--violet)'],
+    ['QA','Pruebas y QA con IA','dom 6 dic · 2:00–6:00 p.m.','S/ 100','','var(--mint)']
+  ];
+
+  var hoy = new Date();
+  var dias=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'], meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('hoy').textContent = dias[hoy.getDay()]+' '+hoy.getDate()+' de '+meses[hoy.getMonth()];
+
+  var cat = document.getElementById('catalogo');
+  CURSOS.forEach(function(c){
+    var d=document.createElement('div'); d.className='c'; d.style.setProperty('--c',c[5]);
+    d.innerHTML='<div class="cat"></div><div class="n"></div><div class="d"></div><div class="p"></div>';
+    d.children[0].textContent=c[0]; d.children[1].textContent=c[1]; d.children[2].textContent=c[2];
+    d.children[3].textContent=c[3]; if(c[4]){var s=document.createElement('s'); s.textContent=c[4]; d.children[3].appendChild(s);}
+    cat.appendChild(d);
+  });
+
+  var bulbs=document.getElementById('bulbs');
+  for(var i=0;i<24;i++){var b=document.createElement('i');var a=i/24*Math.PI*2;b.style.left='calc(50% + '+(Math.sin(a)*50).toFixed(2)+'%)';b.style.top='calc(50% - '+(Math.cos(a)*50).toFixed(2)+'%)';bulbs.appendChild(b);}
+
+  var cv=document.getElementById('wheel'), ctx=cv.getContext('2d');
+  function draw(){
+    var W=cv.width, R=W/2, n=SEG.length, step=Math.PI*2/n;
+    ctx.clearRect(0,0,W,W);
+    for(var i=0;i<n;i++){
+      var a0=-Math.PI/2 - step/2 + i*step, a1=a0+step;
+      ctx.beginPath(); ctx.moveTo(R,R); ctx.arc(R,R,R,a0,a1); ctx.closePath();
+      ctx.fillStyle=SEG[i].c; ctx.fill();
+      ctx.strokeStyle='rgba(20,15,46,.9)'; ctx.lineWidth=6; ctx.stroke();
+      ctx.save(); ctx.translate(R,R); ctx.rotate(a0+step/2);
+      ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillStyle=SEG[i].fg;
+      ctx.font='900 '+(SEG[i].k==='X6'?36:52)+'px Unbounded, system-ui, sans-serif';
+      ctx.fillText(SEG[i].t, R-56, 0);
+      ctx.font='600 20px Manrope, system-ui, sans-serif';
+      ctx.fillText(SEG[i].k==='X6'?'LLEVA 6':'DSCTO', R-56, SEG[i].k==='X6'?34:42);
+      ctx.restore();
+    }
+  }
+  if(document.fonts&&document.fonts.load){Promise.all([document.fonts.load('900 52px Unbounded'),document.fonts.load('600 20px Manrope')]).then(draw,draw);} draw();
+
+  function norm(s){return (s||'').trim().replace(/\s+/g,' ');}
+  function ls(k,v){try{if(v===undefined)return localStorage.getItem(k)||'';localStorage.setItem(k,v);}catch(e){return '';}}
+  var toastEl=null;
+  function toast(t){if(toastEl)toastEl.remove();toastEl=document.createElement('div');toastEl.className='toast';toastEl.textContent=t;document.body.appendChild(toastEl);setTimeout(function(){toastEl&&toastEl.remove();toastEl=null;},2200);}
+  function api(ruta, cuerpo){
+    return fetch(BASE+ruta, cuerpo===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cuerpo)})
+      .then(function(r){return r.json().catch(function(){return {};}).then(function(d){if(!r.ok)throw new Error(d.error||('Error '+r.status));return d;});});
+  }
+
+  var form=document.getElementById('f'), err=document.getElementById('err'), btn=document.getElementById('spinBtn'), stage=document.getElementById('stage');
+  var rot=0, busy=false, current=null;
+
+  function fmtCel(c){return (c||'').replace(/(\d{3})(\d{3})(\d{3})/,'$1 $2 $3');}
+  function showResult(rec, animate, repetido){
+    document.getElementById('rPrize').textContent=(PRIZE[rec.premio]||{big:rec.premio}).big;
+    document.getElementById('rWho').textContent=rec.nombre+' · '+fmtCel(rec.telefono);
+    document.getElementById('rCode').textContent=rec.codigo;
+    document.getElementById('rDesc').textContent=(PRIZE[rec.premio]||{desc:''}).desc;
+    document.getElementById('rEyebrow').textContent=repetido?'Este celular ya giró · tu premio sigue siendo':'¡Ganaste!';
+    document.getElementById('waLink').href='https://wa.me/'+WHATSAPP+'?text='+encodeURIComponent(msg(rec));
+    var r=document.getElementById('result'); r.hidden=false;
+    document.getElementById('formCard').hidden=true;
+    current=rec;
+    if(animate) confetti();
+    setTimeout(function(){r.scrollIntoView({behavior:'smooth',block:'center'});},150);
+  }
+
+  function contador(n){document.getElementById('contador').textContent=n?(n+(n===1?' persona ya giró':' personas ya giraron')):'';}
+
+  // estado inicial: ¿ya giré desde este navegador? ¿sigue abierto?
+  var token=ls('ruleta-cursos-t');
+  api('api/estado?t='+encodeURIComponent(token)).then(function(e){
+    contador(e.personas);
+    document.getElementById('huella').textContent=(e.compromiso||'').slice(0,16)+'…';
+    if(e.yo){showResult(e.yo,false,false);return;}
+    if(e.fase!=='abierto'){document.getElementById('formCard').hidden=true;document.getElementById('cerrado').hidden=false;}
+  }).catch(function(){});
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault(); if(busy)return;
+    var nombre=norm(document.getElementById('nombre').value), cel=document.getElementById('celular').value.replace(/\D/g,'');
+    if(cel.length===11&&cel.indexOf('51')===0)cel=cel.slice(2);
+    err.textContent='';
+    if(nombre.length<3||nombre.indexOf(' ')<0){err.textContent='Escribe tu nombre y apellido.';return;}
+    if(!/^9\d{8}$/.test(cel)){err.textContent='El celular debe tener 9 dígitos y empezar con 9.';return;}
+    busy=true; btn.disabled=true; btn.textContent='Comprobando…';
+    api('api/girar',{nombre:nombre,telefono:cel,t:token}).then(function(d){
+      if(d.t){token=d.t;ls('ruleta-cursos-t',d.t);}
+      if(d.repetido){busy=false;btn.disabled=false;btn.textContent='🎰 Girar la ruleta';showResult(d,false,true);return;}
+      spinTo(d.casilla, function(){
+        busy=false; btn.disabled=false; btn.textContent='🎰 Girar la ruleta';
+        showResult(d,true,false);
+        api('api/estado?t='+encodeURIComponent(token)).then(function(e){contador(e.personas);}).catch(function(){});
+      });
+    }).catch(function(ex){
+      busy=false; btn.disabled=false; btn.textContent='🎰 Girar la ruleta';
+      err.textContent=ex.message||'No se pudo girar. Intenta de nuevo.';
+    });
+  });
+
+  function spinTo(idx, done){
+    var n=SEG.length, step=360/n;
+    var jitter=(Math.random()-0.5)*step*0.7;
+    var target = -(idx*step) + jitter;
+    var turns = 6 + Math.floor(Math.random()*3);
+    var base = Math.ceil(rot/360)*360;
+    rot = base + turns*360 + ((target%360)+360)%360;
+    stage.classList.add('spinning'); btn.textContent='Girando…';
+    cv.style.transform='rotate('+rot+'deg)';
+    var fired=false; function end(){if(fired)return;fired=true;stage.classList.remove('spinning');done();}
+    cv.addEventListener('transitionend', end, {once:true});
+    setTimeout(end, 5600);
+  }
+
+  function msg(rec){return '¡Hola! Giré la Ruleta de Cursos de JMD Learning y gané: '+(PRIZE[rec.premio]||{big:rec.premio}).big+'.\nMi código: '+rec.codigo+'\nNombre: '+rec.nombre+'\nCelular: '+rec.telefono+'\nQuiero canjearlo hoy antes de las 11:59 p.m. 🙌';}
+  function copy(text, label){
+    var ok=function(){toast(label+' copiado ✓');};
+    var fallback=function(){var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok();}catch(e){toast('Selecciona el texto y cópialo');}ta.remove();};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(ok,fallback);}else fallback();
+  }
+  document.getElementById('copyBtn').addEventListener('click',function(){if(current)copy(msg(current),'Mensaje');});
+  document.getElementById('copyCode').addEventListener('click',function(){if(current)copy(current.codigo,'Código');});
+
+  function confetti(){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    var c=document.getElementById('confetti'), x=c.getContext('2d'); c.hidden=false;
+    c.width=innerWidth*devicePixelRatio; c.height=innerHeight*devicePixelRatio; x.scale(devicePixelRatio,devicePixelRatio);
+    var cols=['#f5c542','#ff6b6b','#4ee6b4','#6cb6ff','#b58cff','#ffffff'], P=[];
+    for(var i=0;i<160;i++)P.push({x:innerWidth/2+(Math.random()-.5)*200,y:innerHeight*0.35,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,r:Math.random()*6+3,c:cols[i%cols.length],a:Math.random()*6,va:(Math.random()-.5)*.3});
+    var t0=performance.now();
+    (function frame(t){
+      x.clearRect(0,0,innerWidth,innerHeight);
+      P.forEach(function(p){p.vy+=.35;p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.a+=p.va;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6);x.restore();});
+      if(t-t0<2800)requestAnimationFrame(frame);else{x.clearRect(0,0,innerWidth,innerHeight);c.hidden=true;}
+    })(t0);
+  }
+})();
+</script>
+</body>
+</html>
