@@ -1,7 +1,8 @@
 // Servicio render: arma el video de cada alumno con HyperFrames + p5.js (plantilla/) sin GPU.
 // Una cola FIFO, un render a la vez (RENDER_PARALELO), para no quitarle CPU al LMS ni a las aulas.
 //
-//   POST /render            {frase1, frase2, marca, contacto, color, cielo, acento, efectos, narracion, voz} → 202 {id, estado, posicion}
+//   POST /render            {frase1, frase2, marca, contacto, color, forma, cielo, acento, efectos, narracion, voz} → 202 {id, estado, posicion}
+//                           forma: margarita | cosmos | girasol | lirio | anemona (la forma de la flor; margarita si falta)
 //   GET  /render/{id}       → {id, estado: en_cola|renderizando|listo|error, posicion, segundos, error}
 //   GET  /render/{id}/mp4   → el video (admite Range para que <video> pueda adelantar)
 //   GET  /salud             → {ok, en_cola, renderizando}
@@ -34,6 +35,7 @@ const SEG_POR_VIDEO = 40; // estimación para la espera que se muestra en la esc
 const COLORES = { blanca: "#f8f8f2", rosada: "#f7b8cf", amarilla: "#ffd85c", lila: "#c9b3f2", coral: "#ff9d7a", celeste: "#a9d8f5" };
 const ACENTOS = { verde: "#7CF0A8", amarillo: "#FFE27A", rosa: "#FFB3D1", celeste: "#9FDCFF", blanco: "#FFFFFF" };
 const CIELOS = ["dorado", "rosa", "celeste", "noche"];
+const FORMAS = ["margarita", "cosmos", "girasol", "lirio", "anemona"];
 const EFECTOS = ["lluvia", "polvo", "rayos", "polen", "grano"];
 const GEMINI_KEY = (process.env.GEMINI_API_KEY || "").trim();
 const TTS_MODELOS = (process.env.RENDER_TTS_MODELOS || "gemini-3.8-flash-tts,gemini-3.8-flash-lite-tts,gemini-2.5-flash-preview-tts").split(",").map((m) => m.trim()).filter(Boolean);
@@ -205,6 +207,7 @@ const servidor = http.createServer(async (req, res) => {
       marca: limpio(d.marca, 28) || "Tu negocio",
       contacto: limpio(d.contacto, 40),
       flor_color: COLORES[d.color] || COLORES.blanca,
+      flor_forma: FORMAS.includes(d.forma) ? d.forma : "margarita",
       acento: ACENTOS[d.acento] || ACENTOS.verde,
       cielo_final: CIELOS.includes(d.cielo) ? d.cielo : "dorado",
     };

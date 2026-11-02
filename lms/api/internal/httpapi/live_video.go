@@ -16,7 +16,7 @@ import (
 // servicio render de la clase (RENDER_URL, por defecto http://render:8000; ver lms/render) con el token de
 // la clase (LMS_AULA_TOKEN) y X-Alumno. El servicio guarda la cola, el tope diario y qué video es de quién.
 //
-//   POST /api/v1/live/{lesson}/video            {frase1, frase2, marca, contacto, color, cielo, acento, efectos, narracion, voz} → 202 {id, estado, posicion, espera_s}
+//   POST /api/v1/live/{lesson}/video            {frase1, frase2, marca, contacto, color, forma, cielo, acento, efectos, narracion, voz} → 202 {id, estado, posicion, espera_s}
 //   GET  /api/v1/live/{lesson}/video/{id}       → el estado
 //   GET  /api/v1/live/{lesson}/video/{id}/mp4   → el MP4 (con Range, para que <video> pueda adelantar)
 //   POST /api/v1/live/{lesson}/video/ideas      {idea, marca} → tres variaciones del guion (Gemini; si falla, fijas)
@@ -68,6 +68,7 @@ func (s *Server) liveVideoCrear(w http.ResponseWriter, r *http.Request, p *Princ
 		Marca     string          `json:"marca"`
 		Contacto  string          `json:"contacto"`
 		Color     string          `json:"color"`
+		Forma     string          `json:"forma"`
 		Cielo     string          `json:"cielo"`
 		Acento    string          `json:"acento"`
 		Efectos   map[string]bool `json:"efectos"`

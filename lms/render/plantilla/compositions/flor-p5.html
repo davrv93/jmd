@@ -55,15 +55,25 @@
     function proyectar(p) { const d = sub(p, cPos), z = punto(d, cF); return [W / 2 + (punto(d, cR) / z) * F, H / 2 - (punto(d, cU) / z) * F, z]; }
 
     // ---------- flor: mismos parámetros que la versión Three.js ----------
-    const L = 0.64, AN = 0.42, R0 = 0.165, NU = 12, NV = 26, NPET = 8, RC = 0.17, NFL = 520;
+    // Formas de la flor: los mismos parámetros, distinta flor. La misma tabla vive en la escena LIVE
+    // «01-tu-video» (vista previa con p5): si cambias una, cambia la otra. «margarita» = la flor original.
+    const FORMAS = {
+      margarita: { npet: 8, L: 0.64, AN: 0.42, R0: 0.165, copa: 0.14, rc: 0.17, punta: 0 },
+      cosmos:    { npet: 8, L: 0.6,  AN: 0.56, R0: 0.15,  copa: 0.05, rc: 0.15, punta: 0 },
+      girasol:   { npet: 20, L: 0.56, AN: 0.2,  R0: 0.3,   copa: 0.1,  rc: 0.32, punta: 1 },
+      lirio:     { npet: 6, L: 0.82, AN: 0.34, R0: 0.12,  copa: 0.24, rc: 0.1,  punta: 1 },
+      anemona:   { npet: 12, L: 0.46, AN: 0.4,  R0: 0.14,  copa: 0.1,  rc: 0.2,  punta: 0 },
+    };
+    const FORMA = FORMAS[VAR.flor_forma] || FORMAS.margarita;
+    const L = FORMA.L, AN = FORMA.AN, R0 = FORMA.R0, NU = 12, NV = 26, NPET = FORMA.npet, RC = FORMA.rc, NFL = Math.round(520 * (RC / 0.17) * (RC / 0.17));
     const R = mulberry32(77), jit = [];
     for (let k = 0; k < NPET; k++) jit.push([(R() - 0.5) * 0.12, 0.9 + R() * 0.2, R() * 6.28, (k % 2) * 0.012]);
     const medio = (v) => 0.5 * (0.15 + 0.85 * Math.pow(Math.sin((Math.PI / 2) * Math.min(1, v / 0.68)), 0.72));
-    const tope = (u) => { const x = u + 0.5; return 1 - 0.07 * Math.pow(1 - Math.sin(Math.PI * x), 1.6) - 0.05 * (Math.exp(-Math.pow((x - 1 / 3) / 0.03, 2)) + Math.exp(-Math.pow((x - 2 / 3) / 0.03, 2))); };
+    const tope = (u) => { const x = u + 0.5; return (1 - 0.07 * Math.pow(1 - Math.sin(Math.PI * x), 1.6) - 0.05 * (Math.exp(-Math.pow((x - 1 / 3) / 0.03, 2)) + Math.exp(-Math.pow((x - 2 / 3) / 0.03, 2)))) * (1 - FORMA.punta * 0.5 * Math.pow(Math.abs(u * 2), 1.7)); };
     function petaloLocal(k, t, M, G, out) {
       const [dj, sj, fj, zj] = jit[k], a = (k * Math.PI * 2) / NPET + dj, ca = Math.cos(a), sa = Math.sin(a);
       const aleteo = G * 0.32 * Math.sin(t * 21 + fj) * (0.5 + M) + 0.03 * Math.sin(t * 2.1 + fj);
-      const th0 = 0.18 - 0.75 * M + aleteo, ka = -0.32 - 1.25 * M * sj, copa = 0.14 + 0.1 * M;
+      const th0 = 0.18 - 0.75 * M + aleteo, ka = -0.32 - 1.25 * M * sj, copa = FORMA.copa + 0.1 * M;
       for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
         const u = i / NU - 0.5, v = (j / NV) * tope(u), w = u * 2, th = th0 + ka * v;
         let r = (Math.sin(th) - Math.sin(th0)) / ka, z = (Math.cos(th0) - Math.cos(th)) / ka; r *= L; z *= L;
