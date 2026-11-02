@@ -46,6 +46,30 @@ cycle:
     phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten a mano el texto de tu cliente o de tu negocio.
     check: Has visto la clase completa (o la grabación)
+  - id: video
+    title: Tu primer video hecho con código
+    tool: lms
+    phase: experiencia
+    description: "En la escena del LIVE escribe el problema y la solución de tu negocio, elige el color de tu flor y pide el video. El servidor lo dibuja con p5.js y lo graba con HyperFrames, sin GPU."
+    check: Tienes tu MP4 de 9 s y lo subiste a tu estado de WhatsApp
+  - id: repaso
+    title: "¡PUM! Difícil de olvidar: repaso de la sesión 1"
+    tool: lms
+    phase: reflexion
+    description: "Diez rondas compartidas para 20 alumnos: responde sobre el pedido en seis partes, cámara y animación; después golpea hongos o revienta globos. El concepto vale 100 puntos y la destreza hasta 40."
+    check: "Terminas el repaso y puedes explicar una idea que aplicarás en el pedido de tu landing"
+  - id: sprites
+    title: Tu mascota en sprites, sin dibujar frame por frame
+    tool: jmd
+    phase: experimentacion
+    description: "Una pose canónica de tu mascota, ocho ediciones sobre esa misma imagen y un atlas recortado con el hocico y la base como ancla. En el LIVE el recorte y el ancla se calculan en vivo, sin GPU."
+    check: El atlas se reproduce a 12 fps en tu landing y el cuerpo no tiembla
+  - id: musica
+    title: "Música con Flash Lite: intención, partitura y sonido"
+    tool: jmd
+    phase: experiencia
+    description: "Describe la música de tu pieza, pide a Gemini Flash Lite una partitura de datos y escúchala con el sintetizador del navegador. Ajusta el pulso y descarga el WAV, sin GPU."
+    check: "Tu partitura suena, puedes explicar qué cambió al ajustar los BPM y tienes tu WAV"
   - id: contenido
     title: Del escrito del cliente al contenido
     tool: jmd
