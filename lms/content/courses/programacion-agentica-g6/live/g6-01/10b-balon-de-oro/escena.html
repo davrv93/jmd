@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Balón de Oro</title>
+<!--
+  Break a mitad de la clase 3 (después de mejorar el robot, antes de FLUX). Cartel en estilo cómic punk (trama de puntos, contorno negro,
+  rojo, azul y amarillo) con el juego Pogo IA embebido del mismo origen (/pogo-ia/): robots con resorte
+  que pintan un tablero en 3D, con poderes (cobrar, cohete, turbo, triple, balde) que a veces traen preguntas de IA, WhatsApp, modelos, tokens, audio y FLUX.
+  El nombre del alumno sale de /api/v1/me y se le sugiere al juego con ?n=; el alumno confirma.
+  Pensada para modo libre: cada alumno juega a su ritmo. El instructor puede proyectar el ranking.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+:root { --tinta: #111; --rojo: #2b6b3d; --azul: #1d4fd8; --amarillo: #D9A441; --papel: #f3f7ec; }
+body { background:
+    radial-gradient(var(--rojo) 18%, transparent 21%) 0 0 / 14px 14px,
+    radial-gradient(var(--rojo) 18%, transparent 21%) 7px 7px / 14px 14px,
+    var(--papel); color: var(--tinta); }
+.tp { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(300px, 34%) 1fr; gap: clamp(10px, 1.6vw, 28px); padding: clamp(10px, 1.6vw, 28px); }
+.tp-cartel { position: relative; display: flex; flex-direction: column; gap: clamp(8px, 1.2vh, 18px); min-height: 0;
+  background: var(--azul); border: 5px solid var(--tinta); box-shadow: 10px 10px 0 var(--tinta); padding: clamp(14px, 2vw, 32px);
+  clip-path: polygon(0 0, 100% 1.5%, 98.5% 100%, 1.5% 98%); color: #fff; overflow: hidden; }
+.tp-cartel::before { content: ""; position: absolute; inset: 0; background: radial-gradient(rgba(255,255,255,.18) 20%, transparent 23%) 0 0 / 10px 10px; pointer-events: none; }
+.tp-grupo { position: relative; align-self: flex-start; font: 800 clamp(11px, .9vw, 17px)/1 var(--mono); letter-spacing: .14em; background: var(--amarillo); color: var(--tinta);
+  border: 3px solid var(--tinta); padding: .45em .8em; transform: rotate(-2deg); }
+.tp-titulo { position: relative; margin: 0; font: italic 900 clamp(46px, 6.4vw, 128px)/.86 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: -.04em;
+  color: #fff; -webkit-text-stroke: 4px var(--tinta); paint-order: stroke fill; text-shadow: 6px 6px 0 var(--rojo), 11px 11px 0 var(--tinta); text-transform: uppercase; }
+.tp-titulo span { display: block; color: var(--amarillo); }
+.tp-grito { position: relative; display: flex; flex-wrap: wrap; gap: .3em; font: italic 900 clamp(20px, 2.3vw, 46px)/1 system-ui, sans-serif; text-transform: uppercase; }
+.tp-grito b { background: var(--amarillo); color: var(--tinta); border: 4px solid var(--tinta); padding: .12em .35em; box-shadow: 5px 5px 0 var(--tinta); }
+.tp-grito b:nth-child(1) { transform: rotate(-6deg); background: var(--rojo); color: #fff; }
+.tp-grito b:nth-child(2) { transform: rotate(3deg); }
+.tp-grito b:nth-child(3) { transform: rotate(-2deg); background: #fff; }
+.tp-reglas { position: relative; margin: 0; padding: 0; list-style: none; display: grid; gap: .5em; font-size: clamp(14px, 1.15vw, 23px); line-height: 1.25; }
+.tp-reglas li { background: #fff; color: var(--tinta); border: 3px solid var(--tinta); padding: .45em .7em; box-shadow: 4px 4px 0 var(--tinta); }
+.tp-reglas li:nth-child(even) { transform: rotate(.8deg); }
+.tp-reglas b { color: var(--rojo); }
+.tp-pie { position: relative; margin-top: auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tp-btn { font: 800 clamp(13px, 1vw, 19px)/1 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .03em; cursor: pointer;
+  background: var(--amarillo); color: var(--tinta); border: 4px solid var(--tinta); padding: .6em .9em; box-shadow: 5px 5px 0 var(--tinta); }
+.tp-btn[aria-pressed="true"] { background: #fff; }
+.tp-btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--tinta); }
+.tp-url { font: 700 clamp(12px, .95vw, 18px)/1.2 var(--mono); color: #fff; }
+.tp-juego { position: relative; min-height: 0; border: 5px solid var(--tinta); box-shadow: 10px 10px 0 var(--tinta); background: #0b1d3a; overflow: hidden; }
+.tp-juego iframe { display: block; width: 100%; height: 100%; border: 0; }
+.tp-pum { position: absolute; z-index: 2; top: -6px; right: 18px; font: italic 900 clamp(18px, 1.8vw, 34px)/1 system-ui, sans-serif; background: var(--rojo); color: #fff;
+  border: 4px solid var(--tinta); padding: .2em .5em; transform: rotate(5deg); box-shadow: 4px 4px 0 var(--tinta); pointer-events: none; animation: pum 1.4s ease-in-out infinite; }
+@keyframes pum { 50% { transform: rotate(5deg) scale(1.08); } }
+.tp-robot { position: absolute; top: 24%; right: 6%; width: clamp(80px, 8vw, 160px); transform: rotate(-8deg); pointer-events: none; }
+@media (max-width: 900px), (max-aspect-ratio: 1/1) {
+  .tp { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .tp-reglas, .tp-robot, .tp-url { display: none; }
+  .tp-titulo { font-size: clamp(34px, 9vw, 64px); }
+  .tp-titulo span { display: inline; }
+  .tp-cartel { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .tp-pie { margin-top: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .tp-pum { animation: none; } }
+</style>
+</head>
+<body>
+<div class="tp">
+  <section class="tp-cartel" aria-label="Balón de Oro">
+    <span class="tp-grupo">GRUPO 6 · CLASE 1 · BREAK</span>
+    <h1 class="tp-titulo">Balón <span>de Oro</span></h1>
+    <div class="tp-grito" aria-label="Mete gol y entras"><b>¡Patea!</b><b>¡Gol!</b><b>¡Entras!</b></div>
+    <ul class="tp-reglas">
+      <li><b>⚽ Mete gol y entras gratis</b> al curso <b>Claude Code PRO</b>.</li>
+      <li><b>3 tiros</b> por persona. Un gol de cada <b>250</b> tiros: lo decide el servidor, nadie lo puede forzar.</li>
+      <li><b>2 vacantes</b>. Si se agotan, se sigue pateando por el honor.</li>
+      <li>Entra con tu nombre y apellido. Quien ya ganó Claude Code PRO antes <b>no participa</b> esta vez.</li>
+    </ul>
+    <div class="tp-pie">
+      <span class="tp-url">jmd-learn.online/balon-de-oro</span>
+    </div>
+    <svg class="tp-robot" viewBox="0 0 120 150" aria-hidden="true" focusable="false">
+      <g stroke="#111" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+        <circle cx="60" cy="60" r="44" fill="#fff"/>
+        <path d="M60 30 l18 13 -7 21 h-22 l-7 -21 z" fill="#111"/>
+        <path d="M60 30 l0 -14 M78 43 l14 -6 M71 64 l9 12 M49 64 l-9 12 M42 43 l-14 -6" fill="none"/>
+        <path d="M60 16 l-10 -8 M60 16 l10 -8 M92 37 l6 -12 M80 76 l12 6 M40 76 l-12 6 M28 37 l-6 -12" fill="none"/>
+        <rect x="30" y="112" width="60" height="26" rx="6" fill="#D9A441"/>
+      </g>
+      <text x="60" y="131" text-anchor="middle" font-family="system-ui" font-weight="900" font-size="15" fill="#111">GOL</text>
+    </svg>
+  </section>
+  <section class="tp-juego">
+    <span class="tp-pum" aria-hidden="true">¡GOOOL!</span>
+    <iframe id="tp-marco" title="Balón de Oro" src="/balon-de-oro/" allow="autoplay"></iframe>
+  </section>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light (el cartel tiene paleta propia de cómic; solo se respeta para el CSS común). */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

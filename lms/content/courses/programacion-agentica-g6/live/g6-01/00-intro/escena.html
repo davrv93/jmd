@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intro</title>
+<!--
+  INTRO DE LA CLASE — cielo de estrellas, neuronas que se van uniendo y un arpa de fondo.
+  Todo se genera aquí mismo: sin archivos de audio ni recursos externos. El arpa es síntesis
+  Karplus-Strong (cuerda pulsada) con una reverberación generada; cada nota la dispara una
+  neurona al «encenderse», así lo que se oye y lo que se ve son la misma cosa.
+  El sonido necesita un gesto del usuario (política de los navegadores): el botón del centro.
+-->
+<style>
+:root {
+  --bg: #06081c; --fg: #f1efff; --muted: #a9a5cc; --line: rgba(190,185,255,.14);
+  --accent: #a99cff; --accent-2: #c8c0ff; --cian: #86dcff; --oro: #ffd98a;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 400 clamp(14px, 1.15vw, 22px)/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#cielo { z-index: 0; }
+#red { z-index: 1; }
+
+.velo { position: fixed; inset: 0; z-index: 2; display: grid; place-items: center; text-align: center; pointer-events: none; }
+.velo > * { pointer-events: auto; }
+
+.boton { appearance: none; border: 1px solid rgba(255,255,255,.28); background: rgba(10,12,40,.45); color: var(--fg); font: inherit; font-size: 1.05em; letter-spacing: .02em; padding: .8em 1.7em; border-radius: 999px; cursor: pointer; backdrop-filter: blur(8px); display: inline-flex; align-items: center; gap: .6em; transition: background .2s, border-color .2s, transform .2s; }
+.boton:hover { background: rgba(169,156,255,.18); border-color: var(--accent); transform: translateY(-1px); }
+.boton:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.boton svg { width: 1.1em; height: 1.1em; }
+.boton small { display: block; font-size: .72em; color: var(--muted); letter-spacing: 0; }
+.boton.fuera { opacity: 0; pointer-events: none; transition: opacity .6s; }
+
+.titulo { opacity: 0; transform: translateY(14px); transition: opacity 1.6s ease, transform 1.6s ease; max-width: 30ch; }
+.titulo.visible { opacity: 1; transform: none; }
+.titulo h1 { margin: 0; font-size: clamp(2em, 4.2vw, 4.4em); line-height: 1.02; font-weight: 800; letter-spacing: -.03em; text-shadow: 0 0 40px rgba(169,156,255,.35); }
+.titulo h1 em { font-style: normal; background: linear-gradient(100deg, var(--accent-2), var(--cian) 55%, var(--oro)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.titulo p { margin: 1em 0 0; font-size: 1.15em; color: var(--muted); }
+.titulo .grupo { display: inline-block; margin-bottom: 1.4em; font: 600 .78em/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--cian); opacity: .9; }
+.titulo .grupo::before, .titulo .grupo::after { content: "✦"; margin: 0 .8em; color: var(--oro); }
+
+.pie { position: fixed; left: 50%; bottom: 3vh; transform: translateX(-50%); z-index: 3; display: flex; gap: 1.2em; align-items: center; font-size: .8em; color: var(--muted); }
+.pie button { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 1em; padding: .35em .9em; border-radius: 999px; cursor: pointer; }
+.pie button:hover { color: var(--fg); border-color: var(--accent); }
+.pie button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.pie[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .titulo { transition: none; }
+}
+</style>
+</head>
+<body>
+<canvas id="cielo" aria-hidden="true"></canvas>
+<canvas id="red" aria-hidden="true"></canvas>
+
+<div class="velo">
+  <button class="boton" id="empezar" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    <span>Empezar<small>con arpa</small></span>
+  </button>
+  <div class="titulo" id="titulo" aria-live="polite">
+    <span class="grupo">Programación agéntica · Grupo 6</span>
+    <h1>Hoy tu máquina <em>aprende</em> a trabajar con un agente</h1>
+    <p>Clase 1 · Instalar las herramientas y entender qué hay detrás</p>
+  </div>
+</div>
+
+<div class="pie" id="pie" hidden>
+  <span id="estado">arpa sonando</span>
+  <button type="button" id="silencio">silenciar</button>
+</div>
+
+<script>
+(() => {
+  const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const DPR = Math.min(2, devicePixelRatio || 1);
+  const cielo = document.getElementById('cielo'), red = document.getElementById('red');
+  const cx = cielo.getContext('2d'), rx = red.getContext('2d');
+  let W = 0, H = 0;
+
+  // ───────────── Estrellas ─────────────
+  // Tres capas con paralaje muy lento; las grandes titilan. Se dibujan en su propio canvas
+  // y solo se redibujan cuando cambia el tamaño, salvo el titileo (barato: pocas estrellas).
+  let estrellas = [];
+  function sembrar() {
+    estrellas = [];
+    const n = Math.round((W * H) / 2600);
+    for (let i = 0; i < n; i++) {
+      const capa = Math.random() < .75 ? 0 : Math.random() < .8 ? 1 : 2;
+      estrellas.push({
+        x: Math.random() * W, y: Math.random() * H,
+        r: capa === 0 ? .4 + Math.random() * .7 : capa === 1 ? 1 + Math.random() * .8 : 1.6 + Math.random() * 1.1,
+        capa, f: .4 + Math.random() * 1.2, ph: Math.random() * Math.PI * 2,
+        tono: Math.random() < .12 ? 'rgba(255,217,138,' : Math.random() < .2 ? 'rgba(134,220,255,' : 'rgba(241,239,255,',
+      });
+    }
+  }
+  function pintarCielo(t) {
+    cx.clearRect(0, 0, W, H);
+    // Un leve velo de nebulosa que no compite con las neuronas.
+    const g = cx.createRadialGradient(W * .7, H * .25, 0, W * .7, H * .25, Math.max(W, H) * .7);
+    g.addColorStop(0, 'rgba(90,73,214,.16)'); g.addColorStop(.5, 'rgba(40,30,120,.07)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+    const g2 = cx.createRadialGradient(W * .2, H * .8, 0, W * .2, H * .8, Math.max(W, H) * .5);
+    g2.addColorStop(0, 'rgba(134,220,255,.07)'); g2.addColorStop(1, 'rgba(0,0,0,0)');
+    cx.fillStyle = g2; cx.fillRect(0, 0, W, H);
+    for (const e of estrellas) {
+      const dx = reducido ? 0 : (t * .004) * (e.capa + 1);
+      const x = (e.x + dx) % (W + 4);
+      const brillo = e.capa === 0 ? .55 : .75 + .25 * Math.sin(t * .001 * e.f + e.ph);
+      cx.fillStyle = e.tono + brillo.toFixed(3) + ')';
+      cx.beginPath(); cx.arc(x, e.y, e.r, 0, Math.PI * 2); cx.fill();
+      if (e.capa === 2) {
+        cx.strokeStyle = e.tono + (brillo * .35).toFixed(3) + ')'; cx.lineWidth = .8;
+        cx.beginPath(); cx.moveTo(x - e.r * 3, e.y); cx.lineTo(x + e.r * 3, e.y); cx.moveTo(x, e.y - e.r * 3); cx.lineTo(x, e.y + e.r * 3); cx.stroke();
+      }
+    }
+  }
+
+  // ───────────── Neuronas ─────────────
+  // Nodos que derivan despacio. Dos nodos a menos de ALCANCE se van «uniendo»: la sinapsis crece
+  // de 0 a 1 en un par de segundos y se dibuja como una curva fina. Cada tanto una neurona se
+  // enciende: suena una nota de arpa y un pulso de luz recorre sus sinapsis hacia las vecinas,
+  // que a su vez se encienden un poco después, con menos energía. Así la red «piensa» en cadena.
+  const N = () => Math.max(26, Math.min(64, Math.round((W * H) / 42000)));
+  let nodos = [], sinapsis = new Map(), pulsos = [];
+  const ALCANCE = () => Math.min(W, H) * .22;
+  function crearRed() {
+    nodos = [];
+    const n = N();
+    for (let i = 0; i < n; i++) {
+      nodos.push({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - .5) * .05, vy: (Math.random() - .5) * .05,
+        r: 1.6 + Math.random() * 2.2, luz: 0, tono: Math.random() < .25 ? 'cian' : 'violeta', ultimo: 0,
+      });
+    }
+    sinapsis = new Map(); pulsos = [];
+  }
+  const clave = (a, b) => a < b ? a * 1000 + b : b * 1000 + a;
+  function pasoRed(dt, t) {
+    const alc = ALCANCE(), alc2 = alc * alc;
+    for (const p of nodos) {
+      if (!reducido) { p.x += p.vx * dt; p.y += p.vy * dt; }
+      if (p.x < -20) p.x = W + 20; if (p.x > W + 20) p.x = -20;
+      if (p.y < -20) p.y = H + 20; if (p.y > H + 20) p.y = -20;
+      p.luz = Math.max(0, p.luz - dt * .0009);
+    }
+    // Sinapsis: crecen cuando hay cercanía, se apagan cuando se alejan.
+    const vistas = new Set();
+    for (let i = 0; i < nodos.length; i++) for (let j = i + 1; j < nodos.length; j++) {
+      const a = nodos[i], b = nodos[j];
+      const dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
+      if (d2 > alc2 * 1.15) continue;
+      const k = clave(i, j); vistas.add(k);
+      let s = sinapsis.get(k);
+      if (!s) { s = { i, j, f: 0, nace: t }; sinapsis.set(k, s); }
+      s.f = Math.min(1, s.f + dt * (d2 < alc2 ? .00045 : -.0012));
+      if (s.f <= 0) sinapsis.delete(k);
+    }
+    for (const [k, s] of sinapsis) if (!vistas.has(k)) { s.f -= dt * .0012; if (s.f <= 0) sinapsis.delete(k); }
+    // Pulsos que viajan por una sinapsis.
+    for (let i = pulsos.length - 1; i >= 0; i--) {
+      const q = pulsos[i]; q.p += dt / q.dur;
+      if (q.p >= 1) { pulsos.splice(i, 1); encender(q.hacia, q.e * .55, t, true); }
+    }
+  }
+  function vecinos(idx) {
+    const out = [];
+    for (const s of sinapsis.values()) if (s.f > .6) { if (s.i === idx) out.push(s.j); else if (s.j === idx) out.push(s.i); }
+    return out;
+  }
+  function encender(idx, e, t, propagado) {
+    const p = nodos[idx];
+    if (!p || t - p.ultimo < 900) return;
+    p.ultimo = t; p.luz = Math.min(1, p.luz + e);
+    if (e > .3) tocar(p, e);
+    if (e > .35) for (const v of vecinos(idx)) if (Math.random() < .7) pulsos.push({ desde: idx, hacia: v, p: 0, dur: 900 + Math.random() * 600, e });
+    if (!propagado) ondas.push({ x: p.x, y: p.y, t0: t, e });
+  }
+  let ondas = [];
+  function curva(a, b) {
+    // Una curva suave con una leve comba perpendicular: parece fibra, no alambre.
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
+    const k = (((a.r * 7 + b.r * 3) % 7) - 3.5) * (L / 120);
+    return [mx - dy / L * k, my + dx / L * k];
+  }
+  function pintarRed(t) {
+    rx.clearRect(0, 0, W, H);
+    rx.lineCap = 'round';
+    for (const s of sinapsis.values()) {
+      const a = nodos[s.i], b = nodos[s.j];
+      const [qx, qy] = curva(a, b);
+      const viva = Math.max(a.luz, b.luz);
+      rx.strokeStyle = `rgba(169,156,255,${(.07 + .22 * viva) * s.f})`;
+      rx.lineWidth = .7 + 1.2 * viva * s.f;
+      rx.beginPath(); rx.moveTo(a.x, a.y); rx.quadraticCurveTo(qx, qy, b.x, b.y); rx.stroke();
+    }
+    for (const q of pulsos) {
+      const a = nodos[q.desde], b = nodos[q.hacia];
+      const [qx, qy] = curva(a, b);
+      const u = q.p, v = 1 - u;
+      const x = v * v * a.x + 2 * v * u * qx + u * u * b.x, y = v * v * a.y + 2 * v * u * qy + u * u * b.y;
+      const g = rx.createRadialGradient(x, y, 0, x, y, 9);
+      g.addColorStop(0, `rgba(255,217,138,${.9 * q.e})`); g.addColorStop(.4, `rgba(255,217,138,${.35 * q.e})`); g.addColorStop(1, 'rgba(255,217,138,0)');
+      rx.fillStyle = g; rx.beginPath(); rx.arc(x, y, 9, 0, Math.PI * 2); rx.fill();
+    }
+    for (let i = ondas.length - 1; i >= 0; i--) {
+      const o = ondas[i], age = (t - o.t0) / 1600;
+      if (age >= 1) { ondas.splice(i, 1); continue; }
+      rx.strokeStyle = `rgba(200,192,255,${(1 - age) * .35 * o.e})`; rx.lineWidth = 1.2;
+      rx.beginPath(); rx.arc(o.x, o.y, 6 + age * 70, 0, Math.PI * 2); rx.stroke();
+    }
+    for (const p of nodos) {
+      const col = p.tono === 'cian' ? '134,220,255' : '169,156,255';
+      if (p.luz > .02) {
+        const R = p.r * (4 + 10 * p.luz);
+        const g = rx.createRadialGradient(p.x, p.y, 0, p.x, p.y, R);
+        g.addColorStop(0, `rgba(255,255,255,${.9 * p.luz})`); g.addColorStop(.25, `rgba(${col},${.55 * p.luz})`); g.addColorStop(1, `rgba(${col},0)`);
+        rx.fillStyle = g; rx.beginPath(); rx.arc(p.x, p.y, R, 0, Math.PI * 2); rx.fill();
+      }
+      rx.fillStyle = `rgba(${col},${.55 + .45 * p.luz})`;
+      rx.beginPath(); rx.arc(p.x, p.y, p.r + p.luz * 1.5, 0, Math.PI * 2); rx.fill();
+    }
+  }
+
+  // ───────────── Arpa ─────────────
+  // Karplus-Strong: un buffer de ruido del largo de un período que se filtra en bucle. Precalculado por
+  // nota (2.6 s) y disparado por un BufferSource, con una reverberación de convolución hecha con ruido
+  // que decae. Escala: pentatónica de Re mayor en tres octavas, que suena bien en cualquier orden.
+  let actx = null, master = null, mudo = false;
+  const NOTAS = [50, 52, 54, 57, 59, 62, 64, 66, 69, 71, 74, 76, 78, 81]; // D E F# A B · tres octavas (MIDI)
+  const cache = new Map();
+  const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  function cuerda(midi) {
+    if (cache.has(midi)) return cache.get(midi);
+    const sr = actx.sampleRate, dur = 2.8, n = Math.floor(sr * dur), periodo = Math.round(sr / hz(midi));
+    const out = actx.createBuffer(1, n, sr), d = out.getChannelData(0);
+    const anillo = new Float32Array(periodo);
+    for (let i = 0; i < periodo; i++) anillo[i] = Math.random() * 2 - 1;
+    // Suavizar el ruido inicial: menos «clic» de púa, más yema de dedo.
+    for (let k = 0; k < 2; k++) for (let i = 1; i < periodo; i++) anillo[i] = (anillo[i] + anillo[i - 1]) / 2;
+    const perdida = midi > 70 ? .994 : .9965;
+    let idx = 0;
+    for (let i = 0; i < n; i++) {
+      const sig = (idx + 1) % periodo;
+      const v = anillo[idx];
+      anillo[idx] = perdida * (v + anillo[sig]) / 2;
+      d[i] = v;
+      idx = sig;
+    }
+    cache.set(midi, out);
+    return out;
+  }
+  function reverb() {
+    const sr = actx.sampleRate, dur = 3.2, n = Math.floor(sr * dur), b = actx.createBuffer(2, n, sr);
+    for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.6); }
+    const conv = actx.createConvolver(); conv.buffer = b; return conv;
+  }
+  function iniciarAudio() {
+    if (actx) return;
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    master = actx.createGain(); master.gain.value = 0;
+    const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5200;
+    const rv = reverb(); const rvg = actx.createGain(); rvg.gain.value = .55;
+    const seco = actx.createGain(); seco.gain.value = .8;
+    lp.connect(seco).connect(master); lp.connect(rv).connect(rvg).connect(master);
+    master.connect(actx.destination);
+    master.gain.linearRampToValueAtTime(.7, actx.currentTime + 2.5);
+    master._in = lp;
+    for (const m of NOTAS) cuerda(m);
+  }
+  let ultimaNota = 0;
+  function tocar(p, e) {
+    if (!actx || mudo) return;
+    const now = actx.currentTime;
+    if (now - ultimaNota < .09) return;
+    ultimaNota = now;
+    // La altura sale de la posición vertical (arriba = agudo): la red es el arpa.
+    const i = Math.round((1 - p.y / H) * (NOTAS.length - 1));
+    const src = actx.createBufferSource(); src.buffer = cuerda(NOTAS[Math.max(0, Math.min(NOTAS.length - 1, i))]);
+    const g = actx.createGain(); g.gain.value = .12 + .22 * e;
+    const pan = actx.createStereoPanner ? actx.createStereoPanner() : null;
+    if (pan) { pan.pan.value = (p.x / W) * 1.4 - .7; src.connect(g).connect(pan).connect(master._in); }
+    else src.connect(g).connect(master._in);
+    src.start(now);
+  }
+  // Arpegios suaves cada cierto tiempo, además de los disparos espontáneos: dan el «fondo de arpa».
+  let proxArpegio = 0;
+  function arpegiar(t) {
+    if (t < proxArpegio) return;
+    proxArpegio = t + 2600 + Math.random() * 2400;
+    const base = Math.floor(Math.random() * nodos.length);
+    const orden = [base, ...vecinos(base)].slice(0, 5);
+    orden.forEach((idx, k) => setTimeout(() => encender(idx, .75 - k * .08, performance.now(), k > 0), k * (140 + Math.random() * 90)));
+  }
+
+  // ───────────── Bucle ─────────────
+  let empezado = false, ultimo = 0, proxChispa = 0;
+  function cuadro(t) {
+    const dt = Math.min(50, t - ultimo || 16); ultimo = t;
+    pasoRed(dt, t);
+    if (t > proxChispa) { proxChispa = t + 900 + Math.random() * 1800; encender(Math.floor(Math.random() * nodos.length), empezado ? .45 + Math.random() * .3 : .25, t, !empezado); }
+    if (empezado) arpegiar(t);
+    pintarCielo(t); pintarRed(t);
+    if (!reducido) requestAnimationFrame(cuadro);
+  }
+  function medir() {
+    W = innerWidth; H = innerHeight;
+    for (const c of [cielo, red]) { c.width = W * DPR; c.height = H * DPR; c.getContext('2d').setTransform(DPR, 0, 0, DPR, 0, 0); }
+    sembrar(); if (!nodos.length) crearRed();
+    if (reducido) { pintarCielo(0); pintarRed(0); }
+  }
+  addEventListener('resize', medir);
+  medir();
+  requestAnimationFrame(cuadro);
+  if (reducido) { document.getElementById('titulo').classList.add('visible'); }
+
+  const boton = document.getElementById('empezar'), titulo = document.getElementById('titulo'), pie = document.getElementById('pie'), estado = document.getElementById('estado');
+  boton.addEventListener('click', () => {
+    try { iniciarAudio(); } catch (e) { console.warn('Sin audio:', e); }
+    empezado = true;
+    boton.classList.add('fuera');
+    pie.hidden = false;
+    // Un primer acorde arpegiado para abrir, y el título aparece cuando la red ya suena.
+    const centro = nodos.map((p, i) => [Math.hypot(p.x - W / 2, p.y - H / 2), i]).sort((a, b) => a[0] - b[0]).slice(0, 6).map((x) => x[1]);
+    centro.forEach((idx, k) => setTimeout(() => encender(idx, .9 - k * .06, performance.now(), k > 0), 200 + k * 230));
+    setTimeout(() => titulo.classList.add('visible'), 2600);
+  });
+  document.getElementById('silencio').addEventListener('click', (e) => {
+    mudo = !mudo;
+    if (master) master.gain.linearRampToValueAtTime(mudo ? 0 : .7, actx.currentTime + .6);
+    e.currentTarget.textContent = mudo ? 'con sonido' : 'silenciar';
+    estado.textContent = mudo ? 'arpa en silencio' : 'arpa sonando';
+  });
+  // Clic en cualquier parte del cielo: enciende la neurona más cercana (y suena).
+  addEventListener('pointerdown', (ev) => {
+    if (ev.target.closest('button')) return;
+    let mejor = 0, md = Infinity;
+    nodos.forEach((p, i) => { const d = Math.hypot(p.x - ev.clientX, p.y - ev.clientY); if (d < md) { md = d; mejor = i; } });
+    encender(mejor, .95, performance.now(), false);
+  });
+})();
+</script>
+</body>
+</html>
