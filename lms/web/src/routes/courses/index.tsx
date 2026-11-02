@@ -29,6 +29,7 @@ interface Semana {
 const DIA = new Intl.DateTimeFormat("es-PE", { day: "numeric", timeZone: "America/Lima" });
 const MES = new Intl.DateTimeFormat("es-PE", { month: "short", timeZone: "America/Lima" });
 const HORA = new Intl.DateTimeFormat("es-PE", { hour: "numeric", minute: "2-digit", timeZone: "America/Lima" });
+const HOY = new Intl.DateTimeFormat("es-PE", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Lima" });
 
 /** La clase en la que va el alumno: la primera publicada sin terminar (o la última publicada). */
 function claseActual(c: Course): LessonSummary | null {
@@ -154,6 +155,13 @@ export default component$(() => {
 
   const first = session.me?.name.split(" ")[0] ?? "";
   const ah = st.ahora;
+  // Agenda: primero lo que pasa en vivo, luego las entregas abiertas; lo vencido se agrupa en una
+  // sola línea (suele ser de grupos anteriores y no debe tapar lo de esta semana).
+  const enVivo = semana.filter((s) => s.tipo === "clase");
+  const entregas = semana.filter((s) => s.tipo === "tarea" && s.estado !== "overdue");
+  const vencidas = semana.filter((s) => s.estado === "overdue");
+  const agenda = [...enVivo, ...entregas].slice(0, 5);
+  const avanceRuta = (c: Course | undefined) => (c ? avance(c) : { pct: 0, clases: 0, hechas: 0 });
   const rutaCurso = ah?.curso ?? st.courses?.[0];
   const ruta = rutaCurso ? rutaCurso.modules.flatMap((m) => m.lessons).filter((l) => l.published) : [];
   const numClase = (t: string) => t.split(" · ")[0];
@@ -172,9 +180,9 @@ export default component$(() => {
 
   return (
     <>
-      <div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:1rem">
-        <h1 style="margin:0">{first ? `Hola, ${first}` : "Aprender"}</h1>
-        {rutaCurso && <span class="muted">{rutaCurso.title}</span>}
+      <div class="inicio-cab">
+        <h1>{first ? `Hola, ${first}` : "Aprender"}</h1>
+        <span class="inicio-hoy">{(() => { const h = HOY.format(new Date(ahoraMs)); return h.charAt(0).toUpperCase() + h.slice(1); })()}</span>
       </div>
 
       {st.error && <ErrorState message={st.error} retry$={load} />}
@@ -218,17 +226,32 @@ export default component$(() => {
         <>
           {(semana.length > 0 || ruta.length > 0) && (
             <div class="inicio-cols">
-              <section aria-labelledby="semana-t">
-                <h2 id="semana-t" class="h2-sec">Esta semana</h2>
-                {semana.length === 0 ? (
-                  <Empty icon="checkCircle" title="Nada pendiente esta semana" text="Cuando haya una clase en vivo o una entrega cerca, aparecerá aquí." />
+              <section aria-labelledby="semana-t" class="agenda">
+                <h2 id="semana-t" class="h2-sec">
+                  Esta semana
+                  {(enVivo.length > 0 || entregas.length > 0) && (
+                    <span class="h2-sub">
+                      {enVivo.length > 0 && `${enVivo.length} en vivo`}
+                      {enVivo.length > 0 && entregas.length > 0 && " · "}
+                      {entregas.length > 0 && `${entregas.length} ${entregas.length === 1 ? "entrega" : "entregas"}`}
+                    </span>
+                  )}
+                </h2>
+                {agenda.length === 0 ? (
+                  <div class="agenda-vacia">
+                    <span class="agenda-vacia__ico"><Icon name="checkCircle" size={20} /></span>
+                    <span>
+                      <b>Nada en vivo ni por entregar esta semana</b>
+                      <div class="sm muted">Cuando haya una clase o una entrega cerca, aparecerá aquí.</div>
+                    </span>
+                  </div>
                 ) : (
                   <div class="semana" data-testid="esta-semana">
-                    {semana.slice(0, 4).map((s) => {
+                    {agenda.map((s) => {
                       const d = new Date(s.fecha);
                       const valida = !isNaN(d.getTime());
                       return (
-                        <Link key={s.tipo + s.href} class="it" href={s.href}>
+                        <Link key={s.tipo + s.href} class={`it ${s.tipo}`} href={s.href}>
                           <span class="dia">
                             {valida ? (
                               <>
@@ -244,23 +267,43 @@ export default component$(() => {
                             <div class="sm muted" title={valida ? fmtDate(s.fecha) : undefined}>{s.detalle}</div>
                           </span>
                           {s.estado ? <Status s={STATUS[s.estado] ?? STATUS.pending} /> : <span class="badge accent"><Icon name="video" size={12} /> En vivo</span>}
+                          <Icon name="chevronRight" size={14} class="faint it-chev" />
                         </Link>
                       );
                     })}
                   </div>
                 )}
-                {semana.length > 4 && (
+                {vencidas.length > 0 && (
+                  <Link class="agenda-vencidas" href="/projects/" data-testid="vencidas">
+                    <Icon name="alert" size={14} />
+                    <span class="grow">
+                      {vencidas.length === 1 ? "1 entrega vencida" : `${vencidas.length} entregas vencidas`}
+                      <span class="muted"> · aún puedes entregarlas</span>
+                    </span>
+                    Revisar <Icon name="chevronRight" size={14} />
+                  </Link>
+                )}
+                {enVivo.length + entregas.length > agenda.length && (
                   <Link class="semana-mas" href="/projects/">
-                    {semana.length - 4} más · Ver todos los proyectos <Icon name="chevronRight" size={14} />
+                    {enVivo.length + entregas.length - agenda.length} más · Ver todos los proyectos <Icon name="chevronRight" size={14} />
                   </Link>
                 )}
               </section>
 
               {ruta.length > 0 && rutaCurso && (
-                <section aria-labelledby="ruta-t">
-                  <h2 id="ruta-t" class="h2-sec">
-                    Tu ruta <span class="h2-sub">{familiaDe(rutaCurso).grupo ? `${familiaDe(rutaCurso).familia} · ${familiaDe(rutaCurso).grupo}` : rutaCurso.title}</span>
-                  </h2>
+                <section aria-labelledby="ruta-t" class="ruta-sec">
+                  <h2 id="ruta-t" class="h2-sec">Tu ruta</h2>
+                  <div class="ruta-card">
+                    <Link class="ruta-cab" href={`/courses/${rutaCurso.slug}/`}>
+                      <span class="grow" style="min-width:0">
+                        <b class="ruta-curso">{familiaDe(rutaCurso).familia}</b>
+                        <span class="ruta-meta">
+                          {familiaDe(rutaCurso).grupo && <span class="curso-grupo">{familiaDe(rutaCurso).grupo}</span>}
+                          {avanceRuta(rutaCurso).hechas} de {avanceRuta(rutaCurso).clases} {avanceRuta(rutaCurso).clases === 1 ? "clase" : "clases"} · {Math.round(avanceRuta(rutaCurso).pct)} %
+                        </span>
+                      </span>
+                      <span class="ruta-anillo" style={`--p:${Math.round(avanceRuta(rutaCurso).pct)}`} aria-hidden="true"><i>{Math.round(avanceRuta(rutaCurso).pct)}%</i></span>
+                    </Link>
                   <ol class="ruta" data-testid="tu-ruta">
                     {ruta.map((l, i) => {
                       const hecha = l.steps > 0 && l.steps_done >= l.steps;
@@ -281,6 +324,7 @@ export default component$(() => {
                       );
                     })}
                   </ol>
+                  </div>
                 </section>
               )}
             </div>
