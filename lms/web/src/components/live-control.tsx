@@ -22,20 +22,32 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
   const pendienteCerrar = useSignal(false);
   const texto = useSignal("");
   const cerrojo = useSignal<{ c: CompuertaLive; destino: string } | null>(null);
+  const modo = useSignal(props.estado.modo); // eco inmediato del modo; el servidor confirma por el stream
+  const pendienteAccion = useSignal<"" | "votos" | "muro">(""); // segundo clic para las acciones que borran
+  const masAbierto = useSignal(false);
+  const raiz = useSignal<HTMLElement>();
+  const ahora = useSignal(Date.now());
 
   // Cronómetro de la escena actual.
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(({ track }) => {
     track(() => escenaActual.value);
     segundos.value = 0;
-    const t = setInterval(() => segundos.value++, 1000);
+    const t = setInterval(() => { segundos.value++; ahora.value = Date.now(); }, 1000);
     return () => clearInterval(t);
+  });
+
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(({ track }) => {
+    track(() => props.estado.modo);
+    modo.value = props.estado.modo;
   });
 
   const cambiar = $(async (id: string) => {
     try {
       const estado = await api.liveEscena(props.lesson, id, visible.value);
       if (estado.escena) escenaActual.value = estado.escena;
+      raiz.value?.focus({ preventScroll: true });
     } catch (e) {
       if (!requireLogin(e)) toast(session, errMsg(e), "bad");
     }
@@ -129,6 +141,26 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
     }
   });
 
+  // Acciones que borran (votos, muro): primer clic arma, segundo ejecuta; Escape o clic fuera desarma.
+  const accionDestructiva = $(async (clave: "votos" | "muro") => {
+    if (pendienteAccion.value !== clave) {
+      pendienteAccion.value = clave;
+      return;
+    }
+    pendienteAccion.value = "";
+    try {
+      if (clave === "votos") {
+        await api.liveVotosReiniciar(props.lesson, escenaActual.value);
+        toast(session, "Votos de la escena en cero", "ok");
+      } else {
+        await api.liveMuroVaciar(props.lesson, escenaActual.value);
+        toast(session, "Muro de la escena vacío", "ok");
+      }
+    } catch (e) {
+      if (!requireLogin(e)) toast(session, errMsg(e), "bad");
+    }
+  });
+
   // Atajos: flechas y espacio cambian, h muestra u oculta.
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(() => {
@@ -136,9 +168,18 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
       const el = document.activeElement as HTMLElement | null;
       return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || ("isContentEditable" in el && el.isContentEditable));
     };
+    const enBoton = () => {
+      const el = document.activeElement as HTMLElement | null;
+      return !!el && ["BUTTON", "SUMMARY", "A", "SELECT"].includes(el.tagName);
+    };
+    const cerrarMas = () => {
+      const d = document.querySelector<HTMLDetailsElement>(".mesa-mas[open]");
+      if (d) d.open = false;
+    };
     const mover = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { cerrarMas(); pendienteAccion.value = ""; return; }
       if (enCampo()) return;
-      if (e.key === "ArrowRight" || e.key === " ") {
+      if (e.key === "ArrowRight" || (e.key === " " && !enBoton())) {
         e.preventDefault();
         conmover(1);
       } else if (e.key === "ArrowLeft") {
@@ -148,8 +189,19 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
         conmutarVisible();
       }
     };
+    // La escena (mismo origen) puede reenviar sus teclas: {tipo: "tecla", key}. Así los atajos siguen vivos
+    // aunque el instructor haya hecho clic dentro del marco.
+    const desdeEscena = (e: MessageEvent) => {
+      if (e.origin !== location.origin || !e.data || e.data.tipo !== "tecla" || typeof e.data.key !== "string") return;
+      mover({ key: e.data.key, preventDefault() {} } as KeyboardEvent);
+    };
+    const fuera = (e: PointerEvent) => {
+      if (!(e.target as HTMLElement | null)?.closest?.(".mesa-mas")) { cerrarMas(); pendienteAccion.value = ""; }
+    };
     document.addEventListener("keydown", mover);
-    return () => document.removeEventListener("keydown", mover);
+    window.addEventListener("message", desdeEscena);
+    document.addEventListener("pointerdown", fuera);
+    return () => { document.removeEventListener("keydown", mover); window.removeEventListener("message", desdeEscena); document.removeEventListener("pointerdown", fuera); };
   });
 
   // eslint-disable-next-line qwik/no-use-visible-task
@@ -167,10 +219,17 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
   const limite = actual ? actual.duracion_min * 60 : 0;
   const avanceReloj = limite ? Math.min(100, (segundos.value / limite) * 100) : 0;
   const pasado = !!limite && segundos.value > limite;
+  // Reloj de la clase: cuánto llevas desde «Iniciar» frente a lo que el plan prevé hasta este punto
+  // (duraciones de las escenas pasadas + lo consumido de la actual). Positivo = vas tarde.
+  const inicioMs = props.estado.iniciada_en ? Date.parse(props.estado.iniciada_en) : NaN;
+  const transcurrido = enVivo.value && !isNaN(inicioMs) ? Math.max(0, Math.floor((ahora.value - inicioMs) / 1000)) : null;
+  const planeado = props.escenas.slice(0, Math.max(0, idx)).reduce((a, e) => a + (e.duracion_min || 0) * 60, 0) + Math.min(segundos.value, limite);
+  const desvio = transcurrido === null ? null : transcurrido - planeado;
+  const minutos = (seg: number) => `${Math.round(Math.abs(seg) / 60)}′`;
   const extras = !!actual && (actual.id === "11-probar-medir" || actual.id === "08-avatar");
 
   return (
-    <div class="live-control mesa">
+    <div class="live-control mesa" ref={raiz} tabIndex={-1}>
       {cerrojo.value && <LiveCompuerta c={cerrojo.value.c} onEsperar$={() => (cerrojo.value = null)} onPasar$={pasarIgual} />}
       <div class="live-main">
         <aside class="live-escenas mesa-rail" aria-label="Escenas">
@@ -234,8 +293,8 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
           </span>
         </div>
         <div class="mesa-grupo" role="group" aria-label="Qué ven los alumnos">
-          <button type="button" class="btn ghost sm" aria-pressed={visible.value} aria-label={visible.value ? "Ocultar a todos" : "Mostrar a todos"} title="Mostrar u ocultar (h)" onClick$={conmutarVisible}>
-            <Icon name="eye" size={14} /> {visible.value ? "Visible" : "Oculta"}
+          <button type="button" class={`btn sm ${visible.value ? "ghost" : "ok"}`} title={visible.value ? "Ocultar la escena a los alumnos (h)" : "Mostrar la escena a los alumnos (h)"} onClick$={conmutarVisible}>
+            {visible.value ? "Ocultar" : "Mostrar"}
           </button>
           <span class="live-modo mesa-seg" role="group" aria-label="Modo de la clase" title="Guiado: tu escena arrastra a todos. Libre: cada uno avanza a su ritmo.">
             {(["guiado", "libre"] as const).map((m) => (
@@ -243,11 +302,14 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
                 key={m}
                 type="button"
                 class="btn ghost sm"
-                aria-pressed={props.estado.modo === m}
+                aria-pressed={modo.value === m}
                 onClick$={async () => {
+                  const antes = modo.value;
+                  modo.value = m;
                   try {
                     await api.liveModo(props.lesson, m);
                   } catch (e) {
+                    modo.value = antes;
                     if (!requireLogin(e)) toast(session, errMsg(e), "bad");
                   }
                 }}
@@ -264,90 +326,89 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
           </button>
         </form>
         {actual && (
-          <details class="mesa-mas">
-            <summary class="btn ghost sm" aria-label="Más acciones de esta escena">
+          <details class="mesa-mas" onToggle$={(_, el) => { masAbierto.value = el.open; if (!el.open) pendienteAccion.value = ""; }}>
+            <summary class="btn ghost sm" aria-expanded={masAbierto.value} aria-label="Más acciones de esta escena">
               <Icon name="menu" size={14} /> Más
             </summary>
             <div class="mesa-mas-menu">
-              <button
-                type="button"
-                title="Borra los votos de esta escena (empieza en cero)"
-                onClick$={async () => {
-                  try {
-                    await api.liveVotosReiniciar(props.lesson, actual.id);
-                    toast(session, "Votos de la escena en cero", "ok");
-                  } catch (e) {
-                    if (!requireLogin(e)) toast(session, errMsg(e), "bad");
-                  }
-                }}
-              >
-                <Icon name="refresh" size={14} /> Reiniciar votos
-              </button>
-              <button
-                type="button"
-                title="Vacía el muro del grupo de esta escena"
-                onClick$={async () => {
-                  try {
-                    await api.liveMuroVaciar(props.lesson, actual.id);
-                    toast(session, "Muro de la escena vacío", "ok");
-                  } catch (e) {
-                    if (!requireLogin(e)) toast(session, errMsg(e), "bad");
-                  }
-                }}
-              >
-                <Icon name="trash" size={14} /> Vaciar muro
-              </button>
-              {actual.id === "11-probar-medir" && (
-                <button type="button" onClick$={emparejar}>
-                  <Icon name="users" size={14} /> Emparejar
-                </button>
-              )}
-              {actual.id === "08-avatar" && (
-                <span class="live-animos" role="group" aria-label="Ánimo de los avatares">
-                  {(["feliz", "pensando", "sorprendido"] as const).map((a) => (
-                    <button
-                      key={a}
-                      type="button"
-                      aria-pressed={props.estado.parametro === a}
-                      onClick$={async () => {
-                        try {
-                          await api.liveEscena(props.lesson, "08-avatar", visible.value, { parametro: a });
-                        } catch (e) {
-                          if (!requireLogin(e)) toast(session, errMsg(e), "bad");
-                        }
-                      }}
-                    >
-                      {a}
+              {extras && (
+                <>
+                  {actual.id === "11-probar-medir" && (
+                    <button type="button" onClick$={emparejar}>
+                      <Icon name="users" size={14} /> Emparejar en grupos
                     </button>
-                  ))}
-                </span>
+                  )}
+                  {actual.id === "08-avatar" && (
+                    <span class="live-animos" role="group" aria-label="Ánimo de los avatares">
+                      {(["feliz", "pensando", "sorprendido"] as const).map((a) => (
+                        <button
+                          key={a}
+                          type="button"
+                          aria-pressed={props.estado.parametro === a}
+                          onClick$={async () => {
+                            try {
+                              await api.liveEscena(props.lesson, "08-avatar", visible.value, { parametro: a });
+                            } catch (e) {
+                              if (!requireLogin(e)) toast(session, errMsg(e), "bad");
+                            }
+                          }}
+                        >
+                          {a}
+                        </button>
+                      ))}
+                    </span>
+                  )}
+                  <hr />
+                </>
               )}
-              {!extras && <span class="mesa-mas-nota">Atajos: ← → espacio cambian · h oculta</span>}
+              <button
+                type="button"
+                class={pendienteAccion.value === "votos" ? "peligro" : ""}
+                title="Borra los votos de esta escena (empieza en cero)"
+                onClick$={() => accionDestructiva("votos")}
+              >
+                <Icon name="refresh" size={14} /> {pendienteAccion.value === "votos" ? "¿Seguro? Reiniciar votos" : "Reiniciar votos"}
+              </button>
+              <button
+                type="button"
+                class={pendienteAccion.value === "muro" ? "peligro" : ""}
+                title="Vacía el muro del grupo de esta escena"
+                onClick$={() => accionDestructiva("muro")}
+              >
+                <Icon name="trash" size={14} /> {pendienteAccion.value === "muro" ? "¿Seguro? Vaciar muro" : "Vaciar muro"}
+              </button>
+              <span class="mesa-mas-nota"><kbd>←</kbd> <kbd>→</kbd> <kbd>espacio</kbd> cambian de escena · <kbd>h</kbd> oculta o muestra · <kbd>Esc</kbd> cierra</span>
             </div>
           </details>
         )}
-        <span class="mesa-espacio" />
-        <span class="chip" title="Alumnos conectados al stream">
-          <Icon name="users" size={13} /> {props.conectados}
-        </span>
-        <span class={`mesa-reloj${pasado ? " pasado" : ""}`} title={actual ? `Cronómetro de la escena · prevista ${actual.duracion_min} min` : "Cronómetro de la escena"}>
-          <span class="mesa-reloj-t"><Icon name="clock" size={13} /> {mmss(segundos.value)}{actual ? <small> / {actual.duracion_min}′</small> : null}</span>
-          <i aria-hidden="true"><i style={`width:${avanceReloj}%`} /></i>
-        </span>
-        {props.onVista$ && (
-          <button type="button" class="btn ghost sm" aria-label="Ver la clase como la ve un alumno" title="Terminal, visor y agente con tu cuenta" onClick$={() => props.onVista$?.(true)}>
-            <Icon name="monitor" size={14} /> Como alumno
-          </button>
-        )}
-        {enVivo.value ? (
-          <button type="button" class={`btn sm ${pendienteCerrar.value ? "bad" : "ghost"}`} aria-label="Cerrar el LIVE" onClick$={cerrar} onBlur$={() => (pendienteCerrar.value = false)}>
-            {pendienteCerrar.value ? "¿Cerrar de verdad?" : "Cerrar LIVE"}
-          </button>
-        ) : (
-          <button type="button" class="btn sm ok" aria-label="Iniciar el LIVE" onClick$={iniciar}>
-            <Icon name="play" size={14} /> Iniciar LIVE
-          </button>
-        )}
+        <div class="mesa-estado">
+          <span class="chip" title="Alumnos conectados al stream">
+            <Icon name="users" size={13} /> {props.conectados} {props.conectados === 1 ? "conectado" : "conectados"}
+          </span>
+          <span class={`mesa-reloj${pasado ? " pasado" : ""}`} title={actual ? `Cronómetro de la escena · prevista ${actual.duracion_min} min` : "Cronómetro de la escena"}>
+            <span class="mesa-reloj-t"><Icon name="clock" size={13} /> {mmss(segundos.value)}{actual ? <small> / {actual.duracion_min}′</small> : null}</span>
+            <i aria-hidden="true"><i style={`width:${avanceReloj}%`} /></i>
+            {desvio !== null && transcurrido !== null && (
+              <span class={`mesa-desvio${Math.abs(desvio) < 60 ? "" : desvio > 0 ? " tarde" : " adelante"}`} title={`Clase: ${minutos(transcurrido)} de ${totalMin}′ · plan hasta aquí ${minutos(planeado)}`}>
+                clase {minutos(transcurrido)} · {Math.abs(desvio) < 60 ? "a tiempo" : desvio > 0 ? `+${minutos(desvio)} tarde` : `−${minutos(desvio)} adelante`}
+              </span>
+            )}
+          </span>
+          {props.onVista$ && (
+            <button type="button" class="btn ghost sm" title="Terminal, visor y agente con tu cuenta" onClick$={() => props.onVista$?.(true)}>
+              <Icon name="monitor" size={14} /> Ver como alumno
+            </button>
+          )}
+          {enVivo.value ? (
+            <button type="button" class={`btn sm ${pendienteCerrar.value ? "bad" : "ghost"}`} aria-live="polite" onClick$={cerrar} onBlur$={() => (pendienteCerrar.value = false)}>
+              {pendienteCerrar.value ? "¿Cerrar de verdad?" : "Cerrar LIVE"}
+            </button>
+          ) : (
+            <button type="button" class="btn sm ok" onClick$={iniciar}>
+              <Icon name="play" size={14} /> Iniciar LIVE
+            </button>
+          )}
+        </div>
       </footer>
     </div>
   );
