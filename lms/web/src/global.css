@@ -891,13 +891,6 @@ body { background: var(--liso); }
 .semana .dia { width: 2.8rem; flex: none; text-align: center; line-height: 1.1; }
 .semana .dia b { font-size: 1.25rem; display: block; }
 .semana .dia span { font-size: .75rem; color: var(--muted); }
-.ruta { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .8rem; }
-.ruta li a { display: flex; flex-direction: column; gap: .35rem; height: 100%; padding: .9rem 1rem; border-radius: var(--r2); background: var(--s2); color: inherit; border: 2px solid transparent; }
-.ruta li a:hover { text-decoration: none; border-color: var(--line2); }
-.ruta li a.actual { background: var(--s1); border-color: var(--accent); }
-.ruta .est { font-size: .8rem; font-weight: 700; color: var(--muted); }
-.ruta .est.ok { color: var(--ok); } .ruta .est.on { color: var(--accent); }
-
 /* Tarea: el enunciado y, al lado, la rúbrica siempre visible. */
 .tarea-split { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: 2rem; align-items: start; }
 .rubrica-lateral { position: sticky; top: 4.5rem; display: flex; flex-direction: column; gap: .2rem; }
@@ -962,9 +955,6 @@ body { background: var(--liso); }
 .proy-clase:hover { color: var(--accent); }
 .proy-clase:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 .proy.on { margin: 0 -.8rem; padding: 1rem .8rem; border-radius: var(--r2); background: var(--accent-bg); border-top-color: transparent; }
-/* Inicio: agenda y cursos en dos columnas iguales. */
-.inicio-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6rem 2rem; align-items: start; }
-@media (max-width: 52rem) { .inicio-cols { grid-template-columns: 1fr; } }
 
 /* ── LIVE del alumno con forma de editor ─────────────────────────────────────────────────────────
    Escritorio (≥ 1100 px): barra de actividad a la izquierda, ayuda en una barra lateral, la escena
@@ -1218,3 +1208,62 @@ a.lv-ico-btn { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) { .dsh-giro { animation: none; } }
 .dsh-estado { display: flex; align-items: center; gap: .4rem; font-weight: 600; margin: .2rem 0 .6rem; }
 .dsh-acciones { display: grid; gap: .5rem; margin-top: .6rem; }
+
+/* ── Inicio (11-2026) ─────────────────────────────────────────────────────────────────────────
+   Arriba la agenda y la ruta del curso de ahora, lado a lado; abajo la biblioteca de cursos.
+   Cada curso es un «libro»: lomo de color estable por familia (el mismo curso, el mismo color en
+   cualquier cuenta), monograma, título y una barra dorada de avance. Las familias con varios
+   grupos (el instructor) se ven una sola vez, con sus grupos dentro. */
+.inicio-cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1.6rem 2.4rem; align-items: start; margin-bottom: 2rem; }
+.inicio-cols > section { min-width: 0; }
+@media (max-width: 52rem) { .inicio-cols { grid-template-columns: 1fr; gap: 1.4rem; } }
+.h2-sec { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+.h2-sub { font-size: .86rem; font-weight: 500; color: var(--muted); }
+
+/* Tu ruta: las clases en una línea vertical, con la actual resaltada. */
+.ruta { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ruta li { position: relative; padding-left: 2.1rem; }
+.ruta li::before { content: ""; position: absolute; left: .78rem; top: 1.9rem; bottom: -.3rem; width: 2px; background: var(--line); }
+.ruta li:last-child::before { display: none; }
+.ruta li.ok::before { background: var(--ok); opacity: .55; }
+.ruta li a { display: flex; align-items: flex-start; gap: .75rem; padding: .55rem .7rem .7rem; margin: 0 -.7rem; border-radius: var(--r2); color: inherit; }
+.ruta li a:hover { text-decoration: none; background: var(--s2); }
+.ruta li a.actual { background: var(--accent-bg); }
+.ruta .ruta-pto { position: absolute; left: 0; top: .45rem; width: 1.65rem; height: 1.65rem; border-radius: 50%; display: grid; place-items: center; font-size: .78rem; font-weight: 750; background: var(--s3); color: var(--muted); border: 2px solid var(--liso); }
+.ruta li.ok .ruta-pto { background: var(--ok); color: #fff; }
+.ruta li.on .ruta-pto { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 4px var(--accent-bg); }
+.ruta .ruta-num { display: block; font-size: .76rem; font-weight: 700; color: var(--muted); letter-spacing: .01em; }
+.ruta li.on .ruta-num { color: var(--accent); }
+.ruta b { display: block; font-size: .95rem; line-height: 1.3; }
+.ruta .ruta-est { display: block; font-size: .8rem; color: var(--muted); margin-top: .15rem; }
+.ruta li.ok .ruta-est { color: var(--ok); }
+.ruta li.on .ruta-est { color: var(--fg); }
+
+/* Biblioteca de cursos. */
+.cursos-grid { columns: 17rem; column-gap: .9rem; }
+.cursos-grid > * { break-inside: avoid; margin-bottom: .9rem; }
+.curso-card { --lomo: oklch(.62 .15 var(--h)); --lomo-fg: #fff; --lomo-tinta: oklch(.42 .13 var(--h));
+  position: relative; display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); grid-template-rows: 1fr auto; column-gap: .9rem; min-height: 6.4rem;
+  padding: 0 1rem 0 0; border: 1px solid var(--line); border-radius: var(--r2); background: var(--s1); color: inherit; overflow: hidden; box-shadow: var(--shadow-xs); transition: border-color .15s, transform .15s; }
+:root[data-theme="dark"] .curso-card, :root:not([data-theme="light"]) .curso-card { --lomo: oklch(.72 .13 var(--h)); --lomo-fg: oklch(.2 .05 var(--h)); --lomo-tinta: oklch(.8 .1 var(--h)); }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .curso-card { --lomo: oklch(.62 .15 var(--h)); --lomo-fg: #fff; --lomo-tinta: oklch(.42 .13 var(--h)); } }
+a.curso-card:hover { text-decoration: none; border-color: var(--lomo); }
+a.curso-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.curso-lomo { grid-row: 1 / -1; display: grid; place-items: center; background: var(--lomo); color: var(--lomo-fg); font-weight: 800; font-size: 1.15rem; letter-spacing: -.03em; writing-mode: vertical-rl; transform: rotate(180deg); padding: .6rem 0; }
+.curso-cuerpo { display: flex; flex-direction: column; gap: .3rem; padding: .95rem 0 .5rem; min-width: 0; }
+.curso-tit { font-size: 1rem; line-height: 1.3; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.curso-meta { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; font-size: .8rem; color: var(--muted); }
+.curso-grupo { padding: .08rem .5rem; border-radius: 999px; background: color-mix(in oklch, var(--lomo) 16%, transparent); color: var(--lomo-tinta); font-weight: 700; font-size: .74rem; }
+.curso-av { grid-column: 2; height: 3px; border-radius: 2px; background: var(--s3); overflow: hidden; }
+.curso-av i { display: block; height: 100%; background: var(--gold); border-radius: 2px; }
+.curso-card:not(.empezado) .curso-av { opacity: .6; }
+.curso-pie { grid-column: 2; display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .45rem 0 .7rem; font-size: .78rem; color: var(--muted); }
+.curso-card.empezado .curso-pie { color: var(--gold); font-weight: 700; }
+.curso-card.varios { grid-template-rows: auto auto; padding-bottom: .4rem; }
+.curso-card.varios .curso-cuerpo { padding-bottom: .4rem; }
+.curso-grupos { grid-column: 2; list-style: none; margin: 0 0 .3rem; padding: 0; display: flex; flex-direction: column; }
+.curso-grupos li { border-top: 1px solid var(--line); }
+.curso-grupos a { display: flex; align-items: center; gap: .6rem; padding: .5rem .2rem; font-size: .88rem; font-weight: 600; color: inherit; border-radius: 8px; }
+.curso-grupos a:hover { text-decoration: none; color: var(--lomo-tinta); }
+@media (max-width: 40rem) { .cursos-grid { columns: 1; } .cursos-grid > * { margin-bottom: .7rem; } .curso-card { min-height: 0; } }
+@media (prefers-reduced-motion: reduce) { .curso-card { transition: none; } }
