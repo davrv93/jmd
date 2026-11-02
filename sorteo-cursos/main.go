@@ -54,10 +54,10 @@ type Premio struct {
 }
 
 var premios = []Premio{
-	{ID: "D30", Nombre: "30 % de descuento", Corto: "30 %", Detalle: "Aplica sobre cualquier curso del catálogo.", Casillas: 3, Color: "#6cb6ff", Tinta: "#06203d"},
-	{ID: "D40", Nombre: "40 % de descuento", Corto: "40 %", Detalle: "Aplica sobre cualquier curso del catálogo.", Casillas: 2, Color: "#4ee6b4", Tinta: "#06301f"},
-	{ID: "D50", Nombre: "50 % de descuento", Corto: "50 %", Detalle: "El premio mayor. Aplica sobre cualquier curso del catálogo.", Casillas: 1, Color: "#ff6b6b", Tinta: "#3d0a0a"},
-	{ID: "X6", Nombre: "Lleva 6 cursos por S/ 100", Corto: "6 × S/100", Detalle: "Elige 6 cursos del catálogo y paga S/ 100 en total.", Casillas: 2, Color: "#f5c542", Tinta: "#2a1d00"},
+	{ID: "D30", Nombre: "30 % de descuento (6 cursos por S/ 70)", Corto: "30 %", Detalle: "S/ 100 − 30 % = S/ 70 por 6 cursos.", Casillas: 3, Color: "#6cb6ff", Tinta: "#06203d"},
+	{ID: "D40", Nombre: "40 % de descuento (6 cursos por S/ 60)", Corto: "40 %", Detalle: "S/ 100 − 40 % = S/ 60 por 6 cursos.", Casillas: 2, Color: "#4ee6b4", Tinta: "#06301f"},
+	{ID: "D50", Nombre: "50 % de descuento (6 cursos por S/ 50)", Corto: "50 %", Detalle: "S/ 100 − 50 % = S/ 50 por 6 cursos.", Casillas: 1, Color: "#ff6b6b", Tinta: "#3d0a0a"},
+	{ID: "X6", Nombre: "Pack de 6 cursos por S/ 100", Corto: "6 × S/100", Detalle: "Pagas S/ 100 y eliges 6 cursos.", Casillas: 2, Color: "#f5c542", Tinta: "#2a1d00"},
 }
 
 // patron: las 8 casillas en sentido horario desde arriba. El navegador dibuja
