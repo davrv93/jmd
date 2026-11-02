@@ -224,7 +224,7 @@ export default component$(() => {
                   <Empty icon="checkCircle" title="Nada pendiente esta semana" text="Cuando haya una clase en vivo o una entrega cerca, aparecerá aquí." />
                 ) : (
                   <div class="semana" data-testid="esta-semana">
-                    {semana.slice(0, 6).map((s) => {
+                    {semana.slice(0, 4).map((s) => {
                       const d = new Date(s.fecha);
                       const valida = !isNaN(d.getTime());
                       return (
@@ -248,6 +248,11 @@ export default component$(() => {
                       );
                     })}
                   </div>
+                )}
+                {semana.length > 4 && (
+                  <Link class="semana-mas" href="/projects/">
+                    {semana.length - 4} más · Ver todos los proyectos <Icon name="chevronRight" size={14} />
+                  </Link>
                 )}
               </section>
 
