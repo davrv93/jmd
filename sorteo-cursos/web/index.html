@@ -30,14 +30,16 @@ header p{margin:0;color:var(--muted);max-width:52ch;justify-self:center}
 .stage{position:relative;width:min(88vw,420px);aspect-ratio:1;max-width:100%;margin:0 auto}
 .pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:34px solid var(--gold);filter:drop-shadow(0 4px 6px rgba(0,0,0,.5));z-index:3}
 .pointer::after{content:"";position:absolute;left:-7px;top:-40px;width:14px;height:14px;border-radius:50%;background:var(--gold-2)}
-canvas.wheel{width:100%;height:100%;border-radius:50%;display:block;transition:transform 5.2s cubic-bezier(.12,.74,.08,1);box-shadow:0 0 0 10px #2d2466,0 0 0 13px var(--gold),0 24px 60px rgba(0,0,0,.55)}
+canvas.wheel{width:100%;height:100%;border-radius:50%;display:block;will-change:transform;}
+canvas.wheel.go{transition:transform 5.2s cubic-bezier(.12,.74,.08,1)}
+canvas.wheel{box-shadow:0 0 0 10px #2d2466,0 0 0 13px var(--gold),0 24px 60px rgba(0,0,0,.55)}
 .hub{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff2b8,var(--gold) 55%,#b8891a);display:grid;place-items:center;font-family:var(--display);font-weight:900;font-size:13px;color:#2a1d00;box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:2}
 .bulbs{position:absolute;inset:-22px;border-radius:50%;pointer-events:none;z-index:1}
 .bulbs i{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--gold-2);box-shadow:0 0 10px var(--gold-2);margin:-5px}
 .spinning .bulbs i:nth-child(odd){animation:blink .35s steps(2) infinite}
 .spinning .bulbs i:nth-child(even){animation:blink .35s steps(2) infinite reverse}
 @keyframes blink{to{opacity:.25}}
-@media (prefers-reduced-motion:reduce){canvas.wheel{transition-duration:.6s}.bulbs i{animation:none!important}}
+@media (prefers-reduced-motion:reduce){canvas.wheel.go{transition-duration:.6s}.bulbs i{animation:none!important}}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}
 form{display:grid;gap:14px}
 .row{display:grid;gap:14px;grid-template-columns:1fr 1fr}
@@ -156,7 +158,7 @@ footer a{color:var(--muted)}
 <script>
 (function(){
   var BASE = new URL(".", location.href).pathname.replace(/admin\/?$/, "");
-  var WHATSAPP = ""; // número del curso (sin +); si queda vacío, el botón abre WhatsApp sin destinatario
+  var WHATSAPP = "51986149476"; // WhatsApp del curso (sin +)
   var SEG = [ // mismo orden que «patron» en el servidor: ADBACADB
     {k:'D30', t:'30 %',     c:'#6cb6ff', fg:'#06203d'},
     {k:'X6',  t:'6 × S/100',c:'#f5c542', fg:'#2a1d00'},
@@ -233,6 +235,9 @@ footer a{color:var(--muted)}
 
   var form=document.getElementById('f'), err=document.getElementById('err'), btn=document.getElementById('spinBtn'), stage=document.getElementById('stage');
   var rot=0, busy=false, current=null;
+  // La ruleta gira sola, despacio, todo el tiempo (modo espera). Al girar de verdad se frena y cae en la casilla.
+  var idle=!matchMedia('(prefers-reduced-motion: reduce)').matches, idleTimer=null;
+  (function loop(){ if(idle){ rot+=0.45; cv.style.transform='rotate('+rot+'deg)'; } requestAnimationFrame(loop); })();
 
   function fmtCel(c){return (c||'').replace(/(\d{3})(\d{3})(\d{3})/,'$1 $2 $3');}
   function showResult(rec, animate, repetido){
@@ -287,11 +292,13 @@ footer a{color:var(--muted)}
     var jitter=(Math.random()-0.5)*step*0.7;
     var target = -(idx*step) + jitter;
     var turns = 6 + Math.floor(Math.random()*3);
+    idle=false; clearTimeout(idleTimer);
+    cv.classList.remove('go'); cv.style.transform='rotate('+rot+'deg)'; void cv.offsetWidth; cv.classList.add('go');
     var base = Math.ceil(rot/360)*360;
     rot = base + turns*360 + ((target%360)+360)%360;
     stage.classList.add('spinning'); btn.textContent='Girando…';
     cv.style.transform='rotate('+rot+'deg)';
-    var fired=false; function end(){if(fired)return;fired=true;stage.classList.remove('spinning');done();}
+    var fired=false; function end(){if(fired)return;fired=true;stage.classList.remove('spinning');done();idleTimer=setTimeout(function(){cv.classList.remove('go');rot=rot%360;idle=!matchMedia('(prefers-reduced-motion: reduce)').matches;},6000);}
     cv.addEventListener('transitionend', end, {once:true});
     setTimeout(end, 5600);
   }
