@@ -27,7 +27,7 @@ export const LiveDsh = component$((props: { pedido?: string }) => {
     estado: null,
     vuelta: 0,
   });
-  const vista = useStore({ frac: 0.56, visor: true, lado: false, arrastrando: false });
+  const vista = useStore({ frac: 0.56, visor: true, lado: false, arrastrando: false, pista: true });
   const raiz = useSignal<HTMLElement>();
   const clave = useSignal("");
   const errClave = useSignal("");
@@ -36,7 +36,7 @@ export const LiveDsh = component$((props: { pedido?: string }) => {
 
   const guardarVista = $(() => {
     try {
-      localStorage.setItem(CLAVE_REPARTO, JSON.stringify({ frac: vista.frac, visor: vista.visor }));
+      localStorage.setItem(CLAVE_REPARTO, JSON.stringify({ frac: vista.frac, visor: vista.visor, pista: vista.pista }));
     } catch {
       /* sin almacenamiento: el reparto dura esta pantalla */
     }
@@ -68,6 +68,7 @@ export const LiveDsh = component$((props: { pedido?: string }) => {
       const g = JSON.parse(localStorage.getItem(CLAVE_REPARTO) || "{}");
       if (typeof g.frac === "number") vista.frac = Math.min(MAX, Math.max(MIN, g.frac));
       if (typeof g.visor === "boolean") vista.visor = g.visor;
+      if (g.pista === false) vista.pista = false;
     } catch {
       /* sin almacenamiento */
     }
@@ -184,6 +185,26 @@ export const LiveDsh = component$((props: { pedido?: string }) => {
         </a>
       </div>
 
+      {st.fase === "listo" && vista.pista && (
+        <div class="lv-dsh-pista" role="note">
+          <Icon name="info" size={14} />
+          <span>
+            <b>Primera vez:</b> en «Choose workspace» elige <code>/trabajo</code>, tu carpeta de la clase. Luego pega el pedido y mira el resultado en el visor.
+          </span>
+          <button
+            type="button"
+            class="lv-ico-btn"
+            aria-label="Entendido, ocultar la pista"
+            title="Entendido"
+            onClick$={() => {
+              vista.pista = false;
+              guardarVista();
+            }}
+          >
+            <Icon name="x" size={14} />
+          </button>
+        </div>
+      )}
       <div class="lv-dshv-cuerpo">
         <div class="lv-dshv-agente">
           {st.fase === "listo" ? (

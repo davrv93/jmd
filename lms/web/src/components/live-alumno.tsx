@@ -306,6 +306,9 @@ export const LiveAlumno = component$(
       const e = (props.escenas ?? []).find((x) => x.id === id);
       if (!e?.dsh || movil.value || panel.value || dshVistas.ids.includes(id)) return;
       dshVistas.ids = [...dshVistas.ids, id];
+      // Construir con el agente pide más panel que escena: al menos el 56 % (agente arriba, visor abajo).
+      if (disp.pos === "derecha" && disp.derecha < 0.56) disp.derecha = 0.56;
+      if (disp.pos === "abajo" && disp.abajo < 0.6) disp.abajo = 0.6;
       abrirPestana("agente", false);
     });
 
