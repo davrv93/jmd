@@ -6,6 +6,7 @@ import { setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
 import { Empty, ErrorState, Loading } from "~/components/ui";
 import { IaConfig } from "~/components/ia-config";
+import { DeepseekClave } from "~/components/deepseek-clave";
 import { CertConfig } from "~/components/cert-config";
 
 export default component$(() => {
@@ -58,6 +59,7 @@ export default component$(() => {
         <>
           <div class="section-t"><Icon name="sparkles" /> Inteligencia artificial</div>
           <IaConfig />
+          <DeepseekClave />
           <div class="section-t"><Icon name="award" /> Certificados</div>
           <CertConfig />
         </>

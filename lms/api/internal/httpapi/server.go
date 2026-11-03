@@ -277,6 +277,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/admin/llm", s.authed(s.admin(s.adminLLMGet)))
 	mux.Handle("PUT /api/v1/admin/llm", s.authed(s.admin(s.adminLLMPut)))
 	mux.Handle("POST /api/v1/admin/llm/test", s.authed(s.admin(s.adminLLMTest)))
+	mux.Handle("GET /api/v1/admin/ia/deepseek", s.authed(s.admin(s.adminIADeepSeekGet)))
+	mux.Handle("PUT /api/v1/admin/ia/deepseek", s.authed(s.admin(s.adminIADeepSeekPut)))
+	mux.Handle("POST /api/v1/admin/ia/deepseek/probar", s.authed(s.admin(s.adminIADeepSeekProbar)))
+	mux.Handle("DELETE /api/v1/admin/ia/deepseek", s.authed(s.admin(s.adminIADeepSeekBorrar)))
 	// Certificados verificables e insignias Open Badges 3.0 (ver certificados.go y badges.go).
 	mux.Handle("GET /api/v1/admin/certificados/config", s.authed(s.admin(s.adminCertConfigGet)))
 	mux.Handle("PUT /api/v1/admin/certificados/config", s.authed(s.admin(s.adminCertConfigPut)))

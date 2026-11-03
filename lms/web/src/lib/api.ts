@@ -258,6 +258,26 @@ export interface LlmTest {
   model: string;
   detail: string;
 }
+// Clave de DeepSeek del sistema (panel del instructor): la usa el botón «Abrir DeepSeek Harness» de esos grupos.
+export interface DeepSeekSaldo {
+  ok: boolean;
+  estado: number;
+  ms: number;
+  saldo?: string;
+  disponible?: boolean;
+  detalle?: string;
+}
+export interface DeepSeekSistema {
+  disponible: boolean;
+  clave_puesta: boolean;
+  clave_pista: string;
+  grupos: string[];
+  por: string;
+  fecha: string;
+  entorno: string[];
+  cohortes: { id: string; cursos: string[] }[];
+  saldo?: DeepSeekSaldo;
+}
 export interface CertConfig {
   emisor: string;
   ruc: string;
@@ -367,6 +387,10 @@ export const api = {
   dshEstado: () => req<DshEstado>("GET", "/api/v1/dsh"),
   dshClave: (clave: string) => req<{ clave: DshEstado["clave"]; propia: boolean }>("POST", "/api/v1/dsh/clave", { clave }),
   dshOlvidar: () => req<{ clave: DshEstado["clave"]; propia: boolean }>("POST", "/api/v1/dsh/olvidar", {}),
+  deepseekSistema: () => req<DeepSeekSistema>("GET", "/api/v1/admin/ia/deepseek"),
+  guardarDeepseekSistema: (b: { clave?: string; grupos: string[] }) => req<DeepSeekSistema>("PUT", "/api/v1/admin/ia/deepseek", b),
+  probarDeepseekSistema: (clave?: string) => req<DeepSeekSaldo>("POST", "/api/v1/admin/ia/deepseek/probar", { clave: clave ?? "" }),
+  quitarDeepseekSistema: () => req<DeepSeekSistema>("DELETE", "/api/v1/admin/ia/deepseek", {}),
   dshAbrir: () => req<{ url: string; modo: "propia" | "clase" }>("POST", "/api/v1/dsh/abrir", {}),
   inscripcion: (grupo: string) => req<Inscripcion>("GET", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`),
   inscribirse: (grupo: string, b: { name: string; email: string; password: string }) =>

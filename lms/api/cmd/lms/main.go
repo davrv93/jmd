@@ -34,6 +34,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -139,6 +140,7 @@ func run() error {
 		slog.Info("aula por alumno activa", "imagen", a.Imagen)
 	}
 	srv.IA = iaDesdeEntorno(dataDir, srv.PublicURL)
+	srv.CargarClaveSistema(ctx)
 	if srv.Runner.Available() {
 		slog.Info("runner de código activo", "runtime", srv.Runner.Runtime, "timeout", srv.Runner.Timeout)
 	} else {
@@ -210,7 +212,8 @@ func claseDesdeEntorno(dataDir string) *aula.Clase {
 //	LMS_IA_TOPE_PETICIONES (600/día), LMS_IA_TOPE_TOKENS (4000000/día), LMS_IA_SIMULTANEAS (4) por alumno
 //	LMS_IA_URL_AULA (raíz del LMS vista desde el aula; por defecto LMS_PUBLIC_URL), LMS_IA_UPSTREAM
 //
-// Las claves se leen y se borran del entorno del proceso: no las heredan los «docker» que lanza el LMS.
+// Las claves se leen y se borran del entorno del proceso: no las heredan los «docker» que lanza el LMS. Sin claves en
+// el entorno el relé existe igual (apagado) para que la clave del sistema del panel del instructor lo encienda.
 func iaDesdeEntorno(dataDir, publicURL string) *httpapi.IAConfig {
 	grupos := listaEntorno("LMS_IA_GLOBAL_COHORTES")
 	defecto := strings.TrimSpace(os.Getenv("LMS_DEEPSEEK_API_KEY"))
@@ -234,11 +237,8 @@ func iaDesdeEntorno(dataDir, publicURL string) *httpapi.IAConfig {
 	for _, v := range vars {
 		_ = os.Unsetenv(v)
 	}
-	if len(claves) == 0 {
-		if defecto != "" {
-			slog.Warn("LMS_DEEPSEEK_API_KEY sin LMS_IA_GLOBAL_COHORTES: ningún grupo usa la clave de la clase")
-		}
-		return nil
+	if len(claves) == 0 && defecto != "" {
+		slog.Warn("LMS_DEEPSEEK_API_KEY sin LMS_IA_GLOBAL_COHORTES: ningún grupo usa la clave de la clase")
 	}
 	secreto, err := secretoClase(dataDir)
 	if err != nil {
@@ -255,7 +255,8 @@ func iaDesdeEntorno(dataDir, publicURL string) *httpapi.IAConfig {
 	for g := range claves {
 		gs = append(gs, g)
 	}
-	slog.Info("relé de IA (clave de la clase) activo", "grupos", strings.Join(gs, ","), "base_aula", c.BaseAula(publicURL))
+	sort.Strings(gs)
+	slog.Info("relé de IA listo (la clave del sistema se pone desde el panel del instructor)", "grupos_entorno", strings.Join(gs, ","), "base_aula", c.BaseAula(publicURL))
 	return c
 }
 

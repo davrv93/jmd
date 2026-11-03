@@ -41,9 +41,10 @@ import (
 //
 // Qué se registra: aula (nombre hash), grupo, ruta, estado, ms y tokens. Nunca cuerpos, claves ni tokens.
 
-// IAConfig configura el relé. nil o sin claves = relé apagado (503) y el botón pide la clave propia.
+// IAConfig configura el relé. nil o sin claves (ni del entorno ni del sistema) = relé apagado (503) y el botón pide
+// la clave propia.
 type IAConfig struct {
-	// Claves por grupo (cohorte → clave de DeepSeek). Solo existen en el entorno del LMS.
+	// Claves por grupo (cohorte → clave de DeepSeek) del entorno del LMS. La clave del sistema (PonerSistema) se suma.
 	Claves map[string]string
 	// Upstream: raíz de la Messages API de DeepSeek (por defecto https://api.deepseek.com/anthropic).
 	Upstream string
@@ -62,6 +63,9 @@ type IAConfig struct {
 
 	once      sync.Once
 	uso       *iaUso
+	mu        sync.RWMutex
+	sistema   string   // clave del sistema (panel del instructor, guardada en la base); manda sobre Claves
+	sisGrupos []string // grupos que usan la clave del sistema
 	inicios   sync.Map // sub → iaInicio (caché corta de Aula.Inicio)
 	transport http.RoundTripper
 }
@@ -85,7 +89,52 @@ const (
 var zonaLima = time.FixedZone("Lima", -5*3600)
 
 // Activo: hay al menos una clave de clase y un secreto para firmar tokens.
-func (c *IAConfig) Activo() bool { return c != nil && len(c.Claves) > 0 && len(c.Secreto) > 0 }
+func (c *IAConfig) Activo() bool { return c != nil && len(c.Secreto) > 0 && len(c.grupos()) > 0 }
+
+// claveDe: la clave de DeepSeek del grupo ("" si no tiene). La del sistema manda sobre la del entorno.
+func (c *IAConfig) claveDe(grupo string) string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.sistema != "" {
+		for _, g := range c.sisGrupos {
+			if g == grupo {
+				return c.sistema
+			}
+		}
+	}
+	return c.Claves[grupo]
+}
+
+// grupos: todos los grupos con clave (del entorno o del sistema), ordenados y sin repetir.
+func (c *IAConfig) grupos() []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	vistos := map[string]bool{}
+	for g, k := range c.Claves {
+		if k != "" {
+			vistos[g] = true
+		}
+	}
+	if c.sistema != "" {
+		for _, g := range c.sisGrupos {
+			vistos[g] = true
+		}
+	}
+	out := make([]string, 0, len(vistos))
+	for g := range vistos {
+		out = append(out, g)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// PonerSistema cambia en caliente la clave del sistema y sus grupos (clave vacía = sin clave del sistema).
+func (c *IAConfig) PonerSistema(clave string, grupos []string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.sistema = clave
+	c.sisGrupos = append([]string(nil), grupos...)
+}
 
 func (c *IAConfig) iniciar() {
 	c.once.Do(func() {
@@ -145,7 +194,7 @@ func (c *IAConfig) GrupoCon(cohortes []string) string {
 	cs := append([]string(nil), cohortes...)
 	sort.Strings(cs)
 	for _, g := range cs {
-		if c.Claves[g] != "" {
+		if c.claveDe(g) != "" {
 			return g
 		}
 	}
@@ -406,7 +455,7 @@ func (s *Server) iaRele(w http.ResponseWriter, r *http.Request) {
 		registrar()
 		return
 	}
-	clave := c.Claves[grupo]
+	clave := c.claveDe(grupo)
 
 	// Topes del día y simultáneas.
 	us := c.uso
@@ -666,14 +715,7 @@ func (s *Server) iaUsoHoy(w http.ResponseWriter, r *http.Request, p *Principal) 
 	})
 }
 
-func (c *IAConfig) gruposOrdenados() []string {
-	out := make([]string, 0, len(c.Claves))
-	for g := range c.Claves {
-		out = append(out, g)
-	}
-	sort.Strings(out)
-	return out
-}
+func (c *IAConfig) gruposOrdenados() []string { return c.grupos() }
 
 // ArchivoUso: dónde se guarda el uso del día dentro de la carpeta de datos del LMS.
 func ArchivoUso(dataDir string) string {
