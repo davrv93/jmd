@@ -59,7 +59,7 @@ func TestVistaSirveIndex(t *testing.T) {
 	if r.code != 200 || !strings.HasPrefix(r.hdr.Get("Content-Type"), "text/html") || !strings.Contains(string(r.raw), "<h1>hola</h1>") {
 		t.Fatalf("index: %d %s", r.code, r.raw)
 	}
-	if r.hdr.Get("Cache-Control") != "no-store" || r.hdr.Get("X-Frame-Options") != "SAMEORIGIN" || !strings.Contains(r.hdr.Get("Content-Security-Policy"), "esm.sh") {
+	if r.hdr.Get("Cache-Control") != "no-store" || r.hdr.Get("X-Frame-Options") != "SAMEORIGIN" || !strings.Contains(r.hdr.Get("Content-Security-Policy"), "https:") {
 		t.Errorf("cabeceras: %v", r.hdr)
 	}
 	if n := strings.Count(string(r.raw), "<script>"); n != 1 {
@@ -219,9 +219,10 @@ func TestVistaApiBackendDelAlumno(t *testing.T) {
 	}
 }
 
-// La CSP deja al front (Lit desde esm.sh) llamar a su /vista/<sub>/api y mostrar el QR como data: o png.
+// La CSP deja al front (Lit desde esm.sh u otro CDN) llamar a su /vista/<sub>/api, mostrar el QR como data: o png y
+// salir a internet por HTTPS; nunca se enmarca fuera del LMS.
 func TestVistaCSPClase3(t *testing.T) {
-	for _, quiere := range []string{"script-src 'self' 'unsafe-inline' https://esm.sh", "connect-src 'self'", "img-src 'self' data: blob:"} {
+	for _, quiere := range []string{"script-src 'self' 'unsafe-inline' 'unsafe-eval' https:", "connect-src 'self' https:", "img-src 'self' data: blob: https:", "font-src 'self' data: https:", "frame-ancestors 'self'"} {
 		if !strings.Contains(cspVista, quiere) {
 			t.Errorf("CSP sin %q: %s", quiere, cspVista)
 		}

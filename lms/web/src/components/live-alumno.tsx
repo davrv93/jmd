@@ -297,6 +297,18 @@ export const LiveAlumno = component$(
 
     const alternarPanel = $(() => (panel.value ? cerrarPanel() : abrirPestana(ultima.value)));
 
+    // Al llegar a una escena con DeepSeek Harness, el panel se abre solo en esa pestaña (agente y visor juntos), una
+    // vez por escena y solo si el alumno no tenía otro panel abierto. En el teléfono no: allí tapa la escena.
+    const dshVistas = useStore<{ ids: string[] }>({ ids: [] });
+    // eslint-disable-next-line qwik/no-use-visible-task
+    useVisibleTask$(({ track }) => {
+      const id = track(() => local.value || escena.value);
+      const e = (props.escenas ?? []).find((x) => x.id === id);
+      if (!e?.dsh || movil.value || panel.value || dshVistas.ids.includes(id)) return;
+      dshVistas.ids = [...dshVistas.ids, id];
+      abrirPestana("agente", false);
+    });
+
     const alternarBarra = $(() => {
       if (movil.value) return; // en el teléfono las pestañas de abajo no se esconden
       const dentro = !!(document.activeElement as HTMLElement | null)?.closest?.(".lv-act");
@@ -614,6 +626,8 @@ export const LiveAlumno = component$(
     const umbral = actual?.umbral_pct ?? 80;
     const conLogre = !!actual?.lo_logre;
     const conDsh = !!actual?.dsh; // escena.yaml «dsh: true»
+    // El pedido para pegar en DeepSeek Harness: el primer comando de la escena cuyo título empieza así.
+    const pedidoDsh = actual?.comandos?.find((c) => c.titulo.startsWith("DeepSeek Harness") && c.cmd)?.cmd ?? "";
     const numero = actual ? `${idx + 1}/${lista.length}` : "";
     const logrado = !!actual && logres.ids.includes(aid);
 
@@ -1032,7 +1046,19 @@ export const LiveAlumno = component$(
               )}
             </div>
             <div id="lv-tp-agente" role="tabpanel" aria-labelledby="lv-tab-agente" class="lv-tp lv-tp-agente" hidden={panel.value !== "agente"}>
-              {dshAbierta.value && <LiveDsh />}
+              {dshAbierta.value && (
+                <LiveDsh pedido={pedidoDsh}>
+                  {panel.value === "agente" && session.me && !flot.on && <LiveVisor lesson={props.lesson} escena={efectiva} sub={session.me.id} ruta={rutaVisor} proy={proyVisor} />}
+                  {panel.value === "agente" && flot.on && (
+                    <div class="lv-flot-aviso">
+                      <p>El visor está en una ventana flotante.</p>
+                      <button type="button" class="btn ghost sm" onClick$={acoplar}>
+                        <Icon name="panelDerecha" size={14} /> Acoplarlo aquí
+                      </button>
+                    </div>
+                  )}
+                </LiveDsh>
+              )}
             </div>
             <div id="lv-tp-skills" role="tabpanel" aria-labelledby="lv-tab-skills" class="lv-tp lv-tp-skills" hidden={panel.value !== "skills"}>
               {skillsAbierta.value && <MisSkills prueba={prueba} onIr$={irA} nueva={props.skillNueva} />}

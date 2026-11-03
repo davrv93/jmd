@@ -31,9 +31,13 @@ var mimeVista = map[string]string{
 	".woff": "font/woff", ".woff2": "font/woff2", ".map": "application/json; charset=utf-8", ".wasm": "application/wasm",
 }
 
-// cspVista: la página del alumno corre en el origen del LMS, así que se acota: sus propios archivos y esm.sh.
-const cspVista = "default-src 'self' https://esm.sh; script-src 'self' 'unsafe-inline' https://esm.sh; " +
-	"style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'self'"
+// cspVista: la página del alumno sale a internet como en su laptop (CDN, Google Fonts, imágenes y APIs por HTTPS):
+// lo que arma el agente casi siempre trae <script src="https://cdn…">. Corre en el origen del LMS y ya admitía JS
+// en línea, así que abrir https: no le da acceso nuevo al LMS; sí le deja enviar datos fuera. Solo la abren su dueño
+// y el instructor de su grupo (vistaAcceso). Sigue sin http: plano y solo se enmarca en el propio LMS.
+const cspVista = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:; " +
+	"style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; " +
+	"media-src 'self' blob: https:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-ancestors 'self'"
 
 // scriptConsola avisa al panel de los errores de la página (T-4.6) y lleva las llamadas a «/api/…» (fetch,
 // XMLHttpRequest, EventSource) a «/vista/<tú>/api/…»: los agentes escriben fetch("/api/x") como en localhost y,
