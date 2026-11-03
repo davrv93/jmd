@@ -84,6 +84,10 @@ function moverFoco(e: KeyboardEvent, caja: HTMLElement): HTMLElement | null {
 // (Terminal, Visor, Agente, Mis skills) a la derecha o abajo con un divisor que se arrastra, la ayuda
 // en una barra lateral y una barra de estado abajo. En tablet y móvil, cada vista a pantalla completa
 // con las pestañas abajo.
+// Escenas cuyo iframe puede descargar archivos (el MP4 de la flor, la música): el sandbox lleva allow-downloads
+// en cualquier grupo de la sesión 2 (de-02, dl-02, dm-02, dt-02…); sin él, el navegador ignora «⬇ Descargar».
+const ESCENAS_CON_DESCARGA = new Set(["01-tu-video", "05-escucha-y-descarga", "09-musica-con-lyria"]);
+
 export const LiveAlumno = component$(
   (props: {
     lesson: string;
@@ -902,7 +906,7 @@ export const LiveAlumno = component$(
                   ref={marco}
                   class="live-frame lv-marco"
                   onLoad$={() => avisarEscena(marco.value, props.estado)}
-                  sandbox={props.lesson === "qa-01" && efectiva === "01-descarga" ? "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" : props.lesson === "de-02" && ["05-escucha-y-descarga", "09-musica-con-lyria"].includes(efectiva) ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin"}
+                  sandbox={props.lesson === "qa-01" && efectiva === "01-descarga" ? "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" : ESCENAS_CON_DESCARGA.has(efectiva) ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin"}
                   allow="microphone; clipboard-write"
                   title="Escena"
                   src={urlEscena(props.lesson, efectiva, tema.value)}
