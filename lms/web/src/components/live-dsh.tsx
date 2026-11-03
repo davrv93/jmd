@@ -77,7 +77,7 @@ export const LiveDsh = component$(() => {
 
   if (st.fase === "listo") {
     return (
-      <div class="lv-dsh">
+      <div class="lv-dsh-panel">
         <div class="lv-dsh-barra">
           <span class="lv-dsh-modo">
             <i class="lv-punto verde" aria-hidden="true" />
