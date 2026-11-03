@@ -259,7 +259,7 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
           </ol>
           <div class="mesa-alumnos-cab">
             <span>
-              <Icon name="users" size={13} /> {props.presentes.length} {props.presentes.length === 1 ? "conectado" : "conectados"}
+              <Icon name="users" size={13} /> {props.presentes.length} {props.presentes.length === 1 ? "alumno en vivo" : "alumnos en vivo"}
             </span>
             <button type="button" class="btn ghost sm" title="Un enlace por alumno que inicia su sesión y lo trae a este LIVE" onClick$={() => (verAccesos.value = true)}>
               <Icon name="link" size={13} /> Enlaces de acceso
