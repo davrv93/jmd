@@ -3,6 +3,7 @@ import { api, type EscenaLive, type LiveEstado, type ParejaLive } from "~/lib/ap
 import { SessionContext, toast } from "~/lib/session";
 import { Icon } from "~/components/icon";
 import { Terminal } from "~/components/terminal";
+import { LiveDsh } from "~/components/live-dsh";
 import { LiveVisor, type EstadoProyectos } from "~/components/live-visor";
 import { ChipPrueba, MisSkills, type PruebaSkill } from "~/components/mis-skills";
 import { Copy } from "~/components/ui";
@@ -14,7 +15,7 @@ type Pestana = "terminal" | "visor" | "agente" | "skills";
 const PESTANAS: readonly (readonly [Pestana, string, string, string])[] = [
   ["terminal", "Terminal", "Terminal", "terminal"],
   ["visor", "Visor", "Visor", "eye"],
-  ["agente", "Agente", "Agente", "sparkles"],
+  ["agente", "DeepSeek Harness", "DeepSeek", "sparkles"],
   ["skills", "Mis skills", "Skills", "wand"],
 ];
 const esPestana = (x: unknown): x is Pestana => PESTANAS.some(([id]) => id === x);
@@ -26,7 +27,7 @@ const ACTIVIDAD: readonly (readonly [Actividad, string, string, string])[] = [
   ["escenas", "Todas las escenas", "Lista", "layers"],
   ["terminal", "Terminal", "Terminal", "terminal"],
   ["visor", "Visor", "Visor", "eye"],
-  ["agente", "Agente", "Agente", "sparkles"],
+  ["agente", "DeepSeek Harness", "DeepSeek", "sparkles"],
   ["skills", "Mis skills", "Skills", "wand"],
   ["ayuda", "Ayuda de la escena", "Ayuda", "help"],
 ];
@@ -120,6 +121,7 @@ export const LiveAlumno = component$(
     const ladoEscenas = useSignal(false); // la barra lateral muestra la lista de escenas en vez de la ayuda
     const termAbierta = useSignal(false); // la terminal se queda montada al cambiar de pestaña
     const skillsAbierta = useSignal(false); // «Mis skills» también: sigue atenta a la prueba aunque cambies de pestaña
+    const dshAbierta = useSignal(false); // DeepSeek Harness también: cambiar de pestaña no corta la conversación
     const prueba = useStore<PruebaSkill>({ estado: "", nombre: "", desde: 0 });
     const disp = useStore({ pos: "derecha" as Posicion, derecha: INICIAL.derecha, abajo: INICIAL.abajo, max: false, actividad: true });
     const movil = useSignal(false); // < 1100 px: vistas a pantalla completa
@@ -176,8 +178,12 @@ export const LiveAlumno = component$(
       const alRecibir = (e: MessageEvent) => {
         if (e.origin !== location.origin || !marco.value || e.source !== marco.value.contentWindow) return;
         const d = e.data;
-        if (d && (d.tipo === "abrir-dsh" || d.tipo === "dsh-clave")) {
-          const w = window.open(d.tipo === "dsh-clave" ? "/deepseek/?clave=1" : "/deepseek/", "_blank");
+        if (d && d.tipo === "abrir-dsh") {
+          abrirPestana("agente", false); // DeepSeek Harness en el panel, al lado de la escena
+          return;
+        }
+        if (d && d.tipo === "dsh-clave") {
+          const w = window.open("/deepseek/?clave=1", "_blank");
           if (w) w.opener = null;
           else toast(session, "Tu navegador bloqueó la pestaña nueva. Usa el botón «Abrir DeepSeek Harness» de arriba.", "bad");
           return;
@@ -252,6 +258,7 @@ export const LiveAlumno = component$(
       ultima.value = p;
       if (p === "terminal") termAbierta.value = true;
       if (p === "skills") skillsAbierta.value = true;
+      if (p === "agente") dshAbierta.value = true;
       if (movil.value) ayuda.value = false; // en el teléfono, una vista a la vez
       guardar();
       setTimeout(() => {
@@ -852,9 +859,9 @@ export const LiveAlumno = component$(
               <div class="lv-escena-acc">
                 {conDsh && (
                   <>
-                    <a class="btn sm lv-dsh" href="/deepseek/" target="_blank" rel="noopener" data-testid="abrir-dsh" title="Abre DeepSeek Harness en una pestaña nueva">
+                    <button type="button" class="btn sm lv-dsh" data-testid="abrir-dsh" title="Abre DeepSeek Harness en el panel, al lado de la escena" onClick$={() => abrirPestana("agente")}>
                       <Icon name="sparkles" size={14} /> Abrir DeepSeek Harness
-                    </a>
+                    </button>
                     <a class="lv-ico-btn" href="/deepseek/?clave=1" target="_blank" rel="noopener" aria-label="Mi clave de DeepSeek" title="Mi clave de DeepSeek">
                       <Icon name="lock" size={16} />
                     </a>
@@ -1024,16 +1031,8 @@ export const LiveAlumno = component$(
                 </div>
               )}
             </div>
-            <div id="lv-tp-agente" role="tabpanel" aria-labelledby="lv-tab-agente" class="lv-tp lv-tp-agente" tabIndex={0} hidden={panel.value !== "agente"}>
-              <span class="lv-agente-ico">
-                <Icon name="sparkles" size={22} />
-              </span>
-              <p>
-                <b>Tu agente de código.</b> Escríbele lo que quieres cambiar. En la terminal también puedes usar <code>jmd chat</code>.
-              </p>
-              <button type="button" class="btn ghost sm" onClick$={() => abrirPestana("terminal")}>
-                <Icon name="terminal" size={14} /> Abrir la terminal
-              </button>
+            <div id="lv-tp-agente" role="tabpanel" aria-labelledby="lv-tab-agente" class="lv-tp lv-tp-agente" hidden={panel.value !== "agente"}>
+              {dshAbierta.value && <LiveDsh />}
             </div>
             <div id="lv-tp-skills" role="tabpanel" aria-labelledby="lv-tab-skills" class="lv-tp lv-tp-skills" hidden={panel.value !== "skills"}>
               {skillsAbierta.value && <MisSkills prueba={prueba} onIr$={irA} nueva={props.skillNueva} />}
