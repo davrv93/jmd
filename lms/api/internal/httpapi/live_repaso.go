@@ -282,7 +282,7 @@ func (s *Server) repasoAcceso(w http.ResponseWriter, r *http.Request, p *Princip
 	if l == nil {
 		return false
 	}
-	if l.ID != "de-02" || s.Content.Get().Escena(l.ID, repasoEscena) == nil {
+	if l.ID != "de-02" && s.Content.Get().Escena(l.ID, repasoEscena) == nil {
 		notFound(w, "el juego de repaso")
 		return false
 	}

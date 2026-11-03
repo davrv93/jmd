@@ -36,10 +36,12 @@ const musicaModelo = "google/lyria-3-clip-preview"
 const musicaMaxAudio = 8 << 20
 
 func (s *Server) liveMusicaCrear(w http.ResponseWriter, r *http.Request, p *Principal) {
-	if s.liveLeccion(w, r, p) == nil {
+	l := s.liveLeccion(w, r, p)
+	if l == nil {
 		return
 	}
-	if r.PathValue("lesson") != "de-02" {
+	// La actividad existe en cualquier grupo cuya sesión tenga la escena de Lyria (de-02, dl-02, dm-02, dt-02…).
+	if l.ID != "de-02" && s.Content.Get().Escena(l.ID, "09-musica-con-lyria") == nil {
 		notFound(w, "la actividad")
 		return
 	}
