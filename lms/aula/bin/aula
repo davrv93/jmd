@@ -165,6 +165,8 @@ dsh_tarea() {
   dsh_listo || return 1
   dsh_credencial || { echo "Aún no me diste tu clave de DeepSeek. Primero: aula dsh clave" >&2; return 1; }
   dsh_ws=$(dsh_espacio)
+  # El selector de carpetas de dsh web empieza en el home (tmpfs vacío): el enlace hace que aparezca «trabajo».
+  [ -e "$HOME/trabajo" ] || ln -s /trabajo "$HOME/trabajo" 2>/dev/null
   dsh_err=$(mktemp /tmp/aula-dsh-err.XXXXXX) || return 1
   dsh_st=$(mktemp /tmp/aula-dsh-st.XXXXXX) || return 1
   echo "dsh trabaja en $dsh_ws … (puede tardar un minuto; Ctrl+C para cancelar)" >&2

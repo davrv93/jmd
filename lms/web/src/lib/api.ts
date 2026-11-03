@@ -391,6 +391,8 @@ export const api = {
   guardarDeepseekSistema: (b: { clave?: string; grupos: string[] }) => req<DeepSeekSistema>("PUT", "/api/v1/admin/ia/deepseek", b),
   probarDeepseekSistema: (clave?: string) => req<DeepSeekSaldo>("POST", "/api/v1/admin/ia/deepseek/probar", { clave: clave ?? "" }),
   quitarDeepseekSistema: () => req<DeepSeekSistema>("DELETE", "/api/v1/admin/ia/deepseek", {}),
+  dshVer: (sub: string) => req<{ url: string }>("POST", `/api/v1/dsh/ver/${encodeURIComponent(sub)}`, {}),
+  liveAccesos: (lesson: string) => req<{ vence: string; curso: string; alumnos: AccesoAlumno[] }>("GET", `/api/v1/live/${encodeURIComponent(lesson)}/accesos`),
   dshAbrir: () => req<{ url: string; modo: "propia" | "clase" }>("POST", "/api/v1/dsh/abrir", {}),
   inscripcion: (grupo: string) => req<Inscripcion>("GET", `/api/v1/inscripcion/${encodeURIComponent(grupo)}`),
   inscribirse: (grupo: string, b: { name: string; email: string; password: string }) =>
@@ -524,6 +526,13 @@ export interface SkillCurso {
 }
 
 // Alumno conectado, tal como lo ve el instructor en el evento `presencia`.
+export interface AccesoAlumno {
+  sub: string;
+  nombre: string;
+  email: string;
+  url: string;
+}
+
 export interface PresenteLive {
   sub: string;
   nombre: string;

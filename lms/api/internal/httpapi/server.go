@@ -188,6 +188,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/dsh/clave", s.authed(s.dshGuardarClave))
 	mux.Handle("POST /api/v1/dsh/olvidar", s.authed(s.dshOlvidarClave))
 	mux.Handle("POST /api/v1/dsh/abrir", s.authed(s.dshAbrir))
+	mux.Handle("POST /api/v1/dsh/ver/{sub}", s.authed(s.staff(s.dshVer)))
+	mux.Handle("GET /api/v1/live/{lesson}/accesos", s.authed(s.staff(s.liveAccesos)))
+	mux.HandleFunc("GET /api/v1/auth/enlace", s.authEnlace) // sin sesión: el enlace firmado es la credencial
 	mux.HandleFunc("/api/v1/ia/anthropic/{resto...}", s.iaRele) // sin sesión: token del aula (x-api-key)
 	mux.Handle("GET /api/v1/ia/uso", s.authed(s.staff(s.iaUsoHoy)))
 	mux.Handle("POST /api/v1/aula/iniciar", s.authed(s.aulaIniciar))

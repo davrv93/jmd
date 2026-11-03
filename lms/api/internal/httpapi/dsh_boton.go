@@ -210,6 +210,8 @@ func (s *Server) dshAbrir(w http.ResponseWriter, r *http.Request, p *Principal) 
 		modo = "clase"
 	}
 
+	// El selector de carpetas de dsh empieza en el home del alumno (un tmpfs vacío): sin este enlace nunca ve /trabajo.
+	_, _ = s.Aula.Exec(ctx, nombre, `[ -e "$HOME/trabajo" ] || ln -s /trabajo "$HOME/trabajo"`)
 	out, err := s.Aula.ExecTope(ctx, nombre, "aula dsh abrir", nil, dshAbrirTope)
 	if err != nil {
 		slog.Warn("dsh: «aula dsh abrir» falló", "aula", nombre, "salida", sinTokens(out), "err", err)

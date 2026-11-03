@@ -189,7 +189,7 @@ export const LiveDsh = component$((props: { pedido?: string }) => {
         <div class="lv-dsh-pista" role="note">
           <Icon name="info" size={14} />
           <span>
-            <b>Primera vez:</b> en «Choose workspace» elige <code>/trabajo</code>, tu carpeta de la clase. Luego pega el pedido y mira el resultado en el visor.
+            <b>Primera vez:</b> pulsa «Choose workspace», toca la carpeta <b>trabajo</b> y luego <b>Open</b>. Después pega el pedido y mira tu bot en el visor.
           </span>
           <button
             type="button"

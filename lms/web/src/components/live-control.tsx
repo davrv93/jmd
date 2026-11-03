@@ -3,6 +3,7 @@ import { api, errMsg, requireLogin, type CompuertaLive, type LiveEstado, type Pr
 import { SessionContext, toast } from "~/lib/session";
 import { Icon } from "~/components/icon";
 import { LiveCompuerta } from "~/components/live-compuerta";
+import { AccesosAlumnos, PantallaAlumno } from "~/components/live-pantallas";
 import { avisarEscena, temaActual, urlEscena } from "~/lib/live";
 import { PHASE_BY_ID } from "~/lib/kolb";
 
@@ -22,6 +23,8 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
   const pendienteCerrar = useSignal(false);
   const texto = useSignal("");
   const cerrojo = useSignal<{ c: CompuertaLive; destino: string } | null>(null);
+  const pantalla = useSignal<{ sub: string; nombre: string } | null>(null); // alumno cuya pantalla miras
+  const verAccesos = useSignal(false);
   const modo = useSignal(props.estado.modo); // eco inmediato del modo; el servidor confirma por el stream
   const pendienteAccion = useSignal<"" | "votos" | "muro">(""); // segundo clic para las acciones que borran
   const masAbierto = useSignal(false);
@@ -230,6 +233,10 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
 
   return (
     <div class="live-control mesa" ref={raiz} tabIndex={-1}>
+      {pantalla.value && (
+        <PantallaAlumno lesson={props.lesson} escena={escenaActual.value} sub={pantalla.value.sub} nombre={pantalla.value.nombre} onCerrar$={() => (pantalla.value = null)} />
+      )}
+      {verAccesos.value && <AccesosAlumnos lesson={props.lesson} onCerrar$={() => (verAccesos.value = false)} />}
       {cerrojo.value && <LiveCompuerta c={cerrojo.value.c} onEsperar$={() => (cerrojo.value = null)} onPasar$={pasarIgual} />}
       <div class="live-main">
         <aside class="live-escenas mesa-rail" aria-label="Escenas">
@@ -250,12 +257,23 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
               </li>
             ))}
           </ol>
+          <div class="mesa-alumnos-cab">
+            <span>
+              <Icon name="users" size={13} /> {props.presentes.length} {props.presentes.length === 1 ? "conectado" : "conectados"}
+            </span>
+            <button type="button" class="btn ghost sm" title="Un enlace por alumno que inicia su sesión y lo trae a este LIVE" onClick$={() => (verAccesos.value = true)}>
+              <Icon name="link" size={13} /> Enlaces de acceso
+            </button>
+          </div>
           {props.presentes.length > 0 && (
-            <ul class="live-alumnos" aria-label="Alumnos conectados">
+            <ul class="live-alumnos" aria-label="Alumnos conectados: toca uno para ver su pantalla">
               {props.presentes.map((a) => (
                 <li key={a.sub}>
-                  <span class={`semaforo ${a.semaforo}`} role="img" aria-label={etiquetaSemaforo(a.semaforo)} title={etiquetaSemaforo(a.semaforo)} />
-                  <span class="live-alumno-nombre">{a.nombre}</span>
+                  <button type="button" class="mesa-alumno" title={`Ver la pantalla de ${a.nombre} · ${etiquetaSemaforo(a.semaforo)}`} onClick$={() => (pantalla.value = { sub: a.sub, nombre: a.nombre })}>
+                    <span class={`semaforo ${a.semaforo}`} role="img" aria-label={etiquetaSemaforo(a.semaforo)} />
+                    <span class="live-alumno-nombre">{a.nombre}</span>
+                    <Icon name="monitor" size={13} />
+                  </button>
                 </li>
               ))}
             </ul>
