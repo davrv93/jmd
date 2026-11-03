@@ -32,6 +32,9 @@ export default component$(() => {
           <h1>Instructor</h1>
           <p>Avance de los alumnos por curso. Para calificar, abre una tarea y ve a «Calificar».</p>
         </div>
+        <Link class="btn" href="/instructor/agenda/">
+          <Icon name="calendar" size={15} /> Agenda de clases
+        </Link>
       </div>
       {st.error && <ErrorState message={st.error} retry$={load} />}
       {!st.error && st.list === null && <Loading lines={3} />}

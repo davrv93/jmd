@@ -21,6 +21,18 @@ type Course struct {
 	ProyectoFinal string   `yaml:"proyecto_final" json:"proyecto_final,omitempty"`
 	Requisitos    []string `yaml:"requisitos" json:"requisitos,omitempty"`
 	Dedicacion    string   `yaml:"dedicacion" json:"dedicacion,omitempty"`
+
+	// Agenda (opcional): cómo sale el curso en el calendario del instructor. Sin este bloque se usa
+	// el título del curso, el nombre del grupo y sesiones de 90 minutos.
+	Agenda *CourseAgenda `yaml:"agenda" json:"-"`
+}
+
+// CourseAgenda es el nombre corto, el grupo, el área y la duración de las sesiones de un curso.
+type CourseAgenda struct {
+	Nombre  string `yaml:"nombre"`  // «Difícil de explicar»
+	Grupo   string `yaml:"grupo"`   // «Domingo mañana»
+	Area    string `yaml:"area"`    // agentica · diseno · datos · seguridad · qa · requerimientos · infra
+	Minutos int    `yaml:"minutos"` // duración de cada sesión
 }
 
 // Module agrupa sesiones. En el YAML lleva los ids; Lessons se rellena al cargar.
@@ -36,6 +48,7 @@ type Lesson struct {
 	ID         string      `yaml:"id" json:"id"`
 	Title      string      `yaml:"title" json:"title"`
 	StartsAt   *time.Time  `yaml:"starts_at" json:"starts_at"`
+	Duration   int         `yaml:"duration" json:"duration,omitempty"` // minutos; manda sobre agenda.minutos del curso
 	Published  bool        `yaml:"published" json:"published"`
 	Objectives []Objective `yaml:"objectives" json:"objectives"`
 	Recording  *Recording  `yaml:"recording" json:"recording"`

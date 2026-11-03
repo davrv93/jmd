@@ -408,6 +408,8 @@ export const api = {
   run: (language: string, code: string) => req<RunResult>("POST", "/api/v1/run", { language, code }),
   generate: (prompt: string) => req<{ html: string }>("POST", "/api/v1/generate", { prompt }),
   courseProgress: (id: string) => req<CourseProgress>("GET", `/api/v1/courses/${encodeURIComponent(id)}/progress`),
+  /** Calendario del instructor: sesiones con fecha de sus cursos + content/agenda.yaml, en orden de inicio. */
+  agenda: () => req<Agenda>("GET", "/api/v1/instructor/agenda"),
   // IA del Estudio: estado para cualquier usuario; configuración y prueba solo para el admin.
   llmStatus: () => req<LlmStatus>("GET", "/api/v1/llm/status"),
   llmConfig: () => req<LlmConfig>("GET", "/api/v1/admin/llm"),
@@ -657,3 +659,26 @@ export function rel(iso: string | null | undefined): string {
   const d = Math.round(abs / 86400e3);
   return f(d, d === 1 ? "día" : "días");
 }
+
+/** Una clase del calendario del instructor (GET /api/v1/instructor/agenda). Horas en RFC 3339 con -05:00. */
+export type AgendaClase = {
+  id: string;
+  tipo: "sesion" | "extra";
+  nombre: string;
+  grupo: string;
+  titulo: string;
+  curso_slug?: string;
+  area?: string;
+  numero?: number;
+  total?: number;
+  inicio: string;
+  fin: string;
+  minutos: number;
+  live: boolean;
+  publicada: boolean;
+  /** Grupo con inscripción abierta por enlace (/inscripcion/<grupo>/). */
+  inscripcion?: string;
+  estado: "confirmado" | "propuesto" | "por-confirmar";
+  nota?: string;
+};
+export type Agenda = { zona: string; clases: AgendaClase[] };

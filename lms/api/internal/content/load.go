@@ -36,6 +36,7 @@ type Catalog struct {
 	examples            map[string]*Example
 	// examplesByCourse va ordenado por order y luego por título.
 	examplesByCourse map[string][]*Example
+	agenda           []*AgendaExtra
 	fingerprint      string
 }
 
@@ -78,6 +79,9 @@ func Load(dir string) (*Catalog, error) {
 		c.courseByID[course.ID] = course
 	}
 	sort.Slice(c.courses, func(i, j int) bool { return c.courses[i].Title < c.courses[j].Title })
+	if c.agenda, err = loadAgenda(dir); err != nil {
+		return nil, err
+	}
 	fp, err := Fingerprint(dir)
 	if err != nil {
 		return nil, err
