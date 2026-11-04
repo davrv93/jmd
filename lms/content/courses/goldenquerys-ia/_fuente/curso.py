@@ -171,8 +171,9 @@ def fuga_html():
         return "data:font/woff2;base64," + base64.b64encode((fuentes / nombre).read_bytes()).decode()
 
     html = (d / "fuga.html").read_text(encoding="utf-8")
-    for marca, valor in {"{{FUENTE_TITULO}}": uri("BarlowCondensed-800.woff2"), "{{FUENTE_TEXTO}}": uri("Barlow-500.woff2"), "{{FUENTE_FUERTE}}": uri("Barlow-700.woff2"),
-                         "{{CAJA}}": json.dumps({k: caja[k] for k in ("sal", "iv", "ct", "iter")})}.items():
+    estadio = "data:image/webp;base64," + base64.b64encode((d / "estadio-fuga.webp").read_bytes()).decode()
+    for marca, valor in {"{{ESTADIO}}": estadio, "{{FUENTE_TITULO}}": uri("BarlowCondensed-800.woff2"), "{{FUENTE_TEXTO}}": uri("Barlow-500.woff2"), "{{FUENTE_FUERTE}}": uri("Barlow-700.woff2"),
+                         "{{CAJA}}": json.dumps(caja)}.items():
         html = html.replace(marca, valor)
     return html
 
