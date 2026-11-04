@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070b09">
+<title>Patea tu penal · GoldenQuerys</title>
+<meta name="description" content="Un penal por inscrito: patea y gana tu descuento en el curso GoldenQuerys.">
+<!-- Sorteo de penales. Plantilla: _fuente/sorteo/sorteo.html; la escribe _fuente/curso.py con la imagen y las fuentes
+     incrustadas (la CSP de las escenas solo admite data:). El resultado lo decide el servidor: /api/v1/sorteo-gol. -->
+<style>
+@font-face { font-family: "Barlow Condensed"; font-weight: 800; font-display: swap; src: url({{FUENTE_TITULO}}) format("woff2"); }
+@font-face { font-family: "Barlow"; font-weight: 500; font-display: swap; src: url({{FUENTE_TEXTO}}) format("woff2"); }
+@font-face { font-family: "Barlow"; font-weight: 700; font-display: swap; src: url({{FUENTE_FUERTE}}) format("woff2"); }
+:root { --noche: #070b09; --panel: #0c120f; --linea: rgba(233,240,235,.14); --texto: #eef3ef; --suave: #a9b6ae; --oro: #ffc83d; --cesped: #1f8a4c; --error: #ff9d8a; color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--noche); color: var(--texto); font: 500 15px/1.4 "Barlow", system-ui, sans-serif; }
+::selection { background: var(--oro); color: #14100a; }
+:focus-visible { outline: 2px solid var(--oro); outline-offset: 2px; }
+.juego { min-height: 100dvh; display: grid; grid-template-rows: minmax(280px, 38dvh) auto; }
+.cancha { position: relative; overflow: hidden; container-type: size; background: #05080a; }
+.escenario { position: absolute; left: 50%; bottom: 0; width: max(100cqw, 175cqh); aspect-ratio: 1344 / 768; transform: translateX(-50%); transform-origin: 50% 56%; }
+.foto { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.arquero { position: absolute; left: 50%; top: 50.2%; height: 14%; transform: translateX(-50%); }
+.tirada { position: absolute; left: 50%; top: 53%; width: 15%; transform: translateX(-50%); }
+.balon { position: absolute; left: 50%; top: 92%; width: 5.4%; transform: translate(-50%, -50%); filter: brightness(.86) drop-shadow(0 .5vh .6vh rgba(0,0,0,.6)); }
+.destello { position: absolute; width: 16%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,255,255,.95), rgba(255,255,255,0)); opacity: 0; transform: translate(-50%, -50%); pointer-events: none; }
+.cielo { position: absolute; inset: 0 0 auto 0; height: 62%; background: linear-gradient(rgba(3,6,5,.82), rgba(3,6,5,0)); pointer-events: none; }
+h1 { position: absolute; left: 16px; top: 12px; margin: 0; font: 800 clamp(2.5rem, 12cqw, 4.6rem)/.9 "Barlow Condensed", sans-serif; letter-spacing: -.01em; text-transform: uppercase; text-wrap: balance; }
+h1 span { color: var(--oro); display: block; }
+.sonido { position: absolute; right: 12px; top: 12px; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--linea); border-radius: 50%; background: rgba(7,11,9,.62); color: var(--texto); cursor: pointer; }
+.sonido:hover { border-color: var(--oro); color: var(--oro); }
+.sonido .no { display: none; } .sonido[aria-pressed="false"] .si { display: none; } .sonido[aria-pressed="false"] .no { display: block; }
+.grito { position: absolute; left: 0; right: 0; bottom: 5%; margin: 0; text-align: center; font: 800 clamp(3rem, 15cqw, 6.5rem)/1 "Barlow Condensed", sans-serif; letter-spacing: .02em; text-transform: uppercase; color: var(--oro); text-shadow: 0 .05em .3em rgba(0,0,0,.75); pointer-events: none; }
+.panel { background: var(--panel); padding: 16px 16px max(16px, env(safe-area-inset-bottom)); display: grid; gap: 14px; align-content: start; }
+.bajada { margin: 0; color: var(--suave); max-width: 46ch; }
+.bajada b { color: var(--texto); font-weight: 700; }
+form { display: grid; gap: 8px; }
+label { display: grid; gap: 3px; font-size: .8rem; color: var(--suave); }
+input { width: 100%; min-width: 0; height: 46px; padding: 0 12px; font: 500 1rem "Barlow", sans-serif; color: var(--texto); caret-color: var(--oro); background: #141b17; border: 1px solid var(--linea); border-radius: 8px; }
+input:focus { border-color: var(--oro); outline: none; }
+.patear, .reclamar { height: 50px; border: 0; border-radius: 8px; font: 800 1.35rem "Barlow Condensed", sans-serif; letter-spacing: .02em; text-transform: uppercase; cursor: pointer; }
+.patear { background: var(--oro); color: #14100a; transition: background-color .15s ease-out; }
+.patear:hover:not(:disabled) { background: #ffd868; }
+.patear:disabled { opacity: .55; cursor: default; }
+.error { margin: 0; color: var(--error); font-size: .9rem; }
+.error a { color: inherit; font-weight: 700; text-underline-offset: 2px; }
+.resultado { display: grid; gap: 8px; }
+.cifra { margin: 0; font: 800 clamp(3.4rem, 18vw, 5rem)/.92 "Barlow Condensed", sans-serif; color: var(--oro); }
+.cifra.texto { font-size: clamp(2.2rem, 10vw, 3rem); text-transform: uppercase; line-height: 1; }
+.pago { margin: 0; font-size: 1.05rem; } .pago b { font-weight: 700; } .pago s { color: var(--suave); }
+.codigo { margin: 0; color: var(--suave); font-size: .9rem; } .codigo code { font: 700 1rem ui-monospace, Menlo, Consolas, monospace; color: var(--texto); }
+.acciones { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.reclamar { background: var(--cesped); color: #fff; }
+.reclamar:hover { background: #26a35a; }
+.copiar { height: 50px; padding: 0 14px; border: 1px solid var(--linea); border-radius: 8px; background: none; color: var(--texto); font: 700 .9rem "Barlow", sans-serif; cursor: pointer; }
+.copiar:hover { border-color: var(--oro); }
+.ayuda { margin: 0; color: var(--suave); font-size: .85rem; } .ayuda b { color: var(--texto); }
+h2 { margin: 2px 0 4px; font: 800 1.05rem "Barlow Condensed", sans-serif; letter-spacing: .05em; text-transform: uppercase; color: var(--suave); }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; font-variant-numeric: tabular-nums; }
+td { padding: 4px 0; border-top: 1px solid var(--linea); }
+td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; color: var(--suave); }
+tr.unico td:first-child { color: var(--oro); font-weight: 700; }
+tr.agotado td, tr.agotado td:first-child { color: var(--suave); font-weight: 500; text-decoration: line-through; }
+.nota { margin: 0; color: var(--suave); font-size: .82rem; }
+.nota b { color: var(--texto); }
+@media (min-width: 900px) {
+  .juego { grid-template-columns: minmax(0, 1fr) 372px; grid-template-rows: 100dvh; }
+  .panel { padding: 24px 22px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2a352f transparent; align-content: center; }
+  h1 { left: 28px; top: 22px; font-size: clamp(3.4rem, 7.4cqw, 5.8rem); }
+  .sonido { right: 18px; top: 18px; }
+}
+</style>
+</head>
+<body>
+<main class="juego">
+  <section class="cancha" aria-label="Estadio de noche con el arco al frente">
+    <div class="escenario" id="escenario">
+      <img class="foto" alt="" src="{{ESTADIO}}">
+      <img class="arquero" id="arquero" alt="" src="{{ARQUERO_LISTO}}">
+      <img class="tirada" id="tirada" alt="" src="{{ARQUERO_TIRADA}}" hidden>
+      <div class="destello" id="destello"></div>
+      <svg class="balon" id="balon" viewBox="0 0 100 100" aria-hidden="true">
+        <defs><radialGradient id="esfera" cx="38%" cy="32%" r="72%"><stop offset="0" stop-color="#fff"/><stop offset=".62" stop-color="#e4e7e3"/><stop offset="1" stop-color="#7c837e"/></radialGradient></defs>
+        <circle cx="50" cy="50" r="48" fill="url(#esfera)"/>
+        <path fill="#15191a" d="M50 32l17 12-6 20H39l-6-20zM50 4l13 7-1 10-12 6-12-6-1-10zM12 30l11-6 8 7-4 15-11 3-8-8zM88 30l-11-6-8 7 4 15 11 3 8-8zM28 86l-8-9 6-11 13 2 5 13-6 8zM72 86l8-9-6-11-13 2-5 13 6 8z"/>
+      </svg>
+    </div>
+    <div class="cielo"></div>
+    <h1>Un penal. <span>Tu descuento.</span></h1>
+    <button type="button" class="sonido" id="sonido" aria-pressed="true" aria-label="Sonido del estadio" title="Sonido del estadio">
+      <svg class="si" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+      <svg class="no" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="m17 9.5 5 5m0-5-5 5"/></svg>
+    </button>
+    <p class="grito" id="gol-grito" aria-hidden="true" hidden>¡Gol!</p>
+  </section>
+
+  <section class="panel">
+    <p class="bajada" id="gol-bajada">Curso GoldenQuerys: <b>S/ 100</b>. Un penal por inscrito y todos anotan: <b>20 % a 90 %</b> de descuento, más cuatro premios únicos.</p>
+    <form id="gol-form">
+      <label>Tu nombre<input id="gol-nombre" autocomplete="name" required minlength="3"></label>
+      <label>Tu correo de inscrito<input id="gol-correo" type="email" inputmode="email" autocomplete="email" required></label>
+      <button type="submit" class="patear" id="gq-girar">Patear el penal</button>
+      <p class="error" id="gol-error" role="alert" hidden></p>
+    </form>
+    <div class="resultado" id="gq-premio" role="status" aria-live="polite" hidden>
+      <p class="cifra" id="gq-pct"></p>
+      <p class="pago" id="gq-precio-p">Pagas <b id="gq-final"></b> <s>S/ 100</s></p>
+      <p class="codigo">Código <code id="gq-codigo"></code></p>
+      <div class="acciones">
+        <button type="button" class="reclamar" id="gq-whatsapp">Reclamar por WhatsApp</button>
+        <button type="button" class="copiar" id="gq-copiar">Copiar</button>
+      </div>
+      <p class="ayuda" id="gq-ayuda">O escribe al <b>986 149 476</b> con tu código.</p>
+    </div>
+    <div>
+      <h2>Probabilidades de cada penal</h2>
+      <table><tbody id="gol-tabla"><tr><td>Cargando…</td><td></td></tr></tbody></table>
+    </div>
+    <p class="nota"><span id="gol-giros"></span> Curso en vivo: <b>{{FECHA}}</b></p>
+  </section>
+</main>
+<script>
+(function () {
+  var API = "/api/v1/sorteo-gol", FECHA = {{FECHA_JSON}}, TEL = "51986149476";
+  var $ = function (id) { return document.getElementById(id); };
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var actual = null;
+
+  /* Sonido del estadio, sintetizado: no hay archivos. Arranca con el primer toque (el navegador no deja antes). */
+  var Son = (function () {
+    var ctx = null, maestro, hinchada, activo = true;
+    try { activo = localStorage.getItem("gol.sonido") !== "no"; } catch (e) {}
+    function ruido() {
+      var b = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate), d = b.getChannelData(0), u = 0;
+      for (var i = 0; i < d.length; i++) { u = (u + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = u * 3.5 + (Math.random() * 2 - 1) * .12; }
+      var s = ctx.createBufferSource(); s.buffer = b; s.loop = true; s.start(); return s;
+    }
+    function capa(f, q, nivel, lfo) {
+      var s = ruido(), bp = ctx.createBiquadFilter(), g = ctx.createGain(), o = ctx.createOscillator(), og = ctx.createGain();
+      bp.type = "bandpass"; bp.frequency.value = f; bp.Q.value = q; g.gain.value = nivel;
+      o.frequency.value = lfo; og.gain.value = nivel * .45; o.connect(og); og.connect(g.gain); o.start();
+      s.connect(bp); bp.connect(g); g.connect(hinchada);
+    }
+    function iniciar() {
+      if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
+      var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      ctx = new AC();
+      maestro = ctx.createGain(); maestro.gain.value = activo ? 1 : 0; maestro.connect(ctx.destination);
+      hinchada = ctx.createGain(); hinchada.gain.value = 0; hinchada.connect(maestro);
+      hinchada.gain.linearRampToValueAtTime(.34, ctx.currentTime + 2.5);
+      capa(320, .6, .9, .11); capa(760, .9, .55, .23); capa(1650, 1.2, .22, .37);
+    }
+    function silbato() {
+      if (!ctx) return;
+      var t = ctx.currentTime, g = ctx.createGain(), a = ctx.createOscillator(), b = ctx.createOscillator(), tr = ctx.createOscillator(), tg = ctx.createGain();
+      a.frequency.value = 2780; b.frequency.value = 3040; tr.frequency.value = 46; tg.gain.value = .05;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.11, t + .02); g.gain.setValueAtTime(.11, t + .3); g.gain.linearRampToValueAtTime(0, t + .36);
+      tr.connect(tg); tg.connect(g.gain); a.connect(g); b.connect(g); g.connect(maestro);
+      [a, b, tr].forEach(function (o) { o.start(t); o.stop(t + .4); });
+    }
+    function golpe() {
+      if (!ctx) return;
+      var t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(48, t + .1);
+      g.gain.setValueAtTime(.8, t); g.gain.exponentialRampToValueAtTime(.001, t + .14);
+      o.connect(g); g.connect(maestro); o.start(t); o.stop(t + .16);
+    }
+    function grito() {
+      if (!ctx) return;
+      var t = ctx.currentTime, h = hinchada.gain;
+      h.cancelScheduledValues(t); h.setValueAtTime(h.value, t); h.linearRampToValueAtTime(1.5, t + .35); h.setValueAtTime(1.5, t + 2.2); h.linearRampToValueAtTime(.34, t + 6);
+    }
+    function alternar() {
+      activo = !activo; iniciar();
+      try { localStorage.setItem("gol.sonido", activo ? "si" : "no"); } catch (e) {}
+      if (ctx) maestro.gain.setTargetAtTime(activo ? 1 : 0, ctx.currentTime, .05);
+      return activo;
+    }
+    return { iniciar: iniciar, silbato: silbato, golpe: golpe, grito: grito, alternar: alternar, activo: function () { return activo; } };
+  })();
+  $("sonido").setAttribute("aria-pressed", String(Son.activo()));
+  $("sonido").addEventListener("click", function (e) { e.stopPropagation(); this.setAttribute("aria-pressed", String(Son.alternar())); });
+  ["pointerdown", "keydown"].forEach(function (t) { addEventListener(t, Son.iniciar, { passive: true }); });
+
+  function pct(n) { return n.toLocaleString("es-PE", { maximumFractionDigits: 2 }) + " %"; }
+  function fila(nombre, prob, clase) {
+    var tr = document.createElement("tr"), a = document.createElement("td"), b = document.createElement("td");
+    if (clase) tr.className = clase;
+    a.textContent = nombre; b.textContent = prob; tr.appendChild(a); tr.appendChild(b);
+    return tr;
+  }
+  function cargar() {
+    fetch(API + "/estado").then(function (r) { return r.json(); }).then(function (d) {
+      var t = $("gol-tabla"); t.textContent = "";
+      d.premios.forEach(function (p) {
+        t.appendChild(fila(p.nombre + (p.disponible ? "" : " · ganó " + p.ganador), p.disponible ? pct(p.prob) : "Entregado", p.disponible ? "unico" : "unico agotado"));
+      });
+      d.tramos.forEach(function (x) { t.appendChild(fila(x.desde + " % a " + x.hasta + " % de descuento", pct(x.prob))); });
+      $("gol-giros").textContent = d.giros + (d.giros === 1 ? " penal pateado." : " penales pateados.");
+    }).catch(function () { $("gol-tabla").textContent = ""; $("gol-tabla").appendChild(fila("No pude cargar las probabilidades. Recarga la página.", "")); });
+  }
+  function mensaje(r) {
+    return "Hola, en el sorteo de GoldenQuerys gané: " + r.titulo + " (código " + r.codigo + "). Quiero reclamarlo para el curso del " + FECHA + ".";
+  }
+  function mostrar(r) {
+    actual = r;
+    var c = $("gq-pct");
+    c.textContent = r.unico ? r.titulo : r.pct + " %";
+    c.classList.toggle("texto", !!r.unico);
+    $("gq-final").textContent = r.precio ? "S/ " + r.precio : "S/ 0";
+    $("gq-precio-p").hidden = r.premio === "eterna" || r.premio.indexOf("catalogo") === 0;
+    $("gq-codigo").textContent = r.codigo;
+    $("gq-premio").hidden = false;
+    $("gol-form").hidden = true;
+    $("gol-bajada").textContent = r.repetido ? "Ya pateaste tu penal. Este es tu premio:" : "¡Adentro! Tu premio:";
+    cargar();
+  }
+  /* El único momento animado: la cámara entra, el balón va al ángulo, el arquero se tira al otro lado. */
+  function patear(r) {
+    if (quieto || !$("balon").animate) { $("gol-grito").hidden = false; return mostrar(r); }
+    Son.silbato();
+    var lado = Math.random() < .5 ? -1 : 1, esc = $("escenario"), ancho = esc.clientWidth, alto = esc.clientHeight;
+    var dx = lado * ancho * .115, dy = -alto * .375, des = $("destello");
+    setTimeout(function () {
+      Son.golpe();
+      esc.animate([{ transform: "translateX(-50%) scale(1)" }, { transform: "translateX(-50%) scale(1.3)" }], { duration: 900, easing: "cubic-bezier(.16,1,.3,1)", fill: "forwards" });
+      $("balon").animate([
+        { transform: "translate(-50%,-50%) scale(1) rotate(0deg)" },
+        { transform: "translate(calc(-50% + " + dx + "px),calc(-50% + " + dy + "px)) scale(.2) rotate(620deg)" }
+      ], { duration: 560, easing: "cubic-bezier(.12,.72,.28,1)", fill: "forwards" });
+      $("arquero").hidden = true; $("tirada").hidden = false;
+      var cara = lado < 0 ? -1 : 1; /* la foto se lanza hacia la izquierda: se voltea si va a la derecha */
+      $("tirada").animate([
+        { transform: "translateX(-50%) scaleX(" + cara + ") rotate(-8deg)" },
+        { transform: "translateX(calc(-50% + " + (-lado * ancho * .085) + "px)) translateY(" + (-alto * .02) + "px) scaleX(" + cara + ") rotate(0deg)" }
+      ], { duration: 520, easing: "cubic-bezier(.3,.7,.3,1)", fill: "forwards" });
+      des.style.left = "calc(50% + " + dx + "px)"; des.style.top = "calc(92% + " + dy + "px)";
+      des.animate([{ opacity: 0 }, { opacity: .95, offset: .3 }, { opacity: 0 }], { duration: 620, delay: 470 });
+    }, 420);
+    setTimeout(function () { Son.grito(); $("gol-grito").hidden = false; $("gol-grito").animate([{ opacity: 0, transform: "scale(.82)" }, { opacity: 1, transform: "scale(1)" }], { duration: 320, easing: "cubic-bezier(.16,1,.3,1)" }); }, 960);
+    setTimeout(function () { mostrar(r); }, 1500);
+  }
+  function error(texto, enlace) {
+    var e = $("gol-error"); e.textContent = texto + " "; e.hidden = false;
+    if (enlace) { var a = document.createElement("a"); a.href = enlace; a.target = "_top"; a.textContent = "Inscribirme gratis"; e.appendChild(a); }
+    var b = $("gq-girar"); b.disabled = false; b.textContent = "Patear el penal";
+  }
+  function copiar() {
+    var ayuda = $("gq-ayuda");
+    var ok = function () { ayuda.innerHTML = "<b>Mensaje copiado.</b> Pégalo en WhatsApp al <b>986 149 476</b>."; };
+    var mal = function () { ayuda.textContent = "Escribe al 986 149 476: " + mensaje(actual); };
+    if (navigator.clipboard) navigator.clipboard.writeText(mensaje(actual)).then(ok, mal); else mal();
+  }
+  /* Dentro del LIVE el iframe no tiene allow-popups: el enlace se abre desde la página de arriba (mismo origen). */
+  function whatsapp() {
+    var url = "https://wa.me/" + TEL + "?text=" + encodeURIComponent(mensaje(actual));
+    try {
+      var d = window.parent.document, a = d.createElement("a");
+      a.href = url; a.target = "_blank"; a.rel = "noopener";
+      d.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { copiar(); }
+  }
+  $("gol-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var b = $("gq-girar"); b.disabled = true; b.textContent = "Colocando el balón…"; $("gol-error").hidden = true;
+    fetch(API + "/girar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre: $("gol-nombre").value, correo: $("gol-correo").value }) })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (x) {
+        if (x.ok) return x.d.repetido ? mostrar(x.d) : patear(x.d);
+        var c = x.d.error || {};
+        error(c.message || "No se pudo patear. Prueba otra vez.", c.code === "no_inscrito" ? "/inscripcion/goldenquerys-1/" : "");
+      })
+      .catch(function () { error("Sin conexión. Prueba otra vez."); });
+  });
+  $("gq-whatsapp").addEventListener("click", whatsapp);
+  $("gq-copiar").addEventListener("click", copiar);
+  cargar();
+})();
+</script>
+</body>
+</html>

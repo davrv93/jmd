@@ -7,6 +7,7 @@ Las escenas reutilizan la plantilla del modo LIVE (programacion-agentica-g6/live
 tokens, cielo y animaciones; aquí solo cambian título, fase, número, contenido y estilos propios. Las bases y el kit
 los arma _fuente/sembrar.py + _fuente/empaquetar.sh (materials/goldenquerys-kit.zip).
 """
+import base64
 import json
 import re
 from pathlib import Path
@@ -67,47 +68,6 @@ ORO = """
 .gq-elige .gq-giro[aria-pressed="true"] { outline: 3px solid var(--c); background: color-mix(in srgb, var(--c) 10%, var(--s1)); }
 .gq-aviso { margin: 0; font-size: .82em; color: var(--muted); }
 .gq-aviso b { color: var(--fg); }
-.gq-sorteo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.6vw; align-items: start; }
-@media (max-width: 760px) {
-  html, body { height: auto; overflow: auto; }
-  .esc { min-height: 100dvh; padding: 16px; gap: 14px; }
-  .esc-titulo { font-size: 1.9em; }
-  .esc-sub { font-size: 1em; }
-  .gq-sorteo { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-  .gq-acciones { flex-wrap: wrap; }
-  .gq-acciones button { flex: 1 1 100%; }
-}
-.gol-cancha { position: relative; border-radius: 1em; overflow: hidden; background: repeating-linear-gradient(90deg, #1f7a3f 0 12%, #1b6f39 12% 24%); box-shadow: var(--card-shadow); min-height: 34vh; }
-.gol-cancha svg { display: block; width: 100%; height: 100%; }
-.gol-balon { transition: transform .85s cubic-bezier(.2,.75,.25,1); transform-box: fill-box; transform-origin: center; }
-.gol-arquero { transition: transform .7s cubic-bezier(.3,.7,.3,1) .1s; transform-box: fill-box; transform-origin: center; }
-.gol-grito { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 900; font-size: 2.4em; letter-spacing: .02em; color: #ffd978; text-shadow: 0 .08em .5em rgba(0,0,0,.65); pointer-events: none; }
-.gol-form { display: grid; gap: .5em; margin-top: .7em; }
-.gol-form label { display: grid; gap: .15em; font-size: .72em; font-weight: 700; color: var(--muted); }
-.gol-form input { font: inherit; font-size: 1.15em; padding: .4em .6em; border: 1px solid var(--line2); border-radius: .6em; background: var(--s1); color: var(--fg); min-width: 0; }
-.gq-girar { font: 800 .95em system-ui, sans-serif; padding: .55em 1.6em; border: 0; border-radius: 999px; background: #f2c14e; color: #14122b; cursor: pointer; }
-.gq-girar:hover:not(:disabled), .gq-girar:focus-visible { background: #ffd978; }
-.gq-girar:disabled { opacity: .6; cursor: default; }
-.gol-prob { width: 100%; border-collapse: collapse; font-size: .72em; font-variant-numeric: tabular-nums; }
-.gol-prob th { text-align: left; font-size: .9em; color: var(--muted); font-weight: 700; padding: .15em .3em; }
-.gol-prob td { padding: .22em .3em; border-top: 1px solid var(--line); }
-.gol-prob td:last-child, .gol-prob th:last-child { text-align: right; white-space: nowrap; }
-.gol-prob tr.unico td:first-child { font-weight: 700; color: var(--oro); }
-.gol-prob tr.agotado td { color: var(--muted); text-decoration: line-through; }
-.gol-col { display: grid; gap: .8vh; align-content: start; min-width: 0; }
-.gol-nota { margin: 0; font-size: .7em; color: var(--muted); }
-.gol-error { margin: 0; font-size: .78em; color: var(--bad); font-weight: 600; }
-.gol-error a { color: inherit; }
-.gq-premio, .gq-espera { display: grid; gap: .6vh; align-content: center; background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: 1em 1.2em; box-shadow: var(--card-shadow); }
-.gq-espera span { color: var(--muted); font-size: .82em; }
-.gq-premio p { margin: 0; }
-.gq-premio-t { font-size: 1.3em; font-weight: 800; } .gq-premio-t b { color: var(--oro); }
-.gq-precio { font-size: 1em; } .gq-precio s { color: var(--muted); }
-.gq-codigo { font-size: .86em; } .gq-codigo code { font: 800 1em var(--mono); color: var(--oro); }
-.gq-acciones { display: flex; flex-wrap: wrap; gap: .5em; margin-top: .3em; }
-.gq-reclamar, .gq-copiar { font: 700 .76em system-ui, sans-serif; padding: .5em 1em; border-radius: 999px; cursor: pointer; }
-.gq-reclamar { border: 0; background: #136a33; color: #fff; }
-.gq-copiar { background: none; color: var(--fg); border: 1px solid var(--line2); }
 """
 
 
@@ -185,128 +145,21 @@ ELEGIR = """    <h1 class="esc-titulo a-in">Elige <em class="oro">tu negocio</em
 
 FECHA_CURSO = "martes 10 y 17 de noviembre, de 10:45 a 11:30 p. m."
 
-SORTEO = """    <style>html, body { height: auto; overflow: auto; } .esc { min-height: 100vh; } .esc-cuerpo { justify-content: flex-start; gap: 1.4vh; } .gol-cancha { height: 26vh; min-height: 150px; } .esc-sub { font-size: 1em; }</style>
-    <h1 class="esc-titulo a-in">Hoy hay Champions: <em class="oro">patea tu penal</em> y gana</h1>
-    <p class="esc-sub a-in" style="--d:.1s">El curso GoldenQuerys cuesta S/ 100. Un solo penal por inscrito: todos anotan y se llevan entre 20 % y 90 % de descuento, y hay cuatro premios únicos.</p>
-    <div class="gq-sorteo a-in" style="--d:.2s">
-      <div class="gol-col">
-        <div class="gol-cancha" aria-hidden="true">
-          <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
-            <rect x="90" y="18" width="220" height="92" fill="rgba(255,255,255,.08)" stroke="#fff" stroke-width="4"/>
-            <path d="M90 42h220M90 66h220M90 90h220M134 18v92M178 18v92M222 18v92M266 18v92" stroke="rgba(255,255,255,.28)" stroke-width="1"/>
-            <path d="M30 110h340M120 110l-34 66h228l-34-66" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2.5"/>
-            <g class="gol-arquero" id="gol-arquero"><circle cx="200" cy="52" r="9" fill="#ffd978"/><rect x="190" y="61" width="20" height="30" rx="6" fill="#f2c14e"/><path d="M190 66l-16-10M210 66l16-10M196 91v16M204 91v16" stroke="#f2c14e" stroke-width="6" stroke-linecap="round"/></g>
-            <g class="gol-balon" id="gol-balon"><circle cx="200" cy="190" r="13" fill="#fff" stroke="#14122b" stroke-width="2"/><path d="M200 183l6 4-2 7h-8l-2-7z" fill="#14122b"/></g>
-          </svg>
-          <div class="gol-grito" id="gol-grito" hidden>¡GOOOL!</div>
-        </div>
-        <form class="gol-form" id="gol-form">
-          <label>Tu nombre (el de tu inscripción)<input id="gol-nombre" autocomplete="name" required minlength="3"></label>
-          <label>Tu correo de inscrito<input id="gol-correo" type="email" autocomplete="email" required></label>
-          <button type="submit" class="gq-girar" id="gq-girar">Patear el penal</button>
-          <p class="gol-error" id="gol-error" role="alert" hidden></p>
-        </form>
-      </div>
-      <div class="gol-col">
-        <div class="gq-premio" id="gq-premio" hidden>
-          <p class="gq-premio-t" role="status" aria-live="polite"><b id="gq-pct"></b></p>
-          <p class="gq-precio" id="gq-precio-p">Pagas <b id="gq-final"></b> <s>S/ 100</s></p>
-          <p class="gq-codigo">Tu código: <code id="gq-codigo"></code></p>
-          <div class="gq-acciones">
-            <button type="button" class="gq-reclamar" id="gq-whatsapp">Reclamar por WhatsApp</button>
-            <button type="button" class="gq-copiar" id="gq-copiar">Copiar mensaje</button>
-          </div>
-          <p class="gq-aviso" id="gq-ayuda">O escribe al WhatsApp <b>986 149 476</b> con tu código.</p>
-        </div>
-        <div class="gq-espera">
-          <b>Probabilidades de cada penal</b>
-          <table class="gol-prob"><thead><tr><th>Premio</th><th>Prob.</th></tr></thead><tbody id="gol-tabla"><tr><td>Cargando…</td><td></td></tr></tbody></table>
-          <p class="gol-nota" id="gol-giros"></p>
-        </div>
-        <p class="gol-nota">Curso en vivo: <b>""" + FECHA_CURSO + """</b> · 2 sesiones. Los premios únicos se entregan una sola vez.</p>
-      </div>
-    </div>
-  </main>
-  <script>
-  (function () {
-    var API = "/api/v1/sorteo-gol", FECHA = """ + json.dumps(FECHA_CURSO, ensure_ascii=False) + """, TEL = "51986149476";
-    var $ = function (id) { return document.getElementById(id); };
-    var actual = null;
-    function pct(n) { return n.toLocaleString("es-PE", { maximumFractionDigits: 2 }) + " %"; }
-    function fila(nombre, prob, clase) {
-      var tr = document.createElement("tr"), a = document.createElement("td"), b = document.createElement("td");
-      if (clase) tr.className = clase;
-      a.textContent = nombre; b.textContent = prob; tr.appendChild(a); tr.appendChild(b);
-      return tr;
-    }
-    function cargar() {
-      fetch(API + "/estado").then(function (r) { return r.json(); }).then(function (d) {
-        var t = $("gol-tabla"); t.textContent = "";
-        d.premios.forEach(function (p) {
-          t.appendChild(fila(p.nombre + (p.disponible ? "" : " · ganó " + p.ganador), p.disponible ? pct(p.prob) : "Entregado", p.disponible ? "unico" : "unico agotado"));
-        });
-        d.tramos.forEach(function (x) { t.appendChild(fila(x.desde + " % a " + x.hasta + " % de descuento", pct(x.prob))); });
-        $("gol-giros").textContent = d.giros + (d.giros === 1 ? " penal pateado" : " penales pateados") + " hasta ahora.";
-      }).catch(function () {});
-    }
-    function mensaje(r) {
-      return "Hola, en el sorteo de GoldenQuerys gané: " + r.titulo + " (código " + r.codigo + "). Quiero reclamarlo para el curso del " + FECHA + ".";
-    }
-    function mostrar(r) {
-      actual = r;
-      $("gq-pct").textContent = r.titulo;
-      $("gq-final").textContent = r.precio ? "S/ " + r.precio : "S/ 0: ¡gratis!";
-      $("gq-precio-p").hidden = r.premio === "eterna" || r.premio.indexOf("catalogo") === 0;
-      $("gq-codigo").textContent = r.codigo;
-      $("gq-premio").hidden = false;
-      $("gol-grito").hidden = false;
-      var b = $("gq-girar"); b.disabled = true; b.textContent = r.repetido ? "Ya pateaste tu penal" : "¡Gol!";
-      cargar();
-    }
-    function patear(r) {
-      var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches, lado = Math.random() < .5 ? -1 : 1;
-      $("gol-balon").style.transform = "translate(" + (lado * 70) + "px,-150px) scale(.55)";
-      $("gol-arquero").style.transform = "translateX(" + (-lado * 55) + "px) rotate(" + (-lado * 35) + "deg)";
-      setTimeout(function () { mostrar(r); }, quieto ? 0 : 950);
-    }
-    function error(texto, enlace) {
-      var e = $("gol-error"); e.textContent = texto; e.hidden = false;
-      if (enlace) { var a = document.createElement("a"); a.href = enlace; a.target = "_top"; a.textContent = " Inscribirme gratis"; e.appendChild(a); }
-      var b = $("gq-girar"); b.disabled = false; b.textContent = "Patear el penal";
-    }
-    function copiar() {
-      var ayuda = $("gq-ayuda");
-      var ok = function () { ayuda.innerHTML = "<b>Mensaje copiado.</b> Pégalo en WhatsApp al <b>986 149 476</b>."; };
-      var mal = function () { ayuda.textContent = "Escribe al 986 149 476: " + mensaje(actual); };
-      if (navigator.clipboard) navigator.clipboard.writeText(mensaje(actual)).then(ok, mal); else mal();
-    }
-    /* El iframe del LIVE no tiene allow-popups: el enlace se abre desde la página del LIVE (mismo origen). */
-    function whatsapp() {
-      var url = "https://wa.me/" + TEL + "?text=" + encodeURIComponent(mensaje(actual));
-      try {
-        var d = window.parent.document, a = d.createElement("a");
-        a.href = url; a.target = "_blank"; a.rel = "noopener";
-        d.body.appendChild(a); a.click(); a.remove();
-      } catch (e) { copiar(); }
-    }
-    $("gol-form").addEventListener("submit", function (ev) {
-      ev.preventDefault();
-      var b = $("gq-girar"); b.disabled = true; b.textContent = "Pateando…"; $("gol-error").hidden = true;
-      fetch(API + "/girar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre: $("gol-nombre").value, correo: $("gol-correo").value }) })
-        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-        .then(function (x) {
-          if (x.ok) return x.d.repetido ? mostrar(x.d) : patear(x.d);
-          var c = x.d.error || {};
-          error(c.message || "No se pudo patear. Prueba otra vez.", c.code === "no_inscrito" ? "/inscripcion/goldenquerys-1/" : "");
-        })
-        .catch(function () { error("Sin conexión. Prueba otra vez."); });
-    });
-    $("gq-whatsapp").addEventListener("click", whatsapp);
-    $("gq-copiar").addEventListener("click", copiar);
-    cargar();
-  })();
-  </script>
-  <main hidden>"""
+def sorteo_html():
+    """La escena del sorteo es un documento propio (también se publica en /sorteo-goldenquerys): sin la plantilla."""
+    d = AQUI / "sorteo"
+
+    def uri(nombre, tipo):
+        return f"data:{tipo};base64," + base64.b64encode((d / nombre).read_bytes()).decode()
+
+    html = (d / "sorteo.html").read_text(encoding="utf-8")
+    for marca, valor in {"{{ESTADIO}}": uri("estadio.webp", "image/webp"), "{{ARQUERO_LISTO}}": uri("arquero-listo.webp", "image/webp"),
+                         "{{ARQUERO_TIRADA}}": uri("arquero-tirada.webp", "image/webp"), "{{FUENTE_TITULO}}": uri("BarlowCondensed-800.woff2", "font/woff2"),
+                         "{{FUENTE_TEXTO}}": uri("Barlow-500.woff2", "font/woff2"), "{{FUENTE_FUERTE}}": uri("Barlow-700.woff2", "font/woff2"),
+                         "{{FECHA_JSON}}": json.dumps(FECHA_CURSO, ensure_ascii=False), "{{FECHA}}": FECHA_CURSO}.items():
+        html = html.replace(marca, valor)
+    return html
+
 
 ESCENAS = [
     dict(id="01-bienvenida", titulo="Tus datos ya saben la respuesta", fase="experiencia", dur=5, lo_logre=True, compuerta="presentes", umbral=100,
@@ -382,7 +235,7 @@ ESCENAS = [
     <p class="gq-grande a-in" style="--d:.4s">Mañana hazle la misma pregunta a los datos de tu trabajo. <em>Ese es el verdadero reto.</em></p>""",
          nota="El instructor muestra algunos dashboards en pantalla"),
     dict(id="09-sorteo", titulo="Sorteo: patea tu penal", fase="experimentacion", dur=5,
-         cuerpo=SORTEO, nota="Un penal por inscrito · tu resultado queda registrado"),
+         html_propio=sorteo_html),
 ]
 
 
@@ -391,7 +244,8 @@ def escribir_escenas():
     for n, e in enumerate(ESCENAS, 1):
         d = base / e["id"]
         d.mkdir(parents=True, exist_ok=True)
-        (d / "escena.html").write_text(escena_html(e["titulo"], e["fase"], n, e["cuerpo"], e["nota"]), encoding="utf-8")
+        html = e["html_propio"]() if e.get("html_propio") else escena_html(e["titulo"], e["fase"], n, e["cuerpo"], e["nota"])
+        (d / "escena.html").write_text(html, encoding="utf-8")
         y = [f"id: {e['id']}", f"titulo: {json.dumps(e['titulo'], ensure_ascii=False)}", f"fase: {e['fase']}", 'paso: ""',
              f"duracion_min: {e['dur']}", f"lo_logre: {'true' if e.get('lo_logre') else 'false'}", "evidencia: ninguna"]
         if e.get("umbral"):
