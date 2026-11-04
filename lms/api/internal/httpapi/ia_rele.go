@@ -258,7 +258,7 @@ func (c *IAConfig) olvidarInicio(sub string) {
 // IAContador es el uso de un alumno en un día.
 type IAContador struct {
 	Peticiones int    `json:"peticiones"`
-	Entrada    int64  `json:"tokens_entrada"` // input_tokens + caché (creación y lectura)
+	Entrada    int64  `json:"tokens_entrada"` // input_tokens + creación de caché + 1/10 de la lectura de caché
 	Salida     int64  `json:"tokens_salida"`
 	Rechazadas int    `json:"rechazadas"` // por tope
 	Grupo      string `json:"grupo,omitempty"`
@@ -463,7 +463,11 @@ func (s *Server) iaRele(w http.ResponseWriter, r *http.Request) {
 	us.alDia(time.Now())
 	k := us.contador(sub)
 	k.Grupo = grupo
-	if k.Peticiones >= c.topePeticiones() || k.tokens() >= c.topeTokens() {
+	esStaff := false
+	for _, rol := range u.Roles {
+		esStaff = esStaff || rol == "admin" || rol == "instructor"
+	}
+	if !esStaff && (k.Peticiones >= c.topePeticiones() || k.tokens() >= c.topeTokens()) { // el instructor no tiene tope
 		k.Rechazadas++
 		us.mu.Unlock()
 		estado = 429
@@ -714,7 +718,9 @@ func (m *iaMedidor) sumar(u *iaUsage) {
 	if u == nil {
 		return
 	}
-	if e := u.InputTokens + u.CacheCreationInputTokens + u.CacheReadInputTokens; e > m.entrada {
+	// La lectura de caché cuenta una décima parte: dsh reenvía todo el contexto en cada paso (~80 mil tokens) y casi
+	// todo sale de caché, que DeepSeek cobra a una fracción. Contada entera, un alumno agotaba el tope en 50 pasos.
+	if e := u.InputTokens + u.CacheCreationInputTokens + u.CacheReadInputTokens/10; e > m.entrada {
 		m.entrada = e
 	}
 	if u.OutputTokens > m.salida {

@@ -408,7 +408,7 @@ func TestIAReleReenviaConLaClaveDeLaClaseYSinBufer(t *testing.T) {
 		t.Errorf("cabeceras hacia DeepSeek: %v", p.Header)
 	}
 	_, uso := e.s.IA.Uso()
-	if k := uso[idAna]; k.Peticiones != 1 || k.Entrada != 150 || k.Salida != 45 || k.Grupo != "c1" {
+	if k := uso[idAna]; k.Peticiones != 1 || k.Entrada != 123 || k.Salida != 45 || k.Grupo != "c1" {
 		t.Errorf("uso: %+v", k)
 	}
 }
@@ -511,7 +511,7 @@ func TestIAReleTopes(t *testing.T) {
 		t.Fatalf("tope de tokens: %d", res.StatusCode)
 	}
 	_, uso := e.s.IA.Uso()
-	if k := uso[idAna]; k.Peticiones != 2 || k.Rechazadas != 2 || k.tokens() != 390 {
+	if k := uso[idAna]; k.Peticiones != 2 || k.Rechazadas != 2 || k.tokens() != 336 {
 		t.Errorf("uso: %+v", k)
 	}
 	// El uso es por alumno y lo ve el instructor del grupo.
@@ -577,7 +577,7 @@ func TestIAReleSinSecretosEnLogs(t *testing.T) {
 	mu.Lock()
 	log := buf.String()
 	mu.Unlock()
-	if !strings.Contains(log, "msg=ia") || !strings.Contains(log, "tokens_entrada=150") || !strings.Contains(log, "estado=401") {
+	if !strings.Contains(log, "msg=ia") || !strings.Contains(log, "tokens_entrada=123") || !strings.Contains(log, "estado=401") {
 		t.Errorf("falta el registro de uso: %q", log)
 	}
 	for _, prohibido := range []string{claveClase, "xxxx", tok, strings.Split(tok, ".")[2], idAna, "PREGUNTA-PRIVADA", "TEXTO-PRIVADO", "sk-propia", "ARRANQUE"} {
