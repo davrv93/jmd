@@ -67,6 +67,26 @@ ORO = """
 .gq-elige .gq-giro[aria-pressed="true"] { outline: 3px solid var(--c); background: color-mix(in srgb, var(--c) 10%, var(--s1)); }
 .gq-aviso { margin: 0; font-size: .82em; color: var(--muted); }
 .gq-aviso b { color: var(--fg); }
+.gq-sorteo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 1.6vw; align-items: stretch; }
+.gq-boleto { display: grid; justify-items: center; gap: 1.2vh; padding: 1.1em 1.2em; border-radius: 1em; background: #14122b; color: #f3eedc; border: 2px dashed #f2c14e; box-shadow: var(--card-shadow); transition: box-shadow .4s ease-out; }
+.gq-boleto.listo { box-shadow: 0 0 0 4px rgba(242,193,78,.35), 0 18px 44px -14px rgba(242,193,78,.55); }
+.gq-boleto-t { font-size: .68em; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #f2c14e; }
+.gq-ventana { height: 1.5em; overflow: hidden; font-size: 2.6em; font-weight: 800; line-height: 1.5; color: #ffd978; font-variant-numeric: tabular-nums; }
+.gq-rodillo { transition: transform 1.8s cubic-bezier(.12,.7,.15,1); will-change: transform; }
+.gq-rodillo span { display: block; height: 1.5em; text-align: center; }
+.gq-girar { font: 800 .95em system-ui, sans-serif; padding: .5em 2em; border: 0; border-radius: 999px; background: #f2c14e; color: #14122b; cursor: pointer; }
+.gq-girar:hover:not(:disabled), .gq-girar:focus-visible { background: #ffd978; }
+.gq-girar:disabled { opacity: .6; cursor: default; }
+.gq-premio, .gq-espera { display: grid; gap: .6vh; align-content: center; background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: 1em 1.2em; box-shadow: var(--card-shadow); }
+.gq-espera span { color: var(--muted); font-size: .82em; }
+.gq-premio p { margin: 0; }
+.gq-premio-t { font-size: 1.3em; font-weight: 800; } .gq-premio-t b { color: var(--oro); }
+.gq-precio { font-size: 1em; } .gq-precio s { color: var(--muted); }
+.gq-codigo { font-size: .86em; } .gq-codigo code { font: 800 1em var(--mono); color: var(--oro); }
+.gq-acciones { display: flex; flex-wrap: wrap; gap: .5em; margin-top: .3em; }
+.gq-reclamar, .gq-copiar { font: 700 .76em system-ui, sans-serif; padding: .5em 1em; border-radius: 999px; cursor: pointer; }
+.gq-reclamar { border: 0; background: #136a33; color: #fff; }
+.gq-copiar { background: none; color: var(--fg); border: 1px solid var(--line2); }
 """
 
 
@@ -138,6 +158,93 @@ ELEGIR = """    <h1 class="esc-titulo a-in">Elige <em class="oro">tu negocio</em
         try { parent.postMessage({ tipo: "abrir-dsh" }, location.origin); } catch (e) {}
       });
     });
+  })();
+  </script>
+  <main hidden>"""
+
+FECHA_CURSO = "lunes 9 de noviembre, 7:30 p. m."
+
+SORTEO = """    <h1 class="esc-titulo a-in">Hoy <em class="oro">todos ganan</em>: gira y mira tu descuento</h1>
+    <p class="esc-sub a-in" style="--d:.1s">El curso GoldenQuerys cuesta S/ 100. Cada persona de la charla se lleva entre 70 % y 80 % de descuento: pagas entre S/ 20 y S/ 30.</p>
+    <div class="gq-sorteo a-in" style="--d:.2s">
+      <div class="gq-boleto" id="gq-boleto">
+        <span class="gq-boleto-t">Tu descuento</span>
+        <div class="gq-ventana" aria-hidden="true"><div class="gq-rodillo" id="gq-rodillo">""" + "".join(
+    f"<span>{70 + i % 11} %</span>" for i in range(33)) + """</div></div>
+        <button type="button" class="gq-girar" id="gq-girar">Girar</button>
+      </div>
+      <div class="gq-premio" id="gq-premio" hidden>
+        <p class="gq-premio-t" role="status" aria-live="polite"><b id="gq-pct"></b> de descuento</p>
+        <p class="gq-precio">Pagas <b id="gq-final"></b> <s>S/ 100</s></p>
+        <p class="gq-codigo">Tu código: <code id="gq-codigo"></code></p>
+        <p class="gq-codigo">Curso en vivo: <b>""" + FECHA_CURSO + """</b> · 85 minutos</p>
+        <div class="gq-acciones">
+          <button type="button" class="gq-reclamar" id="gq-whatsapp">Reclamar por WhatsApp</button>
+          <button type="button" class="gq-copiar" id="gq-copiar">Copiar mensaje</button>
+        </div>
+        <p class="gq-aviso" id="gq-ayuda">O escribe al WhatsApp <b>986 149 476</b> con tu código.</p>
+      </div>
+      <div class="gq-espera" id="gq-espera"><b>Curso en vivo</b><span>""" + FECHA_CURSO + """ · 85 minutos</span><span>Un solo giro por persona. Nadie se queda sin premio.</span></div>
+    </div>
+  </main>
+  <script>
+  (function () {
+    var CLAVE = "gq.sorteo.v1", FECHA = """ + json.dumps(FECHA_CURSO, ensure_ascii=False) + """, TEL = "51986149476";
+    var $ = function (id) { return document.getElementById(id); };
+    var alto = function () { var s = $("gq-rodillo").firstChild; return s.getBoundingClientRect().height; };
+    var azar = function (n) { var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; };
+    function leer() { try { return JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { return null; } }
+    function guardar(r) { try { localStorage.setItem(CLAVE, JSON.stringify(r)); } catch (e) {} }
+    function nuevo() {
+      var L = "ABCDEFGHJKMNPQRSTUVWXYZ23456789", c = "", pct = 70 + azar(11);
+      for (var i = 0; i < 4; i++) c += L.charAt(azar(L.length));
+      return { pct: pct, precio: 100 - pct, codigo: "GQ-" + pct + "-" + c };
+    }
+    function mensaje(r) {
+      return "Hola, en el sorteo de GoldenQuerys gané " + r.pct + " % de descuento (código " + r.codigo + "). Quiero inscribirme al curso del " + FECHA + " a S/ " + r.precio + ".";
+    }
+    function colocar(r, salto) {
+      var rod = $("gq-rodillo");
+      if (salto) rod.style.transition = "none";
+      rod.style.transform = "translateY(" + (-(22 + r.pct - 70) * alto()) + "px)";
+    }
+    function mostrar(r) {
+      $("gq-pct").textContent = r.pct + " %";
+      $("gq-final").textContent = "S/ " + r.precio;
+      $("gq-codigo").textContent = r.codigo;
+      $("gq-premio").hidden = false;
+      $("gq-espera").hidden = true;
+      $("gq-boleto").classList.add("listo");
+      var b = $("gq-girar"); b.disabled = true; b.textContent = "Ya giraste";
+    }
+    function copiar() {
+      var r = leer() || actual, ayuda = $("gq-ayuda");
+      var ok = function () { ayuda.innerHTML = "<b>Mensaje copiado.</b> Pégalo en WhatsApp al <b>986 149 476</b>."; };
+      var mal = function () { ayuda.textContent = "Escribe al 986 149 476: " + mensaje(r); };
+      if (navigator.clipboard) navigator.clipboard.writeText(mensaje(r)).then(ok, mal); else mal();
+    }
+    /* El iframe del LIVE no tiene allow-popups: el enlace se abre desde la página del LIVE (mismo origen). */
+    function whatsapp() {
+      var r = leer() || actual, url = "https://wa.me/" + TEL + "?text=" + encodeURIComponent(mensaje(r));
+      try {
+        var d = window.parent.document, a = d.createElement("a");
+        a.href = url; a.target = "_blank"; a.rel = "noopener";
+        d.body.appendChild(a); a.click(); a.remove();
+      } catch (e) { copiar(); }
+    }
+    var actual = leer();
+    if (actual && actual.codigo) { colocar(actual, true); mostrar(actual); }
+    $("gq-girar").addEventListener("click", function () {
+      if (leer()) return;
+      var r = nuevo(), quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      actual = r; guardar(r);
+      this.disabled = true; this.textContent = "Girando…";
+      colocar(r, false);
+      setTimeout(function () { mostrar(r); }, quieto ? 0 : 1900);
+    });
+    $("gq-whatsapp").addEventListener("click", whatsapp);
+    $("gq-copiar").addEventListener("click", copiar);
+    addEventListener("resize", function () { if (actual) colocar(actual, true); });
   })();
   </script>
   <main hidden>"""
@@ -215,6 +322,8 @@ ESCENAS = [
     </ul>
     <p class="gq-grande a-in" style="--d:.4s">Mañana hazle la misma pregunta a los datos de tu trabajo. <em>Ese es el verdadero reto.</em></p>""",
          nota="El instructor muestra algunos dashboards en pantalla"),
+    dict(id="09-sorteo", titulo="Sorteo: todos ganan", fase="experimentacion", dur=5,
+         cuerpo=SORTEO, nota="Tu resultado queda guardado en este navegador"),
 ]
 
 
