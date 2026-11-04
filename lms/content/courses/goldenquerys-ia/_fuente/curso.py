@@ -161,6 +161,44 @@ def sorteo_html():
     return html
 
 
+def pizarra_svg(jugadas):
+    """La pizarra táctica: 12 jugadores (sobra uno) y tres flechas; el dorsal de salida y el de llegada son el código."""
+    sitios = [(70, 210), (190, 90), (190, 170), (190, 250), (190, 330), (330, 120), (330, 210), (330, 300), (470, 90), (470, 210), (470, 330), (590, 210)]
+    pares = [(1, 5), (3, 7), (9, 11)]  # índices de sitio de cada flecha: cortas y sin pasar sobre otro jugador
+    relleno = iter([4, 8, 2, 5, 10, 6])
+    dorsal = {}
+    for (a, b), (frase, palabra) in zip(pares, jugadas):
+        dorsal[a], dorsal[b] = frase, palabra
+    flechas, jugadores = [], []
+    for a, b in pares:
+        (x1, y1), (x2, y2) = sitios[a], sitios[b]
+        cx, cy = (x1 + x2) / 2, (y1 + y2) / 2 - 26
+        flechas.append(f'<path class="fl" d="M{x1} {y1}Q{cx} {cy} {x2} {y2}" marker-end="url(#punta)"/>')
+    for i, (x, y) in enumerate(sitios):
+        n = dorsal[i] if i in dorsal else next(relleno)
+        jugadores.append(f'<g class="ju"><circle cx="{x}" cy="{y}" r="22"/><text x="{x}" y="{y}">{n}</text></g>')
+    return ('<svg class="pizarra" viewBox="0 0 660 420" role="img" aria-label="Pizarra táctica con doce jugadores numerados y tres flechas">'
+            '<defs><marker id="punta" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="35" refY="7" orient="auto"><path d="M0 0L14 7L0 14z" fill="#ffc83d"/></marker></defs>'
+            '<rect class="cal" x="14" y="14" width="632" height="392"/><path class="cal" d="M330 14v392M14 120h86v180H14M646 120h-86v180h86"/><circle class="cal" cx="330" cy="210" r="56"/>'
+            + "".join(flechas) + "".join(jugadores) + "</svg>")
+
+
+def fuga_html():
+    """Página de la caja fuerte: dorsales y texto cifrado salen de caja.json; las palabras nunca pasan por aquí."""
+    d = AQUI / "caja"
+    caja = json.loads((d / "caja.json").read_text(encoding="utf-8"))
+    fuentes = AQUI / "sorteo"
+
+    def uri(nombre):
+        return "data:font/woff2;base64," + base64.b64encode((fuentes / nombre).read_bytes()).decode()
+
+    html = (d / "fuga.html").read_text(encoding="utf-8")
+    for marca, valor in {"{{FUENTE_TITULO}}": uri("BarlowCondensed-800.woff2"), "{{FUENTE_TEXTO}}": uri("Barlow-500.woff2"), "{{FUENTE_FUERTE}}": uri("Barlow-700.woff2"),
+                         "{{PIZARRA}}": pizarra_svg(caja["jugadas"]), "{{CAJA}}": json.dumps({k: caja[k] for k in ("sal", "iv", "ct", "iter")})}.items():
+        html = html.replace(marca, valor)
+    return html
+
+
 ESCENAS = [
     dict(id="01-bienvenida", titulo="Tus datos ya saben la respuesta", fase="experiencia", dur=5, lo_logre=True, compuerta="presentes", umbral=100,
          cuerpo=f"""    <h1 class="esc-titulo a-in">Tus datos ya saben la respuesta.<br><em class="oro">Hoy aprendes a preguntarles.</em></h1>
@@ -236,6 +274,7 @@ ESCENAS = [
          nota="El instructor muestra algunos dashboards en pantalla"),
     dict(id="09-sorteo", titulo="Sorteo: patea tu penal", fase="experimentacion", dur=5,
          html_propio=sorteo_html),
+    dict(id="10-fuga", titulo="La fuga del estadio", fase="experimentacion", dur=5, oculta=True, html_propio=fuga_html),
 ]
 
 
@@ -251,6 +290,8 @@ def escribir_escenas():
         if e.get("umbral"):
             y.append(f"umbral_pct: {e['umbral']}")
         y.append(f"compuerta: {e.get('compuerta', 'ninguna')}")
+        if e.get("oculta"):
+            y.append("oculta: true")
         if e.get("dsh"):
             y.append("dsh: true")
         if e.get("comandos"):

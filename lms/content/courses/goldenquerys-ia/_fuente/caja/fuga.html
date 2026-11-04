@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1410">
+<title>La fuga del estadio · GoldenQuerys</title>
+<meta name="description" content="Un mensaje cifrado, tres palabras y una pizarra. El primero en abrir la caja gana.">
+<!-- La fuga del estadio. Plantilla: _fuente/caja/fuga.html; curso.py le pone la pizarra y el texto cifrado (caja.json).
+     El mensaje solo se descifra en el navegador con las tres palabras: aquí no hay ninguna pista de cuáles son. -->
+<style>
+@font-face { font-family: "Barlow Condensed"; font-weight: 800; font-display: swap; src: url({{FUENTE_TITULO}}) format("woff2"); }
+@font-face { font-family: "Barlow"; font-weight: 500; font-display: swap; src: url({{FUENTE_TEXTO}}) format("woff2"); }
+@font-face { font-family: "Barlow"; font-weight: 700; font-display: swap; src: url({{FUENTE_FUERTE}}) format("woff2"); }
+:root { --fondo: #0a1410; --pizarra: #0f2019; --tiza: #e8efe8; --suave: #a4b5aa; --linea: rgba(232,239,232,.16); --oro: #ffc83d; --error: #ff9d8a; color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--fondo); color: var(--tiza); font: 500 15px/1.45 "Barlow", system-ui, sans-serif; }
+::selection { background: var(--oro); color: #14100a; }
+:focus-visible { outline: 2px solid var(--oro); outline-offset: 2px; }
+.todo { max-width: 1040px; min-height: 100dvh; margin: 0 auto; padding: 18px 16px max(18px, env(safe-area-inset-bottom)); display: grid; gap: 16px; align-content: center; }
+h1 { margin: 0; font: 800 clamp(2.9rem, 12vw, 5rem)/.9 "Barlow Condensed", sans-serif; text-transform: uppercase; }
+h1 span { color: var(--oro); }
+.bajada { margin: 8px 0 0; color: var(--suave); max-width: 58ch; }
+.bajada b { color: var(--tiza); font-weight: 700; }
+.pizarra { display: block; width: 100%; height: auto; background: var(--pizarra); border-radius: 10px; }
+.pizarra .cal { fill: none; stroke: rgba(232,239,232,.42); stroke-width: 2; }
+.pizarra .ju circle { fill: var(--pizarra); stroke: var(--tiza); stroke-width: 2.5; }
+.pizarra .ju text { font: 800 25px "Barlow Condensed", sans-serif; fill: var(--tiza); text-anchor: middle; dominant-baseline: central; }
+.pizarra .fl { fill: none; stroke: var(--oro); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 9 8; }
+.lado { display: grid; gap: 12px; align-content: start; }
+.regla { margin: 0; color: var(--suave); font-size: .92rem; }
+.regla b { color: var(--tiza); }
+form { display: grid; gap: 8px; }
+label { display: grid; gap: 3px; font-size: .8rem; color: var(--suave); }
+input { width: 100%; min-width: 0; height: 46px; padding: 0 12px; font: 500 1rem "Barlow", sans-serif; color: var(--tiza); caret-color: var(--oro); background: #12231b; border: 1px solid var(--linea); border-radius: 8px; }
+input:focus { border-color: var(--oro); outline: none; }
+.abrir { height: 50px; border: 0; border-radius: 8px; background: var(--oro); color: #14100a; font: 800 1.35rem "Barlow Condensed", sans-serif; letter-spacing: .02em; text-transform: uppercase; cursor: pointer; }
+.abrir:hover:not(:disabled) { background: #ffd868; }
+.abrir:disabled { opacity: .55; cursor: default; }
+.error { margin: 0; color: var(--error); font-size: .9rem; }
+.mensaje { margin: 0; padding: 14px; border: 1px solid var(--oro); border-radius: 8px; font-size: 1.1rem; font-weight: 700; color: var(--oro); }
+.acciones { display: grid; }
+.reclamar { height: 50px; display: grid; place-items: center; border-radius: 8px; background: #1f8a4c; color: #fff; font: 800 1.3rem "Barlow Condensed", sans-serif; text-transform: uppercase; text-decoration: none; }
+.reclamar:hover { background: #26a35a; }
+@media (min-width: 860px) {
+  .todo { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); column-gap: 24px; }
+  .cab { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+<main class="todo">
+  <header class="cab">
+    <h1>La fuga <span>del estadio</span></h1>
+    <p class="bajada">Hay un mensaje cifrado con AES-256 en esta página. Sin las tres palabras, ninguna IA lo abre. <b>El primero en abrirlo y escribir el código gana todo el catálogo a S/ 10.</b></p>
+  </header>
+  {{PIZARRA}}
+  <div class="lado">
+    <p class="regla"><b>Tres jugadas, tres palabras.</b> Cada flecha va de un número de frase a un número de palabra. Falta el libro: lo revelo <b>hoy a la 1:00 p. m.</b></p>
+    <form id="caja">
+      <label>Primera palabra<input id="p1" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
+      <label>Segunda palabra<input id="p2" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
+      <label>Tercera palabra<input id="p3" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
+      <button type="submit" class="abrir" id="abrir">Abrir la caja</button>
+      <p class="error" id="error" role="alert" hidden></p>
+    </form>
+    <p class="mensaje" id="mensaje" role="status" aria-live="polite" hidden></p>
+    <div class="acciones" id="acciones" hidden><a class="reclamar" href="https://wa.me/51986149476" target="_top" rel="noopener">Abrir WhatsApp</a></div>
+  </div>
+</main>
+<script>
+(function () {
+  var CAJA = {{CAJA}};
+  var $ = function (id) { return document.getElementById(id); };
+  var bytes = function (b) { return Uint8Array.from(atob(b), function (c) { return c.charCodeAt(0); }); };
+  var limpiar = function (p) { return p.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, ""); };
+  async function abrir(palabras) {
+    var enc = new TextEncoder();
+    var base = await crypto.subtle.importKey("raw", enc.encode(palabras), "PBKDF2", false, ["deriveKey"]);
+    var clave = await crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: bytes(CAJA.sal), iterations: CAJA.iter }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+    var plano = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(CAJA.iv) }, clave, bytes(CAJA.ct));
+    return new TextDecoder().decode(plano);
+  }
+  $("caja").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var b = $("abrir"), e = $("error");
+    var palabras = [$("p1").value, $("p2").value, $("p3").value].map(limpiar).sort().join(" ");
+    b.disabled = true; b.textContent = "Probando la combinación…"; e.hidden = true;
+    abrir(palabras).then(function (m) {
+      $("mensaje").textContent = m; $("mensaje").hidden = false; $("acciones").hidden = false; $("caja").hidden = true;
+    }).catch(function () {
+      e.textContent = "Esas palabras no abren la caja. Revisa cada jugada."; e.hidden = false;
+      b.disabled = false; b.textContent = "Abrir la caja";
+    });
+  });
+})();
+</script>
+</body>
+</html>

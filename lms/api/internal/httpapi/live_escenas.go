@@ -57,6 +57,7 @@ func (s *Server) liveEscenaHTML(w http.ResponseWriter, r *http.Request, p *Princ
 // lista, nunca del cliente: el resto de las escenas sigue pidiendo sesión.
 var escenasPublicas = map[string][2]string{
 	"/sorteo-goldenquerys": {"gq-01", "09-sorteo"},
+	"/fuga-goldenquerys":   {"gq-01", "10-fuga"},
 }
 
 // escenaPublica: GET /sorteo-goldenquerys (sin sesión). Se abre como página suelta para compartirla por WhatsApp.
