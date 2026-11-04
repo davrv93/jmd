@@ -53,6 +53,38 @@ func (s *Server) liveEscenaHTML(w http.ResponseWriter, r *http.Request, p *Princ
 	_, _ = w.Write(raw)
 }
 
+// escenasPublicas: las únicas escenas que se sirven sin sesión, cada una en su propia dirección. El id viene de esta
+// lista, nunca del cliente: el resto de las escenas sigue pidiendo sesión.
+var escenasPublicas = map[string][2]string{
+	"/sorteo-goldenquerys": {"gq-01", "09-sorteo"},
+}
+
+// escenaPublica: GET /sorteo-goldenquerys (sin sesión). Se abre como página suelta para compartirla por WhatsApp.
+func (s *Server) escenaPublica(w http.ResponseWriter, r *http.Request) {
+	ref, ok := escenasPublicas[strings.TrimSuffix(r.URL.Path, "/")]
+	if !ok {
+		notFound(w, "la página")
+		return
+	}
+	e := s.Content.Get().Escena(ref[0], ref[1])
+	if e == nil {
+		notFound(w, "la página")
+		return
+	}
+	raw, err := os.ReadFile(e.HTMLPath)
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "text/html; charset=utf-8")
+	h.Set("Cache-Control", "no-cache")
+	h.Set("Content-Security-Policy", cspEscena)
+	h.Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(200)
+	_, _ = w.Write(raw)
+}
+
 // extsEscena: lo único que una escena puede pedir como archivo hermano o común. Nada de .html,
 // .yaml ni ejecutables: así escena.yaml y escena.html no se sirven por esta ruta.
 var extsEscena = map[string]string{

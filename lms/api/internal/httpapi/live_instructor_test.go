@@ -43,3 +43,14 @@ func TestAccesosSoloStaff(t *testing.T) {
 		t.Fatalf("alumno pidiendo enlaces: %d", c)
 	}
 }
+
+// La dirección pública no pide sesión y no sirve ninguna otra escena.
+func TestEscenaPublicaSinSesion(t *testing.T) {
+	e := newEnv(t)
+	if r := e.call("GET", "/sorteo-goldenquerys", "", false, nil, ""); r.code != 404 { // la lección gq-01 no está en el catálogo de prueba
+		t.Fatalf("sin la escena en el catálogo: %d %s", r.code, r.raw)
+	}
+	if _, ok := escenasPublicas["/api/v1/live/gq-01/escenas/01-bienvenida/html"]; ok {
+		t.Fatal("otra escena quedó pública")
+	}
+}
