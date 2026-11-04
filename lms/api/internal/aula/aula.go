@@ -16,6 +16,7 @@ import (
 	"net"
 	"net/url"
 	"os/exec"
+	"path"
 	"sort"
 	"strings"
 	"sync"
@@ -537,9 +538,22 @@ type Proyecto struct {
 func (a *Aula) Proyectos(ctx context.Context, nombre string) ([]Proyecto, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	script := `find /trabajo -maxdepth 3 -name index.html \( -path '*/node_modules' -o -path '*/.git' \) -prune -o -name index.html -not -path '/trabajo/osito/*' -not -path '/trabajo/index.html' -exec stat -c '%Y %n' {} + 2>/dev/null; [ -f /trabajo/osito/frontend/index.html ] && stat -c '%Y %n' /trabajo/osito/frontend/index.html`
+	script := `find /trabajo -maxdepth 4 \( -name node_modules -o -name .git -o -name __pycache__ -o -name .bun-cache -o -path /trabajo/osito \) -prune -o -type f -name '*.html' -exec stat -c '%Y %n' {} + 2>/dev/null; [ -f /trabajo/osito/frontend/index.html ] && stat -c '%Y %n' /trabajo/osito/frontend/index.html`
 	out, _ := a.exec(ctx, "exec", nombre, "sh", "-c", script)
-	var res []Proyecto
+	return proyectosDe(out), nil
+}
+
+// proyectosDe arma la lista del visor con la salida de «stat -c '%Y %n'»: cada carpeta con index.html es un
+// proyecto; en una carpeta SIN index.html, cada página .html suelta también lo es (p. ej. reportes/ventas.html o
+// mesa-ayuda/public/p5-obra.html). Las demás páginas de una carpeta con index.html no se listan: se llega por sus
+// enlaces. Más recientes primero; como mucho 60.
+func proyectosDe(out string) []Proyecto {
+	type pagina struct {
+		ruta string
+		mod  int64
+	}
+	var paginas []pagina
+	conIndex := map[string]bool{}
 	for _, l := range strings.Split(out, "\n") {
 		campos := strings.SplitN(strings.TrimSpace(l), " ", 2)
 		if len(campos) != 2 || !strings.HasPrefix(campos[1], "/trabajo/") {
@@ -550,15 +564,33 @@ func (a *Aula) Proyectos(ctx context.Context, nombre string) ([]Proyecto, error)
 			continue
 		}
 		ruta := strings.TrimPrefix(campos[1], "/trabajo/")
-		nom := strings.TrimSuffix(strings.TrimSuffix(ruta, "index.html"), "/")
-		if ruta == "osito/frontend/index.html" {
-			nom = "Mi asistente (Robo)"
+		if ruta == "index.html" { // la portada que redirige al asistente
+			continue
 		}
-		if nom == "" {
-			nom = ruta
+		if path.Base(ruta) == "index.html" {
+			conIndex[path.Dir(ruta)] = true
 		}
-		res = append(res, Proyecto{Ruta: ruta, Nombre: nom, Mod: mod})
+		paginas = append(paginas, pagina{ruta, mod})
 	}
-	sort.Slice(res, func(i, j int) bool { return res[i].Mod > res[j].Mod })
-	return res, nil
+	res := []Proyecto{}
+	for _, pg := range paginas {
+		dir, base := path.Dir(pg.ruta), path.Base(pg.ruta)
+		var nom string
+		switch {
+		case pg.ruta == "osito/frontend/index.html":
+			nom = "Mi asistente (Robo)"
+		case base == "index.html":
+			nom = dir
+		case conIndex[dir]:
+			continue
+		default:
+			nom = pg.ruta
+		}
+		res = append(res, Proyecto{Ruta: pg.ruta, Nombre: nom, Mod: pg.mod})
+	}
+	sort.SliceStable(res, func(i, j int) bool { return res[i].Mod > res[j].Mod })
+	if len(res) > 60 {
+		res = res[:60]
+	}
+	return res
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"html"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -94,6 +95,19 @@ func (s *Server) vistaServir(w http.ResponseWriter, r *http.Request, p *Principa
 	if !s.aulaListo(w) {
 		return
 	}
+	// Aula apagada (15 min sin uso, o se borró el contenedor): si la pide su dueño, el visor la enciende; si la
+	// mira el instructor, una página que lo dice (antes salía un 500 con X-Frame-Options DENY: «rechazó la conexión»).
+	if s.Aula.Estado(r.Context(), sub) != "corriendo" {
+		if sub != p.ID {
+			vistaApagada(w)
+			return
+		}
+		if _, err := s.Aula.Crear(r.Context(), sub); err != nil {
+			slog.Warn("visor: no se pudo encender el aula", "aula", aula.Nombre(sub), "err", err)
+			vistaApagada(w)
+			return
+		}
+	}
 	// Lo que el agente escribe cambia en cada corrida: «api/chat» relativo desde una carpeta, una URL armada con la
 	// carpeta de la página o la imagen /imagenes/x.png del backend. Si la ruta pasa por «api/» va al backend; si pasa
 	// por «imagenes/» y no hay tal archivo en /trabajo, también (el backend sirve sus imágenes).
@@ -155,6 +169,19 @@ func vistaVacia(w http.ResponseWriter, ruta string) {
 		`<body style="font-family:system-ui,sans-serif;max-width:34rem;margin:3rem auto;padding:0 1rem;line-height:1.5">` +
 		`<h2>Todavía no hay nada aquí</h2><p>No existe <code>` + html.EscapeString(ruta) + `</code> en tu carpeta de trabajo.</p>` +
 		`<p>En la terminal prueba: <code>aula nuevo html</code> y escribe <code>html/index.html</code> en la barra de arriba.</p>`))
+}
+
+// vistaApagada: el aula no está encendida (página propia, enmarcable en el LMS, en vez de un error).
+func vistaApagada(w http.ResponseWriter) {
+	h := w.Header()
+	h.Set("Content-Type", "text/html; charset=utf-8")
+	h.Set("Cache-Control", "no-store")
+	h.Set("X-Frame-Options", "SAMEORIGIN")
+	h.Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(503)
+	_, _ = w.Write([]byte(`<!doctype html><meta charset="utf-8"><meta name="color-scheme" content="light dark">` +
+		`<body style="font-family:system-ui,sans-serif;max-width:34rem;margin:3rem auto;padding:0 1rem;line-height:1.5">` +
+		`<h2>El aula está apagada</h2><p>Se enciende sola cuando su dueño abre el visor, la terminal o DeepSeek Harness. Pulsa recargar en unos segundos.</p>`))
 }
 
 // vistaVersion: GET /api/v1/vista/version (el propio alumno) y /api/v1/vista/{sub}/version (personal).
