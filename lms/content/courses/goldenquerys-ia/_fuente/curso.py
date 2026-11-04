@@ -108,7 +108,7 @@ PEDIDOS = {
     "plan": "Lee goldenquerys/MI_NEGOCIO.txt y goldenquerys/skill-dashboard/SKILL.md. Completa goldenquerys/PLAN_TRABAJO.md con mi negocio (reemplaza <<NEGOCIO>>) y haz solo la tarea T1: explora mi base con /api/esquema y dime las 3 tablas clave y cómo se relacionan. Ejecuta su criterio y márcala hecha.",
     "preguntas": "Tarea T2 del plan. Propónme 5 preguntas de negocio que mi base pueda responder, numeradas y en una línea cada una. No escribas SQL todavía: espera a que yo elija 3.",
     "preguntas2": "Elijo las preguntas __ , __ y __. Escribe su SQL, pruébala con curl contra /api/consulta, explícame cada consulta en una línea y guárdalas en goldenquerys/consultas/. Marca T2 hecha solo si las 3 devuelven filas.",
-    "dashboard": "Tareas T3 y T4 del plan: construye goldenquerys/dashboard/index.html siguiendo la receta del skill, con mis 3 preguntas de oro como base de los 3 KPI y los 2 gráficos, y filtros de fechas que vuelven a consultar. Al terminar dime qué abrir en el visor.",
+    "dashboard": "Tareas T3, T4 y T4b del plan: construye goldenquerys/dashboard/index.html siguiendo la receta del skill, con mis 3 preguntas de oro como base de los 3 KPI y los 2 gráficos, filtros de fechas que vuelven a consultar y la caja de pregunta en español (GET /api/pregunta, tarea T4b) que muestra el SQL generado, la tabla y un gráfico. Al terminar dime qué abrir en el visor.",
     "verificar": "Tarea T5: elige un KPI del dashboard, repítelo con curl y compáralo con lo que muestra el visor con los mismos filtros. Si no coincide, encuentra por qué y corrígelo. Luego marca T5 hecha y muéstrame el plan completo.",
 }
 

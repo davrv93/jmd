@@ -17,6 +17,7 @@ description: Construye un dashboard web de un negocio a partir de una base SQLit
   - `GET /api/esquema?db=<negocio>` da tablas, vistas, columnas, tipos y filas.
   - `GET /api/consulta?db=<negocio>&sql=<SELECT urlencoded>` devuelve `{columnas, filas, total, ms, truncado}`.
     Solo acepta un SELECT o WITH. Máximo 5000 filas y 5 s.
+  - `GET /api/pregunta?db=<negocio>&pregunta=<texto en español urlencoded>` **convierte lenguaje natural a SQL con IA**, lo ejecuta y devuelve `{pregunta, sql, columnas, filas, total, ms}`. Si la IA no está lista responde 400 con el motivo.
 - El visor del LMS muestra `/trabajo/<ruta>` y reenvía todo lo que empiece por `/api/` al puerto 8766.
 
 ## Cómo se trabaja (en este orden)
@@ -52,11 +53,23 @@ async function q(sql) {
 }
 ```
 
+Caja de pregunta (obligatoria en el dashboard: es el corazón de GoldenQuerys). Un `<input>` con botón «Preguntar»; al enviar:
+```js
+async function preguntar(texto) {
+  const r = await fetch("/api/pregunta?db=" + DB + "&pregunta=" + encodeURIComponent(texto));
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || "No pude responder");
+  return j; // { pregunta, sql, columnas, filas, total, ms }
+}
+```
+Muestra siempre el SQL generado (el alumno lo verifica), la tabla de resultados y, si hay una columna de texto y una numérica, un gráfico de barras. Mientras responde, deshabilita el botón y muestra «Pensando…» (tarda unos segundos).
+
 Filtros sin inyección: las fechas vienen de `<input type="date">`. Valida que cumplan `/^\d{4}-\d{2}-\d{2}$/` antes de ponerlas en el SQL.
 
 ## Criterio de terminado
 - `dashboard/index.html` abre en el visor sin errores en la consola del visor.
 - Muestra 3 KPI y 2 gráficos con datos reales.
+- La caja de pregunta responde en español y muestra su SQL.
 - Cambiar las fechas cambia los números.
 - Cada KPI se puede repetir con un curl y da lo mismo.
 

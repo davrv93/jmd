@@ -9,6 +9,7 @@ Endpoints (JSON):
   GET  /api/esquema?db=botica
   GET  /api/consulta?db=botica&sql=SELECT...     (o POST JSON {"db": "...", "sql": "..."})
   GET  /api/reportes
+  POST /api/pregunta   {"db": "...", "pregunta": "..."}  español → SQL (con IA) → filas; devuelve también el SQL
 Fuera de /api/ sirve los archivos estáticos de esta carpeta (útil para probar en local).
 """
 import json
@@ -18,7 +19,9 @@ import re
 import sqlite3
 import sys
 import time
+import urllib.error
 import urllib.parse
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -153,6 +156,81 @@ def esquema(db):
     return {'db': db, 'objetos': objetos}
 
 
+def credencial_ia():
+    """La IA del aula: el token y el relé de la clase (los deja el botón de DeepSeek Harness) o la clave propia."""
+    carpeta = os.path.expanduser('~/.aula-dsh')
+    try:
+        with open(os.path.join(carpeta, 'rele'), encoding='utf-8') as f:
+            lineas = [x.strip() for x in f.read().splitlines()]
+        if len(lineas) >= 2 and lineas[0] and lineas[1]:
+            return lineas[0], lineas[1].rstrip('/')
+    except OSError:
+        pass
+    try:
+        with open(os.path.join(carpeta, 'clave'), encoding='utf-8') as f:
+            clave = f.readline().strip()
+        if clave:
+            return clave, 'https://api.deepseek.com/anthropic'
+    except OSError:
+        pass
+    raise ErrorConsulta('Tu aula aún no tiene IA: abre DeepSeek Harness una vez y vuelve a preguntar.')
+
+
+def esquema_texto(db):
+    lineas = []
+    for o in esquema(db)['objetos']:
+        cols = ', '.join(f"{c['nombre']} {c['tipo']}" + (f" -> {c['fk']}" if c['fk'] else '') for c in o['columnas'])
+        lineas.append(f"{o['tipo']} {o['nombre']} ({o['filas']} filas): {cols}")
+    return '\n'.join(lineas)
+
+
+def sql_desde_pregunta(db, pregunta, fallo=''):
+    """Traduce la pregunta a un SELECT de SQLite con el modelo. Si `fallo` trae el error del intento anterior, lo corrige."""
+    token, base = credencial_ia()
+    sistema = ('Traduces preguntas de negocio en español a UNA consulta SQLite de solo lectura.\n'
+               'Responde SOLO con el SQL: sin explicación y sin ```.\n'
+               'Reglas: un solo SELECT o WITH; usa únicamente las tablas y columnas del esquema; alias legibles en español; '
+               'las fechas son texto ISO (usa date() y strftime()); excluye registros anulados, cancelados o negativos '
+               'salvo que la pregunta sea sobre ellos; redondea soles a 2 decimales; ordena de forma útil; '
+               'agrega LIMIT 200 si es un listado.\n\nEsquema de la base ' + db + ':\n' + esquema_texto(db))
+    texto = pregunta if not fallo else f'{pregunta}\n\nTu consulta anterior falló. Corrígela:\n{fallo}'
+    cuerpo = json.dumps({'model': 'deepseek-flash', 'max_tokens': 1000, 'stream': False, 'thinking': {'type': 'disabled'},
+                         'system': sistema, 'messages': [{'role': 'user', 'content': [{'type': 'text', 'text': texto}]}]}).encode()
+    pedido = urllib.request.Request(base + '/v1/messages', data=cuerpo, method='POST', headers={
+        'Content-Type': 'application/json', 'x-api-key': token, 'anthropic-version': '2023-06-01'})
+    try:
+        with urllib.request.urlopen(pedido, timeout=45) as r:
+            datos = json.load(r)
+    except urllib.error.HTTPError as e:
+        try:
+            motivo = json.load(e).get('error', {}).get('message', '')
+        except ValueError:
+            motivo = ''
+        raise ErrorConsulta(f'La IA respondió HTTP {e.code}. {motivo}'.strip())
+    except (urllib.error.URLError, TimeoutError) as e:
+        raise ErrorConsulta(f'No pude llegar a la IA: {e}')
+    sql = ''.join(b.get('text', '') for b in datos.get('content', []) if b.get('type') == 'text').strip()
+    sql = re.sub(r'^```[a-zA-Z]*\s*|\s*```$', '', sql).strip()
+    if not sql:
+        raise ErrorConsulta('La IA no devolvió SQL. Prueba con otras palabras.')
+    return sql
+
+
+def responder_pregunta(db, pregunta):
+    pregunta = pregunta.strip()
+    if not pregunta:
+        raise ErrorConsulta('Escribe tu pregunta en español.')
+    sql = sql_desde_pregunta(db, pregunta)
+    try:
+        r = ejecutar(db, sql)
+    except ErrorConsulta as e:  # un segundo intento con el error de SQLite a la vista
+        sql = sql_desde_pregunta(db, pregunta, f'{sql}\n{e}')
+        r = ejecutar(db, sql)
+    r['pregunta'] = pregunta
+    r['sql'] = sql
+    return r
+
+
 def titulo_de(ruta):
     try:
         with open(ruta, encoding='utf-8', errors='replace') as f:
@@ -211,6 +289,9 @@ class Manejador(BaseHTTPRequestHandler):
         if ruta == '/api/consulta':
             r = ejecutar(params.get('db', ''), params.get('sql', ''))
             return self._json(200, r, f'db={r["db"]} filas={r["total"]} {r["ms"]}ms')
+        if ruta == '/api/pregunta':
+            r = responder_pregunta(params.get('db', ''), params.get('pregunta', ''))
+            return self._json(200, r, f'db={r["db"]} pregunta filas={r["total"]}')
         return self._json(404, {'error': f'Ruta desconocida: {ruta}'})
 
     def _atender(self, params):
