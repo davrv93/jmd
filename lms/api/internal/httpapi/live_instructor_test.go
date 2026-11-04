@@ -71,3 +71,21 @@ func TestFugaPistasPorHora(t *testing.T) {
 		t.Fatalf("pistas: %d %s", r.code, r.raw)
 	}
 }
+
+// Las visitas se cuentan por persona sin guardar la IP.
+func TestVisitasPublicas(t *testing.T) {
+	e := newEnv(t)
+	ctx := t.Context()
+	for _, h := range []string{"a", "a", "b"} {
+		if err := e.db.SumarVisita(ctx, "/fuga-yape", h); err != nil {
+			t.Fatal(err)
+		}
+	}
+	v, err := e.db.VisitasResumen(ctx)
+	if err != nil || len(v) != 1 || v[0].Visitas != 3 || v[0].Personas != 2 {
+		t.Fatalf("resumen: %+v %v", v, err)
+	}
+	if r := e.call("GET", "/api/v1/admin/visitas", "", false, nil, ""); r.code != 401 {
+		t.Fatalf("sin sesión: %d", r.code)
+	}
+}

@@ -66,6 +66,11 @@ func migrate(db *sql.DB) error {
 	// existente la columna «numero» recién se creó en los adds de arriba.
 	// Parcial (WHERE numero IS NOT NULL): las filas viejas sin número no lo
 	// bloquean; las nuevas no pueden repetirlo dentro del mismo sorteo.
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS visitas_publicas (
+		ruta TEXT NOT NULL, huella TEXT NOT NULL, veces INTEGER NOT NULL DEFAULT 1, ultima TEXT NOT NULL,
+		PRIMARY KEY (ruta, huella));`); err != nil {
+		return fmt.Errorf("tabla visitas_publicas: %w", err)
+	}
 	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS sorteo_gol (
 		sorteo_id TEXT NOT NULL, email TEXT NOT NULL, nombre TEXT NOT NULL, user_id TEXT NOT NULL, premio TEXT NOT NULL,
 		pct INTEGER NOT NULL, precio INTEGER NOT NULL, codigo TEXT NOT NULL, creado_en TEXT NOT NULL,

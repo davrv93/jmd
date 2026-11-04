@@ -198,6 +198,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/sorteo-gol/estado", s.golEstado) // sin sesión: el sorteo se juega con nombre y correo
 	mux.HandleFunc("POST /api/v1/sorteo-gol/girar", s.golGirar)
 	mux.Handle("GET /api/v1/admin/sorteo-gol", s.authed(s.admin(s.golGiros)))
+	mux.Handle("GET /api/v1/admin/visitas", s.authed(s.admin(s.adminVisitas)))
 	mux.HandleFunc("GET /sorteo-goldenquerys", s.escenaPublica) // sin sesión: solo esta escena (ver escenasPublicas)
 	mux.HandleFunc("GET /sorteo-goldenquerys/", s.escenaPublica)
 	mux.HandleFunc("GET /api/v1/fuga/pistas", s.fugaPistas) // sin sesión: solo las pistas que ya llegaron a su hora

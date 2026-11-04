@@ -80,6 +80,7 @@ func (s *Server) escenaPublica(w http.ResponseWriter, r *http.Request) {
 		internal(w, err)
 		return
 	}
+	s.contarVisita(r, strings.TrimSuffix(r.URL.Path, "/"))
 	h := w.Header()
 	h.Set("Content-Type", "text/html; charset=utf-8")
 	h.Set("Cache-Control", "no-cache")
@@ -112,6 +113,9 @@ func (s *Server) fugaVideo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		internal(w, err)
 		return
+	}
+	if r.Header.Get("Range") == "" || strings.HasPrefix(r.Header.Get("Range"), "bytes=0-") { // no cuenta cada tramo del video
+		s.contarVisita(r, r.URL.Path)
 	}
 	w.Header().Set("Content-Type", "video/mp4")
 	http.ServeContent(w, r, "video.mp4", st.ModTime(), f)
