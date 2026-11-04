@@ -162,7 +162,7 @@ ELEGIR = """    <h1 class="esc-titulo a-in">Elige <em class="oro">tu negocio</em
   </script>
   <main hidden>"""
 
-FECHA_CURSO = "lunes 9 de noviembre, 7:30 p. m."
+FECHA_CURSO = "martes 10 y 17 de noviembre"
 
 SORTEO = """    <h1 class="esc-titulo a-in">Hoy <em class="oro">todos ganan</em>: gira y mira tu descuento</h1>
     <p class="esc-sub a-in" style="--d:.1s">El curso GoldenQuerys cuesta S/ 100. Cada persona de la charla se lleva entre 70 % y 80 % de descuento: pagas entre S/ 20 y S/ 30.</p>
@@ -177,14 +177,14 @@ SORTEO = """    <h1 class="esc-titulo a-in">Hoy <em class="oro">todos ganan</em>
         <p class="gq-premio-t" role="status" aria-live="polite"><b id="gq-pct"></b> de descuento</p>
         <p class="gq-precio">Pagas <b id="gq-final"></b> <s>S/ 100</s></p>
         <p class="gq-codigo">Tu código: <code id="gq-codigo"></code></p>
-        <p class="gq-codigo">Curso en vivo: <b>""" + FECHA_CURSO + """</b> · 85 minutos</p>
+        <p class="gq-codigo">Curso en vivo: <b>""" + FECHA_CURSO + """</b> · 2 sesiones en vivo. Vale tu último giro.</p>
         <div class="gq-acciones">
           <button type="button" class="gq-reclamar" id="gq-whatsapp">Reclamar por WhatsApp</button>
           <button type="button" class="gq-copiar" id="gq-copiar">Copiar mensaje</button>
         </div>
         <p class="gq-aviso" id="gq-ayuda">O escribe al WhatsApp <b>986 149 476</b> con tu código.</p>
       </div>
-      <div class="gq-espera" id="gq-espera"><b>Curso en vivo</b><span>""" + FECHA_CURSO + """ · 85 minutos</span><span>Un solo giro por persona. Nadie se queda sin premio.</span></div>
+      <div class="gq-espera" id="gq-espera"><b>Curso en vivo</b><span>""" + FECHA_CURSO + """ · 2 sesiones en vivo</span><span>Gira las veces que quieras: vale tu último giro. Nadie se queda sin premio.</span></div>
     </div>
   </main>
   <script>
@@ -205,7 +205,8 @@ SORTEO = """    <h1 class="esc-titulo a-in">Hoy <em class="oro">todos ganan</em>
     }
     function colocar(r, salto) {
       var rod = $("gq-rodillo");
-      if (salto) rod.style.transition = "none";
+      rod.style.transition = "none";
+      if (!salto) { rod.style.transform = "translateY(0)"; void rod.offsetHeight; rod.style.transition = ""; }
       rod.style.transform = "translateY(" + (-(22 + r.pct - 70) * alto()) + "px)";
     }
     function mostrar(r) {
@@ -215,7 +216,7 @@ SORTEO = """    <h1 class="esc-titulo a-in">Hoy <em class="oro">todos ganan</em>
       $("gq-premio").hidden = false;
       $("gq-espera").hidden = true;
       $("gq-boleto").classList.add("listo");
-      var b = $("gq-girar"); b.disabled = true; b.textContent = "Ya giraste";
+      var b = $("gq-girar"); b.disabled = false; b.textContent = "Girar otra vez";
     }
     function copiar() {
       var r = leer() || actual, ayuda = $("gq-ayuda");
@@ -235,7 +236,6 @@ SORTEO = """    <h1 class="esc-titulo a-in">Hoy <em class="oro">todos ganan</em>
     var actual = leer();
     if (actual && actual.codigo) { colocar(actual, true); mostrar(actual); }
     $("gq-girar").addEventListener("click", function () {
-      if (leer()) return;
       var r = nuevo(), quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
       actual = r; guardar(r);
       this.disabled = true; this.textContent = "Girando…";
