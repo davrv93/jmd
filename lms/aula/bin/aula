@@ -63,6 +63,8 @@ dsh_credencial() {
 # Exporta la credencial al entorno del proceso hijo (llamar dentro de un subshell).
 dsh_exportar() {
   export DEEPSEEK_API_KEY="$dsh_kk" DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
+  # Sin bubblewrap ni Landlock en el aula, «workspace-write» no deja correr ningún comando: el aula es el sandbox.
+  export DSH_PERMISSION_MODE="${DSH_PERMISSION_MODE:-danger-full-access}"
   if [ -n "$dsh_base" ]; then
     # dsh habla la Messages API (compatible con Anthropic): POST <base>/v1/messages y <base>/v1/files.
     # La búsqueda web va aparte (DEEPSEEK_SEARCH_BASE_URL, ya con /v1).

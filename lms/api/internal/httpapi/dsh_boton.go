@@ -212,7 +212,12 @@ func (s *Server) dshAbrir(w http.ResponseWriter, r *http.Request, p *Principal) 
 
 	// El selector de carpetas de dsh empieza en el home del alumno (un tmpfs vacío): sin este enlace nunca ve /trabajo.
 	_, _ = s.Aula.Exec(ctx, nombre, `[ -e "$HOME/trabajo" ] || ln -s /trabajo "$HOME/trabajo"`)
-	out, err := s.Aula.ExecTope(ctx, nombre, "aula dsh abrir", nil, dshAbrirTope)
+	// dsh corre los comandos del agente en modo «workspace-write», que exige bubblewrap o Landlock: el aula no los
+	// tiene (y en un contenedor sin privilegios no funcionarían), así que el agente no podía ejecutar nada. El aula
+	// ya es el aislamiento (un contenedor por alumno, sin root): dsh arranca en «danger-full-access», sin pedir
+	// aprobación. Si hay una web vieja corriendo sin ese modo, se para para que «abrir» la levante con él.
+	_, _ = s.Aula.Exec(ctx, nombre, `p=$(cat /tmp/aula-dsh-web.pid 2>/dev/null); if [ -n "$p" ] && ! tr '\0' '\n' < /proc/$p/environ 2>/dev/null | grep -qx DSH_PERMISSION_MODE=danger-full-access; then aula dsh web parar >/dev/null 2>&1; fi; true`)
+	out, err := s.Aula.ExecTope(ctx, nombre, "DSH_PERMISSION_MODE=danger-full-access aula dsh abrir", nil, dshAbrirTope)
 	if err != nil {
 		slog.Warn("dsh: «aula dsh abrir» falló", "aula", nombre, "salida", sinTokens(out), "err", err)
 		if strings.Contains(out, "Aún no me diste tu clave") {

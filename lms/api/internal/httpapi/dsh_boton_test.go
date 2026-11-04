@@ -98,7 +98,7 @@ func (a *aulaDsh) ExecTope(ctx context.Context, nombre, script string, stdin []b
 	case "aula dsh rele -":
 		a.rele = string(stdin)
 		return "relé guardado", nil
-	case "aula dsh abrir":
+	case "DSH_PERMISSION_MODE=danger-full-access aula dsh abrir": // el aula no tiene bubblewrap ni Landlock (ver dshAbrir)
 		if a.modo() == "ninguna" {
 			return "Aún no me diste tu clave de DeepSeek. Primero: aula dsh clave", fmt.Errorf("exit status 3")
 		}
