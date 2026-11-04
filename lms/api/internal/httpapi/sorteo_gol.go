@@ -12,20 +12,19 @@ import (
 	"github.com/davrv93/jmd/lms/api/internal/store"
 )
 
-// Sorteo de GoldenQuerys con temática de fútbol: cada inscrito patea un solo penal.
+// Sorteo de GoldenQuerys con temática de fútbol: cada persona patea un solo penal.
 //
 //	GET  /api/v1/sorteo-gol/estado   (público) probabilidades y qué premios únicos quedan
-//	POST /api/v1/sorteo-gol/girar    (público) {nombre, correo}: sortea o devuelve el resultado que ya tenía
+//	POST /api/v1/sorteo-gol/girar    (público) {nombre, correo}: anota a la persona y sortea, o devuelve lo que ya tenía
 //	GET  /api/v1/admin/sorteo-gol    (admin)   todos los giros, para validar los códigos que llegan por WhatsApp
 //
-// El sorteo se hace aquí, no en el navegador, y queda en la base: una cuenta gira una vez y un premio único sale una
-// vez (índice único en store). Las probabilidades que ve el público son exactamente las de premiosGol y tramosGol, en
+// El sorteo se hace aquí, no en el navegador, y queda en la base. No pide cuenta del LMS: el formulario es la
+// inscripción al sorteo. Un penal por correo y por nombre, y un premio único sale una vez (índices únicos en store). Las probabilidades que ve el público son exactamente las de premiosGol y tramosGol, en
 // partes por millón. Agotado un premio único, su probabilidad pasa a los descuentos normales.
 
 const (
 	sorteoGolID   = "goldenquerys"
 	sorteoGolBase = 100 // precio del curso en soles
-	golGrupo      = "goldenquerys-1"
 )
 
 type premioGol struct {
@@ -109,19 +108,6 @@ func sinTildes(s string) string {
 
 var quitaTildes = strings.NewReplacer("á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ü", "u", "ñ", "n")
 
-// nombreCoincide: el nombre escrito debe traer al menos una palabra del de la cuenta (de 3 letras o más).
-func nombreCoincide(escrito, cuenta string) bool {
-	palabras := strings.Fields(sinTildes(cuenta))
-	for _, e := range strings.Fields(sinTildes(escrito)) {
-		for _, p := range palabras {
-			if len(e) >= 3 && e == p {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func (s *Server) golTomados(r *http.Request) (map[string]string, int, error) {
 	giros, err := s.DB.GirosGol(r.Context(), sorteoGolID)
 	if err != nil {
@@ -152,7 +138,7 @@ func (s *Server) golEstado(w http.ResponseWriter, r *http.Request) {
 	for _, t := range tramosGol {
 		tramos = append(tramos, map[string]any{"desde": t.Desde, "hasta": t.Hasta, "prob": float64(t.PPM) / 10_000})
 	}
-	writeJSON(w, 200, map[string]any{"giros": total, "premios": premios, "tramos": tramos, "precio": sorteoGolBase, "inscripcion": "/inscripcion/" + golGrupo})
+	writeJSON(w, 200, map[string]any{"giros": total, "premios": premios, "tramos": tramos, "precio": sorteoGolBase})
 }
 
 func vistaGiro(g *store.GiroGol, repetido bool) map[string]any {
@@ -179,28 +165,30 @@ func (s *Server) golGirar(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &in) {
 		return
 	}
-	nombre, correo := strings.TrimSpace(in.Nombre), strings.ToLower(strings.TrimSpace(in.Correo))
-	if len(nombre) < 3 || !validEmail(correo) {
-		badRequest(w, "Escribe tu nombre y el correo con el que te inscribiste.")
-		return
-	}
-	u, err := s.DB.UserByEmail(r.Context(), correo)
-	if errors.Is(err, store.ErrNotFound) {
-		writeErr(w, 404, "no_inscrito", "Ese correo no está inscrito. Inscríbete gratis y vuelve a patear.")
-		return
-	}
-	if err != nil {
-		internal(w, err)
-		return
-	}
-	if !nombreCoincide(nombre, u.Name) {
-		writeErr(w, 400, "nombre_distinto", "Ese nombre no coincide con el de tu inscripción.")
+	nombre, correo := strings.Join(strings.Fields(in.Nombre), " "), strings.ToLower(strings.TrimSpace(in.Correo))
+	clave := sinTildes(nombre)
+	if len(strings.Fields(clave)) < 2 || len(nombre) > 80 || !validEmail(correo) {
+		badRequest(w, "Escribe tu nombre y apellido, y un correo válido.")
 		return
 	}
 	s.golMu.Lock()
 	defer s.golMu.Unlock()
-	if g, err := s.DB.GiroGolDe(r.Context(), sorteoGolID, u.ID); err == nil {
-		writeJSON(w, 200, vistaGiro(g, true))
+	// Un penal por correo y por nombre: el mismo par ve su resultado; una mitad repetida no vuelve a patear.
+	porCorreo, err := s.DB.GiroGolPorCorreo(r.Context(), sorteoGolID, correo)
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
+		internal(w, err)
+		return
+	}
+	if porCorreo != nil {
+		if porCorreo.UserID != clave {
+			writeErr(w, 409, "correo_usado", "Ese correo ya pateó con otro nombre.")
+			return
+		}
+		writeJSON(w, 200, vistaGiro(porCorreo, true))
+		return
+	}
+	if _, err := s.DB.GiroGolDe(r.Context(), sorteoGolID, clave); err == nil {
+		writeErr(w, 409, "nombre_usado", "Ese nombre ya pateó con otro correo.")
 		return
 	} else if !errors.Is(err, store.ErrNotFound) {
 		internal(w, err)
@@ -216,7 +204,7 @@ func (s *Server) golGirar(w http.ResponseWriter, r *http.Request) {
 		sinStock[id] = true
 	}
 	g := sortearGol(sinStock)
-	g.Email, g.Nombre, g.UserID, g.Codigo = correo, u.Name, u.ID, codigoGol(g.Pct)
+	g.Email, g.Nombre, g.UserID, g.Codigo = correo, nombre, clave, codigoGol(g.Pct)
 	if err := s.DB.GuardarGiroGol(r.Context(), sorteoGolID, g); err != nil {
 		internal(w, err)
 		return

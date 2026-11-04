@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-// Sorteo con premios del instructor (ver httpapi/sorteo_gol.go): cada inscrito gira una sola vez y su resultado queda
-// fijo. El índice único de premio hace que un premio único no pueda salir dos veces, aunque lleguen dos giros juntos.
+// Sorteo con premios del instructor (ver httpapi/sorteo_gol.go): cada persona gira una sola vez y su resultado queda
+// fijo. UserID guarda el nombre normalizado, que es la clave de «un penal por nombre»: aquí no hay cuenta del LMS. El índice único de premio hace que un premio único no pueda salir dos veces, aunque lleguen dos giros juntos.
 
 // GiroGol es el resultado de una persona.
 type GiroGol struct {
@@ -34,9 +34,14 @@ func scanGiroGol(row interface{ Scan(...any) error }) (*GiroGol, error) {
 	return g, err
 }
 
-// GiroGolDe devuelve el giro de esa cuenta en el sorteo (ErrNotFound si aún no gira).
+// GiroGolDe devuelve el giro de ese nombre normalizado en el sorteo (ErrNotFound si aún no gira).
 func (d *DB) GiroGolDe(ctx context.Context, sorteoID, userID string) (*GiroGol, error) {
 	return scanGiroGol(d.sql.QueryRowContext(ctx, "SELECT "+giroGolCols+" FROM sorteo_gol WHERE sorteo_id = ? AND user_id = ?", sorteoID, userID))
+}
+
+// GiroGolPorCorreo devuelve el giro de ese correo (ErrNotFound si aún no gira).
+func (d *DB) GiroGolPorCorreo(ctx context.Context, sorteoID, email string) (*GiroGol, error) {
+	return scanGiroGol(d.sql.QueryRowContext(ctx, "SELECT "+giroGolCols+" FROM sorteo_gol WHERE sorteo_id = ? AND email = ?", sorteoID, correoClave(email)))
 }
 
 // GuardarGiroGol anota el giro. Con un premio único ya entregado devuelve ErrPremioTomado: hay que volver a sortear.

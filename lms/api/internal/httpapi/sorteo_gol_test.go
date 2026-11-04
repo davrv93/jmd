@@ -31,24 +31,28 @@ func TestSorteoGolProbabilidades(t *testing.T) {
 	}
 }
 
-func TestSorteoGolUnGiroPorCuenta(t *testing.T) {
+func TestSorteoGolUnPenalPorCorreoYNombre(t *testing.T) {
 	e := newEnv(t)
-	e.register("ana@x.test")
 	ruta := "/api/v1/sorteo-gol/girar"
-	if r := e.call("POST", ruta, "", false, map[string]string{"nombre": "Nadie", "correo": "nadie@x.test"}, ""); r.code != 404 {
-		t.Fatalf("sin inscripción: %d %s", r.code, r.raw)
+	girar := func(nombre, correo string) resp {
+		return e.call("POST", ruta, "", false, map[string]string{"nombre": nombre, "correo": correo}, "")
 	}
-	u, _ := e.db.UserByEmail(t.Context(), "ana@x.test")
-	if r := e.call("POST", ruta, "", false, map[string]string{"nombre": "Otra Persona", "correo": "ana@x.test"}, ""); r.code != 400 {
-		t.Fatalf("nombre distinto de %q: %d %s", u.Name, r.code, r.raw)
+	if r := girar("Ana", "ana@x.test"); r.code != 400 {
+		t.Fatalf("sin apellido: %d %s", r.code, r.raw)
 	}
-	r1 := e.call("POST", ruta, "", false, map[string]string{"nombre": u.Name, "correo": "ANA@x.test"}, "")
+	r1 := girar("Ana Pérez", "ANA@x.test") // sin cuenta del LMS: el formulario es la inscripción
 	if r1.code != 200 || r1.body["repetido"] != false {
-		t.Fatalf("primer giro: %d %s", r1.code, r1.raw)
+		t.Fatalf("primer penal: %d %s", r1.code, r1.raw)
 	}
-	r2 := e.call("POST", ruta, "", false, map[string]string{"nombre": u.Name, "correo": "ana@x.test"}, "")
+	r2 := girar("  ana   perez ", "ana@x.test")
 	if r2.code != 200 || r2.body["repetido"] != true || r2.body["codigo"] != r1.body["codigo"] {
-		t.Fatalf("segundo giro debía repetir el resultado: %s / %s", r1.raw, r2.raw)
+		t.Fatalf("mismo par debía ver su resultado: %s / %s", r1.raw, r2.raw)
+	}
+	if r := girar("Otra Persona", "ana@x.test"); r.code != 409 || r.body["error"].(map[string]any)["code"] != "correo_usado" {
+		t.Fatalf("correo repetido: %d %s", r.code, r.raw)
+	}
+	if r := girar("Ana Perez", "otro@x.test"); r.code != 409 || r.body["error"].(map[string]any)["code"] != "nombre_usado" {
+		t.Fatalf("nombre repetido: %d %s", r.code, r.raw)
 	}
 	if r := e.call("GET", "/api/v1/sorteo-gol/estado", "", false, nil, ""); r.code != 200 || r.body["giros"].(float64) != 1 {
 		t.Fatalf("estado: %d %s", r.code, r.raw)
