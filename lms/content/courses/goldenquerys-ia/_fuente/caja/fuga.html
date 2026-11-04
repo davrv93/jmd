@@ -28,6 +28,13 @@ h1 span { color: var(--oro); }
 .pizarra .ju circle { fill: var(--pizarra); stroke: var(--tiza); stroke-width: 2.5; }
 .pizarra .ju text { font: 800 25px "Barlow Condensed", sans-serif; fill: var(--tiza); text-anchor: middle; dominant-baseline: central; }
 .pizarra .fl { fill: none; stroke: var(--oro); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 9 8; }
+.tablero { position: relative; min-width: 0; }
+.lluvia { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 10px; pointer-events: none; }
+.sonido { position: absolute; right: 10px; top: 10px; width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--linea); border-radius: 50%; background: rgba(10,20,16,.7); color: var(--tiza); cursor: pointer; }
+.sonido:hover { border-color: var(--oro); color: var(--oro); }
+.sonido .no { display: none; } .sonido[aria-pressed="false"] .si { display: none; } .sonido[aria-pressed="false"] .no { display: block; }
+.leyendas { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; color: var(--suave); font-size: .9rem; }
+.leyendas b { color: var(--tiza); }
 .lado { display: grid; gap: 12px; align-content: start; }
 .regla { margin: 0; color: var(--suave); font-size: .92rem; }
 .regla b { color: var(--tiza); }
@@ -55,7 +62,21 @@ input:focus { border-color: var(--oro); outline: none; }
     <h1>La fuga <span>del estadio</span></h1>
     <p class="bajada">Hay un mensaje cifrado con AES-256 en esta página. Sin las tres palabras, ninguna IA lo abre. <b>El primero en abrirlo y escribir el código gana todo el catálogo a S/ 10.</b></p>
   </header>
-  {{PIZARRA}}
+  <div>
+    <div class="tablero">
+      {{PIZARRA}}
+      <canvas class="lluvia" id="lluvia" aria-hidden="true"></canvas>
+      <button type="button" class="sonido" id="sonido" aria-pressed="true" aria-label="Sonido de lluvia" title="Sonido de lluvia">
+        <svg class="si" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="no" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="m17 9.5 5 5m0-5-5 5"/></svg>
+      </button>
+    </div>
+    <ul class="leyendas">
+      <li><b>Palermo</b> falló tres penales en una noche. Tú tienes tres palabras.</li>
+      <li><b>Higuita</b> sacó el escorpión por detrás: mira lo que nadie mira.</li>
+      <li><b>Alemania 4, Argentina 0:</b> aquí una palabra mal escrita también es goleada.</li>
+    </ul>
+  </div>
   <div class="lado">
     <p class="regla"><b>Tres jugadas, tres palabras.</b> Cada flecha va de un número de frase a un número de palabra. Falta el libro: lo revelo <b>hoy a la 1:00 p. m.</b></p>
     <form id="caja">
@@ -82,6 +103,40 @@ input:focus { border-color: var(--oro); outline: none; }
     var plano = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(CAJA.iv) }, clave, bytes(CAJA.ct));
     return new TextDecoder().decode(plano);
   }
+  /* Lluvia: gotas sobre la pizarra y su sonido, sintetizado con ruido. Sin movimiento si la persona lo pidió así. */
+  (function () {
+    var lienzo = $("lluvia"), c = lienzo.getContext("2d"), gotas = [], quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function medir() { lienzo.width = lienzo.clientWidth; lienzo.height = lienzo.clientHeight; }
+    medir(); addEventListener("resize", medir);
+    for (var i = 0; i < 70; i++) gotas.push({ x: Math.random(), y: Math.random(), v: .006 + Math.random() * .008, l: 8 + Math.random() * 12 });
+    function cuadro() {
+      var w = lienzo.width, h = lienzo.height;
+      c.clearRect(0, 0, w, h); c.strokeStyle = "rgba(190,215,235,.3)"; c.lineWidth = 1; c.beginPath();
+      gotas.forEach(function (g) { var x = g.x * w, y = g.y * h; c.moveTo(x, y); c.lineTo(x - 1.5, y + g.l); g.y += g.v; if (g.y > 1) { g.y = -.05; g.x = Math.random(); } });
+      c.stroke();
+      if (!quieto) requestAnimationFrame(cuadro);
+    }
+    cuadro();
+    var ctx = null, vol, activo = true;
+    try { activo = localStorage.getItem("fuga.sonido") !== "no"; } catch (e) {}
+    $("sonido").setAttribute("aria-pressed", String(activo));
+    function iniciar() {
+      if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
+      var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      ctx = new AC(); vol = ctx.createGain(); vol.gain.value = 0; vol.connect(ctx.destination);
+      var b = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate), d = b.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (Math.random() < .02 ? 1 : .35);
+      var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(); s.buffer = b; s.loop = true; f.type = "highpass"; f.frequency.value = 1400;
+      s.connect(f); f.connect(vol); s.start();
+      if (activo) vol.gain.setTargetAtTime(.09, ctx.currentTime, .8);
+    }
+    ["pointerdown", "keydown"].forEach(function (t) { addEventListener(t, iniciar, { passive: true }); });
+    $("sonido").addEventListener("click", function () {
+      activo = !activo; this.setAttribute("aria-pressed", String(activo)); iniciar();
+      try { localStorage.setItem("fuga.sonido", activo ? "si" : "no"); } catch (e) {}
+      if (vol) vol.gain.setTargetAtTime(activo ? .09 : 0, ctx.currentTime, .1);
+    });
+  })();
   $("caja").addEventListener("submit", function (ev) {
     ev.preventDefault();
     var b = $("abrir"), e = $("error");
