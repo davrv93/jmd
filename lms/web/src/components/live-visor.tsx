@@ -201,6 +201,7 @@ export const LiveVisor = component$((props: { lesson: string; escena: string; su
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(({ cleanup }) => {
     let alMontar = true; // al abrir el panel siempre se relee la lista de proyectos
+    let vacios = 0; // con la lista vacía (aula recién encendida, carpeta nueva) se relee cada 3 sondeos
     let vivo = true;
     let t: ReturnType<typeof setTimeout> | undefined;
     const sondear = async () => {
@@ -232,7 +233,7 @@ export const LiveVisor = component$((props: { lesson: string; escena: string; su
           }
         }
         // Proyectos: al entrar y cuando aparece uno. Un proyecto nuevo se abre solo si no elegiste otro a mano.
-        if (alMontar || proyCambio) {
+        if (alMontar || proyCambio || (proy.lista.length === 0 && ++vacios % 3 === 0)) {
           const lista = (await api.vistaProyectos()) ?? [];
           const nuevos = lista.filter((x) => !proy.conocidas.includes(x.ruta));
           proy.lista = lista;
