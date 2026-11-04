@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Prepara tu estudio de reportes</title>
+<title>Escena · Elige tu negocio</title>
 <!-- Escena del modo LIVE: GoldenQuerys con IA (gq-01). -->
 <style>
 /* ---- Tokens (los mismos del LMS) ---- */
@@ -166,6 +166,11 @@ body {
 .gq-grande em { font-style: normal; color: var(--oro); }
 .gq-reto { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vw; }
 .gq-reto .esc-card { border-top: .3em solid var(--oro); }
+.gq-elige .gq-giro { font: inherit; color: inherit; text-align: left; cursor: pointer; transition: transform .15s ease-out, box-shadow .15s ease-out; }
+.gq-elige .gq-giro:hover, .gq-elige .gq-giro:focus-visible { transform: translateY(-.4vh); outline: 2px solid var(--c); outline-offset: 2px; }
+.gq-elige .gq-giro[aria-pressed="true"] { outline: 3px solid var(--c); background: color-mix(in srgb, var(--c) 10%, var(--s1)); }
+.gq-aviso { margin: 0; font-size: .82em; color: var(--muted); }
+.gq-aviso b { color: var(--fg); }
 
 </style>
 </head>
@@ -195,21 +200,43 @@ body {
 <div class="esc">
   <header class="esc-cab">
     <span class="esc-fase" data-ph="ec">Experiencia</span>
-    <span class="esc-num">GoldenQuerys · E03</span>
+    <span class="esc-num">GoldenQuerys · E02</span>
   </header>
 
   <main class="esc-cuerpo">
-    <h1 class="esc-titulo a-in">Tu estudio de reportes, <em class="oro">listo en un minuto</em></h1>
-    <ol class="gq-pasos a-in" style="--d:.12s">
-      <li><span><b>Abre DeepSeek Harness</b> (el panel se abre solo a la derecha). En «Choose workspace» toca <b>trabajo</b> y luego <b>Open</b>.</span></li>
-      <li><span><b>Copia el pedido de esta escena</b> con el botón de la barra y pégalo en el chat.<small>La IA baja el kit, descomprime las 5 bases y arranca el servidor de reportes.</small></span></li>
-      <li><span><b>Mira el visor:</b> escribe <code>goldenquerys/index.html</code> en su barra.<small>¿Sin IA? Pega el comando «Terminal · bajar y arrancar el kit» en la pestaña Terminal.</small></span></li>
-    </ol>
-    <div class="gq-pedido a-in" style="--d:.4s">Ejecuta el comando del kit y explícame en 5 líneas qué negocio hay en cada una de las 5 bases.</div>
+    <h1 class="esc-titulo a-in">Elige <em class="oro">tu negocio</em>. Uno solo, para toda la clase.</h1>
+    <p class="esc-sub a-in" style="--d:.1s">Toca una tarjeta: se copia tu primer pedido y se abre DeepSeek Harness. Pégalo con Ctrl+V y la IA prepara tu base.</p>
+    <div class="gq-giros gq-elige a-in" style="--d:.2s">
+      <button type="button" class="gq-giro" data-negocio="botica" style="--c:#0b8a5f"><b>Botica</b><span>4 sedes en Lima · stock, recetas y vencimientos</span><code>botica.sqlite</code></button>
+      <button type="button" class="gq-giro" data-negocio="polleria" style="--c:#c2410c"><b>Pollería</b><span>salón y delivery · fines de semana de fuego</span><code>polleria.sqlite</code></button>
+      <button type="button" class="gq-giro" data-negocio="ferreteria" style="--c:#475569"><b>Ferretería</b><span>crédito a maestros de obra · cobranzas</span><code>ferreteria.sqlite</code></button>
+      <button type="button" class="gq-giro" data-negocio="academia" style="--c:#5a49d6"><b>Academia</b><span>matrículas, pensiones y morosidad</span><code>academia.sqlite</code></button>
+      <button type="button" class="gq-giro" data-negocio="courier" style="--c:#a4185c"><b>Courier</b><span>envíos por zona · tiempos e incidencias</span><code>courier.sqlite</code></button>
+    </div>
+    <p class="gq-aviso a-in" style="--d:.4s" role="status" aria-live="polite" id="gq-aviso">Primera vez en DeepSeek: «Choose workspace» → <b>trabajo</b> → <b>Open</b>.</p>
+  </main>
+  <script>
+  (function () {
+    var P = {"botica": "Mi negocio es: Botica (base botica). Ejecuta este comando y dime qué imprimió: curl -fsSL -o /tmp/gq.zip https://raw.githubusercontent.com/davrv93/jmd/main/lms/content/courses/goldenquerys-ia/materials/goldenquerys-kit.zip && unzip -oq /tmp/gq.zip -d /trabajo && echo botica > /trabajo/goldenquerys/MI_NEGOCIO.txt && sh /trabajo/goldenquerys/arrancar.sh . Luego lee goldenquerys/AGENTS.md y goldenquerys/skill-dashboard/SKILL.md, consulta curl -s \"localhost:8766/api/esquema?db=botica\" y explícame en 4 líneas qué datos tiene mi negocio.", "polleria": "Mi negocio es: Pollería (base polleria). Ejecuta este comando y dime qué imprimió: curl -fsSL -o /tmp/gq.zip https://raw.githubusercontent.com/davrv93/jmd/main/lms/content/courses/goldenquerys-ia/materials/goldenquerys-kit.zip && unzip -oq /tmp/gq.zip -d /trabajo && echo polleria > /trabajo/goldenquerys/MI_NEGOCIO.txt && sh /trabajo/goldenquerys/arrancar.sh . Luego lee goldenquerys/AGENTS.md y goldenquerys/skill-dashboard/SKILL.md, consulta curl -s \"localhost:8766/api/esquema?db=polleria\" y explícame en 4 líneas qué datos tiene mi negocio.", "ferreteria": "Mi negocio es: Ferretería (base ferreteria). Ejecuta este comando y dime qué imprimió: curl -fsSL -o /tmp/gq.zip https://raw.githubusercontent.com/davrv93/jmd/main/lms/content/courses/goldenquerys-ia/materials/goldenquerys-kit.zip && unzip -oq /tmp/gq.zip -d /trabajo && echo ferreteria > /trabajo/goldenquerys/MI_NEGOCIO.txt && sh /trabajo/goldenquerys/arrancar.sh . Luego lee goldenquerys/AGENTS.md y goldenquerys/skill-dashboard/SKILL.md, consulta curl -s \"localhost:8766/api/esquema?db=ferreteria\" y explícame en 4 líneas qué datos tiene mi negocio.", "academia": "Mi negocio es: Academia (base academia). Ejecuta este comando y dime qué imprimió: curl -fsSL -o /tmp/gq.zip https://raw.githubusercontent.com/davrv93/jmd/main/lms/content/courses/goldenquerys-ia/materials/goldenquerys-kit.zip && unzip -oq /tmp/gq.zip -d /trabajo && echo academia > /trabajo/goldenquerys/MI_NEGOCIO.txt && sh /trabajo/goldenquerys/arrancar.sh . Luego lee goldenquerys/AGENTS.md y goldenquerys/skill-dashboard/SKILL.md, consulta curl -s \"localhost:8766/api/esquema?db=academia\" y explícame en 4 líneas qué datos tiene mi negocio.", "courier": "Mi negocio es: Courier (base courier). Ejecuta este comando y dime qué imprimió: curl -fsSL -o /tmp/gq.zip https://raw.githubusercontent.com/davrv93/jmd/main/lms/content/courses/goldenquerys-ia/materials/goldenquerys-kit.zip && unzip -oq /tmp/gq.zip -d /trabajo && echo courier > /trabajo/goldenquerys/MI_NEGOCIO.txt && sh /trabajo/goldenquerys/arrancar.sh . Luego lee goldenquerys/AGENTS.md y goldenquerys/skill-dashboard/SKILL.md, consulta curl -s \"localhost:8766/api/esquema?db=courier\" y explícame en 4 líneas qué datos tiene mi negocio."};
+    var aviso = document.getElementById("gq-aviso");
+    document.querySelectorAll("[data-negocio]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var n = b.getAttribute("data-negocio");
+        document.querySelectorAll("[data-negocio]").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+        try { localStorage.setItem("gq.negocio", n); } catch (e) {}
+        var listo = function () { aviso.innerHTML = "<b>Copiado.</b> Pégalo en el chat de DeepSeek Harness con Ctrl+V (en Mac, Cmd+V) y envíalo."; };
+        if (navigator.clipboard) navigator.clipboard.writeText(P[n]).then(listo, function () { aviso.textContent = P[n]; });
+        else aviso.textContent = P[n];
+        try { parent.postMessage({ tipo: "abrir-dsh" }, location.origin); } catch (e) {}
+      });
+    });
+  })();
+  </script>
+  <main hidden>
   </main>
 
   <footer class="esc-pie">
-    <span class="esc-nota">Pulsa «Lo logré» cuando el visor muestre GoldenQuerys</span>
+    <span class="esc-nota">Pulsa «Lo logré» cuando la IA te explique qué datos tiene tu negocio</span>
   </footer>
 </div>
 

@@ -19,8 +19,9 @@ COHORTE = "goldenquerys-1"
 LECCION = "gq-01"
 INICIO = "2026-11-03T21:35:00-05:00"
 KIT_URL = "https://raw.githubusercontent.com/davrv93/jmd/main/lms/content/courses/goldenquerys-ia/materials/goldenquerys-kit.zip"
-CMD_KIT = (f"curl -fsSL -o /tmp/gq.zip {KIT_URL} && unzip -oq /tmp/gq.zip -d /trabajo "
-           "&& sh /trabajo/goldenquerys/arrancar.sh")
+def cmd_kit(negocio="botica"):
+    return (f"curl -fsSL -o /tmp/gq.zip {KIT_URL} && unzip -oq /tmp/gq.zip -d /trabajo "
+            f"&& echo {negocio} > /trabajo/goldenquerys/MI_NEGOCIO.txt && sh /trabajo/goldenquerys/arrancar.sh")
 
 GIROS = [
     ("botica", "Botica", "4 sedes en Lima · stock, recetas y vencimientos", "#0b8a5f"),
@@ -61,6 +62,11 @@ ORO = """
 .gq-grande em { font-style: normal; color: var(--oro); }
 .gq-reto { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vw; }
 .gq-reto .esc-card { border-top: .3em solid var(--oro); }
+.gq-elige .gq-giro { font: inherit; color: inherit; text-align: left; cursor: pointer; transition: transform .15s ease-out, box-shadow .15s ease-out; }
+.gq-elige .gq-giro:hover, .gq-elige .gq-giro:focus-visible { transform: translateY(-.4vh); outline: 2px solid var(--c); outline-offset: 2px; }
+.gq-elige .gq-giro[aria-pressed="true"] { outline: 3px solid var(--c); background: color-mix(in srgb, var(--c) 10%, var(--s1)); }
+.gq-aviso { margin: 0; font-size: .82em; color: var(--muted); }
+.gq-aviso b { color: var(--fg); }
 """
 
 
@@ -92,93 +98,123 @@ def giros_html(con_archivo=True):
     return "\n".join(out)
 
 
+def pedido_inicio(slug, nombre):
+    return (f"Mi negocio es: {nombre} (base {slug}). Ejecuta este comando y dime qué imprimió: {cmd_kit(slug)} . "
+            f"Luego lee goldenquerys/AGENTS.md y goldenquerys/skill-dashboard/SKILL.md, consulta "
+            f"curl -s \"localhost:8766/api/esquema?db={slug}\" y explícame en 4 líneas qué datos tiene mi negocio.")
+
+
 PEDIDOS = {
-    "03": f"Ejecuta este comando y dime qué imprimió: {CMD_KIT} . Luego lee /trabajo/goldenquerys/LEEME.md y explícame en 5 líneas qué negocio hay en cada una de las 5 bases.",
-    "04": "Lee /trabajo/goldenquerys/AGENTS.md. Con la base botica.sqlite responde: ¿qué 10 productos dejaron más soles en 2026 y en qué sede se vendieron más? Escribe la consulta SQL, pruébala con curl contra http://127.0.0.1:8766/api/consulta y guárdala en /trabajo/goldenquerys/consultas/top10-botica.sql con un comentario que explique la pregunta.",
-    "05": "Lee /trabajo/goldenquerys/AGENTS.md. Crea /trabajo/goldenquerys/reportes/tablero-polleria.html: un tablero dinámico de polleria.sqlite con filtros de rango de fechas y sede, 3 indicadores (ventas en soles, ticket promedio, % de pedidos delivery) y 2 gráficos con Chart.js que se recalculan al cambiar los filtros llamando a /api/consulta. Pruébalo y dime qué abrir en el visor.",
-    "06": "Toma /trabajo/goldenquerys/consultas/top10-botica.sql y renderízala en 3 tecnologías con los renderers de /trabajo/goldenquerys/renderers: Python (HTML con gráfico SVG), Bun (Markdown y CSV) y Node (JSON). Dime en qué archivo quedó cada salida y qué tecnología usarías para enviarle el reporte a un gerente.",
-    "07": "Soy dueño de una ferretería (ferreteria.sqlite). Propón 3 preguntas de oro que mi negocio debería hacerse esta semana y que la base pueda responder, respóndelas con SQL y arma /trabajo/goldenquerys/reportes/reto.html con un indicador y un gráfico por pregunta. Al final dame 3 decisiones concretas que tomarías con esos números.",
+    "plan": "Lee goldenquerys/MI_NEGOCIO.txt y goldenquerys/skill-dashboard/SKILL.md. Completa goldenquerys/PLAN_TRABAJO.md con mi negocio (reemplaza <<NEGOCIO>>) y haz solo la tarea T1: explora mi base con /api/esquema y dime las 3 tablas clave y cómo se relacionan. Ejecuta su criterio y márcala hecha.",
+    "preguntas": "Tarea T2 del plan. Propónme 5 preguntas de negocio que mi base pueda responder, numeradas y en una línea cada una. No escribas SQL todavía: espera a que yo elija 3.",
+    "preguntas2": "Elijo las preguntas __ , __ y __. Escribe su SQL, pruébala con curl contra /api/consulta, explícame cada consulta en una línea y guárdalas en goldenquerys/consultas/. Marca T2 hecha solo si las 3 devuelven filas.",
+    "dashboard": "Tareas T3 y T4 del plan: construye goldenquerys/dashboard/index.html siguiendo la receta del skill, con mis 3 preguntas de oro como base de los 3 KPI y los 2 gráficos, y filtros de fechas que vuelven a consultar. Al terminar dime qué abrir en el visor.",
+    "verificar": "Tarea T5: elige un KPI del dashboard, repítelo con curl y compáralo con lo que muestra el visor con los mismos filtros. Si no coincide, encuentra por qué y corrígelo. Luego marca T5 hecha y muéstrame el plan completo.",
 }
+
+GIROS_JS = json.dumps({slug: pedido_inicio(slug, nombre) for slug, nombre, _, _ in GIROS}, ensure_ascii=False)
+
+ELEGIR = """    <h1 class="esc-titulo a-in">Elige <em class="oro">tu negocio</em>. Uno solo, para toda la clase.</h1>
+    <p class="esc-sub a-in" style="--d:.1s">Toca una tarjeta: se copia tu primer pedido y se abre DeepSeek Harness. Pégalo con Ctrl+V y la IA prepara tu base.</p>
+    <div class="gq-giros gq-elige a-in" style="--d:.2s">
+""" + "\n".join(
+    f'      <button type="button" class="gq-giro" data-negocio="{slug}" style="--c:{color}"><b>{nombre}</b><span>{desc}</span><code>{slug}.sqlite</code></button>'
+    for slug, nombre, desc, color in GIROS) + """
+    </div>
+    <p class="gq-aviso a-in" style="--d:.4s" role="status" aria-live="polite" id="gq-aviso">Primera vez en DeepSeek: «Choose workspace» → <b>trabajo</b> → <b>Open</b>.</p>
+  </main>
+  <script>
+  (function () {
+    var P = """ + GIROS_JS + """;
+    var aviso = document.getElementById("gq-aviso");
+    document.querySelectorAll("[data-negocio]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var n = b.getAttribute("data-negocio");
+        document.querySelectorAll("[data-negocio]").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+        try { localStorage.setItem("gq.negocio", n); } catch (e) {}
+        var listo = function () { aviso.innerHTML = "<b>Copiado.</b> Pégalo en el chat de DeepSeek Harness con Ctrl+V (en Mac, Cmd+V) y envíalo."; };
+        if (navigator.clipboard) navigator.clipboard.writeText(P[n]).then(listo, function () { aviso.textContent = P[n]; });
+        else aviso.textContent = P[n];
+        try { parent.postMessage({ tipo: "abrir-dsh" }, location.origin); } catch (e) {}
+      });
+    });
+  })();
+  </script>
+  <main hidden>"""
 
 ESCENAS = [
     dict(id="01-bienvenida", titulo="Tus datos ya saben la respuesta", fase="experiencia", dur=5, lo_logre=True, compuerta="presentes", umbral=100,
          cuerpo=f"""    <h1 class="esc-titulo a-in">Tus datos ya saben la respuesta.<br><em class="oro">Hoy aprendes a preguntarles.</em></h1>
-    <p class="esc-sub a-in" style="--d:.12s">Cinco negocios reales, cinco bases SQLite y una IA que convierte tu pregunta en español en un reporte que se actualiza solo. En 85 minutos sales con tu propio tablero.</p>
+    <p class="esc-sub a-in" style="--d:.12s">Eliges un negocio, le haces preguntas de oro y construyes con una IA el dashboard que su dueño necesita. Tú decides qué preguntar y compruebas cada número; la IA escribe el SQL y el código.</p>
 {giros_html(False)}
-    <div class="gq-flujo a-in" style="--d:.6s"><div><b>Pregunta</b><span>«¿qué producto me deja más?»</span></div><i>→</i><div><b>SQL</b><span>lo escribe la IA, tú lo verificas</span></div><i>→</i><div><b>Reporte</b><span>tabla, gráfico, Excel, Python, Bun, Node</span></div><i>→</i><div><b>Decisión</b><span>la parte que vale oro</span></div></div>""",
+    <div class="gq-flujo a-in" style="--d:.6s"><div><b>Pregunta</b><span>la decides tú</span></div><i>→</i><div><b>SQL</b><span>la escribe la IA, tú la pruebas</span></div><i>→</i><div><b>Dashboard</b><span>KPI, gráficos y filtros</span></div><i>→</i><div><b>Decisión</b><span>la parte que vale oro</span></div></div>""",
          nota="Pulsa «Lo logré» para marcar tu asistencia"),
-    dict(id="02-cinco-bases", titulo="Cinco negocios, cinco bases", fase="conceptualizacion", dur=5,
-         cuerpo=f"""    <h1 class="esc-titulo a-in">Una <em class="oro">golden query</em> es la pregunta que cambia una decisión</h1>
-    <p class="esc-sub a-in" style="--d:.1s">No es la consulta más larga: es la que el dueño necesitaba y nadie le respondía. Cada base trae ventas de enero 2025 a octubre 2026, con temporadas y algún dato sucio a propósito.</p>
-{giros_html(True)}
-    <ul class="esc-lista a-in" style="--d:.6s"><li>Solo lectura: la IA consulta, nunca borra ni modifica una base.</li><li>Cada número que veas debe poder explicarse con su SQL.</li><li>Si un dato se ve raro, puede ser un dato sucio: pregúntale a la IA por qué.</li></ul>""",
-         nota="Mira las cinco y elige el negocio que más se parece al tuyo"),
-    dict(id="03-preparar", titulo="Prepara tu estudio de reportes", fase="experiencia", dur=10, lo_logre=True, compuerta="lo_logre", umbral=80, dsh=True,
-         comandos=[("DeepSeek Harness · pega este pedido", PEDIDOS["03"]), ("Terminal · bajar y arrancar el kit", CMD_KIT),
-                   ("Comprobar que el servidor responde", "curl -s localhost:8766/api/salud"), ("Abrir en el visor: goldenquerys/index.html", "")],
-         cuerpo=f"""    <h1 class="esc-titulo a-in">Tu estudio de reportes, <em class="oro">listo en un minuto</em></h1>
+    dict(id="02-elige-tu-negocio", titulo="Elige tu negocio", fase="experiencia", dur=5, lo_logre=True, compuerta="lo_logre", umbral=80, dsh=True,
+         comandos=[(f"{n} · pedido para pegar en DeepSeek Harness", pedido_inicio(sl, n)) for sl, n, _, _ in GIROS] +
+                  [("Terminal · lo mismo sin IA (cambia botica por tu negocio)", cmd_kit("botica"))],
+         cuerpo=ELEGIR, nota="Pulsa «Lo logré» cuando la IA te explique qué datos tiene tu negocio"),
+    dict(id="03-como-se-pregunta", titulo="Cómo se le pregunta a una base", fase="conceptualizacion", dur=5,
+         cuerpo="""    <h1 class="esc-titulo a-in">La IA no adivina: <em class="oro">sigue una receta y un plan</em></h1>
+    <div class="gq-tec a-in" style="--d:.1s">
+      <div class="esc-card"><h3>El skill</h3><p>Una ficha con la receta del dashboard: qué API usar, cómo probar cada SQL y cómo se ve terminado. Tu agente la lee antes de escribir.</p><code>skill-dashboard/SKILL.md</code></div>
+      <div class="esc-card"><h3>El plan de trabajo</h3><p>Cinco tareas cortas, cada una con un criterio de sí o no. Ninguna se marca hecha sin probarla.</p><code>PLAN_TRABAJO.md</code></div>
+      <div class="esc-card"><h3>La API</h3><p>Tu base responde por HTTP y solo deja leer: puedes equivocarte sin romper nada.</p><code>/api/esquema · /api/consulta</code></div>
+    </div>
+    <p class="gq-grande a-in" style="--d:.4s">Tú pones las preguntas y el criterio. <em>La IA pone las manos.</em></p>""",
+         nota="Escucha y prepárate: en la siguiente escena trabajas tú"),
+    dict(id="04-plan-de-trabajo", titulo="Tu plan de trabajo", fase="experiencia", dur=8, lo_logre=True, compuerta="lo_logre", umbral=70, dsh=True,
+         comandos=[("DeepSeek Harness · pega este pedido", PEDIDOS["plan"]), ("Ver el plan en la terminal", "cat /trabajo/goldenquerys/PLAN_TRABAJO.md")],
+         cuerpo="""    <h1 class="esc-titulo a-in">Primero el plan, <em class="oro">después el código</em></h1>
     <ol class="gq-pasos a-in" style="--d:.12s">
-      <li><span><b>Abre DeepSeek Harness</b> (el panel se abre solo a la derecha). En «Choose workspace» toca <b>trabajo</b> y luego <b>Open</b>.</span></li>
-      <li><span><b>Copia el pedido de esta escena</b> con el botón de la barra y pégalo en el chat.<small>La IA baja el kit, descomprime las 5 bases y arranca el servidor de reportes.</small></span></li>
-      <li><span><b>Mira el visor:</b> escribe <code>goldenquerys/index.html</code> en su barra.<small>¿Sin IA? Pega el comando «Terminal · bajar y arrancar el kit» en la pestaña Terminal.</small></span></li>
-    </ol>
-    <div class="gq-pedido a-in" style="--d:.4s">Ejecuta el comando del kit y explícame en 5 líneas qué negocio hay en cada una de las 5 bases.</div>""",
-         nota="Pulsa «Lo logré» cuando el visor muestre GoldenQuerys"),
-    dict(id="04-primera-golden-query", titulo="Tu primera golden query", fase="experiencia", dur=15, lo_logre=True, compuerta="lo_logre", umbral=70, dsh=True,
-         comandos=[("DeepSeek Harness · pega este pedido", PEDIDOS["04"]),
-                   ("Probar una consulta a mano", "curl -s 'localhost:8766/api/consulta?db=botica&sql=SELECT%20name%20FROM%20sqlite_master%20WHERE%20type%3D%27table%27'")],
-         cuerpo="""    <h1 class="esc-titulo a-in">Pregunta en español, <em class="oro">verifica en SQL</em></h1>
+      <li><span><b>Copia el pedido</b> con el botón «Copiar el pedido de esta escena» del panel y pégalo en DeepSeek.</span></li>
+      <li><span><b>Lee lo que encontró:</b> las 3 tablas clave de tu negocio y cómo se unen.<small>Si no entiendes una relación, pregúntale: «¿por qué esa columna une esas tablas?».</small></span></li>
+      <li><span><b>Abre el plan</b> y revisa que T1 diga <code>hecha</code> y las demás <code>pendiente</code>.</span></li>
+    </ol>""",
+         nota="Pulsa «Lo logré» cuando T1 esté hecha"),
+    dict(id="05-preguntas-de-oro", titulo="Tus tres preguntas de oro", fase="experiencia", dur=15, lo_logre=True, compuerta="lo_logre", umbral=70, dsh=True,
+         comandos=[("DeepSeek Harness · pega este pedido", PEDIDOS["preguntas"]), ("Segundo pedido (completa los números que elegiste)", PEDIDOS["preguntas2"]),
+                   ("Ver tus consultas", "ls /trabajo/goldenquerys/consultas/")],
+         cuerpo="""    <h1 class="esc-titulo a-in">La IA propone. <em class="oro">Tú eliges y compruebas.</em></h1>
     <div class="esc-grid-2 a-in" style="--d:.1s">
       <ol class="gq-pasos">
-        <li><span><b>En el estudio</b> elige <b>Botica</b> y pulsa una pregunta de ejemplo.<small>Mira cómo la misma respuesta sale en tabla y en gráfico.</small></span></li>
-        <li><span><b>Pídele a la IA</b> los 10 productos que más soles dejaron en 2026.<small>Copia el pedido de la escena desde la barra del panel.</small></span></li>
-        <li><span><b>Desconfía con método:</b> pega su SQL en el estudio y comprueba el total.<small>Si no cuadra, pídele que te explique cada JOIN.</small></span></li>
+        <li><span><b>Pide 5 preguntas</b> para tu negocio (pedido de la escena).</span></li>
+        <li><span><b>Elige 3</b> pensando como el dueño: ¿cuál cambia una decisión de esta semana?</span></li>
+        <li><span><b>Segundo pedido:</b> escribe tus 3 números y la IA hace el SQL, lo prueba y lo explica.<small>Está en la ayuda de la escena: «Segundo pedido».</small></span></li>
       </ol>
-      <div class="gq-pedido">¿Qué 10 productos dejaron más soles en 2026 y en qué sede se vendieron más? Escribe la SQL, pruébala con curl y guárdala en consultas/top10-botica.sql.</div>
+      <div class="gq-pedido">Elijo las preguntas 1, 3 y 4. Escribe su SQL, pruébala con curl, explícamela en una línea y guárdala en consultas/.</div>
     </div>
-    <p class="gq-grande a-in" style="--d:.5s">La IA escribe la consulta. <em>Tú firmas el número.</em></p>""",
-         nota="Pulsa «Lo logré» cuando tu consulta corra en el estudio"),
-    dict(id="05-reporte-dinamico", titulo="Un reporte que se arma solo", fase="experimentacion", dur=20, lo_logre=True, compuerta="lo_logre", umbral=70, dsh=True,
-         comandos=[("DeepSeek Harness · pega este pedido", PEDIDOS["05"]), ("Abrir en el visor: goldenquerys/reportes/tablero-polleria.html", ""),
-                   ("Ver lo que pide el tablero al servidor", "tail -n 15 /trabajo/goldenquerys.log")],
-         cuerpo="""    <h1 class="esc-titulo a-in">De consulta a <em class="oro">tablero dinámico</em></h1>
-    <div class="gq-flujo a-in" style="--d:.1s"><div><b>Filtros</b><span>fechas · sede</span></div><i>→</i><div><b>/api/consulta</b><span>SQL de solo lectura</span></div><i>→</i><div><b>3 indicadores</b><span>ventas · ticket · % delivery</span></div><i>→</i><div><b>2 gráficos</b><span>Chart.js, se recalculan</span></div></div>
-    <div class="gq-pedido a-in" style="--d:.35s">Crea reportes/tablero-polleria.html con filtros de fechas y sede, 3 indicadores y 2 gráficos que se recalculan al cambiar los filtros llamando a /api/consulta.</div>
-    <ul class="esc-lista a-in" style="--d:.55s"><li>Mira el visor mientras la IA trabaja: se refresca solo cuando termina de guardar.</li><li>Cambia un filtro y mira el log: cada cambio es una consulta nueva.</li><li>Pídele una mejora más: «agrega el Día del Padre como línea vertical».</li></ul>""",
-         nota="Pulsa «Lo logré» cuando tu tablero cambie con los filtros"),
-    dict(id="06-cuatro-tecnologias", titulo="El mismo dato, cuatro tecnologías", fase="reflexion", dur=10, lo_logre=True, compuerta="lo_logre", umbral=60, dsh=True,
-         comandos=[("DeepSeek Harness · pega este pedido", PEDIDOS["06"]),
-                   ("Python · HTML con gráfico SVG", "cd /trabajo/goldenquerys && python3 renderers/reporte.py botica"),
-                   ("Bun · Markdown y CSV", "cd /trabajo/goldenquerys && bun renderers/reporte.ts botica"),
-                   ("Node · JSON", "cd /trabajo/goldenquerys && node renderers/reporte.mjs botica")],
-         cuerpo="""    <h1 class="esc-titulo a-in">Una consulta, <em class="oro">muchas salidas</em></h1>
-    <div class="gq-tec a-in" style="--d:.1s">
-      <div class="esc-card"><h3>Navegador</h3><p>Tabla, Chart.js, Excel (SheetJS), CSV y Markdown desde el estudio.</p><code>goldenquerys/index.html</code></div>
-      <div class="esc-card"><h3>Python</h3><p>Reporte HTML autónomo con gráfico SVG: se manda por correo tal cual.</p><code>python3 renderers/reporte.py botica</code></div>
-      <div class="esc-card"><h3>Bun y Node</h3><p>Markdown, CSV y JSON para otra app, un bot o una API.</p><code>bun renderers/reporte.ts botica</code></div>
-    </div>
-    <p class="gq-grande a-in" style="--d:.45s">¿Qué le mandarías al gerente, al contador y a otra app? <em>Elige la salida por quien la va a leer.</em></p>""",
-         nota="Pulsa «Lo logré» cuando tengas dos salidas distintas del mismo dato"),
-    dict(id="07-reto-de-oro", titulo="Reto: tres preguntas de oro", fase="experimentacion", dur=15, lo_logre=True, compuerta="lo_logre", umbral=60, dsh=True,
-         comandos=[("DeepSeek Harness · pega este pedido (cambia el giro si quieres)", PEDIDOS["07"]), ("Abrir en el visor: goldenquerys/reportes/reto.html", "")],
-         cuerpo="""    <h1 class="esc-titulo a-in">Reto: <em class="oro">tres preguntas que valen oro</em></h1>
+    <p class="gq-grande a-in" style="--d:.45s">Una pregunta de oro no es la más difícil: <em>es la que cambia una decisión.</em></p>""",
+         nota="Pulsa «Lo logré» cuando tus 3 consultas devuelvan filas"),
+    dict(id="06-tu-dashboard", titulo="Construye tu dashboard", fase="experimentacion", dur=25, lo_logre=True, compuerta="lo_logre", umbral=70, dsh=True,
+         comandos=[("DeepSeek Harness · pega este pedido", PEDIDOS["dashboard"]), ("Abrir en el visor: goldenquerys/dashboard/index.html", ""),
+                   ("Si el visor no muestra datos: ver el log de la API", "tail -n 20 /trabajo/goldenquerys.log")],
+         cuerpo="""    <h1 class="esc-titulo a-in">Tu dashboard, <em class="oro">en vivo en el visor</em></h1>
+    <div class="gq-flujo a-in" style="--d:.1s"><div><b>Filtros</b><span>fecha desde · hasta</span></div><i>→</i><div><b>/api/consulta</b><span>tus 3 preguntas de oro</span></div><i>→</i><div><b>3 KPI</b><span>en soles o en cantidades</span></div><i>→</i><div><b>2 gráficos</b><span>tiempo y ranking</span></div></div>
+    <ol class="gq-pasos a-in" style="--d:.3s">
+      <li><span><b>Pega el pedido</b> y pulsa «Ocultar escena» en la barra de DeepSeek: tendrás agente y visor a pantalla completa.</span></li>
+      <li><span><b>En el visor</b> escribe <code>goldenquerys/dashboard/index.html</code>: se refresca solo cada vez que la IA guarda.</span></li>
+      <li><span><b>Pide un cambio a la vez</b> y míralo aparecer: «el ranking como barras horizontales», «el KPI en verde si sube».</span></li>
+    </ol>""",
+         nota="Pulsa «Lo logré» cuando cambiar las fechas cambie tus números"),
+    dict(id="07-verifica", titulo="Verifica y mejora", fase="reflexion", dur=12, lo_logre=True, compuerta="lo_logre", umbral=60, dsh=True,
+         comandos=[("DeepSeek Harness · pega este pedido", PEDIDOS["verificar"])],
+         cuerpo="""    <h1 class="esc-titulo a-in">Un número sin comprobar <em class="oro">no vale oro</em></h1>
     <div class="gq-reto a-in" style="--d:.1s">
-      <div class="esc-card"><h3>1 · Pregunta</h3><p>Elige un giro y pide a la IA tres preguntas que el dueño debería hacerse esta semana.</p></div>
-      <div class="esc-card"><h3>2 · Responde</h3><p>Cada pregunta con su SQL, un indicador y un gráfico en reportes/reto.html.</p></div>
-      <div class="esc-card"><h3>3 · Decide</h3><p>Tres decisiones concretas con esos números. Sin decisión, no hay oro.</p></div>
-    </div>
-    <p class="gq-grande a-in" style="--d:.4s">Los mejores tableros se muestran en pantalla al final. <em>Tu instructor está mirando el tuyo.</em></p>""",
-         nota="Pulsa «Lo logré» cuando tu reto muestre las tres respuestas"),
-    dict(id="08-cierre", titulo="Lo que te llevas hoy", fase="experimentacion", dur=5,
+      <div class="esc-card"><h3>1 · Repite</h3><p>Un KPI del dashboard, con curl y los mismos filtros.</p></div>
+      <div class="esc-card"><h3>2 · Compara</h3><p>¿Coincide? Si no, la IA busca el porqué: un JOIN que duplica, ventas anuladas, fechas como texto.</p></div>
+      <div class="esc-card"><h3>3 · Mejora</h3><p>Pide UNA mejora tuya: la que haría que el dueño lo abra cada mañana.</p></div>
+    </div>""",
+         nota="Pulsa «Lo logré» cuando tu plan tenga las 5 tareas hechas"),
+    dict(id="08-muestra", titulo="Muéstralo", fase="experimentacion", dur=10,
          cuerpo="""    <h1 class="esc-titulo a-in">Hoy pasaste de <em class="oro">tener datos</em> a <em class="oro">tener respuestas</em></h1>
     <ul class="esc-lista a-in" style="--d:.12s">
-      <li>5 bases de negocios reales y un servidor de reportes de solo lectura.</li>
-      <li>Consultas escritas por IA y verificadas por ti.</li>
-      <li>Un tablero dinámico y el mismo dato en navegador, Python, Bun y Node.</li>
-      <li>Tres preguntas de oro con sus decisiones.</li>
+      <li>Elegiste un negocio y lo exploraste con una API de solo lectura.</li>
+      <li>Escogiste tres preguntas de oro y comprobaste su SQL.</li>
+      <li>Construiste con IA un dashboard con filtros, y lo verificaste.</li>
+      <li>Trabajaste como se trabaja con agentes: skill, plan y criterio.</li>
     </ul>
     <p class="gq-grande a-in" style="--d:.4s">Mañana hazle la misma pregunta a los datos de tu trabajo. <em>Ese es el verdadero reto.</em></p>""",
-         nota="Guarda tu carpeta goldenquerys: es tu portafolio de reportes"),
+         nota="El instructor muestra algunos dashboards en pantalla"),
 ]
 
 
@@ -207,10 +243,10 @@ def escribir_curso():
     (CURSO / "course.yaml").write_text(f"""id: {CURSO_ID}
 title: "GoldenQuerys con IA: genera reportes dinámicamente"
 description: >
-  Pregúntale a tus datos en español y obtén reportes que se actualizan solos. Trabajas con cinco bases
-  SQLite de negocios peruanos (botica, pollería, ferretería, academia y courier), una IA que escribe y
-  explica el SQL, y un estudio de reportes que muestra el mismo resultado en tabla, gráfico, Excel, CSV,
-  Markdown, Python, Bun y Node. Todo en tu navegador, sin instalar nada.
+  Pregúntale a tus datos en español y construye con IA un dashboard que se actualiza solo. Eliges un
+  negocio peruano (botica, pollería, ferretería, academia o courier), escoges tres preguntas de oro y
+  DeepSeek Harness escribe el SQL y el código siguiendo un skill y un plan de trabajo que tú verificas.
+  Todo en tu navegador, sin instalar nada.
 cohorts: [{COHORTE}]
 proyecto_final: >
   Un tablero dinámico con tres preguntas de oro de un negocio, cada una con su SQL verificada, su
@@ -242,13 +278,13 @@ objectives:
   - id: {LECCION}-o2
     title: Construir con IA un tablero dinámico con filtros, indicadores y gráficos
   - id: {LECCION}-o3
-    title: Renderizar el mismo resultado en navegador, Excel, Python, Bun y Node y elegir la salida según quién la lee
+    title: Trabajar con un agente como un profesional, con un skill y un plan de trabajo de criterios verificables
 recording:
   url: ""
   passcode: ""
 materials:
   - id: {LECCION}-kit
-    title: goldenquerys-kit.zip · las 5 bases, el servidor de reportes, el estudio y los renderers
+    title: goldenquerys-kit.zip · las 5 bases, la API de solo lectura, el skill del dashboard y el plan de trabajo
     kind: zip
     file: materials/goldenquerys-kit.zip
     objective_ids: [{LECCION}-o1, {LECCION}-o2, {LECCION}-o3]
@@ -270,87 +306,74 @@ cycle:
     description: Asiste en vivo al LIVE o mira la grabación.
     check: Has visto la clase completa (o la grabación)
   - id: preparar
-    title: Preparar el estudio
+    title: Elegir el negocio
     tool: lms
     phase: experiencia
-    description: Desde el LIVE, pide a DeepSeek Harness que baje y arranque el kit; abre goldenquerys/index.html en el visor.
-    check: El visor muestra el estudio GoldenQuerys con las 5 bases
+    description: En el LIVE toca tu negocio, pega el pedido en DeepSeek Harness y deja que baje tu base y arranque la API.
+    check: La IA te explica qué datos tiene tu negocio
   - id: tablero
     title: Tablero dinámico
     tool: lms
     phase: experimentacion
-    description: Construye con la IA un tablero con filtros que se recalcula llamando a /api/consulta.
-    check: reportes/tablero-polleria.html cambia al mover los filtros
+    description: Construye con la IA tu dashboard con 3 KPI, 2 gráficos y filtros de fecha, siguiendo el skill y el plan.
+    check: goldenquerys/dashboard/index.html cambia al mover las fechas
   - id: reto
     title: Tres preguntas de oro
     tool: lms
     phase: experimentacion
-    description: Elige un giro, responde tres preguntas con SQL verificada y escribe la decisión que tomarías.
-    check: reportes/reto.html muestra las tres respuestas y sus decisiones
+    description: Repite un KPI con curl y compáralo con el dashboard; termina las 5 tareas del plan.
+    check: PLAN_TRABAJO.md con las 5 tareas hechas
 ---
 
 ## Avance de la clase
 
 Tus datos ya saben la respuesta: hoy aprendes a preguntarles.
-Trabajas con cinco bases SQLite de negocios peruanos y una IA que escribe el SQL por ti.
-Tú haces lo que una IA no puede: decidir qué pregunta vale oro y comprobar que el número es correcto.
+Eliges un negocio, le haces tres preguntas de oro y construyes con DeepSeek Harness el dashboard que su dueño necesita.
+La IA escribe el SQL y el código; tú decides qué preguntar y compruebas cada número.
 
 ### Bloques (85 minutos)
 
-- 0:00 a 0:10 · Bienvenida y las cinco bases.
-- 0:10 a 0:20 · Preparar el estudio en tu aula.
-- 0:20 a 0:35 · Tu primera golden query.
-- 0:35 a 0:55 · Un tablero dinámico.
-- 0:55 a 1:05 · El mismo dato en cuatro tecnologías.
-- 1:05 a 1:20 · Reto: tres preguntas de oro.
-- 1:20 a 1:25 · Cierre.
+- 0:00 a 0:05 · Bienvenida.
+- 0:05 a 0:10 · Elige tu negocio: la IA baja tu base y la arranca.
+- 0:10 a 0:15 · Cómo se le pregunta a una base: skill, plan y API.
+- 0:15 a 0:23 · Tu plan de trabajo (T1).
+- 0:23 a 0:38 · Tus tres preguntas de oro (T2).
+- 0:38 a 1:03 · Tu dashboard en el visor (T3 y T4).
+- 1:03 a 1:15 · Verifica y mejora (T5).
+- 1:15 a 1:25 · Muéstralo.
 
-## 1. Preparar el estudio · Experiencia
+## 1. Elige tu negocio · Experiencia
 
-En una frase: bajas el kit a tu aula y arrancas el servidor de reportes.
-
-**Qué vas a hacer**
-1. En el LIVE, abre **DeepSeek Harness** (se abre solo en el panel). En «Choose workspace» toca **trabajo** y luego **Open**.
-2. Pulsa «Copiar el pedido de esta escena» y pégalo en el chat.
-3. Si prefieres la terminal:
-   ```sh
-   {CMD_KIT}
-   ```
-4. En el visor escribe `goldenquerys/index.html`.
-
-**Qué vas a ver:** el estudio GoldenQuerys con cinco bases: botica, pollería, ferretería, academia y courier.
-
-**Si falla:** `curl -s localhost:8766/api/salud` debe responder `"ok": true`. Si no, corre otra vez `sh /trabajo/goldenquerys/arrancar.sh`.
-
-## 2. Tu primera golden query · Experiencia
-
-En una frase: la IA escribe la consulta y tú firmas el número.
+En una frase: tocas un negocio en la escena y tu primer pedido queda copiado.
 
 **Qué vas a hacer**
-1. En el estudio elige Botica y ejecuta una pregunta de ejemplo.
-2. Pide a la IA los 10 productos que más soles dejaron en 2026.
-3. Pega su SQL en el estudio y comprueba el total.
+1. En la escena «Elige tu negocio» toca una tarjeta: botica, pollería, ferretería, academia o courier.
+2. Se abre DeepSeek Harness. Primera vez: «Choose workspace» → **trabajo** → **Open**.
+3. Pega el pedido (Ctrl+V) y envíalo. La IA baja el kit, guarda tu negocio en `MI_NEGOCIO.txt` y arranca la API.
 
-## 3. Tablero dinámico · Aplicación
-
-En una frase: un reporte con filtros que consulta la base cada vez que lo mueves.
-
-Pide a la IA `reportes/tablero-polleria.html` con filtros de fecha y sede, tres indicadores y dos gráficos.
-
-## 4. Cuatro tecnologías · Reflexión
-
+Sin IA, en la terminal (cambia `botica` por tu negocio):
 ```sh
-cd /trabajo/goldenquerys
-python3 renderers/reporte.py botica
-bun renderers/reporte.ts botica
-node renderers/reporte.mjs botica
+{cmd_kit("botica")}
 ```
 
-¿Qué salida le mandarías al gerente, al contador y a otra app?
+**Qué vas a ver:** la IA te explica en 4 líneas qué datos tiene tu negocio.
+
+**Si falla:** `curl -s localhost:8766/api/salud` debe responder `"ok": true`; si no, `sh /trabajo/goldenquerys/arrancar.sh`.
+
+## 2. El skill y el plan · Conceptos
+
+- `skill-dashboard/SKILL.md`: la receta del dashboard que tu agente sigue (API, cómo probar el SQL, cómo se ve terminado).
+- `PLAN_TRABAJO.md`: cinco tareas, cada una con un criterio de sí o no.
+
+## 3. Preguntas de oro y dashboard · Aplicación
+
+1. T1: explorar la base. 2. T2: la IA propone 5 preguntas, tú eliges 3 y compruebas su SQL.
+3. T3 y T4: `dashboard/index.html` con 3 KPI, 2 gráficos y filtros de fecha. Ábrelo en el visor.
+4. T5: repite un KPI con curl y compáralo con el dashboard.
 
 ## Tarea · Aplicación
 
-Elige un giro y entrega `reportes/reto.html` con tres preguntas de oro, su SQL, un gráfico por pregunta y la decisión que tomarías.
+Entrega tu carpeta `goldenquerys` con el plan completo, tus 3 consultas y tu dashboard, y una línea con la decisión que tomaría el dueño.
 """, encoding="utf-8")
 
 

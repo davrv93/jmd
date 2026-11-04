@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · Botica</title>
+<!-- Dashboard de referencia del instructor: hecho siguiendo skill-dashboard/SKILL.md al pie de la letra.
+     Sirve para comprobar el visor y como respaldo si un agente se atasca. Cópialo a goldenquerys/dashboard/index.html. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root { --bg: #0f1020; --s1: #191a33; --line: rgba(255,255,255,.1); --fg: #f2f0e6; --muted: #a9a6bd; --oro: #f2c14e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+  header { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 1.5rem; } h1 span { color: var(--oro); }
+  label { display: grid; gap: .2rem; font-size: .78rem; color: var(--muted); }
+  input, select { background: var(--s1); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: .4rem .5rem; font: inherit; }
+  main { padding: 1.2rem 1.4rem; display: grid; gap: 1rem; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; }
+  .kpi, .panel { background: var(--s1); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; }
+  .kpi small { color: var(--muted); } .kpi b { display: block; font-size: 1.7rem; color: var(--oro); }
+  .graficos { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; } td, th { padding: .35rem .5rem; border-bottom: 1px solid var(--line); text-align: left; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  #error { color: #ff8a8a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Botica · <span>dashboard de ventas</span></h1>
+  <label>Desde <input type="date" id="desde" value="2026-01-01"></label>
+  <label>Hasta <input type="date" id="hasta" value="2026-10-31"></label>
+  <p id="error" role="alert"></p>
+</header>
+<main>
+  <section class="kpis">
+    <div class="kpi"><small>Ventas</small><b id="k-ventas">…</b></div>
+    <div class="kpi"><small>Ticket promedio</small><b id="k-ticket">…</b></div>
+    <div class="kpi"><small>Operaciones</small><b id="k-ops">…</b></div>
+  </section>
+  <section class="graficos">
+    <div class="panel"><canvas id="g-tiempo" height="220"></canvas></div>
+    <div class="panel"><canvas id="g-ranking" height="220"></canvas></div>
+  </section>
+  <section class="panel"><table><thead><tr><th>Sede</th><th>Ventas</th></tr></thead><tbody id="tabla"></tbody></table></section>
+</main>
+<script>
+const DB = "botica";
+const soles = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
+const graficos = {};
+async function q(sql) {
+  const r = await fetch("/api/consulta?db=" + DB + "&sql=" + encodeURIComponent(sql));
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || "Error en la consulta");
+  return j;
+}
+function dibujar(id, tipo, etiquetas, datos, nombre) {
+  if (graficos[id]) graficos[id].destroy();
+  graficos[id] = new Chart(document.getElementById(id), {
+    type: tipo,
+    data: { labels: etiquetas, datasets: [{ label: nombre, data: datos, backgroundColor: "#f2c14e", borderColor: "#f2c14e" }] },
+    options: { plugins: { legend: { labels: { color: "#f2f0e6" } } }, scales: { x: { ticks: { color: "#a9a6bd" } }, y: { ticks: { color: "#a9a6bd" } } } },
+  });
+}
+async function cargar() {
+  const d = document.getElementById("desde").value, h = document.getElementById("hasta").value;
+  const ok = /^\d{4}-\d{2}-\d{2}$/;
+  if (!ok.test(d) || !ok.test(h)) return;
+  const filtro = `date(v.fecha) BETWEEN '${d}' AND '${h}' AND v.total > 0`;
+  try {
+    document.getElementById("error").textContent = "";
+    const k = await q(`SELECT SUM(v.total), AVG(v.total), COUNT(*) FROM ventas v WHERE ${filtro}`);
+    const [total, ticket, ops] = k.filas[0];
+    document.getElementById("k-ventas").textContent = soles.format(total || 0);
+    document.getElementById("k-ticket").textContent = soles.format(ticket || 0);
+    document.getElementById("k-ops").textContent = (ops || 0).toLocaleString("es-PE");
+    const t = await q(`SELECT strftime('%Y-%m', v.fecha) mes, ROUND(SUM(v.total), 2) FROM ventas v WHERE ${filtro} GROUP BY mes ORDER BY mes`);
+    dibujar("g-tiempo", "line", t.filas.map((f) => f[0]), t.filas.map((f) => f[1]), "Ventas por mes (S/)");
+    const s = await q(`SELECT s.nombre, ROUND(SUM(v.total), 2) total FROM ventas v JOIN sedes s ON s.id = v.sede_id WHERE ${filtro} GROUP BY s.nombre ORDER BY total DESC`);
+    dibujar("g-ranking", "bar", s.filas.map((f) => f[0]), s.filas.map((f) => f[1]), "Ventas por sede (S/)");
+    document.getElementById("tabla").innerHTML = s.filas.map((f) => `<tr><td>${f[0]}</td><td class="n">${soles.format(f[1])}</td></tr>`).join("");
+  } catch (e) {
+    document.getElementById("error").textContent = e.message;
+  }
+}
+document.getElementById("desde").addEventListener("change", cargar);
+document.getElementById("hasta").addEventListener("change", cargar);
+cargar();
+</script>
+</body>
+</html>

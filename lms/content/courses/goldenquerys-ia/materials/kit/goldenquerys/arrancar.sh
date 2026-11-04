@@ -22,7 +22,8 @@ echo $! > "$PIDF"
 i=0
 while [ $i -lt 20 ]; do
   if curl -fs "http://127.0.0.1:$PUERTO/api/salud" > /dev/null 2>&1; then
-    echo "Listo: abre goldenquerys/index.html en el visor"
+    echo "Listo: tus datos responden en /api (prueba: curl -s localhost:$PUERTO/api/bases)"
+    echo "Tu dashboard irá en goldenquerys/dashboard/index.html: ábrelo en el visor cuando exista."
     echo "(servidor en http://127.0.0.1:$PUERTO, pid $(cat "$PIDF"), log en $LOG)"
     exit 0
   fi
