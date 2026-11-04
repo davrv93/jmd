@@ -23,6 +23,8 @@ h1 { margin: 0; font: 800 clamp(2.9rem, 12vw, 5rem)/.9 "Barlow Condensed", sans-
 h1 span { color: var(--oro); }
 .bajada { margin: 8px 0 0; color: var(--suave); max-width: 58ch; }
 .bajada b { color: var(--tiza); font-weight: 700; }
+.cierre { margin: 8px 0 0; color: var(--oro); font-weight: 700; }
+.cierre b { font-weight: 700; }
 .foto { position: relative; margin: 0; }
 .luces { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .luces path { fill: #f4f6ee; opacity: 0; }
@@ -75,6 +77,7 @@ input:focus { border-color: var(--oro); outline: none; }
   <header class="cab">
     <h1>La fuga <span>del estadio</span></h1>
     <p class="bajada">Aquí hay una caja cifrada con un premio adentro. Responde las cuatro preguntas para abrirla. <b>La foto y la pizarra esconden pistas: míralas de cerca.</b></p>
+    <p class="cierre" id="cierre">Abierto solo hasta hoy a las <b>11:00 a. m.</b></p>
   </header>
   <figure class="foto"><img src="{{ESTADIO}}" alt="Estadio de noche visto desde el punto penal, con la hinchada iluminada" width="1344" height="768">
     <svg class="luces" viewBox="0 0 1344 768" aria-hidden="true"><path class="la" d="{{LUZ_A}}"/><path class="lb" d="{{LUZ_B}}"/></svg></figure>
@@ -180,6 +183,9 @@ input:focus { border-color: var(--oro); outline: none; }
   $("caja").addEventListener("submit", function (ev) {
     ev.preventDefault();
     var b = $("abrir"), e = $("error");
+    if (Date.now() >= Date.parse("2026-11-04T11:00:00-05:00")) {
+      e.textContent = "El tiempo se acabó a las 11:00 a. m."; e.hidden = false; b.disabled = true; return;
+    }
     var palabras = [$("p1").value, $("p2").value, $("p3").value, $("p4").value].map(limpiar).join("|");
     b.disabled = true; b.textContent = "Probando…"; e.hidden = true;
     abrir(palabras).then(function (m) {

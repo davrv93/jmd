@@ -89,3 +89,18 @@ func TestVisitasPublicas(t *testing.T) {
 		t.Fatalf("sin sesión: %d", r.code)
 	}
 }
+
+// Pasada la hora de cierre, la fuga no entrega la caja; el sorteo sigue abierto.
+func TestFugaCierra(t *testing.T) {
+	e := newEnv(t)
+	antes := cierreFuga
+	t.Cleanup(func() { cierreFuga = antes })
+	cierreFuga = time.Now().Add(-time.Minute)
+	r := e.call("GET", "/fuga-yape", "", false, nil, "")
+	if r.code != 200 || !strings.Contains(string(r.raw), "La fuga terminó") {
+		t.Fatalf("fuga cerrada: %d %s", r.code, r.raw)
+	}
+	if r := e.call("GET", "/sorteo-goldenquerys", "", false, nil, ""); strings.Contains(string(r.raw), "La fuga terminó") {
+		t.Fatal("el sorteo no debía cerrarse")
+	}
+}

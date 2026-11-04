@@ -63,11 +63,30 @@ var escenasPublicas = map[string][2]string{
 	"/fuga-yape":           {"gq-01", "11-fuga-yape"},
 }
 
+// cierreFuga: desde esta hora las fugas ya no entregan la caja. Se cierra aquí y no en el navegador porque el mensaje
+// cifrado viaja dentro de la página.
+var cierreFuga = time.Date(2026, 11, 4, 11, 0, 0, 0, lima)
+
+func fugaCerrada(w http.ResponseWriter) {
+	h := w.Header()
+	h.Set("Content-Type", "text/html; charset=utf-8")
+	h.Set("Cache-Control", "no-store")
+	w.WriteHeader(200)
+	_, _ = w.Write([]byte(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>La fuga del estadio</title>` +
+		`<body style="margin:0;min-height:100dvh;display:grid;place-items:center;background:#0a1410;color:#e8efe8;font:500 17px/1.5 system-ui,sans-serif;text-align:center;padding:24px">` +
+		`<div><h1 style="margin:0 0 8px;font-size:2rem;color:#ffc83d">La fuga terminó</h1><p style="margin:0">El tiempo se acabó a las 11:00 a. m. Gracias por jugar.</p></div>`))
+}
+
 // escenaPublica: GET /sorteo-goldenquerys (sin sesión). Se abre como página suelta para compartirla por WhatsApp.
 func (s *Server) escenaPublica(w http.ResponseWriter, r *http.Request) {
 	ref, ok := escenasPublicas[strings.TrimSuffix(r.URL.Path, "/")]
 	if !ok {
 		notFound(w, "la página")
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/fuga-") && !time.Now().Before(cierreFuga) {
+		s.contarVisita(r, strings.TrimSuffix(r.URL.Path, "/"))
+		fugaCerrada(w)
 		return
 	}
 	e := s.Content.Get().Escena(ref[0], ref[1])
