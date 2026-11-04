@@ -256,7 +256,7 @@ ESCENAS = [
          html_propio=sorteo_html),
     dict(id="10-fuga", titulo="La fuga del estadio", fase="experimentacion", dur=5, oculta=True, html_propio=fuga_html),
     dict(id="11-fuga-yape", titulo="La fuga del estadio", fase="experimentacion", dur=5, oculta=True,
-         html_propio=lambda: fuga_html("caja-yape.json", "/fuga-yape/video.mp4", "En el video, ¿qué local vende más los domingos? Escribe la respuesta en Base64")),
+         html_propio=lambda: fuga_html("caja-yape.json", "/fuga-yape/video.mp4", "En el video, ¿qué día se menciona? Escríbelo en singular y en Base64")),
 ]
 
 
