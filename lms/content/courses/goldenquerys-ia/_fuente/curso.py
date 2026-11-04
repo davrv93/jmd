@@ -161,10 +161,10 @@ def sorteo_html():
     return html
 
 
-def fuga_html():
+def fuga_html(archivo="caja.json", video="/fuga-goldenquerys/video.mp4"):
     """Página de la caja fuerte: el texto cifrado sale de caja.json; las palabras nunca pasan por aquí."""
     d = AQUI / "caja"
-    caja = json.loads((d / "caja.json").read_text(encoding="utf-8"))
+    caja = json.loads((d / archivo).read_text(encoding="utf-8"))
     fuentes = AQUI / "sorteo"
 
     def uri(nombre):
@@ -173,7 +173,7 @@ def fuga_html():
     html = (d / "fuga.html").read_text(encoding="utf-8")
     estadio = "data:image/webp;base64," + base64.b64encode((d / "estadio-fuga.webp").read_bytes()).decode()
     luces = json.loads((d / "luces.json").read_text(encoding="utf-8"))
-    for marca, valor in {"{{ESTADIO}}": estadio, "{{LUZ_A}}": luces["a"], "{{LUZ_B}}": luces["b"], "{{FUENTE_TITULO}}": uri("BarlowCondensed-800.woff2"), "{{FUENTE_TEXTO}}": uri("Barlow-500.woff2"), "{{FUENTE_FUERTE}}": uri("Barlow-700.woff2"),
+    for marca, valor in {"{{ESTADIO}}": estadio, "{{LUZ_A}}": luces["a"], "{{LUZ_B}}": luces["b"], "{{VIDEO_URL}}": video, "{{FUENTE_TITULO}}": uri("BarlowCondensed-800.woff2"), "{{FUENTE_TEXTO}}": uri("Barlow-500.woff2"), "{{FUENTE_FUERTE}}": uri("Barlow-700.woff2"),
                          "{{CAJA}}": json.dumps(caja)}.items():
         html = html.replace(marca, valor)
     return html
@@ -255,6 +255,8 @@ ESCENAS = [
     dict(id="09-sorteo", titulo="Sorteo: patea tu penal", fase="experimentacion", dur=5,
          html_propio=sorteo_html),
     dict(id="10-fuga", titulo="La fuga del estadio", fase="experimentacion", dur=5, oculta=True, html_propio=fuga_html),
+    dict(id="11-fuga-yape", titulo="La fuga del estadio", fase="experimentacion", dur=5, oculta=True,
+         html_propio=lambda: fuga_html("caja-yape.json", "/fuga-yape/video.mp4")),
 ]
 
 

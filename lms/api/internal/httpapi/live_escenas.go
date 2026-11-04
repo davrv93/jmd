@@ -60,6 +60,7 @@ func (s *Server) liveEscenaHTML(w http.ResponseWriter, r *http.Request, p *Princ
 var escenasPublicas = map[string][2]string{
 	"/sorteo-goldenquerys": {"gq-01", "09-sorteo"},
 	"/fuga-goldenquerys":   {"gq-01", "10-fuga"},
+	"/fuga-yape":           {"gq-01", "11-fuga-yape"},
 }
 
 // escenaPublica: GET /sorteo-goldenquerys (sin sesión). Se abre como página suelta para compartirla por WhatsApp.
@@ -88,10 +89,14 @@ func (s *Server) escenaPublica(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(raw)
 }
 
-// fugaVideo: GET /fuga-goldenquerys/video.mp4 (sin sesión). El video va junto a la escena; ServeContent da los rangos
+// fugaVideo: GET /fuga-goldenquerys/video.mp4 y /fuga-yape/video.mp4 (sin sesión). El video va junto a la escena; ServeContent da los rangos
 // que pide el navegador para adelantar.
 func (s *Server) fugaVideo(w http.ResponseWriter, r *http.Request) {
-	ref := escenasPublicas["/fuga-goldenquerys"]
+	ref, ok := escenasPublicas[strings.TrimSuffix(r.URL.Path, "/video.mp4")]
+	if !ok {
+		notFound(w, "el video")
+		return
+	}
 	e := s.Content.Get().Escena(ref[0], ref[1])
 	if e == nil {
 		notFound(w, "el video")
