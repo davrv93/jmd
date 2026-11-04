@@ -506,6 +506,29 @@ func (s *Server) iaRele(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, iaMaxCuerpo)
+	// Esfuerzo de razonamiento: con la clave de la clase solo «low». dsh lo manda en output_config.effort
+	// («low», «high» o «max»); lo que llegue más alto se rebaja aquí, elija lo que elija el alumno en la interfaz.
+	if r.Method == http.MethodPost && strings.HasPrefix(ruta, "v1/messages") {
+		cuerpo, err := io.ReadAll(r.Body)
+		if err != nil {
+			var tope *http.MaxBytesError
+			if errors.As(err, &tope) {
+				estado = 413
+				iaError(w, 413, "invalid_request_error", "demasiado_grande", "La petición pasa de 48 MB.")
+			} else {
+				estado = 400
+				iaError(w, 400, "invalid_request_error", "cuerpo_ilegible", "No se pudo leer la petición.")
+			}
+			registrar()
+			return
+		}
+		if nuevo, ok := esfuerzoBajo(cuerpo); ok {
+			cuerpo = nuevo
+		}
+		r.Body = io.NopCloser(bytes.NewReader(cuerpo))
+		r.ContentLength = int64(len(cuerpo))
+		r.Header.Set("Content-Length", strconv.Itoa(len(cuerpo)))
+	}
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			destino := *up
@@ -568,6 +591,36 @@ func (s *Server) iaRele(w http.ResponseWriter, r *http.Request) {
 		med.terminar()
 	}
 	registrar()
+}
+
+// esfuerzoBajo rebaja output_config.effort a «low» si viene «high» o «max». Devuelve false si no hay nada que cambiar
+// (o el cuerpo no es JSON): entonces pasa tal cual.
+func esfuerzoBajo(cuerpo []byte) ([]byte, bool) {
+	if !bytes.Contains(cuerpo, []byte(`"output_config"`)) {
+		return nil, false
+	}
+	var m map[string]json.RawMessage
+	if json.Unmarshal(cuerpo, &m) != nil {
+		return nil, false
+	}
+	var oc map[string]any
+	if json.Unmarshal(m["output_config"], &oc) != nil || oc == nil {
+		return nil, false
+	}
+	if e, _ := oc["effort"].(string); e == "" || e == "low" || e == "off" {
+		return nil, false
+	}
+	oc["effort"] = "low"
+	raw, err := json.Marshal(oc)
+	if err != nil {
+		return nil, false
+	}
+	m["output_config"] = raw
+	nuevo, err := json.Marshal(m)
+	if err != nil {
+		return nil, false
+	}
+	return nuevo, true
 }
 
 // iaMedidor deja pasar la respuesta tal cual y, de paso, lee el uso de tokens: en SSE, los eventos message_start

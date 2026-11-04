@@ -96,3 +96,20 @@ func TestClaveSistemaDeepSeek(t *testing.T) {
 		t.Fatal("el relé siguió activo sin clave")
 	}
 }
+
+func TestEsfuerzoBajo(t *testing.T) {
+	for in, quiero := range map[string]string{
+		`{"model":"m","output_config":{"effort":"high"},"stream":true}`: `"effort":"low"`,
+		`{"model":"m","output_config":{"effort":"max"}}`:                `"effort":"low"`,
+	} {
+		out, ok := esfuerzoBajo([]byte(in))
+		if !ok || !strings.Contains(string(out), quiero) || !strings.Contains(string(out), `"model":"m"`) {
+			t.Errorf("%s → %s %v", in, out, ok)
+		}
+	}
+	for _, in := range []string{`{"output_config":{"effort":"low"}}`, `{"thinking":{"type":"disabled"}}`, `no es json "output_config"`} {
+		if _, ok := esfuerzoBajo([]byte(in)); ok {
+			t.Errorf("no debía cambiar: %s", in)
+		}
+	}
+}
