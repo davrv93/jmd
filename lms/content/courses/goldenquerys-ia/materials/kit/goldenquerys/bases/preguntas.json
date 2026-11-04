@@ -1,0 +1,127 @@
+{
+ "botica": {
+  "giro": "Botica de barrio con 4 sedes en Lima (ventas con boleta/factura, productos por categoría)",
+  "preguntas": [
+   {
+    "titulo": "¿Cuánto vendimos cada mes?",
+    "sql": "SELECT mes, operaciones, total_soles, ticket_promedio\nFROM v_ventas_mensuales;"
+   },
+   {
+    "titulo": "¿Qué sede vende más y con qué ticket promedio?",
+    "sql": "SELECT s.nombre AS sede, COUNT(*) AS ventas, ROUND(SUM(v.total),2) AS total_soles,\n       ROUND(AVG(v.total),2) AS ticket_promedio\nFROM ventas v JOIN sedes s ON s.id = v.sede_id\nWHERE v.estado = 'emitida'\nGROUP BY s.nombre\nORDER BY total_soles DESC;"
+   },
+   {
+    "titulo": "Top 10 productos por margen bruto",
+    "sql": "SELECT producto, categoria, unidades, venta_soles, margen_soles\nFROM v_top_productos\nORDER BY margen_soles DESC\nLIMIT 10;"
+   },
+   {
+    "titulo": "¿Se venden más antigripales en invierno?",
+    "sql": "SELECT substr(v.fecha,1,7) AS mes, ROUND(SUM(d.importe),2) AS antigripales_soles\nFROM venta_detalle d\nJOIN ventas v ON v.id = d.venta_id\nJOIN productos p ON p.id = d.producto_id\nJOIN categorias c ON c.id = p.categoria_id\nWHERE c.nombre = 'Antigripales' AND v.estado = 'emitida'\nGROUP BY mes ORDER BY mes;"
+   },
+   {
+    "titulo": "Calidad de datos: DNI duplicados y ventas negativas",
+    "sql": "SELECT 'DNI duplicado' AS problema, dni AS detalle, COUNT(*) AS casos\nFROM clientes GROUP BY dni HAVING COUNT(*) > 1\nUNION ALL\nSELECT 'Venta con total negativo', serie_numero, 1 FROM ventas WHERE total < 0\nUNION ALL\nSELECT 'Clientes sin distrito', NULL, COUNT(*) FROM clientes WHERE distrito IS NULL;"
+   }
+  ]
+ },
+ "polleria": {
+  "giro": "Pollería con 3 locales: salón, para llevar, delivery propio y app",
+  "preguntas": [
+   {
+    "titulo": "¿Cuánto vendimos cada mes?",
+    "sql": "SELECT mes, operaciones, total_soles, ticket_promedio\nFROM v_ventas_mensuales;"
+   },
+   {
+    "titulo": "¿Qué día de la semana vendemos más?",
+    "sql": "SELECT dia, pedidos, total_soles\nFROM v_ventas_por_dia_semana;"
+   },
+   {
+    "titulo": "Domingos especiales vs. un domingo normal",
+    "sql": "SELECT CASE\n         WHEN date(fecha) IN ('2025-06-15','2026-06-21') THEN 'Día del Padre'\n         WHEN date(fecha) IN ('2025-07-20','2026-07-19') THEN 'Día del Pollo a la Brasa'\n         WHEN date(fecha) IN ('2025-05-11','2026-05-10') THEN 'Día de la Madre'\n         ELSE 'Domingo normal' END AS tipo_dia,\n       COUNT(DISTINCT date(fecha)) AS dias,\n       ROUND(SUM(total) / COUNT(DISTINCT date(fecha)), 2) AS venta_promedio_por_dia\nFROM pedidos\nWHERE estado = 'entregado' AND strftime('%w', fecha) = '0'\nGROUP BY tipo_dia\nORDER BY venta_promedio_por_dia DESC;"
+   },
+   {
+    "titulo": "Tiempo de delivery por repartidor",
+    "sql": "SELECT repartidor, local, pedidos, minutos_promedio, calificacion\nFROM v_delivery_por_repartidor;"
+   },
+   {
+    "titulo": "Platos más pedidos por canal",
+    "sql": "SELECT p.canal, pl.nombre AS plato, SUM(d.cantidad) AS unidades, ROUND(SUM(d.importe),2) AS total_soles\nFROM pedido_detalle d\nJOIN pedidos p ON p.id = d.pedido_id\nJOIN platos pl ON pl.id = d.plato_id\nWHERE p.estado = 'entregado'\nGROUP BY p.canal, pl.nombre\nORDER BY p.canal, unidades DESC;"
+   }
+  ]
+ },
+ "ferreteria": {
+  "giro": "Ferretería y materiales de construcción: ventas al contado y a crédito a maestros de obra",
+  "preguntas": [
+   {
+    "titulo": "Ventas por mes: contado vs. crédito",
+    "sql": "SELECT mes, contado_soles, credito_soles, total_soles\nFROM v_ventas_mensuales;"
+   },
+   {
+    "titulo": "¿Quién nos debe más?",
+    "sql": "SELECT cliente, tipo, facturas_pendientes, deuda_soles, max_dias_vencido\nFROM v_deuda_por_cliente\nLIMIT 15;"
+   },
+   {
+    "titulo": "Antigüedad de la deuda (0-30, 31-60, 61-90, +90 días)",
+    "sql": "SELECT CASE\n         WHEN dias_vencido <= 0 THEN '1. Por vencer'\n         WHEN dias_vencido <= 30 THEN '2. 1-30 días'\n         WHEN dias_vencido <= 60 THEN '3. 31-60 días'\n         WHEN dias_vencido <= 90 THEN '4. 61-90 días'\n         ELSE '5. Más de 90 días' END AS tramo,\n       COUNT(*) AS facturas, ROUND(SUM(saldo),2) AS saldo_soles\nFROM v_cuentas_por_cobrar\nGROUP BY tramo ORDER BY tramo;"
+   },
+   {
+    "titulo": "Productos estrella por categoría",
+    "sql": "SELECT c.nombre AS categoria, p.nombre AS producto, p.unidad,\n       SUM(d.cantidad) AS cantidad, ROUND(SUM(d.importe),2) AS venta_soles\nFROM venta_detalle d\nJOIN ventas v ON v.id = d.venta_id\nJOIN productos p ON p.id = d.producto_id\nJOIN categorias c ON c.id = p.categoria_id\nWHERE v.estado = 'emitida'\nGROUP BY p.id\nORDER BY venta_soles DESC\nLIMIT 12;"
+   },
+   {
+    "titulo": "Maestros y constructoras que superan su límite de crédito",
+    "sql": "SELECT c.nombre, c.tipo, c.limite_credito, d.deuda_soles,\n       ROUND(d.deuda_soles - c.limite_credito, 2) AS exceso_soles\nFROM v_deuda_por_cliente d JOIN clientes c ON c.id = d.cliente_id\nWHERE d.deuda_soles > c.limite_credito\nORDER BY exceso_soles DESC;"
+   }
+  ]
+ },
+ "academia": {
+  "giro": "Academia preuniversitaria: ciclos, matrículas, pensiones, morosidad y asistencia",
+  "preguntas": [
+   {
+    "titulo": "Matrículas por mes (pico de enero a marzo)",
+    "sql": "SELECT mes, matriculas, matricula_soles\nFROM v_matriculas_mensuales;"
+   },
+   {
+    "titulo": "Cobranza de pensiones por mes",
+    "sql": "SELECT mes, operaciones AS pagos, total_soles\nFROM v_ventas_mensuales;"
+   },
+   {
+    "titulo": "Morosidad por ciclo y sede",
+    "sql": "SELECT ciclo, sede, COUNT(*) AS cuotas_vencidas, ROUND(SUM(monto),2) AS deuda_soles,\n       ROUND(AVG(dias_atraso)) AS dias_atraso_promedio\nFROM v_morosidad\nGROUP BY ciclo, sede\nORDER BY deuda_soles DESC;"
+   },
+   {
+    "titulo": "¿Los que faltan más se retiran más?",
+    "sql": "SELECT m.estado, COUNT(DISTINCT m.id) AS matriculas,\n       ROUND(100.0 * SUM(a.sesiones_asistidas) / SUM(a.sesiones_programadas), 1) AS pct_asistencia\nFROM matriculas m JOIN asistencias a ON a.matricula_id = m.id\nGROUP BY m.estado\nORDER BY pct_asistencia;"
+   },
+   {
+    "titulo": "Carreras más postuladas por universidad",
+    "sql": "SELECT universidad_objetivo AS universidad, carrera_postula AS carrera, COUNT(*) AS alumnos\nFROM alumnos\nGROUP BY universidad, carrera\nORDER BY alumnos DESC;"
+   }
+  ]
+ },
+ "courier": {
+  "giro": "Empresa de envíos (courier): envíos por zona, repartidores, SLA, incidencias y calificaciones",
+  "preguntas": [
+   {
+    "titulo": "Envíos y facturación por mes",
+    "sql": "SELECT mes, operaciones AS envios, total_soles, ticket_promedio\nFROM v_ventas_mensuales;"
+   },
+   {
+    "titulo": "% de entregas dentro del SLA por zona",
+    "sql": "SELECT zona, sla_horas, entregados, dentro_sla, pct_sla, horas_promedio\nFROM v_cumplimiento_sla;"
+   },
+   {
+    "titulo": "Repartidores con más incidencias cada 100 envíos",
+    "sql": "SELECT repartidor, zona, envios, incidencias, incidencias_x100\nFROM v_incidencias_por_repartidor\nLIMIT 10;"
+   },
+   {
+    "titulo": "Tipos de incidencia y cuántas siguen sin resolver",
+    "sql": "SELECT tipo, COUNT(*) AS incidencias, SUM(resuelta = 0) AS sin_resolver\nFROM incidencias\nGROUP BY tipo\nORDER BY incidencias DESC;"
+   },
+   {
+    "titulo": "Clientes que más facturan y su tasa de devolución",
+    "sql": "SELECT c.razon_social, c.tipo, COUNT(*) AS envios, ROUND(SUM(e.total),2) AS total_soles,\n       ROUND(100.0 * SUM(e.estado = 'devuelto') / COUNT(*), 1) AS pct_devueltos\nFROM envios e JOIN clientes c ON c.id = e.cliente_id\nWHERE e.estado <> 'cancelado'\nGROUP BY c.id\nORDER BY total_soles DESC\nLIMIT 15;"
+   }
+  ]
+ }
+}
