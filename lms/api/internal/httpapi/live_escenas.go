@@ -88,6 +88,30 @@ func (s *Server) escenaPublica(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(raw)
 }
 
+// fugaVideo: GET /fuga-goldenquerys/video.mp4 (sin sesión). El video va junto a la escena; ServeContent da los rangos
+// que pide el navegador para adelantar.
+func (s *Server) fugaVideo(w http.ResponseWriter, r *http.Request) {
+	ref := escenasPublicas["/fuga-goldenquerys"]
+	e := s.Content.Get().Escena(ref[0], ref[1])
+	if e == nil {
+		notFound(w, "el video")
+		return
+	}
+	f, err := os.Open(filepath.Join(filepath.Dir(e.HTMLPath), "video.mp4"))
+	if err != nil {
+		notFound(w, "el video")
+		return
+	}
+	defer f.Close()
+	st, err := f.Stat()
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "video/mp4")
+	http.ServeContent(w, r, "video.mp4", st.ModTime(), f)
+}
+
 // fugaPistas: GET /api/v1/fuga/pistas (público). Las pistas de «La fuga del estadio» viven en <datos>/fuga-pistas.json,
 // fuera del repo (es público), y cada una solo sale desde su hora: [{"hora": "RFC 3339", "texto": "…"}] en orden.
 func (s *Server) fugaPistas(w http.ResponseWriter, r *http.Request) {
