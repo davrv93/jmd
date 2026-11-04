@@ -56,6 +56,8 @@ type Server struct {
 	badge     *badgeKeyCache
 	runLimit  *limiter
 	dshLimite *limiter // POST /api/v1/dsh/abrir por alumno
+	golLimite *limiter // POST /api/v1/sorteo-gol/girar por IP
+	golMu     sync.Mutex
 	termSlots *slots
 	Aula      AulaMotor // nil = sin aula configurada (503)
 	repaso    *repasoArena
@@ -111,6 +113,9 @@ func (s *Server) Handler() http.Handler {
 	}
 	if s.runLimit == nil {
 		s.runLimit = newLimiter(20, time.Minute)
+	}
+	if s.golLimite == nil {
+		s.golLimite = newLimiter(20, time.Minute)
 	}
 	if s.dshLimite == nil {
 		s.dshLimite = newLimiter(10, time.Minute)
@@ -190,6 +195,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/dsh/abrir", s.authed(s.dshAbrir))
 	mux.Handle("POST /api/v1/dsh/ver/{sub}", s.authed(s.staff(s.dshVer)))
 	mux.Handle("GET /api/v1/live/{lesson}/accesos", s.authed(s.staff(s.liveAccesos)))
+	mux.HandleFunc("GET /api/v1/sorteo-gol/estado", s.golEstado) // sin sesión: el sorteo se juega con nombre y correo
+	mux.HandleFunc("POST /api/v1/sorteo-gol/girar", s.golGirar)
+	mux.Handle("GET /api/v1/admin/sorteo-gol", s.authed(s.admin(s.golGiros)))
 	mux.HandleFunc("GET /sorteo-goldenquerys", s.escenaPublica) // sin sesión: solo esta escena (ver escenasPublicas)
 	mux.HandleFunc("GET /sorteo-goldenquerys/", s.escenaPublica)
 	mux.HandleFunc("GET /api/v1/auth/enlace", s.authEnlace)     // sin sesión: el enlace firmado es la credencial

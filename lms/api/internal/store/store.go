@@ -66,6 +66,14 @@ func migrate(db *sql.DB) error {
 	// existente la columna «numero» recién se creó en los adds de arriba.
 	// Parcial (WHERE numero IS NOT NULL): las filas viejas sin número no lo
 	// bloquean; las nuevas no pueden repetirlo dentro del mismo sorteo.
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS sorteo_gol (
+		sorteo_id TEXT NOT NULL, email TEXT NOT NULL, nombre TEXT NOT NULL, user_id TEXT NOT NULL, premio TEXT NOT NULL,
+		pct INTEGER NOT NULL, precio INTEGER NOT NULL, codigo TEXT NOT NULL, creado_en TEXT NOT NULL,
+		PRIMARY KEY (sorteo_id, user_id));
+		CREATE UNIQUE INDEX IF NOT EXISTS sorteo_gol_email ON sorteo_gol (sorteo_id, email);
+		CREATE UNIQUE INDEX IF NOT EXISTS sorteo_gol_premio ON sorteo_gol (sorteo_id, premio) WHERE premio <> 'descuento';`); err != nil {
+		return fmt.Errorf("tabla sorteo_gol: %w", err)
+	}
 	if _, err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS sorteo_jugadas_numero
 		ON sorteo_jugadas (sorteo_id, numero) WHERE numero IS NOT NULL`); err != nil {
 		return fmt.Errorf("índice sorteo jugadas: %w", err)
