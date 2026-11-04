@@ -1,4 +1,4 @@
-import { component$, Slot, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
+import { component$, type QRL, Slot, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { api, ApiError, errMsg, requireLogin, type DshEstado } from "~/lib/api";
 import { Icon } from "./icon";
 
@@ -18,7 +18,7 @@ const ANCHO_LADO = 900; // px del panel desde los que agente y visor van lado a 
 const MIN = 0.3;
 const MAX = 0.78;
 
-export const LiveDsh = component$((props: { pedido?: string }) => {
+export const LiveDsh = component$((props: { pedido?: string; escenaOculta?: boolean; onEscena$?: QRL<() => void> }) => {
   const st = useStore<{ fase: Fase; url: string; modo: string; error: string; estado: DshEstado | null; vuelta: number }>({
     fase: "cargando",
     url: "",
@@ -162,6 +162,18 @@ export const LiveDsh = component$((props: { pedido?: string }) => {
           <button type="button" class={`btn sm lv-dsh-pedido ${copiado.value ? "ok" : ""}`} title={props.pedido} onClick$={copiarPedido} aria-live="polite">
             <Icon name={copiado.value ? "check" : "copy"} size={13} />
             {copiado.value ? "Copiado: pégalo en el chat (Ctrl+V)" : "Copiar el pedido de esta escena"}
+          </button>
+        )}
+        {props.onEscena$ && (
+          <button
+            type="button"
+            class={`btn ghost sm lv-dsh-escena ${props.escenaOculta ? "on" : ""}`}
+            aria-pressed={!!props.escenaOculta}
+            title={props.escenaOculta ? "Volver a mostrar la escena del instructor" : "Ocultar la escena del instructor: DeepSeek y el visor a pantalla completa"}
+            onClick$={props.onEscena$}
+          >
+            <Icon name={props.escenaOculta ? "restaurar" : "maximizar"} size={13} />
+            {props.escenaOculta ? "Ver escena" : "Ocultar escena"}
           </button>
         )}
         <button

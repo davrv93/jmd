@@ -345,6 +345,7 @@ export const LiveAlumno = component$(
 
     const alternarMax = $(() => {
       disp.max = !disp.max;
+      setTimeout(() => window.dispatchEvent(new Event("resize")), 60);
     });
 
     // Visor flotante. La primera vez se centra en la ventana; luego recuerda dónde lo dejaste.
@@ -1050,7 +1051,7 @@ export const LiveAlumno = component$(
             </div>
             <div id="lv-tp-agente" role="tabpanel" aria-labelledby="lv-tab-agente" class="lv-tp lv-tp-agente" hidden={panel.value !== "agente"}>
               {dshAbierta.value && (
-                <LiveDsh pedido={pedidoDsh}>
+                <LiveDsh pedido={pedidoDsh} escenaOculta={disp.max} onEscena$={alternarMax}>
                   {panel.value === "agente" && session.me && !flot.on && <LiveVisor lesson={props.lesson} escena={efectiva} sub={session.me.id} ruta={rutaVisor} proy={proyVisor} />}
                   {panel.value === "agente" && flot.on && (
                     <div class="lv-flot-aviso">
