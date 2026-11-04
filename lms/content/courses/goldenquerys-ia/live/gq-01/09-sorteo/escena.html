@@ -225,11 +225,11 @@ body {
 
   <main class="esc-cuerpo">
     <h1 class="esc-titulo a-in">Hoy <em class="oro">todos ganan</em>: gira y mira tu descuento</h1>
-    <p class="esc-sub a-in" style="--d:.1s">El curso GoldenQuerys cuesta S/ 100. Cada persona de la charla se lleva entre 70 % y 80 % de descuento: pagas entre S/ 20 y S/ 30.</p>
+    <p class="esc-sub a-in" style="--d:.1s">El curso GoldenQuerys cuesta S/ 100. Cada persona de la charla se lleva entre 70 % y 100 % de descuento: pagas S/ 30 como máximo, y con suerte, nada.</p>
     <div class="gq-sorteo a-in" style="--d:.2s">
       <div class="gq-boleto" id="gq-boleto">
         <span class="gq-boleto-t">Tu descuento</span>
-        <div class="gq-ventana" aria-hidden="true"><div class="gq-rodillo" id="gq-rodillo"><span>70 %</span><span>71 %</span><span>72 %</span><span>73 %</span><span>74 %</span><span>75 %</span><span>76 %</span><span>77 %</span><span>78 %</span><span>79 %</span><span>80 %</span><span>70 %</span><span>71 %</span><span>72 %</span><span>73 %</span><span>74 %</span><span>75 %</span><span>76 %</span><span>77 %</span><span>78 %</span><span>79 %</span><span>80 %</span><span>70 %</span><span>71 %</span><span>72 %</span><span>73 %</span><span>74 %</span><span>75 %</span><span>76 %</span><span>77 %</span><span>78 %</span><span>79 %</span><span>80 %</span></div></div>
+        <div class="gq-ventana" aria-hidden="true"><div class="gq-rodillo" id="gq-rodillo"><span>70 %</span><span>71 %</span><span>72 %</span><span>73 %</span><span>74 %</span><span>75 %</span><span>76 %</span><span>77 %</span><span>78 %</span><span>79 %</span><span>80 %</span><span>81 %</span><span>82 %</span><span>83 %</span><span>84 %</span><span>85 %</span><span>86 %</span><span>87 %</span><span>88 %</span><span>89 %</span><span>90 %</span><span>91 %</span><span>92 %</span><span>93 %</span><span>94 %</span><span>95 %</span><span>96 %</span><span>97 %</span><span>98 %</span><span>99 %</span><span>100 %</span><span>70 %</span><span>71 %</span><span>72 %</span><span>73 %</span><span>74 %</span><span>75 %</span><span>76 %</span><span>77 %</span><span>78 %</span><span>79 %</span><span>80 %</span><span>81 %</span><span>82 %</span><span>83 %</span><span>84 %</span><span>85 %</span><span>86 %</span><span>87 %</span><span>88 %</span><span>89 %</span><span>90 %</span><span>91 %</span><span>92 %</span><span>93 %</span><span>94 %</span><span>95 %</span><span>96 %</span><span>97 %</span><span>98 %</span><span>99 %</span><span>100 %</span><span>70 %</span><span>71 %</span><span>72 %</span><span>73 %</span><span>74 %</span><span>75 %</span><span>76 %</span><span>77 %</span><span>78 %</span><span>79 %</span><span>80 %</span><span>81 %</span><span>82 %</span><span>83 %</span><span>84 %</span><span>85 %</span><span>86 %</span><span>87 %</span><span>88 %</span><span>89 %</span><span>90 %</span><span>91 %</span><span>92 %</span><span>93 %</span><span>94 %</span><span>95 %</span><span>96 %</span><span>97 %</span><span>98 %</span><span>99 %</span><span>100 %</span></div></div>
         <button type="button" class="gq-girar" id="gq-girar">Girar</button>
       </div>
       <div class="gq-premio" id="gq-premio" hidden>
@@ -255,22 +255,22 @@ body {
     function leer() { try { return JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { return null; } }
     function guardar(r) { try { localStorage.setItem(CLAVE, JSON.stringify(r)); } catch (e) {} }
     function nuevo() {
-      var L = "ABCDEFGHJKMNPQRSTUVWXYZ23456789", c = "", pct = 70 + azar(11);
+      var L = "ABCDEFGHJKMNPQRSTUVWXYZ23456789", c = "", pct = 70 + azar(31);
       for (var i = 0; i < 4; i++) c += L.charAt(azar(L.length));
       return { pct: pct, precio: 100 - pct, codigo: "GQ-" + pct + "-" + c };
     }
     function mensaje(r) {
-      return "Hola, en el sorteo de GoldenQuerys gané " + r.pct + " % de descuento (código " + r.codigo + "). Quiero inscribirme al curso del " + FECHA + " a S/ " + r.precio + ".";
+      return "Hola, en el sorteo de GoldenQuerys gané " + r.pct + " % de descuento (código " + r.codigo + "). Quiero inscribirme al curso del " + FECHA + (r.precio ? " a S/ " + r.precio : " gratis") + ".";
     }
     function colocar(r, salto) {
       var rod = $("gq-rodillo");
       rod.style.transition = "none";
       if (!salto) { rod.style.transform = "translateY(0)"; void rod.offsetHeight; rod.style.transition = ""; }
-      rod.style.transform = "translateY(" + (-(22 + r.pct - 70) * alto()) + "px)";
+      rod.style.transform = "translateY(" + (-(62 + r.pct - 70) * alto()) + "px)";
     }
     function mostrar(r) {
       $("gq-pct").textContent = r.pct + " %";
-      $("gq-final").textContent = "S/ " + r.precio;
+      $("gq-final").textContent = r.precio ? "S/ " + r.precio : "S/ 0: ¡gratis!";
       $("gq-codigo").textContent = r.codigo;
       $("gq-premio").hidden = false;
       $("gq-espera").hidden = true;
