@@ -65,6 +65,8 @@ COPY bin/aula-dsh-uso.mjs /usr/local/lib/aula-dsh-uso.mjs
 # cargarse uno de glibc, aquí revienta con «Segmentation fault» y el build falla (ver dsh/instalar.sh, pasos 0 y 0b).
 RUN node -e 'require("/opt/dsh/node_modules/koffi"); const p=require("/opt/dsh/node_modules/node-pty").spawn("/bin/sh",["-c","echo pty-ok"],{cwd:"/",env:process.env}); let o=""; p.onData(d=>o+=d); p.onExit(()=>{ if(o.trim()!=="pty-ok"){console.error("node-pty no abrió la shell");process.exit(1)} console.log("dsh nativo: koffi y node-pty OK (musl)") })'
 RUN chmod a+r /opt/dsh-aula.patch.yml /usr/local/lib/aula-dsh-uso.mjs && chmod -R a+rX /opt/osito /opt/skills-curso /opt/plantillas /opt/sistemas-practica /home/alumno/AGENTS.md && chmod 0755 /usr/local/bin/aula /usr/local/bin/aula-paso /usr/local/bin/jmrv && ln -s bun /usr/local/bin/bunx && ln -s /opt/dsh/node_modules/@deepseek-ai/dsh/lib/bin.js /usr/local/bin/dsh && chmod -R a+rX /node_modules && ln -s /opt/skills-curso /home/alumno/.config/jmd/skills && chown -R alumno:alumno /home/alumno
+# DeepSeek Harness corre cada comando del agente con «bash -c»: sin bash, toda herramienta falla con «spawn bash ENOENT».
+RUN apk add --no-cache bash
 ENV HOME=/home/alumno PATH=/opt/venv/bin:/usr/local/bin:/usr/bin:/bin TERM=xterm-256color \
     JMD_URL=http://ai-orchestrator:4000 OSITO_PERFIL=nube OSITO_PUERTO=8766 PYTHONDONTWRITEBYTECODE=1 \
     JMRV_URL=http://jmrv:8790 \
