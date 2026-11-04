@@ -30,6 +30,9 @@ const (
 	dshClaveTope = 20 * time.Second
 )
 
+// dshAbrirCmd arranca dsh sin sandbox propio (el aula es el sandbox) y con /tmp/.aula-bin en el PATH (bash de respaldo).
+const dshAbrirCmd = `PATH="/tmp/.aula-bin:$PATH" DSH_PERMISSION_MODE=danger-full-access aula dsh abrir`
+
 // reClaveDeepSeek: lo que «aula dsh clave» acepta (sin comillas, espacios ni texto de más).
 var reClaveDeepSeek = regexp.MustCompile(`^[A-Za-z0-9._-]{8,256}$`)
 
@@ -216,8 +219,10 @@ func (s *Server) dshAbrir(w http.ResponseWriter, r *http.Request, p *Principal) 
 	// tiene (y en un contenedor sin privilegios no funcionarían), así que el agente no podía ejecutar nada. El aula
 	// ya es el aislamiento (un contenedor por alumno, sin root): dsh arranca en «danger-full-access», sin pedir
 	// aprobación. Si hay una web vieja corriendo sin ese modo, se para para que «abrir» la levante con él.
-	_, _ = s.Aula.Exec(ctx, nombre, `p=$(cat /tmp/aula-dsh-web.pid 2>/dev/null); if [ -n "$p" ] && ! tr '\0' '\n' < /proc/$p/environ 2>/dev/null | grep -qx DSH_PERMISSION_MODE=danger-full-access; then aula dsh web parar >/dev/null 2>&1; fi; true`)
-	out, err := s.Aula.ExecTope(ctx, nombre, "DSH_PERMISSION_MODE=danger-full-access aula dsh abrir", nil, dshAbrirTope)
+	// Además dsh corre cada comando con «bash -c»: las aulas de una imagen anterior al 03-11-2026 no traen bash y el
+	// disco es de solo lectura, así que se deja uno en /tmp (el único tmpfs que permite ejecutar) que pasa a sh.
+	_, _ = s.Aula.Exec(ctx, nombre, `command -v bash >/dev/null 2>&1 || { mkdir -p /tmp/.aula-bin && [ -x /tmp/.aula-bin/bash ] || { printf '#!/bin/sh\nexec /bin/sh "$@"\n' > /tmp/.aula-bin/bash && chmod 755 /tmp/.aula-bin/bash; }; }; p=$(cat /tmp/aula-dsh-web.pid 2>/dev/null); if [ -n "$p" ] && ! tr '\0' '\n' < /proc/$p/environ 2>/dev/null | grep -qx DSH_PERMISSION_MODE=danger-full-access; then aula dsh web parar >/dev/null 2>&1; fi; true`)
+	out, err := s.Aula.ExecTope(ctx, nombre, dshAbrirCmd, nil, dshAbrirTope)
 	if err != nil {
 		slog.Warn("dsh: «aula dsh abrir» falló", "aula", nombre, "salida", sinTokens(out), "err", err)
 		if strings.Contains(out, "Aún no me diste tu clave") {
