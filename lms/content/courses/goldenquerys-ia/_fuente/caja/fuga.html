@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a1410">
 <title>La fuga del estadio · GoldenQuerys</title>
-<meta name="description" content="Un mensaje cifrado, tres palabras y una pizarra. El primero en abrir la caja gana.">
-<!-- La fuga del estadio. Plantilla: _fuente/caja/fuga.html; curso.py le pone la pizarra y el texto cifrado (caja.json).
+<meta name="description" content="Un mensaje cifrado y tres palabras escondidas. El primero en abrir la caja gana.">
+<!-- La fuga del estadio. Plantilla: _fuente/caja/fuga.html; curso.py le pone el texto cifrado (caja.json).
      El mensaje solo se descifra en el navegador con las tres palabras: aquí no hay ninguna pista de cuáles son. -->
 <style>
 @font-face { font-family: "Barlow Condensed"; font-weight: 800; font-display: swap; src: url({{FUENTE_TITULO}}) format("woff2"); }
@@ -23,18 +23,16 @@ h1 { margin: 0; font: 800 clamp(2.9rem, 12vw, 5rem)/.9 "Barlow Condensed", sans-
 h1 span { color: var(--oro); }
 .bajada { margin: 8px 0 0; color: var(--suave); max-width: 58ch; }
 .bajada b { color: var(--tiza); font-weight: 700; }
-.pizarra { display: block; width: 100%; height: auto; background: var(--pizarra); border-radius: 10px; }
-.pizarra .cal { fill: none; stroke: rgba(232,239,232,.42); stroke-width: 2; }
-.pizarra .ju circle { fill: var(--pizarra); stroke: var(--tiza); stroke-width: 2.5; }
-.pizarra .ju text { font: 800 25px "Barlow Condensed", sans-serif; fill: var(--tiza); text-anchor: middle; dominant-baseline: central; }
-.pizarra .fl { fill: none; stroke: var(--oro); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 9 8; }
-.tablero { position: relative; min-width: 0; }
-.lluvia { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 10px; pointer-events: none; }
+.carta { position: relative; overflow: hidden; margin: 0; padding: 22px 54px 22px 20px; background: var(--pizarra); border-radius: 10px; }
+.carta p { position: relative; margin: 0; font-size: 1.14rem; line-height: 1.62; max-width: 62ch; }
+.lluvia { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .sonido { position: absolute; right: 10px; top: 10px; width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--linea); border-radius: 50%; background: rgba(10,20,16,.7); color: var(--tiza); cursor: pointer; }
 .sonido:hover { border-color: var(--oro); color: var(--oro); }
 .sonido .no { display: none; } .sonido[aria-pressed="false"] .si { display: none; } .sonido[aria-pressed="false"] .no { display: block; }
-.leyendas { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; color: var(--suave); font-size: .9rem; }
-.leyendas b { color: var(--tiza); }
+.pistas { margin: 0; padding: 0 0 0 1.3em; display: grid; gap: 6px; font-size: .95rem; }
+.pistas:empty { display: none; }
+.pistas li { white-space: pre-line; }
+.pistas li::marker { color: var(--oro); font-weight: 700; }
 .lado { display: grid; gap: 12px; align-content: start; }
 .regla { margin: 0; color: var(--suave); font-size: .92rem; }
 .regla b { color: var(--tiza); }
@@ -60,25 +58,20 @@ input:focus { border-color: var(--oro); outline: none; }
 <main class="todo">
   <header class="cab">
     <h1>La fuga <span>del estadio</span></h1>
-    <p class="bajada">Hay un mensaje cifrado con AES-256 en esta página. Sin las tres palabras, ninguna IA lo abre. <b>El primero en abrirlo y escribir el código gana todo el catálogo a S/ 10.</b></p>
+    <p class="bajada">En esta página hay un mensaje cifrado. <b>El primero en abrirlo y escribir su código por WhatsApp gana todo el catálogo a S/ 10.</b></p>
   </header>
-  <div>
-    <div class="tablero">
-      {{PIZARRA}}
-      <canvas class="lluvia" id="lluvia" aria-hidden="true"></canvas>
-      <button type="button" class="sonido" id="sonido" aria-pressed="true" aria-label="Sonido de lluvia" title="Sonido de lluvia">
-        <svg class="si" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
-        <svg class="no" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="m17 9.5 5 5m0-5-5 5"/></svg>
-      </button>
-    </div>
-    <ul class="leyendas">
-      <li><b>Palermo</b> falló tres penales en una noche. Tú tienes tres palabras.</li>
-      <li><b>Higuita</b> sacó el escorpión por detrás: mira lo que nadie mira.</li>
-      <li><b>Alemania 4, Argentina 0:</b> aquí una palabra mal escrita también es goleada.</li>
-    </ul>
-  </div>
+  <article class="carta">
+    <canvas class="lluvia" id="lluvia" aria-hidden="true"></canvas>
+    <button type="button" class="sonido" id="sonido" aria-pressed="true" aria-label="Sonido de lluvia" title="Sonido de lluvia">
+      <svg class="si" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+      <svg class="no" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="m17 9.5 5 5m0-5-5 5"/></svg>
+    </button>
+    <p>Esa noche las gotas de lluvia caían sobre mi cabeza y aun así nada me preocupaba, porque era libre. Mientras caminaba hacia el estadio me acordé de aquel nueve de Boca que, en una sola noche paraguaya, vio cómo el travesaño, la tribuna y las manos del arquero le negaban todo lo que intentó desde los doce pasos. Me acordé del loco de pelo largo que una tarde de septiembre, en Wembley, dejó pasar la pelota sobre su cabeza y la devolvió con los talones, de espaldas, como un alacrán. Y me acordé del invierno de Ciudad del Cabo, cuando un banco con Maradona vio entrar los goles uno tras otro sin poder responder ninguno. Tres historias, tres números. Lo demás ya lo escuchaste alguna vez.</p>
+  </article>
   <div class="lado">
-    <p class="regla"><b>Tres jugadas, tres palabras.</b> Cada flecha va de un número de frase a un número de palabra. Falta el libro: lo revelo <b>hoy a la 1:00 p. m.</b></p>
+    <p class="regla"><b>Tres palabras abren la caja.</b> Están escondidas detrás de esta historia. Las pistas aparecen aquí solas:</p>
+    <ol class="pistas" id="pistas"></ol>
+    <p class="regla" id="siguiente"></p>
     <form id="caja">
       <label>Primera palabra<input id="p1" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
       <label>Segunda palabra<input id="p2" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
@@ -103,6 +96,19 @@ input:focus { border-color: var(--oro); outline: none; }
     var plano = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(CAJA.iv) }, clave, bytes(CAJA.ct));
     return new TextDecoder().decode(plano);
   }
+  /* Pistas: el servidor solo entrega las que ya llegaron a su hora. */
+  function pistas() {
+    fetch("/api/v1/fuga/pistas").then(function (r) { return r.json(); }).then(function (d) {
+      var l = $("pistas"); l.textContent = "";
+      (d.pistas || []).forEach(function (t) { var li = document.createElement("li"); li.textContent = t; l.appendChild(li); });
+      var s = $("siguiente");
+      if (d.siguiente) {
+        var h = new Date(d.siguiente).toLocaleTimeString("es-PE", { hour: "numeric", minute: "2-digit", timeZone: "America/Lima" });
+        s.textContent = "Próxima pista: " + h + ".";
+      } else s.textContent = "";
+    }).catch(function () {});
+  }
+  pistas(); setInterval(pistas, 30000);
   /* Lluvia: gotas sobre la pizarra y su sonido, sintetizado con ruido. Sin movimiento si la persona lo pidió así. */
   (function () {
     var lienzo = $("lluvia"), c = lienzo.getContext("2d"), gotas = [], quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -145,7 +151,7 @@ input:focus { border-color: var(--oro); outline: none; }
     abrir(palabras).then(function (m) {
       $("mensaje").textContent = m; $("mensaje").hidden = false; $("acciones").hidden = false; $("caja").hidden = true;
     }).catch(function () {
-      e.textContent = "Esas palabras no abren la caja. Revisa cada jugada."; e.hidden = false;
+      e.textContent = "Esas palabras no abren la caja. El orden da igual; la ortografía, no."; e.hidden = false;
       b.disabled = false; b.textContent = "Abrir la caja";
     });
   });

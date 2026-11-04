@@ -3,6 +3,8 @@ package httpapi
 import (
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -52,5 +54,20 @@ func TestEscenaPublicaSinSesion(t *testing.T) {
 	}
 	if _, ok := escenasPublicas["/api/v1/live/gq-01/escenas/01-bienvenida/html"]; ok {
 		t.Fatal("otra escena quedó pública")
+	}
+}
+
+// Una pista no sale antes de su hora, aunque el archivo ya esté en el servidor.
+func TestFugaPistasPorHora(t *testing.T) {
+	e := newEnv(t)
+	e.s.DataDir = t.TempDir()
+	ya, luego := time.Now().Add(-time.Minute).Format(time.RFC3339), time.Now().Add(time.Hour).Format(time.RFC3339)
+	raw := `[{"hora":"` + ya + `","texto":"primera"},{"hora":"` + luego + `","texto":"secreta"}]`
+	if err := os.WriteFile(filepath.Join(e.s.DataDir, "fuga-pistas.json"), []byte(raw), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	r := e.call("GET", "/api/v1/fuga/pistas", "", false, nil, "")
+	if r.code != 200 || strings.Contains(string(r.raw), "secreta") || !strings.Contains(string(r.raw), "primera") || r.body["siguiente"] == "" {
+		t.Fatalf("pistas: %d %s", r.code, r.raw)
 	}
 }

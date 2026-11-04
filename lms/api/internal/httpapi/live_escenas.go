@@ -1,12 +1,14 @@
 package httpapi
 
 import (
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // cspEscena: lo único que una escena puede hacer. Todo inline y del mismo origen; sin CDN, sin
@@ -84,6 +86,33 @@ func (s *Server) escenaPublica(w http.ResponseWriter, r *http.Request) {
 	h.Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(200)
 	_, _ = w.Write(raw)
+}
+
+// fugaPistas: GET /api/v1/fuga/pistas (público). Las pistas de «La fuga del estadio» viven en <datos>/fuga-pistas.json,
+// fuera del repo (es público), y cada una solo sale desde su hora: [{"hora": "RFC 3339", "texto": "…"}] en orden.
+func (s *Server) fugaPistas(w http.ResponseWriter, r *http.Request) {
+	listas := []string{}
+	siguiente := ""
+	var pistas []struct {
+		Hora  time.Time `json:"hora"`
+		Texto string    `json:"texto"`
+	}
+	if raw, err := os.ReadFile(filepath.Join(s.DataDir, "fuga-pistas.json")); err == nil {
+		if err := json.Unmarshal(raw, &pistas); err != nil {
+			internal(w, err)
+			return
+		}
+	}
+	ahora := time.Now()
+	for _, p := range pistas {
+		if !ahora.Before(p.Hora) {
+			listas = append(listas, p.Texto)
+		} else if siguiente == "" {
+			siguiente = p.Hora.Format(time.RFC3339)
+		}
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, 200, map[string]any{"pistas": listas, "siguiente": siguiente})
 }
 
 // extsEscena: lo único que una escena puede pedir como archivo hermano o común. Nada de .html,
