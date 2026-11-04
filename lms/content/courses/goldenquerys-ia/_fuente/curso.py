@@ -162,7 +162,7 @@ ELEGIR = """    <h1 class="esc-titulo a-in">Elige <em class="oro">tu negocio</em
   </script>
   <main hidden>"""
 
-FECHA_CURSO = "martes 10 y 17 de noviembre"
+FECHA_CURSO = "martes 10 y 17 de noviembre, de 10:45 a 11:30 p. m."
 
 SORTEO = """    <h1 class="esc-titulo a-in">Hoy <em class="oro">todos ganan</em>: gira y mira tu descuento</h1>
     <p class="esc-sub a-in" style="--d:.1s">El curso GoldenQuerys cuesta S/ 100. Cada persona de la charla se lleva entre 70 % y 80 % de descuento: pagas entre S/ 20 y S/ 30.</p>
