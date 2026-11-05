@@ -49,6 +49,11 @@ materials:
     kind: doc
     url: https://ffmpeg.org/documentation.html
     objective_ids: [de-03-o3]
+  - id: de-03-estudio
+    title: "Demo: dirige un video con un agente (39 s)"
+    kind: file
+    file: materials/demo-estudio-con-agente.mp4
+    objective_ids: [de-03-o3]
 cycle:
   - id: ver
     title: Ver «Difícil de explicar» en pantalla
@@ -142,6 +147,16 @@ misma línea de tiempo. El movimiento explica; si solo adorna, se quita.
 
 En una frase: de una sola pieza salen el MP4 de 15 a 40 s, la versión con otra música, el flyer
 de 1080 × 1350 y el estado de 1080 × 1920.
+
+## Extra · Dirige un video con un agente
+
+La primera escena del LIVE recorre un video real de 30 segundos hecho con un agente de IA. Empieza
+con una frase y sigue con una aprobación por etapa: idea, guion, escenas, voz y música, y video.
+Es la forma de trabajar de hoy: tú decides qué se hace y cómo debe verse; el agente lo ejecuta.
+
+Ese estudio completo se enseña en el curso **Crea contenido con OpenMontage**: 4 sesiones en vivo
+de 1 hora, domingos 15, 22 y 29 de noviembre y 6 de diciembre de 2026, de 9:00 a 10:00 p. m. (Lima).
+S/ 50, con certificado. Inscripción por WhatsApp al 986 149 476.
 
 ## Tareas
 

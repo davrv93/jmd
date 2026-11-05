@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E01 · Dirige un video: tú apruebas, el agente hace</title>
+<!--
+  Recorrido guiado de una producción real hecha con un agente (reel de 30 s del instructor).
+  Todo lo que se ve es de esa producción: ideas, guion, planos, voz, música y video final.
+  El alumno no genera nada: aprueba cada etapa como en el estudio real. «Pedir cambios» explica
+  qué pasaría, sin fingir una respuesta del agente.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+body { overflow: hidden; }
+.esc { height: 100dvh; min-height: 0; }
+.esc-cuerpo { justify-content: flex-start; gap: 1.4vh; min-height: 0; }
+.esc-titulo { font-size: clamp(26px, 3.2vw, 44px); }
+.bajada { margin: 0; max-width: 68ch; color: var(--muted); font-size: clamp(14px, 1.25vw, 17px); line-height: 1.45; }
+.estudio { flex: 1; min-height: 0; display: grid; grid-template-columns: 190px minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr) auto;
+  background: var(--s1); border: 1px solid var(--line2); border-radius: 16px; box-shadow: var(--card-shadow); overflow: hidden; }
+.etapas { list-style: none; margin: 0; padding: 16px 12px; display: grid; align-content: start; gap: 2px; border-right: 1px solid var(--line); overflow: auto; }
+.etapas li { display: flex; align-items: center; gap: 9px; min-height: 34px; padding: 0 8px; border-radius: 9px; color: var(--muted); font-size: 14px; }
+.etapas i { width: 10px; height: 10px; flex: none; border-radius: 50%; border: 1.5px solid var(--line2); }
+.etapas .hecha { color: var(--fg); }
+.etapas .hecha i { background: var(--ok); border-color: var(--ok); }
+.etapas .ahora { color: var(--fg); font-weight: 700; background: var(--accent-bg); }
+.etapas .ahora i { background: var(--accent); border-color: var(--accent); }
+.centro { min-width: 0; min-height: 0; overflow: auto; padding: 20px 22px; }
+.centro h2 { margin: 0 0 12px; font-size: 20px; letter-spacing: -.01em; }
+.pedido { margin: 0; padding: 18px 20px; border-radius: 12px; background: var(--s2); font: 16px/1.55 var(--mono); }
+.ideas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.idea { display: grid; align-content: start; gap: 8px; padding: 16px; border: 1px solid var(--line2); border-radius: 12px; }
+.idea.elegida { border-color: var(--accent); background: var(--accent-bg); }
+.idea b { font-size: 17px; line-height: 1.2; }
+.idea p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.idea em { justify-self: start; padding: 3px 9px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-style: normal; font-weight: 700; }
+.guion { list-style: none; margin: 0; padding: 0; display: grid; }
+.guion li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15.5px; line-height: 1.45; }
+.guion span { color: var(--muted); font: 13px/1.7 var(--mono); }
+.planos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.plano { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px; text-align: left; color: var(--fg);
+  background: var(--s1); border: 1px solid var(--line2); border-radius: 12px; font: inherit; cursor: pointer; }
+.plano:hover { border-color: var(--accent); }
+.hoja { display: flex; flex-direction: column; justify-content: space-between; aspect-ratio: 9 / 16; padding: 7px; overflow: hidden;
+  background: #f2e9d5; color: #29231a; border-radius: 6px; font-size: 9.5px; line-height: 1.25; }
+.hoja b { font-size: 10.5px; }
+.plano strong { display: block; font-size: 14px; }
+.plano small { display: block; margin-top: 4px; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.audios { display: grid; gap: 16px; max-width: 520px; }
+.audios b { display: block; margin-bottom: 6px; font-size: 15px; }
+audio { display: block; width: 100%; height: 42px; }
+video, .detalle img { display: block; max-height: min(52dvh, 480px); max-width: 100%; border-radius: 12px; background: #000; }
+.detalle { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: start; }
+.detalle p { margin: 0 0 12px; font-size: 15px; line-height: 1.5; }
+.detalle b { display: block; font-size: 13px; color: var(--muted); }
+.fin { display: grid; gap: 12px; max-width: 60ch; font-size: 16px; line-height: 1.5; }
+.fin ul { margin: 0; padding-left: 20px; }
+.sala { min-width: 0; padding: 18px; border-left: 1px solid var(--line); display: grid; align-content: start; gap: 10px; overflow: auto; }
+.sala h3 { margin: 0; font-size: 20px; line-height: 1.2; letter-spacing: -.01em; }
+.sala p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.sala textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line2); border-radius: 10px; background: var(--s2); color: var(--fg); font: 14px/1.4 inherit; resize: vertical; }
+.boton { min-height: 46px; padding: 0 16px; border: 1px solid var(--line2); border-radius: 11px; background: var(--s1); color: var(--fg); font: 600 15px/1 inherit; cursor: pointer; }
+.boton:hover { border-color: var(--accent); }
+.boton.principal { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.boton:focus-visible, .plano:focus-visible, .sala textarea:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.agente { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 10px 18px; border-top: 1px solid var(--line); background: var(--s2); font-size: 15px; line-height: 1.4; }
+.agente b { flex: none; }
+.agente i { width: 9px; height: 9px; flex: none; border-radius: 50%; background: var(--ok); }
+.agente.trabaja i { background: var(--info); animation: pulso 1.4s ease-in-out infinite; }
+@keyframes pulso { 50% { opacity: .3; } }
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .esc { height: auto; }
+  .estudio { grid-template-columns: 1fr; grid-template-rows: none; }
+  .etapas { grid-template-columns: repeat(4, minmax(0, 1fr)); border-right: 0; border-bottom: 1px solid var(--line); }
+  .etapas li { font-size: 12px; padding: 0 4px; }
+  .sala { border-left: 0; border-top: 1px solid var(--line); }
+  .ideas, .planos { grid-template-columns: 1fr; }
+  .detalle { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .agente.trabaja i { animation: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab"><span class="esc-fase" data-ph="ec">Experiencia</span><span class="esc-num">JUEVES · S3 · E01</span></header>
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo">Dirige un video: tú apruebas, <em>el agente hace</em>.</h1>
+    <p class="bajada">Este es un video real de 30 segundos hecho con un agente de IA. Recórrelo como lo hizo el instructor: una frase al inicio y una aprobación por etapa.</p>
+    <section class="estudio" aria-label="Estudio de producción">
+      <ol class="etapas" id="etapas" aria-label="Etapas"></ol>
+      <div class="centro" id="centro" tabindex="-1"></div>
+      <aside class="sala" id="sala" aria-live="polite"></aside>
+      <footer class="agente" id="agente" role="status"><i aria-hidden="true"></i><b>Tu agente</b><span id="dice"></span></footer>
+    </section>
+  </main>
+</div>
+<script>
+const ETAPAS = ["Investigación", "Propuesta", "Guion", "Escenas", "Voz y música", "Edición", "Video", "Publicar"];
+const GUION = [
+  ["0:00–0:04", "Publicar reels todos los días te quita horas.", "Un calendario se llena de reels pendientes; la palabra «horas» crece."],
+  ["0:04–0:09", "Mira esto: le das una idea a un agente, y OpenMontage arma el flujo.", "Una burbuja de chat con la idea; al enviarse, una línea de luz recorre el teléfono."],
+  ["0:09–0:16", "Propone, escribe el guion, crea voz y escenas, y te pide aprobar cada paso.", "La pantalla real del estudio; las etapas se encienden una por una."],
+  ["0:16–0:21", "De un video largo, también puede sacar varios clips para redes.", "Un video horizontal se parte en tres reels verticales que suben."],
+  ["0:21–0:27", "Aprende a montarlo: cuatro sesiones en vivo, domingos a las nueve de la noche.", "Las cuatro fechas del curso: 15, 22 y 29 de noviembre y 6 de diciembre."],
+  ["0:27–0:30", "Empieza el quince de noviembre. Inscríbete ya, con JMD Learning.", "Cierre con el logo de JMD Learning y un código QR de inscripción."],
+];
+const IDEAS = [
+  ["Detrás del reel", "Mira cómo se arma solo", "La pantalla real del estudio, etapas que se encienden y un reel que aparece en un teléfono."],
+  ["Horas contra minutos", "Publicar reels te quita horas", "Pantalla dividida: edición a mano contra el flujo con agente."],
+  ["No lo edites, dirígelo", "Tu nuevo editor no tiene botones", "Letras grandes sobre un chat real con el agente."],
+];
+// Cada paso: etapa activa, lo que dice el agente, la pregunta y su botón.
+const PASOS = [
+  { etapa: -1, dice: "Espero tu pedido.", titulo: "Todo empieza con una frase", texto: "No abres un editor. Le escribes al agente qué video quieres.", boton: "Enviar al agente" },
+  { etapa: 1, dice: "Investigué el tema y te propongo 3 ideas. Recomiendo «Detrás del reel». Costo estimado: US$ 0,15.", titulo: "¿Seguimos con esta idea?", texto: "Revisa el concepto y el costo. Todavía no se ha gastado nada.", boton: "Aprobar y seguir a Guion" },
+  { etapa: 2, dice: "El guion tiene 6 frases y dura 30 segundos.", titulo: "¿Te gusta el guion?", texto: "Es lo que dirá la voz. Cambiarlo ahora no cuesta nada.", boton: "Aprobar y seguir a Escenas" },
+  { etapa: 3, dice: "Dividí el video en 6 planos. Toca un plano para ver su detalle.", titulo: "¿Apruebas las escenas?", texto: "Son bocetos: dicen qué se verá en cada momento. Después se generan la voz y la música.", boton: "Aprobar y seguir a Voz y música" },
+  { etapa: 4, dice: "Ya tengo la voz y la música. Escúchalas antes de armar el video.", titulo: "¿Suena bien?", texto: "Escucha la voz y la música. Aquí todavía puedes pedir otra toma.", boton: "Aprobar y armar el video" },
+  { etapa: 6, dice: "Armé el video: 30 segundos, vertical.", titulo: "¿Apruebas el video final?", texto: "Míralo completo. Al aprobar, queda listo para publicar.", boton: "Aprobar" },
+  { etapa: 8, dice: "Producción terminada.", titulo: "Así se dirige un video", texto: "Si ya entendiste el flujo, pulsa «Lo logré».", boton: "Volver a empezar" },
+];
+let paso = 0;
+let pidiendo = false;
+let nota = "";
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs = {}, ...hijos) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null) continue;
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  n.append(...hijos.flat().filter((h) => h != null));
+  return n;
+}
+function hoja(i) { return el("span", { class: "hoja", "aria-hidden": "true" }, el("span", {}, `Plano ${i + 1}`), el("b", {}, GUION[i][1]), el("span", {}, "Boceto")); }
+function detalle(i) {
+  $("centro").replaceChildren(el("h2", {}, `Plano ${i + 1} · ${GUION[i][0]}`), el("div", { class: "detalle" },
+    el("img", { src: `p${i + 1}.webp`, alt: `Plano ${i + 1} tal como quedó en el video`, width: "270", height: "480" }),
+    el("div", {}, el("b", {}, "Voz"), el("p", {}, GUION[i][1]), el("b", {}, "Qué se ve"), el("p", {}, GUION[i][2]),
+      el("p", {}, "La imagen muestra cómo quedó este plano al final. En la etapa de escenas solo existe el boceto."),
+      el("button", { class: "boton", type: "button", onclick: pintar }, "Volver a los planos"))));
+  $("centro").focus();
+}
+function contenido() {
+  if (paso === 0) return [el("h2", {}, "El pedido"), el("p", { class: "pedido" }, "Haz un video de 30 segundos sobre mi curso: muestra cómo se automatizan los reels con un agente.")];
+  if (paso === 1) return [el("h2", {}, "Tres ideas para elegir"), el("div", { class: "ideas" }, IDEAS.map(([t, g, v], i) =>
+    el("article", { class: `idea${i ? "" : " elegida"}` }, i ? null : el("em", {}, "Recomendada"), el("b", {}, t), el("p", {}, `«${g}»`), el("p", {}, v))))];
+  if (paso === 2) return [el("h2", {}, "El guion"), el("ol", { class: "guion" }, GUION.map(([t, voz]) => el("li", {}, el("span", {}, t), voz)))];
+  if (paso === 3) return [el("h2", {}, "Los planos"), el("div", { class: "planos" }, GUION.map(([t, , ve], i) =>
+    el("button", { class: "plano", type: "button", "aria-label": `Ver detalle del plano ${i + 1}`, onclick: () => detalle(i) },
+      hoja(i), el("span", {}, el("strong", {}, `Plano ${i + 1} · ${t}`), el("small", {}, ve)))))];
+  if (paso === 4) return [el("h2", {}, "La voz y la música"), el("div", { class: "audios" },
+    el("div", {}, el("b", {}, "Voz (6 frases)"), el("audio", { src: "voz.mp3", controls: "", preload: "metadata", "aria-label": "Voz del video" })),
+    el("div", {}, el("b", {}, "Música"), el("audio", { src: "musica.mp3", controls: "", preload: "metadata", "aria-label": "Música del video" })))];
+  if (paso === 5) return [el("h2", {}, "El video final"), el("video", { src: "video.mp4", controls: "", playsinline: "", preload: "metadata", "aria-label": "Video final de 30 segundos" })];
+  return [el("h2", {}, "Lo que acabas de hacer"), el("div", { class: "fin" },
+    el("ul", {}, el("li", {}, "Escribiste 1 pedido."), el("li", {}, "Diste 5 aprobaciones: idea, guion, escenas, voz y música, y video."),
+      el("li", {}, "El agente investigó, escribió, generó la voz y la música, y armó el video."), el("li", {}, "Costo estimado de este video: US$ 0,15.")),
+    el("p", {}, "Hoy harás lo mismo con tu propia pieza: tú decides qué se hace y cómo debe verse."))];
+}
+function pintar() {
+  const p = PASOS[paso];
+  $("etapas").replaceChildren(...ETAPAS.map((n, i) => el("li", { class: i < p.etapa ? "hecha" : i === p.etapa ? "ahora" : "", "aria-current": i === p.etapa ? "step" : null }, el("i", { "aria-hidden": "true" }), n)));
+  $("centro").replaceChildren(...contenido());
+  $("centro").scrollTop = 0;
+  $("agente").classList.remove("trabaja");
+  $("dice").textContent = p.dice;
+  const campo = el("textarea", { rows: "3", maxlength: "400", "aria-label": "Qué quieres cambiar", placeholder: "Ejemplo: usa un tono más cercano" });
+  campo.value = nota;
+  campo.addEventListener("input", () => { nota = campo.value; });
+  $("sala").replaceChildren(el("h3", {}, pidiendo ? "¿Qué quieres cambiar?" : p.titulo), ...[].concat(pidiendo
+    ? [campo, el("button", { class: "boton principal", type: "button", onclick: () => {
+        if (!nota.trim()) { campo.focus(); return; }
+        pidiendo = false; nota = ""; pintar();
+        $("dice").textContent = "En el estudio real aplico tu cambio y vuelvo a preguntarte. Este recorrido usa un video ya terminado: sigue con la versión original.";
+      } }, "Enviar cambios"), el("button", { class: "boton", type: "button", onclick: () => { pidiendo = false; pintar(); } }, "Volver")]
+    : [el("p", {}, p.texto), el("button", { class: "boton principal", type: "button", onclick: avanzar }, p.boton),
+      paso > 0 && paso < 6 ? el("button", { class: "boton", type: "button", onclick: () => { pidiendo = true; pintar(); } }, "Pedir cambios") : null]).filter(Boolean));
+}
+function avanzar() {
+  document.querySelectorAll("audio, video").forEach((m) => m.pause());
+  const siguiente = paso === 6 ? 0 : paso + 1;
+  if (siguiente === 0 || siguiente === 6) { paso = siguiente; pintar(); return; }
+  // El agente tarda: se muestra trabajando antes de la siguiente pregunta.
+  $("agente").classList.add("trabaja");
+  $("dice").textContent = "Trabajando…";
+  $("sala").replaceChildren(el("h3", {}, "Tu agente está trabajando"), el("p", {}, "En el estudio real esto toma de segundos a unos minutos."));
+  setTimeout(() => { paso = siguiente; pintar(); $("sala").querySelector("button")?.focus(); }, 1100);
+}
+pintar();
+</script>
+</body>
+</html>
