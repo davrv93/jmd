@@ -2,7 +2,7 @@
 id: om-03
 title: "Sesión 3 · Escenas y video con IA"
 published: true
-starts_at: 2026-11-29T20:30:00-05:00
+starts_at: 2026-11-29T21:00:00-05:00
 objectives:
   - id: om-03-o1
     title: Generar escenas con video por IA y controlar su costo

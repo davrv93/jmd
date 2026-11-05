@@ -2,7 +2,7 @@
 id: om-04
 title: "Sesión 4 · Tu video final y su copy"
 published: true
-starts_at: 2026-12-06T20:30:00-05:00
+starts_at: 2026-12-06T21:00:00-05:00
 objectives:
   - id: om-04-o1
     title: Renderizar tu video final y escribir su copy

@@ -2,7 +2,7 @@
 id: om-02
 title: "Sesión 2 · Guion, voz y música"
 published: true
-starts_at: 2026-11-22T20:30:00-05:00
+starts_at: 2026-11-22T21:00:00-05:00
 objectives:
   - id: om-02-o1
     title: Escribir un guion por escenas y generar voz y música

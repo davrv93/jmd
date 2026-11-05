@@ -1,10 +1,10 @@
 #!/bin/sh
-# Mueve Crea contenido con OpenMontage a los domingos de 8:30 a 9:30 pm. Corre desde el Mac. No reinicia el LMS.
+# Mueve Crea contenido con OpenMontage a los domingos de 9:00 a 10:00 pm. Corre desde el Mac. No reinicia el LMS.
 set -e
 K=~/Downloads/curdilmer.pem
 cd ~/Documents/jmd
 git add lms/content/courses/crea-contenido-openmontage lms/scripts/mover-openmontage.sh
-git commit -q -m "feat(openmontage): pasa el curso a domingos de 8:30 a 9:30 pm
+git commit -q -m "feat(openmontage): pasa el curso a domingos de 9:00 a 10:00 pm
 
 Domingos 15, 22 y 29 de noviembre y 6 de diciembre.
 

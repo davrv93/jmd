@@ -2,7 +2,7 @@
 id: om-01
 title: "Sesión 1 · Instala y entiende el flujo"
 published: true
-starts_at: 2026-11-15T20:30:00-05:00
+starts_at: 2026-11-15T21:00:00-05:00
 objectives:
   - id: om-01-o1
     title: Instalar OpenMontage y conectar tu asistente de IA
