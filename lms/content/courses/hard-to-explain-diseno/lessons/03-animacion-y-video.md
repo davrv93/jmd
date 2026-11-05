@@ -54,6 +54,21 @@ materials:
     kind: file
     file: materials/demo-estudio-con-agente.mp4
     objective_ids: [de-03-o3]
+  - id: de-03-estudio-video
+    title: "Video final del recorrido «Dirige un video» (30 s)"
+    kind: file
+    file: materials/estudio/video-final.mp4
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-voz
+    title: "Voz del recorrido «Dirige un video»"
+    kind: file
+    file: materials/estudio/voz.mp3
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-musica
+    title: "Música del recorrido «Dirige un video»"
+    kind: file
+    file: materials/estudio/musica.mp3
+    objective_ids: [de-03-o3]
 cycle:
   - id: ver
     title: Ver «Difícil de explicar» en pantalla
