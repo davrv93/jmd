@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Panel lado a lado</title><link rel="stylesheet" href="/estilo.css"></head>
+<body><div class="marco">
+<p class="k">JMD Learning · Charla 2 de seguridad · Solo localhost, datos ficticios</p>
+<h1>Lo que ve quien inspecciona</h1>
+<div class="fila"><a id="ir-directo" target="_blank" rel="noopener">Abrir cliente sin gateway</a><a id="ir-gateway" target="_blank" rel="noopener">Abrir cliente con gateway</a><button class="sec" id="reiniciar">Reiniciar datos</button></div>
+
+<div class="c"><h2>Simulaciones</h2><div id="botones" class="pila"></div></div>
+<div id="resultado" class="pila" aria-live="polite"></div>
+
+<h2>Tráfico en vivo</h2>
+<div class="par">
+  <div class="c mal"><h2>Sin gateway</h2><pre id="t-directo" class="vacio">Sin tráfico todavía</pre><ul class="pistas" id="p-directo"></ul></div>
+  <div class="c"><h2>Con gateway</h2><pre id="t-gateway" class="vacio">Sin tráfico todavía</pre><ul class="pistas" id="p-gateway"></ul></div>
+</div>
+
+<div class="c"><h2>Registro del gateway</h2><pre id="registro" class="vacio">Sin eventos</pre></div>
+
+<div class="c"><h2>Quien controla el navegador lo ve todo</h2>
+<p>Pega esto en la consola de la página del cliente con gateway y paga una factura. Verás el mensaje antes de cifrar.</p>
+<pre id="gancho">const original = crypto.subtle.encrypt.bind(crypto.subtle);
+crypto.subtle.encrypt = (alg, clave, datos) => {
+  console.log("Antes de cifrar:", new TextDecoder().decode(datos));
+  return original(alg, clave, datos);
+};</pre></div>
+</div><script src="/panel.js"></script></body></html>
