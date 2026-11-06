@@ -1,8 +1,7 @@
 ---
 id: pn-01
 title: "Taller gratuito · Tu tienda virtual con WhatsApp, en internet"
-published: true
-starts_at: 2026-11-06T16:00:00-05:00
+published: false
 objectives:
   - id: pn-01-o1
     title: Ver cómo funciona una tienda virtual conectada a WhatsApp
