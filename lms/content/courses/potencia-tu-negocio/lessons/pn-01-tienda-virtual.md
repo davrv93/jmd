@@ -22,7 +22,7 @@ cycle:
     title: Ver el taller
     tool: lms
     phase: experiencia
-    description: Acompáñanos en vivo, unos 40 minutos. No necesitas saber programar.
+    description: Acompáñanos en vivo, unos 25 minutos. No necesitas saber programar.
     check: Viste el taller
   - id: escribir
     title: Escríbenos
