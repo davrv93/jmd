@@ -254,6 +254,14 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/musica", s.authed(s.liveMusicaCrear))
 	mux.Handle("GET /api/v1/live/{lesson}/musica/{id}", s.authed(s.liveMusicaEstado))
 	mux.Handle("GET /api/v1/live/{lesson}/musica/{id}/mp3", s.authed(s.liveMusicaMP3))
+	// Veo con presupuesto: tope por alumno, ampliación a pedido y tope de clase (ver live_veo.go).
+	mux.Handle("GET /api/v1/live/{lesson}/veo", s.authed(s.liveVeoCuenta))
+	mux.Handle("POST /api/v1/live/{lesson}/veo", s.authed(s.liveVeoCrear))
+	mux.Handle("POST /api/v1/live/{lesson}/veo/ampliar", s.authed(s.liveVeoSolicitar))
+	mux.Handle("GET /api/v1/live/{lesson}/veo/solicitudes", s.authed(s.staff(s.liveVeoSolicitudes)))
+	mux.Handle("POST /api/v1/live/{lesson}/veo/ampliar/{alumno}", s.authed(s.staff(s.liveVeoAmpliar)))
+	mux.Handle("GET /api/v1/live/{lesson}/veo/{id}", s.authed(s.liveVeoEstado))
+	mux.Handle("GET /api/v1/live/{lesson}/veo/{id}/mp4", s.authed(s.liveVeoMP4))
 	// Sesión 3 del G5: prompt del alumno → reglas + Gemini → su agente en el aula (ver live_prompt.go y live_agente.go).
 	mux.Handle("GET /api/v1/live/{lesson}/mi-robo", s.authed(s.liveMiRobo))
 	mux.Handle("POST /api/v1/live/{lesson}/mi-robo", s.authed(s.liveMiRoboSubir))

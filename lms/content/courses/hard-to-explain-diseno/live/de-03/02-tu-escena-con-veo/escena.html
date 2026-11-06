@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>E02 · Tu escena con Veo</title>
+<link rel="stylesheet" href="../../comun/escena.css"><style id="esc-propio">
+.esc{min-height:100dvh}.esc-cuerpo{justify-content:flex-start;gap:16px}.esc-titulo{font-size:clamp(28px,3.6vw,48px)}.bajada{margin:0;color:var(--muted);font-size:18px;line-height:1.4}
+.columnas{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:20px;align-items:start}.tarjeta{background:var(--s1);border:1px solid var(--line2);border-radius:16px;padding:20px;min-width:0}
+h2{font-size:20px;margin:0 0 12px}label{display:grid;gap:7px;font-size:14px;font-weight:700}textarea{width:100%;height:132px;resize:vertical;border:1px solid var(--line2);background:var(--s2);color:var(--fg);border-radius:9px;padding:12px;font:15px/1.45 system-ui}
+button{min-height:44px;padding:11px 16px;border:1px solid var(--accent);border-radius:10px;background:var(--accent);color:var(--on-accent);font:750 15px system-ui;cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button.sec{background:var(--s1);color:var(--fg);border-color:var(--line2)}
+a:focus-visible,button:focus-visible,textarea:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:3px}[hidden]{display:none!important}
+.acciones{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}.nota{font-size:13px;line-height:1.45;color:var(--muted);margin:10px 0 0}
+.formato{display:flex;gap:8px;margin-top:12px;border:0;padding:0}.formato legend{font-size:14px;font-weight:700;padding:0;margin-bottom:7px}.formato label{display:flex;align-items:center;gap:7px;min-height:44px;padding:0 14px;border:1px solid var(--line2);border-radius:10px;font-weight:600;cursor:pointer}.formato label:has(input:checked){border-color:var(--accent);background:var(--accent-bg)}
+/* Contador: lo que queda del presupuesto del alumno, siempre a la vista. */
+.cupo{display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:14px;background:var(--accent-bg);border:1px solid var(--line2)}
+.cupo-num{font:800 44px/1 system-ui;font-variant-numeric:tabular-nums;color:var(--accent);min-width:1.1ch;text-align:center}
+.cupo-txt{flex:1;min-width:0}.cupo-txt b{display:block;font-size:17px}.cupo-txt span{font-size:13.5px;color:var(--muted);line-height:1.35}
+.cupo-pts{display:flex;gap:6px;flex-wrap:wrap;max-width:120px}.cupo-pts i{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent);background:var(--accent)}.cupo-pts i.usado{background:transparent;opacity:.45}
+.cupo.agotado{background:var(--warn-bg)}.cupo.agotado .cupo-num{color:var(--warn)}.cupo.agotado .cupo-pts i{border-color:var(--warn)}
+.ampliar{margin-top:12px;padding:14px 16px;border-radius:12px;border:1px dashed var(--line2);display:flex;gap:12px;align-items:center;flex-wrap:wrap}.ampliar p{flex:1;min-width:180px;margin:0;font-size:14px;line-height:1.4}
+.visor{display:grid;place-items:center;aspect-ratio:9/16;max-height:52vh;margin:0 auto;border-radius:14px;background:var(--s2);border:1px solid var(--line2);overflow:hidden;text-align:center;padding:18px;color:var(--muted);font-size:14.5px;line-height:1.45}
+.visor.ancho{aspect-ratio:16/9;max-height:none;width:100%}.visor.con-video{padding:0;background:#000}.visor video{width:100%;height:100%;object-fit:contain;display:block}
+.espera{display:grid;gap:10px;justify-items:center}.espera b{font:800 30px/1 system-ui;font-variant-numeric:tabular-nums;color:var(--fg)}.riel{width:160px;height:6px;border-radius:3px;background:var(--s3);overflow:hidden}.riel i{display:block;height:100%;width:40%;border-radius:3px;background:var(--accent)}
+@media(prefers-reduced-motion:no-preference){.riel i{animation:va 1.4s ease-in-out infinite alternate}@keyframes va{from{transform:translateX(-20%)}to{transform:translateX(170%)}}}
+#estado{min-height:20px;font-size:14px;color:var(--accent);margin:0}#estado.mal{color:var(--bad)}
+.profe{border:1px solid var(--line2);border-radius:14px;background:var(--s1);padding:4px 18px}.profe summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:10px;font-weight:750;font-size:15px}.profe summary em{font-style:normal;padding:3px 9px;border-radius:999px;background:var(--warn-bg);color:var(--warn);font-size:12.5px}
+.profe table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 12px}.profe th{text-align:left;font-size:12px;color:var(--muted);font-weight:700;padding:6px 8px 6px 0;border-bottom:1px solid var(--line2)}.profe td{padding:8px 8px 8px 0;border-bottom:1px solid var(--line);vertical-align:middle}.profe td.n{font-variant-numeric:tabular-nums;white-space:nowrap}.profe tr.pide td:first-child{font-weight:750}.profe .pidio{color:var(--warn);font-weight:700;font-size:12.5px}
+.profe button{min-height:36px;padding:6px 12px;font-size:13px}.profe .total{font-size:13.5px;color:var(--muted);margin:10px 0 4px}.tabla-caja{overflow-x:auto}
+@media(max-width:820px){.columnas{grid-template-columns:1fr;gap:12px}.esc-titulo{font-size:27px}.bajada{font-size:14.5px}.tarjeta{padding:14px}.cupo-num{font-size:36px}.visor{max-height:46vh}textarea{height:104px;font-size:14px}}
+</style></head><body><div class="esc">
+<header class="esc-cab"><span class="esc-fase" data-ph="ea">Experimenta · video con IA</span><span class="esc-num">SESIÓN 3 · E02</span></header>
+<main class="esc-cuerpo"><h1 class="esc-titulo">Tu escena. <em>Generada con Veo.</em></h1><p class="bajada">Describe un plano de 4 segundos. Veo lo genera aquí mismo. Tienes pocos intentos: piensa antes de enviar.</p>
+<div class="columnas">
+<section class="tarjeta"><div class="cupo" id="cupo" aria-live="polite"><span class="cupo-num" id="quedan">–</span><span class="cupo-txt"><b id="cupoTitulo">Consultando tus intentos…</b><span id="cupoDetalle">Cada generación gasta saldo real de la clase.</span></span><span class="cupo-pts" id="puntos" aria-hidden="true"></span></div>
+<div class="ampliar" id="ampliar" hidden><p id="ampliarTexto">Ya usaste tus intentos. Si necesitas uno más, pídeselo a tu instructor.</p><button id="pedir" class="sec" type="button">Solicitar ampliación</button></div>
+<label style="margin-top:16px">Tu plano · sujeto, acción, lugar, luz y cámara<textarea id="pedido" maxlength="1500" spellcheck="false">Un colibrí verde esmeralda suspendido frente a una flor roja, alas en movimiento rápido, jardín al amanecer con luz dorada lateral, fondo desenfocado. Plano cercano, cámara fija, cámara lenta, estilo documental de naturaleza.</textarea></label>
+<fieldset class="formato"><legend>Formato</legend><label><input type="radio" name="formato" value="9:16" checked>Vertical</label><label><input type="radio" name="formato" value="16:9">Horizontal</label></fieldset>
+<div class="acciones"><button id="generar" type="button" disabled>Generar con Veo</button><button id="copiar" class="sec" type="button">Copiar pedido</button></div>
+<p class="nota" id="notaModelo">Video de 4 segundos, 720p, sin sonido. Un pedido rechazado por el proveedor no gasta intento.</p></section>
+<section class="tarjeta"><h2>Tu video</h2><div class="visor" id="visor"><span id="vacio">Tu escena aparecerá aquí. Veo tarda entre uno y tres minutos.</span></div>
+<div class="acciones"><a id="descargar" hidden download="mi-escena-veo.mp4" style="display:inline-block;padding:10px 14px;color:var(--accent);border:1px solid var(--accent);border-radius:9px;font-size:14px;font-weight:750;text-decoration:none">Descargar MP4</a></div>
+<p class="nota">Descárgalo: se conserva dos horas o hasta que el servidor se reinicie. Evidencia: captura de tu video y una frase sobre qué cambiarías en el siguiente intento.</p></section></div>
+<p id="estado" role="status" aria-live="polite"></p>
+<details class="profe" id="profe" hidden><summary>Instructor · presupuesto de Veo <em id="avisos" hidden></em></summary><p class="total" id="total"></p><div class="tabla-caja"><table><thead><tr><th>Alumno</th><th>Usados</th><th>Estado</th><th>Ampliar</th></tr></thead><tbody id="filas"></tbody></table></div><p class="nota" id="sinFilas">Aún nadie generó ni pidió ampliación.</p></details>
+</main>
+<footer class="esc-pie"><span>PLANO → PEDIDO → VEO → MP4</span><span>VEO · OPENROUTER</span></footer></div>
+<script>
+const $=id=>document.getElementById(id),leccion=location.pathname.match(/\/live\/([^/]+)\//)?.[1],base='/api/v1/live/'+encodeURIComponent(leccion||'')+'/veo';
+let cuenta=null,ocupado=false,reloj=null;
+const crear=(tag,attrs={},...hijos)=>{const n=document.createElement(tag);for(const[k,v]of Object.entries(attrs))k==='class'?n.className=v:n.setAttribute(k,v);n.append(...hijos);return n};
+function estado(texto,mal=false){$('estado').textContent=texto;$('estado').classList.toggle('mal',mal)}
+async function api(url,options={}){const r=await fetch(url,{...options,credentials:'same-origin'});let data={};try{data=await r.json()}catch{}if(!r.ok){const e=Error(data.error?.message||'No se pudo consultar. Intenta de nuevo.');e.code=data.error?.code;e.status=r.status;throw e}return data}
+const formato=()=>document.querySelector('input[name=formato]:checked').value;
+
+function pintarCuenta(){
+  const c=cuenta;if(!c)return;
+  const agotado=c.quedan<=0,cerrada=c.clase_agotada&&!agotado;
+  $('quedan').textContent=c.quedan;
+  $('cupo').classList.toggle('agotado',agotado||cerrada);
+  $('cupoTitulo').textContent=agotado?'Sin intentos':c.quedan===1?'Te queda 1 intento':'Te quedan '+c.quedan+' intentos';
+  $('cupoDetalle').textContent=cerrada?'La clase ya usó todo su presupuesto de Veo. Avisa a tu instructor.':'Usaste '+c.usados+' de '+c.limite+'. Cada generación gasta saldo real de la clase.';
+  $('puntos').replaceChildren(...Array.from({length:Math.min(c.limite,12)},(_,i)=>crear('i',{class:i<c.limite-c.quedan?'usado':''})));
+  $('ampliar').hidden=!agotado;
+  $('ampliarTexto').textContent=c.solicitud?'Solicitud enviada. Cuando tu instructor la apruebe, tu contador sube solo.':'Ya usaste tus intentos. Si necesitas uno más, pídeselo a tu instructor.';
+  $('pedir').disabled=c.solicitud;$('pedir').textContent=c.solicitud?'Solicitud enviada':'Solicitar ampliación';
+  $('generar').disabled=ocupado||agotado||cerrada;
+  $('generar').textContent=ocupado?'Generando…':'Generar con Veo · '+c.segundos+' s';
+}
+async function leerCuenta(){
+  if(!leccion){estado('Abre esta ficha desde el LIVE.',true);return}
+  try{const antes=cuenta?.limite;cuenta=await api(base);pintarCuenta();
+    if(antes!=null&&cuenta.limite>antes)estado('Tu instructor amplió tus intentos: ahora tienes '+cuenta.quedan+'.');
+    if(cuenta.trabajo&&!ocupado){if(cuenta.trabajo.estado==='generando')seguir(cuenta.trabajo.id);else if(cuenta.trabajo.estado==='listo'&&!$('visor').classList.contains('con-video'))mostrar(cuenta.trabajo.id)}
+  }catch(e){if(!cuenta)estado(e.status===404?'Esta actividad aún no está activa en el servidor.':e.message,true)}
+}
+function mostrar(id){
+  const url=base+'/'+encodeURIComponent(id)+'/mp4',v=crear('video',{controls:'',playsinline:'',loop:'',muted:'',preload:'metadata','aria-label':'Tu escena generada con Veo'});
+  v.src=url;$('visor').classList.add('con-video');$('visor').replaceChildren(v);v.play().catch(()=>{});
+  $('descargar').href=url+'?descargar=1';$('descargar').hidden=false;
+}
+function esperar(inicio){
+  const tiempo=crear('b',{},'0:00');
+  $('visor').classList.remove('con-video');$('visor').replaceChildren(crear('div',{class:'espera'},tiempo,crear('span',{class:'riel'},crear('i')),crear('span',{},'Veo está generando tu escena. Suele tardar de uno a tres minutos.')));
+  clearInterval(reloj);reloj=setInterval(()=>{const s=Math.floor((Date.now()-inicio)/1000);tiempo.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},1000);
+}
+async function seguir(id){
+  ocupado=true;pintarCuenta();const inicio=Date.now();esperar(inicio);estado('Veo está generando. Puedes esperar aquí; no cierres la ficha.');
+  try{
+    while(Date.now()-inicio<540000){
+      const t=await api(base+'/'+encodeURIComponent(id));
+      if(t.estado==='listo'){mostrar(id);estado('Escena lista. Mírala, evalúa y descárgala.');return}
+      if(t.estado==='error')throw Error(t.mensaje||'No se pudo generar.');
+      await new Promise(r=>setTimeout(r,3000));
+    }
+    throw Error('La escena sigue pendiente. Recarga esta ficha para consultar de nuevo.');
+  }catch(e){$('visor').replaceChildren(crear('span',{},e.message));estado(e.message,true)}
+  finally{clearInterval(reloj);ocupado=false;await leerCuenta();pintarCuenta()}
+}
+$('visor').classList.toggle('ancho',false);
+for(const r of document.querySelectorAll('input[name=formato]'))r.addEventListener('change',()=>{if(!$('visor').classList.contains('con-video'))$('visor').classList.toggle('ancho',formato()==='16:9')});
+$('generar').addEventListener('click',async()=>{
+  if(ocupado||!cuenta)return;
+  const texto=$('pedido').value.trim();
+  if(texto.length<10){estado('Describe tu plano antes de generar.',true);return}
+  ocupado=true;pintarCuenta();estado('Enviando tu pedido a Veo…');
+  $('visor').classList.toggle('ancho',formato()==='16:9');
+  try{const t=await api(base,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:texto,formato:formato()})});await leerCuenta();await seguir(t.id)}
+  catch(e){ocupado=false;estado(e.message,true);await leerCuenta();pintarCuenta()}
+});
+$('pedir').addEventListener('click',async()=>{
+  $('pedir').disabled=true;
+  try{await api(base+'/ampliar',{method:'POST'});estado('Solicitud enviada a tu instructor.');await leerCuenta()}catch(e){estado(e.message,true);$('pedir').disabled=false}
+});
+$('copiar').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('pedido').value);estado('Pedido copiado.')}catch{estado('Selecciona el pedido y cópialo a mano.')}});
+
+// Panel del instructor: solo aparece si el servidor reconoce al usuario como personal.
+async function leerPanel(){
+  let d;try{d=await api(base+'/solicitudes')}catch{return false}
+  $('profe').hidden=false;
+  const piden=d.alumnos.filter(a=>a.pidio).length;
+  $('avisos').hidden=!piden;$('avisos').textContent=piden===1?'1 solicitud':piden+' solicitudes';
+  const dolares=n=>'US$ '+n.toFixed(2).replace('.',',');
+  $('total').textContent='Clase: '+d.total+' de '+d.tope_total+' generaciones usadas'+(d.costo_clip?' · gastado ≈ '+dolares(d.total*d.costo_clip)+' de '+dolares(d.tope_total*d.costo_clip)+' como máximo':'')+' · tope por alumno: '+d.tope+'.';
+  $('sinFilas').hidden=d.alumnos.length>0;
+  $('filas').replaceChildren(...d.alumnos.map(a=>{
+    const dar=n=>{const b=crear('button',{class:'sec',type:'button','aria-label':'Dar '+n+' más a '+a.nombre},'+'+n);b.addEventListener('click',async()=>{b.disabled=true;try{await api(base+'/ampliar/'+encodeURIComponent(a.alumno),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({extra:n})})}catch(e){estado(e.message,true)}leerPanel()});return b};
+    return crear('tr',{class:a.pidio?'pide':''},crear('td',{},a.nombre||a.alumno),crear('td',{class:'n'},a.usados+' de '+a.limite),crear('td',{},a.pidio?crear('span',{class:'pidio'},'Pide ampliar'):a.usados>=a.limite?'Agotó':'En curso'),crear('td',{},crear('span',{style:'display:flex;gap:6px'},dar(1),dar(3))));
+  }));
+  return true;
+}
+(async()=>{await leerCuenta();setInterval(()=>{if(!document.hidden&&!ocupado)leerCuenta()},8000);if(leccion&&await leerPanel())setInterval(()=>{if(!document.hidden)leerPanel()},6000)})();
+</script></body></html>
