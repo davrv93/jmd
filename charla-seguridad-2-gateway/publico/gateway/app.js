@@ -56,7 +56,7 @@ async function llamar(o, d = {}, reintento = true) {
   }
   const abierto = await crypto.subtle.decrypt({ name: "AES-GCM", iv: deB64(j.i), additionalData: utf8.encode(`v1|${sesion.id}|respuesta|${n}`) }, sesion.clave, deB64(j.c));
   const m = JSON.parse(new TextDecoder().decode(abierto));
-  sesion.ruta = m.r; // la ruta rota: el gateway dice cuál toca ahora
+  if (m.r) sesion.ruta = m.r; // la ruta rota: el gateway dice cuál toca ahora
   $("salida").textContent = `POST ${sesion.ruta} → 200 (descifrado en el navegador)\n${JSON.stringify(m.d, null, 2)}`;
   return m.d;
 }
@@ -83,7 +83,7 @@ $("entrar").onsubmit = async (e) => {
   const sobre = await sellar(k, JSON.stringify({ u: $("usuario").value, p: $("clave").value, n, t: Date.now() }), "v1|entrada|peticion");
   const r = await fetch(entrada, { method: "POST", body: JSON.stringify({ ...sobre, e: publica }) });
   const j = await r.json();
-  if (r.status !== 200) { $("aviso").textContent = "Usuario o contraseña incorrectos."; return; }
+  if (r.status !== 200) { $("aviso").textContent = r.status === 429 ? "Demasiados intentos. Espera un minuto." : "Usuario o contraseña incorrectos."; return; }
   const abierto = await abrir(k, j, `v1|entrada|respuesta|${n}`);
   sesion = { id: abierto.s, ruta: abierto.r, clave: await crypto.subtle.importKey("raw", deB64(abierto.k), "AES-GCM", false, ["encrypt", "decrypt"]) };
   const usuario = $("usuario").value;
@@ -94,3 +94,5 @@ $("entrar").onsubmit = async (e) => {
   if (usuario !== "caja") await listar();
   else $("quien").textContent = "Sesión de caja";
 };
+
+$("salir").onclick = async () => { await llamar("x1"); location.reload(); };

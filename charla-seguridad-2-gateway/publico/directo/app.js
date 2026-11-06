@@ -38,3 +38,6 @@ $("entrar").onsubmit = async (e) => {
   $("quien").textContent = `Facturas de ${yo.nombre} · cliente ${yo.clienteId}`;
   await listar();
 };
+
+// Solo borra el token de este navegador: el servidor lo sigue aceptando.
+$("salir").onclick = () => { localStorage.removeItem("token"); location.reload(); };

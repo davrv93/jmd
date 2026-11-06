@@ -87,6 +87,35 @@ async function refrescar() {
     $("registro").textContent = r.length ? r.slice(0, 12).map((l) => `${l.hora.slice(11, 19)} ${l.decision} ${l.status} ${l.usuario ?? "-"} ${l.op ?? "-"} ${l.motivo ?? l.ruta_interna ?? ""} [${l.ref}]`).join("\n") : "Sin eventos";
   } catch { /* el servidor se detuvo */ }
 }
+function celda(r) {
+  const estado = r.ok === null ? "pendiente" : r.ok ? "pasa" : "falla";
+  const c = el("div", null, "res " + estado);
+  c.append(el("b", { pasa: "Pasa", falla: "Falla", pendiente: "En producción" }[estado]), el("span", r.evidencia));
+  return c;
+}
+async function auditar() {
+  const lista = $("a-lista");
+  $("a-repetir").disabled = true;
+  $("a-antes").textContent = "…";
+  $("a-despues").textContent = "…";
+  lista.replaceChildren(el("p", "Auditando las dos tiendas…", "aviso-aud"));
+  const r = await (await fetch("/api/auditoria", { method: "POST" })).json().catch(() => null);
+  $("a-repetir").disabled = false;
+  if (!r || r.error) { lista.replaceChildren(el("p", "No se pudo auditar: " + (r?.error ?? "sin respuesta"), "leccion")); return; }
+  $("a-antes").textContent = `${r.puntaje.antes} de ${r.puntaje.total}`;
+  $("a-despues").textContent = `${r.puntaje.despues} de ${r.puntaje.total}`;
+  lista.replaceChildren(...r.controles.map((c, k) => {
+    const fila = el("div", null, "control entra");
+    fila.style.animationDelay = `${k * 70}ms`;
+    const t = el("div", null, "ctl");
+    t.append(el("small", c.owasp), document.createTextNode(c.titulo));
+    fila.append(t, celda(c.antes), celda(c.despues));
+    return fila;
+  }));
+}
+$("auditar").onclick = () => { $("auditoria").showModal(); auditar(); };
+$("a-repetir").onclick = auditar;
+$("a-cerrar").onclick = () => $("auditoria").close();
 $("ver-trafico").onclick = () => { $("trafico").showModal(); refrescar(); };
 $("t-cerrar").onclick = () => $("trafico").close();
 

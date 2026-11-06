@@ -27,6 +27,8 @@ export function crearConfig(cambios = {}) {
       ventanaMs: numero("VENTANA_LIMITE_MS", 10_000),
     },
     ventanaPeticionMs: numero("VENTANA_PETICION_MS", 30_000),
+    intentosLogin: 5, // fallos seguidos antes de bloquear ese usuario
+    bloqueoMs: numero("BLOQUEO_MS", 60_000),
     sesionMs: 30 * 60_000,
     cuerpoMaxBytes: 16 * 1024,
     timeoutBackendMs: 3000,

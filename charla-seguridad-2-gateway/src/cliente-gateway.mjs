@@ -46,7 +46,7 @@ export class ClienteGateway {
 
   abrir(sobre, n) {
     const claro = JSON.parse(descifrar(this.clave, sobre, aadRespuesta(this.sesion, n)));
-    this.ruta = claro.r;
+    if (claro.r) this.ruta = claro.r;
     return claro.d;
   }
 

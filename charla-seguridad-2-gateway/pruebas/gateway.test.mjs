@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { arrancar } from "../src/arranque.mjs";
 import { ClienteGateway } from "../src/cliente-gateway.mjs";
 import { correrEscenario, ESCENARIOS } from "../src/escenarios.mjs";
+import { correrAuditoria } from "../src/auditoria.mjs";
 import { cifrar, descifrar } from "../src/sobre.mjs";
 import { randomBytes } from "node:crypto";
 
@@ -243,5 +244,27 @@ describe("panel", () => {
     assert.equal((await fetch(ctx.urls.panel + "/")).status, 200);
     const r = await fetch(ctx.urls.panel + "/api/escenario/repetida", { method: "POST" });
     assert.equal((await r.json()).gateway.status, 400);
+  });
+});
+
+describe("auditoría OWASP", () => {
+  it("el después pasa todo, el antes no, y no expone la clave", async () => {
+    const r = await correrAuditoria(ctx);
+    const texto = JSON.stringify(r);
+    assert.ok(!texto.includes(ctx.config.claveDemo));
+    assert.equal(r.puntaje.despues, r.puntaje.total, JSON.stringify(r.controles.filter((c) => c.despues.ok === false)));
+    assert.ok(r.puntaje.antes < r.puntaje.total / 2);
+  });
+  it("bloquea tras cinco fallos y el acierto de otro usuario sigue entrando", async () => {
+    const victima = "bloqueo-prueba";
+    const estados = [];
+    for (let i = 0; i < 6; i++) estados.push((await new ClienteGateway(ctx.urls.gateway, ctx.config.rutaOpaca).entrar(victima, "mal")).status);
+    assert.deepEqual(estados, [401, 401, 401, 401, 401, 429]);
+    assert.equal((await new ClienteGateway(ctx.urls.gateway, ctx.config.rutaOpaca).entrar("ana", ctx.config.claveDemo)).status, 200);
+  });
+  it("cerrar sesión deja inútil la cookie", async () => {
+    const c = await entrar();
+    await c.llamar("x1");
+    assert.equal((await c.llamar("k4")).status, 401);
   });
 });

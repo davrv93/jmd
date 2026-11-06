@@ -105,3 +105,7 @@ Esto frena a quien solo mira el tráfico. No reemplaza HTTPS: sin TLS, quien se 
 ## Panel por colores
 
 El panel agrupa las pruebas por color: azul para mirar, rojo para atacar, verde para proteger la sesión, violeta para la verdad sobre ofuscar y ámbar para beneficios y costos. Cada botón abre un diálogo paso a paso: primero la pregunta y luego «Probar». «Empezar recorrido completo» encadena las 17 pruebas. El tráfico sale en «Ver tráfico en vivo».
+
+## Auditoría OWASP antes y después
+
+El botón «Auditoría OWASP: antes y después» corre 13 pruebas reales contra las dos tiendas, según OWASP Top 10 2021, y una decimocuarta queda marcada para producción (HTTPS y cookie Secure). «Antes» es la tienda sin gateway, débil a propósito. «Después» añade cifrado del login, bloqueo tras 5 fallos, tiempo igual exista o no el usuario, cierre de sesión en el servidor, cabeceras de seguridad, control de origen y validación de entrada. Es una revisión de esta demo, no una certificación.

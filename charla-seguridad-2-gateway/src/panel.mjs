@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { json, servirEstatico } from "./http.mjs";
 import { correrEscenario, listaEscenarios } from "./escenarios.mjs";
+import { correrAuditoria } from "./auditoria.mjs";
 
 export function crearPanel({ ctx, publico }) {
   return createServer(async (req, res) => {
@@ -29,6 +30,7 @@ export function crearPanel({ ctx, publico }) {
         ctx.registro.limpiar();
         return json(res, 200, { ok: true });
       }
+      if (ruta === "/api/auditoria") return json(res, 200, await correrAuditoria(ctx));
       const m = ruta.match(/^\/api\/escenario\/([a-z-]+)$/);
       if (m) {
         const r = await correrEscenario(ctx, m[1]).catch((e) => ({ error: e.message }));

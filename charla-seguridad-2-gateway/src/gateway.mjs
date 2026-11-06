@@ -49,6 +49,17 @@ export const OPERACIONES = {
 // El cliente recibe poco a propósito. El detalle queda en el registro, ligado por la referencia.
 const MENSAJES = { 400: "petición rechazada", 401: "sesión no válida", 403: "sin permiso", 404: "no encontrado", 409: "no se pudo completar", 413: "petición rechazada", 429: "demasiadas peticiones", 502: "servicio no disponible", 503: "servicio no disponible" };
 
+// Cabeceras de seguridad en toda respuesta (OWASP Secure Headers). Las páginas añaden su propia CSP.
+const CABECERAS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "no-referrer",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+};
+const usuarioValido = (v) => typeof v === "string" && /^[a-z0-9._-]{1,40}$/.test(v);
+const claveValida = (v) => typeof v === "string" && v.length >= 1 && v.length <= 128;
+
 const huella = (t) => createHash("sha256").update(t).digest("hex");
 const leerCookie = (req, nombre) => {
   for (const parte of (req.headers.cookie || "").split(";")) {
@@ -66,6 +77,16 @@ export function crearGateway({ config, politicas, tienda, credenciales, registro
   const ecdh = createECDH("prime256v1"); // par de llaves de esta corrida: la pública va en la página
   const llavePublica = ecdh.generateKeys().toString("base64url");
   const noncesEntrada = new Map();
+
+  // Bloqueo por usuario tras varios fallos: vale también para usuarios que no existen, para no delatarlos.
+  const fallos = new Map();
+  const bloqueado = (u) => (fallos.get(u)?.hasta ?? 0) > Date.now();
+  const anotarFallo = (u) => {
+    const f = fallos.get(u) ?? { n: 0, hasta: 0 };
+    f.n += 1;
+    if (f.n >= config.intentosLogin) { f.n = 0; f.hasta = Date.now() + config.bloqueoMs; }
+    fallos.set(u, f);
+  };
 
   // Tiempo y nonce: una petición capturada no se puede volver a enviar.
   const fresco = (m, nonces) => {
@@ -91,6 +112,7 @@ export function crearGateway({ config, politicas, tienda, credenciales, registro
     const ref = randomBytes(4).toString("hex");
     const ctx = { ref, ip, usuario: null, op: null };
     const ms = () => Number((process.hrtime.bigint() - inicio) / 1000n) / 1000;
+    for (const [k, v] of Object.entries(CABECERAS)) res.setHeader(k, v);
 
     const rechazar = (status, motivo) => {
       registro.anotar({ ...ctx, decision: "rechazado", status, motivo, ms: ms() });
@@ -121,6 +143,10 @@ export function crearGateway({ config, politicas, tienda, credenciales, registro
 
     if (req.method !== "POST") return rechazar(404, "ruta desconocida");
 
+    // Otro sitio no puede disparar peticiones con la sesión del usuario (CSRF), aunque el navegador mande la cookie.
+    const origen = req.headers.origin;
+    if (origen && origen !== `http://${req.headers.host}`) return rechazar(403, "origen no permitido");
+
     // Entrada: la única ruta fija. Inicia la sesión.
     if (ruta === config.rutaOpaca) {
       if (!limiteEntrada("entrada:" + ip)) return rechazar(429, "límite de inicios de sesión");
@@ -149,9 +175,17 @@ export function crearGateway({ config, politicas, tienda, credenciales, registro
       } catch { return rechazar(400, "sobre de entrada inválido"); }
       const motivo = fresco(m, noncesEntrada);
       if (motivo) return rechazar(400, motivo);
+      if (!usuarioValido(m.u) || !claveValida(m.p)) return rechazar(400, "usuario o clave con formato inválido");
+      if (bloqueado(m.u)) return rechazar(429, "usuario bloqueado por intentos fallidos");
       const u = tienda.datos.usuarios.find((x) => x.usuario === m.u);
-      const claveOk = credenciales.verificar(m.p ?? "");
-      if (!u || !claveOk) return rechazar(401, "credenciales incorrectas");
+      // La clave se verifica siempre, exista o no el usuario: así el tiempo de respuesta no lo delata.
+      const claveOk = credenciales.verificar(m.p);
+      if (!u || !claveOk) {
+        anotarFallo(m.u);
+        ctx.usuario = m.u;
+        return rechazar(401, "credenciales incorrectas");
+      }
+      fallos.delete(m.u);
       const token = randomBytes(32).toString("base64url");
       const s = { id: randomUUID(), usuario: u.usuario, clienteId: u.clienteId, rol: u.rol, clave: randomBytes(32), vence: Date.now() + config.sesionMs, nonces: new Map() };
       sesiones.set(huella(token), s);
@@ -186,6 +220,15 @@ export function crearGateway({ config, politicas, tienda, credenciales, registro
     // 7 · Anti-repetición: va después de descifrar, para que nadie pueda llenar la lista con basura
     const motivo = fresco(mensaje, s.nonces);
     if (motivo) return rechazar(400, motivo);
+
+    // Cerrar sesión: el servidor la olvida. Borrar solo la cookie del navegador no basta.
+    if (mensaje.o === "x1") {
+      sesiones.delete(huella(leerCookie(req, "sid")));
+      registro.anotar({ ...ctx, decision: "sesion-cerrada", status: 200, ms: ms() });
+      return json(res, 200, cifrar(s.clave, JSON.stringify({ d: { ok: true }, r: "" }), aadRespuesta(s.id, mensaje.n)), {
+        "Set-Cookie": "sid=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0",
+      });
+    }
 
     // 8 · Operación y validación estricta
     const op = Object.hasOwn(OPERACIONES, mensaje.o) ? OPERACIONES[mensaje.o] : null;
