@@ -93,29 +93,84 @@ function celda(r) {
   c.append(el("b", { pasa: "Pasa", falla: "Falla", pendiente: "En producción" }[estado]), el("span", r.evidencia));
   return c;
 }
+const pausa = (ms) => new Promise((ok) => setTimeout(ok, ms));
+const calma = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let corrida = 0;
+
+function avance(n, total, texto) {
+  const pct = Math.round((n / total) * 100);
+  $("a-barra").style.width = pct + "%";
+  $("a-barra").classList.toggle("lista", n === total);
+  $("a-progreso").setAttribute("aria-valuenow", String(pct));
+  $("a-estado").textContent = texto;
+}
+
+// Los resultados llegan del servidor según terminan; se muestran uno a uno para que el público alcance a leerlos.
 async function auditar() {
+  const mia = ++corrida;
   const lista = $("a-lista");
+  let antes = 0, despues = 0, medidos = 0;
   $("a-repetir").disabled = true;
-  $("a-antes").textContent = "…";
-  $("a-despues").textContent = "…";
-  lista.replaceChildren(el("p", "Auditando las dos tiendas…", "aviso-aud"));
-  const r = await (await fetch("/api/auditoria", { method: "POST" })).json().catch(() => null);
-  $("a-repetir").disabled = false;
-  if (!r || r.error) { lista.replaceChildren(el("p", "No se pudo auditar: " + (r?.error ?? "sin respuesta"), "leccion")); return; }
-  $("a-antes").textContent = `${r.puntaje.antes} de ${r.puntaje.total}`;
-  $("a-despues").textContent = `${r.puntaje.despues} de ${r.puntaje.total}`;
-  lista.replaceChildren(...r.controles.map((c, k) => {
+  lista.replaceChildren();
+  $("a-antes").textContent = "0";
+  $("a-despues").textContent = "0";
+  avance(0, 1, "Preparando la auditoría…");
+
+  const pendientes = [];
+  let fin = null, fallo = "";
+  (async () => {
+    try {
+      const r = await fetch("/api/auditoria", { method: "POST" });
+      const lector = r.body.pipeThrough(new TextDecoderStream()).getReader();
+      let resto = "";
+      for (;;) {
+        const { value, done } = await lector.read();
+        if (done) break;
+        resto += value;
+        const lineas = resto.split("\n");
+        resto = lineas.pop();
+        for (const l of lineas) {
+          const m = JSON.parse(l);
+          if (m.error) fallo = m.error;
+          else if (m.fin) fin = m;
+          else pendientes.push(m);
+        }
+      }
+    } catch (e) { fallo = e.message; }
+    if (!fin && !fallo) fallo = "sin respuesta";
+  })();
+
+  while (mia === corrida) {
+    const m = pendientes.shift();
+    if (!m) {
+      if (fallo) { $("a-estado").textContent = "No se pudo auditar: " + fallo; break; }
+      if (fin) {
+        $("a-antes").textContent = `${fin.puntaje.antes} de ${fin.puntaje.total}`;
+        $("a-despues").textContent = `${fin.puntaje.despues} de ${fin.puntaje.total}`;
+        avance(1, 1, `Auditoría terminada: ${fin.puntaje.total} controles medidos.`);
+        break;
+      }
+      await pausa(60);
+      continue;
+    }
+    const c = m.control;
+    if (c.antes.ok !== null) { medidos++; antes += c.antes.ok ? 1 : 0; despues += c.despues.ok ? 1 : 0; }
+    $("a-antes").textContent = `${antes} de ${medidos}`;
+    $("a-despues").textContent = `${despues} de ${medidos}`;
+    avance(m.n, m.total, `Revisando ${m.n} de ${m.total}: ${c.titulo}`);
     const fila = el("div", null, "control entra");
-    fila.style.animationDelay = `${k * 70}ms`;
     const t = el("div", null, "ctl");
     t.append(el("small", c.owasp), document.createTextNode(c.titulo));
     fila.append(t, celda(c.antes), celda(c.despues));
-    return fila;
-  }));
+    lista.append(fila);
+    lista.scrollTop = lista.scrollHeight;
+    if (!calma) await pausa(650);
+  }
+  if (mia === corrida) $("a-repetir").disabled = false;
 }
 $("auditar").onclick = () => { $("auditoria").showModal(); auditar(); };
 $("a-repetir").onclick = auditar;
-$("a-cerrar").onclick = () => $("auditoria").close();
+$("a-cerrar").onclick = () => { corrida++; $("a-repetir").disabled = false; $("auditoria").close(); };
 $("ver-trafico").onclick = () => { $("trafico").showModal(); refrescar(); };
 $("t-cerrar").onclick = () => $("trafico").close();
 

@@ -255,6 +255,13 @@ describe("auditoría OWASP", () => {
     assert.equal(r.puntaje.despues, r.puntaje.total, JSON.stringify(r.controles.filter((c) => c.despues.ok === false)));
     assert.ok(r.puntaje.antes < r.puntaje.total / 2);
   });
+  it("el panel entrega la auditoría control por control", async () => {
+    const r = await fetch(ctx.urls.panel + "/api/auditoria", { method: "POST" });
+    const lineas = (await r.text()).trim().split("\n").map((l) => JSON.parse(l));
+    assert.equal(lineas.filter((l) => l.control).length, 14);
+    assert.deepEqual(lineas.filter((l) => l.control).map((l) => l.n), Array.from({ length: 14 }, (_, i) => i + 1));
+    assert.equal(lineas.at(-1).fin, true);
+  });
   it("bloquea tras cinco fallos y el acierto de otro usuario sigue entrando", async () => {
     const victima = "bloqueo-prueba";
     const estados = [];

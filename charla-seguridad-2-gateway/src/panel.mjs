@@ -30,7 +30,16 @@ export function crearPanel({ ctx, publico }) {
         ctx.registro.limpiar();
         return json(res, 200, { ok: true });
       }
-      if (ruta === "/api/auditoria") return json(res, 200, await correrAuditoria(ctx));
+      if (ruta === "/api/auditoria") {
+        // Una línea JSON por control, según terminan.
+        res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" });
+        const enviar = (o) => res.write(JSON.stringify(o) + "\n");
+        try {
+          const r = await correrAuditoria(ctx, (control, n, total) => enviar({ control, n, total }));
+          enviar({ fin: true, puntaje: r.puntaje });
+        } catch (e) { enviar({ error: e.message }); }
+        return res.end();
+      }
       const m = ruta.match(/^\/api\/escenario\/([a-z-]+)$/);
       if (m) {
         const r = await correrEscenario(ctx, m[1]).catch((e) => ({ error: e.message }));

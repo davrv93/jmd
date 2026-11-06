@@ -8,7 +8,10 @@ const azar = () => "auditoria-" + randomBytes(4).toString("hex");
 const CABECERAS = ["content-security-policy", "x-content-type-options", "x-frame-options", "referrer-policy", "permissions-policy"];
 const faltan = (h) => CABECERAS.filter((k) => !h.get(k));
 
-export async function correrAuditoria(ctx) {
+export const TOTAL_CONTROLES = 14;
+
+// alAvanzar recibe cada control apenas termina: así el panel muestra el avance real.
+export async function correrAuditoria(ctx, alAvanzar = () => {}) {
   const { directo, gateway } = ctx.urls;
   const clave = ctx.config.claveDemo;
   const nuevo = () => new ClienteGateway(gateway, ctx.config.rutaOpaca);
@@ -24,7 +27,11 @@ export async function correrAuditoria(ctx) {
   const token = jD.token;
   const { g, r: rG } = await entrarG();
   const controles = [];
-  const anotar = (owasp, titulo, antes, despues) => controles.push({ owasp, titulo, antes, despues });
+  const anotar = (owasp, titulo, antes, despues) => {
+    const c = { owasp, titulo, antes, despues };
+    controles.push(c);
+    alAvanzar(c, controles.length, TOTAL_CONTROLES);
+  };
 
   // A02 · Contraseña en el camino
   const crudo = await fetch(gateway + ctx.config.rutaOpaca, { method: "POST", body: JSON.stringify({ u: "ana", p: clave }) });
