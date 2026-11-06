@@ -23,7 +23,7 @@ export function crearConfig(cambios = {}) {
     limites: {
       sesion: numero("LIMITE_SESION", 20),
       ip: 300,
-      entrada: 30, // intentos de inicio de sesión por IP y minuto
+      entrada: numero("LIMITE_ENTRADA", 600), // intentos de inicio de sesión por IP y minuto: alto porque las simulaciones del panel entran muchas veces
       ventanaMs: numero("VENTANA_LIMITE_MS", 10_000),
     },
     ventanaPeticionMs: numero("VENTANA_PETICION_MS", 30_000),
