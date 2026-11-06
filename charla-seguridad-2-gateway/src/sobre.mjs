@@ -1,9 +1,18 @@
 // El «sobre»: AES-256-GCM de la librería estándar de Node. El navegador hace lo mismo con Web Crypto.
 // GCM cifra y además sella: si cambia un solo bit del mensaje, abrirlo falla.
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:crypto";
 
 export const aadPeticion = (sesionId) => `v1|${sesionId}|peticion`;
 export const aadRespuesta = (sesionId, nonce) => `v1|${sesionId}|respuesta|${nonce}`;
+export const aadEntrada = "v1|entrada|peticion";
+export const aadEntradaRespuesta = (nonce) => `v1|entrada|respuesta|${nonce}`;
+export const aadRenovar = (sesionId) => `v1|${sesionId}|renovar`;
+
+// Antes del login no hay clave compartida. Cada lado aporta una llave pública (ECDH P-256) y ambos derivan la misma
+// clave AES sin enviarla nunca. Frena a quien solo mira el tráfico. A quien se mete en medio y cambia la llave solo lo
+// frena TLS: por eso esto se suma a HTTPS y no lo reemplaza.
+export const claveDeEntrada = (ecdh, publicaAjena) =>
+  Buffer.from(hkdfSync("sha256", ecdh.computeSecret(Buffer.from(publicaAjena, "base64url")), Buffer.alloc(0), "gateway-entrada-v1", 32));
 
 export function cifrar(clave, textoPlano, aad) {
   const iv = randomBytes(12); // nunca se repite con la misma clave: por eso es al azar en cada mensaje

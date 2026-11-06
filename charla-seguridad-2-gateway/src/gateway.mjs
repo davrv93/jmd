@@ -2,10 +2,10 @@
 // tamaño → límite por IP → sesión (cookie HttpOnly) → ruta dinámica → límite por sesión → sobre → descifrar (GCM)
 // → anti-repetición (tiempo + nonce) → operación y validación → permiso → traducir → backend → filtrar → cifrar → registrar.
 import { createServer } from "node:http";
-import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
+import { createECDH, createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { CuerpoGrande, json, leerCuerpo, servirEstatico } from "./http.mjs";
-import { aadPeticion, aadRespuesta, cifrar, descifrar, sobreValido } from "./sobre.mjs";
+import { aadEntrada, aadEntradaRespuesta, aadPeticion, aadRenovar, aadRespuesta, claveDeEntrada, cifrar, descifrar, sobreValido } from "./sobre.mjs";
 import { crearLimite } from "./limite.mjs";
 
 const idFactura = (v) => typeof v === "string" && /^F-\d{4}$/.test(v);
@@ -63,6 +63,20 @@ export function crearGateway({ config, politicas, tienda, credenciales, registro
   const limiteIp = crearLimite(() => config.limites.ip, () => config.limites.ventanaMs);
   const limiteSesion = crearLimite(() => config.limites.sesion, () => config.limites.ventanaMs);
   const limiteEntrada = crearLimite(() => config.limites.entrada, () => 60_000);
+  const ecdh = createECDH("prime256v1"); // par de llaves de esta corrida: la pública va en la página
+  const llavePublica = ecdh.generateKeys().toString("base64url");
+  const noncesEntrada = new Map();
+
+  // Tiempo y nonce: una petición capturada no se puede volver a enviar.
+  const fresco = (m, nonces) => {
+    const ahora = Date.now();
+    if (typeof m.t !== "number" || Math.abs(ahora - m.t) > config.ventanaPeticionMs) return "fuera de la ventana de tiempo";
+    if (typeof m.n !== "string" || m.n.length < 16) return "nonce inválido";
+    for (const [n, vence] of nonces) if (vence < ahora) nonces.delete(n);
+    if (nonces.has(m.n)) return "nonce repetido: petición reenviada";
+    nonces.set(m.n, ahora + 2 * config.ventanaPeticionMs);
+    return "";
+  };
 
   // Ruta dinámica: firmada por sesión y por ventana de tiempo. Se acepta la ventana anterior para no cortar lo que va en camino.
   const ventanaActual = () => Math.floor(Date.now() / config.ventanaRutaMs) + politicas.saltoRuta;
@@ -86,7 +100,7 @@ export function crearGateway({ config, politicas, tienda, credenciales, registro
     if (politicas.gatewayCaido) { captura.envolver("gateway", req, res, ""); return rechazar(503, "gateway caído (simulado)"); }
 
     if (req.method === "GET") {
-      const inyectar = (t, nombre) => (nombre === "index.html" ? t.replace("__ENTRADA__", config.rutaOpaca) : t);
+      const inyectar = (t, nombre) => (nombre === "index.html" ? t.replace("__ENTRADA__", config.rutaOpaca).replace("__LLAVE__", llavePublica) : t);
       const hecho = await servirEstatico(res, path.join(carpetaPublica, "gateway"), { "/": "index.html", "/app.js": "app.js", "/estilo.css": "../comun.css" }, ruta, {}, inyectar);
       if (hecho) return;
     }
@@ -112,15 +126,31 @@ export function crearGateway({ config, politicas, tienda, credenciales, registro
       if (!limiteEntrada("entrada:" + ip)) return rechazar(429, "límite de inicios de sesión");
       let e = {};
       try { e = JSON.parse(cuerpo); } catch { return rechazar(400, "entrada no es JSON"); }
-      // Renovar la ruta: basta la cookie. Por eso rotar sube el costo pero no frena a quien controla la sesión.
-      if (e.renovar === true) {
+      if (!sobreValido(e)) return rechazar(400, "sobre mal formado");
+
+      // Renovar la ruta: la cookie y la clave de la sesión. Rotar sube el costo, pero no frena a quien controla la sesión.
+      if (e.e === undefined) {
         const viva = sesiones.get(huella(leerCookie(req, "sid")));
         if (!viva || Date.now() > viva.vence) return rechazar(401, "renovar sin sesión");
+        let m;
+        try { m = JSON.parse(descifrar(viva.clave, e, aadRenovar(viva.id))); }
+        catch { return rechazar(400, "sello GCM inválido al renovar"); }
+        const motivo = fresco(m, viva.nonces);
+        if (motivo) return rechazar(400, motivo);
         registro.anotar({ ...ctx, usuario: viva.usuario, decision: "ruta-renovada", status: 200, ms: ms() });
-        return json(res, 200, { r: rutaDe(viva, ventanaActual()) });
+        return json(res, 200, cifrar(viva.clave, JSON.stringify({ r: rutaDe(viva, ventanaActual()) }), aadRespuesta(viva.id, m.n)));
       }
-      const u = tienda.datos.usuarios.find((x) => x.usuario === e.u);
-      const claveOk = credenciales.verificar(e.p ?? "");
+
+      // Iniciar sesión: usuario y clave llegan cifrados, y la clave de la sesión sale cifrada.
+      let clave, m;
+      try {
+        clave = claveDeEntrada(ecdh, e.e);
+        m = JSON.parse(descifrar(clave, e, aadEntrada));
+      } catch { return rechazar(400, "sobre de entrada inválido"); }
+      const motivo = fresco(m, noncesEntrada);
+      if (motivo) return rechazar(400, motivo);
+      const u = tienda.datos.usuarios.find((x) => x.usuario === m.u);
+      const claveOk = credenciales.verificar(m.p ?? "");
       if (!u || !claveOk) return rechazar(401, "credenciales incorrectas");
       const token = randomBytes(32).toString("base64url");
       const s = { id: randomUUID(), usuario: u.usuario, clienteId: u.clienteId, rol: u.rol, clave: randomBytes(32), vence: Date.now() + config.sesionMs, nonces: new Map() };
@@ -128,7 +158,8 @@ export function crearGateway({ config, politicas, tienda, credenciales, registro
       registro.anotar({ ...ctx, usuario: u.usuario, decision: "sesion-iniciada", status: 200, ms: ms() });
       // HttpOnly: el JavaScript de la página no puede leer el token. SameSite: no viaja desde otro sitio.
       // En producción, además, Secure. Aquí no se pone porque la demo corre en http://127.0.0.1.
-      return json(res, 200, { s: s.id, k: s.clave.toString("base64url"), r: rutaDe(s, ventanaActual()) }, {
+      const abierto = JSON.stringify({ s: s.id, k: s.clave.toString("base64url"), r: rutaDe(s, ventanaActual()) });
+      return json(res, 200, cifrar(clave, abierto, aadEntradaRespuesta(m.n)), {
         "Set-Cookie": `sid=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${config.sesionMs / 1000}`,
       });
     }
@@ -153,12 +184,8 @@ export function crearGateway({ config, politicas, tienda, credenciales, registro
     catch { return rechazar(400, "sello GCM inválido: mensaje manipulado o de otra sesión"); }
 
     // 7 · Anti-repetición: va después de descifrar, para que nadie pueda llenar la lista con basura
-    const ahora = Date.now();
-    if (typeof mensaje.t !== "number" || Math.abs(ahora - mensaje.t) > config.ventanaPeticionMs) return rechazar(400, "fuera de la ventana de tiempo");
-    if (typeof mensaje.n !== "string" || mensaje.n.length < 16) return rechazar(400, "nonce inválido");
-    for (const [n, vence] of s.nonces) if (vence < ahora) s.nonces.delete(n);
-    if (s.nonces.has(mensaje.n)) return rechazar(400, "nonce repetido: petición reenviada");
-    s.nonces.set(mensaje.n, ahora + 2 * config.ventanaPeticionMs);
+    const motivo = fresco(mensaje, s.nonces);
+    if (motivo) return rechazar(400, motivo);
 
     // 8 · Operación y validación estricta
     const op = Object.hasOwn(OPERACIONES, mensaje.o) ? OPERACIONES[mensaje.o] : null;

@@ -41,7 +41,27 @@ describe("gateway", () => {
     const c = await entrar();
     const r = await c.llamar("q2", { id: "F-2001" });
     const visto = c.ruta + r.cuerpo + JSON.stringify(r.json);
-    for (const t of ["F-2001", "q2", "interno", "facturas", "120.5"]) assert.ok(!visto.includes(t), t);
+    // "q2" va entre comillas: dos letras sueltas pueden salir por azar dentro del texto cifrado.
+    for (const t of ["F-2001", '"q2"', "interno", "facturas", "120.5"]) assert.ok(!visto.includes(t), t);
+  });
+  it("el inicio de sesión y su respuesta tampoco se leen", async () => {
+    const c = new ClienteGateway(ctx.urls.gateway, ctx.config.rutaOpaca);
+    const r = await c.entrar("ana", ctx.config.claveDemo);
+    const visto = c.cuerpoEntrada + JSON.stringify(r.json);
+    for (const t of ["ana", ctx.config.claveDemo, c.sesion, c.clave.toString("base64url"), c.ruta]) assert.ok(!visto.includes(t), t);
+    assert.deepEqual(Object.keys(JSON.parse(c.cuerpoEntrada)).sort(), ["c", "e", "i", "v"]);
+    assert.deepEqual(Object.keys(r.json).sort(), ["c", "i", "v"]);
+  });
+  it("un inicio de sesión capturado no se puede repetir", async () => {
+    const c = new ClienteGateway(ctx.urls.gateway, ctx.config.rutaOpaca);
+    await c.entrar("ana", ctx.config.claveDemo);
+    const r = await fetch(ctx.urls.gateway + ctx.config.rutaOpaca, { method: "POST", body: c.cuerpoEntrada });
+    assert.equal(r.status, 400);
+    assert.equal(r.headers.get("set-cookie"), null);
+  });
+  it("una entrada sin cifrar se rechaza", async () => {
+    const r = await fetch(ctx.urls.gateway + ctx.config.rutaOpaca, { method: "POST", body: JSON.stringify({ u: "ana", p: ctx.config.claveDemo }) });
+    assert.equal(r.status, 400);
   });
   it("la cookie es HttpOnly y SameSite, y el token no sale en el JSON", async () => {
     const c = new ClienteGateway(ctx.urls.gateway, ctx.config.rutaOpaca);

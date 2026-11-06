@@ -1,7 +1,7 @@
 // Cliente sin gateway: conoce las rutas reales y guarda el token donde cualquier script lo puede leer.
 const $ = (id) => document.getElementById(id);
 const clave = new URLSearchParams(location.hash.slice(1)).get("clave");
-if (clave) $("clave").value = clave;
+if (clave) { $("clave").value = clave; history.replaceState(null, "", location.pathname); }
 let yo = null;
 
 async function api(metodo, ruta, cuerpo) {
@@ -29,9 +29,12 @@ $("entrar").onsubmit = async (e) => {
   e.preventDefault();
   const r = await fetch("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ usuario: $("usuario").value, clave: $("clave").value }) });
   const j = await r.json();
-  if (!j.token) { $("salida").textContent = "No se pudo entrar. Revisa la clave en la terminal."; return; }
+  if (!j.token) { $("aviso").textContent = "Usuario o contraseña incorrectos."; return; }
   localStorage.setItem("token", j.token);
   yo = j.usuario;
-  $("quien").textContent = `${yo.nombre} · cliente ${yo.clienteId}`;
+  $("clave").value = "";
+  $("acceso").hidden = true;
+  $("tablero").hidden = false;
+  $("quien").textContent = `Facturas de ${yo.nombre} · cliente ${yo.clienteId}`;
   await listar();
 };

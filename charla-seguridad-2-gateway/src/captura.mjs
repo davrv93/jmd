@@ -12,7 +12,7 @@ function pistas(e) {
   const claves = (o) => {
     if (Array.isArray(o)) return o.forEach(claves);
     if (o && typeof o === "object") for (const [k, v] of Object.entries(o)) {
-      if (!["v", "i", "c", "error", "ref"].includes(k)) p.add("campo: " + k);
+      if (!["v", "i", "c", "e", "error", "ref"].includes(k)) p.add("campo: " + k);
       claves(v);
     }
   };

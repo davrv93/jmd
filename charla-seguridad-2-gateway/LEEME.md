@@ -95,3 +95,13 @@ npm test
 - NIST SP 800-123, sección 2.4: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-123.pdf
 - Gateway Routing, Azure Architecture Center: https://learn.microsoft.com/en-us/azure/architecture/patterns/gateway-routing
 - API Gateway, microservices.io: https://microservices.io/patterns/apigateway.html
+
+## Inicio de sesión cifrado
+
+El usuario, la clave y la clave de sesión tampoco viajan legibles. El navegador y el gateway derivan una clave con ECDH P-256 y HKDF, sin enviarla, y con ella sellan el login y su respuesta. La renovación de ruta va sellada con la clave de sesión.
+
+Esto frena a quien solo mira el tráfico. No reemplaza HTTPS: sin TLS, quien se mete en medio puede cambiar la llave pública de la página. El navegador y el gateway siguen viendo el mensaje en claro, porque uno lo escribe y el otro lo valida.
+
+## Panel por colores
+
+El panel agrupa las pruebas por color: azul para mirar, rojo para atacar, verde para proteger la sesión, violeta para la verdad sobre ofuscar y ámbar para beneficios y costos. Cada botón abre un diálogo paso a paso: primero la pregunta y luego «Probar». «Empezar recorrido completo» encadena las 17 pruebas. El tráfico sale en «Ver tráfico en vivo».
