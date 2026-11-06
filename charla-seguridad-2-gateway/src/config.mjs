@@ -22,7 +22,7 @@ export function crearConfig(cambios = {}) {
     ventanaRutaMs: numero("VENTANA_RUTA_MS", 60_000), // cada cuánto rota la ruta de una sesión
     limites: {
       sesion: numero("LIMITE_SESION", 20),
-      ip: 300,
+      ip: 3000, // alto: las simulaciones del panel salen todas de esta máquina
       entrada: numero("LIMITE_ENTRADA", 600), // intentos de inicio de sesión por IP y minuto: alto porque las simulaciones del panel entran muchas veces
       ventanaMs: numero("VENTANA_LIMITE_MS", 10_000),
     },

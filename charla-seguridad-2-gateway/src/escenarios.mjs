@@ -16,7 +16,7 @@ async function directa(ctx, usuario = "ana") {
 async function gateway(ctx, usuario = "ana") {
   const c = new ClienteGateway(ctx.urls.gateway, ctx.config.rutaOpaca);
   const r = await c.entrar(usuario, ctx.config.claveDemo);
-  if (r.status !== 200) throw new Error(r.status === 429 ? "demasiados inicios de sesión; espera un minuto" : `el gateway respondió ${r.status} al iniciar sesión`);
+  if (r.status !== 200) throw new Error(r.status === 429 ? "demasiadas peticiones seguidas; espera unos segundos" : `el gateway respondió ${r.status} al iniciar sesión`);
   return c;
 }
 
