@@ -69,6 +69,51 @@ materials:
     kind: file
     file: materials/estudio/musica.mp3
     objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-1
+    title: "Estudio · colibrí, referencia 1: apertura"
+    kind: file
+    file: materials/estudio-ver/colibri-con-veo__assets__video__1-apertura.mp4
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-2
+    title: "Estudio · colibrí, referencia 2: de lado"
+    kind: file
+    file: materials/estudio-ver/colibri-con-veo__assets__video__2-de-lado.mp4
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-3
+    title: "Estudio · colibrí, referencia 3: de frente"
+    kind: file
+    file: materials/estudio-ver/colibri-con-veo__assets__video__3-de-frente.mp4
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-4
+    title: "Estudio · colibrí, referencia 4: de noche"
+    kind: file
+    file: materials/estudio-ver/colibri-con-veo__assets__video__4-de-noche.mp4
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-5
+    title: "Estudio · colibrí, referencia 5: el ojo"
+    kind: file
+    file: materials/estudio-ver/colibri-con-veo__assets__video__5-ojo.mp4
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-6
+    title: "Estudio · colibrí, referencia 6: aleteo 3D"
+    kind: file
+    file: materials/estudio-ver/colibri-con-veo__assets__video__6-aleteo-3d-procedural.mp4
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-7
+    title: "Estudio · «Mi cafetería de barrio»: música de fondo"
+    kind: file
+    file: materials/estudio-ver/video-20261105-150809__assets__music__cafe-barrio-bed.mp3
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-8
+    title: "Estudio · «Mi cafetería de barrio»: música completa"
+    kind: file
+    file: materials/estudio-ver/video-20261105-150809__assets__music__cafe-barrio.mp3
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-9
+    title: "Estudio · «Mi cafetería de barrio»: video final (15 s)"
+    kind: file
+    file: materials/estudio-ver/video-20261105-150809__renders__final.mp4
+    objective_ids: [de-03-o3]
 cycle:
   - id: ver
     title: Ver «Difícil de explicar» en pantalla

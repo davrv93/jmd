@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>El estudio por dentro</title>
+<!-- Tablero de Backlot, parte de OpenMontage (AGPL-3.0): https://github.com/calesthio/OpenMontage. Copia de solo lectura con cambios de JMD Learning. -->
+<link rel="stylesheet" href="tablero.css">
+<style>
+/* Copia de solo lectura: se ve todo, no se escribe ni se aprueba nada. */
+.sv-barra{position:fixed;z-index:400;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;max-width:calc(100vw - 24px);padding:5px 6px 5px 12px;border-radius:999px;background:var(--surface,#1c1d22);border:1px solid var(--border,#34363d);box-shadow:0 6px 24px -10px rgba(0,0,0,.5);font:500 12.5px/1 system-ui,sans-serif;color:var(--text-2,#a9abb3)}
+.sv-barra b{color:var(--text,#f2f2f4);font-weight:600;white-space:nowrap}
+.sv-barra select{min-height:32px;max-width:46vw;padding:0 8px;border-radius:999px;border:1px solid var(--border,#34363d);background:var(--surface-2,#26272d);color:var(--text,#f2f2f4);font:500 12.5px system-ui,sans-serif}
+.sv-barra select:focus-visible{outline:2px solid var(--studio-accent,#e0a23c);outline-offset:2px}
+.sv-aviso{position:fixed;z-index:500;left:50%;bottom:86px;transform:translateX(-50%);max-width:min(440px,calc(100vw - 32px));padding:12px 16px;border-radius:12px;background:var(--text,#f2f2f4);color:var(--bg,#111);font:500 13.5px/1.4 system-ui,sans-serif;text-align:center;box-shadow:0 10px 30px -12px rgba(0,0,0,.6)}
+.sv-aviso[hidden]{display:none}
+.ab-entrada,.ab-enviar,.ab-detener,.ab-panel header a{display:none!important}
+.sv-carga{display:grid;place-items:center;min-height:100dvh;font:500 15px system-ui,sans-serif;color:#a9abb3;background:#111216}
+@media(max-width:640px){.sv-barra{top:auto;bottom:74px}.sv-barra b{display:none}}
+</style></head>
+<body>
+<div class="wrap" id="app"><p class="sv-carga" id="svCarga">Abriendo el estudio…</p></div>
+<div class="modal-bg" id="modal"></div>
+<audio id="player"></audio>
+<div class="sv-barra" id="svBarra" hidden><b>Solo ver</b><label for="svProyecto" style="position:absolute;left:-9999px">Producción</label><select id="svProyecto"></select></div>
+<p class="sv-aviso" id="svAviso" role="status" hidden></p>
+<script>
+(async () => {
+  const aqui = location.pathname.replace(/[^/]*$/, "");
+  let E;
+  try { E = await (await fetch(aqui + "datos.json", { credentials: "same-origin" })).json(); }
+  catch { document.getElementById("svCarga").textContent = "No se pudo abrir el estudio. Recarga la escena."; return; }
+
+  // Qué producción se ve: se recuerda al cambiarla y al recargar.
+  const CLAVE = "jmd:estudio:proyecto";
+  let actual = null;
+  try { actual = sessionStorage.getItem(CLAVE); } catch { /* sin almacenamiento se abre la primera */ }
+  if (!E.proyectos.some((x) => x.id === actual)) actual = E.proyectos[0].id;
+  window.__BACKLOT_P = encodeURIComponent(actual);
+  const selector = document.getElementById("svProyecto");
+  for (const x of E.proyectos) selector.append(new Option(x.titulo, x.id, false, x.id === actual));
+  selector.addEventListener("change", () => { try { sessionStorage.setItem(CLAVE, selector.value); } catch { /* igual recarga */ } const u = new URL(location.href); u.searchParams.delete("stage"); location.replace(u); });
+  document.getElementById("svBarra").hidden = false;
+
+  let reloj;
+  function avisar(texto) {
+    const a = document.getElementById("svAviso");
+    a.textContent = texto; a.hidden = false;
+    clearTimeout(reloj); reloj = setTimeout(() => { a.hidden = true; }, 4200);
+  }
+  const SOLO_VER = "Esta es una copia para mirar. En el curso lo manejas tú, con tu propio agente.";
+
+  // Datos: lo que el tablero pediría al servidor sale de la copia grabada.
+  const real = window.fetch.bind(window);
+  const json = (codigo, cuerpo) => new Response(JSON.stringify(cuerpo), { status: codigo, headers: { "Content-Type": "application/json" } });
+  window.fetch = (entrada, opciones = {}) => {
+    const u = new URL(typeof entrada === "string" ? entrada : entrada.url, location.origin);
+    if (!/^\/(api\/(project|projects|agente)|frame|cebolla|media|thumb)/.test(u.pathname) || u.pathname.startsWith("/api/v1/")) return real(entrada, opciones);
+    if ((opciones.method || "GET").toUpperCase() !== "GET") { avisar(SOLO_VER); return Promise.resolve(json(403, { detail: SOLO_VER })); }
+    const dato = E.datos[u.pathname + u.search] ?? E.datos[u.pathname];
+    return Promise.resolve(dato === undefined ? json(404, { detail: "No está en esta copia" }) : json(200, dato));
+  };
+
+  // Imágenes, audio y video: la dirección del estudio se cambia por la del archivo publicado.
+  const VACIA = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+  const numero = (u, k) => Number(new URLSearchParams(u.split("?")[1] || "").get(k)) || 0;
+  function cercana(ruta, completa) {
+    // Un cuadro que no se grabó se sustituye por el más próximo en el tiempo del mismo video.
+    const base = ruta.split("?")[0], t = numero(completa, "t") || numero(completa, "a");
+    let mejor = null, distancia = Infinity;
+    for (const k of Object.keys(E.imagenes)) {
+      if (k.split("?")[0] !== base) continue;
+      const d = Math.abs((numero(k, "t") || numero(k, "a")) - t);
+      if (d < distancia) { distancia = d; mejor = k; }
+    }
+    return mejor;
+  }
+  function mapear(valor) {
+    if (typeof valor !== "string" || !/^\/(frame|cebolla|media|thumb)\//.test(valor)) return valor;
+    const ruta = decodeURI(valor.split("?")[0]);
+    const medio = E.medios[ruta] || E.medios[decodeURIComponent(valor.split("?")[0])];
+    if (medio) return E.urlMateriales + "/" + medio;
+    const imagen = E.imagenes[valor] || E.imagenes[cercana(valor.split("?")[0], valor)];
+    return imagen ? aqui + imagen : /\.(mp3|wav|m4a|mp4|mov|webm)$/i.test(ruta) ? "" : VACIA;
+  }
+  const poner = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function (nombre, valor) {
+    return poner.call(this, nombre, nombre === "src" || nombre === "poster" ? mapear(String(valor)) : valor);
+  };
+  for (const [clase, propiedad] of [[HTMLImageElement, "src"], [HTMLMediaElement, "src"], [HTMLSourceElement, "src"], [HTMLVideoElement, "poster"]]) {
+    const d = Object.getOwnPropertyDescriptor(clase.prototype, propiedad);
+    Object.defineProperty(clase.prototype, propiedad, { ...d, set(v) { d.set.call(this, mapear(String(v))); } });
+  }
+
+  // Los enlaces del estudio apuntan a páginas que aquí no existen.
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest?.("a[href]");
+    if (!a) return;
+    const h = a.getAttribute("href");
+    if (h === "/" || h.startsWith("/p/") || h === "/agente") { e.preventDefault(); if (h === "/") selector.focus(); else avisar(SOLO_VER); }
+  }, true);
+
+  const cargar = (archivo) => new Promise((ok, mal) => { const s = document.createElement("script"); s.src = aqui + archivo; s.onload = ok; s.onerror = mal; document.body.append(s); });
+  try { await cargar("gsap.js"); await cargar("tablero.js"); }
+  catch { document.getElementById("svCarga").textContent = "No se pudo abrir el estudio. Recarga la escena."; }
+})();
+</script>
+</body></html>
