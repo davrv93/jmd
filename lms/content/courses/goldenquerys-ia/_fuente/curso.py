@@ -143,7 +143,7 @@ ELEGIR = """    <h1 class="esc-titulo a-in">Elige <em class="oro">tu negocio</em
   </script>
   <main hidden>"""
 
-FECHA_CURSO = "martes 10 y 17 de noviembre, de 6:30 a 7:15 p. m."
+FECHA_CURSO = "martes 10 y 17 de noviembre, de 6:30 a 7:30 p. m."
 
 def sorteo_html():
     """La escena del sorteo es un documento propio (también se publica en /sorteo-goldenquerys): sin la plantilla."""
