@@ -1,6 +1,7 @@
 ---
 id: g8-03
 starts_at: 2026-11-11T19:30:00-05:00
+duration: 105
 title: "Grupo 8 · Clase 3 · Tu chatbot de WhatsApp: wireframe, prototipo, Lit, Bun + Elysia, PostgreSQL y pruebas"
 published: true
 objectives:
