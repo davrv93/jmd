@@ -67,7 +67,7 @@ Reparto estimado del chat sin panel: instrucciones de Claude 79 %, conversación
 
 - **−60 % de salida**: Claude escribió 1 386 tokens en vez de 3 462.
 - **Base igual, unos 107 000 tokens por mensaje**, leídos de caché en los dos chats.
-- **−10 a −20 % de costo total**, al ponderar la caché a 10 % y la salida a 5 veces.
+- **Cerca de −10 % de costo total**, al ponderar la caché leída a 10 % y la salida a 5 veces.
 
 ## Cómo se lee
 
