@@ -120,7 +120,9 @@ func TestMiHorario(t *testing.T) {
 }
 
 // Las ofertas: grupos abiertos que no son del alumno, con clases por delante y sin cruces con las suyas.
-func TestOfertasDeMiHorario(t *testing.T) {
+// fixtureOfertas: ana en c1 (curso «Curso de prueba», 8 de octubre) y cuatro grupos más: c2 se cruza,
+// c3 encaja, c4 está cerrado y c5 repite el curso de ana en otro grupo.
+func fixtureOfertas(t *testing.T) (*env, string) {
 	dir := writeFixture(t) // «curso», grupo c1: sesión el 8 de octubre de 19:00 a 20:30
 	cursos := map[string]string{
 		// c2 se cruza: 8 de octubre a las 19:30.
@@ -161,7 +163,11 @@ func TestOfertasDeMiHorario(t *testing.T) {
 	srv := httptest.NewServer(s.Handler())
 	t.Cleanup(srv.Close)
 	e := &env{t: t, srv: srv, db: db, s: s}
-	ana := e.register("ana@x.test")
+	return e, e.register("ana@x.test")
+}
+
+func TestOfertasDeMiHorario(t *testing.T) {
+	e, ana := fixtureOfertas(t)
 
 	antes := ahoraHorario
 	t.Cleanup(func() { ahoraHorario = antes })

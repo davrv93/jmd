@@ -180,6 +180,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/submissions/{id}/grade", s.authed(s.staff(s.gradeSubmission)))
 	mux.Handle("GET /api/v1/courses/{id}/progress", s.authed(s.staff(s.courseProgress)))
 	mux.Handle("GET /api/v1/instructor/agenda", s.authed(s.staff(s.instructorAgenda)))
+	mux.Handle("GET /api/v1/instructor/simulador", s.authed(s.staff(s.simulador)))
+	mux.Handle("GET /api/v1/instructor/simulador/horario", s.authed(s.staff(s.simuladorHorario)))
 	mux.Handle("GET /api/v1/horario", s.authed(s.miHorario))
 	mux.Handle("GET /api/v1/courses/{id}/examples", s.authed(s.courseExamples))
 	mux.Handle("GET /api/v1/examples/{id}", s.authed(s.example))

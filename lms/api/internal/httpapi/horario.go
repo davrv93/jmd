@@ -165,8 +165,8 @@ func (s *Server) ofertas(cat *content.Catalog, p *Principal, suyas []claseAgenda
 	return out
 }
 
-// miHorario: GET /api/v1/horario → {"zona": "America/Lima", "cursos": [...], "clases": [...], "ofertas": [...]}.
-func (s *Server) miHorario(w http.ResponseWriter, r *http.Request, p *Principal) {
+// horarioDe arma Mi horario de quien sea: el alumno que pregunta o el que simula el instructor.
+func (s *Server) horarioDe(p *Principal) map[string]any {
 	cat := s.Content.Get()
 	cursos, clases := []cursoHorario{}, []claseAgenda{}
 	for _, c := range cat.Courses() {
@@ -183,6 +183,11 @@ func (s *Server) miHorario(w http.ResponseWriter, r *http.Request, p *Principal)
 	}
 	sort.SliceStable(clases, func(i, j int) bool { return clases[i].inicio.Before(clases[j].inicio) })
 	marcarCruces(clases)
-	writeJSON(w, 200, map[string]any{"zona": "America/Lima", "cursos": cursos, "clases": clases,
-		"ofertas": s.ofertas(cat, p, clases, ahoraHorario())})
+	return map[string]any{"zona": "America/Lima", "cursos": cursos, "clases": clases,
+		"ofertas": s.ofertas(cat, p, clases, ahoraHorario())}
+}
+
+// miHorario: GET /api/v1/horario → {"zona": "America/Lima", "cursos": [...], "clases": [...], "ofertas": [...]}.
+func (s *Server) miHorario(w http.ResponseWriter, r *http.Request, p *Principal) {
+	writeJSON(w, 200, s.horarioDe(p))
 }

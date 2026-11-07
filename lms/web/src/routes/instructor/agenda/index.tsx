@@ -191,6 +191,9 @@ export default component$(() => {
             <h1>Agenda</h1>
             <p class="ag-sub">Hora de Lima</p>
           </div>
+          <Link class="btn ghost sm" href="/instructor/simulador/">
+            <Icon name="eye" size={14} /> Ver como alumno
+          </Link>
           <Link class="btn ghost sm" href="/instructor/">
             <Icon name="chevronLeft" size={14} /> Instructor
           </Link>

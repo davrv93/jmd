@@ -438,6 +438,15 @@ export const api = {
   agenda: () => req<Agenda>("GET", "/api/v1/instructor/agenda"),
   /** Mi horario: los cursos en los que el usuario está matriculado, sus clases y los cruces. */
   horario: () => req<Horario>("GET", "/api/v1/horario"),
+  /** Simulador (staff): los alumnos y grupos que ve el instructor. */
+  simulador: () => req<Simulador>("GET", "/api/v1/instructor/simulador"),
+  /** Simulador (staff): Mi horario de un alumno, o con los grupos elegidos (`grupos` manda si viene). */
+  simuladorHorario: (q: { alumno?: string; grupos?: string[] }) => {
+    const p = new URLSearchParams();
+    if (q.alumno) p.set("alumno", q.alumno);
+    if (q.grupos) p.set("grupos", q.grupos.join(","));
+    return req<Horario & { simulado: { alumno: string; grupos: string[] } }>("GET", `/api/v1/instructor/simulador/horario?${p}`);
+  },
   // IA del Estudio: estado para cualquier usuario; configuración y prueba solo para el admin.
   llmStatus: () => req<LlmStatus>("GET", "/api/v1/llm/status"),
   llmConfig: () => req<LlmConfig>("GET", "/api/v1/admin/llm"),
@@ -730,6 +739,10 @@ export type HorarioOferta = {
   inscripcion: string;
   cursos: { slug: string; nombre: string; descripcion?: string }[];
   clases: { inicio: string; fin: string; minutos: number }[];
+};
+export type Simulador = {
+  alumnos: { id: string; nombre: string; email: string; grupos: string[] }[];
+  grupos: { id: string; nombre: string; cursos: string[] }[];
 };
 export type Horario = { zona: string; cursos: HorarioCurso[]; clases: HorarioClase[]; ofertas?: HorarioOferta[] };
 
