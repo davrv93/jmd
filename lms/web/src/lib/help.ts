@@ -13,6 +13,7 @@ export const HELP: Record<string, HelpTopic> = {
       "«Continuar» te lleva a la última sesión que abriste en este navegador.",
       "Cada curso muestra tu avance: pasos del ciclo que marcaste como hechos.",
       "«Próximas entregas» lista las tareas pendientes, la más cercana primero.",
+      "«Horario» muestra en qué cursos estás matriculado, todas tus fechas y si dos clases se cruzan.",
     ],
   },
   curso: {

@@ -33,6 +33,7 @@ const MARCA = `<svg class="mark" width="18" height="18" viewBox="0 0 24 24" aria
 // Navegación principal: aprender primero, después las herramientas y el cierre.
 const NAV = [
   { href: "/courses/", label: "Aprender", icon: "home", match: ["/courses/", "/lessons/"] },
+  { href: "/horario/", label: "Horario", icon: "calendar", match: ["/horario/"] },
   { href: "/projects/", label: "Proyectos", icon: "task", match: ["/projects/", "/assignments/", "/examples/"] },
   { href: "/links/", label: "Recursos", icon: "link", match: ["/links/"] },
   { href: "/studio/", label: "Estudio", icon: "wand", match: ["/studio/"] },

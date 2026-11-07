@@ -1,6 +1,6 @@
 import { component$, useContext, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, type DocumentHead } from "@builder.io/qwik-city";
-import { api, errMsg, fmtDate, rel, requireLogin, STATUS, type AssignmentSummary, type Course, type LessonSummary } from "~/lib/api";
+import { api, crucesPendientes, errMsg, fmtDate, proximaClase, rel, requireLogin, STATUS, type AssignmentSummary, type Course, type Horario, type LessonSummary } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
 import { setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
@@ -29,6 +29,7 @@ interface Semana {
 const DIA = new Intl.DateTimeFormat("es-PE", { day: "numeric", timeZone: "America/Lima" });
 const MES = new Intl.DateTimeFormat("es-PE", { month: "short", timeZone: "America/Lima" });
 const HORA = new Intl.DateTimeFormat("es-PE", { hour: "numeric", minute: "2-digit", timeZone: "America/Lima" });
+const FECHA = new Intl.DateTimeFormat("es-PE", { weekday: "short", day: "numeric", month: "short", timeZone: "America/Lima" });
 const HOY = new Intl.DateTimeFormat("es-PE", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Lima" });
 
 /** La clase en la que va el alumno: la primera publicada sin terminar (o la última publicada). */
@@ -86,17 +87,20 @@ function avance(c: Course): { pct: number; clases: number; hechas: number } {
 
 export default component$(() => {
   const session = useContext(SessionContext);
-  const st = useStore<{ courses: Course[] | null; error: string; faltaCert: boolean; ahora: AhoraInicio | null }>({
+  const st = useStore<{ courses: Course[] | null; error: string; faltaCert: boolean; ahora: AhoraInicio | null; horario: Horario | null }>({
     courses: null,
     error: "",
     faltaCert: false,
     ahora: null,
+    horario: null,
   });
 
   const load = $(async () => {
     st.error = "";
     try {
       const list = await api.courses();
+      // Si falla el horario, el inicio sigue funcionando: solo faltan la próxima clase y los cruces.
+      api.horario().then((h) => (st.horario = h)).catch(() => undefined);
       st.courses = await Promise.all(list.map((c) => api.course(c.slug)));
       // El curso «de ahora»: el que tiene avance sin terminar; si no hay, el primero.
       const abiertos = st.courses.filter((x) => { const a = avance(x); return a.pct > 0 && a.pct < 100; }).sort((x, y) => avance(y).pct - avance(x).pct);
@@ -177,6 +181,13 @@ export default component$(() => {
   const peso = (f: { cursos: Course[] }) => (f.cursos.some((c) => c.id === rutaCurso?.id) ? 2 : f.cursos.some((c) => avance(c).pct > 0) ? 1 : 0);
   familias.sort((x, y) => peso(y) - peso(x));
   const matiz = tonos(familias.map((f) => f.familia));
+  const clasesHorario = st.horario?.clases ?? [];
+  const cruces = crucesPendientes(clasesHorario, ahoraMs).length;
+  /** «Próxima: dom 8 nov, 9:00 p. m.» de un curso, o vacío si no tiene fecha por delante. */
+  const proxima = (slug: string) => {
+    const k = proximaClase(clasesHorario.filter((x) => x.curso_slug === slug), ahoraMs);
+    return k ? `Próxima: ${FECHA.format(new Date(k.inicio)).replace(/\./g, "")}, ${HORA.format(new Date(k.inicio))}` : "";
+  };
 
   return (
     <>
@@ -219,6 +230,14 @@ export default component$(() => {
             <div class="xs muted">Tu nombre completo tal como saldrá impreso y el correo donde lo recibirás. Toma un minuto.</div>
           </span>
           <span class="btn sm gold">Completar <Icon name="chevronRight" size={14} /></span>
+        </Link>
+      )}
+
+      {cruces > 0 && (
+        <Link class="agenda-vencidas" href="/horario/" data-testid="aviso-cruces">
+          <Icon name="alert" size={14} />
+          <span class="grow">{cruces === 1 ? "Tienes 1 cruce de horario" : `Tienes ${cruces} cruces de horario`}</span>
+          Ver mi horario <Icon name="chevronRight" size={14} />
         </Link>
       )}
 
@@ -333,6 +352,7 @@ export default component$(() => {
           <section aria-labelledby="cursos-t" class="cursos">
             <h2 id="cursos-t" class="h2-sec">
               Mis cursos {st.courses.length > 1 && <span class="h2-sub">{st.courses.length}</span>}
+              {st.courses.length > 0 && <Link class="h2-enlace" href="/horario/"><Icon name="calendar" size={14} /> Ver mi horario</Link>}
             </h2>
             {st.courses.length === 0 && <Empty icon="book" title="Todavía no estás en ningún curso" text="Pide al instructor que te añada a tu grupo; aparecerá aquí." />}
             <div class="cursos-grid">
@@ -348,6 +368,7 @@ export default component$(() => {
                         <span class="curso-meta">
                           {uno && familiaDe(uno).grupo && <span class="curso-grupo">{familiaDe(uno).grupo}</span>}
                           {avance(uno).clases} {avance(uno).clases === 1 ? "clase" : "clases"} · {uno.assignments.length} {uno.assignments.length === 1 ? "proyecto" : "proyectos"}
+                          {proxima(uno.slug) && <span class="curso-prox">{proxima(uno.slug)}</span>}
                         </span>
                       ) : (
                         <span class="curso-meta">{cursos.length} grupos</span>
@@ -376,7 +397,7 @@ export default component$(() => {
                         return (
                           <li key={c.id}>
                             <Link href={`/courses/${c.slug}/`}>
-                              <span class="grow">{grupo || "Grupo 1"}</span>
+                              <span class="grow">{grupo || "Grupo 1"}{proxima(c.slug) && <span class="curso-prox">{proxima(c.slug)}</span>}</span>
                               <span class="xs muted">{a.clases} {a.clases === 1 ? "clase" : "clases"}</span>
                               {a.pct > 0 && <span class="xs gold">{Math.round(a.pct)} %</span>}
                               <Icon name="chevronRight" size={14} class="faint" />

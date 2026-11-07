@@ -436,6 +436,8 @@ export const api = {
   courseProgress: (id: string) => req<CourseProgress>("GET", `/api/v1/courses/${encodeURIComponent(id)}/progress`),
   /** Calendario del instructor: sesiones con fecha de sus cursos + content/agenda.yaml, en orden de inicio. */
   agenda: () => req<Agenda>("GET", "/api/v1/instructor/agenda"),
+  /** Mi horario: los cursos en los que el usuario está matriculado, sus clases y los cruces. */
+  horario: () => req<Horario>("GET", "/api/v1/horario"),
   // IA del Estudio: estado para cualquier usuario; configuración y prueba solo para el admin.
   llmStatus: () => req<LlmStatus>("GET", "/api/v1/llm/status"),
   llmConfig: () => req<LlmConfig>("GET", "/api/v1/admin/llm"),
@@ -715,3 +717,21 @@ export type AgendaClase = {
   nota?: string;
 };
 export type Agenda = { zona: string; clases: AgendaClase[] };
+
+/** Una clase de Mi horario (GET /api/v1/horario). `cruces` lleva los ids de las clases que se solapan. */
+export type HorarioClase = AgendaClase & { cruces?: string[] };
+export type HorarioCurso = { slug: string; nombre: string; grupo: string; area?: string };
+export type Horario = { zona: string; cursos: HorarioCurso[]; clases: HorarioClase[] };
+
+/** La siguiente clase sin terminar. Las clases llegan ordenadas por inicio. */
+export const proximaClase = (clases: HorarioClase[], ahora: number) => clases.find((c) => Date.parse(c.fin) > ahora) ?? null;
+
+/** Pares de clases por venir que se solapan, cada par una sola vez. */
+export function crucesPendientes(clases: HorarioClase[], ahora: number): [HorarioClase, HorarioClase][] {
+  const vivas = clases.filter((c) => Date.parse(c.fin) > ahora);
+  const pares: [HorarioClase, HorarioClase][] = [];
+  vivas.forEach((a, i) => {
+    for (const b of vivas.slice(i + 1)) if (a.cruces?.includes(b.id)) pares.push([a, b]);
+  });
+  return pares;
+}
