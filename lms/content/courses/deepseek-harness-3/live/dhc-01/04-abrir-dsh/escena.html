@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Abrir DeepSeek Harness, paso a paso</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dhc-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: pestaña «En tu aula» (3 pasos con aula dsh, salida de terminal rotulada como ilustración) y secuencia de capturas reales de dsh 0.2.1-rc.5 con globos que señalan dónde hacer clic (anterior/siguiente o flechas), tabla de errores y diferencias con la documentación. La clave nunca se escribe aquí.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+body { font-size: clamp(16px, calc(1.28vw + .52vh), 32px); }
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.6em; }
+.esc-cuerpo { gap: 1.5vh; }
+.esc-card { padding: .65em 1em; }
+.x-btn { font: 700 .74em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .65em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); transition: transform .15s, background .15s; }
+.x-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.x-btn:disabled { opacity: .4; cursor: default; }
+.x-btn.pri { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-btn:focus-visible, .x-tab:focus-visible, .x-it:focus-visible, .x-chk:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.x-tabs { display: flex; gap: .5em; flex-wrap: wrap; align-items: center; }
+.x-tab { font: 700 .78em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; }
+.x-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-ra, .x-rb, .x-esq { display: inline-flex; align-items: center; gap: .35em; padding: .18em .7em; border-radius: 999px; font-size: .62em; font-weight: 800; letter-spacing: .04em; border: 1px solid; white-space: nowrap; }
+.x-ra { color: var(--accent); background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.x-rb { color: var(--gold); background: var(--gold-bg); border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+.x-esq { color: var(--warn); background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.x-real { color: var(--ok); background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.x-et { font-size: .62em; font-weight: 800; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.x-chk { display: grid; grid-template-columns: 1.5em 1fr; gap: .6em; align-items: start; text-align: left; font: inherit; color: var(--fg); background: transparent; border: 0; padding: .25em 0; cursor: pointer; width: 100%; }
+.x-chk i { width: 1.3em; height: 1.3em; border-radius: .3em; border: 2px solid var(--line2); background: var(--s1); display: grid; place-items: center; font-style: normal; font-weight: 900; color: transparent; font-size: .85em; transition: background .15s; }
+.x-chk[aria-checked="true"] i { background: var(--ok); border-color: var(--ok); color: #fff; }
+.x-chk span { font-size: .92em; line-height: 1.3; }
+.x-chk small { display: block; color: var(--muted); font-size: .86em; }
+.x-pasos { margin: 0; padding: 0; list-style: none; display: grid; gap: .45em; counter-reset: p; }
+.x-pasos li { display: grid; grid-template-columns: 1.6em 1fr; gap: .6em; align-items: baseline; font-size: .95em; line-height: 1.3; }
+.x-pasos li::before { counter-increment: p; content: counter(p); display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font-weight: 800; font-size: .85em; }
+.x-pasos code, .x-c { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.x-ver, .x-falla { padding: .45em .8em; border-radius: .7em; font-size: .82em; line-height: 1.35; }
+.x-ver { background: var(--ok-bg); border-left: 4px solid var(--ok); }
+.x-falla { background: var(--warn-bg); border-left: 4px solid var(--warn); }
+.x-ver b, .x-falla b { display: block; font-size: .85em; letter-spacing: .05em; text-transform: uppercase; }
+.x-ver b { color: var(--ok); } .x-falla b { color: var(--warn); }
+.x-estado { font-size: .74em; font-weight: 600; color: var(--muted); }
+.x-estado b { color: var(--ok); }
+.x-aviso { padding: .5em .9em; border-radius: .8em; background: var(--bad-bg); border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent); color: var(--fg); font-size: .78em; }
+.x-aviso b { color: var(--bad); }
+[data-v][hidden] { display: none !important; }
+.x-aula { display: grid; grid-template-columns: 1.05fr 1fr; gap: 1.4vw; align-items: start; }
+.x-aula > * { min-width: 0; }
+.x-aula .x-esq, .x-aula .x-rb { white-space: normal; }
+.x-a3 { margin: 0; padding: 0; list-style: none; display: grid; gap: .55em; }
+.x-a3 li { display: grid; grid-template-columns: 1.9em 1fr; gap: .7em; align-items: start; padding: .55em .8em; border-radius: .8em; background: var(--s1); border: 1px solid var(--line); box-shadow: var(--card-shadow); font-size: .8em; line-height: 1.3; }
+.x-a3 .n { display: grid; place-items: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--gold-bg); color: var(--gold); font-weight: 900; }
+.x-a3 b.cm { display: table; font: 700 1.02em var(--mono); background: var(--s3); padding: .08em .45em; border-radius: .35em; margin-bottom: .15em; }
+.x-a3 small { display: block; color: var(--muted); font-size: .88em; }
+.x-tterm { padding: .9em 1.1em; border-radius: .8em; background: #14122b; color: #e9e6ff; font: 600 .62em/1.5 var(--mono); white-space: pre-wrap; margin: 0; }
+.x-tterm .c { color: #8b87b8; } .x-tterm .p { color: #8e7dff; } .x-tterm b { color: #ffd27a; }
+.x-aula .x-falla { font-size: .72em; }
+.x-otros { font-size: .7em; line-height: 1.4; margin: 0; }
+.x-otros code { font: 600 .95em var(--mono); background: var(--s3); padding: .05em .35em; border-radius: .3em; }
+
+.esc { padding: 1.5vh 3vw 1.2vh; gap: 1vh; }
+.x-cab4 { display: flex; align-items: center; justify-content: space-between; gap: 1.5vw; flex-wrap: wrap; }
+.x-cab4 .esc-titulo { font-size: 1.35em; }
+.x-rec { display: grid; grid-template-columns: 1.7fr 1fr; gap: 1.4vw; align-items: start; }
+.x-vizq { display: grid; gap: .5vh; }
+.x-vf { position: relative; aspect-ratio: 16 / 10; width: 100%; overflow: hidden; border-radius: .8em; border: 2px solid var(--line2); background: #fff; box-shadow: var(--card-shadow); }
+.x-vi { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; transition: transform .45s ease; }
+.x-term { position: absolute; inset: 0; display: grid; align-content: center; gap: .5em; padding: 1.4em 1.6em; background: #14122b; color: #e9e6ff; font: 600 .95em/1.6 var(--mono); }
+.x-term .c { color: #8b87b8; } .x-term .p { color: #8e7dff; }
+.x-term b { color: #ffd27a; }
+.x-pin { position: absolute; width: 2.6em; height: 2.6em; margin: -1.3em 0 0 -1.3em; border-radius: 50%; background: rgba(255,60,60,.12); border: 4px solid #ff2d2d; box-shadow: 0 0 0 2px #fff, 0 2px 10px rgba(0,0,0,.45); transition: left .45s ease, top .45s ease; }
+.x-pin::after { content: ""; position: absolute; inset: -.5em; border-radius: 50%; border: 3px solid #ff2d2d; animation: x-pulsa 1.6s ease-out infinite; }
+.x-glo { position: absolute; max-width: 46%; padding: .4em .7em; border-radius: .6em; background: #14122b; color: #fff; font-size: .78em; font-weight: 700; line-height: 1.25; box-shadow: 0 4px 14px rgba(0,0,0,.35); transition: left .45s ease, top .45s ease; z-index: 3; }
+@keyframes x-pulsa { 0% { transform: scale(.7); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+.x-vbar { display: flex; align-items: center; gap: .6em; flex-wrap: wrap; }
+.x-dots { display: flex; gap: .35em; margin-left: auto; }
+.x-dots button { width: 1.05em; height: 1.05em; border-radius: 50%; border: 2px solid var(--line2); background: var(--s1); padding: 0; cursor: pointer; }
+.x-dots button[aria-current="step"] { background: var(--accent); border-color: var(--accent); }
+.x-vder { display: grid; gap: .8vh; }
+.x-vder h2 { margin: 0; font-size: 1.12em; line-height: 1.2; }
+.x-vder .x-n { color: var(--accent); }
+.x-nav { display: flex; gap: .6em; align-items: center; }
+.x-dec { display: flex; gap: .5em; flex-wrap: wrap; align-items: center; }
+.x-dec .x-btn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-dec p { margin: 0; font-size: .8em; flex-basis: 100%; }
+.x-tabla { display: grid; gap: .5em; }
+.x-fila { display: grid; grid-template-columns: 4.2em 1fr 1.25fr 1.4fr; gap: .8em; align-items: start; padding: .6em .9em; border-radius: .8em; background: var(--s1); border: 1px solid var(--line); font-size: 1em; line-height: 1.3; }
+.x-fila .cod { font-size: 1.7em; font-weight: 800; color: var(--accent); line-height: 1; }
+.x-fila small { display: block; color: var(--muted); }
+.x-cmp { display: grid; gap: .5em; }
+.x-cmp .x-fila { grid-template-columns: 1fr 1fr; }
+.x-cmp h3 { margin: 0 0 .2em; font-size: .72em; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.x-cmp .x-fila div:last-child { border-left: 3px solid var(--warn); padding-left: .7em; }
+@media (prefers-reduced-motion: reduce) { .x-pin::after { animation: none; } .x-vi, .x-pin, .x-glo { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .x-btn, .x-tab { transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="700" cy="190" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:2.4s" cx="1500" cy="320" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:2.9s" cx="760" cy="840" r="1.6"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/><circle class="e p" style="--p:3.3s" cx="1210" cy="780" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">DeepSeek Harness · S1 · E04</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="x-cab4">
+      <h1 class="esc-titulo a-in">DeepSeek Harness: <em>del comando al primer prompt</em></h1>
+      <div class="x-tabs" role="tablist" aria-label="Vistas">
+        <button type="button" class="x-tab" role="tab" data-vista="aula" aria-selected="true">En tu aula · 3 pasos</button>
+        <button type="button" class="x-tab" role="tab" data-vista="rec" aria-selected="false">Recorrido con capturas</button>
+        <button type="button" class="x-tab" role="tab" data-vista="err" aria-selected="false">Si falla: 401 · 402 · 429</button>
+        <button type="button" class="x-tab" role="tab" data-vista="dif" aria-selected="false">Guía vs lo que verás</button>
+      </div>
+    </div>
+
+    <div class="x-aula" data-v="aula">
+      <div class="x-vder">
+        <span class="x-rb">RUTA B · tu aula del LIVE: Node 24 y dsh 0.2.1-rc.5 ya instalados. No instalas nada en tu laptop</span>
+        <ol class="x-a3">
+          <li><span class="n">1</span><span><b class="cm">aula dsh clave</b>Pega tu API key desde tu gestor: no se ve al escribir. Queda solo en la memoria del aula (si el aula se reinicia, la vuelves a pegar); nunca en <code>/trabajo</code>.<small>Para borrarla: aula dsh olvidar</small></span></li>
+          <li><span class="n">2</span><span><b class="cm">aula dsh web</b>Arranca la interfaz web de dsh (unos segundos) en tu carpeta de trabajo y te imprime tu enlace.<small>Para pararla: aula dsh web parar · para ver qué hay: aula dsh estado</small></span></li>
+          <li><span class="n">3</span><span><b style="display:block">Abre el enlace en tu navegador</b>Es tuyo: lo abren solo tú y el instructor; no lo compartas. Verás la MISMA interfaz del recorrido con capturas: <b>Continue</b>, eliges modelo y escribes tu primer prompt.<small>La clave ya entró en el paso 1: no la pegues en la web. «Upload Session Log» viene apagado en el aula.</small></span></li>
+        </ol>
+      </div>
+      <div class="x-vizq">
+        <pre class="x-tterm" aria-label="Ilustración de la terminal del aula"><span class="p">$</span> <b>aula dsh clave</b>
+Pega tu API key de DeepSeek (no se ve al escribir) y pulsa Enter:
+Clave guardada para esta aula (solo en memoria del aula: se pierde si se reinicia; nunca va a /trabajo).
+Siguiente paso: aula dsh "describe tu tarea"   o   aula dsh web
+<span class="p">$</span> <b>aula dsh web</b>
+Arrancando la interfaz web de dsh … (espacio de trabajo: /trabajo/sistema)
+Lista. Abre este enlace en tu navegador (lleva tu acceso; no lo compartas):
+  jmd-learn.online/dsh/&lt;tú&gt;/?…
+Para ver su estado: aula dsh estado · para pararla: aula dsh web parar</pre>
+        <span class="x-esq">ilustración · no es una captura (el enlace real empieza por https y lleva tu acceso)</span>
+        <p class="x-otros">dsh trabaja en <code>/trabajo/sistema</code> (lo crea <code>aula sistema &lt;id&gt;</code>, escena 5) o en <code>/trabajo</code> si aún no lo tienes: tras la escena 5, <code>aula dsh web parar</code> y <code>aula dsh web</code>. Sin web: <code>aula dsh "tarea"</code> responde en la terminal con un resumen de uso.</p>
+        <div class="x-falla"><b>Si falla</b>«Aún no me diste tu clave» → paso 1. 401 → clave mal copiada: <code>aula dsh clave</code> otra vez. «Sin salida a internet por el proxy» o «esta aula no tiene la interfaz web» → cierra la terminal, vuelve a entrar al LIVE y, si sigue, avisa al instructor.</div>
+      </div>
+    </div>
+
+    <div class="x-rec" data-v="rec" hidden>
+      <div class="x-vizq">
+        <div class="x-vf" id="vf" aria-label="Captura de DeepSeek Harness">
+          <img class="x-vi" id="vi" alt="" hidden>
+          <div class="x-term" id="vt">
+            <div><span class="c"># 1. comprueba Node (24.9 o mayor)</span></div>
+            <div><span class="p">$</span> node -v</div>
+            <div><span class="c"># 2. abre dsh (la primera vez baja dependencias: 5 a 6 min)</span></div>
+            <div><span class="p">$</span> <b>npx @deepseek-ai/dsh web</b></div>
+            <div><span class="c"># 3. se abre el navegador en 127.0.0.1:3080</span></div>
+          </div>
+          <div id="vp"></div>
+        </div>
+        <div class="x-vbar">
+          <span class="x-esq" id="chip">ilustración · no es una captura</span>
+          <button type="button" class="x-btn" id="zoom" style="font-size:.66em;padding:.5em .9em">Ver completa</button>
+          <div class="x-dots" id="dots" role="group" aria-label="Ir al paso"></div>
+        </div>
+      </div>
+      <div class="x-vder">
+        <span class="x-ra">RUTA A · tu laptop (Node 24.9+). En el aula es la misma interfaz desde el paso 2, sin pegar la clave</span>
+        <h2 id="vt-t"></h2>
+        <ol class="x-pasos" id="vt-h"></ol>
+        <div class="x-ver"><b>Qué deberías ver</b><span id="vt-v"></span></div>
+        <div class="x-falla"><b>Si falla</b><span id="vt-f"></span></div>
+        <div class="x-dec" id="dec" hidden>
+          <button type="button" class="x-btn" data-d="on" aria-pressed="false">Lo dejo activado</button>
+          <button type="button" class="x-btn" data-d="off" aria-pressed="false">Lo desactivo</button>
+          <p id="dec-t" aria-live="polite"></p>
+        </div>
+        <div class="x-nav">
+          <button type="button" class="x-btn" id="ant">← Anterior</button>
+          <button type="button" class="x-btn pri" id="sig">Siguiente →</button>
+          <span class="x-estado" id="cuenta"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="x-tabla" data-v="err" hidden>
+      <p class="x-obj" style="margin:0;font-weight:700">Objetivo: saber qué significa cada error y qué hacer. El consumo lo ves en la página Usage de la plataforma.</p>
+      <div id="tabla-err" class="x-tabla"></div>
+    </div>
+
+    <div class="x-cmp" data-v="dif" hidden>
+      <p class="x-obj" style="margin:0;font-weight:700">dsh es un <em>developer preview</em>: puede cambiar sin aviso. Si tu pantalla difiere, manda la documentación oficial; cuéntalo en el hilo.</p>
+      <div id="tabla-dif" class="x-cmp"></div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando tu dsh abra y «Select model» muestre modelos: en el aula con aula dsh clave y aula dsh web; en tu laptop con npx y tu clave en Settings → Models</span>
+  </footer>
+</div>
+
+<script>
+/* Ayudas comunes: tema, selector corto y pestañas. */
+(function () {
+  try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {}
+})();
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function pestanas(alCambiar) {
+  var bs = $$("[data-vista]"), ps = $$("[data-v]");
+  function ir(id) {
+    bs.forEach(function (b) { b.setAttribute("aria-selected", b.getAttribute("data-vista") === id ? "true" : "false"); });
+    ps.forEach(function (p) { p.hidden = p.getAttribute("data-v") !== id; });
+    if (alCambiar) alCambiar(id);
+  }
+  bs.forEach(function (b) { b.addEventListener("click", function () { ir(b.getAttribute("data-vista")); }); });
+  return ir;
+}
+
+</script>
+<script>
+(function () {
+  var IMG = "../../comun/img/";
+  var PASOS = [
+    { t: "Laptop: abre dsh con npx", term: true,
+      h: ["Comprueba <code>node -v</code>: debe ser v24.9 o mayor.", "En una carpeta de pruebas ejecuta <code>npx @deepseek-ai/dsh web</code>.", "No cierres la terminal: la primera vez tarda 5 a 6 minutos."],
+      v: "El navegador abre dsh en 127.0.0.1:3080. Para detenerlo: Ctrl+C en esa terminal. (En el aula este paso es <code>aula dsh web</code>: pestaña «En tu aula».)",
+      f: "«command not found: npx» → falta Node. Errores raros al arrancar → Node por debajo de 24.9. Si no abre solo, copia la dirección que imprime (lleva un token: no la compartas)." },
+    { t: "Aviso de preview", img: "dsh-01-aviso-preview.webp", foco: [50, 52], z: 2, pins: [[64.7, 68, "Pulsa Continue", "t"]],
+      h: ["Lee el aviso: DeepSeek Harness está en preview.", "Pulsa <b>Continue</b>."],
+      v: "El aviso «Preview Notice» con un solo botón, Continue.",
+      f: "La página queda en blanco → recarga con F5; si sigue, mira la terminal: debe estar corriendo (en el aula: <code>aula dsh estado</code>)." },
+    { t: "Get started: Add API Key", img: "dsh-02-inicio-get-started.webp", foco: [50, 55], z: 2.4, pins: [[51.9, 57, "Add API Key", "b"]],
+      h: ["Aparece el diálogo <b>Get started</b>.", "Elige <b>Add API Key</b>. (Sign in es otra vía; en el curso usamos clave de API.)"],
+      v: "Un diálogo con dos botones: Add API Key y Sign in.",
+      f: "¿Cerraste el diálogo? Lo mismo se hace en More → Settings → Models (paso 6). En el aula la clave ya entró con <code>aula dsh clave</code>: si ves este diálogo, elige Configure later." },
+    { t: "Add an API key (campo vacío)", img: "dsh-03-add-api-key.webp", foco: [50, 50], z: 2, pins: [[50, 53.6, "Aquí pegas tu clave, en TU dsh", "t"]],
+      h: ["Haz clic en el campo <b>API key</b>.", "Pega tu clave desde tu gestor de contraseñas.", "<b>Configure later</b> lo deja para después."],
+      v: "El campo vacío y el botón Save and continue apagado hasta que escribas algo.",
+      f: "No pegues la clave en el chat del curso ni en una captura. Solo aquí, en tu dsh." },
+    { t: "Add an API key (con clave de relleno)", img: "dsh-04-add-api-key-relleno.webp", foco: [50, 52], z: 2, pins: [[63.75, 58.9, "Save and continue", "b"], [67.6, 53.9, "El ojo la muestra", "t"]],
+      h: ["El campo es de tipo contraseña: se ven puntos.", "Pulsa <b>Save and continue</b>.", "En esta captura hay una clave de relleno, no una real."],
+      v: "El diálogo se cierra y dsh queda listo para usar.",
+      f: "Si luego recibes 401, la clave está mal copiada (sin espacios sobrantes). Ver pestaña «Si falla»." },
+    { t: "More → Settings", img: "dsh-05-menu-more-settings.webp", foco: [20, 80], z: 2.6, pins: [[5.3, 83.3, "Settings", "r"]],
+      h: ["Abajo a la izquierda abre <b>More</b>.", "Elige <b>Settings</b>."],
+      v: "Un menú con Settings, Feedback y Sign in.",
+      f: "No ves More: ensancha la ventana; la barra lateral puede estar colapsada." },
+    { t: "Settings → Models (sin clave)", img: "dsh-06-settings-models-vacia.webp", foco: [50, 35], z: 2, pins: [[27, 19.7, "Models", "r"], [56.3, 30.6, "API key", "t"]],
+      h: ["Elige <b>Models</b> en el menú de Settings.", "Busca la tarjeta <b>DeepSeek</b> (deepseek-official)."],
+      v: "El aviso naranja «Env var not detected»: aún no hay clave guardada.",
+      f: "También sirve la variable DEEPSEEK_API_KEY: si ya la tienes, deja el campo vacío." },
+    { t: "Settings → Models (con clave)", img: "dsh-07-settings-models-clave.webp", foco: [55, 35], z: 2, pins: [[56.25, 30.5, "Pega la clave", "t"], [72.7, 41, "Apply", "b"]],
+      h: ["Pega tu clave en <b>API key</b>.", "Pulsa <b>Apply</b>: vale sin reiniciar.", "dsh la guarda en su archivo de credenciales y no vuelve a mostrarla."],
+      v: "La tarjeta DeepSeek con el campo lleno. En la captura, clave de relleno.",
+      f: "No pasa nada tras Apply → revisa saldo (402) y la clave (401) en la pestaña «Si falla»." },
+    { t: "Settings → General: Upload Session Log", img: "dsh-08-settings-privacidad-log.webp", foco: [58, 75], z: 2, pins: [[74.7, 81.4, "Upload Session Log", "t"]], decide: true,
+      h: ["Abre <b>General</b> y baja hasta «Upload Session Log…».", "En tu laptop viene <b>activado</b> por defecto: envía el registro de tus sesiones a DeepSeek para mejorar sus modelos. Decide tú.", "En el aula viene <b>apagado</b> por configuración y no se puede encender."],
+      v: "Un interruptor encendido junto a «Help improve DeepSeek models and products».",
+      f: "No lo encuentras: está al final de General, junto a «Current version»." },
+    { t: "Elegir el espacio de trabajo", img: "dsh-09-menu-workspace.webp", foco: [40, 52], z: 2.2, pins: [[38.75, 46.7, "Default workspace ▾", "t"], [38.6, 55.6, "Add workspace…", "r"]],
+      h: ["Abre <b>Default workspace ▾</b>.", "Elige <b>Add workspace…</b>: se abre el selector de carpetas de tu sistema.", "Elige la carpeta de TU sistema de práctica."],
+      v: "El espacio elegido sobre el cuadro de texto. El selector nativo no se pudo capturar: verifica en tu pantalla.",
+      f: "Tu versión pide «Choose workspace» (como dice la documentación): haz lo mismo con ese botón." },
+    { t: "Tu primer prompt", img: "dsh-10-compositor-prompt.webp", foco: [58, 52], z: 1.5, pins: [[44, 51.7, "El prompt oficial", "t"], [84.5, 59.2, "Enviar", "t"]],
+      h: ["Elige un modelo en <b>Select model</b>.", "Escribe <code>Summarize this repository and identify its main packages.</code>", "Envía y lee lo que pide aprobar. Hoy lo aplicarás a tu sistema."],
+      v: "Escrito pero sin enviar: no teníamos clave. Con tu clave, el agente responde y pide aprobación según el modo (por defecto Workspace Write).",
+      f: "«Select model» vacío → falta una clave válida. 401, 402 o 429 → pestaña «Si falla»." }
+  ];
+  var ERR = [
+    ["401", "Autenticación fallida", "La clave es incorrecta.", "Revisa que no falten caracteres o crea otra clave y cámbiala en Settings → Models."],
+    ["402", "Saldo insuficiente", "Se acabó el saldo.", "Mira Billing y recarga en Top Up."],
+    ["429", "Límite alcanzado", "Demasiadas peticiones a la vez (límite por cuenta).", "Espacia las peticiones y reintenta."],
+    ["500 / 503", "Fallo o sobrecarga del servidor", "Es de DeepSeek, no tuyo.", "Reintenta tras una espera."]
+  ];
+  var DIF = [
+    ["Lo que dice la documentación", "Lo que vimos en 0.2.1-rc.5 (31-10-2026)"],
+    ["Elige «Choose workspace»: sin carpeta elegida el cuadro de texto no se activa.", "Ya existe un «Default workspace» y el cuadro está activo. «Choose workspace» solo sale si falla crear ese espacio."],
+    ["La clave se pone en Settings → Models.", "Al abrir sale primero un diálogo «Get started» con Add API Key y Sign in."],
+    ["«Add workspace…» abre el selector de carpetas del sistema operativo.", "No pudimos capturar esa ventana nativa: verifica en tu pantalla que la carpeta quede elegida."],
+    ["Node 24.9 o mayor.", "En tu laptop lo probamos con Node 26.4; con 24.2 (por debajo del mínimo) no. Mantente en 24.9 o más. En el aula ya viene Node 24 con dsh."]
+  ];
+
+  var vf = $("#vf"), vi = $("#vi"), vt = $("#vt"), vp = $("#vp"), paso = 0, cerca = true;
+  var dots = $("#dots");
+  PASOS.forEach(function (p, i) {
+    var b = el("button"); b.type = "button"; b.setAttribute("aria-label", "Paso " + (i + 1));
+    b.addEventListener("click", function () { ir(i); }); dots.appendChild(b);
+  });
+  function clamp(c, z) { var m = 50 / z; return Math.max(m, Math.min(100 - m, c)); }
+  function pos(p, c, z) { return (p - (clamp(c, z) - 50 / z)) * z; }
+  function pintarPins(p) {
+    vp.textContent = "";
+    if (!p.pins) return;
+    var z = cerca ? p.z : 1, cx = p.foco[0], cy = p.foco[1];
+    p.pins.forEach(function (q) {
+      var x = z === 1 ? q[0] : pos(q[0], cx, z), y = z === 1 ? q[1] : pos(q[1], cy, z);
+      var pin = el("div", "x-pin"); pin.style.left = x + "%"; pin.style.top = y + "%"; vp.appendChild(pin);
+      var g = el("div", "x-glo", q[2]); vp.appendChild(g);
+      var W = vf.clientWidth, H = vf.clientHeight, px = x / 100 * W, py = y / 100 * H, gw = g.offsetWidth, gh = g.offsetHeight, m = 42, l, t;
+      if (q[3] === "t") { l = px - gw / 2; t = py - gh - m; } else if (q[3] === "b") { l = px - gw / 2; t = py + m; }
+      else if (q[3] === "l") { l = px - gw - m; t = py - gh / 2; } else { l = px + m; t = py - gh / 2; }
+      l = Math.max(6, Math.min(W - gw - 6, l)); t = Math.max(6, Math.min(H - gh - 6, t));
+      g.style.left = l + "px"; g.style.top = t + "px";
+    });
+  }
+  function zoomear(p) {
+    if (!p.img) return;
+    var z = cerca ? p.z : 1;
+    var ox = z === 1 ? 50 : (clamp(p.foco[0], z) * z - 50) / (z - 1), oy = z === 1 ? 50 : (clamp(p.foco[1], z) * z - 50) / (z - 1);
+    vi.style.transformOrigin = ox + "% " + oy + "%"; vi.style.transform = "scale(" + z + ")";
+  }
+  function ir(i) {
+    paso = Math.max(0, Math.min(PASOS.length - 1, i));
+    var p = PASOS[paso];
+    $$("button", dots).forEach(function (b, k) { if (k === paso) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
+    vt.hidden = !p.term; vi.hidden = !p.img;
+    if (p.img) { vi.src = IMG + p.img; vi.alt = "Captura real de dsh: " + p.t; }
+    var chip = $("#chip");
+    chip.className = p.img ? "x-esq x-real" : "x-esq";
+    chip.textContent = p.img ? "captura real · dsh 0.2.1-rc.5" : "ilustración · no es una captura";
+    $("#zoom").hidden = !p.img;
+    $("#vt-t").innerHTML = "<span class='x-n'>" + (paso + 1) + " de " + PASOS.length + " ·</span> " + p.t;
+    $("#vt-h").innerHTML = p.h.map(function (s) { return "<li><span>" + s + "</span></li>"; }).join("");
+    $("#vt-v").innerHTML = p.v; $("#vt-f").innerHTML = p.f;
+    $("#dec").hidden = !p.decide;
+    $("#ant").disabled = paso === 0; $("#sig").disabled = paso === PASOS.length - 1;
+    $("#cuenta").textContent = paso === PASOS.length - 1 ? "Ese fue el último paso." : "";
+    zoomear(p); pintarPins(p);
+  }
+  $("#ant").addEventListener("click", function () { ir(paso - 1); });
+  $("#sig").addEventListener("click", function () { ir(paso + 1); });
+  $("#zoom").addEventListener("click", function () { cerca = !cerca; this.textContent = cerca ? "Ver completa" : "Acercar"; ir(paso); });
+  document.addEventListener("keydown", function (e) {
+    if ($("[data-v=rec]").hidden) return;
+    if (e.key === "ArrowRight") ir(paso + 1); else if (e.key === "ArrowLeft") ir(paso - 1);
+  });
+  var TXT = {
+    on: "Lo dejas activado: DeepSeek recibe el registro de tus sesiones para mejorar sus modelos. Está bien si trabajas con sistemas de práctica, que no tienen datos reales.",
+    off: "Lo desactivas: no se envía el registro. Es lo prudente si más adelante abres código o datos que no quieras compartir."
+  };
+  $$("[data-d]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      $$("[data-d]").forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+      $("#dec-t").textContent = TXT[b.getAttribute("data-d")];
+    });
+  });
+  ERR.forEach(function (r) {
+    var f = el("div", "x-fila"), c = el("div", "cod", r[0]); if (r[0].length > 3) c.style.fontSize = "1.05em";
+    var a = el("div"); a.innerHTML = "<b>" + r[1] + "</b>"; var cau = el("div", null, r[2]), q = el("div"); q.innerHTML = "<b>Qué hacer:</b> " + r[3];
+    f.appendChild(c); f.appendChild(a); f.appendChild(cau); f.appendChild(q); $("#tabla-err").appendChild(f);
+  });
+  DIF.forEach(function (r, i) {
+    var f = el("div", "x-fila"); if (i === 0) { f.style.background = "transparent"; f.style.border = "0"; f.style.padding = "0 .9em"; }
+    var a = el("div", null, r[0]), b = el("div", null, r[1]);
+    if (i === 0) { a.style.fontWeight = "800"; b.style.fontWeight = "800"; }
+    f.appendChild(a); f.appendChild(b); $("#tabla-dif").appendChild(f);
+  });
+  pestanas(function () { if (!$("[data-v=rec]").hidden) ir(paso); });
+  ir(0);
+
+})();
+</script>
+</body>
+</html>

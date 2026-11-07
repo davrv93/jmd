@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Audita la seguridad: pista automática no es hallazgo</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dhc-03 · Describe por roles, audita y valida). Sin recursos externos,
+  menos de 300 elementos y 1 MB, animaciones solo CSS, todo se apaga con prefers-reduced-motion. Legible a 1366x768.
+  Los datos de ejemplo salen de la foto real del sistema «muebleria». Nada se guarda: cada recarga vuelve al inicio.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc { padding: 1.8vh 2.6vw 1.6vh; gap: 1.4vh; }
+.esc-cuerpo { justify-content: flex-start; gap: 1.5vh; }
+.esc-titulo { font-size: 1.4em; }
+.esc-sub { font-size: .95em; }
+code, .s3-m { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; color: var(--fg); }
+.s3-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4vw; align-items: stretch; min-height: 0; }
+.s3-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .7em .95em; box-shadow: var(--card-shadow); min-height: 0; }
+.s3-card h3 { margin: 0 0 .3em; font-size: .95em; }
+.s3-h { margin: 0; font: 700 .68em var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.s3-tabs { display: flex; gap: .45em; flex-wrap: wrap; }
+.s3-tab { font: 700 .72em system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .42em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.s3-tab:hover { border-color: var(--accent); color: var(--accent); }
+.s3-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.s3-btn { white-space: nowrap; font: 700 .76em system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .5em 1.1em; border-radius: .7em; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.s3-btn.sec { background: var(--s1); color: var(--accent); }
+.s3-btn:disabled { opacity: .45; cursor: default; }
+.s3-btn:hover:not(:disabled) { filter: brightness(1.08); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.s3-term { margin: 0; font: 600 .74em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .6em .9em; white-space: pre-wrap; overflow: hidden; border: 1px solid rgba(190,185,255,.22); }
+.s3-term .p { color: #8e7dff; } .s3-term .c { color: #8e8ab8; } .s3-term .g { color: #6ee7a0; } .s3-term .r { color: #ff9b9b; } .s3-term .y { color: #f4d27a; }
+.s3-bd { display: inline-block; padding: .12em .65em; border-radius: 999px; font-size: .72em; font-weight: 800; border: 1px solid transparent; white-space: nowrap; }
+.s3-bd.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.s3-bd.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.s3-bd.bad { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, transparent); }
+.s3-bd.neu { background: var(--s3); color: var(--muted); border-color: var(--line2); }
+.s3-nota { margin: 0; font-size: .74em; color: var(--muted); }
+.s3-msg { margin: 0; padding: .5em .8em; border-left: 5px solid var(--accent); border-radius: .5em; background: var(--s2); font-size: .82em; }
+.s3-msg.ok { border-color: var(--ok); } .s3-msg.warn { border-color: var(--warn); } .s3-msg.bad { border-color: var(--bad); }
+.s3-msg b { color: var(--fg); }
+.s3-rutas { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; }
+.s3-ruta { padding: .5em .8em; border-radius: .8em; border: 1px dashed var(--line2); background: var(--s2); font-size: .78em; }
+.s3-ruta b { display: block; font-size: .95em; margin-bottom: .1em; }
+@media (prefers-reduced-motion: reduce) { .s3-anim { animation: none !important; transition: none !important; } }
+
+.esc-titulo { font-size: 1.3em; }
+.s3x-g { display: grid; grid-template-columns: .85fr 1.15fr; gap: 1.2vw; min-height: 0; }
+.s3x-tabla { width: 100%; border-collapse: collapse; font-size: .76em; }
+.s3x-tabla td { padding: .28em .5em; border-bottom: 1px solid var(--line); }
+.s3x-tabla tr { cursor: pointer; }
+.s3x-tabla tr:hover td { background: var(--accent-bg); }
+.s3x-tabla tr.sel td { background: var(--accent-bg); font-weight: 700; }
+.s3x-tabla td:first-child { color: var(--muted); width: 1.6em; font-family: var(--mono); }
+.s3x-det { display: grid; gap: .45em; align-content: start; }
+.s3x-det h3 { margin: 0; font-size: 1em; }
+.s3x-bl { font-size: .76em; }
+.s3x-bl ol { margin: .2em 0 0; padding-left: 1.3em; display: grid; gap: .15em; }
+.s3x-prueba { display: grid; grid-template-columns: 1fr auto; gap: .8em; align-items: start; }
+.s3x-prueba img { height: 9em; width: auto; border-radius: .5em; border: 1px solid var(--line2); }
+.s3x-caso { padding: .5em .7em; border-radius: .7em; background: var(--s2); border: 1px solid var(--line); font-size: .78em; }
+.s3x-opc { display: flex; gap: .5em; flex-wrap: wrap; margin-top: .4em; align-items: center; }
+.s3x-opc .s3-btn { padding: .35em .9em; }
+.s3x-fb { margin: .35em 0 0; font-size: .95em; }
+.s3x-prio { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.2vw; }
+.s3x-fila { display: grid; grid-template-columns: 1.6em 1fr auto auto; gap: .5em; align-items: center; padding: .32em .2em; border-bottom: 1px solid var(--line); font-size: .76em; }
+.s3x-fila b { display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
+.s3x-fila select { font: inherit; font-size: .95em; padding: .2em .3em; border-radius: .4em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+.s3x-fila.ok { background: var(--ok-bg); } .s3x-fila.mal { background: var(--bad-bg); }
+.s3x-grid { display: grid; grid-template-columns: 1.4em repeat(3, 1fr); grid-template-rows: repeat(3, 1fr) 1.4em; gap: .3em; }
+.s3x-cel { min-height: 4.6em; border-radius: .6em; border: 1px solid var(--line2); padding: .2em .4em; display: flex; flex-wrap: wrap; gap: .2em; align-content: flex-start; position: relative; }
+.s3x-cel i { position: absolute; right: .4em; bottom: .15em; font-style: normal; font-weight: 800; font-size: 1.5em; opacity: .35; }
+.s3x-cel b { display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .8em; }
+.s3x-ej { font-size: .66em; color: var(--muted); text-align: center; align-self: center; }
+.s3x-lat { writing-mode: vertical-rl; transform: rotate(180deg); }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Describe, audita y valida · E03</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">Audita la seguridad: <em>pista automática no es hallazgo</em></h1>
+    <p class="s3-msg warn a-in" style="--d:.1s"><b>La foto sugiere; tú verificas.</b> Cada mecanismo se confirma en el código (<code>archivo:línea</code>) y con una prueba en el navegador. Tu sistema tiene debilidades por descubrir: aquí aprendes el método con un sistema imaginario.</p>
+    <div class="s3-tabs" role="tablist">
+      <button class="s3-tab" role="tab" aria-selected="true" data-t="mec">1 · Doce mecanismos</button>
+      <button class="s3-tab" role="tab" aria-selected="false" data-t="pri">2 · Priorizar: severidad × probabilidad</button>
+      <span class="s3-nota" id="cuenta" style="margin-left:auto;align-self:center">0 de 12 filas completas</span>
+    </div>
+
+    <section id="t-mec" class="s3x-g">
+      <div class="s3-card" style="padding:.3em .5em"><table class="s3x-tabla" id="tbl"></table></div>
+      <div class="s3-card s3x-det" id="det"></div>
+    </section>
+
+    <section id="t-pri" hidden>
+      <div class="s3x-prio">
+        <div class="s3-card">
+          <p class="s3-h">Seis hallazgos genéricos · elige severidad y probabilidad</p>
+          <div id="filas"></div>
+          <div class="s3x-opc"><button class="s3-btn" id="comp" type="button">Comprobar</button><span class="s3-nota" id="pmsg">Severidad: cuánto daña. Probabilidad: qué tan fácil es que ocurra.</span></div>
+        </div>
+        <div class="s3-card">
+          <p class="s3-h">Prioridad = severidad × probabilidad</p>
+          <div class="s3x-grid" id="grid"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando completes 10 de las 12 filas y entiendas por qué la foto solo da pistas</span>
+  </footer>
+</div>
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+
+(function () {
+  var M = [
+    { n: "Hash de contraseña con sal", g: "grep -n \"hashClave\\|iterado\" js/*.js", m: "js/30-seguridad.js:47 · js/10-sha256.js:101",
+      p: ["Entra como admin y abre #/respaldo → Exportar.", "Abre el JSON y busca «usuarios».", "Cada usuario debe traer sal y hash; la clave en claro no debe estar."],
+      c: "Un sistema guarda un hash SHA-256 de la clave, sin sal, igual para todos los usuarios.", e: "debil", r: "alto", w: "Hay hash, pero sin sal dos usuarios con la misma clave tienen el mismo hash: débil. Riesgo alto: se rompe con tablas precalculadas." },
+    { n: "Política de contraseña", g: "grep -n \"politica\\|minClave\" js/*.js", m: "js/30-seguridad.js:55",
+      p: ["Entra y abre #/perfil.", "Intenta cambiar la clave por «abc».", "Debe rechazarla con mensajes en línea (largo, mayúscula, número, símbolo)."],
+      c: "Un sistema acepta cualquier clave, incluso de 1 carácter; no revisa nada.", e: "no", r: "alto", w: "No hay ninguna revisión de la clave: no encontrado. Riesgo alto: claves triviales." },
+    { n: "Bloqueo por intentos", g: "grep -n \"intentos\\|bloque\" js/30-seguridad.js", m: "js/30-seguridad.js:270",
+      p: ["Sal de la sesión y escribe 6 claves malas seguidas con un usuario real.", "¿Aparece un bloqueo temporal? ¿Cuánto dura?", "Abre #/bitacora como admin: ¿quedó el registro del bloqueo?"],
+      c: "Tras 5 intentos aparece «bloqueado 5 min», pero al recargar la página el contador vuelve a cero.", e: "debil", r: "alto", w: "El bloqueo existe pero se salta recargando: débil. Riesgo alto: no frena un ataque de fuerza bruta." },
+    { n: "Expiración de sesión", g: "grep -n \"sesionMin\\|vigencia\" js/*.js", m: "js/30-seguridad.js:321",
+      p: ["Ingresa y deja la pestaña sin tocar nada.", "Espera el tiempo de sesión. En una COPIA puedes bajarlo a 1 minuto en js/config.js y devolverlo.", "Debe avisar y luego pedir ingreso: «Tu sesión expiró por inactividad»."],
+      c: "El config dice 15 minutos, pero tras 20 minutos sin tocar nada la sesión sigue abierta.", e: "debil", r: "medio", w: "El valor existe pero la prueba lo contradice: débil. Riesgo medio: una laptop abandonada sigue abierta." },
+    { n: "Guardia de ruta (sesión y rol)", g: "grep -n \"guardia\" js/*.js", m: "js/80-app.js:162", img: "s3-04-sin-permiso.webp",
+      p: ["Ingresa como vendedor.", "Escribe #/usuarios en la barra de direcciones.", "Debe salir «Sin permiso» y quedar «acceso-denegado» en la bitácora."],
+      c: "Con rol vendedor abres #/usuarios y ves la tabla de usuarios. El menú no la muestra, pero la URL funciona.", e: "no", r: "alto", w: "Solo el menú la oculta: no hay guardia. Ocultar no es proteger. Riesgo alto." },
+    { n: "Permisos en la capa de datos", g: "grep -n \"Seg.puede\" js/40-datos.js", m: "js/40-datos.js:176 · :200 · :267",
+      p: ["Ingresa como vendedor y abre la consola (F12).", "Escribe: Datos.eliminar('clientes', 'CLI-0001')", "Debe devolver ok:false con «No tienes permiso»."],
+      c: "El sistema valida permisos al crear y editar, pero eliminar no consulta el rol.", e: "debil", r: "alto", w: "Cubre dos de tres acciones: débil. Riesgo alto: se borra datos saltando la pantalla." },
+    { n: "Escape de salida", g: "grep -n \"innerHTML\\|U.esc(\\|textContent\" js/*.js | head", m: "js/00-util.js:19",
+      p: ["Crea un cliente con nombre <b>x</b>.", "Mira la lista de clientes.", "Debe verse el texto literal <b>x</b>, no una «x» en negrita."],
+      c: "Guardas un nombre <b>x</b> y la lista muestra el texto literal <b>x</b>.", e: "si", r: "bajo", w: "La prueba coincide con lo esperado: presente. Riesgo bajo mientras todo dato pase por escape o textContent." },
+    { n: "Validación de entrada", g: "grep -n \"validarCampo\\|validar(\" js/*.js | head", m: "js/30-seguridad.js:443",
+      p: ["Abre #/e/productos/nuevo y guarda con todo vacío.", "Prueba un precio negativo y un código con símbolos.", "Debe mostrar errores en línea y no guardar."],
+      c: "El formulario valida, pero desde la consola Datos.crear acepta un precio negativo.", e: "debil", r: "medio", w: "Valida solo en la pantalla, no al guardar: débil. Riesgo medio." },
+    { n: "Content-Security-Policy", g: "grep -n \"Content-Security-Policy\" index.html", m: "index.html:7",
+      p: ["Abre index.html en un editor.", "Busca la etiqueta meta Content-Security-Policy.", "Lee la política: ¿default-src 'none'? ¿hay 'unsafe-inline' o 'unsafe-eval'?"],
+      c: "El index.html de un sistema no tiene ninguna etiqueta Content-Security-Policy.", e: "no", r: "medio", w: "Sin etiqueta no hay política: no encontrado. Riesgo medio." },
+    { n: "Bitácora con cadena de hashes", g: "grep -n \"prev\\|verificar\" js/35-auditoria.js", m: "js/35-auditoria.js:47 · :76", img: "s3-05-bitacora-denegado.webp",
+      p: ["Como admin, abre #/bitacora y pulsa «Verificar integridad».", "En una copia, edita un detalle guardado (F12 → Almacenamiento → sis_<id>_v1).", "Recarga y verifica: debe señalar la entrada alterada."],
+      c: "La bitácora guarda quién, qué y cuándo, pero sin hash: si editas el JSON guardado, nada lo detecta.", e: "debil", r: "medio", w: "Registra, pero no es a prueba de alteraciones: débil. Riesgo medio." },
+    { n: "Checksum del respaldo", g: "grep -n \"checksum\" js/20-almacen.js", m: "js/20-almacen.js:208 · :221",
+      p: ["En #/respaldo pulsa Exportar.", "Cambia una cifra del JSON descargado.", "Restáuralo: debe rechazarlo («El checksum no coincide»)."],
+      c: "Cambias una cifra del respaldo, lo restauras y el sistema responde «El checksum no coincide».", e: "si", r: "bajo", w: "La prueba confirma el mecanismo: presente. Riesgo bajo." },
+    { n: "Confirmación antes de eliminar", g: "grep -n \"confirmarEliminar\\|UI.confirmar\" js/60-vistas.js | head", m: "js/60-vistas.js:332",
+      p: ["Crea un cliente de prueba.", "Pulsa Eliminar.", "Debe pedir confirmación antes de borrar."],
+      c: "Pulsas Eliminar en un registro y se borra de inmediato, sin preguntar.", e: "no", r: "bajo", w: "No hay confirmación: no encontrado. Riesgo bajo (el dato se puede restaurar desde un respaldo)." }
+  ];
+  var NOM = { si: "presente", debil: "débil", no: "no encontrado" }, CLS = { si: "ok", debil: "warn", no: "bad" };
+  var estado = [], riesgo = [], sel = 0, intento = [];
+  var $ = function (i) { return document.getElementById(i); };
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function cuenta() { var n = 0; estado.forEach(function (e, i) { if (e && riesgo[i]) n++; }); $("cuenta").textContent = n + " de 12 filas completas"; }
+  function tabla() {
+    var t = $("tbl"); t.textContent = "";
+    M.forEach(function (m, i) {
+      var tr = document.createElement("tr"); if (i === sel) tr.className = "sel";
+      var td0 = document.createElement("td"); td0.textContent = i + 1;
+      var td1 = document.createElement("td"); td1.textContent = m.n;
+      var td2 = document.createElement("td"); var b = document.createElement("span"); b.className = "s3-bd " + (estado[i] ? CLS[estado[i]] : "neu"); b.textContent = estado[i] ? NOM[estado[i]] : "?"; td2.appendChild(b);
+      var td3 = document.createElement("td"); var r = document.createElement("span"); r.className = "s3-bd " + (riesgo[i] ? (riesgo[i] === "alto" ? "bad" : riesgo[i] === "medio" ? "warn" : "ok") : "neu"); r.textContent = riesgo[i] || "riesgo"; td3.appendChild(r);
+      tr.appendChild(td0); tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+      tr.addEventListener("click", function () { sel = i; tabla(); detalle(); });
+      t.appendChild(tr);
+    });
+    cuenta();
+  }
+  function detalle() {
+    var m = M[sel], d = $("det"), i = sel, h = "";
+    h += "<h3>" + (i + 1) + " · " + esc(m.n) + "</h3>";
+    h += "<div class='s3x-bl'><p class='s3-h'>Dónde buscar</p><pre class='s3-term' style='margin:.2em 0'><span class='p'>$ </span>" + esc(m.g) + "</pre>En la mueblería: <code>" + esc(m.m) + "</code></div>";
+    h += "<div class='s3x-bl s3x-prueba'><div><p class='s3-h'>Pruébalo en el navegador</p><ol>" + m.p.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ol></div>" + (m.img ? "<img src='../../comun/img/" + m.img + "' alt='Captura real de la mueblería'>" : "") + "</div>";
+    h += "<div class='s3x-caso'><p class='s3-h'>Caso de práctica · sistema imaginario</p>" + esc(m.c) + "<div class='s3x-opc' id='opc'></div><p class='s3x-fb' id='fb'></p></div>";
+    d.innerHTML = h;
+    opciones();
+  }
+  function opciones() {
+    var o = $("opc"), m = M[sel], i = sel; o.textContent = "";
+    if (!estado[i]) {
+      ["si", "debil", "no"].forEach(function (k) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "s3-btn sec"; b.textContent = NOM[k];
+        b.addEventListener("click", function () {
+          if (k === m.e) { estado[i] = k; tabla(); detalle(); }
+          else { intento[i] = true; $("fb").className = "s3x-fb s3-bd bad"; $("fb").textContent = "No: «" + NOM[k] + "» no encaja. Relee la observación: ¿existe? ¿funciona en la prueba? ¿se puede saltar?"; }
+        });
+        o.appendChild(b);
+      });
+    } else if (!riesgo[i]) {
+      var l = document.createElement("span"); l.className = "s3-nota"; l.textContent = "Estado: " + NOM[estado[i]] + ". ¿Qué riesgo le pones?"; o.appendChild(l);
+      ["bajo", "medio", "alto"].forEach(function (k) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "s3-btn sec"; b.textContent = k;
+        b.addEventListener("click", function () { riesgo[i] = k; tabla(); detalle(); });
+        o.appendChild(b);
+      });
+    } else {
+      var f = $("fb"); f.className = "s3x-fb"; f.innerHTML = "<b>" + NOM[estado[i]] + " · riesgo " + riesgo[i] + ".</b> " + esc(m.w) + (riesgo[i] === m.r ? "" : " <i>Riesgo sugerido: " + m.r + ".</i>");
+    }
+  }
+  /* Priorizar */
+  var H = [
+    { t: "Un valor de configuración apaga un mecanismo de seguridad (por ejemplo, un tope en 0)", s: 3, p: 2 },
+    { t: "Una pantalla de administración sin guardia de rol", s: 3, p: 3 },
+    { t: "El mensaje de error revela si el usuario existe", s: 2, p: 2 },
+    { t: "Un listado que cualquier rol con sesión puede abrir", s: 2, p: 3 },
+    { t: "Eliminar un registro de prueba sin pedir confirmación", s: 1, p: 3 },
+    { t: "Un TODO de seguridad dentro de un comentario", s: 1, p: 1 }
+  ];
+  var NS = ["", "baja", "media", "alta"], elegido = H.map(function () { return { s: 0, p: 0 }; }), comprobado = false;
+  function cuadricula() {
+    var g = $("grid"); g.textContent = "";
+    for (var r = 0; r < 3; r++) {
+      var lab = document.createElement("div"); lab.className = "s3x-ej s3x-lat"; lab.textContent = NS[3 - r]; g.appendChild(lab);
+      for (var c = 0; c < 3; c++) {
+        var cel = document.createElement("div"), sv = 3 - r, pr = c + 1, v = sv * pr;
+        cel.className = "s3x-cel"; cel.style.background = v <= 2 ? "var(--ok-bg)" : v <= 4 ? "var(--gold-bg)" : v <= 6 ? "var(--warn-bg)" : "var(--bad-bg)";
+        var num = document.createElement("i"); num.textContent = v; cel.appendChild(num);
+        elegido.forEach(function (e, k) { if (e.s === sv && e.p === pr) { var b = document.createElement("b"); b.textContent = String.fromCharCode(65 + k); cel.appendChild(b); } });
+        g.appendChild(cel);
+      }
+    }
+    g.appendChild(document.createElement("div"));
+    for (var c2 = 1; c2 <= 3; c2++) { var l2 = document.createElement("div"); l2.className = "s3x-ej"; l2.textContent = "prob. " + NS[c2]; g.appendChild(l2); }
+  }
+  function filas() {
+    var f = $("filas"); f.textContent = "";
+    H.forEach(function (h, k) {
+      var row = document.createElement("div"); row.className = "s3x-fila" + (comprobado ? (elegido[k].s === h.s && elegido[k].p === h.p ? " ok" : " mal") : "");
+      var b = document.createElement("b"); b.textContent = String.fromCharCode(65 + k);
+      var t = document.createElement("span"); t.textContent = h.t + (comprobado && !(elegido[k].s === h.s && elegido[k].p === h.p) ? "  → sev. " + NS[h.s] + " · prob. " + NS[h.p] : "");
+      function sel2(campo) {
+        var s = document.createElement("select"); s.setAttribute("aria-label", (campo === "s" ? "Severidad" : "Probabilidad") + " del hallazgo " + String.fromCharCode(65 + k));
+        var o0 = document.createElement("option"); o0.value = 0; o0.textContent = campo === "s" ? "severidad…" : "probab.…"; s.appendChild(o0);
+        [1, 2, 3].forEach(function (v) { var o = document.createElement("option"); o.value = v; o.textContent = NS[v]; s.appendChild(o); });
+        s.value = elegido[k][campo];
+        s.addEventListener("change", function () { elegido[k][campo] = +s.value; comprobado = false; $("pmsg").textContent = "Severidad: cuánto daña. Probabilidad: qué tan fácil es que ocurra."; filas(); cuadricula(); });
+        return s;
+      }
+      row.appendChild(b); row.appendChild(t); row.appendChild(sel2("s")); row.appendChild(sel2("p")); f.appendChild(row);
+    });
+  }
+  $("comp").addEventListener("click", function () {
+    var n = 0, sin = 0;
+    H.forEach(function (h, k) { if (!elegido[k].s || !elegido[k].p) sin++; else if (elegido[k].s === h.s && elegido[k].p === h.p) n++; });
+    comprobado = true; filas();
+    var orden = H.map(function (h, k) { return { k: k, v: h.s * h.p }; }).sort(function (a, b) { return b.v - a.v; }).map(function (x) { return String.fromCharCode(65 + x.k); }).join(" > ");
+    $("pmsg").textContent = n + " de 6 en su celda" + (sin ? " (" + sin + " sin elegir)" : "") + ". Orden de atención: " + orden + ". Tu criterio puede variar en un punto: lo que importa es justificarlo.";
+  });
+  document.querySelectorAll(".s3-tab").forEach(function (t) {
+    t.addEventListener("click", function () {
+      var k = t.getAttribute("data-t");
+      document.querySelectorAll(".s3-tab").forEach(function (o) { o.setAttribute("aria-selected", o === t ? "true" : "false"); });
+      $("t-mec").hidden = k !== "mec"; $("t-pri").hidden = k !== "pri";
+    });
+  });
+  tabla(); detalle(); filas(); cuadricula();
+})();
+
+</script>
+</body>
+</html>

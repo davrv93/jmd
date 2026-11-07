@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Diagramas Mermaid: cada nodo es algo que existe</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dhc-03 · Describe por roles, audita y valida). Sin recursos externos,
+  menos de 300 elementos y 1 MB, animaciones solo CSS, todo se apaga con prefers-reduced-motion. Legible a 1366x768.
+  Los datos de ejemplo salen de la foto real del sistema «muebleria». Nada se guarda: cada recarga vuelve al inicio.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc { padding: 1.8vh 2.6vw 1.6vh; gap: 1.4vh; }
+.esc-cuerpo { justify-content: flex-start; gap: 1.5vh; }
+.esc-titulo { font-size: 1.4em; }
+.esc-sub { font-size: .95em; }
+code, .s3-m { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; color: var(--fg); }
+.s3-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4vw; align-items: stretch; min-height: 0; }
+.s3-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .7em .95em; box-shadow: var(--card-shadow); min-height: 0; }
+.s3-card h3 { margin: 0 0 .3em; font-size: .95em; }
+.s3-h { margin: 0; font: 700 .68em var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.s3-tabs { display: flex; gap: .45em; flex-wrap: wrap; }
+.s3-tab { font: 700 .72em system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .42em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.s3-tab:hover { border-color: var(--accent); color: var(--accent); }
+.s3-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.s3-btn { white-space: nowrap; font: 700 .76em system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .5em 1.1em; border-radius: .7em; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.s3-btn.sec { background: var(--s1); color: var(--accent); }
+.s3-btn:disabled { opacity: .45; cursor: default; }
+.s3-btn:hover:not(:disabled) { filter: brightness(1.08); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.s3-term { margin: 0; font: 600 .74em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .6em .9em; white-space: pre-wrap; overflow: hidden; border: 1px solid rgba(190,185,255,.22); }
+.s3-term .p { color: #8e7dff; } .s3-term .c { color: #8e8ab8; } .s3-term .g { color: #6ee7a0; } .s3-term .r { color: #ff9b9b; } .s3-term .y { color: #f4d27a; }
+.s3-bd { display: inline-block; padding: .12em .65em; border-radius: 999px; font-size: .72em; font-weight: 800; border: 1px solid transparent; white-space: nowrap; }
+.s3-bd.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.s3-bd.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.s3-bd.bad { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, transparent); }
+.s3-bd.neu { background: var(--s3); color: var(--muted); border-color: var(--line2); }
+.s3-nota { margin: 0; font-size: .74em; color: var(--muted); }
+.s3-msg { margin: 0; padding: .5em .8em; border-left: 5px solid var(--accent); border-radius: .5em; background: var(--s2); font-size: .82em; }
+.s3-msg.ok { border-color: var(--ok); } .s3-msg.warn { border-color: var(--warn); } .s3-msg.bad { border-color: var(--bad); }
+.s3-msg b { color: var(--fg); }
+.s3-rutas { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; }
+.s3-ruta { padding: .5em .8em; border-radius: .8em; border: 1px dashed var(--line2); background: var(--s2); font-size: .78em; }
+.s3-ruta b { display: block; font-size: .95em; margin-bottom: .1em; }
+@media (prefers-reduced-motion: reduce) { .s3-anim { animation: none !important; transition: none !important; } }
+
+.esc-titulo { font-size: 1.3em; }
+.s4-b { display: grid; grid-template-columns: .7fr 1.3fr; gap: 1.2vw; min-height: 0; }
+.s4-ed { display: grid; grid-template-rows: auto 1fr auto; gap: .4em; padding: .6em .8em; min-height: 0; }
+.s4-ta { width: 100%; min-height: 34vh; resize: none; font: 600 .72em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .6em .8em; border: 1px solid rgba(190,185,255,.22); outline: none; }
+.s4-ta:focus { border-color: var(--accent); }
+.s4-ej { display: flex; flex-wrap: wrap; gap: .35em; }
+.s4-ej button { font: 700 .66em system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .4em .85em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.s4-ej button:hover { border-color: var(--accent); color: var(--accent); }
+.s4-lz { padding: .6em .8em; display: grid; grid-template-rows: auto 1fr; gap: .3em; min-height: 0; }
+.s4-lz svg { width: 100%; height: 100%; max-height: 47vh; display: block; }
+.s4-lz .nd rect, .s4-lz .nd path.f { fill: var(--s1); stroke: var(--accent); stroke-width: 2.5; }
+.s4-lz .nd.ov rect { fill: var(--gold-bg); stroke: var(--gold); }
+.s4-lz .nd.db path { fill: var(--ok-bg); stroke: var(--ok); stroke-width: 2.5; }
+.s4-lz .nd.mal rect, .s4-lz .nd.mal path.f { stroke: var(--bad); stroke-dasharray: 6 4; fill: var(--bad-bg); }
+.s4-lz .nd text { fill: var(--fg); font-weight: 700; font-size: 18px; text-anchor: middle; dominant-baseline: middle; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.s4-lz .ar { fill: none; stroke: var(--line2); stroke-width: 2.4; marker-end: url(#s4f); }
+.s4-lz .et { fill: var(--muted); font-size: 12.5px; text-anchor: middle; font-weight: 700; }
+.s4-lz .etf { fill: var(--s1); stroke: var(--line); }
+.s4-lz h3 { margin: 0; font: 700 .68em var(--mono); color: var(--muted); letter-spacing: .08em; display: flex; justify-content: space-between; text-transform: uppercase; }
+.s4-lz h3 span { color: var(--bad); }
+.s4-v { display: flex; flex-wrap: wrap; gap: .3em .4em; max-height: 6.6em; overflow: hidden; }
+.s4-v .s3-bd { font-size: .64em; font-family: var(--mono); }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptos</span>
+    <span class="esc-num">Describe, audita y valida · E04</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">Diagramas Mermaid: <em>cada nodo es algo que existe</em></h1>
+    <p class="s3-msg a-in" style="--d:.1s"><b>Regla:</b> <code>[caja]</code> = archivo o componente que existe · <code>([óvalo])</code> = un rol del sistema · <code>[(cilindro)]</code> = donde se guarda (<code>localStorage</code>). Un nodo en rojo es un invento.</p>
+    <div class="s4-b">
+      <section class="s3-card s4-ed a-in" style="--d:.2s">
+        <p class="s3-h">docs/MAPA_DEL_SISTEMA.md · bloque mermaid</p>
+        <textarea class="s4-ta" id="src" spellcheck="false" aria-label="Texto Mermaid"></textarea>
+        <div class="s4-ej">
+          <button type="button" data-ej="venta">Venta emitida con IGV</button>
+          <button type="button" data-ej="capas">Capas del SPA</button>
+          <button type="button" data-ej="ruta">Ruta guardada por rol</button>
+          <button type="button" data-ej="roto">Con inventos</button>
+        </div>
+      </section>
+      <section class="s3-card s4-lz a-in" style="--d:.3s" aria-label="Diagrama dibujado">
+        <h3>vista previa <span id="err"></span></h3>
+        <svg id="svg" viewBox="0 0 1000 440" role="img" aria-label="Flowchart generado a partir del texto"><defs><marker id="s4f" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--line2)"/></marker></defs><g id="capa"></g></svg>
+      </section>
+    </div>
+    <div class="s3-card a-in" style="--d:.4s;padding:.4em .7em">
+      <p class="s3-h" id="vt">Comprobación de nodos</p>
+      <div class="s4-v" id="vl"></div>
+      <p class="s3-nota" style="margin-top:.3em">Aquí se comprueba contra la mueblería. En tu sistema lo haces tú: <code>ls js/</code> y <code>grep -n "Seg.puede = " js/*.js</code> te dicen si el nodo existe y en qué línea.</p>
+    </div>
+
+  </main>
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando un diagrama de TU sistema dibuje sin errores y todos sus nodos estén en verde</span>
+  </footer>
+</div>
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+
+(function () {
+  var SIS = {"files": {"index.html": "archivo del sistema", "css/app.css": "archivo del sistema", "js/00-util.js": "archivo del sistema", "js/10-sha256.js": "archivo del sistema", "js/20-almacen.js": "archivo del sistema", "js/30-seguridad.js": "archivo del sistema", "js/35-auditoria.js": "archivo del sistema", "js/40-datos.js": "archivo del sistema", "js/45-calculos.js": "archivo del sistema", "js/50-ui.js": "archivo del sistema", "js/60-vistas.js": "archivo del sistema", "js/70-reportes.js": "archivo del sistema", "js/80-app.js": "archivo del sistema", "js/config.js": "archivo del sistema"}, "comp": {"App.render": "js/80-app.js:339", "App.guardia": "js/80-app.js:162", "App.parsear": "js/80-app.js:125", "App.alIngresar": "js/80-app.js:191", "App.cerrarPorInactividad": "js/80-app.js:206", "Seg.puede": "js/30-seguridad.js:394", "Seg.ingresar": "js/30-seguridad.js:270", "Seg.vigencia": "js/30-seguridad.js:321", "Seg.politica": "js/30-seguridad.js:55", "Seg.hashClave": "js/30-seguridad.js:47", "Seg.salir": "js/30-seguridad.js:312", "Datos.opEmitir": "js/40-datos.js:419", "Datos.opValidar": "js/40-datos.js:327", "Datos.opTotales": "js/40-datos.js:286", "Datos.opAnular": "js/40-datos.js:445", "Datos.crear": "js/40-datos.js:172", "Datos.eliminar": "js/40-datos.js:263", "Calc.totales": "js/45-calculos.js:61", "Aud.registrar": "js/35-auditoria.js:47", "Aud.verificar": "js/35-auditoria.js:76", "Almacen.guardar": "js/20-almacen.js:190", "Almacen.exportar": "js/20-almacen.js:208", "Almacen.importar": "js/20-almacen.js:218", "Vistas.opFicha": "js/60-vistas.js:580", "Vistas.login": "js/60-vistas.js:74", "Vistas.sinPermiso": "js/60-vistas.js:1051", "Vistas.tablero": "js/60-vistas.js:133", "Reportes.vista": "js/70-reportes.js:50", "Sha.iterado": "js/10-sha256.js:101", "U.esc": "js/00-util.js:19", "UI.confirmar": "js/50-ui.js:185", "parametro.igv": "js/config.js:165", "ventas.calcular": "js/config.js:336", "ventas.alEmitir": "js/config.js:365", "U": "js/00-util.js:444", "Sha": "js/10-sha256.js:132", "Almacen": "js/20-almacen.js:267", "Seg": "js/30-seguridad.js:485", "Aud": "js/35-auditoria.js:96", "Datos": "js/40-datos.js:534", "Calc": "js/45-calculos.js:71", "UI": "js/50-ui.js:602", "Vistas": "js/60-vistas.js:1067", "Reportes": "js/70-reportes.js:136", "App": "js/80-app.js:412"}};
+  var ACTORES = ["admin", "gerente", "vendedor", "almacen", "auditor", "navegador"], ALMACENES = ["localstorage", "sessionstorage"];
+  var EJ = {
+    venta: "flowchart TD\n  V([vendedor]) -->|Emitir| F[Vistas.opFicha]\n  F --> E[Datos.opEmitir]\n  E -->|puede?| P[Seg.puede]\n  E --> T[Calc.totales]\n  T --> C[ventas.calcular]\n  C -.->|lee IGV| I[parametro.igv]\n  E --> L[ventas.alEmitir]\n  E --> G[Almacen.guardar]\n  G --> A[Aud.registrar]\n  G --> S[(localStorage)]",
+    capas: "flowchart TD\n  H[index.html] --> K[js/config.js]\n  H --> A[js/80-app.js]\n  A --> V[js/60-vistas.js]\n  V --> D[js/40-datos.js]\n  D --> S[js/30-seguridad.js]\n  D --> AU[js/35-auditoria.js]\n  D --> AL[js/20-almacen.js]\n  AL --> LS[(localStorage)]",
+    ruta: "flowchart TD\n  U([vendedor]) -->|pega #/usuarios| R[App.render]\n  R --> G[App.guardia]\n  G -->|consulta| P[Seg.puede]\n  P -.->|lee permisos| C[js/config.js]\n  G -->|sin permiso| A[Aud.registrar]\n  G -->|redirige| S[Vistas.sinPermiso]",
+    roto: "flowchart LR\n  V([vendedor]) --> F[Vistas.opFicha]\n  F --> Q[Redis]\n  F --> E[Datos.opEmitir]\n  E --> B[(MySQL)]\n  E --> X[js/facturacion.js]\n  X --> W([cliente SUNAT])"
+  };
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var src = document.getElementById("src"), capa = document.getElementById("capa"), err = document.getElementById("err"), vl = document.getElementById("vl"), vt = document.getElementById("vt");
+  function norm(s) { return String(s).toLowerCase().replace(/[áàä]/g, "a").replace(/[éèë]/g, "e").replace(/[íìï]/g, "i").replace(/[óòö]/g, "o").replace(/[úùü]/g, "u").replace(/\s+/g, "."); }
+  var IDX = {}; ["files", "comp"].forEach(function (g) { for (var k in SIS[g]) { IDX[norm(k)] = SIS[g][k]; var b = k.split("/").pop(); if (!IDX[norm(b)]) IDX[norm(b)] = SIS[g][k]; } });
+  function existe(n) {
+    var et = n.et.replace(/\s*[·(].*$/, "").trim(), k = norm(et);
+    if (n.tipo === "ov") return ACTORES.indexOf(k) >= 0 ? { ok: true, ref: "rol del sistema" } : { ok: false, por: "no es un rol del sistema" };
+    if (n.tipo === "db") return ALMACENES.indexOf(k) >= 0 ? { ok: true, ref: k === "localstorage" ? "js/20-almacen.js:68" : "js/20-almacen.js:258" } : { ok: false, por: "el sistema no guarda datos ahí" };
+    return IDX[k] ? { ok: true, ref: IDX[k] } : { ok: false, por: "ningún archivo ni componente se llama así" };
+  }
+  function el(n, a) { var e = document.createElementNS(SVGNS, n); for (var k in a) e.setAttribute(k, a[k]); return e; }
+  function parsear(txt) {
+    var nodos = {}, orden = [], aristas = [], dir = "LR", errores = 0;
+    function nodo(tok) {
+      var m = /^([A-Za-z0-9_]+)(?:\(\[(.*)\]\)|\[\((.*)\)\]|\[(.*)\])?$/.exec(tok.trim());
+      if (!m) { errores++; return null; }
+      var id = m[1], et = m[2] || m[3] || m[4], tipo = m[2] ? "ov" : m[3] ? "db" : "rc";
+      if (et) et = et.replace(/^"(.*)"$/, "$1");
+      if (!nodos[id]) { nodos[id] = { id: id, et: et || id, tipo: et ? tipo : "rc" }; orden.push(id); }
+      else if (et) { nodos[id].et = et; nodos[id].tipo = tipo; }
+      return id;
+    }
+    txt.split("\n").forEach(function (l) {
+      l = l.trim(); if (!l || l.indexOf("%%") === 0) return;
+      var d = /^(flowchart|graph)\s+(LR|TD|TB|RL)/.exec(l); if (d) { dir = d[2] === "TB" ? "TD" : d[2]; return; }
+      var a = /^(.+?)\s*(-\.->|-->|---)\s*(?:\|(.*?)\|\s*)?(.+)$/.exec(l);
+      if (a) { var o = nodo(a[1]), t = nodo(a[4]); if (o && t) aristas.push({ o: o, t: t, et: a[3] || "", pt: a[2] === "-.->" }); }
+      else if (!nodo(l)) errores++;
+    });
+    return { nodos: nodos, orden: orden, aristas: aristas, dir: dir, errores: errores };
+  }
+  function rangos(g) {
+    var r = {}; g.orden.forEach(function (id) { r[id] = 0; });
+    for (var k = 0; k < g.orden.length; k++) g.aristas.forEach(function (a) { if (a.o !== a.t && r[a.t] < r[a.o] + 1 && r[a.o] < g.orden.length) r[a.t] = r[a.o] + 1; });
+    return r;
+  }
+  function dibujar() {
+    var g = parsear(src.value), W = 1000, H = 440, pos = {}, cols = {}, maxR = 0, nF = 0, ex = {}, ok = 0;
+    capa.textContent = ""; vl.textContent = "";
+    err.textContent = g.errores ? g.errores + " línea(s) sin entender" : "";
+    if (!g.orden.length) { vt.textContent = "Comprobación de nodos"; return; }
+    var r = rangos(g), horiz = g.dir === "LR" || g.dir === "RL";
+    g.orden.forEach(function (id) { (cols[r[id]] = cols[r[id]] || []).push(id); if (r[id] > maxR) maxR = r[id]; });
+    var nR = maxR + 1; Object.keys(cols).forEach(function (k) { if (cols[k].length > nF) nF = cols[k].length; });
+    var bh = 44;
+    g.orden.forEach(function (id) {
+      var k = r[id], fila = cols[k].indexOf(id), nn = cols[k].length, x, y;
+      if (horiz) { x = (k + .5) * (W / nR); y = (fila + .5) * (H / nn); } else { x = (fila + .5) * (W / nn); y = (k + .5) * (H / nR); }
+      if (g.dir === "RL") x = W - x;
+      pos[id] = { x: x, y: y };
+    });
+    function anchoDe(n) { return Math.max(100, Math.min(horiz ? W / nR - 20 : 250, Math.min(24, n.et.length) * 10.9 + 24)); }
+    g.aristas.forEach(function (a) {
+      var p = pos[a.o], q = pos[a.t], dx = q.x - p.x, dy = q.y - p.y, wa = anchoDe(g.nodos[a.o]) / 2, wt = anchoDe(g.nodos[a.t]) / 2;
+      var x1, y1, x2, y2;
+      if (horiz && Math.abs(dx) > 1) { x1 = p.x + Math.sign(dx) * wa; y1 = p.y; x2 = q.x - Math.sign(dx) * wt; y2 = q.y; }
+      else if (horiz) { x1 = p.x; y1 = p.y + Math.sign(dy || 1) * bh / 2; x2 = q.x; y2 = q.y - Math.sign(dy || 1) * bh / 2; }
+      else if (Math.abs(dy) > 1) { x1 = p.x; y1 = p.y + Math.sign(dy) * bh / 2; x2 = q.x; y2 = q.y - Math.sign(dy) * bh / 2; }
+      else { x1 = p.x + Math.sign(dx || 1) * wa; y1 = p.y; x2 = q.x - Math.sign(dx || 1) * wt; y2 = q.y; }
+      var mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      var d = horiz && Math.abs(dx) > 1 ? "M" + x1 + " " + y1 + " C" + mx + " " + y1 + " " + mx + " " + y2 + " " + x2 + " " + y2 : "M" + x1 + " " + y1 + " C" + x1 + " " + my + " " + x2 + " " + my + " " + x2 + " " + y2;
+      var path = el("path", { d: d, "class": "ar" }); if (a.pt) path.setAttribute("stroke-dasharray", "7 6");
+      capa.appendChild(path);
+      if (a.et) {
+        var w = a.et.length * 7 + 14, lx = mx, ly = horiz ? my - 14 : my;
+        capa.appendChild(el("rect", { x: lx - w / 2, y: ly - 10, width: w, height: 20, rx: 6, "class": "etf" }));
+        var t = el("text", { x: lx, y: ly + 4, "class": "et" }); t.textContent = a.et; capa.appendChild(t);
+      }
+    });
+    g.orden.forEach(function (id) {
+      var n = g.nodos[id], p = pos[id], e = existe(n), w = anchoDe(n), grp = el("g", { "class": "nd " + n.tipo + (e.ok ? "" : " mal") });
+      ex[id] = e; if (e.ok) ok++;
+      if (n.tipo === "db") {
+        grp.appendChild(el("path", { "class": "f", d: "M" + (p.x - w / 2) + " " + (p.y - bh / 2 + 8) + " a" + (w / 2) + " 8 0 0 0 " + w + " 0 v" + (bh - 16) + " a" + (w / 2) + " 8 0 0 1 -" + w + " 0 z" }));
+        grp.appendChild(el("path", { d: "M" + (p.x - w / 2) + " " + (p.y - bh / 2 + 8) + " a" + (w / 2) + " 8 0 0 0 " + w + " 0", fill: "none" }));
+      } else grp.appendChild(el("rect", { x: p.x - w / 2, y: p.y - bh / 2, width: w, height: bh, rx: n.tipo === "ov" ? 23 : 10 }));
+      var t = el("text", { x: p.x, y: p.y + (n.tipo === "db" ? 5 : 1) }); var et = n.et.length > 24 ? n.et.slice(0, 23) + "…" : n.et; t.textContent = (e.ok ? "" : "✗ ") + et; grp.appendChild(t);
+      capa.appendChild(grp);
+    });
+    g.orden.forEach(function (id) {
+      var n = g.nodos[id], e = ex[id], c = document.createElement("span");
+      c.className = "s3-bd " + (e.ok ? "ok" : "bad");
+      c.textContent = e.ok ? "✓ " + n.et.replace(/\s*[·(].*$/, "") + " · " + e.ref : "✗ " + n.et + " · " + e.por;
+      vl.appendChild(c);
+    });
+    var tot = g.orden.length;
+    vt.textContent = "Comprobación de nodos · " + ok + " de " + tot + " existen" + (ok === tot && tot >= 5 ? " · cumple la regla" : "");
+  }
+  src.addEventListener("input", dibujar);
+  document.querySelectorAll("[data-ej]").forEach(function (b) { b.addEventListener("click", function () { src.value = EJ[b.getAttribute("data-ej")]; dibujar(); }); });
+  src.value = EJ.venta; dibujar();
+})();
+
+</script>
+</body>
+</html>

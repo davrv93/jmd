@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Corrida B, con foto</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dhc-02). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: la misma tarea con la foto. Entra AGENTS.md (en la base) y FOTO.md; solo se abren fragmentos para verificar.
+  Compara con la corrida A (silueta punteada) y calcula relaciones con la misma estimación (caracteres ÷ 4). Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc { padding-top: 1.6vh; padding-bottom: 1.4vh; gap: 1.2vh; }
+.esc-cuerpo { justify-content: flex-start; gap: 1.2vh; }
+.esc-titulo { font-size: 1.45em; }
+.esc-sub { font-size: .9em; max-width: 60em; }
+.s2-btn { font: 700 .72em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); }
+.s2-btn.pri { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.s2-btn[disabled] { opacity: .45; cursor: default; }
+.s2-btn:focus-visible, .s2-in:focus-visible, .s2-tab:focus-visible, select:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.s2-in { font: 700 .8em var(--mono); padding: .3em .55em; border-radius: .45em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); }
+.s2-tabs { display: flex; gap: .4em; flex-wrap: wrap; }
+.s2-tab { font: 700 .72em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .95em; border-radius: .7em .7em 0 0; border: 1px solid var(--line2); border-bottom: 0; background: var(--s2); color: var(--muted); cursor: pointer; }
+.s2-tab[aria-selected="true"] { background: var(--s1); color: var(--accent); }
+.s2-mono { font-family: var(--mono); }
+.s2-nota { font-size: .66em; color: var(--muted); }
+.s2-ok { color: var(--ok); } .s2-mal { color: var(--bad); }
+.s2-tbl { width: 100%; border-collapse: collapse; font-size: .74em; }
+.s2-tbl th { text-align: left; font-size: .82em; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: .25em .5em; border-bottom: 1px solid var(--line2); }
+.s2-tbl td { padding: .28em .5em; border-bottom: 1px solid var(--line); }
+.s2-tbl td.n { font-family: var(--mono); text-align: right; }
+.e4-b { display: grid; grid-template-columns: .95fr 1.5fr; gap: 1.2vw; min-height: 0; align-items: start; }
+.e4-ctx { padding: .6em .8em; display: grid; gap: .45em; }
+.e4-ctx h2, .e4-gra h2 { margin: 0; font-size: .78em; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.e4-it { display: flex; justify-content: space-between; align-items: baseline; gap: .6em; padding: .35em .5em; border-radius: .5em; background: var(--s2); border: 1px solid var(--line); font-size: .72em; }
+.e4-it b { font-family: var(--mono); }
+.e4-it.base { border-left: 5px solid var(--accent); }
+.e4-it.foto { border-left: 5px solid var(--ok); }
+.e4-sed { margin: 0; font: 600 .6em/1.55 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .6em; padding: .5em .7em; white-space: pre; overflow: hidden; border: 1px solid rgba(190,185,255,.22); }
+.e4-sed .c { color: #8f8bbd; }
+.e4-ctl { display: grid; gap: .4em; font-size: .68em; }
+.e4-ctl label { display: grid; grid-template-columns: auto 1fr auto; gap: .6em; align-items: center; color: var(--muted); }
+.e4-ctl select { font: 700 1em system-ui, sans-serif; padding: .25em .4em; border-radius: .4em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); }
+.e4-ctl input[type=range] { accent-color: var(--accent); width: 100%; }
+.e4-gra { padding: .6em .8em; display: grid; gap: .4em; }
+.e4-gra svg { width: 100%; height: auto; display: block; }
+.e4-gra svg text { font-family: var(--mono); fill: var(--muted); font-size: 11px; }
+.e4-cmp { width: 100%; border-collapse: collapse; font-size: .72em; }
+.e4-cmp th { text-align: left; font-size: .8em; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: .2em .5em; border-bottom: 1px solid var(--line2); }
+.e4-cmp th.a { color: var(--warn); } .e4-cmp th.b { color: var(--accent); }
+.e4-cmp td { padding: .25em .5em; border-bottom: 1px solid var(--line); }
+.e4-cmp td.n { font-family: var(--mono); font-weight: 700; text-align: right; }
+.e4-cmp td.r { font-family: var(--mono); font-weight: 800; color: var(--ok); text-align: right; }
+.e4-av { padding: .45em .8em; font-size: .7em; border-left: 6px solid var(--line2); }
+.e4-av.ok { border-left-color: var(--ok); } .e4-av.warn { border-left-color: var(--warn); }
+.e4-av b { color: var(--fg); }
+.e4-rutas { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; font-size: .66em; }
+.e4-rutas p { margin: 0; color: var(--muted); } .e4-rutas b { color: var(--fg); }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+  </g>
+  <g>
+    <circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="e p" style="--p:2.3s" cx="700" cy="190" r="1.8"/>
+    <circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="300" r="1.8"/><circle class="e p" style="--p:2.7s" cx="1540" cy="470" r="1.6"/>
+    <circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/>
+    <circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/><circle class="e p" style="--p:3.3s" cx="150" cy="260" r="1.7"/>
+  </g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">DeepSeek Harness · S2 · E04</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="a-in">
+      <h1 class="esc-titulo">Corrida B · <em>con foto</em>: leer poco y verificar</h1>
+      <p class="esc-sub">La misma tarea. El agente lee AGENTS.md y la foto, y abre solo lo necesario para comprobar.</p>
+    </div>
+    <div class="e4-b">
+      <section class="esc-card e4-ctx a-in" style="--d:.1s" aria-label="Qué entra al contexto">
+        <h2>Qué entra al contexto</h2>
+        <div class="e4-it base"><span>Instrucciones + herramientas + AGENTS.md</span><b id="t-base">3 000</b></div>
+        <div class="e4-it foto"><span id="t-fn">FOTO/FOTO.md completo</span><b id="t-fv">10 743</b></div>
+        <div class="e4-it"><span><span id="t-nf">5</span> fragmentos para verificar</span><b id="t-fr">2 500</b></div>
+        <pre class="e4-sed"><span class="c"># 5 aperturas, solo para verificar la foto</span>
+sed -n '180,200p' js/config.js        <span class="c"># roles</span>
+sed -n '390,410p' js/config.js        <span class="c"># ventas</span>
+sed -n '15,35p'   js/30-seguridad.js  <span class="c"># pantallas fijas</span>
+sed -n '125,145p' js/80-app.js        <span class="c"># guardia de ruta</span>
+sed -n '1036,1056p' js/60-vistas.js   <span class="c"># menú por rol</span></pre>
+        <div class="e4-ctl">
+          <label>Resumen<select id="res" aria-label="Qué parte de la foto se lee"><option value="0">FOTO.md completo</option><option value="1">solo §1, §7 y §8</option></select><span></span></label>
+          <label>Fragmentos<input type="range" id="nf" min="0" max="8" step="1" value="5" aria-label="Fragmentos abiertos para verificar"><b class="s2-mono" id="nfv">5</b></label>
+        </div>
+      </section>
+      <section class="esc-card e4-gra a-in" style="--d:.2s" aria-label="A contra B">
+        <h2>Contexto por llamada · B relleno, A punteado (estimación)</h2>
+        <svg id="gra" viewBox="0 0 720 190" role="img" aria-label="Barras de B comparadas con la silueta de A"></svg>
+        <table class="e4-cmp" aria-label="Relaciones A y B">
+          <thead><tr><th>Medida (estimación)</th><th class="a">A · sin foto</th><th class="b">B · con foto</th><th>B es</th></tr></thead>
+          <tbody id="cmp"></tbody>
+        </table>
+      </section>
+    </div>
+    <div class="esc-card e4-av a-in" id="av" style="--d:.3s" aria-live="polite"></div>
+    <div class="e4-rutas a-in" style="--d:.35s">
+      <p><b>Ruta B · tu aula:</b> con FOTO y AGENTS.md de vuelta en <span class="s2-mono">/trabajo/sistema</span>, corre <span class="s2-mono">aula dsh "Lee AGENTS.md y FOTO/FOTO.md primero…" | tee docs/medicion/B.txt</span> y compara su RESUMEN DE USO con el de A.</p>
+      <p><b>Ruta A · tu laptop:</b> en la carpeta del sistema (con FOTO y AGENTS.md) corre dsh con el mismo <span class="s2-mono">--json</span> y suma el uso.</p>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Estimación con los mismos supuestos de la escena 3 (caracteres ÷ 4; 500 tokens por fragmento es un supuesto). Costo: ejemplo con precios del 31-10-2026 (deepseek-flash, valle); verifica los vigentes. No es una promesa: son relaciones de dist/muebleria; las tuyas las mides tú.</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var q = function (id) { return document.getElementById(id); };
+  var NS = "http://www.w3.org/2000/svg";
+  var BASE = 3000, LLAM = 80, FINAL = 1500, MAXY = 80000, FRAG = 500;
+  var FOTO_COMPLETA = 10743, FOTO_SECC = 860;
+  var A = { ll: 16, pico: 73050, fac: 634276, usd: 0.0968, ctx: [3000, 3230, 3649, 4524, 10007, 16028, 29550, 46010, 52349, 54200, 61994, 65152, 69356, 70625, 71552, 73050] };
+  var fmt = function (n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); };
+  function el(tag, at) { var e = document.createElementNS(NS, tag); for (var p in at) e.setAttribute(p, at[p]); return e; }
+  function corre() {
+    var foto = q("res").value === "1" ? FOTO_SECC : FOTO_COMPLETA, nf = parseInt(q("nf").value, 10);
+    var items = [foto]; for (var i = 0; i < nf; i++) items.push(FRAG);
+    var N = items.length + 1, ctx = [], c = BASE, fac = 0, out = 0;
+    for (var j = 0; j < N; j++) { ctx.push(c); fac += c; out += (j === N - 1) ? FINAL : LLAM; if (j < items.length) c += items[j] + LLAM; }
+    return { ll: N, pico: ctx[N - 1], fac: fac, usd: (fac * 0.15 + out * 0.60) / 1e6, ctx: ctx, foto: foto, nf: nf };
+  }
+  function pinta() {
+    var B = corre();
+    q("t-fn").textContent = q("res").value === "1" ? "FOTO.md · solo §1, §7 y §8" : "FOTO/FOTO.md completo"; q("t-fv").textContent = fmt(B.foto);
+    q("t-nf").textContent = B.nf; q("t-fr").textContent = fmt(B.nf * FRAG); q("nfv").textContent = B.nf;
+    var svg = q("gra"); svg.innerHTML = "";
+    var X0 = 52, W = 650, H = 140, Y0 = 6, N = A.ll, bw = W / N;
+    [0, 40000, 80000].forEach(function (v) {
+      var y = Y0 + H - v / MAXY * H; svg.appendChild(el("line", { x1: X0, x2: X0 + W, y1: y, y2: y, stroke: "currentColor", "stroke-opacity": ".14" }));
+      var t = el("text", { x: X0 - 6, y: y + 4, "text-anchor": "end" }); t.textContent = v ? (v / 1000) + " mil" : "0"; svg.appendChild(t);
+    });
+    A.ctx.forEach(function (v, i) { var h = v / MAXY * H; svg.appendChild(el("rect", { x: X0 + i * bw + 3, y: Y0 + H - h, width: bw - 6, height: h, fill: "none", stroke: "var(--est-o)", "stroke-width": 2, "stroke-dasharray": "4 3" })); });
+    B.ctx.forEach(function (v, i) { var h = v / MAXY * H; svg.appendChild(el("rect", { x: X0 + i * bw + 3, y: Y0 + H - h, width: bw - 6, height: h, fill: "var(--accent)", opacity: ".85" })); });
+    for (var j = 0; j < N; j++) { var t2 = el("text", { x: X0 + j * bw + bw / 2, y: Y0 + H + 16, "text-anchor": "middle" }); t2.textContent = j + 1; svg.appendChild(t2); }
+    var t3 = el("text", { x: X0 + W / 2, y: Y0 + H + 32, "text-anchor": "middle" }); t3.textContent = "llamada al modelo"; svg.appendChild(t3);
+    var filas = [["Llamadas", A.ll, B.ll, fmt], ["Contexto máximo", A.pico, B.pico, fmt], ["Entrada facturada", A.fac, B.fac, fmt], ["Costo de ejemplo (US$, sin caché)", A.usd, B.usd, function (x) { return x.toFixed(3).replace(".", ","); }]];
+    var tb = q("cmp"); tb.innerHTML = "";
+    filas.forEach(function (f) {
+      var tr = document.createElement("tr");
+      var d0 = document.createElement("td"); d0.textContent = f[0]; tr.appendChild(d0);
+      var d1 = document.createElement("td"); d1.className = "n"; d1.textContent = f[3](f[1]); tr.appendChild(d1);
+      var d2 = document.createElement("td"); d2.className = "n"; d2.textContent = f[3](f[2]); tr.appendChild(d2);
+      var d3 = document.createElement("td"); d3.className = "r"; var r = f[1] / f[2]; d3.textContent = r >= 1.05 ? r.toFixed(1).replace(".", ",") + " veces menos" : (r <= 0.95 ? (1 / r).toFixed(1).replace(".", ",") + " veces más" : "casi igual"); tr.appendChild(d3);
+      tb.appendChild(tr);
+    });
+    var av = q("av");
+    if (B.nf === 0) { av.className = "esc-card e4-av warn"; av.innerHTML = "<b>Sin ningún fragmento verificado</b> la foto queda como pista: todo lo que afirmes va como «por verificar». Gastas poco, pero la calidad baja. La skill pide verificar al menos 5 afirmaciones."; }
+    else if (B.nf < 5) { av.className = "esc-card e4-av warn"; av.innerHTML = "<b>Verificaste " + B.nf + " de las 5 afirmaciones que pide la skill.</b> Lo que no abriste sigue siendo «por verificar». Menos aperturas, más incertidumbre."; }
+    else { av.className = "esc-card e4-av ok"; av.innerHTML = "<b>Con " + B.nf + " fragmentos verificados</b> conservas la evidencia archivo:línea. La foto cuesta 0 tokens al tomarla; lo que pagas es leerla y abrir fragmentos."; }
+  }
+  q("res").addEventListener("change", pinta); q("nf").addEventListener("input", pinta);
+  pinta();
+})();
+</script>
+</body>
+</html>

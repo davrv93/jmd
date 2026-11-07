@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Cuenta y saldo: recorrido guiado</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión dhc-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: tres vistas (cuenta, saldo, antes de pagar) con esquemas rotulados; dos listas con casillas. Nada se guarda ni se envía.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+body { font-size: clamp(16px, calc(1.28vw + .52vh), 32px); }
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.6em; }
+.esc-cuerpo { gap: 1.5vh; }
+.esc-card { padding: .65em 1em; }
+.x-btn { font: 700 .74em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .65em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); transition: transform .15s, background .15s; }
+.x-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.x-btn:disabled { opacity: .4; cursor: default; }
+.x-btn.pri { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-btn:focus-visible, .x-tab:focus-visible, .x-it:focus-visible, .x-chk:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.x-tabs { display: flex; gap: .5em; flex-wrap: wrap; align-items: center; }
+.x-tab { font: 700 .78em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; }
+.x-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-ra, .x-rb, .x-esq { display: inline-flex; align-items: center; gap: .35em; padding: .18em .7em; border-radius: 999px; font-size: .62em; font-weight: 800; letter-spacing: .04em; border: 1px solid; white-space: nowrap; }
+.x-ra { color: var(--accent); background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.x-rb { color: var(--gold); background: var(--gold-bg); border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+.x-esq { color: var(--warn); background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.x-real { color: var(--ok); background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.x-et { font-size: .62em; font-weight: 800; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.x-chk { display: grid; grid-template-columns: 1.5em 1fr; gap: .6em; align-items: start; text-align: left; font: inherit; color: var(--fg); background: transparent; border: 0; padding: .25em 0; cursor: pointer; width: 100%; }
+.x-chk i { width: 1.3em; height: 1.3em; border-radius: .3em; border: 2px solid var(--line2); background: var(--s1); display: grid; place-items: center; font-style: normal; font-weight: 900; color: transparent; font-size: .85em; transition: background .15s; }
+.x-chk[aria-checked="true"] i { background: var(--ok); border-color: var(--ok); color: #fff; }
+.x-chk span { font-size: .92em; line-height: 1.3; }
+.x-chk small { display: block; color: var(--muted); font-size: .86em; }
+.x-pasos { margin: 0; padding: 0; list-style: none; display: grid; gap: .45em; counter-reset: p; }
+.x-pasos li { display: grid; grid-template-columns: 1.6em 1fr; gap: .6em; align-items: baseline; font-size: .95em; line-height: 1.3; }
+.x-pasos li::before { counter-increment: p; content: counter(p); display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font-weight: 800; font-size: .85em; }
+.x-pasos code, .x-c { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.x-ver, .x-falla { padding: .45em .8em; border-radius: .7em; font-size: .82em; line-height: 1.35; }
+.x-ver { background: var(--ok-bg); border-left: 4px solid var(--ok); }
+.x-falla { background: var(--warn-bg); border-left: 4px solid var(--warn); }
+.x-ver b, .x-falla b { display: block; font-size: .85em; letter-spacing: .05em; text-transform: uppercase; }
+.x-ver b { color: var(--ok); } .x-falla b { color: var(--warn); }
+.x-estado { font-size: .74em; font-weight: 600; color: var(--muted); }
+.x-estado b { color: var(--ok); }
+.x-aviso { padding: .5em .9em; border-radius: .8em; background: var(--bad-bg); border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent); color: var(--fg); font-size: .78em; }
+.x-aviso b { color: var(--bad); }
+[data-v][hidden] { display: none !important; }
+
+.esc { padding: 1.6vh 3vw 1.2vh; gap: 1.2vh; }
+.x-cab2 { display: flex; align-items: center; justify-content: space-between; gap: 2vw; flex-wrap: wrap; }
+.x-cab2 .esc-titulo { font-size: 1.45em; }
+.x-par { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.6vw; align-items: start; min-height: 0; }
+.x-fig { padding: .5em; display: grid; gap: .4em; }
+.x-fig img { width: 100%; height: auto; display: block; border-radius: .6em; border: 1px solid var(--line); background: #f6f8fb; }
+.x-fig .x-esq { justify-self: start; }
+.x-lado { display: grid; gap: .8vh; }
+.x-obj { margin: 0; font-size: .92em; font-weight: 700; display: flex; gap: .6em; align-items: baseline; flex-wrap: wrap; }
+.x-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; align-items: start; }
+.x-dos h2 { margin: 0 0 .25em; font-size: .95em; }
+.x-dos p.x-nota { margin: .4em 0 0; font-size: .72em; color: var(--muted); }
+.x-chk span b { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .x-btn, .x-tab { transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="700" cy="190" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:2.4s" cx="1500" cy="320" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:2.9s" cx="760" cy="840" r="1.6"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/><circle class="e p" style="--p:3.3s" cx="1210" cy="780" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">DeepSeek Harness · S1 · E02</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="x-cab2">
+      <h1 class="esc-titulo a-in">Cuenta y saldo, <em>sin pagar en vivo</em></h1>
+      <div class="x-tabs" role="tablist" aria-label="Vistas">
+        <button type="button" class="x-tab" role="tab" data-vista="cuenta" aria-selected="true">1 · Cuenta</button>
+        <button type="button" class="x-tab" role="tab" data-vista="saldo" aria-selected="false">2 · Saldo</button>
+        <button type="button" class="x-tab" role="tab" data-vista="antes" aria-selected="false">3 · Antes de pagar</button>
+      </div>
+    </div>
+
+    <div class="x-par" data-v="cuenta">
+      <figure class="esc-card x-fig" style="margin:0">
+        <img src="../../comun/img/ds-01-cuenta.svg" alt="Esquema de la pantalla de registro de la plataforma de DeepSeek, con cuatro globos numerados">
+        <span class="x-esq">Esquema ilustrativo · tu pantalla puede variar</span>
+      </figure>
+      <div class="x-lado">
+        <p class="x-obj">Objetivo: tener tu cuenta de la plataforma de API. <span class="x-ra">en el navegador de tu equipo</span></p>
+        <ol class="x-pasos">
+          <li><span>Escribe tú mismo <code>platform.deepseek.com</code>. Nada de anuncios ni enlaces de terceros.</span></li>
+          <li><span>Elige registrarte: correo, teléfono (SMS) o Google.</span></li>
+          <li><span>Con correo, usa Gmail, Outlook, Hotmail o Yahoo.</span></li>
+          <li><span>Pide el código de verificación y escríbelo.</span></li>
+          <li><span>Pon una contraseña propia y guárdala en tu gestor.</span></li>
+        </ol>
+        <div class="x-ver"><b>Qué deberías ver</b>Tu sesión abierta en la plataforma. No pudimos capturarla: verifica en tu pantalla.</div>
+        <div class="x-falla"><b>Si falla</b>El código no llega: espera, revisa spam y el correo escrito, y pide otro. «Dominio no admitido»: cambia a Gmail u Outlook.</div>
+      </div>
+    </div>
+
+    <div class="x-par" data-v="saldo" hidden>
+      <figure class="esc-card x-fig" style="margin:0">
+        <img src="../../comun/img/ds-02-recarga.svg" alt="Esquema de la página Top Up con saldo, medios de pago y botón Pagar, con tres globos numerados">
+        <span class="x-esq">Esquema ilustrativo · tu pantalla puede variar</span>
+      </figure>
+      <div class="x-lado">
+        <p class="x-obj">Objetivo: ver tu saldo y saber cómo recargar sin sorpresas.</p>
+        <ol class="x-pasos">
+          <li><span>Abre la página <b>Top Up</b> y mira tu saldo. Con saldo 0, la API responde 402.</span></li>
+          <li><span>Medios publicados: PayPal, tarjeta bancaria, Alipay y WeChat Pay.</span></li>
+          <li><span>Lee monto, comisión, moneda y tipo de cambio <b>antes</b> de pagar (pestaña 3).</span></li>
+          <li><span>Paga tú, en tu cuenta. Aquí nadie paga en vivo.</span></li>
+          <li><span>Mira el resultado en <b>Billing</b>.</span></li>
+        </ol>
+        <div class="x-ver"><b>Qué deberías ver</b>El saldo actualizado y el movimiento en Billing. El saldo recargado no caduca.</div>
+        <div class="x-falla"><b>Si falla</b>No ves el saldo: ¿es la misma cuenta con la que pagaste? Pago rechazado: lo decide el medio de pago; prueba otro o llama a tu banco.</div>
+      </div>
+    </div>
+
+    <div class="x-dos" data-v="antes" hidden>
+      <section class="esc-card">
+        <h2>Mira esto ANTES de pagar</h2>
+        <div id="antes" role="group" aria-label="Antes de pagar"></div>
+        <p class="x-estado" id="antes-est"></p>
+      </section>
+      <section class="esc-card">
+        <h2>Verifica en tu pantalla</h2>
+        <div id="verif" role="group" aria-label="Verifica en tu pantalla"></div>
+        <p class="x-nota">No pudimos entrar a la plataforma para verlo (nos respondió un bloqueo 403). Si hoy no puedes pagar, sigue igual: tu sistema y su foto (escenas 5 y 6) no necesitan saldo; dsh sí, también en el aula.</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Nadie paga en vivo: lo haces en tu cuenta y pulsas «Lo logré» cuando veas tu saldo en Top Up o Billing, aunque sea 0</span>
+  </footer>
+</div>
+
+<script>
+/* Ayudas comunes: tema, selector corto y pestañas. */
+(function () {
+  try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {}
+})();
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function pestanas(alCambiar) {
+  var bs = $$("[data-vista]"), ps = $$("[data-v]");
+  function ir(id) {
+    bs.forEach(function (b) { b.setAttribute("aria-selected", b.getAttribute("data-vista") === id ? "true" : "false"); });
+    ps.forEach(function (p) { p.hidden = p.getAttribute("data-v") !== id; });
+    if (alCambiar) alCambiar(id);
+  }
+  bs.forEach(function (b) { b.addEventListener("click", function () { ir(b.getAttribute("data-vista")); }); });
+  return ir;
+}
+
+</script>
+<script>
+(function () {
+  var ir = pestanas();
+  function lista(id, items, final) {
+    var raiz = $(id);
+    items.forEach(function (it) {
+      var b = el("button", "x-chk"); b.type = "button"; b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false");
+      b.appendChild(el("i", null, "✓"));
+      var s = el("span"); s.innerHTML = "<b>" + it[0] + "</b><small>" + it[1] + "</small>"; b.appendChild(s);
+      b.addEventListener("click", function () { b.setAttribute("aria-checked", b.getAttribute("aria-checked") === "true" ? "false" : "true"); final(); });
+      raiz.appendChild(b);
+    });
+  }
+  var estA = $("#antes-est");
+  function cuentaA() {
+    var n = $$("[aria-checked=true]", $("#antes")).length;
+    estA.innerHTML = n === 5 ? "<b>Las cinco revisadas.</b> Ya puedes pagar, tú, en tu cuenta." : n + " de 5 revisadas. Paga solo cuando marques las cinco.";
+  }
+  lista("#antes", [
+    ["Monto", "Empieza con poco. El mínimo de recarga no está publicado: míralo en tu pantalla."],
+    ["Comisión", "¿La cobra el medio de pago o tu banco? Se lee antes de confirmar."],
+    ["Moneda", "Los precios publicados están en USD. No hay precio en soles publicado."],
+    ["Tipo de cambio", "Si tu tarjeta es en soles, el banco convierte: pregúntale cuánto cobra."],
+    ["Medio de pago", "¿Tu tarjeta acepta pagos internacionales? Prueba con una compra pequeña."]
+  ], cuentaA);
+  cuentaA();
+  lista("#verif", [
+    ["Mínimo de recarga", "No figura en la documentación que leímos el 31-10-2026."],
+    ["Visa / Mastercard de Perú", "El FAQ solo dice «bank card»: confirma que la tuya pasa."],
+    ["Yape / Plin", "No figuran entre los medios publicados. Si no aparecen, no cuentes con ellos."]
+  ], function () {});
+
+})();
+</script>
+</body>
+</html>
