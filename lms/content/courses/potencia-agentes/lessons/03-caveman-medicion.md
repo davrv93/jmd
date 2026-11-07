@@ -1,7 +1,7 @@
 ---
 id: pt-03
 title: "Clase 3 · Caveman y la medición del ahorro"
-starts_at: 2026-11-11T21:30:00-05:00
+starts_at: 2026-11-16T21:15:00-05:00
 published: true
 objectives:
   - {id: pt-03-o1, title: "Comprimir lo que el agente responde con Caveman"}
@@ -10,7 +10,7 @@ objectives:
 ---
 ## Clase 3 · Caveman y la medición del ahorro
 
-**Miércoles 11 de noviembre, 9:30 – 10:45 pm.**
+**Lunes 16 de noviembre, 9:15 – 10:30 pm.**
 
 Lo que entra (RTK) y lo que sale (Caveman): el agente responde corto sin perder
 precisión, y el ahorro se vuelve a medir para saber cuánto ganaste.
