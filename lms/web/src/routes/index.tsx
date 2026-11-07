@@ -1,11 +1,14 @@
 import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 import { api, errMsg, type AuthConfig } from "~/lib/api";
-import { SessionContext } from "~/lib/session";
+import { SessionContext, isStaff } from "~/lib/session";
 import { jmd } from "~/lib/constelacion";
 import { Icon } from "~/components/icon";
 
 const LETRAS = `<svg class="jmd-svg" viewBox="0 0 560 270" role="img" aria-label="JMD en constelación">${jmd({ x: 12, y: 8, dibujar: true })}</svg>`;
+
+// Sin ?next=, el alumno entra a Mi horario (calendario, sus cursos y ofertas) y el staff a los cursos.
+const destino = (next: string, me: Parameters<typeof isStaff>[0]) => next || (isStaff(me) ? "/courses/" : "/horario/");
 
 export default component$(() => {
   const session = useContext(SessionContext);
@@ -15,7 +18,7 @@ export default component$(() => {
   const form = useStore({ email: "", name: "", password: "", invite_code: "" });
   const error = useSignal("");
   const busy = useSignal(false);
-  const next = useSignal("/courses/");
+  const next = useSignal("");
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async ({ track }) => {
@@ -23,7 +26,7 @@ export default component$(() => {
     if (n && n.startsWith("/") && !n.startsWith("//")) next.value = n;
     track(() => session.loaded);
     if (session.loaded && session.me) {
-      location.replace(next.value);
+      location.replace(destino(next.value, session.me));
       return;
     }
     if (cfg.v) return;
@@ -44,7 +47,7 @@ export default component$(() => {
           ? await api.login(form.email, form.password)
           : await api.register({ email: form.email, name: form.name, password: form.password, invite_code: form.invite_code });
       session.me = r.user;
-      location.href = next.value;
+      location.href = destino(next.value, r.user);
     } catch (e) {
       error.value = errMsg(e);
     } finally {
@@ -63,7 +66,7 @@ export default component$(() => {
         <div class="card" style="padding:1.1rem 1.2rem">
           {cfg.v === null && !error.value && <div class="skel" style="height:2.3rem" />}
           {cfg.v?.oidc && (
-            <a class="btn" style="width:100%;justify-content:center;padding:.6rem" href={`/auth/oidc/start?next=${encodeURIComponent(next.value)}`}>
+            <a class="btn" style="width:100%;justify-content:center;padding:.6rem" href={`/auth/oidc/start?next=${encodeURIComponent(next.value || "/")}`}>
               <Icon name="user" size={16} /> Entrar con mi cuenta
             </a>
           )}

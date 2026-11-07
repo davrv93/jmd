@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -115,5 +116,81 @@ func TestMiHorario(t *testing.T) {
 	r = e.call("GET", "/api/v1/horario", e.login("profe@x.test", "profe1234"), false, nil, "")
 	if r.code != 200 || len(r.body["cursos"].([]any)) != 0 {
 		t.Fatalf("sin grupos no hay matrícula: %d %s", r.code, r.raw)
+	}
+}
+
+// Las ofertas: grupos abiertos que no son del alumno, con clases por delante y sin cruces con las suyas.
+func TestOfertasDeMiHorario(t *testing.T) {
+	dir := writeFixture(t) // «curso», grupo c1: sesión el 8 de octubre de 19:00 a 20:30
+	cursos := map[string]string{
+		// c2 se cruza: 8 de octubre a las 19:30.
+		"cruza": "id: cruza\ntitle: Se cruza\ncohorts: [c2]\nmodules:\n  - id: m1\n    title: M\n    lessons: [x1]\n",
+		// c3 encaja: 9 de octubre.
+		"encaja": "id: encaja\ntitle: Encaja\ndescription: Un curso que cabe\ncohorts: [c3]\nmodules:\n  - id: m1\n    title: M\n    lessons: [e1]\n",
+		// c5 es el mismo curso que ya lleva (mismo título), en otro grupo.
+		"repite": "id: repite\ntitle: Curso de prueba · C5\ncohorts: [c5]\nmodules:\n  - id: m1\n    title: M\n    lessons: [r1]\n",
+		// c4 está cerrado aunque encaje.
+		"cerrado": "id: cerrado\ntitle: Cerrado\ncohorts: [c4]\nmodules:\n  - id: m1\n    title: M\n    lessons: [z1]\n",
+	}
+	fechas := map[string]string{"cruza": "x1|2026-10-08T19:30:00-05:00", "encaja": "e1|2026-10-09T19:30:00-05:00", "cerrado": "z1|2026-10-10T19:30:00-05:00", "repite": "r1|2026-10-11T19:30:00-05:00"}
+	for slug, yaml := range cursos {
+		d := filepath.Join(dir, "courses", slug)
+		if err := os.MkdirAll(filepath.Join(d, "lessons"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		id, fecha, _ := strings.Cut(fechas[slug], "|")
+		lec := "---\nid: " + id + "\ntitle: Clase\nstarts_at: " + fecha + "\npublished: true\n---\nHola\n"
+		if err := os.WriteFile(filepath.Join(d, "course.yaml"), []byte(yaml), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(d, "lessons", id+".md"), []byte(lec), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cs, err := content.NewStore(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db, err := store.Open(filepath.Join(t.TempDir(), "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { db.Close() })
+	s := &Server{Content: cs, DB: db, InviteCode: "abc", DefaultCohort: "c1", PublicURL: "http://lms.test",
+		Inscripcion: []string{"c1", "c2", "c3", "c5", ""}}
+	srv := httptest.NewServer(s.Handler())
+	t.Cleanup(srv.Close)
+	e := &env{t: t, srv: srv, db: db, s: s}
+	ana := e.register("ana@x.test")
+
+	antes := ahoraHorario
+	t.Cleanup(func() { ahoraHorario = antes })
+	ahoraHorario = func() time.Time { return time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC) }
+
+	r := e.call("GET", "/api/v1/horario", ana, false, nil, "")
+	ofs, _ := r.body["ofertas"].([]any)
+	if r.code != 200 || len(ofs) != 1 {
+		t.Fatalf("solo encaja c3: %d %s", r.code, r.raw)
+	}
+	o := ofs[0].(map[string]any)
+	if o["grupo"] != "c3" || o["inscripcion"] != "/inscripcion/c3/" || len(o["clases"].([]any)) != 1 {
+		t.Fatalf("oferta de c3: %v", o)
+	}
+	if c := o["cursos"].([]any)[0].(map[string]any); c["slug"] != "encaja" || c["descripcion"] != "Un curso que cabe" {
+		t.Fatalf("curso de la oferta: %v", c)
+	}
+
+	// Un grupo que ya empezó deja de ofrecerse aunque le queden clases.
+	ahoraHorario = func() time.Time { return time.Date(2026, 10, 10, 1, 0, 0, 0, time.UTC) } // 8 pm de Lima, en plena clase
+	r = e.call("GET", "/api/v1/horario", ana, false, nil, "")
+	if ofs, _ := r.body["ofertas"].([]any); len(ofs) != 0 {
+		t.Fatalf("c3 ya empezó: %s", r.raw)
+	}
+
+	// Con todas las clases ya pasadas no hay nada que ofrecer.
+	ahoraHorario = func() time.Time { return time.Date(2026, 12, 1, 12, 0, 0, 0, time.UTC) }
+	r = e.call("GET", "/api/v1/horario", ana, false, nil, "")
+	if ofs, _ := r.body["ofertas"].([]any); len(ofs) != 0 {
+		t.Fatalf("sin clases por delante no hay oferta: %s", r.raw)
 	}
 }

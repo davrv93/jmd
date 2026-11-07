@@ -721,7 +721,17 @@ export type Agenda = { zona: string; clases: AgendaClase[] };
 /** Una clase de Mi horario (GET /api/v1/horario). `cruces` lleva los ids de las clases que se solapan. */
 export type HorarioClase = AgendaClase & { cruces?: string[] };
 export type HorarioCurso = { slug: string; nombre: string; grupo: string; area?: string };
-export type Horario = { zona: string; cursos: HorarioCurso[]; clases: HorarioClase[] };
+/** Un grupo con inscripción abierta cuyas clases no se cruzan con las del alumno. */
+export type HorarioOferta = {
+  grupo: string;
+  nombre: string;
+  nombre_grupo: string;
+  area?: string;
+  inscripcion: string;
+  cursos: { slug: string; nombre: string; descripcion?: string }[];
+  clases: { inicio: string; fin: string; minutos: number }[];
+};
+export type Horario = { zona: string; cursos: HorarioCurso[]; clases: HorarioClase[]; ofertas?: HorarioOferta[] };
 
 /** La siguiente clase sin terminar. Las clases llegan ordenadas por inicio. */
 export const proximaClase = (clases: HorarioClase[], ahora: number) => clases.find((c) => Date.parse(c.fin) > ahora) ?? null;
