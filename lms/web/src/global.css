@@ -1582,8 +1582,16 @@ a.hr-clase:hover { text-decoration: none; background: var(--s2); }
 }
 
 /* Mi horario como portada: calendario del mes, mis cursos al lado y ofertas que encajan. */
-.ag-pagina.hr-pagina { max-width: 72rem; }
-.hr-tablero { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: 1.5rem; align-items: start; }
+.ag-pagina.hr-pagina { max-width: none; }
+.page:has(> .hr-pagina) { max-width: 100rem; }
+/* Tres columnas en pantalla ancha: mis cursos | calendario | ofertas. Más angosto, el calendario
+   manda y las listas van a su derecha; en móvil, todo en una columna con el calendario primero. */
+.hr-tablero { display: grid; gap: 1.25rem; align-items: start; grid-template-columns: 17rem minmax(0, 1fr); grid-template-areas: "mis cal"; }
+.hr-tablero.con-ofertas { grid-template-columns: 17rem minmax(0, 1fr) 19rem; grid-template-areas: "mis cal of"; }
+.hr-col-mis { grid-area: mis; position: sticky; top: 4.5rem; }
+.hr-tablero > .hr-cal { grid-area: cal; }
+.hr-col-ofertas { grid-area: of; position: sticky; top: 4.5rem; max-height: calc(100vh - 5.5rem); overflow-y: auto; border-radius: var(--r2); }
+.hr-col-mis .hr-cursos a { padding: .6rem .8rem; }
 .hr-cal { padding: 1rem; background: var(--s1); border: 1px solid var(--line); border-radius: var(--r2); box-shadow: var(--card-shadow); }
 .hr-cal-cab { display: flex; align-items: center; gap: .35rem; margin-bottom: .75rem; }
 .hr-cal-cab h2 { flex: 1; margin: 0; font-size: 1.15rem; letter-spacing: -.01em; }
@@ -1604,17 +1612,16 @@ a.hr-clase:hover { text-decoration: none; background: var(--s2); }
 .hr-mas { font-size: .7rem; font-weight: 650; color: var(--muted); padding-left: .3rem; }
 .hr-cal .hr-dia { margin-top: 1rem; }
 .hr-libre { margin: 0; font-size: .9rem; }
-.hr-lado { display: grid; gap: 1.4rem; }
 .hr-lado-t { display: flex; align-items: center; gap: .4rem; margin: 0 0 .6rem; font-size: 1.02rem; }
 .hr-lado-t .muted { font-weight: 500; }
-.hr-lado .hr-cursos .grow { gap: .05rem; }
-.hr-lado .hr-prox { text-align: left; font-size: .8rem; }
+.hr-col-mis .hr-cursos .grow { gap: .05rem; }
+.hr-col-mis .hr-prox { text-align: left; font-size: .8rem; }
 .hr-ofertas { padding: 1rem; border-radius: var(--r2); background: linear-gradient(160deg, var(--accent-bg), transparent 70%), var(--s1); border: 1px solid var(--line); box-shadow: var(--card-shadow); }
 .hr-ofertas .hr-lado-t { margin-bottom: .2rem; color: var(--accent); }
 .hr-of-sub { margin: 0 0 .7rem; font-size: .84rem; }
 .hr-ofertas > ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
 .hr-oferta { display: grid; gap: .3rem; padding: .8rem .85rem; border-radius: var(--r); background: var(--s1); border: 1px solid var(--line); box-shadow: inset 3px 0 0 var(--ar, var(--accent)); }
-.hr-lado .hr-prox { padding-left: 0; }
+.hr-col-mis .hr-prox { padding-left: 0; }
 .hr-of-cuando { display: block; font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .hr-of-desc { margin: .1rem 0 0; font-size: .84rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .hr-of-grupos { list-style: none; margin: .2rem 0 0; padding: 0; display: grid; gap: .55rem; }
@@ -1649,8 +1656,12 @@ a.hr-clase:hover { text-decoration: none; background: var(--s2); }
   .sim-modos { justify-self: stretch; }
   .sim-modos button { flex: 1; min-height: 44px; }
 }
+@media (max-width: 79.99rem) {
+  .hr-tablero, .hr-tablero.con-ofertas { grid-template-columns: minmax(0, 1fr) 19rem; grid-template-areas: "cal mis" "cal of"; }
+  .hr-col-mis, .hr-col-ofertas { position: static; max-height: none; overflow: visible; }
+}
 @media (max-width: 61.99rem) {
-  .hr-tablero { grid-template-columns: minmax(0, 1fr); }
+  .hr-tablero, .hr-tablero.con-ofertas { grid-template-columns: minmax(0, 1fr); grid-template-areas: "cal" "mis" "of"; }
 }
 @media (max-width: 40rem) {
   .hr-cal { padding: .7rem; }

@@ -307,9 +307,8 @@ export const VistaHorario = component$<Props>((props) => {
       )}
 
       {h.cursos.length > 0 && (
-        <div class="hr-tablero">
-          {calendario}
-          <aside class="hr-lado">
+        <div class={["hr-tablero", tarjetas.length > 0 && "con-ofertas"].filter(Boolean).join(" ")}>
+          <aside class="hr-col-mis">
             <section aria-labelledby="hr-mis-t">
               <h2 id="hr-mis-t" class="hr-lado-t">
                 Mis cursos <span class="muted">{h.cursos.length}</span>
@@ -336,8 +335,9 @@ export const VistaHorario = component$<Props>((props) => {
                 })}
               </ul>
             </section>
-            {panelOfertas}
           </aside>
+          {calendario}
+          {tarjetas.length > 0 && <aside class="hr-col-ofertas">{panelOfertas}</aside>}
         </div>
       )}
     </>
