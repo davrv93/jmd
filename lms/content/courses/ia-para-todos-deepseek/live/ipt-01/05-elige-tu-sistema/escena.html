@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Elige tu sistema y úsalo en 5 minutos</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión ipt-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: 15 tarjetas filtrables por rubro o por texto (rol, entidad, fórmula); al elegir se muestran los comandos de la Ruta B (aula, con dsh instalado) y de la Ruta A (laptop). Segunda vista: guía de uso en 5 minutos con capturas reales de la mueblería. Los datos de los 15 sistemas van embebidos como JSON (salen de VARIANTES.md).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+body { font-size: clamp(16px, calc(1.28vw + .52vh), 32px); }
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.6em; }
+.esc-cuerpo { gap: 1.5vh; }
+.esc-card { padding: .65em 1em; }
+.x-btn { font: 700 .74em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .65em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); transition: transform .15s, background .15s; }
+.x-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.x-btn:disabled { opacity: .4; cursor: default; }
+.x-btn.pri { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-btn:focus-visible, .x-tab:focus-visible, .x-it:focus-visible, .x-chk:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.x-tabs { display: flex; gap: .5em; flex-wrap: wrap; align-items: center; }
+.x-tab { font: 700 .78em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1.1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; }
+.x-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-ra, .x-rb, .x-esq { display: inline-flex; align-items: center; gap: .35em; padding: .18em .7em; border-radius: 999px; font-size: .62em; font-weight: 800; letter-spacing: .04em; border: 1px solid; white-space: nowrap; }
+.x-ra { color: var(--accent); background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.x-rb { color: var(--gold); background: var(--gold-bg); border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+.x-esq { color: var(--warn); background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.x-real { color: var(--ok); background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.x-et { font-size: .62em; font-weight: 800; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.x-chk { display: grid; grid-template-columns: 1.5em 1fr; gap: .6em; align-items: start; text-align: left; font: inherit; color: var(--fg); background: transparent; border: 0; padding: .25em 0; cursor: pointer; width: 100%; }
+.x-chk i { width: 1.3em; height: 1.3em; border-radius: .3em; border: 2px solid var(--line2); background: var(--s1); display: grid; place-items: center; font-style: normal; font-weight: 900; color: transparent; font-size: .85em; transition: background .15s; }
+.x-chk[aria-checked="true"] i { background: var(--ok); border-color: var(--ok); color: #fff; }
+.x-chk span { font-size: .92em; line-height: 1.3; }
+.x-chk small { display: block; color: var(--muted); font-size: .86em; }
+.x-pasos { margin: 0; padding: 0; list-style: none; display: grid; gap: .45em; counter-reset: p; }
+.x-pasos li { display: grid; grid-template-columns: 1.6em 1fr; gap: .6em; align-items: baseline; font-size: .95em; line-height: 1.3; }
+.x-pasos li::before { counter-increment: p; content: counter(p); display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font-weight: 800; font-size: .85em; }
+.x-pasos code, .x-c { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.x-ver, .x-falla { padding: .45em .8em; border-radius: .7em; font-size: .82em; line-height: 1.35; }
+.x-ver { background: var(--ok-bg); border-left: 4px solid var(--ok); }
+.x-falla { background: var(--warn-bg); border-left: 4px solid var(--warn); }
+.x-ver b, .x-falla b { display: block; font-size: .85em; letter-spacing: .05em; text-transform: uppercase; }
+.x-ver b { color: var(--ok); } .x-falla b { color: var(--warn); }
+.x-estado { font-size: .74em; font-weight: 600; color: var(--muted); }
+.x-estado b { color: var(--ok); }
+.x-aviso { padding: .5em .9em; border-radius: .8em; background: var(--bad-bg); border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent); color: var(--fg); font-size: .78em; }
+.x-aviso b { color: var(--bad); }
+[data-v][hidden] { display: none !important; }
+
+.esc { padding: 1.5vh 3vw 1.2vh; gap: 1vh; }
+.x-cab5 { display: flex; align-items: center; justify-content: space-between; gap: 1.5vw; flex-wrap: wrap; }
+.x-cab5 .esc-titulo { font-size: 1.4em; }
+.x-el { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.4vw; align-items: start; }
+.x-filtro { display: flex; gap: .4em; flex-wrap: wrap; align-items: center; margin-bottom: .6vh; }
+.x-filtro input { font: inherit; font-size: .78em; padding: .45em .8em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); min-width: 14em; flex: 1; }
+.x-chipf { font: 700 .66em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; }
+.x-chipf[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-rejilla { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5em; }
+.x-sis { text-align: left; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .8em; padding: .5em .7em; cursor: pointer; display: grid; gap: .1em; box-shadow: var(--card-shadow); }
+.x-sis b { font-size: .8em; line-height: 1.15; }
+.x-sis span { font-size: .66em; color: var(--muted); line-height: 1.2; }
+.x-sis[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); outline: 2px solid var(--accent); }
+.x-sis.mio { border-color: var(--ok); outline: 3px solid var(--ok); background: var(--ok-bg); }
+.x-sis[hidden] { display: none; }
+.x-det5 { display: grid; gap: .3em; padding: .5em .9em; }
+.x-det5 h2 { margin: 0; font-size: 1.05em; line-height: 1.15; }
+.x-det5 .id { font: 700 .7em var(--mono); color: var(--accent); }
+.x-bloq { display: grid; gap: .2em; }
+.x-bloq .x-et { font-size: .58em; }
+.x-fl { display: flex; flex-wrap: wrap; gap: .3em; }
+.x-fl span { font-size: .62em; padding: .15em .6em; border-radius: 999px; background: var(--s3); }
+.x-fl.f span { background: var(--gold-bg); color: var(--gold); font-weight: 700; }
+.x-cmds { display: grid; gap: .25em; font-size: .7em; }
+.x-cmds .esc-cmd { font-size: .86em; padding: .35em .7em; }
+.x-cmds p { margin: 0; line-height: 1.3; }
+.x-vacio { color: var(--muted); font-size: .9em; }
+.x-g5 { display: grid; grid-template-columns: 1.75fr 1fr; gap: 1.4vw; align-items: start; }
+.x-g5 .x-vf { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: .8em; border: 2px solid var(--line2); background: #fff; box-shadow: var(--card-shadow); }
+.x-g5 .x-vf img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; }
+.x-par2 { display: grid; grid-template-columns: 1fr 1fr; gap: .8vw; }
+.x-par2 figure { margin: 0; display: grid; gap: .2em; }
+.x-par2 figcaption { font-size: .66em; font-weight: 800; text-align: center; color: var(--muted); }
+.x-pin { position: absolute; width: 2.4em; height: 2.4em; margin: -1.2em 0 0 -1.2em; border-radius: 50%; background: rgba(255,60,60,.12); border: 4px solid #ff2d2d; box-shadow: 0 0 0 2px #fff, 0 2px 10px rgba(0,0,0,.45); }
+.x-glo { position: absolute; padding: .35em .65em; border-radius: .6em; background: #14122b; color: #fff; font-size: .74em; font-weight: 700; line-height: 1.25; box-shadow: 0 4px 14px rgba(0,0,0,.35); z-index: 3; white-space: nowrap; }
+.x-dd { display: grid; gap: .8vh; }
+.x-dd h2 { margin: 0; font-size: 1.1em; line-height: 1.2; }
+.x-dd .x-n { color: var(--accent); }
+.x-nav { display: flex; gap: .6em; align-items: center; }
+.x-vbar { display: flex; align-items: center; gap: .6em; margin-top: .5vh; }
+@media (prefers-reduced-motion: reduce) { .x-btn, .x-tab { transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="700" cy="190" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:2.4s" cx="1500" cy="320" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:2.9s" cx="760" cy="840" r="1.6"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/><circle class="e p" style="--p:3.3s" cx="1210" cy="780" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">DeepSeek Harness · S1 · E05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="x-cab5">
+      <h1 class="esc-titulo a-in">Elige <em>tu</em> sistema (1 de 15)</h1>
+      <div class="x-tabs" role="tablist" aria-label="Vistas">
+        <button type="button" class="x-tab" role="tab" data-vista="eleg" aria-selected="true">1 · Elegir</button>
+        <button type="button" class="x-tab" role="tab" data-vista="uso" aria-selected="false">2 · Úsalo en 5 minutos</button>
+      </div>
+    </div>
+
+    <div class="x-el" data-v="eleg">
+      <div>
+        <div class="x-filtro" role="group" aria-label="Filtros">
+          <input type="search" id="q" placeholder="Busca un rol, entidad o fórmula: cajero, OEE, IGV…" aria-label="Buscar por rol, entidad o fórmula">
+        </div>
+        <div class="x-filtro" id="areas" role="group" aria-label="Rubro"></div>
+        <div class="x-rejilla" id="rej" aria-live="polite"></div>
+        <p class="x-estado" id="rej-n" style="margin:.5em 0 0"></p>
+      </div>
+      <section class="esc-card x-det5" id="det5" aria-live="polite"></section>
+    </div>
+
+    <div class="x-g5" data-v="uso" hidden>
+      <div>
+        <div class="x-vf" id="uf"><img id="ui" alt=""></div>
+        <div class="x-vbar">
+          <span class="x-esq x-real">captura real · Maderas del Sur (mueblería)</span>
+        </div>
+      </div>
+      <div class="x-dd">
+        <h2 id="u-t"></h2>
+        <ol class="x-pasos" id="u-p"></ol>
+        <div class="x-ver"><b>Qué deberías ver</b><span id="u-v"></span></div>
+        <div class="x-falla"><b>Si falla</b><span id="u-f"></span></div>
+        <div class="x-nav">
+          <button type="button" class="x-btn" id="u-ant">← Anterior</button>
+          <button type="button" class="x-btn pri" id="u-sig">Siguiente →</button>
+        </div>
+      </div>
+    </div>
+    <script type="application/json" id="datos">[{"id":"muebleria","nombre":"Maderas del Sur · Ventas","rubro":"Venta de muebles","areas":["Comercio"],"negocio":"Tienda de muebles en Arequipa: vende, compra a proveedores y controla su stock.","roles":["admin","gerente","vendedor","almacén","auditor"],"entidades":["clientes","productos","proveedores","categorías","vendedores"],"ops":["ventas","compras"],"formulas":["comisión de vendedor","valorización de stock","IGV"]},{"id":"papeleria","nombre":"Papelería Útil","rubro":"Artículos de escritorio y útiles","areas":["Comercio"],"negocio":"Vende en mostrador y atiende pedidos corporativos de útiles.","roles":["admin","gerente","cajero","almacén","auditor"],"entidades":["clientes (personas y empresas)","productos","combos y kits","proveedores"],"ops":["ventas de mostrador y pedidos corporativos","compras"],"formulas":["descuento escalonado por volumen","margen por categoría","punto de reposición y compra sugerida"]},{"id":"abogados","nombre":"Estudio Jurídico Paredes & Asociados","rubro":"Servicios legales","areas":["Servicios profesionales"],"negocio":"Estudio que lleva expedientes y factura por horas, cuota litis y provisiones.","roles":["socio","abogado","asistente","contador","auditor"],"entidades":["clientes","expedientes (materia, juzgado, etapa)","abogados","tarifas"],"ops":["actuaciones con horas","honorarios y provisiones"],"formulas":["horas facturables × tarifa","cuota litis %","plazos en días hábiles","saldo de provisión de fondos"]},{"id":"centro-salud","nombre":"Centro de Salud Santa Rosa","rubro":"Atención de salud","areas":["Salud"],"negocio":"Centro que agenda citas, registra diagnósticos y receta medicamentos.","roles":["director","médico","enfermería","admisión","farmacia","auditor"],"entidades":["pacientes","médicos","medicamentos","seguros"],"ops":["citas y atenciones (diagnóstico, receta)"],"formulas":["edad","IMC con clasificación","dosis pediátrica por peso","copago según seguro","tiempo de espera"]},{"id":"consultora-software","nombre":"Nexa Soluciones TI","rubro":"Consultora de software","areas":["Tecnología","Servicios profesionales"],"negocio":"Consultora que vende proyectos, registra horas y factura por hitos.","roles":["gerente","PM","consultor","comercial","finanzas","auditor"],"entidades":["clientes","proyectos","consultores","propuestas"],"ops":["partes de horas","facturación por hitos"],"formulas":["costo hora cargado","margen del proyecto","valor ganado (PV, EV, CPI)","utilización"]},{"id":"fabrica-bi","nombre":"DataFactory","rubro":"Fábrica de inteligencia de negocios","areas":["Tecnología"],"negocio":"Fábrica que corre pipelines de datos y atiende tickets de soporte.","roles":["líder de datos","ingeniero","analista","cuenta","auditor"],"entidades":["clientes","fuentes de datos","pipelines","tableros"],"ops":["ejecuciones de pipelines","tickets de soporte"],"formulas":["SLA de entrega","costo de cómputo por ejecución","tasa de éxito","puntaje de calidad de datos"]},{"id":"lab-redes","nombre":"Laboratorio de Redes Andino","rubro":"Laboratorio de redes","areas":["Educación","Tecnología"],"negocio":"Laboratorio que reserva equipos, atiende incidencias y planifica direccionamiento.","roles":["coordinador","técnico","docente","estudiante","auditor"],"entidades":["equipos","laboratorios","docentes","prácticas"],"ops":["reservas de laboratorio","incidencias","planes de direccionamiento"],"formulas":["cálculo de subred (red, broadcast, hosts útiles desde IP/CIDR)","ocupación del laboratorio","depreciación lineal"]},{"id":"linea-produccion","nombre":"Manufacturas Altiplano","rubro":"Cadena de producción","areas":["Industria y obra"],"negocio":"Planta que produce con lista de materiales y registra la producción por turno.","roles":["gerente de planta","supervisor","operador","calidad","mantenimiento","auditor"],"entidades":["productos con lista de materiales (BOM)","líneas y estaciones","insumos","turnos"],"ops":["órdenes de producción","registros de producción por turno"],"formulas":["OEE (disponibilidad × rendimiento × calidad)","takt time","costo estándar por BOM","rendimiento a la primera"]},{"id":"botica","nombre":"Botica Salud Total","rubro":"Botica y farmacia","areas":["Salud","Comercio"],"negocio":"Botica que vende con y sin receta y controla lotes y vencimientos.","roles":["químico farmacéutico","cajero","almacén","admin","auditor"],"entidades":["productos","lotes con vencimiento","proveedores","clientes"],"ops":["ventas (con y sin receta)","compras con lote"],"formulas":["margen","alerta de vencimiento en días","salida por vencimiento (FEFO)","descuento por tarjeta"]},{"id":"restaurante","nombre":"Sabores del Colca","rubro":"Restaurante","areas":["Turismo y transporte"],"negocio":"Restaurante con comandas por mesa, recetas e insumos, y cierre de caja.","roles":["administrador","mozo","cocina","cajero","auditor"],"entidades":["mesas","platos con receta","insumos","personal"],"ops":["comandas","cierres de caja"],"formulas":["costo del plato por receta","food cost %","ticket promedio","rotación de mesa","servicio y propina"]},{"id":"taller-mecanico","nombre":"Taller Automotriz Los Andes","rubro":"Taller mecánico","areas":["Industria y obra"],"negocio":"Taller que atiende vehículos con órdenes de trabajo de servicios y repuestos.","roles":["jefe de taller","asesor de servicio","mecánico","almacén","auditor"],"entidades":["clientes","vehículos (placa)","repuestos","mecánicos"],"ops":["órdenes de trabajo (servicios + repuestos)","compras de repuestos"],"formulas":["mano de obra = tiempo estándar × tarifa","margen en repuestos","próximo mantenimiento por km","comisión por técnico"]},{"id":"colegio","nombre":"I.E. San Martín","rubro":"Colegio","areas":["Educación"],"negocio":"Colegio que matricula, registra notas por bimestre y cobra pensiones.","roles":["director","docente","secretaría","tesorería","auditor"],"entidades":["alumnos","apoderados","cursos y secciones","docentes"],"ops":["matrículas","notas por bimestre","pensiones y pagos"],"formulas":["promedio ponderado","escala literal AD/A/B/C","% de asistencia","interés moratorio de pensión","beca %"]},{"id":"transportes","nombre":"Transportes Andes Cargo","rubro":"Transporte de carga","areas":["Turismo y transporte"],"negocio":"Empresa que despacha viajes con carga y controla mantenimiento y combustible.","roles":["gerente de operaciones","despachador","conductor","contabilidad","auditor"],"entidades":["vehículos","conductores","clientes","rutas"],"ops":["viajes con carga","mantenimiento","combustible"],"formulas":["costo por km","margen del viaje","rendimiento km/galón","ocupación de carga"]},{"id":"hotel","nombre":"Hostal Plaza Mayor","rubro":"Hostal","areas":["Turismo y transporte"],"negocio":"Hostal que reserva habitaciones, hace check-in y check-out y registra consumos.","roles":["gerente","recepción","housekeeping","contabilidad","auditor"],"entidades":["habitaciones","huéspedes","tarifas por temporada","servicios"],"ops":["reservas (check-in/out)","consumos"],"formulas":["noches","tarifa por temporada (alta/baja)","ocupación","ADR y RevPAR"]},{"id":"constructora","nombre":"Constructora Ingeniería Sur","rubro":"Construcción","areas":["Industria y obra"],"negocio":"Constructora que valoriza el avance de obra y pide materiales.","roles":["gerente de proyectos","residente","almacenero","administración","auditor"],"entidades":["proyectos","partidas (metrados)","insumos","proveedores"],"ops":["valorizaciones mensuales","requisiciones de materiales"],"formulas":["costo directo","gastos generales %","utilidad %","IGV","avance valorizado","retención de garantía"]}]</script>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando hayas elegido tu sistema (botón «Elegí el mío») y lo hayas abierto con al menos dos roles</span>
+  </footer>
+</div>
+
+<script>
+/* Ayudas comunes: tema, selector corto y pestañas. */
+(function () {
+  try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {}
+})();
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function pestanas(alCambiar) {
+  var bs = $$("[data-vista]"), ps = $$("[data-v]");
+  function ir(id) {
+    bs.forEach(function (b) { b.setAttribute("aria-selected", b.getAttribute("data-vista") === id ? "true" : "false"); });
+    ps.forEach(function (p) { p.hidden = p.getAttribute("data-v") !== id; });
+    if (alCambiar) alCambiar(id);
+  }
+  bs.forEach(function (b) { b.addEventListener("click", function () { ir(b.getAttribute("data-vista")); }); });
+  return ir;
+}
+
+</script>
+<script>
+(function () {
+  var IMG = "../../comun/img/";
+  var SIS = JSON.parse($("#datos").textContent), AREAS = ["Todos"], area = "Todos", elegido = "", mio = "", sel = "";
+  SIS.forEach(function (s) { s.areas.forEach(function (a) { if (AREAS.indexOf(a) < 0) AREAS.push(a); }); });
+  function norm(t) { return String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+  var rej = $("#rej"), q = $("#q"), cajas = {};
+  SIS.forEach(function (s) {
+    var b = el("button", "x-sis"); b.type = "button"; b.setAttribute("aria-pressed", "false");
+    b.appendChild(el("b", null, s.nombre)); b.appendChild(el("span", null, s.rubro));
+    b.addEventListener("click", function () { seleccionar(s.id); });
+    cajas[s.id] = b; rej.appendChild(b);
+    s.texto = norm([s.nombre, s.rubro, s.negocio, s.roles.join(" "), s.entidades.join(" "), s.ops.join(" "), s.formulas.join(" ")].join(" "));
+  });
+  var barra = $("#areas");
+  AREAS.forEach(function (a) {
+    var b = el("button", "x-chipf", a); b.type = "button"; b.setAttribute("aria-pressed", a === "Todos" ? "true" : "false");
+    b.addEventListener("click", function () { area = a; $$(".x-chipf", barra).forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); }); filtrar(); });
+    barra.appendChild(b);
+  });
+  function filtrar() {
+    var t = norm(q.value.trim()), n = 0;
+    SIS.forEach(function (s) {
+      var ok = (area === "Todos" || s.areas.indexOf(area) >= 0) && (!t || s.texto.indexOf(t) >= 0);
+      cajas[s.id].hidden = !ok; if (ok) n++;
+    });
+    $("#rej-n").textContent = n + " de 15 sistemas" + (n === 0 ? ": prueba con otra palabra" : "");
+  }
+  q.addEventListener("input", filtrar); filtrar();
+  function chips(arr, cls) { var d = el("div", "x-fl" + (cls ? " " + cls : "")); arr.forEach(function (x) { d.appendChild(el("span", null, x)); }); return d; }
+  function bloque(tit, nodo) { var d = el("div", "x-bloq"); d.appendChild(el("span", "x-et", tit)); d.appendChild(nodo); return d; }
+  function seleccionar(id) {
+    sel = id; var s = SIS.filter(function (x) { return x.id === id; })[0];
+    SIS.forEach(function (x) { cajas[x.id].setAttribute("aria-pressed", x.id === id ? "true" : "false"); });
+    var d = $("#det5"); d.textContent = "";
+    d.appendChild(el("span", "id", s.id)); d.appendChild(el("h2", null, s.nombre + " · " + s.rubro));
+    d.appendChild(el("p", "x-vacio", s.negocio)); d.lastChild.style.margin = "0"; d.lastChild.style.fontSize = ".74em";
+    d.appendChild(bloque("Roles", chips(s.roles)));
+    d.appendChild(bloque("Entidades", chips(s.entidades)));
+    d.appendChild(bloque("Fórmulas destacadas", chips(s.formulas, "f")));
+    var c = el("div", "x-cmds");
+    var pa = el("p"); pa.innerHTML = "<span class='x-ra'>RUTA A · laptop</span> Descarga <span class='x-c'>materials/sistemas/" + s.id + ".zip</span> de los Materiales, abre <span class='x-c'>index.html</span> y abre dsh en esa carpeta.";
+    var pb = el("p"); pb.innerHTML = "<span class='x-rb'>RUTA B · aula</span> En la terminal del aula:";
+    var m1 = el("pre", "esc-cmd"); m1.textContent = "aula sistema " + s.id;
+    var m2 = el("p"); m2.innerHTML = "Úsalo en el panel <b>Visor</b>: <span class='x-c'>/vista/&lt;tú&gt;/sistema/</span>. dsh trabaja en <span class='x-c'>/trabajo/sistema</span>; si abriste la web en la escena 4, reiníciala: <span class='x-c'>aula dsh web parar</span> y <span class='x-c'>aula dsh web</span>.";
+    c.appendChild(pb); c.appendChild(m1); c.appendChild(m2); c.appendChild(pa); d.appendChild(c);
+    var b = el("button", "x-btn pri", mio === id ? "✓ Es el mío" : "Elegí el mío"); b.type = "button"; b.style.justifySelf = "start";
+    b.addEventListener("click", function () {
+      if (mio && cajas[mio]) cajas[mio].classList.remove("mio");
+      mio = id; cajas[id].classList.add("mio"); b.textContent = "✓ Es el mío";
+      est.hidden = false; est.textContent = "Elegiste «" + s.nombre + "». Ábrelo con dos roles y pulsa «Lo logré».";
+    });
+    d.appendChild(b);
+    var est = el("p", "x-estado"); est.style.margin = "0"; est.textContent = mio === id ? "Elegiste «" + s.nombre + "»." : ""; if (mio !== id) est.hidden = true; d.appendChild(est);
+  }
+  (function () { var d = $("#det5"); d.appendChild(el("p", "x-vacio", "Toca un sistema para ver su negocio, sus roles, sus entidades, sus fórmulas y cómo abrirlo en cada ruta.")); })();
+
+  var USO = [
+    { t: "Entra con dos roles", imgs: [["s1-mueb-admin.webp", "admin"], ["s1-mueb-almacen.webp", "almacén"]],
+      p: ["Abre el sistema: <b>Visor</b> en el aula, doble clic en <b>index.html</b> en tu laptop.", "Los usuarios de demostración están en <b>LEEME.txt</b> de tu sistema.", "Entra con un rol, sal y entra con otro. La primera vez te pide cambiar la clave de demostración."],
+      v: "El mismo sistema con menús distintos: cada rol ve solo lo suyo. Eso es lo que describirás en la sesión 3.",
+      f: "No entra: revisa mayúsculas y símbolos de la clave. Tras varios errores el sistema puede bloquear el ingreso unos minutos." },
+    { t: "Lee el menú", imgs: [["s1-mueb-admin.webp", ""]], pins: [[7, 21, "Mantenimientos: las entidades", "r"], [7, 53, "Operaciones: ventas, compras…", "r"], [7, 69, "Reportes", "r"]],
+      p: ["Mira las tres zonas del menú: <b>mantenimientos</b>, <b>operaciones</b> y <b>reportes</b>.", "Abre una entidad y mira sus campos y su buscador.", "Anota qué entidades y operaciones ve cada rol."],
+      v: "Un tablero con indicadores y un gráfico, y un menú lateral por zonas.",
+      f: "Una pantalla en blanco: recarga la página; el sistema guarda sus datos en tu navegador." },
+    { t: "Prueba un reporte", imgs: [["s1-mueb-reporte.webp", ""]], pins: [[26.5, 48, "Elige fechas y genera", "r"], [85.6, 15.8, "Exporta o imprime", "b"]],
+      p: ["Abre un reporte del menú <b>Reportes</b>.", "Cambia las fechas y pulsa <b>Generar reporte</b>.", "Prueba <b>Exportar CSV</b> o <b>Imprimir</b>."],
+      v: "Totales, una tabla y un gráfico que cambian con las fechas.",
+      f: "El reporte no aparece en tu menú: ese rol no lo tiene. Entra con otro rol y compáralo." }
+  ];
+  var u = 0, uf = $("#uf");
+  function ur(i) {
+    u = Math.max(0, Math.min(USO.length - 1, i)); var p = USO[u];
+    uf.textContent = "";
+    if (p.imgs.length === 2) {
+      uf.style.aspectRatio = "auto"; uf.style.overflow = "visible"; uf.style.border = "0"; uf.style.background = "transparent"; uf.style.boxShadow = "none";
+      var par = el("div", "x-par2");
+      p.imgs.forEach(function (m) {
+        var fg = el("figure"), fr = el("div", "x-vf"), im = el("img"); im.src = IMG + m[0]; im.alt = "Captura real del sistema con el rol " + m[1];
+        fr.appendChild(im); fg.appendChild(fr); fg.appendChild(el("figcaption", null, "rol: " + m[1])); par.appendChild(fg);
+      });
+      uf.appendChild(par);
+    } else {
+      uf.style.aspectRatio = ""; uf.style.overflow = ""; uf.style.border = ""; uf.style.background = ""; uf.style.boxShadow = "";
+      var im2 = el("img"); im2.src = IMG + p.imgs[0][0]; im2.alt = "Captura real del sistema: " + p.t; uf.appendChild(im2);
+      (p.pins || []).forEach(function (q) {
+        var pin = el("div", "x-pin"); pin.style.left = q[0] + "%"; pin.style.top = q[1] + "%"; uf.appendChild(pin);
+        var g = el("div", "x-glo", q[2]); uf.appendChild(g);
+        var W = uf.clientWidth, H = uf.clientHeight, px = q[0] / 100 * W, py = q[1] / 100 * H, l = px + 36, t = py - g.offsetHeight / 2;
+        if (q[3] === "b") { l = px - g.offsetWidth + 20; t = py + 34; }
+        l = Math.max(6, Math.min(W - g.offsetWidth - 6, l)); t = Math.max(6, Math.min(H - g.offsetHeight - 6, t));
+        g.style.left = l + "px"; g.style.top = t + "px";
+      });
+    }
+    $("#u-t").innerHTML = "<span class='x-n'>" + (u + 1) + " de " + USO.length + " ·</span> " + p.t;
+    $("#u-p").innerHTML = p.p.map(function (s) { return "<li><span>" + s + "</span></li>"; }).join("");
+    $("#u-v").innerHTML = p.v; $("#u-f").innerHTML = p.f;
+    $("#u-ant").disabled = u === 0; $("#u-sig").disabled = u === USO.length - 1;
+  }
+  $("#u-ant").addEventListener("click", function () { ur(u - 1); });
+  $("#u-sig").addEventListener("click", function () { ur(u + 1); });
+  pestanas(function (id) { if (id === "uso") ur(u); });
+
+})();
+</script>
+</body>
+</html>

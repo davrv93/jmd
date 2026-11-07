@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Describe por roles: arma la ficha del vendedor</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión ipt-03 · Describe por roles, audita y valida). Sin recursos externos,
+  menos de 300 elementos y 1 MB, animaciones solo CSS, todo se apaga con prefers-reduced-motion. Legible a 1366x768.
+  Los datos de ejemplo salen de la foto real del sistema «muebleria». Nada se guarda: cada recarga vuelve al inicio.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc { padding: 1.8vh 2.6vw 1.6vh; gap: 1.4vh; }
+.esc-cuerpo { justify-content: flex-start; gap: 1.5vh; }
+.esc-titulo { font-size: 1.4em; }
+.esc-sub { font-size: .95em; }
+code, .s3-m { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; color: var(--fg); }
+.s3-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4vw; align-items: stretch; min-height: 0; }
+.s3-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .7em .95em; box-shadow: var(--card-shadow); min-height: 0; }
+.s3-card h3 { margin: 0 0 .3em; font-size: .95em; }
+.s3-h { margin: 0; font: 700 .68em var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.s3-tabs { display: flex; gap: .45em; flex-wrap: wrap; }
+.s3-tab { font: 700 .72em system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .42em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.s3-tab:hover { border-color: var(--accent); color: var(--accent); }
+.s3-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.s3-btn { white-space: nowrap; font: 700 .76em system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .5em 1.1em; border-radius: .7em; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.s3-btn.sec { background: var(--s1); color: var(--accent); }
+.s3-btn:disabled { opacity: .45; cursor: default; }
+.s3-btn:hover:not(:disabled) { filter: brightness(1.08); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.s3-term { margin: 0; font: 600 .74em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .6em .9em; white-space: pre-wrap; overflow: hidden; border: 1px solid rgba(190,185,255,.22); }
+.s3-term .p { color: #8e7dff; } .s3-term .c { color: #8e8ab8; } .s3-term .g { color: #6ee7a0; } .s3-term .r { color: #ff9b9b; } .s3-term .y { color: #f4d27a; }
+.s3-bd { display: inline-block; padding: .12em .65em; border-radius: 999px; font-size: .72em; font-weight: 800; border: 1px solid transparent; white-space: nowrap; }
+.s3-bd.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.s3-bd.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.s3-bd.bad { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, transparent); }
+.s3-bd.neu { background: var(--s3); color: var(--muted); border-color: var(--line2); }
+.s3-nota { margin: 0; font-size: .74em; color: var(--muted); }
+.s3-msg { margin: 0; padding: .5em .8em; border-left: 5px solid var(--accent); border-radius: .5em; background: var(--s2); font-size: .82em; }
+.s3-msg.ok { border-color: var(--ok); } .s3-msg.warn { border-color: var(--warn); } .s3-msg.bad { border-color: var(--bad); }
+.s3-msg b { color: var(--fg); }
+.s3-rutas { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; }
+.s3-ruta { padding: .5em .8em; border-radius: .8em; border: 1px dashed var(--line2); background: var(--s2); font-size: .78em; }
+.s3-ruta b { display: block; font-size: .95em; margin-bottom: .1em; }
+@media (prefers-reduced-motion: reduce) { .s3-anim { animation: none !important; transition: none !important; } }
+
+.s2-pool { display: flex; flex-wrap: wrap; gap: .4em; padding: .5em .6em; min-height: 3.4em; align-content: flex-start; }
+.s2-chip { font: 600 .78em/1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .42em .8em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: grab; text-align: left; }
+.s2-chip:hover { border-color: var(--accent); }
+.s2-chip.sel { outline: 3px solid var(--accent); outline-offset: 1px; background: var(--accent-bg); }
+.s2-chip.ok { background: var(--ok-bg); border-color: var(--ok); }
+.s2-chip.mal { background: var(--bad-bg); border-color: var(--bad); }
+.s2-zonas { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; }
+.s2-zona { min-height: 10.5em; padding: .5em .7em; border: 2px dashed var(--line2); border-radius: .9em; background: var(--s2); display: flex; flex-direction: column; gap: .35em; cursor: pointer; }
+.s2-zona h3 { margin: 0; font-size: .82em; text-transform: uppercase; letter-spacing: .06em; }
+.s2-zona.puede h3 { color: var(--ok); } .s2-zona.no h3 { color: var(--bad); }
+.s2-zona.sobre { border-color: var(--accent); background: var(--accent-bg); }
+.s2-zona .s2-chip { cursor: pointer; }
+.s2-barra { display: flex; gap: .7em; align-items: center; flex-wrap: wrap; }
+.s2-tabla { width: 100%; border-collapse: collapse; font-size: .78em; }
+.s2-tabla th, .s2-tabla td { padding: .28em .6em; border-bottom: 1px solid var(--line); text-align: center; }
+.s2-tabla th:first-child, .s2-tabla td:first-child { text-align: left; font-family: var(--mono); font-weight: 600; }
+.s2-tabla thead th { color: var(--muted); font-size: .9em; }
+.s2-tabla .v { background: var(--accent-bg); font-weight: 800; }
+.s2-tabla td.n { color: var(--muted); }
+.s2-flujo { width: 100%; height: auto; display: block; }
+.s2-flujo rect { fill: var(--s2); stroke: var(--line2); stroke-width: 2; }
+.s2-flujo text { font-size: 17px; font-weight: 700; text-anchor: middle; }
+.s2-flujo .l { fill: var(--accent); stroke: none; }
+.s2-prompt { white-space: pre-wrap; }
+.s2-lista { margin: .3em 0 0; padding-left: 1.3em; font-size: .82em; display: grid; gap: .25em; }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptos</span>
+    <span class="esc-num">Describe, audita y valida · E02</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <div>
+      <h1 class="esc-titulo a-in">Describe por roles: <em>arma la ficha del vendedor</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Datos reales de la mueblería. Rol del config: «Registra clientes y ventas; consulta productos y el top de ventas. No ve costos.»</p>
+    </div>
+    <div class="s3-tabs" role="tablist">
+      <button class="s3-tab" role="tab" aria-selected="true" data-t="ficha">1 · Arma la ficha</button>
+      <button class="s3-tab" role="tab" aria-selected="false" data-t="foto">2 · La foto, rol × acción</button>
+      <button class="s3-tab" role="tab" aria-selected="false" data-t="agente">3 · Pídeselo al agente</button>
+    </div>
+
+    <section id="t-ficha" class="a-in" style="--d:.2s">
+      <p class="s3-nota" style="margin-bottom:.4em">Toca un permiso y luego «Puede» o «No puede» (o arrástralo). Después pulsa Verificar.</p>
+      <div class="s3-card s2-pool" id="pool" aria-label="Permisos por clasificar"></div>
+      <div class="s2-zonas" style="margin-top:1vh">
+        <div class="s2-zona puede" id="z-puede" tabindex="0" aria-label="Zona: el vendedor puede"><h3>El vendedor puede</h3></div>
+        <div class="s2-zona no" id="z-no" tabindex="0" aria-label="Zona: el vendedor no puede"><h3>El vendedor NO puede</h3></div>
+      </div>
+      <div class="s2-barra" style="margin-top:1vh">
+        <button class="s3-btn" id="verif" type="button">Verificar ficha</button>
+        <button class="s3-btn sec" id="reiniciar" type="button">Empezar de nuevo</button>
+        <p class="s3-msg" id="msg" style="flex:1">Ubica los 12 permisos. El verificador marcará lo que falta o sobra y te dará la línea que lo prueba.</p>
+      </div>
+    </section>
+
+    <section id="t-foto" hidden>
+      <div class="s3-card">
+        <p class="s3-h">FOTO.md §8 · matriz de permisos (fragmento) · V ver · C crear · E editar · D eliminar · M emitir · A anular · X ejecutar</p>
+        <table class="s2-tabla" id="mx"></table>
+        <p class="s3-msg warn" style="margin-top:.5em"><b>La foto no lo resuelve sola:</b> el campo <code>costo</code> (lo oculta un <code>ver</code> dentro del campo), eliminar borradores de venta (la regla está en el código de <code>Seg.puede</code>) y las pantallas fijas como <code>#/usuarios</code>. Se abren en el archivo.</p>
+      </div>
+    </section>
+
+    <section id="t-agente" hidden>
+      <div class="s3-g2">
+        <div class="s3-card">
+          <p class="s3-h">Prompt corto para tu agente (dsh en tu aula o en tu laptop)</p>
+          <pre class="s3-term s2-prompt" id="prompt">Lee AGENTS.md y FOTO/FOTO.md. Escribe docs/DESCRIPCION_POR_ROLES.md con un bloque por cada rol de la matriz (§8): pantallas, qué puede y qué NO puede. Cita archivo:línea abriendo cada línea antes. Lo que no verifiques va como «por verificar».</pre>
+          <div class="s2-barra" style="margin-top:.5em"><button class="s3-btn sec" id="copiar" type="button">Copiar prompt</button><span class="s3-nota" id="copiado"></span></div>
+        </div>
+        <div class="s3-card">
+          <p class="s3-h">Cómo comprobar lo que escribió</p>
+          <ol class="s2-lista">
+            <li>Toma 3 citas al azar y córrelas: <code>sed -n '224p' js/config.js</code>. ¿La línea dice lo que el documento afirma?</li>
+            <li>Compara cada permiso con la matriz de la foto: ¿hay una V, C, E o D de más o de menos?</li>
+            <li>Entra con ese rol y prueba lo que el documento dice que NO puede.</li>
+          </ol>
+          <svg class="s2-flujo" viewBox="0 0 620 90" role="img" aria-label="Esquema: foto, agente, borrador, tu comprobación, documento final" style="margin-top:.6em">
+            <defs><marker id="s2f" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker></defs>
+            <rect x="2" y="20" width="100" height="50" rx="10"/><text x="52" y="50">FOTO</text>
+            <rect x="136" y="20" width="110" height="50" rx="10"/><text x="191" y="50">agente</text>
+            <rect x="280" y="20" width="110" height="50" rx="10"/><text x="335" y="50">borrador</text>
+            <rect x="424" y="20" width="100" height="50" rx="10"/><text x="474" y="42">tú:</text><text x="474" y="62">sed · web</text>
+            <rect x="548" y="20" width="70" height="50" rx="10"/><text x="583" y="50">docs/</text>
+            <g style="stroke:var(--accent);stroke-width:3;fill:none"><path d="M104 45H130" marker-end="url(#s2f)"/><path d="M248 45H274" marker-end="url(#s2f)"/><path d="M392 45H418" marker-end="url(#s2f)"/><path d="M526 45H542" marker-end="url(#s2f)"/></g>
+          </svg>
+          <p class="s3-nota" style="margin-top:.3em">Esquema ilustrativo.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» cuando tu ficha del vendedor acierte 10 de 12 y sepas cuáles tres la foto no resuelve sola</span>
+  </footer>
+</div>
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+
+(function () {
+  var ITEMS = [
+    { id: 1, t: "Ver, crear y editar clientes", z: "puede", ev: "js/config.js:224", why: "El permiso de la entidad clientes lista vendedor en ver, crear y editar. La foto lo muestra como VCE." },
+    { id: 2, t: "Eliminar clientes", z: "no", ev: "js/config.js:224", why: "eliminar: solo admin. La foto lo muestra: VCE sin D." },
+    { id: 3, t: "Ver productos (precio y stock)", z: "puede", ev: "js/config.js:263", why: "vendedor está en ver de productos (V en la matriz)." },
+    { id: 4, t: "Ver el costo de un producto", z: "no", ev: "js/config.js:235", why: "El campo costo lleva ver: admin, gerente, almacen, auditor. La foto no muestra esto: hay que abrir el archivo." },
+    { id: 5, t: "Crear o editar productos", z: "no", ev: "js/config.js:263", why: "crear y editar son de admin y almacen; el vendedor solo tiene V." },
+    { id: 6, t: "Ver proveedores", z: "no", ev: "js/config.js:278", why: "vendedor no está en ver de proveedores (— en la matriz)." },
+    { id: 7, t: "Crear, editar y emitir ventas", z: "puede", ev: "js/config.js:397", why: "En la operación ventas, vendedor figura en crear, editar y emitir (VCEM)." },
+    { id: 8, t: "Anular una venta emitida", z: "no", ev: "js/config.js:397", why: "anular: admin y gerente. El vendedor emite, pero no anula." },
+    { id: 9, t: "Eliminar una venta en borrador", z: "puede", ev: "js/30-seguridad.js:404", why: "La operación no declara eliminar; entonces Seg.puede usa editar, y el vendedor edita. La matriz de la foto no muestra la D." },
+    { id: 10, t: "Ejecutar el reporte «Productos más vendidos»", z: "puede", ev: "js/config.js:527", why: "roles del reporte incluye vendedor." },
+    { id: 11, t: "Ejecutar el reporte «Ventas por mes»", z: "no", ev: "js/config.js:457", why: "roles: admin, gerente, auditor." },
+    { id: 12, t: "Abrir #/usuarios (Usuarios y roles)", z: "no", ev: "js/30-seguridad.js:19", why: "Por defecto solo admin ve usuarios. La guardia lo bloquea en js/80-app.js:179." }
+  ];
+  var ubic = {}, sel = null, verificado = false;
+  var $ = function (i) { return document.getElementById(i); };
+  var pool = $("pool"), zp = $("z-puede"), zn = $("z-no"), msg = $("msg");
+  function chip(it) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "s2-chip" + (sel === it.id ? " sel" : ""); b.textContent = it.t; b.draggable = true;
+    if (verificado && ubic[it.id]) b.className += ubic[it.id] === it.z ? " ok" : " mal";
+    b.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (verificado && ubic[it.id]) { msg.className = "s3-msg " + (ubic[it.id] === it.z ? "ok" : "bad"); msg.innerHTML = "<b>" + esc(it.t) + "</b> · " + esc(it.why) + " <code>" + it.ev + "</code>"; return; }
+      if (ubic[it.id]) { ubic[it.id] = null; sel = it.id; } else { sel = sel === it.id ? null : it.id; }
+      pintar();
+    });
+    b.addEventListener("dragstart", function (e) { try { e.dataTransfer.setData("text/plain", String(it.id)); } catch (x) {} sel = it.id; });
+    return b;
+  }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function pintar() {
+    pool.textContent = ""; [zp, zn].forEach(function (z) { while (z.children.length > 1) z.removeChild(z.lastChild); });
+    ITEMS.forEach(function (it) { var z = ubic[it.id]; (z === "puede" ? zp : z === "no" ? zn : pool).appendChild(chip(it)); });
+    if (!pool.children.length) { var p = document.createElement("span"); p.className = "s3-nota"; p.textContent = "Ya ubicaste los 12. Pulsa Verificar."; pool.appendChild(p); }
+  }
+  function poner(zona) { if (sel === null || verificado) return; ubic[sel] = zona; sel = null; pintar(); }
+  [[zp, "puede"], [zn, "no"]].forEach(function (a) {
+    a[0].addEventListener("click", function () { poner(a[1]); });
+    a[0].addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); poner(a[1]); } });
+    a[0].addEventListener("dragover", function (e) { e.preventDefault(); a[0].classList.add("sobre"); });
+    a[0].addEventListener("dragleave", function () { a[0].classList.remove("sobre"); });
+    a[0].addEventListener("drop", function (e) { e.preventDefault(); a[0].classList.remove("sobre"); var id = 0; try { id = +e.dataTransfer.getData("text/plain"); } catch (x) {} if (id) sel = id; poner(a[1]); });
+  });
+  $("verif").addEventListener("click", function () {
+    var ok = 0, sin = 0, malos = [];
+    ITEMS.forEach(function (it) { if (!ubic[it.id]) sin++; else if (ubic[it.id] === it.z) ok++; else malos.push(it); });
+    verificado = true; pintar();
+    var txt = ok + " de 12 bien";
+    if (sin) txt += " · " + sin + " sin ubicar";
+    if (malos.length) txt += " · mal ubicados: " + malos.map(function (m) { return "«" + m.t + "»"; }).join(", ");
+    msg.className = "s3-msg " + (ok >= 10 && !sin ? "ok" : "warn");
+    msg.innerHTML = "<b>" + esc(txt) + ".</b> " + (ok === 12 ? "Ficha completa. " : "Toca un permiso para ver su línea de evidencia. ") + (ok >= 10 && !sin ? "Ya puedes pulsar «Lo logré»." : "Reinicia y corrige.");
+  });
+  $("reiniciar").addEventListener("click", function () { ubic = {}; sel = null; verificado = false; msg.className = "s3-msg"; msg.textContent = "Ubica los 12 permisos. El verificador marcará lo que falta o sobra y te dará la línea que lo prueba."; pintar(); });
+
+  /* Matriz real (FOTO.md §8 de la mueblería): columnas admin, gerente, vendedor, almacen, auditor */
+  var MX = [["entidad:clientes", "VCED", "V", "VCE", "—", "V"], ["entidad:productos", "VCED", "V", "V", "VCE", "V"], ["entidad:proveedores", "VCED", "V", "—", "VCE", "V"], ["entidad:categorias", "VCED", "VCE", "V", "V", "V"], ["entidad:vendedores", "VCED", "VCE", "—", "—", "V"], ["operacion:ventas", "VCEMA", "VA", "VCEM", "—", "V"], ["operacion:compras", "VCEMA", "V", "—", "VCEM", "V"], ["reporte:ventas-mes", "X", "X", "—", "—", "X"], ["reporte:ventas-vendedor", "X", "X", "—", "—", "X"], ["reporte:productos-top", "X", "X", "X", "X", "X"], ["reporte:formas-pago", "X", "X", "—", "—", "X"]];
+  var mx = $("mx"), th = document.createElement("thead"), tr = document.createElement("tr");
+  ["Recurso", "admin", "gerente", "vendedor", "almacen", "auditor"].forEach(function (h, i) { var c = document.createElement("th"); c.textContent = h; if (i === 3) c.className = "v"; tr.appendChild(c); });
+  th.appendChild(tr); mx.appendChild(th);
+  var tb = document.createElement("tbody");
+  MX.forEach(function (f) { var r = document.createElement("tr"); f.forEach(function (v, i) { var c = document.createElement("td"); c.textContent = v; if (i === 3) c.className = "v"; else if (v === "—") c.className = "n"; r.appendChild(c); }); tb.appendChild(r); });
+  mx.appendChild(tb);
+
+  var ids = { ficha: "t-ficha", foto: "t-foto", agente: "t-agente" };
+  document.querySelectorAll(".s3-tab").forEach(function (t) {
+    t.addEventListener("click", function () {
+      var k = t.getAttribute("data-t");
+      document.querySelectorAll(".s3-tab").forEach(function (o) { o.setAttribute("aria-selected", o === t ? "true" : "false"); });
+      for (var x in ids) $(ids[x]).hidden = x !== k;
+    });
+  });
+  $("copiar").addEventListener("click", function () {
+    var txt = $("prompt").textContent, fin = function (ok) { $("copiado").textContent = ok ? "Copiado." : "Selecciona el texto y cópialo a mano."; };
+    try { navigator.clipboard.writeText(txt).then(function () { fin(true); }, function () { fin(false); }); } catch (e) { fin(false); }
+  });
+  pintar();
+})();
+
+</script>
+</body>
+</html>
