@@ -3,588 +3,935 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Juego: la telaraña cortés</title>
-<!-- Escena LIVE ws-01 · E12. Juego multijugador original, cooperativo y de marca personal (hasta 25 a la vez).
-     Sala y tablero: /carrera (unir {avatar}, paso {dist, golpes}, fin {ms}; el staff inicia y reinicia). Toda la lógica corre aquí:
-       dist = 1000 + puntos  (así «fin» nunca lo pisa: el servidor sube a 840 a quien llegue con menos)
-       golpes = lecciones aprendidas (0 a 6)
-     La reflexión final va al muro (escena 12-telarana-cortes) y a la fotito. Nadie queda fuera: quien llega tarde practica
-     y entra en la siguiente ronda; los errores enseñan una lección y no quitan puntos. -->
+<title>Escena · Arena de conceptos</title>
+<!--
+  ESCENA 12 · ARENA DE CONCEPTOS (Web scraping ético, ws-01) (minijuego multijugador del LIVE)
+  Cada alumno es un robot (mismo robot, otro color) alrededor de la arena. Por el centro flotan
+  bolas con conceptos de la clase: atrapas una, la clasificas en su contenedor y, si acertaste,
+  la disparas al arco de otro. El otro ataja clasificando el concepto que trae la bola.
+  El estado vive en el servidor: GET/POST /api/v1/live/{lección}/juego (ver live_juego.go).
+  La clave de respuestas está en juego.yaml y no llega al navegador.
+  Estética de cómic original (trama de puntos, contorno negro grueso, colores planos); sin
+  recursos externos. La música es un punk chiptune propio hecho con WebAudio y arranca apagada.
+-->
 <link rel="stylesheet" href="../../comun/escena.css">
-<link rel="stylesheet" href="../../comun/ws.css">
 <style id="esc-propio">
-.j-staff { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; background: var(--gold-bg); border: 1px dashed var(--gold); border-radius: .8em; padding: .5em .8em; font-size: .8em; }
-.j-staff b { color: var(--gold); }
-.j-sala { list-style: none; margin: .5em 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .4em; }
-.j-sala li { display: flex; align-items: center; gap: .35em; background: var(--s2); border: 1px solid var(--line); border-radius: 999px; padding: .15em .7em .15em .2em; font-size: .74em; }
-.j-sala li.yo { border-color: var(--accent); background: var(--accent-bg); }
-.j-sala canvas { width: 28px; height: 28px; }
-.j-reglas { margin: 0; padding-left: 1.1em; display: grid; gap: .3em; font-size: .82em; }
-.j-zona { position: relative; border-radius: 1em; overflow: hidden; border: 1px solid var(--line2); background: radial-gradient(ellipse at 50% 100%, var(--s3), var(--s1) 70%); height: min(74vh, 700px); min-height: 440px; box-shadow: var(--card-shadow); }
-.j-zona canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: pointer; }
-.j-hud { position: absolute; left: 0; right: 0; top: 0; display: flex; flex-wrap: wrap; gap: .35em; align-items: center; padding: .5em; z-index: 2; pointer-events: none; }
-.j-hud > * { pointer-events: auto; }
-.j-pill { background: color-mix(in srgb, var(--s1) 88%, transparent); border: 1px solid var(--line2); border-radius: 999px; padding: .25em .7em; font: 700 .74em var(--mono); white-space: nowrap; }
-.j-pill.t { color: var(--accent); }
-.j-vaso { display: inline-flex; align-items: center; gap: .4em; }
-.j-vaso i { display: inline-block; width: 4.2em; height: .7em; border-radius: 999px; background: var(--s3); overflow: hidden; position: relative; }
-.j-vaso i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--v, 0%); background: var(--c, var(--ok)); transition: width .2s linear; }
-.j-robots { margin-left: auto; font: 800 .74em var(--mono); border-radius: 999px; padding: .45em .9em; border: 1px solid var(--gold); background: var(--gold-bg); color: var(--gold); cursor: pointer; min-height: 36px; }
-.j-robots[aria-pressed="true"] { opacity: .7; }
-.j-papel { position: absolute; left: 50%; top: 38%; transform: translateX(-50%); z-index: 3; background: #fffbea; color: #3a2a00; border: 2px solid #e2a72e; border-radius: .7em; padding: .6em .9em; font: 600 .74em/1.55 var(--mono); white-space: pre; box-shadow: 0 10px 30px rgba(0,0,0,.25); max-width: 92%; overflow: auto; }
-.j-leccion { position: absolute; left: 50%; top: 3.6em; transform: translateX(-50%); z-index: 3; width: min(92%, 30em); background: #14122b; color: #fff; border-radius: .9em; padding: .55em .9em; box-shadow: 0 10px 30px rgba(0,0,0,.35); font-size: .78em; border-left: 5px solid var(--gold); }
-.j-leccion b { display: block; color: #ffd77a; }
-.j-cuenta { position: absolute; inset: 0; display: grid; place-items: center; z-index: 4; background: color-mix(in srgb, var(--bg) 70%, transparent); font: 900 5em system-ui, sans-serif; color: var(--accent); }
-.j-cuenta small { display: block; font-size: .18em; color: var(--fg); text-align: center; font-weight: 700; }
-.j-res { display: grid; grid-template-columns: auto 1fr; gap: 1em; align-items: center; }
-.j-res .esc-big { color: var(--accent); }
-.j-datos { display: flex; flex-wrap: wrap; gap: .4em; }
-.j-lecs { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5em; }
-@media (max-width: 860px) { .j-lecs { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 420px) { .j-lecs { grid-template-columns: 1fr; } }
-.j-lec { border: 1px solid var(--line2); border-radius: .7em; padding: .45em .65em; font-size: .74em; background: var(--s2); }
-.j-lec b { display: block; }
-.j-lec.si { border-color: var(--ok); background: var(--ok-bg); }
-.j-lec.si b::before { content: "✓ "; color: var(--ok); }
-.j-tablero { list-style: none; margin: 0; padding: 0; display: grid; gap: .3em; max-height: 46vh; overflow: auto; }
-.j-tablero li { display: grid; grid-template-columns: 30px 1fr auto; gap: .5em; align-items: center; font-size: .76em; padding: .2em .4em; border-radius: .5em; }
-.j-tablero li.yo { background: var(--accent-bg); }
-.j-tablero canvas { width: 30px; height: 30px; }
-.j-tablero small { color: var(--muted); }
-.j-meta { height: 1em; border-radius: 999px; background: var(--s3); overflow: hidden; border: 1px solid var(--line); margin: .3em 0; }
-.j-meta div { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--ok)); transition: width .6s ease-out; }
+:root {
+  --papel: #fff0c2; --punto: rgba(227,38,46,.15); --texto: #000; --caja: #fffdf3;
+  --rojo: #e3262e; --azul: #1d4fd8; --amarillo: #ffd60a; --verde: #17a35a;
+  --rayo-a: #ffe45c; --rayo-b: #ffd21a; --centro: rgba(255,255,255,.72);
+  --comic: Impact, Haettenschweiler, "Franklin Gothic Heavy", "Arial Narrow Bold", "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="light"]) {
+    --papel: #18215e; --punto: rgba(255,214,10,.14); --texto: #fff6dc; --caja: #232e7a;
+    --rayo-a: #2a3a9c; --rayo-b: #22308a; --centro: rgba(16,22,70,.72);
+  }
+}
+:root[data-tema="dark"] {
+  --papel: #18215e; --punto: rgba(255,214,10,.14); --texto: #fff6dc; --caja: #232e7a;
+  --rayo-a: #2a3a9c; --rayo-b: #22308a; --centro: rgba(16,22,70,.72);
+}
+body {
+  color: var(--texto);
+  background-color: var(--papel);
+  background-image:
+    radial-gradient(var(--punto) 24%, transparent 28%),
+    radial-gradient(var(--punto) 24%, transparent 28%),
+    repeating-linear-gradient(97deg, rgba(120,80,0,.035) 0 2px, transparent 2px 7px);
+  background-size: 14px 14px, 14px 14px, auto;
+  background-position: 0 0, 7px 7px, 0 0;
+}
+.esc { height: 100vh; min-height: 0; padding: 2.2vh 2.2vw 1.4vh; gap: 1.2vh; }
+.jg-cab { display: flex; align-items: center; gap: 1vw; flex-wrap: wrap; }
+.jg-logo {
+  margin: 0; font: 400 2.05em/1 var(--comic); letter-spacing: .01em; text-transform: uppercase;
+  color: var(--amarillo); -webkit-text-stroke: .07em #000; paint-order: stroke fill;
+  text-shadow: .06em .06em 0 #000, .1em .1em 0 var(--rojo); transform: rotate(-2deg);
+}
+.jg-reloj {
+  margin-left: auto; font: 400 1.3em/1 var(--comic); color: #000; background: #fff;
+  border: .16em solid #000; padding: .25em .7em; box-shadow: .18em .18em 0 #000; transform: rotate(1.5deg);
+  min-width: 5.5em; text-align: center;
+}
+.jg-reloj.corre { background: var(--amarillo); }
+.jg-reloj.poco { background: var(--rojo); color: #fff; }
+.jg-son {
+  font: 800 .62em system-ui, sans-serif; color: #000; background: #fff; border: .2em solid #000;
+  padding: .45em .8em; cursor: pointer; box-shadow: .2em .2em 0 #000;
+}
+.jg-son[aria-pressed="true"] { background: var(--azul); color: #fff; }
+.jg-son:focus-visible, .jg-btn:focus-visible, .jg-op:focus-visible, .jg-chip:focus-visible { outline: .2em solid var(--azul); outline-offset: .15em; }
+
+.jg-cuerpo { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(13em, 23vw); gap: 1.4vw; }
+.jg-izq { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 1vh; }
+.jg-arena {
+  position: relative; min-height: 0; border: .22em solid #000; box-shadow: .3em .3em 0 #000;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, var(--rayo-a) 0 5deg, var(--rayo-b) 5deg 10deg);
+  overflow: hidden;
+}
+.jg-arena svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.jg-arena text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 900; }
+.jg-centro { fill: var(--centro); stroke: #000; stroke-width: 6; }
+
+.rb { cursor: default; outline: none; }
+.rb .rb-nombre { font-size: 21px; fill: #000; paint-order: stroke; stroke: #fff; stroke-width: 6px; stroke-linejoin: round; text-anchor: middle; }
+.rb.yo .rb-nombre { fill: var(--azul); }
+.rb .rb-pts-c { fill: var(--amarillo); stroke: #000; stroke-width: 4; }
+.rb .rb-pts { font-size: 19px; text-anchor: middle; fill: #000; }
+.rb .rb-mira { fill: none; stroke: var(--rojo); stroke-width: 6; stroke-dasharray: 14 10; opacity: 0; }
+.rb .rb-yo { fill: none; stroke: #fff; stroke-width: 5; opacity: 0; }
+.rb.yo .rb-yo { opacity: .9; }
+.arena-apunta .rb.blanco { cursor: crosshair; }
+.arena-apunta .rb.blanco .rb-mira { opacity: 1; animation: jg-gira 2.4s linear infinite; transform-box: fill-box; transform-origin: center; }
+.rb.blanco:focus-visible .rb-mira { opacity: 1; stroke: var(--azul); }
+.rb.tiembla .rb-cuerpo { animation: jg-tiembla .5s ease-in-out; transform-box: fill-box; transform-origin: center; }
+.rb.fuera { opacity: .45; }
+
+.bl { cursor: pointer; outline: none; }
+.bl .bl-c { stroke: #000; stroke-width: 5; fill: #fff; }
+.bl.atrapada .bl-c { fill: #d9d9d9; }
+.bl.cargada .bl-c { fill: var(--amarillo); }
+.bl.vuelo .bl-c { fill: var(--rojo); }
+.bl .bl-anillo { fill: none; stroke: #000; stroke-width: 7; stroke-dasharray: 1 1; opacity: 0; }
+.bl.vuelo .bl-anillo, .bl.mia .bl-anillo { opacity: 1; }
+.bl.hacia-mi .bl-anillo { stroke: var(--rojo); stroke-width: 9; }
+.bl .bl-et { fill: #fff; stroke: #000; stroke-width: 3.5; }
+.bl.vuelo .bl-et { fill: #ffe1e1; }
+.bl .bl-tx { font-size: 20px; text-anchor: middle; fill: #000; pointer-events: none; }
+.bl:focus-visible .bl-c { stroke: var(--azul); stroke-width: 8; }
+.bl.ocupada { cursor: default; }
+
+.jg-boom { pointer-events: none; }
+.jg-boom .bm-s { stroke: #000; stroke-width: 6; stroke-linejoin: round; }
+.jg-boom text { font-family: var(--comic) !important; font-weight: 400 !important; text-anchor: middle; fill: #fff; stroke: #000; stroke-width: 7px; paint-order: stroke; letter-spacing: 1px; }
+.jg-boom .bm-sub { font-family: system-ui, sans-serif !important; font-weight: 900 !important; fill: #000; stroke: #fff; stroke-width: 5px; }
+.jg-boom > g > g { animation: jg-pum 1.5s cubic-bezier(.2,1.4,.4,1) both; transform-box: fill-box; transform-origin: center; }
+
+.jg-accion {
+  display: flex; align-items: center; gap: .7em; flex-wrap: wrap; min-height: 2.6em;
+  background: var(--caja); color: var(--texto); border: .18em solid #000; box-shadow: .22em .22em 0 #000; padding: .45em .9em;
+  font-size: .78em; font-weight: 800;
+}
+.jg-accion b { font: 400 1.3em/1 var(--comic); letter-spacing: .02em; }
+.jg-accion.alerta { background: var(--rojo); color: #fff; }
+.jg-chip {
+  font: 800 .9em system-ui, sans-serif; border: .18em solid #000; background: #fff; color: #000; padding: .25em .7em;
+  cursor: crosshair; box-shadow: .14em .14em 0 #000; display: inline-flex; align-items: center; gap: .4em;
+}
+.jg-chip.jg-solo-tel { display: none; cursor: pointer; }
+.jg-chip i { width: .8em; height: .8em; border-radius: 50%; border: .12em solid #000; display: inline-block; }
+
+.jg-panel { min-height: 0; display: flex; flex-direction: column; gap: 1.2vh; overflow: auto; padding: 0 .3em .3em 0; }
+.jg-caja { background: var(--caja); color: var(--texto); border: .18em solid #000; box-shadow: .22em .22em 0 #000; padding: .6em .8em; font-size: .72em; }
+.jg-caja h2 { margin: 0 0 .35em; font: 400 1.35em/1 var(--comic); letter-spacing: .02em; }
+.jg-caja.amarilla { background: var(--amarillo); color: #000; transform: rotate(-1deg); }
+.jg-tabla { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; counter-reset: pos; }
+.jg-tabla li { display: grid; grid-template-columns: 1.4em .9em 1fr auto; align-items: center; gap: .45em; font-weight: 800; counter-increment: pos; }
+.jg-tabla li::before { content: counter(pos); font: 400 1.2em/1 var(--comic); }
+.jg-tabla li.yo { text-decoration: underline; text-decoration-thickness: .15em; }
+.jg-tabla .pt { font: 400 1.25em/1 var(--comic); }
+.jg-tabla .rc { font-size: .78em; font-weight: 900; color: var(--rojo); margin-left: .3em; }
+.jg-tabla i { width: .9em; height: .9em; border-radius: 50%; border: .14em solid #000; }
+.jg-yo { margin: .5em 0 0; font-weight: 700; }
+.jg-leyenda { display: grid; grid-template-columns: 1fr 1fr; gap: .35em; }
+.jg-leyenda span { border: .14em solid #000; padding: .2em .4em; font-weight: 900; font-size: .9em; color: #fff; }
+.jg-leyenda span:nth-child(3) { color: #000; }
+.jg-feed { margin: 0; padding: 0; list-style: none; display: grid; gap: .25em; font-weight: 700; }
+.jg-feed li { line-height: 1.25; }
+.jg-feed em { font-style: normal; font-weight: 900; }
+.jg-staff { display: grid; gap: .45em; }
+.jg-btn {
+  font: 800 1em system-ui, sans-serif; border: .18em solid #000; background: #fff; color: #000; padding: .45em .7em;
+  cursor: pointer; box-shadow: .16em .16em 0 #000; text-align: left;
+}
+.jg-btn.fuerte { background: var(--rojo); color: #fff; }
+.jg-btn:active, .jg-chip:active, .jg-op:active { transform: translate(.12em, .12em); box-shadow: .04em .04em 0 #000; }
+.jg-caja.amarilla .jg-tabla { max-height: 34vh; overflow: auto; }
+.jg-caja summary { cursor: pointer; list-style: none; }
+.jg-caja summary::-webkit-details-marker { display: none; }
+.jg-caja summary h2 { display: inline; }
+.jg-caja details:not([open]) summary h2::after { content: " +"; }
+
+/* Ventana de clasificar / atajar */
+.jg-modal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(0,0,0,.35); padding: 16px; }
+.jg-m-caja {
+  width: min(44em, 100%); background: #fff; color: #000; border: .25em solid #000; box-shadow: .4em .4em 0 #000;
+  padding: 1em 1.2em 1.2em; display: grid; gap: .7em; font-size: .9em; animation: jg-entra .25s cubic-bezier(.2,1.3,.4,1) both;
+}
+.jg-modal.atajar .jg-m-caja { background: #ffe9e9; }
+.jg-m-tit { margin: 0; font: 400 1.6em/1 var(--comic); letter-spacing: .02em; }
+.jg-modal.atajar .jg-m-tit { color: var(--rojo); }
+.jg-m-concepto {
+  position: relative; justify-self: start; font: 900 1.55em/1.15 system-ui, sans-serif; background: var(--amarillo);
+  border: .14em solid #000; padding: .35em .7em; border-radius: 1.2em;
+}
+.jg-m-concepto::after {
+  content: ""; position: absolute; left: 1.4em; bottom: -.62em; width: .9em; height: .9em; background: var(--amarillo);
+  border-right: .14em solid #000; border-bottom: .14em solid #000; transform: rotate(45deg) skew(10deg, 10deg);
+}
+.jg-m-reloj { height: .7em; border: .14em solid #000; background: #fff; }
+.jg-m-reloj b { display: block; height: 100%; width: 100%; background: var(--rojo); transform-origin: left; }
+.jg-m-ops { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+.jg-op {
+  font: 900 1.05em/1.15 system-ui, sans-serif; border: .2em solid #000; color: #fff; padding: .8em .6em; cursor: pointer;
+  box-shadow: .2em .2em 0 #000; display: flex; align-items: center; gap: .6em; text-align: left; min-height: 3.6em;
+}
+.jg-op kbd { font: 400 1.1em/1 var(--comic); background: #fff; color: #000; border: .12em solid #000; padding: .1em .35em; }
+.jg-op[data-i="0"] { background: var(--rojo); }
+.jg-op[data-i="1"] { background: var(--azul); }
+.jg-op[data-i="2"] { background: var(--amarillo); color: #000; }
+.jg-op[data-i="3"] { background: var(--verde); }
+.jg-op[data-i="4"] { background: #8e44ad; }
+.jg-op[data-i="5"] { background: #ff7a00; }
+.jg-op:disabled { opacity: .5; cursor: wait; }
+
+/* Aviso y podio */
+.jg-aviso {
+  position: fixed; left: 50%; bottom: 7vh; z-index: 30; transform: translateX(-50%) rotate(-1deg);
+  background: #fff; color: #000; border: .2em solid #000; box-shadow: .25em .25em 0 #000; padding: .5em 1em;
+  font-weight: 900; font-size: .85em; max-width: calc(100vw - 32px);
+}
+.jg-aviso.bien { background: var(--amarillo); }
+.jg-aviso.mal { background: var(--rojo); color: #fff; }
+.jg-podio .jg-m-caja { width: min(40em, 100%); text-align: center; background: var(--amarillo); }
+.jg-podio svg { width: 100%; height: auto; }
+.jg-podio text { font-family: system-ui, sans-serif; font-weight: 900; text-anchor: middle; }
+
+@keyframes jg-pum { 0% { transform: scale(.2) rotate(-12deg); opacity: 0; } 18% { transform: scale(1.12) rotate(3deg); opacity: 1; } 30% { transform: scale(1) rotate(0); } 82% { opacity: 1; } 100% { transform: scale(1.05); opacity: 0; } }
+@keyframes jg-gira { to { transform: rotate(360deg); } }
+@keyframes jg-tiembla { 0%, 100% { transform: none; } 20% { transform: translateX(-8px) rotate(-6deg); } 40% { transform: translateX(8px) rotate(6deg); } 60% { transform: translateX(-6px); } 80% { transform: translateX(5px); } }
+@keyframes jg-entra { from { transform: scale(.85) rotate(-2deg); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Teléfono y ventanas angostas: la tabla baja y se puede desplazar. */
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  .esc { height: auto; min-height: 100vh; padding: 10px 16px 14px; }
+  .jg-cuerpo { grid-template-columns: 1fr; }
+  .jg-arena { aspect-ratio: 16 / 10; }
+  .jg-panel { overflow: visible; }
+  .jg-logo { font-size: 1.6em; }
+  .jg-m-ops { grid-template-columns: 1fr; }
+  .jg-chip.jg-solo-tel { display: inline-flex; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jg-boom > g > g { animation: none; }
+}
 </style>
 </head>
-<body data-escena="12-telarana-cortes">
-<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="eg" cx="1384" cy="168" r="4"/></g></svg>
+<body>
 <div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ca">Conceptualización</span>
-    <span class="esc-num">Scraping ético · E12 · Juego</span>
+  <header class="jg-cab">
+    <span class="esc-fase" data-ph="ca">Conceptos</span>
+    <h1 class="jg-logo">Arena de conceptos</h1>
+    <span class="jg-reloj" id="jg-reloj" aria-live="polite">Calentamiento</span>
+    <button type="button" class="jg-son" id="jg-son" aria-pressed="false">Música: apagada</button>
+    <span class="esc-num">Scraping ético · E12</span>
   </header>
-  <main class="esc-cuerpo">
-    <div>
-      <h1 class="esc-titulo a-in">La telaraña <em>cortés</em></h1>
-      <p class="esc-sub a-in" style="--d:.1s">Tu arañita extrae datos de un sitio en 75 segundos. Gana filas limpias quien respeta el robots.txt, el ritmo y los datos personales.</p>
-    </div>
-    <div class="j-staff" id="staff" hidden>
-      <b>Instructor</b><span id="staff-n">0 en la sala</span>
-      <button type="button" class="w-btn peq" id="iniciar">Empezar ronda para todos</button>
-      <button type="button" class="w-btn sec peq" id="reiniciar">Vaciar la sala</button>
-    </div>
 
-    <!-- 1. Sala -->
-    <section id="lobby" class="w-g2">
-      <div class="esc-card">
-        <span class="w-et">Cómo se juega</span>
-        <ol class="j-reglas">
-          <li><b>Toca una página</b> del sitio: tu arañita le lanza un hilo y trae filas de datos.</li>
-          <li><b>Mira el vaso de paciencia</b> del servidor. Si lo llenas, responde 429 y esperas 3 s.</li>
-          <li><b>Lee el robots.txt</b> (botón dorado): te dice qué no tocar… y dónde está la API.</li>
-          <li><b>Toca las bolitas rosadas</b> (teléfonos y DNI) antes de que lleguen: así las apartas.</li>
-          <li>Nadie pierde: cada error te enseña una lección. Al final, entre todos llenamos el dataset de la clase.</li>
+  <main class="jg-cuerpo">
+    <section class="jg-izq">
+      <div class="jg-arena" id="jg-arena-caja">
+        <svg id="jg-arena" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="application" aria-label="Arena: robots de cada jugador alrededor y bolas con conceptos en el centro">
+          <defs>
+            <pattern id="trama" width="9" height="9" patternUnits="userSpaceOnUse">
+              <circle cx="4.5" cy="4.5" r="1.7" fill="#000" opacity=".22"/>
+            </pattern>
+            <g id="robo">
+              <path d="M0 -50 V-64" stroke="#000" stroke-width="5"/>
+              <circle cx="0" cy="-67" r="7.5" fill="#ffd60a" stroke="#000" stroke-width="4"/>
+              <circle cx="-41" cy="-23" r="7" fill="#fff" stroke="#000" stroke-width="4"/>
+              <circle cx="41" cy="-23" r="7" fill="#fff" stroke="#000" stroke-width="4"/>
+              <path d="M-27 14 L-45 36 M27 14 L45 36" stroke="#000" stroke-width="7" stroke-linecap="round"/>
+              <rect x="-36" y="-52" width="72" height="56" rx="15" style="fill:var(--c)" stroke="#000" stroke-width="5"/>
+              <rect x="-36" y="-52" width="72" height="56" rx="15" fill="url(#trama)"/>
+              <rect x="-26" y="-42" width="52" height="31" rx="9" fill="#141834" stroke="#000" stroke-width="3"/>
+              <rect x="-17" y="-35" width="10" height="15" rx="4" fill="#fff"/>
+              <rect x="7" y="-35" width="10" height="15" rx="4" fill="#fff"/>
+              <rect x="-29" y="6" width="58" height="44" rx="11" style="fill:var(--c)" stroke="#000" stroke-width="5"/>
+              <rect x="-29" y="6" width="58" height="44" rx="11" fill="url(#trama)"/>
+              <rect x="-14" y="16" width="28" height="17" rx="4" fill="#fff" stroke="#000" stroke-width="3"/>
+              <circle cx="0" cy="24.5" r="4" fill="#e3262e"/>
+              <rect x="-23" y="50" width="15" height="10" rx="3" fill="#000"/>
+              <rect x="8" y="50" width="15" height="10" rx="3" fill="#000"/>
+            </g>
+            <g id="arco">
+              <path d="M20 -44 H-14 V44 H20" style="fill:var(--c)" fill-opacity=".38" stroke="#000" stroke-width="7" stroke-linejoin="round"/>
+              <path d="M-14 -22 H20 M-14 0 H20 M-14 22 H20 M3 -44 V44" stroke="#000" stroke-width="2.5" opacity=".55"/>
+            </g>
+          </defs>
+          <ellipse class="jg-centro" cx="800" cy="450" rx="440" ry="235"/>
+          <ellipse cx="800" cy="450" rx="440" ry="235" fill="url(#trama)" pointer-events="none"/>
+          <g id="jg-robots"></g>
+          <g id="jg-bolas"></g>
+          <g id="jg-booms" class="jg-boom"></g>
+        </svg>
+      </div>
+      <div class="jg-accion" id="jg-accion" aria-live="polite"><b>Entrando a la arena…</b></div>
+    </section>
+
+    <aside class="jg-panel">
+      <div class="jg-caja amarilla">
+        <h2>Tabla</h2>
+        <ol class="jg-tabla" id="jg-tabla"><li><i style="background:#fff"></i><span>Aún nadie anota</span><span class="pt">0</span></li></ol>
+        <p class="jg-yo" id="jg-yo"></p>
+      </div>
+      <div class="jg-caja">
+        <h2>Los contenedores</h2>
+        <div class="jg-leyenda" id="jg-leyenda"></div>
+      </div>
+      <div class="jg-caja" id="jg-staff" hidden>
+        <h2>Instructor</h2>
+        <div class="jg-staff">
+          <button type="button" class="jg-btn fuerte" data-ronda="180">Ronda nueva de 3 min</button>
+          <button type="button" class="jg-btn" data-ronda="300">Ronda nueva de 5 min</button>
+          <button type="button" class="jg-btn" id="jg-terminar">Terminar la ronda</button>
+          <button type="button" class="jg-btn" id="jg-jugar" hidden>Jugar yo también</button>
+        </div>
+      </div>
+      <div class="jg-caja">
+        <details id="jg-reglas" open>
+        <summary><h2>Cómo se juega</h2></summary>
+        <ol class="jg-feed">
+          <li>Toca una bola del centro para atraparla.</li>
+          <li>Ponla en su contenedor. Si aciertas, queda cargada.</li>
+          <li>Toca el robot de un rival para disparar a su arco.</li>
+          <li>Si te disparan, ataja clasificando el concepto nuevo en 5 s.</li>
         </ol>
+        <p class="jg-yo">Gol +2 · atajada +1 · 3 aciertos seguidos +1 · fallo −1</p>
+        </details>
       </div>
-      <div class="esc-card">
-        <span class="w-et">Tu arañita</span>
-        <div data-avatar></div>
-        <div class="w-fila" style="margin-top:.7em">
-          <button type="button" class="w-btn" id="unir">Entrar a la sala</button>
-          <button type="button" class="w-btn sec" id="practicar">Practicar solo</button>
-        </div>
-        <p class="w-peq" id="estado-sala" aria-live="polite" style="margin:.5em 0 0">Entra a la sala y espera a que el instructor empiece la ronda.</p>
-        <ul class="j-sala" id="sala" aria-label="Quiénes están en la sala"></ul>
+      <div class="jg-caja">
+        <h2>Jugadas</h2>
+        <ul class="jg-feed" id="jg-feed"><li>Todavía no hay jugadas.</li></ul>
       </div>
-    </section>
-
-    <!-- 2. Juego -->
-    <section id="juego" hidden>
-      <div class="j-zona" id="zona">
-        <canvas id="lienzo" aria-label="Tablero del juego: páginas del sitio y tu arañita"></canvas>
-        <div class="j-hud">
-          <span class="j-pill t" id="h-tiempo">75 s</span>
-          <span class="j-pill" id="h-filas">0 filas</span>
-          <span class="j-pill" id="h-prot">0 protegidos</span>
-          <span class="j-pill j-vaso" title="Paciencia del servidor">vaso <i id="h-vaso"></i></span>
-          <button type="button" class="j-robots" id="robots" aria-pressed="false">robots.txt</button>
-        </div>
-        <div class="j-papel" id="papel" hidden></div>
-        <div class="j-leccion" id="leccion" role="status" hidden></div>
-        <div class="j-cuenta" id="cuenta" hidden></div>
-      </div>
-    </section>
-
-    <!-- 3. Resultado, reflexión y fotito -->
-    <section id="final" hidden>
-      <div class="w-g2">
-        <div style="display:grid;gap:1em;align-content:start">
-          <div class="esc-card">
-            <span class="w-et">Tu resultado</span>
-            <div class="j-res">
-              <div><div class="esc-big" id="r-puntos">0</div><span class="w-peq w-muted">puntos</span></div>
-              <div class="j-datos" id="r-datos"></div>
-            </div>
-            <p class="w-peq" id="r-mejor" style="margin:.5em 0 0"></p>
-          </div>
-          <div class="esc-card">
-            <span class="w-et">Lo que aprendiste jugando</span>
-            <div class="j-lecs" id="r-lecs"></div>
-          </div>
-          <div class="esc-card">
-            <span class="w-et">Reflexión para el muro</span>
-            <h2>En un sitio real, ¿qué harías primero y qué no harías nunca?</h2>
-            <div data-muro="12-telarana-cortes" data-max="140" data-placeholder="Primero… y nunca…" data-pregunta="Qué harías primero y qué no harías nunca en un sitio real"></div>
-          </div>
-        </div>
-        <div style="display:grid;gap:1em;align-content:start">
-          <div class="esc-card">
-            <span class="w-et">La telaraña de la clase</span>
-            <p class="w-peq" id="r-clase" style="margin:0">—</p>
-            <div class="j-meta"><div id="r-meta"></div></div>
-            <ol class="j-tablero" id="r-tablero"></ol>
-          </div>
-          <div class="esc-card">
-            <span class="w-et">Guarda la fotito</span>
-            <div id="fotito"></div>
-          </div>
-          <div class="w-fila">
-            <button type="button" class="w-btn sec" id="otra">Jugar otra vez (práctica)</button>
-            <span class="w-peq w-muted" id="r-siguiente">Si el instructor abre otra ronda, entra desde aquí.</span>
-          </div>
-        </div>
-      </div>
-    </section>
+    </aside>
   </main>
-  <footer class="esc-pie"><span class="esc-nota">Ratón o dedo. Sin sonido. Cada ronda dura 75 segundos.</span></footer>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Cada acierto cuenta solo si el concepto cae en su contenedor. Teclas 1 a 4 para elegir.</span>
+  </footer>
 </div>
-<script src="../../comun/ws.js"></script>
+
+<div class="jg-modal" id="jg-modal" hidden role="dialog" aria-modal="true" aria-labelledby="jg-m-tit">
+  <div class="jg-m-caja">
+    <p class="jg-m-tit" id="jg-m-tit">¿En qué contenedor va?</p>
+    <div class="jg-m-concepto" id="jg-m-concepto">…</div>
+    <div class="jg-m-reloj" aria-hidden="true"><b id="jg-m-barra"></b></div>
+    <div class="jg-m-ops" id="jg-m-ops"></div>
+  </div>
+</div>
+
+<div class="jg-modal jg-podio" id="jg-podio" hidden role="dialog" aria-modal="true" aria-labelledby="jg-p-tit">
+  <div class="jg-m-caja">
+    <p class="jg-m-tit" id="jg-p-tit">¡Fin de la ronda!</p>
+    <svg id="jg-p-svg" viewBox="0 0 600 300" aria-hidden="true"></svg>
+    <p id="jg-p-txt" style="margin:0;font-weight:800"></p>
+    <button type="button" class="jg-btn" id="jg-p-cerrar" style="justify-self:center">Volver a la arena</button>
+  </div>
+</div>
+
+<div class="jg-aviso" id="jg-aviso" hidden role="status"></div>
+
 <script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+/* Música y efectos: punk chiptune propio (La, Re, Mi en corcheas rápidas y batería de ruido). Arranca apagada. */
+var jgSonido = (function () {
+  var ctx = null, maestro = null, activo = false, timer = 0, siguiente = 0, paso = 0;
+  var BPM = 184, CORCHEA = 60 / BPM / 2;
+  var ACORDES = [110, 146.83, 164.81, 146.83]; // La2, Re3, Mi3, Re3: un compás cada uno
+  function asegurar() {
+    if (ctx) return ctx;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    ctx = new AC();
+    maestro = ctx.createGain();
+    maestro.gain.value = 0.16;
+    maestro.connect(ctx.destination);
+    return ctx;
+  }
+  function tono(f, t, dur, tipo, vol, destino) {
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = tipo; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    o.connect(g); g.connect(destino || maestro);
+    o.start(t); o.stop(t + dur + 0.02);
+    return o;
+  }
+  var ruidoBuf = null;
+  function ruido(t, dur, vol, filtro, frec) {
+    if (!ruidoBuf) {
+      ruidoBuf = ctx.createBuffer(1, ctx.sampleRate * 0.4, ctx.sampleRate);
+      var d = ruidoBuf.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = ruidoBuf; f.type = filtro; f.frequency.value = frec;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    s.connect(f); f.connect(g); g.connect(maestro);
+    s.start(t); s.stop(t + dur + 0.02);
+  }
+  function bombo(t) {
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+    g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    o.connect(g); g.connect(maestro); o.start(t); o.stop(t + 0.18);
+  }
+  function programar() {
+    while (siguiente < ctx.currentTime + 0.18) {
+      var t = siguiente, enCompas = paso % 8, raiz = ACORDES[Math.floor(paso / 8) % ACORDES.length];
+      tono(raiz / 2, t, CORCHEA * 0.9, "square", 0.22);          // bajo
+      tono(raiz, t, CORCHEA * 0.7, "sawtooth", 0.07);            // quinta de guitarra (raíz + quinta)
+      tono(raiz * 1.5, t, CORCHEA * 0.7, "sawtooth", 0.05);
+      if (enCompas === 0 || enCompas === 4 || enCompas === 5) bombo(t);
+      if (enCompas === 2 || enCompas === 6) ruido(t, 0.13, 0.5, "bandpass", 1800);
+      ruido(t, 0.03, 0.18, "highpass", 7000);                    // charles
+      siguiente += CORCHEA; paso++;
+    }
+  }
+  function musica(encender) {
+    if (!asegurar()) return false;
+    if (ctx.state === "suspended") ctx.resume();
+    activo = !!encender;
+    clearInterval(timer);
+    if (activo) { siguiente = ctx.currentTime + 0.05; paso = 0; timer = setInterval(programar, 40); }
+    return activo;
+  }
+  var efectos = false;
+  function efecto(nombre) {
+    if (!efectos || !ctx) return;
+    var t = ctx.currentTime + 0.01;
+    if (nombre === "atrapa") { tono(660, t, 0.08, "square", 0.2); tono(990, t + 0.06, 0.08, "square", 0.2); }
+    else if (nombre === "bien") { [523, 659, 784, 1046].forEach(function (f, i) { tono(f, t + i * 0.06, 0.12, "square", 0.18); }); }
+    else if (nombre === "mal") { tono(140, t, 0.3, "sawtooth", 0.3); tono(132, t + 0.05, 0.3, "sawtooth", 0.25); }
+    else if (nombre === "tiro") { var o = tono(900, t, 0.25, "square", 0.2); o.frequency.exponentialRampToValueAtTime(200, t + 0.25); ruido(t, 0.2, 0.4, "highpass", 2500); }
+    else if (nombre === "gol") { ruido(t, 0.5, 0.6, "lowpass", 1200); [392, 523, 659].forEach(function (f) { tono(f, t + 0.05, 0.6, "sawtooth", 0.12); }); }
+    else if (nombre === "atajada") { tono(330, t, 0.1, "square", 0.25); tono(660, t + 0.09, 0.22, "square", 0.25); }
+    else if (nombre === "alerta") { tono(880, t, 0.09, "square", 0.22); tono(880, t + 0.16, 0.09, "square", 0.22); }
+  }
+  return {
+    alternar: function () { var on = !activo; efectos = on; return musica(on) && on; },
+    efecto: efecto
+  };
+})();
+</script>
+<script>
+/* El juego: lee el estado del servidor cada ~0,9 s, pinta la arena y manda las jugadas. */
 (function () {
   "use strict";
-  var DUR = 75000, BASE_DIST = 1000;
+  var ESCENA = "12-telarana-cortes";
+  var leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "ws-01";
+  var API = "/api/v1/live/" + leccion + "/juego";
+  var REDUCIDO = false;
+  try { REDUCIDO = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+  var NS = "http://www.w3.org/2000/svg";
+  var COLORES = ["#e3262e", "#1d4fd8", "#ffd60a", "#17a35a", "#ff7a00", "#8e44ad", "#00a8c8", "#e8439a", "#8bc34a",
+    "#795548", "#3f51b5", "#00897b", "#b0bec5", "#455a64", "#ff8a80", "#0d2c6b", "#7ee0b5", "#7b1f3a"];
+  var COL_CONT = ["#e3262e", "#1d4fd8", "#ffd60a", "#17a35a", "#8e44ad", "#ff7a00"];
+  var CX = 800, CY = 450, RX = 655, RY = 335;
+  var ZONA = { x: 470, y: 290, w: 660, h: 320 };
+
   var $ = function (id) { return document.getElementById(id); };
-  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var svg = $("jg-arena"), gRobots = $("jg-robots"), gBolas = $("jg-bolas"), gBooms = $("jg-booms");
+  var est = null, offset = 0, ultimoEv = -1, leyendo = false, ocupado = false, uniendo = false;
+  var robots = {}, bolas = {}, pos = {}, modal = null, finVisto = false, podioCerrado = false;
+  var atajadasAbiertas = {};
 
-  /* ---------- Lecciones: cada error enseña, nunca resta ---------- */
-  var LECC = [
-    { id: "robots", t: "robots.txt primero", d: "Leerlo te dice qué rutas no tocar y, a veces, dónde hay una API." },
-    { id: "ritmo", t: "429: muy rápido", d: "El servidor pidió esperar (Retry-After). Una pausa entre pedidos lo evita." },
-    { id: "personal", t: "Datos personales fuera", d: "Teléfonos y DNI no van a tu dataset. Apártalos antes de guardar." },
-    { id: "paginacion", t: "Fin de la lista", d: "has_next = false: tu extractor para solo en la última página." },
-    { id: "api", t: "Si hay API, úsala", d: "Más filas por pedido y menos carga para el sitio." },
-    { id: "trampa", t: "Páginas infinitas", d: "El calendario nunca se acaba y repite datos: pon un tope de páginas." },
-  ];
-  var ROBOTS_TXT = "User-agent: *\nDisallow: /admin\nDisallow: /carrito\nDisallow: /cuenta\n# Hay una API: /api/frases";
-
-  /* ---------- Azar con semilla: la misma ronda arma el mismo sitio para todos ---------- */
-  function rng(seed) { var a = seed >>> 0 || 1; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-
-  /* ---------- Estado de la ronda ---------- */
-  var J = null; // la partida en curso
-  function nuevaPartida(seed, duracion) {
-    var r = rng(seed);
-    var nodos = [
-      { id: "frases", ruta: "/frases", tipo: "lista", paginas: 8, filas: 5 },
-      { id: "libros", ruta: "/libros", tipo: "lista", paginas: 8, filas: 5 },
-      { id: "perfiles", ruta: "/perfiles", tipo: "perfiles", paginas: 4, filas: 2, personales: 2 },
-      { id: "api", ruta: "/api/frases", tipo: "api", paginas: 6, filas: 8 },
-      { id: "calendario", ruta: "/calendario", tipo: "trampa", paginas: 999, filas: 1 },
-      { id: "admin", ruta: "/admin", tipo: "prohibida" },
-      { id: "carrito", ruta: "/carrito", tipo: "prohibida" },
-      { id: "cuenta", ruta: "/cuenta", tipo: "prohibida" },
-    ];
-    for (var i = nodos.length - 1; i > 0; i--) { var k = Math.floor(r() * (i + 1)), x = nodos[i]; nodos[i] = nodos[k]; nodos[k] = x; }
-    nodos.forEach(function (n) { n.pag = 1; n.fin = false; n.golpe = 0; });
-    return {
-      seed: seed, nodos: nodos, t0: performance.now(), dur: duracion || DUR, vivo: true,
-      filas: 0, prot: 0, apartados: 0, repetidas: 0, aprendidas: {}, leyo: false,
-      vaso: 0, espera: 0, hilo: null, bolas: [], textos: [], ultimoEnvio: -1,
-    };
+  function ahora() { return Date.now() + offset; }
+  function el(tag, attrs, padre) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (padre) padre.appendChild(n);
+    return n;
   }
-  function puntos() { return J ? J.filas + J.prot : 0; }
-  function nLecciones() { return J ? Object.keys(J.aprendidas).length : 0; }
-
-  var lecT = 0;
-  function aprender(id) {
-    if (!J || J.aprendidas[id]) return;
-    J.aprendidas[id] = true;
-    var l = LECC.filter(function (x) { return x.id === id; })[0];
-    var el = $("leccion");
-    el.innerHTML = "<b></b><span></span>"; el.firstChild.textContent = "Lección: " + l.t; el.lastChild.textContent = l.d;
-    el.hidden = false; clearTimeout(lecT); lecT = setTimeout(function () { el.hidden = true; }, 3800);
+  function jugadorPorId(id) {
+    if (!est || !id) return null;
+    var l = est.jugadores.concat(est.tabla);
+    for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+    return null;
+  }
+  function nombre(id) { var j = jugadorPorId(id); return j ? j.nombre : "alguien"; }
+  function color(j) { return COLORES[(j && j.color || 0) % COLORES.length]; }
+  function miBola() {
+    if (!est || !est.yo) return null;
+    for (var i = 0; i < est.bolas.length; i++) {
+      var b = est.bolas[i];
+      if (b.dueno === est.yo && (b.estado === "atrapada" || b.estado === "cargada")) return b;
+    }
+    return null;
+  }
+  function bolaPorId(id) {
+    if (!est) return null;
+    for (var i = 0; i < est.bolas.length; i++) if (est.bolas[i].id === id) return est.bolas[i];
+    return null;
   }
 
-  /* ---------- Lienzo ---------- */
-  var cv = $("lienzo"), ctx = cv.getContext("2d"), W = 0, H = 0, DPR = 1, COL = {};
-  function colores() {
-    var s = getComputedStyle(document.documentElement);
-    ["--s1", "--s2", "--s3", "--fg", "--muted", "--accent", "--ok", "--bad", "--warn", "--gold", "--line2", "--ph-ea"].forEach(function (k) { COL[k] = s.getPropertyValue(k).trim() || "#888"; });
+  /* ---- Red ---- */
+  function leer() {
+    if (leyendo) return;
+    leyendo = true;
+    fetch(API + "?escena=" + ESCENA, { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+      .then(aplicar)
+      .catch(function () { accion("<b>Sin conexión con la arena</b> · reintentando…", false); })
+      .then(function () { leyendo = false; });
   }
-  function medir() {
-    var r = cv.getBoundingClientRect(); DPR = Math.min(2, window.devicePixelRatio || 1);
-    W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
-    if (J) ubicar();
+  function jugar(acc, extra) {
+    if (ocupado) return Promise.resolve(null);
+    ocupado = true;
+    var cuerpo = { escena: ESCENA, accion: acc };
+    for (var k in (extra || {})) cuerpo[k] = extra[k];
+    return fetch(API, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo) })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (x) {
+        if (x.ok) { aplicar(x.d); return x.d.resultado || { ok: true }; }
+        aviso((x.d && x.d.error && x.d.error.message) || "No se pudo", "mal");
+        return null;
+      })
+      .catch(function () { aviso("Sin conexión con el LMS", "mal"); return null; })
+      .then(function (res) { ocupado = false; return res; });
   }
-  function ubicar() {
-    var cols = W >= H * 1.1 ? 4 : 2, filas = Math.ceil(J.nodos.length / cols);
-    var top = 62, bottom = H - 120, cw = W / cols, ch = (bottom - top) / filas;
-    J.nodos.forEach(function (n, i) {
-      var c = i % cols, f = Math.floor(i / cols);
-      n.w = Math.min(cw * .86, 220); n.h = Math.min(ch * .78, 84);
-      n.x = c * cw + cw / 2; n.y = top + f * ch + ch / 2;
+
+  /* ---- Estado ---- */
+  function aplicar(d) {
+    var previo = est;
+    est = d;
+    offset = d.ahora_ms - Date.now();
+    if (!d.yo && !d.staff && !uniendo) { uniendo = true; jugar("unirse").then(function () { uniendo = false; }); }
+    // Jugadas nuevas → globos. La primera lectura solo marca lo ya ocurrido.
+    var maxN = ultimoEv;
+    (d.eventos || []).forEach(function (e) {
+      if (ultimoEv >= 0 && e.n > ultimoEv) evento(e);
+      if (e.n > maxN) maxN = e.n;
     });
-    J.base = { x: W / 2, y: H - 58 };
-  }
-  addEventListener("resize", function () { medir(); });
-
-  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
-  function visible(n) { return n.tipo !== "api" || J.leyo; }
-  function bloqueada(n) { return n.tipo === "prohibida" && J.leyo; }
-
-  function dibujar(ahora) {
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx.clearRect(0, 0, W, H);
-    var t = (ahora - J.t0) / 1000;
-    // hilos de fondo desde la base
-    ctx.strokeStyle = COL["--line2"]; ctx.lineWidth = 1;
-    J.nodos.forEach(function (n) { if (!visible(n)) return; ctx.beginPath(); ctx.moveTo(J.base.x, J.base.y); ctx.lineTo(n.x, n.y + n.h / 2); ctx.stroke(); });
-    // páginas
-    J.nodos.forEach(function (n) {
-      var x = n.x - n.w / 2, y = n.y - n.h / 2, sh = n.golpe > ahora ? Math.sin(ahora / 30) * 4 : 0;
-      if (!visible(n)) {
-        ctx.setLineDash([5, 5]); ctx.strokeStyle = COL["--line2"]; rr(x, y, n.w, n.h, 12); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = COL["--muted"]; ctx.font = "600 12px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.fillText("¿?", n.x, n.y + 4);
-        return;
+    ultimoEv = Math.max(maxN, 0);
+    // Tiros nuevos → ¡POW! en quien dispara; si va a mi arco, abre la atajada.
+    var antes = {};
+    if (previo) previo.bolas.forEach(function (b) { antes[b.id] = b.estado + "|" + b.desde_ms; });
+    d.bolas.forEach(function (b) {
+      if (b.estado === "vuelo" && previo && antes[b.id] !== b.estado + "|" + b.desde_ms) {
+        var p = pos[b.dueno];
+        if (p) globo(p.x, p.y - 70, "¡POW!", "", "#ffd60a", 0.7);
+        if (b.hacia === d.yo) jgSonido.efecto("alerta"); else if (b.dueno === d.yo) jgSonido.efecto("tiro");
       }
-      ctx.save(); ctx.translate(sh, 0);
-      var borde = n.tipo === "api" ? COL["--gold"] : bloqueada(n) ? COL["--bad"] : n.fin ? COL["--ok"] : COL["--accent"];
-      ctx.fillStyle = COL["--s1"]; rr(x, y, n.w, n.h, 12); ctx.fill();
-      ctx.lineWidth = n.tipo === "api" ? 3 : 2; ctx.strokeStyle = borde; ctx.stroke();
-      if (bloqueada(n)) { ctx.save(); rr(x, y, n.w, n.h, 12); ctx.clip(); ctx.strokeStyle = "rgba(220,60,60,.18)"; ctx.lineWidth = 8; for (var k = -n.h; k < n.w; k += 22) { ctx.beginPath(); ctx.moveTo(x + k, y + n.h); ctx.lineTo(x + k + n.h, y); ctx.stroke(); } ctx.restore(); }
-      ctx.textAlign = "center"; ctx.fillStyle = COL["--fg"];
-      var fs = Math.max(11, Math.min(15, n.w / 11));
-      ctx.font = "800 " + fs + "px ui-monospace, Menlo, monospace";
-      var etiqueta = n.ruta + (n.tipo === "lista" || n.tipo === "perfiles" || n.tipo === "api" ? "?page=" + Math.min(n.pag, n.paginas) : n.tipo === "trampa" ? "?mes=" + n.pag : "");
-      ctx.fillText(etiqueta, n.x, n.y - 4, n.w - 12);
-      ctx.font = "600 " + (fs - 2) + "px system-ui, sans-serif"; ctx.fillStyle = COL["--muted"];
-      var sub = n.fin ? "fin: has_next = false" : bloqueada(n) ? "Disallow: no se toca" : n.tipo === "prohibida" ? "página" : n.tipo === "trampa" ? "¿cuántos meses hay?" : n.tipo === "api" ? "8 filas por pedido" : n.tipo === "perfiles" ? "perfiles de usuarios" : "página " + n.pag + " de " + n.paginas;
-      ctx.fillText(sub, n.x, n.y + fs + 2, n.w - 12);
-      ctx.restore();
     });
-    // hilo en curso
-    if (J.hilo) {
-      var h = J.hilo, n = h.nodo, p = Math.min(1, (ahora - h.t0) / 320);
-      var ex = J.base.x + (n.x - J.base.x) * p, ey = J.base.y - 20 + (n.y + n.h / 2 - J.base.y + 20) * p;
-      ctx.strokeStyle = COL["--accent"]; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(J.base.x, J.base.y - 20); ctx.lineTo(ex, ey); ctx.stroke();
-      if (h.res && ahora > h.t0 + 320) {
-        ctx.font = "800 13px ui-monospace, monospace"; ctx.textAlign = "center";
-        ctx.fillStyle = h.res === 200 ? COL["--ok"] : COL["--bad"];
-        ctx.fillText(h.res === 200 ? "200 OK" : h.res === 429 ? "429 · espera 3 s" : "Disallow", n.x, n.y - n.h / 2 - 6);
+    pintarRobots();
+    pintarBolas();
+    pintarPanel();
+    revisarModal();
+    if (!modal && d.yo && d.estado !== "final") {
+      var entrante = d.bolas.filter(function (b) { return b.estado === "vuelo" && b.hacia === d.yo && !atajadasAbiertas[b.id + "|" + b.desde_ms]; })[0];
+      if (entrante) abrirModal("atajar", entrante);
+    }
+    pintarAccion();
+    if (d.estado === "final" && !finVisto) { finVisto = true; if (!podioCerrado) mostrarPodio(); }
+    if (d.estado !== "final") { finVisto = false; podioCerrado = false; $("jg-podio").hidden = true; }
+  }
+
+  /* ---- Robots ---- */
+  function pintarRobots() {
+    var lista = est.jugadores.slice().sort(function (a, b) { return (+a.id.slice(1)) - (+b.id.slice(1)); });
+    var iyo = -1;
+    lista.forEach(function (j, i) { if (j.id === est.yo) iyo = i; });
+    if (iyo > 0) lista = lista.slice(iyo).concat(lista.slice(0, iyo)); // tú abajo al centro
+    var n = lista.length, escala = n > 14 ? 0.78 : n > 9 ? 0.9 : 1;
+    var vivos = {};
+    var tengo = miBola(), apunto = tengo && tengo.estado === "cargada";
+    svg.classList.toggle("arena-apunta", !!apunto);
+    lista.forEach(function (j, i) {
+      vivos[j.id] = true;
+      var ang = Math.PI / 2 + (n ? i * 2 * Math.PI / n : 0);
+      var x = CX + RX * Math.cos(ang), y = CY + RY * Math.sin(ang);
+      var dx = CX - x, dy = CY - y, dl = Math.sqrt(dx * dx + dy * dy) || 1;
+      var gx = x + dx / dl * 118 * escala, gy = y + dy / dl * 118 * escala;
+      pos[j.id] = { x: x, y: y, gx: gx, gy: gy };
+      var r = robots[j.id];
+      if (!r) {
+        r = { g: el("g", { "class": "rb", tabindex: "0" }, gRobots) };
+        r.arco = el("use", { href: "#arco" }, r.g);
+        r.cuerpo = el("g", { "class": "rb-cuerpo" }, r.g);
+        r.mira = el("circle", { "class": "rb-mira", r: "78" }, r.cuerpo);
+        r.yo = el("ellipse", { "class": "rb-yo", cx: "0", cy: "64", rx: "48", ry: "10" }, r.cuerpo);
+        el("use", { href: "#robo" }, r.cuerpo);
+        r.ptsC = el("circle", { "class": "rb-pts-c", cx: "44", cy: "-52", r: "19" }, r.cuerpo);
+        r.pts = el("text", { "class": "rb-pts", x: "44", y: "-45" }, r.cuerpo);
+        r.nom = el("text", { "class": "rb-nombre", x: "0", y: "88" }, r.cuerpo);
+        r.g.addEventListener("click", function () { tocarRobot(r.id); });
+        r.g.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tocarRobot(r.id); } });
+        robots[j.id] = r;
+      }
+      r.id = j.id;
+      var c = color(j);
+      r.g.style.setProperty("--c", c);
+      r.arco.style.setProperty("--c", c);
+      r.cuerpo.setAttribute("transform", "translate(" + x.toFixed(1) + " " + y.toFixed(1) + ") scale(" + escala + ")");
+      r.arco.setAttribute("transform", "translate(" + gx.toFixed(1) + " " + gy.toFixed(1) + ") rotate(" + (Math.atan2(dy, dx) * 180 / Math.PI).toFixed(1) + ") scale(" + escala + ")");
+      r.pts.textContent = j.puntos;
+      r.nom.textContent = j.nombre + (j.id === est.yo ? " (tú)" : "");
+      var esBlanco = apunto && j.id !== est.yo && j.activo;
+      r.g.setAttribute("class", "rb" + (j.id === est.yo ? " yo" : "") + (esBlanco ? " blanco" : "") + (j.activo ? "" : " fuera") + (r.tiembla ? " tiembla" : ""));
+      r.g.setAttribute("role", esBlanco ? "button" : "img");
+      r.g.setAttribute("aria-label", j.nombre + ", " + j.puntos + " puntos" + (esBlanco ? ". Disparar a su arco" : ""));
+      r.g.setAttribute("tabindex", esBlanco ? "0" : "-1");
+    });
+    Object.keys(robots).forEach(function (id) {
+      if (!vivos[id]) { robots[id].g.remove(); delete robots[id]; delete pos[id]; }
+    });
+  }
+  function sacudir(id) {
+    var r = robots[id];
+    if (!r || REDUCIDO) return;
+    r.tiembla = true;
+    r.g.classList.add("tiembla");
+    setTimeout(function () { r.tiembla = false; r.g.classList.remove("tiembla"); }, 600);
+  }
+  function tocarRobot(id) {
+    var b = miBola();
+    if (!b || b.estado !== "cargada" || id === est.yo) return;
+    disparar(b, id);
+  }
+  function disparar(b, id) {
+    jugar("tirar", { bola: b.id, a: id }).then(function (res) {
+      if (res && res.ok) aviso(res.mensaje, "bien");
+    });
+  }
+
+  /* ---- Bolas ---- */
+  function pintarBolas() {
+    var vivos = {};
+    est.bolas.forEach(function (b) {
+      vivos[b.id] = true;
+      var n = bolas[b.id];
+      if (!n) {
+        n = { g: el("g", { "class": "bl", tabindex: "0", role: "button" }, gBolas) };
+        n.anillo = el("circle", { "class": "bl-anillo", r: "46", pathLength: "1", transform: "rotate(-90)" }, n.g);
+        el("circle", { "class": "bl-c", r: "34" }, n.g);
+        el("circle", { r: "34", fill: "url(#trama)" }, n.g);
+        el("path", { d: "M-18 -14 A22 22 0 0 1 2 -26", fill: "none", stroke: "#fff", "stroke-width": "6", "stroke-linecap": "round" }, n.g);
+        n.et = el("rect", { "class": "bl-et", y: "40", height: "32", rx: "16" }, n.g);
+        n.tx = el("text", { "class": "bl-tx", y: "63" }, n.g);
+        n.g.addEventListener("click", function () { tocarBola(n.id); });
+        n.g.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tocarBola(n.id); } });
+        bolas[b.id] = n;
+      }
+      n.id = b.id;
+      n.b = b;
+      if (n.tx.textContent !== b.concepto) {
+        n.tx.textContent = b.concepto;
+        var w = Math.max(70, b.concepto.length * 11.5 + 28);
+        n.et.setAttribute("x", String(-w / 2));
+        n.et.setAttribute("width", String(w));
+      }
+      var mia = b.dueno === est.yo && (b.estado === "atrapada" || b.estado === "cargada");
+      var haciaMi = b.estado === "vuelo" && b.hacia === est.yo;
+      var tocable = (b.estado === "libre" && !miBola() && est.yo && est.estado !== "final") || haciaMi || (mia && b.estado === "atrapada");
+      n.g.setAttribute("class", "bl " + b.estado + (mia ? " mia" : "") + (haciaMi ? " hacia-mi" : "") + (tocable ? "" : " ocupada"));
+      n.g.setAttribute("aria-label", b.concepto + (b.estado === "libre" ? ": atrapar" : haciaMi ? ": ¡atajar!" : ""));
+      n.g.setAttribute("tabindex", tocable ? "0" : "-1");
+    });
+    Object.keys(bolas).forEach(function (id) {
+      if (!vivos[id]) { bolas[id].g.remove(); delete bolas[id]; }
+    });
+  }
+  function rebota(u) { u = u % 2; if (u < 0) u += 2; return u > 1 ? 2 - u : u; }
+  function lugar(b, t) {
+    var p, q;
+    if (b.estado === "libre") {
+      var s = REDUCIDO ? 0 : (t - b.desde_ms) / 1000;
+      return { x: ZONA.x + ZONA.w * rebota(b.x + b.vx * s), y: ZONA.y + ZONA.h * rebota(b.y + b.vy * s), f: 0 };
+    }
+    var plazo = b.vence_ms > b.desde_ms ? Math.min(1, Math.max(0, (t - b.desde_ms) / (b.vence_ms - b.desde_ms))) : 0;
+    if (b.estado === "vuelo") {
+      p = pos[b.dueno]; q = pos[b.hacia];
+      if (!p || !q) return { x: CX, y: CY, f: plazo };
+      var k = REDUCIDO ? 0.82 : 0.12 + 0.8 * (1 - Math.pow(1 - plazo, 2));
+      return { x: p.x + (q.gx - p.x) * k, y: p.y + (q.gy - p.y) * k, f: plazo };
+    }
+    p = pos[b.dueno];
+    if (!p) return { x: CX, y: CY, f: plazo };
+    var dx = CX - p.x, dy = CY - p.y, dl = Math.sqrt(dx * dx + dy * dy) || 1, bob = REDUCIDO ? 0 : Math.sin(t / 180) * 4;
+    return { x: p.x + dx / dl * 200, y: p.y + dy / dl * 200 + bob, f: plazo };
+  }
+  function cuadro() {
+    if (est) {
+      var t = ahora();
+      Object.keys(bolas).forEach(function (id) {
+        var n = bolas[id], L = lugar(n.b, t);
+        n.g.setAttribute("transform", "translate(" + L.x.toFixed(1) + " " + L.y.toFixed(1) + ")" + (n.b.estado === "libre" || n.b.estado === "vuelo" ? "" : " scale(.82)"));
+        n.anillo.style.strokeDashoffset = String(-L.f);
+      });
+      reloj(t);
+      if (modal) {
+        var b = bolaPorId(modal.bola), fr = 0;
+        if (b && b.vence_ms > b.desde_ms) fr = Math.max(0, Math.min(1, (b.vence_ms - t) / (b.vence_ms - b.desde_ms)));
+        $("jg-m-barra").style.transform = "scaleX(" + fr.toFixed(3) + ")";
       }
     }
-    // bolitas de datos
-    J.bolas.forEach(function (b) {
-      var p = Math.min(1, (ahora - b.t0) / b.dur), e = 1 - Math.pow(1 - p, 2);
-      b.x = b.x0 + (J.base.x - b.x0) * e; b.y = b.y0 + (J.base.y - 24 - b.y0) * e + Math.sin(p * Math.PI) * -30;
-      if (b.ok === false) return;
-      var r = b.tipo === "personal" ? 13 : 9;
-      ctx.fillStyle = b.tipo === "personal" ? "#f0559a" : b.tipo === "repetida" ? "#9a97ad" : b.tipo === "api" ? COL["--gold"] : COL["--ok"];
-      ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, Math.PI * 2); ctx.fill();
-      if (b.tipo === "personal") { ctx.fillStyle = "#fff"; ctx.font = "800 9px system-ui"; ctx.textAlign = "center"; ctx.fillText(b.etq, b.x, b.y + 3); }
-    });
-    // textos flotantes
-    J.textos.forEach(function (x) {
-      var p = (ahora - x.t0) / 900; if (p > 1) return;
-      ctx.globalAlpha = 1 - p; ctx.fillStyle = x.c; ctx.font = "800 15px system-ui, sans-serif"; ctx.textAlign = "center";
-      ctx.fillText(x.s, x.x, x.y - p * 30); ctx.globalAlpha = 1;
-    });
-    // arañita
-    var mov = J.hilo || J.bolas.length ? t : 0;
-    WS.dibujarArana(ctx, J.base.x, J.base.y, 30, WS.avatar(), quieto ? 0 : mov, false);
-    if (J.espera > ahora) {
-      var f = (J.espera - ahora) / 3000;
-      ctx.strokeStyle = COL["--warn"]; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(J.base.x, J.base.y, 44, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke();
-      ctx.fillStyle = COL["--warn"]; ctx.font = "800 13px system-ui"; ctx.textAlign = "center"; ctx.fillText("Retry-After " + Math.ceil(f * 3) + " s", J.base.x, J.base.y - 52);
-    }
-    ctx.fillStyle = COL["--muted"]; ctx.font = "700 12px system-ui"; ctx.textAlign = "center";
-    ctx.fillText(J.filas + " filas limpias", J.base.x, H - 12);
-  }
-
-  /* ---------- Reglas del sitio simulado ---------- */
-  var ETQ = ["DNI", "tel", "DNI", "tel"];
-  function pedir(n, ahora) {
-    if (!J.vivo || !visible(n)) return;
-    if (J.hilo) { WS.aviso("Una página a la vez: espera a que vuelva tu hilo.", 1500); return; }
-    if (J.espera > ahora) { n.golpe = ahora + 300; WS.aviso("Retry-After: espera a que se vacíe el reloj.", 1500); return; }
-    if (bloqueada(n)) { n.golpe = ahora + 300; WS.aviso("Disallow en robots.txt: esta no se toca.", 1600); return; }
-    if (n.fin) { n.golpe = ahora + 300; WS.aviso("Esa lista ya terminó: prueba otra página.", 1500); return; }
-    var res = 200;
-    if (n.tipo === "prohibida") res = 403;
-    else if (J.vaso + .3 > 1) res = 429;
-    J.vaso = Math.min(1, J.vaso + .3);
-    J.hilo = { nodo: n, t0: ahora, res: res };
-    setTimeout(function () { responder(n, res); }, 520);
-  }
-  function responder(n, res) {
-    if (!J || !J.vivo) return;
-    var ahora = performance.now();
-    if (res === 403) {
-      aprender("robots"); J.leyo = true; mostrarRobots(true);
-      J.textos.push({ s: "Disallow", x: n.x, y: n.y, t0: ahora, c: COL["--bad"] });
-      setTimeout(function () { J && (J.hilo = null); }, 500);
-      return;
-    }
-    if (res === 429) {
-      aprender("ritmo"); J.espera = ahora + 3000;
-      setTimeout(function () { J && (J.hilo = null); }, 500);
-      return;
-    }
-    var bolas = [];
-    if (n.tipo === "trampa") {
-      if (n.pag > 1) { aprender("trampa"); bolas.push("repetida"); } else bolas.push("fila");
-      n.pag++;
-    } else {
-      for (var i = 0; i < n.filas; i++) bolas.push(n.tipo === "api" ? "api" : "fila");
-      for (var k = 0; k < (n.personales || 0); k++) bolas.splice(1 + k * 2, 0, "personal");
-      if (n.tipo === "api") aprender("api");
-      n.pag++;
-      if (n.pag > n.paginas) { n.fin = true; aprender("paginacion"); }
-    }
-    bolas.forEach(function (tipo, i) {
-      J.bolas.push({ tipo: tipo, etq: ETQ[i % 4], x0: n.x + (i - bolas.length / 2) * 12, y0: n.y + n.h / 2, x: n.x, y: n.y, t0: ahora + i * 110, dur: tipo === "personal" ? 1900 : 800 });
-    });
-    setTimeout(function () { J && (J.hilo = null); }, 360);
-  }
-  function llegar(b, ahora) {
-    if (b.tipo === "personal") { J.apartados++; aprender("personal"); J.textos.push({ s: "apartado: dato personal", x: J.base.x, y: J.base.y - 40, t0: ahora, c: "#f0559a" }); return; }
-    if (b.tipo === "repetida") { J.repetidas++; J.textos.push({ s: "repetida", x: J.base.x, y: J.base.y - 40, t0: ahora, c: COL["--muted"] }); return; }
-    J.filas++;
-  }
-  function tocar(x, y) {
-    if (!J || !J.vivo) return;
-    var ahora = performance.now();
-    for (var i = J.bolas.length - 1; i >= 0; i--) {
-      var b = J.bolas[i];
-      if (b.tipo === "personal" && b.ok !== false && ahora >= b.t0 && Math.hypot(b.x - x, b.y - y) < 30) {
-        b.ok = false; J.prot++; aprender("personal");
-        J.textos.push({ s: "+1 protegido", x: b.x, y: b.y, t0: ahora, c: "#f0559a" });
-        return;
-      }
-    }
-    for (var k = 0; k < J.nodos.length; k++) {
-      var n = J.nodos[k];
-      if (Math.abs(x - n.x) <= n.w / 2 + 4 && Math.abs(y - n.y) <= n.h / 2 + 4) { pedir(n, ahora); return; }
-    }
-  }
-  cv.addEventListener("pointerdown", function (e) {
-    var r = cv.getBoundingClientRect(); e.preventDefault();
-    tocar(e.clientX - r.left, e.clientY - r.top);
-  });
-
-  function mostrarRobots(auto) {
-    var p = $("papel"); p.textContent = ROBOTS_TXT; p.hidden = false;
-    $("robots").setAttribute("aria-pressed", "true");
-    clearTimeout(mostrarRobots.t); mostrarRobots.t = setTimeout(function () { p.hidden = true; }, auto ? 2600 : 3400);
-  }
-  $("robots").addEventListener("click", function () {
-    if (!J || !J.vivo) return;
-    if (!J.leyo) { J.leyo = true; aprender("robots"); }
-    mostrarRobots(false);
-  });
-  $("papel").addEventListener("click", function () { $("papel").hidden = true; });
-
-  /* ---------- Bucle ---------- */
-  var ultimo = 0;
-  function cuadro(ahora) {
-    if (!J || !J.vivo) return;
-    var dt = Math.min(.1, (ahora - (ultimo || ahora)) / 1000); ultimo = ahora;
-    J.vaso = Math.max(0, J.vaso - .17 * dt);
-    J.bolas = J.bolas.filter(function (b) {
-      if (ahora - b.t0 >= b.dur) { if (b.ok !== false) llegar(b, ahora); return false; }
-      return true;
-    });
-    J.textos = J.textos.filter(function (x) { return ahora - x.t0 < 900; });
-    var resta = Math.max(0, J.dur - (ahora - J.t0));
-    $("h-tiempo").textContent = Math.ceil(resta / 1000) + " s";
-    $("h-filas").textContent = J.filas + (J.filas === 1 ? " fila" : " filas");
-    $("h-prot").textContent = J.prot + (J.prot === 1 ? " protegido" : " protegidos");
-    var v = $("h-vaso"); v.style.setProperty("--v", Math.round(J.vaso * 100) + "%");
-    v.style.setProperty("--c", J.vaso > .7 ? COL["--bad"] : J.vaso > .45 ? COL["--warn"] : COL["--ok"]);
-    dibujar(ahora);
-    if (resta <= 0) { terminar(); return; }
     requestAnimationFrame(cuadro);
   }
-
-  /* ---------- Sala multijugador (/carrera) ---------- */
-  var sala = { estado: "lobby", corredores: [], staff: false, yo: "", salida: 0, seed: 0, desfase: 0 };
-  var unido = false, rondaJugada = -1, practica = false, resultado = null;
-  function consultar() {
-    return WS.api("/carrera").then(function (j) {
-      sala.estado = j.estado; sala.corredores = j.corredores || []; sala.staff = !!j.staff; sala.yo = j.yo || "";
-      sala.salida = +j.salida_ms || 0; sala.seed = +j.seed || 0; sala.desfase = (+j.ahora_ms || Date.now()) - Date.now();
-      unido = sala.corredores.some(function (c) { return c.id === sala.yo; });
-      pintarSala(); revisarRonda();
-      return j;
-    }).catch(function () { $("estado-sala").textContent = "La sala se abre cuando la clase está en vivo. Mientras tanto, practica solo."; });
-  }
-  function pts(c) { return c.dist >= BASE_DIST ? Math.round(c.dist - BASE_DIST) : 0; }
-  function miniAvatar(code) {
-    var c = document.createElement("canvas"); c.width = 60; c.height = 60;
-    WS.dibujarArana(c.getContext("2d"), 30, 33, 17, WS.parseAva(code) ? code : "c0-o0-x0", 0, false);
-    return c;
-  }
-  function pintarSala() {
-    $("staff").hidden = !sala.staff;
-    $("staff-n").textContent = sala.corredores.length + (sala.corredores.length === 1 ? " en la sala" : " en la sala") + " · estado: " + sala.estado;
-    var ul = $("sala"); ul.textContent = "";
-    sala.corredores.slice(0, 25).forEach(function (c) {
-      var li = document.createElement("li"); if (c.id === sala.yo) li.className = "yo";
-      li.appendChild(miniAvatar(c.avatar)); li.appendChild(document.createTextNode(WS.nombreCorto(c.nombre)));
-      ul.appendChild(li);
-    });
-    var est = $("estado-sala");
-    if (sala.estado === "lobby") est.textContent = unido ? "Estás en la sala (" + sala.corredores.length + "). Cuando el instructor empiece, arrancas sola o solo." : "Entra a la sala y espera a que el instructor empiece la ronda.";
-    else if (sala.estado === "cuenta" || sala.estado === "corre") est.textContent = unido ? "¡La ronda está por empezar!" : "Hay una ronda en curso. Practica solo y entras en la siguiente.";
-    else est.textContent = "La ronda terminó. Practica o espera la siguiente.";
-    $("unir").disabled = unido;
-    $("unir").textContent = unido ? "Ya estás en la sala" : "Entrar a la sala";
-    if (!$("final").hidden) pintarTablero();
-  }
-  function revisarRonda() {
-    if (!unido) return;
-    if (J && J.vivo) {
-      if (!(practica && sala.estado === "cuenta" && sala.salida !== rondaJugada)) return;
-      J.vivo = false; // empieza una ronda de verdad: la práctica cede el paso
-    }
-    if ((sala.estado === "cuenta" || sala.estado === "corre") && sala.salida && sala.salida !== rondaJugada) {
-      var falta = sala.salida - (Date.now() + sala.desfase);
-      if (falta > 0) cuentaAtras(falta);
-      else if (DUR + falta > 10000) arrancar(sala.seed, DUR + falta, false);
-    }
-  }
-  var cuentaT = 0;
-  function cuentaAtras(ms) {
-    if (cuentaT) return;
-    mostrar("juego"); medir();
-    J = nuevaPartida(sala.seed); J.vivo = false; ubicar(); dibujar(performance.now());
-    var el = $("cuenta"), fin = performance.now() + ms;
-    el.hidden = false;
-    (function tic() {
-      var r = fin - performance.now();
-      if (r <= 0) { el.hidden = true; cuentaT = 0; arrancar(sala.seed, DUR, false); return; }
-      el.innerHTML = Math.ceil(r / 1000) + "<small>Lee el robots.txt antes de tocar nada</small>";
-      cuentaT = setTimeout(tic, 100);
-    })();
-  }
-  function mostrar(cual) {
-    ["lobby", "juego", "final"].forEach(function (k) { $(k).hidden = k !== cual; });
-    if (cual === "juego") $("zona").scrollIntoView({ block: "nearest" });
-  }
-  function arrancar(seed, duracion, esPractica) {
-    practica = esPractica;
-    if (!esPractica) rondaJugada = sala.salida;
-    mostrar("juego"); colores(); medir();
-    J = nuevaPartida(seed, duracion); ubicar(); ultimo = 0;
-    $("papel").hidden = true; $("leccion").hidden = true; $("robots").setAttribute("aria-pressed", "false");
-    requestAnimationFrame(cuadro);
-    enviarAvance();
-  }
-  function enviarAvance() {
-    if (!J || !unido) return;
-    var p = puntos(), l = nLecciones();
-    if (J.ultimoEnvio === p * 10 + l) return;
-    J.ultimoEnvio = p * 10 + l;
-    WS.api("/carrera/paso", { body: { dist: BASE_DIST + p, golpes: l } }).catch(function () {});
-  }
-  setInterval(function () { if (J && J.vivo) enviarAvance(); }, 2000);
-
-  function terminar() {
-    J.vivo = false;
-    J.bolas.forEach(function (b) { if (b.ok !== false) { if (b.tipo === "personal") J.apartados++; else if (b.tipo !== "repetida") J.filas++; } });
-    J.bolas = [];
-    var p = puntos(), l = nLecciones();
-    resultado = { puntos: p, filas: J.filas, prot: J.prot, lec: l, aprendidas: J.aprendidas, apartados: J.apartados };
-    var mejor = WS.leer("mejor-telarana", 0);
-    if (p > mejor) WS.guardar("mejor-telarana", p);
-    resultado.mejor = Math.max(p, mejor); resultado.record = p > mejor && mejor > 0;
-    WS.guardar("resultado-telarana", { puntos: p, filas: J.filas, prot: J.prot, lec: l });
-    if (unido) {
-      J.ultimoEnvio = -1; enviarAvance();
-      setTimeout(function () { WS.api("/carrera/fin", { body: { ms: Math.round(J.dur) } }).catch(function () {}).then(consultar); }, 400);
-    }
-    pintarFinal();
-  }
-
-  function pintarFinal() {
-    mostrar("final");
-    var r = resultado;
-    $("r-puntos").textContent = r.puntos;
-    var d = $("r-datos"); d.textContent = "";
-    [[r.filas + " filas limpias", "ok"], [r.prot + " datos protegidos", ""], [r.lec + " de 6 lecciones", ""]].forEach(function (x) {
-      var s = document.createElement("span"); s.className = "esc-chip " + x[1]; s.textContent = x[0]; d.appendChild(s);
-    });
-    $("r-mejor").textContent = r.record ? "¡Nuevo récord personal! Tu mejor marca ahora es " + r.mejor + "." : "Tu mejor marca: " + r.mejor + " puntos." + (practica ? " (Ronda de práctica.)" : "");
-    var c = $("r-lecs"); c.textContent = "";
-    LECC.forEach(function (l) {
-      var div = document.createElement("div"); div.className = "j-lec" + (r.aprendidas[l.id] ? " si" : "");
-      div.innerHTML = "<b></b><span></span>"; div.firstChild.textContent = l.t; div.lastChild.textContent = l.d; c.appendChild(div);
-    });
-    pintarTablero();
-    if (foto) foto.generar();
-  }
-  function pintarTablero() {
-    var lista = sala.corredores.slice().sort(function (a, b) { return pts(b) - pts(a) || (b.golpes - a.golpes); });
-    var total = 0; lista.forEach(function (c) { total += pts(c); });
-    var meta = Math.max(1, lista.length) * 50;
-    $("r-clase").textContent = lista.length
-      ? "Entre " + lista.length + (lista.length === 1 ? " arañita" : " arañitas") + ": " + total + " de " + meta + " filas para llenar el dataset de la clase." + (total >= meta ? " ¡Lo llenamos!" : "")
-      : "Juega en la sala con el grupo para llenar entre todos el dataset de la clase.";
-    $("r-meta").style.width = Math.min(100, total / meta * 100) + "%";
-    var ol = $("r-tablero"); ol.textContent = "";
-    lista.slice(0, 25).forEach(function (c) {
-      var li = document.createElement("li"); if (c.id === sala.yo) li.className = "yo";
-      li.appendChild(miniAvatar(c.avatar));
-      var n = document.createElement("span"); n.textContent = WS.nombreCorto(c.nombre); li.appendChild(n);
-      var s = document.createElement("small"); s.textContent = pts(c) + " pts · " + (c.golpes || 0) + "/6"; li.appendChild(s);
-      ol.appendChild(li);
+  function tocarBola(id) {
+    var b = bolaPorId(id);
+    if (!b || !est.yo) return;
+    if (b.estado === "vuelo" && b.hacia === est.yo) { abrirModal("atajar", b); return; }
+    if (b.estado === "atrapada" && b.dueno === est.yo) { abrirModal("clasificar", b); return; }
+    if (b.estado !== "libre") return;
+    var mia = miBola();
+    if (mia) { aviso(mia.estado === "cargada" ? "Ya tienes una bola cargada: dispárala" : "Primero clasifica tu bola", "mal"); return; }
+    jugar("atrapar", { bola: id }).then(function (res) {
+      if (!res) return;
+      jgSonido.efecto("atrapa");
+      var nb = bolaPorId(id);
+      if (nb && nb.estado === "atrapada" && nb.dueno === est.yo) abrirModal("clasificar", nb);
     });
   }
 
-  /* ---------- Botones ---------- */
-  $("unir").addEventListener("click", function () {
-    var b = this; b.disabled = true;
-    WS.api("/carrera/unir", { body: { avatar: WS.avatar() } }).then(function () { unido = true; return consultar(); }, function (e) {
-      $("estado-sala").textContent = e.code === "carrera_empezada" ? "Hay una ronda en curso. Practica solo y entras en la siguiente." : "No se pudo entrar: " + e.message;
-    }).then(function () { b.disabled = unido; });
+  /* ---- Ventana de clasificar / atajar ---- */
+  var ops = $("jg-m-ops");
+  function abrirModal(tipo, b) {
+    modal = { tipo: tipo, bola: b.id, clave: b.id + "|" + b.desde_ms };
+    if (tipo === "atajar") atajadasAbiertas[modal.clave] = true;
+    var m = $("jg-modal");
+    m.className = "jg-modal" + (tipo === "atajar" ? " atajar" : "");
+    $("jg-m-tit").textContent = tipo === "atajar" ? "¡" + nombre(b.dueno) + " te dispara! Ataja: ¿en qué contenedor va?" : "¿En qué contenedor va?";
+    $("jg-m-concepto").textContent = b.concepto;
+    ops.textContent = "";
+    est.contenedores.forEach(function (k, i) {
+      var btn = document.createElement("button");
+      btn.type = "button"; btn.className = "jg-op"; btn.setAttribute("data-i", String(i));
+      var kb = document.createElement("kbd"); kb.textContent = String(i + 1);
+      btn.appendChild(kb); btn.appendChild(document.createTextNode(k.nombre));
+      btn.addEventListener("click", function () { responder(k.id); });
+      ops.appendChild(btn);
+    });
+    m.hidden = false;
+    var primero = ops.querySelector("button");
+    if (primero) primero.focus();
+  }
+  function cerrarModal() { modal = null; $("jg-modal").hidden = true; }
+  function revisarModal() {
+    if (!modal) return;
+    var b = bolaPorId(modal.bola);
+    var sigue = b && (b.id + "|" + b.desde_ms) === modal.clave &&
+      ((modal.tipo === "clasificar" && b.estado === "atrapada" && b.dueno === est.yo) ||
+       (modal.tipo === "atajar" && b.estado === "vuelo" && b.hacia === est.yo));
+    if (!sigue || est.estado === "final") cerrarModal();
+  }
+  function responder(cont) {
+    if (!modal || ocupado) return;
+    var m = modal;
+    Array.prototype.forEach.call(ops.querySelectorAll("button"), function (b) { b.disabled = true; });
+    jugar(m.tipo, { bola: m.bola, contenedor: cont }).then(function (res) {
+      cerrarModal();
+      if (!res) return;
+      if (res.ok) {
+        jgSonido.efecto(m.tipo === "atajar" ? "atajada" : "bien");
+        aviso(res.mensaje, "bien");
+      } else {
+        jgSonido.efecto("mal");
+        aviso(res.mensaje + (res.correcto ? " · Iba en «" + res.correcto + "»" : ""), "mal");
+      }
+    });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (!modal) return;
+    var i = parseInt(ev.key, 10);
+    if (i >= 1 && i <= est.contenedores.length) { ev.preventDefault(); responder(est.contenedores[i - 1].id); }
   });
-  $("practicar").addEventListener("click", function () { arrancar(Math.floor(Math.random() * 1e6) + 1, DUR, true); });
-  $("otra").addEventListener("click", function () {
-    if (!unido) { mostrar("lobby"); return; }
-    arrancar(Math.floor(Math.random() * 1e6) + 1, DUR, true);
+
+  /* ---- Globos de cómic ---- */
+  function estrella(r1, r2, puntas) {
+    var d = "";
+    for (var i = 0; i < puntas * 2; i++) {
+      var a = i * Math.PI / puntas, r = i % 2 ? r2 : r1 * (0.86 + 0.28 * ((i * 37) % 7) / 7);
+      d += (i ? "L" : "M") + (Math.cos(a) * r * 1.35).toFixed(1) + " " + (Math.sin(a) * r).toFixed(1);
+    }
+    return d + "Z";
+  }
+  var FORMA = estrella(120, 74, 13);
+  function globo(x, y, texto, sub, fondo, tam) {
+    tam = tam || 1;
+    x = Math.max(170 * tam, Math.min(1600 - 170 * tam, x));
+    y = Math.max(110 * tam, Math.min(900 - 110 * tam, y));
+    var g = el("g", { transform: "translate(" + x.toFixed(0) + " " + y.toFixed(0) + ") scale(" + tam + ")" }, gBooms);
+    var inner = el("g", {}, g);
+    el("path", { "class": "bm-s", d: FORMA, fill: fondo }, inner);
+    el("path", { d: FORMA, fill: "url(#trama)" }, inner);
+    var t = el("text", { y: sub ? "8" : "20", "font-size": "64" }, inner);
+    t.textContent = texto;
+    if (sub) { var s = el("text", { "class": "bm-sub", y: "48", "font-size": "24" }, inner); s.textContent = sub; }
+    setTimeout(function () { g.remove(); }, 1600);
+    while (gBooms.childNodes.length > 6) gBooms.removeChild(gBooms.firstChild);
+  }
+  var feed = [];
+  function evento(e) {
+    var p;
+    if (e.tipo === "gol") {
+      p = pos[e.a] || { gx: CX, gy: CY };
+      globo(p.gx, p.gy, "¡GOL!", nombre(e.de) + " +" + e.valor, "#e3262e", 1);
+      if (e.a === est.yo) { sacudir(e.a); jgSonido.efecto("gol"); }
+      else if (e.de === est.yo) jgSonido.efecto("gol");
+      feed.unshift("<em>" + esc(nombre(e.de)) + "</em> anota a " + esc(nombre(e.a)) + " · " + esc(e.concepto));
+    } else if (e.tipo === "atajada") {
+      p = pos[e.de] || { gx: CX, gy: CY };
+      globo(p.gx, p.gy, "¡ATAJADA!", nombre(e.de) + " +" + e.valor, "#1d4fd8", 0.95);
+      feed.unshift("<em>" + esc(nombre(e.de)) + "</em> ataja a " + esc(nombre(e.a)) + " · " + esc(e.concepto));
+    } else if (e.tipo === "racha") {
+      p = pos[e.de] || { x: CX, y: CY };
+      globo(p.x, p.y - 90, "¡RACHA ×" + e.valor + "!", nombre(e.de) + " +1", "#ffd60a", 0.7);
+      feed.unshift("<em>" + esc(nombre(e.de)) + "</em> lleva " + e.valor + " aciertos seguidos");
+    } else if (e.tipo === "ronda") {
+      globo(CX, CY, "¡A JUGAR!", Math.round(e.valor / 60) + " minutos", "#17a35a", 1.25);
+      feed = ["Empieza una ronda de " + Math.round(e.valor / 60) + " min"];
+    } else if (e.tipo === "final") {
+      globo(CX, CY, "¡FIN!", "", "#e3262e", 1.3);
+    }
+    feed = feed.slice(0, 5);
+  }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  /* ---- Panel, acción, reloj ---- */
+  function fila(j) {
+    return '<li class="' + (j.id === est.yo ? "yo" : "") + '"><i style="background:' + color(j) + '"></i><span>' + esc(j.nombre) +
+      (j.racha >= 2 ? '<span class="rc">×' + j.racha + "</span>" : "") + '</span><span class="pt">' + j.puntos + "</span></li>";
+  }
+  var leyendaHecha = false;
+  function pintarPanel() {
+    var top = est.staff ? est.tabla : est.tabla.slice(0, 5); // el instructor ve la tabla entera
+    $("jg-tabla").innerHTML = top.length ? top.map(fila).join("") : '<li><i style="background:#fff"></i><span>Aún nadie anota</span><span class="pt">0</span></li>';
+    var yo = jugadorPorId(est.yo);
+    $("jg-yo").textContent = yo ? "Vas " + est.mi_puesto + "º de " + est.total_tabla + " · " + yo.goles + " goles · " + yo.atajadas + " atajadas · mejor racha " + yo.mejor_racha : "";
+    if (!leyendaHecha && est.contenedores.length) {
+      leyendaHecha = true;
+      $("jg-leyenda").innerHTML = est.contenedores.map(function (k, i) {
+        return '<span style="background:' + COL_CONT[i % COL_CONT.length] + '">' + (i + 1) + " · " + esc(k.nombre) + "</span>";
+      }).join("");
+    }
+    $("jg-feed").innerHTML = feed.length ? feed.map(function (f) { return "<li>" + f + "</li>"; }).join("") : "<li>Todavía no hay jugadas.</li>";
+    var st = $("jg-staff");
+    if (st.hidden === !!est.staff) { st.hidden = !est.staff; if (est.staff) $("jg-reglas").open = false; }
+    if (est.staff) {
+      $("jg-jugar").hidden = !!est.yo;
+      $("jg-terminar").disabled = est.estado !== "jugando";
+    }
+  }
+  var avisoT = 0;
+  function aviso(txt, tipo) {
+    var a = $("jg-aviso");
+    a.textContent = txt;
+    a.className = "jg-aviso " + (tipo || "");
+    a.hidden = false;
+    clearTimeout(avisoT);
+    avisoT = setTimeout(function () { a.hidden = true; }, 2600);
+  }
+  function accion(html, alerta) {
+    var a = $("jg-accion");
+    var tenia = a.hasAttribute("data-clave");
+    a.removeAttribute("data-clave");
+    if (tenia || a.innerHTML !== html) a.innerHTML = html; // sin reescribir: aria-live no repite el aviso
+    a.classList.toggle("alerta", !!alerta);
+  }
+  function pintarAccion() {
+    if (!est.yo) {
+      accion(est.staff ? "<b>Eres instructor</b> · abre una ronda en el panel o entra a jugar" : "<b>Entrando a la arena…</b>", false);
+      return;
+    }
+    if (est.estado === "final") { accion("<b>Ronda terminada</b> · espera a que el instructor abra otra", false); return; }
+    var entrante = est.bolas.filter(function (b) { return b.estado === "vuelo" && b.hacia === est.yo; })[0];
+    if (entrante) { accion("<b>¡Te disparan!</b> · toca la bola roja y ponla en su contenedor", true); return; }
+    var b = miBola();
+    if (b && b.estado === "atrapada") { accion("<b>Clasifica tu bola</b> · «" + esc(b.concepto) + "»", false); return; }
+    if (b && b.estado === "cargada") {
+      var rivales = est.jugadores.filter(function (j) { return j.id !== est.yo && j.activo; });
+      if (!rivales.length) { accion("<b>Bola cargada</b> · espera a que entre un rival", false); return; }
+      var a = $("jg-accion");
+      var clave = "rivales:" + rivales.map(function (j) { return j.id + j.nombre; }).join(",");
+      if (a.getAttribute("data-clave") !== clave) {
+        a.setAttribute("data-clave", clave);
+        a.innerHTML = "<b>¡Dispara!</b> Toca un robot o elige: ";
+        rivales.forEach(function (j) {
+          var c = document.createElement("button");
+          c.type = "button"; c.className = "jg-chip";
+          c.innerHTML = '<i style="background:' + color(j) + '"></i>' + esc(j.nombre);
+          c.addEventListener("click", function () { var mb = miBola(); if (mb && mb.estado === "cargada") disparar(mb, j.id); });
+          a.appendChild(c);
+        });
+      }
+      a.classList.remove("alerta");
+      return;
+    }
+    var libresClave = "libres:" + est.bolas.filter(function (x) { return x.estado === "libre"; }).slice(0, 6).map(function (x) { return x.id + x.concepto; }).join(",");
+    if ($("jg-accion").getAttribute("data-clave") === libresClave) return;
+    accion("<b>Atrapa una bola</b> · tócala en el centro de la arena", false);
+    // En el teléfono las bolas quedan chicas: también se atrapan desde botones (y con el teclado).
+    var libres = est.bolas.filter(function (x) { return x.estado === "libre"; }).slice(0, 6);
+    var ac = $("jg-accion");
+    ac.setAttribute("data-clave", "libres:" + libres.map(function (x) { return x.id + x.concepto; }).join(","));
+    libres.forEach(function (x) {
+      var c = document.createElement("button");
+      c.type = "button"; c.className = "jg-chip jg-solo-tel"; c.textContent = x.concepto;
+      c.addEventListener("click", function () { tocarBola(x.id); });
+      ac.appendChild(c);
+    });
+  }
+  var rel = $("jg-reloj");
+  function reloj(t) {
+    var txt = "Calentamiento", cls = "jg-reloj";
+    if (est.estado === "jugando" && est.fin_ms) {
+      var s = Math.max(0, Math.ceil((est.fin_ms - t) / 1000));
+      txt = Math.floor(s / 60) + ":" + ("0" + s % 60).slice(-2);
+      cls += s <= 20 ? " poco" : " corre";
+    } else if (est.estado === "final") txt = "Fin";
+    if (rel.textContent !== txt) rel.textContent = txt;
+    if (rel.className !== cls) rel.className = cls;
+  }
+
+  /* ---- Podio ---- */
+  function mostrarPodio() {
+    var s = $("jg-p-svg"), top = est.tabla.slice(0, 3);
+    s.textContent = "";
+    var lugares = [{ i: 1, x: 140, h: 90 }, { i: 0, x: 300, h: 140 }, { i: 2, x: 460, h: 60 }];
+    lugares.forEach(function (L) {
+      var j = top[L.i];
+      if (!j) return;
+      el("rect", { x: L.x - 70, y: 300 - L.h, width: 140, height: L.h, fill: "#fff", stroke: "#000", "stroke-width": 6 }, s);
+      var num = el("text", { x: L.x, y: 300 - L.h + 50, "font-size": 44 }, s); num.textContent = String(L.i + 1);
+      var u = el("use", { href: "#robo", transform: "translate(" + L.x + " " + (300 - L.h - 64) + ") scale(.85)" }, s);
+      u.style.setProperty("--c", color(j));
+      var t = el("text", { x: L.x, y: 300 - L.h - 140, "font-size": 22 }, s); t.textContent = j.nombre + " · " + j.puntos;
+    });
+    $("jg-p-txt").textContent = top.length ? "¡Bien jugado! Gana " + top[0].nombre + " con " + top[0].puntos + " puntos." : "Nadie anotó en esta ronda.";
+    $("jg-podio").hidden = false;
+  }
+  $("jg-p-cerrar").addEventListener("click", function () { podioCerrado = true; $("jg-podio").hidden = true; });
+
+  /* ---- Controles ---- */
+  $("jg-son").addEventListener("click", function () {
+    var on = jgSonido.alternar();
+    this.setAttribute("aria-pressed", String(on));
+    this.textContent = on ? "Música: encendida" : "Música: apagada";
   });
-  $("iniciar").addEventListener("click", function () { WS.api("/carrera/iniciar", { method: "POST", body: {} }).then(consultar).catch(function (e) { WS.aviso("No se pudo empezar: " + e.message); }); });
-  $("reiniciar").addEventListener("click", function () { WS.api("/carrera/reiniciar", { method: "POST", body: {} }).then(function () { rondaJugada = -1; return consultar(); }).catch(function (e) { WS.aviso("No se pudo vaciar: " + e.message); }); });
-
-  /* ---------- Fotito y reflexión ---------- */
-  var foto = WS.montarFotito($("fotito"), {
-    etiqueta: "Telaraña cortés",
-    archivo: "telarana-cortes",
-    resultado: function () {
-      var r = resultado || WS.leer("resultado-telarana", null);
-      return r ? r.puntos + " puntos · " + r.filas + " filas limpias · " + r.prot + " datos protegidos · " + r.lec + "/6 lecciones" : "Telaraña cortés: jugué y aprendí";
-    },
+  Array.prototype.forEach.call(document.querySelectorAll("[data-ronda]"), function (b) {
+    b.addEventListener("click", function () { jugar("reiniciar", { duracion_s: +b.getAttribute("data-ronda") }); });
   });
-  document.addEventListener("ws-muro", function (e) { if (e.target.closest('[data-muro="12-telarana-cortes"]')) { foto.reflexion(e.detail); foto.generar(); } });
+  $("jg-terminar").addEventListener("click", function () { jugar("terminar"); });
+  $("jg-jugar").addEventListener("click", function () { jugar("unirse"); });
 
-  colores();
-  WS.cada(2500, function () { if (!(J && J.vivo)) consultar(); });
-  setInterval(function () { if (J && J.vivo && !document.hidden) consultar(); }, 5000);
-
-  // Para pruebas automáticas (no cambia el juego): posiciones de las páginas y bolitas.
-  window.__telarana = {
-    estado: function () { return J && { vivo: J.vivo, leyo: J.leyo, filas: J.filas, prot: J.prot, vaso: J.vaso, hilo: !!J.hilo, espera: J.espera > performance.now(), nodos: J.nodos.map(function (n) { return { id: n.id, tipo: n.tipo, x: n.x, y: n.y, fin: n.fin, visible: visible(n), bloqueada: bloqueada(n) }; }), bolas: J.bolas.filter(function (b) { return b.tipo === "personal" && b.ok !== false; }).map(function (b) { return { x: b.x, y: b.y }; }) }; },
-    sala: function () { return sala; }, unido: function () { return unido; },
-  };
+  /* ---- Bucle ---- */
+  function bucle() {
+    leer();
+    setTimeout(bucle, document.hidden ? 4000 : 900);
+  }
+  bucle();
+  requestAnimationFrame(cuadro);
 })();
 </script>
 </body>
