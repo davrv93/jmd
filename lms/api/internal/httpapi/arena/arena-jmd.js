@@ -456,7 +456,7 @@
     function pintarBanner() {
       var r = ronda(), txt = "";
       if (!yo.dentro && !practica) txt = yo.staff ? "Estás mirando como instructor" : "";
-      else if (practica) txt = "Práctica sola · solo tú ves esta mina";
+      else if (practica) txt = "Práctica sola · solo tú ves esta partida";
       else if (r.estado === "espera") txt = "Calentamiento · camina, saluda y prueba: los puntos cuentan cuando el instructor abra la ronda";
       else if (r.estado === "final") txt = "Ronda terminada · espera la próxima o practica sola";
       else txt = "";

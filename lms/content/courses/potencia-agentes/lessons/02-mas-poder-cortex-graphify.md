@@ -50,7 +50,7 @@ cycle:
     title: Construir el grafo con Graphify
     tool: terminal
     phase: experimentacion
-    description: "Instala graphify, construye el grafo de tu proyecto y juega «Sigue el hilo»."
+    description: "Instala graphify, construye el grafo de tu proyecto y juega «Faros en la niebla»."
     check: "Existe graphify-out/graph.json y terminaste una ronda"
   - id: entregar
     title: Consultar en vez de leer

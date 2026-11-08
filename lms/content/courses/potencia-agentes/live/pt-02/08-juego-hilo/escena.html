@@ -2,514 +2,578 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Sigue el hilo</title>
-<link rel="stylesheet" href="../../comun/escena.css">
-<link rel="stylesheet" href="../../comun/pt.css">
-<style id="esc-propio">
-.esc-cielo { opacity: calc(var(--cielo) * .5); }
-.sh-intro { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2vw; align-items: start; }
-.sh-pasos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
-.sh-pasos li { background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .7em .8em; box-shadow: var(--card-shadow); text-align: center; }
-.sh-pasos .ico { font-size: 1.9em; display: block; font-family: "Apple Color Emoji","Segoe UI Emoji",sans-serif; }
-.sh-pasos b { display: block; font-size: .8em; margin-top: .2em; }
-.sh-pasos b.ico2 { font-size: .86em; }
-.sh-pasos small { display: block; line-height: 1.35; margin-top: .3em; color: var(--muted); font-size: .62em; }
-.sh-avs { display: flex; flex-wrap: wrap; gap: .35em; margin: .2em 0 .6em; }
-.sh-av { font: 1.3em/1 system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif; width: 2.1em; height: 2.1em; border-radius: .6em; border: 2px solid var(--line2); background: var(--s2); cursor: pointer; display: grid; place-items: center; padding: 0; }
-.sh-av[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
-.sh-acc { display: flex; gap: .5em; flex-wrap: wrap; }
-.sh-msg { font-size: .66em; color: var(--muted); margin: .5em 0 0; min-height: 1.3em; }
-.sh-msg.bad { color: var(--warn); }
-.sh-staff { margin-top: .7em; padding-top: .6em; border-top: 1px dashed var(--line2); display: flex; gap: .5em; flex-wrap: wrap; }
-.sh-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .2em; max-height: 12em; overflow: auto; font-size: .64em; }
-.sh-lista li { display: grid; grid-template-columns: 1.6em 1fr 2.6em 5em; gap: .45em; align-items: center; padding: .25em .5em; border-radius: .5em; background: var(--s2); border: 1px solid var(--line); }
-.sh-lista li .a { font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
-.sh-lista li .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sh-lista li .h { font: 800 .95em var(--mono); color: var(--gold); }
-.sh-lista li .v { font: 700 .9em var(--mono); color: var(--muted); text-align: right; }
-.sh-lista li.yo { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
-.sh-lista li.vacio { grid-template-columns: 1fr; color: var(--muted); font-style: italic; }
-.sh-cielo { width: 100%; height: auto; aspect-ratio: 2 / 1; display: block; border-radius: .8em; background: #14122b; }
-.sh-meta { display: flex; justify-content: space-between; gap: .5em; font-size: .66em; margin: .3em 0; }
-.sh-meta b { font: 800 1.05em var(--mono); color: var(--gold); }
-/* juego */
-.sh-juego { display: grid; grid-template-columns: 1.55fr .75fr; gap: 1.6vw; align-items: start; }
-.sh-hud { display: flex; gap: .6em; align-items: center; flex-wrap: wrap; font-size: .7em; }
-.sh-hud .reloj { font: 800 1.2em var(--mono); padding: .15em .6em; border-radius: .5em; background: var(--s3); }
-.sh-hud .reloj.poco { color: var(--bad); background: var(--bad-bg); }
-.sh-hud .modo { margin-left: auto; }
-.sh-preg { margin: .4em 0; background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .5em .9em; box-shadow: var(--card-shadow); }
-.sh-preg .q { font: 700 .58em var(--mono); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
-.sh-preg h2 { margin: .1em 0 0; font-size: .98em; }
-.sh-mapa { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; box-shadow: var(--card-shadow); padding: .3em; }
-.sh-mapa svg { width: 100%; height: auto; max-height: 60vh; display: block; touch-action: manipulation; user-select: none; }
-.sh-mapa .nd:focus { outline: none; }
-.sh-mapa .nd:focus-visible .c { stroke: var(--gold); stroke-width: 5; }
-.sh-mapa .ar { stroke: var(--line2); stroke-width: 2; stroke-dasharray: 5 5; }
-.sh-mapa .ar.vis { stroke-dasharray: none; stroke: color-mix(in srgb, var(--accent) 55%, transparent); stroke-width: 3; }
-.sh-mapa .ar.ruta { stroke: var(--gold); stroke-width: 4; stroke-dasharray: none; }
-.sh-mapa .nd { cursor: pointer; }
-.sh-mapa .nd .hit { fill: transparent; }
-.sh-mapa .nd .c { fill: var(--s2); stroke: var(--line2); stroke-width: 2.5; transition: fill .2s, stroke .2s; }
-.sh-mapa .nd text { font: 700 11px var(--mono); fill: var(--fg); text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: var(--s1); stroke-width: 4px; stroke-linejoin: round; }
-.sh-mapa .nd .t { stroke: none; }
-.sh-mapa .nd .t { font: 700 9px var(--mono); fill: var(--muted); }
-.sh-mapa .nd.niebla { opacity: .32; }
-.sh-mapa .nd.luz .c { stroke: var(--accent); stroke-width: 3.5; fill: var(--accent-bg); }
-.sh-mapa .nd.luz { animation: esc-pulso 1.6s ease-in-out infinite; }
-.sh-mapa .nd.leido .c { fill: var(--accent); stroke: var(--accent); }
-.sh-mapa .nd.leido text:not(.t) { fill: var(--fg); }
-.sh-mapa .nd.mem .c { stroke: var(--gold); stroke-width: 4; }
-.sh-mapa .nd.ini .c { fill: var(--ph-or); stroke: var(--ph-or); }
-.sh-mapa .nd.meta .c { fill: var(--gold-bg); stroke: var(--gold); stroke-width: 4; }
-.sh-mapa .nd.meta.leido .c { fill: var(--gold); }
-.sh-fb { min-height: 2.6em; font-size: .7em; padding: .45em .75em; border-radius: .7em; background: var(--s2); border: 1px solid var(--line); margin-top: .5em; }
-.sh-fb.bien { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
-.sh-fb.mal { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
-.sh-lado { display: grid; gap: .8em; }
-.sh-tool { display: grid; gap: .3em; }
-.sh-tool .pt-btn { width: 100%; }
-.sh-ley { margin: 0; font-size: .6em; color: var(--muted); line-height: 1.6; }
-.sh-ley i { display: inline-block; width: .9em; height: .9em; border-radius: 50%; vertical-align: -.1em; margin-right: .4em; border: 2px solid; }
-.sh-score b { display: block; font: 800 1.6em/1.05 var(--mono); color: var(--ok); }
-.sh-score > span { font-size: .62em; color: var(--muted); }
-/* fin */
-.sh-fin { display: grid; grid-template-columns: 1fr 1fr .95fr; gap: 1.6vw; align-items: start; }
-.sh-res .esc-big { color: var(--gold); font-size: 2.6em; }
-.sh-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4em; margin-top: .5em; }
-.sh-kpis div { background: var(--s2); border-radius: .7em; padding: .4em .5em; text-align: center; }
-.sh-kpis b { display: block; font: 800 1.05em var(--mono); }
-.sh-kpis span { font-size: .56em; color: var(--muted); }
-.sh-lec { list-style: none; margin: .5em 0 0; padding: 0; display: grid; gap: .3em; font-size: .64em; }
-.sh-lec li { padding: .35em .55em; border-radius: .5em; background: var(--s2); border-left: 3px solid var(--gold); }
-.sh-cuenta { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); font: 900 7em/1 var(--mono); color: var(--gold); }
-@media (max-width: 1100px) { .sh-fin { grid-template-columns: 1fr 1fr; } .sh-fin > :last-child { grid-column: 1 / -1; } }
-@media (max-width: 860px) {
-  .sh-intro, .sh-juego, .sh-fin { grid-template-columns: 1fr; }
-  .sh-intro > .esc-card { order: -1; }
-  .sh-pasos small, .sh-msg, .sh-fb, .sh-ley, .sh-meta { font-size: .86em; }
-  .sh-lista, .sh-lec { font-size: .82em; }
-  .sh-lado { grid-template-columns: 1fr 1fr; }
-  .sh-lado .sh-grupo-c { grid-column: 1 / -1; }
-  .sh-score b { font-size: 1.3em; }
-}
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · Faros en la niebla</title>
+<link rel="icon" href="data:,">
+<!--
+  «Faros en la niebla» · juego de la clase 2 de Potencia tus agentes, sobre el motor Arena JMD (docs/ARENA_JMD.md).
+  Cada alumno es un robot JMD dentro del mapa de un proyecto (la tienda con pagos: 14 archivos, 28 900 tokens si
+  el agente los lee todos). El mapa está en la niebla: no se ven los hilos entre archivos.
+  - Recoges una pregunta y la llevas al archivo que la responde. Quedarte dentro de un archivo es leerlo (los grandes
+    tardan más; cruzarlo de paso no cuenta): cuesta sus tokens y revela sus hilos (con quién se conecta).
+    Errar no resta puntos: solo gasta tokens y enseña con la lupa.
+  - El Faro Graphify (centro) cuesta 150 tokens y enciende en dorado la ruta del grafo hasta la respuesta.
+  - Las preguntas de «por qué» o «quién decidió» no están en el código: van a la Bóveda Cortex (cortex_brief, 600).
+  - Cada pregunta es una sesión nueva: el agente vuelve a pagar lo que lee. Pero al resolver una pregunta de código,
+    lo aprendido queda en la memoria de la clase (cristal 🧠): releer ese archivo cuesta 30 para todos.
+  - Puntos = miles de tokens ahorrados frente a «leer todo». La barra suma lo que ahorra la clase entera.
+  - Peligro: el /compact (drones) te hace soltar la pregunta. Nadie queda fuera.
+  Al final: título, reflexión al muro (clave 08-juego-hilo, la misma que el juego anterior) y la fotito.
+  Deja el resumen en localStorage «pt-02-juego» para la escena 10 (insignia), con el formato que ya leía.
+  ?demo=1 entra solo; ?sinred=1 fuerza la práctica local; ?fps=1 muestra los cuadros por segundo.
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #f2c14e; margin-bottom: 6px; }
+  .fn-hud { position: absolute; left: 10px; top: 10px; z-index: 3; max-width: calc(100% - 20px); pointer-events: none;
+    display: flex; flex-wrap: wrap; gap: 6px; font: 700 12.5px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; color: #fff; }
+  .fn-hud > span { background: rgba(20,18,43,.84); padding: 6px 11px; border-radius: 999px; box-shadow: 0 0 0 1px rgba(242,193,78,.4); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fn-hud > .mem { box-shadow: 0 0 0 1px rgba(127,233,255,.55); }
+  .fn-hud b { color: #f2c14e; }
+  .fn-hud .mem b { color: #7fe9ff; }
+  @media (max-width: 860px) {
+    .fn-hud { max-width: calc(100% - 150px); font-size: 11.5px; }
+    .fn-hud .largo { display: none; }
+  }
 </style>
 </head>
 <body>
-<!-- Sin cielo de fondo: el mapa del juego es el protagonista (y la escena queda bajo 300 elementos). -->
-
-<div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ea">Experimentación activa</span>
-    <span class="esc-num">PT-02 · 08 / 10</span>
-  </header>
-
-  <main class="esc-cuerpo">
-    <div id="sh">
-      <section id="v-intro">
-        <h1 class="esc-titulo a-in">Sigue <em>el hilo</em></h1>
-        <p class="esc-sub a-in" style="--d:.1s">Una pregunta, un mapa con niebla. Llega a la respuesta leyendo lo menos posible.</p>
-        <div class="sh-intro" style="margin-top:1em">
-          <ol class="sh-pasos a-in" style="--d:.2s">
-            <li><b class="ico2">👆 Toca un nodo con luz</b><small>Lo lees: pagas sus tokens y ves sus hilos.</small></li>
-            <li><b class="ico2">🕸️ Pide el mapa</b><small>Graphify marca la ruta: 150 y cada paso cuesta 40. Dos por ronda.</small></li>
-            <li><b class="ico2">🧠 Lo leído se queda</b><small>Cortex lo recuerda: la próxima vez cuesta 30.</small></li>
-          </ol>
-          <div class="esc-card">
-            <span class="pt-et">Elige tu avatar</span>
-            <div class="sh-avs" id="avs" role="group" aria-label="Avatar"></div>
-            <div class="sh-acc">
-              <button type="button" class="pt-btn" id="unirme">Unirme a la ronda del grupo</button>
-              <button type="button" class="pt-btn sec" id="practicar">Practicar solo</button>
-            </div>
-            <p class="sh-msg" id="msg" aria-live="polite"></p>
-            <span class="pt-et" id="sala-t" style="margin-top:.5em">En la sala</span>
-            <ul class="sh-lista" id="sala-lista"></ul>
-            <div class="sh-staff" id="staff" hidden>
-              <button type="button" class="pt-btn" id="iniciar">Empezar ronda para todos</button>
-              <button type="button" class="pt-btn sec" id="reiniciar">Nueva sala</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="v-juego" hidden>
-        <div class="sh-juego">
-          <div>
-            <div class="sh-hud"><span class="reloj" id="reloj">55</span><span id="prog">Pregunta 1 de 5</span><span class="esc-chip modo" id="modo">en vivo</span></div>
-            <div class="sh-preg"><span class="q">La pregunta</span><h2 id="preg">—</h2></div>
-            <div class="sh-mapa"><svg id="mapa" viewBox="0 0 420 335" role="group" aria-label="Mapa del proyecto"></svg></div>
-            <div class="sh-fb" id="fb" aria-live="polite">Toca un nodo con luz.</div>
-          </div>
-          <div class="sh-lado">
-            <div class="esc-card sh-score"><span>Ahorraste</span><b id="score">0</b><span>tokens · hilos resueltos: <span id="hilos">0</span></span></div>
-            <div class="esc-card sh-tool">
-              <button type="button" class="pt-btn" id="pedir-mapa">🕸️ Pedir el mapa · quedan <span id="cargas">2</span></button>
-              <p class="sh-ley">🟢 empiezas aquí · 🟡 la respuesta, o algo en memoria · 🟣 con luz: puedes leerlo</p>
-            </div>
-            <div class="esc-card sh-grupo-c"><div id="g-juego"></div></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="v-fin" hidden></section>
-      <!-- El resultado se monta al terminar (así la escena empieza con menos elementos). -->
-      <template id="t-fin">
-        <div class="sh-fin">
-          <div class="esc-card sh-res">
-            <span class="pt-et">Tu resultado</span>
-            <div class="esc-big" id="r-hilos">0 hilos</div>
-            <p class="pt-nota" id="r-sub"></p>
-            <div class="sh-kpis">
-              <div><b id="r-ahorro">0</b><span>tokens ahorrados</span></div>
-              <div><b id="r-mem">0</b><span>lecturas desde memoria</span></div>
-              <div><b id="r-mejor">0</b><span>tu mejor marca</span></div>
-            </div>
-            <ul class="sh-lec" id="r-lec"></ul>
-            <div class="sh-acc" style="margin-top:.6em">
-              <button type="button" class="pt-btn sec" id="otra">Jugar otra vez (práctica)</button>
-              <button type="button" class="pt-btn sec" id="volver" hidden>Unirme a la nueva ronda</button>
-            </div>
-          </div>
-          <div class="esc-card">
-            <div id="g-fin"></div>
-            <div id="muro" style="margin-top:.8em"></div>
-          </div>
-          <div class="esc-card">
-            <span class="pt-et">Guarda la fotito</span>
-            <label class="pt-et" for="nombre" style="margin-top:.3em">Tu nombre en la foto</label>
-            <input class="pt-in" id="nombre" maxlength="40" autocomplete="off" placeholder="Tu nombre">
-            <div id="foto" style="margin-top:.6em"></div>
-          </div>
-        </div>
-      </template>
-      <div class="sh-cuenta" id="cuenta" hidden aria-live="assertive">3</div>
-    </div>
-  </main>
-
-  <footer class="esc-pie">
-    <span class="esc-nota">Termina tu ronda y publica tu reflexión en el muro</span>
-  </footer>
-</div>
-
-<script src="../../comun/pt.js"></script>
-<script src="../../comun/fotito.js"></script>
+<div id="juego"><div class="sin-motor"><div><b>Cargando el mapa…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
+<script src="../../arena/arena-jmd.js"></script>
 <script>
-/* «Sigue el hilo» · juego original, hasta 25 a la vez. Cooperativo: cada pregunta resuelta enciende una
-   estrella en el cielo del grupo (meta: 4 por jugador). Marca personal: tokens ahorrados frente a «leer
-   todo el proyecto». Nadie pierde: siempre se llega, solo cambia cuánto se leyó.
-   Sala, salida común y tabla: /carrera (dist = tokens ahorrados, golpes = hilos resueltos).
-   Reflexión: /muro. Nombre: /api/v1/me. Toda la lógica vive aquí. */
 (function () {
   "use strict";
-  var $ = function (id) { return document.getElementById(id); };
-  var RONDA = 55000, MAPA_COSTO = 150, PASO_MAPA = 40, MEMORIA = 30, CARGAS = 2, META_X = 4;
-  var AV = [["llama", "🦙"], ["zorro", "🦊"], ["buho", "🦉"], ["tortuga", "🐢"], ["pulpo", "🐙"], ["panda", "🐼"], ["pinguino", "🐧"], ["robot", "🤖"], ["gato", "🐱"], ["loro", "🦜"]];
-  var EMO = {}; AV.forEach(function (a) { EMO[a[0]] = a[1]; });
-  /* El proyecto de juego: una tienda con pagos. tok = lo que cuesta leer el archivo entero. */
-  var N = {
-    boton: ["Botón Pagar", 900, 40, 40], carrito: ["carrito.tsx", 2400, 150, 40], api: ["api/pagos", 1800, 265, 40], auth: ["auth.ts", 1500, 375, 40],
-    log: ["logger.ts", 900, 40, 128], utils: ["utils.ts", 4000, 150, 128], servicio: ["servicio", 3200, 265, 128], config: ["config.ts", 800, 375, 128],
-    correo: ["correo.ts", 1100, 40, 216], cola: ["cola_pagos", 1600, 150, 216], yape: ["yape.ts", 1200, 265, 216], tests: ["pagos.test", 2800, 375, 216],
-    db: ["tabla pagos", 700, 150, 300], readme: ["README.md", 6000, 375, 300]
+  if (!window.ArenaJMD) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
+  }
+  var REDUCIDO = (function () { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
+  function num(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+
+  // ---------- el proyecto: la tienda con pagos. n = nombre, tok = leer el archivo entero, c/f = columna/fila ----------
+  var F = {
+    boton: { n: "Botón Pagar", tok: 900, c: 0, f: 0 }, carrito: { n: "carrito.tsx", tok: 2400, c: 1, f: 0 },
+    api: { n: "api/pagos", tok: 1800, c: 2, f: 0 }, auth: { n: "auth.ts", tok: 1500, c: 3, f: 0 },
+    log: { n: "logger.ts", tok: 900, c: 0, f: 1 }, utils: { n: "utils.ts", tok: 4000, c: 1, f: 1 },
+    servicio: { n: "servicio.ts", tok: 3200, c: 2, f: 1 }, config: { n: "config.ts", tok: 800, c: 3, f: 1 },
+    correo: { n: "correo.ts", tok: 1100, c: 0, f: 2 }, cola: { n: "cola_pagos.ts", tok: 1600, c: 1, f: 2 },
+    yape: { n: "yape.ts", tok: 1200, c: 2, f: 2 }, tests: { n: "pagos.test.ts", tok: 2800, c: 3, f: 2 },
+    db: { n: "tabla pagos", tok: 700, c: 1, f: 3 }, readme: { n: "README.md", tok: 6000, c: 2, f: 3 },
   };
-  var E = [["boton", "carrito"], ["carrito", "api"], ["carrito", "utils"], ["api", "auth"], ["api", "servicio"], ["api", "log"], ["servicio", "yape"], ["servicio", "cola"], ["servicio", "utils"],
-    ["cola", "db"], ["cola", "correo"], ["auth", "config"], ["yape", "config"], ["tests", "servicio"], ["tests", "api"], ["readme", "config"], ["correo", "log"], ["utils", "log"]];
-  var TODO = Object.keys(N).reduce(function (s, k) { return s + N[k][1]; }, 0);
-  var PREGS = [
-    { s: "boton", t: "db", q: "Un pago: ¿cómo llega del botón a la tabla de pagos?" },
-    { s: "tests", t: "yape", q: "La prueba de pagos falla en Yape: ¿por dónde llega?" },
-    { s: "correo", t: "boton", q: "Llegó un correo raro: ¿qué botón lo dispara?" },
-    { s: "readme", t: "auth", q: "El README habla del login: ¿dónde vive?" },
-    { s: "log", t: "yape", q: "Este log viene de Yape: ¿cómo se conectan?" }
-  ];
-  var VEC = {}; Object.keys(N).forEach(function (k) { VEC[k] = []; });
+  var IDS = Object.keys(F);
+  var E = [["boton", "carrito"], ["carrito", "api"], ["carrito", "utils"], ["api", "auth"], ["api", "servicio"], ["api", "log"],
+    ["servicio", "yape"], ["servicio", "cola"], ["servicio", "utils"], ["cola", "db"], ["cola", "correo"], ["auth", "config"],
+    ["yape", "config"], ["tests", "servicio"], ["tests", "api"], ["readme", "config"], ["correo", "log"], ["utils", "log"]];
+  var VEC = {}; IDS.forEach(function (k) { VEC[k] = []; });
   E.forEach(function (e) { VEC[e[0]].push(e[1]); VEC[e[1]].push(e[0]); });
+  var TODO = IDS.reduce(function (s, k) { return s + F[k].tok; }, 0); // 28 900
+  var FARO = 150, BRIEF = 600, MEMORIA = 30;
 
-  var modo = "intro", enVivo = false, yo = "", staff = false, sala = null, sinServidor = false, offset = 0;
-  var avatar = PT.leer("avatar", "llama"); if (!EMO[avatar]) avatar = "llama";
-  var nombre = "", P = null, reloj = 0, pidiendo = false, cuentaT = 0, cuentaVivo = false, rondaJugada = 0, ultimoPaso = "";
-  var guardado = PT.leer("juego", { mejor: 0 }) || { mejor: 0 };
-  PT.yo().then(function (me) { if (me && me.name) { nombre = me.name; if ($("nombre") && !$("nombre").value) $("nombre").value = me.name; } });
-
-  AV.forEach(function (a) {
-    var b = PT.el("button", "sh-av", a[1]); b.type = "button"; b.setAttribute("aria-label", a[0]); b.setAttribute("aria-pressed", a[0] === avatar ? "true" : "false");
-    b.addEventListener("click", function () { avatar = a[0]; PT.guardar("avatar", avatar); Array.prototype.forEach.call($("avs").children, function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); }); });
-    $("avs").appendChild(b);
-  });
-
-  function rng(seed) { var x = (Math.abs(seed | 0) % 2147483646) + 1; return function () { x = (x * 48271) % 2147483647; return x / 2147483647; }; }
-  function barajar(a, r) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-  // Ruta más corta (BFS) desde cualquiera de los nodos leídos hasta la meta.
-  function ruta(desde, meta) {
-    var prev = {}, cola = desde.slice(), vis = {}; desde.forEach(function (d) { vis[d] = 1; });
-    while (cola.length) { var u = cola.shift(); if (u === meta) break; VEC[u].forEach(function (v) { if (!vis[v]) { vis[v] = 1; prev[v] = u; cola.push(v); } }); }
-    var r = [], c = meta; while (c && desde.indexOf(c) < 0) { r.unshift(c); c = prev[c]; } if (c) r.unshift(c); return r;
-  }
-
-  /* ---------- mapa SVG ---------- */
-  var NS = "http://www.w3.org/2000/svg", svg = $("mapa"), lineas = {}, nodos = {};
-  E.forEach(function (e) {
-    var l = document.createElementNS(NS, "line"); l.setAttribute("class", "ar");
-    l.setAttribute("x1", N[e[0]][2]); l.setAttribute("y1", N[e[0]][3]); l.setAttribute("x2", N[e[1]][2]); l.setAttribute("y2", N[e[1]][3]);
-    svg.appendChild(l); lineas[e[0] + "|" + e[1]] = l; lineas[e[1] + "|" + e[0]] = l;
-  });
-  Object.keys(N).forEach(function (k) {
-    var g = document.createElementNS(NS, "g"); g.setAttribute("class", "nd"); g.setAttribute("data-n", k); g.setAttribute("tabindex", "0"); g.setAttribute("role", "button");
-    g.setAttribute("aria-label", N[k][0] + ", " + N[k][1] + " tokens");
-    var hit = document.createElementNS(NS, "circle"); hit.setAttribute("class", "hit"); hit.setAttribute("cx", N[k][2]); hit.setAttribute("cy", N[k][3]); hit.setAttribute("r", 30);
-    var c = document.createElementNS(NS, "circle"); c.setAttribute("class", "c"); c.setAttribute("cx", N[k][2]); c.setAttribute("cy", N[k][3]); c.setAttribute("r", 15);
-    var t = document.createElementNS(NS, "text"); t.setAttribute("x", N[k][2]); t.setAttribute("y", N[k][3] + 29); t.textContent = N[k][0];
-    var t2 = document.createElementNS(NS, "text"); t2.setAttribute("class", "t"); t2.setAttribute("x", N[k][2]); t2.setAttribute("y", N[k][3] + 3.5); t2.textContent = (N[k][1] / 1000).toFixed(1).replace(".", ",") + "K";
-    g.appendChild(hit); g.appendChild(c); g.appendChild(t2); g.appendChild(t); svg.appendChild(g); nodos[k] = g;
-    g.addEventListener("click", function () { tocar(k); });
-    g.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tocar(k); } });
-  });
-  function pintarMapa() {
-    if (!P) return;
-    var pr = P.preg, lit = luces();
-    Object.keys(N).forEach(function (k) {
-      var g = nodos[k], leido = P.leidos.indexOf(k) >= 0, luz = lit.indexOf(k) >= 0;
-      var cls = "nd" + (leido ? " leido" : luz ? " luz" : " niebla") + (k === pr.s ? " ini" : "") + (k === pr.t ? " meta" : "") + (P.memoria[k] && !leido ? " mem" : "");
-      g.setAttribute("class", cls);
-      var costo = leido ? 0 : costoDe(k);
-      g.querySelector(".t").textContent = leido ? "✓" : (P.memoria[k] ? "30" : (P.ruta.indexOf(k) >= 0 ? "40" : (N[k][1] / 1000).toFixed(1).replace(".", ",") + "K"));
-      g.setAttribute("aria-label", N[k][0] + (leido ? ", leído" : luz ? ", con luz, cuesta " + costo + " tokens" : ", aún sin hilo"));
-    });
-    E.forEach(function (e) {
-      var l = lineas[e[0] + "|" + e[1]], a = P.leidos.indexOf(e[0]) >= 0, b = P.leidos.indexOf(e[1]) >= 0;
-      var enRuta = P.ruta.indexOf(e[0]) >= 0 && P.ruta.indexOf(e[1]) >= 0 && Math.abs(P.ruta.indexOf(e[0]) - P.ruta.indexOf(e[1])) === 1;
-      l.setAttribute("class", "ar" + (enRuta ? " ruta" : a && b ? " vis" : "") );
-      l.style.opacity = a || b || enRuta ? 1 : 0;
-    });
-  }
-  function luces() { var s = {}; P.leidos.forEach(function (k) { VEC[k].forEach(function (v) { if (P.leidos.indexOf(v) < 0) s[v] = 1; }); }); return Object.keys(s); }
-  function costoDe(k) { return P.memoria[k] ? MEMORIA : P.ruta.indexOf(k) >= 0 ? PASO_MAPA : N[k][1]; }
-  function fb(cls, t) { var f = $("fb"); f.className = "sh-fb " + cls; f.textContent = t; }
-
-  function tocar(k) {
-    if (modo !== "juego" || !P) return;
-    if (P.leidos.indexOf(k) >= 0) { fb("", N[k][0] + " ya está leído."); return; }
-    if (luces().indexOf(k) < 0) { fb("mal", "Aún no hay un hilo hasta " + N[k][0] + ": avanza desde lo que ya leíste."); return; }
-    var c = costoDe(k), deMem = !!P.memoria[k], deMapa = !deMem && P.ruta.indexOf(k) >= 0;
-    P.gasto += c; P.leidos.push(k); P.lecturas++; if (deMem) P.desdeMem++;
-    P.memoria[k] = 1;
-    if (k === P.preg.t) { resolver(); return; }
-    fb(deMem ? "bien" : deMapa ? "bien" : "", (deMem ? "🧠 En memoria: " : deMapa ? "🕸️ Con el mapa: " : "Leíste ") + N[k][0] + " · " + PT.num(c) + " tokens.");
-    pintarMapa(); pintarMarcador();
-  }
-  function pedirMapa() {
-    if (modo !== "juego" || !P) return;
-    if (P.cargas <= 0) { fb("mal", "Ya usaste tus dos mapas de esta ronda: sigue los hilos a mano."); return; }
-    if (P.ruta.length) { fb("", "El mapa ya marca la ruta en dorado."); return; }
-    P.cargas--; P.gasto += MAPA_COSTO; P.usoMapa++;
-    P.ruta = ruta(P.leidos, P.preg.t);
-    $("cargas").textContent = P.cargas;
-    fb("bien", "🕸️ graphify path: la ruta en dorado. Cada paso por ella cuesta " + PASO_MAPA + ".");
-    pintarMapa(); pintarMarcador();
-  }
-  $("pedir-mapa").addEventListener("click", pedirMapa);
-
-  function nuevaPregunta() {
-    var pr = P.orden[P.pi];
-    P.preg = pr; P.leidos = [pr.s]; P.gasto = 0; P.ruta = [];
-    $("preg").textContent = pr.q;
-    $("prog").textContent = "Pregunta " + (P.pi + 1) + " de " + P.orden.length;
-    fb("", "Empiezas en " + N[pr.s][0] + ". La respuesta brilla en dorado: " + N[pr.t][0] + ".");
-    pintarMapa(); pintarMarcador();
-  }
-  function resolver() {
-    var ahorro = Math.max(0, TODO - P.gasto), pasos = P.leidos.length - 1, minimo = ruta([P.preg.s], P.preg.t).length - 1;
-    P.ahorro += ahorro; P.hilos++;
-    if (pasos > minimo + 1) P.lecciones.push("«" + P.preg.q + "»: diste " + pasos + " pasos; el hilo corto tenía " + minimo + ". Con el mapa no se adivina.");
-    fb("bien", "✓ ¡Hilo encontrado! Leíste " + PT.num(P.gasto) + " tokens en vez de " + PT.num(TODO) + " (todo el proyecto).");
-    if (enVivo) enviarPaso(true);
-    P.pi++;
-    pintarMarcador();
-    if (P.pi >= P.orden.length) { pintarMapa(); setTimeout(function () { terminar("¡Respondiste las 5 preguntas!"); }, 700); return; }
-    setTimeout(function () { if (modo === "juego") nuevaPregunta(); }, 650);
-  }
-  function pintarMarcador() { $("score").textContent = PT.num(P.ahorro); $("hilos").textContent = P.hilos; }
-
-  /* ---------- sala ---------- */
-  function corredoresVivos() {
-    var l = ((sala && sala.corredores) || []).map(function (c) { return { id: c.id, nombre: c.nombre, avatar: c.avatar, dist: +c.dist || 0, golpes: +c.golpes || 0, fin_ms: c.fin_ms }; });
-    if (P && enVivo) l.forEach(function (c) { if (c.id === yo) { c.dist = Math.max(c.dist, P.ahorro); c.golpes = Math.max(c.golpes, P.hilos); } });
-    return l.sort(function (a, b) { return b.golpes - a.golpes || b.dist - a.dist; });
-  }
-  function pintarLista(ul, l) {
-    ul.textContent = "";
-    if (!l.length) { ul.appendChild(PT.el("li", "vacio", sinServidor ? "La sala del grupo se ve cuando la clase está en vivo." : "Aún nadie en la sala.")); return; }
-    l.slice(0, 30).forEach(function (c) {
-      var li = PT.el("li", c.id === yo ? "yo" : "");
-      li.appendChild(PT.el("span", "a", EMO[c.avatar] || "🙂"));
-      li.appendChild(PT.el("span", "n", c.id === yo ? "Tú · " + (c.nombre || "") : (c.nombre || "Alumno")));
-      li.appendChild(PT.el("span", "h", c.golpes ? "★ " + c.golpes : ""));
-      li.appendChild(PT.el("span", "v", c.dist ? PT.num(c.dist) : ""));
-      ul.appendChild(li);
-    });
-  }
-  // El cielo del grupo: una estrella por pregunta posible; se encienden las resueltas.
-  function pintarCielo(cv, total, lit) {
-    var W = 600, H = 300; cv.width = W; cv.height = H; var ctx = cv.getContext("2d"), r = rng(7);
-    ctx.fillStyle = "#14122b"; ctx.fillRect(0, 0, W, H);
-    for (var i = 0; i < total; i++) {
-      var x = 20 + r() * (W - 40), y = 20 + r() * (H - 40), on = i < lit;
-      ctx.beginPath(); ctx.arc(x, y, on ? 4.2 : 2, 0, 7);
-      ctx.fillStyle = on ? "#e9bd52" : "rgba(195,185,255,.35)"; ctx.fill();
-      if (on) { ctx.beginPath(); ctx.arc(x, y, 9, 0, 7); ctx.fillStyle = "rgba(233,189,82,.18)"; ctx.fill(); }
-    }
-  }
-  function pintarGrupo(caja, titulo) {
-    var l = corredoresVivos(), n = Math.max(1, l.length), lit = l.reduce(function (s, c) { return s + c.golpes; }, 0), meta = n * META_X;
-    caja.textContent = "";
-    caja.appendChild(PT.el("span", "pt-et", titulo));
-    var cv = document.createElement("canvas"); cv.className = "sh-cielo"; cv.setAttribute("role", "img"); cv.setAttribute("aria-label", lit + " estrellas encendidas de " + meta);
-    caja.appendChild(cv); pintarCielo(cv, Math.max(meta, lit, 5), lit);
-    var m = PT.el("div", "sh-meta"); m.appendChild(PT.el("span", "", lit >= meta ? "✓ ¡Cielo encendido!" : "Meta del grupo: " + meta + " estrellas")); m.appendChild(PT.el("b", "", "★ " + lit));
-    caja.appendChild(m);
-    var ul = PT.el("ul", "sh-lista"); pintarLista(ul, l); caja.appendChild(ul);
-    if (P && !enVivo && modo !== "intro") caja.appendChild(PT.el("span", "pt-nota", "Estás en práctica: no suma al cielo del grupo."));
-  }
-  function enSala() { return !!(sala && yo && (sala.corredores || []).some(function (c) { return c.id === yo; })); }
-  function msg(t, mal) { $("msg").textContent = t; $("msg").className = "sh-msg" + (mal ? " bad" : ""); }
-  function pintarSala() {
-    var l = corredoresVivos(), est = sala && sala.estado;
-    $("sala-t").textContent = sinServidor ? "Sala del grupo" : "En la sala · " + l.length + (est && est !== "lobby" ? " · " + ({ cuenta: "salida en segundos", corre: "ronda en curso", fin: "ronda terminada" }[est] || est) : "");
-    pintarLista($("sala-lista"), l);
-    $("unirme").hidden = sinServidor;
-    $("unirme").disabled = enSala() && est === "lobby";
-    $("unirme").textContent = enSala() && est === "lobby" ? "✓ En la sala: espera la salida" : "Unirme a la ronda del grupo";
-    $("staff").hidden = !staff;
-    $("iniciar").disabled = !(est === "lobby" && l.length > 0);
-    if (modo === "juego") pintarGrupo($("g-juego"), enVivo ? "El cielo del grupo" : "El grupo");
-    if (modo === "fin" && $("g-fin")) { pintarGrupo($("g-fin"), "El cielo del grupo"); $("volver").hidden = !(est === "lobby" && !sinServidor); }
-    if (sinServidor && modo === "intro" && !$("msg").textContent) msg("Sin conexión con la sala: puedes practicar solo y publicar al final.");
-  }
-  function refrescar() {
-    if (pidiendo) return; pidiendo = true;
-    PT.pedir("/carrera").then(function (r) {
-      pidiendo = false;
-      if (!r.ok || !r.datos || !r.datos.estado) { sinServidor = true; pintarSala(); return; }
-      sinServidor = false; sala = r.datos; staff = !!sala.staff;
-      if (sala.ahora_ms) offset = sala.ahora_ms - Date.now();
-      if (!yo && sala.yo && (sala.corredores || []).some(function (c) { return c.id === sala.yo; })) yo = sala.yo;
-      var mio = (sala.corredores || []).filter(function (c) { return c.id === yo; })[0];
-      if (mio && (sala.estado === "cuenta" || sala.estado === "corre") && !mio.fin_ms && !(modo === "juego" && enVivo) && !cuentaVivo && sala.salida_ms !== rondaJugada) {
-        rondaJugada = sala.salida_ms; // una sola partida por salida: un sondeo atrasado no la repite
-        if (modo === "juego") { clearInterval(reloj); modo = "intro"; }
-        if (cuentaT) { clearTimeout(cuentaT); cuentaT = 0; }
-        var sl = sala.salida_ms - offset;
-        if (sl > Date.now()) contar(sl, true, sala.seed);
-        else if (Date.now() - sl < RONDA - 3000) empezar(sl, true, sala.seed);
-      }
-      if (modo === "juego" && enVivo && sala.estado === "fin") terminar("El tiempo de la sala se cumplió.");
-      if (modo === "juego" && enVivo && sala.estado === "lobby") terminar("El instructor abrió una sala nueva.");
-      pintarSala();
-    });
-  }
-  setInterval(refrescar, 2000); refrescar();
-
-  $("unirme").addEventListener("click", function () {
-    PT.guardar("avatar", avatar);
-    PT.pedir("/carrera/unir", { avatar: avatar }).then(function (r) {
-      if (r.ok) { yo = r.datos.id || yo; msg(r.datos.tarde ? "Vuelves a tu ronda…" : "✓ Estás en la sala. Empieza cuando el instructor dé la salida."); refrescar(); }
-      else if (r.status === 409) msg("La ronda ya salió. Practica solo y entra a la siguiente.", true);
-      else msg("No pude entrar a la sala. Practica solo: tu resultado vale igual.", true);
-    });
-  });
-  $("practicar").addEventListener("click", function () { contar(Date.now() + 3000, false, Math.floor(Math.random() * 1e6)); });
-  $("iniciar").addEventListener("click", function () { PT.pedir("/carrera/iniciar", {}).then(function (r) { if (!r.ok) msg("Solo el instructor puede dar la salida.", true); refrescar(); }); });
-  $("reiniciar").addEventListener("click", function () { PT.pedir("/carrera/reiniciar", {}).then(function () { yo = ""; refrescar(); }); });
-
-  function ver(v) { ["intro", "juego", "fin"].forEach(function (k) { $("v-" + k).hidden = k !== v; }); modo = v; }
-  function contar(sl, vivo, seed) {
-    if (modo === "juego" || cuentaT) return;
-    cuentaVivo = !!vivo; $("cuenta").hidden = false;
-    (function tic() {
-      var falta = sl - Date.now();
-      if (falta <= 0) { $("cuenta").hidden = true; cuentaT = 0; cuentaVivo = false; empezar(sl, vivo, seed); return; }
-      $("cuenta").textContent = Math.ceil(falta / 1000); cuentaT = setTimeout(tic, 100);
-    })();
-  }
-  function empezar(inicio, vivo, seed) {
-    enVivo = !!vivo;
-    P = { orden: barajar(PREGS, rng(seed)), pi: 0, ahorro: 0, hilos: 0, cargas: CARGAS, usoMapa: 0, lecturas: 0, desdeMem: 0, memoria: {}, lecciones: [], inicio: inicio };
-    ultimoPaso = ""; $("cargas").textContent = CARGAS;
-    ver("juego");
-    $("modo").textContent = enVivo ? "en vivo · suma al cielo" : "práctica";
-    $("modo").className = "esc-chip modo " + (enVivo ? "ok" : "warn");
-    nuevaPregunta();
-    pintarGrupo($("g-juego"), enVivo ? "El cielo del grupo" : "El grupo");
-    clearInterval(reloj); reloj = setInterval(tictac, 200); tictac();
-  }
-  function tictac() {
-    if (!P || modo !== "juego") return;
-    var q = Math.max(0, RONDA - (Date.now() - P.inicio));
-    $("reloj").textContent = Math.ceil(q / 1000); $("reloj").className = "reloj" + (q < 10000 ? " poco" : "");
-    if (q <= 0) terminar("¡Tiempo!");
-    if (enVivo) enviarPaso();
-  }
-  function enviarPaso(forzar) {
-    var k = P.ahorro + "|" + P.hilos; if (k === ultimoPaso) return;
-    if (!forzar && enviarPaso.t && Date.now() - enviarPaso.t < 2000) return;
-    enviarPaso.t = Date.now(); ultimoPaso = k;
-    PT.pedir("/carrera/paso", { dist: P.ahorro, golpes: P.hilos });
-  }
-  function terminar(porque) {
-    if (modo !== "juego" || !P) return;
-    clearInterval(reloj);
-    var ms = Math.max(1, Math.min(RONDA, Date.now() - P.inicio));
-    if (enVivo) PT.pedir("/carrera/paso", { dist: P.ahorro, golpes: P.hilos }).then(function () { return PT.pedir("/carrera/fin", { ms: ms }); }).then(refrescar);
-    guardado.mejor = Math.max(guardado.mejor || 0, P.ahorro);
-    guardado.ultimo = { ahorro: P.ahorro, hilos: P.hilos, mem: P.desdeMem, mapas: P.usoMapa, vivo: enVivo };
-    PT.guardar("juego", guardado);
-    montarFin();
-    ver("fin");
-    $("r-hilos").textContent = P.hilos + (P.hilos === 1 ? " hilo" : " hilos");
-    $("r-sub").textContent = porque + " " + (P.hilos ? "Cada hilo encendió una estrella del grupo." : "Esta vez no llegaste: la práctica es corta, prueba otra.");
-    $("r-ahorro").textContent = PT.num(P.ahorro); $("r-mem").textContent = P.desdeMem; $("r-mejor").textContent = PT.num(guardado.mejor);
-    var ul = $("r-lec"); ul.textContent = "";
-    var lec = P.lecciones.slice(0, 3);
-    if (P.desdeMem) lec.push("🧠 " + P.desdeMem + (P.desdeMem === 1 ? " lectura salió" : " lecturas salieron") + " de memoria a 30 tokens: eso hace Cortex entre sesiones.");
-    if (P.usoMapa) lec.push("🕸️ Usaste el mapa " + P.usoMapa + (P.usoMapa === 1 ? " vez" : " veces") + ": la ruta corta sin adivinar, como graphify path.");
-    if (!P.usoMapa) lec.push("🕸️ No pediste el mapa: en un proyecto real son miles de archivos, no 14.");
-    lec.forEach(function (t) { ul.appendChild(PT.el("li", "", t)); });
-    pintarGrupo($("g-fin"), "El cielo del grupo");
-  }
-
-  function montarFin() {
-    if ($("r-hilos")) return;
-    $("v-fin").appendChild(document.importNode($("t-fin").content, true));
-    if (nombre) $("nombre").value = nombre;
-    $("otra").addEventListener("click", function () { ver("intro"); contar(Date.now() + 3000, false, Math.floor(Math.random() * 1e6)); });
-    $("volver").addEventListener("click", function () { ver("intro"); P = null; $("unirme").click(); });
-    PT.muro($("muro"), "08-juego-hilo", "Una línea: ¿qué parte de tu proyecto le darías primero como mapa o memoria a tu agente?", { placeholder: "Primero le doy…" });
-    PTFoto.montar($("foto"), function () {
-      var u = guardado.ultimo || { ahorro: 0, hilos: 0, mem: 0, mapas: 0 };
-      return {
-        nombre: $("nombre").value.trim() || nombre || "Alumno", avatar: EMO[avatar], leccion: "pt-02",
-        clase: "Clase 2 · Más poder: Cortex y Graphify", fecha: "Martes 10 de noviembre de 2026",
-        etiqueta: "Sigue el hilo", resultado: u.hilos + (u.hilos === 1 ? " hilo" : " hilos") + " · " + PT.num(u.ahorro),
-        detalle: "tokens ahorrados frente a leer todo · " + u.mem + " lecturas desde memoria · " + u.mapas + (u.mapas === 1 ? " mapa" : " mapas"),
-        reflexion: PT.leer("muro-08-juego-hilo", "") || "Primero le doy el mapa: que pregunte al grafo antes de abrir archivos."
-      };
-    });
-
-  }
-
-  // Ganchos para la prueba automática.
-  window.__juego = {
-    estado: function () { return { modo: modo, enVivo: enVivo, P: P && { ahorro: P.ahorro, hilos: P.hilos, pi: P.pi } }; },
-    sugerir: function (punteria) {
-      if (!P || modo !== "juego") return null;
-      if (P.cargas > 0 && !P.ruta.length && Math.random() < punteria * .5) return "mapa";
-      var lit = luces(); if (!lit.length) return null;
-      var bueno = ruta(P.leidos, P.preg.t)[1];
-      return Math.random() < punteria && bueno ? bueno : lit[Math.floor(Math.random() * lit.length)];
-    }
+  // ---------- las preguntas: s = donde empieza, a = archivos que la responden, ruta = lo que enciende el faro ----------
+  var TK = [
+    { tipo: "grafo", cmd: "path", s: "boton", a: ["cola"], ruta: [["boton", "carrito", "api", "servicio", "cola"]], et: "🕸️ ¿Por dónde?",
+      q: "Un cliente pulsa «Pagar»: ¿qué archivo guarda el pago en la tabla?",
+      x: "Botón → carrito → api/pagos → servicio → cola_pagos. Quien escribe en la tabla es cola_pagos.",
+      no: { db: "tabla pagos solo recibe los datos: busca a su vecino, el que escribe en ella." } },
+    { tipo: "grafo", cmd: "affected", s: "config", a: ["auth", "yape"], ruta: [["config", "auth"], ["config", "yape"]], et: "🕸️ ¿Qué se rompe?",
+      q: "Vas a cambiar config.ts: ¿qué archivo se rompe?",
+      x: "auth.ts y yape.ts leen config.ts: los dos se rompen. El README solo lo menciona.",
+      no: { readme: "README.md menciona config.ts, pero un documento no se rompe: busca el código que lo lee." } },
+    { tipo: "grafo", cmd: "path", s: "tests", a: ["servicio"], ruta: [["tests", "servicio", "yape"]], et: "🕸️ ¿Por dónde?",
+      q: "pagos.test.ts falla al cobrar con Yape: ¿qué archivo está entre los dos?",
+      x: "pagos.test.ts → servicio.ts → yape.ts. El fallo pasa por servicio.ts: ahí empiezas a mirar." },
+    { tipo: "grafo", cmd: "explain", s: "correo", a: ["cola"], ruta: [["correo", "cola"]], et: "🕸️ ¿Quién llama?",
+      q: "Llegó un correo de confirmación repetido: ¿qué archivo llama a correo.ts?",
+      x: "A correo.ts lo llama cola_pagos.ts cuando guarda el pago. logger.ts solo recibe sus mensajes.",
+      no: { log: "logger.ts no llama a nadie: solo recibe los mensajes de correo.ts." } },
+    { tipo: "grafo", cmd: "god", s: "", a: ["api", "servicio"], ruta: [["carrito", "api", "auth"], ["log", "api", "servicio", "tests", "api"], ["yape", "servicio", "cola"], ["servicio", "utils"]], et: "🕸️ ¿El centro?",
+      q: "¿Cuál es el centro del proyecto, el archivo con más conexiones?",
+      x: "api/pagos y servicio.ts tienen 5 conexiones cada uno: si uno se cae, se cae media tienda." },
+    { tipo: "grafo", cmd: "affected", s: "log", a: ["api", "correo", "utils"], ruta: [["log", "api"], ["log", "correo"], ["log", "utils"]], et: "🕸️ ¿Qué se rompe?",
+      q: "Cambiaste el formato de logger.ts: ¿quién lo usa?",
+      x: "api/pagos, correo.ts y utils.ts escriben en logger.ts. Cualquiera de los tres era correcto." },
+    { tipo: "grafo", cmd: "path", s: "carrito", a: ["auth"], ruta: [["carrito", "api", "auth"]], et: "🕸️ ¿Por dónde?",
+      q: "El carrito no deja pagar sin iniciar sesión: ¿qué archivo pide el login?",
+      x: "carrito → api/pagos → auth.ts. El nombre ayudaba: si la respuesta está a la vista, leer directo también sirve." },
+    { tipo: "grafo", cmd: "affected", s: "utils", a: ["servicio", "carrito"], ruta: [["utils", "servicio"], ["utils", "carrito"]], et: "🕸️ ¿Qué se rompe?",
+      q: "utils.ts redondea mal los céntimos: ¿qué archivo que cobra sale afectado?",
+      x: "servicio.ts y carrito.tsx usan utils.ts para los montos. logger.ts solo recibe mensajes.",
+      no: { log: "logger.ts solo recibe mensajes de utils.ts: no cobra nada." } },
+    { tipo: "grafo", cmd: "explain", s: "yape", a: ["servicio"], ruta: [["yape", "servicio"]], et: "🕸️ ¿Quién llama?",
+      q: "Yape cambió su API: ¿qué archivo llama a yape.ts?",
+      x: "Solo servicio.ts llama a yape.ts. config.ts no lo llama: solo le da la clave.",
+      no: { config: "config.ts no llama a yape.ts: solo le da la clave." } },
+    { tipo: "grafo", cmd: "explain", s: "yape", a: ["config"], ruta: [["yape", "config"]], et: "🕸️ ¿De dónde?",
+      q: "¿De dónde saca yape.ts su clave?",
+      x: "yape.ts lee su clave de config.ts. Nunca la busques (ni la guardes) en el README.",
+      no: { readme: "El README no guarda claves (y no debería): yape.ts la lee de otro archivo." } },
+    { tipo: "cortex", et: "🧠 ¿Por qué?", q: "¿Por qué los pagos pasan por una cola y no se guardan directo?",
+      x: "Decisión del equipo en marzo: Yape a veces tarda 30 s y la cola reintenta sin cobrar dos veces. El código muestra la cola, no el porqué." },
+    { tipo: "cortex", et: "🧠 ¿Quién decidió?", q: "¿Quién decidió aceptar Yape antes que tarjetas, y por qué?",
+      x: "La dueña, en la reunión de marzo: la comisión es menor. Una decisión no está en ninguna línea de código." },
+    { tipo: "cortex", et: "🧠 ¿Por qué?", q: "¿Por qué el correo sale después de guardar el pago, y no antes?",
+      x: "Regla del proyecto: nunca confirmar algo que no está guardado. Las reglas viven en Cortex y el agente las lee en su resumen." },
+    { tipo: "cortex", et: "🧠 ¿Qué falta?", q: "¿Qué quedó pendiente en la última sesión?",
+      x: "Faltan las pruebas de reembolso. Cada sesión del agente empieza en blanco; Cortex le dice dónde se quedó." },
+    { tipo: "cortex", et: "🧠 ¿Por qué?", q: "¿Por qué la clave de Yape ya no se anota en el README?",
+      x: "Porque en agosto alguien la copió de ahí y se filtró. El incidente y la regla están en Cortex; el README solo dice «no la pongas aquí»." },
+  ];
+  var EXP_CMD = {
+    affected: "affected responde «¿qué se rompe si toco X?»: los archivos que dependen de X.",
+    path: "path responde «¿cómo llego de A a B?»: la ruta más corta del grafo.",
+    explain: "explain responde «¿qué es X y con quién habla?»: sus vecinos directos.",
+    god: "god-nodes muestra los centros: los nodos con más conexiones.",
   };
+  var DATOS_CORTEX = [
+    { p: "¿Con qué empieza el agente en Cortex?", o: ["cortex_brief: un resumen de unos 600 tokens", "Leyendo todo el repositorio", "graphify update ."],
+      x: "cortex_brief le da el mapa de la memoria en unos 600 tokens; después baja solo por la rama que necesita." },
+    { p: "Lo que escribe una IA en Cortex queda como…", o: ["Borrador, hasta que una persona lo aprueba", "Verdad definitiva", "Se borra al cerrar la sesión"],
+      x: "Las personas controlan la memoria: lo que escribe la IA es borrador hasta que alguien lo aprueba." },
+    { p: "Si cambia el código enlazado a una página de Cortex…", o: ["La página se marca desactualizada", "La página se corrige sola", "Nadie se entera"],
+      x: "Las páginas se enlazan al código y se marcan desactualizadas cuando ese código cambia." },
+    { p: "¿Cuánto cuesta buscar en Cortex?", o: ["Nada: la búsqueda es local", "Un token por palabra", "Lo mismo que leer el repositorio"],
+      x: "La búsqueda corre en tu máquina: buscar no gasta tokens." },
+  ];
+
+  // ---------- el mapa: 1900 × 1230 ----------
+  var ANCHO = 1900, ALTO = 1230, COLS = [200, 700, 1210, 1700], FILAS = [150, 455, 770, 1080], SW = 220, SH = 130;
+  function centro(id) {
+    if (id === "faro") return { x: 955, y: 612 };
+    if (id === "cortex") return { x: 1700, y: 1080 };
+    return { x: COLS[F[id].c], y: FILAS[F[id].f] };
+  }
+  var MUROS = [{ x: 545, y: 585, w: 120, h: 70, t: "node_modules" }, { x: 1255, y: 585, w: 120, h: 70, t: ".git" }];
+  var ZONAS = IDS.map(function (id) {
+    var c = centro(id);
+    return { id: id, x: c.x - SW / 2, y: c.y - SH / 2, w: SW, h: SH, nombre: F[id].n, color: "#5a49d6", pintar: pintarSala };
+  });
+  ZONAS.push({ id: "faro", x: 865, y: 545, w: 180, h: 135, nombre: "Faro Graphify", color: "#c48709", colorTexto: "#1c1300", pintar: pintarFaro });
+  ZONAS.push({ id: "cortex", x: 1580, y: 1010, w: 240, h: 140, nombre: "Bóveda Cortex", color: "#0f8f8a", pintar: pintarBoveda });
+  var PRIMERA = ZONAS[0].id; // su dibujo pinta antes la capa del grafo (hilos, ruta dorada, cajas)
+
+  // ---------- estado de mi ronda ----------
+  var juego = null;
+  function estadoNuevo() {
+    return { vistos: {}, cristal: {}, tk: null, bonos: {}, aviso: false,
+      mio: { resueltas: 0, ahorro: 0, gasto: 0, faros: 0, mem: 0, malas: 0, cortex: 0, escritos: 0 } };
+  }
+  var est = estadoNuevo();
+  function actual() {
+    if (!juego) return null;
+    var y = juego.yo(); if (!y.carga) return null;
+    var ob = juego.objeto(y.carga);
+    return ob && ob.k != null ? ob : null;
+  }
+  // Cada pregunta es una sesión nueva: lo leído se paga otra vez (menos lo que está en memoria).
+  function sesion(ob) {
+    var clave = ob.id + "@" + ob.v;
+    if (!est.tk || est.tk.clave !== clave) est.tk = { clave: clave, k: ob.k, gasto: 0, leidos: {}, faro: false, pista: false, avisoFaro: false, avisoCortex: false };
+    return est.tk;
+  }
+  function claveArista(a, b) { return a < b ? a + "|" + b : b + "|" + a; }
+  function rutaEncendida(T) {
+    var luz = {};
+    T.ruta.forEach(function (r) { for (var i = 0; i < r.length - 1; i++) luz[claveArista(r[i], r[i + 1])] = true; });
+    return luz;
+  }
+  function cuantosCristales() { return Object.keys(est.cristal).length; }
+
+  // ---------- dibujo ----------
+  function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function linea(g, a, b) { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); }
+  function cristal(g, x, y, s) {
+    g.save(); g.translate(x, y); g.scale(s, s);
+    [[-9, 0, 9, 24, "#7fe9ff"], [3, 2, 11, 32, "#a99cff"], [13, 2, 8, 19, "#7fe9ff"]].forEach(function (q) {
+      g.fillStyle = q[4]; g.beginPath(); g.moveTo(q[0] - q[2] / 2, q[1]); g.lineTo(q[0], q[1] - q[3]); g.lineTo(q[0] + q[2] / 2, q[1]); g.closePath(); g.fill();
+      g.fillStyle = "rgba(255,255,255,.55)"; g.beginPath(); g.moveTo(q[0] - q[2] / 4, q[1] - 2); g.lineTo(q[0], q[1] - q[3] + 4); g.lineTo(q[0], q[1] - 2); g.closePath(); g.fill();
+    });
+    g.restore();
+  }
+  function pagina(g, x, y, viva) {
+    g.save(); g.translate(x, y);
+    g.fillStyle = viva ? "#f4f1ff" : "rgba(244,241,255,.35)"; g.strokeStyle = "#1b2350"; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(-15, -20); g.lineTo(7, -20); g.lineTo(15, -12); g.lineTo(15, 20); g.lineTo(-15, 20); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = viva ? "#6a58e8" : "rgba(106,88,232,.5)"; g.fillRect(-9, -8, 18, 3); g.fillRect(-9, -1, 13, 3); g.fillRect(-9, 6, 16, 3);
+    g.restore();
+  }
+  function niebla(g, z, t) {
+    var d = REDUCIDO ? 0 : Math.sin(t * .6 + z.x) * 8;
+    g.fillStyle = "rgba(225,222,255,.10)";
+    g.beginPath(); g.ellipse(z.x + z.w * .3 + d, z.y + z.h * .62, 70, 30, 0, 0, 7); g.fill();
+    g.beginPath(); g.ellipse(z.x + z.w * .68 - d, z.y + z.h * .45, 76, 32, 0, 0, 7); g.fill();
+    g.beginPath(); g.ellipse(z.x + z.w * .5, z.y + z.h * .82 + d * .4, 92, 22, 0, 0, 7); g.fill();
+  }
+  // La capa del grafo: hilos (apagados en la niebla, visibles si leíste uno de sus extremos), la ruta del faro,
+  // la línea guía hasta la respuesta y las cajas que bloquean el paso.
+  function pintarGrafo(g, t) {
+    var ob = actual(), T = ob && TK[ob.k], tk = ob && sesion(ob);
+    var luz = T && T.tipo === "grafo" && tk.faro ? rutaEncendida(T) : {};
+    g.save(); g.lineCap = "round";
+    E.forEach(function (e) {
+      if (luz[claveArista(e[0], e[1])]) return;
+      var visto = est.vistos[e[0]] || est.vistos[e[1]];
+      g.strokeStyle = visto ? "rgba(169,156,255,.62)" : "rgba(169,156,255,.10)"; g.lineWidth = visto ? 5 : 3;
+      g.setLineDash(visto ? [] : [10, 16]);
+      linea(g, centro(e[0]), centro(e[1]));
+    });
+    g.setLineDash([]);
+    Object.keys(luz).forEach(function (k) {
+      var p = k.split("|"), a = centro(p[0]), b = centro(p[1]);
+      g.strokeStyle = "rgba(242,193,78,.22)"; g.lineWidth = 24; linea(g, a, b);
+      g.strokeStyle = "#f2c14e"; g.lineWidth = 7; g.setLineDash([28, 16]); g.lineDashOffset = REDUCIDO ? 0 : -t * 70; linea(g, a, b); g.setLineDash([]);
+    });
+    // línea guía: de mi robot a la respuesta (si el faro ya habló) o a la bóveda (si ya sabes que es de Cortex)
+    if (T && juego) {
+      var destino = null, yo = juego.yo();
+      if (T.tipo === "grafo" && tk.faro) {
+        var md = 1e9; T.a.forEach(function (id) { var c = centro(id), d = Math.hypot(c.x - yo.x, c.y - yo.y); if (d < md) { md = d; destino = c; } });
+      } else if (T.tipo === "cortex" && tk.pista) destino = centro("cortex");
+      if (destino) {
+        g.strokeStyle = T.tipo === "cortex" ? "rgba(127,233,255,.7)" : "rgba(255,226,122,.75)"; g.lineWidth = 3.5; g.setLineDash([4, 12]);
+        g.lineDashOffset = REDUCIDO ? 0 : -t * 40; linea(g, { x: yo.x, y: yo.y - 20 }, destino); g.setLineDash([]);
+      }
+    }
+    // cajas: node_modules y .git (no se entra)
+    MUROS.forEach(function (m) {
+      g.fillStyle = "rgba(0,0,0,.35)"; rr(g, m.x + 4, m.y + 8, m.w, m.h, 10); g.fill();
+      g.fillStyle = "#2b2550"; rr(g, m.x, m.y, m.w, m.h, 10); g.fill();
+      g.strokeStyle = "#8a7cf0"; g.lineWidth = 3; g.stroke();
+      g.strokeStyle = "rgba(169,156,255,.25)"; g.lineWidth = 2;
+      for (var i = 1; i < 4; i++) { g.beginPath(); g.moveTo(m.x + 8, m.y + i * m.h / 4); g.lineTo(m.x + m.w - 8, m.y + i * m.h / 4); g.stroke(); }
+      g.fillStyle = "#ffd27a"; g.font = "800 17px ui-monospace, Menlo, Consolas, monospace"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText(m.t, m.x + m.w / 2, m.y + m.h / 2 + 1, m.w - 12);
+    });
+    g.restore();
+  }
+  function pintarSala(g, z, t) {
+    if (z.id === PRIMERA) pintarGrafo(g, t);
+    var id = z.id, f = F[id], ob = actual(), T = ob && TK[ob.k], tk = ob && sesion(ob);
+    var visto = !!est.vistos[id], cr = !!est.cristal[id];
+    var meta = !!(T && T.tipo === "grafo" && tk.faro && T.a.indexOf(id) >= 0), inicio = !!(T && T.s === id), leido = !!(tk && tk.leidos[id]);
+    var pulso = REDUCIDO ? .6 : (Math.sin(t * 5) + 1) / 2;
+    g.save();
+    if (meta) { g.fillStyle = "rgba(242,193,78," + (.18 + pulso * .2).toFixed(3) + ")"; rr(g, z.x - 18, z.y - 18, z.w + 36, z.h + 36, 30); g.fill(); }
+    else if (cr) { g.fillStyle = "rgba(127,233,255,.12)"; rr(g, z.x - 10, z.y - 10, z.w + 20, z.h + 20, 26); g.fill(); }
+    g.fillStyle = "rgba(0,0,0,.3)"; rr(g, z.x + 4, z.y + 8, z.w, z.h, 18); g.fill();
+    g.fillStyle = visto ? "#2c2766" : "#1d1946"; rr(g, z.x, z.y, z.w, z.h, 18); g.fill();
+    g.lineWidth = meta ? 6 : 3; g.strokeStyle = meta ? "#f2c14e" : cr ? "#7fe9ff" : visto ? "#a99cff" : "rgba(169,156,255,.42)"; g.stroke();
+    pagina(g, z.x + 36, z.y + z.h / 2 + 6, visto || cr || meta);
+    var cx = z.x + z.w / 2 + 24, cy = z.y + z.h / 2 + 4;
+    g.textAlign = "center"; g.textBaseline = "middle";
+    if (cr) {
+      g.fillStyle = "rgba(255,246,214,.55)"; g.font = "700 18px system-ui, sans-serif"; g.fillText(num(f.tok) + " tok", cx, cy - 22);
+      var w0 = g.measureText(num(f.tok) + " tok").width; g.strokeStyle = "rgba(255,246,214,.7)"; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - w0 / 2, cy - 22); g.lineTo(cx + w0 / 2, cy - 22); g.stroke();
+      g.fillStyle = "#7fe9ff"; g.font = "800 30px system-ui, sans-serif"; g.fillText(MEMORIA + " tok", cx, cy + 10);
+      cristal(g, z.x + z.w - 22, z.y + 40, .9);
+    } else {
+      g.fillStyle = visto ? "#fff6d6" : "rgba(255,246,214,.78)"; g.font = "800 30px system-ui, sans-serif"; g.fillText(num(f.tok) + " tok", cx, cy - 4);
+    }
+    if (leido) { g.fillStyle = "#c3b9ff"; g.font = "700 16px system-ui, sans-serif"; g.fillText("✓ leído en esta pregunta", z.x + z.w / 2, z.y + z.h - 16); }
+    else if (meta) { g.fillStyle = "#ffe27a"; g.font = "800 17px system-ui, sans-serif"; g.fillText("★ la respuesta está aquí", z.x + z.w / 2, z.y + z.h - 16); }
+    if (!visto && !cr && !meta) niebla(g, z, t);
+    barraLectura(g, z, cr ? "#7fe9ff" : "#f2c14e", z.y + 22);
+    if (inicio) {
+      g.strokeStyle = "#f2c14e"; g.lineWidth = 3; g.setLineDash([10, 8]); g.lineDashOffset = REDUCIDO ? 0 : t * 20;
+      rr(g, z.x - 9, z.y - 9, z.w + 18, z.h + 18, 24); g.stroke(); g.setLineDash([]);
+      g.fillStyle = "rgba(20,18,43,.85)"; rr(g, z.x + z.w / 2 - 110, z.y + z.h + 12, 220, 28, 14); g.fill();
+      g.fillStyle = "#ffe27a"; g.font = "800 15px system-ui, sans-serif"; g.fillText("▲ la pregunta empieza aquí", z.x + z.w / 2, z.y + z.h + 27);
+    }
+    g.restore();
+  }
+  function pintarFaro(g, z, t, resalta) {
+    var cx = z.x + z.w / 2, cy = z.y + z.h / 2 + 8, pulso = resalta && !REDUCIDO ? (Math.sin(t * 5) + 1) / 2 : 0;
+    g.save();
+    // haz que barre el mapa (quieto si se pidió menos movimiento)
+    var ang = REDUCIDO ? -0.6 : t * .8;
+    g.fillStyle = "rgba(255,226,122," + (.10 + pulso * .08).toFixed(3) + ")";
+    g.beginPath(); g.moveTo(cx, cy - 46); g.arc(cx, cy - 46, 330, ang - .22, ang + .22); g.closePath(); g.fill();
+    var luz = g.createRadialGradient(cx, cy, 10, cx, cy, 130); luz.addColorStop(0, "rgba(242,193,78," + (.32 + pulso * .2).toFixed(3) + ")"); luz.addColorStop(1, "rgba(242,193,78,0)");
+    g.fillStyle = luz; g.fillRect(cx - 130, cy - 130, 260, 260);
+    g.fillStyle = "#2a2350"; g.strokeStyle = resalta ? "#ffe27a" : "#c48709"; g.lineWidth = resalta ? 6 : 4;
+    rr(g, z.x, z.y, z.w, z.h, 22); g.fill(); g.stroke();
+    // la torre
+    g.fillStyle = "#f4f1ff"; g.strokeStyle = "#1b2350"; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(cx - 22, cy + 34); g.lineTo(cx - 13, cy - 30); g.lineTo(cx + 13, cy - 30); g.lineTo(cx + 22, cy + 34); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = "#e3262e"; g.fillRect(cx - 17, cy - 4, 34, 9); g.fillRect(cx - 20, cy + 16, 40, 9);
+    g.fillStyle = "#ffe27a"; rr(g, cx - 16, cy - 50, 32, 20, 6); g.fill(); g.stroke();
+    g.fillStyle = "#1b2350"; g.beginPath(); g.moveTo(cx - 19, cy - 50); g.lineTo(cx, cy - 64); g.lineTo(cx + 19, cy - 50); g.closePath(); g.fill();
+    // mini grafo a los lados
+    g.strokeStyle = "#f2c14e"; g.lineWidth = 3; g.fillStyle = "#f2c14e";
+    [[-62, -20, -46, 12], [-46, 12, -70, 34], [62, -20, 46, 12], [46, 12, 70, 34]].forEach(function (s) { g.beginPath(); g.moveTo(cx + s[0], cy + s[1]); g.lineTo(cx + s[2], cy + s[3]); g.stroke(); });
+    [[-62, -20], [-46, 12], [-70, 34], [62, -20], [46, 12], [70, 34]].forEach(function (p) { g.beginPath(); g.arc(cx + p[0], cy + p[1], 5, 0, 7); g.fill(); });
+    g.fillStyle = "#ffe27a"; g.font = "800 16px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText(FARO + " tok", cx, z.y + z.h + 16);
+    barraLectura(g, z, "#ffe27a", z.y + z.h + 30);
+    g.restore();
+  }
+  function pintarBoveda(g, z, t, resalta) {
+    var ob = actual(), T = ob && TK[ob.k], tk = ob && sesion(ob), guia = !!(T && T.tipo === "cortex" && tk.pista);
+    var pulso = (resalta || guia) && !REDUCIDO ? (Math.sin(t * 5) + 1) / 2 : guia ? .6 : 0;
+    g.save();
+    var luz = g.createRadialGradient(z.x + z.w / 2, z.y + z.h / 2, 10, z.x + z.w / 2, z.y + z.h / 2, z.w * .85);
+    luz.addColorStop(0, "rgba(127,233,255," + (.2 + pulso * .22).toFixed(3) + ")"); luz.addColorStop(1, "rgba(127,233,255,0)");
+    g.fillStyle = luz; g.fillRect(z.x - 90, z.y - 90, z.w + 180, z.h + 180);
+    g.fillStyle = "#0e3440"; g.strokeStyle = guia ? "#7fe9ff" : resalta ? "#5fd3d0" : "#12a7a0"; g.lineWidth = guia ? 6 : 4;
+    rr(g, z.x, z.y, z.w, z.h, 22); g.fill(); g.stroke();
+    // estantes de memoria y cristales
+    g.strokeStyle = "rgba(127,233,255,.25)"; g.lineWidth = 2;
+    for (var i = 1; i < 4; i++) { g.beginPath(); g.moveTo(z.x + 14, z.y + i * z.h / 4); g.lineTo(z.x + z.w * .42, z.y + i * z.h / 4); g.stroke(); }
+    cristal(g, z.x + z.w * .66, z.y + z.h * .62, 1.7);
+    g.fillStyle = "#c9fbff"; g.font = "700 15px ui-monospace, Menlo, Consolas, monospace"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("cortex_brief · " + BRIEF + " tok", z.x + z.w / 2, z.y + z.h + 16);
+    barraLectura(g, z, "#7fe9ff", z.y + z.h + 30);
+    g.restore();
+  }
+  function fondo(g, M, rnd) {
+    g.fillStyle = "#151236"; g.fillRect(0, 0, ANCHO, ALTO);
+    g.strokeStyle = "rgba(169,156,255,.05)"; g.lineWidth = 2;
+    for (var x = 0; x <= ANCHO; x += 50) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, ALTO); g.stroke(); }
+    for (var y = 0; y <= ALTO; y += 50) { g.beginPath(); g.moveTo(0, y); g.lineTo(ANCHO, y); g.stroke(); }
+    for (var i = 0; i < 140; i++) { g.fillStyle = "rgba(255,240,200," + (.12 + rnd() * .35).toFixed(2) + ")"; g.beginPath(); g.arc(rnd() * ANCHO, rnd() * ALTO, .8 + rnd() * 1.8, 0, 7); g.fill(); }
+    for (i = 0; i < 46; i++) { // la niebla del proyecto
+      g.fillStyle = "rgba(210,205,255," + (.025 + rnd() * .04).toFixed(3) + ")";
+      g.beginPath(); g.ellipse(rnd() * ANCHO, rnd() * ALTO, 90 + rnd() * 170, 34 + rnd() * 50, 0, 0, 7); g.fill();
+    }
+    g.fillStyle = "rgba(255,230,170,.22)"; g.font = "800 30px system-ui, sans-serif"; g.textAlign = "center"; g.fillText("ENTRADA", 200, 1195);
+    g.fillStyle = "rgba(169,156,255,.2)"; g.font = "800 22px system-ui, sans-serif"; g.fillText("LA TIENDA · 14 archivos · " + num(TODO) + " tok si lees todo", 950, 40);
+  }
+
+  // ---------- jugadas ----------
+  function lupaLectura(titulo, texto, extra) { juego.lupa({ tipo: "mal", icono: "📄", titulo: titulo, texto: texto, real: extra, ms: 6500 }); }
+  function rechazo(m) { return { rechazar: true, mensaje: m }; }
+  function bonoDe(T) {
+    var clave = T.tipo === "grafo" ? "cmd-" + T.cmd : "", pick = null;
+    if (T.tipo === "grafo") {
+      if (est.bonos[clave]) return null;
+      var s = T.s ? F[T.s].n : "api/pagos", b = F[T.a[0]].n;
+      var ops = [{ t: 'graphify affected "' + s + '"', c: "affected" }, { t: 'graphify path "' + s + '" "' + b + '"', c: "path" },
+        { t: 'graphify explain "' + s + '"', c: "explain" }, { t: "graphify god-nodes", c: "god" }];
+      ops = barajar(ops);
+      return { pregunta: "Bono: ¿qué consulta al grafo te daba esta respuesta?", opciones: ops.map(function (o) { return o.t; }),
+        correcta: ops.map(function (o) { return o.c; }).indexOf(T.cmd), puntos: 3, codigo: true, segundos: 16,
+        explicacion: EXP_CMD[T.cmd] + " " + T.x, clave: clave };
+    }
+    for (var i = 0; i < DATOS_CORTEX.length; i++) if (!est.bonos["cx-" + i]) { pick = i; break; }
+    if (pick == null) return null;
+    var d = DATOS_CORTEX[pick], o2 = barajar(d.o.map(function (t, j) { return { t: t, ok: j === 0 }; }));
+    return { pregunta: "Bono: " + d.p, opciones: o2.map(function (o) { return o.t; }), correcta: o2.map(function (o) { return o.ok; }).indexOf(true),
+      puntos: 3, segundos: 16, explicacion: d.x + " " + T.x, clave: "cx-" + pick };
+  }
+  function barajar(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+
+  function resolver(T, tk, R, costo) {
+    tk.gasto += costo;
+    var m = est.mio, ahorro = Math.max(0, TODO - tk.gasto), pts = Math.max(1, Math.round(ahorro / 1000));
+    m.resueltas++; m.ahorro += ahorro; m.gasto += tk.gasto; if (T.tipo === "cortex") m.cortex++;
+    var nuevo = false;
+    if (T.tipo === "grafo") {
+      if (!est.cristal[R]) { est.cristal[R] = true; m.escritos++; nuevo = true; }
+      var c = centro(R); juego.emitir("memoria", F[R].n, IDS.indexOf(R), c.x, c.y); // la memoria es de toda la clase
+    }
+    est.tk = null;
+    guardarResumen();
+    var bono = bonoDe(T);
+    var exp = T.x + " Gastaste " + num(tk.gasto) + " tok; leer todo cuesta " + num(TODO) + "." +
+      (nuevo ? " 🧠 Quedó en la memoria de la clase: releer " + F[R].n + " ahora cuesta " + MEMORIA + " para todos." : "");
+    return { ok: true, puntos: pts, titulo: "¡Resuelta! Ahorraste " + pts + " K tok", explicacion: exp,
+      feed: T.tipo === "cortex" ? "resolvió un «por qué» en Cortex" : "resolvió en " + F[R].n + " con " + num(tk.gasto) + " tok" + (nuevo ? " 🧠" : ""),
+      bonus: bono || undefined };
+  }
+  // Leer toma un momento: hay que quedarse dentro (los archivos grandes tardan más). Así, cruzar una sala
+  // de camino a otra no la lee ni gasta tokens.
+  function tiempoLectura(id) {
+    if (id === "faro") return 450;
+    if (id === "cortex" || est.cristal[id]) return 850;
+    return 700 + F[id].tok / 4; // 900 tok ≈ 0,9 s · README (6 000) ≈ 2,2 s
+  }
+  function leyendo(z) {
+    var L = est.lee;
+    if (!L || L.zona !== z.id || performance.now() - L.ultimo > 200 || L.hecho) return -1;
+    return Math.min(1, (performance.now() - L.desde) / L.total);
+  }
+  function barraLectura(g, z, color, y) {
+    var k = leyendo(z); if (k < 0) return;
+    g.fillStyle = "rgba(10,8,30,.8)"; rr(g, z.x + 14, y, z.w - 28, 12, 6); g.fill();
+    g.fillStyle = color; rr(g, z.x + 14, y, Math.max(12, (z.w - 28) * k), 12, 6); g.fill();
+  }
+  function entregar(ob, zona) {
+    var T = TK[ob.k], tk = sesion(ob), m = est.mio, ahora = performance.now(), L = est.lee;
+    var hecho = zona.id === "faro" ? (T.tipo === "cortex" ? tk.avisoFaro : tk.faro) : zona.id === "cortex" ? (T.tipo !== "cortex" && tk.avisoCortex) : !!tk.leidos[zona.id];
+    if (!L || L.zona !== zona.id || L.clave !== tk.clave || ahora - L.ultimo > 200) L = est.lee = { zona: zona.id, clave: tk.clave, desde: ahora, ultimo: ahora, total: tiempoLectura(zona.id), hecho: hecho };
+    L.ultimo = ahora;
+    if (!hecho && ahora - L.desde < L.total) {
+      return rechazo(zona.id === "faro" ? "🛰️ Consultando el grafo…" : zona.id === "cortex" ? "🧠 Abriendo la memoria…" : "📖 Leyendo " + F[zona.id].n + "… quédate un momento");
+    }
+    L.hecho = true;
+    if (zona.id === "faro") {
+      if (T.tipo === "cortex") {
+        if (!tk.avisoFaro) {
+          tk.avisoFaro = true; tk.pista = true; tk.gasto += FARO; juego.sonido("soltar");
+          juego.lupa({ tipo: "mal", icono: "🛰️", titulo: "El grafo no sabe «por qué» · −" + FARO + " tok", ms: 6500,
+            texto: "Graphify sabe quién llama a quién, no por qué se decidió algo. Esa respuesta vive en la Bóveda Cortex: sigue la línea celeste." });
+          return rechazo("El grafo no guarda decisiones: ve a la Bóveda Cortex");
+        }
+        return rechazo("Esta es de «por qué»: llévala a la Bóveda Cortex");
+      }
+      if (!tk.faro) {
+        tk.faro = true; tk.gasto += FARO; m.faros++; juego.sonido("bonus");
+        juego.lupa({ tipo: "bien", icono: "🛰️", titulo: "Le preguntaste al grafo · −" + FARO + " tok", ms: 4500,
+          texto: "La ruta se encendió en dorado y la respuesta brilla. Síguela: sin abrir archivos de más." });
+        return rechazo("🛰️ Ruta encendida: sigue la línea dorada");
+      }
+      return rechazo("La ruta ya está encendida: sigue la línea dorada");
+    }
+    if (zona.id === "cortex") {
+      if (T.tipo === "cortex") return resolver(T, tk, "cortex", BRIEF);
+      if (!tk.avisoCortex) {
+        tk.avisoCortex = true; tk.gasto += BRIEF; juego.sonido("soltar");
+        juego.lupa({ tipo: "mal", icono: "🧠", titulo: "cortex_brief · −" + BRIEF + " tok", ms: 6500,
+          texto: "Cortex guarda decisiones, reglas y pendientes. Para «qué se rompe» o «por dónde pasa», pregúntale al grafo: el Faro Graphify, al centro." });
+        return rechazo("Para esta, el Faro Graphify (al centro)");
+      }
+      return rechazo("Esta es de código: el Faro Graphify te da la ruta");
+    }
+    var R = zona.id, f = F[R]; if (!f) return rechazo("Aquí no va");
+    var costo = est.cristal[R] ? MEMORIA : f.tok;
+    if (T.tipo === "grafo" && T.a.indexOf(R) >= 0) {
+      if (tk.leidos[R]) costo = 0; else if (est.cristal[R]) m.mem++;
+      est.vistos[R] = true;
+      return resolver(T, tk, R, costo);
+    }
+    if (tk.leidos[R]) return rechazo("Ya leíste " + f.n + " para esta pregunta: sigue sus hilos");
+    tk.leidos[R] = true; tk.gasto += costo; est.vistos[R] = true; m.malas++; if (est.cristal[R]) m.mem++;
+    juego.sonido("soltar");
+    var vec = VEC[R].map(function (k) { return F[k].n; }).join(", ");
+    var titulo = "Leíste " + f.n + " · −" + num(costo) + " tok" + (est.cristal[R] ? " (desde memoria)" : "");
+    if (T.tipo === "cortex") {
+      tk.pista = true;
+      lupaLectura(titulo, "El código dice qué hace, no por qué se decidió. Las decisiones viven en la Bóveda Cortex: sigue la línea celeste.", "Llevas " + num(tk.gasto) + " tok en esta pregunta.");
+    } else {
+      var txt = (T.no && T.no[R]) || (R === T.s ? "Aquí empieza la pregunta, pero la respuesta está en otro archivo." : "Aquí no está.");
+      lupaLectura(titulo, txt + " " + f.n + " se conecta con: " + vec + ". Ya ves sus hilos en el mapa.",
+        "Llevas " + num(tk.gasto) + " tok en esta pregunta." + (tk.faro ? "" : " El faro te ahorra adivinar."));
+    }
+    return rechazo("−" + num(costo) + " tok · " + f.n + (T.tipo === "cortex" ? ": aquí no está el porqué" : ": aquí no está"));
+  }
+
+  // ---------- lo que se guarda para la escena 10 (insignia) ----------
+  var LECCION = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "pt-02";
+  function ptGuardar(k, v) { try { localStorage.setItem(LECCION + "-" + k, JSON.stringify(v)); } catch (e) {} }
+  function ptLeer(k) { try { return JSON.parse(localStorage.getItem(LECCION + "-" + k)); } catch (e) { return null; } }
+  function guardarResumen() {
+    var m = est.mio, g = ptLeer("juego") || {}, y = juego ? juego.yo() : {};
+    g.mejor = Math.max(+g.mejor || 0, m.ahorro);
+    g.ultimo = { juego: "faros", hilos: m.resueltas, mem: m.mem, ahorro: m.ahorro, mapas: m.faros, vivo: !y.practica };
+    ptGuardar("juego", g);
+  }
+
+  // ---------- el juego ----------
+  juego = ArenaJMD.crear({
+    raiz: "#juego",
+    titulo: "Faros en la niebla",
+    subtitulo: "El proyecto está en la niebla. El grafo te alumbra la ruta y la memoria abarata lo que ya se leyó.",
+    curso: "Potencia tus agentes",
+    sesion: "Clase 2 · Memoria y mapa: Cortex y Graphify",
+    fecha: "Martes 10 de noviembre de 2026",
+    hashtag: "#PotenciaTusAgentes",
+    duracion: 180, duraciones: [180, 300], duracionPractica: 120,
+    mundo: { ancho: ANCHO, alto: ALTO, tema: "mina" },
+    jugador: { accesorio: "audifonos" },
+    salida: { x: 60, y: 990, w: 320, h: 200 },
+    reglas: [
+      "Recoge una pregunta y quédate en el archivo que la responde. Leerlo cuesta sus tokens; errar no resta puntos.",
+      "¿No sabes cuál? Pasa por el Faro Graphify (150 tok): enciende en dorado la ruta hasta la respuesta.",
+      "Las de «por qué» van a la Bóveda Cortex. Lo que resuelves queda en memoria 🧠: releerlo cuesta 30.",
+    ],
+    anuncio: "todos al mapa",
+    fondo: fondo,
+    muros: MUROS.map(function (m) { return { x: m.x, y: m.y, w: m.w, h: m.h }; }),
+    zonas: ZONAS,
+    peligros: [
+      { tipo: "dron", nombre: "el /compact", ruta: [[450, 110], [450, 1170]], vel: 115, radio: 24,
+        aviso: "¡/compact! El contexto se compactó y soltaste la pregunta. Volvió a su sitio; la memoria de la clase sigue ahí.", avisoSinCarga: "¡Cuidado con el /compact! Esquívalo." },
+      { tipo: "dron", nombre: "el /compact", ruta: [[380, 925], [1520, 925]], vel: 125, radio: 24,
+        aviso: "¡/compact! Se compactó el contexto y olvidaste la pregunta. Búscala otra vez.", avisoSinCarga: "¡Uy, el /compact! Cruza cuando pase." },
+      { tipo: "dron", nombre: "el /compact", ruta: [[830, 302], [1560, 302]], vel: 105, radio: 24,
+        aviso: "¡/compact! Soltaste la pregunta: volvió a su sitio.", avisoSinCarga: "¡Cuidado con el /compact!" },
+    ],
+    objetos: {
+      cantidad: 14, prefijo: "q",
+      crear: function (i, v, rnd, M) {
+        var base = (juego ? juego.ronda().semilla >>> 0 : 0) % TK.length;
+        var k = (i * 7 + v * 4 + base) % TK.length, T = TK[k];
+        var p = M.lugarLibre(rnd, 36, { x: 40, y: 70, w: ANCHO - 80, h: ALTO - 120 });
+        return { x: p.x, y: p.y, forma: "carta", color: T.tipo === "cortex" ? "#12a7a0" : "#7b6cf0", k: k, texto: T.et };
+      },
+    },
+    tarjeta: function (ob) {
+      var T = TK[ob.k];
+      if (T.tipo === "cortex") return { etiqueta: "Pregunta de «por qué» · memoria", color: "#0f8f8a", titulo: T.q,
+        destacadoEtiqueta: "Si tu agente lee todo:", destacado: num(TODO) + " tok", pie: "Pista: ¿esto lo dice el código o lo decidió alguien? Espacio o «Soltar» la deja." };
+      return { etiqueta: "Pregunta de código · grafo", color: "#5a49d6", titulo: T.q,
+        destacadoEtiqueta: "Si tu agente lee todo:", destacado: num(TODO) + " tok",
+        pie: (T.s ? "Empieza en " + F[T.s].n + ". " : "") + "¿No sabes dónde está? Faro Graphify (centro, 150 tok) y sigue la ruta dorada." };
+    },
+    entregar: entregar,
+    meta: { contador: "ahorro", texto: "Tokens que ahorró la clase", unidad: "K tok", objetivo: function (n) { return Math.max(100, n * 90); }, logro: "la clase ahorró su meta de tokens" },
+    reflexion: { clave: "08-juego-hilo", pregunta: "¿Qué le darías primero a tu agente: mapa o memoria? ¿Por qué?", placeholder: "Primero le doy…",
+      porDefecto: "Primero le doy el mapa: que pregunte al grafo antes de abrir archivos." },
+    alRonda: function () { est = estadoNuevo(); },
+    alTomar: function (ob, api) {
+      if (est.aviso) return;
+      est.aviso = true;
+      api.toast("Cada pregunta es una sesión nueva: tu agente paga lo que lee. Lo que está en memoria 🧠 cuesta 30.", "", 4200);
+    },
+    // El bono acertado no se repite (esa consulta ya la sabes): se marca cuando sube stats.bonus.
+    alEntregar: function (ob, zona, res, api) { if (res && res.bonus && res.bonus.clave) est.bonoPend = { clave: res.bonus.clave, antes: api.stats.bonus }; },
+    alEvento: function (e, api) {
+      if (e.tipo !== "memoria") return;
+      var id = IDS[e.valor | 0];
+      if (!id || est.cristal[id]) return;
+      est.cristal[id] = true;
+      var c = centro(id); api.popup(c.x, c.y - 80, "🧠 memoria", "#7fe9ff");
+    },
+    alReflexion: function (t) { ptGuardar("muro-08-juego-hilo", t); },
+    resultado: function (s, api) {
+      var m = est.mio, k = api.puntos, media = m.resueltas ? m.gasto / m.resueltas : 0;
+      var titulo = !m.resueltas ? "Explorador en la niebla"
+        : m.faros >= 3 && m.malas <= 2 ? "Navegante del grafo"
+        : m.cortex >= 2 && m.escritos >= 1 ? "Guardián de la memoria"
+        : m.escritos >= 3 ? "Cartógrafo de la clase"
+        : m.resueltas >= 3 ? "Faro encendido" : "Primeros hilos";
+      return { etiqueta: "Mi expedición en la niebla", titulo: titulo, resultado: k + " K tokens ahorrados",
+        detalle: m.resueltas ? m.resueltas + (m.resueltas === 1 ? " pregunta" : " preguntas") + " · " + num(media) + " tok de media (leer todo: " + num(TODO) + ") · " + m.mem + " desde memoria"
+          : "La próxima: recoge una pregunta y pasa por el faro." };
+    },
+  });
+
+  // Ganchos para la prueba automática (Playwright): centros del mapa y la pregunta que llevo.
+  window.__faros = {
+    centro: centro, ids: IDS.slice(),
+    llevo: function () { var ob = actual(); if (!ob) return null; var T = TK[ob.k], tk = sesion(ob); return { tipo: T.tipo, s: T.s, a: (T.a || []).slice(), faro: tk.faro, gasto: tk.gasto, q: T.q }; },
+    estado: function () { return { cristales: Object.keys(est.cristal), vistos: Object.keys(est.vistos), mio: est.mio }; },
+    objeto: function (id) { var o = juego.objeto(id); return o ? { x: o.x, y: o.y, k: o.k } : null; },
+  };
+
+  // ---------- el contador de tokens (arriba a la izquierda del mapa) ----------
+  (function () {
+    var esc = document.querySelector("#juego .aj-escenario"), banner = document.querySelector("#juego .aj-banner"), entrada = document.querySelector("#juego .aj-entrada");
+    if (!esc) return;
+    var hud = document.createElement("div"); hud.className = "fn-hud"; hud.setAttribute("aria-live", "off"); esc.appendChild(hud);
+    var firma = "";
+    setInterval(function () {
+      if (est.bonoPend && juego.stats.bonus > est.bonoPend.antes) { est.bonos[est.bonoPend.clave] = true; est.bonoPend = null; }
+      var y = juego.yo(), juega = (y.dentro || y.practica) && (!entrada || entrada.hidden);
+      var ob = juega ? actual() : null, tk = ob ? sesion(ob) : null, n = cuantosCristales();
+      var html = !juega ? "" : (tk ? '<span>🪙 <b>' + num(tk.gasto) + ' tok</b><span class="largo"> en esta pregunta</span></span>' : "") +
+        '<span class="mem">🧠 <b>' + n + '</b><span class="largo"> ' + (n === 1 ? "archivo" : "archivos") + " en la memoria de la clase</span></span>";
+      var top = banner && !banner.hidden && banner.textContent ? banner.offsetTop + banner.offsetHeight + 6 : 10;
+      var f = html + "|" + top;
+      if (f === firma) return;
+      firma = f; hud.innerHTML = html; hud.style.top = top + "px"; hud.hidden = !html;
+    }, 200);
+  })();
 })();
 </script>
 </body>

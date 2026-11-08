@@ -110,24 +110,27 @@ PT.pedir("/api/v1/lessons/" + PT.leccion + "/progress").then(function (r) {
   $("prog").append(done >= UMBRAL ? " · insignia encendida." : " · con " + UMBRAL + " se enciende.");
 });
 var pr = PT.leer("proyecto", null), co = PT.leer("consulta", null), ju = PT.leer("juego", null), u = ju && ju.ultimo;
+// El juego de la escena 8 («Faros en la niebla») deja {hilos: preguntas resueltas, mem, ahorro, mapas}; si no jugó, queda «pendiente».
+if (!u || typeof u !== "object" || !(+u.hilos >= 0)) u = null;
+function preguntas(n) { n = +n || 0; return n + (n === 1 ? " pregunta" : " preguntas"); }
 [["Proyecto entero", pr && pr.car ? "≈ " + PT.num(pr.tok) + " tok" : null],
  ["Consulta al grafo", co && co.x ? "÷" + PT.num(co.x) : null],
- ["Sigue el hilo", u ? u.hilos + (u.hilos === 1 ? " hilo" : " hilos") : null],
- ["Lecturas desde memoria", u ? String(u.mem) : null]].forEach(function (f) {
+ ["Faros en la niebla", u ? preguntas(u.hilos) : null],
+ ["Lecturas desde memoria", u ? String(+u.mem || 0) : null]].forEach(function (f) {
   var li = PT.el("li", f[1] ? "" : "falta"); li.appendChild(PT.el("span", "", f[0])); li.appendChild(PT.el("b", "", f[1] || "pendiente")); $("nums").appendChild(li);
 });
 PT.votos($("voto"), "10-insignia", "¿Qué te llevas de hoy?", [
   { id: "memoria", t: "🧠 Memoria con Cortex" },
   { id: "mapa", t: "🕸️ El grafo de Graphify" },
   { id: "consulta", t: "Preguntar antes de leer" },
-  { id: "juego", t: "Lo que aprendí siguiendo el hilo" }
+  { id: "juego", t: "Lo que aprendí en «Faros en la niebla»" }
 ]);
 PT.muro($("muro"), "10-insignia", "¿Qué decisión de tu proyecto guardarías primero en Cortex?", { placeholder: "Guardaría que…", max: 120 });
 PTFoto.montar($("foto"), function () {
   var d = { nombre: $("nombre").value.trim() || "Alumno", avatar: EMO[avatar], leccion: "pt-02", clase: "Clase 2 · Más poder: Cortex y Graphify", fecha: "Martes 10 de noviembre de 2026",
     reflexion: PT.leer("muro-10-insignia", "") || PT.leer("muro-08-juego-hilo", "") || "Le doy memoria y mapa: pregunto al grafo antes de abrir archivos." };
   if (co && co.x) { d.etiqueta = "Pregunté al grafo"; d.resultado = "÷" + PT.num(co.x); d.detalle = "graphify affected «" + co.fn + "»: " + PT.num(co.todo) + " → " + PT.num(co.grafo) + " caracteres"; }
-  else if (u) { d.etiqueta = "Sigue el hilo"; d.resultado = u.hilos + (u.hilos === 1 ? " hilo" : " hilos"); d.detalle = PT.num(u.ahorro) + " tokens ahorrados · " + u.mem + " lecturas desde memoria"; }
+  else if (u) { d.etiqueta = "Faros en la niebla"; d.resultado = preguntas(u.hilos); d.detalle = PT.num(+u.ahorro || 0) + " tokens ahorrados · " + (+u.mem || 0) + " lecturas desde memoria"; }
   else { d.etiqueta = "Clase 2"; d.resultado = "Completada"; d.detalle = "Memoria con Cortex y mapa con Graphify."; }
   return d;
 }, { texto: "📸 Generar mi fotito de la clase" });
