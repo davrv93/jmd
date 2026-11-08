@@ -2,700 +2,469 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Juego: Hasta la hoja</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · Hasta la hoja: la Partidora</title>
+<link rel="icon" href="data:,">
 <!--
-  JUEGO ORIGINAL «Hasta la hoja» (Claude Code PRO, ccp-02). Hasta 25 a la vez; cooperativo + marca personal.
-  Llega el proyecto entero («Dashboard BI con IA») como una carta. Para cada tarea decides:
-    ✂ Dividir (tiene más de una cosa o más de una prueba) o 🍃 Hoja (1 cosa · 1 sesión · 1 prueba).
-  Si divides bien, sus hijas entran a la pila y las recorres en profundidad: el plan recursivo, jugado.
-  Entre tareas llegan datos del proyecto: ¿van al 🧠 cerebro (CLAUDE.md / Cortex), los responde el 🕸️ grafo
-  (Graphify) o 💨 no se guardan?
-  Nadie queda fuera ni pierde puntos: acertar suma 10 (+5 con racha de 3), fallar suma 2 y muestra por qué, y
-  la carta se corrige sola. La ronda dura 60 s (el mismo tope que pone el servidor a la sala).
-  Cada jugador es una rama del «árbol del grupo»: crece con sus hojas. Meta común: 8 hojas por jugador.
-  Solo endpoints existentes, toda la lógica aquí:
-    /carrera (sala común, salida y tabla): dist = 1000 + puntos (así /carrera/fin, que sube a 840 a quien
-    no llegó, no pisa el puntaje), golpes = hojas. La tabla se ordena aquí por puntos, no por tiempo.
-    /muro (reflexión final, escena 07-juego-hasta-la-hoja) y /api/v1/me (nombre para la fotito).
-  Mismo mazo para todos (semilla de la sala). Quien llega tarde o abre la escena suelta juega en práctica.
-  Teclado: ← o D divide, → o H es hoja, 1/2/3 para los datos. En pantalla táctil: botones o deslizar la carta.
+  «Hasta la hoja» · juego de la sesión 2 de Claude Code PRO, sobre el motor Arena JMD (docs/ARENA_JMD.md).
+  Cada alumno es un robot con casco en la misma obra y ve a los demás moverse en vivo.
+  Las piedras son tareas del plan «Dashboard BI con IA» (19 tareas: 7 se parten, 12 son hojas). La grande sale de
+  la Cantera. Si tiene más de una cosa o más de una prueba, va a la Partidora: se parte y su primera parte cae
+  junto a la máquina; las hermanas esperan en la pila y salen cuando termina la rama (recorrido en profundidad,
+  igual que un agente con un PLAN.md recursivo). Si ya es hoja (1 cosa, 1 sesión, 1 prueba), va a la Obra.
+  Las notas son datos del proyecto: al Cerebro (CLAUDE.md · Cortex), al Grafo (Graphify) o a «No se guarda».
+  Cada ranura de piedra (pz0…pz11) es una copia del plan que avanza una tarea por versión: el contenido de la
+  versión v es la tarea (inicio + v) del recorrido, así que todos ven lo mismo sin estado propio en el servidor.
+  El «Árbol del grupo» (arriba) y las ventanas de la Obra se calculan de las versiones de las ranuras: crecen
+  con lo que la clase ya resolvió. Errar vale 0 (nunca resta), la lupa explica y la tarea sigue su camino.
+  El dron /compact solo te hace soltar lo que llevas.
+  Al final: título, reflexión al muro (07-juego-hasta-la-hoja) y la fotito. Deja ccp-02-juego en localStorage
+  ({pts, hojas, total, aciertos, decididas, mejor, rondas}) para la insignia de la escena 12.
+  ?demo=1 entra solo; ?sinred=1 fuerza la práctica local; ?fps=1 muestra los cuadros por segundo.
 -->
-<link rel="stylesheet" href="../../comun/escena.css">
-<link rel="stylesheet" href="../../comun/ccp.css">
-<style id="esc-propio">
-:root { --noche: #12112a; --noche2: #1c2a3a; --hoja: #3fcf7a; --oro: #e9bd52; --rama: #8e7dff; }
-.esc { gap: 1.4vh; }
-.jg-top { display: flex; align-items: center; gap: .6em; flex-wrap: wrap; }
-.jg-logo { margin: 0; font-size: 1.5em; font-weight: 900; letter-spacing: -.02em; display: flex; align-items: center; gap: .3em; }
-.jg-logo em { font-style: normal; background: linear-gradient(100deg, var(--ok), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.jg-pill { margin-left: auto; display: flex; gap: .4em; flex-wrap: wrap; }
-.jg-pill span { font: 800 .74em var(--mono); padding: .4em .8em; border-radius: 999px; background: var(--s1); border: 1px solid var(--line2); box-shadow: var(--card-shadow); }
-.jg-pill .reloj.poco { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
-.jg-pill .pts.sube { animation: esc-pop .4s ease-out; }
-.jg { display: grid; grid-template-columns: 1.12fr .88fr; gap: 1.6vw; align-items: start; min-height: 0; }
-.jg-izq, .jg-der { display: grid; gap: 1.2vh; min-width: 0; }
-
-/* Intro */
-.jg-reglas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
-.jg-reglas li { background: var(--s1); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: .9em; padding: .6em .75em; box-shadow: var(--card-shadow); }
-.jg-reglas b { display: block; font-size: .8em; margin: .15em 0; }
-.jg-reglas span { display: block; font-size: .62em; color: var(--muted); line-height: 1.35; }
-.jg-reglas .ic { font-size: 1.3em; line-height: 1; }
-.jg-avs { display: flex; flex-wrap: wrap; gap: .35em; margin: .2em 0 .5em; }
-.jg-av { width: 2.3em; height: 2.3em; min-width: 44px; min-height: 44px; border-radius: 50%; border: 2px solid var(--line2); background: var(--s2); font-size: 1em; cursor: pointer; display: grid; place-items: center; touch-action: manipulation; }
-.jg-av span { font-size: 1.2em; line-height: 1; }
-.jg-av[aria-checked="true"] { border-color: var(--gold); background: var(--gold-bg); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 30%, transparent); }
-.jg-av:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.jg-msg { font-size: .68em; color: var(--muted); margin: .4em 0 0; min-height: 1.3em; }
-.jg-msg b { color: var(--fg); }
-.jg-staff { margin-top: .6em; padding-top: .6em; border-top: 1px dashed var(--line2); display: flex; gap: .5em; flex-wrap: wrap; align-items: center; }
-.jg-staff .cc-et { flex-basis: 100%; margin: 0; }
-
-/* Mesa de juego (siempre de noche, en los dos temas) */
-.jg-mesa { position: relative; border-radius: 1.1em; padding: 1em 1.1em; color: #ecebf7; background: radial-gradient(120% 100% at 90% 0%, #2b2366, var(--noche) 55%, var(--noche2)); box-shadow: var(--card-shadow); overflow: hidden; }
-.jg-ruta { display: flex; flex-wrap: wrap; gap: .25em; align-items: center; font-size: .6em; color: #b7b4cc; min-height: 1.6em; }
-.jg-ruta span { padding: .15em .55em; border-radius: 999px; background: rgba(255,255,255,.07); }
-.jg-ruta span:last-child { background: rgba(142,125,255,.3); color: #fff; font-weight: 700; }
-.jg-ruta i { font-style: normal; opacity: .6; }
-.jg-carta { margin: .6em 0 .7em; border-radius: 1em; padding: .9em 1.1em; background: #fffdf7; color: #16151d; border-left: 8px solid var(--rama); box-shadow: 0 14px 30px -14px rgba(0,0,0,.7); min-height: 6.4em; display: grid; align-content: center; gap: .3em; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-.jg-carta.dato { border-left-color: var(--oro); background: #fff8e6; }
-.jg-carta .tipo { font: 800 .56em var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #5a49d6; }
-.jg-carta.dato .tipo { color: #7d5700; }
-.jg-carta h2 { margin: 0; font-size: 1.32em; line-height: 1.15; letter-spacing: -.01em; }
-.jg-carta p { margin: 0; font-size: .74em; color: #4a4756; }
-.jg-carta.entra { animation: esc-pop .38s cubic-bezier(.2,.8,.3,1.2) both; }
-.jg-carta.va-izq { animation: jg-izq .45s ease-in both; }
-.jg-carta.va-der { animation: jg-der .45s ease-in both; }
-.jg-carta.tiembla { animation: jg-tiembla .45s ease-in-out; }
-@keyframes jg-izq { to { transform: translateX(-40%) rotate(-8deg); opacity: 0; } }
-@keyframes jg-der { to { transform: translateX(40%) translateY(-10%) rotate(8deg); opacity: 0; } }
-@keyframes jg-tiembla { 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
-.jg-ops { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
-.jg-ops.tres { grid-template-columns: repeat(3, 1fr); }
-.jg-op { font: 800 .86em/1.15 system-ui, -apple-system, sans-serif; color: #fff; border: 0; border-radius: .9em; padding: .7em .6em; min-height: 64px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .45em; touch-action: manipulation; box-shadow: inset 0 -4px 0 rgba(0,0,0,.22); }
-.jg-op small { display: block; font-size: .66em; font-weight: 700; opacity: .85; }
-.jg-op .ic { font-size: 1.3em; }
-.jg-op kbd { font: 700 .62em var(--mono); background: rgba(255,255,255,.2); border-radius: .3em; padding: .1em .35em; }
-.jg-op:active { transform: translateY(2px); box-shadow: inset 0 -2px 0 rgba(0,0,0,.22); }
-.jg-op:focus-visible { outline: 3px solid var(--oro); outline-offset: 2px; }
-.jg-op:disabled { opacity: .55; cursor: default; }
-.jg-op.dividir { background: #6a59e8; } .jg-op.hoja { background: #1f9d55; }
-.jg-op.cerebro { background: #b07d10; } .jg-op.grafo { background: #b0306f; } .jg-op.nada { background: #4b5563; }
-.jg-fb { margin: .6em 0 0; font-size: .74em; min-height: 2.6em; line-height: 1.35; color: #d9d4ff; }
-.jg-fb b { color: #fff; }
-.jg-fb.bien b { color: var(--hoja); } .jg-fb.mal b { color: var(--oro); }
-.jg-racha { position: absolute; right: 1em; top: .8em; font: 800 .66em var(--mono); color: var(--oro); }
-.jg-cuenta { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(18,17,42,.86); font-size: 4.4em; font-weight: 900; color: #fff; }
-.jg-cuenta span { animation: esc-pop .5s ease-out both; }
-
-/* Árbol propio y árbol del grupo (SVG) */
-.jg-mio svg, .jg-grupo svg { width: 100%; height: auto; display: block; }
-.jg-mio { padding: .5em .8em; }
-.jg-mio svg { max-height: 26vh; }
-.t-ar { fill: none; stroke: var(--line2); stroke-width: 3; stroke-linecap: round; }
-.t-nd { fill: var(--s1); stroke: var(--line2); stroke-width: 3; }
-.t-nd.div { fill: var(--accent); stroke: var(--accent); }
-.t-nd.hoja { fill: var(--ok); stroke: var(--ok); }
-.t-nd.ahora { stroke: var(--gold); stroke-width: 5; animation: esc-pulso 1.2s ease-in-out infinite; }
-.t-g.entra { animation: esc-pop .4s ease-out both; transform-box: fill-box; transform-origin: center; }
-.t-tx { font: 700 11px system-ui, sans-serif; fill: var(--muted); text-anchor: middle; }
-.jg-grupo { padding: .7em .9em; }
-.jg-grupo h2, .jg-mio h2 { margin: 0 0 .2em; font-size: .62em; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); display: flex; justify-content: space-between; gap: .5em; }
-.jg-grupo h2 span, .jg-mio h2 span { color: var(--muted); letter-spacing: 0; text-transform: none; font-weight: 700; }
-.jg-grupo svg { max-height: 40vh; }
-.g-tronco { fill: none; stroke: #7a5a3a; stroke-width: 12; stroke-linecap: round; }
-.g-rama { fill: none; stroke: color-mix(in srgb, var(--rama) 70%, #7a5a3a); stroke-width: 4; stroke-linecap: round; transition: d .6s ease-out; }
-.g-rama.yo { stroke: var(--gold); stroke-width: 5; }
-.g-hoja { fill: var(--hoja); }
-.g-av { stroke-width: 3; }
-.g-av.yo { stroke: var(--gold); stroke-width: 5; }
-.g-em { font-size: 15px; text-anchor: middle; dominant-baseline: central; }
-.g-raiz { fill: var(--s1); stroke: var(--accent); stroke-width: 3; }
-.g-tx { font: 800 12px system-ui, sans-serif; fill: var(--fg); text-anchor: middle; }
-.g-yo { font: 800 11px system-ui, sans-serif; fill: var(--gold); text-anchor: middle; paint-order: stroke; stroke: var(--s1); stroke-width: 4px; }
-.jg-meta { display: grid; grid-template-columns: 1fr auto; gap: .2em .6em; align-items: center; font-size: .62em; font-weight: 700; margin-top: .3em; }
-.jg-meta .b { grid-column: 1 / -1; height: .7em; border-radius: .4em; background: var(--s3); overflow: hidden; }
-.jg-meta .b i { display: block; height: 100%; width: var(--w, 0%); background: linear-gradient(90deg, var(--ok), var(--gold)); transition: width .6s ease-out; }
-.jg-meta.llena .b i { animation: esc-pulso 1.4s ease-in-out infinite; }
-.jg-tabla { list-style: none; margin: .5em 0 0; padding: 0; display: grid; gap: .25em; counter-reset: pos; font-size: .66em; }
-.jg-tabla li { display: grid; grid-template-columns: 1.4em 1.6em 1fr auto auto; gap: .45em; align-items: center; padding: .25em .5em; border-radius: .55em; background: var(--s2); counter-increment: pos; }
-.jg-tabla li::before { content: counter(pos); font: 800 .95em var(--mono); color: var(--muted); }
-.jg-tabla li.yo { background: var(--gold-bg); outline: 1px solid var(--gold); }
-.jg-tabla li.sep { display: block; background: none; text-align: center; color: var(--muted); padding: 0; }
-.jg-tabla li.sep::before { content: none; }
-.jg-tabla .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
-.jg-tabla .p { font: 800 1em var(--mono); }
-.jg-tabla .h { font-size: .9em; color: var(--ok); font-weight: 800; }
-
-/* Fin */
-.jg-res { display: grid; grid-template-columns: auto 1fr; gap: .2em 1em; align-items: center; }
-.jg-res .grande { grid-row: span 2; font-size: 2.6em; line-height: 1; }
-.jg-res h2 { margin: 0; font-size: 1.25em; }
-.jg-res p { margin: 0; font-size: .74em; color: var(--muted); }
-.jg-chips { display: flex; flex-wrap: wrap; gap: .35em; margin-top: .5em; }
-.jg-repaso { list-style: none; margin: .5em 0 0; padding: 0; display: grid; gap: .25em; font-size: .64em; }
-.jg-repaso li { padding: .3em .6em; border-radius: .5em; background: var(--warn-bg); }
-.jg-repaso li b { color: var(--fg); }
-
-@media (max-width: 860px) {
-  .jg { grid-template-columns: 1fr; }
-  .jg-reglas { grid-template-columns: 1fr; }
-  .jg-reglas span { font-size: .82em; }
-  .jg-logo { font-size: 1.3em; }
-  .jg-pill { margin-left: 0; }
-  .jg-carta h2 { font-size: 1.25em; }
-  .jg-carta p, .jg-fb { font-size: .9em; }
-  .jg-ops.tres { grid-template-columns: 1fr; }
-  .jg-op { font-size: .95em; }
-  .jg-op kbd { display: none; }
-  .jg-tabla { font-size: .85em; }
-  .jg-msg, .jg-meta, .jg-repaso { font-size: .82em; }
-  .jg-mio svg { max-height: none; }
-  .jg-grupo svg { max-height: none; }
-}
-@media (prefers-reduced-motion: reduce) { .jg-carta.va-izq, .jg-carta.va-der { opacity: 0; } }
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #f2c14e; margin-bottom: 6px; }
 </style>
 </head>
 <body>
-<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-  <path class="t" pathLength="1" d="M1380 60 L1440 120 L1510 90"/>
-  <g><circle class="e" cx="1380" cy="60" r="4"/><circle class="eo" cx="1440" cy="120" r="5"/><circle class="eg" cx="1510" cy="90" r="4"/></g>
-  <g><circle class="e p" style="--p:.2s" cx="120" cy="840" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="720" cy="40" r="1.6"/></g>
-</svg>
-<div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ca">Conceptualización</span>
-    <span class="esc-num">Claude Code PRO · S2 · 07/12</span>
-  </header>
-  <main class="esc-cuerpo">
-    <div class="jg-top">
-      <h1 class="jg-logo">🌳 Hasta <em>la hoja</em></h1>
-      <div class="jg-pill" aria-live="off">
-        <span class="reloj" id="reloj">60 s</span>
-        <span class="pts" id="pts">0 pts</span>
-        <span id="nhojas">🍃 0</span>
-      </div>
-    </div>
-    <div class="jg">
-      <div class="jg-izq">
-        <!-- INTRO / SALA -->
-        <section id="v-intro">
-          <ul class="jg-reglas">
-            <li style="--c:#6a59e8"><span class="ic">✂</span><b>Dividir</b><span>Si tiene más de una cosa o más de una prueba.</span></li>
-            <li style="--c:#1f9d55"><span class="ic">🍃</span><b>Hoja</b><span>1 cosa · 1 sesión · 1 prueba. Hazla y detente.</span></li>
-            <li style="--c:#b07d10"><span class="ic">🧠 🕸️ 💨</span><b>Datos del proyecto</b><span>¿Van al cerebro, los responde el grafo o no se guardan?</span></li>
-          </ul>
-          <div class="esc-card" style="margin-top:1.2vh">
-            <span class="cc-et">Elige tu avatar y entra</span>
-            <div class="jg-avs" id="avs" role="radiogroup" aria-label="Tu avatar"></div>
-            <div class="cc-fila">
-              <button type="button" class="cc-btn" id="entrar">Entrar a la sala</button>
-              <button type="button" class="cc-btn sec" id="practicar">Practicar sola/o</button>
-            </div>
-            <p class="jg-msg" id="sala-msg" aria-live="polite">60 segundos, mismo mazo para todos. Un error no resta: suma 2 y te dice por qué.</p>
-            <div class="jg-staff" id="staff" hidden>
-              <span class="cc-et">Instructor</span>
-              <button type="button" class="cc-btn" id="iniciar">▶ Empezar ronda</button>
-              <button type="button" class="cc-btn sec" id="reiniciar">↺ Sala nueva</button>
-              <button type="button" class="cc-btn sec" id="jugar-staff">Jugar yo también</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- JUEGO -->
-        <section id="v-juego" hidden>
-          <div class="jg-mesa" id="mesa">
-            <div class="jg-ruta" id="ruta" aria-label="Dónde estás en el plan"></div>
-            <span class="jg-racha" id="racha"></span>
-            <div class="jg-carta" id="carta" aria-live="polite">
-              <span class="tipo" id="c-tipo">Tarea</span>
-              <h2 id="c-tit">—</h2>
-              <p id="c-sub"></p>
-            </div>
-            <div class="jg-ops" id="ops"></div>
-            <p class="jg-fb" id="fb">Lee la carta y decide.</p>
-            <div class="jg-cuenta" id="cuenta" hidden><span id="cuenta-n">3</span></div>
-          </div>
-          <section class="esc-card jg-mio" style="margin-top:1.2vh">
-            <h2>Tu plan, creciendo <span id="mio-tag">0 de 12 hojas</span></h2>
-            <svg id="mio" viewBox="0 0 600 316" role="img" aria-label="Tu árbol del plan"></svg>
-          </section>
-        </section>
-
-        <!-- FIN -->
-        <section id="v-fin" hidden>
-          <div class="esc-card">
-            <div class="jg-res">
-              <span class="grande" id="r-ic">🌳</span>
-              <h2 id="r-tit">—</h2>
-              <p id="r-sub"></p>
-            </div>
-            <div class="jg-chips" id="r-chips"></div>
-            <ul class="jg-repaso" id="r-repaso"></ul>
-          </div>
-          <div class="esc-card" style="margin-top:1.2vh" id="muro"></div>
-          <div class="esc-card" style="margin-top:1.2vh">
-            <span class="cc-et">La fotito de tu ronda</span>
-            <div id="foto"></div>
-          </div>
-          <div class="cc-fila" style="margin-top:1.2vh">
-            <button type="button" class="cc-btn sec" id="otra">↻ Practicar otra vez</button>
-          </div>
-        </section>
-      </div>
-
-      <div class="jg-der">
-        <section class="esc-card jg-grupo">
-          <h2>El árbol del grupo <span id="g-tag">—</span></h2>
-          <svg id="grupo" viewBox="0 0 600 420" role="img" aria-label="El árbol del grupo: una rama por jugador, crece con sus hojas"></svg>
-          <div class="jg-meta" id="meta"><span id="meta-tx">Meta del grupo</span><span id="meta-n">0 / 0</span><span class="b"><i id="meta-b"></i></span></div>
-          <ol class="jg-tabla" id="tabla" aria-label="Tabla de la ronda"></ol>
-        </section>
-      </div>
-    </div>
-  </main>
-  <footer class="esc-pie"><span>Dividir de más también cuesta: cada hoja extra es una vuelta más del agente.</span></footer>
-</div>
-<script src="../../comun/ccp.js"></script>
-<script src="../../comun/fotito.js"></script>
+<div id="juego"><div class="sin-motor"><div><b>Cargando la obra…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
+<script src="../../arena/arena-jmd.js"></script>
 <script>
 (function () {
   "use strict";
-  var $ = function (id) { return document.getElementById(id); };
-  var NS = "http://www.w3.org/2000/svg";
-  var ESCENA = "07-juego-hasta-la-hoja", DUR = 60000, META_POR_JUGADOR = 8;
+  if (!window.ArenaJMD) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
+  }
+  var REDUCIDO = false;
+  try { REDUCIDO = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+  var FUENTE = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
-  /* ---------- El plan (19 tareas: 7 se dividen, 12 son hojas) ---------- */
+  // ---------- el plan: 19 tareas (7 se parten, 12 son hojas) ----------
   var N = {
-    R:    { t: "Dashboard BI con IA", s: "datos + API + tablero + chat + URL", corto: "Dashboard", hijos: ["A", "B", "C"], por: "es el proyecto entero: cuatro sesiones de trabajo" },
-    A:    { t: "Backend de datos", s: "ingesta + modelo + API", corto: "Backend", hijos: ["A1", "A2", "A3"], por: "mezcla ingesta, modelo y API" },
-    A1:   { t: "Cargar ventas.csv a DuckDB", prueba: "1 200 filas en stg_ventas" },
-    A2:   { t: "Modelo estrella", s: "pruebas: hechos y 2 dimensiones", corto: "Modelo", hijos: ["A2a", "A2b", "A2c"], por: "hechos y dimensiones se prueban por separado" },
-    A2a:  { t: "Crear fact_ventas", prueba: "suma de montos = total del CSV" },
-    A2b:  { t: "Crear dim_fecha", prueba: "365 días de 2026, sin huecos" },
-    A2c:  { t: "Crear dim_producto", prueba: "ningún código repetido" },
-    A3:   { t: "API de 10 métricas", s: "10 métricas, 10 pruebas", corto: "API", hijos: ["A3a", "A3b", "A3c"], por: "diez métricas son diez pruebas" },
-    A3a:  { t: "GET /ventas-mes", prueba: "devuelve 12 filas" },
-    A3b:  { t: "GET /ticket-promedio", prueba: "igual al cálculo a mano" },
-    A3c:  { t: "Métricas de clientes", s: "clientes nuevos y recompra", corto: "Clientes", hijos: ["A3c1", "A3c2"], por: "son dos métricas con dos pruebas" },
-    A3c1: { t: "GET /clientes-nuevos", prueba: "un número por mes" },
-    A3c2: { t: "GET /recompra", prueba: "un valor entre 0 y 1" },
-    B:    { t: "Tablero y chat", s: "un gráfico y un chat", corto: "Tablero", hijos: ["B1", "B2"], por: "son dos pantallas con sus propias pruebas" },
-    B1:   { t: "Gráfico de ventas por mes", prueba: "12 barras en pantalla" },
-    B2:   { t: "Chat de texto a SQL", s: "pruebas: guarda + evals", corto: "Chat", hijos: ["B2a", "B2b"], por: "bloquear escrituras y responder bien son dos cosas" },
-    B2a:  { t: "Guarda: solo SELECT", prueba: "un DELETE se rechaza" },
-    B2b:  { t: "Pregunta → SQL", prueba: "18 de 20 evals correctas" },
-    C:    { t: "Publicar en una URL", prueba: "GET /salud responde 200" }
+    R:    { t: "Dashboard BI con IA", corto: "Dashboard BI", s: "datos + API + tablero + chat + URL", hijos: ["A", "B", "C"], por: "es el proyecto entero: cuatro sesiones de trabajo y decenas de pruebas" },
+    A:    { t: "Backend de datos", corto: "Backend", s: "ingesta + modelo + API", hijos: ["A1", "A2", "A3"], por: "mezcla ingesta, modelo y API: tres cosas con tres pruebas" },
+    A1:   { t: "Cargar ventas.csv a DuckDB", corto: "Cargar CSV", prueba: "1 200 filas en stg_ventas" },
+    A2:   { t: "Modelo estrella", corto: "Modelo estrella", s: "hechos y 2 dimensiones, cada una con su prueba", hijos: ["A2a", "A2b", "A2c"], por: "hechos y dimensiones se prueban por separado" },
+    A2a:  { t: "Crear fact_ventas", corto: "fact_ventas", prueba: "suma de montos = total del CSV" },
+    A2b:  { t: "Crear dim_fecha", corto: "dim_fecha", prueba: "365 días de 2026, sin huecos" },
+    A2c:  { t: "Crear dim_producto", corto: "dim_producto", prueba: "ningún código repetido" },
+    A3:   { t: "API de 10 métricas", corto: "API 10 métricas", s: "10 métricas, 10 pruebas", hijos: ["A3a", "A3b", "A3c"], por: "diez métricas son diez pruebas" },
+    A3a:  { t: "GET /ventas-mes", corto: "/ventas-mes", prueba: "devuelve 12 filas" },
+    A3b:  { t: "GET /ticket-promedio", corto: "/ticket-promedio", prueba: "igual al cálculo a mano" },
+    A3c:  { t: "Métricas de clientes", corto: "Métricas clientes", s: "clientes nuevos y recompra: 2 pruebas", hijos: ["A3c1", "A3c2"], por: "son dos métricas con dos pruebas" },
+    A3c1: { t: "GET /clientes-nuevos", corto: "/clientes-nuevos", prueba: "un número por mes" },
+    A3c2: { t: "GET /recompra", corto: "/recompra", prueba: "un valor entre 0 y 1" },
+    B:    { t: "Tablero y chat", corto: "Tablero y chat", s: "un gráfico y un chat, cada uno con su prueba", hijos: ["B1", "B2"], por: "son dos pantallas con sus propias pruebas" },
+    B1:   { t: "Gráfico de ventas por mes", corto: "Gráfico por mes", prueba: "12 barras en pantalla" },
+    B2:   { t: "Chat de texto a SQL", corto: "Chat texto→SQL", s: "una guarda y 20 evals", hijos: ["B2a", "B2b"], por: "bloquear escrituras y responder bien son dos cosas" },
+    B2a:  { t: "Guarda: solo SELECT", corto: "Guarda SELECT", prueba: "un DELETE se rechaza" },
+    B2b:  { t: "Pregunta → SQL", corto: "Pregunta→SQL", prueba: "18 de 20 evals correctas" },
+    C:    { t: "Publicar en una URL", corto: "Publicar URL", prueba: "GET /salud responde 200" },
   };
-  var OPS_DATO = [
-    { id: "cerebro", ic: "🧠", t: "Cerebro", s: "CLAUDE.md · Cortex", k: "1" },
-    { id: "grafo", ic: "🕸️", t: "Grafo", s: "Graphify", k: "2" },
-    { id: "nada", ic: "💨", t: "No se guarda", s: "se regenera", k: "3" }
-  ];
+  var RAMAS = { proy: { n: "Proyecto", c: "#c48709" }, back: { n: "Backend", c: "#6a58e8" }, front: { n: "Tablero", c: "#d2457f" }, pub: { n: "Publicar", c: "#0f8f89" } };
+  var ORDEN = [], HOJAS = [];          // recorrido en profundidad (el orden en que un agente ejecuta el plan) y las hojas
+  (function visita(id, prof, padre, rama) {
+    var n = N[id]; n.id = id; n.prof = prof; n.padre = padre; n.rama = rama || (id === "R" ? "proy" : id.charAt(0) === "A" ? "back" : id.charAt(0) === "B" ? "front" : "pub");
+    ORDEN.push(id); if (!n.hijos) HOJAS.push(id);
+    (n.hijos || []).forEach(function (h) { visita(h, prof + 1, id, h.charAt(0) === "A" ? "back" : h.charAt(0) === "B" ? "front" : "pub"); });
+  })("R", 0, null, "proy");
+  var POS = {}; ORDEN.forEach(function (id, i) { POS[id] = i; });
+  function desciende(id, de) { for (var p = N[id].padre; p; p = N[p].padre) if (p === de) return true; return false; }
+  function nombres(lista) { return lista.length > 1 ? lista.slice(0, -1).join(", ") + " y " + lista[lista.length - 1] : lista[0]; }
+
+  // ---------- datos del proyecto: ¿cerebro, grafo o no se guarda? ----------
+  var BINS = {
+    cerebro: { n: "🧠 Cerebro", sub: "CLAUDE.md · Cortex", c: "#9446c1", bien: "¡Al cerebro! +10" },
+    grafo: { n: "🕸️ Grafo", sub: "Graphify", c: "#2f6bff", bien: "¡Eso se le pregunta al grafo! +10" },
+    nada: { n: "💨 No se guarda", sub: "se vuelve a generar", c: "#64708a", bien: "¡Bien soltado! +10" },
+  };
   var DATOS = [
-    { t: "«Usamos DuckDB, no Postgres»", s: "decisión del día 1", va: "cerebro", por: "Decisión que dura → cerebro. Nadie la vuelve a discutir." },
-    { t: "Las pruebas se corren con make test", s: "comando fijo del proyecto", va: "cerebro", por: "Comando fijo → una línea en CLAUDE.md." },
-    { t: "¿Quién llama a calcular_margen()?", s: "pregunta sobre el código", va: "grafo", por: "graphify query lo responde sin abrir archivos." },
-    { t: "Log de pytest: 900 líneas", s: "salida de la última corrida", va: "nada", por: "Un log se vuelve a generar: no ocupa memoria." },
-    { t: "¿Qué se rompe si cambio fact_ventas?", s: "pregunta sobre el código", va: "grafo", por: "graphify affected \"fact_ventas\" lo lista." },
-    { t: "La conversación de ayer, entera", s: "300 mensajes", va: "nada", por: "Se resume en HANDOFF.md; entera no se guarda." }
+    { t: "«Usamos DuckDB, no Postgres»", corto: "DuckDB, no Postgres", s: "decisión del día 1", va: "cerebro", por: "Decisión que dura → cerebro. Nadie la vuelve a discutir en la próxima sesión." },
+    { t: "Las pruebas se corren con make test", corto: "make test", s: "comando fijo", va: "cerebro", por: "Comando fijo → una línea en CLAUDE.md, que se lee siempre." },
+    { t: "¿Quién llama a calcular_margen()?", corto: "¿Quién llama…?", s: "pregunta sobre el código", va: "grafo", por: "graphify query lo responde sin abrir archivos: no hay nada que escribir a mano." },
+    { t: "Log de pytest: 900 líneas", corto: "Log de 900 líneas", s: "salida de la última corrida", va: "nada", por: "Un log se vuelve a generar con make test: no ocupa memoria." },
+    { t: "¿Qué se rompe si cambio fact_ventas?", corto: "¿Qué se rompe?", s: "pregunta sobre el código", va: "grafo", por: "graphify affected \"fact_ventas\" lista quién depende de esa tabla." },
+    { t: "La conversación de ayer, entera", corto: "Chat de ayer", s: "300 mensajes", va: "nada", por: "Se resume en HANDOFF.md (menos de 2 000 tokens); entera no se guarda." },
+    { t: "Regla: el chat solo hace SELECT", corto: "Solo SELECT", s: "regla del proyecto", va: "cerebro", por: "Regla fija → CLAUDE.md. Se lee al empezar cada sesión." },
+    { t: "¿Dónde se calcula el ticket promedio?", corto: "¿Dónde se calcula?", s: "pregunta sobre el código", va: "grafo", por: "graphify query \"ticket promedio\" te lleva al archivo sin leer el repo." },
+    { t: "El diff completo del último commit", corto: "Diff de 400 líneas", s: "400 líneas", va: "nada", por: "Git ya lo guarda: git show lo trae cuando haga falta." },
   ];
 
-  /* ---------- Azar con semilla: el mismo mazo para toda la sala ---------- */
-  function rng(seed) {
-    var a = (seed >>> 0) || 1;
-    return function () { a = (a + 0x6D2B79F5) | 0; var t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  // ---------- el mapa: 1800 × 1100 ----------
+  var ANCHO = 1800, ALTO = 1100;
+  var CANTERA = { x: 60, y: 80, w: 400, h: 540 };          // aquí salen los proyectos enteros
+  var ANILLO = { x: 600, y: 352, w: 640, h: 448 };         // aquí caen las partes que suelta la Partidora
+  var CAMPO = { x: 60, y: 60, w: 1360, h: 760 };
+  var ZDATOS = [{ x: 60, y: 660, w: 470, h: 400 }, { x: 1320, y: 660, w: 440, h: 400 }, { x: 1440, y: 60, w: 320, h: 230 }];
+  var Z = {
+    arbol: { id: "arbol", x: 560, y: 22, w: 720, h: 284, nombre: "🌳 Árbol del grupo", color: "#2b8a55", entrega: false },
+    partidora: { id: "partidora", x: 790, y: 455, w: 230, h: 185, nombre: "✂️ Partidora", color: "#5a49d6" },
+    obra: { id: "obra", x: 1480, y: 330, w: 260, h: 290, nombre: "🍃 Obra · hojas", color: "#2fa35f" },
+    cerebro: { id: "cerebro", x: 560, y: 875, w: 210, h: 175, nombre: BINS.cerebro.n, color: BINS.cerebro.c },
+    grafo: { id: "grafo", x: 815, y: 875, w: 210, h: 175, nombre: BINS.grafo.n, color: BINS.grafo.c },
+    nada: { id: "nada", x: 1070, y: 875, w: 210, h: 175, nombre: BINS.nada.n, color: BINS.nada.c },
+  };
+  var PIEDRAS = 12, NOTAS = 6;
+  var INICIOS = ["R", "A", "B", "A2", "A3", "C", "R", "B2", "A3c", "A1", "B1", "R", "A", "B"].map(function (k) { return POS[k]; });
+
+  // ---------- utilidades de dibujo ----------
+  function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function tono(hex, k) { // k > 0 aclara, k < 0 oscurece
+    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, o = k > 0 ? 255 : 0, a = Math.abs(k);
+    return "rgb(" + Math.round(r + (o - r) * a) + "," + Math.round(g + (o - g) * a) + "," + Math.round(b + (o - b) * a) + ")";
   }
-  function barajar(arr, r) { arr = arr.slice(); for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)), t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; }
+  function rgba(hex, a) { var n = parseInt(hex.slice(1), 16); return "rgba(" + (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")"; }
 
-  // Recorre el plan en profundidad (hermanos en orden barajado) y arma la pila de cartas y la forma del árbol.
-  function armar(seed) {
-    var r = rng(seed), orden = [], nodos = {}, hojaI = 0;
-    (function visita(id, prof, padre) {
-      var n = N[id], o = { id: id, prof: prof, padre: padre, hijos: n.hijos ? barajar(n.hijos, r) : null };
-      nodos[id] = o; orden.push(id);
-      if (o.hijos) { o.hijos.forEach(function (h) { visita(h, prof + 1, id); }); o.x = (nodos[o.hijos[0]].x + nodos[o.hijos[o.hijos.length - 1]].x) / 2; }
-      else o.x = hojaI++;
-    })("R", 0, null);
-    Object.keys(nodos).forEach(function (k) { var o = nodos[k]; o.px = 36 + o.x * (528 / (hojaI - 1)); o.py = 30 + o.prof * 66; });
-    var di = barajar(DATOS.map(function (d, i) { return i; }), r), cartas = [], k = 0;
-    orden.forEach(function (id, i) { cartas.push({ tipo: "tarea", id: id }); if (i % 3 === 2 && k < di.length) cartas.push({ tipo: "dato", i: di[k++] }); });
-    while (k < di.length) cartas.push({ tipo: "dato", i: di[k++] });
-    return { nodos: nodos, cartas: cartas, hojas: hojaI };
+  // ---------- lo que el grupo ya resolvió (sale de las versiones de las ranuras: igual en todas las pantallas) ----------
+  var cuenta = { t: -1, n: {}, hojas: 0, partidas: 0, planes: 0 };
+  function inicioDe(i) { var s = juego ? juego.ronda().semilla >>> 0 : 0; return INICIOS[(i + s % INICIOS.length) % INICIOS.length]; }
+  function contar(t) {
+    if (cuenta.t === t || !juego) return cuenta;
+    var n = {}, hojas = 0, partidas = 0, planes = 0;
+    for (var i = 0; i < PIEDRAS; i++) {
+      var v = juego.objeto("pz" + i).v, o = inicioDe(i);
+      for (var k = 0; k < v; k++) { var id = ORDEN[(o + k) % ORDEN.length]; n[id] = (n[id] || 0) + 1; if (N[id].hijos) partidas++; else hojas++; if (id === "C" && k >= ORDEN.length - 1) planes++; }
+    }
+    cuenta = { t: t, n: n, hojas: hojas, partidas: partidas, planes: planes };
+    return cuenta;
+  }
+  function llevo() { // "tarea", "dato" o ""
+    if (!juego) return "";
+    var c = juego.yo().carga; if (!c) return "";
+    return juego.objeto(c).tipo || "";
   }
 
-  /* ---------- Estado ---------- */
-  var S = { modo: "intro", staff: false, sala: null, sinServidor: false, offset: 0, yo: "", unido: false, avatar: CC.leer("avatar", "") || "", jugadaSalida: 0, nombre: "", aviso: "" };
-  var P = null; // partida en curso
-  if (!CC.AVATARES.some(function (a) { return a.id === S.avatar; })) S.avatar = CC.AVATARES[Math.floor(Math.random() * CC.AVATARES.length)].id;
-  CC.yo().then(function (me) { if (me && me.name) S.nombre = me.name; });
-
-  function ahora() { return Date.now() + S.offset; }
-  function ver(modo) {
-    S.modo = modo;
-    $("v-intro").hidden = modo !== "intro";
-    $("v-juego").hidden = !(modo === "juego" || modo === "cuenta");
-    $("v-fin").hidden = modo !== "fin";
-  }
-
-  /* ---------- Avatares ---------- */
-  function pintarAvatares() {
-    var cont = $("avs"); cont.textContent = "";
-    CC.AVATARES.forEach(function (a) {
-      var b = CC.el("button", "jg-av"); b.type = "button"; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", a.id === S.avatar ? "true" : "false");
-      b.setAttribute("aria-label", a.id); b.appendChild(CC.el("span", "", a.e));
-      b.addEventListener("click", function () {
-        S.avatar = a.id; CC.guardar("avatar", a.id); pintarAvatares();
-        if (S.unido && S.sala && S.sala.estado === "lobby") unir(); // cambia el avatar en la sala
-      });
-      cont.appendChild(b);
+  // ---------- arte de las zonas ----------
+  function pintarArbol(g, z, t) {
+    var c = contar(t);
+    g.save();
+    g.fillStyle = "rgba(255,255,255,.78)"; g.strokeStyle = "rgba(43,138,85,.55)"; g.lineWidth = 3; rr(g, z.x, z.y, z.w, z.h, 22); g.fill(); g.stroke();
+    // posiciones: hojas repartidas a lo ancho, cada padre al centro de sus hijos
+    if (!pintarArbol.p) {
+      var p = {}, paso = (z.w - 90) / (HOJAS.length - 1);
+      HOJAS.forEach(function (id, i) { p[id] = { x: z.x + 45 + i * paso }; });
+      ORDEN.slice().reverse().forEach(function (id) { var n = N[id]; if (n.hijos) p[id] = { x: (p[n.hijos[0]].x + p[n.hijos[n.hijos.length - 1]].x) / 2 }; });
+      ORDEN.forEach(function (id) { p[id].y = z.y + 36 + N[id].prof * 52; });
+      pintarArbol.p = p;
+    }
+    var P = pintarArbol.p;
+    // ramas
+    ORDEN.forEach(function (id) {
+      var n = N[id]; if (!n.padre) return;
+      var a = P[n.padre], b = P[id], vivo = !!c.n[n.padre];
+      g.beginPath(); g.moveTo(a.x, a.y); g.bezierCurveTo(a.x, a.y + 30, b.x, b.y - 30, b.x, b.y);
+      g.setLineDash(vivo ? [] : [6, 7]); g.strokeStyle = vivo ? "#7a5634" : "rgba(122,108,240,.35)"; g.lineWidth = vivo ? 5 - N[id].prof : 2; g.stroke();
     });
-  }
-  pintarAvatares();
-
-  function msg(html) { $("sala-msg").innerHTML = html; }
-
-  /* ---------- Red: la sala del LIVE (/carrera) ---------- */
-  var pidiendo = false;
-  function refrescar() {
-    if (pidiendo) return; pidiendo = true;
-    CC.pedir("/carrera").then(function (r) {
-      pidiendo = false;
-      if (!r.ok || !r.datos || !Array.isArray(r.datos.corredores)) {
-        S.sinServidor = true; S.sala = null;
-        if (S.modo === "intro") msg("Escena abierta fuera de la clase: juega en <b>práctica</b>. El árbol del grupo aparece en vivo.");
-        $("entrar").disabled = true; pintarGrupo(); return;
+    g.setLineDash([]);
+    // nodos
+    g.textAlign = "center"; g.textBaseline = "middle";
+    ORDEN.forEach(function (id) {
+      var n = N[id], q = P[id], k = c.n[id] || 0, col = RAMAS[n.rama].c;
+      if (n.hijos) {
+        g.beginPath(); g.arc(q.x, q.y, n.prof ? 12 : 16, 0, 7);
+        g.fillStyle = k ? col : "#ffffff"; g.fill(); g.strokeStyle = k ? tono(col, -.35) : "rgba(122,108,240,.5)"; g.lineWidth = 2.5; g.stroke();
+        if (k) { g.fillStyle = "#fff"; g.font = "800 " + (n.prof ? 12 : 15) + "px " + FUENTE; g.fillText("✂", q.x, q.y + 1); }
+      } else {
+        g.save(); g.translate(q.x, q.y); g.rotate(-.5);
+        var crece = k ? (REDUCIDO ? 1 : 1 + Math.sin(t * 2 + q.x) * .04) : 1;
+        g.scale(crece, crece);
+        g.beginPath(); g.ellipse(0, 0, 9, 15, 0, 0, 7);
+        g.fillStyle = k ? "#2fa35f" : "rgba(255,255,255,.9)"; g.fill(); g.strokeStyle = k ? "#1d6b3e" : "rgba(47,163,95,.5)"; g.lineWidth = 2; g.stroke();
+        g.beginPath(); g.moveTo(0, -12); g.lineTo(0, 12); g.strokeStyle = k ? "rgba(255,255,255,.6)" : "rgba(47,163,95,.35)"; g.lineWidth = 1.4; g.stroke();
+        g.restore();
+        if (k > 1) { g.font = "800 11px " + FUENTE; g.fillStyle = "#1d6b3e"; g.fillText("×" + k, q.x, q.y + 25); }
       }
-      var d = r.datos; S.sinServidor = false; S.sala = d; S.staff = !!d.staff; S.yo = d.yo || S.yo;
-      if (d.ahora_ms) S.offset = d.ahora_ms - Date.now();
-      var mio = d.corredores.filter(function (c) { return c.id === S.yo; })[0];
-      S.unido = !!mio;
-      if (mio && mio.nombre) S.nombre = mio.nombre;
-      $("staff").hidden = !S.staff;
-      $("entrar").disabled = false;
-      // Arranca la ronda de la sala si estoy anotado y aún no la jugué.
-      if (mio && (d.estado === "cuenta" || d.estado === "corre") && d.salida_ms !== S.jugadaSalida && !(P && P.vivo && !P.fin)) {
-        if (ahora() - d.salida_ms < DUR - 3000) empezar(true, d.seed, d.salida_ms);
+      if (n.prof <= 1) {
+        g.font = "800 12px " + FUENTE; g.fillStyle = "#2a2450";
+        var lado = n.prof === 0 ? 0 : (q.x < z.x + z.w / 2 ? -1 : 1), tx = n.prof === 0 ? q.x + 28 : q.x + lado * 20;
+        g.textAlign = n.prof === 0 ? "left" : lado < 0 ? "right" : "left"; g.fillText(n.corto, tx, q.y - (n.prof ? 14 : 0)); g.textAlign = "center";
       }
-      if (P && P.vivo && !P.fin && d.estado === "lobby") { P.fin = true; P = null; ver("intro"); msg("El instructor abrió una <b>sala nueva</b>. Entra otra vez."); }
-      if (P && P.vivo && !P.fin && d.estado === "fin") terminar("La ronda terminó para toda la sala.");
-      // Tras «Sala nueva», quien ya había entrado vuelve solo con su avatar.
-      if (!mio && d.estado === "lobby" && CC.leer("unido", false) && !S.staff && !uniendo) unir();
-      if (S.modo === "intro") pintarSala(d, mio);
-      pintarGrupo();
     });
+    g.font = "800 13px " + FUENTE; g.textAlign = "left"; g.fillStyle = "#2b8a55";
+    g.fillText(c.hojas + " hojas · " + c.partidas + " partidas" + (c.planes ? " · " + c.planes + (c.planes > 1 ? " planes cerrados" : " plan cerrado") : ""), z.x + 18, z.y + z.h - 16);
+    g.restore();
   }
-  function pintarSala(d, mio) {
-    var n = d.corredores.length;
-    if (d.estado === "lobby") {
-      $("entrar").textContent = mio ? "✓ Estás en la sala" : "Entrar a la sala";
-      msg(mio ? "Listo, <b>" + CC.avatar(S.avatar).e + "</b> en la sala con " + (n - 1) + (n - 1 === 1 ? " persona más" : " personas más") + ". Espera la salida del instructor."
-              : n + (n === 1 ? " persona espera" : " personas esperan") + " en la sala. Elige avatar y entra.");
-    } else if (S.staff && !mio) {
-      msg(d.estado === "fin" ? "Ronda cerrada. «▶ Empezar ronda» para otra, con los mismos jugadores." : "Ronda en curso: el árbol del grupo crece a la derecha.");
-    } else if (d.estado === "cuenta" || d.estado === "corre") {
-      if (!mio) msg("La ronda ya salió. <b>Practica</b> mientras: entras en la siguiente.");
-    } else if (d.estado === "fin") {
-      msg(mio ? "Ronda cerrada. Espera la siguiente o practica." : "Ronda cerrada. Entra a la sala para la siguiente.");
-    }
-  }
-  var uniendo = false;
-  function unir() {
-    if (uniendo) return; uniendo = true;
-    CC.pedir("/carrera/unir", { avatar: S.avatar }).then(function (r) {
-      uniendo = false;
-      if (r.ok) { CC.guardar("unido", true); S.unido = true; refrescar(); return; }
-      if (r.status === 409) msg("La ronda ya salió. <b>Practica</b> mientras: entras en la siguiente.");
-      else if (!r.status) msg("Sin conexión con la clase: juega en <b>práctica</b>.");
-      else msg("No pude entrar a la sala (" + r.status + "). Prueba otra vez.");
+  function pintarPartidora(g, z, t, resalta) {
+    var pulso = resalta && !REDUCIDO ? (Math.sin(t * 5) + 1) / 2 : 0, cx = z.x + z.w / 2, cy = z.y + z.h / 2 + 10;
+    g.save();
+    var luz = g.createRadialGradient(cx, cy, 10, cx, cy, z.w * .85);
+    luz.addColorStop(0, "rgba(106,88,232," + (.18 + pulso * .22) + ")"); luz.addColorStop(1, "rgba(106,88,232,0)");
+    g.fillStyle = luz; g.fillRect(z.x - 90, z.y - 90, z.w + 180, z.h + 180);
+    // tolva
+    g.fillStyle = "#3b3170"; g.strokeStyle = "#1e1842"; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(z.x + 30, z.y + 6); g.lineTo(z.x + z.w - 30, z.y + 6); g.lineTo(cx + 34, z.y + 52); g.lineTo(cx - 34, z.y + 52); g.closePath(); g.fill(); g.stroke();
+    // cuerpo
+    g.fillStyle = "#2b2350"; g.strokeStyle = resalta ? "#f2c14e" : "#7b6cf0"; g.lineWidth = resalta ? 6 : 4;
+    rr(g, z.x + 10, z.y + 46, z.w - 20, z.h - 56, 18); g.fill(); g.stroke();
+    // dos sierras que giran al acercarte con algo
+    [-48, 48].forEach(function (dx, j) {
+      g.save(); g.translate(cx + dx, cy + 8); g.rotate(REDUCIDO ? 0 : t * (resalta ? 4 : .8) * (j ? -1 : 1));
+      g.fillStyle = "#c9ced6"; g.beginPath();
+      for (var k = 0; k < 16; k++) { var a = k / 16 * Math.PI * 2, r = k % 2 ? 30 : 38; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+      g.closePath(); g.fill(); g.strokeStyle = "#5b6270"; g.lineWidth = 2; g.stroke();
+      g.fillStyle = "#f2c14e"; g.beginPath(); g.arc(0, 0, 9, 0, 7); g.fill();
+      g.restore();
     });
+    g.font = "30px " + FUENTE; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("✂️", cx, cy + 8);
+    // marca de salida: las partes caen alrededor
+    g.strokeStyle = "rgba(90,73,214,.28)"; g.lineWidth = 3; g.setLineDash([10, 12]); g.lineDashOffset = REDUCIDO ? 0 : -t * 12;
+    g.beginPath(); g.ellipse(cx, cy, z.w * .95, z.h * 1.05, 0, 0, 7); g.stroke(); g.setLineDash([]);
+    g.restore();
   }
-  $("entrar").addEventListener("click", unir);
-  $("jugar-staff").addEventListener("click", unir);
-  $("iniciar").addEventListener("click", function () { CC.pedir("/carrera/iniciar", {}).then(function (r) { if (!r.ok) msg("Solo el instructor puede dar la salida."); refrescar(); }); });
-  $("reiniciar").addEventListener("click", function () { CC.pedir("/carrera/reiniciar", {}).then(function () { refrescar(); }); });
-  $("practicar").addEventListener("click", function () { empezar(false, (Math.random() * 1e9) | 0, Date.now() + 3200); });
-  $("otra").addEventListener("click", function () { empezar(false, (Math.random() * 1e9) | 0, Date.now() + 3200); });
-
-  /* ---------- Partida ---------- */
-  function empezar(vivo, seed, salida) {
-    if (vivo) S.jugadaSalida = salida;
-    P = { vivo: vivo, salida: salida, arbol: armar(seed), i: 0, pts: 0, hojas: 0, aciertos: 0, decididas: 0, racha: 0, mejorRacha: 0,
-          vistos: { R: true }, hechos: {}, errores: [], bloqueado: true, fin: false, enviado: 0, pendiente: false, local: !vivo };
-    $("mio").textContent = ""; P.nodosSvg = {}; $("pts").hidden = false; $("nhojas").hidden = false;
-    pintarMio(); pintarCarta(); pintarPuntos();
-    ver("cuenta"); $("cuenta").hidden = false;
-  }
-  function restante() { if (!P) return DUR; var t = (P.local ? Date.now() : ahora()) - P.salida; return DUR - t; }
-  function tick() {
-    if (!P || P.fin) { relojSala(); return; }
-    var falta = restante();
-    if (falta > DUR) { $("cuenta").hidden = false; $("cuenta-n").textContent = Math.ceil((falta - DUR) / 1000); return; }
-    if (S.modo === "cuenta") { ver("juego"); $("cuenta").hidden = true; P.bloqueado = false; pintarCarta(true); }
-    var s = Math.max(0, Math.ceil(falta / 1000));
-    $("reloj").textContent = s + " s"; $("reloj").classList.toggle("poco", s <= 10);
-    if (falta <= 0) terminar("¡Tiempo!");
-  }
-  // Sin partida propia (instructor mirando, o quien llegó tarde): el reloj muestra el de la sala.
-  function relojSala() {
-    var d = S.sala, sp = !P;
-    $("pts").hidden = sp; $("nhojas").hidden = sp;
-    if (!d || !(d.estado === "cuenta" || d.estado === "corre")) { if (sp) { $("reloj").textContent = d && d.estado === "fin" ? "ronda cerrada" : "60 s"; $("reloj").classList.remove("poco"); } return; }
-    if (P) return;
-    var falta = DUR - (ahora() - d.salida_ms), s = Math.max(0, Math.ceil(Math.min(falta, DUR) / 1000));
-    $("reloj").textContent = falta > DUR ? "sale en " + Math.ceil((falta - DUR) / 1000) : "sala: " + s + " s";
-    $("reloj").classList.toggle("poco", s <= 10);
-  }
-  setInterval(tick, 200);
-
-  function cartaActual() { return P.arbol.cartas[P.i]; }
-  function ruta(id) { var r = [], o = P.arbol.nodos[id]; while (o) { r.unshift(N[o.id].corto || N[o.id].t); o = o.padre ? P.arbol.nodos[o.padre] : null; } return r; }
-  function pintarCarta(entra) {
-    var c = cartaActual(), carta = $("carta"), ops = $("ops");
-    carta.className = "jg-carta" + (entra ? " entra" : "");
-    ops.textContent = "";
-    if (!c) return;
-    var rt = $("ruta"); rt.textContent = "";
-    if (c.tipo === "tarea") {
-      var n = N[c.id], o = P.arbol.nodos[c.id];
-      ruta(c.id).forEach(function (t, k) { if (k) rt.appendChild(CC.el("i", "", "›")); rt.appendChild(CC.el("span", "", t)); });
-      $("c-tipo").textContent = "Tarea · nivel " + o.prof;
-      $("c-tit").textContent = n.t;
-      $("c-sub").textContent = n.prueba ? "🧪 prueba: " + n.prueba : n.s;
-      ops.className = "jg-ops";
-      boton("dividir", "✂", "Dividir", "←"); boton("hoja", "🍃", "Hoja", "→");
-    } else {
-      var d = DATOS[c.i]; carta.classList.add("dato");
-      rt.appendChild(CC.el("span", "", "Dato del proyecto"));
-      $("c-tipo").textContent = "¿Dónde vive?";
-      $("c-tit").textContent = d.t; $("c-sub").textContent = d.s;
-      ops.className = "jg-ops tres";
-      OPS_DATO.forEach(function (o) { boton(o.id, o.ic, o.t, o.k, o.s); });
+  function pintarObra(g, z, t, resalta) {
+    var c = contar(t), pulso = resalta && !REDUCIDO ? (Math.sin(t * 5) + 1) / 2 : 0;
+    g.save();
+    var luz = g.createRadialGradient(z.x + z.w / 2, z.y + z.h / 2, 10, z.x + z.w / 2, z.y + z.h / 2, z.w * .85);
+    luz.addColorStop(0, "rgba(47,163,95," + (.16 + pulso * .22) + ")"); luz.addColorStop(1, "rgba(47,163,95,0)");
+    g.fillStyle = luz; g.fillRect(z.x - 80, z.y - 80, z.w + 160, z.h + 160);
+    g.fillStyle = "#f3efe2"; g.strokeStyle = resalta ? "#f2c14e" : "#2fa35f"; g.lineWidth = resalta ? 6 : 4;
+    rr(g, z.x, z.y, z.w, z.h, 20); g.fill(); g.stroke();
+    // edificio: una ventana encendida por cada hoja construida por el grupo
+    var bx = z.x + 34, by = z.y + 44, bw = z.w - 68, bh = z.h - 70, cols = 4, filas = 6, n = c.hojas % (cols * filas), pisos = Math.floor(c.hojas / (cols * filas));
+    g.fillStyle = "#c9b48a"; g.strokeStyle = "#7a6440"; g.lineWidth = 2; g.fillRect(bx, by, bw, bh); g.strokeRect(bx, by, bw, bh);
+    // andamio
+    g.strokeStyle = "#a07a3a"; g.lineWidth = 3;
+    [bx - 14, bx + bw + 14].forEach(function (x) { g.beginPath(); g.moveTo(x, by - 10); g.lineTo(x, by + bh); g.stroke(); });
+    for (var y = by + 20; y < by + bh; y += 48) { g.beginPath(); g.moveTo(bx - 14, y); g.lineTo(bx + bw + 14, y); g.stroke(); }
+    var ww = (bw - 14) / cols, wh = (bh - 14) / filas;
+    for (var f = 0; f < filas; f++) for (var k = 0; k < cols; k++) {
+      var idx = (filas - 1 - f) * cols + k, lit = idx < n || (pisos > 0 && n === 0);
+      g.fillStyle = lit ? "#7de3a0" : "#5a4a30"; g.fillRect(bx + 7 + k * ww + 4, by + 7 + f * wh + 4, ww - 8, wh - 8);
+      if (lit) { g.fillStyle = "#2fa35f"; g.beginPath(); g.ellipse(bx + 7 + k * ww + ww / 2, by + 7 + f * wh + wh / 2, 4, 7, -.5, 0, 7); g.fill(); }
     }
-    if (P.bloqueado) Array.prototype.forEach.call(ops.querySelectorAll("button"), function (b) { b.disabled = true; });
+    g.font = "800 14px " + FUENTE; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#1d6b3e";
+    g.fillText(c.hojas + (c.hojas === 1 ? " hoja construida" : " hojas construidas"), z.x + z.w / 2, z.y + z.h - 14);
+    g.restore();
   }
-  function boton(id, ic, t, k, sub) {
-    var b = CC.el("button", "jg-op " + id); b.type = "button"; b.setAttribute("data-op", id);
-    b.appendChild(CC.el("span", "ic", ic));
-    var tx = CC.el("span", "", t); if (sub) tx.appendChild(CC.el("small", "", sub)); b.appendChild(tx);
-    b.appendChild(CC.el("kbd", "", k));
-    b.addEventListener("click", function () { responder(id); });
-    $("ops").appendChild(b);
-  }
-
-  function sumar(n) { P.pts += n; var e = $("pts"); e.classList.remove("sube"); void e.offsetWidth; e.classList.add("sube"); pintarPuntos(); }
-  function pintarPuntos() {
-    $("pts").textContent = (P ? P.pts : 0) + " pts";
-    $("nhojas").textContent = "🍃 " + (P ? P.hojas : 0);
-    $("racha").textContent = P && P.racha >= 3 ? "🔥 racha ×" + P.racha : "";
-    if (P) $("mio-tag").textContent = P.hojas + " de " + P.arbol.hojas + " hojas";
-  }
-  function fb(cls, html) { var e = $("fb"); e.className = "jg-fb " + cls; e.innerHTML = html; }
-  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-
-  function responder(op) {
-    if (!P || P.bloqueado || P.fin || S.modo !== "juego") return;
-    var c = cartaActual(); if (!c) return;
-    var correcta, bien;
-    P.decididas++;
-    if (c.tipo === "tarea") {
-      var n = N[c.id], o = P.arbol.nodos[c.id];
-      correcta = n.hijos ? "dividir" : "hoja"; bien = op === correcta;
-      P.hechos[c.id] = true;
-      if (o.hijos) o.hijos.forEach(function (h) { P.vistos[h] = true; }); else P.hojas++;
-      if (bien) fb("bien", n.hijos ? "<b>✂ Bien:</b> " + esc(n.por) + ". Se divide en " + o.hijos.length + "." : "<b>🍃 Hoja.</b> Parada: " + esc(n.prueba) + ".");
-      else { fb("mal", n.hijos ? "<b>Aún no es hoja:</b> " + esc(n.por) + ". La divido por ti." : "<b>Ya es hoja:</b> una cosa con una prueba. Dividirla más es gastar vueltas."); P.errores.push(n.t); }
-    } else {
-      var d = DATOS[c.i]; correcta = d.va; bien = op === correcta;
-      var nom = OPS_DATO.filter(function (x) { return x.id === correcta; })[0];
-      fb(bien ? "bien" : "mal", (bien ? "<b>" + nom.ic + " Bien.</b> " : "<b>Va a " + nom.ic + " " + nom.t + ".</b> ") + esc(d.por));
-      if (!bien) P.errores.push(d.t);
-    }
-    if (bien) { P.aciertos++; P.racha++; P.mejorRacha = Math.max(P.mejorRacha, P.racha); sumar(10 + (P.racha >= 3 ? 5 : 0)); }
-    else { P.racha = 0; sumar(2); }
-    pintarMio(); enviar(false);
-    P.bloqueado = true;
-    Array.prototype.forEach.call($("ops").querySelectorAll("button"), function (b) { b.disabled = true; if (b.getAttribute("data-op") === correcta) b.style.outline = "3px solid #fff"; });
-    var carta = $("carta");
-    if (bien) carta.classList.add(op === "dividir" ? "va-izq" : "va-der"); else carta.classList.add("tiembla");
-    setTimeout(siguiente, bien ? 620 : 1700);
-  }
-  function siguiente() {
-    if (!P || P.fin) return;
-    P.i++; P.bloqueado = false;
-    if (P.i >= P.arbol.cartas.length) {
-      var extra = Math.max(0, Math.ceil(restante() / 1000)) * 2;
-      if (extra) sumar(extra);
-      return terminar("¡Plan completo!" + (extra ? " +" + extra + " por el tiempo que sobró." : ""));
-    }
-    pintarCarta(true); pintarMio();
-  }
-
-  // Avance a la sala: dist = 1000 + puntos, golpes = hojas. Como mucho uno por segundo.
-  function enviar(forzar) {
-    if (!P || !P.vivo) return Promise.resolve();
-    var t = Date.now();
-    if (!forzar && t - P.enviado < 1000) { if (!P.pendiente) { P.pendiente = true; setTimeout(function () { if (P) { P.pendiente = false; enviar(true); } }, 1000); } return Promise.resolve(); }
-    P.enviado = t;
-    return CC.pedir("/carrera/paso", { dist: 1000 + P.pts, golpes: P.hojas });
-  }
-  function terminar(motivo) {
-    if (!P || P.fin) return;
-    P.fin = true; P.motivo = motivo;
-    var ms = Math.min(DUR, Math.max(1, (P.local ? Date.now() : ahora()) - P.salida));
-    if (P.vivo) enviar(true).then(function () { return CC.pedir("/carrera/fin", { ms: ms }); }).then(refrescar);
-    var prev = CC.leer("juego", {}) || {};
-    var res = { pts: P.pts, hojas: P.hojas, total: P.arbol.hojas, aciertos: P.aciertos, decididas: P.decididas, racha: P.mejorRacha, vivo: P.vivo,
-                mejor: Math.max(prev.mejor || 0, P.pts), rondas: (prev.rondas || 0) + 1 };
-    CC.guardar("juego", res);
-    pintarFin(res);
-    ver("fin"); $("reloj").textContent = "0 s";
-  }
-
-  /* ---------- Fin: resultado, reflexión al muro y fotito ---------- */
-  var muro = null, foto = null;
-  function puesto() {
-    if (!S.sala || !P || !P.vivo) return null;
-    var lista = jugadores();
-    for (var i = 0; i < lista.length; i++) if (lista[i].id === S.yo) return { n: i + 1, de: lista.length };
-    return null;
-  }
-  function pintarFin(res) {
-    var pct = res.decididas ? Math.round(res.aciertos / res.decididas * 100) : 0;
-    $("r-ic").textContent = res.hojas >= res.total ? "🌳" : res.hojas >= 6 ? "🌿" : "🌱";
-    $("r-tit").textContent = res.hojas + " hojas · " + res.pts + " pts";
-    $("r-sub").textContent = (P && P.motivo ? P.motivo + " " : "") + (pct >= 80 ? "Divides como un plan que se termina." : pct >= 50 ? "Vas bien: mira abajo lo que conviene repasar." : "Cada error ya te dijo por qué: la siguiente ronda sale mejor.");
-    var ch = $("r-chips"); ch.textContent = "";
-    [["ok", res.aciertos + " de " + res.decididas + " al primer intento"], ["", "racha máxima ×" + res.racha], ["warn", res.vivo ? "ronda de la clase" : "práctica"]]
-      .forEach(function (x) { ch.appendChild(CC.el("span", "esc-chip " + x[0], x[1])); });
-    var p = puesto(); if (p) ch.appendChild(CC.el("span", "esc-chip ok", "puesto " + p.n + " de " + p.de));
-    var rep = $("r-repaso"); rep.textContent = "";
-    (P ? P.errores : []).slice(0, 3).forEach(function (t) { var li = CC.el("li"); li.appendChild(CC.el("b", "", "Repasa: ")); li.appendChild(document.createTextNode(t)); rep.appendChild(li); });
-    if (!muro) muro = CC.muro($("muro"), ESCENA, "Completa la frase: «Una hoja está lista cuando…»", { placeholder: "…tiene una sola prueba y cabe en una sesión", alPublicar: function () { if (foto) foto.generar(); } });
-    if (!foto) foto = CCFoto.montar($("foto"), datosFoto);
-  }
-  function datosFoto() {
-    var r = CC.leer("juego", {}) || {}, p = puesto();
-    return {
-      nombre: S.nombre || "Alumno", avatar: CC.avatar(S.avatar).e, etiqueta: "Juego «Hasta la hoja»",
-      resultado: (r.hojas || 0) + " hojas · " + (r.pts || 0) + " pts",
-      detalle: (r.aciertos || 0) + " de " + (r.decididas || 0) + " decisiones al primer intento" + (p ? " · puesto " + p.n + " de " + p.de : ""),
-      reflexion: muro ? muro.input.value.trim() : ""
-    };
-  }
-
-  /* ---------- Tu árbol (SVG): aparece a medida que divides ---------- */
-  function svgEl(tag, at, padre) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (padre) padre.appendChild(e); return e; }
-  function pintarMio() {
-    if (!P) return;
-    var svg = $("mio"), A = P.arbol.nodos, actual = cartaActual();
-    if (!P.capas) { svg.textContent = ""; P.capas = { ar: svgEl("g", {}, svg), nd: svgEl("g", {}, svg) }; }
-    Object.keys(A).forEach(function (id) {
-      if (!P.vistos[id]) return;
-      var o = A[id], g = P.nodosSvg[id];
-      if (!g) {
-        if (o.padre) { var pa = A[o.padre]; svgEl("path", { "class": "t-ar", d: "M" + pa.px + " " + pa.py + " C " + pa.px + " " + (pa.py + 40) + ", " + o.px + " " + (o.py - 40) + ", " + o.px + " " + o.py }, P.capas.ar); }
-        g = svgEl("g", { "class": "t-g" + (o.padre ? " entra" : "") }, P.capas.nd);
-        var c = svgEl("circle", { "class": "t-nd", cx: o.px, cy: o.py, r: o.hijos ? 11 : 9 }, g);
-        var tt = svgEl("title", {}, c); tt.textContent = N[id].t;
-        if (o.hijos) { var tx = svgEl("text", { "class": "t-tx", x: o.px, y: o.py - 16 }, g); tx.textContent = N[id].corto; }
-        P.nodosSvg[id] = g; g.c = c;
+  function pintarCaja(g, z, t, resalta) {
+    var b = BINS[z.id], pulso = resalta && !REDUCIDO ? (Math.sin(t * 5) + 1) / 2 : 0, cx = z.x + z.w / 2;
+    g.save();
+    g.fillStyle = rgba(b.c, .14 + pulso * .14); g.strokeStyle = resalta ? "#f2c14e" : b.c; g.lineWidth = resalta ? 5 : 3.5;
+    rr(g, z.x, z.y, z.w, z.h, 20); g.fill(); g.stroke();
+    g.textAlign = "center"; g.textBaseline = "middle";
+    if (z.id === "grafo") { // red de nodos
+      var pts = [[-50, -10], [-12, -38], [30, -18], [52, 22], [0, 18], [-40, 34]];
+      g.strokeStyle = rgba(b.c, .6); g.lineWidth = 2.5;
+      [[0, 1], [1, 2], [2, 3], [2, 4], [4, 5], [0, 4], [1, 4]].forEach(function (e) { g.beginPath(); g.moveTo(cx + pts[e[0]][0], z.y + 80 + pts[e[0]][1]); g.lineTo(cx + pts[e[1]][0], z.y + 80 + pts[e[1]][1]); g.stroke(); });
+      pts.forEach(function (p, i) { g.fillStyle = i === 4 ? "#f2c14e" : b.c; g.beginPath(); g.arc(cx + p[0], z.y + 80 + p[1], i === 4 ? 9 : 7, 0, 7); g.fill(); });
+    } else if (z.id === "cerebro") { // frasco con el cerebro
+      g.fillStyle = "rgba(255,255,255,.75)"; g.strokeStyle = b.c; g.lineWidth = 3; rr(g, cx - 42, z.y + 36, 84, 86, 18); g.fill(); g.stroke();
+      g.font = "46px " + FUENTE; g.fillText("🧠", cx, z.y + 80);
+    } else { // viento: lo que se regenera se va
+      g.strokeStyle = rgba(b.c, .7); g.lineWidth = 4; g.lineCap = "round";
+      for (var k = 0; k < 3; k++) {
+        var off = REDUCIDO ? 0 : ((t * 30 + k * 23) % 40) - 20;
+        g.beginPath(); g.moveTo(cx - 60 + off, z.y + 52 + k * 26); g.bezierCurveTo(cx - 10 + off, z.y + 40 + k * 26, cx + 30 + off, z.y + 66 + k * 26, cx + 56 + off, z.y + 50 + k * 26); g.stroke();
       }
-      var cls = "t-nd" + (P.hechos[id] ? (o.hijos ? " div" : " hoja") : "") + (!P.fin && actual && actual.tipo === "tarea" && actual.id === id ? " ahora" : "");
-      g.c.setAttribute("class", cls);
-    });
-    pintarPuntos();
-  }
-
-  /* ---------- El árbol del grupo: una rama por jugador ---------- */
-  function jugadores() {
-    var lista = (S.sala ? S.sala.corredores : []).map(function (c) {
-      var pts = Math.max(0, (+c.dist || 0) - 1000), hj = +c.golpes || 0;
-      if (c.id === S.yo && P && P.vivo) { pts = Math.max(pts, P.pts); hj = Math.max(hj, P.hojas); }
-      return { id: c.id, nombre: c.nombre || "alguien", avatar: c.avatar, pts: pts, hojas: hj, fin: +c.fin_ms > 0 };
-    });
-    if (!S.sala && P) lista = [{ id: "yo", nombre: S.nombre || "Tú", avatar: S.avatar, pts: P.pts, hojas: P.hojas, fin: P.fin }];
-    lista.sort(function (a, b) { return b.pts - a.pts || b.hojas - a.hojas || (a.nombre < b.nombre ? -1 : 1); });
-    return lista;
-  }
-  function pintarGrupo() {
-    var lista = jugadores(), svg = $("grupo"), yoId = S.sala ? S.yo : "yo";
-    svg.textContent = "";
-    var cx = 300, base = 412, nudo = 318;
-    svgEl("path", { "class": "g-tronco", d: "M" + cx + " " + base + " L" + cx + " " + nudo }, svg);
-    var porId = lista.slice().sort(function (a, b) { return a.id < b.id ? -1 : 1; }); // ramas quietas: orden por id
-    var n = porId.length, total = 12, suma = 0;
-    porId.forEach(function (j, i) {
-      suma += j.hojas;
-      var ang = n === 1 ? -Math.PI / 2 : (-Math.PI + 0.2) + (Math.PI - 0.4) * (i / (n - 1));
-      var prog = Math.min(1, j.hojas / total), largo = 92 + 150 * prog + (n > 9 ? (i % 2) * 34 : 0);
-      var tx = cx + Math.cos(ang) * largo * 1.02, ty = nudo + Math.sin(ang) * largo * 0.92;
-      var mx = cx + Math.cos(ang) * largo * 0.45, my = nudo + Math.sin(ang) * largo * 0.25 - 10;
-      var yo = j.id === yoId, av = CC.avatar(j.avatar);
-      var path = svgEl("path", { "class": "g-rama" + (yo ? " yo" : ""), d: "M" + cx + " " + nudo + " Q " + mx + " " + my + " " + tx + " " + ty }, svg);
-      for (var h = 0; h < Math.min(j.hojas, total); h++) {
-        var f = 0.3 + 0.65 * (h / Math.max(1, total - 1)), u = 1 - f;
-        var px = u * u * cx + 2 * u * f * mx + f * f * tx, py = u * u * nudo + 2 * u * f * my + f * f * ty;
-        var lado = h % 2 ? 1 : -1, rot = ang * 180 / Math.PI + 90 * lado;
-        svgEl("ellipse", { "class": "g-hoja", cx: px + Math.cos(ang + lado * 1.4) * 7, cy: py + Math.sin(ang + lado * 1.4) * 7, rx: 6, ry: 3.2, transform: "rotate(" + rot + " " + (px + Math.cos(ang + lado * 1.4) * 7) + " " + (py + Math.sin(ang + lado * 1.4) * 7) + ")" }, svg);
-      }
-      var gAv = svgEl("g", {}, svg);
-      var ttl = svgEl("title", {}, gAv); ttl.textContent = j.nombre + " · " + j.hojas + " hojas · " + j.pts + " pts";
-      svgEl("circle", { "class": "g-av" + (yo ? " yo" : ""), cx: tx, cy: ty, r: 12, style: "fill:var(--s1)" + (yo ? "" : ";stroke:" + (j.fin ? "var(--ok)" : av.c)) }, gAv);
-      var em = svgEl("text", { "class": "g-em", x: tx, y: ty + 1 }, gAv); em.textContent = av.e;
-      if (yo) { var t = svgEl("text", { "class": "g-yo", x: tx, y: ty - 19 }, gAv); t.textContent = "Tú"; }
-      void path;
-    });
-    svgEl("circle", { "class": "g-raiz", cx: cx, cy: nudo, r: 16 }, svg);
-    var lab = svgEl("text", { "class": "g-tx", x: cx, y: nudo + 4 }, svg); lab.textContent = "🌳";
-    var meta = Math.max(1, n * META_POR_JUGADOR);
-    $("meta-tx").textContent = !S.sala ? (suma >= meta ? "🌳 ¡Tu meta cumplida!" : "Tu meta: " + META_POR_JUGADOR + " hojas") :
-      suma >= meta && n ? "🌳 ¡Plan del grupo completo!" : "Meta del grupo: " + META_POR_JUGADOR + " hojas por persona";
-    $("meta-n").textContent = suma + " / " + (n ? meta : "—");
-    $("meta-b").style.setProperty("--w", (n ? Math.min(100, suma / meta * 100) : 0) + "%");
-    $("meta").classList.toggle("llena", n > 0 && suma >= meta);
-    $("g-tag").textContent = S.sinServidor ? "solo tú (práctica)" : n + (n === 1 ? " persona" : " personas") + (S.sala ? " · " + ({ lobby: "en la sala", cuenta: "¡salen!", corre: "jugando", fin: "ronda cerrada" }[S.sala.estado] || "") : "");
-    // Tabla: 5 primeros + tú
-    var tb = $("tabla"); tb.textContent = "";
-    var yoI = -1; lista.forEach(function (j, i) { if (j.id === yoId) yoI = i; });
-    var top = S.staff ? lista.slice(0, 10) : lista.slice(0, 5);
-    function fila(j, i) {
-      var li = CC.el("li", j.id === yoId ? "yo" : ""); li.style.counterSet = "pos " + (i + 1);
-      li.appendChild(CC.el("span", "", CC.avatar(j.avatar).e));
-      li.appendChild(CC.el("span", "n", j.id === yoId ? "Tú" : j.nombre));
-      li.appendChild(CC.el("span", "h", "🍃" + j.hojas));
-      li.appendChild(CC.el("span", "p", j.pts));
-      tb.appendChild(li);
     }
-    top.forEach(fila);
-    if (yoI >= top.length) { tb.appendChild(CC.el("li", "sep", "···")); fila(lista[yoI], yoI); }
+    g.font = "800 13px " + FUENTE; g.fillStyle = tono(b.c, -.3); g.fillText(b.sub, cx, z.y + z.h - 22);
+    g.restore();
   }
 
-  /* ---------- Teclado y deslizar ---------- */
-  document.addEventListener("keydown", function (ev) {
-    if (S.modo !== "juego" || !P || ev.target.closest("input, textarea")) return;
-    var c = cartaActual(); if (!c) return;
-    var k = ev.key.toLowerCase();
-    if (c.tipo === "tarea") { if (k === "arrowleft" || k === "d") responder("dividir"); else if (k === "arrowright" || k === "h") responder("hoja"); }
-    else { var o = OPS_DATO.filter(function (x) { return x.k === k; })[0]; if (o) responder(o.id); }
+  // ---------- arte de los objetos ----------
+  var RADIO = [46, 38, 31, 26, 22]; // la piedra crece con lo alto que está en el plan, no con lo que falta partir
+  function pintarPiedra(g, x, y, s, t, d) {
+    var r = RADIO[N[d.k].prof] * s, col = RAMAS[N[d.k].rama].c;
+    g.save(); g.translate(x, y);
+    if (s === 1) { g.fillStyle = "rgba(30,20,60,.22)"; g.beginPath(); g.ellipse(0, r * .55, r * .95, r * .3, 0, 0, 7); g.fill(); }
+    g.beginPath();
+    for (var k = 0; k < d.vert.length; k++) { var a = k / d.vert.length * Math.PI * 2 - Math.PI / 2, q = r * d.vert[k]; g.lineTo(Math.cos(a) * q, Math.sin(a) * q * .82 - r * .1); }
+    g.closePath();
+    var gr = g.createLinearGradient(-r, -r, r, r); gr.addColorStop(0, tono(col, .55)); gr.addColorStop(.55, tono(col, .15)); gr.addColorStop(1, tono(col, -.35));
+    g.fillStyle = gr; g.fill(); g.strokeStyle = tono(col, -.55); g.lineWidth = 2.5; g.stroke();
+    g.fillStyle = "rgba(255,255,255,.45)"; g.beginPath(); g.ellipse(-r * .3, -r * .42, r * .28, r * .13, -.4, 0, 7); g.fill();
+    // vetas: una marca por nivel del plan
+    g.strokeStyle = rgba("#1b2350", .35); g.lineWidth = 2;
+    for (var v = 0; v <= N[d.k].prof; v++) { g.beginPath(); g.moveTo(-r * .35 + v * r * .22, r * .12); g.lineTo(-r * .25 + v * r * .22, r * .36); g.stroke(); }
+    if (!REDUCIDO && s === 1) { var br = (Math.sin(t * 3 + d.i * 1.3) + 1) / 2; g.globalAlpha = br * .8; g.fillStyle = "#fff"; g.beginPath(); g.arc(r * .45, -r * .4, 2.5, 0, 7); g.fill(); g.globalAlpha = 1; }
+    g.restore();
+  }
+  function pintarNota(g, x, y, s, t, d) {
+    var fl = REDUCIDO || s < 1 ? 0 : Math.sin(t * 2.4 + d.i) * 3;
+    g.save(); g.translate(x, y + fl); g.scale(s, s); g.rotate(d.giro);
+    if (s === 1) { g.fillStyle = "rgba(30,20,60,.2)"; g.beginPath(); g.ellipse(0, 22 - fl, 18, 5, 0, 0, 7); g.fill(); }
+    g.fillStyle = "#fffdf3"; g.strokeStyle = "#1b2350"; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(-16, -19); g.lineTo(9, -19); g.lineTo(16, -12); g.lineTo(16, 19); g.lineTo(-16, 19); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = "#e9e3c8"; g.beginPath(); g.moveTo(9, -19); g.lineTo(9, -12); g.lineTo(16, -12); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = "#f2c14e"; g.fillRect(-11, -12, 16, 4);
+    g.fillStyle = "#8a83b8"; g.fillRect(-11, -3, 22, 3); g.fillRect(-11, 4, 17, 3); g.fillRect(-11, 11, 20, 3);
+    g.restore();
+  }
+
+  // ---------- mi ronda y lo que guarda la insignia ----------
+  var mio = { hojas: 0, partidas: 0, datos: 0, sobre: 0, falta: 0, bonus: 0 };
+  var LECCION = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "ccp-02";
+  if (!/^[a-z0-9-]+$/.test(LECCION)) LECCION = "ccp-02";
+  function guardarInsignia() {
+    if (!juego) return;
+    var s = juego.stats, r = juego.ronda(), clave = r.n + ":" + (r.semilla >>> 0);
+    if (!s.entregas) return;
+    var k = LECCION + "-juego", prev = {};
+    try { prev = JSON.parse(localStorage.getItem(k) || "{}") || {}; } catch (e) {}
+    var rec = { pts: juego.puntos, hojas: mio.hojas, total: HOJAS.length, partidas: mio.partidas, datos: mio.datos, aciertos: s.aciertos, decididas: s.entregas,
+      racha: 0, vivo: !juego.yo().practica, mejor: Math.max(prev.mejor || 0, juego.puntos), rondas: (prev.rondas || 0) + (prev.ronda === clave ? 0 : 1), ronda: clave, juego: "partidora" };
+    try { localStorage.setItem(k, JSON.stringify(rec)); } catch (e) {}
+  }
+
+  // ---------- el bono al partir: ¿qué sale directamente de esta tarea? ----------
+  function bonoPartir(n, sem) {
+    var r = ArenaJMD.rng(sem >>> 0), hijo = n.hijos[Math.floor(r() * n.hijos.length)];
+    var fuera = ORDEN.filter(function (id) { return id !== n.id && N[id].padre !== n.id && !desciende(n.id, id) && !desciende(id, n.id); });
+    var nietos = ORDEN.filter(function (id) { return desciende(id, n.id) && N[id].padre !== n.id; });
+    var pool = fuera.length >= 2 ? fuera : nietos;
+    var otros = [];
+    while (otros.length < 2 && pool.length) { var j = Math.floor(r() * pool.length); otros.push(pool.splice(j, 1)[0]); }
+    var ops = [hijo].concat(otros), pos = Math.floor(r() * ops.length);
+    ops.splice(0, 1); ops.splice(pos, 0, hijo);
+    return { pregunta: "Bono: ¿cuál sale directamente de «" + n.t + "»?", opciones: ops.map(function (id) { return N[id].t; }), correcta: pos, puntos: 5, segundos: 14,
+      explicacion: "De «" + n.t + "» salen: " + nombres(n.hijos.map(function (id) { return N[id].t; })) + "." + (pool === nietos ? " Las demás salen un nivel más abajo." : "") };
+  }
+
+  var juego = ArenaJMD.crear({
+    raiz: "#juego",
+    titulo: "Hasta la hoja",
+    subtitulo: "La Partidora: parte cada tarea hasta que sea una hoja, constrúyela en la Obra y guarda en el cerebro solo lo que dura.",
+    curso: "Claude Code PRO",
+    sesion: "Sesión 2 · Plan recursivo y cerebro de proyecto",
+    fecha: "Sábado 14 de noviembre de 2026",
+    hashtag: "#ClaudeCodePRO",
+    duracion: 180, duraciones: [180, 300], duracionPractica: 120,
+    mundo: { ancho: ANCHO, alto: ALTO, tema: "patio" },
+    jugador: { accesorio: "casco" },
+    salida: { x: 110, y: 660, w: 280, h: 170 },
+    reglas: [
+      "Recoge una piedra (tarea) o una nota (dato) pasando encima.",
+      "¿La tarea tiene más de 1 cosa o más de 1 prueba? A la ✂️ Partidora. ¿Es hoja: 1 cosa, 1 sesión, 1 prueba? A la 🍃 Obra.",
+      "Las notas van al 🧠 Cerebro, al 🕸️ Grafo o a 💨 No se guarda. Errar no resta: la lupa te enseña.",
+    ],
+    anuncio: "a partir hasta la hoja",
+    muros: [
+      { x: 505, y: 440, w: 40, h: 100 }, { x: 1290, y: 650, w: 44, h: 130 },
+      { x: 640, y: 790, w: 150, h: 36 }, { x: 1060, y: 790, w: 150, h: 36 },
+    ],
+    zonas: [
+      Object.assign({ pintar: pintarArbol }, Z.arbol),
+      Object.assign({ pintar: pintarPartidora }, Z.partidora),
+      Object.assign({ pintar: pintarObra }, Z.obra),
+      Object.assign({ pintar: pintarCaja }, Z.cerebro),
+      Object.assign({ pintar: pintarCaja }, Z.grafo),
+      Object.assign({ pintar: pintarCaja }, Z.nada),
+    ],
+    peligros: [
+      { tipo: "dron", nombre: "el dron /compact", ruta: [[610, 334], [1250, 334]], vel: 135, radio: 26,
+        aviso: "¡El dron /compact pasó y se te cayó lo que llevabas! Volvió a su lugar: recógelo otra vez. Por eso lo que dura va al cerebro.",
+        avisoSinCarga: "¡Cuidado con el dron /compact!" },
+      { tipo: "dron", nombre: "el dron /compact", ruta: [[1405, 110], [1405, 840]], vel: 120, radio: 26,
+        aviso: "¡El dron /compact te hizo soltarla! Volvió a su lugar: búscala de nuevo.", avisoSinCarga: "¡Cuidado con el dron /compact!" },
+    ],
+    decor: [
+      { tipo: "planta", x: 540, y: 300 }, { tipo: "planta", x: 1300, y: 300, s: 1.2 }, { tipo: "planta", x: 1460, y: 650 },
+      { tipo: "planta", x: 470, y: 1040 }, { tipo: "planta", x: 1320, y: 1050, s: .9 }, { tipo: "planta", x: 1760, y: 300 },
+      { tipo: "texto", x: 260, y: 600, texto: "CANTERA", px: 34, color: "rgba(122,90,52,.35)" },
+      { tipo: "texto", x: 1610, y: 670, texto: "OBRA", px: 30, color: "rgba(47,163,95,.3)" },
+    ],
+    fondo: function (g, M, rnd) {
+      // la cantera: tierra y piedritas
+      g.save();
+      g.fillStyle = "#e6dcc8"; g.beginPath();
+      var cx = CANTERA.x + CANTERA.w / 2, cy = CANTERA.y + CANTERA.h / 2;
+      for (var k = 0; k <= 20; k++) { var a = k / 20 * Math.PI * 2, q = .9 + rnd() * .12; g.lineTo(cx + Math.cos(a) * CANTERA.w * .56 * q, cy + Math.sin(a) * CANTERA.h * .55 * q); }
+      g.closePath(); g.fill(); g.strokeStyle = "#cbb894"; g.lineWidth = 4; g.stroke();
+      for (k = 0; k < 40; k++) { g.fillStyle = k % 3 ? "#c9b48e" : "#b59e76"; g.beginPath(); g.ellipse(CANTERA.x + 30 + rnd() * (CANTERA.w - 60), CANTERA.y + 30 + rnd() * (CANTERA.h - 60), 3 + rnd() * 6, 2 + rnd() * 4, rnd() * 3, 0, 7); g.fill(); }
+      // camino de la Partidora a la Obra
+      g.strokeStyle = "rgba(47,163,95,.28)"; g.lineWidth = 16; g.lineCap = "round"; g.setLineDash([2, 30]);
+      g.beginPath(); g.moveTo(1030, 548); g.bezierCurveTo(1200, 548, 1250, 640, 1470, 470); g.stroke();
+      g.strokeStyle = "rgba(122,90,52,.25)";
+      g.beginPath(); g.moveTo(470, 330); g.bezierCurveTo(620, 360, 700, 440, 780, 520); g.stroke();
+      g.setLineDash([]);
+      g.restore();
+    },
+    objetos: {
+      cantidad: PIEDRAS + NOTAS, prefijo: "pz",
+      crear: function (i, v, rnd, M) {
+        if (i < PIEDRAS) {
+          var p0 = inicioDe(i) + v, k = ORDEN[p0 % ORDEN.length], n = N[k];
+          var area = k === "R" ? CANTERA : v === 0 ? CAMPO : ANILLO;
+          var p = M.lugarLibre(rnd, RADIO[n.prof] + 4, area), vert = [];
+          for (var j = 0; j < 9; j++) vert.push(.82 + rnd() * .26);
+          return { x: p.x, y: p.y, tipo: "tarea", k: k, plan: Math.floor(p0 / ORDEN.length) + 1, vert: vert, pintar: pintarPiedra, texto: n.corto };
+        }
+        var jn = i - PIEDRAS, s = juego ? juego.ronda().semilla >>> 0 : 0, dd = (jn + v * NOTAS + s % DATOS.length) % DATOS.length;
+        var pd = M.lugarLibre(rnd, 26, ZDATOS[(jn + v) % ZDATOS.length]);
+        return { x: pd.x, y: pd.y, tipo: "dato", dato: dd, giro: (rnd() - .5) * .5, pintar: pintarNota, texto: "📝 " + DATOS[dd].corto };
+      },
+    },
+    tarjeta: function (ob) {
+      if (ob.tipo === "dato") {
+        var d = DATOS[ob.dato];
+        return { etiqueta: "Dato del proyecto", color: "#9446c1", titulo: d.t, destacadoEtiqueta: "Qué es", destacado: d.s,
+          pie: "¿Decisión o regla que dura? 🧠 Cerebro. ¿Pregunta sobre el código? 🕸️ Grafo. ¿Se vuelve a generar? 💨 No se guarda." };
+      }
+      var n = N[ob.k];
+      return { etiqueta: RAMAS[n.rama].n + " · nivel " + n.prof, color: RAMAS[n.rama].c, titulo: n.t,
+        destacadoEtiqueta: "Lista cuando", destacado: n.hijos ? n.s : n.prueba,
+        pie: "¿Más de 1 cosa o más de 1 prueba? ✂️ Partidora (al centro). ¿1 cosa, 1 sesión, 1 prueba? 🍃 Obra (a la derecha)." };
+    },
+    entregar: function (ob, zona) {
+      if (ob.tipo === "dato") {
+        if (!BINS[zona.id]) return { rechazar: true, mensaje: "Es un dato: llévalo al Cerebro, al Grafo o a «No se guarda» (abajo)." };
+        var d = DATOS[ob.dato];
+        if (zona.id === d.va) { mio.datos++; return { ok: true, puntos: 10, titulo: BINS[d.va].bien, explicacion: d.por, feed: zona.id === "nada" ? "dejó ir «" + d.corto + "»" : "guardó «" + d.corto + "» en " + (zona.id === "grafo" ? "el grafo" : "el cerebro") }; }
+        return { ok: false, puntos: 0, titulo: "Iba a " + BINS[d.va].n, explicacion: d.por, feed: "aprendió dónde va «" + d.corto + "»" };
+      }
+      if (BINS[zona.id]) return { rechazar: true, mensaje: "Es una tarea: va a la ✂️ Partidora o a la 🍃 Obra." };
+      var n = N[ob.k], hoja = !n.hijos;
+      if (zona.id === "partidora") {
+        if (!hoja) {
+          mio.partidas++;
+          return { ok: true, puntos: 10, titulo: "¡Partida en " + n.hijos.length + "! +10",
+            explicacion: "«" + n.t + "» " + n.por + ". Su primera parte ya cayó junto a la Partidora; las demás esperan en la pila.",
+            feed: "partió «" + n.corto + "» en " + n.hijos.length, bonus: bonoPartir(n, ArenaJMD.hash(ob.id + "@" + ob.v)) };
+        }
+        mio.sobre++;
+        return { ok: false, puntos: 0, titulo: "Ya era hoja",
+          explicacion: "«" + n.t + "» es 1 cosa, cabe en 1 sesión y se prueba con: " + n.prueba + ". Partirla más es una vuelta extra del agente; la Partidora la pasó a la Obra.",
+          feed: "aprendió: «" + n.corto + "» ya era hoja" };
+      }
+      if (hoja) {
+        mio.hojas++;
+        return { ok: true, puntos: 10, titulo: "¡Hoja construida! +10", explicacion: "1 cosa, 1 sesión, 1 prueba: " + n.prueba + ". Una vuelta del agente y queda en verde.",
+          feed: "construyó la hoja «" + n.corto + "»" };
+      }
+      mio.falta++;
+      return { ok: false, puntos: 0, titulo: "Aún no es hoja",
+        explicacion: "«" + n.t + "» " + n.por + ": se parte en " + n.hijos.length + ". La Obra la devolvió a la Partidora y su primera parte ya salió.",
+        feed: "aprendió: «" + n.corto + "» se parte" };
+    },
+    meta: { contador: "plan", texto: "Plan del grupo", unidad: "pts", objetivo: function (n) { return Math.max(150, n * 40); }, logro: "el plan del grupo llegó hasta la hoja" },
+    reflexion: { clave: "07-juego-hasta-la-hoja", pregunta: "Completa la frase: «Una hoja está lista cuando…»", placeholder: "…es 1 cosa, cabe en 1 sesión y tiene 1 prueba",
+      porDefecto: "Una hoja está lista cuando es 1 cosa, cabe en 1 sesión y tiene 1 prueba." },
+    alRonda: function () { mio = { hojas: 0, partidas: 0, datos: 0, sobre: 0, falta: 0, bonus: 0 }; cuenta.t = -1; },
+    alEntregar: function (ob, zona, res, api) {
+      guardarInsignia();
+      if (ob.tipo === "tarea" && ob.k === "C" && ob.v >= ORDEN.length - 1) { // un plan recorrido entero en esta ranura
+        api.anuncio("¡Plan cerrado!", "un plan llegó a su última hoja");
+        api.emitir("plan", "cerró un plan entero", 0);
+      }
+    },
+    alEvento: function (e, api) {
+      if (e.tipo === "plan") api.toast("🌳 " + (e.n || "Alguien") + " cerró un plan entero", "bien", 2600);
+    },
+    resultado: function (s) {
+      guardarInsignia();
+      var titulo = mio.hojas >= 5 && mio.partidas >= 3 ? "Arquitecto del plan"
+        : mio.partidas >= 4 ? "Maestro de la Partidora"
+        : mio.hojas >= 4 ? "Constructor de hojas"
+        : mio.datos >= 3 ? "Guardián del cerebro"
+        : s.entregas ? "Aprendiz de la Partidora" : "Explorador de la cantera";
+      var repaso = mio.sobre > mio.falta ? " · ojo: partiste hojas" : mio.falta ? " · ojo: algo grande fue a la Obra" : "";
+      return { etiqueta: "Mi ronda en la obra", titulo: titulo, resultado: juego.puntos + " pts · " + mio.hojas + (mio.hojas === 1 ? " hoja" : " hojas"),
+        detalle: mio.partidas + (mio.partidas === 1 ? " partida · " : " partidas · ") + mio.datos + (mio.datos === 1 ? " dato en su lugar · " : " datos en su lugar · ") + s.aciertos + " de " + s.entregas + " bien decididas" + repaso };
+    },
   });
-  (function () {
-    var x0 = null, carta = $("carta");
-    carta.addEventListener("pointerdown", function (e) { x0 = e.clientX; });
-    carta.addEventListener("pointerup", function (e) {
-      if (x0 == null) return; var dx = e.clientX - x0; x0 = null;
-      var c = P && cartaActual(); if (!c || c.tipo !== "tarea" || Math.abs(dx) < 60) return;
-      responder(dx < 0 ? "dividir" : "hoja");
-    });
-    carta.addEventListener("pointercancel", function () { x0 = null; });
-  })();
-
-  /* ---------- Arranque ---------- */
-  ver("intro");
-  refrescar();
-  setInterval(function () { refrescar(); }, 2000);
-  pintarGrupo();
 })();
 </script>
 </body>
