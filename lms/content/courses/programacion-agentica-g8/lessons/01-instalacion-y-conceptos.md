@@ -1,15 +1,15 @@
 ---
 id: g8-01
 starts_at: 2026-11-08T19:30:00-05:00
-title: "Grupo 8 · Clase 1 · Instalar las herramientas y entender qué hay detrás"
+title: "Grupo 8 · Clase 1 · Tu asistente virtual: herramientas, tipos y primer prototipo"
 published: true
 objectives:
   - id: g8-01-o1
     title: Instalar y comprobar VS Code, Docker y OpenCode en tu máquina
   - id: g8-01-o2
-    title: Explicar qué es un agente de IA y qué son un proveedor, un modelo y sus parámetros
+    title: Distinguir los tipos de asistente virtual y explicar sus piezas (modelo, instrucciones, memoria, herramientas, canal y bucle)
   - id: g8-01-o3
-    title: Conocer reglas, ahorro de contexto, MCP y las skills, y escribir tu primera skill
+    title: Elegir un camino de integración gratuito y diseñar tu asistente con un primer prototipo en OpenCode
 recording:
   url: ""
   passcode: ""
@@ -130,6 +130,12 @@ cycle:
     phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten a mano la terminal de VS Code para ir haciendo lo mismo.
     check: Has visto la clase completa (o la grabación)
+  - id: pedir
+    title: ¿Qué le pedirías a tu asistente?
+    tool: lms
+    phase: experiencia
+    description: "Piensa en un negocio real y escribe en el muro del LIVE una tarea que le pedirías a su asistente; vota por qué canal te gustaría hablarle."
+    check: Tu tarea aparece en el muro de la escena E02
   - id: vscode
     title: Instalar VS Code
     tool: vscode
@@ -154,11 +160,23 @@ cycle:
     phase: reflexion
     description: En una carpeta vacía, pide a OpenCode «crea un script que imprima la fecha y la hora en español» y mira qué archivos crea y qué comandos ejecuta antes de aceptar.
     check: El script existe y corre
+  - id: clasificar
+    title: Clasificar las tareas por tipo de asistente
+    tool: lms
+    phase: reflexion
+    description: "En el LIVE, asigna a cada tarea su tipo de asistente (reglas, LLM, agente con herramientas, RAG, voz o copiloto) y ubica la tarea que escribiste en el muro."
+    check: Clasificaste las tareas de la escena E07 y votaste el tipo de la tuya
+  - id: tipos
+    title: Tipos, piezas y caminos gratis
+    tool: lms
+    phase: conceptualizacion
+    description: "Conoce los tipos de asistente, sus piezas (modelo, instrucciones de sistema, memoria y contexto, herramientas, canal y bucle) y compara los caminos de integración gratuitos por costo, dificultad y canal."
+    check: Elegiste en la escena E11 el camino con el que empiezas tu prototipo
   - id: conceptos
     title: Poner nombre a las piezas
     tool: lms
     phase: conceptualizacion
-    description: "Juega la Arena de conceptos en el LIVE: atrapa cada concepto de la clase y clasifícalo en su contenedor (agente, herramientas, proveedor y modelo, MCP y skills)."
+    description: "Juega la Arena de conceptos en el LIVE: atrapa cada concepto y clasifícalo en su contenedor (tipos de asistente, cómo funciona, integración gratis y herramientas)."
     check: Clasificaste conceptos en la Arena y pulsaste «Lo logré»
   - id: skill
     title: Escribir tu primera skill
@@ -166,12 +184,12 @@ cycle:
     phase: experimentacion
     description: Crea `.opencode/skills/saludo/SKILL.md` con `name` y `description` en el front matter y una instrucción corta. Pídele al agente que la use.
     check: El agente responde usando tu skill
-  - id: landing-sin-ia
-    title: Landing sin IA (reglas y modelo local)
-    tool: terminal
+  - id: disenar
+    title: Diseñar tu asistente y su primer prototipo
+    tool: opencode
     phase: experimentacion
-    description: En la terminal del aula, saca negocio.json del texto de un cliente con el extractor por reglas (y el modelo local si está) y construye el sitio con --imagenes no.
-    check: El sitio abre en el Visor con los datos correctos del cliente
+    description: "Llena el lienzo del LIVE (negocio, tres tareas, tipo, canal y camino gratis), publícalo y pega en OpenCode el prompt que arma: un asistente.mjs que conversa en la terminal con el gateway de la clase u Ollama."
+    check: Tu diseño está en el muro de la escena E15 y el prototipo responde una pregunta de tu negocio
   - id: preguntar
     title: Preguntar o responder
     tool: lms
@@ -188,22 +206,35 @@ cycle:
 
 ## Avance de la clase
 
-Hoy dejas tu máquina lista para trabajar con un agente de programación: instalas VS Code, Docker
-y OpenCode, conectas OpenCode al gateway de la clase y escribes tu primera skill. Al final le pones
-nombre a las piezas: agente, proveedor, modelo, parámetros, contexto, MCP y skills.
+Hoy empiezas a construir **tu asistente virtual**, el que en la clase 3 atenderá por WhatsApp a un
+negocio tuyo. Primero piensas qué le pedirías; luego dejas lista tu máquina (VS Code, Docker y
+OpenCode conectado al gateway de la clase); después clasificas las tareas, conoces los tipos de
+asistente, cómo funcionan por dentro y por dónde conectarlos gratis; y terminas con tu asistente
+diseñado y un primer prototipo que conversa en tu terminal.
 
 Clase en vivo: domingo 08-11-2026, de 7:30 a 9:30 p. m. (hora de Lima). Si algo falla, no te quedes atrás: pega el
 error completo en el hilo de la sesión y sigue con el siguiente paso.
 
-| Bloque | Qué haces | Comprobación |
-|---|---|---|
-| 1 · VS Code | Instalar y abrir la terminal | `code --version` |
-| 2 · Docker | Instalar y correr un contenedor | `docker run --rm hello-world` |
-| 3 · OpenCode | Instalar y conectar al gateway | `/models` muestra `clase/auto` |
-| 4 · Práctica | Pedir un script y revisarlo antes de aceptar | `python3 fecha.py` imprime la fecha |
-| 5 · Conceptos | Poner nombre a las piezas y jugar la Arena de conceptos | Conceptos clasificados en la Arena |
-| 6 · Skill | Escribir `saludo` | El agente responde con tu skill |
-| 7 · Landing sin IA | Armar el sitio de un cliente sin proveedor | El sitio abre en el Visor |
+| Bloque | Fase | Qué haces | Comprobación |
+|---|---|---|---|
+| 0 · Tu asistente | Experiencia | Escribir una tarea que le pedirías | Tu tarea en el muro (E02) |
+| 1 · VS Code | Experiencia | Instalar y abrir la terminal | `code --version` |
+| 2 · Docker | Experiencia | Instalar y correr un contenedor | `docker run --rm hello-world` |
+| 3 · OpenCode | Experiencia | Instalar y conectar al gateway | `/models` muestra `clase/auto` |
+| 4 · Práctica | Reflexión | Pedir un script y revisarlo antes de aceptar | `python3 fecha.py` imprime la fecha |
+| 5 · Clasificar | Reflexión | Ubicar cada tarea en su tipo de asistente | Tareas clasificadas (E07) |
+| 6 · Tipos y piezas | Conceptualización | Tipos de asistente, cómo funcionan y caminos gratis | Camino elegido (E11) |
+| 7 · Arena | Conceptualización | Poner nombre a las piezas jugando | Conceptos clasificados (E13) |
+| 8 · Skill | Experimentación | Escribir `saludo` | El agente responde con tu skill |
+| 9 · Tu asistente | Experimentación | Diseñarlo y armar el primer prototipo | Diseño publicado y `node asistente.mjs` responde |
+
+## 0. ¿Qué le pedirías a tu asistente? · Experiencia
+
+Piensa en un negocio real: tuyo, de tu familia o de un cliente. ¿Qué mensajes se repiten? ¿Qué te
+quita tiempo? En el LIVE, escena **E02**, escribe en el muro **una tarea** que le pedirías a su
+asistente, empezando con un verbo («Responder el precio del pollo y tomar el pedido»), y vota por
+qué canal te gustaría hablarle. No hace falta saber programarlo todavía: esa tarea la vas a
+clasificar y, al final de la clase, será parte de tu diseño.
 
 ## 1. VS Code · Experiencia
 
@@ -280,7 +311,56 @@ Trabaja siempre en git: si el agente rompe algo, vuelves atrás con un comando. 
 
 **Si falla:** el script da error → pégale el error completo al agente; arreglarlo es parte del ejercicio.
 
-## 5. Las piezas, con nombre · Conceptos
+## 4 bis. Clasifica las tareas · Reflexión
+
+En la escena **E07** eliges qué tipo de asistente resuelve cada tarea: decir el horario (reglas),
+entender «¿tienen algo pa' la gripe?» (modelo de lenguaje), consultar el stock y reservar (agente
+con herramientas), responder con la carta en PDF (RAG), contestar una llamada (voz) o sugerirte
+código (copiloto). Luego ubicas la tarea que escribiste en el muro. Fíjate en esto: el **canal**
+(WhatsApp, Telegram, web) no es el tipo, es por dónde llega el mensaje.
+
+## 5. Tipos de asistente, cómo funcionan y caminos gratis · Conceptualización
+
+**Tipos (escena E10).**
+
+| Tipo | Qué hace | Ejemplo | Ojo con |
+|---|---|---|---|
+| Chatbot con reglas | Menús y palabras clave: si dice X, responde Y | «Marca 1 para horarios» | No entiende lo que no previste |
+| Asistente con LLM | Un modelo de lenguaje entiende y redacta | Responde preguntas libres | Puede inventar si no le das datos |
+| Agente con herramientas | El modelo decide usar herramientas y repite el bucle | Consulta stock y reserva | Limita qué puede tocar |
+| Asistente de voz | Voz a texto, modelo y texto a voz | Contesta el teléfono | La latencia se nota |
+| RAG / base de conocimiento | Busca en tus documentos y se los pasa al modelo | Responde con tu carta en PDF | Depende de lo bien que busque |
+| Bots de WhatsApp, Telegram o web | El mismo asistente, conectado a un canal | Tu bot en Telegram | El canal pone reglas y, a veces, costos |
+| Copiloto | Trabaja a tu lado dentro de otra herramienta | OpenCode en tu terminal | Él propone; tú decides |
+
+En la práctica se mezclan: reglas para lo fijo, modelo para entender y herramientas para actuar.
+Así será el chatbot del proyecto final.
+
+**Cómo funciona por dentro.** Todo asistente tiene las mismas piezas: el **modelo** (el cerebro,
+en la nube o en tu laptop), las **instrucciones de sistema** (quién es, qué puede y qué no, cómo
+habla), la **memoria y el contexto** (la conversación y los datos que le pasas, con un límite), las
+**herramientas, MCP y skills** (consultar, guardar, enviar; saber cómo hacer una tarea), el
+**canal** (WhatsApp, Telegram, web, voz o terminal) y el **bucle**: recibe, piensa, actúa, mira el
+resultado y responde.
+
+**Caminos gratis para integrarlo (escena E11).** Son dos decisiones: qué modelo piensa y qué canal
+usa la gente. Los costos y límites cambian: revisa las condiciones vigentes antes de abrir tu
+asistente al público.
+
+| Camino | Pone | Costo | Dificultad | Ojo con |
+|---|---|---|---|---|
+| Gateway de la clase (`clase/auto`) | Modelo | Gratis durante el curso | Baja | Cuota por alumno |
+| Ollama (modelo local) | Modelo, sin internet | Gratis | Media | Usa tu RAM; en 8 GB, modelos pequeños. API compatible con OpenAI en `localhost:11434/v1` |
+| Capa gratuita de un proveedor (Google AI Studio, modelos `:free` de OpenRouter, Groq…) | Modelo | Gratis con límites | Baja | Topes por minuto y por día; en varias capas gratuitas tus mensajes pueden usarse para mejorar el servicio |
+| Chat web propio | Canal web | Gratis | Media | La clave va en el servidor, nunca en el navegador |
+| Telegram Bot API | Canal Telegram | Gratis | Baja | El token de @BotFather es un secreto |
+| WhatsApp con Evolution API (clase 3) | Canal WhatsApp | Software gratis | Alta | No es la vía oficial: vincula tu número como dispositivo de WhatsApp Web; usa un número de pruebas y no envíes mensajes masivos |
+| WhatsApp Cloud API (Meta) | Canal WhatsApp | Con costos y condiciones | Alta | Cuenta de Meta Business y número verificado; responder cuando el cliente escribió primero no se cobra hoy, las plantillas se cobran por mensaje y por país |
+
+La ruta 100 % gratis del curso: hoy, prototipo en la terminal con `clase/auto` u Ollama; en la
+clase 2, skills y modelo local; en la clase 3, WhatsApp con Evolution, PostgreSQL y bandeja web.
+
+## 5 bis. Las piezas del agente, con nombre · Conceptos
 
 | Pieza | Qué es | Analogía |
 |---|---|---|
@@ -292,11 +372,11 @@ Trabaja siempre en git: si el agente rompe algo, vuelves atrás con un comando. 
 | **Contexto** | Todo lo que el modelo tiene delante en una petición; se gasta en tokens | La mesa de trabajo: lo que no cabe, no se ve |
 | **MCP** | El enchufe estándar para darle al agente herramientas y datos de fuera | El cargador universal |
 
-**Ahorrar contexto.** El agente gasta en lo que lee y en lo que escribe. Tres hábitos: `/init` dentro de OpenCode crea `AGENTS.md` para que no redescubra tu proyecto cada vez; RTK recorta la salida de los comandos (`rtk gain` muestra lo ahorrado); caveman acorta las respuestas. Hoy basta con `/init`; RTK y caveman están en Materiales.
+**Ahorrar contexto (lectura opcional).** El agente gasta en lo que lee y en lo que escribe. Tres hábitos: `/init` dentro de OpenCode crea `AGENTS.md` para que no redescubra tu proyecto cada vez; RTK recorta la salida de los comandos (`rtk gain` muestra lo ahorrado); caveman acorta las respuestas. Hoy basta con `/init`; RTK y caveman están en Materiales.
 
 **MCP, en demostración.** Verás al agente listar cursos y entregar una tarea sin abrir el navegador: herramientas que no vienen de serie (`list_courses`, `submit_assignment`). En `opencode.json` van bajo la clave `mcp`; hoy no lo instalas, solo identifica `type`, `command` y `enabled`.
 
-**Arena de conceptos.** En el LIVE, escena **E11**, eres un robot en la arena: atrapas los conceptos de la clase, los clasificas en su contenedor (agente, herramientas, proveedor y modelo, MCP y skills) y, si aciertas, disparas al arco de un compañero.
+**Arena de conceptos.** En el LIVE, escena **E13**, eres un robot en la arena: atrapas los conceptos de la clase, los clasificas en su contenedor (tipos de asistente, cómo funciona, integración gratis y herramientas) y, si aciertas, disparas al arco de un compañero.
 
 **Cuando no hay cuota.** El gateway de la clase prueba varios modelos en orden, primero los de pago, luego los gratuitos y, si todos fallan, un modelo pequeño que corre en el propio servidor de la clase. Responde más lento y más corto, pero la clase no se detiene.
 
@@ -322,23 +402,37 @@ Una skill es una carpeta con un `SKILL.md`. El agente lee solo el título de cad
 
 **Si falla:** el agente no usa la skill → revisa que `name` coincide con la carpeta y que `description` dice cuándo usarla. Reinicia `opencode`: las skills se leen al arrancar.
 
-## 7. Landing sin IA · Aplicación
+## 7. Diseña tu asistente y arma el primer prototipo · Experimentación
 
-En el LIVE, escena **E13**, la landing de un cliente sale sin ningún proveedor externo: reglas programadas sacan los datos del texto y el motor arma el sitio.
+En el LIVE, escena **E15**, llenas el lienzo de tu asistente: **negocio**, **tres tareas**,
+**tipo**, **canal**, **camino gratis** para hoy, tono y lo que nunca debe hacer. Pulsa
+**Publicar mi diseño**: queda en el muro del grupo y como evidencia de la escena.
 
-1. Pega en el cuadro de la escena lo que te escribió el cliente (o pulsa «poner un ejemplo»).
-2. Elige el estilo.
-3. Pulsa **Copiar comando**, pégalo en la terminal del aula y pulsa Enter.
-4. Abre `/trabajo/landing/sitio-<estilo>/index.html` en el Visor.
+La escena arma con tus datos un prompt para OpenCode. Pruébalo:
 
-**Si falla:** sale `[completar]` → el cliente no dio ese dato (nombre, WhatsApp de 9 dígitos, lista de servicios): agrégalo al texto en el cuadro y vuelve a copiar.
+```bash
+mkdir mi-asistente && cd mi-asistente && git init
+opencode          # pega el prompt; pide el plan antes de crear archivos
+node asistente.mjs
+```
+
+El prototipo es un `asistente.mjs` sin dependencias que conversa en la terminal, lee sus
+instrucciones de sistema de `instrucciones.md` y llama a una API compatible con OpenAI: el gateway
+de la clase o Ollama en `http://localhost:11434/v1`. URL, modelo y clave van en variables de
+entorno, nunca en un archivo. Si eliges Ollama, descarga antes un modelo pequeño
+(`ollama pull qwen2.5:3b`).
+
+**Si falla:** `401` → la variable de la clave no existe en esa terminal. `ECONNREFUSED` con Ollama →
+abre la app de Ollama o corre `ollama serve`. Responde cosas de otro negocio → revisa
+`instrucciones.md`: ahí van las tareas y los límites.
 
 ## Palabras de hoy · Conceptos
 
-Agente · Proveedor · Modelo · Token · Parámetros de generación · Gateway · Contexto · `AGENTS.md` · MCP · Skill. Cada una está definida en la tabla de arriba o en los bloques 5 y 6.
+Asistente virtual · Chatbot con reglas · LLM · Agente · RAG · Copiloto · Instrucciones de sistema · Memoria y contexto · Canal · Bucle · Proveedor · Modelo · Gateway · MCP · Skill. Cada una está definida en los bloques 5, 5 bis y 6.
 
 ## Tareas · Aplicación
 
 - Tarea 1: VS Code, Docker y OpenCode instalados, el gateway conectado y la skill `saludo` escrita.
 - Entrega el repositorio `clase-01` con `EVIDENCIA.md` (las tres comprobaciones y una captura de OpenCode respondiendo) y `.opencode/skills/saludo/SKILL.md`.
+- Recomendado: suma al repositorio la carpeta `mi-asistente/` con `instrucciones.md` y el prototipo; es la base del chatbot de WhatsApp del proyecto final.
 - Entrégala desde la tarea 1 del LMS (URL + commit) antes de la clase 2.
