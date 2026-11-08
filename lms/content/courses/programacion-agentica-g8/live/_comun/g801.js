@@ -22,7 +22,7 @@
   var ESCENA = M[2] || "";
   var BASE = "/api/v1/live/" + encodeURIComponent(LECCION);
   var CURSO = "Programación agéntica (vibecoding) · Grupo 8";
-  var CLASE = "Clase 1 · Instalar las herramientas y entender qué hay detrás";
+  var CLASE = "Clase 1 · Tu asistente virtual: herramientas, tipos y primer prototipo";
   var FECHA = "Domingo 8 de noviembre de 2026";
 
   // ---------- utilidades ----------
@@ -277,11 +277,16 @@
     var listo = document.createElement("p"); listo.className = "k-listo"; listo.hidden = true;
     listo.textContent = ul.getAttribute("data-listo") || "Listo. Pulsa «Lo logré» en el panel de la clase.";
     ul.parentNode.insertBefore(av, ul.nextSibling); ul.parentNode.insertBefore(listo, av.nextSibling);
+    var completa = null; // null = primer pintado: no se celebra lo que ya venía marcado
     function pintar() {
       var n = cajas.filter(function (c) { return c.checked; }).length;
       barra.style.setProperty("--p", Math.round(n * 100 / cajas.length) + "%");
       txt.textContent = n + " de " + cajas.length;
       listo.hidden = n !== cajas.length;
+      var ahora = n === cajas.length;
+      av.classList.toggle("fx-completo", ahora);
+      if (ahora && completa === false) celebrar(listo);
+      completa = ahora;
     }
     cajas.forEach(function (c, i) {
       c.checked = !!est[i];
@@ -414,6 +419,78 @@
     return img;
   }
 
+  // ---------- efectos (solo presentación: clases, variables CSS y adornos aria-hidden) ----------
+  function sinMovimiento() { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
+
+  // celebrar(el): ráfaga de chispas sobre el elemento. Se borra sola; sin movimiento reducido no hace nada.
+  function celebrar(el) {
+    if (sinMovimiento() || !el || !el.getBoundingClientRect) return;
+    var r = el.getBoundingClientRect(); if (!r.width && !r.height) r = { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
+    var caja = document.createElement("div"); caja.className = "fx-chispas"; caja.setAttribute("aria-hidden", "true");
+    caja.style.left = (r.left + Math.min(r.width, 260) / 2) + "px"; caja.style.top = (r.top + r.height / 2) + "px";
+    var colores = ["var(--ok)", "var(--accent)", "var(--gold)", "var(--ph-ea)", "var(--ph-or)"];
+    for (var i = 0; i < 22; i++) {
+      var s = document.createElement("i"), ang = (i / 22) * Math.PI * 2 + Math.random() * .4, dist = 50 + Math.random() * 70;
+      s.style.setProperty("--x", Math.round(Math.cos(ang) * dist) + "px");
+      s.style.setProperty("--y", Math.round(Math.sin(ang) * dist * .75 - 24) + "px");
+      s.style.setProperty("--r", Math.round(Math.random() * 540 - 270) + "deg");
+      s.style.setProperty("--c", colores[i % colores.length]);
+      s.style.animationDelay = Math.round(Math.random() * 60) + "ms";
+      if (i % 3 === 0) s.className = "o";
+      caja.appendChild(s);
+    }
+    document.body.appendChild(caja);
+    setTimeout(function () { caja.remove(); }, 1400);
+  }
+
+  // Fase de Kolb de la escena → <html data-ph>, para teñir acentos con --fase.
+  function marcarFase() {
+    var f = $(".esc-fase[data-ph]"), ph = f && f.getAttribute("data-ph");
+    if (ph) document.documentElement.setAttribute("data-ph", ph);
+    if (!$(".fx-fase")) { var b = document.createElement("div"); b.className = "fx-fase"; b.setAttribute("aria-hidden", "true"); document.body.insertBefore(b, document.body.firstChild); }
+  }
+
+  // Entrada escalonada para las piezas que la escena no anima ya por su cuenta.
+  function animada(el, tope) {
+    for (var n = el; n && n !== tope; n = n.parentElement) {
+      var cs = getComputedStyle(n);
+      if (cs.animationName && cs.animationName !== "none") return n;
+    }
+    return null;
+  }
+  function escalonar() {
+    var cuerpo = $(".esc-cuerpo"); if (!cuerpo) return;
+    var i = 0;
+    $$(".esc-card, .k-caja, .k-links, .esc-grid-2 > *, .esc-grid-3 > *, .as-cols > *, .as-tipo, .as-pieza, .as-fila, .as-campo, .as-tabla-env", cuerpo).forEach(function (el) {
+      if (el.classList.contains("fx-in") || animada(el, cuerpo)) return;
+      el.style.setProperty("--fx-d", Math.min(.12 + i * .06, .9).toFixed(2) + "s"); el.classList.add("fx-in"); i++;
+    });
+    // los hijos de listas y votaciones entran detrás de su caja
+    $$(".k-check, .k-ops", cuerpo).forEach(function (lista) {
+      var padre = animada(lista, cuerpo), base = 0;
+      if (padre) { base = parseFloat(getComputedStyle(padre).animationDelay) || 0; base = Math.max(base, parseFloat(padre.style.getPropertyValue("--fx-d")) || 0); }
+      $$(":scope > li, :scope > button", lista).forEach(function (h, j) {
+        h.style.setProperty("--fx-d", (base + .22 + j * .06).toFixed(2) + "s"); h.classList.add("fx-hijo");
+      });
+    });
+  }
+
+  // Marca JMD discreta en el pie: la Osa Mayor con su última estrella y las cuerdas del arpa.
+  var MARCA = '<svg class="fx-marca" viewBox="14 44 186 144" aria-hidden="true" focusable="false">' +
+    '<path class="cu" d="M95 66.6V177M112 64V181M127 61.2V182M142 58V181M160 68.3V176"/>' +
+    '<path class="ar" d="M92 176Q138 190 186 160"/>' +
+    '<path class="os" pathLength="1" d="M22 52L28 88L68 98L78 69ZM78 69L112 64L142 58L177 78"/>' +
+    '<g class="es"><circle cx="22" cy="52" r="5"/><circle cx="28" cy="88" r="5"/><circle cx="68" cy="98" r="5"/><circle cx="78" cy="69" r="5"/><circle cx="112" cy="64" r="5"/><circle cx="142" cy="58" r="5"/></g>' +
+    '<path class="ul" d="M177 60Q177 78 195 78Q177 78 177 96Q177 78 159 78Q177 78 177 60Z"/></svg>';
+  function ponerMarca() {
+    var pie = $(".esc-pie"); if (!pie || $(".fx-marca", pie)) return;
+    pie.insertAdjacentHTML("beforeend", MARCA);
+  }
+
+  function efectos() {
+    try { marcarFase(); ponerMarca(); escalonar(); } catch (e) {}
+  }
+
   // ---------- montaje automático ----------
   function montar(raiz) {
     $$("[data-voto]", raiz).forEach(montarVoto);
@@ -430,13 +507,13 @@
       setTimeout(function () { t.textContent = antes; t.classList.remove("ok"); }, 2200);
     });
   });
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { montar(); });
-  else montar();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { montar(); efectos(); });
+  else { montar(); efectos(); }
 
   window.G8 = {
     leccion: LECCION, escena: ESCENA, curso: CURSO, clase: CLASE, fecha: FECHA,
     pedir: pedir, toast: toast, copiar: copiar, abrir: abrir, yo: yo, leer: leer, guardar: guardar, hash: hash,
     avatares: AVATARES, avatarPorNombre: avatarPorNombre, dibujarAvatar: dibujarAvatar, avatarCanvas: avatarCanvas,
-    fotito: fotito, descargar: descargar, mostrarFoto: mostrarFoto, montar: montar,
+    fotito: fotito, descargar: descargar, mostrarFoto: mostrarFoto, montar: montar, celebrar: celebrar,
   };
 })();
