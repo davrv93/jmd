@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tu semáforo: las reglas de tu sitio</title>
+<!-- Escena LIVE ws-01 · E06. El alumno revisa SU sitio y envía su ficha como evidencia («hallazgo»). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.s-preg { display: grid; gap: .35em; padding: .45em 0; border-bottom: 1px dashed var(--line2); }
+.s-preg > span { font-size: .8em; font-weight: 700; }
+.s-ops { display: flex; flex-wrap: wrap; gap: .35em; }
+.s-op { font: 600 .74em system-ui, sans-serif; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); border-radius: 999px; padding: .5em .9em; cursor: pointer; min-height: 40px; touch-action: manipulation; }
+.s-op[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.s-ficha { white-space: pre-wrap; font: 600 .74em/1.5 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .7em; padding: .7em .9em; margin: .5em 0; overflow-wrap: anywhere; }
+.s-porque { margin: .4em 0 0; padding-left: 1.1em; font-size: .8em; display: grid; gap: .2em; }
+</style>
+</head>
+<body data-escena="06-tu-semaforo">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/><g><circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="eo" cx="296" cy="524" r="5"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Scraping ético · E06</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Tu semáforo: <em>las reglas de tu sitio</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Elige un sitio del que te gustaría sacar datos, revisa sus reglas y arma tu ficha.</p>
+    </div>
+    <p class="w-ahora a-in" style="--d:.15s"><b>Ahora tú</b><span>Escribe el sitio, abre su robots.txt en otra pestaña, responde las cinco preguntas y pulsa <b>Enviar mi ficha</b>.</span></p>
+    <div class="w-g21">
+      <section class="esc-card a-in" style="--d:.2s">
+        <label class="w-lab">Sitio que quieres revisar
+          <input class="w-in" id="sitio" placeholder="https://www.ejemplo.com/productos" spellcheck="false" autocomplete="off"></label>
+        <p class="w-peq w-muted" style="margin:.4em 0">¿No tienes uno? Usa el de práctica del taller:
+          <button type="button" class="w-btn sec peq" id="practica">quotes.toscrape.com</button></p>
+        <pre class="esc-cmd" id="url-robots" data-copiar="">Escribe el sitio y aquí sale la dirección de su robots.txt</pre>
+        <p class="w-peq w-muted" style="margin:.3em 0 .5em">Cópiala y pégala en una pestaña nueva. Para los términos, busca en el pie de página «Términos», «Condiciones» o «Aviso legal».</p>
+        <div id="preguntas">
+          <div class="s-preg" data-p="robots"><span>1 · ¿Qué dice robots.txt de la ruta que quieres?</span><div class="s-ops"><button class="s-op" data-v="permite">La permite</button><button class="s-op" data-v="prohibe">La prohíbe</button><button class="s-op" data-v="no-existe">No existe (404)</button></div></div>
+          <div class="s-preg" data-p="terminos"><span>2 · ¿Y los términos de uso?</span><div class="s-ops"><button class="s-op" data-v="no-dicen">No lo prohíben</button><button class="s-op" data-v="prohiben">Lo prohíben</button><button class="s-op" data-v="no-encontre">No los encontré</button></div></div>
+          <div class="s-preg" data-p="api"><span>3 · ¿Hay una API o una descarga oficial?</span><div class="s-ops"><button class="s-op" data-v="si">Sí</button><button class="s-op" data-v="no">No</button></div></div>
+          <div class="s-preg" data-p="datos"><span>4 · ¿Hay datos personales en lo que quieres?</span><div class="s-ops"><button class="s-op" data-v="no-hay">No hay</button><button class="s-op" data-v="fuera">Hay, los dejo fuera</button><button class="s-op" data-v="necesito">Los necesito</button></div></div>
+          <div class="s-preg" data-p="ritmo"><span>5 · ¿Cada cuánto harás un pedido?</span><div class="s-ops"><button class="s-op" data-v="0">Sin pausa</button><button class="s-op" data-v="1">1 s</button><button class="s-op" data-v="2">2 s</button><button class="s-op" data-v="5">5 s</button></div></div>
+        </div>
+      </section>
+      <section class="esc-card a-in" style="--d:.3s">
+        <span class="w-et">Tu ficha</span>
+        <p><span class="w-luz ambar" id="luz">Responde las cinco preguntas</span></p>
+        <ul class="s-porque" id="porque"></ul>
+        <div class="s-ficha" id="ficha">—</div>
+        <div class="w-fila">
+          <button type="button" class="w-btn" id="enviar" disabled>Enviar mi ficha</button>
+          <button type="button" class="w-btn sec" id="copiar">Copiar</button>
+        </div>
+        <p class="w-peq" id="enviada" aria-live="polite" style="margin:.5em 0 0"></p>
+        <p class="w-peq w-muted" style="margin-top:.6em">Al enviarla, el instructor ve tu ficha y la escena cuenta como cumplida. Después pulsa <b>«Lo logré»</b>.</p>
+      </section>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Rojo no es fracaso: es saber a tiempo que necesitas permiso u otro camino.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script src="../../comun/copiar.js"></script>
+<script>
+(function () {
+  "use strict";
+  var sitio = document.getElementById("sitio"), urlR = document.getElementById("url-robots");
+  var resp = WS.leer("semaforo", {}) || {};
+  sitio.value = resp.sitio || "";
+  function origen() {
+    var v = sitio.value.trim(); if (!v) return "";
+    if (!/^https?:\/\//i.test(v)) v = "https://" + v;
+    try { return new URL(v).origin; } catch (e) { return ""; }
+  }
+  var ET = {
+    robots: { permite: "la permite", prohibe: "la prohíbe", "no-existe": "no existe" },
+    terminos: { "no-dicen": "no lo prohíben", prohiben: "lo prohíben", "no-encontre": "no los encontré" },
+    api: { si: "sí hay", no: "no hay" },
+    datos: { "no-hay": "no hay", fuera: "los dejo fuera", necesito: "los necesito" },
+    ritmo: { "0": "sin pausa", "1": "1 pedido por segundo", "2": "1 pedido cada 2 s", "5": "1 pedido cada 5 s" },
+  };
+  function calcular() {
+    var o = origen();
+    resp.sitio = sitio.value.trim(); WS.guardar("semaforo", resp);
+    var txtUrl = o ? o + "/robots.txt" : "Escribe el sitio y aquí sale la dirección de su robots.txt";
+    urlR.textContent = txtUrl; urlR.setAttribute("data-copiar", o ? o + "/robots.txt" : "");
+    document.querySelectorAll(".s-preg").forEach(function (g) {
+      var k = g.getAttribute("data-p");
+      g.querySelectorAll(".s-op").forEach(function (b) { b.setAttribute("aria-pressed", resp[k] === b.getAttribute("data-v") ? "true" : "false"); });
+    });
+    var faltan = ["robots", "terminos", "api", "datos", "ritmo"].filter(function (k) { return !resp[k]; });
+    var luz = document.getElementById("luz"), porque = document.getElementById("porque"), enviar = document.getElementById("enviar");
+    porque.textContent = "";
+    if (!o || faltan.length) {
+      luz.className = "w-luz ambar"; luz.textContent = !o ? "Escribe el sitio" : "Te faltan " + faltan.length + (faltan.length === 1 ? " respuesta" : " respuestas");
+      document.getElementById("ficha").textContent = "—"; enviar.disabled = true; return;
+    }
+    var rojo = [], ambar = [];
+    if (resp.robots === "prohibe") rojo.push("robots.txt prohíbe esa ruta: no la visites.");
+    if (resp.terminos === "prohiben") rojo.push("Los términos lo prohíben: pide permiso o busca otra fuente.");
+    if (resp.datos === "necesito") rojo.push("Necesitas datos personales: requiere base legal y consentimiento.");
+    if (resp.ritmo === "0") ambar.push("Sin pausa es la tienda de Rosa otra vez: pon al menos 1 s.");
+    if (resp.terminos === "no-encontre") ambar.push("Sin términos a la vista: ve lento y guarda una nota de lo que revisaste.");
+    if (resp.api === "si") ambar.push("Hay API o descarga oficial: úsala antes que extraer el HTML.");
+    var color = rojo.length ? "rojo" : ambar.length ? "ambar" : "verde";
+    luz.className = "w-luz " + color;
+    luz.textContent = color === "rojo" ? "Rojo: no extraigas así" : color === "ambar" ? "Ámbar: puedes, con cuidado" : "Verde: adelante, despacio";
+    (rojo.concat(ambar).length ? rojo.concat(ambar) : ["robots.txt y términos no lo impiden, sin datos personales y con pausa."]).forEach(function (t) {
+      var li = document.createElement("li"); li.textContent = t; porque.appendChild(li);
+    });
+    var host = o.replace(/^https?:\/\//, "");
+    var ficha = host + " · robots: " + ET.robots[resp.robots] + " · términos: " + ET.terminos[resp.terminos] + " · API: " + ET.api[resp.api] +
+      " · datos personales: " + ET.datos[resp.datos] + " · ritmo: " + ET.ritmo[resp.ritmo] + " → " + { verde: "VERDE", ambar: "ÁMBAR", rojo: "ROJO" }[color];
+    document.getElementById("ficha").textContent = ficha;
+    enviar.disabled = false; enviar.dataset.ficha = ficha;
+  }
+  document.querySelectorAll(".s-preg").forEach(function (g) {
+    g.querySelectorAll(".s-op").forEach(function (b) {
+      b.type = "button";
+      b.addEventListener("click", function () { resp[g.getAttribute("data-p")] = b.getAttribute("data-v"); calcular(); });
+    });
+  });
+  sitio.addEventListener("input", calcular);
+  document.getElementById("practica").addEventListener("click", function () { sitio.value = "https://quotes.toscrape.com"; calcular(); });
+  document.getElementById("enviar").addEventListener("click", function () {
+    var b = this, out = document.getElementById("enviada");
+    b.disabled = true; out.textContent = "Enviando…";
+    WS.evidencia("hallazgo", b.dataset.ficha).then(function () {
+      out.className = "w-peq w-ok"; out.textContent = "✓ Ficha enviada. Ahora pulsa «Lo logré» en el panel.";
+    }, function () {
+      out.className = "w-peq w-bad"; out.textContent = "No se pudo enviar. Copia tu ficha y vuelve a intentar en un momento.";
+    }).then(function () { b.disabled = false; });
+  });
+  document.getElementById("copiar").addEventListener("click", function () {
+    var b = this; window.copiarTexto(document.getElementById("ficha").textContent).then(function (ok) { b.textContent = ok ? "✓ Copiada" : "No pude copiar"; setTimeout(function () { b.textContent = "Copiar"; }, 2000); });
+  });
+  calcular();
+})();
+</script>
+</body>
+</html>

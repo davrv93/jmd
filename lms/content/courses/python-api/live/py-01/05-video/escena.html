@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E05 · Video: tu entorno de Python</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/py01.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .35); }
+.esc-titulo { font-size: 1.85em; }
+.vd { display: grid; grid-template-columns: 1.55fr 1fr; gap: 2vw; align-items: start; min-height: 0; }
+.vd-marco { position: relative; aspect-ratio: 16 / 9; width: 100%; max-height: 66vh; border-radius: 1.1em; overflow: hidden; background: var(--term); border: 1px solid var(--line2); box-shadow: var(--card-shadow); }
+.vd-marco video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: var(--term); }
+.vd-espera { position: absolute; inset: 0; display: grid; place-items: center; color: #a9d0f5; font: 600 .8em system-ui, sans-serif; pointer-events: none; }
+.vd-espera span { animation: esc-pulso 1.6s ease-in-out infinite; }
+/* Respaldo: el video no cargó. El resumen en tres tarjetas ocupa su lugar. */
+.vd-resp { position: absolute; inset: 0; display: grid; grid-template-rows: auto 1fr auto; gap: .8em; padding: 1.1em 1.3em; background: radial-gradient(120% 90% at 80% 0%, rgba(255,212,59,.20), transparent 60%), var(--term); color: #e6eefb; }
+.vd-resp h2 { margin: 0; font-size: .95em; }
+.vd-resp h2 small { display: block; font-size: .72em; font-weight: 500; color: #a9bdd6; margin-top: .2em; }
+.vd-tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8em; align-items: stretch; }
+.vd-t { border-radius: .9em; padding: .8em .9em; background: rgba(255,255,255,.06); border: 1px solid rgba(169,208,245,.25); display: grid; gap: .35em; align-content: start; animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; animation-delay: var(--d, 0s); }
+.vd-t svg { width: 2.4em; height: 2.4em; }
+.vd-t svg * { fill: none; stroke: #ffd43b; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.vd-t b { font-size: .9em; }
+.vd-t span { font-size: .72em; color: #c9dcf3; line-height: 1.35; }
+.vd-t code { font: 700 .95em var(--mono); color: #ffd43b; }
+.vd-resp .k-btn { justify-self: start; }
+.vd-der { display: grid; gap: 1.6vh; align-content: start; }
+.vd-mira { margin: 0; padding: 0; list-style: none; display: grid; gap: .45em; counter-reset: m; }
+.vd-mira li { display: flex; gap: .6em; align-items: baseline; font-size: .8em; line-height: 1.35; }
+.vd-mira li::before { counter-increment: m; content: counter(m); flex: none; width: 1.6em; height: 1.6em; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 800; font-size: .85em; background: var(--ph-or-bg); color: var(--ph-or); border: 2px solid var(--ph-or); }
+.vd-der .k-voto { --c: var(--ph-or); }
+@media (max-width: 760px) {
+  .vd { grid-template-columns: 1fr; gap: 14px; }
+  .vd-marco { max-height: none; }
+  .vd-tres { grid-template-columns: 1fr; gap: .45em; }
+  .vd-t { grid-template-columns: auto 1fr; align-items: center; padding: .5em .7em; }
+  .vd-t svg { grid-row: span 2; width: 1.8em; height: 1.8em; }
+  .vd-resp { position: relative; inset: auto; }
+  .vd-marco.sin-video { aspect-ratio: auto; }
+}
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1120 130 C1170 70 1230 190 1290 130 S1410 70 1470 140"/>
+  <path class="tb" pathLength="1" d="M70 660 C120 600 180 720 240 660 S360 600 420 670"/>
+  <g><circle class="eo" cx="1120" cy="130" r="5"/><circle class="e" cx="1290" cy="130" r="3.5"/><circle class="eg" cx="1470" cy="140" r="4"/><circle class="e" cx="70" cy="660" r="3.5"/><circle class="eo" cx="240" cy="660" r="4.5"/><circle class="eg" cx="420" cy="670" r="3.5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="560" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1520" cy="320" r="1.8"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/><circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/><circle class="e p" style="--p:1.3s" cx="1210" cy="420" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Python · E05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Tu entorno de Python, <em>en un minuto</em></h1>
+    <div class="vd">
+      <div class="vd-marco a-in" id="marco" style="--d:.15s">
+        <video id="video" controls playsinline preload="metadata" src="/files/python-api/materials/video-py-01.mp4" aria-label="Video: tu entorno de Python en un minuto"></video>
+        <div class="vd-espera" id="espera"><span>Cargando el video…</span></div>
+        <div class="vd-resp" id="resp" hidden>
+          <h2>El video no cargó: aquí va el resumen<small>Sigue en la pantalla del instructor o vuelve a intentar en un momento.</small></h2>
+          <div class="vd-tres">
+            <div class="vd-t" style="--d:.1s"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 12h10v8H8zM22 20h10v8H22zM18 16h4v8"/></svg><b>Versiones</b><span>Varias conviven en tu máquina: <code>pyenv</code> o <code>py</code> eligen una por carpeta.</span></div>
+            <div class="vd-t" style="--d:.3s"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 14h20v18a3 3 0 0 1-3 3H13a3 3 0 0 1-3-3zM15 14V10a5 5 0 0 1 10 0v4M15 23h10"/></svg><b>venv</b><span>Una mochila por proyecto: sus librerías no chocan con las de otro.</span></div>
+            <div class="vd-t" style="--d:.5s"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 6l13 6v16l-13 6-13-6V12zM7 12l13 6 13-6M20 18v16"/></svg><b>Docker</b><span>Una caja con Python dentro: el mismo script corre igual en 3.11 y 3.13.</span></div>
+          </div>
+          <button class="k-btn sec" type="button" id="reintentar">Reintentar el video</button>
+        </div>
+      </div>
+      <div class="vd-der">
+        <div class="esc-card a-in" style="--d:.3s">
+          <h3>Mientras lo ves, busca</h3>
+          <ol class="vd-mira">
+            <li>Por qué un proyecto pide 3.11 y otro 3.13.</li>
+            <li>Qué guarda el <code>.venv</code> de cada carpeta.</li>
+            <li>Qué viaja dentro de la caja de Docker.</li>
+          </ol>
+        </div>
+        <div class="k-caja k-voto a-in" style="--d:.45s" data-voto="py01-video">
+          <p class="k-q">¿Qué parte quieres que veamos más despacio?</p>
+          <div class="k-ops">
+            <button data-op="versiones">Versiones</button>
+            <button data-op="venv">venv y pip</button>
+            <button data-op="docker">Docker</button>
+            <button data-op="claro">Todo claro</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Vota al terminar el video: el instructor ve qué explicar mejor</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+/* El video vive en materials/ (material py-01-video). Si no está o no carga, queda el resumen. */
+(function () {
+  var v = document.getElementById("video"), espera = document.getElementById("espera"), resp = document.getElementById("resp"), marco = document.getElementById("marco");
+  var SRC = v.getAttribute("src"), listo = false, t = 0;
+  function bien() { listo = true; clearTimeout(t); espera.hidden = true; resp.hidden = true; v.hidden = false; marco.classList.remove("sin-video"); }
+  function mal() { if (listo) return; clearTimeout(t); espera.hidden = true; v.hidden = true; resp.hidden = false; marco.classList.add("sin-video"); }
+  v.addEventListener("loadedmetadata", bien);
+  v.addEventListener("canplay", bien);
+  v.addEventListener("error", mal);
+  t = setTimeout(function () { if (!listo) espera.querySelector("span").textContent = "El video tarda: puedes pulsar ▶ igual"; }, 8000);
+  if (v.error) mal();
+  document.getElementById("reintentar").addEventListener("click", function () {
+    listo = false; resp.hidden = true; espera.hidden = false; v.hidden = false; marco.classList.remove("sin-video");
+    v.src = SRC + "?r=" + Date.now(); v.load();
+  });
+})();
+</script>
+<script src="../../comun/py01.js"></script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Los estados del pedido y la confirmación del pago</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
+  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<style id="esc-propio">
+.ep { display: grid; grid-template-columns: repeat(5, 1fr) .1fr repeat(2, 1fr); gap: .5em; align-items: stretch; }
+.ep button { position: relative; text-align: left; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); border-radius: .9em; padding: .7em .75em; cursor: pointer; font: 700 .74em/1.25 system-ui, sans-serif; box-shadow: var(--card-shadow); display: grid; gap: .3em; }
+.ep button i { width: .9em; height: .9em; border-radius: 50%; background: var(--c); }
+.ep button small { font-weight: 500; color: var(--muted); font-size: .85em; }
+.ep button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent); }
+.ep .sep { align-self: center; justify-self: center; width: 2px; height: 70%; background: var(--line2); }
+@media (max-width: 860px) { .ep { grid-template-columns: 1fr 1fr; } .ep .sep { display: none; } .ep button { font-size: .9em; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Sesión 2 · E05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-pila">
+      <h1 class="esc-titulo a-in" style="font-size:1.6em">Un pedido pasa por <em>cinco estados</em></h1>
+      <div class="ep a-in" style="--d:.1s" id="ep" role="group" aria-label="Estados del pedido"></div>
+      <div class="tw-cols">
+        <div class="tw-card a-in" style="--d:.2s" aria-live="polite">
+          <h2 id="ep-et">Toca un estado</h2>
+          <p class="tw-peq" id="ep-cli"></p>
+          <p class="tw-peq" id="ep-tu"></p>
+        </div>
+        <div class="tw-card a-in" style="--d:.3s">
+          <h2>Antes de confirmar un pago · 4 reglas</h2>
+          <ol class="tw-pasos">
+            <li><div><b>Verifica en tu app o en tu banco</b><span>Que el dinero llegó. La captura sola no basta.</span></div></li>
+            <li><div><b>Compara el monto</b><span>Si no cuadra con el pedido, habla con el cliente antes de confirmar.</span></div></li>
+            <li><div><b>¿La foto no es un pago?</b><span>Pide la captura correcta. El cliente puede cambiarla desde su pedido.</span></div></li>
+            <li><div><b>La lectura automática ayuda, pero puede equivocarse</b><span>Si el sistema lee el voucher por ti, igual mira la foto.</span></div></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Sigue la explicación del instructor</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$;
+  var E = [
+    ["recibido", "#e0a400", "Recibido", "Llegó el pedido", "Ve su número de pedido y lo que pidió.", "Te aparece en la lista con un puntito amarillo: falta confirmar el pago. La venta por la tienda descuenta tu stock."],
+    ["por-confirmar", "#e0a400", "Pago por confirmar", "Ya mandó su voucher", "Ve «Pago por confirmar». Si subió una foto equivocada, la puede cambiar.", "Revisas el voucher y lo compruebas en tu app o tu banco."],
+    ["pagado", "#1f9d55", "Pagado", "Confirmaste el pago", "Ve que su pago quedó confirmado.", "El puntito pasa a verde y se emite el comprobante: hoy la tienda entrega una nota de venta (la boleta y la factura las vemos en la sesión 3)."],
+    ["listo", "#1f9d55", "Listo para recoger", "Pedido armado", "Sabe que puede pasar a recoger o que va en camino.", "Le avisas por WhatsApp con su número de pedido."],
+    ["entregado", "#1f9d55", "Entregado", "Ciclo cerrado", "Su pedido figura como entregado.", "La venta queda registrada para tus reportes."],
+    ["anulado", "#d63a22", "Anulado", "Con un motivo", "Ve el motivo en su pedido.", "Si el pago no llegó, anulas y escribes por qué. El pedido no se borra: queda en el historial."],
+    ["vencido", "#d63a22", "Vencido", "Nunca pagó", "—", "Un pedido que nadie confirmó queda vencido después de un tiempo (en la tienda de referencia, 3 días)."]
+  ];
+  var ep = $("#ep");
+  E.forEach(function (x, i) {
+    if (i === 5) ep.appendChild(TW.el("span", "sep"));
+    var b = TW.el("button"); b.type = "button"; b.style.setProperty("--c", x[1]); b.setAttribute("aria-pressed", "false");
+    b.appendChild(TW.el("i")); b.appendChild(TW.el("span", "", x[2])); b.appendChild(TW.el("small", "", x[3]));
+    b.addEventListener("click", function () {
+      $$("button", ep).forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+      $("#ep-et").textContent = x[2];
+      $("#ep-cli").innerHTML = "<b>Tu cliente:</b> " + x[4];
+      $("#ep-tu").innerHTML = "<b>Tú:</b> " + x[5];
+    });
+    ep.appendChild(b);
+  });
+  $$("button", ep)[1].click();
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

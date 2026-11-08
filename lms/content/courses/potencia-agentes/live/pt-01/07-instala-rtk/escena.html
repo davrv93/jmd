@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Instala RTK y activa el hook</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<style id="esc-propio">
+.i7 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2vw; align-items: start; }
+.i7-izq { display: grid; gap: .8em; }
+.i7-paso { display: grid; gap: .35em; }
+.i7-paso h3 { margin: 0; font-size: .8em; display: flex; gap: .5em; align-items: baseline; }
+.i7-paso h3 span { font: 800 .8em var(--mono); color: var(--ph-ea); }
+.i7-paso .esc-cmd { font-size: .66em; }
+.i7-falla { font-size: .64em; color: var(--muted); margin: 0; padding: .6em .8em; border-radius: .7em; background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+.i7-falla b { color: var(--warn); }
+.i7-falla code { font: 600 .95em var(--mono); color: var(--fg); }
+.i7-der { display: grid; gap: 1em; }
+.i7-cuenta { font: 800 .7em var(--mono); color: var(--ph-ea); }
+@media (max-width: 860px) { .i7 { grid-template-columns: 1fr; } .i7-paso h3 { font-size: 1em; } .i7-paso .esc-cmd { font-size: .8em; } .i7-falla { font-size: .84em; } .i7-cuenta { font-size: .9em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1330 70 L1270 190 L1330 190 L1250 330"/>
+  <g><circle class="eo" cx="1330" cy="70" r="5"/><circle class="e" cx="1270" cy="190" r="4"/><circle class="eg" cx="1330" cy="190" r="4"/><circle class="eo" cx="1250" cy="330" r="5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación activa</span>
+    <span class="esc-num">PT-01 · 07 / 10</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Instala RTK y <em>activa el hook</em></h1>
+      <p class="esc-sub a-in" style="--d:.12s">Doce minutos. Al final tu agente usa RTK solo, sin que cambies cómo trabajas.</p>
+    </div>
+    <div class="i7">
+      <div class="esc-card i7-izq a-in" style="--d:.2s" id="os">
+        <div class="pt-tabs" role="tablist" aria-label="Tu sistema">
+          <button type="button" class="pt-tab" data-tab="mac">macOS</button>
+          <button type="button" class="pt-tab" data-tab="linux">Linux o WSL</button>
+          <button type="button" class="pt-tab" data-tab="win">Windows</button>
+        </div>
+        <div class="i7-paso">
+          <h3><span>1</span> Instala</h3>
+          <div data-panel="mac"><pre class="esc-cmd"><span class="p">$ </span>brew install rtk</pre></div>
+          <div data-panel="linux" hidden><pre class="esc-cmd"><span class="p">$ </span>curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh</pre></div>
+          <div data-panel="win" hidden><pre class="esc-cmd"><span class="p">PS&gt; </span>winget install rtk-ai.rtk</pre></div>
+        </div>
+        <div class="i7-paso">
+          <h3><span>2</span> Comprueba</h3>
+          <pre class="esc-cmd"><span class="p">$ </span>rtk --version</pre>
+        </div>
+        <div class="i7-paso">
+          <h3><span>3</span> Activa el hook de tu agente</h3>
+          <pre class="esc-cmd"><span class="p">$ </span>rtk init -g <span class="c"># Claude Code</span></pre>
+          <pre class="esc-cmd" data-copiar="rtk init -g --opencode"><span class="p">$ </span>rtk init -g --opencode <span class="c"># además, OpenCode</span></pre>
+        </div>
+        <div class="i7-paso">
+          <h3><span>4</span> ¿Reescribe?</h3>
+          <pre class="esc-cmd"><span class="p">$ </span>rtk rewrite "git status"</pre>
+          <p class="pt-nota">Debe responder <b>rtk git status</b>. Cierra y abre tu agente para que tome el hook.</p>
+        </div>
+        <p class="i7-falla"><b>Si falla:</b> «command not found» en Linux → abre otra terminal o agrega <code>~/.local/bin</code> al PATH. Sin <code>winget</code> → usa WSL y la pestaña de Linux. ¿Sigue? Pega el error completo en el muro de esta escena.</p>
+      </div>
+      <div class="i7-der">
+        <div class="esc-card a-in" style="--d:.3s">
+          <span class="pt-et">Checklist <span class="i7-cuenta" id="cuenta">0 / 5</span></span>
+          <ul class="pt-check" id="check">
+            <li data-id="instalado"><span><code>rtk --version</code> responde</span></li>
+            <li data-id="init"><span>Corrí <code>rtk init -g</code> (o con <code>--opencode</code>)</span></li>
+            <li data-id="rewrite"><span><code>rtk rewrite "git status"</code> dice <code>rtk git status</code></span></li>
+            <li data-id="reinicio"><span>Cerré y abrí mi agente</span></li>
+            <li data-id="gain"><span><code>rtk gain</code> ya muestra algún comando</span></li>
+          </ul>
+          <p class="pt-check-pie" id="fin" style="margin-top:.4em">Marca cada paso. Con los cinco, pulsa «Lo logré» en el panel.</p>
+        </div>
+        <div class="esc-card a-in" style="--d:.38s">
+          <label class="pt-et" for="ver">Pega lo que respondió <code>rtk --version</code></label>
+          <div class="pt-fila"><input class="pt-in" id="ver" autocomplete="off" placeholder="rtk 1.0.1"><button type="button" class="pt-btn" id="pub">Enviar</button></div>
+          <p class="pt-nota" id="msg" style="margin-top:.3em"></p>
+        </div>
+        <div class="esc-card a-in" style="--d:.44s" id="muro"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Lo logré» en el panel cuando el checklist esté completo</span>
+  </footer>
+</div>
+
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/pt.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  PT.pestanas($("os"), "os3");
+  PT.checklist($("check"), "07", function (n, t) {
+    $("cuenta").textContent = n + " / " + t;
+    $("fin").textContent = n === t ? "✓ Listo. Pulsa «Lo logré» en el panel." : "Marca cada paso. Con los cinco, pulsa «Lo logré» en el panel.";
+  });
+  PT.muro($("muro"), "07-instala-rtk", "¿Te trabaste? Pega aquí el error (una línea)", { placeholder: "error: …" });
+  var prev = PT.leer("rtk-version", "");
+  if (prev) $("ver").value = prev;
+  $("pub").addEventListener("click", function () {
+    var t = $("ver").value.replace(/\s+/g, " ").trim().slice(0, 80);
+    if (!/rtk\s+\d+\.\d+/i.test(t)) { $("msg").textContent = "Debe verse algo como «rtk 1.0.1». Si dice «command not found», mira «Si falla»."; return; }
+    PT.guardar("rtk-version", t);
+    PT.evidencia("hallazgo", "RTK instalado: " + t).then(function (r) {
+      $("msg").textContent = r.ok ? "✓ Recibido: " + t + "." : "Guardado en este navegador (la evidencia se envía en vivo).";
+    });
+  });
+})();
+</script>
+</body>
+</html>

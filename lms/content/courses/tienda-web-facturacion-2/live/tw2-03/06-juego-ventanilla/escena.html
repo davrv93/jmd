@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Juego: La ventanilla</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
+  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<link rel="stylesheet" href="../../comun/juego.css">
+<style id="esc-propio">
+.vt { display: grid; gap: .7em; user-select: none; -webkit-user-select: none; }
+.vt-fila { min-height: 7.2em; display: grid; place-items: center; position: relative; }
+.vt-cli { width: min(26em, 100%); background: var(--s1); border: 2px solid var(--line2); border-radius: 1em; padding: .7em .9em; display: grid; grid-template-columns: 2.4em 1fr; gap: .2em .7em; align-items: center; box-shadow: var(--card-shadow); cursor: grab; touch-action: none; position: relative; z-index: 3; }
+.vt-cli.arrastra { cursor: grabbing; box-shadow: 0 18px 40px -16px rgba(0,0,0,.45); transition: none; }
+.vt-cli .cara { grid-row: span 2; font-size: 2.2em; line-height: 1; text-align: center; }
+.vt-cli b { font-size: .8em; }
+.vt-cli span { font-size: .7em; color: var(--muted); }
+.vt-cli .doc { font: 700 .66em var(--mono); color: var(--fg); grid-column: 2; }
+.vt-cli .monto { position: absolute; top: .5em; right: .7em; font: 900 .78em var(--mono); color: var(--accent); }
+.vt-band { display: grid; grid-template-columns: repeat(4, 1fr); gap: .45em; }
+.vt-b { border: 2px dashed var(--line2); border-radius: 1em; padding: .8em .5em; text-align: center; background: var(--s2); cursor: pointer; font: 800 .74em/1.2 system-ui, sans-serif; color: var(--fg); display: grid; gap: .2em; justify-items: center; min-height: 5.4em; align-content: center; touch-action: manipulation; }
+.vt-b i { font-style: normal; font-size: 1.7em; line-height: 1; }
+.vt-b small { font-weight: 600; color: var(--muted); font-size: .8em; }
+.vt-b.sobre { border-style: solid; border-color: var(--accent); background: var(--accent-bg); }
+.vt-b.bien { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
+.vt-b.mal { border-style: solid; border-color: var(--warn); background: var(--warn-bg); }
+.vt-mio { display: flex; flex-wrap: wrap; gap: .35em .9em; font-size: .68em; color: var(--muted); }
+.vt-mio b { color: var(--fg); font-family: var(--mono); }
+.vt-rep { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5em; }
+.vt-rep div { background: var(--s2); border-radius: .7em; padding: .5em .6em; display: grid; }
+.vt-rep small { font-size: .58em; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.vt-rep b { font: 900 1em var(--mono); }
+@media (max-width: 860px) { .vt-band { grid-template-columns: 1fr 1fr; } .vt-b { font-size: .9em; } .vt-cli b { font-size: .95em; } .vt-cli span, .vt-cli .doc { font-size: .85em; } .vt-rep { grid-template-columns: 1fr 1fr; } .vt-rep small { font-size: .7em; } .vt-mio { font-size: .85em; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Sesión 3 · E06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-pila">
+      <div class="esc-fila" style="justify-content:space-between">
+        <h1 class="esc-titulo a-in" style="font-size:1.5em">La <em>ventanilla</em></h1>
+        <p class="tw-nota" style="max-width:36em">Llegan clientes. Arrastra cada uno a su bandeja (o toca la bandeja). Con lo que emitan todos, armamos el reporte del día del grupo.</p>
+      </div>
+      <div id="juego"></div>
+      <div class="tw-card" id="rep-grupo">
+        <h2>Reporte del día del grupo <span class="esc-chip" id="rep-n">0 cajas</span></h2>
+        <div class="vt-rep" id="rep"></div>
+        <p class="tw-nota">Sale de los registros que cada uno publica al terminar su ronda. Todos los productos del juego llevan IGV.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Juego del grupo · al final, tu reflexión al muro y tu fotito</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+<script src="../../comun/juego.js"></script>
+<script src="../../comun/fotito.js"></script>
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$;
+  var BAND = [["boleta", "🅱️", "Boleta", "persona · DNI"], ["factura", "🏢", "Factura", "negocio · RUC"], ["nc", "↩️", "Nota de crédito", "corrige una ya emitida"], ["ruc", "🔎", "Pedir el RUC", "falta un dato"]];
+  var CASOS = [
+    ["boleta", "👩", "Señora que compra para su casa", "DNI 4•••••••"], ["boleta", "🧑", "Joven que compra un regalo", "DNI 7•••••••"],
+    ["boleta", "👴", "Vecino que pagó con Yape y quiere su comprobante", "DNI 0•••••••"], ["boleta", "👩‍🦱", "Clienta de la tienda web, compra personal", "DNI 4•••••••"],
+    ["factura", "🍽️", "Restaurante que compra insumos", "RUC 20•••••••••"], ["factura", "🔧", "Don Luis compra para su ferretería y pide factura", "RUC 10•••••••••"],
+    ["factura", "🚚", "Empresa de transporte que sustenta un gasto", "RUC 20•••••••••"], ["factura", "🏫", "Colegio que compra útiles para sus aulas", "RUC 20•••••••••"],
+    ["nc", "📦", "Devuelve un producto de una boleta ya emitida", "Ref. B001-•••"], ["nc", "💸", "Le cobraste de más en una factura ya enviada", "Ref. F001-•••"],
+    ["nc", "🏷️", "Le das un descuento después de emitir su factura", "Ref. F001-•••"],
+    ["ruc", "🙋", "Pide factura, pero solo te da su DNI", "DNI 4•••••••"], ["ruc", "🤷", "Quiere factura «a nombre de la empresa» y no sabe el RUC", "Sin documento"]
+  ];
+  var POR = {
+    boleta: "Compra para sí misma: es consumidor final. Va <b>boleta</b>, normalmente con su DNI.",
+    factura: "Compra para su negocio y tiene RUC: va <b>factura</b>. El IGV le sirve como crédito fiscal.",
+    nc: "El comprobante ya se emitió y no se borra: se corrige con una <b>nota de crédito</b> que lo referencia.",
+    ruc: "La factura se emite a un RUC. Sin RUC, <b>pídeselo</b>; si no tiene, va boleta."
+  };
+  var vivo = false, rng = Math.random, tipT = 0, mio = { boleta: 0, factura: 0, nc: 0, ventas: 0, menos: 0 }, jugado = false;
+  function igv(t) { return t - t / 1.18; }
+  function texto() { var neto = mio.ventas - mio.menos; return "B" + mio.boleta + " F" + mio.factura + " N" + mio.nc + " T" + neto.toFixed(2) + " I" + igv(neto).toFixed(2); }
+  var REP = TW.escena + "-rep";
+  TWJuego.montar({
+    raiz: $("#juego"), segundos: 50, unidad: ["comprobante", "comprobantes"], meta: 8, tituloGrupo: "Comprobantes del grupo",
+    reglas: ["Llega un cliente con su situación. <b>Arrástralo</b> a su bandeja, o toca la bandeja.",
+             "Boleta, factura, nota de crédito… o <b>pedir el RUC</b> si falta un dato.",
+             "Si te equivocas, ves por qué: <b>no restas</b>. Al final, tu caja se suma al reporte del día del grupo."],
+    pregunta: "¿Qué comprobante te pedirán más en tu negocio, y qué dato necesitas para emitirlo?",
+    placeholder: "Ej.: «Boleta; tener a mano el DNI del cliente»",
+    resultado: function (p, e) { return { resultado: p + (p === 1 ? " comprobante bien elegido" : " comprobantes bien elegidos"), detalle: "La ventanilla · ventas " + TW.soles(mio.ventas - mio.menos) + " · " + e + (e === 1 ? " aprendizaje" : " aprendizajes") }; },
+    crear: function (z, api) {
+      var raiz = TW.el("div", "vt"), fila = TW.el("div", "vt-fila"), band = TW.el("div", "vt-band"), mioEl = TW.el("div", "vt-mio");
+      raiz.appendChild(fila); raiz.appendChild(band); raiz.appendChild(mioEl); z.appendChild(raiz);
+      var actual = null, tarjeta = null, ocupado = false, B = {};
+      BAND.forEach(function (x) {
+        var b = TW.el("button", "vt-b"); b.type = "button"; b.setAttribute("data-b", x[0]);
+        b.appendChild(TW.el("i", "", x[1])); b.appendChild(TW.el("span", "", x[2])); b.appendChild(TW.el("small", "", x[3]));
+        b.addEventListener("click", function () { soltar(x[0]); });
+        B[x[0]] = b; band.appendChild(b);
+      });
+      function pintarMio() {
+        var neto = mio.ventas - mio.menos;
+        mioEl.innerHTML = "Tu caja: <span><b>" + mio.boleta + "</b> boletas</span><span><b>" + mio.factura + "</b> facturas</span><span><b>" + mio.nc + "</b> notas de crédito</span><span>ventas <b>" + TW.soles(neto) + "</b></span><span>IGV <b>" + TW.soles(igv(neto)) + "</b></span>";
+      }
+      function tip(h) { var t = z.querySelector(".tj-tip"); if (t) t.remove(); t = TW.el("div", "tj-tip"); t.innerHTML = h; z.appendChild(t); clearTimeout(tipT); tipT = setTimeout(function () { t.remove(); }, 2600); }
+      function soltar(k) {
+        if (!vivo || !actual || ocupado) return;
+        ocupado = true;
+        var bien = k === actual.k;
+        B[k].classList.add(bien ? "bien" : "mal");
+        if (bien) {
+          api.punto(1);
+          if (k === "boleta" || k === "factura") { mio[k]++; mio.ventas += actual.m; }
+          if (k === "nc") { mio.nc++; mio.menos += Math.round(actual.m * 0.3 * 10) / 10; }
+          pintarMio();
+        } else { api.error(POR[actual.k]); B[actual.k].classList.add("bien"); tip(POR[actual.k]); }
+        if (tarjeta) { tarjeta.style.transition = "transform .3s ease-in, opacity .3s ease-in"; tarjeta.style.opacity = "0"; }
+        setTimeout(function () { $$(".vt-b", band).forEach(function (x) { x.classList.remove("bien", "mal", "sobre"); }); ocupado = false; siguiente(); }, bien ? 380 : 1700);
+      }
+      function siguiente() {
+        if (!vivo) return;
+        var c = CASOS[Math.floor(rng() * CASOS.length)];
+        actual = { k: c[0], m: Math.round((8 + rng() * 240) * 10) / 10 };
+        var t = TW.el("div", "vt-cli tj-pop"); t.setAttribute("role", "img"); t.setAttribute("aria-label", c[2] + ", " + c[3]);
+        t.appendChild(TW.el("span", "cara", c[1])); t.appendChild(TW.el("b", "", c[2])); t.appendChild(TW.el("span", "doc", c[3]));
+        t.appendChild(TW.el("span", "monto", TW.soles(actual.m)));
+        fila.textContent = ""; fila.appendChild(t); tarjeta = t;
+        arrastrable(t);
+      }
+      function bajo(x, y) { var r = null; Object.keys(B).forEach(function (k) { var q = B[k].getBoundingClientRect(); if (x >= q.left && x <= q.right && y >= q.top && y <= q.bottom) r = k; }); return r; }
+      function arrastrable(t) {
+        var x0 = 0, y0 = 0, id = null;
+        t.addEventListener("pointerdown", function (e) { if (!vivo || ocupado) return; id = e.pointerId; x0 = e.clientX; y0 = e.clientY; t.setPointerCapture(id); t.classList.add("arrastra"); });
+        t.addEventListener("pointermove", function (e) {
+          if (e.pointerId !== id) return;
+          t.style.transform = "translate(" + (e.clientX - x0) + "px," + (e.clientY - y0) + "px) rotate(" + ((e.clientX - x0) / 40) + "deg)";
+          var k = bajo(e.clientX, e.clientY); Object.keys(B).forEach(function (q) { B[q].classList.toggle("sobre", q === k); });
+        });
+        function fin(e) {
+          if (e.pointerId !== id) return; id = null; t.classList.remove("arrastra");
+          var k = bajo(e.clientX, e.clientY);
+          if (k) soltar(k); else { t.style.transition = "transform .2s ease-out"; t.style.transform = ""; setTimeout(function () { t.style.transition = ""; }, 220); }
+        }
+        t.addEventListener("pointerup", fin); t.addEventListener("pointercancel", fin);
+      }
+      pintarMio();
+      return {
+        empezar: function (r) { rng = r; vivo = true; ocupado = false; jugado = true; mio = { boleta: 0, factura: 0, nc: 0, ventas: 0, menos: 0 }; pintarMio(); siguiente(); },
+        parar: function () {
+          vivo = false;
+          if (jugado && (mio.boleta + mio.factura + mio.nc) > 0) TW.pedir("/muro", { escena: REP, texto: texto() }).then(traerRep);
+        }
+      };
+    }
+  });
+  // Reporte del grupo: suma lo que cada uno publicó al terminar («B7 F4 N2 T812.40 I123.93»).
+  function traerRep() {
+    TW.pedir("/muro?escena=" + REP).then(function (r) {
+      var en = r.ok && r.datos.entradas ? r.datos.entradas : [], s = { b: 0, f: 0, n: 0, t: 0 }, k = 0;
+      en.forEach(function (e) {
+        var m = String(e.texto || "").match(/^B(\d+) F(\d+) N(\d+) T(-?[\d.]+)/);
+        if (m) { k++; s.b += +m[1]; s.f += +m[2]; s.n += +m[3]; s.t += +m[4]; }
+      });
+      $("#rep-n").textContent = k + (k === 1 ? " caja" : " cajas");
+      var rep = $("#rep"); rep.textContent = "";
+      [["Boletas", s.b], ["Facturas", s.f], ["Notas de crédito", s.n], ["Ventas del día", TW.soles(s.t)], ["IGV incluido", TW.soles(igv(s.t))]].forEach(function (x) {
+        var d = TW.el("div"); d.appendChild(TW.el("small", "", x[0])); d.appendChild(TW.el("b", "", String(x[1]))); rep.appendChild(d);
+      });
+    });
+  }
+  traerRep(); setInterval(traerRep, 5000);
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

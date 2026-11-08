@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Seis impurezas, tres pruebas</title>
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 1 (gq-02). Conceptualización: las seis formas en que un SQL miente y las tres
+     pruebas que lo delatan. Cada tarjeta se voltea al tocarla (síntoma → arreglo). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<style id="esc-propio">
+.b6 { display: grid; grid-template-columns: 1.45fr 1fr; gap: 1.8vw; align-items: start; }
+.b6-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.b6-c { position: relative; min-height: 7.4em; perspective: 900px; border: 0; padding: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; touch-action: manipulation; }
+.b6-c:focus-visible { outline: 3px solid var(--oro); outline-offset: 3px; border-radius: 1em; }
+.b6-in { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .5s cubic-bezier(.2,.7,.2,1); }
+.b6-c[aria-pressed="true"] .b6-in { transform: rotateY(180deg); }
+.b6-f, .b6-b { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: .9em; padding: .6em .75em; display: grid; gap: .3em; align-content: start; border: 1px solid var(--line); box-shadow: var(--card-shadow); }
+.b6-f { background: var(--s1); border-top: .3em solid var(--pirita); }
+.b6-b { background: color-mix(in srgb, var(--oro) 12%, var(--s1)); border-top: .3em solid var(--oro); transform: rotateY(180deg); }
+.b6-f i, .b6-b i { font-style: normal; font: 800 .6em system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--pirita); }
+.b6-b i { color: var(--oro); }
+.b6-f b { font-size: .86em; line-height: 1.2; }
+.b6-f code, .b6-b code { font: 600 .64em/1.4 var(--mono); color: var(--fg); background: var(--s2); border-radius: .4em; padding: .2em .4em; overflow-wrap: anywhere; }
+.b6-b span { font-size: .72em; line-height: 1.35; }
+.b6-toca { position: absolute; right: .6em; bottom: .45em; font-size: .56em; color: var(--muted); }
+.b6-pruebas { display: grid; gap: .5em; counter-reset: p; margin: 0; padding: 0; list-style: none; }
+.b6-pruebas li { counter-increment: p; display: grid; grid-template-columns: 2em 1fr; gap: .6em; align-items: start; background: var(--s1); border: 1px solid var(--line); border-radius: .8em; padding: .55em .8em; box-shadow: var(--card-shadow); font-size: .82em; }
+.b6-pruebas li::before { content: counter(p); display: grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 50%; background: linear-gradient(135deg, var(--oro), var(--oro-2)); color: #1b1300; font-weight: 800; }
+.b6-pruebas b { display: block; }
+.b6-pruebas small { display: block; color: var(--muted); font-size: .82em; margin-top: .1em; }
+.b6-cuenta { margin: 0; font-size: .7em; color: var(--muted); }
+@media (max-width: 760px) {
+  .b6 { grid-template-columns: 1fr; gap: 14px; }
+  .b6-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .b6-c { min-height: 8.6em; }
+}
+@media (prefers-reduced-motion: reduce) { .b6-in { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">GoldenQuerys · S1 · 06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in" style="font-size:1.9em">Seis impurezas, <em class="oro">tres pruebas</em></h1>
+      <p class="esc-sub a-in" style="--d:.08s;font-size:.95em">Toca cada impureza para ver su arreglo.</p>
+    </div>
+    <div class="b6">
+      <div class="k-pila">
+        <div class="b6-grid" id="grid">
+          <button type="button" class="b6-c a-in" style="--d:.1s" aria-pressed="false"><span class="b6-in"><span class="b6-f"><i>1 · síntoma</i><b>Cuenta lo anulado</b><code>sin filtro de estado</code><span class="b6-toca">toca ↻</span></span><span class="b6-b"><i>arreglo</i><span>Filtra el estado:</span><code>estado = 'emitida'</code></span></span></button>
+          <button type="button" class="b6-c a-in" style="--d:.16s" aria-pressed="false"><span class="b6-in"><span class="b6-f"><i>2 · síntoma</i><b>El JOIN duplica</b><code>SUM(v.total) … JOIN detalle</code><span class="b6-toca">toca ↻</span></span><span class="b6-b"><i>arreglo</i><span>Suma en la tabla que tiene el total, sin unirla a sus líneas.</span></span></span></button>
+          <button type="button" class="b6-c a-in" style="--d:.22s" aria-pressed="false"><span class="b6-in"><span class="b6-f"><i>3 · síntoma</i><b>La fecha corta el día</b><code>BETWEEN '…-01' AND '…-31'</code><span class="b6-toca">toca ↻</span></span><span class="b6-b"><i>arreglo</i><span>La fecha trae hora: usa</span><code>date(fecha)</code><span>o «menor que» el 1 del mes siguiente.</span></span></span></button>
+          <button type="button" class="b6-c a-in" style="--d:.28s" aria-pressed="false"><span class="b6-in"><span class="b6-f"><i>4 · síntoma</i><b>Filas, no personas</b><code>COUNT(cliente_id)</code><span class="b6-toca">toca ↻</span></span><span class="b6-b"><i>arreglo</i><span>Cada persona una vez:</span><code>COUNT(DISTINCT cliente_id)</code></span></span></button>
+          <button type="button" class="b6-c a-in" style="--d:.34s" aria-pressed="false"><span class="b6-in"><span class="b6-f"><i>5 · síntoma</i><b>Top sin orden</b><code>LIMIT 5</code><span class="b6-toca">toca ↻</span></span><span class="b6-b"><i>arreglo</i><span>Ordena antes de cortar:</span><code>ORDER BY unidades DESC LIMIT 5</code></span></span></button>
+          <button type="button" class="b6-c a-in" style="--d:.4s" aria-pressed="false"><span class="b6-in"><span class="b6-f"><i>6 · síntoma</i><b>La pregunta cambiada</b><code>responde algo parecido</code><span class="b6-toca">toca ↻</span></span><span class="b6-b"><i>arreglo</i><span>Relee la pregunta y cada filtro: «lo que nos deben» no es «lo que vendimos a crédito».</span></span></span></button>
+        </div>
+        <p class="b6-cuenta" id="cuenta">0 de 6 volteadas</p>
+      </div>
+      <div class="k-pila">
+        <ol class="b6-pruebas a-in" style="--d:.3s" aria-label="Las tres pruebas">
+          <li><span><b>Cuenta las filas base</b><small>Sin SUM ni GROUP BY: ¿cuántas filas entran? ¿Te cuadra?</small></span></li>
+          <li><span><b>Compara por otra ruta</b><small>Otra consulta más simple que debería dar lo mismo.</small></span></li>
+          <li><span><b>Mira los bordes</b><small>Anuladas, último día del mes, nulos y duplicados.</small></span></li>
+        </ol>
+        <div class="k-caja k-voto a-in" style="--d:.45s" data-voto="gq02-traicionera" data-c="oro">
+          <p class="k-q" style="--c:var(--ph-ca)">¿Cuál te parece más traicionera?</p>
+          <div class="k-ops">
+            <button data-op="anuladas">Lo anulado</button>
+            <button data-op="join">El JOIN</button>
+            <button data-op="fecha">La fecha</button>
+            <button data-op="contar">Filas, no personas</button>
+            <button data-op="orden">Top sin orden</button>
+            <button data-op="pregunta">La pregunta cambiada</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">En el juego que sigue las vas a cazar: memoriza las tres pruebas</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq.js"></script>
+<script>
+(function () {
+  var cartas = Array.prototype.slice.call(document.querySelectorAll("#grid .b6-c")), vistas = GQ.leer("impurezas-vistas", []);
+  function pintar() {
+    var n = vistas.filter(Boolean).length;
+    document.getElementById("cuenta").textContent = n === 6 ? "¡Las seis volteadas! Ya las reconoces." : n + " de 6 volteadas";
+  }
+  cartas.forEach(function (c, i) {
+    c.addEventListener("click", function () {
+      var on = c.getAttribute("aria-pressed") !== "true";
+      c.setAttribute("aria-pressed", String(on));
+      if (on && !vistas[i]) { vistas[i] = true; GQ.guardar("impurezas-vistas", vistas); pintar(); }
+    });
+  });
+  pintar();
+})();
+</script>
+</body>
+</html>

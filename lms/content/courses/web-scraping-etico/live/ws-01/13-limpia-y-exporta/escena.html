@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Limpia y exporta</title>
+<!-- Escena LIVE ws-01 · E13. Limpiador interactivo (datos de juguete), revisión del CSV y JSON reales en la Terminal y evidencia «hallazgo». -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.l-ops { display: flex; flex-wrap: wrap; gap: .35em; }
+.l-op { font: 600 .72em system-ui, sans-serif; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); border-radius: 999px; padding: .5em .85em; cursor: pointer; min-height: 40px; touch-action: manipulation; }
+.l-op[aria-pressed="true"] { background: var(--ok); color: #fff; border-color: var(--ok); }
+.l-op[aria-pressed="true"]::before { content: "✓ "; }
+.l-tabla-env { overflow-x: auto; margin-top: .5em; border: 1px solid var(--line); border-radius: .6em; }
+.l-tabla { width: 100%; border-collapse: collapse; font: 600 .66em/1.35 var(--mono); }
+.l-tabla th, .l-tabla td { text-align: left; padding: .35em .5em; border-bottom: 1px solid var(--line); white-space: pre; }
+.l-tabla th { background: var(--s2); }
+.l-tabla tr.rep td { background: var(--warn-bg); }
+.l-tabla tr.vacia td { background: var(--bad-bg); }
+.l-cont { font-size: .8em; font-weight: 700; margin: .4em 0 0; }
+.l-salida { max-height: 22vh; }
+.l-casos { margin: 0; padding-left: 1.1em; display: grid; gap: .25em; font-size: .8em; }
+.l-ev { display: grid; grid-template-columns: 1fr 1fr; gap: .5em; }
+@media (max-width: 520px) { .l-ev { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-escena="13-limpia-y-exporta">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/><g><circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="eo" cx="1230" cy="690" r="4.5"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Scraping ético · E13</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Limpia y exporta: <em>CSV y JSON sin repetidas</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Los datos llegan sucios: espacios, comillas, precios como texto y filas dobles. Límpialos antes de guardarlos.</p>
+    </div>
+    <p class="w-ahora a-in" style="--d:.15s"><b>Ahora tú</b><span><b>1.</b> Enciende las limpiezas una por una y mira qué cambia. <b>2.</b> Revisa tus archivos reales en la Terminal. <b>3.</b> Envía tu resultado.</span></p>
+    <div class="w-g21">
+      <section class="esc-card a-in" style="--d:.2s">
+        <span class="w-et">1 · El limpiador (datos de juguete)</span>
+        <div class="l-ops" id="ops">
+          <button class="l-op" data-op="espacios">Espacios de más</button>
+          <button class="l-op" data-op="comillas">Comillas “ ”</button>
+          <button class="l-op" data-op="vacias">Filas vacías</button>
+          <button class="l-op" data-op="precio">Precio a número</button>
+          <button class="l-op" data-op="ciudad">Ciudad pareja</button>
+          <button class="l-op" data-op="telefono">Quitar teléfono (dato personal)</button>
+          <button class="l-op" data-op="repetidas">Quitar repetidas</button>
+        </div>
+        <div class="l-tabla-env"><table class="l-tabla" id="tabla" aria-live="polite"></table></div>
+        <p class="l-cont" id="cont"></p>
+        <p class="w-peq w-muted" id="pista" style="margin:.2em 0 0"></p>
+        <div class="w-g2" style="gap:.6em;margin-top:.5em">
+          <div><span class="w-et">CSV</span><pre class="esc-cmd l-salida" id="csv"></pre></div>
+          <div><span class="w-et">JSON</span><pre class="esc-cmd l-salida" id="json"></pre></div>
+        </div>
+      </section>
+      <div style="display:grid;gap:1em;align-content:start">
+        <section class="esc-card a-in" style="--d:.3s">
+          <span class="w-et">2 · Revisa tus archivos reales (en la carpeta scraping)</span>
+          <pre class="esc-cmd"><span class="p">$ </span>python3 -m json.tool frases.json &gt; /dev/null &amp;&amp; echo "JSON válido"</pre>
+          <pre class="esc-cmd" style="margin-top:.5em"><span class="p">$ </span>python3 -c "import csv; f=list(csv.DictReader(open('frases.csv', encoding='utf-8-sig'))); print(len(f), 'filas,', len({(r['frase'], r['autor']) for r in f}), 'únicas')"</pre>
+          <div class="w-check" data-check="13-limpia" data-fin=" · ¡Listo! Envía tu resultado abajo." style="margin-top:.5em">
+            <button class="w-chk"><span>Dice «JSON válido»</span></button>
+            <button class="w-chk"><span>Filas y únicas son el mismo número</span></button>
+            <button class="w-chk"><span>El CSV abre en Excel o Sheets con las tildes bien</span></button>
+            <button class="w-chk"><span>No hay columnas con datos personales</span></button>
+          </div>
+        </section>
+        <section class="esc-card a-in" style="--d:.4s">
+          <span class="w-et">3 · Tu resultado</span>
+          <div class="l-ev">
+            <label class="w-lab">Filas<input class="w-in" id="ev-filas" inputmode="numeric" placeholder="50"></label>
+            <label class="w-lab">Únicas<input class="w-in" id="ev-unicas" inputmode="numeric" placeholder="50"></label>
+          </div>
+          <div class="w-fila" style="margin-top:.5em"><button type="button" class="w-btn" id="enviar">Enviar resultado</button><span class="w-peq" id="enviado" aria-live="polite"></span></div>
+        </section>
+        <section class="esc-card a-in" style="--d:.5s">
+          <span class="w-et">Casos reales, con las mismas reglas</span>
+          <ul class="l-casos">
+            <li><b>Precios públicos</b> de la competencia, una vez al día y despacio.</li>
+            <li><b>Datos abiertos y licitaciones</b>: busca primero la descarga oficial.</li>
+            <li><b>Tu catálogo</b> en un marketplace, con tu propia sesión.</li>
+            <li><b>Stock de un proveedor</b>: pide la API antes de extraer.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Las repetidas solo aparecen después de limpiar espacios y mayúsculas: limpia primero, compara después.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script src="../../comun/copiar.js"></script>
+<script>
+(function () {
+  "use strict";
+  var CRUDO = [
+    ["  Arroz  Costeño 5 kg ", "S/ 24.90", "987654321", "Lima"],
+    ["Arroz costeño 5 kg", "S/24.90", "987654321", "lima "],
+    ["“Aceite Primor 1 L”", "S/ 9.50", "912345678", "AREQUIPA"],
+    ["", "", "", ""],
+    ["Azúcar rubia 1 kg", "4,20", "", "Cusco"],
+    ["Leche Gloria x6", "S/ 21.00", "998877665", "Lima"],
+    ["Leche Gloria x6", "S/ 21.00", "998877665", " Lima"],
+    ["Fideos  Don Vittorio 500 g", "S/ 3.10", "", "trujillo"],
+  ];
+  var on = WS.leer("e13-ops", {}) || {};
+  function titulo(s) { return s.toLowerCase().replace(/(^|\s)\S/g, function (m) { return m.toUpperCase(); }); }
+  function limpiar() {
+    var cols = ["producto", "precio", "telefono", "ciudad"];
+    var filas = CRUDO.map(function (r) { return r.slice(); });
+    if (on.espacios) filas = filas.map(function (r) { return r.map(function (v) { return v.replace(/\s+/g, " ").trim(); }); });
+    if (on.comillas) filas = filas.map(function (r) { return r.map(function (v) { return v.replace(/[“”"]/g, ""); }); });
+    if (on.vacias) filas = filas.filter(function (r) { return r.some(function (v) { return v.trim(); }); });
+    if (on.precio) filas = filas.map(function (r) { var n = parseFloat(r[1].replace(/[^\d,.-]/g, "").replace(",", ".")); r[1] = isNaN(n) ? "" : n; return r; });
+    if (on.ciudad) filas = filas.map(function (r) { r[3] = titulo(r[3].trim()); return r; });
+    if (on.telefono) { cols.splice(2, 1); filas = filas.map(function (r) { r.splice(2, 1); return r; }); }
+    var vistas = {}, marcadas = [];
+    filas.forEach(function (r) { var k = r.map(function (v) { return String(v).toLowerCase(); }).join("|"); marcadas.push(!!vistas[k] && k.replace(/\|/g, "") !== ""); vistas[k] = 1; });
+    if (on.repetidas) { filas = filas.filter(function (r, i) { return !marcadas[i]; }); marcadas = filas.map(function () { return false; }); }
+    return { cols: cols, filas: filas, rep: marcadas };
+  }
+  function pintar() {
+    document.querySelectorAll(".l-op").forEach(function (b) { b.setAttribute("aria-pressed", on[b.getAttribute("data-op")] ? "true" : "false"); });
+    var d = limpiar(), t = document.getElementById("tabla");
+    t.textContent = "";
+    var hr = document.createElement("tr"); d.cols.forEach(function (c) { var th = document.createElement("th"); th.textContent = c; hr.appendChild(th); }); t.appendChild(hr);
+    d.filas.forEach(function (r, i) {
+      var tr = document.createElement("tr");
+      if (d.rep[i]) tr.className = "rep"; else if (!r.some(function (v) { return String(v).trim(); })) tr.className = "vacia";
+      r.forEach(function (v) { var td = document.createElement("td"); td.textContent = typeof v === "number" ? v.toFixed(2) : "«" + v + "»"; tr.appendChild(td); });
+      t.appendChild(tr);
+    });
+    var nrep = d.rep.filter(Boolean).length, nOn = Object.keys(on).filter(function (k) { return on[k]; }).length;
+    document.getElementById("cont").textContent = "Filas: " + CRUDO.length + " → " + d.filas.length + (nrep ? " · " + nrep + " repetida" + (nrep > 1 ? "s" : "") + " a la vista" : "");
+    document.getElementById("pista").textContent = nOn === 7 ? "¡Limpio! 5 productos, sin teléfonos y con precios que se pueden sumar." :
+      !on.espacios && !on.repetidas ? "Empieza por «Espacios de más»: verás que aparecen filas repetidas que antes no se notaban." :
+      on.repetidas && !on.espacios ? "Quitar repetidas sin limpiar espacios deja dobles escondidos: enciende «Espacios de más» y «Ciudad pareja»." : "Sigue: te faltan " + (7 - nOn) + " limpiezas.";
+    var csv = [d.cols.join(",")].concat(d.filas.map(function (r) { return r.map(function (v) { v = typeof v === "number" ? String(v) : v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(","); })).join("\n");
+    var json = JSON.stringify(d.filas.map(function (r) { var o = {}; d.cols.forEach(function (c, i) { o[c] = r[i]; }); return o; }), null, 2);
+    document.getElementById("csv").textContent = csv;
+    document.getElementById("json").textContent = json;
+  }
+  document.querySelectorAll(".l-op").forEach(function (b) {
+    b.type = "button";
+    b.addEventListener("click", function () { var k = b.getAttribute("data-op"); on[k] = !on[k]; WS.guardar("e13-ops", on); pintar(); });
+  });
+  pintar();
+  var f = document.getElementById("ev-filas"), u = document.getElementById("ev-unicas"), out = document.getElementById("enviado");
+  document.getElementById("enviar").addEventListener("click", function () {
+    var nf = parseInt(f.value, 10), nu = parseInt(u.value, 10);
+    if (!(nf >= 0) || !(nu >= 0)) { out.className = "w-peq w-warn"; out.textContent = "Escribe las filas y las únicas que te dio la Terminal."; return; }
+    var b = this; b.disabled = true;
+    WS.evidencia("hallazgo", "CSV limpio: " + nf + " filas, " + nu + " únicas" + (nf === nu ? " · sin repetidas" : " · revisar repetidas")).then(function () {
+      out.className = "w-peq w-ok"; out.textContent = nf === nu ? "✓ Enviado. Sin repetidas: pulsa «Lo logré»." : "✓ Enviado. Hay " + (nf - nu) + " repetidas: revisa la clave de tu extractor.";
+    }, function () { out.className = "w-peq w-bad"; out.textContent = "No se pudo enviar; intenta en un momento."; }).then(function () { b.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>

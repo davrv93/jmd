@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Recorre una tienda desde el celular</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
+  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<style id="esc-propio">
+.td-top { display: flex; align-items: center; justify-content: space-between; padding: .7em .9em; border-bottom: 1px solid rgba(0,0,0,.08); }
+.td-bolsa { font: 700 1em system-ui, sans-serif; border: 0; background: #d63a22; color: #fff; border-radius: 999px; padding: .3em .7em; cursor: pointer; }
+.td-cuerpo { overflow: auto; padding: .7em .8em; display: grid; gap: .6em; align-content: start; }
+.td-nav { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgba(0,0,0,.1); }
+.td-nav button { border: 0; background: none; color: inherit; font: 600 .82em system-ui, sans-serif; padding: .45em 0 .55em; display: grid; justify-items: center; gap: .1em; cursor: pointer; opacity: .6; font-size: 1em; }
+.td-nav button span { font-size: .72em; }
+.td-nav button[aria-pressed="true"] { opacity: 1; color: #d63a22; }
+.td-ban { background: #16151d; color: #fff; border-radius: .9em; padding: .9em; }
+.td-ban b { font-size: 1.15em; display: block; }
+.td-dest { display: grid; grid-template-columns: repeat(3, 1fr); gap: .45em; }
+.td-mini { background: rgba(0,0,0,.04); border-radius: .7em; padding: .5em; text-align: center; font-size: .8em; cursor: pointer; border: 0; color: inherit; font-family: inherit; }
+.td-mini i { font-style: normal; font-size: 1.8em; display: block; }
+.td-buscar { width: 100%; font: 500 .95em system-ui, sans-serif; padding: .5em .7em; border-radius: .6em; border: 1px solid rgba(0,0,0,.18); background: #fff; color: #16151d; }
+.td-chips { display: flex; gap: .35em; overflow-x: auto; padding-bottom: .15em; }
+.td-chip { flex: none; border: 1px solid rgba(0,0,0,.18); background: transparent; color: inherit; border-radius: 999px; padding: .25em .7em; font: 600 .8em system-ui, sans-serif; cursor: pointer; }
+.td-chip[aria-pressed="true"] { background: #16151d; color: #fff; border-color: #16151d; }
+.td-orden { font: 600 .8em system-ui, sans-serif; padding: .3em .4em; border-radius: .5em; border: 1px solid rgba(0,0,0,.18); background: #fff; color: #16151d; }
+.td-prod { display: grid; grid-template-columns: 2.4em 1fr auto; gap: .55em; align-items: center; padding: .45em .5em; border-radius: .7em; background: rgba(0,0,0,.035); cursor: pointer; }
+.td-prod i { font-style: normal; font-size: 1.8em; text-align: center; }
+.td-prod b { display: block; font-size: .92em; }
+.td-prod small { opacity: .7; }
+.td-prod .pr { font-weight: 800; }
+.td-add { border: 0; background: #d63a22; color: #fff; border-radius: .5em; padding: .3em .55em; font: 700 .8em system-ui, sans-serif; cursor: pointer; }
+.td-capa { position: absolute; inset: 0; background: rgba(10,8,14,.45); display: grid; align-items: end; z-index: 3; }
+.td-hoja { background: var(--papel); color: var(--tinta); border-radius: 1.2em 1.2em 0 0; padding: 1em; display: grid; gap: .6em; max-height: 85%; overflow: auto; }
+:root[data-tema="dark"] .td-hoja { background: #26232f; color: #f1eff8; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) .td-hoja { background: #26232f; color: #f1eff8; } :root:not([data-tema="light"]) .td-buscar, :root:not([data-tema="light"]) .td-orden { background: #2b2836; color: #f1eff8; } }
+:root[data-tema="dark"] .td-buscar, :root[data-tema="dark"] .td-orden { background: #2b2836; color: #f1eff8; }
+.td-foto { font-size: 4.5em; text-align: center; background: rgba(0,0,0,.05); border-radius: .25em; line-height: 1.5; }
+.td-cant { display: flex; align-items: center; gap: .6em; }
+.td-cant button { width: 2.2em; height: 2.2em; border-radius: 50%; border: 1px solid rgba(0,0,0,.2); background: transparent; color: inherit; font: 800 1em system-ui; cursor: pointer; }
+.td-grande { border: 0; background: #d63a22; color: #fff; border-radius: .8em; padding: .7em; font: 800 1em system-ui, sans-serif; cursor: pointer; }
+.td-linea { display: flex; justify-content: space-between; gap: .5em; font-size: .9em; }
+.td-vacio { text-align: center; opacity: .7; padding: 2em .5em; }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia concreta</span>
+    <span class="esc-num">Sesión 1 · E03</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-cols">
+      <div class="tw-pila">
+        <h1 class="esc-titulo a-in" style="font-size:1.7em">Recorre la tienda <em>como cliente</em></h1>
+        <p class="esc-sub a-in" style="--d:.1s">Bodega Doña Rosa es una tienda de ejemplo, inventada para esta clase. Úsala como si fueras a comprar.</p>
+        <div class="tw-card a-in" style="--d:.2s">
+          <h2>Encuentra en la tienda <span class="esc-chip" id="cuenta">0 de 5</span></h2>
+          <ul class="tw-check auto" id="check">
+            <li data-id="cat">Filtra por una categoría</li>
+            <li data-id="buscar">Busca un producto escribiendo</li>
+            <li data-id="orden">Ordena por precio</li>
+            <li data-id="ficha">Abre la ficha de un producto</li>
+            <li data-id="bolsa">Pon 2 productos distintos en la bolsa</li>
+          </ul>
+          <p class="tw-nota" style="margin-top:.5em">Se marcan solos. Cuando tengas los 5, pulsa «Lo logré».</p>
+        </div>
+        <div class="tw-card a-in" id="demo" hidden>
+          <h2>¿Quieres verla en tu celular?</h2>
+          <div class="tw-btns"><button type="button" class="tw-btn sec peq" id="copiar-demo">Copiar la dirección</button><span class="tw-nota" id="demo-url"></span></div>
+        </div>
+      </div>
+      <div class="tw-cel a-in" style="--d:.15s">
+        <div class="tw-cel-pant">
+          <div class="td-top"><b>🏪 Bodega Doña Rosa</b><button type="button" class="td-bolsa" id="ver-bolsa" aria-label="Ver la bolsa">🛍️ <span id="n-bolsa">0</span></button></div>
+          <div class="td-cuerpo" id="cuerpo"></div>
+          <nav class="td-nav" id="nav">
+            <button type="button" data-v="inicio" aria-pressed="true">🏠<span>Inicio</span></button>
+            <button type="button" data-v="catalogo" aria-pressed="false">📋<span>Catálogo</span></button>
+            <button type="button" data-v="pedidos" aria-pressed="false">📦<span>Pedidos</span></button>
+          </nav>
+          <div class="td-capa" id="capa" hidden></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Juega con la tienda; cuando tengas los 5, pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$;
+  var P = [
+    ["arroz", "🍚", "Arroz extra", "Bolsa 5 kg", 21.5, "Abarrotes"], ["fideos", "🍝", "Fideos spaghetti", "Paquete 500 g", 3.8, "Abarrotes"],
+    ["huevos", "🥚", "Huevos rosados", "15 unidades", 9.5, "Abarrotes"], ["leche", "🥛", "Leche evaporada", "Lata 400 g", 4.1, "Abarrotes"],
+    ["agua", "💧", "Agua sin gas", "Botella 2.5 L", 3.2, "Bebidas"], ["jugo", "🧃", "Jugo de naranja", "Caja 1 L", 6.9, "Bebidas"],
+    ["cafe", "☕", "Café molido", "Bolsa 250 g", 14.9, "Bebidas"], ["jabon", "🧼", "Jabón de tocador", "Pack x 3", 7.5, "Cuidado personal"],
+    ["shampoo", "🧴", "Shampoo de coco", "Frasco 400 ml", 18.9, "Cuidado personal"], ["papel", "🧻", "Papel higiénico", "Paquete 4 rollos", 6.4, "Limpieza"],
+    ["choco", "🍫", "Chocolate de taza", "Tableta 90 g", 3.5, "Abarrotes"], ["galletas", "🍪", "Galletas de vainilla", "6 paquetes", 5.6, "Abarrotes"]
+  ].map(function (p) { return { id: p[0], e: p[1], n: p[2], pres: p[3], pr: p[4], cat: p[5] }; });
+  var CATS = ["Todos", "Abarrotes", "Bebidas", "Limpieza", "Cuidado personal"];
+  var st = { vista: "inicio", cat: "Todos", q: "", orden: "nombre", bolsa: {} };
+  var chk = TW.checklist($("#check"), "recorrido", function (n, t) {
+    $("#cuenta").textContent = n + " de " + t; $("#cuenta").className = "esc-chip" + (n === t ? " ok" : "");
+    if (n === t && !st.av) { st.av = true; TW.evidencia("hallazgo", "recorrido de la tienda completo"); }
+  });
+  var el = TW.el;
+  function precio(n) { return "S/ " + n.toFixed(2); }
+  function nBolsa() { var k = 0; for (var id in st.bolsa) k += st.bolsa[id]; return k; }
+  function pintarNav() { $$("#nav button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-v") === st.vista ? "true" : "false"); }); $("#n-bolsa").textContent = nBolsa(); }
+  function fila(p) {
+    var d = el("div", "td-prod"); d.setAttribute("role", "button"); d.tabIndex = 0;
+    d.appendChild(el("i", "", p.e));
+    var t = el("div"); t.appendChild(el("b", "", p.n)); t.appendChild(el("small", "", p.pres + " · " + p.cat)); d.appendChild(t);
+    var der = el("div"); der.style.textAlign = "right"; der.appendChild(el("div", "pr", precio(p.pr)));
+    var a = el("button", "td-add", "Añadir"); a.type = "button";
+    a.addEventListener("click", function (ev) { ev.stopPropagation(); agregar(p, 1); a.textContent = "✓"; setTimeout(function () { a.textContent = "Añadir"; }, 900); });
+    der.appendChild(a); d.appendChild(der);
+    d.addEventListener("click", function () { ficha(p); });
+    d.addEventListener("keydown", function (e) { if (e.key === "Enter") ficha(p); });
+    return d;
+  }
+  function agregar(p, n) { st.bolsa[p.id] = (st.bolsa[p.id] || 0) + n; if (Object.keys(st.bolsa).length >= 2) chk.marcar("bolsa"); pintarNav(); }
+  function pintar() {
+    var c = $("#cuerpo"); c.textContent = "";
+    if (st.vista === "inicio") {
+      var b = el("div", "td-ban"); b.appendChild(el("b", "", "Lo de siempre, sin escribir")); b.appendChild(el("span", "", "Mira precios, arma tu bolsa y pide."));
+      c.appendChild(b); c.appendChild(el("b", "", "Destacados"));
+      var g = el("div", "td-dest");
+      [P[0], P[6], P[8]].forEach(function (p) { var m = el("button", "td-mini"); m.type = "button"; m.appendChild(el("i", "", p.e)); m.appendChild(el("span", "", p.n)); m.addEventListener("click", function () { ficha(p); }); g.appendChild(m); });
+      c.appendChild(g);
+      var ir = el("button", "td-grande", "Ver todo el catálogo"); ir.type = "button"; ir.addEventListener("click", function () { st.vista = "catalogo"; pintarNav(); pintar(); }); c.appendChild(ir);
+    } else if (st.vista === "catalogo") {
+      var s = el("input", "td-buscar"); s.placeholder = "Buscar en el catálogo"; s.value = st.q; s.setAttribute("aria-label", "Buscar en el catálogo");
+      s.addEventListener("input", function () { st.q = s.value; if (s.value.trim().length >= 3) chk.marcar("buscar"); lista(); });
+      c.appendChild(s);
+      var ch = el("div", "td-chips");
+      CATS.forEach(function (k) { var b = el("button", "td-chip", k); b.type = "button"; b.setAttribute("aria-pressed", k === st.cat ? "true" : "false"); b.addEventListener("click", function () { st.cat = k; if (k !== "Todos") chk.marcar("cat"); pintar(); }); ch.appendChild(b); });
+      c.appendChild(ch);
+      var o = el("select", "td-orden"); o.setAttribute("aria-label", "Ordenar");
+      [["nombre", "Ordenar por nombre"], ["menor", "Precio: de menor a mayor"], ["mayor", "Precio: de mayor a menor"]].forEach(function (x) { var op = el("option", "", x[1]); op.value = x[0]; if (x[0] === st.orden) op.selected = true; o.appendChild(op); });
+      o.addEventListener("change", function () { st.orden = o.value; if (o.value !== "nombre") chk.marcar("orden"); lista(); });
+      c.appendChild(o);
+      var l = el("div"); l.id = "lista"; l.style.display = "grid"; l.style.gap = ".4em"; c.appendChild(l);
+      lista();
+    } else {
+      var v = el("div", "td-vacio"); v.innerHTML = "📦<br><b>Tus pedidos de este celular</b><br>Aquí verás el número y el estado de cada pedido. Lo hacemos en la sesión 2.";
+      c.appendChild(v);
+    }
+  }
+  function lista() {
+    var l = $("#lista"); if (!l) return; l.textContent = "";
+    var q = st.q.trim().toLowerCase();
+    var r = P.filter(function (p) { return (st.cat === "Todos" || p.cat === st.cat) && (!q || (p.n + " " + p.pres).toLowerCase().indexOf(q) >= 0); });
+    r.sort(function (a, b) { return st.orden === "menor" ? a.pr - b.pr : st.orden === "mayor" ? b.pr - a.pr : a.n.localeCompare(b.n); });
+    if (!r.length) { l.appendChild(el("div", "td-vacio", "No encontramos «" + st.q + "». Prueba con otra palabra.")); return; }
+    r.forEach(function (p) { l.appendChild(fila(p)); });
+  }
+  function capa(contenido) { var k = $("#capa"); k.textContent = ""; k.hidden = false; var h = el("div", "td-hoja"); contenido(h); k.appendChild(h); }
+  $("#capa").addEventListener("click", function (e) { if (e.target === this) this.hidden = true; });
+  function ficha(p) {
+    chk.marcar("ficha");
+    var n = 1;
+    capa(function (h) {
+      h.appendChild(el("div", "td-foto", p.e)); h.appendChild(el("b", "", p.n));
+      h.appendChild(el("span", "", p.pres + " · " + p.cat));
+      var pr = el("b", "", precio(p.pr)); pr.style.fontSize = "1.4em"; h.appendChild(pr);
+      var cant = el("div", "td-cant"), menos = el("button", "", "−"), mas = el("button", "", "+"), num = el("b", "", "1");
+      menos.type = mas.type = "button"; menos.setAttribute("aria-label", "Menos"); mas.setAttribute("aria-label", "Más");
+      menos.addEventListener("click", function () { n = Math.max(1, n - 1); num.textContent = n; }); mas.addEventListener("click", function () { n = Math.min(20, n + 1); num.textContent = n; });
+      cant.appendChild(menos); cant.appendChild(num); cant.appendChild(mas); h.appendChild(cant);
+      var a = el("button", "td-grande", "Añadir a la bolsa"); a.type = "button";
+      a.addEventListener("click", function () { agregar(p, n); $("#capa").hidden = true; });
+      h.appendChild(a);
+    });
+  }
+  $("#ver-bolsa").addEventListener("click", function () {
+    capa(function (h) {
+      h.appendChild(el("b", "", "Tu bolsa"));
+      var tot = 0, ids = Object.keys(st.bolsa);
+      if (!ids.length) h.appendChild(el("div", "td-vacio", "Tu bolsa está vacía. Toca «Añadir» en un producto."));
+      ids.forEach(function (id) { var p = P.filter(function (x) { return x.id === id; })[0]; var k = st.bolsa[id]; tot += k * p.pr; var li = el("div", "td-linea"); li.appendChild(el("span", "", k + " × " + p.n)); li.appendChild(el("b", "", precio(k * p.pr))); h.appendChild(li); });
+      if (ids.length) { var t = el("div", "td-linea"); t.appendChild(el("b", "", "Total")); t.appendChild(el("b", "", precio(tot))); h.appendChild(t);
+        var f = el("button", "td-grande", "Finalizar pedido"); f.type = "button"; f.addEventListener("click", function () { f.textContent = "Esto lo terminamos en la sesión 2 😉"; }); h.appendChild(f); }
+    });
+  });
+  $$("#nav button").forEach(function (b) { b.addEventListener("click", function () { st.vista = b.getAttribute("data-v"); pintarNav(); pintar(); }); });
+  pintarNav(); pintar();
+  if (TW.CURSO.demo) { $("#demo").hidden = false; $("#demo-url").textContent = TW.CURSO.demo.replace(/^https?:\/\//, ""); TW.botonCopiar($("#copiar-demo"), function () { return TW.CURSO.demo; }); }
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

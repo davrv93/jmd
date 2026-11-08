@@ -1,0 +1,127 @@
+/* tw.css · piezas comunes de las escenas de «Tienda web con facturación electrónica».
+   Va después de escena.css: <link rel="stylesheet" href="../../comun/tw.css">
+   El acento del curso es el rojo del flyer (puntos rojos sobre papel); el resto son los tokens del LMS. */
+
+:root {
+  --accent: #c8321b; --accent-2: #e2543a; --accent-bg: rgba(200,50,27,.10); --on-accent: #ffffff;
+  --tinta: #16151d; --papel: #fbfaf6; --rojo: #d63a22;
+  --est: #c8321b; --est-g: #e2865f; --est-o: #c08a12;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="light"]) {
+    --accent: #ff8a6b; --accent-2: #ffb199; --accent-bg: rgba(255,138,107,.15); --on-accent: #23110c;
+    --est: #ff8a6b; --est-g: #f2b48f; --est-o: #e9bd52;
+  }
+}
+:root[data-tema="dark"] {
+  --accent: #ff8a6b; --accent-2: #ffb199; --accent-bg: rgba(255,138,107,.15); --on-accent: #23110c;
+  --est: #ff8a6b; --est-g: #f2b48f; --est-o: #e9bd52;
+}
+
+/* Las escenas se proyectan a 1920x1080, pero el alumno las abre también en el celular: se deja hacer
+   scroll vertical (si todo cabe, no aparece barra). */
+body { overflow-x: hidden; overflow-y: auto; }
+.esc { min-height: 100vh; min-height: 100dvh; }
+.esc-titulo em { background: linear-gradient(100deg, var(--accent), var(--est-o)); -webkit-background-clip: text; background-clip: text; }
+
+/* ---- Rejillas ---- */
+.tw-cols { display: grid; grid-template-columns: 1.08fr .92fr; gap: 2vw; align-items: start; }
+.tw-cols.mitad { grid-template-columns: 1fr 1fr; }
+.tw-cols.ancha { grid-template-columns: 1.35fr .65fr; }
+.tw-pila { display: grid; gap: 1.4vh; align-content: start; min-width: 0; }
+.tw-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(11em, 1fr)); gap: .8em; }
+
+/* ---- Tarjetas y textos ---- */
+.tw-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .9em 1.1em; box-shadow: var(--card-shadow); min-width: 0; }
+.tw-card > h2, .tw-h2 { margin: 0 0 .45em; font-size: .7em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: .6em; flex-wrap: wrap; }
+.tw-card p { margin: 0; }
+.tw-card p + p { margin-top: .45em; }
+.tw-mut { color: var(--muted); }
+.tw-peq { font-size: .72em; }
+.tw-nota { font-size: .66em; color: var(--muted); margin: 0; }
+.tw-clave { border-left: 4px solid var(--accent); padding: .35em .9em; background: var(--accent-bg); border-radius: 0 .7em .7em 0; font-weight: 600; margin: 0; }
+
+/* ---- Pasos numerados ---- */
+.tw-pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: .55em; counter-reset: p; }
+.tw-pasos li { counter-increment: p; display: grid; grid-template-columns: 1.7em 1fr; gap: .6em; align-items: start; font-size: .86em; }
+.tw-pasos li::before { content: counter(p); display: grid; place-items: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--tinta); color: #fff; font: 800 .8em var(--mono); }
+:root[data-tema="dark"] .tw-pasos li::before { background: var(--accent); color: var(--on-accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) .tw-pasos li::before { background: var(--accent); color: var(--on-accent); } }
+.tw-pasos li b { display: block; }
+.tw-pasos li span { color: var(--muted); font-size: .9em; }
+
+/* ---- Botones ---- */
+.tw-btn { font: 700 .74em/1.2 system-ui, -apple-system, sans-serif; color: var(--on-accent); background: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: .6em 1.2em; cursor: pointer; display: inline-flex; align-items: center; gap: .45em; touch-action: manipulation; min-height: 2.6em; }
+.tw-btn:hover { filter: brightness(1.06); }
+.tw-btn:disabled { opacity: .5; cursor: default; }
+.tw-btn.sec { color: var(--accent); background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.tw-btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+.tw-btn.peq { font-size: .62em; padding: .45em .9em; min-height: 2.2em; }
+.tw-btns { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- Votación con barras en vivo ---- */
+.tw-votos { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5em, 1fr)); gap: .5em; }
+.tw-voto { position: relative; overflow: hidden; display: flex; align-items: center; gap: .55em; text-align: left; font: 650 .74em/1.25 system-ui, -apple-system, sans-serif; color: var(--fg); background: var(--s2); border: 1px solid var(--line2); border-radius: .8em; padding: .65em .8em; cursor: pointer; touch-action: manipulation; min-height: 3em; }
+.tw-voto .e { font-size: 1.35em; line-height: 1; flex: none; position: relative; }
+.tw-voto .t { flex: 1; position: relative; min-width: 0; }
+.tw-voto .pct { position: relative; font: 800 .9em var(--mono); color: var(--muted); }
+.tw-voto .barra { position: absolute; inset: 0 auto 0 0; width: var(--p, 0%); background: var(--accent-bg); transition: width .5s ease-out; }
+.tw-voto.mia { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent) inset; }
+.tw-voto.mia .pct { color: var(--accent); }
+.tw-voto.bien { border-color: var(--ok); }
+.tw-estado { font-size: .62em; color: var(--muted); margin: .45em 0 0; min-height: 1.3em; }
+
+/* ---- Muro del grupo ---- */
+.tw-muro-form { display: flex; gap: .45em; align-items: stretch; }
+.tw-in { flex: 1; min-width: 0; font: 500 .74em/1.3 system-ui, -apple-system, sans-serif; color: var(--fg); background: var(--s2); border: 1px solid var(--line2); border-radius: .6em; padding: .55em .75em; min-height: 2.6em; }
+.tw-in:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+textarea.tw-in { resize: vertical; min-height: 4.5em; }
+.tw-muro-lista { list-style: none; margin: .55em 0 0; padding: 0; display: grid; gap: .3em; max-height: 9.5em; overflow: auto; font-size: .66em; }
+.tw-muro-lista li { display: flex; gap: .55em; align-items: baseline; padding: .35em .65em; border-radius: .55em; background: var(--s2); border: 1px solid var(--line); }
+.tw-muro-lista li b { flex: none; color: var(--accent); }
+.tw-muro-lista li span { min-width: 0; overflow-wrap: anywhere; }
+.tw-muro-lista li.mia { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.tw-muro-lista li.vacio { color: var(--muted); font-style: italic; }
+
+/* ---- Checklist (se marca con un toque) ---- */
+.tw-check { list-style: none; margin: 0; padding: 0; display: grid; gap: .4em; }
+.tw-check li { display: flex; gap: .65em; align-items: center; font-size: .78em; padding: .5em .7em; border-radius: .7em; border: 1px solid var(--line); background: var(--s2); cursor: pointer; user-select: none; touch-action: manipulation; }
+.tw-check li::before { content: ""; flex: none; width: 1.25em; height: 1.25em; border-radius: .35em; border: 2px solid var(--line2); background: var(--s1); }
+.tw-check li.hecho { border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: var(--ok-bg); }
+.tw-check li.hecho::before { background: var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/80% no-repeat; border-color: var(--ok); }
+.tw-check.auto li { cursor: default; }
+
+/* ---- Video ---- */
+.tw-video { position: relative; border-radius: 1em; overflow: hidden; background: #0f0e16; border: 1px solid var(--line2); aspect-ratio: 16 / 9; width: 100%; }
+.tw-video video { width: 100%; height: 100%; display: block; background: #0f0e16; }
+.tw-respaldo { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 1.2em; background: linear-gradient(150deg, #1b1520, #2a1712); color: #f7efe9; }
+.tw-respaldo b { font-size: 1.1em; display: block; margin-bottom: .3em; }
+.tw-respaldo span { font-size: .75em; opacity: .85; }
+
+/* ---- Celular de muestra (tienda simulada) ---- */
+.tw-cel { width: min(21em, 100%); margin: 0 auto; background: #121118; border-radius: 2em; padding: .55em; box-shadow: 0 20px 50px -25px rgba(0,0,0,.6); }
+.tw-cel-pant { background: var(--papel); color: var(--tinta); border-radius: 1.55em; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; height: min(36em, 70vh); font-size: .78em; position: relative; }
+:root[data-tema="dark"] .tw-cel-pant { background: #1e1c27; color: #f1eff8; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) .tw-cel-pant { background: #1e1c27; color: #f1eff8; } }
+
+/* ---- Sello de dato real / ejemplo ---- */
+.tw-sello { font: 700 .58em var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: .2em .6em; border-radius: 999px; background: var(--warn-bg); color: var(--warn); }
+
+/* ---- Celular y pantallas angostas ---- */
+@media (max-width: 860px) {
+  body { font-size: 15px; }
+  .esc { padding: 12px 14px 16px; gap: 12px; }
+  .esc-titulo { font-size: 1.6em; }
+  .esc-sub { font-size: 1em; }
+  .tw-cols, .tw-cols.mitad, .tw-cols.ancha, .esc-grid-2, .esc-grid-3 { grid-template-columns: 1fr; }
+  .esc-cuerpo { justify-content: flex-start; }
+  .tw-card { padding: .8em .9em; }
+  .tw-voto, .tw-check li, .tw-in, .tw-btn { font-size: .9em; }
+  .tw-muro-lista { font-size: .82em; }
+  .tw-nota, .tw-estado { font-size: .78em; }
+  .tw-card > h2, .tw-h2 { font-size: .74em; }
+  .tw-pasos li { font-size: .92em; }
+  .tw-cel-pant { height: 32em; font-size: .92em; }
+}
+@media (prefers-reduced-motion: reduce) { .tw-voto .barra { transition: none; } }

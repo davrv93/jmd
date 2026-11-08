@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Mide después y publica</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<style id="esc-propio">
+.m9 { display: grid; grid-template-columns: .9fr 1.1fr; gap: 2vw; align-items: start; }
+.m9-izq { display: grid; gap: .8em; }
+.m9-par { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+.m9-res { display: flex; align-items: baseline; gap: .6em; flex-wrap: wrap; }
+.m9-res .esc-big { color: var(--ok); font-size: 2.6em; }
+.m9-res span { font-size: .7em; color: var(--muted); }
+.m9-vs { display: grid; gap: .3em; }
+.m9-vs .f { display: grid; grid-template-columns: 4.5em 1fr 5em; gap: .5em; align-items: center; font-size: .64em; }
+.m9-vs .b { height: .9em; border-radius: .45em; background: var(--s3); overflow: hidden; }
+.m9-vs .b i { display: block; height: 100%; width: var(--w, 0%); border-radius: .45em; background: var(--muted); transition: width .4s ease-out; }
+.m9-vs .f.des .b i { background: var(--ok); }
+.m9-vs .v { font: 700 .95em var(--mono); text-align: right; }
+.m9-grupo { display: grid; gap: .22em; }
+.m9-g { display: grid; grid-template-columns: 7em 1fr 3.4em; gap: .5em; align-items: center; font-size: .6em; }
+.m9-g .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.m9-g .b { height: .75em; border-radius: .4em; background: var(--s3); overflow: hidden; }
+.m9-g .b i { display: block; height: 100%; width: var(--w); background: var(--ok); border-radius: .4em; }
+.m9-g.mia .n { color: var(--accent); font-weight: 800; } .m9-g.mia .b i { background: var(--accent); }
+.m9-g .v { font: 800 .95em var(--mono); text-align: right; color: var(--ok); }
+.m9-prom { font-size: .74em; margin: .3em 0 0; }
+.m9-prom b { color: var(--ok); font-family: var(--mono); }
+@media (max-width: 860px) { .m9 { grid-template-columns: 1fr; } .m9-vs .f, .m9-g { font-size: .8em; } .m9-prom { font-size: .92em; } .m9-res span { font-size: .85em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1330 70 L1270 190 L1330 190 L1250 330"/>
+  <g><circle class="eo" cx="1330" cy="70" r="5"/><circle class="e" cx="1270" cy="190" r="4"/><circle class="eg" cx="1330" cy="190" r="4"/><circle class="eo" cx="1250" cy="330" r="5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación activa</span>
+    <span class="esc-num">PT-01 · 09 / 10</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Mide después: <em>tu antes → después</em></h1>
+      <p class="esc-sub a-in" style="--d:.12s">El mismo comando, en el mismo repositorio, ahora con RTK. Tu número es la evidencia de la clase.</p>
+    </div>
+    <div class="m9">
+      <div class="m9-izq">
+        <div class="esc-card a-in" style="--d:.2s" id="os">
+          <div class="pt-tabs" role="tablist" aria-label="Tu sistema">
+            <button type="button" class="pt-tab" data-tab="mac">Mac · Linux · WSL</button>
+            <button type="button" class="pt-tab" data-tab="win">Windows (PowerShell)</button>
+          </div>
+          <div data-panel="mac" style="margin-top:.6em"><pre class="esc-cmd"><span class="p">$ </span>rtk git log -n 15 | wc -c</pre></div>
+          <div data-panel="win" hidden style="margin-top:.6em"><pre class="esc-cmd"><span class="p">PS&gt; </span>(rtk git log -n 15 | Out-String).Length</pre></div>
+          <pre class="esc-cmd" style="margin-top:.5em"><span class="p">$ </span>rtk gain</pre>
+          <p class="pt-nota" style="margin-top:.4em">¿No hiciste la línea base? Corre también <code>git log -n 15 | wc -c</code> sin <code>rtk</code>.</p>
+        </div>
+        <div class="esc-card a-in" style="--d:.28s">
+          <div class="m9-par">
+            <div><label class="pt-et" for="antes">Antes (sin RTK)</label><input class="pt-in" id="antes" inputmode="numeric" autocomplete="off" placeholder="6713"></div>
+            <div><label class="pt-et" for="despues">Después (con RTK)</label><input class="pt-in" id="despues" inputmode="numeric" autocomplete="off" placeholder="3458"></div>
+          </div>
+          <label class="pt-et" for="gain" style="margin-top:.6em">Opcional: la línea «Tokens saved» de <code>rtk gain</code></label>
+          <input class="pt-in" id="gain" autocomplete="off" placeholder="Tokens saved: 1.2K (48.1%)">
+          <div class="m9-res" style="margin-top:.6em" aria-live="polite"><span class="esc-big" id="pct">—</span><span id="pct-t">Escribe tus dos números</span></div>
+          <div class="m9-vs" id="vs"></div>
+          <button type="button" class="pt-btn" id="pub" style="margin-top:.6em">Publicar mi antes → después</button>
+          <p class="pt-nota" id="msg" style="margin-top:.35em"></p>
+        </div>
+      </div>
+      <div class="esc-card a-in" style="--d:.34s">
+        <span class="pt-et">El grupo con RTK</span>
+        <div class="m9-grupo" id="grupo"></div>
+        <p class="m9-prom" id="prom">Cuando publiquen, aquí aparece el ahorro de cada uno.</p>
+        <p class="pt-nota" style="margin-top:.5em">Referencia del instructor: 6 713 → 3 458 caracteres (−48 %) en <code>git log -n 15</code>, 08-11-2026.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Al publicar queda como evidencia. Luego pulsa «Lo logré» en el panel</span>
+  </footer>
+</div>
+
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/pt.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  PT.pestanas($("os"), "os");
+  var base = PT.leer("antes", null), prev = PT.leer("despues", null);
+  if (base && base.car) $("antes").value = base.car;
+  if (prev) { if (prev.antes) $("antes").value = prev.antes; if (prev.despues) $("despues").value = prev.despues; if (prev.gain) $("gain").value = prev.gain; }
+
+  function num(id) { var n = parseInt(String($(id).value).replace(/[^\d]/g, ""), 10); return n > 0 && n < 50000000 ? n : 0; }
+  function gainTxt() { var m = /saved:?\s*([\d.,]+\s*[KMkm]?)\s*\(?\s*([\d.,]+)\s*%/i.exec($("gain").value || ""); return m ? m[1].replace(/\s+/g, "") + " (" + m[2] + " %)" : ""; }
+  function calcular() {
+    var a = num("antes"), d = num("despues"), vs = $("vs");
+    vs.textContent = "";
+    if (!a || !d) { $("pct").textContent = "—"; $("pct-t").textContent = "Escribe tus dos números"; return null; }
+    var p = Math.round((a - d) / a * 100);
+    $("pct").textContent = p > 0 ? "−" + p + " %" : (p === 0 ? "0 %" : "+" + (-p) + " %");
+    $("pct-t").textContent = p > 0 ? "menos caracteres para tu agente (≈ " + PT.num((a - d) / 4) + " tokens por vuelta)" : "Revisa: ¿corriste el mismo comando en el mismo repo?";
+    [["Antes", a, ""], ["Después", d, "des"]].forEach(function (r) {
+      var f = PT.el("div", "f " + r[2]); f.appendChild(PT.el("span", "", r[0]));
+      var b = PT.el("span", "b"), i = PT.el("i"); i.style.setProperty("--w", r[1] / Math.max(a, d) * 100 + "%"); b.appendChild(i); f.appendChild(b);
+      f.appendChild(PT.el("span", "v", PT.num(r[1]))); vs.appendChild(f);
+    });
+    return { a: a, d: d, p: p };
+  }
+  ["antes", "despues", "gain"].forEach(function (id) { $(id).addEventListener("input", calcular); });
+  calcular();
+
+  var caja = document.createElement("div"); caja.hidden = true; document.body.appendChild(caja);
+  var muro = PT.muro(caja, "09-mide-despues", "", { alPintar: grupo });
+  function grupo(en) {
+    var g = $("grupo"); g.textContent = "";
+    var ds = en.map(function (e) { var m = /\(([−-])(\d{1,3})\s*%\)/.exec(e.texto || ""); return m ? { p: +m[2], n: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
+      .filter(Boolean).sort(function (x, y) { return y.p - x.p; });
+    if (!ds.length) { $("prom").textContent = "Cuando publiquen, aquí aparece el ahorro de cada uno."; return; }
+    ds.slice(0, 25).forEach(function (d) {
+      var f = PT.el("div", "m9-g" + (d.mia ? " mia" : "")); f.appendChild(PT.el("span", "n", d.n));
+      var b = PT.el("span", "b"), i = PT.el("i"); i.style.setProperty("--w", Math.max(2, d.p) + "%"); b.appendChild(i); f.appendChild(b);
+      f.appendChild(PT.el("span", "v", "−" + d.p + " %")); g.appendChild(f);
+    });
+    var prom = Math.round(ds.reduce(function (s, d) { return s + d.p; }, 0) / ds.length);
+    $("prom").textContent = "";
+    $("prom").append(ds.length + (ds.length === 1 ? " persona midió" : " personas midieron") + ". Ahorro promedio del grupo: ");
+    $("prom").appendChild(PT.el("b", "", "−" + prom + " %"));
+    $("prom").append(".");
+  }
+
+  $("pub").addEventListener("click", function () {
+    var r = calcular(), b = this;
+    if (!r) { $("msg").textContent = "Faltan tus dos números (solo dígitos)."; return; }
+    var g = gainTxt();
+    PT.guardar("despues", { antes: r.a, despues: r.d, p: r.p, gain: $("gain").value.trim().slice(0, 80) });
+    var txt = "git log -n 15: " + r.a + " → " + r.d + " caracteres (" + (r.p >= 0 ? "−" : "+") + Math.abs(r.p) + " %)" + (g ? " · rtk gain " + g : "");
+    b.disabled = true;
+    PT.evidencia("hallazgo", "Antes → después con RTK. " + txt).then(function (x) {
+      $("msg").textContent = x.ok ? "✓ Publicado como evidencia. Lo usamos en la clase 3 para sumar el ahorro de Caveman." : "Guardado en este navegador (la evidencia se envía en vivo).";
+      b.disabled = false;
+    });
+    muro.publicar(txt);
+  });
+})();
+</script>
+</body>
+</html>

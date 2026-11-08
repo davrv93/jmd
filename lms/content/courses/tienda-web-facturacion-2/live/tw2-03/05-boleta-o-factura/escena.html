@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Boleta, factura, nota de crédito e IGV</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
+  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<style id="esc-propio">
+.bf { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1vw; }
+.bf-l { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: .35em; background: var(--tinta); color: #fff; font: 900 1em var(--mono); }
+.bf-f .bf-l { background: var(--accent); }
+.bf .esc-lista { gap: .35em; }
+.bf .esc-lista li { display: block; position: relative; padding-left: 1.1em; }
+.bf .esc-lista li::before { position: absolute; left: 0; top: .5em; }
+.igv { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5em; margin: .6em 0 .3em; }
+.igv div { background: var(--s2); border-radius: .7em; padding: .5em .6em; display: grid; }
+.igv small { font-size: .6em; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.igv b { font: 900 1.05em var(--mono); }
+@media (max-width: 860px) { .bf { grid-template-columns: 1fr; } .igv b { font-size: .95em; } .igv small { font-size: .7em; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Sesión 3 · E05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-pila">
+      <h1 class="esc-titulo a-in" style="font-size:1.5em">Boleta o factura: <em>depende de quién compra</em></h1>
+      <div class="bf a-in" style="--d:.1s">
+        <div class="tw-card bf-b">
+          <h2><span class="bf-l">B</span> Boleta de venta</h2>
+          <ul class="esc-lista tw-peq">
+            <li><b>Para quién:</b> una persona que compra para ella (consumidor final).</li>
+            <li><b>Documento:</b> normalmente su <b>DNI</b> (8 dígitos).</li>
+            <li><b>IGV:</b> va incluido en el precio.</li>
+            <li><b>Serie:</b> empieza con B (B001…).</li>
+          </ul>
+        </div>
+        <div class="tw-card bf-f">
+          <h2><span class="bf-l">F</span> Factura</h2>
+          <ul class="esc-lista tw-peq">
+            <li><b>Para quién:</b> un negocio o empresa que necesita sustentar su compra.</li>
+            <li><b>Documento:</b> siempre su <b>RUC</b> (11 dígitos). Sin RUC, no hay factura.</li>
+            <li><b>IGV:</b> se muestra aparte; al comprador le sirve como crédito fiscal.</li>
+            <li><b>Serie:</b> empieza con F (F001…).</li>
+          </ul>
+        </div>
+        <div class="tw-card">
+          <h2>↩️ Nota de crédito</h2>
+          <p class="tw-peq">Corrige un comprobante <b>ya emitido</b>: una devolución, un descuento posterior o un monto cobrado de más. El comprobante original no se borra: la nota lo referencia.</p>
+          <p class="tw-nota" style="margin-top:.4em">Una <b>nota de venta</b> (lo que hoy entrega la tienda) es un control interno: no reemplaza a la boleta ni a la factura. Por eso en el curso la boleta y la factura se practican en el ambiente de pruebas de SUNAT.</p>
+        </div>
+      </div>
+      <div class="tw-cols">
+        <div class="tw-card a-in" style="--d:.2s">
+          <h2>¿Por qué se envía a SUNAT?</h2>
+          <p class="tw-peq">El comprobante electrónico es la constancia oficial de tu venta. Al enviarlo, SUNAT lo recibe y lo valida: tu venta queda registrada y tu cliente puede comprobar que el comprobante es válido. Por eso, si algo estuvo mal, no se borra: se corrige con una nota de crédito.</p>
+        </div>
+        <div class="tw-card a-in" style="--d:.3s">
+          <h2>Calculadora de IGV (18 %) · el total ya lo incluye</h2>
+          <div class="tw-muro-form"><input class="tw-in" id="tot" inputmode="decimal" value="118" aria-label="Total con IGV"><span class="tw-btn sec peq" aria-hidden="true">S/</span></div>
+          <div class="igv"><div><small>Valor de venta</small><b id="base">S/ 100.00</b></div><div><small>IGV 18 %</small><b id="igv">S/ 18.00</b></div><div><small>Total</small><b id="t2">S/ 118.00</b></div></div>
+          <p class="tw-nota">Valor de venta = total ÷ 1.18 · IGV = total − valor de venta. Vale para productos gravados con IGV.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Sigue la explicación del instructor</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$;
+  function calc() {
+    var t = parseFloat(String($("#tot").value).replace(",", ".")) || 0, b = t / 1.18;
+    $("#base").textContent = TW.soles(b); $("#igv").textContent = TW.soles(t - b); $("#t2").textContent = TW.soles(t);
+  }
+  $("#tot").addEventListener("input", calc); calc();
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

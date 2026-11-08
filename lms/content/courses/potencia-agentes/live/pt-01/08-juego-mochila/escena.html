@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · La mochila del agente</title>
+<!--
+  JUEGO ORIGINAL «La mochila del agente» (hasta 25 a la vez, cooperativo + marca personal).
+  Llega una tarea y, una por una, las cosas que podrías darle a leer al agente. Para cada una:
+  Fuera (←), RTK (↓) o Meter (→). Arrastrar la carta, tocar los botones o usar el teclado.
+  · Si falta algo que decide, el agente sale a buscarlo solo: +15 000 tokens («otra vuelta»).
+  · Si la mochila pasa de 100 000 tokens, el agente compacta y olvida: +20 000.
+  · Un secreto (.env) nunca entra: no cuesta tokens, pero cuenta como aprendizaje.
+  Nadie queda fuera: la ronda dura 55 s, cada quien termina con su ahorro, su precisión y lo que aprendió.
+  El grupo suma su ahorro hacia una meta común (300 000 tokens por jugador).
+  Solo endpoints existentes: /carrera (sala, salida común y tabla: dist = tokens ahorrados, golpes =
+  aprendizajes), /muro (reflexión final) y /api/v1/me (nombre). Toda la lógica vive aquí.
+  Quien llega tarde o juega sin instructor, juega en práctica: mismo juego, sin sumar al grupo.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .5); }
+.mj { position: relative; min-height: 0; }
+.mj-intro { display: grid; grid-template-columns: 1.15fr .85fr; gap: 2vw; align-items: start; }
+.mj-reglas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.mj-reglas li { background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .6em .75em; box-shadow: var(--card-shadow); border-top: 4px solid var(--c); }
+.mj-reglas .k { font: 800 .62em var(--mono); color: var(--c); letter-spacing: .05em; }
+.mj-reglas h3 { margin: .1em 0; font-size: .82em; }
+.mj-reglas p { margin: 0; font-size: .62em; color: var(--muted); }
+.c-fuera { --c: #6b7a99; } .c-rtk { --c: var(--gold); } .c-meter { --c: var(--accent); }
+.mj-extra { margin: .7em 0 0; font-size: .66em; color: var(--muted); }
+.mj-extra b { color: var(--fg); }
+.mj-avs { display: flex; flex-wrap: wrap; gap: .35em; margin: .2em 0 .6em; }
+.mj-av { font: 1.3em/1 system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif; width: 2.1em; height: 2.1em; border-radius: .6em; border: 2px solid var(--line2); background: var(--s2); cursor: pointer; display: grid; place-items: center; padding: 0; touch-action: manipulation; }
+.mj-av[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); box-shadow: 0 0 0 2px var(--accent-bg); }
+.mj-acc { display: flex; gap: .5em; flex-wrap: wrap; }
+.mj-msg { font-size: .66em; color: var(--muted); margin: .5em 0 0; min-height: 1.3em; }
+.mj-msg.bad { color: var(--warn); }
+.mj-staff { margin-top: .7em; padding-top: .6em; border-top: 1px dashed var(--line2); display: flex; gap: .5em; flex-wrap: wrap; align-items: center; }
+.mj-staff .pt-et { margin: 0; flex-basis: 100%; }
+
+/* Panel del grupo (meta común + aportes) */
+.mj-grupo { display: grid; gap: .45em; }
+.mj-meta { display: grid; gap: .25em; }
+.mj-meta .fila { display: flex; justify-content: space-between; align-items: baseline; gap: .5em; font-size: .66em; }
+.mj-meta .fila b { font: 800 1.1em var(--mono); color: var(--ok); }
+.mj-meta .barra { height: .9em; border-radius: .5em; background: var(--s3); overflow: hidden; }
+.mj-meta .barra i { display: block; height: 100%; width: var(--w, 0%); background: linear-gradient(90deg, var(--ok), var(--gold)); border-radius: .5em; transition: width .5s ease-out; }
+.mj-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .2em; max-height: 13em; overflow: auto; font-size: .64em; }
+.mj-lista li { display: grid; grid-template-columns: 1.6em 1fr auto; gap: .45em; align-items: center; padding: .25em .5em; border-radius: .5em; background: var(--s2); border: 1px solid var(--line); }
+.mj-lista li .a { font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
+.mj-lista li .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mj-lista li .v { font: 700 .95em var(--mono); }
+.mj-lista li.yo { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.mj-lista li.yo .n { font-weight: 800; }
+.mj-lista li.vacio { grid-template-columns: 1fr; color: var(--muted); font-style: italic; }
+
+/* Juego */
+.mj-juego { display: grid; grid-template-columns: .8fr 1.35fr .75fr; gap: 1.6vw; align-items: start; }
+.mj-centro { display: grid; gap: .6em; justify-items: stretch; }
+.mj-hud { display: flex; gap: .6em; align-items: center; flex-wrap: wrap; font-size: .7em; }
+.mj-hud .reloj { font: 800 1.2em var(--mono); padding: .15em .6em; border-radius: .5em; background: var(--s3); }
+.mj-hud .reloj.poco { color: var(--bad); background: var(--bad-bg); }
+.mj-hud .modo { margin-left: auto; }
+.mj-tarea { background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .55em .9em; box-shadow: var(--card-shadow); }
+.mj-tarea .q { font: 700 .6em var(--mono); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.mj-tarea h2 { margin: .1em 0 0; font-size: 1em; }
+.mj-pista { position: relative; display: grid; place-items: center; min-height: 13em; }
+.mj-pista::before, .mj-pista::after { position: absolute; top: 50%; transform: translateY(-50%); font: 800 .6em var(--mono); color: var(--muted); opacity: .6; pointer-events: none; }
+.mj-pista::before { content: "← FUERA"; left: 0; }
+.mj-pista::after { content: "METER →"; right: 0; }
+.mj-carta { width: min(100%, 19em); background: var(--s1); border: 2px solid var(--line2); border-radius: 1.1em; padding: 1em 1.1em; box-shadow: 0 18px 40px -18px rgba(20,18,60,.55); display: grid; gap: .45em; cursor: grab; user-select: none; touch-action: none; transition: transform .18s ease-out, opacity .18s ease-out, border-color .15s; }
+.mj-carta:active { cursor: grabbing; }
+.mj-carta .tipo { display: flex; align-items: center; gap: .5em; font: 700 .58em var(--mono); color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+.mj-carta .ico { font-size: 2.2em; line-height: 1; font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
+.mj-carta h3 { margin: 0; font-size: 1.05em; line-height: 1.2; }
+.mj-carta .tok { font: 800 .9em var(--mono); color: var(--accent); }
+.mj-carta .rtk { font-size: .58em; color: var(--muted); }
+.mj-carta.h-izq { border-color: #6b7a99; } .mj-carta.h-der { border-color: var(--accent); } .mj-carta.h-abajo { border-color: var(--gold); }
+.mj-carta.sale-izq { transform: translateX(-140%) rotate(-14deg); opacity: 0; }
+.mj-carta.sale-der { transform: translateX(140%) rotate(14deg); opacity: 0; }
+.mj-carta.sale-abajo { transform: translateY(70%) scale(.5); opacity: 0; }
+.mj-carta.entra { animation: esc-pop .3s cubic-bezier(.2,.8,.3,1.2) both; }
+.mj-botones { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5em; }
+.mj-b { font: 800 .8em/1.1 system-ui, sans-serif; min-height: 56px; border-radius: .9em; border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--fg); cursor: pointer; display: grid; place-items: center; gap: .1em; padding: .4em; touch-action: manipulation; }
+.mj-b small { font: 700 .66em var(--mono); color: var(--muted); }
+.mj-b:hover { background: color-mix(in srgb, var(--c) 24%, transparent); }
+.mj-b:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.mj-b:disabled { opacity: .45; }
+.mj-fb { min-height: 2.6em; font-size: .7em; padding: .45em .75em; border-radius: .7em; background: var(--s2); border: 1px solid var(--line); }
+.mj-fb.bien { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.mj-fb.ok { background: var(--info-bg); border-color: color-mix(in srgb, var(--info) 35%, transparent); }
+.mj-fb.mal { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.mj-lado { display: grid; gap: .8em; }
+.mj-mochila .barra { height: 1em; border-radius: .5em; background: var(--s3); overflow: hidden; margin: .3em 0 .2em; }
+.mj-mochila .barra i { display: block; height: 100%; width: var(--w, 0%); background: var(--ok); border-radius: .5em; transition: width .3s ease-out, background .3s; }
+.mj-mochila.medio .barra i { background: var(--gold); }
+.mj-mochila.lleno .barra i { background: var(--bad); }
+.mj-mochila .v { font: 700 .66em var(--mono); color: var(--muted); }
+.mj-score b { display: block; font: 800 1.7em/1.05 var(--mono); color: var(--ok); letter-spacing: -.02em; }
+.mj-score > span { font-size: .62em; color: var(--muted); }
+
+/* Resultado */
+.mj-fin { display: grid; grid-template-columns: 1fr 1fr .95fr; gap: 1.6vw; align-items: start; }
+.mj-res .esc-big { color: var(--ok); font-size: 2.6em; }
+.mj-res .sub { font-size: .7em; color: var(--muted); margin: .2em 0 .6em; }
+.mj-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4em; }
+.mj-kpis div { background: var(--s2); border-radius: .7em; padding: .4em .5em; text-align: center; }
+.mj-kpis b { display: block; font: 800 1.1em var(--mono); }
+.mj-kpis span { font-size: .56em; color: var(--muted); }
+.mj-aprende { list-style: none; margin: .5em 0 0; padding: 0; display: grid; gap: .3em; font-size: .64em; max-height: 12em; overflow: auto; }
+.mj-aprende li { padding: .35em .55em; border-radius: .5em; background: var(--warn-bg); border-left: 3px solid var(--warn); }
+.mj-aprende li.bien { background: var(--ok-bg); border-left-color: var(--ok); }
+.mj-cuenta { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); font: 900 7em/1 var(--mono); color: var(--accent); }
+.mj-tablero h2 { margin: 0 0 .3em; font-size: 1em; }
+
+@media (max-width: 1100px) { .mj-juego { grid-template-columns: 1.3fr .7fr; } .mj-juego .mj-grupo-col { grid-column: 1 / -1; order: 3; } .mj-fin { grid-template-columns: 1fr 1fr; } .mj-fin > :last-child { grid-column: 1 / -1; } }
+@media (max-width: 860px) {
+  .mj-intro, .mj-juego, .mj-fin { grid-template-columns: 1fr; }
+  .mj-reglas { grid-template-columns: 1fr; }
+  .mj-intro > .esc-card { order: -1; }
+  .mj-reglas h3 { font-size: 1em; } .mj-reglas p, .mj-extra, .mj-msg { font-size: .85em; }
+  .mj-juego .mj-lado { order: -1; grid-template-columns: 1fr 1fr; gap: .5em; }
+  .mj-juego .mj-grupo-col { order: 3; }
+  .mj-pista { min-height: 11em; }
+  .mj-pista::before, .mj-pista::after { display: none; }
+  .mj-carta { width: 100%; }
+  .mj-b { font-size: .95em; min-height: 64px; }
+  .mj-fb { font-size: .88em; }
+  .mj-lista, .mj-aprende { font-size: .82em; }
+  .mj-meta .fila, .mj-hud { font-size: .85em; }
+  .mj-score b { font-size: 1.35em; }
+  .mj-kpis span { font-size: .72em; }
+}
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1330 70 L1270 190 L1330 190 L1250 330"/>
+  <g><circle class="eo" cx="1330" cy="70" r="5"/><circle class="e" cx="1270" cy="190" r="4"/><circle class="eg" cx="1330" cy="190" r="4"/><circle class="eo" cx="1250" cy="330" r="5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación activa</span>
+    <span class="esc-num">PT-01 · 08 / 10</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="mj" id="mj">
+      <!-- 1 · Portada y sala -->
+      <section id="v-intro">
+        <h1 class="esc-titulo a-in">La mochila <em>del agente</em></h1>
+        <p class="esc-sub a-in" style="--d:.1s">Llega una tarea y, una por una, las cosas que podrías darle a leer. Tú armas la mochila: justo lo que decide, nada más.</p>
+        <div class="mj-intro" style="margin-top:1em">
+          <div>
+            <ol class="mj-reglas">
+              <li class="c-fuera"><span class="k">← o botón</span><h3>🗑 Fuera</h3><p>No entra. Gratis, pero si era clave el agente sale a buscarlo: +15 000.</p></li>
+              <li class="c-rtk"><span class="k">↓ o botón</span><h3>⚡ RTK</h3><p>Entra filtrado. Solo achica salidas de comandos; lo demás pasa igual.</p></li>
+              <li class="c-meter"><span class="k">→ o botón</span><h3>🎒 Meter</h3><p>Entra entero. Si la mochila pasa de 100 000, el agente compacta y olvida.</p></li>
+            </ol>
+            <p class="mj-extra"><b>55 segundos, 5 tareas, 25 cartas.</b> Arrastra la carta, toca los botones o usa las flechas. Cada error te deja una lección al final. El grupo suma su ahorro hacia una meta común.</p>
+          </div>
+          <div class="esc-card">
+            <span class="pt-et">Elige tu avatar</span>
+            <div class="mj-avs" id="avs" role="group" aria-label="Avatar"></div>
+            <div class="mj-acc">
+              <button type="button" class="pt-btn" id="unirme">Unirme a la ronda del grupo</button>
+              <button type="button" class="pt-btn sec" id="practicar">Practicar solo</button>
+            </div>
+            <p class="mj-msg" id="msg" aria-live="polite"></p>
+            <div class="mj-grupo" style="margin-top:.4em">
+              <span class="pt-et" id="sala-t">En la sala</span>
+              <ul class="mj-lista" id="sala-lista"></ul>
+            </div>
+            <div class="mj-staff" id="staff" hidden>
+              <span class="pt-et">Instructor</span>
+              <button type="button" class="pt-btn" id="iniciar">Empezar ronda para todos</button>
+              <button type="button" class="pt-btn sec" id="reiniciar">Nueva sala</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2 · Partida -->
+      <section id="v-juego" hidden>
+        <div class="mj-juego">
+          <div class="esc-card mj-grupo-col">
+            <div class="mj-grupo" id="g-juego"></div>
+          </div>
+          <div class="mj-centro">
+            <div class="mj-hud"><span class="reloj" id="reloj">55</span><span id="prog">Tarea 1 de 5 · carta 1 de 5</span><span class="esc-chip modo" id="modo">en vivo</span></div>
+            <div class="mj-tarea"><span class="q">La tarea</span><h2 id="tarea">—</h2></div>
+            <div class="mj-pista">
+              <div class="mj-carta" id="carta" tabindex="0" aria-live="polite">
+                <div class="tipo"><span class="ico" id="c-ico">📄</span><span id="c-tipo">archivo</span></div>
+                <h3 id="c-nom">—</h3>
+                <span class="tok" id="c-tok">0 tokens</span>
+                <span class="rtk" id="c-rtk"></span>
+              </div>
+            </div>
+            <div class="mj-botones">
+              <button type="button" class="mj-b c-fuera" data-op="fuera">🗑 Fuera<small>←</small></button>
+              <button type="button" class="mj-b c-rtk" data-op="rtk">⚡ RTK<small>↓</small></button>
+              <button type="button" class="mj-b c-meter" data-op="meter">🎒 Meter<small>→</small></button>
+            </div>
+            <div class="mj-fb" id="fb">Arrastra la carta o toca un botón.</div>
+          </div>
+          <div class="mj-lado">
+            <div class="esc-card mj-mochila" id="mochila"><span class="pt-et">Mochila de esta tarea</span><div class="barra"><i id="moch-b"></i></div><span class="v" id="moch-v">0 / 100 000</span></div>
+            <div class="esc-card mj-score"><span>Ahorraste</span><b id="score">0</b><span>tokens · <span id="vueltas">0</span> aprendizajes</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 · Resultado -->
+      <section id="v-fin" hidden></section>
+      <!-- El resultado se monta al terminar (así la escena empieza con menos de 300 elementos). -->
+      <template id="t-fin">
+        <div class="mj-fin">
+          <div class="esc-card mj-res">
+            <span class="pt-et">Tu resultado</span>
+            <div class="esc-big" id="r-ahorro">0</div>
+            <p class="sub" id="r-sub">tokens ahorrados frente a «meter todo»</p>
+            <div class="mj-kpis">
+              <div><b id="r-prec">0 %</b><span>decisiones justas</span></div>
+              <div><b id="r-tareas">0/5</b><span>tareas</span></div>
+              <div><b id="r-mejor">0</b><span>tu mejor marca</span></div>
+            </div>
+            <span class="pt-et" style="margin-top:.7em">Lo que te llevas</span>
+            <ul class="mj-aprende" id="r-aprende"></ul>
+            <div class="mj-acc" style="margin-top:.6em">
+              <button type="button" class="pt-btn sec" id="otra">Jugar otra vez (práctica)</button>
+              <button type="button" class="pt-btn sec" id="volver" hidden>Unirme a la nueva ronda</button>
+            </div>
+          </div>
+          <div class="esc-card">
+            <div class="mj-grupo" id="g-fin"></div>
+            <div id="muro" style="margin-top:.8em"></div>
+          </div>
+          <div class="esc-card">
+            <span class="pt-et">Guarda la fotito</span>
+            <label class="pt-et" for="nombre" style="margin-top:.3em">Tu nombre en la foto</label>
+            <input class="pt-in" id="nombre" maxlength="40" autocomplete="off" placeholder="Tu nombre">
+            <div id="foto" style="margin-top:.6em"></div>
+          </div>
+        </div>
+      </template>
+
+      <div class="mj-cuenta" id="cuenta" hidden aria-live="assertive">3</div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Termina tu ronda y publica tu reflexión en el muro: eso es lo que cuenta</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script src="../../comun/fotito.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var RONDA = 55000, VENTANA = 100000, VUELTA = 15000, COMPACTA = 20000, META_X = 300000;
+  var AV = [["llama", "🦙"], ["zorro", "🦊"], ["buho", "🦉"], ["tortuga", "🐢"], ["pulpo", "🐙"], ["panda", "🐼"], ["pinguino", "🐧"], ["robot", "🤖"], ["gato", "🐱"], ["loro", "🦜"]];
+  var EMO = {}; AV.forEach(function (a) { EMO[a[0]] = a[1]; });
+  var TIPO = { cmd: ["⌨️", "salida de comando"], arch: ["📄", "archivo"], tuyo: ["💬", "texto tuyo"], hist: ["🕘", "historial"], sec: ["🔑", "secreto"], lista: ["🗂️", "listado"] };
+
+  /* Mazo: tok = tokens si entra entero; r = lo que queda con RTK (0 = RTK no aplica);
+     nec = la tarea lo necesita; b/m = por qué (bien / mal). Las tasas marcadas «medido» salen de la
+     Mac del instructor (08-11-2026); el resto son valores de juego. */
+  var TAREAS = [
+    { t: "Arregla el error 500 al iniciar sesión", c: [
+      { n: "Las 15 líneas del error", k: "cmd", tok: 220, r: 1, nec: 1, b: "Es lo que decide. RTK no lo achica: ya es corto.", m: "Sin las líneas del error, el agente adivina y sale a buscar." },
+      { n: "Log del servidor de hoy · 3 200 líneas", k: "cmd", tok: 41000, r: .1, b: "Ya tienes las 15 líneas que importan: el resto es ruido.", m: "41 000 tokens de ruido: el error ya estaba en las 15 líneas." },
+      { n: "auth.go · solo la función Login", k: "arch", tok: 600, r: 0, nec: 1, b: "Es el código que hay que cambiar.", m: "Sin la función, el agente la busca por todo el proyecto." },
+      { n: "package-lock.json", k: "arch", tok: 38000, r: 0, b: "Nada del login vive ahí.", m: "38 000 tokens de dependencias que nadie pidió." },
+      { n: "AGENTS.md corto: cómo correr las pruebas", k: "arch", tok: 350, r: 0, nec: 1, b: "Cortito y le dice cómo comprobar.", m: "Sin AGENTS.md pregunta cómo se prueba: otra vuelta." }
+    ] },
+    { t: "Haz que pasen las pruebas", c: [
+      { n: "go test ./... · 240 pruebas, 2 fallan", k: "cmd", tok: 12000, r: .03, nec: 1, b: "RTK deja solo las 2 que fallan.", m: "Sin la salida no sabe qué falla." },
+      { n: "README de 900 líneas", k: "arch", tok: 11000, r: 0, b: "Para arreglar 2 pruebas no hace falta el README.", m: "11 000 tokens de README para 2 pruebas." },
+      { n: "La prueba que falla · 40 líneas", k: "arch", tok: 500, r: 0, nec: 1, b: "Es justo lo que hay que mirar.", m: "Sin la prueba, el agente la tiene que encontrar." },
+      { n: "ls -laR de todo el proyecto", k: "lista", tok: 90000, r: .18, b: "No necesita el árbol entero para 2 pruebas.", m: "90 000 tokens: casi revienta la mochila. (RTK lo baja un 82 %, medido, pero igual sobraba.)" },
+      { n: "El chat de ayer, otro tema", k: "hist", tok: 25000, r: 0, b: "Tema nuevo, sesión nueva: /clear.", m: "Arrastrar ayer cuesta 25 000 tokens en cada vuelta." }
+    ] },
+    { t: "Revisa qué cambió antes del commit", c: [
+      { n: "git diff · 3 archivos", k: "cmd", tok: 6500, r: .33, nec: 1, b: "−68 % con RTK (medido) y el cambio sigue ahí.", m: "Sin el diff no hay nada que revisar." },
+      { n: "git log de 200 commits", k: "cmd", tok: 23000, r: .54, b: "Para revisar este commit no hace falta la historia.", m: "23 000 tokens de historia que no deciden nada." },
+      { n: "git status", k: "cmd", tok: 390, r: .69, nec: 1, b: "−31 % con RTK (medido), misma información.", m: "Sin el status no sabe qué archivos tocaste." },
+      { n: "Listado de node_modules", k: "lista", tok: 150000, r: .18, b: "Ni lo mires: son dependencias.", m: "150 000 tokens: la mochila revienta y el agente compacta." },
+      { n: "Tu pedido: «revisa solo src/pagos»", k: "tuyo", tok: 40, r: 0, nec: 1, b: "Lo más barato y lo que más guía.", m: "Sin pedido, ¿qué revisa? Otra vuelta." }
+    ] },
+    { t: "Levanta el proyecto con Docker", c: [
+      { n: "npm install con barras de progreso y 2 avisos", k: "cmd", tok: 18000, r: .05, nec: 1, b: "Las barras no deciden; los 2 avisos sí, y RTK los deja.", m: "Los 2 avisos explicaban la falla." },
+      { n: ".env con las claves de la base", k: "sec", tok: 300, r: 0, sec: 1, b: "Un secreto nunca entra al contexto.", m: "¡Un secreto en el contexto! Cámbialo hoy mismo y que no se repita." },
+      { n: "Dockerfile · 30 líneas", k: "arch", tok: 300, r: 0, nec: 1, b: "Corto y es lo que se está levantando.", m: "Sin el Dockerfile, el agente adivina cómo se arma." },
+      { n: "docker ps · 14 contenedores", k: "cmd", tok: 2400, r: .4, nec: 1, b: "Compacto y con el puerto a la vista.", m: "Sin docker ps no sabe qué está corriendo." },
+      { n: "Todo el repo «para que entienda»", k: "lista", tok: 220000, r: .3, b: "«Para que entienda» es la frase más cara del día.", m: "220 000 tokens: la mochila revienta." }
+    ] },
+    { t: "Explica qué hace la función cobrar()", c: [
+      { n: "cobros.ts completo · 2 000 líneas", k: "arch", tok: 26000, r: .14, b: "Ya tienes la función: el archivo entero sobra.", m: "26 000 tokens para explicar 60 líneas." },
+      { n: "La función cobrar() · 60 líneas", k: "arch", tok: 800, r: 0, nec: 1, b: "Es la protagonista.", m: "Sin la función no hay nada que explicar." },
+      { n: "rg -n \"cobrar(\" · 6 resultados", k: "cmd", tok: 300, r: 1, nec: 1, b: "Dice quién la llama. Ya es corto: RTK lo deja igual.", m: "Sin saber quién la llama, la explicación queda coja." },
+      { n: "La respuesta larga anterior del agente", k: "hist", tok: 4000, r: 0, b: "Lo que ya respondió no hace falta releerlo.", m: "4 000 tokens de algo que ya leíste." },
+      { n: "Tipos que usa cobrar() · 20 líneas", k: "arch", tok: 250, r: 0, nec: 1, b: "Cortos y explican los datos.", m: "Sin los tipos, el agente inventa qué trae cada campo." }
+    ] }
+  ];
+  var TOTAL_CARTAS = TAREAS.reduce(function (s, t) { return s + t.c.length; }, 0);
+
+  /* ---------- estado ---------- */
+  var modo = "intro", enVivo = false, yo = "", staff = false, sala = null, sinServidor = false, offset = 0;
+  var avatar = PT.leer("avatar", "llama"); if (!EMO[avatar]) avatar = "llama";
+  var nombre = "", P = null, reloj = 0, bloqueo = false, ultimoPaso = "", pidiendo = false, cuentaT = 0, cuentaVivo = false, rondaJugada = 0;
+  var guardado = PT.leer("juego", { mejor: 0 }) || { mejor: 0 };
+
+  PT.yo().then(function (me) { if (me && me.name) { nombre = me.name; if ($("nombre") && !$("nombre").value) $("nombre").value = me.name; } });
+
+  /* ---------- avatares ---------- */
+  AV.forEach(function (a) {
+    var b = PT.el("button", "mj-av", a[1]); b.type = "button"; b.setAttribute("aria-label", a[0]);
+    b.setAttribute("aria-pressed", a[0] === avatar ? "true" : "false");
+    b.addEventListener("click", function () {
+      avatar = a[0]; PT.guardar("avatar", avatar);
+      Array.prototype.forEach.call($("avs").children, function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+    });
+    $("avs").appendChild(b);
+  });
+
+  /* ---------- azar con semilla: todo el grupo ve el mismo mazo ---------- */
+  function rng(seed) { var x = (Math.abs(seed | 0) % 2147483646) + 1; return function () { x = (x * 48271) % 2147483647; return x / 2147483647; }; }
+  function barajar(a, r) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function mazo(seed) { var r = rng(seed); return barajar(TAREAS, r).map(function (t) { return { t: t.t, c: barajar(t.c, r) }; }); }
+
+  /* ---------- costos y notas ---------- */
+  function costo(c, op) { return op === "fuera" ? 0 : op === "rtk" && c.r ? Math.round(c.tok * c.r) : c.tok; }
+  function mejorCosto(c) { return c.sec || !c.nec ? 0 : (c.r && c.r < 1 ? Math.round(c.tok * c.r) : c.tok); }
+  function nota(c, op) {
+    var cs = costo(c, op), bc = mejorCosto(c);
+    if (c.sec && op !== "fuera") return "secreto";
+    if (c.nec && op === "fuera") return "falta";
+    if (cs <= bc) return "bien";
+    return cs - bc > 5000 ? "caro" : "ok";
+  }
+
+  /* ---------- red: la sala del LIVE (/carrera) ---------- */
+  function enSala() { return !!(sala && yo && (sala.corredores || []).some(function (c) { return c.id === yo; })); }
+  function refrescar() {
+    if (pidiendo) return; pidiendo = true;
+    PT.pedir("/carrera").then(function (r) {
+      pidiendo = false;
+      if (!r.ok || !r.datos || !r.datos.estado) { sinServidor = true; pintarSala(); return; }
+      sinServidor = false; sala = r.datos; staff = !!sala.staff;
+      if (sala.ahora_ms) offset = sala.ahora_ms - Date.now();
+      if (!yo && sala.yo && (sala.corredores || []).some(function (c) { return c.id === sala.yo; })) yo = sala.yo;
+      var mio = (sala.corredores || []).filter(function (c) { return c.id === yo; })[0];
+      // Si estoy anotado y la sala sale, entro a la ronda del grupo (aunque estuviera practicando o viendo un resultado).
+      if (mio && (sala.estado === "cuenta" || sala.estado === "corre") && !mio.fin_ms && !(modo === "juego" && enVivo) && !cuentaVivo && sala.salida_ms !== rondaJugada) {
+        rondaJugada = sala.salida_ms; // una sola partida por salida: un sondeo atrasado no la repite
+        if (modo === "juego") { clearInterval(reloj); modo = "intro"; }
+        if (cuentaT) { clearTimeout(cuentaT); cuentaT = 0; }
+        var salidaLocal = sala.salida_ms - offset;
+        if (salidaLocal > Date.now()) contar(salidaLocal, true, sala.seed);
+        else if (Date.now() - salidaLocal < RONDA - 3000) empezar(salidaLocal, true, sala.seed, mio.dist || 0);
+      }
+      if (modo === "juego" && enVivo && sala.estado === "fin") terminar("El tiempo de la sala se cumplió.");
+      if (modo === "juego" && enVivo && sala.estado === "lobby") terminar("El instructor abrió una sala nueva.");
+      pintarSala();
+    });
+  }
+  setInterval(refrescar, 2000);
+  refrescar();
+
+  function pintarLista(ul, datos, max) {
+    ul.textContent = "";
+    if (!datos.length) { ul.appendChild(PT.el("li", "vacio", sinServidor ? "La sala del grupo se ve cuando la clase está en vivo." : "Aún nadie en la sala.")); return; }
+    datos.slice(0, max || 30).forEach(function (c) {
+      var li = PT.el("li", c.id === yo ? "yo" : "");
+      li.appendChild(PT.el("span", "a", EMO[c.avatar] || "🙂"));
+      li.appendChild(PT.el("span", "n", c.id === yo ? "Tú · " + (c.nombre || "") : (c.nombre || "Alumno")));
+      li.appendChild(PT.el("span", "v", c.dist > 0 ? PT.num(c.dist) : (c.fin_ms ? "0" : "…")));
+      ul.appendChild(li);
+    });
+  }
+  function corredoresVivos() {
+    var l = ((sala && sala.corredores) || []).map(function (c) { return { id: c.id, nombre: c.nombre, avatar: c.avatar, dist: +c.dist || 0, fin_ms: c.fin_ms }; });
+    if (P && enVivo) l.forEach(function (c) { if (c.id === yo) c.dist = Math.max(c.dist, P.ahorro); });
+    return l.sort(function (a, b) { return b.dist - a.dist; });
+  }
+  function pintarGrupo(caja, titulo) {
+    var l = corredoresVivos(), n = l.length, suma = l.reduce(function (s, c) { return s + c.dist; }, 0), meta = Math.max(1, n) * META_X;
+    caja.textContent = "";
+    caja.appendChild(PT.el("span", "pt-et", titulo || "El grupo"));
+    var m = PT.el("div", "mj-meta"), f = PT.el("div", "fila");
+    f.appendChild(PT.el("span", "", n ? "Ahorro de " + n + (n === 1 ? " jugador" : " jugadores") : "Ahorro del grupo"));
+    f.appendChild(PT.el("b", "", PT.num(suma)));
+    var ba = PT.el("div", "barra"), i = PT.el("i"); i.style.setProperty("--w", Math.min(100, suma / meta * 100) + "%"); ba.appendChild(i);
+    m.appendChild(f); m.appendChild(ba);
+    m.appendChild(PT.el("span", "pt-nota", suma >= meta ? "✓ ¡Meta del grupo cumplida!" : "Meta común: " + PT.num(meta) + " tokens (" + PT.num(META_X) + " por persona)."));
+    caja.appendChild(m);
+    var ul = PT.el("ul", "mj-lista"); pintarLista(ul, l, 30); caja.appendChild(ul);
+    if (P && !enVivo && modo !== "intro") caja.appendChild(PT.el("span", "pt-nota", "Estás en práctica: tu ahorro no suma al grupo."));
+  }
+  function pintarSala() {
+    var l = corredoresVivos(), est = sala && sala.estado;
+    $("sala-t").textContent = sinServidor ? "Sala del grupo" : "En la sala · " + l.length + (est && est !== "lobby" ? " · " + ({ cuenta: "salida en segundos", corre: "ronda en curso", fin: "ronda terminada" }[est] || est) : "");
+    pintarLista($("sala-lista"), l, 30);
+    $("unirme").hidden = sinServidor;
+    $("unirme").disabled = enSala() && est === "lobby";
+    $("unirme").textContent = enSala() && est === "lobby" ? "✓ En la sala: espera la salida" : "Unirme a la ronda del grupo";
+    $("staff").hidden = !staff;
+    $("iniciar").disabled = !(est === "lobby" && l.length > 0);
+    if (modo === "juego") pintarGrupo($("g-juego"), enVivo ? "El grupo, en vivo" : "El grupo");
+    if (modo === "fin" && $("g-fin")) { pintarGrupo($("g-fin"), enVivo ? "Tu aporte al grupo" : "El grupo"); $("volver").hidden = !(est === "lobby" && !sinServidor); }
+    if (sinServidor && modo === "intro" && !$("msg").textContent) msg("Sin conexión con la sala: puedes practicar solo y publicar al final.");
+  }
+  function msg(t, mal) { $("msg").textContent = t; $("msg").className = "mj-msg" + (mal ? " bad" : ""); }
+
+  $("unirme").addEventListener("click", function () {
+    PT.guardar("avatar", avatar);
+    PT.pedir("/carrera/unir", { avatar: avatar }).then(function (r) {
+      if (r.ok) { yo = r.datos.id || yo; msg(r.datos.tarde ? "Vuelves a tu ronda…" : "✓ Estás en la sala. Empieza cuando el instructor dé la salida."); refrescar(); }
+      else if (r.status === 409) msg("La ronda ya salió. Practica solo y entra a la siguiente.", true);
+      else msg("No pude entrar a la sala. Practica solo: tu resultado vale igual.", true);
+    });
+  });
+  $("practicar").addEventListener("click", function () { contar(Date.now() + 3000, false, Math.floor(Math.random() * 1e6)); });
+  $("iniciar").addEventListener("click", function () { PT.pedir("/carrera/iniciar", {}).then(function (r) { if (!r.ok) msg("Solo el instructor puede dar la salida.", true); refrescar(); }); });
+  $("reiniciar").addEventListener("click", function () { PT.pedir("/carrera/reiniciar", {}).then(function () { yo = ""; refrescar(); }); });
+
+  /* ---------- cuenta atrás y partida ---------- */
+  function ver(v) { ["intro", "juego", "fin"].forEach(function (k) { $("v-" + k).hidden = k !== v; }); modo = v; }
+  function contar(salidaLocal, vivo, seed) {
+    if (modo === "juego" || cuentaT) return;
+    cuentaVivo = !!vivo;
+    $("cuenta").hidden = false;
+    (function tic() {
+      var falta = salidaLocal - Date.now();
+      if (falta <= 0) { $("cuenta").hidden = true; cuentaT = 0; cuentaVivo = false; empezar(salidaLocal, vivo, seed, 0); return; }
+      $("cuenta").textContent = Math.ceil(falta / 1000);
+      cuentaT = setTimeout(tic, 100);
+    })();
+  }
+  function empezar(inicio, vivo, seed, base) {
+    enVivo = !!vivo;
+    P = { mazo: mazo(seed), ti: 0, ci: 0, gasto: 0, dec: [], ahorro: base || 0, golpes: 0, bien: 0, total: 0, tareas: 0, lecciones: [], inicio: inicio };
+    ultimoPaso = "";
+    ver("juego");
+    $("modo").textContent = enVivo ? "en vivo · suma al grupo" : "práctica";
+    $("modo").className = "esc-chip modo " + (enVivo ? "ok" : "warn");
+    $("fb").className = "mj-fb"; $("fb").textContent = "Arrastra la carta o toca un botón.";
+    pintarCarta(); pintarMarcador(); pintarGrupo($("g-juego"), enVivo ? "El grupo, en vivo" : "El grupo");
+    clearInterval(reloj); reloj = setInterval(tictac, 200); tictac();
+    try { $("carta").focus({ preventScroll: true }); } catch (e) {}
+  }
+  function tictac() {
+    if (!P || modo !== "juego") return;
+    var queda = Math.max(0, RONDA - (Date.now() - P.inicio));
+    $("reloj").textContent = Math.ceil(queda / 1000);
+    $("reloj").className = "reloj" + (queda < 10000 ? " poco" : "");
+    if (queda <= 0) terminar("¡Tiempo!");
+    if (enVivo) enviarPaso();
+  }
+  function cartaActual() { var t = P && P.mazo[P.ti]; return t ? t.c[P.ci] : null; }
+  function pintarCarta() {
+    var t = P.mazo[P.ti], c = cartaActual(); if (!t || !c) return;
+    $("tarea").textContent = t.t;
+    $("prog").textContent = "Tarea " + (P.ti + 1) + " de " + P.mazo.length + " · carta " + (P.ci + 1) + " de " + t.c.length;
+    $("c-ico").textContent = TIPO[c.k][0]; $("c-tipo").textContent = TIPO[c.k][1];
+    $("c-nom").textContent = c.n;
+    $("c-tok").textContent = PT.num(c.tok) + " tokens";
+    $("c-rtk").textContent = c.r && c.r < 1 ? "Con RTK: ~" + PT.num(c.tok * c.r) : (c.k === "cmd" ? "Salida corta: RTK la deja igual" : "RTK no aplica: no es salida de comando");
+    var el = $("carta"); el.className = "mj-carta"; el.style.transform = ""; void el.offsetWidth; el.className = "mj-carta entra";
+  }
+  function pintarMarcador() {
+    $("score").textContent = PT.num(P.ahorro);
+    $("vueltas").textContent = P.golpes;
+    var p = P.gasto / VENTANA, mo = $("mochila");
+    $("moch-b").style.setProperty("--w", Math.min(100, p * 100) + "%");
+    $("moch-v").textContent = PT.num(P.gasto) + " / " + PT.num(VENTANA);
+    mo.className = "esc-card mj-mochila" + (p > 1 ? " lleno" : p > .5 ? " medio" : "");
+  }
+  function feedback(clase, texto) { var f = $("fb"); f.className = "mj-fb " + clase; f.textContent = texto; }
+
+  function decidir(op) {
+    if (modo !== "juego" || bloqueo || !P) return;
+    var c = cartaActual(); if (!c) return;
+    var n = nota(c, op), cs = costo(c, op), bc = mejorCosto(c);
+    P.dec.push({ c: c, op: op, n: n }); P.total++; P.gasto += cs;
+    if (n === "bien") P.bien++;
+    var extra = op === "rtk" && !c.r ? " (RTK solo filtra salidas de comandos: esto pasó igual.)" : "";
+    if (n === "bien") feedback("bien", "✓ " + c.b + extra);
+    else if (n === "ok") feedback("ok", "≈ Resolvía, pero costó " + PT.num(cs - bc) + " tokens de más." + extra);
+    else { feedback("mal", "✗ " + c.m + extra); P.lecciones.push({ n: c.n, t: c.m, op: op }); }
+    if (n === "secreto") P.golpes++;
+    var el = $("carta"); bloqueo = true;
+    el.style.transform = "";
+    el.className = "mj-carta " + (op === "fuera" ? "sale-izq" : op === "meter" ? "sale-der" : "sale-abajo");
+    pintarMarcador();
+    setTimeout(function () {
+      bloqueo = false;
+      if (modo !== "juego") return;
+      P.ci++;
+      if (P.ci >= P.mazo[P.ti].c.length) cerrarTarea();
+      if (modo === "juego") pintarCarta();
+    }, 190);
+  }
+  function cerrarTarea() {
+    var t = P.mazo[P.ti], naive = 0, faltan = [];
+    t.c.forEach(function (c) { naive += c.tok; });
+    P.dec.forEach(function (d) { if (d.n === "falta") faltan.push(d.c.n); });
+    var extra = faltan.length * VUELTA, compacto = P.gasto > VENTANA;
+    if (compacto) extra += COMPACTA;
+    var ahorro = Math.max(0, naive - P.gasto - extra);
+    P.ahorro += ahorro; P.golpes += faltan.length + (compacto ? 1 : 0); P.tareas++;
+    var partes = [];
+    if (faltan.length) partes.push("faltó «" + faltan[0] + "» y el agente salió a buscarlo (+" + PT.num(faltan.length * VUELTA) + ")");
+    if (compacto) { partes.push("la mochila pasó de 100 000 y el agente compactó (+" + PT.num(COMPACTA) + ")"); P.lecciones.push({ n: "Mochila llena", t: "Pasaste de 100 000 tokens en «" + t.t + "»: el agente compactó y olvidó detalles." }); }
+    feedback(partes.length ? "mal" : "bien", (partes.length ? "Tarea resuelta con otra vuelta: " + partes.join("; ") : "✓ Tarea resuelta a la primera") + ". Ahorraste " + PT.num(ahorro) + ".");
+    P.ti++; P.ci = 0; P.gasto = 0; P.dec = [];
+    pintarMarcador();
+    if (enVivo) enviarPaso(true);
+    if (P.ti >= P.mazo.length) setTimeout(function () { terminar("¡Completaste las 5 tareas!"); }, 600);
+  }
+  function enviarPaso(forzar) {
+    var k = P.ahorro + "|" + P.golpes;
+    if (k === ultimoPaso) return;
+    if (!forzar && enviarPaso.t && Date.now() - enviarPaso.t < 2000) return;
+    enviarPaso.t = Date.now(); ultimoPaso = k;
+    PT.pedir("/carrera/paso", { dist: P.ahorro, golpes: P.golpes });
+  }
+  function terminar(porque) {
+    if (modo !== "juego" || !P) return;
+    clearInterval(reloj);
+    var ms = Math.max(1, Math.min(RONDA, Date.now() - P.inicio));
+    if (enVivo) {
+      ultimoPaso = "";
+      PT.pedir("/carrera/paso", { dist: P.ahorro, golpes: P.golpes }).then(function () { return PT.pedir("/carrera/fin", { ms: ms }); }).then(refrescar);
+    }
+    var prec = P.total ? Math.round(P.bien / P.total * 100) : 0;
+    guardado.mejor = Math.max(guardado.mejor || 0, P.ahorro);
+    guardado.ultimo = { ahorro: P.ahorro, prec: prec, tareas: P.tareas, golpes: P.golpes, vivo: enVivo };
+    PT.guardar("juego", guardado);
+    montarFin();
+    ver("fin");
+    $("r-ahorro").textContent = PT.num(P.ahorro);
+    $("r-sub").textContent = porque + " Tokens ahorrados frente a «meter todo».";
+    $("r-prec").textContent = prec + " %";
+    $("r-tareas").textContent = P.tareas + "/" + P.mazo.length;
+    $("r-mejor").textContent = PT.num(guardado.mejor);
+    var ul = $("r-aprende"); ul.textContent = "";
+    if (!P.lecciones.length) ul.appendChild(PT.el("li", "bien", P.total ? "Ningún error: cada carta fue a donde debía. Ahora hazlo con tu proyecto real." : "Esta vez no alcanzaste a decidir: juega una práctica, es corta."));
+    P.lecciones.slice(0, 8).forEach(function (l) { var li = PT.el("li"); li.appendChild(PT.el("b", "", l.n + ": ")); li.appendChild(document.createTextNode(l.t)); ul.appendChild(li); });
+    pintarGrupo($("g-fin"), enVivo ? "Tu aporte al grupo" : "El grupo");
+  }
+
+  /* ---------- controles: botones, teclado y arrastre (mouse y dedo) ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll(".mj-b"), function (b) { b.addEventListener("click", function () { decidir(b.getAttribute("data-op")); }); });
+  addEventListener("keydown", function (e) {
+    if (modo !== "juego" || /INPUT|TEXTAREA/.test((e.target && e.target.tagName) || "")) return;
+    var op = { ArrowLeft: "fuera", a: "fuera", A: "fuera", ArrowDown: "rtk", s: "rtk", S: "rtk", ArrowRight: "meter", d: "meter", D: "meter" }[e.key];
+    if (op) { e.preventDefault(); decidir(op); }
+  });
+  var carta = $("carta"), arr = null;
+  carta.addEventListener("pointerdown", function (e) {
+    if (modo !== "juego" || bloqueo) return;
+    arr = { x: e.clientX, y: e.clientY }; try { carta.setPointerCapture(e.pointerId); } catch (x) {}
+    carta.style.transition = "none";
+  });
+  carta.addEventListener("pointermove", function (e) {
+    if (!arr) return;
+    var dx = e.clientX - arr.x, dy = Math.max(0, e.clientY - arr.y);
+    carta.style.transform = "translate(" + dx + "px," + dy + "px) rotate(" + (dx / 18) + "deg)";
+    carta.classList.toggle("h-izq", dx < -50 && Math.abs(dx) > dy);
+    carta.classList.toggle("h-der", dx > 50 && Math.abs(dx) > dy);
+    carta.classList.toggle("h-abajo", dy > 50 && dy > Math.abs(dx));
+  });
+  function soltar(e) {
+    if (!arr) return;
+    var dx = e.clientX - arr.x, dy = e.clientY - arr.y; arr = null;
+    carta.style.transition = "";
+    carta.classList.remove("h-izq", "h-der", "h-abajo");
+    if (Math.abs(dx) > 70 && Math.abs(dx) > dy) decidir(dx < 0 ? "fuera" : "meter");
+    else if (dy > 70) decidir("rtk");
+    else carta.style.transform = "";
+  }
+  carta.addEventListener("pointerup", soltar);
+  carta.addEventListener("pointercancel", function () { arr = null; carta.style.transition = ""; carta.style.transform = ""; });
+
+  /* ---------- resultado: reflexión al muro y fotito (se montan la primera vez que terminas) ---------- */
+  function montarFin() {
+    if ($("r-ahorro")) return;
+    $("v-fin").appendChild(document.importNode($("t-fin").content, true));
+    if (nombre) $("nombre").value = nombre;
+    $("otra").addEventListener("click", function () { ver("intro"); contar(Date.now() + 3000, false, Math.floor(Math.random() * 1e6)); });
+    $("volver").addEventListener("click", function () { ver("intro"); P = null; $("unirme").click(); });
+    PT.muro($("muro"), "08-juego-mochila", "Una línea: ¿qué dejarías fuera mañana en tu proyecto real?", { placeholder: "Mañana dejo fuera…" });
+    PTFoto.montar($("foto"), function () {
+      var u = guardado.ultimo || { ahorro: 0, prec: 0, tareas: 0, golpes: 0 };
+      return {
+        nombre: $("nombre").value.trim() || nombre || "Alumno", avatar: EMO[avatar],
+        etiqueta: "La mochila del agente", resultado: PT.num(u.ahorro) + " tokens",
+        detalle: "ahorrados · " + u.prec + " % de decisiones justas · " + u.tareas + " de 5 tareas · " + u.golpes + (u.golpes === 1 ? " aprendizaje" : " aprendizajes"),
+        reflexion: PT.leer("muro-08-juego-mochila", "") || ""
+      };
+    });
+
+  }
+
+  // Ganchos para la prueba automática (no cambian el juego).
+  window.__mochila = { decidir: decidir, cartaActual: cartaActual, estado: function () { return { modo: modo, enVivo: enVivo, yo: yo, P: P && { ahorro: P.ahorro, golpes: P.golpes, tareas: P.tareas, total: P.total, bien: P.bien } }; }, mejorOp: function () {
+    var c = cartaActual(); if (!c) return null; if (c.sec || !c.nec) return "fuera"; return c.r && c.r < 1 ? "rtk" : "meter"; } };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Arma tus 5 primeras fichas</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
+  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<style id="esc-propio">
+.cf { display: grid; gap: .45em; }
+.cf-fila { display: grid; grid-template-columns: 1.6fr 1fr .7fr .55fr 1fr auto; gap: .35em; align-items: center; }
+.cf-fila .tw-in { font-size: .66em; min-height: 2.4em; padding: .4em .55em; }
+.cf-ok { font: 800 .62em var(--mono); width: 2.6em; text-align: center; color: var(--muted); }
+.cf-ok.si { color: var(--ok); }
+.cf-cab { font-size: .56em; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+.cf-vit { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5em, 1fr)); gap: .5em; }
+.cf-card { border: 1px solid var(--line); border-radius: .8em; padding: .6em .7em; background: var(--s2); font-size: .7em; display: grid; gap: .15em; }
+.cf-card b { font-size: 1.05em; }
+.cf-card .pr { font: 900 1.2em system-ui, sans-serif; color: var(--accent); }
+.cf-card .falta { color: var(--warn); font-size: .9em; }
+.cf-card .cat { color: var(--muted); }
+@media (max-width: 860px) {
+  .cf-cab { display: none; }
+  .cf-fila { grid-template-columns: 1fr 1fr; padding: .5em; border: 1px solid var(--line); border-radius: .7em; }
+  .cf-fila .tw-in { font-size: .9em; }
+  .cf-fila .nom { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación activa</span>
+    <span class="esc-num">Sesión 1 · E07</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-cols ancha">
+      <div class="tw-pila">
+        <h1 class="esc-titulo a-in" style="font-size:1.6em">Tus <em>5 primeras fichas</em></h1>
+        <p class="esc-sub a-in" style="--d:.1s;font-size:.9em">Escoge los 5 productos que más te preguntan. Llena nombre, presentación, precio, stock y categoría (la foto la tomas con tu celular): se guardan en este navegador y los copias para tu tienda, Excel o WhatsApp.</p>
+        <div class="tw-card a-in" style="--d:.15s">
+          <h2>Tus productos <span class="esc-chip" id="completas">0 de 5 completas</span></h2>
+          <div class="cf" id="filas"></div>
+          <div class="tw-btns" style="margin-top:.6em">
+            <button type="button" class="tw-btn peq" id="copiar-tabla">Copiar como tabla (Excel)</button>
+            <button type="button" class="tw-btn sec peq" id="copiar-wa">Copiar como mensaje de WhatsApp</button>
+          </div>
+        </div>
+      </div>
+      <div class="tw-pila">
+        <div class="tw-card a-in" style="--d:.2s">
+          <h2>Así se ve tu vitrina</h2>
+          <div class="cf-vit" id="vitrina"></div>
+        </div>
+        <div class="tw-card a-in" style="--d:.3s">
+          <h2>Tu evidencia</h2>
+          <p class="tw-peq">¿Ya tienes una tienda, un catálogo de WhatsApp o una página? Pega el enlace (opcional).</p>
+          <input class="tw-in" id="enlace" maxlength="150" placeholder="https://…" aria-label="Enlace de tu tienda o catálogo" style="width:100%;margin:.4em 0">
+          <div class="tw-btns"><button type="button" class="tw-btn" id="entregar">Listo: entregar mis fichas</button></div>
+          <p class="tw-nota" id="ent-msg">Necesitas al menos 3 fichas completas.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Cuando entregues tus fichas, pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$;
+  var CAMPOS = [["nom", "Nombre (qué es)", "Ej.: Torta de chocolate"], ["pres", "Presentación", "8 porciones"], ["pr", "Precio S/", "55.00"], ["st", "Stock", "6"], ["cat", "Categoría", "Tortas"]];
+  var VAGOS = /^(producto|oferta|nuevo|varios|otros|general|art\.?|item)\b/i;
+  var datos = TW.leer("fichas", null) || [{}, {}, {}, {}, {}];
+  var filas = $("#filas");
+  var cab = TW.el("div", "cf-fila cf-cab"); CAMPOS.forEach(function (c) { cab.appendChild(TW.el("span", "", c[1])); }); cab.appendChild(TW.el("span", "", "")); filas.appendChild(cab);
+  function evaluar(d) {
+    var f = [];
+    var nom = String(d.nom || "").trim(), pr = parseFloat(String(d.pr || "").replace(",", ".")), cat = String(d.cat || "").trim();
+    if (nom.split(/\s+/).length < 2 || VAGOS.test(nom)) f.push("un nombre que diga qué es");
+    if (!String(d.pres || "").trim()) f.push("la presentación");
+    if (!(pr > 0)) f.push("el precio");
+    if (!/^\d+$/.test(String(d.st || "").trim())) f.push("el stock");
+    if (!cat || /^(varios|otros|general|sin categor)/i.test(cat)) f.push("una categoría clara");
+    return f;
+  }
+  datos.forEach(function (d, i) {
+    var fila = TW.el("div", "cf-fila");
+    CAMPOS.forEach(function (c) {
+      var inp = TW.el("input", "tw-in " + c[0]); if (i === 0) inp.placeholder = c[2]; inp.maxLength = c[0] === "nom" ? 60 : 30; inp.value = d[c[0]] || "";
+      inp.setAttribute("aria-label", "Producto " + (i + 1) + ": " + c[1]);
+      if (c[0] === "pr") inp.inputMode = "decimal";
+      if (c[0] === "st") inp.inputMode = "numeric";
+      inp.addEventListener("input", function () { d[c[0]] = inp.value; TW.guardar("fichas", datos); pintar(); });
+      fila.appendChild(inp);
+    });
+    var ok = TW.el("span", "cf-ok", "—"); ok.id = "ok-" + i; fila.appendChild(ok);
+    filas.appendChild(fila);
+  });
+  function completas() { return datos.filter(function (d) { return d.nom && !evaluar(d).length; }).length; }
+  function pintar() {
+    var v = $("#vitrina"); v.textContent = "";
+    datos.forEach(function (d, i) {
+      var f = evaluar(d), ok = $("#ok-" + i);
+      ok.textContent = !d.nom ? "—" : f.length ? "falta" : "✓"; ok.className = "cf-ok" + (d.nom && !f.length ? " si" : "");
+      if (!d.nom) return;
+      var c = TW.el("div", "cf-card");
+      c.appendChild(TW.el("b", "", d.nom)); if (d.pres) c.appendChild(TW.el("span", "", d.pres));
+      var pr = parseFloat(String(d.pr || "").replace(",", "."));
+      c.appendChild(TW.el("span", "pr", pr > 0 ? TW.soles(pr) : "S/ —"));
+      if (/^\d+$/.test(String(d.st || "").trim())) c.appendChild(TW.el("span", "cat", +d.st > 0 ? "Disponible · quedan " + d.st : "Agotado"));
+      if (d.cat) c.appendChild(TW.el("span", "cat", d.cat));
+      if (f.length) c.appendChild(TW.el("span", "falta", "Falta: " + f.join(", ")));
+      v.appendChild(c);
+    });
+    if (!v.children.length) v.appendChild(TW.el("p", "tw-nota", "Escribe tu primer producto y aparece aquí."));
+    var n = completas(); $("#completas").textContent = n + " de 5 completas"; $("#completas").className = "esc-chip" + (n >= 3 ? " ok" : "");
+  }
+  function llenas() { return datos.filter(function (d) { return d.nom; }); }
+  TW.botonCopiar($("#copiar-tabla"), function () {
+    return ["Nombre\tPresentación\tPrecio\tStock\tCategoría"].concat(llenas().map(function (d) { return [d.nom, d.pres || "", d.pr || "", d.st || "", d.cat || ""].join("\t"); })).join("\n");
+  });
+  TW.botonCopiar($("#copiar-wa"), function () {
+    return "*Nuestro catálogo*\n" + llenas().map(function (d) { var pr = parseFloat(String(d.pr || "").replace(",", ".")); return "• " + d.nom + (d.pres ? " (" + d.pres + ")" : "") + (pr > 0 ? " — " + TW.soles(pr) : ""); }).join("\n");
+  });
+  $("#enlace").value = TW.leer("enlace", "");
+  $("#entregar").addEventListener("click", function () {
+    var n = completas(), link = $("#enlace").value.trim();
+    TW.guardar("enlace", link);
+    if (n < 3 && !/^https?:\/\//.test(link)) { $("#ent-msg").textContent = "Aún tienes " + n + " completas. Completa al menos 3 (o pega el enlace de tu tienda)."; return; }
+    TW.evidencia("hallazgo", "fichas completas: " + n + " de 5" + (link ? " · " + link : "")).then(function (r) {
+      $("#ent-msg").innerHTML = r.ok ? "<b>Entregado.</b> Ahora pulsa «Lo logré»." : "Guardado en este navegador. Pulsa «Lo logré» en el panel.";
+    });
+  });
+  pintar();
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

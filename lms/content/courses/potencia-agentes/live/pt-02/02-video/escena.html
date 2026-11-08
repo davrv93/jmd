@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Video: memoria y mapa para tu agente</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<style id="esc-propio">
+.v2 { display: grid; grid-template-columns: 1.4fr .6fr; gap: 2vw; align-items: start; }
+.v2-marco { position: relative; border-radius: 1em; overflow: hidden; background: #0d0c1f; border: 1px solid var(--line2); box-shadow: var(--card-shadow); aspect-ratio: 16 / 9; max-height: 64vh; }
+.v2-marco video { display: block; width: 100%; height: 100%; object-fit: contain; background: #0d0c1f; }
+.v2-respaldo { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 1em; padding: 1.4em; color: #ecebf7; background: linear-gradient(150deg, #14122b, #1f2a5c); }
+.v2-respaldo div { display: grid; gap: .3em; justify-items: center; text-align: center; }
+.v2-respaldo .ico { font-size: 3em; font-family: "Apple Color Emoji","Segoe UI Emoji",sans-serif; }
+.v2-respaldo b { font-size: 1.05em; }
+.v2-respaldo p { margin: 0; color: #b7b4cc; font-size: .74em; }
+.v2-estado { font-size: .62em; color: var(--muted); margin-top: .4em; }
+@media (max-width: 860px) { .v2 { grid-template-columns: 1fr; } .v2-marco { max-height: none; } .v2-respaldo p { font-size: .9em; } .v2-estado { font-size: .8em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 150 L1330 110 L1390 190 L1450 160"/>
+  <path class="tb" pathLength="1" d="M1252 150 L1240 250 M1390 190 L1380 290"/>
+  <g><circle class="eo" cx="1180" cy="92" r="4.5"/><circle class="e" cx="1252" cy="150" r="5"/><circle class="eg" cx="1330" cy="110" r="4"/><circle class="eo" cx="1390" cy="190" r="5"/><circle class="e" cx="1450" cy="160" r="3.5"/><circle class="eg" cx="1240" cy="250" r="3.5"/><circle class="e" cx="1380" cy="290" r="3.5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="460" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:2.9s" cx="140" cy="620" r="1.6"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia concreta</span>
+    <span class="esc-num">PT-02 · 02 / 10</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Memoria y mapa en <em>40 segundos</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Primero apuesta. Después lo medimos.</p>
+    </div>
+    <div class="v2">
+      <div>
+        <div class="v2-marco a-in" style="--d:.2s">
+          <video id="video" controls playsinline preload="metadata" src="/files/potencia-agentes/materials/video-pt-02.mp4" aria-label="Video: memoria y mapa para tu agente"></video>
+          <div class="v2-respaldo" id="respaldo" hidden>
+            <div><span class="ico">🧠</span><b>Memoria</b><p>Lo que se decidió, una vez y para todos.</p></div>
+            <div><span class="ico">🕸️</span><b>Mapa</b><p>Quién llama a quién, sin abrir archivos.</p></div>
+          </div>
+        </div>
+        <p class="v2-estado" id="estado">Si no ves el video, la idea va en dos palabras: memoria y mapa.</p>
+      </div>
+      <div class="esc-card a-in" style="--d:.3s" id="voto"></div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">El video queda también en «Materiales» de la clase</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script>
+PT.votos(document.getElementById("voto"), "02-video", "Apuesta: para saber qué se rompe si tocas una función, el grafo responde con…", [
+  { id: "x2", t: "La mitad de tokens" },
+  { id: "x10", t: "10 veces menos" },
+  { id: "x100", t: "100 veces menos" },
+  { id: "x1000", t: "Más de 1 000 veces menos" }
+]);
+var v = document.getElementById("video"), resp = document.getElementById("respaldo"), est = document.getElementById("estado");
+function respaldo() { resp.hidden = false; v.hidden = true; est.textContent = "El video todavía no está publicado. La idea está arriba: memoria y mapa."; }
+v.addEventListener("error", respaldo);
+v.addEventListener("loadedmetadata", function () { est.textContent = "Dura " + Math.round(v.duration || 40) + " s. Dale play cuando el instructor lo diga."; });
+setTimeout(function () { if (v.readyState === 0 && !v.hidden) est.textContent = "El video tarda en cargar. Si no aparece, sigue con el instructor."; }, 8000);
+if (v.error) respaldo();
+</script>
+</body>
+</html>

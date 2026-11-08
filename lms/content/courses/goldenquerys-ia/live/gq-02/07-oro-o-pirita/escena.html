@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · ¿Oro o pirita?</title>
+<!--
+  «¿Oro o pirita?» · juego de la sesión 1 de GoldenQuerys (hasta 25 a la vez, celular o compu).
+  Eres ensayador: la IA te trae un número con su SQL. Si es oro, lo firmas; si es pirita, dices «pirita» y
+  tocas la línea con la impureza. Nadie queda fuera: un error vale 0 g (nunca resta) y abre la lupa con el
+  número real. Cada veredicto se vota al servidor, así ves al instante qué dijo el grupo en esa misma carta.
+  Al final: tu título (todos reciben uno), el tablero, la bóveda de la clase, tu reflexión en el muro y tu fotito.
+
+  Servidor (sin cambios en el backend): la sala de la carrera (/carrera: unir, paso, fin, iniciar, reiniciar),
+  el muro y los votos. La lógica va aquí. En la sala viaja: dist = gramos; golpes = g*10000 + vistas*100 + líneas.
+  La ronda dura 90 s desde salida_ms (la sala del servidor dice «fin» a los 60 s; el reloj de aquí manda).
+  Sin instructor (grabación), «Practicar solo» juega la misma baraja en local. ?demo=1 arranca una práctica; ?dur=N la acorta (pruebas).
+  Números reales de las bases del kit (consultas hechas sobre materials/kit/goldenquerys/bases/*.sqlite).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<style id="esc-propio">
+.esc-cuerpo { justify-content: flex-start; }
+.op { width: 100%; max-width: 68em; margin-inline: auto; display: grid; gap: 1.5vh; }
+.op-tit { display: flex; align-items: baseline; gap: .4em 1em; flex-wrap: wrap; }
+.op-tit h1 { font-size: 2em; }
+.op-tit .esc-sub { font-size: .92em; }
+
+/* ---- Vestíbulo ---- */
+.op-reglas { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7em; }
+.op-regla { background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .6em .8em; box-shadow: var(--card-shadow); display: grid; grid-template-columns: auto 1fr; gap: .2em .6em; align-items: center; }
+.op-regla i { grid-row: span 2; font-style: normal; display: grid; place-items: center; width: 1.9em; height: 1.9em; border-radius: 50%; background: linear-gradient(135deg, var(--oro), var(--oro-2)); color: #1b1300; font-weight: 800; }
+.op-regla b { font-size: .84em; }
+.op-regla span { font-size: .7em; color: var(--muted); line-height: 1.3; }
+.op-puntos { display: flex; flex-wrap: wrap; gap: .4em; }
+.op-puntos span { font-size: .68em; font-weight: 700; padding: .3em .75em; border-radius: 999px; background: var(--oro-bg); color: var(--oro); border: 1px solid color-mix(in srgb, var(--oro) 30%, transparent); }
+.op-puntos span.gris { background: var(--pirita-bg); color: var(--pirita); border-color: color-mix(in srgb, var(--pirita) 30%, transparent); }
+.op-lobby { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; align-items: start; }
+.op-avs { display: flex; flex-wrap: wrap; gap: .35em; }
+.op-av { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--line2); background: var(--s2); display: grid; place-items: center; cursor: pointer; padding: 0; touch-action: manipulation; }
+.op-av[aria-pressed="true"] { border-color: var(--oro); box-shadow: 0 0 0 3px var(--oro-bg); background: color-mix(in srgb, var(--oro) 12%, var(--s1)); }
+.op-btns { display: flex; flex-wrap: wrap; gap: .5em; }
+.op-msg { margin: 0; font-size: .74em; color: var(--muted); min-height: 1.3em; }
+.op-msg.warn { color: var(--warn); }
+.op-sala { display: flex; flex-wrap: wrap; gap: .3em; max-height: 9.5em; overflow-y: auto; }
+.op-sala .p { display: inline-flex; align-items: center; gap: .35em; font-size: .68em; font-weight: 600; padding: .2em .6em .2em .25em; border-radius: 999px; background: var(--s2); border: 1px solid var(--line); animation: esc-pop .4s ease-out both; }
+.op-staff { border: 1.5px dashed var(--oro); }
+.op-staff .k-q { color: var(--oro); }
+
+/* ---- Juego ---- */
+.op-hud { display: grid; grid-template-columns: auto auto 1fr; gap: .6em 1em; align-items: center; }
+.op-reloj { width: 2.6em; height: 2.6em; border-radius: 50%; display: grid; place-items: center; font: 800 1.05em var(--mono); background: var(--s1); border: 3px solid var(--oro); color: var(--fg); }
+.op-reloj.poco { border-color: var(--bad); color: var(--bad); animation: esc-pulso 1s ease-in-out infinite; }
+.op-mios { display: grid; line-height: 1.1; }
+.op-mios b { font-size: 1.5em; font-weight: 800; color: var(--oro); font-variant-numeric: tabular-nums; }
+.op-mios small { font-size: .62em; color: var(--muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.op-boveda { display: grid; gap: .2em; min-width: 0; }
+.op-boveda small { font-size: .62em; color: var(--muted); font-weight: 700; display: flex; justify-content: space-between; gap: .5em; }
+.op-barra { height: .7em; border-radius: .35em; background: var(--s3); overflow: hidden; }
+.op-barra i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--oro), var(--oro-2)); transition: width .5s ease-out; }
+.op-tiempo { height: 4px; border-radius: 2px; background: var(--oro); transform-origin: left; }
+
+.op-carta { background: var(--s1); border: 1px solid var(--line); border-radius: 1.1em; box-shadow: var(--card-shadow); padding: .8em 1em; display: grid; gap: .55em; }
+.op-carta.entra { animation: esc-entra .35s cubic-bezier(.2,.7,.2,1) both; }
+.op-cab { display: flex; align-items: center; gap: .6em; flex-wrap: wrap; }
+.op-neg { font-size: .62em; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; padding: .25em .7em; border-radius: 999px; color: #fff; background: var(--c); }
+.op-nro { margin-left: auto; font: 700 .64em var(--mono); color: var(--muted); }
+.op-preg { margin: 0; font-size: 1.1em; line-height: 1.25; }
+.op-dice { display: flex; align-items: center; gap: .6em; flex-wrap: wrap; }
+.op-dice small { font-size: .66em; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.op-dice b { font-size: 1.55em; font-weight: 800; letter-spacing: -.02em; color: var(--oro); font-variant-numeric: tabular-nums; }
+.op-dice svg { width: 1.6em; height: 1.6em; flex: none; }
+.op-sql { display: grid; gap: 2px; background: #14122b; border-radius: .8em; padding: .5em; counter-reset: l; }
+.op-sql button { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 1.6em 1fr; gap: .4em; align-items: baseline; font: 600 .7em/1.45 var(--mono); color: #e9e6ff; padding: .28em .45em; border-radius: .45em; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 32px; cursor: default; }
+.op-sql button::before { counter-increment: l; content: counter(l); color: #7f7aa8; text-align: right; }
+.op-carta.linea .op-sql button { cursor: pointer; outline: 1px dashed rgba(242,193,78,.35); touch-action: manipulation; }
+.op-carta.linea .op-sql button:hover, .op-carta.linea .op-sql button:focus-visible { background: rgba(242,193,78,.16); outline: 2px solid #f2c14e; }
+.op-sql button.culpable { background: rgba(242,193,78,.24); outline: 2px solid #f2c14e; }
+.op-sql button.errada { background: rgba(169,176,189,.22); text-decoration: line-through; text-decoration-color: rgba(233,230,255,.5); }
+.op-sql button.hallada { background: rgba(79,211,122,.22); outline: 2px solid #4fd37a; }
+.op-pista { margin: 0; font-size: .78em; font-weight: 800; color: var(--oro); animation: esc-pulso 1.6s ease-in-out infinite; }
+
+.op-acc { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+.op-v { min-height: 58px; border-radius: .9em; font: 800 .95em/1.15 system-ui, -apple-system, sans-serif; cursor: pointer; touch-action: manipulation; display: flex; align-items: center; justify-content: center; gap: .55em; padding: .5em .8em; border: 2px solid transparent; transition: transform .12s ease-out; }
+.op-v:active { transform: scale(.97); }
+.op-v small { display: block; font-size: .7em; font-weight: 600; opacity: .85; }
+.op-v svg { width: 1.7em; height: 1.7em; flex: none; }
+.op-v.oro { background: linear-gradient(135deg, #f7d77a, #e3a91a); color: #2b1d00; border-color: #c48709; }
+.op-v.pirita { background: linear-gradient(135deg, #d9dce2, #a3a9b4); color: #1f232b; border-color: #7f8693; }
+.op-v[disabled] { opacity: .35; cursor: default; }
+.op-v:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.op-lupa { border-radius: 1em; padding: .7em .9em; display: grid; gap: .35em; border: 1.5px solid var(--line2); background: var(--s1); box-shadow: var(--card-shadow); animation: esc-entra .3s ease-out both; }
+.op-lupa.bien { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 9%, var(--s1)); }
+.op-lupa.mal { border-color: var(--pirita); background: color-mix(in srgb, var(--pirita) 10%, var(--s1)); }
+.op-lupa.medio { border-color: var(--oro); background: color-mix(in srgb, var(--oro) 9%, var(--s1)); }
+.op-lupa h3 { margin: 0; font-size: .95em; }
+.op-lupa p { margin: 0; font-size: .8em; line-height: 1.4; }
+.op-lupa .real b { color: var(--oro); }
+.op-lupa .grupo { font-size: .7em; color: var(--muted); }
+.op-lupa .k-btn { justify-self: start; }
+
+.op-capa { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(3px); text-align: center; padding: 16px; }
+.op-capa div { display: grid; gap: .3em; }
+.op-capa b { font-size: 4.2em; font-weight: 800; color: var(--oro); line-height: 1; }
+.op-capa p { margin: 0; font-size: 1.1em; font-weight: 800; }
+.op-capa span { font-size: .8em; color: var(--muted); }
+
+.op-jg { display: grid; grid-template-columns: minmax(0, 1fr) 15em; gap: 1.2vw; align-items: start; width: 100%; max-width: 64em; margin-inline: auto; }
+.op-vivo .op-tab { max-height: 60vh; }
+.op-vivo .op-tab li { grid-template-columns: 22px 1fr auto; font-size: .7em; }
+.op-sql button { font-size: .76em; }
+
+/* ---- Lobby: muestra ---- */
+.op-muestra { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+.op-muestra div { border-radius: .9em; padding: .6em; display: grid; justify-items: center; gap: .2em; text-align: center; border: 1px solid var(--line); }
+.op-muestra .o { background: linear-gradient(160deg, color-mix(in srgb, var(--oro) 18%, var(--s1)), var(--s1)); }
+.op-muestra .pi { background: linear-gradient(160deg, color-mix(in srgb, var(--pirita) 18%, var(--s1)), var(--s1)); }
+.op-muestra svg { width: 3.6em; height: 3.6em; }
+.op-muestra b { font-size: .86em; }
+.op-muestra span { font-size: .66em; color: var(--muted); line-height: 1.3; }
+
+/* ---- Fin ---- */
+.op-fin { display: grid; grid-template-columns: 1.05fr .95fr; gap: 1.4vw; align-items: start; }
+.op-yo { display: grid; grid-template-columns: auto 1fr; gap: .2em .9em; align-items: center; background: linear-gradient(150deg, color-mix(in srgb, var(--oro) 16%, var(--s1)), var(--s1)); border: 1.5px solid color-mix(in srgb, var(--oro) 45%, transparent); border-radius: 1em; padding: .8em 1em; box-shadow: var(--card-shadow); }
+.op-yo canvas { grid-row: span 4; }
+.op-yo h2 { margin: 0; font-size: .82em; color: var(--muted); }
+.op-yo .num { font-size: 2em; font-weight: 800; line-height: 1; color: var(--oro); }
+.op-yo .num small { font-size: .4em; color: var(--muted); font-weight: 700; }
+.op-yo .tit { font-size: .95em; font-weight: 800; }
+.op-yo .det { font-size: .7em; color: var(--muted); }
+.op-tab { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; max-height: 17em; overflow-y: auto; }
+.op-tab li { display: grid; grid-template-columns: 1.6em 26px 1fr auto; gap: .5em; align-items: center; font-size: .74em; padding: .25em .5em; border-radius: .6em; background: var(--s2); }
+.op-tab li.yo { background: color-mix(in srgb, var(--oro) 16%, var(--s1)); outline: 1.5px solid color-mix(in srgb, var(--oro) 50%, transparent); }
+.op-tab li .pos { font: 800 .9em var(--mono); color: var(--muted); text-align: center; }
+.op-tab li .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.op-tab li .nm small { display: block; font-size: .82em; color: var(--muted); font-weight: 600; }
+.op-tab li em { font-style: normal; font-weight: 800; color: var(--oro); font-variant-numeric: tabular-nums; }
+.op-clase { font-size: .76em; margin: 0; line-height: 1.4; }
+.op-clase b { color: var(--oro); }
+.op-nueva { border: 1.5px solid var(--oro); }
+#foto.k-foto img { width: min(100%, 17em); }
+
+@media (max-width: 760px) {
+  .op-tit h1 { font-size: 1.6em !important; }
+  .op-reglas { grid-template-columns: 1fr; gap: 6px; }
+  .op-lobby, .op-fin { grid-template-columns: 1fr; gap: 12px; }
+  .op-hud { grid-template-columns: auto auto 1fr; gap: 8px; }
+  .op-carta { padding: .7em .75em; }
+  .op-preg { font-size: 1.02em; }
+  .op-v { min-height: 62px; font-size: .9em; }
+  .op-yo canvas { width: 60px !important; height: 60px !important; }
+  .op-jg { grid-template-columns: 1fr; }
+  .op-vivo { display: none; }
+  .op-sql button { font-size: .66em; }
+}
+@media (pointer: coarse) { .esc-pie { display: none; } }
+@media (prefers-reduced-motion: reduce) { .op-barra i { transition: none; } .op-v { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">GoldenQuerys · S1 · 07</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="op">
+
+      <!-- ===== Vestíbulo ===== -->
+      <section id="v-lobby">
+        <div class="op" style="gap:1.4vh">
+          <div class="op-tit">
+            <h1 class="esc-titulo a-in">¿Oro o <em class="oro">pirita</em>?</h1>
+            <p class="esc-sub a-in" style="--d:.08s">La IA te trae números. Tú decides cuál firmar.</p>
+          </div>
+          <div class="op-reglas">
+            <div class="op-regla a-in" style="--d:.12s"><i>1</i><b>Lee la carta</b><span>La pregunta, el número de la IA y su SQL.</span></div>
+            <div class="op-regla a-in" style="--d:.2s"><i>2</i><b>Da tu veredicto</b><span>Oro: lo firmas. Pirita: algo huele mal.</span></div>
+            <div class="op-regla a-in" style="--d:.28s"><i>3</i><b>Caza la impureza</b><span>Si es pirita, toca la línea culpable.</span></div>
+          </div>
+          <div class="op-puntos a-in" style="--d:.34s"><span>+10 g · veredicto justo</span><span>+5 g · línea a la primera</span><span class="gris">Error: 0 g y la lupa te muestra el número real</span><span class="gris">90 segundos · todos terminan</span></div>
+          <div class="op-lobby">
+            <div class="k-caja a-in" style="--d:.4s">
+              <p class="k-q" style="--c:var(--oro)">Elige tu ensayador</p>
+              <div class="op-avs" id="avs"></div>
+              <div class="op-btns">
+                <button type="button" class="k-btn oro" id="b-entrar">Entrar a la ronda</button>
+                <button type="button" class="k-btn sec" id="b-solo">Practicar solo</button>
+              </div>
+              <p class="op-msg" id="msg" aria-live="polite"></p>
+            </div>
+            <div class="k-pila a-in" style="--d:.48s">
+              <div class="k-caja">
+                <p class="k-q" style="--c:var(--oro)" id="sala-tit">En la sala</p>
+                <div class="op-sala" id="sala"></div>
+              </div>
+              <div class="op-muestra" aria-hidden="true">
+                <div class="o"><svg viewBox="0 0 60 60"><defs><linearGradient id="mo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a3"/><stop offset="1" stop-color="#c48709"/></linearGradient></defs><path d="M10 40l9-20h22l9 20z" fill="url(#mo)" stroke="#8a5c00" stroke-width="2" stroke-linejoin="round"/><path d="M21 23h7l-4 14h-8z" fill="#fff" opacity=".5"/></svg><b>Oro</b><span>el SQL responde justo lo que preguntaste</span></div>
+                <div class="pi"><svg viewBox="0 0 60 60"><path d="M14 22h22v22H14z" fill="#c9ced6" stroke="#4b515c" stroke-width="2"/><path d="M14 22l9-8h22l-9 8zM36 44l9-8V14" fill="#e6e9ee" stroke="#4b515c" stroke-width="2" stroke-linejoin="round"/><path d="M36 22l9-8v22l-9 8z" fill="#9aa1ad" stroke="#4b515c" stroke-width="2" stroke-linejoin="round"/></svg><b>Pirita</b><span>brilla igual, pero una línea la delata</span></div>
+              </div>
+              <div class="k-caja op-staff" id="staff" hidden>
+                <p class="k-q" id="staff-txt">Instructor</p>
+                <div class="op-btns">
+                  <button type="button" class="k-btn oro" id="b-iniciar">Iniciar ronda (90 s)</button>
+                  <button type="button" class="k-btn sec" id="b-vaciar">Vaciar sala</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Juego ===== -->
+      <section id="v-juego" hidden>
+       <div class="op-jg">
+        <div class="op" style="gap:1.1vh">
+          <div class="op-hud">
+            <div class="op-reloj" id="reloj" aria-label="Segundos que quedan">90</div>
+            <div class="op-mios"><b id="h-g">0 g</b><small>tu oro</small></div>
+            <div class="op-boveda"><small><span>Bóveda de la clase</span><span id="bov-t">0 / 100 g</span></small><div class="op-barra"><i id="bov-b"></i></div></div>
+          </div>
+          <div class="op-tiempo" id="tiempo"></div>
+          <article class="op-carta" id="carta" aria-live="polite">
+            <div class="op-cab"><span class="op-neg" id="c-neg" style="--c:#0b8a5f">Botica</span><span class="op-nro" id="c-nro">Número 1</span></div>
+            <h2 class="op-preg" id="c-preg">¿…?</h2>
+            <div class="op-dice">
+              <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 27l5-12h16l5 12z" fill="#f2c14e" stroke="#b07a00" stroke-width="2" stroke-linejoin="round"/><path d="M14 18h5l-2 6h-5z" fill="#fff" opacity=".5"/></svg>
+              <small>La IA dice</small><b id="c-num">S/ 0</b>
+            </div>
+            <div class="op-sql" id="c-sql"></div>
+            <p class="op-pista" id="pista" hidden>¡Bien visto! Ahora toca la línea con la impureza (+5 g)</p>
+          </article>
+          <div class="op-acc" id="acc">
+            <button type="button" class="op-v oro" id="b-oro"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 27l5-12h16l5 12z" fill="#fff6d6" stroke="#7a5200" stroke-width="2" stroke-linejoin="round"/></svg><span>Oro<small>lo firmo</small></span></button>
+            <button type="button" class="op-v pirita" id="b-pirita"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M12 10h16v16H12z" fill="#eef0f3" stroke="#3a3f4a" stroke-width="2"/><path d="M12 10l6-5h16l-6 5M28 26l6-5V5" fill="none" stroke="#3a3f4a" stroke-width="2" stroke-linejoin="round"/></svg><span>Pirita<small>algo huele mal</small></span></button>
+          </div>
+          <div class="op-lupa" id="lupa" hidden>
+            <h3 id="l-tit">…</h3>
+            <p id="l-txt"></p>
+            <p class="real" id="l-real" hidden></p>
+            <p class="grupo" id="l-grupo"></p>
+            <button type="button" class="k-btn" id="b-sig">Siguiente →</button>
+          </div>
+        </div>
+        <aside class="k-caja op-vivo" aria-label="Tablero en vivo">
+          <p class="k-q" style="--c:var(--oro)">En vivo</p>
+          <ol class="op-tab" id="vivo"></ol>
+        </aside>
+       </div>
+      </section>
+
+      <!-- ===== Fin ===== -->
+      <section id="v-fin" hidden>
+        <div class="op" style="gap:1.2vh">
+          <div class="op-tit"><h1 class="esc-titulo" id="fin-tit" style="font-size:1.8em">Así quedó tu <em class="oro">ronda</em></h1></div>
+          <div class="op-fin">
+            <div class="k-pila">
+              <div class="op-yo" id="yo-caja" hidden></div>
+              <div class="k-caja">
+                <p class="k-q" style="--c:var(--oro)" id="tab-tit">Tablero de la clase</p>
+                <ol class="op-tab" id="tab"></ol>
+              </div>
+              <div class="k-caja">
+                <p class="op-clase" id="bov-fin"></p>
+                <div class="op-barra"><i id="bov-b2"></i></div>
+                <p class="op-clase" id="colada" hidden></p>
+              </div>
+              <div class="k-caja op-nueva" id="nueva" hidden>
+                <p class="k-q" style="--c:var(--oro)" id="nueva-t">El instructor abrió una ronda nueva.</p>
+                <div class="op-btns"><button type="button" class="k-btn oro" id="b-nueva">Entrar a la ronda</button></div>
+              </div>
+              <div class="k-caja op-staff" id="staff2" hidden>
+                <p class="k-q" id="staff2-txt">Instructor</p>
+                <div class="op-btns">
+                  <button type="button" class="k-btn oro" id="b-iniciar2">Otra ronda con todos</button>
+                </div>
+              </div>
+            </div>
+            <div class="k-pila">
+              <div class="k-caja k-muro" id="muro" data-muro="gq02-juego" data-color="var(--oro)" data-pregunta="¿Qué vas a revisar siempre antes de firmar un número?" data-placeholder="Siempre voy a revisar…" data-max="5"></div>
+              <p class="k-listo" id="sigue" hidden>Reflexión publicada: tu fotito ya la lleva. Pulsa «Lo logré» en el panel de la clase.</p>
+              <div id="foto"></div>
+              <p class="op-msg" id="foto-pie"></p>
+              <div class="op-btns">
+                <button type="button" class="k-btn sec" id="b-foto">Armar mi fotito</button>
+                <button type="button" class="k-btn sec" id="b-otra">Practicar otra vez</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Atajos: O = oro · P = pirita · 1–6 = línea · Enter = siguiente</span>
+  </footer>
+</div>
+<div class="op-capa" id="capa" hidden><div><b id="capa-big">3</b><p id="capa-p"></p><span id="capa-s"></span></div></div>
+
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq.js"></script>
+<script>
+(function () {
+  "use strict";
+  var GQ = window.GQ;
+  var $ = function (id) { return document.getElementById(id); };
+  var DUR = 90000, POR_PERSONA = 40;
+  try { var qd = +new URLSearchParams(location.search).get("dur"); if (qd >= 5 && qd <= 90) DUR = qd * 1000; } catch (e) {} // solo para pruebas
+
+  var NEG = {
+    botica: { n: "Botica", c: "#0b8a5f" }, polleria: { n: "Pollería", c: "#c2410c" }, ferreteria: { n: "Ferretería", c: "#475569" },
+    academia: { n: "Academia", c: "#5a49d6" }, courier: { n: "Courier", c: "#a4185c" },
+  };
+  var TIPOS = { anuladas: "lo anulado", join: "el JOIN que duplica", fecha: "la fecha que corta el día", contar: "filas, no personas", orden: "top sin orden", pregunta: "la pregunta cambiada" };
+
+  // ---------- la baraja: b = línea culpable (desde 0) o -1 si es oro; r = el número real ----------
+  var CARTAS = [
+    { id: "c1", neg: "polleria", q: "¿Cuánto vendimos en 2026?", n: "S/ 423 689,00", b: 2, t: "anuladas", r: "S/ 417 961,30",
+      sql: ["SELECT ROUND(SUM(total), 2) AS ventas", "FROM pedidos", "WHERE fecha >= '2026-01-01';"],
+      x: "Suma también los 64 pedidos anulados de 2026. Falta: AND estado = 'entregado'." },
+    { id: "c2", neg: "botica", q: "¿Cuánto vendimos en agosto de 2026?", n: "S/ 21 076,24", b: 2, t: "join", r: "S/ 9 439,28",
+      sql: ["SELECT ROUND(SUM(v.total), 2) AS ventas", "FROM ventas v", "JOIN venta_detalle d ON d.venta_id = v.id", "WHERE v.estado = 'emitida'", "  AND v.fecha >= '2026-08-01' AND v.fecha < '2026-09-01';"],
+      x: "Cada venta se suma una vez por cada producto de la boleta. Suma en ventas, sin unirla al detalle." },
+    { id: "c3", neg: "botica", q: "¿Cuántas ventas hubo en octubre de 2026?", n: "385", b: 3, t: "fecha", r: "400",
+      sql: ["SELECT COUNT(*) AS ventas", "FROM ventas", "WHERE estado = 'emitida'", "  AND fecha BETWEEN '2026-10-01' AND '2026-10-31';"],
+      x: "La fecha trae hora: '2026-10-31 18:14' es mayor que '2026-10-31' y el último día se queda fuera. Usa date(fecha)." },
+    { id: "c4", neg: "botica", q: "¿Cuántos clientes compraron en octubre de 2026?", n: "241", b: 0, t: "contar", r: "217",
+      sql: ["SELECT COUNT(cliente_id) AS clientes", "FROM ventas", "WHERE estado = 'emitida'", "  AND date(fecha) BETWEEN '2026-10-01' AND '2026-10-31';"],
+      x: "Cuenta compras, no clientes: quien compró 3 veces suma 3. Usa COUNT(DISTINCT cliente_id)." },
+    { id: "c5", neg: "polleria", q: "¿Cuál es el plato más pedido?", n: "1 pollo familiar · 2 560 u.", b: 4, t: "orden", r: "½ pollo con papas · 4 100 u.",
+      sql: ["SELECT pl.nombre, SUM(d.cantidad) AS unidades", "FROM pedido_detalle d", "JOIN platos pl ON pl.id = d.plato_id", "GROUP BY pl.nombre", "LIMIT 1;"],
+      x: "LIMIT sin ORDER BY corta en cualquier orden (aquí, el alfabético). Falta ORDER BY unidades DESC." },
+    { id: "c6", neg: "polleria", q: "¿Cuántos pedidos a domicilio entregamos en octubre?", n: "195", b: 3, t: "pregunta", r: "248",
+      sql: ["SELECT COUNT(*) AS pedidos", "FROM pedidos", "WHERE estado = 'entregado'", "  AND canal = 'delivery'", "  AND fecha >= '2026-10-01';"],
+      x: "A domicilio también llegan los pedidos de la app. Usa canal IN ('delivery', 'app')." },
+    { id: "c7", neg: "ferreteria", q: "¿Cuánto nos deben los clientes a crédito?", n: "S/ 1 760 514,10", b: 0, t: "pregunta", r: "S/ 163 897,15",
+      sql: ["SELECT ROUND(SUM(total), 2) AS deuda", "FROM ventas", "WHERE condicion = 'crédito'", "  AND estado = 'emitida';"],
+      x: "Suma todo lo vendido a crédito, no lo que falta cobrar. Hay que restar los pagos (la vista v_cuentas_por_cobrar ya lo hace)." },
+    { id: "c8", neg: "academia", q: "¿Cuántas cuotas vencidas siguen sin pagar? (al 31-10-2026)", n: "1 641", b: 2, t: "pregunta", r: "723",
+      sql: ["SELECT COUNT(*) AS cuotas", "FROM pensiones", "WHERE fecha_pago IS NULL;"],
+      x: "Cuenta también las cuotas que aún no vencen. Falta: AND fecha_vencimiento < '2026-10-31'." },
+    { id: "c9", neg: "academia", q: "¿Cuántos alumnos tenemos?", n: "2 350", b: 0, t: "contar", r: "1 209",
+      sql: ["SELECT COUNT(*) AS alumnos", "FROM matriculas;"],
+      x: "Cuenta matrículas: quien siguió 2 ciclos aparece 2 veces. Usa COUNT(DISTINCT alumno_id)." },
+    { id: "o1", neg: "botica", q: "¿Qué medio de pago usan más?", n: "Efectivo · 3 565 ventas", b: -1,
+      sql: ["SELECT medio_pago, COUNT(*) AS ventas", "FROM ventas", "WHERE estado = 'emitida'", "GROUP BY medio_pago", "ORDER BY ventas DESC;"],
+      x: "Filtra lo emitido, agrupa y ordena antes de leer el primero. Es oro." },
+    { id: "o2", neg: "polleria", q: "¿Cuál fue el ticket promedio en salón en octubre de 2026?", n: "S/ 71,92", b: -1,
+      sql: ["SELECT ROUND(AVG(total), 2) AS ticket", "FROM pedidos", "WHERE estado = 'entregado'", "  AND canal = 'salón'", "  AND date(fecha) BETWEEN '2026-10-01' AND '2026-10-31';"],
+      x: "Estado, canal y date(fecha): el 31 entra completo. Es oro." },
+    { id: "o3", neg: "courier", q: "¿Cuál es la calificación promedio de los envíos?", n: "4,38 de 5", b: -1,
+      sql: ["SELECT ROUND(AVG(puntaje), 2) AS promedio", "FROM calificaciones;"],
+      x: "Una calificación por envío, sin repetidos (3 205 filas, 3 205 envíos): AVG promedia bien. Es oro." },
+    { id: "o4", neg: "ferreteria", q: "¿Cuánto vendimos al contado en octubre de 2026?", n: "S/ 134 907,73", b: -1,
+      sql: ["SELECT ROUND(SUM(total), 2) AS contado", "FROM ventas", "WHERE estado = 'emitida'", "  AND condicion = 'contado'", "  AND date(fecha) BETWEEN '2026-10-01' AND '2026-10-31';"],
+      x: "Sin JOIN, con estado y la fecha bien cortada. Es oro." },
+    { id: "o5", neg: "academia", q: "¿Cuántos alumnos distintos se matricularon?", n: "1 209", b: -1,
+      sql: ["SELECT COUNT(DISTINCT alumno_id) AS alumnos", "FROM matriculas;"],
+      x: "DISTINCT cuenta a cada alumno una vez aunque repita ciclo. Es oro." },
+    { id: "o6", neg: "botica", q: "¿Cuánto vendimos en septiembre de 2026?", n: "S/ 7 404,90", b: -1,
+      sql: ["SELECT ROUND(SUM(total), 2) AS ventas", "FROM ventas", "WHERE estado = 'emitida'", "  AND fecha >= '2026-09-01' AND fecha < '2026-10-01';"],
+      x: "Suma en ventas, sin unirla a sus productos, y corta el mes con «menor que» el 1 del siguiente. Es oro." },
+    { id: "o7", neg: "courier", q: "¿Qué zona entregó más envíos?", n: "Lima Moderna · 1 449", b: -1,
+      sql: ["SELECT z.nombre, COUNT(*) AS envios", "FROM envios e", "JOIN zonas z ON z.id = e.zona_id", "WHERE e.estado = 'entregado'", "GROUP BY z.nombre", "ORDER BY envios DESC;"],
+      x: "Este JOIN no duplica: cada envío tiene una sola zona. No todo JOIN es pirita. Es oro." },
+  ];
+
+  // ---------- estado ----------
+  var yo = { id: "", nombre: "Alumno" };
+  var avatar = GQ.leer("avatar", "");
+  var srv = { estado: "lobby", corredores: [], staff: false, salida: 0, seed: 1, yo: "" };
+  var desfase = 0, dentro = false, quiere = false, R = null, ultimo = null, vista = "lobby", mandado = "", autoT = 0;
+
+  function ahoraSrv() { return Date.now() + desfase; }
+  function primerNombre(n) { var p = String(n || "").trim().split(/\s+/); return p.length > 1 ? p[0] + " " + p[1].charAt(0) + "." : (p[0] || "Alguien"); }
+  function avDe(c) { return GQ.avatares.some(function (a) { return a.id === c.avatar; }) ? c.avatar : GQ.avatarPorNombre(c.nombre || c.id); }
+  function enc(s) { return Math.min(99999, s.g) * 10000 + Math.min(99, s.vistas) * 100 + Math.min(99, s.lineas); }
+  function dec(n) { n = Math.max(0, +n || 0); return { g: Math.floor(n / 10000), vistas: Math.floor(n / 100) % 100, lineas: n % 100 }; }
+  function titulo(s) {
+    var ac = Math.max(0, Math.round((s.g - 5 * s.lineas) / 10));
+    if (s.lineas >= 3) return { t: "Lupa de oro", d: "cazaste " + s.lineas + " piritas con su línea" };
+    if (s.vistas >= 4 && ac / s.vistas >= 0.8) return { t: "Ojo certero", d: ac + " de " + s.vistas + " veredictos justos" };
+    if (ac >= 3) return { t: "Pulso firme", d: ac + " veredictos justos" };
+    return { t: "Primera veta", d: s.vistas ? "ensayaste " + s.vistas + (s.vistas === 1 ? " número" : " números") + " con la lupa" : "ya conoces las impurezas" };
+  }
+  function ver(v) {
+    vista = v;
+    $("v-lobby").hidden = v !== "lobby"; $("v-juego").hidden = v !== "juego"; $("v-fin").hidden = v !== "fin";
+    if (v === "juego") window.scrollTo(0, 0);
+  }
+  function msg(t, warn) { var m = $("msg"); m.textContent = t || ""; m.classList.toggle("warn", !!warn); }
+  function capa(big, p, s) { $("capa-big").textContent = big; $("capa-p").textContent = p || ""; $("capa-s").textContent = s || ""; $("capa").hidden = false; }
+
+  // ---------- avatares ----------
+  function pintarAvs() {
+    var caja = $("avs"); caja.textContent = "";
+    GQ.avatares.forEach(function (a) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "op-av"; b.setAttribute("aria-label", "Ensayador " + a.nombre); b.title = a.nombre;
+      b.setAttribute("aria-pressed", String(a.id === avatar));
+      b.appendChild(GQ.avatarCanvas(a.id, 44));
+      b.addEventListener("click", function () {
+        avatar = a.id; GQ.guardar("avatar", a.id); pintarAvs();
+        if (dentro && srv.estado === "lobby") GQ.pedir("/carrera/unir", { avatar: avatar });
+      });
+      caja.appendChild(b);
+    });
+  }
+
+  // ---------- ronda ----------
+  function barajar(seed) {
+    var s = (seed | 0) % 2147483647 || 1, rnd = function () { s = (s * 48271) % 2147483647; return s / 2147483647; };
+    var orden = CARTAS.map(function (_, i) { return i; });
+    for (var i = orden.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var x = orden[i]; orden[i] = orden[j]; orden[j] = x; }
+    // que no salgan tres oros ni tres piritas seguidos
+    for (var k = 2; k < orden.length; k++) {
+      var e = function (n) { return CARTAS[orden[n]].b < 0; };
+      if (e(k) === e(k - 1) && e(k) === e(k - 2)) for (var m = k + 1; m < orden.length; m++) if (e(m) !== e(k)) { var y = orden[k]; orden[k] = orden[m]; orden[m] = y; break; }
+    }
+    return orden;
+  }
+
+  function nuevaRonda(modo, inicio, seed, previo) {
+    clearTimeout(autoT);
+    R = { modo: modo, inicio: inicio, fin: inicio + DUR, orden: barajar(seed), idx: -1, c: null, etapa: "decidir",
+          g: 0, vistas: 0, lineas: 0, coladas: {}, terminada: false, seed: seed };
+    if (previo) { R.g = previo.g; R.vistas = previo.vistas; R.lineas = previo.lineas; R.idx = previo.vistas - 1; }
+    mandado = "";
+    $("foto").textContent = ""; $("sigue").hidden = true; $("b-foto").textContent = "Armar mi fotito"; $("nueva").hidden = true;
+    siguiente(); ver("juego"); pintarHud(); tic();
+  }
+
+  function siguiente() {
+    if (!R || R.terminada) return;
+    clearTimeout(autoT);
+    R.idx++;
+    while (R.idx >= R.orden.length) R.orden = R.orden.concat(barajar(R.seed + R.orden.length));
+    R.c = CARTAS[R.orden[R.idx]]; R.etapa = "decidir";
+    var c = R.c, carta = $("carta");
+    carta.classList.remove("linea", "entra"); void carta.offsetWidth; carta.classList.add("entra");
+    var ng = NEG[c.neg]; $("c-neg").textContent = ng.n; $("c-neg").style.setProperty("--c", ng.c);
+    $("c-nro").textContent = "Número " + (R.idx + 1);
+    $("c-preg").textContent = c.q; $("c-num").textContent = c.n;
+    var sql = $("c-sql"); sql.textContent = "";
+    c.sql.forEach(function (l, i) {
+      var b = document.createElement("button"); b.type = "button"; b.textContent = l; b.tabIndex = -1;
+      b.setAttribute("aria-label", "Línea " + (i + 1) + ": " + l);
+      b.addEventListener("click", function () { linea(i); });
+      sql.appendChild(b);
+    });
+    $("pista").hidden = true; $("lupa").hidden = true; $("acc").hidden = false;
+    $("b-oro").disabled = false; $("b-pirita").disabled = false;
+  }
+
+  function votarCarta(op) {
+    if (!R) return;
+    var c = R.c;
+    GQ.pedir("/voto", { escena: "gq02-oro-" + c.id, opcion: op }).then(function (r) {
+      if (!R || R.c !== c || !r.ok || !r.datos || !r.datos.total) return;
+      var o = r.datos.opciones || {}, t = r.datos.total, pi = o.pirita || 0;
+      $("l-grupo").textContent = "El grupo en esta carta: " + Math.round(pi * 100 / t) + " % dijo pirita · " + t + (t === 1 ? " veredicto" : " veredictos");
+    });
+  }
+
+  function veredicto(op) {
+    if (!R || R.terminada || R.etapa !== "decidir") return;
+    var c = R.c; R.vistas++;
+    $("b-oro").disabled = true; $("b-pirita").disabled = true;
+    $("l-grupo").textContent = "";
+    votarCarta(op);
+    if (c.b < 0) {
+      if (op === "oro") { R.g += 10; lupa("bien", "✓ Oro de verdad · +10 g", c.x, "", 2200); }
+      else lupa("mal", "Era oro", c.x + " Desconfiar está bien: con las tres pruebas lo habrías confirmado.", "", 6500);
+    } else if (op === "pirita") {
+      R.g += 10; R.etapa = "linea";
+      $("carta").classList.add("linea"); $("acc").hidden = true; $("pista").hidden = false;
+      Array.prototype.forEach.call($("c-sql").children, function (b) { b.tabIndex = 0; });
+      var p = $("c-sql").firstChild; if (p) try { p.focus({ preventScroll: true }); } catch (e) {}
+    } else {
+      R.coladas[c.t] = (R.coladas[c.t] || 0) + 1;
+      $("c-sql").children[c.b].classList.add("culpable");
+      lupa("mal", "Era pirita: " + TIPOS[c.t], c.x, c.r, 7500);
+    }
+    pintarHud(); enviar();
+  }
+
+  function linea(i) {
+    if (!R || R.terminada || R.etapa !== "linea") return;
+    var c = R.c, bs = $("c-sql").children;
+    R.etapa = "lupa"; $("pista").hidden = true; $("carta").classList.remove("linea");
+    Array.prototype.forEach.call(bs, function (b) { b.tabIndex = -1; });
+    if (i === c.b) { R.g += 5; R.lineas++; bs[i].classList.add("hallada"); lupa("bien", "✓ Impureza cazada: " + TIPOS[c.t] + " · +15 g", c.x, c.r, 3200); }
+    else { bs[i].classList.add("errada"); bs[c.b].classList.add("culpable"); lupa("medio", "Bien visto, era pirita (+10 g). La impureza estaba en la línea " + (c.b + 1), c.x, c.r, 7000); }
+    pintarHud(); enviar();
+  }
+
+  function lupa(clase, tit, txt, real, ms) {
+    if (!R) return;
+    R.etapa = "lupa";
+    var l = $("lupa"); l.className = "op-lupa " + clase; l.hidden = false;
+    $("l-tit").textContent = tit; $("l-txt").textContent = txt;
+    var lr = $("l-real"); lr.hidden = !real; lr.textContent = "";
+    if (real) { lr.appendChild(document.createTextNode("Número real: ")); var b = document.createElement("b"); b.textContent = real; lr.appendChild(b); }
+    $("acc").hidden = true;
+    clearTimeout(autoT);
+    autoT = setTimeout(siguiente, ms || 3000);
+    try { $("b-sig").focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  function pintarHud() {
+    if (!R) return;
+    $("h-g").textContent = R.g + " g";
+    pintarBoveda();
+  }
+
+  function tic() {
+    if (!R || R.terminada) return;
+    var ahora = R.modo === "sala" ? ahoraSrv() : Date.now();
+    var falta = Math.max(0, R.fin - ahora);
+    $("reloj").textContent = Math.ceil(falta / 1000); $("reloj").classList.toggle("poco", falta < 10000);
+    $("tiempo").style.transform = "scaleX(" + (falta / DUR).toFixed(4) + ")";
+    if (falta <= 0) return terminar();
+    requestAnimationFrame(tic);
+  }
+
+  function terminar() {
+    if (!R || R.terminada) return;
+    R.terminada = true; clearTimeout(autoT); $("capa").hidden = true;
+    var peor = "", n = 0;
+    Object.keys(R.coladas).forEach(function (k) { if (R.coladas[k] > n) { n = R.coladas[k]; peor = k; } });
+    var mejor = GQ.leer("juego-mejor", 0), nuevaMarca = R.g > mejor && mejor > 0;
+    if (R.g > mejor) GQ.guardar("juego-mejor", R.g);
+    var t = titulo(R);
+    ultimo = { modo: R.modo, g: R.g, vistas: R.vistas, lineas: R.lineas, peor: peor, mejor: Math.max(mejor, R.g), nuevaMarca: nuevaMarca, titulo: t.t, tdet: t.d };
+    GQ.guardar("juego-ultimo", ultimo);
+    if (R.modo === "sala") {
+      GQ.guardar("ronda-hecha", R.inicio);
+      enviar(true).then(function () { return GQ.pedir("/carrera/fin", { ms: DUR }); });
+      GQ.pedir("/voto", { escena: "gq02-oro-colada", opcion: peor || "ninguna" });
+    }
+    capa("¡Tiempo!", R.g + " g de oro", "Tu título: " + t.t);
+    setTimeout(function () { $("capa").hidden = true; mostrarFin(); }, 1500);
+  }
+
+  function enviar(forzar) {
+    if (!R || R.modo !== "sala") return Promise.resolve();
+    var cuerpo = { dist: R.g, golpes: enc(R) };
+    var k = JSON.stringify(cuerpo);
+    if (!forzar && k === mandado) return Promise.resolve();
+    mandado = k;
+    return GQ.pedir("/carrera/paso", cuerpo);
+  }
+
+  // ---------- bóveda y tablero ----------
+  function filas() {
+    var l = srv.corredores.map(function (c) {
+      var d = dec(c.golpes);
+      if (c.id === yo.id && R && R.modo === "sala") d = { g: R.g, vistas: R.vistas, lineas: R.lineas };
+      return { id: c.id, nombre: c.nombre, av: avDe(c), g: d.g, vistas: d.vistas, lineas: d.lineas };
+    });
+    l.sort(function (a, b) { return b.g - a.g || b.lineas - a.lineas || String(a.nombre).localeCompare(b.nombre); });
+    return l;
+  }
+  function pintarVivo() {
+    var ol = $("vivo"); if (!ol || vista !== "juego") return;
+    ol.textContent = "";
+    var l = filas();
+    if (R && R.modo === "solo") l = [{ id: yo.id, nombre: yo.nombre, av: avatar || GQ.avatarPorNombre(yo.nombre), g: R.g }];
+    l.slice(0, 8).forEach(function (f) {
+      var li = document.createElement("li"); if (f.id === yo.id) li.className = "yo";
+      li.appendChild(GQ.avatarCanvas(f.av, 22));
+      var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = f.id === yo.id ? "Tú" : primerNombre(f.nombre); li.appendChild(nm);
+      var e = document.createElement("em"); e.textContent = f.g + " g"; li.appendChild(e);
+      ol.appendChild(li);
+    });
+    if (l.length > 8) { var m = document.createElement("li"); m.className = "k-vacio"; m.style.background = "none"; m.textContent = "y " + (l.length - 8) + " más"; ol.appendChild(m); }
+  }
+  function pintarBoveda() {
+    pintarVivo();
+    var l = filas(), solo = (R && R.modo === "solo") || (!R && ultimo && ultimo.modo === "solo" && !l.length);
+    var suma = 0; l.forEach(function (f) { suma += f.g; });
+    var meta = Math.max(100, l.length * POR_PERSONA);
+    if (solo) { suma = R ? R.g : ultimo.g; meta = POR_PERSONA * 2; }
+    var p = Math.min(100, Math.round(suma * 100 / meta)) + "%";
+    $("bov-b").style.width = p; $("bov-b2").style.width = p;
+    $("bov-t").textContent = suma + " / " + meta + " g";
+    $("bov-fin").innerHTML = "";
+    var b = document.createElement("b"); b.textContent = suma + " g";
+    if (solo) { $("bov-fin").appendChild(document.createTextNode("Práctica: tu bóveda personal lleva ")); $("bov-fin").appendChild(b); $("bov-fin").appendChild(document.createTextNode(" de " + meta + " g.")); }
+    else {
+      $("bov-fin").appendChild(document.createTextNode(suma >= meta ? "¡La clase llenó la bóveda! Entre todos: " : "Bóveda de la clase: "));
+      $("bov-fin").appendChild(b); $("bov-fin").appendChild(document.createTextNode(" de " + meta + " g (" + POR_PERSONA + " g por ensayador)."));
+    }
+  }
+  function pintarTablero() {
+    var tab = $("tab"), l = filas();
+    tab.textContent = "";
+    if (!l.length) { var v = document.createElement("li"); v.className = "k-vacio"; v.style.background = "none"; v.textContent = ultimo && ultimo.modo === "solo" ? "Jugaste solo: tu resultado está arriba." : "Nadie jugó todavía esta ronda."; tab.appendChild(v); }
+    l.forEach(function (f, i) {
+      var li = document.createElement("li"); if (f.id === yo.id) li.className = "yo";
+      var pos = document.createElement("span"); pos.className = "pos"; pos.textContent = i < 3 && f.g > 0 ? ["①", "②", "③"][i] : "·"; li.appendChild(pos);
+      li.appendChild(GQ.avatarCanvas(f.av, 26));
+      var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = f.id === yo.id ? "Tú" : primerNombre(f.nombre);
+      var sm = document.createElement("small"); sm.textContent = titulo(f).t; nm.appendChild(sm); li.appendChild(nm);
+      var e = document.createElement("em"); e.textContent = f.g + " g"; e.title = f.vistas + " números ensayados, " + f.lineas + " piritas con su línea"; li.appendChild(e);
+      tab.appendChild(li);
+    });
+    $("tab-tit").textContent = (ultimo && ultimo.modo === "solo" && !R ? "Última ronda de la clase" : "Tablero de la clase") + (l.length ? " · " + l.length + (l.length === 1 ? " ensayador" : " ensayadores") : "");
+    pintarBoveda();
+  }
+  function pintarColada() {
+    GQ.pedir("/votos?escena=gq02-oro-colada").then(function (r) {
+      var o = (r.ok && r.datos && r.datos.opciones) || {}, top = "", n = 0;
+      Object.keys(o).forEach(function (k) { if (k !== "ninguna" && TIPOS[k] && o[k] > n) { n = o[k]; top = k; } });
+      if (!top && ultimo && ultimo.peor) { top = ultimo.peor; n = 1; }
+      var el = $("colada");
+      if (!top) { el.hidden = true; return; }
+      el.hidden = false; el.textContent = "La impureza que más se coló: ";
+      var b = document.createElement("b"); b.textContent = TIPOS[top]; el.appendChild(b);
+      el.appendChild(document.createTextNode(" (" + n + (n === 1 ? " persona" : " personas") + "). Repásala en tus tres consultas."));
+    });
+  }
+
+  // ---------- fin: resultado, reflexión y fotito ----------
+  function pintarYo() {
+    var caja = $("yo-caja");
+    if (!ultimo) { caja.hidden = true; return; }
+    caja.hidden = false; caja.textContent = "";
+    caja.appendChild(GQ.avatarCanvas(avatar || GQ.avatarPorNombre(yo.nombre), 76, "feliz"));
+    var h = document.createElement("h2"); h.textContent = (ultimo.modo === "solo" ? "Tu práctica" : "Tu ronda") + " · " + primerNombre(yo.nombre); caja.appendChild(h);
+    var n = document.createElement("div"); n.className = "num"; n.textContent = ultimo.g + " g "; var sm = document.createElement("small"); sm.textContent = "de oro"; n.appendChild(sm); caja.appendChild(n);
+    var t = document.createElement("div"); t.className = "tit"; t.textContent = "★ " + ultimo.titulo; caja.appendChild(t);
+    var d = document.createElement("div"); d.className = "det";
+    d.textContent = ultimo.tdet + " · " + (ultimo.nuevaMarca ? "¡nueva marca personal!" : "tu mejor marca: " + ultimo.mejor + " g");
+    caja.appendChild(d);
+  }
+  function armarFoto() {
+    if (!ultimo) { GQ.toast("Juega una ronda (o practica solo) y luego arma tu fotito."); return; }
+    var refl = GQ.leer("muro-gq02-juego", "");
+    var cv = GQ.fotito({
+      nombre: yo.nombre, avatar: avatar || GQ.avatarPorNombre(yo.nombre), etiqueta: "¿Oro o pirita? · mi ronda",
+      resultado: ultimo.g + " g de oro", titulo: "★ " + ultimo.titulo,
+      detalle: ultimo.vistas + (ultimo.vistas === 1 ? " número ensayado" : " números ensayados") + " · " + ultimo.lineas + (ultimo.lineas === 1 ? " pirita cazada" : " piritas cazadas") + " con su línea",
+      reflexion: refl,
+    });
+    GQ.mostrarFoto($("foto"), cv, "oro-o-pirita-" + GQ.slug(yo.nombre) + ".png");
+    $("b-foto").textContent = "Volver a armar mi fotito";
+    $("foto-pie").textContent = refl ? "" : "Publica tu reflexión y la fotito se vuelve a armar con ella.";
+  }
+  function mostrarFin() {
+    R = null;
+    $("fin-tit").innerHTML = ultimo ? "Así quedó tu <em class=\"oro\">ronda</em>" : "Ronda <em class=\"oro\">en vivo</em>";
+    pintarYo(); pintarTablero(); pintarColada();
+    $("b-foto").hidden = !ultimo;
+    if (ultimo && !$("foto").firstChild) armarFoto();
+    pintarStaff();
+    ver("fin");
+  }
+
+  // ---------- sala ----------
+  function pintarStaff() {
+    $("b-entrar").textContent = dentro ? "✓ Estás dentro" : "Entrar a la ronda";
+    $("b-entrar").disabled = dentro && srv.estado === "lobby";
+    var l = srv.corredores, txt = "Instructor · " + l.length + " en la sala · " + faseTxt();
+    $("staff").hidden = !srv.staff; $("staff2").hidden = !srv.staff;
+    $("staff-txt").textContent = txt; $("staff2-txt").textContent = txt;
+    var jugando = faseSala() === "cuenta" || faseSala() === "juego";
+    $("b-iniciar").disabled = !l.length || jugando; $("b-iniciar2").disabled = !l.length || jugando;
+  }
+  function faseSala() {
+    if (srv.estado === "lobby" || !srv.salida) return "lobby";
+    var a = ahoraSrv();
+    return a < srv.salida ? "cuenta" : a < srv.salida + DUR ? "juego" : "fin";
+  }
+  function faseTxt() {
+    var f = faseSala();
+    if (f === "juego") return "en juego · quedan " + Math.max(0, Math.ceil((srv.salida + DUR - ahoraSrv()) / 1000)) + " s";
+    return { lobby: "esperando", cuenta: "saliendo", fin: "terminó" }[f];
+  }
+  var salaK = "";
+  function pintarSala() {
+    var s = $("sala"), l = srv.corredores.slice().sort(function (a, b) { return String(a.nombre).localeCompare(b.nombre) || (a.id < b.id ? -1 : 1); }), k = yo.id + "|" + l.map(function (c) { return c.id + ":" + c.avatar; }).join(",");
+    if (k === salaK) { pintarStaff(); return; } // sin cambios: no se rehace (las fichas entran animadas)
+    salaK = k;
+    $("sala-tit").textContent = "En la sala · " + l.length + (l.length === 1 ? " persona" : " personas") + (l.length > 25 ? " (más de 25: el juego va mejor hasta 25)" : "");
+    s.textContent = "";
+    if (!l.length) { var v = document.createElement("span"); v.className = "k-vacio"; v.textContent = "Aún no entra nadie. Sé el primero."; s.appendChild(v); }
+    l.slice(0, 30).forEach(function (c) {
+      var p = document.createElement("span"); p.className = "p";
+      p.appendChild(GQ.avatarCanvas(avDe(c), 22));
+      p.appendChild(document.createTextNode(c.id === yo.id ? "Tú" : primerNombre(c.nombre)));
+      s.appendChild(p);
+    });
+    pintarStaff();
+  }
+
+  function unirse() {
+    quiere = true;
+    if (!avatar) { avatar = GQ.avatarPorNombre(yo.nombre); GQ.guardar("avatar", avatar); pintarAvs(); }
+    msg("Entrando…");
+    if (!dentro && (srv.estado === "cuenta" || srv.estado === "corre")) { // la sala ya salió: no hace falta pedir y recibir un 409
+      msg("La ronda ya salió. Practica solo mientras tanto: entras en la siguiente.", true);
+      return refrescar();
+    }
+    return GQ.pedir("/carrera/unir", { avatar: avatar }).then(function (r) {
+      if (r.ok) { dentro = true; msg(r.datos && r.datos.tarde ? "Vuelves a tu ronda." : "Estás dentro. Espera la salida del instructor."); }
+      else if (r.status === 409) { dentro = false; msg("La ronda ya salió. Practica solo mientras tanto: entras en la siguiente.", true); }
+      else { dentro = false; msg("No pude entrar a la sala. Puedes practicar solo.", true); }
+      return refrescar();
+    });
+  }
+
+  var pidiendo = false;
+  function refrescar() {
+    if (pidiendo) return Promise.resolve();
+    pidiendo = true;
+    var t0 = Date.now();
+    return GQ.pedir("/carrera").then(function (r) {
+      pidiendo = false;
+      if (!r.ok || !r.datos || !r.datos.estado) return;
+      var d = r.datos, t1 = Date.now();
+      if (d.ahora_ms) desfase = d.ahora_ms - Math.round((t0 + t1) / 2);
+      srv = { estado: d.estado, corredores: d.corredores || [], staff: !!d.staff, salida: d.salida_ms || 0, seed: d.seed || 1, yo: d.yo || "" };
+      if (srv.yo) yo.id = srv.yo;
+      var mio = srv.corredores.filter(function (c) { return c.id === yo.id; })[0];
+      dentro = !!mio;
+      if (!dentro && quiere && srv.estado === "lobby" && (!R || R.modo !== "solo") && vista !== "fin") { unirse(); }
+      decidir(mio);
+      if (vista === "lobby") pintarSala();
+      if (vista === "fin") { pintarTablero(); pintarStaff(); }
+      if (vista === "juego") pintarBoveda();
+    });
+  }
+
+  function decidir(mio) {
+    var f = faseSala(), enRonda = f === "cuenta" || f === "juego";
+    if (R && R.modo === "solo" && !R.terminada) {
+      if (!(dentro && enRonda)) return;                              // la práctica no se interrumpe…
+      R.terminada = true; R = null; clearTimeout(autoT); $("capa").hidden = true; // …salvo que salga la ronda de la sala
+    }
+    if (dentro && enRonda) {
+      if (R && R.modo === "sala" && !R.terminada) return;   // ya juego
+      if (GQ.leer("ronda-hecha", 0) === srv.salida || (mio && mio.fin_ms > 0)) { if (vista !== "fin") { ultimo = ultimo || GQ.leer("juego-ultimo", null); mostrarFin(); } return; }
+      if (f === "cuenta") return cuentaAtras(srv.salida);
+      var previo = mio ? dec(mio.golpes) : null;
+      return nuevaRonda("sala", srv.salida, srv.seed, previo && previo.vistas ? previo : null);
+    }
+    if (vista === "fin") {
+      $("nueva").hidden = !(srv.estado === "lobby" && !dentro);
+      $("nueva-t").textContent = ultimo && ultimo.modo === "solo" ? "La sala de la clase está abierta: juega la ronda con todos." : "El instructor abrió una ronda nueva.";
+      return;
+    }
+    if (!dentro && f !== "lobby" && vista === "lobby" && srv.corredores.length && !(R && R.modo === "solo")) {
+      // espectador (el instructor en el proyector o quien llegó tarde): ve el tablero en vivo
+      if (srv.staff || f === "fin") mostrarFin();
+    }
+  }
+
+  var cuentaT = 0;
+  function cuentaAtras(inicio) {
+    if (cuentaT) return;
+    ver("lobby");
+    (function paso() {
+      var falta = inicio - ahoraSrv();
+      if (falta <= 0) { cuentaT = 0; $("capa").hidden = true; nuevaRonda("sala", inicio, srv.seed, null); return; }
+      capa(String(Math.ceil(falta / 1000)), "¡Prepara tu lupa!", "Oro: lo firmas · Pirita: tocas la línea culpable");
+      cuentaT = setTimeout(paso, Math.min(250, falta));
+    })();
+  }
+
+  function practicar() {
+    $("nueva").hidden = true; msg("");
+    var t = Date.now() + 3000;
+    (function paso() {
+      var falta = t - Date.now();
+      if (falta <= 0) { $("capa").hidden = true; nuevaRonda("solo", Date.now(), Date.now() % 100000, null); return; }
+      capa(String(Math.ceil(falta / 1000)), "Práctica solo", "No cuenta en el tablero; tu mejor marca sí se guarda");
+      setTimeout(paso, Math.min(250, falta));
+    })();
+  }
+  function iniciar() {
+    GQ.pedir("/carrera/iniciar", {}).then(function (r) { if (!r.ok) GQ.toast("No se pudo iniciar: ¿entraste como instructor?"); else { ultimo = null; $("foto").textContent = ""; } refrescar(); });
+  }
+
+  // ---------- botones ----------
+  $("b-entrar").addEventListener("click", function () { unirse(); });
+  $("b-solo").addEventListener("click", practicar);
+  $("b-otra").addEventListener("click", practicar);
+  $("b-nueva").addEventListener("click", function () { $("nueva").hidden = true; ver("lobby"); unirse(); });
+  $("b-foto").addEventListener("click", armarFoto);
+  $("b-oro").addEventListener("click", function () { veredicto("oro"); });
+  $("b-pirita").addEventListener("click", function () { veredicto("pirita"); });
+  $("b-sig").addEventListener("click", function () { if (R && R.etapa === "lupa") siguiente(); });
+  $("b-iniciar").addEventListener("click", iniciar);
+  $("b-iniciar2").addEventListener("click", iniciar);
+  $("b-vaciar").addEventListener("click", function () {
+    var b = $("b-vaciar");
+    if (b.getAttribute("data-seguro") !== "1") { b.setAttribute("data-seguro", "1"); b.textContent = "¿Vaciar? Toca otra vez"; setTimeout(function () { b.removeAttribute("data-seguro"); b.textContent = "Vaciar sala"; }, 3000); return; }
+    b.removeAttribute("data-seguro"); b.textContent = "Vaciar sala";
+    GQ.pedir("/carrera/reiniciar", {}).then(function () { refrescar(); });
+  });
+  // Reflexión publicada → la fotito se vuelve a armar con ella y toca «Lo logré».
+  $("muro").addEventListener("k-muro", function () { if (ultimo) armarFoto(); $("sigue").hidden = false; });
+
+  document.addEventListener("keydown", function (e) {
+    if (vista !== "juego" || !R || e.target.tagName === "INPUT") return;
+    var k = e.key.toLowerCase();
+    if (R.etapa === "decidir" && (k === "o" || k === "p")) { veredicto(k === "o" ? "oro" : "pirita"); e.preventDefault(); return; }
+    var n = parseInt(e.key, 10);
+    if (R.etapa === "linea" && n >= 1 && n <= R.c.sql.length) { linea(n - 1); e.preventDefault(); return; }
+    if (R.etapa === "lupa" && (e.key === "Enter" || e.key === " ")) { siguiente(); e.preventDefault(); }
+  });
+
+  // ---------- arranque ----------
+  pintarAvs();
+  GQ.yo().then(function (u) {
+    yo.nombre = u.nombre; if (u.id) yo.id = u.id;
+    if (!avatar) { avatar = GQ.avatarPorNombre(yo.nombre); pintarAvs(); }
+    refrescar();
+  });
+  var vuelta = 0;
+  setInterval(function () {
+    vuelta++;
+    if (R && !R.terminada && (R.modo === "sala" ? ahoraSrv() : Date.now()) >= R.fin) terminar(); // pestaña en segundo plano: rAF se detiene
+    if (document.visibilityState === "hidden" && vista !== "juego") return;
+    if (vista === "juego") { enviar(false); if (R && R.modo === "sala" && vuelta % 2 === 0) refrescar(); return; }
+    refrescar();
+  }, 1600);
+  try { if (new URLSearchParams(location.search).get("demo") === "1") setTimeout(practicar, 300); } catch (e) {}
+})();
+</script>
+</body>
+</html>

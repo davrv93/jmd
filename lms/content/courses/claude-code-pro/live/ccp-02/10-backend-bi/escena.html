@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Backend BI, hoja por hoja</title>
+<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). Experimentación: construir el backend BI con el PLAN.md,
+     una hoja por vuelta. Contador de métricas con prueba verde → evidencia «hallazgo» + muro (barras del grupo). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style id="esc-propio">
+.e10 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 1.8vw; align-items: start; }
+.e10-izq, .e10-der { display: grid; gap: 1.4vh; min-width: 0; }
+.e10-visual { display: grid; grid-template-columns: 1fr 1fr; gap: 1vw; align-items: center; }
+.e10-visual svg { width: 100%; height: auto; display: block; }
+.e10-visual text { font: 700 13px system-ui, sans-serif; fill: var(--fg); text-anchor: middle; }
+.e10-visual .k { font: 800 10px var(--mono); fill: var(--muted); letter-spacing: .06em; }
+.st-fact { fill: var(--gold-bg); stroke: var(--gold); stroke-width: 3; }
+.st-dim { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 2.5; }
+.st-l { stroke: var(--line2); stroke-width: 3; }
+.lp-n { fill: var(--s1); stroke: var(--accent); stroke-width: 2.5; }
+.lp-n.ok { fill: var(--ok-bg); stroke: var(--ok); }
+.lp-a { fill: none; stroke: var(--accent); stroke-width: 2.5; marker-end: url(#flecha); }
+.e10-cont { display: grid; grid-template-columns: auto 1fr; gap: .4em 1em; align-items: center; }
+.e10-anillo { width: 5.6em; height: 5.6em; position: relative; }
+.e10-anillo svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.e10-anillo circle { fill: none; stroke-width: 10; }
+.e10-anillo .fondo { stroke: var(--s3); }
+.e10-anillo .lleno { stroke: var(--ok); stroke-linecap: round; transition: stroke-dashoffset .5s ease-out; }
+.e10-anillo b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: .1em; font-size: 1.3em; font-weight: 900; }
+.e10-anillo b small { font-size: .5em; color: var(--muted); }
+.e10-mas { display: flex; gap: .4em; align-items: center; flex-wrap: wrap; }
+.e10-mas button:not(.cc-btn) { width: 44px; height: 44px; border-radius: 50%; font: 900 1em system-ui, sans-serif; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; touch-action: manipulation; }
+.e10-mas button:not(.cc-btn):focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+@media (max-width: 860px) { .e10 { grid-template-columns: 1fr; } .e10-visual { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1320 70 L1390 110 L1460 70 L1530 120"/>
+  <g><circle class="e" cx="1320" cy="70" r="4"/><circle class="eo" cx="1390" cy="110" r="5"/><circle class="e" cx="1460" cy="70" r="3.5"/><circle class="eg" cx="1530" cy="120" r="4"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="120" cy="820" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="700" cy="860" r="1.6"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Claude Code PRO · S2 · 10/12</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Backend BI, <em>hoja por hoja</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Una vuelta = una hoja: prueba, código mínimo, verde, [x]. Y se detiene.</p>
+    </div>
+    <div class="e10">
+      <div class="e10-izq">
+        <section class="esc-card e10-visual a-in" style="--d:.15s">
+          <svg viewBox="0 0 300 200" role="img" aria-label="Modelo estrella: fact_ventas al centro con dim_fecha, dim_producto y dim_cliente">
+            <line class="st-l" x1="150" y1="100" x2="60" y2="40"/><line class="st-l" x1="150" y1="100" x2="240" y2="40"/><line class="st-l" x1="150" y1="100" x2="150" y2="172"/>
+            <rect class="st-dim" x="10" y="20" width="100" height="38" rx="10"/><text x="60" y="44">dim_fecha</text>
+            <rect class="st-dim" x="190" y="20" width="100" height="38" rx="10"/><text x="240" y="44">dim_producto</text>
+            <rect class="st-dim" x="100" y="156" width="100" height="38" rx="10"/><text x="150" y="180">dim_cliente</text>
+            <rect class="st-fact" x="88" y="78" width="124" height="44" rx="12"/><text x="150" y="105">fact_ventas</text>
+            <text class="k" x="150" y="140">MODELO ESTRELLA</text>
+          </svg>
+          <svg viewBox="0 0 300 236" role="img" aria-label="La vuelta de una hoja: prueba, código, verde, marcar y detenerse">
+            <defs><marker id="flecha" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker></defs>
+            <path class="lp-a" d="M174 62 Q 220 76 234 100"/><path class="lp-a" d="M234 144 Q 220 172 176 188"/><path class="lp-a" d="M124 188 Q 80 172 66 146"/><path class="lp-a" d="M66 100 Q 80 76 126 62"/>
+            <circle class="lp-n" cx="150" cy="52" r="26"/><text x="150" y="57">🧪</text><text class="k" x="150" y="14">1 · PRUEBA</text>
+            <circle class="lp-n" cx="252" cy="122" r="26"/><text x="252" y="127">⌨️</text><text class="k" x="262" y="166">2 · CÓDIGO</text>
+            <circle class="lp-n ok" cx="150" cy="196" r="26"/><text x="150" y="201">✅</text><text class="k" x="150" y="234">3 · VERDE</text>
+            <circle class="lp-n" cx="48" cy="122" r="26"/><text x="48" y="127">☑️</text><text class="k" x="38" y="166">4 · [x]</text>
+          </svg>
+        </section>
+        <section class="esc-card a-in" style="--d:.25s">
+          <ol class="cc-pasos">
+            <li><h3>¿Sin datos? Que Claude los genere</h3><div class="cuerpo"><pre class="esc-cmd">Genera data/ventas.csv con 1 200 ventas sintéticas de 2026: fecha, producto, cliente, cantidad y precio. Solo el archivo, sin más cambios.</pre></div></li>
+            <li><h3>Sal del modo plan y arranca la vuelta</h3><div class="cuerpo"><pre class="esc-cmd">Toma la siguiente hoja sin marcar de PLAN.md. Escribe primero su prueba, luego el código mínimo y corre la prueba. Si pasa, marca [x] en PLAN.md y detente: no sigas con otra hoja.</pre></div></li>
+            <li><h3>Cada 2 o 3 hojas, mira el contexto</h3><div class="cuerpo"><p class="cc-nota"><span class="cc-c">/context</span> pasa del 60 %? Pide el HANDOFF.md (escena 11) y <span class="cc-c">/clear</span>. Mejor que un <span class="cc-c">/compact</span> a ciegas.</p></div></li>
+          </ol>
+        </section>
+      </div>
+      <div class="e10-der">
+        <section class="esc-card a-in" style="--d:.3s">
+          <span class="cc-et">Métricas con prueba verde</span>
+          <div class="e10-cont">
+            <div class="e10-anillo"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="fondo" cx="50" cy="50" r="42"/><circle class="lleno" id="anillo" cx="50" cy="50" r="42" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg><b><span id="n">0</span><small>/10</small></b></div>
+            <div>
+              <div class="e10-mas"><button type="button" id="menos" aria-label="Una métrica menos">−</button><button type="button" id="mas" aria-label="Una métrica más">+</button><button type="button" class="cc-btn" id="pub">Publicar</button></div>
+              <p class="cc-nota" id="msg" style="margin-top:.4em">Cuenta solo las que tienen su prueba pasando.</p>
+            </div>
+          </div>
+          <div class="cc-barras" id="grupo" style="margin-top:.6em" aria-label="Métricas verdes del grupo"></div>
+        </section>
+        <section class="esc-card a-in" style="--d:.4s">
+          <span class="cc-et">Stack sugerido (o el tuyo)</span>
+          <pre class="esc-cmd"><span class="p">$ </span>uv init bi &amp;&amp; cd bi
+<span class="p">$ </span>uv add duckdb fastapi uvicorn pytest httpx</pre>
+          <p class="cc-nota" style="margin-top:.4em">Python 3.11+, DuckDB, FastAPI y pytest. Con Node también se puede: dilo en CLAUDE.md.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Meta del entregable 2: las 10 métricas, cada una con su prueba verde.</span></footer>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var n = +(CC.leer("metricas", 0)) || 0;
+  function pintar() { $("n").textContent = n; $("anillo").setAttribute("stroke-dashoffset", String(100 - n * 10)); }
+  $("mas").addEventListener("click", function () { n = Math.min(10, n + 1); CC.guardar("metricas", n); pintar(); });
+  $("menos").addEventListener("click", function () { n = Math.max(0, n - 1); CC.guardar("metricas", n); pintar(); });
+  pintar();
+  var caja = document.createElement("div"); caja.hidden = true; document.body.appendChild(caja);
+  var muro = CC.muro(caja, "10-backend-bi", "", { alPintar: function (en) {
+    var g = $("grupo"); g.textContent = "";
+    en.map(function (e) { var m = /^(\d{1,2})\/10/.exec(e.texto || ""); return m ? { n: +m[1], nombre: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
+      .filter(Boolean).sort(function (a, b) { return b.n - a.n; }).slice(0, 25).forEach(function (d) {
+        var f = CC.el("div", "cc-barra" + (d.mia ? " mia" : ""));
+        f.appendChild(CC.el("span", "n", d.nombre));
+        var b = CC.el("span", "b"), i = CC.el("i"); i.style.setProperty("--w", Math.max(3, d.n * 10) + "%"); b.appendChild(i); f.appendChild(b);
+        f.appendChild(CC.el("span", "v", d.n + "/10"));
+        g.appendChild(f);
+      });
+  } });
+  $("pub").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    CC.evidencia("hallazgo", "Backend BI: " + n + "/10 métricas con prueba verde").then(function (r) {
+      $("msg").textContent = r.ok ? "✓ Publicado. Pulsa «Lo logré» cuando tengas al menos la ingesta y una métrica verde." : "Guardado en este navegador.";
+      b.disabled = false;
+    });
+    muro.publicar(n + "/10 métricas verdes");
+  });
+})();
+</script>
+</body>
+</html>

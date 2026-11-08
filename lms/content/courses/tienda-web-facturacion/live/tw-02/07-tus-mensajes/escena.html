@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tus datos de cobro y tus mensajes</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
+  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<style id="esc-propio">
+.mk { display: grid; grid-template-columns: 1fr 1fr; gap: .5em .7em; }
+.mk label { display: grid; gap: .2em; font-size: .64em; font-weight: 700; color: var(--muted); }
+.mk label .tw-in { font-size: 1.1em; color: var(--fg); }
+.mk .ancho { grid-column: 1 / -1; }
+.mk-msgs { display: grid; grid-template-columns: 1fr 1fr; gap: .45em; }
+.mk-m:first-child { grid-column: 1 / -1; }
+.mk-m { border: 1px solid var(--line); border-radius: .8em .8em .8em .2em; background: color-mix(in srgb, #25d366 9%, var(--s1)); padding: .55em .7em; display: grid; gap: .35em; }
+.mk-m b { font-size: .66em; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.mk-m p { margin: 0; font-size: .7em; white-space: pre-wrap; }
+.mk-m .tw-btn { justify-self: start; }
+@media (max-width: 860px) { .mk, .mk-msgs { grid-template-columns: 1fr; } .mk label { font-size: .85em; } .mk-m p { font-size: .9em; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación activa</span>
+    <span class="esc-num">Sesión 2 · E07</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-cols">
+      <div class="tw-pila">
+        <h1 class="esc-titulo a-in" style="font-size:1.6em">Tus datos de cobro y <em>tus 5 mensajes</em></h1>
+        <p class="esc-sub a-in" style="--d:.1s;font-size:.9em">Llena tus datos una vez y copia los mensajes que respondes todos los días. Se quedan en este navegador: no se envían a nadie.</p>
+        <div class="tw-card a-in mk" style="--d:.15s">
+          <label>Nombre de tu negocio<input class="tw-in" id="f-neg" maxlength="40" placeholder="Bodega Doña Rosa"></label>
+          <label>Enlace de tu tienda o catálogo<input class="tw-in" id="f-link" maxlength="120" placeholder="https://… (si aún no tienes, déjalo vacío)"></label>
+          <label>Yape o Plin (número)<input class="tw-in" id="f-yape" maxlength="11" inputmode="numeric" placeholder="9xx xxx xxx"></label>
+          <label>Titular<input class="tw-in" id="f-tit" maxlength="40" placeholder="Nombre del titular"></label>
+          <label>Banco y cuenta<input class="tw-in" id="f-cta" maxlength="60" placeholder="Banco · número de cuenta"></label>
+          <label>CCI<input class="tw-in" id="f-cci" maxlength="30" placeholder="20 dígitos"></label>
+          <label class="ancho">Dónde y cuándo recogen<input class="tw-in" id="f-rec" maxlength="80" placeholder="Av. … , de lunes a sábado de 9 a. m. a 6 p. m."></label>
+        </div>
+      </div>
+      <div class="tw-pila">
+        <div class="tw-card a-in" style="--d:.2s">
+          <h2>Tus mensajes <span class="esc-chip" id="copiados">0 de 5 copiados</span></h2>
+          <div id="msgs" class="mk-msgs"></div>
+          <p class="tw-nota" id="mk-nota">Pégalos en las respuestas rápidas de WhatsApp Business o en tus notas.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Copia al menos 3 mensajes con el nombre de tu negocio y pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$;
+  var CAMPOS = ["neg", "link", "yape", "tit", "cta", "cci", "rec"];
+  var d = TW.leer("cobro", {}), copiados = TW.leer("copiados", {});
+  CAMPOS.forEach(function (k) { var i = $("#f-" + k); i.value = d[k] || ""; i.addEventListener("input", function () { d[k] = i.value.trim(); TW.guardar("cobro", d); pintar(); }); });
+  function v(k, def) { return d[k] || def; }
+  var MSG = [
+    ["bienvenida", "1 · Bienvenida", function () { return "¡Hola! Gracias por escribir a " + v("neg", "[tu negocio]") + ". " + (d.link ? "Aquí ves todos nuestros productos con su precio y puedes hacer tu pedido: " + d.link : "Te comparto nuestro catálogo con precios.") + " Cualquier duda, te leo."; }],
+    ["datos", "2 · Datos de pago", function () { return "Puedes pagar por:\n• Yape/Plin: " + v("yape", "[número]") + " (" + v("tit", "[titular]") + ")\n• Transferencia: " + v("cta", "[banco y cuenta]") + (d.cci ? "\n• CCI: " + d.cci : "") + "\nCuando pagues, adjunta la captura en tu pedido (o envíamela por aquí con tu número de pedido). La verificamos y te confirmamos."; }],
+    ["recibido", "3 · Voucher recibido", function () { return "¡Recibimos tu captura! La estamos verificando en nuestra cuenta y te confirmamos en breve."; }],
+    ["confirmado", "4 · Pago confirmado", function () { return "Tu pago está confirmado ✅ Tu pedido [número] ya está en preparación. ¡Gracias por tu compra en " + v("neg", "[tu negocio]") + "!"; }],
+    ["listo", "5 · Listo para recoger", function () { return "Tu pedido [número] está listo 📦 Puedes recogerlo en " + v("rec", "[dirección y horario]") + ". Muestra tu número de pedido al llegar."; }]
+  ];
+  var cont = $("#msgs");
+  MSG.forEach(function (m) {
+    var c = TW.el("div", "mk-m"); c.appendChild(TW.el("b", "", m[1])); var p = TW.el("p"); p.id = "m-" + m[0]; c.appendChild(p);
+    var b = TW.el("button", "tw-btn sec peq", "Copiar"); b.type = "button";
+    TW.botonCopiar(b, function () { return m[2](); });
+    b.addEventListener("click", function () { copiados[m[0]] = 1; TW.guardar("copiados", copiados); contar(); });
+    c.appendChild(b); cont.appendChild(c);
+  });
+  var avisado = false;
+  function contar() {
+    var n = Object.keys(copiados).length;
+    $("#copiados").textContent = n + " de 5 copiados"; $("#copiados").className = "esc-chip" + (n >= 3 ? " ok" : "");
+    if (n >= 3 && !avisado && d.neg) { avisado = true; TW.evidencia("hallazgo", "mensajes de cobro copiados: " + n + " · " + d.neg).then(function (r) { if (r.ok) $("#mk-nota").innerHTML = "<b>Listo, quedó como evidencia.</b> Pulsa «Lo logré»."; }); }
+  }
+  function pintar() { MSG.forEach(function (m) { $("#m-" + m[0]).textContent = m[2](); }); contar(); }
+  pintar();
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

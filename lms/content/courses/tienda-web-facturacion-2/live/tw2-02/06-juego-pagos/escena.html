@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Juego: ¿Cuadra el pago?</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
+  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<link rel="stylesheet" href="../../comun/juego.css">
+<style id="esc-propio">
+.cp { display: grid; gap: .7em; }
+.cp-ped { border: 1px solid var(--line2); border-radius: 1em; background: var(--s2); padding: .8em .9em; display: grid; gap: .55em; }
+.cp-cab { display: flex; justify-content: space-between; align-items: baseline; gap: .6em; font-size: .78em; }
+.cp-cab b { font: 800 1em var(--mono); }
+.cp-tot { font: 900 1.25em system-ui, sans-serif; }
+.cp-dos { display: grid; grid-template-columns: 1fr 1fr; gap: .5em; }
+.cp-box { border-radius: .8em; padding: .55em .7em; background: var(--s1); border: 1px solid var(--line); font-size: .74em; display: grid; gap: .15em; }
+.cp-box small { color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .78em; }
+.cp-box .big { font-size: 1.15em; font-weight: 800; }
+.cp-box .foto { font-size: 2em; line-height: 1; }
+.cp-est { display: flex; gap: .25em; flex-wrap: wrap; }
+.cp-est span { font-size: .6em; padding: .2em .55em; border-radius: 999px; background: var(--s3); color: var(--muted); font-weight: 700; }
+.cp-est span.ya { background: var(--accent); color: var(--on-accent); }
+.cp-acc { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4em; }
+.cp-acc button { font: 700 .72em/1.2 system-ui, sans-serif; text-align: left; padding: .7em .7em; border-radius: .8em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; min-height: 3.6em; display: flex; align-items: center; gap: .45em; touch-action: manipulation; }
+.cp-acc button i { font-style: normal; font-size: 1.4em; }
+.cp-acc button.bien { border-color: var(--ok); background: var(--ok-bg); }
+.cp-acc button.mal { border-color: var(--warn); background: var(--warn-bg); }
+.cp-ped.sale { animation: cp-sale .35s ease-in both; }
+@keyframes cp-sale { to { transform: translateX(40%); opacity: 0; } }
+@media (max-width: 860px) { .cp-acc { grid-template-columns: 1fr 1fr; } .cp-acc button { font-size: .88em; } .cp-box { font-size: .88em; } .cp-cab { font-size: .9em; } }
+@media (prefers-reduced-motion: reduce) { .cp-ped.sale { animation: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Sesión 2 · E06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-pila">
+      <div class="esc-fila" style="justify-content:space-between">
+        <h1 class="esc-titulo a-in" style="font-size:1.5em">¿Cuadra <em>el pago?</em></h1>
+        <p class="tw-nota" style="max-width:34em">Te llegan pedidos con su voucher. Decide qué haces con cada uno. Entre todos atendemos el mostrador.</p>
+      </div>
+      <div id="juego"></div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Juego del grupo · al final, tu reflexión al muro y tu fotito</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+<script src="../../comun/juego.js"></script>
+<script src="../../comun/fotito.js"></script>
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$;
+  // Acciones del mostrador. Cada caso tiene UNA acción correcta y una explicación corta (sale de la guía de uso de la
+  // tienda de referencia: verificar en la app, «no cuadra», pedir la captura correcta, anular con motivo, avisar).
+  var ACC = [
+    ["confirmar", "✅", "Confirmar el pago"], ["captura", "📷", "Pedir la captura correcta"], ["revisar", "💬", "Revisar el monto con el cliente"],
+    ["esperar", "⏳", "Esperar: aún no llega a mi app"], ["avisar", "📦", "Avisar: listo para recoger"], ["anular", "✖️", "Anular con motivo"]
+  ];
+  var NOMBRES = ["Rosa", "Luis", "Carmen", "Jorge", "Ana", "Pedro", "Lucía", "Miguel", "Sofía", "Raúl", "Elena", "Diego"];
+  function caso(rng) {
+    var tot = Math.round((15 + rng() * 180) * 10) / 10, medio = rng() < .5 ? "Yape" : "Transferencia", t = Math.floor(rng() * 6);
+    var n = NOMBRES[Math.floor(rng() * NOMBRES.length)], v, app, est = 1, ok;
+    if (t === 0) { v = ["🧾", medio + " " + TW.soles(tot)]; app = ["✅", "Llegó " + TW.soles(tot)]; ok = "confirmar"; }
+    if (t === 1) { var otro = Math.round(tot * (rng() < .5 ? .5 : .8) * 10) / 10; v = ["🧾", medio + " " + TW.soles(otro)]; app = ["✅", "Llegó " + TW.soles(otro)]; ok = "revisar"; }
+    if (t === 2) { v = [["🐶", "🌅", "🛍️", "📄"][Math.floor(rng() * 4)], "No es un pago"]; app = ["—", "No llegó nada"]; ok = "captura"; }
+    if (t === 3) { v = ["🧾", medio + " " + TW.soles(tot)]; app = ["⏳", "Aún no aparece"]; ok = "esperar"; }
+    if (t === 4) { v = ["🧾", medio + " " + TW.soles(tot)]; app = ["✅", "Confirmado ayer"]; est = 2; ok = "avisar"; }
+    if (t === 5) { v = ["—", "Sin voucher"]; app = ["—", "Nada en 3 días"]; est = 0; ok = "anular"; }
+    return { n: n, tot: tot, v: v, app: app, est: est, ok: ok, t: t };
+  }
+  var POR = {
+    confirmar: "El voucher y tu app dicen lo mismo: <b>confirma</b>. Así el pedido pasa a «Pagado».",
+    revisar: "El monto <b>no cuadra</b> con el pedido. Antes de confirmar, conversa con el cliente.",
+    captura: "Esa foto <b>no es un pago</b>. Pídele la captura correcta: él puede cambiarla desde su pedido.",
+    esperar: "La captura sola no basta: <b>verifica en tu app o tu banco</b>. Si aún no llega, espera antes de confirmar.",
+    avisar: "Ya está pagado y armado: <b>avisa que está listo</b> con su número de pedido.",
+    anular: "Sin pago ni respuesta: <b>anula con un motivo</b>. El pedido queda en el historial, no se borra."
+  };
+  var EST = ["Recibido", "Pago por confirmar", "Pagado", "Listo", "Entregado"];
+  var vivo = false, rng = Math.random, n = 0, tipT = 0;
+  TWJuego.montar({
+    raiz: $("#juego"), segundos: 50, unidad: ["pedido", "pedidos"], meta: 8, tituloGrupo: "El mostrador del grupo",
+    reglas: ["Llega un pedido con su voucher y lo que ves en tu app. Elige <b>qué haces</b> con él.",
+             "Si te equivocas, ves por qué y pasa el siguiente: <b>nadie pierde puntos</b>.",
+             "Cada pedido bien atendido suma al mostrador de todo el grupo. Ganas a tu mejor marca."],
+    pregunta: "¿Qué vas a revisar siempre antes de confirmar un pago?",
+    placeholder: "Ej.: «Que el dinero esté en mi Yape, no solo en la captura»",
+    resultado: function (p, e) { return { resultado: p + (p === 1 ? " pedido bien atendido" : " pedidos bien atendidos"), detalle: "¿Cuadra el pago? · " + e + (e === 1 ? " aprendizaje" : " aprendizajes") }; },
+    crear: function (z, api) {
+      var raiz = TW.el("div", "cp"), hueco = TW.el("div"), acc = TW.el("div", "cp-acc");
+      raiz.appendChild(hueco); raiz.appendChild(acc); z.appendChild(raiz);
+      var actual = null, ocupado = false;
+      ACC.forEach(function (a) {
+        var b = TW.el("button"); b.type = "button"; b.setAttribute("data-a", a[0]);
+        b.appendChild(TW.el("i", "", a[1])); b.appendChild(TW.el("span", "", a[2]));
+        b.addEventListener("click", function () {
+          if (!vivo || !actual || ocupado) return;
+          ocupado = true;
+          var bien = a[0] === actual.ok;
+          b.classList.add(bien ? "bien" : "mal");
+          if (bien) api.punto(1);
+          else {
+            api.error(POR[actual.ok]);
+            $$("button", acc).forEach(function (x) { if (x.getAttribute("data-a") === actual.ok) x.classList.add("bien"); });
+            var t = z.querySelector(".tj-tip"); if (t) t.remove();
+            t = TW.el("div", "tj-tip"); t.innerHTML = POR[actual.ok]; z.appendChild(t); clearTimeout(tipT); tipT = setTimeout(function () { t.remove(); }, 2600);
+          }
+          var espera = bien ? 420 : 1700, tarjeta = hueco.firstChild;
+          setTimeout(function () { if (tarjeta) tarjeta.classList.add("sale"); }, espera - 340);
+          setTimeout(function () { $$("button", acc).forEach(function (x) { x.classList.remove("bien", "mal"); }); ocupado = false; siguiente(); }, espera);
+        });
+        acc.appendChild(b);
+      });
+      function siguiente() {
+        if (!vivo) return;
+        actual = caso(rng); n++;
+        var c = TW.el("div", "cp-ped tj-pop");
+        var cab = TW.el("div", "cp-cab"); cab.appendChild(TW.el("b", "", "PED-" + String(100 + n))); cab.appendChild(TW.el("span", "", actual.n)); cab.appendChild(TW.el("span", "cp-tot", TW.soles(actual.tot)));
+        c.appendChild(cab);
+        var est = TW.el("div", "cp-est"); EST.forEach(function (e, i) { est.appendChild(TW.el("span", i === actual.est ? "ya" : "", e)); }); c.appendChild(est);
+        var dos = TW.el("div", "cp-dos");
+        var b1 = TW.el("div", "cp-box"); b1.appendChild(TW.el("small", "", "Voucher del cliente")); b1.appendChild(TW.el("span", "foto", actual.v[0])); b1.appendChild(TW.el("span", "big", actual.v[1]));
+        var b2 = TW.el("div", "cp-box"); b2.appendChild(TW.el("small", "", "Tu app o tu banco")); b2.appendChild(TW.el("span", "foto", actual.app[0])); b2.appendChild(TW.el("span", "big", actual.app[1]));
+        dos.appendChild(b1); dos.appendChild(b2); c.appendChild(dos);
+        hueco.textContent = ""; hueco.appendChild(c);
+      }
+      return {
+        empezar: function (r) { rng = r; vivo = true; n = 0; ocupado = false; siguiente(); },
+        parar: function () { vivo = false; }
+      };
+    }
+  });
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

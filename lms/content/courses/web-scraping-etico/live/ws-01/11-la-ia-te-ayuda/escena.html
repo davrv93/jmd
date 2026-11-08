@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · La IA escribe y arregla tu extractor</title>
+<!-- Escena LIVE ws-01 · E11. Arma el prompt con las reglas del taller y la plantilla para pedir una corrección. Nada sale de la escena: el alumno copia y pega en la IA que use. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.i-prompt { max-height: 30vh; white-space: pre-wrap; }
+.i-form { display: grid; gap: .55em; }
+.i-dos { display: grid; grid-template-columns: 1fr 1fr; gap: .55em; }
+@media (max-width: 520px) { .i-dos { grid-template-columns: 1fr; } }
+.i-seg { display: flex; gap: .35em; flex-wrap: wrap; }
+.i-seg button { font: 600 .74em system-ui, sans-serif; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); border-radius: 999px; padding: .5em .9em; cursor: pointer; min-height: 40px; }
+.i-seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.i-alerta { font-size: .76em; margin: 0; }
+</style>
+</head>
+<body data-escena="11-la-ia-te-ayuda">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168"/><g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="eg" cx="1384" cy="168" r="4"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Scraping ético · E11</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">La IA escribe y <em>arregla tu extractor</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">La IA escribe rápido, pero no conoce las reglas del sitio ni tu HTML. Tú le das las dos cosas.</p>
+    </div>
+    <p class="w-ahora a-in" style="--d:.15s"><b>Ahora tú</b><span>Arma tu prompt, cópialo en la IA que uses (ChatGPT, Claude, DeepSeek, Gemini…) y prueba el script con <b>una sola página</b>. Después practica una corrección con el error de ejemplo.</span></p>
+    <div class="w-g2" data-tabs-raiz>
+      <section class="esc-card a-in" style="--d:.2s">
+        <div class="w-tabs" data-tabs role="tablist" aria-label="Qué le pides a la IA">
+          <button class="w-tab" data-tab="escribir">1 · Que lo escriba</button>
+          <button class="w-tab" data-tab="arreglar">2 · Que lo arregle</button>
+        </div>
+        <div data-panel="escribir" class="i-form" style="margin-top:.7em">
+          <div class="i-seg" id="donde" role="group" aria-label="Dónde corre">
+            <button type="button" data-v="servidor" aria-pressed="true">Servidor · Python</button>
+            <button type="button" data-v="navegador" aria-pressed="false">Navegador · Tampermonkey</button>
+          </div>
+          <div class="i-dos">
+            <label class="w-lab">Página<input class="w-in" id="url" value="https://books.toscrape.com/" spellcheck="false"></label>
+            <label class="w-lab">Datos que quieres<input class="w-in" id="campos" value="título, precio y disponibilidad"></label>
+          </div>
+          <div class="i-dos">
+            <label class="w-lab">Pausa entre pedidos (s)<input class="w-in" id="pausa" type="number" min="1" max="30" value="2"></label>
+            <label class="w-lab">Tope de páginas<input class="w-in" id="tope" type="number" min="1" max="500" value="5"></label>
+          </div>
+          <label class="w-lab">Un solo elemento del HTML (clic derecho → Inspeccionar → copiar el elemento)
+            <textarea class="w-in" id="html" spellcheck="false" placeholder='&lt;article class="product_pod"&gt;…&lt;/article&gt;'></textarea></label>
+          <p class="i-alerta w-warn" id="alerta" hidden></p>
+        </div>
+        <div data-panel="arreglar" class="i-form" style="margin-top:.7em" hidden>
+          <div class="w-fila"><button type="button" class="w-btn sec peq" id="ejemplo">Usar el error de práctica</button></div>
+          <label class="w-lab">Qué esperabas<input class="w-in" id="esperaba" placeholder="10 frases de la página 1"></label>
+          <label class="w-lab">Qué pasó (el error completo o lo que salió)<textarea class="w-in" id="error" spellcheck="false"></textarea></label>
+          <label class="w-lab">Las líneas de código donde falla<textarea class="w-in" id="codigo" spellcheck="false"></textarea></label>
+          <label class="w-lab">Un pedazo del HTML real (sin datos personales)<textarea class="w-in" id="html2" spellcheck="false"></textarea></label>
+        </div>
+      </section>
+      <div style="display:grid;gap:1em;align-content:start">
+        <section class="esc-card a-in" style="--d:.3s">
+          <span class="w-et">Tu prompt (cópialo completo)</span>
+          <pre class="esc-cmd i-prompt" id="prompt"></pre>
+        </section>
+        <section class="esc-card a-in" style="--d:.4s">
+          <span class="w-et">Antes de pegar en la IA</span>
+          <div class="w-check" data-check="11-ia">
+            <button class="w-chk"><span>Quité cookies, tokens y contraseñas</span></button>
+            <button class="w-chk"><span>Quité correos, teléfonos y DNI del HTML</span></button>
+            <button class="w-chk"><span>Pegué un solo elemento, no la página entera</span></button>
+            <button class="w-chk"><span>Probé el script con una página antes de correrlo completo</span></button>
+            <button class="w-chk"><span>Practiqué una corrección y entendí la causa</span></button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">La IA propone; tú revisas que respete pausas, tope y datos personales antes de correrlo.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script src="../../comun/copiar.js"></script>
+<script>
+(function () {
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+  var donde = "servidor", pestana = "escribir";
+  var ids = ["url", "campos", "pausa", "tope", "html", "esperaba", "error", "codigo", "html2"];
+  var gu = WS.leer("e11", {}) || {};
+  ids.forEach(function (k) { if (gu[k] != null) $(k).value = gu[k]; });
+  if (gu.donde) donde = gu.donde;
+  var SECRETO = /(cookie\s*[:=]|authorization\s*:|bearer\s+[a-z0-9._-]{8,}|sessionid|password|contrase(ñ|n)a|token\s*[:=])/i;
+  var PERSONAL = /([\w.+-]+@[\w-]+\.[\w.]+|\b9\d{8}\b|\b\d{8}\b)/;
+  function armar() {
+    ids.forEach(function (k) { gu[k] = $(k).value; }); gu.donde = donde; WS.guardar("e11", gu);
+    document.querySelectorAll("#donde button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-v") === donde ? "true" : "false"); });
+    var txt;
+    if (pestana === "escribir") {
+      var html = $("html").value.trim();
+      var lineas = html ? html.split("\n").length : 0;
+      var al = $("alerta"), avisos = [];
+      if (SECRETO.test(html)) avisos.push("Tu HTML parece tener una cookie, un token o una contraseña: bórralo antes de copiar.");
+      if (PERSONAL.test(html)) avisos.push("Tu HTML parece tener un correo, un teléfono o un DNI: cámbialo por uno inventado.");
+      if (lineas > 40) avisos.push("Son " + lineas + " líneas: recorta a un solo elemento (menos de 40).");
+      al.hidden = !avisos.length; al.textContent = avisos.join(" ");
+      var p = Math.max(1, +$("pausa").value || 2), t = Math.max(1, +$("tope").value || 5);
+      txt = donde === "servidor"
+        ? "Eres un programador cuidadoso. Escribe un script en Python (usa requests; si no está instalado, httpx) que extraiga " + ($("campos").value.trim() || "los datos") + " de " + ($("url").value.trim() || "la página") + ".\n\n" +
+          "Reglas que no se negocian:\n" +
+          "- Antes de empezar, lee robots.txt con urllib.robotparser y detente si la ruta está prohibida.\n" +
+          "- Una pausa de " + p + " s más un poco de azar entre pedidos.\n" +
+          "- Si responde 429 o 5xx, espera lo que diga Retry-After (o 2, 4, 8 s) y como máximo 4 intentos.\n" +
+          "- Tope de " + t + " páginas; pagina con el enlace «siguiente» o el parámetro de página.\n" +
+          "- Un User-Agent honesto con un contacto que leas de la variable CONTACTO.\n" +
+          "- Si hace falta sesión, lee la cookie o el token de variables de entorno (COOKIE, TOKEN). Nunca los escribas en el código.\n" +
+          "- No guardes datos personales (correos, teléfonos, DNI, direcciones).\n" +
+          "- Limpia espacios y comillas, quita filas repetidas y exporta a CSV (UTF-8 con BOM) y JSON.\n" +
+          "- Usa solo selectores que existan en este HTML; si te falta algo, pregúntame en vez de inventarlo.\n"
+        : "Eres un programador cuidadoso. Escribe un script de Tampermonkey que extraiga " + ($("campos").value.trim() || "los datos") + " de " + ($("url").value.trim() || "la página") + " mientras yo navego.\n\n" +
+          "Reglas que no se negocian:\n" +
+          "- Corre solo al cargar cada página que yo visite: yo pongo el ritmo, sin pedidos extra en segundo plano.\n" +
+          "- @match solo para ese sitio y @grant none.\n" +
+          "- Acumula lo extraído en localStorage, sin filas repetidas.\n" +
+          "- Una cajita fija abajo a la derecha con el conteo y botones CSV (UTF-8 con BOM), JSON y Borrar.\n" +
+          "- No guardes datos personales (correos, teléfonos, DNI, direcciones).\n" +
+          "- Usa solo selectores que existan en este HTML; si te falta algo, pregúntame en vez de inventarlo.\n";
+      txt += "\nEste es un elemento de la lista:\n```html\n" + (html || "(pega aquí un solo elemento del HTML)") + "\n```\n\n" +
+        "Al final, explícame en 5 viñetas qué hace el script y cómo lo pruebo con una sola página antes de correrlo completo.";
+    } else {
+      txt = "Mi extractor no hace lo que espero. Arréglalo con el cambio mínimo y explícame la causa en una línea.\n" +
+        "No cambies las pausas, el tope de páginas ni las reglas de robots.txt.\n\n" +
+        "Qué esperaba:\n" + ($("esperaba").value.trim() || "(escribe qué esperabas)") + "\n\n" +
+        "Qué pasó:\n```\n" + ($("error").value.trim() || "(pega el error completo)") + "\n```\n\n" +
+        "Las líneas donde falla:\n```\n" + ($("codigo").value.trim() || "(pega solo las líneas del problema)") + "\n```\n\n" +
+        "Un pedazo del HTML real:\n```html\n" + ($("html2").value.trim() || "(pega un elemento del HTML)") + "\n```";
+    }
+    $("prompt").textContent = txt;
+  }
+  ids.forEach(function (k) { $(k).addEventListener("input", armar); });
+  document.querySelectorAll("#donde button").forEach(function (b) { b.addEventListener("click", function () { donde = b.getAttribute("data-v"); armar(); }); });
+  document.querySelectorAll(".w-tab").forEach(function (b) { b.addEventListener("click", function () { pestana = b.getAttribute("data-tab"); armar(); }); });
+  $("ejemplo").addEventListener("click", function () {
+    $("esperaba").value = "Las 10 frases de la página 1 de quotes.toscrape.com";
+    $("error").value = "Uncaught TypeError: Cannot read properties of null (reading 'textContent')";
+    $("codigo").value = "document.querySelectorAll('.quote').forEach((q) => {\n  const frase = q.querySelector('.texto').textContent;";
+    $("html2").value = '<div class="quote">\n  <span class="text" itemprop="text">“The world as we have created it…”</span>\n  <span>by <small class="author">Albert Einstein</small></span>\n</div>';
+    armar();
+  });
+  armar();
+})();
+</script>
+</body>
+</html>

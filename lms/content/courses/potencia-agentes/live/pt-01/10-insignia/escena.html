@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tu insignia y tu fotito</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .5); }
+.i10 { display: grid; grid-template-columns: .7fr 1fr 1fr; gap: 1.8vw; align-items: start; }
+.i10-ins { display: grid; gap: .5em; justify-items: center; text-align: center; }
+.i10-ins svg { width: 100%; max-width: 15em; height: auto; overflow: visible; }
+.i10-ins .badge { transform-origin: 300px 300px; animation: esc-pop .7s cubic-bezier(.2,.8,.3,1.2) .2s both; }
+.i10.apagada .badge { filter: grayscale(1); opacity: .45; }
+.i10-prog { font-size: .7em; color: var(--muted); margin: 0; }
+.i10-prog b { color: var(--ok); }
+.i10.apagada .i10-prog b { color: var(--warn); }
+.i10-nums { list-style: none; margin: 0; padding: 0; display: grid; gap: .35em; }
+.i10-nums li { display: flex; justify-content: space-between; gap: .6em; align-items: baseline; font-size: .7em; padding: .4em .6em; border-radius: .55em; background: var(--s2); }
+.i10-nums li b { font: 800 1.05em var(--mono); color: var(--ok); white-space: nowrap; }
+.i10-nums li.falta b { color: var(--muted); font-weight: 600; }
+.i10-col { display: grid; gap: 1em; }
+.i10-avs { display: flex; flex-wrap: wrap; gap: .3em; }
+.i10-av { font: 1.15em/1 system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif; width: 2em; height: 2em; border-radius: .55em; border: 2px solid var(--line2); background: var(--s2); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.i10-av[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
+.i10-sig { font-size: .68em; margin: 0; padding: .6em .8em; border-radius: .7em; background: var(--accent-bg); }
+.i10-sig b { color: var(--accent); }
+@media (max-width: 1100px) { .i10 { grid-template-columns: 1fr 1fr; } .i10 > :first-child { grid-column: 1 / -1; } }
+@media (max-width: 860px) { .i10 { grid-template-columns: 1fr; } .i10-nums li, .i10-prog, .i10-sig { font-size: .88em; } .i10-ins svg { max-width: 11em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1330 70 L1270 190 L1330 190 L1250 330"/>
+  <path class="tb" pathLength="1" d="M90 640 L170 590 L240 630 L300 560"/>
+  <g><circle class="eo" cx="1330" cy="70" r="5"/><circle class="e" cx="1270" cy="190" r="4"/><circle class="eg" cx="1330" cy="190" r="4"/><circle class="eo" cx="1250" cy="330" r="5"/><circle class="e" cx="90" cy="640" r="3.5"/><circle class="eg" cx="170" cy="590" r="4"/><circle class="eo" cx="300" cy="560" r="4.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Observación reflexiva</span>
+    <span class="esc-num">PT-01 · 10 / 10</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Tu insignia de la <em>clase 1</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Tus números de hoy, una línea para el grupo y la fotito para guardar.</p>
+    </div>
+    <div class="i10" id="i10">
+      <div class="esc-card i10-ins a-in" style="--d:.15s">
+        <svg viewBox="0 0 600 600" role="img" aria-label="Insignia de la clase 1: hexágono morado y dorado con un rayo y el texto Menos tokens">
+          <defs><linearGradient id="ig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b2f9e"/><stop offset="1" stop-color="#8a2f7a"/></linearGradient></defs>
+          <g class="badge">
+            <polygon points="300,10 551,155 551,445 300,590 49,445 49,155" fill="url(#ig)"/>
+            <polygon points="300,34 530,167 530,433 300,566 70,433 70,167" fill="none" stroke="#e9bd52" stroke-width="10"/>
+            <text x="300" y="150" text-anchor="middle" font-size="26" font-weight="600" letter-spacing="6" fill="#ffffff" fill-opacity=".85" font-family="system-ui,sans-serif">CLASE 01</text>
+            <path d="M330 175 L245 320 L298 320 L262 440 L360 280 L305 280 L345 175 Z" fill="#e9bd52"/>
+            <text x="300" y="478" text-anchor="middle" font-size="25" font-weight="800" letter-spacing="2" fill="#ffffff" font-family="system-ui,sans-serif">MENOS TOKENS</text>
+          </g>
+        </svg>
+        <p class="i10-prog" id="prog">Tu avance se ve cuando la clase está en vivo.</p>
+      </div>
+      <div class="i10-col">
+        <div class="esc-card a-in" style="--d:.22s">
+          <span class="pt-et">Tus números de hoy</span>
+          <ul class="i10-nums" id="nums"></ul>
+        </div>
+        <div class="esc-card a-in" style="--d:.28s" id="voto"></div>
+        <div class="esc-card a-in" style="--d:.34s" id="muro"></div>
+      </div>
+      <div class="i10-col">
+        <div class="esc-card a-in" style="--d:.3s">
+          <span class="pt-et">Tu fotito</span>
+          <label class="pt-et" for="nombre">Nombre</label>
+          <input class="pt-in" id="nombre" maxlength="40" autocomplete="off" placeholder="Tu nombre">
+          <span class="pt-et" style="margin-top:.5em">Avatar</span>
+          <div class="i10-avs" id="avs" role="group" aria-label="Avatar"></div>
+          <div id="foto" style="margin-top:.6em"></div>
+        </div>
+        <p class="i10-sig a-in" style="--d:.4s"><b>Clase 2 · martes 10 de noviembre, 9:30 p. m.:</b> Cortex y Graphify. Deja RTK instalado y trabaja normal: abriremos <code>rtk gain</code> para ver cuánto ahorró solo.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Gracias por venir un domingo en la noche. Nos vemos el martes</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script src="../../comun/fotito.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var AV = [["llama", "🦙"], ["zorro", "🦊"], ["buho", "🦉"], ["tortuga", "🐢"], ["pulpo", "🐙"], ["panda", "🐼"], ["pinguino", "🐧"], ["robot", "🤖"], ["gato", "🐱"], ["loro", "🦜"]];
+  var EMO = {}; AV.forEach(function (a) { EMO[a[0]] = a[1]; });
+  var avatar = PT.leer("avatar", "llama"); if (!EMO[avatar]) avatar = "llama";
+  AV.forEach(function (a) {
+    var b = PT.el("button", "i10-av", a[1]); b.type = "button"; b.setAttribute("aria-label", a[0]); b.setAttribute("aria-pressed", a[0] === avatar ? "true" : "false");
+    b.addEventListener("click", function () { avatar = a[0]; PT.guardar("avatar", avatar); Array.prototype.forEach.call($("avs").children, function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); }); });
+    $("avs").appendChild(b);
+  });
+  PT.yo().then(function (me) { if (me && me.name && !$("nombre").value) $("nombre").value = me.name; });
+
+  // Avance real de la lección (los 6 pasos del ciclo). La insignia se enciende con 4.
+  var UMBRAL = 4;
+  PT.pedir("/api/v1/lessons/" + PT.leccion + "/progress").then(function (r) {
+    var d = r.ok && r.datos, done = d ? +d.done : NaN, total = d ? +d.total : NaN;
+    if (!(done >= 0) || !(total > 0)) return;
+    var ok = done >= UMBRAL;
+    $("i10").classList.toggle("apagada", !ok);
+    $("prog").innerHTML = "";
+    $("prog").appendChild(PT.el("b", "", done + " de " + total + " pasos"));
+    $("prog").append(ok ? " · insignia encendida." : " · con " + UMBRAL + " se enciende. Pulsa «Lo logré» en las escenas que hiciste.");
+  });
+
+  var antes = PT.leer("antes", null), despues = PT.leer("despues", null), juego = PT.leer("juego", null);
+  var u = juego && juego.ultimo;
+  var filas = [
+    ["Línea base (git log -n 15)", antes && antes.car ? PT.num(antes.car) + " car." : null],
+    ["Con RTK", despues && despues.p != null ? (despues.p > 0 ? "−" : "") + Math.abs(despues.p) + " %" : null],
+    ["La mochila: tu mejor marca", juego && juego.mejor ? PT.num(juego.mejor) + " tokens" : null],
+    ["Decisiones justas", u ? u.prec + " %" : null]
+  ];
+  filas.forEach(function (f) {
+    var li = PT.el("li", f[1] ? "" : "falta"); li.appendChild(PT.el("span", "", f[0])); li.appendChild(PT.el("b", "", f[1] || "pendiente")); $("nums").appendChild(li);
+  });
+
+  PT.votos($("voto"), "10-insignia", "¿Qué te llevas de hoy?", [
+    { id: "medir", t: "Medir antes de opinar" },
+    { id: "rtk", t: "RTK instalado y ahorrando" },
+    { id: "pedido", t: "El pedido corto" },
+    { id: "mochila", t: "Lo que aprendí en la mochila" }
+  ]);
+  PT.muro($("muro"), "10-insignia", "¿Qué cambias mañana en tu forma de pedirle al agente?", { placeholder: "Mañana voy a…", max: 120 });
+
+  PTFoto.montar($("foto"), function () {
+    var refl = PT.leer("muro-10-insignia", "") || PT.leer("muro-08-juego-mochila", "") || "";
+    var d = { nombre: $("nombre").value.trim() || "Alumno", avatar: EMO[avatar], reflexion: refl };
+    if (despues && despues.p > 0) {
+      d.etiqueta = "Mi ahorro con RTK"; d.resultado = "−" + despues.p + " %";
+      d.detalle = "git log -n 15: " + PT.num(despues.antes) + " → " + PT.num(despues.despues) + " caracteres" + (juego && juego.mejor ? " · mochila: " + PT.num(juego.mejor) + " tokens" : "");
+    } else if (juego && juego.mejor) {
+      d.etiqueta = "La mochila del agente"; d.resultado = PT.num(juego.mejor) + " tokens";
+      d.detalle = "ahorrados en mi mejor ronda" + (u ? " · " + u.prec + " % de decisiones justas" : "");
+    } else {
+      d.etiqueta = "Clase 1"; d.resultado = "Completada"; d.detalle = "Medí, instalé RTK y aprendí a pedir corto.";
+    }
+    return d;
+  }, { texto: "📸 Generar mi fotito de la clase" });
+})();
+</script>
+</body>
+</html>

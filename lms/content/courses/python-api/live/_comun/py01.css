@@ -1,0 +1,173 @@
+/* py01.css · kit de las escenas de «Python: de cero a tu API» (py-01 y siguientes). Va DESPUÉS de escena.css.
+   Piezas: votación (.k-voto), muro (.k-muro), lista de comprobación (.k-check), pestañas por sistema (.k-so),
+   enlaces que abren pestaña (.k-link), código Python resaltado (.k-py), evidencia pegada (.k-evi),
+   aviso flotante (.k-toast), la «fotito» (.k-foto) y el ajuste a celular. */
+
+/* ---- Paleta del curso: el azul y el amarillo de Python sobre los tokens del LMS ---- */
+:root {
+  --bg: #edf3fb; --bg2: #f2f5fb; --bg3: #fbf7ea; --s2: #f1f5fb; --s3: #e3eaf4;
+  --accent: #245a92; --accent-2: #3776ab; --accent-bg: rgba(55,118,171,.12); --on-accent: #ffffff;
+  --gold: #765800; --gold-bg: rgba(255,212,59,.26);
+  --line: rgba(36,90,146,.14); --line2: rgba(36,90,146,.26);
+  --est: #3776ab; --est-g: #6fa3d6; --est-o: #d9a900;
+  --py-azul: #3776ab; --py-amarillo: #ffd43b; --term: #0c1a2b;
+  --card-shadow: 0 1px 2px rgba(36,90,146,.07), 0 10px 28px -12px rgba(36,90,146,.30);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="light"]) {
+    --bg: #0d1626; --bg2: #101c30; --bg3: #161f2c; --s1: #14223a; --s2: #1b2c47; --s3: #233654;
+    --accent: #84b9ee; --accent-2: #a9d0f5; --accent-bg: rgba(132,185,238,.16); --on-accent: #0b1422;
+    --gold: #ffd43b; --gold-bg: rgba(255,212,59,.15);
+    --line: rgba(169,208,245,.13); --line2: rgba(169,208,245,.26);
+    --est: #a9d0f5; --est-g: #5f95cc; --est-o: #ffd43b;
+  }
+}
+:root[data-tema="dark"] {
+  --bg: #0d1626; --bg2: #101c30; --bg3: #161f2c; --s1: #14223a; --s2: #1b2c47; --s3: #233654;
+  --accent: #84b9ee; --accent-2: #a9d0f5; --accent-bg: rgba(132,185,238,.16); --on-accent: #0b1422;
+  --gold: #ffd43b; --gold-bg: rgba(255,212,59,.15);
+  --line: rgba(169,208,245,.13); --line2: rgba(169,208,245,.26);
+  --est: #a9d0f5; --est-g: #5f95cc; --est-o: #ffd43b;
+}
+.esc-cmd { background: var(--term); border-color: rgba(169,208,245,.22); color: #e6eefb; }
+.esc-cmd .p { color: #ffd43b; }
+.esc-cmd .o { color: #8fe3a8; }
+.esc-cmd .c { color: #7f93ad; }
+.esc-cmd .e { color: #ff9a9a; }
+
+/* ---- Pestañas por sistema: Windows · macOS · Linux (recuerda tu elección en todas las escenas) ---- */
+.k-so { display: inline-flex; gap: .25em; padding: .25em; border-radius: 999px; background: var(--s2); border: 1px solid var(--line); flex-wrap: wrap; }
+.k-so button { font: 700 .74em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 40px; padding: .55em 1em; border-radius: 999px; border: 0; background: transparent; color: var(--muted); cursor: pointer; touch-action: manipulation; display: inline-flex; align-items: center; gap: .45em; }
+.k-so button svg { width: 1.15em; height: 1.15em; }
+.k-so button svg * { fill: currentColor; }
+.k-so button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+.k-so button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+.k-so-cab { display: flex; align-items: center; gap: .6em 1em; flex-wrap: wrap; }
+.k-so-cab .k-pie { font-size: .7em; }
+.cp-env:has(> pre[hidden]) { display: none; }
+:where(.esc) code { font-family: var(--mono); font-weight: 700; font-size: .92em; }
+
+/* ---- Pasos con comando: número, qué haces y el comando con su botón Copiar ---- */
+.k-pasos { margin: 0; padding: 0; list-style: none; display: grid; gap: .55em; counter-reset: kp; }
+.k-pasos > li { display: grid; grid-template-columns: auto 1fr; gap: .3em .8em; align-items: start; }
+.k-pasos > li::before { counter-increment: kp; content: counter(kp); grid-row: span 2; width: 1.7em; height: 1.7em; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .8em; background: var(--accent-bg); color: var(--accent); border: 2px solid var(--accent); margin-top: .1em; }
+.k-pasos > li > b { font-size: .84em; line-height: 1.3; }
+.k-pasos > li > b small { font-weight: 600; color: var(--muted); }
+.k-pasos .esc-cmd { font-size: .72em; }
+
+/* ---- Código Python resaltado (pre.k-py o code.k-py) ---- */
+.k-py { margin: 0; font: 600 .78em/1.55 var(--mono); background: var(--term); color: #e6eefb; border-radius: .8em; padding: .75em 1em; border: 1px solid rgba(169,208,245,.22); white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; }
+.k-py .kw { color: #ffd43b; }
+.k-py .bi { color: #84b9ee; }
+.k-py .st { color: #9be39f; }
+.k-py .nu { color: #f6a6d8; }
+.k-py .co { color: #7f93ad; font-style: italic; }
+.k-sal { margin: 0; font: 600 .74em/1.45 var(--mono); padding: .45em .9em; border-radius: .6em; background: var(--ok-bg); color: var(--fg); border: 1px dashed color-mix(in srgb, var(--ok) 45%, transparent); white-space: pre-wrap; }
+.k-sal::before { content: "salida ›\A"; white-space: pre; color: var(--ok); font-weight: 800; }
+
+/* ---- Evidencia pegada: el alumno pega lo que imprimió su terminal ---- */
+.k-evi { display: grid; gap: .5em; }
+.k-evi textarea { width: 100%; min-height: 4.2em; resize: vertical; font: 600 .8em/1.4 var(--mono); padding: .6em .8em; border-radius: .7em; border: 1.5px solid var(--line2); background: var(--term); color: #e6eefb; }
+.k-evi textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.k-evi textarea::placeholder { color: #7f93ad; }
+.k-evi .k-res { margin: 0; font-size: .78em; font-weight: 700; padding: .5em .75em; border-radius: .6em; background: var(--s2); color: var(--muted); }
+.k-evi .k-res.ok { background: var(--ok-bg); color: var(--fg); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); }
+.k-evi .k-res.warn { background: var(--warn-bg); color: var(--fg); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); }
+
+/* La escena puede crecer más que la pantalla (votos, muro): en vez de cortarse, se desplaza. */
+body { overflow-x: hidden; overflow-y: auto; }
+html { background: var(--bg2); } /* el fondo sigue cuando la escena es más alta que la pantalla */
+
+/* ---- Botones ---- */
+.k-btn { font: 700 .82em/1.1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: .45em; min-height: 44px; padding: .6em 1.1em; border-radius: .75em; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; touch-action: manipulation; text-decoration: none; }
+.k-btn:hover { filter: brightness(1.06); }
+.k-btn:focus-visible, .k-link:focus-visible, .k-voto button:focus-visible, .k-check input:focus-visible + span { outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+.k-btn.sec { background: var(--s1); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.k-btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+.k-btn[disabled] { opacity: .5; cursor: default; filter: none; }
+
+/* ---- Enlace que abre una pestaña del navegador ---- */
+.k-link { font: 700 .74em/1.1 system-ui, -apple-system, sans-serif; display: inline-flex; align-items: center; gap: .4em; min-height: 36px; padding: .45em .85em; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-bg); color: var(--accent); cursor: pointer; touch-action: manipulation; }
+.k-link::after { content: "↗"; font-weight: 800; }
+.k-link:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.k-links { display: flex; flex-wrap: wrap; gap: .45em; }
+
+/* ---- Tarjeta de interacción (voto, muro, lista) ---- */
+.k-caja { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .8em 1em; box-shadow: var(--card-shadow); display: grid; gap: .55em; align-content: start; min-width: 0; }
+.k-q { margin: 0; font-size: .86em; font-weight: 800; line-height: 1.3; display: flex; gap: .5em; align-items: baseline; }
+.k-q::before { content: ""; flex: none; width: .6em; height: .6em; border-radius: 50%; background: var(--c, var(--accent)); transform: translateY(-.05em); }
+.k-pie { margin: 0; font-size: .66em; color: var(--muted); }
+
+/* ---- Votación: un chip por opción con la barra del grupo detrás ---- */
+.k-ops { display: grid; gap: .4em; grid-template-columns: repeat(auto-fit, minmax(9em, 1fr)); }
+.k-voto button { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: .6em; min-height: 44px; padding: .45em .8em; border-radius: .7em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); font: 700 .76em/1.2 system-ui, -apple-system, sans-serif; text-align: left; cursor: pointer; touch-action: manipulation; }
+.k-voto button .b { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent-bg); transition: width .5s cubic-bezier(.2,.7,.2,1); }
+.k-voto button span { position: relative; }
+.k-voto button .n { font: 700 .92em var(--mono); color: var(--muted); }
+.k-voto button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+.k-voto button[aria-pressed="true"] .t::before { content: "✓ "; color: var(--accent); }
+.k-voto.revela button.bien { border-color: var(--ok); }
+.k-voto.revela button.bien .b { background: var(--ok-bg); }
+.k-voto.revela button.bien .t::after { content: "  · correcta"; color: var(--ok); font-weight: 800; }
+.k-explica { margin: 0; font-size: .74em; padding: .5em .75em; border-radius: .6em; background: var(--ok-bg); color: var(--fg); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); }
+
+/* ---- Muro: una línea por alumno ---- */
+.k-fila { display: flex; gap: .45em; }
+.k-fila input { flex: 1; min-width: 0; min-height: 44px; font: 500 .8em/1.3 system-ui, -apple-system, sans-serif; padding: .5em .8em; border-radius: .7em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); }
+.k-fila input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.k-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .35em; max-height: 13em; overflow-y: auto; }
+.k-lista li { font-size: .74em; line-height: 1.35; padding: .4em .7em; border-radius: .6em; background: var(--s2); animation: esc-entra .35s ease-out both; }
+.k-lista li b { color: var(--accent); margin-right: .35em; }
+.k-lista li.mia { background: var(--accent-bg); }
+.k-vacio { font-size: .72em; color: var(--muted); }
+
+/* ---- Lista de comprobación con «Lo logré» ---- */
+.k-check { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; }
+.k-check label { display: flex; gap: .65em; align-items: flex-start; min-height: 40px; padding: .35em .55em; border-radius: .6em; cursor: pointer; font-size: .78em; line-height: 1.35; touch-action: manipulation; }
+.k-check label:hover { background: var(--s2); }
+.k-check input { position: absolute; opacity: 0; pointer-events: none; }
+.k-check input + span { flex: none; width: 1.35em; height: 1.35em; border-radius: .4em; border: 2px solid var(--line2); background: var(--s1); display: grid; place-items: center; margin-top: .05em; }
+.k-check input:checked + span { background: var(--ok); border-color: var(--ok); }
+.k-check input:checked + span::after { content: ""; width: .32em; height: .62em; border: solid #fff; border-width: 0 .17em .17em 0; transform: translateY(-.08em) rotate(45deg); }
+.k-check input:checked ~ em { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 50%, transparent); }
+.k-check em { font-style: normal; }
+.k-check code { font: 700 .92em var(--mono); color: var(--accent); }
+.k-avance { display: flex; align-items: center; gap: .6em; font-size: .72em; color: var(--muted); }
+.k-avance i { flex: 1; height: .5em; border-radius: .25em; background: var(--s3); overflow: hidden; }
+.k-avance i::before { content: ""; display: block; height: 100%; width: var(--p, 0%); background: var(--ok); transition: width .4s ease-out; }
+.k-listo { margin: 0; font-size: .76em; font-weight: 800; color: var(--ok); padding: .45em .7em; border-radius: .6em; background: var(--ok-bg); }
+
+/* ---- Aviso flotante ---- */
+.k-toast { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translate(-50%, 1em); z-index: 50; max-width: min(92vw, 34em); padding: .7em 1.1em; border-radius: .8em; background: var(--term); color: #e6eefb; font: 600 .78em/1.35 system-ui, -apple-system, sans-serif; box-shadow: 0 10px 30px -10px rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity .25s ease-out, transform .25s ease-out; }
+.k-toast.ve { opacity: 1; transform: translate(-50%, 0); }
+.k-toast code { color: #ffd43b; word-break: break-all; }
+
+/* ---- La fotito ---- */
+.k-foto { display: grid; gap: .6em; justify-items: center; text-align: center; }
+.k-foto img { width: min(100%, 22em); height: auto; border-radius: .9em; box-shadow: 0 16px 40px -18px rgba(12,26,43,.6); border: 1px solid var(--line); -webkit-touch-callout: default; user-select: auto; }
+.k-foto .k-links { justify-content: center; }
+.k-foto p { margin: 0; font-size: .7em; color: var(--muted); max-width: 30em; }
+
+/* ---- Celular y ventanas angostas: una columna, todo legible y nada cortado ---- */
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .esc { min-height: 100dvh; padding: 14px 16px 20px; gap: 14px; grid-template-rows: auto auto 1fr; align-content: start; }
+  .esc-pie { align-self: end; }
+  .esc-cab { gap: 8px; flex-wrap: wrap; }
+  .esc-num { font-size: .7em; letter-spacing: .06em; }
+  .esc-cuerpo { justify-content: flex-start; gap: 14px; }
+  .esc-titulo { font-size: 1.55em !important; }
+  .esc-sub { font-size: 1em; }
+  .esc-grid-2, .esc-grid-3 { grid-template-columns: 1fr !important; gap: 12px; }
+  .esc-cmd { white-space: pre-wrap !important; word-break: break-word; font-size: .74em !important; }
+  .k-ops { grid-template-columns: 1fr 1fr; }
+  .k-q { font-size: .92em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-voto button .b, .k-avance i::before, .k-toast { transition: none; }
+}
+@media (max-width: 760px) {
+  .k-so { width: 100%; justify-content: space-between; }
+  .k-so button { flex: 1; justify-content: center; padding-inline: .6em; }
+  .k-py { font-size: .74em; }
+}

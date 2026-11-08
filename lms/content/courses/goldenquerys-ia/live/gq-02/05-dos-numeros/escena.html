@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Dos números, una pregunta</title>
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 1 (gq-02). Reflexión: la misma pregunta con dos SQL; votar cuál va al dueño.
+     Números reales de bases/botica.sqlite (septiembre de 2026, ventas emitidas). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<style id="esc-propio">
+.b5-preg { display: inline-flex; align-items: center; gap: .6em; flex-wrap: wrap; font-size: .9em; font-weight: 700; background: var(--s1); border: 1px solid var(--line); border-radius: 999px; padding: .4em 1em; box-shadow: var(--card-shadow); }
+.b5-preg span { font-size: .78em; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #0b8a5f; }
+.b5-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; }
+.b5-r { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .8em 1em; box-shadow: var(--card-shadow); display: grid; gap: .5em; min-width: 0; position: relative; transition: border-color .3s ease-out; }
+.b5-r h2 { margin: 0; display: flex; align-items: baseline; justify-content: space-between; gap: .5em; font-size: .8em; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.b5-r h2 b { font-size: 1.9em; letter-spacing: -.02em; text-transform: none; color: var(--oro); font-variant-numeric: tabular-nums; }
+.b5-sql { margin: 0; font: 600 .68em/1.55 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .7em .9em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.b5-sql mark { background: transparent; color: inherit; border-radius: .25em; padding: 0 .15em; transition: background .4s ease-out; }
+.b5-sello { display: inline-block; vertical-align: middle; margin-left: .5em; font: 800 .78em system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; padding: .3em .7em; border-radius: 999px; opacity: 0; transform: scale(.8) rotate(-6deg); transition: opacity .35s ease-out, transform .35s ease-out; }
+.revela .b5-sello { opacity: 1; transform: scale(1) rotate(-6deg); }
+.revela .b5-r.pirita { border-color: var(--pirita); }
+.revela .b5-r.pirita .b5-sello { background: var(--pirita-bg); color: var(--pirita); border: 1px solid var(--pirita); }
+.revela .b5-r.pirita mark { background: rgba(255,123,123,.28); }
+.revela .b5-r.oro { border-color: var(--oro); }
+.revela .b5-r.oro .b5-sello { background: var(--oro-bg); color: var(--oro); border: 1px solid var(--oro); }
+#voto .k-ops { grid-template-columns: 1fr; }
+.b5-r h2 b { white-space: nowrap; }
+.b5-abajo { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; align-items: start; }
+@media (max-width: 760px) {
+  .b5-dos, .b5-abajo { grid-template-columns: 1fr; gap: 12px; }
+  .b5-preg { border-radius: .9em; }
+}
+@media (prefers-reduced-motion: reduce) { .b5-sello, .b5-sql mark, .b5-r { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">GoldenQuerys · S1 · 05</span>
+  </header>
+
+  <main class="esc-cuerpo" id="b5">
+    <div style="display:grid;gap:1vh">
+      <h1 class="esc-titulo a-in" style="font-size:1.9em">Misma pregunta, <em class="oro">dos números</em></h1>
+      <p class="b5-preg a-in" style="--d:.1s"><span>Botica</span>¿Cuánto vendimos en septiembre de 2026?</p>
+    </div>
+    <div class="b5-dos">
+      <div class="b5-r pirita a-in" style="--d:.2s">
+        <h2><span>Respuesta A<span class="b5-sello">Pirita</span></span> <b>S/ 15 939,24</b></h2>
+        <pre class="b5-sql">SELECT ROUND(SUM(v.total), 2)
+FROM ventas v
+<mark>JOIN venta_detalle d ON d.venta_id = v.id</mark>
+WHERE v.estado = 'emitida'
+  AND v.fecha &gt;= '2026-09-01'
+  AND v.fecha &lt; '2026-10-01';</pre>
+      </div>
+      <div class="b5-r oro a-in" style="--d:.3s">
+        <h2><span>Respuesta B<span class="b5-sello">Oro</span></span> <b>S/ 7 404,90</b></h2>
+        <pre class="b5-sql">SELECT ROUND(SUM(total), 2)
+FROM ventas
+WHERE estado = 'emitida'
+  AND fecha &gt;= '2026-09-01'
+  AND fecha &lt; '2026-10-01';</pre>
+      </div>
+    </div>
+    <div class="b5-abajo">
+      <div class="k-caja k-voto a-in" style="--d:.4s" id="voto" data-voto="gq02-dos-numeros" data-correcta="b" data-c="oro"
+           data-explica="B es oro. A une cada venta con sus productos: una boleta de 3 productos se suma 3 veces. La prueba que lo delata: cuenta las filas de A sin el SUM y compáralas con las ventas del mes.">
+        <p class="k-q" style="--c:var(--ph-or)">¿Cuál le das al dueño?</p>
+        <div class="k-ops">
+          <button data-op="a">A · S/ 15 939</button>
+          <button data-op="b">B · S/ 7 405</button>
+          <button data-op="ninguno">Ninguno sin probar</button>
+        </div>
+      </div>
+      <div class="k-caja k-muro a-in" style="--d:.5s" data-muro="gq02-dudar" data-color="var(--ph-or)" data-pregunta="¿Qué te hizo dudar? (o qué te habría hecho dudar)" data-placeholder="Dudé porque…" data-max="4"></div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Vota, escribe tu duda en el muro y pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq.js"></script>
+<script>
+(function () {
+  var raiz = document.getElementById("b5");
+  function revelar() { raiz.classList.add("revela"); }
+  document.getElementById("voto").addEventListener("k-voto", revelar);
+  if (GQ.leer("voto-gq02-dos-numeros", "")) revelar();
+})();
+</script>
+</body>
+</html>

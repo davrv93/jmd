@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Juego: la telaraña cortés</title>
+<!-- Escena LIVE ws-01 · E12. Juego multijugador original, cooperativo y de marca personal (hasta 25 a la vez).
+     Sala y tablero: /carrera (unir {avatar}, paso {dist, golpes}, fin {ms}; el staff inicia y reinicia). Toda la lógica corre aquí:
+       dist = 1000 + puntos  (así «fin» nunca lo pisa: el servidor sube a 840 a quien llegue con menos)
+       golpes = lecciones aprendidas (0 a 6)
+     La reflexión final va al muro (escena 12-telarana-cortes) y a la fotito. Nadie queda fuera: quien llega tarde practica
+     y entra en la siguiente ronda; los errores enseñan una lección y no quitan puntos. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.j-staff { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; background: var(--gold-bg); border: 1px dashed var(--gold); border-radius: .8em; padding: .5em .8em; font-size: .8em; }
+.j-staff b { color: var(--gold); }
+.j-sala { list-style: none; margin: .5em 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .4em; }
+.j-sala li { display: flex; align-items: center; gap: .35em; background: var(--s2); border: 1px solid var(--line); border-radius: 999px; padding: .15em .7em .15em .2em; font-size: .74em; }
+.j-sala li.yo { border-color: var(--accent); background: var(--accent-bg); }
+.j-sala canvas { width: 28px; height: 28px; }
+.j-reglas { margin: 0; padding-left: 1.1em; display: grid; gap: .3em; font-size: .82em; }
+.j-zona { position: relative; border-radius: 1em; overflow: hidden; border: 1px solid var(--line2); background: radial-gradient(ellipse at 50% 100%, var(--s3), var(--s1) 70%); height: min(74vh, 700px); min-height: 440px; box-shadow: var(--card-shadow); }
+.j-zona canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: pointer; }
+.j-hud { position: absolute; left: 0; right: 0; top: 0; display: flex; flex-wrap: wrap; gap: .35em; align-items: center; padding: .5em; z-index: 2; pointer-events: none; }
+.j-hud > * { pointer-events: auto; }
+.j-pill { background: color-mix(in srgb, var(--s1) 88%, transparent); border: 1px solid var(--line2); border-radius: 999px; padding: .25em .7em; font: 700 .74em var(--mono); white-space: nowrap; }
+.j-pill.t { color: var(--accent); }
+.j-vaso { display: inline-flex; align-items: center; gap: .4em; }
+.j-vaso i { display: inline-block; width: 4.2em; height: .7em; border-radius: 999px; background: var(--s3); overflow: hidden; position: relative; }
+.j-vaso i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--v, 0%); background: var(--c, var(--ok)); transition: width .2s linear; }
+.j-robots { margin-left: auto; font: 800 .74em var(--mono); border-radius: 999px; padding: .45em .9em; border: 1px solid var(--gold); background: var(--gold-bg); color: var(--gold); cursor: pointer; min-height: 36px; }
+.j-robots[aria-pressed="true"] { opacity: .7; }
+.j-papel { position: absolute; left: 50%; top: 38%; transform: translateX(-50%); z-index: 3; background: #fffbea; color: #3a2a00; border: 2px solid #e2a72e; border-radius: .7em; padding: .6em .9em; font: 600 .74em/1.55 var(--mono); white-space: pre; box-shadow: 0 10px 30px rgba(0,0,0,.25); max-width: 92%; overflow: auto; }
+.j-leccion { position: absolute; left: 50%; top: 3.6em; transform: translateX(-50%); z-index: 3; width: min(92%, 30em); background: #14122b; color: #fff; border-radius: .9em; padding: .55em .9em; box-shadow: 0 10px 30px rgba(0,0,0,.35); font-size: .78em; border-left: 5px solid var(--gold); }
+.j-leccion b { display: block; color: #ffd77a; }
+.j-cuenta { position: absolute; inset: 0; display: grid; place-items: center; z-index: 4; background: color-mix(in srgb, var(--bg) 70%, transparent); font: 900 5em system-ui, sans-serif; color: var(--accent); }
+.j-cuenta small { display: block; font-size: .18em; color: var(--fg); text-align: center; font-weight: 700; }
+.j-res { display: grid; grid-template-columns: auto 1fr; gap: 1em; align-items: center; }
+.j-res .esc-big { color: var(--accent); }
+.j-datos { display: flex; flex-wrap: wrap; gap: .4em; }
+.j-lecs { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5em; }
+@media (max-width: 860px) { .j-lecs { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 420px) { .j-lecs { grid-template-columns: 1fr; } }
+.j-lec { border: 1px solid var(--line2); border-radius: .7em; padding: .45em .65em; font-size: .74em; background: var(--s2); }
+.j-lec b { display: block; }
+.j-lec.si { border-color: var(--ok); background: var(--ok-bg); }
+.j-lec.si b::before { content: "✓ "; color: var(--ok); }
+.j-tablero { list-style: none; margin: 0; padding: 0; display: grid; gap: .3em; max-height: 46vh; overflow: auto; }
+.j-tablero li { display: grid; grid-template-columns: 30px 1fr auto; gap: .5em; align-items: center; font-size: .76em; padding: .2em .4em; border-radius: .5em; }
+.j-tablero li.yo { background: var(--accent-bg); }
+.j-tablero canvas { width: 30px; height: 30px; }
+.j-tablero small { color: var(--muted); }
+.j-meta { height: 1em; border-radius: 999px; background: var(--s3); overflow: hidden; border: 1px solid var(--line); margin: .3em 0; }
+.j-meta div { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--ok)); transition: width .6s ease-out; }
+</style>
+</head>
+<body data-escena="12-telarana-cortes">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="eg" cx="1384" cy="168" r="4"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Scraping ético · E12 · Juego</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">La telaraña <em>cortés</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Tu arañita extrae datos de un sitio en 75 segundos. Gana filas limpias quien respeta el robots.txt, el ritmo y los datos personales.</p>
+    </div>
+    <div class="j-staff" id="staff" hidden>
+      <b>Instructor</b><span id="staff-n">0 en la sala</span>
+      <button type="button" class="w-btn peq" id="iniciar">Empezar ronda para todos</button>
+      <button type="button" class="w-btn sec peq" id="reiniciar">Vaciar la sala</button>
+    </div>
+
+    <!-- 1. Sala -->
+    <section id="lobby" class="w-g2">
+      <div class="esc-card">
+        <span class="w-et">Cómo se juega</span>
+        <ol class="j-reglas">
+          <li><b>Toca una página</b> del sitio: tu arañita le lanza un hilo y trae filas de datos.</li>
+          <li><b>Mira el vaso de paciencia</b> del servidor. Si lo llenas, responde 429 y esperas 3 s.</li>
+          <li><b>Lee el robots.txt</b> (botón dorado): te dice qué no tocar… y dónde está la API.</li>
+          <li><b>Toca las bolitas rosadas</b> (teléfonos y DNI) antes de que lleguen: así las apartas.</li>
+          <li>Nadie pierde: cada error te enseña una lección. Al final, entre todos llenamos el dataset de la clase.</li>
+        </ol>
+      </div>
+      <div class="esc-card">
+        <span class="w-et">Tu arañita</span>
+        <div data-avatar></div>
+        <div class="w-fila" style="margin-top:.7em">
+          <button type="button" class="w-btn" id="unir">Entrar a la sala</button>
+          <button type="button" class="w-btn sec" id="practicar">Practicar solo</button>
+        </div>
+        <p class="w-peq" id="estado-sala" aria-live="polite" style="margin:.5em 0 0">Entra a la sala y espera a que el instructor empiece la ronda.</p>
+        <ul class="j-sala" id="sala" aria-label="Quiénes están en la sala"></ul>
+      </div>
+    </section>
+
+    <!-- 2. Juego -->
+    <section id="juego" hidden>
+      <div class="j-zona" id="zona">
+        <canvas id="lienzo" aria-label="Tablero del juego: páginas del sitio y tu arañita"></canvas>
+        <div class="j-hud">
+          <span class="j-pill t" id="h-tiempo">75 s</span>
+          <span class="j-pill" id="h-filas">0 filas</span>
+          <span class="j-pill" id="h-prot">0 protegidos</span>
+          <span class="j-pill j-vaso" title="Paciencia del servidor">vaso <i id="h-vaso"></i></span>
+          <button type="button" class="j-robots" id="robots" aria-pressed="false">robots.txt</button>
+        </div>
+        <div class="j-papel" id="papel" hidden></div>
+        <div class="j-leccion" id="leccion" role="status" hidden></div>
+        <div class="j-cuenta" id="cuenta" hidden></div>
+      </div>
+    </section>
+
+    <!-- 3. Resultado, reflexión y fotito -->
+    <section id="final" hidden>
+      <div class="w-g2">
+        <div style="display:grid;gap:1em;align-content:start">
+          <div class="esc-card">
+            <span class="w-et">Tu resultado</span>
+            <div class="j-res">
+              <div><div class="esc-big" id="r-puntos">0</div><span class="w-peq w-muted">puntos</span></div>
+              <div class="j-datos" id="r-datos"></div>
+            </div>
+            <p class="w-peq" id="r-mejor" style="margin:.5em 0 0"></p>
+          </div>
+          <div class="esc-card">
+            <span class="w-et">Lo que aprendiste jugando</span>
+            <div class="j-lecs" id="r-lecs"></div>
+          </div>
+          <div class="esc-card">
+            <span class="w-et">Reflexión para el muro</span>
+            <h2>En un sitio real, ¿qué harías primero y qué no harías nunca?</h2>
+            <div data-muro="12-telarana-cortes" data-max="140" data-placeholder="Primero… y nunca…" data-pregunta="Qué harías primero y qué no harías nunca en un sitio real"></div>
+          </div>
+        </div>
+        <div style="display:grid;gap:1em;align-content:start">
+          <div class="esc-card">
+            <span class="w-et">La telaraña de la clase</span>
+            <p class="w-peq" id="r-clase" style="margin:0">—</p>
+            <div class="j-meta"><div id="r-meta"></div></div>
+            <ol class="j-tablero" id="r-tablero"></ol>
+          </div>
+          <div class="esc-card">
+            <span class="w-et">Guarda la fotito</span>
+            <div id="fotito"></div>
+          </div>
+          <div class="w-fila">
+            <button type="button" class="w-btn sec" id="otra">Jugar otra vez (práctica)</button>
+            <span class="w-peq w-muted" id="r-siguiente">Si el instructor abre otra ronda, entra desde aquí.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Ratón o dedo. Sin sonido. Cada ronda dura 75 segundos.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script>
+(function () {
+  "use strict";
+  var DUR = 75000, BASE_DIST = 1000;
+  var $ = function (id) { return document.getElementById(id); };
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- Lecciones: cada error enseña, nunca resta ---------- */
+  var LECC = [
+    { id: "robots", t: "robots.txt primero", d: "Leerlo te dice qué rutas no tocar y, a veces, dónde hay una API." },
+    { id: "ritmo", t: "429: muy rápido", d: "El servidor pidió esperar (Retry-After). Una pausa entre pedidos lo evita." },
+    { id: "personal", t: "Datos personales fuera", d: "Teléfonos y DNI no van a tu dataset. Apártalos antes de guardar." },
+    { id: "paginacion", t: "Fin de la lista", d: "has_next = false: tu extractor para solo en la última página." },
+    { id: "api", t: "Si hay API, úsala", d: "Más filas por pedido y menos carga para el sitio." },
+    { id: "trampa", t: "Páginas infinitas", d: "El calendario nunca se acaba y repite datos: pon un tope de páginas." },
+  ];
+  var ROBOTS_TXT = "User-agent: *\nDisallow: /admin\nDisallow: /carrito\nDisallow: /cuenta\n# Hay una API: /api/frases";
+
+  /* ---------- Azar con semilla: la misma ronda arma el mismo sitio para todos ---------- */
+  function rng(seed) { var a = seed >>> 0 || 1; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  /* ---------- Estado de la ronda ---------- */
+  var J = null; // la partida en curso
+  function nuevaPartida(seed, duracion) {
+    var r = rng(seed);
+    var nodos = [
+      { id: "frases", ruta: "/frases", tipo: "lista", paginas: 8, filas: 5 },
+      { id: "libros", ruta: "/libros", tipo: "lista", paginas: 8, filas: 5 },
+      { id: "perfiles", ruta: "/perfiles", tipo: "perfiles", paginas: 4, filas: 2, personales: 2 },
+      { id: "api", ruta: "/api/frases", tipo: "api", paginas: 6, filas: 8 },
+      { id: "calendario", ruta: "/calendario", tipo: "trampa", paginas: 999, filas: 1 },
+      { id: "admin", ruta: "/admin", tipo: "prohibida" },
+      { id: "carrito", ruta: "/carrito", tipo: "prohibida" },
+      { id: "cuenta", ruta: "/cuenta", tipo: "prohibida" },
+    ];
+    for (var i = nodos.length - 1; i > 0; i--) { var k = Math.floor(r() * (i + 1)), x = nodos[i]; nodos[i] = nodos[k]; nodos[k] = x; }
+    nodos.forEach(function (n) { n.pag = 1; n.fin = false; n.golpe = 0; });
+    return {
+      seed: seed, nodos: nodos, t0: performance.now(), dur: duracion || DUR, vivo: true,
+      filas: 0, prot: 0, apartados: 0, repetidas: 0, aprendidas: {}, leyo: false,
+      vaso: 0, espera: 0, hilo: null, bolas: [], textos: [], ultimoEnvio: -1,
+    };
+  }
+  function puntos() { return J ? J.filas + J.prot : 0; }
+  function nLecciones() { return J ? Object.keys(J.aprendidas).length : 0; }
+
+  var lecT = 0;
+  function aprender(id) {
+    if (!J || J.aprendidas[id]) return;
+    J.aprendidas[id] = true;
+    var l = LECC.filter(function (x) { return x.id === id; })[0];
+    var el = $("leccion");
+    el.innerHTML = "<b></b><span></span>"; el.firstChild.textContent = "Lección: " + l.t; el.lastChild.textContent = l.d;
+    el.hidden = false; clearTimeout(lecT); lecT = setTimeout(function () { el.hidden = true; }, 3800);
+  }
+
+  /* ---------- Lienzo ---------- */
+  var cv = $("lienzo"), ctx = cv.getContext("2d"), W = 0, H = 0, DPR = 1, COL = {};
+  function colores() {
+    var s = getComputedStyle(document.documentElement);
+    ["--s1", "--s2", "--s3", "--fg", "--muted", "--accent", "--ok", "--bad", "--warn", "--gold", "--line2", "--ph-ea"].forEach(function (k) { COL[k] = s.getPropertyValue(k).trim() || "#888"; });
+  }
+  function medir() {
+    var r = cv.getBoundingClientRect(); DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    if (J) ubicar();
+  }
+  function ubicar() {
+    var cols = W >= H * 1.1 ? 4 : 2, filas = Math.ceil(J.nodos.length / cols);
+    var top = 62, bottom = H - 120, cw = W / cols, ch = (bottom - top) / filas;
+    J.nodos.forEach(function (n, i) {
+      var c = i % cols, f = Math.floor(i / cols);
+      n.w = Math.min(cw * .86, 220); n.h = Math.min(ch * .78, 84);
+      n.x = c * cw + cw / 2; n.y = top + f * ch + ch / 2;
+    });
+    J.base = { x: W / 2, y: H - 58 };
+  }
+  addEventListener("resize", function () { medir(); });
+
+  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function visible(n) { return n.tipo !== "api" || J.leyo; }
+  function bloqueada(n) { return n.tipo === "prohibida" && J.leyo; }
+
+  function dibujar(ahora) {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    var t = (ahora - J.t0) / 1000;
+    // hilos de fondo desde la base
+    ctx.strokeStyle = COL["--line2"]; ctx.lineWidth = 1;
+    J.nodos.forEach(function (n) { if (!visible(n)) return; ctx.beginPath(); ctx.moveTo(J.base.x, J.base.y); ctx.lineTo(n.x, n.y + n.h / 2); ctx.stroke(); });
+    // páginas
+    J.nodos.forEach(function (n) {
+      var x = n.x - n.w / 2, y = n.y - n.h / 2, sh = n.golpe > ahora ? Math.sin(ahora / 30) * 4 : 0;
+      if (!visible(n)) {
+        ctx.setLineDash([5, 5]); ctx.strokeStyle = COL["--line2"]; rr(x, y, n.w, n.h, 12); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = COL["--muted"]; ctx.font = "600 12px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.fillText("¿?", n.x, n.y + 4);
+        return;
+      }
+      ctx.save(); ctx.translate(sh, 0);
+      var borde = n.tipo === "api" ? COL["--gold"] : bloqueada(n) ? COL["--bad"] : n.fin ? COL["--ok"] : COL["--accent"];
+      ctx.fillStyle = COL["--s1"]; rr(x, y, n.w, n.h, 12); ctx.fill();
+      ctx.lineWidth = n.tipo === "api" ? 3 : 2; ctx.strokeStyle = borde; ctx.stroke();
+      if (bloqueada(n)) { ctx.save(); rr(x, y, n.w, n.h, 12); ctx.clip(); ctx.strokeStyle = "rgba(220,60,60,.18)"; ctx.lineWidth = 8; for (var k = -n.h; k < n.w; k += 22) { ctx.beginPath(); ctx.moveTo(x + k, y + n.h); ctx.lineTo(x + k + n.h, y); ctx.stroke(); } ctx.restore(); }
+      ctx.textAlign = "center"; ctx.fillStyle = COL["--fg"];
+      var fs = Math.max(11, Math.min(15, n.w / 11));
+      ctx.font = "800 " + fs + "px ui-monospace, Menlo, monospace";
+      var etiqueta = n.ruta + (n.tipo === "lista" || n.tipo === "perfiles" || n.tipo === "api" ? "?page=" + Math.min(n.pag, n.paginas) : n.tipo === "trampa" ? "?mes=" + n.pag : "");
+      ctx.fillText(etiqueta, n.x, n.y - 4, n.w - 12);
+      ctx.font = "600 " + (fs - 2) + "px system-ui, sans-serif"; ctx.fillStyle = COL["--muted"];
+      var sub = n.fin ? "fin: has_next = false" : bloqueada(n) ? "Disallow: no se toca" : n.tipo === "prohibida" ? "página" : n.tipo === "trampa" ? "¿cuántos meses hay?" : n.tipo === "api" ? "8 filas por pedido" : n.tipo === "perfiles" ? "perfiles de usuarios" : "página " + n.pag + " de " + n.paginas;
+      ctx.fillText(sub, n.x, n.y + fs + 2, n.w - 12);
+      ctx.restore();
+    });
+    // hilo en curso
+    if (J.hilo) {
+      var h = J.hilo, n = h.nodo, p = Math.min(1, (ahora - h.t0) / 320);
+      var ex = J.base.x + (n.x - J.base.x) * p, ey = J.base.y - 20 + (n.y + n.h / 2 - J.base.y + 20) * p;
+      ctx.strokeStyle = COL["--accent"]; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(J.base.x, J.base.y - 20); ctx.lineTo(ex, ey); ctx.stroke();
+      if (h.res && ahora > h.t0 + 320) {
+        ctx.font = "800 13px ui-monospace, monospace"; ctx.textAlign = "center";
+        ctx.fillStyle = h.res === 200 ? COL["--ok"] : COL["--bad"];
+        ctx.fillText(h.res === 200 ? "200 OK" : h.res === 429 ? "429 · espera 3 s" : "Disallow", n.x, n.y - n.h / 2 - 6);
+      }
+    }
+    // bolitas de datos
+    J.bolas.forEach(function (b) {
+      var p = Math.min(1, (ahora - b.t0) / b.dur), e = 1 - Math.pow(1 - p, 2);
+      b.x = b.x0 + (J.base.x - b.x0) * e; b.y = b.y0 + (J.base.y - 24 - b.y0) * e + Math.sin(p * Math.PI) * -30;
+      if (b.ok === false) return;
+      var r = b.tipo === "personal" ? 13 : 9;
+      ctx.fillStyle = b.tipo === "personal" ? "#f0559a" : b.tipo === "repetida" ? "#9a97ad" : b.tipo === "api" ? COL["--gold"] : COL["--ok"];
+      ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, Math.PI * 2); ctx.fill();
+      if (b.tipo === "personal") { ctx.fillStyle = "#fff"; ctx.font = "800 9px system-ui"; ctx.textAlign = "center"; ctx.fillText(b.etq, b.x, b.y + 3); }
+    });
+    // textos flotantes
+    J.textos.forEach(function (x) {
+      var p = (ahora - x.t0) / 900; if (p > 1) return;
+      ctx.globalAlpha = 1 - p; ctx.fillStyle = x.c; ctx.font = "800 15px system-ui, sans-serif"; ctx.textAlign = "center";
+      ctx.fillText(x.s, x.x, x.y - p * 30); ctx.globalAlpha = 1;
+    });
+    // arañita
+    var mov = J.hilo || J.bolas.length ? t : 0;
+    WS.dibujarArana(ctx, J.base.x, J.base.y, 30, WS.avatar(), quieto ? 0 : mov, false);
+    if (J.espera > ahora) {
+      var f = (J.espera - ahora) / 3000;
+      ctx.strokeStyle = COL["--warn"]; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(J.base.x, J.base.y, 44, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke();
+      ctx.fillStyle = COL["--warn"]; ctx.font = "800 13px system-ui"; ctx.textAlign = "center"; ctx.fillText("Retry-After " + Math.ceil(f * 3) + " s", J.base.x, J.base.y - 52);
+    }
+    ctx.fillStyle = COL["--muted"]; ctx.font = "700 12px system-ui"; ctx.textAlign = "center";
+    ctx.fillText(J.filas + " filas limpias", J.base.x, H - 12);
+  }
+
+  /* ---------- Reglas del sitio simulado ---------- */
+  var ETQ = ["DNI", "tel", "DNI", "tel"];
+  function pedir(n, ahora) {
+    if (!J.vivo || !visible(n)) return;
+    if (J.hilo) { WS.aviso("Una página a la vez: espera a que vuelva tu hilo.", 1500); return; }
+    if (J.espera > ahora) { n.golpe = ahora + 300; WS.aviso("Retry-After: espera a que se vacíe el reloj.", 1500); return; }
+    if (bloqueada(n)) { n.golpe = ahora + 300; WS.aviso("Disallow en robots.txt: esta no se toca.", 1600); return; }
+    if (n.fin) { n.golpe = ahora + 300; WS.aviso("Esa lista ya terminó: prueba otra página.", 1500); return; }
+    var res = 200;
+    if (n.tipo === "prohibida") res = 403;
+    else if (J.vaso + .3 > 1) res = 429;
+    J.vaso = Math.min(1, J.vaso + .3);
+    J.hilo = { nodo: n, t0: ahora, res: res };
+    setTimeout(function () { responder(n, res); }, 520);
+  }
+  function responder(n, res) {
+    if (!J || !J.vivo) return;
+    var ahora = performance.now();
+    if (res === 403) {
+      aprender("robots"); J.leyo = true; mostrarRobots(true);
+      J.textos.push({ s: "Disallow", x: n.x, y: n.y, t0: ahora, c: COL["--bad"] });
+      setTimeout(function () { J && (J.hilo = null); }, 500);
+      return;
+    }
+    if (res === 429) {
+      aprender("ritmo"); J.espera = ahora + 3000;
+      setTimeout(function () { J && (J.hilo = null); }, 500);
+      return;
+    }
+    var bolas = [];
+    if (n.tipo === "trampa") {
+      if (n.pag > 1) { aprender("trampa"); bolas.push("repetida"); } else bolas.push("fila");
+      n.pag++;
+    } else {
+      for (var i = 0; i < n.filas; i++) bolas.push(n.tipo === "api" ? "api" : "fila");
+      for (var k = 0; k < (n.personales || 0); k++) bolas.splice(1 + k * 2, 0, "personal");
+      if (n.tipo === "api") aprender("api");
+      n.pag++;
+      if (n.pag > n.paginas) { n.fin = true; aprender("paginacion"); }
+    }
+    bolas.forEach(function (tipo, i) {
+      J.bolas.push({ tipo: tipo, etq: ETQ[i % 4], x0: n.x + (i - bolas.length / 2) * 12, y0: n.y + n.h / 2, x: n.x, y: n.y, t0: ahora + i * 110, dur: tipo === "personal" ? 1900 : 800 });
+    });
+    setTimeout(function () { J && (J.hilo = null); }, 360);
+  }
+  function llegar(b, ahora) {
+    if (b.tipo === "personal") { J.apartados++; aprender("personal"); J.textos.push({ s: "apartado: dato personal", x: J.base.x, y: J.base.y - 40, t0: ahora, c: "#f0559a" }); return; }
+    if (b.tipo === "repetida") { J.repetidas++; J.textos.push({ s: "repetida", x: J.base.x, y: J.base.y - 40, t0: ahora, c: COL["--muted"] }); return; }
+    J.filas++;
+  }
+  function tocar(x, y) {
+    if (!J || !J.vivo) return;
+    var ahora = performance.now();
+    for (var i = J.bolas.length - 1; i >= 0; i--) {
+      var b = J.bolas[i];
+      if (b.tipo === "personal" && b.ok !== false && ahora >= b.t0 && Math.hypot(b.x - x, b.y - y) < 30) {
+        b.ok = false; J.prot++; aprender("personal");
+        J.textos.push({ s: "+1 protegido", x: b.x, y: b.y, t0: ahora, c: "#f0559a" });
+        return;
+      }
+    }
+    for (var k = 0; k < J.nodos.length; k++) {
+      var n = J.nodos[k];
+      if (Math.abs(x - n.x) <= n.w / 2 + 4 && Math.abs(y - n.y) <= n.h / 2 + 4) { pedir(n, ahora); return; }
+    }
+  }
+  cv.addEventListener("pointerdown", function (e) {
+    var r = cv.getBoundingClientRect(); e.preventDefault();
+    tocar(e.clientX - r.left, e.clientY - r.top);
+  });
+
+  function mostrarRobots(auto) {
+    var p = $("papel"); p.textContent = ROBOTS_TXT; p.hidden = false;
+    $("robots").setAttribute("aria-pressed", "true");
+    clearTimeout(mostrarRobots.t); mostrarRobots.t = setTimeout(function () { p.hidden = true; }, auto ? 2600 : 3400);
+  }
+  $("robots").addEventListener("click", function () {
+    if (!J || !J.vivo) return;
+    if (!J.leyo) { J.leyo = true; aprender("robots"); }
+    mostrarRobots(false);
+  });
+  $("papel").addEventListener("click", function () { $("papel").hidden = true; });
+
+  /* ---------- Bucle ---------- */
+  var ultimo = 0;
+  function cuadro(ahora) {
+    if (!J || !J.vivo) return;
+    var dt = Math.min(.1, (ahora - (ultimo || ahora)) / 1000); ultimo = ahora;
+    J.vaso = Math.max(0, J.vaso - .17 * dt);
+    J.bolas = J.bolas.filter(function (b) {
+      if (ahora - b.t0 >= b.dur) { if (b.ok !== false) llegar(b, ahora); return false; }
+      return true;
+    });
+    J.textos = J.textos.filter(function (x) { return ahora - x.t0 < 900; });
+    var resta = Math.max(0, J.dur - (ahora - J.t0));
+    $("h-tiempo").textContent = Math.ceil(resta / 1000) + " s";
+    $("h-filas").textContent = J.filas + (J.filas === 1 ? " fila" : " filas");
+    $("h-prot").textContent = J.prot + (J.prot === 1 ? " protegido" : " protegidos");
+    var v = $("h-vaso"); v.style.setProperty("--v", Math.round(J.vaso * 100) + "%");
+    v.style.setProperty("--c", J.vaso > .7 ? COL["--bad"] : J.vaso > .45 ? COL["--warn"] : COL["--ok"]);
+    dibujar(ahora);
+    if (resta <= 0) { terminar(); return; }
+    requestAnimationFrame(cuadro);
+  }
+
+  /* ---------- Sala multijugador (/carrera) ---------- */
+  var sala = { estado: "lobby", corredores: [], staff: false, yo: "", salida: 0, seed: 0, desfase: 0 };
+  var unido = false, rondaJugada = -1, practica = false, resultado = null;
+  function consultar() {
+    return WS.api("/carrera").then(function (j) {
+      sala.estado = j.estado; sala.corredores = j.corredores || []; sala.staff = !!j.staff; sala.yo = j.yo || "";
+      sala.salida = +j.salida_ms || 0; sala.seed = +j.seed || 0; sala.desfase = (+j.ahora_ms || Date.now()) - Date.now();
+      unido = sala.corredores.some(function (c) { return c.id === sala.yo; });
+      pintarSala(); revisarRonda();
+      return j;
+    }).catch(function () { $("estado-sala").textContent = "La sala se abre cuando la clase está en vivo. Mientras tanto, practica solo."; });
+  }
+  function pts(c) { return c.dist >= BASE_DIST ? Math.round(c.dist - BASE_DIST) : 0; }
+  function miniAvatar(code) {
+    var c = document.createElement("canvas"); c.width = 60; c.height = 60;
+    WS.dibujarArana(c.getContext("2d"), 30, 33, 17, WS.parseAva(code) ? code : "c0-o0-x0", 0, false);
+    return c;
+  }
+  function pintarSala() {
+    $("staff").hidden = !sala.staff;
+    $("staff-n").textContent = sala.corredores.length + (sala.corredores.length === 1 ? " en la sala" : " en la sala") + " · estado: " + sala.estado;
+    var ul = $("sala"); ul.textContent = "";
+    sala.corredores.slice(0, 25).forEach(function (c) {
+      var li = document.createElement("li"); if (c.id === sala.yo) li.className = "yo";
+      li.appendChild(miniAvatar(c.avatar)); li.appendChild(document.createTextNode(WS.nombreCorto(c.nombre)));
+      ul.appendChild(li);
+    });
+    var est = $("estado-sala");
+    if (sala.estado === "lobby") est.textContent = unido ? "Estás en la sala (" + sala.corredores.length + "). Cuando el instructor empiece, arrancas sola o solo." : "Entra a la sala y espera a que el instructor empiece la ronda.";
+    else if (sala.estado === "cuenta" || sala.estado === "corre") est.textContent = unido ? "¡La ronda está por empezar!" : "Hay una ronda en curso. Practica solo y entras en la siguiente.";
+    else est.textContent = "La ronda terminó. Practica o espera la siguiente.";
+    $("unir").disabled = unido;
+    $("unir").textContent = unido ? "Ya estás en la sala" : "Entrar a la sala";
+    if (!$("final").hidden) pintarTablero();
+  }
+  function revisarRonda() {
+    if (!unido) return;
+    if (J && J.vivo) {
+      if (!(practica && sala.estado === "cuenta" && sala.salida !== rondaJugada)) return;
+      J.vivo = false; // empieza una ronda de verdad: la práctica cede el paso
+    }
+    if ((sala.estado === "cuenta" || sala.estado === "corre") && sala.salida && sala.salida !== rondaJugada) {
+      var falta = sala.salida - (Date.now() + sala.desfase);
+      if (falta > 0) cuentaAtras(falta);
+      else if (DUR + falta > 10000) arrancar(sala.seed, DUR + falta, false);
+    }
+  }
+  var cuentaT = 0;
+  function cuentaAtras(ms) {
+    if (cuentaT) return;
+    mostrar("juego"); medir();
+    J = nuevaPartida(sala.seed); J.vivo = false; ubicar(); dibujar(performance.now());
+    var el = $("cuenta"), fin = performance.now() + ms;
+    el.hidden = false;
+    (function tic() {
+      var r = fin - performance.now();
+      if (r <= 0) { el.hidden = true; cuentaT = 0; arrancar(sala.seed, DUR, false); return; }
+      el.innerHTML = Math.ceil(r / 1000) + "<small>Lee el robots.txt antes de tocar nada</small>";
+      cuentaT = setTimeout(tic, 100);
+    })();
+  }
+  function mostrar(cual) {
+    ["lobby", "juego", "final"].forEach(function (k) { $(k).hidden = k !== cual; });
+    if (cual === "juego") $("zona").scrollIntoView({ block: "nearest" });
+  }
+  function arrancar(seed, duracion, esPractica) {
+    practica = esPractica;
+    if (!esPractica) rondaJugada = sala.salida;
+    mostrar("juego"); colores(); medir();
+    J = nuevaPartida(seed, duracion); ubicar(); ultimo = 0;
+    $("papel").hidden = true; $("leccion").hidden = true; $("robots").setAttribute("aria-pressed", "false");
+    requestAnimationFrame(cuadro);
+    enviarAvance();
+  }
+  function enviarAvance() {
+    if (!J || !unido) return;
+    var p = puntos(), l = nLecciones();
+    if (J.ultimoEnvio === p * 10 + l) return;
+    J.ultimoEnvio = p * 10 + l;
+    WS.api("/carrera/paso", { body: { dist: BASE_DIST + p, golpes: l } }).catch(function () {});
+  }
+  setInterval(function () { if (J && J.vivo) enviarAvance(); }, 2000);
+
+  function terminar() {
+    J.vivo = false;
+    J.bolas.forEach(function (b) { if (b.ok !== false) { if (b.tipo === "personal") J.apartados++; else if (b.tipo !== "repetida") J.filas++; } });
+    J.bolas = [];
+    var p = puntos(), l = nLecciones();
+    resultado = { puntos: p, filas: J.filas, prot: J.prot, lec: l, aprendidas: J.aprendidas, apartados: J.apartados };
+    var mejor = WS.leer("mejor-telarana", 0);
+    if (p > mejor) WS.guardar("mejor-telarana", p);
+    resultado.mejor = Math.max(p, mejor); resultado.record = p > mejor && mejor > 0;
+    WS.guardar("resultado-telarana", { puntos: p, filas: J.filas, prot: J.prot, lec: l });
+    if (unido) {
+      J.ultimoEnvio = -1; enviarAvance();
+      setTimeout(function () { WS.api("/carrera/fin", { body: { ms: Math.round(J.dur) } }).catch(function () {}).then(consultar); }, 400);
+    }
+    pintarFinal();
+  }
+
+  function pintarFinal() {
+    mostrar("final");
+    var r = resultado;
+    $("r-puntos").textContent = r.puntos;
+    var d = $("r-datos"); d.textContent = "";
+    [[r.filas + " filas limpias", "ok"], [r.prot + " datos protegidos", ""], [r.lec + " de 6 lecciones", ""]].forEach(function (x) {
+      var s = document.createElement("span"); s.className = "esc-chip " + x[1]; s.textContent = x[0]; d.appendChild(s);
+    });
+    $("r-mejor").textContent = r.record ? "¡Nuevo récord personal! Tu mejor marca ahora es " + r.mejor + "." : "Tu mejor marca: " + r.mejor + " puntos." + (practica ? " (Ronda de práctica.)" : "");
+    var c = $("r-lecs"); c.textContent = "";
+    LECC.forEach(function (l) {
+      var div = document.createElement("div"); div.className = "j-lec" + (r.aprendidas[l.id] ? " si" : "");
+      div.innerHTML = "<b></b><span></span>"; div.firstChild.textContent = l.t; div.lastChild.textContent = l.d; c.appendChild(div);
+    });
+    pintarTablero();
+    if (foto) foto.generar();
+  }
+  function pintarTablero() {
+    var lista = sala.corredores.slice().sort(function (a, b) { return pts(b) - pts(a) || (b.golpes - a.golpes); });
+    var total = 0; lista.forEach(function (c) { total += pts(c); });
+    var meta = Math.max(1, lista.length) * 50;
+    $("r-clase").textContent = lista.length
+      ? "Entre " + lista.length + (lista.length === 1 ? " arañita" : " arañitas") + ": " + total + " de " + meta + " filas para llenar el dataset de la clase." + (total >= meta ? " ¡Lo llenamos!" : "")
+      : "Juega en la sala con el grupo para llenar entre todos el dataset de la clase.";
+    $("r-meta").style.width = Math.min(100, total / meta * 100) + "%";
+    var ol = $("r-tablero"); ol.textContent = "";
+    lista.slice(0, 25).forEach(function (c) {
+      var li = document.createElement("li"); if (c.id === sala.yo) li.className = "yo";
+      li.appendChild(miniAvatar(c.avatar));
+      var n = document.createElement("span"); n.textContent = WS.nombreCorto(c.nombre); li.appendChild(n);
+      var s = document.createElement("small"); s.textContent = pts(c) + " pts · " + (c.golpes || 0) + "/6"; li.appendChild(s);
+      ol.appendChild(li);
+    });
+  }
+
+  /* ---------- Botones ---------- */
+  $("unir").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    WS.api("/carrera/unir", { body: { avatar: WS.avatar() } }).then(function () { unido = true; return consultar(); }, function (e) {
+      $("estado-sala").textContent = e.code === "carrera_empezada" ? "Hay una ronda en curso. Practica solo y entras en la siguiente." : "No se pudo entrar: " + e.message;
+    }).then(function () { b.disabled = unido; });
+  });
+  $("practicar").addEventListener("click", function () { arrancar(Math.floor(Math.random() * 1e6) + 1, DUR, true); });
+  $("otra").addEventListener("click", function () {
+    if (!unido) { mostrar("lobby"); return; }
+    arrancar(Math.floor(Math.random() * 1e6) + 1, DUR, true);
+  });
+  $("iniciar").addEventListener("click", function () { WS.api("/carrera/iniciar", { method: "POST", body: {} }).then(consultar).catch(function (e) { WS.aviso("No se pudo empezar: " + e.message); }); });
+  $("reiniciar").addEventListener("click", function () { WS.api("/carrera/reiniciar", { method: "POST", body: {} }).then(function () { rondaJugada = -1; return consultar(); }).catch(function (e) { WS.aviso("No se pudo vaciar: " + e.message); }); });
+
+  /* ---------- Fotito y reflexión ---------- */
+  var foto = WS.montarFotito($("fotito"), {
+    etiqueta: "Telaraña cortés",
+    archivo: "telarana-cortes",
+    resultado: function () {
+      var r = resultado || WS.leer("resultado-telarana", null);
+      return r ? r.puntos + " puntos · " + r.filas + " filas limpias · " + r.prot + " datos protegidos · " + r.lec + "/6 lecciones" : "Telaraña cortés: jugué y aprendí";
+    },
+  });
+  document.addEventListener("ws-muro", function (e) { if (e.target.closest('[data-muro="12-telarana-cortes"]')) { foto.reflexion(e.detail); foto.generar(); } });
+
+  colores();
+  WS.cada(2500, function () { if (!(J && J.vivo)) consultar(); });
+  setInterval(function () { if (J && J.vivo && !document.hidden) consultar(); }, 5000);
+
+  // Para pruebas automáticas (no cambia el juego): posiciones de las páginas y bolitas.
+  window.__telarana = {
+    estado: function () { return J && { vivo: J.vivo, leyo: J.leyo, filas: J.filas, prot: J.prot, vaso: J.vaso, hilo: !!J.hilo, espera: J.espera > performance.now(), nodos: J.nodos.map(function (n) { return { id: n.id, tipo: n.tipo, x: n.x, y: n.y, fin: n.fin, visible: visible(n), bloqueada: bloqueada(n) }; }), bolas: J.bolas.filter(function (b) { return b.tipo === "personal" && b.ok !== false; }).map(function (b) { return { x: b.x, y: b.y }; }) }; },
+    sala: function () { return sala; }, unido: function () { return unido; },
+  };
+})();
+</script>
+</body>
+</html>

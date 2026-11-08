@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tampermonkey: extrae mientras navegas</title>
+<!-- Escena LIVE ws-01 · E07. El script de Tampermonkey se probó en quotes.toscrape.com: 3 páginas = 30 frases, recargar no duplica,
+     CSV con BOM (Excel lee las tildes) y JSON. El plan B es el mismo extractor pegado en la consola (F12). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.t-script { max-height: 40vh; }
+@media (max-width: 860px) { .t-script { max-height: 52vh; } }
+.t-url { display: inline-flex; }
+</style>
+</head>
+<body data-escena="07-tampermonkey">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168"/><g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="eg" cx="1384" cy="168" r="4"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Scraping ético · E07</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Tampermonkey: <em>extrae mientras navegas</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Un script que vive en tu navegador: lee la página que ya estás viendo, con tu sesión y a tu ritmo. Un clic, una página.</p>
+    </div>
+    <p class="w-ahora a-in" style="--d:.15s"><b>Ahora tú</b><span>Sigue los cinco pasos y marca cada uno al terminarlo. Si no puedes instalar extensiones, usa la pestaña <b>Sin instalar nada</b>.</span></p>
+    <div class="w-g2" data-tabs-raiz>
+      <section class="esc-card a-in" style="--d:.2s">
+        <div class="w-tabs" data-tabs role="tablist" aria-label="Cómo lo haces">
+          <button class="w-tab" data-tab="tm">Con Tampermonkey</button>
+          <button class="w-tab" data-tab="consola">Sin instalar nada</button>
+        </div>
+        <div data-panel="tm" style="margin-top:.8em">
+          <ol class="w-pasos">
+            <li><div><span><b>Instala Tampermonkey</b> en Chrome o Firefox desde su página oficial.</span><pre class="esc-cmd">https://www.tampermonkey.net/</pre>
+              <span class="w-peq w-muted">Si Chrome te pide permitir scripts de usuario, entra a <span class="w-c">chrome://extensions</span>, abre «Detalles» de Tampermonkey y actívalo (o activa el modo de desarrollador).</span></div></li>
+            <li><div><span>Ícono de Tampermonkey → <b>Crear un nuevo script</b>. Borra lo que trae, pega el script del recuadro «El script» y guarda con <span class="w-c">Ctrl+S</span> (<span class="w-c">Cmd+S</span> en Mac).</span></div></li>
+            <li><div><span>Abre el sitio de práctica. Abajo a la derecha aparece tu cajita con el conteo.</span><pre class="esc-cmd">https://quotes.toscrape.com/</pre></div></li>
+            <li><div><span>Pasa a la página 2 y 3 con <b>Next →</b>. El conteo sube de 10 en 10. Recarga una página: no se repite nada.</span></div></li>
+            <li><div><span>Pulsa <b>CSV</b> y <b>JSON</b>: se descargan <span class="w-c">frases.csv</span> y <span class="w-c">frases.json</span>. Ábrelos.</span></div></li>
+          </ol>
+        </div>
+        <div data-panel="consola" style="margin-top:.8em" hidden>
+          <ol class="w-pasos">
+            <li><div><span>Abre <span class="w-c">https://quotes.toscrape.com/</span> y pulsa <span class="w-c">F12</span> → pestaña <b>Console</b> (Consola).</span></div></li>
+            <li><div><span>Pega esto y pulsa Enter. Si Chrome te pide escribir <span class="w-c">allow pasting</span>, escríbelo y vuelve a pegar.</span><pre class="esc-cmd">const filas = [...document.querySelectorAll('.quote')].map((q) =&gt; ({
+  frase: q.querySelector('.text').textContent.replace(/[“”]/g, '').trim(),
+  autor: q.querySelector('.author').textContent.trim(),
+  etiquetas: [...q.querySelectorAll('.tag')].map((t) =&gt; t.textContent).join(';'),
+}));
+console.table(filas);
+copy(JSON.stringify(filas, null, 2)); // la lista queda en tu portapapeles</pre></div></li>
+            <li><div><span>Ves una tabla con 10 frases y la lista queda en tu portapapeles como JSON. Pégala en un archivo <span class="w-c">frases.json</span>.</span></div></li>
+            <li><div><span>Pasa a la página 2 y repite. Fíjate: aquí tú llevas la cuenta de lo repetido; el script de Tampermonkey lo hacía solo.</span></div></li>
+          </ol>
+        </div>
+      </section>
+      <section class="esc-card a-in" style="--d:.3s">
+        <span class="w-et">El script (cópialo completo)</span>
+        <pre class="esc-cmd t-script">// ==UserScript==
+// @name         Frases con permiso · JMD
+// @namespace    jmd-learning
+// @version      1.0
+// @description  Junta las frases de quotes.toscrape.com mientras navegas y las exporta a CSV y JSON
+// @match        https://quotes.toscrape.com/*
+// @grant        none
+// ==/UserScript==
+(function () {
+  'use strict';
+  const CLAVE = 'jmd-frases';
+  const limpiar = (t) =&gt; t.replace(/\s+/g, ' ').replace(/^[“"]|[”"]$/g, '').trim();
+  const guardadas = JSON.parse(localStorage.getItem(CLAVE) || '[]');
+  const vistas = new Set(guardadas.map((f) =&gt; f.frase + '|' + f.autor));
+  let nuevas = 0;
+  document.querySelectorAll('.quote').forEach((q) =&gt; {
+    const fila = {
+      frase: limpiar(q.querySelector('.text').textContent),
+      autor: limpiar(q.querySelector('.author').textContent),
+      etiquetas: [...q.querySelectorAll('.tag')].map((t) =&gt; t.textContent.trim()).join(';'),
+      pagina: location.pathname,
+    };
+    const clave = fila.frase + '|' + fila.autor;
+    if (!vistas.has(clave)) { vistas.add(clave); guardadas.push(fila); nuevas++; }
+  });
+  localStorage.setItem(CLAVE, JSON.stringify(guardadas));
+
+  // Cajita abajo a la derecha: conteo y botones para exportar
+  const caja = document.createElement('div');
+  caja.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:9999;background:#14122b;color:#fff;' +
+    'padding:10px 12px;border-radius:12px;font:14px system-ui;display:flex;gap:6px;align-items:center';
+  const texto = document.createElement('span');
+  texto.textContent = guardadas.length + ' frases (+' + nuevas + ' aquí)';
+  caja.append(texto);
+  const boton = (nombre, accion) =&gt; {
+    const b = document.createElement('button');
+    b.textContent = nombre; b.onclick = accion; caja.append(b);
+  };
+  const bajar = (archivo, tipo, contenido) =&gt; {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([contenido], { type: tipo }));
+    a.download = archivo; a.click();
+  };
+  const csv = () =&gt; {
+    const cols = ['frase', 'autor', 'etiquetas', 'pagina'];
+    const celda = (v) =&gt; '"' + String(v).replace(/"/g, '""') + '"';
+    return '\ufeff' + [cols.join(','), ...guardadas.map((f) =&gt; cols.map((c) =&gt; celda(f[c])).join(','))].join('\r\n');
+  };
+  boton('CSV', () =&gt; bajar('frases.csv', 'text/csv;charset=utf-8', csv()));
+  boton('JSON', () =&gt; bajar('frases.json', 'application/json', JSON.stringify(guardadas, null, 2)));
+  boton('Borrar', () =&gt; { localStorage.removeItem(CLAVE); location.reload(); });
+  document.body.append(caja);
+})();</pre>
+        <span class="w-et" style="margin-top:.8em">Tu avance</span>
+        <div class="w-check" data-check="07-tampermonkey">
+          <button class="w-chk"><span>Tampermonkey instalado (o la consola abierta)</span></button>
+          <button class="w-chk"><span>Script pegado y guardado</span></button>
+          <button class="w-chk"><span>La cajita aparece en quotes.toscrape.com</span></button>
+          <button class="w-chk"><span>3 páginas: 30 frases y ninguna repetida</span></button>
+          <button class="w-chk"><span>frases.csv y frases.json descargados y abiertos</span></button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Material: Tampermonkey · extensión para scripts en el navegador.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

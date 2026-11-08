@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · El pedido que no arrastra todo</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<style id="esc-propio">
+.p6 { display: grid; grid-template-columns: .95fr 1.05fr; gap: 2vw; align-items: start; }
+.p6-reglas { list-style: none; margin: 0; padding: 0; display: grid; gap: .5em; counter-reset: r; }
+.p6-reglas li { counter-increment: r; display: grid; grid-template-columns: 1.7em 1fr; gap: .1em .6em; align-items: start; }
+.p6-reglas li::before { content: counter(r); grid-row: span 2; width: 1.55em; height: 1.55em; border-radius: 50%; display: grid; place-items: center; font: 800 .74em var(--mono); color: #14122b; background: var(--gold); }
+.p6-reglas h3 { margin: 0; font-size: .8em; }
+.p6-reglas .esc-cmd { font-size: .62em; padding: .45em .8em; }
+.p6-reglas p { margin: 0; font-size: .64em; color: var(--muted); }
+.p6-der { display: grid; gap: 1em; }
+.p6-plant .esc-cmd { font-size: .64em; }
+@media (max-width: 860px) { .p6 { grid-template-columns: 1fr; } .p6-reglas h3 { font-size: 1em; } .p6-reglas p { font-size: .85em; } .p6-reglas .esc-cmd, .p6-plant .esc-cmd { font-size: .78em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1330 70 L1270 190 L1330 190 L1250 330"/>
+  <g><circle class="eo" cx="1330" cy="70" r="5"/><circle class="e" cx="1270" cy="190" r="4"/><circle class="eg" cx="1330" cy="190" r="4"/><circle class="eo" cx="1250" cy="330" r="5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">PT-01 · 06 / 10</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">El pedido que <em>no arrastra todo</em></h1>
+      <p class="esc-sub a-in" style="--d:.12s">RTK recorta lo que el agente lee. Tú decides qué le pides leer.</p>
+    </div>
+    <div class="p6">
+      <div class="p6-der">
+        <div class="esc-card a-in" style="--d:.2s">
+          <div id="voto"></div>
+          <button type="button" class="pt-btn sec" id="ver" style="margin-top:.5em">Ver la respuesta</button>
+          <p class="pt-nota" id="por" hidden style="margin-top:.4em"><b>C:</b> nombra archivo y función, trae solo las líneas del error y dice cómo comprobar. A y B mandan al agente a leer el proyecto entero: miles de tokens antes de empezar.</p>
+        </div>
+        <div class="esc-card p6-plant a-in" style="--d:.3s">
+          <span class="pt-et">Plantilla del pedido corto · cópiala</span>
+<pre class="esc-cmd">En &lt;archivo&gt;, la función &lt;nombre&gt; &lt;qué pasa&gt; cuando &lt;condición&gt;.
+Error (solo estas líneas):
+&lt;pega aquí de 5 a 15 líneas&gt;
+Cambia solo esa función. Después corre: &lt;comando de prueba&gt;.</pre>
+        </div>
+      </div>
+      <div class="esc-card a-in" style="--d:.25s">
+        <span class="pt-et">Cinco reglas</span>
+        <ol class="p6-reglas">
+          <li><h3>Nombra archivo y función</h3><p>El agente no tiene que buscar: va directo.</p></li>
+          <li><h3>Ubica antes de leer</h3><pre class="esc-cmd"><span class="p">$ </span>rg -n "Login(" src/</pre></li>
+          <li><h3>Lee el fragmento, no el archivo</h3><pre class="esc-cmd"><span class="p">$ </span>rtk read -m 40 src/auth/login.go</pre></li>
+          <li><h3>Pega solo el error</h3><pre class="esc-cmd"><span class="p">$ </span>rtk err go test ./src/auth/</pre></li>
+          <li><h3>Una tarea por sesión, y nunca secretos</h3><p><code>/clear</code> al cambiar de tema y <code>/context</code> para ver cuánto llevas (Claude Code). Un <code>.env</code> no entra al contexto.</p></li>
+        </ol>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Ahora lo ponemos a prueba: instalamos RTK y jugamos</span>
+  </footer>
+</div>
+
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/pt.js"></script>
+<script>
+(function () {
+  var v = PT.votos(document.getElementById("voto"), "06-el-pedido", "¿Cuál pedido gasta menos y resuelve?", [
+    { id: "a", t: "A · «Revisa todo el proyecto y arregla el login.»" },
+    { id: "b", t: "B · «Lee la carpeta src/ entera y después te digo qué falla.»" },
+    { id: "c", t: "C · «En src/auth/login.go, Login devuelve 500 si el correo trae mayúsculas. Error: (12 líneas). Corrige solo esa función y corre go test ./src/auth/.»" }
+  ], { correcta: "c" });
+  document.getElementById("ver").addEventListener("click", function () { v.revelar(); document.getElementById("por").hidden = false; this.hidden = true; });
+})();
+</script>
+</body>
+</html>

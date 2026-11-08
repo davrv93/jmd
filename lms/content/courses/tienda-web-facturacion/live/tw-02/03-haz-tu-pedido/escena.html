@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Haz un pedido como cliente</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
+  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<style id="esc-propio">
+.td-top { display: flex; align-items: center; justify-content: space-between; padding: .7em .9em; border-bottom: 1px solid rgba(0,0,0,.08); }
+.td-paso { font: 700 .75em var(--mono); background: #16151d; color: #fff; border-radius: 999px; padding: .2em .7em; }
+.td-cuerpo { overflow: auto; padding: .8em; display: grid; gap: .6em; align-content: start; }
+.td-pie { padding: .6em .8em .8em; border-top: 1px solid rgba(0,0,0,.08); }
+.td-linea { display: flex; justify-content: space-between; gap: .5em; font-size: .92em; }
+.td-total { font-weight: 900; font-size: 1.1em; }
+.td-grande { width: 100%; border: 0; background: #d63a22; color: #fff; border-radius: .8em; padding: .75em; font: 800 1em system-ui, sans-serif; cursor: pointer; }
+.td-grande:disabled { opacity: .45; cursor: default; }
+.td-in { width: 100%; font: 500 .95em system-ui, sans-serif; padding: .55em .7em; border-radius: .6em; border: 1px solid rgba(0,0,0,.2); background: #fff; color: #16151d; }
+.td-et { font-size: .78em; font-weight: 700; opacity: .75; }
+.td-opc { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; }
+.td-opc button { border: 2px solid rgba(0,0,0,.15); background: transparent; color: inherit; border-radius: .7em; padding: .6em; font: 700 .9em system-ui, sans-serif; cursor: pointer; }
+.td-opc button[aria-pressed="true"] { border-color: #d63a22; background: rgba(214,58,34,.08); }
+.td-dato { display: grid; grid-template-columns: 1fr auto; gap: .4em; align-items: center; background: rgba(0,0,0,.04); border-radius: .6em; padding: .45em .6em; font-size: .88em; }
+.td-dato small { display: block; opacity: .65; font-size: .8em; }
+.td-cp { border: 1px solid rgba(0,0,0,.2); background: transparent; color: inherit; border-radius: 999px; padding: .25em .7em; font: 700 .78em system-ui; cursor: pointer; }
+.td-voucher { border: 2px dashed rgba(0,0,0,.25); border-radius: .8em; padding: .8em; text-align: center; cursor: pointer; background: transparent; color: inherit; font: 600 .92em system-ui, sans-serif; width: 100%; }
+.td-voucher.ok { border-style: solid; border-color: #136a33; background: rgba(19,106,51,.08); }
+.td-orden { text-align: center; display: grid; gap: .3em; }
+.td-orden b { font: 900 1.9em var(--mono); color: #d63a22; }
+.td-estados { list-style: none; margin: 0; padding: 0; display: grid; gap: .3em; font-size: .88em; }
+.td-estados li { display: flex; gap: .5em; align-items: center; opacity: .45; }
+.td-estados li::before { content: ""; width: .8em; height: .8em; border-radius: 50%; border: 2px solid currentColor; }
+.td-estados li.ya { opacity: 1; font-weight: 700; }
+.td-estados li.ya::before { background: #e0a400; border-color: #e0a400; }
+:root[data-tema="dark"] .td-in { background: #2b2836; color: #f1eff8; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) .td-in { background: #2b2836; color: #f1eff8; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia concreta</span>
+    <span class="esc-num">Sesión 2 · E03</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-cols">
+      <div class="tw-pila">
+        <h1 class="esc-titulo a-in" style="font-size:1.7em">Haz un pedido <em>como cliente</em></h1>
+        <p class="esc-sub a-in" style="--d:.1s;font-size:.95em">Vuelve a Bodega Doña Rosa (es de ejemplo) y termina la compra. No pagas nada: el voucher también es de mentira.</p>
+        <div class="tw-card a-in" style="--d:.2s">
+          <h2>Tu recorrido <span class="esc-chip" id="cuenta">0 de 5</span></h2>
+          <ul class="tw-check auto" id="check">
+            <li data-id="bolsa">Revisa tu bolsa y toca «Finalizar pedido»</li>
+            <li data-id="datos">Deja tu nombre y tu celular</li>
+            <li data-id="pago">Elige Yape o transferencia y copia los datos</li>
+            <li data-id="voucher">Adjunta el voucher</li>
+            <li data-id="orden">Envía y guarda tu número de pedido</li>
+          </ul>
+          <p class="tw-nota" style="margin-top:.5em">Fíjate: en ningún momento tuviste que escribirle a la tienda.</p>
+        </div>
+      </div>
+      <div class="tw-cel a-in" style="--d:.15s">
+        <div class="tw-cel-pant">
+          <div class="td-top"><b>🏪 Bodega Doña Rosa</b><span class="td-paso" id="paso">Bolsa</span></div>
+          <div class="td-cuerpo" id="cuerpo"></div>
+          <div class="td-pie" id="pie"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Cuando tengas tu número de pedido, pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$;
+  var BOLSA = [["🍚", "Arroz extra · Bolsa 5 kg", 2, 21.5], ["☕", "Café molido · Bolsa 250 g", 1, 14.9], ["🥚", "Huevos rosados · 15 unidades", 1, 9.5]];
+  var TOTAL = BOLSA.reduce(function (a, b) { return a + b[2] * b[3]; }, 0);
+  var st = TW.leer("pedido", { paso: "bolsa", nombre: "", cel: "", pago: "", voucher: false, num: "" });
+  var chk = TW.checklist($("#check"), "pedido", function (n, t) {
+    $("#cuenta").textContent = n + " de " + t; $("#cuenta").className = "esc-chip" + (n === t ? " ok" : "");
+  });
+  var el = TW.el;
+  function guardar() { TW.guardar("pedido", st); }
+  function boton(txt, fn, dis) { var b = el("button", "td-grande", txt); b.type = "button"; b.disabled = !!dis; b.addEventListener("click", fn); $("#pie").textContent = ""; $("#pie").appendChild(b); return b; }
+  function dato(etq, val) {
+    var d = el("div", "td-dato"), t = el("div"); t.appendChild(el("small", "", etq)); t.appendChild(el("b", "", val)); d.appendChild(t);
+    var c = el("button", "td-cp", "Copiar"); c.type = "button"; TW.botonCopiar(c, function () { return val.replace(/\s/g, ""); });
+    c.addEventListener("click", function () { chk.marcar("pago"); });
+    d.appendChild(c); return d;
+  }
+  function pintar() {
+    var c = $("#cuerpo"); c.textContent = "";
+    var NOMBRES = { bolsa: "Bolsa", datos: "Tus datos", pago: "Pago", voucher: "Voucher", orden: "Listo" };
+    $("#paso").textContent = NOMBRES[st.paso];
+    if (st.paso === "bolsa") {
+      c.appendChild(el("b", "", "Tu bolsa"));
+      BOLSA.forEach(function (p) { var l = el("div", "td-linea"); l.appendChild(el("span", "", p[0] + " " + p[2] + " × " + p[1])); l.appendChild(el("b", "", TW.soles(p[2] * p[3]))); c.appendChild(l); });
+      var t = el("div", "td-linea td-total"); t.appendChild(el("span", "", "Total")); t.appendChild(el("span", "", TW.soles(TOTAL))); c.appendChild(t);
+      boton("Finalizar pedido", function () { chk.marcar("bolsa"); st.paso = "datos"; guardar(); pintar(); });
+    } else if (st.paso === "datos") {
+      c.appendChild(el("b", "", "¿A nombre de quién?"));
+      c.appendChild(el("span", "td-et", "Nombre y apellidos"));
+      var n = el("input", "td-in"); n.value = st.nombre; n.placeholder = "Ej.: Rosa Quispe"; n.maxLength = 40; n.setAttribute("aria-label", "Nombre y apellidos"); c.appendChild(n);
+      c.appendChild(el("span", "td-et", "Celular"));
+      var k = el("input", "td-in"); k.value = st.cel; k.placeholder = "9 dígitos"; k.inputMode = "numeric"; k.maxLength = 11; k.setAttribute("aria-label", "Celular"); c.appendChild(k);
+      c.appendChild(el("span", "td-et", "Usa datos inventados si prefieres: es una tienda de ejemplo."));
+      var b = boton("Continuar", function () { st.nombre = n.value.trim(); st.cel = k.value.trim(); chk.marcar("datos"); st.paso = "pago"; guardar(); pintar(); }, true);
+      function val() { b.disabled = !(n.value.trim().length >= 3 && /^9\d{8}$/.test(k.value.replace(/\s/g, ""))); }
+      n.addEventListener("input", val); k.addEventListener("input", val); val();
+    } else if (st.paso === "pago") {
+      c.appendChild(el("b", "", "¿Cómo pagas? Total " + TW.soles(TOTAL)));
+      var o = el("div", "td-opc");
+      ["Yape", "Transferencia"].forEach(function (x) { var b = el("button", "", x); b.type = "button"; b.setAttribute("aria-pressed", st.pago === x ? "true" : "false"); b.addEventListener("click", function () { st.pago = x; guardar(); pintar(); }); o.appendChild(b); });
+      c.appendChild(o);
+      if (st.pago === "Yape") { c.appendChild(dato("Yape a nombre de Rosa Díaz (ejemplo)", "999 000 111")); c.appendChild(dato("Monto a pagar", TW.soles(TOTAL))); }
+      if (st.pago === "Transferencia") { c.appendChild(dato("Banco (ejemplo) · Cuenta", "000-0000000-0-00")); c.appendChild(dato("CCI (ejemplo)", "000 000 000000000000 00")); c.appendChild(dato("Titular", "Rosa Díaz")); }
+      if (st.pago) c.appendChild(el("span", "td-et", "Primero pagas en tu app, después adjuntas la captura."));
+      boton("Ya pagué: adjuntar voucher", function () { chk.marcar("pago"); st.paso = "voucher"; guardar(); pintar(); }, !st.pago);
+    } else if (st.paso === "voucher") {
+      c.appendChild(el("b", "", "Adjunta tu voucher"));
+      var v = el("button", "td-voucher" + (st.voucher ? " ok" : ""), st.voucher ? "🧾 captura-pago.jpg · toca para cambiarla" : "📎 Toca para adjuntar la captura del pago"); v.type = "button";
+      v.addEventListener("click", function () { st.voucher = true; chk.marcar("voucher"); guardar(); pintar(); });
+      c.appendChild(v);
+      var r = el("div", "td-dato"); r.innerHTML = "<div><small>Resumen</small><b>" + st.nombre + " · " + st.pago + " · " + TW.soles(TOTAL) + "</b></div>"; c.appendChild(r);
+      boton("Enviar pedido", function () { st.num = "PED-" + String(Math.floor(100 + Math.random() * 900)); chk.marcar("orden"); st.paso = "orden"; guardar(); pintar();
+        TW.evidencia("hallazgo", "pedido de prueba " + st.num + " · " + st.pago); }, !st.voucher);
+    } else {
+      var d = el("div", "td-orden"); d.appendChild(el("span", "", "Tu número de pedido")); d.appendChild(el("b", "", st.num)); d.appendChild(el("span", "td-et", "Guárdalo: con él la tienda encuentra tu pedido."));
+      c.appendChild(d);
+      var e = el("ul", "td-estados");
+      ["Recibido", "Pago por confirmar", "Pagado", "Listo para recoger", "Entregado"].forEach(function (x, i) { var li = el("li", i < 2 ? "ya" : "", x); e.appendChild(li); });
+      c.appendChild(e);
+      c.appendChild(el("span", "td-et", "Ahora le toca a la tienda: revisar el voucher y confirmar el pago."));
+      boton("Hacer otro pedido", function () { st = { paso: "bolsa", nombre: st.nombre, cel: st.cel, pago: "", voucher: false, num: "" }; guardar(); pintar(); });
+    }
+  }
+  pintar();
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

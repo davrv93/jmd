@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Navegador o servidor</title>
+<!-- Escena LIVE ws-01 · E09. Navegador vs servidor, anatomía de un pedido con sesión y tres casos para votar. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.n-tabla { width: 100%; border-collapse: collapse; font-size: .78em; }
+.n-tabla th, .n-tabla td { text-align: left; padding: .45em .5em; border-bottom: 1px solid var(--line2); vertical-align: top; }
+.n-tabla th { font-size: .82em; color: var(--muted); font-weight: 700; }
+.n-tabla td:first-child { font-weight: 700; white-space: nowrap; }
+.n-pedido .k { color: #f4ac5c; } .n-pedido .v { color: #7ee2a0; } .n-pedido .s { color: #ff9bc8; }
+.n-caso { padding: .5em 0; border-bottom: 1px dashed var(--line2); }
+.n-caso p.q { margin: 0 0 .35em; font-size: .82em; font-weight: 700; }
+.n-caso .w-op { font-size: .74em; }
+.n-caso .d { margin: .35em 0 0; font-size: .74em; color: var(--ph-ca); }
+.n-habitos { margin: 0; padding-left: 1.1em; display: grid; gap: .25em; font-size: .8em; }
+</style>
+</head>
+<body data-escena="09-navegador-o-servidor">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Scraping ético · E09</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Navegador o servidor: <em>sesión, cookie y token</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">El mismo trabajo, dos lugares. Elige según cuántas páginas, cada cuánto y con qué sesión.</p>
+    </div>
+    <div class="w-g3">
+      <section class="esc-card a-in" style="--d:.15s">
+        <span class="w-et">¿Dónde corre?</span>
+        <table class="n-tabla">
+          <thead><tr><th></th><th>Navegador</th><th>Servidor</th></tr></thead>
+          <tbody>
+            <tr><td>Sesión</td><td>La tuya, ya iniciada</td><td>Cookie o token en la cabecera</td></tr>
+            <tr><td>Ritmo</td><td>El tuyo: un clic, una página</td><td>Pausas que tú programas</td></tr>
+            <tr><td>Escala</td><td>Decenas de páginas</td><td>Miles, de noche y sin ti</td></tr>
+            <tr><td>Ve</td><td>La página ya dibujada</td><td>El HTML o el JSON que llega</td></tr>
+            <tr><td>Hoy</td><td>Tampermonkey</td><td>Python en la Terminal</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="esc-card a-in" style="--d:.25s">
+        <span class="w-et">Anatomía de un pedido con sesión</span>
+        <pre class="esc-cmd n-pedido" style="max-height:none">GET /api/quotes?page=2 HTTP/1.1
+Host: quotes.toscrape.com
+<span class="k">User-Agent:</span> <span class="v">CursoJMD-scraping-etico/1.0</span>
+<span class="k">Cookie:</span> <span class="s">session=…tu llave…</span>
+<span class="k">Authorization:</span> <span class="s">Bearer …tu token…</span></pre>
+        <p><b>Cookie</b>: la sesión que el sitio te dio al iniciar sesión. <b>Token</b>: una llave que viaja en la cabecera <span class="w-c">Authorization</span>.</p>
+        <p class="w-bad" style="font-weight:700">Las dos son tu llave: van en una variable de entorno. Nunca en el código, en git ni en el chat de la IA.</p>
+      </section>
+      <section class="esc-card a-in" style="--d:.35s">
+        <span class="w-et">Cuatro hábitos del extractor educado</span>
+        <ol class="n-habitos">
+          <li><b>Pausa con azar</b> entre pedidos (1,5 s + un poco).</li>
+          <li><b>Reintenta con espera</b> ante 429 o 5xx: 2, 4, 8 s… o lo que diga <span class="w-c">Retry-After</span>.</li>
+          <li><b>Pon un tope</b> de páginas: hay sitios con páginas infinitas.</li>
+          <li><b>Pagina con lo que da el sitio</b>: el enlace «siguiente», <span class="w-c">?page=N</span> o el <span class="w-c">has_next</span> de su API.</li>
+        </ol>
+      </section>
+    </div>
+    <section class="esc-card a-in" style="--d:.45s">
+      <span class="w-et">¿Navegador o servidor? Vota y mira la respuesta</span>
+      <div class="w-g3" style="gap:.4em 1.2em">
+        <div class="n-caso"><p class="q">Revisar 20 fichas de tu intranet mientras trabajas.</p>
+          <div class="w-voto" data-voto="ws09-caso1"><div class="w-voto-fila"><button class="w-op" data-opcion="navegador"><span>Navegador</span></button><button class="w-op" data-opcion="servidor"><span>Servidor</span></button></div><p class="w-voto-tot"></p>
+          <p class="d" data-tras-votar hidden>Navegador: pocas páginas, con tu sesión y a tu ritmo.</p></div></div>
+        <div class="n-caso"><p class="q">Bajar 5 000 precios públicos cada noche a las 3 a. m.</p>
+          <div class="w-voto" data-voto="ws09-caso2"><div class="w-voto-fila"><button class="w-op" data-opcion="navegador"><span>Navegador</span></button><button class="w-op" data-opcion="servidor"><span>Servidor</span></button></div><p class="w-voto-tot"></p>
+          <p class="d" data-tras-votar hidden>Servidor: muchas páginas, a horario fijo, con pausas y sin tu laptop prendida.</p></div></div>
+        <div class="n-caso"><p class="q">Tus 30 facturas de un portal donde entras con tu usuario.</p>
+          <div class="w-voto" data-voto="ws09-caso3"><div class="w-voto-fila"><button class="w-op" data-opcion="navegador"><span>Navegador</span></button><button class="w-op" data-opcion="servidor"><span>Servidor</span></button></div><p class="w-voto-tot"></p>
+          <p class="d" data-tras-votar hidden>Las dos sirven. Navegador si es una vez; servidor con tu cookie en una variable si es cada mes.</p></div></div>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Siguiente: el extractor en Python con sesión, páginas y pausas.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+</body>
+</html>

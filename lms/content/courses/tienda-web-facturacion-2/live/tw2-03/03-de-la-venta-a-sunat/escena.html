@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · De la venta a SUNAT, paso a paso</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
+  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<style id="esc-propio">
+.vs-tipo { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; margin-bottom: .6em; }
+.vs-tipo button { font: 700 .74em system-ui, sans-serif; padding: .65em; border-radius: .7em; border: 2px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; }
+.vs-tipo button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+.vs-et { display: block; font-size: .64em; font-weight: 700; color: var(--muted); margin-bottom: .25em; }
+.vs-pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: .4em; counter-reset: v; }
+.vs-pasos li { counter-increment: v; display: grid; grid-template-columns: 2em 1fr; column-gap: .6em; padding: .55em .7em; border-radius: .8em; background: var(--s1); border: 1px solid var(--line); opacity: .55; transition: opacity .3s ease-out, border-color .3s ease-out; }
+.vs-pasos li::before { content: counter(v); grid-row: span 2; width: 2em; height: 2em; border-radius: 50%; display: grid; place-items: center; background: var(--s3); font: 800 .8em var(--mono); }
+.vs-pasos li b { font-size: .8em; }
+.vs-pasos li span { font-size: .66em; color: var(--muted); }
+.vs-pasos li.ya { opacity: 1; border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.vs-pasos li.ya::before { background: var(--ok); color: #fff; content: "✓"; }
+.vs-pasos li.ahora { opacity: 1; border-color: var(--accent); }
+.vs-cpe { background: #fff; color: #16151d; border-radius: .6em; padding: .8em 1em; font-size: .72em; display: grid; gap: .3em; box-shadow: var(--card-shadow); border-top: 6px solid #d63a22; position: relative; animation: esc-pop .5s ease-out both; }
+.vs-cpe-cab { display: flex; justify-content: space-between; gap: .5em; flex-wrap: wrap; border-bottom: 1px dashed #bbb; padding-bottom: .3em; }
+.vs-cpe-cab span { font-family: var(--mono); font-weight: 700; }
+.vs-cpe-l { display: flex; justify-content: space-between; gap: .5em; }
+.vs-cpe-l span { color: #555; }
+.vs-cpe-l.tot { font-size: 1.15em; border-top: 1px solid #ddd; padding-top: .3em; }
+.vs-sello { position: absolute; right: .8em; bottom: 2.6em; transform: rotate(-8deg); border: 2px solid #136a33; color: #136a33; font: 800 .8em var(--mono); padding: .15em .5em; border-radius: .3em; text-transform: uppercase; }
+@media (max-width: 860px) { .vs-tipo button { font-size: .9em; } .vs-pasos li b { font-size: .95em; } .vs-pasos li span { font-size: .85em; } .vs-cpe { font-size: .9em; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia concreta</span>
+    <span class="esc-num">Sesión 3 · E03</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-cols">
+      <div class="tw-pila">
+        <h1 class="esc-titulo a-in" style="font-size:1.6em">De la venta a <em>SUNAT</em></h1>
+        <p class="esc-sub a-in" style="--d:.1s;font-size:.9em">Emite un comprobante de práctica. Es una simulación, como el ambiente de pruebas de SUNAT: no se envía nada de verdad.</p>
+        <div class="tw-card a-in" style="--d:.15s">
+          <h2>Venta: 1 × Torta de chocolate · S/ 59.00</h2>
+          <div class="vs-tipo" role="group" aria-label="Tipo de comprobante">
+            <button type="button" data-t="boleta" aria-pressed="true">Boleta · DNI</button>
+            <button type="button" data-t="factura" aria-pressed="false">Factura · RUC</button>
+          </div>
+          <label class="vs-et" for="doc" id="doc-et">DNI del cliente (8 dígitos)</label>
+          <div class="tw-muro-form"><input class="tw-in" id="doc" inputmode="numeric" maxlength="11" placeholder="Ej.: 40123456"><button type="button" class="tw-btn" id="emitir">Emitir</button></div>
+          <p class="tw-nota" id="doc-msg">Usa un número inventado.</p>
+        </div>
+        <p class="tw-clave a-in" style="--d:.2s">Hoy la tienda entrega <b>nota de venta</b>. La boleta y la factura electrónicas funcionan en el <b>ambiente de pruebas</b> de SUNAT: en este curso las practicas ahí, no emites comprobantes reales.</p>
+        <div class="tw-card a-in" style="--d:.25s">
+          <h2>Prueba las dos <span class="esc-chip" id="cuenta">0 de 2</span></h2>
+          <ul class="tw-check auto" id="check"><li data-id="boleta">Emite una boleta con DNI</li><li data-id="factura">Emite una factura con RUC</li></ul>
+        </div>
+      </div>
+      <div class="tw-pila">
+        <ol class="vs-pasos a-in" style="--d:.2s" id="pasos">
+          <li data-p="1"><b>Armas el comprobante</b><span>Tipo, serie y número, cliente, productos, IGV y total.</span></li>
+          <li data-p="2"><b>Se firma digitalmente</b><span>Con el certificado digital de tu negocio.</span></li>
+          <li data-p="3"><b>Se envía a SUNAT</b><span>SUNAT lo recibe y lo valida.</span></li>
+          <li data-p="4"><b>SUNAT responde</b><span>Aceptado, o rechazado con el motivo. El sistema guarda ese estado.</span></li>
+          <li data-p="5"><b>Lo entregas</b><span>En PDF por WhatsApp o impreso. Tu cliente puede comprobarlo en SUNAT.</span></li>
+        </ol>
+        <div class="vs-cpe" id="cpe" hidden>
+          <div class="vs-cpe-cab"><b id="c-tipo">BOLETA DE VENTA ELECTRÓNICA</b><span id="c-num">B001-00000123</span></div>
+          <div class="vs-cpe-l"><span>Cliente</span><b id="c-cli">DNI 40123456</b></div>
+          <div class="vs-cpe-l"><span>1 × Torta de chocolate</span><b>S/ 59.00</b></div>
+          <div class="vs-cpe-l"><span>Valor de venta</span><b>S/ 50.00</b></div>
+          <div class="vs-cpe-l"><span>IGV 18 %</span><b>S/ 9.00</b></div>
+          <div class="vs-cpe-l tot"><span>Total</span><b>S/ 59.00</b></div>
+          <div class="vs-sello" id="c-sello">PRUEBAS · aceptado</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Emite las dos y pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$;
+  var tipo = "boleta", corriendo = false, nB = 123, nF = 45;
+  var chk = TW.checklist($("#check"), "emitir", function (n, t) { $("#cuenta").textContent = n + " de " + t; $("#cuenta").className = "esc-chip" + (n === t ? " ok" : ""); if (n === t) TW.evidencia("hallazgo", "boleta y factura de práctica emitidas"); });
+  $$(".vs-tipo button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      tipo = b.getAttribute("data-t");
+      $$(".vs-tipo button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      $("#doc-et").textContent = tipo === "boleta" ? "DNI del cliente (8 dígitos)" : "RUC del cliente (11 dígitos)";
+      $("#doc").placeholder = tipo === "boleta" ? "Ej.: 40123456" : "Ej.: 20123456789";
+      $("#doc-msg").textContent = "Usa un número inventado.";
+    });
+  });
+  function valido(d) { return tipo === "boleta" ? /^\d{8}$/.test(d) : /^(10|15|17|20)\d{9}$/.test(d); }
+  $("#emitir").addEventListener("click", function () {
+    if (corriendo) return;
+    var d = $("#doc").value.replace(/\s/g, "");
+    if (!valido(d)) {
+      $("#doc-msg").innerHTML = tipo === "boleta" ? "El DNI tiene <b>8 dígitos</b>." : "El RUC tiene <b>11 dígitos</b> (empieza con 10 si es persona con negocio o con 20 si es empresa). <b>Sin RUC no hay factura.</b>";
+      return;
+    }
+    corriendo = true;
+    var pasos = $$("#pasos li"); pasos.forEach(function (li) { li.className = ""; });
+    $("#cpe").hidden = true;
+    var k = 0;
+    (function paso() {
+      if (k > 0) pasos[k - 1].className = "ya";
+      if (k === pasos.length) {
+        var f = tipo === "factura";
+        $("#c-tipo").textContent = f ? "FACTURA ELECTRÓNICA" : "BOLETA DE VENTA ELECTRÓNICA";
+        $("#c-num").textContent = f ? "F001-" + String(++nF).padStart(8, "0") : "B001-" + String(++nB).padStart(8, "0");
+        $("#c-cli").textContent = (f ? "RUC " : "DNI ") + d;
+        $("#cpe").hidden = false;
+        $("#doc-msg").innerHTML = "<b>Listo.</b> " + (f ? "La serie de la factura empieza con F." : "La serie de la boleta empieza con B.") + " Fíjate en el IGV: va dentro del total.";
+        chk.marcar(tipo); corriendo = false; return;
+      }
+      pasos[k].className = "ahora"; k++;
+      setTimeout(paso, 650);
+    })();
+  });
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>

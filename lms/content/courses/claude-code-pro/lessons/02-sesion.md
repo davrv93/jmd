@@ -13,6 +13,12 @@ objectives:
 recording:
   url: ""
   passcode: ""
+materials:
+  - id: ccp-02-video
+    title: "Video: el agente que no pierde el hilo"
+    kind: file
+    file: materials/video-ccp-02.mp4
+    objective_ids: [ccp-02-o1, ccp-02-o2]
 cycle:
   - id: ver
     title: Ver la clase
@@ -20,12 +26,36 @@ cycle:
     phase: experiencia
     description: Asiste en vivo el sábado de 7:30 a 9:30 p.m. (hora de Lima) o mira la grabación.
     check: Has visto la clase completa (o la grabación)
+  - id: medir
+    title: Medir la línea base
+    tool: terminal
+    phase: experiencia
+    description: "En una sesión nueva de Claude Code, pide «¿qué hace este proyecto, en qué quedamos y cuál es el siguiente paso?» y publica el total de /context en la escena 3."
+    check: Tu número «antes» quedó publicado en la escena 3
   - id: preguntar
     title: Preguntar o responder
     tool: lms
     phase: reflexion
     description: Publica una pregunta sobre la sesión en el hilo o responde la de un compañero.
     check: Tu pregunta aparece en el hilo de la sesión
+  - id: plan
+    title: Escribir el PLAN.md recursivo
+    tool: terminal
+    phase: conceptualizacion
+    description: "En modo plan, pide un PLAN.md que divida cada tarea hasta la hoja (1 cosa, 1 sesión, 1 prueba) y publica cuántas hojas tiene en la escena 8."
+    check: Tu PLAN.md tiene hojas con criterio de parada y quedó publicado
+  - id: cerebro
+    title: Encender el cerebro del proyecto
+    tool: terminal
+    phase: conceptualizacion
+    description: "CLAUDE.md de 40 líneas o menos, el grafo con graphify update . y tus 3 decisiones en Cortex (o en una sección «Decisiones» de CLAUDE.md)."
+    check: graphify query responde y tu CLAUDE.md quedó publicado en la escena 9
+  - id: construir
+    title: Construir el backend hoja por hoja
+    tool: terminal
+    phase: experimentacion
+    description: "Una hoja por vuelta: prueba, código mínimo, verde y [x] en PLAN.md. Publica cuántas métricas tienen prueba verde en la escena 10."
+    check: Al menos la ingesta y una métrica con prueba verde
   - id: entregar
     title: Entregar el entregable 2
     tool: git

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Cuadra tu día y cierra la caja</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
+  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<style id="esc-propio">
+.cd { width: 100%; border-collapse: collapse; font-size: .7em; min-width: 26em; }
+.cd th, .cd td { text-align: left; padding: .4em .5em; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.cd th { font-size: .82em; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.cd td:first-child { font-family: var(--mono); font-weight: 700; }
+.cd .n { text-align: right; font-family: var(--mono); font-weight: 700; }
+.cd tr.nc td { color: var(--bad); white-space: normal; }
+.cq { display: grid; gap: .5em; }
+.cq-p { display: grid; grid-template-columns: 1fr 7.5em; gap: .3em .6em; align-items: center; }
+.cq-p label { font-size: .72em; font-weight: 650; }
+.cq-p .tw-in { text-align: right; font-family: var(--mono); }
+.cq-p .tw-in.si { border-color: var(--ok); background: var(--ok-bg); }
+.cq-p .tw-in.no { border-color: var(--warn); background: var(--warn-bg); }
+.cq-p .ay { grid-column: 1 / -1; font-size: .62em; color: var(--muted); margin: 0; }
+.cq-p .ay b { color: var(--fg); }
+@media (max-width: 860px) { .cq-p { grid-template-columns: 1fr 6.5em; } .cq-p label { font-size: .9em; } .cq-p .ay { font-size: .8em; } .cd { font-size: .82em; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación activa</span>
+    <span class="esc-num">Sesión 3 · E07</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-cols">
+      <div class="tw-pila">
+        <h1 class="esc-titulo a-in" style="font-size:1.6em">Cuadra tu día y <em>cierra la caja</em></h1>
+        <p class="esc-sub a-in" style="--d:.1s;font-size:.88em">Así se ven los comprobantes de un día en Bodega Doña Rosa (de ejemplo, con boletas y facturas como si ya estuvieran activas). Haz las cuentas a mano una vez: así entiendes cualquier reporte de ventas.</p>
+        <div class="tw-card a-in" style="--d:.15s;overflow-x:auto">
+          <table class="cd">
+            <thead><tr><th>Comprobante</th><th>Cliente</th><th>Pago</th><th class="n">Total</th></tr></thead>
+            <tbody>
+              <tr><td>B001-00000101</td><td>DNI</td><td>Yape</td><td class="n">45.00</td></tr>
+              <tr><td>B001-00000102</td><td>DNI</td><td>Efectivo</td><td class="n">12.50</td></tr>
+              <tr><td>F001-00000031</td><td>RUC</td><td>Transferencia</td><td class="n">236.00</td></tr>
+              <tr><td>B001-00000103</td><td>DNI</td><td>Yape</td><td class="n">30.00</td></tr>
+              <tr><td>B001-00000104</td><td>DNI</td><td>Efectivo</td><td class="n">59.00</td></tr>
+              <tr><td>F001-00000032</td><td>RUC</td><td>Transferencia</td><td class="n">118.00</td></tr>
+              <tr class="nc"><td>Nota de crédito de la B001-00000101</td><td>DNI</td><td>Devolución en efectivo</td><td class="n">−20.50</td></tr>
+            </tbody>
+          </table>
+          <p class="tw-nota" style="margin-top:.4em">Todos los productos llevan IGV (18 %). La caja empezó el día con S/ 100.00 de sencillo.</p>
+        </div>
+      </div>
+      <div class="tw-pila">
+        <div class="tw-card a-in" style="--d:.2s">
+          <h2>Tus cuentas y tu cierre de caja <span class="esc-chip" id="bien">0 de 6</span></h2>
+          <div class="cq" id="preg"></div>
+          <div class="tw-btns" style="margin-top:.6em"><button type="button" class="tw-btn" id="revisar">Revisar mis respuestas</button></div>
+          <p class="tw-nota" id="cq-msg">Escribe solo números. Usa punto para los decimales; si falta dinero, la diferencia va con signo menos.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Con 5 de 6 bien, pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$;
+  var P = [
+    ["neto", "1. Total vendido en el día (ventas menos la nota de crédito), en S/", 480.00, "Suma las seis ventas (500.50) y resta la nota de crédito (20.50)."],
+    ["igv", "2. IGV incluido en ese total, en S/", 73.22, "Valor de venta = 480 ÷ 1.18 = 406.78. IGV = 480 − 406.78."],
+    ["yape", "3. ¿Cuánto entró por Yape?, en S/", 75.00, "Solo las ventas pagadas con Yape: 45.00 + 30.00."],
+    ["caja", "4. ¿Cuánto efectivo debe haber en la caja al cierre?, en S/", 151.00, "Sencillo inicial 100 + efectivo 12.50 + 59.00 − devolución 20.50."],
+    ["fact", "5. ¿Cuántas facturas emitiste?", 2, "Las que empiezan con F: F001-…31 y F001-…32."],
+    ["dif", "6. Al cerrar, cuentas S/ 148.00 en la caja. ¿Cuál es la diferencia (contado − esperado)?, en S/", -3.00, "Contado 148.00 − esperado 151.00 = −3.00: faltan 3 soles. Se anota y se revisa, no se esconde."]
+  ];
+  var resp = TW.leer("cuadre", {}), cont = $("#preg");
+  P.forEach(function (p) {
+    var d = TW.el("div", "cq-p");
+    var l = TW.el("label", "", p[1]); l.setAttribute("for", "q-" + p[0]);
+    var i = TW.el("input", "tw-in"); i.id = "q-" + p[0]; i.inputMode = "decimal"; i.value = resp[p[0]] || ""; i.autocomplete = "off";
+    i.addEventListener("input", function () { resp[p[0]] = i.value; TW.guardar("cuadre", resp); i.classList.remove("si", "no"); });
+    var a = TW.el("p", "ay"); a.id = "a-" + p[0]; a.hidden = true;
+    d.appendChild(l); d.appendChild(i); d.appendChild(a); cont.appendChild(d);
+  });
+  var entregado = false;
+  $("#revisar").addEventListener("click", function () {
+    var n = 0;
+    P.forEach(function (p) {
+      var i = $("#q-" + p[0]), v = parseFloat(String(i.value).replace(",", ".").replace(/[^\d.\-]/g, "")), ok = Math.abs(v - p[2]) <= 0.05;
+      i.classList.toggle("si", ok); i.classList.toggle("no", !ok);
+      var a = $("#a-" + p[0]); a.hidden = ok; a.innerHTML = "<b>Pista:</b> " + p[3];
+      if (ok) n++;
+    });
+    $("#bien").textContent = n + " de 6"; $("#bien").className = "esc-chip" + (n >= 5 ? " ok" : "");
+    if (n >= 5 && !entregado) { entregado = true; TW.evidencia("hallazgo", "cuadre del día: " + n + " de 6").then(function () { $("#cq-msg").innerHTML = "<b>¡Cuadraste el día!</b> Pulsa «Lo logré»."; }); }
+    else if (n < 5) $("#cq-msg").textContent = "Llevas " + n + " de 6. Mira las pistas y vuelve a intentarlo: equivocarse aquí no cuesta nada.";
+  });
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+</body>
+</html>
