@@ -43,6 +43,11 @@ materials:
     kind: zip
     file: materials/skills.zip
     objective_ids: [g8-01-o3]
+  - id: g8-01-video
+    title: "Video: agente, MCP y skills en 40 segundos"
+    kind: file
+    file: materials/video-g8-01.mp4
+    objective_ids: [g8-01-o2, g8-01-o3]
   - id: g8-01-pdf
     title: Clase 1 en PDF (objetivos, ciclo, enlaces, contenido y tarea)
     kind: pdf
@@ -149,10 +154,16 @@ cycle:
     phase: reflexion
     description: En una carpeta vacía, pide a OpenCode «crea un script que imprima la fecha y la hora en español» y mira qué archivos crea y qué comandos ejecuta antes de aceptar.
     check: El script existe y corre
+  - id: conceptos
+    title: Poner nombre a las piezas
+    tool: lms
+    phase: conceptualizacion
+    description: "Juega la Arena de conceptos en el LIVE: atrapa cada concepto de la clase y clasifícalo en su contenedor (agente, herramientas, proveedor y modelo, MCP y skills)."
+    check: Clasificaste conceptos en la Arena y pulsaste «Lo logré»
   - id: skill
     title: Escribir tu primera skill
     tool: opencode
-    phase: conceptualizacion
+    phase: experimentacion
     description: Crea `.opencode/skills/saludo/SKILL.md` con `name` y `description` en el front matter y una instrucción corta. Pídele al agente que la use.
     check: El agente responde usando tu skill
   - id: landing-sin-ia
@@ -181,7 +192,7 @@ Hoy dejas tu máquina lista para trabajar con un agente de programación: instal
 y OpenCode, conectas OpenCode al gateway de la clase y escribes tu primera skill. Al final le pones
 nombre a las piezas: agente, proveedor, modelo, parámetros, contexto, MCP y skills.
 
-Clase en vivo: domingo 25-10-2026, 7:30 a 9:30 pm. Si algo falla, no te quedes atrás: pega el
+Clase en vivo: domingo 08-11-2026, de 7:30 a 9:30 p. m. (hora de Lima). Si algo falla, no te quedes atrás: pega el
 error completo en el hilo de la sesión y sigue con el siguiente paso.
 
 | Bloque | Qué haces | Comprobación |
@@ -189,9 +200,10 @@ error completo en el hilo de la sesión y sigue con el siguiente paso.
 | 1 · VS Code | Instalar y abrir la terminal | `code --version` |
 | 2 · Docker | Instalar y correr un contenedor | `docker run --rm hello-world` |
 | 3 · OpenCode | Instalar y conectar al gateway | `/models` muestra `clase/auto` |
-| 4 · Skill | Escribir `saludo` | El agente responde con tu skill |
-| 5 · Práctica | Pedir un script y revisarlo antes de aceptar | `python3 fecha.py` imprime la fecha |
-| 6 · Conceptos | Poner nombre a las piezas | Las «Palabras de hoy» |
+| 4 · Práctica | Pedir un script y revisarlo antes de aceptar | `python3 fecha.py` imprime la fecha |
+| 5 · Conceptos | Poner nombre a las piezas y jugar la Arena de conceptos | Conceptos clasificados en la Arena |
+| 6 · Skill | Escribir `saludo` | El agente responde con tu skill |
+| 7 · Landing sin IA | Armar el sitio de un cliente sin proveedor | El sitio abre en el Visor |
 
 ## 1. VS Code · Experiencia
 
@@ -250,7 +262,45 @@ OpenCode es el agente: lee y escribe archivos, ejecuta comandos y habla con el m
 
 **Si falla:** `401` → la clave está mal copiada o la variable no existe en esa terminal. `ECONNREFUSED` → la URL está mal: cópiala del hilo.
 
-## 4. Tu primera skill · Conceptos
+## 4. Practica: el agente propone, tú decides · Reflexión
+
+Trabaja siempre en git: si el agente rompe algo, vuelves atrás con un comando. Lee el diff antes de aceptar.
+
+1. Carpeta nueva con git y el agente dentro:
+   ```bash
+   mkdir practica-01 && cd practica-01 && git init
+   opencode
+   ```
+2. Pídele: «Crea un script que imprima la fecha y la hora en español.»
+3. Antes de aceptar, mira qué archivos crea y qué comandos quiere ejecutar. Luego córrelo tú:
+   ```bash
+   python3 fecha.py
+   ```
+4. Publica una pregunta en la pestaña **Preguntas** de esta sesión, o responde la de un compañero.
+
+**Si falla:** el script da error → pégale el error completo al agente; arreglarlo es parte del ejercicio.
+
+## 5. Las piezas, con nombre · Conceptos
+
+| Pieza | Qué es | Analogía |
+|---|---|---|
+| **Agente** | Pone un modelo en un bucle: decide, usa una herramienta, mira el resultado y repite | Un empleado nuevo con las herramientas de la oficina |
+| **Proveedor** | Quien aloja el modelo y lo sirve por una API con clave, cuota y precio | La empresa que te alquila el cerebro |
+| **Modelo** | La red entrenada que recibe texto y devuelve texto; lee y cobra en **tokens** | El cerebro; se cambia sin cambiar de agente |
+| **Parámetros** | Perillas de cada petición: `temperature` (cuánto improvisa), `max_tokens` (cuánto habla) | Las perillas de una radio |
+| **Gateway** | El servidor de la clase: elige el modelo y, si uno falla por cuota, pasa al siguiente | La central telefónica |
+| **Contexto** | Todo lo que el modelo tiene delante en una petición; se gasta en tokens | La mesa de trabajo: lo que no cabe, no se ve |
+| **MCP** | El enchufe estándar para darle al agente herramientas y datos de fuera | El cargador universal |
+
+**Ahorrar contexto.** El agente gasta en lo que lee y en lo que escribe. Tres hábitos: `/init` dentro de OpenCode crea `AGENTS.md` para que no redescubra tu proyecto cada vez; RTK recorta la salida de los comandos (`rtk gain` muestra lo ahorrado); caveman acorta las respuestas. Hoy basta con `/init`; RTK y caveman están en Materiales.
+
+**MCP, en demostración.** Verás al agente listar cursos y entregar una tarea sin abrir el navegador: herramientas que no vienen de serie (`list_courses`, `submit_assignment`). En `opencode.json` van bajo la clave `mcp`; hoy no lo instalas, solo identifica `type`, `command` y `enabled`.
+
+**Arena de conceptos.** En el LIVE, escena **E11**, eres un robot en la arena: atrapas los conceptos de la clase, los clasificas en su contenedor (agente, herramientas, proveedor y modelo, MCP y skills) y, si aciertas, disparas al arco de un compañero.
+
+**Cuando no hay cuota.** El gateway de la clase prueba varios modelos en orden, primero los de pago, luego los gratuitos y, si todos fallan, un modelo pequeño que corre en el propio servidor de la clase. Responde más lento y más corto, pero la clase no se detiene.
+
+## 6. Tu primera skill · Aplicación
 
 Una skill es una carpeta con un `SKILL.md`. El agente lee solo el título de cada una al arrancar y abre la ficha completa cuando tu pedido encaja con la descripción: contexto bajo demanda. Van en `.opencode/skills/<nombre>/` (proyecto) o en `~/.config/opencode/skills/<nombre>/` (usuario).
 
@@ -272,45 +322,9 @@ Una skill es una carpeta con un `SKILL.md`. El agente lee solo el título de cad
 
 **Si falla:** el agente no usa la skill → revisa que `name` coincide con la carpeta y que `description` dice cuándo usarla. Reinicia `opencode`: las skills se leen al arrancar.
 
-## 5. Practica: el agente propone, tú decides · Reflexión
-
-Trabaja siempre en git: si el agente rompe algo, vuelves atrás con un comando. Lee el diff antes de aceptar.
-
-1. Carpeta nueva con git y el agente dentro:
-   ```bash
-   mkdir practica-01 && cd practica-01 && git init
-   opencode
-   ```
-2. Pídele: «Crea un script que imprima la fecha y la hora en español.»
-3. Antes de aceptar, mira qué archivos crea y qué comandos quiere ejecutar. Luego córrelo tú:
-   ```bash
-   python3 fecha.py
-   ```
-4. Publica una pregunta en la pestaña **Preguntas** de esta sesión, o responde la de un compañero.
-
-**Si falla:** el script da error → pégale el error completo al agente; arreglarlo es parte del ejercicio.
-
-## 6. Las piezas, con nombre · Conceptos
-
-| Pieza | Qué es | Analogía |
-|---|---|---|
-| **Agente** | Pone un modelo en un bucle: decide, usa una herramienta, mira el resultado y repite | Un empleado nuevo con las herramientas de la oficina |
-| **Proveedor** | Quien aloja el modelo y lo sirve por una API con clave, cuota y precio | La empresa que te alquila el cerebro |
-| **Modelo** | La red entrenada que recibe texto y devuelve texto; lee y cobra en **tokens** | El cerebro; se cambia sin cambiar de agente |
-| **Parámetros** | Perillas de cada petición: `temperature` (cuánto improvisa), `max_tokens` (cuánto habla) | Las perillas de una radio |
-| **Gateway** | El servidor de la clase: elige el modelo y, si uno falla por cuota, pasa al siguiente | La central telefónica |
-| **Contexto** | Todo lo que el modelo tiene delante en una petición; se gasta en tokens | La mesa de trabajo: lo que no cabe, no se ve |
-| **MCP** | El enchufe estándar para darle al agente herramientas y datos de fuera | El cargador universal |
-
-**Ahorrar contexto.** El agente gasta en lo que lee y en lo que escribe. Tres hábitos: `/init` dentro de OpenCode crea `AGENTS.md` para que no redescubra tu proyecto cada vez; RTK recorta la salida de los comandos (`rtk gain` muestra lo ahorrado); caveman acorta las respuestas. Hoy basta con `/init`; RTK y caveman están en Materiales.
-
-**MCP, en demostración.** Verás al agente listar cursos y entregar una tarea sin abrir el navegador: herramientas que no vienen de serie (`list_courses`, `submit_assignment`). En `opencode.json` van bajo la clave `mcp`; hoy no lo instalas, solo identifica `type`, `command` y `enabled`.
-
-**Cuando no hay cuota.** El gateway de la clase prueba varios modelos en orden, primero los de pago, luego los gratuitos y, si todos fallan, un modelo pequeño que corre en el propio servidor de la clase. Responde más lento y más corto, pero la clase no se detiene.
-
 ## 7. Landing sin IA · Aplicación
 
-En el LIVE, escena **E10**, la landing de un cliente sale sin ningún proveedor externo: reglas programadas sacan los datos del texto y el motor arma el sitio.
+En el LIVE, escena **E13**, la landing de un cliente sale sin ningún proveedor externo: reglas programadas sacan los datos del texto y el motor arma el sitio.
 
 1. Pega en el cuadro de la escena lo que te escribió el cliente (o pulsa «poner un ejemplo»).
 2. Elige el estilo.
@@ -321,10 +335,10 @@ En el LIVE, escena **E10**, la landing de un cliente sale sin ningún proveedor 
 
 ## Palabras de hoy · Conceptos
 
-Agente · Proveedor · Modelo · Token · Parámetros de generación · Gateway · Contexto · `AGENTS.md` · MCP · Skill. Cada una está definida en la tabla de arriba o en los bloques 4 y 6.
+Agente · Proveedor · Modelo · Token · Parámetros de generación · Gateway · Contexto · `AGENTS.md` · MCP · Skill. Cada una está definida en la tabla de arriba o en los bloques 5 y 6.
 
 ## Tareas · Aplicación
 
 - Tarea 1: VS Code, Docker y OpenCode instalados, el gateway conectado y la skill `saludo` escrita.
 - Entrega el repositorio `clase-01` con `EVIDENCIA.md` (las tres comprobaciones y una captura de OpenCode respondiendo) y `.opencode/skills/saludo/SKILL.md`.
-- Entrégala desde la tarea 1 del LMS (URL + commit) antes de la clase 2, el martes 27-10-2026 a las 7:30 pm.
+- Entrégala desde la tarea 1 del LMS (URL + commit) antes de la clase 2.
