@@ -102,7 +102,7 @@ Ejemplo: S/ 118.00 = S/ 100.00 de valor de venta + S/ 18.00 de IGV. Vale para pr
 
 ## El juego: La ventanilla
 
-Llegan clientes con su situación. Los arrastras (o tocas) a su bandeja: boleta, factura, nota de crédito o «pedir el RUC». Lo que emite cada uno se suma al **reporte del día del grupo**: boletas, facturas, notas de crédito, ventas e IGV.
+Cada uno es un robot cajero y ve a los demás en vivo. Los clientes esperan en la sala con su documento en la mano (DNI, RUC, la referencia de un comprobante o nada). Llevas a cada uno a su ventanilla: boleta, factura, nota de crédito o «pedir el RUC». Es práctica, como en el ambiente de pruebas de SUNAT: no se emite nada real. Lo que emite el grupo llena la caja y el **reporte del día del grupo**: boletas, facturas, notas de crédito, ventas e IGV.
 
 ## Las cuentas del día
 

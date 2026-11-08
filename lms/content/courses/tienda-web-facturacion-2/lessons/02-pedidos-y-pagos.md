@@ -89,7 +89,7 @@ Si el pago no llega, el pedido se **anula con un motivo**; si nadie lo confirma,
 
 ## El juego: ¿Cuadra el pago?
 
-En 50 segundos te llegan pedidos con su voucher y lo que ves en tu app. Eliges qué hacer: confirmar, pedir la captura correcta, revisar el monto, esperar, avisar que está listo o anular. Si te equivocas, ves por qué y pasa el siguiente. Cada pedido bien atendido suma al mostrador del grupo.
+Cada uno es un robot repartidor y ve a los demás en vivo. Recoges un pedido del chat y lo pasas por «Tu app» para ver si el dinero llegó de verdad: sin eso no se puede confirmar. Si cuadra, el pedido cruza las puertas de su estado (Pagado, Listo para recoger, Entregado). Si no cuadra, le escribes al cliente (monto distinto o foto que no es un pago), lo dejas en la banca de espera (aún no llega) o lo anulas con motivo. Si te equivocas, ves por qué y sigues: no pierdes puntos. Todo suma al mostrador del grupo.
 
 ## Actividad evaluable
 

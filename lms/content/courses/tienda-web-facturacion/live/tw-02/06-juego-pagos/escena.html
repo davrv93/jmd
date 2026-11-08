@@ -2,150 +2,303 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Juego: ¿Cuadra el pago?</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · ¿Cuadra el pago? La ruta del pedido</title>
+<link rel="icon" href="data:,">
 <!--
-  Escena del modo LIVE · «Tienda web con facturación electrónica».
-  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
-  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+  «¿Cuadra el pago?» · juego de la sesión 2 de «Tienda web con facturación electrónica», sobre el motor Arena JMD
+  (docs/ARENA_JMD.md). Cada alumno es un robot repartidor y ve a los demás en vivo.
+  A la izquierda está el chat de pedidos: cada burbuja es un pedido con su voucher. Lo recoges y lo pasas por
+  «Tu app» para ver si el dinero llegó de verdad (sin eso, «Pagado» no te deja confirmar: la captura sola no
+  basta). Si cuadra, el pedido cruza las puertas de su estado: Pagado → Listo para recoger → Entregado (+10).
+  Si no cuadra, va a «Escribir al cliente» (monto distinto o foto que no es un pago; bono: qué le escribes),
+  a la «Banca de espera» (aún no llega a tu app) o a «Anular con motivo» (sin pago ni respuesta en 3 días).
+  Confirmar un pago que no cuadra vale 0 y la lupa explica por qué; nunca resta. Los drones de reparto solo te
+  hacen soltar el pedido. Meta del grupo: los puntos del mostrador. Al final: título, reflexión al muro y fotito.
+  Curso, grupo, sesión y fecha salen de ../../comun/tw.js: el mismo archivo sirve para el Grupo 1 y el Grupo 2.
+  ?demo=1 entra solo; ?sinred=1 fuerza la práctica local; ?fps=1 muestra los cuadros por segundo.
 -->
-<link rel="stylesheet" href="../../comun/escena.css">
-<link rel="stylesheet" href="../../comun/tw.css">
-<link rel="stylesheet" href="../../comun/juego.css">
-<style id="esc-propio">
-.cp { display: grid; gap: .7em; }
-.cp-ped { border: 1px solid var(--line2); border-radius: 1em; background: var(--s2); padding: .8em .9em; display: grid; gap: .55em; }
-.cp-cab { display: flex; justify-content: space-between; align-items: baseline; gap: .6em; font-size: .78em; }
-.cp-cab b { font: 800 1em var(--mono); }
-.cp-tot { font: 900 1.25em system-ui, sans-serif; }
-.cp-dos { display: grid; grid-template-columns: 1fr 1fr; gap: .5em; }
-.cp-box { border-radius: .8em; padding: .55em .7em; background: var(--s1); border: 1px solid var(--line); font-size: .74em; display: grid; gap: .15em; }
-.cp-box small { color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .78em; }
-.cp-box .big { font-size: 1.15em; font-weight: 800; }
-.cp-box .foto { font-size: 2em; line-height: 1; }
-.cp-est { display: flex; gap: .25em; flex-wrap: wrap; }
-.cp-est span { font-size: .6em; padding: .2em .55em; border-radius: 999px; background: var(--s3); color: var(--muted); font-weight: 700; }
-.cp-est span.ya { background: var(--accent); color: var(--on-accent); }
-.cp-acc { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4em; }
-.cp-acc button { font: 700 .72em/1.2 system-ui, sans-serif; text-align: left; padding: .7em .7em; border-radius: .8em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; min-height: 3.6em; display: flex; align-items: center; gap: .45em; touch-action: manipulation; }
-.cp-acc button i { font-style: normal; font-size: 1.4em; }
-.cp-acc button.bien { border-color: var(--ok); background: var(--ok-bg); }
-.cp-acc button.mal { border-color: var(--warn); background: var(--warn-bg); }
-.cp-ped.sale { animation: cp-sale .35s ease-in both; }
-@keyframes cp-sale { to { transform: translateX(40%); opacity: 0; } }
-@media (max-width: 860px) { .cp-acc { grid-template-columns: 1fr 1fr; } .cp-acc button { font-size: .88em; } .cp-box { font-size: .88em; } .cp-cab { font-size: .9em; } }
-@media (prefers-reduced-motion: reduce) { .cp-ped.sale { animation: none; } }
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; }
+  .esc-cielo { display: none !important; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #f2c14e; margin-bottom: 6px; }
 </style>
 </head>
 <body>
-<div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ca">Conceptualización</span>
-    <span class="esc-num">Sesión 2 · E06</span>
-  </header>
-
-  <main class="esc-cuerpo">
-    <div class="tw-pila">
-      <div class="esc-fila" style="justify-content:space-between">
-        <h1 class="esc-titulo a-in" style="font-size:1.5em">¿Cuadra <em>el pago?</em></h1>
-        <p class="tw-nota" style="max-width:34em">Te llegan pedidos con su voucher. Decide qué haces con cada uno. Entre todos atendemos el mostrador.</p>
-      </div>
-      <div id="juego"></div>
-    </div>
-  </main>
-
-  <footer class="esc-pie">
-    <span class="esc-nota">Juego del grupo · al final, tu reflexión al muro y tu fotito</span>
-  </footer>
-</div>
+<div id="juego"><div class="sin-motor"><div><b>Abriendo el mostrador…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
 <script src="../../comun/tw.js"></script>
-<script src="../../comun/juego.js"></script>
-<script src="../../comun/fotito.js"></script>
+<script src="../../comun/arena-tw.js"></script>
+<script src="../../arena/arena-jmd.js"></script>
 <script>
 (function () {
-  var $ = TW.$, $$ = TW.$$;
-  // Acciones del mostrador. Cada caso tiene UNA acción correcta y una explicación corta (sale de la guía de uso de la
-  // tienda de referencia: verificar en la app, «no cuadra», pedir la captura correcta, anular con motivo, avisar).
-  var ACC = [
-    ["confirmar", "✅", "Confirmar el pago"], ["captura", "📷", "Pedir la captura correcta"], ["revisar", "💬", "Revisar el monto con el cliente"],
-    ["esperar", "⏳", "Esperar: aún no llega a mi app"], ["avisar", "📦", "Avisar: listo para recoger"], ["anular", "✖️", "Anular con motivo"]
-  ];
-  var NOMBRES = ["Rosa", "Luis", "Carmen", "Jorge", "Ana", "Pedro", "Lucía", "Miguel", "Sofía", "Raúl", "Elena", "Diego"];
-  function caso(rng) {
-    var tot = Math.round((15 + rng() * 180) * 10) / 10, medio = rng() < .5 ? "Yape" : "Transferencia", t = Math.floor(rng() * 6);
-    var n = NOMBRES[Math.floor(rng() * NOMBRES.length)], v, app, est = 1, ok;
-    if (t === 0) { v = ["🧾", medio + " " + TW.soles(tot)]; app = ["✅", "Llegó " + TW.soles(tot)]; ok = "confirmar"; }
-    if (t === 1) { var otro = Math.round(tot * (rng() < .5 ? .5 : .8) * 10) / 10; v = ["🧾", medio + " " + TW.soles(otro)]; app = ["✅", "Llegó " + TW.soles(otro)]; ok = "revisar"; }
-    if (t === 2) { v = [["🐶", "🌅", "🛍️", "📄"][Math.floor(rng() * 4)], "No es un pago"]; app = ["—", "No llegó nada"]; ok = "captura"; }
-    if (t === 3) { v = ["🧾", medio + " " + TW.soles(tot)]; app = ["⏳", "Aún no aparece"]; ok = "esperar"; }
-    if (t === 4) { v = ["🧾", medio + " " + TW.soles(tot)]; app = ["✅", "Confirmado ayer"]; est = 2; ok = "avisar"; }
-    if (t === 5) { v = ["—", "Sin voucher"]; app = ["—", "Nada en 3 días"]; est = 0; ok = "anular"; }
-    return { n: n, tot: tot, v: v, app: app, est: est, ok: ok, t: t };
+  "use strict";
+  if (!window.ArenaJMD || !window.TWA) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
   }
+  var A = window.ArenaJMD, X = window.TWA, K = X.marca(), RED = X.REDUCIDO, rr = X.rr, soles = X.soles;
+
+  // ---------- los casos de la clase (las 4 reglas antes de confirmar un pago) ----------
+  var TIPOS = [["cuadra", 30], ["monto", 14], ["foto", 12], ["espera", 16], ["pagado", 13], ["anular", 15]];
+  var NOMBRES = ["Rosa", "Luis", "Carmen", "Jorge", "Ana", "Pedro", "Lucía", "Miguel", "Sofía", "Raúl", "Elena", "Diego", "Óscar", "Pilar"];
+  var FOTOS = [["🐶", "foto de su perrito"], ["🌅", "foto de un atardecer"], ["🛍️", "foto del producto"], ["📄", "foto de un documento"]];
+  var ESTADOS = ["Recibido", "Pago por confirmar", "Pagado", "Listo para recoger", "Entregado"];
   var POR = {
-    confirmar: "El voucher y tu app dicen lo mismo: <b>confirma</b>. Así el pedido pasa a «Pagado».",
-    revisar: "El monto <b>no cuadra</b> con el pedido. Antes de confirmar, conversa con el cliente.",
-    captura: "Esa foto <b>no es un pago</b>. Pídele la captura correcta: él puede cambiarla desde su pedido.",
-    esperar: "La captura sola no basta: <b>verifica en tu app o tu banco</b>. Si aún no llega, espera antes de confirmar.",
-    avisar: "Ya está pagado y armado: <b>avisa que está listo</b> con su número de pedido.",
-    anular: "Sin pago ni respuesta: <b>anula con un motivo</b>. El pedido queda en el historial, no se borra."
+    cuadra: "El voucher y tu app dicen lo mismo: confírmalo en «Pagado» y llévalo por la ruta hasta «Entregado».",
+    monto: "El monto no cuadra con el pedido. Antes de confirmar, escríbele al cliente para revisarlo.",
+    foto: "Esa foto no es un pago. Escríbele y pídele la captura correcta: él puede cambiarla desde su pedido.",
+    espera: "La captura sola no basta: tu app dice que aún no llega. Espera y vuelve a mirar antes de confirmar.",
+    pagado: "Ya se confirmó ayer: pásalo por «Listo para recoger», avisa al cliente con su número de pedido y entrégalo.",
+    anular: "Sin pago ni respuesta en 3 días: anula con un motivo. El pedido queda en el historial, no se borra.",
   };
-  var EST = ["Recibido", "Pago por confirmar", "Pagado", "Listo", "Entregado"];
-  var vivo = false, rng = Math.random, n = 0, tipT = 0;
-  TWJuego.montar({
-    raiz: $("#juego"), segundos: 50, unidad: ["pedido", "pedidos"], meta: 8, tituloGrupo: "El mostrador del grupo",
-    reglas: ["Llega un pedido con su voucher y lo que ves en tu app. Elige <b>qué haces</b> con él.",
-             "Si te equivocas, ves por qué y pasa el siguiente: <b>nadie pierde puntos</b>.",
-             "Cada pedido bien atendido suma al mostrador de todo el grupo. Ganas a tu mejor marca."],
-    pregunta: "¿Qué vas a revisar siempre antes de confirmar un pago?",
-    placeholder: "Ej.: «Que el dinero esté en mi Yape, no solo en la captura»",
-    resultado: function (p, e) { return { resultado: p + (p === 1 ? " pedido bien atendido" : " pedidos bien atendidos"), detalle: "¿Cuadra el pago? · " + e + (e === 1 ? " aprendizaje" : " aprendizajes") }; },
-    crear: function (z, api) {
-      var raiz = TW.el("div", "cp"), hueco = TW.el("div"), acc = TW.el("div", "cp-acc");
-      raiz.appendChild(hueco); raiz.appendChild(acc); z.appendChild(raiz);
-      var actual = null, ocupado = false;
-      ACC.forEach(function (a) {
-        var b = TW.el("button"); b.type = "button"; b.setAttribute("data-a", a[0]);
-        b.appendChild(TW.el("i", "", a[1])); b.appendChild(TW.el("span", "", a[2]));
-        b.addEventListener("click", function () {
-          if (!vivo || !actual || ocupado) return;
-          ocupado = true;
-          var bien = a[0] === actual.ok;
-          b.classList.add(bien ? "bien" : "mal");
-          if (bien) api.punto(1);
-          else {
-            api.error(POR[actual.ok]);
-            $$("button", acc).forEach(function (x) { if (x.getAttribute("data-a") === actual.ok) x.classList.add("bien"); });
-            var t = z.querySelector(".tj-tip"); if (t) t.remove();
-            t = TW.el("div", "tj-tip"); t.innerHTML = POR[actual.ok]; z.appendChild(t); clearTimeout(tipT); tipT = setTimeout(function () { t.remove(); }, 2600);
-          }
-          var espera = bien ? 420 : 1700, tarjeta = hueco.firstChild;
-          setTimeout(function () { if (tarjeta) tarjeta.classList.add("sale"); }, espera - 340);
-          setTimeout(function () { $$("button", acc).forEach(function (x) { x.classList.remove("bien", "mal"); }); ocupado = false; siguiente(); }, espera);
-        });
-        acc.appendChild(b);
-      });
-      function siguiente() {
-        if (!vivo) return;
-        actual = caso(rng); n++;
-        var c = TW.el("div", "cp-ped tj-pop");
-        var cab = TW.el("div", "cp-cab"); cab.appendChild(TW.el("b", "", "PED-" + String(100 + n))); cab.appendChild(TW.el("span", "", actual.n)); cab.appendChild(TW.el("span", "cp-tot", TW.soles(actual.tot)));
-        c.appendChild(cab);
-        var est = TW.el("div", "cp-est"); EST.forEach(function (e, i) { est.appendChild(TW.el("span", i === actual.est ? "ya" : "", e)); }); c.appendChild(est);
-        var dos = TW.el("div", "cp-dos");
-        var b1 = TW.el("div", "cp-box"); b1.appendChild(TW.el("small", "", "Voucher del cliente")); b1.appendChild(TW.el("span", "foto", actual.v[0])); b1.appendChild(TW.el("span", "big", actual.v[1]));
-        var b2 = TW.el("div", "cp-box"); b2.appendChild(TW.el("small", "", "Tu app o tu banco")); b2.appendChild(TW.el("span", "foto", actual.app[0])); b2.appendChild(TW.el("span", "big", actual.app[1]));
-        dos.appendChild(b1); dos.appendChild(b2); c.appendChild(dos);
-        hueco.textContent = ""; hueco.appendChild(c);
-      }
-      return {
-        empezar: function (r) { rng = r; vivo = true; n = 0; ocupado = false; siguiente(); },
-        parar: function () { vivo = false; }
-      };
+  var LO_CORRECTO = { cuadra: "confirmar y entregar", monto: "escribir al cliente para revisar el monto", foto: "escribir al cliente y pedir la captura correcta",
+    espera: "esperar en la banca y volver a mirar tu app", pagado: "Listo para recoger → Entregado", anular: "anular con motivo" };
+  var MENSAJES = ["Hola, esa foto no es un pago. ¿Me mandas la captura de tu Yape o transferencia?",
+    "Hola, el monto de tu pago no cuadra con tu pedido. ¿Lo revisamos?", "Hola, tu pedido ya está listo para recoger."];
+
+  // ---------- el mapa: 1800 × 1300 (arriba, el letrero; así la tarjeta del celular no tapa nada) ----------
+  var ANCHO = 1800, ALTO = 1300;
+  var CHAT = { x: 30, y: 250, w: 580, h: 1020 };                 // el chat de pedidos (pintado en el fondo)
+  var BANDEJA = { x: 60, y: 400, w: 520, h: 840 };               // donde caen las burbujas
+  var Z = {
+    app: { id: "app", tipo: "app", x: 760, y: 600, w: 240, h: 240, nombre: "2 · Tu app: ¿llegó?", color: "#6a58e8" },
+    espera: { id: "espera", tipo: "espera", x: 760, y: 280, w: 240, h: 200, nombre: "Banca de espera", color: "#c48709", colorTexto: "#1c1300" },
+    chat: { id: "chat", tipo: "chat", x: 780, y: 960, w: 240, h: 220, nombre: "Escribir al cliente", color: "#12a7a0" },
+    pagado: { id: "pagado", tipo: "pagado", x: 1100, y: 420, w: 220, h: 210, nombre: "3 · Pagado", color: "#2fa35f" },
+    listo: { id: "listo", tipo: "listo", x: 1330, y: 680, w: 210, h: 210, nombre: "4 · Listo para recoger", color: "#2f6bff" },
+    entregado: { id: "entregado", tipo: "entregado", x: 1560, y: 940, w: 210, h: 280, nombre: "5 · Entregado", color: "#9446c1" },
+    anular: { id: "anular", tipo: "anular", x: 1550, y: 270, w: 220, h: 200, nombre: "Anular con motivo", color: "#b8344c" },
+  };
+
+  // ---------- estado de cada pedido que llevo (solo en mi pantalla) ----------
+  var EST = {}, avisada = "", mio = { entregados: 0, bien: 0, revisados: 0, colados: 0 };
+  function estadoDe(ob) {
+    var c = ob.id + "@" + ob.v;
+    return EST[c] || (EST[c] = { app: false, paso: ob.t === "pagado" ? 2 : 1 });
+  }
+  function voucher(ob) {
+    if (ob.t === "foto") return ob.foto[0] + " " + ob.foto[1];
+    if (ob.t === "pagado") return "Confirmado ayer";
+    if (ob.t === "anular") return "Sin voucher · 3 días sin respuesta";
+    return ob.medio + " " + soles(ob.pago);
+  }
+  function appDice(ob) {
+    if (ob.t === "cuadra" || ob.t === "monto") return "✅ Llegó " + soles(ob.pago);
+    if (ob.t === "espera") return "⏳ Aún no aparece";
+    if (ob.t === "pagado") return "✅ Ya confirmado ayer";
+    return ob.t === "anular" ? "— Nada en 3 días" : "— No llegó nada";
+  }
+  function tarjetaDe(ob) {
+    var st = estadoDe(ob), ahora;
+    if (st.paso >= 3) ahora = "Ahora: «Entregado»";
+    else if (st.paso === 2) ahora = "Ahora: «Listo para recoger»";
+    else if (!st.app) ahora = "Antes de decidir, pásalo por «Tu app»";
+    else ahora = "¿Cuadra? «Pagado». ¿No? Escribir al cliente, Banca de espera o Anular";
+    return { etiqueta: ob.num + " · " + ob.nom, color: ob.medio === "Yape" ? "#7b2cbf" : "#2f6bff",
+      titulo: "Pedido de " + soles(ob.tot) + " · voucher: " + voucher(ob),
+      destacadoEtiqueta: "Tu app", destacado: st.app || ob.t === "pagado" ? appDice(ob) : "❓ Sin revisar",
+      pie: "Estado: " + ESTADOS[st.paso] + " · " + ahora };
+  }
+  function refrescar(ob) { X.carta(tarjetaDe(ob)); }
+  function cargaMia() { var c = juego && juego.yo().carga; return c ? juego.objeto(c) : null; }
+  // La puerta que toca (solo para guiar el camino, no para decidir por ti).
+  function siguienteZona() {
+    var ob = cargaMia(); if (!ob) return "";
+    var st = estadoDe(ob);
+    return st.paso >= 3 ? "entregado" : st.paso === 2 ? "listo" : !st.app ? "app" : "";
+  }
+
+  // ---------- arte ----------
+  function pintarPedido(g, x, y, sc, t, d) {
+    var mia = sc < 1 && juego && juego.yo().carga === d.id, st = mia ? estadoDe(d) : null;
+    g.save(); g.translate(x, y); g.scale(sc, sc);
+    var fl = RED || sc < 1 ? 0 : Math.sin(t * 2.2 + d.i) * 2.5;
+    if (sc >= 1) { g.fillStyle = "rgba(0,0,0,.2)"; g.beginPath(); g.ellipse(0, 22, 24, 6, 0, 0, 7); g.fill(); }
+    g.translate(0, fl);
+    if (st && st.paso >= 2) { // ya pagado: ahora es un paquete
+      g.fillStyle = "#c8915a"; g.strokeStyle = "#6b4423"; g.lineWidth = 2.5; rr(g, -24, -22, 48, 40, 5); g.fill(); g.stroke();
+      g.fillStyle = "#e9c79a"; g.fillRect(-4, -22, 8, 40); X.emoji(g, st.paso >= 3 ? "✅" : "📦", 0, -36, 20);
+    } else {
+      g.fillStyle = "#e7fbe0"; g.strokeStyle = "#1f8a5b"; g.lineWidth = 3;
+      rr(g, -30, -24, 60, 40, 14); g.fill(); g.stroke();
+      g.beginPath(); g.moveTo(-18, 14); g.lineTo(-26, 26); g.lineTo(-6, 15); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = "#e7fbe0"; g.fillRect(-20, 10, 16, 5);
+      g.fillStyle = d.medio === "Yape" ? "#7b2cbf" : "#2f6bff"; g.beginPath(); g.arc(-15, -4, 8, 0, 7); g.fill();
+      X.texto(g, "S/", -15, -4, 9, "900", "#ffffff", "center");
+      g.fillStyle = "#1f8a5b"; [0, 10, 20].forEach(function (dx) { g.beginPath(); g.arc(dx, -4, 3.2, 0, 7); g.fill(); });
     }
+    g.restore();
+  }
+  function marcoZona(g, z, t, borde) {
+    var guia = siguienteZona() === z.id, pul = X.pulso(t);
+    if (guia) { g.fillStyle = "rgba(242,193,78," + (.2 + pul * .24) + ")"; rr(g, z.x - 16, z.y - 16, z.w + 32, z.h + 32, 26); g.fill(); }
+    g.fillStyle = "rgba(20,18,43,.22)"; rr(g, z.x + 5, z.y + 9, z.w, z.h, 18); g.fill();
+    return guia;
+  }
+  function pintarApp(g, z, t) {
+    var guia = marcoZona(g, z, t), x = z.x, y = z.y, w = z.w, h = z.h;
+    g.fillStyle = "#1b1838"; rr(g, x, y, w, h, 30); g.fill();
+    var gr = g.createLinearGradient(x, y, x + w, y + h); gr.addColorStop(0, "#6a58e8"); gr.addColorStop(1, "#2a2160");
+    g.fillStyle = gr; rr(g, x + 14, y + 26, w - 28, h - 44, 18); g.fill();
+    g.fillStyle = "#14122b"; rr(g, x + w / 2 - 30, y + 10, 60, 8, 4); g.fill();
+    X.texto(g, "Tu app o tu banco", x + w / 2, y + 56, 19, "800", "#ffe9a3", "center");
+    g.fillStyle = "#f2c14e"; g.beginPath(); g.arc(x + w / 2, y + 116, 36, 0, 7); g.fill();
+    X.texto(g, "S/", x + w / 2, y + 117, 30, "900", "#3a2600", "center");
+    X.texto(g, "¿llegó el dinero?", x + w / 2, y + 172, 19, "800", "#ffffff", "center");
+    X.texto(g, "la captura sola no basta", x + w / 2, y + 198, 15, "600", "#c3b9ff", "center");
+    g.strokeStyle = guia ? "#f2c14e" : "#a99cff"; g.lineWidth = guia ? 6 : 4; rr(g, x, y, w, h, 30); g.stroke();
+  }
+  function mesa(g, z, t, fondo, borde, emoji, l1, l2) {
+    var guia = marcoZona(g, z, t), x = z.x, y = z.y, w = z.w, h = z.h;
+    g.fillStyle = fondo; rr(g, x, y, w, h, 20); g.fill();
+    g.fillStyle = "rgba(255,255,255,.9)"; rr(g, x + 16, y + 34, w - 32, h - 52, 14); g.fill();
+    X.emoji(g, emoji, x + w / 2, y + 34 + (h - 52) * .3, 46);
+    X.texto(g, l1, x + w / 2, y + h - 74, 20, "900", "#1b2350", "center");
+    if (l2) { var b = X.bloque(g, l2, w - 50, 2, 16, 12, "700"); g.fillStyle = "#4a4760"; g.textAlign = "center"; b.ls.forEach(function (l, i) { g.fillText(l, x + w / 2, y + h - 48 + i * (b.px + 3)); }); }
+    g.strokeStyle = guia ? "#f2c14e" : borde; g.lineWidth = guia ? 6 : 4; rr(g, x, y, w, h, 20); g.stroke();
+  }
+  function puerta(g, z, t, n, emoji, sub) {
+    var guia = marcoZona(g, z, t), x = z.x, y = z.y, w = z.w, h = z.h, c = z.color;
+    g.fillStyle = "rgba(255,255,255,.6)"; rr(g, x, y, w, h, 18); g.fill();
+    g.fillStyle = c; rr(g, x, y, 26, h, 10); g.fill(); rr(g, x + w - 26, y, 26, h, 10); g.fill();   // pilares
+    rr(g, x, y, w, 42, 14); g.fill();                                                             // dintel
+    X.emoji(g, emoji, x + w / 2, y + h * .5 + 6, 54);
+    var b = X.bloque(g, sub, w - 70, 2, 16, 12, "700"); g.fillStyle = "#1b2350"; g.textAlign = "center";
+    b.ls.forEach(function (l, i) { g.fillText(l, x + w / 2, y + h - 40 + (i - (b.ls.length - 1) / 2) * (b.px + 3)); });
+    g.strokeStyle = guia ? "#f2c14e" : c; g.lineWidth = guia ? 6 : 4; rr(g, x, y, w, h, 18); g.stroke();
+  }
+  function fondo(g) {
+    // letrero
+    var gr = g.createLinearGradient(0, 0, 0, 220); gr.addColorStop(0, "#14122b"); gr.addColorStop(1, "#2a2160");
+    g.fillStyle = gr; g.fillRect(0, 0, ANCHO, 220);
+    g.strokeStyle = "rgba(242,193,78,.45)"; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 220); g.lineTo(ANCHO, 220); g.stroke();
+    var r = A.rng(31);
+    for (var i = 0; i < 70; i++) { g.fillStyle = "rgba(255,240,200," + (.2 + r() * .5).toFixed(2) + ")"; g.beginPath(); g.arc(r() * ANCHO, r() * 210, 1 + r() * 2, 0, 7); g.fill(); }
+    X.texto(g, "¿CUADRA EL PAGO?", 900, 92, 56, "900", "#ffe9a3", "center");
+    X.texto(g, "la ruta del pedido: del chat a «Entregado», sin confirmar nada a ciegas", 900, 150, 23, "700", "#c3b9ff", "center");
+    // el chat de pedidos
+    g.fillStyle = "rgba(0,0,0,.18)"; rr(g, CHAT.x + 6, CHAT.y + 10, CHAT.w, CHAT.h, 30); g.fill();
+    g.fillStyle = "#efe7da"; rr(g, CHAT.x, CHAT.y, CHAT.w, CHAT.h, 30); g.fill();
+    g.fillStyle = "#1f6f5c"; rr(g, CHAT.x, CHAT.y, CHAT.w, 110, 30); g.fill(); g.fillRect(CHAT.x, CHAT.y + 70, CHAT.w, 40);
+    X.texto(g, "💬 Chat de pedidos", CHAT.x + 30, CHAT.y + 42, 26, "900", "#ffffff");
+    X.texto(g, "1 · Recibido: cada burbuja es un pedido con su voucher", CHAT.x + 30, CHAT.y + 82, 16, "700", "#cdeee3");
+    g.fillStyle = "rgba(31,111,92,.07)";
+    for (i = 0; i < 26; i++) { var bx = CHAT.x + 30 + r() * (CHAT.w - 120), by = CHAT.y + 130 + r() * (CHAT.h - 170); rr(g, bx, by, 60 + r() * 60, 26, 12); g.fill(); }
+    // la ruta: Tu app → Pagado → Listo → Entregado
+    g.save(); g.lineCap = "round"; g.lineJoin = "round";
+    g.strokeStyle = "rgba(242,193,78,.28)"; g.lineWidth = 64;
+    g.beginPath(); g.moveTo(880, 720); g.lineTo(1210, 525); g.lineTo(1435, 785); g.lineTo(1665, 1080); g.stroke();
+    g.strokeStyle = "rgba(196,135,9,.55)"; g.lineWidth = 4; g.setLineDash([18, 16]);
+    g.beginPath(); g.moveTo(880, 720); g.lineTo(1210, 525); g.lineTo(1435, 785); g.lineTo(1665, 1080); g.stroke();
+    g.restore();
+  }
+
+  // ---------- el juego ----------
+  var juego = A.crear({
+    raiz: "#juego",
+    titulo: "¿Cuadra el pago?",
+    subtitulo: "La ruta del pedido: llévalo del chat a «Entregado», sin confirmar un pago que no viste en tu app.",
+    curso: K.curso, sesion: K.sesion, fecha: K.fecha || undefined, hashtag: K.hashtag,
+    duracion: 180, duraciones: [180, 300], duracionPractica: 120,
+    mundo: { ancho: ANCHO, alto: ALTO, tema: "patio" },
+    jugador: { accesorio: "audifonos" },
+    salida: { x: 120, y: 700, w: 340, h: 160 },
+    reglas: [
+      "Recoge un pedido del chat y pásalo por «Tu app»: ¿llegó el dinero?",
+      "¿Cuadra? Por las puertas: Pagado → Listo → Entregado. ¿No? Escríbele, espera o anula.",
+      "Errar no resta: la lupa te dice qué hacía falta. Cada pedido bien atendido suma al grupo.",
+    ],
+    anuncio: "a repartir",
+    muros: [{ x: 810, y: 515, w: 140, h: 46 }, { x: 810, y: 880, w: 140, h: 46 }],
+    zonas: [
+      Object.assign({ pintar: pintarApp }, Z.app),
+      Object.assign({ pintar: function (g, z, t) { mesa(g, z, t, "#c48709", "#c48709", "⏳", "Aún no llega", "espera y vuelve a mirar tu app"); } }, Z.espera),
+      Object.assign({ pintar: function (g, z, t) { mesa(g, z, t, "#12a7a0", "#12a7a0", "💬", "Algo no cuadra", "monto distinto o foto que no es pago"); } }, Z.chat),
+      Object.assign({ pintar: function (g, z, t) { puerta(g, z, t, 3, "✅", "confirmas solo lo que viste en tu app"); } }, Z.pagado),
+      Object.assign({ pintar: function (g, z, t) { puerta(g, z, t, 4, "📦", "avisa al cliente con su número de pedido"); } }, Z.listo),
+      Object.assign({ pintar: function (g, z, t) { puerta(g, z, t, 5, "🏁", "entregado: la venta descuenta tu stock"); } }, Z.entregado),
+      Object.assign({ pintar: function (g, z, t) { mesa(g, z, t, "#b8344c", "#b8344c", "🗂️", "Sin pago en 3 días", "anula con motivo: queda en el historial"); } }, Z.anular),
+    ],
+    peligros: [
+      { tipo: "dron", nombre: "el dron de reparto", ruta: [[660, 290], [660, 1250]], vel: 115, radio: 26,
+        aviso: "¡El dron de reparto te hizo soltar el pedido! Volvió al chat: recógelo otra vez.", avisoSinCarga: "¡Uy, el dron de reparto! Cruza cuando pase." },
+      { tipo: "dron", nombre: "el dron de reparto", ruta: [[1050, 290], [1050, 1250]], vel: 95, radio: 26,
+        aviso: "¡El dron te hizo soltar el pedido! Volvió al chat.", avisoSinCarga: "¡Cuidado con el dron de reparto!" },
+    ],
+    decor: [{ tipo: "planta", x: 1290, y: 1240 }, { tipo: "planta", x: 1480, y: 560 }, { tipo: "planta", x: 1060, y: 1240 }],
+    fondo: fondo,
+    objetos: {
+      cantidad: 20, prefijo: "ped",
+      crear: function (i, v, rnd, M) {
+        var r = rnd() * 100, acc = 0, t = "cuadra";
+        for (var k = 0; k < TIPOS.length; k++) { acc += TIPOS[k][1]; if (r < acc) { t = TIPOS[k][0]; break; } }
+        var tot = Math.round((18 + rnd() * 160) * 10) / 10, medio = rnd() < .55 ? "Yape" : "Transferencia";
+        var nom = NOMBRES[Math.floor(rnd() * NOMBRES.length)], baja = rnd() < .5 ? .5 : .8, foto = FOTOS[Math.floor(rnd() * FOTOS.length)];
+        var p = M.lugarLibre(rnd, 40, BANDEJA), sem = juego ? juego.ronda().semilla >>> 0 : 0;
+        return { x: p.x, y: p.y, t: t, tot: tot, pago: t === "monto" ? Math.round(tot * baja * 10) / 10 : tot, medio: medio, nom: nom, foto: foto,
+          num: "PED-" + (1000 + (i * 131 + v * 37 + sem % 911) % 9000), stock: rnd() < .34, texto: nom + " · " + soles(tot), pintar: pintarPedido };
+      },
+    },
+    tarjeta: tarjetaDe,
+    entregar: function (ob, z, api) {
+      var st = estadoDe(ob), c = ob.id + "@" + ob.v, mal = function (titulo) {
+        mio.colados++;
+        return { ok: false, puntos: 0, titulo: titulo, explicacion: POR[ob.t], real: "Lo que tocaba: " + LO_CORRECTO[ob.t] + ".", feed: "aprendió con el " + ob.num };
+      };
+      switch (z.tipo) {
+        case "app":
+          if (!st.app) { st.app = true; mio.revisados++; api.sonido("tomar"); api.popup(z.x + z.w / 2, z.y - 10, appDice(ob), "#ffe9a3"); refrescar(ob); }
+          return { rechazar: true, mensaje: "Tu app dice: " + appDice(ob) };
+        case "pagado":
+          if (st.paso >= 2) return { rechazar: true, mensaje: "Ya está pagado: ahora a «Listo para recoger»" };
+          if (!st.app) {
+            if (avisada !== c) { avisada = c; api.sonido("mal"); api.lupa({ icono: "🔍", tipo: "mal", titulo: "La captura sola no basta", texto: "Antes de confirmar, mira en tu app o tu banco que el dinero llegó de verdad.", real: "Pásalo por «Tu app» (al centro) y vuelve.", ms: 6500 }); }
+            return { rechazar: true, mensaje: "Primero pásalo por «Tu app»: la captura sola no basta" };
+          }
+          if (ob.t === "cuadra") { st.paso = 2; api.sonido("tomar"); api.popup(z.x + z.w / 2, z.y - 10, "Pagado ✓", "#7ef0c3"); refrescar(ob); return { rechazar: true, mensaje: "✅ Pagado. Ahora: «Listo para recoger»" }; }
+          return mal(ob.t === "espera" ? "Aún no llegaba" : "No cuadraba");
+        case "listo":
+          if (st.paso < 2) return { rechazar: true, mensaje: "Aún no está pagado: primero «Pagado»" + (st.app ? "" : " (y antes, «Tu app»)") };
+          if (st.paso === 2) { st.paso = 3; api.sonido("tomar"); api.popup(z.x + z.w / 2, z.y - 10, "Listo ✓ · aviso enviado", "#9fc3ff"); refrescar(ob); return { rechazar: true, mensaje: "📦 Listo. Avisa al cliente con su número de pedido y llévalo a «Entregado»" }; }
+          return { rechazar: true, mensaje: "Ya está listo: llévalo a «Entregado»" };
+        case "entregado":
+          if (st.paso < 3) return { rechazar: true, mensaje: "Falta pasar por «" + (st.paso < 2 ? "Pagado" : "Listo para recoger") + "»" };
+          mio.entregados++; mio.bien++;
+          var res = { ok: true, puntos: 10, titulo: "¡Entregado! +10", feed: "entregó el " + ob.num };
+          if (ob.stock) res.bonus = { pregunta: "Se vendió por la tienda web. ¿Qué pasa con tu stock?", opciones: ["Se descuenta solo con la venta", "Lo resto yo a mano en un cuaderno", "No cambia hasta fin de mes"],
+            correcta: 0, puntos: 5, segundos: 12, explicacion: "La venta por la tienda descuenta tu stock: así no vendes lo que ya no tienes." };
+          return res;
+        case "chat":
+          if (ob.t === "monto" || ob.t === "foto") {
+            mio.bien++;
+            return { ok: true, puntos: 10, titulo: "¡Bien! No confirmaste a ciegas +10", feed: "escribió al cliente del " + ob.num,
+              bonus: { pregunta: "¿Qué le escribes a " + ob.nom + "?", opciones: MENSAJES, correcta: ob.t === "foto" ? 0 : 1, puntos: 5, segundos: 14, explicacion: POR[ob.t] } };
+          }
+          return mal(ob.t === "cuadra" ? "Ese pago sí cuadraba" : "Aquí no hacía falta escribirle");
+        case "espera":
+          if (!st.app && ob.t !== "anular" && ob.t !== "foto" && ob.t !== "pagado") return { rechazar: true, mensaje: "¿Esperar qué? Primero mira «Tu app»" };
+          if (ob.t === "espera") { mio.bien++; return { ok: true, puntos: 10, titulo: "¡Bien! Esperas sin confirmar +10", explicacion: "Cuando aparezca en tu app, recién lo confirmas. Mientras, el pedido sigue en «Pago por confirmar».", feed: "esperó a que llegue el pago del " + ob.num }; }
+          return mal("No tocaba esperar");
+        case "anular":
+          if (ob.t === "anular") { mio.bien++; return { ok: true, puntos: 10, titulo: "Anulado con motivo +10", explicacion: "El pedido no se borra: queda en el historial con su motivo.", feed: "anuló con motivo el " + ob.num }; }
+          return mal("No había que anularlo");
+      }
+      return { rechazar: true, mensaje: "Aquí no va" };
+    },
+    meta: { contador: "mostrador", texto: "Mostrador del grupo", unidad: "pts", objetivo: function (n) { return Math.max(60, n * 35); }, logro: "el mostrador del grupo va al día" },
+    reflexion: { clave: K.escena || "06-juego-pagos", pregunta: "¿Qué vas a revisar siempre antes de confirmar un pago?",
+      placeholder: "Ej.: «Que el dinero esté en mi Yape, no solo en la captura»", porDefecto: "La captura sola no basta: lo veo en mi app antes de confirmar." },
+    alRonda: function () { EST = {}; avisada = ""; mio = { entregados: 0, bien: 0, revisados: 0, colados: 0 }; },
+    alReflexion: function (t) { X.guardarReflexion(t); },
+    resultado: function (s) {
+      var t = mio.entregados >= 3 ? "Repartidor estrella" : mio.bien >= 4 && s.fallos <= 1 ? "Cajero de confianza" : mio.revisados >= 3 ? "Siempre mira su app"
+        : mio.bien ? "Primer pedido atendido" : "Conoció la ruta del pedido";
+      return X.guardar({ etiqueta: "Mi turno en el mostrador", titulo: t, resultado: juego.puntos + " puntos",
+        detalle: X.pl(mio.bien, "pedido bien atendido", "pedidos bien atendidos") + " · " + X.pl(mio.entregados, "entregado") + " · " + X.pl(mio.revisados, "revisado", "revisados") + " en la app" }, juego.puntos);
+    },
   });
 })();
 </script>
-<script src="../../comun/copiar.js"></script>
 </body>
 </html>

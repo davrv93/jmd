@@ -85,7 +85,7 @@ Y la **categoría** ordena tu catálogo: con ella el cliente filtra. En «Varios
 
 ## El juego: Vitrina express
 
-En 45 segundos armas fichas completas eligiendo el nombre, el precio y la categoría buenos. Si eliges uno flojo («Precio al inbox», «Varios»), el juego te dice por qué y sigues: no pierdes puntos. Cada ficha suma a la vitrina de todo el grupo. Al final escribes tu reflexión en el muro y guardas tu fotito.
+En el piso de la tienda, cada uno es un robot vendedor y ve a los demás en vivo. Recoges piezas de ficha (foto, nombre, precio o stock) y llevas las que venden a su vitrina; las flojas («Consultar», «Producto nuevo!!!», «Foto borrosa») no entran: la vitrina te dice por qué no venden y las arreglas en el Taller de fichas. Quien pone la última pieza vende el producto y elige su pasillo (la categoría). Errar no resta y las vitrinas son de todo el grupo. Al final escribes tu reflexión en el muro y guardas tu fotito.
 
 ## Actividad evaluable
 

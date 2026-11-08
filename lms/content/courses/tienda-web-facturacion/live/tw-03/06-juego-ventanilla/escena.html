@@ -2,185 +2,264 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Juego: La ventanilla</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · La ventanilla: boleta, factura o pedir el RUC</title>
+<link rel="icon" href="data:,">
 <!--
-  Escena del modo LIVE · «Tienda web con facturación electrónica».
-  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
-  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+  «La ventanilla» · juego de la sesión 3 de «Tienda web con facturación electrónica», sobre el motor Arena JMD
+  (docs/ARENA_JMD.md). Cada alumno es un robot cajero en la misma sala de atención y ve a los demás en vivo.
+  Los clientes esperan en la sala, cada uno con su documento en la mano (DNI, RUC, la referencia de un
+  comprobante o nada). Pasas a su lado, te sigue y lo llevas a su ventanilla: Boleta (DNI, consumidor final),
+  Factura (RUC, negocio), Nota de crédito (corrige un comprobante ya emitido) o Pedir el RUC (quiere factura y no
+  lo tiene). Acertar +10, con bonos de IGV y de serie; errar vale 0 y la lupa explica por qué.
+  Es PRÁCTICA: hoy la tienda entrega nota de venta y la boleta y la factura solo se practican en el ambiente de
+  pruebas de SUNAT; el juego no emite nada real. Lo que emite el grupo llena la caja y el «Reporte del día»
+  (boletas, facturas, notas de crédito, ventas e IGV): contadores de la sala /patio leídos cada 2,5 s.
+  Curso, grupo, sesión y fecha salen de ../../comun/tw.js: el mismo archivo sirve para el Grupo 1 y el Grupo 2.
+  ?demo=1 entra solo; ?sinred=1 fuerza la práctica local; ?fps=1 muestra los cuadros por segundo.
 -->
-<link rel="stylesheet" href="../../comun/escena.css">
-<link rel="stylesheet" href="../../comun/tw.css">
-<link rel="stylesheet" href="../../comun/juego.css">
-<style id="esc-propio">
-.vt { display: grid; gap: .7em; user-select: none; -webkit-user-select: none; }
-.vt-fila { min-height: 7.2em; display: grid; place-items: center; position: relative; }
-.vt-cli { width: min(26em, 100%); background: var(--s1); border: 2px solid var(--line2); border-radius: 1em; padding: .7em .9em; display: grid; grid-template-columns: 2.4em 1fr; gap: .2em .7em; align-items: center; box-shadow: var(--card-shadow); cursor: grab; touch-action: none; position: relative; z-index: 3; }
-.vt-cli.arrastra { cursor: grabbing; box-shadow: 0 18px 40px -16px rgba(0,0,0,.45); transition: none; }
-.vt-cli .cara { grid-row: span 2; font-size: 2.2em; line-height: 1; text-align: center; }
-.vt-cli b { font-size: .8em; }
-.vt-cli span { font-size: .7em; color: var(--muted); }
-.vt-cli .doc { font: 700 .66em var(--mono); color: var(--fg); grid-column: 2; }
-.vt-cli .monto { position: absolute; top: .5em; right: .7em; font: 900 .78em var(--mono); color: var(--accent); }
-.vt-band { display: grid; grid-template-columns: repeat(4, 1fr); gap: .45em; }
-.vt-b { border: 2px dashed var(--line2); border-radius: 1em; padding: .8em .5em; text-align: center; background: var(--s2); cursor: pointer; font: 800 .74em/1.2 system-ui, sans-serif; color: var(--fg); display: grid; gap: .2em; justify-items: center; min-height: 5.4em; align-content: center; touch-action: manipulation; }
-.vt-b i { font-style: normal; font-size: 1.7em; line-height: 1; }
-.vt-b small { font-weight: 600; color: var(--muted); font-size: .8em; }
-.vt-b.sobre { border-style: solid; border-color: var(--accent); background: var(--accent-bg); }
-.vt-b.bien { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
-.vt-b.mal { border-style: solid; border-color: var(--warn); background: var(--warn-bg); }
-.vt-mio { display: flex; flex-wrap: wrap; gap: .35em .9em; font-size: .68em; color: var(--muted); }
-.vt-mio b { color: var(--fg); font-family: var(--mono); }
-.vt-rep { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5em; }
-.vt-rep div { background: var(--s2); border-radius: .7em; padding: .5em .6em; display: grid; }
-.vt-rep small { font-size: .58em; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-.vt-rep b { font: 900 1em var(--mono); }
-@media (max-width: 860px) { .vt-band { grid-template-columns: 1fr 1fr; } .vt-b { font-size: .9em; } .vt-cli b { font-size: .95em; } .vt-cli span, .vt-cli .doc { font-size: .85em; } .vt-rep { grid-template-columns: 1fr 1fr; } .vt-rep small { font-size: .7em; } .vt-mio { font-size: .85em; } }
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; }
+  .esc-cielo { display: none !important; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #f2c14e; margin-bottom: 6px; }
 </style>
 </head>
 <body>
-<div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ca">Conceptualización</span>
-    <span class="esc-num">Sesión 3 · E06</span>
-  </header>
-
-  <main class="esc-cuerpo">
-    <div class="tw-pila">
-      <div class="esc-fila" style="justify-content:space-between">
-        <h1 class="esc-titulo a-in" style="font-size:1.5em">La <em>ventanilla</em></h1>
-        <p class="tw-nota" style="max-width:36em">Llegan clientes. Arrastra cada uno a su bandeja (o toca la bandeja). Con lo que emitan todos, armamos el reporte del día del grupo.</p>
-      </div>
-      <div id="juego"></div>
-      <div class="tw-card" id="rep-grupo">
-        <h2>Reporte del día del grupo <span class="esc-chip" id="rep-n">0 cajas</span></h2>
-        <div class="vt-rep" id="rep"></div>
-        <p class="tw-nota">Sale de los registros que cada uno publica al terminar su ronda. Todos los productos del juego llevan IGV.</p>
-      </div>
-    </div>
-  </main>
-
-  <footer class="esc-pie">
-    <span class="esc-nota">Juego del grupo · al final, tu reflexión al muro y tu fotito</span>
-  </footer>
-</div>
+<div id="juego"><div class="sin-motor"><div><b>Abriendo la ventanilla…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
 <script src="../../comun/tw.js"></script>
-<script src="../../comun/juego.js"></script>
-<script src="../../comun/fotito.js"></script>
+<script src="../../comun/arena-tw.js"></script>
+<script src="../../arena/arena-jmd.js"></script>
 <script>
 (function () {
-  var $ = TW.$, $$ = TW.$$;
-  var BAND = [["boleta", "🅱️", "Boleta", "persona · DNI"], ["factura", "🏢", "Factura", "negocio · RUC"], ["nc", "↩️", "Nota de crédito", "corrige una ya emitida"], ["ruc", "🔎", "Pedir el RUC", "falta un dato"]];
+  "use strict";
+  if (!window.ArenaJMD || !window.TWA) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
+  }
+  var A = window.ArenaJMD, X = window.TWA, K = X.marca(), RED = X.REDUCIDO, rr = X.rr, soles = X.soles;
+
+  // ---------- los clientes de la clase ----------
+  var DOC = {
+    dni: { t: "🪪 DNI", c: "#2f6bff", corto: "DNI" }, ruc10: { t: "🏢 RUC 10", c: "#c2410c", corto: "RUC" }, ruc20: { t: "🏢 RUC 20", c: "#c2410c", corto: "RUC" },
+    refb: { t: "🧾 Ref. B001", c: "#9446c1", corto: "Ref." }, reff: { t: "🧾 Ref. F001", c: "#9446c1", corto: "Ref." }, nada: { t: "❓ Sin documento", c: "#6b7280", corto: "?" },
+  };
   var CASOS = [
-    ["boleta", "👩", "Señora que compra para su casa", "DNI 4•••••••"], ["boleta", "🧑", "Joven que compra un regalo", "DNI 7•••••••"],
-    ["boleta", "👴", "Vecino que pagó con Yape y quiere su comprobante", "DNI 0•••••••"], ["boleta", "👩‍🦱", "Clienta de la tienda web, compra personal", "DNI 4•••••••"],
-    ["factura", "🍽️", "Restaurante que compra insumos", "RUC 20•••••••••"], ["factura", "🔧", "Don Luis compra para su ferretería y pide factura", "RUC 10•••••••••"],
-    ["factura", "🚚", "Empresa de transporte que sustenta un gasto", "RUC 20•••••••••"], ["factura", "🏫", "Colegio que compra útiles para sus aulas", "RUC 20•••••••••"],
-    ["nc", "📦", "Devuelve un producto de una boleta ya emitida", "Ref. B001-•••"], ["nc", "💸", "Le cobraste de más en una factura ya enviada", "Ref. F001-•••"],
-    ["nc", "🏷️", "Le das un descuento después de emitir su factura", "Ref. F001-•••"],
-    ["ruc", "🙋", "Pide factura, pero solo te da su DNI", "DNI 4•••••••"], ["ruc", "🤷", "Quiere factura «a nombre de la empresa» y no sabe el RUC", "Sin documento"]
+    { k: "boleta", d: "dni", q: "Señora que compra para su casa", dice: "«¿Me das mi comprobante?»" },
+    { k: "boleta", d: "dni", q: "Joven que compra un regalo", dice: "«Es para mi mamá»" },
+    { k: "boleta", d: "dni", q: "Vecino que pagó con Yape y quiere su comprobante", dice: "«Ya te yapeé»" },
+    { k: "boleta", d: "dni", q: "Clienta de la tienda web, compra personal", dice: "«Pedí por la web»" },
+    { k: "factura", d: "ruc20", q: "Restaurante que compra insumos", dice: "«Factura, por favor»" },
+    { k: "factura", d: "ruc10", q: "Don Luis compra para su ferretería y pide factura", dice: "«Aquí está mi RUC»" },
+    { k: "factura", d: "ruc20", q: "Empresa de transporte que sustenta un gasto", dice: "«Es para la empresa»" },
+    { k: "factura", d: "ruc20", q: "Colegio que compra útiles para sus aulas", dice: "«Con factura, por favor»" },
+    { k: "nc", d: "refb", q: "Devuelve un producto de una boleta ya emitida", dice: "«Vino fallado»" },
+    { k: "nc", d: "reff", q: "Le cobraste de más en una factura ya enviada", dice: "«Me cobraron de más»" },
+    { k: "nc", d: "reff", q: "Le das un descuento después de emitir su factura", dice: "«¿Y el descuento?»" },
+    { k: "ruc", d: "dni", q: "Pide factura, pero solo te da su DNI", dice: "«Quiero factura»" },
+    { k: "ruc", d: "nada", q: "Quiere factura «a nombre de la empresa» y no sabe el RUC", dice: "«Póngale el de la empresa»" },
   ];
   var POR = {
-    boleta: "Compra para sí misma: es consumidor final. Va <b>boleta</b>, normalmente con su DNI.",
-    factura: "Compra para su negocio y tiene RUC: va <b>factura</b>. El IGV le sirve como crédito fiscal.",
-    nc: "El comprobante ya se emitió y no se borra: se corrige con una <b>nota de crédito</b> que lo referencia.",
-    ruc: "La factura se emite a un RUC. Sin RUC, <b>pídeselo</b>; si no tiene, va boleta."
+    boleta: "Compra para sí: es consumidor final. Va boleta, normalmente con su DNI.",
+    factura: "Compra para su negocio y tiene RUC: va factura. El IGV le sirve como crédito fiscal.",
+    nc: "El comprobante ya se emitió y no se borra: se corrige con una nota de crédito que lo referencia.",
+    ruc: "La factura se emite a un RUC (11 dígitos). Sin RUC, pídeselo; si no lo tiene, va boleta.",
   };
-  var vivo = false, rng = Math.random, tipT = 0, mio = { boleta: 0, factura: 0, nc: 0, ventas: 0, menos: 0 }, jugado = false;
-  function igv(t) { return t - t / 1.18; }
-  function texto() { var neto = mio.ventas - mio.menos; return "B" + mio.boleta + " F" + mio.factura + " N" + mio.nc + " T" + neto.toFixed(2) + " I" + igv(neto).toFixed(2); }
-  var REP = TW.escena + "-rep";
-  TWJuego.montar({
-    raiz: $("#juego"), segundos: 50, unidad: ["comprobante", "comprobantes"], meta: 8, tituloGrupo: "Comprobantes del grupo",
-    reglas: ["Llega un cliente con su situación. <b>Arrástralo</b> a su bandeja, o toca la bandeja.",
-             "Boleta, factura, nota de crédito… o <b>pedir el RUC</b> si falta un dato.",
-             "Si te equivocas, ves por qué: <b>no restas</b>. Al final, tu caja se suma al reporte del día del grupo."],
-    pregunta: "¿Qué comprobante te pedirán más en tu negocio, y qué dato necesitas para emitirlo?",
-    placeholder: "Ej.: «Boleta; tener a mano el DNI del cliente»",
-    resultado: function (p, e) { return { resultado: p + (p === 1 ? " comprobante bien elegido" : " comprobantes bien elegidos"), detalle: "La ventanilla · ventas " + TW.soles(mio.ventas - mio.menos) + " · " + e + (e === 1 ? " aprendizaje" : " aprendizajes") }; },
-    crear: function (z, api) {
-      var raiz = TW.el("div", "vt"), fila = TW.el("div", "vt-fila"), band = TW.el("div", "vt-band"), mioEl = TW.el("div", "vt-mio");
-      raiz.appendChild(fila); raiz.appendChild(band); raiz.appendChild(mioEl); z.appendChild(raiz);
-      var actual = null, tarjeta = null, ocupado = false, B = {};
-      BAND.forEach(function (x) {
-        var b = TW.el("button", "vt-b"); b.type = "button"; b.setAttribute("data-b", x[0]);
-        b.appendChild(TW.el("i", "", x[1])); b.appendChild(TW.el("span", "", x[2])); b.appendChild(TW.el("small", "", x[3]));
-        b.addEventListener("click", function () { soltar(x[0]); });
-        B[x[0]] = b; band.appendChild(b);
-      });
-      function pintarMio() {
-        var neto = mio.ventas - mio.menos;
-        mioEl.innerHTML = "Tu caja: <span><b>" + mio.boleta + "</b> boletas</span><span><b>" + mio.factura + "</b> facturas</span><span><b>" + mio.nc + "</b> notas de crédito</span><span>ventas <b>" + TW.soles(neto) + "</b></span><span>IGV <b>" + TW.soles(igv(neto)) + "</b></span>";
-      }
-      function tip(h) { var t = z.querySelector(".tj-tip"); if (t) t.remove(); t = TW.el("div", "tj-tip"); t.innerHTML = h; z.appendChild(t); clearTimeout(tipT); tipT = setTimeout(function () { t.remove(); }, 2600); }
-      function soltar(k) {
-        if (!vivo || !actual || ocupado) return;
-        ocupado = true;
-        var bien = k === actual.k;
-        B[k].classList.add(bien ? "bien" : "mal");
-        if (bien) {
-          api.punto(1);
-          if (k === "boleta" || k === "factura") { mio[k]++; mio.ventas += actual.m; }
-          if (k === "nc") { mio.nc++; mio.menos += Math.round(actual.m * 0.3 * 10) / 10; }
-          pintarMio();
-        } else { api.error(POR[actual.k]); B[actual.k].classList.add("bien"); tip(POR[actual.k]); }
-        if (tarjeta) { tarjeta.style.transition = "transform .3s ease-in, opacity .3s ease-in"; tarjeta.style.opacity = "0"; }
-        setTimeout(function () { $$(".vt-b", band).forEach(function (x) { x.classList.remove("bien", "mal", "sobre"); }); ocupado = false; siguiente(); }, bien ? 380 : 1700);
-      }
-      function siguiente() {
-        if (!vivo) return;
-        var c = CASOS[Math.floor(rng() * CASOS.length)];
-        actual = { k: c[0], m: Math.round((8 + rng() * 240) * 10) / 10 };
-        var t = TW.el("div", "vt-cli tj-pop"); t.setAttribute("role", "img"); t.setAttribute("aria-label", c[2] + ", " + c[3]);
-        t.appendChild(TW.el("span", "cara", c[1])); t.appendChild(TW.el("b", "", c[2])); t.appendChild(TW.el("span", "doc", c[3]));
-        t.appendChild(TW.el("span", "monto", TW.soles(actual.m)));
-        fila.textContent = ""; fila.appendChild(t); tarjeta = t;
-        arrastrable(t);
-      }
-      function bajo(x, y) { var r = null; Object.keys(B).forEach(function (k) { var q = B[k].getBoundingClientRect(); if (x >= q.left && x <= q.right && y >= q.top && y <= q.bottom) r = k; }); return r; }
-      function arrastrable(t) {
-        var x0 = 0, y0 = 0, id = null;
-        t.addEventListener("pointerdown", function (e) { if (!vivo || ocupado) return; id = e.pointerId; x0 = e.clientX; y0 = e.clientY; t.setPointerCapture(id); t.classList.add("arrastra"); });
-        t.addEventListener("pointermove", function (e) {
-          if (e.pointerId !== id) return;
-          t.style.transform = "translate(" + (e.clientX - x0) + "px," + (e.clientY - y0) + "px) rotate(" + ((e.clientX - x0) / 40) + "deg)";
-          var k = bajo(e.clientX, e.clientY); Object.keys(B).forEach(function (q) { B[q].classList.toggle("sobre", q === k); });
-        });
-        function fin(e) {
-          if (e.pointerId !== id) return; id = null; t.classList.remove("arrastra");
-          var k = bajo(e.clientX, e.clientY);
-          if (k) soltar(k); else { t.style.transition = "transform .2s ease-out"; t.style.transform = ""; setTimeout(function () { t.style.transition = ""; }, 220); }
-        }
-        t.addEventListener("pointerup", fin); t.addEventListener("pointercancel", fin);
-      }
-      pintarMio();
-      return {
-        empezar: function (r) { rng = r; vivo = true; ocupado = false; jugado = true; mio = { boleta: 0, factura: 0, nc: 0, ventas: 0, menos: 0 }; pintarMio(); siguiente(); },
-        parar: function () {
-          vivo = false;
-          if (jugado && (mio.boleta + mio.factura + mio.nc) > 0) TW.pedir("/muro", { escena: REP, texto: texto() }).then(traerRep);
-        }
-      };
-    }
-  });
-  // Reporte del grupo: suma lo que cada uno publicó al terminar («B7 F4 N2 T812.40 I123.93»).
-  function traerRep() {
-    TW.pedir("/muro?escena=" + REP).then(function (r) {
-      var en = r.ok && r.datos.entradas ? r.datos.entradas : [], s = { b: 0, f: 0, n: 0, t: 0 }, k = 0;
-      en.forEach(function (e) {
-        var m = String(e.texto || "").match(/^B(\d+) F(\d+) N(\d+) T(-?[\d.]+)/);
-        if (m) { k++; s.b += +m[1]; s.f += +m[2]; s.n += +m[3]; s.t += +m[4]; }
-      });
-      $("#rep-n").textContent = k + (k === 1 ? " caja" : " cajas");
-      var rep = $("#rep"); rep.textContent = "";
-      [["Boletas", s.b], ["Facturas", s.f], ["Notas de crédito", s.n], ["Ventas del día", TW.soles(s.t)], ["IGV incluido", TW.soles(igv(s.t))]].forEach(function (x) {
-        var d = TW.el("div"); d.appendChild(TW.el("small", "", x[0])); d.appendChild(TW.el("b", "", String(x[1]))); rep.appendChild(d);
-      });
-    });
+  var NOMBRE = { boleta: "Boleta", factura: "Factura", nc: "Nota de crédito", ruc: "Pedir el RUC" };
+  var COLORES = ["#8d99ae", "#b08968", "#6d9773", "#c9a227", "#a26769", "#5e7ca8", "#7d6b91", "#4f8a8b"];
+  var ACCS = ["sombrero", "gorra", "chullo", "mono", "", "birrete"];
+
+  // ---------- el mapa: 1800 × 1300 ----------
+  var ANCHO = 1800, ALTO = 1300;
+  var V = {
+    boleta: { id: "boleta", k: "boleta", x: 60, y: 260, w: 310, h: 260, nombre: "Boleta · DNI", color: "#2f6bff", ico: "🧑", l1: "Boleta", l2: "persona que compra para ella", serie: "Serie B001" },
+    factura: { id: "factura", k: "factura", x: 420, y: 260, w: 310, h: 260, nombre: "Factura · RUC", color: "#c2410c", ico: "🏢", l1: "Factura", l2: "negocio que sustenta su compra", serie: "Serie F001" },
+    nc: { id: "nc", k: "nc", x: 780, y: 260, w: 310, h: 260, nombre: "Nota de crédito", color: "#9446c1", ico: "↩️", l1: "Nota de crédito", l2: "corrige una ya emitida", serie: "con la referencia" },
+    ruc: { id: "ruc", k: "ruc", x: 1140, y: 260, w: 310, h: 260, nombre: "Pedir el RUC", color: "#12a7a0", ico: "🔎", l1: "Pedir el RUC", l2: "quiere factura y le falta el dato", serie: "11 dígitos: 10… o 20…" },
+  };
+  var TABLERO = { id: "tablero", entrega: false, x: 1500, y: 260, w: 270, h: 760, nombre: "Caja del grupo", color: "#c48709", colorTexto: "#1c1300" };
+  var SALA = { x: 60, y: 780, w: 1390, h: 480 };
+
+  // ---------- la caja del grupo: contadores de la sala ----------
+  var CERO = function () { return { caja: 0, bol: 0, fac: 0, nc: 0, ruc: 0, dev: 0 }; };
+  var LOCAL = CERO(), CNT = CERO(), sellos = {}, mio = { bol: 0, fac: 0, nc: 0, ruc: 0, caja: 0, igv: 0 };
+  function practica() { return !juego || juego.yo().practica || !X.ruta; }
+  function caja() { return practica() ? LOCAL : CNT; }
+  function anotar(nombre, n) {
+    LOCAL[nombre] += n; CNT[nombre] += n;
+    if (!practica()) X.sumar(nombre, n);
   }
-  traerRep(); setInterval(traerRep, 5000);
+  X.contadores(2500, function (c) { if (!practica()) { var n = CERO(); Object.keys(n).forEach(function (k) { n[k] = +c[k] || 0; }); CNT = n; } });
+
+  // ---------- arte ----------
+  function pintarCliente(g, x, y, sc, t, d) {
+    var lleva = sc < 1, gx = lleva ? x - 46 : x, gy = lleva ? y + 108 : y, k = lleva ? .64 : .76, D = DOC[d.c.d];
+    A.pintarRobot(g, gx, gy, k, { color: d.col, accesorio: d.acc, dir: 0, anim: d.c.k === "ruc" ? "triste" : "", t: t + d.i * .7 });
+    // el documento en la mano
+    g.save(); g.translate(gx + 22 * k, gy - 32 * k); g.rotate(-.12);
+    g.fillStyle = "#ffffff"; g.strokeStyle = D.c; g.lineWidth = 2.4; rr(g, -15, -11, 34, 22, 4); g.fill(); g.stroke();
+    g.fillStyle = D.c; g.fillRect(-15, -11, 8, 22);
+    X.texto(g, D.corto, 6, 0.5, 9, "900", D.c, "center");
+    g.restore();
+    if (!lleva) { // lo que pide, en un globito
+      var by = gy - 96 * k - 26;
+      g.fillStyle = "#ffffff"; rr(g, gx - 22, by - 16, 44, 30, 12); g.fill();
+      g.beginPath(); g.moveTo(gx - 5, by + 13); g.lineTo(gx, by + 21); g.lineTo(gx + 5, by + 13); g.fill();
+      X.emoji(g, d.c.k === "nc" ? "↩️" : d.c.k === "boleta" ? "🧾" : "📄", gx, by, 17);
+    }
+  }
+  function pintarVentanilla(g, z, t) {
+    var x = z.x, y = z.y, w = z.w, h = z.h, lleva = juego && juego.yo().carga, pul = X.pulso(t);
+    if (lleva) { g.fillStyle = "rgba(242,193,78," + (.1 + pul * .14) + ")"; rr(g, x - 12, y - 12, w + 24, h + 24, 26); g.fill(); }
+    g.fillStyle = "rgba(20,18,43,.22)"; rr(g, x + 5, y + 9, w, h, 18); g.fill();
+    g.fillStyle = "#fffaf0"; rr(g, x, y, w, h, 18); g.fill();
+    g.save(); rr(g, x, y, w, h, 18); g.clip();
+    var n = 8, a = w / n;
+    for (var i = 0; i < n; i++) { g.fillStyle = i % 2 ? "#ffffff" : z.color; g.fillRect(x + i * a, y, a + .5, 30); g.beginPath(); g.arc(x + i * a + a / 2, y + 30, a / 2, 0, Math.PI); g.fill(); }
+    g.restore();
+    X.emoji(g, z.ico, x + 58, y + 112, 52);
+    X.texto(g, z.l1, x + 102, y + 96, z.l1.length > 12 ? 23 : 28, "900", "#1b2350");
+    var b = X.bloque(g, z.l2, w - 120, 2, 17, 12, "700"); g.fillStyle = "#4a4760"; g.textAlign = "left";
+    b.ls.forEach(function (l, j) { g.fillText(l, x + 102, y + 128 + j * (b.px + 3)); });
+    X.pastilla(g, z.serie, x + w / 2, y + h - 66, 15, "rgba(27,35,80,.08)", "#1b2350");
+    if (z.k === "boleta" || z.k === "factura") X.pastilla(g, "SOLO PRUEBAS SUNAT", x + w / 2, y + h - 30, 13, z.color, "#ffffff");
+    else X.pastilla(g, z.k === "nc" ? "no se borra: se corrige" : "sin RUC no hay factura", x + w / 2, y + h - 30, 13, z.color, "#ffffff");
+    g.strokeStyle = z.color; g.lineWidth = 4; rr(g, x, y, w, h, 18); g.stroke();
+    var dt = performance.now() - (sellos[z.k] || -1e9);
+    if (dt < 1500) X.sello(g, z.k === "ruc" ? "¡RUC PEDIDO!" : "¡EMITIDA · PRUEBA!", x + w / 2, y + h / 2 + 8, z.k === "ruc" ? 28 : 22, z.color, dt / 1500);
+  }
+  function pintarTablero(g, z) {
+    var x = z.x, y = z.y, w = z.w, h = z.h, c = caja(), ventas = Math.max(0, c.caja - c.dev), igv = ventas - ventas / 1.18;
+    g.fillStyle = "rgba(20,18,43,.25)"; rr(g, x + 5, y + 9, w, h, 20); g.fill();
+    g.fillStyle = "#1d1838"; rr(g, x, y, w, h, 20); g.fill();
+    g.strokeStyle = "#f2c14e"; g.lineWidth = 4; rr(g, x, y, w, h, 20); g.stroke();
+    // la caja registradora
+    g.fillStyle = "#c48709"; rr(g, x + 20, y + 40, w - 40, 150, 16); g.fill();
+    g.fillStyle = "#16301e"; rr(g, x + 34, y + 54, w - 68, 70, 10); g.fill();
+    var cj = X.bloque(g, soles(ventas), w - 90, 1, 34, 16, "900"); g.fillStyle = "#7ef0a0"; g.textAlign = "center"; g.fillText(cj.ls[0], x + w / 2, y + 90);
+    X.texto(g, "ventas del día del grupo", x + w / 2, y + 150, 15, "800", "#3a2600", "center");
+    X.texto(g, "IGV incluido: " + soles(igv), x + w / 2, y + 172, 15, "800", "#3a2600", "center");
+    // el reporte
+    X.texto(g, "REPORTE DEL DÍA", x + 22, y + 228, 16, "900", "#ffe9a3");
+    X.pastilla(g, "PRÁCTICA", x + w - 50, y + 228, 11, "#f2c14e", "#1c1300");
+    var filas = [["🧾 Boletas", c.bol], ["🏢 Facturas", c.fac], ["↩️ Notas de crédito", c.nc], ["🔎 RUC pedidos", c.ruc],
+      ["Vendido", soles(c.caja)], ["Notas de crédito", "− " + soles(c.dev)], ["Ventas", soles(ventas)], ["Valor de venta", soles(ventas / 1.18)], ["IGV (18 %)", soles(igv)]];
+    filas.forEach(function (f, i) {
+      var fy = y + 270 + i * 36 + (i >= 4 ? 14 : 0);
+      if (i === 4) { g.strokeStyle = "rgba(242,193,78,.35)"; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 20, fy - 24); g.lineTo(x + w - 20, fy - 24); g.stroke(); }
+      X.texto(g, f[0], x + 22, fy, 16, i === 6 ? "900" : "700", i === 6 ? "#ffe9a3" : "#d9d4ff");
+      X.texto(g, String(f[1]), x + w - 22, fy, 17, "900", i === 6 ? "#ffe9a3" : "#ffffff", "right");
+    });
+    var nota = X.bloque(g, "Hoy la tienda entrega nota de venta. La boleta y la factura se practican solo en el ambiente de pruebas de SUNAT.", w - 44, 5, 14, 11, "600");
+    g.fillStyle = "#b7b4cc"; g.textAlign = "left";
+    nota.ls.forEach(function (l, i) { g.fillText(l, x + 22, y + h - 104 + i * (nota.px + 4)); });
+  }
+  function fondo(g) {
+    var gr = g.createLinearGradient(0, 0, 0, 220); gr.addColorStop(0, "#14122b"); gr.addColorStop(1, "#2a2160");
+    g.fillStyle = gr; g.fillRect(0, 0, ANCHO, 220);
+    g.strokeStyle = "rgba(242,193,78,.45)"; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 220); g.lineTo(ANCHO, 220); g.stroke();
+    var r = A.rng(53);
+    for (var i = 0; i < 70; i++) { g.fillStyle = "rgba(255,240,200," + (.2 + r() * .5).toFixed(2) + ")"; g.beginPath(); g.arc(r() * ANCHO, r() * 210, 1 + r() * 2, 0, 7); g.fill(); }
+    X.texto(g, "LA VENTANILLA", 900, 92, 56, "900", "#ffe9a3", "center");
+    X.texto(g, "boleta, factura, nota de crédito o pedir el RUC · práctica en el ambiente de pruebas de SUNAT", 900, 150, 22, "700", "#c3b9ff", "center");
+    // mostrador
+    g.fillStyle = "#c9b38a"; g.fillRect(40, 540, 1430, 26); g.fillStyle = "#a88d5f"; g.fillRect(40, 566, 1430, 8);
+    // la sala de espera: baldosas cálidas y la fila
+    g.fillStyle = "rgba(196,135,9,.07)"; rr(g, SALA.x - 20, SALA.y - 30, SALA.w + 40, SALA.h + 50, 30); g.fill();
+    g.strokeStyle = "rgba(196,135,9,.25)"; g.lineWidth = 3; g.setLineDash([14, 10]); rr(g, SALA.x - 20, SALA.y - 30, SALA.w + 40, SALA.h + 50, 30); g.stroke(); g.setLineDash([]);
+    X.texto(g, "SALA DE ESPERA · los clientes te esperan aquí", SALA.x + 10, SALA.y - 6, 18, "800", "rgba(140,96,6,.55)");
+  }
+
+  // ---------- el juego ----------
+  var juego = A.crear({
+    raiz: "#juego",
+    titulo: "La ventanilla",
+    subtitulo: "Práctica: hoy la tienda entrega nota de venta; la boleta y la factura se practican en el ambiente de pruebas de SUNAT.",
+    curso: K.curso, sesion: K.sesion, fecha: K.fecha || undefined, hashtag: K.hashtag,
+    duracion: 180, duraciones: [180, 300], duracionPractica: 120,
+    mundo: { ancho: ANCHO, alto: ALTO, tema: "patio" },
+    jugador: { accesorio: "mono" },
+    salida: { x: 580, y: 650, w: 380, h: 90 },
+    reglas: [
+      "Pasa al lado de un cliente de la sala: te sigue con su documento en la mano.",
+      "Llévalo a su ventanilla: Boleta, Factura, Nota de crédito o Pedir el RUC.",
+      "Lo que emite el grupo llena la caja y el reporte del día. Errar no resta: la lupa te dice por qué.",
+    ],
+    anuncio: "a atender",
+    muros: [{ x: 300, y: 690, w: 160, h: 46 }, { x: 1080, y: 690, w: 160, h: 46 }],
+    zonas: [V.boleta, V.factura, V.nc, V.ruc].map(function (v) { return Object.assign({ pintar: pintarVentanilla }, v); })
+      .concat([Object.assign({ pintar: pintarTablero }, TABLERO)]),
+    peligros: [
+      { tipo: "dron", nombre: "el dron de la tienda", ruta: [[110, 630], [1420, 630]], vel: 130, radio: 26,
+        aviso: "¡El dron te hizo soltar al cliente! Volvió a la sala: búscalo otra vez.", avisoSinCarga: "¡Uy, el dron de la tienda! Cruza cuando pase." },
+    ],
+    decor: [{ tipo: "planta", x: 40, y: 760 }, { tipo: "planta", x: 1480, y: 1250 }, { tipo: "planta", x: 1480, y: 1080 }],
+    fondo: fondo,
+    objetos: {
+      cantidad: 18, prefijo: "cli",
+      crear: function (i, v, rnd, M) {
+        var c = CASOS[Math.floor(rnd() * CASOS.length)], m;
+        if (c.k === "factura") m = [59, 118, 177, 236][Math.floor(rnd() * 4)];
+        else if (c.k === "nc") m = 10 + Math.floor(rnd() * 51);
+        else m = 12 + Math.floor(rnd() * 87);
+        var p = M.lugarLibre(rnd, 44, SALA), D = DOC[c.d];
+        var txt = c.k === "ruc" ? D.corto + " · pide factura" : c.k === "nc" ? DOC[c.d].t.slice(3) + " · S/ " + m : D.corto + " · S/ " + m;
+        return { x: p.x, y: p.y, c: c, m: m, col: COLORES[Math.floor(rnd() * COLORES.length)], acc: ACCS[Math.floor(rnd() * ACCS.length)], texto: txt, pintar: pintarCliente };
+      },
+    },
+    tarjeta: function (ob) {
+      var D = DOC[ob.c.d];
+      return { etiqueta: D.t + (ob.c.d === "dni" ? " 4•••••••" : ob.c.d.indexOf("ruc") === 0 ? "•••••••••" : ob.c.d.indexOf("ref") === 0 ? "-•••" : ""), color: D.c,
+        titulo: ob.c.q + " " + ob.c.dice, destacadoEtiqueta: ob.c.k === "nc" ? "A corregir" : "Compra", destacado: soles(ob.m),
+        pie: "Llévalo a su ventanilla, arriba." };
+    },
+    entregar: function (ob, z) {
+      var c = ob.c;
+      if (z.k !== c.k) return { ok: false, puntos: 0, titulo: "Casi: era «" + NOMBRE[c.k] + "»", explicacion: POR[c.k], real: c.q + " → " + NOMBRE[c.k] + ".", feed: "aprendió en la ventanilla" };
+      if (c.k === "boleta") {
+        anotar("bol", 1); anotar("caja", ob.m); mio.bol++; mio.caja += ob.m;
+        var r = { ok: true, puntos: 10, titulo: "Boleta de prueba emitida +10", feed: "emitió una boleta de prueba de " + soles(ob.m) };
+        if (A.hash(ob.id + ":" + ob.v) % 3 === 0) r.bonus = { pregunta: "¿Con qué empieza la serie de una boleta?", opciones: ["B (B001…)", "F (F001…)", "NV (nota de venta)"], correcta: 0, puntos: 5, segundos: 12,
+          explicacion: "Boleta: serie B. Factura: serie F. La nota de venta es un control interno: no reemplaza a ninguna de las dos." };
+        return r;
+      }
+      if (c.k === "factura") {
+        anotar("fac", 1); anotar("caja", ob.m); mio.fac++; mio.caja += ob.m;
+        var valor = Math.round(ob.m / 1.18 * 100) / 100, igv = Math.round((ob.m - valor) * 100) / 100, rnd = A.rng(A.hash(ob.id + "|" + ob.v));
+        var ops = [soles(igv), soles(ob.m * .18), "S/ 0.00: la factura no lleva IGV"];
+        for (var a = 2; a > 0; a--) { var b = Math.floor(rnd() * (a + 1)), q = ops[a]; ops[a] = ops[b]; ops[b] = q; }
+        return { ok: true, puntos: 10, titulo: "Factura de prueba emitida +10", feed: "emitió una factura de prueba de " + soles(ob.m),
+          bonus: { pregunta: "Factura de " + soles(ob.m) + " con IGV incluido. ¿Cuánto es el IGV?", opciones: ops, correcta: ops.indexOf(soles(igv)), puntos: 5, segundos: 15,
+            explicacion: "Valor de venta = " + soles(ob.m) + " ÷ 1.18 = " + soles(valor) + ". IGV = " + soles(ob.m) + " − " + soles(valor) + " = " + soles(igv) + "." } };
+      }
+      if (c.k === "nc") {
+        anotar("nc", 1); anotar("dev", ob.m); mio.nc++;
+        var rn = { ok: true, puntos: 10, titulo: "Nota de crédito de prueba +10", feed: "emitió una nota de crédito de prueba" };
+        if (A.hash(ob.id + ":" + ob.v) % 2 === 0) rn.bonus = { pregunta: "¿Qué lleva siempre la nota de crédito?", opciones: ["La referencia del comprobante original", "El DNI de quien atendió", "Nada: el comprobante se borra"], correcta: 0, puntos: 5, segundos: 12,
+          explicacion: "Un comprobante emitido no se borra: la nota de crédito lo corrige y dice cuál es (" + (c.d === "refb" ? "B001-…" : "F001-…") + ")." };
+        return rn;
+      }
+      anotar("ruc", 1); mio.ruc++;
+      return { ok: true, puntos: 10, titulo: "¡Bien! Sin RUC no hay factura +10", explicacion: "Pídele su RUC de 11 dígitos. Si no lo tiene, le emites boleta con su DNI.", feed: "le pidió el RUC a un cliente" };
+    },
+    alEntregar: function (ob, z, res) { if (res && res.ok) sellos[z.k] = performance.now(); },
+    alEvento: function (e) {
+      if (e.tipo !== "entrega" || !e.valor || e.x == null) return;
+      Object.keys(V).forEach(function (k) { var z = V[k]; if (e.x > z.x && e.x < z.x + z.w && e.y + 100 > z.y && e.y + 100 < z.y + z.h) sellos[k] = performance.now(); });
+    },
+    meta: { contador: "ventanilla", texto: "Ventanilla del grupo", unidad: "pts", objetivo: function (n) { return Math.max(60, n * 50); }, logro: "la caja del grupo cerró el día" },
+    reflexion: { clave: K.escena || "06-juego-ventanilla", pregunta: "¿Qué comprobante te pedirán más en tu negocio, y qué dato necesitas para emitirlo?",
+      placeholder: "Ej.: «Boleta; tener a mano el DNI del cliente»", porDefecto: "Boleta con DNI, factura con RUC y nota de crédito para corregir." },
+    alRonda: function () { LOCAL = CERO(); CNT = CERO(); sellos = {}; mio = { bol: 0, fac: 0, nc: 0, ruc: 0, caja: 0, igv: 0 }; },
+    alReflexion: function (t) { X.guardarReflexion(t); },
+    resultado: function (s) {
+      var bien = mio.bol + mio.fac + mio.nc + mio.ruc;
+      var t = bien >= 6 && s.fallos <= 1 ? "Ventanilla de oro" : s.bonus >= 2 ? "Ojo de contador" : bien >= 3 ? "Atención de primera" : bien ? "Primer cliente atendido" : "Conoció la ventanilla";
+      return X.guardar({ etiqueta: "Mi turno en la ventanilla (práctica)", titulo: t, resultado: juego.puntos + " puntos",
+        detalle: X.pl(mio.bol, "boleta") + " · " + X.pl(mio.fac, "factura") + " · " + X.pl(mio.nc, "nota de crédito", "notas de crédito") + " · " + X.pl(mio.ruc, "RUC pedido", "RUC pedidos") }, juego.puntos);
+    },
+  });
 })();
 </script>
-<script src="../../comun/copiar.js"></script>
 </body>
 </html>

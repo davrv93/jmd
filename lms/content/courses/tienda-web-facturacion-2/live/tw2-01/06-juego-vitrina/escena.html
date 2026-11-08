@@ -2,151 +2,381 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Juego: Vitrina express</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · Vitrina express: la tienda de los robots</title>
+<link rel="icon" href="data:,">
 <!--
-  Escena del modo LIVE · «Tienda web con facturación electrónica».
-  Armazón de live/_plantilla (programacion-agentica-g8): escena.css común + tw.css del curso, sin recursos externos.
-  Los textos del grupo (fechas, horario, WhatsApp) y la ruta del video salen de ../../comun/tw.js (TW.CURSO / TW.FECHAS).
+  «Vitrina express» · juego de la sesión 1 de «Tienda web con facturación electrónica», sobre el motor Arena JMD
+  (docs/ARENA_JMD.md). Cada alumno es un robot vendedor en el mismo piso de tienda y ve a los demás en vivo.
+  Arriba hay cuatro vitrinas; cada una arma la ficha de un producto con cuatro piezas: foto, nombre, precio y stock.
+  Las piezas están regadas por el piso. Una pieza buena va a su vitrina (+10) y la ficha se llena a la vista de
+  todos. Una pieza floja («Consultar», «Producto nuevo!!!», «Foto borrosa») no entra: la vitrina te explica por
+  qué no vende y la llevas al Taller de fichas (+5), que la devuelve arreglada en su puerta. Quien pone la última
+  pieza completa la ficha, el producto se vende («¡VENDIDO!») y elige su pasillo (la categoría, bono +5).
+  Las vitrinas son del grupo: su estado sale de las versiones de los objetos de la sala, así que todos ven lo mismo.
+  Los drones de inventario solo te hacen soltar la pieza. Al final: título, reflexión al muro y fotito.
+  Curso, grupo, sesión y fecha salen de ../../comun/tw.js: el mismo archivo sirve para el Grupo 1 y el Grupo 2.
+  ?demo=1 entra solo; ?sinred=1 fuerza la práctica local; ?fps=1 muestra los cuadros por segundo.
 -->
-<link rel="stylesheet" href="../../comun/escena.css">
-<link rel="stylesheet" href="../../comun/tw.css">
-<link rel="stylesheet" href="../../comun/juego.css">
-<style id="esc-propio">
-.vx { display: grid; gap: .7em; }
-.vx-ficha { display: grid; grid-template-columns: 5.5em 1fr; gap: .9em; align-items: center; background: var(--s2); border: 2px dashed var(--line2); border-radius: 1em; padding: .8em; }
-.vx-ficha.lista { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
-.vx-foto { font-size: 3.6em; text-align: center; line-height: 1.3; background: var(--s1); border-radius: .2em; }
-.vx-slots { display: grid; gap: .35em; }
-.vx-slot { display: grid; grid-template-columns: 6.2em 1fr; gap: .5em; align-items: center; font-size: .78em; }
-.vx-slot span { color: var(--muted); font-size: .85em; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
-.vx-slot b { min-height: 1.9em; border-radius: .5em; background: var(--s1); border: 1px solid var(--line); padding: .3em .6em; display: flex; align-items: center; }
-.vx-slot b:empty::before { content: "toca la correcta abajo"; color: var(--muted); font-weight: 500; font-style: italic; font-size: .9em; }
-.vx-fichas { display: grid; grid-template-columns: repeat(2, 1fr); gap: .45em; }
-.vx-t { font: 650 .78em/1.25 system-ui, sans-serif; padding: .75em .8em; border-radius: .8em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; text-align: left; touch-action: manipulation; min-height: 3.1em; display: flex; gap: .5em; align-items: center; }
-.vx-t small { flex: none; font-size: .72em; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 800; }
-.vx-t:disabled { opacity: .35; cursor: default; text-decoration: line-through; }
-.vx-t.usada { visibility: hidden; }
-.vx-estante { display: flex; flex-wrap: wrap; gap: .2em; min-height: 2em; padding: .35em .5em; border-radius: .7em; background: linear-gradient(transparent 70%, color-mix(in srgb, var(--gold) 30%, transparent) 70%); font-size: 1.35em; }
-.vx-estante:empty::before { content: "Tu vitrina: aquí aparece cada ficha que completes"; font-size: .5em; color: var(--muted); align-self: center; }
-@media (max-width: 860px) { .vx-ficha { grid-template-columns: 4.2em 1fr; } .vx-foto { font-size: 2.8em; } .vx-slot { grid-template-columns: 5.2em 1fr; font-size: .9em; } .vx-t { font-size: .88em; } }
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; }
+  .esc-cielo { display: none !important; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #f2c14e; margin-bottom: 6px; }
 </style>
 </head>
 <body>
-<div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ca">Conceptualización</span>
-    <span class="esc-num">Sesión 1 · E06</span>
-  </header>
-
-  <main class="esc-cuerpo">
-    <div class="tw-pila">
-      <div class="esc-fila" style="justify-content:space-between">
-        <h1 class="esc-titulo a-in" style="font-size:1.5em">Vitrina <em>express</em></h1>
-        <p class="tw-nota" style="max-width:34em">Arma fichas completas en 45 segundos. Cada ficha que cierras se suma a la vitrina de todo el grupo.</p>
-      </div>
-      <div id="juego"></div>
-    </div>
-  </main>
-
-  <footer class="esc-pie">
-    <span class="esc-nota">Juego del grupo · al final, tu reflexión al muro y tu fotito</span>
-  </footer>
-</div>
+<div id="juego"><div class="sin-motor"><div><b>Abriendo la tienda…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
 <script src="../../comun/tw.js"></script>
-<script src="../../comun/juego.js"></script>
-<script src="../../comun/fotito.js"></script>
+<script src="../../comun/arena-tw.js"></script>
+<script src="../../arena/arena-jmd.js"></script>
 <script>
 (function () {
-  var $ = TW.$, $$ = TW.$$;
-  // Cada producto: foto, y por cada parte una opción buena y una floja. La floja enseña por qué.
+  "use strict";
+  if (!window.ArenaJMD || !window.TWA) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
+  }
+  var A = window.ArenaJMD, X = window.TWA, K = X.marca(), RED = X.REDUCIDO, rr = X.rr;
+
+  // ---------- los productos (los de la clase: nombre con su presentación, precio en soles, stock y pasillo) ----------
   var PROD = [
-    ["🧴", "Shampoo de coco 400 ml", "S/ 18.90", "Cuidado personal"], ["👟", "Zapatillas urbanas talla 40", "S/ 129.00", "Calzado"],
-    ["🍰", "Torta de chocolate, 8 porciones", "S/ 55.00", "Tortas"], ["🔨", "Martillo de carpintero 16 oz", "S/ 32.50", "Herramientas"],
-    ["👕", "Polo de algodón talla M", "S/ 35.00", "Ropa de hombre"], ["🍯", "Miel de abeja 500 g", "S/ 22.00", "Abarrotes"],
-    ["💄", "Labial mate tono rojo", "S/ 24.90", "Maquillaje"], ["🧃", "Jugo de naranja 1 L", "S/ 6.90", "Bebidas"],
-    ["🪴", "Maceta de barro mediana", "S/ 15.00", "Jardín"], ["🎒", "Mochila escolar 20 L", "S/ 79.90", "Escolar"],
-    ["🧀", "Queso fresco 1 kg", "S/ 28.00", "Lácteos"], ["🕯️", "Vela aromática de vainilla", "S/ 19.00", "Decoración"],
-    ["🧦", "Medias deportivas pack x 3", "S/ 18.00", "Ropa deportiva"], ["☕", "Café molido 250 g", "S/ 14.90", "Bebidas"],
-    ["🔌", "Extensión eléctrica 3 m", "S/ 27.00", "Electricidad"], ["🍪", "Galletas de avena, caja x 12", "S/ 16.50", "Snacks"]
+    { e: "🧴", n: "Shampoo de coco 400 ml", p: "S/ 18.90", c: "Cuidado personal", s: 14 },
+    { e: "👟", n: "Zapatillas urbanas talla 40", p: "S/ 129.00", c: "Calzado", s: 3 },
+    { e: "🍰", n: "Torta de chocolate, 8 porciones", p: "S/ 55.00", c: "Tortas", s: 2 },
+    { e: "🔨", n: "Martillo de carpintero 16 oz", p: "S/ 32.50", c: "Herramientas", s: 9 },
+    { e: "👕", n: "Polo de algodón talla M", p: "S/ 35.00", c: "Ropa de hombre", s: 12 },
+    { e: "🍯", n: "Miel de abeja 500 g", p: "S/ 22.00", c: "Abarrotes", s: 20 },
+    { e: "💄", n: "Labial mate tono rojo", p: "S/ 24.90", c: "Maquillaje", s: 7 },
+    { e: "🧃", n: "Jugo de naranja 1 L", p: "S/ 6.90", c: "Bebidas", s: 30 },
+    { e: "🪴", n: "Maceta de barro mediana", p: "S/ 15.00", c: "Jardín", s: 6 },
+    { e: "🎒", n: "Mochila escolar 20 L", p: "S/ 79.90", c: "Útiles escolares", s: 5 },
+    { e: "🧀", n: "Queso fresco 1 kg", p: "S/ 28.00", c: "Lácteos", s: 8 },
+    { e: "🕯️", n: "Vela aromática de vainilla", p: "S/ 19.00", c: "Decoración", s: 11 },
+    { e: "🧦", n: "Medias deportivas pack x 3", p: "S/ 18.00", c: "Ropa deportiva", s: 16 },
+    { e: "☕", n: "Café molido 250 g", p: "S/ 14.90", c: "Café e infusiones", s: 18 },
+    { e: "🔌", n: "Extensión eléctrica 3 m", p: "S/ 27.00", c: "Electricidad", s: 10 },
+    { e: "🍪", n: "Galletas de avena, caja x 12", p: "S/ 16.50", c: "Galletas y snacks", s: 25 },
   ];
-  var FLOJO = {
-    nombre: [["Producto nuevo!!!", "Un nombre vago obliga a preguntar. Di <b>qué es</b> y su tamaño o talla."], ["Oferta", "«Oferta» no se encuentra en el buscador. <b>El nombre dice qué es</b>; la oferta va en el precio."], ["Art. 0231", "Un código sirve para ti, no para tu cliente. <b>Nombre claro</b> primero."], ["Lo de siempre", "Tu cliente nuevo no sabe qué es «lo de siempre». <b>Nombra el producto</b>."]],
-    precio: [["Precio al inbox", "Sin precio a la vista, el cliente escribe y espera… o se va. <b>Muestra el precio</b>."], ["Consultar", "«Consultar» es una pregunta más por chat. <b>El precio va en la ficha</b>."], ["S/ ??", "Un precio incompleto genera desconfianza. <b>Pon el monto exacto</b>."], ["Escríbenos", "Si hay que escribir para saber el precio, la tienda no trabaja sola. <b>Precio visible</b>."]],
-    cat: [["Varios", "En «Varios» nadie busca. <b>La categoría es el pasillo</b> de tu tienda."], ["Otros", "«Otros» no ayuda a filtrar. <b>Usa una categoría que tu cliente reconozca</b>."], ["Nuevos", "«Nuevos» cambia cada semana. <b>La categoría dice qué tipo de producto es</b>."], ["Sin categoría", "Sin categoría, el producto se pierde en el catálogo. <b>Ponle su pasillo</b>."]]
+  // Las cuatro piezas de la ficha. ok: lo que dice el aviso al ponerla bien.
+  var PARTES = [
+    { id: "foto", n: "Foto", ico: "📷", col: "#2f6bff", ok: "¡Foto clara!", art: "la foto" },
+    { id: "nombre", n: "Nombre", ico: "🏷️", col: "#6a58e8", ok: "¡Nombre que dice qué es!", art: "el nombre" },
+    { id: "precio", n: "Precio", ico: "💲", col: "#c48709", ok: "¡Precio a la vista!", art: "el precio" },
+    { id: "stock", n: "Stock", ico: "📦", col: "#12a7a0", ok: "¡Stock a la vista!", art: "el stock" },
+  ];
+  var FOTO_BUENA = ["Foto con luz de día", "Foto nítida y real", "Foto con fondo liso"];
+  // Piezas flojas: [lo que dice, por qué no vende].
+  var FLOJAS = {
+    foto: [["Foto borrosa", "Oscura y movida, no se ve qué vendes. Tómala con luz de día y fondo liso."],
+           ["Foto de internet", "Si no es tu producto real, el cliente desconfía o reclama. Usa una foto tuya."],
+           ["Foto con cosas atrás", "Con la mesa llena nadie sabe qué vendes. Fondo liso y solo el producto."],
+           ["Sin foto", "Sin foto el cliente no se anima a comprar. Una foto clara vende por ti."]],
+    nombre: [["Producto nuevo!!!", "Un nombre vago obliga a preguntar. Di qué es y su presentación: tamaño, talla o peso."],
+             ["Oferta", "«Oferta» no se encuentra en el buscador. El nombre dice qué es; la oferta va en el precio."],
+             ["Art. 0231", "Un código te sirve a ti, no a tu cliente. Primero, un nombre claro."],
+             ["Lo de siempre", "Tu cliente nuevo no sabe qué es «lo de siempre». Nombra el producto."]],
+    precio: [["Precio al inbox", "Sin precio a la vista, el cliente escribe y espera… o se va. Muestra el precio en soles."],
+             ["Consultar", "«Consultar» es una pregunta más por chat. El precio va en la ficha."],
+             ["S/ ??", "Un precio incompleto da desconfianza. Pon el monto exacto."],
+             ["Escríbenos", "Si hay que escribir para saber el precio, la tienda no trabaja sola."]],
+    stock: [["¿Hay? Pregunta", "Sin stock a la vista, todos te escriben «¿todavía tienes?». Muestra cuántos quedan."],
+            ["Sin dato de stock", "Si no dices cuántos hay, vendes lo que no tienes. Con el stock en la ficha, cada venta web lo descuenta sola."],
+            ["Siempre hay", "«Siempre hay» hasta que se acaba. Pon el número real: la tienda lo descuenta con cada venta."]],
   };
-  var NOM = { nombre: "Nombre", precio: "Precio", cat: "Categoría" };
-  var vivo = false, rng = Math.random, orden = [], i = 0, tipT = 0;
-  var zona;
-  TWJuego.montar({
-    raiz: $("#juego"), segundos: 45, unidad: ["ficha", "fichas"], meta: 8, tituloGrupo: "La vitrina del grupo",
-    reglas: ["Aparece un producto con su foto. Toca la opción buena para <b>Nombre</b>, <b>Precio</b> y <b>Categoría</b>.",
-             "Si eliges la floja, te dice por qué y sigues: <b>no pierdes puntos</b>.",
-             "Cada ficha completa va a tu vitrina y a la del grupo. Juegas contra tu mejor marca, no contra nadie."],
-    pregunta: "¿Qué producto tuyo subirías primero a tu tienda, y por qué?",
-    placeholder: "Ej.: «Mis tortas, porque es lo que más me preguntan»",
-    resultado: function (p, e) { return { resultado: p + (p === 1 ? " ficha completa" : " fichas completas"), detalle: "Vitrina express · " + e + (e === 1 ? " aprendizaje" : " aprendizajes") }; },
-    crear: function (z, api) {
-      zona = z;
-      var raiz = TW.el("div", "vx");
-      var ficha = TW.el("div", "vx-ficha"), foto = TW.el("div", "vx-foto", "🛍️"), slots = TW.el("div", "vx-slots");
-      var S = {};
-      ["nombre", "precio", "cat"].forEach(function (k) { var s = TW.el("div", "vx-slot"); s.appendChild(TW.el("span", "", NOM[k])); S[k] = TW.el("b"); s.appendChild(S[k]); slots.appendChild(s); });
-      ficha.appendChild(foto); ficha.appendChild(slots);
-      var fichas = TW.el("div", "vx-fichas"), estante = TW.el("div", "vx-estante");
-      raiz.appendChild(ficha); raiz.appendChild(fichas); raiz.appendChild(estante);
-      z.appendChild(raiz);
-      var faltan = 0;
-      function tip(html) {
-        var t = z.querySelector(".tj-tip"); if (t) t.remove();
-        t = TW.el("div", "tj-tip"); t.innerHTML = html; z.appendChild(t);
-        clearTimeout(tipT); tipT = setTimeout(function () { t.remove(); }, 2600);
-      }
-      function siguiente() {
-        if (!vivo) return;
-        var p = PROD[orden[i % orden.length]]; i++;
-        foto.textContent = p[0]; foto.classList.remove("tj-pop"); void foto.offsetWidth; foto.classList.add("tj-pop");
-        ficha.classList.remove("lista");
-        Object.keys(S).forEach(function (k) { S[k].textContent = ""; });
-        var buenas = { nombre: p[1], precio: p[2], cat: p[3] }, ops = [];
-        Object.keys(buenas).forEach(function (k) {
-          var f = FLOJO[k][Math.floor(rng() * FLOJO[k].length)];
-          ops.push({ k: k, t: buenas[k], ok: true }); ops.push({ k: k, t: f[0], ok: false, por: f[1] });
-        });
-        for (var a = ops.length - 1; a > 0; a--) { var b = Math.floor(rng() * (a + 1)); var x = ops[a]; ops[a] = ops[b]; ops[b] = x; }
-        fichas.textContent = ""; faltan = 3;
-        ops.forEach(function (o) {
-          var bt = TW.el("button", "vx-t"); bt.type = "button";
-          bt.appendChild(TW.el("small", "", NOM[o.k])); bt.appendChild(TW.el("span", "", o.t));
-          bt.addEventListener("click", function () {
-            if (!vivo) return;
-            if (o.ok) {
-              S[o.k].textContent = o.t; bt.classList.add("usada"); faltan--;
-              if (faltan === 0) {
-                ficha.classList.add("lista"); api.punto(1);
-                var e = TW.el("span", "tj-pop", p[0]); estante.appendChild(e);
-                vivo && setTimeout(siguiente, 380);
-              }
-            } else {
-              bt.disabled = true; bt.classList.add("tj-tiembla"); api.error(o.por); tip(o.por);
-            }
-          });
-          fichas.appendChild(bt);
-        });
-      }
-      return {
-        empezar: function (r) {
-          rng = r; vivo = true; i = 0; estante.textContent = "";
-          orden = PROD.map(function (_, k) { return k; });
-          for (var a = orden.length - 1; a > 0; a--) { var b = Math.floor(rng() * (a + 1)); var x = orden[a]; orden[a] = orden[b]; orden[b] = x; }
-          siguiente();
-        },
-        parar: function () { vivo = false; $$(".vx-t", z).forEach(function (b) { b.disabled = true; }); }
-      };
+  var CAT_FLOJAS = ["Varios", "Otros", "Nuevos", "Ofertas"];
+
+  // ---------- el mapa: 1800 × 1100 ----------
+  var ANCHO = 1800, ALTO = 1300, NV = 4;
+  var VITRINAS = [0, 1, 2, 3].map(function (s) {
+    return { id: "v" + s, tipo: "vitrina", s: s, x: 60 + s * 430, y: 236, w: 370, h: 284, nombre: "Vitrina " + (s + 1), color: "#6a58e8" };
+  });
+  var TALLER = { id: "taller", tipo: "taller", x: 1410, y: 1040, w: 330, h: 220, nombre: "Taller de fichas", color: "#a0522d" };
+  var CAJA = { id: "caja", tipo: "caja", entrega: false, x: 60, y: 1050, w: 310, h: 210, nombre: "Caja de la tienda", color: "#c48709", colorTexto: "#1c1300" };
+  var PISO = { x: 60, y: 670, w: 1680, h: 600 };          // donde caen las piezas
+  var PUERTA_TALLER = { x: 1140, y: 1050, w: 250, h: 210 };  // donde sale lo que arregla el taller
+
+  // ---------- estado compartido: sale de las versiones de los objetos ----------
+  // Pieza i = vitrina s (i / 4) y parte k (i % 4); su versión v avanza cada vez que alguien la entrega.
+  // · Una pieza floja solo se entrega en el taller; la siguiente versión es esa misma pieza, ya arreglada.
+  // · Una pieza buena solo se entrega en su vitrina: llena su espacio. buenas(v) = espacios que esa parte llenó.
+  // · La vitrina va por su producto número min(buenas de sus 4 partes); una parte con más está llena (y su
+  //   pieza, que ya es del producto siguiente, se esconde hasta que la ficha se complete).
+  var memo = { sem: -1, d: {} };
+  function semilla() { return juego ? juego.ronda().semilla >>> 0 : 0; }
+  function debil(s, k, v) {
+    var S = semilla();
+    if (memo.sem !== S) memo = { sem: S, d: {} };
+    var c = s + "." + k + "." + v;
+    if (c in memo.d) return memo.d[c];
+    var r = v > 0 && debil(s, k, v - 1) ? false : A.hash(S + ":" + c) % 100 < 42;
+    memo.d[c] = r;
+    return r;
+  }
+  function buenas(s, k, v) { var n = 0; for (var i = 0; i < v; i++) if (!debil(s, k, i)) n++; return n; }
+  function prodDe(s, gen) { return PROD[(semilla() % PROD.length + s + gen * NV) % PROD.length]; }
+  function bueno(ob) {
+    var pr = ob.prod;
+    return ob.k === 0 ? ob.fotoBuena : ob.k === 1 ? pr.n : ob.k === 2 ? pr.p : "Quedan " + pr.s;
+  }
+  function estado() {
+    var out = [];
+    for (var s = 0; s < NV; s++) {
+      var g = [], min = 1e9;
+      for (var k = 0; k < 4; k++) { var ob = juego.objeto("p" + (s * 4 + k)); g[k] = buenas(s, k, ob.v); if (g[k] < min) min = g[k]; }
+      out.push({ gen: min, lleno: g.map(function (x) { return x > min; }) });
     }
+    return out;
+  }
+
+  var EST = [], genAntes = [], vendido = [], vendidoProd = [], ultimoSync = -1, cargaMia = null, avisada = "";
+  var mio = { piezas: 0, completas: 0, arregladas: 0, flojas: 0 };
+  function vendidas() { var n = 0; EST.forEach(function (e) { n += e.gen; }); return n; }
+  // Se llama una vez por cuadro (desde la primera vitrina): estado de las vitrinas, piezas escondidas y «¡VENDIDO!».
+  function sincronizar() {
+    var ahora = performance.now();
+    if (ahora === ultimoSync || !juego) return;
+    ultimoSync = ahora;
+    EST = estado();
+    for (var s = 0; s < NV; s++) {
+      var gen = EST[s].gen;
+      if (genAntes[s] != null && gen > genAntes[s]) {
+        vendido[s] = ahora; vendidoProd[s] = prodDe(s, gen - 1);
+        var z = VITRINAS[s]; juego.popup(z.x + z.w / 2, z.y + z.h + 30, "¡Vendido! " + vendidoProd[s].e, "#f2c14e");
+      }
+      genAntes[s] = gen;
+      for (var k = 0; k < 4; k++) {
+        var d = juego.objeto("p" + (s * 4 + k));
+        if (d.x0 == null) d.x0 = d.x;
+        d.x = EST[s].lleno[k] ? -9999 : d.x0;
+      }
+    }
+    var yo = juego.yo();
+    cargaMia = yo.carga ? juego.objeto(yo.carga) : null;
+    if (cargaMia && EST[cargaMia.s] && EST[cargaMia.s].lleno[cargaMia.k]) {
+      juego.soltar(); cargaMia = null;
+      juego.toast("Alguien llenó ese espacio antes que tú: busca otra pieza.", "", 2400);
+    }
+  }
+
+  // ---------- arte ----------
+  function pintarPieza(g, x, y, sc, t, d) {
+    var P = PARTES[d.k];
+    g.save(); g.translate(x, y); g.scale(sc, sc);
+    var fl = RED || sc < 1 ? 0 : Math.sin(t * 2.4 + d.i) * 2.5;
+    if (sc >= 1) { g.fillStyle = "rgba(0,0,0,.22)"; g.beginPath(); g.ellipse(0, 20, 22, 6, 0, 0, 7); g.fill(); }
+    g.translate(0, fl);
+    g.fillStyle = "#ffffff"; g.strokeStyle = P.col; g.lineWidth = 3.2;
+    rr(g, -28, -24, 56, 42, 9); g.fill(); g.stroke();
+    g.fillStyle = P.col; rr(g, -28, -24, 56, 12, 6); g.fill(); g.fillRect(-28, -18, 56, 6);
+    X.emoji(g, P.ico, -12, 3, 18);
+    X.emoji(g, d.prod.e, 13, 3, 18);
+    g.restore();
+  }
+  function toldo(g, x, y, w, col1, col2) {
+    var n = 9, a = w / n;
+    for (var i = 0; i < n; i++) { g.fillStyle = i % 2 ? col2 : col1; g.fillRect(x + i * a, y, a + .5, 26); }
+    for (i = 0; i < n; i++) { g.fillStyle = i % 2 ? col2 : col1; g.beginPath(); g.arc(x + i * a + a / 2, y + 26, a / 2, 0, Math.PI); g.fill(); }
+  }
+  function marcador(g, txt, x, y, w) {
+    g.save(); g.setLineDash([7, 6]); g.strokeStyle = "#c9c3ee"; g.lineWidth = 2; rr(g, x, y - 15, w, 30, 8); g.stroke(); g.restore();
+    X.texto(g, txt, x + 10, y, 17, "italic 700", "#8c86b8");
+  }
+  function pintarVitrina(g, z, t) {
+    if (z.s === 0) sincronizar();
+    var e = EST[z.s] || { gen: 0, lleno: [false, false, false, false] }, p = prodDe(z.s, e.gen);
+    var x = z.x, y = z.y, w = z.w, h = z.h, mia = cargaMia && cargaMia.s === z.s, pul = X.pulso(t);
+    z.nombre = "Vitrina " + (z.s + 1) + " · " + p.e;
+    if (mia) { g.fillStyle = "rgba(242,193,78," + (.22 + pul * .22) + ")"; rr(g, x - 16, y - 16, w + 32, h + 32, 28); g.fill(); }
+    g.fillStyle = "rgba(20,18,43,.25)"; rr(g, x + 5, y + 9, w, h, 18); g.fill();
+    g.fillStyle = "#2a2160"; rr(g, x, y, w, h, 18); g.fill();
+    g.save(); rr(g, x, y, w, h, 18); g.clip(); toldo(g, x, y, w, "#6a58e8", "#f2c14e"); g.restore();
+    g.fillStyle = "#fffaf0"; rr(g, x + 12, y + 52, w - 24, h - 64, 12); g.fill();
+    // la foto
+    var fx = x + 24, fy = y + 64, fs = 116;
+    if (e.lleno[0]) {
+      g.fillStyle = "#ffffff"; rr(g, fx, fy, fs, fs, 12); g.fill(); g.strokeStyle = "#e3def9"; g.lineWidth = 2; rr(g, fx, fy, fs, fs, 12); g.stroke();
+      X.emoji(g, p.e, fx + fs / 2, fy + fs / 2 + 4, 70);
+    } else {
+      g.save(); g.setLineDash([8, 6]); g.strokeStyle = "#c9c3ee"; g.lineWidth = 2.5; rr(g, fx, fy, fs, fs, 12); g.stroke(); g.restore();
+      X.emoji(g, p.e, fx + fs / 2, fy + fs / 2 - 8, 46, .22);
+      X.texto(g, "Falta la foto", fx + fs / 2, fy + fs - 18, 16, "italic 700", "#8c86b8", "center");
+    }
+    // nombre, precio y stock
+    var cx = x + 156, cw = w - 156 - 24;
+    if (e.lleno[1]) {
+      var bl = X.bloque(g, p.n, cw, 2, 22, 15, "800"); g.fillStyle = "#1b2350"; g.textAlign = "left"; g.textBaseline = "middle";
+      bl.ls.forEach(function (l, i) { g.fillText(l, cx, y + 82 + (i - (bl.ls.length - 1) / 2) * (bl.px + 4) + (bl.ls.length === 1 ? 0 : 6)); });
+    } else marcador(g, "Falta el nombre", cx, y + 86, cw);
+    if (e.lleno[2]) X.texto(g, p.p, cx, y + 146, 36, "900", "#9a6a00");
+    else marcador(g, "Falta el precio", cx, y + 146, cw);
+    if (e.lleno[3]) X.texto(g, "📦 Quedan " + p.s, cx, y + 190, 21, "800", "#0d7f79");
+    else marcador(g, "Falta el stock", cx, y + 190, cw);
+    // el botón de la ficha: se enciende con las cuatro piezas
+    var n = e.lleno.filter(Boolean).length, by = y + h - 54;
+    g.fillStyle = "#ece9fb"; rr(g, x + 24, by, w - 48, 36, 18); g.fill();
+    for (var i = 0; i < 4; i++) {
+      g.fillStyle = e.lleno[i] ? PARTES[i].col : "#cfc9f0"; g.beginPath(); g.arc(x + 48 + i * 24, by + 18, 7, 0, 7); g.fill();
+    }
+    X.texto(g, n + " de 4 piezas", x + 150, by + 18, 19, "800", "#5a4fb0");
+    g.strokeStyle = mia ? "#f2c14e" : "#6a58e8"; g.lineWidth = mia ? 6 : 4; rr(g, x, y, w, h, 18); g.stroke();
+    // ¡VENDIDO!
+    var dt = performance.now() - (vendido[z.s] || -1e9);
+    if (dt < 2600) {
+      var k = dt / 2600;
+      A.pintarRobot(g, x + w - 44 + (RED ? 0 : k * 30), y + h - 4, .62, { color: "#38b2e6", accesorio: "sombrero", anim: "festeja", t: t, dir: 3 });
+      X.sello(g, "¡VENDIDO! " + vendidoProd[z.s].e, x + w / 2, y + h / 2 + 6, 34, "#d6336c", k);
+    }
+  }
+  function pintarTaller(g, z, t) {
+    var x = z.x, y = z.y, w = z.w, h = z.h, lleva = cargaMia, pul = X.pulso(t);
+    if (lleva) { g.fillStyle = "rgba(242,193,78," + (.14 + pul * .16) + ")"; rr(g, x - 12, y - 12, w + 24, h + 24, 24); g.fill(); }
+    g.fillStyle = "#7a4a2a"; rr(g, x, y, w, h, 18); g.fill();
+    g.strokeStyle = "rgba(0,0,0,.18)"; g.lineWidth = 3;
+    for (var yy = y + 28; yy < y + h; yy += 30) { g.beginPath(); g.moveTo(x + 10, yy); g.lineTo(x + w - 10, yy); g.stroke(); }
+    g.fillStyle = "#fff6e6"; rr(g, x + 18, y + 40, w - 36, 108, 12); g.fill();
+    X.emoji(g, "🛠️", x + 58, y + 94, 50);
+    X.texto(g, "Arregla aquí", x + 98, y + 72, 24, "900", "#5b3415");
+    X.texto(g, "lo que no vende", x + 98, y + 100, 20, "700", "#5b3415");
+    X.texto(g, "← sale por la puerta", x + 98, y + 126, 17, "700", "#8a5a33");
+    X.texto(g, "+5 por cada pieza floja", x + w / 2, y + h - 36, 19, "800", "#ffe9a3", "center");
+    g.strokeStyle = lleva ? "#f2c14e" : "#a0522d"; g.lineWidth = lleva ? 6 : 4; rr(g, x, y, w, h, 18); g.stroke();
+  }
+  function pintarCaja(g, z) {
+    var x = z.x, y = z.y, w = z.w, h = z.h, n = vendidas();
+    g.fillStyle = "#3a2c1a"; rr(g, x, y + 30, w, h - 30, 16); g.fill();
+    g.fillStyle = "#c48709"; rr(g, x + 20, y + 44, w - 40, h - 70, 14); g.fill();
+    g.fillStyle = "#16301e"; rr(g, x + 36, y + 58, w - 72, 60, 10); g.fill();
+    X.texto(g, String(n), x + 60, y + 89, 38, "900", "#7ef0a0");
+    X.texto(g, n === 1 ? "ficha vendida" : "fichas vendidas", x + 104, y + 82, 17, "800", "#bdf5cf");
+    X.texto(g, "por todo el grupo", x + 104, y + 102, 14, "600", "#bdf5cf");
+    X.texto(g, "Cada ficha completa se vende sola", x + w / 2, y + h - 24, 14, "700", "#fff6d6", "center");
+  }
+  function fondo(g) {
+    // la pared de la tienda: el letrero arriba y las vitrinas delante, con la constelación JMD
+    var gr = g.createLinearGradient(0, 0, 0, 580); gr.addColorStop(0, "#14122b"); gr.addColorStop(.45, "#221a48"); gr.addColorStop(1, "#3b2f7a");
+    g.fillStyle = gr; g.fillRect(0, 0, ANCHO, 580);
+    g.strokeStyle = "rgba(242,193,78,.4)"; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 580); g.lineTo(ANCHO, 580); g.stroke();
+    var r = A.rng(77);
+    for (var i = 0; i < 90; i++) { g.fillStyle = "rgba(255,240,200," + (.25 + r() * .5).toFixed(2) + ")"; g.beginPath(); g.arc(r() * ANCHO, r() * 220, 1 + r() * 2.2, 0, 7); g.fill(); }
+    g.strokeStyle = "rgba(242,193,78,.45)"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(1280, 70); g.lineTo(1380, 40); g.lineTo(1470, 96); g.lineTo(1580, 58); g.lineTo(1680, 120); g.stroke();
+    [[1280, 70], [1380, 40], [1470, 96], [1580, 58], [1680, 120]].forEach(function (q, j) { g.fillStyle = j === 3 ? "#f2c14e" : "#a99cff"; g.beginPath(); g.arc(q[0], q[1], j === 3 ? 7 : 5, 0, 7); g.fill(); });
+    // el letrero de la tienda
+    g.fillStyle = "rgba(0,0,0,.3)"; rr(g, 486, 66, 840, 128, 26); g.fill();
+    g.fillStyle = "#2a2160"; rr(g, 480, 58, 840, 128, 26); g.fill();
+    g.strokeStyle = "#f2c14e"; g.lineWidth = 5; rr(g, 480, 58, 840, 128, 26); g.stroke();
+    X.texto(g, "VITRINA EXPRESS", 900, 106, 54, "900", "#ffe9a3", "center");
+    X.texto(g, "la tienda web del grupo · abierto las 24 horas", 900, 156, 22, "700", "#c3b9ff", "center");
+    X.pastilla(g, "ABIERTO", 1420, 186, 18, "#2fa35f", "#ffffff");
+    // alfombra de la entrada
+    g.fillStyle = "rgba(106,88,232,.16)"; rr(g, 700, 1160, 340, 120, 22); g.fill();
+    g.strokeStyle = "rgba(106,88,232,.4)"; g.lineWidth = 3; g.setLineDash([12, 9]); rr(g, 700, 1160, 340, 120, 22); g.stroke(); g.setLineDash([]);
+    // puerta del taller
+    g.fillStyle = "rgba(160,82,45,.14)"; rr(g, PUERTA_TALLER.x, PUERTA_TALLER.y, PUERTA_TALLER.w, PUERTA_TALLER.h, 20); g.fill();
+    X.texto(g, "← sale arreglada aquí", PUERTA_TALLER.x + PUERTA_TALLER.w / 2, PUERTA_TALLER.y + PUERTA_TALLER.h - 18, 17, "800", "rgba(122,74,42,.8)", "center");
+  }
+
+  // ---------- el juego ----------
+  var juego = A.crear({
+    raiz: "#juego",
+    titulo: "Vitrina express",
+    subtitulo: "La tienda de los robots: arma las fichas del grupo pieza por pieza. Lo que no vende, al taller.",
+    curso: K.curso, sesion: K.sesion, fecha: K.fecha || undefined, hashtag: K.hashtag,
+    duracion: 180, duraciones: [180, 300], duracionPractica: 120,
+    mundo: { ancho: ANCHO, alto: ALTO, tema: "patio" },
+    jugador: { accesorio: "gorra" },
+    salida: { x: 720, y: 1180, w: 300, h: 80 },
+    reglas: [
+      "Pasa sobre una pieza del piso: foto, nombre, precio o stock de un producto.",
+      "¿Vende? Llévala a su vitrina, arriba. ¿Es floja? Al Taller de fichas.",
+      "Pon la última pieza y el producto se vende. Errar no resta: la vitrina te dice por qué.",
+    ],
+    anuncio: "a la tienda",
+    muros: [{ x: 470, y: 810, w: 250, h: 56 }, { x: 1010, y: 810, w: 220, h: 56 }, { x: 740, y: 1010, w: 260, h: 56 }],
+    zonas: VITRINAS.map(function (v) { return Object.assign({ pintar: pintarVitrina }, v); })
+      .concat([Object.assign({ pintar: pintarTaller }, TALLER), Object.assign({ pintar: pintarCaja }, CAJA)]),
+    peligros: [
+      { tipo: "dron", nombre: "el dron de inventario", ruta: [[150, 620], [1650, 620]], vel: 150, radio: 26,
+        aviso: "¡El dron de inventario te hizo soltar la pieza! Volvió al piso: recógela otra vez.", avisoSinCarga: "¡Uy, el dron de inventario! Cruza cuando pase." },
+      { tipo: "dron", nombre: "el dron de inventario", ruta: [[1330, 700], [1330, 1000]], vel: 95, radio: 26,
+        aviso: "¡El dron te hizo soltar la pieza! Volvió a su lugar.", avisoSinCarga: "¡Cuidado con el dron de inventario!" },
+    ],
+    decor: [
+      { tipo: "planta", x: 420, y: 960 }, { tipo: "planta", x: 1290, y: 1250 }, { tipo: "planta", x: 1440, y: 690 }, { tipo: "planta", x: 40, y: 690 },
+      { tipo: "texto", x: 870, y: 1232, texto: "ENTRADA", px: 30, color: "rgba(90,73,214,.30)" },
+      { tipo: "texto", x: 870, y: 760, texto: "PISO DE VENTA", px: 26, color: "rgba(90,73,214,.16)" },
+    ],
+    fondo: fondo,
+    objetos: {
+      cantidad: NV * 4, prefijo: "p",
+      crear: function (i, v, rnd, M) {
+        var s = Math.floor(i / 4), k = i % 4, d = debil(s, k, v), gen = buenas(s, k, v), pr = prodDe(s, gen);
+        var arreglada = v > 0 && debil(s, k, v - 1);
+        var pos = arreglada ? M.lugarLibre(rnd, 30, PUERTA_TALLER) : M.lugarLibre(rnd, 36, PISO);
+        var lista = FLOJAS[PARTES[k].id], f = lista[Math.floor(rnd() * lista.length)];
+        var ob = { x: pos.x, y: pos.y, s: s, k: k, debil: d, gen: gen, prod: pr, malo: f, arreglada: arreglada,
+          fotoBuena: FOTO_BUENA[Math.floor(rnd() * FOTO_BUENA.length)], pintar: pintarPieza };
+        var txt = d ? f[0] : bueno(ob);
+        ob.texto = pr.e + " " + (txt.length > 20 ? txt.slice(0, 19) + "…" : txt);
+        return ob;
+      },
+    },
+    tarjeta: function (ob) {
+      var P = PARTES[ob.k], pr = ob.prod;
+      return { etiqueta: P.ico + " " + P.n + (ob.arreglada ? " · arreglada" : ""), color: P.col, titulo: "Pieza de " + pr.e + " para la Vitrina " + (ob.s + 1),
+        destacadoEtiqueta: P.n, destacado: ob.debil ? ob.malo[0] : bueno(ob),
+        pie: "¿Vende? → Vitrina " + (ob.s + 1) + ", arriba. ¿Floja? → Taller de fichas, abajo a la derecha." };
+    },
+    alTomar: function (ob) {
+      var e = EST[ob.s];
+      if (e && e.lleno[ob.k]) { juego.soltar(); juego.toast("Alguien llenó ese espacio antes que tú: busca otra pieza.", "", 2400); }
+    },
+    entregar: function (ob, z, api) {
+      var P = PARTES[ob.k], pr = ob.prod, clave = ob.id + "@" + ob.v;
+      if (z.tipo === "taller") {
+        if (!ob.debil) return { rechazar: true, mensaje: "Esta pieza ya vende: llévala a la Vitrina " + (ob.s + 1) + " " + pr.e };
+        mio.arregladas++;
+        return { ok: true, puntos: 5, titulo: "¡Bien visto! +5", explicacion: ob.malo[1],
+          real: "Arreglada: «" + bueno(ob) + "». Sale por la puerta del taller: llévala a la Vitrina " + (ob.s + 1) + ".",
+          feed: "arregló " + P.art + " de " + pr.e };
+      }
+      if (z.s !== ob.s) return { rechazar: true, mensaje: "Esta pieza es de " + pr.e + " " + pr.n + ": va a la Vitrina " + (ob.s + 1) };
+      var e = estado()[ob.s];
+      if (e.lleno[ob.k]) { api.soltar(); return { rechazar: true, mensaje: "Ese espacio ya se llenó: la pieza volvió al piso." }; }
+      if (ob.debil) {
+        if (avisada !== clave) {
+          avisada = clave; mio.flojas++; api.sonido("mal");
+          api.lupa({ icono: "🔍", titulo: "Así no se vende: «" + ob.malo[0] + "»", texto: ob.malo[1], real: "Llévala al Taller de fichas (abajo a la derecha): ahí la arreglas.", tipo: "mal", ms: 7500 });
+        }
+        return { rechazar: true, mensaje: "Pieza floja: llévala al Taller de fichas" };
+      }
+      var completa = e.lleno.filter(function (x, k) { return x && k !== ob.k; }).length === 3;
+      mio.piezas++;
+      var res = { ok: true, puntos: 10, titulo: completa ? "¡Ficha completa! +10" : P.ok + " +10",
+        feed: completa ? "completó la ficha de " + pr.e : "puso " + P.art + " de " + pr.e };
+      if (completa) {
+        mio.completas++;
+        var r = A.rng(A.hash(semilla() + ":cat:" + clave)), malas = CAT_FLOJAS.slice(), ops = [pr.c];
+        ops.push(malas.splice(Math.floor(r() * malas.length), 1)[0]); ops.push(malas[Math.floor(r() * malas.length)]);
+        for (var a = ops.length - 1; a > 0; a--) { var b = Math.floor(r() * (a + 1)), q = ops[a]; ops[a] = ops[b]; ops[b] = q; }
+        res.bonus = { pregunta: "¡" + pr.e + " vendido! ¿En qué pasillo pones su ficha?", opciones: ops, correcta: ops.indexOf(pr.c), puntos: 5, segundos: 12,
+          explicacion: "La categoría es el pasillo de tu tienda: con «" + pr.c + "» tu cliente filtra y la encuentra. En «Varios» u «Otros» nadie busca." };
+      }
+      return res;
+    },
+    meta: { contador: "vitrina", texto: "Vitrinas del grupo", unidad: "pts", objetivo: function (n) { return Math.max(60, n * 50); }, logro: "las vitrinas del grupo venden solas" },
+    reflexion: { clave: K.escena || "06-juego-vitrina", pregunta: "¿Qué producto tuyo subirías primero a tu tienda, y por qué?",
+      placeholder: "Ej.: «Mis tortas, porque es lo que más me preguntan»", porDefecto: "Si el cliente tiene que preguntar, a la ficha le falta algo." },
+    alRonda: function () { mio = { piezas: 0, completas: 0, arregladas: 0, flojas: 0 }; genAntes = []; vendido = []; avisada = ""; },
+    alReflexion: function (t) { X.guardarReflexion(t); },
+    resultado: function (s) {
+      var t = mio.completas >= 2 ? "Vitrinista estrella" : mio.arregladas >= 3 ? "Ojo de cliente" : mio.piezas >= 4 ? "Armador de fichas"
+        : mio.piezas + mio.arregladas ? "Primera pieza en vitrina" : "Recorrió la tienda";
+      return X.guardar({ etiqueta: "Mi turno en la vitrina", titulo: t, resultado: juego.puntos + " puntos",
+        detalle: X.pl(mio.piezas, "pieza puesta", "piezas puestas") + " · " + X.pl(mio.completas, "ficha completa", "fichas completas") + " · " + X.pl(mio.arregladas, "floja arreglada", "flojas arregladas") }, juego.puntos);
+    },
   });
 })();
 </script>
-<script src="../../comun/copiar.js"></script>
 </body>
 </html>
