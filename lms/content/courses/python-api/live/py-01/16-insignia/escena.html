@@ -101,7 +101,7 @@
               <div class="g-t hecho" data-id="versiones"><span class="ic"></span>Varias versiones</div>
               <div class="g-t hecho" data-id="venv"><span class="ic"></span>venv</div>
               <div class="g-t hecho" data-id="sintaxis"><span class="ic"></span>Sintaxis</div>
-              <div class="g-t hecho" data-id="juego"><span class="ic"></span>Expreso Python</div>
+              <div class="g-t hecho" data-id="juego"><span class="ic"></span>Fábrica Python</div>
               <div class="g-t hecho" data-id="docker"><span class="ic"></span>Docker 3.11 y 3.13</div>
               <div class="g-t" data-id="reto"><span class="ic"></span>Reto: recibo</div>
               <div class="g-t" data-id="preguntar"><span class="ic"></span>Preguntar</div>
@@ -169,17 +169,26 @@
   } catch (e) { ir(); }
   setTimeout(function () { ir(); listoAvance = true; quizas(); }, 1500);
 
-  // La fotito: tu avance, lo mejor de tu Expreso Python y tu frase.
+  // La fotito: tu avance, tu ronda en la Fábrica Python (11-juego-expreso) y tu frase.
   var yo = { nombre: "Alumno" }, listoYo = false, listoAvance = false;
   function quizas() { if (listoYo && listoAvance && !$("foto").firstChild) armar(); }
   PY.yo().then(function (u) { yo = u; listoYo = true; quizas(); });
+  // py01-ultimo lo escribe el juego: {juego:"fabrica", programas, lineas, bugs} (o {trenes, mejor} del juego anterior).
+  // Si falta o viene raro, la fotito sale igual con el texto por defecto.
+  function detalleJuego(j) {
+    if (!j || typeof j !== "object") return "";
+    var n = +j.programas;
+    if (j.juego === "fabrica" && n >= 0) return "Fábrica Python: " + n + (n === 1 ? " programa corrió" : " programas corrieron") + " con mis líneas" + (+j.bugs > 0 ? " · " + j.bugs + (+j.bugs === 1 ? " bug cazado" : " bugs cazados") : "");
+    if (+j.trenes >= 0 && j.trenes !== null && j.trenes !== undefined) return "Juego de la clase: " + j.trenes + (+j.trenes === 1 ? " programa armado" : " programas armados");
+    return "";
+  }
   function armar() {
     var juego = PY.leer("ultimo", null), refl = PY.leer("muro-py01-cierre", "") || PY.leer("muro-py01-juego", "");
     var a = avance || { done: +$("p-done").textContent, total: +$("p-total").textContent };
     var cv = PY.fotito({
       nombre: yo.nombre, avatar: PY.leer("avatar", "") || PY.avatarPorNombre(yo.nombre), etiqueta: "Mi clase 1",
       resultado: a.done + " de " + a.total + " pasos" + (a.done >= UMBRAL ? " · insignia" : ""),
-      detalle: juego ? "Expreso Python: " + juego.trenes + (juego.trenes === 1 ? " tren" : " trenes") + " · mejor marca " + juego.mejor : "Python, venv y Docker listos en mi máquina",
+      detalle: detalleJuego(juego) || "Python, venv y Docker listos en mi máquina",
       reflexion: refl,
     });
     PY.mostrarFoto($("foto"), cv, "python-clase-1-" + PY.slug(yo.nombre) + ".png");

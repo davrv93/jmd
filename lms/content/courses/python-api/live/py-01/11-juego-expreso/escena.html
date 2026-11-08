@@ -2,837 +2,570 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Juego: Expreso Python</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · Fábrica Python</title>
+<link rel="icon" href="data:,">
 <!--
-  «Expreso Python» · juego de la clase 1 (hasta 25 a la vez).
-  El intérprete lee de arriba abajo, como un tren que pasa por sus estaciones. Cada pedido es un programa
-  (o una serie de comandos de terminal, o un Dockerfile) con sus líneas desordenadas en el andén: tocas la
-  línea que sigue y se engancha como un vagón. Algunas líneas traen trampa (falta «:», sangría, comillas,
-  = en vez de ==, el comando del otro sistema…): si la tocas, ves por qué fallaría y sigues. Nadie queda
-  fuera: tras dos tropiezos en la misma línea, la correcta brilla. Al completar el programa, el tren sale
-  y la terminal muestra lo que imprime.
+  «Fábrica Python» · juego de la clase 1 de «Python: de cero a tu API», sobre el motor Arena JMD (docs/ARENA_JMD.md).
+  Cada alumno es un robot JMD en la misma fábrica y ve a los demás moverse en vivo. Por el piso hay bloques de
+  código: líneas de programas, de comandos de venv y de Dockerfiles. Hay cuatro talleres (Scripts, Decisiones,
+  venv y Docker); cada uno arma UN programa a la vez, entre toda la clase, y lo muestra en su pantalla.
+  - Llevas un bloque a su taller y entra si es la línea que sigue (Python lee de arriba abajo). Si todavía no le
+    toca, esperas en el taller y entra solo cuando llega la anterior: así se forman las cadenas de robots.
+  - Algunos bloques traen un bug (falta «:», sangría, = en vez de ==, el comando del otro sistema…). Si lo metes
+    al taller, la lupa te dice por qué fallaría (0 pts, nunca resta). Si lo llevas al Depurador, +10.
+  - Cuando se pone la última línea, el programa CORRE: la pantalla muestra su salida, quien lo cerró gana +20 y
+    todos los que pusieron una línea, +5. La meta del grupo cuenta programas que corren.
+  - Los bugs voladores solo te hacen soltar el bloque.
 
-  Servidor: solo la sala de la carrera (/carrera: unir, paso, fin, iniciar, reiniciar), el muro y los votos.
-  La lógica va aquí. En la sala viaja: dist = vagones; golpes = trenes * 10000 + vagones * 100 + limpios.
-  Sin instructor (grabación), «Practicar solo» juega la misma ronda en local.
+  Sin estado propio en el servidor: el avance de cada taller sale de las VERSIONES de sus bloques. El bloque de la
+  línea j de un taller, en su versión v, es la línea j del programa nº v de ese taller. El programa en curso es la
+  versión más baja entre sus bloques; la línea que sigue, el primer bloque que sigue en esa versión. Como solo
+  quien lleva un bloque puede consumirlo, dos robots nunca ponen la misma línea. Por eso todos los programas de un
+  mismo taller tienen el mismo número de líneas.
+
+  Al final: título, reflexión al muro (py01-juego) y la fotito. Guarda py01-ultimo para la insignia (16-insignia).
+  ?demo=1 entra solo; ?sinred=1 fuerza la práctica local; ?fps=1 muestra los cuadros por segundo.
 -->
-<link rel="stylesheet" href="../../comun/escena.css">
-<link rel="stylesheet" href="../../comun/py01.css">
-<style id="esc-propio">
-.esc-cielo { opacity: calc(var(--cielo) * .3); }
-.esc-cuerpo { justify-content: flex-start; }
-.ex { width: 100%; max-width: 74em; margin-inline: auto; display: grid; gap: 1.5vh; }
-.ex-tit { display: flex; align-items: baseline; gap: .6em 1em; flex-wrap: wrap; }
-.ex-tit h1 { font-size: 1.9em; }
-.ex-tit .esc-sub { font-size: .9em; max-width: 46em; }
-
-/* ---- Vestíbulo ---- */
-.ex-reglas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vw; }
-.ex-regla { display: grid; grid-template-columns: auto 1fr; gap: .2em .8em; align-items: center; padding: .7em .9em; }
-.ex-regla .n { grid-row: span 2; width: 2em; height: 2em; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--ph-ca-bg); color: var(--ph-ca); border: 2px solid var(--ph-ca); }
-.ex-regla b { font-size: .86em; }
-.ex-regla span { font-size: .72em; color: var(--muted); line-height: 1.3; }
-.ex-lobby { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.4vw; align-items: start; }
-.ex-avs { display: grid; grid-template-columns: repeat(8, 1fr); gap: .45em; }
-.ex-av { aspect-ratio: 1; min-width: 44px; border-radius: .9em; border: 2px solid var(--line2); background: var(--s2); display: grid; place-items: center; cursor: pointer; padding: 0; touch-action: manipulation; }
-.ex-av canvas { width: 82% !important; height: 82% !important; }
-.ex-av[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); box-shadow: 0 0 0 3px var(--accent-bg); }
-.ex-acc { display: flex; gap: .6em; flex-wrap: wrap; align-items: center; }
-.ex-acc .k-btn { font-size: .95em; min-height: 52px; padding-inline: 1.4em; }
-.ex-msg { margin: 0; font-size: .78em; font-weight: 700; color: var(--accent); min-height: 1.3em; }
-.ex-msg.warn { color: var(--warn); }
-.ex-sala { display: flex; flex-wrap: wrap; gap: .35em; min-height: 2.2em; align-items: center; }
-.ex-sala .p { display: inline-flex; align-items: center; gap: .3em; padding: .15em .55em .15em .2em; border-radius: 999px; background: var(--s2); font-size: .66em; font-weight: 700; animation: esc-pop .4s ease-out both; }
-.ex-staff { display: flex; gap: .5em; flex-wrap: wrap; align-items: center; padding: .55em .8em; border-radius: .9em; border: 1.5px dashed var(--gold); background: var(--gold-bg); font-size: .8em; }
-.ex-staff b { color: var(--gold); margin-right: auto; }
-
-/* ---- Juego ---- */
-.ex-hud { display: grid; grid-template-columns: auto 1fr auto auto; gap: .6em 1em; align-items: center; }
-.ex-reloj { font: 800 1.5em var(--mono); min-width: 2.6em; color: var(--fg); }
-.ex-reloj.poco { color: var(--bad); }
-.ex-tiempo { height: .55em; border-radius: .3em; background: var(--s3); overflow: hidden; }
-.ex-tiempo i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--py-azul), var(--py-amarillo)); transform-origin: left; }
-.ex-cuenta { display: inline-flex; gap: .35em; align-items: baseline; font-weight: 800; }
-.ex-cuenta b { font-size: 1.5em; line-height: 1; }
-.ex-cuenta small { font-size: .62em; color: var(--muted); font-weight: 700; }
-
-.ex-ped { display: grid; grid-template-columns: 1fr auto; gap: .3em 1em; align-items: center; padding: .8em 1.1em; border-width: 2px; }
-.ex-ped .de { font-size: .66em; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.ex-ped .txt { margin: 0; font-size: 1.15em; font-weight: 800; line-height: 1.25; letter-spacing: -.01em; grid-column: 1; }
-.ex-ped.entra { animation: esc-pop .35s cubic-bezier(.2,.8,.3,1.2) both; }
-.ex-ped.bien { border-color: var(--ok); }
-
-/* el tren: locomotora + un vagón por línea enganchada */
-.ex-via { grid-column: 1 / -1; position: relative; height: 2.6em; overflow: hidden; }
-.ex-via::after { content: ""; position: absolute; left: 0; right: 0; bottom: .25em; height: 3px; background: repeating-linear-gradient(90deg, var(--line2) 0 10px, transparent 10px 16px); }
-.ex-tren { position: absolute; left: 0; bottom: .45em; display: flex; align-items: flex-end; gap: 3px; transition: transform 1s cubic-bezier(.5,0,.75,0); }
-.ex-tren.sale { transform: translateX(calc(100vw)); }
-.ex-loco { position: relative; width: 3.4em; height: 2.1em; flex: none; }
-.ex-loco svg { width: 100%; height: 100%; display: block; }
-.ex-loco canvas { position: absolute; left: .32em; top: .12em; width: 1.05em !important; height: 1.05em !important; }
-.ex-vg { width: 1.9em; height: 1.35em; border-radius: .3em .3em .2em .2em; background: var(--py-azul); color: #fff; font: 800 .62em/1.35em var(--mono); text-align: center; position: relative; animation: esc-pop .3s cubic-bezier(.2,.8,.3,1.2) both; }
-.ex-vg:nth-child(odd) { background: #d9a900; color: #0c1a2b; }
-.ex-vg::before, .ex-vg::after { content: ""; position: absolute; bottom: -.32em; width: .45em; height: .45em; border-radius: 50%; background: var(--fg); }
-.ex-vg::before { left: .25em; } .ex-vg::after { right: .25em; }
-
-.ex-mesa { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1vw; align-items: start; }
-.ex-ed { border-radius: .9em; overflow: hidden; border: 1px solid rgba(169,208,245,.25); background: var(--term); color: #e6eefb; box-shadow: var(--card-shadow); }
-.ex-ed-cab { display: flex; align-items: center; gap: .45em; padding: .45em .8em; font: 700 .66em var(--mono); color: #a9bdd6; background: rgba(255,255,255,.05); border-bottom: 1px solid rgba(169,208,245,.15); }
-.ex-ed-cab i { width: .6em; height: .6em; border-radius: 50%; background: #ff6b6b; }
-.ex-ed-cab i:nth-child(2) { background: #ffd43b; } .ex-ed-cab i:nth-child(3) { background: #6bd88b; }
-.ex-ed-cab b { margin-left: .5em; color: #e6eefb; }
-.ex-lineas { margin: 0; padding: .55em 0; list-style: none; counter-reset: ln; min-height: 7.5em; }
-.ex-lineas li { counter-increment: ln; display: grid; grid-template-columns: 2.2em 1fr; align-items: center; min-height: 1.9em; font: 600 .78em/1.4 var(--mono); padding-right: .8em; }
-.ex-lineas li::before { content: counter(ln); text-align: right; padding-right: .8em; color: #4f6a8a; font-size: .9em; }
-.ex-lineas li.puesta { animation: ex-engancha .35s cubic-bezier(.2,.8,.3,1.2) both; }
-.ex-lineas li.puesta code { white-space: pre; overflow-wrap: normal; }
-.ex-lineas li.sig code::after { content: ""; display: inline-block; width: .55em; height: 1.05em; vertical-align: text-bottom; background: #ffd43b; animation: esc-pulso 1s steps(2, jump-none) infinite; }
-.ex-lineas li.falta code { color: #3f5674; }
-.ex-lineas .kw { color: #ffd43b; } .ex-lineas .bi { color: #84b9ee; } .ex-lineas .st { color: #9be39f; } .ex-lineas .nu { color: #f6a6d8; } .ex-lineas .sg { color: #ffd43b; opacity: .45; }
-.ex-espera { margin: 0; padding: 1em; border-radius: .8em; border: 2px dashed var(--line2); text-align: center; font-weight: 800; color: var(--ok); }
-@keyframes ex-engancha { from { opacity: 0; transform: translateX(-.8em); } to { opacity: 1; transform: none; } }
-.ex-sal { margin: 0; padding: .55em .9em; border-top: 1px dashed rgba(169,208,245,.25); font: 600 .74em/1.45 var(--mono); color: #8fe3a8; white-space: pre-wrap; }
-.ex-sal::before { content: "salida ›\A"; white-space: pre; color: #ffd43b; font-weight: 800; }
-
-.ex-anden { display: grid; gap: .5em; align-content: start; }
-.ex-anden-t { margin: 0; font-size: .7em; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.ex-tl { position: relative; display: grid; grid-template-columns: auto 1fr; gap: .6em; align-items: center; text-align: left; min-height: 48px; padding: .45em .8em .45em .5em; border-radius: .8em; border: 2px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; box-shadow: var(--card-shadow); font: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: transform .12s ease-out, border-color .15s, opacity .2s; }
-.ex-tl:hover { border-color: var(--accent); }
-.ex-tl:active { transform: scale(.98); }
-.ex-tl:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
-.ex-tl .k { width: 1.6em; height: 1.6em; border-radius: .45em; display: grid; place-items: center; font: 800 .66em var(--mono); background: var(--s2); color: var(--muted); }
-.ex-tl code { font: 650 .76em/1.35 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); }
-.ex-tl code .sg { color: var(--gold); opacity: .8; letter-spacing: -.05em; }
-.ex-tl code .kw { color: var(--accent); font-weight: 800; }
-.ex-tl code .bi { color: var(--accent-2); }
-.ex-tl code .st { color: var(--ok); }
-.ex-tl code .nu { color: var(--ph-ea); }
-.ex-tl.no { opacity: .42; border-style: dashed; cursor: not-allowed; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--bad) 60%, transparent); }
-.ex-tl.temprano { animation: ex-sacude .35s ease-out; border-color: var(--warn); }
-.ex-tl.pista { border-color: var(--gold); box-shadow: 0 0 0 .3em var(--gold-bg); animation: esc-pulso 1s ease-in-out infinite; }
-@keyframes ex-sacude { 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
-.ex-res { margin: 0; min-height: 2.6em; font-size: .82em; line-height: 1.35; padding: .55em .8em; border-radius: .7em; background: var(--s2); color: var(--muted); }
-.ex-res.bien { background: var(--ok-bg); color: var(--fg); }
-.ex-res.mal { background: var(--warn-bg); color: var(--fg); }
-.ex-res b { color: var(--fg); }
-
-.ex-metaw { display: grid; grid-template-columns: auto 1fr auto; gap: .7em; align-items: center; font-size: .72em; font-weight: 700; color: var(--muted); }
-.ex-metaw .barra { height: .7em; border-radius: .35em; background: var(--s3); overflow: hidden; }
-.ex-metaw .barra i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--py-azul), var(--py-amarillo)); transition: width .6s ease-out; }
-.ex-metaw b { color: var(--fg); font-family: var(--mono); }
-
-.ex-capa { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(3px); }
-.ex-capa div { text-align: center; display: grid; gap: .4em; padding: 1.2em 1.6em; max-width: 90vw; }
-.ex-capa .big { font: 800 5em/1 var(--mono); color: var(--accent); }
-.ex-capa p { margin: 0; font-weight: 700; }
-.ex-capa small { color: var(--muted); font-size: .8em; }
-
-/* ---- Fin y tablero ---- */
-.ex-fin { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4vw; align-items: start; }
-.ex-col { display: grid; gap: 1.4vh; align-content: start; min-width: 0; }
-.ex-yo { display: grid; grid-template-columns: auto 1fr; gap: .2em 1em; align-items: center; }
-.ex-yo canvas { grid-row: span 3; }
-.ex-yo h2 { margin: 0; font-size: 1.05em; }
-.ex-yo .num { font-size: 1.9em; font-weight: 800; letter-spacing: -.02em; line-height: 1.05; }
-.ex-yo .num small { font-size: .45em; color: var(--muted); font-weight: 700; letter-spacing: 0; }
-.ex-yo .det { font-size: .74em; color: var(--muted); }
-.ex-yo .marca { grid-column: 1 / -1; font-size: .74em; font-weight: 800; color: var(--gold); }
-.ex-tab { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; max-height: 16em; overflow-y: auto; }
-.ex-tab li { display: grid; grid-template-columns: auto 7.5em 1fr auto; gap: .5em; align-items: center; font-size: .72em; padding: .25em .5em; border-radius: .6em; background: var(--s2); }
-.ex-tab li.yo { background: var(--accent-bg); }
-.ex-tab li > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
-.ex-tab li em { font-style: normal; font-family: var(--mono); font-weight: 800; color: var(--accent); white-space: nowrap; }
-.ex-mini { display: flex; gap: 2px; align-items: center; overflow: hidden; min-width: 0; }
-.ex-mini i { flex: none; width: .9em; height: .65em; border-radius: .15em; background: var(--py-azul); }
-.ex-mini i:nth-child(odd) { background: #d9a900; }
-.ex-mini i.lc { width: 1.3em; height: .8em; background: var(--fg); border-radius: .2em .45em .15em .15em; }
-.ex-mini small { font: 700 .85em var(--mono); color: var(--muted); margin-left: .2em; }
-.ex-trampa { margin: 0; font-size: .76em; padding: .55em .8em; border-radius: .7em; background: var(--gold-bg); border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); }
-.ex-trampa b { color: var(--gold); }
-.ex-aviso { display: flex; gap: .6em; align-items: center; flex-wrap: wrap; padding: .55em .8em; border-radius: .8em; background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); font-size: .8em; font-weight: 700; }
-.ex-fotobox { display: grid; gap: .5em; justify-items: start; }
-.ex-fotobox .k-foto { justify-self: stretch; }
-.ex-sigue { margin: 0; font-size: .78em; font-weight: 800; color: var(--ok); }
-
-@media (max-width: 1100px) and (min-width: 761px) { .ex-avs { grid-template-columns: repeat(4, 1fr); } }
-@media (max-width: 760px) {
-  .ex { gap: 12px; }
-  .ex-tit h1 { font-size: 1.5em !important; }
-  .ex-reglas, .ex-lobby, .ex-fin, .ex-mesa { grid-template-columns: 1fr; gap: 10px; }
-  .ex-regla { padding: .5em .7em; }
-  .ex-avs { grid-template-columns: repeat(4, 1fr); }
-  .ex-acc .k-btn { flex: 1 1 auto; }
-  .ex-hud { gap: 6px 10px; }
-  .ex-reloj { font-size: 1.2em; }
-  .ex-cuenta b { font-size: 1.2em; }
-  .ex-ped .txt { font-size: 1.02em; }
-  .ex-lineas li { font-size: .72em; }
-  .ex-tl code { font-size: .78em; }
-  .ex-tab li { grid-template-columns: auto 6em 1fr auto; }
-  .ex-capa .big { font-size: 4em; }
-}
-@media (prefers-reduced-motion: reduce) { .ex-tl.pista, .ex-tl.temprano { animation: none; } .ex-tren { transition: none; } }
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #f2c14e; margin-bottom: 6px; }
 </style>
 </head>
 <body>
-<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-  <path class="t" pathLength="1" d="M1120 130 C1170 70 1230 190 1290 130 S1410 70 1470 140"/>
-  <path class="tb" pathLength="1" d="M70 660 C120 600 180 720 240 660 S360 600 420 670"/>
-  <g><circle class="eo" cx="1120" cy="130" r="5"/><circle class="e" cx="1290" cy="130" r="3.5"/><circle class="eg" cx="1470" cy="140" r="4"/><circle class="e" cx="70" cy="660" r="3.5"/><circle class="eo" cx="240" cy="660" r="4.5"/><circle class="eg" cx="420" cy="670" r="3.5"/></g>
-  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="560" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.1s" cx="1010" cy="210" r="1.6"/><circle class="eg p" style="--p:1.8s" cx="1520" cy="320" r="1.8"/><circle class="eo p" style="--p:.4s" cx="1440" cy="620" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/><circle class="eg p" style="--p:1.5s" cx="760" cy="840" r="1.6"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/><circle class="eo p" style="--p:.9s" cx="40" cy="380" r="1.6"/><circle class="e p" style="--p:1.3s" cx="1210" cy="420" r="1.6"/><circle class="eg p" style="--p:2.9s" cx="1090" cy="560" r="1.7"/></g>
-</svg>
-
-<div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ca">Conceptualización</span>
-    <span class="esc-num">Python · E11</span>
-  </header>
-
-  <main class="esc-cuerpo">
-    <div class="ex" id="ex">
-      <div class="ex-staff" id="staff" hidden>
-        <b id="staff-txt">Instructor · 0 en la sala</b>
-        <button class="k-btn" type="button" id="b-iniciar">▶ Iniciar ronda</button>
-        <button class="k-btn sec" type="button" id="b-vaciar">Vaciar sala</button>
-      </div>
-
-      <!-- VESTÍBULO -->
-      <section id="v-lobby" class="ex">
-        <div class="ex-tit">
-          <h1 class="esc-titulo a-in">Expreso <em>Python</em></h1>
-          <p class="esc-sub a-in" style="--d:.1s">Python lee de arriba abajo, como un tren que pasa por sus estaciones. Arma cada programa vagón por vagón. 55 segundos, y toda la clase suma.</p>
-        </div>
-        <div class="ex-reglas">
-          <div class="esc-card ex-regla a-in" style="--d:.2s"><span class="n">1</span><b>Lee el pedido</b><span>Un programa, unos comandos o un Dockerfile.</span></div>
-          <div class="esc-card ex-regla a-in" style="--d:.3s"><span class="n">2</span><b>Toca la línea que sigue</b><span>Se engancha como un vagón. Completa el programa y el tren sale.</span></div>
-          <div class="esc-card ex-regla a-in" style="--d:.4s"><span class="n">3</span><b>Ojo con las trampas</b><span>Falta «:», mala sangría, = en vez de ==… Si caes, ves por qué y sigues.</span></div>
-        </div>
-        <div class="ex-lobby">
-          <div class="k-caja a-in" style="--d:.5s">
-            <p class="k-q">Elige quién maneja tu tren</p>
-            <div class="ex-avs" id="avs" role="group" aria-label="Tu maquinista"></div>
-            <div class="ex-acc">
-              <button class="k-btn" type="button" id="b-entrar">Subir al tren de la clase</button>
-              <button class="k-btn sec" type="button" id="b-solo">Practicar solo</button>
-            </div>
-            <p class="ex-msg" id="msg" role="status"></p>
-          </div>
-          <div class="k-caja a-in" style="--d:.6s">
-            <p class="k-q" style="--c: var(--ok)" id="sala-tit">En la estación</p>
-            <div class="ex-sala" id="sala"><span class="k-vacio">Aún no sube nadie.</span></div>
-            <p class="k-pie">Nadie se queda abajo: si tropiezas dos veces en la misma línea, la correcta brilla. Cada tren que llega suma a la meta de la clase.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- JUEGO -->
-      <section id="v-juego" class="ex" hidden>
-        <div class="ex-hud">
-          <span class="ex-reloj" id="reloj" aria-label="Segundos que quedan">55</span>
-          <span class="ex-tiempo" aria-hidden="true"><i id="tiempo"></i></span>
-          <span class="ex-cuenta" title="Programas completos"><b id="h-tren">0</b><small>trenes</small></span>
-          <span class="ex-cuenta" title="Líneas bien puestas"><b id="h-vg">0</b><small>vagones</small></span>
-        </div>
-        <article class="esc-card ex-ped" id="ped" aria-live="polite">
-          <span class="de" id="ped-n">Pedido 1</span>
-          <p class="txt" id="ped-txt">…</p>
-          <div class="ex-via" aria-hidden="true"><div class="ex-tren" id="tren"></div></div>
-        </article>
-        <div class="ex-mesa">
-          <div class="ex-ed">
-            <div class="ex-ed-cab"><i></i><i></i><i></i><b id="ed-arch">programa.py</b></div>
-            <ol class="ex-lineas" id="lineas"></ol>
-            <pre class="ex-sal" id="salida" hidden></pre>
-          </div>
-          <div class="ex-anden">
-            <p class="ex-anden-t">Andén · toca la línea que sigue</p>
-            <div class="ex-anden" id="anden" role="group" aria-label="Líneas para enganchar"></div>
-          </div>
-        </div>
-        <p class="ex-res" id="res" role="status">Toca la primera línea del programa.</p>
-        <div class="ex-metaw"><span>Meta de la clase</span><span class="barra"><i id="meta-b"></i></span><b id="meta-t">0 / 0</b></div>
-      </section>
-
-      <!-- FIN, TABLERO Y ESPECTADOR -->
-      <section id="v-fin" class="ex" hidden>
-        <div class="ex-tit"><h1 class="esc-titulo" id="fin-tit">Así llegó el <em>expreso</em></h1></div>
-        <div class="ex-aviso" id="nueva" hidden><span id="nueva-t">El instructor abrió una ronda nueva.</span><button class="k-btn" type="button" id="b-nueva">Subir a la nueva ronda</button></div>
-        <div class="ex-fin">
-          <div class="ex-col">
-            <div class="k-caja ex-yo" id="yo-caja" hidden></div>
-            <div class="k-caja">
-              <p class="k-q" style="--c: var(--gold)">Meta de la clase</p>
-              <div class="ex-metaw" style="grid-template-columns: 1fr auto"><span class="barra"><i id="meta-b2"></i></span><b id="meta-t2">0 / 0</b></div>
-              <p class="k-pie" id="meta-msg"></p>
-            </div>
-            <p class="ex-trampa" id="trampa" hidden></p>
-            <div class="k-caja">
-              <p class="k-q" id="tab-tit">La vía de la clase</p>
-              <ul class="ex-tab" id="tab"></ul>
-              <p class="k-pie">Cuenta cada tren que llegó, aunque haya tropezado en el camino.</p>
-            </div>
-          </div>
-          <div class="ex-col">
-            <div class="k-caja k-muro" id="muro" data-muro="py01-juego" data-color="var(--ph-ca)" data-max="5"
-                 data-pregunta="¿Qué trampa te cazó y cómo la reconoces ahora?" data-placeholder="Olvidé los dos puntos del if: ahora miro el final de la línea"></div>
-            <div class="k-caja ex-fotobox">
-              <p class="k-q" style="--c: var(--est-o)">Guarda tu fotito</p>
-              <p class="k-pie" id="foto-pie">Lleva tu nombre, tu maquinista, tu resultado y tu reflexión. Publica tu reflexión y se arma sola.</p>
-              <button class="k-btn sec" type="button" id="b-foto">Armar mi fotito</button>
-              <div id="foto"></div>
-            </div>
-            <p class="ex-sigue" id="sigue" hidden>Listo: pulsa «Lo logré» en el panel de la clase.</p>
-            <div class="ex-acc"><button class="k-btn sec" type="button" id="b-otra">Practicar otra vez (solo)</button></div>
-          </div>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <footer class="esc-pie">
-    <span class="esc-nota" id="pie">El instructor da la salida · si llegas tarde, practica solo y subes en la siguiente</span>
-  </footer>
-</div>
-
-<div class="ex-capa" id="capa" hidden><div><span class="big" id="capa-big">3</span><p id="capa-p">¡Al andén!</p><small id="capa-s">Toca la línea que sigue</small></div></div>
-
-<script>
-/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
-(function () {
-  try {
-    var t = new URLSearchParams(location.search).get("tema");
-    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
-  } catch (e) {}
-})();
-</script>
-<script src="../../comun/py01.js"></script>
+<div id="juego"><div class="sin-motor"><div><b>Encendiendo la fábrica…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
+<script src="../../arena/arena-jmd.js"></script>
 <script>
 (function () {
   "use strict";
-  var PY = window.PY;
-  var $ = function (id) { return document.getElementById(id); };
-  var DUR = 55000, POR_PERSONA = 3;
-  try { var qd = +new URLSearchParams(location.search).get("dur"); if (qd >= 5 && qd <= 55) DUR = qd * 1000; } catch (e) {} // solo para pruebas
+  if (!window.ArenaJMD) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
+  }
 
-  // ---------- trampas: el error típico y cómo reconocerlo ----------
+  var SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  var MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
+  var RED = false; try { RED = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+
+  // ---------- los bugs: el error típico y cómo reconocerlo ----------
   var TRAMPAS = {
     dospuntos: { n: "Los dos puntos", r: "if, else, for, def y try terminan en «:»" },
     sangria: { n: "La sangría", r: "lo que va dentro de un bloque lleva 4 espacios" },
     comillas: { n: "Las comillas", r: "un texto se abre y se cierra con comillas" },
     igual: { n: "= y ==", r: "un = guarda; dos == comparan" },
+    comparar: { n: "Los comparadores", r: ">=, <=, == y != llevan el = al final" },
     rango: { n: "range", r: "range(1, 4) da 1, 2, 3: se detiene antes del final" },
     fstring: { n: "La f del f-string", r: "sin la f, las llaves salen tal cual" },
     cierre: { n: "Cerrar lo que abres", r: "cada ( y [ que se abre, se cierra" },
-    orden: { n: "El orden", r: "Python y la terminal van de arriba abajo: primero lo que se necesita" },
     sistema: { n: "Cada sistema su comando", r: "activar el venv cambia entre Windows y macOS/Linux" },
-    opcion: { n: "Opciones y argumentos", r: "-r, --version y el punto de docker build no son adorno" },
+    opcion: { n: "Opciones y argumentos", r: "-r, --version, el nombre del venv y el punto de docker build no son adorno" },
+    etiqueta: { n: "imagen:versión", r: "la versión va pegada a la imagen con dos puntos" },
   };
 
-  // ---------- pedidos: l = líneas en orden; x = [línea con trampa, trampa, explicación];
-  //            a = pista cuando falta la línea n (alguien tocó una de más abajo); o = lo que imprime ----------
-  var PEDIDOS = [
-    { nivel: 1, f: "saludo.py", t: "Saluda con el nombre y la edad",
-      l: ['nombre = "Ana"', 'edad = 30', 'print(f"{nombre} tiene {edad} años")'],
-      x: [['print("{nombre} tiene {edad} años")', "fstring", "Sin la f delante, Python imprime las llaves tal cual: {nombre} tiene {edad} años."]],
-      a: { 2: "print usa nombre y edad: primero hay que crearlas." }, o: "Ana tiene 30 años" },
-    { nivel: 1, f: "clave.py", t: "Deja pasar solo con la clave correcta",
-      l: ['clave = "python"', 'if clave == "python":', '    print("Adelante")'],
-      x: [['if clave = "python":', "igual", "Un = guarda un valor; para comparar se usan dos: ==."], ['print("Adelante")', "sangria", "Lo que va dentro del if lleva 4 espacios de sangría."]],
-      a: { 1: "El if pregunta por clave: primero hay que crearla." }, o: "Adelante" },
-    { nivel: 1, f: "compras.py", t: "Suma los precios de la lista",
-      l: ["precios = [10, 20, 5]", "total = sum(precios)", 'print(f"Total: S/ {total}")'],
-      x: [["precios = [10, 20, 5", "cierre", "El corchete que abre la lista también se cierra: [10, 20, 5]."]],
-      a: { 1: "Para sumar, primero la lista tiene que existir.", 2: "Primero calcula el total; luego lo imprimes." }, o: "Total: S/ 35" },
-    { nivel: 1, f: "cuenta.py", t: "Cuenta del 1 al 3 y avisa al final",
-      l: ["for n in range(1, 4):", "    print(n)", 'print("¡Listo!")'],
-      x: [["for n in range(1, 3):", "rango", "range(1, 3) se detiene antes del 3: solo imprimiría 1 y 2."]],
-      a: { 0: "Primero el for: es el que repite.", 1: "Primero lo que se repite (con sangría); lo del final va sin sangría." }, o: "1\n2\n3\n¡Listo!" },
-    { nivel: 2, f: "voto.py", t: "¿Puede votar? Decide con if y else",
-      l: ["edad = 17", "if edad >= 18:", '    print("Puedes votar")', "else:", '    print("Aún no")'],
-      x: [["if edad >= 18", "dospuntos", "Al if le faltan los dos puntos: Python diría SyntaxError."]],
-      a: { 0: "El if pregunta por edad: primero hay que crearla.", 2: "Justo después del if va lo que pasa si se cumple.", 3: "else va después de lo que hace el if." }, o: "Aún no" },
-    { nivel: 2, f: "saludar.py", t: "Crea una función que saluda y úsala",
-      l: ["def saludar(nombre):", '    return f"Hola, {nombre}"', 'print(saludar("Luis"))'],
-      x: [["def saludar(nombre)", "dospuntos", "def también termina en dos puntos: def saludar(nombre):"], ["print(saludar(Luis))", "comillas", "Sin comillas, Luis sería una variable que no existe: NameError."]],
-      a: { 0: "Primero se define la función; después se usa.", 1: "Una función tiene que devolver algo antes de usarla." }, o: "Hola, Luis" },
-    { nivel: 2, f: "seguro.py", t: "Que no se caiga si el dato no es un número",
-      l: ["try:", '    numero = int("tres")', "except ValueError:", '    print("Eso no es un número")'],
-      x: [['numero = int("tres")', "sangria", "Lo que intentas va dentro del try: con 4 espacios de sangría."]],
-      a: { 0: "Primero abre el try: dentro va lo que podría fallar.", 2: "except va después de lo que intentas." }, o: "Eso no es un número" },
-    { nivel: 2, so: "mac linux", f: "terminal", t: "Tu venv con requests (macOS o Linux)",
-      l: ["python3 -m venv .venv", "source .venv/bin/activate", "pip install requests", "pip freeze > requirements.txt"],
-      x: [[".venv\\Scripts\\Activate.ps1", "sistema", "Ese es el de Windows; en macOS y Linux: source .venv/bin/activate."]],
-      a: { 0: "Primero crea el venv.", 1: "Primero activa el venv: si no, pip instala fuera de tu proyecto.", 2: "Primero instala; después anotas lo instalado." }, o: "(.venv) $ cat requirements.txt\nrequests==2.32.5" },
-    { nivel: 2, so: "win", f: "terminal · PowerShell", t: "Tu venv con requests (Windows)",
-      l: ["py -3.13 -m venv .venv", ".venv\\Scripts\\Activate.ps1", "pip install requests", "pip freeze > requirements.txt"],
-      x: [["source .venv/bin/activate", "sistema", "Ese es el de macOS y Linux; en Windows: .venv\\Scripts\\Activate.ps1."]],
-      a: { 0: "Primero crea el venv.", 1: "Primero activa el venv: si no, pip instala fuera de tu proyecto.", 2: "Primero instala; después anotas lo instalado." }, o: "(.venv) PS> type requirements.txt\nrequests==2.32.5" },
-    { nivel: 3, so: "mac linux", f: "terminal", t: "En otra máquina: rehaz el proyecto y córrelo",
-      l: ["python3 -m venv .venv", "source .venv/bin/activate", "pip install -r requirements.txt", "python app.py"],
-      x: [["pip install requirements.txt", "opcion", "Sin -r, pip busca un paquete llamado «requirements.txt». Con -r lee el archivo."]],
-      a: { 0: "Primero crea el venv.", 1: "Primero activa el venv: las librerías van dentro del proyecto.", 2: "Antes de correr la app, instala lo que pide." }, o: "¡La app arrancó!" },
-    { nivel: 3, so: "win", f: "terminal · PowerShell", t: "En otra máquina: rehaz el proyecto y córrelo",
-      l: ["py -m venv .venv", ".venv\\Scripts\\Activate.ps1", "pip install -r requirements.txt", "python app.py"],
-      x: [["pip install requirements.txt", "opcion", "Sin -r, pip busca un paquete llamado «requirements.txt». Con -r lee el archivo."]],
-      a: { 0: "Primero crea el venv.", 1: "Primero activa el venv: las librerías van dentro del proyecto.", 2: "Antes de correr la app, instala lo que pide." }, o: "¡La app arrancó!" },
-    { nivel: 3, so: "mac linux", f: "terminal", t: "Fija Python 3.11 en esta carpeta con pyenv",
-      l: ["pyenv install 3.11.10", "pyenv local 3.11.10", "python --version"],
-      x: [["python -version", "opcion", "Las opciones largas llevan dos guiones: --version."]],
-      a: { 0: "Primero se instala la versión; después la eliges.", 1: "Elige la versión de la carpeta antes de preguntar cuál corre." }, o: "Python 3.11.10" },
-    { nivel: 3, so: "win", f: "terminal · PowerShell", t: "Corre Python 3.11 sin tocar tu 3.13",
-      l: ["winget install -e --id Python.Python.3.11", "py -0p", "py -3.11 --version"],
-      x: [["py -3.11 -version", "opcion", "Las opciones largas llevan dos guiones: --version."]],
-      a: { 0: "Primero instala la 3.11.", 1: "Mira primero qué versiones tienes." }, o: "Python 3.11.9" },
-    { nivel: 3, f: "Dockerfile", t: "Un Dockerfile mínimo para hola.py",
-      l: ["FROM python:3.13-slim", "WORKDIR /app", "COPY hola.py .", 'CMD ["python", "hola.py"]'],
-      x: [["COPY hola.py", "opcion", "COPY necesita origen y destino: COPY hola.py . (el punto es «aquí, en /app»)."]],
-      a: { 0: "Todo Dockerfile empieza con FROM: la imagen de partida.", 1: "Antes de copiar, di dónde trabajar: WORKDIR.", 2: "Copia el script antes de decir cómo correrlo.", 3: "CMD va al final." }, o: "$ docker run --rm hola\nHola, Lima. Soy Python 3.13.1" },
-    { nivel: 3, f: "terminal", t: "Construye la imagen y córrela",
-      l: ["docker build -t hola .", "docker run --rm hola"],
-      x: [["docker build -t hola", "opcion", "Falta el punto final: le dice a Docker dónde está el Dockerfile (aquí)."]],
-      a: { 0: "Primero se construye la imagen; después se corre." }, o: "Hola, Lima. Soy Python 3.13.1" },
+  // ---------- los talleres y sus programas ----------
+  // l = líneas en orden (todas las del taller miden lo mismo); x = [bug, tipo, línea que imita, por qué falla];
+  // a[n] = pista cuando falta la línea n y alguien trae una de más abajo; o = lo que imprime al correr.
+  var TALLERES = [
+    { id: "py", nombre: "🐍 Taller Scripts", corto: "Scripts", icono: "🐍", glifo: "py", color: "#3776ab", texto: "#ffffff", donde: "arriba a la izquierda",
+      pantalla: { x: 30, y: 60, w: 420, h: 190 }, mesa: { x: 30, y: 60, w: 420, h: 232 }, mat: { x: 30, y: 292, w: 420, h: 98 },
+      progs: [
+        { f: "saludo.py", t: "Saluda a Ana con un f-string", l: ['nombre = "Ana"', 'saludo = f"Hola, {nombre}"', "print(saludo)"], o: "Hola, Ana",
+          x: [['saludo = "Hola, {nombre}"', "fstring", 1, "Sin la f delante, Python no rellena las llaves: imprimiría Hola, {nombre}."]],
+          a: { 0: "Primero se crea nombre: la línea del saludo lo usa.", 1: "print muestra saludo: primero hay que armarlo." } },
+        { f: "clave.py", t: "Deja pasar solo con la clave correcta", l: ['clave = "python"', 'if clave == "python":', '    print("Adelante")'], o: "Adelante",
+          x: [['if clave = "python":', "igual", 1, "Un = guarda un valor; para comparar se usan dos: ==."], ['print("Adelante")', "sangria", 2, "Lo que va dentro del if lleva 4 espacios de sangría. Sin ellos, Python diría IndentationError."]],
+          a: { 0: "El if pregunta por clave: primero hay que crearla.", 1: "Primero la pregunta (el if); después, lo que pasa si se cumple." } },
+        { f: "compras.py", t: "Suma los precios de la lista", l: ["precios = [10, 20, 5]", "total = sum(precios)", 'print(f"Total: S/ {total}")'], o: "Total: S/ 35",
+          x: [["precios = [10, 20, 5", "cierre", 0, "El corchete que abre la lista también se cierra: [10, 20, 5]."]],
+          a: { 0: "Para sumar, primero la lista tiene que existir.", 1: "Primero calcula el total; luego lo imprimes." } },
+        { f: "cuenta.py", t: "Cuenta del 1 al 3 y avisa al final", l: ["for n in range(1, 4):", "    print(n)", 'print("¡Listo!")'], o: "1\n2\n3\n¡Listo!",
+          x: [["for n in range(1, 3):", "rango", 0, "range(1, 3) se detiene antes del 3: solo imprimiría 1 y 2."]],
+          a: { 0: "Primero el for: es el que repite.", 1: "Primero lo que se repite (con sangría); lo del final va sin sangría." } },
+        { f: "saludar.py", t: "Crea una función que saluda y úsala", l: ["def saludar(nombre):", '    return f"Hola, {nombre}"', 'print(saludar("Luis"))'], o: "Hola, Luis",
+          x: [["def saludar(nombre)", "dospuntos", 0, "def también termina en dos puntos: def saludar(nombre):"], ["print(saludar(Luis))", "comillas", 2, "Sin comillas, Luis sería una variable que no existe: NameError."]],
+          a: { 0: "Primero se define la función; después se usa.", 1: "La función tiene que decir qué devuelve antes de usarla." } },
+        { f: "igv.py", t: "Calcula el IGV de S/ 100", l: ["def igv(monto):", "    return monto * 0.18", "print(igv(100))"], o: "18.0",
+          x: [["print(igv(100)", "cierre", 2, "Cada paréntesis que se abre se cierra: print(igv(100)) lleva dos al final."]],
+          a: { 0: "Primero se define igv; después se usa.", 1: "Primero di qué devuelve la función; después la usas." } },
+      ] },
+    { id: "if", nombre: "🔀 Taller Decisiones", corto: "Decisiones", icono: "🔀", glifo: "if", color: "#d99a00", texto: "#1c1300", donde: "abajo a la izquierda",
+      pantalla: { x: 30, y: 705, w: 420, h: 265 }, mesa: { x: 30, y: 705, w: 420, h: 265 }, mat: { x: 30, y: 605, w: 420, h: 100 },
+      progs: [
+        { f: "voto.py", t: "¿Puede votar? Decide con if y else", l: ["edad = 17", "if edad >= 18:", '    print("Puedes votar")', "else:", '    print("Aún no")'], o: "Aún no",
+          x: [["if edad >= 18", "dospuntos", 1, "Al if le faltan los dos puntos: Python diría SyntaxError."]],
+          a: { 0: "El if pregunta por edad: primero hay que crearla.", 1: "Primero la pregunta (el if).", 2: "Justo después del if va lo que pasa si se cumple.", 3: "else va después de lo que hace el if." } },
+        { f: "seguro.py", t: "Que no se caiga si el dato no es un número", l: ['texto = "tres"', "try:", "    numero = int(texto)", "except ValueError:", '    print("Eso no es un número")'], o: "Eso no es un número",
+          x: [["numero = int(texto)", "sangria", 2, "Lo que intentas va dentro del try: con 4 espacios de sangría."]],
+          a: { 0: "int(texto) usa texto: primero hay que crearlo.", 1: "Primero abre el try: dentro va lo que podría fallar.", 2: "Dentro del try va lo que podría fallar.", 3: "except va después de lo que intentas." } },
+        { f: "descuento.py", t: "10 % menos si pasa de S/ 100", l: ["def precio_final(precio):", "    if precio > 100:", "        return precio * 0.9", "    return precio", "print(precio_final(200))"], o: "180.0",
+          x: [["    if precio > 100", "dospuntos", 1, "El if necesita sus dos puntos al final: if precio > 100:"]],
+          a: { 0: "Primero se define la función.", 1: "Primero la pregunta: ¿pasa de 100?", 2: "Lo que pasa si se cumple va justo debajo del if, con más sangría.", 3: "Si no se cumple, devuelve el precio tal cual: va después del if." } },
+        { f: "promedio.py", t: "¿Aprobó? Saca el promedio de sus notas", l: ["notas = [14, 17, 20]", "total = sum(notas)", "promedio = total / len(notas)", "if promedio >= 14:", '    print(f"Aprobado con {promedio}")'], o: "Aprobado con 17.0",
+          x: [["if promedio => 14:", "comparar", 3, "«Mayor o igual» se escribe >= (primero el >). => no existe en Python: SyntaxError."]],
+          a: { 0: "Para sumar las notas, primero la lista tiene que existir.", 1: "El promedio usa total: primero súmalas.", 2: "El if pregunta por promedio: primero calcúlalo.", 3: "Primero la pregunta (el if); después, lo que pasa si se cumple." } },
+      ] },
+    { id: "venv", nombre: "📦 Taller venv", corto: "venv", icono: "📦", glifo: ">_", color: "#1f9d55", texto: "#ffffff", donde: "arriba a la derecha",
+      pantalla: { x: 1150, y: 60, w: 420, h: 190 }, mesa: { x: 1150, y: 60, w: 420, h: 232 }, mat: { x: 1150, y: 292, w: 420, h: 98 },
+      progs: [
+        { so: "mac", f: "terminal", n: "tu venv con requests", t: "Tu venv con requests (macOS o Linux)", l: ["python3 -m venv .venv", "source .venv/bin/activate", "pip install requests", "pip freeze > requirements.txt"], o: "(.venv) $ cat requirements.txt\nrequests==2.32.5",
+          x: [[".venv\\Scripts\\Activate.ps1", "sistema", 1, "Ese es el de Windows; en macOS y Linux: source .venv/bin/activate."]],
+          a: { 0: "Primero crea el venv.", 1: "Primero activa el venv: si no, pip instala fuera de tu proyecto.", 2: "Primero instala; después anotas lo instalado." } },
+        { so: "win", f: "PowerShell", n: "tu venv con requests", t: "Tu venv con requests (Windows)", l: ["py -3.13 -m venv .venv", ".venv\\Scripts\\Activate.ps1", "pip install requests", "pip freeze > requirements.txt"], o: "(.venv) PS> type requirements.txt\nrequests==2.32.5",
+          x: [["source .venv/bin/activate", "sistema", 1, "Ese es el de macOS y Linux; en Windows: .venv\\Scripts\\Activate.ps1."]],
+          a: { 0: "Primero crea el venv.", 1: "Primero activa el venv: si no, pip instala fuera de tu proyecto.", 2: "Primero instala; después anotas lo instalado." } },
+        { so: "mac", f: "terminal", n: "el proyecto en otra máquina", t: "En otra máquina: rehaz el proyecto y córrelo (macOS o Linux)", l: ["python3 -m venv .venv", "source .venv/bin/activate", "pip install -r requirements.txt", "python app.py"], o: "¡La app arrancó!",
+          x: [["pip install requirements.txt", "opcion", 2, "Sin -r, pip busca un paquete llamado «requirements.txt». Con -r lee el archivo."]],
+          a: { 0: "Primero crea el venv.", 1: "Primero activa el venv: las librerías van dentro del proyecto.", 2: "Antes de correr la app, instala lo que pide." } },
+        { so: "win", f: "PowerShell", n: "el proyecto en otra máquina", t: "En otra máquina: rehaz el proyecto y córrelo (Windows)", l: ["py -m venv .venv", ".venv\\Scripts\\Activate.ps1", "pip install -r requirements.txt", "python app.py"], o: "¡La app arrancó!",
+          x: [["pip install requirements.txt", "opcion", 2, "Sin -r, pip busca un paquete llamado «requirements.txt». Con -r lee el archivo."]],
+          a: { 0: "Primero crea el venv.", 1: "Primero activa el venv: las librerías van dentro del proyecto.", 2: "Antes de correr la app, instala lo que pide." } },
+        { so: "mac", f: "terminal", n: "Python 3.11 con pyenv", t: "Python 3.11 solo en esta carpeta, con pyenv (macOS o Linux)", l: ["pyenv install 3.11.10", "pyenv local 3.11.10", "python -m venv .venv", "source .venv/bin/activate"], o: "(.venv) $ python --version\nPython 3.11.10",
+          x: [["python -m venv", "opcion", 2, "venv necesita el nombre de la carpeta que va a crear: python -m venv .venv."]],
+          a: { 0: "Primero se instala la versión; después la eliges.", 1: "Elige la versión de la carpeta antes de crear el venv: así nace con 3.11.", 2: "Primero crea el venv; después lo activas." } },
+        { so: "win", f: "PowerShell", n: "Python 3.11 con py", t: "Python 3.11 junto a tu 3.13, con el lanzador py (Windows)", l: ["winget install -e --id Python.Python.3.11", "py -3.11 -m venv .venv", ".venv\\Scripts\\Activate.ps1", "python --version"], o: "Python 3.11.9",
+          x: [["python -version", "opcion", 3, "Las opciones largas llevan dos guiones: --version."]],
+          a: { 0: "Primero instala la 3.11.", 1: "Primero crea el venv con la 3.11.", 2: "Activa el venv antes de preguntar la versión: así responde la 3.11." } },
+      ] },
+    { id: "docker", nombre: "🐳 Taller Docker", corto: "Docker", icono: "🐳", glifo: "🐳", color: "#0f8f8a", texto: "#ffffff", donde: "abajo a la derecha",
+      pantalla: { x: 1150, y: 740, w: 420, h: 230 }, mesa: { x: 1150, y: 740, w: 420, h: 230 }, mat: { x: 1150, y: 640, w: 420, h: 100 },
+      progs: [
+        { f: "Dockerfile", n: "el Dockerfile de hola.py", t: "Un Dockerfile mínimo para hola.py", l: ["FROM python:3.13-slim", "WORKDIR /app", "COPY hola.py .", 'CMD ["python", "hola.py"]'], o: "$ docker run --rm hola\nHola, Lima. Soy Python 3.13.1",
+          x: [["COPY hola.py", "opcion", 2, "COPY necesita origen y destino: COPY hola.py . (el punto es «aquí, en /app»)."]],
+          a: { 0: "Todo Dockerfile empieza con FROM: la imagen de partida.", 1: "Antes de copiar, di dónde trabajar: WORKDIR.", 2: "Primero copia el script: CMD no puede correr lo que no está." } },
+        { f: "Dockerfile", n: "el Dockerfile de 3.11", t: "El mismo hola.py, ahora en Python 3.11", l: ["FROM python:3.11-slim", "WORKDIR /app", "COPY hola.py .", 'CMD ["python", "hola.py"]'], o: "$ docker run --rm hola311\nHola, Lima. Soy Python 3.11.10",
+          x: [["FROM python 3.11-slim", "etiqueta", 0, "La versión va pegada a la imagen con dos puntos: python:3.11-slim."]],
+          a: { 0: "Todo Dockerfile empieza con FROM: la imagen de partida.", 1: "Antes de copiar, di dónde trabajar: WORKDIR.", 2: "Primero copia el script: CMD no puede correr lo que no está." } },
+        { f: "Dockerfile", n: "el Dockerfile con requirements", t: "Una imagen con tus dependencias", l: ["FROM python:3.13-slim", "WORKDIR /app", "COPY requirements.txt .", "RUN pip install -r requirements.txt"], o: "$ docker build -t miapp .\nSuccessfully installed requests",
+          x: [["RUN pip install requirements.txt", "opcion", 3, "Sin -r, pip busca un paquete llamado «requirements.txt». Con -r lee el archivo."]],
+          a: { 0: "Todo Dockerfile empieza con FROM: la imagen de partida.", 1: "Antes de copiar, di dónde trabajar: WORKDIR.", 2: "Primero copia requirements.txt: RUN no puede leer lo que no está." } },
+        { f: "terminal", n: "build, run y limpieza", t: "Construye, revisa, corre y limpia tu imagen", l: ["docker build -t hola .", "docker image ls", "docker run --rm hola", "docker image rm hola"], o: "Hola, Lima. Soy Python 3.13.1\nUntagged: hola:latest",
+          x: [["docker build -t hola", "opcion", 0, "Falta el punto final: le dice a Docker dónde está el Dockerfile (aquí)."]],
+          a: { 0: "Primero se construye la imagen.", 1: "Revisa que la imagen existe antes de correrla.", 2: "Córrela antes de borrarla." } },
+      ] },
   ];
+  var BUGS_POR = 2; // bloques con bug por taller, a la vez
+  var DEPURADOR = { id: "dep", x: 660, y: 40, w: 280, h: 180, nombre: "🐞 Depurador", color: "#e3262e" };
 
-  // ---------- estado ----------
-  var yo = { id: "", nombre: "Alumno" };
-  var avatar = PY.leer("avatar", "");
-  var srv = { estado: "lobby", corredores: [], staff: false, salida: 0, seed: 1, yo: "" };
-  var desfase = 0, dentro = false, quiere = false, R = null, ultimo = null, vista = "lobby", mandado = "";
-
-  function ahoraSrv() { return Date.now() + desfase; }
-  function primerNombre(n) { var p = String(n || "").trim().split(/\s+/); return p.length > 1 ? p[0] + " " + p[1].charAt(0) + "." : (p[0] || "Alguien"); }
-  function avDe(c) { return PY.avatares.some(function (a) { return a.id === c.avatar; }) ? c.avatar : PY.avatarPorNombre(c.nombre || c.id); }
-  function dec(g) { g = g | 0; return { trenes: Math.floor(g / 10000), vagones: Math.floor((g % 10000) / 100), limpios: g % 100 }; }
-  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-
-  function ver(v) {
-    vista = v;
-    $("v-lobby").hidden = v !== "lobby"; $("v-juego").hidden = v !== "juego"; $("v-fin").hidden = v !== "fin";
-    if (v === "juego") window.scrollTo(0, 0);
-  }
-  function msg(t, warn) { var m = $("msg"); m.textContent = t || ""; m.classList.toggle("warn", !!warn); }
-
-  // ---------- código con la sangría a la vista ----------
-  function codigo(txt, py) {
-    var m = txt.match(/^( *)/), n = m[1].length, resto = txt.slice(n);
-    var sg = n ? '<span class="sg">' + new Array(n + 1).join("·") + "</span>" : "";
-    return sg + (py ? PY.resaltar(resto) : esc(resto));
-  }
-
-  // ---------- avatares ----------
-  function pintarAvs() {
-    var caja = $("avs"); caja.textContent = "";
-    PY.avatares.forEach(function (a) {
-      var b = document.createElement("button"); b.type = "button"; b.className = "ex-av"; b.setAttribute("aria-label", "Maquinista " + a.nombre);
-      b.setAttribute("aria-pressed", String(a.id === avatar));
-      b.appendChild(PY.avatarCanvas(a.id, 56));
-      b.addEventListener("click", function () {
-        avatar = a.id; PY.guardar("avatar", a.id); pintarAvs();
-        if (dentro && srv.estado === "lobby") PY.pedir("/carrera/unir", { avatar: avatar });
-      });
-      caja.appendChild(b);
-    });
-  }
-
-  // ---------- ronda ----------
-  function rnd(seed) { var s = (seed | 0) || 1; return function () { s = (s * 48271) % 2147483647; return s / 2147483647; }; }
-  function mezclar(a, r) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
-  function ordenPedidos(seed) {
-    var r = rnd(seed), so = PY.so(), out = [];
-    [1, 2, 3].forEach(function (nv) {
-      var grupo = [];
-      PEDIDOS.forEach(function (p, i) { if (p.nivel === nv && (!p.so || p.so.split(" ").indexOf(so) >= 0)) grupo.push(i); });
-      out = out.concat(mezclar(grupo, r));
-    });
-    return out;
-  }
-
-  function nuevaRonda(modo, inicio, seed, previo) {
-    R = { modo: modo, inicio: inicio, fin: inicio + DUR, seed: seed, orden: ordenPedidos(seed), idx: -1, ped: null, pos: 0, tiles: [], fallos: {}, errores: 0,
-          trenes: 0, vagones: 0, limpios: 0, trampas: {}, pausa: 0, terminada: false };
-    if (previo) { R.trenes = previo.trenes; R.vagones = previo.vagones; R.limpios = previo.limpios; R.idx = previo.trenes - 1; }
-    mandado = "";
-    $("foto").textContent = ""; $("sigue").hidden = true; $("b-foto").textContent = "Armar mi fotito"; $("nueva").hidden = true;
-    pintarHud(); siguiente(); ver("juego"); tic();
-  }
-
-  function siguiente() {
-    R.idx++;
-    if (R.idx >= R.orden.length) R.orden = R.orden.concat(ordenPedidos(R.seed + R.idx));
-    var P = R.ped = PEDIDOS[R.orden[R.idx]];
-    R.pos = 0; R.fallos = {}; R.errores = 0;
-    var r = rnd(R.seed * 31 + R.idx + 7);
-    var tiles = P.l.map(function (t, i) { return { t: t, i: i }; }).concat(P.x.map(function (x) { return { t: x[0], i: -1, trampa: x[1], por: x[2] }; }));
-    R.tiles = mezclar(tiles, r);
-    var ped = $("ped"); ped.classList.remove("bien", "entra"); void ped.offsetWidth; ped.classList.add("entra");
-    $("ped-n").textContent = "Pedido " + (R.idx + 1) + " · " + (P.f.indexOf(".py") > 0 ? "programa" : P.f === "Dockerfile" ? "Dockerfile" : "comandos");
-    $("ped-txt").textContent = P.t;
-    $("ed-arch").textContent = P.f;
-    $("salida").hidden = true;
-    var tren = $("tren"); tren.style.transition = "none"; tren.classList.remove("sale"); tren.textContent = ""; void tren.offsetWidth; tren.style.transition = "";
-    tren.appendChild(loco());
-    pintarLineas(); pintarAnden();
-    $("res").className = "ex-res"; $("res").textContent = "Toca la línea " + 1 + " de " + P.l.length + ".";
-  }
-
-  function loco() {
-    var d = document.createElement("div"); d.className = "ex-loco";
-    d.innerHTML = '<svg viewBox="0 0 68 42" aria-hidden="true"><rect x="2" y="4" width="22" height="26" rx="4" fill="#3776ab"/><rect x="5" y="7" width="16" height="12" rx="2" fill="#f3f8ff"/><rect x="22" y="14" width="40" height="16" rx="6" fill="#3776ab"/><rect x="44" y="6" width="7" height="10" rx="2" fill="#0c1a2b"/><path d="M62 30 L68 36 H58 Z" fill="#ffd43b"/><rect x="24" y="18" width="36" height="3" rx="1.5" fill="#ffd43b"/><circle cx="12" cy="34" r="6" fill="#0c1a2b"/><circle cx="34" cy="35" r="5" fill="#0c1a2b"/><circle cx="50" cy="35" r="5" fill="#0c1a2b"/></svg>';
-    d.appendChild(PY.avatarCanvas(avatar || PY.avatarPorNombre(yo.nombre), 20, "feliz"));
-    return d;
-  }
-
-  function pintarLineas() {
-    var P = R.ped, ol = $("lineas"), py = P.f.indexOf(".py") > 0; ol.textContent = "";
-    P.l.forEach(function (t, i) {
-      var li = document.createElement("li"), c = document.createElement("code");
-      if (i < R.pos) { li.className = "puesta"; c.innerHTML = codigo(t, py); }
-      else if (i === R.pos) { li.className = "sig"; }
-      else { li.className = "falta"; c.textContent = "…"; }
-      li.appendChild(c); ol.appendChild(li);
-    });
-  }
-
-  function pintarAnden() {
-    var caja = $("anden"), py = R.ped.f.indexOf(".py") > 0, n = 0; caja.textContent = "";
-    R.tiles.forEach(function (tl, k) {
-      if (tl.i >= 0 && tl.i < R.pos) return;
-      n++;
-      var b = document.createElement("button"); b.type = "button"; b.className = "ex-tl" + (tl.no ? " no" : "");
-      if (tl.no) b.disabled = true;
-      if (tl.i === R.pos && (R.fallos[R.pos] || 0) >= 2) b.classList.add("pista");
-      b.innerHTML = '<span class="k">' + n + "</span><code>" + codigo(tl.t, py) + "</code>";
-      b.setAttribute("aria-label", "Línea: " + tl.t);
-      b.addEventListener("click", function () { tocar(k, b); });
-      tl.btn = b; caja.appendChild(b);
-    });
-  }
-
-  function tocar(k, b) {
-    if (!R || R.terminada || Date.now() < R.pausa) return;
-    var tl = R.tiles[k], P = R.ped, res = $("res");
-    if (tl.no) return;
-    if (tl.i === R.pos) {
-      R.pos++; R.vagones++;
-      var vg = document.createElement("span"); vg.className = "ex-vg"; vg.textContent = R.pos; $("tren").appendChild(vg);
-      pintarLineas();
-      if (R.pos >= P.l.length) return llego();
-      pintarAnden();
-      res.className = "ex-res bien"; res.innerHTML = "<b>✓ Enganchada.</b> ";
-      res.appendChild(document.createTextNode("Ahora la línea " + (R.pos + 1) + " de " + P.l.length + "."));
-      pintarHud(); enviar();
-      return;
-    }
-    R.errores++; R.fallos[R.pos] = (R.fallos[R.pos] || 0) + 1;
-    res.className = "ex-res mal";
-    if (tl.i < 0) {
-      tl.no = true; R.trampas[tl.trampa] = (R.trampas[tl.trampa] || 0) + 1;
-      res.innerHTML = "<b>Trampa: " + esc(TRAMPAS[tl.trampa].n) + ".</b> ";
-      res.appendChild(document.createTextNode(tl.por));
-    } else {
-      R.trampas.orden = (R.trampas.orden || 0) + 1;
-      res.innerHTML = "<b>Todavía no.</b> ";
-      res.appendChild(document.createTextNode((P.a && P.a[R.pos]) || "Esa va más abajo: Python lee de arriba abajo. ¿Qué tiene que pasar antes?"));
-    }
-    pintarAnden();
-    if (tl.i >= 0 && tl.btn) { tl.btn.classList.add("temprano"); }
-    if (R.fallos[R.pos] >= 2) res.appendChild(document.createTextNode(" Pista: la que brilla."));
-  }
-
-  function llego() {
-    var P = R.ped; R.trenes++; if (!R.errores) R.limpios++;
-    $("ped").classList.add("bien");
-    $("anden").innerHTML = '<p class="ex-espera">🚂 El tren sale… prepara el próximo pedido</p>';
-    var res = $("res"); res.className = "ex-res bien";
-    res.innerHTML = "<b>🚂 ¡Salió el tren!</b> ";
-    res.appendChild(document.createTextNode(R.errores ? "Programa completo." : "Programa completo y sin tropiezos."));
-    var s = $("salida"); s.textContent = P.o; s.hidden = false;
-    pintarHud(); enviar();
-    setTimeout(function () { $("tren").classList.add("sale"); }, 250);
-    var r0 = R; R.pausa = Date.now() + 1700;
-    setTimeout(function () { if (R === r0 && !R.terminada) siguiente(); }, 1700);
-  }
-
-  function pintarHud() { $("h-tren").textContent = R.trenes; $("h-vg").textContent = R.vagones; pintarMeta(); }
-
-  function tic() {
-    if (!R || R.terminada) return;
-    var ahora = R.modo === "sala" ? ahoraSrv() : Date.now();
-    var falta = Math.max(0, R.fin - ahora);
-    $("reloj").textContent = Math.ceil(falta / 1000); $("reloj").classList.toggle("poco", falta < 10000);
-    $("tiempo").style.transform = "scaleX(" + (falta / DUR).toFixed(4) + ")";
-    if (falta <= 0) return terminar();
-    requestAnimationFrame(tic);
-  }
-
-  function terminar() {
-    if (!R || R.terminada) return;
-    R.terminada = true; $("capa").hidden = true;
-    var peor = "", n = 0;
-    Object.keys(R.trampas).forEach(function (k) { if (R.trampas[k] > n) { n = R.trampas[k]; peor = k; } });
-    var mejor = PY.leer("mejor", 0), nuevaMarca = R.trenes > mejor;
-    if (nuevaMarca) PY.guardar("mejor", R.trenes);
-    ultimo = { modo: R.modo, trenes: R.trenes, vagones: R.vagones, limpios: R.limpios, peor: peor, mejor: Math.max(mejor, R.trenes), nuevaMarca: nuevaMarca && mejor > 0 };
-    PY.guardar("ultimo", ultimo);
-    if (R.modo === "sala") {
-      enviar(true).then(function () { return PY.pedir("/carrera/fin", { ms: DUR }); });
-      PY.pedir("/voto", { escena: "py01-juego-trampa", opcion: peor || "ninguna" });
-    }
-    capa("¡Fin del viaje!", R.trenes + (R.trenes === 1 ? " tren llegó" : " trenes llegaron"), "Ahora: tu reflexión y tu fotito.");
-    setTimeout(function () { $("capa").hidden = true; mostrarFin(); }, 1400);
-  }
-
-  function enviar(forzar) {
-    if (!R || R.modo !== "sala") return Promise.resolve();
-    var cuerpo = { dist: R.vagones, golpes: R.trenes * 10000 + Math.min(99, R.vagones) * 100 + Math.min(99, R.limpios) };
-    var k = JSON.stringify(cuerpo);
-    if (!forzar && k === mandado) return Promise.resolve();
-    mandado = k;
-    return PY.pedir("/carrera/paso", cuerpo);
-  }
-
-  function capa(big, p, s) { $("capa-big").textContent = big; $("capa-p").textContent = p || ""; $("capa-s").textContent = s || ""; $("capa").hidden = false; }
-
-  // ---------- meta de la clase y tablero ----------
-  function filas() {
-    var l = srv.corredores.map(function (c) {
-      var d = dec(c.golpes);
-      if (c.id === yo.id && R && R.modo === "sala") d = { trenes: R.trenes, vagones: R.vagones, limpios: R.limpios };
-      return { id: c.id, nombre: c.nombre, av: avDe(c), trenes: d.trenes, vagones: d.vagones, limpios: d.limpios };
-    });
-    l.sort(function (a, b) { return b.trenes - a.trenes || b.vagones - a.vagones || String(a.nombre).localeCompare(b.nombre); });
-    return l;
-  }
-  function soloActivo() { return (R && R.modo === "solo") || (!R && ultimo && ultimo.modo === "solo" && !srv.corredores.length); }
-  function pintarMeta() {
-    var l = filas(), n = Math.max(1, l.length), meta = Math.max(6, n * POR_PERSONA), suma = 0;
-    l.forEach(function (f) { suma += f.trenes; });
-    if (soloActivo()) { suma = R ? R.trenes : ultimo.trenes; meta = POR_PERSONA + 2; }
-    var p = Math.min(100, Math.round(suma * 100 / meta)) + "%";
-    $("meta-b").style.width = p; $("meta-b2").style.width = p;
-    $("meta-t").textContent = suma + " / " + meta; $("meta-t2").textContent = suma + " / " + meta;
-    $("meta-msg").textContent = soloActivo() ? "Práctica: tu meta personal son " + meta + " trenes."
-      : suma >= meta ? "¡La clase cumplió la meta! Entre todos llegaron " + suma + " trenes." : "Meta: " + POR_PERSONA + " trenes por persona. Cada programa completo suma, con o sin tropiezos.";
-  }
-  function mini(f) {
-    var d = document.createElement("span"); d.className = "ex-mini";
-    var lc = document.createElement("i"); lc.className = "lc"; d.appendChild(lc);
-    for (var i = 0; i < Math.min(f.vagones, 14); i++) d.appendChild(document.createElement("i"));
-    if (f.vagones > 14) { var s = document.createElement("small"); s.textContent = "+" + (f.vagones - 14); d.appendChild(s); }
-    return d;
-  }
-  function pintarTablero() {
-    var tab = $("tab"), l = filas();
-    tab.textContent = "";
-    if (!l.length) { var v = document.createElement("li"); v.className = "k-vacio"; v.style.background = "none"; v.textContent = ultimo && ultimo.modo === "solo" ? "Viajaste solo: tu resultado está arriba." : "Nadie viajó todavía en esta ronda."; tab.appendChild(v); }
-    l.forEach(function (f) {
-      var li = document.createElement("li"); if (f.id === yo.id) li.className = "yo";
-      li.appendChild(PY.avatarCanvas(f.av, 26));
-      var s = document.createElement("span"); s.textContent = f.id === yo.id ? "Tú" : primerNombre(f.nombre); li.appendChild(s);
-      li.appendChild(mini(f));
-      var e = document.createElement("em"); e.textContent = f.trenes + " 🚂"; e.title = f.trenes + " trenes, " + f.vagones + " vagones, " + f.limpios + " sin tropiezos"; li.appendChild(e);
-      tab.appendChild(li);
-    });
-    $("tab-tit").textContent = "La vía de la clase" + (l.length ? " · " + l.length + (l.length === 1 ? " viajero" : " viajeros") : "");
-    pintarMeta();
-  }
-  function pintarTrampa() {
-    PY.pedir("/votos?escena=py01-juego-trampa").then(function (r) {
-      var o = (r.ok && r.datos && r.datos.opciones) || {}, top = "", n = 0;
-      Object.keys(o).forEach(function (k) { if (k !== "ninguna" && o[k] > n) { n = o[k]; top = k; } });
-      if (!top && ultimo && ultimo.peor) { top = ultimo.peor; n = 1; }
-      var el = $("trampa");
-      if (!top || !TRAMPAS[top]) { el.hidden = true; return; }
-      el.hidden = false; el.textContent = "";
-      var b = document.createElement("b"); b.textContent = TRAMPAS[top].n;
-      el.appendChild(document.createTextNode("La trampa que más cazó a la clase: ")); el.appendChild(b);
-      el.appendChild(document.createTextNode(" (" + n + (n === 1 ? " persona" : " personas") + "). Recuerda: " + TRAMPAS[top].r + "."));
-    });
-  }
-
-  // ---------- fin: tu resultado, reflexión y fotito ----------
-  function pintarYo() {
-    var caja = $("yo-caja");
-    if (!ultimo) { caja.hidden = true; return; }
-    caja.hidden = false; caja.textContent = "";
-    caja.appendChild(PY.avatarCanvas(avatar || PY.avatarPorNombre(yo.nombre), 76, "feliz"));
-    var h = document.createElement("h2"); h.textContent = (ultimo.modo === "solo" ? "Tu práctica" : "Tu viaje") + " · " + primerNombre(yo.nombre); caja.appendChild(h);
-    var n = document.createElement("div"); n.className = "num"; n.innerHTML = ultimo.trenes + " <small>" + (ultimo.trenes === 1 ? "tren llegó" : "trenes llegaron") + "</small>"; caja.appendChild(n);
-    var d = document.createElement("div"); d.className = "det";
-    d.textContent = ultimo.vagones + " vagones · " + ultimo.limpios + " sin tropiezos"; caja.appendChild(d);
-    var m = document.createElement("div"); m.className = "marca";
-    m.textContent = ultimo.nuevaMarca ? "★ ¡Nueva marca personal! Tu mejor: " + ultimo.mejor + " trenes" : "Tu mejor marca: " + ultimo.mejor + (ultimo.peor && TRAMPAS[ultimo.peor] ? " · repasa «" + TRAMPAS[ultimo.peor].n + "»" : "");
-    caja.appendChild(m);
-  }
-  function armarFoto() {
-    if (!ultimo) { PY.toast("Juega una ronda (o practica solo) y luego arma tu fotito."); return; }
-    var refl = PY.leer("muro-py01-juego", "");
-    var cv = PY.fotito({
-      nombre: yo.nombre, avatar: avatar || PY.avatarPorNombre(yo.nombre), etiqueta: "Expreso Python",
-      resultado: ultimo.trenes + (ultimo.trenes === 1 ? " tren llegó" : " trenes llegaron"),
-      detalle: ultimo.vagones + " vagones · " + ultimo.limpios + " sin tropiezos · mejor marca " + ultimo.mejor,
-      reflexion: refl,
-    });
-    PY.mostrarFoto($("foto"), cv, "expreso-python-" + PY.slug(yo.nombre) + ".png");
-    $("b-foto").textContent = "Volver a armar mi fotito";
-    $("foto-pie").textContent = refl ? "Tu fotito está lista." : "Tu fotito está lista. Si publicas tu reflexión, se vuelve a armar con ella.";
-  }
-  function tituloFin() {
-    $("fin-tit").innerHTML = ultimo ? "Así llegó tu <em>expreso</em>" : srv.estado === "fin" ? "Así llegó el <em>expreso</em> de la clase" : "Viaje en <em>curso</em>";
-  }
-  function mostrarFin() {
-    R = null;
-    tituloFin();
-    pintarYo(); pintarTablero(); pintarTrampa();
-    $("b-foto").hidden = !ultimo;
-    if (ultimo && !$("foto").firstChild) armarFoto();
-    ver("fin");
-  }
-
-  // ---------- sala ----------
-  function pintarSala() {
-    var s = $("sala"), l = srv.corredores;
-    $("sala-tit").textContent = "En la estación · " + l.length + (l.length === 1 ? " persona" : " personas") + (l.length >= 25 ? " (tren lleno)" : "");
-    s.textContent = "";
-    if (!l.length) { var v = document.createElement("span"); v.className = "k-vacio"; v.textContent = "Aún no sube nadie. Sé el primero."; s.appendChild(v); }
-    l.slice(0, 30).forEach(function (c) {
-      var p = document.createElement("span"); p.className = "p";
-      p.appendChild(PY.avatarCanvas(avDe(c), 22));
-      p.appendChild(document.createTextNode(c.id === yo.id ? "Tú" : primerNombre(c.nombre)));
-      s.appendChild(p);
-    });
-    $("staff").hidden = !srv.staff;
-    $("staff-txt").textContent = "Instructor · " + l.length + " en la estación · " + ({ lobby: "esperando", cuenta: "saliendo", corre: "en viaje", fin: "llegó" }[srv.estado] || srv.estado);
-    $("b-iniciar").disabled = !l.length || srv.estado === "cuenta" || srv.estado === "corre";
-    $("b-entrar").textContent = dentro ? "✓ Ya subiste" : "Subir al tren de la clase";
-    $("b-entrar").disabled = dentro && srv.estado === "lobby";
-  }
-
-  function unirse() {
-    quiere = true;
-    if (!avatar) { avatar = PY.avatarPorNombre(yo.nombre); PY.guardar("avatar", avatar); pintarAvs(); }
-    msg("Subiendo…");
-    return PY.pedir("/carrera/unir", { avatar: avatar }).then(function (r) {
-      if (r.ok) { dentro = true; msg(r.datos && r.datos.tarde ? "Vuelves a tu viaje." : "Ya subiste. Espera la salida del instructor."); }
-      else if (r.status === 409) { dentro = false; msg("Este tren ya salió. Practica solo mientras tanto: subes en el siguiente.", true); }
-      else { dentro = false; msg("No pude subirte al tren de la clase. Puedes practicar solo.", true); }
-      return refrescar();
-    });
-  }
-
-  var pidiendo = false;
-  function refrescar() {
-    if (pidiendo) return Promise.resolve();
-    pidiendo = true;
-    var t0 = Date.now();
-    return PY.pedir("/carrera").then(function (r) {
-      pidiendo = false;
-      if (!r.ok || !r.datos || !r.datos.estado) return;
-      var d = r.datos, t1 = Date.now();
-      if (d.ahora_ms) desfase = d.ahora_ms - Math.round((t0 + t1) / 2);
-      var antes = srv.estado;
-      srv = { estado: d.estado, corredores: d.corredores || [], staff: !!d.staff, salida: d.salida_ms || 0, seed: d.seed || 1, yo: d.yo || "" };
-      if (srv.yo) yo.id = srv.yo;
-      var mio = srv.corredores.filter(function (c) { return c.id === yo.id; })[0];
-      dentro = !!mio;
-      if (!dentro && quiere && srv.estado === "lobby" && (!R || R.modo !== "solo") && vista !== "fin") unirse();
-      decidir(antes, mio);
-      if (vista === "lobby") pintarSala();
-      if (vista === "fin") { pintarTablero(); tituloFin(); $("staff").hidden = !srv.staff; pintarSala(); }
-      if (vista === "juego") pintarMeta();
-    });
-  }
-
-  function decidir(antes, mio) {
-    var e = srv.estado;
-    if (R && R.modo === "solo" && !R.terminada) {
-      if (!(dentro && (e === "cuenta" || e === "corre"))) return;   // la práctica no se interrumpe…
-      R.terminada = true; R = null; $("capa").hidden = true;           // …salvo que salga el tren de la clase
-    }
-    if (dentro && (e === "cuenta" || e === "corre")) {
-      if (R && R.modo === "sala" && !R.terminada) return;
-      var inicio = srv.salida, fin = inicio + DUR;
-      if (mio && mio.fin_ms > 0) { if (vista !== "fin") { ultimo = ultimo || PY.leer("ultimo", null); mostrarFin(); } return; }
-      if (ahoraSrv() >= fin) return;
-      if (ahoraSrv() < inicio) return cuentaAtras(inicio);
-      var previo = mio ? dec(mio.golpes) : null;
-      if (ultimo && ultimo.modo === "sala" && vista === "fin" && antes === e) return;
-      return nuevaRonda("sala", inicio, srv.seed, previo && previo.trenes ? previo : null);
-    }
-    if (vista === "fin") {
-      $("nueva").hidden = !(e === "lobby" && !dentro);
-      $("nueva-t").textContent = ultimo && ultimo.modo === "solo" ? "El tren de la clase está en la estación: viaja con todos." : "El instructor abrió una ronda nueva.";
-      return;
-    }
-    if (!dentro && (e === "corre" || e === "fin") && vista === "lobby" && srv.corredores.length && !(R && R.modo === "solo")) {
-      if (srv.staff || e === "fin") mostrarFin();   // el proyector del instructor (o quien llegó tarde) ve la vía en vivo
-    }
-  }
-
-  var cuentaT = 0;
-  function cuentaAtras(inicio) {
-    if (cuentaT) return;
-    ver("lobby");
-    (function paso() {
-      var falta = inicio - ahoraSrv();
-      if (falta <= 0) { cuentaT = 0; $("capa").hidden = true; nuevaRonda("sala", inicio, srv.seed, null); return; }
-      capa(String(Math.ceil(falta / 1000)), "¡Al andén!", "Toca la línea que sigue en cada programa");
-      cuentaT = setTimeout(paso, Math.min(250, falta));
-    })();
-  }
-
-  // ---------- botones ----------
-  $("b-entrar").addEventListener("click", function () { unirse(); });
-  $("b-solo").addEventListener("click", function () { practicar(); });
-  $("b-otra").addEventListener("click", function () { practicar(); });
-  $("b-nueva").addEventListener("click", function () { $("nueva").hidden = true; ver("lobby"); unirse(); });
-  $("b-foto").addEventListener("click", armarFoto);
-  $("b-iniciar").addEventListener("click", function () {
-    PY.pedir("/carrera/iniciar", {}).then(function (r) { if (!r.ok) PY.toast("No se pudo iniciar: ¿entraste como instructor?"); else { ultimo = null; $("foto").textContent = ""; } refrescar(); });
+  // ---------- los bloques: primero las líneas de cada taller, luego sus bugs ----------
+  var OBJS = [];
+  TALLERES.forEach(function (T, s) {
+    T.L = T.progs[0].l.length;
+    T.progs.forEach(function (p) { if (p.l.length !== T.L) throw new Error("Todos los programas de " + T.id + " deben medir " + T.L + " líneas"); });
+    T.pool = [];
+    T.progs.forEach(function (p) { p.x.forEach(function (x) { T.pool.push({ prog: p, linea: x[0], tipo: x[1], j: x[2], por: x[3] }); }); });
+    T.base = OBJS.length;
+    for (var j = 0; j < T.L; j++) OBJS.push({ s: s, j: j });
+    for (var b = 0; b < BUGS_POR; b++) OBJS.push({ s: s, bug: b });
   });
-  $("b-vaciar").addEventListener("click", function () {
-    var b = $("b-vaciar");
-    if (b.getAttribute("data-seguro") !== "1") { b.setAttribute("data-seguro", "1"); b.textContent = "¿Vaciar? Toca otra vez"; setTimeout(function () { b.removeAttribute("data-seguro"); b.textContent = "Vaciar sala"; }, 3000); return; }
-    b.removeAttribute("data-seguro"); b.textContent = "Vaciar sala";
-    PY.pedir("/carrera/reiniciar", {}).then(function () { refrescar(); });
-  });
-  function practicar() {
-    $("nueva").hidden = true; msg("");
-    var t = Date.now() + 3000;
-    (function paso() {
-      var falta = t - Date.now();
-      if (falta <= 0) { $("capa").hidden = true; nuevaRonda("solo", Date.now(), Date.now() % 100000, null); return; }
-      capa(String(Math.ceil(falta / 1000)), "Práctica solo", "No cuenta en la vía de la clase; tu mejor marca sí se guarda");
-      setTimeout(paso, Math.min(250, falta));
-    })();
+  var PREF = "bq";
+
+  // ---------- utilidades ----------
+  function vis(l) { var m = /^ */.exec(l)[0].length; return new Array(m + 1).join("·") + l.slice(m); }
+  function visCorto(l, max) {
+    var m = /^ */.exec(l)[0].length, t = new Array(Math.ceil(m / 2) + 1).join("·") + l.slice(m);
+    return t.length > max ? t.slice(0, max - 1) + "…" : t;
+  }
+  function tagSO(p) { return p.so === "win" ? "win: " : p.so === "mac" ? "mac: " : ""; }
+  function corto(p) { return p.n || p.f; }
+  function nomProg(p) { return p.f; } // el título ya dice el sistema: «(Windows)», «(macOS o Linux)»
+  function rgba(hex, a) { var n = parseInt(hex.slice(1), 16); return "rgba(" + (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255) + "," + a + ")"; }
+  function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function guardarLocal(k, v) { try { localStorage.setItem("py01-" + k, JSON.stringify(v)); } catch (e) {} }
+  function leerLocal(k, d) { try { var v = localStorage.getItem("py01-" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
+
+  // ---------- el orden de los programas de cada taller (sale de la semilla: todos ven el mismo) ----------
+  var juego = null, permCache = { sem: -1, p: [] };
+  function semilla() { return juego ? (juego.ronda().semilla >>> 0) : 0; }
+  function permDe(s) {
+    var sem = semilla();
+    if (permCache.sem !== sem) permCache = { sem: sem, p: [] };
+    if (!permCache.p[s]) {
+      var n = TALLERES[s].progs.length, a = [], r = ArenaJMD.rng((sem ^ Math.imul(s + 1, 2654435761)) >>> 0);
+      for (var i = 0; i < n; i++) a.push(i);
+      for (i = n - 1; i > 0; i--) { var k = Math.floor(r() * (i + 1)), x = a[i]; a[i] = a[k]; a[k] = x; }
+      permCache.p[s] = a;
+    }
+    return permCache.p[s];
+  }
+  function progDe(s, k) { var T = TALLERES[s], p = permDe(s); return T.progs[p[k % p.length]]; }
+
+  // ---------- el estado de un taller, leído de las versiones de sus bloques ----------
+  function estado(s) {
+    var T = TALLERES[s], vs = [], kc = Infinity, j;
+    for (j = 0; j < T.L; j++) { var v = juego ? juego.objeto(PREF + (T.base + j)).v : 0; vs.push(v); if (v < kc) kc = v; }
+    var sig = -1, puestas = 0;
+    for (j = 0; j < T.L; j++) { if (vs[j] > kc) puestas++; else if (sig < 0) sig = j; }
+    return { kc: kc, sig: sig, puestas: puestas, vs: vs, prog: progDe(s, kc) };
   }
 
-  // Reflexión publicada → la fotito se vuelve a armar con ella y toca «Lo logré».
-  $("muro").addEventListener("k-muro", function () { if (ultimo) armarFoto(); $("sigue").hidden = false; });
+  // ---------- arte: el bloque de código ----------
+  function pintarBloque(g, x, y, s, t, d) {
+    var T = TALLERES[d.s], e = cache[d.s];
+    var brilla = !d.bug && e && d.k === e.kc && d.j === e.sig && s >= 1 && atascado(d.s);
+    g.save(); g.translate(x, y); g.scale(s, s);
+    var flota = RED || s < 1 ? 0 : Math.sin(t * 2.6 + d.i) * 3;
+    if (s >= 1) { g.fillStyle = "rgba(20,18,43,.22)"; g.beginPath(); g.ellipse(0, 18, 22, 6, 0, 0, 7); g.fill(); }
+    g.translate(0, flota);
+    if (brilla) {
+      var pu = RED ? .6 : (Math.sin(t * 6) + 1) / 2;
+      g.strokeStyle = "rgba(242,193,78," + (.5 + pu * .5) + ")"; g.lineWidth = 4; g.beginPath(); g.arc(0, -2, 34 + pu * 5, 0, 7); g.stroke();
+      g.fillStyle = "#f2c14e"; g.font = "800 13px " + SANS; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("¡falta esta!", 0, -44);
+    }
+    // ladrillo con muesca, como un bloque de código
+    g.fillStyle = T.color; g.strokeStyle = "rgba(20,18,43,.75)"; g.lineWidth = 2.2;
+    g.beginPath(); g.moveTo(-24, -16); g.lineTo(-12, -16); g.lineTo(-9, -21); g.lineTo(3, -21); g.lineTo(6, -16); g.lineTo(24, -16);
+    g.arcTo(28, -16, 28, -12, 4); g.lineTo(28, 12); g.arcTo(28, 16, 24, 16, 4); g.lineTo(-24, 16); g.arcTo(-28, 16, -28, 12, 4); g.lineTo(-28, -12); g.arcTo(-28, -16, -24, -16, 4);
+    g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = "rgba(255,255,255,.22)"; g.fillRect(-24, -13, 48, 5);
+    g.fillStyle = T.texto; g.font = "800 15px " + (d.s === 3 ? SANS : MONO); g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText(T.glifo, 0, 2);
+    g.restore();
+  }
 
-  // Teclado: 1-9 eligen la línea del andén.
-  document.addEventListener("keydown", function (e) {
-    if (vista !== "juego" || e.target.tagName === "INPUT" || !R) return;
-    var n = parseInt(e.key, 10); if (!(n >= 1 && n <= 9)) return;
-    var btns = $("anden").querySelectorAll(".ex-tl"); if (btns[n - 1]) { btns[n - 1].click(); e.preventDefault(); }
-  });
+  // ---------- arte: el taller (pantalla con el programa + tapete de entrega) ----------
+  var KW = /^(def|if|else|elif|for|in|return|try|except|while|import|from|as|and|or|not|True|False|None|FROM|WORKDIR|COPY|CMD|RUN)$/;
+  var BI = /^(print|sum|int|len|range|str|float|python|python3|pip|py|source|docker|pyenv|winget|f)$/;
+  var tokCache = {};
+  function tokens(l) {
+    if (tokCache[l]) return tokCache[l];
+    var m = /^ */.exec(l)[0].length, out = [], re = /("[^"]*"?)|(\b\d+(?:\.\d+)*\b)|([A-Za-z_][A-Za-z_0-9]*)|(\s+)|([^\sA-Za-z_0-9"]+)/g, x;
+    if (m) out.push({ t: new Array(m + 1).join("·"), c: "rgba(242,193,78,.55)" });
+    var resto = l.slice(m);
+    while ((x = re.exec(resto))) {
+      var c = "#e9e6ff";
+      if (x[1]) c = "#9be39f"; else if (x[2]) c = "#f6a6d8"; else if (x[3]) c = KW.test(x[3]) ? "#ffd43b" : BI.test(x[3]) ? "#84b9ee" : "#e9e6ff";
+      out.push({ t: x[0], c: c });
+    }
+    return (tokCache[l] = out);
+  }
+  function linea(g, l, x, y, ancho, px) {
+    var tk = tokens(l), f = px;
+    g.font = "600 " + f + "px " + MONO;
+    var w = 0; tk.forEach(function (k) { w += g.measureText(k.t).width; });
+    if (w > ancho) { f = Math.max(10, Math.floor(px * ancho / w)); g.font = "600 " + f + "px " + MONO; }
+    tk.forEach(function (k) { g.fillStyle = k.c; g.fillText(k.t, x, y); x += g.measureText(k.t).width; });
+  }
+  function atascado(s) { return VIG.cambio[s] && performance.now() - VIG.cambio[s] > 12000; }
+  function miCarga() { if (!juego) return null; var id = juego.yo().carga; return id ? juego.objeto(id) : null; }
 
-  // ---------- arranque ----------
-  pintarAvs();
-  PY.yo().then(function (u) {
-    yo.nombre = u.nombre; if (u.id) yo.id = u.id;
-    if (!avatar) { avatar = PY.avatarPorNombre(yo.nombre); pintarAvs(); }
-    refrescar();
+  function pintarTaller(g, z, t) {
+    var s = z.taller, T = TALLERES[s], e = cache[s]; if (!e) return;
+    var c = miCarga(), mio = c && c.s === s;
+    var pu = mio && !RED ? (Math.sin(t * 5) + 1) / 2 : 0;
+    var m = T.mat, p = T.pantalla, ahora = performance.now();
+    g.save();
+    // tapete de entrega
+    g.fillStyle = rgba(T.color, .16 + pu * .16); rr(g, m.x, m.y, m.w, m.h, 18); g.fill();
+    g.setLineDash([14, 10]); g.lineDashOffset = RED ? 0 : -t * 20; g.strokeStyle = T.color; g.lineWidth = mio ? 5 : 3; rr(g, m.x + 2, m.y + 2, m.w - 4, m.h - 4, 16); g.stroke(); g.setLineDash([]);
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillStyle = rgba(T.color, mio ? .95 : .6); g.font = "800 17px " + SANS;
+    g.fillText(mio ? "▼ ¡Entra aquí con tu bloque! ▼" : "entrega aquí", m.x + m.w / 2, m.y + m.h / 2 + 6);
+    // la mesa (muro) bajo la pantalla
+    var me = T.mesa;
+    g.fillStyle = "#3d3566"; rr(g, me.x, me.y, me.w, me.h, 16); g.fill();
+    // pantalla
+    g.fillStyle = "#17142f"; rr(g, p.x + 6, p.y + 6, p.w - 12, p.h - 12, 14); g.fill();
+    g.strokeStyle = T.color; g.lineWidth = 4; rr(g, p.x + 6, p.y + 6, p.w - 12, p.h - 12, 14); g.stroke();
+    var pr = e.prog, x0 = p.x + 18, y0 = p.y + 18;
+    // barra de título
+    g.fillStyle = "rgba(255,255,255,.07)"; rr(g, p.x + 8, p.y + 8, p.w - 16, 30, 10); g.fill();
+    ["#ff6b6b", "#ffd43b", "#6bd88b"].forEach(function (col, i) { g.fillStyle = col; g.beginPath(); g.arc(x0 + 6 + i * 15, y0 + 5, 4.5, 0, 7); g.fill(); });
+    g.textAlign = "left"; g.fillStyle = "#ffffff"; g.font = "700 15px " + MONO;
+    g.fillText(tagSO(pr) + pr.f, x0 + 52, y0 + 6);
+    g.textAlign = "right"; g.fillStyle = "rgba(233,230,255,.6)"; g.font = "700 13px " + SANS;
+    g.fillText("programa " + (e.kc + 1), p.x + p.w - 20, y0 + 6);
+    // líneas
+    var LH = 30, ly = y0 + 40, blink = RED ? true : Math.floor(t * 2) % 2 === 0;
+    for (var j = 0; j < T.L; j++) {
+      var yy = ly + j * LH + 10;
+      g.textAlign = "right"; g.fillStyle = "#6f6a98"; g.font = "600 14px " + MONO; g.fillText(String(j + 1), x0 + 16, yy);
+      g.textAlign = "left";
+      if (e.vs[j] > e.kc) linea(g, pr.l[j], x0 + 26, yy, p.w - 60, 16);
+      else if (j === e.sig) {
+        if (blink) { g.fillStyle = "#ffd43b"; g.fillRect(x0 + 26, yy - 9, 9, 18); }
+        g.fillStyle = atascado(s) ? "#f2c14e" : "rgba(255,212,59,.75)"; g.font = "italic 700 14px " + SANS;
+        g.fillText(atascado(s) ? "falta esta línea: ¡búscala en el piso!" : "← falta esta línea", x0 + 42, yy);
+      } else { g.fillStyle = "rgba(233,230,255,.28)"; g.font = "700 15px " + MONO; g.fillText("· · ·", x0 + 26, yy); }
+    }
+    // pie: qué hace el programa + avance
+    var fy = p.y + p.h - 26;
+    g.fillStyle = "rgba(233,230,255,.72)"; g.font = "600 13px " + SANS; g.textAlign = "left";
+    var meta = pr.t.length > 44 ? pr.t.slice(0, 43) + "…" : pr.t; g.fillText(meta, x0 + 4, fy);
+    for (j = 0; j < T.L; j++) {
+      var cx = p.x + p.w - 24 - (T.L - 1 - j) * 15;
+      g.fillStyle = e.vs[j] > e.kc ? T.color : "rgba(233,230,255,.18)"; g.beginPath(); g.arc(cx, fy, 5.5, 0, 7); g.fill();
+    }
+    // ¡corrió!: la salida del programa que se acaba de completar
+    var cr = VIG.corrio[s];
+    if (cr && ahora - cr.t < 4500) {
+      var edad = (ahora - cr.t) / 1000, al = edad < 3.8 ? 1 : 1 - (edad - 3.8) / .7;
+      g.globalAlpha = al;
+      g.fillStyle = "rgba(8,30,20,.94)"; rr(g, p.x + 10, p.y + 10, p.w - 20, p.h - 20, 12); g.fill();
+      g.strokeStyle = "#5fd393"; g.lineWidth = 3; rr(g, p.x + 10, p.y + 10, p.w - 20, p.h - 20, 12); g.stroke();
+      g.textAlign = "left"; g.fillStyle = "#5fd393"; g.font = "800 15px " + MONO;
+      var cmd = cr.pr.f.indexOf(".py") > 0 ? "$ python " + cr.pr.f : "▶ salida · " + corto(cr.pr);
+      g.fillText(cmd, p.x + 24, p.y + 34);
+      var out = cr.pr.o.split("\n");
+      out.slice(0, T.L).forEach(function (l, i) { g.fillStyle = "#c9f7d6"; g.font = "600 15px " + MONO; g.fillText(l.length > 40 ? l.slice(0, 39) + "…" : l, p.x + 24, p.y + 62 + i * 24); });
+      // sello
+      g.save(); g.translate(p.x + p.w - 78, p.y + p.h - 44); g.rotate(-.12);
+      var es = RED ? 1 : Math.min(1, edad * 4) * (1 + Math.max(0, .25 - edad) );
+      g.scale(es, es);
+      g.fillStyle = "#f2c14e"; rr(g, -62, -20, 124, 40, 12); g.fill(); g.strokeStyle = "#7a5200"; g.lineWidth = 3; rr(g, -62, -20, 124, 40, 12); g.stroke();
+      g.fillStyle = "#1c1300"; g.font = "900 20px " + SANS; g.textAlign = "center"; g.fillText("¡CORRIÓ!", 0, 2);
+      g.restore();
+      // chispas
+      if (!RED && edad < 1.6) {
+        for (var k = 0; k < 16; k++) {
+          var an = k / 16 * Math.PI * 2 + cr.k, rad = 30 + edad * 230, sx = p.x + p.w / 2 + Math.cos(an) * rad, sy = p.y + p.h / 2 + Math.sin(an) * rad * .6;
+          g.globalAlpha = Math.max(0, 1 - edad / 1.6); g.fillStyle = k % 3 ? "#f2c14e" : T.color;
+          g.beginPath(); g.arc(sx, sy, 5 - edad * 2, 0, 7); g.fill();
+        }
+      }
+      g.globalAlpha = 1;
+    }
+    g.restore();
+  }
+
+  function pintarDepurador(g, z, t) {
+    var c = miCarga(), conBug = !!c, pu = conBug && !RED ? (Math.sin(t * 5) + 1) / 2 : 0;
+    g.save();
+    g.fillStyle = rgba(z.color, .12 + pu * .14); rr(g, z.x, z.y, z.w, z.h, 22); g.fill();
+    g.setLineDash([12, 9]); g.lineDashOffset = RED ? 0 : -t * 18; g.strokeStyle = z.color; g.lineWidth = conBug ? 5 : 3; rr(g, z.x + 2, z.y + 2, z.w - 4, z.h - 4, 20); g.stroke(); g.setLineDash([]);
+    // frasco con bugs atrapados
+    var cx = z.x + 82, cy = z.y + 102;
+    g.fillStyle = "rgba(200,230,255,.45)"; rr(g, cx - 42, cy - 50, 84, 96, 18); g.fill(); g.strokeStyle = "#5c6a80"; g.lineWidth = 3; g.stroke();
+    g.fillStyle = "#7b6cf0"; rr(g, cx - 46, cy - 60, 92, 16, 6); g.fill();
+    [[-16, -8, .3], [14, 12, -.5], [-6, 26, .9]].forEach(function (b, i) { bicho(g, cx + b[0] + (RED ? 0 : Math.sin(t * 3 + i) * 3), cy + b[1], b[2], .8); });
+    // lupa
+    var lx = z.x + 196, ly = z.y + 92;
+    g.save(); g.translate(lx, ly); g.rotate(RED ? 0 : Math.sin(t * 2) * .12);
+    g.strokeStyle = "#2b2342"; g.lineWidth = 10; g.lineCap = "round"; g.beginPath(); g.moveTo(24, 24); g.lineTo(52, 52); g.stroke();
+    g.fillStyle = "rgba(200,230,255,.4)"; g.beginPath(); g.arc(0, 0, 34, 0, 7); g.fill(); g.strokeStyle = "#c9ced6"; g.lineWidth = 7; g.stroke();
+    bicho(g, 0, 2, 0, .9);
+    g.restore();
+    g.fillStyle = "rgba(227,38,46,.85)"; g.font = "800 14px " + SANS; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("trae aquí los bugs", z.x + z.w / 2, z.y + z.h - 14);
+    g.restore();
+  }
+  function bicho(g, x, y, rot, s) {
+    g.save(); g.translate(x, y); g.rotate(rot); g.scale(s, s);
+    g.strokeStyle = "#2b2342"; g.lineWidth = 2;
+    for (var i = -1; i <= 1; i++) { g.beginPath(); g.moveTo(-6, i * 5); g.lineTo(-13, i * 7); g.moveTo(6, i * 5); g.lineTo(13, i * 7); g.stroke(); }
+    g.fillStyle = "#e3262e"; g.beginPath(); g.ellipse(0, 0, 8, 11, 0, 0, 7); g.fill(); g.stroke();
+    g.fillStyle = "#2b2342"; g.beginPath(); g.arc(0, -11, 4.5, 0, 7); g.fill();
+    g.beginPath(); g.moveTo(0, -9); g.lineTo(0, 10); g.stroke();
+    g.beginPath(); g.arc(-3.5, -2, 1.6, 0, 7); g.arc(3.5, 4, 1.6, 0, 7); g.fill();
+    g.restore();
+  }
+
+  // ---------- el piso: caminos de color del centro a cada taller ----------
+  function fondo(g) {
+    var c0 = { x: 800, y: 500 };
+    var destinos = [[TALLERES[0], 240, 340], [TALLERES[1], 240, 655], [TALLERES[2], 1360, 340], [TALLERES[3], 1360, 690], [DEPURADOR, 800, 130]];
+    g.save(); g.lineCap = "round";
+    destinos.forEach(function (d) {
+      g.strokeStyle = rgba(d[0].color, .32); g.lineWidth = 9; g.setLineDash([2, 22]);
+      g.beginPath(); g.moveTo(c0.x, c0.y); g.quadraticCurveTo((c0.x + d[1]) / 2, d[2], d[1], d[2]); g.stroke();
+    });
+    g.setLineDash([]);
+    // logo de piso: la constelación JMD en el centro, con la marca de la fábrica
+    g.strokeStyle = "rgba(90,73,214,.16)"; g.lineWidth = 5; g.beginPath(); g.moveTo(700, 548); g.lineTo(752, 470); g.lineTo(808, 520); g.lineTo(880, 452); g.stroke();
+    g.fillStyle = "rgba(90,73,214,.18)"; [[700, 548, 9], [752, 470, 10], [808, 520, 8], [880, 452, 12]].forEach(function (q) { g.beginPath(); g.arc(q[0], q[1], q[2], 0, 7); g.fill(); });
+    g.restore();
+  }
+
+  // ---------- mi ronda ----------
+  var mio, cache = [], VIG;
+  function reiniciarMio() {
+    mio = { lineas: 0, bugs: 0, metidos: {}, progs: {}, cerrados: 0, ayudas: 0, dudas: 0, avisos: {}, tomado: 0, empujon: 0 };
+    VIG = { n: "", prev: [], firma: [], cambio: [], corrio: [], hechos: {}, celebrados: {} };
+    cache = [];
+  }
+  reiniciarMio();
+
+  function lupaUnaVez(clave, d) {
+    var ahora = performance.now();
+    if (mio.avisos[clave] && ahora - mio.avisos[clave] < 15000) return false;
+    mio.avisos[clave] = ahora; juego.lupa(d); return true;
+  }
+
+  // vigilar: detecta los programas que corren (en todas las pantallas a la vez) y los talleres atascados
+  function vigilar() {
+    if (!juego) return;
+    var r = juego.ronda(), clave = r.n + ":" + r.semilla, ahora = performance.now();
+    if (VIG.n !== clave) { VIG.n = clave; VIG.prev = []; VIG.firma = []; VIG.cambio = []; VIG.corrio = []; }
+    for (var s = 0; s < TALLERES.length; s++) {
+      var e = cache[s] = estado(s), firma = e.kc + ":" + e.puestas;
+      if (VIG.prev[s] == null || e.kc < VIG.prev[s]) { VIG.prev[s] = e.kc; VIG.firma[s] = firma; VIG.cambio[s] = ahora; continue; }
+      if (firma !== VIG.firma[s]) { VIG.firma[s] = firma; VIG.cambio[s] = ahora; }
+      for (var k = VIG.prev[s]; k < e.kc; k++) corrio(s, k, ahora);
+      VIG.prev[s] = e.kc;
+    }
+    // empujón: llevo justo la línea que falta y no estoy en su taller
+    var c = miCarga();
+    if (c && !c.bug && cache[c.s] && c.k === cache[c.s].kc && c.j === cache[c.s].sig && mio.tomado && ahora - mio.tomado > 7000 && ahora - mio.empujon > 14000) {
+      var T = TALLERES[c.s], yo = juego.yo();
+      if (!(yo.x > T.mat.x && yo.x < T.mat.x + T.mat.w && yo.y > T.mat.y && yo.y < T.mat.y + T.mat.h)) {
+        mio.empujon = ahora; juego.toast("¡Tu bloque es el que falta en el " + T.nombre + "! Llévalo ya.", "bien", 3200);
+      }
+    }
+  }
+  function corrio(s, k, ahora) {
+    var pr = progDe(s, k), clave = s + ":" + k;
+    VIG.corrio[s] = { k: k, pr: pr, t: ahora };
+    VIG.hechos[clave] = true;
+    if (VIG.celebrados[clave]) return;
+    VIG.celebrados[clave] = true;
+    if (mio.progs[clave]) {
+      mio.ayudas++;
+      juego.sumarPuntos(5); juego.sonido("meta");
+      juego.anuncio("¡Corrió " + corto(pr) + "!", "tu línea ayudó · +5");
+    }
+  }
+
+  // ---------- el juego ----------
+  juego = ArenaJMD.crear({
+    raiz: "#juego",
+    titulo: "Fábrica Python",
+    subtitulo: "Toda la clase arma programas que corren: línea por línea, de arriba abajo.",
+    curso: "Python: de cero a tu API",
+    sesion: "Clase 1 · Entorno y sintaxis",
+    fecha: "Jueves 12 de noviembre de 2026",
+    hashtag: "#PythonDeCero",
+    duracion: 180, duraciones: [180, 300], duracionPractica: 150,
+    mundo: { ancho: 1600, alto: 1000, tema: "patio" },
+    jugador: { accesorio: "audifonos" },
+    salida: { x: 690, y: 450, w: 220, h: 110 },
+    reglas: [
+      "Recoge un bloque de código pasando encima.",
+      "Llévalo a su taller: entra en orden, de arriba abajo. Si aún no le toca, espera ahí y entra solo.",
+      "¿Tiene un bug? Al Depurador 🐞 (+10). Errar no resta: la lupa te explica.",
+    ],
+    anuncio: "a la fábrica",
+    muros: [
+      TALLERES[0].mesa, TALLERES[1].mesa, TALLERES[2].mesa, TALLERES[3].mesa,
+      { x: 560, y: 300, w: 90, h: 70 }, { x: 950, y: 300, w: 90, h: 70 }, { x: 740, y: 810, w: 120, h: 70 },
+    ],
+    zonas: TALLERES.map(function (T, s) {
+      var a = T.mesa, b = T.mat, y = Math.min(a.y, b.y);
+      return { id: T.id, taller: s, x: a.x, y: y, w: a.w, h: Math.max(a.y + a.h, b.y + b.h) - y, nombre: T.nombre, color: T.color, colorTexto: T.texto, pintar: pintarTaller };
+    }).concat([Object.assign({ pintar: pintarDepurador, colorTexto: "#ffffff" }, DEPURADOR)]),
+    peligros: [
+      { tipo: "dron", nombre: "el bug volador", ruta: [[480, 640], [1110, 640]], vel: 125, radio: 26,
+        aviso: "¡Un bug volador te hizo soltar el bloque! Volvió a su lugar: búscalo otra vez.", avisoSinCarga: "¡Cuidado con los bugs voladores! Esquívalos." },
+      { tipo: "dron", nombre: "el bug guardián", ruta: [[800, 250], [800, 395]], vel: 85, radio: 24,
+        aviso: "¡El bug guardián del Depurador te hizo soltar el bloque! Rodéalo.", avisoSinCarga: "El bug guardián cuida el Depurador: pasa cuando se aleje." },
+    ],
+    decor: [
+      { tipo: "planta", x: 560, y: 960 }, { tipo: "planta", x: 1050, y: 960 }, { tipo: "planta", x: 520, y: 70 }, { tipo: "planta", x: 1080, y: 70 },
+      { tipo: "planta", x: 40, y: 500, s: 1.2 }, { tipo: "planta", x: 1560, y: 520, s: 1.2 },
+      { tipo: "texto", x: 800, y: 955, texto: "FÁBRICA PYTHON", px: 34, color: "rgba(55,118,171,.20)" },
+      { tipo: "texto", x: 300, y: 505, texto: ">>>", px: 40, color: "rgba(90,73,214,.13)" },
+      { tipo: "texto", x: 1300, y: 525, texto: "{ }", px: 44, color: "rgba(90,73,214,.13)" },
+    ],
+    fondo: fondo,
+    objetos: {
+      cantidad: OBJS.length, prefijo: PREF,
+      crear: function (i, v, rnd, M) {
+        var o = OBJS[i], T = TALLERES[o.s], p = M.lugarLibre(rnd, 38, { x: 40, y: 40, w: 1520, h: 930 });
+        if (o.bug != null) {
+          var off = (semilla() >>> 3) % T.pool.length, tr = T.pool[(o.bug + v * BUGS_POR + off) % T.pool.length];
+          return { x: p.x, y: p.y, pintar: pintarBloque, s: o.s, bug: true, tr: tr, prog: tr.prog, j: tr.j, linea: tr.linea, texto: tagSO(tr.prog) + visCorto(tr.linea, 19) };
+        }
+        var pr = progDe(o.s, v);
+        return { x: p.x, y: p.y, pintar: pintarBloque, s: o.s, bug: false, k: v, j: o.j, prog: pr, linea: pr.l[o.j], texto: tagSO(pr) + visCorto(pr.l[o.j], 19) };
+      },
+    },
+    tarjeta: function (ob) {
+      var T = TALLERES[ob.s], e = estado(ob.s), pr = ob.prog, actual = pr === e.prog, lineas = [], puesta = false;
+      for (var j = 0; j < T.L; j++) {
+        var ya = actual && e.vs[j] > e.kc;
+        if (j === ob.j && ya) puesta = true;
+        lineas.push(ya ? vis(pr.l[j]) : j === ob.j ? vis(ob.linea) + "   ◀ tu bloque" : "…");
+      }
+      if (puesta) lineas.push(vis(ob.linea) + "   ◀ tu bloque");
+      return {
+        etiqueta: T.icono + " " + T.corto, color: T.color,
+        titulo: nomProg(pr) + " · " + pr.t,
+        lineas: lineas,
+        pie: actual
+          ? "¿Encaja? Llévalo al " + T.nombre + " (" + T.donde + "). ¿Tiene un bug? Al Depurador 🐞. Espacio lo suelta."
+          : "Ese programa viene después del que se arma ahora. Si está bien escrito, espéralo en el " + T.nombre + "; si tiene un bug, al Depurador 🐞.",
+      };
+    },
+    entregar: function (ob, zona) {
+      var T = TALLERES[ob.s], pr = ob.prog;
+      if (zona.id === "dep") {
+        if (ob.bug) {
+          mio.bugs++;
+          return { ok: true, puntos: 10, meta: false, titulo: "¡Bug cazado! +10", explicacion: TRAMPAS[ob.tr.tipo].n + ": " + ob.tr.por,
+            real: "Así sí corre: " + vis(pr.l[ob.tr.j]), feed: "cazó un bug: " + TRAMPAS[ob.tr.tipo].n.toLowerCase() };
+        }
+        if (lupaUnaVez(ob.id + "@" + ob.v + "dep", { tipo: "mal", icono: "🔍", titulo: "Ese bloque no tiene bug", ms: 6000,
+          texto: "Está bien escrito: es la línea " + (ob.j + 1) + " de " + corto(pr) + ". Llévalo al " + T.nombre + " (" + T.donde + ")." })) mio.dudas++;
+        return { rechazar: true, mensaje: "Sin bug: llévalo al " + T.nombre };
+      }
+      if (zona.taller !== ob.s) return { rechazar: true, mensaje: "Este bloque va al " + T.nombre + " (" + T.donde + ")" };
+      if (ob.bug) {
+        mio.metidos[ob.tr.tipo] = (mio.metidos[ob.tr.tipo] || 0) + 1;
+        return { ok: false, puntos: 0, meta: false, titulo: "¡Bug! Así no corre", explicacion: TRAMPAS[ob.tr.tipo].n + ": " + ob.tr.por,
+          real: "Así sí: " + vis(pr.l[ob.tr.j]), feed: "aprendió de un bug: " + TRAMPAS[ob.tr.tipo].n.toLowerCase() };
+      }
+      var e = estado(ob.s);
+      if (ob.k > e.kc) {
+        lupaUnaVez(ob.id + "@" + ob.v, { tipo: "espera", icono: "⏳", titulo: "Ese programa viene después", ms: 5000,
+          texto: "El taller está terminando " + corto(e.prog) + ". Quédate aquí y tu bloque entra solo cuando le toque, o suéltalo (Espacio) y ayuda a terminar el actual." });
+        return { rechazar: true, mensaje: "⏳ Espera aquí: entra cuando corra " + corto(e.prog) };
+      }
+      if (ob.j !== e.sig) {
+        lupaUnaVez(ob.id + "@" + ob.v, { tipo: "espera", icono: "⏳", titulo: "Todavía no le toca: falta la línea " + (e.sig + 1), ms: 6000,
+          texto: ((pr.a && pr.a[e.sig]) || "Python lee de arriba abajo: primero va lo que se necesita.") + " Quédate aquí y tu bloque entra solo cuando llegue la línea " + (e.sig + 1) + ", o suéltalo (Espacio) y búscala tú." });
+        return { rechazar: true, mensaje: "⏳ Espera aquí: falta la línea " + (e.sig + 1) };
+      }
+      var clave = ob.s + ":" + ob.k;
+      mio.lineas++; mio.progs[clave] = true;
+      if (e.puestas === T.L - 1) {
+        mio.cerrados++; VIG.celebrados[clave] = true; VIG.hechos[clave] = true;
+        return { ok: true, puntos: 20, meta: 1, titulo: "¡Corrió " + corto(pr) + "! +20", explicacion: "Pusiste la última línea y el programa corrió.",
+          real: "Salida › " + pr.o.split("\n").join("  ⏎  "), feed: "¡hizo correr " + corto(pr) + "! 🎉" };
+      }
+      return { ok: true, puntos: 10, meta: false, titulo: "Línea " + (ob.j + 1) + " en su sitio · +10", feed: "puso la línea " + (ob.j + 1) + " de " + corto(pr) };
+    },
+    alTomar: function () { mio.tomado = performance.now(); },
+    alEntregar: function (ob, z, res) { if (res.meta === 1) juego.anuncio("¡Corrió!", corto(ob.prog) + " · +1 a la meta"); },
+    meta: { contador: "corren", texto: "Programas que corren", objetivo: function (n) { return n <= 1 ? 2 : Math.round(2 + n * 0.9); }, logro: "¡la fábrica cumplió su meta de programas!" },
+    reflexion: { clave: "py01-juego", pregunta: "¿Qué bug te cazó y cómo lo reconoces ahora?", placeholder: "Olvidé los dos puntos del if: ahora miro el final de la línea",
+      porDefecto: "Python lee de arriba abajo: cada línea en su lugar." },
+    alReflexion: function (t) { guardarLocal("muro-py01-juego", t); },
+    alRonda: function () { reiniciarMio(); },
+    resultado: function (s) {
+      var corrieron = Object.keys(mio.progs).filter(function (k) { return VIG.hechos[k]; }).length;
+      var peor = "", n = 0;
+      Object.keys(mio.metidos).forEach(function (k) { if (mio.metidos[k] > n) { n = mio.metidos[k]; peor = k; } });
+      var titulo = corrieron >= 4 && mio.bugs >= 2 ? "Mente de intérprete" : mio.bugs >= 3 ? "Cazabugs de la fábrica" : corrieron >= 3 ? "Pieza clave de la fábrica"
+        : mio.lineas >= 1 ? "Primeras líneas en Python" : mio.bugs >= 1 ? "Ojo para los bugs" : "De visita en la fábrica";
+      var mejor = Math.max(leerLocal("mejor-fabrica", 0), corrieron);
+      guardarLocal("mejor-fabrica", mejor);
+      guardarLocal("ultimo", { juego: "fabrica", programas: corrieron, lineas: mio.lineas, bugs: mio.bugs, titulo: titulo, mejor: mejor, peor: peor });
+      return {
+        etiqueta: "Mi turno en la fábrica", titulo: titulo,
+        resultado: corrieron + (corrieron === 1 ? " programa corrió" : " programas corrieron") + " con mis líneas",
+        detalle: mio.lineas + (mio.lineas === 1 ? " línea" : " líneas") + " en su sitio · " + mio.bugs + (mio.bugs === 1 ? " bug cazado" : " bugs cazados") + " · " + juego.puntos + " pts"
+          + (peor ? " · repasa: " + TRAMPAS[peor].n.toLowerCase() : ""),
+      };
+    },
   });
-  setInterval(function () {
-    if (R && !R.terminada && (R.modo === "sala" ? ahoraSrv() : Date.now()) >= R.fin) terminar(); // pestaña en segundo plano: rAF se detiene
-    if (document.visibilityState === "hidden" && vista !== "juego") return;
-    if (vista === "juego") { enviar(false); if (R && R.modo === "sala") refrescar(); return; }
-    refrescar();
-  }, 1600);
-  // Prueba local: ?demo=1 juega una práctica sin servidor (sirve para revisar la escena sola).
-  try { if (new URLSearchParams(location.search).get("demo") === "1") setTimeout(practicar, 300); } catch (e) {}
+  setInterval(vigilar, 150);
+  vigilar();
+  // Solo lectura, para las pruebas con Playwright (como window.__arenaJMD del motor).
+  window.__fabrica = {
+    bloque: function (id) { var d = juego.objeto(id); return { id: d.id, v: d.v, x: d.x, y: d.y, s: d.s, bug: d.bug, j: d.j, k: d.k, linea: d.linea }; },
+    estado: function () { return TALLERES.map(function (T, s) { var e = estado(s); return { taller: T.id, programa: e.kc, prog: e.prog.f, sig: e.sig, puestas: e.puestas }; }); },
+    mio: function () { return JSON.parse(JSON.stringify(mio)); },
+    talleres: TALLERES.map(function (T) { return { mat: T.mat }; }), depurador: DEPURADOR, bloques: OBJS.length, prefijo: PREF,
+  };
 })();
 </script>
 </body>

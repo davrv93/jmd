@@ -87,10 +87,10 @@ cycle:
     description: Tipos, f-strings, if, bucles, funciones y try / except. Predice qué imprime cada bloque antes de ver la respuesta.
     check: Votaste en los «¿Qué imprime?» del LIVE
   - id: juego
-    title: Jugar «Expreso Python»
+    title: Jugar «Fábrica Python»
     tool: lms
     phase: conceptualizacion
-    description: Arma programas y comandos línea por línea con la clase. Al final publica en el muro qué trampa te cazó y cómo la reconoces ahora.
+    description: Con tu robot, lleva bloques de código a los talleres y arma con la clase programas, comandos de venv y Dockerfiles que corren, línea por línea. Al final publica en el muro qué bug te cazó y cómo lo reconoces ahora.
     check: Tu reflexión aparece en el muro del juego
   - id: docker
     title: El mismo script en 3.11 y 3.13 con Docker
