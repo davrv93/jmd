@@ -22,11 +22,12 @@ interface LiveState {
   skillNueva: string; // skill creada desde la terminal que aún no está en la cuenta
   vistaAlumno: boolean; // el instructor mira la clase como la ve un alumno (terminal, visor, agente)
   conexion: ConexionLive; // estado del stream, para la barra de estado del alumno
+  muro: string; // "<escena>|<n>" del último evento «muro»: la vista del muro se refresca
 }
 
 export default component$(() => {
   const session = useContext(SessionContext);
-  const st = useStore<LiveState>({ me: null, estado: null, escenas: [], error: "", conectados: 0, presentes: [], aviso: "", pareja: null, skillNueva: "", vistaAlumno: false, conexion: "conectando" });
+  const st = useStore<LiveState>({ me: null, estado: null, escenas: [], error: "", conectados: 0, presentes: [], aviso: "", pareja: null, skillNueva: "", vistaAlumno: false, conexion: "conectando", muro: "" });
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async ({ track }) => {
@@ -65,13 +66,16 @@ export default component$(() => {
       /* sin pareja todavía */
     }
     abrirStream(id, (evento, data) => {
-      if (evento === "estado" && data) {
+      // «cierre» trae el mismo estado (cerrada): así el alumno ve «Clase cerrada» y el formulario de opinión.
+      if ((evento === "estado" || evento === "cierre") && data) {
         st.estado = data as LiveEstado;
         st.conectados = st.estado.conectados;
       } else if (evento === "mensaje" && data && typeof data.texto === "string") {
         st.aviso = data.texto;
       } else if (evento === "skill_nueva" && data && typeof data.nombre === "string") {
         st.skillNueva = `${data.nombre}:${Date.now()}`;
+      } else if (evento === "muro" && data && typeof data.escena === "string") {
+        st.muro = `${data.escena}|${Date.now()}`;
       } else if (evento === "pareja" && data) {
         st.pareja = (data as ParejaLive).con?.length ? (data as ParejaLive) : null;
       } else if (evento === "presencia" && data) {
@@ -102,9 +106,9 @@ export default component$(() => {
   return (
     <div class="live">
       {staff && !st.vistaAlumno ? (
-        <LiveControl lesson={id} estado={st.estado} escenas={st.escenas} conectados={st.conectados} presentes={st.presentes} onVista$={cambiarVista} />
+        <LiveControl lesson={id} estado={st.estado} escenas={st.escenas} conectados={st.conectados} presentes={st.presentes} muro={st.muro} onVista$={cambiarVista} />
       ) : (
-        <LiveAlumno lesson={id} estado={st.estado} aviso={st.aviso} pareja={st.pareja} escenas={st.escenas} skillNueva={st.skillNueva} staff={staff} onVista$={cambiarVista} conexion={st.conexion} conectados={st.conectados} />
+        <LiveAlumno lesson={id} estado={st.estado} aviso={st.aviso} pareja={st.pareja} escenas={st.escenas} skillNueva={st.skillNueva} staff={staff} onVista$={cambiarVista} conexion={st.conexion} conectados={st.conectados} muro={st.muro} />
       )}
     </div>
   );

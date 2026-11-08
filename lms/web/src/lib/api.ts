@@ -502,6 +502,27 @@ export const api = {
     req<{ total: number }>("DELETE", `/api/v1/live/${encodeURIComponent(lesson)}/votos?escena=${encodeURIComponent(escena)}`),
   liveMuroVaciar: (lesson: string, escena: string) =>
     req<{ entradas: unknown[] }>("DELETE", `/api/v1/live/${encodeURIComponent(lesson)}/muro?escena=${encodeURIComponent(escena)}`),
+  // Muro con «me gusta»: orden "likes" pone primero las más gustadas; el «me gusta» se alterna.
+  liveMuro: (lesson: string, escena: string, orden: "" | "likes" = "") =>
+    req<{ entradas: EntradaMuro[] }>(
+      "GET",
+      `/api/v1/live/${encodeURIComponent(lesson)}/muro?escena=${encodeURIComponent(escena)}${orden ? `&orden=${orden}` : ""}`,
+    ),
+  liveMuroLike: (lesson: string, escena: string, id: string, orden: "" | "likes" = "") =>
+    req<{ entrada: EntradaMuro; entradas: EntradaMuro[] }>(
+      "POST",
+      `/api/v1/live/${encodeURIComponent(lesson)}/muro/like${orden ? `?orden=${orden}` : ""}`,
+      { escena, id },
+    ),
+  // Opiniones de las clases: una por alumno y sesión; «me gusta» de los demás; el personal modera.
+  opinionesCurso: (course: string) => req<OpinionesCurso>("GET", `/api/v1/courses/${encodeURIComponent(course)}/opiniones`),
+  miOpinion: (lesson: string) =>
+    req<{ opinion: Opinion | null; puede: boolean; motivo: string }>("GET", `/api/v1/lessons/${encodeURIComponent(lesson)}/opinion`),
+  guardarOpinion: (lesson: string, estrellas: number, texto: string) =>
+    req<Opinion>("PUT", `/api/v1/lessons/${encodeURIComponent(lesson)}/opinion`, { estrellas, texto }),
+  opinionLike: (id: string) => req<{ id: string; likes: number; me_gusta: boolean }>("POST", `/api/v1/opiniones/${encodeURIComponent(id)}/like`, {}),
+  opinionOcultar: (id: string, oculta: boolean) =>
+    req<{ id: string; oculta: boolean }>("PUT", `/api/v1/opiniones/${encodeURIComponent(id)}/oculta`, { oculta }),
   // Skills del alumno: cada cuenta guarda las suyas; las del curso son de solo lectura.
   misSkills: () => req<SkillResumen[]>("GET", "/api/v1/mis-skills"),
   miSkill: (nombre: string) => req<Skill>("GET", `/api/v1/mis-skills/${encodeURIComponent(nombre)}`),
@@ -515,6 +536,37 @@ export const api = {
   skillsDetectadas: () => req<{ nombres: string[] }>("GET", "/api/v1/mis-skills/detectadas"),
   importarSkill: (nombre: string) => req<Skill>("POST", "/api/v1/mis-skills/importar", { nombre }),
 };
+
+// Entrada del muro del LIVE (en memoria). id es público (no deja ver al autor); mia y me_gusta son de quien pregunta.
+export interface EntradaMuro {
+  id: string;
+  nombre: string;
+  texto: string;
+  fecha: string;
+  mia: boolean;
+  likes: number;
+  me_gusta: boolean;
+}
+
+// Opinión de una clase: el autor va solo con su primer nombre. oculta solo llega al personal.
+export interface Opinion {
+  id: string;
+  nombre: string;
+  estrellas: number;
+  texto: string;
+  likes: number;
+  me_gusta: boolean;
+  mia: boolean;
+  lesson_id: string;
+  lesson_title?: string;
+  fecha: string;
+  oculta?: boolean;
+}
+export interface OpinionesCurso {
+  promedio: number;
+  total: number;
+  opiniones: Opinion[];
+}
 
 // Skill del alumno (GET /api/v1/mis-skills): la lista trae el resumen; el detalle, cuerpo y variantes.
 export interface SkillResumen {

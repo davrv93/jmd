@@ -9,6 +9,8 @@ import { ChipPrueba, MisSkills, type PruebaSkill } from "~/components/mis-skills
 import { Copy } from "~/components/ui";
 import { avisarEscena, temaActual, urlEscena, type ConexionLive } from "~/lib/live";
 import { contar, moneda } from "~/lib/mario";
+import { LiveMuro } from "~/components/live-muro";
+import { OpinionClase } from "~/components/opiniones";
 
 // Pestañas del panel de trabajo (a la derecha o abajo de la escena, como el panel de un editor).
 type Pestana = "terminal" | "visor" | "agente" | "skills";
@@ -87,6 +89,7 @@ function moverFoco(e: KeyboardEvent, caja: HTMLElement): HTMLElement | null {
 // con las pestañas abajo.
 // Escenas cuyo iframe puede descargar archivos (el MP4 de la flor, la música): el sandbox lleva allow-downloads
 // en cualquier grupo de la sesión 2 (de-02, dl-02, dm-02, dt-02…); sin él, el navegador ignora «⬇ Descargar».
+// Todas las escenas pueden descargar (la fotito de cada clase la baja como PNG); la lista queda por si se quiere distinguir.
 const ESCENAS_CON_DESCARGA = new Set(["01-tu-video", "05-escucha-y-descarga", "09-musica-con-lyria"]);
 
 export const LiveAlumno = component$(
@@ -101,6 +104,7 @@ export const LiveAlumno = component$(
     onVista$?: QRL<(alumno: boolean) => void>;
     conexion?: ConexionLive;
     conectados?: number;
+    muro?: string; // "<escena>|<n>": el muro de esa escena cambió (evento «muro» del stream)
   }) => {
     const session = useContext(SessionContext);
     const escena = useSignal(props.estado.escena);
@@ -875,6 +879,8 @@ export const LiveAlumno = component$(
                 </div>
               )}
               <div class="lv-escena-acc">
+                {efectiva && <LiveMuro lesson={props.lesson} escena={efectiva} senal={props.muro} />}
+                {!props.staff && <OpinionClase lesson={props.lesson} cerrada={props.estado.estado === "cerrada"} />}
                 {conDsh && (
                   <>
                     <button type="button" class="btn sm lv-dsh" data-testid="abrir-dsh" title="Abre DeepSeek Harness en el panel, al lado de la escena" onClick$={() => abrirPestana("agente")}>
@@ -931,7 +937,7 @@ export const LiveAlumno = component$(
                   ref={marco}
                   class="live-frame lv-marco"
                   onLoad$={() => avisarEscena(marco.value, props.estado)}
-                  sandbox={props.lesson === "qa-01" && efectiva === "01-descarga" ? "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" : ESCENAS_CON_DESCARGA.has(efectiva) ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin"}
+                  sandbox={props.lesson === "qa-01" && efectiva === "01-descarga" ? "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" : ESCENAS_CON_DESCARGA.has(efectiva) ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin allow-downloads"}
                   allow="microphone; clipboard-write"
                   title="Escena"
                   src={urlEscena(props.lesson, efectiva, tema.value)}

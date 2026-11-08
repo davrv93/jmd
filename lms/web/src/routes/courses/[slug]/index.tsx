@@ -7,11 +7,12 @@ import { modToken, PHASE_BY_ID } from "~/lib/kolb";
 import { Icon } from "~/components/icon";
 import { Crumbs, Empty, ErrorState, lessonState, Loading, Ring, Status, Tabs } from "~/components/ui";
 import { Ahora, pasoActual, type PasoActual } from "~/components/ahora";
+import { OpinionesCursoSeccion } from "~/components/opiniones";
 
 export default component$(() => {
   const loc = useLocation();
   const session = useContext(SessionContext);
-  const st = useStore<{ c: Course | null; ex: ExampleSummary[] | null; error: string; paso: PasoActual | null }>({ c: null, ex: null, error: "", paso: null });
+  const st = useStore<{ c: Course | null; ex: ExampleSummary[] | null; error: string; paso: PasoActual | null; opiniones: number }>({ c: null, ex: null, error: "", paso: null, opiniones: 0 });
   const tab = useSignal("temario");
 
   const load = $(async () => {
@@ -21,6 +22,8 @@ export default component$(() => {
       st.c = await api.course(slug);
       setTitle(st.c.title);
       st.ex = await api.examples(st.c.id).catch(() => []);
+      // Solo el número, para la pestaña; la lista la carga la sección al abrirla.
+      api.opinionesCurso(st.c.id).then((o) => (st.opiniones = o.total)).catch(() => {});
       // «Ahora»: el primer paso sin hacer de la clase en curso.
       const cur = st.c.modules.flatMap((m) => m.lessons).find((l) => l.published && l.steps_done < l.steps);
       st.paso = cur ? await api.lesson(cur.id).then(pasoActual).catch(() => null) : null;
@@ -97,6 +100,7 @@ export default component$(() => {
           { id: "temario", label: "Temario", icon: "layers", count: lessons.length },
           { id: "tareas", label: "Tareas", icon: "task", count: c.assignments.length },
           { id: "ejemplos", label: "Prácticas", icon: "sparkles", count: st.ex?.length ?? 0 },
+          { id: "opiniones", label: "Opiniones", icon: "star", count: st.opiniones },
         ]}
       />
 
@@ -228,6 +232,8 @@ export default component$(() => {
             ))}
           </div>
         ))}
+
+      {tab.value === "opiniones" && <OpinionesCursoSeccion course={c.id} />}
     </>
   );
 });

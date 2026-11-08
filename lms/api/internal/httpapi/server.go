@@ -50,22 +50,24 @@ type Server struct {
 	// IA: relé de la «clave de la clase» para DeepSeek Harness (ver ia_rele.go); nil = sin clave de la clase.
 	IA *IAConfig
 
-	login     *limiter
-	llm       *llmCache
-	cert      *certCache
-	badge     *badgeKeyCache
-	runLimit  *limiter
-	dshLimite *limiter // POST /api/v1/dsh/abrir por alumno
-	golLimite *limiter // POST /api/v1/sorteo-gol/girar por IP
-	golMu     sync.Mutex
-	termSlots *slots
-	Aula      AulaMotor // nil = sin aula configurada (503)
-	repaso    *repasoArena
-	live      *liveHub
-	presencia *presencia
-	presMu    sync.Mutex
-	parejas   map[string][][]alumnoLive // lección → grupos del último emparejado (en memoria)
-	presStop  map[string]func()         // lección → detener la difusión de presencia
+	login         *limiter
+	llm           *llmCache
+	cert          *certCache
+	badge         *badgeKeyCache
+	runLimit      *limiter
+	dshLimite     *limiter // POST /api/v1/dsh/abrir por alumno
+	golLimite     *limiter // POST /api/v1/sorteo-gol/girar por IP
+	opinionLimite *limiter // PUT /api/v1/lessons/{id}/opinion por alumno
+	likeLimite    *limiter // «me gusta» del muro del LIVE y de las opiniones, por persona
+	golMu         sync.Mutex
+	termSlots     *slots
+	Aula          AulaMotor // nil = sin aula configurada (503)
+	repaso        *repasoArena
+	live          *liveHub
+	presencia     *presencia
+	presMu        sync.Mutex
+	parejas       map[string][][]alumnoLive // lección → grupos del último emparejado (en memoria)
+	presStop      map[string]func()         // lección → detener la difusión de presencia
 }
 
 // LLMConfig apunta a un endpoint OpenAI-compatible (el gateway de la clase) para generar landings.
@@ -119,6 +121,12 @@ func (s *Server) Handler() http.Handler {
 	}
 	if s.dshLimite == nil {
 		s.dshLimite = newLimiter(10, time.Minute)
+	}
+	if s.opinionLimite == nil {
+		s.opinionLimite = newLimiter(10, time.Minute)
+	}
+	if s.likeLimite == nil {
+		s.likeLimite = newLimiter(60, time.Minute)
 	}
 	if s.termSlots == nil {
 		s.termSlots = newSlots()
@@ -184,6 +192,12 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/instructor/simulador/horario", s.authed(s.staff(s.simuladorHorario)))
 	mux.Handle("GET /api/v1/horario", s.authed(s.miHorario))
 	mux.Handle("GET /api/v1/courses/{id}/examples", s.authed(s.courseExamples))
+	// Opiniones de las clases (ver opiniones.go).
+	mux.Handle("GET /api/v1/courses/{id}/opiniones", s.authed(s.opinionesCurso))
+	mux.Handle("GET /api/v1/lessons/{id}/opinion", s.authed(s.miOpinion))
+	mux.Handle("PUT /api/v1/lessons/{id}/opinion", s.authed(s.guardarOpinion))
+	mux.Handle("POST /api/v1/opiniones/{id}/like", s.authed(s.opinionLike))
+	mux.Handle("PUT /api/v1/opiniones/{id}/oculta", s.authed(s.staff(s.opinionOcultar)))
 	mux.Handle("GET /api/v1/examples/{id}", s.authed(s.example))
 	mux.Handle("POST /api/v1/run", s.authed(s.run))
 	mux.Handle("GET /api/v1/term", s.authed(s.term))
@@ -280,6 +294,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/muro", s.authed(s.liveMuroPost))
 	mux.Handle("GET /api/v1/live/{lesson}/muro", s.authed(s.liveMuroGet))
 	mux.Handle("DELETE /api/v1/live/{lesson}/muro", s.authed(s.staff(s.liveMuroBorrar)))
+	mux.Handle("POST /api/v1/live/{lesson}/muro/like", s.authed(s.liveMuroLike))
 	mux.Handle("GET /api/v1/live/{lesson}/repaso", s.authed(s.liveRepasoGet))
 	mux.Handle("POST /api/v1/live/{lesson}/repaso", s.authed(s.liveRepasoPost))
 	mux.Handle("GET /api/v1/live/{lesson}/juego", s.authed(s.liveJuegoGet))

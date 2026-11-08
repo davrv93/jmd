@@ -2,7 +2,7 @@
 // En error cierra y reabre con espera creciente (1, 2, 4, 8 s; tope 8 s). `alCambiar`, si se pasa,
 // recibe el estado de la conexión para mostrarlo (barra de estado del alumno).
 
-const EVENTOS = ["estado", "presencia", "logre", "mensaje", "pareja", "cierre", "skill_nueva"] as const;
+const EVENTOS = ["estado", "presencia", "logre", "mensaje", "pareja", "cierre", "skill_nueva", "muro"] as const;
 
 export type EventoLive = (typeof EVENTOS)[number];
 

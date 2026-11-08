@@ -290,6 +290,28 @@ CREATE TABLE IF NOT EXISTS live_evidencias (
   PRIMARY KEY (user_id, lesson_id, escena, tipo)
 );
 CREATE TABLE IF NOT EXISTS skills (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, nombre TEXT NOT NULL, descripcion TEXT NOT NULL DEFAULT '', cuerpo TEXT NOT NULL, modelo_destino TEXT NOT NULL DEFAULT 'generico', variantes_json TEXT NOT NULL DEFAULT '{}', version INTEGER NOT NULL DEFAULT 1, origen TEXT NOT NULL DEFAULT 'propia', compartida INTEGER NOT NULL DEFAULT 0, creada_en TEXT NOT NULL, actualizada_en TEXT NOT NULL, UNIQUE (user_id, nombre));
+-- Opiniones de las clases (11-2026): una por alumno y sesión (volver a enviarla la edita), de 1 a 5
+-- estrellas y un texto corto. El personal puede ocultarlas (moderación); los demás les dan «me gusta».
+CREATE TABLE IF NOT EXISTS opiniones (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  course_id TEXT NOT NULL,
+  lesson_id TEXT NOT NULL,
+  estrellas INTEGER NOT NULL CHECK (estrellas BETWEEN 1 AND 5),
+  texto TEXT NOT NULL DEFAULT '',
+  oculta INTEGER NOT NULL DEFAULT 0,
+  oculta_por TEXT NOT NULL DEFAULT '',
+  creada_en TEXT NOT NULL,
+  actualizada_en TEXT NOT NULL,
+  UNIQUE (user_id, lesson_id)
+);
+CREATE INDEX IF NOT EXISTS opiniones_curso ON opiniones (course_id);
+CREATE TABLE IF NOT EXISTS opinion_likes (
+  opinion_id TEXT NOT NULL REFERENCES opiniones(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  creado_en TEXT NOT NULL,
+  PRIMARY KEY (opinion_id, user_id)
+);
 `
 
 // NewID genera un id aleatorio no adivinable (32 hex).

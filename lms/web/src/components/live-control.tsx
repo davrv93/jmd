@@ -6,13 +6,14 @@ import { LiveCompuerta } from "~/components/live-compuerta";
 import { AccesosAlumnos, PantallaAlumno } from "~/components/live-pantallas";
 import { avisarEscena, temaActual, urlEscena } from "~/lib/live";
 import { PHASE_BY_ID } from "~/lib/kolb";
+import { LiveMuro } from "~/components/live-muro";
 
 const etiquetaSemaforo = (c: string) =>
   c === "verde" ? "Ya cumplió" : c === "ambar" ? "Trabajando" : c === "rojo" ? "Necesita ayuda" : "Sin conexión";
 
 // LiveControl: la mesa del instructor del LIVE. Lista de escenas, anterior/siguiente,
 // mostrar/ocultar, iniciar/cerrar, conectados y cronómetro de la escena.
-export const LiveControl = component$((props: { lesson: string; estado: LiveEstado; escenas: { id: string; titulo: string; fase: string; duracion_min: number; compuerta?: string }[]; conectados: number; presentes: PresenteLive[]; onVista$?: QRL<(alumno: boolean) => void> }) => {
+export const LiveControl = component$((props: { lesson: string; estado: LiveEstado; escenas: { id: string; titulo: string; fase: string; duracion_min: number; compuerta?: string }[]; conectados: number; presentes: PresenteLive[]; muro?: string; onVista$?: QRL<(alumno: boolean) => void> }) => {
   const session = useContext(SessionContext);
   const escenaActual = useSignal(props.estado.escena);
   const visible = useSignal(props.estado.visible);
@@ -286,7 +287,7 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
               ref={marco}
               class="live-frame"
               onLoad$={() => avisarEscena(marco.value, props.estado)}
-              sandbox={props.lesson === "qa-01" && escenaActual.value === "01-descarga" ? "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" : props.lesson === "de-02" && ["05-escucha-y-descarga", "09-musica-con-lyria"].includes(escenaActual.value) ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin"}
+              sandbox={props.lesson === "qa-01" && escenaActual.value === "01-descarga" ? "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" : props.lesson === "de-02" && ["05-escucha-y-descarga", "09-musica-con-lyria"].includes(escenaActual.value) ? "allow-scripts allow-same-origin allow-downloads" : "allow-scripts allow-same-origin allow-downloads"}
               allow="microphone; clipboard-write"
               title="Vista previa"
               src={urlEscena(props.lesson, escenaActual.value, tema.value, !visible.value)}
@@ -400,6 +401,7 @@ export const LiveControl = component$((props: { lesson: string; estado: LiveEsta
           </details>
         )}
         <div class="mesa-estado">
+          {escenaActual.value && <LiveMuro lesson={props.lesson} escena={escenaActual.value} senal={props.muro} compacto />}
           <span class="chip" title="Alumnos conectados al stream">
             <Icon name="users" size={13} /> {props.conectados} {props.conectados === 1 ? "conectado" : "conectados"}
           </span>
