@@ -299,6 +299,11 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/repaso", s.authed(s.liveRepasoPost))
 	mux.Handle("GET /api/v1/live/{lesson}/juego", s.authed(s.liveJuegoGet))
 	mux.Handle("POST /api/v1/live/{lesson}/juego", s.authed(s.liveJuegoPost)) // reiniciar/terminar: solo staff (ver live_juego.go)
+	// Arena JMD: sala genérica de tiempo real y el motor del cliente (ver live_patio.go y docs/ARENA_JMD.md).
+	mux.Handle("GET /api/v1/live/{lesson}/patio", s.authed(s.livePatioGet))
+	mux.Handle("GET /api/v1/live/{lesson}/patio/stream", s.authed(s.livePatioStream))
+	mux.Handle("POST /api/v1/live/{lesson}/patio", s.authed(s.livePatioPost)) // iniciar/terminar/reiniciar: solo staff
+	mux.Handle("GET /api/v1/live/{lesson}/arena/{archivo}", s.authed(s.liveArenaArchivo))
 	mux.Handle("POST /api/v1/live/{lesson}/evidencia", s.authed(s.liveEvidencia))
 	mux.Handle("POST /api/v1/live/{lesson}/logre", s.authed(s.liveLogre))
 	mux.Handle("GET /api/v1/live/{lesson}/logre", s.authed(s.liveLogres))
