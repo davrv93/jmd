@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Laboratorio de scraping</title>
+<!-- Escena LIVE ws-01 · E10b. GENERADA: no la edites aquí. Fuente: ~/Documents/jmd/scraping-lab/escena/escena.plantilla.html
+     + el kit (~/Documents/jmd/scraping-lab/kit/); regenerar con  python3 ~/Documents/jmd/scraping-lab/generar_escena.py
+     Los cinco scripts se probaron contra el laboratorio corriendo en local (Go, mismo binario que va al servidor). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.p-script { max-height: 30vh; }
+.l-reglas { margin: 0; padding: 0; list-style: none; display: grid; gap: .35em; }
+.l-reglas li { font-size: .78em; padding: .35em .6em; border-left: 4px solid var(--c, var(--accent)); background: var(--s2); border-radius: 0 .5em .5em 0; }
+.l-que { font-size: .8em; margin: .2em 0 .6em; }
+details.l-ver { margin-top: .5em; }
+details.l-ver summary { cursor: pointer; font-size: .78em; font-weight: 700; }
+.l-ev { display: grid; gap: .5em; }
+</style>
+</head>
+<body data-escena="10b-laboratorio">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524 L360 560"/><g><circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3.5"/><circle class="eo" cx="360" cy="560" r="5"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Scraping ético · E10b</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Laboratorio: raspa nuestra tienda <em>con modales</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Un sitio nuestro, con robots.txt, sesión, límites y trampas como uno real. Aquí equivocarte cuesta un minuto de espera, no un bloqueo para siempre.</p>
+    </div>
+    <p class="w-ahora a-in" style="--d:.15s"><b>Ahora tú</b><span>Abre la <b>Terminal</b> del panel, prepara el kit (pestaña <b>0</b>) y avanza reto por reto. Elige un <b>apodo</b>: en el aula todos salen por la misma IP y el laboratorio te cuenta por tu apodo. Búscate en el panel en vivo.</span></p>
+    <div class="w-g2" data-tabs-raiz>
+      <section class="esc-card a-in" style="--d:.2s">
+        <div class="w-tabs" data-tabs role="tablist" aria-label="Retos del laboratorio">
+          <button class="w-tab" data-tab="prep">0 · Preparar</button>
+          <button class="w-tab" data-tab="cat">1 · Catálogo</button>
+          <button class="w-tab" data-tab="api">2 · Sesión y cursor</button>
+          <button class="w-tab" data-tab="cola">3 · Cola</button>
+          <button class="w-tab" data-tab="lim">4 · Límites</button>
+          <button class="w-tab" data-tab="mcp">5 · MCP</button>
+          <button class="w-tab" data-tab="tm">6 · Tampermonkey</button>
+        </div>
+
+        <div data-panel="prep" style="margin-top:.8em">
+          <ol class="w-pasos">
+            <li><div><span>Baja el kit a <span class="w-c">/trabajo</span> (tu carpeta personal es pequeña y se borra; <span class="w-c">/trabajo</span> se queda).</span><pre class="esc-cmd"><span class="p">$ </span>cd /trabajo &amp;&amp; curl -fsSLO https://jmd-learn.online/scraping-lab/kit.zip &amp;&amp; python3 -m zipfile -e kit.zip . &amp;&amp; cd kit-scraping-lab</pre></div></li>
+            <li><div><span>Crea tu entorno de Python e instala las librerías (tarda menos de un minuto).</span><pre class="esc-cmd"><span class="p">$ </span>python3 -m venv .venv &amp;&amp; . .venv/bin/activate &amp;&amp; pip install --no-cache-dir -r requirements.txt</pre></div></li>
+            <li><div><span>Dile al laboratorio quién eres. Cambia <span class="w-c">tu-apodo</span> y el correo: van en la cabecera <span class="w-c">X-Alumno</span> y en el <span class="w-c">User-Agent</span>.</span><pre class="esc-cmd"><span class="p">$ </span>export ALUMNO=tu-apodo CONTACTO=tu-correo@ejemplo.com</pre></div></li>
+            <li><div><span>Primero las reglas: lee el robots.txt del laboratorio.</span><pre class="esc-cmd"><span class="p">$ </span>curl -s https://jmd-learn.online/scraping-lab/robots.txt</pre></div></li>
+            <li><div><span>¿Volviste otro día o se reinició la terminal? Entra de nuevo a la carpeta y activa el entorno.</span><pre class="esc-cmd"><span class="p">$ </span>cd /trabajo/kit-scraping-lab &amp;&amp; . .venv/bin/activate &amp;&amp; export ALUMNO=tu-apodo CONTACTO=tu-correo@ejemplo.com</pre></div></li>
+          </ol>
+          <details class="l-ver"><summary>En tu laptop (sin la Terminal del aula)</summary>
+            <pre class="esc-cmd"><span class="p">$ </span>python3 -m venv .venv
+<span class="p">$ </span>. .venv/bin/activate          # Windows: .venv\Scripts\activate
+<span class="p">$ </span>pip install -r requirements.txt</pre>
+            <span class="w-peq w-muted">Necesitas Python 3.10 o más nuevo. Baja el kit desde el navegador con la dirección del recuadro «El laboratorio» y descomprímelo. En PowerShell las variables van así: <span class="w-c">$env:ALUMNO="tu-apodo"</span>.</span>
+          </details>
+        </div>
+
+        <div data-panel="cat" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> leer robots.txt (Crawl-delay y Disallow), recorrer las 10 páginas HTML siguiendo <span class="w-c">rel="next"</span> con pausa, saltarte el enlace trampa y exportar CSV y JSON.</p>
+          <pre class="esc-cmd"><span class="p">$ </span>python3 01_catalogo.py</pre>
+          <pre class="esc-cmd"><span class="p">$ </span>head -4 catalogo.csv</pre>
+          <span class="w-peq w-muted">Meta: «Listo: 120 productos» y la línea «omitido por robots.txt: …/trampa/…». Tarda unos 10 s: son las pausas.</span>
+          <details class="l-ver"><summary>El script (por si no bajaste el kit)</summary><pre class="esc-cmd p-script"><span class="p">$ </span>cat &gt; 01_catalogo.py &lt;&lt;'EOF'
+"""01 · Catálogo HTML con modales.
+
+Recorre la Tienda JMD de práctica página por página (?page=N) siguiendo el enlace rel="next",
+con pausa entre pedidos, y guarda catalogo.csv y catalogo.json.
+
+Antes de pedir nada lee robots.txt: respeta Crawl-delay y se salta los enlaces prohibidos
+(la tienda esconde uno, la «trampa» para bots que no leen las reglas).
+
+    ALUMNO=tu-apodo CONTACTO=tu-correo@ejemplo.com python3 01_catalogo.py
+"""
+import csv
+import json
+import os
+import random
+import time
+from urllib import robotparser
+from urllib.parse import urljoin
+
+import httpx
+from bs4 import BeautifulSoup
+
+LAB = os.environ.get("LAB", "https://jmd-learn.online/scraping-lab").rstrip("/")
+ALUMNO = os.environ.get("ALUMNO", "sin-apodo")
+CONTACTO = os.environ.get("CONTACTO", "sin-contacto")
+PAUSA = float(os.environ.get("PAUSA", "1.0"))
+# Identifícate: quién eres y cómo contactarte. El laboratorio lo muestra en el panel.
+UA = f"KitJMD-catalogo/1.0 ({ALUMNO}; {CONTACTO})"
+
+cliente = httpx.Client(headers={"User-Agent": UA, "X-Alumno": ALUMNO}, timeout=20, follow_redirects=True)
+
+
+def pedir(url):
+    """GET con reintentos: si el sitio dice 429 o 503, espera lo que pide Retry-After."""
+    for intento in range(1, 6):
+        r = cliente.get(url)
+        if r.status_code in (429, 503):
+            espera = int(r.headers.get("Retry-After", 2 ** intento))
+            print(f"  {r.status_code}: el sitio pide esperar {espera} s (intento {intento})")
+            time.sleep(espera)
+            continue
+        if r.status_code == 403:
+            raise SystemExit(f"403 bloqueado: {r.text[:200]}… Espera y baja el ritmo.")
+        r.raise_for_status()
+        return r
+    raise SystemExit(f"{url} no respondió tras 5 intentos")
+
+
+# 1. Reglas primero
+rp = robotparser.RobotFileParser()
+rp.parse(pedir(LAB + "/robots.txt").text.splitlines())
+PAUSA = max(PAUSA, float(rp.crawl_delay(UA) or 0))
+inicio = LAB + "/tienda?page=1"
+if not rp.can_fetch(UA, inicio):
+    raise SystemExit("robots.txt no permite la tienda: me detengo")
+print(f"robots.txt OK · pausa de {PAUSA} s entre pedidos · como {ALUMNO}")
+
+# 2. Páginas: sigue rel="next" hasta que no haya más
+filas, url, pagina, omitidos = [], inicio, 0, set()
+while url:
+    pagina += 1
+    html = BeautifulSoup(pedir(url).text, "html.parser")
+    for li in html.select("li.producto"):
+        enlace = li.select_one("a.producto-enlace")
+        filas.append({
+            "id": int(li["data-id"]),
+            "sku": li["data-sku"],
+            "nombre": li.select_one(".nombre").get_text(strip=True),
+            "categoria": li.select_one(".categoria").get_text(strip=True),
+            "precio": float(li.select_one(".precio")["data-precio"]),
+            "stock": int(li.select_one(".stock")["data-stock"]),
+            "valoracion": float(li.select_one(".valoracion")["data-valor"]),
+            "url": urljoin(url, enlace["href"]),
+        })
+    # Cualquier enlace que robots.txt prohíba se anota y NO se visita.
+    for a in html.select("a[href]"):
+        destino = urljoin(url, a["href"])
+        if not rp.can_fetch(UA, destino):
+            omitidos.add(destino)
+    print(f"página {pagina}: {len(filas)} productos")
+    sig = html.select_one('a[rel="next"]')
+    url = urljoin(url, sig["href"]) if sig else None
+    if url:
+        time.sleep(PAUSA + random.uniform(0, 0.3))  # ritmo humano, con algo de azar
+
+for o in sorted(omitidos):
+    print(f"omitido por robots.txt: {o}")
+
+# 3. Exportar: CSV que Excel abre con tildes (utf-8-sig) y JSON legible
+with open("catalogo.csv", "w", newline="", encoding="utf-8-sig") as f:
+    w = csv.DictWriter(f, fieldnames=list(filas[0].keys()))
+    w.writeheader()
+    w.writerows(filas)
+with open("catalogo.json", "w", encoding="utf-8") as f:
+    json.dump(filas, f, ensure_ascii=False, indent=2)
+print(f"Listo: {len(filas)} productos en catalogo.csv y catalogo.json")
+EOF</pre></details>
+        </div>
+
+        <div data-panel="api" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> sesión con token CSRF y cookie, token en la cabecera <span class="w-c">X-Lab-Token</span>, paginación por <span class="w-c">next_cursor</span> y los <b>saltos</b>: se corta, guarda un checkpoint y al volver salta lo ya bajado.</p>
+          <ol class="w-pasos">
+            <li><div><span>Córrelo con un corte a propósito tras 2 páginas.</span><pre class="esc-cmd"><span class="p">$ </span>python3 02_api_sesion.py --parar-en 2</pre></div></li>
+            <li><div><span>Mira dónde se quedó.</span><pre class="esc-cmd"><span class="p">$ </span>cat checkpoint_api.json; wc -l productos_api.jsonl</pre></div></li>
+            <li><div><span>Vuelve a correrlo: reanuda desde el cursor y termina en 120.</span><pre class="esc-cmd"><span class="p">$ </span>python3 02_api_sesion.py</pre></div></li>
+            <li><div><span>Extra: busca por texto (empieza de cero).</span><pre class="esc-cmd"><span class="p">$ </span>python3 02_api_sesion.py --desde-cero --q mochila</pre></div></li>
+          </ol>
+          <details class="l-ver"><summary>El script (por si no bajaste el kit)</summary><pre class="esc-cmd p-script"><span class="p">$ </span>cat &gt; 02_api_sesion.py &lt;&lt;'EOF'
+"""02 · API con sesión, cursor y «saltos» (reanudar donde quedaste).
+
+1. Inicia sesión: pide el formulario, saca el token CSRF, hace POST con la misma cookie
+   y lee el token de la API (cabecera X-Lab-Token).
+2. Recorre /api/productos siguiendo next_cursor hasta que llegue null.
+3. Guarda cada página en productos_api.jsonl y el cursor en checkpoint_api.json.
+   Si se corta (Ctrl+C, red, bloqueo), al volver a correrlo SALTA lo ya bajado y sigue desde el cursor.
+
+    ALUMNO=tu-apodo CONTACTO=tu-correo python3 02_api_sesion.py --parar-en 2   # simula un corte tras 2 páginas
+    ALUMNO=tu-apodo CONTACTO=tu-correo python3 02_api_sesion.py                # reanuda y termina
+    python3 02_api_sesion.py --desde-cero --q taza                              # borra el avance; filtra por texto
+"""
+import argparse
+import json
+import os
+import time
+from pathlib import Path
+
+import httpx
+from bs4 import BeautifulSoup
+
+LAB = os.environ.get("LAB", "https://jmd-learn.online/scraping-lab").rstrip("/")
+ALUMNO = os.environ.get("ALUMNO", "sin-apodo")
+CONTACTO = os.environ.get("CONTACTO", "sin-contacto")
+PAUSA = float(os.environ.get("PAUSA", "1.0"))
+UA = f"KitJMD-api/1.0 ({ALUMNO}; {CONTACTO})"
+
+SALIDA = Path("productos_api.jsonl")
+CHECKPOINT = Path("checkpoint_api.json")
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--q", default="", help="texto a buscar (vacío = todo el catálogo)")
+ap.add_argument("--limite", type=int, default=20, help="productos por página (máx. 50)")
+ap.add_argument("--parar-en", type=int, default=0, help="se corta a propósito tras N páginas")
+ap.add_argument("--desde-cero", action="store_true", help="borra checkpoint y salida")
+args = ap.parse_args()
+
+
+def pedir(c, metodo, url, **kw):
+    for intento in range(1, 6):
+        r = c.request(metodo, url, **kw)
+        if r.status_code in (429, 503):
+            espera = int(r.headers.get("Retry-After", 2 ** intento))
+            print(f"  {r.status_code}: espero {espera} s como pide Retry-After")
+            time.sleep(espera)
+            continue
+        return r
+    raise SystemExit("el sitio no responde: me detengo")
+
+
+def iniciar_sesion():
+    c = httpx.Client(base_url=LAB, headers={"User-Agent": UA, "X-Alumno": ALUMNO}, timeout=20, follow_redirects=True)
+    form = BeautifulSoup(pedir(c, "GET", "/login").text, "html.parser")
+    csrf = form.select_one('input[name="csrf_token"]')["value"]       # sale del HTML
+    r = pedir(c, "POST", "/login", data={"csrf_token": csrf, "usuario": ALUMNO, "clave": "practica"})
+    if r.status_code != 200:
+        raise SystemExit(f"no se inició sesión ({r.status_code}): {r.text[:300]}")
+    token = BeautifulSoup(r.text, "html.parser").select_one("#api-token").get_text(strip=True)
+    c.headers["X-Lab-Token"] = token                                   # la cookie ya la guarda el cliente
+    print(f"sesión iniciada como {ALUMNO} · cookie lab_sesion y token {token[:8]}… (no lo imprimas entero)")
+    return c
+
+
+if args.desde_cero:
+    CHECKPOINT.unlink(missing_ok=True)
+    SALIDA.unlink(missing_ok=True)
+
+# Lo que ya tengo (para saltarlo) y dónde me quedé
+ya = set()
+if SALIDA.exists():
+    for linea in SALIDA.read_text(encoding="utf-8").splitlines():
+        if linea.strip():
+            ya.add(json.loads(linea)["id"])
+estado = json.loads(CHECKPOINT.read_text()) if CHECKPOINT.exists() else {}
+if estado.get("q", "") != args.q:
+    estado = {}                                     # otra búsqueda: el cursor viejo no sirve
+if estado.get("terminado"):
+    print(f"ya estaba completo: {len(ya)} productos en {SALIDA}. Usa --desde-cero para repetir.")
+    raise SystemExit(0)
+cursor = estado.get("cursor")
+if cursor:
+    print(f"reanudo desde el checkpoint: {len(ya)} productos ya bajados, salto directo al cursor guardado")
+
+c = iniciar_sesion()
+paginas = 0
+while True:
+    params = {"limite": args.limite, "q": args.q}
+    if cursor:
+        params["cursor"] = cursor
+    r = pedir(c, "GET", "/api/productos", params=params)
+    if r.status_code == 401:                         # sesión vencida: entro de nuevo y sigo con el mismo cursor
+        print("  401: sesión vencida, vuelvo a entrar")
+        c = iniciar_sesion()
+        continue
+    if r.status_code == 403:
+        raise SystemExit(f"403 bloqueado: {r.json().get('motivo')} · vuelve a correrlo luego: reanudará solo")
+    r.raise_for_status()
+    datos = r.json()
+    nuevos = [p for p in datos["items"] if p["id"] not in ya]
+    with SALIDA.open("a", encoding="utf-8") as f:
+        for p in nuevos:
+            f.write(json.dumps(p, ensure_ascii=False) + "\n")
+            ya.add(p["id"])
+    cursor = datos["next_cursor"]
+    # El checkpoint se escribe DESPUÉS de guardar los datos: si se corta en medio, a lo mucho repites una página.
+    CHECKPOINT.write_text(json.dumps({"cursor": cursor, "q": args.q, "terminado": cursor is None, "productos": len(ya)}))
+    paginas += 1
+    print(f"página {paginas}: +{len(nuevos)} nuevos ({len(datos['items']) - len(nuevos)} saltados) · {len(ya)}/{datos['total']}")
+    if cursor is None:
+        break
+    if args.parar_en and paginas &gt;= args.parar_en:
+        print(f"corte simulado tras {paginas} páginas. Vuelve a correr el script: seguirá desde el checkpoint.")
+        raise SystemExit(3)
+    time.sleep(PAUSA)
+
+print(f"Listo: {len(ya)} productos en {SALIDA} · checkpoint marcado como terminado")
+EOF</pre></details>
+        </div>
+
+        <div data-panel="cola" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> cola <span class="w-c">asyncio</span> con varios trabajadores, un ritmo compartido que sale de las cabeceras del sitio, reintentos con espera exponencial, <span class="w-c">Retry-After</span>, saltar lo ya bajado (sha256) y una barra de avance.</p>
+          <ol class="w-pasos">
+            <li><div><span>Baja los 200 reportes (unos 2 minutos; el ritmo lo pone el sitio, no tus trabajadores).</span><pre class="esc-cmd"><span class="p">$ </span>python3 03_descarga_cola.py</pre></div></li>
+            <li><div><span>Córtalo con <span class="w-c">Ctrl+C</span> a la mitad cuando quieras y vuelve a correrlo: dice cuántos «ya estaban (saltados)».</span><pre class="esc-cmd"><span class="p">$ </span>python3 03_descarga_cola.py</pre></div></li>
+            <li><div><span>Revisa: 199 archivos y uno en <span class="w-c">fallidos.txt</span> (está dañado a propósito).</span><pre class="esc-cmd"><span class="p">$ </span>ls descargas | wc -l; cat fallidos.txt</pre></div></li>
+            <li><div><span>Prueba con 8 trabajadores. ¿Fue más rápido? ¿Por qué no?</span><pre class="esc-cmd"><span class="p">$ </span>rm -rf descargas &amp;&amp; TRABAJADORES=8 python3 03_descarga_cola.py</pre></div></li>
+          </ol>
+          <details class="l-ver"><summary>El script (por si no bajaste el kit)</summary><pre class="esc-cmd p-script"><span class="p">$ </span>cat &gt; 03_descarga_cola.py &lt;&lt;'EOF'
+"""03 · Descarga masiva con cola (asyncio).
+
+- Lee la lista de 200 archivos de /api/descargas (nombre, url, tamaño y sha256).
+- Mete en la cola solo los que FALTAN: si el archivo ya está y su sha256 cuadra, lo salta.
+- N trabajadores sacan de la cola. Un «semáforo de ritmo» compartido reparte los pedidos para no pasar
+  el límite del sitio, aunque haya muchos trabajadores.
+- Reintenta 500/502/503/504 con espera exponencial (1, 2, 4, 8 s + azar) y respeta Retry-After en 429/503.
+- Si llega un 403 (bloqueo), TODOS los trabajadores se detienen el tiempo que pide el sitio.
+- Escribe en .part y renombra al final: un corte nunca deja un archivo a medias que parezca bueno.
+
+    ALUMNO=tu-apodo CONTACTO=tu-correo python3 03_descarga_cola.py
+    TRABAJADORES=8 python3 03_descarga_cola.py      # más trabajadores NO es más rápido: el ritmo lo pone el sitio
+"""
+import asyncio
+import hashlib
+import os
+import random
+import sys
+import time
+from pathlib import Path
+
+import httpx
+
+LAB = os.environ.get("LAB", "https://jmd-learn.online/scraping-lab").rstrip("/")
+ALUMNO = os.environ.get("ALUMNO", "sin-apodo")
+CONTACTO = os.environ.get("CONTACTO", "sin-contacto")
+TRABAJADORES = int(os.environ.get("TRABAJADORES", "4"))
+REINTENTOS = int(os.environ.get("REINTENTOS", "5"))
+UA = f"KitJMD-cola/1.0 ({ALUMNO}; {CONTACTO})"
+CARPETA = Path(os.environ.get("CARPETA", "descargas"))
+
+
+class Ritmo:
+    """Deja pasar un pedido cada `intervalo` segundos, compartido por todos los trabajadores."""
+
+    def __init__(self, intervalo):
+        self.intervalo = intervalo
+        self.siguiente = 0.0
+        self.candado = asyncio.Lock()
+        self.pausa_hasta = 0.0          # la fija un 403 o un 429: frena a todos
+
+    async def turno(self):
+        async with self.candado:
+            ahora = time.monotonic()
+            espera = max(self.siguiente, self.pausa_hasta) - ahora
+            if espera &gt; 0:
+                await asyncio.sleep(espera)
+            self.siguiente = time.monotonic() + self.intervalo
+
+    def frenar(self, segundos):
+        self.pausa_hasta = max(self.pausa_hasta, time.monotonic() + segundos)
+
+
+def sha256(p):
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+class Barra:
+    def __init__(self, total):
+        self.total, self.ok, self.mal, self.reint, self.t0 = total, 0, 0, 0, time.monotonic()
+
+    def pintar(self):
+        hechos = self.ok + self.mal
+        ancho = 30
+        lleno = int(ancho * hechos / self.total) if self.total else ancho
+        seg = time.monotonic() - self.t0
+        sys.stderr.write(f"\r[{'#' * lleno}{'.' * (ancho - lleno)}] {hechos}/{self.total} · ok {self.ok} · fallidos {self.mal} · reintentos {self.reint} · {seg:5.1f} s ")
+        sys.stderr.flush()
+
+
+async def bajar(cliente, ritmo, arch, barra):
+    destino = CARPETA / arch["nombre"]
+    for intento in range(1, REINTENTOS + 1):
+        await ritmo.turno()
+        try:
+            r = await cliente.get(arch["url"])
+        except httpx.TransportError as e:
+            r, error = None, str(e)
+        if r is not None and r.status_code == 200:
+            datos = r.content
+            if hashlib.sha256(datos).hexdigest() != arch["sha256"]:
+                error = "sha256 no cuadra"
+            else:
+                parcial = destino.with_suffix(".part")
+                parcial.write_bytes(datos)
+                parcial.replace(destino)          # atómico: o está entero o no está
+                return True
+        elif r is not None:
+            error = f"HTTP {r.status_code}"
+            if r.status_code in (429, 403) or (r.status_code == 503 and "Retry-After" in r.headers):
+                espera = int(r.headers.get("Retry-After", "5"))
+                ritmo.frenar(espera)              # el sitio manda: frena a TODOS
+                if r.status_code == 403:
+                    sys.stderr.write(f"\n403: el sitio nos bloqueó {espera} s. Todos esperan.\n")
+                barra.reint += 1
+                barra.pintar()
+                continue
+            if r.status_code not in (500, 502, 504):
+                break                             # 404 y compañía: reintentar no sirve
+        if intento == REINTENTOS:
+            break
+        espera = min(2 ** (intento - 1), 8) + random.uniform(0, 0.5)    # 1, 2, 4, 8 s + azar
+        barra.reint += 1
+        barra.pintar()
+        await asyncio.sleep(espera)
+    sys.stderr.write(f"\n  {arch['nombre']}: me rindo tras {intento} intentos ({error})\n")
+    return False
+
+
+async def trabajador(cola, cliente, ritmo, barra, fallidos):
+    while True:
+        arch = await cola.get()
+        try:
+            if await bajar(cliente, ritmo, arch, barra):
+                barra.ok += 1
+            else:
+                barra.mal += 1
+                fallidos.append(arch["nombre"])
+            barra.pintar()
+        finally:
+            cola.task_done()
+
+
+async def main():
+    CARPETA.mkdir(exist_ok=True)
+    cab = {"User-Agent": UA, "X-Alumno": ALUMNO}
+    limites = httpx.Limits(max_connections=TRABAJADORES)
+    async with httpx.AsyncClient(headers=cab, timeout=20, limits=limites) as cliente:
+        r = await cliente.get(LAB + "/api/descargas")
+        r.raise_for_status()
+        lista = r.json()["archivos"]
+        # El ritmo sale de las cabeceras del propio sitio: N pedidos cada V segundos (+10 % de margen).
+        n = int(r.headers.get("X-RateLimit-Limit", "20"))
+        v = int(r.headers.get("X-RateLimit-Window", "10"))
+        ritmo = Ritmo(v / n * 1.1)
+        for p in CARPETA.glob("*.part"):
+            p.unlink()                            # restos de un corte anterior
+        pendientes = [a for a in lista if not ((CARPETA / a["nombre"]).exists() and sha256(CARPETA / a["nombre"]) == a["sha256"])]
+        saltados = len(lista) - len(pendientes)
+        print(f"{len(lista)} archivos en el índice · {saltados} ya estaban (saltados) · {len(pendientes)} en cola")
+        print(f"{TRABAJADORES} trabajadores · un pedido cada {ritmo.intervalo:.2f} s (límite del sitio: {n} cada {v} s)")
+        if not pendientes:
+            print("Nada que bajar: todo está y el sha256 cuadra.")
+            return
+        cola = asyncio.Queue()
+        for a in pendientes:
+            a["url"] = str(httpx.URL(LAB).join(a["url"]))  # la API da rutas absolutas del sitio
+            cola.put_nowait(a)
+        barra, fallidos = Barra(len(pendientes)), []
+        tareas = [asyncio.create_task(trabajador(cola, cliente, ritmo, barra, fallidos)) for _ in range(TRABAJADORES)]
+        await cola.join()
+        for t in tareas:
+            t.cancel()
+        sys.stderr.write("\n")
+        Path("fallidos.txt").write_text("\n".join(sorted(fallidos)) + ("\n" if fallidos else ""))
+        print(f"Listo: {barra.ok} bajados, {saltados} saltados, {len(fallidos)} fallidos (en fallidos.txt) en {time.monotonic() - barra.t0:.0f} s")
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nCortado. Vuelve a correrlo: saltará lo que ya bajaste.")
+EOF</pre></details>
+        </div>
+
+        <div data-panel="lim" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> chocar con el límite a propósito, leer <span class="w-c">429</span>, <span class="w-c">Retry-After</span> y <span class="w-c">X-RateLimit-*</span>, y adaptar el ritmo hasta tener cero 429.</p>
+          <ol class="w-pasos">
+            <li><div><span>Parte A a lo bruto (se detiene en el primer 429) y parte B con modales.</span><pre class="esc-cmd"><span class="p">$ </span>python3 04_limites.py</pre></div></li>
+            <li><div><span>Opcional: ignora el 429 adrede y mira el 403 con su explicación. Te bloquea 1 minuto.</span><pre class="esc-cmd"><span class="p">$ </span>python3 04_limites.py --provocar-bloqueo</pre></div></li>
+            <li><div><span>Pregúntale al laboratorio cómo vas.</span><pre class="esc-cmd"><span class="p">$ </span>curl -s -H "X-Alumno: $ALUMNO" https://jmd-learn.online/scraping-lab/api/yo</pre></div></li>
+          </ol>
+          <details class="l-ver"><summary>El script (por si no bajaste el kit)</summary><pre class="esc-cmd p-script"><span class="p">$ </span>cat &gt; 04_limites.py &lt;&lt;'EOF'
+"""04 · Límites: choca con el 429 a propósito, y luego aprende a no chocar.
+
+Parte A · «a lo bruto»: pide sin pausa hasta recibir el primer 429 y muestra lo que dice el sitio
+          (Retry-After, X-RateLimit-*). Se detiene en el primer 429, como haría un bot educado.
+Parte B · «con modales»: espera lo que pidió el sitio y hace 30 pedidos leyendo X-RateLimit-Remaining
+          y X-RateLimit-Reset para no volver a pasarse. Meta: cero 429.
+
+    ALUMNO=tu-apodo CONTACTO=tu-correo python3 04_limites.py
+    python3 04_limites.py --provocar-bloqueo   # ignora el 429 adrede para ver el 403 y su explicación (te bloquea ~1 min)
+"""
+import argparse
+import os
+import time
+from collections import Counter
+
+import httpx
+
+LAB = os.environ.get("LAB", "https://jmd-learn.online/scraping-lab").rstrip("/")
+ALUMNO = os.environ.get("ALUMNO", "sin-apodo")
+CONTACTO = os.environ.get("CONTACTO", "sin-contacto")
+UA = f"KitJMD-limites/1.0 ({ALUMNO}; {CONTACTO})"
+URL = LAB + "/tienda?page=1"
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--provocar-bloqueo", action="store_true")
+ap.add_argument("--pedidos", type=int, default=30, help="pedidos de la parte B")
+args = ap.parse_args()
+
+c = httpx.Client(headers={"User-Agent": UA, "X-Alumno": ALUMNO, "Accept": "application/json"}, timeout=20)
+
+
+def cab(r):
+    h = r.headers
+    return f"Remaining={h.get('X-RateLimit-Remaining', '?')} Reset={h.get('X-RateLimit-Reset', '-')} Retry-After={h.get('Retry-After', '-')}"
+
+
+print("== Parte A · a lo bruto (sin pausa) ==")
+t0, codigos, espera = time.monotonic(), Counter(), 0
+for i in range(1, 200):
+    r = c.get(URL)
+    codigos[r.status_code] += 1
+    if r.status_code != 200 or i % 5 == 0:
+        print(f"  #{i:3d} {time.monotonic() - t0:5.2f} s → {r.status_code}  {cab(r)}")
+    if r.status_code == 429:
+        espera = int(r.headers.get("Retry-After", "10"))
+        if not args.provocar_bloqueo:
+            print(f"  429 tras {i} pedidos en {time.monotonic() - t0:.1f} s. El sitio dice: «{r.json()['explicacion']}»")
+            break
+    if r.status_code == 403:
+        j = r.json()
+        espera = int(r.headers.get("Retry-After", "60"))
+        print(f"\n  403 BLOQUEADO hasta las {j.get('hasta')} · motivo: {j.get('motivo')}")
+        print(f"  {j.get('explicacion')}")
+        break
+print(f"  resumen A: {dict(codigos)}")
+
+print(f"\n== Parte B · con modales: primero espero {espera} s como pidió el sitio ==")
+time.sleep(espera)
+codigos, t0 = Counter(), time.monotonic()
+hechos = 0
+while hechos &lt; args.pedidos:
+    r = c.get(URL)
+    codigos[r.status_code] += 1
+    if r.status_code in (429, 403):
+        e = int(r.headers.get("Retry-After", "5"))
+        print(f"  {r.status_code}: espero {e} s (Retry-After)")
+        time.sleep(e)
+        continue
+    hechos += 1
+    quedan = int(r.headers.get("X-RateLimit-Remaining", "1"))
+    reinicio = int(r.headers.get("X-RateLimit-Reset", "1"))
+    # Si se me acaba el cupo, espero a que se renueve; si no, reparto lo que queda en el tiempo que falta.
+    pausa = reinicio if quedan &lt;= 1 else reinicio / quedan
+    if hechos % 5 == 0:
+        print(f"  #{hechos:3d} {time.monotonic() - t0:5.1f} s → 200  {cab(r)} · pausa {pausa:.2f} s")
+    time.sleep(pausa)
+print(f"  resumen B: {dict(codigos)} en {time.monotonic() - t0:.1f} s")
+print("  Cero 429 = lo lograste: dejaste que el sitio marcara el ritmo." if not codigos[429] else "  Hubo 429: revisa la pausa.")
+
+yo = c.get(LAB + "/api/yo").json()["alumno"]
+print(f"\nTu ficha en el laboratorio ({yo['nick']}): {yo['pedidos']} pedidos · {yo['c429']} respuestas 429 · {yo['bloqueos']} bloqueos")
+EOF</pre></details>
+        </div>
+
+        <div data-panel="mcp" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> convertir tu scraper en herramientas MCP (<span class="w-c">buscar_productos</span>, <span class="w-c">detalle</span>, <span class="w-c">mi_estado</span>) para que tu asistente las use, sin saltarse los modales.</p>
+          <ol class="w-pasos">
+            <li><div><span>Pruébalo sin asistente.</span><pre class="esc-cmd"><span class="p">$ </span>python3 05_mcp_server.py --probar mochila</pre></div></li>
+            <li><div><span>Regístralo en Claude Code (en tu laptop o donde tengas <span class="w-c">claude</span>).</span><pre class="esc-cmd"><span class="p">$ </span>claude mcp add tienda-jmd -e ALUMNO=$ALUMNO -e CONTACTO=$CONTACTO -- "$PWD/.venv/bin/python" "$PWD/05_mcp_server.py"</pre></div></li>
+            <li><div><span>Pídele algo en lenguaje natural.</span><pre class="esc-cmd">Usa tienda-jmd y dame las 5 mochilas más baratas con su SKU y su marca.</pre></div></li>
+            <li><div><span>OpenCode: agrega esto a <span class="w-c">opencode.json</span> (cambia las rutas por las de <span class="w-c">pwd</span>).</span><pre class="esc-cmd">{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "tienda-jmd": {
+      "type": "local",
+      "command": ["/ruta/.venv/bin/python", "/ruta/05_mcp_server.py"],
+      "environment": { "ALUMNO": "tu-apodo", "CONTACTO": "tu-correo" },
+      "enabled": true
+    }
+  }
+}</pre></div></li>
+            <li><div><span>Claude Desktop: en <span class="w-c">claude_desktop_config.json</span> y reinícialo.</span><pre class="esc-cmd">{
+  "mcpServers": {
+    "tienda-jmd": {
+      "command": "/ruta/.venv/bin/python",
+      "args": ["/ruta/05_mcp_server.py"],
+      "env": { "ALUMNO": "tu-apodo", "CONTACTO": "tu-correo" }
+    }
+  }
+}</pre></div></li>
+          </ol>
+          <details class="l-ver"><summary>El script (por si no bajaste el kit)</summary><pre class="esc-cmd p-script"><span class="p">$ </span>cat &gt; 05_mcp_server.py &lt;&lt;'EOF'
+"""05 · Tu scraper como herramienta MCP.
+
+Un servidor MCP (FastMCP, transporte stdio) que expone la Tienda JMD de práctica a tu asistente
+(Claude Code, OpenCode, Claude Desktop…). Por dentro usa la API con sesión del script 02 y respeta
+Retry-After: el asistente pregunta en lenguaje natural y el scraper hace el trabajo con modales.
+
+Herramientas:
+  buscar_productos(texto, maximo)  → productos cuyo nombre, categoría o marca contiene el texto
+  detalle(id)                      → ficha completa de un producto
+  mi_estado()                      → tus pedidos, 429 y bloqueos según el laboratorio
+
+Probar a mano (sin asistente):   python3 05_mcp_server.py --probar taza
+Registrar en Claude Code:        claude mcp add tienda-jmd -e ALUMNO=tu-apodo -e CONTACTO=tu-correo -- python3 "$PWD/05_mcp_server.py"
+(OpenCode y Claude Desktop: ver README.md)
+
+IMPORTANTE con stdio: nunca uses print() a stdout, rompe el protocolo. Los mensajes van a stderr.
+"""
+import logging
+import os
+import re
+import sys
+import time
+
+import httpx
+
+LAB = os.environ.get("LAB", "https://jmd-learn.online/scraping-lab").rstrip("/")
+ALUMNO = os.environ.get("ALUMNO", "sin-apodo")
+CONTACTO = os.environ.get("CONTACTO", "sin-contacto")
+UA = f"KitJMD-mcp/1.0 ({ALUMNO}; {CONTACTO})"
+
+_cliente = None
+logging.getLogger("httpx").setLevel(logging.WARNING)  # sin ruido en stderr
+
+
+def log(*a):
+    print(*a, file=sys.stderr, flush=True)
+
+
+def _pedir(c, metodo, url, **kw):
+    for intento in range(1, 5):
+        r = c.request(metodo, url, **kw)
+        if r.status_code in (429, 503):
+            espera = min(int(r.headers.get("Retry-After", 2 ** intento)), 30)
+            log(f"{r.status_code}: espero {espera} s")
+            time.sleep(espera)
+            continue
+        return r
+    raise RuntimeError("el laboratorio no responde, intenta en un minuto")
+
+
+def _sesion():
+    """Inicia sesión una sola vez (CSRF + cookie + token) y reutiliza el cliente."""
+    global _cliente
+    if _cliente is not None:
+        return _cliente
+    c = httpx.Client(base_url=LAB, headers={"User-Agent": UA, "X-Alumno": ALUMNO}, timeout=20, follow_redirects=True)
+    html = _pedir(c, "GET", "/login").text
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', html).group(1)
+    r = _pedir(c, "POST", "/login", data={"csrf_token": csrf, "usuario": ALUMNO, "clave": "practica"})
+    r.raise_for_status()
+    c.headers["X-Lab-Token"] = re.search(r'id="api-token"&gt;([^&lt;]+)&lt;', r.text).group(1)
+    log(f"sesión iniciada como {ALUMNO}")
+    _cliente = c
+    return c
+
+
+def _api(ruta, **params):
+    global _cliente
+    for _ in range(2):
+        r = _pedir(_sesion(), "GET", ruta, params=params)
+        if r.status_code == 401:          # sesión vencida: entra de nuevo
+            _cliente = None
+            continue
+        if r.status_code == 403:
+            raise RuntimeError("bloqueado por el laboratorio: " + r.json().get("motivo", ""))
+        r.raise_for_status()
+        return r.json()
+    raise RuntimeError("no se pudo iniciar sesión")
+
+
+def buscar_productos(texto: str = "", maximo: int = 10) -&gt; list[dict]:
+    """Busca productos de la Tienda JMD de práctica (datos ficticios).
+
+    texto: palabras a buscar (inicio de palabra, sin importar tildes) en nombre, categoría, marca o descripción. Vacío = todos.
+    maximo: cuántos devolver como máximo (1 a 120).
+    """
+    maximo = max(1, min(int(maximo), 120))
+    salida, cursor = [], None
+    while len(salida) &lt; maximo:
+        params = {"q": texto, "limite": min(50, maximo - len(salida))}
+        if cursor:
+            params["cursor"] = cursor
+        datos = _api("/api/productos", **params)
+        salida += [{k: p[k] for k in ("id", "nombre", "categoria", "precio", "stock", "valoracion")} for p in datos["items"]]
+        cursor = datos["next_cursor"]
+        if not cursor:
+            break
+        time.sleep(0.5)                   # con modales también dentro del asistente
+    return salida
+
+
+def detalle(id: int) -&gt; dict:
+    """Ficha completa de un producto de la tienda de práctica: sku, marca, precio, stock, valoración, descripción."""
+    return _api(f"/api/productos/{int(id)}")
+
+
+def mi_estado() -&gt; dict:
+    """Cuántos pedidos, respuestas 429 y bloqueos lleva tu apodo en el laboratorio."""
+    r = httpx.get(LAB + "/api/yo", headers={"User-Agent": UA, "X-Alumno": ALUMNO}, timeout=20)
+    a = r.json()["alumno"]
+    return {k: a.get(k) for k in ("nick", "pedidos", "c429", "c403", "bloqueos", "items_api", "archivos", "estado")}
+
+
+if __name__ == "__main__":
+    if len(sys.argv) &gt; 1 and sys.argv[1] == "--probar":
+        texto = sys.argv[2] if len(sys.argv) &gt; 2 else ""
+        res = buscar_productos(texto, 5)
+        log(f"buscar_productos({texto!r}, 5) → {len(res)} resultados")
+        for p in res:
+            log(f"  #{p['id']} {p['nombre']} · S/ {p['precio']:.2f}")
+        if res:
+            d = detalle(res[0]["id"])
+            log(f"detalle({res[0]['id']}) → {d['sku']} · {d['marca']} · {d['descripcion'][:60]}…")
+        log(f"mi_estado() → {mi_estado()}")
+        raise SystemExit(0)
+
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("tienda-jmd")
+    for f in (buscar_productos, detalle, mi_estado):
+        mcp.tool()(f)
+    mcp.run()                              # stdio por defecto
+EOF</pre></details>
+        </div>
+
+        <div data-panel="tm" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> extraer en el navegador mientras navegas, con tu sesión y a tu ritmo, y exportar CSV o JSON.</p>
+          <ol class="w-pasos">
+            <li><div><span>Abre en una pestaña nueva la página del laboratorio y guarda tu apodo.</span><pre class="esc-cmd">https://jmd-learn.online/scraping-lab/</pre></div></li>
+            <li><div><span>Con Tampermonkey instalado, abre esta dirección y pulsa <b>Instalar</b> (o crea un script nuevo y pega el del recuadro de abajo).</span><pre class="esc-cmd">https://jmd-learn.online/scraping-lab/kit/tienda_jmd.user.js</pre></div></li>
+            <li><div><span>Entra a la tienda. Cada tarjeta que juntas se marca en verde y el conteo sube abajo a la derecha.</span><pre class="esc-cmd">https://jmd-learn.online/scraping-lab/tienda</pre></div></li>
+            <li><div><span>Pulsa <b>Recorrer solo</b>: avanza una página cada 2,5 s y para al final. Luego <b>CSV</b> y <b>JSON</b>.</span></div></li>
+          </ol>
+          <details class="l-ver"><summary>El userscript</summary><pre class="esc-cmd p-script">// ==UserScript==
+// @name         Tienda JMD · recolector del laboratorio
+// @namespace    https://jmd-learn.online/scraping-lab/
+// @version      1.0
+// @description  Junta los productos de la Tienda JMD de práctica mientras navegas y los exporta a CSV o JSON.
+// @author       Taller «Web scraping ético con IA» · JMD Learning
+// @match        https://jmd-learn.online/scraping-lab/tienda*
+// @match        http://127.0.0.1:18685/scraping-lab/tienda*
+// @match        http://localhost:18685/scraping-lab/tienda*
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @run-at       document-idle
+// ==/UserScript==
+(function () {
+  "use strict";
+  var CLAVE = "tiendaJMD.productos";
+  var PAUSA_MS = 2500; // al recorrer solo: una página cada 2,5 s, como una persona que mira
+
+  function leer() { try { return JSON.parse(GM_getValue(CLAVE, "{}")); } catch (e) { return {}; } }
+  function guardar(o) { GM_setValue(CLAVE, JSON.stringify(o)); }
+
+  // 1. Extraer lo que se ve en esta página (solo las tarjetas visibles: el enlace oculto «trampa» ni se toca)
+  var guardados = leer();
+  var nuevos = 0;
+  document.querySelectorAll("li.producto").forEach(function (li) {
+    var id = li.dataset.id;
+    var p = {
+      id: Number(id),
+      sku: li.dataset.sku,
+      nombre: li.querySelector(".nombre").textContent.trim(),
+      categoria: li.querySelector(".categoria").textContent.trim(),
+      precio: Number(li.querySelector(".precio").dataset.precio),
+      stock: Number(li.querySelector(".stock").dataset.stock),
+      valoracion: Number(li.querySelector(".valoracion").dataset.valor),
+      url: new URL(li.querySelector("a.producto-enlace").getAttribute("href"), location.href).href,
+      visto: new Date().toISOString()
+    };
+    if (!guardados[id]) nuevos++;
+    guardados[id] = p;
+    li.style.outline = "2px solid #4fd37a"; // marca lo que ya juntaste
+  });
+  guardar(guardados);
+
+  // 2. Panel flotante
+  var caja = document.createElement("div");
+  caja.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:99999;background:#15132a;color:#e9e6ff;" +
+    "font:13px/1.4 system-ui,sans-serif;padding:12px 14px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.35);max-width:260px";
+  caja.innerHTML = '&lt;b&gt;Recolector Tienda JMD&lt;/b&gt;&lt;div id="tj-n"&gt;&lt;/div&gt;' +
+    '&lt;div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"&gt;' +
+    '&lt;button id="tj-csv"&gt;CSV&lt;/button&gt;&lt;button id="tj-json"&gt;JSON&lt;/button&gt;' +
+    '&lt;button id="tj-auto"&gt;&lt;/button&gt;&lt;button id="tj-borrar"&gt;Vaciar&lt;/button&gt;&lt;/div&gt;';
+  document.body.appendChild(caja);
+  caja.querySelectorAll("button").forEach(function (b) {
+    b.style.cssText = "font:600 12px system-ui;border:0;border-radius:999px;padding:6px 10px;cursor:pointer;background:#a99cff;color:#14122a";
+  });
+  function total() { return Object.keys(leer()).length; }
+  function pintar() {
+    document.getElementById("tj-n").textContent = total() + " productos juntados (" + nuevos + " nuevos en esta página)";
+    document.getElementById("tj-auto").textContent = GM_getValue("tiendaJMD.auto", false) ? "Detener" : "Recorrer solo";
+  }
+  pintar();
+
+  function bajar(nombre, tipo, texto) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([texto], { type: tipo }));
+    a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  function filas() { return Object.values(leer()).sort(function (a, b) { return a.id - b.id; }); }
+  document.getElementById("tj-json").onclick = function () {
+    bajar("tienda_jmd.json", "application/json", JSON.stringify(filas(), null, 2));
+  };
+  document.getElementById("tj-csv").onclick = function () {
+    var f = filas();
+    if (!f.length) return;
+    var cols = Object.keys(f[0]);
+    var esc = function (v) { v = String(v); return /[",\n;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var csv = "﻿" + cols.join(",") + "\n" + f.map(function (p) { return cols.map(function (c) { return esc(p[c]); }).join(","); }).join("\n");
+    bajar("tienda_jmd.csv", "text/csv", csv);
+  };
+  document.getElementById("tj-borrar").onclick = function () { guardar({}); nuevos = 0; pintar(); };
+  document.getElementById("tj-auto").onclick = function () {
+    GM_setValue("tiendaJMD.auto", !GM_getValue("tiendaJMD.auto", false));
+    pintar();
+    if (GM_getValue("tiendaJMD.auto", false)) seguir();
+  };
+
+  // 3. Recorrer solo: sigue rel="next" con pausa; se detiene en la última página o si el sitio dice 429.
+  function seguir() {
+    if (!GM_getValue("tiendaJMD.auto", false)) return;
+    var sig = document.querySelector('a[rel="next"]');
+    if (!sig) { GM_setValue("tiendaJMD.auto", false); pintar(); document.getElementById("tj-n").textContent += " · ¡Última página!"; return; }
+    setTimeout(function () { if (GM_getValue("tiendaJMD.auto", false)) location.href = sig.href; }, PAUSA_MS);
+  }
+  if (!document.querySelector("li.producto")) GM_setValue("tiendaJMD.auto", false); // página de 429/403: paramos
+  seguir();
+})();</pre></details>
+        </div>
+      </section>
+
+      <div style="display:grid;gap:1em;align-content:start">
+        <section class="esc-card a-in" style="--d:.3s">
+          <span class="w-et">El laboratorio (cópialo en una pestaña nueva)</span>
+          <pre class="esc-cmd">https://jmd-learn.online/scraping-lab/</pre>
+          <span class="w-et" style="margin-top:.5em">Panel en vivo: búscate</span>
+          <pre class="esc-cmd">https://jmd-learn.online/scraping-lab/panel</pre>
+          <span class="w-et" style="margin-top:.5em">Las reglas del sitio</span>
+          <ul class="l-reglas">
+            <li style="--c:var(--ph-ec)">Máximo <b>20 pedidos cada 10 s</b> por apodo. Si te pasas: <span class="w-c">429</span> y <span class="w-c">Retry-After</span>.</li>
+            <li style="--c:var(--ph-or)">Si sigues tras más de 10 respuestas 429 en un minuto: <span class="w-c">403</span> por 60 s.</li>
+            <li style="--c:var(--ph-ca)"><span class="w-c">/privado/</span> y <span class="w-c">/trampa/</span> están prohibidas en robots.txt. La trampa bloquea al instante.</li>
+            <li style="--c:var(--ph-ea)">Identifícate: apodo en <span class="w-c">X-Alumno</span>, contacto en el <span class="w-c">User-Agent</span>.</li>
+          </ul>
+        </section>
+        <section class="esc-card a-in" style="--d:.35s">
+          <span class="w-et">Tu avance</span>
+          <div class="w-check" data-check="10b-lab">
+            <button class="w-chk"><span><b>Catálogo:</b> 120 productos y la trampa omitida</span></button>
+            <button class="w-chk"><span><b>Sesión y cursor:</b> corté en 2 páginas y reanudé hasta 120</span></button>
+            <button class="w-chk"><span><b>Cola:</b> 199 archivos, 1 fallido, y la segunda vez saltó todo</span></button>
+            <button class="w-chk"><span><b>Límites:</b> vi el 429 y la parte B salió con cero 429</span></button>
+            <button class="w-chk"><span><b>MCP:</b> mi asistente usó <span class="w-c">buscar_productos</span></span></button>
+            <button class="w-chk"><span><b>Tampermonkey:</b> exporté el CSV desde el navegador</span></button>
+          </div>
+        </section>
+        <section class="esc-card a-in" style="--d:.4s">
+          <span class="w-et">Tu evidencia</span>
+          <div class="l-ev">
+            <label class="w-lab">Reto<select class="w-in" id="reto">
+              <option value="catalogo">1 · Catálogo</option><option value="sesion-cursor">2 · Sesión y cursor</option>
+              <option value="cola">3 · Cola de descarga</option><option value="limites">4 · Límites</option>
+              <option value="mcp">5 · MCP</option><option value="tampermonkey">6 · Tampermonkey</option></select></label>
+            <label class="w-lab">Pega las últimas líneas de la salida<textarea class="w-in" id="salida" spellcheck="false" placeholder="Listo: 199 bajados, 0 saltados, 1 fallidos…"></textarea></label>
+            <div class="w-fila"><button type="button" class="w-btn" id="enviar">Enviar evidencia</button><span class="w-peq" id="enviado" aria-live="polite"></span></div>
+            <span class="w-peq w-muted">Nunca pegues tu token ni tu clave: el script solo muestra sus primeros caracteres.</span>
+          </div>
+        </section>
+        <section class="esc-card a-in" style="--d:.45s">
+          <span class="w-et">Ética y límites</span>
+          <ul class="l-reglas">
+            <li style="--c:var(--ok, var(--accent))"><b>Sí:</b> leer robots.txt y términos, identificarte, ir despacio, obedecer <span class="w-c">Retry-After</span>, preferir la API, guardar avance para no repetir pedidos.</li>
+            <li style="--c:var(--bad, var(--ph-or))"><b>No:</b> rotar IPs o proxies, cambiar de apodo o de cuenta para esquivar un bloqueo, ni resolver CAPTCHAs. Si un sitio te frena, la respuesta es bajar el ritmo o pedir permiso.</li>
+            <li style="--c:var(--ph-ca)">El laboratorio te enseña cómo te detectan (conteo por apodo, trampas ocultas, ráfagas) para que entiendas por qué ir lento.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Laboratorio de scraping JMD: sitio nuestro con datos ficticios. Kit completo y README en /scraping-lab/kit.zip.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script src="../../comun/copiar.js"></script>
+<script>
+(function () {
+  "use strict";
+  var reto = document.getElementById("reto"), salida = document.getElementById("salida"), out = document.getElementById("enviado");
+  reto.value = WS.leer("e10b-reto", "catalogo"); salida.value = WS.leer("e10b-salida", "");
+  reto.addEventListener("change", function () { WS.guardar("e10b-reto", reto.value); });
+  salida.addEventListener("input", function () { WS.guardar("e10b-salida", salida.value); });
+  document.getElementById("enviar").addEventListener("click", function () {
+    var t = salida.value.trim();
+    if (t.length < 5) { out.className = "w-peq w-warn"; out.textContent = "Pega la salida de tu script."; salida.focus(); return; }
+    if (/lab_[0-9a-f]{20,}/.test(t)) { out.className = "w-peq w-bad"; out.textContent = "Eso parece tu token completo: bórralo antes de enviar."; return; }
+    var lineas = t.split(/\r?\n/).filter(Boolean).slice(-3).join(" | ");
+    var b = this; b.disabled = true;
+    WS.evidencia("hallazgo", "lab " + reto.value + ": " + lineas.slice(-170)).then(function () {
+      out.className = "w-peq w-ok"; out.textContent = "✓ Enviado. Marca el reto en «Tu avance».";
+    }, function () { out.className = "w-peq w-bad"; out.textContent = "No se pudo enviar; intenta en un momento."; }).then(function () { b.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>
