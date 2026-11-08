@@ -12,6 +12,12 @@ objectives:
 recording:
   url: ""
   passcode: ""
+materials:
+  - id: ipt-04-guia-visual
+    title: "Guía visual (10 diapositivas): MCP, skill, agente, cuánto dura cada plan de Claude y cómo estirar tu cuota"
+    kind: slides
+    slides_dir: materials/guia-visual-s4
+    objective_ids: [ipt-04-o1, ipt-04-o2, ipt-04-o3]
 cycle:
   - id: leer
     title: Leer la lección
