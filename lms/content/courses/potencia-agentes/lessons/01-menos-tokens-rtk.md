@@ -8,7 +8,7 @@ objectives:
   - {id: pt-01-o2, title: "Instalar RTK y comprimir lo que el agente lee"}
   - {id: pt-01-o3, title: "Escribir un pedido que no arrastre media base de código"}
 recording:
-  url: ""
+  url: "/files/potencia-agentes/materials/grabaciones/pt-01-grabacion.mp4"
   passcode: ""
 materials:
   - id: pt-01-video
