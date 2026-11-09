@@ -11,6 +11,11 @@ recording:
   url: "/files/potencia-agentes/materials/grabaciones/pt-01-grabacion.mp4"
   passcode: ""
 materials:
+  - id: pt-01-grabacion
+    title: "Grabación de la clase 1 (domingo 8 de noviembre)"
+    kind: file
+    file: materials/grabaciones/pt-01-grabacion.mp4
+    objective_ids: [pt-01-o1, pt-01-o2]
   - id: pt-01-video
     title: "Video: menos tokens en 40 segundos"
     kind: file
