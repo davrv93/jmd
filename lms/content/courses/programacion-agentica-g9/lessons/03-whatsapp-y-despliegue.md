@@ -1,7 +1,7 @@
 ---
 id: g9-03
 starts_at: 2026-12-12T19:00:00-05:00
-duration: 105
+duration: 120
 title: "Grupo 9 · Clase 3 · Tu chatbot de WhatsApp: wireframe, prototipo, Lit, Bun + Elysia, PostgreSQL y pruebas"
 published: true
 objectives:
