@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Video: agente, MCP y skills</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/g801.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .35); }
+.esc-titulo { font-size: 1.85em; }
+.vd { display: grid; grid-template-columns: 1.55fr 1fr; gap: 2vw; align-items: start; min-height: 0; }
+.vd-marco { position: relative; aspect-ratio: 16 / 9; width: 100%; max-height: 66vh; border-radius: 1.1em; overflow: hidden; background: #14122b; border: 1px solid var(--line2); box-shadow: var(--card-shadow); }
+.vd-marco video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: #14122b; }
+.vd-espera { position: absolute; inset: 0; display: grid; place-items: center; color: #c3b9ff; font: 600 .8em system-ui, sans-serif; pointer-events: none; }
+.vd-espera span { animation: esc-pulso 1.6s ease-in-out infinite; }
+/* Respaldo: el video no cargó. El resumen en tres tarjetas ocupa su lugar. */
+.vd-resp { position: absolute; inset: 0; display: grid; grid-template-rows: auto 1fr auto; gap: .8em; padding: 1.1em 1.3em; background: radial-gradient(120% 90% at 80% 0%, rgba(157,140,255,.28), transparent 60%), #14122b; color: #ecebf7; }
+.vd-resp h2 { margin: 0; font-size: .95em; }
+.vd-resp h2 small { display: block; font-size: .72em; font-weight: 500; color: #b7b4cc; margin-top: .2em; }
+.vd-tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8em; align-items: stretch; }
+.vd-t { border-radius: .9em; padding: .8em .9em; background: rgba(255,255,255,.06); border: 1px solid rgba(195,185,255,.25); display: grid; gap: .35em; align-content: start; animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; animation-delay: var(--d, 0s); }
+.vd-t svg { width: 2.4em; height: 2.4em; }
+.vd-t svg * { fill: none; stroke: #c3b9ff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.vd-t b { font-size: .9em; }
+.vd-t span { font-size: .72em; color: #cfcbe6; line-height: 1.35; }
+.vd-resp .k-btn { justify-self: start; }
+.vd-der { display: grid; gap: 1.6vh; align-content: start; }
+.vd-mira { margin: 0; padding: 0; list-style: none; display: grid; gap: .45em; counter-reset: m; }
+.vd-mira li { display: flex; gap: .6em; align-items: baseline; font-size: .8em; line-height: 1.35; }
+.vd-mira li::before { counter-increment: m; content: counter(m); flex: none; width: 1.6em; height: 1.6em; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 800; font-size: .85em; background: var(--ph-or-bg); color: var(--ph-or); border: 2px solid var(--ph-or); }
+.vd-der .k-voto { --c: var(--ph-or); }
+@media (max-width: 760px) {
+  .vd { grid-template-columns: 1fr; gap: 14px; }
+  .vd-marco { max-height: none; }
+  .vd-tres { grid-template-columns: 1fr; gap: .45em; }
+  .vd-t { grid-template-columns: auto 1fr; align-items: center; padding: .5em .7em; }
+  .vd-t svg { grid-row: span 2; width: 1.8em; height: 1.8em; }
+  .vd-resp { position: relative; inset: auto; }
+  .vd-marco.sin-video { aspect-ratio: auto; }
+}
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Grupo 9 · E08</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Lo que acabas de hacer, <em>en 40 segundos</em></h1>
+    <div class="vd">
+      <div class="vd-marco a-in" id="marco" style="--d:.15s">
+        <video id="video" controls playsinline preload="metadata" src="/files/programacion-agentica-g9/materials/video-g9-01.mp4" aria-label="Video: agente, MCP y skills en 40 segundos"></video>
+        <div class="vd-espera" id="espera"><span>Cargando el video…</span></div>
+        <div class="vd-resp" id="resp" hidden>
+          <h2>El video no cargó: aquí va el resumen<small>Sigue en la pantalla del instructor o vuelve a intentar en un momento.</small></h2>
+          <div class="vd-tres">
+            <div class="vd-t" style="--d:.1s"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 20a12 12 0 1 1 3.5 8.5"/><path d="M6 30l5.5-1.5L10 23"/></svg><b>Agente</b><span>Modelo + herramientas + bucle: decide, usa una herramienta, mira el resultado y repite.</span></div>
+            <div class="vd-t" style="--d:.3s"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="12" y="14" width="16" height="14" rx="3"/><path d="M16 8v6M24 8v6M20 28v6"/></svg><b>MCP</b><span>El enchufe estándar: le da al agente herramientas y datos que no trae de serie.</span></div>
+            <div class="vd-t" style="--d:.5s"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M11 6h13l6 6v22H11z"/><path d="M24 6v6h6M15 20h10M15 25h7"/></svg><b>Skill</b><span>Una ficha <code>SKILL.md</code>: el agente solo lee su título y la abre cuando tu pedido encaja.</span></div>
+          </div>
+          <button class="k-btn sec" type="button" id="reintentar">Reintentar el video</button>
+        </div>
+      </div>
+      <div class="vd-der">
+        <div class="esc-card a-in" style="--d:.3s">
+          <h3>Mientras lo ves, busca</h3>
+          <ol class="vd-mira">
+            <li>Qué hace el agente que un chat no hace.</li>
+            <li>Dónde se enchufa MCP.</li>
+            <li>Cuándo se abre una skill (y cuándo no).</li>
+          </ol>
+        </div>
+        <div class="k-caja k-voto a-in" style="--d:.45s" data-voto="g801-video">
+          <p class="k-q">¿Qué pieza del video ya usaste hoy sin saberlo?</p>
+          <div class="k-ops">
+            <button data-op="bucle">El bucle del agente</button>
+            <button data-op="modelo">Proveedor y modelo</button>
+            <button data-op="contexto">El contexto</button>
+            <button data-op="mcp">MCP</button>
+            <button data-op="skill">Una skill</button>
+            <button data-op="ninguna">Ninguna todavía</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Vota al terminar el video: el instructor ve qué pieza explicar mejor</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+/* El video vive en materials/ (material g9-01-video). Si no está o no carga, queda el resumen. */
+(function () {
+  var v = document.getElementById("video"), espera = document.getElementById("espera"), resp = document.getElementById("resp"), marco = document.getElementById("marco");
+  var SRC = v.getAttribute("src"), listo = false, t = 0;
+  function bien() { listo = true; clearTimeout(t); espera.hidden = true; resp.hidden = true; v.hidden = false; marco.classList.remove("sin-video"); }
+  function mal() { if (listo) return; clearTimeout(t); espera.hidden = true; v.hidden = true; resp.hidden = false; marco.classList.add("sin-video"); }
+  v.addEventListener("loadedmetadata", bien);
+  v.addEventListener("canplay", bien);
+  v.addEventListener("error", mal);
+  t = setTimeout(function () { if (!listo) espera.querySelector("span").textContent = "El video tarda: puedes pulsar ▶ igual"; }, 8000);
+  if (v.error) mal();
+  document.getElementById("reintentar").addEventListener("click", function () {
+    listo = false; resp.hidden = true; espera.hidden = false; v.hidden = false; marco.classList.remove("sin-video");
+    v.src = SRC + "?r=" + Date.now(); v.load();
+  });
+})();
+</script>
+<script src="../../comun/g801.js"></script>
+</body>
+</html>
