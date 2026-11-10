@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ticket de salida</title>
+<!-- Ticket de salida de g8-02 (última escena). Dos votos y un muro con g801.js (POST/GET …/voto[s], …/muro).
+     El muro vive en memoria del servidor (se pierde al reiniciar el LMS): para el staff aparece «Copiar las
+     dudas», que copia todas las entradas para retomarlas en la clase 3. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/g801.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.75em; }
+.tk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; align-items: start; }
+.tk-izq { display: grid; gap: 1.2vh; min-width: 0; }
+.tk-izq .k-ops { grid-template-columns: 1fr 1fr; }
+.tk-cols .k-lista { max-height: 9em; }
+.tk-staff { justify-self: start; }
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  .tk-cols, .tk-izq .k-ops { grid-template-columns: 1fr; }
+}
+.esc .k-voto button .n { white-space: nowrap; }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M120 760 C170 730 220 730 262 764 C304 730 354 730 404 760 M262 764 L262 838"/>
+  <g>
+    <circle class="eo" cx="262" cy="764" r="4.5"/><circle class="e" cx="120" cy="760" r="3"/><circle class="e" cx="404" cy="760" r="3"/><circle class="eg" cx="262" cy="838" r="3.5"/>
+    <circle class="e p" style="--p:.2s" cx="1320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="1520" cy="80" r="1.6"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Grupo 8 · E12b</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Ticket de <em>salida</em></h1>
+      <p class="esc-sub a-in" style="--d:.12s">Un minuto, tres respuestas. Con esto se arma el inicio de la clase 3.</p>
+    </div>
+
+    <div class="tk-cols">
+      <div class="tk-izq">
+        <div class="k-caja k-voto" data-voto="g802-ticket-listo">
+          <p class="k-q">1 · ¿Tu asistente está listo para pasar a WhatsApp en la clase 3?</p>
+          <div class="k-ops">
+            <button data-op="listo">Funciona y lo probé</button>
+            <button data-op="sin-probar">Funciona, me falta probar</button>
+            <button data-op="falta">Me falta construir algo</button>
+            <button data-op="ayuda">Me trabé: necesito ayuda</button>
+          </div>
+        </div>
+        <div class="k-caja k-voto" data-voto="g802-ticket-edge">
+          <p class="k-q">2 · Tu apuesta de la E02b (local o remoto), ¿se cumplió con tu medición?</p>
+          <div class="k-ops">
+            <button data-op="si">Sí, acerté</button>
+            <button data-op="no">No, me sorprendió</button>
+            <button data-op="no-medi">No llegué a medir</button>
+          </div>
+        </div>
+      </div>
+      <div class="tk-izq">
+        <div class="k-caja k-muro" data-muro="g802-ticket-duda" data-max="5"
+             data-pregunta="3 · Una duda que todavía tienes (se retoma al inicio de la clase 3)"
+             data-placeholder="No me quedó claro…"></div>
+        <button type="button" class="k-btn sec tk-staff" id="tk-copiar" hidden>Copiar las dudas (solo instructor)</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Gracias por la clase. Nos vemos en la clase 3.</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/g801.js"></script>
+<script>
+/* Staff: copia las dudas del muro (en memoria del servidor) antes de cerrar la clase. */
+(function () {
+  var G = window.G8, btn = document.getElementById("tk-copiar");
+  G.yo().then(function (y) { if (y && y.staff) btn.hidden = false; });
+  btn.addEventListener("click", function () {
+    G.pedir("/muro?escena=g802-ticket-duda").then(function (r) {
+      var e = (r.ok && r.datos && r.datos.entradas) || [];
+      if (!e.length) { G.toast("Todavía no hay dudas publicadas."); return; }
+      var texto = "Dudas · g8-02 · ticket de salida\n" + e.map(function (x) { return "- " + (x.nombre || "alguien") + ": " + x.texto; }).join("\n");
+      G.copiar(texto).then(function (ok) { G.toast(ok ? "Copié " + e.length + (e.length === 1 ? " duda." : " dudas.") : "No pude copiar: selecciona el muro a mano."); });
+    });
+  });
+})();
+</script>
+</body>
+</html>

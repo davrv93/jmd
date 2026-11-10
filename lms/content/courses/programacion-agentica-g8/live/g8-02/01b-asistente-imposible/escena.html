@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El asistente imposible</title>
+<!-- Apertura de la clase 2 (g8-02). Voto del grupo (POST/GET …/voto[s]) y muro (POST/GET …/muro) con el kit
+     g801.js del curso. No hay respuesta correcta: se discute y se retoma en la «Batalla de asistentes» (11c). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/g801.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.75em; }
+.ai-tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1vw; }
+.ai-card { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .7em .95em .75em; box-shadow: var(--card-shadow); display: grid; gap: .35em; align-content: start; min-width: 0; border-top: 4px solid var(--c); }
+.ai-card.a { --c: var(--warn); } .ai-card.b { --c: var(--bad); } .ai-card.c { --c: var(--ok); }
+.ai-cab { display: flex; align-items: center; gap: .55em; }
+.ai-letra { flex: none; width: 1.7em; height: 1.7em; border-radius: .5em; display: grid; place-items: center; font-weight: 800; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1.5px solid var(--c); }
+.ai-card h2 { margin: 0; font-size: .95em; line-height: 1.15; }
+.ai-card h2 small { display: block; font-size: .72em; font-weight: 600; color: var(--muted); }
+.ai-card ul { margin: 0; padding: 0; list-style: none; display: grid; gap: .2em; font-size: .72em; line-height: 1.35; }
+.ai-card li { padding-left: 1.2em; text-indent: -1.2em; }
+.ai-card li::before { content: "•"; display: inline-block; width: 1.2em; text-indent: 0; color: var(--c); font-weight: 800; }
+.ai-pero { margin: .15em 0 0; font-size: .68em; color: var(--muted); border-top: 1px dashed var(--line2); padding-top: .35em; }
+.ai-pero b { color: var(--fg); }
+.ai-dos { display: grid; grid-template-columns: .9fr 1.1fr; gap: 1.1vw; align-items: start; }
+.ai-dos .k-ops { grid-template-columns: 1fr 1fr; }
+.ai-dos .k-lista { max-height: 6.2em; }
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  .ai-tres, .ai-dos { grid-template-columns: 1fr; gap: 12px; }
+}
+.esc .k-voto button .n { white-space: nowrap; }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+    <circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3"/><circle class="eo" cx="296" cy="524" r="5"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 8 · E01b</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">El asistente <em>imposible</em></h1>
+      <p class="esc-sub a-in" style="--d:.12s">Tres asistentes para la misma cafetería. Solo uno sale a producción mañana. ¿Cuál llevarías y qué le cambiarías?</p>
+    </div>
+
+    <div class="ai-tres">
+      <article class="ai-card a">
+        <div class="ai-cab"><span class="ai-letra">A</span><h2>El sabelotodo<small>Responde todo, sin herramientas</small></h2></div>
+        <ul>
+          <li>Contesta cualquier pregunta, tenga o no el dato</li>
+          <li>No consulta nada: ni la carta, ni el stock, ni el horario real</li>
+          <li>Suena seguro siempre, también cuando inventa</li>
+        </ul>
+        <p class="ai-pero"><b>A su favor:</b> se arma en diez minutos.</p>
+      </article>
+      <article class="ai-card b">
+        <div class="ai-cab"><span class="ai-letra">B</span><h2>El pulpo<small>Muchas herramientas, sin controles</small></h2></div>
+        <ul>
+          <li>Lee, borra, envía mensajes y cobra</li>
+          <li>No pide confirmación ni deja registro de lo que hizo</li>
+          <li>Si una herramienta falla, sigue como si nada</li>
+        </ul>
+        <p class="ai-pero"><b>A su favor:</b> hace muchísimo.</p>
+      </article>
+      <article class="ai-card c">
+        <div class="ai-cab"><span class="ai-letra">C</span><h2>El especialista<small>Un propósito, pocas herramientas</small></h2></div>
+        <ul>
+          <li>Solo atiende dudas y pedidos de la cafetería</li>
+          <li>Dos herramientas autorizadas: leer la carta y reservar</li>
+          <li>Sigue un plan y verifica antes de responder</li>
+        </ul>
+        <p class="ai-pero"><b>En contra:</b> cuesta más armarlo y dice «no sé» más seguido.</p>
+      </article>
+    </div>
+
+    <div class="ai-dos">
+      <div class="k-caja k-voto" data-voto="g802-imposible">
+        <p class="k-q">¿Cuál llevarías a producción mañana?</p>
+        <div class="k-ops">
+          <button data-op="a">A · El sabelotodo</button>
+          <button data-op="b">B · El pulpo</button>
+          <button data-op="c">C · El especialista</button>
+          <button data-op="ninguno">Ninguno así como está</button>
+        </div>
+      </div>
+      <div class="k-caja k-muro" data-muro="g802-imposible-cambio" data-max="4"
+           data-pregunta="¿Qué le cambiarías al que elegiste? Una línea."
+           data-placeholder="Al C le pondría… · Al B le quitaría…"></div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">No hay respuesta correcta. Al final de la clase pones a prueba el tuyo en la «Batalla de asistentes».</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/g801.js"></script>
+</body>
+</html>

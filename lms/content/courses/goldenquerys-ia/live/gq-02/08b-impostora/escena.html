@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · La consulta impostora</title>
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 1 (gq-02). Reto final: tres SQL para la misma pregunta;
+     dos son oro (A, y C por otra ruta) y B es la impostora (strftime('%m') mezcla octubre de 2025 y de 2026).
+     Los resultados se ven recién al votar. Números reales de botica.sqlite (kit del curso). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<style id="esc-propio">
+.im-preg { display: inline-flex; align-items: center; gap: .6em; flex-wrap: wrap; font-size: .9em; font-weight: 700; background: var(--s1); border: 1px solid var(--line); border-radius: 999px; padding: .4em 1em; box-shadow: var(--card-shadow); justify-self: start; }
+.im-preg span { font-size: .78em; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #0b8a5f; }
+.im-tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vw; }
+.im-q { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .65em .8em; box-shadow: var(--card-shadow); display: grid; gap: .45em; align-content: start; min-width: 0; transition: border-color .3s ease-out; }
+.im-q h2 { margin: 0; display: flex; justify-content: space-between; align-items: center; font-size: .78em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.im-q h2 b { font-size: 1.5em; color: var(--fg); letter-spacing: 0; }
+.im-sql { margin: 0; font: 600 .56em/1.45 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .6em .75em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.im-sql mark { background: transparent; color: inherit; border-radius: .25em; padding: 0 .1em; transition: background .4s ease-out; }
+.im-res { margin: 0; font-size: .7em; color: var(--muted); padding: .45em .6em; border-radius: .6em; background: var(--s2); }
+.im-res b { color: var(--fg); font-variant-numeric: tabular-nums; }
+.im-res .tapa { font-style: italic; }
+.im-res .dato { display: none; }
+.revela .im-res .tapa { display: none; }
+.revela .im-res .dato { display: inline; }
+.im-sello { opacity: 0; font: 800 .8em system-ui, sans-serif; letter-spacing: .1em; padding: .25em .7em; border-radius: 999px; transition: opacity .35s ease-out; }
+.revela .im-sello { opacity: 1; }
+.revela .im-q.oro { border-color: var(--oro); }
+.revela .im-q.oro .im-sello { background: var(--oro-bg); color: var(--oro); border: 1px solid var(--oro); }
+.revela .im-q.pirita { border-color: var(--bad); }
+.revela .im-q.pirita .im-sello { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad); }
+.revela .im-q.pirita mark { background: rgba(255,123,123,.3); }
+.im-abajo { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; align-items: start; }
+#imp .k-ops { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 760px) {
+  .im-tres, .im-abajo { grid-template-columns: 1fr; gap: 12px; }
+  .im-preg { border-radius: .9em; }
+}
+@media (prefers-reduced-motion: reduce) { .im-q, .im-sello, .im-sql mark { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">GoldenQuerys · S1 · 08b</span>
+  </header>
+
+  <main class="esc-cuerpo" id="im" style="gap:1.6vh">
+    <div style="display:grid;gap:.8vh">
+      <h1 class="esc-titulo a-in" style="font-size:1.6em">Reto final: <em class="oro">encuentra la consulta impostora</em></h1>
+      <p class="im-preg a-in" style="--d:.08s"><span>Botica</span>¿Qué sede vendió más en octubre de 2026, en soles?</p>
+    </div>
+    <div class="im-tres">
+      <div class="im-q oro a-in" style="--d:.15s">
+        <h2><b>A</b><span class="im-sello">Oro</span></h2>
+        <pre class="im-sql">SELECT s.nombre, ROUND(SUM(v.total), 2) AS soles
+FROM ventas v
+JOIN sedes s ON s.id = v.sede_id
+WHERE v.estado = 'emitida'
+  AND v.fecha &gt;= '2026-10-01'
+  AND v.fecha &lt; '2026-11-01'
+GROUP BY s.nombre ORDER BY soles DESC;</pre>
+        <p class="im-res"><span class="tapa">El resultado se ve al votar.</span><span class="dato">1.º SJL <b>S/ 2 558,80</b> · 2.º Los Olivos <b>S/ 2 143,60</b></span></p>
+      </div>
+      <div class="im-q pirita a-in" style="--d:.22s">
+        <h2><b>B</b><span class="im-sello">Impostora</span></h2>
+        <pre class="im-sql">SELECT s.nombre, ROUND(SUM(v.total), 2) AS soles
+FROM ventas v
+JOIN sedes s ON s.id = v.sede_id
+WHERE v.estado = 'emitida'
+  <mark>AND strftime('%m', v.fecha) = '10'</mark>
+GROUP BY s.nombre
+ORDER BY soles DESC;</pre>
+        <p class="im-res"><span class="tapa">El resultado se ve al votar.</span><span class="dato">1.º SJL <b>S/ 5 292,20</b> · 2.º Lince <b>S/ 4 124,74</b></span></p>
+      </div>
+      <div class="im-q oro a-in" style="--d:.29s">
+        <h2><b>C</b><span class="im-sello">Oro</span></h2>
+        <pre class="im-sql">SELECT s.nombre,
+  ROUND(SUM(d.importe), 2) AS soles
+FROM venta_detalle d
+JOIN ventas v ON v.id = d.venta_id
+JOIN sedes s ON s.id = v.sede_id
+WHERE v.estado = 'emitida'
+  AND date(v.fecha)
+      BETWEEN '2026-10-01' AND '2026-10-31'
+GROUP BY s.nombre ORDER BY soles DESC;</pre>
+        <p class="im-res"><span class="tapa">El resultado se ve al votar.</span><span class="dato">1.º SJL <b>S/ 2 558,80</b> · 2.º Los Olivos <b>S/ 2 143,60</b></span></p>
+      </div>
+    </div>
+    <div class="im-abajo">
+      <div class="k-caja k-voto a-in" style="--d:.35s" id="imp" data-voto="gq02-impostora" data-correcta="b" data-c="oro"
+           data-explica="B: strftime('%m') = '10' junta octubre de 2025 y de 2026 (766 ventas, no 400) y Lince sube al 2.º lugar. C es oro: suma el importe de cada línea y date() quita la hora. A y C coinciden por dos rutas: eso es contrastar.">
+        <p class="k-q" style="--c:var(--ph-ea)">¿Cuál es la impostora?</p>
+        <div class="k-ops">
+          <button data-op="a">A</button>
+          <button data-op="b">B</button>
+          <button data-op="c">C</button>
+        </div>
+      </div>
+      <div class="k-caja k-muro a-in" style="--d:.45s" data-muro="gq02-impostora-prueba" data-color="var(--ph-ea)"
+           data-pregunta="Justifica: ¿con qué prueba la desenmascaras antes de ver el número?"
+           data-placeholder="Correría … y esperaría …" data-max="4" data-max-largo="200"></div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Elige, mira los resultados y escribe en el muro la prueba que usarías</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq.js"></script>
+<script>
+(function () {
+  var raiz = document.getElementById("im");
+  function revelar() { raiz.classList.add("revela"); }
+  var voto = document.getElementById("imp");
+  voto.addEventListener("k-voto", revelar);
+  // si el voto llega del servidor (otra pestaña, recarga), gq.js marca .revela en el voto: lo seguimos
+  new MutationObserver(function () { if (voto.classList.contains("revela")) revelar(); }).observe(voto, { attributes: true, attributeFilter: ["class"] });
+  if (GQ.leer("voto-gq02-impostora", "")) revelar();
+})();
+</script>
+</body>
+</html>

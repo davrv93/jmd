@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Detective del SQL</title>
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 1 (gq-02). Juego «Detective»: tres SQL que corren sin
+     errores y responden otra cosa. Cada línea es una opción del voto (gq02-detective-1..3): el alumno toca la
+     culpable y ve dónde sospechó el grupo. Números reales de botica.sqlite (kit del curso). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<style id="esc-propio">
+.dt { display: grid; grid-template-columns: 1.25fr .75fr; gap: 1.4vw; align-items: start; }
+.dt-tabs { display: flex; gap: .5em; flex-wrap: wrap; }
+.dt-tab { font: 700 .74em system-ui, sans-serif; border: 1px solid var(--line); background: var(--s1); color: var(--muted); border-radius: 999px; padding: .4em .95em; cursor: pointer; }
+.dt-tab[aria-selected="true"] { background: var(--oro-bg); color: var(--fg); border-color: var(--oro); }
+.dt-tab.hecho::after { content: " ✓"; color: var(--ok); }
+.dt-tab:focus-visible { outline: 2px solid var(--oro); outline-offset: 2px; }
+.dt-caso { display: grid; gap: .7em; }
+.dt-caso[hidden] { display: none; }
+.dt-preg, .dt-ia, .dt-real { margin: 0; }
+.dt-preg { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5em 1em; font-size: .86em; font-weight: 700; }
+.dt-preg small { font-size: .78em; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #0b8a5f; }
+.dt-ia { font-size: .78em; color: var(--muted); }
+.dt-ia b { color: var(--oro); font-size: 1.25em; font-variant-numeric: tabular-nums; }
+/* el voto se pinta como un listado de SQL: cada botón es una línea */
+.dt-sql.k-caja { background: #14122b; border-color: rgba(242,193,78,.3); }
+.dt-sql .k-q { color: #f3eedc; }
+.dt-sql .k-ops { grid-template-columns: 1fr; gap: .2em; }
+.dt-sql .k-ops button { font: 600 .72em/1.45 var(--mono); background: rgba(255,255,255,.03); color: #e9e6ff; border-color: rgba(190,185,255,.16); padding: .35em .7em; white-space: pre; text-align: left; }
+.dt-sql .k-ops button .t { white-space: pre; overflow-wrap: normal; }
+.dt-sql .k-ops button .n { color: #b9b4dd; }
+.dt-sql .k-ops button .b { background: rgba(242,193,78,.22); }
+.dt-sql .k-ops button:hover { border-color: #f2c14e; }
+.dt-sql .k-pie { color: #b9b4dd; }
+.dt-sql .k-explica { color: #fff; background: rgba(19,140,70,.28); border-color: rgba(120,220,160,.45); }
+.dt-sql.revela .k-ops button.bien { border-color: #6fdc9b; }
+.dt-real { display: none; font-size: .8em; padding: .55em .8em; border-radius: .7em; background: var(--oro-bg); border: 1px solid color-mix(in srgb, var(--oro) 40%, transparent); }
+.dt-real b { color: var(--oro); font-variant-numeric: tabular-nums; }
+.dt-caso.visto .dt-real { display: block; }
+.dt-lado { display: grid; gap: 1.2vh; }
+.dt-pistas { display: flex; align-items: center; gap: .8em; }
+.dt-pistas b { font-size: 2.4em; font-weight: 800; color: var(--oro); font-variant-numeric: tabular-nums; line-height: 1; }
+.dt-pistas span { font-size: .78em; color: var(--muted); }
+.dt-reglas { margin: 0; padding-left: 1.2em; font-size: .78em; display: grid; gap: .35em; color: var(--muted); }
+.dt-reglas b { color: var(--fg); }
+@media (max-width: 760px) {
+  .dt { grid-template-columns: 1fr; gap: 12px; }
+  .dt-sql .k-ops button, .dt-sql .k-ops button .t { white-space: pre-wrap; overflow-wrap: anywhere; }
+}
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">GoldenQuerys · S1 · 05b</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in" style="font-size:1.9em">Detective: <em class="oro">el SQL corre, pero miente</em></h1>
+      <p class="esc-sub a-in" style="--d:.08s;font-size:.9em">Tres casos de la botica. Ninguno da error. Toca la línea culpable.</p>
+    </div>
+    <div class="dt">
+      <div class="dt-caso-zona a-in" style="--d:.15s">
+        <div class="dt-tabs" role="tablist" aria-label="Casos">
+          <button type="button" class="dt-tab" role="tab" aria-selected="true" aria-controls="caso1" id="t1">Caso 1 · la fecha</button>
+          <button type="button" class="dt-tab" role="tab" aria-selected="false" aria-controls="caso2" id="t2">Caso 2 · las ventas</button>
+          <button type="button" class="dt-tab" role="tab" aria-selected="false" aria-controls="caso3" id="t3">Caso 3 · los clientes</button>
+        </div>
+
+        <section class="dt-caso" id="caso1" role="tabpanel" aria-labelledby="t1" style="margin-top:.7em">
+          <p class="dt-preg"><small>Botica</small>¿Cuánto vendimos en septiembre de 2026?</p>
+          <p class="dt-ia">La IA respondió: <b>S/ 7 160,10</b></p>
+          <div class="k-caja k-voto dt-sql" data-voto="gq02-detective-1" data-correcta="l4"
+               data-explica="Línea 4. La columna fecha guarda la hora («2026-09-30 20:40:55»). BETWEEN … '2026-09-30' corta en la medianoche del 30: se pierden las 13 ventas del último día. Arreglo: fecha < '2026-10-01' o date(fecha).">
+            <p class="k-q">¿Qué línea miente?</p>
+            <div class="k-ops">
+              <button data-op="l1">1  SELECT ROUND(SUM(total), 2)</button>
+              <button data-op="l2">2  FROM ventas</button>
+              <button data-op="l3">3  WHERE estado = 'emitida'</button>
+              <button data-op="l4">4    AND fecha BETWEEN '2026-09-01' AND '2026-09-30';</button>
+            </div>
+          </div>
+          <p class="dt-real">Lo real: <b>S/ 7 404,90</b> (380 ventas). Faltaban S/ 244,80 del 30 de septiembre. Prueba que lo delata: <b>los bordes</b>, con <code>MAX(fecha)</code> de lo que entra.</p>
+        </section>
+
+        <section class="dt-caso" id="caso2" role="tabpanel" aria-labelledby="t2" style="margin-top:.7em" hidden>
+          <p class="dt-preg"><small>Botica</small>¿Cuántas ventas hizo cada sede en octubre de 2026?</p>
+          <p class="dt-ia">La IA respondió: <b>SJL, 196 ventas</b> (la primera del ranking)</p>
+          <div class="k-caja k-voto dt-sql" data-voto="gq02-detective-2" data-correcta="l4"
+               data-explica="Línea 4. Al unir cada venta con sus productos, una boleta de 3 productos aparece 3 veces: COUNT(*) cuenta líneas, no ventas. Arreglo: quita ese JOIN o usa COUNT(DISTINCT v.id).">
+            <p class="k-q">¿Qué línea miente?</p>
+            <div class="k-ops">
+              <button data-op="l1">1  SELECT s.nombre, COUNT(*) AS ventas</button>
+              <button data-op="l2">2  FROM ventas v</button>
+              <button data-op="l3">3  JOIN sedes s ON s.id = v.sede_id</button>
+              <button data-op="l4">4  JOIN venta_detalle d ON d.venta_id = v.id</button>
+              <button data-op="l5">5  WHERE v.estado = 'emitida'</button>
+              <button data-op="l6">6    AND v.fecha &gt;= '2026-10-01' AND v.fecha &lt; '2026-11-01'</button>
+              <button data-op="l7">7  GROUP BY s.nombre ORDER BY ventas DESC;</button>
+            </div>
+          </div>
+          <p class="dt-real">Lo real: SJL hizo <b>116 ventas</b>, no 196. Prueba que lo delata: <b>filas base</b>: las ventas de octubre son 400 y la suma de este ranking da 685.</p>
+        </section>
+
+        <section class="dt-caso" id="caso3" role="tabpanel" aria-labelledby="t3" style="margin-top:.7em" hidden>
+          <p class="dt-preg"><small>Botica</small>¿Cuántos clientes distintos compraron en octubre de 2026?</p>
+          <p class="dt-ia">La IA respondió: <b>241 clientes</b></p>
+          <div class="k-caja k-voto dt-sql" data-voto="gq02-detective-3" data-correcta="l1"
+               data-explica="Línea 1. COUNT(cliente_id) cuenta ventas que tienen cliente, no personas: quien compró tres veces cuenta tres. La pregunta dice «distintos». Arreglo: COUNT(DISTINCT cliente_id).">
+            <p class="k-q">¿Qué línea miente?</p>
+            <div class="k-ops">
+              <button data-op="l1">1  SELECT COUNT(cliente_id)</button>
+              <button data-op="l2">2  FROM ventas</button>
+              <button data-op="l3">3  WHERE estado = 'emitida'</button>
+              <button data-op="l4">4    AND fecha &gt;= '2026-10-01' AND fecha &lt; '2026-11-01';</button>
+            </div>
+          </div>
+          <p class="dt-real">Lo real: <b>217 clientes</b>. Prueba que lo delata: <b>otra ruta</b>, contando con <code>DISTINCT</code> y comparando.</p>
+        </section>
+      </div>
+
+      <div class="dt-lado a-in" style="--d:.3s">
+        <div class="esc-card">
+          <div class="dt-pistas"><b id="pistas">0</b><span>de 3 pistas<br>al primer intento</span></div>
+        </div>
+        <div class="esc-card">
+          <h3>Cómo juega un detective</h3>
+          <ol class="dt-reglas">
+            <li><b>Relee la pregunta</b> palabra por palabra: «distintos», «septiembre», «ventas».</li>
+            <li><b>Busca dónde cambia el sentido</b>, no dónde falta una coma.</li>
+            <li><b>Toca la línea.</b> Las barras muestran dónde sospechó el grupo.</li>
+          </ol>
+        </div>
+        <button type="button" class="k-btn oro" id="sig">Siguiente caso →</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Resuelve los tres casos: en la escena que sigue cada uno tiene nombre</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq.js"></script>
+<script>
+(function () {
+  "use strict";
+  var tabs = [1, 2, 3].map(function (i) { return document.getElementById("t" + i); });
+  var casos = [1, 2, 3].map(function (i) { return document.getElementById("caso" + i); });
+  var actual = 0;
+  // primer intento por caso: true (acertó) / false (falló); solo cuenta el primero
+  var primeros = GQ.leer("detective-primeros", [null, null, null]);
+
+  function mostrar(i) {
+    actual = i;
+    casos.forEach(function (c, k) { c.hidden = k !== i; });
+    tabs.forEach(function (t, k) { t.setAttribute("aria-selected", String(k === i)); });
+    document.getElementById("sig").textContent = i < 2 ? "Siguiente caso →" : "Volver al caso 1";
+  }
+  function pintar() {
+    document.getElementById("pistas").textContent = primeros.filter(function (x) { return x === true; }).length;
+    casos.forEach(function (c, k) {
+      var visto = primeros[k] !== null || !!GQ.leer("voto-gq02-detective-" + (k + 1), "") || c.querySelector("[data-voto]").classList.contains("revela");
+      c.classList.toggle("visto", visto);
+      tabs[k].classList.toggle("hecho", visto);
+    });
+  }
+  casos.forEach(function (c, k) {
+    var voto = c.querySelector("[data-voto]");
+    new MutationObserver(pintar).observe(voto, { attributes: true, attributeFilter: ["class"] });
+    voto.addEventListener("k-voto", function (e) {
+      if (primeros[k] === null) { primeros[k] = e.detail.opcion === voto.getAttribute("data-correcta"); GQ.guardar("detective-primeros", primeros); }
+      pintar();
+      GQ.toast(e.detail.opcion === voto.getAttribute("data-correcta") ? "¡Pista encontrada! Lee por qué." : "Esa línea está bien. Mira la marcada en verde y por qué.");
+    });
+  });
+  tabs.forEach(function (t, k) {
+    t.addEventListener("click", function () { mostrar(k); });
+    t.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); var n = (k + (e.key === "ArrowRight" ? 1 : 2)) % 3; mostrar(n); tabs[n].focus(); }
+    });
+  });
+  document.getElementById("sig").addEventListener("click", function () { mostrar((actual + 1) % 3); });
+  mostrar(0); pintar();
+})();
+</script>
+</body>
+</html>

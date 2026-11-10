@@ -77,7 +77,7 @@ cycle:
     tool: lms
     phase: experimentacion
     description: Aplicas las tres pruebas a tus tres consultas, corriges la que falle y anotas qué la verificó.
-    check: Cada consulta lleva «-- Verificado:» con la prueba y su número; T2 hecha en el plan
+    check: Cada consulta lleva «-- Contrastado:» (la IA) y «-- Verificado:» (tú, después de revisar); T2 hecha en el plan
   - id: entregar
     title: Insignia y tarea
     tool: lms
@@ -98,15 +98,20 @@ Hoy la IA escribe el SQL de tus tres preguntas de oro y tú lo pruebas antes de 
 
 ### Bloques (60 minutos)
 
-- 0:00 a 0:03 · Bienvenida: un número sin verificar es pirita.
-- 0:03 a 0:09 · Tu negocio en marcha (retomas el de la charla o eliges uno).
-- 0:09 a 0:18 · Cinco preguntas de oro: la IA propone, tú eliges tres.
-- 0:18 a 0:21 · Video: de la pregunta al número verificado.
-- 0:21 a 0:26 · Dos números para la misma pregunta.
-- 0:26 a 0:32 · Las seis impurezas y las tres pruebas.
-- 0:32 a 0:42 · Juego: ¿oro o pirita?
-- 0:42 a 0:54 · Verifica tus tres consultas.
-- 0:54 a 1:00 · Tu insignia, tu fotito y la tarea.
+- 0:00 a 0:02 · Bienvenida: un número sin verificar es pirita (voto).
+- 0:02 a 0:05 · Pulso: 10 000 ventas, ¿qué preguntas primero? (muro) y ¿vaga, de cobre o de oro? (voto).
+- 0:05 a 0:10 · Tu negocio en marcha (retomas el de la charla o eliges uno).
+- 0:10 a 0:18 · Cinco preguntas de oro: la IA propone, tú eliges tres (muro).
+- 0:18 a 0:21 · Video: de la pregunta al número verificado (voto).
+- 0:21 a 0:25 · Dos números para la misma pregunta (voto y muro).
+- 0:25 a 0:29 · Juego: Detective del SQL, tres casos que corren y mienten.
+- 0:29 a 0:33 · Las seis impurezas y las tres pruebas (voto).
+- 0:33 a 0:36 · La escalera: generado → revisado → ejecutado → contrastado → verificado (voto).
+- 0:36 a 0:43 · Juego: ¿oro o pirita?
+- 0:43 a 0:45 · De memoria: las tres pruebas, sin mirar (muro y voto).
+- 0:45 a 0:53 · Verifica tus tres consultas.
+- 0:53 a 0:57 · Reto final: la consulta impostora (voto y muro).
+- 0:57 a 1:00 · Ticket de salida, tu insignia, tu fotito y la tarea.
 
 ## 1. Tu negocio en marcha · Experiencia
 
@@ -152,6 +157,10 @@ Uno de los dos duplica cada venta por cada producto de la boleta. ¿Cuál le dar
 **Las tres pruebas:** 1) cuenta las filas base sin agrupar; 2) compara el total con otra consulta más
 simple que debería dar lo mismo; 3) mira los bordes: anuladas, último día del mes, nulos y duplicados.
 
+**La escalera de la verificación:** generado (la IA escribió el SQL) → revisado (lees cada filtro, JOIN y
+fecha contra la pregunta) → ejecutado (corre y devuelve filas) → contrastado (el número coincide por otra
+ruta) → verificado (lo firmas tú). Un «está correcto» de la IA no sube ningún escalón.
+
 ## 5. Juego: ¿oro o pirita? · Conceptos
 
 Hasta 25 jugadores a la vez. La IA te trae un número con su SQL: si es oro, lo firmas; si es pirita, tocas
@@ -163,11 +172,11 @@ título, el tablero de la clase y tu fotito.
 Pega en DeepSeek Harness:
 
 ```text
-Tarea T2 con verificación. Para cada una de mis 3 consultas de goldenquerys/consultas/: 1) ejecútala con curl contra /api/consulta y dime filas y total; 2) aplica las 3 pruebas: cuenta las filas base sin agrupar, compara el total con una consulta independiente más simple y revisa los bordes (anuladas, fechas con hora, JOIN que duplica, DISTINCT); 3) si una prueba falla, corrige el SQL y explícame en una línea qué impureza tenía; 4) agrega arriba de cada archivo «-- Decisión:» y «-- Verificado:» con la prueba y su número. Marca T2 hecha solo si las 3 pasan.
+Tarea T2 con verificación. Para cada una de mis 3 consultas de goldenquerys/consultas/: 1) ejecútala con curl contra /api/consulta y dime filas y total; 2) aplica las 3 pruebas: cuenta las filas base sin agrupar, compara el total con una consulta independiente más simple y revisa los bordes (anuladas, fechas con hora, JOIN que duplica, DISTINCT); 3) si una prueba falla, corrige el SQL y explícame en una línea qué impureza tenía; 4) agrega arriba de cada archivo «-- Decisión:» y «-- Contrastado:» con la prueba y su número. NO escribas «-- Verificado:» ni marques T2: eso lo hago yo después de revisar tus números. Termina diciéndome qué debo mirar en cada consulta.
 ```
 
 ## Tarea · Aplicación
 
 En `goldenquerys/consultas/` deja tus tres consultas, cada una con `-- Pregunta:`, `-- Decisión:` y
-`-- Verificado:` (la prueba y su número). Si la IA se equivocó en alguna, anota en una línea qué impureza
+`-- Verificado:` (la prueba y su número; esa línea la escribes tú, no la IA). Si la IA se equivocó en alguna, anota en una línea qué impureza
 tenía. En la sesión 2 (martes 17) las conviertes en tu tablero dinámico.

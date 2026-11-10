@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repaso relámpago 2</title>
+<!-- Pregunta de recuperación 2 de g8-02 (~min 85, entre la voz y el flyer). Retoma el plan defectuoso (E05b).
+     Semáforo del grupo para que el instructor vea quién está trabado, y la apuesta de la E02b leída con
+     GET …/votos?escena=g802-edge-rapido (solo lectura) para recordar qué se mide en «Probar y medir». -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/g801.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc-titulo { font-size: 1.55em; }
+.r2-cols { display: grid; grid-template-columns: 1.25fr .75fr; gap: 1.2vw; align-items: start; }
+.r2-cols > .k-voto .k-ops { grid-template-columns: 1fr 1fr; }
+.r2-cols > .k-voto button { text-align: left; line-height: 1.3; min-height: 3em; }
+.r2-der { display: grid; gap: 1vh; min-width: 0; }
+.r2-der .k-ops { grid-template-columns: 1fr; }
+.r2-sem button[data-op="verde"] .t::before { content: "● "; color: var(--ok); }
+.r2-sem button[data-op="amarillo"] .t::before { content: "● "; color: var(--gold); }
+.r2-sem button[data-op="rojo"] .t::before { content: "● "; color: var(--bad); }
+.r2-apuesta { display: grid; gap: .35em; }
+.r2-fila { display: grid; grid-template-columns: 5.5em 1fr 3.8em; gap: .5em; align-items: center; font-size: .68em; }
+.r2-fila i { height: .8em; border-radius: .4em; background: var(--s3); overflow: hidden; }
+.r2-fila i::before { content: ""; display: block; height: 100%; width: var(--p, 0%); background: var(--accent); border-radius: .4em; transition: width .5s ease-out; }
+.r2-fila b { font: 700 1em var(--mono); text-align: right; white-space: nowrap; }
+.r2-fila.mia span { font-weight: 800; color: var(--accent); }
+.r2-mide { margin: 0; font-size: .64em; color: var(--muted); }
+.r2-mide code { font: 600 .95em var(--mono); color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { .r2-fila i::before { transition: none; } }
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  .r2-cols, .r2-cols > .k-voto .k-ops { grid-template-columns: 1fr; }
+}
+.esc .k-voto button .n { white-space: nowrap; }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Grupo 8 · E09b</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <span class="esc-chip a-in">Repaso relámpago 2 de 2 · sin mirar atrás</span>
+      <h1 class="esc-titulo a-in" style="--d:.1s">Tu plan dice «T4 Micrófono · <em>opcional</em> · si falla: sigue por texto». En la demo no hay micrófono. ¿Qué haces?</h1>
+    </div>
+
+    <div class="r2-cols">
+      <div class="k-caja k-voto" data-voto="g802-repaso-2" data-correcta="texto"
+           data-explica="Para eso separas obligatorio de opcional y escribes «si falla»: la demo sigue por texto y el problema queda anotado para corregirlo después.">
+        <p class="k-q">Elige una. Ves la respuesta y al grupo después de votar.</p>
+        <div class="k-ops">
+          <button data-op="parar">Detengo la demo hasta arreglar el micrófono</button>
+          <button data-op="texto">Sigo por texto y anoto el hallazgo</button>
+          <button data-op="borrar">Borro la tarea T4 del plan</button>
+          <button data-op="inventar">Le pido al modelo que finja la voz</button>
+        </div>
+      </div>
+
+      <div class="r2-der">
+        <div class="k-caja k-voto r2-sem" data-voto="g802-semaforo">
+          <p class="k-q">Semáforo: ¿cómo va tu Robo?</p>
+          <div class="k-ops">
+            <button data-op="verde">Chat y voz funcionan</button>
+            <button data-op="amarillo">El chat sí, la voz todavía no</button>
+            <button data-op="rojo">Me trabé: necesito ayuda</button>
+          </div>
+        </div>
+        <div class="k-caja">
+          <p class="k-q">Tu apuesta de la E02b: ¿quién contesta primero?</p>
+          <div class="r2-apuesta" id="r2-apuesta" aria-live="polite">
+            <div class="r2-fila" data-op="local"><span>Local</span><i></i><b>–</b></div>
+            <div class="r2-fila" data-op="remoto"><span>Remoto</span><i></i><b>–</b></div>
+            <div class="r2-fila" data-op="empate"><span>Casi igual</span><i></i><b>–</b></div>
+          </div>
+          <p class="r2-mide" id="r2-pie">En «Probar y medir» lo compruebas: <code>ollama run qwen3:1.7b --verbose "hola"</code> y la línea <code>POST /api/chat … ms</code>.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Rojo en el semáforo = el instructor pasa por tu pantalla durante el flyer.</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/g801.js"></script>
+<script>
+/* Apuesta de la E02b: solo lectura de los votos g802-edge-rapido (no se vota aquí). Cada 8 s. */
+(function () {
+  var G = window.G8, filas = Array.prototype.slice.call(document.querySelectorAll("#r2-apuesta .r2-fila"));
+  function pintar(d) {
+    var total = (d && d.total) || 0, ops = (d && d.opciones) || {};
+    filas.forEach(function (f) {
+      var op = f.getAttribute("data-op"), n = ops[op] || 0, pct = total ? Math.round(n * 100 / total) : 0;
+      f.querySelector("i").style.setProperty("--p", pct + "%");
+      f.querySelector("b").textContent = total ? pct + " %" : "–";
+      f.classList.toggle("mia", !!d && d.mia === op);
+    });
+  }
+  function leer() {
+    if (document.visibilityState === "hidden") return;
+    G.pedir("/votos?escena=g802-edge-rapido").then(function (r) { if (r.ok && r.datos && typeof r.datos.total === "number") pintar(r.datos); });
+  }
+  leer(); setInterval(leer, 8000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · De memoria: las tres pruebas</title>
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 1 (gq-02). Práctica de recuperación: unos 15 minutos
+     después de la escena 06, el alumno escribe de memoria las tres pruebas (muro gq02-memoria), las compara
+     y dice cuántas recordó (voto gq02-memoria-n). Las tres pruebas quedan ocultas hasta que escribe o pide verlas. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<style id="esc-propio">
+.dm-tres { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: .8vw; counter-reset: t; }
+.dm-tres li { counter-increment: t; position: relative; background: var(--s1); border: 1px dashed var(--line2); border-radius: .9em; padding: .7em .85em; min-height: 5.2em; display: grid; align-content: start; gap: .25em; }
+.dm-tres li::before { content: counter(t); display: grid; place-items: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--oro-bg); color: var(--oro); font-weight: 800; font-size: .8em; }
+.dm-tres li b, .dm-tres li span { transition: opacity .35s ease-out, filter .35s ease-out; }
+.dm-tres li b { font-size: .9em; }
+.dm-tres li span { font-size: .7em; color: var(--muted); line-height: 1.35; }
+.dm-oculto .dm-tres li b, .dm-oculto .dm-tres li span { opacity: .14; filter: blur(.35em); user-select: none; }
+.dm-tres li .dm-tapa { position: absolute; inset: auto .8em .6em auto; font: 800 .58em system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.dm-visto .dm-tres li { border-style: solid; border-color: color-mix(in srgb, var(--oro) 45%, var(--line)); }
+.dm-visto .dm-tapa { display: none; }
+#cuantas .k-ops { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 760px) {
+  .dm-tres { grid-template-columns: 1fr; gap: 6px; }
+  #cuantas .k-ops { grid-template-columns: 1fr 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .dm-tres li b, .dm-tres li span { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">GoldenQuerys · S1 · 07b</span>
+  </header>
+
+  <main class="esc-cuerpo dm-oculto" id="dm">
+    <div>
+      <h1 class="esc-titulo a-in" style="font-size:1.9em">Sin mirar atrás: <em class="oro">¿cuáles son las tres pruebas?</em></h1>
+      <p class="esc-sub a-in" style="--d:.08s;font-size:.9em">Las viste hace un cuarto de hora. Recordar cuesta, y por eso se queda. En la escena que sigue las aplicas a tus tres consultas.</p>
+    </div>
+    <div class="k-cols">
+      <div class="k-pila a-in" style="--d:.15s">
+        <div class="k-caja k-muro" id="muro" data-muro="gq02-memoria" data-color="var(--ph-ca)"
+             data-pregunta="Escribe las tres pruebas como las recuerdes, con tus palabras"
+             data-placeholder="1) …  2) …  3) …" data-max="4" data-max-largo="200"></div>
+        <button type="button" class="k-btn sec" id="ver">Ya escribí: muéstrame las tres</button>
+      </div>
+      <div class="k-pila a-in" style="--d:.25s">
+        <ol class="dm-tres" aria-label="Las tres pruebas">
+          <li><b>Cuenta las filas base</b><span>Sin SUM ni GROUP BY: ¿cuántas filas entran? ¿Te cuadra?</span><em class="dm-tapa">oculta</em></li>
+          <li><b>Compara por otra ruta</b><span>Otra consulta, más simple, que debería dar lo mismo.</span><em class="dm-tapa">oculta</em></li>
+          <li><b>Mira los bordes</b><span>Anuladas, último día del mes, nulos y duplicados.</span><em class="dm-tapa">oculta</em></li>
+        </ol>
+        <div class="k-caja k-voto" id="cuantas" data-voto="gq02-memoria-n" data-c="oro">
+          <p class="k-q" style="--c:var(--oro)">¿Cuántas recordaste sin mirar?</p>
+          <div class="k-ops">
+            <button data-op="tres">Las 3</button>
+            <button data-op="dos">2</button>
+            <button data-op="una">1</button>
+            <button data-op="cero">Ninguna</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Escribe primero, compara después y vota con honestidad: nadie ve tu nombre en el voto</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq.js"></script>
+<script>
+(function () {
+  "use strict";
+  var raiz = document.getElementById("dm");
+  function destapar() {
+    raiz.classList.remove("dm-oculto"); raiz.classList.add("dm-visto");
+    GQ.guardar("memoria-vista", true);
+    document.getElementById("ver").hidden = true;
+  }
+  document.getElementById("muro").addEventListener("k-muro", destapar);
+  document.getElementById("ver").addEventListener("click", destapar);
+  if (GQ.leer("memoria-vista", false)) destapar();
+})();
+</script>
+</body>
+</html>

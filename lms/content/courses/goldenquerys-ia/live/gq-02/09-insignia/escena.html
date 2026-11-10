@@ -31,6 +31,10 @@
 .b9-foto { display: grid; gap: .5em; }
 .b9-foto .k-foto img { width: min(100%, 12.5em); }
 .b9-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; align-items: start; }
+.b9-salida .k-ops { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 760px) { .b9-salida .k-ops { grid-template-columns: 1fr; } }
+.b9-ticket { margin: 0; font-size: .74em; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--oro); }
+.b9-ticket b { color: var(--muted); font-weight: 700; letter-spacing: 0; text-transform: none; }
 .b9-tarea p { margin: 0; font-size: .74em; line-height: 1.4; }
 .b9-tarea code { font: 700 .92em var(--mono); color: var(--oro); }
 @keyframes b9-enciende { from { filter: grayscale(1); opacity: .45; } to { filter: none; opacity: 1; } }
@@ -80,9 +84,19 @@
       <div class="k-pila a-in" style="--d:.25s">
         <div class="b9-dos">
           <div class="k-pila">
-            <div class="k-caja k-muro" id="muro" data-muro="gq02-cierre" data-color="var(--oro)" data-pregunta="En una línea: ¿qué te llevas de hoy?" data-placeholder="Hoy me llevo…" data-max="4"></div>
-            <div class="k-caja k-voto" data-voto="gq02-salida" data-c="oro">
-              <p class="k-q" style="--c:var(--oro)">¿Cómo te vas?</p>
+            <p class="b9-ticket">Ticket de salida · <b>3 respuestas, 1 minuto</b></p>
+            <div class="k-caja k-voto" data-voto="gq02-quien-firma" data-correcta="yo" data-c="oro"
+                 data-explica="Tú, y solo después del contraste. La IA puede escribir, ejecutar y contrastar; si dice «está correcto», el número no sube ningún escalón.">
+              <p class="k-q" style="--c:var(--oro)">1 · ¿Quién escribe «-- Verificado:» en tu consulta?</p>
+              <div class="k-ops">
+                <button data-op="ia">La IA, si sus pruebas pasan</button>
+                <button data-op="yo">Yo, después de contrastar el número</button>
+                <button data-op="nadie">Nadie: si corre, ya está</button>
+              </div>
+            </div>
+            <div class="k-caja k-muro" id="muro" data-muro="gq02-cierre" data-color="var(--oro)" data-pregunta="2 · En una línea: ¿qué te llevas de hoy?" data-placeholder="Hoy me llevo…" data-max="4"></div>
+            <div class="k-caja k-voto b9-salida" data-voto="gq02-salida" data-c="oro">
+              <p class="k-q" style="--c:var(--oro)">3 · ¿Cómo te vas?</p>
               <div class="k-ops">
                 <button data-op="solo">Ya verifico solo</button>
                 <button data-op="con-ia">Con la IA, sí</button>
@@ -153,7 +167,7 @@
   $("muro").addEventListener("k-muro", function () { armar(); });
 
   var TAREA = "Tarea · GoldenQuerys, sesión 1 (para el martes 17 de noviembre)\n" +
-    "- En goldenquerys/consultas/ deja tus 3 consultas, cada una con «-- Pregunta:», «-- Decisión:» y «-- Verificado:» (la prueba y su número).\n" +
+    "- En goldenquerys/consultas/ deja tus 3 consultas, cada una con «-- Pregunta:», «-- Decisión:» y «-- Verificado:» (la prueba y su número; esa línea la escribes tú, no la IA).\n" +
     "- Si la IA se equivocó en alguna, anota en una línea qué impureza tenía.\n" +
     "- Sesión 2: martes 17, 6:30 p. m. Convertimos tus tres preguntas en tu tablero dinámico.";
   $("b-tarea").addEventListener("click", function () {

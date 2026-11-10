@@ -32,14 +32,14 @@ cycle:
     title: Medir el proyecto entero
     tool: terminal
     phase: experiencia
-    description: "Mide cuántos caracteres pesa leer tu proyecto completo y publícalo en la escena 3."
+    description: "Mide cuántos caracteres pesa leer tu proyecto completo y publícalo en la escena 5."
     check: "Tu número «proyecto entero» quedó publicado"
   - id: observar
     title: Ver lo que tu agente olvida
     tool: lms
     phase: reflexion
     description: "Escribe en el muro qué le vuelves a explicar a tu agente en cada sesión."
-    check: "Tu línea aparece en el muro de la escena 4"
+    check: "Tu línea aparece en el muro de la escena 6"
   - id: memoria
     title: Entender e instalar Cortex
     tool: terminal
@@ -57,7 +57,7 @@ cycle:
     tool: lms
     phase: experimentacion
     description: "Responde una pregunta de tu proyecto con graphify affected y publica proyecto entero → consulta."
-    check: "Tu antes → después aparece en el muro de la escena 9"
+    check: "Tu antes → después aparece en el muro de la escena 15"
 ---
 
 ## Clase 2 · Más poder: Cortex y Graphify
@@ -145,7 +145,19 @@ git ls-files | xargs cat 2>/dev/null | wc -c     # leer todo
 graphify affected "<función>" | wc -c             # preguntar al grafo
 ```
 
-Publica tu **proyecto entero → consulta** en la escena 9.
+Publica tu **proyecto entero → consulta** en la escena 15.
+
+### Tu agente contra su versión anterior
+
+Menos caracteres no prueba que el agente responda mejor. Corre **las mismas tres pruebas** en una sesión
+nueva sin Cortex ni Graphify y en otra que empiece con `cortex_brief` y use `graphify`:
+
+1. «¿Por qué el proyecto hace X así?» (una decisión)
+2. «¿Qué se rompe si cambio `tuFuncion`?»
+3. «Cambia algo pequeño en `tuFuncion` y dime qué probaste»
+
+Compara **éxito, calidad, errores, robustez y explicación** (¿dice de dónde lo sacó?). Una respuesta más
+larga no es una respuesta mejor; y «igual» con evidencia también es un resultado.
 
 ## Para la clase 3
 

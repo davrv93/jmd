@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El plan defectuoso</title>
+<!-- Reto de g8-02, antes de «Plan de trabajo con criterios» (06). Marcar fallas es local; al revisar aparece
+     un voto del grupo (g802-plan-grave) y el muro (g802-plan-arreglo) recoge la tarea que cada uno corrige.
+     Votos y muro con g801.js (POST/GET …/voto[s], …/muro). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/g801.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .28); }
+.esc-titulo { font-size: 1.7em; }
+.pd-cols { display: grid; grid-template-columns: 1.05fr .95fr; gap: 1.2vw; align-items: start; }
+.pd-plan { padding: .7em 1em; display: grid; gap: .45em; min-width: 0; }
+.pd-plan h2 { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: .6em; font: 700 .74em var(--mono); color: var(--muted); }
+.pd-md { margin: 0; padding: 0; list-style: none; display: grid; gap: .15em; font: 600 .76em/1.45 var(--mono); }
+.pd-md li::before { content: "- [ ] "; color: var(--muted); }
+.pd-md + p { margin: 0; font: 600 .72em var(--mono); color: var(--bad); }
+.pd-tabla { width: 100%; border-collapse: collapse; font-size: .6em; line-height: 1.3; }
+.pd-tabla th, .pd-tabla td { text-align: left; vertical-align: top; padding: .32em .45em; border-bottom: 1px solid var(--line); }
+.pd-tabla thead th { color: var(--muted); font-size: .92em; text-transform: uppercase; letter-spacing: .05em; }
+.pd-tabla td:first-child { font-weight: 700; white-space: nowrap; }
+.pd-tabla code { font: 600 .95em var(--mono); color: var(--accent); }
+.pd-ob { color: var(--ok); font-weight: 700; } .pd-op { color: var(--gold); font-weight: 700; }
+.pd-cambio { font: 700 .62em/1 system-ui, sans-serif; padding: .4em .8em; border-radius: 999px; border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent); background: var(--s1); color: var(--accent); cursor: pointer; min-height: 32px; }
+.pd-der, .pd-izq { display: grid; gap: 1vh; min-width: 0; }
+.esc .k-voto button .n { white-space: nowrap; }
+.pd-fallas { display: grid; grid-template-columns: 1fr 1fr; gap: .35em; }
+.pd-fallas button { text-align: left; min-height: 44px; padding: .4em .7em; border-radius: .6em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); font: 600 .66em/1.25 system-ui, -apple-system, sans-serif; cursor: pointer; }
+.pd-fallas button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
+.pd-fallas button[aria-pressed="true"]::before { content: "✓ "; color: var(--accent); font-weight: 800; }
+.pd-revisado .pd-fallas button.real { border-color: var(--ok); background: var(--ok-bg); }
+.pd-revisado .pd-fallas button.real::after { content: " · falla real"; color: var(--ok); font-weight: 800; }
+.pd-revisado .pd-fallas button.no[aria-pressed="true"] { border-color: var(--bad); background: var(--bad-bg); }
+.pd-revisado .pd-fallas button.no[aria-pressed="true"]::after { content: " · no es"; color: var(--bad); font-weight: 800; }
+.pd-acciones { display: flex; align-items: center; gap: .7em; flex-wrap: wrap; }
+.pd-res { margin: 0; font-size: .68em; color: var(--fg); }
+.pd-fallas button:focus-visible, .pd-cambio:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+.pd-cols .k-ops { grid-template-columns: repeat(3, 1fr); }
+.pd-muro .k-lista { max-height: 3.4em; }
+.pd-muro .k-q { font-size: .76em; }
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  .pd-cols, .pd-fallas, .pd-cols .k-ops { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <g>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Grupo 8 · E05b</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Reto: el plan <em>defectuoso</em></h1>
+      <p class="esc-sub a-in" style="--d:.12s">Un agente escribió este plan para el Robo de la cafetería. Tiene tres fallas que lo hacen imposible de verificar. Encuéntralas y arregla una tarea.</p>
+    </div>
+
+    <div class="pd-cols">
+      <div class="pd-izq">
+      <section class="esc-card pd-plan">
+        <h2><span id="pd-tit">PLAN_TRABAJO.md · versión del agente</span><button type="button" class="pd-cambio" id="pd-cambio" hidden aria-pressed="false">Ver el plan corregido</button></h2>
+        <div id="pd-malo">
+          <ul class="pd-md">
+            <li>T1 Cargar el corpus</li>
+            <li>T2 Nombre, saludo y ánimo</li>
+            <li>T3 Conectar el chat al modelo</li>
+            <li>T4 Micrófono</li>
+            <li>T5 Flyer</li>
+            <li>T6 Entregar</li>
+          </ul>
+          <p>Listo cuando todo funcione.</p>
+        </div>
+        <table class="pd-tabla" id="pd-bueno" hidden>
+          <thead><tr><th scope="col">Tarea</th><th scope="col">Prioridad</th><th scope="col">Hecho cuando…</th><th scope="col">Si falla…</th></tr></thead>
+          <tbody>
+            <tr><td>T1 Corpus</td><td class="pd-ob">Obligatoria</td><td>Responde 3 preguntas de <code>faq.json</code></td><td>Valida el JSON y vuelve a cargar</td></tr>
+            <tr><td>T2 Saludo</td><td class="pd-ob">Obligatoria</td><td>El saludo dice el nombre del negocio</td><td>Usa el saludo del ejemplo</td></tr>
+            <tr><td>T3 Chat</td><td class="pd-ob">Obligatoria</td><td><code>POST /api/chat</code> responde 200</td><td>Contesta con <code>faq.json</code> y dice «No estoy seguro»</td></tr>
+            <tr><td>T4 Micrófono</td><td class="pd-op">Opcional</td><td>Dictas 3 s y aparece el texto</td><td>Sigue por texto y anótalo</td></tr>
+            <tr><td>T5 Flyer</td><td class="pd-op">Opcional</td><td>Fecha, hora y precio bien escritos</td><td>Flyer sin imagen generada</td></tr>
+            <tr><td>T6 Pruebas</td><td class="pd-ob">Obligatoria</td><td>Otra persona hace 3 pruebas y anotas</td><td>Anota el hallazgo con su severidad</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <div class="k-caja k-muro pd-muro" data-muro="g802-plan-arreglo" data-max="3"
+           data-pregunta="Arregla UNA tarea a tu manera: prioridad, «hecho cuando» y «si falla»."
+           data-placeholder="T4 Micrófono · opcional · hecho cuando… · si falla…"></div>
+      </div>
+
+      <div class="pd-der" id="pd-der">
+        <div class="k-caja">
+          <p class="k-q">1 · Marca las tres fallas</p>
+          <div class="pd-fallas" id="pd-fallas">
+            <button type="button" class="real" data-f="pruebas" aria-pressed="false">Ninguna tarea dice cómo comprobar que quedó hecha</button>
+            <button type="button" class="no" data-f="largo" aria-pressed="false">Tiene demasiadas tareas</button>
+            <button type="button" class="real" data-f="prioridad" aria-pressed="false">Todo pesa igual: no separa obligatorio de opcional</button>
+            <button type="button" class="no" data-f="ingles" aria-pressed="false">Debería estar escrito en inglés</button>
+            <button type="button" class="no" data-f="emojis" aria-pressed="false">Le faltan emojis y colores</button>
+            <button type="button" class="real" data-f="fallos" aria-pressed="false">No dice qué hacer si algo falla</button>
+          </div>
+          <div class="pd-acciones"><button type="button" class="k-btn" id="pd-revisar">Revisar</button><p class="pd-res" id="pd-res" aria-live="polite">Marca hasta tres.</p></div>
+        </div>
+        <div class="k-caja k-voto" data-voto="g802-plan-grave" id="pd-voto" hidden>
+          <p class="k-q">2 · ¿Cuál falla te costaría más en la demo?</p>
+          <div class="k-ops">
+            <button data-op="sin-pruebas">Sin pruebas</button>
+            <button data-op="sin-prioridad">Sin prioridad</button>
+            <button data-op="sin-plan-b">Sin plan B</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">En la siguiente escena el agente arma tu plan con estos tres criterios.</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/g801.js"></script>
+<script>
+/* Fallas: selección local (hasta tres), «Revisar» marca cuáles son reales y abre el voto y el plan corregido. */
+(function () {
+  var G = window.G8;
+  var botones = Array.prototype.slice.call(document.querySelectorAll("#pd-fallas button"));
+  var der = document.getElementById("pd-der"), res = document.getElementById("pd-res");
+  var voto = document.getElementById("pd-voto"), cambio = document.getElementById("pd-cambio");
+  var malo = document.getElementById("pd-malo"), bueno = document.getElementById("pd-bueno"), tit = document.getElementById("pd-tit");
+  var est = G.leer("g802-plan-fallas", { marcadas: [], revisado: false }) || { marcadas: [], revisado: false };
+  function marcadas() { return botones.filter(function (b) { return b.getAttribute("aria-pressed") === "true"; }); }
+  function revisar(celebrar) {
+    var m = marcadas(), bien = m.filter(function (b) { return b.classList.contains("real"); }).length;
+    der.classList.add("pd-revisado");
+    res.textContent = bien === 3 ? "¡Las tres! Ahora vota y arregla una tarea a la izquierda." : bien + " de 3. Las reales, en verde: el número de tareas, el idioma o los emojis no hacen verificable un plan.";
+    voto.hidden = false; cambio.hidden = false;
+    if (celebrar && bien === 3) G.celebrar(res);
+  }
+  botones.forEach(function (b) {
+    if (est.marcadas.indexOf(b.getAttribute("data-f")) >= 0) b.setAttribute("aria-pressed", "true");
+    b.addEventListener("click", function () {
+      var on = b.getAttribute("aria-pressed") === "true";
+      if (!on && marcadas().length >= 3) { G.toast("Son tres: quita una antes de marcar otra."); return; }
+      b.setAttribute("aria-pressed", String(!on));
+      est.marcadas = marcadas().map(function (x) { return x.getAttribute("data-f"); });
+      G.guardar("g802-plan-fallas", est);
+      if (est.revisado) revisar(false);
+    });
+  });
+  document.getElementById("pd-revisar").addEventListener("click", function () {
+    if (!marcadas().length) { G.toast("Marca al menos una falla antes de revisar."); return; }
+    est.revisado = true; G.guardar("g802-plan-fallas", est); revisar(true);
+  });
+  cambio.addEventListener("click", function () {
+    var ver = cambio.getAttribute("aria-pressed") !== "true";
+    cambio.setAttribute("aria-pressed", String(ver));
+    cambio.textContent = ver ? "Ver la versión del agente" : "Ver el plan corregido";
+    tit.textContent = ver ? "PLAN_TRABAJO.md · corregido" : "PLAN_TRABAJO.md · versión del agente";
+    malo.hidden = ver; bueno.hidden = !ver;
+  });
+  if (est.revisado) revisar(false);
+})();
+</script>
+</body>
+</html>

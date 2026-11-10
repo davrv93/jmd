@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Conexiones</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<!--
+  «Conexiones», en pareja. Cada pareja ordena seis tarjetas: Entrada → Agente → Herramienta → Proceso →
+  Validación → Salida, y la envía como voto (clave «06b-cadena», opción = códigos «e-a-h-p-v-s»). El panel
+  del grupo cuenta cuántas cadenas llegaron completas y cuál es la más repetida.
+  Pareja: GET /pareja (el instructor pulsa «Emparejar en grupos» en su panel; si no, cada uno juega solo).
+  Falla sorpresa: el instructor (solo staff: lo exige el servidor en POST /mensaje) pulsa una falla en esta
+  escena. Viaja como mensaje del LIVE «💥 Falla sorpresa · <Eslabón>: …», que todos ven como aviso; la escena lo
+  lee de GET /api/v1/live/<lección> cada 4 s (y del postMessage «estado», validando el origen) y abre la
+  pregunta «06b-falla». «Quitar la falla» borra el mensaje. El caso de la tienda es una simulación didáctica.
+-->
+<style id="esc-propio">
+.c6 { display: grid; grid-template-columns: .9fr 1.1fr .95fr; gap: 1.4vw; align-items: start; }
+.c6-pz { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; }
+.c6-pz button, .c6-ca button { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: .5em; font: 700 .7em/1.2 system-ui, sans-serif; padding: .6em .8em; border-radius: .7em; background: var(--s2); border: 1px solid var(--line2); color: var(--fg); cursor: pointer; min-height: 44px; }
+.c6-pz button:focus-visible, .c6-ca button:focus-visible { outline: 3px solid var(--gold); outline-offset: 1px; }
+.c6-pz button:disabled { opacity: .3; cursor: default; }
+.c6-pz .ico, .c6-ca .ico { font-family: "Apple Color Emoji","Segoe UI Emoji",sans-serif; }
+.c6-ca { list-style: none; margin: 0; padding: 0; display: grid; gap: .35em; counter-reset: n; }
+.c6-ca li { display: grid; grid-template-columns: 1.6em 1fr; gap: .4em; align-items: center; }
+.c6-ca li::before { counter-increment: n; content: counter(n); font: 800 .7em var(--mono); color: var(--muted); text-align: right; }
+.c6-ca .vac { min-height: 44px; border: 2px dashed var(--line2); border-radius: .7em; }
+.c6-ca button { width: 100%; background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.c6-ca small { display: block; font-weight: 500; color: var(--muted); font-size: .86em; }
+.c6-ca .bien button { background: var(--ok-bg); border-color: var(--ok); }
+.c6-pareja { font-size: .66em; margin: 0 0 .5em; padding: .45em .7em; border-radius: .6em; background: var(--info-bg); }
+.c6-g { font-size: .7em; display: grid; gap: .3em; }
+.c6-g .big { font: 900 2.2em/1 var(--mono); color: var(--ok); }
+.c6-falla { border: 2px solid var(--bad); background: var(--bad-bg); border-radius: 1em; padding: .8em 1em; }
+.c6-falla h2 { margin: 0 0 .3em; font-size: .9em; color: var(--bad); }
+.c6-falla p { margin: 0 0 .4em; font-size: .7em; }
+.c6-staff { margin-top: .6em; padding: .6em; border-radius: .8em; border: 1px dashed var(--warn); display: grid; gap: .35em; }
+.c6-staff .pt-btn { font-size: .62em; min-height: 38px; }
+@media (prefers-reduced-motion: no-preference) { .c6-falla { animation: c6-sacude .5s ease-out 1; } }
+@keyframes c6-sacude { 0%, 100% { transform: none; } 30% { transform: translateX(-6px); } 60% { transform: translateX(6px); } }
+@media (max-width: 1100px) { .c6 { grid-template-columns: 1fr 1fr; } .c6 > :last-child { grid-column: 1 / -1; } }
+@media (max-width: 860px) { .c6 { grid-template-columns: 1fr; } .c6-pz button, .c6-ca button { font-size: .92em; } .c6-pareja, .c6-g, .c6-falla p { font-size: .9em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 150 L1330 110 L1390 190 L1450 160"/>
+  <g><circle class="eo" cx="1180" cy="92" r="4.5"/><circle class="e" cx="1252" cy="150" r="5"/><circle class="eg" cx="1330" cy="110" r="4"/><circle class="eo" cx="1390" cy="190" r="5"/><circle class="e" cx="1450" cy="160" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">PT-02 · 11 / 18</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Conexiones: <em>arma la cadena</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">En pareja. Caso: el descuento de <code>cobrar()</code> (simulación). Toca las piezas en orden.</p>
+    </div>
+    <div class="c6">
+      <div class="esc-card a-in" style="--d:.2s">
+        <p class="c6-pareja" id="pareja">Buscando tu pareja…</p>
+        <span class="pt-et">Las piezas</span>
+        <div class="c6-pz" id="piezas"></div>
+        <p class="pt-nota" style="margin-top:.5em">Toca una pieza de la cadena para devolverla.</p>
+      </div>
+      <div class="esc-card a-in" style="--d:.3s">
+        <span class="pt-et">Su cadena</span>
+        <ol class="c6-ca" id="cadena" aria-live="polite"></ol>
+        <div class="pt-fila" style="margin-top:.5em">
+          <button type="button" class="pt-btn" id="enviar" disabled>Enviar la cadena</button>
+          <button type="button" class="pt-btn sec" id="limpiar">Empezar de nuevo</button>
+        </div>
+        <p class="pt-nota" id="msg" style="margin-top:.3em"></p>
+      </div>
+      <div>
+        <div class="esc-card a-in" style="--d:.4s" id="grupo">
+          <span class="pt-et">El grupo</span>
+          <div class="c6-g"><span class="big" id="pct">—</span><span id="g-txt">Cuando las parejas envíen, aquí ves cuántas cadenas llegaron completas.</span><span id="g-top"></span></div>
+          <button type="button" class="pt-btn sec" id="ver" style="margin-top:.5em">Ver la cadena del instructor</button>
+        </div>
+        <div class="c6-falla" id="falla" hidden style="margin-top:.8em" role="alert">
+          <h2>💥 Falla sorpresa</h2>
+          <p id="falla-txt"></p>
+          <div id="falla-voto"></div>
+          <button type="button" class="pt-btn sec" id="falla-ver" style="margin-top:.4em">Ver la lectura</button>
+          <p id="falla-lect" hidden style="margin-top:.4em"></p>
+        </div>
+        <div class="c6-staff" id="staff" hidden>
+          <span class="pt-et">Solo instructor · inyectar falla</span>
+          <button type="button" class="pt-btn sec" data-falla="Herramienta">Herramienta: no hay grafo</button>
+          <button type="button" class="pt-btn sec" data-falla="Validación">Validación: no hay pruebas</button>
+          <button type="button" class="pt-btn sec" data-falla="Entrada">Entrada: pedido ambiguo</button>
+          <button type="button" class="pt-btn" data-falla="">Quitar la falla</button>
+          <p class="pt-nota" id="staff-msg">Sale como aviso para toda la clase. Quítala antes de cambiar de escena.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Acuerden el orden en pareja · 6 min</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var BIEN = ["e", "a", "h", "p", "v", "s"];
+var P = {
+  e: { n: "Entrada", ico: "📥", ej: "el pedido + la decisión guardada en Cortex" },
+  a: { n: "Agente", ico: "🤖", ej: "lee cortex_brief y planifica" },
+  h: { n: "Herramienta", ico: "🛠️", ej: "graphify affected \"cobrar\"" },
+  p: { n: "Proceso", ico: "⚙️", ej: "cambia cobrar() y quienes la llaman" },
+  v: { n: "Validación", ico: "✅", ej: "corre las pruebas de cobro y reembolso" },
+  s: { n: "Salida", ico: "📤", ej: "el cambio + qué probó + qué no" }
+};
+var MEZCLA = ["v", "e", "s", "h", "p", "a"];
+var cadena = PT.leer("conexiones", []) || [];
+var revelado = false;
+
+function pintar() {
+  var pz = $("piezas"); pz.textContent = "";
+  MEZCLA.forEach(function (k) {
+    var b = PT.el("button"); b.type = "button"; b.disabled = cadena.indexOf(k) >= 0;
+    b.appendChild(PT.el("span", "ico", P[k].ico)); b.appendChild(PT.el("span", "", P[k].n));
+    b.addEventListener("click", function () { if (cadena.length < 6) { cadena.push(k); guardar(); } });
+    pz.appendChild(b);
+  });
+  var ca = $("cadena"); ca.textContent = "";
+  for (var i = 0; i < 6; i++) {
+    var li = PT.el("li"), k = cadena[i];
+    if (k) {
+      if (revelado && k === BIEN[i]) li.className = "bien";
+      var b = PT.el("button"); b.type = "button"; b.setAttribute("aria-label", "Quitar " + P[k].n);
+      var t = PT.el("span"); t.appendChild(PT.el("span", "", P[k].ico + " " + P[k].n)); t.appendChild(PT.el("small", "", P[k].ej));
+      b.appendChild(t);
+      (function (j) { b.addEventListener("click", function () { cadena.splice(j, 1); guardar(); }); })(i);
+      li.appendChild(b);
+    } else li.appendChild(PT.el("span", "vac"));
+    ca.appendChild(li);
+  }
+  $("enviar").disabled = cadena.length !== 6;
+}
+function guardar() { PT.guardar("conexiones", cadena); pintar(); }
+$("limpiar").addEventListener("click", function () { cadena = []; guardar(); $("msg").textContent = ""; });
+
+function pintarGrupo(c) {
+  var tot = c && +c.total > 0 ? +c.total : 0;
+  if (!tot) return;
+  var op = c.opciones || {}, bien = +op[BIEN.join("-")] || 0, top = "", max = 0;
+  Object.keys(op).forEach(function (k) { if (op[k] > max) { max = op[k]; top = k; } });
+  $("pct").textContent = Math.round(bien / tot * 100) + " %";
+  $("g-txt").textContent = bien + " de " + tot + (tot === 1 ? " envío" : " envíos") + " con la cadena completa.";
+  $("g-top").textContent = "La más repetida: " + top.split("-").map(function (k) { return P[k] ? P[k].n : k; }).join(" → ") + " (" + max + ")";
+}
+function traerGrupo() { PT.pedir("/votos?escena=06b-cadena").then(function (r) { if (r.ok) pintarGrupo(r.datos); }); }
+$("enviar").addEventListener("click", function () {
+  var b = this; b.disabled = true;
+  PT.pedir("/voto", { escena: "06b-cadena", opcion: cadena.join("-") }).then(function (r) {
+    $("msg").textContent = r.ok ? "✓ Enviada. Puedes cambiarla y enviarla otra vez." : "Guardada aquí (se envía en vivo).";
+    if (r.ok) pintarGrupo(r.datos);
+    b.disabled = cadena.length !== 6;
+  });
+});
+$("ver").addEventListener("click", function () { revelado = true; pintar(); this.textContent = "Verde = en su lugar: " + BIEN.map(function (k) { return P[k].n; }).join(" → "); this.disabled = true; });
+
+PT.pedir("/pareja").then(function (r) {
+  var con = r.ok && r.datos && Array.isArray(r.datos.con) ? r.datos.con : [];
+  $("pareja").textContent = con.length ? "Tu pareja: " + con.map(function (x) { return x.nombre || "alguien"; }).join(" y ") + ". Acuerden y envíen una cadena cada uno." : "Sin pareja asignada: júntate con quien tengas al lado o juega solo.";
+});
+
+/* ---- Falla sorpresa ---- */
+var LECT = {
+  "Herramienta": "El agente no debe inventar quién llama a cobrar(). Herramienta: corre «graphify update .» o pide permiso. Si no pudo, la Salida lo dice.",
+  "Validación": "Sin validación, «listo» no vale nada. La Salida debe decir «no probado: reembolso» y pedir esa prueba antes de subir.",
+  "Entrada": "Ningún agente arregla un pedido ambiguo. Entrada: cortex_search busca la decisión; si no está, cortex_ask pregunta a quien la tomó."
+};
+var TEXTOS = {
+  "Herramienta": "💥 Falla sorpresa · Herramienta: no existe graphify-out/. El grafo nunca se construyó.",
+  "Validación": "💥 Falla sorpresa · Validación: el proyecto no tiene pruebas de reembolso.",
+  "Entrada": "💥 Falla sorpresa · Entrada: nadie definió qué es «cliente frecuente»."
+};
+var fallaActual = null, votoFalla = null;
+function verMensaje(m) {
+  var x = /^💥 Falla sorpresa · ([^:]+):/.exec(m || "");
+  var id = x && LECT[x[1]] ? x[1] : null;
+  if (id === fallaActual) return;
+  fallaActual = id;
+  $("falla").hidden = !id;
+  if (!id) return;
+  $("falla-txt").textContent = m.replace(/^💥 Falla sorpresa · /, "");
+  $("falla-lect").hidden = true; $("falla-ver").hidden = false;
+  $("falla-lect").textContent = LECT[id];
+  if (votoFalla) votoFalla.detener();
+  votoFalla = PT.votos($("falla-voto"), "06b-falla", "¿Qué eslabón la detiene antes de la Salida?", [
+    { id: "entrada", t: "📥 Entrada" }, { id: "agente", t: "🤖 Agente" }, { id: "herramienta", t: "🛠️ Herramienta" }, { id: "validacion", t: "✅ Validación" }
+  ]);
+}
+$("falla-ver").addEventListener("click", function () { $("falla-lect").hidden = false; this.hidden = true; });
+function traerEstado() { PT.pedir("").then(function (r) { if (r.ok && r.datos && typeof r.datos.mensaje === "string") verMensaje(r.datos.mensaje); }); }
+window.addEventListener("message", function (ev) {
+  if (ev.origin !== location.origin) return;
+  var d = ev.data;
+  if (d && d.tipo === "estado" && d.estado && typeof d.estado.mensaje === "string") verMensaje(d.estado.mensaje);
+});
+
+PT.yo().then(function (me) {
+  var roles = (me && me.roles) || [];
+  if (roles.indexOf("instructor") < 0 && roles.indexOf("admin") < 0) return;
+  $("staff").hidden = false;
+  Array.prototype.forEach.call($("staff").querySelectorAll("button[data-falla]"), function (b) {
+    b.addEventListener("click", function () {
+      var id = b.getAttribute("data-falla"), texto = id ? TEXTOS[id] : "";
+      PT.pedir("/votos?escena=06b-falla", null, "DELETE").then(function () {
+        return PT.pedir("/mensaje", { texto: texto, para: "todos" });
+      }).then(function (r) {
+        $("staff-msg").textContent = r.ok ? (id ? "✓ Falla enviada a toda la clase." : "✓ Falla quitada.") : "No se pudo enviar (¿la clase está iniciada?).";
+        traerEstado();
+      });
+    });
+  });
+});
+
+pintar(); traerGrupo(); traerEstado();
+setInterval(function () { traerGrupo(); traerEstado(); }, 4000);
+</script>
+</body>
+</html>

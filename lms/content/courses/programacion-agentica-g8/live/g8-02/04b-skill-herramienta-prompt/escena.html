@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill, herramienta o prompt</title>
+<!-- Juego de cartas de g8-02, después de «Skills y modo piedra» (04). Cada carta es un voto del grupo
+     (POST …/voto y GET …/votos, claves g802-carta-1..4) con la utilidad pedir() de g801.js. El veredicto y la
+     explicación salen al elegir; «La diferencia en operación» se abre con un botón (el instructor lo proyecta). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/g801.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .28); }
+.esc-titulo { font-size: 1.7em; }
+.sh-barra { display: flex; align-items: center; gap: .8em; flex-wrap: wrap; }
+.sh-cuenta { font: 700 .74em var(--mono); color: var(--muted); }
+.sh-cartas { display: grid; grid-template-columns: 1fr 1fr; gap: 1vh 1.1vw; }
+.sh-carta { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .6em .9em .65em; box-shadow: var(--card-shadow); display: grid; gap: .4em; align-content: start; min-width: 0; border-left: 5px solid var(--line2); }
+.sh-carta.ok { border-left-color: var(--ok); }
+.sh-carta.casi { border-left-color: var(--gold); }
+.sh-carta.mal { border-left-color: var(--bad); }
+.sh-n { margin: 0; font-size: .6em; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sh-txt { margin: 0; font-size: .86em; font-weight: 700; line-height: 1.3; }
+.sh-ops { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35em; }
+.sh-ops button { position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; gap: .4em; min-height: 40px; padding: .35em .7em; border-radius: .6em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); font: 700 .7em/1.1 system-ui, -apple-system, sans-serif; cursor: pointer; }
+.sh-ops button::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p, 0%); background: var(--accent-bg); transition: width .5s ease-out; }
+.sh-ops button span { position: relative; }
+.sh-ops button .n { font: 700 .95em var(--mono); color: var(--muted); }
+.sh-ops button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+.sh-ops button.es-ok { border-color: var(--ok); }
+.sh-ops button.es-ok::before { background: var(--ok-bg); }
+.sh-ops button:focus-visible, .sh-ver:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+.sh-veredicto { margin: 0; font-size: .68em; line-height: 1.35; padding: .35em .6em; border-radius: .5em; background: var(--s2); }
+.sh-carta.ok .sh-veredicto { background: var(--ok-bg); }
+.sh-carta.casi .sh-veredicto { background: var(--gold-bg); }
+.sh-carta.mal .sh-veredicto { background: var(--bad-bg); }
+.sh-veredicto b { margin-right: .3em; }
+.sh-dif { display: grid; gap: 1vh; }
+.sh-tabla { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .7em; background: var(--s1); border: 1px solid var(--line); border-radius: 1em; overflow: hidden; box-shadow: var(--card-shadow); }
+.sh-tabla th, .sh-tabla td { text-align: left; vertical-align: top; padding: .45em .75em; border-bottom: 1px solid var(--line); line-height: 1.35; }
+.sh-tabla tr:last-child th, .sh-tabla tr:last-child td { border-bottom: 0; }
+.sh-tabla thead th { font-size: 1.05em; background: var(--s2); }
+.sh-tabla thead th:nth-child(2) { color: var(--info); } .sh-tabla thead th:nth-child(3) { color: var(--warn); } .sh-tabla thead th:nth-child(4) { color: var(--ok); }
+.sh-tabla tbody th { color: var(--muted); font-weight: 700; width: 17%; }
+.sh-tabla code { font: 600 .95em var(--mono); color: var(--accent); }
+.sh-regla { margin: 0; font-size: .82em; font-weight: 800; padding-left: .7em; border-left: 5px solid var(--fase, var(--accent)); }
+.sh-regla em { font-style: normal; color: var(--accent); }
+.sh-ver { font: 700 .72em/1.1 system-ui, -apple-system, sans-serif; min-height: 40px; padding: .5em 1em; border-radius: 999px; border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent); background: var(--s1); color: var(--accent); cursor: pointer; }
+.sh-ver[aria-expanded="true"] { background: var(--accent); color: var(--on-accent); }
+@media (prefers-reduced-motion: reduce) { .sh-ops button::before { transition: none; } }
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  .sh-cartas { grid-template-columns: 1fr; }
+  .sh-tabla { font-size: .62em; }
+}
+.esc .k-voto button .n { white-space: nowrap; }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g>
+    <circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Grupo 8 · E04b</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">¿Skill, herramienta o <em>simple prompt</em>?</h1>
+      <p class="esc-sub a-in" style="--d:.12s">Cuatro cartas. Elige qué necesita cada una: ves al instante qué eligió el grupo y por qué.</p>
+    </div>
+
+    <div class="sh-barra">
+      <button type="button" class="sh-ver" id="sh-ver" aria-expanded="false" aria-controls="sh-dif">Ver la diferencia en operación</button>
+      <span class="sh-cuenta" id="sh-cuenta" aria-live="polite">0 de 4 elegidas</span>
+    </div>
+
+    <div class="sh-cartas" id="sh-cartas">
+      <article class="sh-carta" data-carta="1">
+        <p class="sh-n">Carta 1</p>
+        <p class="sh-txt">«Resume un documento»</p>
+        <div class="sh-ops" role="group" aria-label="Carta 1"><button type="button" data-op="prompt">Prompt</button><button type="button" data-op="herramienta">Herramienta</button><button type="button" data-op="skill">Skill</button></div>
+        <p class="sh-veredicto" hidden></p>
+      </article>
+      <article class="sh-carta" data-carta="2">
+        <p class="sh-n">Carta 2</p>
+        <p class="sh-txt">«Lee un archivo autorizado, extrae requisitos, genera una matriz y revisa el resultado»</p>
+        <div class="sh-ops" role="group" aria-label="Carta 2"><button type="button" data-op="prompt">Prompt</button><button type="button" data-op="herramienta">Herramienta</button><button type="button" data-op="skill">Skill</button></div>
+        <p class="sh-veredicto" hidden></p>
+      </article>
+      <article class="sh-carta" data-carta="3">
+        <p class="sh-n">Carta 3</p>
+        <p class="sh-txt">«Responde amablemente»</p>
+        <div class="sh-ops" role="group" aria-label="Carta 3"><button type="button" data-op="prompt">Prompt</button><button type="button" data-op="herramienta">Herramienta</button><button type="button" data-op="skill">Skill</button></div>
+        <p class="sh-veredicto" hidden></p>
+      </article>
+      <article class="sh-carta" data-carta="4">
+        <p class="sh-n">Carta 4</p>
+        <p class="sh-txt">«Ejecuta una secuencia reutilizable con entradas, salidas, validaciones y criterios de error»</p>
+        <div class="sh-ops" role="group" aria-label="Carta 4"><button type="button" data-op="prompt">Prompt</button><button type="button" data-op="herramienta">Herramienta</button><button type="button" data-op="skill">Skill</button></div>
+        <p class="sh-veredicto" hidden></p>
+      </article>
+    </div>
+
+    <div class="sh-dif" id="sh-dif" hidden>
+      <table class="sh-tabla">
+        <thead><tr><th scope="col">En operación</th><th scope="col">Prompt</th><th scope="col">Herramienta</th><th scope="col">Skill</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Qué es</th><td>Una instrucción al modelo</td><td>Una función que el agente llama, con permiso</td><td>Un procedimiento empaquetado: <code>SKILL.md</code> y sus scripts</td></tr>
+          <tr><th scope="row">¿Actúa fuera del chat?</th><td>No: usa lo que ya está en el contexto</td><td>Sí: lee, consulta, guarda o envía</td><td>Sí, cuando usa herramientas</td></tr>
+          <tr><th scope="row">¿Se repite igual?</th><td>Se reescribe cada vez</td><td>Hace una acción cuando la llaman</td><td>Sí: mismas entradas, mismos pasos, mismas salidas</td></tr>
+          <tr><th scope="row">¿Valida y maneja errores?</th><td>No por sí solo</td><td>Devuelve el error; no decide qué sigue</td><td>Sí: trae cómo se valida y qué hacer si falla</td></tr>
+          <tr><th scope="row">En tu Robo</th><td>«Responde cálido, como barista»</td><td><code>herramientas.py</code>: lo que tu Robo puede hacer</td><td><code>piedra</code>, <code>plan-de-trabajo</code>, <code>s2-robo-estilos</code></td></tr>
+        </tbody>
+      </table>
+      <p class="sh-regla">¿Solo hablar? <em>prompt</em>. ¿Tocar algo fuera del chat? <em>herramienta</em>. ¿Repetir un procedimiento con controles? <em>skill</em>.</p>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Puedes cambiar tu elección: cuenta la última.</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/g801.js"></script>
+<script>
+/* Cartas: voto por carta (clave g802-carta-N) + veredicto local + % del grupo cada 6 s. */
+(function () {
+  var G = window.G8, NOMBRE = { prompt: "Prompt", herramienta: "Herramienta", skill: "Skill" };
+  var CLAVE = {
+    1: { ok: "prompt",
+      prompt: "Con el texto ya en el chat basta una instrucción: no toca nada fuera y no hay pasos fijos que repetir.",
+      herramienta: "Solo hace falta una herramienta si hay que ir a buscar el archivo; resumirlo sigue siendo un prompt.",
+      skill: "Es demasiado: un resumen suelto no necesita un procedimiento con validaciones. Basta un prompt." },
+    2: { ok: "herramienta", casi: "skill",
+      herramienta: "La pieza que no puede faltar: sin permiso para abrir ese archivo, el modelo ni siquiera empieza.",
+      skill: "También vale si ese recorrido se repite: sería un skill que usa una herramienta. Sin la herramienta, no arranca.",
+      prompt: "No alcanza: un prompt no puede abrir un archivo. Hace falta una herramienta con permiso." },
+    3: { ok: "prompt",
+      prompt: "Es tono, no acción: va en la instrucción del sistema de tu Robo.",
+      herramienta: "Una herramienta actúa fuera del chat; la amabilidad no se consulta en ninguna parte. Es un prompt.",
+      skill: "Sobrediseño: no hay pasos ni validaciones. Una línea en el prompt del sistema basta." },
+    4: { ok: "skill",
+      skill: "Es la definición operativa de un skill: entradas, pasos, salidas, cómo se valida y qué hacer si falla. Como piedra o plan-de-trabajo.",
+      herramienta: "Una herramienta hace UNA acción y devuelve error si falla; no decide el paso siguiente. La secuencia con controles es un skill.",
+      prompt: "Un prompt se reescribe cada vez y no trae validaciones. Lo que se repite igual, con controles, es un skill." }
+  };
+  var cartas = Array.prototype.slice.call(document.querySelectorAll(".sh-carta"));
+  var cuenta = document.getElementById("sh-cuenta");
+  var mias = G.leer("g802-cartas", {}) || {};
+  var conteos = {};
+
+  // Cada botón: barra del % del grupo (::before con --p), texto y número.
+  cartas.forEach(function (c) {
+    c.querySelectorAll("button[data-op]").forEach(function (b) {
+      var t = b.textContent; b.textContent = "";
+      var s1 = document.createElement("span"); s1.textContent = t;
+      var s2 = document.createElement("span"); s2.className = "n";
+      b.appendChild(s1); b.appendChild(s2); b.setAttribute("aria-pressed", "false");
+    });
+  });
+
+  function pintar(c) {
+    var n = c.getAttribute("data-carta"), k = CLAVE[n], mia = mias[n] || "", cn = conteos[n] || { total: 0, opciones: {} };
+    var total = cn.total || 0;
+    c.querySelectorAll("button[data-op]").forEach(function (b) {
+      var op = b.getAttribute("data-op"), v = (cn.opciones && cn.opciones[op]) || 0, pct = total ? Math.round(v * 100 / total) : 0;
+      b.setAttribute("aria-pressed", String(mia === op));
+      b.style.setProperty("--p", (mia ? pct : 0) + "%");
+      b.querySelector(".n").textContent = mia && total ? pct + " %" : "";
+      b.classList.toggle("es-ok", !!mia && op === k.ok);
+    });
+    var v = c.querySelector(".sh-veredicto");
+    c.classList.remove("ok", "casi", "mal");
+    if (!mia) { v.hidden = true; return; }
+    var estado = mia === k.ok ? "ok" : (mia === k.casi ? "casi" : "mal");
+    c.classList.add(estado);
+    v.hidden = false; v.textContent = "";
+    var b = document.createElement("b");
+    b.textContent = estado === "ok" ? "✓ " + NOMBRE[mia] + "." : (estado === "casi" ? "≈ " + NOMBRE[mia] + ", con matiz." : "✗ Mejor: " + NOMBRE[k.ok] + ".");
+    v.appendChild(b); v.appendChild(document.createTextNode(k[mia]));
+    v.appendChild(document.createTextNode(total ? "  · " + total + (total === 1 ? " voto" : " votos") + " del grupo" : ""));
+  }
+  function contar() {
+    var n = 0, bien = 0;
+    cartas.forEach(function (c) { var i = c.getAttribute("data-carta"); if (mias[i]) { n++; if (mias[i] === CLAVE[i].ok || mias[i] === CLAVE[i].casi) bien++; } });
+    cuenta.textContent = n < 4 ? n + " de 4 elegidas" : bien + " de 4 bien" + (bien === 4 ? " · ¡todas!" : "");
+    return bien;
+  }
+  function refrescar(c) {
+    var n = c.getAttribute("data-carta");
+    return G.pedir("/votos?escena=g802-carta-" + n).then(function (r) {
+      if (r.ok && r.datos && typeof r.datos.total === "number") { conteos[n] = r.datos; if (r.datos.mia && !mias[n]) { mias[n] = r.datos.mia; G.guardar("g802-cartas", mias); } }
+      pintar(c);
+    });
+  }
+  cartas.forEach(function (c) {
+    var n = c.getAttribute("data-carta");
+    c.querySelectorAll("button[data-op]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var op = b.getAttribute("data-op"), antes = contar();
+        mias[n] = op; G.guardar("g802-cartas", mias);
+        if (!conteos[n] || !conteos[n].total) { conteos[n] = { total: 1, opciones: {} }; conteos[n].opciones[op] = 1; }
+        pintar(c);
+        if (contar() === 4 && antes < 4) G.celebrar(cuenta);
+        G.pedir("/voto", { escena: "g802-carta-" + n, opcion: op }).then(function (r) {
+          if (r.ok && r.datos && typeof r.datos.total === "number") { conteos[n] = r.datos; pintar(c); }
+        });
+      });
+    });
+    pintar(c);
+  });
+  contar();
+  function ciclo() { if (document.visibilityState !== "hidden") cartas.forEach(refrescar); }
+  ciclo(); setInterval(ciclo, 6000);
+
+  // Vista «La diferencia en operación»: reemplaza las cartas para que todo quepa en la pantalla proyectada.
+  var ver = document.getElementById("sh-ver"), dif = document.getElementById("sh-dif"), zona = document.getElementById("sh-cartas");
+  ver.addEventListener("click", function () {
+    var abrir = ver.getAttribute("aria-expanded") !== "true";
+    ver.setAttribute("aria-expanded", String(abrir));
+    ver.textContent = abrir ? "Volver a las cartas" : "Ver la diferencia en operación";
+    dif.hidden = !abrir; zona.hidden = abrir;
+  });
+})();
+</script>
+</body>
+</html>

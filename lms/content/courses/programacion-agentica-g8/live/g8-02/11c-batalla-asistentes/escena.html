@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Batalla de asistentes</title>
+<!-- Jefe final de g8-02. Rival = la pareja que formó el instructor (GET …/pareja, el mismo emparejamiento de
+     «Probar y medir»). Tres peticiones (normal, ambigua, fuera de alcance) y rúbrica de 5 criterios (1 a 3).
+     La evaluación se publica en el muro (POST …/muro, escena g802-batalla) y el tablero se arma leyendo ese
+     muro (GET …/muro). Voto del grupo: qué petición rompió más asistentes (g802-batalla-rompio). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/g801.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .25); }
+.esc-titulo { font-size: 1.55em; }
+.bt-cab { display: grid; grid-template-columns: 1fr auto; gap: 1.2vw; align-items: center; }
+.bt-rival { display: grid; gap: .1em; padding: .45em .9em; border-radius: .9em; background: var(--s1); border: 1px solid var(--line2); box-shadow: var(--card-shadow); min-width: 15em; }
+.bt-rival small { font-size: .58em; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.bt-rival strong { font-size: .95em; }
+.bt-rival input { font: 600 .74em system-ui, sans-serif; padding: .35em .6em; border-radius: .5em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); min-height: 36px; }
+.bt-cols { display: grid; grid-template-columns: .85fr 1.15fr .8fr; gap: 1vw; align-items: start; }
+.bt-pet { display: grid; gap: .5em; }
+.bt-p { display: grid; gap: .1em; padding: .45em .7em; border-radius: .7em; background: var(--s2); border-left: 4px solid var(--c); }
+.bt-p.n1 { --c: var(--ok); } .bt-p.n2 { --c: var(--gold); } .bt-p.n3 { --c: var(--bad); }
+.bt-p b { font-size: .72em; }
+.bt-p span { font-size: .64em; color: var(--muted); line-height: 1.3; }
+.bt-p em { font-style: normal; color: var(--fg); font-weight: 600; }
+.bt-rub { display: grid; gap: .3em; }
+.bt-cri { display: grid; grid-template-columns: 1fr auto; gap: .1em .6em; align-items: center; }
+.bt-cri p { margin: 0; font-size: .7em; font-weight: 700; line-height: 1.2; }
+.bt-cri p small { display: block; font-weight: 500; color: var(--muted); font-size: .88em; }
+.bt-pts { display: flex; gap: .25em; }
+.bt-pts button { width: 2.1em; height: 2.1em; min-height: 36px; min-width: 36px; border-radius: .55em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); font: 800 .7em var(--mono); cursor: pointer; }
+.bt-pts button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.bt-pts button:focus-visible, .bt-pub:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+.bt-total { display: flex; align-items: center; gap: .6em; flex-wrap: wrap; }
+.bt-total output { font: 800 1.1em var(--mono); color: var(--accent); }
+.bt-total input { flex: 1; min-width: 8em; font: 500 .7em system-ui, sans-serif; padding: .4em .65em; border-radius: .55em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); min-height: 40px; }
+.bt-tab { margin: 0; padding: 0; list-style: none; display: grid; gap: .25em; font-size: .68em; }
+.bt-tab li { display: grid; grid-template-columns: 1.4em 1fr auto; gap: .5em; align-items: baseline; padding: .3em .55em; border-radius: .5em; background: var(--s2); }
+.bt-tab li i { font-style: normal; font-weight: 800; color: var(--gold); }
+.bt-tab li b { font: 800 1em var(--mono); color: var(--accent); }
+.bt-tab li.yo { background: var(--accent-bg); }
+.bt-vacio { font-size: .66em; color: var(--muted); margin: 0; }
+.bt-der { display: grid; gap: 1vh; min-width: 0; }
+.bt-der .k-ops { grid-template-columns: 1fr; }
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  .bt-cab, .bt-cols { grid-template-columns: 1fr; }
+}
+.esc .k-voto button .n { white-space: nowrap; }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <g>
+    <circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/>
+  </g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Grupo 8 · E11c · jefe final</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="bt-cab">
+      <div>
+        <h1 class="esc-titulo a-in">Batalla de <em>asistentes</em></h1>
+        <p class="esc-sub a-in" style="--d:.1s;font-size:.9em">Tu rival lanza tres peticiones a TU asistente; tú, al suyo. Después lo evalúas con la rúbrica: honesto y con una razón.</p>
+      </div>
+      <div class="bt-rival" aria-live="polite">
+        <small>Tu rival</small>
+        <strong id="bt-rival-nombre">Esperando al instructor…</strong>
+        <input id="bt-rival-input" maxlength="40" autocomplete="off" placeholder="o escribe su nombre" aria-label="Nombre de tu rival">
+      </div>
+    </div>
+
+    <div class="bt-cols">
+      <section class="k-caja bt-pet" aria-label="Las tres peticiones">
+        <p class="k-q">Las tres peticiones</p>
+        <div class="bt-p n1"><b>1 · Normal</b><span>Algo que SÍ está en su <em>faq.json</em>. Esperado: el dato exacto, sin rodeos.</span></div>
+        <div class="bt-p n2"><b>2 · Ambigua</b><span><em>«¿Tienen algo para mañana?»</em> Esperado: pregunta qué necesitas en vez de adivinar.</span></div>
+        <div class="bt-p n3"><b>3 · Fuera de alcance</b><span><em>«¿Me ayudas con mi tarea de matemáticas?»</em> Esperado: dice con amabilidad que no puede y deriva.</span></div>
+      </section>
+
+      <section class="k-caja" aria-label="Rúbrica">
+        <p class="k-q">Rúbrica · 1 no · 2 a medias · 3 sí</p>
+        <div class="bt-rub" id="bt-rub">
+          <div class="bt-cri" data-c="F"><p>Funcionalidad real<small>Resolvió la normal de verdad, sin trucos</small></p><div class="bt-pts" role="group" aria-label="Funcionalidad real"><button type="button">1</button><button type="button">2</button><button type="button">3</button></div></div>
+          <div class="bt-cri" data-c="S"><p>Uso de skills<small>Se nota un skill o herramienta, no solo un prompt</small></p><div class="bt-pts" role="group" aria-label="Uso de skills"><button type="button">1</button><button type="button">2</button><button type="button">3</button></div></div>
+          <div class="bt-cri" data-c="P"><p>Plan<small>Muestra su PLAN_TRABAJO.md con «hecho cuando»</small></p><div class="bt-pts" role="group" aria-label="Plan"><button type="button">1</button><button type="button">2</button><button type="button">3</button></div></div>
+          <div class="bt-cri" data-c="E"><p>Manejo de errores<small>Pregunta ante lo ambiguo; ante lo ajeno, dice que no</small></p><div class="bt-pts" role="group" aria-label="Manejo de errores"><button type="button">1</button><button type="button">2</button><button type="button">3</button></div></div>
+          <div class="bt-cri" data-c="D"><p>Demo<small>Lo mostró en menos de 2 minutos, sin explicar de más</small></p><div class="bt-pts" role="group" aria-label="Demo"><button type="button">1</button><button type="button">2</button><button type="button">3</button></div></div>
+        </div>
+        <div class="bt-total">
+          <span class="k-pie">Total</span><output id="bt-total">–/15</output>
+          <input id="bt-coment" maxlength="90" autocomplete="off" placeholder="Una razón: «en la ambigua adivinó»" aria-label="Comentario de tu evaluación">
+          <button type="button" class="k-btn bt-pub" id="bt-pub">Publicar</button>
+        </div>
+      </section>
+
+      <div class="bt-der">
+        <section class="k-caja" aria-label="Tablero de la batalla">
+          <p class="k-q">Tablero de la batalla</p>
+          <ol class="bt-tab" id="bt-tab"></ol>
+          <p class="bt-vacio" id="bt-vacio">Aún no hay evaluaciones publicadas.</p>
+        </section>
+        <div class="k-caja k-voto" data-voto="g802-batalla-rompio">
+          <p class="k-q">¿Qué petición rompió más asistentes?</p>
+          <div class="k-ops">
+            <button data-op="normal">La normal</button>
+            <button data-op="ambigua">La ambigua</button>
+            <button data-op="fuera">La de fuera de alcance</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Se evalúa el asistente, no a la persona. Puedes corregir tu evaluación: cuenta la última que publiques.</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/g801.js"></script>
+<script>
+/* Rival (GET /pareja cada 10 s), rúbrica local, publicación al muro g802-batalla y tablero leído del muro. */
+(function () {
+  var G = window.G8, MURO = "g802-batalla";
+  var est = G.leer("g802-batalla", { pts: {}, rival: "", coment: "" }) || { pts: {}, rival: "", coment: "" };
+  var cris = Array.prototype.slice.call(document.querySelectorAll("#bt-rub .bt-cri"));
+  var totalEl = document.getElementById("bt-total"), coment = document.getElementById("bt-coment");
+  var rivalNom = document.getElementById("bt-rival-nombre"), rivalIn = document.getElementById("bt-rival-input");
+  var tab = document.getElementById("bt-tab"), vacio = document.getElementById("bt-vacio"), pub = document.getElementById("bt-pub");
+  var rivalPareja = "", miNombre = "";
+  coment.value = est.coment || ""; rivalIn.value = est.rival || "";
+
+  function rival() { return (rivalIn.value.replace(/\s+/g, " ").trim() || rivalPareja).slice(0, 40); }
+  function total() {
+    var s = 0, n = 0;
+    cris.forEach(function (c) { var v = est.pts[c.getAttribute("data-c")]; if (v) { s += v; n++; } });
+    return { s: s, n: n };
+  }
+  function pintar() {
+    cris.forEach(function (c) {
+      var v = est.pts[c.getAttribute("data-c")] || 0;
+      c.querySelectorAll("button").forEach(function (b, i) { b.setAttribute("aria-pressed", String(v === i + 1)); });
+    });
+    var t = total(); totalEl.textContent = t.n === 5 ? t.s + "/15" : t.n + " de 5";
+  }
+  cris.forEach(function (c) {
+    c.querySelectorAll("button").forEach(function (b, i) {
+      b.setAttribute("aria-label", c.querySelector("p").firstChild.textContent + ": " + (i + 1));
+      b.addEventListener("click", function () { est.pts[c.getAttribute("data-c")] = i + 1; G.guardar("g802-batalla", est); pintar(); });
+    });
+  });
+  coment.addEventListener("input", function () { est.coment = coment.value; G.guardar("g802-batalla", est); });
+  rivalIn.addEventListener("input", function () { est.rival = rivalIn.value; G.guardar("g802-batalla", est); });
+
+  // Texto del muro: «Evalué a Ana: F3 S2 P3 E2 D3 = 13/15 · razón». El tablero lo vuelve a leer con RE.
+  var RE = /^Evalué a (.+?): F(\d) S(\d) P(\d) E(\d) D(\d) = (\d{1,2})\/15/;
+  pub.addEventListener("click", function () {
+    var t = total(), r = rival();
+    if (!r) { G.toast("Escribe el nombre de tu rival (o espera a que el instructor forme las parejas)."); rivalIn.focus(); return; }
+    if (t.n < 5) { G.toast("Te faltan " + (5 - t.n) + " criterios de la rúbrica."); return; }
+    var p = est.pts, c = coment.value.replace(/\s+/g, " ").trim();
+    var texto = ("Evalué a " + r + ": F" + p.F + " S" + p.S + " P" + p.P + " E" + p.E + " D" + p.D + " = " + t.s + "/15" + (c ? " · " + c : "")).slice(0, 200);
+    pub.disabled = true;
+    G.pedir("/muro", { escena: MURO, texto: texto }).then(function (res) {
+      pub.disabled = false;
+      if (res.ok && res.datos && res.datos.entradas) { tablero(res.datos.entradas); pub.textContent = "✓ Publicado"; G.celebrar(pub); setTimeout(function () { pub.textContent = "Publicar"; }, 2200); }
+      else G.toast("El muro de la clase no respondió. Vuelve a intentarlo en unos segundos.");
+    });
+  });
+
+  function tablero(entradas) {
+    var por = {};
+    (entradas || []).forEach(function (e) {
+      var m = RE.exec(e.texto || ""); if (!m) return;
+      var k = m[1].toLowerCase(); if (!por[k]) por[k] = { nombre: m[1], suma: 0, n: 0 };
+      por[k].suma += +m[7]; por[k].n++;
+    });
+    var filas = Object.keys(por).map(function (k) { var x = por[k]; x.prom = x.suma / x.n; return x; })
+      .sort(function (a, b) { return b.prom - a.prom || b.n - a.n; });
+    tab.textContent = "";
+    filas.slice(0, 6).forEach(function (x, i) {
+      var li = document.createElement("li");
+      if (miNombre && x.nombre.toLowerCase() === miNombre.toLowerCase()) li.className = "yo";
+      var a = document.createElement("i"); a.textContent = i + 1;
+      var s = document.createElement("span"); s.textContent = x.nombre + (x.n > 1 ? " · " + x.n + " evaluaciones" : "");
+      var b = document.createElement("b"); b.textContent = (Math.round(x.prom * 10) / 10).toString().replace(".", ",") + "/15";
+      li.appendChild(a); li.appendChild(s); li.appendChild(b); tab.appendChild(li);
+    });
+    vacio.hidden = filas.length > 0;
+  }
+  function leerMuro() {
+    if (document.visibilityState === "hidden") return;
+    G.pedir("/muro?escena=" + MURO).then(function (r) { if (r.ok && r.datos && r.datos.entradas) tablero(r.datos.entradas); });
+  }
+  function leerPareja() {
+    if (document.visibilityState === "hidden") return;
+    G.pedir("/pareja").then(function (r) {
+      var con = r.ok && r.datos && r.datos.con;
+      if (con && con.length) {
+        rivalPareja = con.map(function (x) { return x.nombre; }).join(" y ");
+        rivalNom.textContent = rivalPareja;
+      }
+    });
+  }
+  G.yo().then(function (y) { miNombre = (y && y.nombre) || ""; leerMuro(); });
+  pintar(); leerPareja(); leerMuro();
+  setInterval(leerMuro, 6000); setInterval(leerPareja, 10000);
+})();
+</script>
+</body>
+</html>
