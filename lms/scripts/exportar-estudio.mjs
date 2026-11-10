@@ -73,6 +73,12 @@ await b.close();
 // El agente no corre en la copia: se muestra su última conversación, en reposo.
 for (const [k, v] of Object.entries(datos)) if (/\/agente$/.test(k) && v && typeof v === "object") Object.assign(v, { trabajando: false, actividad: null, permiso: null, saldo: null, costo: null, tokens: 0 });
 
+// Consumo: se muestra lo gastado por video, nunca los saldos de la cuenta de quien produjo.
+for (const [k, v] of Object.entries(datos)) if (k.startsWith("/api/consumo") && v && typeof v === "object") {
+  if (v.openrouter) Object.assign(v.openrouter, { saldo: null, hoy: null, sesion: null });
+  if (v.deepseek) Object.assign(v.deepseek, { saldo: null, conectado: false });
+}
+
 // Audio y video: los que el tablero pidió y los que nombra el estado de cada proyecto.
 const medios = {};
 function sumar(id, rel) {
@@ -95,13 +101,15 @@ datos["/api/projects"] = await (await fetch(ORIGEN + "/api/projects")).json();
 const lista = datos["/api/projects"].filter((x) => proyectos.includes(x.project_id)).map((x) => ({ id: x.project_id, titulo: x.title }));
 lista.sort((a, c) => proyectos.indexOf(a.id) - proyectos.indexOf(c.id));
 // Las rutas del equipo donde se produjo no se publican.
+// Claves que alguien pegó en una conversación del agente: nunca se publican.
+const CLAVES = /(sk-or-v1-|sk-ant-|sk-|ghp_|xox[bp]-|AKIA)[A-Za-z0-9_\-]{16,}/g;
 fs.writeFileSync(path.join(escena, "datos.json"), JSON.stringify({ proyectos: lista, datos, imagenes, medios, urlMateriales })
-  .replaceAll(OM + "/", "").replaceAll(os.homedir(), "~"));
+  .replaceAll(OM + "/", "").replaceAll(os.homedir(), "~").replace(CLAVES, "[clave oculta]"));
 
 // El código del tablero, en un solo archivo. El proyecto sale de la escena, no de la dirección.
 const esbuild = createRequire(path.join(os.homedir(), "Documents/jmd/lms/web/package.json"))("esbuild");
 const entrada = path.join(tmp, "entrada.js");
-fs.writeFileSync(entrada, 'import "/ui/board.js";\nimport "/ui/agente-barra.js";\n');
+fs.writeFileSync(entrada, 'import "/ui/board.js";\nimport "/ui/agente-barra.js";\nimport "/ui/ruta-skills.js";\n');
 await esbuild.build({
   entryPoints: [entrada], bundle: true, format: "iife", minify: true, outfile: path.join(escena, "tablero.js"), logLevel: "warning",
   plugins: [{ name: "ui", setup(build) {

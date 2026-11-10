@@ -1210,6 +1210,11 @@ body:not(.first) .approval-review { animation: none; }
 .ref-fila figcaption { margin-top: 5px; font-size: 12.5px; color: var(--text-2); }
 @media (max-width: 760px) { .ref-fila { grid-template-columns: 1fr; } }
 
+/* Etapa sin contenido: una acción clara en vez de un callejón. */
+.stage-no-artifact .etapa-accion { margin-top: 20px; padding: 0 20px; min-height: 44px; font-size: 14px; }
+.stage-no-artifact .etapa-aviso { margin-top: 12px; min-height: 1.5em; font-size: 13px; color: var(--text-2); }
+.stage-no-artifact .etapa-aviso:empty { display: none; }
+
 /* Backlot Studio — superficies nativas y una mesa de trabajo cinematográfica. */
 :root,:root[data-theme="dark"] {
   --bg:#111214;--surface:#1b1c20;--surface-2:#222328;--surface-3:#2c2d33;
@@ -1825,3 +1830,92 @@ body.con-agente { padding-bottom: 68px; }
   @keyframes ab-giro { to { transform: rotate(360deg); } }
   .ab-pasos li.en-curso::before { animation: ab-pulso 1.2s ease-in-out infinite; }
 }
+
+/* Servicios: con qué proveedor y modelo se genera, y cuánto cuesta cada clip. */
+.ab-servicio { display: flex; align-items: center; gap: 8px; flex: none; min-height: 44px; max-width: 300px; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; background: none; color: var(--text); font: 500 13px/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.ab-servicio:hover { border-color: var(--text-3); }
+.ab-servicio i { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--green); }
+.ab-servicio.falta i { background: var(--studio-accent, var(--amber)); }
+.ab-servicio b { font-weight: 600; }
+.ab-servicio span { overflow: hidden; text-overflow: ellipsis; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.ab-servicio.falta span { color: var(--studio-accent, var(--amber)); }
+.ab-servicio:focus-visible, .ab-servicios select:focus-visible, .ab-servicios button:focus-visible, .ab-servicios input:focus-visible { outline: 2px solid var(--studio-accent, var(--amber)); outline-offset: 2px; }
+.ab-servicios { position: fixed; z-index: 61; left: 20px; bottom: 78px; width: min(420px, calc(100vw - 40px)); display: grid; gap: 10px; padding: 0 18px 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 18px 50px -20px rgba(0,0,0,.55); font: 14px/1.45 var(--sans); color: var(--text); }
+.ab-servicios[hidden] { display: none; }
+.ab-servicios header { display: flex; align-items: center; margin: 0 -6px 0 0; padding-top: 10px; }
+.ab-servicios h2 { flex: 1; margin: 0; font: 600 15px/1.2 var(--sans); }
+.ab-servicios p { margin: 0; font-size: 13px; color: var(--text-2); }
+.ab-servicios label, .ab-serv-rotulo { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.ab-servicios select { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--text); font: 13.5px var(--sans); }
+.ab-opciones { display: flex; gap: 6px; }
+.ab-opciones button { flex: 1; min-height: 38px; border: 1px solid var(--border); border-radius: 10px; background: none; color: var(--text); font: 500 13.5px var(--sans); cursor: pointer; }
+.ab-opciones button.activa { border-color: var(--text); background: var(--text); color: var(--bg); }
+.ab-servicios .ab-audio { display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text); }
+.ab-serv-falta { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--studio-accent, var(--amber)); color: var(--text) !important; }
+.ab-serv-costo { padding-top: 8px; border-top: 1px solid var(--border-soft, var(--border)); }
+.ab-serv-costo b { color: var(--text); font-size: 16px; font-variant-numeric: tabular-nums; }
+@media (max-width: 720px) {
+  .ab-servicio { order: 2; flex: 1 0 100%; max-width: none; min-height: 36px; }
+  .ab-servicios { left: 12px; bottom: 166px; width: calc(100vw - 24px); }
+}
+
+/* Servicios v2: un bloque por tipo de archivo, lista larga con desplazamiento. */
+.ab-servicios { max-height: calc(100vh - 120px); overflow-y: auto; }
+.ab-serv-bloque { display: grid; gap: 8px; margin: 0; padding: 10px 12px 12px; border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+.ab-serv-bloque legend { padding: 0 6px; font: 600 12.5px/1.2 var(--sans); color: var(--text); }
+.ab-serv-bloque select { width: 100%; min-width: 0; }
+
+/* Medidor de consumo: siempre visible en la barra del agente. */
+.ab-consumo { display: flex; align-items: center; gap: 8px; flex: none; min-height: 44px; max-width: 280px; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; background: none; color: var(--text); font: 500 13px/1 var(--sans); cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ab-consumo:hover { border-color: var(--text-3); }
+.ab-consumo i { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--green); }
+.ab-consumo.bajo i { background: var(--studio-accent, var(--amber)); }
+.ab-consumo b { font-weight: 650; }
+.ab-consumo span { overflow: hidden; text-overflow: ellipsis; color: var(--text-2); }
+.ab-consumo:focus-visible { outline: 2px solid var(--studio-accent, var(--amber)); outline-offset: 2px; }
+.ab-consumo-caja { left: auto; right: 20px; }
+.ab-cons-fila { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.ab-cons-fila b { color: var(--text); font-weight: 600; }
+@media (max-width: 720px) {
+  .ab-consumo { order: 2; flex: 1 0 100%; max-width: none; min-height: 36px; }
+  .ab-consumo-caja { right: 12px; left: 12px; width: auto; bottom: 210px; }
+}
+.ab-opciones { flex-wrap: wrap; }
+
+/* Ruta de skills: panel lateral derecho con cada etapa, su skill y sus herramientas. */
+.rs-boton { position: fixed; z-index: 59; right: 20px; top: 16px; display: flex; align-items: center; gap: 8px; max-width: min(460px, calc(100vw - 40px)); min-height: 40px; padding: 0 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); font: 500 13px/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.rs-boton span { overflow: hidden; text-overflow: ellipsis; color: var(--text-2); }
+.rs-boton:focus-visible { outline: 2px solid var(--studio-accent, var(--amber)); outline-offset: 2px; }
+.rs-panel { position: fixed; z-index: 58; right: 20px; top: 64px; bottom: 90px; width: min(360px, calc(100vw - 40px)); overflow-y: auto; padding: 0 16px 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 18px 50px -24px rgba(0,0,0,.5); font: 13.5px/1.45 var(--sans); color: var(--text); }
+.rs-panel[hidden] { display: none; }
+.rs-panel header { position: sticky; top: 0; display: flex; align-items: center; padding: 12px 0 8px; background: var(--surface); }
+.rs-panel h2 { flex: 1; margin: 0; font: 600 15px/1.2 var(--sans); }
+.rs-nota { margin: 0 0 10px; color: var(--text-2); font-size: 12.5px; }
+.rs-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.rs-etapa { position: relative; display: grid; grid-template-columns: 28px 1fr; gap: 10px; padding: 10px 0; }
+.rs-etapa + .rs-etapa::before { content: ""; position: absolute; left: 13px; top: -10px; height: 20px; border-left: 2px solid var(--border); }
+.rs-num { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--border); font: 600 12px/1 var(--sans); color: var(--text-2); background: var(--surface); }
+.rs-etapa.rs-hecha .rs-num { border-color: var(--green); color: var(--green); }
+.rs-etapa.actual .rs-num { border-color: var(--studio-accent, var(--amber)); background: var(--studio-accent, var(--amber)); color: var(--bg); }
+.rs-etapa.rs-fallo .rs-num { border-color: #d9534f; color: #d9534f; }
+.rs-etapa.actual .rs-cuerpo { padding: 8px 10px; margin: -8px 0 0 -10px; border-radius: 10px; background: var(--surface-2); }
+.rs-cuerpo { min-width: 0; }
+.rs-cuerpo p { margin: 0; }
+.rs-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rs-cab b { font-weight: 600; }
+.rs-candado, .rs-estado { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; color: var(--text-2); }
+.rs-estado.rs-ahora, .rs-estado.rs-espera { border-color: var(--studio-accent, var(--amber)); color: var(--text); }
+.rs-estado.rs-hecha { border-color: var(--green); }
+.rs-skill { margin-top: 4px !important; color: var(--text-2); font-size: 12.5px; overflow-wrap: anywhere; }
+.rs-skill code { font: 500 12px var(--mono, ui-monospace, monospace); color: var(--text); }
+.rs-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px !important; }
+.rs-tools span { padding: 2px 7px; border-radius: 6px; background: var(--surface-2); color: var(--text-2); font-size: 11.5px; }
+.rs-tools span.obligatoria { color: var(--text); border: 1px solid var(--border); }
+.rs-error { margin-top: 6px !important; color: #d9534f; font-size: 12px; }
+@media (min-width: 1100px) { body.con-ruta .wrap { margin-right: 380px; } }
+@media (max-width: 720px) { .rs-boton { top: auto; bottom: 230px; right: 12px; } .rs-panel { top: 12px; right: 12px; left: 12px; width: auto; bottom: 280px; } }
+.rs-skill { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.rs-etapa.actual .rs-skill { -webkit-line-clamp: 6; }
+.ab-consumo { max-width: 210px; }
+.ab-servicio { max-width: 250px; }
+.ab-entrada { min-width: 200px; }

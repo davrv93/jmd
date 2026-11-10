@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual de Backlot</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  :root { --tinta: #1d1a16; --suave: #5c554c; --linea: #e6dccd; --crema: #fbf6ee; --naranja: #e85d12; --azul: #14213d; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: var(--tinta); font: 10.5pt/1.55 "Inter", "Helvetica Neue", Arial, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font: 800 26pt/1.1 "Archivo Black", "Arial Black", sans-serif; margin: 0 0 8px; letter-spacing: -.01em; }
+  h2 { font: 800 15pt/1.2 "Archivo Black", "Arial Black", sans-serif; margin: 28px 0 8px; padding-top: 10px; border-top: 2px solid var(--naranja); break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 18px 0 6px; break-after: avoid; }
+  p, li { margin: 0 0 7px; }
+  ul, ol { padding-left: 20px; margin: 0 0 10px; }
+  code { font: 9.5pt ui-monospace, "SF Mono", Menlo, monospace; background: var(--crema); padding: 1px 4px; border-radius: 4px; }
+  pre { font: 9pt/1.45 ui-monospace, "SF Mono", Menlo, monospace; background: var(--crema); border: 1px solid var(--linea); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; break-inside: avoid; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 9.5pt; }
+  tr { break-inside: avoid; }
+  th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--linea); }
+  th { background: var(--crema); font-weight: 700; }
+  .portada { background: var(--crema); border-radius: 14px; padding: 26px 24px; margin-bottom: 18px; }
+  .kicker { color: var(--naranja); font-weight: 700; letter-spacing: .08em; font-size: 9pt; text-transform: uppercase; margin-bottom: 8px; }
+  .sub { color: var(--suave); font-size: 11.5pt; margin: 0; }
+  .nota { border-left: 4px solid var(--naranja); background: var(--crema); padding: 8px 12px; border-radius: 0 8px 8px 0; margin: 10px 0; break-inside: avoid; }
+  .indice { columns: 2; column-gap: 24px; font-size: 10pt; }
+  .indice li { break-inside: avoid; }
+  .pie { color: var(--suave); font-size: 8.5pt; margin-top: 30px; border-top: 1px solid var(--linea); padding-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+
+<section class="portada">
+  <div class="kicker">JMD Learning · ¿Difícil de explicar? ¡No! · Sesión de video</div>
+  <h1>Manual de Backlot</h1>
+  <p class="sub">El estudio de OpenMontage para hacer videos con un agente de IA: elegir modelos, ver lo que se gasta, seguir cada etapa con su skill, hacer un tutorial dibujado con p5.js y GSAP, y animar un personaje que corre.</p>
+</section>
+
+<ol class="indice">
+  <li>Qué es Backlot</li>
+  <li>IA, agente, MCP y skill en una página</li>
+  <li>La pantalla, parte por parte</li>
+  <li>Hablar con el agente</li>
+  <li>Elegir con qué se genera</li>
+  <li>Consumo: lo que se gasta</li>
+  <li>La ruta: qué se hace y con qué skill</li>
+  <li>Receta «tutorial p5 + GSAP»</li>
+  <li>Personaje corriendo</li>
+  <li>Cuando algo falla</li>
+  <li>La copia «solo ver» del LIVE</li>
+  <li>Para el instructor: arrancar en tu Mac</li>
+  <li>Referencia de herramientas</li>
+</ol>
+
+<h2>1. Qué es Backlot</h2>
+<p>Backlot es el tablero de <b>OpenMontage</b>, un estudio de video de código abierto. Tú le dices a un agente qué video quieres; el agente lo produce por etapas (idea, guion, escenas, render…) y Backlot te muestra cada etapa, lo que se generó y lo que falta. En las etapas importantes el agente se detiene y espera tu aprobación: nada se gasta sin tu «sí».</p>
+<p>En este taller el agente es <b>DeepSeek Harness</b> y todo lo que se genera con IA (video, imágenes, voz y música) pasa por <b>OpenRouter</b>, con una sola clave. Lo que se puede dibujar con código, como un tutorial hecho con p5.js y GSAP, no se genera ni cuesta.</p>
+
+<h2>2. IA, agente, MCP y skill en una página</h2>
+<table>
+  <tr><th>Palabra</th><th>Qué es</th><th>Dónde lo ves en Backlot</th></tr>
+  <tr><td><b>IA</b> (modelo)</td><td>Un programa que lee tu mensaje y predice la respuesta palabra por palabra. Sola, responde; no actúa.</td><td>DeepSeek, el «cerebro» del agente. También los modelos de video, imagen, voz y música que eliges.</td></tr>
+  <tr><td><b>Agente</b></td><td>Una IA dentro de un bucle: piensa, usa una herramienta, mira el resultado y repite hasta terminar.</td><td>La barra de abajo: «Trabajando», sus pasos, sus preguntas y permisos.</td></tr>
+  <tr><td><b>Herramienta</b></td><td>Algo concreto que el agente puede hacer: renderizar, generar una imagen, mezclar audio.</td><td>Las etiquetas grises de cada etapa en la ruta (por ejemplo «render HTML → MP4»).</td></tr>
+  <tr><td><b>MCP</b></td><td>El enchufe estándar para conectar un agente con apps y datos. Un conector MCP sirve para cualquier agente que lo soporte.</td><td>DeepSeek Harness acepta servidores MCP; así se le suman herramientas sin tocar su código.</td></tr>
+  <tr><td><b>Skill</b></td><td>Una receta guardada: instrucciones que el agente carga cuando las necesita. Se le enseña una vez y lo hace siempre igual.</td><td>Cada etapa de la ruta dice qué skill la hace, por ejemplo <code>render-director</code>.</td></tr>
+</table>
+
+<h2>3. La pantalla, parte por parte</h2>
+<ul>
+  <li><b>Biblioteca</b> (inicio): tus producciones. «Crear con el agente» empieza una nueva y abre su tablero.</li>
+  <li><b>Columna de etapas</b> (izquierda): cada etapa con su estado. Clic para verla.</li>
+  <li><b>Contenido de etapa / Visor y storyboard</b> (centro): lo que produjo la etapa. El visor reproduce imágenes, audio y video.</li>
+  <li><b>Sala de revisión</b> (derecha del centro): cuando una etapa espera tu aprobación aparece aquí la pregunta con «Aprobar y seguir» o «Pedir cambios».</li>
+  <li><b>Ruta</b> (botón arriba a la derecha): el panel «Qué se hace y con qué skill». Ver la sección 7.</li>
+  <li><b>Barra del agente</b> (abajo): estado del agente, el <b>medidor de consumo</b>, el botón <b>OpenRouter</b> y la caja para escribirle.</li>
+</ul>
+
+<h2>4. Hablar con el agente</h2>
+<p>Escribe en la caja de abajo y pulsa Enter (Mayús + Enter hace un salto de línea). Mientras trabaja verás «Trabajando», un reloj y la lista de pasos en palabras simples. «Detener» corta lo que esté haciendo.</p>
+<ul>
+  <li><b>Permisos:</b> si el agente quiere hacer algo fuera de su carpeta, la conversación se abre sola con «Permitir una vez» o «Rechazar». Lee la orden antes de permitirla.</li>
+  <li><b>Aprobaciones:</b> las etapas con candado esperan tu decisión en la sala de revisión. Aprobar avanza; «Pedir cambios» le devuelve la etapa con tu nota.</li>
+  <li><b>Pide con seis partes:</b> qué quieres, para quién, cómo debe verse, cuánto dura, qué no quieres y cómo sabrás que está bien. Un pedido claro ahorra vueltas y dinero.</li>
+</ul>
+<div class="nota">El agente recibe en cada mensaje las reglas del tablero: qué modelos usar, cuánto cuesta cada uno, que debe cotizar antes de generar y esperar tu «sí», y que lo que se puede dibujar con código no se genera.</div>
+
+<h2>5. Elegir con qué se genera</h2>
+<p>El botón <b>OpenRouter</b> de la barra abre «Con qué se genera». La lista sale en vivo del catálogo de OpenRouter, con precio, y se actualiza cada hora. Arriba van los recomendados; debajo, todos.</p>
+<table>
+  <tr><th>Tipo</th><th>Qué eliges</th><th>Cómo se cobra</th></tr>
+  <tr><td>Video</td><td>Modelo (Veo 3.1 Lite, Fast o normal, Kling, Wan, Seedance, Grok, Runway, Hailuo…), duración, resolución y si lleva sonido.</td><td>Por segundo. El panel muestra el costo de un clip con lo que elegiste. Los marcados «≈» cobran por tokens y son aproximados.</td></tr>
+  <tr><td>Imágenes</td><td>Modelo para personajes, fondos y poses.</td><td>Por imagen. En los que cobran por tokens (Gemini, GPT Image) el precio es aproximado y puede subir con calidad alta.</td></tr>
+  <tr><td>Voz</td><td>Modelo de voz (TTS).</td><td>Por letras leídas; suele ser menos de un centavo por minuto.</td></tr>
+  <tr><td>Música</td><td>Modelo de música (Lyria Clip o Pro).</td><td>Por pista: unos US$ 0,04 (clip de 30 s) o US$ 0,08 (canción).</td></tr>
+</table>
+<p>Si el modelo no admite la duración o la resolución elegida, el panel la ajusta sola a la más cercana. La herramienta de video también rechaza combinaciones que el modelo no soporta, antes de cobrar nada.</p>
+
+<h2>6. Consumo: lo que se gasta</h2>
+<p>El medidor de la barra siempre está a la vista. El número grande es lo gastado <b>en este video</b>; al lado, los saldos (OR = OpenRouter, DS = DeepSeek). El punto se pone de color de alerta cuando un saldo está bajo. Haz clic para ver el detalle:</p>
+<ul>
+  <li><b>Este video:</b> lo gastado en OpenRouter desde que abriste esta producción, lo gastado por el agente (DeepSeek) y el total.</li>
+  <li><b>OpenRouter:</b> saldo, gastado hoy y gastado desde que abriste Backlot.</li>
+  <li><b>DeepSeek:</b> saldo del agente (aparece cuando el agente está conectado).</li>
+</ul>
+<p>Se actualiza solo cada 15 segundos. La clave nunca se muestra: el tablero solo lee números.</p>
+
+<h2>7. La ruta: qué se hace y con qué skill</h2>
+<p>El panel de la derecha muestra todas las etapas de la receta, en orden y alineadas sobre una línea. Cada etapa dice:</p>
+<ul>
+  <li>su <b>número y nombre</b>, y si lleva <b>aprobación</b>;</li>
+  <li>su <b>estado</b>: Pendiente, En curso, Espera tu respuesta, Hecha o Falló (con el error);</li>
+  <li>la <b>skill</b> que la hace y, en una línea, qué hace;</li>
+  <li>las <b>herramientas</b> que puede usar, en palabras simples (las de borde son obligatorias).</li>
+</ul>
+<p>La etapa actual va resaltada y el botón «Ruta» resume dónde estás: por ejemplo «3/6 · Storyboard · skill storyboard-director».</p>
+
+<h2>8. Receta «tutorial p5 + GSAP»</h2>
+<p>Un tutorial dibujado entero con código: no se genera video con IA y no cuesta saldo de OpenRouter. Sirve para explicar conceptos (como «¿Qué es un agente?») con el estilo JMD: portada, pasos numerados, un lienzo que dibuja cada idea, subtítulos, barra de progreso y cierre con el logo. Sale en horizontal (1920 × 1080) o vertical (1080 × 1920, para estados).</p>
+<table>
+  <tr><th>#</th><th>Etapa</th><th>Skill</th><th>Qué pasa</th><th>¿Aprobación?</th></tr>
+  <tr><td>1</td><td>Idea y brief</td><td>idea-director</td><td>Tema, público, mensaje central, duración y formato.</td><td>Sí</td></tr>
+  <tr><td>2</td><td>Guion</td><td>script-director</td><td>Todo el texto en pantalla, con su tiempo. No hay voz: el texto es el guion.</td><td>Sí</td></tr>
+  <tr><td>3</td><td>Storyboard</td><td>storyboard-director</td><td>Qué dibuja p5 en cada escena y qué se mueve.</td><td>Sí</td></tr>
+  <tr><td>4</td><td>Escenas p5 + GSAP</td><td>sketch-director + p5-hyperframes</td><td>Convierte guion y storyboard en el archivo <code>tutorial.json</code> y en el HTML del video.</td><td>No</td></tr>
+  <tr><td>5</td><td>Render y verificación</td><td>render-director</td><td>Revisión previa, render a MP4 y comprobación del resultado.</td><td>No</td></tr>
+  <tr><td>6</td><td>Revisión final</td><td>review-director</td><td>Ves el video completo y lo apruebas.</td><td>Sí</td></tr>
+</table>
+<h3>Cómo pedirlo</h3>
+<pre>Quiero un tutorial p5 + GSAP de 30 s, horizontal, para alumnos que empiezan:
+«¿Qué es un agente?». Cuatro pasos: IA, agente, MCP y skill. Una frase por paso,
+un dibujo simple que se mueva, estilo JMD (crema y naranja). Sin voz.</pre>
+<h3>Por qué no falla la secuencia</h3>
+<ul>
+  <li><b>Un solo reloj.</b> La línea de tiempo de GSAP manda; p5 dibuja el cuadro que corresponde a ese instante. Cualquier cuadro puede renderizarse en cualquier orden y sale igual.</li>
+  <li><b>Revisión antes de renderizar.</b> Bloquea lo que rompe un render: números al azar sin semilla, relojes propios (<code>millis</code>, <code>frameCount</code>, <code>requestAnimationFrame</code>), librerías desde internet o un HTML desactualizado. Los problemas se explican en español.</li>
+  <li><b>Un reintento.</b> Si el render falla por algo pasajero, se repite una vez. Si falla la revisión, no se reintenta: hay que corregir.</li>
+  <li><b>Comprobación final.</b> Duración y tamaño del MP4, que cada escena tenga dibujo y movimiento, y que dos instantes renderizados en distinto orden den exactamente la misma imagen.</li>
+</ul>
+<h3>El archivo <code>tutorial.json</code></h3>
+<pre>{
+  "titulo_video": "¿Qué es un agente?", "formato": "horizontal", "fps": 30,
+  "marca":   { "nombre": "JMD Learning", "curso": "Agentes con IA" },
+  "portada": { "kicker": "TUTORIAL", "titulo": "¿Qué es &lt;b&gt;un agente&lt;/b&gt;?", "duracion": 3.5, "boceto": "portada" },
+  "pasos": [
+    { "id": "ia", "etiqueta": "IA", "titulo": "La IA",
+      "texto": "Un modelo que lee tu mensaje y &lt;b&gt;predice&lt;/b&gt; la respuesta.",
+      "subtitulos": ["Sola, la IA responde. Todavía no actúa."],
+      "duracion": 5, "boceto": "ia" }
+  ],
+  "cierre":  { "titulo": "IA + bucle + MCP + skills = &lt;b&gt;agente&lt;/b&gt;", "url": "jmd-learn.online", "duracion": 3.5, "boceto": "cierre" }
+}</pre>
+<p><code>boceto</code> es el nombre del dibujo p5 de esa escena. Para música, agrega <code>"audio": {"musica": "ruta/a/pista.mp3"}</code>.</p>
+
+<h2>9. Personaje corriendo</h2>
+<p>Para animar un personaje propio: se genera con IA una hoja de referencia y sus poses de carrera, se recortan y alinean, y se animan con p5 + GSAP.</p>
+<ol>
+  <li><b>Cotizar.</b> El agente dice cuántas imágenes, con qué modelo y el total, y espera tu «sí». Ejemplo: 9 imágenes (1 referencia + 8 poses) a ≈ US$ 0,04 = ≈ US$ 0,35.</li>
+  <li><b>Diseñar al personaje.</b> Una hoja de referencia (de frente y de perfil) sobre un fondo de un solo color plano, por ejemplo verde puro.</li>
+  <li><b>Las 8 poses.</b> De perfil, mirando a la derecha: contacto, bajada, paso y subida con cada pierna. Cada pose se genera con la hoja de referencia para que no cambien la cara, la ropa ni las proporciones.</li>
+  <li><b>Armar la hoja de sprites</b> con <code>sprite_ciclo</code> (local y gratis): quita el fondo, alinea los pies sobre una misma línea y el torso en una misma vertical, iguala tamaños y entrega la hoja PNG, los cuadros sueltos, una vista previa en GIF o MP4 y una «piel de cebolla» para revisar la alineación.</li>
+  <li><b>Animarlo.</b> En la escena p5, el cuadro que se dibuja sale del tiempo de la línea de GSAP: <code>cuadro = floor(t × fps) mod 8</code>. Así corre igual en cualquier render.</li>
+</ol>
+<div class="nota">Repetir una pose también cuesta y también se cotiza. Si una sale mal, pide solo esa; no regeneres las ocho.</div>
+
+<h2>10. Cuando algo falla</h2>
+<table>
+  <tr><th>Ves esto</th><th>Qué significa</th><th>Qué hacer</th></tr>
+  <tr><td>«Falta la clave» en OpenRouter</td><td>No hay <code>OPENROUTER_API_KEY</code> en el <code>.env</code> de OpenMontage.</td><td>Ponla con tu editor en ese archivo y vuelve a abrir el panel.</td></tr>
+  <tr><td>Medidor con punto de alerta</td><td>Saldo bajo en OpenRouter o DeepSeek.</td><td>Recarga antes de generar; un clip de Veo Lite de 4 s cuesta unos US$ 0,12.</td></tr>
+  <tr><td>«precio no publicado»</td><td>OpenRouter no da el precio de ese modelo.</td><td>El agente debe pedirte confirmación; mejor elige uno con precio.</td></tr>
+  <tr><td>Etapa en «Falló»</td><td>Una herramienta dio error.</td><td>Lee el error en la ruta y pídele al agente que lo corrija. En el tutorial p5 suele ser la revisión previa: te dice qué corregir y en qué línea.</td></tr>
+  <tr><td>«Trabajando» mucho rato</td><td>Un render o una descarga tarda.</td><td>Espera; si pasa de varios minutos sin pasos nuevos, «Detener» y vuelve a pedir.</td></tr>
+  <tr><td>«No hay conexión con tu agente»</td><td>DeepSeek Harness está cerrado.</td><td>Escríbele un mensaje: Backlot lo vuelve a abrir.</td></tr>
+</table>
+
+<h2>11. La copia «solo ver» del LIVE</h2>
+<p>En la escena «El estudio por dentro» del LIVE ves una copia grabada del tablero real con tres producciones: el tutorial «¿Qué es un agente?», «Mi cafetería de barrio» y la investigación del colibrí. Puedes recorrer las etapas, abrir la ruta de skills, el medidor (sin saldos de cuenta) y el panel de modelos, y reproducir los videos. No se aprueba, no se escribe y el agente no corre: Backlot no tiene usuarios ni contraseña y su agente ejecuta órdenes en la máquina, así que la versión completa solo corre en el equipo del instructor o, más adelante, en un aula aislada por alumno.</p>
+
+<h2>12. Para el instructor: arrancar en tu Mac</h2>
+<pre>cd ~/Downloads/OpenMontage
+.venv/bin/python -m backlot serve --port 4799     # el tablero en http://127.0.0.1:4799
+# o, para abrir el navegador directamente en una producción:
+.venv/bin/python -m backlot open tutorial-p5-demo</pre>
+<ul>
+  <li>El agente (DeepSeek Harness) se abre solo con el primer mensaje o con «Crear con el agente». Reiniciar Backlot no corta al agente.</li>
+  <li>La clave de OpenRouter va en <code>~/Downloads/OpenMontage/.env</code> (<code>OPENROUTER_API_KEY=</code>). Con <code>OPENMONTAGE_SOLO_PROVEEDOR=openrouter</code> ningún otro proveedor de pago queda disponible.</li>
+  <li>Render del tutorial a mano:
+<pre>.venv/bin/python -c "from tools.video.p5_tutorial import P5Tutorial as T; print(T().execute({
+  'operation': 'render', 'workspace_path': 'projects/tutorial-p5-demo/hyperframes',
+  'output_path': 'projects/tutorial-p5-demo/renders/que-es-un-agente.mp4'}).data)"</pre></li>
+  <li>Actualizar la copia del LIVE: <code>node lms/scripts/exportar-estudio.mjs …</code> con Backlot encendido y luego <code>sh lms/scripts/publicar-estudio-ver.sh</code> (solo contenido, sin reinicio).</li>
+</ul>
+
+<h2>13. Referencia de herramientas</h2>
+<table>
+  <tr><th>Herramienta</th><th>Para qué</th><th>Datos principales</th></tr>
+  <tr><td><code>p5_tutorial</code></td><td>Tutorial dibujado con p5 + GSAP.</td><td><code>operation</code>: scaffold, build, preflight, render, verify · <code>workspace_path</code> · <code>output_path</code></td></tr>
+  <tr><td><code>hyperframes_compose</code></td><td>Render de HTML a MP4.</td><td>Lo usa <code>p5_tutorial</code> por dentro (<code>render_existing</code>).</td></tr>
+  <tr><td><code>openrouter_image</code></td><td>Imágenes con IA.</td><td><code>prompt</code>, <code>model</code>, <code>n</code>, <code>aspect_ratio</code>, <code>reference_images</code>, <code>seed</code>, <code>project_dir</code></td></tr>
+  <tr><td><code>sprite_ciclo</code></td><td>Hoja de sprites desde cuadros sueltos.</td><td><code>frames</code> o <code>frames_dir</code>, <code>fps</code>, <code>key_color</code>, <code>align_x</code>, <code>align_y</code>, <code>preview</code>, <code>onion_skin</code></td></tr>
+  <tr><td><code>openrouter_video</code></td><td>Clips de video con IA.</td><td><code>prompt</code>, <code>model</code> (cualquiera del catálogo), <code>duration</code>, <code>resolution</code>, <code>aspect_ratio</code>, <code>generate_audio</code>, <code>image_path</code></td></tr>
+  <tr><td><code>openrouter_tts</code> / <code>openrouter_music</code></td><td>Voz y música.</td><td><code>text</code> o <code>prompt</code>, <code>model</code>, <code>voice</code></td></tr>
+</table>
+<p>Skills de la receta: <code>executive-producer</code>, <code>idea-director</code>, <code>script-director</code>, <code>storyboard-director</code>, <code>sketch-director</code>, <code>p5-hyperframes</code>, <code>render-director</code>, <code>review-director</code> (en <code>skills/pipelines/tutorial-p5-gsap/</code>). Personaje: <code>skills/creative/personaje-corriendo.md</code>.</p>
+
+<p class="pie">Backlot y OpenMontage son software libre (AGPL-3.0). Precios de OpenRouter tomados del catálogo en vivo el 9 de noviembre de 2026; pueden cambiar. JMD Learning · jmd-learn.online</p>
+</main>
+</body>
+</html>

@@ -114,6 +114,36 @@ materials:
     kind: file
     file: materials/estudio-ver/video-20261105-150809__renders__final.mp4
     objective_ids: [de-03-o3]
+  - id: de-03-manual-backlot
+    title: "Manual de Backlot: modelos, consumo, skills, tutorial p5 + GSAP y personaje corriendo (PDF)"
+    kind: pdf
+    file: materials/manual-backlot.pdf
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-10
+    title: "Estudio · tutorial «¿Qué es un agente?» hecho con p5 + GSAP (27 s, horizontal)"
+    kind: file
+    file: materials/estudio-ver/tutorial-p5-demo__renders__que-es-un-agente.mp4
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-11
+    title: "Estudio · tutorial «¿Qué es un agente?» (27 s, vertical para estados)"
+    kind: file
+    file: materials/estudio-ver/tutorial-p5-demo__renders__que-es-un-agente-vertical.mp4
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-12
+    title: "Estudio · colibrí, música del tema"
+    kind: file
+    file: materials/estudio-ver/colibri-con-veo__assets__music__colibri-tema.mp3
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-13
+    title: "Estudio · colibrí, clip Veo: de lado"
+    kind: file
+    file: materials/estudio-ver/colibri-con-veo__assets__video__veo__e2-lado.mp4
+    objective_ids: [de-03-o3]
+  - id: de-03-estudio-ver-14
+    title: "Estudio · colibrí, clip Veo: de frente"
+    kind: file
+    file: materials/estudio-ver/colibri-con-veo__assets__video__veo__e5-frente.mp4
+    objective_ids: [de-03-o3]
 cycle:
   - id: ver
     title: Ver «Difícil de explicar» en pantalla
