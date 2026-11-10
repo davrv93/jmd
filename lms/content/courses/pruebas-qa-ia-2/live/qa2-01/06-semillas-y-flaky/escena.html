@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Pruebas inestables</title>
+<!--
+  Escena del modo LIVE (taller qa2-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: cuatro causas de inestabilidad (datos sin semilla, esperas fijas, dependencia del orden, reloj real)
+  se arreglan con un interruptor; «Correr 10 veces» llena la matriz prueba × corrida y calcula cuántas pruebas
+  son inestables. «Reintentos» muestra cómo los reintentos esconden el problema sin arreglarlo. Abajo, un
+  generador con semilla (mulberry32): la misma semilla da los mismos datos. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .22); }
+.esc { padding: 1.7vh 2.6vw 1.5vh; gap: 1.2vh; }
+.esc-cuerpo { gap: 1.2vh; }
+.esc-titulo { font-size: 1.28em; }
+.q-btn { font: 700 .66em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .58em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.q-btn:hover { transform: translateY(-1px); }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-et { font-size: .58em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.q-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: center; }
+
+.q-b4 { display: grid; grid-template-columns: 1fr 1.15fr; gap: 1.2vw; min-height: 0; }
+.q-causas { display: grid; gap: .5em; grid-auto-rows: 1fr; }
+.q-causa { display: grid; grid-template-columns: 1fr auto; gap: .15em .8em; align-items: center; padding: .45em .8em; border-left: 5px solid var(--bad); transition: border-color .25s; }
+.q-causa.ok { border-left-color: var(--ok); }
+.q-causa h3 { margin: 0; font-size: .82em; }
+.q-causa code { grid-column: 1 / -1; display: block; font: 600 .6em/1.45 var(--mono); padding: .2em .5em; border-radius: .4em; background: var(--bad-bg); color: var(--bad); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-causa.ok code { background: var(--ok-bg); color: var(--ok); }
+.q-causa p { grid-column: 1 / -1; margin: 0; font-size: .64em; color: var(--muted); }
+.q-fix { font: 700 .6em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .45em .8em; border-radius: 999px; cursor: pointer; border: 1px solid var(--bad); background: var(--bad-bg); color: var(--bad); }
+.q-fix[aria-checked="true"] { border-color: var(--ok); background: var(--ok-bg); color: var(--ok); }
+.q-sw { position: relative; width: 3.2em; height: 1.7em; border-radius: 999px; border: 1px solid var(--line2); background: var(--bad-bg); cursor: pointer; font-size: .7em; }
+.q-sw::after { content: ""; position: absolute; top: .18em; left: .2em; width: 1.25em; height: 1.25em; border-radius: 50%; background: var(--bad); transition: transform .2s; }
+.q-sw[aria-checked="true"] { background: var(--ok-bg); }
+.q-sw[aria-checked="true"]::after { transform: translateX(1.45em); background: var(--ok); }
+.q-der { display: grid; gap: 1vh; align-content: start; min-width: 0; }
+.q-suite { padding: .6em .9em; display: grid; gap: .45em; }
+.q-suite .esc-fila { gap: .6em; }
+.q-mat { display: grid; grid-template-columns: 8.6em repeat(10, 1fr); gap: .22em; align-items: center; font-size: .58em; }
+.q-mat .h { text-align: center; color: var(--muted); font-weight: 700; font-family: var(--mono); }
+.q-mat .t { font: 600 1em var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-mat .t.inest { color: var(--warn); font-weight: 800; }
+.q-c { height: 1.55em; border-radius: .3em; background: var(--s3); }
+.q-c.p { background: var(--ok); } .q-c.f { background: var(--bad); } .q-c.r { background: var(--gold); }
+.q-c.nuevo { animation: esc-pop .3s ease-out both; }
+.q-ley { display: flex; gap: 1em; font-size: .56em; color: var(--muted); flex-wrap: wrap; }
+.q-ley i { display: inline-block; width: .9em; height: .9em; border-radius: .2em; vertical-align: -.1em; margin-right: .3em; }
+.q-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5em; }
+.q-stat { background: var(--s2); border-radius: .6em; padding: .3em .6em; line-height: 1.2; }
+.q-stat b { display: block; font-size: 1.25em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.q-stat span { font-size: .58em; color: var(--muted); }
+.q-stat.bad b { color: var(--bad); } .q-stat.ok b { color: var(--ok); } .q-stat.warn b { color: var(--warn); }
+.q-semilla { padding: .55em .9em; display: grid; grid-template-columns: auto 1fr; gap: .4em 1em; align-items: start; }
+.q-semilla .ctl { display: grid; grid-template-columns: auto auto; gap: .4em; align-items: center; align-content: start; }
+.q-semilla .ctl .q-et { grid-column: 1 / -1; }
+.q-semilla label { font-size: .6em; font-weight: 700; color: var(--muted); }
+.q-semilla input { width: 6.5em; font: 700 .8em var(--mono); padding: .3em .5em; border-radius: .5em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+.q-datos { margin: 0; padding: 0; list-style: none; display: grid; gap: .15em; font: 600 .58em/1.4 var(--mono); }
+.q-datos li { display: grid; grid-template-columns: 9.5em 1fr 3em; gap: .6em; padding: .1em .5em; border-radius: .35em; background: var(--s2); }
+.q-datos li.nuevo { animation: esc-entra .3s ease-out both; }
+.q-huella { font-size: .6em; color: var(--muted); }
+.q-huella b { font-family: var(--mono); color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { .q-c.nuevo, .q-datos li.nuevo { animation: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">QA con IA · E06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="q-cab">
+      <h1 class="esc-titulo a-in">¿Por qué pasa hoy y falla mañana? <em>Pruebas inestables</em></h1>
+    </div>
+    <div class="q-b4">
+      <div class="q-causas">
+        <section class="esc-card q-causa a-in" style="--d:.1s" data-c="datos">
+          <h3>Datos compartidos o al azar</h3><button type="button" class="q-fix" role="switch" aria-checked="false" aria-label="Arreglar datos"></button>
+          <code data-mal="stock = el que dejó la corrida anterior" data-bien="await sembrar({ semilla: 42 })  // antes de cada prueba"></code>
+          <p>El stock, los precios y los usuarios cambian entre corridas.</p>
+        </section>
+        <section class="esc-card q-causa a-in" style="--d:.15s" data-c="espera">
+          <h3>Esperas fijas</h3><button type="button" class="q-fix" role="switch" aria-checked="false" aria-label="Arreglar esperas"></button>
+          <code data-mal="await page.waitForTimeout(500)" data-bien="await expect(page.getByRole('alert')).toBeVisible()"></code>
+          <p>500 ms alcanzan en tu laptop, no en la máquina lenta del CI.</p>
+        </section>
+        <section class="esc-card q-causa a-in" style="--d:.2s" data-c="orden">
+          <h3>Dependencia del orden</h3><button type="button" class="q-fix" role="switch" aria-checked="false" aria-label="Aislar pruebas"></button>
+          <code data-mal="reporte.spec usa la venta que creó venta.spec" data-bien="cada prueba crea sus datos (fixture) · corre sola o en paralelo"></code>
+          <p>Con varios workers el orden cambia y la venta aún no existe.</p>
+        </section>
+        <section class="esc-card q-causa a-in" style="--d:.25s" data-c="reloj">
+          <h3>Hora y fecha reales</h3><button type="button" class="q-fix" role="switch" aria-checked="false" aria-label="Fijar el reloj"></button>
+          <code data-mal="const hoy = new Date()  // el servidor está en UTC" data-bien="await page.clock.setFixedTime(new Date('2026-11-01T10:00:00-05:00'))"></code>
+          <p>«Ventas de hoy» falla entre las 7 p. m. y medianoche de Lima.</p>
+        </section>
+      </div>
+      <div class="q-der">
+        <section class="esc-card q-suite a-in" style="--d:.2s" aria-label="Suite">
+          <div class="esc-fila">
+            <span class="q-et">8 pruebas × 10 corridas</span>
+            <label class="q-et" style="display:inline-flex;align-items:center;gap:.5em;margin-left:auto">Reintentos (retries: 2) <button type="button" class="q-sw" role="switch" aria-checked="false" id="reint" aria-label="Reintentos"></button></label>
+            <button type="button" class="q-btn pri" id="correr">Correr 10 veces</button>
+          </div>
+          <div class="q-mat" id="mat"></div>
+          <div class="q-ley"><span><i style="background:var(--ok)"></i>pasó</span><span><i style="background:var(--bad)"></i>falló</span><span><i style="background:var(--gold)"></i>«flaky»: pasó al reintentar</span><span><i style="background:var(--s3)"></i>sin correr</span></div>
+          <div class="q-stats">
+            <div class="q-stat" id="st-inest"><b>—</b><span>pruebas inestables (pasan y fallan)</span></div>
+            <div class="q-stat" id="st-verdes"><b>—</b><span>corridas en verde de punta a punta</span></div>
+            <div class="q-stat" id="st-tasa"><b>—</b><span>de ejecuciones fallidas o reintentadas</span></div>
+          </div>
+        </section>
+        <section class="esc-card q-semilla a-in" style="--d:.3s" aria-label="Datos con semilla">
+          <div class="ctl">
+            <span class="q-et">Datos con semilla</span>
+            <label for="semilla">Semilla</label>
+            <input id="semilla" type="number" value="42" inputmode="numeric">
+            <button type="button" class="q-btn" id="generar">Generar</button>
+            <button type="button" class="q-btn" id="azar">Semilla nueva</button>
+          </div>
+          <div style="display:grid;gap:.35em;min-width:0">
+            <ol class="q-datos" id="datos"></ol>
+            <span class="q-huella" id="huella"></span>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Un reintento esconde la inestabilidad; no la arregla</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Probabilidad de fallo que aporta cada causa a cada prueba (si la causa no está arreglada).
+  var PRUEBAS = [
+    { n: "login", p: { espera: .12 } },
+    { n: "catalogo", p: { datos: .25 } },
+    { n: "venta-efectivo", p: { datos: .15, espera: .25 } },
+    { n: "venta-yape", p: { datos: .15, espera: .2 } },
+    { n: "promo", p: { espera: .3, orden: .1 } },
+    { n: "vuelto", p: { orden: .2 } },
+    { n: "reporte-dia", p: { datos: .3, orden: .35, reloj: .25 } },
+    { n: "vencidos", p: { datos: .2, reloj: .35 } }
+  ];
+  var arreglado = { datos: false, espera: false, orden: false, reloj: false };
+  var timers = [];
+
+  document.querySelectorAll(".q-causa").forEach(function (sec) {
+    var c = sec.getAttribute("data-c"), sw = sec.querySelector(".q-fix"), code = sec.querySelector("code");
+    function pinta() { code.textContent = arreglado[c] ? code.getAttribute("data-bien") : code.getAttribute("data-mal"); sec.classList.toggle("ok", arreglado[c]); sw.setAttribute("aria-checked", arreglado[c] ? "true" : "false"); sw.textContent = arreglado[c] ? "✓ arreglado" : "✗ sin arreglar"; }
+    sw.addEventListener("click", function () { arreglado[c] = !arreglado[c]; pinta(); });
+    pinta();
+  });
+  $("reint").addEventListener("click", function () { var b = $("reint"); b.setAttribute("aria-checked", b.getAttribute("aria-checked") === "true" ? "false" : "true"); });
+
+  function pFallo(t) {
+    var ok = 1;
+    for (var c in t.p) if (!arreglado[c]) ok *= 1 - t.p[c];
+    return 1 - ok;
+  }
+  function vaciar() {
+    var m = $("mat"); m.textContent = "";
+    var h = document.createElement("span"); m.appendChild(h);
+    for (var r = 1; r <= 10; r++) { var s = document.createElement("span"); s.className = "h"; s.textContent = r; m.appendChild(s); }
+    PRUEBAS.forEach(function (t, i) {
+      var n = document.createElement("span"); n.className = "t"; n.id = "t" + i; n.textContent = t.n; m.appendChild(n);
+      for (var r = 0; r < 10; r++) { var c = document.createElement("span"); c.className = "q-c"; c.id = "c" + i + "-" + r; m.appendChild(c); }
+    });
+  }
+  function stat(id, valor, clase) { var el = $(id); el.querySelector("b").textContent = valor; el.className = "q-stat " + clase; }
+  function correr() {
+    timers.forEach(clearTimeout); timers = [];
+    vaciar();
+    var reint = $("reint").getAttribute("aria-checked") === "true";
+    var res = PRUEBAS.map(function () { return []; });
+    $("correr").disabled = true;
+    for (var r = 0; r < 10; r++) (function (r) {
+      timers.push(setTimeout(function () {
+        PRUEBAS.forEach(function (t, i) {
+          var p = pFallo(t), e = Math.random() < p ? "f" : "p";
+          if (e === "f" && reint) { if (Math.random() >= p) e = "r"; else if (Math.random() >= p) e = "r"; }
+          res[i][r] = e;
+          var c = $("c" + i + "-" + r); c.className = "q-c nuevo " + e;
+        });
+        if (r === 9) fin(res);
+      }, quieto ? 0 : 140 * r));
+    })(r);
+  }
+  function fin(res) {
+    var inest = 0, verdes = 0, malas = 0;
+    res.forEach(function (fila, i) {
+      var hay = {}; fila.forEach(function (e) { hay[e] = 1; if (e !== "p") malas++; });
+      var es = (hay.p && hay.f) || hay.r; if (es) inest++;
+      $("t" + i).classList.toggle("inest", !!es);
+    });
+    for (var r = 0; r < 10; r++) { var v = true; res.forEach(function (f) { if (f[r] === "f") v = false; }); if (v) verdes++; }
+    var tasa = Math.round(malas / 80 * 100);
+    stat("st-inest", inest + " de 8", inest ? "bad" : "ok");
+    stat("st-verdes", verdes + " de 10", verdes === 10 ? "ok" : verdes >= 7 ? "warn" : "bad");
+    stat("st-tasa", tasa + " %", tasa ? (tasa > 10 ? "bad" : "warn") : "ok");
+    $("correr").disabled = false;
+  }
+  $("correr").addEventListener("click", correr);
+  vaciar();
+
+  // ---- Generador con semilla: mulberry32, el mismo del kit (app/semilla.mjs).
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  var CLIENTES = ["Rosa Quispe", "Luis Huamán", "Ana Flores", "Jorge Mamani", "Carmen Rojas", "Pedro Torres", "Lucía Chávez", "Miguel Ramos"];
+  var PRODUCTOS = [["Inca Kola 500 ml", 2.5], ["Agua San Luis 625 ml", 1.8], ["Café Altomayo 200 g", 18.9], ["Arroz Costeño 5 kg", 24.5], ["Leche Gloria azul 400 g", 4.1], ["Galletas Soda Field", 1.2], ["Panetón D'Onofrio 900 g", 32.9], ["Jabón Bolívar 190 g", 3.9]];
+  var previo = {};
+  function generar() {
+    var s = parseInt($("semilla").value, 10); if (!(s >= 0)) { s = 42; $("semilla").value = 42; }
+    var rnd = mulberry32(s), ol = $("datos"), filas = [];
+    ol.textContent = "";
+    for (var k = 0; k < 4; k++) {
+      var cli = CLIENTES[Math.floor(rnd() * CLIENTES.length)], pr = PRODUCTOS[Math.floor(rnd() * PRODUCTOS.length)], q = 1 + Math.floor(rnd() * 5);
+      filas.push(cli + pr[0] + q);
+      var li = document.createElement("li"); li.className = "nuevo";
+      [cli, pr[0] + " · S/ " + pr[1].toFixed(2).replace(".", ","), "× " + q].forEach(function (t) { var sp = document.createElement("span"); sp.textContent = t; li.appendChild(sp); });
+      ol.appendChild(li);
+    }
+    var h = 0, txt = filas.join("|"); for (var i = 0; i < txt.length; i++) h = (Math.imul(h, 31) + txt.charCodeAt(i)) >>> 0;
+    var huella = h.toString(16).padStart(8, "0"), msj;
+    if (previo[s] === huella) msj = '<span class="esc-chip ok">misma semilla → mismos datos ✓</span>';
+    else if (previo[s]) msj = '<span class="esc-chip bad">cambió</span>';
+    else msj = "Pulsa «Generar» otra vez: saldrá lo mismo.";
+    previo[s] = huella;
+    $("huella").innerHTML = "Semilla <b>" + s + "</b> · huella <b>" + huella + "</b> · " + msj;
+  }
+  $("generar").addEventListener("click", generar);
+  $("azar").addEventListener("click", function () { $("semilla").value = Math.floor(Math.random() * 100000); generar(); });
+  $("semilla").addEventListener("keydown", function (e) { if (e.key === "Enter") generar(); });
+  generar();
+})();
+</script>
+</body>
+</html>

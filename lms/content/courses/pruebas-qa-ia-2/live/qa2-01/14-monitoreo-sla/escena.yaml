@@ -1,0 +1,16 @@
+id: "14-monitoreo-sla"
+titulo: "Disponibilidad, SLA y alerta"
+fase: experimentacion
+paso: monitoreo
+duracion_min: 12
+lo_logre: true
+evidencia: ninguna
+umbral_pct: 100
+compuerta: lo_logre
+comandos:
+  - titulo: "¿Está arriba? (lo mismo que hace la sonda)"
+    cmd: "curl -s -o /dev/null -w '%{http_code} %{time_total}s\\n' localhost:3000/salud"
+  - titulo: "Regla de alerta en PromQL (Grafana → Alerting)"
+    cmd: "probe_success{job=\"tienda-sol\"} == 0"
+  - titulo: "Disponibilidad de los últimos 30 días"
+    cmd: "avg_over_time(probe_success{job=\"tienda-sol\"}[30d]) * 100"

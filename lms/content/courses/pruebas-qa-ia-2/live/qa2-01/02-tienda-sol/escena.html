@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Una venta que no debía pasar</title>
+<!--
+  Escena del modo LIVE (taller qa2-01). Plantilla «Consola + Qué pasa en el software» con sub-pasos (puntos ● ○ ○,
+  flechas ‹ › y teclas ← →). A la izquierda lo que el alumno escribe en Claude Code (o el comando sin IA) y lo que
+  responde, tomado de corridas reales del kit; a la derecha una réplica clara e interactiva del software que cambia
+  paso a paso. Sin recursos externos, menos de 300 elementos y 1 MB, todo se apaga con prefers-reduced-motion. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .25); }
+.esc { height: 100vh; min-height: 0; padding: 1.4vh 2.4vw 1.1vh; gap: .9vh; overflow: hidden; }
+.esc-cuerpo { gap: .8vh; justify-content: start; min-height: 0; }
+.esc-titulo { font-size: 1.32em; }
+.v-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: end; }
+.v-obj { margin: 0; font-size: .7em; color: var(--muted); } .v-obj b { color: var(--fg); }
+.v-bloque { font: 700 .62em var(--mono); color: var(--muted); letter-spacing: .06em; white-space: nowrap; }
+.v-dots { display: flex; align-items: center; gap: .6em; }
+.v-dots .q-btn { padding: .3em .75em; font-size: .8em; }
+.v-dotbar { display: flex; gap: .45em; }
+.v-dot { width: .85em; height: .85em; border-radius: 50%; border: 2px solid var(--accent); background: transparent; padding: 0; cursor: pointer; }
+.v-dot[aria-current="true"] { background: var(--accent); }
+.v-dots b { font-size: .78em; } .v-dots #sub-n { margin-left: auto; }
+.v-sub { display: grid; align-content: start; gap: .5em; }
+.v-b2 { display: grid; grid-template-columns: 45fr 55fr; gap: 1.1vw; min-height: 0; flex: 1; }
+.v-con, .v-soft { display: grid; grid-template-rows: auto minmax(0,1fr); gap: .45em; padding: .6em .9em .7em; min-width: 0; min-height: 0; overflow: hidden; }
+.v-et { font-size: .58em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: flex; align-items: center; gap: .6em; }
+.v-et .esc-chip { font-size: .95em; padding: .15em .6em; margin-left: auto; }
+.v-term { background: #14122b; color: #e9e6ff; border-radius: .7em; border: 1px solid rgba(190,185,255,.22); display: grid; grid-template-rows: auto 1fr auto; min-height: 0; overflow: hidden; }
+.v-term-cab { display: flex; align-items: center; gap: .5em; padding: .4em .8em; background: #1d1b38; font: 700 .62em var(--mono); color: #b7b4cc; border-bottom: 1px solid rgba(190,185,255,.14); }
+.v-term-cab i { width: .6em; height: .6em; border-radius: 50%; background: #ff5f57; display: inline-block; } .v-term-cab i+i { background: #febc2e; } .v-term-cab i+i+i { background: #28c840; }
+.v-term-cab span { margin-left: .4em; }
+.v-term pre { margin: 0; padding: .6em .9em; font: 500 .85em/1.45 var(--mono); white-space: pre-wrap; word-break: break-word; overflow: auto; min-height: 0; }
+.v-term pre .p { color: #8e7dff; } .v-term pre .u { color: #ffd166; } .v-term pre .k { color: #7fd1ff; } .v-term pre .c { color: #8a86b3; }
+.v-term pre .ok { color: #4fd37a; } .v-term pre .bad { color: #ff7b7b; } .v-term pre .w { color: #f4ac5c; } .v-term pre .d { color: #c3b9ff; }
+.v-term pre .cur { display: inline-block; width: .55em; height: 1em; background: #e9e6ff; vertical-align: text-bottom; animation: esc-parpadeo 1s steps(2) infinite; }
+.v-term-pie { display: flex; gap: .5em; align-items: center; padding: .45em .8em; border-top: 1px solid rgba(190,185,255,.14); background: #1d1b38; }
+.v-alt { font: 500 .6em/1.3 var(--mono); color: #b7b4cc; margin-left: auto; text-align: right; }
+.v-alt b { color: #ffd166; font-weight: 600; }
+.q-btn { font: 700 .66em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .95em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s; }
+.q-btn:hover { transform: translateY(-1px); } .q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.q-btn.ok { color: var(--ok); border-color: var(--ok); } .q-btn.no { color: var(--bad); border-color: var(--bad); }
+.q-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.v-soft-cuerpo { min-height: 0; overflow: auto; display: grid; align-content: start; gap: .5em; }
+.v-paso { transition: box-shadow .3s, background .3s; border-radius: .6em; }
+.v-paso.on { box-shadow: 0 0 0 3px var(--accent-bg), 0 0 0 5px var(--accent); background: var(--accent-bg); }
+.v-haz { display: grid; grid-template-columns: auto 1fr auto; gap: 1vw; align-items: center; padding: .45em 1em; flex: none; }
+.v-haz ol { margin: 0; padding: 0; list-style: none; display: flex; gap: 1.2vw; flex-wrap: wrap; font-size: .7em; }
+.v-haz ol li { display: flex; gap: .45em; align-items: baseline; }
+.v-haz ol li b { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .85em; flex: none; }
+.v-haz code { font: 600 .92em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.v-logre { font-size: .66em; display: flex; gap: .5em; align-items: center; background: var(--ok-bg); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); border-radius: 999px; padding: .3em .8em; font-weight: 700; white-space: nowrap; }
+.v-logre input { accent-color: var(--ok); }
+/* piezas de réplica (claras) */
+.s-win { background: #fffbf2; color: #1f2937; border: 1px solid #e5e7eb; border-radius: .6em; overflow: hidden; font-size: .72em; }
+.s-win .s-bar { background: #1f2937; color: #fff; padding: .45em .8em; display: flex; gap: .8em; align-items: center; font-weight: 700; }
+.s-win .s-bar span { color: #f59e0b; } .s-win .s-bar nav { margin-left: auto; display: flex; gap: .8em; font-weight: 500; font-size: .9em; }
+.s-win .s-bar nav a { color: #fff; text-decoration: none; cursor: pointer; } .s-win .s-bar nav a.cur { border-bottom: 2px solid #f59e0b; }
+.s-win .s-main { padding: .8em 1em; display: grid; gap: .5em; }
+.s-win h4 { margin: 0; font-size: 1.1em; }
+.s-win label { display: grid; gap: .15em; font-weight: 600; font-size: .9em; }
+.s-win input { width: 100%; padding: .4em .6em; font: inherit; border: 1px solid #d1d5db; border-radius: .4em; background: #fff; }
+.s-win .s-pri { background: #f59e0b; color: #1f1300; border: 0; border-radius: .4em; padding: .45em 1em; font: inherit; font-weight: 700; cursor: pointer; justify-self: start; }
+.s-win .s-sec { background: #fff; border: 1px solid #d1d5db; border-radius: .4em; padding: .3em .7em; font: inherit; font-size: .9em; cursor: pointer; }
+.s-win .s-err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: .4em; padding: .4em .6em; font-weight: 600; } .s-win .s-err:empty { display: none; }
+.s-win .s-ok { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: .4em; padding: .4em .6em; font-weight: 600; } .s-win .s-ok:empty { display: none; }
+.s-win table { width: 100%; border-collapse: collapse; font-size: .95em; } .s-win th, .s-win td { text-align: left; padding: .3em .4em; border-bottom: 1px solid #e5e7eb; } .s-win th { color: #6b7280; font-size: .85em; }
+.s-win .s-tot { display: flex; gap: 1.5em; align-items: end; } .s-win .s-tot b { font-size: 1.3em; }
+.v-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .25em; font-size: .68em; }
+.v-lista li { display: grid; grid-template-columns: 1.4em 1fr; gap: .5em; align-items: start; padding: .22em .5em; border-radius: .4em; border: 1px solid var(--line); background: var(--s1); }
+.v-lista li i { font-style: normal; font-weight: 800; color: var(--muted); } .v-lista li.ok i { color: var(--ok); } .v-lista li.bad i { color: var(--bad); }
+.v-lista li.bad { background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 35%, transparent); } .v-lista li.ok { background: var(--ok-bg); }
+.v-lista li small { display: block; font: 500 .85em var(--mono); color: var(--bad); white-space: pre-wrap; }
+.v-lista li[hidden] { display: none; }
+.v-code { margin: 0; font: 500 .66em/1.45 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .6em .8em; white-space: pre-wrap; color: var(--fg); overflow: auto; }
+.v-code .n { color: var(--ok); } .v-code .ph { color: var(--muted); font-style: italic; } .v-code .r { color: var(--bad); }
+.v-nota { margin: 0; font-size: .66em; color: var(--muted); } .v-nota b { color: var(--fg); }
+.v-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.v-kpi { background: var(--s2); border: 1px solid var(--line); border-radius: .6em; padding: .5em .7em; display: grid; gap: .15em; }
+.v-kpi .v-et { font-size: .52em; } .v-kpi b { font-size: 1.25em; line-height: 1.1; } .v-kpi small { font-size: .62em; color: var(--muted); }
+.v-kpi.ok { background: var(--ok-bg); } .v-kpi.ok b { color: var(--ok); } .v-kpi.bad { background: var(--bad-bg); } .v-kpi.bad b { color: var(--bad); }
+.v-tabs { display: flex; gap: .4em; } .v-tabs .q-btn { padding: .4em .8em; }
+@media (prefers-reduced-motion: reduce) { .v-term pre .cur { animation: none; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 780 L168 728 L236 764 L296 700"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="780" r="3.5"/><circle class="eg" cx="168" cy="728" r="4.5"/><circle class="e" cx="236" cy="764" r="3"/><circle class="eo" cx="296" cy="700" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="v-bloque">Bloque 1/6 · 9:00 hora de Lima</span>
+    <span class="esc-num">QA con IA · 02 / 19</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div class="v-cab">
+      <h1 class="esc-titulo a-in">Una venta que <em>no debía pasar</em></h1>
+      <p class="v-obj a-in" style="--d:.05s"><b>Objetivo</b> · Ver con tus ojos los dos bugs antes de escribir una sola prueba.</p>
+    </div>
+    <div class="v-dots a-in" style="--d:.08s"><button type="button" class="q-btn" id="ant" aria-label="Paso anterior">‹</button><span class="v-dotbar"><button type="button" class="v-dot" data-i="0" aria-label="Paso 1" aria-current=true></button><button type="button" class="v-dot" data-i="1" aria-label="Paso 2"></button><button type="button" class="v-dot" data-i="2" aria-label="Paso 3"></button></span><b id="sub-tit"></b><span class="v-nota" id="sub-n"></span><button type="button" class="q-btn" id="sig" aria-label="Paso siguiente">›</button></div>
+    <div class="v-b2">
+      <section class="esc-card v-con a-in" style="--d:.1s" aria-label="Consola">
+        <span class="v-et">Consola · lo que escribes <span class="esc-chip">Claude Code</span></span>
+        <div class="v-term">
+          <div class="v-term-cab"><i></i><i></i><i></i><span id="cwd">❯ claude</span></div>
+          <pre id="con" aria-live="polite"></pre>
+          <div class="v-term-pie"><button type="button" class="q-btn pri" id="ejecutar">Ejecutar ▶</button><button type="button" class="q-btn" id="reiniciar">Reiniciar</button><span class="v-alt" id="alt"></span></div>
+        </div>
+      </section>
+      <section class="esc-card v-soft a-in" style="--d:.15s" aria-label="Qué pasa en el software">
+        <span class="v-et">Qué pasa en el software <span class="esc-chip ok" id="soft"></span></span>
+        <div class="v-soft-cuerpo"><div class="v-sub" data-i="0"><div class="s-win v-paso" id="r-login"><div class="s-bar">☀ Tienda <span>Sol</span></div><div class="s-main" style="max-width:22em"><h4>Iniciar sesión</h4><label>Usuario<input id="ts-u" value="cajero"></label><label>Clave<input id="ts-c" type="password" value="cajero123"></label><button type="button" class="s-pri" id="ts-ingresar">Ingresar</button></div></div>
+<div class="s-win v-paso" id="r-cat" hidden><div class="s-bar">☀ Tienda <span>Sol</span><nav><a class="cur">Catálogo</a><a id="ts-ir-venta">Venta (<b id="ts-n">0</b>)</a><a>Reporte</a></nav></div><div class="s-main"><h4>Catálogo</h4><table><tr><th>Producto</th><th>Precio</th><th></th></tr><tr><td>Inca Kola 500 ml</td><td>S/ 2.50</td><td><button type="button" class="s-sec" data-add="Inca Kola 500 ml|2.50">Agregar</button></td></tr><tr><td>Café Altomayo 200 g <small>−10 %</small></td><td>S/ 18.90</td><td><button type="button" class="s-sec" data-add="Café Altomayo 200 g|17.01">Agregar</button></td></tr><tr><td>Arroz Costeño 5 kg</td><td>S/ 24.50</td><td><button type="button" class="s-sec" data-add="Arroz Costeño 5 kg|24.50">Agregar</button></td></tr></table></div></div>
+<div class="s-win v-paso" id="r-venta" hidden><div class="s-bar">☀ Tienda <span>Sol</span><nav><a id="ts-ir-cat">Catálogo</a><a class="cur">Venta</a><a>Reporte</a></nav></div><div class="s-main"><h4>Venta</h4><table><tr><th>Producto</th><th>Cantidad</th><th>Subtotal</th></tr><tr><td id="ts-prod">—</td><td><input id="ts-cant" type="number" value="1" min="1" style="width:4em"></td><td id="ts-sub">S/ 0.00</td></tr></table><div class="s-tot"><div>Total<br><b id="ts-total">S/ 0.00</b></div><label style="flex:1">Efectivo recibido (S/)<input id="ts-ef" type="number" placeholder="0.00"></label><div>Vuelto<br><b id="ts-vuelto">—</b></div></div><button type="button" class="s-pri" id="ts-conf">Confirmar venta</button><div class="s-err" id="ts-err"></div><div class="s-ok v-paso" id="r-ok"></div></div></div>
+<p class="v-nota"><b>Bug A:</b> el vuelto en pantalla sale de lo que tecleas, pero al servidor se le manda efectivo = total. <b>Bug B:</b> al cambiar la cantidad se vuelve a descontar la promo sobre un precio ya rebajado.</p></div></div>
+      </section>
+    </div>
+    <div class="esc-card v-haz a-in" style="--d:.25s">
+      <span class="v-et">Hazlo tú · Tu acción</span>
+      <ol id="haz"></ol>
+      <label class="v-logre"><input type="checkbox"> <span id="logre"></span></label>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Antes · 01 · Tu Tienda Sol en la nube</span> <span style="margin-left:auto">Después · 03 · Casos y pirámide de pruebas</span></footer>
+</div>
+<script>
+const SUBS=[{pasos:[{"t": "prompt", "s": "Abre localhost:3000, entra como cajero / cajero123, agrega 1 Café Altomayo 200 g, ve a Venta, escribe efectivo 5 y confirma. Dime qué muestra la pantalla."}, {"t": "claude", "s": "browser_navigate localhost:3000", "on": "r-login"}, {"t": "claude", "s": "browser_fill Usuario=cajero · Clave=cajero123 · click «Ingresar»"}, {"t": "claude", "s": "click «Agregar» en Café Altomayo 200 g · click «Venta»", "on": "r-cat"}],inicio:["Puedes pedírselo a Claude Code con el navegador (Playwright MCP) o hacerlo tú a mano en la réplica de la derecha."],alt:"",cwd:"qa-taller-kit",soft:"Tienda Sol",titulo:"Entra y vende",haz:["Entra como cajero en tu tienda (localhost:3000 o la web).", "Agrega Café Altomayo y ve a Venta."],logre:"llegué a la pantalla de venta con el café en el carrito"},{pasos:[{"t": "claude", "s": "browser_fill «Efectivo recibido» = 5 · click «Confirmar venta»", "on": "r-ef5"}, {"t": "out", "s": "La pantalla muestra: «Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00».\nEl cajero escribió S/ 5 pero la venta se registró igual: el POS envió efectivo = total (17.01).", "c": "bad", "on": "r-ok"}],inicio:["Puedes pedírselo a Claude Code con el navegador (Playwright MCP) o hacerlo tú a mano en la réplica de la derecha."],alt:"",cwd:"qa-taller-kit",soft:"Tienda Sol",titulo:"Bug A · el pago que no alcanzaba",haz:["Escribe efectivo <code>5</code> y confirma.", "¿Se registró la venta? Anota el mensaje exacto."],logre:"vi «Venta N° 1 registrada… Vuelto S/ 0.00» con efectivo 5"},{pasos:[{"t": "prompt", "s": "Ahora agrega otro Café Altomayo y cambia la cantidad a 2. ¿Qué total sale?"}, {"t": "claude", "s": "browser_fill Cantidad = 2", "on": "r-cant2"}, {"t": "out", "s": "Total: S/ 30.62. Debería ser 2 × 17.01 = S/ 34.02: la promo de 10 % se aplicó dos veces al recalcular.", "c": "bad"}],inicio:["Puedes pedírselo a Claude Code con el navegador (Playwright MCP) o hacerlo tú a mano en la réplica de la derecha."],alt:"",cwd:"qa-taller-kit",soft:"Tienda Sol",titulo:"Bug B · la promo doble",haz:["Agrega otro café y cambia la cantidad a 2.", "¿Da 34.02 o 30.62? Anota."],logre:"puedo explicar los dos bugs con sus números"}];
+
+const $=id=>document.getElementById(id);const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const con=$('con');let corriendo=false,parar=false,cur=0;const S=()=>SUBS[cur];
+function linea(cls,txt){const s=document.createElement('span');if(cls)s.className=cls;s.innerHTML=txt;con.appendChild(s);con.appendChild(document.createTextNode('\n'));con.scrollTop=con.scrollHeight;return s;}
+const dormir=ms=>new Promise(r=>setTimeout(r,RM?0:ms));
+async function tipear(pref,cls,txt){const s=linea('',pref);const t=document.createElement('span');t.className=cls;s.appendChild(t);const c=document.createElement('span');c.className='cur';s.appendChild(c);
+  if(RM){t.textContent=txt;}else{for(let i=0;i<txt.length;i++){t.textContent+=txt[i];con.scrollTop=con.scrollHeight;if(parar)break;await dormir(txt.length>90?8:18);}}c.remove();}
+function marcar(id){document.querySelectorAll('.v-paso.on').forEach(e=>e.classList.remove('on'));if(id){const e=$(id);if(e){e.classList.add('on');e.scrollIntoView({block:'nearest'});}}}
+async function ejecutar(){if(corriendo)return;corriendo=true;parar=false;$('ejecutar').disabled=true;con.textContent='';marcar(null);
+  for(const p of S().pasos){if(parar)break;
+    if(p.t==='prompt')await tipear('<span class="p">&gt; </span>','u',p.s);
+    else if(p.t==='cmd')await tipear('<span class="p">$ </span>','k',p.s);
+    else if(p.t==='claude'){await dormir(250);linea('d','<span class="c">⏺</span> '+esc(p.s));}
+    else if(p.t==='out')linea(p.c||'',esc(p.s));
+    else if(p.t==='html')linea(p.c||'',p.s);
+    else if(p.t==='pausa')await dormir(p.ms||600);
+    if(p.on){marcar(p.on);if(S().paso)S().paso(p.on);}
+    if(p.t!=='pausa')await dormir(p.ms||220);}
+  linea('c','— listo · pulsa «Reiniciar» para verlo otra vez');corriendo=false;$('ejecutar').disabled=false;}
+function inicio(){con.innerHTML=S().inicio.map(l=>'<span class="c">'+esc(l)+'</span>').join('\n')+'\n';}
+$('ejecutar').onclick=ejecutar;$('reiniciar').onclick=()=>{parar=true;corriendo=false;$('ejecutar').disabled=false;inicio();marcar(null);if(S().reiniciar)S().reiniciar();};
+function irSub(i){parar=true;corriendo=false;$('ejecutar').disabled=false;cur=(i+SUBS.length)%SUBS.length;const pn=S().panel??cur;document.querySelectorAll('.v-sub').forEach(d=>d.hidden=+d.dataset.i!==pn);document.querySelectorAll('.v-dot').forEach(d=>{if(+d.dataset.i===cur)d.setAttribute('aria-current','true');else d.removeAttribute('aria-current');});
+ $('sub-tit').textContent=S().titulo;$('sub-n').textContent=(cur+1)+' de '+SUBS.length;$('soft').textContent=S().soft;$('cwd').textContent='❯ claude · '+S().cwd;$('alt').innerHTML=S().alt?'Sin IA: <b>'+esc(S().alt)+'</b>':'';
+ $('haz').innerHTML=S().haz.map((h,k)=>'<li><b>'+(k+1)+'</b><span>'+h+'</span></li>').join('');$('logre').textContent='Lo logré: '+S().logre;inicio();marcar(null);}
+$('ant').onclick=()=>irSub(cur-1);$('sig').onclick=()=>irSub(cur+1);document.querySelectorAll('.v-dot').forEach(d=>d.onclick=()=>irSub(+d.dataset.i));
+addEventListener('keydown',e=>{if(e.target.matches('input,textarea'))return;if(e.key==='ArrowLeft')irSub(cur-1);if(e.key==='ArrowRight')irSub(cur+1);});
+
+(function(){window.paso=null;window.reiniciar=null;let items=[];const soles=n=>'S/ '+n.toFixed(2);
+function ver(id){['r-login','r-cat','r-venta'].forEach(x=>$(x).hidden=x!==id);}
+$('ts-ingresar').onclick=()=>{ver('r-cat');};$('ts-ir-venta').onclick=()=>{ver('r-venta');pintar();};$('ts-ir-cat').onclick=()=>ver('r-cat');
+document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const [n,p]=b.dataset.add.split('|');items=[{n,p:+p,c:1}];$('ts-n').textContent=1;});
+function total(){const it=items[0];if(!it)return 0;const c=+$('ts-cant').value||1;return c===1?it.p:+(it.p*c*0.9).toFixed(2);}
+function pintar(){const it=items[0];$('ts-prod').textContent=it?it.n:'—';$('ts-sub').textContent=soles(total());$('ts-total').textContent=soles(total());const ef=+$('ts-ef').value;$('ts-vuelto').textContent=ef?(ef>=total()?soles(ef-total()):'Falta '+soles(total()-ef)):'—';}
+$('ts-cant').oninput=pintar;$('ts-ef').oninput=pintar;
+$('ts-conf').onclick=()=>{const ef=+$('ts-ef').value;$('ts-err').textContent='';if(!items[0]){$('ts-err').textContent='Agrega un producto primero';return;}
+  const enviado=total();$('r-ok').textContent='Venta N° 1 registrada. Total '+soles(enviado)+' · Vuelto S/ 0.00';$('r-ok').classList.add('on');
+  if(ef<total())$('ts-err').textContent='Tú escribiste '+soles(ef)+' y la venta pasó igual: el POST llevó efectivo = '+soles(enviado)+' (bug A).';};
+window.paso=id=>{if(id==='r-login'||id==='r-cat'||id==='r-venta')ver(id);if(id==='r-cat'){items=[{n:'Café Altomayo 200 g',p:17.01,c:1}];$('ts-n').textContent=1;}if(id==='r-venta'){pintar();}
+ if(id==='r-ef5'){ver('r-venta');if(!items[0]){items=[{n:'Café Altomayo 200 g',p:17.01,c:1}];$('ts-n').textContent=1;}$('ts-cant').value=1;$('ts-ef').value=5;pintar();}
+ if(id==='r-ok'){ver('r-venta');$('ts-conf').click();}
+ if(id==='r-cant2'){ver('r-venta');if(!items[0]){items=[{n:'Café Altomayo 200 g',p:17.01,c:1}];$('ts-n').textContent=1;}$('r-ok').textContent='';$('ts-err').textContent='';$('ts-ef').value='';$('ts-cant').value=2;pintar();$('ts-err').textContent='Total S/ 30.62: debería ser 2 × 17.01 = S/ 34.02 (bug B: la promo se aplicó dos veces).';}};
+window.reiniciar=()=>{items=[];$('ts-n').textContent=0;$('ts-ef').value='';$('ts-cant').value=1;$('r-ok').textContent='';$('ts-err').textContent='';ver('r-login');};
+SUBS[0].paso=window.paso;SUBS[0].reiniciar=window.reiniciar;})();
+SUBS[1].panel=0;SUBS[1].paso=SUBS[0].paso;SUBS[1].reiniciar=SUBS[0].reiniciar;SUBS[2].panel=0;SUBS[2].paso=SUBS[0].paso;SUBS[2].reiniciar=SUBS[0].reiniciar;
+irSub(0);
+</script>
+</body>
+</html>

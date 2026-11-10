@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Del caso de uso a la prueba</title>
+<!--
+  Escena del modo LIVE (taller qa2-01). Plantilla «Consola + Qué pasa en el software» con sub-pasos (puntos ● ○ ○,
+  flechas ‹ › y teclas ← →). A la izquierda lo que el alumno escribe en Claude Code (o el comando sin IA) y lo que
+  responde, tomado de corridas reales del kit; a la derecha una réplica clara e interactiva del software que cambia
+  paso a paso. Sin recursos externos, menos de 300 elementos y 1 MB, todo se apaga con prefers-reduced-motion. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .25); }
+.esc { height: 100vh; min-height: 0; padding: 1.4vh 2.4vw 1.1vh; gap: .9vh; overflow: hidden; }
+.esc-cuerpo { gap: .8vh; justify-content: start; min-height: 0; }
+.esc-titulo { font-size: 1.32em; }
+.v-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: end; }
+.v-obj { margin: 0; font-size: .7em; color: var(--muted); } .v-obj b { color: var(--fg); }
+.v-bloque { font: 700 .62em var(--mono); color: var(--muted); letter-spacing: .06em; white-space: nowrap; }
+.v-dots { display: flex; align-items: center; gap: .6em; }
+.v-dots .q-btn { padding: .3em .75em; font-size: .8em; }
+.v-dotbar { display: flex; gap: .45em; }
+.v-dot { width: .85em; height: .85em; border-radius: 50%; border: 2px solid var(--accent); background: transparent; padding: 0; cursor: pointer; }
+.v-dot[aria-current="true"] { background: var(--accent); }
+.v-dots b { font-size: .78em; } .v-dots #sub-n { margin-left: auto; }
+.v-sub { display: grid; align-content: start; gap: .5em; }
+.v-b2 { display: grid; grid-template-columns: 45fr 55fr; gap: 1.1vw; min-height: 0; flex: 1; }
+.v-con, .v-soft { display: grid; grid-template-rows: auto minmax(0,1fr); gap: .45em; padding: .6em .9em .7em; min-width: 0; min-height: 0; overflow: hidden; }
+.v-et { font-size: .58em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: flex; align-items: center; gap: .6em; }
+.v-et .esc-chip { font-size: .95em; padding: .15em .6em; margin-left: auto; }
+.v-term { background: #14122b; color: #e9e6ff; border-radius: .7em; border: 1px solid rgba(190,185,255,.22); display: grid; grid-template-rows: auto 1fr auto; min-height: 0; overflow: hidden; }
+.v-term-cab { display: flex; align-items: center; gap: .5em; padding: .4em .8em; background: #1d1b38; font: 700 .62em var(--mono); color: #b7b4cc; border-bottom: 1px solid rgba(190,185,255,.14); }
+.v-term-cab i { width: .6em; height: .6em; border-radius: 50%; background: #ff5f57; display: inline-block; } .v-term-cab i+i { background: #febc2e; } .v-term-cab i+i+i { background: #28c840; }
+.v-term-cab span { margin-left: .4em; }
+.v-term pre { margin: 0; padding: .6em .9em; font: 500 .85em/1.45 var(--mono); white-space: pre-wrap; word-break: break-word; overflow: auto; min-height: 0; }
+.v-term pre .p { color: #8e7dff; } .v-term pre .u { color: #ffd166; } .v-term pre .k { color: #7fd1ff; } .v-term pre .c { color: #8a86b3; }
+.v-term pre .ok { color: #4fd37a; } .v-term pre .bad { color: #ff7b7b; } .v-term pre .w { color: #f4ac5c; } .v-term pre .d { color: #c3b9ff; }
+.v-term pre .cur { display: inline-block; width: .55em; height: 1em; background: #e9e6ff; vertical-align: text-bottom; animation: esc-parpadeo 1s steps(2) infinite; }
+.v-term-pie { display: flex; gap: .5em; align-items: center; padding: .45em .8em; border-top: 1px solid rgba(190,185,255,.14); background: #1d1b38; }
+.v-alt { font: 500 .6em/1.3 var(--mono); color: #b7b4cc; margin-left: auto; text-align: right; }
+.v-alt b { color: #ffd166; font-weight: 600; }
+.q-btn { font: 700 .66em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .95em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s; }
+.q-btn:hover { transform: translateY(-1px); } .q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.q-btn.ok { color: var(--ok); border-color: var(--ok); } .q-btn.no { color: var(--bad); border-color: var(--bad); }
+.q-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.v-soft-cuerpo { min-height: 0; overflow: auto; display: grid; align-content: start; gap: .5em; }
+.v-paso { transition: box-shadow .3s, background .3s; border-radius: .6em; }
+.v-paso.on { box-shadow: 0 0 0 3px var(--accent-bg), 0 0 0 5px var(--accent); background: var(--accent-bg); }
+.v-haz { display: grid; grid-template-columns: auto 1fr auto; gap: 1vw; align-items: center; padding: .45em 1em; flex: none; }
+.v-haz ol { margin: 0; padding: 0; list-style: none; display: flex; gap: 1.2vw; flex-wrap: wrap; font-size: .7em; }
+.v-haz ol li { display: flex; gap: .45em; align-items: baseline; }
+.v-haz ol li b { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .85em; flex: none; }
+.v-haz code { font: 600 .92em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.v-logre { font-size: .66em; display: flex; gap: .5em; align-items: center; background: var(--ok-bg); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); border-radius: 999px; padding: .3em .8em; font-weight: 700; white-space: nowrap; }
+.v-logre input { accent-color: var(--ok); }
+/* piezas de réplica (claras) */
+.s-win { background: #fffbf2; color: #1f2937; border: 1px solid #e5e7eb; border-radius: .6em; overflow: hidden; font-size: .72em; }
+.s-win .s-bar { background: #1f2937; color: #fff; padding: .45em .8em; display: flex; gap: .8em; align-items: center; font-weight: 700; }
+.s-win .s-bar span { color: #f59e0b; } .s-win .s-bar nav { margin-left: auto; display: flex; gap: .8em; font-weight: 500; font-size: .9em; }
+.s-win .s-bar nav a { color: #fff; text-decoration: none; cursor: pointer; } .s-win .s-bar nav a.cur { border-bottom: 2px solid #f59e0b; }
+.s-win .s-main { padding: .8em 1em; display: grid; gap: .5em; }
+.s-win h4 { margin: 0; font-size: 1.1em; }
+.s-win label { display: grid; gap: .15em; font-weight: 600; font-size: .9em; }
+.s-win input { width: 100%; padding: .4em .6em; font: inherit; border: 1px solid #d1d5db; border-radius: .4em; background: #fff; }
+.s-win .s-pri { background: #f59e0b; color: #1f1300; border: 0; border-radius: .4em; padding: .45em 1em; font: inherit; font-weight: 700; cursor: pointer; justify-self: start; }
+.s-win .s-sec { background: #fff; border: 1px solid #d1d5db; border-radius: .4em; padding: .3em .7em; font: inherit; font-size: .9em; cursor: pointer; }
+.s-win .s-err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: .4em; padding: .4em .6em; font-weight: 600; } .s-win .s-err:empty { display: none; }
+.s-win .s-ok { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: .4em; padding: .4em .6em; font-weight: 600; } .s-win .s-ok:empty { display: none; }
+.s-win table { width: 100%; border-collapse: collapse; font-size: .95em; } .s-win th, .s-win td { text-align: left; padding: .3em .4em; border-bottom: 1px solid #e5e7eb; } .s-win th { color: #6b7280; font-size: .85em; }
+.s-win .s-tot { display: flex; gap: 1.5em; align-items: end; } .s-win .s-tot b { font-size: 1.3em; }
+.v-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .25em; font-size: .68em; }
+.v-lista li { display: grid; grid-template-columns: 1.4em 1fr; gap: .5em; align-items: start; padding: .22em .5em; border-radius: .4em; border: 1px solid var(--line); background: var(--s1); }
+.v-lista li i { font-style: normal; font-weight: 800; color: var(--muted); } .v-lista li.ok i { color: var(--ok); } .v-lista li.bad i { color: var(--bad); }
+.v-lista li.bad { background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 35%, transparent); } .v-lista li.ok { background: var(--ok-bg); }
+.v-lista li small { display: block; font: 500 .85em var(--mono); color: var(--bad); white-space: pre-wrap; }
+.v-lista li[hidden] { display: none; }
+.v-code { margin: 0; font: 500 .66em/1.45 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .6em .8em; white-space: pre-wrap; color: var(--fg); overflow: auto; }
+.v-code .n { color: var(--ok); } .v-code .ph { color: var(--muted); font-style: italic; } .v-code .r { color: var(--bad); }
+.v-nota { margin: 0; font-size: .66em; color: var(--muted); } .v-nota b { color: var(--fg); }
+.v-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.v-kpi { background: var(--s2); border: 1px solid var(--line); border-radius: .6em; padding: .5em .7em; display: grid; gap: .15em; }
+.v-kpi .v-et { font-size: .52em; } .v-kpi b { font-size: 1.25em; line-height: 1.1; } .v-kpi small { font-size: .62em; color: var(--muted); }
+.v-kpi.ok { background: var(--ok-bg); } .v-kpi.ok b { color: var(--ok); } .v-kpi.bad { background: var(--bad-bg); } .v-kpi.bad b { color: var(--bad); }
+.v-tabs { display: flex; gap: .4em; } .v-tabs .q-btn { padding: .4em .8em; }
+@media (prefers-reduced-motion: reduce) { .v-term pre .cur { animation: none; } }
+.v-cu{background:var(--accent-bg);border-left:4px solid var(--accent);border-radius:.5em;padding:.45em .8em;font-size:.72em}.v-cu b{color:var(--accent)}
+.v-preg{display:grid;gap:.2em;padding:.15em}.v-preg h3{font-size:.72em;margin:0;display:flex;gap:.5em;align-items:center}.v-preg h3 .n{display:inline-grid;place-items:center;width:1.6em;height:1.6em;border-radius:50%;background:var(--s3);font-size:.85em}.v-preg.ok h3 .n{background:var(--ok);color:#fff}
+.v-ops{display:grid;gap:.3em}.v-ops button{text-align:left;font:500 .62em/1.25 system-ui,sans-serif;padding:.4em .7em;border:1px solid var(--line2);border-radius:.5em;background:var(--s1);color:var(--fg);cursor:pointer}.v-ops button.bien{border-color:var(--ok);background:var(--ok-bg)}.v-ops button.mal{border-color:var(--bad);background:var(--bad-bg)}
+.v-why{margin:0;font-size:.62em;min-height:1.2em;color:var(--muted)}.v-why.bien{color:var(--ok)}.v-why.mal{color:var(--bad)}.v-g2{display:grid;grid-template-columns:1fr 1fr;gap:.6em;align-items:start}</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 780 L168 728 L236 764 L296 700"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="780" r="3.5"/><circle class="eg" cx="168" cy="728" r="4.5"/><circle class="e" cx="236" cy="764" r="3"/><circle class="eo" cx="296" cy="700" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="v-bloque">Bloque 1/6 · 9:00 hora de Lima</span>
+    <span class="esc-num">QA con IA · 05 / 19</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div class="v-cab">
+      <h1 class="esc-titulo a-in">Del caso de uso <em>a la prueba</em></h1>
+      <p class="v-obj a-in" style="--d:.05s"><b>Objetivo</b> · Armar E2E-VEN-002 en 3 decisiones, verlo como código con Page Object y grabar localizadores con codegen.</p>
+    </div>
+    <div class="v-dots a-in" style="--d:.08s"><button type="button" class="q-btn" id="ant" aria-label="Paso anterior">‹</button><span class="v-dotbar"><button type="button" class="v-dot" data-i="0" aria-label="Paso 1" aria-current=true></button><button type="button" class="v-dot" data-i="1" aria-label="Paso 2"></button></span><b id="sub-tit"></b><span class="v-nota" id="sub-n"></span><button type="button" class="q-btn" id="sig" aria-label="Paso siguiente">›</button></div>
+    <div class="v-b2">
+      <section class="esc-card v-con a-in" style="--d:.1s" aria-label="Consola">
+        <span class="v-et">Consola · lo que escribes <span class="esc-chip">Claude Code</span></span>
+        <div class="v-term">
+          <div class="v-term-cab"><i></i><i></i><i></i><span id="cwd">❯ claude</span></div>
+          <pre id="con" aria-live="polite"></pre>
+          <div class="v-term-pie"><button type="button" class="q-btn pri" id="ejecutar">Ejecutar ▶</button><button type="button" class="q-btn" id="reiniciar">Reiniciar</button><span class="v-alt" id="alt"></span></div>
+        </div>
+      </section>
+      <section class="esc-card v-soft a-in" style="--d:.15s" aria-label="Qué pasa en el software">
+        <span class="v-et">Qué pasa en el software <span class="esc-chip ok" id="soft"></span></span>
+        <div class="v-soft-cuerpo"><div class="v-sub" data-i="0"><div class="v-cu"><b>Caso de uso CU-04</b> · La cajera cobra una venta. Si el efectivo no alcanza, el sistema <b>no</b> registra la venta.</div>
+<div class="v-preg v-paso" id="p1"><h3><span class="n">1</span>¿Con qué datos empieza la prueba? (semilla)</h3><div class="v-ops"><button type="button" data-p="1" data-ok="0" data-why="Cambia cada día: hoy pasa y mañana falla sin que nadie toque el código.">Con lo que haya en la base en ese momento</button><button type="button" data-p="1" data-ok="1" data-why="Correcto: siempre los mismos datos; la prueba se repite y no depende de otra.">Semilla fija: cajero; Café Altomayo S/ 18.90 con promo 10 %, stock 12</button><button type="button" data-p="1" data-ok="0" data-why="Depende de una persona y de que nadie lo borre. No es repetible.">Alguien crea el producto a mano antes de la clase</button></div><p class="v-why" id="w1"></p></div>
+<div class="v-preg v-paso" id="p2"><h3><span class="n">2</span>¿Qué pasos hace la prueba?</h3><div class="v-ops"><button type="button" data-p="2" data-ok="0" data-why="Esa es una prueba de API: no ve la pantalla, y el bug vive en la pantalla.">Llamar POST /api/ventas con efectivo 5</button><button type="button" data-p="2" data-ok="0" data-why="Espera fija + id generado: lenta, frágil y se rompe con cualquier rediseño.">Esperar 3 s → clic en #btn-23 → escribir 5 → clic en #btn-24</button><button type="button" data-p="2" data-ok="1" data-why="Correcto: lo mismo que hace la cajera, con nombres que ve una persona.">Ingresar → agregar 1 café → ir a Venta → efectivo S/ 5 → Confirmar venta</button></div><p class="v-why" id="w2"></p></div>
+<div class="v-preg v-paso" id="p3"><h3><span class="n">3</span>¿Qué resultado esperas?</h3><div class="v-ops"><button type="button" data-p="3" data-ok="0" data-why="Muy vago: «no hubo error» también es cierto cuando la venta se registra mal.">Que no salga ningún error</button><button type="button" data-p="3" data-ok="0" data-why="¡Eso es justo el bug! Si lo esperas, la prueba nunca lo detecta.">Venta registrada con vuelto S/ 0.00</button><button type="button" data-p="3" data-ok="1" data-why="Correcto: comprobable y concreto. Dice qué debe pasar y qué NO.">Aparece «Efectivo insuficiente» y NO se registra ninguna venta</button></div><p class="v-why" id="w3"></p></div>
+<pre class="v-code v-paso" id="spec"></pre></div><div class="v-sub" data-i="1" hidden><div class="v-g2"><div class="s-win v-paso" id="r-nav"><div class="s-bar">☀ Tienda <span>Sol</span> <small style="margin-left:auto;font-weight:500">grabando ●</small></div><div class="s-main" style="max-width:22em"><h4>Iniciar sesión</h4><label>Usuario<input id="g-in-u" placeholder="haz clic y escribe"></label><label>Clave<input id="g-in-c" type="password" placeholder="haz clic y escribe"></label><button type="button" class="s-pri" id="g-btn">Ingresar</button></div></div>
+<div><span class="v-et">Playwright Inspector · código generado</span><pre class="v-code" id="g-code">import { test, expect } from '@playwright/test';
+
+test('test', async ({ page }) => {
+  await page.goto('localhost:3000/');
+<span class="ph">  // haz clic en la tienda de la izquierda…</span>
+});</pre></div></div>
+<pre class="v-code v-paso" id="g-pom" hidden><span class="n">// pages/LoginPage.ts · lo mismo, con nombre de negocio</span>
+async ingresar(usuario: string, clave: string) {
+  await this.page.getByLabel('Usuario').fill(usuario);
+  await this.page.getByLabel('Clave').fill(clave);
+  await this.page.getByRole('button', { name: 'Ingresar' }).click();
+}</pre>
+<p class="v-nota"><b>Lee lo grabado:</b> <code>getByLabel('Usuario')</code> y <code>getByRole('button', { name: 'Ingresar' })</code> son lo que ve una persona. Si codegen te da <code>locator('#x7')</code> o <code>nth(3)</code>, cámbialo.</p></div></div>
+      </section>
+    </div>
+    <div class="esc-card v-haz a-in" style="--d:.25s">
+      <span class="v-et">Hazlo tú · Tu acción</span>
+      <ol id="haz"></ol>
+      <label class="v-logre"><input type="checkbox"> <span id="logre"></span></label>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Antes · 04 · Page Object Model</span> <span style="margin-left:auto">Después · 06 · Pruebas inestables (flaky)</span></footer>
+</div>
+<script>
+const SUBS=[{pasos:[{"t": "prompt", "s": "Lee docs/casos-de-uso.md (CU-04) y pages/VentaPage.ts. Escribe en specs/venta.spec.ts el caso E2E-VEN-002 con Page Object Model: semilla fija, pasos de la cajera con getByRole/getByLabel, y el resultado esperado «Efectivo insuficiente» sin venta registrada. No uses esperas fijas."}, {"t": "claude", "s": "Read docs/casos-de-uso.md", "on": "p1"}, {"t": "claude", "s": "Read pages/VentaPage.ts · pages/CatalogoPage.ts", "on": "p2"}, {"t": "claude", "s": "Edit specs/venta.spec.ts (+14 líneas)", "on": "p3"}, {"t": "out", "s": "Agregué E2E-VEN-002. Usa loginPage.ingresarComoCajero(), catalogoPage.agregar(), ventaPage.cobrar(5) y dos expect: error con /Efectivo insuficiente/ y confirmacion vacía.", "c": "ok", "on": "spec"}, {"t": "cmd", "s": "npx playwright test specs/venta.spec.ts -g \"E2E-VEN-002\" --project=chromium"}, {"t": "out", "s": "  ✘ 1 [chromium] › specs/venta.spec.ts:26:3 › Venta › E2E-VEN-002 si el efectivo no alcanza, la venta se rechaza (5.4s)\n  Expected: \"\"\n  Received: \"Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00\"\n  1 failed", "c": "bad"}, {"t": "out", "s": "Ese rojo es el bug A. No lo «arregles» tocando la prueba.", "c": "w"}],inicio:["Primero decide tú (derecha). Luego mira cómo se lo pides a Claude Code."],alt:"",cwd:"qa-taller-kit/pruebas",soft:"pruebas/specs/venta.spec.ts",titulo:"Tres decisiones → un spec",haz:["Responde las 3 preguntas de la derecha.", "Pídele a Claude Code el spec con el prompt de la consola (o escríbelo tú).", "Córrelo: debe salir en <strong>rojo</strong> contra la tienda con bugs."],logre:"mi E2E-VEN-002 existe y lo vi fallar en rojo"},{pasos:[{"t": "cmd", "s": "npx playwright codegen localhost:3000", "on": "r-nav"}, {"t": "out", "s": "Se abre Chromium con la tienda y la ventana «Playwright Inspector» al lado.", "c": "c"}, {"t": "claude", "s": "tú haces clic en «Usuario» y escribes cajero", "on": "g-u"}, {"t": "claude", "s": "tú haces clic en «Clave» y escribes cajero123", "on": "g-c"}, {"t": "claude", "s": "tú haces clic en «Ingresar»", "on": "g-i"}, {"t": "prompt", "s": "Toma este código grabado y muévelo a pages/LoginPage.ts como método ingresar(usuario, clave). Quita los clics accidentales."}, {"t": "claude", "s": "Edit pages/LoginPage.ts", "on": "g-pom"}, {"t": "out", "s": "Listo: el spec ya no conoce selectores; llama loginPage.ingresar('cajero', 'cajero123').", "c": "ok"}],inicio:["codegen abre un navegador y escribe código mientras tú haces clic."],alt:"npm run codegen",cwd:"qa-taller-kit/pruebas",soft:"Playwright codegen",titulo:"Graba con codegen, pásalo al Page Object",haz:["Corre <code>npm run codegen</code> con la tienda abierta en 3000.", "Haz el login y un clic; mira el código que aparece.", "Pásalo a <code>pages/LoginPage.ts</code> (con Claude o a mano)."],logre:"mi LoginPage.ts tiene ingresar() con getByLabel y getByRole"}];
+
+const $=id=>document.getElementById(id);const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const con=$('con');let corriendo=false,parar=false,cur=0;const S=()=>SUBS[cur];
+function linea(cls,txt){const s=document.createElement('span');if(cls)s.className=cls;s.innerHTML=txt;con.appendChild(s);con.appendChild(document.createTextNode('\n'));con.scrollTop=con.scrollHeight;return s;}
+const dormir=ms=>new Promise(r=>setTimeout(r,RM?0:ms));
+async function tipear(pref,cls,txt){const s=linea('',pref);const t=document.createElement('span');t.className=cls;s.appendChild(t);const c=document.createElement('span');c.className='cur';s.appendChild(c);
+  if(RM){t.textContent=txt;}else{for(let i=0;i<txt.length;i++){t.textContent+=txt[i];con.scrollTop=con.scrollHeight;if(parar)break;await dormir(txt.length>90?8:18);}}c.remove();}
+function marcar(id){document.querySelectorAll('.v-paso.on').forEach(e=>e.classList.remove('on'));if(id){const e=$(id);if(e){e.classList.add('on');e.scrollIntoView({block:'nearest'});}}}
+async function ejecutar(){if(corriendo)return;corriendo=true;parar=false;$('ejecutar').disabled=true;con.textContent='';marcar(null);
+  for(const p of S().pasos){if(parar)break;
+    if(p.t==='prompt')await tipear('<span class="p">&gt; </span>','u',p.s);
+    else if(p.t==='cmd')await tipear('<span class="p">$ </span>','k',p.s);
+    else if(p.t==='claude'){await dormir(250);linea('d','<span class="c">⏺</span> '+esc(p.s));}
+    else if(p.t==='out')linea(p.c||'',esc(p.s));
+    else if(p.t==='html')linea(p.c||'',p.s);
+    else if(p.t==='pausa')await dormir(p.ms||600);
+    if(p.on){marcar(p.on);if(S().paso)S().paso(p.on);}
+    if(p.t!=='pausa')await dormir(p.ms||220);}
+  linea('c','— listo · pulsa «Reiniciar» para verlo otra vez');corriendo=false;$('ejecutar').disabled=false;}
+function inicio(){con.innerHTML=S().inicio.map(l=>'<span class="c">'+esc(l)+'</span>').join('\n')+'\n';}
+$('ejecutar').onclick=ejecutar;$('reiniciar').onclick=()=>{parar=true;corriendo=false;$('ejecutar').disabled=false;inicio();marcar(null);if(S().reiniciar)S().reiniciar();};
+function irSub(i){parar=true;corriendo=false;$('ejecutar').disabled=false;cur=(i+SUBS.length)%SUBS.length;const pn=S().panel??cur;document.querySelectorAll('.v-sub').forEach(d=>d.hidden=+d.dataset.i!==pn);document.querySelectorAll('.v-dot').forEach(d=>{if(+d.dataset.i===cur)d.setAttribute('aria-current','true');else d.removeAttribute('aria-current');});
+ $('sub-tit').textContent=S().titulo;$('sub-n').textContent=(cur+1)+' de '+SUBS.length;$('soft').textContent=S().soft;$('cwd').textContent='❯ claude · '+S().cwd;$('alt').innerHTML=S().alt?'Sin IA: <b>'+esc(S().alt)+'</b>':'';
+ $('haz').innerHTML=S().haz.map((h,k)=>'<li><b>'+(k+1)+'</b><span>'+h+'</span></li>').join('');$('logre').textContent='Lo logré: '+S().logre;inicio();marcar(null);}
+$('ant').onclick=()=>irSub(cur-1);$('sig').onclick=()=>irSub(cur+1);document.querySelectorAll('.v-dot').forEach(d=>d.onclick=()=>irSub(+d.dataset.i));
+addEventListener('keydown',e=>{if(e.target.matches('input,textarea'))return;if(e.key==='ArrowLeft')irSub(cur-1);if(e.key==='ArrowRight')irSub(cur+1);});
+
+(function(){window.paso=null;window.reiniciar=null;const elegido={1:0,2:0,3:0};
+function pintar(){const L=[];const ph=t=>'<span class="ph">'+esc(t)+'</span>';const nv=t=>'<span class="n">'+esc(t)+'</span>';
+L.push(esc("test('E2E-VEN-002 si el efectivo no alcanza, la venta se rechaza',"));L.push(esc("  async ({ loginPage, catalogoPage, ventaPage }) => {"));
+L.push(elegido[1]?nv("  // semilla fija: cajero · Café Altomayo S/ 18.90 −10 % · stock 12"):ph("  // 1 · ¿con qué datos empieza?"));
+if(elegido[2]){L.push(nv("  await loginPage.ingresarComoCajero();"));L.push(nv("  await catalogoPage.agregar('Café Altomayo 200 g');"));L.push(nv("  await catalogoPage.irAVenta();"));L.push(nv("  await ventaPage.cobrar(5);"));}else L.push(ph("  // 2 · ¿qué pasos?"));
+if(elegido[3]){L.push(nv("  await expect(ventaPage.error).toHaveText(/Efectivo insuficiente/);"));L.push(nv("  await expect(ventaPage.confirmacion).toHaveText('');  // ninguna venta"));}else L.push(ph("  // 3 · ¿qué resultado esperas?"));
+L.push("});");$('spec').innerHTML=L.join('\n');}
+document.querySelectorAll('.v-ops button').forEach(b=>b.onclick=()=>{const p=b.dataset.p,ok=b.dataset.ok==='1';b.parentNode.querySelectorAll('button').forEach(x=>x.classList.remove('bien','mal'));b.classList.add(ok?'bien':'mal');const w=$('w'+p);w.textContent=b.dataset.why;w.className='v-why '+(ok?'bien':'mal');elegido[p]=ok?1:0;$('p'+p).classList.toggle('ok',ok);pintar();});
+window.paso=id=>{if(id==='spec'){elegido[1]=elegido[2]=elegido[3]=1;[1,2,3].forEach(p=>{$('p'+p).classList.add('ok');const b=document.querySelector('[data-p="'+p+'"][data-ok="1"]');b.classList.add('bien');$('w'+p).textContent=b.dataset.why;$('w'+p).className='v-why bien';});pintar();}};
+window.reiniciar=()=>{elegido[1]=elegido[2]=elegido[3]=0;document.querySelectorAll('.v-ops button').forEach(x=>x.classList.remove('bien','mal'));[1,2,3].forEach(p=>{$('p'+p).classList.remove('ok');$('w'+p).textContent='';});pintar();};pintar();
+SUBS[0].paso=window.paso;SUBS[0].reiniciar=window.reiniciar;})();
+(function(){window.paso=null;window.reiniciar=null;const L=[];function code(){$('g-code').innerHTML="import { test, expect } from '@playwright/test';\n\ntest('test', async ({ page }) => {\n  await page.goto('localhost:3000/');\n"+(L.length?L.map(l=>'<span class="n">'+esc(l)+'</span>').join('\n')+'\n':'<span class="ph">  // haz clic en la tienda de la izquierda…</span>\n')+"});";}
+function add(l){if(!L.includes(l)){L.push(l);code();}}
+$('g-in-u').oninput=e=>{L.splice(L.findIndex(x=>x.includes("'Usuario'")),L.some(x=>x.includes("'Usuario'"))?1:0);add("  await page.getByLabel('Usuario').fill('"+e.target.value+"');");};
+$('g-in-c').oninput=e=>{L.splice(L.findIndex(x=>x.includes("'Clave'")),L.some(x=>x.includes("'Clave'"))?1:0);add("  await page.getByLabel('Clave').fill('"+e.target.value+"');");};
+$('g-btn').onclick=()=>add("  await page.getByRole('button', { name: 'Ingresar' }).click();");
+window.paso=id=>{if(id==='g-u'){$('g-in-u').value='cajero';$('g-in-u').dispatchEvent(new Event('input'));}if(id==='g-c'){$('g-in-c').value='cajero123';$('g-in-c').dispatchEvent(new Event('input'));}if(id==='g-i')$('g-btn').click();if(id==='g-pom')$('g-pom').hidden=false;};
+window.reiniciar=()=>{L.length=0;code();$('g-in-u').value='';$('g-in-c').value='';$('g-pom').hidden=true;};
+SUBS[1].paso=window.paso;SUBS[1].reiniciar=window.reiniciar;})();
+
+irSub(0);
+</script>
+</body>
+</html>

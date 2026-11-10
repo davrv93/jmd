@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Page Object Model</title>
+<!--
+  Escena del modo LIVE (taller qa2-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: «Cambio de diseño» renombra el botón «Ingresar» → «Iniciar sesión» y la etiqueta «Usuario» →
+  «Correo o usuario». Sin POM se ponen en rojo las líneas de los 8 specs; con POM solo 2 líneas de LoginPage.ts.
+  «Arreglar» aplica la edición. Abajo, un quiz: ordenar localizadores del más robusto al más frágil, con
+  acuerdo acumulado frente al criterio del instructor. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .22); }
+.esc { padding: 1.7vh 2.6vw 1.5vh; gap: 1.2vh; }
+.esc-cuerpo { gap: 1.2vh; }
+.esc-titulo { font-size: 1.28em; }
+.q-btn { font: 700 .66em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .58em 1em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.q-btn:hover { transform: translateY(-1px); }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.q-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-et { font-size: .58em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.q-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: center; }
+.q-seg { display: inline-flex; gap: .3em; padding: .2em; border-radius: 999px; background: var(--s2); border: 1px solid var(--line); }
+
+.q-b3 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.2vw; min-height: 0; }
+.q-col { padding: .6em .9em; display: grid; gap: .4em; align-content: start; min-width: 0; }
+.q-col h2 { margin: 0; display: flex; align-items: center; gap: .6em; font-size: .62em; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.q-specs { display: grid; gap: .22em; }
+.q-spec { display: grid; grid-template-columns: 8.4em 1fr; align-items: center; border: 1px solid var(--line); border-radius: .5em; background: var(--s2); padding: .15em .5em; min-width: 0; transition: border-color .25s, background .25s; }
+.q-spec b { grid-row: span 2; font: 700 .56em var(--mono); color: var(--accent); }
+.q-spec code { display: block; font: 600 .52em/1.45 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg); padding: 0 .3em; border-radius: .3em; }
+.q-spec.roto { border-color: var(--bad); background: var(--bad-bg); }
+.q-spec.roto b { color: var(--bad); }
+.q-spec code.r { background: var(--bad-bg); color: var(--bad); text-decoration: line-through; }
+.q-spec code.g { background: var(--ok-bg); color: var(--ok); }
+.q-spec code.m { color: var(--muted); }
+.q-code { margin: 0; font: 600 .56em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .55em .8em; white-space: pre; overflow: hidden; border: 1px solid rgba(190,185,255,.22); transition: opacity .25s; }
+.q-code .k { color: #c3b9ff; } .q-code .s { color: #9fe0b0; } .q-code .c { color: #8f8ab8; }
+.q-code .r { background: rgba(255,110,110,.25); color: #ffb4b4; text-decoration: line-through; border-radius: .25em; }
+.q-code .g { background: rgba(79,211,122,.22); color: #b6f5c9; border-radius: .25em; }
+.q-code.dim { opacity: .5; }
+.q-cuenta { display: grid; grid-template-columns: auto 1fr; gap: .1em .8em; align-items: center; padding: .45em .7em; border-radius: .7em; background: var(--s2); }
+.q-cuenta .n { font-size: 1.7em; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--accent); }
+.q-cuenta .n.bad { color: var(--bad); } .q-cuenta .n.ok { color: var(--ok); }
+.q-cuenta p { margin: 0; font-size: .66em; color: var(--muted); }
+.q-cuenta p b { color: var(--fg); }
+p.q-nota { margin: 0; font-size: .64em; color: var(--muted); }
+.q-nota b { color: var(--fg); } .q-nota code { font: 600 .95em var(--mono); background: var(--s3); padding: 0 .3em; border-radius: .3em; color: var(--fg); }
+.q-quiz { padding: .55em .9em; display: grid; grid-template-columns: 1fr auto; gap: .45em 1em; align-items: center; }
+.q-quiz h2 { margin: 0; font-size: .74em; }
+.q-quiz h2 small { color: var(--muted); font-weight: 600; }
+.q-sels { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: .5em; }
+.q-sel { position: relative; text-align: left; font: 600 .6em/1.35 var(--mono); padding: .5em .6em .5em 2.3em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; min-height: 3.4em; }
+.q-sel i { position: absolute; left: .55em; top: .5em; width: 1.4em; height: 1.4em; border-radius: 50%; display: grid; place-items: center; font: 800 .95em system-ui, sans-serif; font-style: normal; background: var(--s3); color: var(--muted); }
+.q-sel.puesto i { background: var(--accent); color: var(--on-accent); }
+.q-sel.bien { border-color: var(--ok); background: var(--ok-bg); } .q-sel.bien i { background: var(--ok); }
+.q-sel.mal { border-color: var(--bad); background: var(--bad-bg); } .q-sel.mal i { background: var(--bad); }
+.q-sel small { display: block; margin-top: .3em; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 500; color: var(--muted); font-size: .92em; }
+.q-acu { font-size: 1.15em; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+.q-acu small { font-size: .55em; color: var(--muted); font-weight: 700; }
+.q-logro { animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">QA con IA · E04</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="q-cab">
+      <h1 class="esc-titulo a-in">Page Object Model: <em>un cambio de diseño, una sola edición</em></h1>
+      <div class="esc-fila a-in" style="--d:.1s">
+        <div class="q-seg" role="radiogroup" aria-label="Modo"><button type="button" class="q-btn" id="m-sin" aria-pressed="true">Sin POM</button><button type="button" class="q-btn" id="m-con" aria-pressed="false">Con POM</button></div>
+        <button type="button" class="q-btn pri" id="cambio">Cambio de diseño</button>
+        <button type="button" class="q-btn" id="arreglar" disabled>Arreglar</button>
+      </div>
+    </div>
+    <div class="q-b3">
+      <section class="esc-card q-col a-in" style="--d:.15s" aria-label="Specs">
+        <h2>specs/ · 8 specs que entran como cajero <span class="esc-chip" id="modo-tag">sin POM</span></h2>
+        <div class="q-specs" id="specs"></div>
+        <div class="q-cuenta"><span class="n" id="n">0</span><p id="n-txt">El diseñador cambia <b>«Ingresar» → «Iniciar sesión»</b> y <b>«Usuario» → «Correo o usuario»</b>. Pulsa «Cambio de diseño».</p></div>
+      </section>
+      <section class="esc-card q-col a-in" style="--d:.25s" aria-label="LoginPage.ts">
+        <h2>pages/LoginPage.ts <span class="esc-chip warn" id="lp-tag">sin usar</span></h2>
+        <pre class="q-code dim" id="lp"></pre>
+        <p class="q-nota">Un page object por pantalla: <b>LoginPage</b>, <b>VentaPage</b>, <b>ReportePage</b>. Los localizadores van con <code>getByRole</code> y <code>getByLabel</code>: así encuentra las cosas una persona, no el CSS.</p>
+      </section>
+    </div>
+    <section class="esc-card q-quiz a-in" style="--d:.35s" aria-label="Quiz de localizadores">
+      <h2>¿Qué localizador sobrevive al próximo rediseño? <small id="q-obj">Botón «Confirmar»</small> <small>· pulsa del más robusto (1) al más frágil (4)</small></h2>
+      <div class="esc-fila" style="gap:.6em"><div class="q-acu"><span id="acu">0</span><small> de <span id="tot">0</span> · <span id="pct">—</span></small></div><button type="button" class="q-btn" id="ronda">Otra ronda</button></div>
+      <div class="q-sels" id="sels"></div>
+    </section>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota" id="pie">El spec dice QUÉ hace el usuario; el page object sabe DÓNDE está cada cosa</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var SPECS = ["login", "venta-efectivo", "venta-yape", "vuelto", "catalogo", "promo", "reporte", "anular-venta"];
+  var est = { con: false, cambio: false, arreglado: false };
+  function esc(t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function nombres() {
+    var nuevo = est.cambio && est.arreglado;
+    return { u: nuevo ? "Correo o usuario" : "Usuario", b: nuevo ? "Iniciar sesión" : "Ingresar" };
+  }
+  function pintarSpecs() {
+    var box = $("specs"); box.textContent = "";
+    var n = nombres(), roto = est.cambio && !est.arreglado;
+    SPECS.forEach(function (s) {
+      var d = document.createElement("div"); d.className = "q-spec";
+      var b = document.createElement("b"); b.textContent = s + ".spec.ts"; d.appendChild(b);
+      var lineas;
+      if (est.con) lineas = [["m", "const login = new LoginPage(page);"], ["", "await login.entrar('cajero', 'cajero123');"]];
+      else {
+        var cl = roto ? "r" : (est.cambio && est.arreglado ? "g" : "");
+        lineas = [[cl, "await page.getByLabel('" + n.u + "').fill('cajero');"], [cl, "await page.getByRole('button', { name: '" + n.b + "' }).click();"]];
+        if (roto) d.classList.add("roto");
+      }
+      lineas.forEach(function (l) { var c = document.createElement("code"); if (l[0]) c.className = l[0]; c.textContent = l[1]; d.appendChild(c); });
+      box.appendChild(d);
+    });
+  }
+  function pintarLP() {
+    var n = nombres(), roto = est.cambio && !est.arreglado, cl = roto ? "r" : (est.cambio && est.arreglado ? "g" : "");
+    var mk = function (txt) { return cl ? '<span class="' + cl + '">' + txt + "</span>" : txt; };
+    var L = [
+      '<span class="k">import</span> { type Page, type Locator } <span class="k">from</span> <span class="s">\'@playwright/test\'</span>;',
+      "",
+      '<span class="k">export class</span> LoginPage {',
+      "  <span class=\"k\">readonly</span> usuario: Locator;",
+      "  <span class=\"k\">readonly</span> clave: Locator;",
+      "  <span class=\"k\">readonly</span> ingresar: Locator;",
+      "  <span class=\"k\">constructor</span>(<span class=\"k\">readonly</span> page: Page) {",
+      "    this.usuario  = " + mk("page.getByLabel(<span class=\"s\">'" + esc(n.u) + "'</span>)") + ";",
+      "    this.clave    = page.getByLabel(<span class=\"s\">'Clave'</span>);",
+      "    this.ingresar = " + mk("page.getByRole(<span class=\"s\">'button'</span>, { name: <span class=\"s\">'" + esc(n.b) + "'</span> })") + ";",
+      "  }",
+      "  <span class=\"k\">async</span> entrar(u: string, c: string) {",
+      "    <span class=\"k\">await</span> this.page.goto(<span class=\"s\">'/login'</span>);",
+      "    <span class=\"k\">await</span> this.usuario.fill(u);",
+      "    <span class=\"k\">await</span> this.clave.fill(c);",
+      "    <span class=\"k\">await</span> this.ingresar.click();",
+      "  }",
+      "}"
+    ];
+    if (!est.con && est.cambio) { // sin POM el archivo no existe: se muestra atenuado y sin marcas
+      L[7] = "    this.usuario  = page.getByLabel(<span class=\"s\">'Usuario'</span>);";
+      L[9] = "    this.ingresar = page.getByRole(<span class=\"s\">'button'</span>, { name: <span class=\"s\">'Ingresar'</span> });";
+    }
+    $("lp").innerHTML = L.join("\n");
+    $("lp").classList.toggle("dim", !est.con);
+    var tag = $("lp-tag"); tag.textContent = est.con ? (roto ? "2 líneas que editar" : "en uso") : "sin usar"; tag.className = "esc-chip " + (est.con ? (roto ? "bad" : "ok") : "warn");
+  }
+  function pintarCuenta() {
+    var n = $("n"), t = $("n-txt"), roto = est.cambio && !est.arreglado;
+    n.className = "n";
+    if (!est.cambio) { n.textContent = "0"; t.innerHTML = "El diseñador cambia <b>«Ingresar» → «Iniciar sesión»</b> y <b>«Usuario» → «Correo o usuario»</b>. Pulsa «Cambio de diseño»."; }
+    else if (roto) { n.classList.add("bad"); n.textContent = est.con ? "2" : "16"; t.innerHTML = est.con ? "<b>2 líneas en 1 archivo</b> (LoginPage.ts). Los 8 specs no se tocan." : "<b>16 líneas en 8 archivos</b>. Y si se te escapa una, ese spec queda rojo sin que la app falle."; }
+    else { n.classList.add("ok"); n.textContent = "✓"; t.innerHTML = est.con ? "Editaste <b>1 archivo</b>. Los 8 specs pasan sin cambiar una letra." : "Editaste <b>8 archivos</b>. Funciona… hasta el próximo cambio."; }
+    $("modo-tag").textContent = est.con ? "con POM" : "sin POM";
+    $("arreglar").disabled = !roto;
+  }
+  function pintar() { pintarSpecs(); pintarLP(); pintarCuenta(); }
+  function modo(con) { est.con = con; $("m-sin").setAttribute("aria-pressed", con ? "false" : "true"); $("m-con").setAttribute("aria-pressed", con ? "true" : "false"); pintar(); }
+  $("m-sin").addEventListener("click", function () { modo(false); });
+  $("m-con").addEventListener("click", function () { modo(true); });
+  $("cambio").addEventListener("click", function () {
+    if (est.cambio) { est.cambio = false; est.arreglado = false; $("cambio").textContent = "Cambio de diseño"; }
+    else { est.cambio = true; est.arreglado = false; $("cambio").textContent = "Deshacer cambio"; }
+    pintar();
+  });
+  $("arreglar").addEventListener("click", function () { est.arreglado = true; pintar(); });
+  pintar();
+
+  // ---- Quiz de localizadores: orden del instructor = orden de la lista (1 = más robusto).
+  var RONDAS = [
+    { o: "Botón «Confirmar»", s: [
+      ["getByRole('button', { name: 'Confirmar' })", "Lo que ve y usa la persona; además valida accesibilidad."],
+      ["getByTestId('confirmar-venta')", "Estable y explícito, pero no prueba el texto que ve el usuario."],
+      ["locator('.btn.primary')", "Clases de estilo: cambian con el diseño y hay varias en la página."],
+      ["locator('#btn-23')", "Id autogenerado: cambia en el próximo build."] ] },
+    { o: "Campo «Efectivo recibido»", s: [
+      ["getByLabel('Efectivo recibido')", "La etiqueta es lo que lee el cajero y el lector de pantalla."],
+      ["getByTestId('efectivo')", "Estable; útil si la etiqueta cambia por idioma."],
+      ["getByPlaceholder('0.00')", "Un placeholder no es una etiqueta y se borra al escribir."],
+      ["locator('//div[3]/form/input[2]')", "XPath por posición: cualquier div nuevo lo rompe."] ] },
+    { o: "Aviso «Venta registrada»", s: [
+      ["getByRole('alert')", "El rol del aviso; luego se verifica su texto con toHaveText."],
+      ["getByText('Venta registrada')", "Bueno, pero puede coincidir con otro texto igual de la página."],
+      ["locator('.toast-success')", "Clase de la librería de avisos: cambia si cambian la librería."],
+      ["locator('div').nth(42)", "El div número 42: frágil por definición."] ] },
+    { o: "Enlace «Reporte del día»", s: [
+      ["getByRole('link', { name: 'Reporte del día' })", "Rol y nombre visible: así lo busca una persona."],
+      ["getByTestId('menu-reporte')", "Estable mientras nadie borre el atributo."],
+      ["locator('nav li:nth-child(4) a')", "Depende del orden del menú."],
+      ["locator('#ember412')", "Id generado por el framework: cambia solo."] ] }
+  ];
+  var q = { r: -1, orden: [], puestos: [], hecho: false, acu: 0, tot: 0, usadas: [] };
+  function ronda() {
+    var libres = RONDAS.map(function (_, i) { return i; }).filter(function (i) { return q.usadas.indexOf(i) < 0; });
+    if (!libres.length) { q.usadas = []; libres = RONDAS.map(function (_, i) { return i; }).filter(function (i) { return i !== q.r; }); }
+    q.r = libres[Math.floor(Math.random() * libres.length)]; q.usadas.push(q.r);
+    q.orden = [0, 1, 2, 3].sort(function () { return Math.random() - .5; });
+    q.puestos = []; q.hecho = false;
+    $("q-obj").textContent = RONDAS[q.r].o;
+    var box = $("sels"); box.textContent = "";
+    q.orden.forEach(function (k) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "q-sel"; b.setAttribute("data-k", k);
+      var i = document.createElement("i"); i.textContent = "·"; b.appendChild(i);
+      b.appendChild(document.createTextNode(RONDAS[q.r].s[k][0]));
+      b.addEventListener("click", function () { poner(b, k); });
+      box.appendChild(b);
+    });
+  }
+  function poner(b, k) {
+    if (q.hecho || q.puestos.indexOf(k) >= 0) return;
+    q.puestos.push(k); b.classList.add("puesto"); b.querySelector("i").textContent = q.puestos.length;
+    if (q.puestos.length < 4) return;
+    q.hecho = true; var ok = 0;
+    document.querySelectorAll(".q-sel").forEach(function (el) {
+      var kk = +el.getAttribute("data-k"), pos = q.puestos.indexOf(kk), bien = pos === kk;
+      if (bien) ok++;
+      el.classList.add(bien ? "bien" : "mal");
+      var sm = document.createElement("small"); sm.textContent = (bien ? "" : "Instructor: " + (kk + 1) + ". ") + RONDAS[q.r].s[kk][1]; el.appendChild(sm);
+    });
+    q.acu += ok; q.tot += 4;
+    var pct = Math.round(q.acu / q.tot * 100);
+    $("acu").textContent = q.acu; $("tot").textContent = q.tot; $("pct").textContent = pct + " %";
+    if (q.tot >= 8 && pct >= 80 && !$("logro")) { var l = document.createElement("span"); l.id = "logro"; l.className = "esc-chip ok q-logro"; l.textContent = "≥ 80 % · pulsa «Lo logré»"; $("ronda").parentNode.appendChild(l); }
+  }
+  $("ronda").addEventListener("click", ronda);
+  ronda();
+})();
+</script>
+</body>
+</html>

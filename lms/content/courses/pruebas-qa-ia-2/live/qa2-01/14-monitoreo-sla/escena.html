@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Monitoreo y alertas</title>
+<!--
+  Escena del modo LIVE (taller qa2-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: una sonda consulta /salud cada 15 s (simulado: 0,6 s reales por sonda). «Tumbar servicio»,
+  «Poner lento», «Parpadeo» y «Recuperar» cambian lo que responde. Se calcula la disponibilidad (1 h, 24 h y 30 días,
+  suponiendo que antes todo estuvo arriba), se compara con la tabla de SLA y la regla «si up == 0 durante X min →
+  avisar» marca dónde sonaría: con X muy chico suena en falso con cada parpadeo. Lo logras cuando la regla avisa la
+  caída real y ningún parpadeo. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .2); }
+.esc { padding: 1.7vh 2.6vw 1.5vh; gap: 1.1vh; }
+.esc-cuerpo { gap: 1.1vh; }
+.esc-titulo { font-size: 1.25em; }
+.q-btn { font: 700 .62em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.q-btn:hover { transform: translateY(-1px); }
+.q-btn.bad { color: var(--bad); border-color: var(--bad); } .q-btn.warn { color: var(--warn); border-color: var(--warn); } .q-btn.ok { color: var(--ok); border-color: var(--ok); }
+.q-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.q-et { font-size: .56em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.q-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: center; }
+
+.q-b7 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.1vw; min-height: 0; }
+.q-izq { display: grid; gap: 1vh; align-content: start; min-width: 0; }
+.q-mon { padding: .6em .9em; display: grid; gap: .45em; }
+.q-mon .esc-fila { gap: .45em; }
+.q-estado { font: 800 .7em var(--mono); padding: .25em .7em; border-radius: 999px; }
+.q-estado.up { background: var(--ok-bg); color: var(--ok); } .q-estado.down { background: var(--bad-bg); color: var(--bad); } .q-estado.lento { background: var(--warn-bg); color: var(--warn); }
+.q-tira-w { position: relative; padding-top: 1.1em; }
+.q-tira { display: flex; align-items: flex-end; gap: 1px; height: 4.2em; border-bottom: 2px solid var(--line2); }
+.q-tira i { flex: 1; min-width: 0; border-radius: 1px 1px 0 0; background: var(--ok); }
+.q-tira i.d { background: var(--bad); } .q-tira i.l { background: var(--gold); }
+.q-marca { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); }
+.q-marca.izq span { left: auto; right: 3px; }
+.q-marca span { position: absolute; top: -.2em; left: 3px; font: 800 .5em/1 system-ui, sans-serif; color: var(--accent); white-space: nowrap; }
+.q-marca.falsa { background: var(--bad); } .q-marca.falsa span { color: var(--bad); }
+.q-eje { display: flex; justify-content: space-between; font: 600 .5em var(--mono); color: var(--muted); }
+.q-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: .45em; }
+.q-tile { background: var(--s2); border-radius: .6em; padding: .3em .6em; line-height: 1.2; }
+.q-tile b { display: block; font-size: 1.15em; font-variant-numeric: tabular-nums; }
+.q-tile span { font-size: .56em; color: var(--muted); }
+.q-regla { padding: .6em .9em; display: grid; gap: .45em; }
+.q-expr { display: flex; align-items: center; gap: .5em; flex-wrap: wrap; font: 700 .72em var(--mono); }
+.q-expr select { font: 700 1em var(--mono); padding: .15em .3em; border-radius: .4em; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--fg); }
+.q-cont { display: grid; grid-template-columns: repeat(3, 1fr); gap: .45em; }
+.q-cont div { background: var(--s2); border-radius: .6em; padding: .3em .6em; line-height: 1.2; }
+.q-cont b { display: block; font-size: 1.1em; }
+.q-cont span { font-size: .56em; color: var(--muted); }
+.q-cont .ok b { color: var(--ok); } .q-cont .bad b { color: var(--bad); } .q-cont .warn b { color: var(--warn); }
+p.q-msg { margin: 0; font-size: .66em; min-height: 1.4em; color: var(--fg); }
+.q-der { display: grid; gap: 1vh; align-content: start; min-width: 0; }
+.q-diag { padding: .55em .8em; display: grid; gap: .3em; }
+.q-diag svg { width: 100%; height: auto; display: block; }
+.q-diag rect { fill: var(--s2); stroke: var(--line2); stroke-width: 2; }
+.q-diag rect.a { stroke: var(--accent); } .q-diag rect.o { stroke: var(--ph-or); } .q-diag rect.g { stroke: var(--gold); } .q-diag rect.e { stroke: var(--ph-ea); }
+.q-diag text { fill: var(--fg); font-weight: 800; font-size: 15px; text-anchor: middle; }
+.q-diag text.m { fill: var(--muted); font-weight: 600; font-size: 11.5px; }
+.q-diag path.fl { fill: none; stroke: var(--accent); stroke-width: 2.5; marker-end: url(#q-fl); stroke-dasharray: 6 5; animation: q-flujo 1.2s linear infinite; }
+@keyframes q-flujo { to { stroke-dashoffset: -22; } }
+.q-sla { padding: .55em .8em; display: grid; gap: .35em; }
+.q-sla table { width: 100%; border-collapse: collapse; font-size: .64em; }
+.q-sla th, .q-sla td { padding: .3em .45em; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
+.q-sla th:first-child, .q-sla td:first-child { text-align: left; }
+.q-sla th { color: var(--muted); font-weight: 700; }
+.q-sla td.si { color: var(--ok); font-weight: 800; } .q-sla td.no { color: var(--bad); font-weight: 800; }
+.q-sla p { margin: 0; font-size: .58em; color: var(--muted); }
+.q-logro { animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+@media (prefers-reduced-motion: reduce) { .q-diag path.fl { animation: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">QA con IA · E14</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="q-cab">
+      <h1 class="esc-titulo a-in">Monitoreo: <em>disponibilidad, SLA y una alerta</em> que no grita en falso</h1>
+    </div>
+    <div class="q-b7">
+      <div class="q-izq">
+        <section class="esc-card q-mon a-in" style="--d:.1s" aria-label="Sondas">
+          <div class="esc-fila">
+            <span class="q-et">GET /salud cada 15 s · últimos 30 min</span>
+            <span class="q-estado up" id="estado">UP · 120 ms</span>
+            <span style="margin-left:auto"></span>
+            <button type="button" class="q-btn bad" id="b-caer">Tumbar servicio</button>
+            <button type="button" class="q-btn warn" id="b-lento">Poner lento</button>
+            <button type="button" class="q-btn warn" id="b-parp">Parpadeo</button>
+            <button type="button" class="q-btn ok" id="b-ok">Recuperar</button>
+            <button type="button" class="q-btn" id="b-pausa" aria-pressed="false">❚❚</button>
+          </div>
+          <div class="q-tira-w" id="tira-w"><div class="q-tira" id="tira"></div></div>
+          <div class="q-eje"><span>hace 30 min</span><span>hace 15 min</span><span>ahora</span></div>
+          <div class="q-tiles">
+            <div class="q-tile"><b id="d1">—</b><span>disponibilidad 1 h</span></div>
+            <div class="q-tile"><b id="d24">—</b><span>24 h</span></div>
+            <div class="q-tile"><b id="d30">—</b><span>30 días</span></div>
+            <div class="q-tile"><b id="caida">—</b><span>caída acumulada</span></div>
+          </div>
+        </section>
+        <section class="esc-card q-regla a-in" style="--d:.2s" aria-label="Regla de alerta">
+          <span class="q-et">Regla de alerta (Grafana) · se evalúa sobre toda la historia</span>
+          <div class="q-expr">si <span>probe_success == 0</span> durante
+            <select id="x" aria-label="Minutos"><option value="0">0 min</option><option value="0.5">30 s</option><option value="1">1 min</option><option value="2">2 min</option><option value="5">5 min</option></select>
+            → avisar por
+            <select id="canal" aria-label="Canal"><option>WhatsApp</option><option>Telegram</option><option>correo</option><option>webhook</option></select>
+          </div>
+          <div class="q-cont">
+            <div id="c-real"><b>—</b><span>avisos de caídas reales (≥ 1 min)</span></div>
+            <div id="c-falsa"><b>—</b><span>falsas alarmas (parpadeos &lt; 1 min)</span></div>
+            <div id="c-perdida"><b>—</b><span>caídas reales sin aviso</span></div>
+          </div>
+          <p class="q-msg" id="msg">Con 0 min, cada sonda fallida despierta a alguien. Sube X hasta que solo avise la caída real; luego pulsa «Tumbar servicio».</p>
+        </section>
+      </div>
+      <div class="q-der">
+        <section class="esc-card q-diag a-in" style="--d:.25s" aria-label="Arquitectura">
+          <span class="q-et">Cómo se arma</span>
+          <svg viewBox="0 0 520 250" role="img" aria-label="Tienda Sol, blackbox_exporter, Prometheus, Grafana y el punto de contacto">
+            <defs><marker id="q-fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="var(--accent)" stroke="none"/></marker></defs>
+            <rect x="6" y="14" width="150" height="62" rx="12"/><text x="81" y="42">Tienda Sol</text><text class="m" x="81" y="62">GET /salud → 200</text>
+            <rect class="o" x="185" y="14" width="150" height="62" rx="12"/><text x="260" y="42" style="font-size:13.5px">blackbox_exporter</text><text class="m" x="260" y="62">la sonda HTTP</text>
+            <rect class="a" x="364" y="14" width="150" height="62" rx="12"/><text x="439" y="42">Prometheus</text><text class="m" x="439" y="62">guarda probe_success</text>
+            <rect class="g" x="364" y="160" width="150" height="62" rx="12"/><text x="439" y="188">Grafana</text><text class="m" x="439" y="208">dashboard + alerta</text>
+            <rect class="e" x="70" y="160" width="262" height="62" rx="12"/><text x="201" y="188">Punto de contacto</text><text class="m" x="201" y="208">webhook · WhatsApp · Telegram · correo</text>
+            <path class="fl" d="M185 45 L160 45"/><path class="fl" d="M335 45 L360 45"/><path class="fl" d="M439 76 L439 156"/><path class="fl" d="M364 191 L334 191"/>
+            <text class="m" x="170" y="104" style="text-anchor:start">cada 15 s: ¿responde? ¿en cuánto?</text><text class="m" x="430" y="122" style="text-anchor:end">evalúa la regla cada minuto</text>
+          </svg>
+        </section>
+        <section class="esc-card q-sla a-in" style="--d:.35s" aria-label="Tabla de SLA">
+          <span class="q-et">SLA: cuánta caída te permite cada «nueve» (mes de 30 días)</span>
+          <table>
+            <thead><tr><th>SLA</th><th>al mes</th><th>al día</th><th>tú vas</th></tr></thead>
+            <tbody id="sla"></tbody>
+          </table>
+          <p>Disponibilidad = sondas OK ÷ sondas totales. En PromQL: avg_over_time(probe_success[30d]) × 100.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota" id="pie">Una alerta que suena en falso diez veces se apaga para siempre: la undécima es la de verdad</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var VISTA = 120, SEG = 15, REAL_MIN = 4; // 120 sondas = 30 min · una caída es «real» desde 4 sondas (1 min)
+  // Historia inicial determinista: 1 h arriba con un parpadeo de 1 sonda y otro de 2 sondas.
+  var hist = [], modo = "up", parpadeo = 0, pausa = false;
+  function semilla(a) { return function () { a = (a * 1103515245 + 12345) & 0x7fffffff; return a / 0x7fffffff; }; }
+  var r0 = semilla(7);
+  for (var k = 0; k < 240; k++) hist.push({ s: (k === 170 || k === 205 || k === 206) ? "d" : "u", ms: Math.round(90 + r0() * 110) });
+
+  // Tira: 120 barras fijas, se repintan en cada sonda.
+  var tira = $("tira");
+  for (var k = 0; k < VISTA; k++) tira.appendChild(document.createElement("i"));
+  var barras = tira.children;
+
+  function sondear() {
+    var s = "u", ms = Math.round(90 + Math.random() * 110);
+    if (parpadeo > 0) { s = "d"; parpadeo--; }
+    else if (modo === "down") s = "d";
+    else if (modo === "lento") { s = "l"; ms = Math.round(2600 + Math.random() * 1600); }
+    hist.push({ s: s, ms: s === "d" ? 0 : ms });
+    if (hist.length > 2000) hist.shift();
+    pintar();
+  }
+  function segmentos() { // tramos consecutivos de caída: [inicio, largo]
+    var out = [], ini = -1;
+    for (var i = 0; i <= hist.length; i++) {
+      var d = i < hist.length && hist[i].s === "d";
+      if (d && ini < 0) ini = i;
+      if (!d && ini >= 0) { out.push([ini, i - ini, i === hist.length]); ini = -1; }
+    }
+    if (ini >= 0) out.push([ini, hist.length - ini, true]);
+    return out;
+  }
+  function fmtMin(seg) { if (seg < 60) return Math.round(seg) + " s"; var m = seg / 60; return (m < 10 ? m.toFixed(1).replace(".", ",") : Math.round(m)) + " min"; }
+  function pct(x) { return (x * 100).toFixed(x > .9999 ? 3 : 2).replace(".", ",") + " %"; }
+  function pintar() {
+    var n = hist.length, ini = n - VISTA;
+    for (var k = 0; k < VISTA; k++) {
+      var p = hist[ini + k], b = barras[k];
+      if (!p) { b.style.height = "0"; continue; }
+      b.className = p.s === "d" ? "d" : p.s === "l" ? "l" : "";
+      b.style.height = p.s === "d" ? "100%" : p.s === "l" ? Math.min(92, 55 + p.ms / 130) + "%" : (28 + p.ms / 10) + "%";
+    }
+    var u = hist[n - 1], est = $("estado");
+    est.className = "q-estado " + (u.s === "d" ? "down" : u.s === "l" ? "lento" : "up");
+    est.textContent = u.s === "d" ? "DOWN · sin respuesta" : (u.s === "l" ? "LENTO · " : "UP · ") + u.ms + " ms";
+    // Disponibilidad.
+    var h1 = hist.slice(-240), caidas1 = h1.filter(function (p) { return p.s === "d"; }).length;
+    var caidasTot = hist.filter(function (p) { return p.s === "d"; }).length, segCaida = caidasTot * SEG;
+    $("d1").textContent = pct(1 - caidas1 / h1.length);
+    $("d24").textContent = pct(1 - segCaida / 86400);
+    $("d30").textContent = pct(1 - segCaida / 2592000);
+    $("caida").textContent = fmtMin(segCaida);
+    sla(segCaida);
+    alertas(ini);
+  }
+  function sla(segCaida) {
+    var filas = [[99, 432 * 60, "7 h 12 min", "14,4 min"], [99.9, 43.2 * 60, "43,2 min", "1,4 min"], [99.99, 4.32 * 60, "4 min 19 s", "8,6 s"]];
+    $("sla").innerHTML = filas.map(function (f) {
+      var ok = segCaida <= f[1];
+      return "<tr><td><b>" + String(f[0]).replace(".", ",") + " %</b></td><td>" + f[2] + "</td><td>" + f[3] + "</td><td class='" + (ok ? "si" : "no") + "'>" + (ok ? "✓ te quedan " + fmtMin(f[1] - segCaida) : "✗ lo rompiste") + "</td></tr>";
+    }).join("");
+  }
+  function alertas(ini) {
+    var X = parseFloat($("x").value), umbral = Math.max(1, Math.ceil(X * 60 / SEG)); // sondas seguidas para avisar
+    var reales = 0, falsas = 0, perdidas = 0, marcas = [], tiempos = [];
+    segmentos().forEach(function (sg) {
+      var largo = sg[1], abierto = sg[2], suena = largo >= umbral, esReal = largo >= REAL_MIN;
+      if (suena) {
+        if (esReal) { reales++; tiempos.push(umbral * SEG); }
+        else if (!abierto) falsas++;
+        marcas.push([sg[0] + umbral - 1, esReal || abierto ? "aviso" : "falsa"]);
+      } else if (esReal && !abierto) perdidas++;
+    });
+    var w = $("tira-w");
+    w.querySelectorAll(".q-marca").forEach(function (m) { m.remove(); });
+    marcas.forEach(function (m) {
+      var pos = m[0] - ini; if (pos < 0 || pos >= VISTA) return;
+      var d = document.createElement("div"); d.className = "q-marca" + (m[1] === "falsa" ? " falsa" : "") + (pos > VISTA * .85 ? " izq" : "");
+      d.style.left = (pos + .5) / VISTA * 100 + "%";
+      d.innerHTML = "<span>" + (m[1] === "falsa" ? "🔔 falsa" : "🔔 " + $("canal").value) + "</span>";
+      w.appendChild(d);
+    });
+    caja("c-real", reales, reales ? "ok" : "");
+    caja("c-falsa", falsas, falsas ? "bad" : "ok");
+    caja("c-perdida", perdidas, perdidas ? "bad" : "ok");
+    var msg = $("msg");
+    if (falsas && X === 0) msg.textContent = "Con 0 min, cada sonda fallida despierta a alguien. Sube X hasta que solo avise la caída real; luego pulsa «Tumbar servicio».";
+    else if (falsas) msg.textContent = "Todavía suena con parpadeos: sube X.";
+    else if (perdidas) msg.textContent = "Hubo una caída real de " + "más de 1 min sin aviso: X es demasiado grande para tu SLA.";
+    else if (!reales) msg.textContent = "Sin falsas alarmas. Ahora pulsa «Tumbar servicio», espera y mira cuándo avisa.";
+    else msg.innerHTML = "Avisó la caída real " + fmtMin(tiempos[tiempos.length - 1]) + " después de empezar, sin falsas alarmas. Con 99,9 % tienes 43 min al mes: avisar en " + fmtMin(umbral * SEG) + " deja margen.";
+    if (reales && !falsas && !perdidas && !$("logro")) { $("pie").innerHTML = '<span class="esc-chip ok q-logro" id="logro">La alerta avisa la caída real y ningún parpadeo · pulsa «Lo logré»</span>'; }
+  }
+  function caja(id, n, cls) { var el = $(id); el.className = cls; el.querySelector("b").textContent = n; }
+
+  $("b-caer").addEventListener("click", function () { modo = "down"; });
+  $("b-lento").addEventListener("click", function () { modo = "lento"; });
+  $("b-parp").addEventListener("click", function () { parpadeo = 1; });
+  $("b-ok").addEventListener("click", function () { modo = "up"; parpadeo = 0; });
+  $("b-pausa").addEventListener("click", function () { pausa = !pausa; this.setAttribute("aria-pressed", pausa ? "true" : "false"); this.textContent = pausa ? "▶" : "❚❚"; });
+  $("x").addEventListener("change", pintar);
+  $("canal").addEventListener("change", pintar);
+  pintar();
+  setInterval(function () { if (!pausa) sondear(); }, 600);
+})();
+</script>
+</body>
+</html>

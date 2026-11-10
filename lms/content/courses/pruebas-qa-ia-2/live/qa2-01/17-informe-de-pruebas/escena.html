@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · El informe de pruebas</title>
+<!--
+  Escena del modo LIVE (taller qa2-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Izquierda: vista previa página a página del informe Word que genera el kit (npm run informe), con la corrida
+  real de la tienda con defectos (3 rojos, NO APTO). Derecha: «arma tu informe» (ordenar las 6 secciones con
+  clic) y el quiz «¿apto o no apto?» con resultados al azar y contador de acuerdo. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .2); }
+.esc { padding: 1.6vh 2.6vw 1.4vh; gap: 1vh; }
+.esc-cuerpo { gap: 1vh; }
+.esc-titulo { font-size: 1.22em; }
+.q-btn { font: 700 .62em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .5em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.q-btn:hover { transform: translateY(-1px); }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.q-btn.ok { color: var(--ok); border-color: var(--ok); } .q-btn.bad { color: var(--bad); border-color: var(--bad); } .q-btn.warn { color: var(--warn); border-color: var(--warn); }
+.q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-et { font-size: .56em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.q-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: center; }
+.q-cab .esc-fila { gap: .4em; }
+
+.q-b { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.1vw; min-height: 0; }
+.q-izq, .q-der { display: grid; gap: 1vh; align-content: start; min-width: 0; }
+
+/* ---- vista previa del Word ---- */
+.q-word { padding: .6em .9em; display: grid; grid-template-rows: auto 1fr auto; gap: .5em; min-height: 0; }
+.q-pags { display: flex; gap: .35em; flex-wrap: wrap; }
+.q-pags button { font: 700 .56em/1 var(--mono); padding: .45em .6em; border-radius: .5em; border: 1px solid var(--line2); background: var(--s2); color: var(--muted); cursor: pointer; }
+.q-pags button[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.q-hoja { background: #fff; color: #1a1a1a; border: 1px solid #c9c9c9; border-radius: .25em; padding: 1.1em 1.4em; font: 400 .6em/1.35 Arial, Helvetica, sans-serif; display: grid; gap: .55em; align-content: start; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.18); position: relative; min-height: 0; }
+.q-hoja::after { content: attr(data-pie); position: absolute; left: 0; right: 0; bottom: .4em; text-align: center; font-size: .85em; color: #8a8a8a; }
+.q-hoja h2 { margin: 0; color: #1F3864; font-size: 1.3em; }
+.q-hoja h3 { margin: 0; color: #1F3864; font-size: 1.05em; }
+.q-hoja p { margin: 0; }
+.q-hoja .portada { text-align: center; padding-top: 2.2em; display: grid; gap: .5em; }
+.q-hoja .portada b { color: #1F3864; font-size: 2.1em; letter-spacing: .02em; }
+.q-hoja .portada .sub { color: #595959; font-size: 1.05em; }
+.q-hoja .portada .proy { font-size: 1.4em; font-weight: 700; margin-top: .6em; }
+.q-hoja table { border-collapse: collapse; width: 100%; font-size: .95em; }
+.q-hoja th, .q-hoja td { border: 1px solid #bfbfbf; padding: .22em .45em; text-align: left; vertical-align: top; }
+.q-hoja th { background: #1F3864; color: #fff; font-weight: 700; }
+.q-hoja td.k { background: #f2f2f2; font-weight: 700; width: 38%; }
+.q-hoja tr.ok td:last-child { background: #e2f0d9; } .q-hoja tr.bad td:last-child { background: #fbe4e4; } .q-hoja tr.pend td:last-child { background: #f2f2f2; }
+.q-hoja .ver { background: #fbe4e4; color: #c00000; font-weight: 800; font-size: 1.25em; padding: .35em .5em; }
+.q-hoja .ver.ok { background: #e2f0d9; color: #2e7d32; }
+.q-hoja .mono { font-family: Consolas, Menlo, monospace; background: #f2f2f2; padding: .15em .4em; font-size: .95em; }
+.q-hoja ul { margin: 0; padding-left: 1.3em; }
+.q-hoja .portada table { width: 72%; margin: .6em auto 0; }
+.q-cmd { display: flex; gap: .6em; align-items: center; font: 600 .6em var(--mono); color: var(--muted); flex-wrap: wrap; }
+.q-cmd code { color: var(--fg); background: var(--s2); padding: .2em .5em; border-radius: .4em; }
+
+/* ---- arma tu informe ---- */
+.q-arma { padding: .6em .9em; display: grid; gap: .45em; }
+.q-slots { display: grid; grid-template-columns: repeat(2, 1fr); gap: .35em; }
+.q-slot { display: flex; align-items: center; gap: .5em; background: var(--s2); border: 1px dashed var(--line2); border-radius: .6em; padding: .3em .55em; min-height: 2.2em; font-size: .64em; color: var(--muted); }
+.q-slot b { font-family: var(--mono); color: var(--accent); }
+.q-slot.lleno { border-style: solid; color: var(--fg); } .q-slot.mal { border-color: var(--bad); color: var(--bad); } .q-slot.bien { border-color: var(--ok); }
+.q-cartas { display: flex; flex-wrap: wrap; gap: .35em; }
+.q-cartas button { font: 700 .6em/1.15 system-ui, sans-serif; padding: .45em .8em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.q-cartas button:disabled { opacity: .3; cursor: default; }
+p.q-msg { margin: 0; font-size: .64em; min-height: 1.4em; color: var(--fg); }
+
+/* ---- quiz apto ---- */
+.q-quiz { padding: .6em .9em; display: grid; gap: .45em; }
+.q-caso { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4em; }
+.q-caso div { background: var(--s2); border-radius: .6em; padding: .3em .55em; line-height: 1.2; }
+.q-caso b { display: block; font-size: 1.15em; font-variant-numeric: tabular-nums; }
+.q-caso span { font-size: .54em; color: var(--muted); }
+.q-caso .bad b { color: var(--bad); } .q-caso .ok b { color: var(--ok); } .q-caso .warn b { color: var(--warn); }
+.q-acuerdo { margin-left: auto; font: 800 .72em var(--mono); }
+.q-acuerdo small { color: var(--muted); font-weight: 600; }
+.q-logro { animation: esc-pop .5s cubic-bezier(.2,.8,.3,1.2) both; }
+@media (prefers-reduced-motion: reduce) { .q-logro, .q-btn { animation: none !important; transition: none !important; } }
+
+/* ---- dots (paginación interna) ---- */
+.q-dots { display: flex; align-items: center; gap: .4em; }
+.q-dots button { font: 700 .58em/1.1 system-ui, sans-serif; padding: .45em .75em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: .45em; }
+.q-dots button i { width: .75em; height: .75em; border-radius: 50%; background: var(--line2); display: inline-block; }
+.q-dots button[aria-current="step"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.q-dots button[aria-current="step"] i { background: var(--accent); }
+.q-dots button.hecho i { background: var(--ok); }
+.q-dots .q-fl { font-size: .8em; padding: .4em .6em; }
+.q-pag[hidden] { display: none !important; }
+.q-pag { display: grid; min-height: 0; }
+/* ---- escribe tu informe ---- */
+.q-b2 { display: grid; grid-template-columns: 1.25fr 1fr; gap: 1.1vw; min-height: 0; }
+.q-form { padding: .6em .9em; display: grid; grid-template-rows: auto 1fr auto; gap: .45em; min-height: 0; }
+.q-campos { display: grid; grid-template-columns: 1fr 1fr; gap: .4em .6em; overflow: auto; min-height: 0; align-content: start; padding-right: .2em; }
+.q-campo { display: grid; gap: .15em; }
+.q-campo label { font-size: .6em; font-weight: 800; display: flex; align-items: center; gap: .4em; }
+.q-campo label .esc-chip { font-size: .8em; padding: .05em .5em; margin-left: auto; }
+.q-campo small { font-size: .52em; color: var(--muted); line-height: 1.25; }
+.q-campo textarea { font: 500 .6em/1.3 system-ui, sans-serif; min-height: 2.9em; resize: vertical; border: 1px solid var(--line2); border-radius: .5em; padding: .35em .5em; background: var(--s1); color: var(--fg); width: 100%; box-sizing: border-box; }
+.q-campo textarea:focus { outline: 2px solid var(--accent); }
+.q-campo.ok textarea { border-color: var(--ok); } .q-campo.falta textarea { border-color: var(--warn); }
+.q-prev { padding: .6em .9em; display: grid; grid-template-rows: auto 1fr auto; gap: .5em; min-height: 0; }
+.q-prev .q-hoja { overflow: auto; }
+.q-hoja .falta { background: #ffff00; color: #5a5a00; font-style: italic; padding: .05em .25em; }
+.q-rev { font: 600 .58em/1.35 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .6em; padding: .5em .8em; white-space: pre-wrap; margin: 0; max-height: 7.5em; overflow: auto; }
+.q-rev .ok { color: #9fe0b0; } .q-rev .no { color: #ff9fa3; }
+
+/* la escena no debe crecer más que la ventana: lo que sobra se desplaza dentro de las tarjetas */
+.esc { height: 100vh; box-sizing: border-box; overflow: hidden; }
+.esc-cuerpo { min-height: 0; }
+.q-pag { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.q-pag[data-pag="1"] .q-b2 { height: 100%; min-height: 0; }
+.q-form, .q-prev { min-height: 0; overflow: hidden; }
+.q-campo textarea { min-height: 3.6em; }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">QA con IA · E17</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="q-cab">
+      <h1 class="esc-titulo a-in">El informe de pruebas: <em>lo que entrega QA</em></h1>
+      <nav class="q-dots" aria-label="Pasos de la escena ● ○ ○">
+        <button type="button" class="q-fl" id="d-ant" aria-label="Paso anterior">‹</button>
+        <button type="button" data-pag="0" aria-current="step"><i></i>1 · Qué va en cada sección</button>
+        <button type="button" data-pag="1"><i></i>2 · Escribe tu informe</button>
+        <button type="button" data-pag="2"><i></i>3 · ¿Apto o no apto?</button>
+        <button type="button" class="q-fl" id="d-sig" aria-label="Paso siguiente">›</button>
+      </nav>
+    </div>
+
+    <section class="q-pag" data-pag="0">
+    <div class="q-b">
+      <div class="q-izq">
+        <section class="esc-card q-word a-in" style="--d:.1s" aria-label="Vista previa del informe en Word">
+          <div class="esc-fila">
+            <span class="q-et">Word · informe-de-pruebas.docx · corrida real de Tienda Sol con defectos</span>
+            <span style="margin-left:auto"></span>
+            <div class="q-pags" id="pags" role="tablist"></div>
+          </div>
+          <div class="q-hoja" id="hoja" data-pie="Página 1 de 6"></div>
+          <div class="esc-fila" style="gap:.4em">
+            <button type="button" class="q-btn" id="b-ant">← Página</button>
+            <button type="button" class="q-btn" id="b-sig">Página →</button>
+            <span class="q-et" id="hoja-et" style="margin-left:auto">Portada</span>
+          </div>
+        </section>
+      </div>
+      <div class="q-der">
+        <section class="esc-card q-arma a-in" style="--d:.2s" aria-label="Arma tu informe">
+          <div class="esc-fila"><span class="q-et">Arma tu informe · pulsa las secciones en el orden en que se leen</span><button type="button" class="q-btn" id="b-reset" style="margin-left:auto">Reiniciar</button></div>
+          <div class="q-slots" id="slots"></div>
+          <div class="q-cartas" id="cartas"></div>
+          <p class="q-msg" id="msg-arma">Primero lo que se prometió probar; al final la decisión. Los defectos van antes de la conclusión: la justifican.</p>
+        </section>
+        <section class="esc-card q-arma a-in" style="--d:.3s" aria-label="Cómo se produce">
+          <div class="esc-fila"><span class="q-et">Cómo se produce · la herramienta pone las cifras, tú pones el juicio</span></div>
+          <div class="q-cmd"><code>npm test</code> → <code>informe/datos.json</code> (tu redacción) → <code>npm run informe</code> → <code>npm run informe:revisar</code> → <code>.docx</code></div>
+          <p class="q-msg">Las tablas (casos, resultados, defectos, cobertura) salen de la corrida. Objetivo, alcance, criterio de salida, riesgos, conclusión y recomendación los escribes tú. Sin eso el Word sale con huecos amarillos.</p>
+        </section>
+      </div>
+    </div>
+    </section>
+
+    <section class="q-pag" data-pag="1" hidden>
+    <div class="q-b2">
+      <section class="esc-card q-form a-in" aria-label="Tu hoja de trabajo">
+        <div class="esc-fila"><span class="q-et">Tu hoja de trabajo · informe/datos.json · la corrida de hoy: 23 ejecutados, 20 pasan, 3 fallan (Alta), 2 pendientes</span><button type="button" class="q-btn" id="b-ejemplo" style="margin-left:auto">Ver un ejemplo</button><button type="button" class="q-btn" id="b-limpiar">Limpiar</button></div>
+        <div class="q-campos" id="campos"></div>
+        <div class="esc-fila" style="gap:.5em"><button type="button" class="q-btn pri" id="b-revisar">Revisar como jefe de QA (npm run informe:revisar)</button><span class="q-et" id="rev-et"></span></div>
+      </section>
+      <section class="esc-card q-prev a-in" aria-label="Vista previa de tu Word">
+        <div class="esc-fila"><span class="q-et">Así queda tu Word · lo amarillo falta</span></div>
+        <div class="q-hoja" id="prev" data-pie="Tu informe · vista previa"></div>
+        <pre class="q-rev" id="rev">Escribe y pulsa «Revisar». La misma revisión corre en tu laptop con npm run informe:revisar.</pre>
+      </section>
+    </div>
+    </section>
+
+    <section class="q-pag" data-pag="2" hidden>
+    <div class="q-b">
+      <div class="q-izq">
+        <section class="esc-card q-quiz a-in" aria-label="¿Apto o no apto?">
+          <div class="esc-fila"><span class="q-et">¿Apto o no apto para desplegar? · regla: cualquier Alta en rojo bloquea</span><span class="q-acuerdo" id="acuerdo">0 / 0 <small>· acuerdo —</small></span></div>
+          <div class="q-caso" id="caso"></div>
+          <div class="esc-fila" style="gap:.4em">
+            <button type="button" class="q-btn ok" data-v="apto">Apto</button>
+            <button type="button" class="q-btn warn" data-v="riesgo">Apto con riesgo</button>
+            <button type="button" class="q-btn bad" data-v="no">No apto</button>
+            <button type="button" class="q-btn pri" id="b-otro" style="margin-left:auto">Otro resultado</button>
+          </div>
+          <p class="q-msg" id="msg-quiz">Mira los cuatro números y decide. Después lee el porqué.</p>
+        </section>
+      </div>
+      <div class="q-der">
+        <section class="esc-card q-arma a-in" aria-label="Criterio de salida">
+          <div class="esc-fila"><span class="q-et">Criterio de salida · se acuerda ANTES de correr, no después de ver el rojo</span></div>
+          <p class="q-msg">Alta en rojo → <b>NO APTO</b>. Solo Media o Baja en rojo → APTO con observaciones (responsable y fecha). Todo verde con pendientes → APTO con riesgo (se declara qué no se probó). Todo verde y nada pendiente → APTO.</p>
+          <p class="q-msg">El veredicto se argumenta con IDs y cifras: «3 de 23 fallan: DEF-01 a DEF-03, todos Alta, en la pantalla de venta; la API pasa entera». Un «todo bien» sin números no es un informe.</p>
+        </section>
+      </div>
+    </div>
+    </section>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota" id="pie">Un verde en la terminal se olvida al cerrar la ventana; el informe es lo que el equipo lee, firma y guarda</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  /* Las plantillas usan ⟨ ⟩ en vez de < > para que el verificador no las cuente como elementos; .html las vuelve HTML. */
+  var h = function (t) { return String(t).replace(/⟨/g, "<").replace(/⟩/g, ">"); };
+  Object.defineProperty(Element.prototype, "html", { set: function (v) { this.innerHTML = h(v); }, get: function () { return this.innerHTML; }, configurable: true });
+
+  /* ---------- vista previa del Word (datos de la corrida real del kit, 01-11-2026) ---------- */
+  var PAGS = [
+    { et: "Portada", html: '⟨div class="portada">⟨b>INFORME DE PRUEBAS⟨/b>⟨p class="sub">Resumen de ejecución y recomendación de despliegue⟨/p>⟨p class="proy">Tienda Sol · punto de venta⟨/p>⟨p>Versión 1.0 (kit del taller)⟨/p>⟨table>⟨tr>⟨td class="k">Elaborado por⟨/td>⟨td>Tu nombre aquí⟨/td>⟨/tr>⟨tr>⟨td class="k">Fecha de la corrida⟨/td>⟨td>1 de noviembre de 2026, 7:00 a. m.⟨/td>⟨/tr>⟨tr>⟨td class="k">Resultado⟨/td>⟨td>20 pasan · 3 fallan · 2 sin ejecutar⟨/td>⟨/tr>⟨tr>⟨td class="k">Veredicto⟨/td>⟨td style="color:#c00000;font-weight:800">NO APTO⟨/td>⟨/tr>⟨/table>⟨/div>' },
+    { et: "1–2 · Objetivo y entorno", html: '⟨h2>1. Objetivo y alcance⟨/h2>⟨p>Verificar de extremo a extremo que Tienda Sol permite iniciar sesión, buscar productos, registrar una venta con el cobro correcto y ver el reporte del día, y que rechaza un pago insuficiente y una venta sin stock.⟨/p>⟨h3>Alcance⟨/h3>⟨p>E2E con Playwright + POM, pruebas de API y la misma suite en tres navegadores sin interfaz. Fuera: carga, seguridad, navegadores con interfaz.⟨/p>⟨h2>2. Entorno de pruebas⟨/h2>⟨table>⟨tr>⟨td class="k">Sistema operativo⟨/td>⟨td>Darwin 24.1.0 (arm64)⟨/td>⟨/tr>⟨tr>⟨td class="k">Node.js / Playwright⟨/td>⟨td>v24.2.0 / 1.64.1⟨/td>⟨/tr>⟨tr>⟨td class="k">Motores⟨/td>⟨td>Chromium headless · Lightpanda 1.0.2 · Obscura 0.2.6 (CDP)⟨/td>⟨/tr>⟨tr>⟨td class="k">Datos de prueba⟨/td>⟨td>Semilla determinista cargada antes de cada prueba (POST /api/semilla)⟨/td>⟨/tr>⟨/table>' },
+    { et: "3 · Casos", html: '⟨h2>3. Casos planificados vs ejecutados⟨/h2>⟨p>Planificados: 25 · Ejecutados: 23 · Pendientes de automatizar: 2.⟨/p>⟨table>⟨tr>⟨th>ID⟨/th>⟨th>Módulo⟨/th>⟨th>Descripción⟨/th>⟨th>Prio.⟨/th>⟨th>Resultado⟨/th>⟨/tr>⟨tr class="ok">⟨td>E2E-LOG-001⟨/td>⟨td>Login⟨/td>⟨td>El cajero ingresa con usuario y clave válidos⟨/td>⟨td>Alta⟨/td>⟨td>pasa⟨/td>⟨/tr>⟨tr class="pend">⟨td>E2E-LOG-004⟨/td>⟨td>Login⟨/td>⟨td>Tres claves incorrectas bloquean 5 minutos⟨/td>⟨td>Media⟨/td>⟨td>pendiente⟨/td>⟨/tr>⟨tr class="ok">⟨td>E2E-CAT-002⟨/td>⟨td>Catálogo⟨/td>⟨td>Buscar por nombre filtra el catálogo⟨/td>⟨td>Alta⟨/td>⟨td>pasa⟨/td>⟨/tr>⟨tr class="bad">⟨td>E2E-VEN-001⟨/td>⟨td>Venta⟨/td>⟨td>Venta en efectivo calcula bien total y vuelto⟨/td>⟨td>Alta⟨/td>⟨td>falla⟨/td>⟨/tr>⟨tr class="bad">⟨td>E2E-VEN-002⟨/td>⟨td>Venta⟨/td>⟨td>Si el efectivo no alcanza la venta se rechaza⟨/td>⟨td>Alta⟨/td>⟨td>falla⟨/td>⟨/tr>⟨tr class="bad">⟨td>E2E-VEN-003⟨/td>⟨td>Venta⟨/td>⟨td>La promo de 10 % se aplica una sola vez⟨/td>⟨td>Alta⟨/td>⟨td>falla⟨/td>⟨/tr>⟨tr class="ok">⟨td>API-VEN-001⟨/td>⟨td>API⟨/td>⟨td>El servidor rechaza efectivo insuficiente (422)⟨/td>⟨td>Alta⟨/td>⟨td>pasa⟨/td>⟨/tr>⟨tr class="ok">⟨td>E2E-REP-001⟨/td>⟨td>Reporte⟨/td>⟨td>Con semilla limpia el reporte está en cero⟨/td>⟨td>Media⟨/td>⟨td>pasa⟨/td>⟨/tr>⟨/table>⟨p style="color:#8a8a8a">… 25 filas en el documento real⟨/p>' },
+    { et: "4 · Resultados", html: '⟨h2>4. Resultados⟨/h2>⟨table>⟨tr>⟨td class="k">Casos ejecutados⟨/td>⟨td>23⟨/td>⟨/tr>⟨tr>⟨td class="k">Pasan⟨/td>⟨td>20 (87 %)⟨/td>⟨/tr>⟨tr>⟨td class="k">Fallan⟨/td>⟨td>3 (13 %)⟨/td>⟨/tr>⟨tr>⟨td class="k">Sin correr / pendientes⟨/td>⟨td>2⟨/td>⟨/tr>⟨tr>⟨td class="k">Duración de la corrida⟨/td>⟨td>21,3 s⟨/td>⟨/tr>⟨/table>⟨h3>Por módulo⟨/h3>⟨table>⟨tr>⟨th>Módulo⟨/th>⟨th>Pasan⟨/th>⟨th>Fallan⟨/th>⟨th>% éxito⟨/th>⟨/tr>⟨tr>⟨td>Login⟨/td>⟨td>3⟨/td>⟨td>0⟨/td>⟨td>100 %⟨/td>⟨/tr>⟨tr>⟨td>API⟨/td>⟨td>8⟨/td>⟨td>0⟨/td>⟨td>100 %⟨/td>⟨/tr>⟨tr>⟨td>Catálogo⟨/td>⟨td>6⟨/td>⟨td>0⟨/td>⟨td>100 %⟨/td>⟨/tr>⟨tr class="bad">⟨td>Venta⟨/td>⟨td>1⟨/td>⟨td>3⟨/td>⟨td style="background:#fbe4e4">25 %⟨/td>⟨/tr>⟨tr>⟨td>Reporte⟨/td>⟨td>2⟨/td>⟨td>0⟨/td>⟨td>100 %⟨/td>⟨/tr>⟨/table>⟨p>La API pasa entera y la pantalla de venta falla: los tres defectos viven en el frontend.⟨/p>' },
+    { et: "5 · Defectos", html: '⟨h2>5. Defectos encontrados⟨/h2>⟨h3>DEF-01 · E2E-VEN-001 · Venta en efectivo calcula bien total y vuelto⟨/h3>⟨table>⟨tr>⟨td class="k">Severidad⟨/td>⟨td style="background:#fbe4e4">Alta (bloquea el despliegue)⟨/td>⟨/tr>⟨tr>⟨td class="k">Qué debía pasar⟨/td>⟨td>Expected: "Venta N° 1 registrada. Total S/ 29.50 · Vuelto S/ 20.50"⟨/td>⟨/tr>⟨tr>⟨td class="k">Qué pasó⟨/td>⟨td>Received: "Venta N° 1 registrada. Total S/ 29.50 · Vuelto S/ 0.00"⟨/td>⟨/tr>⟨tr>⟨td class="k">Evidencia⟨/td>⟨td>⟨span class="mono">test-results/venta-…VEN-001…/trace.zip⟨/span> · test-failed-1.png⟨/td>⟨/tr>⟨/table>⟨h3>DEF-02 · E2E-VEN-002 · Si el efectivo no alcanza la venta se rechaza⟨/h3>⟨table>⟨tr>⟨td class="k">Qué pasó⟨/td>⟨td>Received: "Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00" (se cobró S/ 17.01 con S/ 5)⟨/td>⟨/tr>⟨/table>⟨h3>DEF-03 · E2E-VEN-003 · La promo se aplica una sola vez⟨/h3>⟨table>⟨tr>⟨td class="k">Qué pasó⟨/td>⟨td>Expected "S/ 34.02" · Received "S/ 30.62" (10 % descontado dos veces)⟨/td>⟨/tr>⟨/table>' },
+    { et: "6–9 · Cobertura y conclusión", html: '⟨h2>6. Cobertura de casos de uso⟨/h2>⟨table>⟨tr>⟨th>Caso de uso⟨/th>⟨th>Pruebas⟨/th>⟨th>Fallan⟨/th>⟨th>Cubierto⟨/th>⟨/tr>⟨tr>⟨td>CU-01 Iniciar sesión⟨/td>⟨td>7⟨/td>⟨td>0⟨/td>⟨td style="background:#fff2cc">Parcial (1 pendiente)⟨/td>⟨/tr>⟨tr>⟨td>CU-03 Registrar venta⟨/td>⟨td>5⟨/td>⟨td>2⟨/td>⟨td style="background:#fbe4e4">Con defectos⟨/td>⟨/tr>⟨tr>⟨td>CU-04 Rechazar pago insuficiente⟨/td>⟨td>2⟨/td>⟨td>1⟨/td>⟨td style="background:#fbe4e4">Con defectos⟨/td>⟨/tr>⟨tr>⟨td>CU-05 Ver reporte del día⟨/td>⟨td>2⟨/td>⟨td>0⟨/td>⟨td style="background:#e2f0d9">Sí⟨/td>⟨/tr>⟨/table>⟨h2>8. Riesgos y pendientes⟨/h2>⟨ul>⟨li>E2E-LOG-004 y E2E-VEN-005 sin automatizar.⟨/li>⟨li>Obscura no dispara ⟨span class="mono">change⟨/span> al perder el foco: un rojo solo ahí se verifica en Chromium.⟨/li>⟨/ul>⟨h2>9. Conclusión y recomendación⟨/h2>⟨p class="ver">Veredicto: NO APTO para desplegar⟨/p>⟨p>Hay 3 defectos de prioridad Alta sin corregir. Regla: cualquier caso Alta en rojo bloquea el despliegue.⟨/p>' }
+  ];
+  var pag = 0, pagsEl = $("pags"), hoja = $("hoja");
+  PAGS.forEach(function (p, i) {
+    var b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "tab"); b.textContent = String(i + 1);
+    b.addEventListener("click", function () { irA(i); }); pagsEl.appendChild(b);
+  });
+  function irA(i) {
+    pag = (i + PAGS.length) % PAGS.length;
+    hoja.html = PAGS[pag].html; hoja.setAttribute("data-pie", "Página " + (pag + 1) + " de " + PAGS.length);
+    $("hoja-et").textContent = PAGS[pag].et;
+    Array.prototype.forEach.call(pagsEl.children, function (b, k) { b.setAttribute("aria-pressed", k === pag ? "true" : "false"); });
+  }
+  $("b-ant").addEventListener("click", function () { irA(pag - 1); });
+  $("b-sig").addEventListener("click", function () { irA(pag + 1); });
+  irA(0);
+
+  /* ---------- arma tu informe ---------- */
+  var SECC = [
+    { n: "Objetivo y alcance", por: "qué se prometió probar y qué no" },
+    { n: "Entorno", por: "dónde corrió: SO, Node, Playwright, motores, semilla" },
+    { n: "Casos ejecutados", por: "la matriz completa con su resultado" },
+    { n: "Defectos", por: "cada rojo con esperado, recibido, severidad y traza" },
+    { n: "Cobertura", por: "qué caso de uso quedó cubierto y cuál no" },
+    { n: "Conclusión", por: "APTO / NO APTO con la regla aplicada" }
+  ];
+  var orden = [], armaOk = false;
+  function pintarArma() {
+    var s = $("slots"); s.html = "";
+    for (var i = 0; i < SECC.length; i++) {
+      var d = document.createElement("div"); d.className = "q-slot";
+      var idx = orden[i];
+      if (idx !== undefined) { d.classList.add("lleno", idx === i ? "bien" : "mal"); d.html = "⟨b>" + (i + 1) + "⟨/b> " + SECC[idx].n; }
+      else d.html = "⟨b>" + (i + 1) + "⟨/b> —";
+      s.appendChild(d);
+    }
+    var c = $("cartas"); c.html = "";
+    SECC.map(function (x, k) { return k; }).sort(function (a, b) { return mezcla[a] - mezcla[b]; }).forEach(function (k) {
+      var b = document.createElement("button"); b.type = "button"; b.textContent = SECC[k].n; b.disabled = orden.indexOf(k) >= 0;
+      b.addEventListener("click", function () { if (orden.length < SECC.length) { orden.push(k); pintarArma(); } });
+      c.appendChild(b);
+    });
+    var msg = $("msg-arma");
+    if (orden.length === SECC.length) {
+      var malos = orden.filter(function (x, i) { return x !== i; }).length;
+      if (!malos) { armaOk = true; msg.textContent = "Orden correcto. Fíjate: los defectos justifican la conclusión, por eso van justo antes."; }
+      else msg.textContent = malos + " sección(es) fuera de lugar (en rojo). Pulsa Reiniciar y piensa qué necesita leer antes quien decide.";
+    } else if (orden.length) {
+      var ult = orden[orden.length - 1];
+      msg.textContent = SECC[ult].n + ": " + SECC[ult].por + ".";
+    } else msg.textContent = "Primero lo que se prometió probar; al final la decisión. Los defectos van antes de la conclusión: la justifican.";
+    logro();
+  }
+  var mezcla = [3, 0, 5, 1, 4, 2];
+  $("b-reset").addEventListener("click", function () { orden = []; mezcla = mezcla.map(function (_, i) { return (i * 7 + Date.now()) % 11; }); pintarArma(); });
+  pintarArma();
+
+  /* ---------- quiz apto / no apto ---------- */
+  function semilla(a) { return function () { a = (a * 1103515245 + 12345) & 0x7fffffff; return a / 0x7fffffff; }; }
+  var rnd = semilla(19);
+  var CASOS = [
+    { pasan: 23, fallan: 0, alta: 0, pend: 0, v: "apto", por: "Todo verde y nada pendiente: APTO." },
+    { pasan: 22, fallan: 1, alta: 1, pend: 0, v: "no", por: "Un solo rojo, pero es Alta: bloquea. NO APTO hasta corregir." },
+    { pasan: 21, fallan: 0, alta: 0, pend: 2, v: "riesgo", por: "Todo verde, pero 2 casos nunca se probaron: APTO CON RIESGO, y se declara qué falta." },
+    { pasan: 20, fallan: 3, alta: 3, pend: 2, v: "no", por: "Tres Alta en rojo (la corrida de hoy): NO APTO." },
+    { pasan: 22, fallan: 1, alta: 0, pend: 0, v: "riesgo", por: "Un rojo Media o Baja: se despliega registrándolo con responsable y fecha. APTO con observaciones (cuenta como riesgo)." },
+    { pasan: 0, fallan: 0, alta: 0, pend: 25, v: "no", por: "No se ejecutó nada: no hay evidencia. Sin evidencia no hay apto." },
+    { pasan: 24, fallan: 1, alta: 1, pend: 0, v: "no", por: "96 % verde suena bien, pero el 4 % es el cobro. Alta en rojo: NO APTO." },
+    { pasan: 23, fallan: 0, alta: 0, pend: 1, v: "riesgo", por: "Verde con 1 pendiente: APTO CON RIESGO. Di cuál es el pendiente." }
+  ];
+  var actual = null, resp = 0, aciertos = 0, contestado = false;
+  function otroCaso() {
+    var k = Math.floor(rnd() * CASOS.length); if (actual === CASOS[k]) k = (k + 1) % CASOS.length;
+    actual = CASOS[k]; contestado = false;
+    var c = $("caso"); c.html = "";
+    [[actual.pasan, "pasan", "ok"], [actual.fallan, "fallan", actual.fallan ? "bad" : ""], [actual.alta, "de ellos, Alta", actual.alta ? "bad" : ""], [actual.pend, "pendientes", actual.pend ? "warn" : ""]].forEach(function (t) {
+      var d = document.createElement("div"); d.className = t[2]; d.html = "⟨b>" + t[0] + "⟨/b>⟨span>" + t[1] + "⟨/span>"; c.appendChild(d);
+    });
+    $("msg-quiz").textContent = "Mira los cuatro números y decide. Después lee el porqué.";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-v]"), function (b) {
+    b.addEventListener("click", function () {
+      if (contestado) return; contestado = true; resp++;
+      var ok = b.getAttribute("data-v") === actual.v; if (ok) aciertos++;
+      $("msg-quiz").textContent = (ok ? "Correcto. " : "No. ") + actual.por;
+      var p = Math.round(100 * aciertos / resp);
+      $("acuerdo").html = aciertos + " / " + resp + " ⟨small>· acuerdo " + p + " %⟨/small>";
+      logro();
+    });
+  });
+  $("b-otro").addEventListener("click", otroCaso);
+  otroCaso();
+
+
+  /* ---------- dots ---------- */
+  var dotN = 0, PAGS_N = 3;
+  var NOTAS = ["Un verde en la terminal se olvida al cerrar la ventana; el informe es lo que el equipo lee, firma y guarda",
+               "La herramienta pone las cifras; tú pones el juicio. Cita IDs y números: sin ellos no es un informe",
+               "El criterio de salida se acuerda antes de correr; después solo se aplica"];
+  function irDot(n) {
+    dotN = (n + PAGS_N) % PAGS_N;
+    Array.prototype.forEach.call(document.querySelectorAll(".q-pag"), function (s) { s.hidden = Number(s.getAttribute("data-pag")) !== dotN; });
+    Array.prototype.forEach.call(document.querySelectorAll(".q-dots [data-pag]"), function (b) { if (Number(b.getAttribute("data-pag")) === dotN) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
+    if (!$("logro")) $("pie").textContent = NOTAS[dotN];
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".q-dots [data-pag]"), function (b) { b.addEventListener("click", function () { irDot(Number(b.getAttribute("data-pag"))); }); });
+  $("d-ant").addEventListener("click", function () { irDot(dotN - 1); });
+  $("d-sig").addEventListener("click", function () { irDot(dotN + 1); });
+  document.addEventListener("keydown", function (e) {
+    if (/^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName)) return;
+    if (e.key === "ArrowRight") irDot(dotN + 1); else if (e.key === "ArrowLeft") irDot(dotN - 1);
+  });
+
+  /* ---------- escribe tu informe ---------- */
+  var CAMPOS = [
+    { k: "tester", n: "Elaborado por", g: "Tu nombre y rol.", ej: "María Quispe · QA en formación", chk: "texto" },
+    { k: "objetivo", n: "1 · Objetivo", g: "Qué se quería comprobar y para qué (2–3 líneas).", ej: "Verificar de extremo a extremo, antes de desplegar la versión 1.0, que Tienda Sol permite iniciar sesión, buscar, registrar una venta con el cobro correcto y ver el reporte; y que rechaza un pago insuficiente y una venta sin stock.", chk: "texto" },
+    { k: "alcance", n: "1 · Alcance", g: "Qué SÍ se probó: módulos, tipos de prueba, motores. Cita cuántos casos.", ej: "25 casos de docs/matriz.csv: 15 E2E con Playwright y POM (login, catálogo, venta, reporte), 8 de API y 2 pendientes. Corrido en Chromium, Lightpanda 1.0.2 y Obscura 0.2.6.", chk: "cifra" },
+    { k: "fuera_de_alcance", n: "1 · Fuera de alcance", g: "Qué NO se probó y por qué.", ej: "Rendimiento bajo carga, seguridad, impresión de comprobantes y navegadores con interfaz (Safari, Firefox, móviles).", chk: "texto" },
+    { k: "criterio_de_salida", n: "1 · Criterio de salida", g: "La regla para decidir apto / no apto, acordada antes de correr.", ej: "Cualquier caso de prioridad Alta en rojo bloquea el despliegue. Media o Baja en rojo se registran como deuda con responsable y fecha. Pendientes se declaran como riesgo.", chk: "texto" },
+    { k: "riesgos", n: "8 · Riesgos y pendientes", g: "2 a 4 frases: lo no cubierto, falsos resultados, dependencias. Cita IDs.", ej: "E2E-LOG-004 y E2E-VEN-005 siguen sin automatizar. Obscura no dispara change al perder el foco: un rojo ahí se verifica en Chromium. La prueba visual depende de una línea base por equipo.", chk: "id" },
+    { k: "conclusion", n: "9 · Conclusión", g: "Tu veredicto con IDs y cifras: cuántos corrieron, cuántos pasan, qué defectos (DEF-01 = E2E-VEN-002…), severidad, y por qué APTO o NO APTO.", ej: "Se ejecutaron 23 de 25 casos: 20 pasan y 3 fallan, todos en la pantalla de venta y de prioridad Alta: DEF-01 (E2E-VEN-001, vuelto S/ 0.00), DEF-02 (E2E-VEN-002, cobró S/ 17.01 con S/ 5) y DEF-03 (E2E-VEN-003, promo descontada dos veces). Las 8 pruebas de API pasan: los defectos viven en el frontend. Según el criterio de salida, la versión 1.0 es NO APTA para desplegar.", chk: "conclusion" },
+    { k: "recomendacion", n: "9 · Recomendación", g: "Qué debe pasar ahora: corregir DEF-…, volver a correr, automatizar pendientes, desplegar o no. Responsable y plazo.", ej: "Corregir DEF-01, DEF-02 y DEF-03 en app/publico/js/venta.js, volver a correr npm test y confirmar 23/23 en verde; automatizar E2E-LOG-004 y E2E-VEN-005 antes de la 1.1. Responsable: frontend; plazo: 2 días.", chk: "id" },
+    { k: "firmado_por", n: "Firma", g: "Quién firma y su rol.", ej: "María Quispe, QA · revisado por el jefe de QA", chk: "texto" }
+  ];
+  var ALTAS = ["E2E-VEN-001", "E2E-VEN-002", "E2E-VEN-003"], DEFS = ["DEF-01", "DEF-02", "DEF-03"];
+  var revisarOk = false;
+  function val(k) { var t = $("c-" + k); return t ? t.value.trim() : ""; }
+  function estadoCampo(c) {
+    var v = val(c.k); if (!v) return "falta";
+    if (c.chk === "cifra" && !/\d/.test(v)) return "falta";
+    if (c.chk === "id" && !/\b(E2E|API)-[A-Z]{3}-\d{3}\b|\bDEF-\d{2}\b/.test(v)) return "falta";
+    if (c.chk === "conclusion" && !(/\d/.test(v) && /\bAPT[OA]\b/i.test(v) && /\bDEF-\d{2}\b|\bE2E-VEN-00[123]\b/.test(v))) return "falta";
+    return "ok";
+  }
+  function pintarCampos() {
+    CAMPOS.forEach(function (c) {
+      var w = $("w-" + c.k); var e = estadoCampo(c); w.className = "q-campo " + e;
+      var chip = w.querySelector(".esc-chip"); chip.className = "esc-chip " + (e === "ok" ? "ok" : "");
+      chip.textContent = e === "ok" ? "✓" : (c.chk === "texto" ? "falta" : c.chk === "cifra" ? "cita cifras" : c.chk === "id" ? "cita IDs" : "IDs + cifras + veredicto");
+    });
+    var esc = function (t) { return t.replace(/&/g, "&amp;").replace(/⟨/g, "&lt;"); };
+    var tx = function (k, g) { var v = val(k); return v ? "⟨p>" + esc(v) + "⟨/p>" : '⟨p>⟨span class="falta">[Completa: ' + k + "] " + esc(g) + "⟨/span>⟨/p>"; };
+    var g = function (k) { return CAMPOS.filter(function (c) { return c.k === k; })[0].g; };
+    $("prev").html = '⟨div class="portada" style="padding-top:.2em">⟨b style="font-size:1.4em">INFORME DE PRUEBAS⟨/b>⟨p class="proy" style="font-size:1.1em;margin-top:.1em">Tienda Sol · punto de venta⟨/p>⟨p>Elaborado por: ' + (val("tester") ? esc(val("tester")) : '⟨span class="falta">[Completa: tester]⟨/span>') + '⟨/p>⟨/div>'
+      + "⟨h2>1. Objetivo y alcance⟨/h2>" + tx("objetivo", g("objetivo")) + "⟨h3>Alcance⟨/h3>" + tx("alcance", g("alcance")) + "⟨h3>Fuera de alcance⟨/h3>" + tx("fuera_de_alcance", g("fuera_de_alcance")) + "⟨h3>Criterio de salida⟨/h3>" + tx("criterio_de_salida", g("criterio_de_salida"))
+      + '⟨h2>3–7. Casos, resultados, defectos, cobertura, motores⟨/h2>⟨p style="color:#8a8a8a">Tablas generadas desde la corrida: 23 ejecutados · 20 pasan · 3 fallan (DEF-01 E2E-VEN-001, DEF-02 E2E-VEN-002, DEF-03 E2E-VEN-003, Alta) · 2 pendientes.⟨/p>'
+      + "⟨h2>8. Riesgos y pendientes⟨/h2>" + tx("riesgos", g("riesgos"))
+      + '⟨h2>9. Conclusión y recomendación⟨/h2>⟨p class="ver">Veredicto calculado: NO APTO (pista: 3 Alta en rojo)⟨/p>⟨h3>Conclusión del tester⟨/h3>' + tx("conclusion", g("conclusion")) + "⟨h3>Recomendación⟨/h3>" + tx("recomendacion", g("recomendacion")) + "⟨h3>Firma⟨/h3>" + tx("firmado_por", g("firmado_por"));
+  }
+  function revisar() {
+    var prob = [];
+    CAMPOS.forEach(function (c) { if (!val(c.k)) prob.push("Falta redactar «" + c.k + "» (ver _guia_" + c.k + " en informe/datos.json)."); });
+    var con = val("conclusion"), rec = val("recomendacion");
+    if (con && !/\bAPT[OA]\b/i.test(con)) prob.push("La conclusión no dice si la aplicación es APTA o NO APTA.");
+    if (con && !/NO APT/i.test(con)) prob.push("Hay 3 defectos de prioridad Alta, pero la conclusión no dice NO APTO. Si tu criterio es otro, explícalo.");
+    if (con && !/\d/.test(con)) prob.push("La conclusión no cita ninguna cifra (ejecutados, pasan, fallan).");
+    DEFS.forEach(function (d, i) { if (con && !(con.indexOf(d) >= 0 || con.indexOf(ALTAS[i]) >= 0 || rec.indexOf(d) >= 0 || rec.indexOf(ALTAS[i]) >= 0)) prob.push("El defecto " + d + " (" + ALTAS[i] + ", Alta) no aparece ni en la conclusión ni en la recomendación."); });
+    if (val("alcance") && !/\d/.test(val("alcance"))) prob.push("El alcance no dice cuántos casos se probaron.");
+    var r = $("rev");
+    if (!prob.length) { revisarOk = true; r.html = '⟨span class="ok">✓ Informe completo: sin marcadores, conclusión con veredicto y cifras, defectos Alta citados.⟨/span>\n$ npm run informe\nInforme escrito en informe/informe-de-pruebas.docx'; $("rev-et").textContent = "pasa la revisión"; }
+    else { revisarOk = false; r.html = '⟨span class="no">✗ ' + prob.length + " cosa(s) por corregir:⟨/span>\n" + prob.map(function (p) { return "  - " + p; }).join("\n"); $("rev-et").textContent = prob.length + " observación(es)"; }
+    Array.prototype.forEach.call(document.querySelectorAll(".q-dots [data-pag]"), function (b) { if (b.getAttribute("data-pag") === "1") b.classList.toggle("hecho", revisarOk); });
+    logro();
+  }
+  (function construirCampos() {
+    var cont = $("campos");
+    CAMPOS.forEach(function (c) {
+      var w = document.createElement("div"); w.className = "q-campo falta"; w.id = "w-" + c.k;
+      w.html = '⟨label for="c-' + c.k + '">' + c.n + ' ⟨span class="esc-chip">falta⟨/span>⟨/label>⟨small>' + c.g + '⟨/small>⟨textarea id="c-' + c.k + '" rows="2" spellcheck="false">⟨/textarea>';
+      cont.appendChild(w);
+      w.querySelector("textarea").addEventListener("input", pintarCampos);
+    });
+    $("b-ejemplo").addEventListener("click", function () { CAMPOS.forEach(function (c) { $("c-" + c.k).value = c.ej; }); pintarCampos(); $("rev").textContent = "Ejemplo cargado. Léelo, cámbialo con tus palabras y pulsa «Revisar»."; });
+    $("b-limpiar").addEventListener("click", function () { CAMPOS.forEach(function (c) { $("c-" + c.k).value = ""; }); revisarOk = false; pintarCampos(); $("rev").textContent = "Escribe y pulsa «Revisar»."; $("rev-et").textContent = ""; });
+    $("b-revisar").addEventListener("click", revisar);
+    pintarCampos();
+  })();
+
+  function logro() {
+    var p = resp ? Math.round(100 * aciertos / resp) : 0;
+    if (armaOk) document.querySelector('.q-dots [data-pag="0"]').classList.add("hecho");
+    if (resp >= 4 && p >= 80) document.querySelector('.q-dots [data-pag="2"]').classList.add("hecho");
+    if (armaOk && revisarOk && !$("logro")) {
+      $("pie").html = '⟨span class="esc-chip ok q-logro" id="logro">Escribí objetivo, alcance y conclusión con IDs y cifras, y mi informe pasa --revisar · pulsa «Lo logré»⟨/span>';
+    }
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Del rojo a la evidencia</title>
+<!--
+  Escena del modo LIVE (taller qa2-01). Plantilla «Consola + Qué pasa en el software» con sub-pasos (puntos ● ○ ○,
+  flechas ‹ › y teclas ← →). A la izquierda lo que el alumno escribe en Claude Code (o el comando sin IA) y lo que
+  responde, tomado de corridas reales del kit; a la derecha una réplica clara e interactiva del software que cambia
+  paso a paso. Sin recursos externos, menos de 300 elementos y 1 MB, todo se apaga con prefers-reduced-motion. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .25); }
+.esc { height: 100vh; min-height: 0; padding: 1.4vh 2.4vw 1.1vh; gap: .9vh; overflow: hidden; }
+.esc-cuerpo { gap: .8vh; justify-content: start; min-height: 0; }
+.esc-titulo { font-size: 1.32em; }
+.v-cab { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: end; }
+.v-obj { margin: 0; font-size: .7em; color: var(--muted); } .v-obj b { color: var(--fg); }
+.v-bloque { font: 700 .62em var(--mono); color: var(--muted); letter-spacing: .06em; white-space: nowrap; }
+.v-dots { display: flex; align-items: center; gap: .6em; }
+.v-dots .q-btn { padding: .3em .75em; font-size: .8em; }
+.v-dotbar { display: flex; gap: .45em; }
+.v-dot { width: .85em; height: .85em; border-radius: 50%; border: 2px solid var(--accent); background: transparent; padding: 0; cursor: pointer; }
+.v-dot[aria-current="true"] { background: var(--accent); }
+.v-dots b { font-size: .78em; } .v-dots #sub-n { margin-left: auto; }
+.v-sub { display: grid; align-content: start; gap: .5em; }
+.v-b2 { display: grid; grid-template-columns: 45fr 55fr; gap: 1.1vw; min-height: 0; flex: 1; }
+.v-con, .v-soft { display: grid; grid-template-rows: auto minmax(0,1fr); gap: .45em; padding: .6em .9em .7em; min-width: 0; min-height: 0; overflow: hidden; }
+.v-et { font-size: .58em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; display: flex; align-items: center; gap: .6em; }
+.v-et .esc-chip { font-size: .95em; padding: .15em .6em; margin-left: auto; }
+.v-term { background: #14122b; color: #e9e6ff; border-radius: .7em; border: 1px solid rgba(190,185,255,.22); display: grid; grid-template-rows: auto 1fr auto; min-height: 0; overflow: hidden; }
+.v-term-cab { display: flex; align-items: center; gap: .5em; padding: .4em .8em; background: #1d1b38; font: 700 .62em var(--mono); color: #b7b4cc; border-bottom: 1px solid rgba(190,185,255,.14); }
+.v-term-cab i { width: .6em; height: .6em; border-radius: 50%; background: #ff5f57; display: inline-block; } .v-term-cab i+i { background: #febc2e; } .v-term-cab i+i+i { background: #28c840; }
+.v-term-cab span { margin-left: .4em; }
+.v-term pre { margin: 0; padding: .6em .9em; font: 500 .85em/1.45 var(--mono); white-space: pre-wrap; word-break: break-word; overflow: auto; min-height: 0; }
+.v-term pre .p { color: #8e7dff; } .v-term pre .u { color: #ffd166; } .v-term pre .k { color: #7fd1ff; } .v-term pre .c { color: #8a86b3; }
+.v-term pre .ok { color: #4fd37a; } .v-term pre .bad { color: #ff7b7b; } .v-term pre .w { color: #f4ac5c; } .v-term pre .d { color: #c3b9ff; }
+.v-term pre .cur { display: inline-block; width: .55em; height: 1em; background: #e9e6ff; vertical-align: text-bottom; animation: esc-parpadeo 1s steps(2) infinite; }
+.v-term-pie { display: flex; gap: .5em; align-items: center; padding: .45em .8em; border-top: 1px solid rgba(190,185,255,.14); background: #1d1b38; }
+.v-alt { font: 500 .6em/1.3 var(--mono); color: #b7b4cc; margin-left: auto; text-align: right; }
+.v-alt b { color: #ffd166; font-weight: 600; }
+.q-btn { font: 700 .66em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .95em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s; }
+.q-btn:hover { transform: translateY(-1px); } .q-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.q-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.q-btn.ok { color: var(--ok); border-color: var(--ok); } .q-btn.no { color: var(--bad); border-color: var(--bad); }
+.q-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.v-soft-cuerpo { min-height: 0; overflow: auto; display: grid; align-content: start; gap: .5em; }
+.v-paso { transition: box-shadow .3s, background .3s; border-radius: .6em; }
+.v-paso.on { box-shadow: 0 0 0 3px var(--accent-bg), 0 0 0 5px var(--accent); background: var(--accent-bg); }
+.v-haz { display: grid; grid-template-columns: auto 1fr auto; gap: 1vw; align-items: center; padding: .45em 1em; flex: none; }
+.v-haz ol { margin: 0; padding: 0; list-style: none; display: flex; gap: 1.2vw; flex-wrap: wrap; font-size: .7em; }
+.v-haz ol li { display: flex; gap: .45em; align-items: baseline; }
+.v-haz ol li b { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .85em; flex: none; }
+.v-haz code { font: 600 .92em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.v-logre { font-size: .66em; display: flex; gap: .5em; align-items: center; background: var(--ok-bg); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); border-radius: 999px; padding: .3em .8em; font-weight: 700; white-space: nowrap; }
+.v-logre input { accent-color: var(--ok); }
+/* piezas de réplica (claras) */
+.s-win { background: #fffbf2; color: #1f2937; border: 1px solid #e5e7eb; border-radius: .6em; overflow: hidden; font-size: .72em; }
+.s-win .s-bar { background: #1f2937; color: #fff; padding: .45em .8em; display: flex; gap: .8em; align-items: center; font-weight: 700; }
+.s-win .s-bar span { color: #f59e0b; } .s-win .s-bar nav { margin-left: auto; display: flex; gap: .8em; font-weight: 500; font-size: .9em; }
+.s-win .s-bar nav a { color: #fff; text-decoration: none; cursor: pointer; } .s-win .s-bar nav a.cur { border-bottom: 2px solid #f59e0b; }
+.s-win .s-main { padding: .8em 1em; display: grid; gap: .5em; }
+.s-win h4 { margin: 0; font-size: 1.1em; }
+.s-win label { display: grid; gap: .15em; font-weight: 600; font-size: .9em; }
+.s-win input { width: 100%; padding: .4em .6em; font: inherit; border: 1px solid #d1d5db; border-radius: .4em; background: #fff; }
+.s-win .s-pri { background: #f59e0b; color: #1f1300; border: 0; border-radius: .4em; padding: .45em 1em; font: inherit; font-weight: 700; cursor: pointer; justify-self: start; }
+.s-win .s-sec { background: #fff; border: 1px solid #d1d5db; border-radius: .4em; padding: .3em .7em; font: inherit; font-size: .9em; cursor: pointer; }
+.s-win .s-err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: .4em; padding: .4em .6em; font-weight: 600; } .s-win .s-err:empty { display: none; }
+.s-win .s-ok { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: .4em; padding: .4em .6em; font-weight: 600; } .s-win .s-ok:empty { display: none; }
+.s-win table { width: 100%; border-collapse: collapse; font-size: .95em; } .s-win th, .s-win td { text-align: left; padding: .3em .4em; border-bottom: 1px solid #e5e7eb; } .s-win th { color: #6b7280; font-size: .85em; }
+.s-win .s-tot { display: flex; gap: 1.5em; align-items: end; } .s-win .s-tot b { font-size: 1.3em; }
+.v-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .25em; font-size: .68em; }
+.v-lista li { display: grid; grid-template-columns: 1.4em 1fr; gap: .5em; align-items: start; padding: .22em .5em; border-radius: .4em; border: 1px solid var(--line); background: var(--s1); }
+.v-lista li i { font-style: normal; font-weight: 800; color: var(--muted); } .v-lista li.ok i { color: var(--ok); } .v-lista li.bad i { color: var(--bad); }
+.v-lista li.bad { background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 35%, transparent); } .v-lista li.ok { background: var(--ok-bg); }
+.v-lista li small { display: block; font: 500 .85em var(--mono); color: var(--bad); white-space: pre-wrap; }
+.v-lista li[hidden] { display: none; }
+.v-code { margin: 0; font: 500 .66em/1.45 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .6em .8em; white-space: pre-wrap; color: var(--fg); overflow: auto; }
+.v-code .n { color: var(--ok); } .v-code .ph { color: var(--muted); font-style: italic; } .v-code .r { color: var(--bad); }
+.v-nota { margin: 0; font-size: .66em; color: var(--muted); } .v-nota b { color: var(--fg); }
+.v-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6em; }
+.v-kpi { background: var(--s2); border: 1px solid var(--line); border-radius: .6em; padding: .5em .7em; display: grid; gap: .15em; }
+.v-kpi .v-et { font-size: .52em; } .v-kpi b { font-size: 1.25em; line-height: 1.1; } .v-kpi small { font-size: .62em; color: var(--muted); }
+.v-kpi.ok { background: var(--ok-bg); } .v-kpi.ok b { color: var(--ok); } .v-kpi.bad { background: var(--bad-bg); } .v-kpi.bad b { color: var(--bad); }
+.v-tabs { display: flex; gap: .4em; } .v-tabs .q-btn { padding: .4em .8em; }
+@media (prefers-reduced-motion: reduce) { .v-term pre .cur { animation: none; } }
+.rp{display:grid;gap:.5em}.rp-cab{display:flex;gap:.6em;align-items:center;font-size:.7em;flex-wrap:wrap}.rp-f{padding:.2em .6em;border-radius:999px;background:var(--s3);cursor:pointer}.rp-f i{font-style:normal;font-weight:700}.rp-f.ok{background:var(--ok-bg);color:var(--ok)}.rp-f.bad{background:var(--bad-bg);color:var(--bad)}.rp-det{font-size:.7em;display:grid;gap:.4em}.tr{display:grid;gap:.5em}.tr-acc{display:flex;gap:.4em;flex-wrap:wrap}.tr-acc .q-btn{font-family:var(--mono);font-weight:600}.v-g2{display:grid;grid-template-columns:1fr 1fr;gap:.5em}.s-win .s-main{font-size:.95em;gap:.3em}.mx{display:grid;gap:.35em;background:var(--s1);border:1px solid var(--line);border-radius:.6em;padding:.6em .8em}.mx-cab{display:flex;gap:.5em;align-items:center;font-size:.72em;margin-bottom:.2em}.mx-cab .esc-chip{font-size:.8em}
+.mx-f{display:grid;grid-template-columns:5.5em 1fr;gap:.5em;align-items:center;font-size:.68em}.mx-f>div{display:flex;gap:.3em;flex-wrap:wrap}
+.mx-c{display:inline-grid;place-items:center;min-width:2.6em;padding:.25em .4em;border-radius:.35em;font:700 .85em var(--mono);background:var(--s3);color:var(--muted);cursor:pointer;border:1px solid transparent}.mx-c.ok{background:var(--ok-bg);color:var(--ok)}.mx-c.bad{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}.mx-c.pend{background:var(--s2);border:1px dashed var(--line2)}</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 780 L168 728 L236 764 L296 700"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="780" r="3.5"/><circle class="eg" cx="168" cy="728" r="4.5"/><circle class="e" cx="236" cy="764" r="3"/><circle class="eo" cx="296" cy="700" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="v-bloque">Bloque 4/6 · 11:15 hora de Lima</span>
+    <span class="esc-num">QA con IA · 10 / 19</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div class="v-cab">
+      <h1 class="esc-titulo a-in">Del rojo <em>a la evidencia</em></h1>
+      <p class="v-obj a-in" style="--d:.05s"><b>Objetivo</b> · Reporte → traza → portal: llegar al paso exacto donde se perdió el pago y unir cada caso con su prueba.</p>
+    </div>
+    <div class="v-dots a-in" style="--d:.08s"><button type="button" class="q-btn" id="ant" aria-label="Paso anterior">‹</button><span class="v-dotbar"><button type="button" class="v-dot" data-i="0" aria-label="Paso 1" aria-current=true></button><button type="button" class="v-dot" data-i="1" aria-label="Paso 2"></button><button type="button" class="v-dot" data-i="2" aria-label="Paso 3"></button></span><b id="sub-tit"></b><span class="v-nota" id="sub-n"></span><button type="button" class="q-btn" id="sig" aria-label="Paso siguiente">›</button></div>
+    <div class="v-b2">
+      <section class="esc-card v-con a-in" style="--d:.1s" aria-label="Consola">
+        <span class="v-et">Consola · lo que escribes <span class="esc-chip">Claude Code</span></span>
+        <div class="v-term">
+          <div class="v-term-cab"><i></i><i></i><i></i><span id="cwd">❯ claude</span></div>
+          <pre id="con" aria-live="polite"></pre>
+          <div class="v-term-pie"><button type="button" class="q-btn pri" id="ejecutar">Ejecutar ▶</button><button type="button" class="q-btn" id="reiniciar">Reiniciar</button><span class="v-alt" id="alt"></span></div>
+        </div>
+      </section>
+      <section class="esc-card v-soft a-in" style="--d:.15s" aria-label="Qué pasa en el software">
+        <span class="v-et">Qué pasa en el software <span class="esc-chip ok" id="soft"></span></span>
+        <div class="v-soft-cuerpo"><div class="v-sub" data-i="0"><div class="rp"><div class="rp-cab"><b>Playwright Test Report</b><span class="rp-f" id="rp-all">All <i>22</i></span><span class="rp-f ok">Passed <i>19</i></span><span class="rp-f bad v-paso" id="rp-failed">Failed <i>3</i></span><span class="rp-f">Flaky <i>0</i></span></div>
+<ul class="v-lista" id="rp-lista"></ul>
+<div class="rp-det v-paso" id="rp-det" hidden><b>E2E-VEN-002 si el efectivo no alcanza, la venta se rechaza</b> · venta.spec.ts:26 · 5.4s
+<pre class="v-code"><span class="r">Error: Con S/ 5.00 no se paga S/ 17.01: el POS NO debe registrar la venta</span>
+expect(locator).toHaveText(expected) failed
+Locator:  locator('#exito')
+Expected: <span class="n">""</span>
+Received: <span class="r">"Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00"</span></pre>
+<span class="esc-chip">📎 test-failed-1.png</span> <span class="esc-chip">📎 trace.zip → siguiente punto ›</span></div></div></div><div class="v-sub" data-i="1" hidden><div class="tr"><div class="tr-acc"><button type="button" class="q-btn v-paso" id="tr-0" data-i="0">1 · click Venta</button><button type="button" class="q-btn v-paso" id="tr-1" data-i="1">2 · fill Efectivo = 5</button><button type="button" class="q-btn v-paso" id="tr-2" data-i="2">3 · click Confirmar</button><button type="button" class="q-btn v-paso" id="tr-3" data-i="3">4 · expect ✘</button></div>
+<div class="v-tabs"><button type="button" class="q-btn" data-tab="dom" aria-pressed="true">DOM antes / después</button><button type="button" class="q-btn v-paso" data-tab="red" id="tr-red">Red</button><button type="button" class="q-btn v-paso" data-tab="err" id="tr-err">Error</button></div>
+<div id="tab-dom" class="v-g2"><div class="s-win"><div class="s-bar">Antes</div><div class="s-main" id="dom-a"></div></div><div class="s-win"><div class="s-bar">Después</div><div class="s-main" id="dom-d"></div></div></div>
+<pre id="tab-red" class="v-code" hidden>POST /api/ventas   201 Created
+request body:
+{ "items": [ { "codigo": "CAF-200", "cantidad": 1 } ],
+  "efectivo": <span class="r">17.01</span> }        <span class="ph">// el campo decía 5</span>
+response: { "numero": 1, "total": 17.01, "vuelto": 0 }</pre>
+<pre id="tab-err" class="v-code" hidden><span class="r">Error: Con S/ 5.00 no se paga S/ 17.01: el POS NO debe registrar la venta</span>
+Expected: ""
+Received: <span class="r">"Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00"</span></pre>
+<p class="v-nota" id="tr-nota">Pulsa una acción: a la izquierda el DOM antes, a la derecha después.</p></div></div><div class="v-sub" data-i="2" hidden><div class="mx v-paso" id="mx"><div class="mx-cab"><b>Matriz de pruebas · Tienda Sol</b><span class="esc-chip ok" id="mx-n">—</span><span class="esc-chip bad" id="mx-r">—</span><span class="esc-chip" id="mx-p">—</span></div><div class="mx-f"><b>Login</b><div><span class="mx-c" data-id="E2E-LOG-001" data-p="0" title="E2E-LOG-001">001</span><span class="mx-c" data-id="E2E-LOG-002" data-p="0" title="E2E-LOG-002">002</span><span class="mx-c" data-id="E2E-LOG-003" data-p="0" title="E2E-LOG-003">003</span><span class="mx-c" data-id="E2E-LOG-004" data-p="1" title="E2E-LOG-004*">004</span></div></div><div class="mx-f"><b>Catálogo</b><div><span class="mx-c" data-id="E2E-CAT-001" data-p="0" title="E2E-CAT-001">001</span><span class="mx-c" data-id="E2E-CAT-002" data-p="0" title="E2E-CAT-002">002</span><span class="mx-c" data-id="E2E-CAT-003" data-p="0" title="E2E-CAT-003">003</span><span class="mx-c" data-id="E2E-CAT-004" data-p="0" title="E2E-CAT-004">004</span><span class="mx-c" data-id="E2E-CAT-005" data-p="0" title="E2E-CAT-005">005</span></div></div><div class="mx-f"><b>Venta</b><div><span class="mx-c" data-id="E2E-VEN-001" data-p="0" title="E2E-VEN-001">001</span><span class="mx-c" data-id="E2E-VEN-002" data-p="0" title="E2E-VEN-002">002</span><span class="mx-c" data-id="E2E-VEN-003" data-p="0" title="E2E-VEN-003">003</span><span class="mx-c" data-id="E2E-VEN-004" data-p="0" title="E2E-VEN-004">004</span><span class="mx-c" data-id="E2E-VEN-005" data-p="1" title="E2E-VEN-005*">005</span></div></div><div class="mx-f"><b>Reporte</b><div><span class="mx-c" data-id="E2E-REP-001" data-p="0" title="E2E-REP-001">001</span><span class="mx-c" data-id="E2E-REP-002" data-p="0" title="E2E-REP-002">002</span></div></div><div class="mx-f"><b>API</b><div><span class="mx-c" data-id="API-SAL-001" data-p="0" title="API-SAL-001">001</span><span class="mx-c" data-id="API-LOG-001" data-p="0" title="API-LOG-001">001</span><span class="mx-c" data-id="API-LOG-002" data-p="0" title="API-LOG-002">002</span><span class="mx-c" data-id="API-SEG-001" data-p="0" title="API-SEG-001">001</span><span class="mx-c" data-id="API-VEN-001" data-p="0" title="API-VEN-001">001</span><span class="mx-c" data-id="API-VEN-002" data-p="0" title="API-VEN-002">002</span><span class="mx-c" data-id="API-VEN-003" data-p="0" title="API-VEN-003">003</span><span class="mx-c" data-id="API-SEM-001" data-p="0" title="API-SEM-001">001</span></div></div></div>
+<p class="v-nota" id="mx-nota">Pulsa una celda: verde abre el reporte; rojo abre la traza; gris es un caso de la matriz que aún nadie automatizó.</p></div></div>
+      </section>
+    </div>
+    <div class="esc-card v-haz a-in" style="--d:.25s">
+      <span class="v-et">Hazlo tú · Tu acción</span>
+      <ol id="haz"></ol>
+      <label class="v-logre"><input type="checkbox"> <span id="logre"></span></label>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Antes · 09 · Tres motores, una suite</span> <span style="margin-left:auto">Después · 11 · Reproduce el error del usuario</span></footer>
+</div>
+<script>
+const SUBS=[{pasos:[{"t": "cmd", "s": "npx playwright show-report", "on": "rp-all"}, {"t": "out", "s": "Serving HTML report at localhost:9323. Press Ctrl+C to quit.", "c": "c"}, {"t": "claude", "s": "tú haces clic en el filtro «Failed»", "on": "rp-failed"}, {"t": "claude", "s": "tú abres E2E-VEN-002", "on": "rp-det"}, {"t": "out", "s": "Error: Con S/ 5.00 no se paga S/ 17.01: el POS NO debe registrar la venta\nExpected: \"\"\nReceived: \"Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00\"\nAdjuntos: screenshot · trace.zip", "c": "bad"}],inicio:["Después de npm test, el reporte queda en playwright-report/."],alt:"npm run reporte",cwd:"qa-taller-kit/pruebas",soft:"Reporte HTML de Playwright",titulo:"Reporte HTML · filtra Failed",haz:["<code>npx playwright show-report</code> después de <code>npm test</code>.", "Filtra <strong>Failed</strong> y abre E2E-VEN-002.", "Lee Expected y Received; localiza el adjunto <code>trace.zip</code>."],logre:"llegué al trace.zip de un caso rojo desde el reporte"},{pasos:[{"t": "cmd", "s": "npx playwright show-trace test-results/venta-Venta-E2E-VEN-002-*/trace.zip", "on": "tr-0"}, {"t": "out", "s": "Trace Viewer en localhost:9322", "c": "c"}, {"t": "claude", "s": "acción 1 · getByRole('link', { name: /Venta/ }).click()", "on": "tr-0"}, {"t": "claude", "s": "acción 2 · getByLabel('Efectivo recibido (S/)').fill('5')", "on": "tr-1"}, {"t": "claude", "s": "acción 3 · getByRole('button', { name: 'Confirmar venta' }).click()", "on": "tr-2"}, {"t": "out", "s": "Red → POST /api/ventas  body: {\"items\":[…],\"efectivo\":17.01}   ← el DOM decía 5", "c": "bad", "on": "tr-red"}, {"t": "claude", "s": "acción 4 · expect(locator('#exito')).toHaveText('')  ✘", "on": "tr-3"}, {"t": "out", "s": "Received: \"Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00\"", "c": "bad", "on": "tr-err"}],inicio:["La traza es una grabación de la prueba: cada acción con DOM antes/después, red y consola."],alt:"",cwd:"qa-taller-kit/pruebas",soft:"Trace Viewer",titulo:"Traza · el paso exacto",haz:["Abre la traza del rojo: <code>npx playwright show-trace test-results/…VEN-002…/trace.zip</code>.", "Recorre las acciones y mira Antes/Después.", "En la pestaña Network busca el POST /api/ventas: ¿qué efectivo llevó?"],logre:"encontré en la traza el POST que mandó 17.01 en vez de 5"},{pasos:[{"t": "cmd", "s": "npm run portal", "on": "mx"}, {"t": "out", "s": "Portal escrito en qa-taller-kit/portal/index.html\nÁbrelo en el navegador (doble clic) — 2 motores, 25 casos.", "c": "ok", "on": "mx-on"}, {"t": "prompt", "s": "Lee portal/index.html y dime qué casos de docs/matriz.csv siguen pendientes y cuáles bloquearían un despliegue."}, {"t": "claude", "s": "Read portal/index.html · Read docs/matriz.csv", "on": "mx-pend"}, {"t": "out", "s": "Pendientes (sin automatizar): E2E-LOG-004 bloqueo tras 3 claves, E2E-VEN-005 quitar del carrito.\nBloquean despliegue: E2E-VEN-001, VEN-002 y VEN-003 (cobro y promo: dinero).", "c": "w", "on": "mx-rojo"}],inicio:["El portal lee resultados/resultados.json y docs/matriz.csv y escribe portal/index.html."],alt:"npm run portal",cwd:"qa-taller-kit/pruebas",soft:"portal/index.html",titulo:"Portal · la matriz con evidencia",haz:["<code>npm run portal</code> y abre <code>portal/index.html</code>.", "Haz clic en un rojo: debe llevarte a su traza.", "Decide: ¿qué rojo bloquea un despliegue y cuál solo avisa?"],logre:"mi portal muestra la matriz y cada rojo enlaza a su traza"}];
+
+const $=id=>document.getElementById(id);const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const con=$('con');let corriendo=false,parar=false,cur=0;const S=()=>SUBS[cur];
+function linea(cls,txt){const s=document.createElement('span');if(cls)s.className=cls;s.innerHTML=txt;con.appendChild(s);con.appendChild(document.createTextNode('\n'));con.scrollTop=con.scrollHeight;return s;}
+const dormir=ms=>new Promise(r=>setTimeout(r,RM?0:ms));
+async function tipear(pref,cls,txt){const s=linea('',pref);const t=document.createElement('span');t.className=cls;s.appendChild(t);const c=document.createElement('span');c.className='cur';s.appendChild(c);
+  if(RM){t.textContent=txt;}else{for(let i=0;i<txt.length;i++){t.textContent+=txt[i];con.scrollTop=con.scrollHeight;if(parar)break;await dormir(txt.length>90?8:18);}}c.remove();}
+function marcar(id){document.querySelectorAll('.v-paso.on').forEach(e=>e.classList.remove('on'));if(id){const e=$(id);if(e){e.classList.add('on');e.scrollIntoView({block:'nearest'});}}}
+async function ejecutar(){if(corriendo)return;corriendo=true;parar=false;$('ejecutar').disabled=true;con.textContent='';marcar(null);
+  for(const p of S().pasos){if(parar)break;
+    if(p.t==='prompt')await tipear('<span class="p">&gt; </span>','u',p.s);
+    else if(p.t==='cmd')await tipear('<span class="p">$ </span>','k',p.s);
+    else if(p.t==='claude'){await dormir(250);linea('d','<span class="c">⏺</span> '+esc(p.s));}
+    else if(p.t==='out')linea(p.c||'',esc(p.s));
+    else if(p.t==='html')linea(p.c||'',p.s);
+    else if(p.t==='pausa')await dormir(p.ms||600);
+    if(p.on){marcar(p.on);if(S().paso)S().paso(p.on);}
+    if(p.t!=='pausa')await dormir(p.ms||220);}
+  linea('c','— listo · pulsa «Reiniciar» para verlo otra vez');corriendo=false;$('ejecutar').disabled=false;}
+function inicio(){con.innerHTML=S().inicio.map(l=>'<span class="c">'+esc(l)+'</span>').join('\n')+'\n';}
+$('ejecutar').onclick=ejecutar;$('reiniciar').onclick=()=>{parar=true;corriendo=false;$('ejecutar').disabled=false;inicio();marcar(null);if(S().reiniciar)S().reiniciar();};
+function irSub(i){parar=true;corriendo=false;$('ejecutar').disabled=false;cur=(i+SUBS.length)%SUBS.length;const pn=S().panel??cur;document.querySelectorAll('.v-sub').forEach(d=>d.hidden=+d.dataset.i!==pn);document.querySelectorAll('.v-dot').forEach(d=>{if(+d.dataset.i===cur)d.setAttribute('aria-current','true');else d.removeAttribute('aria-current');});
+ $('sub-tit').textContent=S().titulo;$('sub-n').textContent=(cur+1)+' de '+SUBS.length;$('soft').textContent=S().soft;$('cwd').textContent='❯ claude · '+S().cwd;$('alt').innerHTML=S().alt?'Sin IA: <b>'+esc(S().alt)+'</b>':'';
+ $('haz').innerHTML=S().haz.map((h,k)=>'<li><b>'+(k+1)+'</b><span>'+h+'</span></li>').join('');$('logre').textContent='Lo logré: '+S().logre;inicio();marcar(null);}
+$('ant').onclick=()=>irSub(cur-1);$('sig').onclick=()=>irSub(cur+1);document.querySelectorAll('.v-dot').forEach(d=>d.onclick=()=>irSub(+d.dataset.i));
+addEventListener('keydown',e=>{if(e.target.matches('input,textarea'))return;if(e.key==='ArrowLeft')irSub(cur-1);if(e.key==='ArrowRight')irSub(cur+1);});
+
+(function(){window.paso=null;window.reiniciar=null;const T=[["ok", "API-SAL-001 /salud responde 200 con estado ok"], ["ok", "API-LOG-001 login correcto devuelve un token"], ["ok", "API-LOG-002 login con clave incorrecta devuelve 401"], ["ok", "API-SEG-001 sin token no se ven los productos"], ["ok", "API-VEN-001 el servidor rechaza efectivo insuficiente (422)"], ["ok", "API-VEN-002 una venta descuenta el stock"], ["ok", "API-VEN-003 no se vende un producto sin stock (422)"], ["ok", "API-SEM-001 la semilla aleatoria es reproducible"], ["ok", "E2E-LOG-001 el cajero ingresa con usuario y clave válidos"], ["ok", "E2E-LOG-002 una clave incorrecta muestra un error"], ["ok", "E2E-LOG-003 sin sesión, una página interna devuelve al login"], ["ok", "E2E-CAT-001 la semilla carga 20 productos"], ["ok", "E2E-CAT-002 buscar por nombre filtra el catálogo"], ["ok", "E2E-CAT-003 una búsqueda sin coincidencias lo dice"], ["ok", "E2E-CAT-004 un producto sin stock no se puede agregar"], ["ok", "E2E-CAT-005 un producto vencido no se puede agregar"], ["bad", "E2E-VEN-001 una venta en efectivo calcula bien el total y el vuelto"], ["bad", "E2E-VEN-002 si el efectivo no alcanza, la venta se rechaza"], ["bad", "E2E-VEN-003 la promo de 10 % se aplica una sola vez al cambiar la cantidad"], ["ok", "E2E-VEN-004 el vuelto se actualiza mientras se escribe el efectivo"], ["ok", "E2E-REP-001 con semilla limpia el reporte está en cero"], ["ok", "E2E-REP-002 el reporte suma las ventas registradas"]];const ul=$('rp-lista');function pintar(f){ul.innerHTML='';T.forEach(([k,t])=>{if(f&&k!==f)return;const tit=t.split('|')[0];const li=document.createElement('li');li.className=k==='bad'?'bad':'ok';li.innerHTML='<i>'+(k==='bad'?'✘':'✓')+'</i><span>'+esc(tit)+'</span>';if(k==='bad')li.onclick=()=>$('rp-det').hidden=false;ul.appendChild(li);});}
+$('rp-all').onclick=()=>pintar();$('rp-failed').onclick=()=>pintar('bad');
+window.paso=id=>{if(id==='rp-all')pintar();if(id==='rp-failed')pintar('bad');if(id==='rp-det')$('rp-det').hidden=false;};window.reiniciar=()=>{ul.innerHTML='';$('rp-det').hidden=true;};
+SUBS[0].paso=window.paso;SUBS[0].reiniciar=window.reiniciar;})();
+(function(){window.paso=null;window.reiniciar=null;const V=(ef,ok,err)=>'<b>Venta</b><table><tr><td>Café Altomayo 200 g</td><td>× 1</td><td>S/ 17.01</td></tr></table><div class="s-tot"><div>Total<br><b>S/ 17.01</b></div><div>Efectivo<br><b>'+ef+'</b></div></div>'+(ok?'<div class="s-ok">'+ok+'</div>':'')+(err?'<div class="s-err">'+err+'</div>':'');
+const C='<b>Catálogo</b><table><tr><td>Inca Kola 500 ml</td><td>S/ 2.50</td></tr><tr><td>Café Altomayo 200 g</td><td>S/ 18.90 <small>−10 %</small></td></tr></table><div>Venta (1)</div>';
+const P=[[C,V('—'),'Del catálogo a la pantalla de venta. Nada raro aún.'],[V('—'),V('5'),'El campo dice 5; el vuelto en pantalla diría «Falta S/ 12.01».'],[V('5'),V('5','Venta N° 1 registrada. Total S/ 17.01 · Vuelto S/ 0.00'),'Aquí se perdió el pago: mira la pestaña Red → el POST llevó 17.01.'],[V('5','Venta N° 1 registrada…'),V('5','Venta N° 1 registrada…'),'La aserción esperaba #exito vacío y encontró la venta registrada.']];
+function ir(i){document.querySelectorAll('.tr-acc .q-btn').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.i===i));$('dom-a').innerHTML=P[i][0];$('dom-d').innerHTML=P[i][1];$('tr-nota').textContent=P[i][2];}
+document.querySelectorAll('.tr-acc .q-btn').forEach(b=>b.onclick=()=>ir(+b.dataset.i));
+function tab(t){document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===t));['dom','red','err'].forEach(x=>$('tab-'+x).hidden=x!==t);}
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+window.paso=id=>{if(/^tr-\d$/.test(id)){tab('dom');ir(+id.slice(3));}if(id==='tr-red')tab('red');if(id==='tr-err')tab('err');};window.reiniciar=()=>{ir(0);tab('dom');};ir(0);
+SUBS[1].paso=window.paso;SUBS[1].reiniciar=window.reiniciar;})();
+(function(){window.paso=null;window.reiniciar=null;const BAD=['E2E-VEN-001','E2E-VEN-002','E2E-VEN-003'];const C=[...document.querySelectorAll('.mx-c')];
+function pintar(fase){let ok=0,b=0,p=0;C.forEach(c=>{c.className='mx-c';if(!fase)return;if(c.dataset.p==='1'){if(fase>=3){c.classList.add('pend');p++;}return;}if(BAD.includes(c.dataset.id)){if(fase>=2){c.classList.add('bad');b++;}else{c.classList.add('ok');ok++;}}else{c.classList.add('ok');ok++;}});$('mx-n').textContent=fase?ok+' verdes':'—';$('mx-r').textContent=fase?b+' rojos':'—';$('mx-p').textContent=fase?p+' pendientes':'—';}
+C.forEach(c=>c.onclick=()=>{$('mx-nota').textContent=c.classList.contains('bad')?c.dataset.id+' → abre test-results/…/trace.zip (escena 13)':c.classList.contains('pend')?c.dataset.id+' → está en docs/matriz.csv con estado «pendiente»: todavía nadie lo automatizó':c.dataset.id+' → abre su entrada en playwright-report/';});
+let fmax=0;window.paso=id=>{const f={'mx-on':1,'mx-rojo':2,'mx-pend':3}[id]||0;fmax=Math.max(fmax,f);pintar(fmax);};window.reiniciar=()=>{fmax=0;pintar(0);};pintar(0);
+SUBS[2].paso=window.paso;SUBS[2].reiniciar=window.reiniciar;})();
+
+irSub(0);
+</script>
+</body>
+</html>

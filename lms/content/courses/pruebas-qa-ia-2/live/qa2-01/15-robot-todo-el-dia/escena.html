@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Un robot que prueba tu app todo el día</title>
+<!--
+  Escena del modo LIVE (taller qa2-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS/SVG, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: réplica de la página de estado del robot (robot/robot.mjs del kit). El reloj simulado arranca a las
+  8:00 y cada «Avanzar 1 h» agrega 6 corridas (una cada 10 min). Con «Desplegaron un bug a las 15:00», desde esa
+  hora las corridas salen en rojo: el robot lo detecta 10 min después, antes del primer reclamo (simulado, 16:42).
+  Lo logras cuando ves la detección. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .2); }
+.esc { padding: 1.7vh 2.6vw 1.5vh; gap: 1.1vh; }
+.esc-cuerpo { gap: 1.1vh; }
+.esc-titulo { font-size: 1.25em; }
+.r-btn { font: 700 .62em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
+.r-btn:hover { transform: translateY(-1px); }
+.r-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: var(--card-shadow); }
+.r-btn[aria-pressed="true"] { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+.r-et { font-size: .56em; font-weight: 700; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.r-b { display: grid; grid-template-columns: 1.45fr 1fr; gap: 1.1vw; min-height: 0; }
+.r-izq, .r-der { display: grid; gap: 1vh; align-content: start; min-width: 0; }
+.r-robot { padding: 0; overflow: hidden; }
+.r-cab { display: flex; align-items: center; gap: .6em; padding: .45em .9em; background: #171b28; color: #fff; font-size: .66em; font-weight: 700; white-space: nowrap; }
+.r-cab b { color: #f5a623; } .r-cab small { color: #aab3c5; font-weight: 600; }
+.r-cab .esc-fila { margin-left: auto; gap: .4em; }
+.r-cuerpo { padding: .5em .9em; display: grid; gap: .4em; }
+.r-res { font-size: .82em; font-weight: 700; }
+.r-tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5em; }
+.r-tile { background: var(--s2); border: 1px solid var(--line); border-radius: .7em; padding: .35em .6em; display: grid; gap: .1em; }
+.r-tile b { font-size: 1.25em; line-height: 1; } .r-tile span { font-size: .55em; color: var(--muted); font-weight: 600; }
+.r-tile b.ok { color: var(--ok); } .r-tile b.bad { color: var(--bad); }
+.r-tira { display: flex; align-items: flex-end; gap: 1px; height: 2.2em; border-bottom: 2px solid var(--line2); background: var(--s2); border-radius: .5em .5em 0 0; padding: .3em .3em 0; }
+.r-tira i { flex: 1; min-width: 2px; height: 100%; border-radius: 1px 1px 0 0; background: var(--ok); }
+.r-tira i.d { background: var(--bad); } .r-tira i.v { background: transparent; }
+.r-eje { display: flex; justify-content: space-between; font: 600 .52em var(--mono); color: var(--muted); }
+.r-lista { margin: 0; padding: 0; list-style: none; font-size: .6em; display: grid; gap: .14em; }
+.r-lista li { display: grid; grid-template-columns: 7em 1fr auto; gap: .6em; padding: .14em .5em; border-radius: .4em; background: var(--s2); }
+.r-lista li b { font-family: var(--mono); } .r-lista li em { font-style: normal; font-weight: 800; }
+.r-lista li.bad { background: var(--bad-bg); } .r-lista li.bad em { color: var(--bad); } .r-lista li.ok em { color: var(--ok); }
+.r-msg { font-size: .64em; font-weight: 700; min-height: 1.4em; }
+.r-msg.bad { color: var(--bad); } .r-msg.ok { color: var(--ok); }
+.r-tabla { width: 100%; border-collapse: collapse; font-size: .6em; }
+.r-tabla th, .r-tabla td { text-align: left; padding: .22em .45em; border-bottom: 1px solid var(--line); vertical-align: top; }
+.r-tabla th { font-size: .9em; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.r-tabla td b { font-size: 1.05em; }
+.r-url { display: grid; gap: .3em; }
+.r-url code { font: 600 .66em/1.5 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .5em; padding: .3em .6em; display: block; }
+.r-url code span { color: var(--muted); }
+.r-pasos { margin: 0; padding-left: 1.2em; font-size: .62em; display: grid; gap: .15em; }
+@media (prefers-reduced-motion: reduce) { .r-btn { transition: none; } .r-btn:hover { transform: none; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">QA con IA · E15</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Un robot que prueba tu app <em>todo el día</em> (y te da una URL)</h1>
+    <div class="r-b">
+      <div class="r-izq">
+        <section class="esc-card r-robot a-in" style="--d:.1s" aria-label="Página de estado del robot">
+          <div class="r-cab">🤖 <b>Robot de pruebas</b> · Tienda Sol <small>· motor lightpanda · cada 10 min</small>
+            <div class="esc-fila">
+              <button type="button" class="r-btn pri" id="b-hora">Avanzar 1 h</button>
+              <button type="button" class="r-btn" id="b-bug" aria-pressed="false">Desplegaron un bug a las 15:00</button>
+              <button type="button" class="r-btn" id="b-reset">Reiniciar</button>
+            </div>
+          </div>
+          <div class="r-cuerpo">
+            <div class="r-res" id="res">🟢 Todo en verde · última corrida 08:00</div>
+            <div class="r-tiles">
+              <div class="r-tile"><b class="ok" id="pasan">22</b><span>pasan</span></div>
+              <div class="r-tile"><b class="bad" id="fallan">0</b><span>fallan</span></div>
+              <div class="r-tile"><b id="verde">100 %</b><span>corridas en verde (hoy)</span></div>
+              <div class="r-tile"><b id="dur">2,3 s</b><span>duración</span></div>
+              <div class="r-tile"><b id="reloj">08:00</b><span>hora simulada</span></div>
+            </div>
+            <span class="r-et">Hoy · una barra por corrida (verde: todo pasó · rojo: algo falló)</span>
+            <div class="r-tira" id="tira" aria-label="Corridas del día"></div>
+            <div class="r-eje"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+            <ul class="r-lista" id="lista" aria-label="Última corrida"></ul>
+            <p class="r-msg" id="msg">Avanza el reloj: cada hora el robot corre 6 veces la misma suite del kit, sola.</p>
+          </div>
+        </section>
+      </div>
+      <div class="r-der">
+        <section class="esc-card a-in" style="--d:.2s" aria-label="Dónde vive el robot">
+          <span class="r-et">Dónde vive tu robot · tres opciones</span>
+          <table class="r-tabla">
+            <thead><tr><th>Dónde</th><th>Está siempre</th><th>Avisa en</th><th>Cuesta</th></tr></thead>
+            <tbody>
+              <tr><td><b>Laptop</b><br>node robot/robot.mjs</td><td>mientras esté abierta</td><td>minutos</td><td>0</td></tr>
+              <tr><td><b>Servidor + Docker</b><br>Lightpanda + runner</td><td>24/7</td><td>minutos</td><td>un contenedor de 512 MB</td></tr>
+              <tr><td><b>GitHub Actions + Pages</b><br>cron cada 30 min</td><td>24/7</td><td>30 min o más</td><td>gratis (cuota)</td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section class="esc-card r-url a-in" style="--d:.3s" aria-label="La URL">
+          <span class="r-et">La URL que compartes con tu equipo</span>
+          <code>localhost:3200/ <span>· en tu laptop</span></code>
+          <code>tu-dominio/qa-robot/ <span>· nginx → 127.0.0.1:3200</span></code>
+          <code>usuario.github.io/repo/ <span>· GitHub Pages</span></code>
+        </section>
+        <section class="esc-card a-in" style="--d:.4s" aria-label="Cuando se pone rojo">
+          <span class="r-et">Cuando se pone rojo</span>
+          <ol class="r-pasos">
+            <li><b>La misma prueba falla varias corridas seguidas</b> → bug o cambio real: abre el reporte y la traza.</li>
+            <li><b>Una sola corrida roja y vuelve a verde</b> → prueba inestable o servidor lento: revisa esperas y semilla.</li>
+            <li><b>Gris (no pudo correr)</b> → la app o el navegador no estaban: es infraestructura, no código.</li>
+          </ol>
+        </section>
+      </div>
+    </div>
+    <p class="esc-pie"><span class="esc-chip" id="chip">Grafana dice si la app responde; el robot dice si funciona como la usa el usuario</span></p>
+  </main>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const PRUEBAS = [['E2E-LOG-001', 'login correcto'], ['E2E-CAT-002', 'buscar «inca»'], ['E2E-VEN-001', 'venta en efectivo y vuelto'], ['E2E-VEN-002', 'pago insuficiente se rechaza'], ['E2E-REP-001', 'reporte del día']];
+  const CORRIDAS_DIA = 144; // una cada 10 min
+  let hora = 8 * 60, bug = false, logrado = false;
+  const corridas = [];
+  const hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  function reset() { hora = 8 * 60; corridas.length = 0; logrado = false; for (let m = 0; m <= hora; m += 10) corridas.push({ m, roja: false }); pintar(); }
+  function avanzar() {
+    if (hora >= 23 * 60 + 50) { $('msg').textContent = 'Fin del día. Pulsa «Reiniciar» para otro día.'; return; }
+    for (let k = 0; k < 6 && hora < 23 * 60 + 50; k++) { hora += 10; corridas.push({ m: hora, roja: bug && hora >= 15 * 60 + 10 }); }
+    pintar();
+  }
+  function pintar() {
+    const ult = corridas[corridas.length - 1];
+    const roja = ult.roja;
+    $('reloj').textContent = hhmm(hora);
+    $('res').textContent = (roja ? '🔴 Hay fallos' : '🟢 Todo en verde') + ' · última corrida ' + hhmm(ult.m);
+    $('pasan').textContent = roja ? 20 : 22; $('fallan').textContent = roja ? 2 : 0; $('dur').textContent = roja ? '12,4 s' : '2,3 s';
+    const verdes = corridas.filter((c) => !c.roja).length;
+    $('verde').textContent = Math.round(100 * verdes / corridas.length) + ' %';
+    const tira = $('tira'); tira.replaceChildren();
+    for (let i = 0; i < CORRIDAS_DIA; i++) {
+      const c = corridas[i]; const el = document.createElement('i');
+      if (!c) el.className = 'v'; else if (c.roja) el.className = 'd';
+      el.title = c ? hhmm(c.m) + (c.roja ? ' · 2 fallan' : ' · todo pasó') : '';
+      tira.append(el);
+    }
+    const lista = $('lista'); lista.replaceChildren();
+    for (const [id, t] of PRUEBAS) {
+      const falla = roja && (id === 'E2E-VEN-001' || id === 'E2E-VEN-002');
+      const li = document.createElement('li'); li.className = falla ? 'bad' : 'ok';
+      li.innerHTML = `<b>${id}</b><span>${t}${falla ? ' · <i>Received: «Venta N° 1 registrada… Vuelto S/ 0.00»</i>' : ''}</span><em>${falla ? 'falla' : 'pasa'}</em>`;
+      lista.append(li);
+    }
+    const m = $('msg');
+    if (roja) {
+      const primera = corridas.find((c) => c.roja);
+      m.className = 'r-msg bad';
+      m.textContent = `Detectado a las ${hhmm(primera.m)}: 10 min después del despliegue de las 15:00. El primer cliente habría reclamado a las 16:42 (simulado). Nadie tocó el código: lo encontró el robot.`;
+      if (!logrado) { logrado = true; $('chip').className = 'esc-chip ok'; $('chip').textContent = 'Lo logré: el robot avisó antes que el cliente · pulsa «Lo logré»'; }
+    } else if (bug && hora < 15 * 60 + 10) { m.className = 'r-msg'; m.textContent = 'El bug entra a producción a las 15:00. Sigue avanzando: la siguiente corrida después de esa hora lo va a ver.'; }
+    else { m.className = 'r-msg'; m.textContent = hora < 12 * 60 ? 'Avanza el reloj: cada hora el robot corre 6 veces la misma suite del kit, sola.' : 'Todo verde durante horas. Activa «Desplegaron un bug a las 15:00» y sigue avanzando.'; }
+  }
+  $('b-hora').onclick = avanzar;
+  $('b-bug').onclick = () => { bug = !bug; $('b-bug').setAttribute('aria-pressed', String(bug)); corridas.forEach((c) => { c.roja = bug && c.m >= 15 * 60 + 10; }); pintar(); };
+  $('b-reset').onclick = () => { bug = false; $('b-bug').setAttribute('aria-pressed', 'false'); $('chip').className = 'esc-chip'; $('chip').textContent = 'Grafana dice si la app responde; el robot dice si funciona como la usa el usuario'; reset(); };
+  reset();
+})();
+</script>
+</body>
+</html>

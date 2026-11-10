@@ -1,0 +1,16 @@
+id: "12-asi-lo-hace-una-botica"
+titulo: "Así lo hace una botica real"
+fase: reflexion
+paso: monitoreo
+duracion_min: 8
+lo_logre: true
+evidencia: ninguna
+umbral_pct: 100
+compuerta: lo_logre
+comandos:
+  - titulo: "Encolar la matriz desde el panel (el backend devuelve 202 y el host la corre)"
+    cmd: "curl -X POST https://botica/api/qa/run -H 'Authorization: Bearer …' -d '{\"engine\":\"lightpanda\"}'"
+  - titulo: "Seguir el avance sin retener workers (SSE de 45 s + sondeo)"
+    cmd: "curl -N https://botica/api/qa/run/stream?tope=45"
+  - titulo: "El cerco del contenedor que corre la batería"
+    cmd: "timeout -k 30 30m docker run --memory=400m --cpus=1 --init … node qa/runner.mjs"
