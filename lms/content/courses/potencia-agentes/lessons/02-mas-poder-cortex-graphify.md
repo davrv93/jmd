@@ -11,6 +11,14 @@ recording:
   url: ""
   passcode: ""
 materials:
+  - id: pt-02-video-cortex
+    title: "Video corto: Cortex, la memoria del agente"
+    kind: file
+    file: materials/video-pt-02-cortex.mp4
+  - id: pt-02-video-graphify
+    title: "Video corto: Graphify, el mapa del proyecto"
+    kind: file
+    file: materials/video-pt-02-graphify.mp4
   - id: pt-02-video
     title: "Video: memoria y mapa para tu agente"
     kind: file

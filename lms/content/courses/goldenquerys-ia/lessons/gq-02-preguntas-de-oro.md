@@ -15,6 +15,14 @@ recording:
   url: ""
   passcode: ""
 materials:
+  - id: gq-02-video-a
+    title: "Video corto: las tres preguntas de oro"
+    kind: file
+    file: materials/video-gq-02-preguntas-de-oro.mp4
+  - id: gq-02-video-b
+    title: "Video corto: SQL verificada o pirita"
+    kind: file
+    file: materials/video-gq-02-sql-verificada.mp4
   - id: gq-02-video
     title: "Video: tus tres preguntas de oro, de la pregunta al número verificado"
     kind: file

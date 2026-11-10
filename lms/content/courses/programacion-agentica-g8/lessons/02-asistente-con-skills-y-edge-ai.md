@@ -19,6 +19,14 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: g8-02-video-a
+    title: "Video corto: skills y plan de trabajo"
+    kind: file
+    file: materials/video-g8-02-skills-y-plan.mp4
+  - id: g8-02-video-b
+    title: "Video corto: Edge AI, local o remoto"
+    kind: file
+    file: materials/video-g8-02-edge-ai.mp4
   - id: g8-02-temario
     title: Temario del curso (3 sesiones, PDF)
     kind: pdf
