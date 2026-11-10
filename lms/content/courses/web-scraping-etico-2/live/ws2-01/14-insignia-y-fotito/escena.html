@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Cierre: insignia, reflexión y tu fotito</title>
+<!-- Escena LIVE ws2-01 · E14. Avance real (/lessons/ws2-01/progress), lo construido, voto de salida, muro y la fotito (canvas → PNG). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.c-pips { display: flex; gap: .3em; margin: .4em 0; }
+.c-pips i { flex: 1; height: .7em; border-radius: 999px; background: var(--s3); border: 1px solid var(--line); }
+.c-pips i.ok { background: var(--ok); border-color: var(--ok); }
+.c-num { font: 800 1.6em var(--mono); color: var(--accent); }
+</style>
+</head>
+<body data-escena="14-insignia-y-fotito">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><path class="tb" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/><g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="92" cy="612" r="3.5"/><circle class="eo" cx="296" cy="524" r="5"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Scraping ético · E14 · Cierre</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Lo que <em>te llevas hoy</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Extraes datos con permiso: lees las reglas, vas despacio, cuidas los datos personales y entregas archivos limpios.</p>
+    </div>
+    <p class="w-ahora a-in" style="--d:.15s"><b>Ahora tú</b><span>Escribe en el muro lo que te llevas, genera tu fotito y guárdala. Después pulsa <b>«Lo logré»</b>. El instructor te explica cómo recibir tu certificado y tu insignia.</span></p>
+    <div class="w-g3">
+      <div style="display:grid;gap:1em;align-content:start">
+        <section class="esc-card a-in" style="--d:.2s">
+          <span class="w-et">Tu avance en el taller</span>
+          <div><span class="c-num" id="p-done">—</span> <span class="w-muted">de <span id="p-total">6</span> pasos</span></div>
+          <div class="c-pips" id="p-pips" aria-hidden="true"></div>
+          <p class="w-peq w-muted" id="p-estado" style="margin:0">Los pasos se marcan con «Lo logré» en cada escena.</p>
+        </section>
+        <section class="esc-card a-in" style="--d:.25s">
+          <span class="w-et">Tu proyecto final, pieza por pieza</span>
+          <div class="w-check" data-check="14-proyecto" data-fin=" · ¡Proyecto completo!">
+            <button class="w-chk"><span>Script de Tampermonkey que extrae mientras navegas</span></button>
+            <button class="w-chk"><span>Extractor en Python con sesión: cookie y token en la cabecera</span></button>
+            <button class="w-chk"><span>Paginación, pausas y reintentos para no saturar el sitio</span></button>
+            <button class="w-chk"><span>CSV y JSON limpios, listos para importar</span></button>
+          </div>
+        </section>
+      </div>
+      <div style="display:grid;gap:1em;align-content:start">
+        <section class="esc-card a-in" style="--d:.3s">
+          <span class="w-et">Muro del grupo</span>
+          <h2>¿Qué te llevas hoy? En una línea.</h2>
+          <div data-muro="14-insignia-y-fotito" data-max="140" data-placeholder="Hoy me llevo…" data-pregunta="Qué te llevas hoy, en una línea"></div>
+        </section>
+        <section class="esc-card a-in" style="--d:.35s">
+          <span class="w-et">¿Cómo te vas?</span>
+          <div class="w-voto" data-voto="ws14-salida">
+            <button class="w-op" data-opcion="lo-aplico"><span>Lo aplico esta semana</span></button>
+            <button class="w-op" data-opcion="practicar"><span>Necesito practicar más</span></button>
+            <button class="w-op" data-opcion="siguiente"><span>Quiero el siguiente nivel</span></button>
+            <p class="w-voto-tot"></p>
+          </div>
+        </section>
+      </div>
+      <section class="esc-card a-in" style="--d:.4s">
+        <span class="w-et">Guarda tu fotito</span>
+        <div id="fotito"></div>
+      </section>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Gracias por venir. Primero las reglas, después los datos.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script>
+(function () {
+  "use strict";
+  var avance = null;
+  function pintar(j) {
+    var done = +j.done, total = +j.total;
+    if (!(done >= 0) || !(total > 0)) return;
+    avance = { done: done, total: total };
+    document.getElementById("p-done").textContent = done;
+    document.getElementById("p-total").textContent = total;
+    var p = document.getElementById("p-pips"); p.textContent = "";
+    for (var k = 0; k < total; k++) { var i = document.createElement("i"); if (k < done) i.className = "ok"; p.appendChild(i); }
+    document.getElementById("p-estado").textContent = done >= total ? "¡Completaste todos los pasos del taller!" :
+      "Te " + (total - done === 1 ? "falta 1 paso" : "faltan " + (total - done) + " pasos") + ": pulsa «Lo logré» donde ya terminaste.";
+  }
+  WS.api("/api/v1/lessons/" + WS.leccion + "/progress").then(pintar).catch(function () {});
+  var foto = WS.montarFotito(document.getElementById("fotito"), {
+    etiqueta: "Taller completado",
+    archivo: "fotito-scraping-etico",
+    resultado: function () {
+      var r = WS.leer("resultado-telarana", null), partes = [];
+      if (avance) partes.push(avance.done + " de " + avance.total + " pasos del taller");
+      if (r) partes.push("telaraña cortés: " + r.puntos + " puntos");
+      return partes.length ? partes.join(" · ") : "Scraping ético en el navegador y en el servidor";
+    },
+  });
+  document.addEventListener("ws-muro", function (e) {
+    if (e.target.closest('[data-muro="14-insignia-y-fotito"]')) { foto.reflexion(e.detail); foto.generar(); }
+  });
+})();
+</script>
+</body>
+</html>

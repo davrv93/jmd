@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · La tienda de Rosa</title>
+<!-- Escena LIVE ws2-01 · E02. Simulación en el navegador: nada sale a internet. La tienda y sus números son de juguete. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.r-tienda { border: 1px solid var(--line2); border-radius: .8em; overflow: hidden; background: var(--s1); }
+.r-barra { display: flex; align-items: center; gap: .5em; padding: .4em .7em; background: var(--s3); font: 600 .66em var(--mono); color: var(--muted); }
+.r-barra i { width: .7em; height: .7em; border-radius: 50%; background: var(--line2); display: inline-block; }
+.r-prods { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4em; padding: .6em; }
+@media (max-width: 520px) { .r-prods { grid-template-columns: repeat(2, 1fr); } }
+.r-prod { font: inherit; font-size: .74em; text-align: left; border: 1px solid var(--line); background: var(--s2); color: var(--fg); border-radius: .6em; padding: .45em .55em; cursor: pointer; min-height: 44px; display: grid; gap: .1em; touch-action: manipulation; }
+.r-prod b { font-family: var(--mono); color: var(--accent); }
+.r-prod.sig { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+.r-prod.hecho { opacity: .5; text-decoration: line-through; cursor: default; }
+.r-tiempos { display: flex; flex-wrap: wrap; gap: .5em; margin-top: .6em; }
+.r-t { flex: 1 1 9em; background: var(--s2); border: 1px solid var(--line); border-radius: .7em; padding: .45em .7em; }
+.r-t span { display: block; font-size: .64em; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.r-t b { font: 800 1.25em var(--mono); }
+.r-slider { width: 100%; accent-color: var(--accent); height: 44px; }
+.r-medidor { height: 1.1em; border-radius: 999px; background: linear-gradient(90deg, var(--ok), var(--warn) 55%, var(--bad) 75%); overflow: hidden; border: 1px solid var(--line); display: flex; justify-content: flex-end; }
+.r-medidor div { height: 100%; width: 100%; background: var(--s3); transition: width .4s ease-out; }
+.r-clientes { display: flex; gap: .35em; flex-wrap: wrap; margin: .5em 0; }
+.r-cli { width: 1.9em; height: 1.9em; border-radius: 50%; display: grid; place-items: center; background: var(--ok-bg); border: 2px solid var(--ok); transition: background .3s, border-color .3s; }
+.r-cli svg { width: 1.2em; height: 1.2em; }
+.r-cli.mal { background: var(--bad-bg); border-color: var(--bad); }
+.r-cli path.boca { stroke: currentColor; }
+.r-cli { color: var(--ok); } .r-cli.mal { color: var(--bad); }
+.r-log { margin: .4em 0 0; font: 600 .62em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .6em; padding: .5em .8em; min-height: 7.5em; overflow: hidden; }
+.r-log .ok { color: #7ee2a0; } .r-log .lento { color: #f4ac5c; } .r-log .no { color: #ff8b8b; }
+.r-estado { font-size: .84em; font-weight: 700; margin: .3em 0; min-height: 2.6em; }
+.r-switch { display: flex; align-items: center; gap: .6em; font-size: .8em; font-weight: 700; cursor: pointer; min-height: 44px; }
+.r-switch input { width: 1.3em; height: 1.3em; accent-color: var(--ok); }
+</style>
+</head>
+<body data-escena="02-la-tienda-de-rosa">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168"/><g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Scraping ético · E02</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">La tienda de Rosa: <em>a mano, con bot y con modales</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Rosa vende por internet desde un servidor pequeño. Vive las tres formas de sacar sus precios.</p>
+    </div>
+    <p class="w-ahora a-in" style="--d:.15s"><b>Ahora tú</b><span><b>1.</b> Toca los 8 precios en orden, como si los copiaras. <b>2.</b> Sube el ritmo del bot hasta que algo pase. <b>3.</b> Activa el modo cortés y mira la diferencia.</span></p>
+    <div class="w-g2">
+      <section class="esc-card a-in" style="--d:.2s">
+        <span class="w-et">1 · Copia a mano</span>
+        <div class="r-tienda">
+          <div class="r-barra"><i></i><i></i><i></i><span>bodega-rosa.example/precios</span></div>
+          <div class="r-prods" id="prods"></div>
+        </div>
+        <div class="r-tiempos">
+          <div class="r-t"><span>Tú, a mano</span><b id="t-mano">—</b></div>
+          <div class="r-t"><span>Un script</span><b id="t-script">—</b></div>
+        </div>
+        <div class="w-fila" style="margin-top:.6em">
+          <button type="button" class="w-btn sec peq" id="script">Que lo haga un script</button>
+          <button type="button" class="w-btn sec peq" id="otra">Otra vez</button>
+        </div>
+      </section>
+      <section class="esc-card a-in" style="--d:.3s">
+        <span class="w-et">2 · Ahora con un bot</span>
+        <label class="w-lab" for="ritmo">Pedidos por segundo de tu bot: <b id="ritmo-v">0</b></label>
+        <input class="r-slider" id="ritmo" type="range" min="0" max="40" step="1" value="0">
+        <label class="r-switch"><input type="checkbox" id="cortes"> 3 · Modo cortés: 1 pedido cada 2 s y respeta el 429</label>
+        <div class="r-medidor" role="meter" aria-label="Carga del servidor de Rosa" aria-valuemin="0" aria-valuemax="150" id="medidor"><div></div></div>
+        <div class="r-clientes" id="clientes" aria-label="Clientes de Rosa"></div>
+        <p class="r-estado" id="estado" aria-live="polite">Todo tranquilo. Los clientes de Rosa compran sin problema.</p>
+        <p class="w-peq w-muted" id="cuanto">Bajar sus 500 productos: —</p>
+        <pre class="r-log" id="log" aria-label="Lo que responde el servidor"></pre>
+      </section>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Guarda lo que sentiste: en la siguiente escena lo conversamos.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* ---- 1. Copiar a mano ---- */
+  var PRODS = [["Arroz 5 kg", "24.90"], ["Aceite 1 L", "9.50"], ["Azúcar 1 kg", "4.20"], ["Leche x6", "21.00"], ["Fideos 500 g", "3.10"], ["Huevos x15", "8.90"], ["Atún 170 g", "5.60"], ["Pan x10", "3.00"]];
+  var cont = document.getElementById("prods"), sig = 0, t0 = 0;
+  function pintar() {
+    cont.textContent = "";
+    PRODS.forEach(function (p, i) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "r-prod" + (i < sig ? " hecho" : i === sig ? " sig" : "");
+      b.innerHTML = "<span></span><b></b>"; b.firstChild.textContent = p[0]; b.lastChild.textContent = "S/ " + p[1];
+      b.setAttribute("aria-label", p[0] + ", S/ " + p[1] + (i === sig ? ". Toca para copiarlo" : ""));
+      b.addEventListener("click", function () {
+        if (i !== sig) { if (i > sig) WS.aviso("En orden: primero " + PRODS[sig][0] + ".", 1800); return; }
+        if (sig === 0) t0 = performance.now();
+        sig++;
+        if (sig === PRODS.length) document.getElementById("t-mano").textContent = ((performance.now() - t0) / 1000).toFixed(1) + " s";
+        pintar();
+      });
+      cont.appendChild(b);
+    });
+  }
+  pintar();
+  document.getElementById("script").addEventListener("click", function () {
+    var a = performance.now(), filas = [];
+    document.querySelectorAll(".r-prod").forEach(function (b) { filas.push(b.textContent); });
+    var ms = Math.max(0.02, performance.now() - a);
+    document.getElementById("t-script").textContent = (ms / 1000).toFixed(3) + " s";
+    sig = PRODS.length; pintar();
+  });
+  document.getElementById("otra").addEventListener("click", function () { sig = 0; document.getElementById("t-mano").textContent = "—"; document.getElementById("t-script").textContent = "—"; pintar(); });
+
+  /* ---- 2 y 3. El bot y la carga del servidor (capacidad 12 pedidos/s; los clientes usan 4/s) ---- */
+  var CAP = 12, CLIENTES = 4, N = 8;
+  var ritmo = document.getElementById("ritmo"), cortes = document.getElementById("cortes"), log = document.getElementById("log");
+  var cl = document.getElementById("clientes"), medidor = document.getElementById("medidor"), estado = document.getElementById("estado");
+  var cara = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="8" r="1.2" fill="currentColor"/><circle cx="13" cy="8" r="1.2" fill="currentColor"/><path class="boca" d="M6.5 12.5 Q10 15.5 13.5 12.5" fill="none" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  for (var i = 0; i < N; i++) { var c = document.createElement("span"); c.className = "r-cli"; c.innerHTML = cara; cl.appendChild(c); }
+  var bloqueo = 0, exceso = 0, lineas = [];
+  function efectivo() { return cortes.checked ? 0.5 : +ritmo.value; }
+  function tick() {
+    var r = efectivo(), carga = (CLIENTES + r) / CAP;
+    if (!cortes.checked && r > 15) exceso++; else exceso = Math.max(0, exceso - 2);
+    if (exceso >= 8 && !bloqueo) bloqueo = 1;
+    if (cortes.checked) bloqueo = 0;
+    var cargaVis = bloqueo ? CLIENTES / CAP : carga;
+    medidor.firstChild.style.width = (100 - Math.min(100, cargaVis / 1.5 * 100)) + "%";
+    medidor.setAttribute("aria-valuenow", Math.round(cargaVis * 100));
+    var malos = cargaVis <= 1 ? (cargaVis > .8 ? 1 : 0) : Math.min(N, Math.round(N * (1 - 1 / cargaVis)) + 1);
+    cl.querySelectorAll(".r-cli").forEach(function (x, k) {
+      x.classList.toggle("mal", k < malos);
+      x.querySelector(".boca").setAttribute("d", k < malos ? "M6.5 14 Q10 11 13.5 14" : "M6.5 12.5 Q10 15.5 13.5 12.5");
+    });
+    var txt;
+    if (bloqueo) txt = "Rosa bloqueó tu IP: la tienda se recuperó y tu bot se quedó sin datos. Activa el modo cortés.";
+    else if (cortes.checked) txt = "Modo cortés: tu bot apenas se nota y los clientes compran tranquilos.";
+    else if (r === 0) txt = "Todo tranquilo. Los clientes de Rosa compran sin problema.";
+    else if (carga <= .8) txt = "Tu bot trabaja y nadie lo nota. Todavía.";
+    else if (carga <= 1) txt = "La página va lenta: un cliente ya se está cansando.";
+    else txt = "La tienda se cae: " + malos + " de " + N + " clientes no pueden comprar.";
+    estado.textContent = txt;
+    estado.className = "r-estado " + (bloqueo || carga > 1 ? "w-bad" : carga > .8 && !cortes.checked ? "w-warn" : "w-ok");
+    document.getElementById("ritmo-v").textContent = cortes.checked ? "0,5 (cortés)" : String(r);
+    var seg = r > 0 ? 500 / r : 0;
+    document.getElementById("cuanto").textContent = r > 0 && !bloqueo
+      ? "Bajar sus 500 productos: " + (seg < 60 ? Math.round(seg) + " s" : Math.round(seg / 60) + " min") + (carga > 1 ? ", si la tienda no se cae antes." : ".")
+      : bloqueo ? "Bajar sus 500 productos: nunca. Te bloquearon." : "Bajar sus 500 productos: —";
+    // registro de respuestas
+    if (r > 0) {
+      var linea;
+      if (bloqueo) linea = '<span class="no">403 Forbidden  · tu IP está bloqueada</span>';
+      else if (carga > 1 && Math.random() < 1 - 1 / carga + .2) linea = '<span class="no">429 Too Many Requests · Retry-After: 60</span>';
+      else if (carga > .8) linea = '<span class="lento">200 OK  /producto/' + (100 + Math.floor(Math.random() * 400)) + '  · 2,8 s</span>';
+      else linea = '<span class="ok">200 OK  /producto/' + (100 + Math.floor(Math.random() * 400)) + '  · 0,1 s</span>';
+      lineas.push(linea); if (lineas.length > 6) lineas.shift();
+      log.innerHTML = lineas.join("\n");
+    } else if (!lineas.length) log.textContent = "(el servidor espera tus pedidos)";
+  }
+  ritmo.addEventListener("input", tick);
+  cortes.addEventListener("change", tick);
+  tick(); setInterval(function () { if (!document.hidden) tick(); }, 450);
+})();
+</script>
+</body>
+</html>

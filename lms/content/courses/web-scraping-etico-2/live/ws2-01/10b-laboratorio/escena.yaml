@@ -1,0 +1,38 @@
+id: 10b-laboratorio
+titulo: "Laboratorio: raspa nuestra tienda con modales"
+fase: experimentacion
+paso: extraer
+duracion_min: 40
+lo_logre: true
+evidencia: automatica
+umbral_pct: 70
+compuerta: lo_logre
+comandos:
+  - titulo: "Bajar el kit del laboratorio"
+    cmd: "cd /trabajo && curl -fsSLO https://jmd-learn.online/scraping-lab/kit.zip && python3 -m zipfile -e kit.zip . && cd kit-scraping-lab"
+  - titulo: "Crear el entorno e instalar"
+    cmd: "python3 -m venv .venv && . .venv/bin/activate && pip install --no-cache-dir -r requirements.txt"
+  - titulo: "Decir quién eres (cambia apodo y correo)"
+    cmd: "export ALUMNO=tu-apodo CONTACTO=tu-correo@ejemplo.com"
+  - titulo: "Volver a entrar otro día"
+    cmd: "cd /trabajo/kit-scraping-lab && . .venv/bin/activate"
+  - titulo: "Leer el robots.txt del laboratorio"
+    cmd: "curl -s https://jmd-learn.online/scraping-lab/robots.txt"
+  - titulo: "Reto 1 · Catálogo HTML"
+    cmd: "python3 01_catalogo.py"
+  - titulo: "Reto 2 · Sesión y cursor, con corte"
+    cmd: "python3 02_api_sesion.py --parar-en 2"
+  - titulo: "Reto 2 · Reanudar desde el checkpoint"
+    cmd: "python3 02_api_sesion.py"
+  - titulo: "Reto 3 · Cola de descarga"
+    cmd: "python3 03_descarga_cola.py"
+  - titulo: "Reto 3 · Revisar archivos y fallidos"
+    cmd: "ls descargas | wc -l; cat fallidos.txt"
+  - titulo: "Reto 4 · Límites (429 y Retry-After)"
+    cmd: "python3 04_limites.py"
+  - titulo: "Reto 4 · Mi estado en el laboratorio"
+    cmd: 'curl -s -H "X-Alumno: $ALUMNO" https://jmd-learn.online/scraping-lab/api/yo'
+  - titulo: "Reto 5 · Probar el servidor MCP"
+    cmd: "python3 05_mcp_server.py --probar mochila"
+  - titulo: "Reto 5 · Registrar el MCP en Claude Code"
+    cmd: 'claude mcp add tienda-jmd -e ALUMNO=$ALUMNO -e CONTACTO=$CONTACTO -- "$PWD/.venv/bin/python" "$PWD/05_mcp_server.py"'

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Python en el servidor</title>
+<!-- Escena LIVE ws2-01 · E10. extractor.py se probó contra quotes.toscrape.com con httpx (el que trae el servidor del curso) y con requests:
+     robots.txt, inicio de sesión con token CSRF y cookie, 5 páginas por la API con pausas, 50 filas sin repetidas, CSV utf-8-sig y JSON. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.p-script { max-height: 34vh; }
+.p-bloques { margin: 0; padding: 0; list-style: none; display: grid; gap: .4em; }
+.p-bloques li { font-size: .8em; padding: .4em .6em; border-left: 4px solid var(--c, var(--accent)); background: var(--s2); border-radius: 0 .5em .5em 0; }
+.p-ev { display: grid; grid-template-columns: 1fr 1fr; gap: .5em; }
+@media (max-width: 520px) { .p-ev { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-escena="10-python-en-el-servidor">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524"/><g><circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="eo" cx="296" cy="524" r="5"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Scraping ético · E10</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Python en el servidor: <em>sesión, páginas y pausas</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Tu extractor lee el robots.txt, inicia sesión, recorre las páginas despacio y guarda CSV y JSON limpios.</p>
+    </div>
+    <p class="w-ahora a-in" style="--d:.15s"><b>Ahora tú</b><span>Abre la <b>Terminal</b> del panel (corre en el servidor del curso) y pega los comandos en orden. Cada bloque tiene su botón <b>Copiar</b>.</span></p>
+    <div class="w-g2">
+      <section class="esc-card a-in" style="--d:.2s">
+        <ol class="w-pasos">
+          <li><div><span>Crea tu carpeta de trabajo.</span><pre class="esc-cmd"><span class="p">$ </span>mkdir -p scraping &amp;&amp; cd scraping</pre></div></li>
+          <li><div><span>Crea <span class="w-c">extractor.py</span>: copia el bloque completo y pégalo en la Terminal.</span><pre class="esc-cmd p-script"><span class="p">$ </span>cat &gt; extractor.py &lt;&lt;'EOF'
+# extractor.py · scraping ético en el servidor (curso Web scraping ético con IA, JMD Learning)
+# Sitio de práctica: quotes.toscrape.com, hecho para practicar scraping.
+# Sesión con cookie, token CSRF, paginación, pausas, reintentos y CSV/JSON limpios.
+import csv, json, os, random, re, time
+from urllib import robotparser
+
+try:
+    import httpx as http          # ya viene en el servidor del curso
+except ImportError:
+    import requests as http       # en tu máquina: pip install requests
+
+BASE = "https://quotes.toscrape.com"
+PAUSA = float(os.environ.get("PAUSA", "1.5"))         # segundos entre pedidos
+MAX_PAGINAS = int(os.environ.get("MAX_PAGINAS", "5"))
+UA = "CursoJMD-scraping-etico/1.0 (practica; " + os.environ.get("CONTACTO", "sin-contacto") + ")"
+CABECERAS = {"User-Agent": UA}
+if os.environ.get("TOKEN"):        # el token viaja en la cabecera y vive en una variable, nunca en el código
+    CABECERAS["Authorization"] = "Bearer " + os.environ["TOKEN"]
+
+
+def nueva_sesion():
+    if http.__name__ == "httpx":
+        return http.Client(headers=CABECERAS, follow_redirects=True)
+    s = http.Session()
+    s.headers.update(CABECERAS)
+    return s
+
+
+def pedir(s, metodo, url, **kw):
+    for intento in range(1, 5):
+        r = s.request(metodo, url, timeout=20, **kw)
+        if r.status_code in (429, 500, 502, 503, 504):
+            try:
+                espera = int(r.headers.get("Retry-After", ""))
+            except ValueError:
+                espera = 2 ** intento                    # 2, 4, 8, 16 s
+            print(f"  {r.status_code} en {url}: espero {espera} s (intento {intento})")
+            time.sleep(espera)
+            continue
+        r.raise_for_status()
+        time.sleep(PAUSA + random.uniform(0, 0.5))      # ritmo humano, con un poco de azar
+        return r
+    raise SystemExit(f"{url} no respondió tras 4 intentos: me detengo")
+
+
+def limpiar(t):
+    return re.sub(r"\s+", " ", t).strip().strip("“”\"").strip()
+
+
+# 1. Reglas primero: robots.txt
+rp = robotparser.RobotFileParser(BASE + "/robots.txt")
+rp.read()
+if not rp.can_fetch(UA, BASE + "/api/quotes"):
+    raise SystemExit("robots.txt no permite esta ruta: me detengo")
+PAUSA = max(PAUSA, rp.crawl_delay(UA) or 0)
+print(f"robots.txt OK · pausa de {PAUSA} s entre pedidos")
+
+# 2. Sesión: la cookie la guarda la sesión; el token CSRF sale del formulario
+s = nueva_sesion()
+html = pedir(s, "GET", BASE + "/login").text
+token = re.search(r'name="csrf_token" value="([^"]+)"', html).group(1)
+pedir(s, "POST", BASE + "/login", data={
+    "csrf_token": token,
+    "username": os.environ.get("USUARIO", "alumno"),
+    "password": os.environ.get("CLAVE", "practica"),
+})
+dentro = "Logout" in pedir(s, "GET", BASE + "/").text
+print("Sesión iniciada (cookie guardada)" if dentro else "Ojo: no se inició sesión")
+
+# 3. Paginación por la API del sitio (si hay API, úsala antes que el HTML)
+filas, vistas, pagina = [], set(), 1
+while pagina &lt;= MAX_PAGINAS:
+    datos = pedir(s, "GET", BASE + "/api/quotes", params={"page": pagina}).json()
+    for q in datos["quotes"]:
+        fila = {"frase": limpiar(q["text"]), "autor": limpiar(q["author"]["name"]),
+                "etiquetas": ";".join(q["tags"]), "pagina": pagina}
+        clave = (fila["frase"].lower(), fila["autor"].lower())
+        if clave not in vistas:                          # sin filas repetidas
+            vistas.add(clave)
+            filas.append(fila)
+    print(f"página {pagina}: {len(filas)} filas")
+    if not datos.get("has_next"):
+        break
+    pagina += 1
+
+# 4. Exportar limpio: CSV que Excel abre con tildes (utf-8-sig) y JSON legible
+with open("frases.csv", "w", newline="", encoding="utf-8-sig") as f:
+    w = csv.DictWriter(f, fieldnames=["frase", "autor", "etiquetas", "pagina"])
+    w.writeheader()
+    w.writerows(filas)
+with open("frases.json", "w", encoding="utf-8") as f:
+    json.dump(filas, f, ensure_ascii=False, indent=2)
+print(f"Listo: {len(filas)} filas en frases.csv y frases.json")
+EOF</pre></div></li>
+          <li><div><span>Córrelo con tu correo como contacto (va en el User-Agent, así el sitio sabe quién pide). Tarda unos 20 s: son las pausas.</span><pre class="esc-cmd"><span class="p">$ </span>CONTACTO="tu-correo@ejemplo.com" python3 extractor.py</pre></div></li>
+          <li><div><span>Revisa lo que salió.</span><pre class="esc-cmd"><span class="p">$ </span>head -5 frases.csv
+<span class="p">$ </span>python3 -c "import json; print(len(json.load(open('frases.json'))), 'filas')"</pre></div></li>
+          <li><div><span>¿Tu sitio te dio un token? Guárdalo sin que quede en el historial y vuelve a correr el paso 3.</span><pre class="esc-cmd"><span class="p">$ </span>read -rs TOKEN &amp;&amp; export TOKEN</pre>
+            <span class="w-peq w-muted">Pega el token y pulsa Enter: no se ve en pantalla. El script lo manda como <span class="w-c">Authorization: Bearer</span>.</span></div></li>
+        </ol>
+      </section>
+      <div style="display:grid;gap:1em;align-content:start">
+        <section class="esc-card a-in" style="--d:.3s">
+          <span class="w-et">Lee tu script en cuatro bloques</span>
+          <ol class="p-bloques">
+            <li style="--c:var(--ph-or)"><b>1 · Reglas:</b> <span class="w-c">robotparser</span> lee el robots.txt; si la ruta está prohibida, el script se detiene solo.</li>
+            <li style="--c:var(--ph-ec)"><b>2 · Sesión:</b> saca el <span class="w-c">csrf_token</span> del formulario, inicia sesión y la cookie queda guardada en la sesión.</li>
+            <li style="--c:var(--ph-ca)"><b>3 · Páginas:</b> pide <span class="w-c">/api/quotes?page=N</span> mientras <span class="w-c">has_next</span> sea verdadero, con pausa y reintentos.</li>
+            <li style="--c:var(--ph-ea)"><b>4 · Exportar:</b> limpia comillas y espacios, quita repetidas y escribe CSV y JSON.</li>
+          </ol>
+        </section>
+        <section class="esc-card a-in" style="--d:.4s">
+          <span class="w-et">Tu avance</span>
+          <div class="w-check" data-check="10-python">
+            <button class="w-chk"><span>Terminal abierta y carpeta <span class="w-c">scraping</span> creada</span></button>
+            <button class="w-chk"><span>El script dice «robots.txt OK» y «Sesión iniciada»</span></button>
+            <button class="w-chk"><span>Recorre 5 páginas y dice «Listo: 50 filas»</span></button>
+            <button class="w-chk"><span><span class="w-c">head</span> muestra el CSV con encabezados</span></button>
+          </div>
+          <span class="w-et" style="margin-top:.8em">Cuéntale al instructor</span>
+          <div class="p-ev">
+            <label class="w-lab">Filas que salieron<input class="w-in" id="filas" inputmode="numeric" placeholder="50"></label>
+            <label class="w-lab">¿Qué cambiarías?<input class="w-in" id="cambio" maxlength="120" placeholder="Más pausa, otro sitio…"></label>
+          </div>
+          <div class="w-fila" style="margin-top:.5em"><button type="button" class="w-btn" id="enviar">Enviar resultado</button><span class="w-peq" id="enviado" aria-live="polite"></span></div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Sitio de práctica: quotes.toscrape.com, hecho para practicar scraping. En tu máquina: pip install requests.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script src="../../comun/copiar.js"></script>
+<script>
+(function () {
+  "use strict";
+  var filas = document.getElementById("filas"), cambio = document.getElementById("cambio"), out = document.getElementById("enviado");
+  filas.value = WS.leer("e10-filas", ""); cambio.value = WS.leer("e10-cambio", "");
+  filas.addEventListener("input", function () { WS.guardar("e10-filas", filas.value); });
+  cambio.addEventListener("input", function () { WS.guardar("e10-cambio", cambio.value); });
+  document.getElementById("enviar").addEventListener("click", function () {
+    var n = parseInt(filas.value, 10);
+    if (!(n >= 0)) { out.className = "w-peq w-warn"; out.textContent = "Escribe cuántas filas salieron."; filas.focus(); return; }
+    var b = this; b.disabled = true;
+    WS.evidencia("hallazgo", "extractor.py: " + n + " filas · " + (cambio.value.trim() || "sin cambios")).then(function () {
+      out.className = "w-peq w-ok"; out.textContent = "✓ Enviado. Pulsa «Lo logré» en el panel.";
+    }, function () { out.className = "w-peq w-bad"; out.textContent = "No se pudo enviar; intenta en un momento."; }).then(function () { b.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>

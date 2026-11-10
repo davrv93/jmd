@@ -1,0 +1,127 @@
+/* ws.css · piezas comunes de las escenas LIVE de «Web scraping ético con IA» (ws2-01).
+   Va después de escena.css: <link rel="stylesheet" href="../../comun/ws.css">.
+   Lo que añade: scroll en pantallas chicas, botones, checklist, votación, muro, pasos numerados,
+   el aviso «Ahora tú» y el panel de la fotito. Todo con los tokens de escena.css (claro y oscuro). */
+
+/* En el celular y en ventanas bajas la escena se desplaza en vez de cortarse. */
+html, body { height: auto; min-height: 100%; }
+body { overflow-x: hidden; overflow-y: auto; font-size: clamp(15px, calc(.95vw + .55vh), 26px); }
+.esc { min-height: 100vh; min-height: 100dvh; }
+.esc-cielo { opacity: calc(var(--cielo) * .35); }
+.esc-titulo { font-size: 1.75em; }
+.esc-sub { font-size: 1em; }
+.esc-cuerpo { justify-content: flex-start; gap: 1.6vh; }
+@media (min-height: 760px) and (min-width: 1100px) { .esc-cuerpo { justify-content: center; } }
+
+.w-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2em; align-items: start; }
+.w-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em; align-items: start; }
+.w-g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9em; align-items: stretch; }
+.w-g21 { display: grid; grid-template-columns: 1.35fr 1fr; gap: 1.2em; align-items: start; }
+@media (max-width: 1100px) { .w-g4 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 860px) { .w-g2, .w-g3, .w-g21 { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .w-g4 { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {
+  .esc { padding: 14px 14px 20px; gap: 12px; }
+  .esc-titulo { font-size: 1.5em; }
+  .esc-num { font-size: .66em; letter-spacing: .06em; }
+}
+
+.esc-card { padding: .8em 1em; min-width: 0; }
+.esc-card h2 { font-size: 1em; margin: 0 0 .35em; line-height: 1.2; }
+.esc-card p, .esc-card li { font-size: .84em; line-height: 1.4; }
+.esc-card p + p { margin-top: .45em; }
+.w-et { display: block; font-size: .6em; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: .35em; }
+.w-c { font-family: var(--mono); font-size: .92em; background: var(--s2); border: 1px solid var(--line); padding: .05em .4em; border-radius: .35em; overflow-wrap: anywhere; }
+.w-muted { color: var(--muted); }
+.w-peq { font-size: .78em; }
+.w-ok { color: var(--ok); } .w-bad { color: var(--bad); } .w-warn { color: var(--warn); }
+.esc-cmd { font-size: .7em; max-height: 46vh; overflow: auto; }
+pre.esc-cmd { overflow-wrap: anywhere; }
+
+/* «Ahora tú»: lo que el alumno hace en este momento, siempre visible. */
+.w-ahora { display: flex; gap: .8em; align-items: flex-start; background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: .9em; padding: .65em .9em; font-size: .84em; }
+.w-ahora > b:first-child { flex: none; font-size: .72em; letter-spacing: .1em; text-transform: uppercase; color: var(--on-accent); background: var(--accent); border-radius: 999px; padding: .3em .75em; margin-top: .1em; }
+.w-ahora span { min-width: 0; }
+
+/* Botones */
+.w-btn { font: 700 .8em/1.1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .65em 1.15em; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; display: inline-flex; align-items: center; gap: .45em; min-height: 44px; touch-action: manipulation; }
+.w-btn.sec { background: var(--s1); color: var(--fg); border-color: var(--line2); }
+.w-btn.peq { min-height: 36px; padding: .45em .9em; font-size: .72em; }
+.w-btn:disabled { opacity: .5; cursor: default; }
+.w-btn:focus-visible, .w-chk:focus-visible, .w-op:focus-visible, .w-in:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.w-fila { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; }
+.w-in { font: inherit; font-size: .84em; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .6em; padding: .55em .75em; min-height: 44px; width: 100%; min-width: 0; }
+textarea.w-in { min-height: 6em; resize: vertical; font-family: var(--mono); font-size: .74em; line-height: 1.45; }
+select.w-in { cursor: pointer; }
+label.w-lab { display: grid; gap: .3em; font-size: .78em; font-weight: 700; }
+
+/* Checklist con avance (se guarda en el navegador del alumno) */
+.w-check { display: grid; gap: 0; }
+.w-chk { display: flex; gap: .65em; align-items: flex-start; width: 100%; text-align: left; font: inherit; font-size: .84em; background: none; border: 0; color: var(--fg); padding: .5em .2em; cursor: pointer; border-bottom: 1px solid var(--line); min-height: 44px; touch-action: manipulation; }
+.w-chk > i { flex: none; width: 1.15em; height: 1.15em; border: 2px solid var(--accent); border-radius: .3em; margin-top: .12em; display: grid; place-items: center; font-style: normal; font-size: .9em; line-height: 1; }
+.w-chk[aria-pressed="true"] > i { background: var(--accent); color: var(--on-accent); }
+.w-chk[aria-pressed="true"] > i::after { content: "✓"; }
+.w-chk[aria-pressed="true"] > span { opacity: .72; }
+.w-check-est { font-size: .74em; color: var(--accent); font-weight: 700; margin: .5em 0 0; }
+.w-check-est.listo { color: var(--ok); }
+
+/* Votación: chips con el % del grupo */
+.w-voto { display: grid; gap: .45em; }
+.w-op { position: relative; overflow: hidden; display: flex; justify-content: space-between; gap: .6em; align-items: center; width: 100%; font: inherit; font-size: .82em; text-align: left; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .7em; padding: .55em .8em; cursor: pointer; min-height: 44px; touch-action: manipulation; }
+.w-op::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--pct, 0%); background: var(--accent-bg); transition: width .5s ease-out; z-index: 0; }
+.w-op > * { position: relative; z-index: 1; }
+.w-op b { font-variant-numeric: tabular-nums; color: var(--accent); font-size: .9em; min-width: 3em; text-align: right; }
+.w-op[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.w-op[aria-pressed="true"] span::after { content: " · tu voto"; color: var(--accent); font-weight: 700; font-size: .85em; }
+.w-voto-tot { font-size: .72em; color: var(--muted); margin: .2em 0 0; }
+.w-voto-fila { display: flex; flex-wrap: wrap; gap: .45em; }
+.w-voto-fila .w-op { width: auto; flex: 1 1 8em; }
+
+/* Muro del grupo */
+.w-muro { display: grid; gap: .55em; }
+.w-muro-form { display: flex; gap: .5em; }
+.w-muro-form .w-in { flex: 1; }
+.w-muro-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .4em; max-height: 34vh; overflow: auto; }
+.w-muro-lista li { font-size: .78em; background: var(--s2); border: 1px solid var(--line); border-radius: .65em; padding: .45em .7em; overflow-wrap: anywhere; }
+.w-muro-lista li b { color: var(--accent); margin-right: .35em; }
+.w-muro-lista li.mia { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.w-muro-lista li.vacio { color: var(--muted); font-style: italic; }
+.w-muro-est { font-size: .7em; color: var(--muted); margin: 0; }
+@media (max-width: 520px) { .w-muro-form { flex-direction: column; } }
+
+/* Pasos numerados */
+.w-pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: .7em; counter-reset: paso; }
+.w-pasos > li { counter-increment: paso; display: grid; grid-template-columns: 1.9em 1fr; gap: .6em; align-items: start; font-size: .86em; min-width: 0; }
+.w-pasos > li::before { content: counter(paso); width: 1.75em; height: 1.75em; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-weight: 800; font-size: .85em; }
+.w-pasos > li > div { min-width: 0; display: grid; gap: .35em; }
+
+/* Pestañas sencillas */
+.w-tabs { display: flex; gap: .35em; flex-wrap: wrap; }
+.w-tab { font: 700 .74em system-ui, sans-serif; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); border-radius: 999px; padding: .5em 1em; cursor: pointer; min-height: 40px; }
+.w-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+/* Semáforo */
+.w-luz { display: inline-flex; align-items: center; gap: .5em; font-weight: 800; padding: .35em .9em; border-radius: 999px; font-size: .84em; }
+.w-luz::before { content: ""; width: .8em; height: .8em; border-radius: 50%; background: currentColor; }
+.w-luz.verde { color: var(--ok); background: var(--ok-bg); }
+.w-luz.ambar { color: var(--warn); background: var(--warn-bg); }
+.w-luz.rojo { color: var(--bad); background: var(--bad-bg); }
+
+/* Fotito */
+.w-foto { display: grid; gap: .7em; }
+.w-foto-img { width: 100%; max-width: 380px; height: auto; border-radius: .9em; border: 1px solid var(--line2); box-shadow: var(--card-shadow); display: block; -webkit-touch-callout: default; user-select: auto; }
+.w-foto-ayuda { font-size: .74em; color: var(--muted); margin: 0; }
+.w-foto-ayuda b { color: var(--fg); }
+
+/* Avatar (arañita) */
+.w-ava { display: grid; grid-template-columns: auto 1fr; gap: .8em; align-items: center; }
+.w-ava canvas { width: 104px; height: 104px; border-radius: 50%; background: radial-gradient(circle at 50% 40%, var(--s1), var(--s3)); border: 1px solid var(--line2); }
+.w-ava-op { display: grid; gap: .4em; min-width: 0; }
+.w-ava-fila { display: flex; flex-wrap: wrap; gap: .3em; align-items: center; font-size: .7em; }
+.w-ava-fila > span { min-width: 5.5em; color: var(--muted); font-weight: 700; }
+.w-sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line2); cursor: pointer; padding: 0; background: var(--s1); color: var(--fg); font: 700 13px system-ui, sans-serif; touch-action: manipulation; }
+.w-sw[aria-pressed="true"] { border-color: var(--fg); box-shadow: 0 0 0 2px var(--accent); }
+@media (max-width: 420px) { .w-ava { grid-template-columns: 1fr; justify-items: center; } .w-ava-fila { justify-content: center; } .w-ava-fila > span { min-width: 100%; text-align: center; } .w-ava .w-fila { justify-content: center; } }
+
+/* Aviso flotante */
+.w-toast { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 50; background: #14122b; color: #fff; padding: .6em 1em; border-radius: .8em; font-size: .78em; box-shadow: 0 10px 30px rgba(0,0,0,.35); max-width: min(92vw, 34em); }

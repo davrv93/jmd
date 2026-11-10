@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Las cuatro reglas antes de extraer</title>
+<!-- Escena LIVE ws2-01 · E05. Cuatro reglas y un probador de robots.txt que corre en el navegador (nada sale a internet). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.g-regla { border-top: 4px solid var(--ph-ca); }
+.g-regla .num { font: 800 .7em var(--mono); color: var(--ph-ca); }
+.g-regla ul { margin: .3em 0 0; padding-left: 1.1em; display: grid; gap: .2em; }
+.g-prob textarea { min-height: 13em; }
+.g-ver { margin: .5em 0 0; padding: .55em .8em; border-radius: .7em; font-size: .84em; font-weight: 700; }
+.g-ver.si { background: var(--ok-bg); color: var(--ok); }
+.g-ver.no { background: var(--bad-bg); color: var(--bad); }
+.g-ver small { display: block; font-weight: 500; color: var(--fg); margin-top: .2em; font-size: .9em; }
+.g-rutas { display: flex; flex-wrap: wrap; gap: .35em; margin-top: .4em; }
+</style>
+</head>
+<body data-escena="05-las-cuatro-reglas">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Scraping ético · E05</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Las cuatro reglas <em>antes de extraer</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Si las cuatro dan verde, extraes tranquilo. Si una da rojo, buscas otro camino.</p>
+    </div>
+    <div class="w-g4">
+      <section class="esc-card g-regla a-in" style="--d:.15s">
+        <span class="num">1 · robots.txt</span>
+        <h2>Lo que el sitio pide a los robots</h2>
+        <ul>
+          <li>Está en <span class="w-c">/robots.txt</span> de cada dominio.</li>
+          <li><span class="w-c">Disallow</span>: no entres. <span class="w-c">Allow</span>: sí puedes.</li>
+          <li>Si no existe, no hay reglas escritas… pero igual vas despacio.</li>
+        </ul>
+      </section>
+      <section class="esc-card g-regla a-in" style="--d:.2s">
+        <span class="num">2 · Términos de uso</span>
+        <h2>El contrato del sitio</h2>
+        <ul>
+          <li>Busca «robot», «automatizado», «scraping» o «uso comercial».</li>
+          <li>¿Hay una <b>API</b> o una descarga oficial? Úsala primero.</li>
+          <li>Si lo prohíben, no lo hagas: pide permiso.</li>
+        </ul>
+      </section>
+      <section class="esc-card g-regla a-in" style="--d:.25s">
+        <span class="num">3 · Ritmo</span>
+        <h2>Que tu bot no se note</h2>
+        <ul>
+          <li>Una pausa de 1 a 3 s entre pedidos, con un poco de azar.</li>
+          <li><span class="w-c">429</span> = vas muy rápido: espera lo que diga <span class="w-c">Retry-After</span>.</li>
+          <li>Un <span class="w-c">User-Agent</span> honesto, y no pidas dos veces lo que ya tienes.</li>
+        </ul>
+      </section>
+      <section class="esc-card g-regla a-in" style="--d:.3s">
+        <span class="num">4 · Datos personales</span>
+        <h2>Lo mínimo, y nunca de más</h2>
+        <ul>
+          <li>Nombre con DNI, teléfono, correo o dirección son datos personales.</li>
+          <li>En el Perú los protege la Ley 29733.</li>
+          <li>Si no los necesitas, no los guardes.</li>
+        </ul>
+      </section>
+    </div>
+    <div class="w-g21">
+      <section class="esc-card g-prob a-in" style="--d:.35s">
+        <span class="w-et">Probador de robots.txt</span>
+        <div class="w-g2" style="gap:.7em">
+          <label class="w-lab">robots.txt del sitio (puedes pegar el de un sitio real)
+            <textarea class="w-in" id="robots" spellcheck="false">User-agent: *
+Disallow: /admin/
+Disallow: /carrito
+Allow: /productos/
+Crawl-delay: 2
+
+User-agent: BotCopion
+Disallow: /</textarea></label>
+          <div style="display:grid;gap:.5em;align-content:start">
+            <label class="w-lab">Ruta que quieres visitar<input class="w-in" id="ruta" value="/productos/arroz" spellcheck="false"></label>
+            <label class="w-lab">Tu User-Agent<input class="w-in" id="ua" value="CursoJMD-scraping-etico" spellcheck="false"></label>
+            <div class="g-rutas" aria-label="Prueba otras rutas">
+              <button type="button" class="w-btn sec peq" data-ruta="/admin/usuarios">/admin/usuarios</button>
+              <button type="button" class="w-btn sec peq" data-ruta="/carrito?id=9">/carrito?id=9</button>
+              <button type="button" class="w-btn sec peq" data-ua="BotCopion">UA: BotCopion</button>
+            </div>
+            <p class="g-ver" id="veredicto" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+      <section class="esc-card a-in" style="--d:.4s">
+        <span class="w-et">Para llevar</span>
+        <p><b>Crawl-delay</b> es un pedido de pausa en segundos. Google no lo usa, pero es lo que el sitio te pide: respétalo.</p>
+        <p>La regla más larga que coincide con la ruta es la que manda; si empatan, gana <span class="w-c">Allow</span>.</p>
+        <p class="w-peq w-muted">Esto es una guía práctica, no asesoría legal. Para un proyecto comercial grande, consulta a un abogado.</p>
+        <p class="w-ahora" style="margin-top:.6em"><b>Ahora tú</b><span>Prueba tres rutas en el probador. En la siguiente escena revisas tu propio sitio.</span></p>
+      </section>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Material: robots.txt · cómo funciona (Google Search Central).</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script>
+(function () {
+  "use strict";
+  var ta = document.getElementById("robots"), ruta = document.getElementById("ruta"), ua = document.getElementById("ua"), out = document.getElementById("veredicto");
+  // Grupos de robots.txt: líneas User-agent seguidas comparten reglas.
+  function grupos(txt) {
+    var gs = [], g = null, ultimaUA = false;
+    txt.split(/\r?\n/).forEach(function (l) {
+      l = l.replace(/#.*/, "").trim(); if (!l) return;
+      var m = /^([A-Za-z-]+)\s*:\s*(.*)$/.exec(l); if (!m) return;
+      var k = m[1].toLowerCase(), v = m[2].trim();
+      if (k === "user-agent") { if (!ultimaUA) { g = { uas: [], reglas: [], delay: null }; gs.push(g); } g.uas.push(v.toLowerCase()); ultimaUA = true; return; }
+      ultimaUA = false; if (!g) return;
+      if (k === "allow" || k === "disallow") g.reglas.push({ tipo: k, patron: v });
+      if (k === "crawl-delay") g.delay = v;
+    });
+    return gs;
+  }
+  function coincide(patron, p) {
+    if (!patron) return false;
+    var fin = /\$$/.test(patron), cuerpo = fin ? patron.slice(0, -1) : patron;
+    var re = "^" + cuerpo.split("*").map(function (t) { return t.replace(/[.+?^${}()|[\]\\\/]/g, "\\$&"); }).join(".*") + (fin ? "$" : "");
+    try { return new RegExp(re).test(p); } catch (e) { return false; }
+  }
+  function evaluar() {
+    var gs = grupos(ta.value), mio = ua.value.trim().toLowerCase(), p = ruta.value.trim() || "/";
+    if (p.charAt(0) !== "/") p = "/" + p;
+    var g = null, largo = -1;
+    gs.forEach(function (x) { x.uas.forEach(function (u) { if (u !== "*" && mio.indexOf(u) >= 0 && u.length > largo) { g = x; largo = u.length; } }); });
+    if (!g) gs.forEach(function (x) { if (x.uas.indexOf("*") >= 0) g = x; });
+    if (!g) { pintar(true, "Ningún grupo aplica a tu robot: no hay reglas escritas para ti.", null); return; }
+    var mejor = null;
+    g.reglas.forEach(function (r) {
+      if (r.tipo === "disallow" && r.patron === "") return;
+      if (!coincide(r.patron, p)) return;
+      var n = r.patron.length;
+      if (!mejor || n > mejor.n || (n === mejor.n && r.tipo === "allow")) mejor = { n: n, r: r };
+    });
+    var grupo = "Grupo «User-agent: " + g.uas.join(", ") + "»";
+    if (!mejor) pintar(true, grupo + ": ninguna regla toca esta ruta.", g.delay);
+    else pintar(mejor.r.tipo === "allow", grupo + " · regla que manda: " + (mejor.r.tipo === "allow" ? "Allow: " : "Disallow: ") + mejor.r.patron, g.delay);
+  }
+  function pintar(ok, porque, delay) {
+    out.className = "g-ver " + (ok ? "si" : "no");
+    out.textContent = ok ? "Permitido" : "Prohibido: no la visites";
+    var s = document.createElement("small"); s.textContent = porque + (ok && delay ? " · Pausa pedida: " + delay + " s entre pedidos." : ""); out.appendChild(s);
+  }
+  [ta, ruta, ua].forEach(function (x) { x.addEventListener("input", evaluar); });
+  document.querySelectorAll("[data-ruta]").forEach(function (b) { b.addEventListener("click", function () { ruta.value = b.getAttribute("data-ruta"); evaluar(); }); });
+  document.querySelectorAll("[data-ua]").forEach(function (b) { b.addEventListener("click", function () { ua.value = b.getAttribute("data-ua"); evaluar(); }); });
+  evaluar();
+})();
+</script>
+</body>
+</html>
