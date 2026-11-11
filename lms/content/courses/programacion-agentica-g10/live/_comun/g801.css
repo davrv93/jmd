@@ -1,0 +1,259 @@
+/* g801.css · kit de las escenas de la clase 1 del Grupo 10 (g10-01). Va DESPUÉS de escena.css.
+   Piezas: votación (.k-voto), muro (.k-muro), lista de comprobación (.k-check), enlaces que abren
+   pestaña (.k-link), aviso flotante (.k-toast), la «fotito» (.k-foto) y el ajuste a celular. */
+
+/* La escena puede crecer más que la pantalla (votos, muro): en vez de cortarse, se desplaza. */
+body { overflow-x: hidden; overflow-y: auto; }
+
+/* ---- Botones ---- */
+.k-btn { font: 700 .82em/1.1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: .45em; min-height: 44px; padding: .6em 1.1em; border-radius: .75em; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; touch-action: manipulation; text-decoration: none; }
+.k-btn:hover { filter: brightness(1.06); }
+.k-btn:focus-visible, .k-link:focus-visible, .k-voto button:focus-visible, .k-check input:focus-visible + span { outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+.k-btn.sec { background: var(--s1); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.k-btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+.k-btn[disabled] { opacity: .5; cursor: default; filter: none; }
+
+/* ---- Enlace que abre una pestaña del navegador ---- */
+.k-link { font: 700 .74em/1.1 system-ui, -apple-system, sans-serif; display: inline-flex; align-items: center; gap: .4em; min-height: 36px; padding: .45em .85em; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-bg); color: var(--accent); cursor: pointer; touch-action: manipulation; }
+.k-link::after { content: "↗"; font-weight: 800; }
+.k-link:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.k-links { display: flex; flex-wrap: wrap; gap: .45em; }
+
+/* ---- Tarjeta de interacción (voto, muro, lista) ---- */
+.k-caja { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .8em 1em; box-shadow: var(--card-shadow); display: grid; gap: .55em; align-content: start; min-width: 0; }
+.k-q { margin: 0; font-size: .86em; font-weight: 800; line-height: 1.3; display: block; padding-left: 1.1em; text-indent: -1.1em; }
+.k-q::before { content: ""; display: inline-block; width: .6em; height: .6em; margin-right: .5em; border-radius: 50%; background: var(--c, var(--accent)); vertical-align: .08em; }
+.k-pie { margin: 0; font-size: .66em; color: var(--muted); }
+
+/* ---- Votación: un chip por opción con la barra del grupo detrás ---- */
+.k-ops { display: grid; gap: .4em; grid-template-columns: repeat(auto-fit, minmax(9em, 1fr)); }
+.k-voto button { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: .6em; min-height: 44px; padding: .45em .8em; border-radius: .7em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); font: 700 .76em/1.2 system-ui, -apple-system, sans-serif; text-align: left; cursor: pointer; touch-action: manipulation; }
+.k-voto button .b { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent-bg); transition: width .5s cubic-bezier(.2,.7,.2,1); }
+.k-voto button span { position: relative; }
+.k-voto button .n { font: 700 .92em var(--mono); color: var(--muted); }
+.k-voto button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+.k-voto button[aria-pressed="true"] .t::before { content: "✓ "; color: var(--accent); }
+.k-voto.revela button.bien { border-color: var(--ok); }
+.k-voto.revela button.bien .b { background: var(--ok-bg); }
+.k-voto.revela button.bien .t::after { content: "  · correcta"; color: var(--ok); font-weight: 800; }
+.k-explica { margin: 0; font-size: .74em; padding: .5em .75em; border-radius: .6em; background: var(--ok-bg); color: var(--fg); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); }
+
+/* ---- Muro: una línea por alumno ---- */
+.k-fila { display: flex; gap: .45em; }
+.k-fila input { flex: 1; min-width: 0; min-height: 44px; font: 500 .8em/1.3 system-ui, -apple-system, sans-serif; padding: .5em .8em; border-radius: .7em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); }
+.k-fila input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.k-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .35em; max-height: 13em; overflow-y: auto; }
+.k-lista li { font-size: .74em; line-height: 1.35; padding: .4em .7em; border-radius: .6em; background: var(--s2); animation: esc-entra .35s ease-out both; }
+.k-lista li b { color: var(--accent); margin-right: .35em; }
+.k-lista li.mia { background: var(--accent-bg); }
+.k-vacio { font-size: .72em; color: var(--muted); }
+
+/* ---- Lista de comprobación con «Lo logré» ---- */
+.k-check { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; }
+.k-check label { display: flex; gap: .65em; align-items: flex-start; min-height: 40px; padding: .35em .55em; border-radius: .6em; cursor: pointer; font-size: .78em; line-height: 1.35; touch-action: manipulation; }
+.k-check label:hover { background: var(--s2); }
+.k-check input { position: absolute; opacity: 0; pointer-events: none; }
+.k-check input + span { flex: none; width: 1.35em; height: 1.35em; border-radius: .4em; border: 2px solid var(--line2); background: var(--s1); display: grid; place-items: center; margin-top: .05em; }
+.k-check input:checked + span { background: var(--ok); border-color: var(--ok); }
+.k-check input:checked + span::after { content: ""; width: .32em; height: .62em; border: solid #fff; border-width: 0 .17em .17em 0; transform: translateY(-.08em) rotate(45deg); }
+.k-check input:checked ~ em { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 50%, transparent); }
+.k-check em { font-style: normal; }
+.k-check code { font: 700 .92em var(--mono); color: var(--accent); }
+.k-avance { display: flex; align-items: center; gap: .6em; font-size: .72em; color: var(--muted); }
+.k-avance i { flex: 1; height: .5em; border-radius: .25em; background: var(--s3); overflow: hidden; }
+.k-avance i::before { content: ""; display: block; height: 100%; width: var(--p, 0%); background: var(--ok); transition: width .4s ease-out; }
+.k-listo { margin: 0; font-size: .76em; font-weight: 800; color: var(--ok); padding: .45em .7em; border-radius: .6em; background: var(--ok-bg); }
+
+/* ---- Aviso flotante ---- */
+.k-toast { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translate(-50%, 1em); z-index: 50; max-width: min(92vw, 34em); padding: .7em 1.1em; border-radius: .8em; background: #14122b; color: #e9e6ff; font: 600 .78em/1.35 system-ui, -apple-system, sans-serif; box-shadow: 0 10px 30px -10px rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity .25s ease-out, transform .25s ease-out; }
+.k-toast.ve { opacity: 1; transform: translate(-50%, 0); }
+.k-toast code { color: #c3b9ff; word-break: break-all; }
+
+/* ---- La fotito ---- */
+.k-foto { display: grid; gap: .6em; justify-items: center; text-align: center; }
+.k-foto img { width: min(100%, 22em); height: auto; border-radius: .9em; box-shadow: 0 16px 40px -18px rgba(20,18,43,.6); border: 1px solid var(--line); -webkit-touch-callout: default; user-select: auto; }
+.k-foto .k-links { justify-content: center; }
+.k-foto p { margin: 0; font-size: .7em; color: var(--muted); max-width: 30em; }
+
+/* ---- Celular y ventanas angostas: una columna, todo legible y nada cortado ---- */
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .esc { min-height: 100dvh; padding: 14px 16px 20px; gap: 14px; grid-template-rows: auto auto 1fr; align-content: start; }
+  .esc-pie { align-self: end; }
+  .esc-cab { gap: 8px; flex-wrap: wrap; }
+  .esc-num { font-size: .7em; letter-spacing: .06em; }
+  .esc-cuerpo { justify-content: flex-start; gap: 14px; }
+  .esc-titulo { font-size: 1.55em !important; }
+  .esc-sub { font-size: 1em; }
+  .esc-grid-2, .esc-grid-3 { grid-template-columns: 1fr !important; gap: 12px; }
+  .esc-cmd { white-space: pre-wrap !important; word-break: break-word; font-size: .74em !important; }
+  .k-ops { grid-template-columns: 1fr 1fr; }
+  .k-q { font-size: .92em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-voto button .b, .k-avance i::before, .k-toast { transition: none; }
+}
+
+/* =====================================================================================
+   Efectos y pulido (FX). Solo transform, opacity y colores; todo se apaga con
+   prefers-reduced-motion (escena.css ya anula animaciones y transiciones con !important).
+   ===================================================================================== */
+
+/* ---- Fase de Kolb: g801.js copia el data-ph de .esc-fase en <html> ---- */
+:root { --fase: var(--accent); --fase-bg: var(--accent-bg); --fx-ease: cubic-bezier(.2,.7,.2,1); --fx-rebote: cubic-bezier(.2,.8,.3,1.3); }
+:root[data-ph="ec"] { --fase: var(--ph-ec); --fase-bg: var(--ph-ec-bg); }
+:root[data-ph="or"] { --fase: var(--ph-or); --fase-bg: var(--ph-or-bg); }
+:root[data-ph="ca"] { --fase: var(--ph-ca); --fase-bg: var(--ph-ca-bg); }
+:root[data-ph="ea"] { --fase: var(--ph-ea); --fase-bg: var(--ph-ea-bg); }
+
+/* hilo de color arriba + un halo suave del color de la fase */
+.fx-fase { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.fx-fase::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: linear-gradient(90deg, var(--fase), color-mix(in srgb, var(--fase) 40%, var(--est-o)) 60%, transparent);
+  transform-origin: 0 50%; animation: fx-hilo .9s var(--fx-ease) .05s both; }
+.fx-fase::after { content: ""; position: absolute; top: -30vh; left: -20vw; width: 70vw; height: 70vh;
+  background: radial-gradient(closest-side, var(--fase-bg), transparent); animation: fx-aparece 1.4s ease-out both; }
+
+/* cabecera: la píldora de la fase entra con un pequeño rebote y su punto late una vez */
+.esc-cab > .esc-fase:not(.a-in):not(.a-pop) { animation: fx-pildora .55s var(--fx-rebote) both; }
+.esc-cab > .esc-fase::before { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent); animation: fx-latido 1.6s ease-out .5s 2; }
+.esc-cab > .esc-num:not(.a-in) { animation: fx-entra .5s var(--fx-ease) .15s both; }
+.esc-pie:not(.a-in) { animation: fx-aparece .6s ease-out .6s both; }
+
+/* ---- Entrada escalonada (g801.js pone .fx-in / .fx-hijo y --fx-d) ---- */
+.fx-in { animation: fx-entra .5s var(--fx-ease) var(--fx-d, 0s) both; }
+.fx-hijo { animation: fx-lado .4s var(--fx-ease) var(--fx-d, 0s) both; }
+
+/* ---- Tipografía: títulos equilibrados, párrafos sin viudas ---- */
+.esc-titulo { text-wrap: balance; }
+.esc-sub, .esc-card p, .k-q, .k-explica, .k-pie { text-wrap: pretty; }
+.esc-sub { line-height: 1.4; }
+::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+
+/* ---- Tarjetas de interacción con el filo de la fase ---- */
+.k-caja { background: linear-gradient(90deg, var(--fase), color-mix(in srgb, var(--fase) 25%, transparent)) top / 100% 3px no-repeat, var(--s1); }
+.k-q::before { background: var(--c, var(--fase)); }
+
+/* ---- Botones: hover que levanta, pulsado que se hunde, foco siempre visible ---- */
+.k-btn, .k-link, .k-voto button, .cp-env > .cp-btn {
+  transition: transform .18s var(--fx-ease), box-shadow .2s ease-out, background-color .2s ease-out, border-color .2s ease-out, color .2s ease-out, filter .2s ease-out, opacity .2s ease-out;
+  -webkit-tap-highlight-color: transparent; }
+.k-btn { position: relative; }
+.k-btn:hover:not([disabled]) { transform: translateY(-1px); box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--accent) 80%, transparent); }
+.k-btn.sec:hover:not([disabled]) { background: color-mix(in srgb, var(--accent) 10%, var(--s1)); filter: none; }
+.k-btn:active:not([disabled]), .k-link:active, .k-voto button:active, .cp-env > .cp-btn:active { transform: translateY(0) scale(.96); transition-duration: .06s; }
+.k-link:hover { transform: translateY(-1px); border-color: var(--accent); }
+.k-link::after { display: inline-block; transition: transform .2s var(--fx-ease); }
+.k-link:hover::after, .k-link:focus-visible::after { transform: translate(2px, -2px); }
+.k-btn:focus-visible, .k-link:focus-visible, .k-voto button:focus-visible, .cp-env > .cp-btn:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 3px; }
+.k-check input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.cp-env > .cp-btn:hover:not(.ok):not(.mal) { background: rgba(60,52,140,.95); }
+
+/* «✓ Copiado»: salto corto y una onda que se abre */
+.k-btn.ok, .cp-env > .cp-btn.ok { animation: fx-copiado .45s var(--fx-rebote); }
+.k-btn.ok::after, .cp-env > .cp-btn.ok::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; border: 2px solid #4fd37a; pointer-events: none; animation: fx-onda .65s ease-out forwards; }
+.cp-env > .cp-btn.mal, .k-btn.mal { animation: fx-niega .35s ease-in-out; }
+
+/* ---- Votación ---- */
+.k-voto button:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--line2)); transform: translateY(-1px); }
+.k-voto button[aria-pressed="true"] { animation: fx-elegido .4s var(--fx-rebote); }
+.k-voto.revela button.bien { box-shadow: 0 0 0 2px var(--ok-bg); }
+.k-explica:not([hidden]) { animation: fx-entra .45s var(--fx-ease) both; }
+
+/* ---- Muro ---- */
+.k-fila input { transition: border-color .2s ease-out, box-shadow .2s ease-out; }
+.k-fila input:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line2)); }
+.k-lista { scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+.k-lista li.mia { box-shadow: inset 3px 0 0 var(--accent); }
+
+/* ---- Lista de comprobación: el tic se dibuja, la barra brilla al completarse ---- */
+.k-check label { transition: background-color .2s ease-out; }
+.k-check input + span { transition: background-color .2s ease-out, border-color .2s ease-out, transform .15s var(--fx-ease); }
+.k-check label:hover input:not(:checked) + span { border-color: var(--ok); }
+.k-check label:active input + span { transform: scale(.86); }
+.k-check input:checked + span { animation: fx-tic .4s var(--fx-rebote); }
+.k-check input:checked + span::after { animation: fx-tic-in .3s var(--fx-rebote) .05s both; }
+.k-check em { transition: color .25s ease-out; }
+.k-avance i { position: relative; }
+.k-avance i::before { background: linear-gradient(90deg, var(--ok), color-mix(in srgb, var(--ok) 65%, var(--gold))); transition: width .5s var(--fx-ease); }
+.k-avance.fx-completo i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.65) 50%, transparent 70%); transform: translateX(-100%); animation: fx-brillo 1.1s ease-out .15s 2; }
+.k-avance.fx-completo span { color: var(--ok); font-weight: 800; }
+.k-listo:not([hidden]) { animation: fx-logro .55s var(--fx-rebote) both; }
+.k-listo::before { content: "★ "; color: var(--gold); }
+
+/* chispas de celebración (g801.js las crea y las borra) */
+.fx-chispas { position: fixed; z-index: 60; width: 0; height: 0; pointer-events: none; }
+.fx-chispas i { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 2px; background: var(--c); animation: fx-chispa 1s cubic-bezier(.15,.7,.3,1) both; }
+.fx-chispas i.o { border-radius: 50%; width: 6px; height: 6px; }
+
+/* ---- Aviso flotante ---- */
+.k-toast { transform: translate(-50%, 1em) scale(.96); border: 1px solid rgba(190,185,255,.25); transition: opacity .25s ease-out, transform .35s var(--fx-rebote); }
+.k-toast.ve { transform: translate(-50%, 0) scale(1); }
+
+/* ---- La fotito ---- */
+.k-foto img { animation: fx-pildora .6s var(--fx-rebote) both; }
+
+/* ---- Marca JMD en el pie ---- */
+.fx-marca { position: absolute; right: 0; bottom: -.2em; height: 2.6em; width: auto; color: var(--muted); opacity: .75; overflow: visible; }
+.fx-marca .cu { fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: round; opacity: .6; }
+.fx-marca .ar { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; }
+.fx-marca .os { fill: none; stroke: currentColor; stroke-width: 3.4; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo 1.6s ease-out .9s forwards; }
+.fx-marca .es { fill: currentColor; }
+.fx-marca .ul { fill: var(--est-o); transform-box: fill-box; transform-origin: center; animation: fx-destello 3.2s ease-in-out 2s infinite; }
+
+/* ---- Proyector: más aire entre bloques en pantallas grandes ---- */
+@media (min-width: 1700px) {
+  .k-caja { padding: .9em 1.15em; gap: .65em; }
+}
+/* ---- Celular: textos de apoyo legibles y blancos táctiles de 44 px ---- */
+@media (max-width: 760px) {
+  .esc-pie { font-size: .74em; }
+  .k-pie { font-size: .78em; }
+  .k-check label { font-size: .92em; min-height: 44px; }
+  .k-voto button { font-size: .88em; }
+  .k-lista li { font-size: .86em; }
+  .k-avance { font-size: .82em; }
+  .k-link { min-height: 44px; font-size: .84em; }
+  .k-explica { font-size: .86em; }
+  .k-links { gap: .55em; }
+  .fx-fase::after { width: 120vw; height: 50vh; }
+}
+
+/* ---- Fotogramas ---- */
+@keyframes fx-entra { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes fx-lado { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+@keyframes fx-aparece { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fx-hilo { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes fx-pildora { 0% { opacity: 0; transform: scale(.8); } 70% { opacity: 1; transform: scale(1.05); } 100% { opacity: 1; transform: none; } }
+@keyframes fx-latido { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent); } 100% { box-shadow: 0 0 0 .7em transparent; } }
+@keyframes fx-copiado { 0% { transform: scale(.92); } 60% { transform: scale(1.06); } 100% { transform: none; } }
+@keyframes fx-onda { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(1.18, 1.5); } }
+@keyframes fx-niega { 0%, 100% { transform: none; } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@keyframes fx-elegido { 0% { transform: scale(.97); } 60% { transform: scale(1.02); } 100% { transform: none; } }
+@keyframes fx-tic { 0% { transform: scale(.7); } 60% { transform: scale(1.15); } 100% { transform: none; } }
+@keyframes fx-tic-in { from { opacity: 0; transform: translateY(-.08em) rotate(45deg) scale(.2); } to { opacity: 1; transform: translateY(-.08em) rotate(45deg) scale(1); } }
+@keyframes fx-brillo { to { transform: translateX(100%); } }
+@keyframes fx-logro { 0% { opacity: 0; transform: translateY(8px) scale(.94); } 70% { opacity: 1; transform: scale(1.03); } 100% { opacity: 1; transform: none; } }
+@keyframes fx-chispa { 0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(1); } 65% { opacity: 1; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(.9); } 100% { opacity: 0; transform: translate(var(--x), calc(var(--y) + 46px)) rotate(var(--r)) scale(.5); } }
+@keyframes fx-destello { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.72); opacity: .75; } }
+
+/* Sin movimiento: nada se desplaza ni escala; cada pieza queda en su estado final, legible. */
+@media (prefers-reduced-motion: reduce) {
+  .k-btn:hover, .k-btn:active, .k-link:hover, .k-link:active, .k-link:hover::after, .k-voto button:hover, .k-voto button:active,
+  .cp-env > .cp-btn:active, .k-check label:active input + span { transform: none !important; }
+  .fx-marca .os { stroke-dashoffset: 0 !important; }
+  .fx-chispas, .k-btn.ok::after, .cp-env > .cp-btn.ok::after, .k-avance.fx-completo i::after { display: none !important; }
+}
+
+/* deja sitio a la marca para que el texto del pie no la pise */
+.esc-pie:has(.fx-marca) { padding-right: 3.6em; }
+
+/* ---- Escenas del asistente (g801-asistente.css): campos y clasificación ---- */
+.as-fila, .as-fila select, .as-campo input, .as-campo select, .as-campo textarea { transition: border-color .2s ease-out, box-shadow .2s ease-out, background-color .2s ease-out; }
+.as-fila select:hover, .as-campo input:hover, .as-campo select:hover, .as-campo textarea:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line2)); }
+.as-fila select:focus-visible, .as-campo input:focus-visible, .as-campo select:focus-visible, .as-campo textarea:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.as-fila.bien { background: color-mix(in srgb, var(--ok) 8%, var(--s1)); animation: fx-elegido .4s var(--fx-rebote); }
+.as-fila.mal { animation: fx-niega .35s ease-in-out; }
+.as-fila .pista { animation: fx-entra .35s var(--fx-ease) both; }
+@media (max-width: 760px) { .as-fila select, .as-campo input, .as-campo select { min-height: 44px; } }
