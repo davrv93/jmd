@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Video: menos tokens en 40 segundos</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<style id="esc-propio">
+.v2 { display: grid; grid-template-columns: 1.35fr .65fr; gap: 2.2vw; align-items: start; }
+.v2-marco { position: relative; border-radius: 1em; overflow: hidden; background: #0d0c1f; border: 1px solid var(--line2); box-shadow: var(--card-shadow); aspect-ratio: 16 / 9; max-height: 64vh; }
+.v2-marco video { display: block; width: 100%; height: 100%; object-fit: contain; background: #0d0c1f; }
+.v2-respaldo { position: absolute; inset: 0; display: grid; align-content: center; gap: .7em; padding: 1.4em 1.8em; color: #ecebf7; background: linear-gradient(150deg, #14122b, #2a1f5c); }
+.v2-respaldo h2 { margin: 0; font-size: 1.15em; }
+.v2-respaldo p { margin: 0; color: #b7b4cc; font-size: .78em; }
+.v2-respaldo ol { margin: 0; padding-left: 1.2em; display: grid; gap: .4em; font-size: .84em; }
+.v2-respaldo ol b { color: #e9bd52; }
+.v2-estado { font-size: .62em; color: var(--muted); margin-top: .4em; }
+@media (max-width: 860px) { .v2 { grid-template-columns: 1fr; } .v2-marco { max-height: none; } .v2-respaldo { position: static; min-height: 100%; padding: 1em; } .v2-respaldo ol, .v2-respaldo p { font-size: .9em; } .v2-estado { font-size: .8em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1330 70 L1270 190 L1330 190 L1250 330"/>
+  <g><circle class="eo" cx="1330" cy="70" r="5"/><circle class="e" cx="1270" cy="190" r="4"/><circle class="eg" cx="1330" cy="190" r="4"/><circle class="eo" cx="1250" cy="330" r="5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="460" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia concreta</span>
+    <span class="esc-num">PT-01 · 02 / 10</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Menos tokens en <em>40 segundos</em></h1>
+      <p class="esc-sub a-in" style="--d:.12s">Antes de mirar, apuesta. Después lo medimos con tu propia terminal.</p>
+    </div>
+    <div class="v2">
+      <div>
+        <div class="v2-marco a-in" style="--d:.2s">
+          <video id="video" controls playsinline preload="metadata" src="/files/potencia-agentes-2/materials/video-pt-01.mp4" aria-label="Video: menos tokens en 40 segundos"></video>
+          <div class="v2-respaldo" id="respaldo" hidden>
+            <h2>El video llega en un momento</h2>
+            <p>Mientras tanto, la idea en tres pasos:</p>
+            <ol>
+              <li><b>El agente paga por lo que lee:</b> archivos, logs y salidas de comandos entran enteros al contexto.</li>
+              <li><b>RTK se pone en medio:</b> corre el comando y le entrega al modelo una versión corta, con los errores a la vista.</li>
+              <li><b>Tú pides justo:</b> archivo, función y las líneas del error. Nada de «revisa todo».</li>
+            </ol>
+          </div>
+        </div>
+        <p class="v2-estado" id="estado">Si no ves el video, la idea está en tres pasos aquí mismo.</p>
+      </div>
+      <div class="esc-card a-in" style="--d:.3s" id="voto"></div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Lo verás también en «Materiales» de la clase, para repasarlo después</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script>
+(function () {
+  PT.votos(document.getElementById("voto"), "02-video", "Apuesta: ¿cuánto se puede recortar la salida de «git log -n 15» sin perder nada que decida?", [
+    { id: "p10", t: "Un 10 %" },
+    { id: "p30", t: "Un 30 %" },
+    { id: "p50", t: "Cerca de la mitad" },
+    { id: "p80", t: "Un 80 % o más" }
+  ]);
+
+  var v = document.getElementById("video"), resp = document.getElementById("respaldo"), est = document.getElementById("estado");
+  function respaldo(msg) {
+    resp.hidden = false; v.hidden = true;
+    est.textContent = msg || "El video todavía no está publicado. Sigue con el instructor: la idea está arriba.";
+  }
+  v.addEventListener("error", function () { respaldo(); });
+  v.addEventListener("loadedmetadata", function () { est.textContent = "Dura " + Math.round(v.duration || 40) + " s. Dale play cuando el instructor lo diga."; });
+  // Un 404 dispara «error» y sale el respaldo. Si en 8 s no llegó ni la cabecera (red lenta), solo se avisa.
+  setTimeout(function () { if (v.readyState === 0 && !v.hidden) est.textContent = "El video tarda en cargar. Si no aparece, la idea va en tres pasos: el agente paga por lo que lee, RTK lo recorta y tú pides justo."; }, 8000);
+  if (v.error) respaldo();
+})();
+</script>
+</body>
+</html>

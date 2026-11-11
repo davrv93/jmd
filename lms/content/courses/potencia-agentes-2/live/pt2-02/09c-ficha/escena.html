@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Ficha de evolución</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<!--
+  Ticket de salida: la ficha de evolución del agente. Relee la opinión del inicio (localStorage
+  «pt2-02-muro-01b-que-le-falta», escrita por la escena 01b) y el veredicto de la 09b («pt2-02-contra»).
+  Votación de confianza «09c-confianza»; la ficha se publica en el muro «09c-ficha» y queda en «pt2-02-ficha».
+-->
+<style id="esc-propio">
+.x9 { display: grid; grid-template-columns: 1fr 1.1fr .95fr; gap: 1.4vw; align-items: start; }
+.x9-antes { margin: 0; font-size: .7em; padding: .55em .8em; border-radius: .7em; background: var(--s2); border: 1px solid var(--line); }
+.x9-antes b { display: block; font-size: .8em; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .2em; }
+.x9-campos { display: grid; gap: .45em; }
+.x9-campos label { font-size: .64em; font-weight: 700; }
+@media (max-width: 1100px) { .x9 { grid-template-columns: 1fr 1fr; } .x9 > :last-child { grid-column: 1 / -1; } }
+@media (max-width: 860px) { .x9 { grid-template-columns: 1fr; } .x9-antes, .x9-campos label { font-size: .9em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 150 L1330 110 L1390 190 L1450 160"/>
+  <g><circle class="eo" cx="1180" cy="92" r="4.5"/><circle class="e" cx="1252" cy="150" r="5"/><circle class="eg" cx="1330" cy="110" r="4"/><circle class="eo" cx="1390" cy="190" r="5"/><circle class="e" cx="1450" cy="160" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Observación reflexiva</span>
+    <span class="esc-num">PT-02 · 17 / 18</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Ficha de <em>evolución</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Tu ticket de salida: de dónde partió tu agente y a dónde va.</p>
+    </div>
+    <div class="x9">
+      <div class="esc-card a-in" style="--d:.2s">
+        <p class="x9-antes"><b>Al inicio dijiste que le faltaba</b><span id="antes">— (no escribiste en la escena 2)</span></p>
+        <p class="x9-antes" style="margin-top:.5em"><b>Tu antes → después</b><span id="contra">— (sin veredicto en la escena 16)</span></p>
+      </div>
+      <div class="esc-card a-in x9-campos" style="--d:.3s">
+        <label for="gano">Hoy mi agente ganó…</label>
+        <select class="pt-in" id="gano">
+          <option value="">Elige…</option>
+          <option>memoria (Cortex)</option>
+          <option>mapa (Graphify)</option>
+          <option>memoria y mapa</option>
+          <option>nada todavía</option>
+        </select>
+        <label for="falta">Todavía le falta…</label>
+        <input class="pt-in" id="falta" maxlength="50" autocomplete="off" placeholder="Ej.: pruebas que pueda correr">
+        <label for="paso">Mi próximo paso antes de la clase 3 (lun 16)</label>
+        <input class="pt-in" id="paso" maxlength="60" autocomplete="off" placeholder="Ej.: guardar 3 decisiones en Cortex">
+        <button type="button" class="pt-btn" id="pub">Publicar mi ficha</button>
+        <p class="pt-nota" id="msg"></p>
+      </div>
+      <div class="esc-card a-in" style="--d:.4s">
+        <div id="voto"></div>
+        <div id="muro" style="margin-top:.6em"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Publica tu ficha y pulsa «Lo logré»</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var antes = PT.leer("muro-01b-que-le-falta", "");
+if (antes) $("antes").textContent = "«" + antes + "»";
+var contra = PT.leer("contra", null);
+if (contra && contra.v) {
+  var m = 0, p = 0; Object.keys(contra.v).forEach(function (k) { if (contra.v[k] === "mejor") m++; if (contra.v[k] === "peor") p++; });
+  if (Object.keys(contra.v).length === 5) $("contra").textContent = "mejor en " + m + " de 5 criterios, peor en " + p + ".";
+}
+var f = PT.leer("ficha", {}) || {};
+$("gano").value = f.gano || ""; $("falta").value = f.falta || ""; $("paso").value = f.paso || "";
+
+PT.votos($("voto"), "09c-confianza", "¿Qué tan seguro te sientes de usar Cortex y Graphify sin ayuda?", [
+  { id: "c1", t: "1 · Necesito verlo otra vez" },
+  { id: "c2", t: "2 · Con la guía, sí" },
+  { id: "c3", t: "3 · Ya lo hice en mi proyecto" },
+  { id: "c4", t: "4 · Podría enseñarlo" }
+]);
+var muro = PT.muro($("muro"), "09c-ficha", "", { max: 160 });
+try { muro.input.parentNode.style.display = "none"; } catch (e) {}
+
+$("pub").addEventListener("click", function () {
+  var d = { gano: $("gano").value, falta: $("falta").value.replace(/\s+/g, " ").trim(), paso: $("paso").value.replace(/\s+/g, " ").trim() };
+  if (!d.gano || !d.paso) { $("msg").textContent = "Elige qué ganó y escribe tu próximo paso."; return; }
+  PT.guardar("ficha", d);
+  muro.publicar("Ganó: " + d.gano + (d.falta ? " · Falta: " + d.falta : "") + " · Próximo: " + d.paso);
+  $("msg").textContent = "✓ Ficha publicada. Ahora pulsa «Lo logré».";
+});
+</script>
+</body>
+</html>

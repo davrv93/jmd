@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Qué es RTK y dónde ahorra</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<style id="esc-propio">
+.r5-flujo { list-style: none; margin: 0; padding: 0; display: flex; align-items: stretch; gap: .5em; flex-wrap: wrap; }
+.r5-flujo li { flex: 1 1 9em; background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .55em .8em; box-shadow: var(--card-shadow); position: relative; }
+.r5-flujo li.rtk { border-color: var(--gold); background: var(--gold-bg); }
+.r5-flujo .q { font: 700 .58em var(--mono); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.r5-flujo h3 { margin: .1em 0; font-size: .82em; }
+.r5-flujo p { margin: 0; font-size: .64em; color: var(--muted); }
+.r5-flujo code { font: 700 .95em var(--mono); color: var(--fg); }
+.r5 { display: grid; grid-template-columns: 1fr 1fr .9fr; gap: 1.4vw; align-items: start; }
+.r5-term { display: grid; gap: .4em; }
+.r5-term .esc-cmd { font-size: .64em; white-space: pre; overflow-x: auto; }
+.r5-term .cab { display: flex; justify-content: space-between; align-items: baseline; font-size: .62em; font-weight: 700; color: var(--muted); }
+.r5-term .cab b { font-family: var(--mono); color: var(--fg); }
+.r5-tabla { width: 100%; border-collapse: collapse; font-size: .62em; }
+.r5-tabla th, .r5-tabla td { padding: .3em .35em; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.r5-tabla th:first-child, .r5-tabla td:first-child { text-align: left; white-space: normal; }
+.r5-tabla th { color: var(--muted); font-weight: 700; font-size: .9em; }
+.r5-tabla code { font: 700 .95em var(--mono); }
+.r5-tabla .p { font-weight: 800; }
+.r5-tabla .p.alto { color: var(--ok); } .r5-tabla .p.cero { color: var(--warn); }
+.r5-scroll { overflow-x: auto; }
+@media (max-width: 1100px) { .r5 { grid-template-columns: 1fr 1fr; } .r5 > :last-child { grid-column: 1 / -1; } }
+@media (max-width: 860px) { .r5 { grid-template-columns: 1fr; } .r5-flujo h3 { font-size: 1em; } .r5-flujo p { font-size: .84em; } .r5-tabla { font-size: .8em; } .r5-term .esc-cmd { font-size: .78em; } .r5-term .cab { font-size: .8em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1330 70 L1270 190 L1330 190 L1250 330"/>
+  <g><circle class="eo" cx="1330" cy="70" r="5"/><circle class="e" cx="1270" cy="190" r="4"/><circle class="eg" cx="1330" cy="190" r="4"/><circle class="eo" cx="1250" cy="330" r="5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/><circle class="e p" style="--p:2.1s" cx="560" cy="760" r="1.8"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">PT-01 · 05 / 10</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">RTK: un filtro entre <em>tus comandos y el modelo</em></h1>
+      <p class="esc-sub a-in" style="--d:.12s">RTK (Rust Token Killer) corre el comando de verdad y le entrega al modelo una versión corta, con los errores a la vista.</p>
+    </div>
+    <ol class="r5-flujo a-in" style="--d:.18s" aria-label="Cómo pasa un comando por RTK">
+      <li><span class="q">1 · el agente</span><h3>Pide <code>git status</code></h3><p>Como siempre: no sabe que RTK existe.</p></li>
+      <li class="rtk"><span class="q">2 · el hook</span><h3>Lo reescribe</h3><p><code>rtk rewrite</code> lo cambia a <code>rtk git status</code>. Lo deja <code>rtk init -g</code>.</p></li>
+      <li class="rtk"><span class="q">3 · RTK</span><h3>Corre y filtra</h3><p>Quita relleno, agrupa, deduplica. Los errores no se tocan.</p></li>
+      <li><span class="q">4 · el modelo</span><h3>Lee lo que decide</h3><p>Menos tokens por vuelta. <code>rtk gain</code> lo cuenta.</p></li>
+    </ol>
+    <div class="r5">
+      <div class="esc-card r5-term a-in" style="--d:.26s">
+        <div class="cab">Sin RTK <b>377 caracteres</b></div>
+<pre class="esc-cmd">On branch main
+Changes not staged for commit:
+  (use "git add &lt;file&gt;..." to update what will be committed)
+  (use "git restore &lt;file&gt;..." to discard changes in working directory)
+	modified:   src/f1.go
+
+Untracked files:
+  (use "git add &lt;file&gt;..." to include in what will be committed)
+	notas.txt
+	src/nuevo.go
+
+no changes added to commit (use "git add" and/or "git commit -a")</pre>
+        <div class="cab">Con RTK <b>49 caracteres · −87 %</b></div>
+<pre class="esc-cmd">* main
+ M src/f1.go
+?? notas.txt
+?? src/nuevo.go</pre>
+        <p class="pt-nota">Salida real, repositorio de prueba, rtk 1.0.1. La misma información: rama, un archivo cambiado, dos nuevos.</p>
+      </div>
+      <div class="esc-card a-in" style="--d:.32s">
+        <span class="pt-et">Dónde ahorra (y dónde no)</span>
+        <div class="r5-scroll">
+        <table class="r5-tabla">
+          <thead><tr><th>Comando</th><th>Sin RTK</th><th>Con RTK</th><th>Ahorro</th></tr></thead>
+          <tbody id="tabla"></tbody>
+        </table>
+        </div>
+        <p class="pt-nota" style="margin-top:.4em">Caracteres. Mac del instructor, 08-11-2026. Su historial (<code>rtk gain</code>): 12 240 comandos, 47,9 % ahorrado.</p>
+      </div>
+      <div class="esc-card a-in" style="--d:.38s">
+        <div id="voto"></div>
+        <button type="button" class="pt-btn sec" id="ver" style="margin-top:.5em">Ver la respuesta</button>
+        <p class="pt-nota" id="por" hidden style="margin-top:.4em"><b>grep con 2 resultados:</b> la salida ya es corta (274 caracteres) y RTK la deja igual. RTK brilla en salidas largas y repetitivas: diffs, logs, listados, pruebas.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Próximo: cómo pedir para no arrastrar todo el proyecto</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script>
+(function () {
+  var T = [
+    ["git diff (2 commits)", 125454, 40558], ["git log -n 200", 92409, 49474], ["git log -n 15", 6713, 3458],
+    ["ls -la (90 archivos)", 6548, 1447], ["find (carpeta de curso)", 1471, 559], ["git status", 1551, 1064],
+    ["rtk read -m 40 (archivo Go)", 6858, 955], ["grep (2 resultados)", 274, 274], ["git diff --stat", 2101, 2101]
+  ];
+  var tb = document.getElementById("tabla");
+  T.forEach(function (r) {
+    var p = Math.round((r[1] - r[2]) / r[1] * 100);
+    var tr = document.createElement("tr");
+    var c = PT.el("td"); c.appendChild(PT.el("code", "", r[0])); tr.appendChild(c);
+    tr.appendChild(PT.el("td", "", PT.num(r[1])));
+    tr.appendChild(PT.el("td", "", PT.num(r[2])));
+    tr.appendChild(PT.el("td", "p " + (p >= 60 ? "alto" : p === 0 ? "cero" : ""), p ? "−" + p + " %" : "0 %"));
+    tb.appendChild(tr);
+  });
+  var v = PT.votos(document.getElementById("voto"), "05-que-es-rtk", "¿En cuál RTK casi NO te ahorra?", [
+    { id: "diff", t: "Un git diff largo" },
+    { id: "ls", t: "ls -la de una carpeta con 90 archivos" },
+    { id: "grep", t: "Un grep que devuelve 2 líneas" },
+    { id: "log", t: "git log -n 200" }
+  ], { correcta: "grep" });
+  document.getElementById("ver").addEventListener("click", function () { v.revelar(); document.getElementById("por").hidden = false; this.hidden = true; });
+})();
+</script>
+</body>
+</html>

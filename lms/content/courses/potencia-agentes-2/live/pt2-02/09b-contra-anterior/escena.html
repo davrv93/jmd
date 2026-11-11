@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tu agente contra su versión anterior</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<!--
+  «Tu agente contra su versión anterior». Las mismas tres pruebas, antes (sin Cortex ni Graphify) y después.
+  El alumno califica cinco criterios (éxito, calidad, errores, robustez, explicación) con peor / igual / mejor.
+  La longitud de la respuesta NO es criterio: el botón «es más larga» solo muestra el aviso y no suma.
+  El veredicto se calcula aquí y se publica en el muro «09b-contra-anterior» y como evidencia (hallazgo).
+  Se guarda en localStorage «pt2-02-contra» para la ficha de salida.
+-->
+<style id="esc-propio">
+.v9 { display: grid; grid-template-columns: .9fr 1.25fr .95fr; gap: 1.4vw; align-items: start; }
+.v9-pr { margin: 0; padding-left: 1.2em; display: grid; gap: .35em; font-size: .64em; }
+.v9-pr code { font: 600 .95em var(--mono); }
+.v9-modo { font-size: .62em; margin: .5em 0 0; display: grid; gap: .25em; }
+.v9-modo span { padding: .35em .6em; border-radius: .5em; background: var(--s2); border: 1px solid var(--line); }
+.v9-cr { display: grid; gap: .35em; }
+.v9-f { display: grid; grid-template-columns: 1fr auto; gap: .2em .6em; align-items: center; }
+.v9-f b { font-size: .7em; }
+.v9-f small { grid-column: 1; font-size: .58em; color: var(--muted); }
+.v9-seg { grid-row: 1 / span 2; grid-column: 2; display: inline-flex; border: 1px solid var(--line2); border-radius: 999px; overflow: hidden; }
+.v9-seg button { all: unset; box-sizing: border-box; font: 700 .6em system-ui, sans-serif; padding: .55em .8em; min-height: 40px; display: grid; place-items: center; cursor: pointer; color: var(--muted); }
+.v9-seg button + button { border-left: 1px solid var(--line2); }
+.v9-seg button:focus-visible { outline: 3px solid var(--gold); outline-offset: -3px; }
+.v9-seg button[aria-pressed="true"][data-v="peor"] { background: var(--bad-bg); color: var(--bad); }
+.v9-seg button[aria-pressed="true"][data-v="igual"] { background: var(--s3); color: var(--fg); }
+.v9-seg button[aria-pressed="true"][data-v="mejor"] { background: var(--ok-bg); color: var(--ok); }
+.v9-trampa { margin-top: .4em; font-size: .62em; padding: .45em .7em; border-radius: .6em; background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); }
+.v9-ver { font: 800 1em/1.25 system-ui, sans-serif; margin: .2em 0 .4em; }
+.v9-ver.ok { color: var(--ok); } .v9-ver.mal { color: var(--bad); } .v9-ver.neutro { color: var(--fg); }
+.v9-g { font-size: .64em; margin: .5em 0 0; color: var(--muted); }
+@media (max-width: 1100px) { .v9 { grid-template-columns: 1fr 1fr; } .v9 > :first-child { grid-column: 1 / -1; } }
+@media (max-width: 860px) { .v9 { grid-template-columns: 1fr; } .v9-pr, .v9-modo, .v9-trampa, .v9-g { font-size: .9em; } .v9-f b { font-size: .95em; } .v9-f small { font-size: .82em; } .v9-seg button { font-size: .85em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 150 L1330 110 L1390 190 L1450 160"/>
+  <g><circle class="eo" cx="1180" cy="92" r="4.5"/><circle class="e" cx="1252" cy="150" r="5"/><circle class="eg" cx="1330" cy="110" r="4"/><circle class="eo" cx="1390" cy="190" r="5"/><circle class="e" cx="1450" cy="160" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación activa</span>
+    <span class="esc-num">PT-02 · 16 / 18</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Tu agente contra <em>su versión anterior</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Las mismas pruebas, antes y después. Una respuesta más larga no es una respuesta mejor.</p>
+    </div>
+    <div class="v9">
+      <div class="esc-card a-in" style="--d:.2s">
+        <span class="pt-et">Las mismas 3 pruebas</span>
+        <ol class="v9-pr">
+          <li>«¿Por qué el proyecto hace <code>X</code> así?» (una decisión)</li>
+          <li>«¿Qué se rompe si cambio <code>tuFuncion</code>?»</li>
+          <li>«Cambia algo pequeño en <code>tuFuncion</code> y dime qué probaste»</li>
+        </ol>
+        <div class="v9-modo">
+          <span><b>Antes:</b> sesión nueva, «no uses Cortex ni graphify».</span>
+          <span><b>Después:</b> sesión nueva, «empieza con cortex_brief y usa graphify antes de abrir archivos».</span>
+        </div>
+        <label class="pt-et" for="n" style="margin-top:.6em">¿Cuántas pruebas corriste en las dos versiones?</label>
+        <select class="pt-in" id="n"><option value="0">Elige…</option><option value="1">1 de 3</option><option value="2">2 de 3</option><option value="3">Las 3</option></select>
+      </div>
+      <div class="esc-card a-in" style="--d:.3s">
+        <span class="pt-et">Después, comparado con antes</span>
+        <div class="v9-cr" id="cr"></div>
+        <button type="button" class="pt-btn sec" id="larga" style="margin-top:.5em">La nueva es más larga</button>
+        <p class="v9-trampa" id="trampa" hidden><b>La longitud no es un criterio.</b> Más texto puede ser más relleno o más invento. ¿Qué criterio de arriba cambió de verdad?</p>
+      </div>
+      <div class="esc-card a-in" style="--d:.4s">
+        <span class="pt-et">Tu veredicto</span>
+        <p class="v9-ver neutro" id="ver" aria-live="polite">Marca los cinco criterios.</p>
+        <button type="button" class="pt-btn" id="pub" disabled>Publicar mi veredicto</button>
+        <p class="pt-nota" id="msg" style="margin-top:.3em"></p>
+        <p class="v9-g" id="grupo"></p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Decir «igual» con evidencia también es un buen resultado</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var CR = [
+  { id: "exito", n: "Éxito", d: "¿Resolvió la tarea?" },
+  { id: "calidad", n: "Calidad", d: "¿Es correcta y te sirve?" },
+  { id: "errores", n: "Errores", d: "Menos errores o inventos = mejor" },
+  { id: "robustez", n: "Robustez", d: "¿Aguanta si cambias un poco la pregunta?" },
+  { id: "explicacion", n: "Explicación", d: "¿Dice de dónde lo sacó (archivo:línea, nodo)?" }
+];
+var st = PT.leer("contra", null) || { n: "0", v: {} };
+if (!st.v) st.v = {};
+$("n").value = st.n || "0";
+
+CR.forEach(function (c) {
+  var f = PT.el("div", "v9-f");
+  f.appendChild(PT.el("b", "", c.n));
+  var seg = PT.el("div", "v9-seg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", c.n);
+  ["peor", "igual", "mejor"].forEach(function (v) {
+    var b = PT.el("button", "", v === "peor" ? "Peor" : v === "igual" ? "Igual" : "Mejor"); b.type = "button"; b.setAttribute("data-v", v); b.setAttribute("data-c", c.id);
+    b.addEventListener("click", function () { st.v[c.id] = v; guardar(); });
+    seg.appendChild(b);
+  });
+  f.appendChild(seg);
+  f.appendChild(PT.el("small", "", c.d));
+  $("cr").appendChild(f);
+});
+
+function veredicto() {
+  var n = +st.n || 0, falta = CR.filter(function (c) { return !st.v[c.id]; });
+  if (!n) return { t: "Primero di cuántas pruebas corriste en las dos versiones.", k: "neutro" };
+  if (falta.length) return { t: "Falta marcar: " + falta.map(function (c) { return c.n; }).join(", ") + ".", k: "neutro" };
+  var mej = CR.filter(function (c) { return st.v[c.id] === "mejor"; }), peo = CR.filter(function (c) { return st.v[c.id] === "peor"; });
+  var nombres = function (l) { return l.map(function (c) { return c.n.toLowerCase(); }).join(", "); };
+  var parcial = n < 3 ? " (con " + n + " de 3 pruebas: parcial)" : "";
+  var r;
+  if (st.v.exito === "peor" || st.v.errores === "peor") r = { t: "No mejoró: perdió en lo esencial (" + nombres(peo) + ")", k: "mal", c: "No mejoró" };
+  else if (!mej.length && !peo.length) r = { t: "Igual en los cinco criterios", k: "neutro", c: "Igual" };
+  else if (peo.length) r = { t: "Mixto: mejor en " + nombres(mej) + "; peor en " + nombres(peo), k: "neutro", c: "Mixto" };
+  else r = { t: "Mejoró en " + mej.length + " de 5: " + nombres(mej), k: "ok", c: "Mejoró" };
+  r.t += parcial + ".";
+  r.corto = r.c + " · mejor " + mej.length + " · peor " + peo.length + " · " + n + "/3 pruebas" + (mej.length ? " · " + nombres(mej) : "");
+  return r;
+}
+function guardar() { st.n = $("n").value; PT.guardar("contra", st); pintar(); }
+function pintar() {
+  Array.prototype.forEach.call($("cr").querySelectorAll("button"), function (b) {
+    b.setAttribute("aria-pressed", st.v[b.getAttribute("data-c")] === b.getAttribute("data-v") ? "true" : "false");
+  });
+  var r = veredicto();
+  $("ver").textContent = r.t; $("ver").className = "v9-ver " + r.k;
+  $("pub").disabled = !r.corto;
+}
+$("n").addEventListener("change", guardar);
+$("larga").addEventListener("click", function () { $("trampa").hidden = false; });
+
+var caja = document.createElement("div"); caja.hidden = true; document.body.appendChild(caja);
+var muro = PT.muro(caja, "09b-contra-anterior", "", { max: 160, alPintar: function (en) {
+  var c = { "Mejoró": 0, "Igual": 0, "Mixto": 0, "No mejoró": 0 };
+  en.forEach(function (e) { var m = /^(Mejoró|Igual|Mixto|No mejoró) ·/.exec(e.texto || ""); if (m) c[m[1]]++; });
+  var tot = c["Mejoró"] + c["Igual"] + c["Mixto"] + c["No mejoró"];
+  $("grupo").textContent = tot ? "El grupo: " + c["Mejoró"] + " mejoró · " + c["Igual"] + " igual · " + c["Mixto"] + " mixto · " + c["No mejoró"] + " no mejoró." : "";
+} });
+$("pub").addEventListener("click", function () {
+  var r = veredicto(), b = this; if (!r.corto) return;
+  b.disabled = true;
+  PT.evidencia("hallazgo", "Antes/después. " + r.corto).then(function (x) {
+    $("msg").textContent = x.ok ? "✓ Publicado como evidencia." : "Guardado en este navegador (la evidencia se envía en vivo).";
+    b.disabled = false;
+  });
+  muro.publicar(r.corto);
+});
+pintar();
+</script>
+</body>
+</html>

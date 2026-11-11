@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · ¿A dónde se va tu contexto?</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<style id="esc-propio">
+.d4 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2vw; align-items: start; }
+.d4-izq { display: grid; gap: 1em; }
+.d4-barras { display: grid; gap: .45em; }
+.d4-f { display: grid; grid-template-columns: 11em 1fr 5.6em; gap: .6em; align-items: center; font-size: .66em; }
+.d4-f code { font: 700 .95em var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.d4-f .b { height: 1em; border-radius: .5em; background: var(--s3); overflow: hidden; }
+.d4-f .b i { display: block; height: 100%; width: var(--w); border-radius: .5em; background: linear-gradient(90deg, var(--ph-or), var(--accent)); transform-origin: left; animation: d4-crece .8s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0s); }
+.d4-f .v { font: 800 1em var(--mono); text-align: right; }
+.d4-fuente { font-size: .58em; color: var(--muted); margin: 0; }
+.d4-golpe { margin: 0; font-size: .86em; padding: .7em 1em; border-radius: .9em; background: var(--ph-or-bg); border: 1px solid color-mix(in srgb, var(--ph-or) 35%, transparent); }
+.d4-golpe b { color: var(--ph-or); }
+.d4-grupo { font-size: .7em; margin: 0; }
+.d4-der { display: grid; gap: 1em; }
+@keyframes d4-crece { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (max-width: 860px) { .d4 { grid-template-columns: 1fr; } .d4-f { grid-template-columns: 7.4em 1fr 4.8em; font-size: .78em; } .d4-fuente { font-size: .76em; } .d4-golpe { font-size: .95em; } .d4-grupo { font-size: .88em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="tb" pathLength="1" d="M90 640 L170 590 L240 630 L300 560"/>
+  <g><circle class="e" cx="90" cy="640" r="3.5"/><circle class="eg" cx="170" cy="590" r="4"/><circle class="e" cx="240" cy="630" r="3"/><circle class="eo" cx="300" cy="560" r="4.5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="1520" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="70" r="1.7"/><circle class="eg p" style="--p:1.8s" cx="1500" cy="460" r="1.8"/><circle class="e p" style="--p:3.6s" cx="1380" cy="820" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Observación reflexiva</span>
+    <span class="esc-num">PT-01 · 04 / 10</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">¿A dónde se va <em>tu contexto</em>?</h1>
+      <p class="esc-sub a-in" style="--d:.12s">Casi nunca es tu pedido. Es lo que el agente lee para cumplirlo.</p>
+    </div>
+    <div class="d4">
+      <div class="d4-izq">
+        <div class="esc-card a-in" style="--d:.2s">
+          <span class="pt-et">Tokens que lee el agente, por comando (sin RTK)</span>
+          <div class="d4-barras" id="barras"></div>
+          <p class="d4-fuente" style="margin-top:.5em">Medido el 08-11-2026 en la Mac del instructor, repositorio del LMS. Tokens ≈ caracteres ÷ 4.</p>
+        </div>
+        <p class="d4-golpe a-in" style="--d:.35s">Un <b>git diff</b> de dos commits pesa unos <b>31 000 tokens</b>: lo mismo que unos 400 pedidos tuyos de una línea.</p>
+        <p class="d4-grupo a-in" style="--d:.4s" id="grupo"></p>
+      </div>
+      <div class="d4-der">
+        <div class="esc-card a-in" style="--d:.3s" id="voto"></div>
+        <div class="esc-card a-in" style="--d:.4s" id="muro"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Publica tu línea en el muro y pulsa «Lo logré» en el panel</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script>
+(function () {
+  var MED = [
+    ["git diff (2 commits)", 125454], ["git log -n 200", 92409], ["git log -n 15", 6713],
+    ["ls -la (90 archivos)", 6548], ["git status", 1551], ["grep (2 resultados)", 274]
+  ];
+  var caja = document.getElementById("barras"), max = MED[0][1];
+  MED.forEach(function (m, k) {
+    var f = PT.el("div", "d4-f");
+    f.appendChild(PT.el("code", "", m[0]));
+    var b = PT.el("span", "b"), i = PT.el("i");
+    i.style.setProperty("--w", Math.max(1.2, m[1] / max * 100) + "%"); i.style.setProperty("--d", (.25 + k * .08) + "s");
+    b.appendChild(i); f.appendChild(b);
+    f.appendChild(PT.el("span", "v", PT.num(m[1] / 4)));
+    caja.appendChild(f);
+  });
+
+  PT.votos(document.getElementById("voto"), "04-donde-se-va", "En una sesión tuya, ¿qué crees que gasta más?", [
+    { id: "comandos", t: "Salidas de comandos (git, tests, logs)" },
+    { id: "archivos", t: "Archivos que lee completos" },
+    { id: "historial", t: "El historial del chat que se arrastra" },
+    { id: "pedido", t: "Lo que yo escribo" }
+  ]);
+  PT.muro(document.getElementById("muro"), "04-donde-se-va", "¿Qué te sorprendió de tu número?", { placeholder: "Me sorprendió que…" });
+
+  // La mediana del grupo, leída del muro de la escena 3.
+  var mio = PT.leer("antes", null);
+  PT.pedir("/muro?escena=03-linea-base").then(function (r) {
+    var en = r.ok && r.datos && r.datos.entradas || [];
+    var ns = en.map(function (e) { var m = /(\d{2,9})\s*caracteres/.exec(e.texto || ""); return m ? +m[1] : 0; }).filter(Boolean).sort(function (a, b) { return a - b; });
+    var g = document.getElementById("grupo");
+    if (!ns.length) { g.textContent = mio ? "Tu línea base: " + PT.num(mio.car) + " caracteres ≈ " + PT.num(mio.tok) + " tokens." : ""; return; }
+    var med = ns.length % 2 ? ns[(ns.length - 1) / 2] : (ns[ns.length / 2 - 1] + ns[ns.length / 2]) / 2;
+    g.textContent = "El grupo (" + ns.length + "): de " + PT.num(ns[0]) + " a " + PT.num(ns[ns.length - 1]) + " caracteres, mediana " + PT.num(med) + "." +
+      (mio ? " El tuyo: " + PT.num(mio.car) + "." : "");
+  });
+})();
+</script>
+</body>
+</html>

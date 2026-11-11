@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Predice: cortex_brief</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<!--
+  Predicción antes de la demo de Cortex. Dos votaciones («04b-cortex-que», «04b-cortex-tam»); el instructor hace
+  la demo en su terminal y luego pulsa «Comparar con lo que devolvió». La respuesta mostrada es REAL: la estructura
+  que devolvió cortex_brief (cortexboard 0.4.0) en otro proyecto con Cortex el 10-11-2026, sin los títulos internos.
+  El texto «project summary not written yet» es literal. El tamaño (~600, bajo 800 tokens) lo dicen el README de
+  cortexboard y la descripción de la propia herramienta.
+-->
+<style id="esc-propio">
+.k4 { display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 1.4vw; align-items: start; }
+.k4-demo { font-size: .66em; margin: .2em 0 .5em; }
+.k4-res { margin: 0; font: 600 .58em/1.55 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .8em; padding: .8em 1em; border: 1px solid rgba(190,185,255,.22); white-space: pre-wrap; overflow-wrap: anywhere; }
+.k4-res .k { color: #f2c14e; }
+.k4-res .c { color: #9d95c9; }
+.k4-lec { list-style: none; margin: .5em 0 0; padding: 0; display: grid; gap: .3em; font-size: .64em; }
+.k4-lec li { padding: .4em .6em; border-radius: .5em; background: var(--ok-bg); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); }
+.k4-tapa { display: grid; place-items: center; min-height: 9em; border: 2px dashed var(--line2); border-radius: .8em; color: var(--muted); font-size: .7em; text-align: center; padding: 1em; }
+@media (max-width: 1100px) { .k4 { grid-template-columns: 1fr 1fr; } .k4 > :last-child { grid-column: 1 / -1; } }
+@media (max-width: 860px) { .k4 { grid-template-columns: 1fr; } .k4-res { font-size: .78em; } .k4-lec, .k4-demo, .k4-tapa { font-size: .9em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 150 L1330 110 L1390 190 L1450 160"/>
+  <g><circle class="eo" cx="1180" cy="92" r="4.5"/><circle class="e" cx="1252" cy="150" r="5"/><circle class="eg" cx="1330" cy="110" r="4"/><circle class="eo" cx="1390" cy="190" r="5"/><circle class="e" cx="1450" cy="160" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">PT-02 · 07 / 18</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Antes de la demo: <em>predice</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Sesión nueva. El agente llama <code>cortex_brief</code>. ¿Qué crees que devolverá?</p>
+    </div>
+    <div class="k4">
+      <div class="esc-card a-in" style="--d:.2s"><div id="v1"></div></div>
+      <div class="esc-card a-in" style="--d:.3s">
+        <div id="v2"></div>
+        <p class="k4-demo"><b>La demo:</b> en Claude Code, «Llama cortex_brief y muéstrame la respuesta tal cual».</p>
+      </div>
+      <div class="esc-card a-in" style="--d:.4s">
+        <span class="pt-et">Lo que devolvió de verdad</span>
+        <div class="k4-tapa" id="tapa">Se destapa después de la demo.<br>Primero vota tus dos predicciones.</div>
+        <div id="real" hidden>
+<pre class="k4-res"><span class="c"># cortex_brief · otro proyecto real · 10-11-2026</span>
+<span class="k">project.summary</span>   "project summary not written yet"
+<span class="k">branches</span>          9 ramas con sus pendientes
+<span class="k">attention.inbox</span>   preguntas que te esperan
+<span class="k">pending_approvals</span> 78 borradores de IA sin aprobar
+<span class="k">recent_activity</span>   qué hizo un agente y por qué
+<span class="k">rules</span>             10 reglas escritas por personas</pre>
+          <ul class="k4-lec">
+            <li>No lee tu código para resumirlo: devuelve <b>lo que alguien escribió</b>. Si nadie escribió el resumen, lo dice.</li>
+            <li>Pesa unos <b>600 tokens</b> (la herramienta promete menos de 800). Lo demás se baja por rama.</li>
+            <li>Lo que propone una IA vuelve marcado como <b>borrador</b>: «puede estar mal o cambiar».</li>
+          </ul>
+        </div>
+        <button type="button" class="pt-btn sec" id="ver" style="margin-top:.5em">Comparar con lo que devolvió</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Compara: ¿en qué acertaste y en qué te sorprendió?</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script>
+var a = PT.votos(document.getElementById("v1"), "04b-cortex-que", "¿Qué devuelve cortex_brief?", [
+  { id: "codigo", t: "Un resumen del código que Cortex leyó solo" },
+  { id: "escrito", t: "Lo que personas y agentes escribieron: resumen, ramas, pendientes, reglas" },
+  { id: "todo", t: "Todo el contenido de .cortex/" },
+  { id: "chat", t: "La conversación de la sesión anterior" }
+], { correcta: "escrito" });
+var b = PT.votos(document.getElementById("v2"), "04b-cortex-tam", "¿Cuánto pesa la respuesta?", [
+  { id: "t600", t: "Unos 600 tokens" },
+  { id: "t6k", t: "Unos 6 000 tokens" },
+  { id: "t60k", t: "Unos 60 000 tokens" }
+], { correcta: "t600" });
+document.getElementById("ver").addEventListener("click", function () {
+  a.revelar(); b.revelar();
+  document.getElementById("tapa").hidden = true; document.getElementById("real").hidden = false; this.hidden = true;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Predice: graphify affected</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<!--
+  Predicción antes de la demo de Graphify. Dos votaciones («05b-graphify-que», «05b-graphify-tam»).
+  La salida mostrada es REAL, medida el 10-11-2026 con graphify 0.9.92 sobre una copia de los 26 archivos
+  live_*.go (sin pruebas) del backend del LMS: 242 501 caracteres; «graphify update .» tardó ~1 s
+  (408 nodos, 1 305 relaciones, sin LLM); «graphify affected "contarVotos"» respondió 343 caracteres.
+  «graphify query … --budget 300» avisó TRUNCATED: mostró 14 de 40 nodos.
+-->
+<style id="esc-propio">
+.k5 { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 1.4vw; align-items: start; }
+.k5-dato { font-size: .64em; margin: 0 0 .5em; }
+.k5-res { margin: 0; font: 600 .56em/1.55 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .8em; padding: .8em 1em; border: 1px solid rgba(190,185,255,.22); white-space: pre-wrap; overflow-wrap: anywhere; }
+.k5-res .c { color: #9d95c9; }
+.k5-res .y { color: #f2c14e; }
+.k5-cifra { display: flex; justify-content: space-between; align-items: baseline; gap: .6em; font-size: .66em; margin-top: .5em; }
+.k5-cifra b { font: 900 1.9em/1 var(--mono); color: var(--gold); }
+.k5-lec { list-style: none; margin: .5em 0 0; padding: 0; display: grid; gap: .3em; font-size: .62em; }
+.k5-lec li { padding: .4em .6em; border-radius: .5em; background: var(--s2); border: 1px solid var(--line); }
+.k5-lec li.ojo { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.k5-tapa { display: grid; place-items: center; min-height: 9em; border: 2px dashed var(--line2); border-radius: .8em; color: var(--muted); font-size: .7em; text-align: center; padding: 1em; }
+@media (max-width: 1100px) { .k5 { grid-template-columns: 1fr 1fr; } .k5 > :last-child { grid-column: 1 / -1; } }
+@media (max-width: 860px) { .k5 { grid-template-columns: 1fr; } .k5-res { font-size: .76em; } .k5-lec, .k5-dato, .k5-tapa, .k5-cifra { font-size: .9em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 150 L1330 110 L1390 190 L1450 160"/>
+  <g><circle class="eo" cx="1180" cy="92" r="4.5"/><circle class="e" cx="1252" cy="150" r="5"/><circle class="eg" cx="1330" cy="110" r="4"/><circle class="eo" cx="1390" cy="190" r="5"/><circle class="e" cx="1450" cy="160" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">PT-02 · 09 / 18</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Antes de la demo: <em>predice</em> otra vez</h1>
+      <p class="esc-sub a-in" style="--d:.1s">26 archivos Go del LIVE del LMS. <code>graphify update .</code> y luego <code>graphify affected "contarVotos"</code>.</p>
+    </div>
+    <div class="k5">
+      <div class="esc-card a-in" style="--d:.2s">
+        <p class="k5-dato">Esos 26 archivos pesan <b>242 501</b> caracteres (≈ 60 600 tokens).</p>
+        <div id="v1"></div>
+      </div>
+      <div class="esc-card a-in" style="--d:.3s"><div id="v2"></div></div>
+      <div class="esc-card a-in" style="--d:.4s">
+        <span class="pt-et">Lo que devolvió de verdad · 10-11-2026</span>
+        <div class="k5-tapa" id="tapa">Se destapa después de la demo.<br>Primero vota tus dos predicciones.</div>
+        <div id="real" hidden>
+<pre class="k5-res"><span class="c">$ graphify affected "contarVotos"</span>
+Affected nodes for contarVotos()
+Relations: calls, indirect_call, references, …
+Depth: 2
+<span class="y">- .liveVoto() [calls] live_votos.go:L74
+- .liveVotos() [calls] live_votos.go:L89
+- .liveVotosReiniciar() [calls] live_votos.go:L108</span></pre>
+          <div class="k5-cifra"><span>242 501 → <b style="font-size:1em">343</b> caracteres</span><b>÷707</b></div>
+          <ul class="k5-lec">
+            <li>Sin LLM y sin clave: el grafo salió de la estructura del código en ~1 s (408 nodos).</li>
+            <li class="ojo">Te dice <b>quién depende</b>, no si tu cambio es correcto. Eso lo prueban tus pruebas.</li>
+            <li class="ojo">Con <code>query --budget 300</code> avisó «TRUNCATED»: mostró 14 de 40 nodos. Lee los avisos.</li>
+          </ul>
+        </div>
+        <button type="button" class="pt-btn sec" id="ver" style="margin-top:.5em">Comparar con lo que devolvió</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">¿Tu predicción se acercó? ¿Qué no esperabas?</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script>
+var a = PT.votos(document.getElementById("v1"), "05b-graphify-que", "¿Qué devuelve?", [
+  { id: "ia", t: "Un párrafo escrito por IA que explica la función" },
+  { id: "quien", t: "Las funciones que la usan, con archivo y línea" },
+  { id: "archivos", t: "Los archivos completos donde aparece" },
+  { id: "clave", t: "Un error: falta la clave de API" }
+], { correcta: "quien" });
+var b = PT.votos(document.getElementById("v2"), "05b-graphify-tam", "¿Cuántos caracteres?", [
+  { id: "c500", t: "Menos de 500" },
+  { id: "c5k", t: "Unos 5 000" },
+  { id: "c50k", t: "Unos 50 000" },
+  { id: "c240k", t: "Los 242 501: lee todo" }
+], { correcta: "c500" });
+document.getElementById("ver").addEventListener("click", function () {
+  a.revelar(); b.revelar();
+  document.getElementById("tapa").hidden = true; document.getElementById("real").hidden = false; this.hidden = true;
+});
+</script>
+</body>
+</html>

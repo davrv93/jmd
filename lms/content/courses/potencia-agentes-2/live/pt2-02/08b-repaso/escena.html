@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Repaso sin apuntes</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/pt.css">
+<!--
+  Práctica de recuperación espaciada: ~35 min después de ver Cortex y Graphify (escenas 05 y 06), y antes de la
+  consulta final. Dos votaciones con respuesta («08b-repaso-1», «08b-repaso-2»); la respuesta y el porqué se abren
+  con «Ver respuestas». Se responde de memoria: el valor está en el esfuerzo de recordar.
+  Fuentes: README de cortexboard 0.4.0 (lo que escribe una IA queda como borrador) y graphify 0.9.92
+  («update: re-extract code files … no LLM needed»).
+-->
+<style id="esc-propio">
+.r8 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; align-items: start; }
+.r8-por { margin: .5em 0 0; font-size: .64em; padding: .45em .7em; border-radius: .6em; background: var(--ok-bg); }
+.r8-reglas { font-size: .7em; margin: 0; color: var(--muted); }
+.r8-reglas b { color: var(--fg); }
+@media (max-width: 860px) { .r8 { grid-template-columns: 1fr; } .r8-por, .r8-reglas { font-size: .9em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 150 L1330 110 L1390 190 L1450 160"/>
+  <g><circle class="eo" cx="1180" cy="92" r="4.5"/><circle class="e" cx="1252" cy="150" r="5"/><circle class="eg" cx="1330" cy="110" r="4"/><circle class="eo" cx="1390" cy="190" r="5"/><circle class="e" cx="1450" cy="160" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Observación reflexiva</span>
+    <span class="esc-num">PT-02 · 14 / 18</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Repaso <em>sin apuntes</em></h1>
+      <p class="r8-reglas a-in" style="--d:.1s">Lo viste hace media hora. <b>No vuelvas atrás ni busques:</b> responde de memoria. Equivocarte aquí también te ayuda a recordar.</p>
+    </div>
+    <div class="r8">
+      <div class="esc-card a-in" style="--d:.2s">
+        <div id="q1"></div>
+        <p class="r8-por" id="p1" hidden><b>Borrador.</b> Lo que escribe una IA en Cortex espera a que una persona lo apruebe; en las búsquedas vuelve marcado «puede estar mal o cambiar».</p>
+      </div>
+      <div class="esc-card a-in" style="--d:.3s">
+        <div id="q2"></div>
+        <p class="r8-por" id="p2" hidden><b>No.</b> <code>graphify update .</code> arma el grafo del código por su estructura, sin LLM y sin clave. Una clave solo hace falta para extras: leer docs, PDF o imágenes, o ponerle nombre a las comunidades.</p>
+      </div>
+    </div>
+    <div class="a-in" style="--d:.4s"><button type="button" class="pt-btn sec" id="ver">Ver respuestas</button></div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">2 min · de memoria</span>
+  </footer>
+</div>
+
+<script src="../../comun/pt.js"></script>
+<script>
+var a = PT.votos(document.getElementById("q1"), "08b-repaso-1", "Tu agente escribe en Cortex «el descuento es 10 %». ¿Qué pasa con eso?", [
+  { id: "borrador", t: "Queda como borrador hasta que una persona lo apruebe" },
+  { id: "verdad", t: "Queda como verdad para todos los agentes" },
+  { id: "codigo", t: "Se copia al código del proyecto" },
+  { id: "borra", t: "Se borra al cerrar la sesión" }
+], { correcta: "borrador" });
+var b = PT.votos(document.getElementById("q2"), "08b-repaso-2", "¿graphify update . necesita una clave de API para armar el grafo del código?", [
+  { id: "no", t: "No: lee la estructura del código, sin LLM" },
+  { id: "si", t: "Sí: cada archivo pasa por un LLM" },
+  { id: "solo-go", t: "Solo para proyectos que no son Go" }
+], { correcta: "no" });
+document.getElementById("ver").addEventListener("click", function () {
+  a.revelar(); b.revelar();
+  document.getElementById("p1").hidden = false; document.getElementById("p2").hidden = false; this.hidden = true;
+});
+</script>
+</body>
+</html>

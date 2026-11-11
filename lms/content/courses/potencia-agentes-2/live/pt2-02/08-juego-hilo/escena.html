@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · Faros en la niebla</title>
+<link rel="icon" href="data:,">
+<!--
+  «Faros en la niebla» · juego de la clase 2 de Potencia tus agentes, sobre el motor Arena JMD (docs/ARENA_JMD.md).
+  Cada alumno es un robot JMD dentro del mapa de un proyecto (la tienda con pagos: 14 archivos, 28 900 tokens si
+  el agente los lee todos). El mapa está en la niebla: no se ven los hilos entre archivos.
+  - Recoges una pregunta y la llevas al archivo que la responde. Quedarte dentro de un archivo es leerlo (los grandes
+    tardan más; cruzarlo de paso no cuenta): cuesta sus tokens y revela sus hilos (con quién se conecta).
+    Errar no resta puntos: solo gasta tokens y enseña con la lupa.
+  - El Faro Graphify (centro) cuesta 150 tokens y enciende en dorado la ruta del grafo hasta la respuesta.
+  - Las preguntas de «por qué» o «quién decidió» no están en el código: van a la Bóveda Cortex (cortex_brief, 600).
+  - Cada pregunta es una sesión nueva: el agente vuelve a pagar lo que lee. Pero al resolver una pregunta de código,
+    lo aprendido queda en la memoria de la clase (cristal 🧠): releer ese archivo cuesta 30 para todos.
+  - Puntos = miles de tokens ahorrados frente a «leer todo». La barra suma lo que ahorra la clase entera.
+  - Peligro: el /compact (drones) te hace soltar la pregunta. Nadie queda fuera.
+  Al final: título, reflexión al muro (clave 08-juego-hilo, la misma que el juego anterior) y la fotito.
+  Deja el resumen en localStorage «pt2-02-juego» para la escena 10 (insignia), con el formato que ya leía.
+  ?demo=1 entra solo; ?sinred=1 fuerza la práctica local; ?fps=1 muestra los cuadros por segundo.
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #f2c14e; margin-bottom: 6px; }
+  .fn-hud { position: absolute; left: 10px; top: 10px; z-index: 3; max-width: calc(100% - 20px); pointer-events: none;
+    display: flex; flex-wrap: wrap; gap: 6px; font: 700 12.5px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; color: #fff; }
+  .fn-hud > span { background: rgba(20,18,43,.84); padding: 6px 11px; border-radius: 999px; box-shadow: 0 0 0 1px rgba(242,193,78,.4); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fn-hud > .mem { box-shadow: 0 0 0 1px rgba(127,233,255,.55); }
+  .fn-hud b { color: #f2c14e; }
+  .fn-hud .mem b { color: #7fe9ff; }
+  @media (max-width: 860px) {
+    .fn-hud { max-width: calc(100% - 150px); font-size: 11.5px; }
+    .fn-hud .largo { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="juego"><div class="sin-motor"><div><b>Cargando el mapa…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
+<script src="../../arena/arena-jmd.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.ArenaJMD) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
+  }
+  var REDUCIDO = (function () { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
+  function num(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+
+  // ---------- el proyecto: la tienda con pagos. n = nombre, tok = leer el archivo entero, c/f = columna/fila ----------
+  var F = {
+    boton: { n: "Botón Pagar", tok: 900, c: 0, f: 0 }, carrito: { n: "carrito.tsx", tok: 2400, c: 1, f: 0 },
+    api: { n: "api/pagos", tok: 1800, c: 2, f: 0 }, auth: { n: "auth.ts", tok: 1500, c: 3, f: 0 },
+    log: { n: "logger.ts", tok: 900, c: 0, f: 1 }, utils: { n: "utils.ts", tok: 4000, c: 1, f: 1 },
+    servicio: { n: "servicio.ts", tok: 3200, c: 2, f: 1 }, config: { n: "config.ts", tok: 800, c: 3, f: 1 },
+    correo: { n: "correo.ts", tok: 1100, c: 0, f: 2 }, cola: { n: "cola_pagos.ts", tok: 1600, c: 1, f: 2 },
+    yape: { n: "yape.ts", tok: 1200, c: 2, f: 2 }, tests: { n: "pagos.test.ts", tok: 2800, c: 3, f: 2 },
+    db: { n: "tabla pagos", tok: 700, c: 1, f: 3 }, readme: { n: "README.md", tok: 6000, c: 2, f: 3 },
+  };
+  var IDS = Object.keys(F);
+  var E = [["boton", "carrito"], ["carrito", "api"], ["carrito", "utils"], ["api", "auth"], ["api", "servicio"], ["api", "log"],
+    ["servicio", "yape"], ["servicio", "cola"], ["servicio", "utils"], ["cola", "db"], ["cola", "correo"], ["auth", "config"],
+    ["yape", "config"], ["tests", "servicio"], ["tests", "api"], ["readme", "config"], ["correo", "log"], ["utils", "log"]];
+  var VEC = {}; IDS.forEach(function (k) { VEC[k] = []; });
+  E.forEach(function (e) { VEC[e[0]].push(e[1]); VEC[e[1]].push(e[0]); });
+  var TODO = IDS.reduce(function (s, k) { return s + F[k].tok; }, 0); // 28 900
+  var FARO = 150, BRIEF = 600, MEMORIA = 30;
+
+  // ---------- las preguntas: s = donde empieza, a = archivos que la responden, ruta = lo que enciende el faro ----------
+  var TK = [
+    { tipo: "grafo", cmd: "path", s: "boton", a: ["cola"], ruta: [["boton", "carrito", "api", "servicio", "cola"]], et: "🕸️ ¿Por dónde?",
+      q: "Un cliente pulsa «Pagar»: ¿qué archivo guarda el pago en la tabla?",
+      x: "Botón → carrito → api/pagos → servicio → cola_pagos. Quien escribe en la tabla es cola_pagos.",
+      no: { db: "tabla pagos solo recibe los datos: busca a su vecino, el que escribe en ella." } },
+    { tipo: "grafo", cmd: "affected", s: "config", a: ["auth", "yape"], ruta: [["config", "auth"], ["config", "yape"]], et: "🕸️ ¿Qué se rompe?",
+      q: "Vas a cambiar config.ts: ¿qué archivo se rompe?",
+      x: "auth.ts y yape.ts leen config.ts: los dos se rompen. El README solo lo menciona.",
+      no: { readme: "README.md menciona config.ts, pero un documento no se rompe: busca el código que lo lee." } },
+    { tipo: "grafo", cmd: "path", s: "tests", a: ["servicio"], ruta: [["tests", "servicio", "yape"]], et: "🕸️ ¿Por dónde?",
+      q: "pagos.test.ts falla al cobrar con Yape: ¿qué archivo está entre los dos?",
+      x: "pagos.test.ts → servicio.ts → yape.ts. El fallo pasa por servicio.ts: ahí empiezas a mirar." },
+    { tipo: "grafo", cmd: "explain", s: "correo", a: ["cola"], ruta: [["correo", "cola"]], et: "🕸️ ¿Quién llama?",
+      q: "Llegó un correo de confirmación repetido: ¿qué archivo llama a correo.ts?",
+      x: "A correo.ts lo llama cola_pagos.ts cuando guarda el pago. logger.ts solo recibe sus mensajes.",
+      no: { log: "logger.ts no llama a nadie: solo recibe los mensajes de correo.ts." } },
+    { tipo: "grafo", cmd: "god", s: "", a: ["api", "servicio"], ruta: [["carrito", "api", "auth"], ["log", "api", "servicio", "tests", "api"], ["yape", "servicio", "cola"], ["servicio", "utils"]], et: "🕸️ ¿El centro?",
+      q: "¿Cuál es el centro del proyecto, el archivo con más conexiones?",
+      x: "api/pagos y servicio.ts tienen 5 conexiones cada uno: si uno se cae, se cae media tienda." },
+    { tipo: "grafo", cmd: "affected", s: "log", a: ["api", "correo", "utils"], ruta: [["log", "api"], ["log", "correo"], ["log", "utils"]], et: "🕸️ ¿Qué se rompe?",
+      q: "Cambiaste el formato de logger.ts: ¿quién lo usa?",
+      x: "api/pagos, correo.ts y utils.ts escriben en logger.ts. Cualquiera de los tres era correcto." },
+    { tipo: "grafo", cmd: "path", s: "carrito", a: ["auth"], ruta: [["carrito", "api", "auth"]], et: "🕸️ ¿Por dónde?",
+      q: "El carrito no deja pagar sin iniciar sesión: ¿qué archivo pide el login?",
+      x: "carrito → api/pagos → auth.ts. El nombre ayudaba: si la respuesta está a la vista, leer directo también sirve." },
+    { tipo: "grafo", cmd: "affected", s: "utils", a: ["servicio", "carrito"], ruta: [["utils", "servicio"], ["utils", "carrito"]], et: "🕸️ ¿Qué se rompe?",
+      q: "utils.ts redondea mal los céntimos: ¿qué archivo que cobra sale afectado?",
+      x: "servicio.ts y carrito.tsx usan utils.ts para los montos. logger.ts solo recibe mensajes.",
+      no: { log: "logger.ts solo recibe mensajes de utils.ts: no cobra nada." } },
+    { tipo: "grafo", cmd: "explain", s: "yape", a: ["servicio"], ruta: [["yape", "servicio"]], et: "🕸️ ¿Quién llama?",
+      q: "Yape cambió su API: ¿qué archivo llama a yape.ts?",
+      x: "Solo servicio.ts llama a yape.ts. config.ts no lo llama: solo le da la clave.",
+      no: { config: "config.ts no llama a yape.ts: solo le da la clave." } },
+    { tipo: "grafo", cmd: "explain", s: "yape", a: ["config"], ruta: [["yape", "config"]], et: "🕸️ ¿De dónde?",
+      q: "¿De dónde saca yape.ts su clave?",
+      x: "yape.ts lee su clave de config.ts. Nunca la busques (ni la guardes) en el README.",
+      no: { readme: "El README no guarda claves (y no debería): yape.ts la lee de otro archivo." } },
+    { tipo: "cortex", et: "🧠 ¿Por qué?", q: "¿Por qué los pagos pasan por una cola y no se guardan directo?",
+      x: "Decisión del equipo en marzo: Yape a veces tarda 30 s y la cola reintenta sin cobrar dos veces. El código muestra la cola, no el porqué." },
+    { tipo: "cortex", et: "🧠 ¿Quién decidió?", q: "¿Quién decidió aceptar Yape antes que tarjetas, y por qué?",
+      x: "La dueña, en la reunión de marzo: la comisión es menor. Una decisión no está en ninguna línea de código." },
+    { tipo: "cortex", et: "🧠 ¿Por qué?", q: "¿Por qué el correo sale después de guardar el pago, y no antes?",
+      x: "Regla del proyecto: nunca confirmar algo que no está guardado. Las reglas viven en Cortex y el agente las lee en su resumen." },
+    { tipo: "cortex", et: "🧠 ¿Qué falta?", q: "¿Qué quedó pendiente en la última sesión?",
+      x: "Faltan las pruebas de reembolso. Cada sesión del agente empieza en blanco; Cortex le dice dónde se quedó." },
+    { tipo: "cortex", et: "🧠 ¿Por qué?", q: "¿Por qué la clave de Yape ya no se anota en el README?",
+      x: "Porque en agosto alguien la copió de ahí y se filtró. El incidente y la regla están en Cortex; el README solo dice «no la pongas aquí»." },
+  ];
+  var EXP_CMD = {
+    affected: "affected responde «¿qué se rompe si toco X?»: los archivos que dependen de X.",
+    path: "path responde «¿cómo llego de A a B?»: la ruta más corta del grafo.",
+    explain: "explain responde «¿qué es X y con quién habla?»: sus vecinos directos.",
+    god: "god-nodes muestra los centros: los nodos con más conexiones.",
+  };
+  var DATOS_CORTEX = [
+    { p: "¿Con qué empieza el agente en Cortex?", o: ["cortex_brief: un resumen de unos 600 tokens", "Leyendo todo el repositorio", "graphify update ."],
+      x: "cortex_brief le da el mapa de la memoria en unos 600 tokens; después baja solo por la rama que necesita." },
+    { p: "Lo que escribe una IA en Cortex queda como…", o: ["Borrador, hasta que una persona lo aprueba", "Verdad definitiva", "Se borra al cerrar la sesión"],
+      x: "Las personas controlan la memoria: lo que escribe la IA es borrador hasta que alguien lo aprueba." },
+    { p: "Si cambia el código enlazado a una página de Cortex…", o: ["La página se marca desactualizada", "La página se corrige sola", "Nadie se entera"],
+      x: "Las páginas se enlazan al código y se marcan desactualizadas cuando ese código cambia." },
+    { p: "¿Cuánto cuesta buscar en Cortex?", o: ["Nada: la búsqueda es local", "Un token por palabra", "Lo mismo que leer el repositorio"],
+      x: "La búsqueda corre en tu máquina: buscar no gasta tokens." },
+  ];
+
+  // ---------- el mapa: 1900 × 1230 ----------
+  var ANCHO = 1900, ALTO = 1230, COLS = [200, 700, 1210, 1700], FILAS = [150, 455, 770, 1080], SW = 220, SH = 130;
+  function centro(id) {
+    if (id === "faro") return { x: 955, y: 612 };
+    if (id === "cortex") return { x: 1700, y: 1080 };
+    return { x: COLS[F[id].c], y: FILAS[F[id].f] };
+  }
+  var MUROS = [{ x: 545, y: 585, w: 120, h: 70, t: "node_modules" }, { x: 1255, y: 585, w: 120, h: 70, t: ".git" }];
+  var ZONAS = IDS.map(function (id) {
+    var c = centro(id);
+    return { id: id, x: c.x - SW / 2, y: c.y - SH / 2, w: SW, h: SH, nombre: F[id].n, color: "#5a49d6", pintar: pintarSala };
+  });
+  ZONAS.push({ id: "faro", x: 865, y: 545, w: 180, h: 135, nombre: "Faro Graphify", color: "#c48709", colorTexto: "#1c1300", pintar: pintarFaro });
+  ZONAS.push({ id: "cortex", x: 1580, y: 1010, w: 240, h: 140, nombre: "Bóveda Cortex", color: "#0f8f8a", pintar: pintarBoveda });
+  var PRIMERA = ZONAS[0].id; // su dibujo pinta antes la capa del grafo (hilos, ruta dorada, cajas)
+
+  // ---------- estado de mi ronda ----------
+  var juego = null;
+  function estadoNuevo() {
+    return { vistos: {}, cristal: {}, tk: null, bonos: {}, aviso: false,
+      mio: { resueltas: 0, ahorro: 0, gasto: 0, faros: 0, mem: 0, malas: 0, cortex: 0, escritos: 0 } };
+  }
+  var est = estadoNuevo();
+  function actual() {
+    if (!juego) return null;
+    var y = juego.yo(); if (!y.carga) return null;
+    var ob = juego.objeto(y.carga);
+    return ob && ob.k != null ? ob : null;
+  }
+  // Cada pregunta es una sesión nueva: lo leído se paga otra vez (menos lo que está en memoria).
+  function sesion(ob) {
+    var clave = ob.id + "@" + ob.v;
+    if (!est.tk || est.tk.clave !== clave) est.tk = { clave: clave, k: ob.k, gasto: 0, leidos: {}, faro: false, pista: false, avisoFaro: false, avisoCortex: false };
+    return est.tk;
+  }
+  function claveArista(a, b) { return a < b ? a + "|" + b : b + "|" + a; }
+  function rutaEncendida(T) {
+    var luz = {};
+    T.ruta.forEach(function (r) { for (var i = 0; i < r.length - 1; i++) luz[claveArista(r[i], r[i + 1])] = true; });
+    return luz;
+  }
+  function cuantosCristales() { return Object.keys(est.cristal).length; }
+
+  // ---------- dibujo ----------
+  function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function linea(g, a, b) { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); }
+  function cristal(g, x, y, s) {
+    g.save(); g.translate(x, y); g.scale(s, s);
+    [[-9, 0, 9, 24, "#7fe9ff"], [3, 2, 11, 32, "#a99cff"], [13, 2, 8, 19, "#7fe9ff"]].forEach(function (q) {
+      g.fillStyle = q[4]; g.beginPath(); g.moveTo(q[0] - q[2] / 2, q[1]); g.lineTo(q[0], q[1] - q[3]); g.lineTo(q[0] + q[2] / 2, q[1]); g.closePath(); g.fill();
+      g.fillStyle = "rgba(255,255,255,.55)"; g.beginPath(); g.moveTo(q[0] - q[2] / 4, q[1] - 2); g.lineTo(q[0], q[1] - q[3] + 4); g.lineTo(q[0], q[1] - 2); g.closePath(); g.fill();
+    });
+    g.restore();
+  }
+  function pagina(g, x, y, viva) {
+    g.save(); g.translate(x, y);
+    g.fillStyle = viva ? "#f4f1ff" : "rgba(244,241,255,.35)"; g.strokeStyle = "#1b2350"; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(-15, -20); g.lineTo(7, -20); g.lineTo(15, -12); g.lineTo(15, 20); g.lineTo(-15, 20); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = viva ? "#6a58e8" : "rgba(106,88,232,.5)"; g.fillRect(-9, -8, 18, 3); g.fillRect(-9, -1, 13, 3); g.fillRect(-9, 6, 16, 3);
+    g.restore();
+  }
+  function niebla(g, z, t) {
+    var d = REDUCIDO ? 0 : Math.sin(t * .6 + z.x) * 8;
+    g.fillStyle = "rgba(225,222,255,.10)";
+    g.beginPath(); g.ellipse(z.x + z.w * .3 + d, z.y + z.h * .62, 70, 30, 0, 0, 7); g.fill();
+    g.beginPath(); g.ellipse(z.x + z.w * .68 - d, z.y + z.h * .45, 76, 32, 0, 0, 7); g.fill();
+    g.beginPath(); g.ellipse(z.x + z.w * .5, z.y + z.h * .82 + d * .4, 92, 22, 0, 0, 7); g.fill();
+  }
+  // La capa del grafo: hilos (apagados en la niebla, visibles si leíste uno de sus extremos), la ruta del faro,
+  // la línea guía hasta la respuesta y las cajas que bloquean el paso.
+  function pintarGrafo(g, t) {
+    var ob = actual(), T = ob && TK[ob.k], tk = ob && sesion(ob);
+    var luz = T && T.tipo === "grafo" && tk.faro ? rutaEncendida(T) : {};
+    g.save(); g.lineCap = "round";
+    E.forEach(function (e) {
+      if (luz[claveArista(e[0], e[1])]) return;
+      var visto = est.vistos[e[0]] || est.vistos[e[1]];
+      g.strokeStyle = visto ? "rgba(169,156,255,.62)" : "rgba(169,156,255,.10)"; g.lineWidth = visto ? 5 : 3;
+      g.setLineDash(visto ? [] : [10, 16]);
+      linea(g, centro(e[0]), centro(e[1]));
+    });
+    g.setLineDash([]);
+    Object.keys(luz).forEach(function (k) {
+      var p = k.split("|"), a = centro(p[0]), b = centro(p[1]);
+      g.strokeStyle = "rgba(242,193,78,.22)"; g.lineWidth = 24; linea(g, a, b);
+      g.strokeStyle = "#f2c14e"; g.lineWidth = 7; g.setLineDash([28, 16]); g.lineDashOffset = REDUCIDO ? 0 : -t * 70; linea(g, a, b); g.setLineDash([]);
+    });
+    // línea guía: de mi robot a la respuesta (si el faro ya habló) o a la bóveda (si ya sabes que es de Cortex)
+    if (T && juego) {
+      var destino = null, yo = juego.yo();
+      if (T.tipo === "grafo" && tk.faro) {
+        var md = 1e9; T.a.forEach(function (id) { var c = centro(id), d = Math.hypot(c.x - yo.x, c.y - yo.y); if (d < md) { md = d; destino = c; } });
+      } else if (T.tipo === "cortex" && tk.pista) destino = centro("cortex");
+      if (destino) {
+        g.strokeStyle = T.tipo === "cortex" ? "rgba(127,233,255,.7)" : "rgba(255,226,122,.75)"; g.lineWidth = 3.5; g.setLineDash([4, 12]);
+        g.lineDashOffset = REDUCIDO ? 0 : -t * 40; linea(g, { x: yo.x, y: yo.y - 20 }, destino); g.setLineDash([]);
+      }
+    }
+    // cajas: node_modules y .git (no se entra)
+    MUROS.forEach(function (m) {
+      g.fillStyle = "rgba(0,0,0,.35)"; rr(g, m.x + 4, m.y + 8, m.w, m.h, 10); g.fill();
+      g.fillStyle = "#2b2550"; rr(g, m.x, m.y, m.w, m.h, 10); g.fill();
+      g.strokeStyle = "#8a7cf0"; g.lineWidth = 3; g.stroke();
+      g.strokeStyle = "rgba(169,156,255,.25)"; g.lineWidth = 2;
+      for (var i = 1; i < 4; i++) { g.beginPath(); g.moveTo(m.x + 8, m.y + i * m.h / 4); g.lineTo(m.x + m.w - 8, m.y + i * m.h / 4); g.stroke(); }
+      g.fillStyle = "#ffd27a"; g.font = "800 17px ui-monospace, Menlo, Consolas, monospace"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText(m.t, m.x + m.w / 2, m.y + m.h / 2 + 1, m.w - 12);
+    });
+    g.restore();
+  }
+  function pintarSala(g, z, t) {
+    if (z.id === PRIMERA) pintarGrafo(g, t);
+    var id = z.id, f = F[id], ob = actual(), T = ob && TK[ob.k], tk = ob && sesion(ob);
+    var visto = !!est.vistos[id], cr = !!est.cristal[id];
+    var meta = !!(T && T.tipo === "grafo" && tk.faro && T.a.indexOf(id) >= 0), inicio = !!(T && T.s === id), leido = !!(tk && tk.leidos[id]);
+    var pulso = REDUCIDO ? .6 : (Math.sin(t * 5) + 1) / 2;
+    g.save();
+    if (meta) { g.fillStyle = "rgba(242,193,78," + (.18 + pulso * .2).toFixed(3) + ")"; rr(g, z.x - 18, z.y - 18, z.w + 36, z.h + 36, 30); g.fill(); }
+    else if (cr) { g.fillStyle = "rgba(127,233,255,.12)"; rr(g, z.x - 10, z.y - 10, z.w + 20, z.h + 20, 26); g.fill(); }
+    g.fillStyle = "rgba(0,0,0,.3)"; rr(g, z.x + 4, z.y + 8, z.w, z.h, 18); g.fill();
+    g.fillStyle = visto ? "#2c2766" : "#1d1946"; rr(g, z.x, z.y, z.w, z.h, 18); g.fill();
+    g.lineWidth = meta ? 6 : 3; g.strokeStyle = meta ? "#f2c14e" : cr ? "#7fe9ff" : visto ? "#a99cff" : "rgba(169,156,255,.42)"; g.stroke();
+    pagina(g, z.x + 36, z.y + z.h / 2 + 6, visto || cr || meta);
+    var cx = z.x + z.w / 2 + 24, cy = z.y + z.h / 2 + 4;
+    g.textAlign = "center"; g.textBaseline = "middle";
+    if (cr) {
+      g.fillStyle = "rgba(255,246,214,.55)"; g.font = "700 18px system-ui, sans-serif"; g.fillText(num(f.tok) + " tok", cx, cy - 22);
+      var w0 = g.measureText(num(f.tok) + " tok").width; g.strokeStyle = "rgba(255,246,214,.7)"; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - w0 / 2, cy - 22); g.lineTo(cx + w0 / 2, cy - 22); g.stroke();
+      g.fillStyle = "#7fe9ff"; g.font = "800 30px system-ui, sans-serif"; g.fillText(MEMORIA + " tok", cx, cy + 10);
+      cristal(g, z.x + z.w - 22, z.y + 40, .9);
+    } else {
+      g.fillStyle = visto ? "#fff6d6" : "rgba(255,246,214,.78)"; g.font = "800 30px system-ui, sans-serif"; g.fillText(num(f.tok) + " tok", cx, cy - 4);
+    }
+    if (leido) { g.fillStyle = "#c3b9ff"; g.font = "700 16px system-ui, sans-serif"; g.fillText("✓ leído en esta pregunta", z.x + z.w / 2, z.y + z.h - 16); }
+    else if (meta) { g.fillStyle = "#ffe27a"; g.font = "800 17px system-ui, sans-serif"; g.fillText("★ la respuesta está aquí", z.x + z.w / 2, z.y + z.h - 16); }
+    if (!visto && !cr && !meta) niebla(g, z, t);
+    barraLectura(g, z, cr ? "#7fe9ff" : "#f2c14e", z.y + 22);
+    if (inicio) {
+      g.strokeStyle = "#f2c14e"; g.lineWidth = 3; g.setLineDash([10, 8]); g.lineDashOffset = REDUCIDO ? 0 : t * 20;
+      rr(g, z.x - 9, z.y - 9, z.w + 18, z.h + 18, 24); g.stroke(); g.setLineDash([]);
+      g.fillStyle = "rgba(20,18,43,.85)"; rr(g, z.x + z.w / 2 - 110, z.y + z.h + 12, 220, 28, 14); g.fill();
+      g.fillStyle = "#ffe27a"; g.font = "800 15px system-ui, sans-serif"; g.fillText("▲ la pregunta empieza aquí", z.x + z.w / 2, z.y + z.h + 27);
+    }
+    g.restore();
+  }
+  function pintarFaro(g, z, t, resalta) {
+    var cx = z.x + z.w / 2, cy = z.y + z.h / 2 + 8, pulso = resalta && !REDUCIDO ? (Math.sin(t * 5) + 1) / 2 : 0;
+    g.save();
+    // haz que barre el mapa (quieto si se pidió menos movimiento)
+    var ang = REDUCIDO ? -0.6 : t * .8;
+    g.fillStyle = "rgba(255,226,122," + (.10 + pulso * .08).toFixed(3) + ")";
+    g.beginPath(); g.moveTo(cx, cy - 46); g.arc(cx, cy - 46, 330, ang - .22, ang + .22); g.closePath(); g.fill();
+    var luz = g.createRadialGradient(cx, cy, 10, cx, cy, 130); luz.addColorStop(0, "rgba(242,193,78," + (.32 + pulso * .2).toFixed(3) + ")"); luz.addColorStop(1, "rgba(242,193,78,0)");
+    g.fillStyle = luz; g.fillRect(cx - 130, cy - 130, 260, 260);
+    g.fillStyle = "#2a2350"; g.strokeStyle = resalta ? "#ffe27a" : "#c48709"; g.lineWidth = resalta ? 6 : 4;
+    rr(g, z.x, z.y, z.w, z.h, 22); g.fill(); g.stroke();
+    // la torre
+    g.fillStyle = "#f4f1ff"; g.strokeStyle = "#1b2350"; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(cx - 22, cy + 34); g.lineTo(cx - 13, cy - 30); g.lineTo(cx + 13, cy - 30); g.lineTo(cx + 22, cy + 34); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = "#e3262e"; g.fillRect(cx - 17, cy - 4, 34, 9); g.fillRect(cx - 20, cy + 16, 40, 9);
+    g.fillStyle = "#ffe27a"; rr(g, cx - 16, cy - 50, 32, 20, 6); g.fill(); g.stroke();
+    g.fillStyle = "#1b2350"; g.beginPath(); g.moveTo(cx - 19, cy - 50); g.lineTo(cx, cy - 64); g.lineTo(cx + 19, cy - 50); g.closePath(); g.fill();
+    // mini grafo a los lados
+    g.strokeStyle = "#f2c14e"; g.lineWidth = 3; g.fillStyle = "#f2c14e";
+    [[-62, -20, -46, 12], [-46, 12, -70, 34], [62, -20, 46, 12], [46, 12, 70, 34]].forEach(function (s) { g.beginPath(); g.moveTo(cx + s[0], cy + s[1]); g.lineTo(cx + s[2], cy + s[3]); g.stroke(); });
+    [[-62, -20], [-46, 12], [-70, 34], [62, -20], [46, 12], [70, 34]].forEach(function (p) { g.beginPath(); g.arc(cx + p[0], cy + p[1], 5, 0, 7); g.fill(); });
+    g.fillStyle = "#ffe27a"; g.font = "800 16px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText(FARO + " tok", cx, z.y + z.h + 16);
+    barraLectura(g, z, "#ffe27a", z.y + z.h + 30);
+    g.restore();
+  }
+  function pintarBoveda(g, z, t, resalta) {
+    var ob = actual(), T = ob && TK[ob.k], tk = ob && sesion(ob), guia = !!(T && T.tipo === "cortex" && tk.pista);
+    var pulso = (resalta || guia) && !REDUCIDO ? (Math.sin(t * 5) + 1) / 2 : guia ? .6 : 0;
+    g.save();
+    var luz = g.createRadialGradient(z.x + z.w / 2, z.y + z.h / 2, 10, z.x + z.w / 2, z.y + z.h / 2, z.w * .85);
+    luz.addColorStop(0, "rgba(127,233,255," + (.2 + pulso * .22).toFixed(3) + ")"); luz.addColorStop(1, "rgba(127,233,255,0)");
+    g.fillStyle = luz; g.fillRect(z.x - 90, z.y - 90, z.w + 180, z.h + 180);
+    g.fillStyle = "#0e3440"; g.strokeStyle = guia ? "#7fe9ff" : resalta ? "#5fd3d0" : "#12a7a0"; g.lineWidth = guia ? 6 : 4;
+    rr(g, z.x, z.y, z.w, z.h, 22); g.fill(); g.stroke();
+    // estantes de memoria y cristales
+    g.strokeStyle = "rgba(127,233,255,.25)"; g.lineWidth = 2;
+    for (var i = 1; i < 4; i++) { g.beginPath(); g.moveTo(z.x + 14, z.y + i * z.h / 4); g.lineTo(z.x + z.w * .42, z.y + i * z.h / 4); g.stroke(); }
+    cristal(g, z.x + z.w * .66, z.y + z.h * .62, 1.7);
+    g.fillStyle = "#c9fbff"; g.font = "700 15px ui-monospace, Menlo, Consolas, monospace"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("cortex_brief · " + BRIEF + " tok", z.x + z.w / 2, z.y + z.h + 16);
+    barraLectura(g, z, "#7fe9ff", z.y + z.h + 30);
+    g.restore();
+  }
+  function fondo(g, M, rnd) {
+    g.fillStyle = "#151236"; g.fillRect(0, 0, ANCHO, ALTO);
+    g.strokeStyle = "rgba(169,156,255,.05)"; g.lineWidth = 2;
+    for (var x = 0; x <= ANCHO; x += 50) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, ALTO); g.stroke(); }
+    for (var y = 0; y <= ALTO; y += 50) { g.beginPath(); g.moveTo(0, y); g.lineTo(ANCHO, y); g.stroke(); }
+    for (var i = 0; i < 140; i++) { g.fillStyle = "rgba(255,240,200," + (.12 + rnd() * .35).toFixed(2) + ")"; g.beginPath(); g.arc(rnd() * ANCHO, rnd() * ALTO, .8 + rnd() * 1.8, 0, 7); g.fill(); }
+    for (i = 0; i < 46; i++) { // la niebla del proyecto
+      g.fillStyle = "rgba(210,205,255," + (.025 + rnd() * .04).toFixed(3) + ")";
+      g.beginPath(); g.ellipse(rnd() * ANCHO, rnd() * ALTO, 90 + rnd() * 170, 34 + rnd() * 50, 0, 0, 7); g.fill();
+    }
+    g.fillStyle = "rgba(255,230,170,.22)"; g.font = "800 30px system-ui, sans-serif"; g.textAlign = "center"; g.fillText("ENTRADA", 200, 1195);
+    g.fillStyle = "rgba(169,156,255,.2)"; g.font = "800 22px system-ui, sans-serif"; g.fillText("LA TIENDA · 14 archivos · " + num(TODO) + " tok si lees todo", 950, 40);
+  }
+
+  // ---------- jugadas ----------
+  function lupaLectura(titulo, texto, extra) { juego.lupa({ tipo: "mal", icono: "📄", titulo: titulo, texto: texto, real: extra, ms: 6500 }); }
+  function rechazo(m) { return { rechazar: true, mensaje: m }; }
+  function bonoDe(T) {
+    var clave = T.tipo === "grafo" ? "cmd-" + T.cmd : "", pick = null;
+    if (T.tipo === "grafo") {
+      if (est.bonos[clave]) return null;
+      var s = T.s ? F[T.s].n : "api/pagos", b = F[T.a[0]].n;
+      var ops = [{ t: 'graphify affected "' + s + '"', c: "affected" }, { t: 'graphify path "' + s + '" "' + b + '"', c: "path" },
+        { t: 'graphify explain "' + s + '"', c: "explain" }, { t: "graphify god-nodes", c: "god" }];
+      ops = barajar(ops);
+      return { pregunta: "Bono: ¿qué consulta al grafo te daba esta respuesta?", opciones: ops.map(function (o) { return o.t; }),
+        correcta: ops.map(function (o) { return o.c; }).indexOf(T.cmd), puntos: 3, codigo: true, segundos: 16,
+        explicacion: EXP_CMD[T.cmd] + " " + T.x, clave: clave };
+    }
+    for (var i = 0; i < DATOS_CORTEX.length; i++) if (!est.bonos["cx-" + i]) { pick = i; break; }
+    if (pick == null) return null;
+    var d = DATOS_CORTEX[pick], o2 = barajar(d.o.map(function (t, j) { return { t: t, ok: j === 0 }; }));
+    return { pregunta: "Bono: " + d.p, opciones: o2.map(function (o) { return o.t; }), correcta: o2.map(function (o) { return o.ok; }).indexOf(true),
+      puntos: 3, segundos: 16, explicacion: d.x + " " + T.x, clave: "cx-" + pick };
+  }
+  function barajar(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+
+  function resolver(T, tk, R, costo) {
+    tk.gasto += costo;
+    var m = est.mio, ahorro = Math.max(0, TODO - tk.gasto), pts = Math.max(1, Math.round(ahorro / 1000));
+    m.resueltas++; m.ahorro += ahorro; m.gasto += tk.gasto; if (T.tipo === "cortex") m.cortex++;
+    var nuevo = false;
+    if (T.tipo === "grafo") {
+      if (!est.cristal[R]) { est.cristal[R] = true; m.escritos++; nuevo = true; }
+      var c = centro(R); juego.emitir("memoria", F[R].n, IDS.indexOf(R), c.x, c.y); // la memoria es de toda la clase
+    }
+    est.tk = null;
+    guardarResumen();
+    var bono = bonoDe(T);
+    var exp = T.x + " Gastaste " + num(tk.gasto) + " tok; leer todo cuesta " + num(TODO) + "." +
+      (nuevo ? " 🧠 Quedó en la memoria de la clase: releer " + F[R].n + " ahora cuesta " + MEMORIA + " para todos." : "");
+    return { ok: true, puntos: pts, titulo: "¡Resuelta! Ahorraste " + pts + " K tok", explicacion: exp,
+      feed: T.tipo === "cortex" ? "resolvió un «por qué» en Cortex" : "resolvió en " + F[R].n + " con " + num(tk.gasto) + " tok" + (nuevo ? " 🧠" : ""),
+      bonus: bono || undefined };
+  }
+  // Leer toma un momento: hay que quedarse dentro (los archivos grandes tardan más). Así, cruzar una sala
+  // de camino a otra no la lee ni gasta tokens.
+  function tiempoLectura(id) {
+    if (id === "faro") return 450;
+    if (id === "cortex" || est.cristal[id]) return 850;
+    return 700 + F[id].tok / 4; // 900 tok ≈ 0,9 s · README (6 000) ≈ 2,2 s
+  }
+  function leyendo(z) {
+    var L = est.lee;
+    if (!L || L.zona !== z.id || performance.now() - L.ultimo > 200 || L.hecho) return -1;
+    return Math.min(1, (performance.now() - L.desde) / L.total);
+  }
+  function barraLectura(g, z, color, y) {
+    var k = leyendo(z); if (k < 0) return;
+    g.fillStyle = "rgba(10,8,30,.8)"; rr(g, z.x + 14, y, z.w - 28, 12, 6); g.fill();
+    g.fillStyle = color; rr(g, z.x + 14, y, Math.max(12, (z.w - 28) * k), 12, 6); g.fill();
+  }
+  function entregar(ob, zona) {
+    var T = TK[ob.k], tk = sesion(ob), m = est.mio, ahora = performance.now(), L = est.lee;
+    var hecho = zona.id === "faro" ? (T.tipo === "cortex" ? tk.avisoFaro : tk.faro) : zona.id === "cortex" ? (T.tipo !== "cortex" && tk.avisoCortex) : !!tk.leidos[zona.id];
+    if (!L || L.zona !== zona.id || L.clave !== tk.clave || ahora - L.ultimo > 200) L = est.lee = { zona: zona.id, clave: tk.clave, desde: ahora, ultimo: ahora, total: tiempoLectura(zona.id), hecho: hecho };
+    L.ultimo = ahora;
+    if (!hecho && ahora - L.desde < L.total) {
+      return rechazo(zona.id === "faro" ? "🛰️ Consultando el grafo…" : zona.id === "cortex" ? "🧠 Abriendo la memoria…" : "📖 Leyendo " + F[zona.id].n + "… quédate un momento");
+    }
+    L.hecho = true;
+    if (zona.id === "faro") {
+      if (T.tipo === "cortex") {
+        if (!tk.avisoFaro) {
+          tk.avisoFaro = true; tk.pista = true; tk.gasto += FARO; juego.sonido("soltar");
+          juego.lupa({ tipo: "mal", icono: "🛰️", titulo: "El grafo no sabe «por qué» · −" + FARO + " tok", ms: 6500,
+            texto: "Graphify sabe quién llama a quién, no por qué se decidió algo. Esa respuesta vive en la Bóveda Cortex: sigue la línea celeste." });
+          return rechazo("El grafo no guarda decisiones: ve a la Bóveda Cortex");
+        }
+        return rechazo("Esta es de «por qué»: llévala a la Bóveda Cortex");
+      }
+      if (!tk.faro) {
+        tk.faro = true; tk.gasto += FARO; m.faros++; juego.sonido("bonus");
+        juego.lupa({ tipo: "bien", icono: "🛰️", titulo: "Le preguntaste al grafo · −" + FARO + " tok", ms: 4500,
+          texto: "La ruta se encendió en dorado y la respuesta brilla. Síguela: sin abrir archivos de más." });
+        return rechazo("🛰️ Ruta encendida: sigue la línea dorada");
+      }
+      return rechazo("La ruta ya está encendida: sigue la línea dorada");
+    }
+    if (zona.id === "cortex") {
+      if (T.tipo === "cortex") return resolver(T, tk, "cortex", BRIEF);
+      if (!tk.avisoCortex) {
+        tk.avisoCortex = true; tk.gasto += BRIEF; juego.sonido("soltar");
+        juego.lupa({ tipo: "mal", icono: "🧠", titulo: "cortex_brief · −" + BRIEF + " tok", ms: 6500,
+          texto: "Cortex guarda decisiones, reglas y pendientes. Para «qué se rompe» o «por dónde pasa», pregúntale al grafo: el Faro Graphify, al centro." });
+        return rechazo("Para esta, el Faro Graphify (al centro)");
+      }
+      return rechazo("Esta es de código: el Faro Graphify te da la ruta");
+    }
+    var R = zona.id, f = F[R]; if (!f) return rechazo("Aquí no va");
+    var costo = est.cristal[R] ? MEMORIA : f.tok;
+    if (T.tipo === "grafo" && T.a.indexOf(R) >= 0) {
+      if (tk.leidos[R]) costo = 0; else if (est.cristal[R]) m.mem++;
+      est.vistos[R] = true;
+      return resolver(T, tk, R, costo);
+    }
+    if (tk.leidos[R]) return rechazo("Ya leíste " + f.n + " para esta pregunta: sigue sus hilos");
+    tk.leidos[R] = true; tk.gasto += costo; est.vistos[R] = true; m.malas++; if (est.cristal[R]) m.mem++;
+    juego.sonido("soltar");
+    var vec = VEC[R].map(function (k) { return F[k].n; }).join(", ");
+    var titulo = "Leíste " + f.n + " · −" + num(costo) + " tok" + (est.cristal[R] ? " (desde memoria)" : "");
+    if (T.tipo === "cortex") {
+      tk.pista = true;
+      lupaLectura(titulo, "El código dice qué hace, no por qué se decidió. Las decisiones viven en la Bóveda Cortex: sigue la línea celeste.", "Llevas " + num(tk.gasto) + " tok en esta pregunta.");
+    } else {
+      var txt = (T.no && T.no[R]) || (R === T.s ? "Aquí empieza la pregunta, pero la respuesta está en otro archivo." : "Aquí no está.");
+      lupaLectura(titulo, txt + " " + f.n + " se conecta con: " + vec + ". Ya ves sus hilos en el mapa.",
+        "Llevas " + num(tk.gasto) + " tok en esta pregunta." + (tk.faro ? "" : " El faro te ahorra adivinar."));
+    }
+    return rechazo("−" + num(costo) + " tok · " + f.n + (T.tipo === "cortex" ? ": aquí no está el porqué" : ": aquí no está"));
+  }
+
+  // ---------- lo que se guarda para la escena 10 (insignia) ----------
+  var LECCION = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "pt2-02";
+  function ptGuardar(k, v) { try { localStorage.setItem(LECCION + "-" + k, JSON.stringify(v)); } catch (e) {} }
+  function ptLeer(k) { try { return JSON.parse(localStorage.getItem(LECCION + "-" + k)); } catch (e) { return null; } }
+  function guardarResumen() {
+    var m = est.mio, g = ptLeer("juego") || {}, y = juego ? juego.yo() : {};
+    g.mejor = Math.max(+g.mejor || 0, m.ahorro);
+    g.ultimo = { juego: "faros", hilos: m.resueltas, mem: m.mem, ahorro: m.ahorro, mapas: m.faros, vivo: !y.practica };
+    ptGuardar("juego", g);
+  }
+
+  // ---------- el juego ----------
+  juego = ArenaJMD.crear({
+    raiz: "#juego",
+    titulo: "Faros en la niebla",
+    subtitulo: "El proyecto está en la niebla. El grafo te alumbra la ruta y la memoria abarata lo que ya se leyó.",
+    curso: "Potencia tus agentes",
+    sesion: "Clase 2 · Memoria y mapa: Cortex y Graphify",
+    fecha: "Domingo 29 de noviembre de 2026",
+    hashtag: "#PotenciaTusAgentes",
+    duracion: 180, duraciones: [180, 300], duracionPractica: 120,
+    mundo: { ancho: ANCHO, alto: ALTO, tema: "mina" },
+    jugador: { accesorio: "audifonos" },
+    salida: { x: 60, y: 990, w: 320, h: 200 },
+    reglas: [
+      "Recoge una pregunta y quédate en el archivo que la responde. Leerlo cuesta sus tokens; errar no resta puntos.",
+      "¿No sabes cuál? Pasa por el Faro Graphify (150 tok): enciende en dorado la ruta hasta la respuesta.",
+      "Las de «por qué» van a la Bóveda Cortex. Lo que resuelves queda en memoria 🧠: releerlo cuesta 30.",
+    ],
+    anuncio: "todos al mapa",
+    fondo: fondo,
+    muros: MUROS.map(function (m) { return { x: m.x, y: m.y, w: m.w, h: m.h }; }),
+    zonas: ZONAS,
+    peligros: [
+      { tipo: "dron", nombre: "el /compact", ruta: [[450, 110], [450, 1170]], vel: 115, radio: 24,
+        aviso: "¡/compact! El contexto se compactó y soltaste la pregunta. Volvió a su sitio; la memoria de la clase sigue ahí.", avisoSinCarga: "¡Cuidado con el /compact! Esquívalo." },
+      { tipo: "dron", nombre: "el /compact", ruta: [[380, 925], [1520, 925]], vel: 125, radio: 24,
+        aviso: "¡/compact! Se compactó el contexto y olvidaste la pregunta. Búscala otra vez.", avisoSinCarga: "¡Uy, el /compact! Cruza cuando pase." },
+      { tipo: "dron", nombre: "el /compact", ruta: [[830, 302], [1560, 302]], vel: 105, radio: 24,
+        aviso: "¡/compact! Soltaste la pregunta: volvió a su sitio.", avisoSinCarga: "¡Cuidado con el /compact!" },
+    ],
+    objetos: {
+      cantidad: 14, prefijo: "q",
+      crear: function (i, v, rnd, M) {
+        var base = (juego ? juego.ronda().semilla >>> 0 : 0) % TK.length;
+        var k = (i * 7 + v * 4 + base) % TK.length, T = TK[k];
+        var p = M.lugarLibre(rnd, 36, { x: 40, y: 70, w: ANCHO - 80, h: ALTO - 120 });
+        return { x: p.x, y: p.y, forma: "carta", color: T.tipo === "cortex" ? "#12a7a0" : "#7b6cf0", k: k, texto: T.et };
+      },
+    },
+    tarjeta: function (ob) {
+      var T = TK[ob.k];
+      if (T.tipo === "cortex") return { etiqueta: "Pregunta de «por qué» · memoria", color: "#0f8f8a", titulo: T.q,
+        destacadoEtiqueta: "Si tu agente lee todo:", destacado: num(TODO) + " tok", pie: "Pista: ¿esto lo dice el código o lo decidió alguien? Espacio o «Soltar» la deja." };
+      return { etiqueta: "Pregunta de código · grafo", color: "#5a49d6", titulo: T.q,
+        destacadoEtiqueta: "Si tu agente lee todo:", destacado: num(TODO) + " tok",
+        pie: (T.s ? "Empieza en " + F[T.s].n + ". " : "") + "¿No sabes dónde está? Faro Graphify (centro, 150 tok) y sigue la ruta dorada." };
+    },
+    entregar: entregar,
+    meta: { contador: "ahorro", texto: "Tokens que ahorró la clase", unidad: "K tok", objetivo: function (n) { return Math.max(100, n * 90); }, logro: "la clase ahorró su meta de tokens" },
+    reflexion: { clave: "08-juego-hilo", pregunta: "¿Qué le darías primero a tu agente: mapa o memoria? ¿Por qué?", placeholder: "Primero le doy…",
+      porDefecto: "Primero le doy el mapa: que pregunte al grafo antes de abrir archivos." },
+    alRonda: function () { est = estadoNuevo(); },
+    alTomar: function (ob, api) {
+      if (est.aviso) return;
+      est.aviso = true;
+      api.toast("Cada pregunta es una sesión nueva: tu agente paga lo que lee. Lo que está en memoria 🧠 cuesta 30.", "", 4200);
+    },
+    // El bono acertado no se repite (esa consulta ya la sabes): se marca cuando sube stats.bonus.
+    alEntregar: function (ob, zona, res, api) { if (res && res.bonus && res.bonus.clave) est.bonoPend = { clave: res.bonus.clave, antes: api.stats.bonus }; },
+    alEvento: function (e, api) {
+      if (e.tipo !== "memoria") return;
+      var id = IDS[e.valor | 0];
+      if (!id || est.cristal[id]) return;
+      est.cristal[id] = true;
+      var c = centro(id); api.popup(c.x, c.y - 80, "🧠 memoria", "#7fe9ff");
+    },
+    alReflexion: function (t) { ptGuardar("muro-08-juego-hilo", t); },
+    resultado: function (s, api) {
+      var m = est.mio, k = api.puntos, media = m.resueltas ? m.gasto / m.resueltas : 0;
+      var titulo = !m.resueltas ? "Explorador en la niebla"
+        : m.faros >= 3 && m.malas <= 2 ? "Navegante del grafo"
+        : m.cortex >= 2 && m.escritos >= 1 ? "Guardián de la memoria"
+        : m.escritos >= 3 ? "Cartógrafo de la clase"
+        : m.resueltas >= 3 ? "Faro encendido" : "Primeros hilos";
+      return { etiqueta: "Mi expedición en la niebla", titulo: titulo, resultado: k + " K tokens ahorrados",
+        detalle: m.resueltas ? m.resueltas + (m.resueltas === 1 ? " pregunta" : " preguntas") + " · " + num(media) + " tok de media (leer todo: " + num(TODO) + ") · " + m.mem + " desde memoria"
+          : "La próxima: recoge una pregunta y pasa por el faro." };
+    },
+  });
+
+  // Ganchos para la prueba automática (Playwright): centros del mapa y la pregunta que llevo.
+  window.__faros = {
+    centro: centro, ids: IDS.slice(),
+    llevo: function () { var ob = actual(); if (!ob) return null; var T = TK[ob.k], tk = sesion(ob); return { tipo: T.tipo, s: T.s, a: (T.a || []).slice(), faro: tk.faro, gasto: tk.gasto, q: T.q }; },
+    estado: function () { return { cristales: Object.keys(est.cristal), vistos: Object.keys(est.vistos), mio: est.mio }; },
+    objeto: function (id) { var o = juego.objeto(id); return o ? { x: o.x, y: o.y, k: o.k } : null; },
+  };
+
+  // ---------- el contador de tokens (arriba a la izquierda del mapa) ----------
+  (function () {
+    var esc = document.querySelector("#juego .aj-escenario"), banner = document.querySelector("#juego .aj-banner"), entrada = document.querySelector("#juego .aj-entrada");
+    if (!esc) return;
+    var hud = document.createElement("div"); hud.className = "fn-hud"; hud.setAttribute("aria-live", "off"); esc.appendChild(hud);
+    var firma = "";
+    setInterval(function () {
+      if (est.bonoPend && juego.stats.bonus > est.bonoPend.antes) { est.bonos[est.bonoPend.clave] = true; est.bonoPend = null; }
+      var y = juego.yo(), juega = (y.dentro || y.practica) && (!entrada || entrada.hidden);
+      var ob = juega ? actual() : null, tk = ob ? sesion(ob) : null, n = cuantosCristales();
+      var html = !juega ? "" : (tk ? '<span>🪙 <b>' + num(tk.gasto) + ' tok</b><span class="largo"> en esta pregunta</span></span>' : "") +
+        '<span class="mem">🧠 <b>' + n + '</b><span class="largo"> ' + (n === 1 ? "archivo" : "archivos") + " en la memoria de la clase</span></span>";
+      var top = banner && !banner.hidden && banner.textContent ? banner.offsetTop + banner.offsetHeight + 6 : 10;
+      var f = html + "|" + top;
+      if (f === firma) return;
+      firma = f; hud.innerHTML = html; hud.style.top = top + "px"; hud.hidden = !html;
+    }, 200);
+  })();
+})();
+</script>
+</body>
+</html>
