@@ -134,6 +134,36 @@ materials:
     kind: doc
     url: https://api-docs.deepseek.com
     objective_ids: [dhc-01-o1]
+  - id: dhc-01-video-02
+    title: "Video de 1 minuto · Escena 2: Cuenta y saldo"
+    kind: file
+    file: materials/videos/dhc-01-02.mp4
+    objective_ids: [dhc-01-o1]
+  - id: dhc-01-video-03
+    title: "Video de 1 minuto · Escena 3: Tu API key: dónde sí y dónde no"
+    kind: file
+    file: materials/videos/dhc-01-03.mp4
+    objective_ids: [dhc-01-o1]
+  - id: dhc-01-video-04
+    title: "Video de 1 minuto · Escena 4: Abrir DeepSeek Harness"
+    kind: file
+    file: materials/videos/dhc-01-04.mp4
+    objective_ids: [dhc-01-o2]
+  - id: dhc-01-video-05
+    title: "Video de 1 minuto · Escena 5: Elige tu sistema y úsalo"
+    kind: file
+    file: materials/videos/dhc-01-05.mp4
+    objective_ids: [dhc-01-o3]
+  - id: dhc-01-video-06
+    title: "Video de 1 minuto · Escena 6: La foto de tu sistema"
+    kind: file
+    file: materials/videos/dhc-01-06.mp4
+    objective_ids: [dhc-01-o4]
+  - id: dhc-01-video-07
+    title: "Video de 1 minuto · Escena 7: AGENTS.md, la skill y tu tarea"
+    kind: file
+    file: materials/videos/dhc-01-07.mp4
+    objective_ids: [dhc-01-o3]
 cycle:
   - id: ver
     title: Ver la clase y abrir el mapa del día
