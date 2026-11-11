@@ -27,6 +27,7 @@ type Clase struct {
 	EvoKey     string // GLOBAL_API_KEY de Evolution Go. Vive SOLO en el LMS: nunca entra al aula
 	EvoURLAula string // Evolution Go visto desde el aula; por defecto http://evogo-clase:8080
 	Proxy      string // HTTPS_PROXY del aula para «bun install» (p. ej. http://npm-proxy:8888); vacío = sin proxy
+	LMSURL     string // el LMS visto desde Evolution Go (relé de la lista blanca); por defecto http://lms:8080
 	Secreto    []byte // semilla de las credenciales por alumno
 
 	HTTP *http.Client // nil = cliente con tope de 10 s
@@ -59,9 +60,22 @@ func (c *Clase) EvoToken(userID string) string { return c.derivar("evo", userID,
 // EvoInstancia es el nombre de la instancia: el mismo del contenedor del aula.
 func EvoInstancia(userID string) string { return Nombre(userID) }
 
-// Webhook es la URL a la que Evolution Go entrega los mensajes del alumno: su backend en el puerto 8766,
-// alcanzado por el nombre del contenedor en la red del aula.
-func Webhook(userID string) string { return "http://" + Nombre(userID) + ":8766/api/webhook" }
+// WebhookAula es el backend del alumno en el puerto 8766, alcanzado por el nombre del contenedor.
+func WebhookAula(nombre string) string { return "http://" + nombre + ":8766/api/webhook" }
+
+// FirmaWebhook firma el nombre del aula en la URL del relé: sin ella nadie puede inyectar mensajes falsos.
+func (c *Clase) FirmaWebhook(nombre string) string { return c.derivar("wa", nombre, 24) }
+
+// Webhook es la URL a la que Evolution Go entrega los mensajes del alumno: el relé del LMS, que deja pasar
+// solo a los números de la lista blanca del alumno y reenvía a su backend (WebhookAula).
+func (c *Clase) Webhook(userID string) string {
+	base := strings.TrimRight(c.LMSURL, "/")
+	if base == "" {
+		base = "http://lms:8080"
+	}
+	n := Nombre(userID)
+	return base + "/api/v1/aula/wa/" + n + "/" + c.FirmaWebhook(n)
+}
 
 func (c *Clase) pgHost() string {
 	if c.PGHost != "" {
@@ -96,7 +110,7 @@ func (c *Clase) entorno(userID string) []string {
 			"-e", "EVO_URL="+c.evoURLAula(),
 			"-e", "EVO_TOKEN="+c.EvoToken(userID),
 			"-e", "EVO_INSTANCE="+EvoInstancia(userID),
-			"-e", "EVO_WEBHOOK="+Webhook(userID),
+			"-e", "EVO_WEBHOOK="+c.Webhook(userID),
 		)
 	}
 	if c.Proxy != "" {
@@ -146,9 +160,9 @@ const scriptPGEvo = "psql -X -q -t -A -v ON_ERROR_STOP=1 -U postgres -d evogo_us
 // QR que pida el alumno por su cuenta (GET /instance/qr arranca el cliente con lo guardado) ya entrega los
 // mensajes a su backend. Solo rellena lo vacío: si alguien lo borró con un connect sin webhookUrl, se repara al
 // volver a abrir el aula; si el alumno puso otro, se respeta.
-func sqlWebhook(userID string) string {
+func (c *Clase) sqlWebhook(userID string) string {
 	n := EvoInstancia(userID)
-	return fmt.Sprintf("UPDATE instances SET webhook = '%s' WHERE name = '%s' AND coalesce(webhook, '') = '';\n", Webhook(userID), n) +
+	return fmt.Sprintf("UPDATE instances SET webhook = '%s' WHERE name = '%s' AND (coalesce(webhook, '') = '' OR webhook LIKE 'http://curso-%%:8766/api/webhook');\n", c.Webhook(userID), n) +
 		fmt.Sprintf("UPDATE instances SET events = 'MESSAGE' WHERE name = '%s' AND coalesce(events, '') = '';\n", n)
 }
 

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -101,6 +102,7 @@ func (s *Server) liveTranscribir(w http.ResponseWriter, r *http.Request, p *Prin
 // WhatsAppMotor lo implementa *aula.Aula cuando el LMS tiene Evolution Go (perfil «clase»).
 type WhatsAppMotor interface {
 	WhatsApp(ctx context.Context, userID string, conQR bool) (aula.EstadoWhatsApp, error)
+	WebhookValido(nombre, firma string) bool
 }
 
 // liveWhatsApp: POST /api/v1/live/{lesson}/whatsapp {"qr":true} → estado de la instancia del alumno, el QR si
@@ -120,12 +122,20 @@ func (s *Server) liveWhatsApp(w http.ResponseWriter, r *http.Request, p *Princip
 	if !readJSONAllowEmpty(w, r, &in) {
 		return
 	}
+	rec, recOK := recursosOK()
+	if !recOK {
+		writeErr(w, 503, "servidor_lleno", "El servidor de la clase está sin memoria o sin disco en este momento. Espera un minuto y vuelve a intentar; el instructor ya fue avisado.")
+		slog.Warn("WhatsApp de la clase: servidor sin recursos", "recursos", rec)
+		return
+	}
 	if _, err := s.Aula.Crear(r.Context(), p.ID); err != nil {
 		internal(w, err)
 		return
 	}
 	tocarAula(p.ID)
-	e, err := wm.WhatsApp(r.Context(), p.ID, in.QR)
+	lista, bloq := s.waEstadoLista(r.Context(), p.ID)
+	// Sin lista blanca no hay QR: vincular sin ella haría que el robot conteste a toda la agenda del alumno.
+	e, err := wm.WhatsApp(r.Context(), p.ID, in.QR && len(lista) > 0)
 	if errors.Is(err, aula.ErrSinWhatsApp) {
 		writeErr(w, 503, "sin_whatsapp", err.Error())
 		return
@@ -138,5 +148,6 @@ func (s *Server) liveWhatsApp(w http.ResponseWriter, r *http.Request, p *Princip
 		`curl -s -m 5 -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d "{}" http://127.0.0.1:8766/api/webhook || true`)
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, 200, map[string]any{"conectado": e.Conectado, "vinculado": e.Vinculado, "nombre": e.Nombre,
-		"qr": e.QR, "qr_hora": e.QRHora, "robot_escucha": strings.TrimSpace(code) == "200"})
+		"qr": e.QR, "qr_hora": e.QRHora, "robot_escucha": strings.TrimSpace(code) == "200",
+		"permitidos": lista, "bloqueados": bloq, "falta_lista": len(lista) == 0, "recursos": rec})
 }

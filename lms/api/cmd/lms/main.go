@@ -187,6 +187,7 @@ func claseDesdeEntorno(dataDir string) *aula.Clase {
 	c := &aula.Clase{
 		PG: os.Getenv("LMS_AULA_PG"), EvoURL: os.Getenv("LMS_EVO_URL"), EvoKey: os.Getenv("LMS_EVO_KEY"),
 		EvoURLAula: os.Getenv("LMS_AULA_EVO_URL"), Proxy: os.Getenv("LMS_AULA_PROXY"),
+		LMSURL: os.Getenv("LMS_AULA_LMS_URL"),
 	}
 	if c.PG == "" && c.EvoURL == "" && c.Proxy == "" {
 		slog.Info("clase 3 sin configurar (LMS_AULA_PG, LMS_EVO_URL, LMS_EVO_KEY): las aulas no llevan base ni WhatsApp")

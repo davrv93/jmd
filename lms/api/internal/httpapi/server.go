@@ -289,6 +289,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/voz", s.authed(s.liveVoz))
 	mux.Handle("POST /api/v1/live/{lesson}/transcribir", s.authed(s.liveTranscribir))
 	mux.Handle("POST /api/v1/live/{lesson}/whatsapp", s.authed(s.liveWhatsApp))
+	mux.Handle("PUT /api/v1/live/{lesson}/whatsapp/permitidos", s.authed(s.livePermitidosPut))
+	mux.Handle("POST /api/v1/live/{lesson}/embeddings", s.authed(s.liveEmbeddings))
+	mux.Handle("POST /api/v1/live/{lesson}/responder", s.authed(s.liveResponder))
+	mux.HandleFunc("POST /api/v1/aula/wa/{nombre}/{firma}", s.waRele) // sin sesión: lo llama Evolution Go, la firma autentica
 	mux.Handle("POST /api/v1/live/{lesson}/voto", s.authed(s.liveVoto))
 	mux.Handle("GET /api/v1/live/{lesson}/votos", s.authed(s.liveVotos))
 	mux.Handle("DELETE /api/v1/live/{lesson}/votos", s.authed(s.staff(s.liveVotosReiniciar)))

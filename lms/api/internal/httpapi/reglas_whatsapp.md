@@ -15,7 +15,10 @@ Formato del webhook (Evolution Go, fork whatsmeow), ejemplo real:
 - Ignora IsFromMe (eco), chats que terminan en "@g.us" (grupos) o "@broadcast" (estados).
 - Evolution reintenta: descarta un Info.ID que ya atendiste (guarda los últimos 500 en memoria).
 Enviar: POST $EVO_URL/send/text con cabeceras {"apikey": EVO_TOKEN, "Content-Type":"application/json"} y cuerpo
-{"number": N, "text": T}; N = solo los dígitos si el chat termina en "@s.whatsapp.net", si no (p. ej. "@lid") el JID completo.
+{"number": N, "text": T}; N = data.responder_a TAL CUAL (el LMS ya lo prepara: dígitos para un número, el JID completo
+"…@lid" para un contacto con nombre de usuario). Nunca le quites el "@lid" ni lo conviertas a dígitos: así falla el envío.
+Si no viene responder_a: solo los dígitos si el chat termina en "@s.whatsapp.net", si no el JID completo.
+El LMS solo deja pasar mensajes de la lista blanca del alumno: no agregues otro filtro de números.
 Imágenes o audios: POST $EVO_URL/send/media {"number": N, "url": U, "type": "image"} (Evolution descarga U). U debe ser
 "http://" + EVO_INSTANCE + ":8766/imagenes/<archivo>": así ve Evolution tu aula. Nunca «aula», «localhost» ni una IP
 (todas las aulas se llaman «aula» por dentro y la IP cambia). No pruebes /send/* con números falsos: Evolution se queda

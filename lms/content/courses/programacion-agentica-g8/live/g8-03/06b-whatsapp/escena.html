@@ -40,6 +40,16 @@
 .wa-nota p { margin: 0; }
 .wa-sec { margin-top: 1.2em; }
 .wa-sec > h2 { font-size: .9em; margin: 0 0 .6em; display: flex; align-items: center; gap: .4em; }
+[hidden] { display: none !important; }
+.wa-iniciar { font-size: 1.15em; padding: .7em 1.4em; }
+.wa-lista textarea { width: 100%; min-height: 4.6em; font: 1em var(--mono); padding: .5em .6em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s2, #fff); color: inherit; resize: vertical; }
+.wa-chips { display: flex; flex-wrap: wrap; gap: .35em; margin: .4em 0 0; padding: 0; list-style: none; }
+.wa-chips li { font: 700 .85em var(--mono); background: var(--ok-bg); color: var(--ok); border-radius: 999px; padding: .15em .7em; }
+.wa-bloq { list-style: none; margin: .4em 0 0; padding: 0; display: grid; gap: .3em; }
+.wa-bloq li { display: flex; gap: .6em; align-items: center; justify-content: space-between; background: var(--warn-bg); color: var(--warn); border-radius: .5em; padding: .3em .6em; font-size: .9em; }
+.wa-qr.bloqueado { background: repeating-linear-gradient(45deg, #eee, #eee 8px, #f7f7f7 8px, #f7f7f7 16px); }
+.wa-qr.bloqueado p { font-weight: 700; color: #5c5966; }
+.wa-aviso { font-size: .85em; color: var(--warn); margin: .3em 0 0; }
 @media (max-width: 900px) { .wa { grid-template-columns: 1fr; font-size: .9em; } }
 @media (max-width: 600px) {
   .esc-titulo { font-size: 1.55em; }
@@ -90,8 +100,24 @@
       </div>
       <section class="lb-caja">
         <h2><span class="wa-paso">1</span> Vincula tu WhatsApp</h2>
-        <div class="wa-qr-zona">
-          <div class="wa-qr" id="wa-qr" aria-live="polite"><p>Pulsa «Mostrar mi QR» para vincular.</p></div>
+        <div class="lb-herr" id="wa-inicio">
+          <button type="button" class="lb-btn wa-iniciar" id="wa-iniciar">▶ Iniciar WhatsApp</button>
+          <span class="wa-tiempo" id="wa-recursos"></span>
+        </div>
+        <div class="wa-lista" id="wa-lista" hidden>
+          <h3 style="margin:.6em 0 .3em;font-size:1em">🔒 Lista blanca: ¿a quién puede contestar tu robot?</h3>
+          <p style="margin:0 0 .4em;font-size:.9em">Escribe uno por línea, con código de país (p. ej. <b>+51 999 888 777</b>). Tu robot <b>solo</b> responderá a estos números; el QR aparece cuando guardes al menos uno.</p>
+          <textarea id="wa-nums" aria-label="Números permitidos, uno por línea" placeholder="+51 999 888 777"></textarea>
+          <div class="lb-herr"><button type="button" class="lb-btn" id="wa-guardar">💾 Guardar lista</button><span class="wa-tiempo" id="wa-lista-est"></span></div>
+          <ul class="wa-chips" id="wa-chips"></ul>
+          <p class="wa-aviso" id="wa-avisos" hidden></p>
+          <div id="wa-bloq-caja" hidden>
+            <p style="margin:.6em 0 0;font-size:.9em"><b>Te escribieron y no están en tu lista</b> (contactos con nombre de usuario @ aparecen aquí cuando escriben primero):</p>
+            <ul class="wa-bloq" id="wa-bloq"></ul>
+          </div>
+        </div>
+        <div class="wa-qr-zona" id="wa-qr-zona" hidden>
+          <div class="wa-qr bloqueado" id="wa-qr" aria-live="polite"><p>🔒 Primero guarda tu lista blanca.</p></div>
           <div class="lb-col">
             <ol class="wa-pasos">
               <li>Usa el celular con el <b>número de pruebas del curso</b> (o el tuyo, solo si el instructor lo indicó).</li>
@@ -125,6 +151,33 @@
   var esc = Lab.esc, est = $("wa-est"), qrCaja = $("wa-qr"), ver = $("wa-ver"), tiempo = $("wa-tiempo");
   var VIDA_QR = 150000, CADA_QR = 15000;
   var estado = null, quiereQR = false, desdeQR = 0, ultimoQR = 0, enCurso = false, error = null, proxima = 0;
+  var iniciado = false, listaPintada = false, btnIni = $("wa-iniciar");
+  try { iniciado = sessionStorage.getItem("g8-03-wa-iniciado") === "1"; } catch (e) {}
+
+  function pintarLista(d) {
+    var l = (d && d.permitidos) || [];
+    $("wa-chips").innerHTML = l.map(function (n) { return "<li>" + esc(n.indexOf("@") < 0 ? "+" + n : n) + "</li>"; }).join("");
+    if (!listaPintada && l.length) { $("wa-nums").value = l.map(function (n) { return n.indexOf("@") < 0 ? "+" + n : n; }).join("\n"); }
+    listaPintada = listaPintada || l.length > 0;
+    var b = (d && d.bloqueados) || [];
+    $("wa-bloq-caja").hidden = !b.length;
+    $("wa-bloq").innerHTML = b.map(function (x) {
+      return '<li><span>' + esc(x.nombre ? x.nombre + " · " : "") + '<b>' + esc(x.id.indexOf("@") < 0 ? "+" + x.id : x.id) + '</b></span>' +
+        '<button type="button" class="lb-btn" data-permitir="' + esc(x.id) + '">✓ Permitir</button></li>';
+    }).join("");
+  }
+  function guardarLista(extra) {
+    var txt = $("wa-nums").value + (extra ? "\n" + extra : "");
+    $("wa-lista-est").textContent = "Guardando…";
+    return Lab.pedirJSON("/whatsapp/permitidos", { method: "PUT", body: { numeros: [txt] } }).then(function (d) {
+      listaPintada = false; pintarLista(d);
+      $("wa-avisos").hidden = !(d.avisos && d.avisos.length);
+      $("wa-avisos").textContent = (d.avisos || []).join(" ");
+      $("wa-lista-est").textContent = d.permitidos.length ? "✓ " + d.permitidos.length + " permitido(s)" : "La lista está vacía";
+      if (estado) { estado.falta_lista = !d.permitidos.length; estado.permitidos = d.permitidos; }
+      proxima = 0; pintarQR();
+    }, function (e) { $("wa-lista-est").textContent = Lab.mensaje(e, "guardar tu lista"); });
+  }
 
   function item(ok, titulo, nota) {
     return '<li class="' + (ok === null ? "" : ok ? "si" : "no") + '"><i aria-hidden="true">' + (ok === null ? "…" : ok ? "✓" : "✗") + '</i><span>' + titulo + (nota ? '<small>' + nota + '</small>' : '') + '</span></li>';
@@ -147,6 +200,12 @@
       ver.disabled = true; ver.textContent = "📱 Ya está vinculado"; tiempo.textContent = "";
       return;
     }
+    if (estado && estado.falta_lista) {
+      qrCaja.className = "wa-qr bloqueado"; qrCaja.innerHTML = "<p>🔒 Primero guarda tu lista blanca.</p>";
+      ver.disabled = true; ver.textContent = "🔒 Guarda tu lista primero"; tiempo.textContent = "";
+      quiereQR = false;
+      return;
+    }
     qrCaja.className = "wa-qr";
     ver.disabled = !estado || !!error;
     if (!quiereQR) {
@@ -161,13 +220,17 @@
   }
 
   function consultar() {
-    if (enCurso || Date.now() < proxima) return;
+    if (!iniciado || enCurso || Date.now() < proxima) return;
     if (quiereQR && Date.now() - desdeQR > VIDA_QR) { quiereQR = false; pintarQR(); }
     // Solo se pide QR si el último estado conocido dice NO vinculado.
     var pedirQR = quiereQR && estado && !estado.vinculado && Date.now() - ultimoQR >= CADA_QR;
     enCurso = true;
     Lab.pedirJSON("/whatsapp", { method: "POST", body: { qr: !!pedirQR } }).then(function (d) {
       error = null; estado = d || {};
+      $("wa-lista").hidden = false; $("wa-qr-zona").hidden = false;
+      btnIni.disabled = true; btnIni.textContent = "✓ WhatsApp iniciado";
+      if (d && d.recursos) $("wa-recursos").textContent = "Servidor: " + d.recursos.ram_libre_mb + " MB de RAM y " + d.recursos.disco_libre_gb + " GB de disco libres";
+      pintarLista(d);
       if (pedirQR) ultimoQR = Date.now();
       if (estado.vinculado) {
         if (quiereQR) est.textContent = "¡Listo! Tu WhatsApp quedó vinculado.";
@@ -181,7 +244,8 @@
         ultimoQR = Date.now() - CADA_QR + 4000;
       }
     }, function (e) {
-      if (e.status === 503) error = "Tu aula aún no tiene WhatsApp (Evolution Go). Avísale al instructor.";
+      if (!estado) { btnIni.disabled = false; btnIni.textContent = "🔄 Reintentar: iniciar WhatsApp"; }
+      if (e.status === 503) error = e.message || "Tu aula aún no tiene WhatsApp (Evolution Go). Avísale al instructor.";
       else if (e.status === 502) error = "Evolution respondió con un error" + (e.message ? ": " + e.message : "") + ". Lo reintento en unos segundos.";
       else error = Lab.mensaje(e, "consultar tu WhatsApp");
       proxima = Date.now() + 10000;
@@ -196,7 +260,21 @@
     pintarQR(); consultar();
   });
 
-  consultar();
+  btnIni.addEventListener("click", function () {
+    iniciado = true; proxima = 0;
+    try { sessionStorage.setItem("g8-03-wa-iniciado", "1"); } catch (e) {}
+    btnIni.disabled = true; btnIni.textContent = "⏳ Iniciando WhatsApp…";
+    $("wa-estado").innerHTML = item(null, "Iniciando WhatsApp…", "Encendemos Evolution Go y preparamos tu instancia. Puede tardar hasta 30 s.");
+    consultar();
+  });
+  $("wa-guardar").addEventListener("click", function () { guardarLista(""); });
+  $("wa-bloq").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-permitir]");
+    if (b) { b.disabled = true; guardarLista(b.getAttribute("data-permitir")); }
+  });
+
+  if (iniciado) consultar();
+  else $("wa-estado").innerHTML = item(null, "WhatsApp apagado", "Pulsa «Iniciar WhatsApp» para empezar.");
   setInterval(function () { if (!document.hidden) consultar(); else pintarQR(); }, 3000);
   setInterval(function () { if (quiereQR) pintarQR(); }, 1000);
 

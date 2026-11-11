@@ -114,7 +114,7 @@ func TestArgsClaseVariables(t *testing.T) {
 	for _, quiere := range []string{
 		"DATABASE_URL=postgres://" + PGUsuario("u1") + ":" + a.Clase.PGClave("u1") + "@aula-pg:5432/" + PGBase("u1"),
 		"EVO_URL=http://evogo-clase:8080", "EVO_TOKEN=" + a.Clase.EvoToken("u1"), "EVO_INSTANCE=" + Nombre("u1"),
-		"EVO_WEBHOOK=http://" + Nombre("u1") + ":8766/api/webhook", "--label " + EtiquetaFirma + "=",
+		"EVO_WEBHOOK=http://lms:8080/api/v1/aula/wa/" + Nombre("u1") + "/" + a.Clase.FirmaWebhook(Nombre("u1")), "--label " + EtiquetaFirma + "=",
 	} {
 		if !strings.Contains(j, quiere) {
 			t.Errorf("falta %q en %s", quiere, j)
@@ -188,7 +188,7 @@ func TestCrearPreparaClaseIdempotente(t *testing.T) {
 	}
 	for _, s := range webhooks {
 		for _, quiere := range []string{
-			"UPDATE instances SET webhook = '" + Webhook("u1") + "' WHERE name = '" + Nombre("u1") + "' AND coalesce(webhook, '') = ''",
+			"UPDATE instances SET webhook = '" + a.Clase.Webhook("u1") + "' WHERE name = '" + Nombre("u1") + "' AND (coalesce(webhook, '') = ''",
 			"SET events = 'MESSAGE'",
 		} {
 			if !strings.Contains(s, quiere) {

@@ -222,7 +222,7 @@ func (a *Aula) prepararClase(ctx context.Context, userID string) {
 		// Las bases de evolution-go viven en el mismo aula-pg: ahí se deja el webhook sin arrancar WhatsApp.
 		if c.PGActivo() {
 			pctx, cancel := context.WithTimeout(ctx, 20*time.Second)
-			if out, err := a.ExecStdin(pctx, c.PG, scriptPGEvo, []byte(sqlWebhook(userID))); err != nil {
+			if out, err := a.ExecStdin(pctx, c.PG, scriptPGEvo, []byte(c.sqlWebhook(userID))); err != nil {
 				slog.Warn("aula: no se pudo fijar el webhook de WhatsApp", "contenedor", Nombre(userID), "salida", out, "err", err)
 			}
 			cancel()

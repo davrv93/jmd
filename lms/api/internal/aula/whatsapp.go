@@ -3,11 +3,13 @@ package aula
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -69,6 +71,9 @@ func (a *Aula) WhatsApp(ctx context.Context, userID string, conQR bool) (EstadoW
 	if !c.EvoActivo() {
 		return EstadoWhatsApp{}, ErrSinWhatsApp
 	}
+	if err := a.asegurarEvo(ctx); err != nil {
+		return EstadoWhatsApp{}, err
+	}
 	if err := c.asegurarInstancia(ctx, userID); err != nil {
 		return EstadoWhatsApp{}, err
 	}
@@ -84,7 +89,7 @@ func (a *Aula) WhatsApp(ctx context.Context, userID string, conQR bool) (EstadoW
 	e.Nombre, _ = d["Name"].(string)
 	// connect guarda el webhook; con la sesión ya corriendo solo actualiza la configuración
 	if _, err := c.evo(ctx, http.MethodPost, "/instance/connect", tok,
-		map[string]any{"webhookUrl": Webhook(userID), "subscribe": []string{"MESSAGE"}}, 15*time.Second); err != nil {
+		map[string]any{"webhookUrl": c.Webhook(userID), "subscribe": []string{"MESSAGE"}}, 15*time.Second); err != nil {
 		return e, err
 	}
 	if e.Vinculado || !conQR {
@@ -109,4 +114,62 @@ func (a *Aula) WhatsApp(ctx context.Context, userID string, conQR bool) (EstadoW
 		ultimoQR.Unlock()
 	}
 	return e, nil
+}
+
+// WebhookValido comprueba la firma de la URL del relé (ver Clase.Webhook).
+func (a *Aula) WebhookValido(nombre, firma string) bool {
+	c := a.Clase
+	if !c.EvoActivo() || !strings.HasPrefix(nombre, "curso-") {
+		return false
+	}
+	return hmac.Equal([]byte(c.FirmaWebhook(nombre)), []byte(firma))
+}
+
+var arrancandoEvo sync.Mutex
+
+// evoVivo: Evolution Go contesta algo (cualquier código HTTP) en su raíz.
+func (c *Clase) evoVivo(ctx context.Context) bool {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(c.EvoURL, "/")+"/", nil)
+	if err != nil {
+		return false
+	}
+	res, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
+	if err != nil {
+		return false
+	}
+	res.Body.Close()
+	return true
+}
+
+// asegurarEvo arranca el contenedor de Evolution Go si está apagado (botón «Iniciar WhatsApp» del LIVE).
+func (a *Aula) asegurarEvo(ctx context.Context) error {
+	c := a.Clase
+	if c.evoVivo(ctx) {
+		return nil
+	}
+	arrancandoEvo.Lock()
+	defer arrancandoEvo.Unlock()
+	if c.evoVivo(ctx) {
+		return nil
+	}
+	u, err := url.Parse(c.EvoURL)
+	if err != nil || u.Hostname() == "" {
+		return fmt.Errorf("Evolution Go no responde y no sé qué contenedor arrancar")
+	}
+	if out, err := a.exec(ctx, "start", u.Hostname()); err != nil {
+		return fmt.Errorf("no se pudo iniciar Evolution Go: %.200s", out)
+	}
+	for i := 0; i < 30; i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(time.Second):
+		}
+		if c.evoVivo(ctx) {
+			return nil
+		}
+	}
+	return errors.New("Evolution Go se inició pero aún no responde; vuelve a intentar en unos segundos")
 }

@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E00b · Ponte al día: tu asistente entrenado con embeddings</title>
+<!--
+  Escena de recuperación para quien faltó a g8-02: arma las preguntas de su negocio (lista, a mano o
+  desde un Excel/CSV), las «entrena» como embeddings y prueba un chat que busca por parecido.
+  Todo corre en el navegador: la CSP de escenas no deja CDN ni otro origen, y el LMS no tiene
+  endpoint de embeddings ni de chat libre. Los embeddings son vectores por «hashing» de palabras y
+  trozos de palabras (1024 dimensiones, normalizados), y la búsqueda es por similitud del coseno.
+  El Excel (.xlsx) se abre con un lector ZIP propio (DecompressionStream) + DOMParser.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+html, body { height: auto; }
+body { overflow: auto; }
+.esc { min-height: 100vh; padding: 16px; gap: 14px; font-size: 16px; }
+.pd { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; max-width: 1280px; width: 100%; margin: 0 auto; }
+@media (max-width: 860px) { .pd { grid-template-columns: 1fr; } }
+.pd-caja { background: var(--s1); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.pd-caja h2 { margin: 0; font-size: 1.05em; }
+.pd-caja h2 b { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--accent); color: var(--on-accent); margin-right: .4em; font-size: .85em; }
+.pd-nota { margin: 0; color: var(--muted); font-size: .88em; line-height: 1.45; }
+.pd-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pd-chips button, .pd-btn { font: inherit; font-size: .9em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.pd-chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.pd-btn.prim { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+.pd-btn:disabled { opacity: .5; cursor: default; }
+.pd-btn:focus-visible, .pd-chips button:focus-visible, .pd input:focus-visible, .pd textarea:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.pd input[type=text], .pd textarea { font: inherit; font-size: .92em; width: 100%; box-sizing: border-box; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); border-radius: 10px; padding: 8px 10px; }
+.pd textarea { resize: vertical; min-height: 2.6em; }
+.pd-filas { display: grid; gap: 8px; max-height: 46vh; overflow: auto; padding-right: 4px; }
+.pd-fila { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) minmax(0, 1.3fr) auto; gap: 6px; align-items: start; }
+@media (max-width: 560px) { .pd-fila { grid-template-columns: 1.6em minmax(0, 1fr) auto; } .pd-fila textarea { grid-column: 2 / 3; } }
+.pd-fila .n { color: var(--muted); font-size: .8em; padding-top: .7em; text-align: right; }
+.pd-quitar { border: 0; background: transparent; color: var(--bad); font-size: 1.2em; cursor: pointer; padding: 4px 6px; }
+.pd-acc { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pd-cuenta { font-size: .88em; font-weight: 700; }
+.pd-cuenta.mal { color: var(--warn); } .pd-cuenta.bien { color: var(--ok); }
+.pd-barra { height: 10px; background: var(--s3); border-radius: 999px; overflow: hidden; }
+.pd-barra i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .15s; }
+.pd-estado { font-size: .9em; margin: 0; min-height: 1.3em; }
+.pd-modo { font-size: .78em; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+.pd-modo.serv { background: var(--ok-bg); color: var(--ok); } .pd-modo.loc { background: var(--warn-bg); color: var(--warn); }
+.pd-lienzo { position: relative; height: 200px; border-radius: 12px; background: radial-gradient(120% 90% at 50% 100%, var(--accent-bg), transparent 70%); overflow: hidden; }
+.pd-lienzo canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.pd-respaldo { position: absolute; inset: 0; display: grid; place-items: center; font-size: 3.5em; }
+.pd-chat { display: grid; gap: 8px; max-height: 40vh; overflow: auto; }
+.pd-msg { padding: 9px 12px; border-radius: 12px; font-size: .92em; line-height: 1.45; max-width: 92%; overflow-wrap: anywhere; }
+.pd-msg.yo { justify-self: end; background: var(--accent); color: var(--on-accent); }
+.pd-msg.bot { justify-self: start; background: var(--s2); border: 1px solid var(--line); }
+.pd-fuentes { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: .8em; color: var(--muted); }
+.pd-fuentes li { display: grid; grid-template-columns: 3.4em minmax(0, 1fr); gap: 6px; }
+.pd-fuentes .pct { font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
+.pd-preg { display: flex; gap: 8px; }
+.pd-preg input { flex: 1; }
+.pd-archivo { font-size: .88em; }
+.pd details summary { cursor: pointer; font-size: .88em; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .pd-barra i { transition: none; } }
+</style>
+</head>
+<body>
+<script type="importmap">
+{"imports":{"three":"/api/v1/live/g8-03/comun/three.module.min.js","three/addons/geometries/RoundedBoxGeometry.js":"/api/v1/live/g8-03/comun/RoundedBoxGeometry.js"}}
+</script>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Grupo 8 · Ponte al día</span>
+  </header>
+  <main class="pd">
+    <section class="pd-caja" aria-labelledby="t1">
+      <h2 id="t1"><b>1</b>Las preguntas de tus clientes</h2>
+      <p class="pd-nota">Elige un tipo de negocio para empezar con un ejemplo, o escribe el tuyo. Escribe <strong>al menos 8 preguntas</strong> que te harían tus clientes, con su respuesta.</p>
+      <div class="pd-chips" id="tipos" role="group" aria-label="Tipo de negocio"></div>
+      <label><span class="pd-nota">Nombre de tu negocio</span><input type="text" id="negocio" maxlength="80" placeholder="Ej.: Botica San Martín"></label>
+      <div class="pd-filas" id="filas"></div>
+      <div class="pd-acc">
+        <button type="button" class="pd-btn" id="agregar">+ Agregar pregunta</button>
+        <span class="pd-cuenta" id="cuenta"></span>
+      </div>
+      <details>
+        <summary>¿Tienes un Excel o CSV con preguntas o precios? Súbelo aquí</summary>
+        <p class="pd-nota">Sirve una hoja con columnas <em>pregunta</em> y <em>respuesta</em>, o una lista de productos con <em>producto</em> y <em>precio</em>. Se lee en tu navegador: no se sube a ningún lado.</p>
+        <input class="pd-archivo" type="file" id="archivo" accept=".xlsx,.csv,text/csv">
+        <p class="pd-estado" id="archivo-estado" role="status"></p>
+      </details>
+    </section>
+
+    <section class="pd-caja" aria-labelledby="t2">
+      <h2 id="t2"><b>2</b>Entrena y prueba a tu Robo</h2>
+      <p class="pd-nota"><strong>Entrenar</strong> = convertir cada pregunta y respuesta en una lista de números (un <em>embedding</em>) con el servidor del curso; si no responde, se hace aquí mismo en modo sin conexión. Cuando un cliente pregunta algo, tu Robo busca las 3 respuestas que más se parecen.</p>
+      <div class="pd-acc"><button type="button" class="pd-btn prim" id="entrenar">Entrenar a mi Robo</button><span class="pd-cuenta" id="indexados"></span><span class="pd-modo" id="modo" hidden></span></div>
+      <div class="pd-barra" aria-hidden="true"><i id="barra"></i></div>
+      <p class="pd-estado" id="estado" role="status"></p>
+      <div class="pd-lienzo"><canvas id="lienzo" aria-label="Tu Robo"></canvas><div class="pd-respaldo" id="respaldo" hidden aria-hidden="true">🤖</div></div>
+      <div class="pd-chat" id="chat" aria-live="polite"></div>
+      <form class="pd-preg" id="form">
+        <label class="esc-sr" for="pregunta" style="position:absolute;left:-9999px">Tu pregunta</label>
+        <input type="text" id="pregunta" maxlength="300" placeholder="Pregunta como lo haría un cliente…" autocomplete="off">
+        <button type="submit" class="pd-btn prim" id="enviar">Preguntar</button>
+      </form>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+import { montarAvatar } from "/api/v1/live/g8-03/comun/avatar.js";
+let av = null;
+try { av = montarAvatar(document.getElementById("lienzo"), "robot"); } catch (e) { av = null; }
+if (!av || !av.soportado) document.getElementById("respaldo").hidden = false;
+else { try { av.saludar(); } catch (e) {} }
+window.ponerAnimo = (a) => { try { if (av && av.soportado) av.setAnimo(a); } catch (e) {} };
+</script>
+
+<script>
+(function () {
+  "use strict";
+  var K_DATOS = "g8-03-ponte-datos", K_INDICE = "g8-03-ponte-indice", MIN_PREG = 8, DIM = 1024, UMBRAL = 0.2;
+
+  /* ---------- tipos de negocio con 8 preguntas de ejemplo ---------- */
+  var TIPOS = {
+    cafeteria: { nombre: "Cafetería", ej: "Café La Esquina", qa: [
+      ["¿Dónde están?", "Estamos en Av. Larco 345, Miraflores, a media cuadra del parque."],
+      ["¿Qué horario tienen?", "Abrimos de lunes a domingo de 8 a.m. a 9 p.m."],
+      ["¿Qué cafés tienen?", "Espresso, americano, capuchino, flat white y cold brew."],
+      ["¿Cuánto cuesta un capuchino?", "El capuchino cuesta S/ 9 y el flat white S/ 11."],
+      ["¿Tienen delivery?", "Sí, por Rappi y PedidosYa, de 8 a.m. a 8 p.m."],
+      ["¿Tienen leche sin lactosa o de avena?", "Sí, tenemos leche de avena y sin lactosa sin costo extra."],
+      ["¿Aceptan Yape o tarjeta?", "Aceptamos Yape, Plin, efectivo y todas las tarjetas."],
+      ["¿Tienen wifi?", "Sí, el wifi es gratis; la clave está en tu ticket."]
+    ]},
+    botica: { nombre: "Botica", ej: "Botica San Martín", qa: [
+      ["¿A qué hora abren?", "Abrimos todos los días de 7 a.m. a 11 p.m."],
+      ["¿Hacen delivery?", "Sí, delivery gratis en el distrito por compras desde S/ 30."],
+      ["¿Venden medicinas con receta?", "Sí, pero los antibióticos y controlados solo con receta médica."],
+      ["¿Tienen genéricos?", "Sí, siempre te ofrecemos el genérico más económico."],
+      ["¿Miden la presión?", "Sí, la toma de presión es gratis en tienda."],
+      ["¿Ponen inyectables?", "Sí, aplicamos inyectables con receta, cuesta S/ 5."],
+      ["¿Aceptan Yape?", "Aceptamos Yape, Plin, efectivo y tarjetas."],
+      ["¿Dónde están ubicados?", "Jr. Lima 210, frente a la plaza principal."]
+    ]},
+    bodega: { nombre: "Bodega / minimarket", ej: "Minimarket Don Lucho", qa: [
+      ["¿Hasta qué hora atienden?", "Atendemos de 6 a.m. a 11 p.m., todos los días."],
+      ["¿Hacen delivery?", "Sí, a 5 cuadras a la redonda, sin costo desde S/ 20."],
+      ["¿Cuánto está el arroz?", "El arroz extra está a S/ 4.20 el kilo."],
+      ["¿Tienen gas?", "Sí, balón de gas de 10 kg a S/ 48 con delivery incluido."],
+      ["¿Recargan celulares?", "Sí, recargas de todos los operadores desde S/ 3."],
+      ["¿Aceptan Yape?", "Sí, Yape y Plin, y también efectivo."],
+      ["¿Venden pan?", "Sí, pan francés y ciabatta a las 6 a.m. y a las 5 p.m."],
+      ["¿Dónde están?", "Calle Los Pinos 455, al costado del colegio."]
+    ]},
+    peluqueria: { nombre: "Peluquería / barbería", ej: "Barbería El Filo", qa: [
+      ["¿Cuánto cuesta el corte?", "Corte de caballero S/ 20, con barba S/ 30."],
+      ["¿Necesito cita?", "Mejor con cita por WhatsApp; también atendemos por orden de llegada."],
+      ["¿Qué horario tienen?", "De martes a domingo de 10 a.m. a 9 p.m."],
+      ["¿Hacen tintes?", "Sí, tinte desde S/ 60 según el largo del cabello."],
+      ["¿Cortan a niños?", "Sí, corte de niño S/ 15."],
+      ["¿Aceptan tarjeta?", "Aceptamos tarjeta, Yape y efectivo."],
+      ["¿Dónde están?", "Av. Brasil 1020, segundo piso."],
+      ["¿Venden productos para el cabello?", "Sí, ceras, aceites para barba y shampoo."]
+    ]},
+    taller: { nombre: "Taller mecánico", ej: "Taller Rueda Firme", qa: [
+      ["¿Cuánto cuesta el cambio de aceite?", "Desde S/ 120 con filtro incluido, según el auto."],
+      ["¿Qué horario tienen?", "De lunes a viernes de 8 a.m. a 6 p.m. y domingo de 9 a.m. a 1 p.m."],
+      ["¿Necesito cita?", "Sí, para no esperar; separa tu turno por WhatsApp."],
+      ["¿Hacen diagnóstico con escáner?", "Sí, el escaneo computarizado cuesta S/ 50."],
+      ["¿Dan garantía?", "Sí, 3 meses de garantía en mano de obra."],
+      ["¿Recogen el auto?", "Sí, recojo y entrega en el distrito por S/ 30."],
+      ["¿Dónde están?", "Av. Industrial 780, cerca del grifo."],
+      ["¿Aceptan tarjeta?", "Sí, tarjeta, transferencia y Yape."]
+    ]},
+    academia: { nombre: "Academia / cursos", ej: "Academia Avanza", qa: [
+      ["¿Qué cursos tienen?", "Matemática, inglés y preparación preuniversitaria."],
+      ["¿Cuánto cuesta la mensualidad?", "S/ 180 al mes; la matrícula es S/ 50."],
+      ["¿Qué horarios tienen?", "Turno mañana de 8 a 12 y turno noche de 6 a 9, de lunes a jueves."],
+      ["¿Las clases son virtuales?", "Hay presencial y virtual en vivo, con grabación."],
+      ["¿Dan certificado?", "Sí, certificado al aprobar el curso."],
+      ["¿Hay clase de prueba?", "Sí, la primera clase es gratis."],
+      ["¿Cómo me inscribo?", "Escríbenos por WhatsApp con tu nombre y el curso."],
+      ["¿Dónde están?", "Jr. Ayacucho 330, tercer piso."]
+    ]},
+    propio: { nombre: "Mi negocio (lo escribo yo)", ej: "", qa: [] }
+  };
+
+  /* ---------- utilidades ---------- */
+  function $(id) { return document.getElementById(id); }
+  function esc(t) { return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function leer(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function guardar(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+  function animo(a) { try { if (window.ponerAnimo) window.ponerAnimo(a); } catch (e) {} }
+  function pausa() { return new Promise(function (r) { setTimeout(r, 0); }); }
+
+  /* ---------- estado ---------- */
+  var est = { tipo: "", negocio: "", filas: [] };
+  var indice = null; // { firma, chunks:[{q,a,fuente,vec:number[]}] }
+
+  function cargar() {
+    try { var d = JSON.parse(leer(K_DATOS) || "null"); if (d && Array.isArray(d.filas)) est = d; } catch (e) {}
+    if (!est.filas.length) {
+      // ¿Hizo la mesa creativa de g8-02? Se toma de ahí.
+      try {
+        var a = JSON.parse(leer("g8-02-asistente-borrador") || leer("g8-02-asistente") || "null");
+        if (a) {
+          var ps = a.preguntas || a.preguntas_frecuentes || [];
+          ps.forEach(function (p) {
+            var q = p.formas || (Array.isArray(p.preguntas) ? p.preguntas[0] : "") || "";
+            q = String(q).split(/[,\n]/)[0].trim();
+            if (q && p.respuesta) est.filas.push({ q: q, a: String(p.respuesta) });
+          });
+          est.negocio = String((a.negocio && a.negocio.nombre) || a.negocio || "");
+        }
+      } catch (e) {}
+    }
+    while (est.filas.length < 3) est.filas.push({ q: "", a: "" });
+    try { var ix = JSON.parse(leer(K_INDICE) || "null"); if (ix && Array.isArray(ix.chunks)) indice = ix; } catch (e) {}
+  }
+  function persistir() { guardar(K_DATOS, JSON.stringify(est)); }
+
+  /* ---------- 1: tipos y filas ---------- */
+  function pintarTipos() {
+    $("tipos").innerHTML = Object.keys(TIPOS).map(function (k) {
+      return '<button type="button" data-tipo="' + k + '" aria-pressed="' + (est.tipo === k) + '">' + esc(TIPOS[k].nombre) + "</button>";
+    }).join("");
+  }
+  function elegirTipo(k) {
+    var t = TIPOS[k]; if (!t) return;
+    est.tipo = k;
+    var llenas = est.filas.filter(function (f) { return f.q.trim() || f.a.trim(); }).length;
+    if (k === "propio") {
+      if (!llenas) est.filas = Array.from({ length: MIN_PREG }, function () { return { q: "", a: "" }; });
+    } else {
+      est.filas = t.qa.map(function (x) { return { q: x[0], a: x[1] }; });
+      if (!est.negocio) est.negocio = t.ej;
+    }
+    $("negocio").value = est.negocio;
+    persistir(); pintarTipos(); pintarFilas();
+    if (k !== "propio") estado("Listo: cargué 8 preguntas de ejemplo. Cámbialas por las de tu negocio.", "");
+  }
+  function pintarFilas() {
+    $("filas").innerHTML = est.filas.map(function (f, i) {
+      return '<div class="pd-fila" data-i="' + i + '"><span class="n">' + (i + 1) + "</span>" +
+        '<input type="text" data-c="q" maxlength="200" aria-label="Pregunta ' + (i + 1) + '" placeholder="Pregunta del cliente" value="' + esc(f.q) + '">' +
+        '<textarea data-c="a" maxlength="600" rows="1" aria-label="Respuesta ' + (i + 1) + '" placeholder="Tu respuesta">' + esc(f.a) + "</textarea>" +
+        '<button type="button" class="pd-quitar" data-quitar="' + i + '" aria-label="Quitar pregunta ' + (i + 1) + '">×</button></div>';
+    }).join("");
+    contar();
+  }
+  function completas() { return est.filas.filter(function (f) { return f.q.trim() && f.a.trim(); }); }
+  function contar() {
+    var n = completas().length, c = $("cuenta");
+    c.textContent = n >= MIN_PREG ? n + " preguntas listas ✓" : n + " de " + MIN_PREG + " preguntas con respuesta";
+    c.className = "pd-cuenta " + (n >= MIN_PREG ? "bien" : "mal");
+  }
+
+  /* ---------- 2: leer Excel / CSV ---------- */
+  function partirCSV(txt) {
+    txt = txt.replace(/^﻿/, "");
+    var primera = txt.split(/\r?\n/)[0] || "";
+    var sep = [";", "\t", ","].sort(function (a, b) { return primera.split(b).length - primera.split(a).length; })[0];
+    var filas = [], fila = [], campo = "", comillas = false;
+    for (var i = 0; i < txt.length; i++) {
+      var ch = txt[i];
+      if (comillas) {
+        if (ch === '"' && txt[i + 1] === '"') { campo += '"'; i++; }
+        else if (ch === '"') comillas = false;
+        else campo += ch;
+      } else if (ch === '"') comillas = true;
+      else if (ch === sep) { fila.push(campo); campo = ""; }
+      else if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && txt[i + 1] === "\n") i++;
+        fila.push(campo); filas.push(fila); fila = []; campo = "";
+      } else campo += ch;
+    }
+    if (campo !== "" || fila.length) { fila.push(campo); filas.push(fila); }
+    return filas;
+  }
+
+  // Lector ZIP mínimo para .xlsx (sin librerías: la escena no puede cargar CDN).
+  async function abrirZip(buf) {
+    var dv = new DataView(buf), u8 = new Uint8Array(buf), eocd = -1;
+    for (var i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) throw new Error("no parece un Excel (.xlsx)");
+    var n = dv.getUint16(eocd + 10, true), p = dv.getUint32(eocd + 16, true), arch = {};
+    var dec = new TextDecoder();
+    for (var k = 0; k < n; k++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      var metodo = dv.getUint16(p + 10, true), tam = dv.getUint32(p + 20, true);
+      var ln = dv.getUint16(p + 28, true), le = dv.getUint16(p + 30, true), lc = dv.getUint16(p + 32, true);
+      var local = dv.getUint32(p + 42, true), nombre = dec.decode(u8.subarray(p + 46, p + 46 + ln));
+      arch[nombre] = { metodo: metodo, tam: tam, local: local };
+      p += 46 + ln + le + lc;
+    }
+    return {
+      nombres: Object.keys(arch),
+      leer: async function (nombre) {
+        var e = arch[nombre]; if (!e) return null;
+        var o = e.local, ini = o + 30 + dv.getUint16(o + 26, true) + dv.getUint16(o + 28, true);
+        var datos = u8.subarray(ini, ini + e.tam);
+        if (e.metodo === 0) return dec.decode(datos);
+        if (e.metodo !== 8) throw new Error("compresión no soportada");
+        if (typeof DecompressionStream === "undefined") throw new Error("tu navegador no puede abrir .xlsx; guárdalo como CSV");
+        var s = new Blob([datos]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+        return await new Response(s).text();
+      }
+    };
+  }
+  function colNum(ref) { var m = /^([A-Z]+)/.exec(ref || ""), n = 0; if (!m) return -1; for (var i = 0; i < m[1].length; i++) n = n * 26 + m[1].charCodeAt(i) - 64; return n - 1; }
+  async function leerXLSX(buf) {
+    var z = await abrirZip(buf), dp = new DOMParser(), compartidos = [];
+    var ss = await z.leer("xl/sharedStrings.xml");
+    if (ss) {
+      var d = dp.parseFromString(ss, "application/xml");
+      Array.prototype.forEach.call(d.getElementsByTagName("si"), function (si) {
+        var t = ""; Array.prototype.forEach.call(si.getElementsByTagName("t"), function (x) { t += x.textContent; });
+        compartidos.push(t);
+      });
+    }
+    var hoja = z.nombres.filter(function (x) { return /^xl\/worksheets\/sheet\d+\.xml$/.test(x); }).sort()[0];
+    if (!hoja) throw new Error("el Excel no tiene hojas");
+    var doc = dp.parseFromString(await z.leer(hoja), "application/xml"), filas = [];
+    Array.prototype.forEach.call(doc.getElementsByTagName("row"), function (r) {
+      var fila = [];
+      Array.prototype.forEach.call(r.getElementsByTagName("c"), function (c) {
+        var t = c.getAttribute("t"), v = c.getElementsByTagName("v")[0], val = "";
+        if (t === "s" && v) val = compartidos[parseInt(v.textContent, 10)] || "";
+        else if (t === "inlineStr") { Array.prototype.forEach.call(c.getElementsByTagName("t"), function (x) { val += x.textContent; }); }
+        else if (v) val = v.textContent;
+        var ci = colNum(c.getAttribute("r")); if (ci < 0) ci = fila.length;
+        fila[ci] = val;
+      });
+      for (var i = 0; i < fila.length; i++) if (fila[i] == null) fila[i] = "";
+      filas.push(fila);
+    });
+    return filas;
+  }
+
+  // Convierte la tabla en pares pregunta/respuesta.
+  function tablaAPares(filas) {
+    filas = filas.filter(function (f) { return f.some(function (c) { return String(c).trim(); }); });
+    if (!filas.length) return [];
+    var cab = filas[0].map(function (c) { return String(c).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim(); });
+    function col(re) { for (var i = 0; i < cab.length; i++) if (re.test(cab[i])) return i; return -1; }
+    var iq = col(/pregunta|question|consulta/), ia = col(/respuesta|answer/);
+    var ip = col(/producto|articulo|item|descripcion|nombre|servicio/), ipr = col(/precio|price|costo|valor|s\//);
+    var cuerpo = filas.slice(1), pares = [];
+    if (iq >= 0 && ia >= 0) {
+      cuerpo.forEach(function (f) { var q = String(f[iq] || "").trim(), a = String(f[ia] || "").trim(); if (q && a) pares.push({ q: q, a: a }); });
+    } else if (ip >= 0 && ipr >= 0) {
+      cuerpo.forEach(function (f) {
+        var p = String(f[ip] || "").trim(), pr = String(f[ipr] || "").trim(); if (!p) return;
+        var extra = f.map(function (v, i) { return i !== ip && i !== ipr && String(v).trim() && filas[0][i] ? filas[0][i] + ": " + v : ""; }).filter(Boolean).join(". ");
+        pares.push({ q: "¿Cuánto cuesta " + p + "?", a: p + (pr ? " cuesta " + (/^\d/.test(pr) ? "S/ " + pr : pr) : "") + "." + (extra ? " " + extra + "." : "") });
+      });
+    } else if (cab.length >= 2 && !cuerpo.length) {
+      return [];
+    } else {
+      // Sin cabecera reconocible: columna A = pregunta, B = respuesta (incluye la primera fila).
+      filas.forEach(function (f) { var q = String(f[0] || "").trim(), a = String(f[1] || "").trim(); if (q && a) pares.push({ q: q, a: a }); });
+    }
+    return pares.slice(0, 500);
+  }
+
+  async function alSubir(ev) {
+    var f = ev.target.files && ev.target.files[0], st = $("archivo-estado");
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { st.textContent = "El archivo pesa más de 5 MB. Usa uno más pequeño."; return; }
+    st.textContent = "Leyendo " + f.name + "…";
+    try {
+      var buf = await f.arrayBuffer(), filas;
+      if (/\.xlsx$/i.test(f.name)) filas = await leerXLSX(buf);
+      else if (/\.csv$/i.test(f.name)) filas = partirCSV(new TextDecoder().decode(buf));
+      else throw new Error("solo se aceptan .xlsx o .csv");
+      var pares = tablaAPares(filas);
+      if (!pares.length) throw new Error("no encontré columnas pregunta/respuesta ni producto/precio");
+      est.filas = est.filas.filter(function (x) { return x.q.trim() || x.a.trim(); }).concat(pares);
+      persistir(); pintarFilas();
+      st.textContent = "Agregué " + pares.length + " filas de " + f.name + ". Revísalas abajo y luego entrena.";
+    } catch (e) {
+      st.textContent = "No pude leer el archivo: " + (e && e.message ? e.message : "formato desconocido") + ".";
+    }
+    ev.target.value = "";
+  }
+
+  /* ---------- 3: embeddings (en el navegador) ---------- */
+  var VACIAS = new Set("el la los las un una unos unas de del al a en y o u que se su sus por para con sin es son lo le les me te mi tu yo como cual cuales hay ser este esta estos estas ese esa eso tienen tiene tengo puedo puede quiero hola favor hacen hace venden vende ustedes algo".split(" "));
+  /* Sinónimos de mostrador: cada palabra suma además un rasgo común («envio» y «delivery» se parecen). */
+  var SINON = {};
+  [["delivery", "envio", "envia", "domicilio", "reparto", "llevan", "despacho"], ["horario", "hora", "abren", "abre", "cierran", "cierra", "atienden", "atiende", "abierto"],
+   ["pago", "pagar", "yape", "plin", "tarjeta", "efectivo", "transferencia", "aceptan"], ["precio", "cuesta", "cuanto", "costo", "vale", "cobran", "tarifa", "mensualidad"],
+   ["direccion", "donde", "ubicado", "ubicada", "ubicacion", "local", "llego", "queda"], ["cita", "reserva", "reservar", "turno", "separar"]]
+    .forEach(function (g) { g.forEach(function (w) { SINON[w] = g[0]; }); });
+  function normal(t) { return String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9ñ\s]/g, " "); }
+  function raiz(w) { if (w.length > 5 && /(es)$/.test(w)) return w.slice(0, -2); if (w.length > 3 && /s$/.test(w)) return w.slice(0, -1); return w; }
+  function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function sumar(v, rasgo, peso) { var h = hash(rasgo); v[h % DIM] += (h & 0x80000000 ? -1 : 1) * peso; }
+  function embed(texto) {
+    var v = new Float32Array(DIM);
+    var pal = normal(texto).split(/\s+/).filter(function (w) { return w && !VACIAS.has(w); }).map(raiz);
+    pal.forEach(function (w, i) {
+      sumar(v, "w:" + w, 1);
+      if (SINON[w]) sumar(v, "s:" + SINON[w], 1.2);
+      if (i > 0) sumar(v, "b:" + pal[i - 1] + "_" + w, 0.6);
+      var g = "<" + w + ">";
+      for (var j = 0; j + 3 <= g.length; j++) sumar(v, "c:" + g.substr(j, 3), 0.35);
+    });
+    var n = 0; for (var k = 0; k < DIM; k++) n += v[k] * v[k];
+    n = Math.sqrt(n) || 1;
+    var out = new Array(DIM); for (var m = 0; m < DIM; m++) out[m] = Math.round((v[m] / n) * 1e4) / 1e4;
+    return out;
+  }
+  function coseno(a, b) { var s = 0, n = Math.min(a.length, b.length); for (var i = 0; i < n; i++) s += a[i] * b[i]; return s; }
+  function firma() { return JSON.stringify(completas()); }
+
+  /* ---------- servidor del LMS (mismo patrón que Lab.pedir de laboratorio.js) ---------- */
+  var LECCION = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "g8-03";
+  var BASE = "/api/v1/live/" + encodeURIComponent(LECCION);
+  var LOCAL = "local-palabras-1024", UMBRAL_SERV = 0.45, LOTE = 96, MAXTXT = 1500;
+  async function postJSON(ruta, body) {
+    var r;
+    try {
+      r = await fetch(BASE + ruta, { method: "POST", credentials: "same-origin", cache: "no-store",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    } catch (e) { var x = new Error("sin conexión"); x.status = 0; throw x; }
+    if (!r.ok) {
+      var m = ""; try { var d = await r.json(); m = (d && d.error && d.error.message) || ""; } catch (e) {}
+      var er = new Error(m); er.status = r.status; throw er;
+    }
+    return r.json();
+  }
+  function redondear(v) { var o = new Array(v.length); for (var i = 0; i < v.length; i++) o[i] = Math.round(v[i] * 1e4) / 1e4; return o; }
+  // Embeddings del servidor en lotes de 96 → { vectores, modelo }. Lanza error si algo falla.
+  async function embedServidor(textos, alAvanzar) {
+    var vectores = [], modelo = "";
+    for (var i = 0; i < textos.length; i += LOTE) {
+      var lote = textos.slice(i, i + LOTE).map(function (t) { return String(t).slice(0, MAXTXT); });
+      var d = await postJSON("/embeddings", { textos: lote });
+      if (!d || !Array.isArray(d.vectores) || d.vectores.length !== lote.length || !d.modelo) { var e = new Error("respuesta incompleta"); e.status = 502; throw e; }
+      if (modelo && d.modelo !== modelo) { var e2 = new Error("cambió el modelo"); e2.status = 409; throw e2; }
+      modelo = d.modelo;
+      d.vectores.forEach(function (v) { vectores.push(redondear(v)); });
+      if (alAvanzar) alAvanzar(vectores.length);
+    }
+    return { vectores: vectores, modelo: modelo };
+  }
+  function motivo(e) {
+    var s = e && e.status;
+    if (s === 429) return "llegaste al tope del servidor por ahora";
+    if (s === 404 || s === 501 || s === 503) return "el servidor aún no tiene este servicio";
+    if (s === 401) return "tu sesión se cerró (recarga la página)";
+    if (s === 0) return "no hay conexión con el LMS";
+    return "el servidor no respondió bien";
+  }
+  function pintarModo() {
+    var b = $("modo"); if (!indice) { b.hidden = true; return; }
+    b.hidden = false;
+    var serv = indice.modelo && indice.modelo !== LOCAL;
+    b.textContent = serv ? "Entrenado con embeddings " + indice.modelo.replace(/^.*\//, "") + " (servidor)" : "Modo sin conexión (embeddings de palabras)";
+    b.className = "pd-modo " + (serv ? "serv" : "loc");
+  }
+
+  async function entrenar() {
+    var pares = completas(), btn = $("entrenar");
+    if (pares.length < MIN_PREG) {
+      estado("Te faltan " + (MIN_PREG - pares.length) + " preguntas con respuesta (mínimo " + MIN_PREG + ").", "mal");
+      return;
+    }
+    btn.disabled = true; animo("pensando");
+    var chunks = [], modelo = LOCAL, aviso = "";
+    $("barra").style.width = "0%";
+    estado("Entrenando en el servidor… 0 de " + pares.length, "");
+    try {
+      var r = await embedServidor(pares.map(function (p) { return p.q + "\n" + p.a; }), function (n) {
+        $("barra").style.width = Math.round((n / pares.length) * 100) + "%";
+        estado("Entrenando en el servidor… " + n + " de " + pares.length, "");
+      });
+      modelo = r.modelo;
+      chunks = pares.map(function (p, i) { return { q: p.q, a: p.a, vec: r.vectores[i] }; });
+    } catch (e) {
+      aviso = " (Usé el modo sin conexión: " + motivo(e) + ".)";
+      chunks = [];
+      for (var i = 0; i < pares.length; i++) {
+        var p = pares[i];
+        chunks.push({ q: p.q, a: p.a, vec: embed(p.q + " " + p.q + " " + p.a) }); // la pregunta pesa doble
+        $("barra").style.width = Math.round(((i + 1) / pares.length) * 100) + "%";
+        estado("Entrenando sin conexión… " + (i + 1) + " de " + pares.length, "");
+        if (i % 4 === 3) await pausa();
+      }
+    }
+    indice = { firma: firma(), negocio: est.negocio, modelo: modelo, chunks: chunks, fecha: Date.now() };
+    var ok = guardar(K_INDICE, JSON.stringify(indice));
+    $("indexados").textContent = chunks.length + " trozos indexados";
+    pintarModo();
+    estado("¡Listo! Tu Robo aprendió " + chunks.length + " respuestas" + (ok ? " y quedaron guardadas en este navegador." : " (no se pudieron guardar: se pierden al cerrar).") + aviso + " Pregúntale algo.", "bien");
+    btn.disabled = false; animo("feliz");
+    $("pregunta").focus();
+  }
+
+  /* ---------- 4: chat ---------- */
+  function burbuja(clase, html) {
+    var d = document.createElement("div"); d.className = "pd-msg " + clase; d.innerHTML = html;
+    $("chat").appendChild(d); $("chat").scrollTop = $("chat").scrollHeight; return d;
+  }
+  // Busca con los mismos embeddings con que se entrenó; si el servidor falla, rehace la búsqueda local
+  // con el texto de los trozos (nunca mezcla vectores de modelos distintos).
+  async function buscar(q) {
+    var serv = indice.modelo && indice.modelo !== LOCAL;
+    if (serv) {
+      try {
+        var r = await embedServidor([q]);
+        if (r.modelo === indice.modelo) {
+          return { modo: "serv", umbral: UMBRAL_SERV, top: indice.chunks.map(function (c) { return { c: c, s: coseno(r.vectores[0], c.vec) }; }) };
+        }
+        estado("El servidor cambió de modelo (" + r.modelo + "): pulsa Entrenar otra vez. Mientras, busco sin conexión.", "mal");
+      } catch (e) { /* sigue local */ }
+    }
+    var qv = embed(q);
+    return { modo: "local", umbral: UMBRAL, top: indice.chunks.map(function (c) {
+      return { c: c, s: coseno(qv, serv ? embed(c.q + " " + c.q + " " + c.a) : c.vec) };
+    }) };
+  }
+  var ocupado = false;
+  async function preguntar(ev) {
+    ev.preventDefault();
+    if (ocupado) return;
+    var q = $("pregunta").value.trim(); if (!q) return;
+    burbuja("yo", esc(q)); $("pregunta").value = "";
+    if (!indice || !indice.chunks.length) { burbuja("bot", "Primero pulsa <strong>Entrenar a mi Robo</strong>."); return; }
+    if (indice.firma !== firma()) estado("Cambiaste preguntas después de entrenar: vuelve a pulsar Entrenar para que las aprenda.", "mal");
+    ocupado = true; $("enviar").disabled = true; animo("pensando");
+    var caja = burbuja("bot", '<span class="pd-nota">Buscando en tus datos…</span>');
+    try {
+      var b = await buscar(q);
+      var orden = b.top.sort(function (x, y) { return y.s - x.s; }), top = orden.slice(0, 3), mejor = top[0];
+      var fuentes = '<ul class="pd-fuentes" aria-label="Fuentes encontradas">' + top.map(function (t) {
+        return '<li><span class="pct">' + Math.max(0, Math.round(t.s * 100)) + "%</span><span>" + esc(t.c.q) + "</span></li>";
+      }).join("") + "</ul>";
+      var hay = mejor && mejor.s >= b.umbral, resp, como = "";
+      if (!hay) {
+        resp = "Eso no está en mis datos. Mejor escríbenos por WhatsApp y te respondemos.";
+      } else {
+        resp = esc(mejor.c.a); como = "respuesta copiada de tus datos";
+        var frag = orden.filter(function (t) { return t.s >= b.umbral; }).slice(0, 5)
+          .map(function (t) { return { pregunta: t.c.q, respuesta: t.c.a }; });
+        try {
+          var negocio = (est.negocio || "") + (est.tipo && TIPOS[est.tipo] && est.tipo !== "propio" ? " (" + TIPOS[est.tipo].nombre + ")" : "");
+          var d = await postJSON("/responder", { pregunta: q.slice(0, MAXTXT), negocio: negocio.trim() || "mi negocio", fragmentos: frag });
+          if (d && typeof d.respuesta === "string" && d.respuesta.trim()) { resp = esc(d.respuesta.trim()); como = "redactada por la IA solo con tus datos"; }
+        } catch (e) { /* se queda con el mejor trozo */ }
+      }
+      animo("hablando");
+      caja.innerHTML = resp + '<div class="pd-nota" style="margin-top:6px">' +
+        (como ? esc(como) + " · " : "") + (b.modo === "serv" ? "búsqueda con embeddings del servidor" : "búsqueda sin conexión") +
+        ". Lo más parecido:</div>" + fuentes;
+      $("chat").scrollTop = $("chat").scrollHeight;
+      setTimeout(function () { animo(hay ? "feliz" : "triste"); }, 1600);
+    } catch (e) {
+      caja.textContent = "Algo falló al buscar. Vuelve a intentar.";
+      animo("triste");
+    } finally {
+      ocupado = false; $("enviar").disabled = false;
+    }
+  }
+
+  function estado(t, clase) { var e = $("estado"); e.textContent = t; e.className = "pd-estado pd-cuenta " + (clase || ""); }
+
+  /* ---------- eventos ---------- */
+  cargar(); pintarTipos(); pintarFilas();
+  $("negocio").value = est.negocio || "";
+  if (indice && !indice.modelo) indice.modelo = LOCAL; // índices guardados antes de existir el servidor
+  pintarModo();
+  if (indice) { $("indexados").textContent = indice.chunks.length + " trozos indexados"; $("barra").style.width = "100%"; estado("Tu Robo ya estaba entrenado en este navegador. Puedes preguntarle o volver a entrenar.", "bien"); }
+  $("tipos").addEventListener("click", function (e) { var b = e.target.closest("[data-tipo]"); if (b) elegirTipo(b.getAttribute("data-tipo")); });
+  $("negocio").addEventListener("input", function () { est.negocio = this.value; persistir(); });
+  $("filas").addEventListener("input", function (e) {
+    var fila = e.target.closest(".pd-fila"), c = e.target.getAttribute("data-c"); if (!fila || !c) return;
+    est.filas[+fila.getAttribute("data-i")][c] = e.target.value; persistir(); contar();
+  });
+  $("filas").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-quitar]"); if (!b) return;
+    est.filas.splice(+b.getAttribute("data-quitar"), 1);
+    if (!est.filas.length) est.filas.push({ q: "", a: "" });
+    persistir(); pintarFilas();
+  });
+  $("agregar").addEventListener("click", function () {
+    est.filas.push({ q: "", a: "" }); persistir(); pintarFilas();
+    var ins = $("filas").querySelectorAll("input"); if (ins.length) ins[ins.length - 1].focus();
+  });
+  $("archivo").addEventListener("change", alSubir);
+  $("entrenar").addEventListener("click", entrenar);
+  $("form").addEventListener("submit", preguntar);
+})();
+</script>
+</body>
+</html>
