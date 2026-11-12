@@ -21,7 +21,8 @@ async function cargarModelo() {
     const { pipeline, env } = await import('@huggingface/transformers');
     env.cacheDir = process.env.FORJA_MODELOS || path.join(AQUI, 'modelos');
     env.allowRemoteModels = process.env.FORJA_DESCARGAR === '1'; // en producción el modelo ya está en disco
-    const ex = await pipeline('feature-extraction', 'Xenova/multilingual-e5-small', { dtype: 'q8' });
+    // un solo hilo y sin reserva adelantada de memoria: el servidor comparte RAM con otros servicios
+    const ex = await pipeline('feature-extraction', 'Xenova/multilingual-e5-small', { dtype: 'q8', session_options: { enableCpuMemArena: false, enableMemPattern: false, intraOpNumThreads: 1, interOpNumThreads: 1 } });
     embeber = async (textos) => (await ex(textos, { pooling: 'mean', normalize: true })).tolist();
     const fam = await embeber(lexico.familias.map((f) => `passage: ${f.desc}`));
     const va = await embeber(lexico.variantes.map((v) => `passage: ${v.desc}`));

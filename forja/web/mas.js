@@ -160,6 +160,7 @@ export function iniciarMas(A) {
   let quien = lee('forja.quien', null); if (!quien) { quien = Math.random().toString(36).slice(2) + Date.now().toString(36); guarda('forja.quien', quien); }
   let sala = lee('forja.sala', ''), reloj = null, misVotos = new Set(lee('forja.votos', []));
   const q = new URLSearchParams(location.search); if (q.get('sala')) sala = q.get('sala').toLowerCase();
+  if (q.get('clase')) { sala = q.get('clase').toLowerCase(); guarda('forja.sala', sala); } // ?clase=rsg-01 deja la sala lista sin abrir la galería (escena LIVE)
   $('sala').value = sala; $('autor').value = lee('forja.autor', '');
   const salaLimpia = () => $('sala').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 24);
   async function cargarGaleria() {
