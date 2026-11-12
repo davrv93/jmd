@@ -38,6 +38,41 @@ def _correr(codigo, pruebas, entradas):
                 resultados.append([nombre, False, f'{type(e).__name__}: {e}'])
     sys.stdout = viejo
     return json.dumps({'salida': salida[:20000], 'error': error, 'pruebas': resultados})
+
+# ---- consola interactiva (>>>): cada línea se compila como en el intérprete de verdad. Si el bloque aún no termina
+# (un if, un for, un def) devuelve mas=True y la página muestra «...». Las variables viven entre una línea y otra.
+import codeop
+_ns_consola = {'__name__': '__console__'}
+_pendiente = []
+
+def _reiniciar_consola():
+    _ns_consola.clear(); _ns_consola['__name__'] = '__console__'; _pendiente.clear()
+
+def _sin_input(mensaje=''):
+    raise RuntimeError('input() no funciona en esta consola. Asigna el valor directo, por ejemplo: nombre = "Ana"')
+
+def _consola(linea):
+    _pendiente.append(linea)
+    fuente = '\\n'.join(_pendiente)
+    try:
+        cod = codeop.compile_command(fuente, '<consola>', 'single')
+    except (SyntaxError, OverflowError, ValueError) as e:
+        _pendiente.clear()
+        return json.dumps({'mas': False, 'salida': '', 'error': ''.join(traceback.format_exception_only(type(e), e))})
+    if cod is None:
+        return json.dumps({'mas': True, 'salida': '', 'error': ''})
+    _pendiente.clear()
+    buf = io.StringIO(); viejo = sys.stdout; sys.stdout = buf; builtins.input = _sin_input
+    error = ''
+    try:
+        exec(cod, _ns_consola)
+    except SystemExit:
+        error = 'Aquí no hace falta salir: sigue escribiendo.\\n'
+    except BaseException as e:
+        error = ''.join(traceback.format_exception(type(e), e, e.__traceback__.tb_next))
+    finally:
+        sys.stdout = viejo
+    return json.dumps({'mas': False, 'salida': buf.getvalue()[:20000], 'error': error})
 `;
 
 const listo = (async () => {
@@ -50,6 +85,12 @@ const listo = (async () => {
 onmessage = async (e) => {
   const py = await listo; if (!py) return;
   const { id, codigo, pruebas, entradas } = e.data;
+  if (e.data.tipo === 'consola') { // una línea escrita en la consola interactiva
+    try { postMessage({ tipo: 'consola', id, ...JSON.parse(py.globals.get('_consola')(e.data.linea)) }); }
+    catch (err) { postMessage({ tipo: 'consola', id, mas: false, salida: '', error: String(err && err.message || err) + '\n' }); }
+    return;
+  }
+  if (e.data.tipo === 'reiniciar-consola') { py.globals.get('_reiniciar_consola')(); return; }
   try {
     const correr = py.globals.get('_correr');
     const r = correr(codigo, py.toPy(pruebas || []), py.toPy(entradas || []));

@@ -56,13 +56,33 @@
   ul.pruebas li i { font-style: normal; font-weight: 900; } ul.pruebas li.ok i { color: var(--ok); } ul.pruebas li.no i { color: var(--bad); }
   ul.pruebas small { display: block; color: var(--muted); font-family: var(--mono); font-size: 12px; }
   .logro { background: var(--ok-bg); color: var(--ok); border-radius: 12px; padding: 10px 12px; font-weight: 800; animation: entra .35s ease-out; }
+  .modos { display: flex; gap: 2px; background: var(--s2); border-radius: 999px; padding: 3px; }
+  .modos button { border: 0; background: none; border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 14px; color: var(--muted); transition: background .15s, color .15s; }
+  .modos button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+  .terminal { grid-row: 2 / 4; background: var(--cod); color: var(--cod-fg); font: 14.5px/1.55 var(--mono); padding: 12px 14px; overflow: auto; cursor: text; min-height: 0; }
+  .terminal pre { margin: 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .terminal .p { color: #c6ff4a; user-select: none; } .terminal .e { color: #ff8f8f; } .terminal .g { color: #8f8ab8; }
+  .terminal .linea { display: flex; }
+  .terminal input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: inherit; font: inherit; padding: 0; caret-color: #c6ff4a; }
+  .ideas { display: grid; gap: 6px; }
+  .ideas button { text-align: left; border: 1px solid var(--line); background: var(--s2); border-radius: 9px; padding: 7px 10px; font: 13.5px var(--mono); transition: transform .15s, border-color .15s; }
+  .ideas button:hover { transform: translateX(3px); border-color: var(--accent); }
+  .ideas small { display: block; font: 12.5px system-ui, sans-serif; color: var(--muted); }
   @keyframes entra { from { opacity: 0; transform: translateY(6px); } }
   @media (max-width: 760px) { body { grid-template-columns: minmax(0, 1fr); height: auto; } .der { min-height: 70vh; } }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<section class="panel izq" aria-label="Ejercicio">
+<section class="panel izq" id="guia" aria-label="Qué probar en la consola" hidden>
+  <h1>Consola de Python</h1>
+  <p class="consigna">Escribe una línea, pulsa Enter y Python te responde. Todo lo que guardes en una variable se queda hasta que reinicies.</p>
+  <p class="avance" id="cuenta" aria-live="polite"></p>
+  <div class="ideas" id="ideas"></div>
+  <p class="caja">↑ y ↓ repiten lo que ya escribiste. Un bloque (if, for, def) termina con una línea vacía.</p>
+  <div class="fila"><button class="btn" id="bLimpiar" type="button">Limpiar pantalla</button><button class="btn" id="bReiniciarConsola" type="button">Reiniciar consola</button></div>
+</section>
+<section class="panel izq" id="ejercicio" aria-label="Ejercicio">
   <div class="pasos" id="pasos" role="tablist" aria-label="Ejercicios"></div>
   <p class="avance" id="avance" aria-live="polite"></p>
   <h1 id="titulo">Cargando…</h1>
@@ -78,12 +98,14 @@
 </section>
 <section class="panel der" aria-label="Editor y consola">
   <div class="barra">
+    <div class="modos" id="modos" role="tablist" aria-label="Modo"><button role="tab" data-m="editor" aria-selected="true" type="button">Ejercicios</button><button role="tab" data-m="consola" aria-selected="false" type="button">Consola &gt;&gt;&gt;</button></div>
     <button class="btn pri" id="bEjecutar" type="button" disabled title="Ctrl + Enter">▶ Ejecutar</button>
     <button class="btn" id="bComprobar" type="button" disabled title="Ctrl + Mayús + Enter">✓ Comprobar</button>
     <button class="btn" id="bReiniciar" type="button">Volver al código inicial</button>
     <span class="estado" id="estado" aria-live="polite">Cargando Python…</span>
   </div>
   <div class="editor"><div class="lineas" id="lineas" aria-hidden="true">1</div><textarea id="codigo" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Tu código en Python"></textarea></div>
+  <div class="terminal" id="terminal" hidden aria-label="Consola interactiva de Python"><pre id="pantalla" aria-live="polite"></pre><div class="linea"><span class="p" id="indicador">&gt;&gt;&gt;&nbsp;</span><input id="entrada" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Escribe una línea de Python y pulsa Enter"></div></div>
   <div class="consola"><h2>Lo que imprime tu programa</h2><pre id="salida" tabindex="0"><span class="gris">Pulsa Ejecutar para correr tu código.</span></pre></div>
 </section>
 <script>
@@ -100,15 +122,15 @@
   const ta = $('codigo');
 
   // ---- trabajador con Python: se crea al cargar y se vuelve a crear si un programa se cuelga
-  let obrero = null, pendiente = null, reloj = null, pyListo = false;
+  let obrero = null, pendiente = null, reloj = null, pyListo = false, versionPy = '', alListo = [], alReiniciar = [];
   function crearObrero() {
     pyListo = false; $('bEjecutar').disabled = $('bComprobar').disabled = true;
     obrero = new Worker('worker.js');
     obrero.onmessage = (e) => {
       const m = e.data;
-      if (m.tipo === 'listo') { pyListo = true; $('estado').textContent = 'Python ' + m.version + ' · corre en tu navegador'; $('bEjecutar').disabled = $('bComprobar').disabled = false; }
+      if (m.tipo === 'listo') { pyListo = true; versionPy = m.version; alListo.forEach((f) => f()); $('estado').textContent = 'Python ' + m.version + ' · corre en tu navegador'; $('bEjecutar').disabled = $('bComprobar').disabled = false; }
       else if (m.tipo === 'fallo') $('estado').textContent = 'No se pudo cargar Python: recarga la página';
-      else if (m.tipo === 'resultado' && pendiente && m.id === pendiente.id) { clearTimeout(reloj); const p = pendiente; pendiente = null; p.ok(m); }
+      else if ((m.tipo === 'resultado' || m.tipo === 'consola') && pendiente && m.id === pendiente.id) { clearTimeout(reloj); const p = pendiente; pendiente = null; p.ok(m); }
     };
     obrero.onerror = () => { $('estado').textContent = 'No se pudo cargar Python: recarga la página'; };
   }
@@ -118,12 +140,66 @@
       const id = Math.random().toString(36).slice(2);
       pendiente = { id, ok };
       reloj = setTimeout(() => { // bucle infinito o programa muy lento: se corta y se reinicia Python
-        obrero.terminate(); pendiente = null; crearObrero();
+        obrero.terminate(); pendiente = null; crearObrero(); alReiniciar.forEach((f) => f());
         ok({ salida: '', error: { tipo: 'Tiempo agotado', msg: 'tu programa tardó más de 6 segundos. ¿Un bucle que nunca termina?', linea: null }, pruebas: [] });
       }, 6000);
       obrero.postMessage({ id, codigo: ta.value, pruebas, entradas: E[i].entradas || [] });
     });
   }
+
+  // ---- consola interactiva: una línea por vez, con historial y bloques de varias líneas
+  const pantalla = $('pantalla'), entrada = $('entrada'), historial = []; let hPos = 0, enBloque = false, buenas = 0, cola = Promise.resolve();
+  const IDEAS = [['2 + 3 * 4', 'Python como calculadora'], ['10 / 3', 'división con decimales'], ['10 // 3', 'división entera'], ['nombre = "Ana"', 'guarda un texto (no responde nada)'], ['nombre', 'pregunta qué hay en la variable'], ['f"Hola, {nombre}"', 'un f-string rellena las llaves'], ['type(12.5)', '¿de qué tipo es?'], ['"3" + "4"', 'las comillas cambian todo'], ['int("3") + 4', 'convertir texto en número'], ['len("Python")', 'cuántas letras tiene'], ['for n in range(3):', 'un bloque: sigue con 4 espacios y print(n)']];
+  const escribe = (txt, cls) => { const s = document.createElement('span'); if (cls) s.className = cls; s.textContent = txt; pantalla.append(s); $('terminal').scrollTop = $('terminal').scrollHeight; };
+  const bienvenida = () => { pantalla.replaceChildren(); escribe('Python ' + versionPy + ' · corre en tu navegador\n', 'g'); escribe('Escribe una línea y pulsa Enter. Prueba: 2 + 3\n\n', 'g'); };
+  function lineaConsola(linea) {
+    return new Promise((ok) => {
+      const id = Math.random().toString(36).slice(2); pendiente = { id, ok };
+      reloj = setTimeout(() => { obrero.terminate(); pendiente = null; crearObrero(); ok({ mas: false, salida: '', error: 'Tardó más de 6 segundos (¿un bucle que no termina?). Python se reinició y tus variables se borraron.\n' }); }, 6000);
+      obrero.postMessage({ tipo: 'consola', id, linea });
+    });
+  }
+  function enviar(linea) { // las líneas se atienden en orden, aunque se pegue un bloque entero
+    cola = cola.then(async () => {
+      escribe(enBloque ? '... ' : '>>> ', 'p'); escribe(linea + '\n');
+      if (!pyListo) { escribe('Python aún está cargando: espera un momento.\n', 'e'); return; }
+      const r = await lineaConsola(linea);
+      if (r.salida) escribe(r.salida); if (r.error) escribe(r.error, 'e');
+      enBloque = !!r.mas; $('indicador').textContent = enBloque ? '...\u00a0' : '>>>\u00a0';
+      if (!r.mas && !r.error && linea.trim()) { buenas++; $('cuenta').innerHTML = '<b>' + buenas + '</b> ' + (buenas === 1 ? 'línea probada' : 'líneas probadas'); if (buenas === 5) avisarConsola(); }
+    });
+    return cola;
+  }
+  entrada.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); const l = entrada.value; entrada.value = ''; if (l.trim()) { historial.push(l); } hPos = historial.length; enviar(l); }
+    else if (e.key === 'ArrowUp') { if (hPos > 0) { e.preventDefault(); entrada.value = historial[--hPos]; } }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); hPos = Math.min(historial.length, hPos + 1); entrada.value = historial[hPos] || ''; }
+    else if (e.key === 'Tab') { e.preventDefault(); const a = entrada.selectionStart; entrada.value = entrada.value.slice(0, a) + '    ' + entrada.value.slice(entrada.selectionEnd); entrada.selectionStart = entrada.selectionEnd = a + 4; }
+    else if (e.key === 'l' && e.ctrlKey) { e.preventDefault(); bienvenida(); }
+  });
+  entrada.addEventListener('paste', (e) => { const t = (e.clipboardData || window.clipboardData).getData('text'); if (!t.includes('\n')) return; e.preventDefault(); const ls = t.replace(/\r/g, '').split('\n'); const ultima = ls.pop(); for (const l of ls) enviar(l); entrada.value = ultima; });
+  $('terminal').addEventListener('click', () => { if (!String(getSelection())) entrada.focus(); });
+  $('ideas').replaceChildren(...IDEAS.map(([c, d]) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = c; const s = document.createElement('small'); s.textContent = d; b.append(s); b.onclick = () => { entrada.value = c; entrada.focus(); }; return b; }));
+  $('bLimpiar').onclick = () => { bienvenida(); entrada.focus(); };
+  $('bReiniciarConsola').onclick = () => { obrero.postMessage({ tipo: 'reiniciar-consola' }); enBloque = false; $('indicador').textContent = '>>>\u00a0'; bienvenida(); escribe('Consola reiniciada: las variables se borraron.\n\n', 'g'); entrada.focus(); };
+  alListo.push(() => { if (!pantalla.childNodes.length) bienvenida(); });
+  alReiniciar.push(() => { enBloque = false; $('indicador').textContent = '>>>\u00a0'; });
+  async function avisarConsola() { // dentro de una escena LIVE: cinco líneas probadas cuentan como «Lo logré»
+    if (!leccion || !escena || modoFijo !== 'consola') return;
+    try { await fetch('/api/v1/live/' + encodeURIComponent(leccion) + '/logre', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ escena, hecho: true }) }); } catch { /* sin aula: la consola sigue */ }
+  }
+  // ---- modos: ejercicios con editor, o consola libre. ?modo=consola abre directo la consola (escena propia)
+  const modoFijo = q.get('modo') === 'consola' ? 'consola' : '';
+  function modo(m) {
+    const con = m === 'consola';
+    for (const b of $('modos').children) b.setAttribute('aria-selected', String(b.dataset.m === m));
+    $('terminal').hidden = !con; document.querySelector('.editor').hidden = con; document.querySelector('.consola').hidden = con;
+    $('guia').hidden = !con; $('ejercicio').hidden = con;
+    for (const id of ['bEjecutar', 'bComprobar', 'bReiniciar']) $(id).hidden = con;
+    if (con) { if (pyListo && !pantalla.childNodes.length) bienvenida(); entrada.focus(); }
+    try { sessionStorage.setItem('pylab.modo', m); } catch { /* sin almacenamiento */ }
+  }
+  for (const b of $('modos').children) b.onclick = () => modo(b.dataset.m);
 
   // ---- editor: números de línea, tabulador de 4 espacios y sangría automática
   function lineas() {
@@ -201,6 +277,9 @@
   $('bSiguiente').onclick = () => ir(Math.min(E.length - 1, i + 1));
   window.__pylab = { ir, ejecutar, comprobar, estado: () => ({ i, hechos: hechos(), pyListo, salida: $('salida').textContent }) }; // para las pruebas automáticas
   ir(i);
+  let inicial = modoFijo || 'editor'; try { inicial = modoFijo || sessionStorage.getItem('pylab.modo') || 'editor'; } catch { /* valor por defecto */ }
+  modo(inicial);
+  window.__pylab.modo = modo; window.__pylab.enviar = enviar; window.__pylab.pantalla = () => pantalla.textContent;
 })();
 </script>
 </body>
