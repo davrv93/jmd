@@ -5,6 +5,7 @@ Secuencia (81 min de 90): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano
 a la tecnología · 04 movimiento y choques · 05 hoja de sprites · 06 elige tu juego · 07 cierre.
 Las escenas 01 y 05/heroe.png no se generan aquí. Reglas del modo LIVE: sin recursos externos, menos de 300 elementos
 y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion. Nada usa <form>: el marco no lo permite.
+El campo «paso» va vacío: la lección rsg-01 no define un ciclo de pasos, y el LMS rechaza un paso que no exista ahí.
 """
 import pathlib
 
@@ -65,7 +66,7 @@ def escena(id_, titulo, fase, paso, minutos, cuerpo, nota, js="", css="", compue
     (d / "escena.html").write_text(html, encoding="utf-8")
     logro = "true" if logro else "false"
     (d / "escena.yaml").write_text(
-        f'id: {id_}\ntitulo: "{titulo}"\nfase: {fase}\npaso: {paso}\nduracion_min: {minutos}\nlo_logre: {logro}\nevidencia: ninguna\n'
+        f'id: {id_}\ntitulo: "{titulo}"\nfase: {fase}\npaso: ""\nduracion_min: {minutos}\nlo_logre: {logro}\nevidencia: ninguna\n'
         f"umbral_pct: {umbral}\ncompuerta: {compuerta}\n", encoding="utf-8")
     print(f"ok {id_:28s} {len(html) / 1024:5.1f} KB · {html.count('<') - html.count('</') - html.count('<!')} etiquetas aprox.")
 
