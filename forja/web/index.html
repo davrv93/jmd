@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Forja · estudio de personajes · JMD Learning</title>
+<meta name="description" content="Describe tu personaje y fórjalo con más de 10 000 reglas locales: 800 tipos, colores, formas y animaciones listas para Phaser. Sin IA externa.">
+<meta name="theme-color" content="#14111c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2314111c'/%3E%3Cpath d='M9 22h14l-2-6H11zM13 16l3-8 3 8' fill='%23c6ff4a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Unbounded:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","three/addons/":"./vendor/addons/"}}</script>
+<script src="vendor/p5.min.js" defer></script>
+</head>
+<body>
+<header class="barra">
+  <a class="logo" href="./" aria-label="Forja, inicio"><span class="yunque" aria-hidden="true"></span><b>FORJA</b><small>estudio de personajes</small></a>
+  <p class="cifras" id="cifras" aria-live="polite"><span><b id="nReglas">10 000+</b> reglas</span><span><b id="nTipos">800</b> tipos</span><span class="local" id="estadoIA">IA externa: 0</span></p>
+  <div class="acciones">
+    <button class="btn" id="bSorpresa" type="button" title="Tecla S"><span aria-hidden="true">✦</span> Sorpréndeme</button>
+    <button class="btn primario" id="bExportar" type="button">Llevar a mi juego</button>
+  </div>
+</header>
+
+<main class="estudio">
+  <section class="panel izq" aria-label="Describe y elige">
+    <form class="describe" id="fDescribe">
+      <label for="texto">Describe tu personaje</label>
+      <div class="caja-texto">
+        <textarea id="texto" rows="2" maxlength="300" placeholder="un michi rechoncho de fuego con lentes"></textarea>
+        <button class="btn primario" id="bForjar" type="submit">Forjar</button>
+      </div>
+      <div class="ejemplos" id="ejemplos"></div>
+      <div class="entendido" id="entendido" aria-live="polite"></div>
+    </form>
+    <div class="catalogo">
+      <h2>Familia <small id="nFam"></small></h2>
+      <div class="familias" id="familias" role="listbox" aria-label="Familias"></div>
+      <h2>Variante <small>20 por familia</small></h2>
+      <div class="chips" id="variantes" role="listbox" aria-label="Variantes"></div>
+    </div>
+  </section>
+
+  <section class="escenario" id="escenario" data-fondo="noche" aria-label="Escenario">
+    <canvas id="lienzo" aria-label="Vista 3D del personaje. Arrastra para girarlo."></canvas>
+    <div class="titulo">
+      <h1 id="nombre">…</h1>
+      <p id="ficha"></p>
+    </div>
+    <div class="fisica" id="fisica" aria-label="Valores para Phaser"></div>
+    <div class="pie-escena">
+      <div class="fondos" id="fondos" role="radiogroup" aria-label="Fondo"></div>
+      <div class="segmento" id="animaciones" role="radiogroup" aria-label="Animación"></div>
+      <button class="btn mini" id="bGirar" type="button" aria-pressed="false" title="Girar solo">⟳</button>
+    </div>
+  </section>
+
+  <section class="panel der" aria-label="Ajustes">
+    <div class="pestanas" role="tablist" id="pestanas">
+      <button role="tab" aria-selected="true" data-t="cuerpo">Cuerpo</button>
+      <button role="tab" aria-selected="false" data-t="color">Color</button>
+      <button role="tab" aria-selected="false" data-t="cara">Cara</button>
+      <button role="tab" aria-selected="false" data-t="extras">Accesorios</button>
+      <button role="tab" aria-selected="false" data-t="reglas">Reglas</button>
+    </div>
+    <div class="hoja" data-t="cuerpo" id="tCuerpo"></div>
+    <div class="hoja" data-t="color" id="tColor" hidden></div>
+    <div class="hoja" data-t="cara" id="tCara" hidden></div>
+    <div class="hoja" data-t="extras" id="tExtras" hidden></div>
+    <div class="hoja" data-t="reglas" id="tReglas" hidden></div>
+  </section>
+
+  <section class="variaciones" aria-label="Variaciones">
+    <h2>Variaciones <small>mismo tipo, otras medidas</small></h2>
+    <div class="tira" id="tira"></div>
+    <button class="btn mini" id="bMas" type="button">Otras</button>
+  </section>
+</main>
+
+<dialog id="dExportar" aria-labelledby="hExportar">
+  <form method="dialog" class="cerrar"><button aria-label="Cerrar">✕</button></form>
+  <h2 id="hExportar">Llévalo a tu juego</h2>
+  <p class="sub">Hoja de sprites con 4 animaciones y su atlas para Phaser 4. Todo se genera en tu navegador.</p>
+  <div class="chips" id="tamanos" role="radiogroup" aria-label="Tamaño del cuadro"></div>
+  <div class="vista-hoja" id="vistaHoja"></div>
+  <div class="acciones">
+    <button class="btn primario" id="bPng" type="button">Descargar PNG</button>
+    <button class="btn" id="bAtlas" type="button">Descargar atlas JSON</button>
+    <button class="btn" id="bCodigo" type="button">Copiar código Phaser</button>
+    <button class="btn" id="bEnlace" type="button">Copiar enlace</button>
+  </div>
+  <pre id="codigo" tabindex="0"></pre>
+</dialog>
+<div class="aviso" id="aviso" role="status" aria-live="polite"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

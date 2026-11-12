@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><title>prueba</title>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","three/addons/":"./vendor/addons/"}}</script>
+<script src="vendor/p5.min.js"></script>
+<body style="background:#2a2535;margin:0;display:flex;flex-wrap:wrap;font:11px sans-serif;color:#fff">
+<script type="module">
+import { resolver, sorpresa } from './motor/resolver.js';
+import { iniciarP5 } from './motor/texturas.js';
+import { miniatura, hojaSprites } from './motor/sprites.js';
+const R = await (await fetch('datos/reglas.json')).json(); await iniciarP5();
+const q = new URLSearchParams(location.search), modo = q.get('modo') || 'familias';
+const pon = (spec, px = 150) => { const d = document.createElement('div'); d.style.cssText = 'text-align:center;width:' + px + 'px'; d.innerHTML = `<img src="${miniatura(spec, px)}" width="${px}"><div>${spec.nombre}</div>`; document.body.append(d); };
+try {
+  if (modo === 'familias') for (const f of R.meta.familias) pon(resolver(R, f.id, 'clasico', {}, 5));
+  else if (modo === 'variantes') for (const fam of (q.get('f') || 'gato,robot').split(',')) for (const v of R.meta.variantes) pon(resolver(R, fam, v.id, {}, 5));
+  else if (modo === 'azar') for (let i = 0; i < 40; i++) { const s = sorpresa(R, i * 97 + 3); pon(resolver(R, s.familia, s.variante, s.params, s.semilla)); }
+  else if (modo === 'hoja') { const s = resolver(R, q.get('f') || 'gato', q.get('v') || 'fuego', {}, 5); const h = hojaSprites(s, R, 128); h.hoja.style.background = '#445'; document.body.append(h.hoja); }
+  document.title = 'listo';
+} catch (e) { document.body.append(String(e.stack)); document.title = 'error'; }
+</script>
