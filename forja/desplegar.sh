@@ -3,7 +3,8 @@
 #   LLAVE=~/Downloads/curdilmer.pem ./desplegar.sh
 # Compila las reglas, corre las pruebas, sube el código y el modelo de embeddings (129 MB, solo la primera vez),
 # construye la imagen en el servidor y levanta el contenedor «forja» en 127.0.0.1:18697 con tope de 1000 MB
-# (el modelo de embeddings ocupa unos 600 MB al cargar; con 512 MB el contenedor moría por falta de memoria).
+# (el modelo de embeddings ocupa unos 600 MB mientras está cargado; con 512 MB el contenedor moría por falta de memoria).
+# En reposo usa unos 60 MB: el modelo vive en un proceso hijo que se crea al necesitarlo y se mata a los 10 min sin uso.
 # El modelo se sube desde ./modelos (lo descarga la Mac una sola vez con: FORJA_DESCARGAR=1 node servidor.mjs).
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -39,7 +40,7 @@ p.write_text(s.replace(marca, '    include /etc/nginx/snippets/forja.conf;\n' + 
 PY
   sudo nginx -t 2>&1 | tail -1 && sudo systemctl reload nginx
 fi
-for i in $(seq 1 40); do curl -fsS http://127.0.0.1:18697/api/estado 2>/dev/null | grep -q '"listo"' && break; sleep 2; done
+for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:18697/api/estado 2>/dev/null && break; sleep 1; done
 curl -s -m 5 http://127.0.0.1:18697/api/estado || echo 'el servidor no responde: mira sudo docker logs forja'; echo
 sudo docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' forja
 REMOTO

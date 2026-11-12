@@ -6,6 +6,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fork } from 'node:child_process';
 import { interpretar, normaliza } from './web/motor/interprete.js';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -15,21 +16,34 @@ const reglas = JSON.parse(fs.readFileSync(path.join(WEB, 'datos', 'reglas.json')
 const lexico = JSON.parse(fs.readFileSync(path.join(WEB, 'datos', 'lexico.json'), 'utf8'));
 
 // ---------------------------------------------------------------- embeddings
-let embeber = null, indice = null, estadoModelo = 'cargando';
-async function cargarModelo() {
-  try {
-    const { pipeline, env } = await import('@huggingface/transformers');
-    env.cacheDir = process.env.FORJA_MODELOS || path.join(AQUI, 'modelos');
-    env.allowRemoteModels = process.env.FORJA_DESCARGAR === '1'; // en producción el modelo ya está en disco
-    // un solo hilo y sin reserva adelantada de memoria: el servidor comparte RAM con otros servicios
-    const ex = await pipeline('feature-extraction', 'Xenova/multilingual-e5-small', { dtype: 'q8', session_options: { enableCpuMemArena: false, enableMemPattern: false, intraOpNumThreads: 1, interOpNumThreads: 1 } });
-    embeber = async (textos) => (await ex(textos, { pooling: 'mean', normalize: true })).tolist();
-    const fam = await embeber(lexico.familias.map((f) => `passage: ${f.desc}`));
-    const va = await embeber(lexico.variantes.map((v) => `passage: ${v.desc}`));
-    indice = { fam, va };
-    estadoModelo = 'listo';
-    console.log('embeddings listos:', fam.length, 'familias,', va.length, 'variantes');
-  } catch (e) { estadoModelo = 'apagado'; console.error('sin embeddings (se usa solo el léxico):', e.message); }
+// El modelo ocupa unos 600 MB de RAM. Para no tenerlos tomados todo el día vive en un proceso hijo (embeddings-hijo.mjs)
+// que se crea recién cuando una frase lo necesita (ninguna palabra conocida) y se MATA tras FORJA_OCIO_MIN minutos sin
+// uso: solo matando el proceso el sistema recupera toda la memoria. Los vectores de familias y variantes (69 x 384
+// números) se conservan aquí: son pocos KB y evitan recalcularlos en cada arranque del hijo.
+let hijo = null, indice = null, estadoModelo = 'bajo demanda', cargando = null, reloj = null, turno = 0;
+const esperas = new Map();
+const OCIO_MS = (+process.env.FORJA_OCIO_MIN || 10) * 60000;
+function soltarModelo() { if (!hijo) return; hijo.kill(); hijo = null; if (estadoModelo !== 'apagado') estadoModelo = 'bajo demanda'; console.log('modelo de embeddings liberado por inactividad'); }
+function embeber(textos) {
+  return new Promise((ok, mal) => { const id = ++turno; esperas.set(id, { ok, mal }); hijo.send({ id, textos }); setTimeout(() => { if (esperas.delete(id)) mal(new Error('embeddings sin respuesta')); }, 20000); });
+}
+async function asegurarModelo() {
+  clearTimeout(reloj); reloj = setTimeout(soltarModelo, OCIO_MS);
+  if (hijo || estadoModelo === 'apagado') return !!hijo;
+  cargando ??= new Promise((ok) => {
+    const h = fork(path.join(AQUI, 'embeddings-hijo.mjs'));
+    const fallo = (motivo) => { estadoModelo = 'apagado'; console.error('sin embeddings (se usa solo el léxico):', motivo); cargando = null; ok(false); };
+    h.on('message', async (m) => {
+      if (m.listo) {
+        hijo = h;
+        try { indice ??= { fam: await embeber(lexico.familias.map((x) => `passage: ${x.desc}`)), va: await embeber(lexico.variantes.map((x) => `passage: ${x.desc}`)) }; } catch (e) { hijo = null; h.kill(); return fallo(e.message); }
+        estadoModelo = 'listo'; cargando = null; console.log('embeddings cargados bajo demanda'); ok(true);
+      } else if (m.fallo) fallo(m.fallo);
+      else { const e = esperas.get(m.id); if (e) { esperas.delete(m.id); m.error ? e.mal(new Error(m.error)) : e.ok(m.vectores); } }
+    });
+    h.on('exit', () => { if (hijo === h) { hijo = null; if (estadoModelo === 'listo') estadoModelo = 'bajo demanda'; } for (const e of esperas.values()) e.mal(new Error('el modelo se cerró')); esperas.clear(); });
+  });
+  return await cargando;
 }
 const punto = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
 // e5 da cosenos muy juntos (0.78–0.88): se comparan como puntaje z contra el resto de candidatos
@@ -43,7 +57,9 @@ async function entender(texto) {
   const t0 = Date.now();
   const r = interpretar(texto, lexico, reglas.T.modificador);
   let fuente = 'léxico', alternativas = [];
-  if (embeber && normaliza(texto).length > 1) {
+  // solo se despierta el modelo si las palabras no bastaron: falta la familia, o queda texto sin entender para la variante
+  const hace_falta = normaliza(texto).length > 1 && (!r.familia || (!r.variante && r.resto.length > 2));
+  if (hace_falta && await asegurarModelo()) try {
     const [q] = await embeber([`query: ${texto}`]);
     const rf = ranking(q, indice.fam);
     alternativas = rf.slice(0, 5).map((x) => ({ id: lexico.familias[x.i].id, z: +x.z.toFixed(2) }));
@@ -53,7 +69,7 @@ async function entender(texto) {
       const rv = ranking(qr, indice.va);
       if (rv[0].z > 2.1) { r.variante = lexico.variantes[rv[0].i].id; r.entendido.push({ tipo: 'variante', id: r.variante, texto: 'por significado', z: +rv[0].z.toFixed(2) }); fuente = fuente === 'léxico' ? 'léxico + embeddings' : fuente; }
     }
-  }
+  } catch (e) { console.error('embeddings:', e.message); }
   return { ...r, fuente, alternativas, ms: Date.now() - t0 };
 }
 
@@ -144,4 +160,4 @@ http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': TIPOS[path.extname(archivo)] || 'application/octet-stream', 'Cache-Control': ruta.includes('/vendor/') ? 'public, max-age=604800' : 'no-cache' });
     fs.createReadStream(archivo).pipe(res);
   } catch (e) { console.error(e); if (!res.headersSent) json(res, 500, { error: 'error interno' }); }
-}).listen(PUERTO, () => { console.log(`Forja en :${PUERTO} · ${reglas.meta.total} reglas · ${reglas.meta.tipos} tipos`); cargarModelo(); });
+}).listen(PUERTO, () => { console.log(`Forja en :${PUERTO} · ${reglas.meta.total} reglas · ${reglas.meta.tipos} tipos · embeddings bajo demanda`); });

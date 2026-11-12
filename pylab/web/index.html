@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laboratorio Python · JMD Learning</title>
+<meta name="description" content="Ejercicios de Python que corren en tu navegador, con comprobación automática.">
+<link rel="icon" href="data:,">
+<!--
+  Laboratorio Python de JMD Learning. Python corre en el navegador del alumno (Pyodide, en un trabajador aparte):
+  el servidor solo entrega archivos, no ejecuta nada. Se usa suelto (/pylab/?set=py-01) o dentro de una escena LIVE
+  (…&leccion=py-01&escena=10b-laboratorio), y entonces avisa al aula del avance. Sin formularios ni ventanas nuevas.
+-->
+<style>
+  :root { --bg: #eef0ff; --s1: #ffffff; --s2: #f4f3fb; --fg: #16151d; --muted: #5c5966; --line: rgba(60,52,140,.2); --accent: #5a49d6; --on-accent: #fff; --ok: #136a33; --ok-bg: rgba(19,106,51,.12); --bad: #b11f1f; --bad-bg: rgba(177,31,31,.1); --cod: #14122b; --cod-fg: #e9e6ff; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color-scheme: light; }
+  @media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) { --bg: #12112a; --s1: #1d1b38; --s2: #252347; --fg: #ecebf7; --muted: #b7b4cc; --line: rgba(190,185,255,.24); --accent: #a99cff; --on-accent: #14122b; --ok: #4fd37a; --ok-bg: rgba(79,211,122,.15); --bad: #ff7b7b; --bad-bg: rgba(255,123,123,.14); color-scheme: dark; } }
+  :root[data-tema="dark"] { --bg: #12112a; --s1: #1d1b38; --s2: #252347; --fg: #ecebf7; --muted: #b7b4cc; --line: rgba(190,185,255,.24); --accent: #a99cff; --on-accent: #14122b; --ok: #4fd37a; --ok-bg: rgba(79,211,122,.15); --bad: #ff7b7b; --bad-bg: rgba(255,123,123,.14); color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--fg); font: 500 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 1.5fr); gap: 12px; padding: 12px; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .panel { background: var(--s1); border: 1px solid var(--line); border-radius: 14px; min-height: 0; }
+  .izq { display: flex; flex-direction: column; gap: 12px; padding: 14px; overflow: auto; }
+  .pasos { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pasos button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--s2); font-weight: 800; font-size: 13px; transition: transform .15s, background .15s; }
+  .pasos button:hover { transform: translateY(-2px); }
+  .pasos button[aria-current="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .pasos button.hecho { background: var(--ok); color: #fff; border-color: transparent; }
+  .avance { font-size: 13px; color: var(--muted); }
+  .avance b { color: var(--ok); }
+  h1 { font-size: 21px; line-height: 1.15; letter-spacing: -.01em; }
+  .consigna { white-space: pre-line; font-size: 15.5px; }
+  .caja { background: var(--s2); border-radius: 10px; padding: 9px 12px; font-size: 14px; border-left: 3px solid var(--accent); }
+  .fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn { border: 1px solid var(--line); background: var(--s1); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; transition: transform .15s, border-color .15s, background .15s; }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--accent); }
+  .btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .der { display: grid; grid-template-rows: auto minmax(120px, 1.3fr) minmax(90px, 1fr); overflow: hidden; }
+  .barra { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .barra .estado { margin-left: auto; font-size: 12.5px; color: var(--muted); }
+  .editor { display: grid; grid-template-columns: auto 1fr; background: var(--cod); color: var(--cod-fg); font: 14px/1.55 var(--mono); overflow: auto; min-height: 0; }
+  .lineas { padding: 10px 8px 10px 12px; text-align: right; color: #6f6a99; user-select: none; white-space: pre; }
+  .lineas .mal { color: #ff7b7b; font-weight: 800; }
+  textarea { background: none; color: inherit; border: 0; outline: none; resize: none; font: inherit; padding: 10px 12px 10px 4px; white-space: pre; overflow: hidden; min-width: 100%; tab-size: 4; caret-color: #c6ff4a; }
+  .consola { display: flex; flex-direction: column; min-height: 0; border-top: 1px solid var(--line); }
+  .consola h2 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 12px 0; }
+  pre#salida { flex: 1; margin: 0; padding: 6px 12px 10px; font: 13.5px/1.5 var(--mono); overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre#salida .err { color: var(--bad); font-weight: 700; }
+  pre#salida .gris { color: var(--muted); }
+  ul.pruebas { list-style: none; padding: 0; display: grid; gap: 5px; }
+  ul.pruebas li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; font-size: 14px; padding: 6px 9px; border-radius: 9px; animation: entra .3s ease-out backwards; }
+  ul.pruebas li.ok { background: var(--ok-bg); } ul.pruebas li.no { background: var(--bad-bg); }
+  ul.pruebas li i { font-style: normal; font-weight: 900; } ul.pruebas li.ok i { color: var(--ok); } ul.pruebas li.no i { color: var(--bad); }
+  ul.pruebas small { display: block; color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  .logro { background: var(--ok-bg); color: var(--ok); border-radius: 12px; padding: 10px 12px; font-weight: 800; animation: entra .35s ease-out; }
+  @keyframes entra { from { opacity: 0; transform: translateY(6px); } }
+  @media (max-width: 760px) { body { grid-template-columns: minmax(0, 1fr); height: auto; } .der { min-height: 70vh; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<section class="panel izq" aria-label="Ejercicio">
+  <div class="pasos" id="pasos" role="tablist" aria-label="Ejercicios"></div>
+  <p class="avance" id="avance" aria-live="polite"></p>
+  <h1 id="titulo">Cargando…</h1>
+  <p class="consigna" id="consigna"></p>
+  <ul class="pruebas" id="pruebas" aria-live="polite"></ul>
+  <p class="logro" id="logro" hidden></p>
+  <p class="caja" id="pista" hidden></p>
+  <div class="fila">
+    <button class="btn" id="bPista" type="button">Dame una pista</button>
+    <button class="btn" id="bSolucion" type="button" hidden>Ver una solución</button>
+    <button class="btn pri" id="bSiguiente" type="button" hidden>Siguiente ejercicio →</button>
+  </div>
+</section>
+<section class="panel der" aria-label="Editor y consola">
+  <div class="barra">
+    <button class="btn pri" id="bEjecutar" type="button" disabled title="Ctrl + Enter">▶ Ejecutar</button>
+    <button class="btn" id="bComprobar" type="button" disabled title="Ctrl + Mayús + Enter">✓ Comprobar</button>
+    <button class="btn" id="bReiniciar" type="button">Volver al código inicial</button>
+    <span class="estado" id="estado" aria-live="polite">Cargando Python…</span>
+  </div>
+  <div class="editor"><div class="lineas" id="lineas" aria-hidden="true">1</div><textarea id="codigo" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Tu código en Python"></textarea></div>
+  <div class="consola"><h2>Lo que imprime tu programa</h2><pre id="salida" tabindex="0"><span class="gris">Pulsa Ejecutar para correr tu código.</span></pre></div>
+</section>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id), q = new URLSearchParams(location.search);
+  if (q.get('tema') === 'dark' || q.get('tema') === 'light') document.documentElement.dataset.tema = q.get('tema');
+  const conjunto = (q.get('set') || 'py-01').replace(/[^a-z0-9-]/g, ''), leccion = q.get('leccion'), escena = q.get('escena');
+  const CLAVE = 'pylab.' + conjunto;
+  const lee = () => { try { return JSON.parse(localStorage.getItem(CLAVE)) || {}; } catch { return {}; } };
+  const guarda = (m) => { try { localStorage.setItem(CLAVE, JSON.stringify(m)); } catch { /* sin almacenamiento: sigue funcionando */ } };
+  let M = { codigo: {}, hechos: {}, intentos: {}, actual: 0, ...lee() };
+  const D = await (await fetch('ejercicios/' + conjunto + '.json')).json(), E = D.ejercicios;
+  let i = Math.min(M.actual || 0, E.length - 1), ocupado = false, lineaMala = null;
+  const ta = $('codigo');
+
+  // ---- trabajador con Python: se crea al cargar y se vuelve a crear si un programa se cuelga
+  let obrero = null, pendiente = null, reloj = null, pyListo = false;
+  function crearObrero() {
+    pyListo = false; $('bEjecutar').disabled = $('bComprobar').disabled = true;
+    obrero = new Worker('worker.js');
+    obrero.onmessage = (e) => {
+      const m = e.data;
+      if (m.tipo === 'listo') { pyListo = true; $('estado').textContent = 'Python ' + m.version + ' · corre en tu navegador'; $('bEjecutar').disabled = $('bComprobar').disabled = false; }
+      else if (m.tipo === 'fallo') $('estado').textContent = 'No se pudo cargar Python: recarga la página';
+      else if (m.tipo === 'resultado' && pendiente && m.id === pendiente.id) { clearTimeout(reloj); const p = pendiente; pendiente = null; p.ok(m); }
+    };
+    obrero.onerror = () => { $('estado').textContent = 'No se pudo cargar Python: recarga la página'; };
+  }
+  crearObrero();
+  function correr(pruebas) {
+    return new Promise((ok) => {
+      const id = Math.random().toString(36).slice(2);
+      pendiente = { id, ok };
+      reloj = setTimeout(() => { // bucle infinito o programa muy lento: se corta y se reinicia Python
+        obrero.terminate(); pendiente = null; crearObrero();
+        ok({ salida: '', error: { tipo: 'Tiempo agotado', msg: 'tu programa tardó más de 6 segundos. ¿Un bucle que nunca termina?', linea: null }, pruebas: [] });
+      }, 6000);
+      obrero.postMessage({ id, codigo: ta.value, pruebas, entradas: E[i].entradas || [] });
+    });
+  }
+
+  // ---- editor: números de línea, tabulador de 4 espacios y sangría automática
+  function lineas() {
+    const n = ta.value.split('\n').length;
+    $('lineas').innerHTML = Array.from({ length: n }, (_, k) => (k + 1 === lineaMala ? '<span class="mal">' + (k + 1) + '</span>' : k + 1)).join('\n');
+    ta.rows = n + 1; ta.cols = Math.max(40, ...ta.value.split('\n').map((l) => l.length + 2));
+  }
+  ta.addEventListener('input', () => { lineaMala = null; M.codigo[E[i].id] = ta.value; guarda(M); lineas(); });
+  ta.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); e.shiftKey ? comprobar() : ejecutar(); return; }
+    const a = ta.selectionStart, b = ta.selectionEnd, v = ta.value, pon = (txt, pos) => { ta.value = v.slice(0, a) + txt + v.slice(b); ta.selectionStart = ta.selectionEnd = pos; ta.dispatchEvent(new Event('input')); };
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const ini = v.lastIndexOf('\n', a - 1) + 1;
+      if (e.shiftKey) { const quita = Math.min(4, v.slice(ini).match(/^ */)[0].length); if (quita) { ta.value = v.slice(0, ini) + v.slice(ini + quita); ta.selectionStart = ta.selectionEnd = Math.max(ini, a - quita); ta.dispatchEvent(new Event('input')); } }
+      else pon('    ', a + 4);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const ini = v.lastIndexOf('\n', a - 1) + 1, linea = v.slice(ini, a), sangria = linea.match(/^ */)[0] + (linea.trimEnd().endsWith(':') ? '    ' : '');
+      pon('\n' + sangria, a + 1 + sangria.length);
+    }
+  });
+
+  // ---- pantalla
+  const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const hechos = () => E.filter((e) => M.hechos[e.id]).length;
+  function pintaPasos() {
+    $('pasos').replaceChildren(...E.map((e, k) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = M.hechos[e.id] ? '✓' : k + 1; b.title = e.titulo; b.setAttribute('role', 'tab'); b.setAttribute('aria-label', 'Ejercicio ' + (k + 1) + ': ' + e.titulo + (M.hechos[e.id] ? ' (resuelto)' : '')); b.setAttribute('aria-current', String(k === i)); if (M.hechos[e.id]) b.className = 'hecho'; b.onclick = () => ir(k); return b; }));
+    const n = hechos(); $('avance').innerHTML = '<b>' + n + ' de ' + E.length + '</b> resueltos' + (D.meta && n < D.meta ? ' · meta de la clase: ' + D.meta : n >= E.length ? ' · ¡todos!' : ' · meta cumplida');
+  }
+  function ir(k) {
+    i = k; M.actual = k; guarda(M); const e = E[i]; lineaMala = null;
+    $('titulo').textContent = (i + 1) + ' · ' + e.titulo; $('consigna').textContent = e.consigna;
+    ta.value = M.codigo[e.id] ?? e.codigo; lineas();
+    $('pruebas').replaceChildren(); $('pista').hidden = true; $('logro').hidden = true;
+    $('bSolucion').hidden = (M.intentos[e.id] || 0) < 2; $('bSiguiente').hidden = !(M.hechos[e.id] && i < E.length - 1);
+    $('salida').innerHTML = '<span class="gris">Pulsa Ejecutar para correr tu código.</span>';
+    pintaPasos();
+  }
+  function mostrar(r) {
+    let h = esc(r.salida);
+    if (r.error) {
+      lineaMala = r.error.linea; lineas();
+      const hueco = /____/.test(r.error.msg) || /____/.test(ta.value) && r.error.tipo === 'SyntaxError';
+      h += (h && !h.endsWith('\n') ? '\n' : '') + '<span class="err">' + (hueco ? 'Aún quedan huecos (____) por completar' : esc(r.error.tipo + ': ' + r.error.msg)) + (r.error.linea ? ' · línea ' + r.error.linea : '') + '</span>';
+    } else if (!r.salida) h = '<span class="gris">(tu programa corrió y no imprimió nada)</span>';
+    $('salida').innerHTML = h;
+  }
+  async function ejecutar() { if (ocupado || !pyListo) return; ocupado = true; $('estado').textContent = 'Ejecutando…'; const r = await correr([]); mostrar(r); $('estado').textContent = 'Listo'; ocupado = false; return r; }
+  async function comprobar() {
+    if (ocupado || !pyListo) return; ocupado = true; $('estado').textContent = 'Comprobando…';
+    const e = E[i], r = await correr(e.pruebas); mostrar(r); ocupado = false; $('estado').textContent = 'Listo';
+    const filas = r.error ? [['Tu programa debe correr sin errores', false, 'Mira el mensaje en rojo de la consola']] : r.pruebas;
+    $('pruebas').replaceChildren(...filas.map(([nombre, ok, msg], k) => { const li = document.createElement('li'); li.className = ok ? 'ok' : 'no'; li.style.animationDelay = k * 70 + 'ms'; li.innerHTML = '<i>' + (ok ? '✓' : '✗') + '</i><span>' + esc(nombre) + (msg ? '<small>' + esc(msg) + '</small>' : '') + '</span>'; return li; }));
+    const paso = !r.error && filas.length && filas.every((f) => f[1]);
+    if (paso) {
+      const nuevo = !M.hechos[e.id]; M.hechos[e.id] = 1; guarda(M); pintaPasos();
+      $('logro').hidden = false; $('logro').textContent = hechos() >= E.length ? '¡Completaste todo el laboratorio!' : '¡Correcto! ' + hechos() + ' de ' + E.length + '.';
+      $('bSiguiente').hidden = i >= E.length - 1; if (nuevo) avisar();
+    } else { M.intentos[e.id] = (M.intentos[e.id] || 0) + 1; guarda(M); $('logro').hidden = true; $('bSolucion').hidden = M.intentos[e.id] < 2; }
+  }
+  // ---- aviso al aula (solo dentro de una escena LIVE): avance como evidencia y «Lo logré» al cumplir la meta
+  async function avisar() {
+    if (!leccion || !escena) return;
+    const base = '/api/v1/live/' + encodeURIComponent(leccion), n = hechos(), cab = { 'Content-Type': 'application/json' };
+    try {
+      await fetch(base + '/evidencia', { method: 'POST', credentials: 'same-origin', headers: cab, body: JSON.stringify({ escena, tipo: 'hallazgo', detalle: 'Laboratorio Python: ' + n + ' de ' + E.length + ' ejercicios resueltos' }) });
+      if (n >= (D.meta || E.length) && !M.avisado) { const r = await fetch(base + '/logre', { method: 'POST', credentials: 'same-origin', headers: cab, body: JSON.stringify({ escena, hecho: true }) }); if (r.ok) { M.avisado = 1; guarda(M); } }
+    } catch { /* sin conexión con el aula: el laboratorio sigue */ }
+  }
+  $('bEjecutar').onclick = ejecutar; $('bComprobar').onclick = comprobar;
+  $('bReiniciar').onclick = () => { delete M.codigo[E[i].id]; guarda(M); ir(i); };
+  $('bPista').onclick = () => { $('pista').hidden = false; $('pista').textContent = 'Pista: ' + E[i].pista; };
+  $('bSolucion').onclick = () => { ta.value = E[i].solucion; ta.dispatchEvent(new Event('input')); };
+  $('bSiguiente').onclick = () => ir(Math.min(E.length - 1, i + 1));
+  window.__pylab = { ir, ejecutar, comprobar, estado: () => ({ i, hechos: hechos(), pyListo, salida: $('salida').textContent }) }; // para las pruebas automáticas
+  ir(i);
+})();
+</script>
+</body>
+</html>

@@ -247,7 +247,7 @@ addEventListener('keydown', (e) => { if (e.target.closest('textarea, input, dial
 const EJEMPLOS = ['un michi rechoncho de fuego con lentes', 'robot alto y flaco, azul neón', 'dragón bebé de hielo con corona', 'fantasma travieso con sombrero de mago', 'una criatura del pantano que da miedo'];
 $('ejemplos').replaceChildren(...EJEMPLOS.map((t) => { const b = el('button', { type: 'button' }, t); b.onclick = () => { $('texto').value = t; forjar(); }; return b; }));
 let embeddings = false;
-fetch('api/estado').then((r) => r.json()).then((d) => { embeddings = d.embeddings === 'listo'; $('estadoIA').textContent = embeddings ? 'IA externa: 0 · e5-small local' : 'IA externa: 0'; $('estadoIA').title = d.modelo || ''; }).catch(() => {});
+fetch('api/estado').then((r) => r.json()).then((d) => { embeddings = d.embeddings !== 'apagado'; $('estadoIA').textContent = embeddings ? 'IA externa: 0 · e5-small local' : 'IA externa: 0'; $('estadoIA').title = d.modelo || ''; }).catch(() => {});
 $('nReglas').textContent = M.total.toLocaleString('es-PE'); $('nTipos').textContent = M.tipos;
 
 async function describir(texto) {
