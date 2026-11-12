@@ -4,8 +4,7 @@ import { resolver, sorpresa, PARAMS_BASE } from './motor/resolver.js';
 import { miniatura, hojaSprites, hojaObjetos } from './motor/sprites.js';
 import { generarEscenario } from './motor/escenario.js';
 import { banco, sonar } from './motor/sonido.js';
-import { crearPista } from './motor/pista.js';
-import { zipProyecto, grabarVideo, modeloGLB } from './motor/exportar.js';
+import { zipProyecto, armarProyecto, paginaEnMemoria, plantillas, extracto, grabarVideo, modeloGLB } from './motor/exportar.js';
 import { zip, pngDeLienzo } from './motor/zip.js';
 
 export function iniciarMas(A) {
@@ -81,26 +80,54 @@ export function iniciarMas(A) {
   };
   $('fijado').onclick = () => { if (!fijo) return; const actual = copiaEstado(), antes = fijo; fijo = actual; const sp = A.spec(); $('fijado').style.backgroundImage = `url(${miniatura(sp, 260)})`; $('fijado').firstChild.textContent = sp.nombre; A.cargar(antes); };
 
-  // ---------------------------------------------------------------- pista jugable
-  let pista = null;
-  function arrancarPista() {
-    pista?.detener();
-    const d = paquete(128);
-    pista = crearPista($('pista'), { ...d, alRepetir: arrancarPista });
-    A.chips($('horas'), A.lista(R.meta.horas), hora, (id) => { hora = id; arrancarPista(); });
-    $('pista').focus();
+  // ---------------------------------------------------------------- plantillas de juego (el mismo código que se exporta, corriendo aquí)
+  let plantilla = lee('forja.plantilla', 'plataformas'), enMemoria = null, vista = 'algoritmos', PL = [];
+  const marco = $('marcoJuego');
+  async function arrancarJuego() {
+    PL = PL.length ? PL : await plantillas();
+    const meta = PL.find((p) => p.id === plantilla) || PL[0]; plantilla = meta.id; guarda('forja.plantilla', plantilla);
+    const proyecto = await armarProyecto(paquete(128), plantilla);
+    enMemoria?.liberar(); enMemoria = paginaEnMemoria(proyecto); marco.srcdoc = enMemoria.html;
+    marco.onload = () => marco.contentWindow?.focus();
+    $('plantillas').replaceChildren(...PL.map((p) => { const b = el('button', { type: 'button', role: 'tab', 'aria-selected': String(p.id === plantilla), class: 'plantilla' }); b.append(el('b', {}, p.nombre), el('span', {}, p.lema)); b.onclick = () => { plantilla = p.id; arrancarJuego(); }; return b; }));
+    $('controlesJuego').textContent = meta.controles;
+    A.chips($('horas'), A.lista(R.meta.horas), hora, (id) => { hora = id; arrancarJuego(); });
+    explicar(meta, proyecto);
   }
-  $('bProbar').onclick = (ev) => ocupado(ev.currentTarget, async () => { $('dPista').showModal(); arrancarPista(); });
-  $('bOtroNivel').onclick = () => { semillaNivel++; arrancarPista(); };
-  $('dPista').addEventListener('close', () => { pista?.detener(); pista = null; });
-  for (const b of $('tactil').querySelectorAll('button')) {
-    const pon = (v) => (e) => { e.preventDefault(); pista?.tecla(b.dataset.k, v); };
-    b.addEventListener('pointerdown', pon(true)); b.addEventListener('pointerup', pon(false)); b.addEventListener('pointerleave', pon(false)); b.addEventListener('pointercancel', pon(false));
+  function explicar(meta, proyecto) {
+    const caja = $('explica');
+    for (const b of $('pExplica').children) { b.setAttribute('aria-selected', String(b.dataset.v === vista)); b.onclick = () => { vista = b.dataset.v; explicar(meta, proyecto); }; }
+    if (vista === 'algoritmos') {
+      caja.replaceChildren(el('p', { class: 'nota' }, 'Cada tarjeta es un trozo real de juego.js. En el juego pulsa V (rayos X) para ver lo que el código «piensa».'), ...meta.algoritmos.map((a, i) => {
+        const d = el('details', { class: 'algoritmo' }); d.open = i === 0;
+        d.append(el('summary', {}, a.nombre), el('p', {}, a.idea), el('pre', {}, extracto(proyecto.juego, a.id) || '(sin extracto)'), el('p', { class: 'prueba' }, 'Pruébalo: ' + a.prueba)); return d;
+      }));
+    } else {
+      const kb = (a) => `${Math.max(1, Math.round((a.datos.length ?? a.datos.byteLength) / 1024))} KB`;
+      const QUE = { 'heroe.png': 'Hoja de sprites de tu personaje: todas las animaciones en una sola imagen.', 'enemigo.png': 'Hoja de sprites del rival: otro personaje de las mismas reglas.', 'objetos.png': 'Monedas, gemas, bombas… 6 cuadros por objeto.', 'cielo.png': 'Fondo fijo.', 'capa0.png': 'Capa lejana: se mueve muy lento.', 'capa1.png': 'Capa media.', 'capa2.png': 'Capa cercana: se mueve más rápido. Eso es el paralaje.', 'suelo.png': 'Loseta de 64 px que se repite.', 'relleno.png': 'Loseta de muro.', 'plat_izq.png': 'Plataforma: borde izquierdo.', 'plat_cen.png': 'Plataforma: centro (se repite).', 'plat_der.png': 'Plataforma: borde derecho.' };
+      const filas = proyecto.archivos.filter((a) => a.lienzo).map((a) => {
+        const f = el('div', { class: 'recurso' }), n = a.nombre.slice(7), h = n === 'heroe.png' ? proyecto.DATOS.heroe : null;
+        const img = el('img', { alt: '', loading: 'lazy' }); img.src = a.lienzo.toDataURL('image/png');
+        const t = el('div'); t.append(el('b', {}, `${n} · ${a.lienzo.width}×${a.lienzo.height} · ${kb(a)}`), el('span', {}, (QUE[n] || '') + (h ? ` ${h.animaciones.reduce((s2, x) => s2 + x.cuadros, 0)} cuadros de ${h.px} px en ${h.animaciones.length} filas.` : '')));
+        f.append(img, t); return f;
+      });
+      const son = el('div', { class: 'chips' }); for (const a of proyecto.archivos.filter((x) => x.muestras)) { const b = el('button', { type: 'button', class: 'chip' }, `♪ ${a.nombre.split('/').pop()} · ${kb(a)}`); b.onclick = () => sonar(a.muestras, 0.5); son.append(b); }
+      const atlas = JSON.parse(proyecto.archivos.find((a) => a.nombre === 'assets/heroe.json').datos), primero = Object.entries(atlas.frames)[0];
+      caja.replaceChildren(el('p', { class: 'nota' }, 'Esto es todo lo que el juego carga. Ninguna imagen se dibujó a mano ni con IA generativa: salen de las reglas.'), ...filas,
+        el('div', { class: 'grupo-t' }, 'El atlas (heroe.json) dice dónde está cada cuadro'), el('pre', {}, `"${primero[0]}": ${JSON.stringify(primero[1].frame)}\n… ${Object.keys(atlas.frames).length} cuadros en total`),
+        el('div', { class: 'grupo-t' }, 'Sonidos: ondas calculadas, no grabaciones'), son,
+        el('div', { class: 'grupo-t' }, 'datos.js: los números de tu personaje'), el('pre', {}, proyecto.datosJS.split('\n').slice(0, 26).join('\n') + '\n…'));
+    }
   }
-  window.__forjaPista = () => pista; // para las pruebas automáticas
+  $('bProbar').onclick = (ev) => ocupado(ev.currentTarget, async () => { $('dPista').showModal(); await arrancarJuego(); });
+  $('bOtroNivel').onclick = () => { semillaNivel++; arrancarJuego(); };
+  $('bReiniciarJuego').onclick = () => { marco.srcdoc = enMemoria.html; };
+  $('bZipJuego').onclick = (ev) => ocupado(ev.currentTarget, async () => { const { blob, carpeta } = await zipProyecto(paquete(128), plantilla); bajar(`${carpeta}.zip`, blob); aviso('Proyecto descargado'); });
+  $('dPista').addEventListener('close', () => { marco.srcdoc = ''; enMemoria?.liberar(); enMemoria = null; });
+  window.__forjaJuego = () => marco.contentWindow; // para las pruebas automáticas
 
   // ---------------------------------------------------------------- exportación completa
-  $('bZip').onclick = (ev) => ocupado(ev.currentTarget, async () => { const d = paquete(128); bajar(`${d.hoja.clave}-phaser.zip`, await zipProyecto(d)); aviso('Proyecto Phaser descargado'); });
+  $('bZip').onclick = (ev) => ocupado(ev.currentTarget, async () => { const { blob, carpeta } = await zipProyecto(paquete(128), plantilla); bajar(`${carpeta}.zip`, blob); aviso('Proyecto Phaser descargado'); });
   $('bVideo').onclick = (ev) => ocupado(ev.currentTarget, async () => {
     const antes = A.control.autoRotate; A.control.autoRotate = true;
     const f = A.COL_FONDO[A.estado().params.fondo] || '#3a2f6b';
@@ -110,6 +137,7 @@ export function iniciarMas(A) {
   $('bGlb').onclick = (ev) => ocupado(ev.currentTarget, async () => { bajar(`${A.spec().id.replace('|', '_')}.glb`, await modeloGLB(A.pj().raiz)); aviso('Modelo GLB descargado'); });
   $('bExportar').addEventListener('click', () => {
     const b = banco(R, A.spec());
+    plantillas().then((ps) => A.chips($('zipPlantilla'), ps.map((p) => ({ id: p.id, nombre: p.nombre })), plantilla, function elegir(id) { plantilla = id; guarda('forja.plantilla', id); A.chips($('zipPlantilla'), ps.map((p) => ({ id: p.id, nombre: p.nombre })), plantilla, elegir); }));
     $('sonidos').replaceChildren(...Object.keys(b).map((n) => { const x = el('button', { type: 'button', class: 'chip' }, `♪ ${n}`); x.onclick = () => sonar(b[n], 0.5); return x; }));
   });
 
@@ -151,4 +179,71 @@ export function iniciarMas(A) {
   $('bGaleria').onclick = () => { $('dGaleria').showModal(); cargarGaleria(); clearInterval(reloj); reloj = setInterval(cargarGaleria, 6000); };
   $('dGaleria').addEventListener('close', () => clearInterval(reloj));
   if (q.get('sala')) setTimeout(() => $('bGaleria').click(), 600);
+
+  // ---------------------------------------------------------------- recorrido inicial: qué es cada parte y qué algoritmo hay detrás
+  const PASOS = [
+    { titulo: 'Bienvenido a Forja', texto: 'Aquí diseñas un personaje y lo conviertes en un videojuego. Nada lo dibuja una IA generativa: todo sale de reglas que puedes leer. Este recorrido te muestra cada parte y la idea de programación que hay detrás.' },
+    { sel: '.describe', titulo: '1 · Describe', idea: 'Algoritmo: buscar por significado', texto: 'Escribes en español. Primero se buscan palabras conocidas («michi» → gato). Si no hay ninguna, un modelo pequeño que corre aquí mismo convierte tu frase en una lista de 384 números y elige la familia cuyos números se parecen más (similitud del coseno).' },
+    { sel: '#cajon', antes: () => A.abrir('catalogo'), titulo: '2 · Catálogo', idea: 'Idea: combinar tablas', texto: `${R.meta.familias.length} familias × ${R.meta.variantes.length} variantes = ${R.meta.tipos} tipos. No hay ${R.meta.tipos} dibujos guardados: hay dos tablas que se combinan. Así pocas reglas escritas producen ${R.meta.total.toLocaleString('es-PE')} reglas concretas.` },
+    { sel: '#cajon', antes: () => A.abrir('cuerpo'), titulo: '3 · Ajustes', idea: 'Algoritmo: interpolar', texto: 'Cada deslizador va de 0 a 1. Las reglas solo guardan 5 valores (muy bajo… muy alto); para lo que queda en medio se calcula el punto intermedio. El muelle de la izquierda abre una herramienta a la vez; en «Reglas» ves cuáles se aplicaron a tu personaje.' },
+    { sel: '#escenario', titulo: '4 · El personaje', idea: 'Recurso: un modelo 3D hecho de piezas', texto: 'Tu personaje se arma con esferas, cápsulas y conos, como plastilina. Arrástralo para girarlo. Guardar su «semilla» basta para volver a crearlo idéntico.' },
+    { sel: '#animaciones', titulo: '5 · Animaciones', idea: 'Idea: líneas de tiempo', texto: 'Cada animación es una línea de tiempo: «en el instante 0,18 estírate; en el 0,5 estás arriba». Antes de saltar se agacha (anticipación) y al caer se aplasta: por eso se siente vivo. Teclas 1 a 9.' },
+    { sel: '#bProbar', titulo: '6 · Probar', idea: 'Algoritmos: física, estados, caminos', texto: 'Cuatro plantillas de juego: plataformas, fútbol, laberinto y runner. Cada una explica sus algoritmos con el código real, y con la tecla V (rayos X) ves lo que el juego «piensa».' },
+    { sel: '#bExportar', titulo: '7 · Llévalo a tu juego', idea: 'Recursos: hoja de sprites, atlas, sonidos', texto: 'Un juego no carga 72 imágenes: carga UNA hoja con todos los cuadros y un archivo (atlas) que dice dónde está cada uno. Aquí descargas el proyecto completo, listo para abrir y modificar.' },
+    { sel: '#bGaleria', titulo: '8 · Galería', texto: 'Entra a la sala de tu clase, publica tu personaje y vota. Con «Guardar» y «Mis personajes» armas tu elenco. Si te pierdes, toca a Chispa (abajo a la derecha): te dice qué hacer ahora.' },
+  ];
+  let paso = 0;
+  const capa = $('recorrido'), foco = $('foco'), globo = $('globo');
+  function mostrar() {
+    const p = PASOS[paso]; p.antes?.();
+    const obj = p.sel ? document.querySelector(p.sel) : null, visible = obj && obj.getClientRects().length;
+    if (visible) obj.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (p.antes && !mostrar.espera) { mostrar.espera = true; return setTimeout(() => { mostrar(); mostrar.espera = false; }, 320); } // deja terminar la animación del cajón
+    const r = visible ? obj.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0, bottom: innerHeight / 2, right: innerWidth / 2 };
+    Object.assign(foco.style, { left: r.left - 6 + 'px', top: r.top - 6 + 'px', width: r.width + 12 + 'px', height: r.height + 12 + 'px', opacity: visible ? 1 : 0 });
+    globo.replaceChildren(el('small', {}, `${paso + 1} de ${PASOS.length}`), el('h3', {}, p.titulo), ...(p.idea ? [el('b', { class: 'idea' }, p.idea)] : []), el('p', {}, p.texto));
+    const fila = el('div', { class: 'fila' }), salir = el('button', { type: 'button', class: 'btn mini' }, 'Saltar'), atras = el('button', { type: 'button', class: 'btn mini' }, 'Atrás'), sig = el('button', { type: 'button', class: 'btn mini primario' }, paso === PASOS.length - 1 ? '¡A forjar!' : 'Siguiente');
+    salir.onclick = cerrar; atras.onclick = () => { paso--; mostrar(); }; sig.onclick = () => { if (paso === PASOS.length - 1) cerrar(); else { paso++; mostrar(); } };
+    if (paso === 0) atras.hidden = true; fila.append(salir, atras, sig); globo.append(fila);
+    // el globo va debajo, encima o al lado, donde quepa
+    const g = globo.getBoundingClientRect(), margen = 14;
+    let x = Math.min(innerWidth - g.width - 10, Math.max(10, r.left + r.width / 2 - g.width / 2)), y = r.bottom + margen;
+    if (!visible) y = innerHeight / 2 - g.height / 2;
+    else if (y + g.height > innerHeight - 10) { y = r.top - g.height - margen; if (y < 10) { y = Math.min(innerHeight - g.height - 10, Math.max(10, r.top)); x = r.right + margen + g.width < innerWidth ? r.right + margen : Math.max(10, r.left - g.width - margen); } }
+    Object.assign(globo.style, { left: x + 'px', top: y + 'px' }); sig.focus();
+  }
+  function cerrar() { capa.hidden = true; guarda('forja.recorrido', 1); removeEventListener('resize', mostrar); }
+  function abrirRecorrido() { paso = 0; capa.hidden = false; addEventListener('resize', mostrar); mostrar(); }
+  capa.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); if (e.key === 'ArrowRight' && paso < PASOS.length - 1) { paso++; mostrar(); } if (e.key === 'ArrowLeft' && paso > 0) { paso--; mostrar(); } });
+  // ---------------------------------------------------------------- Chispa: el asistente que dice qué hacer ahora
+  const guia = $('bAyuda'), burbuja = $('burbuja');
+  try { guia.style.backgroundImage = `url(${miniatura(resolver(R, 'llama', 'clasico', { ...PARAMS_BASE, expresion: 'feliz', ojos: 0.8 }, 3), 120)})`; guia.classList.add('con-cara'); } catch { /* se queda el signo de pregunta */ }
+  const vistos = new Set(lee('forja.consejos', []));
+  function consejoAhora() { // el consejo depende de lo que aún no has hecho
+    if (!vistos.has('describir')) return 'Empieza por arriba: describe tu personaje con una frase y pulsa Forjar.';
+    if (!A.hoja()) return 'El muelle de la izquierda abre una herramienta a la vez. Prueba «Cuerpo» y mueve el peso.';
+    if (!mios.length) return 'Cuando un personaje te guste, guárdalo con el corazón. Luego armas tu elenco.';
+    if (!vistos.has('juegos')) return 'Ya tienes personaje: pulsa «Juegos» y pruébalo en una de las cuatro plantillas.';
+    if (!vistos.has('exportar')) return 'Lleva tu juego a tu computadora con «Llevar a mi juego». Trae todo el código para que lo cambies.';
+    return 'En cualquier juego pulsa V (rayos X): verás cajas de choque, estados y caminos.';
+  }
+  function abrirBurbuja(texto) {
+    const cerrarB = () => { burbuja.hidden = true; guia.setAttribute('aria-expanded', 'false'); };
+    const accion = (nombre, fn) => { const b = el('button', { type: 'button' }, nombre); b.onclick = () => { cerrarB(); fn(); }; return b; };
+    const lista = el('div', { class: 'lista' });
+    const guiaLink = el('a', { href: 'guia.html', target: '_blank', rel: 'noopener' }, 'Guía de una página');
+    lista.append(accion('Hacer el recorrido', abrirRecorrido), accion('Crear con una frase', () => { $('texto').value = A.ejemplos[Math.floor(Math.random() * A.ejemplos.length)]; $('fDescribe').requestSubmit(); }),
+      accion('Probar un juego', () => $('bProbar').click()), accion('Entender los algoritmos', () => { vista = 'algoritmos'; $('bProbar').click(); }), guiaLink);
+    burbuja.replaceChildren(el('h3', {}, 'Soy Chispa, tu guía'), el('p', { class: 'consejo' }, texto || consejoAhora()), lista);
+    burbuja.hidden = false; guia.setAttribute('aria-expanded', 'true');
+  }
+  guia.onclick = () => { if (burbuja.hidden) abrirBurbuja(); else { burbuja.hidden = true; guia.setAttribute('aria-expanded', 'false'); } };
+  addEventListener('pointerdown', (e) => { if (!burbuja.hidden && !e.target.closest('#burbuja, #bAyuda')) { burbuja.hidden = true; guia.setAttribute('aria-expanded', 'false'); } });
+  // consejos que aparecen solos, una sola vez cada uno
+  function consejo(id, texto) { const nuevo = !vistos.has(id); vistos.add(id); guarda('forja.consejos', [...vistos]); if (!nuevo || !capa.hidden || document.querySelector('dialog[open]')) return; abrirBurbuja(texto); guia.classList.remove('llama'); void guia.offsetWidth; guia.classList.add('llama'); clearTimeout(consejo.t); consejo.t = setTimeout(() => { burbuja.hidden = true; }, 9000); }
+  $('fDescribe').addEventListener('submit', () => setTimeout(() => consejo('describir', '¡Listo! Arriba ves lo que entendí. Ahora abre «Cuerpo» o «Color» en el muelle para afinarlo, o pulsa el dado para una sorpresa.'), 1600));
+  $('bGuardar').addEventListener('click', () => consejo('guardar', 'Guardado. En «Mis personajes» puedes marcarlo con ★ para tu elenco: héroe, enemigos y jefe.'));
+  $('bProbar').addEventListener('click', () => { vistos.add('juegos'); guarda('forja.consejos', [...vistos]); });
+  $('bExportar').addEventListener('click', () => { vistos.add('exportar'); guarda('forja.consejos', [...vistos]); });
+  if (!lee('forja.recorrido', 0) && !q.get('sala') && !q.has('sinrecorrido')) setTimeout(abrirRecorrido, 900);
 }

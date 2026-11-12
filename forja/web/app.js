@@ -84,7 +84,7 @@ function pintar(cambioTipo = false) {
     encuadrar(fueTipo || !camara.userData.listo); camara.userData.listo = true;
     if (fueTipo) golpe = performance.now();
     interfaz(); history.replaceState(null, '', aEnlace());
-    clearTimeout(pintar.t); pintar.t = setTimeout(() => { anotar(); variaciones(); }, 450);
+    clearTimeout(pintar.t); pintar.t = setTimeout(() => { anotar(); if (hojaActiva === 'variar') variaciones(); }, 450);
   });
 }
 const t0 = performance.now();
@@ -119,9 +119,9 @@ function deslizador(k, nombre, a = 'bajo', b = 'alto') {
   c.append(cab, i); return c;
 }
 
-let hojaActiva = 'cuerpo', interfazDe = '';
+let hojaActiva = null, interfazDe = '', nombreVisto = '';
 function interfaz() {
-  $('nombre').textContent = spec.nombre;
+  if (spec.nombre !== nombreVisto) { const h = $('nombre'); nombreVisto = h.textContent = spec.nombre; h.classList.remove('cambia'); void h.offsetWidth; h.classList.add('cambia'); }
   $('ficha').textContent = `${M.familias.find((f) => f.id === E.familia).rig} · semilla ${E.semilla} · ${spec.reglas.length} reglas aplicadas`;
   const f = spec.fisica;
   $('fisica').replaceChildren(...[['Velocidad', f.velocidad, 320], ['Salto', f.salto, 640], ['Masa', f.masa, 4]].map(([n, v, max]) => { const d = el('div'); d.append(el('span', {}, n), el('b', {}, String(v)), el('i', { style: `--v:${clamp(v / max * 100, 4, 100)}%` })); return d; }));
@@ -174,7 +174,7 @@ function hojas() {
     chips(cc, M.accesorios.map((a) => ({ id: a.id, nombre: a.nombre, no: !T.acc[`${E.familia}|${a.id}`][0] })), puestos, (id) => { const s = new Set(puestos); s.has(id) ? s.delete(id) : s.add(id); fijar({ accesorios: [...s] }); }, { multi: true, rol: 'switch' });
     const q = el('button', { type: 'button', class: 'btn mini' }, 'Los del tipo'); q.onclick = () => fijar({ accesorios: null });
     tE.replaceChildren(el('p', { class: 'nota' }, 'Las reglas de compatibilidad apagan lo que no encaja con esta familia.'), cc, q);
-  } else {
+  } else if (hojaActiva === 'reglas') {
     const n = el('div', { class: 'reglas-n' });
     for (const [k, v] of Object.entries(M.cuenta)) n.append(el('span', {}, k), el('b', {}, v.toLocaleString('es-PE')));
     n.append(el('span', { class: 'tot' }, 'Total compilado'), el('b', { class: 'tot' }, M.total.toLocaleString('es-PE')));
@@ -183,13 +183,20 @@ function hojas() {
     tR.lastChild.style.whiteSpace = 'pre-wrap';
   }
 }
-$('pestanas').onclick = (e) => {
-  const b = e.target.closest('[role="tab"]'); if (!b) return;
-  hojaActiva = b.dataset.t; interfazDe = '';
-  for (const x of $('pestanas').children) x.setAttribute('aria-selected', String(x === b));
-  for (const h of document.querySelectorAll('.hoja')) h.hidden = h.dataset.t !== hojaActiva;
-  hojas();
-};
+// Muelle: una sola herramienta abierta a la vez. Tocar la que ya está abierta la cierra y deja todo el espacio al personaje.
+const TITULOS = { catalogo: 'Catálogo', cuerpo: 'Cuerpo', color: 'Color', cara: 'Cara', extras: 'Accesorios', variar: 'Variaciones', reglas: 'Reglas' };
+function abrir(id) {
+  hojaActiva = id && TITULOS[id] ? id : null; interfazDe = '';
+  $('cajon').classList.toggle('abierto', !!hojaActiva);
+  for (const b of $('muelle').children) b.setAttribute('aria-selected', String(b.dataset.t === hojaActiva));
+  for (const h of document.querySelectorAll('.cajon .hoja')) h.hidden = h.dataset.t !== hojaActiva;
+  $('cajonTitulo').textContent = TITULOS[hojaActiva] || '';
+  try { localStorage.setItem('forja.hoja', JSON.stringify(hojaActiva)); } catch { /* sin almacenamiento */ }
+  if (spec && hojaActiva) { hojas(); if (hojaActiva === 'variar') variaciones(); }
+}
+$('muelle').onclick = (e) => { const b = e.target.closest('[data-t]'); if (b) abrir(hojaActiva === b.dataset.t ? null : b.dataset.t); };
+$('bCerrarCajon').onclick = () => abrir(null);
+
 
 // animaciones, fondos y giro
 chips($('animaciones'), lista(M.animaciones), anim, function elegir(id) { anim = id; chips($('animaciones'), lista(M.animaciones), anim, elegir); });
@@ -247,6 +254,7 @@ async function describir(texto) {
   if (otras.length) { caja.append(el('span', {}, '¿O quizá?')); for (const a of otras) { const b = el('button', { type: 'button', class: 'alt' }, nomF(a.id)); b.onclick = () => { E.familia = a.id; E.params.accesorios = null; pintar(true); }; caja.append(b); } }
   caja.append(el('span', { class: 'fuente' }, `Fuente: ${r.fuente}${r.ms != null ? ` · ${r.ms} ms` : ''} · sin IA externa`));
   interfazDe = ''; pintar(true);
+  const sg = document.querySelector('.sugiere'); sg.classList.add('ver'); clearTimeout(describir.t); describir.t = setTimeout(() => sg.classList.remove('ver'), 6000);
 }
 $('fDescribe').onsubmit = async (e) => { e.preventDefault(); const t = $('texto').value.trim() || $('texto').placeholder; const b = $('bForjar'); b.disabled = true; await describir(t); b.disabled = false; };
 $('texto').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('fDescribe').requestSubmit(); } };
@@ -269,8 +277,10 @@ $('bCodigo').onclick = () => copiar($('codigo').textContent, 'Código copiado');
 $('bEnlace').onclick = () => copiar(location.href, 'Enlace copiado');
 
 $('bDeshacer').onclick = deshacer; $('bRehacer').onclick = rehacer;
-iniciarMas({ R, $, el, aviso, bajar, copiar, chips, lista, nombreDe, lienzo, control, COL_FONDO,
+iniciarMas({ R, $, el, aviso, bajar, copiar, chips, lista, nombreDe, lienzo, control, COL_FONDO, abrir, hoja: () => hojaActiva, ejemplos: EJEMPLOS,
   estado: () => E, spec: () => spec, pj: () => pj, enlace: () => location.origin + location.pathname + aEnlace(),
   cargar: (e) => { E = { familia: e.familia, variante: e.variante, semilla: e.semilla, params: { ...PARAMS_BASE, ...e.params } }; interfazDe = ''; fondos(); pintar(true); } });
+let inicial = innerWidth > 760 ? 'catalogo' : null; try { const g = JSON.parse(localStorage.getItem('forja.hoja')); if (g !== undefined && innerWidth > 760) inicial = g; } catch { /* valor por defecto */ }
+abrir(inicial);
 fondos(); tamano(); pintar(true);
 document.documentElement.dataset.listo = '1';

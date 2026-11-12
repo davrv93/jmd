@@ -166,7 +166,7 @@ for (const f of B.FAMILIAS) for (const so of B.SONIDOS) {
 }
 
 // 17 · objetos: objeto x variante -> [tono, saturación, luz, emisivo]. Los tesoros conservan su color; lo mágico toma el del mundo.
-const BASE_OBJ = { moneda: [46, 0.9, 0.56, 0.2], gema: [190, 0.8, 0.6, 0.3], corazon: [352, 0.85, 0.56, 0.1], llave: [44, 0.75, 0.6, 0.1], cofre: [28, 0.55, 0.36, 0], pocion: [300, 0.8, 0.58, 0.3], estrella: [50, 0.95, 0.6, 0.4], bomba: [240, 0.12, 0.2, 0], proyectil: [20, 0.95, 0.58, 0.7], meta: [130, 0.7, 0.5, 0.1] };
+const BASE_OBJ = { moneda: [46, 0.9, 0.56, 0.2], gema: [190, 0.8, 0.6, 0.3], corazon: [352, 0.85, 0.56, 0.1], llave: [44, 0.75, 0.6, 0.1], cofre: [28, 0.55, 0.36, 0], pocion: [300, 0.8, 0.58, 0.3], estrella: [50, 0.95, 0.6, 0.4], bomba: [240, 0.12, 0.2, 0], proyectil: [20, 0.95, 0.58, 0.7], meta: [130, 0.7, 0.5, 0.1], balon: [0, 0, 0.96, 0] };
 for (const o of B.OBJETOS) for (const v of B.VARIANTES) {
   const [h, sa, l, e] = BASE_OBJ[o], magico = ['gema', 'pocion', 'proyectil', 'meta'].includes(o) && v.dTono != null;
   regla('objeto', `${o}|${v.id}`, [magico ? v.dTono : h, r3(clamp(sa + v.dSat * 0.4, 0.05, 1)), r3(clamp(l + v.dLuz * 0.3, 0.15, 0.9)), r3(clamp(e + v.emisivo, 0, 0.9))]);

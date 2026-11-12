@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 
 const PI = Math.PI;
-export const NOMBRES = { moneda: 'Moneda', gema: 'Gema', corazon: 'Corazón', llave: 'Llave', cofre: 'Cofre', pocion: 'Poción', estrella: 'Estrella', bomba: 'Bomba', proyectil: 'Proyectil', meta: 'Meta' };
+export const NOMBRES = { moneda: 'Moneda', gema: 'Gema', corazon: 'Corazón', llave: 'Llave', cofre: 'Cofre', pocion: 'Poción', estrella: 'Estrella', bomba: 'Bomba', proyectil: 'Proyectil', meta: 'Meta', balon: 'Balón' };
 
 export function construirObjeto(id, regla) {
   const [h, s, l, em] = regla, basura = [], raiz = new THREE.Group();
@@ -29,6 +29,7 @@ export function construirObjeto(id, regla) {
     case 'bomba': pieza(new THREE.SphereGeometry(0.36, 22, 16), P, 0, -0.06, 0); pieza(new THREE.CylinderGeometry(0.08, 0.1, 0.1, 10), mat(0, 0, 0.4), 0, 0.3, 0); pieza(new THREE.CylinderGeometry(0.02, 0.02, 0.18, 6), mat(30, 0.4, 0.5), 0.04, 0.42, 0, true).rotation.z = -0.4; pieza(new THREE.SphereGeometry(0.07, 10, 8), mat(40, 1, 0.6, 1), 0.09, 0.51, 0, true); pieza(new THREE.SphereGeometry(0.08, 10, 8), mat(0, 0, 1, 0.6), -0.13, 0.08, 0.28, true); break;
     case 'proyectil': pieza(new THREE.SphereGeometry(0.22, 18, 14), mat(h, s, Math.min(0.9, l + 0.2), 1), 0, 0, 0, true); pieza(new THREE.SphereGeometry(0.36, 18, 14), mat(h, s, l, 0.6, 0.4), 0, 0, 0, true); { const c = pieza(new THREE.ConeGeometry(0.2, 0.5, 12), mat(h, s, l, 0.6, 0.5), -0.3, 0, 0, true); c.rotation.z = -PI / 2; } break;
     case 'meta': pieza(new THREE.CylinderGeometry(0.035, 0.035, 1, 8), mat(0, 0, 0.85), -0.25, 0, 0); pieza(new THREE.SphereGeometry(0.07, 10, 8), oro, -0.25, 0.52, 0); pieza(new THREE.BoxGeometry(0.5, 0.32, 0.03), P, 0.03, 0.3, 0); break;
+    case 'balon': pieza(new THREE.SphereGeometry(0.4, 22, 16), P); for (const [x, y, z] of [[0, 0, 1], [0.75, 0.4, 0.5], [-0.75, 0.4, 0.5], [0.45, -0.75, 0.5], [-0.45, -0.75, 0.5], [0, 0.85, -0.5], [0.8, -0.2, -0.55], [-0.8, -0.2, -0.55], [0, -0.5, -0.86]]) pieza(new THREE.SphereGeometry(0.13, 10, 8), mat(0, 0, 0.1), x * 0.33, y * 0.33, z * 0.33, true); break;
     default: pieza(new THREE.BoxGeometry(0.5, 0.5, 0.5), P);
   }
   return { raiz, gira: !['cofre', 'proyectil', 'meta', 'bomba', 'corazon'].includes(id), late: ['corazon', 'proyectil', 'bomba'].includes(id), liberar() { for (const b of basura) b.dispose?.(); } };

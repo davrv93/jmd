@@ -1,0 +1,37 @@
+[
+  { "id": "plataformas", "nombre": "Plataformas", "lema": "Corre, salta y llega a la meta", "gravedad": true,
+    "controles": "← → moverte · ↑ o espacio saltar · X golpear · ↓ agacharte · V rayos X · R repetir",
+    "recursos": ["heroe", "enemigo", "objetos", "cielo", "capa0", "capa1", "capa2", "suelo", "plat_izq", "plat_cen", "plat_der"],
+    "algoritmos": [
+      { "id": "salto", "nombre": "Gravedad y salto", "idea": "La gravedad tira hacia abajo en cada cuadro. Saltar es dar una velocidad hacia arriba de golpe. Los números (velocidad, salto) salen de las reglas de tu personaje: uno pesado salta menos.", "prueba": "Sube el peso de tu personaje y vuelve a jugar: ¿llega igual a la plataforma?" },
+      { "id": "nivel", "nombre": "El nivel es una lista de datos", "idea": "No hay un «dibujo» del nivel: hay una lista que dice qué columnas tienen suelo y dónde va cada plataforma. El código la recorre y crea los cuerpos sólidos.", "prueba": "Abre datos.js y cambia un true por false en «suelo»: aparece un hueco." },
+      { "id": "patrulla", "nombre": "Enemigo que patrulla", "idea": "Camina hasta un límite y da la vuelta. Es la inteligencia más simple: una variable (dir) y dos comparaciones.", "prueba": "Con rayos X (V) verás su caja de choque y la tuya." },
+      { "id": "camara", "nombre": "Cámara que sigue", "idea": "La cámara persigue al héroe con suavidad y no sale de los bordes del nivel. El fondo se mueve más lento que el suelo: eso es el paralaje.", "prueba": "Cambia 0.12 por 1 en la cámara: se vuelve brusca." }
+    ] },
+  { "id": "futbol", "nombre": "Fútbol", "lema": "Tú y tu arquero contra dos rivales", "gravedad": false,
+    "controles": "← → ↑ ↓ moverte · X o espacio patear (↑ ↓ apuntan) · V rayos X · R repetir",
+    "recursos": ["heroe", "enemigo", "objetos"],
+    "algoritmos": [
+      { "id": "estados", "nombre": "Máquina de estados", "idea": "El defensa siempre está en UN estado: volver, perseguir o despejar. En cada estado hace una sola cosa y decide si cambia a otro. Así se programa casi toda la «IA» de los videojuegos.", "prueba": "Con rayos X (V) verás el estado encima de cada rival mientras juegas." },
+      { "id": "perseguir", "nombre": "Perseguir un punto", "idea": "Se resta «a dónde quiero ir» menos «dónde estoy». Ese vector se ajusta a la velocidad deseada. Una sola función sirve para ir al balón, volver a casa o cubrir el arco.", "prueba": "Sube 185 a 260 en «perseguir»: el defensa se vuelve implacable." },
+      { "id": "rebote", "nombre": "El balón: rebote y roce", "idea": "El balón es un círculo que rebota en los bordes y pierde velocidad solo, como en el pasto. Dos números lo controlan: bounce (rebote) y drag (freno).", "prueba": "Pon el drag en 0.9: la cancha se vuelve de hielo." },
+      { "id": "gol", "nombre": "¿Fue gol?", "idea": "Gol es una prueba de rectángulo: el balón tocó la línea de fondo y su altura está entre los dos postes.", "prueba": "Con rayos X verás los rectángulos de los arcos en rojo." }
+    ] },
+  { "id": "laberinto", "nombre": "Laberinto", "lema": "Rivales que te buscan por el camino más corto", "gravedad": false,
+    "controles": "← → ↑ ↓ moverte · V rayos X (muestra las rutas) · R repetir",
+    "recursos": ["heroe", "enemigo", "objetos", "relleno", "cielo"],
+    "algoritmos": [
+      { "id": "bfs", "nombre": "Búsqueda en anchura (BFS)", "idea": "Para hallar el camino más corto, se visitan primero las celdas a 1 paso, luego a 2, luego a 3… como una mancha que crece. La primera vez que toca el destino, ese es el camino más corto.", "prueba": "Con rayos X (V) verás la ruta de cada rival y cuántas celdas visitó el algoritmo." },
+      { "id": "generar", "nombre": "Generar el laberinto", "idea": "Se parte de una rejilla llena de muros y se «excava» al azar, volviendo atrás cuando no hay salida. Así todo queda conectado. La semilla hace que el mismo número dé siempre el mismo laberinto.", "prueba": "Pulsa «Otro nivel»: cambia la semilla y sale otro laberinto." },
+      { "id": "estados", "nombre": "Patrulla o persigue", "idea": "Cada rival tiene dos estados. Si estás lejos, patrulla hacia una celda cualquiera. Si estás a 6 celdas o menos, te persigue. Piensa cada 0,35 s, no en cada cuadro: calcular rutas cuesta.", "prueba": "Cambia el 6 por 20: te persiguen desde cualquier lugar." }
+    ] },
+  { "id": "runner", "nombre": "Runner", "lema": "Corre sin parar, cada vez más rápido", "gravedad": false,
+    "controles": "↑ o espacio saltar (doble salto) · ↓ agacharte o caer rápido · V rayos X · R repetir",
+    "recursos": ["heroe", "enemigo", "objetos", "cielo", "capa0", "capa1", "capa2", "suelo"],
+    "algoritmos": [
+      { "id": "infinito", "nombre": "Mundo infinito", "idea": "El héroe no avanza: lo que se mueve es el suelo (una imagen que se repite) y los obstáculos que vienen hacia él. La distancia es solo un número que crece.", "prueba": "Mira el suelo: es la misma loseta de 64 px repetida." },
+      { "id": "generar", "nombre": "Generación por azar con reglas", "idea": "Cada cierta distancia se elige un patrón: bomba, proyectil, monedas en arco. El azar decide cuál; las reglas garantizan que siempre se pueda pasar.", "prueba": "Con rayos X (V) verás una línea verde: ahí nacerá el próximo patrón." },
+      { "id": "dificultad", "nombre": "Curva de dificultad", "idea": "La velocidad sube poco a poco con el tiempo y tiene un tope. Una sola línea de código decide qué tan difícil es el juego.", "prueba": "Cambia el 7 por 30: se vuelve imposible en segundos." },
+      { "id": "reciclaje", "nombre": "Reciclaje de objetos", "idea": "En vez de crear y destruir cientos de objetos, hay un grupo con un máximo. El que sale de la pantalla se apaga y se reutiliza. Así el juego no se pone lento.", "prueba": "Con rayos X verás «activos 5/12»: 12 creados en total, 5 en uso." }
+    ] }
+]
