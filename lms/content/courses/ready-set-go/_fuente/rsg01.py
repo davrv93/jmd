@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Genera las escenas LIVE de la Clase 1 de Ready Set Go (rsg-01): python3 _fuente/rsg01.py
 
-Secuencia (92 min de 90): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano) · 01b historia por décadas · 01c los que
+Secuencia (94 min de 90): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano) · 01b historia por décadas · 01c los que
 cambiaron las reglas · 02 Forja: tu héroe · 03 de la mecánica
 a la tecnología · 04 movimiento y choques · 05 hoja de sprites · 06 elige tu juego · 07 cierre.
 Las escenas 01 y 05/heroe.png no se generan aquí. Reglas del modo LIVE: sin recursos externos, menos de 300 elementos
@@ -155,46 +155,140 @@ DECADAS = [
         (2026, "Tu juego", "Tú, con IA", "Describes la mecánica y la IA elige la tecnología. Lo que antes pedía un equipo y meses, hoy empieza en una clase.", "Empieza en la siguiente escena"),
     ]),
 ]
-datos_decadas = [{"d": d, "t": t, "r": r, "j": [{"a": a, "n": n, "q": q, "i": i, "h": h} for a, n, q, i, h in js]} for d, t, r, js in DECADAS]
-escena("01b-historia-por-decadas", "Historia: setenta años de videojuegos", "reflexion", "", 6, """
+# Videos de referencia comprobados el 12-11-2026 (existen y son de la institución que se indica). Para el resto de
+# juegos el botón arma una búsqueda de YouTube: así ningún enlace queda roto ni apunta a una copia no autorizada.
+VIDEOS = {"Tennis for Two": ("u6mu5B-YZU8", "Brookhaven Lab"), "Spacewar!": ("_L1HeZ2kPck", "Computer History Museum")}
+# Réplicas jugables: SOLO la mecánica, con formas, colores y nombres propios. No copian el arte, los personajes, la
+# música ni los niveles de ningún juego (las mecánicas no tienen derechos de autor; lo demás, sí).
+DEMOS = {0: "rebote", 1: "paletas", 2: "rivales", 5: "semilla"}
+datos_decadas = [{"d": d, "t": t, "r": r, "m": DEMOS.get(k, ""), "j": [{"a": a, "n": n, "q": q, "i": i, "h": h, "v": VIDEOS.get(n, ("", ""))[0], "c": VIDEOS.get(n, ("", ""))[1]} for a, n, q, i, h in js]} for k, (d, t, r, js) in enumerate(DECADAS)]
+escena("01b-historia-por-decadas", "Historia: setenta años de videojuegos", "reflexion", "", 8, """
     <div class="x-fila"><h1 class="esc-titulo a-in">Setenta años de <em>videojuegos</em></h1><span class="esc-chip a-in" id="vistas" aria-live="polite">1 de 7 décadas</span></div>
     <div class="x-linea a-in" id="linea" role="tablist" aria-label="Décadas"></div>
     <section class="esc-card x-regla a-in" style="--d:.2s" aria-live="polite"><span class="x-et" id="dTitulo"></span><p id="dResumen" style="font-size:1em;color:var(--fg)"></p></section>
-    <div class="x-juegos" id="juegos" aria-live="polite"></div>""",
-       "Pulsa «Lo logré» cuando hayas recorrido las siete décadas. Fíjate en la línea de abajo de cada tarjeta: esa idea la usarás en el taller",
-       js="var D = " + json.dumps(datos_decadas, ensure_ascii=False) + """;
-var vistas = {}, linea = $("#linea"), caja = $("#juegos");
+    <div class="x-juegos" id="juegos" aria-live="polite"></div>
+    <section class="esc-card x-prueba a-in" style="--d:.3s" id="prueba">
+      <div><span class="x-et" id="mTitulo"></span><p id="mAyuda"></p><p class="x-marca" id="mMarca" aria-live="polite"></p><p class="x-nota">Réplica propia de la mecánica: formas y colores nuestros, no el juego original.</p></div>
+      <canvas id="demo" width="720" height="200" tabindex="0" aria-label="Réplica jugable de la mecánica de la década"></canvas>
+    </section>
+    <p class="x-copiado" id="copiado" aria-live="polite"></p>""",
+       "Pulsa «Lo logré» cuando hayas recorrido las siete décadas y probado al menos una réplica. Los videos también están en los materiales de la clase",
+       js="var D = " + json.dumps(datos_decadas, ensure_ascii=False) + r""";
+var vistas = {}, linea = $("#linea"), caja = $("#juegos"), actual = 0;
+// Los enlaces se arman aquí y se copian al portapapeles: la escena no puede abrir pestañas (va en un marco aislado).
+var YT = "https:" + "//www.youtube.com/";
+function enlace(j) { return j.v ? YT + "watch?v=" + j.v : YT + "results?search_query=" + encodeURIComponent(j.n + " " + j.a + " gameplay"); }
+function copiar(url) {
+  var c = $("#copiado"), listo = function () { c.textContent = "Enlace copiado. Abre una pestaña nueva y pégalo: " + url; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(listo, function () { c.textContent = "Copia este enlace: " + url; }); else c.textContent = "Copia este enlace: " + url;
+}
 function ver(k) {
-  vistas[k] = 1; var d = D[k];
+  actual = k; vistas[k] = 1; var d = D[k];
   $$(".x-dec", linea).forEach(function (b, i) { b.setAttribute("aria-selected", i === k ? "true" : "false"); if (vistas[i]) b.classList.add("vista"); });
-  $("#dTitulo").textContent = d.d + " · " + d.t; $("#dResumen").textContent = d.r;
+  $("#dTitulo").textContent = d.d + " · " + d.t; $("#dResumen").textContent = d.r; $("#copiado").textContent = "";
   caja.innerHTML = "";
   d.j.forEach(function (j, i) {
     var c = el("article", "esc-card x-juego a-in"); c.style.setProperty("--d", i * 0.07 + "s");
     var cab = el("div", "x-cab"); cab.appendChild(el("span", "x-anio", String(j.a))); var t = el("div"); t.appendChild(el("h2", null, j.n)); t.appendChild(el("small", null, j.q)); cab.appendChild(t); c.appendChild(cab);
     c.appendChild(el("p", "x-idea", j.i)); var h = el("p", "x-hoy"); h.appendChild(el("b", null, "En el taller: ")); h.appendChild(document.createTextNode(j.h)); c.appendChild(h);
+    if (j.a < 2026) { var b = el("button", "x-btn x-yt", j.v ? "▶ Video · " + j.c : "▶ Buscar en YouTube"); b.type = "button"; b.onclick = function () { copiar(enlace(j)); }; c.appendChild(b); }
     caja.appendChild(c);
   });
   $("#vistas").textContent = Object.keys(vistas).length + " de " + D.length + " décadas";
+  $("#prueba").hidden = !d.m; if (d.m) arrancar(d.m);
 }
-D.forEach(function (d, k) { var b = el("button", "x-dec"); b.type = "button"; b.setAttribute("role", "tab"); b.appendChild(el("b", null, d.d)); b.appendChild(el("span", null, d.t)); b.onclick = function () { ver(k); }; linea.appendChild(b); });
-addEventListener("keydown", function (e) { var k = $$(".x-dec", linea).findIndex(function (b) { return b.getAttribute("aria-selected") === "true"; }); if (e.key === "ArrowRight" && k < D.length - 1) ver(k + 1); if (e.key === "ArrowLeft" && k > 0) ver(k - 1); });
+D.forEach(function (d, k) { var b = el("button", "x-dec"); b.type = "button"; b.setAttribute("role", "tab"); b.appendChild(el("b", null, d.d)); b.appendChild(el("span", null, d.t + (d.m ? " ▸" : ""))); b.onclick = function () { ver(k); }; linea.appendChild(b); });
+
+// ---- réplicas jugables: cuatro mecánicas en un lienzo de 720 x 200. Flechas y espacio (clic en el lienzo primero) o el dedo.
+var cv = $("#demo"), x = cv.getContext("2d"), W = 720, H = 200, K = {}, P = { x: 0, y: 0, dentro: false }, demo = null, antes = performance.now();
+function col(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function azar(s) { return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+var DEMOS = {
+  rebote: { titulo: "Pruébalo · una pelota con gravedad", ayuda: "Espacio o clic golpea la pelota cuando está de tu lado. Hazla pasar la red.",
+    inicia: function () { this.b = { x: 120, y: 60, vx: 0, vy: 0 }; this.lado = 0; this.pases = 0; this.rastro = []; },
+    golpe: function () { var b = this.b, mio = (this.lado === 0) === (b.x < W / 2); if (mio && b.y > 60) { b.vx = (this.lado === 0 ? 1 : -1) * (230 + Math.random() * 60); b.vy = -330; this.lado = 1 - this.lado; this.pases++; } },
+    paso: function (dt) { var b = this.b; if (K.salto) { K.salto = false; this.golpe(); } b.vy += 620 * dt; b.x += b.vx * dt; b.y += b.vy * dt;
+      if (b.y > H - 26) { b.y = H - 26; b.vy *= -0.62; b.vx *= 0.86; }
+      if (Math.abs(b.x - W / 2) < 6 && b.y > H - 70) { b.vx *= -0.5; b.x = W / 2 + (b.x < W / 2 ? -7 : 7); }
+      if (b.x < 12 || b.x > W - 12) { b.vx *= -0.7; b.x = Math.max(12, Math.min(W - 12, b.x)); }
+      this.rastro.push([b.x, b.y]); if (this.rastro.length > 26) this.rastro.shift(); },
+    pinta: function () { var g = "#7dffa6"; x.fillStyle = "#06140c"; x.fillRect(0, 0, W, H); x.strokeStyle = g; x.lineWidth = 2; x.beginPath(); x.moveTo(20, H - 18); x.lineTo(W - 20, H - 18); x.moveTo(W / 2, H - 18); x.lineTo(W / 2, H - 70); x.stroke();
+      this.rastro.forEach(function (p, i) { x.globalAlpha = i / 40; x.fillStyle = g; x.beginPath(); x.arc(p[0], p[1], 4, 0, 6.283); x.fill(); }); x.globalAlpha = 1; x.fillStyle = "#eafff1"; x.beginPath(); x.arc(this.b.x, this.b.y, 7, 0, 6.283); x.fill(); },
+    marca: function () { return this.pases + " pases · le toca al lado " + (this.lado === 0 ? "izquierdo" : "derecho"); } },
+  paletas: { titulo: "Pruébalo · dos paletas y una pelota", ayuda: "Mueve tu paleta (izquierda) con ↑ ↓ o con el cursor. Gana quien llegue a 5.",
+    inicia: function () { this.yo = H / 2; this.el = H / 2; this.p = [0, 0]; this.saca(1); },
+    saca: function (dir) { this.b = { x: W / 2, y: H / 2, vx: 250 * dir, vy: (Math.random() - 0.5) * 220 }; },
+    paso: function (dt) { var b = this.b; if (this.p[0] >= 5 || this.p[1] >= 5) return;
+      if (P.dentro) this.yo += (P.y - this.yo) * Math.min(1, dt * 14); this.yo += ((K.abajo ? 1 : 0) - (K.arriba ? 1 : 0)) * 260 * dt; this.yo = Math.max(34, Math.min(H - 34, this.yo));
+      this.el += Math.max(-170 * dt, Math.min(170 * dt, b.y - this.el)); // la otra paleta sigue la pelota, pero con velocidad limitada: por eso se le puede ganar
+      b.x += b.vx * dt; b.y += b.vy * dt; if (b.y < 10 || b.y > H - 10) { b.vy *= -1; b.y = Math.max(10, Math.min(H - 10, b.y)); }
+      if (b.vx < 0 && b.x < 44 && b.x > 26 && Math.abs(b.y - this.yo) < 40) { b.vx = Math.abs(b.vx) * 1.06; b.vy += (b.y - this.yo) * 5; }
+      if (b.vx > 0 && b.x > W - 44 && b.x < W - 26 && Math.abs(b.y - this.el) < 40) { b.vx = -Math.abs(b.vx) * 1.06; b.vy += (b.y - this.el) * 5; }
+      if (b.x < -20) { this.p[1]++; this.saca(1); } if (b.x > W + 20) { this.p[0]++; this.saca(-1); } },
+    pinta: function () { x.fillStyle = col("--s2"); x.fillRect(0, 0, W, H); x.fillStyle = col("--accent"); x.beginPath(); x.roundRect(28, this.yo - 34, 12, 68, 6); x.fill(); x.fillStyle = col("--warn"); x.beginPath(); x.roundRect(W - 40, this.el - 34, 12, 68, 6); x.fill(); x.fillStyle = col("--fg"); x.beginPath(); x.arc(this.b.x, this.b.y, 8, 0, 6.283); x.fill(); },
+    marca: function () { var f = this.p[0] >= 5 ? " · ¡Ganaste!" : this.p[1] >= 5 ? " · Ganó la máquina" : ""; return "Tú " + this.p[0] + " – " + this.p[1] + " Máquina" + f; } },
+  rivales: { titulo: "Pruébalo · rivales con carácter", ayuda: "Muévete con las flechas o el cursor y junta las 8 semillas. Cada rival te busca a su manera.",
+    inicia: function () { var r = azar(7); this.yo = { x: 60, y: 100, dx: 1, dy: 0 }; this.s = []; for (var i = 0; i < 8; i++) this.s.push({ x: 150 + r() * 520, y: 30 + r() * 140, v: true });
+      this.r = [{ x: 660, y: 40, n: "directo", c: "--bad" }, { x: 660, y: 160, n: "se adelanta", c: "--warn" }, { x: 360, y: 20, n: "tímido", c: "--info" }]; this.atrapado = 0; },
+    paso: function (dt) { var y = this.yo, dx = (K.der ? 1 : 0) - (K.izq ? 1 : 0), dy = (K.abajo ? 1 : 0) - (K.arriba ? 1 : 0);
+      if (P.dentro && !dx && !dy) { var ax = P.x - y.x, ay = P.y - y.y, d0 = Math.hypot(ax, ay); if (d0 > 8) { dx = ax / d0; dy = ay / d0; } }
+      var m = Math.hypot(dx, dy); if (m) { y.dx = dx / m; y.dy = dy / m; y.x += y.dx * 170 * dt; y.y += y.dy * 170 * dt; } y.x = Math.max(12, Math.min(W - 12, y.x)); y.y = Math.max(12, Math.min(H - 12, y.y));
+      this.s.forEach(function (q) { if (q.v && Math.hypot(q.x - y.x, q.y - y.y) < 16) q.v = false; });
+      var self = this; this.r.forEach(function (e) {
+        var tx = y.x, ty = y.y, d = Math.hypot(y.x - e.x, y.y - e.y), v = 84;
+        if (e.n === "se adelanta") { tx = y.x + y.dx * 90; ty = y.y + y.dy * 90; }          // apunta a donde vas a estar
+        if (e.n === "tímido" && d < 110) { tx = e.x - (y.x - e.x); ty = e.y - (y.y - e.y); v = 100; } // de cerca, huye
+        var ex = tx - e.x, ey = ty - e.y, m2 = Math.hypot(ex, ey) || 1; e.x += ex / m2 * v * dt; e.y += ey / m2 * v * dt; e.x = Math.max(12, Math.min(W - 12, e.x)); e.y = Math.max(12, Math.min(H - 12, e.y)); e.tx = tx; e.ty = ty;
+        if (d < 18) { self.atrapado++; y.x = 60; y.y = 100; } }); },
+    pinta: function () { x.fillStyle = col("--s2"); x.fillRect(0, 0, W, H); var y = this.yo;
+      this.s.forEach(function (q) { if (q.v) { x.fillStyle = col("--ok"); x.beginPath(); x.arc(q.x, q.y, 5, 0, 6.283); x.fill(); } });
+      this.r.forEach(function (e) { x.strokeStyle = col(e.c); x.globalAlpha = 0.35; x.setLineDash([4, 5]); x.beginPath(); x.moveTo(e.x, e.y); x.lineTo(e.tx || e.x, e.ty || e.y); x.stroke(); x.setLineDash([]); x.globalAlpha = 1; x.fillStyle = col(e.c); x.beginPath(); x.roundRect(e.x - 10, e.y - 10, 20, 20, 5); x.fill(); x.fillStyle = col("--fg"); x.font = "700 11px system-ui, sans-serif"; x.textAlign = "center"; x.fillText(e.n, e.x, e.y - 15); });
+      x.fillStyle = col("--accent"); x.beginPath(); x.arc(y.x, y.y, 10, 0, 6.283); x.fill(); },
+    marca: function () { var n = this.s.filter(function (q) { return !q.v; }).length; return n + " de 8 semillas · te atraparon " + this.atrapado + (n === 8 ? " · ¡Listo!" : ""); } },
+  semilla: { titulo: "Pruébalo · un mundo que sale de un número", ayuda: "Clic o espacio cambia la semilla; ← → la sube o la baja de uno en uno. La misma semilla da siempre el mismo mundo.",
+    inicia: function () { this.n = 2011; this.hacer(); },
+    hacer: function () { var r = azar(this.n * 7919 + 1), h = 5 + r() * 3, cols = []; for (var i = 0; i < 36; i++) { h += (r() - 0.5) * 2.2; h = Math.max(2, Math.min(8, h)); cols.push({ h: Math.round(h), arbol: r() < 0.16, agua: false }); } this.cols = cols; },
+    paso: function () { if (K.salto) { K.salto = false; this.n = Math.floor(Math.random() * 9000) + 1; this.hacer(); } if (K.der) { K.der = false; this.n++; this.hacer(); } if (K.izq) { K.izq = false; this.n = Math.max(1, this.n - 1); this.hacer(); } },
+    pinta: function () { x.fillStyle = "#9fd4ff"; x.fillRect(0, 0, W, H); var c = 20;
+      this.cols.forEach(function (k, i) { for (var f = 0; f < k.h; f++) { x.fillStyle = f === k.h - 1 ? "#5fbf5a" : f > k.h - 4 ? "#9a6b43" : "#8b8f98"; x.fillRect(i * c, H - (f + 1) * c, c - 1, c - 1); }
+        if (k.arbol) { var top = H - k.h * c; x.fillStyle = "#6b4a2b"; x.fillRect(i * c + 7, top - 2 * c, 6, 2 * c); x.fillStyle = "#2f8f4e"; x.fillRect(i * c - c / 2, top - 4 * c, 2 * c, 2 * c); } }); },
+    marca: function () { return "Semilla " + this.n + " · 36 columnas generadas con reglas"; } }
+};
+function arrancar(id) { demo = DEMOS[id]; demo.inicia(); $("#mTitulo").textContent = demo.titulo; $("#mAyuda").textContent = demo.ayuda; }
+(function bucle(t) { requestAnimationFrame(bucle); var dt = Math.min(0.04, (t - antes) / 1000); antes = t; if (!demo || $("#prueba").hidden) return; demo.paso(dt); demo.pinta(); var m = demo.marca(); if ($("#mMarca").textContent !== m) $("#mMarca").textContent = m; })(antes);
+var TEC = { ArrowLeft: "izq", ArrowRight: "der", ArrowUp: "arriba", ArrowDown: "abajo", " ": "salto" };
+cv.addEventListener("keydown", function (e) { var k = TEC[e.key]; if (k) { e.preventDefault(); e.stopPropagation(); K[k] = true; } });
+cv.addEventListener("keyup", function (e) { var k = TEC[e.key]; if (k) K[k] = false; });
+cv.addEventListener("blur", function () { K = {}; });
+function puntero(e) { var r = cv.getBoundingClientRect(); P.x = (e.clientX - r.left) / r.width * W; P.y = (e.clientY - r.top) / r.height * H; P.dentro = true; }
+cv.addEventListener("pointermove", puntero); cv.addEventListener("pointerleave", function () { P.dentro = false; });
+cv.addEventListener("pointerdown", function (e) { puntero(e); cv.focus(); K.salto = true; });
+// las flechas cambian de década solo si no se está jugando en el lienzo
+addEventListener("keydown", function (e) { if (document.activeElement === cv) return; if (e.key === "ArrowRight" && actual < D.length - 1) ver(actual + 1); if (e.key === "ArrowLeft" && actual > 0) ver(actual - 1); });
 ver(0);""",
-       css=""".x-linea { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .4em; position: relative; }
+       css=""".esc { padding-top: 1.4vh; padding-bottom: 1.2vh; gap: 1.2vh; }
+.esc-cuerpo { gap: 1vh; }
+.x-linea { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .4em; position: relative; }
 .x-linea::before { content: ""; position: absolute; left: 2%; right: 2%; top: 50%; height: 2px; background: var(--line2); z-index: 0; }
-.x-dec { position: relative; z-index: 1; display: grid; gap: .1em; justify-items: center; text-align: center; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .9em; padding: .45em .3em; cursor: pointer; transition: transform .2s, border-color .2s, background .2s; }
-.x-dec b { font: 800 .95em var(--mono); } .x-dec span { font-size: .62em; color: var(--muted); line-height: 1.2; }
+.x-dec { position: relative; z-index: 1; display: grid; gap: .1em; justify-items: center; text-align: center; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .9em; padding: .35em .3em; cursor: pointer; transition: transform .2s, border-color .2s, background .2s; }
+.x-dec b { font: 800 .9em var(--mono); } .x-dec span { font-size: .6em; color: var(--muted); line-height: 1.2; }
 .x-dec:hover { transform: translateY(-.15em); border-color: var(--accent); }
 .x-dec.vista b { color: var(--ok); }
 .x-dec[aria-selected="true"] { background: var(--accent); border-color: var(--accent); transform: translateY(-.2em); } .x-dec[aria-selected="true"] b, .x-dec[aria-selected="true"] span { color: var(--on-accent); }
-.x-juegos { display: grid; grid-template-columns: repeat(auto-fit, minmax(13em, 1fr)); gap: 1vw; min-height: 0; }
-.x-juego { display: grid; gap: .45em; align-content: start; }
-.x-cab { display: flex; gap: .6em; align-items: center; } .x-cab h2 { margin: 0; font-size: 1.02em; line-height: 1.15; } .x-cab small { color: var(--muted); font-size: .68em; }
-.x-anio { font: 800 .95em var(--mono); color: var(--accent); background: var(--accent-bg); border-radius: .5em; padding: .2em .45em; }
-.x-idea { font-size: .84em !important; color: var(--fg) !important; }
-.x-hoy { font-size: .74em !important; border-top: 1px dashed var(--line2); padding-top: .4em; } .x-hoy b { color: var(--ok); }
-@media (max-width: 900px) { .x-linea { grid-template-columns: repeat(4, 1fr); } .x-linea::before { display: none; } }""",
-       comentario="Interacción: línea de tiempo de siete décadas (clic o flechas); cada juego muestra qué idea aportó y dónde aparece en el taller. Solo texto.")
+.x-regla { padding: .5em 1em; }
+.x-juegos { display: grid; grid-template-columns: repeat(auto-fit, minmax(12em, 1fr)); gap: .8vw; min-height: 0; }
+.x-juego { display: grid; gap: .35em; align-content: start; padding: .6em .8em; }
+.x-cab { display: flex; gap: .6em; align-items: center; } .x-cab h2 { margin: 0; font-size: .98em; line-height: 1.15; } .x-cab small { color: var(--muted); font-size: .64em; }
+.x-anio { font: 800 .9em var(--mono); color: var(--accent); background: var(--accent-bg); border-radius: .5em; padding: .2em .45em; }
+.x-idea { font-size: .78em !important; color: var(--fg) !important; line-height: 1.35; }
+.x-hoy { font-size: .68em !important; border-top: 1px dashed var(--line2); padding-top: .35em; } .x-hoy b { color: var(--ok); }
+.x-yt { justify-self: start; font-size: .62em; padding: .45em .8em; }
+.x-prueba { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.1fr); gap: 1vw; align-items: center; padding: .6em .9em; }
+.x-prueba p { font-size: .76em; color: var(--muted); margin: .2em 0 0; } .x-prueba .x-marca { color: var(--accent); font-weight: 700; font-family: var(--mono); min-height: 1.3em; } .x-prueba .x-nota { font-size: .6em; }
+#demo { width: auto; max-width: 100%; height: auto; aspect-ratio: 720 / 200; max-height: 20vh; justify-self: end; display: block; border-radius: .7em; border: 1px solid var(--line2); cursor: crosshair; touch-action: none; }
+.x-copiado { font-size: .66em; color: var(--ok); min-height: 1.3em; margin: 0; overflow-wrap: anywhere; user-select: all; }
+@media (max-width: 900px) { .x-linea { grid-template-columns: repeat(4, 1fr); } .x-linea::before { display: none; } .x-prueba { grid-template-columns: minmax(0, 1fr); } }""",
+       comentario="Interacción: línea de tiempo de siete décadas; cuatro llevan una réplica jugable de su mecánica (formas propias, no el juego original). Cada juego ofrece un enlace de YouTube que se copia. Solo texto: sin imágenes, logos ni personajes de ningún juego.")
 
 # ---------------------------------------------------------------- 01c · los que cambiaron las reglas
 DIEZ = [

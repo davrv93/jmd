@@ -7,6 +7,32 @@ objectives:
   - {id: rsg-01-o1, title: "Pasar de una mecánica a la tecnología que la resuelve con un buen prompt"}
   - {id: rsg-01-o2, title: "Mover al héroe con Arcade Physics y chocar con paredes de un tilemap"}
   - {id: rsg-01-o3, title: "Animar al personaje con un spritesheet"}
+materials:
+  - id: rsg-01-v1
+    title: "Video · ¿El primer videojuego? Tennis for Two, 1958 (Brookhaven Lab)"
+    kind: link
+    url: https://www.youtube.com/watch?v=u6mu5B-YZU8
+    objective_ids: [rsg-01-o1]
+  - id: rsg-01-v2
+    title: "Video · La historia de Tennis for Two (Stony Brook University)"
+    kind: link
+    url: https://www.youtube.com/watch?v=6QSHZ20MQfE
+    objective_ids: [rsg-01-o1]
+  - id: rsg-01-v3
+    title: "Video · Spacewar! en la PDP-1 restaurada (Computer History Museum)"
+    kind: link
+    url: https://www.youtube.com/watch?v=_L1HeZ2kPck
+    objective_ids: [rsg-01-o1]
+  - id: rsg-01-v4
+    title: "Video · Steve Russell cuenta cómo hizo Spacewar! (VentureBeat)"
+    kind: link
+    url: https://www.youtube.com/watch?v=PnJvZHegg8I
+    objective_ids: [rsg-01-o1]
+  - id: rsg-01-m1
+    title: "Línea de tiempo de la historia del videojuego (The Strong National Museum of Play)"
+    kind: link
+    url: https://www.museumofplay.org/video-game-history-timeline/
+    objective_ids: [rsg-01-o1]
 ---
 ## Clase 1 · Tu primer juego con IA: Phaser 4 y JMD Play
 
