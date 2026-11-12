@@ -72,6 +72,15 @@ export function iniciarMas(A) {
   };
   cuenta();
 
+  // ---------------------------------------------------------------- comparar lado a lado
+  let fijo = null;
+  $('bFijar').onclick = () => {
+    const caja = $('fijado');
+    if (fijo && JSON.stringify(fijo) === JSON.stringify(A.estado())) { fijo = null; caja.hidden = true; return; }
+    fijo = copiaEstado(); caja.hidden = false; caja.style.backgroundImage = `url(${miniatura(A.spec(), 260)})`; caja.firstChild.textContent = A.spec().nombre; aviso('Fijado: cambia algo y compáralo');
+  };
+  $('fijado').onclick = () => { if (!fijo) return; const actual = copiaEstado(), antes = fijo; fijo = actual; const sp = A.spec(); $('fijado').style.backgroundImage = `url(${miniatura(sp, 260)})`; $('fijado').firstChild.textContent = sp.nombre; A.cargar(antes); };
+
   // ---------------------------------------------------------------- pista jugable
   let pista = null;
   function arrancarPista() {

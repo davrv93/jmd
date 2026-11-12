@@ -65,6 +65,7 @@ class Juego extends Phaser.Scene {
     this.physics.add.collider(this.heroe, suelo); this.physics.add.collider(this.heroe, plats);
     this.physics.add.overlap(this.heroe, this.monedas, (h, m) => {
       if (m.getData('vida')) h.setData('vidas', Math.min(5, h.getData('vidas') + 1)); else this.puntos += m.getData('vale');
+      this.chispas.explode(m.getData('vale') === 1 ? 6 : 14, m.x, m.y);
       this.sound.play(m.getData('vale') === 1 ? 'moneda' : 'celebrar', { volume: 0.4 }); m.destroy(); this.marcador();
     });
     for (const e of this.enemigos) this.physics.add.overlap(this.heroe, e, () => this.choque(e));
@@ -72,6 +73,10 @@ class Juego extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, NIVEL.ancho, H + 400);
     this.cameras.main.setBounds(0, 0, NIVEL.ancho, H).startFollow(this.heroe, true, 0.12, 0.12, -W * 0.1, 80);
     this.teclas = this.input.keyboard.addKeys('LEFT,RIGHT,UP,DOWN,SPACE,X,A,D,W,S,R');
+    // efectos: polvo al saltar y caer, chispas al recoger y al vencer
+    const g = this.make.graphics({ x: 0, y: 0 }, false); g.fillStyle(0xffffff, 1).fillCircle(8, 8, 8); g.generateTexture('mota', 16, 16); g.destroy();
+    const efecto = (tinte, vel, vida) => this.add.particles(0, 0, 'mota', { speed: { min: vel * 0.3, max: vel }, angle: { min: 200, max: 340 }, lifespan: vida, scale: { start: 0.7, end: 0 }, alpha: { start: 0.9, end: 0 }, gravityY: 520, tint: tinte, emitting: false }).setDepth(5);
+    this.polvo = efecto(0xffffff, 130, 380); this.chispas = efecto(0xffd94a, 240, 480); this.enSuelo = true;
     this.puntos = 0; this.inicio = this.time.now;
     this.texto = this.add.text(16, 14, '', { fontFamily: 'system-ui, sans-serif', fontSize: '22px', fontStyle: 'bold', color: '#ffffff', backgroundColor: 'rgba(15,12,24,.6)', padding: { x: 12, y: 6 } }).setScrollFactor(0).setDepth(10);
     this.marcador();
@@ -84,6 +89,7 @@ class Juego extends Phaser.Scene {
     const pisa = h.body.velocity.y > 200 && h.y < e.y - 30;
     if (pisa || h.getData('golpe') > 0.12) {
       e.setData('vivo', false); e.body.enable = false; e.play('enemigo:morir'); this.tweens.add({ targets: e, alpha: 0, delay: 500, duration: 300 });
+      this.chispas.explode(16, e.x, e.y - 50);
       this.puntos += 3; this.sound.play('golpe', { volume: 0.5 }); if (pisa) h.setVelocityY(-520); this.marcador();
     } else if (h.getData('inmune') <= 0) this.herir();
   }
@@ -106,12 +112,14 @@ class Juego extends Phaser.Scene {
     h.setVelocityX(Phaser.Math.Linear(h.body.velocity.x, agach ? 0 : dir * FISICA.velocidad, Math.min(1, dt * (piso ? 12 : 6))));
     if (dir) h.setFlipX(dir < 0);
     const salta = k.UP.isDown || k.W.isDown || k.SPACE.isDown;
-    if (salta && piso && !agach) { h.setVelocityY(-FISICA.salto); this.sound.play('salto', { volume: 0.45 }); }
+    if (salta && piso && !agach) { h.setVelocityY(-FISICA.salto); this.sound.play('salto', { volume: 0.45 }); this.polvo.explode(5, h.x, h.y); }
+    if (piso && !this.enSuelo) this.polvo.explode(7, h.x, h.y);
+    this.enSuelo = piso;
     if (!salta && h.body.velocity.y < -260) h.setVelocityY(-260);
     if (Phaser.Input.Keyboard.JustDown(k.X) && h.getData('golpe') <= 0) { h.setData('golpe', 0.38); this.sound.play('golpe', { volume: 0.5 }); }
     if (piso && NIVEL.suelo[Math.floor(h.x / 64)]) h.setData('seguro', h.x);
     if (h.y > 760) { h.setPosition(h.getData('seguro'), 300); h.setVelocity(0, 0); this.herir(); }
-    if (Math.abs(h.x - NIVEL.meta.x) < 40 && piso) { h.setData('gana', true); this.sound.play('celebrar', { volume: 0.6 }); const s = Math.floor((this.time.now - this.inicio) / 1000); this.texto.setText('¡Meta! ' + this.puntos + ' puntos en ' + s + ' s · R para repetir'); }
+    if (Math.abs(h.x - NIVEL.meta.x) < 40 && piso) { h.setData('gana', true); this.sound.play('celebrar', { volume: 0.6 }); this.chispas.explode(30, h.x, h.y - 90); const s = Math.floor((this.time.now - this.inicio) / 1000); this.texto.setText('¡Meta! ' + this.puntos + ' puntos en ' + s + ' s · R para repetir'); }
     const v = Math.abs(h.body.velocity.x);
     const a = h.getData('inmune') > 0.9 ? 'dano' : h.getData('golpe') > 0 ? 'golpe' : !piso ? 'saltar' : agach ? 'agachado' : v > 250 ? 'correr' : v > 40 ? 'caminar' : 'quieto';
     h.play(HEROE.clave + ':' + a, true);

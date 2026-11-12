@@ -11,27 +11,27 @@ const f = (id, nombre, rig, sin, desc, tono, r = {}) => ({
 
 export const FAMILIAS = [
   // ---- bípedos
-  f('aventurero', 'Aventurero', 'bipedo', ['humano', 'persona', 'explorador', 'heroe', 'chico', 'chica', 'nino', 'nina'], 'persona aventurera, héroe humano explorador con mochila', 28, { fijo: ['mochila'], sat: 0.5 }),
-  f('guerrero', 'Guerrero', 'bipedo', ['caballero', 'soldado', 'luchador', 'gladiador', 'paladin'], 'guerrero caballero con armadura, espada y escudo', 215, { tw: 0.95, fijo: ['casco', 'espada'], kPeso: 1.15 }),
-  f('mago', 'Mago', 'bipedo', ['hechicero', 'brujo', 'bruja', 'wizard', 'hechicera'], 'mago hechicero con sombrero puntiagudo, túnica y varita', 268, { torso: 'cono', fijo: ['sombrero_mago', 'varita'], pierna: 0.35 }),
+  f('aventurero', 'Aventurero', 'bipedo', ['humano', 'persona', 'explorador', 'heroe', 'chico', 'chica', 'nino', 'nina'], 'persona aventurera, héroe humano explorador con mochila', 196, { humano: 1, fijo: ['mochila'], sat: 0.5 }),
+  f('guerrero', 'Guerrero', 'bipedo', ['caballero', 'soldado', 'luchador', 'gladiador', 'paladin'], 'guerrero caballero con armadura, espada y escudo', 215, { humano: 1, tw: 0.95, fijo: ['casco', 'espada'], kPeso: 1.15 }),
+  f('mago', 'Mago', 'bipedo', ['hechicero', 'brujo', 'bruja', 'wizard', 'hechicera'], 'mago hechicero con sombrero puntiagudo, túnica y varita', 268, { humano: 1, torso: 'cono', fijo: ['sombrero_mago', 'varita'], pierna: 0.35 }),
   f('ninja', 'Ninja', 'bipedo', ['shinobi', 'asesino', 'sigiloso'], 'ninja sigiloso con máscara y bufanda, ágil y rápido', 235, { tw: 0.68, luz: 0.3, sat: 0.35, fijo: ['mascara', 'bufanda'], ojo: 'enojado', kPeso: 0.8 }),
   f('astronauta', 'Astronauta', 'bipedo', ['cosmonauta', 'espacial', 'astro'], 'astronauta con traje espacial blanco y casco de burbuja', 205, { tw: 0.95, sat: 0.18, luz: 0.86, cab: 0.7, fijo: ['burbuja', 'jetpack'] }),
-  f('pirata', 'Pirata', 'bipedo', ['corsario', 'bucanero', 'capitan'], 'pirata capitán con parche en el ojo, sombrero y espada', 8, { fijo: ['parche', 'gorro'], sat: 0.7 }),
+  f('pirata', 'Pirata', 'bipedo', ['corsario', 'bucanero', 'capitan'], 'pirata capitán con parche en el ojo, sombrero y espada', 8, { humano: 1, fijo: ['parche', 'gorro'], sat: 0.7 }),
   f('duende', 'Duende', 'bipedo', ['elfo', 'goblin', 'trasgo'], 'duende travieso de orejas largas y puntiagudas, pequeño y verde', 118, { th: 0.8, cab: 0.72, orejas: 'punta', pierna: 0.45, kAlto: 0.8 }),
   f('zombi', 'Zombi', 'bipedo', ['zombie', 'muerto viviente', 'no muerto'], 'zombi muerto viviente verdoso que camina con los brazos estirados', 95, { sat: 0.32, luz: 0.5, ojo: 'dormilon', brazo: 0.8 }),
   f('esqueleto', 'Esqueleto', 'bipedo', ['calavera', 'huesos', 'craneo'], 'esqueleto de huesos blancos con calavera sonriente', 48, { tw: 0.55, sat: 0.1, luz: 0.9, ojo: 'hueco', kPeso: 0.5 }),
-  f('vampiro', 'Vampiro', 'bipedo', ['dracula', 'chupasangre', 'nosferatu'], 'vampiro elegante de capa oscura, colmillos y piel pálida', 350, { sat: 0.55, luz: 0.36, orejas: 'punta', fijo: ['capa'], ojo: 'enojado' }),
+  f('vampiro', 'Vampiro', 'bipedo', ['dracula', 'chupasangre', 'nosferatu'], 'vampiro elegante de capa oscura, colmillos y piel pálida', 350, { humano: 1, sat: 0.55, luz: 0.36, orejas: 'punta', fijo: ['capa'], ojo: 'enojado' }),
   f('robot', 'Robot', 'bipedo', ['bot', 'maquina', 'automata', 'mecha'], 'robot de metal con cuerpo cuadrado, antenas y ojos de luz', 195, { torso: 'caja', cabeza: 'caja', sat: 0.28, luz: 0.66, antenas: 2, ojo: 'robot', kPeso: 1.1 }),
   f('androide', 'Androide', 'bipedo', ['cyborg', 'humanoide', 'ciborg'], 'androide cyborg estilizado con visor brillante y cuerpo liso', 178, { tw: 0.7, sat: 0.45, luz: 0.74, ojo: 'visor', antenas: 1 }),
   f('alien', 'Alien', 'bipedo', ['extraterrestre', 'marciano', 'alienigena', 'ovni'], 'alien extraterrestre verde de cabeza grande, ojos enormes y antenas', 135, { tw: 0.6, cab: 0.86, antenas: 2, ojo: 'ovalado', brazo: 0.8, kPeso: 0.7 }),
-  f('hada', 'Hada', 'bipedo', ['ninfa', 'pixie', 'hadita'], 'hada pequeña con alas brillantes y varita mágica', 312, { th: 0.8, tw: 0.6, alas: 'hada', orejas: 'punta', fijo: ['varita'], luz: 0.72, kAlto: 0.75, kPeso: 0.6 }),
+  f('hada', 'Hada', 'bipedo', ['ninfa', 'pixie', 'hadita'], 'hada pequeña con alas brillantes y varita mágica', 312, { humano: 1, th: 0.8, tw: 0.6, alas: 'hada', orejas: 'punta', fijo: ['varita'], luz: 0.72, kAlto: 0.75, kPeso: 0.6 }),
   f('ogro', 'Ogro', 'bipedo', ['troll', 'gigante', 'bestia', 'orco'], 'ogro enorme y fuerte, de brazos largos, cuernos y colmillos', 84, { tw: 1.25, th: 1.15, cab: 0.55, brazo: 0.95, cuernos: 2, ojo: 'enojado', kPeso: 1.4, kAlto: 1.25 }),
-  f('gnomo', 'Gnomo', 'bipedo', ['enano', 'gnomito', 'duendecillo'], 'gnomo bajito de barba blanca con gorro puntiagudo', 4, { th: 0.7, tw: 0.9, cab: 0.7, pierna: 0.3, fijo: ['gorro', 'barba'], kAlto: 0.65, kPeso: 1.1 }),
+  f('gnomo', 'Gnomo', 'bipedo', ['enano', 'gnomito', 'duendecillo'], 'gnomo bajito de barba blanca con gorro puntiagudo', 4, { humano: 1, th: 0.7, tw: 0.9, cab: 0.7, pierna: 0.3, fijo: ['gorro', 'barba'], kAlto: 0.65, kPeso: 1.1 }),
   f('escuadron', 'Héroe de escuadrón', 'bipedo', ['ranger', 'power ranger', 'sentai', 'escuadron', 'heroe de color', 'patrullero'], 'héroe de escuadrón con traje de color, casco con visor y cinturón, pelea en equipo', 0, { sat: 0.82, luz: 0.5, ojo: 'visor', fijo: ['casco', 'cinturon'], tw: 0.78 }),
-  f('samurai', 'Samurái', 'bipedo', ['samurai', 'ronin', 'bushido', 'espadachin japones'], 'samurái con armadura, casco con cuernos y katana', 355, { sat: 0.6, luz: 0.4, cuernos: 2, fijo: ['casco', 'espada', 'cinturon'], ojo: 'enojado', tw: 0.9 }),
-  f('superheroe', 'Superhéroe', 'bipedo', ['super heroe', 'heroina', 'justiciero', 'vengador', 'enmascarado'], 'superhéroe con capa al viento, antifaz y pecho fuerte', 225, { sat: 0.8, tw: 0.98, th: 1.05, fijo: ['capa', 'antifaz', 'cinturon'], kPeso: 1.1 }),
-  f('vaquero', 'Vaquero', 'bipedo', ['cowboy', 'sheriff', 'pistolero', 'forajido'], 'vaquero del oeste con sombrero de ala ancha y pañuelo', 30, { sat: 0.5, luz: 0.5, fijo: ['sombrero_ala', 'bufanda', 'cinturon'] }),
-  f('futbolista', 'Futbolista', 'bipedo', ['jugador', 'delantero', 'goleador', 'arquero', 'crack', 'pelotero'], 'futbolista jugador de fútbol con camiseta, medias y balón', 140, { sat: 0.75, pierna: 0.72, fijo: ['balon'], tw: 0.76 }),
+  f('samurai', 'Samurái', 'bipedo', ['samurai', 'ronin', 'bushido', 'espadachin japones'], 'samurái con armadura, casco con cuernos y katana', 355, { humano: 1, sat: 0.6, luz: 0.4, cuernos: 2, fijo: ['casco', 'espada', 'cinturon'], ojo: 'enojado', tw: 0.9 }),
+  f('superheroe', 'Superhéroe', 'bipedo', ['super heroe', 'heroina', 'justiciero', 'vengador', 'enmascarado'], 'superhéroe con capa al viento, antifaz y pecho fuerte', 225, { humano: 1, sat: 0.8, tw: 0.98, th: 1.05, fijo: ['capa', 'antifaz', 'cinturon'], kPeso: 1.1 }),
+  f('vaquero', 'Vaquero', 'bipedo', ['cowboy', 'sheriff', 'pistolero', 'forajido'], 'vaquero del oeste con sombrero de ala ancha y pañuelo', 356, { humano: 1, sat: 0.5, luz: 0.5, fijo: ['sombrero_ala', 'bufanda', 'cinturon'] }),
+  f('futbolista', 'Futbolista', 'bipedo', ['jugador', 'delantero', 'goleador', 'arquero', 'crack', 'pelotero'], 'futbolista jugador de fútbol con camiseta, medias y balón', 140, { humano: 1, sat: 0.75, pierna: 0.72, fijo: ['balon'], tw: 0.76 }),
   // ---- cuadrúpedos
   f('gato', 'Gato', 'cuadrupedo', ['gatito', 'michi', 'minino', 'felino', 'gata'], 'gato gatito tierno de orejas triangulares, bigotes y cola larga', 30, { orejas: 'gato', cola: 'larga', hocico: 'corto' }),
   f('perro', 'Perro', 'cuadrupedo', ['perrito', 'cachorro', 'can', 'firulais', 'perra'], 'perro cachorro juguetón de orejas caídas y cola alegre', 34, { orejas: 'caida', cola: 'corta', hocico: 'largo', sat: 0.5 }),
@@ -60,10 +60,10 @@ export const FAMILIAS = [
   f('estrella', 'Estrella', 'flotante', ['estrellita', 'lucero', 'astro brillante'], 'estrella amarilla brillante con carita feliz', 48, { torso: 'estrella', sat: 0.9, luz: 0.62, brazo: 0.35, emisivo: 0.35 }),
   f('llama', 'Espíritu de fuego', 'flotante', ['flama', 'fueguito', 'chispa', 'fogata'], 'espíritu de fuego con forma de llama viva que arde y flota', 22, { torso: 'gota', sat: 0.95, luz: 0.56, emisivo: 0.5, brazo: 0.35 }),
   // ---- blobs
-  f('slime', 'Slime', 'blob', ['baba', 'gelatina', 'moco', 'gota', 'blob'], 'slime gelatinoso y rebotón, una gota blanda con carita', 160, { torso: 'gota', translucido: 1, sat: 0.7 }),
+  f('slime', 'Slime', 'blob', ['baba', 'gelatina', 'moco', 'gota', 'blob'], 'slime gelatinoso y rebotón, una gota blanda con carita', 160, { torso: 'gota', translucido: 1, sat: 0.7, pierna: 0 }),
   f('hongo', 'Hongo', 'blob', ['seta', 'champinon', 'honguito'], 'hongo seta con sombrero rojo de puntos blancos y patitas', 2, { torso: 'hongo', sat: 0.8, pierna: 0, tw: 0.9, th: 0.95, patronBase: 'lunares' }),
   f('cactus', 'Cactus', 'blob', ['nopal', 'planta', 'suculenta', 'arbol'], 'cactus verde con espinas, brazos y una flor encima', 128, { torso: 'capsula', brazo: 0.5, espinas: 1, fijo: ['flor'], th: 1.25 }),
-  f('calabaza', 'Calabaza', 'blob', ['zapallo', 'halloween', 'fruta', 'verdura'], 'calabaza naranja de Halloween con cara tallada y tallo', 28, { torso: 'calabaza', sat: 0.9, ojo: 'hueco', pierna: 0.25 }),
+  f('calabaza', 'Calabaza', 'blob', ['zapallo', 'halloween', 'fruta', 'verdura'], 'calabaza naranja de Halloween con cara tallada y tallo', 28, { torso: 'calabaza', sat: 0.9, ojo: 'hueco', pierna: 0 }),
   f('golem', 'Gólem', 'blob', ['roca', 'piedra', 'cubo', 'bloque', 'cristal'], 'gólem de piedra con cuerpo de bloque, brazos pesados y ojos de cristal', 40, { torso: 'caja', sat: 0.14, luz: 0.5, brazo: 0.75, pierna: 0.3, ojo: 'robot', kPeso: 1.5 }),
 ];
 
@@ -135,16 +135,16 @@ export const PATRONES = ['liso', 'manchas', 'rayas', 'lunares', 'escamas', 'estr
 
 // Armonías de color: desplazamientos de tono para [panza, extremidad, detalle, accesorio].
 export const ARMONIAS = [
-  { id: 'analoga', nombre: 'Análoga', d: [18, -14, 30, -32] },
-  { id: 'complementaria', nombre: 'Complementaria', d: [12, -8, 180, 168] },
-  { id: 'triada', nombre: 'Tríada', d: [10, 120, 240, 120] },
-  { id: 'mono', nombre: 'Monocroma', d: [0, 0, 0, 6] },
-  { id: 'dividida', nombre: 'Complementaria dividida', d: [14, 150, 210, 150] },
-  { id: 'tetrada', nombre: 'Tétrada', d: [90, 180, 270, 180] },
+  { id: 'analoga', nombre: 'Análoga', d: [6, 0, 34, -30] },
+  { id: 'complementaria', nombre: 'Complementaria', d: [6, 0, 180, 150] },
+  { id: 'triada', nombre: 'Tríada', d: [6, 0, 120, 240] },
+  { id: 'mono', nombre: 'Monocroma', d: [0, 0, 0, 0] },
+  { id: 'dividida', nombre: 'Complementaria dividida', d: [6, 0, 150, 210] },
+  { id: 'tetrada', nombre: 'Tétrada', d: [6, 0, 90, 180] },
 ];
 
 export const ANIMOS = [
-  { id: 'vivo', nombre: 'Vivo', s: 1.12, l: 1 },
+  { id: 'vivo', nombre: 'Vivo', s: 1, l: 1.04 },
   { id: 'pastel', nombre: 'Pastel', s: 0.62, l: 1.24 },
   { id: 'oscuro', nombre: 'Oscuro', s: 0.85, l: 0.66 },
   { id: 'neon', nombre: 'Neón', s: 1.4, l: 1.04 },

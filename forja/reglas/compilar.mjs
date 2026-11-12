@@ -63,7 +63,7 @@ for (const v of B.VARIANTES) for (const ar of B.ARMONIAS) for (const an of B.ANI
 
 // 4 · pintura: familia x parte x ánimo (1200) -> [índice de color, dLuz, dSat]
 for (const f of B.FAMILIAS) for (const [i, parte] of B.PARTES.entries()) for (const an of B.ANIMOS) {
-  let dl = [0, 0.16, -0.07, 0.04, 0, 0.02][i], ds = [0, -0.12, 0.02, 0.1, 0, 0.08][i];
+  let dl = [0, 0.17, -0.09, 0.02, 0, 0.02][i], ds = [0, -0.16, 0, 0.06, 0, 0.06][i];
   if (parte === 'panza' && f.panza) { dl = 0.9 - f.luz; ds = -f.sat * 0.8; }
   if (parte === 'extremidad' && f.rig === 'ave') { dl = 0.06; ds = 0.2; }
   if (an.id === 'oscuro') dl *= 0.7;

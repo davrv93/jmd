@@ -9,7 +9,7 @@ const PI = Math.PI;
 let GRAD = null;
 function gradiente() {
   if (GRAD) return GRAD;
-  GRAD = new THREE.DataTexture(new Uint8Array([120, 120, 120, 255, 200, 200, 200, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
+  GRAD = new THREE.DataTexture(new Uint8Array([172, 172, 178, 255, 255, 255, 255, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
   GRAD.minFilter = GRAD.magFilter = THREE.NearestFilter; GRAD.needsUpdate = true;
   return GRAD;
 }
@@ -17,11 +17,16 @@ const col = (c) => new THREE.Color().setHSL(c.h / 360, c.s, c.l, THREE.SRGBColor
 const H = (h, s, l) => ({ h, s, l });
 
 export function construir(spec) {
-  const d = spec.dims, C = spec.colores, f = spec.familia, rig = spec.rig, rnd = azar(spec.semilla * 31 + 7);
+  // Estilo «chibi»: cabeza grande, cuerpo corto y extremidades gorditas. Se aplica aquí, sobre las medidas de las reglas.
+  const d = { ...spec.dims };
+  if (spec.rig === 'ave') d.pierna *= 0.6;
+  if (spec.rig === 'bipedo' || spec.rig === 'ave') { d.th *= 0.64; d.tw *= 0.9; d.td *= 0.92; d.pierna *= 0.62; d.brazo *= 0.66; d.cab *= 1.34; }
+  else if (spec.rig === 'cuadrupedo') { d.th *= 0.74; d.pierna *= 0.6; d.cab *= 1.24; }
+  const C = spec.colores, f = spec.familia, rig = spec.rig, rnd = azar(spec.semilla * 31 + 7);
   const basura = [], graficos = [];
   const G = (geo) => { basura.push(geo); return geo; };
   const mats = new Map();
-  const g = spec.grosor;
+  const g = spec.grosor * 1.65;
   const matContorno = new THREE.MeshBasicMaterial({ color: col(C.contorno), side: THREE.BackSide }); basura.push(matContorno);
 
   // textura de patrón (p5) solo para el cuerpo
@@ -53,13 +58,19 @@ export function construir(spec) {
     madera: () => mat(H(28, 0.5, 0.36)), brillo: () => mat(H(0, 0, 1), { plano: true }),
     luz: (c = C.detalle) => mat(H(c.h, 0.9, 0.66), { luz: 0.9 }),
   };
+  // humanos: piel y pelo salen de la semilla; la camiseta es el color del cuerpo y el pantalón, su sombra
+  const PIELES = [H(28, 0.62, 0.83), H(26, 0.54, 0.73), H(24, 0.5, 0.6), H(22, 0.46, 0.45)], PELOS = [H(30, 0.3, 0.14), H(25, 0.5, 0.28), H(42, 0.72, 0.58), H(14, 0.7, 0.42), H(0, 0, 0.1)];
+  const piel = f.id === 'vampiro' ? H(275, 0.14, 0.87) : PIELES[Math.floor(rnd() * PIELES.length)], pelo = f.id === 'hada' ? C.detalle : PELOS[Math.floor(rnd() * PELOS.length)];
+  M.piel = () => (f.humano ? mat(piel) : M.liso());
+  if (rig === 'ave') { const patas = mat(H(36, 0.92, 0.58)); M.ext = () => patas; } // pico y patas siempre anaranjados
+  M.pantalon = () => (f.humano ? mat(H(C.extremidad.h + 14, C.extremidad.s * 0.55, Math.max(0.2, C.extremidad.l - 0.24))) : M.ext());
 
   // pieza con su contorno
   function pieza(geo, material, o = {}) {
     const m = new THREE.Mesh(geo, material);
     if (o.sinContorno || material.transparent && material.opacity < 0.5) return m;
     if (!geo.boundingSphere) geo.computeBoundingSphere();
-    const k = clamp(1 + g / Math.max(geo.boundingSphere.radius, 0.02), 1.02, 1.3);
+    const k = clamp(1 + g / Math.max(geo.boundingSphere.radius, 0.02), 1.02, 1.42);
     const c = new THREE.Mesh(geo, matContorno); c.scale.setScalar(k); c.userData.contorno = true; m.add(c);
     return m;
   }
@@ -120,45 +131,59 @@ export function construir(spec) {
   }
 
   // ---------------------------------------------------------------- cara
-  function cara(padre, rx, ry, rz, plano) {
+  function cara(padre, rx, ry, rz, plano, base = C.cuerpo) {
     const sz = (x, y) => plano ? rz : rz * Math.sqrt(Math.max(0.08, 1 - (x / rx) ** 2 - (y / ry) ** 2));
-    const conHocico = f.hocico !== 'ninguno', est = spec.ojoEstilo, ca = spec.cara;
-    const er = Math.min(d.ojo * rx * 1.2, rx * 0.52), ey = (d.ojoAlt + (conHocico ? 0.12 : 0)) * ry, ex = d.ojoSep * rx * (f.ojos === 1 ? 0 : 1);
-    const ojos = [];
+    const conHocico = f.hocico !== 'ninguno', est = spec.ojoEstilo, ca = spec.cara, sin = { sinContorno: true };
+    const claro = base.l >= 0.4;
+    const er = Math.min(d.ojo * rx * 1.5, rx * 0.5), ey = (d.ojoAlt - 0.1 + (conHocico ? 0.16 : 0)) * ry, ex = Math.max(d.ojoSep * rx * 0.95, er * 1.04) * (f.ojos === 1 ? 0 : 1);
+    const tierno = claro && ['redondo', 'enojado', 'dormilon'].includes(est), cerrado = ca.parpado > 0.6;
+    if (est === 'robot') pon(caja(Math.min(rx * 1.7, ex * 2 + er * 3), er * 2.7, 0.04, M.oscuro(), 0.03), padre, 0, ey, sz(ex, ey) * 0.97 + 0.005); // pantalla de la cara
     if (est === 'visor') {
-      pon(caja(rx * 1.45, er * 1.15, 0.06, M.oscuro(), 0.025), padre, 0, ey, sz(0, ey) * 0.96);
-      for (const s of [-1, 1]) pon(esfera(er * 0.3, M.luz(), 1, 1, 0.4, { sinContorno: true }), padre, s * ex, ey, sz(0, ey) + 0.035);
+      pon(caja(rx * 1.45, er * 1.1, 0.06, M.oscuro(), 0.025), padre, 0, ey, sz(0, ey) * 0.96);
+      for (const s of [-1, 1]) pon(esfera(er * 0.28, M.luz(), 1, 1, 0.4, sin), padre, s * ex, ey, sz(0, ey) + 0.035);
     } else for (const s of f.ojos === 1 ? [0] : [-1, 1]) {
       const x = s * ex, salt = est === 'saltones';
-      const o = grupo(x, ey, sz(x, salt ? ey * 0.5 : ey) * (salt ? 0.72 : 0.97), padre); o.rotation.y = s * 0.22;
-      if (est === 'robot') o.add(caja(er * 1.6, er * 1.6, 0.05, M.luz(), 0.02));
-      else if (est === 'hueco') { o.add(esfera(er, M.oscuro(), 1, 1.15, 0.4)); }
-      else {
-        o.add(esfera(er, M.blanco(), 1, est === 'ovalado' ? 1.3 : 1, salt ? 0.95 : 0.5));
-        pon(esfera(er * 0.56, M.oscuro(), 1, 1, 0.6, { sinContorno: true }), o, ca.mirada * er * 0.3, 0, er * (salt ? 0.72 : 0.36));
-        pon(esfera(er * 0.17, M.brillo(), 1, 1, 0.5, { sinContorno: true }), o, er * 0.2 + ca.mirada * er * 0.3, er * 0.22, er * (salt ? 1.15 : 0.66));
+      const o = grupo(x, ey, sz(x, salt ? ey * 0.5 : ey) * (salt ? 0.72 : 0.97), padre); o.rotation.y = s * 0.2;
+      if (est === 'robot') { o.rotation.y = 0; pon(caja(er * 1.2, er * 1.5, 0.05, M.luz(H(180, 1, 0.6)), 0.02), o, 0, 0, 0.035); }
+      else if (est === 'hueco') o.add(esfera(er * 0.9, M.oscuro(), 1, 1.15, 0.4));
+      else if (cerrado && !salt) pon(toro(er * 0.55, 0.024, claro ? M.oscuro() : M.blanco(), PI, sin), o, 0, er * 0.2, 0.02, 0, 0, PI);
+      else if (tierno) { // ojo oscuro y brillante, sin blanco: el estilo tierno
+        o.add(esfera(er * 0.8, M.oscuro(), 1, 1.22, 0.4, sin));
+        pon(esfera(er * 0.27, M.brillo(), 1, 1, 0.5, sin), o, -er * 0.2 + ca.mirada * er * 0.15, er * 0.36, er * 0.34);
+        pon(esfera(er * 0.13, M.brillo(), 1, 1, 0.5, sin), o, er * 0.24 + ca.mirada * er * 0.15, -er * 0.32, er * 0.34);
+        o.scale.y = clamp(1 - ca.parpado * 0.55, 0.4, 1.15);
+      } else {
+        pon(esfera(er * 1.1, M.oscuro(), 1, est === 'ovalado' ? 1.25 : 1, salt ? 0.9 : 0.4, sin), o, 0, 0, -er * 0.06);
+        o.add(esfera(er, M.blanco(), 1, est === 'ovalado' ? 1.25 : 1, salt ? 0.95 : 0.5, sin));
+        pon(esfera(er * 0.62, M.oscuro(), 1, 1.1, 0.6, sin), o, ca.mirada * er * 0.25, 0, er * (salt ? 0.7 : 0.34));
+        pon(esfera(er * 0.2, M.brillo(), 1, 1, 0.5, sin), o, -er * 0.18 + ca.mirada * er * 0.25, er * 0.26, er * (salt ? 1.16 : 0.68));
+        pon(esfera(er * 0.1, M.brillo(), 1, 1, 0.5, sin), o, er * 0.2 + ca.mirada * er * 0.25, -er * 0.22, er * (salt ? 1.16 : 0.68));
+        o.scale.y = clamp(1 - ca.parpado * 0.7, 0.3, 1.15);
       }
-      if (est !== 'robot') o.scale.y = clamp(1 - ca.parpado * 0.82, 0.12, 1.2);
-      ojos.push(o);
-      if (Math.abs(ca.ceja) > 0.05 && est !== 'robot' && est !== 'hueco') pon(capsula(0.018, er * 1.1, M.oscuro(), { sinContorno: true }), padre, x, ey + er * 1.28, sz(x, ey + er) + 0.03, 0, 0, PI / 2 + (s || 1) * ca.ceja);
+      if (Math.abs(ca.ceja) > 0.05 && est !== 'robot' && est !== 'hueco') pon(capsula(0.02, er * 0.9, claro ? M.oscuro() : M.blanco(), sin), padre, x, ey + er * 1.3, sz(x, ey + er) + 0.03, 0, 0, PI / 2 + (s || 1) * ca.ceja);
     }
-    const my = ey - er * 1.5 - ry * 0.08, mz = sz(0, my);
+    // rubor
+    if (claro && !['robot', 'visor', 'hueco'].includes(est) && f.ojos !== 1) for (const s of [-1, 1]) {
+      const x = s * Math.min(ex + er * 0.95, rx * 0.74), y = ey - er * 0.9;
+      pon(esfera(er * 0.4, mat(H(352, 0.85, 0.74)), 1, 0.62, 0.22, sin), padre, x, y, sz(x, y) * 0.985, 0, s * 0.35);
+    }
+    const my = ey - er * 1.0 - ry * 0.07, mz = sz(0, my);
     if (conHocico) {
-      const hy = ey - er * 1.25 - ry * 0.1;
-      if (f.hocico === 'pico') pon(cono(rx * 0.24, rx * 0.56, M.ext(), 12), padre, 0, hy + ry * 0.06, sz(0, hy) + rx * 0.2, PI / 2);
-      else if (f.hocico === 'chato') { pon(cil(rx * 0.3, rx * 0.32, rx * 0.2, M.det(), 18), padre, 0, hy, sz(0, hy) + rx * 0.04, PI / 2); for (const s of [-1, 1]) pon(esfera(rx * 0.06, M.oscuro(), 1, 1.3, 0.5, { sinContorno: true }), padre, s * rx * 0.11, hy, sz(0, hy) + rx * 0.15); }
+      const hy = ey - er * 1.0 - ry * 0.1;
+      if (f.hocico === 'pico') pon(cono(rx * 0.2, rx * 0.44, M.ext(), 12), padre, 0, hy + ry * 0.06, sz(0, hy) + rx * 0.16, PI / 2);
+      else if (f.hocico === 'chato') { pon(cil(rx * 0.26, rx * 0.28, rx * 0.16, M.det(), 18), padre, 0, hy, sz(0, hy) + rx * 0.04, PI / 2); for (const s of [-1, 1]) pon(esfera(rx * 0.05, M.oscuro(), 1, 1.3, 0.5, sin), padre, s * rx * 0.1, hy, sz(0, hy) + rx * 0.13); }
       else {
-        const largo = f.hocico === 'largo' ? 0.62 : 0.3;
-        pon(esfera(rx * 0.4, M.panza(), 1, 0.74, largo * 2.2), padre, 0, hy, sz(0, hy) * 0.92 + rx * largo * 0.25);
-        pon(esfera(rx * 0.11, M.oscuro(), 1.2, 0.85, 0.8, { sinContorno: true }), padre, 0, hy + rx * 0.16, sz(0, hy) * 0.92 + rx * largo * 1.05);
+        const largo = f.hocico === 'largo' ? 0.46 : 0.24;
+        pon(esfera(rx * 0.34, M.panza(), 1, 0.72, largo * 2.2), padre, 0, hy, sz(0, hy) * 0.93 + rx * largo * 0.2);
+        pon(esfera(rx * 0.1, M.oscuro(), 1.25, 0.85, 0.8, sin), padre, 0, hy + rx * 0.13, sz(0, hy) * 0.93 + rx * largo * 0.86);
       }
-    } else if (est !== 'visor' || true) {
-      const b = ca.boca, mr = rx * 0.22;
-      if (b === 2) pon(esfera(rx * 0.12, M.oscuro(), 1, 1.2, 0.4, { sinContorno: true }), padre, 0, my, mz);
-      else if (Math.abs(b) < 0.1) pon(capsula(0.017, rx * 0.26, M.oscuro(), { sinContorno: true }), padre, 0, my, mz + 0.01, 0, 0, PI / 2);
-      else pon(toro(mr * clamp(Math.abs(b), 0.55, 1), 0.019, M.oscuro(), PI, { sinContorno: true }), padre, 0, my + (b > 0 ? mr * 0.5 : -mr * 0.3), mz + 0.01, b > 0 ? -0.2 : 0.2, 0, b > 0 ? PI : 0);
+    } else {
+      const b = ca.boca, mr = rx * 0.13, tinta = claro ? M.oscuro() : M.blanco();
+      if (b === 2) pon(esfera(rx * 0.08, tinta, 1, 1.25, 0.4, sin), padre, 0, my, mz);
+      else if (Math.abs(b) < 0.1) pon(capsula(0.016, rx * 0.14, tinta, sin), padre, 0, my, mz + 0.01, 0, 0, PI / 2);
+      else pon(toro(mr * clamp(Math.abs(b), 0.6, 1), 0.017, tinta, PI, sin), padre, 0, my + (b > 0 ? mr * 0.45 : -mr * 0.3), mz + 0.01, b > 0 ? -0.15 : 0.15, 0, b > 0 ? PI : 0);
     }
-    return { sz, er, ex, ey, ojos };
+    return { sz, er, ex, ey };
   }
 
   // ---------------------------------------------------------------- rasgos de cabeza
@@ -173,7 +198,7 @@ export function construir(spec) {
       if (o) P.orejas.push(o);
       if (f.cuernos === 2) pon(cono(rx * 0.14, rx * 0.52, M.hueso(), 10), c, s * rx * 0.46, ry * 0.92, rz * 0.1, 0, 0, -s * 0.4);
     }
-    if (f.melena) { pon(esfera(rx * 1.34, M.det(), 1, 1.02, 0.7), c, 0, -ry * 0.02, -rz * 0.32); for (let i = 0; i < 9; i++) { const an = i / 9 * PI * 2; pon(esfera(rx * 0.3, M.det()), c, Math.cos(an) * rx * 1.18, Math.sin(an) * ry * 1.18, -rz * 0.15); } }
+    if (f.melena) { const mm = mat(H(C.cuerpo.h - 10, Math.min(1, C.cuerpo.s + 0.1), Math.max(0.2, C.cuerpo.l - 0.2))); pon(esfera(rx * 1.34, mm, 1, 1.02, 0.7), c, 0, -ry * 0.02, -rz * 0.32); for (let i = 0; i < 9; i++) { const an = i / 9 * PI * 2; pon(esfera(rx * 0.3, mm), c, Math.cos(an) * rx * 1.18, Math.sin(an) * ry * 1.18, -rz * 0.15); } }
     if (f.cuernos === 1) pon(cono(rx * 0.12, rx * 0.85, M.oro(), 10), c, 0, ry * 1.1, rz * 0.45, 0.4);
     const na = f.antenas;
     for (let i = 0; i < na; i++) antena(c, na === 1 ? 0 : (i ? 1 : -1) * rx * 0.42, ry * 0.9, rx);
@@ -185,7 +210,7 @@ export function construir(spec) {
   }
 
   // ---------------------------------------------------------------- armado por esqueleto
-  const rl = rig === 'ave' ? 0.045 : clamp(0.1 * tw + 0.035, 0.06, 0.16), L = d.pierna, rc = d.cab * 0.55;
+  const rl = rig === 'ave' ? 0.05 : clamp(0.13 * tw + 0.05, 0.09, 0.2) * (rig === 'cuadrupedo' ? 0.86 : 1), L = d.pierna, rc = d.cab * 0.55;
   let A = {}; // anclas para accesorios
   const sinBrazos = ['slime', 'hongo', 'calabaza', 'medusa', 'nube'].includes(f.id) || d.brazo < 0.06;
 
@@ -194,10 +219,11 @@ export function construir(spec) {
       const b = grupo(s * xHombro, yHombro, 0, padre); b.rotation.z = s * 0.3;
       if (rig === 'ave') pon(esfera(1, mat(H(C.cuerpo.h, C.cuerpo.s, C.cuerpo.l - 0.09), { cuerpo: true }), 0.09, d.brazo * 0.5, 0.24), b, 0, -d.brazo * 0.42, 0);
       else {
-        const ra = f.id === 'golem' ? rl * 1.5 : rl * 0.85;
+        const ra = f.id === 'golem' ? rl * 1.1 : rl * 0.85;
+        d.brazo = Math.min(d.brazo, yHombro - ra * 1.3 - 0.03); // la mano nunca atraviesa el piso
         if (f.id === 'golem' || f.torso === 'caja') pon(caja(ra * 2, d.brazo, ra * 2, M.ext()), b, 0, -d.brazo / 2, 0);
-        else pon(capsula(ra, d.brazo - ra, M.ext()), b, 0, -d.brazo / 2, 0);
-        const mano = grupo(0, -d.brazo, 0, b); mano.add(esfera(ra * 1.3, M.panza())); P.manos.push(mano);
+        else pon(capsula(ra, d.brazo - ra, f.humano ? M.liso() : M.ext()), b, 0, -d.brazo / 2, 0);
+        const mano = grupo(0, -d.brazo, 0, b); mano.add(esfera(ra * 1.22, f.humano ? M.piel() : M.ext())); P.manos.push(mano);
       }
       b.userData.lado = s; P.brazos.push(b);
     }
@@ -205,27 +231,28 @@ export function construir(spec) {
   function manosFlotantes(y, x, padre) { for (const s of [-1, 1]) { const mano = grupo(s * x, y, 0.08, padre); if (!sinBrazos) mano.add(esfera(0.085, M.panza())); mano.userData.lado = s; P.manos.push(mano); if (!sinBrazos) P.brazos.push(mano); } }
 
   if (rig === 'bipedo' || rig === 'ave') {
-    const yT = L + th / 2 - 0.05, t = torso(f.torso); t.q.position.y = yT; cuerpo.add(t.q);
-    if (f.panza) pon(esfera(0.5, M.panza(), tw * 0.72, th * 0.78, td * 0.5, { sinContorno: true }), cuerpo, 0, yT - th * 0.06, td * 0.3);
+    const yT = L + th / 2 - 0.04, t = torso(f.torso); t.q.position.y = yT; cuerpo.add(t.q);
+    if (f.panza || rig === 'ave') pon(esfera(0.5, M.panza(), tw * 0.72, th * 0.8, td * 0.5, { sinContorno: true }), cuerpo, 0, yT - th * 0.05, td * 0.3);
     for (const s of [-1, 1]) {
-      const p = grupo(s * tw * 0.24, L + 0.03, 0, todo);
-      if (f.torso === 'caja') pon(caja(rl * 1.9, L, rl * 1.9, M.ext()), p, 0, -L / 2, 0); else pon(capsula(rl, L - rl, M.ext()), p, 0, -L / 2, 0);
-      pon(esfera(rl * 1.5, rig === 'ave' ? M.ext() : M.det(), 1, 0.6, 1.5), p, 0, -L - 0.01 + rl * 0.7, rl * 0.7);
+      const p = grupo(s * Math.max(tw * 0.25, rl * 1.25), L + 0.03, 0, todo);
+      if (f.torso === 'caja') pon(caja(rl * 1.9, L, rl * 1.9, M.ext()), p, 0, -L / 2, 0); else pon(capsula(rl, Math.max(0.02, L - rl), M.pantalon()), p, 0, -L / 2, 0);
+      pon(esfera(rl * 1.12, rig === 'ave' ? M.ext() : M.det(), 1, 0.6, 1.45), p, 0, -L + rl * 0.48, rl * 0.5);
       P.piernas.push(p);
     }
-    const yC = L + th - 0.08 + rc * 0.8, c = grupo(0, yC, 0, cuerpo); P.cabeza = c;
+    const yC = L + th - 0.1 + rc * 0.84, c = grupo(0, yC, 0, cuerpo); P.cabeza = c;
     const cajaC = f.cabeza === 'caja';
-    c.add(cajaC ? caja(rc * 2, rc * 1.7, rc * 1.7, M.liso()) : esfera(rc, M.liso(), 1, 0.94, 0.96));
-    const rx = rc, ry = cajaC ? rc * 0.85 : rc * 0.94, rz = cajaC ? rc * 0.85 : rc * 0.96;
-    const ca = cara(c, rx, ry, rz, cajaC); rasgosCabeza(c, rx, ry, rz);
-    brazosVerticales(L + th * 0.72, tw / 2 - 0.02, cuerpo);
-    A = { cab: c, rx, ry, rz, cara: ca, espalda: grupo(0, yT, -td / 2, cuerpo), cintura: { g: cuerpo, y: L + th * 0.2, r: tw * 0.49 }, cola: grupo(0, L + th * 0.18, -td * 0.45, cuerpo), altoT: th };
+    c.add(cajaC ? caja(rc * 2, rc * 1.7, rc * 1.7, M.liso()) : esfera(rc, M.piel(), 1.06, 0.96, 1));
+    const rx = cajaC ? rc : rc * 1.06, ry = cajaC ? rc * 0.85 : rc * 0.96, rz = cajaC ? rc * 0.85 : rc;
+    if (f.humano && f.id !== 'gnomo') { const pl = pieza(G(new THREE.SphereGeometry(rc * 1.07, 22, 12, 0, PI * 2, 0, PI * 0.52)), mat(pelo)); pl.scale.set(1.06, 0.98, 1.02); pon(pl, c, 0, rc * 0.03, -rc * 0.05, -0.45); }
+    const ca = cara(c, rx, ry, rz, cajaC, f.humano ? piel : C.cuerpo); rasgosCabeza(c, rx, ry, rz);
+    brazosVerticales(L + th * 0.7, tw / 2 - 0.03, cuerpo);
+    A = { cab: c, rx, ry, rz, cara: ca, espalda: grupo(0, yT, -td / 2, cuerpo), cintura: { g: cuerpo, y: L + th * 0.16, r: tw * 0.49 }, cola: grupo(0, L + th * 0.18, -td * 0.45, cuerpo), altoT: th };
   } else if (rig === 'cuadrupedo') {
     const r = tw * 0.42, len = Math.max(th * 1.15, r * 2.1), yT = L + r * 0.82;
     const cu = capsula(r, len - r * 2, M.cuerpo()); pon(cu, cuerpo, 0, yT, 0, PI / 2);
     for (const [sx, szz] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
       const p = grupo(sx * r * 0.58, L + 0.04, szz * (len / 2 - r * 0.6), todo);
-      pon(capsula(rl, L - rl, M.ext()), p, 0, -L / 2, 0); pon(esfera(rl * 1.35, M.det(), 1, 0.6, 1.3), p, 0, -L + rl * 0.6, rl * 0.4);
+      pon(capsula(rl, Math.max(0.02, L - rl), M.ext()), p, 0, -L / 2, 0); pon(esfera(rl * 1.08, M.panza(), 1, 0.55, 1.25), p, 0, -L + rl * 0.45, rl * 0.3);
       P.piernas.push(p);
     }
     const c = grupo(0, yT + r * 0.55 + rc * 0.4, len / 2 + rc * 0.25, cuerpo); P.cabeza = c;
@@ -242,7 +269,7 @@ export function construir(spec) {
     const fc = grupo(0, t.yCara, 0, c);
     const ca = cara(fc, t.rx, t.ry, t.rz, t.plano);
     for (let i = 0; i < f.antenas; i++) antena(c, (i ? 1 : -1) * t.rx * 0.4, th / 2, t.rx);
-    if (pie) for (const s of [-1, 1]) { const p = grupo(s * tw * 0.24, pie + 0.04, 0, todo); pon(esfera(rl * 1.5, M.det(), 1, 0.7, 1.4), p, 0, -pie + rl * 0.5, rl * 0.3); P.piernas.push(p); }
+    if (pie) for (const s of [-1, 1]) { const p = grupo(s * tw * 0.24, pie + 0.04, 0, todo); pon(esfera(rl * 1.05, M.det(), 1, 0.65, 1.35), p, 0, -pie + rl * 0.45, rl * 0.3); P.piernas.push(p); }
     if (f.id === 'cactus' || f.id === 'golem') { d.brazo = Math.min(d.brazo, yT + th * 0.15 - 0.12); brazosVerticales(yT + th * 0.15, tw / 2 - 0.02, cuerpo); } else manosFlotantes(yT - th * 0.05, tw / 2 + 0.14, cuerpo);
     if (f.id === 'cactus') for (const b of P.brazos) b.rotation.z = b.userData.lado * 2.2;
     if (f.tentaculos) for (let i = 0; i < f.tentaculos; i++) {
@@ -326,6 +353,6 @@ export function construir(spec) {
   const bb = new THREE.Box3().setFromObject(raiz);
   return {
     raiz, P, alto: bb.max.y, ancho: Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z), caja: bb,
-    liberar() { for (const b of basura) b.dispose?.(); for (const gr of graficos) gr.remove(); },
+    liberar() { for (const t of Object.values(this.tl || {})) t.kill(); for (const b of basura) b.dispose?.(); for (const gr of graficos) gr.remove(); },
   };
 }

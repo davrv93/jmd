@@ -1,6 +1,7 @@
 <!doctype html><meta charset="utf-8"><title>prueba</title>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","three/addons/":"./vendor/addons/"}}</script>
 <script src="vendor/p5.min.js"></script>
+<script src="vendor/gsap.min.js"></script>
 <body style="background:#2a2535;margin:0;display:flex;flex-wrap:wrap;font:11px sans-serif;color:#fff">
 <script type="module">
 import { resolver, sorpresa } from './motor/resolver.js';
@@ -13,7 +14,8 @@ try {
   if (modo === 'familias') for (const f of R.meta.familias) pon(resolver(R, f.id, 'clasico', {}, 5));
   else if (modo === 'variantes') for (const fam of (q.get('f') || 'gato,robot').split(',')) for (const v of R.meta.variantes) pon(resolver(R, fam, v.id, {}, 5));
   else if (modo === 'azar') for (let i = 0; i < 40; i++) { const s = sorpresa(R, i * 97 + 3); pon(resolver(R, s.familia, s.variante, s.params, s.semilla)); }
-  else if (modo === 'hoja') { const s = resolver(R, q.get('f') || 'gato', q.get('v') || 'fuego', {}, 5); const h = hojaSprites(s, R, 128); h.hoja.style.background = '#445'; document.body.append(h.hoja); }
+  else if (modo === 'zoom') (q.get('f') || 'gato,aventurero,robot,dragon,pollito,slime').split(',').forEach((x, i) => { const [fa, va] = x.split(':'); pon(resolver(R, fa, va || 'clasico', {}, 11 + i * 7), 360); });
+  else if (modo === 'hoja') { const s = resolver(R, q.get('f') || 'gato', q.get('v') || 'fuego', {}, 5); const h = hojaSprites(s, R, 160); h.hoja.style.background = '#445'; document.body.append(h.hoja); }
   document.title = 'listo';
 } catch (e) { document.body.append(String(e.stack)); document.title = 'error'; }
 </script>
