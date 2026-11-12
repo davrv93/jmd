@@ -100,7 +100,7 @@ body { overflow: auto; }
       <form class="pd-preg" id="form">
         <label class="esc-sr" for="pregunta" style="position:absolute;left:-9999px">Tu pregunta</label>
         <input type="text" id="pregunta" maxlength="300" placeholder="Pregunta como lo haría un cliente…" autocomplete="off">
-        <button type="submit" class="pd-btn prim" id="enviar">Preguntar</button>
+        <button type="button" class="pd-btn prim" id="enviar">Preguntar</button>
       </form>
     </section>
   </main>
@@ -590,7 +590,10 @@ window.ponerAnimo = (a) => { try { if (av && av.soportado) av.setAnimo(a); } cat
   });
   $("archivo").addEventListener("change", alSubir);
   $("entrenar").addEventListener("click", entrenar);
-  $("form").addEventListener("submit", preguntar);
+  // El LIVE muestra la escena en un iframe con sandbox sin allow-forms: un <form> no envía. Clic y Enter directos.
+  $("form").addEventListener("submit", function (e) { e.preventDefault(); });
+  $("enviar").addEventListener("click", preguntar);
+  $("pregunta").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) preguntar(e); });
 })();
 </script>
 </body>
