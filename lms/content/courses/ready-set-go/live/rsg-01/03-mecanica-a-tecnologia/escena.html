@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · De la mecánica a la tecnología</title>
+<!--
+  Escena del modo LIVE (Ready Set Go, clase rsg-01). Generada por _fuente/rsg01.py: edita ahí, no aquí.
+  Reglas: sin recursos externos, menos de 300 elementos y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion.
+  Interacción: seis mecánicas; cada una muestra su tecnología, dónde vive en el proyecto y arma un prompt copiable.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/rsg.css">
+<style id="esc-propio">
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/><circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab"><span class="esc-fase" data-ph="ca">Concepto</span><span class="esc-num">Ready Set Go · C1 · E03</span></header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">De la <em>mecánica</em> a la tecnología</h1>
+    <div class="x-dos">
+      <section class="esc-card a-in" style="--d:.15s"><span class="x-et">Lo que quieres que pase · toca una</span><div class="x-col" id="mec" role="tablist" style="margin-top:.5em"></div></section>
+      <div class="x-col">
+        <section class="esc-card x-regla a-in" style="--d:.25s" aria-live="polite"><span class="x-et">La tecnología que lo resuelve</span><strong id="tec"></strong><p id="exp"></p><p style="margin-top:.5em"><span class="esc-chip" id="donde"></span> <span class="esc-chip ok" id="clave"></span></p></section>
+        <section class="esc-card a-in" style="--d:.35s"><span class="x-et">Tu prompt · mecánica + contexto + límite + prueba</span>
+          <div class="x-fila" id="juego" role="radiogroup" aria-label="Tu juego" style="margin:.4em 0"></div>
+          <pre class="x-cod" id="prompt" tabindex="0"></pre>
+          <div class="x-fila" style="margin-top:.5em"><button class="x-btn pri" id="copiar" type="button">Copiar prompt</button><span class="x-et" id="copiado" aria-live="polite"></span></div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Pulsa «Lo logré» cuando hayas tocado las seis mecánicas y copiado un prompt para tu juego</span></footer>
+</div>
+<script>
+(function () { try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {} })();
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+var MEC = [
+  ["El héroe cae y salta", "Gravedad y velocidad", "La gravedad tira hacia abajo en cada cuadro. Saltar es dar una velocidad hacia arriba de golpe.", "juego.js · «salto»", "Arcade Physics", "mi héroe salte al pulsar espacio y caiga solo", "el héroe sube, llega a un punto alto y vuelve al suelo"],
+  ["No atraviesa el suelo ni las paredes", "Colisiones con cuerpos sólidos", "El nivel es una lista de datos. Cada loseta sólida se convierte en un cuerpo que no deja pasar.", "juego.js · «nivel»", "collider · tilemap", "mi héroe no atraviese el suelo ni las plataformas", "puedo pararme sobre una plataforma y no caigo a través de ella"],
+  ["Camina moviendo las piernas", "Hoja de sprites y animación por cuadros", "Una sola imagen guarda todos los dibujos. Pasarlos rápido, uno tras otro, crea el movimiento.", "assets/heroe.png + heroe.json", "spritesheet · frameRate", "mi héroe muestre la animación de caminar cuando se mueve y la de quieto cuando para", "las piernas se mueven solo mientras avanzo"],
+  ["La cámara lo sigue", "Cámara con seguimiento", "La cámara persigue al héroe con suavidad y no sale de los bordes del nivel.", "juego.js · «camara»", "startFollow", "la cámara siga a mi héroe sin mostrar fuera del nivel", "al llegar al borde del nivel la cámara se detiene"],
+  ["El rival va y viene", "Patrulla", "Camina hasta un límite y da la vuelta: una variable y dos comparaciones.", "juego.js · «patrulla»", "estado simple", "un rival camine entre dos puntos y dé la vuelta en cada extremo", "el rival nunca se cae del borde"],
+  ["El rival me busca por el laberinto", "Búsqueda de caminos (BFS)", "Se revisan las celdas a 1 paso, luego a 2, luego a 3… hasta tocar el destino. Lo veremos la próxima clase.", "Clase 2 · plantilla Laberinto", "pathfinding", "un rival encuentre el camino más corto hasta mi héroe esquivando muros", "con rayos X veo la ruta y siempre es la más corta"]
+];
+var sel = 0, juego = "plataformas", vistas = {};
+function pinta() {
+  var m = MEC[sel]; $("#tec").textContent = m[1]; $("#exp").textContent = m[2]; $("#donde").textContent = m[3]; $("#clave").textContent = m[4];
+  $("#prompt").textContent = "Quiero que " + m[5] + ".\nMi juego es de " + juego + ", hecho con Phaser 4 y Arcade Physics.\nNo cambies los controles ni los archivos de assets/.\nSabré que funciona cuando " + m[6] + ".";
+  $$("#mec .x-it").forEach(function (b, i) { b.setAttribute("aria-selected", i === sel ? "true" : "false"); if (vistas[i]) b.firstChild.textContent = "✓"; });
+}
+MEC.forEach(function (m, i) { var b = el("button", "x-it"); b.type = "button"; b.setAttribute("role", "tab"); b.appendChild(el("i", null, String(i + 1))); b.appendChild(el("span", null, m[0])); b.onclick = function () { sel = i; vistas[i] = 1; pinta(); }; $("#mec").appendChild(b); });
+["plataformas", "fútbol"].forEach(function (j) { var b = el("button", "x-btn", "Mi juego: " + j); b.type = "button"; b.setAttribute("role", "radio"); b.setAttribute("aria-pressed", j === juego ? "true" : "false"); b.onclick = function () { juego = j; $$("#juego .x-btn").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); }); pinta(); }; $("#juego").appendChild(b); });
+$("#copiar").onclick = function () {
+  var t = $("#prompt").textContent, ok = function () { $("#copiado").textContent = "Copiado"; setTimeout(function () { $("#copiado").textContent = ""; }, 1800); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, function () { seleccionar(); }); else seleccionar();
+  function seleccionar() { var r = document.createRange(); r.selectNodeContents($("#prompt")); var s = getSelection(); s.removeAllRanges(); s.addRange(r); $("#copiado").textContent = "Seleccionado: pulsa Ctrl+C"; }
+};
+vistas[0] = 1; pinta();
+</script>
+</body>
+</html>

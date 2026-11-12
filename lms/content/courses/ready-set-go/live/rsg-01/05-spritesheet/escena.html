@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Animación: la hoja de sprites</title>
+<!--
+  Escena del modo LIVE (Ready Set Go, clase rsg-01). Generada por _fuente/rsg01.py: edita ahí, no aquí.
+  Reglas: sin recursos externos, menos de 300 elementos y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion.
+  Interacción: hoja de sprites real (heroe.png, hermana de esta escena, sacada de Forja). Se elige animación, velocidad y cuadro; el atlas se actualiza.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/rsg.css">
+<style id="esc-propio">
+#hoja { width: auto; height: auto; max-width: 100%; max-height: 62vh; display: block; margin: .5em auto 0; border-radius: .6em; background: repeating-conic-gradient(var(--s2) 0% 25%, var(--s3) 0% 50%) 0 0 / 24px 24px; cursor: pointer; aspect-ratio: 512 / 576; }
+#vista { width: 9em; height: 9em; flex: none; border-radius: .8em; background: var(--s2); border: 1px solid var(--line2); image-rendering: pixelated; }
+#anims .x-btn { font-size: .66em; padding: .5em .8em; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/><circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab"><span class="esc-fase" data-ph="ca">Concepto</span><span class="esc-num">Ready Set Go · C1 · E05</span></header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">Animación: <em>muchos dibujos, muy rápido</em></h1>
+    <div class="x-dos">
+      <section class="esc-card a-in" style="--d:.15s"><span class="x-et">heroe.png · UNA imagen de 512 × 576 con 72 cuadros de 64 px · toca un cuadro</span>
+        <canvas id="hoja" width="512" height="576" aria-label="Hoja de sprites completa con el cuadro actual resaltado"></canvas></section>
+      <div class="x-col">
+        <section class="esc-card a-in" style="--d:.25s"><span class="x-et">Lo que ve el jugador</span>
+          <div class="x-fila" style="align-items:flex-start;flex-wrap:nowrap"><canvas id="vista" width="192" height="192" aria-label="Animación en marcha"></canvas>
+            <div class="x-col" style="flex:1"><div class="x-fila" id="anims" role="radiogroup" aria-label="Animación"></div>
+              <label class="x-campo">Velocidad<input id="fps" type="range" min="1" max="24" step="1" value="12"><output id="ofps"></output></label>
+              <div class="x-fila"><button class="x-btn" id="pausa" type="button" aria-pressed="false">Pausa</button><button class="x-btn" id="sig" type="button">Cuadro siguiente</button></div></div></div>
+        </section>
+        <section class="esc-card a-in" style="--d:.35s"><span class="x-et">El atlas (heroe.json) dice dónde está cada cuadro</span><pre class="x-cod" id="atlas"></pre></section>
+        <section class="esc-card x-regla a-in" style="--d:.45s"><strong>Con 1 cuadro por segundo es un pase de diapositivas. Con 12, camina.</strong><p>Baja la velocidad a 1 y súbela de a pocos: ¿desde qué número lo ves moverse de verdad?</p></section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Pulsa «Lo logré» cuando hayas probado tres animaciones y encontrado desde qué velocidad se ve fluido</span></footer>
+</div>
+<script>
+(function () { try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {} })();
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+var ANIMS = [["quieto", 6, 6], ["caminar", 8, 12], ["correr", 8, 16], ["saltar", 8, 10], ["golpe", 6, 14], ["dano", 4, 10], ["morir", 8, 10], ["celebrar", 8, 12], ["agachado", 4, 6]];
+var img = new Image(), hoja = $("#hoja").getContext("2d"), vista = $("#vista").getContext("2d"), fila = 1, cuadro = 0, pausa = false, acum = 0, antes = performance.now(), probadas = {};
+vista.imageSmoothingEnabled = false;
+function pinta() {
+  var e = getComputedStyle(document.documentElement), acento = e.getPropertyValue("--accent").trim(), linea = e.getPropertyValue("--line2").trim();
+  hoja.clearRect(0, 0, 512, 576); hoja.drawImage(img, 0, 0);
+  hoja.strokeStyle = linea; hoja.lineWidth = 1; for (var i = 0; i <= 8; i++) { hoja.beginPath(); hoja.moveTo(i * 64 + .5, 0); hoja.lineTo(i * 64 + .5, 576); hoja.stroke(); } for (var j = 0; j <= 9; j++) { hoja.beginPath(); hoja.moveTo(0, j * 64 + .5); hoja.lineTo(512, j * 64 + .5); hoja.stroke(); }
+  hoja.fillStyle = acento; hoja.globalAlpha = .12; hoja.fillRect(0, fila * 64, ANIMS[fila][1] * 64, 64); hoja.globalAlpha = 1;
+  hoja.strokeStyle = acento; hoja.lineWidth = 4; hoja.strokeRect(cuadro * 64 + 2, fila * 64 + 2, 60, 60);
+  vista.clearRect(0, 0, 192, 192); vista.drawImage(img, cuadro * 64, fila * 64, 64, 64, 0, 0, 192, 192);
+  $("#atlas").textContent = '"' + ANIMS[fila][0] + "_" + cuadro + '": { "x": ' + cuadro * 64 + ', "y": ' + fila * 64 + ', "w": 64, "h": 64 }\n\n// y así se crea la animación en Phaser:\nanims.create({ key: "' + ANIMS[fila][0] + '", frames: [' + ANIMS[fila][1] + ' cuadros], frameRate: ' + $("#fps").value + " })";
+  $("#ofps").textContent = $("#fps").value + " fps";
+}
+function elegir(i) { fila = i; cuadro = 0; probadas[i] = 1; $("#fps").value = ANIMS[i][2]; $$("#anims .x-btn").forEach(function (b, k) { b.setAttribute("aria-pressed", k === i ? "true" : "false"); }); pinta(); }
+ANIMS.forEach(function (a, i) { var b = el("button", "x-btn", a[0] === "dano" ? "daño" : a[0]); b.type = "button"; b.setAttribute("role", "radio"); b.onclick = function () { elegir(i); }; $("#anims").appendChild(b); });
+$("#fps").oninput = pinta; $("#pausa").onclick = function () { pausa = !pausa; this.setAttribute("aria-pressed", String(pausa)); };
+$("#sig").onclick = function () { pausa = true; $("#pausa").setAttribute("aria-pressed", "true"); cuadro = (cuadro + 1) % ANIMS[fila][1]; pinta(); };
+$("#hoja").addEventListener("pointerdown", function (e) { var r = this.getBoundingClientRect(), c = Math.floor((e.clientX - r.left) / r.width * 8), f = Math.floor((e.clientY - r.top) / r.height * 9); if (f >= 0 && f < 9) { if (f !== fila) elegir(f); cuadro = Math.min(c, ANIMS[f][1] - 1); pausa = true; $("#pausa").setAttribute("aria-pressed", "true"); pinta(); } });
+img.onload = function () { elegir(1); (function bucle(t) { requestAnimationFrame(bucle); var dt = (t - antes) / 1000; antes = t; if (pausa) return; acum += dt * +$("#fps").value; if (acum >= 1) { cuadro = (cuadro + Math.floor(acum)) % ANIMS[fila][1]; acum %= 1; pinta(); } })(antes); };
+img.src = "heroe.png";
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Movimiento y choques: mueve los números</title>
+<!--
+  Escena del modo LIVE (Ready Set Go, clase rsg-01). Generada por _fuente/rsg01.py: edita ahí, no aquí.
+  Reglas: sin recursos externos, menos de 300 elementos y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion.
+  Interacción: simulador propio en lienzo (gravedad, salto, velocidad y choque con celdas). Clic pone o quita muros. Tres retos que se marcan solos.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/rsg.css">
+<style id="esc-propio">
+#sim { width: 100%; height: auto; aspect-ratio: 16 / 9; display: block; margin: .5em 0; border-radius: .7em; background: var(--s2); border: 1px solid var(--line2); cursor: crosshair; touch-action: none; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/><circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab"><span class="esc-fase" data-ph="ea">Práctica</span><span class="esc-num">Ready Set Go · C1 · E04</span></header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">Movimiento y choques: <em>mueve los números</em></h1>
+    <div class="x-dos">
+      <section class="esc-card a-in" style="--d:.15s">
+        <span class="x-et">Tu primer nivel · clic en una celda pone o quita un muro · <span class="x-k">←</span> <span class="x-k">→</span> moverte · <span class="x-k">espacio</span> saltar</span>
+        <canvas id="sim" width="640" height="360" tabindex="0" aria-label="Simulador: un héroe con gravedad en un nivel de celdas"></canvas>
+        <div class="x-fila"><button class="x-btn" data-k="izq" type="button">◀</button><button class="x-btn" data-k="der" type="button">▶</button><button class="x-btn" data-k="salto" type="button">⤒ Saltar</button>
+          <button class="x-btn" id="caja" type="button" aria-pressed="false">Ver caja de choque</button><button class="x-btn" id="reinicio" type="button">Reiniciar nivel</button></div>
+      </section>
+      <div class="x-col">
+        <section class="esc-card a-in" style="--d:.25s"><span class="x-et">Tres números mandan</span>
+          <label class="x-campo">Gravedad<input id="g" type="range" min="0" max="2600" step="50" value="1700"><output id="og"></output></label>
+          <label class="x-campo">Salto<input id="s" type="range" min="200" max="1100" step="10" value="700"><output id="os"></output></label>
+          <label class="x-campo">Velocidad<input id="v" type="range" min="60" max="420" step="10" value="220"><output id="ov"></output></label>
+          <p class="x-det" id="lee" aria-live="polite" style="font-size:.84em;min-height:3.2em"></p>
+        </section>
+        <section class="esc-card a-in" style="--d:.35s"><span class="x-et">Así está escrito en tu juego (juego.js)</span>
+<pre class="x-cod"><span class="c">// la gravedad tira hacia abajo en cada cuadro; saltar es una velocidad hacia arriba</span>
+h.setVelocityX(direccion * <span class="k">F.velocidad</span>);
+if (salto &amp;&amp; enElPiso) h.setVelocityY(-<span class="k">F.salto</span>);
+<span class="c">// y el nivel es una lista: cada celda sólida es un cuerpo que no deja pasar</span>
+this.physics.add.collider(heroe, suelo);</pre></section>
+        <section class="esc-card a-in" style="--d:.45s"><span class="x-et">Retos</span><div class="x-col" id="retos" role="group" aria-label="Retos" style="margin-top:.4em"></div></section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Pulsa «Lo logré» cuando hayas completado los tres retos</span></footer>
+</div>
+<script>
+(function () { try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {} })();
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+var C = 40, COLS = 16, FILAS = 9, cv = $("#sim"), x = cv.getContext("2d"), K = {}, verCaja = false;
+var BASE = ["................", "................", "................", "..........###...", "................", "......###.......", "................", "..##............", "################"];
+var mapa, H;
+function reiniciar() { mapa = BASE.map(function (f) { return f.split("").map(function (c) { return c === "#" ? 1 : 0; }); }); H = { x: 60, y: 200, vx: 0, vy: 0, w: 24, h: 32, piso: false, max: 0 }; }
+function solido(px, py) { var c = Math.floor(px / C), f = Math.floor(py / C); if (c < 0 || c >= COLS) return true; if (f < 0) return false; if (f >= FILAS) return true; return mapa[f][c] === 1; }
+function choca(nx, ny) { return solido(nx - H.w / 2, ny - H.h) || solido(nx + H.w / 2 - 1, ny - H.h) || solido(nx - H.w / 2, ny - 1) || solido(nx + H.w / 2 - 1, ny - 1) || solido(nx - H.w / 2, ny - H.h / 2) || solido(nx + H.w / 2 - 1, ny - H.h / 2); }
+reiniciar();
+var G = $("#g"), S = $("#s"), V = $("#v"), antes = performance.now(), cumplidos = {};
+function leer() {
+  var g = +G.value, s = +S.value, alto = g > 0 ? s * s / (2 * g) : Infinity;
+  $("#og").textContent = g; $("#os").textContent = s; $("#ov").textContent = V.value;
+  $("#lee").innerHTML = g > 0 ? "Altura del salto = salto² ÷ (2 × gravedad) = <b>" + Math.round(alto) + " px</b>, o sea <b>" + (alto / C).toFixed(1) + " celdas</b>." : "<b>Gravedad 0:</b> nada lo baja. Salta y mira cómo se va para siempre.";
+  if (g > 0 && alto < 2 * C) reto(0); if (g === 0) reto(2);
+}
+function reto(i) { if (cumplidos[i]) return; cumplidos[i] = 1; var b = $$("#retos .x-it")[i]; if (b) b.setAttribute("aria-checked", "true"); }
+["Baja el salto hasta que ya no alcance 2 celdas de alto", "Construye una escalera de 3 escalones y súbela", "Pon la gravedad en 0 y salta: ¿qué pasa?"].forEach(function (t) { var b = el("div", "x-it"); b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); b.appendChild(el("span", null, t)); $("#retos").appendChild(b); });
+function paso(dt) {
+  var dir = (K.der ? 1 : 0) - (K.izq ? 1 : 0); H.vx = dir * +V.value;
+  if (K.salto && H.piso) { H.vy = -S.value; H.piso = false; }
+  H.vy += +G.value * dt;
+  var nx = H.x + H.vx * dt; if (!choca(nx, H.y)) H.x = nx;
+  var ny = H.y + H.vy * dt;
+  if (!choca(H.x, ny)) { H.y = ny; H.piso = false; } else { if (H.vy > 0) { H.y = Math.floor((ny - 1) / C) * C; H.piso = true; } H.vy = 0; }
+  if (H.y < -400 || H.y > 600) { H.x = 60; H.y = 200; H.vy = 0; }
+  if (H.piso && H.y <= (FILAS - 4) * C) reto(1);
+}
+function dibuja() {
+  var e = getComputedStyle(document.documentElement), acento = e.getPropertyValue("--accent").trim(), linea = e.getPropertyValue("--line2").trim();
+  x.clearRect(0, 0, 640, 360);
+  for (var f = 0; f < FILAS; f++) for (var c = 0; c < COLS; c++) { if (mapa[f][c]) { x.fillStyle = acento; x.globalAlpha = .85; x.fillRect(c * C + 1, f * C + 1, C - 2, C - 2); x.globalAlpha = 1; } else { x.strokeStyle = linea; x.lineWidth = 1; x.strokeRect(c * C + .5, f * C + .5, C, C); } }
+  x.fillStyle = "#ff8a3d"; x.beginPath(); x.roundRect(H.x - H.w / 2 - 3, H.y - H.h - 6, H.w + 6, H.h + 6, 9); x.fill();
+  x.fillStyle = "#14122b"; x.beginPath(); x.arc(H.x - 4, H.y - H.h + 8, 3.4, 0, 6.283); x.arc(H.x + 6, H.y - H.h + 8, 3.4, 0, 6.283); x.fill();
+  if (verCaja) { x.strokeStyle = "#c6ff4a"; x.lineWidth = 2; x.strokeRect(H.x - H.w / 2, H.y - H.h, H.w, H.h); x.fillStyle = "#c6ff4a"; x.font = "700 12px monospace"; x.fillText("vx " + Math.round(H.vx) + "  vy " + Math.round(H.vy) + (H.piso ? "  en el piso" : "  en el aire"), 8, 16); }
+}
+(function bucle(t) { requestAnimationFrame(bucle); var dt = Math.min(.04, (t - antes) / 1000); antes = t; for (; dt > 0; dt -= 1 / 120) paso(Math.min(dt, 1 / 120)); dibuja(); })(antes);
+var TEC = { ArrowLeft: "izq", a: "izq", ArrowRight: "der", d: "der", " ": "salto", ArrowUp: "salto", w: "salto" };
+addEventListener("keydown", function (e) { var k = TEC[e.key]; if (k) { e.preventDefault(); K[k] = true; } }); addEventListener("keyup", function (e) { var k = TEC[e.key]; if (k) K[k] = false; });
+$$("[data-k]").forEach(function (b) { ["pointerdown", "pointerup", "pointerleave", "pointercancel"].forEach(function (ev, i) { b.addEventListener(ev, function (e) { e.preventDefault(); K[b.dataset.k] = i === 0; }); }); });
+cv.addEventListener("pointerdown", function (e) { var r = cv.getBoundingClientRect(), c = Math.floor((e.clientX - r.left) / r.width * COLS), f = Math.floor((e.clientY - r.top) / r.height * FILAS); if (f >= 0 && f < FILAS - 1 && c >= 0 && c < COLS) { mapa[f][c] = mapa[f][c] ? 0 : 1; if (choca(H.x, H.y)) mapa[f][c] = 0; } cv.focus(); });
+$("#caja").onclick = function () { verCaja = !verCaja; this.setAttribute("aria-pressed", String(verCaja)); };
+$("#reinicio").onclick = reiniciar; [G, S, V].forEach(function (i) { i.oninput = leer; });
+leer();
+</script>
+</body>
+</html>

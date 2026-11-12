@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Bienvenida: hoy tu héroe se mueve</title>
+<!--
+  Escena del modo LIVE (Ready Set Go, clase rsg-01). Generada por _fuente/rsg01.py: edita ahí, no aquí.
+  Reglas: sin recursos externos, menos de 300 elementos y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion.
+  Interacción: tocar un paso del mapa muestra qué se hace; lista previa con casillas. Nada se guarda.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/rsg.css">
+<style id="esc-propio">
+.x-mapa { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .5em; margin: .5em 0; } .x-mapa .x-it { grid-template-columns: 1fr; justify-items: start; gap: .3em; font-size: .8em; }
+@media (max-width: 900px) { .x-mapa { grid-template-columns: repeat(2, 1fr); } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/><circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab"><span class="esc-fase" data-ph="ec">Experiencia</span><span class="esc-num">Ready Set Go · C1 · E00</span></header>
+  <main class="esc-cuerpo">
+
+    <div class="x-fila"><h1 class="esc-titulo a-in">Tu primer juego con IA: <em>hoy tu héroe se mueve</em></h1><span class="esc-chip a-in">Clase 1 · jueves 19 de noviembre · 9:15 pm</span></div>
+    <section class="esc-card a-in" style="--d:.15s" aria-label="Mapa de la clase">
+      <span class="x-et">Mapa de la clase · toca un paso</span>
+      <div class="x-mapa" id="mapa" role="tablist"></div>
+      <p class="x-det" id="det" aria-live="polite"></p>
+    </section>
+    <div class="x-tres">
+      <section class="esc-card x-regla a-in" style="--d:.3s"><span class="x-et">La regla del taller</span><strong>Tú describes la mecánica. La IA elige la tecnología.</strong><p>No necesitas saber cómo se llama cada cosa: necesitas decir con claridad qué quieres que pase en tu juego.</p></section>
+      <section class="esc-card a-in" style="--d:.4s"><h2>Las 4 clases</h2><ul class="esc-lista" style="font-size:.86em"><li><b>Hoy:</b>&nbsp;tu héroe se mueve y choca</li><li>Rivales que piensan</li><li>Arte, animación y música</li><li>Tu juego publicado</li></ul></section>
+      <section class="esc-card a-in" style="--d:.5s"><h2>Antes de empezar</h2><div class="x-col" id="lista" role="group" aria-label="Lista previa"></div></section>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Pulsa «Lo logré» cuando tengas el navegador abierto, el sonido encendido y las manos en el teclado</span></footer>
+</div>
+<script>
+(function () { try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {} })();
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+var PASOS = [
+  ["Carrera", "6 min", "Jugamos todos una carrera de plataformas. Mientras juegas, fíjate: ¿qué cosas pasan en pantalla? Esas son las mecánicas."],
+  ["Tu héroe", "15 min", "En Forja describes a tu héroe con una frase, lo afinas y lo publicas en la galería de la clase."],
+  ["Mecánica → tecnología", "10 min", "Cada cosa que quieres que pase tiene una tecnología que la resuelve. Aprendes a pedirla con un buen prompt."],
+  ["Movimiento y choques", "15 min", "Gravedad, salto y paredes: mueves los números y ves qué cambia. Construyes tu primer nivel con clics."],
+  ["Animación", "10 min", "Tu héroe camina porque pasan muchos dibujos muy rápido. Abres una hoja de sprites y la controlas."],
+  ["Tu juego", "15 min", "Eliges fútbol o plataformas, lo juegas con tu héroe, miras sus algoritmos con rayos X y te lo llevas."],
+  ["Cierre", "5 min", "Revisas lo que ya sabes hacer y qué traer para la próxima clase."]
+];
+var mapa = $("#mapa"), det = $("#det");
+PASOS.forEach(function (p, i) {
+  var b = el("button", "x-it"); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", "false");
+  b.appendChild(el("i", null, String(i + 1))); var t = el("span", null, p[0]); t.appendChild(el("small", null, p[1])); b.appendChild(t);
+  b.onclick = function () { $$(".x-it", mapa).forEach(function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); }); det.textContent = p[2]; };
+  mapa.appendChild(b);
+});
+mapa.firstChild.click();
+["Navegador Chrome o Edge abierto", "Sonido encendido o audífonos puestos", "Teclado a la mano: flechas, espacio y X"].forEach(function (t) {
+  var b = el("button", "x-it"); b.type = "button"; b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); b.appendChild(el("span", null, t));
+  b.onclick = function () { b.setAttribute("aria-checked", b.getAttribute("aria-checked") === "true" ? "false" : "true"); }; $("#lista").appendChild(b);
+});
+</script>
+</body>
+</html>

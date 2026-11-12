@@ -196,6 +196,7 @@ export function iniciarMas(A) {
   $('bGaleria').onclick = () => { $('dGaleria').showModal(); cargarGaleria(); clearInterval(reloj); reloj = setInterval(cargarGaleria, 6000); };
   $('dGaleria').addEventListener('close', () => clearInterval(reloj));
   if (q.get('sala')) setTimeout(() => $('bGaleria').click(), 600);
+  if (q.get('abrir') === 'juegos') setTimeout(() => $('bProbar').click(), 1500); // la escena LIVE «elige tu juego» entra directo a las plantillas
 
   // ---------------------------------------------------------------- recorrido inicial: qué es cada parte y qué algoritmo hay detrás
   const PASOS = [
@@ -262,5 +263,5 @@ export function iniciarMas(A) {
   $('bGuardar').addEventListener('click', () => consejo('guardar', 'Guardado. En «Mis personajes» puedes marcarlo con ★ para tu elenco: héroe, enemigos y jefe.'));
   $('bProbar').addEventListener('click', () => { vistos.add('juegos'); guarda('forja.consejos', [...vistos]); });
   $('bExportar').addEventListener('click', () => { vistos.add('exportar'); guarda('forja.consejos', [...vistos]); });
-  if (!lee('forja.recorrido', 0) && !q.get('sala') && !q.has('sinrecorrido')) setTimeout(abrirRecorrido, 900);
+  if (!lee('forja.recorrido', 0) && !q.get('sala') && !q.get('abrir') && !q.has('sinrecorrido')) setTimeout(abrirRecorrido, 900);
 }
