@@ -91,6 +91,7 @@ export function construir(spec) {
           pts.push(new THREE.Vector2(Math.max(0.001, r), y));
         }
         const m = pieza(G(new THREE.LatheGeometry(pts, 26)), forma === 'sabana' ? mat(C.cuerpo, { cuerpo: true, alfa: alfaCuerpo, doble: true }) : M.cuerpo()); m.scale.z = td / tw; q.add(m);
+        if (forma === 'sabana') for (let i = 0; i < 9; i++) { const an = i / 9 * PI * 2; pon(esfera(tw * 0.17, M.liso(), 1, 1, 1), q, Math.cos(an) * tw * 0.4, -th * 0.5, Math.sin(an) * td * 0.4); }
         yCara = forma === 'gota' ? -th * 0.1 : th * 0.12; ry = th * 0.4; rx = tw * 0.46; rz = td * 0.46; break;
       }
       case 'campana': { const m = pieza(G(new THREE.SphereGeometry(tw / 2, 24, 14, 0, PI * 2, 0, PI * 0.56)), mat(C.cuerpo, { mapa: true, cuerpo: true, alfa: alfaCuerpo, doble: true })); m.scale.y = th / tw * 1.5; m.position.y = -th * 0.2; q.add(m); yCara = th * 0.05; ry = th * 0.4; break; }
@@ -282,7 +283,7 @@ export function construir(spec) {
   const ACC = {
     sombrero_mago: (e) => { const q = grupo(0, techo * 0.82, 0, c); q.rotation.z = 0.12; q.add(cil(rx * 1.12 * e, rx * 1.12 * e, 0.04, M.acc(), 22)); pon(cono(rx * 0.72 * e, rx * 1.5 * e, M.acc(), 18), q, 0, rx * 0.75 * e, 0); pon(toro(rx * 0.7 * e, 0.03, M.oro(), PI * 2, { sinContorno: true }), q, 0, 0.05, 0, PI / 2); },
     corona: (e) => { const q = grupo(0, techo * 0.95, 0, c); q.add(cil(rx * 0.5 * e, rx * 0.46 * e, rx * 0.28, M.oro(), 16)); for (let i = 0; i < 5; i++) { const a = i / 5 * PI * 2; pon(cono(rx * 0.1, rx * 0.26, M.oro(), 6), q, Math.cos(a) * rx * 0.44 * e, rx * 0.24, Math.sin(a) * rx * 0.44 * e); } },
-    casco: (e) => { const s = pieza(G(new THREE.SphereGeometry(rx * 1.1 * e, 22, 10, 0, PI * 2, 0, PI * 0.48)), M.metal()); pon(s, c, 0, techo - ry + ry * 0.08, 0); pon(caja(0.06, rx * 0.5, rx * 1.3, M.acc()), c, 0, techo + rx * 0.16, -rx * 0.05); },
+    casco: (e) => { const s = pieza(G(new THREE.SphereGeometry(rx * 1.1 * e, 22, 10, 0, PI * 2, 0, PI * (spec.ojoEstilo === 'visor' || spec.ojoEstilo === 'robot' ? 0.34 : 0.48))), M.metal()); pon(s, c, 0, techo - ry + ry * 0.08, 0); pon(caja(0.06, rx * 0.5, rx * 1.3, M.acc()), c, 0, techo + rx * 0.16, -rx * 0.05); },
     gorro: (e) => { const s = pieza(G(new THREE.SphereGeometry(rx * 1.04 * e, 22, 10, 0, PI * 2, 0, PI * 0.45)), M.acc()); s.scale.y = 1.25; pon(s, c, 0, techo - ry + ry * 0.1, 0); pon(esfera(rx * 0.2, M.blanco()), c, 0, techo + rx * 0.42, 0); },
     lazo: () => { const q = grupo(rx * 0.5, techo * 0.92, rz * 0.2, c); q.rotation.z = -0.3; for (const s of [-1, 1]) pon(cono(rx * 0.2, rx * 0.34, M.acc(), 10), q, s * rx * 0.2, 0, 0, 0, 0, s * PI / 2); q.add(esfera(rx * 0.09, M.acc())); },
     lentes: () => { const { ex, ey, er, sz } = A.cara; for (const s of [-1, 1]) pon(toro(er * 1.2, 0.022, M.oscuro(), PI * 2, { sinContorno: true }), c, s * ex, ey, sz(s * ex, ey) + er * 0.3, 0, s * 0.22); pon(capsula(0.016, Math.max(0.02, ex * 2 - er * 2.4), M.oscuro(), { sinContorno: true }), c, 0, ey, sz(0, ey) + er * 0.35, 0, 0, PI / 2); },

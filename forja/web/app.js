@@ -7,6 +7,7 @@ import { construir } from './motor/personaje.js';
 import { posar, duracion } from './motor/animar.js';
 import { miniatura, hojaSprites, codigoPhaser } from './motor/sprites.js';
 import { interpretar, aParams } from './motor/interprete.js';
+import { iniciarMas } from './mas.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, attrs = {}, txt) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) if (v != null && v !== false) e.setAttribute(k, v); if (txt != null) e.textContent = txt; return e; };
@@ -64,6 +65,11 @@ function encuadrar(mover = true) {
 camara.position.set(1.6, 1.5, 5); control.target.set(0, 0.8, 0);
 new ResizeObserver(tamano).observe(escenario);
 
+const historial = [], futuro = []; let ultimo = '', enHistoria = false;
+function anotar() { const j = JSON.stringify(E); if (j === ultimo) return; if (ultimo && !enHistoria) { historial.push(ultimo); if (historial.length > 80) historial.shift(); futuro.length = 0; } ultimo = j; enHistoria = false; $('bDeshacer').disabled = !historial.length; $('bRehacer').disabled = !futuro.length; }
+function saltarA(j, pila) { pila.push(ultimo); E = JSON.parse(j); ultimo = ''; enHistoria = true; interfazDe = ''; fondos(); pintar(true); }
+function deshacer() { if (historial.length) saltarA(historial.pop(), futuro); }
+function rehacer() { if (futuro.length) saltarA(futuro.pop(), historial); }
 let pendiente = false, golpe = 0; // «golpe»: rebote de aparición al cambiar de personaje
 function pintar(cambioTipo = false) {
   if (pendiente) { pendiente = pendiente === 'tipo' || cambioTipo ? 'tipo' : true; return; }
@@ -78,7 +84,7 @@ function pintar(cambioTipo = false) {
     encuadrar(fueTipo || !camara.userData.listo); camara.userData.listo = true;
     if (fueTipo) golpe = performance.now();
     interfaz(); history.replaceState(null, '', aEnlace());
-    clearTimeout(pintar.t); pintar.t = setTimeout(variaciones, 450);
+    clearTimeout(pintar.t); pintar.t = setTimeout(() => { anotar(); variaciones(); }, 450);
   });
 }
 const t0 = performance.now();
@@ -101,7 +107,8 @@ function chips(caja, lista, activo, alElegir, o = {}) {
     b.onclick = () => alElegir(x.id); return b;
   }));
 }
-const nombreDe = (id) => id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, ' ');
+const BONITO = { dano: 'Daño', bebe: 'Bebé', arcoiris: 'Arcoíris', dia: 'Día' };
+const nombreDe = (id) => BONITO[id] || id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, ' ');
 const lista = (ids) => ids.map((id) => ({ id, nombre: nombreDe(id) }));
 
 function deslizador(k, nombre, a = 'bajo', b = 'alto') {
@@ -122,7 +129,7 @@ function interfaz() {
   for (const b of $('familias').children) b.setAttribute('aria-selected', String(b.dataset.id === E.familia));
   chips($('variantes'), M.variantes.map((v) => ({ id: v.id, nombre: v.id === 'clasico' ? 'Clásico' : v.nombre })), E.variante, (id) => { E.variante = id; E.params.tono = null; E.params.patron = null; E.params.accesorios = null; pintar(true); }, { rol: 'option', attr: 'aria-selected' });
   // las hojas de ajustes solo se rehacen si cambió algo que las afecta (no mientras se arrastra un deslizador)
-  const firma = [E.familia, E.variante, hojaActiva, E.params.armonia, E.params.animo, E.params.patron, E.params.expresion, E.params.ojoEstilo, E.params.edad, (spec.accesorios.map((a) => a.id)).join(), E.params.tono == null, hojaActiva === 'reglas' ? spec.reglas.length : ''].join('|');
+  const firma = [E.familia, E.variante, hojaActiva, E.params.armonia, E.params.animo, E.params.patron, E.params.expresion, E.params.ojoEstilo, E.params.edad, (spec.accesorios.map((a) => a.id)).join(), E.params.tono == null, E.params.tonos == null, hojaActiva === 'reglas' ? spec.reglas.length : ''].join('|');
   if (firma !== interfazDe) { interfazDe = firma; hojas(); } else if (hojaActiva === 'color') muestras();
 }
 function muestras() {
@@ -136,6 +143,9 @@ function hojas() {
       deslizador('ojos', 'Ojos', 'pequeños', 'grandes'), deslizador('brazos', 'Brazos', 'cortos', 'largos'), deslizador('piernas', 'Piernas', 'cortas', 'largas'));
     const g = el('div'); g.append(el('div', { class: 'grupo-t' }, 'Edad')); const c = el('div', { class: 'chips', role: 'radiogroup' }); chips(c, lista(M.edades), E.params.edad, (id) => fijar({ edad: id })); g.append(c); tC.append(g);
     const re = el('button', { type: 'button', class: 'btn mini' }, 'Volver a las medidas base'); re.onclick = () => { fijar({ altura: 0.5, peso: 0.5, cabeza: 0.5, ojos: 0.5, brazos: 0.5, piernas: 0.5, edad: 'adulto' }); interfazDe = ''; }; tC.append(re);
+    const gb = el('div'); gb.append(el('div', { class: 'grupo-t' }, 'Al sorprender, conservar')); const cb = el('div', { class: 'chips' });
+    (function candados() { chips(cb, lista(['familia', 'variante', 'color', 'medidas']), [...bloqueos], (id) => { bloqueos.has(id) ? bloqueos.delete(id) : bloqueos.add(id); candados(); }, { multi: true, rol: 'switch' }); })();
+    gb.append(cb); tC.append(gb);
   } else if (hojaActiva === 'color') {
     const tono = E.params.tono ?? T.tipo[spec.id].tono;
     const c = el('label', { class: 'campo' }), cab = el('span'); cab.append('Color principal'); const auto = el('button', { type: 'button', class: 'btn mini' }, 'Color del tipo'); auto.onclick = (e) => { e.preventDefault(); fijar({ tono: null, luzAbs: null, satAbs: null }); };
@@ -145,6 +155,13 @@ function hojas() {
     for (const [titulo, k, ops] of [['Armonía', 'armonia', M.armonias], ['Ánimo', 'animo', M.animos]]) { const g = el('div'); g.append(el('div', { class: 'grupo-t' }, titulo)); const cc = el('div', { class: 'chips', role: 'radiogroup' }); chips(cc, ops, E.params[k], (id) => fijar({ [k]: id })); g.append(cc); tCo.append(g); }
     const g = el('div'); g.append(el('div', { class: 'grupo-t' }, 'Patrón')); const cc = el('div', { class: 'chips', role: 'radiogroup' });
     chips(cc, M.patrones.map((p) => ({ id: p, nombre: nombreDe(p), no: !T.patronFam[`${E.familia}|${p}`][0] })), spec.patron.tipo, (id) => fijar({ patron: id })); g.append(cc); tCo.append(g);
+    const det = el('details'); det.open = !!E.params.tonos; det.append(el('summary', { class: 'grupo-t', style: 'cursor:pointer' }, 'Color por parte'));
+    for (const parte of ['panza', 'extremidad', 'detalle', 'accesorio']) {
+      const cp = el('label', { class: 'campo' }); cp.append(el('span', {}, nombreDe(parte)));
+      const ip = el('input', { type: 'range', class: 'tono', min: 0, max: 359, step: 1, value: Math.round(spec.colores[parte].h) }); ip.oninput = () => { E.params.tonos = { ...(E.params.tonos || {}), [parte]: +ip.value }; pintar(); };
+      cp.append(ip); det.append(cp);
+    }
+    const qt = el('button', { type: 'button', class: 'btn mini' }, 'Volver a la armonía'); qt.onclick = () => { fijar({ tonos: null }); interfazDe = ''; }; det.append(qt); tCo.append(det);
     muestras();
   } else if (hojaActiva === 'cara') {
     tCa.replaceChildren();
@@ -199,9 +216,14 @@ function variaciones() {
   }));
 }
 $('bMas').onclick = variaciones;
-function sorprender() { E = sorpresa(R, Math.floor(Math.random() * 1e9)); E.params = { ...PARAMS_BASE, ...E.params, fondo: E.params.fondo || 'noche' }; $('entendido').replaceChildren(); interfazDe = ''; fondos(); pintar(true); }
+const bloqueos = new Set();
+function sorprender() {
+  const antes = E, fijo = {}; if (bloqueos.has('familia')) fijo.familia = antes.familia; if (bloqueos.has('variante')) fijo.variante = antes.variante;
+  E = sorpresa(R, Math.floor(Math.random() * 1e9), fijo); E.params = { ...PARAMS_BASE, ...E.params, fondo: antes.params.fondo || 'noche' };
+  if (bloqueos.has('color')) for (const k of ['tono', 'luzAbs', 'satAbs', 'armonia', 'animo', 'patron', 'tonos']) E.params[k] = antes.params[k];
+  if (bloqueos.has('medidas')) for (const k of ['altura', 'peso', 'cabeza', 'ojos', 'brazos', 'piernas', 'edad']) E.params[k] = antes.params[k]; $('entendido').replaceChildren(); interfazDe = ''; fondos(); pintar(true); }
 $('bSorpresa').onclick = sorprender;
-addEventListener('keydown', (e) => { if (e.target.closest('textarea, input, dialog')) return; if (e.key === 's' || e.key === 'S') sorprender(); const i = '1234'.indexOf(e.key); if (i >= 0) $('animaciones').children[i].click(); });
+addEventListener('keydown', (e) => { if (e.target.closest('textarea, input, dialog') || document.querySelector('dialog[open]')) return; if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); e.shiftKey ? rehacer() : deshacer(); return; } if (e.metaKey || e.ctrlKey) return; if (e.key === 's' || e.key === 'S') sorprender(); const i = '123456789'.indexOf(e.key); if (i >= 0) $('animaciones').children[i]?.click(); });
 
 // ---------------------------------------------------------------- describir (embeddings locales en el servidor, léxico de respaldo)
 const EJEMPLOS = ['un michi rechoncho de fuego con lentes', 'robot alto y flaco, azul neón', 'dragón bebé de hielo con corona', 'fantasma travieso con sombrero de mago', 'una criatura del pantano que da miedo'];
@@ -246,5 +268,9 @@ const copiar = async (t, ok) => { try { await navigator.clipboard.writeText(t); 
 $('bCodigo').onclick = () => copiar($('codigo').textContent, 'Código copiado');
 $('bEnlace').onclick = () => copiar(location.href, 'Enlace copiado');
 
+$('bDeshacer').onclick = deshacer; $('bRehacer').onclick = rehacer;
+iniciarMas({ R, $, el, aviso, bajar, copiar, chips, lista, nombreDe, lienzo, control, COL_FONDO,
+  estado: () => E, spec: () => spec, pj: () => pj, enlace: () => location.origin + location.pathname + aEnlace(),
+  cargar: (e) => { E = { familia: e.familia, variante: e.variante, semilla: e.semilla, params: { ...PARAMS_BASE, ...e.params } }; interfazDe = ''; fondos(); pintar(true); } });
 fondos(); tamano(); pintar(true);
 document.documentElement.dataset.listo = '1';

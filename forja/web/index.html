@@ -19,7 +19,12 @@
   <a class="logo" href="./" aria-label="Forja, inicio"><span class="yunque" aria-hidden="true"></span><b>FORJA</b><small>estudio de personajes</small></a>
   <p class="cifras" id="cifras" aria-live="polite"><span><b id="nReglas">10 000+</b> reglas</span><span><b id="nTipos">800</b> tipos</span><span class="local" id="estadoIA">IA externa: 0</span></p>
   <div class="acciones">
+    <a class="btn" href="guia.html" target="_blank" rel="noopener" title="Guía de una página">?</a>
     <button class="btn" id="bSorpresa" type="button" title="Tecla S"><span aria-hidden="true">✦</span> Sorpréndeme</button>
+    <button class="btn" id="bGuardar" type="button">Guardar</button>
+    <button class="btn" id="bMios" type="button">Mis personajes <b id="nMios"></b></button>
+    <button class="btn" id="bGaleria" type="button">Galería</button>
+    <button class="btn" id="bProbar" type="button"><span aria-hidden="true">▶</span> Probar</button>
     <button class="btn primario" id="bExportar" type="button">Llevar a mi juego</button>
   </div>
 </header>
@@ -53,7 +58,11 @@
     <div class="pie-escena">
       <div class="fondos" id="fondos" role="radiogroup" aria-label="Fondo"></div>
       <div class="segmento" id="animaciones" role="radiogroup" aria-label="Animación"></div>
-      <button class="btn mini" id="bGirar" type="button" aria-pressed="false" title="Girar solo">⟳</button>
+      <div class="grupo-b">
+        <button class="btn mini" id="bDeshacer" type="button" title="Deshacer (Ctrl+Z)" aria-label="Deshacer" disabled>↶</button>
+        <button class="btn mini" id="bRehacer" type="button" title="Rehacer (Ctrl+Mayús+Z)" aria-label="Rehacer" disabled>↷</button>
+        <button class="btn mini" id="bGirar" type="button" aria-pressed="false" title="Girar solo" aria-label="Girar solo">⟳</button>
+      </div>
     </div>
   </section>
 
@@ -82,16 +91,45 @@
 <dialog id="dExportar" aria-labelledby="hExportar">
   <form method="dialog" class="cerrar"><button aria-label="Cerrar">✕</button></form>
   <h2 id="hExportar">Llévalo a tu juego</h2>
-  <p class="sub">Hoja de sprites con 4 animaciones y su atlas para Phaser 4. Todo se genera en tu navegador.</p>
+  <p class="sub">Proyecto completo para Phaser 4: tu personaje con 9 animaciones, un enemigo, objetos, escenario, sonidos y un nivel jugable. Todo se genera en tu navegador.</p>
   <div class="chips" id="tamanos" role="radiogroup" aria-label="Tamaño del cuadro"></div>
   <div class="vista-hoja" id="vistaHoja"></div>
   <div class="acciones">
-    <button class="btn primario" id="bPng" type="button">Descargar PNG</button>
-    <button class="btn" id="bAtlas" type="button">Descargar atlas JSON</button>
-    <button class="btn" id="bCodigo" type="button">Copiar código Phaser</button>
+    <button class="btn primario" id="bZip" type="button">Proyecto Phaser 4 (ZIP)</button>
+    <button class="btn" id="bPng" type="button">Solo PNG</button>
+    <button class="btn" id="bAtlas" type="button">Solo atlas JSON</button>
+    <button class="btn" id="bCodigo" type="button">Copiar código</button>
+    <button class="btn" id="bVideo" type="button">Video</button>
+    <button class="btn" id="bGlb" type="button">Modelo 3D (GLB)</button>
     <button class="btn" id="bEnlace" type="button">Copiar enlace</button>
   </div>
+  <div class="sonidos"><span>Sonidos de este personaje:</span><div class="chips" id="sonidos"></div></div>
   <pre id="codigo" tabindex="0"></pre>
+</dialog>
+<dialog id="dMios" aria-labelledby="hMios">
+  <form method="dialog" class="cerrar"><button aria-label="Cerrar">✕</button></form>
+  <h2 id="hMios">Mis personajes</h2>
+  <p class="sub">Se guardan en este navegador. Marca con ★ los que forman tu elenco (héroe, enemigos, jefe) y expórtalos juntos.</p>
+  <div class="rejilla" id="mios"></div>
+  <div class="acciones"><button class="btn primario" id="bElenco" type="button">Exportar elenco (ZIP)</button><button class="btn" id="bRespaldo" type="button">Respaldo (JSON)</button><label class="btn">Importar respaldo<input type="file" id="iRespaldo" accept="application/json" hidden></label></div>
+</dialog>
+
+<dialog id="dPista" class="ancho" aria-labelledby="hPista">
+  <form method="dialog" class="cerrar"><button aria-label="Cerrar">✕</button></form>
+  <h2 id="hPista">Pruébalo en la pista</h2>
+  <p class="sub">← → moverte · ↑ o espacio saltar · X golpear · ↓ agacharte · R repetir. La velocidad y el salto salen de las reglas de tu personaje.</p>
+  <div class="marco-pista"><canvas id="pista" width="960" height="540" tabindex="0" aria-label="Pista de prueba"></canvas>
+    <div class="tactil" id="tactil" aria-hidden="true"><button data-k="izq">◀</button><button data-k="der">▶</button><span></span><button data-k="golpe">✦</button><button data-k="salto">⤒</button></div></div>
+  <div class="acciones"><div class="chips" id="horas" role="radiogroup" aria-label="Hora del día"></div><button class="btn mini" id="bOtroNivel" type="button">Otro nivel</button></div>
+</dialog>
+
+<dialog id="dGaleria" aria-labelledby="hGaleria">
+  <form method="dialog" class="cerrar"><button aria-label="Cerrar">✕</button></form>
+  <h2 id="hGaleria">Galería de la clase</h2>
+  <p class="sub">Entra a la sala que diga tu instructor, publica tu personaje y vota por tus favoritos.</p>
+  <form class="fila-sala" id="fSala"><label>Sala<input id="sala" maxlength="24" placeholder="rsg-01" autocomplete="off"></label><label>Tu nombre<input id="autor" maxlength="24" placeholder="Nombre" autocomplete="nickname"></label><button class="btn" type="submit">Entrar</button><button class="btn primario" id="bPublicar" type="button">Publicar el mío</button></form>
+  <p class="nota" id="notaGaleria" aria-live="polite"></p>
+  <div class="rejilla" id="galeria"></div>
 </dialog>
 <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
 <script type="module" src="app.js"></script>

@@ -97,12 +97,13 @@ for (const v of B.VARIANTES) for (const p of B.PATRONES) {
 }
 
 // 7 · animación: familia x animación x peso (800) -> [amplitud, frecuencia, aplastado, rebote]
-const BASE_ANIM = { quieto: [0.05, 1.1, 0.02, 0.02], caminar: [0.62, 2.2, 0.04, 0.05], saltar: [0.9, 1.2, 0.2, 0.75], golpe: [1.2, 1.6, 0.08, 0.04] };
+const BASE_ANIM = { quieto: [0.05, 1.1, 0.02, 0.02], caminar: [0.62, 2.2, 0.04, 0.05], correr: [0.95, 3.2, 0.05, 0.09], saltar: [0.9, 1.2, 0.2, 0.75], golpe: [1.2, 1.6, 0.08, 0.04],
+  dano: [0.5, 2.4, 0.1, 0.05], morir: [1, 0.8, 0.15, 0], celebrar: [0.8, 1.5, 0.12, 0.4], agachado: [0.3, 1, 0.3, 0.01] };
 for (const f of B.FAMILIAS) for (const an of B.ANIMACIONES) for (let p = 0; p < 5; p++) {
   const [amp, fr, sq, bo] = BASE_ANIM[an], pt = p / 4, k = PESO_RIG[f.rig];
   const val = [r3(amp * lerp(1.12, 0.84, pt) * (f.rig === 'flotante' ? 0.7 : 1)), r3(fr * lerp(1.22, 0.74, pt) / Math.sqrt(k)),
     r3(sq * lerp(0.7, 1.5, pt) * (f.rig === 'blob' || f.translucido ? 1.7 : 1)), r3(bo * lerp(1.2, 0.72, pt) * (f.rig === 'flotante' ? 1.8 : 1))];
-  rango('anim', `${f.id}|${an}|${p}`, val[1], 0.3, 4);
+  rango('anim', `${f.id}|${an}|${p}`, val[1], 0.3, 6);
   regla('anim', `${f.id}|${an}|${p}`, val);
 }
 
@@ -142,8 +143,8 @@ for (const ar of B.ARMONIAS) for (const fo of B.FONDOS) for (const an of B.ANIMO
 
 // 13 · sprite: familia x tamaño x animación (640) -> [cuadros, fps, pivote Y, margen]
 for (const f of B.FAMILIAS) for (const t of B.TAMANOS) for (const an of B.ANIMACIONES) {
-  const cuadros = { quieto: 6, caminar: 8, saltar: 8, golpe: 6 }[an];
-  regla('sprite', `${f.id}|${t}|${an}`, [cuadros, { quieto: 6, caminar: 12, saltar: 10, golpe: 14 }[an], f.rig === 'flotante' ? 0.82 : 0.96, t <= 64 ? 3 : Math.round(t * 0.06)]);
+  const cuadros = { quieto: 6, caminar: 8, correr: 8, saltar: 8, golpe: 6, dano: 4, morir: 8, celebrar: 8, agachado: 4 }[an];
+  regla('sprite', `${f.id}|${t}|${an}`, [cuadros, { quieto: 6, caminar: 12, correr: 16, saltar: 10, golpe: 14, dano: 10, morir: 10, celebrar: 12, agachado: 6 }[an], f.rig === 'flotante' ? 0.82 : 0.96, t <= 64 ? 3 : Math.round(t * 0.06)]);
 }
 
 // 14 · física para Phaser: familia x peso x altura (1000) -> [hitbox ancho, alto, desfase Y, masa, salto, velocidad]
@@ -154,6 +155,34 @@ for (const f of B.FAMILIAS) for (let p = 0; p < 5; p++) for (let a = 0; a < 5; a
   regla('fisica', `${f.id}|${p}|${a}`, [r3(clamp(tw * alto * 0.5 / h, 0.2, 0.8)), 0.9, 0.08, masa,
     r3(clamp(520 - masa * 90 + a * 14, 260, 640)), r3(clamp(250 - masa * 46 + a * 10 + (f.rig === 'flotante' ? -30 : 0), 90, 320))]);
 }
+
+// 16 · sonido: familia x efecto -> [frecuencia Hz, duración s, onda (0 seno, 1 cuadrada, 2 sierra, 3 triángulo), barrido en octavas, ruido]
+const BASE_SON = { salto: [420, 0.22, 1, 1, 0], golpe: [160, 0.14, 2, -1.2, 0.5], dano: [300, 0.25, 1, -0.8, 0.2], moneda: [990, 0.3, 0, 0.4, 0], morir: [260, 0.7, 2, -2, 0.15], celebrar: [520, 0.6, 1, 1.2, 0], paso: [90, 0.06, 3, -0.5, 0.7] };
+for (const f of B.FAMILIAS) for (const so of B.SONIDOS) {
+  const [fr, du, on, ba, ru] = BASE_SON[so], k = clamp(1.3 - 0.3 * f.kPeso * PESO_RIG[f.rig], 0.6, 1.5);
+  const onda = so === 'moneda' ? 0 : f.ojo === 'robot' || f.ojo === 'visor' ? 1 : f.rig === 'flotante' ? 0 : f.rig === 'blob' ? 3 : on;
+  regla('sonido', `${f.id}|${so}`, [Math.round(fr * (so === 'moneda' ? 1 : k)), r3(du * (so === 'paso' ? 1 : lerp(1.15, 0.9, k - 0.6))), onda, ba, r3(f.rig === 'blob' && so === 'paso' ? 0.3 : ru)]);
+  rango('sonido', `${f.id}|${so}`, T.sonido[`${f.id}|${so}`][0], 40, 2000);
+}
+
+// 17 · objetos: objeto x variante -> [tono, saturación, luz, emisivo]. Los tesoros conservan su color; lo mágico toma el del mundo.
+const BASE_OBJ = { moneda: [46, 0.9, 0.56, 0.2], gema: [190, 0.8, 0.6, 0.3], corazon: [352, 0.85, 0.56, 0.1], llave: [44, 0.75, 0.6, 0.1], cofre: [28, 0.55, 0.36, 0], pocion: [300, 0.8, 0.58, 0.3], estrella: [50, 0.95, 0.6, 0.4], bomba: [240, 0.12, 0.2, 0], proyectil: [20, 0.95, 0.58, 0.7], meta: [130, 0.7, 0.5, 0.1] };
+for (const o of B.OBJETOS) for (const v of B.VARIANTES) {
+  const [h, sa, l, e] = BASE_OBJ[o], magico = ['gema', 'pocion', 'proyectil', 'meta'].includes(o) && v.dTono != null;
+  regla('objeto', `${o}|${v.id}`, [magico ? v.dTono : h, r3(clamp(sa + v.dSat * 0.4, 0.05, 1)), r3(clamp(l + v.dLuz * 0.3, 0.15, 0.9)), r3(clamp(e + v.emisivo, 0, 0.9))]);
+}
+
+// 18 · escenario: ambiente x hora x capa -> color [tono, saturación, luz]
+const AMB = { noche: [250, 0.45, 0.3], bosque: [135, 0.5, 0.36], cielo: [205, 0.7, 0.66], desierto: [34, 0.65, 0.62], nieve: [205, 0.3, 0.86], cueva: [270, 0.18, 0.24], ciudad: [235, 0.3, 0.42], lava: [12, 0.75, 0.36] };
+const HORA = { dia: [0, 1, 1.12], tarde: [-22, 1.15, 0.92], noche: [18, 0.7, 0.5], amanecer: [-38, 0.9, 1.04] };
+const CAPA = { cielo: [0, 1, 1.25], lejos: [8, 0.7, 1.02], medio: [0, 0.85, 0.8], cerca: [-6, 0.9, 0.58], suelo: [-14, 0.8, 0.7], plataforma: [-14, 0.7, 0.86] };
+for (const [am, [h, sa, l]] of Object.entries(AMB)) for (const ho of B.HORAS) for (const ca of B.CAPAS) {
+  const [dh, ks, kl] = HORA[ho], [ch, cs, cl] = CAPA[ca];
+  regla('escenario', `${am}|${ho}|${ca}`, [Math.round((h + (ca === 'cielo' ? dh : dh * 0.4) + ch + 360) % 360), r3(clamp(sa * ks * cs, 0.04, 1)), r3(clamp(l * kl * cl, 0.06, 0.95))]);
+}
+// 19 · relieve: ambiente x capa -> [forma (0 colinas, 1 picos, 2 torres, 3 dunas, 4 estalactitas), altura, densidad, rugosidad]
+const REL = { noche: [0, 0.4, 0.5, 0.4], bosque: [0, 0.45, 0.9, 0.5], cielo: [0, 0.3, 0.4, 0.3], desierto: [3, 0.32, 0.5, 0.2], nieve: [1, 0.55, 0.6, 0.7], cueva: [4, 0.5, 0.8, 0.8], ciudad: [2, 0.6, 0.9, 0.1], lava: [1, 0.5, 0.6, 0.9] };
+for (const [am, [fo, al, de, ru]] of Object.entries(REL)) for (const [i, ca] of ['lejos', 'medio', 'cerca'].entries()) regla('relieve', `${am}|${ca}`, [fo, r3(al * [1, 0.72, 0.4][i]), r3(de * [0.6, 1, 0.7][i]), ru]);
 
 // 15 · modificadores de texto: una regla por palabra y por sinónimo
 const quitaTildes = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ñ/g, 'n');
@@ -171,6 +200,7 @@ const meta = {
   familias: B.FAMILIAS, variantes: B.VARIANTES.map(({ id, nombre }) => ({ id, nombre })),
   accesorios: B.ACCESORIOS.map(({ id, nombre, ancla }) => ({ id, nombre, ancla })), patrones: B.PATRONES,
   armonias: B.ARMONIAS.map(({ id, nombre }) => ({ id, nombre })), animos: B.ANIMOS.map(({ id, nombre }) => ({ id, nombre })),
+  sonidos: B.SONIDOS, objetos: B.OBJETOS, horas: B.HORAS, capas: B.CAPAS,
   expresiones: B.EXPRESIONES, ojos: B.OJOS, edades: B.EDADES, fondos: B.FONDOS, tamanos: B.TAMANOS, animaciones: B.ANIMACIONES, partes: B.PARTES,
 };
 fs.writeFileSync(path.join(SAL, 'reglas.json'), JSON.stringify({ meta, T }));

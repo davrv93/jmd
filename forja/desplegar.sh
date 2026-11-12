@@ -11,18 +11,21 @@ H=ubuntu@3.151.56.55
 node reglas/compilar.mjs | tail -1
 node --test >/dev/null && echo "pruebas OK"
 test -d modelos/Xenova/multilingual-e5-small || { echo "falta ./modelos: corre una vez FORJA_DESCARGAR=1 node servidor.mjs"; exit 1; }
-ssh -i "$LLAVE" $H 'mkdir -p ~/forja/src ~/forja/modelos'
-rsync -az --delete --exclude node_modules --exclude modelos --exclude .git -e "ssh -i $LLAVE" ./ $H:forja/src/
+ssh -i "$LLAVE" $H 'mkdir -p ~/forja/src ~/forja/modelos ~/forja/datos'
+rsync -az --delete --exclude node_modules --exclude modelos --exclude datos --exclude .git -e "ssh -i $LLAVE" ./ $H:forja/src/
 rsync -az -e "ssh -i $LLAVE" modelos/ $H:forja/modelos/
 ssh -i "$LLAVE" $H bash -s <<'REMOTO'
 set -euo pipefail
 if ! sudo docker ps -a --format '{{.Names}}' | grep -qx forja && sudo ss -ltn | grep -q ':18697 '; then echo "puerto 18697 ocupado"; exit 1; fi
+# clave del instructor para borrar publicaciones de la galería: se genera una vez y NO se imprime (está en ~/forja/.env)
+if [ ! -f ~/forja/.env ]; then (umask 077; echo "FORJA_CLAVE=$(openssl rand -hex 16)" > ~/forja/.env); fi
+sudo chown 65534:65534 ~/forja/datos
 cd ~/forja/src
 sudo docker build -q -t forja:1 . >/dev/null
 sudo docker rm -f forja >/dev/null 2>&1 || true
 sudo docker run -d --name forja --restart unless-stopped --memory 512m --memory-swap 640m --cpus 1 \
-  -v /home/ubuntu/forja/modelos:/app/modelos:ro -p 127.0.0.1:18697:18697 forja:1 >/dev/null
-sudo docker image prune -f >/dev/null
+  --env-file /home/ubuntu/forja/.env -v /home/ubuntu/forja/modelos:/app/modelos:ro -v /home/ubuntu/forja/datos:/datos \
+  -p 127.0.0.1:18697:18697 forja:1 >/dev/null
 if ! sudo test -e /etc/nginx/snippets/forja.conf; then
   sudo install -m 644 nginx.conf /etc/nginx/snippets/forja.conf
   sudo cp -p /etc/nginx/sites-enabled/jmd-learn "/tmp/jmd-learn.antes-forja-$(date +%s)"

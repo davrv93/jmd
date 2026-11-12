@@ -152,7 +152,11 @@ export const ANIMOS = [
 ];
 
 export const PARTES = ['cuerpo', 'panza', 'extremidad', 'detalle', 'ojo', 'accesorio'];
-export const ANIMACIONES = ['quieto', 'caminar', 'saltar', 'golpe'];
+export const ANIMACIONES = ['quieto', 'caminar', 'correr', 'saltar', 'golpe', 'dano', 'morir', 'celebrar', 'agachado'];
+export const SONIDOS = ['salto', 'golpe', 'dano', 'moneda', 'morir', 'celebrar', 'paso'];
+export const OBJETOS = ['moneda', 'gema', 'corazon', 'llave', 'cofre', 'pocion', 'estrella', 'bomba', 'proyectil', 'meta'];
+export const HORAS = ['dia', 'tarde', 'noche', 'amanecer'];
+export const CAPAS = ['cielo', 'lejos', 'medio', 'cerca', 'suelo', 'plataforma'];
 export const EXPRESIONES = ['feliz', 'serio', 'enojado', 'sorpresa', 'dormido', 'travieso', 'triste', 'valiente'];
 export const OJOS = ['redondo', 'ovalado', 'enojado', 'dormilon', 'hueco', 'robot', 'visor', 'saltones'];
 export const EDADES = ['bebe', 'joven', 'adulto', 'anciano'];

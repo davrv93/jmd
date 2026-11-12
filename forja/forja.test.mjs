@@ -4,6 +4,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { resolver, sorpresa, mutar } from './web/motor/resolver.js';
 import { interpretar } from './web/motor/interprete.js';
+import { nivel, fisicaJugable, LOSA, SUELO_Y } from './web/motor/nivel.js';
+import { sintetizar, wav } from './web/motor/sonido.js';
+import { zip } from './web/motor/zip.js';
 
 const R = JSON.parse(fs.readFileSync(new URL('./web/datos/reglas.json', import.meta.url)));
 const LEX = JSON.parse(fs.readFileSync(new URL('./web/datos/lexico.json', import.meta.url)));
@@ -46,4 +49,25 @@ test('el intérprete entiende español coloquial sin embeddings', () => {
   r = t('robots altos y flacos azul neón'); assert.equal(r.familia, 'robot'); assert.equal(r.cambios.tono, 222); assert.equal(r.cambios.animo, 'neon');
   r = t('gato guerrero'); assert.deepEqual([r.familia, r.variante], ['gato', 'armado']);
   r = t('xyzzy'); assert.equal(r.familia, null);
+});
+
+test('el nivel de prueba es completable por cualquier personaje', () => {
+  for (let s = 1; s <= 40; s++) {
+    const n = nivel(s);
+    assert.ok(n.suelo[Math.floor(n.inicio.x / LOSA)] && n.suelo[Math.floor(n.meta.x / LOSA)], 'inicio y meta sobre suelo');
+    for (const e of n.enemigos) for (let x = e.min; x <= e.max; x += LOSA / 2) assert.ok(n.suelo[Math.floor(x / LOSA)], `enemigo sobre hueco (semilla ${s})`);
+    let racha = 0; for (const hay of n.suelo) { racha = hay ? 0 : racha + 1; assert.ok(racha <= 2, 'hueco de más de 2 losetas'); }
+  }
+  for (const c of cat) { // el peor personaje (lento y pesado) cruza un hueco de 2 losetas y alcanza la primera plataforma
+    const f = fisicaJugable(resolver(R, c.familia, c.variante, { peso: 1, altura: 0 }, 1).fisica);
+    assert.ok(f.velocidad * (2 * f.salto / f.gravedad) > 2 * LOSA + 20, `${c.id} no cruza el hueco`);
+    assert.ok(f.salto ** 2 / (2 * f.gravedad) > SUELO_Y - 360 + 12, `${c.id} no llega a la plataforma`);
+  }
+});
+
+test('sonidos y ZIP son archivos válidos', async () => {
+  for (const [k, r] of Object.entries(R.T.sonido)) { const m = sintetizar(k.split('|')[1], r, 3); assert.ok(m.length > 500 && m.every((x) => Math.abs(x) <= 1), k); }
+  const w = wav(sintetizar('salto', R.T.sonido['gato|salto'], 1)); assert.equal(String.fromCharCode(...w.slice(0, 4)), 'RIFF');
+  const z = new Uint8Array(await zip([{ nombre: 'a/hola.txt', datos: 'hola ñ' }, { nombre: 'b.bin', datos: new Uint8Array([1, 2, 3]) }]).arrayBuffer());
+  assert.deepEqual([...z.slice(0, 4)], [0x50, 0x4b, 3, 4]); assert.deepEqual([...z.slice(-22, -18)], [0x50, 0x4b, 5, 6]); assert.equal(z[z.length - 12], 2);
 });

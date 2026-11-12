@@ -12,7 +12,7 @@ export function azar(semilla) { // mulberry32
 export const PARAMS_BASE = {
   altura: 0.5, peso: 0.5, cabeza: 0.5, ojos: 0.5, brazos: 0.5, piernas: 0.5,
   tono: null, luzAbs: null, satAbs: null, armonia: 'analoga', animo: 'vivo', expresion: 'feliz', ojoEstilo: null, edad: 'adulto',
-  patron: null, accesorios: null, fondo: 'noche',
+  patron: null, accesorios: null, fondo: 'noche', tonos: null,
 };
 
 export function hsl(h, s, l) { return { h: ((h % 360) + 360) % 360, s: clamp(s, 0, 1), l: clamp(l, 0.04, 0.97) }; }
@@ -61,6 +61,7 @@ export function resolver(R, familiaId, varianteId, params = {}, semilla = 1) {
     const [, dl, ds] = usa('pinta', `${f.id}|${parte}|${p.animo}`);
     colores[parte] = hsl(tono + D[i], sat + ds, luz + dl);
   });
+  if (p.tonos) for (const [parte, h] of Object.entries(p.tonos)) if (colores[parte] && Number.isFinite(h)) colores[parte] = hsl(h, colores[parte].s, colores[parte].l); // color por parte
   colores.ojo = hsl(tono + 180, 0.3, 0.12);
   const con = usa('contraste', `${p.armonia}|${p.fondo}|${p.animo}`);
   colores.contorno = hsl(tono, 0.3, con[0]);

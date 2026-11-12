@@ -25,8 +25,9 @@ export function posar(pj, spec, anim, u) {
   if (anim === 'quieto') {
     P.brazos.forEach((b) => { if (b.userData.lado && !flota) b.rotation.z += b.userData.lado * 0.05 * s; else b.position.y += 0.03 * s; });
     if (P.cabeza && rig !== 'blob' && !flota) P.cabeza.rotation.z += 0.025 * s;
-  } else if (anim === 'caminar') {
-    const f = TAU * u;
+  } else if (anim === 'caminar' || anim === 'correr') {
+    const f = TAU * u, corre = anim === 'correr';
+    if (corre) { P.todo.rotation.x += flota ? 0.12 : 0.2; P.brazos.forEach((b) => { if (b.userData.lado && rig === 'bipedo') b.rotation.z += b.userData.lado * 0.12; }); }
     if (rig === 'bipedo' || rig === 'ave') {
       P.piernas.forEach((p, i) => { p.rotation.x += r.amp * Math.sin(f + i * PI) * (rig === 'ave' ? 0.8 : 1); });
       P.brazos.forEach((b, i) => { b.rotation.x += -r.amp * 0.8 * Math.sin(f + i * PI) * (rig === 'ave' ? 0.2 : 1); });
@@ -57,6 +58,31 @@ export function posar(pj, spec, anim, u) {
       P.brazos.forEach((b) => { if (b.userData.lado && !flota) b.rotation.z += b.userData.lado * 1.5 * k; else b.position.y += 0.12 * k; });
       if (P.cola) P.cola.rotation.x += 0.4 * k;
     } else aplasta(r.sq * Math.sin(PI * (1 - (u - B) / (1 - B)) * 0.5) * 0.9);
+  } else if (anim === 'dano') {
+    const k = Math.sin(PI * u);
+    P.todo.position.z -= 0.16 * k; P.todo.rotation.x -= 0.26 * k; P.todo.position.x += 0.035 * Math.sin(TAU * u * 3) * (1 - u);
+    aplasta(r.sq * k * 0.8);
+    P.brazos.forEach((b) => { if (b.userData.lado && !flota) b.rotation.z += b.userData.lado * 0.9 * k; });
+    if (P.cabeza && rig !== 'blob' && !flota) P.cabeza.rotation.x -= 0.25 * k;
+  } else if (anim === 'morir') {
+    const k = suave(Math.min(1, u / 0.6)), fin = Math.min(1, Math.max(0, (u - 0.6) / 0.25));
+    if (flota) { P.todo.position.y -= 0.3 * k; P.todo.scale.multiplyScalar(1 - 0.55 * k); P.todo.rotation.z += 0.5 * k; }
+    else if (rig === 'blob') aplasta(0.72 * k);
+    else { P.todo.rotation.x -= (PI / 2) * k; P.todo.position.y += 0.12 * Math.sin(PI * k) + 0.1 * k; P.todo.position.y -= 0.05 * Math.abs(Math.sin(PI * 3 * fin)) * (1 - fin); }
+    P.brazos.forEach((b) => { if (b.userData.lado && !flota) b.rotation.z += b.userData.lado * 1.1 * k; });
+    P.piernas.forEach((p, i) => { p.rotation.x += (i % 2 ? 0.3 : -0.3) * k; });
+  } else if (anim === 'celebrar') {
+    const h = Math.abs(Math.sin(TAU * u));
+    P.todo.position.y += r.bo * r.amp * 0.9 * h; aplasta(-r.sq * 0.4 * h);
+    P.todo.rotation.z += 0.08 * Math.sin(TAU * u);
+    P.brazos.forEach((b, i) => { if (b.userData.lado && !flota) { b.rotation.z += b.userData.lado * (2.2 + 0.25 * Math.sin(TAU * u * 2 + i)); } else b.position.y += 0.3 + 0.08 * h; });
+    P.alas.forEach((a) => { a.rotation.y += a.userData.lado * 0.4 * h; });
+  } else if (anim === 'agachado') {
+    const k = 1 + 0.06 * s;
+    if (rig === 'bipedo' || rig === 'ave') { P.piernas.forEach((p) => { p.scale.y *= 0.55; }); P.cuerpo.position.y -= spec.dims.pierna * 0.45; P.cuerpo.rotation.x += 0.18; aplasta(r.sq * 0.45 * k); }
+    else if (rig === 'cuadrupedo') { P.piernas.forEach((p) => { p.scale.y *= 0.5; }); P.cuerpo.position.y -= spec.dims.pierna * 0.5; if (P.cabeza) P.cabeza.position.y -= 0.08; }
+    else aplasta(r.sq * 1.1 * k);
+    P.brazos.forEach((b) => { if (b.userData.lado && !flota) b.rotation.z += b.userData.lado * 0.25; });
   } else if (anim === 'golpe') {
     const carga = u < 0.3 ? suave(u / 0.3) : 1, pega = u < 0.3 ? 0 : u < 0.5 ? suave((u - 0.3) / 0.2) : 1 - suave((u - 0.5) / 0.5);
     const vuelta = u < 0.5 ? 1 : 1 - suave((u - 0.5) / 0.5);
