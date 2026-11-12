@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Genera las escenas LIVE de la Clase 1 de Ready Set Go (rsg-01): python3 _fuente/rsg01.py
 
-Secuencia (81 min de 90): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano) · 02 Forja: tu héroe · 03 de la mecánica
+Secuencia (92 min de 90): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano) · 01b historia por décadas · 01c los que
+cambiaron las reglas · 02 Forja: tu héroe · 03 de la mecánica
 a la tecnología · 04 movimiento y choques · 05 hoja de sprites · 06 elige tu juego · 07 cierre.
 Las escenas 01 y 05/heroe.png no se generan aquí. Reglas del modo LIVE: sin recursos externos, menos de 300 elementos
 y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion. Nada usa <form>: el marco no lo permite.
 El campo «paso» va vacío: la lección rsg-01 no define un ciclo de pasos, y el LMS rechaza un paso que no exista ahí.
 """
+import json
 import pathlib
 
 AQUI = pathlib.Path(__file__).resolve().parent.parent / "live" / "rsg-01"
@@ -87,6 +89,7 @@ escena("00-bienvenida", "Bienvenida: hoy tu héroe se mueve", "experiencia", "ve
        "Pulsa «Lo logré» cuando tengas el navegador abierto, el sonido encendido y las manos en el teclado",
        js="""var PASOS = [
   ["Carrera", "6 min", "Jugamos todos una carrera de plataformas. Mientras juegas, fíjate: ¿qué cosas pasan en pantalla? Esas son las mecánicas."],
+  ["Historia", "11 min", "Setenta años en once minutos: de un osciloscopio a los juegos que haces tú. Cada juego famoso inventó una mecánica que hoy vas a usar."],
   ["Tu héroe", "15 min", "En Forja describes a tu héroe con una frase, lo afinas y lo publicas en la galería de la clase."],
   ["Mecánica → tecnología", "10 min", "Cada cosa que quieres que pase tiene una tecnología que la resuelve. Aprendes a pedirla con un buen prompt."],
   ["Movimiento y choques", "15 min", "Gravedad, salto y paredes: mueves los números y ves qué cambia. Construyes tu primer nivel con clics."],
@@ -106,8 +109,148 @@ mapa.firstChild.click();
   var b = el("button", "x-it"); b.type = "button"; b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); b.appendChild(el("span", null, t));
   b.onclick = function () { b.setAttribute("aria-checked", b.getAttribute("aria-checked") === "true" ? "false" : "true"); }; $("#lista").appendChild(b);
 });""",
-       css=".x-mapa { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .5em; margin: .5em 0; } .x-mapa .x-it { grid-template-columns: 1fr; justify-items: start; gap: .3em; font-size: .8em; }\n@media (max-width: 900px) { .x-mapa { grid-template-columns: repeat(2, 1fr); } }",
+       css=".x-mapa { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: .4em; margin: .5em 0; } .x-mapa .x-it { grid-template-columns: 1fr; justify-items: start; gap: .3em; font-size: .8em; }\n@media (max-width: 900px) { .x-mapa { grid-template-columns: repeat(2, 1fr); } }",
        compuerta="presentes", umbral=100, comentario="Interacción: tocar un paso del mapa muestra qué se hace; lista previa con casillas. Nada se guarda.")
+
+# ---------------------------------------------------------------- 01b · historia por décadas
+# Cada entrada: año, juego, quién, la idea que aportó y dónde aparece esa idea en el taller. Datos históricos verificables;
+# solo texto: no se usan imágenes, logos ni personajes de ningún juego.
+DECADAS = [
+    ("1950–60", "Los laboratorios", "Nadie vendía juegos: los hacían científicos en sus ratos libres, en máquinas del tamaño de un cuarto.", [
+        (1958, "Tennis for Two", "William Higinbotham, laboratorio de Brookhaven", "Un partido de tenis en la pantalla de un osciloscopio: una pelota con gravedad que rebota.", "Gravedad y rebote: la escena «Movimiento y choques» de hoy"),
+        (1962, "Spacewar!", "Steve Russell y compañeros, MIT", "Dos naves se disparan mientras una estrella las atrae. Se copió de laboratorio en laboratorio: el primer juego que «se compartió».", "Dos jugadores y física: la plantilla Fútbol"),
+    ]),
+    ("1970", "Nace la industria", "El juego sale del laboratorio: llega al bar, al salón recreativo y a la sala de la casa.", [
+        (1972, "Pong", "Atari · Allan Alcorn", "Dos paletas y una pelota. Tan simple que cualquiera lo entendía sin instrucciones: el primer gran éxito comercial.", "Rebote y marcador: la plantilla Fútbol"),
+        (1972, "Magnavox Odyssey", "Ralph Baer", "La primera consola doméstica: el juego se conecta al televisor de la casa.", "Jugar en casa: tu juego corre en cualquier navegador"),
+        (1978, "Space Invaders", "Taito · Tomohiro Nishikado", "Oleadas de enemigos que aceleran cuando quedan pocos, y una tabla de récords que todos querían encabezar.", "Curva de dificultad: la plantilla Runner"),
+    ]),
+    ("1980", "La edad de oro", "Aparecen los personajes, los géneros y, tras la crisis de 1983, el renacer con las consolas japonesas.", [
+        (1980, "Pac-Man", "Namco · Toru Iwatani", "Un personaje con cara y cuatro fantasmas que se comportan distinto: cada uno persigue a su manera.", "Rivales con estados: Clase 2 y la plantilla Laberinto"),
+        (1981, "Donkey Kong", "Nintendo · Shigeru Miyamoto", "Saltar obstáculos para subir: define el juego de plataformas. Su héroe saltarín sería luego Mario.", "Salto y gravedad: la plantilla Plataformas"),
+        (1984, "Tetris", "Alexey Pajitnov, Unión Soviética", "Piezas que caen y líneas que desaparecen. Sin historia ni personajes: pura mecánica, y nunca pasó de moda.", "Una regla simple, bien pulida, basta"),
+        (1985, "Super Mario Bros.", "Nintendo", "El mundo se desplaza con el héroe y cada nivel enseña una idea nueva sin decir una palabra.", "Cámara que sigue y nivel como datos: la plantilla Plataformas"),
+    ]),
+    ("1990", "El salto al 3D", "Las máquinas ya pueden dibujar mundos con profundidad. Hay que inventar cómo moverse y cómo mirar.", [
+        (1991, "Street Fighter II", "Capcom", "Peleas uno contra uno con personajes distintos y combinaciones de golpes: los «combos».", "Animación de golpe y cajas de choque: rayos X (tecla V)"),
+        (1993, "Doom", "id Software", "Disparos en primera persona, partidas en red y niveles que los propios jugadores podían crear y compartir.", "Motor y datos separados: datos.js y juego.js de tu ZIP"),
+        (1996, "Super Mario 64", "Nintendo", "Resuelve el 3D: una palanca para moverse en cualquier dirección y una cámara que el jugador controla.", "La cámara también se diseña"),
+        (1996, "Pokémon Rojo y Verde", "Game Freak · Satoshi Tajiri", "Coleccionar criaturas e intercambiarlas con un amigo por cable: jugar es también compartir.", "Tu elenco de personajes y la galería de la clase"),
+    ]),
+    ("2000", "Mundos y gente conectada", "Internet entra en los juegos: mundos enormes, millones de personas a la vez y públicos nuevos.", [
+        (2000, "The Sims", "Maxis · Will Wright", "No hay que ganar: se simula la vida de unas personas con necesidades. El jugador inventa su propia historia.", "Reglas simples que producen situaciones inesperadas"),
+        (2001, "Grand Theft Auto III", "DMA Design", "Una ciudad en 3D para recorrer con libertad: el «mundo abierto» moderno.", "Un mundo es datos: más datos, más mundo"),
+        (2004, "World of Warcraft", "Blizzard", "Millones de jugadores en el mismo mundo, que sigue existiendo cuando apagas la computadora.", "Sala compartida: la carrera y la galería de hoy"),
+        (2006, "Wii Sports", "Nintendo", "Se juega moviendo el cuerpo: abuelos y niños jugando juntos. El control también es diseño.", "Teclado y botones táctiles leen lo mismo: comun.js"),
+    ]),
+    ("2010", "Independientes y móviles", "Hacer y publicar un juego deja de ser cosa de grandes empresas: un equipo pequeño llega a todo el mundo.", [
+        (2011, "Minecraft", "Mojang · Markus Persson", "Un mundo de bloques generado por reglas donde el juego es crear. Es el videojuego más vendido de la historia.", "Generar con reglas y una semilla: así funciona Forja"),
+        (2015, "Undertale", "Toby Fox", "Hecho casi por una sola persona, con gráficos sencillos. Demostró que una buena idea pesa más que un gran presupuesto.", "Tú también puedes: de eso trata este taller"),
+        (2016, "Pokémon GO", "Niantic", "El mapa del juego es tu ciudad: realidad aumentada y GPS sacan a millones a caminar.", "El celular como consola: tu juego funciona en móvil"),
+        (2017, "Fortnite Battle Royale", "Epic Games", "Cien jugadores, queda uno. Gratis, en todas las plataformas a la vez y con temporadas que lo renuevan.", "Publicar y actualizar: Clase 4"),
+    ]),
+    ("2020", "Hoy: todos crean", "Los jugadores ya no solo juegan: crean. Y las herramientas con IA acortan el camino de la idea al juego.", [
+        (2020, "Among Us", "InnerSloth (salió en 2018)", "Un juego pequeño que explotó dos años después: mentir, deducir y votar. La mecánica es la conversación.", "Una mecánica social no necesita grandes gráficos"),
+        (2021, "Roblox", "Roblox Corporation (existe desde 2006)", "Más que un juego, una plataforma: millones de experiencias creadas por sus propios jugadores.", "Crear y compartir: la galería de la sala rsg-01"),
+        (2026, "Tu juego", "Tú, con IA", "Describes la mecánica y la IA elige la tecnología. Lo que antes pedía un equipo y meses, hoy empieza en una clase.", "Empieza en la siguiente escena"),
+    ]),
+]
+datos_decadas = [{"d": d, "t": t, "r": r, "j": [{"a": a, "n": n, "q": q, "i": i, "h": h} for a, n, q, i, h in js]} for d, t, r, js in DECADAS]
+escena("01b-historia-por-decadas", "Historia: setenta años de videojuegos", "reflexion", "", 6, """
+    <div class="x-fila"><h1 class="esc-titulo a-in">Setenta años de <em>videojuegos</em></h1><span class="esc-chip a-in" id="vistas" aria-live="polite">1 de 7 décadas</span></div>
+    <div class="x-linea a-in" id="linea" role="tablist" aria-label="Décadas"></div>
+    <section class="esc-card x-regla a-in" style="--d:.2s" aria-live="polite"><span class="x-et" id="dTitulo"></span><p id="dResumen" style="font-size:1em;color:var(--fg)"></p></section>
+    <div class="x-juegos" id="juegos" aria-live="polite"></div>""",
+       "Pulsa «Lo logré» cuando hayas recorrido las siete décadas. Fíjate en la línea de abajo de cada tarjeta: esa idea la usarás en el taller",
+       js="var D = " + json.dumps(datos_decadas, ensure_ascii=False) + """;
+var vistas = {}, linea = $("#linea"), caja = $("#juegos");
+function ver(k) {
+  vistas[k] = 1; var d = D[k];
+  $$(".x-dec", linea).forEach(function (b, i) { b.setAttribute("aria-selected", i === k ? "true" : "false"); if (vistas[i]) b.classList.add("vista"); });
+  $("#dTitulo").textContent = d.d + " · " + d.t; $("#dResumen").textContent = d.r;
+  caja.innerHTML = "";
+  d.j.forEach(function (j, i) {
+    var c = el("article", "esc-card x-juego a-in"); c.style.setProperty("--d", i * 0.07 + "s");
+    var cab = el("div", "x-cab"); cab.appendChild(el("span", "x-anio", String(j.a))); var t = el("div"); t.appendChild(el("h2", null, j.n)); t.appendChild(el("small", null, j.q)); cab.appendChild(t); c.appendChild(cab);
+    c.appendChild(el("p", "x-idea", j.i)); var h = el("p", "x-hoy"); h.appendChild(el("b", null, "En el taller: ")); h.appendChild(document.createTextNode(j.h)); c.appendChild(h);
+    caja.appendChild(c);
+  });
+  $("#vistas").textContent = Object.keys(vistas).length + " de " + D.length + " décadas";
+}
+D.forEach(function (d, k) { var b = el("button", "x-dec"); b.type = "button"; b.setAttribute("role", "tab"); b.appendChild(el("b", null, d.d)); b.appendChild(el("span", null, d.t)); b.onclick = function () { ver(k); }; linea.appendChild(b); });
+addEventListener("keydown", function (e) { var k = $$(".x-dec", linea).findIndex(function (b) { return b.getAttribute("aria-selected") === "true"; }); if (e.key === "ArrowRight" && k < D.length - 1) ver(k + 1); if (e.key === "ArrowLeft" && k > 0) ver(k - 1); });
+ver(0);""",
+       css=""".x-linea { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .4em; position: relative; }
+.x-linea::before { content: ""; position: absolute; left: 2%; right: 2%; top: 50%; height: 2px; background: var(--line2); z-index: 0; }
+.x-dec { position: relative; z-index: 1; display: grid; gap: .1em; justify-items: center; text-align: center; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .9em; padding: .45em .3em; cursor: pointer; transition: transform .2s, border-color .2s, background .2s; }
+.x-dec b { font: 800 .95em var(--mono); } .x-dec span { font-size: .62em; color: var(--muted); line-height: 1.2; }
+.x-dec:hover { transform: translateY(-.15em); border-color: var(--accent); }
+.x-dec.vista b { color: var(--ok); }
+.x-dec[aria-selected="true"] { background: var(--accent); border-color: var(--accent); transform: translateY(-.2em); } .x-dec[aria-selected="true"] b, .x-dec[aria-selected="true"] span { color: var(--on-accent); }
+.x-juegos { display: grid; grid-template-columns: repeat(auto-fit, minmax(13em, 1fr)); gap: 1vw; min-height: 0; }
+.x-juego { display: grid; gap: .45em; align-content: start; }
+.x-cab { display: flex; gap: .6em; align-items: center; } .x-cab h2 { margin: 0; font-size: 1.02em; line-height: 1.15; } .x-cab small { color: var(--muted); font-size: .68em; }
+.x-anio { font: 800 .95em var(--mono); color: var(--accent); background: var(--accent-bg); border-radius: .5em; padding: .2em .45em; }
+.x-idea { font-size: .84em !important; color: var(--fg) !important; }
+.x-hoy { font-size: .74em !important; border-top: 1px dashed var(--line2); padding-top: .4em; } .x-hoy b { color: var(--ok); }
+@media (max-width: 900px) { .x-linea { grid-template-columns: repeat(4, 1fr); } .x-linea::before { display: none; } }""",
+       comentario="Interacción: línea de tiempo de siete décadas (clic o flechas); cada juego muestra qué idea aportó y dónde aparece en el taller. Solo texto.")
+
+# ---------------------------------------------------------------- 01c · los que cambiaron las reglas
+DIEZ = [
+    ("Spacewar!", 1962, "El primer juego que se compartió entre computadoras"),
+    ("Pong", 1972, "El primer gran éxito comercial"),
+    ("Space Invaders", 1978, "Oleadas que aceleran y tabla de récords"),
+    ("Pac-Man", 1980, "Enemigos que se comportan distinto entre sí"),
+    ("Tetris", 1984, "Pura mecánica: piezas que caen"),
+    ("Super Mario Bros.", 1985, "El nivel enseña sin palabras"),
+    ("Doom", 1993, "Partidas en red y niveles hechos por jugadores"),
+    ("Super Mario 64", 1996, "Moverse y mirar en 3D"),
+    ("Pokémon", 1996, "Coleccionar e intercambiar con amigos"),
+    ("Minecraft", 2011, "El juego es crear; el más vendido de la historia"),
+]
+PREGUNTAS = [
+    ("¿Cuál popularizó la tabla de récords y la dificultad que sube sola?", 2),
+    ("¿En cuál cada enemigo persigue a su manera? (Lo programarás en la Clase 2.)", 3),
+    ("¿Cuál nació en la Unión Soviética y no tiene ni un personaje?", 4),
+    ("¿Cuál permitió que los jugadores crearan y compartieran sus propios niveles?", 6),
+    ("¿Cuál resolvió cómo moverse y mirar en tres dimensiones?", 7),
+    ("¿Cuál es el videojuego más vendido de la historia?", 9),
+]
+escena("01c-los-que-cambiaron-las-reglas", "Diez juegos que cambiaron las reglas", "reflexion", "", 5, """
+    <div class="x-fila"><h1 class="esc-titulo a-in">Diez que <em>cambiaron las reglas</em></h1><span class="esc-chip ok a-in" id="puntos" aria-live="polite">0 de 6</span></div>
+    <section class="esc-card x-regla a-in" style="--d:.15s" aria-live="polite"><span class="x-et" id="nPreg"></span><strong id="pregunta"></strong><p id="pista"></p></section>
+    <div class="x-diez" id="diez" role="group" aria-label="Diez juegos: elige la respuesta"></div>
+    <p class="esc-sub a-in" style="--d:.5s;font-size:.8em">Es una selección para discutir, no un ranking oficial. ¿Cuál falta para ti? Dilo en el chat.</p>""",
+       "Pulsa «Lo logré» cuando hayas respondido las seis preguntas. Lo importante no es acertar: es notar que cada juego famoso aportó UNA idea",
+       js="var J = " + json.dumps([{"n": n, "a": a, "i": i} for n, a, i in DIEZ], ensure_ascii=False) + ", P = " + json.dumps([{"q": q, "r": r} for q, r in PREGUNTAS], ensure_ascii=False) + """;
+var k = 0, buenas = 0, bloqueado = false, caja = $("#diez");
+J.forEach(function (j, i) {
+  var b = el("button", "x-carta a-in"); b.type = "button"; b.style.setProperty("--d", i * 0.04 + "s");
+  b.appendChild(el("span", "x-anio", String(j.a))); b.appendChild(el("b", null, j.n)); b.appendChild(el("small", null, j.i));
+  b.onclick = function () { responder(i, b); }; caja.appendChild(b);
+});
+function pregunta() {
+  bloqueado = false; $$(".x-carta", caja).forEach(function (b) { b.classList.remove("bien", "mal"); });
+  if (k >= P.length) { $("#nPreg").textContent = "Terminaste"; $("#pregunta").textContent = buenas + " de " + P.length + " aciertos."; $("#pista").textContent = "Cada uno aportó una sola idea nueva y la pulió hasta que fue divertida. Tu juego también empieza con una."; return; }
+  $("#nPreg").textContent = "Pregunta " + (k + 1) + " de " + P.length + " · toca un juego"; $("#pregunta").textContent = P[k].q; $("#pista").textContent = "";
+}
+function responder(i, b) {
+  if (bloqueado || k >= P.length) return;
+  var ok = i === P[k].r, cartas = $$(".x-carta", caja);
+  if (ok) { bloqueado = true; b.classList.add("bien"); if (!b.dataset.fallo) buenas++; $("#puntos").textContent = buenas + " de " + P.length; $("#pista").textContent = "¡Sí! " + J[i].n + " (" + J[i].a + "): " + J[i].i.charAt(0).toLowerCase() + J[i].i.slice(1) + "."; cartas.forEach(function (c) { delete c.dataset.fallo; }); k++; setTimeout(pregunta, 2200); }
+  else { b.classList.add("mal"); cartas[P[k].r].dataset.fallo = "1"; $("#pista").textContent = J[i].n + " aportó otra cosa: " + J[i].i.charAt(0).toLowerCase() + J[i].i.slice(1) + ". Prueba otra vez."; }
+}
+pregunta();""",
+       css=""".x-diez { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .8vw; }
+.x-carta { display: grid; gap: .25em; justify-items: start; text-align: left; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .6em .7em; cursor: pointer; box-shadow: var(--card-shadow); transition: transform .2s, border-color .2s, background .2s; }
+.x-carta:hover { transform: translateY(-.2em); border-color: var(--accent); }
+.x-carta b { font-size: .92em; line-height: 1.15; } .x-carta small { font-size: .66em; color: var(--muted); line-height: 1.25; }
+.x-carta .x-anio { font: 800 .72em var(--mono); color: var(--accent); background: var(--accent-bg); border-radius: .5em; padding: .15em .4em; }
+.x-carta.bien { background: var(--ok-bg); border-color: var(--ok); } .x-carta.mal { background: var(--bad-bg); border-color: var(--bad); }
+#pista { min-height: 2.6em; }
+@media (max-width: 900px) { .x-diez { grid-template-columns: repeat(2, 1fr); } }""",
+       comentario="Interacción: seis preguntas; se responde tocando uno de los diez juegos. Solo texto: sin imágenes ni marcas gráficas.")
 
 # ---------------------------------------------------------------- 02 · Forja: tu héroe
 MARCO = """

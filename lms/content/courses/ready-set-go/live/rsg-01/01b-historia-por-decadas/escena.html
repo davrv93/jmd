@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Historia: setenta años de videojuegos</title>
+<!--
+  Escena del modo LIVE (Ready Set Go, clase rsg-01). Generada por _fuente/rsg01.py: edita ahí, no aquí.
+  Reglas: sin recursos externos, menos de 300 elementos y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion.
+  Interacción: línea de tiempo de siete décadas (clic o flechas); cada juego muestra qué idea aportó y dónde aparece en el taller. Solo texto.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/rsg.css">
+<style id="esc-propio">
+.x-linea { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .4em; position: relative; }
+.x-linea::before { content: ""; position: absolute; left: 2%; right: 2%; top: 50%; height: 2px; background: var(--line2); z-index: 0; }
+.x-dec { position: relative; z-index: 1; display: grid; gap: .1em; justify-items: center; text-align: center; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .9em; padding: .45em .3em; cursor: pointer; transition: transform .2s, border-color .2s, background .2s; }
+.x-dec b { font: 800 .95em var(--mono); } .x-dec span { font-size: .62em; color: var(--muted); line-height: 1.2; }
+.x-dec:hover { transform: translateY(-.15em); border-color: var(--accent); }
+.x-dec.vista b { color: var(--ok); }
+.x-dec[aria-selected="true"] { background: var(--accent); border-color: var(--accent); transform: translateY(-.2em); } .x-dec[aria-selected="true"] b, .x-dec[aria-selected="true"] span { color: var(--on-accent); }
+.x-juegos { display: grid; grid-template-columns: repeat(auto-fit, minmax(13em, 1fr)); gap: 1vw; min-height: 0; }
+.x-juego { display: grid; gap: .45em; align-content: start; }
+.x-cab { display: flex; gap: .6em; align-items: center; } .x-cab h2 { margin: 0; font-size: 1.02em; line-height: 1.15; } .x-cab small { color: var(--muted); font-size: .68em; }
+.x-anio { font: 800 .95em var(--mono); color: var(--accent); background: var(--accent-bg); border-radius: .5em; padding: .2em .45em; }
+.x-idea { font-size: .84em !important; color: var(--fg) !important; }
+.x-hoy { font-size: .74em !important; border-top: 1px dashed var(--line2); padding-top: .4em; } .x-hoy b { color: var(--ok); }
+@media (max-width: 900px) { .x-linea { grid-template-columns: repeat(4, 1fr); } .x-linea::before { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/><circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab"><span class="esc-fase" data-ph="or">Reflexión</span><span class="esc-num">Ready Set Go · C1 · E01b</span></header>
+  <main class="esc-cuerpo">
+
+    <div class="x-fila"><h1 class="esc-titulo a-in">Setenta años de <em>videojuegos</em></h1><span class="esc-chip a-in" id="vistas" aria-live="polite">1 de 7 décadas</span></div>
+    <div class="x-linea a-in" id="linea" role="tablist" aria-label="Décadas"></div>
+    <section class="esc-card x-regla a-in" style="--d:.2s" aria-live="polite"><span class="x-et" id="dTitulo"></span><p id="dResumen" style="font-size:1em;color:var(--fg)"></p></section>
+    <div class="x-juegos" id="juegos" aria-live="polite"></div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Pulsa «Lo logré» cuando hayas recorrido las siete décadas. Fíjate en la línea de abajo de cada tarjeta: esa idea la usarás en el taller</span></footer>
+</div>
+<script>
+(function () { try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {} })();
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+var D = [{"d": "1950–60", "t": "Los laboratorios", "r": "Nadie vendía juegos: los hacían científicos en sus ratos libres, en máquinas del tamaño de un cuarto.", "j": [{"a": 1958, "n": "Tennis for Two", "q": "William Higinbotham, laboratorio de Brookhaven", "i": "Un partido de tenis en la pantalla de un osciloscopio: una pelota con gravedad que rebota.", "h": "Gravedad y rebote: la escena «Movimiento y choques» de hoy"}, {"a": 1962, "n": "Spacewar!", "q": "Steve Russell y compañeros, MIT", "i": "Dos naves se disparan mientras una estrella las atrae. Se copió de laboratorio en laboratorio: el primer juego que «se compartió».", "h": "Dos jugadores y física: la plantilla Fútbol"}]}, {"d": "1970", "t": "Nace la industria", "r": "El juego sale del laboratorio: llega al bar, al salón recreativo y a la sala de la casa.", "j": [{"a": 1972, "n": "Pong", "q": "Atari · Allan Alcorn", "i": "Dos paletas y una pelota. Tan simple que cualquiera lo entendía sin instrucciones: el primer gran éxito comercial.", "h": "Rebote y marcador: la plantilla Fútbol"}, {"a": 1972, "n": "Magnavox Odyssey", "q": "Ralph Baer", "i": "La primera consola doméstica: el juego se conecta al televisor de la casa.", "h": "Jugar en casa: tu juego corre en cualquier navegador"}, {"a": 1978, "n": "Space Invaders", "q": "Taito · Tomohiro Nishikado", "i": "Oleadas de enemigos que aceleran cuando quedan pocos, y una tabla de récords que todos querían encabezar.", "h": "Curva de dificultad: la plantilla Runner"}]}, {"d": "1980", "t": "La edad de oro", "r": "Aparecen los personajes, los géneros y, tras la crisis de 1983, el renacer con las consolas japonesas.", "j": [{"a": 1980, "n": "Pac-Man", "q": "Namco · Toru Iwatani", "i": "Un personaje con cara y cuatro fantasmas que se comportan distinto: cada uno persigue a su manera.", "h": "Rivales con estados: Clase 2 y la plantilla Laberinto"}, {"a": 1981, "n": "Donkey Kong", "q": "Nintendo · Shigeru Miyamoto", "i": "Saltar obstáculos para subir: define el juego de plataformas. Su héroe saltarín sería luego Mario.", "h": "Salto y gravedad: la plantilla Plataformas"}, {"a": 1984, "n": "Tetris", "q": "Alexey Pajitnov, Unión Soviética", "i": "Piezas que caen y líneas que desaparecen. Sin historia ni personajes: pura mecánica, y nunca pasó de moda.", "h": "Una regla simple, bien pulida, basta"}, {"a": 1985, "n": "Super Mario Bros.", "q": "Nintendo", "i": "El mundo se desplaza con el héroe y cada nivel enseña una idea nueva sin decir una palabra.", "h": "Cámara que sigue y nivel como datos: la plantilla Plataformas"}]}, {"d": "1990", "t": "El salto al 3D", "r": "Las máquinas ya pueden dibujar mundos con profundidad. Hay que inventar cómo moverse y cómo mirar.", "j": [{"a": 1991, "n": "Street Fighter II", "q": "Capcom", "i": "Peleas uno contra uno con personajes distintos y combinaciones de golpes: los «combos».", "h": "Animación de golpe y cajas de choque: rayos X (tecla V)"}, {"a": 1993, "n": "Doom", "q": "id Software", "i": "Disparos en primera persona, partidas en red y niveles que los propios jugadores podían crear y compartir.", "h": "Motor y datos separados: datos.js y juego.js de tu ZIP"}, {"a": 1996, "n": "Super Mario 64", "q": "Nintendo", "i": "Resuelve el 3D: una palanca para moverse en cualquier dirección y una cámara que el jugador controla.", "h": "La cámara también se diseña"}, {"a": 1996, "n": "Pokémon Rojo y Verde", "q": "Game Freak · Satoshi Tajiri", "i": "Coleccionar criaturas e intercambiarlas con un amigo por cable: jugar es también compartir.", "h": "Tu elenco de personajes y la galería de la clase"}]}, {"d": "2000", "t": "Mundos y gente conectada", "r": "Internet entra en los juegos: mundos enormes, millones de personas a la vez y públicos nuevos.", "j": [{"a": 2000, "n": "The Sims", "q": "Maxis · Will Wright", "i": "No hay que ganar: se simula la vida de unas personas con necesidades. El jugador inventa su propia historia.", "h": "Reglas simples que producen situaciones inesperadas"}, {"a": 2001, "n": "Grand Theft Auto III", "q": "DMA Design", "i": "Una ciudad en 3D para recorrer con libertad: el «mundo abierto» moderno.", "h": "Un mundo es datos: más datos, más mundo"}, {"a": 2004, "n": "World of Warcraft", "q": "Blizzard", "i": "Millones de jugadores en el mismo mundo, que sigue existiendo cuando apagas la computadora.", "h": "Sala compartida: la carrera y la galería de hoy"}, {"a": 2006, "n": "Wii Sports", "q": "Nintendo", "i": "Se juega moviendo el cuerpo: abuelos y niños jugando juntos. El control también es diseño.", "h": "Teclado y botones táctiles leen lo mismo: comun.js"}]}, {"d": "2010", "t": "Independientes y móviles", "r": "Hacer y publicar un juego deja de ser cosa de grandes empresas: un equipo pequeño llega a todo el mundo.", "j": [{"a": 2011, "n": "Minecraft", "q": "Mojang · Markus Persson", "i": "Un mundo de bloques generado por reglas donde el juego es crear. Es el videojuego más vendido de la historia.", "h": "Generar con reglas y una semilla: así funciona Forja"}, {"a": 2015, "n": "Undertale", "q": "Toby Fox", "i": "Hecho casi por una sola persona, con gráficos sencillos. Demostró que una buena idea pesa más que un gran presupuesto.", "h": "Tú también puedes: de eso trata este taller"}, {"a": 2016, "n": "Pokémon GO", "q": "Niantic", "i": "El mapa del juego es tu ciudad: realidad aumentada y GPS sacan a millones a caminar.", "h": "El celular como consola: tu juego funciona en móvil"}, {"a": 2017, "n": "Fortnite Battle Royale", "q": "Epic Games", "i": "Cien jugadores, queda uno. Gratis, en todas las plataformas a la vez y con temporadas que lo renuevan.", "h": "Publicar y actualizar: Clase 4"}]}, {"d": "2020", "t": "Hoy: todos crean", "r": "Los jugadores ya no solo juegan: crean. Y las herramientas con IA acortan el camino de la idea al juego.", "j": [{"a": 2020, "n": "Among Us", "q": "InnerSloth (salió en 2018)", "i": "Un juego pequeño que explotó dos años después: mentir, deducir y votar. La mecánica es la conversación.", "h": "Una mecánica social no necesita grandes gráficos"}, {"a": 2021, "n": "Roblox", "q": "Roblox Corporation (existe desde 2006)", "i": "Más que un juego, una plataforma: millones de experiencias creadas por sus propios jugadores.", "h": "Crear y compartir: la galería de la sala rsg-01"}, {"a": 2026, "n": "Tu juego", "q": "Tú, con IA", "i": "Describes la mecánica y la IA elige la tecnología. Lo que antes pedía un equipo y meses, hoy empieza en una clase.", "h": "Empieza en la siguiente escena"}]}];
+var vistas = {}, linea = $("#linea"), caja = $("#juegos");
+function ver(k) {
+  vistas[k] = 1; var d = D[k];
+  $$(".x-dec", linea).forEach(function (b, i) { b.setAttribute("aria-selected", i === k ? "true" : "false"); if (vistas[i]) b.classList.add("vista"); });
+  $("#dTitulo").textContent = d.d + " · " + d.t; $("#dResumen").textContent = d.r;
+  caja.innerHTML = "";
+  d.j.forEach(function (j, i) {
+    var c = el("article", "esc-card x-juego a-in"); c.style.setProperty("--d", i * 0.07 + "s");
+    var cab = el("div", "x-cab"); cab.appendChild(el("span", "x-anio", String(j.a))); var t = el("div"); t.appendChild(el("h2", null, j.n)); t.appendChild(el("small", null, j.q)); cab.appendChild(t); c.appendChild(cab);
+    c.appendChild(el("p", "x-idea", j.i)); var h = el("p", "x-hoy"); h.appendChild(el("b", null, "En el taller: ")); h.appendChild(document.createTextNode(j.h)); c.appendChild(h);
+    caja.appendChild(c);
+  });
+  $("#vistas").textContent = Object.keys(vistas).length + " de " + D.length + " décadas";
+}
+D.forEach(function (d, k) { var b = el("button", "x-dec"); b.type = "button"; b.setAttribute("role", "tab"); b.appendChild(el("b", null, d.d)); b.appendChild(el("span", null, d.t)); b.onclick = function () { ver(k); }; linea.appendChild(b); });
+addEventListener("keydown", function (e) { var k = $$(".x-dec", linea).findIndex(function (b) { return b.getAttribute("aria-selected") === "true"; }); if (e.key === "ArrowRight" && k < D.length - 1) ver(k + 1); if (e.key === "ArrowLeft" && k > 0) ver(k - 1); });
+ver(0);
+</script>
+</body>
+</html>

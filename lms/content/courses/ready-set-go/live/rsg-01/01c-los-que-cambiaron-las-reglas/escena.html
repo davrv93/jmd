@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Diez juegos que cambiaron las reglas</title>
+<!--
+  Escena del modo LIVE (Ready Set Go, clase rsg-01). Generada por _fuente/rsg01.py: edita ahí, no aquí.
+  Reglas: sin recursos externos, menos de 300 elementos y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion.
+  Interacción: seis preguntas; se responde tocando uno de los diez juegos. Solo texto: sin imágenes ni marcas gráficas.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/rsg.css">
+<style id="esc-propio">
+.x-diez { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .8vw; }
+.x-carta { display: grid; gap: .25em; justify-items: start; text-align: left; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .6em .7em; cursor: pointer; box-shadow: var(--card-shadow); transition: transform .2s, border-color .2s, background .2s; }
+.x-carta:hover { transform: translateY(-.2em); border-color: var(--accent); }
+.x-carta b { font-size: .92em; line-height: 1.15; } .x-carta small { font-size: .66em; color: var(--muted); line-height: 1.25; }
+.x-carta .x-anio { font: 800 .72em var(--mono); color: var(--accent); background: var(--accent-bg); border-radius: .5em; padding: .15em .4em; }
+.x-carta.bien { background: var(--ok-bg); border-color: var(--ok); } .x-carta.mal { background: var(--bad-bg); border-color: var(--bad); }
+#pista { min-height: 2.6em; }
+@media (max-width: 900px) { .x-diez { grid-template-columns: repeat(2, 1fr); } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/><path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/><circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab"><span class="esc-fase" data-ph="or">Reflexión</span><span class="esc-num">Ready Set Go · C1 · E01c</span></header>
+  <main class="esc-cuerpo">
+
+    <div class="x-fila"><h1 class="esc-titulo a-in">Diez que <em>cambiaron las reglas</em></h1><span class="esc-chip ok a-in" id="puntos" aria-live="polite">0 de 6</span></div>
+    <section class="esc-card x-regla a-in" style="--d:.15s" aria-live="polite"><span class="x-et" id="nPreg"></span><strong id="pregunta"></strong><p id="pista"></p></section>
+    <div class="x-diez" id="diez" role="group" aria-label="Diez juegos: elige la respuesta"></div>
+    <p class="esc-sub a-in" style="--d:.5s;font-size:.8em">Es una selección para discutir, no un ranking oficial. ¿Cuál falta para ti? Dilo en el chat.</p>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Pulsa «Lo logré» cuando hayas respondido las seis preguntas. Lo importante no es acertar: es notar que cada juego famoso aportó UNA idea</span></footer>
+</div>
+<script>
+(function () { try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {} })();
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+var J = [{"n": "Spacewar!", "a": 1962, "i": "El primer juego que se compartió entre computadoras"}, {"n": "Pong", "a": 1972, "i": "El primer gran éxito comercial"}, {"n": "Space Invaders", "a": 1978, "i": "Oleadas que aceleran y tabla de récords"}, {"n": "Pac-Man", "a": 1980, "i": "Enemigos que se comportan distinto entre sí"}, {"n": "Tetris", "a": 1984, "i": "Pura mecánica: piezas que caen"}, {"n": "Super Mario Bros.", "a": 1985, "i": "El nivel enseña sin palabras"}, {"n": "Doom", "a": 1993, "i": "Partidas en red y niveles hechos por jugadores"}, {"n": "Super Mario 64", "a": 1996, "i": "Moverse y mirar en 3D"}, {"n": "Pokémon", "a": 1996, "i": "Coleccionar e intercambiar con amigos"}, {"n": "Minecraft", "a": 2011, "i": "El juego es crear; el más vendido de la historia"}], P = [{"q": "¿Cuál popularizó la tabla de récords y la dificultad que sube sola?", "r": 2}, {"q": "¿En cuál cada enemigo persigue a su manera? (Lo programarás en la Clase 2.)", "r": 3}, {"q": "¿Cuál nació en la Unión Soviética y no tiene ni un personaje?", "r": 4}, {"q": "¿Cuál permitió que los jugadores crearan y compartieran sus propios niveles?", "r": 6}, {"q": "¿Cuál resolvió cómo moverse y mirar en tres dimensiones?", "r": 7}, {"q": "¿Cuál es el videojuego más vendido de la historia?", "r": 9}];
+var k = 0, buenas = 0, bloqueado = false, caja = $("#diez");
+J.forEach(function (j, i) {
+  var b = el("button", "x-carta a-in"); b.type = "button"; b.style.setProperty("--d", i * 0.04 + "s");
+  b.appendChild(el("span", "x-anio", String(j.a))); b.appendChild(el("b", null, j.n)); b.appendChild(el("small", null, j.i));
+  b.onclick = function () { responder(i, b); }; caja.appendChild(b);
+});
+function pregunta() {
+  bloqueado = false; $$(".x-carta", caja).forEach(function (b) { b.classList.remove("bien", "mal"); });
+  if (k >= P.length) { $("#nPreg").textContent = "Terminaste"; $("#pregunta").textContent = buenas + " de " + P.length + " aciertos."; $("#pista").textContent = "Cada uno aportó una sola idea nueva y la pulió hasta que fue divertida. Tu juego también empieza con una."; return; }
+  $("#nPreg").textContent = "Pregunta " + (k + 1) + " de " + P.length + " · toca un juego"; $("#pregunta").textContent = P[k].q; $("#pista").textContent = "";
+}
+function responder(i, b) {
+  if (bloqueado || k >= P.length) return;
+  var ok = i === P[k].r, cartas = $$(".x-carta", caja);
+  if (ok) { bloqueado = true; b.classList.add("bien"); if (!b.dataset.fallo) buenas++; $("#puntos").textContent = buenas + " de " + P.length; $("#pista").textContent = "¡Sí! " + J[i].n + " (" + J[i].a + "): " + J[i].i.charAt(0).toLowerCase() + J[i].i.slice(1) + "."; cartas.forEach(function (c) { delete c.dataset.fallo; }); k++; setTimeout(pregunta, 2200); }
+  else { b.classList.add("mal"); cartas[P[k].r].dataset.fallo = "1"; $("#pista").textContent = J[i].n + " aportó otra cosa: " + J[i].i.charAt(0).toLowerCase() + J[i].i.slice(1) + ". Prueba otra vez."; }
+}
+pregunta();
+</script>
+</body>
+</html>
