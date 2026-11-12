@@ -12,7 +12,7 @@ export function azar(semilla) { // mulberry32
 export const PARAMS_BASE = {
   altura: 0.5, peso: 0.5, cabeza: 0.5, ojos: 0.5, brazos: 0.5, piernas: 0.5,
   tono: null, luzAbs: null, satAbs: null, armonia: 'analoga', animo: 'vivo', expresion: 'feliz', ojoEstilo: null, edad: 'adulto',
-  patron: null, accesorios: null, fondo: 'noche', tonos: null,
+  patron: null, accesorios: null, fondo: 'noche', tonos: null, accAjuste: null,
 };
 
 export function hsl(h, s, l) { return { h: ((h % 360) + 360) % 360, s: clamp(s, 0, 1), l: clamp(l, 0.04, 0.97) }; }

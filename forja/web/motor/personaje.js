@@ -342,7 +342,15 @@ export function construir(spec) {
     antifaz: () => { const { ey } = A.cara; const s = pieza(G(new THREE.SphereGeometry(rx * 1.035, 22, 6, 0, PI * 2, PI * 0.5 - (ey / ry) * 1.1 - 0.3, 0.6)), mat(H(C.accesorio.h, 0.5, 0.2)), { sinContorno: true }); s.scale.set(1, ry / rx, rz / rx); c.add(s); },
     balon: () => { const q = grupo(tw * 0.75 + 0.2, 0.15, 0.25, todo); q.add(esfera(0.15, M.blanco())); for (const [x, y, z] of [[0, 0.13, 0.07], [0.12, 0, 0.09], [-0.1, -0.04, 0.11], [0, -0.1, 0.11], [0.05, 0.06, 0.14]]) pon(esfera(0.05, M.oscuro(), 1, 1, 1, { sinContorno: true }), q, x * 0.82, y * 0.82, z * 0.82); },
   };
-  for (const a of spec.accesorios) ACC[a.id]?.(a.escala);
+  // Cada accesorio se arma y luego se ajusta a gusto: se detectan las piezas que acaba de agregar y se escalan y mueven.
+  for (const a of spec.accesorios) {
+    const aj = spec.params.accAjuste?.[a.id];
+    if (!aj) { ACC[a.id]?.(a.escala); continue; }
+    const antes = new Set(); raiz.traverse((o) => antes.add(o));
+    ACC[a.id]?.(a.escala);
+    const nuevas = []; raiz.traverse((o) => { if (!antes.has(o) && antes.has(o.parent)) nuevas.push(o); });
+    for (const o of nuevas) { o.scale.multiplyScalar(clamp(aj.e ?? 1, 0.4, 2)); o.position.y += clamp(aj.y ?? 0, -0.6, 0.6) * rc * 2; o.position.z += clamp(aj.z ?? 0, -0.6, 0.6) * rc * 2; }
+  }
 
   raiz.scale.setScalar(d.escala);
   // posturas de reposo para poder reiniciar antes de cada cuadro de animación

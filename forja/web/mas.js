@@ -6,6 +6,7 @@ import { generarEscenario } from './motor/escenario.js';
 import { banco, sonar } from './motor/sonido.js';
 import { zipProyecto, armarProyecto, paginaEnMemoria, plantillas, extracto, grabarVideo, modeloGLB } from './motor/exportar.js';
 import { zip, pngDeLienzo } from './motor/zip.js';
+import { gif } from './motor/gif.js';
 
 export function iniciarMas(A) {
   const { R, $, el, aviso, bajar } = A;
@@ -134,6 +135,20 @@ export function iniciarMas(A) {
     const { blob, ext } = await grabarVideo(A.lienzo, A.spec().nombre, [f, '#14111c']).finally(() => { A.control.autoRotate = antes; });
     bajar(`${A.spec().id.replace('|', '_')}.${ext}`, blob); aviso(ext === 'mp4' ? 'Video MP4 descargado' : 'Video WebM descargado');
   });
+  $('bGif').onclick = (ev) => ocupado(ev.currentTarget, async () => { // una vuelta completa en 36 cuadros de 320 px
+    const antes = A.control.autoRotate, c = document.createElement('canvas'); c.width = c.height = 320; const x = c.getContext('2d', { willReadFrequently: true }), cuadros = [];
+    A.control.autoRotate = true; const vel = A.control.autoRotateSpeed; A.control.autoRotateSpeed = 20; // 20 = una vuelta cada 3 s a 60 cuadros por segundo
+    const fondo = A.COL_FONDO[A.estado().params.fondo] || '#3a2f6b';
+    try {
+      for (let i = 0; i < 36; i++) {
+        for (let k = 0; k < 5; k++) await new Promise((ok) => requestAnimationFrame(ok));
+        const w = A.lienzo.width, h = A.lienzo.height, lado = Math.min(w, h);
+        x.fillStyle = fondo; x.fillRect(0, 0, 320, 320); x.drawImage(A.lienzo, (w - lado) / 2, (h - lado) / 2, lado, lado, 0, 0, 320, 320);
+        cuadros.push(x.getImageData(0, 0, 320, 320));
+      }
+    } finally { A.control.autoRotate = antes; A.control.autoRotateSpeed = vel; }
+    bajar(`${A.spec().id.replace('|', '_')}.gif`, gif(cuadros, 8)); aviso('GIF descargado');
+  });
   $('bGlb').onclick = (ev) => ocupado(ev.currentTarget, async () => { bajar(`${A.spec().id.replace('|', '_')}.glb`, await modeloGLB(A.pj().raiz)); aviso('Modelo GLB descargado'); });
   $('bExportar').addEventListener('click', () => {
     const b = banco(R, A.spec());
@@ -167,7 +182,8 @@ export function iniciarMas(A) {
     }));
   }
   function entrar() { sala = salaLimpia(); $('sala').value = sala; guarda('forja.sala', sala); guarda('forja.autor', $('autor').value.trim()); $('galeria').dataset.firma = ''; cargarGaleria(); }
-  $('fSala').onsubmit = (e) => { e.preventDefault(); if (salaLimpia().length < 2) return aviso('Escribe el código de la sala'); entrar(); };
+  const entrarSala = () => { if (salaLimpia().length < 2) return aviso('Escribe el código de la sala'); entrar(); };
+  $('bEntrar').onclick = entrarSala; $('sala').onkeydown = $('autor').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); entrarSala(); } };
   $('bPublicar').onclick = async () => {
     const autor = $('autor').value.trim(); if (salaLimpia().length < 2 || autor.length < 2) return aviso('Escribe la sala y tu nombre');
     entrar(); const E = A.estado();
@@ -232,7 +248,7 @@ export function iniciarMas(A) {
     const accion = (nombre, fn) => { const b = el('button', { type: 'button' }, nombre); b.onclick = () => { cerrarB(); fn(); }; return b; };
     const lista = el('div', { class: 'lista' });
     const guiaLink = el('a', { href: 'guia.html', target: '_blank', rel: 'noopener' }, 'Guía de una página');
-    lista.append(accion('Hacer el recorrido', abrirRecorrido), accion('Crear con una frase', () => { $('texto').value = A.ejemplos[Math.floor(Math.random() * A.ejemplos.length)]; $('fDescribe').requestSubmit(); }),
+    lista.append(accion('Hacer el recorrido', abrirRecorrido), accion('Crear con una frase', () => { $('texto').value = A.ejemplos[Math.floor(Math.random() * A.ejemplos.length)]; A.forjar(); }),
       accion('Probar un juego', () => $('bProbar').click()), accion('Entender los algoritmos', () => { vista = 'algoritmos'; $('bProbar').click(); }), guiaLink);
     burbuja.replaceChildren(el('h3', {}, 'Soy Chispa, tu guía'), el('p', { class: 'consejo' }, texto || consejoAhora()), lista);
     burbuja.hidden = false; guia.setAttribute('aria-expanded', 'true');
@@ -241,7 +257,7 @@ export function iniciarMas(A) {
   addEventListener('pointerdown', (e) => { if (!burbuja.hidden && !e.target.closest('#burbuja, #bAyuda')) { burbuja.hidden = true; guia.setAttribute('aria-expanded', 'false'); } });
   // consejos que aparecen solos, una sola vez cada uno
   function consejo(id, texto) { const nuevo = !vistos.has(id); vistos.add(id); guarda('forja.consejos', [...vistos]); if (!nuevo || !capa.hidden || document.querySelector('dialog[open]')) return; abrirBurbuja(texto); guia.classList.remove('llama'); void guia.offsetWidth; guia.classList.add('llama'); clearTimeout(consejo.t); consejo.t = setTimeout(() => { burbuja.hidden = true; }, 9000); }
-  $('fDescribe').addEventListener('submit', () => setTimeout(() => consejo('describir', '¡Listo! Arriba ves lo que entendí. Ahora abre «Cuerpo» o «Color» en el muelle para afinarlo, o pulsa el dado para una sorpresa.'), 1600));
+  document.addEventListener('forja:descrito', () => setTimeout(() => consejo('describir', '¡Listo! Arriba ves lo que entendí. Ahora abre «Cuerpo» o «Color» en el muelle para afinarlo, o pulsa el dado para una sorpresa.'), 1600));
   $('bGuardar').addEventListener('click', () => consejo('guardar', 'Guardado. En «Mis personajes» puedes marcarlo con ★ para tu elenco: héroe, enemigos y jefe.'));
   $('bProbar').addEventListener('click', () => { vistos.add('juegos'); guarda('forja.consejos', [...vistos]); });
   $('bExportar').addEventListener('click', () => { vistos.add('exportar'); guarda('forja.consejos', [...vistos]); });

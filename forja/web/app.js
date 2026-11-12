@@ -36,7 +36,7 @@ if (location.hash.length > 3) deEnlace();
 
 // ---------------------------------------------------------------- escena 3D
 const lienzo = $('lienzo'), escenario = $('escenario');
-const render = new THREE.WebGLRenderer({ canvas: lienzo, antialias: true, alpha: true });
+const render = new THREE.WebGLRenderer({ canvas: lienzo, antialias: true, alpha: true, preserveDrawingBuffer: true }); // se conserva el dibujo para copiarlo al GIF y al video
 render.setPixelRatio(Math.min(devicePixelRatio, 2));
 const escena = new THREE.Scene();
 escena.add(new THREE.HemisphereLight(0xffffff, 0x8a7f9c, 1.5));
@@ -173,7 +173,18 @@ function hojas() {
     const cc = el('div', { class: 'chips' });
     chips(cc, M.accesorios.map((a) => ({ id: a.id, nombre: a.nombre, no: !T.acc[`${E.familia}|${a.id}`][0] })), puestos, (id) => { const s = new Set(puestos); s.has(id) ? s.delete(id) : s.add(id); fijar({ accesorios: [...s] }); }, { multi: true, rol: 'switch' });
     const q = el('button', { type: 'button', class: 'btn mini' }, 'Los del tipo'); q.onclick = () => fijar({ accesorios: null });
-    tE.replaceChildren(el('p', { class: 'nota' }, 'Las reglas de compatibilidad apagan lo que no encaja con esta familia.'), cc, q);
+    // mover y escalar cada accesorio puesto: tamaño, altura y adelante/atrás
+    const filas = spec.accesorios.map((a) => {
+      const f = el('div', { class: 'ajuste' }), aj = { e: 1, y: 0, z: 0, ...(E.params.accAjuste?.[a.id] || {}) };
+      f.append(el('b', {}, M.accesorios.find((x) => x.id === a.id)?.nombre || a.id));
+      for (const [k, nombre, min, max] of [['e', 'Tamaño', 0.5, 1.8], ['y', 'Altura', -0.4, 0.4], ['z', 'Adelante', -0.4, 0.4]]) {
+        const l = el('label', {}, nombre), i = el('input', { type: 'range', min, max, step: 0.01, value: aj[k], 'aria-label': `${nombre} de ${a.id}`, style: `--p:${(aj[k] - min) / (max - min) * 100}%` });
+        i.oninput = () => { aj[k] = +i.value; i.style.setProperty('--p', (aj[k] - min) / (max - min) * 100 + '%'); E.params.accAjuste = { ...(E.params.accAjuste || {}), [a.id]: { e: aj.e, y: aj.y, z: aj.z } }; pintar(); };
+        l.append(i); f.append(l);
+      }
+      return f;
+    });
+    tE.replaceChildren(el('p', { class: 'nota' }, 'Las reglas de compatibilidad apagan lo que no encaja con esta familia.'), cc, q, ...(filas.length ? [el('div', { class: 'grupo-t' }, 'Mover y escalar'), ...filas] : []));
   } else if (hojaActiva === 'reglas') {
     const n = el('div', { class: 'reglas-n' });
     for (const [k, v] of Object.entries(M.cuenta)) n.append(el('span', {}, k), el('b', {}, v.toLocaleString('es-PE')));
@@ -234,7 +245,7 @@ addEventListener('keydown', (e) => { if (e.target.closest('textarea, input, dial
 
 // ---------------------------------------------------------------- describir (embeddings locales en el servidor, léxico de respaldo)
 const EJEMPLOS = ['un michi rechoncho de fuego con lentes', 'robot alto y flaco, azul neón', 'dragón bebé de hielo con corona', 'fantasma travieso con sombrero de mago', 'una criatura del pantano que da miedo'];
-$('ejemplos').replaceChildren(...EJEMPLOS.map((t) => { const b = el('button', { type: 'button' }, t); b.onclick = () => { $('texto').value = t; $('fDescribe').requestSubmit(); }; return b; }));
+$('ejemplos').replaceChildren(...EJEMPLOS.map((t) => { const b = el('button', { type: 'button' }, t); b.onclick = () => { $('texto').value = t; forjar(); }; return b; }));
 let embeddings = false;
 fetch('api/estado').then((r) => r.json()).then((d) => { embeddings = d.embeddings === 'listo'; $('estadoIA').textContent = embeddings ? 'IA externa: 0 · e5-small local' : 'IA externa: 0'; $('estadoIA').title = d.modelo || ''; }).catch(() => {});
 $('nReglas').textContent = M.total.toLocaleString('es-PE'); $('nTipos').textContent = M.tipos;
@@ -256,8 +267,11 @@ async function describir(texto) {
   interfazDe = ''; pintar(true);
   const sg = document.querySelector('.sugiere'); sg.classList.add('ver'); clearTimeout(describir.t); describir.t = setTimeout(() => sg.classList.remove('ver'), 6000);
 }
-$('fDescribe').onsubmit = async (e) => { e.preventDefault(); const t = $('texto').value.trim() || $('texto').placeholder; const b = $('bForjar'); b.disabled = true; await describir(t); b.disabled = false; };
-$('texto').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('fDescribe').requestSubmit(); } };
+// Sin <form>: dentro del aula en vivo el marco va en «sandbox» sin permiso de formularios, y un submit no llegaría nunca.
+async function forjar() { const t = $('texto').value.trim() || 'un michi rechoncho de fuego con lentes'; const b = $('bForjar'); b.disabled = true; await describir(t); b.disabled = false; document.dispatchEvent(new CustomEvent('forja:descrito')); }
+$('bForjar').onclick = forjar;
+$('texto').onkeydown = (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); forjar(); } };
+document.addEventListener('click', (e) => { const x = e.target.closest('button.cerrar'); if (x) x.closest('dialog')?.close(); });
 
 // ---------------------------------------------------------------- exportar
 let hoja = null, px = 128;
@@ -277,7 +291,7 @@ $('bCodigo').onclick = () => copiar($('codigo').textContent, 'Código copiado');
 $('bEnlace').onclick = () => copiar(location.href, 'Enlace copiado');
 
 $('bDeshacer').onclick = deshacer; $('bRehacer').onclick = rehacer;
-iniciarMas({ R, $, el, aviso, bajar, copiar, chips, lista, nombreDe, lienzo, control, COL_FONDO, abrir, hoja: () => hojaActiva, ejemplos: EJEMPLOS,
+iniciarMas({ R, $, el, aviso, bajar, copiar, chips, lista, nombreDe, lienzo, control, COL_FONDO, abrir, forjar, hoja: () => hojaActiva, ejemplos: EJEMPLOS,
   estado: () => E, spec: () => spec, pj: () => pj, enlace: () => location.origin + location.pathname + aEnlace(),
   cargar: (e) => { E = { familia: e.familia, variante: e.variante, semilla: e.semilla, params: { ...PARAMS_BASE, ...e.params } }; interfazDe = ''; fondos(); pintar(true); } });
 let inicial = innerWidth > 760 ? 'catalogo' : null; try { const g = JSON.parse(localStorage.getItem('forja.hoja')); if (g !== undefined && innerWidth > 760) inicial = g; } catch { /* valor por defecto */ }

@@ -67,7 +67,7 @@ let guardando = null;
 function guardar() { clearTimeout(guardando); guardando = setTimeout(() => { try { fs.mkdirSync(DATOS, { recursive: true }); fs.writeFileSync(ARCHIVO + '.tmp', JSON.stringify(galeria)); fs.renameSync(ARCHIVO + '.tmp', ARCHIVO); } catch (e) { console.error('galería sin guardar:', e.message); } }, 400); }
 const limpio = (t, n) => String(t || '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 const salaOk = (x) => /^[a-z0-9-]{2,24}$/.test(x);
-const PARAMS_OK = new Set(['altura', 'peso', 'cabeza', 'ojos', 'brazos', 'piernas', 'tono', 'luzAbs', 'satAbs', 'armonia', 'animo', 'expresion', 'ojoEstilo', 'edad', 'patron', 'accesorios', 'fondo', 'tonos']);
+const PARAMS_OK = new Set(['altura', 'peso', 'cabeza', 'ojos', 'brazos', 'piernas', 'tono', 'luzAbs', 'satAbs', 'armonia', 'animo', 'expresion', 'ojoEstilo', 'edad', 'patron', 'accesorios', 'fondo', 'tonos', 'accAjuste']);
 function estadoValido(e) {
   if (!Array.isArray(e) || e.length !== 4 || JSON.stringify(e).length > 1500) return null;
   const [f, v, sem, p] = e;
@@ -78,6 +78,7 @@ function estadoValido(e) {
     if (typeof val === 'number' && Number.isFinite(val)) q[k] = val;
     else if (typeof val === 'string' && /^[a-z_]{1,24}$/.test(val)) q[k] = val;
     else if (k === 'accesorios' && Array.isArray(val)) q[k] = val.filter((x) => typeof x === 'string' && reglas.T.acc[`${f}|${x}`]).slice(0, 8);
+    else if (k === 'accAjuste' && val && typeof val === 'object') q[k] = Object.fromEntries(Object.entries(val).filter(([a, b]) => reglas.T.acc[`${f}|${a}`] && b && typeof b === 'object').slice(0, 8).map(([a, b]) => [a, Object.fromEntries(['e', 'y', 'z'].filter((x) => Number.isFinite(b[x])).map((x) => [x, Math.max(-2, Math.min(2, b[x]))]))]));
     else if (k === 'tonos' && val && typeof val === 'object') q[k] = Object.fromEntries(Object.entries(val).filter(([a, b]) => reglas.meta.partes.includes(a) && Number.isFinite(b)).slice(0, 6));
   }
   return [f, v, Math.abs(Math.floor(+sem)) % 1e9, q];
