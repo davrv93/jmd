@@ -25,6 +25,22 @@ ANTES, DESPUES = 45, 75   # minutos: la reunión puede abrirse antes o empezar t
 MINIMO = 20               # minutos: una grabación más corta es una prueba, no una clase
 LIMA = dt.timezone(dt.timedelta(hours=-5))
 
+# Grabaciones que la hora no alcanza a ubicar: la clase empezó lejos de su starts_at o la lección no
+# tiene fecha. Clave: inicio de la reunión en hora de Lima. Se identificaron el 13-11-2026 por la
+# transcripción de Zoom (el instructor nombra el grupo y la sesión) y por los participantes en común.
+MANUALES = {
+    "2026-10-08 22:03": "pa-01",   # «grupo uno», instalación: el LMS dice 7 p. m. y fue a las 10
+    "2026-10-11 21:58": "pa-02",   # skills y Edge AI
+    "2026-10-13 21:59": "pa-03",   # «grupo uno», WhatsApp
+    "2026-10-12 21:42": "g2-01",   # «nosotros somos grupo 2», deja OpenCode «para la sesión 2»
+    "2026-10-17 21:45": "g2-03",   # «hoy es la última sesión»; 2 de sus 3 participantes estuvieron el 12-10
+    "2026-10-18 21:11": "g4-01",   # «clase en vivo en el grupo 4»
+    "2026-10-20 21:15": "g4-02",   # «el contenido de la sesión número 2», Edge
+    "2026-10-21 21:16": "g4-03",   # «en esta sesión 3 … un asistente de WhatsApp»
+    "2026-11-07 18:42": "ccp-01",  # «la primera de las 4 sesiones» de Claude Code PRO
+    "2026-11-12 18:11": "py-01",   # Python, «primera» sesión, sala personal
+}
+
 
 def credenciales():
     if not os.path.exists(ENV):
@@ -120,12 +136,12 @@ def clases(filtro):
         fm = open(ruta).read().split("\n---\n", 1)[0]
         ini = re.search(r"(?m)^starts_at:\s*\"?([^\s\"]+)", fm)
         lid = re.search(r"(?m)^id:\s*(\S+)", fm)
-        if not ini or not lid:
+        if not lid:
             continue
         try:
-            cuando = dt.datetime.fromisoformat(ini.group(1))
+            cuando = dt.datetime.fromisoformat(ini.group(1)) if ini else None   # sin fecha: solo por MANUALES
         except ValueError:
-            continue
+            cuando = None
         bloque = re.search(r'(?m)^recording:\n  url: "(.*)"\n  passcode: "(.*)"$', fm)
         out.append({"id": lid.group(1), "curso": curso, "ruta": ruta, "inicio": cuando,
                     "bloque": bloque is not None, "url": bloque.group(1) if bloque else None})
@@ -143,8 +159,14 @@ def emparejar(reuniones, lecciones):
         dur = int(r.get("duration") or 0)
         if dur < MINIMO or not r.get("share_url"):
             continue
+        manual = MANUALES.get(ini.astimezone(LIMA).strftime("%Y-%m-%d %H:%M"))
+        if manual:
+            l = next((x for x in lecciones if x["id"] == manual), None)
+            if l:
+                pares[l["id"]] = (r, dur, ini, l)
+            continue
         cerca = sorted((abs((ini - l["inicio"]).total_seconds()) / 60, l) for l in lecciones
-                       if -ANTES <= (ini - l["inicio"]).total_seconds() / 60 <= DESPUES)
+                       if l["inicio"] and -ANTES <= (ini - l["inicio"]).total_seconds() / 60 <= DESPUES)
         if not cerca:
             sueltas.append((ini, dur, r.get("topic", "")))
             continue
@@ -152,7 +174,7 @@ def emparejar(reuniones, lecciones):
             sueltas.append((ini, dur, r.get("topic", "") + f"  (dudosa: {cerca[0][1]['id']} o {cerca[1][1]['id']})"))
             continue
         l = cerca[0][1]
-        if l["id"] not in pares or dur > pares[l["id"]][1]:
+        if l["id"] not in MANUALES.values() and (l["id"] not in pares or dur > pares[l["id"]][1]):
             pares[l["id"]] = (r, dur, ini, l)
     return pares, sueltas
 
@@ -184,7 +206,7 @@ def main():
     tok, permisos = token(c)
     print(f"Token de Zoom: OK ({len(permisos.split())} permisos)")
     ruta, reuniones = grabaciones(tok, c.get("ZOOM_USER", ""), dt.date.fromisoformat(a.desde), dt.date.fromisoformat(a.hasta))
-    print(f"Grabaciones en la nube entre {a.desde} y {a.hasta}: {len(reuniones)} ({ruta})")
+    print(f"Grabaciones en la nube entre {a.desde} y {a.hasta}: {len(reuniones)}")
     lecciones = clases(a.curso)
     pares, sueltas = emparejar(reuniones, lecciones)
 
@@ -206,7 +228,7 @@ def main():
         for ini, dur, tema in sorted(sueltas):
             print(f"  {ini.astimezone(LIMA).strftime('%d-%m %H:%M')} · {dur:>3} min · {tema[:70]}")
     hoy = dt.datetime.now(LIMA)
-    faltan = [l for l in lecciones if not l["url"] and l["id"] not in pares and l["inicio"] < hoy and l["inicio"].date() >= dt.date.fromisoformat(a.desde)]
+    faltan = [l for l in lecciones if not l["url"] and l["id"] not in pares and l["inicio"] and l["inicio"] < hoy and l["inicio"].date() >= dt.date.fromisoformat(a.desde)]
     if faltan:
         print(f"\nClases ya dictadas sin grabación en la nube ({len(faltan)}): " + ", ".join(l["id"] for l in faltan))
     print(f"\n{'Escritas: ' + str(escritas) if a.aplicar else 'En seco: nada se escribió. Repite con --aplicar.'}")
