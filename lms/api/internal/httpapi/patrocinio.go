@@ -121,16 +121,39 @@ func (s *Server) patrocinioInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	cursos := []map[string]any{}
 	for _, c := range s.catalogoPatrocinio(time.Now()) {
-		fechas := []string{}
+		// Cada clase con su duración, para el calendario que arma el patrocinador mientras elige.
+		type clase struct {
+			Inicio  string `json:"inicio"`
+			Minutos int    `json:"minutos"`
+		}
+		fechas, clases := []string{}, []clase{}
+		porDefecto, nombre, grupo := 90, c.Title, ""
+		if c.Agenda != nil {
+			if c.Agenda.Minutos > 0 {
+				porDefecto = c.Agenda.Minutos
+			}
+			if c.Agenda.Nombre != "" {
+				nombre = c.Agenda.Nombre
+			}
+			grupo = c.Agenda.Grupo
+		}
 		for _, m := range c.Modules {
 			for _, l := range m.Lessons {
-				if l.StartsAt != nil {
-					fechas = append(fechas, l.StartsAt.Format(time.RFC3339))
+				if l.StartsAt == nil {
+					continue
 				}
+				min := porDefecto
+				if l.Duration > 0 {
+					min = l.Duration
+				}
+				fechas = append(fechas, l.StartsAt.Format(time.RFC3339))
+				clases = append(clases, clase{l.StartsAt.Format(time.RFC3339), min})
 			}
 		}
 		slices.Sort(fechas)
-		cursos = append(cursos, map[string]any{"id": c.ID, "slug": c.Slug, "title": c.Title, "description": c.Description, "fechas": fechas})
+		slices.SortFunc(clases, func(a, b clase) int { return strings.Compare(a.Inicio, b.Inicio) })
+		cursos = append(cursos, map[string]any{"id": c.ID, "slug": c.Slug, "title": c.Title, "description": c.Description,
+			"fechas": fechas, "clases": clases, "nombre": nombre, "grupo": grupo})
 	}
 	writeJSON(w, 200, map[string]any{"max": maxCursosPatrocinio, "cursos": cursos})
 }
