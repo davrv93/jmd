@@ -111,42 +111,18 @@ cycle:
     phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten tu aula abierta en el LMS y los dos teléfonos a mano (el de pruebas y otro que le escribe).
     check: Has visto la clase completa (o la grabación)
-  - id: plan
-    title: Plan personalizado
-    tool: jmd
-    phase: experiencia
-    description: En la terminal del aula, `aula nuevo plan-chatbot`; abre `jmd`, pega el prompt de PROMPT_ARMAR_CHATBOT.md y responde sus 5 preguntas.
-    check: "`grep -c '<<[A-Z0-9_]*>>' /trabajo/plan-chatbot/PLAN_TRABAJO.md` imprime 0"
   - id: wireframe
-    title: Wireframe y prototipo
+    title: "Diseñar: plan, wireframe y prototipo"
     tool: jmd
     phase: conceptualizacion
-    description: Con s3-wireframe y s3-prototipo, FLUJOS.md con el flujo feliz y tres errores, el wireframe en gris de 3 pantallas y el prototipo navegable con tu color.
-    check: chatbot/prototipo se recorre en el visor a 393 px sin barra horizontal
-  - id: afiliar
-    title: Vincular WhatsApp
-    tool: terminal
-    phase: experiencia
-    description: "`aula whatsapp`, abre qr.png en el visor y escanéalo desde WhatsApp › Dispositivos vinculados en el teléfono de pruebas."
-    check: "`/instance/status` dice \"LoggedIn\": true"
-  - id: webhook
-    title: Datos y API
-    tool: jmd
-    phase: experiencia
-    description: Con s3-postgres y s3-back-elysia, la base y la API en el puerto 8766. Escribe «hola» desde el otro teléfono.
-    check: El «hola» aparece en /api/conversaciones
-  - id: bandeja
-    title: Bandeja en Lit
-    tool: jmd
-    phase: experiencia
-    description: Con s3-front-lit y s3-whatsapp-qr, la bandeja, el chat y el estado del número. Ábrela en el visor y pulsa «Móvil».
-    check: La bandeja muestra tu conversación a 393 px sin desborde
+    description: "En la terminal del aula, `aula nuevo plan-chatbot`; abre `jmd`, pega el prompt de PROMPT_ARMAR_CHATBOT.md y responde sus 5 preguntas. Con s3-wireframe y s3-prototipo: FLUJOS.md con el flujo feliz y tres errores, el wireframe en gris de 3 pantallas y el prototipo navegable con tu color."
+    check: "PLAN_TRABAJO.md no tiene marcadores <<...>> y chatbot/prototipo se recorre en el visor a 393 px sin barra horizontal"
   - id: bot
-    title: Bot respondiendo
+    title: "Construir el chatbot: WhatsApp, API, bandeja y bot"
     tool: jmd
     phase: experiencia
-    description: Con s3-integracion, el bot responde con el modelo «clase» y una persona puede tomar la conversación desde la bandeja.
-    check: 3 mensajes reales respondidos y una conversación tomada por una persona
+    description: "Vincula el teléfono de pruebas (`aula whatsapp` y escanea qr.png). Con s3-postgres y s3-back-elysia, la base y la API en el puerto 8766. Con s3-front-lit y s3-whatsapp-qr, la bandeja y el chat. Con s3-integracion, el bot responde con el modelo «clase» y una persona puede tomar la conversación."
+    check: "3 mensajes reales respondidos y una conversación tomada por una persona desde la bandeja"
   - id: pruebas
     title: Probar
     tool: terminal

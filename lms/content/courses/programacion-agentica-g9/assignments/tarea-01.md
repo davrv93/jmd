@@ -48,7 +48,7 @@ Un repositorio git (GitHub, GitLab o Forgejo, público o con acceso para el inst
    en el front matter y, debajo, instrucciones en pasos. Pídele a OpenCode «salúdame» y pega su
    respuesta en `EVIDENCIA.md`.
 
-3. **`REFLEXION.md`** (10–15 líneas): qué le pediste al agente en el paso «practicar», qué
+3. **`REFLEXION.md`** (10–15 líneas): qué le pediste al agente cuando practicaste con él, qué
    archivos creó, qué comandos quiso ejecutar, qué aceptaste y qué no, y por qué.
 
 ## Cómo entregar

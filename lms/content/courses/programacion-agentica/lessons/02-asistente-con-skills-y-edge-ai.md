@@ -108,41 +108,23 @@ cycle:
     description: Asiste en vivo o mira la grabación. Ten abierta la carpeta del taller en VS Code y una terminal lista.
     check: Has visto la clase completa (o la grabación)
   - id: relevar
-    title: Relevar tu máquina
+    title: "Preparar tu máquina: diagnóstico y Ollama"
     tool: terminal
     phase: experiencia
-    description: Descomprime taller-agentico.zip, crea el entorno virtual, instala los requisitos y corre el diagnóstico. Anota el nivel de imagen que te toca.
-    check: "python osito/backend/diagnostico.py imprime tu nivel máximo de imagen"
-  - id: ollama
-    title: Instalar Ollama y bajar qwen3:1.7b
-    tool: terminal
-    phase: experiencia
-    description: Instala Ollama desde ollama.com y descarga el modelo de chat la noche anterior, nunca en el aula.
-    check: "ollama list muestra qwen3:1.7b"
-  - id: skills
-    title: Instalar los skills
-    tool: terminal
-    phase: experiencia
-    description: Dentro de la carpeta del taller, corre el instalador. Copia los 14 skills y genera AGENTS.md y prompts/ para tu herramienta.
-    check: "bash instalar.sh termina con «Skills encontrados : 14»"
+    description: "Descomprime taller-agentico.zip, crea el entorno virtual, instala los requisitos y corre el diagnóstico: anota el nivel de imagen que te toca. Instala Ollama desde ollama.com y descarga qwen3:1.7b la noche anterior, nunca en el aula."
+    check: "python osito/backend/diagnostico.py imprime tu nivel de imagen y ollama list muestra qwen3:1.7b"
   - id: plan
-    title: Escribir el plan de trabajo
+    title: "Instalar los skills y escribir el plan de trabajo"
     tool: opencode
     phase: conceptualizacion
-    description: Activa el modo piedra y pide a tu agente, con el skill plan-de-trabajo, un PLAN_TRABAJO.md con seis tareas y criterio de aceptación sí o no.
-    check: Existe PLAN_TRABAJO.md con 6 tareas
+    description: "Dentro de la carpeta del taller, corre el instalador: copia los 14 skills y genera AGENTS.md y prompts/. Activa el modo piedra y pide a tu agente, con el skill plan-de-trabajo, un PLAN_TRABAJO.md con seis tareas y criterio de aceptación sí o no."
+    check: "bash instalar.sh termina con «Skills encontrados : 14» y existe PLAN_TRABAJO.md con 6 tareas"
   - id: construir
-    title: Construir con la obra en vivo
+    title: "Construir con la obra en vivo y probar voz e imagen"
     tool: opencode
-    phase: experiencia
-    description: Inicia la obra con las seis tareas, abre obra.html y deja que el agente ejecute el plan marcando cada paso cuando esté verificado.
-    check: Obra al 100 %
-  - id: voz-imagen
-    title: Probar voz e imagen
-    tool: terminal
-    phase: reflexion
-    description: Dicta una pregunta por micrófono y pide un flyer con fecha, hora y precio. Revisa los datos extraídos y corrige uno a propósito.
-    check: Captura del flyer con los datos correctos
+    phase: experimentacion
+    description: "Inicia la obra con las seis tareas, abre obra.html y deja que el agente ejecute el plan marcando cada paso cuando esté verificado. Después dicta una pregunta por micrófono y pide un flyer con fecha, hora y precio: revisa los datos extraídos y corrige uno a propósito."
+    check: "Obra al 100 % y una captura del flyer con los datos correctos"
   - id: preguntar
     title: Preguntar o responder
     tool: lms

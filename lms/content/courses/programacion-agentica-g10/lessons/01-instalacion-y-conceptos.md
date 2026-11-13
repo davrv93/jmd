@@ -17,6 +17,11 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: g10-01-video
+    title: "Video: agente, MCP y skills en 40 segundos"
+    kind: video
+    file: materials/video-g10-01.mp4
+    objective_ids: [g10-01-o2, g10-01-o3]
   - id: g10-01-instalador
     title: "Instalador de todo el curso (Windows, macOS, Linux)"
     kind: repo
@@ -43,11 +48,6 @@ materials:
     kind: zip
     file: materials/skills.zip
     objective_ids: [g10-01-o3]
-  - id: g10-01-video
-    title: "Video: agente, MCP y skills en 40 segundos"
-    kind: file
-    file: materials/video-g10-01.mp4
-    objective_ids: [g10-01-o2, g10-01-o3]
   - id: g10-01-pdf
     title: Clase 1 en PDF (objetivos, ciclo, enlaces, contenido y tarea)
     kind: pdf
@@ -130,66 +130,24 @@ cycle:
     phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten a mano la terminal de VS Code para ir haciendo lo mismo.
     check: Has visto la clase completa (o la grabación)
-  - id: pedir
-    title: ¿Qué le pedirías a tu asistente?
-    tool: lms
-    phase: experiencia
-    description: "Piensa en un negocio real y escribe en el muro del LIVE una tarea que le pedirías a su asistente; vota por qué canal te gustaría hablarle."
-    check: Tu tarea aparece en el muro de la escena E02
-  - id: vscode
-    title: Instalar VS Code
-    tool: vscode
-    phase: experiencia
-    description: Instala Visual Studio Code y abre una terminal dentro (Ctrl+ñ / Ctrl+`). En Windows, instala también la extensión WSL si vas a trabajar en Ubuntu.
-    check: code --version
-  - id: docker
-    title: Instalar Docker
-    tool: docker
-    phase: experiencia
-    description: Docker Desktop (Windows y macOS) o Docker Engine (Linux). Reinicia la sesión y comprueba que el demonio responde.
-    check: docker run --rm hello-world
   - id: opencode
-    title: Instalar OpenCode y conectarlo al gateway
+    title: "Instalar las herramientas y probar el agente"
     tool: opencode
     phase: experiencia
-    description: Instala OpenCode, configúralo como proveedor propio apuntando al gateway de la clase y elige un modelo.
-    check: opencode (arranca) y responde una pregunta
-  - id: practicar
-    title: Practicar con el agente
-    tool: terminal
-    phase: reflexion
-    description: En una carpeta vacía, pide a OpenCode «crea un script que imprima la fecha y la hora en español» y mira qué archivos crea y qué comandos ejecuta antes de aceptar.
-    check: El script existe y corre
-  - id: clasificar
-    title: Clasificar las tareas por tipo de asistente
-    tool: lms
-    phase: reflexion
-    description: "En el LIVE, asigna a cada tarea su tipo de asistente (reglas, LLM, agente con herramientas, RAG, voz o copiloto) y ubica la tarea que escribiste en el muro."
-    check: Clasificaste las tareas de la escena E07 y votaste el tipo de la tuya
+    description: "Instala VS Code, Docker y OpenCode, y conecta OpenCode al gateway de la clase. Luego, en una carpeta vacía, pídele «crea un script que imprima la fecha y la hora en español» y revisa qué archivos crea y qué comandos ejecuta antes de aceptar."
+    check: "code --version, docker run --rm hello-world y el script del agente corre"
   - id: tipos
-    title: Tipos, piezas y caminos gratis
+    title: "Entender los asistentes: tipos, piezas y caminos gratis"
     tool: lms
     phase: conceptualizacion
-    description: "Conoce los tipos de asistente, sus piezas (modelo, instrucciones de sistema, memoria y contexto, herramientas, canal y bucle) y compara los caminos de integración gratuitos por costo, dificultad y canal."
-    check: Elegiste en la escena E11 el camino con el que empiezas tu prototipo
-  - id: conceptos
-    title: Poner nombre a las piezas
-    tool: lms
-    phase: conceptualizacion
-    description: "Juega la Arena de conceptos en el LIVE: atrapa cada concepto y clasifícalo en su contenedor (tipos de asistente, cómo funciona, integración gratis y herramientas)."
-    check: Clasificaste conceptos en la Arena y pulsaste «Lo logré»
-  - id: skill
-    title: Escribir tu primera skill
-    tool: opencode
-    phase: experimentacion
-    description: Crea `.opencode/skills/saludo/SKILL.md` con `name` y `description` en el front matter y una instrucción corta. Pídele al agente que la use.
-    check: El agente responde usando tu skill
+    description: "En el LIVE: escribe en el muro una tarea que le pedirías a tu asistente (E02), clasifica las tareas por tipo de asistente (E07), elige tu camino de integración gratuito (E11) y juega la Arena de conceptos (E13)."
+    check: "Tu tarea está en el muro, elegiste tu camino en la escena E11 y pulsaste «Lo logré» en la Arena"
   - id: disenar
-    title: Diseñar tu asistente y su primer prototipo
+    title: "Tu primera skill y el diseño de tu asistente"
     tool: opencode
     phase: experimentacion
-    description: "Llena el lienzo del LIVE (negocio, tres tareas, tipo, canal y camino gratis), publícalo y pega en OpenCode el prompt que arma: un asistente.mjs que conversa en la terminal con el gateway de la clase u Ollama."
-    check: Tu diseño está en el muro de la escena E15 y el prototipo responde una pregunta de tu negocio
+    description: "Crea `.opencode/skills/saludo/SKILL.md` con `name` y `description` y pídele al agente que la use. Después llena el lienzo del LIVE (negocio, tres tareas, tipo, canal y camino gratis), publícalo y pega en OpenCode el prompt que arma tu primer prototipo."
+    check: "El agente responde con tu skill, tu diseño está en el muro (E15) y el prototipo responde una pregunta de tu negocio"
   - id: preguntar
     title: Preguntar o responder
     tool: lms

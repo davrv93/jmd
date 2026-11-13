@@ -114,72 +114,24 @@ cycle:
     phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten tu aula abierta en el LMS y los dos teléfonos a mano (el de pruebas y otro que le escribe).
     check: Has visto la clase completa (o la grabación)
-  - id: robo3d
-    title: Tu Robo en 3D con tu prompt
-    tool: lms
-    phase: experiencia
-    description: "En el LIVE, escribe TU prompt (Three.js, p5.js, SVG o Canvas) para que tu agente construya tu Robo en 3D leyendo el asistente.json de la sesión 2. Califícalo y envíalo cuando esté «listo»."
-    check: "robo3d/index.html se abre en el Visor y muestra a tu Robo"
   - id: mejora
-    title: "Mejora: voz, oído y ánimo"
+    title: "Tu Robo: 3D, voz, imagen y WhatsApp"
     tool: lms
     phase: experimentacion
-    description: "Un segundo prompt tuyo: que el robot hable sus respuestas (/api/voz), te escuche (/api/stt o dictado), cambie según el «animo» y use tus colores de marca."
-    check: El robot del Visor responde con voz y su ánimo se nota
-  - id: imagen-voz
-    title: Imagen con FLUX y voz
-    tool: lms
-    phase: experimentacion
-    description: "Genera con FLUX el escenario de tu robot (queda en robo3d/imagenes/) y prueba el dictado y la voz del servidor."
-    check: Hay al menos una imagen en robo3d/imagenes/
-  - id: whatsapp
-    title: Tu Robo en WhatsApp
-    tool: lms
-    phase: experimentacion
-    description: "Vincula tu WhatsApp con el QR del LIVE y escribe tu prompt para que el mismo robot conteste por WhatsApp: avisa que es un bot, solo responde a quien le escribe y nunca inventa."
-    check: Le escribes a tu número desde otro celular y tu robot responde
-  - id: plan
-    title: Plan personalizado
-    tool: jmd
-    phase: experiencia
-    description: En la terminal del aula, `aula nuevo plan-chatbot`; abre `jmd`, pega el prompt de PROMPT_ARMAR_CHATBOT.md y responde sus 5 preguntas.
-    check: "`grep -c '<<[A-Z0-9_]*>>' /trabajo/plan-chatbot/PLAN_TRABAJO.md` imprime 0"
+    description: "En el LIVE, con tus propios prompts: tu Robo en 3D leyendo el asistente.json de la sesión 2; que hable, te escuche y cambie según su ánimo; su escenario con FLUX; y, con el QR del LIVE, que conteste por WhatsApp avisando que es un bot."
+    check: "Tu Robo se ve en el Visor, responde con voz y contesta por WhatsApp desde otro celular"
   - id: wireframe
-    title: Wireframe y prototipo
+    title: "Diseñar: plan, wireframe y prototipo"
     tool: jmd
     phase: conceptualizacion
-    description: Con s3-wireframe y s3-prototipo, FLUJOS.md con el flujo feliz y tres errores, el wireframe en gris de 3 pantallas y el prototipo navegable con tu color.
-    check: chatbot/prototipo se recorre en el visor a 393 px sin barra horizontal
-  - id: afiliar
-    title: Vincular WhatsApp
-    tool: terminal
-    phase: experiencia
-    description: "`aula whatsapp`, abre qr.png en el visor y escanéalo desde WhatsApp › Dispositivos vinculados en el teléfono de pruebas."
-    check: "`/instance/status` dice \"LoggedIn\": true"
-  - id: webhook
-    title: Datos y API
-    tool: jmd
-    phase: experiencia
-    description: Con s3-postgres y s3-back-elysia, la base y la API en el puerto 8766. Escribe «hola» desde el otro teléfono.
-    check: El «hola» aparece en /api/conversaciones
-  - id: bandeja
-    title: Bandeja en Lit
-    tool: jmd
-    phase: experiencia
-    description: Con s3-front-lit y s3-whatsapp-qr, la bandeja, el chat y el estado del número. Ábrela en el visor y pulsa «Móvil».
-    check: La bandeja muestra tu conversación a 393 px sin desborde
+    description: "En la terminal del aula, `aula nuevo plan-chatbot`; abre `jmd`, pega el prompt de PROMPT_ARMAR_CHATBOT.md y responde sus 5 preguntas. Con s3-wireframe y s3-prototipo: FLUJOS.md con el flujo feliz y tres errores, el wireframe en gris de 3 pantallas y el prototipo navegable con tu color."
+    check: "PLAN_TRABAJO.md no tiene marcadores <<...>> y chatbot/prototipo se recorre en el visor a 393 px sin barra horizontal"
   - id: bot
-    title: Bot respondiendo
+    title: "Construir y probar el chatbot"
     tool: jmd
     phase: experiencia
-    description: Con s3-integracion, el bot responde con el modelo «clase» y una persona puede tomar la conversación desde la bandeja.
-    check: 3 mensajes reales respondidos y una conversación tomada por una persona
-  - id: pruebas
-    title: Probar
-    tool: terminal
-    phase: reflexion
-    description: "`bun test pruebas/` en el aula y la prueba de uso con una persona de otro equipo (s3-pruebas-uso): tres tareas, diez tiempos, p50 y p95."
-    check: 6 pass en bun test y PRUEBAS_DE_USO.md con p50 y p95
+    description: "Vincula el teléfono de pruebas (`aula whatsapp`). Con s3-postgres y s3-back-elysia, la base y la API; con s3-front-lit y s3-whatsapp-qr, la bandeja; con s3-integracion, el bot responde con el modelo «clase» y una persona puede tomar la conversación. Cierra con `bun test pruebas/` y la prueba de uso con otra persona."
+    check: "3 mensajes reales respondidos, una conversación tomada por una persona, 6 pass en bun test y PRUEBAS_DE_USO.md con p50 y p95"
   - id: preguntar
     title: Preguntar o responder
     tool: lms

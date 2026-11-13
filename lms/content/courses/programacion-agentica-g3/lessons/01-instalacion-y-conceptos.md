@@ -125,24 +125,12 @@ cycle:
     phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten a mano la terminal de VS Code para ir haciendo lo mismo.
     check: Has visto la clase completa (o la grabación)
-  - id: vscode
-    title: Instalar VS Code
-    tool: vscode
-    phase: experiencia
-    description: Instala Visual Studio Code y abre una terminal dentro (Ctrl+ñ / Ctrl+`). En Windows, instala también la extensión WSL si vas a trabajar en Ubuntu.
-    check: code --version
-  - id: docker
-    title: Instalar Docker
-    tool: docker
-    phase: experiencia
-    description: Docker Desktop (Windows y macOS) o Docker Engine (Linux). Reinicia la sesión y comprueba que el demonio responde.
-    check: docker run --rm hello-world
   - id: opencode
-    title: Instalar OpenCode y conectarlo al gateway
+    title: "Instalar VS Code, Docker y OpenCode"
     tool: opencode
     phase: experiencia
-    description: Instala OpenCode, configúralo como proveedor propio apuntando al gateway de la clase y elige un modelo.
-    check: opencode (arranca) y responde una pregunta
+    description: "Instala Visual Studio Code y abre su terminal (Ctrl+ñ); instala Docker Desktop (Windows y macOS) o Docker Engine (Linux); instala OpenCode y conéctalo al gateway de la clase como proveedor propio. En Windows, añade la extensión WSL."
+    check: "code --version, docker run --rm hello-world y OpenCode responde una pregunta"
   - id: practicar
     title: Practicar con el agente
     tool: terminal

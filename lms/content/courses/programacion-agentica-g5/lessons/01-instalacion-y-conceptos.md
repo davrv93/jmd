@@ -125,42 +125,24 @@ cycle:
     phase: experiencia
     description: Asiste en vivo o mira la grabación. Ten a mano la terminal de VS Code para ir haciendo lo mismo.
     check: Has visto la clase completa (o la grabación)
-  - id: vscode
-    title: Instalar VS Code
-    tool: vscode
-    phase: experiencia
-    description: Instala Visual Studio Code y abre una terminal dentro (Ctrl+ñ / Ctrl+`). En Windows, instala también la extensión WSL si vas a trabajar en Ubuntu.
-    check: code --version
-  - id: docker
-    title: Instalar Docker
-    tool: docker
-    phase: experiencia
-    description: Docker Desktop (Windows y macOS) o Docker Engine (Linux). Reinicia la sesión y comprueba que el demonio responde.
-    check: docker run --rm hello-world
   - id: opencode
-    title: Instalar OpenCode y conectarlo al gateway
+    title: "Instalar VS Code, Docker y OpenCode"
     tool: opencode
     phase: experiencia
-    description: Instala OpenCode, configúralo como proveedor propio apuntando al gateway de la clase y elige un modelo.
-    check: opencode (arranca) y responde una pregunta
+    description: "Instala Visual Studio Code y abre su terminal (Ctrl+ñ); instala Docker Desktop (Windows y macOS) o Docker Engine (Linux); instala OpenCode y conéctalo al gateway de la clase como proveedor propio. En Windows, añade la extensión WSL."
+    check: "code --version, docker run --rm hello-world y OpenCode responde una pregunta"
   - id: practicar
-    title: Practicar con el agente
+    title: "Practicar: el agente y una landing sin IA"
     tool: terminal
     phase: reflexion
-    description: En una carpeta vacía, pide a OpenCode «crea un script que imprima la fecha y la hora en español» y mira qué archivos crea y qué comandos ejecuta antes de aceptar.
-    check: El script existe y corre
+    description: "En una carpeta vacía, pide a OpenCode «crea un script que imprima la fecha y la hora en español» y revisa qué archivos crea y qué comandos ejecuta antes de aceptar. Luego, en la terminal del aula, saca negocio.json del texto de un cliente con el extractor por reglas y construye el sitio con --imagenes no."
+    check: "El script corre y el sitio abre en el Visor con los datos correctos del cliente"
   - id: skill
     title: Escribir tu primera skill
     tool: opencode
     phase: conceptualizacion
     description: Crea `.opencode/skills/saludo/SKILL.md` con `name` y `description` en el front matter y una instrucción corta. Pídele al agente que la use.
     check: El agente responde usando tu skill
-  - id: landing-sin-ia
-    title: Landing sin IA (reglas y modelo local)
-    tool: terminal
-    phase: experimentacion
-    description: En la terminal del aula, saca negocio.json del texto de un cliente con el extractor por reglas (y el modelo local si está) y construye el sitio con --imagenes no.
-    check: El sitio abre en el Visor con los datos correctos del cliente
   - id: preguntar
     title: Preguntar o responder
     tool: lms
