@@ -17,7 +17,7 @@ El script no imprime ni guarda credenciales ni el token.
 
 Las grabaciones hechas en la computadora (no en la nube) no aparecen en la API.
 """
-import argparse, base64, calendar, datetime as dt, glob, json, os, re, sys, urllib.error, urllib.parse, urllib.request
+import argparse, base64, calendar, datetime as dt, glob, json, os, re, sys, time, urllib.error, urllib.parse, urllib.request
 
 RAIZ = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "content", "courses")
 ENV = os.path.expanduser("~/.zoom-jmd.env")
@@ -44,14 +44,22 @@ def credenciales():
 
 def pedir(url, cabeceras, datos=None):
     """GET o POST que devuelve (estado, json). Nunca imprime cabeceras: llevan el secreto o el token."""
-    try:
-        with urllib.request.urlopen(urllib.request.Request(url, data=datos, headers=cabeceras), timeout=30) as r:
-            return r.status, json.loads(r.read() or b"{}")
-    except urllib.error.HTTPError as e:
+    for intento in range(4):  # la lista de grabaciones tarda: Zoom la arma al vuelo
         try:
-            return e.code, json.loads(e.read() or b"{}")
-        except ValueError:
-            return e.code, {}
+            with urllib.request.urlopen(urllib.request.Request(url, data=datos, headers=cabeceras), timeout=120) as r:
+                return r.status, json.loads(r.read() or b"{}")
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and intento < 3:
+                time.sleep(3 * (intento + 1))
+                continue
+            try:
+                return e.code, json.loads(e.read() or b"{}")
+            except ValueError:
+                return e.code, {}
+        except (TimeoutError, urllib.error.URLError, ConnectionError):
+            if intento == 3:
+                sys.exit("Zoom no respondió a tiempo tras 4 intentos. Vuelve a correr el script en unos minutos.")
+            time.sleep(2 * (intento + 1))
 
 
 def token(c):
@@ -82,7 +90,7 @@ def grabaciones(tok, usuario, desde, hasta):
         for a, b in meses(desde, hasta):
             pagina = ""
             while True:
-                q = {"from": a.isoformat(), "to": b.isoformat(), "page_size": 300}
+                q = {"from": a.isoformat(), "to": b.isoformat(), "page_size": 50}
                 if pagina:
                     q["next_page_token"] = pagina
                 estado, d = pedir(f"https://api.zoom.us/v2/{ruta}?" + urllib.parse.urlencode(q), cab)
