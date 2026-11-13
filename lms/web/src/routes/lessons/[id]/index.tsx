@@ -13,10 +13,10 @@ import { Prose } from "~/components/prose";
 
 const ADJUNTO = new Set(["zip", "file", "pptx"]);
 const GRUPOS: { title: string; icon: string; k: string; kinds: string[] }[] = [
+  { title: "Vídeos", icon: "video", k: "video", kinds: ["video"] }, // primero: es lo que más se busca al volver a una clase
   { title: "Diapositivas y documentos", icon: "file", k: "slides", kinds: ["slides", "pdf", "doc", "note", "pptx"] },
   { title: "Adjuntos para descargar", icon: "box", k: "zip", kinds: ["zip", "file"] },
   { title: "Repositorios", icon: "git", k: "repo", kinds: ["repo"] },
-  { title: "Vídeos", icon: "video", k: "video", kinds: ["video"] },
   { title: "Enlaces", icon: "globe", k: "link", kinds: ["link"] },
 ];
 
@@ -135,6 +135,7 @@ export default component$(() => {
   const ringPhases = group.map((g) => ({ token: g.phase.token, done: g.done, total: g.total }));
   const deck = l.materials.find((m) => (m.slides?.length ?? 0) > 0);
   const downloads = l.materials.filter((m) => m === deck || (m.kind === "pdf" && /diapositiva/i.test(m.title)));
+  const videos = l.materials.filter((m) => m.kind === "video");
   const open = st.qs.filter((q) => !q.resolved).length;
   const qs = st.qs.filter((q) => (qFilter.value === "abiertas" ? !q.resolved : qFilter.value === "mias" ? q.user_id === me?.id : true));
   const objTitle = (id: string) => l.objectives.find((o) => o.id === id)?.title ?? id;
@@ -244,6 +245,24 @@ export default component$(() => {
         {tab.value === "ruta" && (
           <div class="split">
             <div class="stack">
+              {/* Los videos de la clase van arriba de todo: los propios se reproducen aquí mismo, los externos abren en otra pestaña. */}
+              {videos.length > 0 && (
+                <section class="card" data-testid="videos-clase">
+                  <div class="section-t" style="margin-top:0"><Icon name="video" /> {videos.length === 1 ? "Video de la clase" : "Videos de la clase"}</div>
+                  <div style="display:grid;gap:.75rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr))">
+                    {videos.map((m) =>
+                      /\.(mp4|webm)(\?|$)/i.test(m.url) ? (
+                        <figure key={m.id} style="margin:0">
+                          <video controls preload="metadata" playsInline src={m.url} style="display:block;width:100%;aspect-ratio:16/9;border-radius:8px;background:#000" />
+                          <figcaption class="sm" style="margin-top:.35rem">{m.title}</figcaption>
+                        </figure>
+                      ) : (
+                        <a key={m.id} class="btn ghost" href={m.url} target="_blank" rel="noopener"><Icon name="video" size={15} /> {m.title}</a>
+                      ),
+                    )}
+                  </div>
+                </section>
+              )}
               <section class="card">
                 <div class="section-t" style="margin-top:0"><Icon name="target" /> Al terminar podrás</div>
                 <div class="steps">
