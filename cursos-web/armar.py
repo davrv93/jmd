@@ -27,7 +27,7 @@ BROCHURE = {c["slug"]: c for c in json.load(open(pathlib.Path.home() / "Document
 VIDEOS = pathlib.Path.home() / "Downloads/web-con-ia-jmd"
 WA = "51986149476"
 WA_TXT = "986 149 476"
-HOY = dt.datetime(2026, 11, 11, 16, 0)
+HOY = dt.datetime(2026, 11, 13, 16, 0)
 DIAS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 DIAS_L = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"]
@@ -56,6 +56,14 @@ CURSOS = [
     dict(slug="programacion-agentica", grupos=["programacion-agentica-g9", "programacion-agentica-g10"], br="programacion-agentica",
          precio="S/ 100", video=("vibecoding-g9/renders/vibecoding-g9-25s-whatsapp.mp4", True), acento="#e10600"),
     dict(slug="pruebas-y-qa-con-ia", grupos=["pruebas-qa-ia-2"], br="pruebas-qa-ia", precio="S/ 100", acento="#9be37d"),
+    # Los 7 cursos nuevos (flyer «Nuevos cursos», 11-11-2026): sin brochure, salen del LMS. Precios del flyer.
+    dict(slug="orquestacion-qwen-coder", grupos=["orquestacion-qwen-coder"], br=None, precio="S/ 50", acento="#ff8a3d"),
+    dict(slug="videojuegos-con-ia", grupos=["ready-set-go-2"], br=None, precio="S/ 50", acento="#7cc6ff"),
+    dict(slug="tutoriales-en-video", grupos=["tutoriales-en-video"], br=None, precio="S/ 25", acento="#f6cf47"),
+    dict(slug="pwa-app-movil", grupos=["pwa-app-movil"], br=None, precio="S/ 35", acento="#9be37d"),
+    dict(slug="maestro-cerebros-ia", grupos=["maestro-cerebros-ia"], br=None, precio="S/ 35", acento="#ff5c7a"),
+    dict(slug="gsap-avanzado", grupos=["gsap-avanzado"], br=None, precio="S/ 20", acento="#5cc8cd"),
+    dict(slug="docker-vs-podman", grupos=["docker-vs-podman"], br=None, precio="S/ 30", acento="#7cc6ff"),
 ]
 
 
