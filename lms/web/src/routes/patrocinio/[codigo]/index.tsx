@@ -1,4 +1,4 @@
-import { component$, useContext, useSignal, useStore, useStyles$, useVisibleTask$, $ } from "@builder.io/qwik";
+import { component$, useContext, useSignal, useStore, useStyles$, useVisibleTask$, $, type QRL, type Signal } from "@builder.io/qwik";
 import { type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
 import { SessionContext } from "~/lib/session";
 import { pathId, setTitle } from "~/lib/url";
@@ -10,7 +10,49 @@ import { ErrorState, Loading } from "~/components/ui";
 // servidor lo compara con LMS_PATROCINIO y solo ofrece cursos con inscripción abierta que no terminaron.
 
 interface ClaseP { inicio: string; minutos: number }
-interface CursoP { id: string; slug: string; title: string; description: string; fechas: string[]; clases?: ClaseP[]; nombre?: string; grupo?: string }
+interface TemaP { titulo: string; objetivos: string[] }
+interface CursoP {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  fechas: string[];
+  clases?: ClaseP[];
+  nombre?: string;
+  grupo?: string;
+  area?: string;
+  temario?: TemaP[];
+  proyecto_final?: string;
+  requisitos?: string[];
+  dedicacion?: string;
+}
+
+// Formas de colores: cada curso lleva una (por su posición) en el color de su área; el encabezado y
+// el modal llevan varias flotando con GSAP. Con «reducir movimiento» quedan quietas.
+const FORMAS = ["circulo", "triangulo", "cuadro", "rombo", "aro"] as const;
+const PALETA = ["var(--accent)", "var(--ph-or)", "var(--gold)", "var(--ph-ea)", "var(--k-link)", "var(--ag-qa)"];
+const TRAZOS: Record<string, string> = {
+  circulo: '<circle cx="12" cy="12" r="10" />',
+  triangulo: '<path d="M12 2.5 22 20.5H2z" />',
+  cuadro: '<rect x="3" y="3" width="18" height="18" rx="3" />',
+  rombo: '<path d="M12 1.5 22.5 12 12 22.5 1.5 12z" />',
+  aro: '<circle cx="12" cy="12" r="8.5" stroke-width="4" />',
+};
+function forma(tipo: string, color: string, estilo = ""): string {
+  const aro = tipo === "aro";
+  const pinta = aro ? 'fill="none" stroke="currentColor"' : 'fill="currentColor"';
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" style="color:${color};${estilo}"><g ${pinta}>${TRAZOS[tipo] ?? TRAZOS.circulo}</g></svg>`;
+}
+const sinMovimiento = () => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+async function flotar(raiz: Element | undefined, selector: string) {
+  if (!raiz || sinMovimiento()) return;
+  const { gsap } = await import("gsap");
+  raiz.querySelectorAll(selector).forEach((el, i) => {
+    gsap.fromTo(el, { scale: 0, rotate: -40, opacity: 0 }, { scale: 1, rotate: 0, opacity: 1, duration: 0.7, delay: 0.05 * i, ease: "back.out(2.2)" });
+    gsap.to(el, { y: i % 2 ? 10 : -10, x: i % 3 ? 6 : -6, rotate: i % 2 ? 18 : -18, duration: 2.6 + (i % 4) * 0.5, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 0.7 });
+  });
+}
+
 
 // Calendario que se arma mientras el patrocinador marca: cada curso elegido toma un color y sus clases
 // aparecen en el mes; si dos clases se cruzan, el día se marca y se avisa debajo. Hora de Lima (-05:00).
@@ -91,6 +133,54 @@ const CSS = `
 .pt-form h2 { margin: 0 0 .2rem; font-size: 1.1rem; }
 .pt-ok { text-align: center; padding: 2rem 1.2rem; }
 @media (max-width: 640px) { .pt-curso { padding: .8rem .8rem; } .pt-form .btn { min-height: 44px; } }
+.pt-cab { position: relative; padding-right: 9rem; }
+.pt-deco { position: absolute; inset: -0.5rem 0 auto auto; width: 11rem; height: 7.5rem; pointer-events: none; }
+.pt-deco svg { position: absolute; width: var(--t, 1.6rem); height: var(--t, 1.6rem); }
+.pt-item { position: relative; border: 1px solid var(--line); border-radius: var(--r2); background: var(--s1); transition: border-color .15s, background .15s; }
+.pt-item:hover { background: var(--s2); }
+.pt-item:has(input:checked) { border-color: var(--accent); background: var(--accent-bg); }
+.pt-item:has(input:disabled) .pt-curso { cursor: not-allowed; opacity: .55; }
+.pt-item .pt-curso { border: 0; background: none; padding-bottom: .4rem; }
+.pt-item .pt-curso:hover { background: none; }
+.pt-item:has(input:checked) .pt-curso { background: none; }
+.pt-pie { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: 0 1rem .8rem 3.1rem; }
+.pt-forma { display: inline-grid; width: 1.15rem; height: 1.15rem; flex: none; }
+.pt-forma svg { width: 100%; height: 100%; }
+.pt-aprender { display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .75rem; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--accent); font: inherit; font-size: .84rem; font-weight: 650; cursor: pointer; }
+.pt-aprender:hover { border-color: var(--accent); background: var(--accent-bg); }
+dialog.pt-modal { width: min(42rem, calc(100vw - 2rem)); max-height: 88vh; padding: 0; border: 0; border-radius: var(--r3); background: var(--s1); color: var(--fg); box-shadow: 0 24px 60px rgba(20, 16, 60, .35); overflow: hidden; }
+dialog.pt-modal[open] { display: flex; flex-direction: column; }
+dialog.pt-modal::backdrop { background: rgba(20, 16, 60, .5); }
+.pt-banda { position: relative; flex: none; padding: 1.3rem 1.4rem 1.1rem; background: color-mix(in srgb, var(--ar, var(--accent)) 14%, var(--s1)); border-bottom: 1px solid var(--line); overflow: hidden; }
+.pt-banda .pt-deco { inset: 0 3.4rem auto auto; width: 11rem; height: 100%; opacity: .9; }
+.pt-banda h2 { position: relative; margin: 0 6rem .3rem 0; font-size: 1.3rem; line-height: 1.25; text-wrap: balance; }
+.pt-banda p { position: relative; margin: 0; font-size: .88rem; color: var(--muted); font-variant-numeric: tabular-nums; max-width: 34rem; }
+.pt-x { position: absolute; top: .8rem; right: .8rem; z-index: 1; }
+.pt-cuerpo { padding: 1.1rem 1.4rem; overflow: auto; display: grid; gap: 1.1rem; }
+.pt-cuerpo h3 { margin: 0 0 .5rem; font-size: 1rem; }
+.pt-temas { list-style: none; margin: 0; padding: 0; display: grid; gap: .8rem; }
+.pt-tema { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .7rem; align-items: start; }
+.pt-num { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 10px; background: var(--c); color: #fff; font-weight: 750; font-size: .9rem; font-variant-numeric: tabular-nums; }
+.pt-tema b { display: block; line-height: 1.3; margin-top: .25rem; }
+.pt-tema ul { list-style: none; margin: .35rem 0 0; padding: 0; display: grid; gap: .25rem; font-size: .88rem; color: var(--muted); }
+.pt-tema ul li { display: grid; grid-template-columns: 1rem minmax(0, 1fr); gap: .4rem; line-height: 1.45; }
+.pt-tema ul .ico { margin-top: .2rem; color: var(--c); }
+.pt-proy { padding: .9rem 1rem; border-radius: var(--r2); background: var(--gold-bg); }
+.pt-proy h3 { color: var(--gold); }
+.pt-proy p { margin: 0; font-size: .92rem; line-height: 1.5; }
+.pt-req { margin: 0; padding-left: 1.1rem; font-size: .88rem; color: var(--muted); display: grid; gap: .2rem; }
+.pt-acc { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; padding: .9rem 1.4rem; border-top: 1px solid var(--line); background: var(--s1); }
+@media (max-width: 640px) {
+  .pt-cab { padding-right: 0; }
+  .pt-cab .pt-deco { width: 7rem; height: 5rem; inset: -1.6rem 0 auto auto; opacity: .7; }
+  .pt-pie { padding-left: 1rem; }
+  .pt-banda { padding-top: 3.1rem; }
+  .pt-banda .pt-deco { inset: .7rem auto auto 1.2rem; width: 9rem; height: 2rem; opacity: .85; }
+  .pt-banda h2 { margin-right: 0; }
+  dialog.pt-modal { width: 100vw; max-width: 100vw; max-height: 92vh; margin: auto 0 0; border-radius: var(--r3) var(--r3) 0 0; }
+  .pt-acc .btn { flex: 1; justify-content: center; min-height: 44px; }
+}
+
 `;
 
 export default component$(() => {
@@ -102,6 +192,10 @@ export default component$(() => {
   const yaTiene = useSignal(false);
   const busy = useSignal(false);
   const verCal = useSignal(false);
+  const modal = useSignal("");
+  const dlg = useSignal<HTMLDialogElement>();
+  const cab = useSignal<HTMLElement>();
+  const lista = useSignal<HTMLElement>();
 
   const load = $(async () => {
     st.error = "";
@@ -120,10 +214,53 @@ export default component$(() => {
     await load();
   });
 
-  const alternar = $((id: string) => {
-    if (st.elegidos.includes(id)) st.elegidos = st.elegidos.filter((x) => x !== id);
-    else if (st.elegidos.length < (st.info?.max ?? 5)) st.elegidos = [...st.elegidos, id];
+  // Encabezado y lista: las formas entran y flotan; las tarjetas suben una tras otra.
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(async ({ track }) => {
+    track(() => st.info);
+    if (!st.info) return;
+    await new Promise((r) => requestAnimationFrame(r));
+    await flotar(cab.value, ".pt-deco svg");
+    if (lista.value && !sinMovimiento()) {
+      const { gsap } = await import("gsap");
+      gsap.from(lista.value.querySelectorAll(".pt-item"), { y: 18, opacity: 0, duration: 0.45, stagger: 0.04, ease: "power3.out", clearProps: "transform,opacity" });
+    }
   });
+
+  // Modal «¿Qué voy a aprender?»: showModal da foco, Escape y fondo nativos; GSAP anima el contenido.
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(async ({ track }) => {
+    const id = track(() => modal.value);
+    const d = dlg.value;
+    if (!d) return;
+    if (!id) {
+      if (d.open) d.close();
+      return;
+    }
+    if (!d.open) d.showModal();
+    d.querySelector(".pt-cuerpo")?.scrollTo(0, 0);
+    if (sinMovimiento()) return;
+    const { gsap } = await import("gsap");
+    gsap.fromTo(d, { y: 24, opacity: 0, scale: 0.97 }, { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power3.out", clearProps: "transform,opacity" });
+    gsap.from(d.querySelectorAll(".pt-tema, .pt-proy, .pt-req-sec"), { x: -14, opacity: 0, duration: 0.4, stagger: 0.07, delay: 0.12, ease: "power2.out", clearProps: "transform,opacity" });
+    await flotar(d, ".pt-banda .pt-deco svg");
+  });
+
+  const alternar = $(async (id: string) => {
+    const agrega = !st.elegidos.includes(id);
+    if (!agrega) st.elegidos = st.elegidos.filter((x) => x !== id);
+    else if (st.elegidos.length < (st.info?.max ?? 5)) st.elegidos = [...st.elegidos, id];
+    else return;
+    if (!agrega || sinMovimiento()) return;
+    // Al elegir: la forma del curso salta y gira, y el tramo nuevo del contador se llena.
+    const { gsap } = await import("gsap");
+    await new Promise((r) => requestAnimationFrame(r));
+    const f = document.querySelector(`[data-curso="${window.CSS.escape(id)}"] .pt-forma`);
+    if (f) gsap.fromTo(f, { scale: 0.4, rotate: -90 }, { scale: 1, rotate: 0, duration: 0.6, ease: "back.out(3)" });
+    const t = document.querySelectorAll(".pt-tramos i.on");
+    if (t.length) gsap.fromTo(t[t.length - 1], { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power2.out", transformOrigin: "left center" });
+  });
+
 
   const enviar = $(async () => {
     error.value = "";
@@ -257,10 +394,11 @@ export default component$(() => {
 
   return (
     <div class="pt">
-      <div class="pt-cab">
+      <div class="pt-cab" ref={cab}>
+      <div class="pt-deco" aria-hidden="true" dangerouslySetInnerHTML={DECO_CAB} />
       <h1>Elige tus cursos</h1>
       <p class="pt-intro">
-        Gracias por patrocinar a JMD Learning. Elige hasta <b>{info.max} cursos</b>, sin costo, y crea tu usuario para entrar a las clases. Mientras marcas, se arma tu horario.
+        Gracias por patrocinar a JMD Learning. Elige hasta <b>{info.max} cursos</b>, sin costo, y crea tu usuario para entrar a las clases. Toca <b>«¿Qué voy a aprender?»</b> para ver el temario de cada curso; mientras marcas, se arma tu horario.
       </p>
       </div>
 
@@ -279,8 +417,8 @@ export default component$(() => {
             </span>
           </div>
           {calendario}
-          <ul class="pt-lista" aria-label="Cursos disponibles">
-            {info.cursos.map((c) => {
+          <ul class="pt-lista" aria-label="Cursos disponibles" ref={lista}>
+            {info.cursos.map((c, idx) => {
               const on = st.elegidos.includes(c.id);
               const lleno = !on && n >= info.max;
               const ahora = Date.now();
@@ -288,7 +426,7 @@ export default component$(() => {
               const empezo = c.fechas.length > 0 && Date.parse(c.fechas[0]) < ahora;
               const cuando = (f: string) => `${DIA.format(new Date(f)).replace(/\./g, "")}, ${HORA.format(new Date(f))}`;
               return (
-                <li key={c.id}>
+                <li key={c.id} class="pt-item" data-curso={c.id} data-area={c.area || undefined}>
                   <label class="pt-curso">
                     <input type="checkbox" checked={on} disabled={lleno} onChange$={() => alternar(c.id)} />
                     <span style="min-width:0">
@@ -300,7 +438,14 @@ export default component$(() => {
                       {c.description && <span class="pt-desc">{c.description}</span>}
                     </span>
                   </label>
+                  <div class="pt-pie">
+                    <span class="pt-forma" dangerouslySetInnerHTML={forma(FORMAS[idx % FORMAS.length], "var(--ar, var(--accent))")} />
+                    <button type="button" class="pt-aprender" onClick$={() => (modal.value = c.id)} aria-haspopup="dialog">
+                      <Icon name="book" size={14} /> ¿Qué voy a aprender?
+                    </button>
+                  </div>
                 </li>
+
               );
             })}
           </ul>
@@ -348,9 +493,134 @@ export default component$(() => {
         </div>
         </>
       )}
+      <Temario info={info} elegidos={st.elegidos} modal={modal} dlg={dlg} alternar$={alternar} />
     </div>
   );
 });
+
+// Modal del temario: qué vas a aprender clase por clase, el proyecto final y lo que necesitas.
+const Temario = component$((p: { info: InfoP; elegidos: string[]; modal: Signal<string>; dlg: Signal<HTMLDialogElement | undefined>; alternar$: QRL<(id: string) => Promise<void>> }) => {
+  const c = p.info.cursos.find((x) => x.id === p.modal.value);
+  const max = p.info.max;
+  const on = !!c && p.elegidos.includes(c.id);
+  const lleno = !on && p.elegidos.length >= max;
+  const minutos = c?.clases?.[0]?.minutos;
+  const proxima = c?.fechas.find((f) => Date.parse(f) + 3 * 3600e3 > Date.now());
+  const nClases = c ? (c.temario?.length || c.fechas.length) : 0;
+  const duracion = minutos ? (minutos >= 60 ? `${Math.floor(minutos / 60)} h${minutos % 60 ? ` ${minutos % 60} min` : ""}` : `${minutos} min`) : "";
+  return (
+    <dialog
+      ref={p.dlg}
+      class="pt-modal"
+      aria-labelledby="pt-modal-t"
+      data-testid="patrocinio-modal"
+      onClose$={() => (p.modal.value = "")}
+      onClick$={(e, el) => {
+        if (e.target === el) p.modal.value = "";
+      }}
+    >
+      {c && (
+        <>
+          <header class="pt-banda" data-area={c.area || undefined}>
+            <div class="pt-deco" aria-hidden="true" dangerouslySetInnerHTML={DECO_MODAL} />
+            <button type="button" class="btn ghost sm pt-x" onClick$={() => (p.modal.value = "")} aria-label="Cerrar">
+              <Icon name="x" size={16} />
+            </button>
+            <h2 id="pt-modal-t">{c.title}</h2>
+            <p>
+              {nClases} {nClases === 1 ? "clase" : "clases"}
+              {duracion && ` de ${duracion}`}
+              {proxima && ` · próxima el ${DIA.format(new Date(proxima)).replace(/\./g, "")}, ${HORA.format(new Date(proxima))}`}
+            </p>
+          </header>
+          <div class="pt-cuerpo">
+            {c.description && <p style="margin:0;line-height:1.55">{c.description}</p>}
+            {c.temario && c.temario.length > 0 && (
+              <section aria-labelledby="pt-aprende-t">
+                <h3 id="pt-aprende-t">Lo que vas a aprender</h3>
+                <ol class="pt-temas">
+                  {c.temario.map((t, i) => (
+                    <li key={i} class="pt-tema" style={`--c:${PALETA[i % PALETA.length]}`}>
+                      <span class="pt-num">{i + 1}</span>
+                      <div style="min-width:0">
+                        <b>{t.titulo}</b>
+                        {t.objetivos.length > 0 && (
+                          <ul>
+                            {t.objetivos.map((o) => (
+                              <li key={o}>
+                                <Icon name="check" size={13} />
+                                <span>{o}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+            {c.proyecto_final && (
+              <section class="pt-proy" aria-labelledby="pt-proy-t">
+                <h3 id="pt-proy-t">Tu proyecto final</h3>
+                <p>{c.proyecto_final}</p>
+              </section>
+            )}
+            {c.requisitos && c.requisitos.length > 0 && (
+              <section class="pt-req-sec" aria-labelledby="pt-req-t">
+                <h3 id="pt-req-t">Lo que necesitas</h3>
+                <ul class="pt-req">
+                  {c.requisitos.map((r) => (
+                    <li key={r}>{r}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {c.dedicacion && (
+              <p class="sm muted" style="margin:0">
+                {c.dedicacion}
+              </p>
+            )}
+          </div>
+          <footer class="pt-acc">
+            <button type="button" class="btn ghost" onClick$={() => (p.modal.value = "")}>
+              Cerrar
+            </button>
+            <button
+              type="button"
+              class="btn"
+              disabled={lleno}
+              onClick$={async () => {
+                await p.alternar$(c.id);
+                p.modal.value = "";
+              }}
+            >
+              {on ? "Quitar este curso" : lleno ? `Ya elegiste ${max} cursos` : "Elegir este curso"}
+            </button>
+          </footer>
+        </>
+      )}
+    </dialog>
+  );
+});
+
+// Formas del encabezado y de la banda del modal: posiciones y tamaños fijos, colores de la paleta.
+const DECO_CAB = [
+  forma("circulo", PALETA[0], "--t:1.9rem;top:10%;left:8%"),
+  forma("triangulo", PALETA[2], "--t:1.6rem;top:6%;left:46%"),
+  forma("cuadro", PALETA[1], "--t:1.3rem;top:44%;left:30%"),
+  forma("rombo", PALETA[3], "--t:1.5rem;top:30%;left:74%"),
+  forma("aro", PALETA[4], "--t:1.7rem;top:64%;left:58%"),
+  forma("circulo", PALETA[5], "--t:.9rem;top:70%;left:12%"),
+  forma("triangulo", PALETA[0], "--t:1rem;top:78%;left:86%"),
+].join("");
+const DECO_MODAL = [
+  forma("aro", PALETA[0], "--t:2.2rem;top:12%;left:18%"),
+  forma("triangulo", PALETA[2], "--t:1.8rem;top:50%;left:46%"),
+  forma("circulo", PALETA[3], "--t:1.2rem;top:18%;left:70%"),
+  forma("rombo", PALETA[1], "--t:1.4rem;top:62%;left:80%"),
+  forma("cuadro", PALETA[4], "--t:1rem;top:70%;left:16%"),
+].join("");
 
 export const onStaticGenerate: StaticGenerateHandler = async () => ({ params: [{ codigo: "_" }] });
 
