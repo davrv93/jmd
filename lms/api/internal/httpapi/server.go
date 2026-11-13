@@ -154,6 +154,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/inscripcion/{grupo}", s.inscripcionInfo)
 	mux.HandleFunc("POST /api/v1/inscripcion/{grupo}", s.inscribirse)
 	mux.Handle("POST /api/v1/inscripcion/{grupo}/unirme", s.authed(s.unirseAGrupo))
+	// Patrocinadores: eligen hasta 5 cursos y crean su cuenta sin pago (ver patrocinio.go).
+	mux.HandleFunc("GET /api/v1/patrocinio/{codigo}", s.patrocinioInfo)
+	mux.HandleFunc("POST /api/v1/patrocinio/{codigo}", s.patrocinioInscribir)
+	mux.Handle("POST /api/v1/patrocinio/{codigo}/unirme", s.authed(s.patrocinioUnirme))
 	// Sorteo de cupos (ver sorteo.go): página pública + sorteo del staff.
 	mux.HandleFunc("GET /api/v1/sorteo/{id}", s.sorteoInfo)
 	mux.HandleFunc("POST /api/v1/sorteo/{id}/participar", s.sorteoParticipar)
@@ -554,7 +558,7 @@ func jsonString(s string) []byte {
 }
 
 // shellSections son las rutas con parámetro: el front solo prerenderiza /<sección>/_/.
-var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true, "verificar": true, "live": true, "links": true, "projects": true, "inscripcion": true, "sorteo": true}
+var shellSections = map[string]bool{"lessons": true, "assignments": true, "courses": true, "instructor": true, "examples": true, "verificar": true, "live": true, "links": true, "projects": true, "inscripcion": true, "sorteo": true, "patrocinio": true}
 
 // shellFor da el archivo genérico (<sección>/_/index.html o q-data.json) para /<sección>/<x>/ y
 // /<sección>/<x>/q-data.json; "" si la ruta no es de ese tipo. p viene limpia (path.Clean).
