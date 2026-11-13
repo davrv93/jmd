@@ -246,6 +246,8 @@ Paleta fría de tinta sobre lavanda, con un violeta protagonista, un oro de apoy
 - **Insignia** (600, 0.74rem): badges.
 
 ### Named Rules
+**The Sin Antetítulo Rule.** (13-11-2026) Nada de etiquetas en mayúsculas y mono encima de un título. En el bloque «Ahora» la etiqueta va debajo del título, en texto normal: «Clase 2 · paso 3 de 6 · Programación agéntica».
+
 **The Cifras Tabulares Rule.** Toda hora, fecha, cuenta regresiva, contador y porcentaje lleva `font-variant-numeric: tabular-nums`, para que las columnas no bailen al cambiar el valor.
 
 **The Pesos Intermedios Rule.** La jerarquía se hace con 550/650/750 y tamaño, no con otra familia.
@@ -273,6 +275,8 @@ Sistema casi plano: las tarjetas descansan con una sombra de un píxel y la prof
 En oscuro las sombras pasan a negro (`rgba(0,0,0,.3)` a `.6`).
 
 ### Named Rules
+**The Sin Franjas Rule.** (13-11-2026) Las tarjetas y los pasos ya no llevan franja de color a la izquierda: la cabecera de la clase y los pasos de «Mi ruta» quedan con borde de 1px. La categoría se dice con texto o con una insignia, no con una franja.
+
 **The Plano Por Defecto Rule.** En reposo, una tarjeta no flota; sube 2px con la sombra flotante solo al pasar el cursor si es un enlace.
 
 ## Shapes
@@ -322,6 +326,14 @@ Esquinas suaves y escalonadas: 4px para código y teclas, 6px para elementos de 
 ### Tarjeta de marca (hero card)
 La acción principal de la pantalla: degradado hero-a → hero-b (la agenda a 135°, dos paradas; «Ahora» y la bienvenida a 118° con hero-c), radio de 20px, texto blanco con secundarios al 82-88 %, halo de marca. En la agenda reparte una columna de hora (display tabular, «hasta» y duración) y otra de qué (título, grupo · sesión, cuenta regresiva), con el botón blanco «Entrar a la mesa» y fantasmas blancos. En vivo, un punto blanco con latido (1.6s, `cubic-bezier(.16,1,.3,1)`) que se apaga con `prefers-reduced-motion`. La selección de texto dentro va en blanco al 30 %.
 
+### Habilidad (hexágono de insignia)
+Lo que el alumno va ganando tiene una sola forma en todo el producto: un hexágono (`components/habilidad.tsx`, `<Hex>`). Cada clase es una habilidad con su insignia Open Badges; el curso completo da el certificado (el mismo hexágono con el icono de premio). Tres estados y nada más:
+- **Ganada:** oro lleno con visto (o la imagen real de la insignia en Logros y en la clase).
+- **En camino:** violeta, la primera clase sin insignia; muestra su número.
+- **Por ganar:** contorno punteado en línea fuerte, número en gris.
+
+Se usa en la ruta del inicio («2 de 3 habilidades · certificado al completar las 3»), en la tarjeta «La habilidad que ganas en esta clase» (objetivos como lista de lo que vas a poder hacer, o con visto oro si ya es tuya) y en Logros (una ruta por curso: clases → certificado, con lo que te falta y «Compartir» plegado).
+
 ### Fila de grupo (agenda)
 Columna fija de fecha (día en 1.15rem/750 en minúsculas, hora en 0.84rem gris, tabular; 5.6rem, 4.6rem en el celular), nombre con punto de área, línea de sesión, barra segmentada de avance (sesión hecha en color de área, siguiente al 40 %, resto surface-3) y acciones fantasma pequeñas. La fila de hoy lleva tinte oro con anillo interior de 1px en oro y la fecha en oro.
 
@@ -335,6 +347,8 @@ Columna fija de fecha (día en 1.15rem/750 en minúsculas, hora en 0.84rem gris,
 - **Do** usar la tarjeta de marca una sola vez por pantalla, para la acción principal, con botón blanco y texto hero-a.
 - **Do** usar los componentes compartidos (Tabs, Empty, ErrorState, Loading, Chip, Status, Copy) y los iconos SVG en línea de trazo 1.75.
 - **Do** usar `useDialog()` y `toast()` en lugar de diálogos nativos.
+- **Do** mostrar lo ganado con el hexágono de habilidad y sus tres estados; el oro es lo ganado, el violeta la clase en la que estás.
+- **Do** escribir los pasos de una clase como una sola lista numerada; la fase del ciclo no parte la lista en secciones de color.
 
 ### Don't:
 - **Don't** pintar acciones primarias en oro ni usar el naranja de aviso como color de área.
@@ -342,3 +356,5 @@ Columna fija de fecha (día en 1.15rem/750 en minúsculas, hora en 0.84rem gris,
 - **Don't** apilar sombras flotantes en tarjetas en reposo.
 - **Don't** usar el cielo de constelaciones fuera del login.
 - **Don't** usar `window.alert`, `window.confirm` ni `window.prompt`.
+- **Don't** mostrar más de un botón de compartir por insignia: LinkedIn, PDF, imagen y Open Badges van plegados en «Compartir».
+- **Don't** usar verde para lo ganado: el verde es «hecho» (pasos), el oro es «ganado» (insignias y certificados).

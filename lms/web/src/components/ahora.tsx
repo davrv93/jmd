@@ -58,11 +58,9 @@ export const Ahora = component$<Props>((p) => {
   return (
     <section class={`ahora${p.compacto ? " compacto" : ""}`} aria-labelledby="ahora-t" data-testid="ahora">
       <div class="ahora-main">
-        <span class="ahora-lbl">
-          {p.fase && <i data-ph={p.fase} aria-hidden="true" />}
-          {p.etiqueta}
-        </span>
         <h2 id="ahora-t">{p.titulo}</h2>
+        {/* La etiqueta va debajo, como dato: «Clase 2 · paso 3 de 6». El bloque ya dice «ahora» por su lugar. */}
+        {p.etiqueta.replace(/^ahora( · )?/i, "") && <span class="ahora-lbl">{p.etiqueta.replace(/^ahora( · )?/i, "")}</span>}
         {!p.compacto && p.descripcion && <p>{p.descripcion}</p>}
         {!p.compacto && p.check && (
           <div class="ahora-check">
@@ -109,7 +107,7 @@ export const AhoraClase = component$<{
     return (
       <Ahora
         key={a.step.id}
-        etiqueta={`Ahora · paso ${a.n} de ${a.total} · ${a.fase.short}`}
+        etiqueta={`Paso ${a.n} de ${a.total}`}
         fase={a.fase.token}
         titulo={a.step.title}
         descripcion={a.step.description}

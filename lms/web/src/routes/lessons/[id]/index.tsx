@@ -1,17 +1,43 @@
 import { AhoraClase } from "~/components/ahora";
 import { LiveEntrada } from "~/components/live-entrada";
-import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
+import { component$, useContext, useSignal, useStore, useStyles$, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
-import { api, errMsg, fmtDate, KINDS, rel, requireLogin, TOOLS, type Course, type Lesson, type Material, type Question } from "~/lib/api";
+import { api, errMsg, fmtDate, KINDS, rel, requireLogin, TOOLS, type Certificate, type Course, type Lesson, type Material, type Question } from "~/lib/api";
 import { SessionContext, isStaff, toast } from "~/lib/session";
 import { getParam, pathId, saveLast, setParams, setTitle } from "~/lib/url";
-import { groupByPhase, modToken } from "~/lib/kolb";
+import { modToken } from "~/lib/kolb";
 import { Icon, KIND_ICON, TOOL_ICON } from "~/components/icon";
-import { Bar, Chip, Copy, Crumbs, CycleRing, Empty, ErrorState, lessonState, Loading, Tabs } from "~/components/ui";
+import { Chip, Copy, Crumbs, Empty, ErrorState, lessonState, Loading, Tabs } from "~/components/ui";
+import { Hex } from "~/components/habilidad";
 import { Slides } from "~/components/slides";
 import { Prose } from "~/components/prose";
 
 const ADJUNTO = new Set(["zip", "file", "pptx"]);
+// La clase: la habilidad que da (con su insignia) arriba de los pasos, y los pasos en una sola lista
+// numerada. Las fases del ciclo ya no parten la lista en secciones de color: el número y el título
+// bastan para saber qué sigue.
+const CSS = `
+.hab-clase { display: grid; gap: .75rem; }
+.hab-cab { display: flex; align-items: flex-start; gap: .9rem; }
+.hab-cab .hex { --hx: 3rem; }
+.hab-img { width: 3rem; height: 3.3rem; object-fit: contain; flex: none; }
+.hab-t { margin: 0; font-size: 1.05rem; line-height: 1.3; }
+.hab-sub { margin: .2rem 0 0; font-size: .87rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hab-sab { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; font-size: .92rem; }
+.hab-sab li { display: grid; grid-template-columns: 1rem minmax(0, 1fr); gap: .5rem; line-height: 1.45; }
+.hab-sab .ico { margin-top: .2rem; color: var(--faint); }
+.hab-clase[data-e="ganada"] .hab-sab .ico { color: var(--gold); }
+.hab-pie { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1rem; padding-top: .7rem; border-top: 1px solid var(--line); font-size: .86rem; color: var(--muted); }
+.pasos-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: 0 0 .6rem; }
+.pasos-cab h2 { margin: 0; font-size: 1.05rem; }
+.pasos-cab span { font-size: .86rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; counter-reset: paso; }
+.pasos .step { border-left-width: 1px; border-left-color: var(--line); }
+.pasos .step.done { background: var(--s2); border-color: var(--line); }
+.pasos .check.on { background: var(--ok); border-color: var(--ok); }
+.pasos .paso-n { font-size: .78rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+`;
+
 const GRUPOS: { title: string; icon: string; k: string; kinds: string[] }[] = [
   { title: "Vídeos", icon: "video", k: "video", kinds: ["video"] }, // primero: es lo que más se busca al volver a una clase
   { title: "Diapositivas y documentos", icon: "file", k: "slides", kinds: ["slides", "pdf", "doc", "note", "pptx"] },
@@ -23,7 +49,8 @@ const GRUPOS: { title: string; icon: string; k: string; kinds: string[] }[] = [
 export default component$(() => {
   const loc = useLocation();
   const session = useContext(SessionContext);
-  const st = useStore<{ l: Lesson | null; c: Course | null; qs: Question[]; error: string; busy: string }>({ l: null, c: null, qs: [], error: "", busy: "" });
+  useStyles$(CSS);
+  const st = useStore<{ l: Lesson | null; c: Course | null; qs: Question[]; certs: Certificate[]; error: string; busy: string }>({ l: null, c: null, qs: [], certs: [], error: "", busy: "" });
   const tab = useSignal("ruta");
   const outlineOpen = useSignal(false);
   const ask = useStore({ open: false, body: "", objective: "", minute: "", sending: false });
@@ -39,7 +66,7 @@ export default component$(() => {
       st.qs = qs;
       setTitle(l.title);
       if (session.me) saveLast(session.me.id, { lesson: l.id, title: l.title, course: l.course.slug, courseTitle: l.course.title, at: Date.now() });
-      st.c = await api.course(l.course.slug).catch(() => null);
+      [st.c, st.certs] = await Promise.all([api.course(l.course.slug).catch(() => null), api.misCertificados().catch(() => [] as Certificate[])]);
     } catch (e) {
       if (!requireLogin(e)) st.error = errMsg(e);
     }
@@ -131,15 +158,15 @@ export default component$(() => {
   const done = l.progress.done;
   const totalSteps = l.progress.total;
   const state = lessonState(done, totalSteps, l.published);
-  const group = groupByPhase(l.cycle, l.progress.steps);
-  const ringPhases = group.map((g) => ({ token: g.phase.token, done: g.done, total: g.total }));
   const deck = l.materials.find((m) => (m.slides?.length ?? 0) > 0);
   const downloads = l.materials.filter((m) => m === deck || (m.kind === "pdf" && /diapositiva/i.test(m.title)));
   const videos = l.materials.filter((m) => m.kind === "video");
   const open = st.qs.filter((q) => !q.resolved).length;
   const qs = st.qs.filter((q) => (qFilter.value === "abiertas" ? !q.resolved : qFilter.value === "mias" ? q.user_id === me?.id : true));
   const objTitle = (id: string) => l.objectives.find((o) => o.id === id)?.title ?? id;
-  const phasesWithSteps = group.filter((g) => g.total > 0);
+  // La habilidad de esta clase: su número en el curso y, si ya la ganó, su insignia.
+  const numClase = (st.c?.modules.flatMap((m) => m.lessons).filter((x) => x.published || staff).findIndex((x) => x.id === l.id) ?? -1) + 1;
+  const insignia = st.certs.find((c) => c.ambito === "clase" && c.lesson_id === l.id && c.estado === "valido");
   const modIndex = Math.max(0, st.c?.modules.findIndex((m) => m.id === l.module.id) ?? 0);
 
   const tabs = [
@@ -168,15 +195,16 @@ export default component$(() => {
     );
   };
 
-  const stepRow = (s: Lesson["cycle"][number]) => {
+  const stepRow = (s: Lesson["cycle"][number], i: number) => {
     const ok = !!l.progress.steps[s.id];
     return (
-      <div class={`step ${ok ? "done" : ""}`} key={s.id}>
+      <li class={`step ${ok ? "done" : ""}`} key={s.id}>
         <button type="button" class={`check ${ok ? "on" : ""}`} aria-pressed={ok} aria-label={`${ok ? "Desmarcar" : "Marcar"}: ${s.title}`} disabled={st.busy === s.id} onClick$={() => toggle(s.id, !ok)}>
           {ok && <Icon name="check" size={14} />}
         </button>
         <div>
           <div class="row">
+            <span class="paso-n">Paso {i + 1}</span>
             <span class="t" style="font-weight:650">{s.title}</span>
             <span class="badge"><Icon name={TOOL_ICON[s.tool] ?? "zap"} size={12} /> {TOOLS[s.tool] ?? s.tool}</span>
           </div>
@@ -188,7 +216,7 @@ export default component$(() => {
             </div>
           )}
         </div>
-      </div>
+      </li>
     );
   };
 
@@ -225,7 +253,6 @@ export default component$(() => {
       <article style="min-width:0">
         <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { href: `/courses/${l.course.slug}/`, label: l.course.title }, { label: l.module.title }]} />
         <div class="head card" data-ph={modToken(modIndex)}>
-          <CycleRing phases={ringPhases} size={56} />
           <div class="grow">
             <h1>{l.title}</h1>
             <div class="row sm muted" style="margin-top:.35rem;gap:.8rem">
@@ -263,35 +290,42 @@ export default component$(() => {
                   </div>
                 </section>
               )}
-              <section class="card">
-                <div class="section-t" style="margin-top:0"><Icon name="target" /> Al terminar podrás</div>
-                <div class="steps">
-                  {l.objectives.map((o, i) => (
-                    <div key={o.id} class="row" style="align-items:flex-start;flex-wrap:nowrap">
-                      <span class="badge gold" style="min-width:1.6rem;justify-content:center">{i + 1}</span>
-                      <span>{o.title}</span>
+              {l.objectives.length > 0 && (
+                <section class="card hab-clase" data-e={insignia ? "ganada" : "camino"} aria-labelledby="hab-t" data-testid="habilidad-clase">
+                  <div class="hab-cab">
+                    {insignia?.url_insignia_png ? (
+                      <img class="hab-img" src={insignia.url_insignia_png} alt={`Tu insignia de la clase ${numClase || ""}`} width={48} height={53} />
+                    ) : (
+                      <Hex estado={insignia ? "ganada" : "camino"} n={numClase || undefined} />
+                    )}
+                    <div style="min-width:0">
+                      <h2 id="hab-t" class="hab-t">{insignia ? "Ya ganaste la habilidad de esta clase" : "La habilidad que ganas en esta clase"}</h2>
+                      <p class="hab-sub">
+                        {insignia
+                          ? `Insignia entregada el ${fmtDate(insignia.emitido_en, false)}.`
+                          : `Al completar la clase recibes su insignia. Llevas ${done} de ${totalSteps} pasos.`}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </section>
-
-              {phasesWithSteps.map((g) => (
-                <section class="ph-sec" data-ph={g.phase.token} key={g.phase.id} aria-labelledby={`ph-${g.phase.id}`}>
-                  <div class="ph-sec__h">
-                    <span class="ph-ico"><Icon name={g.phase.icon} size={16} /></span>
-                    <div class="grow">
-                      <div class="ph-n">Fase {g.phase.n} · {g.phase.name}</div>
-                      <h3 id={`ph-${g.phase.id}`}>{g.phase.short} <span class="ph-sub">— {g.phase.verb}</span></h3>
-                    </div>
-                    <span class="ph-prog" style="min-width:8rem">
-                      <Bar pct={g.total ? (100 * g.done) / g.total : 0} />
-                      <b>{g.done}/{g.total}</b>
-                    </span>
                   </div>
-                  <p class="sm muted" style="margin:0">{g.phase.description}</p>
-                  <div class="steps">{g.steps.map((s) => stepRow(s.step))}</div>
+                  <ul class="hab-sab" aria-label={insignia ? "Lo que ya sabes hacer" : "Al terminar podrás"}>
+                    {l.objectives.map((o) => (
+                      <li key={o.id}><Icon name={insignia ? "check" : "target"} size={14} /><span>{o.title}</span></li>
+                    ))}
+                  </ul>
+                  <div class="hab-pie">
+                    <span>Cada insignia suma al certificado de {l.course.title.split(" · ")[0]}.</span>
+                    <Link href="/grades/">Ver mis logros <Icon name="chevronRight" size={13} /></Link>
+                  </div>
                 </section>
-              ))}
+              )}
+
+              <section class="card" aria-labelledby="pasos-t">
+                <div class="pasos-cab">
+                  <h2 id="pasos-t">Pasos de la clase</h2>
+                  <span>{done} de {totalSteps}</span>
+                </div>
+                <ol class="pasos">{l.cycle.map((s, i) => stepRow(s, i))}</ol>
+              </section>
 
             </div>
             <aside class="stack">

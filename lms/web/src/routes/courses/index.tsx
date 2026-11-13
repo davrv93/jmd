@@ -1,11 +1,12 @@
 import { component$, useContext, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, type DocumentHead } from "@builder.io/qwik-city";
-import { api, crucesPendientes, errMsg, fmtDate, proximaClase, rel, requireLogin, STATUS, type AssignmentSummary, type Course, type Horario, type LessonSummary } from "~/lib/api";
+import { api, crucesPendientes, errMsg, fmtDate, proximaClase, rel, requireLogin, STATUS, type AssignmentSummary, type Certificate, type Course, type Horario, type LessonSummary } from "~/lib/api";
 import { SessionContext } from "~/lib/session";
 import { setTitle } from "~/lib/url";
 import { Icon } from "~/components/icon";
 import { Empty, ErrorState, Loading, Status } from "~/components/ui";
 import { Ahora, pasoActual, type PasoActual } from "~/components/ahora";
+import { Hex, rutaDe } from "~/components/habilidad";
 
 // Mi aprendizaje (inicio). Sigue el patrón del LMS: arriba «Ahora» (el siguiente paso de verdad, con
 // su comprobación), luego lo que viene esta semana y tu ruta. El método (las fases) se explica en
@@ -33,9 +34,11 @@ const FECHA = new Intl.DateTimeFormat("es-PE", { weekday: "short", day: "numeric
 const HOY = new Intl.DateTimeFormat("es-PE", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Lima" });
 
 /** La clase en la que va el alumno: la primera publicada sin terminar (o la última publicada). */
-function claseActual(c: Course): LessonSummary | null {
+function claseActual(c: Course, certs: Certificate[] = []): LessonSummary | null {
   const ls = c.modules.flatMap((m) => m.lessons).filter((l) => l.published);
-  return ls.find((l) => l.steps > 0 && l.steps_done < l.steps) ?? ls[ls.length - 1] ?? null;
+  // Una clase con su insignia ya ganada no es «la de ahora», aunque le falten pasos marcados.
+  const ganada = (id: string) => certs.some((x) => x.ambito === "clase" && x.lesson_id === id && x.estado === "valido");
+  return ls.find((l) => !ganada(l.id) && l.steps > 0 && l.steps_done < l.steps) ?? ls.find((l) => !ganada(l.id)) ?? ls[ls.length - 1] ?? null;
 }
 
 
@@ -87,8 +90,9 @@ function avance(c: Course): { pct: number; clases: number; hechas: number } {
 
 export default component$(() => {
   const session = useContext(SessionContext);
-  const st = useStore<{ courses: Course[] | null; error: string; faltaCert: boolean; ahora: AhoraInicio | null; horario: Horario | null }>({
+  const st = useStore<{ courses: Course[] | null; error: string; faltaCert: boolean; ahora: AhoraInicio | null; horario: Horario | null; certs: Certificate[] }>({
     courses: null,
+    certs: [],
     error: "",
     faltaCert: false,
     ahora: null,
@@ -101,11 +105,13 @@ export default component$(() => {
       const list = await api.courses();
       // Si falla el horario, el inicio sigue funcionando: solo faltan la próxima clase y los cruces.
       api.horario().then((h) => (st.horario = h)).catch(() => undefined);
+      const certs = api.misCertificados().catch(() => [] as Certificate[]);
       st.courses = await Promise.all(list.map((c) => api.course(c.slug)));
+      st.certs = await certs;
       // El curso «de ahora»: el que tiene avance sin terminar; si no hay, el primero.
       const abiertos = st.courses.filter((x) => { const a = avance(x); return a.pct > 0 && a.pct < 100; }).sort((x, y) => avance(y).pct - avance(x).pct);
       const c = abiertos[0] ?? st.courses[0];
-      const l = c ? claseActual(c) : null;
+      const l = c ? claseActual(c, st.certs) : null;
       if (c && l) {
         const det = await api.lesson(l.id).catch(() => null);
         st.ahora = { curso: c, leccion: l, paso: det ? pasoActual(det) : null };
@@ -165,10 +171,11 @@ export default component$(() => {
   const entregas = semana.filter((s) => s.tipo === "tarea" && s.estado !== "overdue");
   const vencidas = semana.filter((s) => s.estado === "overdue");
   const agenda = [...enVivo, ...entregas].slice(0, 5);
-  const avanceRuta = (c: Course | undefined) => (c ? avance(c) : { pct: 0, clases: 0, hechas: 0 });
   const rutaCurso = ah?.curso ?? st.courses?.[0];
   const ruta = rutaCurso ? rutaCurso.modules.flatMap((m) => m.lessons).filter((l) => l.published) : [];
-  const numClase = (t: string) => t.split(" · ")[0];
+  // «Clase 2»: el número sale del orden en el curso, no del título (que a veces empieza por «Grupo 8»).
+  const claseN = (c: Course, id: string) => `Clase ${c.modules.flatMap((m) => m.lessons).filter((x) => x.published).findIndex((x) => x.id === id) + 1}`;
+  const habRuta = rutaCurso ? rutaDe(rutaCurso, st.certs) : null;
   // Cursos agrupados por familia (el instructor ve «Programación agéntica» una vez, con sus grupos
   // dentro); el curso de ahora va primero y, luego, los empezados.
   const familias: { familia: string; cursos: Course[] }[] = [];
@@ -201,14 +208,13 @@ export default component$(() => {
 
       {ah && ah.paso && (
         <Ahora
-          etiqueta={`Ahora · ${numClase(ah.leccion.title)} · paso ${ah.paso.n} de ${ah.paso.total} · ${ah.paso.fase.short}`}
-          fase={ah.paso.fase.token}
+          etiqueta={`${claseN(ah.curso, ah.leccion.id)} · paso ${ah.paso.n} de ${ah.paso.total} · ${familiaDe(ah.curso).familia}`}
           titulo={ah.paso.step.title}
           descripcion={ah.paso.step.description}
           check={ah.paso.step.check}
           accion="Continuar el paso"
           href={`/lessons/${ah.leccion.id}/`}
-          avance={`${numClase(ah.leccion.title)}: ${ah.paso.hechos} de ${ah.paso.total} pasos`}
+          avance={`${ah.paso.hechos} de ${ah.paso.total} pasos`}
           pct={ah.paso.total ? (100 * ah.paso.hechos) / ah.paso.total : 0}
         />
       )}
@@ -318,25 +324,28 @@ export default component$(() => {
                         <b class="ruta-curso">{familiaDe(rutaCurso).familia}</b>
                         <span class="ruta-meta">
                           {familiaDe(rutaCurso).grupo && <span class="curso-grupo">{familiaDe(rutaCurso).grupo}</span>}
-                          {avanceRuta(rutaCurso).hechas} de {avanceRuta(rutaCurso).clases} {avanceRuta(rutaCurso).clases === 1 ? "clase" : "clases"} · {Math.round(avanceRuta(rutaCurso).pct)} %
+                          {habRuta?.ganadas ?? 0} de {ruta.length} {ruta.length === 1 ? "habilidad" : "habilidades"}
+                          {habRuta?.certCurso ? " · certificado obtenido" : ` · certificado al completar ${ruta.length === 1 ? "la clase" : `las ${ruta.length}`}`}
                         </span>
                       </span>
-                      <span class="ruta-anillo" style={`--p:${Math.round(avanceRuta(rutaCurso).pct)}`} aria-hidden="true"><i>{Math.round(avanceRuta(rutaCurso).pct)}%</i></span>
+                      <Icon name="chevronRight" size={16} class="faint" />
                     </Link>
                   <ol class="ruta" data-testid="tu-ruta">
                     {ruta.map((l, i) => {
-                      const hecha = l.steps > 0 && l.steps_done >= l.steps;
+                      const hab = habRuta?.clases[i];
+                      const ganada = !!hab?.cert;
+                      const hecha = ganada || (l.steps > 0 && l.steps_done >= l.steps);
                       const actual = ah?.leccion.id === l.id && !hecha;
                       const f = l.starts_at ? new Date(l.starts_at) : null;
                       const { num, resto } = partes(l.title);
                       return (
-                        <li key={l.id} class={hecha ? "ok" : actual ? "on" : ""}>
+                        <li key={l.id} class={ganada ? "ok gana" : hecha ? "ok" : actual ? "on" : ""}>
                           <Link href={`/lessons/${l.id}/`} class={actual ? "actual" : ""} aria-current={actual ? "step" : undefined}>
-                            <span class="ruta-pto" aria-hidden="true">{hecha ? <Icon name="check" size={13} /> : i + 1}</span>
+                            <span class="ruta-pto ruta-hex"><Hex estado={ganada ? "ganada" : actual ? "camino" : "pendiente"} n={i + 1} size="1.75rem" /></span>
                             <span class="grow" style="min-width:0">
                               <span class="ruta-num">{num}{f ? ` · ${DIA.format(f)} ${MES.format(f).replace(".", "")}` : ""}</span>
                               <b>{resto || l.title}</b>
-                              <span class="ruta-est">{hecha ? "Hecha" : actual ? `En curso · ${l.steps_done} de ${l.steps} pasos` : l.steps_done > 0 ? `${l.steps_done} de ${l.steps} pasos` : "Próxima"}</span>
+                              <span class="ruta-est">{ganada ? "Habilidad ganada" : hecha ? "Pasos completos · insignia en camino" : actual ? `En curso · ${l.steps_done} de ${l.steps} pasos` : l.steps_done > 0 ? `${l.steps_done} de ${l.steps} pasos` : "Próxima"}</span>
                             </span>
                           </Link>
                         </li>
@@ -379,11 +388,11 @@ export default component$(() => {
                 return uno ? (
                   <Link key={uno.id} class={`curso-card${avance(uno).pct > 0 ? " empezado" : ""}`} style={`--h:${h}`} href={`/courses/${uno.slug}/`} data-testid="curso">
                     {cab}
-                    <span class="curso-av" title={`${Math.round(avance(uno).pct)}% de los pasos`}>
-                      <i style={`width:${Math.round(avance(uno).pct)}%`} />
+                    <span class="curso-av" title={`${Math.round(Math.max(avance(uno).pct, (100 * rutaDe(uno, st.certs).ganadas) / (avance(uno).clases || 1)))} % del curso`}>
+                      <i style={`width:${Math.round(Math.max(avance(uno).pct, (100 * rutaDe(uno, st.certs).ganadas) / (avance(uno).clases || 1)))}%`} />
                     </span>
                     <span class="curso-pie">
-                      {avance(uno).pct >= 100 ? "Completo" : avance(uno).pct > 0 ? `${Math.round(avance(uno).pct)} % · ${avance(uno).hechas} de ${avance(uno).clases} clases` : "Sin empezar"}
+                      {rutaDe(uno, st.certs).ganadas > 0 ? `${rutaDe(uno, st.certs).ganadas} de ${avance(uno).clases} habilidades` : avance(uno).pct >= 100 ? "Completo" : avance(uno).pct > 0 ? `${Math.round(avance(uno).pct)} % · ${avance(uno).hechas} de ${avance(uno).clases} clases` : "Sin empezar"}
                       <Icon name="chevronRight" size={14} class="faint" />
                     </span>
                   </Link>
