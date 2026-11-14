@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sorteo de las secuencias · JMD Learning</title>
+<meta name="description" content="Elige tu ticket del 1 al 50. Tres ruletas en vivo: secuencia (Fibonacci, Euler, pares, impares, primos), ticket y premio. Descuentos de hasta 90 % en los cursos de JMD Learning.">
+<meta name="theme-color" content="#0d0b1f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%BB%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/estilo.css?v=3">
+</head>
+<body>
+<canvas id="fondo" aria-hidden="true"></canvas>
+<main>
+  <header class="cab">
+    <div>
+      <span class="kick">JMD LEARNING · SORTEO EN VIVO</span>
+      <h1 class="marca">Sorteo de las <em>secuencias</em></h1>
+      <p class="sub">50 tickets, 3 ganadores y tres ruletas: primero una secuencia famosa, luego un ticket y al final el premio. Descuentos de hasta <b class="oro">90 %</b>.</p>
+    </div>
+    <div class="chips">
+      <span class="chip" id="chip-fase">Cargando…</span>
+      <span class="chip" id="chip-tickets">— tickets</span>
+    </div>
+  </header>
+
+  <!-- mi ticket -->
+  <section class="panel" id="mi" hidden>
+    <h2>Tu <span>ticket</span></h2>
+    <div class="mi" style="margin-top:12px">
+      <div id="mi-numeros"></div>
+      <div>
+        <p style="margin:0"><b id="mi-nombre"></b></p>
+        <p class="suave chico" id="mi-texto" style="margin:4px 0 0"></p>
+      </div>
+    </div>
+    <a class="btn sec" href="referidos" id="mi-ref" style="width:auto">🤝 Gana tickets extra con tu código de referido</a>
+  </section>
+
+  <!-- elegir ticket -->
+  <section class="panel" id="elegir" hidden>
+    <h2 id="elegir-titulo">Elige tu <span>ticket</span></h2>
+    <p class="suave" id="elegir-texto">Toca un número libre. Los puntitos dicen a qué secuencias pertenece: cuantas más tenga, más veces puede entrar a la ruleta.</p>
+    <div class="leyenda" id="leyenda"></div>
+    <div class="tablero" id="tablero"></div>
+    <form id="form" hidden>
+      <p style="margin:16px 0 0;font-weight:800;font-size:18px">Ticket elegido: <span class="oro mono" id="form-num">—</span></p>
+      <div id="form-datos">
+        <div class="fila">
+          <div>
+            <label for="nombre">Tu nombre y apellido</label>
+            <input id="nombre" autocomplete="name" maxlength="40" placeholder="Ana Torres" required>
+          </div>
+          <div>
+            <label for="telefono">Tu WhatsApp (con código de país)</label>
+            <input id="telefono" type="tel" autocomplete="tel" maxlength="20" placeholder="51986149476" required>
+          </div>
+        </div>
+        <label for="ref">Código de referido <span class="suave">(opcional)</span></label>
+        <input id="ref" maxlength="14" placeholder="Si un amigo te pasó su código, escríbelo aquí" autocapitalize="characters">
+        <p class="chico suave" id="ref-aviso" style="margin:6px 0 0"></p>
+      </div>
+      <button class="btn" id="btn-elegir" type="submit">Quedarme con este ticket</button>
+    </form>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <!-- en vivo -->
+  <section class="panel" id="vivo" hidden>
+    <h2>Sorteo <span>en vivo</span></h2>
+    <div id="show" style="margin-top:12px"></div>
+  </section>
+
+  <!-- ganadores -->
+  <section class="panel" id="ganadores-panel" hidden>
+    <h2>Los <span>ganadores</span></h2>
+    <div class="ganadores" id="ganadores"></div>
+  </section>
+
+  <!-- cómo funciona -->
+  <section class="panel">
+    <h2>¿Cómo <span>funciona</span>?</h2>
+    <ol class="pasos">
+      <li><em>1</em><b>Ruleta de secuencias</b>Sale Fibonacci, Euler, pares, impares o primos. Los tickets con dueño de esa secuencia son los candidatos. Si ninguno tiene dueño, gira otra vez.</li>
+      <li><em>2</em><b>Ruleta de tickets</b>Entre los candidatos sale el ticket ganador de la ronda.</li>
+      <li><em>3</em><b>Ruleta de premios</b>El ganador se lleva uno de los premios que quedan. Son 3 rondas: 3 ganadores.</li>
+    </ol>
+    <div class="secs" id="secs"></div>
+  </section>
+
+  <!-- premios -->
+  <section class="panel">
+    <h2>Los <span>premios</span></h2>
+    <p class="suave">Están todos en la ruleta de premios. El precio con premio se calcula sobre el precio regular.</p>
+    <div class="premios" id="premios"></div>
+    <h3 style="margin-top:20px;font-size:18px">Precios de los cursos nuevos</h3>
+    <div class="precios">
+      <div><b>S/ 25</b>inscripción temprana, hasta el <b style="display:inline;font-size:inherit">domingo 1 de noviembre, 11:59 p. m.</b></div>
+      <div><b>S/ 40</b>precio regular, después del 1 de noviembre</div>
+      <div><b>S/ 35</b>promo 2 × 1: el total por dos personas</div>
+    </div>
+    <p class="chico suave">Mantienen su precio: Claude Code PRO, Programación agéntica, Diseño Hard to Explain y Pruebas y QA, S/ 100. Bots avanzados de IA (nuevo): S/ 60, con <b class="oro">promo 2 × 1 temprana</b>: 2 personas por S/ 60 hasta el domingo 1 de noviembre, 11:59 p. m.</p>
+  </section>
+
+  <!-- reglas -->
+  <section class="panel">
+    <h2>Reglas <span>claras</span></h2>
+    <ul class="reglas">
+      <li><b>Un ticket por persona</b>, elegido con tu nombre y tu WhatsApp. Puedes ganar tickets extra con referidos.</li>
+      <li><b>Cada persona gana una sola vez.</b> Cuando uno de tus tickets gana, tus demás tickets salen de la ruleta.</li>
+      <li><b>Un ticket que ya ganó no se vuelve a usar</b>, ni en este sorteo ni en los siguientes.</li>
+    </ul>
+    <div class="aviso"><b>¿Ya ganaste o el curso no es para ti?</b> Tu premio puedes <b>regalárselo a un amigo</b> o <b>canjearlo por otro curso de tu gusto</b>, siempre con el mismo porcentaje de descuento.</div>
+  </section>
+
+  <!-- verificación -->
+  <section class="panel" id="verif" hidden>
+    <h2>Comprueba que fue <span>al azar</span></h2>
+    <p class="suave chico">Al cerrar la elección se publicó la huella SHA-256 de una semilla secreta y de la lista de tickets. Todos los giros salen de esa semilla. Ahora que se reveló, tu navegador puede rehacer el sorteo entero.</p>
+    <p class="verif" id="verif-datos"></p>
+    <button class="btn sec" id="btn-verif" type="button" style="width:auto">Comprobar en mi navegador</button>
+    <p id="verif-res" class="chico"></p>
+  </section>
+
+  <p class="pie">Premios por WhatsApp al <a href="https://wa.me/51986149476" target="_blank" rel="noopener">+51 986 149 476</a> · <a href="referidos">Código de referido</a> · <a href="pantalla">Pantalla</a></p>
+</main>
+
+<script type="module">
+import { api, $, esc, dos, soles, SEC, corto, conPremio, numerosDe, tokenLeer, tokenGuardar, comprobar } from "./static/comun.js";
+import { fondo } from "./static/fondo.js";
+import { crearShow, tablero } from "./static/show.js";
+
+const fx = fondo($("#fondo"));
+const show = crearShow($("#show"), { fondo: fx });
+let estado = null, elegido = null;
+const ref = new URLSearchParams(location.search).get("ref");
+if (ref) $("#ref").value = ref.toUpperCase();
+
+function pintarFase() {
+  const f = estado.fase;
+  const chip = $("#chip-fase");
+  chip.className = "chip" + (f === "sorteo" ? " vivo" : "");
+  chip.textContent = { inscripcion: "Elección de tickets abierta", cerrado: "Elección cerrada · pronto el sorteo", sorteo: "Sorteo en vivo", fin: "Sorteo terminado ✓" }[f];
+  $("#chip-tickets").textContent = `${estado.ocupados.length} de ${estado.total} tickets elegidos`;
+}
+
+function pintarMio() {
+  const yo = estado.yo;
+  $("#mi").hidden = !yo;
+  if (!yo) return;
+  $("#mi-numeros").innerHTML = yo.tickets.map((n) => `<span class="grande">${dos(n)}</span>`).join(" ");
+  $("#mi-nombre").textContent = yo.nombre;
+  const extra = yo.porElegir > 0 && estado.fase === "inscripcion" ? ` Tienes <b class="oro">${yo.porElegir} ticket${yo.porElegir > 1 ? "s" : ""} extra</b> por elegir: tócalo en el tablero.` : "";
+  const gane = estado.resultado.find((g) => yo.tickets.includes(g.ticket));
+  $("#mi-texto").innerHTML = gane
+    ? `🎉 <b class="oro">¡Ganaste con el ticket ${dos(gane.ticket)}!</b> Escribe al WhatsApp para canjear tu premio.`
+    : estado.fase === "fin"
+      ? "Esta vez no saliste. ¡Gracias por jugar! Te esperamos en el próximo sorteo."
+      : (yo.tickets.length > 1 ? `Tienes ${yo.tickets.length} tickets en juego.` : "Tu ticket está en juego.") + extra;
+  $("#mi-ref").hidden = estado.fase !== "inscripcion";
+}
+
+function pintarElegir() {
+  const abierto = estado.fase === "inscripcion";
+  const yo = estado.yo;
+  const puede = abierto && (!yo || yo.porElegir > 0);
+  $("#elegir").hidden = !abierto;
+  if (!abierto) return;
+  $("#elegir-titulo").innerHTML = yo ? (yo.porElegir > 0 ? "Elige tu ticket <span>extra</span>" : "El <span>tablero</span>") : "Elige tu <span>ticket</span>";
+  $("#form-datos").hidden = !!yo;
+  if (elegido && estado.ocupados.includes(elegido)) elegido = null;
+  tablero($("#tablero"), {
+    ocupados: estado.ocupados, mios: yo ? yo.tickets : [], elegido, puntos: true, total: estado.total,
+    alElegir: puede ? (n) => { elegido = n; pintarElegir(); $("#form").scrollIntoView({ behavior: "smooth", block: "nearest" }); } : null,
+  });
+  $("#form").hidden = !puede || !elegido;
+  $("#form-num").textContent = elegido ? dos(elegido) : "—";
+}
+
+function pintarLeyenda() {
+  $("#leyenda").innerHTML = `<span><b class="libre"></b>Libre</span><span><b class="tomado"></b>Ocupado</span>` + estado.secuencias.map((s) => `<span><i style="background:${SEC[s.id].color}"></i>${esc(s.nombre)}</span>`).join("");
+  $("#secs").innerHTML = estado.secuencias.map((s) => `
+    <div class="sec-card" style="--c:${SEC[s.id].color}"><b>${SEC[s.id].simbolo} · ${esc(s.nombre)}</b>
+      <p>${esc(s.regla)}</p><div class="nums">${s.numeros.map(dos).join(" ")}</div></div>`).join("");
+}
+
+function pintarPremios() {
+  const entregados = new Map(estado.resultado.map((g) => [g.premio, g]));
+  $("#premios").innerHTML = estado.premios.map((p) => `
+    <div class="premio ${entregados.has(p.id) ? "entregado" : ""}">
+      <div class="pct">${p.descuento}%</div>
+      <div class="curso">${esc(p.curso)}</div>
+      <div class="precio">${soles(p.precio)} → <b>${soles(conPremio(p))}</b></div>
+      ${p.nota ? `<div class="nota">${esc(p.nota)}</div>` : ""}
+    </div>`).join("");
+}
+
+function pintarGanadores() {
+  const g = estado.resultado;
+  $("#ganadores-panel").hidden = !g.length;
+  $("#ganadores").innerHTML = g.map((x) => {
+    const p = estado.premios.find((q) => q.id === x.premio);
+    return `<div class="gana"><span class="num">RONDA ${x.ronda + 1} · TICKET ${dos(x.ticket)}</span><h3>${esc(x.nombre)}</h3>
+      <p><b>${p.descuento}%</b> en ${esc(p.curso)}</p><p>${soles(p.precio)} → <b>${soles(conPremio(p))}</b></p></div>`;
+  }).join("");
+}
+
+let primera = true;
+async function cargar() {
+  try {
+    estado = await api("api/estado?t=" + encodeURIComponent(tokenLeer()));
+  } catch { return; }
+  if (primera) { pintarLeyenda(); primera = false; }
+  pintarFase(); pintarMio(); pintarElegir(); pintarPremios(); pintarGanadores();
+  $("#vivo").hidden = estado.fase === "inscripcion";
+  // al terminar, los ganadores van antes de la ruleta
+  if (estado.fase === "fin" && $("#ganadores-panel").nextElementSibling !== $("#vivo")) $("#vivo").before($("#ganadores-panel"));
+  if (estado.fase !== "inscripcion") { show.actualizar(estado); }
+  $("#verif").hidden = estado.fase !== "fin";
+  if (estado.fase === "fin") $("#verif-datos").textContent = `Semilla: ${estado.semilla} · Huella de la semilla: ${estado.compromiso} · Huella de la lista: ${estado.huellaLista}`;
+}
+
+$("#form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("#btn-elegir");
+  $("#error").textContent = "";
+  btn.disabled = true;
+  try {
+    const r = await api("api/elegir", { method: "POST", body: JSON.stringify({
+      numero: elegido, nombre: $("#nombre").value, telefono: $("#telefono").value, ref: $("#ref").value, t: tokenLeer(),
+    }) });
+    tokenGuardar(r.t);
+    elegido = null;
+    await cargar();
+    $("#mi").scrollIntoView({ behavior: "smooth" });
+  } catch (ex) {
+    $("#error").textContent = ex.message;
+    await cargar();
+  } finally { btn.disabled = false; }
+});
+
+let tRef = 0;
+$("#ref").addEventListener("input", () => {
+  clearTimeout(tRef);
+  const c = $("#ref").value.trim();
+  if (!c) { $("#ref-aviso").textContent = ""; return; }
+  tRef = setTimeout(async () => {
+    const r = await api("api/codigo?c=" + encodeURIComponent(c)).catch(() => null);
+    $("#ref-aviso").innerHTML = r && r.existe
+      ? `<span class="ok">✓ Código de ${esc(r.de)}.</span> Cuando el organizador confirme que estás en el grupo, los dos ganan un ticket extra.`
+      : "Ese código no existe todavía.";
+  }, 350);
+});
+if (ref) $("#ref").dispatchEvent(new Event("input"));
+
+$("#btn-verif").addEventListener("click", async () => {
+  $("#verif-res").textContent = "Comprobando…";
+  const r = await comprobar(estado);
+  $("#verif-res").innerHTML = r.ok
+    ? `<span class="ok">✓ Todo cuadra: la semilla corresponde a la huella publicada y los ${r.pasos} giros salen idénticos.</span>`
+    : `<span class="error">${r.fallos.map(esc).join(" ")}</span>`;
+});
+
+await cargar();
+setInterval(() => { if (!document.hidden) cargar(); }, 1500);
+</script>
+</body>
+</html>

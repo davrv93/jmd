@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ninja Race · gana el 100 % de Claude Code PRO o DeepSeek Harness</title>
+<meta name="description" content="Sorteo en forma de carrera ninja: un corredor contra dos cpu, tres vidas y un marcador que crece mientras dures sin caerse. El mejor puntaje se lleva el 100 % de Claude Code PRO (o de DeepSeek Harness si ya ganaste Claude Code); el resto, entre 40 % y 70 % de descuento con su cupón y su QR de WhatsApp.">
+<meta name="theme-color" content="#ffd633">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="static/estilo.css?v=20261031c">
+</head>
+<body>
+<main>
+
+  <header class="cab">
+    <div>
+      <span class="kick">SORTEO · JMD LEARNING</span>
+      <h1 class="marca">Ninja <em>Race</em></h1>
+    </div>
+    <div class="marcador">
+      <span class="chip oro" id="chip-record">Récord —</span>
+      <span class="chip rojo" id="chip-cupos">100 % —</span>
+      <span class="chip cian" id="chip-carreras">— carreras</span>
+      <span class="chip" id="chip-cierre">Cierre —</span>
+    </div>
+  </header>
+
+  <div class="globo" style="margin-top:16px">
+    «Tres carriles. Dos rivales de la casa con 6 vidas que te lanzan jutsus. Avanza, salta, usa Kamui,
+    Amaterasu y teletransporte: la carrera sigue arena tras arena… y el mejor puntaje se lleva el
+    <b>100 % de Claude Code PRO</b> o el <b>100 % de DeepSeek Harness</b>.»
+  </div>
+
+  <div class="reglas">
+    <div class="regla"><b>3</b>VIDAS <i>tres caídas y termina tu carrera</i></div>
+    <div class="regla"><b>+10</b>POR SEGUNDO <i>5 más por cada obstáculo esquivado</i></div>
+    <div class="regla"><b>1 vs 2</b>CONTRA LA CASA <i>KAGE y YUKI: 6 vidas y shurikens</i></div>
+    <div class="regla"><b>40–70 %</b>EL RESTO <i>cupón aleatorio con QR para WhatsApp</i></div>
+  </div>
+
+  <section class="panel premios" id="premios">
+    <h2>Los <span>premios</span></h2>
+    <div class="premios-grid">
+      <div class="premio-card claude">
+        <span class="medalla">🥇 100 %</span>
+        <b>Claude Code PRO</b>
+        <p>Para el <strong>mejor puntaje</strong> de la carrera.</p>
+      </div>
+      <div class="premio-card deepseek">
+        <span class="medalla">🥇 100 %</span>
+        <b>DeepSeek Harness</b>
+        <p>Para el <strong>mejor puntaje</strong> entre quienes <strong>ya ganaron Claude Code</strong>.
+          Optimiza recursos y documenta tus sistemas.</p>
+      </div>
+      <div class="premio-card resto">
+        <span class="medalla">🎟️ 40–70 %</span>
+        <b>Todos los demás</b>
+        <p>Cupón de descuento al azar en su curso, con QR para WhatsApp.</p>
+      </div>
+    </div>
+    <div class="vale">
+      <h3>¿Qué intento vale?</h3>
+      <ul>
+        <li><b>Solo tu MEJOR carrera.</b> Los puntajes no se suman: corre las veces que quieras y
+          cada intento nuevo cuenta solo si supera tu mejor marca.</li>
+        <li><b>Debe durar al menos <span id="vale-min">15</span> segundos.</b> Las más cortas no entran a la tabla.</li>
+        <li><b>Empate:</b> gana quien se inscribió primero.</li>
+        <li><b>Los premios se calculan al cierre<span id="vale-hora"></span> 🏁</b>, con la tabla de ese momento. Un premio por persona.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel" id="registro">
+    <h2>Apúntate y <span>corre</span></h2>
+    <p class="suave">Tu nombre y tu WhatsApp: con eso te buscamos si ganas y evitamos
+      que quien ya ganó el sorteo de Claude se lleve otro 100 %.</p>
+    <form id="form-reg">
+      <label for="nombre">Tu nombre y apellido</label>
+      <input id="nombre" name="nombre" type="text" maxlength="40" autocomplete="name" placeholder="Ana Torres" required>
+      <label for="telefono">Tu WhatsApp (con código de país)</label>
+      <input id="telefono" name="telefono" type="tel" maxlength="20" autocomplete="tel" placeholder="51986149476" required>
+      <button class="btn" id="btn-reg" type="submit">¡Quiero correr!</button>
+    </form>
+    <p class="error" id="reg-error" role="alert"></p>
+  </section>
+
+  <section class="panel" id="listo" hidden>
+    <h2>¡Listo, <span id="hola-nombre">corredor</span>!</h2>
+    <p class="suave" id="listo-texto">Tres vidas, dos cpu y un solo botón: la barra
+      amarilla suma puntos mientras dures sin caerse.</p>
+    <p class="error" id="listo-aviso"></p>
+    <button class="btn verde" id="btn-empezar" type="button">¡Correr! ▶</button>
+    <p class="chico suave" id="listo-premio" hidden></p>
+  </section>
+
+  <section class="arena" id="arena" hidden>
+    <div class="hud">
+      <span class="vidas" id="hud-vidas">❤❤❤</span>
+      <span class="puntos" id="hud-puntos">0 pts</span>
+      <span id="hud-esquivadas">0 esquivadas</span>
+      <span id="hud-tiempo">0:00</span>
+      <span class="puesto" id="hud-puesto">1.º</span>
+      <span class="volumen">
+        <button class="chip" id="btn-sonido" type="button" aria-label="Activar o silenciar el sonido">🔊</button>
+        <input type="range" id="vol-musica" min="0" max="100" step="5" value="35" aria-label="Volumen de la música" title="Volumen de la música">
+      </span>
+    </div>
+    <canvas id="cv" width="980" height="430" aria-label="Pista de la carrera ninja"></canvas>
+    <div class="capa" id="capa">
+      <div>
+        <h3 id="capa-titulo">Preparados…</h3>
+        <p id="capa-texto">Cargando la pista y a tus rivales.</p>
+        <div class="acciones">
+          <button class="btn amarillo" id="capa-btn" type="button" hidden>¡Correr! ▶</button>
+        </div>
+      </div>
+    </div>
+    <div class="mandos">
+      <button class="mando" id="frenar" type="button" aria-label="Frenar">◀</button>
+      <button class="salto" id="salto" type="button">¡SALTAR!</button>
+      <button class="mando" id="avanzar" type="button" aria-label="Avanzar">▶</button>
+    </div>
+    <div class="mandos jutsus">
+      <button class="mando jutsu" data-jutsu="kamui" type="button">🌀 Kamui</button>
+      <button class="mando jutsu" data-jutsu="amaterasu" type="button">🔥 Amaterasu</button>
+      <button class="mando jutsu" data-jutsu="tele" type="button">⚡ Zuum</button>
+    </div>
+  </section>
+
+  <section class="panel como" id="como">
+    <h2>Cómo se <span>juega</span></h2>
+    <div class="teclas">
+      <div class="tecla">
+        <div class="keys"><kbd>Espacio</kbd> o <kbd>↑</kbd></div>
+        <b>SALTAR</b>
+        <p>Pasa por encima de piedras, troncos y shurikens.</p>
+      </div>
+      <div class="tecla">
+        <div class="keys"><kbd>←</kbd> <kbd>→</kbd></div>
+        <b>FRENAR · AVANZAR</b>
+        <p>Adelántate para esquivar más y sumar más… pero tendrás menos tiempo para saltar.</p>
+      </div>
+      <div class="tecla jutsu kamui">
+        <div class="keys"><kbd>Espacio</kbd><kbd>Espacio</kbd> <small>rápido</small></div>
+        <b>🌀 KAMUI</b>
+        <p>Te vuelves fantasma 1,6 s: atraviesas obstáculos y shurikens.</p>
+        <span class="costo">45 de chakra</span>
+      </div>
+      <div class="tecla jutsu fuego">
+        <div class="keys"><kbd>P</kbd></div>
+        <b>🔥 AMATERASU</b>
+        <p>Llamas que queman lo próximo que viene por tu carril.</p>
+        <span class="costo">35 de chakra</span>
+      </div>
+      <div class="tecla jutsu zuum">
+        <div class="keys"><kbd>↓</kbd></div>
+        <b>⚡ TELETRANSPORTE</b>
+        <p>Saltas hacia adelante en un instante y esquivas lo que tienes encima.</p>
+        <span class="costo">30 de chakra</span>
+      </div>
+    </div>
+    <ul class="tips">
+      <li><i>🔋</i><span><b>Chakra</b>: la barra azul de arriba a la izquierda. Se recarga sola y sube con cada obstáculo esquivado.</span></li>
+      <li><i>🥷</i><span><b>KAGE y YUKI</b> tienen 6 vidas y te lanzan shurikens: sáltalos o quémalos.</span></li>
+      <li><i>❤</i><span><b>Tú tienes 3 vidas.</b> La meta llega a los 2 minutos… y empieza otra arena. Gana el mejor puntaje.</span></li>
+    </ul>
+    <p class="movil-nota">📱 En el celular: <b>◀ ▶</b> frenan y avanzan, <b>¡SALTAR!</b> salta (dos toques rápidos = Kamui) y abajo tienes <b>🌀 🔥 ⚡</b>.</p>
+  </section>
+
+  <section class="panel" id="resultado" hidden>
+    <h2 id="res-titulo">Carrera terminada</h2>
+    <p class="suave" id="res-texto"></p>
+    <div class="marcador" style="margin-top:12px">
+      <span class="chip oro" id="res-puntaje">0 pts</span>
+      <span class="chip" id="res-puesto">—</span>
+      <span class="chip" id="res-tiempo">—</span>
+      <span class="chip rojo" id="res-vidas">—</span>
+    </div>
+    <button class="btn cian" id="btn-repetir" type="button">Correr de nuevo</button>
+    <p class="chico suave" id="res-tabla">Cuenta tu mejor carrera, no la suma: corre otra vez para superarla.</p>
+  </section>
+
+  <section class="premio" id="premio" hidden>
+    <span class="sello" id="premio-sello">PREMIO</span>
+    <h3 id="premio-titulo">—</h3>
+    <p class="suave" id="premio-texto"></p>
+    <div class="codigo" id="premio-bloque-codigo"><span id="premio-codigo">······</span></div>
+    <div class="pendiente" id="premio-pendiente" hidden>
+      Tu cupón se está emitiendo: vuelve a entrar en un minuto y aparecerá aquí.
+    </div>
+    <div class="qr-caja" id="premio-qr-caja">
+      <img id="premio-qr" alt="QR con tu mensaje de WhatsApp y tu cupón" width="168" height="168">
+      <div>
+        <p class="aviso">Escanea el QR (o toca el botón) y se abre WhatsApp con el mensaje
+          <b>«He ganado X % de descuento en el curso y mi código de cupón es este»</b>
+          ya escrito para el instructor.</p>
+        <a class="btn verde" id="btn-wa" href="#" target="_blank" rel="noopener">Enviar mi cupón por WhatsApp</a>
+        <a class="btn amarillo" id="btn-matricula" href="#" target="_blank" rel="noopener">Canjear en la matrícula</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel tabla" id="tabla">
+    <h2>Tabla de <span>corredores</span></h2>
+    <p class="suave" id="tabla-sub">Mejor carrera válida de cada uno. Se actualiza sola.</p>
+    <div class="tabla-caja">
+      <table>
+        <thead><tr><th>#</th><th>Corredor</th><th class="num">Mejor</th><th class="num">Intentos</th></tr></thead>
+        <tbody id="tabla-filas"><tr><td colspan="4" class="vacia">Nadie en la tabla todavía: corre al menos 15 s y entra tú primero.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" id="acta">
+    <h2>Acta de la carrera</h2>
+    <p class="suave" id="acta-sub">Ganadores con sus iniciales y su descuento.</p>
+    <ul class="lista" id="acta-lista"><li>Todavía no hay premios: sé el primero en cruzar la meta.</li></ul>
+  </section>
+
+  <p class="pie">Los cupos del 100 % son limitados y un premio por persona. Quien ya ganó
+    Claude Code PRO en el sorteo corre igual, y su premio es el curso <b>DeepSeek Harness</b>
+    (optimiza recursos y documenta tus sistemas). Los ganadores de la carrera anterior esta vez no
+    corren: le toca a los demás. Códigos emitidos por el
+    sorteo de Claude Code PRO · <a href="admin">panel del instructor</a>.</p>
+
+</main>
+
+<script type="module">
+import { api, $, esc, tokenLeer, tokenGuardar, BASE } from "./static/comun.js";
+import { carrera, precargar } from "./static/juego.js?v=sprites-fondo-20261030f";
+precargar();
+
+let estado = null, yo = null, juego = null;
+const audioCfg = { on: true };
+
+// ---------- música de fondo ----------
+// Suena en bucle solo durante la carrera, bajita por defecto (35 %). El volumen
+// se guarda en el navegador; 🔇 silencia música y efectos a la vez.
+const musica = new Audio(BASE + "static/audio/musica.mp3?v=silhouette-1");
+musica.loop = true;
+musica.preload = "none";
+let musicaSonando = false;
+try {
+  const v = localStorage.getItem("ninja-vol");
+  if (v !== null) $("#vol-musica").value = v;
+} catch (_) { /* sin almacenamiento */ }
+function musicaVolumen() {
+  // curva cuadrática: el tramo bajo del control es el que más se usa
+  const v = +$("#vol-musica").value / 100;
+  musica.volume = audioCfg.on ? v * v : 0;
+}
+function musicaTocar() {
+  musicaVolumen();
+  musica.play().catch(() => { /* sin permiso aún: arranca con la siguiente tecla */ });
+}
+function musicaEmpezar() {
+  if (!musicaSonando) musica.currentTime = 0;
+  musicaSonando = true;
+  musicaTocar();
+}
+function musicaParar() { musicaSonando = false; musica.pause(); }
+
+// ---------- pantalla completa en el teléfono ----------
+// En pantalla táctil la pista ocupa toda la pantalla mientras corres: en
+// horizontal los botones van encima de la pista; en vertical, debajo y con un
+// aviso para girar. Donde se puede (Android) entra a pantalla completa y gira.
+const tactil = matchMedia("(pointer: coarse)").matches;
+function pantallaEntrar() {
+  if (!tactil) return;
+  $("#arena").classList.add("pantalla");
+  document.body.classList.add("sin-scroll");
+  try {
+    const el = document.documentElement;
+    if (el.requestFullscreen && !document.fullscreenElement) {
+      el.requestFullscreen({ navigationUI: "hide" })
+        .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock("landscape"))
+        .catch(() => { /* iPhone u otro: queda la pantalla fija igual */ });
+    }
+  } catch (_) { /* sin pantalla completa */ }
+}
+function pantallaSalir() {
+  $("#arena").classList.remove("pantalla");
+  document.body.classList.remove("sin-scroll");
+  try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (_) { /* nada */ }
+  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+}
+musicaVolumen();
+
+// ---------- estado público ----------
+async function cargarEstado() {
+  estado = await api("api/estado");
+  const cerrado = !!estado.cerrado;
+  $("#chip-record").textContent = estado.record > 0 ? `Récord ${estado.record} pts` : "Sin récord aún";
+  // Mientras está abierto no se publican cupos ni premios: nada de que alguien
+  // ya ganó. Solo la cuenta regresiva del cierre.
+  $("#chip-cupos").textContent = cerrado
+    ? (estado.quedan_100 > 0 ? `100 %: quedan ${estado.quedan_100} de ${estado.cupos_100}` : "100 % agotado")
+    : "100 % · entrega al cierre";
+  $("#chip-carreras").textContent = `${estado.carreras} carreras · ${estado.jugadores} corredores`;
+  pintarCierre();
+  $("#vale-min").textContent = Math.round((estado.min_ms || 15000) / 1000);
+  pintarTabla();
+  const lista = $("#acta-lista");
+  if (!cerrado) {
+    $("#acta-sub").textContent = estado.anuncio || "";
+    lista.innerHTML = estado.solo_manual
+      ? "<li>El acta se publica cuando el instructor cierre la carrera 🏁: ahí se calculan los puntajes y aparecen los ganadores.</li>"
+      : `<li>El acta se publica al cierre (${esc(horaCierre())} 🏁): ahí aparecen los ganadores y sus cupones.</li>`;
+    return;
+  }
+  $("#acta-sub").textContent = "Ganadores con sus iniciales y su descuento.";
+  if (!estado.ganadores.length) {
+    lista.innerHTML = "<li>Todavía no hay premios: sé el primero en cruzar la meta.</li>";
+  } else {
+    lista.innerHTML = estado.ganadores.slice().reverse().map((g) => `
+      <li><b>${esc(g.nombre)}</b>
+        <span>${g.puntaje} pts · ${g.puesto}.º puesto</span>
+        <span class="desc">${g.descuento} % · ${esc(g.curso)}</span></li>`).join("");
+  }
+}
+
+// ---------- hora de cierre ----------
+function horaCierre() {
+  if (!estado || !estado.cierre) return "";
+  return new Date(estado.cierre).toLocaleTimeString("es-PE", { timeZone: "America/Lima", hour: "numeric", minute: "2-digit", hour12: true });
+}
+// Chip con la hora y lo que falta; al llegar a cero recarga el estado (el
+// servidor cierra y reparte solo).
+let recargoAlCierre = false;
+function pintarCierre() {
+  if (!estado) return;
+  const chip = $("#chip-cierre");
+  if (estado.cerrado) { chip.textContent = "Cerrado ✓"; $("#vale-hora").textContent = ""; return; }
+  if (estado.solo_manual || !estado.cierre) { chip.textContent = "Cierre en vivo 🏁"; $("#vale-hora").textContent = ""; return; }
+  const falta = new Date(estado.cierre) - Date.now();
+  $("#vale-hora").textContent = ` (hoy a las ${horaCierre()})`;
+  if (falta <= 0) {
+    chip.textContent = "Cerrando… 🏁";
+    if (!recargoAlCierre) { recargoAlCierre = true; setTimeout(() => cargarEstado().catch(() => {}), 6000); }
+    return;
+  }
+  const min = Math.ceil(falta / 60000);
+  const resta = min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")} min` : `${min} min`;
+  chip.textContent = `Cierra ${horaCierre()} · faltan ${resta} ⏰`;
+}
+setInterval(pintarCierre, 15000);
+
+// ---------- tabla de corredores ----------
+// Iniciales, mejor carrera válida e intentos; tu fila va resaltada.
+function pintarTabla() {
+  const filas = (estado && estado.tabla) || [];
+  const mio = yo && yo.puesto_tabla;
+  const min = Math.round(((estado && estado.min_ms) || 15000) / 1000);
+  $("#tabla-filas").innerHTML = filas.length
+    ? filas.map((f) => `
+      <tr class="${f.puesto === mio ? "yo" : ""}">
+        <td class="pos">${f.puesto <= 3 ? ["🥇", "🥈", "🥉"][f.puesto - 1] : f.puesto}</td>
+        <td>${esc(f.nombre)}${f.puesto === mio ? ' <span class="tu">TÚ</span>' : ""}</td>
+        <td class="num">${f.mejor} pts</td>
+        <td class="num">${f.carreras}</td>
+      </tr>`).join("")
+    : `<tr><td colspan="4" class="vacia">Nadie en la tabla todavía: corre al menos ${min} s y entra tú primero.</td></tr>`;
+  $("#tabla-sub").textContent = estado && estado.jugadores > filas.length
+    ? `Mejor carrera válida de cada uno · ${filas.length} en la tabla de ${estado.jugadores} inscritos. Se actualiza sola.`
+    : "Mejor carrera válida de cada uno. Se actualiza sola.";
+}
+setInterval(() => {
+  if (document.hidden || !$("#arena").hidden) return;
+  cargarEstado().catch(() => {});
+}, 20000);
+
+// ---------- registro ----------
+$("#form-reg").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("#btn-reg"), err = $("#reg-error");
+  err.textContent = "";
+  btn.disabled = true;
+  try {
+    const r = await api("api/inscribir", {
+      method: "POST",
+      body: JSON.stringify({ nombre: $("#nombre").value, telefono: $("#telefono").value }),
+    });
+    tokenGuardar(r.t);
+    yo = r;
+    verListo();
+  } catch (ex) {
+    err.textContent = ex.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+async function recuperar() {
+  const t = tokenLeer();
+  if (!t) return;
+  try {
+    yo = await api("api/yo?t=" + encodeURIComponent(t));
+    verListo();
+  } catch {
+    tokenGuardar("");
+  }
+}
+
+function verListo() {
+  pintarTabla();
+  if (!yo) return;
+  $("#registro").hidden = true;
+  $("#listo").hidden = false;
+  $("#hola-nombre").textContent = yo.nombre.split(" ")[0];
+  $("#listo-aviso").textContent = yo.aviso || "";
+  if (yo.cerrado && yo.premio) {
+    // recién después del cierre se ve el premio
+    $("#listo-texto").textContent = "Ya tienes tu premio guardado. Puedes correr las veces que quieras.";
+    mostrarPremio(yo.premio);
+  } else if (!yo.cerrado) {
+    $("#listo-texto").textContent =
+      "Tres vidas, dos cpu y un solo botón: la barra suma puntos mientras dures sin caerse. " +
+      (yo.anuncio || "");
+  }
+}
+
+// ---------- carrera ----------
+async function empezar() {
+  const btn = $("#btn-empezar");
+  if (btn) btn.disabled = true;
+  musicaEmpezar(); // dentro del clic: así el navegador deja sonar la música
+  pantallaEntrar(); // también la pantalla completa necesita el clic
+  try {
+    const r = await api("api/correr", { method: "POST", body: JSON.stringify({ t: tokenLeer() }) });
+    await arrancar(r.carrera);
+  } catch (ex) {
+    musicaParar();
+    pantallaSalir();
+    $("#listo-aviso").textContent = ex.message;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function arrancar(carreraId) {
+  $("#listo").hidden = true;
+  $("#resultado").hidden = true;
+  $("#premio").hidden = true;
+  $("#arena").hidden = false;
+  $("#capa").hidden = false;
+  $("#capa-titulo").textContent = "Preparados…";
+  $("#capa-texto").textContent = "3 · 2 · 1 · ¡YA! Espacio o toque para saltar.";
+  $("#capa-btn").hidden = true;
+  if (juego) juego.cancelar();
+  juego = carrera({
+    canvas: $("#cv"),
+    audio: audioCfg,
+    cfg: estado,
+    hud: {
+      vidas: $("#hud-vidas"), puntos: $("#hud-puntos"), tiempo: $("#hud-tiempo"),
+      puesto: $("#hud-puesto"), esquivadas: $("#hud-esquivadas"),
+    },
+    onCuenta: (d) => {
+      if (d.cargando !== undefined) {
+        $("#capa-titulo").textContent = "Cargando la pista…";
+        $("#capa-texto").textContent = `Imágenes ${d.cargando}. La primera vez tarda un poco; después queda guardado.`;
+        return;
+      }
+      if (d.tiempo_ms !== undefined) {
+        // latido: el panel del instructor ve tu puntaje en vivo
+        api("api/tick", { method: "POST", body: JSON.stringify({ t: tokenLeer(), carrera: carreraId, tiempo_ms: d.tiempo_ms, puntaje: d.puntaje }) }).catch(() => {});
+        return;
+      }
+      if (d.cuenta === undefined) return;
+      $("#capa").hidden = d.cuenta <= 0.05 ? true : false;
+      $("#capa-titulo").textContent = d.cuenta > .35 ? String(Math.ceil(d.cuenta - .2)) : "¡YA!";
+      $("#capa-texto").textContent = "¡Corre!";
+    },
+    onFin: async (res) => {
+      musicaParar();
+      pantallaSalir();
+      $("#arena").hidden = true;
+      $("#resultado").hidden = false;
+      juego.cancelar();
+      $("#res-puntaje").textContent = `${res.puntaje} pts`;
+      $("#res-puesto").textContent = `${res.puesto}.º de 3`;
+      $("#res-tiempo").textContent = `${(res.tiempo_ms / 1000).toFixed(1)} s`;
+      $("#res-vidas").textContent = `${res.vidas} de 3 vidas`;
+      try {
+        const r = await api("api/terminar", {
+          method: "POST",
+          body: JSON.stringify({
+            t: tokenLeer(), carrera: res.carrera, tiempo_ms: res.tiempo_ms,
+            esquivadas: res.esquivadas, vidas: res.vidas, puesto: res.puesto, cpu: res.cpu,
+          }),
+        });
+        if (r.cerrado) {
+          // sorteo cerrado: ahora sí se revela el premio
+          $("#res-titulo").textContent = r.puesto === 1 ? "¡Ganaste la carrera!" : "¡Buena carrera!";
+          $("#res-texto").textContent = r.aviso
+            ? r.aviso
+            : (r.puesto === 1
+                ? "Le sacaste puntaje a los dos cpu. Revisa tu premio aquí abajo."
+                : "Los cpu te superaron esta vez. Tu descuento te espera abajo.");
+          if (r.premio) mostrarPremio(r.premio);
+          else if (r.puede_premio) sinPremio(`Para llevarte el cupón la carrera debe durar al menos ${(estado.min_ms / 1000).toFixed(0)} segundos.`);
+        } else {
+          // sorteo abierto: nada de premios, solo la posición y el cierre
+          const corta = r.valida === false;
+          $("#res-titulo").textContent = r.puesto === 1
+            ? "¡Vas primero! 🥇"
+            : `Vas ${r.puesto}.º de 3`;
+          $("#res-texto").textContent = [
+            corta ? `Las carreras cuentan desde los ${(estado.min_ms / 1000).toFixed(0)} s: corre un poco más.` : "",
+            r.anuncio || "",
+          ].filter(Boolean).join(" ");
+          if (corta) sinPremio("Esta carrera quedó muy corta. Otra vez y aguanta el tipo 🏃");
+        }
+        yo = await api("api/yo?t=" + encodeURIComponent(tokenLeer()));
+        await cargarEstado();
+        $("#res-tabla").textContent = yo.puesto_tabla
+          ? `Tu mejor carrera: ${yo.mejor_valido} pts · vas ${yo.puesto_tabla}.º de ${yo.en_tabla} en la tabla. No se suman: corre otra vez para superarla.`
+          : "Todavía no entras a la tabla: necesitas una carrera válida. Corre otra vez.";
+      } catch (ex) {
+        $("#res-texto").textContent = ex.message;
+      }
+    },
+  });
+  try {
+    await juego.arrancar(carreraId);
+  } catch (ex) {
+    juego.cancelar();
+    musicaParar();
+    pantallaSalir();
+    $("#arena").hidden = true;
+    $("#listo").hidden = false;
+    $("#listo-aviso").textContent = ex.message || "No cargaron el fondo o los ninjas. Recarga la página.";
+  }
+}
+
+// Aviso de carrera corta: sin código, sin QR, sin premio que enseñar.
+function sinPremio(texto) {
+  $("#premio").hidden = false;
+  $("#premio-sello").textContent = "SIN PREMIO";
+  $("#premio-titulo").textContent = "¡Corre un poco más!";
+  $("#premio-texto").textContent = texto;
+  $("#premio-bloque-codigo").hidden = true;
+  $("#premio-pendiente").hidden = true;
+  $("#premio-qr-caja").hidden = true;
+}
+
+function mostrarPremio(p) {
+  $("#premio").hidden = false;
+  $("#premio-bloque-codigo").hidden = false;
+  $("#premio-qr-caja").hidden = false;
+  const gratis = p.descuento === 100;
+  $("#premio-sello").textContent = gratis ? "🏆 GANADOR DEL 100 %" : "PREMIO PARA TI";
+  $("#premio-titulo").innerHTML = gratis
+    ? `¡<em>100 % GRATIS!</em> ${p.curso}`
+    : `¡<em>${p.descuento} %</em> de descuento!`;
+  $("#premio-texto").textContent = gratis
+    ? "Tu carrera valió el curso completo: el instructor canjea este cupón al 100 %."
+    : `Cupón para ${p.curso}. Aleatorio entre 40 % y 70 %, y te salió ${p.descuento} %.`;
+  $("#premio-codigo").textContent = p.codigo || "······";
+  const pendiente = !p.codigo;
+  $("#premio-pendiente").hidden = !pendiente;
+  const qr = $("#premio-qr"), wa = $("#btn-wa"), mat = $("#btn-matricula");
+  if (pendiente) {
+    $("#premio-qr-caja").hidden = true;
+    qr.hidden = true; wa.hidden = true; mat.hidden = true;
+  } else {
+    $("#premio-qr-caja").hidden = false;
+    qr.hidden = false; wa.hidden = false; mat.hidden = false;
+    qr.src = BASE + "api/qr?u=" + encodeURIComponent(p.wa);
+    wa.href = p.wa;
+    mat.href = p.matricula;
+  }
+}
+
+// ---------- botones ----------
+$("#btn-empezar").addEventListener("click", empezar);
+$("#btn-repetir").addEventListener("click", empezar);
+$("#capa-btn").addEventListener("click", empezar);
+$("#salto").addEventListener("pointerdown", (e) => { e.preventDefault(); juego && juego.saltar(); });
+for (const b of document.querySelectorAll("[data-jutsu]")) {
+  b.addEventListener("pointerdown", (e) => { e.preventDefault(); juego && juego.jutsu(b.dataset.jutsu); });
+}
+for (const [id, m] of [["#avanzar", 1], ["#frenar", -1]]) {
+  const b = $(id);
+  b.addEventListener("pointerdown", (e) => { e.preventDefault(); b.setPointerCapture(e.pointerId); juego && juego.mover(m); });
+  for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => juego && juego.mover(0));
+}
+$("#btn-sonido").addEventListener("click", () => {
+  audioCfg.on = !audioCfg.on;
+  $("#btn-sonido").textContent = audioCfg.on ? "🔊" : "🔇";
+  musicaVolumen();
+});
+$("#vol-musica").addEventListener("input", () => {
+  if (!audioCfg.on && +$("#vol-musica").value > 0) {
+    audioCfg.on = true;
+    $("#btn-sonido").textContent = "🔊";
+  }
+  musicaVolumen();
+  try { localStorage.setItem("ninja-vol", $("#vol-musica").value); } catch (_) { /* sin almacenamiento */ }
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) musica.pause();
+  else if (musicaSonando) musicaTocar();
+});
+// Si el navegador no dejó arrancar la música (la carrera empezó sin un clic),
+// arranca con la primera tecla o toque.
+for (const ev of ["keydown", "pointerdown"]) {
+  document.addEventListener(ev, () => { if (musicaSonando && musica.paused && !document.hidden) musicaTocar(); });
+}
+
+await cargarEstado();
+await recuperar();
+</script>
+</body>
+</html>

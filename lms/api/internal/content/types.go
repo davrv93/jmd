@@ -25,6 +25,12 @@ type Course struct {
 	// Agenda (opcional): cómo sale el curso en el calendario del instructor. Sin este bloque se usa
 	// el título del curso, el nombre del grupo y sesiones de 90 minutos.
 	Agenda *CourseAgenda `yaml:"agenda" json:"-"`
+
+	// Portada (opcional): una página HTML del curso (ruta relativa a su carpeta) que la página del curso
+	// muestra arriba, en un iframe aislado: una cuenta regresiva, un tráiler. Mismas reglas que una escena
+	// LIVE (todo inline, sin CDN, menos de 1 MB). PortadaPath es la ruta en disco, ya validada.
+	Portada     string `yaml:"portada" json:"-"`
+	PortadaPath string `yaml:"-" json:"-"`
 }
 
 // CourseAgenda es el nombre corto, el grupo, el área y la duración de las sesiones de un curso.

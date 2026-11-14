@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin del sorteo</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/base.css">
+<style>
+  main { max-width: 980px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 11px; color: var(--soft); letter-spacing: .06em; }
+  .tabla { overflow-x: auto; }
+  .acc { display: flex; flex-wrap: wrap; gap: 8px; }
+  .acc .btn { width: auto; margin-top: 0; padding: 10px 16px; font-size: 14px; }
+  .mini { border: 0; border-radius: 99px; padding: 5px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; background: var(--ink); color: #fff; margin: 2px; }
+  .mini.ok { background: var(--ok); } .mini.no { background: #9a8a7c; }
+  .est-pagado { color: var(--ok); font-weight: 700; } .est-anulado { color: #9a8a7c; text-decoration: line-through; }
+  textarea { font-family: 'JetBrains Mono', monospace; font-size: 12px; min-height: 320px; }
+  .grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .grid4 label { margin-top: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <span class="kick">ADMIN · SORTEO Y MATRÍCULAS</span>
+  <h1 style="font-size:40px">Panel</h1>
+  <div class="card" id="login">
+    <label for="k">Clave</label><input id="k" type="password" autocomplete="current-password">
+    <button class="btn" id="entrar">Entrar</button><p class="err" id="lerr"></p>
+  </div>
+  <div id="panel" hidden>
+    <div class="card">
+      <h2 id="fase"></h2>
+      <p class="soft" id="horas"></p>
+      <div class="acc" style="margin-top:12px">
+        <button class="btn dark" data-a="cerrar">Cerrar ahora</button>
+        <button class="btn" data-a="sortear">Sortear ahora</button>
+        <button class="btn ghost" data-a="reabrir">Reabrir</button>
+        <button class="btn ghost" data-a="reiniciar">Sorteo nuevo</button>
+      </div>
+      <p class="soft small" style="margin-top:8px">El cierre y el sorteo se hacen solos a la hora fijada. Los botones son por si hace falta adelantarlos.</p>
+      <p class="err" id="err"></p>
+    </div>
+
+    <div class="card">
+      <h2>Números reales</h2>
+      <div class="grid4">
+        <div><label>Matriculados fuera de esta web</label><input id="c-extra" type="text" inputmode="numeric"></div>
+        <div><label>Cursos dictados</label><input id="c-cursos" type="text" inputmode="numeric"></div>
+        <div><label>Alumnos</label><input id="c-alumnos" type="text" inputmode="numeric"></div>
+        <div><label>Certificados emitidos</label><input id="c-cert" type="text" inputmode="numeric"></div>
+      </div>
+      <button class="btn" id="guardar-num" style="width:auto">Guardar</button>
+      <p class="soft small" id="cuenta-cupos" style="margin-top:8px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Matrículas</h2>
+      <div class="tabla"><table id="mat"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Participantes del sorteo</h2>
+      <div class="tabla"><table id="par"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Códigos de premio</h2>
+      <div class="tabla"><table id="cods"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Configuración completa</h2>
+      <p class="soft small">Horas en formato ISO con zona de Lima (-05:00). Ofertas: precio normal y precio en combo.</p>
+      <textarea id="cfg"></textarea>
+      <button class="btn" id="guardar-cfg" style="width:auto">Guardar configuración</button>
+    </div>
+  </div>
+</main>
+<script type="module">
+import { api, $, esc, soles, hora } from "./static/comun.js";
+
+let clave = sessionStorage.getItem("clave-admin") || "";
+let e;
+const llamar = (ruta, cuerpo) => api(ruta, { method: cuerpo ? "POST" : "GET", headers: { "X-Clave": clave }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+
+async function cargar() {
+  e = await llamar("api/admin/estado");
+  $("#login").hidden = true; $("#panel").hidden = false;
+  pintar();
+}
+
+function pintar() {
+  const nombres = { inscripcion: "Inscripciones abiertas", cerrado: "Cerrado: esperando el sorteo", sorteado: "Sorteado" };
+  $("#fase").textContent = `${nombres[e.fase]} · ${e.total} participantes · edición ${e.edicion}`;
+  $("#horas").textContent = `Abre ${hora(e.apertura)} · cierra ${hora(e.cierre)} · resultado ${hora(e.sorteo)} (${new Date(e.sorteo).toLocaleDateString("es-PE", { timeZone: "America/Lima" })})`;
+  const c = e.config;
+  $("#c-extra").value = c.matriculadosExtra; $("#c-cursos").value = c.cursos; $("#c-alumnos").value = c.alumnos; $("#c-cert").value = c.certificados;
+  $("#cuenta-cupos").textContent = `Cupos tomados: ${e.matriculados} de ${e.cupos} (matrículas pagadas + las de fuera de esta web).`;
+  if (document.activeElement !== $("#cfg")) $("#cfg").value = JSON.stringify(c, null, 2);
+
+  const wa = (t, txt) => `https://wa.me/51${t}?text=${encodeURIComponent(txt)}`;
+  $("#mat").innerHTML = `<tr><th>ID</th><th>TITULAR</th><th>ACOMPAÑANTE</th><th>EXTRAS</th><th>CÓDIGO</th><th>TOTAL</th><th>ESTADO</th><th></th></tr>` +
+    e.matriculas.slice().reverse().map((m) => `<tr>
+      <td class="mono">${esc(m.id)}</td>
+      <td>${esc(m.titular.nombre)}<br><span class="soft">${esc(m.titular.email)}</span><br><a href="${wa(m.titular.telefono, `Hola ${m.titular.nombre}, sobre tu matrícula ${m.id} de Claude Code PRO:`)}" target="_blank">${esc(m.titular.telefono)}</a></td>
+      <td>${m.amigo ? `${esc(m.amigo.nombre)}<br><span class="soft">${esc(m.amigo.email)}</span><br>${esc(m.amigo.telefono)}` : "–"}</td>
+      <td>${esc((m.extras || []).join(", ")) || "–"}</td>
+      <td class="mono">${esc(m.codigo || "–")}</td>
+      <td><b>${soles(m.total)}</b></td>
+      <td class="est-${m.estado}">${m.estado}</td>
+      <td>${m.estado !== "pagado" ? `<button class="mini ok" data-pago="${m.id}" data-e="pagado">Pagó</button>` : ""}
+          ${m.estado !== "pendiente" ? `<button class="mini" data-pago="${m.id}" data-e="pendiente">Pendiente</button>` : ""}
+          ${m.estado !== "anulado" ? `<button class="mini no" data-pago="${m.id}" data-e="anulado">Anular</button>` : ""}</td>
+    </tr>`).join("");
+  $("#par").innerHTML = `<tr><th>#</th><th>NOMBRE</th><th>CELULAR</th><th>IP</th><th>HORA</th></tr>` +
+    e.participantes.map((p) => `<tr><td class="mono">${p.numero}</td><td>${esc(p.nombre)}</td><td>${esc(p.telefono)}</td><td class="soft">${esc(p.ip)}</td><td class="soft">${hora(p.creadoEn)}</td></tr>`).join("");
+  const nombreDe = (n) => (e.participantes.find((p) => p.numero === n) || {}).nombre || "";
+  $("#cods").innerHTML = `<tr><th>CÓDIGO</th><th>DESCUENTO</th><th>GANADOR</th><th>USADO EN</th></tr>` +
+    (e.codigos || []).map((k) => `<tr><td class="mono">${esc(k.codigo)}</td><td>${k.descuento} %</td><td>#${k.numero} ${esc(nombreDe(k.numero))}</td><td>${esc(k.usado || "–")}</td></tr>`).join("");
+}
+
+const err = (x) => { $("#err").textContent = x.message; };
+$("#entrar").onclick = async () => {
+  clave = $("#k").value; sessionStorage.setItem("clave-admin", clave);
+  try { await cargar(); } catch (x) { $("#lerr").textContent = x.message; }
+};
+document.addEventListener("click", async (ev) => {
+  const a = ev.target.dataset.a, id = ev.target.dataset.pago;
+  try {
+    if (a) { $("#err").textContent = ""; e = await llamar("api/admin/" + a, {}); pintar(); }
+    if (id) { e = await llamar("api/admin/pago", { id, estado: ev.target.dataset.e }); pintar(); }
+  } catch (x) { err(x); }
+});
+$("#guardar-num").onclick = async () => {
+  const c = { ...e.config, matriculadosExtra: +$("#c-extra").value || 0, cursos: +$("#c-cursos").value || 0, alumnos: +$("#c-alumnos").value || 0, certificados: +$("#c-cert").value || 0 };
+  try { e = await llamar("api/admin/config", c); pintar(); } catch (x) { err(x); }
+};
+$("#guardar-cfg").onclick = async () => {
+  try { e = await llamar("api/admin/config", JSON.parse($("#cfg").value)); pintar(); } catch (x) { err(x); }
+};
+if (clave) cargar().catch(() => {});
+setInterval(() => { if (clave && !$("#panel").hidden) cargar().catch(() => {}); }, 8000);
+</script>
+</body>
+</html>

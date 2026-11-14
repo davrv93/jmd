@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La ceremonia · Claude Code PRO</title>
+<meta name="description" content="Ceremonia de ganadores del sorteo de Claude Code PRO.">
+<meta name="theme-color" content="#0f0b14">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root { --oro: #e6b84a; --oro-d: #8a6420; --orange: #d97757; --ink: #0f0b14; --txt: #fbf8f3; --soft: #c9bba9; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--ink); color: var(--txt); font-family: 'Space Grotesk', system-ui, sans-serif; overflow: hidden; }
+  #estadio { position: fixed; inset: 0; width: 100%; height: 100%; }
+  main { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; text-align: center; padding: 20px 16px 11vh; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
+  .px { font-family: 'Press Start 2P', monospace; }
+  .kick { font-family: 'JetBrains Mono', monospace; color: var(--oro); font-size: 12px; letter-spacing: .18em; }
+  h1 { font-size: clamp(30px, 8vw, 64px); line-height: 1; letter-spacing: -.02em; margin: 10px 0; }
+  h1 span { color: var(--oro); }
+  .btn { display: inline-block; margin-top: 18px; background: var(--oro); color: #1b1310; font-weight: 700; padding: 14px 26px; border-radius: 999px; border: 0; font: inherit; font-size: 17px; cursor: pointer; }
+  .btn.g { background: transparent; color: var(--txt); border: 2px solid rgba(255,255,255,.3); }
+  .cuenta { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+  [hidden] { display: none !important; }
+  .cuenta div { min-width: 64px; background: rgba(255,255,255,.08); border-radius: 12px; padding: 8px 6px; }
+  .cuenta b { display: block; font-size: 30px; font-family: 'JetBrains Mono', monospace; }
+  .cuenta span { font-size: 11px; letter-spacing: .1em; color: var(--soft); }
+
+  /* escenas */
+  .esc { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 16px 10vh; text-align: center; }
+  .esc.on { display: flex; }
+  .anio { font-size: clamp(60px, 18vw, 140px); line-height: 1; color: var(--oro); opacity: .18; position: absolute; top: 10vh; left: 50%; transform: translateX(-50%); }
+  .tit { font-size: clamp(24px, 6vw, 44px); line-height: 1.08; max-width: 720px; text-shadow: 0 2px 20px rgba(0,0,0,.6); }
+  .tit span { color: var(--oro); }
+  .sub { color: var(--soft); font-size: clamp(14px, 3.6vw, 19px); margin-top: 8px; max-width: 600px; }
+  .temp { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--soft); letter-spacing: .14em; margin-bottom: 10px; }
+  .anim { animation: sube .7s cubic-bezier(.2, .9, .3, 1) both; }
+  @keyframes sube { from { opacity: 0; transform: translateY(16px); } }
+
+  .cupon { margin-top: 14px; background: #fff; color: #1b1310; border-radius: 20px; padding: 16px 20px; min-width: min(92vw, 420px); transform: rotateX(-90deg); transform-origin: top; animation: gira .9s .3s cubic-bezier(.2, 1.2, .4, 1) forwards; box-shadow: 0 30px 60px -20px rgba(230,184,74,.5); }
+  @keyframes gira { to { transform: none; } }
+  .cupon .k { font-size: 11px; letter-spacing: .14em; font-weight: 700; color: var(--orange); }
+  .cupon .big { font-size: clamp(48px, 13vw, 80px); font-weight: 700; line-height: 1; letter-spacing: -.04em; }
+  .cupon .quien { font-size: clamp(18px, 5vw, 26px); font-weight: 700; margin-top: 6px; }
+  .cupon .num { font-family: 'JetBrains Mono', monospace; color: var(--orange); }
+  .cupon.oro { background: linear-gradient(160deg, #fff2c2, #e6b84a 60%, #c9962e); }
+  .lista { margin-top: 18px; display: grid; gap: 8px; width: min(92vw, 460px); }
+  .lista div { display: flex; justify-content: space-between; background: rgba(255,255,255,.08); border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+  .lista b { color: var(--oro); }
+  .barra { position: fixed; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.1); z-index: 3; }
+  .barra i { display: block; height: 100%; background: var(--oro); width: 0; transition: width .4s linear; }
+  .saltar { position: fixed; right: 12px; top: 12px; z-index: 3; background: rgba(0,0,0,.4); color: var(--soft); border: 1px solid rgba(255,255,255,.2); border-radius: 99px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; display: none; }
+  .foot { position: fixed; left: 0; right: 0; bottom: 10px; z-index: 3; font-size: 11px; color: #7a6c60; text-align: center; padding: 0 16px; }
+  @media (prefers-reduced-motion: reduce) { .anim, .cupon { animation: none; transform: none; opacity: 1; } }
+</style>
+</head>
+<body>
+<canvas id="estadio"></canvas>
+<button class="saltar" id="saltar">Saltar ›</button>
+<div class="barra"><i id="prog"></i></div>
+
+<main id="portada">
+  <div class="kick">CLAUDE CODE PRO · SORTEO DE LA ÚLTIMA VACANTE</div>
+  <h1>La ceremonia del<br><span>balón de oro.</span></h1>
+  <p class="sub" id="msj">Quince temporadas sin levantar nada. Cuatro premios en el camino. Un balón de oro al final.</p>
+  <div class="cuenta" id="cta" hidden></div>
+  <button class="btn" id="ver" hidden>▶ Ver la ceremonia</button>
+  <a class="btn g" href="./" id="volver">Ir al sorteo</a>
+</main>
+
+<div id="escenas"></div>
+<p class="foot">Tributo. Ilustración generada con IA; no es una fotografía de Harry Kane. Los hechos deportivos son públicos. Las marcas que aparecen en la ilustración (escudo de la FA, Nike) pertenecen a sus dueños y no tienen relación con este sorteo. Claude y Claude Code son marcas de Anthropic, PBC; sin relación ni patrocinio de Anthropic.</p>
+
+<script type="module">
+import { api, $, esc, hora, sincronizar, cuenta } from "./static/comun.js";
+
+/* ---------- Escenario: estadio en píxeles, público, focos ---------- */
+const cv = $("#estadio"), cx = cv.getContext("2d");
+let W, H, S = 1, t0 = performance.now();
+const sprite = { x: .2, y: 0, accion: "correr", dir: 1, salto: 0 };
+let balon = { x: .28, y: 0, vx: 0, vy: 0, visible: true }, foco = 0, oroY = 2, confeti = [], lluvia = 0, noche = 0;
+function medir() { W = cv.width = innerWidth * devicePixelRatio; H = cv.height = innerHeight * devicePixelRatio; S = Math.max(3, Math.round(Math.min(W, H) / 120)); }
+addEventListener("resize", medir); medir();
+
+// Kane en 8 bits: un delantero rubio, camiseta blanca con el 9, botines negros.
+// 0 vacío · 1 piel · 2 pelo · 3 camiseta · 4 número/sombra · 5 short · 6 botín · 7 ojo · 8 media
+const Kane = {
+  correr1: ["..2222..", ".222222.", ".217117.", ".211111.", "..1111..", ".333333.", "3334333.", "3333333.", "1333331.", "..5555..", "..5..5..", ".88..88.", ".66..66."],
+  correr2: ["..2222..", ".222222.", ".217117.", ".211111.", "..1111..", ".333333.", "3334333.", "3333333.", "1333331.", "..5555..", ".5...5..", "88...88.", "66...66."],
+  patea:  ["..2222..", ".222222.", ".217117.", ".211111.", "..1111..", ".333333.", "3334333.", "3333333.", "1333331.", "..5555..", "..5.5...", ".88.88..", ".66..66."],
+  celebra:["..2222..", "1222222.", "1217117.", "1211111.", "1.1111.1", "1333333.", "3334333.", "3333333.", ".33333..", "..5555..", "..5..5..", ".88..88.", ".66..66."],
+};
+const PAL = { 1: "#f1c7a3", 2: "#d9b25a", 3: "#ffffff", 4: "#1b2559", 5: "#1b2559", 6: "#111", 7: "#1b1310", 8: "#ffffff" };
+function dibujarSprite(mapa, x, y, esc, dir) {
+  const p = S * esc;
+  for (let r = 0; r < mapa.length; r++) for (let c = 0; c < 8; c++) {
+    const k = mapa[r][c]; if (k === ".") continue;
+    cx.fillStyle = PAL[k]; const cc = dir > 0 ? c : 7 - c;
+    cx.fillRect(x + cc * p, y + r * p, p, p);
+  }
+  // el 9 en la espalda/pecho
+  cx.fillStyle = "#1b2559"; const nx = x + (dir > 0 ? 3 : 3) * p, ny = y + 6 * p;
+  cx.fillRect(nx, ny, p, p); cx.fillRect(nx + p, ny, p, p); cx.fillRect(nx + p, ny + p, p, p); cx.fillRect(nx, ny + 2 * p, p, p); cx.fillRect(nx + p, ny + 2 * p, p, p);
+}
+function dibujarBalon(x, y, r, oro) {
+  cx.fillStyle = oro ? "#e6b84a" : "#fff"; cx.beginPath(); cx.arc(x, y, r, 0, 6.283); cx.fill();
+  cx.fillStyle = oro ? "#8a6420" : "#111"; cx.beginPath(); cx.moveTo(x, y - r * .5); cx.lineTo(x + r * .45, y - r * .15); cx.lineTo(x + r * .28, y + r * .4); cx.lineTo(x - r * .28, y + r * .4); cx.lineTo(x - r * .45, y - r * .15); cx.closePath(); cx.fill();
+  if (oro) { cx.fillStyle = "rgba(255,255,255,.5)"; cx.beginPath(); cx.arc(x - r * .35, y - r * .35, r * .22, 0, 6.283); cx.fill(); }
+}
+let semilla = 9; const az = () => ((semilla = (semilla * 16807) % 2147483647) / 2147483647);
+// Silueta de la celebración (solo la forma y sus luces: sin rostro ni marcas),
+// como nube de 20 000 puntos en tres etapas: primero pocos, luego más, luego
+// todos, hasta la figura completa. Los que ya llegaron se pintan una vez en un
+// lienzo aparte; solo vuelan los que faltan.
+let SIL = [], chispas = [], retrato = { on: 0, t0: 0, cx: .5, cy: .3, ancho: .9 }, lienzo = document.createElement("canvas"), lcx = lienzo.getContext("2d");
+const TONO = ["#8a6420", "#c0902f", "#e6b84a", "#fff1c2"];
+const FOTO = new Image(); FOTO.src = "static/celebra.jpg";
+fetch("static/celebra.json").then((r) => r.json()).then((j) => { SIL = j.pts; if (retrato.on) formarRostro(retrato.cx, retrato.cy, retrato.ancho); });
+function formarRostro(cxr, cyr, ancho) {
+  retrato = { on: 1, t0: performance.now(), cx: cxr, cy: cyr, ancho, lado: 0 };
+  lienzo.width = lienzo.height = 1; // se redimensiona en el primer cuadro
+  chispas = SIL.map(([x, y, t, et]) => ({ x: x / 200, y: y / 200, t, et, x0: Math.random(), y0: Math.random() * .7, d: et * 2.6 + Math.random() * 1.6, fin: false }));
+}
+function dibujarRostro(t) {
+  if (!retrato.on || !chispas.length) return;
+  const lado = Math.round(Math.min(W * retrato.ancho, H * .55)), ox = retrato.cx * W - lado / 2, oy = retrato.cy * H - lado / 2;
+  if (lienzo.width !== lado) { lienzo.width = lienzo.height = lado; for (const ch of chispas) ch.fin = false; }
+  const el = (performance.now() - retrato.t0) / 1000, q = Math.max(1, lado / 200 * 1.05);
+  let pend = 0;
+  for (const ch of chispas) {
+    if (ch.fin) continue;
+    const u = Math.max(0, Math.min(1, (el - ch.d) / 1.6));
+    if (u >= 1) { lcx.fillStyle = TONO[ch.t]; lcx.fillRect(ch.x * lado, ch.y * lado, q * (ch.et === 0 ? 3.4 : ch.et === 1 ? 1.9 : 1.1), q * (ch.et === 0 ? 3.4 : ch.et === 1 ? 1.9 : 1.1)); ch.fin = true; continue; }
+    if (u <= 0 || ++pend > 2500) continue;
+    const e = 1 - Math.pow(1 - u, 3), x = ch.x0 * W + (ox + ch.x * lado - ch.x0 * W) * e, y = ch.y0 * H + (oy + ch.y * lado - ch.y0 * H) * e;
+    cx.fillStyle = "#ffe9a8"; cx.globalAlpha = .9; cx.fillRect(x, y, q * 1.2, q * 1.2);
+  }
+  // etapa final: de las chispas a la imagen real, en fundido.
+  const real = Math.max(0, Math.min(1, (el - 8.8) / 2.2));
+  cx.globalAlpha = (.82 + .18 * Math.sin(t * 2.2)) * (1 - real * .85); cx.drawImage(lienzo, ox, oy);
+  if (real > 0 && FOTO.complete && FOTO.naturalWidth) {
+    cx.save(); cx.globalAlpha = real; cx.beginPath(); cx.roundRect ? cx.roundRect(ox, oy, lado, lado, lado * .06) : cx.rect(ox, oy, lado, lado); cx.clip();
+    cx.drawImage(FOTO, ox, oy, lado, lado); cx.restore();
+    const borde = cx.createRadialGradient(retrato.cx * W, retrato.cy * H, lado * .3, retrato.cx * W, retrato.cy * H, lado * .72);
+    borde.addColorStop(0, "rgba(15,11,20,0)"); borde.addColorStop(1, `rgba(15,11,20,${.9 * real})`); cx.fillStyle = borde; cx.fillRect(ox - lado * .3, oy - lado * .3, lado * 1.6, lado * 1.6);
+  }
+  cx.globalAlpha = 1;
+  // chispas de felicitación alrededor cuando ya está completa
+  if (el > 9.5) for (let i = 0; i < 14; i++) { const a = t * 1.6 + i * .45, rr = lado * (.52 + .06 * Math.sin(t * 3 + i)); const sx = retrato.cx * W + Math.cos(a) * rr, sy = retrato.cy * H + Math.sin(a) * rr * .8; cx.globalAlpha = .4 + .6 * Math.abs(Math.sin(t * 6 + i)); cx.fillStyle = i % 3 ? "#e6b84a" : "#fff"; cx.fillRect(sx, sy, q * 1.4, q * 1.4); cx.fillRect(sx - q * 2, sy, q * 5, q * .4); cx.fillRect(sx, sy - q * 2, q * .4, q * 5); }
+  cx.globalAlpha = 1;
+}
+const publico = Array.from({ length: 420 }, () => ({ x: az(), y: az(), c: ["#d97757", "#e6b84a", "#f5e9d8", "#3b5bdb", "#6b4f3a"][Math.floor(az() * 5)], f: az() * 6.28 }));
+function cuadro(now) {
+  requestAnimationFrame(cuadro);
+  const t = (now - t0) / 1000;
+  cx.clearRect(0, 0, W, H);
+  // cielo nocturno + gradas
+  const g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#0f0b14"); g.addColorStop(1, "#1b1230"); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  const gradaH = H * .38;
+  cx.fillStyle = "#1a1322"; cx.fillRect(0, H * .18, W, gradaH);
+  for (const p of publico) { const bl = .55 + .45 * Math.sin(t * 2 + p.f); cx.globalAlpha = bl * (noche ? .35 : 1); cx.fillStyle = p.c; cx.fillRect(p.x * W, H * .2 + p.y * gradaH * .9, S * .9, S * .9); }
+  cx.globalAlpha = 1;
+  dibujarRostro(t);
+  // césped
+  const cesped = H * .56;
+  for (let i = 0; i < 8; i++) { cx.fillStyle = i % 2 ? "#2f7a3e" : "#2a6d37"; cx.fillRect(0, cesped + (H - cesped) * i / 8, W, (H - cesped) / 8 + 1); }
+  cx.strokeStyle = "rgba(255,255,255,.55)"; cx.lineWidth = S * .4; cx.strokeRect(W * .06, cesped + S, W * .88, H - cesped - S * 2);
+  cx.beginPath(); cx.arc(W / 2, cesped + (H - cesped) / 2, Math.min(W, H) * .12, 0, 6.283); cx.stroke();
+  // arco a la derecha
+  const ax = W * .86, ay = cesped + (H - cesped) * .25, aw = W * .1, ah = (H - cesped) * .5;
+  cx.strokeStyle = "#fff"; cx.lineWidth = S * .6; cx.strokeRect(ax, ay, aw, ah);
+  cx.strokeStyle = "rgba(255,255,255,.35)"; cx.lineWidth = 1; for (let i = 1; i < 6; i++) { cx.beginPath(); cx.moveTo(ax + aw * i / 6, ay); cx.lineTo(ax + aw * i / 6, ay + ah); cx.stroke(); cx.beginPath(); cx.moveTo(ax, ay + ah * i / 6); cx.lineTo(ax + aw, ay + ah * i / 6); cx.stroke(); }
+  // foco de ceremonia
+  if (foco > 0) { const fg = cx.createRadialGradient(W / 2, H * .62, 0, W / 2, H * .62, W * .45); fg.addColorStop(0, `rgba(230,184,74,${.35 * foco})`); fg.addColorStop(1, "rgba(230,184,74,0)"); cx.fillStyle = fg; cx.fillRect(0, 0, W, H); }
+  // jugador
+  const esc = 1.4, px = sprite.x * W, py = cesped + (H - cesped) * .55 - 13 * S * esc - Math.abs(Math.sin(t * 9)) * (sprite.accion === "correr" ? S * .8 : 0) - sprite.salto * S * 6;
+  const mapa = sprite.accion === "correr" ? (Math.floor(t * 8) % 2 ? Kane.correr1 : Kane.correr2) : sprite.accion === "patea" ? Kane.patea : Kane.celebra;
+  cx.fillStyle = "rgba(0,0,0,.35)"; cx.beginPath(); cx.ellipse(px + 4 * S * esc, cesped + (H - cesped) * .55 + S, 6 * S, 2 * S, 0, 0, 6.283); cx.fill();
+  dibujarSprite(mapa, px, py, esc, sprite.dir);
+  // balón
+  if (balon.visible) { balon.x += balon.vx; balon.y += balon.vy; balon.vy += .0006; if (balon.y > 0) { balon.y = 0; balon.vy *= -.4; balon.vx *= .9; } dibujarBalon(balon.x * W, cesped + (H - cesped) * .55 + S * 2 + balon.y * H, S * 2.2, false); }
+  // balón de oro de la ceremonia
+  if (oroY < 2) { const oy = H * .3 + oroY * H * .3, ox = W / 2; const halo = cx.createRadialGradient(ox, oy, 0, ox, oy, S * 22); halo.addColorStop(0, "rgba(255,241,200,.9)"); halo.addColorStop(1, "rgba(255,241,200,0)"); cx.fillStyle = halo; cx.fillRect(ox - S * 22, oy - S * 22, S * 44, S * 44); dibujarBalon(ox, oy, S * 7 + Math.sin(t * 3) * S * .4, true); }
+  // confeti
+  for (const c of confeti) { c.y += c.vy; c.x += Math.sin(t * 3 + c.f) * .0015; c.r += .1; cx.save(); cx.translate(c.x * W, c.y * H); cx.rotate(c.r); cx.fillStyle = c.c; cx.fillRect(-S * .6, -S, S * 1.2, S * 2); cx.restore(); }
+  confeti = confeti.filter((c) => c.y < 1.1);
+}
+requestAnimationFrame(cuadro);
+const lanzarConfeti = (n) => { for (let i = 0; i < n; i++) confeti.push({ x: .1 + Math.random() * .8, y: -.05 - Math.random() * .3, vy: .003 + Math.random() * .004, r: Math.random() * 6, f: Math.random() * 6, c: ["#e6b84a", "#fff", "#d97757", "#3b5bdb"][i % 4] }); };
+
+/* ---------- Audio: vítores y acordes, solo tras el toque ---------- */
+let ac;
+function sonido() { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); return ac; }
+function acorde(notas, dur = 1.2, vol = .09) { const a = sonido(), t = a.currentTime; notas.forEach((f, i) => { const o = a.createOscillator(), g = a.createGain(); o.type = "triangle"; o.frequency.value = f; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .03 + i * .03); g.gain.exponentialRampToValueAtTime(.0005, t + dur); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + .05); }); }
+function viva(dur = 1.5) { const a = sonido(), t = a.currentTime, n = a.createBufferSource(), b = a.createBuffer(1, a.sampleRate * dur, a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(Math.sin(Math.PI * i / d.length), 2); n.buffer = b; const f = a.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 900; f.Q.value = .6; const g = a.createGain(); g.gain.value = .12; n.connect(f); f.connect(g); g.connect(a.destination); n.start(t); }
+const silbato = () => acorde([2200, 2600], .35, .05);
+
+/* ---------- Guion ---------- */
+const HITOS = [
+  { temp: "2010 – 2013 · CUATRO PRÉSTAMOS", tit: "Empezó <span>desde abajo</span>.", sub: "Leyton Orient, Millwall, Norwich, Leicester. Nadie apostaba por él.", accion: "correr", dur: 5 },
+  { temp: "2014 – 2015 · TOTTENHAM", tit: "21 goles en su <span>primera temporada</span> completa.", sub: "Jugador joven del año. Y aun así, ningún título.", accion: "patea", dur: 5, premio: 0 },
+  { temp: "2016 Y 2017 · PREMIER LEAGUE", tit: "<span>Bota de Oro</span> dos años seguidos.", sub: "El mejor goleador de Inglaterra. Las copas, para otros.", accion: "patea", dur: 5 },
+  { temp: "2018 · MUNDIAL DE RUSIA", tit: "<span>Bota de Oro del Mundial</span>: 6 goles.", sub: "Capitán de Inglaterra, semifinal. Tan cerca.", accion: "celebra", dur: 5, premio: 1 },
+  { temp: "2019 · FINAL DE CHAMPIONS", tit: "Perdió la final <span>en Madrid</span>.", sub: "Lo que más duele es llegar y no levantarla.", accion: "correr", dur: 5, gol: false },
+  { temp: "2023 · RÉCORD Y FICHAJE", tit: "<span>Máximo goleador histórico</span> de Inglaterra y fichaje por el Bayern.", sub: "A los 30, empezó de nuevo en otro país.", accion: "celebra", dur: 6, premio: 2 },
+  { temp: "2025 · BUNDESLIGA", tit: "Quince temporadas después, <span>la copa llegó</span>.", sub: "Su primer título. Siguió marcando hasta que llegó.", accion: "celebra", dur: 6, final: true },
+];
+const CUP = ["30 %", "50 %", "70 %", "GRATIS"];
+
+let e = null, ganadores = null, demo = new URLSearchParams(location.search).get("demo") === "1";
+async function cargar() {
+  try { e = await api("api/estado"); } catch { return; }
+  sincronizar(e.ahora);
+  if (demo) { ganadores = [{ numero: 7, nombre: "Ana Pérez" }, { numero: 3, nombre: "Luis Rojas" }, { numero: 11, nombre: "María Quispe" }, { numero: 5, nombre: "Jorge Huamán" }]; }
+  else if (e.fase === "sorteado" && e.ganadores) ganadores = e.ganadores;
+  const cta = $("#cta"), ver = $("#ver");
+  if (ganadores) { cta.hidden = true; ver.hidden = false; $("#msj").textContent = "El sorteo ya se hizo. Toca para ver la ceremonia con sonido."; }
+  else { cta.hidden = false; ver.hidden = true; $("#msj").textContent = `La ceremonia empieza a las ${hora(e.sorteo)}, cuando salga el resultado.`; }
+}
+cargar(); setInterval(() => { if (!ganadores) cargar(); }, 5000);
+formarRostro(.5, .3, .9);
+setInterval(() => { const c = $("#cta"); if (c && !c.hidden && e) cuenta(c, e.sorteo); }, 250);
+
+let saltar = false;
+$("#saltar").onclick = () => { saltar = true; };
+const espera = (s) => new Promise((r) => { const i = setInterval(() => { if (saltar) { clearInterval(i); r(); } }, 100); setTimeout(() => { clearInterval(i); r(); }, s * 1000); });
+const escena = (html) => { const d = document.createElement("div"); d.className = "esc on"; d.innerHTML = html; $("#escenas").innerHTML = ""; $("#escenas").append(d); return d; };
+
+async function ceremonia() {
+  try { await ceremoniaInterna(); } catch (x) { console.error(x); $("#escenas").innerHTML = `<div class="esc on"><p class="sub">Algo falló al animar (${esc(x.message)}). Los ganadores están en la página del sorteo.</p><a class="btn" href="./">Ir al sorteo</a></div>`; }
+}
+const seguro = (f) => { try { f(); } catch (x) { console.warn("audio", x.message); } };
+async function ceremoniaInterna() {
+  // Sin resultado todavía (o lista corta): ensayo con nombres de ejemplo, avisado en pantalla.
+  if (!ganadores || ganadores.length < 4) {
+    const ej = [{ numero: 7, nombre: "Ana Pérez" }, { numero: 3, nombre: "Luis Rojas" }, { numero: 11, nombre: "María Quispe" }, { numero: 5, nombre: "Jorge Huamán" }];
+    ganadores = [...(ganadores || []), ...ej.slice((ganadores || []).length)];
+    demo = true;
+  }
+  $("#portada").style.display = "none"; $("#saltar").style.display = "block";
+  retrato.on = 0; seguro(() => { sonido(); viva(2); silbato(); });
+  const total = HITOS.reduce((a, h) => a + h.dur + (h.premio != null ? 6 : 0), 0) + 12; let acum = 0;
+  const prog = (s) => { acum += s; $("#prog").style.width = Math.min(100, acum / total * 100) + "%"; };
+  for (const h of HITOS) {
+    saltar = false;
+    sprite.accion = h.accion; sprite.x = .18; sprite.dir = 1; balon = { x: .26, y: 0, vx: 0, vy: 0, visible: true };
+    escena(`<div class="anio px">${esc(h.temp.slice(0, 4))}</div><div class="temp anim">${esc(h.temp)}</div><h2 class="tit anim">${h.tit}</h2><p class="sub anim">${esc(h.sub)}</p>`);
+    if (h.accion === "patea") { await espera(1.2); balon.vx = .012; balon.vy = -.012; seguro(() => { acorde([392, 494, 587], .6); setTimeout(() => seguro(() => viva(1.2)), 700); }); }
+    if (h.accion === "correr") { const i = setInterval(() => { sprite.x += .004; balon.x = sprite.x + .08; if (sprite.x > .6) sprite.x = .12; }, 40); await espera(h.dur); clearInterval(i); }
+    else if (h.accion === "celebra") { sprite.salto = 1; seguro(() => acorde([523, 659, 784, 1046], 1.4)); lanzarConfeti(40); await espera(h.dur); sprite.salto = 0; }
+    else await espera(h.dur - 1.2);
+    prog(h.dur);
+    if (h.premio != null && ganadores[h.premio]) {
+      saltar = false; const g = ganadores[h.premio];
+      seguro(() => { acorde([659, 830, 988, 1319], 1.6, .11); viva(1.8); }); lanzarConfeti(70);
+      escena(`<div class="temp anim">POR ESTE LOGRO, UN PREMIO</div><div class="cupon"><div class="k">CUPÓN DE DESCUENTO · CLAUDE CODE PRO</div><div class="big">${CUP[h.premio]}</div>
+        <div class="quien"><span class="num">#${String(g.numero).padStart(2, "0")}</span> ${esc(g.nombre)}</div></div>`);
+      await espera(6); prog(6);
+    }
+    if (h.final) {
+      saltar = false; noche = 1; foco = 1; sprite.accion = "celebra"; sprite.x = .44; balon.visible = false;
+      escena(`<div class="temp anim">LA CEREMONIA</div><h2 class="tit anim">Y ahora, <span>el balón de oro</span>.</h2><p class="sub anim">El premio mayor es para quien siguió intentando.</p>`);
+      seguro(() => { viva(2.5); acorde([262, 330, 392, 523], 2.2, .1); });
+      formarRostro(.5, .14, .5);
+      for (let k = 0; k <= 60; k++) { oroY = 1 - k / 60; await new Promise((r) => setTimeout(r, 40)); }
+      await espera(2);
+      const g = ganadores[3] || { numero: 0, nombre: "por confirmar" };
+      seguro(() => { acorde([523, 659, 784, 1046, 1318], 2.6, .12); viva(3); }); lanzarConfeti(160); lluvia = 1;
+      escena(`<div class="temp anim">BALÓN DE ORO · INSCRIPCIÓN COMPLETA</div><div class="cupon oro"><div class="k">LA ÚLTIMA VACANTE · 100 %</div><div class="big">GRATIS</div>
+        <div class="quien"><span class="num">#${String(g.numero).padStart(2, "0")}</span> ${esc(g.nombre)}</div></div>`);
+      await espera(8); prog(12);
+    }
+  }
+  // acta final
+  saltar = false; $("#saltar").style.display = "none";
+  escena(`<div class="temp anim">${demo ? "ENSAYO CON NOMBRES DE EJEMPLO" : "GANADORES DEL SORTEO"}</div><h2 class="tit anim">Si Harry Kane ganó, <span>¿por qué tú no?</span></h2>
+    <div class="lista anim">${ganadores.map((g, i) => `<div><span><b>#${String(g.numero).padStart(2, "0")}</b> ${esc(g.nombre)}</span><span>${CUP[i]}</span></div>`).join("")}</div>
+    <p class="sub">Cada ganador ve su código en la página del sorteo. Comprobable con la semilla publicada.</p>
+    <a class="btn" href="./">Ir al sorteo</a> <button class="btn g" id="otra">Ver otra vez</button>`);
+  $("#otra").onclick = () => { noche = 0; foco = 0; oroY = 2; retrato.on = 0; ceremonia(); };
+}
+$("#ver").onclick = ceremonia;
+</script>
+</body>
+</html>

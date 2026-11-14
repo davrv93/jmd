@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matrícula Claude Code PRO</title>
+<meta name="description" content="Separa tu cupo en Claude Code PRO. Preventa, promoción de 2 personas y cursos en combo.">
+<meta name="theme-color" content="#fbf8f3">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/base.css">
+<style>
+  .modo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .modo label { margin: 0; border: 2px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; background: #fff; }
+  .modo input { display: none; }
+  .modo label:has(input:checked) { border-color: var(--orange); background: #fff6f0; box-shadow: 0 0 0 3px #fbe3d6; }
+  .modo b { display: block; font-size: 28px; letter-spacing: -.03em; }
+  .modo s { color: var(--soft); font-size: 14px; }
+  .modo span { font-size: 13px; color: var(--soft); font-weight: 500; }
+  .curso { display: flex; gap: 12px; align-items: center; border: 2px solid var(--line); border-radius: 16px; padding: 12px 14px; margin-top: 10px; background: #fff; }
+  .curso.fijo { border-color: var(--orange); background: #fff6f0; }
+  .curso .info { flex: 1; }
+  .curso .info b { display: block; font-size: 15px; line-height: 1.2; }
+  .curso .info span { font-size: 12px; color: var(--soft); }
+  .curso .pre { text-align: right; white-space: nowrap; }
+  .curso .pre s { display: block; font-size: 12px; color: var(--soft); }
+  .curso .pre b { font-size: 18px; }
+  .curso .ahorro { display: inline-block; margin-top: 3px; font-size: 11px; font-weight: 700; color: #fff; background: var(--ok); border-radius: 99px; padding: 2px 8px; }
+  .curso input { width: 22px; height: 22px; accent-color: var(--orange); flex: none; }
+  label.curso { cursor: pointer; font-weight: 400; }
+  label.curso:has(input:checked) { border-color: var(--ok); background: #f0faf5; }
+  .resumen { margin-bottom: 4px; }
+  .resumen .tot { display: flex; justify-content: space-between; align-items: baseline; }
+  .resumen .tot b { font-size: 40px; letter-spacing: -.03em; }
+  .resumen .linea { display: flex; justify-content: space-between; font-size: 14px; color: #d8c8b8; }
+  .resumen .linea.ok { color: #7ee2b4; font-weight: 700; }
+  .yape { text-align: center; }
+  .yape .num { font-size: 42px; font-weight: 700; letter-spacing: .02em; font-family: 'JetBrains Mono', monospace; color: var(--ink); }
+  .yape img { width: 220px; max-width: 70%; border-radius: 16px; margin: 10px auto 0; display: block; }
+  .paso { display: flex; gap: 12px; align-items: flex-start; margin-top: 12px; text-align: left; }
+  .paso > b { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--orange); color: #fff; display: grid; place-items: center; font-size: 14px; }
+  .bug { margin-top: 12px; border-radius: 16px; padding: 14px 16px; background: var(--ink); color: #fff; }
+  .bug b { display: block; font-size: 18px; color: #7ee2b4; }
+  .bug span { font-size: 14px; color: #e6d9cc; }
+  .bug.pop { animation: pop .6s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes pop { 0% { transform: scale(.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  .codigo-ok { color: var(--ok); font-weight: 700; font-size: 14px; margin-top: 6px; }
+  .copiar { border: 0; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 99px; cursor: pointer; margin-top: 6px; }
+</style>
+</head>
+<body>
+<canvas id="luz"></canvas>
+<main>
+  <span class="kick">CLAUDE CODE PRO · MATRÍCULA</span>
+  <h1>Separa tu <span>cupo.</span></h1>
+  <p class="lead" id="sub">4 sesiones en vivo. 4 sistemas reales.</p>
+
+  <div id="paso1">
+    <div class="card">
+      <h2>1. ¿Cómo te inscribes?</h2>
+      <div class="modo">
+        <label><input type="radio" name="modo" value="ind" checked><span>Individual · preventa</span><b id="p-ind"></b><s id="p-reg"></s></label>
+        <label><input type="radio" name="modo" value="duo"><span>2 personas</span><b id="p-duo"></b><span id="p-duo-c"></span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Tus datos</h2>
+      <label for="t-n">Nombre y apellido</label><input id="t-n" type="text" autocomplete="name" maxlength="40">
+      <label for="t-e">Correo (será tu usuario del aula)</label><input id="t-e" type="email" autocomplete="email" maxlength="80">
+      <label for="t-t">Celular (WhatsApp)</label><input id="t-t" type="tel" inputmode="numeric" autocomplete="tel" placeholder="9xx xxx xxx">
+      <div id="amigo" hidden>
+        <h2 style="margin-top:18px">Datos de tu acompañante</h2>
+        <label for="a-n">Nombre y apellido</label><input id="a-n" type="text" maxlength="40">
+        <label for="a-e">Correo</label><input id="a-e" type="email" maxlength="80">
+        <label for="a-t">Celular (WhatsApp)</label><input id="a-t" type="tel" inputmode="numeric" placeholder="9xx xxx xxx">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3. Cursos en oferta</h2>
+      <p class="soft small">Suma otro curso y mira qué pasa con tu total.</p>
+      <div class="curso fijo"><div class="info"><b>Claude Code PRO</b><span id="horario"></span></div><div class="pre"><b>Incluido</b></div></div>
+      <div id="ofertas"></div>
+      <div id="bug" class="bug" hidden><b>¡Genial, descubriste el bug! 🐞</b><span>Por llevar más de un curso, todo tu pedido baja <span id="bug-pct"></span>.</span></div>
+    </div>
+
+    <div class="card" id="cod-card">
+      <h2>4. ¿Ganaste en el sorteo?</h2>
+      <label for="cod">Código de premio (opcional)</label>
+      <div class="row"><input id="cod" type="text" placeholder="CCP-XXXXXX" style="text-transform:uppercase" maxlength="12"><button class="copiar" id="cod-b" style="flex:none;margin:0">Aplicar</button></div>
+      <p id="cod-msg" class="small soft" style="margin-top:6px">Solo vale para la inscripción individual.</p>
+    </div>
+
+    <div class="card dark resumen">
+      <div id="lineas"></div>
+      <div class="tot"><span>Total</span><b id="total"></b></div>
+      <label class="check" style="color:#d8c8b8"><input type="checkbox" id="acepto">Acepto que usen mis datos para la matrícula, el aula y los avisos del curso por WhatsApp.</label>
+      <button class="btn" id="enviar">Continuar al pago</button>
+      <p class="err" id="err"></p>
+      <p class="small" style="color:#d8c8b8;margin-top:4px">*Financiamiento disponible: escríbenos por WhatsApp.</p>
+    </div>
+  </div>
+
+  <div id="paso2" hidden>
+    <div class="card yape">
+      <span class="kick">MATRÍCULA <span id="m-id"></span> · PENDIENTE DE PAGO</span>
+      <h2 style="margin-top:8px">Yapea <span id="m-total"></span> al</h2>
+      <div class="num" id="m-yape"></div>
+      <button class="copiar" id="copiar">Copiar número</button>
+      <img id="qr-yape" src="static/yape.png" alt="QR de Yape" onerror="this.remove()">
+      <p class="soft small" style="margin-top:6px">A nombre de Samuel Roncal.</p>
+      <div class="paso"><b>1</b><p>Abre Yape y paga <b id="m-total2"></b>.</p></div>
+      <div class="paso"><b>2</b><p>Toma captura del comprobante.</p></div>
+      <div class="paso"><b>3</b><p>Envíala por WhatsApp con el botón de abajo.</p></div>
+      <a class="btn" id="wa" target="_blank" rel="noopener">Enviar comprobante por WhatsApp</a>
+      <p class="soft small" style="margin-top:10px">Cuando confirmemos tu pago te llegan por WhatsApp tus accesos al aula y la fecha de inicio.</p>
+    </div>
+  </div>
+
+  <p class="foot">Curso independiente con fines académicos. Claude, Claude Code, Fable y Opus son marcas de Anthropic, PBC; sin relación ni patrocinio de Anthropic.</p>
+</main>
+
+<script type="module">
+import { api, $, esc, soles, luz } from "./static/comun.js";
+luz();
+
+const GUARDADO = "matricula-claude-pro";
+let e, codigo = null;
+
+const duo = () => document.querySelector("input[name=modo]:checked").value === "duo";
+const extras = () => [...document.querySelectorAll("#ofertas input:checked")].map((x) => x.value);
+
+// Mismo cálculo que el servidor (main.go: calcular).
+function calcular() {
+  const p = e.precios;
+  const lineas = [];
+  let total = duo() ? p.duo : p.individual;
+  lineas.push([duo() ? "Claude Code PRO · 2 personas" : "Claude Code PRO · preventa", total]);
+  if (codigo && !duo()) {
+    const desc = Math.round(total * codigo.descuento / 100);
+    total -= desc;
+    lineas.push([`Código ${codigo.codigo} (−${codigo.descuento} %)`, -desc, true]);
+  }
+  const personas = duo() ? 2 : 1;
+  for (const id of extras()) {
+    const o = e.ofertas.find((x) => x.id === id);
+    total += o.precio * personas;
+    lineas.push([o.nombre + (personas > 1 ? " × 2" : ""), o.precio * personas]);
+  }
+  const d = p.descuentoCombo || 0;
+  if (extras().length && d) {
+    const nuevo = Math.floor((total * (100 - d) + 50) / 100);
+    lineas.push([`🐞 Bug del combo: −${d} % en todo`, -(total - nuevo), true]);
+    total = nuevo;
+  }
+  return { total, lineas };
+}
+
+let bugVisto = false;
+function pintar() {
+  const bug = extras().length > 0;
+  $("#bug").hidden = !bug;
+  if (bug && !bugVisto) { bugVisto = true; $("#bug").classList.remove("pop"); void $("#bug").offsetWidth; $("#bug").classList.add("pop"); }
+  if (!bug) bugVisto = false;
+  $("#amigo").hidden = !duo();
+  $("#cod-card").style.opacity = duo() ? .5 : 1;
+  const { total, lineas } = calcular();
+  $("#lineas").innerHTML = lineas.map(([t, v, ok]) => `<div class="linea ${ok ? "ok" : ""}"><span>${esc(t)}</span><span>${v < 0 ? "−" + soles(-v) : (ok ? soles(v) : soles(v))}</span></div>`).join("");
+  $("#total").textContent = soles(total);
+}
+
+async function iniciar() {
+  e = await api("api/estado");
+  const p = e.precios;
+  $("#p-ind").textContent = soles(p.individual);
+  $("#p-reg").textContent = soles(p.regular);
+  $("#p-duo").textContent = soles(p.duo);
+  $("#p-duo-c").textContent = ` (${soles(Math.round(p.duo / 2))} c/u)`;
+  $("#horario").textContent = e.horario;
+  $("#bug-pct").textContent = `${p.descuentoCombo} %`;
+  const q = Math.max(0, e.cupos - e.matriculados);
+  $("#sub").innerHTML = `4 sesiones en vivo. 4 sistemas reales. <b>Quedan ${q} de ${e.cupos} cupos.</b>`;
+  $("#ofertas").innerHTML = e.ofertas.map((o) => {
+    return `<label class="curso"><input type="checkbox" value="${esc(o.id)}"><div class="info"><b>${esc(o.nombre)}</b><span>${esc(o.fechas)}</span></div>
+      <div class="pre"><b>${soles(o.precio)}</b><br><span class="ahorro">−${p.descuentoCombo} % EN TODO</span></div></label>`;
+  }).join("") || '<p class="soft small" style="margin-top:8px">Pronto más cursos en combo.</p>';
+  const c = new URLSearchParams(location.search).get("c");
+  if (c) { $("#cod").value = c; aplicarCodigo(); }
+  pintar();
+
+  const previa = JSON.parse(localStorage.getItem(GUARDADO) || "null");
+  if (previa) {
+    try {
+      const m = await api("api/matricula?t=" + encodeURIComponent(previa.t));
+      if (m.estado === "pendiente") mostrarPago(m.id, m.total, m.titular);
+    } catch { localStorage.removeItem(GUARDADO); }
+  }
+}
+
+async function aplicarCodigo() {
+  const msg = $("#cod-msg");
+  const v = $("#cod").value.trim();
+  codigo = null;
+  if (!v) { msg.textContent = "Solo vale para la inscripción individual."; pintar(); return; }
+  try {
+    codigo = await api("api/codigo?c=" + encodeURIComponent(v));
+    msg.innerHTML = `<span class="codigo-ok">✓ ${codigo.descuento} % de descuento aplicado</span>`;
+    if (duo()) document.querySelector("input[value=ind]").checked = true;
+  } catch (x) { msg.textContent = x.message; }
+  pintar();
+}
+
+function mostrarPago(id, total, nombre) {
+  $("#paso1").hidden = true;
+  $("#paso2").hidden = false;
+  $("#m-id").textContent = id;
+  $("#m-total").textContent = soles(total);
+  $("#m-total2").textContent = soles(total);
+  $("#m-yape").textContent = e.yape.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
+  const texto = `Hola, soy ${nombre}. Me matriculé en Claude Code PRO (matrícula ${id}) y yapeé ${soles(total)}. Te adjunto el comprobante.`;
+  $("#wa").href = `https://wa.me/${e.whatsapp}?text=${encodeURIComponent(texto)}`;
+  scrollTo({ top: 0, behavior: "smooth" });
+}
+
+document.addEventListener("change", (ev) => {
+  if (ev.target.name === "modo" && duo() && codigo) {
+    codigo = null; $("#cod-msg").textContent = "Los códigos del sorteo solo valen para la inscripción individual.";
+  }
+  pintar();
+});
+$("#cod-b").onclick = aplicarCodigo;
+$("#copiar").onclick = () => navigator.clipboard?.writeText(e.yape).then(() => { $("#copiar").textContent = "¡Copiado!"; });
+
+$("#enviar").onclick = async () => {
+  const err = $("#err");
+  err.textContent = "";
+  if (!$("#acepto").checked) { err.textContent = "Marca la casilla para continuar."; return; }
+  const persona = (p) => ({ nombre: $(`#${p}-n`).value, email: $(`#${p}-e`).value, telefono: $(`#${p}-t`).value });
+  const cuerpo = { titular: persona("t"), extras: extras(), codigo: codigo && !duo() ? codigo.codigo : "" };
+  if (duo()) cuerpo.amigo = persona("a");
+  const b = $("#enviar"); b.disabled = true;
+  try {
+    const r = await api("api/matricula", { method: "POST", body: JSON.stringify(cuerpo) });
+    localStorage.setItem(GUARDADO, JSON.stringify({ t: r.t }));
+    mostrarPago(r.id, r.total, cuerpo.titular.nombre.trim());
+  } catch (x) { err.textContent = x.message; }
+  b.disabled = false;
+};
+
+iniciar().catch((x) => { $("#err").textContent = x.message; });
+</script>
+</body>
+</html>

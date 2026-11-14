@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Código de referido · Sorteo de las secuencias</title>
+<meta name="description" content="Crea tu código de referido: si un amigo elige su ticket con tu código y está en el grupo, los dos ganan un ticket extra para el sorteo.">
+<meta name="theme-color" content="#0d0b1f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A4%9D%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/estilo.css?v=3">
+</head>
+<body>
+<canvas id="fondo" aria-hidden="true"></canvas>
+<main style="max-width:760px">
+  <header>
+    <span class="kick">JMD LEARNING · SORTEO DE LAS SECUENCIAS</span>
+    <h1 class="marca">Código de <em>referido</em></h1>
+    <p class="sub">Invita a un amigo: si elige su ticket con tu código y está en el grupo, <b class="oro">los dos ganan un ticket extra</b>. Más tickets = más números en las secuencias = más opciones de ganar.</p>
+  </header>
+
+  <section class="panel">
+    <ol class="pasos">
+      <li><em>1</em><b>Crea tu código</b>Con tu nombre ya inscrito, inventa un código fácil de recordar.</li>
+      <li><em>2</em><b>Compártelo</b>Tu amigo lo escribe al elegir su ticket (o entra con tu enlace).</li>
+      <li><em>3</em><b>Entra al grupo</b>Cuando el organizador confirma que tu amigo está en el grupo, los dos eligen un ticket extra.</li>
+    </ol>
+    <p class="chico suave" id="tope">Hasta 3 tickets extra por persona. Cada persona gana una sola vez, tenga los tickets que tenga.</p>
+  </section>
+
+  <!-- sin ticket -->
+  <section class="panel" id="sin" hidden>
+    <h2>Primero, tu <span>ticket</span></h2>
+    <p class="suave">Para tener código hay que estar en el sorteo. Elige tu ticket desde este mismo teléfono y vuelve aquí.</p>
+    <a class="btn" href="./">Elegir mi ticket</a>
+  </section>
+
+  <!-- crear código -->
+  <section class="panel" id="crear" hidden>
+    <h2>Hola, <span id="hola"></span></h2>
+    <form id="form">
+      <label for="nombre">Tu nombre</label>
+      <input id="nombre" disabled>
+      <label for="codigo">Tu código <span class="suave">(3 a 12 letras o números)</span></label>
+      <input id="codigo" maxlength="14" placeholder="ANA2026" autocapitalize="characters" required>
+      <button class="btn" id="btn" type="submit">Crear mi código</button>
+    </form>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <!-- mi código -->
+  <section class="panel" id="mio" hidden>
+    <h2>Tu <span>código</span></h2>
+    <p style="margin:12px 0 0"><span class="codigo" id="codigo-ver"></span></p>
+    <p class="suave chico" style="margin-top:12px">Enlace para tu amigo (ya trae tu código escrito):</p>
+    <p class="verif" id="enlace"></p>
+    <div class="fila">
+      <a class="btn verde" id="btn-wa" target="_blank" rel="noopener">Compartir por WhatsApp</a>
+      <button class="btn sec" id="btn-copiar" type="button">Copiar enlace</button>
+    </div>
+    <h3 style="margin-top:22px;font-size:18px">Tus referidos</h3>
+    <ul class="lista-ref" id="refs"></ul>
+    <p style="margin-top:14px" id="extras"></p>
+    <a class="btn" href="./" id="btn-elegir" hidden>Elegir mi ticket extra</a>
+  </section>
+
+  <p class="pie"><a href="./">← Volver al sorteo</a></p>
+</main>
+<script type="module">
+import { api, $, esc, tokenLeer } from "./static/comun.js";
+import { fondo } from "./static/fondo.js";
+fondo($("#fondo"));
+
+let estado = null;
+async function cargar() {
+  estado = await api("api/estado?t=" + encodeURIComponent(tokenLeer()));
+  const yo = estado.yo;
+  $("#tope").textContent = `Hasta ${estado.topeExtras} tickets extra por persona. Cada persona gana una sola vez, tenga los tickets que tenga.`;
+  $("#sin").hidden = !!yo;
+  $("#crear").hidden = !yo || !!yo.codigo;
+  $("#mio").hidden = !yo || !yo.codigo;
+  if (!yo) return;
+  $("#hola").textContent = yo.nombre.split(" ")[0];
+  $("#nombre").value = yo.nombre;
+  if (estado.fase !== "inscripcion" && !yo.codigo) {
+    $("#form").hidden = true;
+    $("#error").textContent = "La elección de tickets ya se cerró: ya no se crean códigos.";
+  }
+  if (!yo.codigo) return;
+  const enlace = new URL("./?ref=" + encodeURIComponent(yo.codigo), location.href).href;
+  $("#codigo-ver").textContent = yo.codigo;
+  $("#enlace").textContent = enlace;
+  const msg = `¡Entra al Sorteo de las secuencias de JMD Learning! Descuentos de hasta 90 % en cursos de IA. Elige tu ticket con mi código ${yo.codigo} y los dos ganamos un ticket extra: ${enlace}`;
+  $("#btn-wa").href = "https://wa.me/?text=" + encodeURIComponent(msg);
+  $("#refs").innerHTML = yo.referidos.length
+    ? yo.referidos.map((r) => `<li><span>${esc(r.nombre)}</span><span class="${r.enGrupo ? "ok" : "suave"}">${r.enGrupo ? "✓ En el grupo: +1 ticket" : "Falta confirmar el grupo"}</span></li>`).join("")
+    : `<li class="suave">Aún nadie se inscribió con tu código.</li>`;
+  $("#extras").innerHTML = `Tickets extra ganados: <b class="oro">${yo.extras}</b> de ${estado.topeExtras}` +
+    (yo.porElegir > 0 ? ` · <b class="oro">${yo.porElegir} por elegir</b>` : "");
+  $("#btn-elegir").hidden = !(yo.porElegir > 0 && estado.fase === "inscripcion");
+}
+
+$("#form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#error").textContent = "";
+  $("#btn").disabled = true;
+  try {
+    await api("api/codigo", { method: "POST", body: JSON.stringify({ t: tokenLeer(), codigo: $("#codigo").value }) });
+    await cargar();
+  } catch (ex) { $("#error").textContent = ex.message; } finally { $("#btn").disabled = false; }
+});
+$("#btn-copiar").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("#enlace").textContent); $("#btn-copiar").textContent = "¡Copiado! ✓"; }
+  catch { $("#btn-copiar").textContent = "Mantén presionado el enlace para copiarlo"; }
+});
+await cargar();
+setInterval(() => { if (!document.hidden) cargar().catch(() => {}); }, 8000);
+</script>
+</body>
+</html>

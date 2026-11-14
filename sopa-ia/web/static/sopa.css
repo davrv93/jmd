@@ -1,0 +1,122 @@
+/* Sopa de letras IA: tablero, lista de palabras, glosario y ranking. Se apoya en base.css. */
+[hidden] { display: none !important; }
+:root { --ia: #4338ca; --ia-l: #e7e5fb; --ia-d: #312e81; --oro: #f5c518; --oro-l: #fdeeb0; --verde: #1f7a4d; }
+main { max-width: 600px; padding-top: 24px; }
+.marca { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #141A46; font-size: 16px; }
+.marca svg { width: 40px; height: 40px; }
+.kick { margin-top: 30px; color: var(--ia); }
+h1 { font-size: clamp(44px, 13vw, 76px); margin: 6px 0 10px; }
+h1 span { color: #fff; background: var(--ia); border-radius: .16em; padding: 0 .14em; display: inline-block; transform: rotate(-3deg); }
+p.lead b { color: var(--txt); }
+
+.regla { margin-top: 16px; background: var(--dark); color: #fff; border-radius: 18px; padding: 15px 17px; display: flex; gap: 12px; align-items: center;
+         font-size: clamp(16px, 4.4vw, 20px); font-weight: 700; line-height: 1.2; border: 2px solid var(--oro); box-shadow: 0 16px 34px -24px rgba(27, 19, 16, .8); }
+.regla i { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--oro); color: var(--dark); display: grid; place-items: center; font-style: normal; font-size: 19px; }
+.regla small { display: block; font-weight: 500; font-size: 13.5px; color: #d8c8b8; margin-top: 4px; }
+.chips { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.chips span { font-size: 13px; font-weight: 700; background: #fff; border: 1.5px solid var(--line); border-radius: 99px; padding: 7px 13px; }
+.chips span.dest { background: var(--ia-l); border-color: #b8b2f0; color: var(--ia-d); }
+.cuenta { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 6px; margin-top: 10px; }
+.cuenta div { background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 8px 6px; text-align: center; min-width: 0; }
+.cuenta b { display: block; font-size: 24px; line-height: 1.05; font-family: 'JetBrains Mono', monospace; }
+.cuenta span { display: block; font-size: 10px; letter-spacing: .08em; color: var(--soft); margin-top: 3px; font-weight: 700; }
+
+.btn { background: var(--ia); }
+.btn.dark { background: var(--dark); }
+
+/* El juego */
+.juego { padding: 16px 14px; }
+.hola { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 15px; color: var(--soft); }
+.hola b { color: var(--txt); }
+.hola .quien { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.intentos { display: flex; gap: 6px; align-items: center; flex: none; font-size: 12px; font-weight: 700; color: var(--soft); }
+.intentos i { width: 12px; height: 12px; border-radius: 50%; background: var(--ia); display: inline-block; }
+.intentos i.gastado { background: #e3d9ce; }
+.aviso { margin-top: 10px; background: var(--oro-l); border: 1.5px solid var(--oro); color: #5d4a05; border-radius: 14px; padding: 10px 13px; font-size: 14px; }
+
+.barra { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 10px; margin-top: 12px; }
+.barra .k { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .12em; color: var(--soft); }
+.barra b { font-family: 'JetBrains Mono', monospace; font-size: clamp(26px, 8vw, 34px); line-height: 1; letter-spacing: -.02em; }
+.prog { text-align: right; }
+.sel { text-align: center; align-self: center; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; letter-spacing: .12em; color: var(--ia); min-height: 1.4em;
+       overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sel.ok { color: var(--verde); }
+.sel.mal { color: var(--bad); }
+
+.tablero { position: relative; margin-top: 10px; aspect-ratio: 1; background: #fffdf9; border: 2px solid var(--line); border-radius: 16px; overflow: hidden;
+           touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.trazos { position: absolute; inset: 6px; width: calc(100% - 12px); height: calc(100% - 12px); pointer-events: none; }
+.trazos line { stroke-linecap: round; stroke-width: .78; }
+.trazos line.prev { stroke: var(--ia); stroke-opacity: .28; }
+.trazos line.mal { stroke: var(--bad); stroke-opacity: .3; animation: tiembla .35s; }
+.trazos circle.ini { fill: none; stroke: var(--ia); stroke-width: .09; animation: late 1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes late { 50% { transform: scale(1.12); } }
+@keyframes tiembla { 25% { transform: translateX(-.08px); } 75% { transform: translateX(.08px); } }
+.letras { position: absolute; inset: 6px; display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(12, 1fr); cursor: pointer; }
+.letras span { display: grid; place-items: center; font-weight: 700; font-size: clamp(15px, 4.7vw, 24px); color: var(--txt); line-height: 1; position: relative; }
+.letras span.hall { color: #1b1310; }
+.velo { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(251, 248, 243, .74); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); padding: 20px; }
+.velo-in { text-align: center; max-width: 330px; }
+.velo p { font-size: 15px; color: var(--txt); font-weight: 600; }
+.velo .btn { font-size: 18px; padding: 16px 22px; }
+.ayuda { font-size: 13px; color: var(--soft); margin-top: 8px; text-align: center; }
+
+.lista { list-style: none; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 12px; }
+.lista li { display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--line); background: #fff; border-radius: 12px; padding: 9px 11px;
+            font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; letter-spacing: .06em; }
+.lista li i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #d9cdbf; flex: none; }
+.lista li.ok { background: #f6f2ec; color: #8a7a6c; }
+.lista li.ok b { text-decoration: line-through; text-decoration-thickness: 2px; }
+.lista li.ok i { border: 0; }
+.lista li.nuevo { animation: brilla .7s ease; }
+@keyframes brilla { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
+
+.glosario { list-style: none; margin-top: 12px; display: grid; gap: 6px; }
+.glosario li { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; background: var(--ia-l); border-radius: 12px; padding: 10px 12px; font-size: 14px; line-height: 1.35;
+               animation: aparece .45s cubic-bezier(.2, 1.3, .4, 1); }
+.glosario li b { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; letter-spacing: .06em; color: #fff; border-radius: 6px; padding: 2px 7px; margin-top: 1px; }
+.glosario:not(:empty)::before { content: "MINI GLOSARIO · LO QUE ACABAS DE APRENDER"; display: block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .12em; color: var(--ia); font-weight: 700; margin-bottom: 2px; }
+@keyframes aparece { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.fin { margin-top: 14px; background: var(--dark); color: #fff; border-radius: 18px; padding: 18px; text-align: center; animation: aparece .5s cubic-bezier(.2, 1.3, .4, 1); }
+.fin .k { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .14em; color: var(--oro); font-weight: 700; }
+.fin .t { font-family: 'JetBrains Mono', monospace; font-size: clamp(44px, 14vw, 64px); font-weight: 700; letter-spacing: -.03em; line-height: 1.05; margin-top: 4px; }
+.fin p { color: #d8c8b8; font-size: 15px; margin-top: 6px; }
+.fin p b { color: #fff; }
+.fin .btn { background: var(--oro); color: var(--dark); }
+.fin.mal .t { color: #f2a57f; font-size: 30px; }
+.rendirse { display: block; margin: 14px auto 0; background: none; border: 0; color: var(--soft); text-decoration: underline; font: inherit; font-size: 13px; cursor: pointer; padding: 6px; }
+
+.premio { margin-top: 14px; background: var(--oro); color: var(--dark); border-radius: 20px; padding: 20px; animation: gira .9s cubic-bezier(.2, 1.2, .4, 1); transform-origin: top; }
+@keyframes gira { from { transform: rotateX(-90deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.premio .k { font-size: 12px; letter-spacing: .14em; font-weight: 700; color: #5d4a05; }
+.premio .big { font-size: clamp(52px, 15vw, 84px); }
+.premio .big small { font-size: .3em; letter-spacing: 0; margin-left: 8px; }
+.cod { font-family: 'JetBrains Mono', monospace; font-size: clamp(22px, 6.6vw, 32px); font-weight: 700; letter-spacing: .06em; background: #fff; color: var(--ink);
+       border-radius: 14px; padding: 12px 16px; margin-top: 12px; text-align: center; user-select: all; word-break: break-all; }
+.cod.pend { font-size: 15px; letter-spacing: 0; font-family: inherit; font-weight: 600; word-break: normal; }
+.premio p { font-size: 13px; color: #5d4a05; margin-top: 10px; }
+
+.ranking { list-style: none; display: grid; gap: 6px; margin-top: 10px; }
+.ranking li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 9px 12px; font-size: 15px; }
+.ranking li .p { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #f6efe7; color: var(--soft); }
+.ranking li:first-child .p { background: var(--oro); color: var(--dark); }
+.ranking li .n { font-weight: 700; min-width: 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ranking li .t { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 16px; }
+.ranking li .fuera { font-size: 11px; font-weight: 700; color: #8a7a6c; background: #f3ebe4; border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
+.ranking li.fuera-c { background: #fcfaf7; }
+.ranking li.fuera-c .t { color: #8a7a6c; }
+.mipuesto { margin-top: 10px; background: var(--ia-l); color: var(--ia-d); border-radius: 12px; padding: 10px 12px; font-size: 14px; font-weight: 600; text-align: center; }
+.ganadores ul { list-style: none; display: grid; gap: 8px; }
+.ganadores li { display: flex; justify-content: space-between; gap: 10px; align-items: center; background: var(--oro-l); border: 1.5px solid var(--oro); border-radius: 14px; padding: 12px 14px; font-size: 16px; }
+.ganadores li span { font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+
+.comprobar p { font-size: 14px; color: var(--soft); margin-top: 8px; }
+.comprobar code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #f6efe7; padding: 2px 6px; border-radius: 6px; }
+.enlaces { margin-top: 14px; font-size: 13px; text-align: center; color: var(--soft); }
+@media (max-width: 380px) { .lista li { font-size: 13.5px; padding: 8px 9px; } .juego { padding: 14px 10px; } }
+@media (prefers-reduced-motion: reduce) { .premio, .fin, .glosario li, .lista li.nuevo { animation: none; } }
+.juego.quieto .barra, .juego.quieto .tablero, .juego.quieto .ayuda, .juego.quieto .lista { display: none; }
+.nota-juego { margin-top: 12px; background: #f6efe7; border-radius: 14px; padding: 14px 16px; font-size: 15.5px; font-weight: 600; text-align: center; }
+.nota-juego b { font-family: 'JetBrains Mono', monospace; }
+.juego .err:empty, .juego.quieto .glosario { display: none; }

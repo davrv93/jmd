@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Laboratorio de scraping</title>
+<!-- Escena LIVE ws-01 · E10b. GENERADA: no la edites aquí. Fuente: ~/Documents/jmd/scraping-lab/escena/escena.plantilla.html
+     + el kit (~/Documents/jmd/scraping-lab/kit/); regenerar con  python3 ~/Documents/jmd/scraping-lab/generar_escena.py
+     Los cinco scripts se probaron contra el laboratorio corriendo en local (Go, mismo binario que va al servidor). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ws.css">
+<style id="esc-propio">
+.p-script { max-height: 30vh; }
+.l-reglas { margin: 0; padding: 0; list-style: none; display: grid; gap: .35em; }
+.l-reglas li { font-size: .78em; padding: .35em .6em; border-left: 4px solid var(--c, var(--accent)); background: var(--s2); border-radius: 0 .5em .5em 0; }
+.l-que { font-size: .8em; margin: .2em 0 .6em; }
+details.l-ver { margin-top: .5em; }
+details.l-ver summary { cursor: pointer; font-size: .78em; font-weight: 700; }
+.l-ev { display: grid; gap: .5em; }
+</style>
+</head>
+<body data-escena="10b-laboratorio">
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="t" pathLength="1" d="M92 612 L168 560 L236 598 L296 524 L360 560"/><g><circle class="e" cx="92" cy="612" r="3.5"/><circle class="eg" cx="168" cy="560" r="4.5"/><circle class="e" cx="236" cy="598" r="3.5"/><circle class="eo" cx="360" cy="560" r="5"/></g></svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Scraping ético · E10b</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Laboratorio: raspa nuestra tienda <em>con modales</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Un sitio nuestro, con robots.txt, sesión, límites y trampas como uno real. Aquí equivocarte cuesta un minuto de espera, no un bloqueo para siempre.</p>
+    </div>
+    <p class="w-ahora a-in" style="--d:.15s"><b>Ahora tú</b><span>Abre la <b>Terminal</b> del panel, prepara el kit (pestaña <b>0</b>) y avanza reto por reto. Elige un <b>apodo</b>: en el aula todos salen por la misma IP y el laboratorio te cuenta por tu apodo. Búscate en el panel en vivo.</span></p>
+    <div class="w-g2" data-tabs-raiz>
+      <section class="esc-card a-in" style="--d:.2s">
+        <div class="w-tabs" data-tabs role="tablist" aria-label="Retos del laboratorio">
+          <button class="w-tab" data-tab="prep">0 · Preparar</button>
+          <button class="w-tab" data-tab="cat">1 · Catálogo</button>
+          <button class="w-tab" data-tab="api">2 · Sesión y cursor</button>
+          <button class="w-tab" data-tab="cola">3 · Cola</button>
+          <button class="w-tab" data-tab="lim">4 · Límites</button>
+          <button class="w-tab" data-tab="mcp">5 · MCP</button>
+          <button class="w-tab" data-tab="tm">6 · Tampermonkey</button>
+        </div>
+
+        <div data-panel="prep" style="margin-top:.8em">
+          <ol class="w-pasos">
+            <li><div><span>Baja el kit a <span class="w-c">/trabajo</span> (tu carpeta personal es pequeña y se borra; <span class="w-c">/trabajo</span> se queda).</span><pre class="esc-cmd"><span class="p">$ </span>cd /trabajo &amp;&amp; curl -fsSLO https://jmd-learn.online/scraping-lab/kit.zip &amp;&amp; python3 -m zipfile -e kit.zip . &amp;&amp; cd kit-scraping-lab</pre></div></li>
+            <li><div><span>Crea tu entorno de Python e instala las librerías (tarda menos de un minuto).</span><pre class="esc-cmd"><span class="p">$ </span>python3 -m venv .venv &amp;&amp; . .venv/bin/activate &amp;&amp; pip install --no-cache-dir -r requirements.txt</pre></div></li>
+            <li><div><span>Dile al laboratorio quién eres. Cambia <span class="w-c">tu-apodo</span> y el correo: van en la cabecera <span class="w-c">X-Alumno</span> y en el <span class="w-c">User-Agent</span>.</span><pre class="esc-cmd"><span class="p">$ </span>export ALUMNO=tu-apodo CONTACTO=tu-correo@ejemplo.com</pre></div></li>
+            <li><div><span>Primero las reglas: lee el robots.txt del laboratorio.</span><pre class="esc-cmd"><span class="p">$ </span>curl -s https://jmd-learn.online/scraping-lab/robots.txt</pre></div></li>
+            <li><div><span>¿Volviste otro día o se reinició la terminal? Entra de nuevo a la carpeta y activa el entorno.</span><pre class="esc-cmd"><span class="p">$ </span>cd /trabajo/kit-scraping-lab &amp;&amp; . .venv/bin/activate &amp;&amp; export ALUMNO=tu-apodo CONTACTO=tu-correo@ejemplo.com</pre></div></li>
+          </ol>
+          <details class="l-ver"><summary>En tu laptop (sin la Terminal del aula)</summary>
+            <pre class="esc-cmd"><span class="p">$ </span>python3 -m venv .venv
+<span class="p">$ </span>. .venv/bin/activate          # Windows: .venv\Scripts\activate
+<span class="p">$ </span>pip install -r requirements.txt</pre>
+            <span class="w-peq w-muted">Necesitas Python 3.10 o más nuevo. Baja el kit desde el navegador con la dirección del recuadro «El laboratorio» y descomprímelo. En PowerShell las variables van así: <span class="w-c">$env:ALUMNO="tu-apodo"</span>.</span>
+          </details>
+        </div>
+
+        <div data-panel="cat" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> leer robots.txt (Crawl-delay y Disallow), recorrer las 10 páginas HTML siguiendo <span class="w-c">rel="next"</span> con pausa, saltarte el enlace trampa y exportar CSV y JSON.</p>
+          <pre class="esc-cmd"><span class="p">$ </span>python3 01_catalogo.py</pre>
+          <pre class="esc-cmd"><span class="p">$ </span>head -4 catalogo.csv</pre>
+          <span class="w-peq w-muted">Meta: «Listo: 120 productos» y la línea «omitido por robots.txt: …/trampa/…». Tarda unos 10 s: son las pausas.</span>
+          <details class="l-ver"><summary>El script (por si no bajaste el kit)</summary>{{KIT:01_catalogo.py}}</details>
+        </div>
+
+        <div data-panel="api" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> sesión con token CSRF y cookie, token en la cabecera <span class="w-c">X-Lab-Token</span>, paginación por <span class="w-c">next_cursor</span> y los <b>saltos</b>: se corta, guarda un checkpoint y al volver salta lo ya bajado.</p>
+          <ol class="w-pasos">
+            <li><div><span>Córrelo con un corte a propósito tras 2 páginas.</span><pre class="esc-cmd"><span class="p">$ </span>python3 02_api_sesion.py --parar-en 2</pre></div></li>
+            <li><div><span>Mira dónde se quedó.</span><pre class="esc-cmd"><span class="p">$ </span>cat checkpoint_api.json; wc -l productos_api.jsonl</pre></div></li>
+            <li><div><span>Vuelve a correrlo: reanuda desde el cursor y termina en 120.</span><pre class="esc-cmd"><span class="p">$ </span>python3 02_api_sesion.py</pre></div></li>
+            <li><div><span>Extra: busca por texto (empieza de cero).</span><pre class="esc-cmd"><span class="p">$ </span>python3 02_api_sesion.py --desde-cero --q mochila</pre></div></li>
+          </ol>
+          <details class="l-ver"><summary>El script (por si no bajaste el kit)</summary>{{KIT:02_api_sesion.py}}</details>
+        </div>
+
+        <div data-panel="cola" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> cola <span class="w-c">asyncio</span> con varios trabajadores, un ritmo compartido que sale de las cabeceras del sitio, reintentos con espera exponencial, <span class="w-c">Retry-After</span>, saltar lo ya bajado (sha256) y una barra de avance.</p>
+          <ol class="w-pasos">
+            <li><div><span>Baja los 200 reportes (unos 2 minutos; el ritmo lo pone el sitio, no tus trabajadores).</span><pre class="esc-cmd"><span class="p">$ </span>python3 03_descarga_cola.py</pre></div></li>
+            <li><div><span>Córtalo con <span class="w-c">Ctrl+C</span> a la mitad cuando quieras y vuelve a correrlo: dice cuántos «ya estaban (saltados)».</span><pre class="esc-cmd"><span class="p">$ </span>python3 03_descarga_cola.py</pre></div></li>
+            <li><div><span>Revisa: 199 archivos y uno en <span class="w-c">fallidos.txt</span> (está dañado a propósito).</span><pre class="esc-cmd"><span class="p">$ </span>ls descargas | wc -l; cat fallidos.txt</pre></div></li>
+            <li><div><span>Prueba con 8 trabajadores. ¿Fue más rápido? ¿Por qué no?</span><pre class="esc-cmd"><span class="p">$ </span>rm -rf descargas &amp;&amp; TRABAJADORES=8 python3 03_descarga_cola.py</pre></div></li>
+          </ol>
+          <details class="l-ver"><summary>El script (por si no bajaste el kit)</summary>{{KIT:03_descarga_cola.py}}</details>
+        </div>
+
+        <div data-panel="lim" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> chocar con el límite a propósito, leer <span class="w-c">429</span>, <span class="w-c">Retry-After</span> y <span class="w-c">X-RateLimit-*</span>, y adaptar el ritmo hasta tener cero 429.</p>
+          <ol class="w-pasos">
+            <li><div><span>Parte A a lo bruto (se detiene en el primer 429) y parte B con modales.</span><pre class="esc-cmd"><span class="p">$ </span>python3 04_limites.py</pre></div></li>
+            <li><div><span>Opcional: ignora el 429 adrede y mira el 403 con su explicación. Te bloquea 1 minuto.</span><pre class="esc-cmd"><span class="p">$ </span>python3 04_limites.py --provocar-bloqueo</pre></div></li>
+            <li><div><span>Pregúntale al laboratorio cómo vas.</span><pre class="esc-cmd"><span class="p">$ </span>curl -s -H "X-Alumno: $ALUMNO" https://jmd-learn.online/scraping-lab/api/yo</pre></div></li>
+          </ol>
+          <details class="l-ver"><summary>El script (por si no bajaste el kit)</summary>{{KIT:04_limites.py}}</details>
+        </div>
+
+        <div data-panel="mcp" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> convertir tu scraper en herramientas MCP (<span class="w-c">buscar_productos</span>, <span class="w-c">detalle</span>, <span class="w-c">mi_estado</span>) para que tu asistente las use, sin saltarse los modales.</p>
+          <ol class="w-pasos">
+            <li><div><span>Pruébalo sin asistente.</span><pre class="esc-cmd"><span class="p">$ </span>python3 05_mcp_server.py --probar mochila</pre></div></li>
+            <li><div><span>Regístralo en Claude Code (en tu laptop o donde tengas <span class="w-c">claude</span>).</span><pre class="esc-cmd"><span class="p">$ </span>claude mcp add tienda-jmd -e ALUMNO=$ALUMNO -e CONTACTO=$CONTACTO -- "$PWD/.venv/bin/python" "$PWD/05_mcp_server.py"</pre></div></li>
+            <li><div><span>Pídele algo en lenguaje natural.</span><pre class="esc-cmd">Usa tienda-jmd y dame las 5 mochilas más baratas con su SKU y su marca.</pre></div></li>
+            <li><div><span>OpenCode: agrega esto a <span class="w-c">opencode.json</span> (cambia las rutas por las de <span class="w-c">pwd</span>).</span><pre class="esc-cmd">{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "tienda-jmd": {
+      "type": "local",
+      "command": ["/ruta/.venv/bin/python", "/ruta/05_mcp_server.py"],
+      "environment": { "ALUMNO": "tu-apodo", "CONTACTO": "tu-correo" },
+      "enabled": true
+    }
+  }
+}</pre></div></li>
+            <li><div><span>Claude Desktop: en <span class="w-c">claude_desktop_config.json</span> y reinícialo.</span><pre class="esc-cmd">{
+  "mcpServers": {
+    "tienda-jmd": {
+      "command": "/ruta/.venv/bin/python",
+      "args": ["/ruta/05_mcp_server.py"],
+      "env": { "ALUMNO": "tu-apodo", "CONTACTO": "tu-correo" }
+    }
+  }
+}</pre></div></li>
+          </ol>
+          <details class="l-ver"><summary>El script (por si no bajaste el kit)</summary>{{KIT:05_mcp_server.py}}</details>
+        </div>
+
+        <div data-panel="tm" style="margin-top:.8em" hidden>
+          <p class="l-que"><b>Aprendes:</b> extraer en el navegador mientras navegas, con tu sesión y a tu ritmo, y exportar CSV o JSON.</p>
+          <ol class="w-pasos">
+            <li><div><span>Abre en una pestaña nueva la página del laboratorio y guarda tu apodo.</span><pre class="esc-cmd">https://jmd-learn.online/scraping-lab/</pre></div></li>
+            <li><div><span>Con Tampermonkey instalado, abre esta dirección y pulsa <b>Instalar</b> (o crea un script nuevo y pega el del recuadro de abajo).</span><pre class="esc-cmd">https://jmd-learn.online/scraping-lab/kit/tienda_jmd.user.js</pre></div></li>
+            <li><div><span>Entra a la tienda. Cada tarjeta que juntas se marca en verde y el conteo sube abajo a la derecha.</span><pre class="esc-cmd">https://jmd-learn.online/scraping-lab/tienda</pre></div></li>
+            <li><div><span>Pulsa <b>Recorrer solo</b>: avanza una página cada 2,5 s y para al final. Luego <b>CSV</b> y <b>JSON</b>.</span></div></li>
+          </ol>
+          <details class="l-ver"><summary>El userscript</summary>{{KIT_JS:tienda_jmd.user.js}}</details>
+        </div>
+      </section>
+
+      <div style="display:grid;gap:1em;align-content:start">
+        <section class="esc-card a-in" style="--d:.3s">
+          <span class="w-et">El laboratorio (cópialo en una pestaña nueva)</span>
+          <pre class="esc-cmd">https://jmd-learn.online/scraping-lab/</pre>
+          <span class="w-et" style="margin-top:.5em">Panel en vivo: búscate</span>
+          <pre class="esc-cmd">https://jmd-learn.online/scraping-lab/panel</pre>
+          <span class="w-et" style="margin-top:.5em">Las reglas del sitio</span>
+          <ul class="l-reglas">
+            <li style="--c:var(--ph-ec)">Máximo <b>20 pedidos cada 10 s</b> por apodo. Si te pasas: <span class="w-c">429</span> y <span class="w-c">Retry-After</span>.</li>
+            <li style="--c:var(--ph-or)">Si sigues tras más de 10 respuestas 429 en un minuto: <span class="w-c">403</span> por 60 s.</li>
+            <li style="--c:var(--ph-ca)"><span class="w-c">/privado/</span> y <span class="w-c">/trampa/</span> están prohibidas en robots.txt. La trampa bloquea al instante.</li>
+            <li style="--c:var(--ph-ea)">Identifícate: apodo en <span class="w-c">X-Alumno</span>, contacto en el <span class="w-c">User-Agent</span>.</li>
+          </ul>
+        </section>
+        <section class="esc-card a-in" style="--d:.35s">
+          <span class="w-et">Tu avance</span>
+          <div class="w-check" data-check="10b-lab">
+            <button class="w-chk"><span><b>Catálogo:</b> 120 productos y la trampa omitida</span></button>
+            <button class="w-chk"><span><b>Sesión y cursor:</b> corté en 2 páginas y reanudé hasta 120</span></button>
+            <button class="w-chk"><span><b>Cola:</b> 199 archivos, 1 fallido, y la segunda vez saltó todo</span></button>
+            <button class="w-chk"><span><b>Límites:</b> vi el 429 y la parte B salió con cero 429</span></button>
+            <button class="w-chk"><span><b>MCP:</b> mi asistente usó <span class="w-c">buscar_productos</span></span></button>
+            <button class="w-chk"><span><b>Tampermonkey:</b> exporté el CSV desde el navegador</span></button>
+          </div>
+        </section>
+        <section class="esc-card a-in" style="--d:.4s">
+          <span class="w-et">Tu evidencia</span>
+          <div class="l-ev">
+            <label class="w-lab">Reto<select class="w-in" id="reto">
+              <option value="catalogo">1 · Catálogo</option><option value="sesion-cursor">2 · Sesión y cursor</option>
+              <option value="cola">3 · Cola de descarga</option><option value="limites">4 · Límites</option>
+              <option value="mcp">5 · MCP</option><option value="tampermonkey">6 · Tampermonkey</option></select></label>
+            <label class="w-lab">Pega las últimas líneas de la salida<textarea class="w-in" id="salida" spellcheck="false" placeholder="Listo: 199 bajados, 0 saltados, 1 fallidos…"></textarea></label>
+            <div class="w-fila"><button type="button" class="w-btn" id="enviar">Enviar evidencia</button><span class="w-peq" id="enviado" aria-live="polite"></span></div>
+            <span class="w-peq w-muted">Nunca pegues tu token ni tu clave: el script solo muestra sus primeros caracteres.</span>
+          </div>
+        </section>
+        <section class="esc-card a-in" style="--d:.45s">
+          <span class="w-et">Ética y límites</span>
+          <ul class="l-reglas">
+            <li style="--c:var(--ok, var(--accent))"><b>Sí:</b> leer robots.txt y términos, identificarte, ir despacio, obedecer <span class="w-c">Retry-After</span>, preferir la API, guardar avance para no repetir pedidos.</li>
+            <li style="--c:var(--bad, var(--ph-or))"><b>No:</b> rotar IPs o proxies, cambiar de apodo o de cuenta para esquivar un bloqueo, ni resolver CAPTCHAs. Si un sitio te frena, la respuesta es bajar el ritmo o pedir permiso.</li>
+            <li style="--c:var(--ph-ca)">El laboratorio te enseña cómo te detectan (conteo por apodo, trampas ocultas, ráfagas) para que entiendas por qué ir lento.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Laboratorio de scraping JMD: sitio nuestro con datos ficticios. Kit completo y README en /scraping-lab/kit.zip.</span></footer>
+</div>
+<script src="../../comun/ws.js"></script>
+<script src="../../comun/copiar.js"></script>
+<script>
+(function () {
+  "use strict";
+  var reto = document.getElementById("reto"), salida = document.getElementById("salida"), out = document.getElementById("enviado");
+  reto.value = WS.leer("e10b-reto", "catalogo"); salida.value = WS.leer("e10b-salida", "");
+  reto.addEventListener("change", function () { WS.guardar("e10b-reto", reto.value); });
+  salida.addEventListener("input", function () { WS.guardar("e10b-salida", salida.value); });
+  document.getElementById("enviar").addEventListener("click", function () {
+    var t = salida.value.trim();
+    if (t.length < 5) { out.className = "w-peq w-warn"; out.textContent = "Pega la salida de tu script."; salida.focus(); return; }
+    if (/lab_[0-9a-f]{20,}/.test(t)) { out.className = "w-peq w-bad"; out.textContent = "Eso parece tu token completo: bórralo antes de enviar."; return; }
+    var lineas = t.split(/\r?\n/).filter(Boolean).slice(-3).join(" | ");
+    var b = this; b.disabled = true;
+    WS.evidencia("hallazgo", "lab " + reto.value + ": " + lineas.slice(-170)).then(function () {
+      out.className = "w-peq w-ok"; out.textContent = "✓ Enviado. Marca el reto en «Tu avance».";
+    }, function () { out.className = "w-peq w-bad"; out.textContent = "No se pudo enviar; intenta en un momento."; }).then(function () { b.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>

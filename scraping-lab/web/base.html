@@ -1,0 +1,265 @@
+{{define "base"}}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Titulo}} · Laboratorio de scraping JMD</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="{{.P}}/estilo.css">
+</head>
+<body class="c-{{.Cuerpo}}">
+<header class="cab">
+  <a class="marca" href="{{.P}}/"><span class="logo" aria-hidden="true">{}</span> Laboratorio de scraping <b>JMD</b></a>
+  <nav class="menu">
+    <a href="{{.P}}/tienda">Tienda</a>
+    <a href="{{.P}}/login">Sesión y API</a>
+    <a href="{{.P}}/descargas/">Descargas</a>
+    <a href="{{.P}}/panel">Panel</a>
+    <a href="{{.P}}/robots.txt">robots.txt</a>
+    <a href="{{.P}}/terminos">Términos</a>
+  </nav>
+</header>
+<main class="cuerpo">
+{{if eq .Cuerpo "inicio"}}{{template "inicio" .}}
+{{else if eq .Cuerpo "tienda"}}{{template "tienda" .}}
+{{else if eq .Cuerpo "producto"}}{{template "producto" .}}
+{{else if eq .Cuerpo "login"}}{{template "login" .}}
+{{else if eq .Cuerpo "sesion"}}{{template "sesion" .}}
+{{else if eq .Cuerpo "descargas"}}{{template "descargas" .}}
+{{else if eq .Cuerpo "panel"}}{{template "panel" .}}
+{{else if eq .Cuerpo "terminos"}}{{template "terminos" .}}
+{{else if eq .Cuerpo "privado"}}{{template "privado" .}}
+{{else if eq .Cuerpo "limite"}}{{template "limite" .}}
+{{else if eq .Cuerpo "bloqueado"}}{{template "bloqueado" .}}
+{{else}}{{template "error" .}}{{end}}
+</main>
+<footer class="pie">Sitio de práctica del taller «Web scraping ético con IA» · JMD Learning · Todos los datos son ficticios.</footer>
+</body>
+</html>{{end}}
+
+{{define "inicio"}}
+<section class="heroe">
+  <p class="eti">Taller en vivo · ws-01</p>
+  <h1>Practica scraping <em>sin molestar a nadie</em></h1>
+  <p class="sub">Este sitio es nuestro y está hecho para que lo raspes: tiene reglas, límites y trampas como un sitio real, pero aquí equivocarte solo te cuesta un minuto de espera.</p>
+</section>
+
+<section class="tarjeta">
+  <h2>1 · Elige tu apodo</h2>
+  <p>En el aula todos salen a internet por la misma IP, así que el laboratorio te reconoce por tu <b>apodo</b>. Mándalo en la cabecera <code>X-Alumno</code> desde tus scripts (los del kit ya lo hacen con la variable <code>ALUMNO</code>).</p>
+  <form class="fila" method="get" action="{{.P}}/">
+    <label>Tu apodo <input name="alumno" value="{{.Nick}}" placeholder="rosa-lima" pattern="[A-Za-z0-9_ -]{2,24}" required></label>
+    <button>Guardar en este navegador</button>
+  </form>
+  {{if .Nick}}<p class="ok">Este navegador navega como <b>{{.Nick}}</b>.</p>{{end}}
+</section>
+
+<div class="rejilla">
+  <section class="tarjeta">
+    <h2>2 · Qué hay para practicar</h2>
+    <ul class="lista">
+      <li><a href="{{.P}}/tienda">Tienda JMD de práctica</a>: 120 productos en 10 páginas HTML (<code>?page=N</code>) y una ficha por producto.</li>
+      <li><a href="{{.P}}/login">Sesión y API</a>: formulario con token CSRF, cookie <code>lab_sesion</code> y cabecera <code>X-Lab-Token</code>. La API pagina con <code>next_cursor</code>.</li>
+      <li><a href="{{.P}}/descargas/">Descargas</a>: 200 CSV pequeños para tu cola. Algunos fallan a propósito.</li>
+      <li><a href="{{.P}}/panel">Panel del laboratorio</a>: tus pedidos, 429, bloqueos y archivos en vivo.</li>
+    </ul>
+  </section>
+  <section class="tarjeta">
+    <h2>3 · Las reglas del sitio</h2>
+    <ul class="lista">
+      <li>Máximo <b>{{.Lim}} pedidos cada {{.Ventana}} s</b> por alumno. Si te pasas: <code>429</code> con <code>Retry-After</code>.</li>
+      <li>Si sigues pidiendo tras más de {{.Tol}} respuestas 429 en un minuto: <code>403</code> durante {{.Castigo}} s.</li>
+      <li>Lee <a href="{{.P}}/robots.txt">robots.txt</a>: hay rutas prohibidas y una trampa para bots que no lo leen.</li>
+      <li>Identifícate: pon tu nombre y un contacto en el <code>User-Agent</code>.</li>
+    </ul>
+  </section>
+</div>
+
+<section class="tarjeta">
+  <h2>4 · El kit para tu terminal</h2>
+  <p>Descarga todo junto o archivo por archivo:</p>
+  <pre class="cmd">curl -fsSLO https://jmd-learn.online{{.P}}/kit.zip &amp;&amp; python3 -m zipfile -e kit.zip . &amp;&amp; cd kit-scraping-lab</pre>
+  <p class="chips">{{range .Kit}}<a class="chip" href="{{$.P}}/kit/{{.}}">{{.}}</a>{{end}}</p>
+  <p><a class="boton" href="{{.P}}/kit.zip">Descargar kit.zip</a></p>
+</section>
+{{end}}
+
+{{define "tienda"}}
+<section class="heroe chico">
+  <p class="eti">Catálogo · página {{.Pag}} de {{.Total}}</p>
+  <h1>Tienda JMD de práctica</h1>
+  <p class="sub">Productos inventados. Recórrela con pausas: {{if .Nick}}te estamos contando como <b>{{.Nick}}</b>.{{else}}sin apodo cuentas como anónimo.{{end}}</p>
+</section>
+<ul class="catalogo">
+{{range .Productos}}
+  <li class="producto" data-id="{{.ID}}" data-sku="{{.SKU}}">
+    <span class="categoria">{{.Categoria}}</span>
+    <a class="producto-enlace" href="{{$.P}}/tienda/producto/{{.ID}}"><h2 class="nombre">{{.Nombre}}</h2></a>
+    <span class="precio" data-precio="{{printf "%.2f" .Precio}}">{{soles .Precio}}</span>
+    <span class="stock" data-stock="{{.Stock}}">{{if .Stock}}Stock: {{.Stock}}{{else}}Agotado{{end}}</span>
+    <span class="valoracion" data-valor="{{.Valoracion}}" title="{{.Valoracion}} de 5">{{estrellas .Valoracion}} <small>({{.Resenas}})</small></span>
+  </li>
+{{end}}
+</ul>
+<nav class="paginacion" aria-label="Páginas">
+  {{if gt .Ant 0}}<a rel="prev" class="anterior" href="{{.P}}/tienda?page={{.Ant}}">« Anterior</a>{{end}}
+  {{range .Nums}}{{if eq . $.Pag}}<span class="actual" aria-current="page">{{.}}</span>{{else}}<a href="{{$.P}}/tienda?page={{.}}">{{.}}</a>{{end}}{{end}}
+  {{if .HaySig}}<a rel="next" class="siguiente" href="{{.P}}/tienda?page={{.Sig}}">Siguiente »</a>{{end}}
+</nav>
+<a class="trampa" href="{{.P}}/trampa/ofertas-secretas" rel="nofollow" tabindex="-1" aria-hidden="true">Ofertas secretas para bots</a>
+{{end}}
+
+{{define "producto"}}
+<article class="tarjeta detalle" data-id="{{.Prod.ID}}">
+  <p class="eti"><a href="{{.P}}/tienda">« Volver a la tienda</a></p>
+  <h1 class="nombre">{{.Prod.Nombre}}</h1>
+  <p class="descripcion">{{.Prod.Descripcion}}</p>
+  <dl class="ficha">
+    <dt>SKU</dt><dd class="sku">{{.Prod.SKU}}</dd>
+    <dt>Marca</dt><dd class="marca">{{.Prod.Marca}}</dd>
+    <dt>Categoría</dt><dd class="categoria">{{.Prod.Categoria}}</dd>
+    <dt>Precio</dt><dd class="precio" data-precio="{{printf "%.2f" .Prod.Precio}}">{{soles .Prod.Precio}}</dd>
+    <dt>Stock</dt><dd class="stock">{{.Prod.Stock}}</dd>
+    <dt>Valoración</dt><dd class="valoracion" data-valor="{{.Prod.Valoracion}}">{{estrellas .Prod.Valoracion}} {{.Prod.Valoracion}} ({{.Prod.Resenas}} reseñas)</dd>
+  </dl>
+</article>
+{{end}}
+
+{{define "login"}}
+<section class="tarjeta estrecha">
+  <h1>Inicia sesión</h1>
+  <p>Este formulario trae un <b>token CSRF</b> escondido y te deja una cookie <code>lab_pre</code>. Tu script debe pedir esta página, leer el token y mandarlo en el POST con la misma cookie.</p>
+  <form method="post" action="{{.P}}/login" class="formulario">
+    <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+    <label>Usuario (tu apodo) <input name="usuario" value="{{.Nick}}" required autocomplete="username"></label>
+    <label>Clave <input name="clave" type="password" placeholder="practica" required autocomplete="current-password"></label>
+    <button>Entrar</button>
+  </form>
+  <p class="nota">La clave de práctica es <code>practica</code>. No es secreta: el laboratorio no guarda datos personales.</p>
+</section>
+{{end}}
+
+{{define "sesion"}}
+<section class="tarjeta estrecha">
+  <h1>Sesión iniciada como {{.Nick}}</h1>
+  <p>Tu navegador ya tiene la cookie <code>lab_sesion</code>. La API pide además esta cabecera:</p>
+  <pre class="cmd">X-Lab-Token: <code id="api-token">{{.Token}}</code></pre>
+  <p>Prueba: <code>GET {{.P}}/api/productos?limite=20</code> y luego sigue el <code>next_cursor</code> hasta que llegue <code>null</code>.</p>
+  <p class="nota">El token vale mientras dure la sesión (2 h). Trátalo como un secreto: no lo pegues en el chat.</p>
+</section>
+{{end}}
+
+{{define "descargas"}}
+<section class="heroe chico">
+  <p class="eti">Cola de descarga</p>
+  <h1>Descargas de práctica</h1>
+  <p class="sub">200 reportes CSV ficticios. La misma lista, con tamaño y <code>sha256</code>, está en <a href="{{.P}}/api/descargas">/api/descargas</a>. Algunos fallan a propósito: reintenta con espera; uno no se arregla nunca.</p>
+</section>
+<ol class="archivos">
+{{range .Archivos}}<li><a class="archivo" href="{{.URL}}" data-sha256="{{.SHA256}}" data-bytes="{{.Bytes}}">{{.Nombre}}</a></li>
+{{end}}
+</ol>
+{{end}}
+
+{{define "panel"}}
+<section class="heroe chico">
+  <p class="eti">En vivo · se actualiza cada 2 s · <span id="hora">--:--:--</span></p>
+  <h1>Panel del laboratorio</h1>
+  <p class="sub">Límite: {{.Lim}} pedidos cada {{.Ventana}} s por alumno. Busca tu apodo.</p>
+</section>
+<div class="totales" id="totales"></div>
+<div class="tabla-env">
+<table class="tabla">
+  <thead><tr><th>Alumno</th><th>Estado</th><th>Pedidos</th><th>429</th><th>403</th><th>Bloqueos</th><th>Páginas</th><th>Items API</th><th>Archivos</th><th>Errores 5xx</th><th>Insignias</th></tr></thead>
+  <tbody id="filas"><tr><td colspan="11">Esperando el primer pedido…</td></tr></tbody>
+</table>
+</div>
+<script>
+(function () {
+  var filas = document.getElementById("filas"), tot = document.getElementById("totales"), hora = document.getElementById("hora");
+  function e(s) { return String(s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+  function insignias(a) {
+    var b = [];
+    if (a.ua_identificado) b.push(["id", "Se identifica"]);
+    if (a.login) b.push(["ses", "Sesión"]);
+    if (a.paginas >= 10) b.push(["cat", "Catálogo completo"]);
+    if (a.items_api >= 120) b.push(["api", "API completa"]);
+    if (a.archivos >= 199) b.push(["cola", "Cola completa"]);
+    if (a.pedidos >= 40 && a.c429 === 0) b.push(["edu", "Educado"]);
+    if (a.trampas) b.push(["mal", "Cayó en la trampa"]);
+    if (a.robots) b.push(["mal", "Ignoró robots.txt"]);
+    return b.map(function (x) { return '<span class="ins ins-' + x[0] + '">' + e(x[1]) + "</span>"; }).join(" ");
+  }
+  function pintar(j) {
+    hora.textContent = j.hora;
+    var al = j.alumnos || [], t = {p: 0, r: 0, b: 0, a: 0};
+    al.forEach(function (a) { t.p += a.pedidos; t.r += a.c429; t.b += a.bloqueos; t.a += a.archivos; });
+    tot.innerHTML = [["Alumnos", al.length], ["Pedidos", t.p], ["Respuestas 429", t.r], ["Bloqueos", t.b], ["Archivos bajados", t.a]]
+      .map(function (x) { return '<div class="total"><b>' + x[1] + "</b><span>" + x[0] + "</span></div>"; }).join("");
+    if (!al.length) return;
+    filas.innerHTML = al.map(function (a) {
+      return "<tr><td><b>" + e(a.nick) + '</b><br><small title="' + e(a.ua) + '">' + e((a.ua || "").slice(0, 38)) + "</small></td>" +
+        '<td><span class="est est-' + e(a.estado.replace(" ", "-")) + '">' + e(a.estado) + "</span></td>" +
+        "<td>" + a.pedidos + "</td><td>" + a.c429 + "</td><td>" + a.c403 + "</td><td>" + a.bloqueos + "</td><td>" + a.paginas + "/10</td><td>" +
+        a.items_api + "</td><td>" + a.archivos + "/200</td><td>" + a.c500 + "</td><td>" + insignias(a) + "</td></tr>";
+    }).join("");
+  }
+  function tick() {
+    if (document.hidden) return;
+    fetch("{{.P}}/api/panel", {cache: "no-store"}).then(function (r) { return r.json(); }).then(pintar).catch(function () {});
+  }
+  tick(); setInterval(tick, 2000);
+})();
+</script>
+{{end}}
+
+{{define "terminos"}}
+<section class="tarjeta estrecha">
+  <h1>Términos de uso del laboratorio</h1>
+  <ol class="lista">
+    <li>Este sitio existe para practicar scraping en el taller de JMD Learning. Puedes extraer todo lo que está permitido en <a href="{{.P}}/robots.txt">robots.txt</a>.</li>
+    <li>Respeta el ritmo: como máximo {{.Lim}} pedidos cada {{.Ventana}} s por persona. Si recibes <code>429</code>, espera lo que dice <code>Retry-After</code>.</li>
+    <li>Identifícate en el <code>User-Agent</code> con tu nombre o apodo y un contacto, y manda tu apodo en <code>X-Alumno</code>.</li>
+    <li>No intentes esquivar los límites (cambiar de apodo, rotar IPs o proxies). En un sitio real eso viola sus términos y puede ser ilegal.</li>
+    <li>Todos los datos son ficticios. No hay datos personales ni precios reales.</li>
+  </ol>
+</section>
+{{end}}
+
+{{define "privado"}}
+<section class="tarjeta estrecha alerta">
+  <h1>Zona privada</h1>
+  <p>Esta ruta está en <code>Disallow</code> dentro de <a href="{{.P}}/robots.txt">robots.txt</a>. Un bot ético no entra aquí aunque la puerta esté abierta.</p>
+  <p>Quedó anotado en el panel para <b>{{.Nick}}</b>. Revisa tu script: ¿lee robots.txt antes de pedir?</p>
+</section>
+{{end}}
+
+{{define "limite"}}
+<section class="tarjeta estrecha alerta">
+  <h1>429 · Demasiados pedidos</h1>
+  <p>El laboratorio acepta {{.Pedidos}} pedidos cada {{.Ventana}} s por alumno, y <b>{{.Nick}}</b> se pasó.</p>
+  <p>Espera <b>{{.Retry}} s</b> (cabecera <code>Retry-After</code>) y sigue más despacio. Si insistes sin esperar, te bloqueamos un rato.</p>
+</section>
+{{end}}
+
+{{define "bloqueado"}}
+<section class="tarjeta estrecha peligro">
+  <h1>{{.Titulo}}</h1>
+  <p><b>{{.Nick}}</b> queda bloqueado hasta las <b>{{.Hasta}}</b> (hora de Lima, unos {{.Retry}} s).</p>
+  <p class="motivo">{{.Motivo}}</p>
+  <h2>Por qué pasa esto en un sitio real</h2>
+  <ul class="lista">
+    <li>Los sitios cuentan pedidos por IP, cookie, cuenta o huella del navegador. Mucho y muy rápido parece un ataque.</li>
+    <li>Primero te frenan (429), luego te cortan (403). Un bloqueo real puede durar días o ser permanente.</li>
+    <li>La salida ética no es esconderte (otra IP, otro apodo): es esperar, bajar el ritmo y, si necesitas más, pedir permiso o usar la API oficial.</li>
+  </ul>
+</section>
+{{end}}
+
+{{define "error"}}
+<section class="tarjeta estrecha alerta">
+  <h1>{{.Titulo}}</h1>
+  <p>{{.Texto}}</p>
+  {{if .Volver}}<p><a class="boton" href="{{.Volver}}">Volver a intentar</a></p>{{end}}
+</section>
+{{end}}

@@ -184,7 +184,13 @@ $("t-cerrar").onclick = () => $("trafico").close();
   }).filter((g) => g.items.length);
   for (const g of armados) {
     const b = el("button", null, "grupo " + g.color);
-    b.append(el("b", g.nombre), el("span", g.resumen), el("small", `${g.items.length} ${g.items.length === 1 ? "prueba" : "pruebas"}`));
+    const cabecera = el("div", null, "grupo-cabecera");
+    const icono = el("span", null, "grupo-icono");
+    const dibujos = ['<circle cx="11" cy="11" r="7"/><path d="m16 16 4 4M8 11h6m-3-3v6"/>', '<path d="m13 2-9 12h7l-1 8 10-13h-7z"/>', '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/>', '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6zM12 8v5m0 3h.01"/>', '<path d="M4 4v16h16M8 15v-4m5 4V7m5 8v-6"/>'];
+    // Static decorative icons only; scenario content stays in textContent.
+    icono.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + dibujos[GRUPOS.findIndex((item) => item.id === g.id)] + '</svg>';
+    cabecera.append(icono, el("span", String(armados.indexOf(g) + 1).padStart(2, "0"), "grupo-numero"));
+    b.append(cabecera, el("b", g.nombre), el("span", g.resumen), el("small", `${g.items.length} ${g.items.length === 1 ? "prueba" : "pruebas"}`));
     b.onclick = () => abrir(g.items, g.nombre);
     $("grupos").append(b);
   }

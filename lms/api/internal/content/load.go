@@ -108,6 +108,13 @@ func loadCourse(dir string, c *Catalog) (*Course, error) {
 	if course.Title == "" {
 		return nil, errors.New("course.yaml: falta title")
 	}
+	if course.Portada != "" {
+		full, err := portadaPath(dir, course.Portada)
+		if err != nil {
+			return nil, fmt.Errorf("course.yaml: portada: %w", err)
+		}
+		course.PortadaPath = full
+	}
 
 	lessons := map[string]*Lesson{}
 	files, _ := filepath.Glob(filepath.Join(dir, "lessons", "*.md"))
@@ -552,6 +559,26 @@ func safeRel(p string) bool {
 		}
 	}
 	return true
+}
+
+// MaxPortada es el tamaño máximo de la portada de un curso (el mismo tope que una escena LIVE).
+const MaxPortada = 1 << 20
+
+// portadaPath valida la portada de un curso: un .html dentro de su carpeta, que exista y pese menos de
+// MaxPortada. Devuelve la ruta en disco.
+func portadaPath(dir, rel string) (string, error) {
+	if !safeRel(rel) || strings.ToLower(filepath.Ext(rel)) != ".html" {
+		return "", fmt.Errorf("%q debe ser un .html dentro de la carpeta del curso", rel)
+	}
+	full := filepath.Join(dir, filepath.FromSlash(rel))
+	st, err := os.Stat(full)
+	if err != nil || st.IsDir() {
+		return "", fmt.Errorf("no existe %s", rel)
+	}
+	if st.Size() > MaxPortada {
+		return "", fmt.Errorf("%s pesa %d bytes (máximo %d)", rel, st.Size(), MaxPortada)
+	}
+	return full, nil
 }
 
 // SafeRel es safeRel para otros paquetes.

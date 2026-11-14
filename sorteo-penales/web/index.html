@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorteo · Curso de ClickHouse</title>
+<meta name="description" content="Pide tu dorsal y patea tus 3 penales. Si metes los 3, ganas el curso de ClickHouse.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap">
+<link rel="stylesheet" href="static/sorteo.css">
+</head>
+<body class="estadio">
+<main>
+  <span class="marca">⚽ JMD Learn · Copa ClickHouse</span>
+  <h1 id="titulo">Sorteo del curso de ClickHouse</h1>
+  <p class="sub">Pide tu dorsal y espera el pitazo. Cuando empiece el sorteo, tu jugador patea 3 penales: si mete los 3, se lleva el curso.</p>
+
+  <div class="marcador-led" aria-live="polite">
+    <div><small>Convocados</small><b id="led-total">00</b></div>
+    <div><small>Estado</small><b id="led-fase" class="verde">CALENTAMIENTO</b></div>
+    <div><small>Premios</small><b id="led-premios">3 CUPOS</b></div>
+  </div>
+
+  <section id="v-form" class="panel" hidden>
+    <form id="form" autocomplete="off">
+      <label for="nombre">Ficha de inscripción · nombre y apellido (va en tu camiseta)</label>
+      <input id="nombre" type="text" maxlength="40" placeholder="Ej.: Lucía Ramos" required>
+      <div class="fila" style="margin-top:12px"><button id="btn" type="submit">Pedir mi dorsal ⚽</button></div>
+      <p class="error" id="error" role="alert"></p>
+      <p class="nota">Un dorsal por jugador. Usa tu nombre real: así te contactamos si ganas.</p>
+    </form>
+  </section>
+
+  <section id="v-cerrado" class="panel" hidden>
+    <h2 style="margin-top:0">Se cerró la convocatoria</h2>
+    <p class="nota">Ya no entran más jugadores, pero puedes quedarte en la tribuna a ver quién gana.</p>
+  </section>
+
+  <section id="v-espera" class="panel" hidden>
+    <div class="camiseta-wrap">
+      <div id="mi-camiseta"></div>
+      <div>
+        <div class="nota">Estás convocado, <strong id="mi-nombre"></strong></div>
+        <div class="nota" style="margin-top:4px">Tu dorsal</div>
+        <div class="numero" id="mi-numero">00</div>
+      </div>
+    </div>
+    <p class="banco" style="margin-top:16px"><span id="balon"></span><span id="txt-espera">Calentando en el banco.</span></p>
+  </section>
+
+  <section id="v-buscar" class="panel" hidden>
+    <h2 style="margin-top:0">⚽ Mira tus penales</h2>
+    <form id="f-buscar" autocomplete="off">
+      <label for="dorsal">Escribe tu número de dorsal</label>
+      <div class="fila"><input id="dorsal" type="number" min="1" inputmode="numeric" placeholder="Ej.: 7" style="max-width:160px"><button type="submit">Ver mis penales</button></div>
+      <p class="error" id="e-buscar" role="alert"></p>
+    </form>
+    <p class="nota" style="margin-top:14px">¿No participaste? <a href="#" id="solo-campeones" style="color:var(--amarillo)">Ver directamente a los campeones</a></p>
+  </section>
+
+  <section id="v-juego" class="panel" hidden>
+    <div id="cancha"></div>
+    <div class="marcador" id="marcador"></div>
+    <div class="grito" id="grito" aria-live="polite"></div>
+    <div class="resultado" id="resultado" hidden></div>
+  </section>
+
+  <section id="v-ganadores" class="panel" hidden>
+    <h2 style="margin-top:0">🏆 Campeones</h2>
+    <div id="lista-ganadores"></div>
+  </section>
+
+  <details class="panel" id="v-como">
+    <summary>📋 Reglamento: ¿cómo se eligen los ganadores?</summary>
+    <p class="nota">Nadie lo sabe antes del pitazo, ni el organizador. Al cerrar la convocatoria el sistema genera una semilla secreta al azar y publica su huella (SHA-256), junto con la de la lista de jugadores. Al empezar el sorteo revela la semilla: de ella salen los ganadores y hacia dónde va cada penal. Quien sale elegido mete los 3; el resto falla al menos uno.</p>
+    <p class="nota" id="huellas"></p>
+    <div id="verificacion"></div>
+  </details>
+</main>
+<script type="module">
+import { api, crearCancha, jugarTanda, marcador, confeti, GRITO, pad, verificar, textoVerificacion, escapar, camiseta, BALON } from "./static/sorteo.js";
+
+const $ = (id) => document.getElementById(id);
+const ver = (id, si) => ($(id).hidden = !si);
+let guardado = null;
+try { guardado = JSON.parse(localStorage.getItem("sorteo-clickhouse") || "null"); } catch {}
+let estado = null;
+let jugado = false;
+$("balon").innerHTML = BALON;
+
+async function cargar() {
+  try {
+    estado = await api(`api/estado?t=${encodeURIComponent(guardado?.t || "")}`);
+  } catch { return; }
+  if (guardado && guardado.edicion !== estado.edicion) { guardado = null; try { localStorage.removeItem("sorteo-clickhouse"); } catch {} }
+  pintar();
+}
+
+function pintar() {
+  const e = estado;
+  $("titulo").textContent = e.titulo;
+  document.title = `${e.titulo} · JMD`;
+  $("led-total").textContent = pad(e.total);
+  $("led-premios").textContent = `${e.ganadores} ${e.ganadores === 1 ? "CUPO" : "CUPOS"}`;
+  $("led-fase").textContent = { inscripcion: "CALENTAMIENTO", cerrado: "¡AL CAMPO!", sorteado: "FINAL" }[e.fase];
+  const yo = e.yo;
+  ver("v-form", !yo && e.fase === "inscripcion");
+  ver("v-cerrado", !yo && e.fase === "cerrado");
+  ver("v-buscar", !yo && e.fase === "sorteado");
+  ver("v-espera", !!yo && !(e.fase === "sorteado" && jugado));
+  if (yo) {
+    $("mi-numero").textContent = pad(yo.numero);
+    $("mi-nombre").textContent = yo.nombre;
+    if (!$("mi-camiseta").dataset.n) {
+      $("mi-camiseta").innerHTML = camiseta(yo.numero, yo.nombre);
+      $("mi-camiseta").dataset.n = yo.numero;
+    }
+    $("txt-espera").textContent = e.fase === "inscripcion"
+      ? `Calentando en el banco con ${e.total - 1} ${e.total - 1 === 1 ? "jugador más" : "jugadores más"}. Puedes cerrar esta página: vuelve a este enlace el día del sorteo, desde este mismo celular y navegador, para patear tus penales.`
+      : e.fase === "cerrado" ? "¡Se cerró la convocatoria! Ve saliendo a la cancha: el sorteo está por empezar." : "¡Pitazo! Te toca patear.";
+  }
+  if (e.compromiso) $("huellas").innerHTML = `Huella de la semilla: <span class="huella">${e.compromiso}</span><br>Huella de la lista (${e.total}): <span class="huella">${e.huellaLista}</span>${e.reaperturas ? `<br>La convocatoria se reabrió ${e.reaperturas} vez/veces antes del sorteo.` : ""}`;
+  if (e.fase === "sorteado") {
+    // Sin spoilers: los campeones (y el VAR, que los nombra) salen después de ver una tanda.
+    if (yo && !jugado) jugar();
+  }
+}
+
+function mostrarGanadores() {
+  ver("v-ganadores", true);
+  verificar(estado).then((v) => ($("verificacion").innerHTML = `<p class="nota">Revisado en tu navegador (el VAR):</p>${textoVerificacion(v)}`)).catch(() => {});
+  $("lista-ganadores").innerHTML = estado.resultado.map((g) => `<p style="font-size:22px;margin:6px 0;display:flex;align-items:center;gap:10px"><span style="width:44px;display:inline-block">${camiseta(g.numero, g.nombre)}</span><b style="color:var(--amarillo);font-family:'Bebas Neue',Impact,sans-serif;font-size:28px">${pad(g.numero)}</b> ${escapar(g.nombre)}</p>`).join("");
+}
+
+let jugando = false;
+async function jugar(j = { numero: estado.yo.numero, nombre: estado.yo.nombre, penales: estado.misPenales, gane: estado.gane }) {
+  if (jugando) return;
+  jugando = true;
+  jugado = true;
+  const e = { yo: j, misPenales: j.penales, gane: j.gane };
+  ver("v-espera", false);
+  ver("v-juego", true);
+  $("v-juego").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("resultado").hidden = true;
+  const c = crearCancha($("cancha"), e.yo.numero);
+  const marcar = marcador($("marcador"));
+  $("grito").textContent = `Patea el ${pad(e.yo.numero)}, ${e.yo.nombre}…`;
+  const goles = await jugarTanda(c, e.misPenales, (i, tiro) => { marcar(i, tiro); $("grito").textContent = GRITO[tiro.resultado]; });
+  jugando = false;
+  $("grito").textContent = "";
+  const r = $("resultado");
+  r.hidden = false;
+  r.innerHTML = e.gane
+    ? `<h2>🏆 ¡Campeón! Ganaste el curso</h2><p class="nota">Metiste los 3, ${escapar(e.yo.nombre)}. Para reclamar tu premio, escríbenos al WhatsApp <a href="https://wa.me/51986149476?text=${encodeURIComponent(`Hola, gané el sorteo del curso de ClickHouse con el dorsal ${pad(e.yo.numero)} (${e.yo.nombre})`)}" style="color:var(--amarillo);font-weight:700">986 149 476</a> con tu dorsal ${pad(e.yo.numero)}.</p>`
+    : `<h2>${goles} de 3</h2><p class="nota">Esta vez ganó el arquero. ¡Gracias por jugar!</p>`;
+  r.insertAdjacentHTML("beforeend", `<div class="fila" style="justify-content:center;margin-top:10px"><button class="sec" id="otra">Ver la repetición</button></div>`);
+  $("otra").onclick = () => jugar(j);
+  if (e.gane) confeti();
+  mostrarGanadores();
+}
+
+async function buscar(n) {
+  $("e-buscar").textContent = "";
+  if (!n) { $("e-buscar").textContent = "Escribe tu número de dorsal."; return; }
+  try {
+    const j = await api(`api/penales?n=${n}`);
+    jugar(j);
+  } catch (err) {
+    $("e-buscar").textContent = err.message;
+  }
+}
+$("solo-campeones").addEventListener("click", (ev) => { ev.preventDefault(); mostrarGanadores(); $("v-ganadores").scrollIntoView({ behavior: "smooth" }); });
+$("f-buscar").addEventListener("submit", (ev) => { ev.preventDefault(); buscar(Number($("dorsal").value)); });
+
+$("form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  $("error").textContent = "";
+  $("btn").disabled = true;
+  try {
+    const r = await api("api/inscribir", { method: "POST", body: JSON.stringify({ nombre: $("nombre").value, t: guardado?.t || "" }) });
+    guardado = { edicion: estado.edicion, t: r.t };
+    try { localStorage.setItem("sorteo-clickhouse", JSON.stringify(guardado)); } catch {}
+    await cargar();
+  } catch (err) {
+    $("error").textContent = err.message;
+  } finally {
+    $("btn").disabled = false;
+  }
+});
+
+await cargar();
+setInterval(() => { if (!(estado?.fase === "sorteado" && (jugado || !estado.yo))) cargar(); }, 2500);
+</script>
+</body>
+</html>

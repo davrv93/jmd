@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balón de Oro · Mete gol y entras gratis</title>
+<meta name="description" content="Mete gol y entras gratis a Claude Code PRO. Tres tiros por persona, un gol de cada 250, dos vacantes. Esta vez no participa ningún ganador de Claude Code PRO.">
+<meta name="theme-color" content="#fbf8f3">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/base.css">
+<style>
+  [hidden] { display: none !important; }
+  :root { --oro: #D9A441; --oro-d: #b8862b; --oro-l: #f3dca3; --cesped: #2b6b3d; --cesped-d: #1f4f2d; }
+  main { max-width: 620px; padding-top: 24px; }
+  .marca { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #141A46; font-size: 16px; }
+  .marca svg { width: 40px; height: 40px; }
+  .kick { margin-top: 34px; color: var(--oro-d); }
+  h1 { font-size: clamp(52px, 14vw, 88px); margin: 4px 0 10px; }
+  h1 span { color: var(--oro); }
+  p.lead b { color: var(--txt); }
+
+  .regla { margin-top: 18px; background: var(--dark); color: #fff; border-radius: 18px; padding: 16px 18px; display: flex; gap: 12px; align-items: center;
+           font-size: clamp(16px, 4.4vw, 20px); font-weight: 700; line-height: 1.2; border: 2px solid var(--oro); box-shadow: 0 16px 34px -24px rgba(27, 19, 16, .8); }
+  .regla i { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--oro); color: var(--dark); display: grid; place-items: center; font-style: normal; font-size: 20px; }
+  .regla small { display: block; font-weight: 500; font-size: 13px; color: #d8c8b8; margin-top: 3px; }
+  .chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .chips span { font-size: 13px; font-weight: 700; background: #fff; border: 1.5px solid var(--line); border-radius: 99px; padding: 7px 13px; display: inline-flex; gap: 6px; align-items: center; }
+  .chips span.oro { background: var(--oro-l); border-color: var(--oro); color: #5d4310; }
+  .chips span.agot { background: #f3ebe4; color: var(--soft); text-decoration: line-through; }
+
+  .btn.oro { background: var(--oro); color: var(--dark); }
+  .btn.oro:disabled { opacity: .6; }
+  .hola { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 14px; color: #d8c8b8; }
+  .hola b { color: #fff; font-size: 17px; }
+  .tiros { display: inline-flex; gap: 5px; vertical-align: middle; margin-left: 6px; }
+  .tiros i { width: 12px; height: 12px; border-radius: 50%; background: var(--oro); display: inline-block; }
+  .tiros i.gastado { background: rgba(255, 255, 255, .18); }
+
+  /* La cancha: arco, arquero y balón. */
+  .campo { position: relative; margin-top: 14px; border-radius: 18px; overflow: hidden;
+           background: linear-gradient(180deg, #2a2019 0%, #1b1310 42%, var(--cesped-d) 42.2%, var(--cesped) 100%); }
+  .campo svg { display: block; width: 100%; height: auto; }
+  .campo .conf { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; opacity: 0; animation: cae 2.2s linear forwards; }
+  @keyframes cae { 0% { opacity: 0; transform: translateY(0) rotate(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: translateY(260px) rotate(540deg); } }
+  #arquero, #balon { transform-box: fill-box; transform-origin: center; }
+  #red { transition: transform .15s; }
+  .campo.gol #red { animation: tiembla .5s ease-out 1; }
+  @keyframes tiembla { 0%, 100% { transform: none; } 30% { transform: translate(0, 4px) scale(1.02); } 60% { transform: translate(0, -2px); } }
+  .campo.palo #poste-i, .campo.palo #poste-d { animation: vibra .4s ease-out 1; }
+  @keyframes vibra { 0%, 100% { transform: none; } 25% { transform: translateX(-2px); } 50% { transform: translateX(2px); } 75% { transform: translateX(-1px); } }
+
+  .res { margin-top: 14px; min-height: 30px; text-align: center; font-size: clamp(28px, 8vw, 40px); font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+  .res.gol { color: var(--oro); }
+  .res.mal { color: #f2a57f; }
+  .res small { display: block; font-size: 15px; letter-spacing: 0; font-weight: 500; color: #d8c8b8; margin-top: 8px; }
+  .fin { text-align: center; color: #d8c8b8; margin-top: 10px; font-size: 15px; }
+
+  .premio { margin-top: 14px; background: var(--oro); color: var(--dark); border-radius: 20px; padding: 20px; animation: gira .9s cubic-bezier(.2, 1.2, .4, 1); transform-origin: top; perspective: 1200px; }
+  @keyframes gira { from { transform: rotateX(-90deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  .premio .k { font-size: 12px; letter-spacing: .14em; font-weight: 700; color: #5d4310; }
+  .premio .big { font-size: clamp(52px, 15vw, 84px); }
+  .premio .big small { font-size: .38em; letter-spacing: 0; margin-left: 8px; }
+  .cod { font-family: 'JetBrains Mono', monospace; font-size: clamp(24px, 7vw, 34px); font-weight: 700; letter-spacing: .08em; background: #fff; color: var(--ink);
+         border-radius: 14px; padding: 12px 16px; margin-top: 12px; text-align: center; user-select: all; }
+  .cod.pend { font-size: 15px; letter-spacing: 0; font-family: inherit; font-weight: 600; }
+  .premio .btn { background: var(--dark); color: #fff; }
+  .premio p { font-size: 13px; color: #5d4310; margin-top: 10px; }
+
+  .goles { list-style: none; display: grid; gap: 8px; margin-top: 8px; }
+  .goles li { display: flex; justify-content: space-between; gap: 10px; align-items: center; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 11px 14px; font-size: 15px; }
+  .goles li b { display: flex; gap: 8px; align-items: center; }
+  .goles li b::before { content: "⚽"; }
+  .goles li span { color: var(--soft); font-size: 13px; }
+  .goles li b.yashin::before { content: "🧤"; }
+  .goles .vacio { color: var(--soft); font-size: 14px; }
+  .cuenta { justify-content: flex-start; margin-top: 12px; }
+  .cuenta div { min-width: 92px; }
+  .cuenta b { font-size: 26px; }
+  .comprobar p { font-size: 14px; color: var(--soft); margin-top: 8px; }
+  .comprobar code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #f6efe7; padding: 2px 6px; border-radius: 6px; }
+  .enlaces { margin-top: 14px; font-size: 13px; text-align: center; color: var(--soft); }
+  @media (prefers-reduced-motion: reduce) { .premio { animation: none; } .conf { display: none; } }
+</style>
+</head>
+<body>
+<canvas id="luz"></canvas>
+<main>
+  <div class="marca"><svg viewBox="0 0 200 200" fill="none"><g fill="#1B2559"><circle cx="38" cy="78" r="6"/><circle cx="52" cy="112" r="6"/><circle cx="84" cy="118" r="6"/><circle cx="92" cy="88" r="6"/><circle cx="120" cy="80" r="6"/><circle cx="146" cy="74" r="6"/></g><path d="M38 78 92 88 120 80 146 74M92 88 84 118 52 112 38 78" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M100 86v90M114 84v90M128 82v90M142 80v90" stroke="#3B5BDB" stroke-width="5" stroke-linecap="round"/><path d="M92 176q40 14 64-6" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M160 60l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#D9A441"/></svg>JMD Learning</div>
+
+  <div class="kick">JUEGO INSTANTÁNEO · CLAUDE CODE PRO</div>
+  <h1>Balón<br><span>de Oro</span></h1>
+  <p class="lead">Mete gol y entras <b>gratis</b> a Claude Code PRO.</p>
+
+  <div class="regla"><i>!</i><div>Esta vez no participa ningún ganador de Claude Code PRO<small>Si ya ganaste, hoy el balón es para otros. ¡Gracias por jugar!</small></div></div>
+  <div class="chips">
+    <span class="oro" id="chipVac">2 vacantes · quedan 2</span>
+    <span id="chipProb">1 gol de cada 250 tiros</span>
+    <span id="chipTiros">3 tiros por persona</span>
+  </div>
+
+  <section class="card" id="inscripcion">
+    <h2>Escribe tu nombre y patea</h2>
+    <p class="soft small">Solo nombre y apellido: nada de celular. Si metes gol, el código aparece aquí mismo.</p>
+    <form id="form" autocomplete="off">
+      <label for="nombre">Nombre y apellido</label>
+      <input type="text" id="nombre" name="nombre" maxlength="40" placeholder="Ej.: Ana Pérez" required>
+      <button class="btn oro" type="submit" id="quiero">Quiero patear</button>
+      <div class="err" id="err1"></div>
+    </form>
+  </section>
+
+  <section class="card dark" id="juego" hidden>
+    <div class="hola"><div>Vamos, <b id="nom"></b></div><div id="restan"></div></div>
+    <div class="campo" id="campo">
+      <svg viewBox="0 0 360 250" aria-label="Arco, arquero y balón">
+        <defs>
+          <pattern id="malla" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M0 0L10 10M10 0L0 10" stroke="#fff" stroke-opacity=".38" stroke-width=".8"/></pattern>
+          <radialGradient id="luzarco" cx=".5" cy="1" r=".9"><stop offset="0" stop-color="#D9A441" stop-opacity=".22"/><stop offset="1" stop-color="#D9A441" stop-opacity="0"/></radialGradient>
+        </defs>
+        <ellipse cx="180" cy="106" rx="170" ry="70" fill="url(#luzarco)"/>
+        <!-- Red (al fondo) -->
+        <g id="red"><path d="M58 44 L302 44 L292 150 L68 150 Z" fill="url(#malla)" opacity=".9"/><path d="M58 44 L68 150 M302 44 L292 150" stroke="#fff" stroke-opacity=".5" stroke-width="1"/></g>
+        <!-- Línea de gol y césped -->
+        <rect x="0" y="150" width="360" height="4" fill="#fff" opacity=".9"/>
+        <path d="M20 200 H340" stroke="#fff" stroke-opacity=".35" stroke-width="2"/>
+        <circle cx="180" cy="215" r="3" fill="#fff" opacity=".6"/>
+        <!-- Postes -->
+        <rect id="poste-i" x="52" y="40" width="8" height="112" rx="3" fill="#fff"/>
+        <rect id="poste-d" x="300" y="40" width="8" height="112" rx="3" fill="#fff"/>
+        <rect x="52" y="38" width="256" height="8" rx="3" fill="#fff"/>
+        <!-- Arquero -->
+        <g id="arquero">
+          <ellipse cx="180" cy="150" rx="24" ry="4" fill="#000" opacity=".3"/>
+          <path d="M156 114 L148 92 L156 88 L164 108 L196 108 L204 88 L212 92 L204 114 Z" fill="#f2c46b"/>
+          <circle cx="146" cy="88" r="6" fill="#f2c46b"/><circle cx="214" cy="88" r="6" fill="#f2c46b"/>
+          <rect x="162" y="100" width="36" height="34" rx="8" fill="#D97757"/>
+          <rect x="166" y="132" width="11" height="18" rx="3" fill="#1b1310"/><rect x="183" y="132" width="11" height="18" rx="3" fill="#1b1310"/>
+          <circle cx="180" cy="86" r="13" fill="#f3dca3"/>
+          <path d="M167 84 q13 -14 26 0" fill="#1b1310"/>
+          <text x="180" y="124" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" font-family="JetBrains Mono, monospace">1</text>
+        </g>
+        <!-- Balón de oro -->
+        <g id="balon">
+          <ellipse cx="180" cy="238" rx="16" ry="4" fill="#000" opacity=".35"/>
+          <circle cx="180" cy="220" r="17" fill="#D9A441"/>
+          <path d="M180 209l6 4-2 7h-8l-2-7z" fill="#5d4310"/>
+          <path d="M180 209V204M186 213l5-3M184 220l4 5M176 220l-4 5M174 213l-5-3" stroke="#5d4310" stroke-width="1.6"/>
+          <circle cx="180" cy="220" r="17" fill="none" stroke="#8a6420" stroke-width="2"/>
+          <circle cx="174" cy="213" r="4" fill="#fff" opacity=".45"/>
+        </g>
+      </svg>
+    </div>
+    <button class="btn oro" id="patear">¡Patear!</button>
+    <div class="res" id="res"></div>
+    <div class="fin" id="fin" hidden></div>
+    <div class="premio" id="premio" hidden>
+      <div class="k">¡GOOOL! · CÓDIGO 100 % · UN SOLO USO</div>
+      <div class="big">100 %<small>GRATIS</small></div>
+      <div class="cod" id="cod">CCP-XXXXXX</div>
+      <a class="btn" id="usar" href="#" target="_blank" rel="noopener">Usar mi cupo</a>
+      <p>Toca «Usar mi cupo»: el código va puesto en la matrícula. Elige «Individual» y el total queda en S/ 0.</p>
+    </div>
+    <div class="err" id="err2"></div>
+  </section>
+
+  <section class="card">
+    <h2>Goles</h2>
+    <p class="soft small" id="golesTxt">Nadie ha metido gol todavía. ¿Serás el primero?</p>
+    <ul class="goles" id="goles"></ul>
+  </section>
+
+  <section class="card comprobar">
+    <h2>Comprobar</h2>
+    <div class="cuenta"><div><b id="cTiros">0</b><span>TIROS</span></div><div><b id="cGoles">0</b><span>GOLES</span></div><div><b id="cProb">1/250</b><span>PROB.</span></div></div>
+    <p>El azar lo decide el servidor en cada tiro con <code>crypto/rand</code>, no tu navegador: ni el organizador puede elegir quién mete gol. Cada tiro queda contado y estos números son públicos en <code>api/estado</code>.</p>
+  </section>
+
+  <p class="enlaces"><a href="flyer">Ver el póster para compartir</a> · ¿Prefieres atajar? <a href="/yashin/">Juega Yashin 🧤</a></p>
+  <p class="foot">Tres tiros por persona. Dos cupos gratis para una inscripción individual en Claude Code PRO (sábados 7, 14, 21 y 28 nov, 7:30 – 9:30 p.m.). Curso independiente con fines académicos. Claude y Claude Code son marcas de Anthropic, PBC; sin relación ni patrocinio de Anthropic.</p>
+</main>
+<script type="module">
+import { api, $, esc, luz } from "./static/comun.js";
+luz();
+
+const LLAVE = "bdo_t";
+let token = null;
+try { token = localStorage.getItem(LLAVE); } catch (e) { token = null; }
+let estado = {}, yo = null, animando = false;
+
+const fecha = (iso) => {
+  const d = new Date(iso);
+  const dia = d.toLocaleDateString("es-PE", { day: "numeric", month: "short", timeZone: "America/Lima" }).replace(".", "");
+  const hora = d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Lima" });
+  return `${dia} ${hora}`;
+};
+
+function pintarEstado() {
+  const e = estado;
+  const chip = $("#chipVac");
+  if (e.quedan > 0) { chip.textContent = `${e.vacantes} vacantes · quedan ${e.quedan}`; chip.className = "oro"; }
+  else { chip.textContent = `Las ${e.vacantes} vacantes ya salieron`; chip.className = "agot"; }
+  $("#chipProb").textContent = `1 gol de cada ${e.prob_n} tiros`;
+  $("#chipTiros").textContent = `${e.tiros_por_persona} tiros por persona`;
+  $("#cTiros").textContent = e.tiros_totales;
+  $("#cGoles").textContent = e.goles;
+  $("#cProb").textContent = `1/${e.prob_n}`;
+  const ul = $("#goles");
+  if (!e.ganadores.length) { ul.innerHTML = ""; $("#golesTxt").hidden = false; }
+  else {
+    $("#golesTxt").hidden = true;
+    ul.innerHTML = e.ganadores.map((g) => g.juego === "yashin"
+      ? `<li><b class="yashin">${esc(g.nombre)}</b><span>${fecha(g.fecha)} · atajó en Yashin</span></li>`
+      : `<li><b>${esc(g.nombre)}</b><span>${fecha(g.fecha)} · tiro ${g.tiro}</span></li>`).join("");
+  }
+}
+
+async function cargarEstado() {
+  try { estado = await api("api/estado"); pintarEstado(); } catch (e) { /* se reintenta luego */ }
+}
+
+function pintarYo() {
+  $("#inscripcion").hidden = true;
+  $("#juego").hidden = false;
+  $("#nom").textContent = yo.nombre;
+  const total = estado.tiros_por_persona || 3, usados = yo.tiros || 0;
+  let bolas = "";
+  for (let i = 0; i < total; i++) bolas += `<i class="${i < usados ? "gastado" : ""}"></i>`;
+  $("#restan").innerHTML = `${yo.tiros_restantes} ${yo.tiros_restantes === 1 ? "tiro" : "tiros"}<span class="tiros">${bolas}</span>`;
+  const btn = $("#patear");
+  if (yo.gane) {
+    btn.hidden = true;
+    mostrarPremio(yo.codigo, yo.codigo_pendiente);
+    if (!$("#res").classList.contains("gol")) { $("#res").className = "res gol"; $("#res").innerHTML = `¡GOOOL!<small>Lo metiste en tu tiro ${yo.tiro}. Tu cupo ya está guardado.</small>`; }
+  } else if (yo.tiros_restantes <= 0) {
+    btn.hidden = true;
+    $("#fin").hidden = false; $("#fin").textContent = "Se acabaron tus tiros. Gracias por jugar.";
+  } else {
+    btn.hidden = false;
+  }
+}
+
+function mostrarPremio(codigo, pendiente) {
+  const p = $("#premio");
+  p.hidden = false;
+  const cod = $("#cod");
+  if (codigo) {
+    cod.textContent = codigo; cod.className = "cod";
+    $("#usar").href = (estado.matricula || "https://jmd-learn.online/sorteo-claude/matricula?c=") + encodeURIComponent(codigo);
+    $("#usar").hidden = false;
+  } else {
+    cod.textContent = "Tu código está en camino: el gol quedó registrado y te lo completamos en minutos. Vuelve a esta página desde este mismo navegador."; cod.className = "cod pend";
+    $("#usar").hidden = true;
+  }
+}
+
+$("#form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const btn = $("#quiero"); btn.disabled = true; $("#err1").textContent = "";
+  try {
+    yo = await api("api/inscribir", { method: "POST", body: JSON.stringify({ nombre: $("#nombre").value }) });
+    token = yo.t;
+    try { localStorage.setItem(LLAVE, token); } catch (e) { /* sin memoria: igual juega */ }
+    pintarYo();
+    $("#juego").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    $("#err1").textContent = e.message;
+  } finally { btn.disabled = false; }
+});
+
+// Animación del tiro: 1,5 s. El balón sale; el arquero se lanza a un lado;
+// según lo que dijo el servidor, el balón acaba en la red, en las manos, en el
+// palo o fuera.
+const lado = () => (Math.random() < .5 ? -1 : 1);
+function animar(resultado) {
+  const balon = $("#balon"), arquero = $("#arquero"), campo = $("#campo");
+  campo.classList.remove("gol", "palo");
+  const l = lado();                       // lado al que va el balón
+  const ladoArq = resultado === "atajado" ? l : -l;
+  const ease = "cubic-bezier(.3,.8,.4,1)";
+  const vuela = (dx, dy, escala, extra = []) => balon.animate([
+    { transform: "translate(0,0) scale(1) rotate(0)" },
+    { transform: `translate(${dx * .5}px, ${dy * .55}px) scale(${(1 + escala) / 2}) rotate(${l * 240}deg)`, offset: .5 },
+    { transform: `translate(${dx}px, ${dy}px) scale(${escala}) rotate(${l * 480}deg)` },
+    ...extra,
+  ], { duration: 1500, easing: ease, fill: "forwards" });
+  arquero.animate([
+    { transform: "translate(0,0) rotate(0)" },
+    { transform: "translate(0,0) rotate(0)", offset: .25 },
+    { transform: `translate(${ladoArq * 72}px, -14px) rotate(${ladoArq * 55}deg)` },
+  ], { duration: 1500, easing: ease, fill: "forwards" });
+  switch (resultado) {
+    case "gol": vuela(l * 82, -124, .62); setTimeout(() => campo.classList.add("gol"), 1300); break;
+    case "atajado": vuela(l * 66, -112, .66); break;
+    case "palo": vuela(l * 124, -112, .66, [{ transform: `translate(${l * 124}px, -112px) scale(.66) rotate(${l * 480}deg)`, offset: .92 }, { transform: `translate(${l * 96}px, -60px) scale(.7) rotate(${l * 520}deg)` }]); setTimeout(() => campo.classList.add("palo"), 1300); break;
+    default: vuela(l * 150, -230, .52); break; // afuera
+  }
+}
+function reponer() {
+  for (const el of [$("#balon"), $("#arquero")]) el.getAnimations().forEach((a) => a.cancel());
+  $("#campo").classList.remove("gol", "palo");
+}
+function confeti() {
+  const campo = $("#campo"), colores = ["#D9A441", "#f3dca3", "#fff", "#f2a57f"];
+  for (let i = 0; i < 48; i++) {
+    const e = document.createElement("i"); e.className = "conf";
+    e.style.cssText = `left:${5 + Math.random() * 90}%;background:${colores[i % 4]};animation-delay:${Math.random() * .8}s`;
+    campo.append(e); setTimeout(() => e.remove(), 3200);
+  }
+}
+const textos = { atajado: "¡Atajado!", palo: "¡Al palo!", afuera: "¡Afuera!" };
+
+$("#patear").addEventListener("click", async () => {
+  if (animando) return;
+  animando = true;
+  const btn = $("#patear"); btn.disabled = true; $("#err2").textContent = "";
+  $("#res").className = "res"; $("#res").textContent = ""; $("#premio").hidden = true;
+  reponer();
+  try {
+    const [r] = await Promise.all([
+      api("api/patear", { method: "POST", body: JSON.stringify({ t: token }) }),
+      new Promise((ok) => setTimeout(ok, 60)),
+    ]);
+    animar(r.resultado);
+    await new Promise((ok) => setTimeout(ok, 1550));
+    yo.tiros = r.tiro; yo.tiros_restantes = r.tiros_restantes;
+    const res = $("#res");
+    if (r.gol) {
+      res.className = "res gol";
+      if ("codigo" in r) {
+        yo.gane = true; yo.codigo = r.codigo; yo.codigo_pendiente = r.codigo_pendiente; yo.tiro = r.tiro;
+        res.innerHTML = `¡GOOOL!<small>Entras gratis a Claude Code PRO. Guarda tu código.</small>`;
+        confeti();
+      } else {
+        res.innerHTML = `¡GOOOL!<small>Pero las ${estado.vacantes} vacantes ya salieron. Igual: ¡qué tiro!</small>`;
+        confeti();
+      }
+    } else {
+      res.className = "res mal";
+      res.innerHTML = `${textos[r.resultado] || "¡Fallaste!"}<small>${r.tiros_restantes > 0 ? `Te ${r.tiros_restantes === 1 ? "queda 1 tiro" : `quedan ${r.tiros_restantes} tiros`}.` : "Se acabaron tus tiros. Gracias por jugar."}</small>`;
+    }
+    pintarYo();
+    if (!yo.gane && r.tiros_restantes > 0) setTimeout(reponer, 900);
+    cargarEstado();
+  } catch (e) {
+    $("#err2").textContent = e.message;
+    if (/acabaron|Ya metiste/.test(e.message)) { try { yo = await api("api/yo?t=" + encodeURIComponent(token)); pintarYo(); } catch (e2) { /* nada */ } }
+  } finally { btn.disabled = false; animando = false; }
+});
+
+(async () => {
+  await cargarEstado();
+  if (token) {
+    try { yo = await api("api/yo?t=" + encodeURIComponent(token)); pintarYo(); }
+    catch (e) { token = null; try { localStorage.removeItem(LLAVE); } catch (e2) { /* nada */ } }
+  }
+  setInterval(cargarEstado, 20000);
+})();
+</script>
+</body>
+</html>

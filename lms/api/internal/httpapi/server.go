@@ -196,6 +196,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/instructor/simulador/horario", s.authed(s.staff(s.simuladorHorario)))
 	mux.Handle("GET /api/v1/horario", s.authed(s.miHorario))
 	mux.Handle("GET /api/v1/courses/{id}/examples", s.authed(s.courseExamples))
+	mux.Handle("GET /api/v1/courses/{id}/portada", s.authed(s.coursePortada))
 	// Opiniones de las clases (ver opiniones.go).
 	mux.Handle("GET /api/v1/courses/{id}/opiniones", s.authed(s.opinionesCurso))
 	mux.Handle("GET /api/v1/lessons/{id}/opinion", s.authed(s.miOpinion))

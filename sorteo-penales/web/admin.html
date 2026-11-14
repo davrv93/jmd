@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Organizar el sorteo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap">
+<link rel="stylesheet" href="static/sorteo.css">
+</head>
+<body class="estadio">
+<main style="max-width:760px">
+  <span class="marca">⚽ JMD Learn · Mesa del árbitro</span>
+  <h1 id="titulo">Sorteo</h1>
+
+  <section class="panel" id="v-clave">
+    <form id="f-clave">
+      <label for="clave">Clave de organizador</label>
+      <input id="clave" type="password" autocomplete="current-password">
+      <div class="fila" style="margin-top:12px"><button type="submit">Entrar</button></div>
+      <p class="error" id="e-clave" role="alert"></p>
+    </form>
+  </section>
+
+  <div id="v-panel" hidden>
+    <section class="panel">
+      <div class="fila" style="justify-content:space-between">
+        <div><div class="nota">Fase</div><div style="font-size:22px;font-weight:800" id="fase"></div></div>
+        <div><div class="nota">Inscritos</div><div style="font-size:22px;font-weight:800" id="total"></div></div>
+        <div class="fila">
+          <a class="nota" href="./" target="_blank" rel="noopener">Página para participantes ↗</a>
+          <a class="nota" href="pantalla" target="_blank" rel="noopener">Pantalla para proyectar ↗</a>
+        </div>
+      </div>
+      <p class="error" id="e-accion" role="alert"></p>
+      <div class="fila" id="acciones" style="margin-top:8px"></div>
+      <p class="nota" id="ayuda"></p>
+    </section>
+    <section class="panel">
+      <h2 style="margin-top:0;font-size:18px">Participantes</h2>
+      <table><thead><tr><th>N.º</th><th>Nombre</th><th>Hora (Lima)</th><th></th></tr></thead><tbody id="filas"></tbody></table>
+    </section>
+    <section class="panel">
+      <div class="fila" style="justify-content:space-between">
+        <h2 style="margin:0;font-size:18px">Premios reclamados (<span id="n-curso">0</span>)</h2>
+        <div class="fila"><a class="nota" href="inscripcion" target="_blank" rel="noopener">Formulario ↗</a><button class="sec" id="csv" style="height:36px;font-size:14px">Descargar CSV</button></div>
+      </div>
+      <table style="margin-top:8px"><thead><tr><th>Dorsal</th><th>Nombre escrito</th><th>Nombre en el sorteo</th><th>Correo</th><th>Revisión</th><th>Hora (Lima)</th></tr></thead><tbody id="filas-curso"></tbody></table>
+    </section>
+    <section class="panel">
+      <h2 style="margin-top:0;font-size:18px">Nuevo sorteo</h2>
+      <p class="nota">Borra participantes y resultado y empieza de cero (los números anteriores dejan de valer).</p>
+      <label for="nuevo-titulo">Título</label>
+      <input id="nuevo-titulo" type="text" maxlength="80">
+      <div class="fila" style="margin-top:12px"><button class="peligro" id="reiniciar">Empezar un sorteo nuevo</button></div>
+    </section>
+  </div>
+</main>
+<script type="module">
+import { api, pad, escapar } from "./static/sorteo.js";
+
+const $ = (id) => document.getElementById(id);
+let clave = sessionStorage.getItem("sorteo-clave") || "";
+const adm = (ruta, cuerpo) => api(ruta, { method: cuerpo ? "POST" : "GET", body: cuerpo ? JSON.stringify(cuerpo) : undefined, headers: { "X-Clave": clave } });
+
+/** Botón que pide un segundo clic para confirmar, sin diálogos del sistema. */
+function confirmar(boton, texto, accion) {
+  let armado = false;
+  const original = boton.textContent;
+  boton.onclick = async () => {
+    if (!armado) {
+      armado = true;
+      boton.textContent = texto;
+      setTimeout(() => { armado = false; boton.textContent = original; }, 4000);
+      return;
+    }
+    armado = false;
+    boton.textContent = original;
+    await accion();
+  };
+}
+
+async function hacer(ruta, cuerpo) {
+  $("e-accion").textContent = "";
+  try { pintar(await adm(ruta, cuerpo || {})); await cargar(); } catch (e) { $("e-accion").textContent = e.message; }
+}
+
+function pintar(e) {
+  $("titulo").textContent = e.titulo;
+  $("fase").textContent = { inscripcion: "Inscripciones abiertas", cerrado: "Cerrado, listo para sortear", sorteado: "Sorteo realizado" }[e.fase];
+  $("total").textContent = e.total;
+  if (!$("nuevo-titulo").value) $("nuevo-titulo").value = e.titulo;
+  const acc = $("acciones");
+  // Los botones solo se rehacen al cambiar de fase: así la recarga periódica no borra una confirmación a medias.
+  const firma = `${e.fase}|${e.ganadores}`;
+  const rehacer = acc.dataset.firma !== firma;
+  acc.dataset.firma = firma;
+  if (rehacer) acc.innerHTML = "";
+  const boton = (texto, clase) => { const b = document.createElement("button"); b.textContent = texto; if (clase) b.className = clase; acc.appendChild(b); return b; };
+  if (!rehacer) {
+    // nada: se conservan los botones
+  } else if (e.fase === "inscripcion") {
+    acc.insertAdjacentHTML("beforeend", `<label style="margin:0">Ganadores <input id="n-gan" type="number" min="1" max="20" value="${e.ganadores || 3}" style="width:80px;height:40px"></label>`);
+    confirmar(boton("Cerrar inscripciones"), "¿Cerrar? Clic otra vez", () => hacer("api/admin/cerrar", { ganadores: Number($("n-gan").value) || 3 }));
+    $("ayuda").textContent = "Al cerrar se genera la semilla secreta y se publica su huella. Después ya nadie puede inscribirse.";
+  } else if (e.fase === "cerrado") {
+    confirmar(boton("⚽ Activar modo ganador"), "¿Sortear ahora? Clic otra vez", () => hacer("api/admin/sortear"));
+    confirmar(boton("Reabrir inscripciones", "sec"), "Se descarta la semilla y queda a la vista. Clic otra vez", () => hacer("api/admin/reabrir"));
+    $("ayuda").textContent = `Se sortean ${e.ganadores} ganadores entre ${e.total} inscritos. Abre la pantalla para proyectar antes de activar.`;
+  } else if (e.fase === "sorteado") {
+    $("ayuda").innerHTML = `Ganadores: ${e.resultado.map((g) => `<b>${pad(g.numero)}</b> ${escapar(g.nombre)}`).join(" · ")}`;
+  }
+  const lima = (iso) => new Date(iso).toLocaleTimeString("es-PE", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  $("filas").innerHTML = (e.participantes || []).map((p) => `<tr><td>${pad(p.numero)}</td><td>${escapar(p.nombre)}</td><td>${lima(p.creadoEn)}</td><td>${e.fase === "inscripcion" ? `<button class="sec" data-quitar="${p.numero}" style="height:32px;padding:0 10px;font-size:13px">Quitar</button>` : ""}</td></tr>`).join("");
+  document.querySelectorAll("[data-quitar]").forEach((b) => confirmar(b, "¿Quitar?", () => hacer("api/admin/quitar", { numero: Number(b.dataset.quitar) })));
+}
+
+async function cargarCurso() {
+  try {
+    const { inscripciones } = await adm("api/admin/curso");
+    const lima = (iso) => new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    $("n-curso").textContent = inscripciones.length;
+    $("filas-curso").innerHTML = inscripciones.map((i) => `<tr><td>${pad(i.dorsal)} 🏆</td><td>${escapar(i.nombre)}</td><td>${escapar(i.nombreSorteo || "")}</td><td>${escapar(i.correo)}</td><td>${i.verificado ? "✔ mismo navegador" : i.parecido ? "nombre parecido" : "⚠ revisar por WhatsApp"}</td><td>${lima(i.creadaEn)}</td></tr>`).join("");
+  } catch {}
+}
+$("csv").onclick = async () => {
+  const r = await fetch("api/admin/curso?formato=csv", { headers: { "X-Clave": clave } });
+  const url = URL.createObjectURL(await r.blob());
+  const a = Object.assign(document.createElement("a"), { href: url, download: "inscripciones-clickhouse.csv" });
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+async function cargar() {
+  cargarCurso();
+  try {
+    const e = await adm("api/admin/estado");
+    $("v-clave").hidden = true;
+    $("v-panel").hidden = false;
+    pintar(e);
+    return true;
+  } catch (err) {
+    $("v-clave").hidden = false;
+    $("v-panel").hidden = true;
+    if (clave) $("e-clave").textContent = err.message;
+    return false;
+  }
+}
+
+$("f-clave").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  clave = $("clave").value;
+  if (await cargar()) sessionStorage.setItem("sorteo-clave", clave);
+});
+confirmar($("reiniciar"), "Se borra todo. Clic otra vez", () => hacer("api/admin/reiniciar", { titulo: $("nuevo-titulo").value }));
+
+if (clave) await cargar();
+setInterval(() => { if (!$("v-panel").hidden && document.activeElement?.id !== "n-gan" && document.activeElement?.id !== "nuevo-titulo") cargar(); }, 3000);
+</script>
+</body>
+</html>

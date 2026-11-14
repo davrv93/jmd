@@ -110,7 +110,32 @@ func (s *Server) course(w http.ResponseWriter, r *http.Request, p *Principal) {
 		"id": c.ID, "slug": c.Slug, "title": c.Title, "description": c.Description, "role": roleIn(p),
 		"modules": modules, "assignments": assignments, "examples_total": len(s.visibleExamples(p, c.ID)),
 		"proyecto_final": c.ProyectoFinal, "requisitos": c.Requisitos, "dedicacion": c.Dedicacion,
+		"portada": c.PortadaPath != "",
 	})
+}
+
+// coursePortada: GET /api/v1/courses/{id}/portada (autenticado). La portada del curso (course.yaml
+// «portada:»), para el iframe de la página del curso. Igual que una escena LIVE: la ruta sale del
+// catálogo (nunca del cliente), con la CSP de las escenas y enmarcable solo desde el mismo origen.
+func (s *Server) coursePortada(w http.ResponseWriter, r *http.Request, p *Principal) {
+	c := s.Content.Get().Course(r.PathValue("id"))
+	if c == nil || c.PortadaPath == "" || !s.canSeeCourse(p, c) {
+		notFound(w, "la portada")
+		return
+	}
+	raw, err := os.ReadFile(c.PortadaPath)
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "text/html; charset=utf-8")
+	h.Set("Cache-Control", "no-cache")
+	h.Set("Content-Security-Policy", cspEscena)
+	h.Set("X-Frame-Options", "SAMEORIGIN") // el middleware general pone DENY; el iframe es del mismo origen
+	h.Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(200)
+	_, _ = w.Write(raw)
 }
 
 // lesson: contrato GET /api/v1/lessons/{id} con el ciclo, el contenido en HTML y el progreso.

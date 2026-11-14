@@ -1,0 +1,50 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1280px;height:720px;overflow:hidden;font-family:"Avenir Next","Helvetica Neue",Arial,sans-serif;color:#0b2b22;
+  background:radial-gradient(900px 620px at 78% 30%,#c9f2d9 0,rgba(201,242,217,0) 70%),linear-gradient(135deg,#f3fbf5,#e6f6ec)}
+.lado{position:absolute;left:70px;top:0;bottom:0;width:520px;display:flex;flex-direction:column;justify-content:center;gap:18px}
+.num{font-size:26px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#128c5e}
+h1{font-size:84px;line-height:.98;font-weight:700;letter-spacing:-.03em;text-wrap:balance}
+h1 em{font-style:normal;color:#128c5e}
+.lado p{font-size:31px;line-height:1.3;color:#3d5a50;max-width:470px;text-wrap:pretty}
+.tel{position:absolute;right:120px;top:44px;width:430px;height:860px;border-radius:58px;background:#101a17;padding:14px;box-shadow:0 40px 80px -30px rgba(11,43,34,.55),0 0 0 2px rgba(11,43,34,.2)}
+.pan{position:relative;width:100%;height:100%;border-radius:46px;overflow:hidden;background:#efe7dd}
+.cab{display:flex;align-items:center;gap:12px;height:92px;padding:26px 20px 0;background:#0b6b4f;color:#fff}
+.cab img{width:46px;height:46px;border-radius:50%;background:#e8dcff;object-fit:cover}
+.cab b{display:block;font-size:20px;font-weight:600}.cab span{font-size:14px;opacity:.82}
+.chat{display:flex;flex-direction:column;gap:11px;padding:18px 16px}
+.b{max-width:84%;padding:11px 14px 8px;border-radius:16px;font-size:20px;line-height:1.3;box-shadow:0 1px 1px rgba(0,0,0,.10)}
+.b small{display:block;margin-top:3px;text-align:right;font-size:12px;color:#6b7c75}
+.yo{align-self:flex-end;background:#d9fdd3;border-top-right-radius:4px}
+.bot{align-self:flex-start;background:#fff;border-top-left-radius:4px}
+.audio{display:flex;align-items:center;gap:10px;min-width:250px}
+.audio i{width:34px;height:34px;border-radius:50%;background:#128c5e;flex:none;position:relative}
+.audio i::after{content:"";position:absolute;left:13px;top:9px;border:8px solid transparent;border-left:12px solid #fff}
+.onda{flex:1;height:30px;background:repeating-linear-gradient(90deg,#128c5e 0 3px,transparent 3px 7px);-webkit-mask:linear-gradient(90deg,#000,#000);
+  clip-path:polygon(0 40%,4% 20%,8% 55%,12% 10%,16% 45%,20% 25%,24% 60%,28% 5%,32% 40%,36% 22%,40% 58%,44% 12%,48% 46%,52% 28%,56% 62%,60% 8%,64% 42%,68% 24%,72% 56%,76% 14%,80% 44%,84% 26%,88% 60%,92% 18%,96% 42%,100% 30%,100% 70%,96% 58%,92% 82%,88% 40%,84% 74%,80% 56%,76% 86%,72% 44%,68% 76%,64% 58%,60% 92%,56% 38%,52% 72%,48% 54%,44% 88%,40% 42%,36% 78%,32% 60%,28% 95%,24% 40%,20% 75%,16% 55%,12% 90%,8% 45%,4% 80%,0 60%)}
+.audio span{font-size:13px;color:#6b7c75}
+.foto{padding:5px 5px 8px}.foto img{display:block;width:290px;height:220px;object-fit:cover;border-radius:12px}.foto p{padding:7px 8px 0;font-size:19px}
+.ok{display:flex;gap:9px;align-items:flex-start}.ok::before{content:"✓";flex:none;display:grid;place-items:center;width:24px;height:24px;margin-top:1px;border-radius:50%;background:#128c5e;color:#fff;font-size:15px;font-weight:700}
+.nota{font-size:14px;color:#6b7c75;font-style:italic}
+</style></head><body>
+<div class="lado" id="lado"></div>
+<div class="tel"><div class="pan"><div class="cab"><img src="avatar-asistente.png" alt=""><div><b>Lumi · tu asistente</b><span>en línea</span></div></div><div class="chat" id="chat"></div></div></div>
+<script>
+const n = new URLSearchParams(location.search).get("n") || "1";
+const yo = (t, h) => `<div class="b yo">${t}<small>${h} ✓✓</small></div>`, bot = (t, h) => `<div class="b bot">${t}<small>${h}</small></div>`;
+const audio = (d, h) => `<div class="b yo"><div class="audio"><i></i><div class="onda"></div><span>${d}</span></div><small>${h} ✓✓</small></div>`;
+const V = {
+  1: ["01 · Responde y escucha", "Atiende a toda <em>hora</em>", "Contesta lo que le preguntan y entiende tus notas de voz.",
+      yo("Hola, ¿hasta qué hora atienden hoy?", "9:41 p. m.") + bot("¡Hola! Hoy atendemos hasta las 8:00 p. m. ¿Te separo un turno para mañana?", "9:41 p. m.")
+      + audio("0:12", "9:42 p. m.") + bot("<span class='nota'>Te escuché: «Sí, a las diez, y dime cuánto cuesta el corte»</span><br>Listo: mañana 10:00 a. m. El corte cuesta S/ 25.", "9:42 p. m.")],
+  2: ["02 · Crea imágenes", "Pídele una <em>imagen</em>", "Para tus publicaciones, tus promociones o tus ideas.",
+      yo("Genera una imagen de una tortuga en el bosque 🐢", "4:15 p. m.") + `<div class="b bot foto"><img src="bot-tortuga.jpg" alt=""><p>¡Aquí está tu tortuga! 🎨</p><small>4:15 p. m.</small></div>`
+      + yo("Ahora un elefante en la sabana", "4:16 p. m.") + `<div class="b bot foto"><img src="bot-elefante.jpg" alt=""><small>4:17 p. m.</small></div>`],
+  3: ["03 · Hace tareas", "Encárgale lo <em>repetitivo</em>", "Citas, recordatorios, pedidos y gastos: él los anota por ti.",
+      yo("Agenda una cita con Rosa el lunes a las 4", "8:05 a. m.") + bot("<div class='ok'>Cita agendada: lunes, 4:00 p. m., con Rosa. Te aviso 30 minutos antes.</div>", "8:05 a. m.")
+      + yo("Anota un gasto: taxi, 18 soles", "8:07 a. m.") + bot("<div class='ok'>Anotado. Esta semana llevas S/ 142 en transporte.</div>", "8:07 a. m.")
+      + yo("¿Qué tengo pendiente hoy?", "8:08 a. m.") + bot("Tres cosas: enviar la cotización, llamar a Luis y recoger el pedido a las 6.", "8:08 a. m.")],
+}[n];
+document.getElementById("lado").innerHTML = `<span class="num">${V[0]}</span><h1>${V[1]}</h1><p>${V[2]}</p>`;
+document.getElementById("chat").innerHTML = V[3];
+</script></body></html>

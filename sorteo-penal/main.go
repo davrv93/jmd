@@ -468,6 +468,8 @@ func (s *Sorteo) rutas() http.Handler {
 		archivos.ServeHTTP(w, r)
 	})
 	s.rutasCanje(mux, http.FS(web))
+	s.rutasChat(mux)
+	s.rutasCatalogo(mux)
 	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Robots-Tag", "noindex")
@@ -631,8 +633,20 @@ func main() {
 	if s.cursosCanje, err = leerCursos(cursosCanjeJSON, web); err != nil {
 		log.Fatal(err)
 	}
-	if s.cursos, err = leerCursos(cursosJSON, web); err != nil {
-		log.Fatal(err)
+	// catálogo: si existe datos/cursos.json lo usa (importado por el admin)
+	if b, err := os.ReadFile(filepath.Join(dir, "cursos.json")); err == nil {
+		if cs, err2 := leerCursos(b, web); err2 == nil {
+			s.cursos = cs
+		} else {
+			log.Printf("cursos.json en datos ignorado: %v", err2)
+			if s.cursos, err = leerCursos(cursosJSON, web); err != nil {
+				log.Fatal(err)
+			}
+		}
+	} else {
+		if s.cursos, err = leerCursos(cursosJSON, web); err != nil {
+			log.Fatal(err)
+		}
 	}
 	puerto := os.Getenv("PORT")
 	if puerto == "" {

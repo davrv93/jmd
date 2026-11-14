@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pregunta relámpago · JMD Learning</title>
+<meta name="description" content="Responde una pregunta y llévate un premio al azar: descuentos de hasta 90 % en los cursos de JMD Learning.">
+<meta name="theme-color" content="#0d0b1f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/estilo.css?v=3">
+<style>
+  .pregunta { text-align: center; padding: 26px 18px; }
+  .pregunta .q { font-size: clamp(34px, 10vw, 76px); font-weight: 800; letter-spacing: -.03em; margin: 8px 0 0; }
+  .pregunta .q span { color: var(--oro); white-space: nowrap; }
+  #respuesta { text-align: center; font: 800 34px "JetBrains Mono", monospace; max-width: 220px; margin: 18px auto 0; display: block; }
+  .tarjeta-gana { margin: 18px auto 0; }
+  .lista-ref li b { color: var(--oro); }
+  .regalo { margin: 14px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(255, 126, 179, .14); border: 1px dashed var(--rosa); font-weight: 700; }
+  .regalo b { color: var(--rosa); }
+  .acertijo .enigma { font-size: clamp(19px, 4.8vw, 25px); font-weight: 700; line-height: 1.45; margin: 12px 0 0; }
+  .acertijo .enigma em { color: var(--oro); font-style: normal; }
+  .cupon { display: flex; gap: 12px; align-items: center; margin-top: 14px; padding: 12px 14px; border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255, 200, 87, .18), rgba(185, 140, 255, .14)); border: 1px dashed var(--oro); }
+  .cupon b.pct { font: 800 34px/1 Sora, sans-serif; color: var(--oro); }
+  .cupon span { font-weight: 700; font-size: 14.5px; line-height: 1.35; }
+  .opciones { display: grid; gap: 10px; margin-top: 16px; }
+  .opcion { display: flex; gap: 12px; align-items: center; text-align: left; width: 100%; padding: 14px; border-radius: 14px;
+    border: 1px solid var(--borde); background: rgba(255, 255, 255, .06); color: var(--texto); font: 700 16px Sora, sans-serif; cursor: pointer; }
+  .opcion i { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, .12);
+    font: 800 15px "JetBrains Mono", monospace; font-style: normal; }
+  .opcion.sel { border-color: var(--oro); background: rgba(255, 200, 87, .16); box-shadow: 0 0 0 2px var(--oro); }
+  .opcion.sel i { background: var(--oro); color: var(--tinta); }
+  .opcion.ok { border-color: var(--verde); background: rgba(77, 216, 200, .18); }
+  .opcion.ok i { background: var(--verde); color: var(--tinta); }
+  .opcion:disabled { cursor: default; }
+  .sacude { animation: sacude .4s; }
+  @keyframes sacude { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+</style>
+</head>
+<body>
+<canvas id="fondo" aria-hidden="true"></canvas>
+<main style="max-width:680px">
+  <header>
+    <span class="kick">JMD LEARNING · PREGUNTA RELÁMPAGO</span>
+    <h1 class="marca">Responde y <em>gana</em></h1>
+    <p class="sub">Responde bien y te llevas un <b class="oro">premio al azar</b>: descuentos de hasta 90 % en nuestros cursos. Uno por persona, y <b class="oro">si no lo vas a usar, regálaselo a un amigo 🎁</b>.</p>
+  </header>
+
+  <section class="panel" id="cerrado" hidden>
+    <h2>La pregunta está <span>cerrada</span></h2>
+    <p class="suave">Gracias por participar. Atento al grupo para la próxima.</p>
+  </section>
+
+  <section class="panel pregunta" id="juego" hidden>
+    <p class="kick" style="color:var(--suave)" id="hola">PREGUNTA</p>
+    <p class="q">¿Cuánto es <span>7 × 7</span>?</p>
+    <form id="form">
+      <div id="datos" hidden style="text-align:left">
+        <p class="suave chico" style="margin:14px 0 0">No te encontramos en este teléfono: inscríbete aquí mismo.</p>
+        <div class="fila">
+          <div><label for="nombre">Tu nombre y apellido</label><input id="nombre" autocomplete="name" maxlength="40" placeholder="Ana Torres"></div>
+          <div><label for="telefono">Tu WhatsApp (con código de país)</label><input id="telefono" type="tel" autocomplete="tel" maxlength="20" placeholder="51986149476"></div>
+        </div>
+      </div>
+      <input id="respuesta" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="?" aria-label="Tu respuesta" required>
+      <button class="btn" id="btn" type="submit">Responder ⚡</button>
+    </form>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <section class="panel acertijo" id="acertijo" hidden>
+    <p class="kick" style="color:var(--suave)" id="a-kick">ACERTIJO · UNA SOLA OPORTUNIDAD</p>
+    <div class="cupon" id="a-cupon"></div>
+    <p class="enigma" id="a-pregunta"></p>
+    <div class="opciones" id="a-opciones"></div>
+    <div id="a-datos" hidden>
+      <p class="suave chico" style="margin:14px 0 0">No te encontramos en este teléfono: inscríbete aquí mismo.</p>
+      <div class="fila">
+        <div><label for="a-nombre">Tu nombre y apellido</label><input id="a-nombre" autocomplete="name" maxlength="40" placeholder="Ana Torres"></div>
+        <div><label for="a-tel">Tu WhatsApp (con código de país)</label><input id="a-tel" type="tel" autocomplete="tel" maxlength="20" placeholder="51986149476"></div>
+      </div>
+    </div>
+    <button class="btn" id="a-btn" type="button" disabled>Elige una alternativa</button>
+    <p class="chico suave" id="a-nota" style="margin:10px 0 0">Gana el primero que acierte. Piénsalo bien: <b class="oro">solo puedes responder una vez</b>.</p>
+    <p class="error" id="a-error" role="alert"></p>
+  </section>
+
+  <section class="panel" id="gane" hidden>
+    <div class="tarjeta-gana" id="tarjeta"></div>
+    <a class="btn verde" id="btn-wa" target="_blank" rel="noopener">Canjear mi premio por WhatsApp</a>
+    <a class="btn sec" id="btn-regalar" target="_blank" rel="noopener">🎁 Regalar mi cupón a un amigo</a>
+    <div class="aviso"><b>¿No lo vas a usar?</b> Regálaselo a un amigo: le mandas el cupón con el botón de arriba y él lo canjea escribiendo al WhatsApp. También puedes <b>canjearlo por otro curso de tu gusto</b>, con el mismo porcentaje de descuento.</div>
+  </section>
+
+  <section class="panel" id="lista-panel" hidden>
+    <h2>Ya <span>ganaron</span></h2>
+    <ul class="lista-ref" id="lista"></ul>
+  </section>
+
+  <p class="pie">El acertijo es para todos · Gana el primero que acierte · <a href="./">Sorteo de las secuencias</a></p>
+</main>
+<script type="module">
+import { api, $, esc, soles, conPremio, tokenLeer, tokenGuardar } from "./static/comun.js";
+import { fondo } from "./static/fondo.js";
+const fx = fondo($("#fondo"));
+let estado = null, animado = false;
+
+function mostrarPremio(id, nombre, animar) {
+  const p = estado.premios.find((q) => q.id === id);
+  $("#juego").hidden = true;
+  $("#gane").hidden = false;
+  $("#tarjeta").innerHTML = `
+    <span class="sello">¡RESPUESTA CORRECTA!</span>
+    <h3>${esc(nombre)}</h3>
+    <p class="premio-gana"><b>${p.descuento}%</b> de descuento en <b>${esc(p.curso)}</b></p>
+    <p class="precio-gana">${soles(p.precio)} → <b>${soles(conPremio(p))}</b> con tu premio</p>
+    ${p.nota ? `<p class="chico suave" style="margin-top:8px">${esc(p.nota)}</p>` : ""}
+    <p class="regalo">🎁 Este cupón es tuyo para usarlo o <b>regalárselo a un amigo</b>.</p>`;
+  $("#tarjeta").style.animation = animar ? "entra .8s cubic-bezier(.2,1.4,.4,1)" : "";
+  const msg = `Hola, soy ${nombre}. Respondí la pregunta relámpago y gané ${p.descuento}% de descuento en ${p.curso}. Quiero canjear mi premio.`;
+  $("#btn-wa").href = "https://wa.me/51986149476?text=" + encodeURIComponent(msg);
+  const regalo = `🎁 Te regalo mi cupón de ${p.descuento}% de descuento en el curso ${p.curso} de JMD Learning. Para canjearlo escribe al WhatsApp +51 986 149 476 y di que te lo regaló ${nombre}.`;
+  $("#btn-regalar").href = "https://wa.me/?text=" + encodeURIComponent(regalo);
+  if (animar && !animado) { fx.rafaga(); animado = true; }
+}
+
+function pintarLista() {
+  $("#lista-panel").hidden = !estado.ganadores.length;
+  $("#lista").innerHTML = estado.ganadores.slice(0, 30).map((g) => {
+    const p = estado.premios.find((q) => q.id === g.premio);
+    return `<li><span>${esc(g.nombre)}</span><span><b>${p.descuento}%</b> ${esc(p.curso.split(":")[0])}</span></li>`;
+  }).join("");
+}
+
+async function cargar() {
+  estado = await api("api/pregunta?t=" + encodeURIComponent(tokenLeer()));
+  pintarLista();
+  const yo = estado.yo;
+  const ac = estado.acertijo;
+  if (ac && ac.activo) {
+    // el acertijo es para todos: primero el acertijo (o su premio, si lo ganó)
+    if (ac.yo && ac.yo.gane) { mostrarPremio(ac.premio, yo.nombre, false); return; }
+    pintarAcertijo();
+    return;
+  }
+  if (yo && yo.premio) { mostrarPremio(yo.premio, yo.nombre, false); return; }
+  if (!estado.abierto) { $("#cerrado").hidden = false; $("#juego").hidden = true; return; }
+  $("#juego").hidden = false;
+  $("#datos").hidden = !!yo;
+  $("#hola").textContent = yo ? `HOLA, ${yo.nombre.split(" ")[0].toUpperCase()}` : "PREGUNTA";
+  if (yo && yo.yaGano) {
+    $("#form").hidden = true;
+    $("#error").textContent = "Hoy ya ganaste un premio 🎉: esta pregunta es para los que aún no ganan. ¡Gracias por jugar!";
+  }
+}
+
+// ---------- acertijo ----------
+let elegida = null;
+const LETRAS = ["A", "B", "C", "D", "E"];
+function pintarAcertijo() {
+  const a = estado.acertijo, yo = a.yo || {};
+  const p = estado.premios.find((q) => q.id === a.premio);
+  $("#juego").hidden = true; $("#cerrado").hidden = true; $("#acertijo").hidden = false;
+  $("#a-kick").textContent = `ACERTIJO · EL CUPÓN DE ${a.origen.split(" ")[0].toUpperCase()}`;
+  $("#a-cupon").innerHTML = `<b class="pct">${p.descuento}%</b><span>${esc(p.curso)}<br><span class="suave">${soles(p.precio)} → <b class="oro">${soles(conPremio(p))}</b> · el cupón que regaló ${esc(a.origen.split(" ")[0])}</span></span>`;
+  $("#a-pregunta").textContent = a.pregunta;
+  const cerrado = !!a.ganador || yo.respondio || yo.excluido;
+  $("#a-opciones").innerHTML = a.opciones.map((o, i) => {
+    const cl = ["opcion"];
+    if (a.ganador && i === a.correcta) cl.push("ok");
+    else if ((yo.respondio && yo.opcion === i) || (!cerrado && elegida === i)) cl.push("sel");
+    return `<button type="button" class="${cl.join(" ")}" data-i="${i}" ${cerrado ? "disabled" : ""}><i>${LETRAS[i]}</i>${esc(o)}</button>`;
+  }).join("");
+  $("#a-datos").hidden = cerrado || !!estado.yo;
+  $("#a-btn").hidden = cerrado;
+  $("#a-nota").hidden = cerrado;
+  $("#a-btn").disabled = elegida === null;
+  $("#a-btn").textContent = elegida === null ? "Elige una alternativa" : `Responder ${LETRAS[elegida]} ⚡`;
+  const err = $("#a-error");
+  if (a.ganador) err.innerHTML = `<span class="ok">🎉 El cupón ya tiene dueño: ${esc(a.ganador)} 🏆 La respuesta era la ${LETRAS[a.correcta]}: «${esc(a.opciones[a.correcta])}».</span>`;
+  else if (yo.excluido) err.textContent = "Tú ya tienes este mismo cupón 🎉: déjaselo a otra persona.";
+  else if (yo.respondio) err.textContent = "No era esa 😅. ¡Gracias por jugar! Si nadie acierta, atento al grupo.";
+  else err.textContent = "";
+}
+$("#a-opciones").addEventListener("click", (e) => {
+  const b = e.target.closest(".opcion");
+  if (!b || b.disabled) return;
+  elegida = +b.dataset.i;
+  pintarAcertijo();
+});
+$("#a-btn").addEventListener("click", async () => {
+  if (elegida === null) return;
+  $("#a-btn").disabled = true;
+  $("#a-error").textContent = "";
+  try {
+    const r = await api("api/acertijo", { method: "POST", body: JSON.stringify({
+      t: tokenLeer(), nombre: $("#a-nombre").value, telefono: $("#a-tel").value, opcion: elegida,
+    }) });
+    if (r.t) tokenGuardar(r.t);
+    estado = await api("api/pregunta?t=" + encodeURIComponent(tokenLeer()));
+    pintarLista();
+    if (r.acerto) { $("#acertijo").hidden = true; mostrarPremio(r.premio, r.nombre, true); return; }
+    pintarAcertijo();
+    $("#a-error").textContent = "No era esa 😅. ¡Gracias por jugar! Si nadie acierta, atento al grupo.";
+  } catch (ex) {
+    $("#a-error").textContent = ex.message;
+    $("#a-btn").disabled = false;
+  }
+});
+
+$("#form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#error").textContent = "";
+  $("#btn").disabled = true;
+  try {
+    const r = await api("api/pregunta", { method: "POST", body: JSON.stringify({
+      t: tokenLeer(), nombre: $("#nombre").value, telefono: $("#telefono").value, respuesta: $("#respuesta").value,
+    }) });
+    if (r.t) tokenGuardar(r.t);
+    if (r.incorrecta) {
+      $("#error").textContent = "Mmm… no es esa. Inténtalo otra vez 😉";
+      $("#respuesta").classList.remove("sacude"); void $("#respuesta").offsetWidth; $("#respuesta").classList.add("sacude");
+      $("#respuesta").select();
+      if (r.t) $("#datos").hidden = true;
+      return;
+    }
+    mostrarPremio(r.premio, r.nombre, !r.repetido);
+    estado = await api("api/pregunta?t=" + encodeURIComponent(tokenLeer()));
+    pintarLista();
+  } catch (ex) { $("#error").textContent = ex.message; } finally { $("#btn").disabled = false; }
+});
+
+await cargar();
+setInterval(async () => {
+  if (document.hidden) return;
+  try {
+    estado = await api("api/pregunta?t=" + encodeURIComponent(tokenLeer()));
+    pintarLista();
+    if (estado.acertijo && estado.acertijo.activo && !$("#acertijo").hidden) pintarAcertijo();
+  } catch { /* nada */ }
+}, 6000);
+</script>
+</body>
+</html>

@@ -91,6 +91,8 @@ export interface Course {
   proyecto_final?: string;
   requisitos?: string[];
   dedicacion?: string;
+  /** El curso trae portada (course.yaml «portada:»): se ve en un iframe en /api/v1/courses/{id}/portada. */
+  portada?: boolean;
 }
 export interface ExampleSummary {
   id: string;

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conectar a Claude</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%224%22 fill=%22%2313212e%22/%3E%3Ccircle cx=%225%22 cy=%228%22 r=%222.5%22 fill=%22%23e2601a%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..750&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/app.css">
+<style>
+  .url { display: flex; gap: 10px; align-items: center; background: var(--tinta); color: #fff; border-radius: 12px; padding: 10px 10px 10px 16px; font-family: var(--mono); font-size: 13.5px; margin-top: 12px; }
+  .url span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .url .btn { background: rgba(255, 255, 255, .12); }
+  .url .btn:hover { background: rgba(255, 255, 255, .2); }
+  .clave { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .clave input { flex: 1 1 200px; max-width: 300px; }
+  .segm { display: inline-flex; gap: 2px; background: var(--linea-2); padding: 3px; border-radius: 11px; margin-top: 12px; }
+  .segm button { border: 0; background: transparent; padding: 7px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--suave); cursor: pointer; display: inline-flex; gap: 7px; align-items: center; }
+  .segm button[aria-selected=true] { background: #fff; color: var(--tinta); box-shadow: 0 1px 2px rgba(19, 33, 46, .12); }
+  ol.numerados { list-style: none; counter-reset: p; margin-top: 16px; display: grid; gap: 12px; }
+  ol.numerados li { counter-increment: p; position: relative; padding-left: 42px; min-height: 28px; padding-top: 2px; }
+  ol.numerados li::before { content: counter(p); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--tinta); color: #fff; font-weight: 650; font-size: 13.5px; display: grid; place-items: center; }
+  .frases { display: grid; gap: 10px; margin-top: 14px; }
+  .frase { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: start; padding: 14px; border-radius: 12px; background: var(--papel); }
+  .frase .f-ico { width: 36px; height: 36px; border-radius: 50%; background: #fff; display: grid; place-items: center; color: var(--suave); }
+  .frase.escribe .f-ico { background: var(--senal); color: #fff; }
+  .frase p { font-size: 15.5px; font-weight: 550; }
+  .frase small { display: block; color: var(--suave); font-size: 13px; margin-top: 2px; }
+  .frase small code { color: var(--tinta); }
+  details.herramientas { margin-top: 20px; }
+  details.herramientas summary { font-weight: 600; cursor: pointer; padding: 6px 0; }
+  .herr td:first-child { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+  .nota-ad { font-size: 13.5px; color: var(--suave); background: var(--papel); border-radius: 12px; padding: 12px 14px; margin-top: 14px; }
+  code { background: var(--linea-2); padding: 1px 5px; border-radius: 5px; }
+  .pre { margin-top: 12px; }
+</style>
+</head>
+<body>
+<main class="pagina">
+  <h1>Conecta tu Claude a la mesa de ayuda</h1>
+  <p class="bajada">Tu equipo pregunta desde claude.ai o Claude Code y recibe la trazabilidad de cada ticket, sin abrir este sistema. También puede pedirle a Claude que clasifique los tickets dudosos.</p>
+
+  <div class="card">
+    <h2>La dirección del conector</h2>
+    <p class="small suave">Lleva un token secreto: quien la tiene puede consultar la mesa. Para verla completa, ingresa la clave de admin.</p>
+    <div class="url"><span id="url">Cargando…</span><button class="btn sm" id="copiar" type="button" disabled></button></div>
+    <div id="pedir-clave">
+      <div class="clave"><input id="clave" type="password" placeholder="Clave de admin" aria-label="Clave de admin" autocomplete="current-password"><button class="btn" id="ver" type="button">Mostrar</button></div>
+      <p class="err" id="err" style="margin-top:8px"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Agrégalo</h2>
+    <div class="segm" role="tablist">
+      <button type="button" role="tab" data-v="web" aria-selected="true"></button>
+      <button type="button" role="tab" data-v="code" aria-selected="false"></button>
+    </div>
+    <div data-panel="web">
+      <ol class="numerados">
+        <li>En claude.ai, abre <b>Configuración → Conectores</b>.</li>
+        <li>Pulsa <b>Agregar conector personalizado</b>.</li>
+        <li>Nombre: <code>Mesa de ayuda demo</code>. URL: pega la de arriba. Deja vacíos los campos de OAuth.</li>
+        <li>En un chat nuevo, activa el conector desde el menú de herramientas y pregunta.</li>
+      </ol>
+      <p class="nota-ad">En planes Team o Enterprise, quien administra la organización agrega el conector y luego cada persona lo activa.</p>
+    </div>
+    <div data-panel="code" hidden>
+      <ol class="numerados">
+        <li>En la terminal, dentro de cualquier proyecto:</li>
+      </ol>
+      <div class="pre" id="cmd">claude mcp add --transport http sperant-demo &lt;URL&gt;</div>
+      <ol class="numerados" style="counter-reset:p 1">
+        <li>Comprueba con <code>claude mcp list</code> (debe decir <i>connected</i>) o con <code>/mcp</code>.</li>
+        <li>Pregunta en la sesión, como en el chat.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pídeselo así</h2>
+    <div class="frases" id="frases"></div>
+    <details class="herramientas">
+      <summary>Herramientas que expone el conector</summary>
+      <div class="tabla"><table class="herr"><thead><tr><th>Herramienta</th><th>Qué hace</th><th>Escribe</th></tr></thead><tbody>
+        <tr><td>consultar_ticket(id)</td><td>Trazabilidad completa de un ticket.</td><td>No</td></tr>
+        <tr><td>tickets_derivados(area?, desde?)</td><td>Lo derivado por área y fecha (por defecto hoy, hora de Lima).</td><td>No</td></tr>
+        <tr><td>cola_revision()</td><td>Tickets bajo el umbral de confianza, con propuesta y motivo.</td><td>No</td></tr>
+        <tr><td>aplicar_clasificacion(ticket, categoria, prioridad, area, confianza, justificacion)</td><td>Claude clasifica un ticket nuevo o de la cola y lo pasa por el mismo camino del orquestador: umbral, derivación, comentario, correo y auditoría (motor «claude (claude.ai)», costo 0 para el servidor).</td><td>Sí, solo asignar, comentar y correo simulado</td></tr>
+        <tr><td>clasificar_pendientes(limite)</td><td>Corre el motor del servidor sobre hasta 20 tickets nuevos.</td><td>Sí, solo asignar, comentar y correo simulado</td></tr>
+        <tr><td>resumen_hoy()</td><td>Estados, derivados por área, correos, gasto y carga.</td><td>No</td></tr>
+        <tr><td>metricas_evaluacion()</td><td>Acierto medido, confusiones, costo y tiempo por ticket.</td><td>No</td></tr>
+      </tbody></table></div>
+      <p class="nota-ad">Transporte Streamable HTTP, JSON-RPC 2.0, protocolo 2025-06-18. Sin OAuth: el secreto es el token de la URL. En producción se usaría OAuth con cuentas por persona.</p>
+    </details>
+  </div>
+</main>
+<footer class="pie"><a href="./">Volver a la demo</a><a href="admin">Admin</a></footer>
+<script type="module">
+import { $, $$, esc, api, cabecera, toast, claveGuardada, guardarClave, ico } from "./static/app.js";
+cabecera("Conectar");
+const FRASES = [
+  ["chat", "¿Qué pasó con el ticket 1042?", "consultar_ticket: clasificación, por qué, a quién fue, correos y auditoría"],
+  ["chat", "¿Qué tickets derivaste hoy a facturación?", "tickets_derivados(area: facturacion)"],
+  ["chat", "¿Qué hay en la cola de revisión?", "cola_revision: lo que el clasificador no se atrevió a derivar"],
+  ["chispa", "Revisa la cola y clasifica tú mismo el ticket 1061.", "consultar_ticket y luego aplicar_clasificacion: Claude decide y el orquestador deriva, avisa y audita", true],
+  ["rayo", "Clasifica los pendientes y dime a quién fue cada uno.", "clasificar_pendientes: corre el motor del servidor", true],
+  ["chat", "¿Qué tan bien clasifica? ¿Cumple la meta del 90 %?", "metricas_evaluacion"],
+];
+$("#frases").innerHTML = FRASES.map(([i, f, d, escribe]) => `<div class="frase ${escribe ? "escribe" : ""}"><span class="f-ico">${ico(i, 18)}</span><div><p>«${esc(f)}»</p><small>${esc(d).replace(/\b([a-z]+_[a-z_]+)\b/g, "<code>$1</code>")}</small></div></div>`).join("");
+const [bw, bc] = $$(".segm button");
+bw.innerHTML = ico("chat", 16) + "claude.ai"; bc.innerHTML = ico("terminal", 16) + "Claude Code";
+$$(".segm button").forEach((b) => b.addEventListener("click", () => {
+  $$(".segm button").forEach((x) => x.setAttribute("aria-selected", x === b));
+  $$("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== b.dataset.v));
+}));
+$("#copiar").innerHTML = ico("copiar", 16) + "<span>Copiar</span>";
+const base = new URL(".", location.href).href.replace(/\/$/, "");
+$("#url").textContent = base + "/mcp/••••••••••••••••";
+async function mostrar(k) {
+  try {
+    const r = await api("api/admin/mcp", { headers: { "X-Clave": k } });
+    guardarClave(k);
+    $("#url").textContent = r.url;
+    $("#cmd").textContent = `claude mcp add --transport http sperant-demo ${r.url}`;
+    $("#copiar").disabled = false;
+    $("#pedir-clave").classList.add("oculto");
+  } catch (e) { $("#err").textContent = e.message; }
+}
+$("#ver").addEventListener("click", () => mostrar($("#clave").value.trim()));
+$("#clave").addEventListener("keydown", (e) => e.key === "Enter" && mostrar($("#clave").value.trim()));
+$("#copiar").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("#url").textContent); toast("URL copiada."); } catch { toast("No se pudo copiar: selecciónala a mano.", true); }
+});
+if (claveGuardada()) mostrar(claveGuardada());
+</script>
+</body>
+</html>

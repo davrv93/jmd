@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ninja Race · clase</title>
+<meta name="theme-color" content="#ffd633">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="static/estilo.css?v=20261031c">
+<style>
+/* Modo clase: misma piel cómic del sorteo, más compacta (vive dentro de la escena del LMS). */
+main { padding-top: 12px; }
+.cab { margin-bottom: 10px; }
+.sala-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
+.sala-chips .chip.yo { background: var(--amarillo); }
+.cuenta-auto { font-size: 15px; margin: 6px 0 12px; }
+.mesa-nota { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 3; padding: 6px 12px; background: var(--tinta); color: #fff;
+  border: 3px solid var(--tinta); box-shadow: 4px 4px 0 var(--rojo); font-size: 14px; white-space: nowrap; pointer-events: none; }
+.arena { position: relative; }
+.podio { list-style: none; display: grid; gap: 8px; margin: 10px 0 14px; }
+.podio li { display: grid; grid-template-columns: 2.4em 1fr auto; align-items: center; gap: 10px; padding: 8px 12px; background: #fff; border: 3px solid var(--tinta); box-shadow: 3px 3px 0 var(--tinta); }
+.podio li.yo { background: var(--amarillo-claro); }
+.podio li b { font-size: 20px; text-align: center; }
+.podio li .pts { font-variant-numeric: tabular-nums; }
+.dos-col { display: grid; grid-template-columns: 1.1fr 1fr; gap: 14px; }
+.dos-col h3 { font-size: 17px; margin-bottom: 4px; }
+@media (max-width: 720px) { .dos-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="cab">
+    <div>
+      <span class="kick">RECREO · RONDAS DE MESA</span>
+      <h1 class="marca">Ninja <em>Race</em></h1>
+    </div>
+    <div class="marcador">
+      <span class="chip oro" id="chip-ronda">Ronda —</span>
+      <span class="chip cian" id="chip-sala">— en la sala</span>
+      <span class="chip" id="chip-mejor">Tu mejor —</span>
+    </div>
+  </header>
+
+  <section class="panel" id="registro">
+    <h2>Entra a la <span>sala</span></h2>
+    <p class="suave">Corres en una mesa de tres carriles contra tus compañeros. Si falta gente, KAGE y YUKI completan la mesa.
+      Gana quien más dura sin caerse: 10 puntos por segundo y 5 por obstáculo esquivado.</p>
+    <form id="form-reg">
+      <label for="nombre">Tu nombre</label>
+      <input id="nombre" name="nombre" type="text" maxlength="24" autocomplete="given-name" placeholder="Ana" required>
+      <button class="btn" id="btn-reg" type="submit">Entrar a la sala</button>
+    </form>
+    <p class="error" id="reg-error" role="alert"></p>
+  </section>
+
+  <section class="panel" id="lobby" hidden>
+    <h2 id="lobby-titulo">¡Listo, <span id="hola">ninja</span>!</h2>
+    <p class="suave" id="lobby-texto">Espera a tus compañeros: cuando empiece la ronda te toca una mesa.</p>
+    <div class="sala-chips" id="presentes"></div>
+    <p class="cuenta-auto" id="lobby-auto"></p>
+    <button class="btn verde" id="btn-empezar" type="button">¡Empezar ronda! ▶</button>
+    <p class="error" id="lobby-error" role="alert"></p>
+  </section>
+
+  <section class="arena" id="arena" hidden>
+    <div class="hud">
+      <span class="vidas" id="hud-vidas">❤❤❤</span>
+      <span class="puntos" id="hud-puntos">0 pts</span>
+      <span id="hud-esquivadas">0 esquivadas</span>
+      <span id="hud-tiempo">0:00</span>
+      <span class="puesto" id="hud-puesto">1.º</span>
+      <span class="volumen">
+        <button class="chip" id="btn-sonido" type="button" aria-label="Activar o silenciar el sonido">🔊</button>
+        <input type="range" id="vol-musica" min="0" max="100" step="5" value="30" aria-label="Volumen de la música">
+      </span>
+    </div>
+    <div style="position:relative">
+      <canvas id="cv" width="980" height="430" aria-label="Pista de la carrera ninja"></canvas>
+      <div class="mesa-nota" id="mesa-nota"></div>
+      <div class="capa" id="capa">
+        <div>
+          <h3 id="capa-titulo">Preparados…</h3>
+          <p id="capa-texto">Cargando la pista y a tu mesa.</p>
+        </div>
+      </div>
+    </div>
+    <div class="mandos">
+      <button class="mando" id="frenar" type="button" aria-label="Frenar">◀</button>
+      <button class="salto" id="salto" type="button">¡SALTAR!</button>
+      <button class="mando" id="avanzar" type="button" aria-label="Avanzar">▶</button>
+    </div>
+    <div class="mandos jutsus">
+      <button class="mando jutsu" data-jutsu="kamui" type="button">🌀 Kamui</button>
+      <button class="mando jutsu" data-jutsu="amaterasu" type="button">🔥 Amaterasu</button>
+      <button class="mando jutsu" data-jutsu="tele" type="button">⚡ Zuum</button>
+    </div>
+  </section>
+
+  <section class="panel" id="resultado" hidden>
+    <h2 id="res-titulo">Ronda terminada</h2>
+    <div class="dos-col">
+      <div>
+        <h3 id="res-mesa">Tu mesa</h3>
+        <ol class="podio" id="res-podio"></ol>
+      </div>
+      <div>
+        <h3>Tabla de la clase</h3>
+        <ol class="podio" id="res-ranking"></ol>
+      </div>
+    </div>
+    <p class="cuenta-auto" id="res-auto"></p>
+    <button class="btn cian" id="btn-otra" type="button">Otra ronda ya ▶</button>
+    <p class="error" id="res-error" role="alert"></p>
+  </section>
+
+  <section class="panel como" id="como">
+    <h2>Cómo se <span>juega</span></h2>
+    <div class="teclas">
+      <div class="tecla"><div class="keys"><kbd>Espacio</kbd> o <kbd>↑</kbd></div><b>SALTAR</b><p>Por encima de piedras y troncos.</p></div>
+      <div class="tecla"><div class="keys"><kbd>←</kbd> <kbd>→</kbd></div><b>FRENAR · AVANZAR</b><p>Adelántate para esquivar más… con menos tiempo para saltar.</p></div>
+      <div class="tecla jutsu kamui"><div class="keys"><kbd>Espacio</kbd><kbd>Espacio</kbd></div><b>🌀 KAMUI</b><p>Fantasma 1,6 s: atraviesas todo.</p><span class="costo">45 de chakra</span></div>
+      <div class="tecla jutsu fuego"><div class="keys"><kbd>P</kbd></div><b>🔥 AMATERASU</b><p>Quema lo próximo de tu carril.</p><span class="costo">35 de chakra</span></div>
+      <div class="tecla jutsu zuum"><div class="keys"><kbd>↓</kbd></div><b>⚡ ZUUM</b><p>Saltas hacia adelante en un instante.</p><span class="costo">30 de chakra</span></div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { api, $, esc, BASE } from "./static/comun.js";
+import { carrera, precargar } from "./static/juego.js?v=clase-20261102a";
+precargar();
+
+const LLAVE = "ninja.clase.token";
+const tok = { leer() { try { return localStorage.getItem(LLAVE) || ""; } catch { return ""; } },
+  guardar(t) { try { t ? localStorage.setItem(LLAVE, t) : localStorage.removeItem(LLAVE); } catch { /* sin storage */ } } };
+const audioCfg = { on: true };
+let v = null;            // última vista del servidor
+let desfase = 0;         // reloj del servidor − reloj local
+let juego = null, rondaJugando = 0, miEst = null, finMandado = false, llamando = false;
+
+// ---------- música ----------
+const musica = new Audio(BASE + "static/audio/musica.mp3?v=silhouette-1");
+musica.loop = true; musica.preload = "none";
+const musicaVol = () => { const x = +$("#vol-musica").value / 100; musica.volume = audioCfg.on ? x * x : 0; };
+const musicaOn = () => { musicaVol(); musica.play().catch(() => {}); };
+const musicaOff = () => musica.pause();
+for (const ev of ["keydown", "pointerdown"]) document.addEventListener(ev, () => { if (juego && musica.paused && !document.hidden) musicaOn(); });
+
+// ---------- vistas ----------
+const nombre1 = (n) => String(n || "").split(" ")[0];
+function pintarComun() {
+  $("#chip-ronda").textContent = v.ronda ? `Ronda ${v.ronda}` : "Ronda 1 por empezar";
+  $("#chip-sala").textContent = `${v.presentes.length} en la sala`;
+  $("#chip-mejor").textContent = v.yo && v.yo.mejor ? `Tu mejor ${v.yo.mejor} pts` : "Tu mejor —";
+}
+function segundosA(msServidor) { return Math.max(0, Math.ceil((msServidor - (Date.now() + desfase)) / 1000)); }
+
+function verLobby() {
+  $("#registro").hidden = true; $("#arena").hidden = true; $("#resultado").hidden = true; $("#lobby").hidden = false;
+  $("#hola").textContent = nombre1(v.yo.nombre);
+  $("#presentes").innerHTML = v.presentes.map((n) => `<span class="chip${n === v.yo.nombre ? " yo" : ""}">${esc(n)}</span>`).join("");
+  const enMarcha = v.fase === "cuenta" || v.fase === "corre";
+  $("#lobby-texto").textContent = enMarcha
+    ? "Hay una ronda en marcha: entras en la siguiente. Mientras, mira la sala en el proyector."
+    : v.presentes.length < 2 ? "Espera a tus compañeros: cuando empiece la ronda te toca una mesa de tres carriles."
+    : "Ya hay gente: la ronda reparte las mesas al empezar.";
+  $("#lobby-auto").textContent = v.auto && !enMarcha ? `La ronda empieza sola en ${segundosA(v.auto)} s.` : "";
+  $("#btn-empezar").hidden = enMarcha;
+}
+
+function verResultados() {
+  if (juego) { juego.cancelar(); juego = null; }
+  musicaOff();
+  $("#arena").hidden = true; $("#lobby").hidden = true; $("#registro").hidden = true; $("#resultado").hidden = false;
+  const mia = (v.resultados || []).find((r) => (r.puestos || []).some((p) => p.id === v.yo.id));
+  const yoP = mia ? mia.puestos.find((p) => p.id === v.yo.id) : null;
+  $("#res-titulo").textContent = !yoP ? "Ronda terminada"
+    : yoP.puesto === 1 && mia.puestos.length > 1 ? "¡Ganaste tu mesa! 🥇" : `Quedaste ${yoP.puesto}.º de tu mesa`;
+  $("#res-mesa").textContent = mia ? `Mesa ${mia.mesa}` : "Tu mesa";
+  $("#res-podio").innerHTML = mia ? mia.puestos.map((p) => `<li class="${p.id === v.yo.id ? "yo" : ""}"><b>${["🥇", "🥈", "🥉"][p.puesto - 1] || p.puesto}</b><span>${esc(p.nombre)}</span><span class="pts">${p.puntos} pts</span></li>`).join("")
+    : `<li><b>—</b><span>No corriste esta ronda: entras en la siguiente.</span><span></span></li>`;
+  $("#res-ranking").innerHTML = (v.ranking || []).slice(0, 8).map((p) => `<li class="${p.id === v.yo.id ? "yo" : ""}"><b>${["🥇", "🥈", "🥉"][p.puesto - 1] || p.puesto}</b><span>${esc(p.nombre)}${p.ganadas ? ` · ${p.ganadas} 🏆` : ""}</span><span class="pts">${p.mejor} pts</span></li>`).join("");
+  $("#res-auto").textContent = v.auto ? `La siguiente ronda empieza sola en ${segundosA(v.auto)} s (las mesas se arman por puntaje).` : "";
+}
+
+// ---------- carrera ----------
+const rivalesDe = (mesa) => (mesa ? mesa.rivales : []).slice(0, 2);
+function arrancarRonda() {
+  rondaJugando = v.ronda; finMandado = false; miEst = null;
+  $("#registro").hidden = true; $("#lobby").hidden = true; $("#resultado").hidden = true; $("#arena").hidden = false;
+  $("#capa").hidden = false; $("#capa-titulo").textContent = "Preparados…"; $("#capa-texto").textContent = "Cargando la pista y a tu mesa.";
+  const riv = rivalesDe(v.mesa);
+  $("#mesa-nota").textContent = `Mesa ${v.mesa.n} · ${riv.map((r) => r.humano ? nombre1(r.nombre) : r.nombre + " (cpu)").join(" · ")}`;
+  if (juego) juego.cancelar();
+  musicaOn();
+  juego = carrera({
+    canvas: $("#cv"), audio: audioCfg, cfg: { max_ms: v.tope_ms, record: v.yo.mejor },
+    hud: { vidas: $("#hud-vidas"), puntos: $("#hud-puntos"), tiempo: $("#hud-tiempo"), puesto: $("#hud-puesto"), esquivadas: $("#hud-esquivadas") },
+    red: {
+      salida: v.salida - desfase,
+      rivales: riv.map((r) => ({ nombre: r.humano ? nombre1(r.nombre) : r.nombre, humano: r.humano })),
+      onEstado: (e) => { miEst = e; },
+    },
+    onCuenta: (d) => {
+      if (d.cargando !== undefined) { $("#capa-texto").textContent = `Cargando imágenes ${d.cargando}…`; return; }
+      if (d.cuenta === undefined) return;
+      $("#capa").hidden = d.cuenta <= 0.05;
+      $("#capa-titulo").textContent = d.cuenta > .35 ? String(Math.ceil(d.cuenta - .2)) : "¡YA!";
+      $("#capa-texto").textContent = "Espacio o toque para saltar.";
+    },
+    onFin: (res) => {
+      if (finMandado) return;
+      finMandado = true;
+      $("#mesa-nota").textContent = res.vidas > 0 ? `¡Llegaste al final! ${res.puntaje} pts` : `¡KO! ${res.puntaje} pts · mira cómo termina tu mesa`;
+      api("api/fin", { method: "POST", body: JSON.stringify({ t: tok.leer(), puntos: res.puntaje, esq: res.esquivadas, ms: res.tiempo_ms, vidas: res.vidas }) }).catch(() => {});
+    },
+  });
+  juego.arrancar(v.ronda).catch((ex) => { $("#capa-titulo").textContent = "Uy"; $("#capa-texto").textContent = ex.message || "No cargó la pista. Recarga la página."; });
+}
+
+// ---------- latido ----------
+function aplicar(nv) {
+  v = nv;
+  desfase = v.ahora - Date.now();
+  pintarComun();
+  const enRonda = v.mesa && (v.fase === "cuenta" || v.fase === "corre");
+  if (enRonda) {
+    if (!juego || rondaJugando !== v.ronda) arrancarRonda();
+    // rivales humanos: el carril de cada uno es su posición en la lista (0 y 1); tú vas siempre abajo
+    juego.rivales(rivalesDe(v.mesa).map((r, lane) => r.humano ? { lane, dx: r.dx, y: r.y, estado: r.estado, vidas: r.vidas, ko: r.ko, kamui: r.kamui, invul: r.invul, puntos: r.puntos } : null).filter(Boolean));
+  } else if (v.fase === "resultados") {
+    verResultados();
+  } else {
+    if (juego) { juego.cancelar(); juego = null; musicaOff(); }
+    verLobby();
+  }
+}
+async function latir() {
+  if (llamando || !tok.leer()) return;
+  llamando = true;
+  try {
+    const cuerpo = { t: tok.leer() };
+    if (juego && miEst) cuerpo.est = miEst;
+    aplicar(await api("api/latido", { method: "POST", body: JSON.stringify(cuerpo) }));
+  } catch (ex) {
+    if (/Vuelve a entrar/.test(ex.message)) { tok.guardar(""); verRegistro(); }
+  } finally { llamando = false; }
+}
+function ritmo() {
+  const rapido = v && (v.fase === "corre" || v.fase === "cuenta") && v.mesa;
+  setTimeout(() => { latir().finally(ritmo); }, document.hidden ? 2000 : rapido ? 110 : 1000);
+}
+
+// ---------- entrada ----------
+function verRegistro() {
+  $("#registro").hidden = false; $("#lobby").hidden = true; $("#arena").hidden = true; $("#resultado").hidden = true;
+}
+$("#form-reg").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#reg-error").textContent = "";
+  $("#btn-reg").disabled = true;
+  try {
+    const r = await api("api/unirse", { method: "POST", body: JSON.stringify({ nombre: $("#nombre").value }) });
+    tok.guardar(r.t);
+    musica.play().then(() => musica.pause()).catch(() => {});   // desbloquea el audio con este clic
+    aplicar(r);
+  } catch (ex) { $("#reg-error").textContent = ex.message; }
+  finally { $("#btn-reg").disabled = false; }
+});
+async function empezar(errSel) {
+  $(errSel).textContent = "";
+  try { await api("api/empezar", { method: "POST", body: "{}" }); await latir(); }
+  catch (ex) { $(errSel).textContent = ex.message; }
+}
+$("#btn-empezar").addEventListener("click", () => empezar("#lobby-error"));
+$("#btn-otra").addEventListener("click", () => empezar("#res-error"));
+$("#salto").addEventListener("pointerdown", (e) => { e.preventDefault(); juego && juego.saltar(); });
+for (const b of document.querySelectorAll("[data-jutsu]")) b.addEventListener("pointerdown", (e) => { e.preventDefault(); juego && juego.jutsu(b.dataset.jutsu); });
+for (const [id, m] of [["#avanzar", 1], ["#frenar", -1]]) {
+  const b = $(id);
+  b.addEventListener("pointerdown", (e) => { e.preventDefault(); b.setPointerCapture(e.pointerId); juego && juego.mover(m); });
+  for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => juego && juego.mover(0));
+}
+$("#btn-sonido").addEventListener("click", () => { audioCfg.on = !audioCfg.on; $("#btn-sonido").textContent = audioCfg.on ? "🔊" : "🔇"; musicaVol(); });
+$("#vol-musica").addEventListener("input", musicaVol);
+setInterval(() => { if (!v) return; if (!$("#lobby").hidden) verLobby(); else if (!$("#resultado").hidden && v.auto) $("#res-auto").textContent = `La siguiente ronda empieza sola en ${segundosA(v.auto)} s (las mesas se arman por puntaje).`; }, 1000);
+
+const sugerido = new URLSearchParams(location.search).get("n");
+if (sugerido) $("#nombre").value = sugerido.slice(0, 24);
+if (tok.leer()) {
+  try { aplicar(await api("api/unirse", { method: "POST", body: JSON.stringify({ t: tok.leer(), nombre: "" }) })); }
+  catch { tok.guardar(""); verRegistro(); }
+} else verRegistro();
+ritmo();
+</script>
+</body>
+</html>
