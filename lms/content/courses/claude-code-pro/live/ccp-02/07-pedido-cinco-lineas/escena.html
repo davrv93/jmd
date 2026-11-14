@@ -58,17 +58,17 @@
       <div class="p7-izq">
         <ol class="p7-receta a-in" style="--d:.2s">
           <li><div><b>Qué · una sola cosa</b><span><i>«Cambia los datos del gráfico por estos: …»</i> Un verbo, un objeto. Dos cosas son dos pedidos.</span></div></li>
-          <li><div><b>Dónde · el archivo y el bloque</b><span><i>«En index.html, bloque DATOS.»</i> La dirección exacta: sin ella el taxi da vueltas.</span></div></li>
-          <li><div><b>Con qué · lo que ya existe</b><span><i>«Usa la plantilla p5 tal como está.»</i> Le recuerdas que no parta de cero.</span></div></li>
-          <li><div><b>Límites · lo que NO quieres</b><span><i>«Nada más. Sin explicar. Muestra solo el cambio.»</i> Aquí se ahorran las maletas.</span></div></li>
-          <li><div><b>Comprobación · lo que debo ver</b><span><i>«Compruebo: al abrir index.html veo 6 barras con mis meses.»</i> Tú verificas en 10 segundos.</span></div></li>
+          <li><div><b>Dónde · la plantilla y el bloque</b><span><i>«En la plantilla, bloque DATOS.»</i> La dirección exacta: sin ella el taxi da vueltas.</span></div></li>
+          <li><div><b>Con qué · lo que ya existe</b><span><i>«Usa la plantilla del proyecto tal como está.»</i> Le recuerdas que no parta de cero.</span></div></li>
+          <li><div><b>Límites · lo que NO quieres</b><span><i>«Nada más. Sin explicar. Actualiza el artefacto.»</i> Aquí se ahorran las maletas.</span></div></li>
+          <li><div><b>Comprobación · lo que debo ver</b><span><i>«Compruebo: en el artefacto veo 6 barras con mis meses.»</i> Tú verificas en 10 segundos.</span></div></li>
         </ol>
         <p class="cc-nota a-in" style="--d:.3s"><b>Corto no es lo mismo que claro.</b> «Arréglalo» es corto y carísimo: Claude adivina, rehace y vuelves a pedir. Cinco líneas claras cuestan menos que una vaga.</p>
       </div>
       <div class="p7-der">
         <section class="esc-card a-in" style="--d:.3s">
           <label class="cc-et" for="ped">Afinador · escribe tu pedido</label>
-          <textarea class="p7-ta" id="ped" spellcheck="false" placeholder="En index.html, bloque DATOS: titulo «Gastos 2025» e items Ene 2300, Feb 1950, Mar 2800. Usa la plantilla p5 tal como está. Nada más. Sin explicar. Compruebo: abro index.html y veo 3 barras con esos valores."></textarea>
+          <textarea class="p7-ta" id="ped" spellcheck="false" placeholder="En la plantilla, bloque DATOS: titulo «Gastos 2025» e items Ene 2300, Feb 1950, Mar 2800. Usa la plantilla del proyecto tal como está. Nada más. Sin explicar. Actualiza el artefacto. Compruebo: en el artefacto veo 3 barras con esos valores."></textarea>
           <div class="p7-luces" id="luces" style="margin-top:.5em" aria-live="polite">
             <div class="p7-luz" data-l="que"><i></i>Qué</div>
             <div class="p7-luz" data-l="donde"><i></i>Dónde</div>
@@ -101,10 +101,10 @@
 
   var R = {
     que: /\b(cambia|cambiar|pon|agrega|agregar|añade|a[ñn]adir|quita|haz|crea|usa|reemplaza|ajusta|arregla|mueve|gira|anima|muestra|formatea|ordena|baja|sube)\b/i,
-    donde: /index\.html|bloque|\bdatos\b|funci[oó]n|l[ií]nea|archivo|animar\(\)|setup\(\)|draw\(\)/i,
+    donde: /plantilla|artefacto|index\.html|bloque|\bdatos\b|funci[oó]n|l[ií]nea|archivo|animar\(\)|setup\(\)|draw\(\)/i,
     conque: /\bp5\b|three|gsap|plantilla|webgl|canvas|tal como est[aá]/i,
-    limites: /sin explicar|no expliques|no explicar|nada m[aá]s|\bs[oó]lo\b|no toques|no cambies|m[aá]ximo|[uú]nicamente|no agregues/i,
-    prueba: /compruebo|deber[ií]a ver|debo ver|\bveo\b|al abrir|al recargar|espero ver|tengo que ver/i
+    limites: /sin explicar|no expliques|no explicar|nada m[aá]s|\bs[oó]lo\b|no toques|no cambies|m[aá]ximo|[uú]nicamente|no agregues|actualiza el artefacto|no (lo )?reescribas/i,
+    prueba: /compruebo|deber[ií]a ver|debo ver|\bveo\b|al abrir|al recargar|espero ver|tengo que ver|en el artefacto/i
   };
   var VAGAS = [
     [/\bbonit[oa]s?\b|\blind[oa]s?\b|\bmodern[oa]\b|\bprofesional\b|\bincre[ií]ble\b|\bperfect[oa]\b/gi, "adjetivo vago: di el color, el tamaño o el número"],
@@ -115,7 +115,7 @@
     [/no funciona|est[aá] mal|no sirve/gi, "«no funciona»: di qué viste y qué esperabas"],
     [/\bhazme algo\b|\bhazme un\b.*\bbonito\b/gi, "«hazme algo»: sin dirección, el taxi da vueltas"]
   ];
-  var ETQ = { que: "qué (un verbo y una cosa)", donde: "dónde (index.html, bloque DATOS)", conque: "con qué (plantilla o librería)", limites: "límites («nada más», «sin explicar»)", prueba: "comprobación («compruebo: veo …»)" };
+  var ETQ = { que: "qué (un verbo y una cosa)", donde: "dónde (la plantilla, bloque DATOS)", conque: "con qué (plantilla o librería)", limites: "límites («nada más», «sin explicar», «actualiza el artefacto»)", prueba: "comprobación («compruebo: veo …»)" };
 
   function analizar() {
     var t = ta.value, luces = 0, faltan = [];
@@ -144,7 +144,7 @@
   ta.addEventListener("input", analizar); analizar();
 
   $("ejemplo").addEventListener("click", function () {
-    ta.value = "En index.html, bloque DATOS: titulo «Ventas 2025» e items Ene 120, Feb 95, Mar 140, Abr 160, May 130, Jun 175.\nUsa la plantilla p5 tal como está. Nada más. Sin explicar. Muestra solo el bloque cambiado.\nCompruebo: abro index.html y veo 6 barras girando con esos valores.";
+    ta.value = "En la plantilla, bloque DATOS: titulo «Ventas 2025» e items Ene 120, Feb 95, Mar 140, Abr 160, May 130, Jun 175.\nUsa la plantilla del proyecto tal como está. Nada más. Sin explicar. Actualiza el artefacto.\nCompruebo: en el artefacto veo 6 barras girando con esos valores.";
     analizar(); ta.focus();
   });
 

@@ -4,19 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Escena · Línea base: el render sin preparar</title>
-<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). Línea base de la sesión: cuántos tokens gasta Claude en hacer
-     el render sin reglas ni plantilla. El número queda en localStorage (ccp-02-antes) para las escenas 9, 10 y 12,
-     sale como evidencia «hallazgo» y se publica en el muro de la escena para dibujar al grupo. -->
+<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). Línea base de la sesión: cuánto escribe Claude (claude.ai) para
+     hacer el render sin reglas ni plantilla. El alumno pega la respuesta y el código del artefacto en el medidor
+     (tokens ≈ letras ÷ 4). El número queda en localStorage (ccp-02-antes) para las escenas 9, 10 y 12, sale como
+     evidencia «hallazgo» y se publica en el muro de la escena para dibujar al grupo. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/ccp.css">
 <style id="esc-propio">
-.l3-tok { display: flex; align-items: baseline; gap: .5em; margin: .5em 0 .2em; }
+.l3-tok { display: flex; align-items: baseline; gap: .5em; margin: .4em 0 .2em; }
 .l3-tok span:last-child { font-size: .7em; color: var(--muted); font-weight: 700; }
-.l3-ayuda { display: grid; grid-template-columns: auto 1fr; gap: .2em .7em; align-items: center; font-size: .66em; color: var(--muted); background: var(--s2); border: 1px dashed var(--line2); border-radius: .7em; padding: .5em .8em; margin-top: .3em; }
-.l3-ayuda code { font: 700 1em var(--mono); color: var(--fg); }
+.l3-tok .esc-big { font-size: 2.4em; }
 .l3-der { display: grid; gap: 1.4vh; }
+.l3-ta { font: 500 .58em/1.35 var(--mono); color: var(--fg); background: var(--s2); border: 1px solid var(--line2); border-radius: .6em; padding: .45em .6em; width: 100%; min-height: 3.6em; resize: vertical; }
+.l3-ta:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.l3-cajas { display: grid; gap: .4em; }
+.l3-cajas label { display: flex; justify-content: space-between; font-size: .6em; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.l3-cajas label b { font: 800 1em var(--mono); color: var(--accent); }
 .esc-card p.l3-resumen { font-size: .64em; color: var(--muted); margin: .4em 0 0; }
 .l3-resumen b { color: var(--fg); }
+.cc-pasos .cc-nota b { color: var(--fg); }
+@media (max-width: 860px) { .l3-ta { font-size: .8em; } .l3-cajas label { font-size: .74em; } }
 </style>
 </head>
 <body>
@@ -33,59 +40,55 @@
   <main class="esc-cuerpo">
     <div>
       <h1 class="esc-titulo a-in">Línea base: el render <em>sin preparar</em></h1>
-      <p class="esc-sub a-in" style="--d:.1s">Sin reglas, sin plantilla, sin pensar mucho el pedido. Como lo haría cualquiera el primer día. ¿Cuánto marca el taxímetro?</p>
+      <p class="esc-sub a-in" style="--d:.1s">Sin reglas, sin plantilla, sin Proyecto. Como lo haría cualquiera el primer día. ¿Cuánto escribe Claude?</p>
     </div>
     <div class="cc-g-ancho">
       <section class="esc-card a-in" style="--d:.2s">
         <ol class="cc-pasos">
-          <li><h3>Carpeta vacía y sesión nueva</h3>
-            <div class="cuerpo"><pre class="esc-cmd"><span class="p">$ </span>mkdir base &amp;&amp; cd base &amp;&amp; claude</pre>
-            <p class="cc-nota">¿Ya tenías una abierta? Escribe <span class="cc-c">/clear</span>. La mochila debe estar vacía.</p></div></li>
+          <li><h3>Chat nuevo en claude.ai, fuera de cualquier Proyecto</h3>
+            <div class="cuerpo"><p class="cc-nota">Desde la pantalla de inicio, no desde «Mi render». La mochila debe estar vacía. Da igual el modelo que tengas elegido.</p></div></li>
           <li><h3>Pega este pedido, tal cual</h3>
-            <div class="cuerpo"><pre class="esc-cmd">Haz un gráfico de barras 3D con p5.js en index.html, con 6 meses de ventas inventadas, que gire y se vea bien.</pre>
-            <p class="cc-nota">Si te pregunta algo, responde «lo que tú decidas». Deja que trabaje.</p></div></li>
-          <li><h3>Abre el resultado y mira cuánto costó</h3>
-            <div class="cuerpo"><pre class="esc-cmd"><span class="p">$ </span>open index.html   <span class="c"># Windows: start index.html · Linux: xdg-open index.html</span></pre>
-            <pre class="esc-cmd"><span class="p">&gt; </span>/context</pre>
-            <div class="l3-ayuda"><span>Ejemplo</span><span><code>claude-opus · 38.4k/200k tokens (19%)</code> → escribe <b>38400</b> o <b>38.4k</b></span></div></div></li>
+            <div class="cuerpo"><pre class="esc-cmd">Haz un gráfico de barras 3D con p5.js, con 6 meses de ventas inventadas, que gire y se vea bien.</pre>
+            <p class="cc-nota">Si te pregunta algo, responde «lo que tú decidas». Claude te mostrará un <b>artefacto</b> a la derecha, con el gráfico moviéndose.</p></div></li>
+          <li><h3>Mide lo que escribió</h3>
+            <div class="cuerpo"><p class="cc-nota"><b>Caja 1:</b> el botón «Copiar» al pie del mensaje de Claude → pega el texto. <b>Caja 2:</b> abre el artefacto, arriba a la derecha «Copiar» (el código) → pégalo. El medidor cuenta letras ÷ 4.</p></div></li>
         </ol>
       </section>
       <div class="l3-der">
         <section class="esc-card a-in" style="--d:.3s">
-          <label class="cc-et" for="antes">Tokens que mostró /context</label>
-          <div class="cc-fila">
-            <input class="cc-in" id="antes" inputmode="decimal" autocomplete="off" placeholder="Ej.: 38.4k">
-            <button type="button" class="cc-btn" id="pub">Publicar</button>
+          <span class="cc-et">Medidor · lo que Claude escribió</span>
+          <div class="l3-cajas">
+            <label for="txt">Caja 1 · texto de la respuesta <b id="t-txt">0</b></label>
+            <textarea class="l3-ta" id="txt" spellcheck="false" placeholder="Pega aquí el texto que Claude escribió en el chat"></textarea>
+            <label for="cod">Caja 2 · código del artefacto <b id="t-cod">0</b></label>
+            <textarea class="l3-ta" id="cod" spellcheck="false" placeholder="Pega aquí el código del artefacto (botón Copiar del artefacto)"></textarea>
           </div>
-          <div class="l3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>tokens sin reglas</span></div>
-          <p class="cc-nota" id="msg"></p>
-          <div class="cc-barras" id="grupo" aria-label="Las líneas base del grupo"></div>
+          <div class="l3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>tokens escritos, sin reglas</span></div>
+          <div class="cc-fila"><button type="button" class="cc-btn" id="pub">Publicar</button><p class="cc-nota" id="msg" style="align-self:center"></p></div>
+          <div class="cc-barras" id="grupo" aria-label="Las líneas base del grupo" style="margin-top:.4em"></div>
           <p class="l3-resumen" id="resumen"></p>
         </section>
         <section class="esc-card a-in" style="--d:.4s" id="voto"></section>
       </div>
     </div>
   </main>
-  <footer class="esc-pie"><span>Al publicar, tu número cuenta como evidencia. En la escena 9 lo hacemos otra vez, con reglas, y comparamos.</span></footer>
+  <footer class="esc-pie"><span>Al publicar, tu número cuenta como evidencia. En la escena 9 lo hacemos otra vez, dentro del Proyecto con reglas, y comparamos.</span></footer>
 </div>
 <script src="../../comun/ccp.js"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var inp = $("antes"), previo = CC.leer("antes", null);
-  if (previo && previo.tok) inp.value = previo.tok;
+  var txt = $("txt"), cod = $("cod"), previo = CC.leer("antes", null);
+  if (previo && previo.txt) txt.value = previo.txt;
+  if (previo && previo.cod) cod.value = previo.cod;
 
-  // «38.4k», «38,4 k», «38400» o «38 400» → 38400
-  function tok() {
-    var s = String(inp.value).toLowerCase().replace(/\s/g, "").replace(",", ".");
-    var k = /k$/.test(s); s = s.replace(/k$/, "");
-    var n = parseFloat(k ? s : s.replace(/\./g, ""));
-    if (!(n > 0)) return 0;
-    n = Math.round(k ? n * 1000 : n);
-    return n < 5000000 ? n : 0;
+  function largo(s) { return String(s || "").replace(/\s+/g, " ").trim().length; }
+  function tok() { return Math.round((largo(txt.value) + largo(cod.value)) / 4); }
+  function pintarTok() {
+    $("t-txt").textContent = "≈ " + CC.num(Math.round(largo(txt.value) / 4)); $("t-cod").textContent = "≈ " + CC.num(Math.round(largo(cod.value) / 4));
+    var n = tok(); $("tok-n").textContent = n ? CC.num(n) : "—";
   }
-  function pintarTok() { var n = tok(); $("tok-n").textContent = n ? CC.num(n) : "—"; }
-  inp.addEventListener("input", pintarTok); pintarTok();
+  txt.addEventListener("input", pintarTok); cod.addEventListener("input", pintarTok); pintarTok();
 
   CC.votos($("voto"), "03-linea-base", "¿Qué hizo Claude de más?", [
     { id: "explico", t: "Me explicó todo el código" }, { id: "pregunto", t: "Me hizo preguntas antes de empezar" },
@@ -96,7 +99,7 @@
   var muro = CC.muro(caja, "03-linea-base", "", { alPintar: grupo });
   function grupo(en) {
     var g = $("grupo"); g.textContent = "";
-    var datos = en.map(function (e) { var m = /([\d ]{3,9})\s*tokens/.exec(e.texto || ""); return m ? { n: +m[1].replace(/\s/g, ""), nombre: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
+    var datos = en.map(function (e) { var m = /([\d ]{2,9})\s*tokens/.exec(e.texto || ""); return m ? { n: +m[1].replace(/\s/g, ""), nombre: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
       .filter(function (d) { return d && d.n > 0; }).sort(function (a, b) { return b.n - a.n; });
     if (!datos.length) { $("resumen").textContent = "Cuando el grupo publique, aquí aparecen sus números."; return; }
     var max = datos[0].n;
@@ -112,15 +115,15 @@
     $("resumen").textContent = "";
     $("resumen").append("Mediana del grupo: ");
     $("resumen").appendChild(CC.el("b", "", CC.num(med) + " tokens"));
-    $("resumen").append(" para un render sin reglas (" + datos.length + (datos.length === 1 ? " medición)." : " mediciones)."));
+    $("resumen").append(" escritos para un render sin reglas (" + datos.length + (datos.length === 1 ? " medición)." : " mediciones)."));
   }
 
   $("pub").addEventListener("click", function () {
     var n = tok(), b = this;
-    if (!n) { $("msg").textContent = "Escribe el total que mostró /context (por ejemplo 38.4k)."; inp.focus(); return; }
-    CC.guardar("antes", { tok: n });
+    if (!n) { $("msg").textContent = "Pega primero la respuesta o el código del artefacto."; txt.focus(); return; }
+    CC.guardar("antes", { tok: n, txt: txt.value.slice(0, 20000), cod: cod.value.slice(0, 60000) });
     b.disabled = true;
-    CC.evidencia("hallazgo", "Línea base, render sin reglas: " + n + " tokens en /context").then(function (r) {
+    CC.evidencia("hallazgo", "Línea base, render sin reglas: Claude escribió ≈ " + n + " tokens").then(function (r) {
       $("msg").textContent = r.ok ? "✓ Publicado como evidencia. Ahora pulsa «Lo logré»." : "Lo guardé en este navegador. La evidencia se envía con la clase en vivo.";
       b.disabled = false;
     });
