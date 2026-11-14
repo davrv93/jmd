@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Témpano IA · Sala de 20</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --tinta: #0b1d2e; --naranja: #ff7a3d; --hielo: #e8f6ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b2a45; color: #fff; font: 15px system-ui, -apple-system, "Segoe UI", sans-serif; touch-action: none; }
+  #escena { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .hud { position: fixed; top: 0; left: 0; right: 0; display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 14px; pointer-events: none; }
+  .hud > * { pointer-events: auto; }
+  .chip { background: rgba(5, 20, 35, .72); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 6px 12px; font-weight: 700; white-space: nowrap; }
+  .chip b { color: #ffd21a; } .chip:empty { display: none; }
+  .tabla { position: fixed; top: 54px; right: 10px; background: rgba(5, 20, 35, .72); border-radius: 12px; padding: 8px 10px; font-size: 13px; max-height: 46vh; overflow: auto; min-width: 150px; }
+  .tabla h3 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #9fd0ef; }
+  .tabla ol { margin: 0; padding-left: 18px; } .tabla li.fuera { opacity: .45; text-decoration: line-through; } .tabla li.yo { color: #ffb08a; font-weight: 800; }
+  .cartel { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 460px); background: rgba(5, 20, 35, .9); border: 2px solid rgba(255,255,255,.2); border-radius: 18px; padding: 20px 22px; text-align: center; }
+  .cartel h1 { margin: 0 0 6px; font-size: 26px; } .cartel p { margin: 6px 0; color: #cfe6f5; line-height: 1.4; }
+  .grande { font: 900 64px/1 system-ui; color: #ffd21a; margin: 6px 0; }
+  input, button { font: inherit; }
+  input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #4d7290; background: #0b2238; color: #fff; margin: 8px 0; }
+  button.btn { background: var(--naranja); color: #fff; border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 800; cursor: pointer; width: 100%; font-size: 17px; }
+  button.btn:disabled { opacity: .55; cursor: default; }
+  .err { color: #ff9b9b; min-height: 1.2em; }
+  .teclas { font-size: 13px; color: #9fd0ef; }
+  .zona { position: fixed; left: 0; bottom: 0; width: 55%; height: 45%; display: none; }
+  .palanca { position: absolute; left: 30px; bottom: 30px; width: 110px; height: 110px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.35); }
+  .perilla { position: absolute; left: 30px; top: 30px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.75); }
+  .embestir { position: fixed; right: 22px; bottom: 30px; width: 96px; height: 96px; border-radius: 50%; border: 0; background: var(--naranja); color: #fff; font-weight: 900; font-size: 15px; display: none; box-shadow: 0 6px 0 #a8461b; }
+  body.tactil .zona, body.tactil .embestir { display: block; } body.tactil .teclas { display: none; }
+  [hidden] { display: none !important; }
+  @media (max-width: 640px) { .tabla { display: none; } .chip { font-size: 13px; padding: 5px 9px; } }
+</style>
+</head>
+<body>
+<canvas id="escena" aria-label="Témpano con los ositos de la sala"></canvas>
+<div class="hud">
+  <span class="chip" id="hFase">Conectando…</span>
+  <span class="chip" id="hGente">0 / 20</span>
+  <span class="chip" id="hReloj"></span>
+</div>
+<div class="tabla" id="tabla" hidden><h3>En el hielo</h3><ol id="lista"></ol></div>
+
+<div class="cartel" id="cEntrar" hidden>
+  <h1>🐻‍❄️ Témpano IA · Sala de 20</h1>
+  <p>Todos juegan <b>a la vez</b> en el mismo témpano. Empuja a los demás al agua y sé el último en pie. ¡Cuidado con los <b>rayos ⚡</b>: avisan con un círculo rojo y parten el hielo!</p>
+  <form id="fEntrar"><input id="nombre" maxlength="60" placeholder="Tu nombre y apellido" autocomplete="name" required>
+  <button class="btn" id="bEntrar">Entrar a la sala</button></form>
+  <p class="err" id="eEntrar"></p>
+</div>
+<div class="cartel" id="cMsg" hidden><p id="mK"></p><div class="grande" id="mT"></div><p id="mP"></p><p class="teclas">Flechas o WASD para moverte · Espacio para embestir</p></div>
+
+<div class="zona" id="zona"><div class="palanca" id="palanca"><div class="perilla" id="perilla"></div></div></div>
+<button class="embestir" id="embestir" type="button">EMBESTIR</button>
+
+<script type="module" src="static/multi.js"></script>
+</body>
+</html>

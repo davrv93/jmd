@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sopa de letras IA · El mejor tiempo gana Claude Code PRO</title>
+<meta name="description" content="Encuentra las 8 palabras de IA lo más rápido que puedas. Letras al azar en cada intento, 3 intentos por persona. El mejor tiempo gana una vacante 100 % en Claude Code PRO.">
+<meta name="theme-color" content="#fbf8f3">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/base.css">
+<link rel="stylesheet" href="static/sopa.css">
+</head>
+<body>
+<canvas id="luz"></canvas>
+<main>
+  <div class="marca"><svg viewBox="0 0 200 200" fill="none"><g fill="#1B2559"><circle cx="38" cy="78" r="6"/><circle cx="52" cy="112" r="6"/><circle cx="84" cy="118" r="6"/><circle cx="92" cy="88" r="6"/><circle cx="120" cy="80" r="6"/><circle cx="146" cy="74" r="6"/></g><path d="M38 78 92 88 120 80 146 74M92 88 84 118 52 112 38 78" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M100 86v90M114 84v90M128 82v90M142 80v90" stroke="#3B5BDB" stroke-width="5" stroke-linecap="round"/><path d="M92 176q40 14 64-6" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M160 60l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#D9A441"/></svg>JMD Learning</div>
+
+  <div class="kick">JUEGO CONTRA EL RELOJ · CLAUDE CODE PRO</div>
+  <h1>Sopa de<br>letras <span>IA</span></h1>
+  <p class="lead">Encuentra las <b>8 palabras de IA</b>. El mejor tiempo gana una vacante 100 % en Claude Code PRO.</p>
+
+  <div class="regla" id="regla"><i>⏱</i><div><span id="reglaTxt">El mejor tiempo gana una vacante 100 % en Claude Code PRO</span><small id="reglaSub">Abierto hasta que el organizador lo cierre.</small></div></div>
+
+  <div class="chips">
+    <span class="dest">Mejor tiempo gana</span>
+    <span>Letras al azar en cada intento</span>
+    <span id="chipInt">3 intentos por persona</span>
+  </div>
+  <div class="cuenta" id="cuenta">
+    <div><b id="cJug">0</b><span>JUGARON</span></div><div><b id="cPar">0</b><span>PARTIDAS</span></div><div><b id="cMejor">–</b><span>MEJOR TIEMPO</span></div>
+  </div>
+
+  <section class="card" id="inscripcion">
+    <h2>Escribe tu nombre y empieza</h2>
+    <p class="soft small">Solo nombre y apellido: nada de celular. Si ganas, el código aparece aquí mismo y solo en tu navegador.</p>
+    <form id="form" autocomplete="off">
+      <label for="nombre">Nombre y apellido</label>
+      <input type="text" id="nombre" name="nombre" maxlength="40" placeholder="Ej.: Ana Pérez" required>
+      <button class="btn" type="submit" id="quiero">Quiero jugar</button>
+      <div class="err" id="err1"></div>
+    </form>
+  </section>
+
+  <section class="card juego" id="juego" hidden>
+    <div class="hola">
+      <div class="quien">Hola, <b id="nom"></b></div>
+      <div class="intentos" id="intentos" title="Intentos"></div>
+    </div>
+    <div class="aviso" id="aviso" hidden></div>
+
+    <div class="nota-juego" id="notaJuego" hidden></div>
+    <div class="barra">
+      <div class="reloj"><span class="k">TIEMPO</span><b id="reloj">00:00.0</b></div>
+      <div class="sel" id="sel" aria-live="polite"></div>
+      <div class="prog"><span class="k">PALABRAS</span><b><span id="nEnc">0</span>/<span id="nTot">8</span></b></div>
+    </div>
+
+    <div class="tablero" id="tablero">
+      <svg class="trazos" id="trazos" viewBox="0 0 12 12" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="letras" id="letras" role="grid" aria-label="Sopa de letras de 12 por 12"></div>
+      <div class="velo" id="velo">
+        <div class="velo-in">
+          <p id="veloTxt">Cada intento trae letras nuevas. El reloj empieza al tocar el botón.</p>
+          <button class="btn" id="empezar" type="button">▶ Empezar intento 1</button>
+        </div>
+      </div>
+    </div>
+    <p class="ayuda" id="ayuda">Arrastra el dedo de la primera a la última letra, o toca la primera y luego la última. Las palabras van → ↓ ↘ ↗.</p>
+
+    <ul class="lista" id="lista"></ul>
+    <div class="err" id="err2"></div>
+
+    <div class="fin" id="fin" hidden></div>
+    <ol class="glosario" id="glosario"></ol>
+    <button class="rendirse" id="rendirse" type="button" hidden>Me rindo con este intento</button>
+  </section>
+
+  <section class="premio" id="premio" hidden>
+    <div class="k" id="premioK">¡GANASTE! · CÓDIGO 100 % · UN SOLO USO</div>
+    <div class="big" id="premioBig">100 %<small>GRATIS</small></div>
+    <div class="cod" id="cod"></div>
+    <a class="btn dark" id="usar" href="#" target="_blank" rel="noopener">Usar mi código</a>
+    <p id="premioTxt">Toca «Usar mi código»: va puesto en la matrícula. Elige «Individual» y el total queda en S/ 0.</p>
+  </section>
+
+  <section class="card">
+    <h2>Ranking</h2>
+    <p class="soft small" id="rankTxt">Nadie ha terminado todavía. ¿Serás la primera persona?</p>
+    <ol class="ranking" id="ranking"></ol>
+    <div class="mipuesto" id="mipuesto" hidden></div>
+  </section>
+
+  <section class="card ganadores" id="ganadores" hidden>
+    <h2>Ganador</h2>
+    <ul id="ganLista"></ul>
+  </section>
+
+  <section class="card comprobar">
+    <h2>Cómo funciona</h2>
+    <p>En cada intento el servidor arma una sopa nueva con <code>crypto/rand</code>: 8 palabras sacadas al azar de una lista de 30, en posiciones al azar. Tu navegador no sabe dónde están: cada palabra que marcas la revisa el servidor.</p>
+    <p>El tiempo también lo mide el servidor, desde que tocas «Empezar» hasta que aparece la octava palabra. Un tiempo de menos de <span id="minTxt">15</span> segundos no cuenta. Tienes <span id="intTxt">3</span> intentos y vale el mejor.</p>
+    <p>El ranking es público y solo muestra iniciales. Los ganadores de Claude Code PRO pueden jugar y salir en el ranking, pero no ganan: el premio va al mejor tiempo entre los demás.</p>
+  </section>
+
+  <p class="enlaces">¿Más juegos? <a href="/arbitro/">Árbitro 🟨</a> · <a href="/balon-de-oro/">Balón de Oro ⚽</a></p>
+  <p class="foot">El premio es una inscripción individual en Claude Code PRO (sábados 7, 14, 21 y 28 nov, 7:30 – 9:30 p.m.). Los ganadores de Claude Code PRO pueden jugar, pero no ganan. Curso independiente con fines académicos. Claude y Claude Code son marcas de Anthropic, PBC; sin relación ni patrocinio de Anthropic.</p>
+</main>
+<script type="module" src="static/sopa.js"></script>
+</body>
+</html>

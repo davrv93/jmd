@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gol en vivo · JMD Learning</title>
+<meta name="description" content="Una cancha, un balón y todos jugando a la vez. Mete gol y sube al ranking.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@500;600;700&display=swap">
+<style>
+:root{--noche:#0f1020;--panel:#191a33;--borde:#34365c;--oro:#f2c14e;--crema:#f2f0e6;--gris:#b9b6ab;--coral:#ff9c88}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--noche);color:var(--crema);font:500 16px/1.35 Inter,system-ui,sans-serif;overflow:hidden}
+h1{font:800 clamp(36px,9vw,56px)/1.03 Outfit,sans-serif;letter-spacing:-.02em}
+#entrada{height:100%;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:440px;margin:0 auto;padding:24px 16px}
+.k{font:700 15px/1 Inter,sans-serif;color:var(--oro)}
+#entrada p.t{color:var(--gris)}
+label{font-weight:600;margin-top:6px}
+input{display:block;width:100%;margin-top:6px;padding:13px 14px;font:500 16px/1.2 Inter,sans-serif;color:var(--crema);background:var(--panel);border:1px solid var(--borde);border-radius:12px}
+input:focus{outline:2px solid var(--oro)}
+button{font:800 18px/1 Outfit,sans-serif;padding:16px;border:0;border-radius:12px;background:var(--oro);color:var(--noche);cursor:pointer;width:100%}
+#error{color:var(--coral);font-weight:600;min-height:21px}
+#juego{display:none;height:100vh;height:100dvh;flex-direction:column;max-width:1040px;margin:0 auto}
+.barra{flex:none;display:flex;justify-content:space-between;gap:10px;padding:8px 12px;font-weight:700;font-size:15px}
+.barra b{color:var(--oro)}
+.barra .der{display:flex;align-items:center;gap:12px}
+button.son{width:auto;padding:6px 10px;font:700 14px/1 Inter,sans-serif;background:var(--panel);color:var(--crema);border:1px solid var(--borde);border-radius:999px}
+button.son[aria-pressed="false"]{color:var(--gris)}
+.medio{flex:1;min-height:0;display:flex;gap:16px;justify-content:center;padding:0 12px 10px}
+.cancha{position:relative;height:100%;aspect-ratio:2/3;max-width:100%;touch-action:none}
+canvas{width:100%;height:100%;display:block;border-radius:12px;touch-action:none;cursor:crosshair}
+#aviso{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:16px;font:800 clamp(30px,8vw,52px)/1.05 Outfit,sans-serif;color:var(--oro);text-shadow:0 3px 0 #0f1020;pointer-events:none}
+#rank{flex:0 0 240px;overflow:auto}
+#rank h2{font:700 16px/1 Outfit,sans-serif;color:var(--oro);padding:6px 0 8px}
+#rank ol{list-style:none;padding:0}
+#rank li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--borde);font-size:15px}
+#rank li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vacio{color:var(--gris);font-size:15px}
+@media (max-width:760px){
+  .medio{flex-direction:column;gap:6px;align-items:center}
+  .cancha{flex:1;min-height:0;height:auto}
+  #rank{flex:none;width:100%;max-height:74px}
+  #rank h2{display:none}
+  #rank ol{display:flex;gap:14px;overflow-x:auto}
+  #rank li{flex:none;border:0;padding:2px 0}
+}
+</style>
+</head>
+<body>
+<form id="entrada" novalidate>
+  <p class="k">JMD Learning</p>
+  <h1>Gol en vivo</h1>
+  <p class="t">Una cancha y un balón para todos a la vez. Gana el gol quien toca el balón al último. Vence al portero bot.</p>
+  <label>Tu nombre<input id="nombre" maxlength="24" autocomplete="name" required></label>
+  <p id="error" role="alert"></p>
+  <button type="submit">Entrar a la cancha</button>
+</form>
+<main id="juego">
+  <div class="barra"><span><b id="conectados">0</b> en cancha</span><span class="der"><span>Tus goles: <b id="misgoles">0</b></span><button type="button" id="sonido" class="son" aria-pressed="true">🔊 Estadio</button></span></div>
+  <div class="medio">
+    <div class="cancha"><canvas id="c" width="600" height="900" aria-label="Cancha de fútbol: toca o arrastra para mover a tu jugador"></canvas><div id="aviso" role="status"></div></div>
+    <aside id="rank"><h2>Ranking</h2><ol id="lista"></ol></aside>
+  </div>
+</main>
+<script>
+(function(){
+  var BASE=new URL('.',location.href).pathname,W=600,H=900,ARCO=[170,430];
+  var yo=0,nombres={},jug={},balon={x:300,y:495,tx:300,ty:495},port={x:300,tx:300},ws=null,token='',goles=0,avisoHasta=0;
+  var cv=document.getElementById('c'),g=cv.getContext('2d'),aviso=document.getElementById('aviso');
+  function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
+  document.getElementById('nombre').value=ls('gol-nombre')||'';
+  // Sonido de estadio sintetizado en el navegador (sin archivos): murmullo de la tribuna en bucle,
+  // rugido y silbato en cada gol. Arranca con el clic de «Entrar» porque el navegador exige un gesto.
+  var estadio=(function(){
+    var ac=null,maestro=null,tribuna=null,activo=ls('gol-sonido')!=='0';
+    function ruido(seg){var b=ac.createBuffer(1,ac.sampleRate*seg,ac.sampleRate),d=b.getChannelData(0),u=0;
+      for(var i=0;i<d.length;i++){u=.97*u+.03*(Math.random()*2-1);d[i]=u*6+(Math.random()*2-1)*.25;}return b;}
+    function fuente(buf){var s=ac.createBufferSource();s.buffer=buf;s.loop=true;s.start(0,Math.random()*buf.duration);return s;}
+    function banda(f,q){var x=ac.createBiquadFilter();x.type='bandpass';x.frequency.value=f;x.Q.value=q;return x;}
+    function iniciar(){
+      var C=window.AudioContext||window.webkitAudioContext;if(!C||ac)return;ac=new C();
+      var comp=ac.createDynamicsCompressor();comp.threshold.value=-14;comp.knee.value=0;comp.ratio.value=20;comp.attack.value=.002;var salida=ac.createGain();salida.gain.value=.5;comp.connect(salida);salida.connect(ac.destination);maestro=ac.createGain();maestro.gain.value=activo?1:0;maestro.connect(comp);
+      tribuna=ac.createGain();tribuna.gain.value=.22;tribuna.connect(maestro);
+      var buf=ruido(4);
+      [[300,.9],[650,1.2],[1100,1.6],[1900,2.2]].forEach(function(b,i){
+        var v=ac.createGain();v.gain.value=.5/(i+1);
+        var lfo=ac.createOscillator(),prof=ac.createGain();lfo.frequency.value=.07+Math.random()*.25;prof.gain.value=.22/(i+1);
+        lfo.connect(prof);prof.connect(v.gain);lfo.start();
+        fuente(buf).connect(banda(b[0],b[1])).connect(v);v.connect(tribuna);});
+    }
+    function silbato(t,dur){var o=ac.createOscillator(),m=ac.createOscillator(),mg=ac.createGain(),v=ac.createGain();
+      o.type='triangle';o.frequency.value=2900;m.frequency.value=34;mg.gain.value=180;m.connect(mg);mg.connect(o.frequency);
+      v.gain.setValueAtTime(0,t);v.gain.linearRampToValueAtTime(.09,t+.02);v.gain.setValueAtTime(.09,t+dur-.04);v.gain.linearRampToValueAtTime(0,t+dur);
+      o.connect(v);v.connect(maestro);o.start(t);m.start(t);o.stop(t+dur);m.stop(t+dur);}
+    function gol(){if(!ac)return;if(ac.state==='suspended')ac.resume();var t=ac.currentTime,buf=ruido(5);
+      [[500,.8,.55],[1300,1.1,.42],[2600,1.6,.27]].forEach(function(b){var s=ac.createBufferSource(),v=ac.createGain();s.buffer=buf;
+        v.gain.setValueAtTime(0,t);v.gain.linearRampToValueAtTime(b[2],t+.35);v.gain.setValueAtTime(b[2],t+1.4);v.gain.exponentialRampToValueAtTime(.001,t+4.6);
+        s.connect(banda(b[0],b[1])).connect(v);v.connect(maestro);s.start(t);s.stop(t+4.7);});
+      tribuna.gain.cancelScheduledValues(t);tribuna.gain.setValueAtTime(.22,t);tribuna.gain.linearRampToValueAtTime(.36,t+.5);tribuna.gain.linearRampToValueAtTime(.22,t+6);
+      silbato(t+.05,.28);silbato(t+.42,.28);silbato(t+.8,.75);}
+    function alternar(){activo=!activo;ls('gol-sonido',activo?'1':'0');if(ac){if(ac.state==='suspended')ac.resume();maestro.gain.setTargetAtTime(activo?1:0,ac.currentTime,.05);}return activo;}
+    return {iniciar:iniciar,gol:gol,alternar:alternar,activo:function(){return activo;}};
+  })();
+  var botonSon=document.getElementById('sonido');
+  function marcarSon(){var a=estadio.activo();botonSon.setAttribute('aria-pressed',a?'true':'false');botonSon.textContent=a?'🔊 Estadio':'🔇 Estadio';botonSon.setAttribute('aria-label',a?'Silenciar el sonido de estadio':'Activar el sonido de estadio');}
+  marcarSon();
+  botonSon.addEventListener('click',function(){estadio.iniciar();estadio.alternar();marcarSon();});
+  document.getElementById('entrada').addEventListener('submit',function(e){
+    e.preventDefault();estadio.iniciar();var n=document.getElementById('nombre').value,err=document.getElementById('error');err.textContent='';
+    fetch(BASE+'api/entrar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre:n,token:ls('gol-token')||''})})
+    .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});}).then(function(x){
+      if(!x.ok){err.textContent=x.d.error;return;}
+      token=x.d.token;goles=x.d.goles;ls('gol-token',token);ls('gol-nombre',n);
+      document.getElementById('entrada').style.display='none';document.getElementById('juego').style.display='flex';
+      conectar();requestAnimationFrame(pintar);
+    }).catch(function(){err.textContent='Revisa tu conexión.';});
+  });
+  function conectar(){
+    ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+BASE+'api/ws?t='+token);
+    ws.onmessage=function(e){var m=JSON.parse(e.data);
+      if(m.t==='s'){balon.tx=m.b[0];balon.ty=m.b[1];port.tx=m.k;var vistos={};
+        m.p.forEach(function(p){vistos[p[0]]=1;var j=jug[p[0]];if(!j)j=jug[p[0]]={x:p[1],y:p[2]};j.tx=p[1];j.ty=p[2];});
+        for(var id in jug)if(!vistos[id])delete jug[id];
+        document.getElementById('conectados').textContent=m.p.length;}
+      else if(m.t==='r'){nombres=m.j;pintarRanking(m.r);}
+      else if(m.t==='y'){yo=m.id;goles=m.goles;document.getElementById('misgoles').textContent=goles;}
+      else if(m.t==='g'){aviso.textContent='¡GOOOL de '+m.n+'!';aviso.style.display='flex';avisoHasta=performance.now()+2300;estadio.gol();
+        if(m.n===(ls('gol-nombre')||'').trim()){goles++;document.getElementById('misgoles').textContent=goles;}}
+    };
+    ws.onclose=function(){aviso.textContent='Reconectando…';aviso.style.display='flex';avisoHasta=performance.now()+1500;setTimeout(conectar,1500);};
+  }
+  function pintarRanking(r){var l=document.getElementById('lista');l.textContent='';
+    if(!r.length){var v=document.createElement('li');v.className='vacio';v.textContent='Aún nadie anota. Sé primero.';l.appendChild(v);return;}
+    r.forEach(function(f,i){var li=document.createElement('li'),a=document.createElement('span'),b=document.createElement('b');a.textContent=(i+1)+'. '+f.n;b.textContent=f.g;li.appendChild(a);li.appendChild(b);l.appendChild(li);});}
+  var ultimoEnvio=0;
+  function mandar(x,y){var a=performance.now();if(a-ultimoEnvio<60||!ws||ws.readyState!==1)return;ultimoEnvio=a;ws.send(JSON.stringify({x:Math.round(x),y:Math.round(y)}));}
+  function apuntar(e){var r=cv.getBoundingClientRect();mandar((e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H);}
+  var apretado=false;
+  cv.addEventListener('pointerdown',function(e){apretado=true;cv.setPointerCapture(e.pointerId);ultimoEnvio=0;apuntar(e);});
+  cv.addEventListener('pointermove',function(e){if(apretado||e.pointerType==='mouse')apuntar(e);});
+  cv.addEventListener('pointerup',function(){apretado=false;});
+  var teclas={};
+  addEventListener('keydown',function(e){teclas[e.key]=1;});addEventListener('keyup',function(e){delete teclas[e.key];});
+  function porTeclado(){var j=jug[yo];if(!j)return;var dx=(teclas.ArrowRight?1:0)-(teclas.ArrowLeft?1:0),dy=(teclas.ArrowDown?1:0)-(teclas.ArrowUp?1:0);if(dx||dy)mandar(j.tx+dx*80,j.ty+dy*80);}
+  function ir(o,k){o.x+=(o.tx-o.x)*k;if('ty' in o)o.y+=(o.ty-o.y)*k;}
+  function circulo(x,y,r,c){g.fillStyle=c;g.beginPath();g.arc(x,y,r,0,7);g.fill();}
+  function pintar(){
+    requestAnimationFrame(pintar);porTeclado();
+    if(avisoHasta&&performance.now()>avisoHasta){aviso.style.display='none';avisoHasta=0;}
+    for(var f=0;f<9;f++){g.fillStyle=f%2?'#1d6b43':'#1a6039';g.fillRect(0,f*100,W,100);}
+    g.strokeStyle='rgba(242,240,230,.55)';g.lineWidth=4;g.strokeRect(10,10,W-20,H-20);
+    g.beginPath();g.moveTo(10,H/2);g.lineTo(W-10,H/2);g.stroke();g.beginPath();g.arc(W/2,H/2,80,0,7);g.stroke();g.strokeRect(120,10,360,150);
+    g.fillStyle='#f2f0e6';g.fillRect(ARCO[0]-8,0,8,16);g.fillRect(ARCO[1],0,8,16);g.fillStyle='rgba(242,240,230,.28)';g.fillRect(ARCO[0],0,ARCO[1]-ARCO[0],10);
+    ir(balon,.4);ir(port,.4);
+    circulo(port.x,46,24,'#ff6b55');g.fillStyle='#0f1020';g.font='800 15px Outfit,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('BOT',port.x,47);
+    for(var id in jug){var j=jug[id],mio=+id===yo;ir(j,.4);circulo(j.x,j.y,18,mio?'#f2c14e':'#e7e4d8');
+      g.fillStyle='#0f1020';g.font='800 16px Outfit,sans-serif';var n=nombres[id]||'';g.fillText(n.charAt(0).toUpperCase(),j.x,j.y+1);
+      g.fillStyle=mio?'#f2c14e':'#f2f0e6';g.font='600 15px Inter,sans-serif';g.fillText(n.slice(0,14),j.x,j.y+30);}
+    circulo(balon.x,balon.y,12,'#ffffff');circulo(balon.x,balon.y,5,'#0f1020');
+  }
+})();
+</script>
+</body>
+</html>

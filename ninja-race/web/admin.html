@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ninja Race · panel del instructor</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="static/estilo.css?v=20261030d">
+<style>
+  .campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .campos label { margin-top: 0; }
+  .campos input { width: 100%; font: 800 15px system-ui, sans-serif; padding: 10px;
+    border: 3px solid var(--tinta); border-radius: 4px; }
+  .acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .acciones .btn { width: auto; margin-top: 0; }
+  .punto { font-size: .8em; color: var(--gris); }
+  .punto.ok { color: var(--verde); } .punto.mal { color: var(--rojo); }
+  .provisional { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 12px; }
+  .provisional div { background: var(--tinta); color: var(--amarillo); border: 3px solid var(--tinta); padding: 10px 12px;
+    font: 800 15px system-ui, sans-serif; }
+  .provisional b { display: block; color: #fff; font-size: 19px; margin-top: 2px; }
+  tr.corre td { background: #e9fbef; }
+  .vivo-pts { font: 900 15px ui-monospace, monospace; color: var(--verde); }
+  #btn-cerrar { background: var(--rojo); font-size: 20px; padding: 18px; }
+  #btn-cerrar.armado { background: var(--tinta); color: var(--amarillo); }
+</style>
+</head>
+<body>
+<main>
+  <header class="cab">
+    <div>
+      <span class="kick">INSTRUCTOR</span>
+      <h1 class="marca">Ninja <em>Race</em> · panel</h1>
+    </div>
+    <div class="marcador">
+      <span class="chip oro" id="chip-record">—</span>
+      <span class="chip rojo" id="chip-cupos">—</span>
+      <span class="chip cian" id="chip-activas">—</span>
+    </div>
+  </header>
+
+  <section class="panel" id="clave-panel">
+    <h2>Clave del <span>sorteo</span></h2>
+    <p class="suave">La misma <code>SORTEO_CLAVE</code> del contenedor (cabecera X-Clave).</p>
+    <label for="clave">Clave</label>
+    <input id="clave" type="password" autocomplete="current-password">
+    <button class="btn" id="btn-entrar" type="button">Entrar</button>
+    <p class="error" id="clave-error"></p>
+  </section>
+
+  <div id="panel" hidden>
+    <section class="panel" id="vivo-panel">
+      <h2>En <span>vivo</span> <span class="punto" id="vivo-estado">● conectando…</span></h2>
+      <div class="marcador" style="margin-top:10px">
+        <span class="chip cian" id="v-pista">0 en pista</span>
+        <span class="chip" id="v-carreras">0 carreras</span>
+        <span class="chip oro" id="v-record">sin récord</span>
+        <span class="chip" id="v-estado">—</span>
+      </div>
+      <div class="provisional" id="v-provisional"></div>
+      <table class="tabla" id="tabla-vivo" style="margin-top:14px">
+        <thead><tr><th>#</th><th>Corredor</th><th>Ahora</th><th>Mejor válido</th><th>Carreras</th><th>Curso</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <button class="btn" id="btn-cerrar" type="button">🏁 Cerrar carrera y calcular ganadores</button>
+      <p class="chico suave" id="cerrar-nota">Cierra la inscripción y las carreras. El mejor puntaje válido de cada
+        curso se lleva el 100 %; el resto, su descuento aleatorio. Los cupones se piden solos y aparecen aquí.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Corredores y <span>premios</span></h2>
+      <table class="tabla" id="tabla-ganadores">
+        <thead><tr><th>Ganador</th><th>Puntaje</th><th>Puesto</th><th>Descuento</th><th>Curso</th><th>Cupón</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <table class="tabla" id="tabla-jugadores" style="margin-top:16px">
+        <thead><tr><th>#</th><th>Nombre</th><th>WhatsApp</th><th>Carreras</th><th>Mejor</th><th>Premio</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Configuración</h2>
+      <div class="campos" style="margin-top:10px">
+        <label>Título<input id="c-titulo" type="text"></label>
+        <label>Curso principal<input id="c-curso" type="text"></label>
+        <label>Curso de los excluidos<input id="c-curso-otro" type="text"></label>
+        <label>WhatsApp destino<input id="c-whatsapp" type="text"></label>
+        <label>Cupos del 100 %<input id="c-cupos" type="number" min="0" max="100"></label>
+        <label>Descuento mínimo %<input id="c-descmin" type="number" min="1" max="100"></label>
+        <label>Descuento máximo %<input id="c-descmax" type="number" min="1" max="100"></label>
+        <label>Duración mínima (ms)<input id="c-minms" type="number" min="3000"></label>
+        <label>Duración tope (ms)<input id="c-maxms" type="number"></label>
+        <label>Cierra (hora de Lima; vacío = solo manual)
+          <input id="c-cierre" type="datetime-local"></label>
+        <label style="margin-top:26px">Estado
+          <span class="chip" id="c-estado" style="margin-left:6px">—</span></label>
+        <label class="check" style="margin-top:26px">
+          <input id="c-cerrado" type="checkbox">
+          Cerrado ya (el participante solo verá su posición)
+        </label>
+        <label class="check" style="margin-top:26px">
+          <input id="c-solo-manual" type="checkbox">
+          Cierre solo con el botón 🏁 (sin cierre automático)
+        </label>
+        <label class="check" style="margin-top:26px">
+          <input id="c-al-cierre" type="checkbox">
+          Calcular los premios al cerrar (por mejor puntaje)
+        </label>
+      </div>
+      <label>Ganadores anteriores de Claude, uno por línea (no pueden ganar el 100 %)</label>
+      <textarea id="c-excluidos"></textarea>
+      <label>Celulares excluidos, uno por línea (solo dígitos)</label>
+      <textarea id="c-excluidostel" style="min-height:70px"></textarea>
+      <label>Bloqueados (ganaron una carrera anterior: no se inscriben ni corren), uno por línea</label>
+      <textarea id="c-bloqueados" style="min-height:70px"></textarea>
+      <label>Celulares bloqueados, uno por línea</label>
+      <textarea id="c-bloqueadostel" style="min-height:70px"></textarea>
+      <div class="acciones">
+        <button class="btn verde" id="btn-guardar" type="button">Guardar</button>
+        <button class="btn amarillo" id="btn-refrescar" type="button">Refrescar</button>
+        <button class="btn" id="btn-reiniciar" type="button">Reiniciar sorteo</button>
+      </div>
+      <p class="error" id="cfg-error"></p>
+      <p class="chico suave">«Reiniciar» borra corredores, premios y récord: los cupos del 100 %
+        se vuelven a contar desde la configuración. Pide confirmación antes en clase.</p>
+      <p class="chico suave">Mientras el sorteo está <b>abierto</b>, el participante solo ve su
+        posición («vas primero») y el aviso del cierre: los premios, los códigos y el acta aparecen
+        recién <b>a la hora de cierre</b> o cuando marcas «Cerrado ya». El cupón se emite igual, en silencio.</p>
+    </section>
+  </div>
+
+  <p class="pie"><a href="./">Volver a la carrera</a></p>
+</main>
+
+<script type="module">
+import { api, $, esc } from "./static/comun.js";
+
+let estado = null;
+const clave = () => sessionStorage.getItem("ninja.clave") || "";
+const cabecera = () => ({ "X-Clave": clave() });
+const admin = (ruta, cuerpo) =>
+  api("api/admin/" + ruta, { method: cuerpo ? "POST" : "GET", headers: cabecera(), body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+
+// El cierre se piensa en hora de Lima (el sorteo no tiene horario de verano).
+const paraLima = (iso) =>
+  new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Lima", year: "numeric", month: "2-digit",
+    day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso)).replace(" ", "T");
+const deLima = (v) => (v ? `${v}:00-05:00` : "");
+
+async function cargar() {
+  estado = await admin("estado");
+  $("#chip-record").textContent = estado.record > 0 ? `Récord ${estado.record} pts` : "Sin récord";
+  $("#chip-cupos").textContent = `100 %: ${estado.quedan_100}/${estado.cupos_100}`;
+  $("#chip-activas").textContent = `${estado.activas} en pista · ${estado.carreras} carreras`;
+  const c = estado.config;
+  $("#c-titulo").value = c.titulo; $("#c-curso").value = c.curso;
+  $("#c-curso-otro").value = c.curso_otro; $("#c-whatsapp").value = c.whatsapp;
+  $("#c-cupos").value = c.cupos_100; $("#c-descmin").value = c.desc_min;
+  $("#c-descmax").value = c.desc_max; $("#c-minms").value = c.min_ms;
+  $("#c-maxms").value = c.max_ms;
+  $("#c-cierre").value = c.cierre && !String(c.cierre).startsWith("0001") ? paraLima(c.cierre) : "";
+  $("#c-cerrado").checked = !!c.cerrado;
+  $("#c-estado").textContent = estado.cerrado ? "CERRADO ✓" : "ABIERTO · entrega al cierre";
+  $("#c-excluidos").value = (c.excluidos || []).join("\n");
+  $("#c-excluidostel").value = (c.excluidosTel || []).join("\n");
+  $("#c-solo-manual").checked = !!c.solo_manual; $("#c-al-cierre").checked = !!c.al_cierre;
+  $("#c-bloqueados").value = (c.bloqueados || []).join("\n");
+  $("#c-bloqueadostel").value = (c.bloqueadosTel || []).join("\n");
+  $("#tabla-ganadores tbody").innerHTML = (estado.ganadores || []).map((g) => `
+    <tr><td>${esc(g.nombreCensurado)}</td><td>${g.puntaje}</td><td>${g.puesto}.º</td>
+      <td><b>${g.descuento} %</b></td><td>${esc(g.curso)}</td>
+      <td>${g.codigo ? `<code>${esc(g.codigo)}</code>` : `<button class="btn chico" data-cod="${g.id}" type="button">Pedir código</button>`}</td></tr>`).join("")
+    || `<tr><td colspan="6">Sin premios todavía.</td></tr>`;
+  $("#tabla-jugadores tbody").innerHTML = (estado.jugadores || []).map((j) => `
+    <tr><td>${j.id}</td><td>${esc(j.nombre)}</td><td>${esc(j.telefono)}</td>
+      <td>${j.carreras}</td><td>${j.mejorPuntaje}</td><td>${j.gano ? "Sí" : "—"}</td></tr>`).join("")
+    || `<tr><td colspan="6">Nadie se ha registrado todavía.</td></tr>`;
+}
+
+$("#btn-entrar").addEventListener("click", async () => {
+  $("#clave-error").textContent = "";
+  sessionStorage.setItem("ninja.clave", $("#clave").value);
+  try {
+    await cargar();
+    $("#clave-panel").hidden = true;
+    $("#panel").hidden = false;
+    conectarVivo();
+  } catch (ex) {
+    sessionStorage.removeItem("ninja.clave");
+    $("#clave-error").textContent = ex.message;
+  }
+});
+
+$("#btn-refrescar").addEventListener("click", () => cargar().catch((e) => alert(e.message)));
+
+$("#btn-guardar").addEventListener("click", async () => {
+  $("#cfg-error").textContent = "";
+  try {
+    await admin("config", {
+      titulo: $("#c-titulo").value, curso: $("#c-curso").value, curso_otro: $("#c-curso-otro").value,
+      whatsapp: $("#c-whatsapp").value, cupos_100: +$("#c-cupos").value,
+      desc_min: +$("#c-descmin").value, desc_max: +$("#c-descmax").value,
+      min_ms: +$("#c-minms").value, max_ms: +$("#c-maxms").value,
+      cierre: deLima($("#c-cierre").value), cerrado: $("#c-cerrado").checked,
+      excluidos: $("#c-excluidos").value.split("\n"),
+      excluidosTel: $("#c-excluidostel").value.split("\n"),
+      solo_manual: $("#c-solo-manual").checked, al_cierre: $("#c-al-cierre").checked,
+      bloqueados: $("#c-bloqueados").value.split("\n"),
+      bloqueadosTel: $("#c-bloqueadostel").value.split("\n").map((t) => t.trim()).filter(Boolean),
+    });
+    await cargar();
+  } catch (ex) {
+    $("#cfg-error").textContent = ex.message;
+  }
+});
+
+$("#btn-reiniciar").addEventListener("click", async () => {
+  if (!confirm("¿Reiniciar el sorteo? Se borran corredores, premios y récord.")) return;
+  try { await admin("reiniciar"); await cargar(); } catch (ex) { $("#cfg-error").textContent = ex.message; }
+});
+
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-cod]");
+  if (!btn) return;
+  btn.disabled = true;
+  try {
+    await admin("codigo", { id: +btn.dataset.cod, codigo: "" });
+    await cargar();
+  } catch (ex) {
+    alert(ex.message);
+    btn.disabled = false;
+  }
+});
+
+// ---------- en vivo (WebSocket) ----------
+let ws = null, espera = 1000;
+const mmss = (ms) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+function conectarVivo() {
+  if (ws) return;
+  const u = new URL("api/admin/vivo", location.href);
+  u.protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  ws = new WebSocket(u);
+  ws.onopen = () => { ws.send(JSON.stringify({ clave: clave() })); espera = 1000; };
+  ws.onmessage = (e) => { try { pintarVivo(JSON.parse(e.data)); } catch (_) { /* foto rota: se ignora */ } };
+  ws.onclose = (e) => {
+    ws = null;
+    $("#vivo-estado").className = "punto mal";
+    $("#vivo-estado").textContent = e.code === 1008 ? "● clave incorrecta" : "● reconectando…";
+    if (e.code !== 1008) setTimeout(conectarVivo, espera = Math.min(espera * 2, 15000));
+  };
+}
+function pintarVivo(f) {
+  $("#vivo-estado").className = "punto ok"; $("#vivo-estado").textContent = "● en vivo";
+  $("#v-pista").textContent = `${f.en_pista} en pista`;
+  $("#v-carreras").textContent = `${f.carreras} carreras · ${f.jugadores.length} corredores`;
+  $("#v-record").textContent = f.record > 0 ? `récord ${f.record} pts` : "sin récord";
+  $("#v-estado").textContent = f.cerrado ? "CERRADO ✓" : f.solo_manual ? "ABIERTO · cierra con el botón" : "ABIERTO";
+  const prov = f.provisional || {};
+  $("#v-provisional").innerHTML = f.cerrado ? "" : [f.curso, f.curso_otro].map((c) =>
+    `<div>Va ganando el 100 % de ${esc(c)}<b>${prov[c] ? esc(prov[c]) : "— nadie todavía —"}</b></div>`).join("");
+  $("#tabla-vivo tbody").innerHTML = f.jugadores.map((j) => `
+    <tr class="${j.corriendo ? "corre" : ""}"><td>${j.puesto ? j.puesto + ".º" : "—"}</td>
+      <td>${esc(j.nombre)}${j.gano ? " 🏆" : ""}</td>
+      <td>${j.corriendo ? `<span class="vivo-pts">🏃 ${j.vivo_puntaje} pts · ${mmss(j.vivo_ms)}</span>` : "—"}</td>
+      <td><b>${j.mejor_valido || "—"}</b></td><td>${j.carreras}</td>
+      <td>${j.excluido ? esc(f.curso_otro) : esc(f.curso)}</td></tr>`).join("")
+    || `<tr><td colspan="6">Nadie se ha inscrito todavía.</td></tr>`;
+  $("#btn-cerrar").disabled = !!f.cerrado;
+  $("#btn-cerrar").textContent = f.cerrado ? "Carrera cerrada ✓ · ganadores calculados" : "🏁 Cerrar carrera y calcular ganadores";
+  if (f.ganadores && f.ganadores.length) {
+    $("#tabla-ganadores tbody").innerHTML = f.ganadores.map((g) => `
+      <tr><td>${esc(g.nombre)}</td><td>${g.puntaje}</td><td>${g.puesto}.º</td>
+        <td><b>${g.descuento} %</b></td><td>${esc(g.curso)}</td>
+        <td>${g.codigo ? `<code>${esc(g.codigo)}</code>` : `<button class="btn chico" data-cod="${g.id}" type="button">Pedir código</button>`}</td></tr>`).join("");
+  }
+}
+let armado = null;
+$("#btn-cerrar").addEventListener("click", async () => {
+  const b = $("#btn-cerrar");
+  if (!armado) {
+    b.classList.add("armado"); b.textContent = "¿Seguro? Toca otra vez para cerrar y calcular";
+    armado = setTimeout(() => { armado = null; b.classList.remove("armado"); b.textContent = "🏁 Cerrar carrera y calcular ganadores"; }, 4000);
+    return;
+  }
+  clearTimeout(armado); armado = null; b.classList.remove("armado"); b.disabled = true; b.textContent = "Calculando…";
+  try { await admin("cerrar", {}); await cargar(); } catch (ex) { $("#cerrar-nota").textContent = ex.message; b.disabled = false; }
+});
+
+if (clave()) $("#btn-entrar").click();
+</script>
+</body>
+</html>

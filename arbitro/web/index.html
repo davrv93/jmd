@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Árbitro · Adivina la tarjeta y entras a Claude Code PRO</title>
+<meta name="description" content="¿Qué saca el árbitro? Adivina la tarjeta y entras a Claude Code PRO. Tres jugadas por persona, aciertas 1 de cada 250: un cupo 100 % y dos de 80 %. Si fallas las tres, tiro libre con 85 %.">
+<meta name="theme-color" content="#fbf8f3">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/base.css">
+<link rel="stylesheet" href="static/arbitro.css">
+</head>
+<body>
+<canvas id="luz"></canvas>
+<main>
+  <div class="marca"><svg viewBox="0 0 200 200" fill="none"><g fill="#1B2559"><circle cx="38" cy="78" r="6"/><circle cx="52" cy="112" r="6"/><circle cx="84" cy="118" r="6"/><circle cx="92" cy="88" r="6"/><circle cx="120" cy="80" r="6"/><circle cx="146" cy="74" r="6"/></g><path d="M38 78 92 88 120 80 146 74M92 88 84 118 52 112 38 78" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M100 86v90M114 84v90M128 82v90M142 80v90" stroke="#3B5BDB" stroke-width="5" stroke-linecap="round"/><path d="M92 176q40 14 64-6" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M160 60l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#D9A441"/></svg>JMD Learning</div>
+
+  <div class="kick">JUEGO INSTANTÁNEO · CLAUDE CODE PRO</div>
+  <h1>Árbi<span>tro</span><i class="tj am"></i><i class="tj ro"></i></h1>
+  <p class="lead">¿Qué saca el árbitro? <b>Adivina la tarjeta</b> y entras a Claude Code PRO.</p>
+
+  <div class="regla"><i>⚖</i><div id="reglaTxt">El servidor decide: aciertas 1 de cada 250<small>Elijas amarilla, roja o sin tarjeta, la probabilidad es la misma. Si aciertas, el árbitro saca lo que dijiste.</small></div></div>
+
+  <div class="premios" id="premios">
+    <div class="p1"><span class="pu">PREMIO 1</span><b>100 %</b><span class="de">gratis</span><em>Libre</em></div>
+    <div><span class="pu">PREMIO 2</span><b>80 %</b><span class="de">de descuento</span><em>Libre</em></div>
+    <div><span class="pu">PREMIO 3</span><b>80 %</b><span class="de">de descuento</span><em>Libre</em></div>
+  </div>
+  <div class="chips">
+    <span id="chipJug">3 jugadas por persona</span>
+    <span>Solo nombre y apellido</span>
+    <span class="tl" id="chipTL">¿Fallaste las 3? Tiro libre · 85 %</span>
+  </div>
+
+  <section class="card" id="inscripcion">
+    <h2>Escribe tu nombre y entra a la cancha</h2>
+    <p class="soft small">Solo nombre y apellido: nada de celular. Si aciertas, el código aparece aquí mismo y solo en tu navegador.</p>
+    <form id="form" autocomplete="off">
+      <label for="nombre">Nombre y apellido</label>
+      <input type="text" id="nombre" name="nombre" maxlength="40" placeholder="Ej.: Ana Pérez" required>
+      <button class="btn amar" type="submit" id="quiero">Quiero jugar</button>
+      <div class="err" id="err1"></div>
+    </form>
+  </section>
+
+  <section class="card dark" id="juego" hidden>
+    <div class="hola">
+      <div class="quien"><span class="pre">En la cancha, </span><b id="nom"></b></div>
+      <div class="der"><span id="restan"></span><button class="mudo" id="mudo" type="button" aria-pressed="false" title="Sonido">🔊</button></div>
+    </div>
+    <div class="aviso" id="aviso" hidden></div>
+    <div class="estadio" id="estadio">
+      <svg id="cancha" viewBox="0 0 360 240" aria-label="Estadio: un delantero de blanco recibe una falta de un defensor de rayas azules y granate; entra el árbitro">
+        <defs>
+          <pattern id="rayas" width="6" height="40" patternUnits="userSpaceOnUse"><rect width="3" height="40" fill="#1d4fa8"/><rect x="3" width="3" height="40" fill="#a3123f"/></pattern>
+          <pattern id="malla" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 0L6 6M6 0L0 6" stroke="#fff" stroke-opacity=".45" stroke-width=".6"/></pattern>
+          <linearGradient id="cielo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d0b0a"/><stop offset="1" stop-color="#241b15"/></linearGradient>
+          <linearGradient id="pasto" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c7440"/><stop offset="1" stop-color="#1e5a2e"/></linearGradient>
+          <radialGradient id="foco" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff8e0" stop-opacity=".55"/><stop offset="1" stop-color="#fff8e0" stop-opacity="0"/></radialGradient>
+          <radialGradient id="vineta" cx=".5" cy=".55" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+        </defs>
+        <!-- Escena 1: la falta (vista lateral) -->
+        <g id="esc1">
+          <rect width="360" height="104" fill="url(#cielo)"/>
+          <g id="tribuna1"></g>
+          <ellipse cx="34" cy="8" rx="60" ry="34" fill="url(#foco)"/>
+          <ellipse cx="326" cy="8" rx="60" ry="34" fill="url(#foco)"/>
+          <rect y="88" width="360" height="16" fill="#101915"/>
+          <text x="180" y="99" text-anchor="middle" font-size="7" fill="#fff" fill-opacity=".35" font-family="JetBrains Mono, monospace" letter-spacing="3">JMD LEARNING · CLAUDE CODE PRO</text>
+          <rect y="104" width="360" height="136" fill="url(#pasto)"/>
+          <g id="franjas1"></g>
+          <path d="M0 108 H360" stroke="#fff" stroke-opacity=".7" stroke-width="1.4"/>
+          <path d="M300 108 Q 270 150 300 200" stroke="#fff" stroke-opacity=".25" stroke-width="1.2" fill="none"/>
+          <g id="actores1"></g>
+        </g>
+        <!-- Escena 2: el tiro libre (vista hacia el arco) -->
+        <g id="esc2" display="none">
+          <rect width="360" height="56" fill="url(#cielo)"/>
+          <g id="tribuna2"></g>
+          <ellipse cx="40" cy="4" rx="56" ry="26" fill="url(#foco)"/>
+          <ellipse cx="320" cy="4" rx="56" ry="26" fill="url(#foco)"/>
+          <rect y="44" width="360" height="12" fill="#101915"/>
+          <rect y="56" width="360" height="184" fill="url(#pasto)"/>
+          <g id="franjas2"></g>
+          <path d="M0 122 H360 M66 122 L36 160 H324 L294 122" stroke="#fff" stroke-opacity=".6" stroke-width="1.2" fill="none"/>
+          <path d="M150 160 Q180 172 210 160" stroke="#fff" stroke-opacity=".4" stroke-width="1.1" fill="none"/>
+          <g id="red"><path d="M112 66 H248 L242 118 H118 Z" fill="#0b2a16" fill-opacity=".55"/><path d="M112 66 H248 L242 118 H118 Z" fill="url(#malla)"/><path d="M106 62 L112 66 M254 62 L248 66 M106 122 L118 118 M254 122 L242 118" stroke="#fff" stroke-opacity=".6" stroke-width=".8"/></g>
+          <rect id="poste1" x="103" y="60" width="4.5" height="63" rx="1.5" fill="#fff"/>
+          <rect id="poste2" x="252.5" y="60" width="4.5" height="63" rx="1.5" fill="#fff"/>
+          <rect x="103" y="58.5" width="154" height="4.5" rx="1.5" fill="#fff"/>
+          <g id="actores2"></g>
+        </g>
+        <rect id="vin" width="360" height="240" fill="url(#vineta)" opacity="0"/>
+      </svg>
+      <div class="pregunta" id="pregunta" hidden><span id="preguntaTxt">¿Qué saca el árbitro?</span></div>
+      <div class="cartel" id="cartel" hidden></div>
+    </div>
+
+    <div class="res" id="res"></div>
+    <div class="mando" id="mando">
+      <button class="btn amar" id="empezar" type="button">▶ Empezar la jugada 1</button>
+      <div class="opciones" id="opciones" hidden>
+        <button class="btn op am" data-e="amarilla" type="button"><i class="tj am"></i>Amarilla</button>
+        <button class="btn op ro" data-e="roja" type="button"><i class="tj ro"></i>Roja</button>
+        <button class="btn op na" data-e="nada" type="button">Sin tarjeta</button>
+      </div>
+      <div class="opciones dos" id="opcionesTL" hidden>
+        <button class="btn op si" data-e="si" type="button">⚽ Sí, entra</button>
+        <button class="btn op no" data-e="no" type="button">✋ No entra</button>
+      </div>
+      <p class="nota" id="nota" hidden></p>
+    </div>
+    <div class="segunda" id="segunda" hidden>
+      <div class="k">SEGUNDA OPORTUNIDAD · TIRO LIBRE</div>
+      <b>¡Esta vez hay una siguiente oportunidad!</b>
+      <p id="segundaTxt">Un tiro libre: dinos si entra el gol. Aciertas 1 de cada 2 y ganas un código de 85 % de descuento.</p>
+      <button class="btn amar" id="irTL" type="button">Ir al tiro libre ⚽</button>
+    </div>
+    <div class="fin" id="fin" hidden></div>
+    <div class="premio" id="premio" hidden>
+      <div class="k" id="premioK">¡ACERTASTE! · CÓDIGO 100 % · UN SOLO USO</div>
+      <div class="big" id="premioBig">100 %<small>GRATIS</small></div>
+      <div class="cod" id="cod">CCP-XXXXXX</div>
+      <a class="btn" id="usar" href="#" target="_blank" rel="noopener">Usar mi código</a>
+      <p id="premioTxt">Toca «Usar mi código»: va puesto en la matrícula. Elige «Individual» y el total queda en S/ 0.</p>
+    </div>
+    <div class="err" id="err2"></div>
+  </section>
+
+  <section class="card">
+    <h2>Ganadores</h2>
+    <p class="soft small" id="ganTxt">Nadie ha acertado todavía. ¿Tienes ojo de árbitro?</p>
+    <ul class="ganadores" id="ganadores"></ul>
+  </section>
+
+  <section class="card comprobar">
+    <h2>Comprobar</h2>
+    <div class="cuenta">
+      <div><b id="cJug">0</b><span>JUGADAS</span></div><div><b id="cAc">0</b><span>ACIERTOS</span></div>
+      <div><b id="cTL">0</b><span>TIROS LIBRES</span></div><div><b id="c50">0</b><span>CÓDIGOS TIRO LIBRE</span></div>
+    </div>
+    <p>El azar lo decide el servidor en cada jugada con <code>crypto/rand</code>, no tu navegador: ni el organizador puede elegir quién acierta, y lo que eliges no cambia la probabilidad. Si no aciertas, el árbitro saca una de las otras dos opciones, mitad y mitad. Cada jugada queda contada y estos números son públicos en <code>api/estado</code>. Los ganadores se muestran solo con sus iniciales.</p>
+    <p id="tlRegla">Tiro libre: solo si fallaste tus tres jugadas, uno por persona; aciertas 1 de cada 2 y ganas 85 %.</p>
+  </section>
+
+  <p class="enlaces">¿Prefieres patear? <a href="/balon-de-oro/">Balón de Oro</a> · ¿Atajar? <a href="/yashin/">Yashin 🧤</a></p>
+  <p class="foot">Tres jugadas por persona y, si fallas las tres, un tiro libre. Los premios son para una inscripción individual en Claude Code PRO (sábados 7, 14, 21 y 28 nov, 7:30 – 9:30 p.m.). No ganan premio quienes ya ganaron en Claude Code PRO. Curso independiente con fines académicos. Claude y Claude Code son marcas de Anthropic, PBC; sin relación ni patrocinio de Anthropic. Colores de referencia; sin relación con ningún club.</p>
+</main>
+<script type="module" src="static/arbitro.js"></script>
+</body>
+</html>

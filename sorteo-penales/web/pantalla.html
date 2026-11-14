@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pantalla del sorteo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap">
+<link rel="stylesheet" href="static/sorteo.css">
+</head>
+<body class="pantalla estadio">
+<main>
+  <span class="marca">⚽ JMD Learn · Copa ClickHouse · en vivo</span>
+  <h1 id="titulo">Sorteo del curso de ClickHouse</h1>
+  <p class="sub" id="unete"></p>
+
+  <section id="v-inscripcion" class="panel">
+    <div class="fila" style="justify-content:space-between">
+      <div><div class="nota">Convocados</div><div class="contador" id="total">0</div></div>
+      <p class="estado"><span class="punto"></span><span id="fase-txt">Calentamiento: convocatoria abierta</span></p>
+    </div>
+    <div class="grid" id="grid" style="margin-top:12px"></div>
+    <p class="nota" id="huellas" style="margin-top:12px"></p>
+  </section>
+
+  <section id="v-juego" class="panel" hidden>
+    <div class="juego">
+      <div id="cancha"></div>
+      <div>
+        <div class="nota">Penales del ganador <span id="orden"></span></div>
+        <div class="numero" id="num">00</div>
+        <div style="font-size:26px;font-weight:700;margin:8px 0" id="nom"></div>
+        <div class="marcador" id="marcador" style="justify-content:flex-start"></div>
+        <div class="grito" id="grito" style="text-align:left"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-podio" hidden>
+    <div class="podio" id="podio"></div>
+    <div class="fila" style="margin-top:12px"><button class="sec" id="repetir">Repetir los penales</button></div>
+    <div class="panel" style="margin-top:16px" id="verificacion"></div>
+  </section>
+</main>
+<script type="module">
+import { api, crearCancha, jugarTanda, marcador, confeti, GRITO, pad, verificar, textoVerificacion, escapar, camiseta } from "./static/sorteo.js";
+
+const $ = (id) => document.getElementById(id);
+let estado = null;
+let mostrado = false;
+$("unete").innerHTML = `Entra en <b style="color:var(--amarillo)">${escapar(location.host + location.pathname.replace(/pantalla$/, ""))}</b>, escribe tu nombre y pide tu dorsal.`;
+
+async function cargar() {
+  try { estado = await api("api/estado"); } catch { return; }
+  const e = estado;
+  $("titulo").textContent = e.titulo;
+  $("total").textContent = e.total;
+  $("fase-txt").textContent = e.fase === "inscripcion" ? "Calentamiento: convocatoria abierta" : e.fase === "cerrado" ? "Convocatoria cerrada · ¡los jugadores salen a la cancha!" : "Final del partido";
+  $("grid").innerHTML = (e.lista || []).map((p) => `<span class="ficha">${camiseta(p.numero, p.nombre)}<b>${pad(p.numero)}</b>${escapar(p.nombre)}</span>`).join("");
+  $("huellas").innerHTML = e.compromiso ? `Huella de la semilla (publicada al cerrar): <span class="huella">${e.compromiso}</span>` : "";
+  if (e.fase === "sorteado" && !mostrado) mostrar();
+  if (e.fase !== "sorteado") { mostrado = false; $("v-podio").hidden = true; $("v-juego").hidden = true; $("v-inscripcion").hidden = false; }
+}
+
+async function mostrar() {
+  mostrado = true;
+  const e = estado;
+  $("v-inscripcion").hidden = true;
+  $("v-podio").hidden = true;
+  $("v-juego").hidden = false;
+  for (let i = 0; i < e.resultado.length; i++) {
+    const g = e.resultado[i];
+    $("orden").textContent = `${i + 1} de ${e.resultado.length}`;
+    $("num").textContent = pad(g.numero);
+    $("nom").textContent = g.nombre;
+    $("grito").textContent = "";
+    const marcar = marcador($("marcador"));
+    const c = crearCancha($("cancha"), g.numero, ["#2563eb", "#dc2626", "#7c3aed"][i % 3]);
+    await jugarTanda(c, g.penales, (j, tiro) => { marcar(j, tiro); $("grito").textContent = GRITO[tiro.resultado]; });
+    $("grito").textContent = "🏆 ¡Campeón: gana el curso!";
+    confeti(80);
+    await new Promise((r) => setTimeout(r, 2200));
+  }
+  $("v-juego").hidden = true;
+  $("v-podio").hidden = false;
+  $("podio").innerHTML = e.resultado.map((g, i) => `<div class="panel"><div class="nota">🏆 Campeón ${i + 1}</div><div style="width:150px;margin:6px auto">${camiseta(g.numero, g.nombre)}</div><div style="font-size:24px;font-weight:700;margin-top:6px">${escapar(g.nombre)}</div></div>`).join("");
+  confeti(160);
+  const v = await verificar(e).catch(() => null);
+  $("verificacion").innerHTML = v ? `<p class="nota">Semilla revelada: <span class="huella">${e.semilla}</span></p>${textoVerificacion(v)}` : "";
+}
+
+$("repetir").onclick = () => mostrar();
+await cargar();
+setInterval(() => { if (!(estado?.fase === "sorteado" && mostrado)) cargar(); }, 2000);
+</script>
+</body>
+</html>

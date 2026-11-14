@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorteo Claude Code PRO</title>
+<meta name="description" content="Toma tu número: inscripción gratis, descuentos de hasta 80 % y vacantes.">
+<meta name="theme-color" content="#fbf8f3">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/base.css">
+<link rel="stylesheet" href="static/entregables.css">
+<style>
+  body { background: #fbfaf8; }
+  .pagina { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; padding: 18px 16px 48px; }
+  .marca { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .marca b { font-size: 15px; letter-spacing: -.01em; }
+  .marca b span { color: var(--soft); font-weight: 500; }
+  .vivo { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+          background: var(--ink); color: #fff; padding: 6px 12px; border-radius: 99px; }
+  .vivo i { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; box-shadow: 0 0 8px #3ddc97; animation: lat 1.4s infinite; }
+  @keyframes lat { 50% { opacity: .3; } }
+  #heroe { height: 260px; margin: 0 -16px; touch-action: pan-y; cursor: grab; }
+  .rifa h1 { text-align: center; margin: -8px 0 6px; font-size: clamp(40px, 11vw, 54px); }
+  .datos { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .datos span { font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 99px; background: #fff; border: 1px solid var(--line); }
+  .datos span b { color: var(--orange-d); }
+  .centro { text-align: center; }
+  .premios { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .premios div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+  .premios div:first-child { grid-column: 1 / -1; background: var(--orange); border-color: var(--orange); color: #fff; }
+  .premios b { display: block; font-size: 22px; line-height: 1.05; letter-spacing: -.03em; }
+  .premios span { font-size: 13px; font-weight: 500; opacity: .85; }
+  .gano .codigo { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; letter-spacing: .06em;
+                  background: #fff; color: var(--ink); border-radius: 12px; padding: 10px; margin-top: 8px; user-select: all; }
+  details { margin-top: 12px; font-size: 12px; color: #d8c8b8; }
+  details code { word-break: break-all; font-size: 11px; }
+  .oferta { margin-top: 12px; }
+  .cta { display: flex; align-items: center; gap: 12px; }
+  .cta .btn { margin: 0; width: auto; flex: 1; }
+  .cta b { font-size: 32px; letter-spacing: -.03em; line-height: 1; }
+  .cta s { font-size: 13px; color: #d8c8b8; display: block; }
+  .tray { display: flex; justify-content: center; gap: 18px; margin-top: 14px; font-size: 13px; color: var(--soft); font-weight: 500; }
+  .tray b { color: var(--orange-d); font-size: 17px; }
+  .taller { margin-top: 18px; }
+  .rifa .card { margin-top: 12px; }
+  @media (min-width: 1100px) {
+    .pagina { max-width: 1520px; padding: 22px 28px 32px; display: grid; grid-template-columns: 372px minmax(0, 1fr); gap: 28px; align-items: start; }
+    .rifa { position: sticky; top: 18px; max-height: calc(100vh - 36px); overflow: auto; scrollbar-width: none; }
+    .rifa::-webkit-scrollbar { display: none; }
+    #heroe { height: 210px; margin: 0; }
+    .rifa h1 { font-size: 44px; }
+    .taller { margin-top: 0; height: calc(100vh - 54px); min-height: 680px; max-height: 940px; }
+    .taller .taller-vista { overflow: auto; }
+    .foot { grid-column: 1 / -1; margin-top: 4px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="luz"></canvas>
+<main class="pagina">
+  <div class="rifa">
+    <div class="marca"><b>JMD Learning <span>· Claude Code PRO</span></b><span class="vivo"><i></i>Sorteo en vivo</span></div>
+    <div id="heroe"></div>
+    <h1>Tú puedes <span>ganar.</span></h1>
+    <div class="datos"><span><b id="cupos">–</b> cupos tomados</span><span>Resultado <b id="hora-res">–</b></span></div>
+
+    <div id="estado" class="card dark"><p class="soft">Cargando…</p></div>
+
+    <div class="premios" id="premios"></div>
+
+    <div class="card dark oferta">
+      <p class="small" style="color:#d8c8b8">4 sábados del 7 al 28 de noviembre, 7:30 p.m.</p>
+      <div class="cta" style="margin-top:10px">
+        <div><b id="precio"></b><s id="regular"></s></div>
+        <a class="btn" href="matricula">Separar mi cupo</a>
+      </div>
+      <p class="small" style="color:#d8c8b8;margin-top:10px">2 personas <b id="duo" style="color:#fff"></b>, financiamiento disponible</p>
+    </div>
+
+    <div class="tray" id="trayectoria" hidden>
+      <span><b id="t-cursos"></b> grupos</span><span><b id="t-alumnos"></b> alumnos</span><span><b id="t-cert"></b> certificados</span>
+    </div>
+  </div>
+
+  <div id="entregables"></div>
+
+  <p class="foot">Curso independiente con fines académicos. Claude, Claude Code, Fable y Opus son marcas de Anthropic, PBC; sin relación ni patrocinio de Anthropic.
+    Tus datos solo sirven para avisarte el resultado.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="module">
+import { api, $, esc, soles, hora, sincronizar, cuenta, luz, celebrar } from "./static/comun.js";
+import { crearHeroe } from "./static/heroe.js";
+
+luz();
+const heroe = crearHeroe($("#heroe"));
+// Si las muestras fallan, el sorteo sigue funcionando.
+import("./static/entregables.js").then((m) => m.montar($("#entregables"))).catch(() => { $("#entregables").hidden = true; });
+
+const CLAVE = "sorteo-claude-pro";
+let token = localStorage.getItem(CLAVE) || "";
+let e = null, vista = "", caraPuesta = "";
+const dos = (n) => String(n).padStart(2, "0");
+
+async function cargar() {
+  try { e = await api("api/estado?t=" + encodeURIComponent(token)); } catch { return; }
+  sincronizar(e.ahora);
+  $("#cupos").textContent = `${e.matriculados}/${e.cupos}`;
+  $("#hora-res").textContent = hora(e.sorteo);
+  // Premios de la edición: el primero destacado; títulos tal como vienen.
+  $("#premios").innerHTML = e.premios.map((p, i) => {
+    const m = p.titulo.match(/^(.*?)(gratis|\d+ %)(.*)$/i);
+    const b = m ? m[2].toUpperCase() : p.titulo, t = m ? (m[1] + m[3]).replace(/^[\s·:+]+|[\s·:+]+$/g, "") : "";
+    return `<div ${e.premios.length === 1 || (i === e.premios.length - 1 && i % 2 === 1) ? 'style="grid-column:1/-1"' : ""}><b>${esc(b)}</b><span>${esc(t || "premio")}</span></div>`;
+  }).join("");
+  $("#precio").textContent = soles(e.precios.individual);
+  $("#regular").textContent = soles(e.precios.regular);
+  $("#duo").textContent = soles(e.precios.duo);
+  const t = e.trayectoria;
+  if (t.cursos || t.alumnos || t.certificados) {
+    $("#trayectoria").hidden = false;
+    $("#t-cursos").textContent = t.cursos; $("#t-alumnos").textContent = t.alumnos; $("#t-cert").textContent = t.certificados;
+  }
+  pintar();
+}
+
+function medalla(grande, chico) {
+  if (caraPuesta === grande + chico) return;
+  caraPuesta = grande + chico;
+  heroe.mostrar(grande, chico);
+}
+
+function pintar() {
+  const el = $("#estado");
+  let nueva;
+  if (e.fase === "sorteado") nueva = "resultado";
+  else if (e.fase === "cerrado") nueva = "cerrado";
+  else if (e.yo) nueva = "tengo";
+  else if (!e.abierto) nueva = "espera";
+  else nueva = "form";
+  // Misma vista: no se vuelve a pintar (evita el salto del contador y no borra lo que se escribe).
+  if (nueva === vista) return;
+  vista = nueva;
+  if (e.yo) medalla("#" + dos(e.yo.numero), "TU NÚMERO");
+
+  if (nueva === "espera") {
+    el.innerHTML = `<p class="centro kick" style="color:#f2a57f">ABRE A LAS ${esc(hora(e.apertura)).toUpperCase()}</p><div class="cuenta" id="cta"></div>`;
+  } else if (nueva === "form") {
+    el.innerHTML = `<form id="f">
+        <input id="n" type="text" autocomplete="name" maxlength="40" placeholder="Nombre y apellido" required>
+        <input id="tel" type="tel" inputmode="numeric" autocomplete="tel" placeholder="Celular (WhatsApp)" style="margin-top:10px" required>
+        <label class="check" style="color:#d8c8b8"><input type="checkbox" id="ok" required>Que me avisen el resultado por WhatsApp.</label>
+        <button class="btn" id="b">Quiero mi número</button><p class="err" id="err"></p>
+        <p class="small centro" style="color:#d8c8b8;margin-top:8px">${esc(e.regla || "")}</p>
+      </form>`;
+    $("#f").onsubmit = async (ev) => {
+      ev.preventDefault();
+      const b = $("#b"); b.disabled = true; $("#err").textContent = "";
+      try {
+        const r = await api("api/inscribir", { method: "POST", body: JSON.stringify({ nombre: $("#n").value, telefono: $("#tel").value, t: token }) });
+        token = r.t; localStorage.setItem(CLAVE, token);
+        await cargar();
+      } catch (x) { $("#err").textContent = x.message; b.disabled = false; }
+    };
+  } else if (nueva === "tengo") {
+    el.innerHTML = `<p class="centro"><b>Ya estás dentro.</b> Vuelve a las ${esc(hora(e.sorteo))} en punto.</p><div class="cuenta" id="cta"></div>
+      ${e.yo.elegible === false ? `<p class="small centro" style="color:#f2a57f;margin-top:10px">Como ya ganaste un sorteo anterior, esta vez el premio es para otros. ¡Gracias por acompañar!</p>` : ""}`;
+  } else if (nueva === "cerrado") {
+    el.innerHTML = `<p class="centro kick" style="color:#f2a57f">SORTEANDO EN</p><div class="cuenta" id="cta"></div>`;
+  } else {
+    const mio = e.gane;
+    if (mio) {
+      medalla("¡SÍ!", "GANASTE");
+      el.innerHTML = `<div class="gano centro"><p class="kick" style="color:#f2a57f">¡GANASTE, ${esc(e.yo.nombre).toUpperCase()}!</p>
+        <h2 style="margin:6px 0">${esc(mio.premio)}</h2>
+        ${mio.codigo ? `<div class="codigo">${esc(mio.codigo)}</div><a class="btn" href="matricula?c=${encodeURIComponent(mio.codigo)}">Usarlo ahora</a>` : ""}
+        ${mio.referido ? `<p class="small" style="color:#d8c8b8;margin-top:12px">Para tu amigo (50 %):</p><div class="codigo">${esc(mio.referido)}</div>` : ""}
+        ${!mio.codigo ? `<a class="btn" href="https://wa.me/${e.whatsapp}?text=${encodeURIComponent(`Hola, gané en el sorteo de Claude Code PRO con el número ${dos(e.yo.numero)}: ${mio.premio}.`)}">Reclamar por WhatsApp</a>` : ""}
+      </div>`;
+      heroe.celebrar(); celebrar();
+    } else if (e.yo) {
+      el.innerHTML = `<h2 class="centro">${e.yo.elegible === false ? "Gracias por acompañar." : "Esta vez no salió."}</h2><p class="centro" style="color:#d8c8b8">${e.yo.elegible === false ? "Como ya ganaste antes, esta vez el premio fue para otros. " : ""}Tu cupo con preventa sigue aquí.</p>
+        <a class="btn" href="matricula">Matricularme</a>`;
+    } else {
+      el.innerHTML = `<h2 class="centro">El sorteo terminó.</h2><a class="btn" href="matricula">Matricularme con preventa</a>`;
+    }
+    el.innerHTML += `<details><summary>Comprobar que fue al azar</summary><p>Semilla: <code>${esc(e.semilla)}</code></p>
+      <p>Huella publicada antes: <code>${esc(e.compromiso)}</code></p><p id="ver">Verificando…</p></details>`;
+    verificar();
+  }
+}
+
+async function sha(t) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+// Repite en el navegador el mismo cálculo del servidor.
+async function verificar() {
+  const v = $("#ver");
+  if (!v) return;
+  const lista = [...e.lista].sort((a, b) => a - b);
+  const okSemilla = (await sha(e.semilla)) === e.compromiso;
+  const okLista = (await sha(lista.join("\n"))) === e.huellaLista;
+  let quedan = [...lista];
+  const salen = [];
+  for (let k = 0; k < e.premios.length && quedan.length; k++) {
+    const h = await sha(`${e.semilla}:${k}`);
+    const i = Number(BigInt("0x" + h.slice(0, 16)) % BigInt(quedan.length));
+    salen.push(quedan[i]); quedan.splice(i, 1);
+  }
+  const ok = okSemilla && okLista && salen.join(",") === e.resultado.join(",");
+  v.textContent = ok ? `✓ Comprobado en tu navegador: ${e.total} participantes, semilla y resultado coinciden.` : "✗ Algo no coincide.";
+}
+
+cargar();
+setInterval(() => {
+  const c = $("#cta");
+  if (c && e) {
+    const objetivo = vista === "espera" ? e.apertura : e.sorteo;
+    if (cuenta(c, objetivo) <= 0) cargar();
+  }
+}, 250);
+setInterval(cargar, 5000);
+</script>
+</body>
+</html>

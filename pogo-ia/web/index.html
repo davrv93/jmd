@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pogo IA · Rebota, pinta y responde</title>
+<meta name="description" content="Cuatro robots con resorte en un tablero de 9 × 9. Rebota para pintar casillas de tu color, toma los chips IA y usa poderes (cohetes, turbo, triple, balde) y responde preguntas de IA.">
+<meta name="theme-color" content="#ffd21a">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/base.css">
+<link rel="stylesheet" href="static/pogo.css">
+</head>
+<body>
+<main id="inicio">
+  <div class="marca"><svg viewBox="0 0 200 200" fill="none"><g fill="#1B2559"><circle cx="38" cy="78" r="6"/><circle cx="52" cy="112" r="6"/><circle cx="84" cy="118" r="6"/><circle cx="92" cy="88" r="6"/><circle cx="120" cy="80" r="6"/><circle cx="146" cy="74" r="6"/></g><path d="M38 78 92 88 120 80 146 74M92 88 84 118 52 112 38 78" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M100 86v90M114 84v90M128 82v90M142 80v90" stroke="#3B5BDB" stroke-width="5" stroke-linecap="round"/><path d="M92 176q40 14 64-6" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M160 60l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#D9A441"/></svg>JMD Learning</div>
+
+  <div class="kick">JUEGO DE APERTURA · PROGRAMACIÓN AGÉNTICA</div>
+  <h1>Pogo <span>IA</span></h1>
+  <p class="lead">Robots con <b>resorte</b> que pintan el tablero: 9 × 9 contra la máquina, y hasta <b>17 × 17 con toda la clase</b> en la mesa en vivo. Cada rebote pinta una casilla de tu color. Al final del reloj gana quien tenga <b>más casillas</b>.</p>
+
+  <div class="vitrina"><canvas id="demo" aria-label="Demostración: cuatro robots rebotan y pintan el tablero"></canvas></div>
+
+  <section class="card" id="inscripcion">
+    <h2>Escribe tu nombre y juega</h2>
+    <p class="soft small">Nombre y apellido. En el ranking solo salen tus iniciales.</p>
+    <form id="form" autocomplete="off">
+      <label for="nombre">Nombre y apellido</label>
+      <input type="text" id="nombre" name="nombre" maxlength="40" placeholder="Ej.: Ana Pérez" required>
+      <button class="btn" type="submit" id="quiero">Jugar</button>
+      <div class="err" id="err1"></div>
+    </form>
+  </section>
+
+  <section class="card" id="listo" hidden>
+    <div class="hola"><span>Hola, <b id="nom"></b></span><span class="pill" id="quedan"></span></div>
+    <div class="mejor" id="mejor" hidden></div>
+    <button class="btn" type="button" id="vivo" hidden>🎮 Jugar en vivo con la clase</button>
+    <button class="btn" type="button" id="jugar">▶ Jugar</button>
+    <div class="err" id="err2"></div>
+  </section>
+
+  <section class="card resultado" id="resultado" hidden>
+    <div class="k">TU PARTIDA</div>
+    <div class="total"><b id="rTotal">0</b><span>puntos</span></div>
+    <ul class="desglose" id="rDesglose"></ul>
+    <p class="nota" id="rNota"></p>
+    <button class="btn" type="button" id="otra">▶ Jugar otra vez</button>
+  </section>
+
+  <section class="card reglas">
+    <h2>Cómo se juega</h2>
+    <ol>
+      <li>Tu robot <b>rebota solo</b>. Elige hacia dónde con las flechas o <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>. En el celular, con la cruz o deslizando el dedo.</li>
+      <li>Cada casilla donde caes queda de <b>tu color</b>, aunque fuera de otro robot. Lo que cobraste ya nadie te lo quita.</li>
+      <li>Salta sobre los <b>poderes</b>:
+        🤖 <b>Chip IA</b>: cobras; tus casillas se vacían y se suman a tu marcador.
+        🚀 <b>Cohete</b>: con <kbd>Espacio</kbd> (o el botón) aturdes al rival más cercano.
+        ⚡ <b>Turbo</b>: rebotas el doble de rápido.
+        <b>×3 Triple</b>: vas lento, pero tus casillas valen el triple.
+        🪣 <b>Balde</b>: pintas toda la mesa (sale poco).</li>
+      <li>A veces el poder trae una <b>pregunta de IA</b> de 8 segundos: si aciertas, es tuyo (+300); si fallas, te mareas. Son 3 rondas de 45 segundos, con hasta 3 preguntas por ronda.</li>
+    </ol>
+    <div class="puntos">
+      <div><b>1000</b><span>por ronda ganada</span></div>
+      <div><b>10</b><span>por casilla cobrada o pintada al final</span></div>
+      <div><b>300</b><span>por pregunta acertada</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Ranking de la clase</h2>
+    <p class="soft small" id="rankTxt">Nadie ha jugado todavía. ¿Serás la primera persona?</p>
+    <ol class="ranking" id="ranking"></ol>
+    <div class="mipuesto" id="mipuesto" hidden></div>
+    <p class="small pantalla"><a href="ranking" target="_blank" rel="noopener">Abrir el ranking en pantalla grande ↗</a></p>
+  </section>
+
+  <section class="card comprobar">
+    <h2>Lo justo</h2>
+    <p>Las preguntas las elige y las corrige el servidor: tu navegador no conoce la respuesta hasta que contestas, y en una partida no se repite ninguna.</p>
+    <p>El servidor anota cuándo empezó tu partida: cada ronda dura su reloj completo y no acepta más casillas de las que da el tiempo que de verdad pasó. Un puntaje por partida y hasta <span id="pdTxt">5</span> partidas por día. Vale tu mejor partida.</p>
+  </section>
+
+  <p class="enlaces">¿Más juegos? <a href="/tempano-ia/">Témpano IA 🧊</a> · <a href="/sopa-ia/">Sopa de letras IA 🔤</a></p>
+  <p class="foot">Curso independiente con fines académicos. Robots y tablero hechos a mano en el navegador con Three.js.</p>
+</main>
+
+<!-- El juego: pantalla completa. -->
+<div id="juego" hidden>
+  <canvas id="escena"></canvas>
+  <div class="hud">
+    <div class="caja"><span class="k">RONDA</span><b id="hRonda">1/3</b></div>
+    <div class="caja"><span class="k">TIEMPO</span><b id="hReloj">45</b></div>
+    <div class="caja"><span class="k">PREGUNTAS</span><b id="hChips" class="chips"></b></div>
+    <div class="caja poder" id="hPoderCaja" hidden><span class="k">PODER</span><b id="hPoder"></b></div>
+    <div class="caja marcador" id="hMarcador" aria-label="Casillas de cada robot"></div>
+    <button class="mudo" id="mudo" type="button" aria-label="Silenciar">🔊</button>
+  </div>
+  <div class="cruz" id="cruz" aria-label="Dirección">
+    <button type="button" data-dir="arriba" aria-label="Arriba">▲</button>
+    <button type="button" data-dir="izquierda" aria-label="Izquierda">◀</button>
+    <button type="button" data-dir="derecha" aria-label="Derecha">▶</button>
+    <button type="button" data-dir="abajo" aria-label="Abajo">▼</button>
+  </div>
+  <button class="disparar" id="disparar" type="button" hidden aria-label="Lanzar cohete">🚀</button>
+  <div class="teclas" id="teclas">Flechas o WASD para rebotar · <kbd>Espacio</kbd> lanza el cohete · toma los <b>poderes</b> del tablero</div>
+  <div class="aviso" id="aviso" hidden></div>
+
+  <div class="cartel" id="cartel" hidden>
+    <div class="cartel-in">
+      <div class="k" id="cK"></div>
+      <div class="t" id="cT"></div>
+      <p id="cP"></p>
+      <button class="btn" type="button" id="cBtn" hidden></button>
+    </div>
+  </div>
+
+  <div class="pregunta" id="pregunta" hidden role="dialog" aria-modal="true" aria-labelledby="pTexto">
+    <div class="pregunta-in">
+      <div class="k"><span id="pPoder">🤖 CHIP IA</span><span id="pTema"></span></div>
+      <div class="barra-t"><i id="pBarra"></i></div>
+      <h3 id="pTexto"></h3>
+      <div class="opciones" id="pOps"></div>
+      <div class="explica" id="pExp" hidden></div>
+      <button class="btn" type="button" id="pSeguir" hidden>Seguir</button>
+    </div>
+  </div>
+
+  <div class="cartel" id="pausa" hidden>
+    <div class="cartel-in">
+      <div class="t">Pausa</div>
+      <button class="btn" type="button" id="seguir">Seguir jugando</button>
+    </div>
+  </div>
+</div>
+<script type="module" src="static/pogo.js"></script>
+</body>
+</html>

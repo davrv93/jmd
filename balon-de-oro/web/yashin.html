@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yashin · Ataja y entras gratis</title>
+<meta name="description" content="Esta vez eres el arquero: ataja un penal y entras gratis a Claude Code PRO. Tres penales por persona, una atajada de cada 250, queda un solo cupo.">
+<meta name="theme-color" content="#fbf8f3">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/base.css">
+<style>
+  [hidden] { display: none !important; }
+  :root { --oro: #D9A441; --oro-d: #b8862b; --oro-l: #f3dca3; --cesped: #2b6b3d; --cesped-d: #1f4f2d; }
+  main { max-width: 620px; padding-top: 24px; }
+  .marca { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #141A46; font-size: 16px; }
+  .marca svg { width: 40px; height: 40px; }
+  .kick { margin-top: 34px; color: var(--oro-d); }
+  h1 { font-size: clamp(52px, 14vw, 88px); margin: 4px 0 10px; }
+  h1 span { color: var(--oro); }
+  p.lead b { color: var(--txt); }
+
+  .regla { margin-top: 18px; background: var(--dark); color: #fff; border-radius: 18px; padding: 16px 18px; display: flex; gap: 12px; align-items: center;
+           font-size: clamp(16px, 4.4vw, 20px); font-weight: 700; line-height: 1.2; border: 2px solid var(--oro); box-shadow: 0 16px 34px -24px rgba(27, 19, 16, .8); }
+  .regla i { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--oro); color: var(--dark); display: grid; place-items: center; font-style: normal; font-size: 20px; }
+  .regla small { display: block; font-weight: 500; font-size: 13px; color: #d8c8b8; margin-top: 3px; }
+  .chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .chips span { font-size: 13px; font-weight: 700; background: #fff; border: 1.5px solid var(--line); border-radius: 99px; padding: 7px 13px; display: inline-flex; gap: 6px; align-items: center; }
+  .chips span.oro { background: var(--oro-l); border-color: var(--oro); color: #5d4310; }
+  .chips span.agot { background: #f3ebe4; color: var(--soft); text-decoration: line-through; }
+
+  .btn.oro { background: var(--oro); color: var(--dark); }
+  .btn.oro:disabled { opacity: .6; }
+  .hola { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 14px; color: #d8c8b8; }
+  .hola b { color: #fff; font-size: 17px; }
+  .tiros { display: inline-flex; gap: 5px; vertical-align: middle; margin-left: 6px; }
+  .tiros i { width: 12px; height: 12px; border-radius: 50%; background: var(--oro); display: inline-block; }
+  .tiros i.gastado { background: rgba(255, 255, 255, .18); }
+
+  /* La cancha: arco, arquero y balón. */
+  .campo { position: relative; margin-top: 14px; border-radius: 18px; overflow: hidden;
+           background: linear-gradient(180deg, #2a2019 0%, #1b1310 42%, var(--cesped-d) 42.2%, var(--cesped) 100%); }
+  .campo svg { display: block; width: 100%; height: auto; }
+  .campo .conf { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; opacity: 0; animation: cae 2.2s linear forwards; }
+  @keyframes cae { 0% { opacity: 0; transform: translateY(0) rotate(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: translateY(260px) rotate(540deg); } }
+  #arquero, #balon { transform-box: fill-box; transform-origin: center; }
+  #red { transition: transform .15s; }
+  .campo.gol #red { animation: tiembla .5s ease-out 1; }
+  @keyframes tiembla { 0%, 100% { transform: none; } 30% { transform: translate(0, 4px) scale(1.02); } 60% { transform: translate(0, -2px); } }
+  .campo.palo #poste-i, .campo.palo #poste-d { animation: vibra .4s ease-out 1; }
+  @keyframes vibra { 0%, 100% { transform: none; } 25% { transform: translateX(-2px); } 50% { transform: translateX(2px); } 75% { transform: translateX(-1px); } }
+
+  .res { margin-top: 14px; min-height: 30px; text-align: center; font-size: clamp(28px, 8vw, 40px); font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+  .res.gol { color: var(--oro); }
+  .res.mal { color: #f2a57f; }
+  .res small { display: block; font-size: 15px; letter-spacing: 0; font-weight: 500; color: #d8c8b8; margin-top: 8px; }
+  .fin { text-align: center; color: #d8c8b8; margin-top: 10px; font-size: 15px; }
+
+  .premio { margin-top: 14px; background: var(--oro); color: var(--dark); border-radius: 20px; padding: 20px; animation: gira .9s cubic-bezier(.2, 1.2, .4, 1); transform-origin: top; perspective: 1200px; }
+  @keyframes gira { from { transform: rotateX(-90deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  .premio .k { font-size: 12px; letter-spacing: .14em; font-weight: 700; color: #5d4310; }
+  .premio .big { font-size: clamp(52px, 15vw, 84px); }
+  .premio .big small { font-size: .38em; letter-spacing: 0; margin-left: 8px; }
+  .cod { font-family: 'JetBrains Mono', monospace; font-size: clamp(24px, 7vw, 34px); font-weight: 700; letter-spacing: .08em; background: #fff; color: var(--ink);
+         border-radius: 14px; padding: 12px 16px; margin-top: 12px; text-align: center; user-select: all; }
+  .cod.pend { font-size: 15px; letter-spacing: 0; font-family: inherit; font-weight: 600; }
+  .premio .btn { background: var(--dark); color: #fff; }
+  .premio p { font-size: 13px; color: #5d4310; margin-top: 10px; }
+
+  .goles { list-style: none; display: grid; gap: 8px; margin-top: 8px; }
+  .goles li { display: flex; justify-content: space-between; gap: 10px; align-items: center; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 11px 14px; font-size: 15px; }
+  .goles li b { display: flex; gap: 8px; align-items: center; }
+  .goles li b::before { content: "⚽"; }
+  .goles li span { color: var(--soft); font-size: 13px; }
+  .goles .vacio { color: var(--soft); font-size: 14px; }
+  .cuenta { justify-content: flex-start; margin-top: 12px; }
+  .cuenta div { min-width: 92px; }
+  .cuenta b { font-size: 26px; }
+  .comprobar p { font-size: 14px; color: var(--soft); margin-top: 8px; }
+  .comprobar code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #f6efe7; padding: 2px 6px; border-radius: 6px; }
+  .enlaces { margin-top: 14px; font-size: 13px; text-align: center; color: var(--soft); }
+  .lados { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+  .lados .btn { margin-top: 0; padding: 14px 8px; font-size: 16px; }
+  .nota { text-align: center; font-size: 12.5px; color: #d8c8b8; margin-top: 8px; }
+  .goles li b.yashin::before { content: "🧤"; }
+  @media (prefers-reduced-motion: reduce) { .premio { animation: none; } .conf { display: none; } }
+</style>
+</head>
+<body>
+<canvas id="luz"></canvas>
+<main>
+  <div class="marca"><svg viewBox="0 0 200 200" fill="none"><g fill="#1B2559"><circle cx="38" cy="78" r="6"/><circle cx="52" cy="112" r="6"/><circle cx="84" cy="118" r="6"/><circle cx="92" cy="88" r="6"/><circle cx="120" cy="80" r="6"/><circle cx="146" cy="74" r="6"/></g><path d="M38 78 92 88 120 80 146 74M92 88 84 118 52 112 38 78" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M100 86v90M114 84v90M128 82v90M142 80v90" stroke="#3B5BDB" stroke-width="5" stroke-linecap="round"/><path d="M92 176q40 14 64-6" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M160 60l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#D9A441"/></svg>JMD Learning</div>
+
+  <div class="kick">JUEGO INSTANTÁNEO · CLAUDE CODE PRO</div>
+  <h1>Yas<span>hin</span></h1>
+  <p class="lead">Esta vez <b>tú eres el arquero</b>. Ataja un penal y entras <b>gratis</b> a Claude Code PRO.</p>
+
+  <div class="regla"><i>!</i><div id="reglaTxt">Queda un solo cupo<small>Es el mismo cupo de Balón de Oro: el primero que lo gane, en cualquiera de los dos juegos, se lo lleva. No participan ganadores de Claude Code PRO.</small></div></div>
+  <div class="chips">
+    <span class="oro" id="chipVac">Queda 1 cupo</span>
+    <span id="chipProb">1 atajada de cada 250 penales</span>
+    <span id="chipTiros">3 penales por persona</span>
+  </div>
+
+  <section class="card" id="inscripcion">
+    <h2>Escribe tu nombre y ponte los guantes</h2>
+    <p class="soft small">Solo nombre y apellido: nada de celular. Si ya jugaste Balón de Oro en este navegador, entras directo. Si atajas, el código aparece aquí mismo.</p>
+    <form id="form" autocomplete="off">
+      <label for="nombre">Nombre y apellido</label>
+      <input type="text" id="nombre" name="nombre" maxlength="40" placeholder="Ej.: Ana Pérez" required>
+      <button class="btn oro" type="submit" id="quiero">Quiero atajar</button>
+      <div class="err" id="err1"></div>
+    </form>
+  </section>
+
+  <section class="card dark" id="juego" hidden>
+    <div class="hola"><div>Bajo los palos, <b id="nom"></b></div><div id="restan"></div></div>
+    <div class="campo" id="campo">
+      <svg viewBox="0 0 360 250" aria-label="Tu arco, tú de arquero y el balón en el punto penal">
+        <defs>
+          <pattern id="malla" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M0 0L10 10M10 0L0 10" stroke="#fff" stroke-opacity=".38" stroke-width=".8"/></pattern>
+          <radialGradient id="luzarco" cx=".5" cy="1" r=".9"><stop offset="0" stop-color="#D9A441" stop-opacity=".22"/><stop offset="1" stop-color="#D9A441" stop-opacity="0"/></radialGradient>
+        </defs>
+        <ellipse cx="180" cy="106" rx="170" ry="70" fill="url(#luzarco)"/>
+        <!-- Red (al fondo) -->
+        <g id="red"><path d="M58 44 L302 44 L292 150 L68 150 Z" fill="url(#malla)" opacity=".9"/><path d="M58 44 L68 150 M302 44 L292 150" stroke="#fff" stroke-opacity=".5" stroke-width="1"/></g>
+        <!-- Línea de gol y césped -->
+        <rect x="0" y="150" width="360" height="4" fill="#fff" opacity=".9"/>
+        <path d="M20 200 H340" stroke="#fff" stroke-opacity=".35" stroke-width="2"/>
+        <circle cx="180" cy="215" r="3" fill="#fff" opacity=".6"/>
+        <!-- Postes -->
+        <rect id="poste-i" x="52" y="40" width="8" height="112" rx="3" fill="#fff"/>
+        <rect id="poste-d" x="300" y="40" width="8" height="112" rx="3" fill="#fff"/>
+        <rect x="52" y="38" width="256" height="8" rx="3" fill="#fff"/>
+        <!-- Arquero -->
+        <g id="arquero">
+          <ellipse cx="180" cy="150" rx="24" ry="4" fill="#000" opacity=".3"/>
+          <path d="M156 114 L148 92 L156 88 L164 108 L196 108 L204 88 L212 92 L204 114 Z" fill="#f2c46b"/>
+          <circle cx="146" cy="88" r="6" fill="#f2c46b"/><circle cx="214" cy="88" r="6" fill="#f2c46b"/>
+          <rect x="162" y="100" width="36" height="34" rx="8" fill="#1b1310" stroke="#D9A441" stroke-width="2"/>
+          <rect x="166" y="132" width="11" height="18" rx="3" fill="#1b1310"/><rect x="183" y="132" width="11" height="18" rx="3" fill="#1b1310"/>
+          <circle cx="180" cy="86" r="13" fill="#f3dca3"/>
+          <path d="M167 84 q13 -14 26 0" fill="#1b1310"/>
+          <text x="180" y="124" text-anchor="middle" font-size="12" font-weight="700" fill="#D9A441" font-family="JetBrains Mono, monospace">TÚ</text>
+        </g>
+        <!-- Balón de oro -->
+        <g id="balon">
+          <ellipse cx="180" cy="238" rx="16" ry="4" fill="#000" opacity=".35"/>
+          <circle cx="180" cy="220" r="17" fill="#D9A441"/>
+          <path d="M180 209l6 4-2 7h-8l-2-7z" fill="#5d4310"/>
+          <path d="M180 209V204M186 213l5-3M184 220l4 5M176 220l-4 5M174 213l-5-3" stroke="#5d4310" stroke-width="1.6"/>
+          <circle cx="180" cy="220" r="17" fill="none" stroke="#8a6420" stroke-width="2"/>
+          <circle cx="174" cy="213" r="4" fill="#fff" opacity=".45"/>
+        </g>
+      </svg>
+    </div>
+    <div class="lados" id="lados">
+      <button class="btn oro" data-lado="-1">⬅ Izquierda</button>
+      <button class="btn oro" data-lado="0">Al centro</button>
+      <button class="btn oro" data-lado="1">Derecha ➡</button>
+    </div>
+    <p class="nota" id="nota">Elige a dónde te lanzas. Es para la emoción: el lado no cambia la probabilidad.</p>
+    <div class="res" id="res"></div>
+    <div class="fin" id="fin" hidden></div>
+    <div class="premio" id="premio" hidden>
+      <div class="k" id="premioK">¡ATAJADA! · CÓDIGO 100 % · UN SOLO USO</div>
+      <div class="big">100 %<small>GRATIS</small></div>
+      <div class="cod" id="cod">CCP-XXXXXX</div>
+      <a class="btn" id="usar" href="#" target="_blank" rel="noopener">Usar mi cupo</a>
+      <p>Toca «Usar mi cupo»: el código va puesto en la matrícula. Elige «Individual» y el total queda en S/ 0.</p>
+    </div>
+    <div class="err" id="err2"></div>
+  </section>
+
+  <section class="card">
+    <h2>Ganadores</h2>
+    <p class="soft small" id="golesTxt">Nadie ha ganado todavía.</p>
+    <ul class="goles" id="goles"></ul>
+  </section>
+
+  <section class="card comprobar">
+    <h2>Comprobar</h2>
+    <div class="cuenta"><div><b id="cTiros">0</b><span>PENALES</span></div><div><b id="cGoles">0</b><span>ATAJADAS</span></div><div><b id="cProb">1/250</b><span>PROB.</span></div></div>
+    <p>El azar lo decide el servidor en cada penal con <code>crypto/rand</code>, no tu navegador: ni el organizador puede elegir quién ataja. Cada penal queda contado y estos números son públicos en <code>api/estado</code>. Los ganadores se muestran solo con sus iniciales.</p>
+  </section>
+
+  <p class="enlaces">¿Prefieres patear? <a href="/balon-de-oro/">Juega Balón de Oro</a></p>
+  <p class="foot">Tres penales por persona. Un cupo gratis para una inscripción individual en Claude Code PRO (sábados 7, 14, 21 y 28 nov, 7:30 – 9:30 p.m.). Curso independiente con fines académicos. Claude y Claude Code son marcas de Anthropic, PBC; sin relación ni patrocinio de Anthropic.</p>
+</main>
+<script type="module">
+import { api, $, esc, luz } from "./static/comun.js";
+luz();
+
+const LLAVE = "bdo_t"; // la misma inscripción que Balón de Oro
+let token = null;
+try { token = localStorage.getItem(LLAVE); } catch (e) { token = null; }
+let estado = {}, yo = null, animando = false;
+
+const fecha = (iso) => {
+  const d = new Date(iso);
+  const dia = d.toLocaleDateString("es-PE", { day: "numeric", month: "short", timeZone: "America/Lima" }).replace(".", "");
+  const hora = d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Lima" });
+  return `${dia} ${hora}`;
+};
+
+function pintarEstado() {
+  const e = estado;
+  const chip = $("#chipVac");
+  if (e.quedan > 0) {
+    chip.textContent = e.quedan === 1 ? "Queda 1 cupo" : `Quedan ${e.quedan} cupos`; chip.className = "oro";
+    $("#reglaTxt").firstChild.textContent = e.quedan === 1 ? "Queda un solo cupo" : `Quedan ${e.quedan} cupos`;
+  } else {
+    chip.textContent = "Los cupos ya salieron"; chip.className = "agot";
+    $("#reglaTxt").firstChild.textContent = "Los cupos ya salieron";
+  }
+  $("#chipProb").textContent = `1 atajada de cada ${e.prob_n} penales`;
+  $("#chipTiros").textContent = `${e.tiros_por_persona} penales por persona`;
+  $("#cTiros").textContent = e.penales ?? 0;
+  $("#cGoles").textContent = e.atajadas ?? 0;
+  $("#cProb").textContent = `1/${e.prob_n}`;
+  const ul = $("#goles");
+  if (!e.ganadores.length) { ul.innerHTML = ""; $("#golesTxt").hidden = false; }
+  else {
+    $("#golesTxt").hidden = true;
+    ul.innerHTML = e.ganadores.map((g) => g.juego === "yashin"
+      ? `<li><b class="yashin">${esc(g.nombre)}</b><span>${fecha(g.fecha)} · atajó el penal ${g.tiro}</span></li>`
+      : `<li><b>${esc(g.nombre)}</b><span>${fecha(g.fecha)} · gol en el tiro ${g.tiro}</span></li>`).join("");
+  }
+}
+
+async function cargarEstado() {
+  try { estado = await api("api/estado"); pintarEstado(); } catch (e) { /* se reintenta luego */ }
+}
+
+function pintarYo() {
+  $("#inscripcion").hidden = true;
+  $("#juego").hidden = false;
+  $("#nom").textContent = yo.nombre;
+  const total = estado.tiros_por_persona || 3, usados = yo.atajadas || 0;
+  let bolas = "";
+  for (let i = 0; i < total; i++) bolas += `<i class="${i < usados ? "gastado" : ""}"></i>`;
+  const r = yo.atajadas_restantes;
+  $("#restan").innerHTML = `${r} ${r === 1 ? "penal" : "penales"}<span class="tiros">${bolas}</span>`;
+  const lados = $("#lados"), nota = $("#nota");
+  if (yo.gane) {
+    lados.hidden = true; nota.hidden = true;
+    mostrarPremio(yo.codigo, yo.codigo_pendiente);
+    if (!$("#res").classList.contains("gol")) {
+      $("#res").className = "res gol";
+      $("#res").innerHTML = yo.juego === "yashin"
+        ? `¡ATAJADA!<small>La paraste en el penal ${yo.tiro}. Tu cupo ya está guardado.</small>`
+        : `¡Ya ganaste!<small>Tu cupo salió en Balón de Oro y está guardado.</small>`;
+    }
+  } else if (r <= 0) {
+    lados.hidden = true; nota.hidden = true;
+    $("#fin").hidden = false; $("#fin").textContent = "Ya te patearon tus penales. Gracias por jugar.";
+  } else {
+    lados.hidden = false; nota.hidden = false;
+  }
+}
+
+function mostrarPremio(codigo, pendiente) {
+  const p = $("#premio");
+  p.hidden = false;
+  $("#premioK").textContent = yo && yo.juego !== "yashin" ? "TU CUPO · CÓDIGO 100 % · UN SOLO USO" : "¡ATAJADA! · CÓDIGO 100 % · UN SOLO USO";
+  const cod = $("#cod");
+  if (codigo) {
+    cod.textContent = codigo; cod.className = "cod";
+    $("#usar").href = (estado.matricula || "https://jmd-learn.online/sorteo-claude/matricula?c=") + encodeURIComponent(codigo);
+    $("#usar").hidden = false;
+  } else {
+    cod.textContent = "Tu código está en camino: la atajada quedó registrada y te lo completamos en minutos. Vuelve a esta página desde este mismo navegador."; cod.className = "cod pend";
+    $("#usar").hidden = true;
+  }
+}
+
+$("#form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const btn = $("#quiero"); btn.disabled = true; $("#err1").textContent = "";
+  try {
+    yo = await api("api/inscribir", { method: "POST", body: JSON.stringify({ nombre: $("#nombre").value }) });
+    token = yo.t;
+    try { localStorage.setItem(LLAVE, token); } catch (e) { /* sin memoria: igual juega */ }
+    pintarYo();
+    $("#juego").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    $("#err1").textContent = e.message;
+  } finally { btn.disabled = false; }
+});
+
+// Animación del penal: 1,5 s. Tú te lanzas al lado elegido; según lo que dijo
+// el servidor, el balón acaba en tus guantes o en la red.
+function animar(resultado, lado) {
+  const balon = $("#balon"), arquero = $("#arquero"), campo = $("#campo");
+  campo.classList.remove("gol", "palo");
+  const ease = "cubic-bezier(.3,.8,.4,1)";
+  const salto = lado === 0 ? "translate(0,-22px) rotate(0)" : `translate(${lado * 72}px, -14px) rotate(${lado * 55}deg)`;
+  arquero.animate([
+    { transform: "translate(0,0) rotate(0)" },
+    { transform: "translate(0,0) rotate(0)", offset: .25 },
+    { transform: salto },
+  ], { duration: 1500, easing: ease, fill: "forwards" });
+  // A dónde va el balón: a tus manos si atajas; si no, lejos de ti.
+  const otro = lado === 0 ? (Math.random() < .5 ? -1 : 1) : -lado;
+  let dx, dy, esc = .62;
+  if (resultado === "atajada") { dx = lado * 70; dy = lado === 0 ? -116 : -110; esc = .66; }
+  else if (resultado === "angulo") { dx = (lado === 0 ? otro : lado) * 104; dy = -158; esc = .56; }
+  else if (resultado === "centro" && lado !== 0) { dx = 0; dy = -112; }
+  else { dx = otro * 86; dy = -100; }
+  const giro = (dx >= 0 ? 1 : -1) * 480;
+  balon.animate([
+    { transform: "translate(0,0) scale(1) rotate(0)" },
+    { transform: `translate(${dx * .5}px, ${dy * .55}px) scale(${(1 + esc) / 2}) rotate(${giro / 2}deg)`, offset: .5 },
+    { transform: `translate(${dx}px, ${dy}px) scale(${esc}) rotate(${giro}deg)` },
+  ], { duration: 1500, easing: ease, fill: "forwards" });
+  if (resultado !== "atajada") setTimeout(() => campo.classList.add("gol"), 1300);
+}
+function reponer() {
+  for (const el of [$("#balon"), $("#arquero")]) el.getAnimations().forEach((a) => a.cancel());
+  $("#campo").classList.remove("gol", "palo");
+}
+function confeti() {
+  const campo = $("#campo"), colores = ["#D9A441", "#f3dca3", "#fff", "#f2a57f"];
+  for (let i = 0; i < 48; i++) {
+    const e = document.createElement("i"); e.className = "conf";
+    e.style.cssText = `left:${5 + Math.random() * 90}%;background:${colores[i % 4]};animation-delay:${Math.random() * .8}s`;
+    campo.append(e); setTimeout(() => e.remove(), 3200);
+  }
+}
+const textos = { angulo: ["¡Al ángulo!", "No llegaste."], otro_lado: ["¡Te engañó!", "Se fue al otro lado."], centro: ["¡Por el medio!", "Te la picaron al centro."] };
+
+async function atajar(lado) {
+  if (animando) return;
+  animando = true;
+  const btns = [...document.querySelectorAll("#lados .btn")];
+  btns.forEach((b) => (b.disabled = true)); $("#err2").textContent = "";
+  $("#res").className = "res"; $("#res").textContent = ""; $("#premio").hidden = true;
+  reponer();
+  try {
+    const [r] = await Promise.all([
+      api("api/atajar", { method: "POST", body: JSON.stringify({ t: token }) }),
+      new Promise((ok) => setTimeout(ok, 60)),
+    ]);
+    animar(r.resultado, lado);
+    await new Promise((ok) => setTimeout(ok, 1550));
+    yo.atajadas = r.penal; yo.atajadas_restantes = r.penales_restantes;
+    const res = $("#res");
+    if (r.atajo) {
+      res.className = "res gol";
+      if ("codigo" in r) {
+        yo.gane = true; yo.juego = "yashin"; yo.codigo = r.codigo; yo.codigo_pendiente = r.codigo_pendiente; yo.tiro = r.penal;
+        res.innerHTML = `¡ATAJADA!<small>Entras gratis a Claude Code PRO. Guarda tu código.</small>`;
+      } else {
+        res.innerHTML = `¡ATAJADA!<small>Pero el cupo ya salió. Igual: ¡qué manos!</small>`;
+      }
+      confeti();
+    } else {
+      const [t, sub] = textos[r.resultado] || ["¡Gol!", "No llegaste."];
+      res.className = "res mal";
+      res.innerHTML = `${t}<small>${sub} ${r.penales_restantes > 0 ? `Te ${r.penales_restantes === 1 ? "queda 1 penal" : `quedan ${r.penales_restantes} penales`}.` : "Ya no te quedan penales. Gracias por jugar."}</small>`;
+    }
+    pintarYo();
+    if (!yo.gane && r.penales_restantes > 0) setTimeout(reponer, 900);
+    cargarEstado();
+  } catch (e) {
+    $("#err2").textContent = e.message;
+    if (/ganaste|patearon/.test(e.message)) { try { yo = await api("api/yo?t=" + encodeURIComponent(token)); pintarYo(); } catch (e2) { /* nada */ } }
+  } finally { btns.forEach((b) => (b.disabled = false)); animando = false; }
+}
+document.querySelectorAll("#lados .btn").forEach((b) => b.addEventListener("click", () => atajar(Number(b.dataset.lado))));
+
+(async () => {
+  await cargarEstado();
+  if (token) {
+    try { yo = await api("api/yo?t=" + encodeURIComponent(token)); pintarYo(); }
+    catch (e) { token = null; try { localStorage.removeItem(LLAVE); } catch (e2) { /* nada */ } }
+  }
+  setInterval(cargarEstado, 20000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; background: #0d1324; font-family: "Outfit", sans-serif; color: #f4f6ff; }
+    #ofi-cam { position: absolute; inset: 0; }
+    #ofi-mesa { position: absolute; left: -10%; right: -10%; bottom: 0; height: 34%; background: linear-gradient(180deg, #19233f 0%, #121a30 60%, #0d1324 100%); transform: perspective(1200px) rotateX(55deg); transform-origin: top center; }
+    #ofi-luz { position: absolute; left: 20%; right: 20%; bottom: 18%; height: 30%; background: radial-gradient(ellipse at center, rgba(96,165,250,.22), transparent 70%); }
+    .dev { position: absolute; }
+    .pant { position: absolute; background: #0a0f1f; overflow: hidden; }
+    /* iMac */
+    #imac { left: 600px; top: 175px; width: 980px; height: 720px; }
+    #imac-marco { position: absolute; left: 0; top: 0; width: 980px; height: 620px; background: #2a3354; border-radius: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+    #imac-pant { left: 18px; top: 18px; width: 944px; height: 520px; border-radius: 10px; }
+    #imac-barbilla { position: absolute; left: 0; top: 540px; width: 980px; height: 80px; background: #cbd2e6; border-radius: 0 0 22px 22px; }
+    #imac-pie { position: absolute; left: 400px; top: 620px; width: 180px; height: 90px; background: linear-gradient(180deg,#9aa3bd,#6c7592); clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%); }
+    /* MacBook */
+    #mac { left: 1400px; top: 520px; width: 620px; height: 420px; transform: scale(.85); transform-origin: left top; }
+    #mac-marco { position: absolute; left: 60px; top: 0; width: 500px; height: 330px; background: #2a3354; border-radius: 14px 14px 0 0; }
+    #mac-pant { left: 72px; top: 12px; width: 476px; height: 300px; border-radius: 6px; }
+    #mac-base { position: absolute; left: 0; top: 330px; width: 620px; height: 22px; background: linear-gradient(180deg,#b9c1d8,#7f88a6); border-radius: 0 0 16px 16px; }
+    /* iPad */
+    #ipad { left: 40px; top: 520px; width: 420px; height: 320px; }
+    #ipad-marco { position: absolute; inset: 0; background: #2a3354; border-radius: 26px; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+    #ipad-pant { left: 16px; top: 16px; width: 388px; height: 288px; border-radius: 14px; }
+    /* iPhone */
+    #iphone { left: 1250px; top: 640px; width: 260px; height: 520px; }
+    #iphone-marco { position: absolute; inset: 0; background: #1b2240; border-radius: 42px; box-shadow: 0 20px 60px rgba(0,0,0,.6), inset 0 0 0 3px #3a4470; }
+    #iphone-pant { left: 12px; top: 12px; width: 236px; height: 496px; border-radius: 32px; background: #0a0f1f; }
+    #iphone-isla { position: absolute; left: 88px; top: 24px; width: 84px; height: 24px; border-radius: 12px; background: #000; }
+    /* contenido de pantallas */
+    .term { position: absolute; left: 36px; top: 36px; right: 36px; font-family: "Space Mono", monospace; font-size: 26px; line-height: 1.5; color: #9fb3d9; }
+    .term b { color: #2dd4bf; font-weight: 400; }
+    .term .l { opacity: 0; }
+    .barra { position: absolute; left: 36px; right: 36px; bottom: 44px; height: 18px; background: #182138; border-radius: 9px; overflow: hidden; }
+    .barra i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg,#38bdf8,#2dd4bf); }
+    .etq { position: absolute; left: 36px; bottom: 76px; font-size: 24px; font-weight: 600; color: #cbd5f5; letter-spacing: .02em; }
+    #mac-grid { position: absolute; inset: 24px; display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    #mac-grid i { display: block; background: #182138; border-radius: 6px; }
+    #ipad-chat { position: absolute; inset: 20px; font-size: 22px; line-height: 1.35; color: #cbd5f5; }
+    #ipad-chat p { background: #182138; border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; opacity: 0; }
+    #reloj { position: absolute; right: 80px; top: 36px; font-family: "Space Mono", monospace; font-size: 64px; color: #cbd5f5; letter-spacing: .04em; }
+    #reloj small { display: block; font-family: "Outfit", sans-serif; font-size: 22px; color: #7c89b0; letter-spacing: .2em; text-transform: uppercase; }
+    /* título */
+    #ofi-titulo { position: absolute; left: 100px; top: 120px; width: 520px; font-size: 116px; font-weight: 800; letter-spacing: -.03em; line-height: .98; }
+    #ofi-titulo span { display: inline-block; opacity: 0; margin-right: .22em; }
+    /* alarmas */
+    .rojo { position: absolute; inset: 0; background: #ff4d5e; opacity: 0; mix-blend-mode: screen; }
+    #alerta-imac { position: absolute; inset: 0; display: grid; place-items: center; font-size: 150px; font-weight: 800; letter-spacing: -.02em; color: #ff4d5e; opacity: 0; }
+    #banners { position: absolute; left: 16px; right: 16px; top: 70px; display: grid; gap: 8px; }
+    .ban { background: rgba(255,255,255,.1); /* textura */ border: 1px solid rgba(255,77,94,.6); border-radius: 14px; padding: 10px 12px; font-size: 16px; line-height: 1.3; color: #ffe4e6; opacity: 0; transform: translateY(-20px); }
+    .ban b { color: #ff4d5e; display: block; font-family: "Space Mono", monospace; font-size: 14px; }
+    #badge { position: absolute; right: -18px; top: -18px; width: 64px; height: 64px; border-radius: 50%; background: #ff4d5e; color: #fff; font-weight: 800; font-size: 30px; display: grid; place-items: center; opacity: 0; }
+    /* la omisión */
+    #om-ipad { position: absolute; left: 980px; top: 150px; width: 780px; height: 600px; opacity: 0; }
+    #om-marco { position: absolute; inset: 0; background: #2a3354; border-radius: 34px; box-shadow: 0 30px 90px rgba(0,0,0,.7); }
+    #ticket { position: absolute; inset: 22px; background: #f8fafc; color: #0f172a; border-radius: 18px; padding: 40px 46px; font-family: "Space Mono", monospace; font-size: 30px; line-height: 1.6; }
+    #ticket .ok { margin-top: 18px; font-family: "Outfit", sans-serif; font-size: 26px; color: #15803d; font-weight: 600; }
+    #ticket h4 { font-family: "Outfit", sans-serif; font-size: 32px; margin-bottom: 14px; }
+    #ticket .tot { display: flex; justify-content: space-between; border-top: 2px dashed #94a3b8; margin-top: 8px; padding-top: 8px; font-weight: 700; }
+    #ticket .mal { color: #b91c1c; }
+    #omision { position: absolute; left: 100px; top: 420px; width: 760px; line-height: 1.1; font-size: 64px; font-weight: 700; color: #cbd5f5; opacity: 0; letter-spacing: -.01em; }
+    #omision em { font-style: normal; color: #ff4d5e; }
+    #velo { position: absolute; inset: 0; background: #05070f; opacity: 0; }
+  </style>
+  <div id="root" data-composition-id="oficina" data-width="1920" data-height="1080" data-layout-allow-overflow>
+    <div id="ofi-cam">
+      <div id="ofi-mesa"></div>
+      <div id="ofi-luz"></div>
+
+      <div id="reloj"><span id="reloj-d">23:47</span><small>viernes · producción</small></div>
+
+      <div class="dev" id="ipad">
+        <div id="ipad-marco"></div>
+        <div class="pant" id="ipad-pant">
+          <div id="ipad-chat" data-layout-ignore>
+            <p>¿Ya pasó el deploy? El cliente abre a las 8.</p>
+            <p>Corriendo migraciones… 2 min más</p>
+            <p>Avísame si algo falla 🙏</p>
+          </div>
+          <div class="rojo"></div>
+        </div>
+      </div>
+
+      <div class="dev" id="imac">
+        <div id="imac-marco"></div>
+        <div class="pant" id="imac-pant">
+          <div class="term">
+            <div class="l">$ git push origin main</div>
+            <div class="l"><b>✓</b> build · 1m 42s</div>
+            <div class="l"><b>✓</b> migraciones · 23 aplicadas</div>
+            <div class="l"><b>✓</b> contenedores · 4 arriba</div>
+            <div class="l">… publicando a producción</div>
+          </div>
+          <div class="etq">Deploy a producción</div>
+          <div class="barra"><i id="imac-prog"></i></div>
+          <div id="alerta-imac" data-layout-allow-overlap>ALERTA</div>
+          <div class="rojo"></div>
+        </div>
+        <div id="imac-barbilla"></div>
+        <div id="imac-pie"></div>
+      </div>
+
+      <div class="dev" id="mac">
+        <div id="mac-marco"></div>
+        <div class="pant" id="mac-pant">
+          <div id="mac-grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="rojo"></div>
+        </div>
+        <div id="mac-base"></div>
+      </div>
+
+      <div class="dev" id="iphone">
+        <div id="iphone-marco"></div>
+        <div class="pant" id="iphone-pant">
+          <div id="iphone-isla"></div>
+          <div id="banners" data-layout-ignore>
+            <div class="ban"><b>Monitor · 23:52</b>/api/ventas responde 500</div>
+            <div class="ban"><b>Monitor · 23:52</b>Latencia p95 4.8 s</div>
+            <div class="ban"><b>Cliente</b>«No puedo cobrar, se cuelga»</div>
+            <div class="ban"><b>Monitor · 23:53</b>Caja no cierra · 7 ventas sin registrar</div>
+          </div>
+          <div class="rojo"></div>
+        </div>
+        <div id="badge">12</div>
+      </div>
+
+      <h1 id="ofi-titulo" data-layout-allow-overlap><span>Sacar</span><span>a</span><br><span>producción.</span></h1>
+    </div>
+    <div id="velo"></div>
+    <div id="om-ipad" data-layout-allow-occlusion>
+      <div id="om-marco"></div>
+      <div id="ticket">
+        <h4>Tienda Sol · Venta #4821 · 23:49</h4>
+        Café Altomayo ×1 ……………… 17.01<br>
+        Pagado (efectivo) ……………… <span class="mal">17.01</span><br>
+        <div class="tot"><span>El cajero ingresó</span><span class="mal">5.00</span></div>
+        <div class="ok">✓ venta registrada · sin alertas</div>
+      </div>
+    </div>
+    <div id="omision">y las que <em>nadie vio</em>.</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // 0–6.5 · deploy de noche
+    tl.set("#ofi-cam", { scale: 1.08, x: -40, y: 20 }, 0);
+    tl.to("#ofi-cam", { scale: 1, x: 0, y: 0, duration: 10.5, ease: "power2.inOut" }, 0);
+    tl.fromTo("#imac-pant .term .l", { opacity: 0 }, { opacity: 1, duration: 0.05, stagger: 0.9 }, 0.8);
+    tl.fromTo("#imac-prog", { width: "0%" }, { width: "72%", duration: 10, ease: "power1.inOut" }, 0.9);
+    tl.fromTo("#ipad-chat p", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, stagger: 1.8, ease: "power3.out" }, 1.6);
+    tl.fromTo("#mac-grid i", { opacity: 0.2 }, { opacity: 0.9, duration: 0.4, stagger: { each: 0.18, from: "random" }, ease: "power2.out" }, 2.0);
+    tl.fromTo("#ofi-titulo span", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.07, ease: "power4.out" }, 3.3);
+    tl.fromTo("#ofi-titulo", { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "power3.in" }, 10.8);
+    // reloj avanza 23:47 → 23:52
+    const reloj = { v: 0 };
+    tl.fromTo(reloj, { v: 0 }, { v: 5, duration: 10, ease: "none", onUpdate() { const d = document.getElementById("reloj-d"); if (d) d.textContent = "23:" + (47 + Math.min(5, Math.floor(reloj.v))); } }, 1.5);
+
+    // 8.0 · alarmas
+    tl.fromTo("#iphone .ban", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.25, stagger: 0.35, ease: "back.out(1.6)" }, 12.0);
+    tl.fromTo("#badge", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 12.2);
+    tl.fromTo("#alerta-imac", { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.2, ease: "power4.out" }, 12.35);
+    tl.fromTo(".rojo", { opacity: 0 }, { opacity: 0.55, duration: 0.08, repeat: 7, yoyo: true, ease: "none" }, 12.35);
+    tl.to("#imac-prog", { backgroundColor: "#ff4d5e", duration: 0.1 }, 12.4);
+    tl.to("#ofi-cam", { x: 6, duration: 0.05, repeat: 11, yoyo: true, ease: "none" }, 12.35);
+    tl.to("#ofi-cam", { scale: 1.06, duration: 1.4, ease: "power2.out" }, 12.35);
+    // 10.3 · la omisión: todo calla
+    tl.to(".rojo", { opacity: 0, duration: 0.3 }, 15.5);
+    tl.to("#alerta-imac", { opacity: 0, duration: 0.3 }, 15.5);
+    tl.to("#iphone .ban, #badge", { opacity: 0.15, duration: 0.4 }, 15.5);
+    tl.to("#velo", { opacity: 0.72, duration: 0.5 }, 15.6);
+    tl.to("#imac-pant .term, #ipad-chat", { opacity: 0, duration: 0.25, ease: "power2.in" }, 15.3);
+    tl.fromTo("#om-ipad", { opacity: 0, y: 80, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "expo.out" }, 15.8);
+    tl.fromTo("#ticket .mal", { backgroundColor: "rgba(185,28,28,0)" }, { backgroundColor: "rgba(254,202,202,1)", duration: 0.4 }, 16.4);
+    tl.fromTo("#omision", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 17.6);
+    // 13.0 · fundido al cosmos
+    tl.to("#velo", { opacity: 1, duration: 0.6, ease: "power2.in" }, 20.3);
+    tl.to("#om-ipad, #omision", { opacity: 0, duration: 0.5 }, 20.3);
+    window.__timelines["oficina"] = tl;
+  </script>
+</template>

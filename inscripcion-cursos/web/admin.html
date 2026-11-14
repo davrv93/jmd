@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>Panel · Inscripciones</title>
+<style>body{background:#0f1020;color:#f2f0e6;font:16px/1.45 Inter,system-ui,sans-serif;padding:24px 16px;max-width:900px;margin:auto}input,button{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid #34365c}button{background:#f2c14e;color:#0f1020;font-weight:700;cursor:pointer}table{width:100%;border-collapse:collapse;margin-top:16px}td,th{text-align:left;padding:8px;border-bottom:1px solid #34365c;vertical-align:top}</style></head>
+<body><h1>Inscripciones</h1><form id="f"><input id="c" type="password" placeholder="Clave" aria-label="Clave"> <button>Ver</button> <button type="button" id="csv">Descargar CSV</button></form><p id="m" role="alert"></p><table id="t"></table>
+<script>
+var B=new URL('.',location.href).pathname.replace(/admin\.html$/,''),c=document.getElementById('c'),m=document.getElementById('m');
+function h(){return {'X-Clave':c.value};}
+document.getElementById('f').addEventListener('submit',function(e){e.preventDefault();fetch(B+'api/admin/solicitudes',{headers:h()}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){m.textContent=(d||[]).length+' inscripciones';var t=document.getElementById('t');t.textContent='';(d||[]).forEach(function(x){var r=t.insertRow();[x.nombre,x.telefono,x.correo,x.cursos.join(', ')].forEach(function(v){r.insertCell().textContent=v;});});}).catch(function(){m.textContent='Clave incorrecta.';});});
+document.getElementById('csv').addEventListener('click',function(){fetch(B+'api/admin/csv',{headers:h()}).then(function(r){if(!r.ok)throw 0;return r.blob();}).then(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='inscripciones.csv';a.click();}).catch(function(){m.textContent='Clave incorrecta.';});});
+</script></body></html>

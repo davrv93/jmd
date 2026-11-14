@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Témpano IA · Empuja ositos, responde y vuelve al hielo</title>
+<meta name="description" content="Cuatro ositos polares en un témpano que se rompe. Empuja a los demás al agua y sé el último en pie. Si caes, responde una pregunta del curso para volver al hielo.">
+<meta name="theme-color" content="#eaf6fd">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/base.css">
+<link rel="stylesheet" href="static/tempano.css">
+</head>
+<body>
+<canvas id="copos" aria-hidden="true"></canvas>
+<main id="inicio">
+  <div class="marca"><svg viewBox="0 0 200 200" fill="none"><g fill="#1B2559"><circle cx="38" cy="78" r="6"/><circle cx="52" cy="112" r="6"/><circle cx="84" cy="118" r="6"/><circle cx="92" cy="88" r="6"/><circle cx="120" cy="80" r="6"/><circle cx="146" cy="74" r="6"/></g><path d="M38 78 92 88 120 80 146 74M92 88 84 118 52 112 38 78" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M100 86v90M114 84v90M128 82v90M142 80v90" stroke="#3B5BDB" stroke-width="5" stroke-linecap="round"/><path d="M92 176q40 14 64-6" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M160 60l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#D9A441"/></svg>JMD Learning</div>
+
+  <div class="kick">JUEGO DE APERTURA · PROGRAMACIÓN AGÉNTICA</div>
+  <h1>Témpano <span>IA</span></h1>
+  <p class="lead">Cuatro ositos polares y un témpano que <b>se rompe</b>. Empuja a los demás al agua y sé el último en el hielo.</p>
+
+  <div class="vitrina"><canvas id="demo" aria-label="Demostración: cuatro ositos se empujan en el témpano"></canvas></div>
+
+  <section class="card" id="inscripcion">
+    <h2>Escribe tu nombre y juega</h2>
+    <p class="soft small">Nombre y apellido. En el ranking solo salen tus iniciales.</p>
+    <form id="form" autocomplete="off">
+      <label for="nombre">Nombre y apellido</label>
+      <input type="text" id="nombre" name="nombre" maxlength="40" placeholder="Ej.: Ana Pérez" required>
+      <button class="btn" type="submit" id="quiero">Jugar</button>
+      <div class="err" id="err1"></div>
+    </form>
+  </section>
+
+  <section class="card" id="listo" hidden>
+    <div class="hola"><span>Hola, <b id="nom"></b></span><span class="pill" id="quedan"></span></div>
+    <div class="mejor" id="mejor" hidden></div>
+    <button class="btn" type="button" id="jugar">▶ Jugar</button>
+    <div class="err" id="err2"></div>
+  </section>
+
+  <section class="card resultado" id="resultado" hidden>
+    <div class="k">TU PARTIDA</div>
+    <div class="total"><b id="rTotal">0</b><span>puntos</span></div>
+    <ul class="desglose" id="rDesglose"></ul>
+    <p class="nota" id="rNota"></p>
+    <button class="btn" type="button" id="otra">▶ Jugar otra vez</button>
+  </section>
+
+  <section class="card reglas">
+    <h2>Cómo se juega</h2>
+    <ol>
+      <li><b>Muévete</b> con las flechas o <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>. En el celular, con la palanca de abajo a la izquierda.</li>
+      <li><b>Embiste</b> con <kbd>Espacio</kbd> o el botón grande. Después espera un segundo para la siguiente.</li>
+      <li>El hielo <b>resbala</b> y el témpano <b>se va rompiendo</b> por los bordes. ¡Cuidado!</li>
+      <li>¿Caíste al agua? Responde una <b>pregunta del curso</b> en 12 segundos. Si aciertas, vuelves al centro. Tienes 2 rescates por ronda.</li>
+      <li>Son <b>3 rondas</b> de hasta 60 segundos.</li>
+    </ol>
+    <div class="puntos">
+      <div><b>1000</b><span>por ronda ganada</span></div>
+      <div><b>10</b><span>por segundo en el hielo</span></div>
+      <div><b>300</b><span>por rescate acertado</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Ranking de la clase</h2>
+    <p class="soft small" id="rankTxt">Nadie ha jugado todavía. ¿Serás la primera persona?</p>
+    <ol class="ranking" id="ranking"></ol>
+    <div class="mipuesto" id="mipuesto" hidden></div>
+    <p class="small pantalla"><a href="ranking" target="_blank" rel="noopener">Abrir el ranking en pantalla grande ↗</a></p>
+  </section>
+
+  <section class="card comprobar">
+    <h2>Lo justo</h2>
+    <p>Las preguntas las elige y las corrige el servidor: tu navegador no conoce la respuesta hasta que contestas, y en una partida no se repite ninguna.</p>
+    <p>El servidor anota cuándo empezó tu partida y no acepta más segundos de los que de verdad pasaron, ni más de 3 rondas. Un puntaje por partida y hasta <span id="pdTxt">5</span> partidas por día. Vale tu mejor partida.</p>
+  </section>
+
+  <p class="enlaces">¿Más juegos? <a href="/sopa-ia/">Sopa de letras IA 🔤</a> · <a href="/arbitro/">Árbitro 🟨</a></p>
+  <p class="foot">Curso independiente con fines académicos. Claude y Claude Code son marcas de Anthropic, PBC; sin relación ni patrocinio de Anthropic. Ositos y témpano dibujados a mano en el navegador.</p>
+</main>
+
+<!-- El juego: pantalla completa. -->
+<div id="juego" hidden>
+  <canvas id="escena"></canvas>
+  <div class="hud">
+    <div class="caja"><span class="k">RONDA</span><b id="hRonda">1/3</b></div>
+    <div class="caja"><span class="k">TIEMPO</span><b id="hReloj">60</b></div>
+    <div class="caja"><span class="k">RESCATES</span><b id="hResc" class="boyas"></b></div>
+    <div class="caja osos" id="hOsos" aria-label="Ositos en el hielo"></div>
+    <button class="mudo" id="mudo" type="button" aria-label="Silenciar">🔊</button>
+  </div>
+  <div class="zona-palanca" id="zonaPalanca">
+    <div class="palanca" id="palanca"><div class="perilla" id="perilla"></div></div>
+  </div>
+  <button class="embestir" id="embestir" type="button" aria-label="Embestir (Espacio)"><span>💨</span><small>EMBESTIR</small></button>
+  <div class="teclas" id="teclas">Flechas o WASD para moverte · <kbd>Espacio</kbd> para embestir</div>
+
+  <div class="cartel" id="cartel" hidden>
+    <div class="cartel-in">
+      <div class="k" id="cK"></div>
+      <div class="t" id="cT"></div>
+      <p id="cP"></p>
+      <button class="btn" type="button" id="cBtn" hidden></button>
+    </div>
+  </div>
+
+  <div class="pregunta" id="pregunta" hidden role="dialog" aria-modal="true" aria-labelledby="pTexto">
+    <div class="pregunta-in">
+      <div class="k"><span>🛟 PREGUNTA DE RESCATE</span><span id="pTema"></span></div>
+      <div class="barra-t"><i id="pBarra"></i></div>
+      <h3 id="pTexto"></h3>
+      <div class="opciones" id="pOps"></div>
+      <div class="explica" id="pExp" hidden></div>
+      <button class="btn" type="button" id="pSeguir" hidden>Seguir</button>
+    </div>
+  </div>
+
+  <div class="cartel" id="pausa" hidden>
+    <div class="cartel-in">
+      <div class="t">Pausa</div>
+      <button class="btn" type="button" id="seguir">Seguir jugando</button>
+    </div>
+  </div>
+</div>
+<script type="module" src="static/tempano.js"></script>
+</body>
+</html>

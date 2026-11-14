@@ -8,6 +8,7 @@ import { Icon } from "~/components/icon";
 import { Crumbs, Empty, ErrorState, lessonState, Loading, Ring, Status, Tabs } from "~/components/ui";
 import { Ahora, pasoActual, type PasoActual } from "~/components/ahora";
 import { OpinionesCursoSeccion } from "~/components/opiniones";
+import { temaActual } from "~/lib/live";
 
 export default component$(() => {
   const loc = useLocation();
@@ -81,6 +82,16 @@ export default component$(() => {
           )}
         </div>
       </div>
+
+      {c.portada && (
+        <iframe
+          class="portada-curso"
+          data-testid="portada-curso"
+          src={`/api/v1/courses/${encodeURIComponent(c.id)}/portada${temaActual() ? `?tema=${temaActual()}` : ""}`}
+          title={`Portada de ${c.title}`}
+          sandbox="allow-scripts allow-same-origin"
+        />
+      )}
 
       {st.paso && next && (
         <Ahora

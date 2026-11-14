@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel · Sorteo de las secuencias</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/estilo.css?v=3">
+<style>
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--borde); vertical-align: middle; }
+  th { color: var(--oro); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .tabla { overflow-x: auto; }
+  .acciones { display: flex; gap: 10px; flex-wrap: wrap; }
+  .acciones .btn { width: auto; margin-top: 10px; }
+  .grande { font-size: 22px; padding: 20px 28px; }
+  td .btn { width: auto; margin: 0; padding: 6px 10px; font-size: 13px; }
+  input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--verde); }
+</style>
+</head>
+<body>
+<main>
+  <span class="kick">PANEL DEL ORGANIZADOR</span>
+  <h1 class="marca" style="font-size:40px">Sorteo de las <em>secuencias</em></h1>
+
+  <section class="panel" id="login">
+    <label for="clave">Clave del panel</label>
+    <input id="clave" type="password" autocomplete="current-password">
+    <button class="btn" id="btn-entrar" type="button">Entrar</button>
+    <p class="error" id="login-error"></p>
+  </section>
+
+  <div id="panel" hidden>
+    <section class="panel">
+      <h2>Estado: <span id="fase"></span></h2>
+      <p class="suave" id="resumen"></p>
+      <div class="acciones">
+        <button class="btn" id="btn-cerrar" type="button">Cerrar la elección</button>
+        <button class="btn sec" id="btn-reabrir" type="button">Reabrir</button>
+        <button class="btn verde" id="btn-empezar" type="button">Empezar el sorteo</button>
+        <button class="btn grande" id="btn-girar" type="button">🎡 Girar la siguiente ruleta</button>
+        <button class="btn sec" id="btn-ampliar" type="button">➕ 3 rondas más (sin los que ya ganaron)</button>
+      </div>
+      <p class="chico suave" id="ayuda-girar"></p>
+      <p class="error" id="error"></p>
+      <p class="verif" id="huellas"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Pregunta <span>relámpago</span> (/pregunta)</h2>
+      <p class="suave chico" id="quiz-resumen"></p>
+      <div class="acciones">
+        <button class="btn" id="btn-quiz" type="button"></button>
+        <a class="btn sec" href="pregunta" target="_blank" rel="noopener">Abrir la página</a>
+      </div>
+      <div class="tabla"><table>
+        <thead><tr><th>Nombre</th><th>WhatsApp</th><th>Premio</th><th>Hora</th></tr></thead>
+        <tbody id="quiz"></tbody>
+      </table></div>
+    </section>
+
+    <section class="panel">
+      <h2>Acertijo por un <span>cupón</span> (/pregunta)</h2>
+      <p class="suave chico" id="a-resumen"></p>
+      <button class="btn" id="btn-acertijo" type="button" style="width:auto"></button>
+      <div class="tabla"><table>
+        <thead><tr><th>Nombre</th><th>Eligió</th><th>¿Acertó?</th><th>Hora</th></tr></thead>
+        <tbody id="a-intentos"></tbody>
+      </table></div>
+    </section>
+
+    <section class="panel">
+      <h2>Personas y <span>referidos</span></h2>
+      <p class="suave chico">Marca «En el grupo» a quien llegó con código y ya está en el grupo de WhatsApp: activa su ticket extra y el de quien lo refirió.</p>
+      <div class="tabla"><table>
+        <thead><tr><th>Tickets</th><th>Nombre</th><th>WhatsApp</th><th>Su código</th><th>Llegó con</th><th>En el grupo</th><th>Extras</th></tr></thead>
+        <tbody id="personas"></tbody>
+      </table></div>
+    </section>
+
+    <section class="panel">
+      <h2>Anotar a <span>mano</span></h2>
+      <div class="fila">
+        <div><label for="a-num">Ticket</label><input id="a-num" type="number" min="1" max="50"></div>
+        <div><label for="a-ref">Código de referido (opcional)</label><input id="a-ref"></div>
+        <div><label for="a-nombre">Nombre y apellido</label><input id="a-nombre"></div>
+        <div><label for="a-tel">WhatsApp</label><input id="a-tel" type="tel"></div>
+      </div>
+      <button class="btn sec" id="btn-anotar" type="button">Anotar</button>
+      <h3 style="margin-top:22px;font-size:18px">Corregir un nombre o un código ofensivo</h3>
+      <p class="suave chico">Los nombres y códigos con lisuras ya se rechazan solos. Si alguno se cuela, corrígelo aquí antes de cerrar la elección.</p>
+      <div class="fila">
+        <div><label for="c-num">Uno de sus tickets</label><input id="c-num" type="number" min="1" max="50"></div>
+        <div><label for="c-nombre">Nombre corregido (vacío = no cambiar)</label><input id="c-nombre"></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="c-borrar" style="width:22px"> Borrar su código de referido</label>
+      <button class="btn sec" id="btn-corregir" type="button">Corregir</button>
+      <label for="q-num" style="margin-top:20px">Liberar un ticket</label>
+      <div class="fila"><input id="q-num" type="number" min="1" max="50"><button class="btn sec" id="btn-quitar" type="button" style="margin-top:0">Liberar</button></div>
+    </section>
+
+    <section class="panel">
+      <h2>Volver a <span>empezar</span></h2>
+      <p class="suave chico">Borra tickets, personas y resultado. Úsalo solo para una nueva edición.</p>
+      <button class="btn sec" id="btn-reiniciar" type="button" style="width:auto">Reiniciar (escribe REINICIAR)</button>
+      <input id="confirmar" placeholder="REINICIAR" style="margin-top:8px;max-width:240px">
+    </section>
+  </div>
+</main>
+<script type="module">
+import { api, $, esc, dos } from "./static/comun.js";
+let clave = "";
+try { clave = sessionStorage.getItem("sorteo-sec-clave") || ""; } catch { /* nada */ }
+const adm = (ruta, cuerpo) => api(ruta, cuerpo === undefined ? { headers: { "X-Clave": clave } } : { method: "POST", headers: { "X-Clave": clave }, body: JSON.stringify(cuerpo) });
+
+function pintar(e) {
+  ultimo = e;
+  const pre = (id) => { const p = e.premios.find((q) => q.id === id); return p ? `${p.descuento}% ${p.curso}` : id; };
+  const ac = e.acertijo;
+  $("#btn-acertijo").textContent = ac.activo ? "Quitar el acertijo (vuelve el 7 × 7)" : "Poner el acertijo en /pregunta";
+  $("#btn-acertijo").className = "btn" + (ac.activo ? " sec" : "");
+  $("#a-resumen").textContent = `${ac.activo ? "Activo" : "Inactivo"} · cupón de ${ac.origen || "—"} (${pre(ac.premio)}) · ${ac.intentos.length} respuestas · ${ac.ganador ? "ganador: " + ac.ganador : "sin ganador aún"}`;
+  $("#a-intentos").innerHTML = ac.intentos.slice().reverse().map((x) => `<tr><td>${esc(x.nombre)}</td><td>${esc(x.opcion)}</td><td>${x.acerto ? "✅" : "—"}</td><td class="mono">${new Date(x.fecha).toLocaleTimeString("es-PE", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit" })}</td></tr>`).join("")
+    || `<tr><td colspan="4" class="suave">Aún nadie respondió.</td></tr>`;
+  $("#btn-quiz").textContent = e.quizAbierto ? "Cerrar la pregunta" : "Abrir la pregunta";
+  $("#btn-quiz").className = "btn" + (e.quizAbierto ? " sec" : "");
+  $("#quiz-resumen").textContent = `${e.quizAbierto ? "Abierta" : "Cerrada"} · ${e.quiz.length} premios entregados · ${e.excluidosHoy.length} excluidos de otros sorteos de hoy (más los ganadores de este).`;
+  $("#quiz").innerHTML = e.quiz.slice().reverse().map((q) => `<tr><td>${esc(q.nombre)}</td><td class="mono">${esc(q.telefono)}</td><td>${esc(pre(q.premio))}</td><td class="mono">${new Date(q.fecha).toLocaleTimeString("es-PE", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit" })}</td></tr>`).join("")
+    || `<tr><td colspan="4" class="suave">Aún nadie respondió.</td></tr>`;
+  $("#login").hidden = true; $("#panel").hidden = false;
+  const nombres = { inscripcion: "elección abierta", cerrado: "elección cerrada", sorteo: "sorteo en marcha", fin: "terminado" };
+  $("#fase").textContent = nombres[e.fase];
+  $("#resumen").textContent = `${e.personasLista.length} personas · ${e.ocupados.length} de ${e.total} tickets · ${e.resultado.length} de ${e.ganadores} ganadores revelados`;
+  $("#btn-cerrar").hidden = e.fase !== "inscripcion";
+  $("#btn-reabrir").hidden = e.fase !== "cerrado";
+  $("#btn-empezar").hidden = e.fase !== "cerrado";
+  $("#btn-girar").hidden = e.fase !== "sorteo";
+  $("#btn-ampliar").hidden = e.fase !== "fin";
+  const sig = e.fase === "sorteo" ? e.revelados : -1;
+  $("#ayuda-girar").textContent = e.fase === "sorteo"
+    ? `Giro ${sig + 1} de ${e.totalPasos}. Espera a que la ruleta se detenga en la pantalla antes de girar la siguiente (unos 7 s).`
+    : "";
+  $("#huellas").textContent = e.compromiso ? `Huella de la semilla: ${e.compromiso} · Huella de la lista: ${e.huellaLista}` : "";
+  $("#personas").innerHTML = e.personasLista.map((p) => `
+    <tr><td class="mono">${p.tickets.map(dos).join(" ")}</td><td>${esc(p.nombre)}</td><td class="mono">${esc(p.telefono)}</td>
+      <td class="mono">${esc(p.codigo || "—")}</td><td class="mono">${esc(p.referidoPor || "—")}</td>
+      <td>${p.referidoPor ? `<input type="checkbox" data-grupo="${p.id}" ${p.enGrupo ? "checked" : ""} ${e.fase !== "inscripcion" ? "disabled" : ""} aria-label="En el grupo">` : '<span class="suave">—</span>'}</td>
+      <td>${p.extras}${p.referidos ? ` <span class="suave chico">(${p.referidos} ref.)</span>` : ""}</td></tr>`).join("")
+    || `<tr><td colspan="7" class="suave">Aún no hay nadie.</td></tr>`;
+}
+
+async function accion(ruta, cuerpo) {
+  $("#error").textContent = "";
+  try { pintar(await adm(ruta, cuerpo)); } catch (ex) { $("#error").textContent = ex.message; }
+}
+
+async function entrar() {
+  try { pintar(await adm("api/admin/estado")); try { sessionStorage.setItem("sorteo-sec-clave", clave); } catch { /* nada */ } }
+  catch (ex) { $("#login-error").textContent = ex.message; }
+}
+$("#btn-entrar").addEventListener("click", () => { clave = $("#clave").value; entrar(); });
+$("#clave").addEventListener("keydown", (e) => { if (e.key === "Enter") { clave = $("#clave").value; entrar(); } });
+$("#btn-cerrar").addEventListener("click", () => accion("api/admin/cerrar", {}));
+$("#btn-reabrir").addEventListener("click", () => accion("api/admin/reabrir", {}));
+$("#btn-empezar").addEventListener("click", () => accion("api/admin/empezar", {}));
+let girando = false;
+$("#btn-girar").addEventListener("click", async () => {
+  if (girando) return;
+  girando = true; $("#btn-girar").disabled = true;
+  await accion("api/admin/girar", {});
+  setTimeout(() => { girando = false; $("#btn-girar").disabled = false; }, 4000);
+});
+$("#btn-acertijo").addEventListener("click", () => accion("api/admin/acertijo", { activo: !ultimo.acertijo.activo }));
+$("#btn-quiz").addEventListener("click", () => accion("api/admin/pregunta", { abierto: !ultimo.quizAbierto }));
+$("#btn-ampliar").addEventListener("click", () => accion("api/admin/ampliar", { mas: 3 }));
+$("#personas").addEventListener("change", (e) => {
+  const c = e.target.closest("[data-grupo]");
+  if (c) accion("api/admin/grupo", { id: +c.dataset.grupo, enGrupo: c.checked });
+});
+$("#btn-anotar").addEventListener("click", () => accion("api/admin/anotar", { numero: +$("#a-num").value, nombre: $("#a-nombre").value, telefono: $("#a-tel").value, ref: $("#a-ref").value }));
+let ultimo = null;
+$("#btn-corregir").addEventListener("click", () => {
+  const n = +$("#c-num").value;
+  const p = (ultimo?.personasLista || []).find((x) => x.tickets.includes(n));
+  if (!p) { $("#error").textContent = `Nadie tiene el ticket ${n}.`; return; }
+  accion("api/admin/renombrar", { id: p.id, nombre: $("#c-nombre").value.trim(), borrarCodigo: $("#c-borrar").checked });
+});
+$("#btn-quitar").addEventListener("click", () => accion("api/admin/quitar", { numero: +$("#q-num").value }));
+$("#btn-reiniciar").addEventListener("click", () => {
+  if ($("#confirmar").value.trim() !== "REINICIAR") { $("#error").textContent = "Escribe REINICIAR para confirmar."; return; }
+  accion("api/admin/reiniciar", {});
+});
+if (clave) entrar();
+setInterval(() => { if (clave && !document.hidden && !$("#panel").hidden) adm("api/admin/estado").then(pintar).catch(() => {}); }, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin de la demo</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%224%22 fill=%22%2313212e%22/%3E%3Ccircle cx=%225%22 cy=%228%22 r=%222.5%22 fill=%22%23e2601a%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..750&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/app.css">
+<style>
+  .rejilla { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; }
+  .rejilla .card { margin-top: 20px; }
+  @media (max-width: 860px) { .rejilla { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+  .seg { display: inline-flex; gap: 2px; background: var(--linea-2); padding: 3px; border-radius: 12px; margin-top: 6px; }
+  .seg button { border: 0; background: transparent; padding: 8px 16px; border-radius: 9px; font-weight: 600; color: var(--suave); cursor: pointer; display: inline-flex; gap: 7px; align-items: center; }
+  .seg button.activo { background: #fff; color: var(--tinta); box-shadow: 0 1px 2px rgba(19, 33, 46, .12); }
+  .seg button.activo .ico { color: var(--senal); }
+  .tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; }
+  @media (max-width: 560px) { .tres { grid-template-columns: minmax(0, 1fr); } }
+  input[type=range] { width: 100%; accent-color: var(--senal); margin-top: 8px; }
+  .interruptor { display: flex; align-items: center; gap: 10px; font-weight: 550; margin-top: 16px; font-size: 14.5px; }
+  .interruptor input { width: 20px; height: 20px; accent-color: var(--tinta); flex: none; }
+  .gasto { font-family: var(--disp); font-size: 44px; font-weight: 650; letter-spacing: -.03em; line-height: 1; margin: 10px 0 12px; font-variant-numeric: tabular-nums; }
+  .acc { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-top: 14px; }
+  .acc .btn { justify-content: flex-start; }
+  .nota-ad { font-size: 13.5px; color: var(--suave); background: var(--papel); border-radius: 12px; padding: 12px 14px; margin-top: 14px; }
+  .login { max-width: 420px; }
+  .linea-btn { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+  #acc-info:empty { display: none; }
+  #acc-info { margin-top: 12px; }
+</style>
+</head>
+<body>
+<main class="pagina">
+  <h1>Admin de la demo</h1>
+  <p class="bajada">Elige el motor, mira el gasto y prepara la demo antes de mostrarla.</p>
+
+  <div class="card login" id="login">
+    <label for="k" style="margin-top:0">Clave de admin</label>
+    <input id="k" type="password" autocomplete="current-password">
+    <div class="linea-btn"><button class="btn" id="entrar" type="button">Entrar</button></div>
+    <p class="err" id="lerr" style="margin-top:10px"></p>
+  </div>
+
+  <div id="panel" class="oculto">
+    <div class="rejilla">
+      <div class="card">
+        <h2>Motor del clasificador</h2>
+        <div class="seg" id="motor"></div>
+        <p class="small suave" id="motor-info" style="margin-top:10px"></p>
+        <label for="umbral">Umbral de confianza: <b id="umbral-v"></b></label>
+        <input id="umbral" type="range" min="0.3" max="0.99" step="0.01">
+        <p class="small suave">Bajo este valor, el ticket no se deriva: va a la cola de revisión humana.</p>
+        <div class="tres">
+          <div><label for="intervalo">Cada cuántos minutos</label><input id="intervalo" type="number" min="1" max="120"></div>
+          <div><label for="lote">Tickets por pasada</label><input id="lote" type="number" min="1" max="20"></div>
+        </div>
+        <label class="interruptor"><input type="checkbox" id="programado"> Modo programado: el orquestador corre solo cada N minutos</label>
+        <div class="linea-btn"><button class="btn senal" id="guardar" type="button">Guardar configuración</button></div>
+        <p class="err" id="cerr" style="margin-top:10px"></p>
+      </div>
+      <div class="card">
+        <h2>Gasto de Claude</h2>
+        <div class="gasto" id="gasto">—</div>
+        <div class="medidor"><i id="gasto-bar" style="width:0"></i></div>
+        <p class="small suave" id="gasto-info" style="margin-top:10px"></p>
+        <p class="small" id="saldo" style="margin-top:8px"></p>
+        <div class="linea-btn"><button class="btn sec sm" id="consultar-saldo" type="button"></button></div>
+        <p class="nota-ad">La cuenta de OpenRouter es compartida. La demo se corta sola al llegar al tope y no enciende Claude si el saldo está bajo el mínimo. Si Claude no puede correr, se usan reglas y la auditoría dice «respaldo».</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Preparar la demo</h2>
+      <div class="acc">
+        <button class="btn sec" id="llegada" type="button"></button>
+        <button class="btn sec" id="orquestar" type="button"></button>
+        <button class="btn sec" id="lista-blanca" type="button"></button>
+        <button class="btn sec" id="eval-claude" type="button"></button>
+        <button class="btn sec" id="reiniciar" type="button" style="color:var(--rojo)"></button>
+      </div>
+      <p class="small suave" id="acc-info"></p>
+    </div>
+    <div class="card">
+      <h2>Conector MCP</h2>
+      <div class="pre" id="mcp" style="margin-top:10px"></div>
+      <p class="small suave" style="margin-top:10px">Cómo se agrega en <a href="conectar">Conectar a Claude</a>. No compartas esta URL fuera del equipo.</p>
+    </div>
+  </div>
+</main>
+<footer class="pie"><a href="./">Volver a la demo</a><a href="conectar">Conectar a Claude</a></footer>
+<script type="module">
+import { $, $$, esc, api, post, cabecera, toast, usd, fecha, claveGuardada, guardarClave, ico, confirmar, modal, pasos } from "./static/app.js";
+cabecera("");
+let clave = claveGuardada(), motorSel = "reglas";
+const h = () => ({ "X-Clave": clave });
+$("#motor").innerHTML = `<button type="button" data-m="reglas">${ico("lista", 16)}Reglas</button><button type="button" data-m="claude">${ico("chispa", 16)}Claude</button>`;
+const icoBtn = (id, i, t) => ($(id).innerHTML = ico(i, 17) + `<span>${t}</span>`);
+icoBtn("#consultar-saldo", "monedas", "Consultar saldo de OpenRouter");
+icoBtn("#llegada", "bandeja", "Simular llegada de 3 tickets");
+icoBtn("#orquestar", "rayo", "Clasificar pendientes ahora");
+icoBtn("#lista-blanca", "escudo", "Probar una acción prohibida");
+icoBtn("#eval-claude", "diana", "Medir con Claude (60 tickets)");
+icoBtn("#reiniciar", "repetir", "Reiniciar la demo");
+
+function pintar(e) {
+  motorSel = e.motor;
+  $$("#motor button").forEach((b) => b.classList.toggle("activo", b.dataset.m === e.motor));
+  $("#motor-info").innerHTML = e.claudeConfigurado ? `Claude disponible: <b>${esc(e.modelo)}</b> vía ${esc(e.proveedor)}.` : "No hay clave de Claude en el servidor: solo funciona el motor de reglas.";
+  $("#umbral").value = e.umbral; $("#umbral-v").textContent = Math.round(e.umbral * 100) + " %";
+  $("#intervalo").value = e.intervaloMin; $("#lote").value = e.lote; $("#programado").checked = e.programado;
+  $("#gasto").textContent = usd(e.gasto, 4);
+  $("#gasto-bar").style.width = Math.min(100, (100 * e.gasto) / e.tope) + "%";
+  $("#gasto-info").textContent = `Tope de la demo ${usd(e.tope, 2)}. ${e.llamadasLLM} llamadas a Claude. ${e.pendientes} tickets pendientes.`;
+  $("#saldo").innerHTML = e.saldo != null ? `Saldo en OpenRouter: <b>${usd(e.saldo, 2)}</b> (mínimo para encender Claude ${usd(e.saldoMin, 2)}), consultado ${fecha(e.saldoEn)}.` : `Saldo de OpenRouter sin consultar (mínimo para encender Claude ${usd(e.saldoMin, 2)}).`;
+  $("#mcp").textContent = e.mcpURL;
+  if (e.evalEnCurso) { $("#acc-info").textContent = `Midiendo con ${e.evalEnCurso}: ${e.evalAvance} de ${e.evalTotal}…`; setTimeout(refrescar, 1500); }
+}
+async function refrescar() { try { pintar(await api("api/admin/estado", { headers: h() })); } catch (e) { toast(e.message, true); } }
+async function entrar(k) {
+  try {
+    clave = k; const e = await api("api/admin/estado", { headers: h() });
+    guardarClave(k); $("#login").classList.add("oculto"); $("#panel").classList.remove("oculto"); pintar(e);
+  } catch (e) { $("#lerr").textContent = e.message; guardarClave(""); }
+}
+$("#entrar").addEventListener("click", () => entrar($("#k").value.trim()));
+$("#k").addEventListener("keydown", (e) => e.key === "Enter" && entrar($("#k").value.trim()));
+$$("#motor button").forEach((b) => b.addEventListener("click", () => { motorSel = b.dataset.m; $$("#motor button").forEach((x) => x.classList.toggle("activo", x === b)); }));
+$("#umbral").addEventListener("input", () => ($("#umbral-v").textContent = Math.round($("#umbral").value * 100) + " %"));
+$("#guardar").addEventListener("click", async (ev) => {
+  $("#cerr").textContent = "";
+  const b = ev.currentTarget; b.disabled = true;
+  try {
+    pintar(await post("api/admin/config", { motor: motorSel, umbral: +$("#umbral").value, programado: $("#programado").checked, intervaloMin: +$("#intervalo").value, lote: +$("#lote").value }, h()));
+    toast("Configuración guardada.");
+  } catch (e) { $("#cerr").textContent = e.message; refrescar(); }
+  b.disabled = false;
+});
+$("#consultar-saldo").addEventListener("click", async () => {
+  try { const e = await post("api/admin/saldo", {}, h()); pintar(e); if (e.aviso) toast(e.aviso, true); } catch (e) { toast(e.message, true); }
+});
+$("#llegada").addEventListener("click", async () => {
+  try { const r = await post("api/admin/llegada", { n: 3 }, h()); toast(`Llegaron los tickets ${r.creados.map((x) => "#" + x).join(", ")}.`); refrescar(); } catch (e) { toast(e.message, true); }
+});
+$("#orquestar").addEventListener("click", async () => {
+  const m = modal({ titulo: "Clasificar pendientes", cerrable: false, html: `<div id="op"></div>` });
+  const P = pasos($("#op"), ["Clasificando y derivando…"]);
+  P.activar(0);
+  try { const r = await post("api/orquestar", { limite: 10 }); P.hecho(0, `${r.procesados} tickets procesados`); refrescar(); }
+  catch (e) { P.fallo(0, "No se pudo clasificar", e.message); }
+  m.cerrable(true); setTimeout(() => m.cerrar(), 1400);
+});
+$("#lista-blanca").addEventListener("click", async () => {
+  try { const r = await post("api/admin/probar-lista-blanca", { accion: "cerrar_ticket" }, h()); $("#acc-info").textContent = (r.rechazada ? "Rechazada y auditada: " : "") + r.resultado; } catch (e) { toast(e.message, true); }
+});
+$("#eval-claude").addEventListener("click", async () => {
+  if (!(await confirmar({ titulo: "¿Medir con Claude?", texto: "Clasifica los 60 tickets etiquetados con Claude. Cuesta alrededor de US$0.02 del saldo compartido de OpenRouter.", si: "Medir" }))) return;
+  try { await post("api/evaluar", { motor: "claude" }, h()); toast("Medición con Claude iniciada. Resultados en Precisión."); refrescar(); } catch (e) { toast(e.message, true); }
+});
+$("#reiniciar").addEventListener("click", async () => {
+  if (!(await confirmar({ titulo: "¿Reiniciar la demo?", texto: "Vuelven los 60 tickets iniciales y se borran los creados. El gasto acumulado se conserva.", si: "Reiniciar", peligro: true }))) return;
+  try { pintar(await post("api/admin/reiniciar", {}, h())); toast("Demo reiniciada. El gasto acumulado se conserva."); } catch (e) { toast(e.message, true); }
+});
+if (clave) entrar(clave);
+</script>
+</body>
+</html>

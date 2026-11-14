@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reclama tu premio · Curso de ClickHouse · JMD</title>
+<meta name="description" content="Solo para los campeones del sorteo: registra tu dorsal ganador, tu nombre y tu correo para recibir el curso de ClickHouse.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap">
+<link rel="stylesheet" href="static/sorteo.css">
+</head>
+<body class="estadio">
+<main>
+  <span class="marca">⚽ JMD Learn · Copa ClickHouse</span>
+  <h1>🏆 Reclama tu premio</h1>
+  <p class="sub">Solo para los <b>campeones del sorteo</b>. Escribe tu dorsal ganador, tu nombre y tu correo: ahí te enviamos el acceso al curso de ClickHouse.</p>
+
+  <section class="panel" id="v-form">
+    <form id="form" autocomplete="on" novalidate>
+      <label for="dorsal">Tu dorsal ganador (el número de tu ticket)</label>
+      <input id="dorsal" type="number" min="1" inputmode="numeric" placeholder="Ej.: 10" style="max-width:160px" required>
+      <label for="nombre" style="margin-top:14px">Nombre y apellido</label>
+      <input id="nombre" name="name" type="text" maxlength="60" autocomplete="name" placeholder="Ej.: Lucía Ramos" required>
+      <label for="correo" style="margin-top:14px">Correo electrónico</label>
+      <input id="correo" name="email" type="text" inputmode="email" maxlength="120" autocomplete="email" placeholder="tu@correo.com" required>
+      <div class="fila" style="margin-top:16px"><button id="btn" type="submit">Reclamar mi premio 🏆</button></div>
+      <p class="error" id="error" role="alert"></p>
+      <p class="nota">Usamos tu correo solo para enviarte lo del curso. Nada de spam.</p>
+    </form>
+  </section>
+
+  <section class="panel" id="v-ok" hidden>
+    <h2 style="margin-top:0" id="ok-titulo">🏆 ¡Premio registrado, campeón!</h2>
+    <p class="nota" id="ok-texto">Te escribiremos al correo con el acceso y las fechas. Si tienes dudas, escríbenos al WhatsApp <a href="https://wa.me/51986149476" style="color:var(--amarillo);font-weight:700">986 149 476</a>.</p>
+  </section>
+</main>
+<script type="module">
+import { api, pad } from "./static/sorteo.js";
+const $ = (id) => document.getElementById(id);
+// Si este navegador es el del sorteo, rellena el dorsal y el nombre.
+let token = "";
+try { token = JSON.parse(localStorage.getItem("sorteo-clickhouse") || "null")?.t || ""; } catch {}
+if (token) api(`api/estado?t=${encodeURIComponent(token)}`).then((e) => {
+  if (e.yo && e.gane) { $("dorsal").value = e.yo.numero; $("nombre").value = e.yo.nombre; }
+}).catch(() => {});
+$("form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  $("error").textContent = "";
+  $("btn").disabled = true;
+  try {
+    const r = await api("api/curso", { method: "POST", body: JSON.stringify({ nombre: $("nombre").value, correo: $("correo").value, dorsal: $("dorsal").value, t: token }) });
+    $("v-form").hidden = true;
+    $("v-ok").hidden = false;
+    $("ok-titulo").textContent = r.repetido ? "Tu premio ya estaba registrado" : "🏆 ¡Premio registrado, campeón!";
+    $("ok-texto").innerHTML = `Dorsal ${pad($("dorsal").value)}. Te escribiremos al correo con tu acceso al curso de ClickHouse. Dudas: WhatsApp <a href="https://wa.me/51986149476" style="color:var(--amarillo);font-weight:700">986 149 476</a>.`;
+  } catch (err) {
+    $("error").textContent = err.message;
+  } finally {
+    $("btn").disabled = false;
+  }
+});
+</script>
+</body>
+</html>

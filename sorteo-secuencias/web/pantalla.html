@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pantalla · Sorteo de las secuencias</title>
+<meta name="theme-color" content="#0d0b1f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%BB%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/estilo.css?v=3">
+<style>
+  main { max-width: 1500px; padding-top: 18px; }
+  .rueda { width: min(100%, 72vh); }
+  .titular { font-size: clamp(32px, 4.4vw, 64px); }
+  .detalle { font-size: clamp(16px, 1.5vw, 22px); }
+  .barra { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .ganadores { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 760px) { .ganadores { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<canvas id="fondo" aria-hidden="true"></canvas>
+<main>
+  <div class="barra">
+    <div>
+      <span class="kick">JMD LEARNING · SORTEO EN VIVO</span>
+      <h1 class="marca" style="font-size:clamp(30px,4vw,54px)">Sorteo de las <em>secuencias</em></h1>
+    </div>
+    <div class="chips">
+      <span class="chip" id="chip-fase">Cargando…</span>
+      <button class="chip" id="btn-sonido" type="button" style="cursor:pointer;color:inherit">🔇 Activar sonido</button>
+    </div>
+  </div>
+  <section class="panel"><div id="show"></div></section>
+  <section class="panel" id="ganadores-panel" hidden>
+    <h2>Los <span>ganadores</span></h2>
+    <div class="ganadores" id="ganadores"></div>
+  </section>
+</main>
+<script type="module">
+import { api, $, esc, dos, soles, conPremio } from "./static/comun.js";
+import { fondo } from "./static/fondo.js";
+import { crearShow } from "./static/show.js";
+const fx = fondo($("#fondo"));
+const show = crearShow($("#show"), { fondo: fx });
+$("#btn-sonido").addEventListener("click", () => {
+  show.sonido.on = !show.sonido.on;
+  $("#btn-sonido").textContent = show.sonido.on ? "🔊 Sonido activo" : "🔇 Activar sonido";
+});
+async function cargar() {
+  let e;
+  try { e = await api("api/estado"); } catch { return; }
+  const chip = $("#chip-fase");
+  chip.className = "chip" + (e.fase === "sorteo" ? " vivo" : "");
+  chip.textContent = { inscripcion: `Elección abierta · ${e.ocupados.length} de ${e.total} tickets`, cerrado: "Elección cerrada · empieza el sorteo", sorteo: "En vivo", fin: "Terminado ✓" }[e.fase];
+  show.actualizar(e);
+  $("#ganadores-panel").hidden = !e.resultado.length;
+  $("#ganadores").innerHTML = e.resultado.map((x) => {
+    const p = e.premios.find((q) => q.id === x.premio);
+    return `<div class="gana"><span class="num">RONDA ${x.ronda + 1} · TICKET ${dos(x.ticket)}</span><h3>${esc(x.nombre)}</h3>
+      <p><b>${p.descuento}%</b> en ${esc(p.curso)}</p><p>${soles(p.precio)} → <b>${soles(conPremio(p))}</b></p></div>`;
+  }).join("");
+}
+await cargar();
+setInterval(() => { if (!document.hidden) cargar(); }, 1200);
+</script>
+</body>
+</html>
