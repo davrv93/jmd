@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Escena · Tu render</title>
-<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). La medición «después»: el mismo render con reglas, plantilla y el
-     pedido afinado. Laboratorio: el alumno pega su index.html y la escena lo renderiza en un iframe srcdoc con sandbox
+<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). La medición «después»: el mismo render en un chat nuevo del Proyecto
+     (reglas + plantilla) con el pedido afinado; se mide pegando la respuesta y el código del artefacto (tokens ≈ letras ÷ 4). Laboratorio: el alumno pega el código del artefacto y la escena lo renderiza en un iframe srcdoc con sandbox
      «allow-scripts» (origen opaco, sin cookies): los <script src> de CDN de p5, GSAP y three se reemplazan por las copias
      de _comun, traídas con fetch e incrustadas. El número «después» queda en localStorage (ccp-02-despues), sale como
      evidencia «hallazgo» y se publica en el muro para la escena 10. -->
@@ -27,7 +27,11 @@
 .r9-estado.ok { color: var(--ok); }
 .r9-tok { display: flex; align-items: baseline; gap: .5em; margin: .4em 0 .2em; }
 .r9-tok span:last-child { font-size: .66em; color: var(--muted); font-weight: 700; }
-.r9-tok .esc-big { font-size: 2.4em; }
+.r9-tok .esc-big { font-size: 2.2em; }
+.r9-cajas { display: grid; gap: .35em; }
+.r9-cajas label { display: flex; justify-content: space-between; font-size: .58em; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.r9-cajas label b { font: 800 1em var(--mono); color: var(--accent); }
+.r9-cajas .r9-ta { min-height: 3.2em; }
 @media (max-width: 860px) { .r9 { grid-template-columns: 1fr; } .r9-pasos .esc-cmd, .r9-ta, .r9-ped { font-size: .78em; } .r9-estado { font-size: .8em; } }
 </style>
 </head>
@@ -40,29 +44,32 @@
 <div class="esc">
   <header class="esc-cab">
     <span class="esc-fase" data-ph="ea">Experimentación</span>
-    <span class="esc-num">Claude Code PRO · S2 · 09/12</span>
+    <span class="esc-num">Claude Code PRO · S2 · 09/13</span>
   </header>
   <main class="esc-cuerpo">
     <div>
       <h1 class="esc-titulo a-in">Tu render, <em>con reglas</em></h1>
-      <p class="esc-sub a-in" style="--d:.1s">El mismo gráfico de la escena 3, pero ahora con CLAUDE.md, la plantilla y tu pedido de cinco líneas. Con tus propios datos. Y medimos.</p>
+      <p class="esc-sub a-in" style="--d:.1s">El mismo gráfico de la escena 3, pero ahora en un chat nuevo dentro de tu Proyecto: reglas, plantilla y tu pedido de cinco líneas. Con tus propios datos. Y medimos.</p>
     </div>
     <div class="r9">
       <div class="r9-izq">
         <section class="esc-card r9-pasos a-in" style="--d:.2s">
           <ol class="cc-pasos">
-            <li><h3>Sesión nueva en <span class="cc-c">mi-render</span></h3><div class="cuerpo"><pre class="esc-cmd"><span class="p">$ </span>cd mi-render &amp;&amp; claude</pre><p class="cc-nota">Dentro: <span class="cc-c">/model</span> y elige Sonnet. Para cambiar ocho líneas no hace falta el modelo grande.</p></div></li>
+            <li><h3>Chat nuevo <b>dentro</b> de tu Proyecto «Mi render»</h3><div class="cuerpo"><p class="cc-nota">Entra al Proyecto y pulsa «Nuevo chat» ahí. En el selector de modelo del chat elige <b>Sonnet</b>: para cambiar ocho líneas no hace falta el modelo grande.</p></div></li>
             <li><h3>Pega tu pedido de la escena 7</h3><div class="cuerpo"><pre class="esc-cmd r9-ped" id="ped"></pre><p class="cc-nota">Cambia los datos por los tuyos: meses y montos, sprints y tickets, días y pasos. Lo que sea tuyo.</p></div></li>
-            <li><h3>Abre index.html y mide</h3><div class="cuerpo"><pre class="esc-cmd"><span class="p">$ </span>open index.html   <span class="c"># Windows: start · Linux: xdg-open</span></pre><pre class="esc-cmd"><span class="p">&gt; </span>/context</pre></div></li>
+            <li><h3>Mira el artefacto y mide</h3><div class="cuerpo"><p class="cc-nota">El artefacto se actualiza a la derecha. Luego: «Copiar» del mensaje → caja 1; «Copiar» del artefacto (código) → caja 2. Ese mismo código va al laboratorio y, descargado, es tu index.html del entregable.</p></div></li>
           </ol>
         </section>
         <section class="esc-card a-in" style="--d:.3s">
-          <label class="cc-et" for="despues">Tokens que mostró /context (con reglas)</label>
-          <div class="cc-fila">
-            <input class="cc-in" id="despues" inputmode="decimal" autocomplete="off" placeholder="Ej.: 14.2k">
-            <button type="button" class="cc-btn" id="pub">Publicar</button>
+          <span class="cc-et">Medidor · lo que Claude escribió, con reglas</span>
+          <div class="r9-cajas">
+            <label for="txt">Caja 1 · texto de la respuesta <b id="t-txt">0</b></label>
+            <textarea class="r9-ta" id="txt" spellcheck="false" placeholder="Pega el texto del mensaje de Claude"></textarea>
+            <label for="cod">Caja 2 · código del artefacto <b id="t-cod">0</b></label>
+            <textarea class="r9-ta" id="cod" spellcheck="false" placeholder="Pega el código del artefacto (botón Copiar del artefacto)"></textarea>
           </div>
-          <div class="r9-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>tokens con reglas</span></div>
+          <div class="r9-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>tokens escritos, con reglas</span></div>
+          <div class="cc-fila"><button type="button" class="cc-btn" id="pub">Publicar</button><button type="button" class="cc-btn sec" id="al-lab">Llevar el código al laboratorio</button></div>
           <div class="cc-ad" id="ad" hidden>
             <div class="cc-ad-fila"><span>Antes</span><div class="b"><i id="b-antes"></i><b id="t-antes"></b></div></div>
             <div class="cc-ad-fila despues"><span>Después</span><div class="b"><i id="b-desp"></i><b id="t-desp"></b></div></div>
@@ -73,21 +80,21 @@
       </div>
       <div class="r9-der">
         <section class="esc-card r9-lab a-in" style="--d:.3s">
-          <span class="cc-et">Laboratorio · pega tu index.html y mírate en el LMS</span>
-          <textarea class="r9-ta" id="html" spellcheck="false" placeholder="Pega aquí todo el contenido de tu index.html (Mac: pbcopy < index.html · Windows: Get-Content index.html | Set-Clipboard). Las librerías p5, three.js y GSAP las pone el LMS."></textarea>
+          <span class="cc-et">Laboratorio · pega el código del artefacto y mírate en el LMS</span>
+          <textarea class="r9-ta" id="html" spellcheck="false" placeholder="Pega aquí el código del artefacto (en claude.ai: abre el artefacto → Copiar). Las librerías p5, three.js y GSAP las pone el LMS, sin internet."></textarea>
           <div class="cc-fila">
             <button type="button" class="cc-btn" id="render">Renderizar</button>
             <button type="button" class="cc-btn sec" id="demo">Probar con la plantilla p5</button>
             <button type="button" class="cc-btn sec" id="limpiar">Limpiar</button>
           </div>
-          <div class="r9-visor"><div class="vacio" id="vacio">Aquí aparece tu render. Pega tu index.html arriba y pulsa «Renderizar».</div><iframe id="marco" title="Tu render" sandbox="allow-scripts" hidden></iframe></div>
+          <div class="r9-visor"><div class="vacio" id="vacio">Aquí aparece tu render. Pega el código del artefacto arriba y pulsa «Renderizar».</div><iframe id="marco" title="Tu render" sandbox="allow-scripts" hidden></iframe></div>
           <p class="r9-estado" id="estado"></p>
           <div id="muro"></div>
         </section>
       </div>
     </div>
   </main>
-  <footer class="esc-pie"><span>Al publicar, tu número cuenta como evidencia. En la escena 10 comparamos el grupo: sin reglas y con reglas.</span></footer>
+  <footer class="esc-pie"><span>Al publicar, tu número cuenta como evidencia. En la escena 10 comparamos el grupo: chat suelto contra Proyecto con reglas.</span></footer>
 </div>
 <script src="../../comun/ccp.js"></script>
 <script>
@@ -96,22 +103,18 @@
 
   /* ---- El pedido de la escena 7 ---- */
   var ped = CC.leer("pedido", null);
-  var EJ = "En index.html, bloque DATOS: titulo «Ventas 2025» e items Ene 120, Feb 95, Mar 140, Abr 160, May 130, Jun 175.\nUsa la plantilla tal como está. Nada más. Sin explicar. Muestra solo el bloque cambiado.\nCompruebo: abro index.html y veo 6 barras girando con esos valores.";
+  var EJ = "En la plantilla, bloque DATOS: titulo «Ventas 2025» e items Ene 120, Feb 95, Mar 140, Abr 160, May 130, Jun 175.\nUsa la plantilla del proyecto tal como está. Nada más. Sin explicar. Actualiza el artefacto.\nCompruebo: en el artefacto veo 6 barras girando con esos valores.";
   $("ped").textContent = ped && ped.texto && ped.texto.trim() ? ped.texto.trim() : EJ;
   CC.montarCopiar();
 
   /* ---- Medición después ---- */
-  var inp = $("despues"), antes = CC.leer("antes", null), previo = CC.leer("despues", null);
-  if (previo && previo.tok) inp.value = previo.tok;
-  function tok() {
-    var s = String(inp.value).toLowerCase().replace(/\s/g, "").replace(",", ".");
-    var k = /k$/.test(s); s = s.replace(/k$/, "");
-    var n = parseFloat(k ? s : s.replace(/\./g, ""));
-    if (!(n > 0)) return 0;
-    n = Math.round(k ? n * 1000 : n);
-    return n < 5000000 ? n : 0;
-  }
+  var txt = $("txt"), cod = $("cod"), antes = CC.leer("antes", null), previo = CC.leer("despues", null);
+  if (previo && previo.txt) txt.value = previo.txt;
+  if (previo && previo.cod) cod.value = previo.cod;
+  function largo(s) { return String(s || "").replace(/\s+/g, " ").trim().length; }
+  function tok() { return Math.round((largo(txt.value) + largo(cod.value)) / 4); }
   function pintar() {
+    $("t-txt").textContent = "≈ " + CC.num(Math.round(largo(txt.value) / 4)); $("t-cod").textContent = "≈ " + CC.num(Math.round(largo(cod.value) / 4));
     var n = tok(); $("tok-n").textContent = n ? CC.num(n) : "—";
     if (n && antes && antes.tok) {
       var max = Math.max(n, antes.tok);
@@ -123,16 +126,17 @@
       $("delta").classList.toggle("mal", pct >= 0);
     } else $("ad").hidden = true;
   }
-  inp.addEventListener("input", pintar); pintar();
+  txt.addEventListener("input", pintar); cod.addEventListener("input", pintar); pintar();
+  $("al-lab").addEventListener("click", function () { if (cod.value.trim()) { $("html").value = cod.value; renderizar(cod.value); } else aviso("Pega primero el código del artefacto en la caja 2.", "mal"); });
 
   var cajaMuro = document.createElement("div"); cajaMuro.hidden = true; document.body.appendChild(cajaMuro);
   var muroTok = CC.muro(cajaMuro, "09-tu-render", "");
   $("pub").addEventListener("click", function () {
     var n = tok(), b = this;
-    if (!n) { $("msg").textContent = "Escribe el total que mostró /context (por ejemplo 14.2k)."; inp.focus(); return; }
-    CC.guardar("despues", { tok: n });
+    if (!n) { $("msg").textContent = "Pega primero la respuesta o el código del artefacto."; txt.focus(); return; }
+    CC.guardar("despues", { tok: n, txt: txt.value.slice(0, 20000), cod: cod.value.slice(0, 60000) });
     b.disabled = true;
-    CC.evidencia("hallazgo", "Render con reglas y plantilla: " + n + " tokens en /context" + (antes && antes.tok ? " (antes " + antes.tok + ")" : "")).then(function (r) {
+    CC.evidencia("hallazgo", "Render con reglas y plantilla: Claude escribió ≈ " + n + " tokens" + (antes && antes.tok ? " (antes " + antes.tok + ")" : "")).then(function (r) {
       $("msg").textContent = r.ok ? "✓ Publicado como evidencia. Ahora pulsa «Lo logré»." : "Lo guardé en este navegador. La evidencia se envía con la clase en vivo.";
       b.disabled = false;
     });
@@ -185,8 +189,8 @@
   function aviso(t, cls) { estado.textContent = t; estado.className = "r9-estado" + (cls ? " " + cls : ""); }
   addEventListener("message", function (ev) {
     if (ev.source !== marco.contentWindow || !ev.data || ev.data.tipo !== "lab") return;
-    if (ev.data.error) aviso("Tu página dio un error: " + ev.data.error + " · Pídele a Claude: «Al abrir index.html sale este error: … Arregla solo eso.»", "mal");
-    else if (ev.data.ok && !estado.classList.contains("mal")) aviso("✓ Renderizado en el LMS. Publica tu /context y pulsa «Lo logré».", "ok");
+    if (ev.data.error) aviso("Tu página dio un error: " + ev.data.error + " · Pídele a Claude: «En el artefacto sale este error: … Arregla solo eso. Actualiza el artefacto.»", "mal");
+    else if (ev.data.ok && !estado.classList.contains("mal")) aviso("✓ Renderizado en el LMS. Publica tu medición y pulsa «Lo logré».", "ok");
   });
   function renderizar(html) {
     if (!html.trim()) { aviso("Pega primero tu index.html.", "mal"); return; }
