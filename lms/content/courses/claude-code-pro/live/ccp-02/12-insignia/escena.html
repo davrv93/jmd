@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Escena · Tu insignia y tu fotito</title>
 <!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). Cierre: insignia (se enciende con 5 de los 7 pasos del
-     ciclo, leídos de /api/v1/lessons/<lección>/progress), resumen de la sesión desde localStorage (línea base,
-     medición final, plan, juego), la fotito, el muro «¿Qué te llevas?», la encuesta de dificultad y el entregable 2. -->
+     ciclo, leídos de /api/v1/lessons/<lección>/progress), resumen de la sesión desde localStorage (antes, después, pedido,
+     juego), la fotito, el muro «¿Qué te llevas?», la encuesta de dificultad y el entregable 2. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/ccp.css">
 <style id="esc-propio">
@@ -69,7 +69,7 @@
     </div>
     <div class="i12 apagada" id="i12">
       <div class="i12-ins">
-        <svg viewBox="-60 -60 720 720" role="img" aria-label="Insignia de la sesión 2: hexágono verde con un árbol que se divide en hojas y el número 02">
+        <svg viewBox="-60 -60 720 720" role="img" aria-label="Insignia de la sesión 2: hexágono con seis barras 3D y el número 02">
           <defs>
             <linearGradient id="ig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f766e"/><stop offset="1" stop-color="#5a49d6"/></linearGradient>
           </defs>
@@ -79,11 +79,12 @@
             <polygon points="300,34 530,167 530,433 300,566 70,433 70,167" fill="none" stroke="#fff" stroke-width="9"/>
             <text x="300" y="140" text-anchor="middle" font-size="24" font-weight="600" letter-spacing="6" fill="#fff" fill-opacity=".85" font-family="system-ui,sans-serif">SESIÓN</text>
             <text x="300" y="262" text-anchor="middle" font-size="130" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">02</text>
-            <g fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round">
-              <path d="M300 410 L300 360 M300 360 L240 318 M300 360 L360 318 M240 318 L210 290 M240 318 L262 288 M360 318 L338 288 M360 318 L392 290"/>
+            <g fill="#fff" fill-opacity=".92">
+              <rect x="195" y="372" width="26" height="46" rx="4"/><rect x="229" y="352" width="26" height="66" rx="4"/><rect x="263" y="386" width="26" height="32" rx="4"/>
+              <rect x="297" y="330" width="26" height="88" rx="4"/><rect x="331" y="362" width="26" height="56" rx="4"/><rect x="365" y="318" width="26" height="100" rx="4" fill="#4fd37a"/>
             </g>
-            <g fill="#4fd37a" stroke="#fff" stroke-width="3"><circle cx="210" cy="286" r="12"/><circle cx="262" cy="284" r="12"/><circle cx="338" cy="284" r="12"/><circle cx="392" cy="286" r="12"/></g>
-            <text x="300" y="470" text-anchor="middle" font-size="19" font-weight="700" letter-spacing="1.5" fill="#fff" font-family="system-ui,sans-serif">PLAN RECURSIVO · CEREBRO</text>
+            <line x1="180" y1="420" x2="410" y2="420" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+            <text x="300" y="470" text-anchor="middle" font-size="19" font-weight="700" letter-spacing="1.5" fill="#fff" font-family="system-ui,sans-serif">REGLAS · PLANTILLA · PROMPT</text>
           </g>
         </svg>
         <div class="i12-prog">
@@ -105,10 +106,10 @@
         </div>
         <section class="esc-card">
           <span class="cc-et">Entregable 2</span>
-          <p class="cc-nota" style="font-size:.7em;color:var(--fg)">API con 10 métricas probadas, PLAN.md, el grafo del proyecto y una sesión retomada en frío con un traspaso de menos de 2 000 tokens. Súbelo en «Mis notas».</p>
+          <p class="cc-nota" style="font-size:.7em;color:var(--fg)">Tu index.html con tus datos, el CLAUDE.md que usaste, el prompt de cinco líneas y las dos capturas de /context (sin reglas y con reglas). Meta: −50 %. Súbelo en «Mis notas».</p>
           <div class="cc-fila" style="margin-top:.4em"><button type="button" class="cc-btn sec" id="copiar-ent" data-copiar="">Copiar la lista del entregable 2</button></div>
         </section>
-        <p class="i12-sig"><b>Sesión 3 · sábado 21 de noviembre, 7:30 p. m.:</b> multiagente y contexto acotado. Llega con tu backend y tu HANDOFF.md.</p>
+        <p class="i12-sig"><b>Sesión 3 · sábado 21 de noviembre, 7:30 p. m.:</b> multiagente y contexto acotado. Llega con tu carpeta mi-render (index.html y CLAUDE.md) y practica un pedido al día.</p>
       </div>
     </div>
   </main>
@@ -135,8 +136,8 @@
     else $("estado").textContent = "Tu avance aparece aquí durante la clase en vivo.";
   });
 
-  /* ---- Resumen de la sesión (lo que dejaron las escenas 3, 8, 7 y 11) ---- */
-  var antes = CC.leer("antes", null), despues = CC.leer("despues", null), plan = CC.leer("plan", null), juego = CC.leer("juego", null), cer = CC.leer("cerebro", null);
+  /* ---- Resumen de la sesión (lo que dejaron las escenas 3, 9, 7, 8 y 5) ---- */
+  var antes = CC.leer("antes", null), despues = CC.leer("despues", null), pedido = CC.leer("pedido", null), juego = CC.leer("juego", null), reglas = CC.leer("reglas", null), lab = CC.leer("lab", null);
   var res = $("res");
   function dato(et, val, sub) {
     var d = CC.el("div", "i12-dato" + (val ? "" : " vacio"));
@@ -144,13 +145,14 @@
     res.appendChild(d);
   }
   var pct = antes && despues && antes.tok ? Math.round((despues.tok - antes.tok) / antes.tok * 100) : null;
-  dato("Retomar en frío", pct == null ? "" : (pct > 0 ? "+" : pct < 0 ? "−" : "") + Math.abs(pct) + " %", pct == null ? "escenas 3 y 11" : CC.num(antes.tok) + " → " + CC.num(despues.tok));
-  dato("PLAN.md", plan && plan.hojas ? plan.hojas + " hojas" : "", plan && plan.criterio ? plan.criterio : "escena 8");
-  dato("Cerebro", cer && cer.lineas ? cer.lineas + " líneas" : "", cer ? (cer.luces || 0) + " de 3 luces" : "escena 9");
-  dato("Hasta la hoja", juego && juego.rondas ? juego.hojas + " hojas" : "", juego && juego.rondas ? juego.pts + " pts · mejor " + juego.mejor : "escena 7");
+  var lib = lab ? (lab.p5 ? "p5.js" : lab.three ? "three.js" : lab.gsap ? "GSAP" : "") : "";
+  dato("Tu render", pct == null ? "" : (pct > 0 ? "+" : pct < 0 ? "−" : "") + Math.abs(pct) + " %", pct == null ? "escenas 3 y 9" : CC.num(antes.tok) + " → " + CC.num(despues.tok) + (lib ? " · " + lib : ""));
+  dato("Tu pedido", pedido && pedido.luces ? pedido.luces + " de 5 luces" : "", pedido && pedido.tok ? "≈ " + pedido.tok + " tokens" : "escena 7");
+  dato("Reglas", reglas && reglas.luces ? reglas.luces + " de " + reglas.total : "", "entendidas · escena 5");
+  dato("¿Cuál gasta menos?", juego && juego.decididas ? juego.aciertos + " de " + juego.decididas : "", juego && juego.decididas ? "aciertos · escena 8" : "escena 8");
 
   /* ---- Muro, dificultad, fotito ---- */
-  var muro = CC.muro($("muro"), "12-insignia", "¿Qué te llevas de hoy?", { placeholder: "Divido hasta la hoja y retomo con un traspaso corto", alPublicar: function () { foto.generar(); } });
+  var muro = CC.muro($("muro"), "12-insignia", "¿Qué te llevas de hoy?", { placeholder: "Reglas, plantilla y cinco líneas: Claude escribe menos y yo gasto la mitad", alPublicar: function () { foto.generar(); } });
   CC.votos($("dif"), "12-insignia-dificultad", "", [1, 2, 3, 4, 5].map(function (n) { return { id: "d" + n, t: String(n) }; }));
   $("dif").classList.add("i12-dif");
   var avatar = CC.leer("avatar", "") || "";
@@ -158,19 +160,19 @@
   CC.yo().then(function (me) { if (me && me.name) nombre = me.name; });
   var foto = CCFoto.montar($("foto"), function () {
     var principal, detalle, et;
-    if (pct != null) { et = "Retomar en frío"; principal = (pct > 0 ? "+" : pct < 0 ? "−" : "") + Math.abs(pct) + " % de contexto"; detalle = CC.num(antes.tok) + " → " + CC.num(despues.tok) + " tokens" + (despues.hand ? " · HANDOFF ≈ " + CC.num(despues.hand / 4) + " tokens" : ""); }
-    else if (juego && juego.rondas) { et = "Juego «Hasta la hoja»"; principal = juego.hojas + " hojas · " + juego.pts + " pts"; detalle = juego.aciertos + " de " + juego.decididas + " al primer intento"; }
-    else { et = "Mi plan"; principal = plan && plan.hojas ? plan.hojas + " hojas en PLAN.md" : "PLAN.md recursivo"; detalle = plan && plan.criterio ? "parada: " + plan.criterio : "1 cosa · 1 sesión · 1 prueba"; }
-    if (pct != null && plan && plan.hojas) detalle += " · PLAN.md con " + plan.hojas + " hojas";
+    if (pct != null) { et = "Mi render con reglas"; principal = (pct > 0 ? "+" : pct < 0 ? "−" : "") + Math.abs(pct) + " % de contexto"; detalle = CC.num(antes.tok) + " → " + CC.num(despues.tok) + " tokens" + (lib ? " · " + lib : ""); }
+    else if (pedido && pedido.luces) { et = "Mi pedido de cinco líneas"; principal = pedido.luces + " de 5 luces"; detalle = "≈ " + pedido.tok + " tokens de pedido"; }
+    else { et = "Reglas de la casa"; principal = reglas && reglas.luces ? reglas.luces + " reglas entendidas" : "CLAUDE.md en 20 líneas"; detalle = "corto · solo lo pedido · sin explicar"; }
+    if (juego && juego.decididas) detalle += " · juego " + juego.aciertos + "/" + juego.decididas;
     return { nombre: nombre || "Alumno", avatar: CC.avatar(avatar).e, etiqueta: et, resultado: principal, detalle: detalle, reflexion: muro.input.value.trim() };
   });
 
   /* ---- Entregable 2 ---- */
   var ENT = "Entregable 2 · Claude Code PRO (sesión 2)\n" +
-    "- API con 10 métricas, cada una con su prueba verde\n" +
-    "- PLAN.md recursivo: hojas con criterio de parada\n" +
-    "- graphify-out/ (el grafo del proyecto)\n" +
-    "- HANDOFF.md de menos de 2 000 tokens y captura de /context al retomar en frío\n" +
+    "- index.html con mis datos (hecho desde la plantilla)\n" +
+    "- CLAUDE.md con las reglas de la casa\n" +
+    "- El prompt de cinco líneas que usé\n" +
+    "- Captura de /context sin reglas (escena 3) y con reglas (escena 9). Meta: −50 %\n" +
     "Súbelo en «Mis notas» de la sesión 2.";
   $("copiar-ent").setAttribute("data-copiar", ENT);
 })();

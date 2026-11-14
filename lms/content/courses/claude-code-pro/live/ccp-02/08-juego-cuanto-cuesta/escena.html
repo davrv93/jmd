@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Juego: ¿cuál pedido gasta menos?</title>
+<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). Cuatro rondas: dos pedidos, el grupo vota cuál gasta menos
+     (CC.votos con «correcta»), se revela y se explica. El marcador propio queda en localStorage (ccp-02-juego). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style id="esc-propio">
+.j8 { display: grid; grid-template-columns: 1.3fr .7fr; gap: 1.6vw; align-items: start; }
+.j8-ronda { display: grid; gap: .8em; }
+.j8-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 1vw; }
+.j8-op { display: grid; grid-template-rows: auto 1fr; gap: .4em; background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .7em .9em; box-shadow: var(--card-shadow); min-width: 0; }
+.j8-op .letra { font: 900 1.2em var(--mono); color: var(--accent); }
+.j8-op .ctx { font-size: .6em; color: var(--muted); }
+.j8-op pre { margin: 0; font: 500 .66em/1.45 var(--mono); white-space: pre-wrap; color: var(--fg); background: var(--s2); border-radius: .6em; padding: .5em .7em; overflow-wrap: anywhere; }
+.j8-op.gana { border-color: var(--ok); box-shadow: inset 0 0 0 2px var(--ok); }
+.j8-op.gana .letra::after { content: " · gasta menos"; font-size: .6em; color: var(--ok); }
+.j8-op.pierde { opacity: .6; }
+.j8-rev { font-size: .7em; margin: 0; padding: .55em .85em; border-radius: .8em; background: var(--gold-bg); border: 1px dashed var(--gold); color: var(--fg); }
+.j8-rev b { color: var(--fg); }
+.j8-marc { display: grid; gap: .5em; }
+.j8-marc .esc-big { font-size: 2.6em; }
+.j8-tabs .cc-tab.hecha { border-color: var(--ok); color: var(--ok); }
+.j8-tabs .cc-tab[aria-selected="true"].hecha { background: var(--ok); color: #fff; }
+@media (max-width: 860px) { .j8, .j8-dos { grid-template-columns: 1fr; } .j8-op pre { font-size: .84em; } .j8-rev, .j8-op .ctx { font-size: .86em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="tb" pathLength="1" d="M1010 760 L1086 708 L1162 744 L1230 690 L1300 722"/>
+  <g><circle class="e" cx="1010" cy="760" r="3.5"/><circle class="eg" cx="1086" cy="708" r="4"/><circle class="e" cx="1162" cy="744" r="3"/><circle class="eo" cx="1230" cy="690" r="4.5"/><circle class="e" cx="1300" cy="722" r="3.5"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="1500" cy="300" r="1.7"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Claude Code PRO · S2 · 08/12</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Juego: ¿cuál pedido <em>gasta menos</em>?</h1>
+      <p class="esc-sub a-in" style="--d:.1s">Cuatro rondas. Dos pedidos que buscan lo mismo. Vota cuál hace marcar menos al taxímetro. Luego revelamos y vemos por qué.</p>
+    </div>
+    <div class="j8">
+      <div class="j8-ronda" id="juego">
+        <div class="cc-tabs j8-tabs" id="tabs">
+          <button type="button" class="cc-tab" data-tab="r1">Ronda 1</button>
+          <button type="button" class="cc-tab" data-tab="r2">Ronda 2</button>
+          <button type="button" class="cc-tab" data-tab="r3">Ronda 3</button>
+          <button type="button" class="cc-tab" data-tab="r4">Ronda 4</button>
+        </div>
+        <div id="rondas"></div>
+      </div>
+      <div class="j8-marc">
+        <section class="esc-card a-in" style="--d:.3s">
+          <span class="cc-et">Tu marcador</span>
+          <div class="esc-big" id="pts">0</div>
+          <p class="cc-nota" id="pts-nota">aciertos de 4 rondas</p>
+        </section>
+        <section class="esc-card a-in" style="--d:.4s">
+          <span class="cc-et">Lo que se repite</span>
+          <ul class="esc-lista" style="font-size:.7em">
+            <li>Claro gana a vago, aunque sea más largo.</li>
+            <li>Nombrar el archivo gana a pegarlo.</li>
+            <li>Decir qué viste gana a «arréglalo».</li>
+            <li>Mochila vacía gana a mochila llena.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>El instructor pulsa «Revelar» cuando el grupo votó. Puedes cambiar tu voto hasta ese momento.</span></footer>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var RONDAS = [
+    { id: "r1", t: "Lo mismo, dicho de dos formas", correcta: "b",
+      a: { ctx: "Sesión nueva, carpeta con la plantilla", txt: "Hazme un dashboard bonito con mis ventas en 3D, con colores modernos y que se vea profesional. Explícame cada parte." },
+      b: { ctx: "Sesión nueva, carpeta con la plantilla", txt: "En index.html, bloque DATOS: titulo «Ventas 2025», items Ene 120, Feb 95, Mar 140. Nada más. Sin explicar. Compruebo: 3 barras." },
+      por: "B es más largo y gasta menos: A obliga a Claude a adivinar «bonito», escribir todo el archivo y explicarlo. Casi siempre hay que repetir. Claro gana a vago." },
+    { id: "r2", t: "El archivo: ¿lo pego o lo nombro?", correcta: "b",
+      a: { ctx: "Pegas 120 líneas de index.html en el chat", txt: "Aquí está mi index.html: [120 líneas pegadas]. ¿Qué opinas? Quiero que las barras entren animadas." },
+      b: { ctx: "El archivo está en la carpeta", txt: "En index.html, función animar(): las barras entran en 0.4 s, una por una. Solo esa función. Sin explicar." },
+      por: "Pegar el archivo es pagar su lectura dos veces (ya está en la carpeta) y «¿qué opinas?» abre una respuesta larga. Nombrar el archivo y la función es dar la dirección exacta." },
+    { id: "r3", t: "Algo salió mal", correcta: "b",
+      a: { ctx: "Las barras no giran", txt: "Arréglalo." },
+      b: { ctx: "Las barras no giran", txt: "Al abrir index.html las barras no giran. Esperaba giro lento sobre su eje. Arregla solo eso. Sin explicar." },
+      por: "A es cortísimo y carísimo: Claude no sabe qué está mal, relee todo, prueba cosas y vuelves a pedir. B cuesta cinco líneas y una sola vuelta. Corto no es lo mismo que claro." },
+    { id: "r4", t: "La mochila", correcta: "b",
+      a: { ctx: "Misma conversación de hace 40 mensajes", txt: "Ahora cambia el color de las barras a verde." },
+      b: { ctx: "Sesión nueva con CLAUDE.md y la plantilla", txt: "En index.html, bloque DATOS: colorA #4fd37a. Nada más." },
+      por: "El pedido A es corto, pero viaja con 40 mensajes a la espalda: cada vez Claude relee toda la mochila. En B la mochila está vacía y las reglas ya dicen cómo trabajar. Sesión nueva + dos archivos gana." }
+  ];
+  var estado = CC.leer("juego", { reveladas: {}, votos: {} }) || { reveladas: {}, votos: {} };
+  estado.reveladas = estado.reveladas || {}; estado.votos = estado.votos || {};
+  var cont = $("rondas"), votaciones = {};
+
+  RONDAS.forEach(function (r) {
+    var pan = CC.el("div"); pan.setAttribute("data-panel", r.id); pan.hidden = true; pan.className = "j8-ronda";
+    var cab = CC.el("div", "cc-fila"); cab.style.justifyContent = "space-between"; cab.style.alignItems = "center";
+    cab.appendChild(CC.el("p", "cc-votos-q", r.t));
+    var btn = CC.el("button", "cc-btn sec", "Revelar"); btn.type = "button"; cab.appendChild(btn);
+    pan.appendChild(cab);
+    var dos = CC.el("div", "j8-dos");
+    ["a", "b"].forEach(function (k) {
+      var op = CC.el("div", "j8-op"); op.id = r.id + "-" + k;
+      op.appendChild(CC.el("div", "letra", k.toUpperCase()));
+      op.appendChild(CC.el("div", "ctx", r[k].ctx));
+      op.appendChild(CC.el("pre", "", r[k].txt));
+      dos.appendChild(op);
+    });
+    pan.appendChild(dos);
+    var voto = CC.el("section", "esc-card"); pan.appendChild(voto);
+    var rev = CC.el("p", "j8-rev"); rev.hidden = true; pan.appendChild(rev);
+    cont.appendChild(pan);
+
+    votaciones[r.id] = CC.votos(voto, "08-" + r.id, "¿Cuál gasta menos?", [{ id: "a", t: "El pedido A" }, { id: "b", t: "El pedido B" }], {
+      correcta: r.correcta,
+      alVotar: function (id) { if (!estado.reveladas[r.id]) { estado.votos[r.id] = id; CC.guardar("juego", estado); } }
+    });
+    function revelar() {
+      estado.reveladas[r.id] = true; CC.guardar("juego", estado);
+      votaciones[r.id].revelar();
+      $(r.id + "-" + r.correcta).classList.add("gana"); $(r.id + "-" + (r.correcta === "a" ? "b" : "a")).classList.add("pierde");
+      rev.textContent = ""; rev.appendChild(CC.el("b", "", "Por qué: ")); rev.append(r.por);
+      var mio = estado.votos[r.id] || votaciones[r.id].mio();
+      if (mio) rev.append(mio === r.correcta ? " ✓ Acertaste." : " ✗ Esta vez no.");
+      rev.hidden = false; btn.disabled = true;
+      document.querySelector('.cc-tab[data-tab="' + r.id + '"]').classList.add("hecha");
+      marcador();
+    }
+    btn.addEventListener("click", revelar);
+    if (estado.reveladas[r.id]) revelar();
+  });
+
+  function marcador() {
+    var ac = 0, dec = 0;
+    RONDAS.forEach(function (r) { if (estado.reveladas[r.id]) { dec++; if ((estado.votos[r.id] || votaciones[r.id].mio()) === r.correcta) ac++; } });
+    $("pts").textContent = ac;
+    $("pts-nota").textContent = dec ? ac + " de " + dec + " reveladas (4 rondas)" : "aciertos de 4 rondas";
+    estado.aciertos = ac; estado.decididas = dec; estado.rondas = 4; CC.guardar("juego", estado);
+  }
+  marcador();
+  CC.pestanas($("juego"), "juego");
+})();
+</script>
+</body>
+</html>

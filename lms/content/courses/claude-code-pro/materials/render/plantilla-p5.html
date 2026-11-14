@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis números en 3D · p5.js</title>
+<!-- Plantilla del curso Claude Code PRO (sesión 2). Pídele a Claude cambios pequeños sobre esto: no partas de cero. -->
+<script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.min.js"></script>
+<style>
+  :root { --bg: #f4f3fb; --fg: #16151d; --muted: #5c5966; --card: #ffffff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #12112a; --fg: #ecebf7; --muted: #b7b4cc; --card: #1d1b38; } }
+  body { margin: 0; font: 16px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--fg); display: grid; justify-items: center; gap: 12px; padding: 16px; }
+  h1 { margin: 0; font-size: 1.6rem; }
+  p { margin: 0; color: var(--muted); font-size: .9rem; }
+  main canvas { display: block; border-radius: 16px; max-width: 100%; }
+  ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 900px; }
+  li { display: flex; align-items: center; gap: 8px; background: var(--card); padding: 6px 12px; border-radius: 999px; font-size: .9rem; }
+  li i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  li b { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<header style="text-align:center"><h1 id="titulo"></h1><p>p5.js · WEBGL · cambia solo el bloque DATOS</p></header>
+<main id="lienzo"></main>
+<ol id="leyenda"></ol>
+<script>
+// ===== DATOS · lo único que cambias (o le pides a Claude que cambie) =====
+const DATOS = {
+  titulo: "Mis números 2025",
+  items: [
+    { etiqueta: "Ene", valor: 120 },
+    { etiqueta: "Feb", valor: 95 },
+    { etiqueta: "Mar", valor: 140 },
+    { etiqueta: "Abr", valor: 160 },
+    { etiqueta: "May", valor: 130 },
+    { etiqueta: "Jun", valor: 175 }
+  ],
+  colorA: "#5a49d6",   // color de la barra más baja
+  colorB: "#4fd1c5",   // color de la barra más alta
+  velocidad: 0.006     // giro por cuadro; 0 = quieto
+};
+// ===== FIN DATOS =====
+
+let giro = 0;
+const ancho = () => Math.min(window.innerWidth - 32, 900);
+
+function setup() {
+  const c = createCanvas(ancho(), 460, WEBGL);
+  c.parent("lienzo");
+  document.getElementById("titulo").textContent = DATOS.titulo;
+  pintarLeyenda();
+}
+function windowResized() { resizeCanvas(ancho(), 460); }
+
+function colorDe(i) {
+  const max = Math.max(...DATOS.items.map(d => d.valor));
+  return lerpColor(color(DATOS.colorA), color(DATOS.colorB), DATOS.items[i].valor / max);
+}
+
+function draw() {
+  background(getComputedStyle(document.body).getPropertyValue("--bg"));
+  ambientLight(140);
+  directionalLight(255, 255, 255, -0.4, -1, -0.6);
+  rotateX(-0.42);
+  rotateY(giro);
+  giro += DATOS.velocidad;
+
+  const n = DATOS.items.length;
+  const max = Math.max(...DATOS.items.map(d => d.valor));
+  const paso = 72, lado = 46, x0 = -(n - 1) * paso / 2;
+
+  push(); translate(0, 1, 0); rotateX(HALF_PI); noStroke(); fill(120, 110, 200, 60); plane(n * paso + 90, 240); pop();
+
+  noStroke();
+  DATOS.items.forEach((it, i) => {
+    const h = map(it.valor, 0, max, 12, 230);
+    push();
+    translate(x0 + i * paso, -h / 2, 0);
+    fill(colorDe(i));
+    box(lado, h, lado);
+    pop();
+  });
+}
+
+function pintarLeyenda() {
+  const ol = document.getElementById("leyenda");
+  ol.innerHTML = "";
+  DATOS.items.forEach((it, i) => {
+    const li = document.createElement("li");
+    const sw = document.createElement("i"); sw.style.background = colorDe(i).toString();
+    li.append(sw, it.etiqueta + " ", Object.assign(document.createElement("b"), { textContent: it.valor.toLocaleString("es-PE") }));
+    ol.append(li);
+  });
+}
+</script>
+</body>
+</html>

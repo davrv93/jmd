@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis números en 3D · three.js</title>
+<!-- Plantilla del curso Claude Code PRO (sesión 2). Una escena, una cámara, una luz y cajas: pide cambios pequeños. -->
+<style>
+  :root { --bg: #f4f3fb; --fg: #16151d; --muted: #5c5966; --card: #ffffff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #12112a; --fg: #ecebf7; --muted: #b7b4cc; --card: #1d1b38; } }
+  body { margin: 0; font: 16px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--fg); display: grid; justify-items: center; gap: 12px; padding: 16px; }
+  h1 { margin: 0; font-size: 1.6rem; }
+  p { margin: 0; color: var(--muted); font-size: .9rem; }
+  #lienzo { width: min(100%, 900px); height: 460px; border-radius: 16px; overflow: hidden; }
+  #lienzo canvas { display: block; width: 100% !important; height: 100% !important; }
+  ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 900px; }
+  li { display: flex; align-items: center; gap: 8px; background: var(--card); padding: 6px 12px; border-radius: 999px; font-size: .9rem; }
+  li i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<header style="text-align:center"><h1 id="titulo"></h1><p>three.js · cambia solo el bloque DATOS</p></header>
+<div id="lienzo"></div>
+<ol id="leyenda"></ol>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js";
+
+// ===== DATOS · lo único que cambias (o le pides a Claude que cambie) =====
+const DATOS = {
+  titulo: "Mis números 2025",
+  items: [
+    { etiqueta: "Ene", valor: 120 },
+    { etiqueta: "Feb", valor: 95 },
+    { etiqueta: "Mar", valor: 140 },
+    { etiqueta: "Abr", valor: 160 },
+    { etiqueta: "May", valor: 130 },
+    { etiqueta: "Jun", valor: 175 }
+  ],
+  colorA: "#5a49d6",   // barra más baja
+  colorB: "#4fd1c5",   // barra más alta
+  velocidad: 0.004     // giro por cuadro; 0 = quieto
+};
+// ===== FIN DATOS =====
+
+document.getElementById("titulo").textContent = DATOS.titulo;
+const caja = document.getElementById("lienzo");
+const escena = new THREE.Scene();
+const camara = new THREE.PerspectiveCamera(40, caja.clientWidth / caja.clientHeight, 0.1, 100);
+camara.position.set(0, 4.2, 9.5);
+camara.lookAt(0, 1.2, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(caja.clientWidth, caja.clientHeight);
+caja.append(renderer.domElement);
+
+escena.add(new THREE.AmbientLight(0xffffff, 0.9));
+const luz = new THREE.DirectionalLight(0xffffff, 1.6);
+luz.position.set(-3, 6, 4);
+escena.add(luz);
+
+const grupo = new THREE.Group();
+escena.add(grupo);
+const max = Math.max(...DATOS.items.map(d => d.valor));
+const paso = 1.1, x0 = -(DATOS.items.length - 1) * paso / 2;
+const cA = new THREE.Color(DATOS.colorA), cB = new THREE.Color(DATOS.colorB);
+
+DATOS.items.forEach((it, i) => {
+  const h = 0.2 + (it.valor / max) * 3.4;
+  const color = cA.clone().lerp(cB, it.valor / max);
+  const barra = new THREE.Mesh(new THREE.BoxGeometry(0.7, h, 0.7), new THREE.MeshStandardMaterial({ color, roughness: 0.45 }));
+  barra.position.set(x0 + i * paso, h / 2, 0);
+  grupo.add(barra);
+  const li = document.createElement("li");
+  const sw = document.createElement("i"); sw.style.background = "#" + color.getHexString();
+  li.append(sw, it.etiqueta + " ", Object.assign(document.createElement("b"), { textContent: it.valor.toLocaleString("es-PE") }));
+  document.getElementById("leyenda").append(li);
+});
+const piso = new THREE.Mesh(new THREE.PlaneGeometry(DATOS.items.length * paso + 1.6, 3.2), new THREE.MeshStandardMaterial({ color: 0x8f86d8, transparent: true, opacity: 0.25 }));
+piso.rotation.x = -Math.PI / 2;
+grupo.add(piso);
+
+addEventListener("resize", () => {
+  camara.aspect = caja.clientWidth / caja.clientHeight;
+  camara.updateProjectionMatrix();
+  renderer.setSize(caja.clientWidth, caja.clientHeight);
+});
+renderer.setAnimationLoop(() => {
+  grupo.rotation.y += DATOS.velocidad;
+  renderer.render(escena, camara);
+});
+</script>
+</body>
+</html>

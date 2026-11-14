@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis números se mueven · GSAP</title>
+<!-- Plantilla del curso Claude Code PRO (sesión 2). GSAP no dibuja: mueve lo que ya existe. Pide cambios solo en animar(). -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+<style>
+  :root { --bg: #f4f3fb; --fg: #16151d; --muted: #5c5966; --card: #ffffff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #12112a; --fg: #ecebf7; --muted: #b7b4cc; --card: #1d1b38; } }
+  body { margin: 0; font: 16px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--fg); display: grid; justify-items: center; gap: 16px; padding: 16px; }
+  h1 { margin: 0; font-size: 1.6rem; }
+  p { margin: 0; color: var(--muted); font-size: .9rem; }
+  #grafico { display: flex; align-items: flex-end; gap: 14px; height: 320px; width: min(100%, 900px); padding: 0 8px; border-bottom: 2px solid var(--muted); }
+  .barra { flex: 1; display: grid; grid-template-rows: auto 1fr; align-items: end; text-align: center; height: 100%; }
+  .barra b { font-variant-numeric: tabular-nums; font-size: .95rem; }
+  .barra i { display: block; height: var(--h); border-radius: 10px 10px 0 0; background: var(--c); transform-origin: bottom; }
+  #etiquetas { display: flex; gap: 14px; width: min(100%, 900px); padding: 0 8px; }
+  #etiquetas span { flex: 1; text-align: center; color: var(--muted); font-size: .9rem; }
+  button { font: inherit; padding: 8px 18px; border-radius: 999px; border: 1px solid var(--muted); background: var(--card); color: var(--fg); cursor: pointer; }
+</style>
+</head>
+<body>
+<header style="text-align:center"><h1 id="titulo"></h1><p>GSAP · cambia el bloque DATOS o la función animar()</p></header>
+<div id="grafico"></div>
+<div id="etiquetas"></div>
+<button type="button" id="otra">Animar otra vez</button>
+<script>
+// ===== DATOS · lo único que cambias (o le pides a Claude que cambie) =====
+const DATOS = {
+  titulo: "Mis números 2025",
+  items: [
+    { etiqueta: "Ene", valor: 120 },
+    { etiqueta: "Feb", valor: 95 },
+    { etiqueta: "Mar", valor: 140 },
+    { etiqueta: "Abr", valor: 160 },
+    { etiqueta: "May", valor: 130 },
+    { etiqueta: "Jun", valor: 175 }
+  ],
+  colorA: "#5a49d6",   // barra más baja
+  colorB: "#4fd1c5"    // barra más alta
+};
+// ===== FIN DATOS =====
+
+document.getElementById("titulo").textContent = DATOS.titulo;
+const max = Math.max(...DATOS.items.map(d => d.valor));
+const grafico = document.getElementById("grafico"), etiquetas = document.getElementById("etiquetas");
+DATOS.items.forEach(it => {
+  const b = document.createElement("div"); b.className = "barra";
+  b.style.setProperty("--h", (it.valor / max * 100) + "%");
+  b.style.setProperty("--c", gsap.utils.interpolate(DATOS.colorA, DATOS.colorB, it.valor / max));
+  b.innerHTML = "<b data-valor='" + it.valor + "'>0</b><i></i>";
+  grafico.append(b);
+  const e = document.createElement("span"); e.textContent = it.etiqueta; etiquetas.append(e);
+});
+
+// ===== ANIMAR · lo que GSAP mueve. Pide cambios aquí. =====
+function animar() {
+  const tl = gsap.timeline();
+  tl.from(".barra i", { scaleY: 0, duration: 0.7, ease: "back.out(1.6)", stagger: 0.12 });
+  document.querySelectorAll(".barra b").forEach((b, i) => {
+    const fin = +b.dataset.valor, obj = { n: 0 };
+    tl.to(obj, { n: fin, duration: 0.7, ease: "power2.out", onUpdate: () => { b.textContent = Math.round(obj.n).toLocaleString("es-PE"); } }, i * 0.12);
+  });
+  tl.from("h1", { y: -20, opacity: 0, duration: 0.5 }, 0);
+}
+// ===== FIN ANIMAR =====
+
+animar();
+document.getElementById("otra").addEventListener("click", animar);
+</script>
+</body>
+</html>

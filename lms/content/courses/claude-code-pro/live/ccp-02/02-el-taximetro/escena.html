@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · El taxímetro</title>
+<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). Qué es un token con la analogía del taxi: cobra por leer
+     (el camino) y por escribir (las maletas, 5 veces más caro). Simulador con tres pedidos de ejemplo. Nada se guarda. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style id="esc-propio">
+.t2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; align-items: start; }
+.t2-ideas { display: grid; gap: .7em; }
+.t2-idea { display: grid; grid-template-columns: 2.6em 1fr; gap: .7em; align-items: start; background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .6em .8em; box-shadow: var(--card-shadow); }
+.t2-idea .ico { font-size: 1.7em; line-height: 1; text-align: center; }
+.t2-idea b { display: block; font-size: .82em; }
+.t2-idea span { display: block; font-size: .66em; color: var(--muted); line-height: 1.35; }
+.t2-sim { display: grid; gap: .6em; }
+.t2-btns { display: flex; gap: .4em; flex-wrap: wrap; }
+.t2-btns .cc-tab { flex: 1; }
+.t2-pedido { font-size: .66em; color: var(--fg); background: var(--s2); border: 1px dashed var(--line2); border-radius: .7em; padding: .55em .8em; min-height: 3.6em; margin: 0; }
+.t2-barra { display: grid; grid-template-columns: 5.4em 1fr 5em; gap: .5em; align-items: center; font-size: .66em; }
+.t2-barra .n { font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.t2-barra .b { height: 1.5em; border-radius: .5em; background: var(--s3); overflow: hidden; display: flex; }
+.t2-barra .b i { display: block; height: 100%; width: var(--w, 0%); transition: width .6s ease-out; }
+.t2-barra .b i.lee { background: var(--accent); } .t2-barra .b i.esc { background: var(--warn); }
+.t2-barra .v { font: 800 1em var(--mono); text-align: right; }
+.t2-total { display: flex; align-items: baseline; gap: .5em; justify-content: flex-end; }
+.t2-total b { font-size: 1.9em; font-weight: 900; letter-spacing: -.02em; line-height: 1; color: var(--accent); }
+.t2-total span { font-size: .62em; color: var(--muted); }
+.t2-ley { display: flex; gap: 1em; font-size: .6em; color: var(--muted); }
+.t2-ley i { display: inline-block; width: .9em; height: .9em; border-radius: .25em; vertical-align: -.1em; margin-right: .3em; }
+.t2-moraleja { font-size: .7em; margin: 0; padding: .55em .85em; border-radius: .8em; background: var(--gold-bg); border: 1px dashed var(--gold); color: var(--fg); }
+@media (max-width: 860px) { .t2 { grid-template-columns: 1fr; } .t2-idea b { font-size: .95em; } .t2-idea span { font-size: .82em; } .t2-pedido, .t2-barra, .t2-moraleja { font-size: .84em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1200 760 L1270 700 L1340 735 L1420 680"/>
+  <g><circle class="e" cx="1200" cy="760" r="4"/><circle class="eo" cx="1270" cy="700" r="5"/><circle class="e" cx="1340" cy="735" r="3.5"/><circle class="eg" cx="1420" cy="680" r="4"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="920" cy="60" r="1.6"/><circle class="eo p" style="--p:.7s" cx="1500" cy="120" r="1.7"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Claude Code PRO · S2 · 02/12</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">El <em>taxímetro</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Claude es un taxi con taxímetro. Cobra por el camino que lee y por las maletas que escribe. Las maletas pesan cinco veces más.</p>
+    </div>
+    <div class="t2">
+      <div class="t2-ideas">
+        <div class="t2-idea a-in" style="--d:.2s"><div class="ico">🧩</div><div><b>Token = pedacito de texto</b><span>Más o menos cuatro letras. «gráfico de barras» son unos cinco tokens. Claude cuenta en tokens todo lo que lee y todo lo que escribe.</span></div></div>
+        <div class="t2-idea a-in" style="--d:.3s"><div class="ico">🛣️</div><div><b>Leer = el camino</b><span>Tu mensaje, tus archivos, las reglas. Y ojo: en cada mensaje nuevo vuelve a recorrer <b>todo</b> lo anterior. La conversación es una mochila que se llena.</span></div></div>
+        <div class="t2-idea a-in" style="--d:.4s"><div class="ico">🧳</div><div><b>Escribir = las maletas</b><span>El código y la explicación que te devuelve. Cuesta unas <b>cinco veces</b> más que leer. Un archivo de cien líneas más tres párrafos de explicación es un viaje caro.</span></div></div>
+        <div class="t2-idea a-in" style="--d:.5s"><div class="ico">🔄</div><div><b>Sesión nueva = mochila vacía</b><span><span class="cc-c">/clear</span> o una terminal nueva. Lo que pierdes se recupera con dos archivos: las reglas y la plantilla. Eso es lo que armamos hoy.</span></div></div>
+      </div>
+      <section class="esc-card a-in" style="--d:.35s">
+        <span class="cc-et">Simulador: el mismo render, tres formas de pedirlo</span>
+        <div class="t2-sim">
+          <div class="t2-btns" id="tabs">
+            <button type="button" class="cc-tab" data-tab="vago">A lo bruto</button>
+            <button type="button" class="cc-tab" data-tab="cinco">Cinco líneas</button>
+            <button type="button" class="cc-tab" data-tab="plantilla">Reglas + plantilla</button>
+          </div>
+          <p class="t2-pedido" id="pedido"></p>
+          <div class="t2-barra"><span class="n">Lee</span><span class="b"><i class="lee" id="b-lee"></i></span><span class="v" id="v-lee"></span></div>
+          <div class="t2-barra"><span class="n">Escribe</span><span class="b"><i class="esc" id="b-esc"></i></span><span class="v" id="v-esc"></span></div>
+          <div class="t2-barra"><span class="n">Cuesta como</span><span class="b"><i class="lee" id="b-lee2"></i><i class="esc" id="b-esc2"></i></span><span class="v" id="v-tot"></span></div>
+          <div class="t2-total"><b id="total"></b><span>«tokens de camino», con escribir a 5×</span></div>
+          <div class="t2-ley"><span><i style="background:var(--accent)"></i>leer</span><span><i style="background:var(--warn)"></i>escribir (×5)</span></div>
+          <p class="cc-nota" id="nota"></p>
+        </div>
+      </section>
+    </div>
+    <p class="t2-moraleja a-in" style="--d:.6s"><b>La moraleja:</b> para gastar menos no hay que escribir prompts más cortos, hay que lograr que Claude <b>escriba menos</b> y <b>relea menos</b>. Reglas de la casa, plantilla y un pedido claro. Los números de arriba son de ejemplo: en la escena siguiente mides los tuyos.</p>
+  </main>
+  <footer class="esc-pie"><span>Lo que escribe cuesta 5 veces lo que lee. Casi todo el ahorro de hoy está en las maletas.</span></footer>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var CASOS = {
+    vago: { pedido: "«Hazme un gráfico 3D bonito con mis ventas, que se vea moderno y profesional. Explícame cada parte.»", lee: 3000, esc: 4200, nota: "Claude escribe el archivo completo desde cero, lo explica y además adivina qué es «bonito». Casi siempre toca repetir." },
+    cinco: { pedido: "«En index.html, gráfico de barras 3D con p5.js: Ene 120, Feb 95, Mar 140. Sin explicar. Compruebo: 3 barras girando.»", lee: 2800, esc: 2200, nota: "Ya no explica ni adivina, pero sigue escribiendo todo el archivo porque no tiene de dónde partir." },
+    plantilla: { pedido: "«En index.html, bloque DATOS: items Ene 120, Feb 95, Mar 140. Nada más. Sin explicar. Compruebo: 3 barras.» (con CLAUDE.md y la plantilla en la carpeta)", lee: 3400, esc: 350, nota: "Lee un poco más (las reglas y la plantilla) pero escribe solo 8 líneas. Y así cada pedido de la noche." }
+  };
+  var MAX = 3000 + 4200 * 5;
+  function pintar(k) {
+    var c = CASOS[k], costo = c.lee + c.esc * 5;
+    $("pedido").textContent = c.pedido;
+    $("b-lee").style.setProperty("--w", (c.lee / 4200 * 100) + "%"); $("v-lee").textContent = CC.num(c.lee);
+    $("b-esc").style.setProperty("--w", (c.esc / 4200 * 100) + "%"); $("v-esc").textContent = CC.num(c.esc);
+    $("b-lee2").style.setProperty("--w", (c.lee / MAX * 100) + "%"); $("b-esc2").style.setProperty("--w", (c.esc * 5 / MAX * 100) + "%");
+    $("v-tot").textContent = CC.num(costo); $("total").textContent = CC.num(costo);
+    $("nota").textContent = c.nota;
+  }
+  CC.pestanas($("tabs"), "taximetro", pintar);
+})();
+</script>
+</body>
+</html>

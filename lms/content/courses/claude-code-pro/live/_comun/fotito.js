@@ -20,7 +20,7 @@
   var SANS = "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
   var CURSO = "Claude Code PRO";
   var GRUPO = "Grupo 1 · Sesión 2";
-  var SESION = "Sesión 2 · Plan recursivo y cerebro de proyecto";
+  var SESION = "Sesión 2 · Reglas, plantillas y prompts: tu primer render";
   var FECHA = "Sábado 14 de noviembre de 2026";
 
   function envolver(ctx, texto, ancho, max) {

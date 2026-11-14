@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tres librerías</title>
+<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). Las tres librerías de hoy con una demo viva de cada una,
+     cargadas desde _comun (p5.min.js, three.module.min.js, gsap.min.js): así los alumnos ven que el LMS ya las tiene.
+     Con prefers-reduced-motion las demos quedan quietas en su estado final. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style id="esc-propio">
+.t4 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2vw; align-items: stretch; }
+.t4-lib { display: grid; grid-template-rows: auto auto 1fr auto; gap: .5em; border-top: 4px solid var(--c); }
+.t4-cab { display: flex; align-items: baseline; gap: .5em; }
+.t4-cab b { font-size: .95em; }
+.t4-cab span { font: 700 .6em var(--mono); color: var(--c); }
+.t4-ana { font-size: .68em; color: var(--muted); margin: 0; line-height: 1.35; }
+.t4-ana b { color: var(--fg); }
+.t4-demo { position: relative; aspect-ratio: 2 / 1; border-radius: .7em; overflow: hidden; background: var(--s2); border: 1px solid var(--line); display: grid; place-items: center; }
+.t4-demo canvas { display: block; width: 100% !important; height: 100% !important; }
+.t4-demo .sin { font-size: .62em; color: var(--muted); padding: .5em; text-align: center; }
+.t4-gs { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; gap: 4%; padding: 8% 10%; }
+.t4-gs i { display: block; width: 10%; height: var(--h); border-radius: .3em .3em 0 0; background: var(--ph-ea); transform-origin: bottom; }
+.t4-gs i:nth-child(2n) { background: var(--gold); } .t4-gs i:nth-child(3n) { background: var(--ph-or); }
+.t4-pie { display: flex; flex-wrap: wrap; gap: .3em; align-items: center; justify-content: space-between; }
+.t4-pie .esc-chip { font-size: .58em; }
+.t4-cuando { font-size: .62em; color: var(--muted); margin: 0; }
+.t4-cuando b { color: var(--fg); }
+.t4-bajo { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.4vw; align-items: start; }
+.t4-regla { font-size: .7em; margin: 0; padding: .55em .85em; border-radius: .8em; background: var(--accent-bg); border: 1px dashed var(--accent); color: var(--fg); }
+@media (max-width: 860px) { .t4, .t4-bajo { grid-template-columns: 1fr; } .t4-ana, .t4-cuando, .t4-regla { font-size: .86em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="1500" cy="460" r="1.7"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Claude Code PRO · S2 · 04/12</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Tres librerías: el cuaderno, la maqueta y <em>el titiritero</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Una librería es una caja de herramientas que ya está hecha. Claude no la escribe: la usa. Tú solo eliges cuál. Estas tres ya viven en el LMS: lo que ves abajo está corriendo en vivo.</p>
+    </div>
+    <div class="t4">
+      <section class="esc-card t4-lib a-in" style="--c:var(--accent);--d:.2s">
+        <div class="t4-cab"><b>p5.js</b><span>el cuaderno de dibujo</span></div>
+        <p class="t4-ana">Tú dibujas <b>todo</b> con pocas órdenes: «caja aquí, de este alto, de este color». Dos funciones: <span class="cc-c">setup()</span> una vez y <span class="cc-c">draw()</span> sesenta veces por segundo.</p>
+        <div class="t4-demo" id="d-p5"><span class="sin">Cargando p5…</span></div>
+        <div class="t4-pie"><span class="esc-chip ok">≈ 50 líneas</span><p class="t4-cuando"><b>Úsala hoy</b> si quieres tus números en 3D con poco código.</p></div>
+      </section>
+      <section class="esc-card t4-lib a-in" style="--c:var(--ph-or);--d:.3s">
+        <div class="t4-cab"><b>three.js</b><span>la maqueta 3D</span></div>
+        <p class="t4-ana">Más piezas: una <b>escena</b>, una <b>cámara</b>, una <b>luz</b> y los objetos. Se ve más real y puede crecer mucho. Por eso Claude escribe más.</p>
+        <div class="t4-demo" id="d-three"><span class="sin">Cargando three.js…</span></div>
+        <div class="t4-pie"><span class="esc-chip warn">≈ 90 líneas</span><p class="t4-cuando"><b>Úsala</b> si el 3D es el protagonista o lo vas a hacer crecer.</p></div>
+      </section>
+      <section class="esc-card t4-lib a-in" style="--c:var(--ph-ea);--d:.4s">
+        <div class="t4-cab"><b>GSAP</b><span>el titiritero</span></div>
+        <p class="t4-ana">No dibuja nada. <b>Mueve lo que ya existe</b> en la página: barras, títulos, tarjetas. «Entra desde abajo en 0,4 s, una por una». Complementa a las otras dos.</p>
+        <div class="t4-demo" id="d-gsap"><div class="t4-gs" aria-hidden="true"><i style="--h:40%"></i><i style="--h:65%"></i><i style="--h:30%"></i><i style="--h:80%"></i><i style="--h:55%"></i><i style="--h:90%"></i></div></div>
+        <div class="t4-pie"><span class="esc-chip ok">≈ 30 líneas</span><p class="t4-cuando"><b>Úsala</b> si ya tienes HTML y quieres que entre con estilo.</p></div>
+      </section>
+    </div>
+    <div class="t4-bajo">
+      <p class="t4-regla a-in" style="--d:.5s"><b>Regla simple:</b> elige <b>una</b> librería por proyecto. Cambiar de librería a mitad de camino es pedirle a Claude que escriba todo de nuevo: el viaje más caro de la noche. Si dudas, p5.js.</p>
+      <section class="esc-card a-in" style="--d:.55s" id="voto"></section>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Las librerías no cuestan tokens: se cargan en el navegador. Lo que cuesta es el código que Claude escribe para usarlas.</span></footer>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script src="../../comun/p5.min.js"></script>
+<script src="../../comun/gsap.min.js"></script>
+<script>
+(function () {
+  var REDUCIDO = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  CC.votos(document.getElementById("voto"), "04-tres-librerias", "¿Con cuál haces tu render hoy?", [
+    { id: "p5", t: "p5.js · el cuaderno" }, { id: "three", t: "three.js · la maqueta" }, { id: "gsap", t: "GSAP · el titiritero" }
+  ]);
+
+  /* ---- p5: seis barras 3D que giran (modo instancia para no tocar el global) ---- */
+  var caja = document.getElementById("d-p5");
+  try {
+    caja.textContent = "";
+    new p5(function (s) {
+      var V = [120, 95, 140, 160, 130, 175], giro = 0;
+      s.setup = function () { s.createCanvas(caja.clientWidth, caja.clientHeight, s.WEBGL); if (REDUCIDO) s.noLoop(); };
+      s.windowResized = function () { s.resizeCanvas(caja.clientWidth, caja.clientHeight); };
+      s.draw = function () {
+        s.clear(); s.ambientLight(150); s.directionalLight(255, 255, 255, -0.4, -1, -0.6);
+        s.scale(Math.min(caja.clientWidth / 420, caja.clientHeight / 236));
+        s.rotateX(-0.42); s.rotateY(REDUCIDO ? 0.5 : giro); giro += 0.008;
+        s.noStroke();
+        var paso = 46, x0 = -(V.length - 1) * paso / 2;
+        s.push(); s.translate(0, 1, 0); s.rotateX(s.HALF_PI); s.fill(120, 110, 200, 60); s.plane(V.length * paso + 50, 140); s.pop();
+        V.forEach(function (v, i) { var h = s.map(v, 0, 175, 10, 120); s.push(); s.translate(x0 + i * paso, -h / 2, 0); s.fill(s.lerpColor(s.color("#5a49d6"), s.color("#4fd1c5"), v / 175)); s.box(28, h, 28); s.pop(); });
+      };
+    }, caja);
+  } catch (e) { caja.innerHTML = '<span class="sin">Tu navegador no pudo con WebGL. La idea sigue: p5 dibuja cajas con pocas órdenes.</span>'; }
+
+  /* ---- GSAP: las barras entran en cascada y se repiten ---- */
+  var barras = document.querySelectorAll("#d-gsap i");
+  if (!REDUCIDO && window.gsap) {
+    gsap.from(barras, { scaleY: 0, duration: .7, ease: "back.out(1.6)", stagger: .12, repeat: -1, repeatDelay: 1.6 });
+  }
+})();
+</script>
+<script type="module">
+import * as THREE from "../../comun/three.module.min.js";
+const caja = document.getElementById("d-three");
+const REDUCIDO = matchMedia("(prefers-reduced-motion: reduce)").matches;
+try {
+  caja.textContent = "";
+  const escena = new THREE.Scene();
+  const camara = new THREE.PerspectiveCamera(40, caja.clientWidth / caja.clientHeight, 0.1, 100);
+  camara.position.set(0, 3.6, 8.4); camara.lookAt(0, 1, 0);
+  const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  r.setPixelRatio(Math.min(devicePixelRatio, 2)); r.setSize(caja.clientWidth, caja.clientHeight); caja.append(r.domElement);
+  escena.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const luz = new THREE.DirectionalLight(0xffffff, 1.6); luz.position.set(-3, 6, 4); escena.add(luz);
+  const g = new THREE.Group(); escena.add(g);
+  const V = [120, 95, 140, 160, 130, 175], cA = new THREE.Color("#0b5f58"), cB = new THREE.Color("#4fd1c5");
+  V.forEach((v, i) => { const h = 0.2 + v / 175 * 3; const m = new THREE.Mesh(new THREE.BoxGeometry(0.7, h, 0.7), new THREE.MeshStandardMaterial({ color: cA.clone().lerp(cB, v / 175), roughness: .45 })); m.position.set(-(V.length - 1) * 1.1 / 2 + i * 1.1, h / 2, 0); g.add(m); });
+  const piso = new THREE.Mesh(new THREE.PlaneGeometry(8.2, 3), new THREE.MeshStandardMaterial({ color: 0x8f86d8, transparent: true, opacity: .25 })); piso.rotation.x = -Math.PI / 2; g.add(piso);
+  new ResizeObserver(() => { camara.aspect = caja.clientWidth / caja.clientHeight; camara.updateProjectionMatrix(); r.setSize(caja.clientWidth, caja.clientHeight); }).observe(caja);
+  if (REDUCIDO) { g.rotation.y = .5; r.render(escena, camara); } else r.setAnimationLoop(() => { g.rotation.y += 0.006; r.render(escena, camara); });
+} catch (e) { caja.innerHTML = '<span class="sin">Tu navegador no pudo con WebGL. La idea sigue: escena, cámara, luz y cajas.</span>'; }
+</script>
+</body>
+</html>

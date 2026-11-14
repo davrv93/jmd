@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · El pedido de cinco líneas</title>
+<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). La receta del pedido (qué, dónde, con qué, límites, comprobación)
+     y el afinador: el alumno escribe su pedido, cinco luces le dicen qué falta, una lista le dice qué palabras encarecen,
+     y lo publica en el muro. El pedido queda en localStorage (ccp-02-pedido) para la escena 9. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style id="esc-propio">
+.p7 { display: grid; grid-template-columns: .85fr 1.15fr; gap: 1.6vw; align-items: start; }
+.p7-izq, .p7-der { display: grid; gap: 1.2vh; }
+.p7-receta { list-style: none; margin: 0; padding: 0; display: grid; gap: .4em; counter-reset: r; }
+.p7-receta li { display: grid; grid-template-columns: 1.6em 1fr; gap: .6em; align-items: start; counter-increment: r; background: var(--s1); border: 1px solid var(--line); border-radius: .8em; padding: .5em .7em; box-shadow: var(--card-shadow); }
+.p7-receta li::before { content: counter(r); width: 1.6em; height: 1.6em; border-radius: 50%; display: grid; place-items: center; font: 800 .72em var(--mono); color: var(--on-accent); background: var(--accent); }
+.p7-receta b { display: block; font-size: .78em; }
+.p7-receta span { display: block; font-size: .62em; color: var(--muted); line-height: 1.35; }
+.p7-receta span i { font-style: normal; color: var(--fg); }
+.p7-ta { font: 500 .72em/1.45 var(--mono); color: var(--fg); background: var(--s2); border: 1px solid var(--line2); border-radius: .7em; padding: .6em .8em; width: 100%; min-height: 8.5em; resize: vertical; }
+.p7-ta:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.p7-luces { display: grid; grid-template-columns: repeat(5, 1fr); gap: .35em; }
+.p7-luz { display: grid; gap: .2em; justify-items: center; text-align: center; font-size: .58em; font-weight: 800; color: var(--muted); padding: .45em .2em; border-radius: .6em; background: var(--s2); border: 1px solid var(--line); }
+.p7-luz i { width: 1.4em; height: 1.4em; border-radius: 50%; background: var(--s3); border: 2px solid var(--line2); display: grid; place-items: center; font-style: normal; font-size: 1.2em; color: #fff; }
+.p7-luz.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: var(--ok-bg); }
+.p7-luz.ok i { background: var(--ok); border-color: var(--ok); }
+.p7-luz.ok i::after { content: "✓"; }
+.p7-med { display: flex; gap: .6em; align-items: baseline; flex-wrap: wrap; }
+.p7-med b { font-size: 1.5em; font-weight: 900; line-height: 1; letter-spacing: -.02em; }
+.p7-med span { font-size: .62em; color: var(--muted); }
+.p7-sobra { display: flex; gap: .3em; flex-wrap: wrap; min-height: 1.6em; }
+.p7-sobra .esc-chip { font-size: .58em; }
+.p7-veredicto { font-size: .7em; margin: 0; padding: .5em .8em; border-radius: .7em; background: var(--s2); border: 1px dashed var(--line2); }
+.p7-veredicto.bien { background: var(--ok-bg); border-color: var(--ok); }
+.p7-veredicto.mal { background: var(--warn-bg); border-color: var(--warn); }
+.cc-muro .cc-fila { display: none; }
+@media (max-width: 860px) { .p7 { grid-template-columns: 1fr; } .p7-receta b { font-size: .95em; } .p7-receta span { font-size: .8em; } .p7-ta { font-size: .9em; } .p7-luz { font-size: .72em; } .p7-veredicto { font-size: .88em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="520" cy="80" r="1.6"/><circle class="eo p" style="--p:.7s" cx="860" cy="770" r="1.7"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Claude Code PRO · S2 · 07/12</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">El pedido de <em>cinco líneas</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Como pedir en una cafetería: qué, de qué tamaño, para llevar. No cuentas tu vida. Escribe el tuyo a la derecha y el afinador te dice qué falta y qué sobra.</p>
+    </div>
+    <div class="p7">
+      <div class="p7-izq">
+        <ol class="p7-receta a-in" style="--d:.2s">
+          <li><div><b>Qué · una sola cosa</b><span><i>«Cambia los datos del gráfico por estos: …»</i> Un verbo, un objeto. Dos cosas son dos pedidos.</span></div></li>
+          <li><div><b>Dónde · el archivo y el bloque</b><span><i>«En index.html, bloque DATOS.»</i> La dirección exacta: sin ella el taxi da vueltas.</span></div></li>
+          <li><div><b>Con qué · lo que ya existe</b><span><i>«Usa la plantilla p5 tal como está.»</i> Le recuerdas que no parta de cero.</span></div></li>
+          <li><div><b>Límites · lo que NO quieres</b><span><i>«Nada más. Sin explicar. Muestra solo el cambio.»</i> Aquí se ahorran las maletas.</span></div></li>
+          <li><div><b>Comprobación · lo que debo ver</b><span><i>«Compruebo: al abrir index.html veo 6 barras con mis meses.»</i> Tú verificas en 10 segundos.</span></div></li>
+        </ol>
+        <p class="cc-nota a-in" style="--d:.3s"><b>Corto no es lo mismo que claro.</b> «Arréglalo» es corto y carísimo: Claude adivina, rehace y vuelves a pedir. Cinco líneas claras cuestan menos que una vaga.</p>
+      </div>
+      <div class="p7-der">
+        <section class="esc-card a-in" style="--d:.3s">
+          <label class="cc-et" for="ped">Afinador · escribe tu pedido</label>
+          <textarea class="p7-ta" id="ped" spellcheck="false" placeholder="En index.html, bloque DATOS: titulo «Gastos 2025» e items Ene 2300, Feb 1950, Mar 2800. Usa la plantilla p5 tal como está. Nada más. Sin explicar. Compruebo: abro index.html y veo 3 barras con esos valores."></textarea>
+          <div class="p7-luces" id="luces" style="margin-top:.5em" aria-live="polite">
+            <div class="p7-luz" data-l="que"><i></i>Qué</div>
+            <div class="p7-luz" data-l="donde"><i></i>Dónde</div>
+            <div class="p7-luz" data-l="conque"><i></i>Con qué</div>
+            <div class="p7-luz" data-l="limites"><i></i>Límites</div>
+            <div class="p7-luz" data-l="prueba"><i></i>Comprobación</div>
+          </div>
+          <div class="p7-med" style="margin-top:.5em"><b id="tok">0</b><span>tokens aprox. de pedido (letras ÷ 4)</span><span id="largo"></span></div>
+          <div class="p7-sobra" id="sobra" aria-label="Palabras que encarecen"></div>
+          <p class="p7-veredicto" id="ver">Escribe arriba. Las luces se encienden solas.</p>
+          <div class="cc-fila" style="margin-top:.5em">
+            <button type="button" class="cc-btn sec" id="ejemplo">Pegar un ejemplo bueno</button>
+            <button type="button" class="cc-btn" id="pub">Publicar mi pedido</button>
+          </div>
+          <p class="cc-nota" id="msg"></p>
+        </section>
+        <section class="esc-card a-in" style="--d:.4s" id="muro"></section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Tu pedido queda guardado para la escena 9. Con 4 luces o más, publícalo y pulsa «Lo logré».</span></footer>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var ta = $("ped");
+  var guardado = CC.leer("pedido", null);
+  if (guardado && guardado.texto) ta.value = guardado.texto;
+
+  var R = {
+    que: /\b(cambia|cambiar|pon|agrega|agregar|añade|a[ñn]adir|quita|haz|crea|usa|reemplaza|ajusta|arregla|mueve|gira|anima|muestra|formatea|ordena|baja|sube)\b/i,
+    donde: /index\.html|bloque|\bdatos\b|funci[oó]n|l[ií]nea|archivo|animar\(\)|setup\(\)|draw\(\)/i,
+    conque: /\bp5\b|three|gsap|plantilla|webgl|canvas|tal como est[aá]/i,
+    limites: /sin explicar|no expliques|no explicar|nada m[aá]s|\bs[oó]lo\b|no toques|no cambies|m[aá]ximo|[uú]nicamente|no agregues/i,
+    prueba: /compruebo|deber[ií]a ver|debo ver|\bveo\b|al abrir|al recargar|espero ver|tengo que ver/i
+  };
+  var VAGAS = [
+    [/\bbonit[oa]s?\b|\blind[oa]s?\b|\bmodern[oa]\b|\bprofesional\b|\bincre[ií]ble\b|\bperfect[oa]\b/gi, "adjetivo vago: di el color, el tamaño o el número"],
+    [/\balgo\b|lo que quieras|lo que t[uú] veas|lo que creas|a tu gusto/gi, "«algo / lo que quieras»: Claude adivina y rehace"],
+    [/\bmej[oó]ra(lo|me|r)?\b/gi, "«mejora»: ¿qué exactamente? nombra el cambio"],
+    [/(?<!sin |no )\bexpl[ií]ca(me)?\b|\bexplicaci[oó]n\b/gi, "«explícame»: maletas caras; léelo después si quieres"],
+    [/todo el archivo|archivo completo|otra vez todo|mu[ée]strame todo/gi, "repetir todo el archivo: 100 líneas de salida"],
+    [/no funciona|est[aá] mal|no sirve/gi, "«no funciona»: di qué viste y qué esperabas"],
+    [/\bhazme algo\b|\bhazme un\b.*\bbonito\b/gi, "«hazme algo»: sin dirección, el taxi da vueltas"]
+  ];
+  var ETQ = { que: "qué (un verbo y una cosa)", donde: "dónde (index.html, bloque DATOS)", conque: "con qué (plantilla o librería)", limites: "límites («nada más», «sin explicar»)", prueba: "comprobación («compruebo: veo …»)" };
+
+  function analizar() {
+    var t = ta.value, luces = 0, faltan = [];
+    Object.keys(R).forEach(function (k) {
+      var ok = R[k].test(t);
+      document.querySelector('[data-l="' + k + '"]').classList.toggle("ok", ok);
+      if (ok) luces++; else faltan.push(ETQ[k]);
+    });
+    var tok = Math.round(t.replace(/\s+/g, " ").trim().length / 4);
+    $("tok").textContent = CC.num(tok);
+    $("largo").textContent = tok > 180 ? "· demasiado largo: Claude también cobra por leer tu pedido" : "";
+    var sobra = $("sobra"); sobra.textContent = "";
+    var nSobra = 0;
+    VAGAS.forEach(function (v) {
+      var m = t.match(v[0]);
+      if (m) { nSobra++; var c = CC.el("span", "esc-chip bad", "sobra «" + m[0].toLowerCase() + "»: " + v[1]); sobra.appendChild(c); }
+    });
+    var ver = $("ver"); ver.className = "p7-veredicto";
+    if (!t.trim()) { ver.textContent = "Escribe arriba. Las luces se encienden solas."; }
+    else if (luces >= 4 && !nSobra && tok <= 180) { ver.classList.add("bien"); ver.textContent = "Pedido afinado: " + luces + " de 5 luces, sin palabras caras. Publícalo y guárdalo para la escena 9."; }
+    else if (luces >= 4) { ver.classList.add("mal"); ver.textContent = "Casi: tienes " + luces + " luces, pero " + (nSobra ? "quita lo que sobra" : "recórtalo") + "."; }
+    else { ver.classList.add("mal"); ver.textContent = "Faltan " + (5 - luces) + ": " + faltan.join(" · ") + "."; }
+    CC.guardar("pedido", { texto: t, luces: luces, sobra: nSobra, tok: tok });
+    return luces;
+  }
+  ta.addEventListener("input", analizar); analizar();
+
+  $("ejemplo").addEventListener("click", function () {
+    ta.value = "En index.html, bloque DATOS: titulo «Ventas 2025» e items Ene 120, Feb 95, Mar 140, Abr 160, May 130, Jun 175.\nUsa la plantilla p5 tal como está. Nada más. Sin explicar. Muestra solo el bloque cambiado.\nCompruebo: abro index.html y veo 6 barras girando con esos valores.";
+    analizar(); ta.focus();
+  });
+
+  var muro = CC.muro($("muro"), "07-pedido-cinco-lineas", "Los pedidos del grupo", { max: 200 });
+  $("pub").addEventListener("click", function () {
+    var l = analizar();
+    if (!ta.value.trim()) { $("msg").textContent = "Primero escribe tu pedido."; ta.focus(); return; }
+    muro.publicar(ta.value.replace(/\s+/g, " ").trim().slice(0, 200)).then(function (ok) {
+      $("msg").textContent = ok ? "✓ Publicado con " + l + " de 5 luces. Pulsa «Lo logré»." : "Guardado en este navegador. El muro se ve con la clase en vivo.";
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Línea base: retoma en frío sin cerebro</title>
-<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). Línea base de la sesión: cuántos tokens gasta Claude
-     en retomar un proyecto sin plan ni cerebro. El número queda en localStorage (ccp-02-antes) para la escena 11,
+<title>Escena · Línea base: el render sin reglas</title>
+<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-02). Línea base de la sesión: cuántos tokens gasta Claude en hacer
+     el render sin reglas ni plantilla. El número queda en localStorage (ccp-02-antes) para las escenas 9, 10 y 12,
      sale como evidencia «hallazgo» y se publica en el muro de la escena para dibujar al grupo. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/ccp.css">
@@ -32,30 +32,32 @@
   </header>
   <main class="esc-cuerpo">
     <div>
-      <h1 class="esc-titulo a-in">Línea base: retoma en frío, <em>sin cerebro</em></h1>
-      <p class="esc-sub a-in" style="--d:.1s">Como si volvieras mañana: sesión nueva, sin plan, sin notas. ¿Cuánto gasta Claude en ubicarse?</p>
+      <h1 class="esc-titulo a-in">Línea base: el render <em>a lo bruto</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Sin reglas, sin plantilla, sin pensar mucho el pedido. Como lo haría cualquiera el primer día. ¿Cuánto marca el taxímetro?</p>
     </div>
     <div class="cc-g-ancho">
       <section class="esc-card a-in" style="--d:.2s">
         <ol class="cc-pasos">
-          <li><h3>Abre una sesión nueva en tu repo</h3>
-            <div class="cuerpo"><pre class="esc-cmd"><span class="p">$ </span>cd ~/tu-proyecto &amp;&amp; claude</pre>
-            <p class="cc-nota">¿Ya tenías una abierta? Escribe <span class="cc-c">/clear</span>.</p></div></li>
+          <li><h3>Carpeta vacía y sesión nueva</h3>
+            <div class="cuerpo"><pre class="esc-cmd"><span class="p">$ </span>mkdir base &amp;&amp; cd base &amp;&amp; claude</pre>
+            <p class="cc-nota">¿Ya tenías una abierta? Escribe <span class="cc-c">/clear</span>. La mochila debe estar vacía.</p></div></li>
           <li><h3>Pega este pedido, tal cual</h3>
-            <div class="cuerpo"><pre class="esc-cmd">¿Qué hace este proyecto, en qué quedamos y cuál es el siguiente paso? Responde en 5 líneas.</pre></div></li>
-          <li><h3>Mira cuánto contexto usó</h3>
-            <div class="cuerpo"><pre class="esc-cmd"><span class="p">&gt; </span>/context</pre>
-            <div class="l3-ayuda"><span>Ejemplo</span><span><code>claude-opus · 41.2k/200k tokens (21%)</code> → escribe <b>41200</b> o <b>41.2k</b></span></div></div></li>
+            <div class="cuerpo"><pre class="esc-cmd">Haz un gráfico de barras 3D con p5.js en index.html, con 6 meses de ventas inventadas, que gire y se vea bien.</pre>
+            <p class="cc-nota">Si te pregunta algo, responde «lo que tú decidas». Deja que trabaje.</p></div></li>
+          <li><h3>Abre el resultado y mira cuánto costó</h3>
+            <div class="cuerpo"><pre class="esc-cmd"><span class="p">$ </span>open index.html   <span class="c"># Windows: start index.html · Linux: xdg-open index.html</span></pre>
+            <pre class="esc-cmd"><span class="p">&gt; </span>/context</pre>
+            <div class="l3-ayuda"><span>Ejemplo</span><span><code>claude-opus · 38.4k/200k tokens (19%)</code> → escribe <b>38400</b> o <b>38.4k</b></span></div></div></li>
         </ol>
       </section>
       <div class="l3-der">
         <section class="esc-card a-in" style="--d:.3s">
           <label class="cc-et" for="antes">Tokens que mostró /context</label>
           <div class="cc-fila">
-            <input class="cc-in" id="antes" inputmode="decimal" autocomplete="off" placeholder="Ej.: 41.2k">
+            <input class="cc-in" id="antes" inputmode="decimal" autocomplete="off" placeholder="Ej.: 38.4k">
             <button type="button" class="cc-btn" id="pub">Publicar</button>
           </div>
-          <div class="l3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>tokens para ubicarse</span></div>
+          <div class="l3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>tokens sin reglas</span></div>
           <p class="cc-nota" id="msg"></p>
           <div class="cc-barras" id="grupo" aria-label="Las líneas base del grupo"></div>
           <p class="l3-resumen" id="resumen"></p>
@@ -64,7 +66,7 @@
       </div>
     </div>
   </main>
-  <footer class="esc-pie"><span>Al publicar, tu número cuenta como evidencia. Lo comparamos en la escena 11, con cerebro.</span></footer>
+  <footer class="esc-pie"><span>Al publicar, tu número cuenta como evidencia. En la escena 9 lo hacemos otra vez, con reglas, y comparamos.</span></footer>
 </div>
 <script src="../../comun/ccp.js"></script>
 <script>
@@ -73,7 +75,7 @@
   var inp = $("antes"), previo = CC.leer("antes", null);
   if (previo && previo.tok) inp.value = previo.tok;
 
-  // «41.2k», «41,2 k», «41200» o «41 200» → 41200
+  // «38.4k», «38,4 k», «38400» o «38 400» → 38400
   function tok() {
     var s = String(inp.value).toLowerCase().replace(/\s/g, "").replace(",", ".");
     var k = /k$/.test(s); s = s.replace(/k$/, "");
@@ -85,8 +87,9 @@
   function pintarTok() { var n = tok(); $("tok-n").textContent = n ? CC.num(n) : "—"; }
   inp.addEventListener("input", pintarTok); pintarTok();
 
-  CC.votos($("voto"), "03-linea-base", "¿Acertó el siguiente paso?", [
-    { id: "si", t: "Sí, a la primera" }, { id: "medias", t: "A medias" }, { id: "no", t: "No: tuve que explicarle" }
+  CC.votos($("voto"), "03-linea-base", "¿Qué hizo Claude de más?", [
+    { id: "explico", t: "Me explicó todo el código" }, { id: "pregunto", t: "Me hizo preguntas antes de empezar" },
+    { id: "extra", t: "Agregó cosas que no pedí" }, { id: "nada", t: "Nada: fue directo" }
   ]);
 
   var caja = document.createElement("div"); caja.hidden = true; document.body.appendChild(caja);
@@ -109,19 +112,19 @@
     $("resumen").textContent = "";
     $("resumen").append("Mediana del grupo: ");
     $("resumen").appendChild(CC.el("b", "", CC.num(med) + " tokens"));
-    $("resumen").append(" solo para ubicarse (" + datos.length + (datos.length === 1 ? " medición)." : " mediciones)."));
+    $("resumen").append(" para un render sin reglas (" + datos.length + (datos.length === 1 ? " medición)." : " mediciones)."));
   }
 
   $("pub").addEventListener("click", function () {
     var n = tok(), b = this;
-    if (!n) { $("msg").textContent = "Escribe el total que mostró /context (por ejemplo 41.2k)."; inp.focus(); return; }
+    if (!n) { $("msg").textContent = "Escribe el total que mostró /context (por ejemplo 38.4k)."; inp.focus(); return; }
     CC.guardar("antes", { tok: n });
     b.disabled = true;
-    CC.evidencia("hallazgo", "Línea base, retomar en frío sin cerebro: " + n + " tokens en /context").then(function (r) {
+    CC.evidencia("hallazgo", "Línea base, render sin reglas: " + n + " tokens en /context").then(function (r) {
       $("msg").textContent = r.ok ? "✓ Publicado como evidencia. Ahora pulsa «Lo logré»." : "Lo guardé en este navegador. La evidencia se envía con la clase en vivo.";
       b.disabled = false;
     });
-    muro.publicar(CC.num(n) + " tokens · retomar sin cerebro");
+    muro.publicar(CC.num(n) + " tokens · sin reglas");
   });
 })();
 </script>
