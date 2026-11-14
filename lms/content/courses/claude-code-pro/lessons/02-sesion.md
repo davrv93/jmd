@@ -136,11 +136,12 @@ claude.ai no muestra los tokens de cada respuesta. Medimos lo que Claude **escri
 | 25 | 05 Reglas de la casa | Creamos el Proyecto «Mi render»: Instrucciones y Conocimiento. Cada uno marca las reglas que entendió. |
 | 33 | 06 La plantilla | Ver el bloque `DATOS`. Pedir cambios, no obras. |
 | 39 | 07 El pedido de cinco líneas | Afinador de prompts: escribes, el medidor te avisa qué sobra y qué falta. |
-| 47 | 08 Juego: ¿cuánto cuesta? | Cuatro rondas: ¿qué pedido gasta menos? Votar y revelar. |
+| 47 | 08 Juego: la carrera del taxímetro | Juego en vivo: cada uno es un robot taxista, recoge pedidos y los lleva al taxímetro bajo o alto. Bonos de porqué. |
 | 55 | 09 Tu render | Chat nuevo en el Proyecto, tu pedido con tus datos. Artefacto, medidor y laboratorio del LMS. |
 | 75 | 10 Antes y después | Las barras del grupo. Mediana antes, mediana después, el porcentaje. |
-| 81 | 11 Llévatelo a tu trabajo | Un prompt listo por perfil: contabilidad, sistemas, diseño, oficina. |
-| 87 | 12 Insignia | Resumen, fotito, entregable 2 y lo que viene. |
+| 81 | 10b Arena de conceptos | Juego en vivo: atrapa los conceptos de hoy, clasifícalos y dispara a otro. |
+| 87 | 11 Llévatelo a tu trabajo | Un prompt listo por perfil: contabilidad, sistemas, diseño, oficina. |
+| 93 | 12 Insignia | Resumen, fotito, entregable 2 y lo que viene. |
 
 ## Entregable 2
 

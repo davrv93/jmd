@@ -15,6 +15,7 @@
 .t2-idea .ico { font-size: 1.7em; line-height: 1; text-align: center; }
 .t2-idea b { display: block; font-size: .82em; }
 .t2-idea span { display: block; font-size: .66em; color: var(--muted); line-height: 1.35; }
+.t2-idea span b { display: inline; font-size: inherit; color: var(--fg); }
 .t2-sim { display: grid; gap: .6em; }
 .t2-btns { display: flex; gap: .4em; flex-wrap: wrap; }
 .t2-btns .cc-tab { flex: 1; }
@@ -30,6 +31,12 @@
 .t2-total span { font-size: .62em; color: var(--muted); }
 .t2-ley { display: flex; gap: 1em; font-size: .6em; color: var(--muted); }
 .t2-ley i { display: inline-block; width: .9em; height: .9em; border-radius: .25em; vertical-align: -.1em; margin-right: .3em; }
+.t2-via { position: relative; height: 2.2em; margin: .2em 0 .1em; border-radius: 1.1em; background: var(--s3); overflow: hidden; }
+.t2-via::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed var(--line2); }
+.t2-via .taxi { position: absolute; top: 50%; left: var(--x, 0%); transform: translate(-50%, -50%); font-size: 1.5em; line-height: 1; transition: left 1.1s cubic-bezier(.2,.8,.3,1); }
+.t2-via .maleta { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: .9em; line-height: 1; opacity: 0; animation: t2-aparece .4s ease-out forwards; animation-delay: var(--d); }
+@keyframes t2-aparece { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .t2-via .taxi { transition: none; } .t2-via .maleta { animation: none; opacity: 1; } }
 .t2-moraleja { font-size: .7em; margin: 0; padding: .55em .85em; border-radius: .8em; background: var(--gold-bg); border: 1px dashed var(--gold); color: var(--fg); }
 @media (max-width: 860px) { .t2 { grid-template-columns: 1fr; } .t2-idea b { font-size: .95em; } .t2-idea span { font-size: .82em; } .t2-pedido, .t2-barra, .t2-moraleja { font-size: .84em; } }
 </style>
@@ -43,7 +50,7 @@
 <div class="esc">
   <header class="esc-cab">
     <span class="esc-fase" data-ph="ca">Conceptualización</span>
-    <span class="esc-num">Claude Code PRO · S2 · 02/12</span>
+    <span class="esc-num">Claude Code PRO · S2 · 02/13</span>
   </header>
   <main class="esc-cuerpo">
     <div>
@@ -66,6 +73,7 @@
             <button type="button" class="cc-tab" data-tab="plantilla">Reglas + plantilla</button>
           </div>
           <p class="t2-pedido" id="pedido"></p>
+          <div class="t2-via" id="via" aria-hidden="true"><span class="taxi" id="taxi">🚕</span></div>
           <div class="t2-barra"><span class="n">Lee</span><span class="b"><i class="lee" id="b-lee"></i></span><span class="v" id="v-lee"></span></div>
           <div class="t2-barra"><span class="n">Escribe</span><span class="b"><i class="esc" id="b-esc"></i></span><span class="v" id="v-esc"></span></div>
           <div class="t2-barra"><span class="n">Cuesta como</span><span class="b"><i class="lee" id="b-lee2"></i><i class="esc" id="b-esc2"></i></span><span class="v" id="v-tot"></span></div>
@@ -95,8 +103,16 @@
     $("b-lee").style.setProperty("--w", (c.lee / 4200 * 100) + "%"); $("v-lee").textContent = CC.num(c.lee);
     $("b-esc").style.setProperty("--w", (c.esc / 4200 * 100) + "%"); $("v-esc").textContent = CC.num(c.esc);
     $("b-lee2").style.setProperty("--w", (c.lee / MAX * 100) + "%"); $("b-esc2").style.setProperty("--w", (c.esc * 5 / MAX * 100) + "%");
-    $("v-tot").textContent = CC.num(costo); $("total").textContent = CC.num(costo);
+    $("v-tot").textContent = CC.num(costo);
     $("nota").textContent = c.nota;
+    // el taxi avanza según el costo y el total cuenta hasta llegar; las maletas son lo que escribe
+    var via = $("via"); Array.prototype.forEach.call(via.querySelectorAll(".maleta"), function (m) { m.remove(); });
+    var pct = Math.min(96, 6 + costo / MAX * 90); $("taxi").style.setProperty("--x", pct + "%");
+    var nM = Math.max(1, Math.round(c.esc / 700));
+    for (var i = 0; i < nM; i++) { var m = CC.el("span", "maleta", "🧳"); m.style.left = (6 + (pct - 10) * (i + 1) / (nM + 1)) + "%"; m.style.setProperty("--d", (0.15 + i * 0.08) + "s"); via.appendChild(m); }
+    var t0 = performance.now(), desde = +(($("total").textContent || "0").replace(/\D/g, "")) || 0, red = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    cancelAnimationFrame(pintar._raf);
+    (function paso(now) { var k = red ? 1 : Math.min(1, (now - t0) / 900); var e = 1 - Math.pow(1 - k, 3); $("total").textContent = CC.num(desde + (costo - desde) * e); if (k < 1) pintar._raf = requestAnimationFrame(paso); })(t0);
   }
   CC.pestanas($("tabs"), "taximetro", pintar);
 })();
