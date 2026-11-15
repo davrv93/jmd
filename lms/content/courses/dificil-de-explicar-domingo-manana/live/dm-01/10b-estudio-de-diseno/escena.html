@@ -128,6 +128,7 @@ textarea { min-height: 4.2em; resize: vertical; }
           <p class="nota">Arrastra desde una regla para crear una guía; devuélvela a la regla para quitarla. Las capas se pegan a las guías.</p>
         </section>
         <button class="bt pri" id="exportar" type="button"><svg viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Exportar PNG</button>
+        <button class="bt" id="reiniciar" type="button"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5"/></svg>Empezar de nuevo</button>
       </aside>
 
       <section class="mesa" aria-label="Mesa de trabajo">
@@ -656,6 +657,22 @@ textarea { min-height: 4.2em; resize: vertical; }
     document.body.appendChild(m);
   }
   $('exportar').onclick = exportar;
+  // Reiniciar: dos toques (sin diálogos del navegador) y todo vuelve al inicio
+  let armado = null;
+  $('reiniciar').onclick = (e) => {
+    const bt = e.currentTarget;
+    if (!armado) {
+      bt.lastChild.textContent = 'Toca otra vez para borrar todo'; bt.classList.add('pri');
+      armado = setTimeout(() => { armado = null; bt.lastChild.textContent = 'Empezar de nuevo'; bt.classList.remove('pri'); }, 3000);
+      return;
+    }
+    clearTimeout(armado); armado = null; bt.lastChild.textContent = 'Empezar de nuevo'; bt.classList.remove('pri');
+    E.capas = []; E.guias = []; E.sel = null; E.varita = false; vista.classList.remove('varita');
+    E.fondo = 6; E.reglas = new Set(['tercios', 'reglas']); E.W = 1080; E.H = 1080; $('formato').value = 0;
+    [...$('fondos').children].forEach((x, k) => x.setAttribute('aria-pressed', k === E.fondo));
+    [...$('reglas').children].forEach((x, k) => x.setAttribute('aria-pressed', E.reglas.has(REGLAS[k][0])));
+    encajar(); sobreDibujo(); guiasDibujo(); pintar();
+  };
 
   // ---------- Arranque ----------
   new ResizeObserver(() => encajar()).observe(vista);
