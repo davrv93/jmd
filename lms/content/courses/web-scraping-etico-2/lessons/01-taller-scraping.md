@@ -2,7 +2,8 @@
 id: ws2-01
 title: "Taller · Scraping ético en el navegador y en el servidor"
 published: true
-starts_at: 2026-11-15T15:00:00-05:00
+starts_at: 2026-11-15T17:00:00-05:00
+duration: 90
 objectives:
   - id: ws2-01-o1
     title: Decidir qué se puede extraer y cómo, leyendo robots.txt, los términos de uso y los límites del sitio
@@ -80,11 +81,11 @@ cycle:
 
 # Agenda del taller (hora de Lima)
 
-- **3:00** · Scraping ético: robots.txt, términos de uso y límites
-- **3:25** · Tampermonkey y scripts en el navegador
-- **4:00** · Python en el servidor (EC2): sesión, cookies y token en la cabecera; la IA escribe y corrige
-- **4:40** · Juego «La telaraña cortés»; limpiar y exportar: CSV y JSON; casos reales
-- **5:15** · Cierre, certificado e insignia
+- **5:00** · Scraping ético: robots.txt, términos de uso y límites
+- **5:15** · Tampermonkey y scripts en el navegador
+- **5:40** · Python en el servidor (EC2): sesión, cookies y token en la cabecera; la IA escribe y corrige
+- **6:05** · Juego «La telaraña cortés»; limpiar y exportar: CSV y JSON; casos reales
+- **6:20** · Cierre, certificado e insignia
 
 ## Las cuatro reglas antes de extraer
 
