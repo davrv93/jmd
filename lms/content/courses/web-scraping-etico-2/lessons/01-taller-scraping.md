@@ -15,6 +15,16 @@ recording:
   url: ""
   passcode: ""
 materials:
+  - id: ws2-01-guia
+    title: "Guía paso a paso (PDF): pedir datos con y sin permiso, 5 retos"
+    kind: pdf
+    file: materials/guia-scraping-paso-a-paso.pdf
+    objective_ids: [ws2-01-o1, ws2-01-o2, ws2-01-o3]
+  - id: ws2-01-kit
+    title: "Kit de los 5 retos: scripts de Python y el userscript de Tampermonkey"
+    kind: zip
+    file: materials/kit-scraping-paso-a-paso.zip
+    objective_ids: [ws2-01-o2, ws2-01-o3]
   - id: ws2-01-m1
     title: Tampermonkey · extensión para scripts en el navegador
     kind: link
