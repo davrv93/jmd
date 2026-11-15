@@ -268,6 +268,13 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/carrera/fin", s.authed(s.liveCarreraFin))
 	mux.Handle("POST /api/v1/live/{lesson}/carrera/iniciar", s.authed(s.staff(s.liveCarreraIniciar)))
 	mux.Handle("POST /api/v1/live/{lesson}/carrera/reiniciar", s.authed(s.staff(s.liveCarreraReiniciar)))
+	// Karts del arpa (live_karts.go): hasta 20 pilotos, un POST por tick con el estado propio.
+	mux.Handle("GET /api/v1/live/{lesson}/karts", s.authed(s.liveKartsEstado))
+	mux.Handle("POST /api/v1/live/{lesson}/karts/unir", s.authed(s.liveKartsUnir))
+	mux.Handle("POST /api/v1/live/{lesson}/karts/salir", s.authed(s.liveKartsSalir))
+	mux.Handle("POST /api/v1/live/{lesson}/karts/tick", s.authed(s.liveKartsTick))
+	mux.Handle("POST /api/v1/live/{lesson}/karts/iniciar", s.authed(s.staff(s.liveKartsIniciar)))
+	mux.Handle("POST /api/v1/live/{lesson}/karts/reiniciar", s.authed(s.staff(s.liveKartsReiniciar)))
 	mux.Handle("POST /api/v1/live/{lesson}/video", s.authed(s.liveVideoCrear))
 	mux.Handle("POST /api/v1/live/{lesson}/video/ideas", s.authed(s.liveVideoIdeas))
 	mux.Handle("GET /api/v1/live/{lesson}/video/{id}", s.authed(s.liveVideoEstado))
