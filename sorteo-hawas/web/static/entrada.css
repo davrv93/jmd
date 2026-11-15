@@ -1,0 +1,220 @@
+/* Sorteo de penales · Web scraping ético. La página es una entrada de estadio:
+   se llena, se patea el penal y vuelve sellada con el cupón. Mismo mundo que el flyer. */
+@font-face { font-family: "Archivo Black"; src: url(../fonts/ArchivoBlack-400.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Plex Mono"; src: url(../fonts/IBMPlexMono-700.woff2) format("woff2"); font-weight: 700; font-display: swap; }
+
+:root {
+  --noche: #0b1030;
+  --noche-2: #141a46;
+  --papel: #f3f1ea;
+  --papel-2: #e9e5d8;
+  --papel-3: #fbfaf6;
+  --tinta: #15172d;
+  --tinta-2: #4b4e66;
+  --linea: #cdc7b6;
+  --oro: #f5c518;
+  --oro-tinta: #8a6200;
+  --rojo: #d40d0d;
+  --error: #b3261e;
+  --tenue: #c6c9ea;
+  --display: "Archivo Black", "Arial Narrow", sans-serif;
+  --mono: "Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sale: cubic-bezier(.16, 1, .3, 1);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--noche); color-scheme: dark; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; min-height: 100dvh; overflow-x: clip;
+  background: var(--noche); color: #fff;
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+::selection { background: var(--oro); color: var(--tinta); }
+img, svg { display: block; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--oro); outline-offset: 3px; border-radius: 6px; }
+
+.pagina { width: min(100%, 460px); margin: 0 auto; padding: 0 16px calc(28px + env(safe-area-inset-bottom)); }
+
+/* ---- La foto del penal: ancho completo, se funde con la noche ---- */
+.foto { position: relative; margin: 0 0 0 calc(50% - 50vw); width: 100vw; height: clamp(220px, 31vh, 420px); overflow: hidden; }
+.foto > img { width: 100%; height: 100%; object-fit: cover; object-position: 74% 64%; }
+.foto::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(11, 16, 48, .82), rgba(11, 16, 48, 0) 30%),
+    linear-gradient(to top, var(--noche) 22%, rgba(11, 16, 48, .6) 48%, rgba(11, 16, 48, 0) 72%);
+}
+.marca {
+  position: absolute; z-index: 1; top: max(14px, env(safe-area-inset-top)); left: max(16px, calc(50vw - 214px));
+  display: flex; align-items: center; gap: 8px; margin: 0;
+  font: 700 14px/1 system-ui, sans-serif; letter-spacing: .01em; color: #fff;
+}
+.marca img { border-radius: 6px; }
+
+/* ---- La entrada ---- */
+.entrada {
+  position: relative; margin-top: 0; overflow: clip;
+  background: var(--papel); color: var(--tinta); border-radius: 18px;
+  box-shadow: 0 28px 50px -22px rgba(0, 0, 0, .7), 0 2px 6px rgba(0, 0, 0, .3);
+}
+.cabeza { padding: 22px 22px 18px; }
+h1 {
+  position: relative; z-index: 1; margin: -96px 0 18px; color: #fff; text-shadow: 0 2px 14px rgba(11, 16, 48, .75);
+  font-family: var(--display); font-weight: 400;
+  font-size: clamp(29px, 8.4vw, 38px); line-height: 1.02; letter-spacing: -.02em; text-wrap: balance;
+}
+h1 em { font-style: normal; color: var(--oro); }
+
+.oferta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 0; }
+.precio { display: flex; align-items: baseline; gap: 12px; margin: 0; font-family: var(--display); white-space: nowrap; }
+.precio s { font-size: clamp(38px, 11vw, 48px); line-height: 1; color: var(--tinta-2); text-decoration-color: var(--rojo); text-decoration-thickness: 4px; }
+.precio strong { font-weight: 400; font-size: clamp(42px, 13vw, 62px); line-height: .9; letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: var(--oro-tinta); }
+
+/* El sello: tinta roja, un poco torcido, como recién estampado. */
+.estampa, .sello {
+  display: grid; place-content: center; text-align: center; flex: none; margin: 0;
+  border-radius: 50%; color: var(--rojo); border: 3px solid currentColor;
+  box-shadow: inset 0 0 0 4px var(--papel), inset 0 0 0 5.5px currentColor;
+  white-space: nowrap; transform: rotate(-12deg);
+}
+.estampa { width: clamp(70px, 20vw, 84px); height: clamp(70px, 20vw, 84px); }
+.estampa b { font: 400 clamp(17px, 5vw, 21px)/1 var(--display); letter-spacing: -.03em; }
+.estampa span { font: 700 9px/1.3 var(--mono); letter-spacing: .1em; padding-left: .1em; }
+
+.trato { margin: 12px 0 0; font-size: 16px; color: var(--tinta-2); text-wrap: pretty; }
+.trato b { color: var(--tinta); }
+
+.datos { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; margin: 16px 0 0; }
+.datos div { display: contents; }
+.datos dt, .datos dd { margin: 0; font: 700 12px/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+.datos dt { color: var(--tinta-2); }
+.datos dd { color: var(--tinta); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Troquel: línea punteada con dos muescas que muerden el borde. */
+.troquel { position: relative; height: 0; margin: 0 18px; border-top: 2px dashed var(--linea); }
+.troquel::before, .troquel::after {
+  content: ""; position: absolute; top: -13px; width: 24px; height: 24px; border-radius: 50%; background: var(--noche);
+}
+.troquel::before { left: -31px; }
+.troquel::after { right: -31px; }
+
+/* ---- Talón: datos, penal o cupón (uno a la vez) ---- */
+.talon { padding: 18px 22px 22px; }
+label { display: block; margin: 0 0 6px; font-size: 15px; font-weight: 650; color: var(--tinta); }
+label + input, label + .tel { margin-bottom: 14px; }
+input {
+  width: 100%; height: 52px; padding: 0 14px; border-radius: 12px;
+  border: 1.5px solid var(--linea); background: var(--papel-3); color: var(--tinta);
+  font: 17px/1 system-ui, sans-serif; caret-color: var(--oro-tinta);
+  transition: border-color .2s, box-shadow .2s;
+}
+input::placeholder { color: #6b6d82; }
+input:focus { outline: none; border-color: var(--tinta); box-shadow: 0 0 0 3px rgba(245, 197, 24, .6); }
+.tel { display: flex; align-items: center; gap: 10px; }
+.tel span { font: 700 16px/1 var(--mono); color: var(--tinta-2); }
+
+.boton {
+  display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 56px; margin-top: 6px;
+  padding: 0 20px; border: 0; border-radius: 14px; background: var(--oro); color: var(--tinta);
+  font: 400 19px/1 var(--display); letter-spacing: -.005em; text-decoration: none;
+  box-shadow: 0 10px 18px -10px rgba(138, 98, 0, .9), inset 0 -3px 0 rgba(0, 0, 0, .12);
+  transition: transform .18s var(--sale), box-shadow .18s, filter .18s;
+}
+.boton svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.boton svg path:first-of-type { fill: currentColor; }
+#usar svg path { fill: none; }
+.boton:hover { filter: brightness(1.04); box-shadow: 0 14px 22px -12px rgba(138, 98, 0, .95), inset 0 -3px 0 rgba(0, 0, 0, .12); }
+.boton:active { transform: translateY(2px); box-shadow: 0 4px 10px -6px rgba(138, 98, 0, .9), inset 0 -1px 0 rgba(0, 0, 0, .12); }
+.boton:disabled { cursor: progress; filter: saturate(.5); opacity: .75; }
+.boton:focus-visible { outline-color: var(--tinta); }
+
+.err { min-height: 1.4em; margin: 10px 0 0; font-size: 15px; font-weight: 600; color: var(--error); }
+.err:empty { min-height: 0; margin: 0; }
+.nota { margin: 12px 0 0; font-size: 14px; color: var(--tinta-2); }
+.aviso { margin: 0 0 14px; padding: 12px 14px; border-radius: 12px; background: var(--papel-2); font-size: 15px; color: var(--tinta); }
+
+/* ---- El penal ---- */
+.hola { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.hola p { margin: 0; font-size: 16px; color: var(--tinta-2); }
+.hola b { color: var(--tinta); }
+.mudo { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--linea); background: var(--papel-3); color: var(--tinta); }
+.mudo svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.mudo .parlante { fill: currentColor; }
+.mudo .cruz { display: none; }
+.mudo[aria-pressed="true"] .ondas { display: none; }
+.mudo[aria-pressed="true"] .cruz { display: inline; }
+
+.estadio { position: relative; border-radius: 14px; overflow: hidden; background: var(--noche); box-shadow: 0 10px 22px -14px rgba(0, 0, 0, .6); }
+.estadio svg { width: 100%; height: auto; }
+@keyframes flash { 0%, 92%, 100% { opacity: 0; } 94% { opacity: .95; } }
+.res {
+  position: absolute; left: 0; right: 0; bottom: 12px; margin: 0; text-align: center;
+  font: 400 clamp(30px, 10vw, 44px)/1 var(--display); letter-spacing: -.02em; color: #fff;
+  text-shadow: 0 3px 14px rgba(0, 0, 0, .55); pointer-events: none;
+}
+.res:empty { display: none; }
+.res.gol { animation: golpe .5s var(--sale) both; }
+.res.gratis { color: var(--oro); }
+@keyframes golpe { from { transform: scale(1.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.apunta { margin-top: 16px; }
+.pregunta { margin: 0 0 10px; font: 400 21px/1.1 var(--display); letter-spacing: -.01em; text-align: center; }
+.opciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.op {
+  display: grid; justify-items: center; gap: 6px; min-height: 76px; padding: 12px 6px 10px;
+  border-radius: 12px; border: 1.5px solid var(--linea); background: var(--papel-3); color: var(--tinta);
+  font-size: 15px; font-weight: 650;
+  transition: border-color .18s, background .18s, transform .18s var(--sale);
+}
+.op svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.op:hover { border-color: var(--tinta); }
+.op:active { transform: scale(.97); background: var(--papel-2); }
+.op:disabled { opacity: .5; cursor: default; }
+
+/* Confeti (lo suelta juego.js dentro de la entrada). */
+.conf { position: absolute; top: -12px; width: 8px; height: 13px; border-radius: 2px; pointer-events: none; animation: cae 2.6s cubic-bezier(.3, .6, .5, 1) forwards; }
+@keyframes cae { to { transform: translateY(560px) rotate(540deg); opacity: 0; } }
+
+/* ---- El cupón: el talón vuelve sellado ---- */
+.premio { display: grid; justify-items: center; text-align: center; }
+.sello { width: 158px; height: 158px; margin: 6px 0 14px; }
+.sello b { font: 400 46px/1 var(--display); letter-spacing: -.03em; }
+.sello span { margin-top: 4px; font: 700 11px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.premio.gratis .sello { color: var(--oro-tinta); }
+.premio.gratis .sello b { font-size: 30px; }
+.premio.sellar .sello { animation: sellar .55s var(--sale) both; }
+@keyframes sellar {
+  0% { transform: scale(1.7) rotate(-26deg); opacity: 0; filter: blur(3px); }
+  60% { opacity: 1; filter: blur(0); }
+  100% { transform: scale(1) rotate(-12deg); opacity: 1; }
+}
+.premio h2 { margin: 0; font: 400 24px/1.1 var(--display); letter-spacing: -.015em; text-wrap: balance; }
+.codigo {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin: 16px 0 0;
+  padding: 12px 12px 12px 16px; border-radius: 12px; border: 2px dashed var(--linea); background: var(--papel-3);
+}
+.codigo p { display: grid; gap: 2px; margin: 0; text-align: left; }
+.codigo span { font-size: 13px; color: var(--tinta-2); }
+.codigo b { font: 700 21px/1.1 var(--mono); letter-spacing: .04em; color: var(--tinta); overflow-wrap: anywhere; }
+.copiar { flex: none; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1.5px solid var(--tinta); background: transparent; font-size: 15px; font-weight: 650; }
+.copiar:active { background: var(--papel-2); }
+.pagas { margin: 14px 0 4px; font-size: 16px; color: var(--tinta-2); }
+.pagas b { color: var(--tinta); white-space: nowrap; }
+
+/* ---- Pie ---- */
+.pie { display: grid; justify-items: center; gap: 10px; margin-top: 22px; font-size: 15px; }
+.pie a { color: var(--tenue); text-decoration: underline; text-decoration-color: rgba(198, 201, 234, .4); text-underline-offset: 4px; }
+.pie a:hover { color: #fff; text-decoration-color: var(--oro); }
+
+@media (min-width: 720px) {
+  .foto { height: min(40vh, 360px); }
+  .foto > img { object-position: 58% 55%; }
+  .entrada { margin-top: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
