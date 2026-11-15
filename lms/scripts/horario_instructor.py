@@ -32,7 +32,8 @@ MESES = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "ag
 MARGEN = D.timedelta(minutes=15)
 
 # Cursos que dicta otra persona: salen en el horario, pero no cuentan para los cruces del instructor.
-OTRO_INSTRUCTOR = {"python-api"}
+# web-scraping-etico-2: lo dicta Gian Grobert desde el 15-11-2026.
+OTRO_INSTRUCTOR = {"python-api", "web-scraping-etico-2"}
 
 # Datos que no están en el LMS y que el dueño dio por otro lado. Se listan como cruces pendientes.
 AVISOS_EXTERNOS = [
