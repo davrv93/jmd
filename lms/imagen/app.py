@@ -279,18 +279,18 @@ def _openrouter(p: "Pedido") -> Response:
     import base64
     import httpx
     from PIL import Image
-    r = httpx.post("https://openrouter.ai/api/v1/chat/completions", timeout=120.0,
+    # Los FLUX de OpenRouter van por /api/v1/images (no por chat/completions): devuelve data[0].b64_json (~US$ 0,009).
+    r = httpx.post("https://openrouter.ai/api/v1/images", timeout=120.0,
                    headers={"Authorization": f"Bearer {OR_KEY}", "HTTP-Referer": "https://jmd-learn.online", "X-Title": "JMD imagen (respaldo FLUX)"},
-                   json={"model": OR_MODELO, "modalities": ["image"], "messages": [{"role": "user", "content": p.prompt}],
-                         "image_config": {"aspect_ratio": OR_ASPECTO.get(p.orientacion, "1:1")}})
+                   json={"model": OR_MODELO, "prompt": p.prompt, "aspect_ratio": OR_ASPECTO.get(p.orientacion, "1:1")})
     try:
         d = r.json()
-        url = d["choices"][0]["message"]["images"][0]["image_url"]["url"]
+        crudo = base64.b64decode(d["data"][0]["b64_json"])
     except Exception:
         log.warning("openrouter %s %s", r.status_code, r.text[:300])
         raise HTTPException(429 if r.status_code == 402 else 502, "el respaldo de imágenes (OpenRouter) no respondió")
     _or_uso["n"] += 1
-    img = Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1]))).convert("RGB")
+    img = Image.open(io.BytesIO(crudo)).convert("RGB")
     log.info("maxima (openrouter %s) %dx%d · costo %s · %d hoy", OR_MODELO, *img.size, (d.get("usage") or {}).get("cost"), _or_uso["n"])
     return _formato(img, p.orientacion)
 
