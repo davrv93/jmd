@@ -1,43 +1,40 @@
 # Horario del instructor · JMD Learning
 
-Generado el 15-11-2026 13:05 (hora de Lima) desde el contenido del LMS, con las clases desde el domingo 15 de noviembre. Para regenerarlo: `python3 lms/scripts/horario_instructor.py` (instrucciones dentro del script).
+Generado el 15-11-2026 13:07 (hora de Lima) desde el contenido del LMS, con las clases desde el domingo 15 de noviembre. Para regenerarlo: `python3 lms/scripts/horario_instructor.py` (instrucciones dentro del script).
 
 Reglas del instructor: no da clases del viernes a la puesta del sol al sábado a la puesta del sol (sábado bíblico), ni de lunes a jueves entre 6:00 y 9:00 p. m. Entre clases deja al menos 15 minutos.
 
 ## Cruces pendientes
 
 1. **Seguidas sin 15 min de margen** el domingo 15 de noviembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y QA Bots · Grupo 1 (3:00 p. m. a 4:30 p. m.).
-2. **Se pisan** el domingo 15 de noviembre: Bot de WhatsApp avanzado · Grupo 2 (7:30 p. m. a 8:15 p. m.) y IA para todos: DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.).
-3. **Seguidas sin 15 min de margen** el domingo 15 de noviembre: IA para todos: DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.) y Crea contenido con OpenMontage · Grupo 1 (9:00 p. m. a 10:00 p. m.).
-4. **Se pisan** el lunes 16 de noviembre: Potencia tus agentes · Grupo 1 (9:15 p. m. a 10:30 p. m.) y Tienda web con facturación · Grupo 1 (9:15 p. m. a 10:00 p. m.).
-5. **Seguidas sin 15 min de margen** el martes 17 de noviembre: GoldenQuerys con IA · Grupo 1 (6:30 p. m. a 7:30 p. m.) y DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.).
-6. **Seguidas sin 15 min de margen** el domingo 22 de noviembre: Difícil de explicar · Domingo mañana (10:00 a. m. a 11:30 a. m.) y Potencia tus agentes · Grupo 2 (11:30 a. m. a 12:45 p. m.).
-7. **Seguidas sin 15 min de margen** el domingo 22 de noviembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y Dashboards y BI con IA · Grupo 1 (3:00 p. m. a 5:00 p. m.).
-8. **Seguidas sin 15 min de margen** el domingo 22 de noviembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y QA Bots · Grupo 1 (3:00 p. m. a 4:30 p. m.).
-9. **Se pisan** el domingo 22 de noviembre: Dashboards y BI con IA · Grupo 1 (3:00 p. m. a 5:00 p. m.) y QA Bots · Grupo 1 (3:00 p. m. a 4:30 p. m.).
-10. **Se pisan** el domingo 22 de noviembre: Bot de WhatsApp avanzado · Grupo 2 (7:30 p. m. a 8:15 p. m.) y IA para todos: DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.).
-11. **Seguidas sin 15 min de margen** el domingo 22 de noviembre: IA para todos: DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.) y Crea contenido con OpenMontage · Grupo 1 (9:00 p. m. a 10:00 p. m.).
-12. **Seguidas sin 15 min de margen** el domingo 29 de noviembre: Difícil de explicar · Domingo mañana (10:00 a. m. a 11:30 a. m.) y Potencia tus agentes · Grupo 2 (11:30 a. m. a 12:45 p. m.).
-13. **Seguidas sin 15 min de margen** el domingo 29 de noviembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y Dashboards y BI con IA · Grupo 1 (3:00 p. m. a 5:00 p. m.).
-14. **Seguidas sin 15 min de margen** el domingo 29 de noviembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y QA Bots · Grupo 1 (3:00 p. m. a 4:30 p. m.).
-15. **Se pisan** el domingo 29 de noviembre: Dashboards y BI con IA · Grupo 1 (3:00 p. m. a 5:00 p. m.) y QA Bots · Grupo 1 (3:00 p. m. a 4:30 p. m.).
-16. **Se pisan** el domingo 29 de noviembre: Bot de WhatsApp avanzado · Grupo 2 (7:30 p. m. a 8:15 p. m.) y IA para todos: DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.).
-17. **Seguidas sin 15 min de margen** el domingo 29 de noviembre: IA para todos: DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.) y Crea contenido con OpenMontage · Grupo 1 (9:00 p. m. a 10:00 p. m.).
-18. **Seguidas sin 15 min de margen** el domingo 6 de diciembre: Requerimientos con IA · Grupo 3 (10:00 a. m. a 11:30 a. m.) y Potencia tus agentes · Grupo 2 (11:30 a. m. a 12:45 p. m.).
-19. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 1, lunes 16 de noviembre de 7:30 p. m. a 9:00 p. m.
-20. **Lunes a jueves entre 6 y 9 p. m.**: GoldenQuerys con IA · Grupo 1, martes 17 de noviembre de 6:30 p. m. a 7:30 p. m.
-21. **Lunes a jueves entre 6 y 9 p. m.**: DeepSeek Harness · Grupo 1, martes 17 de noviembre de 7:30 p. m. a 9:00 p. m.
-22. **Lunes a jueves entre 6 y 9 p. m.**: Seguridad con IA · Grupo 1, miércoles 18 de noviembre de 7:30 p. m. a 9:00 p. m.
-23. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 1, lunes 23 de noviembre de 7:30 p. m. a 9:00 p. m.
-24. **Lunes a jueves entre 6 y 9 p. m.**: DeepSeek Harness · Grupo 1, martes 24 de noviembre de 7:30 p. m. a 9:00 p. m.
-25. **Lunes a jueves entre 6 y 9 p. m.**: Seguridad con IA · Grupo 1, miércoles 25 de noviembre de 7:30 p. m. a 9:00 p. m.
-26. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 1, lunes 30 de noviembre de 7:30 p. m. a 9:00 p. m.
-27. **Lunes a jueves entre 6 y 9 p. m.**: DeepSeek Harness · Grupo 1, martes 1 de diciembre de 7:30 p. m. a 9:00 p. m.
-28. **Lunes a jueves entre 6 y 9 p. m.**: Seguridad con IA · Grupo 1, miércoles 2 de diciembre de 7:30 p. m. a 9:00 p. m.
-29. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 3 de diciembre de 7:30 p. m. a 9:00 p. m.
-30. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 10 de diciembre de 7:30 p. m. a 9:00 p. m.
-31. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 17 de diciembre de 7:30 p. m. a 9:00 p. m.
-32. **Dato contradictorio**: Chatbot avanzado (Grupo 2): el LMS lo tiene los domingos a las 7:30 p. m., pero su video promocional anuncia domingos 15, 22 y 29 de noviembre de 2:00 a 3:00 p. m. Si vale la hora del video, se cruza con Claude Code PRO Grupo 2 (domingos 2:00 a 3:00 p. m.). Hay que decidir cuál es la buena y corregir el otro.
+2. **Seguidas sin 15 min de margen** el domingo 15 de noviembre: IA para todos: DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.) y Crea contenido con OpenMontage · Grupo 1 (9:00 p. m. a 10:00 p. m.).
+3. **Se pisan** el lunes 16 de noviembre: Potencia tus agentes · Grupo 1 (9:15 p. m. a 10:30 p. m.) y Tienda web con facturación · Grupo 1 (9:15 p. m. a 10:00 p. m.).
+4. **Seguidas sin 15 min de margen** el martes 17 de noviembre: GoldenQuerys con IA · Grupo 1 (6:30 p. m. a 7:30 p. m.) y DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.).
+5. **Seguidas sin 15 min de margen** el domingo 22 de noviembre: Difícil de explicar · Domingo mañana (10:00 a. m. a 11:30 a. m.) y Potencia tus agentes · Grupo 2 (11:30 a. m. a 12:45 p. m.).
+6. **Seguidas sin 15 min de margen** el domingo 22 de noviembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y Dashboards y BI con IA · Grupo 1 (3:00 p. m. a 5:00 p. m.).
+7. **Seguidas sin 15 min de margen** el domingo 22 de noviembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y QA Bots · Grupo 1 (3:00 p. m. a 4:30 p. m.).
+8. **Se pisan** el domingo 22 de noviembre: Dashboards y BI con IA · Grupo 1 (3:00 p. m. a 5:00 p. m.) y QA Bots · Grupo 1 (3:00 p. m. a 4:30 p. m.).
+9. **Seguidas sin 15 min de margen** el domingo 22 de noviembre: IA para todos: DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.) y Crea contenido con OpenMontage · Grupo 1 (9:00 p. m. a 10:00 p. m.).
+10. **Seguidas sin 15 min de margen** el domingo 29 de noviembre: Difícil de explicar · Domingo mañana (10:00 a. m. a 11:30 a. m.) y Potencia tus agentes · Grupo 2 (11:30 a. m. a 12:45 p. m.).
+11. **Seguidas sin 15 min de margen** el domingo 29 de noviembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y Dashboards y BI con IA · Grupo 1 (3:00 p. m. a 5:00 p. m.).
+12. **Seguidas sin 15 min de margen** el domingo 29 de noviembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y QA Bots · Grupo 1 (3:00 p. m. a 4:30 p. m.).
+13. **Se pisan** el domingo 29 de noviembre: Dashboards y BI con IA · Grupo 1 (3:00 p. m. a 5:00 p. m.) y QA Bots · Grupo 1 (3:00 p. m. a 4:30 p. m.).
+14. **Seguidas sin 15 min de margen** el domingo 29 de noviembre: IA para todos: DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.) y Crea contenido con OpenMontage · Grupo 1 (9:00 p. m. a 10:00 p. m.).
+15. **Seguidas sin 15 min de margen** el domingo 6 de diciembre: Requerimientos con IA · Grupo 3 (10:00 a. m. a 11:30 a. m.) y Potencia tus agentes · Grupo 2 (11:30 a. m. a 12:45 p. m.).
+16. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 1, lunes 16 de noviembre de 7:30 p. m. a 9:00 p. m.
+17. **Lunes a jueves entre 6 y 9 p. m.**: GoldenQuerys con IA · Grupo 1, martes 17 de noviembre de 6:30 p. m. a 7:30 p. m.
+18. **Lunes a jueves entre 6 y 9 p. m.**: DeepSeek Harness · Grupo 1, martes 17 de noviembre de 7:30 p. m. a 9:00 p. m.
+19. **Lunes a jueves entre 6 y 9 p. m.**: Seguridad con IA · Grupo 1, miércoles 18 de noviembre de 7:30 p. m. a 9:00 p. m.
+20. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 1, lunes 23 de noviembre de 7:30 p. m. a 9:00 p. m.
+21. **Lunes a jueves entre 6 y 9 p. m.**: DeepSeek Harness · Grupo 1, martes 24 de noviembre de 7:30 p. m. a 9:00 p. m.
+22. **Lunes a jueves entre 6 y 9 p. m.**: Seguridad con IA · Grupo 1, miércoles 25 de noviembre de 7:30 p. m. a 9:00 p. m.
+23. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 1, lunes 30 de noviembre de 7:30 p. m. a 9:00 p. m.
+24. **Lunes a jueves entre 6 y 9 p. m.**: DeepSeek Harness · Grupo 1, martes 1 de diciembre de 7:30 p. m. a 9:00 p. m.
+25. **Lunes a jueves entre 6 y 9 p. m.**: Seguridad con IA · Grupo 1, miércoles 2 de diciembre de 7:30 p. m. a 9:00 p. m.
+26. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 3 de diciembre de 7:30 p. m. a 9:00 p. m.
+27. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 10 de diciembre de 7:30 p. m. a 9:00 p. m.
+28. **Lunes a jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 17 de diciembre de 7:30 p. m. a 9:00 p. m.
+29. **Dato contradictorio**: Chatbot avanzado (Grupo 2): el LMS lo tiene los domingos a las 7:30 p. m., pero su video promocional anuncia domingos 15, 22 y 29 de noviembre de 2:00 a 3:00 p. m. Si vale la hora del video, se cruza con Claude Code PRO Grupo 2 (domingos 2:00 a 3:00 p. m.). Hay que decidir cuál es la buena y corregir el otro.
 
 Las clases en la franja de lunes a jueves de 6 a 9 p. m. pueden ser de otro instructor; si las dicta él, hay que moverlas.
 
@@ -91,7 +88,7 @@ Las clases en la franja de lunes a jueves de 6 a 9 p. m. pueden ser de otro inst
 - 3:00 p. m. a 4:30 p. m. · **QA Bots · Grupo 1** · Sesión 1 · Explora: usuarios sintéticos que encuentran lo que nadie escribió
 - 5:00 p. m. a 6:30 p. m. · **Web scraping ético · Grupo 2 (lo dicta otra persona)** · Taller · Scraping ético en el navegador y en el servidor
 - 5:30 p. m. a 7:00 p. m. · **Difícil de explicar · Domingo tarde** · Sesión 1 · Imágenes con FLUX y animación en código: p5, Three.js, GSAP y HyperFrames
-- 7:30 p. m. a 8:15 p. m. · **Bot de WhatsApp avanzado · Grupo 2** · Sesión 1 · Modelo local: tu bot sin API ni cuota
+- 7:30 p. m. a 8:15 p. m. · **Bot de WhatsApp avanzado · Grupo 2 (lo dicta otra persona)** · Sesión 1 · Modelo local: tu bot sin API ni cuota
 - 7:30 p. m. a 9:00 p. m. · **IA para todos: DeepSeek Harness · Grupo 1** · Sesión 1 · Cuenta, clave y la foto de tu sistema
 - 9:00 p. m. a 10:00 p. m. · **Crea contenido con OpenMontage · Grupo 1** · Sesión 1 · Instala y entiende el flujo
 
@@ -125,7 +122,7 @@ Las clases en la franja de lunes a jueves de 6 a 9 p. m. pueden ser de otro inst
 - 3:00 p. m. a 5:00 p. m. · **Dashboards y BI con IA · Grupo 1** · Sesión 1 · Conecta, limpia y estructura tus datos
 - 3:00 p. m. a 4:30 p. m. · **QA Bots · Grupo 1** · Sesión 2 · Vigila: cada fallo a tu WhatsApp con la evidencia
 - 5:30 p. m. a 7:00 p. m. · **Difícil de explicar · Domingo tarde** · Sesión 2 · Web y landing que funcionan
-- 7:30 p. m. a 8:15 p. m. · **Bot de WhatsApp avanzado · Grupo 2** · Sesión 2 · Motor de decisiones: el código decide
+- 7:30 p. m. a 8:15 p. m. · **Bot de WhatsApp avanzado · Grupo 2 (lo dicta otra persona)** · Sesión 2 · Motor de decisiones: el código decide
 - 7:30 p. m. a 9:00 p. m. · **IA para todos: DeepSeek Harness · Grupo 1** · Sesión 2 · Mide y reduce el consumo
 - 9:00 p. m. a 10:00 p. m. · **Crea contenido con OpenMontage · Grupo 1** · Sesión 2 · Guion, voz y música
 
@@ -157,7 +154,7 @@ Las clases en la franja de lunes a jueves de 6 a 9 p. m. pueden ser de otro inst
 - 3:00 p. m. a 5:00 p. m. · **Dashboards y BI con IA · Grupo 1** · Sesión 2 · Dashboards, refresco automático y publicación
 - 3:00 p. m. a 4:30 p. m. · **QA Bots · Grupo 1** · Sesión 3 · Repara: la IA propone la corrección y abre el pull request
 - 5:30 p. m. a 7:00 p. m. · **Difícil de explicar · Domingo tarde** · Sesión 3 · Animación y video con HyperFrames
-- 7:30 p. m. a 8:15 p. m. · **Bot de WhatsApp avanzado · Grupo 2** · Sesión 3 · Embeddings: entender lo que pide el cliente
+- 7:30 p. m. a 8:15 p. m. · **Bot de WhatsApp avanzado · Grupo 2 (lo dicta otra persona)** · Sesión 3 · Embeddings: entender lo que pide el cliente
 - 7:30 p. m. a 9:00 p. m. · **IA para todos: DeepSeek Harness · Grupo 1** · Sesión 3 · Describe por roles, audita y valida tu sistema
 - 9:00 p. m. a 10:00 p. m. · **Crea contenido con OpenMontage · Grupo 1** · Sesión 3 · Escenas y video con IA
 
