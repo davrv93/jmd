@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tu oficio: ¿verdad o falso en el código?</title>
+<!--
+  Escena del modo LIVE (DeepSeek Harness, sesión ipt-01). Reglas: sin recursos externos, menos de 300 elementos y 1 MB,
+  animaciones solo CSS, todo se apaga con prefers-reduced-motion. Diseñada a 1920x1080, legible en 1366x768.
+  Interacción: cuatro oficios del grupo (salud, derecho, diseño, informática). Cada uno trae su sistema de práctica,
+  dos roles para comparar, 5 afirmaciones de «¿verdad o falso?» que se comprueban en el código (archivo:línea
+  verificado el 15-11-2026 contra lms/aula/sistemas-practica/dist) y una tarea automatizada que sale de la encuesta
+  del grupo. Ninguna afirmación toca las claves de seguridad debilitadas a propósito (ESQUEMA_SISTEMA.md): esos
+  hallazgos son de la sesión 3.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+body { font-size: clamp(15px, calc(1.18vw + .48vh), 30px); overflow-y: auto; }
+.x-mini { font: 700 1em/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; color: inherit; }
+.x-mini u { font-weight: 600; color: var(--muted); }
+.esc-cielo { opacity: calc(var(--cielo) * .3); }
+.esc { padding: 1.5vh 3vw 1.2vh; gap: 1vh; }
+.esc-cuerpo { gap: 1.2vh; }
+.x-cab { display: flex; align-items: center; justify-content: space-between; gap: 1.5vw; flex-wrap: wrap; }
+.x-cab .esc-titulo { font-size: 1.4em; margin: 0; }
+.x-tabs { display: flex; gap: .45em; flex-wrap: wrap; }
+.x-tab { font: 700 .78em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .6em 1.05em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; }
+.x-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-tab:focus-visible, .x-vf button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.x-enc { display: flex; align-items: center; gap: .6em; flex-wrap: wrap; font-size: .7em; color: var(--muted); }
+.x-enc b { color: var(--fg); }
+.x-enc span { display: inline-flex; align-items: center; gap: .4em; padding: .2em .7em; border-radius: 999px; background: var(--s3); color: var(--fg); }
+.x-enc i { font-style: normal; font-weight: 800; color: var(--accent); }
+.x-g { display: grid; grid-template-columns: .82fr 1.18fr; gap: 1.4vw; align-items: start; }
+.x-col { display: grid; gap: 1vh; }
+.x-card { background: var(--s1); border: 1px solid var(--line2); border-radius: .9em; padding: .6em .95em; box-shadow: var(--card-shadow); display: grid; gap: .4em; }
+.x-et { font-size: .6em; font-weight: 800; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.x-card h2 { margin: 0; font-size: 1em; line-height: 1.2; }
+.x-card p { margin: 0; font-size: .7em; line-height: 1.38; }
+.x-c { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.x-roles { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+.x-rol { border-radius: .7em; padding: .5em .7em; background: var(--s3); display: grid; gap: .2em; font-size: .7em; line-height: 1.35; }
+.x-rol b { font-size: 1.05em; }
+.x-rol code { font: 600 .92em var(--mono); color: var(--accent); }
+.x-tarea { background: var(--gold-bg); border-color: color-mix(in srgb, var(--gold) 40%, transparent); }
+.x-tarea .x-et { color: var(--gold); }
+.x-cmdref { font-size: .66em; color: var(--muted); }
+.x-cmdref b { color: var(--fg); }
+.x-quiz { display: grid; gap: .35em; }
+.x-af { border: 1px solid var(--line2); border-radius: .8em; padding: .35em .7em; background: var(--s1); display: grid; gap: .35em; }
+.x-af.ok { border-color: var(--ok); background: var(--ok-bg); }
+.x-af.mal { border-color: var(--bad); background: var(--bad-bg); }
+.x-fila { display: grid; grid-template-columns: 1.6em 1fr auto; gap: .6em; align-items: center; }
+.x-n { display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font-weight: 800; font-size: .7em; }
+.x-t { font-size: .74em; line-height: 1.28; }
+.x-vf { display: flex; gap: .35em; }
+.x-vf button { font: 700 .66em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .55em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; transition: transform .15s; }
+.x-vf button:hover:not(:disabled) { transform: translateY(-1px); }
+.x-vf button:disabled { cursor: default; opacity: .55; }
+.x-vf button.elegido { opacity: 1; background: var(--fg); color: var(--s1); border-color: var(--fg); }
+.x-pr { font-size: .6em; line-height: 1.35; padding-left: 2.4em; display: grid; gap: .1em; }
+.x-pr .v { font-weight: 800; }
+.x-af.ok .v { color: var(--ok); } .x-af.mal .v { color: var(--bad); }
+.x-pr .ev { color: var(--fg); }
+.x-pr .pq { color: var(--muted); }
+.x-pie { display: flex; align-items: center; justify-content: space-between; gap: 1em; flex-wrap: wrap; font-size: .7em; }
+.x-pie b { color: var(--accent); }
+.x-fin { padding: .45em .8em; border-radius: .7em; background: var(--ok-bg); border-left: 4px solid var(--ok); font-size: .7em; line-height: 1.4; }
+.x-reset { font: 700 .9em/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: .45em .9em; border-radius: 999px; border: 1px solid var(--line2); background: transparent; color: var(--muted); cursor: pointer; }
+@media (max-width: 1100px) { .x-g { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .x-vf button { transition: none !important; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 640 L168 588 L236 626 L296 552"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e" cx="1440" cy="146" r="3"/>
+  <circle class="e" cx="92" cy="640" r="3.5"/><circle class="eg" cx="168" cy="588" r="4.5"/><circle class="e" cx="236" cy="626" r="3"/><circle class="eo" cx="296" cy="552" r="5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptos</span>
+    <span class="esc-num">DeepSeek Harness · S1 · E05b</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="x-cab">
+      <h1 class="esc-titulo a-in">Tu oficio: ¿verdad o falso en el código?</h1>
+      <div class="x-tabs" role="tablist" aria-label="Oficio" id="tabs"></div>
+    </div>
+
+    <p class="x-enc">Lo que votó el grupo:
+      <span>Automatizar mis tareas <i>3</i></span>
+      <span>Documentos y ofimática <i>1</i></span>
+      <span>Mejorar mi agenda diaria <i>1</i></span>
+      <b>Por eso cada oficio se lleva hoy una tarea que dsh hace por ti.</b>
+    </p>
+
+    <div class="x-g">
+      <div class="x-col">
+        <section class="x-card" aria-live="polite">
+          <span class="x-et">Tu sistema de práctica</span>
+          <h2 id="s-nombre"></h2>
+          <p id="s-neg"></p>
+          <p>En la terminal del aula: <span class="x-c" id="s-cmd"></span> · Ábrelo en el <b>Visor</b>.</p>
+        </section>
+        <section class="x-card">
+          <span class="x-et">Entra con dos roles y compara</span>
+          <div class="x-roles" id="roles"></div>
+        </section>
+        <section class="x-card x-tarea">
+          <span class="x-et" id="t-et"></span>
+          <h2 id="t-tit"></h2>
+          <p id="t-txt"></p>
+          <p class="x-cmdref" id="t-cmd"></p>
+        </section>
+      </div>
+
+      <section class="x-card">
+        <span class="x-et">Antes de preguntarle a la IA: ¿verdad o falso?</span>
+        <div class="x-quiz" id="quiz" aria-live="polite"></div>
+        <div class="x-pie">
+          <span id="marcador"></span>
+          <button type="button" class="x-reset" id="reset">Empezar de nuevo</button>
+        </div>
+        <p class="x-fin" id="fin" hidden></p>
+      </section>
+    </div>
+
+    <script type="application/json" id="datos">{
+"salud": {"tab": "🩺 Salud", "cmd": "Salud",
+  "sistema": "centro-salud", "nombre": "Centro de Salud Santa Rosa", "neg": "Citas, triaje, diagnósticos, recetas y farmacia. Datos clínicos 100 % ficticios.",
+  "roles": [
+    {"rol": "Admisión", "u": "admision", "c": "Salud#Adm2027", "mira": "Abre un paciente: ¿ves su peso, su talla y sus alergias?"},
+    {"rol": "Médico", "u": "medico", "c": "Salud#Med2026", "mira": "El mismo paciente: ahora con peso, talla, IMC y alergias."}],
+  "tarea": {"et": "Tu tarea automatizada · agenda diaria", "tit": "Tu agenda de citas, con alergias", "txt": "dsh lee los datos y te arma una tabla con las citas pendientes de hoy en adelante: hora, paciente, sus alergias, médico y motivo. Tú solo revisas y la imprimes."},
+  "af": [
+    {"t": "Admisión no ve el peso, la talla ni las alergias del paciente.", "v": true,
+     "ev": "js/config.js:414-416 marcan esos campos con ver: CLINICO, y CLINICO (js/config.js:28) no incluye a admisión.",
+     "pq": "El dato de salud es un dato sensible (Ley 29733): lo ve solo quien lo necesita para atender."},
+    {"t": "A una niña de 9 años con IMC 30, el sistema la clasifica como «Obesidad I».", "v": false,
+     "ev": "js/config.js:83: en menores de 18 años responde «No aplica (menor de 18 años)».",
+     "pq": "La tabla de adultos de la OMS no sirve en niños: ahí se usan percentiles por edad y sexo, y el sistema no los calcula."},
+    {"t": "En un niño menor de 12 años, la receta no deja pasar una dosis diaria mayor que peso × mg/kg/día.", "v": true,
+     "ev": "js/config.js:363 fija la edad límite en 12 años y js/config.js:666 rechaza la receta si la dosis diaria pasa ese tope.",
+     "pq": "Es una regla clínica escrita en código: tú puedes revisar si el tope está bien puesto."},
+    {"t": "Si un medicamento no tiene dosis pediátrica definida, igual se puede recetar a un niño.", "v": false,
+     "ev": "js/config.js:663: si la dosis máxima pediátrica es 0, la receta para un menor se rechaza.",
+     "pq": "La metformina y el enalapril tienen 0 (js/config.js:216-217): no salen recetados a menores desde este sistema."},
+    {"t": "La dexametasona del almacén ya está vencida.", "v": true,
+     "ev": "js/config.js:221 la registra con vencimiento hace 15 días y js/config.js:135 la marca «Vencido».",
+     "pq": "Un vencido que sigue en el stock es justo lo que farmacia debe ver primero."}
+  ]},
+"derecho": {"tab": "⚖️ Derecho", "cmd": "Derecho",
+  "sistema": "abogados", "nombre": "Estudio Jurídico Paredes & Asociados", "neg": "Expedientes, plazos procesales, horas y honorarios. Números de expediente de ejemplo.",
+  "roles": [
+    {"rol": "Asistente legal", "u": "asistente", "c": "Estudio#Asi2026", "mira": "Abre Expedientes: ¿qué columnas de plazo y alerta ves?"},
+    {"rol": "Socio", "u": "socio", "c": "Estudio#Soc2026", "mira": "Los mismos expedientes con su lado económico: tarifas y honorarios."}],
+  "tarea": {"et": "Tu tarea automatizada · agenda de plazos", "tit": "Tu reporte de plazos por vencer", "txt": "dsh calcula el vencimiento de cada expediente activo en días hábiles y te lo ordena del más urgente al menos urgente, con los que vencen en 5 días o menos marcados."},
+  "af": [
+    {"t": "Al contar un plazo procesal, el sistema descuenta los feriados (28 de julio, 8 de diciembre…).", "v": false,
+     "ev": "js/config.js:65-73 solo salta sábados y domingos, y el propio campo lo avisa: «No descuenta feriados» (js/config.js:364).",
+     "pq": "Si el plazo cruza un feriado, el sistema da un vencimiento un día antes del real: peca de prudente, pero esa fecha no es la verdadera."},
+    {"t": "Si trabajas 1 h 05 min en una actuación, se facturan 1,25 h.", "v": true,
+     "ev": "La fracción de facturación es un cuarto de hora (js/config.js:277) y se redondea hacia arriba (js/config.js:104).",
+     "pq": "1,08 h sube al siguiente cuarto: 1,25 h. Es una política del estudio y se cambia en Parámetros."},
+    {"t": "Se puede pactar una cuota litis de 40 %.", "v": false,
+     "ev": "El rango va de 10 % a 35 % (js/config.js:279-280) y la regla de js/config.js:564 rechaza lo que salga de él.",
+     "pq": "El rango es un parámetro del estudio: se cambia en Parámetros, sin tocar el código."},
+    {"t": "El día de la notificación cuenta como el día 1 del plazo.", "v": false,
+     "ev": "js/config.js:64: «el día de la notificación no cuenta, el primero que cuenta es el siguiente hábil»; js/config.js:68 avanza un día antes de contar.",
+     "pq": "Igual que en el proceso: el plazo corre desde el día siguiente de notificado."},
+    {"t": "Una audiencia vale 20 % más que otra actuación de las mismas horas.", "v": true,
+     "ev": "El recargo por audiencia es 20 % (js/config.js:278) y se aplica solo a las actuaciones tipo Audiencia (js/config.js:492).",
+     "pq": "Otra regla del oficio convertida en código: la puedes auditar sin leer todo el sistema."}
+  ]},
+"diseno": {"tab": "🎨 Diseño", "cmd": "Diseño",
+  "sistema": "muebleria", "nombre": "Maderas del Sur · mueblería", "neg": "Catálogo de muebles, ventas y compras. Marca en café y dorado.",
+  "roles": [
+    {"rol": "Vendedor", "u": "vendedor", "c": "Vende#2026x", "mira": "Abre Productos: ¿qué columnas ves? ¿Está el costo?"},
+    {"rol": "Gerente", "u": "gerente", "c": "Gerente#2026x", "mira": "La misma pantalla con otras columnas y otro menú."}],
+  "tarea": {"et": "Tu tarea automatizada · documentos", "tit": "La guía de estilo del sistema, hecha sola", "txt": "dsh lee el CSS y el tema y te arma la tabla de colores con su contraste WCAG. Después te propone otra paleta para la mueblería, con el contraste ya calculado."},
+  "af": [
+    {"t": "Los colores de la marca (café y dorado) están escritos en css/app.css.", "v": false,
+     "ev": "Están en js/config.js:162 (primario #7a4a2b, acento #d9a441) y se inyectan al arrancar (js/80-app.js:83). El CSS no usa variables (css/app.css:4).",
+     "pq": "Cambiar la marca es tocar una línea del config: así 15 sistemas comparten un solo diseño."},
+    {"t": "Si el texto blanco no se lee sobre el dorado, el sistema lo cambia solo a oscuro.", "v": true,
+     "ev": "js/80-app.js:69 elige blanco u oscuro según el contraste WCAG de 4,5:1. Blanco sobre #d9a441 da 2,25:1; el texto #1f2933 da 6,56:1.",
+     "pq": "Accesibilidad calculada, no adivinada: eso es diseño de sistemas."},
+    {"t": "El sistema tiene modo oscuro automático.", "v": false,
+     "ev": "css/app.css solo tiene @media por ancho (css/app.css:241, 251 y 267) y de impresión (css/app.css:277); no hay prefers-color-scheme.",
+     "pq": "Una mejora que podrías proponer y medir."},
+    {"t": "Con la tecla Tab, el foco se ve con un borde azul de 3 px.", "v": true,
+     "ev": "css/app.css:24: outline: 3px solid #0b57d0.",
+     "pq": "Quien no usa mouse sabe siempre dónde está."},
+    {"t": "El vendedor ve el costo de los muebles, no solo el precio.", "v": false,
+     "ev": "El campo Costo promedio solo lo ven admin, gerente, almacén y auditor (js/config.js:235).",
+     "pq": "La misma pantalla cambia según quién mira: diseñas una pantalla por rol."}
+  ]},
+"info": {"tab": "💻 Informática", "cmd": "Informática",
+  "sistema": "consultora-software", "nombre": "Nexa Soluciones TI", "neg": "Consultora: proyectos, partes de horas, facturación por hitos y valor ganado.",
+  "roles": [
+    {"rol": "Consultor", "u": "consultor", "c": "Horas#2026x", "mira": "Mira tu menú: ¿aparecen Consultores o Clientes?"},
+    {"rol": "Gerente", "u": "gerente", "c": "Gerente#2026x", "mira": "Abre Consultores: sueldo y costo hora cargado de cada uno."}],
+  "tarea": {"et": "Tu tarea automatizada · pruebas", "tit": "Casos de prueba del valor ganado", "txt": "dsh toma 3 proyectos de los datos y calcula paso a paso PV, EV, AC, CPI y SPI. Te queda una tabla de casos de prueba lista para tu QA."},
+  "af": [
+    {"t": "Las claves se guardan con sal y 1.000 iteraciones de SHA-256, no en texto plano.", "v": true,
+     "ev": "js/30-seguridad.js:16 (ITERACIONES = 1000), js/30-seguridad.js:47 (hash con la sal) y js/30-seguridad.js:101 (guarda sal y hash, no la clave).",
+     "pq": "Es demostración: en producción se usan muchas más iteraciones o un algoritmo hecho para claves."},
+    {"t": "Los datos del sistema se guardan en un servidor.", "v": false,
+     "ev": "Todo vive en el navegador: js/20-almacen.js:22 arranca en modo localStorage, con window.name y memoria de respaldo (js/20-almacen.js:5).",
+     "pq": "Por eso la seguridad es de demostración: cualquiera con las herramientas del navegador la puede saltar."},
+    {"t": "La bitácora encadena cada entrada con el hash de la anterior y detecta si alguien la edita.", "v": true,
+     "ev": "js/35-auditoria.js:54-57 encadena el hash y js/35-auditoria.js:85-87 detecta la entrada borrada, movida o editada.",
+     "pq": "Una cadena de bloques sencilla, en menos de 100 líneas."},
+    {"t": "Un proyecto con CPI 0,85 aparece «en riesgo».", "v": true,
+     "ev": "CPI = EV / AC (js/config.js:98) y el índice mínimo es 0,9 (js/config.js:254): 0,85 queda debajo.",
+     "pq": "Por cada sol gastado avanzas 85 céntimos: el proyecto se está comiendo el margen."},
+    {"t": "El consultor puede ver el sueldo de sus compañeros.", "v": false,
+     "ev": "El sueldo mensual solo lo ven admin, gerente, finanzas y auditor (js/config.js:362), y la pantalla Consultores ni siquiera aparece para el consultor (js/config.js:383).",
+     "pq": "El dato sensible se protege por campo, no por pantalla."}
+  ]}
+}</script>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Responde las 5, compruébalas con dsh (comando 2 de tu oficio) y pide tu tarea (comando 3). Luego pulsa «Lo logré»</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {}
+})();
+(function () {
+  function $(s) { return document.querySelector(s); }
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  var D = JSON.parse($("#datos").textContent), ORDEN = ["salud", "derecho", "diseno", "info"], actual = "salud", resp = {};
+  var guard = null, abierta = {};
+  try { guard = JSON.parse(sessionStorage.getItem("ipt01-oficio") || "null"); } catch (e) {}
+  if (guard && guard.resp) { resp = guard.resp; if (D[guard.actual]) actual = guard.actual; }
+  function guardar() { try { sessionStorage.setItem("ipt01-oficio", JSON.stringify({ actual: actual, resp: resp })); } catch (e) {} }
+
+  var tabs = $("#tabs");
+  ORDEN.forEach(function (k) {
+    var b = el("button", "x-tab", D[k].tab); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("data-k", k);
+    b.addEventListener("click", function () { actual = k; guardar(); pintar(); });
+    tabs.appendChild(b);
+  });
+
+  function pintar() {
+    var o = D[actual], r = resp[actual] || (resp[actual] = {});
+    Array.prototype.forEach.call(tabs.children, function (b) { b.setAttribute("aria-selected", b.getAttribute("data-k") === actual ? "true" : "false"); });
+    $("#s-nombre").textContent = o.nombre; $("#s-neg").textContent = o.neg; $("#s-cmd").textContent = "aula sistema " + o.sistema;
+    var roles = $("#roles"); roles.textContent = "";
+    o.roles.forEach(function (x) {
+      var d = el("div", "x-rol"); d.appendChild(el("b", null, x.rol));
+      var u = el("span"); u.appendChild(el("code", null, x.u)); u.appendChild(document.createTextNode(" · clave ")); u.appendChild(el("code", null, x.c)); d.appendChild(u);
+      d.appendChild(el("span", null, x.mira)); roles.appendChild(d);
+    });
+    $("#t-et").textContent = o.tarea.et; $("#t-tit").textContent = o.tarea.tit; $("#t-txt").textContent = o.tarea.txt;
+    $("#t-cmd").innerHTML = "En la lista de comandos: <b>" + o.tab + " · 3</b>. Revisa que cada dato cite archivo:línea.";
+    var q = $("#quiz"); q.textContent = "";
+    var aciertos = 0, hechas = 0;
+    o.af.forEach(function (a, i) {
+      var elegida = r[i], hay = elegida === true || elegida === false, bien = hay && elegida === a.v;
+      if (hay) { hechas++; if (bien) aciertos++; }
+      var c = el("div", "x-af" + (hay ? (bien ? " ok" : " mal") : ""));
+      var f = el("div", "x-fila"); f.appendChild(el("span", "x-n", String(i + 1))); f.appendChild(el("span", "x-t", a.t));
+      var vf = el("div", "x-vf");
+      [["Verdad", true], ["Falso", false]].forEach(function (p) {
+        var b = el("button", hay && elegida === p[1] ? "elegido" : "", p[0]); b.type = "button"; b.disabled = hay;
+        b.setAttribute("aria-label", p[0] + ": " + a.t);
+        b.addEventListener("click", function () { r[i] = p[1]; abierta[actual] = i; guardar(); pintar(); });
+        vf.appendChild(b);
+      });
+      f.appendChild(vf); c.appendChild(f);
+      if (hay) {
+        var pr = el("div", "x-pr"), ab = abierta[actual] === i;
+        var mini = el("button", "x-mini v"); mini.type = "button"; mini.setAttribute("aria-expanded", ab ? "true" : "false");
+        mini.textContent = (bien ? "✓ Bien: es " : "✗ Era ") + (a.v ? "VERDAD." : "FALSO.") + " ";
+        if (!ab) mini.appendChild(el("u", null, "Ver la prueba"));
+        mini.addEventListener("click", function () { abierta[actual] = ab ? -1 : i; pintar(); });
+        pr.appendChild(mini);
+        if (ab) { pr.appendChild(el("span", "ev", a.ev)); pr.appendChild(el("span", "pq", a.pq)); }
+        c.appendChild(pr);
+      }
+      q.appendChild(c);
+    });
+    $("#marcador").innerHTML = "Respondiste <b>" + hechas + " de 5</b> · aciertos <b>" + aciertos + "</b>";
+    var fin = $("#fin");
+    if (hechas === 5) {
+      fin.hidden = false;
+      fin.textContent = "Ahora que dsh lo compruebe: comando «" + o.tab + " · 2». Si dice otra cosa, abre el archivo en esa línea y decide tú: la IA también se equivoca, y por eso le pides archivo:línea.";
+    } else { fin.hidden = true; }
+  }
+  $("#reset").addEventListener("click", function () { resp[actual] = {}; guardar(); pintar(); });
+  pintar();
+})();
+</script>
+</body>
+</html>
