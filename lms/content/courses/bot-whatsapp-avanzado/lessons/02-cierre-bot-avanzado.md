@@ -14,6 +14,17 @@ objectives:
 recording:
   url: ""
   passcode: ""
+materials:
+  - id: bwa-02-logro-lora
+    title: "Video del logro: IA local con LoRA, sin servidor de IA, en el navegador (35 s)"
+    kind: file
+    file: materials/grabaciones/bwa-02-logro-lora-35s.mp4
+    objective_ids: [bwa-02-o1, bwa-02-o3]
+  - id: bwa-02-prompt-a-prompt
+    title: "Video: del PDF al chatbot con IA local, prompt a prompt (3:50)"
+    kind: file
+    file: materials/grabaciones/bwa-02-prompt-a-prompt.mp4
+    objective_ids: [bwa-02-o1, bwa-02-o2]
 cycle:
   - id: ver
     title: Ver la clase
