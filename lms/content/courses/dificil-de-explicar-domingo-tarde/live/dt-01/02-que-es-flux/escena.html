@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qué son los modelos FLUX · Taller S1</title>
+<!-- Escena generada por _fuente/sesion1.py: edita ahí y vuelve a correrlo. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.nota { font-size: .7em; color: var(--muted); margin: 0; }
+.nota b { color: var(--fg); }
+
+.fx { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 1.2vw; align-items: start; }
+.fx canvas { width: 100%; height: auto; display: block; border-radius: .7em; background: #101018; }
+.ve-fila { display: flex; flex-wrap: wrap; gap: .4em; align-items: center; margin: .5em 0 .3em; }
+.chips { display: inline-flex; gap: .3em; flex-wrap: wrap; }
+.chips button, .boton { font: 600 .68em/1 system-ui, sans-serif; padding: .5em .8em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.chips button[aria-pressed="true"], .boton { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.tira { display: flex; gap: .3em; overflow: hidden; margin-bottom: .4em; }
+.tira canvas { width: 11%; flex: none; border-radius: .3em; outline: 2px solid transparent; }
+.tira canvas.ya { outline-color: var(--accent); }
+.lado { display: grid; gap: .55em; }
+.lado .esc-card { padding: .6em .85em; } .lado .esc-card h3 { font-size: .8em; } .lado .esc-card p { font-size: .7em; }
+.familia { width: 100%; border-collapse: separate; border-spacing: 0 .25em; font-size: .66em; }
+.familia th { text-align: left; white-space: nowrap; padding: .35em .6em; background: var(--s2); border-radius: .5em 0 0 .5em; vertical-align: top; }
+.familia td { padding: .35em .6em; background: var(--s1); border-radius: 0 .5em .5em 0; color: var(--muted); }
+.familia tr.aqui th, .familia tr.aqui td { background: var(--accent-bg); color: var(--fg); }
+@media (max-width: 900px) { .fx { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Taller · S1 · E02</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">FLUX: del <em>ruido</em> a la imagen, en pocos pasos</h1>
+    <section class="fx">
+      <div class="esc-card a-in" style="--d:.1s">
+        <canvas id="lienzo" width="768" height="432" aria-label="Del ruido a la imagen, paso a paso"></canvas>
+        <div class="ve-fila"><span class="nota">pasos:</span><span id="pasos" class="chips"></span>
+          <button type="button" id="ver" class="boton">▶ Ver los pasos</button><span class="nota" id="contador"></span></div>
+        <div id="tira" class="tira"></div>
+        <p class="nota">Ilustración de la idea. El modelo no pinta píxel por píxel: parte de <b>ruido</b> y en cada <b>paso</b> lo ordena un poco hacia lo que dice tu texto. FLUX hace ese trabajo en un espacio comprimido (latente) y al final lo convierte en píxeles.</p>
+      </div>
+      <div class="lado a-in" style="--d:.2s">
+        <div class="esc-card"><h3>Quién lo hace</h3><p><b>Black Forest Labs</b> (Alemania), fundada por investigadores que crearon Stable Diffusion. FLUX.1 salió en agosto de 2024; FLUX.2, en noviembre de 2025.</p></div>
+        <table class="familia">
+          <tr class="aqui"><th>FLUX.1 [schnell]</th><td>«schnell» = rápido: 1 a 4 pasos. Licencia Apache 2.0 (sirve hasta para trabajos comerciales). <b>★ El de la clase</b></td></tr>
+          <tr><th>FLUX.1 [dev]</th><td>Más pasos (unos 28 a 50), más detalle. Pesos abiertos, uso no comercial.</td></tr>
+          <tr><th>[pro] · FLUX.2 [pro, flex, max]</th><td>La mejor calidad. Solo por API, de pago.</td></tr>
+          <tr><th>Kontext</th><td>Edita una imagen que tú le das: «cambia el sombrero a rojo».</td></tr>
+          <tr><th>FLUX.2 [klein] 4B</th><td>Pequeño y rápido (2026). Apache 2.0.</td></tr>
+        </table>
+        <div class="esc-card"><h3>Lo que tú controlas</h3><p><b>Texto</b> (el prompt) · <b>orientación</b> (horizontal, cuadrado, vertical) · <b>pasos</b> · <b>semilla</b>: el ruido de partida. Misma semilla + mismo texto = misma imagen.</p></div>
+        <div class="esc-card"><h3>En el LMS</h3><p>FLUX.1 [schnell] en Cloudflare Workers AI (capa gratuita), a 2 pasos: unos 10 s por imagen y un cupo diario por persona.</p></div>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Fuentes: bfl.ai · huggingface.co/black-forest-labs · developers.cloudflare.com/workers-ai</footer>
+</div>
+<script>
+
+(() => {
+  const BASE = new URL('../../comun/base-ejemplo.webp', location.href).href;
+  let propia = null; try { propia = localStorage.getItem('flux-base-v1'); } catch (e) {}
+  const lz = document.getElementById('lienzo'), g = lz.getContext('2d'), W = lz.width, H = lz.height;
+  // ruido fijo (semilla 7): el mismo punto de partida cada vez, como una semilla de FLUX
+  let s = 7; const azar = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const ruido = document.createElement('canvas'); ruido.width = W / 4; ruido.height = H / 4;
+  const rg = ruido.getContext('2d'), id = rg.createImageData(ruido.width, ruido.height);
+  for (let i = 0; i < id.data.length; i += 4) { id.data[i] = azar() * 255; id.data[i + 1] = azar() * 255; id.data[i + 2] = azar() * 255; id.data[i + 3] = 255; }
+  rg.putImageData(id, 0, 0);
+  const img = new Image(); img.src = propia || BASE;
+  let N = 2; const OPC = [1, 2, 4, 8, 28];
+  function dibujar(ctx, w, h, p) {   // p = 0 (todo ruido) … 1 (imagen limpia)
+    ctx.save(); ctx.clearRect(0, 0, w, h);
+    ctx.filter = `blur(${((1 - p) * w / 32).toFixed(1)}px)`;
+    if (img.complete && img.naturalWidth) ctx.drawImage(img, 0, 0, w, h);
+    ctx.filter = 'none'; ctx.globalAlpha = Math.pow(1 - p, 1.25); ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(ruido, 0, 0, w, h); ctx.restore();
+  }
+  const pasosVisibles = () => { if (N <= 8) return Array.from({ length: N + 1 }, (_, k) => k); return [0, 1, 2, 4, 7, 12, 18, 24, 28]; };
+  function tira(hasta) {
+    const t = document.getElementById('tira'); t.innerHTML = '';
+    for (const k of pasosVisibles()) {
+      const c = document.createElement('canvas'); c.width = 128; c.height = 72; c.title = k === 0 ? 'ruido' : 'paso ' + k;
+      dibujar(c.getContext('2d'), 128, 72, k / N); if (k <= hasta) c.classList.add('ya'); t.appendChild(c);
+    }
+  }
+  function chips() {
+    const c = document.getElementById('pasos'); c.innerHTML = '';
+    for (const n of OPC) { const b = document.createElement('button'); b.type = 'button'; b.textContent = n; b.setAttribute('aria-pressed', String(n === N)); b.onclick = () => { N = n; chips(); mostrar(N); }; c.appendChild(b); }
+  }
+  function mostrar(k) { dibujar(g, W, H, k / N); tira(k); document.getElementById('contador').textContent = k === 0 ? 'ruido de partida' : `paso ${k} de ${N}`; }
+  let corriendo = null;
+  document.getElementById('ver').onclick = () => {
+    clearInterval(corriendo); const lista = pasosVisibles(); let i = 0; mostrar(0);
+    corriendo = setInterval(() => { i++; if (i >= lista.length) { clearInterval(corriendo); return; } mostrar(lista[i]); }, N > 8 ? 380 : 700);
+  };
+  img.onload = () => mostrar(N); chips(); mostrar(N);
+})();
+</script>
+</body>
+</html>

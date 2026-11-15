@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Referencia: Willie (1928) · Taller S1</title>
+<!-- Escena generada por _fuente/sesion1.py: edita ahí y vuelve a correrlo. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.nota { font-size: .7em; color: var(--muted); margin: 0; }
+.nota b { color: var(--fg); }
+
+.wi { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2vw; align-items: center; }
+.wi canvas { width: 100%; height: auto; display: block; border-radius: .7em; background: #f3ead6; }
+.wi .esc-lista { font-size: .82em; }
+@media (max-width: 900px) { .wi { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Taller · S1 · E09</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">Referencia: <em>Willie</em> (1928)</h1>
+    <section class="wi">
+      <div class="esc-card a-in" style="--d:.1s">
+        <ul class="esc-lista">
+          <li><span><b>Dominio público</b> desde el 1 de enero de 2024 (Estados Unidos): el Mickey de <i>Steamboat Willie</i>, no el de años después.</span></li>
+          <li><span>Se filmó a <b>24 fps</b> con dibujos <b>«en dos»</b>: 12 dibujos por segundo, cada uno dura dos cuadros.</span></li>
+          <li><span>Estilo «manguera»: brazos y piernas que se doblan como goma, <b>estirar y encoger</b>.</span></li>
+          <li><span>Hoy no la construimos: la pieza «Willie, difícil de explicar» está en <b>Materiales</b> como ejemplo terminado. Ábrela y compara con lo que hiciste.</span></li>
+        </ul>
+      </div>
+      <div class="esc-card a-in" style="--d:.2s">
+        <canvas id="bote" width="640" height="360" aria-label="Una pelota en unos y en dos"></canvas>
+        <p class="nota">Arriba, <b>en unos</b> (24 dibujos por segundo). Abajo, <b>en dos</b> (12): el salto es el mismo, cambia la textura del movimiento.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Steamboat Willie (1928) en Wikimedia Commons · enlace en Materiales</footer>
+</div>
+<script>
+
+(() => {
+  const c = document.getElementById('bote'), g = c.getContext('2d'), W = c.width, H = c.height, t0 = performance.now();
+  function pelota(y0, t) {
+    const u = (t % 1.2) / 1.2, alto = Math.abs(Math.sin(u * Math.PI)), y = y0 + 120 - alto * 100;
+    const aplasta = alto < 0.12 ? 1 + (0.12 - alto) * 4 : 1;          // estira y encoge al tocar el piso
+    const x = 60 + ((t * 120) % (W - 120));
+    g.fillStyle = '#16151d'; g.beginPath(); g.ellipse(x, y, 22 * aplasta, 22 / aplasta, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#16151d55'; g.beginPath(); g.moveTo(0, y0 + 144); g.lineTo(W, y0 + 144); g.stroke();
+  }
+  (function dibujar(ms) {
+    const t = (ms - t0) / 1000; g.clearRect(0, 0, W, H);
+    pelota(0, Math.floor(t * 24) / 24); pelota(170, Math.floor(t * 12) / 12);
+    g.fillStyle = '#5c5966'; g.font = '600 16px system-ui'; g.fillText('en unos · 24', 10, 20); g.fillText('en dos · 12', 10, 190);
+    requestAnimationFrame(dibujar);
+  })(t0);
+})();
+</script>
+</body>
+</html>

@@ -1,88 +1,79 @@
 ---
 id: dm-tarea-01
-title: "Tarea 1 · Tu pieza animada y tu ficha de prompts"
+title: "Tarea 1 · Tu imagen base en movimiento y tu ficha de prompts"
 lesson: dm-01
 due_at: 2026-11-21T23:59:00-05:00
 max_score: 16
 autograde: false
-objective_ids: [dm-01-o1, dm-01-o3, dm-01-o4]
+objective_ids: [dm-01-o1, dm-01-o2, dm-01-o3, dm-01-o4]
 rubric:
-  - criterion: Mensaje y flujo · se entiende qué es la pieza y qué cuenta; las escenas se siguen de principio a fin
+  - criterion: "Imagen base · la receta FLUX tiene sus cuatro partes (quién, qué hace, dónde, cómo se ve), hay una variación que cambia una sola parte y la base elegida está en assets/"
     levels:
-      - {title: Ausente (no se entiende el mensaje o la pieza no reproduce), points: 0}
-      - {title: Parcial (se entiende, pero una escena sobra o falta), points: 1}
-      - {title: Logrado y comprobado (mensaje claro en una frase y cuatro escenas que lo cuentan), points: 2}
-  - criterion: Pedidos a la IA · los tres pedidos de la ficha tienen rol, contexto, tarea, límites, formato y comprobación, y hay un segundo pedido de corrección preciso
+      - {title: "Ausente (sin receta o sin imagen)", points: 0}
+      - {title: "Parcial (falta una parte o la variación cambia varias cosas)", points: 1}
+      - {title: "Logrado (receta completa, variación de una parte y base en la carpeta)", points: 2}
+  - criterion: "Movimiento por tiempo · la animación se calcula con el tiempo (millis, performance.now o segundos de GSAP), no sumando por cuadro"
     levels:
-      - {title: Ausente (sin ficha o pedidos de una línea), points: 0}
-      - {title: Parcial (faltan partes o la comprobación es «que funcione»), points: 1}
-      - {title: Logrado (seis partes, comprobación ejecutable y una corrección con lugar, cambio y límite), points: 2}
-  - criterion: Jerarquía · un solo punto focal por escena; el texto no compite con la figura
+      - {title: "Ausente (suma píxeles por cuadro)", points: 0}
+      - {title: "Parcial (una parte por tiempo y otra por cuadro)", points: 1}
+      - {title: "Logrado y comprobado (a 12 y a 60 fps va igual de rápido)", points: 2}
+  - criterion: "fps con criterio · el index.html dice a cuántos fps corre y la ficha explica por qué (dónde se va a ver)"
     levels:
-      - {title: Ausente, points: 0}
-      - {title: Parcial (una escena con dos focos), points: 1}
-      - {title: Logrado, points: 2}
-  - criterion: Coherencia · todo sale de los tokens (fondo tinta y pasteles o los tuyos); el estilo se sostiene de principio a fin
+      - {title: "Ausente", points: 0}
+      - {title: "Parcial (fps sin justificar)", points: 1}
+      - {title: "Logrado", points: 2}
+  - criterion: "Herramienta bien usada · p5, Three.js o GSAP con al menos dos movimientos que se entienden (o HyperFrames con el MP4 renderizado)"
     levels:
-      - {title: Ausente (colores al azar), points: 0}
-      - {title: Parcial (un color o un efecto fuera de sistema), points: 1}
-      - {title: Logrado, points: 2}
-  - criterion: Contenido real · textos concretos de tu negocio o idea; nada inventado (ni precios, ni testimonios, ni cifras)
+      - {title: "Ausente (un solo movimiento o la imagen quieta)", points: 0}
+      - {title: "Parcial (dos movimientos que compiten)", points: 1}
+      - {title: "Logrado", points: 2}
+  - criterion: "Pedidos a la IA · el pedido tiene rol, contexto, tarea, límites, formato y comprobación, y hay un segundo pedido de corrección preciso"
     levels:
-      - {title: Ausente (lorem ipsum o datos inventados), points: 0}
-      - {title: Parcial (un dato sin fuente), points: 1}
-      - {title: Logrado, points: 2}
-  - criterion: Responsive · la pieza se ve completa a 393 px de ancho sin desborde horizontal
+      - {title: "Ausente (sin ficha o pedidos de una línea)", points: 0}
+      - {title: "Parcial (faltan partes o la comprobación es «que funcione»)", points: 1}
+      - {title: "Logrado (seis partes, comprobación ejecutable y una corrección con lugar, cambio y límite)", points: 2}
+  - criterion: "Foco · un solo punto de atención; el movimiento explica la idea, no decora"
     levels:
-      - {title: Ausente, points: 0}
-      - {title: Parcial (una escena recorta texto en el teléfono), points: 1}
-      - {title: Logrado (captura a 393 px incluida), points: 2}
-  - criterion: Accesibilidad · contraste AA en cada texto, foco visible en los botones y «reducir movimiento» muestra el storyboard quieto
+      - {title: "Ausente", points: 0}
+      - {title: "Parcial (dos focos a la vez)", points: 1}
+      - {title: "Logrado", points: 2}
+  - criterion: "Accesibilidad · «reducir movimiento» deja la imagen quieta y el texto (si hay) tiene contraste AA"
     levels:
-      - {title: Ausente, points: 0}
-      - {title: Parcial (contraste bien, pero reducir movimiento no hace nada), points: 1}
-      - {title: Logrado, points: 2}
-  - criterion: Movimiento y ritmo · el movimiento explica; los cortes caen en la rejilla de 0,25 s; sin destellos ni cortes menores de 0,25 s
+      - {title: "Ausente", points: 0}
+      - {title: "Parcial (contraste bien, pero reducir movimiento no hace nada)", points: 1}
+      - {title: "Logrado", points: 2}
+  - criterion: "Contenido real · la idea y los textos son tuyos; nada inventado (ni precios, ni testimonios, ni cifras)"
     levels:
-      - {title: Ausente (movimiento decorativo o destellos), points: 0}
-      - {title: Parcial (un corte fuera de la rejilla), points: 1}
-      - {title: Logrado y comprobado (la suma de data-duration da la duración exacta), points: 2}
+      - {title: "Ausente (lorem ipsum o datos inventados)", points: 0}
+      - {title: "Parcial (un dato sin fuente)", points: 1}
+      - {title: "Logrado", points: 2}
 ---
 
 ## Fase del ciclo · Aplicación
 
-Esta tarea cierra el ciclo de la sesión 1: es la **aplicación** de lo que pediste y construiste
-en clase. La ficha de prompts es la **reflexión** (qué pedido funcionó y por qué); las dos cuentan
-en la nota. No se aprueba con un cero en «Mensaje y flujo» ni en «Accesibilidad».
+Esta tarea cierra el ciclo de la sesión 1: es la **aplicación** de lo que hiciste en clase. La ficha de
+prompts es la **reflexión** (qué receta y qué pedido funcionaron y por qué); las dos cuentan en la nota.
+No se aprueba con un cero en «Imagen base» ni en «Movimiento por tiempo».
 
 ## Qué entregar
 
 Un repositorio git (GitHub, GitLab o Forgejo, público o con acceso para el instructor) llamado
 `sesion-01`, con:
 
-1. **`willie/index.html`**: la pieza del taller tal como la generó tu agente con el prompt de seis
-   partes, más `willie/willie.svg` al lado. Debe abrir sin internet y durar 20,0 s. Si le hiciste un
-   segundo pedido de corrección, deja esta versión corregida.
+1. **`mi-pieza/assets/base.webp`** (o `.png` / `.jpg`): tu imagen base hecha con FLUX, la que elegiste en clase.
 
-2. **`mi-pieza/index.html`**: tu propia pieza, de 8 a 20 segundos y **cuatro escenas como mínimo**,
-   con el mensaje de tu negocio o de tu idea en una frase. Mismo modelo: un solo reloj, cada escena
-   es una `section` con `data-start` y `data-duration`, cortes en la rejilla de 0,25 s, sin CDN ni
-   fuentes remotas, y con «reducir movimiento» muestra el storyboard quieto. Puedes usar los tokens
-   del taller (fondo tinta y seis pasteles) o los tuyos, pero los mismos de principio a fin. La
-   duración se comprueba sumando los `data-duration`:
+2. **`mi-pieza/index.html`**: tu imagen base en movimiento con **p5.js, Three.js o GSAP** (puedes partir
+   de un ejemplo del LIVE con «Descargar .html»). Un ciclo de 4 a 10 segundos, movimiento calculado con
+   el **tiempo**, los fps escritos en el código y «reducir movimiento» que deja la imagen quieta.
+   Si usaste **HyperFrames**, agrega también `mi-pieza/renders/mi-pieza.mp4`.
 
-   ```bash
-   grep -o 'data-duration="[0-9.]*"' mi-pieza/index.html | grep -o '[0-9.]*' | paste -sd+ | bc
-   ```
+3. **`FICHA_PROMPTS.md`**:
+   - la **receta FLUX** de tu base (quién, qué hace, dónde, cómo se ve) y la **variación** que probaste;
+   - el **pedido de seis partes** que le diste a tu agente (Rol, Contexto, Tarea, Límites, Formato, Comprobación);
+   - un **segundo pedido de corrección** que hayas usado de verdad, con el lugar, el cambio y «no toques nada más»;
+   - una línea: a cuántos fps corre tu pieza y por qué (dónde se va a ver).
 
-3. **`FICHA_PROMPTS.md`**: los **tres pedidos que mejor funcionaron**, cada uno con sus seis
-   partes etiquetadas (Rol, Contexto, Tarea, Límites, Formato, Comprobación), y **un segundo
-   pedido de corrección** que hayas usado de verdad, con el lugar, el cambio y «no toques nada
-   más». Debajo de cada uno, una línea: qué salió bien y qué tuviste que corregir.
-
-4. **`capturas/`**: tres capturas de `mi-pieza/index.html?t=` en tres instantes distintos (por
-   ejemplo `?t=0`, a mitad y al final), más una a 393 px de ancho (en el teléfono o con las
-   herramientas del navegador). Nómbralas `01.png`, `02.png`, `03.png` y `movil.png`.
+4. **`capturas/`**: `antes.png` y `despues.png` (antes y después del segundo pedido) y `movil.png` a 393 px de ancho.
 
 ## Cómo entregar
 

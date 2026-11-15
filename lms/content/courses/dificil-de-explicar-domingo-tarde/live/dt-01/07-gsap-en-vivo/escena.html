@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GSAP en vivo: animación con línea de tiempo · Taller S1</title>
+<!-- Escena generada por _fuente/sesion1.py: edita ahí y vuelve a correrlo. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/vivo.css">
+<style id="esc-propio">
+.nota { font-size: .7em; color: var(--muted); margin: 0; }
+.nota b { color: var(--fg); }
+.esc-cuerpo { gap: 1.2vh; justify-content: flex-start; }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Taller · S1 · E07</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">GSAP: animación con <em>línea de tiempo</em></h1>
+    <div class="explica a-in" style="--d:.05s"><div class="esc-card"><h3>Qué es</h3><p>GreenSock Animation Platform: anima propiedades de HTML y SVG (x, y, escala, opacidad). Es de Webflow y desde 2025 es <b>gratis</b>, también para trabajos comerciales.</p></div><div class="esc-card"><h3>Las piezas</h3><p><code>gsap.to / from / fromTo</code>, <code>duration</code> en segundos, <code>ease</code> (la curva) y <code>timeline</code> para encadenar.</p></div><div class="esc-card"><h3>Por qué importa</h3><p>Una línea de tiempo se puede <b>pausar y mover a cualquier segundo</b>. Eso es lo que usa HyperFrames para hacer video.</p></div></div>
+    <section class="vivo a-in" style="--d:.15s" id="vivo"></section>
+  </main>
+  <footer class="esc-pie">Lo logré = tu línea de tiempo corre con una duración o un ease cambiado por ti</footer>
+</div>
+<script src="../../comun/vivo.js"></script>
+<script>
+
+(() => {
+  const PRESETS = {"entrada": {"titulo": "Entrada", "que": "La imagen y el título entran con una curva (ease)", "codigo": "// Entrada: la imagen entra con zoom y el título sube; cada uno con su curva (ease)\ndocument.body.innerHTML = `\n  <img id=\"foto\" src=\"${BASE}\" style=\"position:absolute;inset:0;width:100%;height:100%;object-fit:cover\">\n  <h1 id=\"titulo\" style=\"position:absolute;left:6%;bottom:8%;margin:0;font:900 9vw/1 system-ui;color:#fff;text-shadow:0 .05em 0 #000\">¡Hola!<\/h1>`;\n\ngsap.ticker.fps(FPS);                       // cuadros por segundo\n\nconst tl = gsap.timeline({ repeat: -1, repeatDelay: 1 });\ntl.from('#foto', { scale: 1.3, opacity: 0, duration: 1.2, ease: 'power3.out' })\n  .from('#titulo', { y: 80, opacity: 0, duration: 0.6, ease: 'back.out(2)' }, '-=0.3')\n  .to('#titulo', { scale: 1.1, duration: 0.4, yoyo: true, repeat: 1, ease: 'power1.inOut' }, '+=0.5');\n"}, "camara": {"titulo": "Cámara: zoom y paneo", "que": "Una línea de tiempo con tres movimientos de cámara", "codigo": "// Cámara: tres movimientos en una línea de tiempo (acercar, panear, alejar)\ndocument.body.innerHTML = `<img id=\"foto\" src=\"${BASE}\" style=\"position:absolute;inset:0;width:100%;height:100%;object-fit:cover\">`;\ngsap.ticker.fps(FPS);\n\nconst tl = gsap.timeline({ repeat: -1, defaults: { ease: 'power2.inOut' } });\ntl.to('#foto', { scale: 1.6, xPercent: 12, yPercent: 8, duration: 2 })      // acerca al personaje\n  .to('#foto', { xPercent: -14, duration: 2.5 })                            // paneo a la derecha\n  .to('#foto', { scale: 1, xPercent: 0, yPercent: 0, duration: 1.5 });      // vuelve al plano general\n"}, "eases": {"titulo": "Curvas (eases)", "que": "La misma subida con cinco curvas distintas", "codigo": "// Curvas: el mismo movimiento con cinco eases. Mira cuál «pesa» y cuál «rebota»\nconst EASES = ['none', 'power2.out', 'power4.inOut', 'back.out(2)', 'elastic.out(1, 0.4)', 'bounce.out'];\ndocument.body.innerHTML = EASES.map((e, i) => `\n  <div style=\"position:absolute;left:${4 + i * 16}%;bottom:6%;width:12%;text-align:center;color:#ccc;font:600 1.6vw system-ui\">\n    <img class=\"b\" src=\"${BASE}\" style=\"width:100%;aspect-ratio:1;object-fit:cover;border-radius:50%;border:.3vw solid #fff\">\n    <div>${e}<\/div><\/div>`).join('');\ngsap.ticker.fps(FPS);\n\ngsap.utils.toArray('.b').forEach((b, i) => {\n  gsap.fromTo(b, { y: 0 }, { y: -innerHeight * 0.55, duration: 1.6, ease: EASES[i], repeat: -1, yoyo: true, repeatDelay: 0.4 });\n});\n"}, "tifo": {"titulo": "Tifo (stagger)", "que": "La imagen se arma con cartulinas que se dan vuelta, una tras otra", "codigo": "// Tifo: la imagen se arma con cartulinas que se dan vuelta, desde el centro (stagger)\nconst COL = 16, FIL = 9;\nlet html = '';\nfor (let f = 0; f < FIL; f++) for (let c = 0; c < COL; c++) {\n  html += `<div class=\"carta\" style=\"position:absolute;left:${c * 100 / COL}%;top:${f * 100 / FIL}%;width:${100 / COL}%;height:${100 / FIL}%;\n    background:url(${BASE}) ${-c * 100}% ${-f * 100}% / ${COL * 100}% ${FIL * 100}%;outline:1px solid #0006\"><\/div>`;\n}\ndocument.body.innerHTML = html;\ngsap.ticker.fps(FPS);\n\ngsap.timeline({ repeat: -1, repeatDelay: 1.2 })\n  .from('.carta', { rotationX: -90, opacity: 0, duration: 0.5, ease: 'power2.out', stagger: { grid: [FIL, COL], from: 'center', amount: 1.2 } })\n  .to('.carta', { scale: 0.92, duration: 0.3, yoyo: true, repeat: 1, stagger: { grid: [FIL, COL], from: 'edges', amount: 0.6 } }, '+=0.8');\n"}};
+  Vivo.editor(document.getElementById('vivo'), { lib: 'gsap', presets: PRESETS, clave: 'gsap' });
+})();
+</script>
+</body>
+</html>

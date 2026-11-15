@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fps: imágenes por segundo · Taller S1</title>
+<!-- Escena generada por _fuente/sesion1.py: edita ahí y vuelve a correrlo. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.nota { font-size: .7em; color: var(--muted); margin: 0; }
+.nota b { color: var(--fg); }
+
+.fp { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.2vw; align-items: start; }
+.fp canvas { width: 100%; height: auto; display: block; border-radius: .7em; background: #101018; margin: .4em 0; }
+.pestanas { display: flex; gap: .3em; }
+.pestanas button { font: 600 .68em/1 system-ui, sans-serif; padding: .5em .85em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.pestanas button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.nota input { vertical-align: middle; accent-color: var(--accent); }
+.lado { display: grid; gap: .55em; }
+.tabla { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .4em; }
+.tabla div { background: var(--s1); border: 1px solid var(--line); border-radius: .7em; padding: .45em .6em; display: grid; }
+.tabla b { font: 800 1em var(--mono); color: var(--accent); } .tabla span { font-size: .62em; color: var(--muted); }
+.lado .esc-card { padding: .6em .85em; } .lado .esc-card h3 { font-size: .8em; } .lado .esc-card p { font-size: .7em; }
+.lado .esc-cmd { font-size: .6em; }
+@media (max-width: 900px) { .fp { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Taller · S1 · E04</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">fps: cuántas <em>imágenes por segundo</em> ves</h1>
+    <section class="fp">
+      <div class="esc-card a-in" style="--d:.1s">
+        <div class="pestanas"><button type="button" data-m="fps" aria-pressed="true">Comparar fps</button><button type="button" data-m="lag" aria-pressed="false">Por cuadro vs por tiempo</button></div>
+        <canvas id="pista" width="960" height="540" aria-label="La misma animación a distintos fps"></canvas>
+        <label class="nota" id="lag-l" hidden>Tu compu se atasca a <b id="lag-v">20</b> fps <input id="lag" type="range" min="6" max="60" value="20"></label>
+        <p class="nota" id="pie-demo"></p>
+      </div>
+      <div class="lado a-in" style="--d:.2s">
+        <div class="tabla">
+          <div><b>24</b><span>cine</span></div><div><b>25 · 30</b><span>video y TV</span></div>
+          <div><b>60 · 120</b><span>pantallas y juegos</span></div><div><b>12</b><span>dibujos clásicos «en dos»: cada dibujo dura 2 cuadros</span></div>
+          <div><b>10 – 15</b><span>GIF livianos</span></div><div><b>30</b><span>lo que renderiza HyperFrames por defecto</span></div>
+        </div>
+        <div class="esc-card"><h3>Regla de oro: mueve por <em>tiempo</em>, no por cuadro</h3>
+          <p>Si sumas «3 píxeles por cuadro», en una compu lenta todo va más lento. Si calculas la posición con el <b>tiempo</b> (segundos), se ve igual de rápido a 12 o a 60 fps: solo cambia lo suave.</p></div>
+        <pre class="esc-cmd"><span class="c">// p5.js</span>
+frameRate(24);                 <span class="c">// cuadros por segundo</span>
+const t = millis() / 1000;     <span class="c">// tiempo en segundos</span>
+x = 100 + 80 * t;              <span class="c">// por tiempo ✓</span>
+
+<span class="c">// Three.js</span>
+const t = performance.now() / 1000;
+
+<span class="c">// GSAP / HyperFrames: todo se mide en segundos</span>
+gsap.to(gato, { x: 300, duration: 2 });</pre>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Willie (1928) se filmó a 24 fps con dibujos «en dos»: 12 dibujos por segundo</footer>
+</div>
+<script>
+
+(() => {
+  const lz = document.getElementById('pista'), g = lz.getContext('2d'), W = lz.width, H = lz.height;
+  const img = new Image(); let propia = null; try { propia = localStorage.getItem('flux-base-v1'); } catch (e) {}
+  img.src = propia || new URL('../../comun/base-ejemplo.webp', location.href).href;
+  let modo = 'fps'; const t0 = performance.now();
+  const FPS = [6, 12, 24, 60];
+  const tinta = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a99cff';
+  // carril: la imagen va y vuelve en 3 s con un salto; la posición sale SOLO del tiempo (cuantizado a los fps del carril)
+  function carril(y, h, t, etiqueta, color) {
+    const lado = h * 0.82, iw = lado * (img.naturalWidth ? img.naturalWidth / img.naturalHeight : 16 / 9);
+    const u = (t % 3) / 3, ida = u < .5 ? u * 2 : 2 - u * 2, x = 110 + ida * (W - 140 - iw);
+    const salto = Math.abs(Math.sin(t * Math.PI * 2 / 1.5)) * h * 0.12;
+    g.fillStyle = 'rgba(255,255,255,.05)'; g.fillRect(0, y, W, h);
+    if (img.complete && img.naturalWidth) g.drawImage(img, x, y + (h - lado) / 2 + h * 0.06 - salto, iw, lado);
+    g.fillStyle = color; g.font = '700 22px ui-monospace, monospace'; g.fillText(etiqueta, 12, y + h / 2 + 8);
+  }
+  let lagX = 110, lagUlt = 0;
+  function cuadro() {
+    const t = (performance.now() - t0) / 1000; g.clearRect(0, 0, W, H);
+    if (modo === 'fps') {
+      const h = H / FPS.length;
+      FPS.forEach((f, i) => carril(i * h, h, Math.floor(t * f) / f, f + ' fps', i === 3 ? '#7ee2a8' : tinta));
+      document.getElementById('pie-demo').innerHTML = 'Misma animación, mismo tiempo: a <b>6 fps</b> salta, a <b>12</b> se ve «de dibujo», a <b>24</b> es cine y a <b>60</b> es seda.';
+    } else {
+      const lag = +document.getElementById('lag').value, h = H / 2;
+      const tq = Math.floor(t * lag) / lag;
+      // por cuadro: suma 4 px cada vez que dibuja, pensando que siempre son 60 fps
+      if (tq !== lagUlt) { lagX += 4 * (lag > 0 ? 1 : 0); lagUlt = tq; }
+      const iw = h * 0.7 * 16 / 9, ancho = W - 140 - iw;
+      const porCuadro = 110 + (lagX - 110) % ancho, porTiempo = 110 + ((tq * 240) % ancho);
+      g.fillStyle = 'rgba(255,255,255,.05)'; g.fillRect(0, 0, W, h); g.fillRect(0, h, W, h);
+      if (img.complete && img.naturalWidth) { g.drawImage(img, porCuadro, h * .15, iw, h * .7); g.drawImage(img, porTiempo, h + h * .15, iw, h * .7); }
+      g.font = '700 20px ui-monospace, monospace'; g.fillStyle = '#ff8a8a'; g.fillText('por cuadro', 10, h / 2); g.fillStyle = '#7ee2a8'; g.fillText('por tiempo', 10, h + h / 2);
+      document.getElementById('pie-demo').innerHTML = `A ${lag} fps: <b>por cuadro</b> avanza ${(4 * lag).toFixed(0)} px/s (a 60 fps serían 240); <b>por tiempo</b> siempre 240 px/s.`;
+    }
+    requestAnimationFrame(cuadro);
+  }
+  document.querySelectorAll('.pestanas button').forEach((b) => b.onclick = () => {
+    modo = b.dataset.m; document.querySelectorAll('.pestanas button').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+    document.getElementById('lag-l').hidden = modo !== 'lag'; lagX = 110;
+  });
+  document.getElementById('lag').oninput = (e) => { document.getElementById('lag-v').textContent = e.target.value; };
+  requestAnimationFrame(cuadro);
+})();
+</script>
+</body>
+</html>

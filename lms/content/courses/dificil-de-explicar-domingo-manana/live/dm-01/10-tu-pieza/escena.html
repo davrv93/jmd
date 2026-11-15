@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu pieza: el pedido en seis partes · Taller S1</title>
+<!-- Escena generada por _fuente/sesion1.py: edita ahí y vuelve a correrlo. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.nota { font-size: .7em; color: var(--muted); margin: 0; }
+.nota b { color: var(--fg); }
+
+.tp { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 1.2vw; align-items: start; }
+.sec { display: grid; gap: .55em; min-width: 0; }
+.campo { display: grid; gap: .3em; font-size: .74em; font-weight: 700; }
+.campo input { font: .95em/1.3 inherit; font-weight: 400; padding: .45em .65em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+.grupo { display: flex; flex-wrap: wrap; gap: .35em .5em; align-items: center; }
+.grupo > span { font-size: .68em; font-weight: 700; color: var(--muted); min-width: 5.5em; }
+.chips { display: flex; flex-wrap: wrap; gap: .3em; }
+.chips button { font: 600 .64em/1 system-ui, sans-serif; padding: .48em .7em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.reglas { margin: 0; padding-left: 1.1em; font-size: .66em; color: var(--muted); } .reglas b, .reglas code { color: var(--fg); }
+.pedido { font: .64em/1.55 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .8em; padding: .8em 1em; margin: 0; white-space: pre-wrap; max-height: 56vh; overflow: auto; }
+.pedido b { color: #c3b9ff; }
+.grande { width: 100%; font: 700 .9em/1 system-ui, sans-serif; padding: .8em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+@media (max-width: 900px) { .tp { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Aplicación</span>
+    <span class="esc-num">Taller · S1 · E10</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">Tu pieza: pídela a tu agente en <em>seis partes</em></h1>
+    <section class="tp">
+      <div class="sec a-in" style="--d:.1s">
+        <label class="campo">Tu idea en una frase<input id="idea" type="text" placeholder="El gato pirata toca al amanecer mientras el barco se mece"></label>
+        <div class="grupo"><span>Herramienta</span><div class="chips" id="libs"></div></div>
+        <div class="grupo"><span>Movimientos</span><div class="chips" id="efectos"></div></div>
+        <div class="grupo"><span>fps</span><div class="chips" id="fpss"></div><span>ciclo</span><div class="chips" id="ciclos"></div></div>
+        <div class="grupo"><span>Formato</span><div class="chips" id="formatos"></div></div>
+        <ul class="reglas">
+          <li><b>Entrega:</b> carpeta <code>mi-pieza/</code> con <code>index.html</code> y tu imagen base, <code>FICHA_PROMPTS.md</code> (la receta FLUX, este pedido y tu corrección) y <code>capturas/</code>.</li>
+          <li><b>Si sale mal:</b> un segundo pedido con <b>el lugar</b>, <b>el cambio</b> y «no toques nada más».</li>
+        </ul>
+      </div>
+      <div class="sec a-in" style="--d:.2s">
+        <pre class="pedido" id="pedido"></pre>
+        <button type="button" id="copiar" class="grande">Copiar el pedido</button>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Lo logré = tu imagen base se mueve en tu propio index.html (captura antes y después del segundo pedido)</footer>
+</div>
+<script>
+
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const LIBS = {
+    p5: { n: 'p5.js', cdn: 'p5.js 1.11.1 desde jsDelivr', ef: ['respira', 'flota y se mece', 'parallax por franjas', 'ondas de agua abajo', 'partículas que suben'] },
+    three: { n: 'Three.js', cdn: 'Three.js 0.169 (módulo ES) desde jsDelivr', ef: ['postal que se mece', 'relieve por brillo', 'multiplano en tres capas', 'cámara que orbita', 'cubo con la imagen'] },
+    gsap: { n: 'GSAP', cdn: 'GSAP 3.15 desde jsDelivr', ef: ['entrada con zoom', 'zoom y paneo de cámara', 'título que rebota', 'tifo de cartulinas (stagger)', 'eases distintos'] },
+    hyperframes: { n: 'HyperFrames (video MP4)', cdn: 'GSAP 3.15 y el formato de HyperFrames', ef: ['acercamiento lento', 'título que entra', 'paneo de cámara', 'subtítulo con mi frase', 'cierre con fundido'] },
+  };
+  const FORMATOS = [['vertical 1080×1920', 1080, 1920], ['horizontal 1920×1080', 1920, 1080], ['cuadrado 1080×1080', 1080, 1080]];
+  const st = { lib: 'p5', ef: [0, 2], fps: 24, ciclo: 6, formato: 0, idea: '' };
+  try { Object.assign(st, JSON.parse(localStorage.getItem('s1-pedido') || '{}')); } catch (e) {}
+  function chips(caja, items, activo, al) {
+    caja.innerHTML = '';
+    items.forEach((it, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it; b.setAttribute('aria-pressed', String(activo(i))); b.onclick = () => { al(i); pintar(); }; caja.appendChild(b); });
+  }
+  function pedido() {
+    const L = LIBS[st.lib], F = FORMATOS[st.formato], ef = st.ef.map((i) => L.ef[i]).filter(Boolean);
+    const idea = st.idea.trim() || '(escribe tu idea en una frase)';
+    const video = st.lib === 'hyperframes';
+    return [
+      ['ROL', `Eres un desarrollador creativo que anima ilustraciones con ${L.n} en un solo index.html.`],
+      ['CONTEXTO', `Tengo una imagen base hecha con FLUX: assets/base.webp. Mi idea: «${idea}». La imagen no se cambia ni se regenera: el movimiento lo pone el código.`],
+      ['TAREA', `Anima la imagen base con: ${ef.join(', ') || 'un movimiento suave'}. Un ciclo de ${st.ciclo} s${video ? '' : ' que se repite sin salto'}, a ${st.fps} fps, en formato ${F[0]}.`],
+      ['LÍMITES', `Un solo index.html + assets/base.webp. ${L.cdn} con versión fija. Mueve por tiempo (segundos), no por cuadro. Sin texto dentro de la imagen. Respeta «reducir movimiento» (prefers-reduced-motion): la imagen queda quieta.${video ? ' Cumple el formato de HyperFrames: class="clip" con data-start y data-duration, una línea de tiempo GSAP pausada en window.__timelines["main"], sin Math.random sin semilla ni Date.now.' : ''}`],
+      ['FORMATO', `Devuelve el index.html completo y, en tres líneas, dónde cambio los fps, la velocidad y la amplitud.`],
+      ['COMPROBACIÓN', video
+        ? `npx hyperframes check sin errores y npx hyperframes render -o renders/mi-pieza.mp4 da un video de ${st.ciclo} s exactos a ${st.fps} fps.`
+        : `Abro index.html: el ciclo dura ${st.ciclo} s exactos, a ${st.fps} fps se ve igual de rápido que a 60 y con «reducir movimiento» queda quieta.`],
+    ];
+  }
+  const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  function pintar() {
+    const L = LIBS[st.lib];
+    chips($('libs'), Object.values(LIBS).map((l) => l.n), (i) => Object.keys(LIBS)[i] === st.lib, (i) => { st.lib = Object.keys(LIBS)[i]; st.ef = [0, 2]; });
+    chips($('efectos'), L.ef, (i) => st.ef.includes(i), (i) => { st.ef = st.ef.includes(i) ? st.ef.filter((x) => x !== i) : [...st.ef, i].slice(-3); });
+    chips($('fpss'), ['12', '24', '30', '60'], (i) => [12, 24, 30, 60][i] === st.fps, (i) => { st.fps = [12, 24, 30, 60][i]; });
+    chips($('ciclos'), ['4 s', '6 s', '8 s', '10 s'], (i) => [4, 6, 8, 10][i] === st.ciclo, (i) => { st.ciclo = [4, 6, 8, 10][i]; });
+    chips($('formatos'), FORMATOS.map((f) => f[0]), (i) => i === st.formato, (i) => { st.formato = i; });
+    $('pedido').innerHTML = pedido().map(([k, v]) => `<b>${k}:</b> ${esc(v)}`).join('\n\n');
+    try { localStorage.setItem('s1-pedido', JSON.stringify(st)); } catch (e) {}
+  }
+  $('idea').value = st.idea; $('idea').oninput = (e) => { st.idea = e.target.value; pintar(); };
+  $('copiar').onclick = async (e) => {
+    const t = pedido().map(([k, v]) => `${k}: ${v}`).join('\n\n');
+    let ok = false; try { await navigator.clipboard.writeText(t); ok = true; } catch (x) { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); try { ok = document.execCommand('copy'); } catch (y) {} a.remove(); }
+    e.target.textContent = ok ? '✓ Copiado: pégalo en tu agente' : 'Selecciona el texto y cópialo'; setTimeout(() => { e.target.textContent = 'Copiar el pedido'; }, 2600);
+  };
+  pintar();
+})();
+</script>
+</body>
+</html>

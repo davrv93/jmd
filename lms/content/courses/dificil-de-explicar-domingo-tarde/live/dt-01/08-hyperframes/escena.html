@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HyperFrames: de HTML a video · Taller S1</title>
+<!-- Escena generada por _fuente/sesion1.py: edita ahí y vuelve a correrlo. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/vivo.css">
+<style id="esc-propio">
+.nota { font-size: .7em; color: var(--muted); margin: 0; }
+.nota b { color: var(--fg); }
+
+.hf { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1.2vw; align-items: start; }
+.escenario { position: relative; aspect-ratio: 16 / 9; border-radius: .9em; overflow: hidden; background: #101018; box-shadow: var(--card-shadow); }
+#hf-fondo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+#hf-velo { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.55), transparent 55%); }
+#hf-titulo { position: absolute; left: 5%; bottom: 17%; margin: 0; font: 900 2.6em/1 system-ui; color: #fff; }
+#hf-sub { position: absolute; left: 5.3%; bottom: 9%; margin: 0; font: 600 .9em system-ui; color: #ffe49a; }
+#hf-reloj { position: absolute; right: 2%; top: 3%; font: 700 .62em var(--mono); color: #fff; background: rgba(0,0,0,.55); padding: .3em .55em; border-radius: .4em; }
+.ctrl { display: flex; gap: .45em; align-items: center; margin: .5em 0 .3em; flex-wrap: wrap; }
+.ctrl input[type=range] { flex: 1; min-width: 8em; accent-color: var(--accent); }
+.ctrl > button:first-child { width: 2.2em; height: 2.2em; border-radius: 50%; border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.chips { display: inline-flex; gap: .25em; }
+.chips button, .boton { font: 600 .64em/1 system-ui, sans-serif; padding: .48em .7em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.chips button[aria-pressed="true"], .boton { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.tira { display: flex; gap: 2px; height: .9em; }
+.tira i { flex: 1; background: var(--s3); border-radius: 2px; }
+.tira i.ya { background: var(--accent); }
+.lado { display: grid; gap: .5em; }
+.lado .esc-card { padding: .55em .8em; } .lado .esc-card h3 { font-size: .8em; } .lado .esc-card p { font-size: .68em; }
+.lado code { font: .95em var(--mono); color: var(--accent); }
+.grande { width: 100%; font: 700 .85em/1 system-ui, sans-serif; padding: .8em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+@media (max-width: 900px) { .hf { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Taller · S1 · E08</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">HyperFrames: de <em>HTML a video</em>, cuadro por cuadro</h1>
+    <section class="hf">
+      <div class="a-in" style="--d:.1s">
+        <div class="escenario" id="escenario">
+          <img id="hf-fondo" alt="">
+          <div id="hf-velo"></div>
+          <h2 id="hf-titulo">Mi pieza</h2>
+          <p id="hf-sub">hecha con FLUX + GSAP</p>
+          <span id="hf-reloj"></span>
+        </div>
+        <div class="ctrl">
+          <button type="button" id="hf-play">▶</button>
+          <input type="range" id="hf-t" min="0" max="6" step="0.001" value="0" aria-label="Tiempo">
+          <span class="chips" id="hf-fps"></span>
+          <button type="button" id="hf-render" class="boton">Renderizar como HyperFrames</button>
+        </div>
+        <div class="tira" id="hf-tira" aria-hidden="true"></div>
+        <p class="nota" id="hf-nota">Arrastra el tiempo: la línea de tiempo está <b>pausada</b> y salta a cualquier segundo. Eso es lo que hace HyperFrames: cuadro 0, 1, 2… una foto de cada uno.</p>
+      </div>
+      <div class="lado a-in" style="--d:.2s">
+        <div class="esc-card"><h3>Qué es</h3><p>Un programa de <b>HeyGen</b>, de código abierto (Apache 2.0), que convierte una página HTML + CSS + GSAP en <b>video MP4</b>. Hecho para que un agente de IA escriba el video como código.</p></div>
+        <div class="esc-card"><h3>Cómo funciona</h3><p>Abre tu <code>index.html</code> en Chrome sin pantalla, mueve la línea de tiempo al cuadro 0, 1, 2… a los fps que pidas (30 por defecto), toma una foto de cada uno y <b>FFmpeg</b> las une. Siempre sale igual: no depende de lo rápida que sea tu compu.</p></div>
+        <div class="esc-card"><h3>Sus reglas</h3><p>Cada elemento con tiempo: <code>class="clip"</code>, <code>data-start</code> y <code>data-duration</code> (segundos). Una línea de tiempo GSAP <b>pausada</b> en <code>window.__timelines</code>. Nada de <code>Math.random()</code> sin semilla ni <code>Date.now()</code>.</p></div>
+        <button type="button" id="hf-copiar" class="grande">Copiar plantilla (index.html con tu imagen)</button>
+        <p class="nota">Guarda tu imagen base como <code>assets/base.webp</code>, pega la plantilla en <code>index.html</code> y corre los comandos del panel. En la sesión 3 lo usamos a fondo.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">HyperFrames: github.com/heygen-com/hyperframes · código abierto, Apache 2.0</footer>
+</div>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/vivo.js"></script>
+<script>
+
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const PLANTILLA = "<!doctype html>\n<html lang=\"es\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=1920, height=1080\" />\n  <script src=\"https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js\"><\/script>\n  <style>\n    html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #101018; }\n    #fondo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }\n    #titulo { position: absolute; left: 120px; bottom: 120px; margin: 0; font: 900 140px/1 sans-serif; color: #fff; }\n  <\/style>\n<\/head>\n<body>\n  <!-- La composición: 6 segundos a 1920×1080. Cada elemento con tiempo lleva class=\"clip\", data-start y data-duration -->\n  <div id=\"main\" data-composition-id=\"main\" data-start=\"0\" data-duration=\"6\" data-width=\"1920\" data-height=\"1080\">\n    <img id=\"fondo\" class=\"clip\" src=\"assets/base.webp\" data-start=\"0\" data-duration=\"6\" />\n    <h1 id=\"titulo\" class=\"clip\" data-start=\"1\" data-duration=\"5\">Mi pieza<\/h1>\n  <\/div>\n  <script>\n    // Una línea de tiempo PAUSADA: HyperFrames la mueve cuadro a cuadro y toma una foto de cada uno\n    window.__timelines = window.__timelines || {};\n    const tl = gsap.timeline({ paused: true });\n    tl.fromTo(\"#fondo\", { scale: 1.15 }, { scale: 1, duration: 6, ease: \"none\" }, 0);\n    tl.from(\"#titulo\", { y: 80, opacity: 0, duration: 0.6, ease: \"power3.out\" }, 1);\n    window.__timelines[\"main\"] = tl;\n  <\/script>\n<\/body>\n<\/html>\n";
+  $('hf-fondo').src = Vivo.base();
+  const DUR = 6; let fps = 30, jugando = false, t0 = 0, desde = 0;
+  // la misma línea de tiempo que la plantilla, más un subtítulo; PAUSADA, como en HyperFrames
+  const tl = gsap.timeline({ paused: true });
+  tl.fromTo('#hf-fondo', { scale: 1.15 }, { scale: 1, duration: DUR, ease: 'none' }, 0)
+    .from('#hf-titulo', { y: 60, opacity: 0, duration: 0.6, ease: 'power3.out' }, 1)
+    .from('#hf-sub', { y: 30, opacity: 0, duration: 0.5, ease: 'power2.out' }, 1.4)
+    .to('#hf-titulo', { scale: 1.06, transformOrigin: 'left bottom', duration: 0.4, yoyo: true, repeat: 1, ease: 'power1.inOut' }, 3.2);
+  function ir(t) {
+    t = Math.max(0, Math.min(DUR, t)); tl.seek(t); $('hf-t').value = t;
+    const f = Math.min(Math.round(t * fps), DUR * fps - 1);
+    $('hf-reloj').textContent = `cuadro ${f} de ${DUR * fps} · ${t.toFixed(2)} s · ${fps} fps`;
+    const tira = $('hf-tira'); const n = 60; if (tira.children.length !== n) tira.innerHTML = '<i></i>'.repeat(n);
+    [...tira.children].forEach((c, i) => c.classList.toggle('ya', i / n <= t / DUR));
+  }
+  function bucle(ms) {
+    if (!jugando) return;
+    ir(desde + (ms - t0) / 1000); if ($('hf-t').value >= DUR) { jugando = false; $('hf-play').textContent = '▶'; return; }
+    requestAnimationFrame(bucle);
+  }
+  $('hf-play').onclick = () => {
+    jugando = !jugando; $('hf-play').textContent = jugando ? '❚❚' : '▶';
+    if (jugando) { desde = +$('hf-t').value >= DUR ? 0 : +$('hf-t').value; t0 = performance.now(); requestAnimationFrame(bucle); }
+  };
+  $('hf-t').oninput = (e) => { jugando = false; $('hf-play').textContent = '▶'; ir(+e.target.value); };
+  function chips() {
+    const c = $('hf-fps'); c.innerHTML = '';
+    for (const f of [12, 24, 30, 60]) { const b = document.createElement('button'); b.type = 'button'; b.textContent = f + ' fps'; b.setAttribute('aria-pressed', String(f === fps)); b.onclick = () => { fps = f; chips(); ir(+$('hf-t').value); }; c.appendChild(b); }
+  }
+  // «render» de mentira, igual que el de verdad: cuadro a cuadro, sin importar el reloj
+  $('hf-render').onclick = () => {
+    jugando = false; let f = 0; const total = DUR * fps; const b = $('hf-render'); b.disabled = true;
+    const paso = () => { ir(f / fps); b.textContent = `Cuadro ${f + 1} / ${total}`; f++; if (f < total) setTimeout(paso, 1000 / 60); else { b.textContent = `✓ ${total} cuadros → MP4 (FFmpeg)`; setTimeout(() => { b.disabled = false; b.textContent = 'Renderizar como HyperFrames'; }, 2600); } };
+    paso();
+  };
+  $('hf-copiar').onclick = async (e) => { const ok = await Vivo.copiar(PLANTILLA); e.target.textContent = ok ? '✓ Copiada: pégala en index.html' : 'No pude copiar'; setTimeout(() => { e.target.textContent = 'Copiar plantilla (index.html con tu imagen)'; }, 2600); };
+  chips(); ir(0);
+})();
+</script>
+</body>
+</html>

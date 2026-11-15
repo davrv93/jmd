@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu imagen base con FLUX · Taller S1</title>
+<!-- Escena generada por _fuente/sesion1.py: edita ahí y vuelve a correrlo. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/vivo.css">
+<style id="esc-propio">
+.nota { font-size: .7em; color: var(--muted); margin: 0; }
+.nota b { color: var(--fg); }
+
+.ib { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2vw; align-items: start; }
+.sec { display: grid; gap: .5em; min-width: 0; }
+.receta { display: grid; grid-template-columns: auto 1fr; gap: .35em .6em; align-items: center; }
+.receta label { font-size: .72em; font-weight: 700; } .receta label small { display: block; font-weight: 400; color: var(--muted); }
+.receta input { width: 100%; font: .78em/1.3 inherit; padding: .4em .6em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+.chips { display: flex; flex-wrap: wrap; gap: .3em; }
+.chips button, .mini { font: 600 .66em/1 system-ui, sans-serif; padding: .48em .75em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chips .t { font-size: .66em; color: var(--muted); align-self: center; }
+.prompt { font: .7em/1.5 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .8em; padding: .6em .8em; margin: 0; white-space: pre-wrap; word-break: break-word; }
+.grande { width: 100%; font: 700 .9em/1 system-ui, sans-serif; padding: .8em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; box-shadow: var(--card-shadow); }
+.grande:disabled { opacity: .55; cursor: wait; }
+.aviso { font-size: .7em; color: var(--bad); margin: 0; min-height: 1em; }
+.reglas { margin: 0; padding-left: 1.1em; font-size: .68em; color: var(--muted); } .reglas b { color: var(--fg); }
+.galeria { display: grid; grid-template-columns: 1fr 1fr; gap: .5em; }
+.galeria figure { margin: 0; border: 1px solid var(--line); border-radius: .8em; overflow: hidden; background: var(--s2); display: grid; }
+.galeria img { width: 100%; display: block; }
+.galeria figcaption { display: flex; gap: .4em; align-items: center; justify-content: space-between; padding: .35em .5em; font-size: .6em; color: var(--muted); }
+.galeria figcaption button { font: 700 .95em system-ui; padding: .35em .6em; border-radius: 99px; border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; white-space: nowrap; }
+.galeria .vacia { grid-column: 1 / -1; display: grid; place-items: center; font-size: .7em; color: var(--muted); padding: 1.4em; border: 1px dashed var(--line2); border-radius: .8em; text-align: center; }
+.base-actual { display: grid; grid-template-columns: 9em 1fr; gap: .7em; align-items: center; background: var(--s1); border: 2px solid var(--accent); border-radius: .9em; padding: .5em; }
+.base-actual img { width: 100%; border-radius: .5em; display: block; }
+.base-actual h3 { margin: 0 0 .2em; font-size: .85em; }
+@media (max-width: 900px) { .ib { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Taller · S1 · E03</span>
+  </header>
+  <main class="esc-cuerpo">
+
+    <h1 class="esc-titulo a-in">Tu <em>imagen base</em>: una sola, la eliges y ya no se regenera</h1>
+    <section class="ib">
+      <div class="sec a-in" style="--d:.1s">
+        <div class="chips" id="ejemplos"><span class="t">Ejemplos:</span></div>
+        <div class="receta">
+          <label>Quién o qué<small>el sujeto</small></label><input id="sujeto" type="text" placeholder="un gato pirata con parche">
+          <label>Qué hace<small>la acción</small></label><input id="accion" type="text" placeholder="toca el ukelele">
+          <label>Dónde<small>el lugar y la hora</small></label><input id="lugar" type="text" placeholder="en la cubierta de un barco, al amanecer">
+          <label>Cómo se ve<small>el estilo</small></label><div class="chips" id="estilos"></div>
+          <label>Forma<small>orientación</small></label><div class="chips" id="formas"></div>
+        </div>
+        <pre class="prompt" id="prompt"></pre>
+        <button id="generar" type="button" class="grande">Generar con FLUX (~10 s)</button>
+        <p class="aviso" id="aviso" aria-live="polite"></p>
+        <ul class="reglas">
+          <li><b>Lo que no dices, el modelo lo inventa.</b> Concreto gana: «un gato naranja con sombrero rojo» &gt; «un gato bonito».</li>
+          <li><b>Sin texto dentro de la imagen:</b> FLUX escribe mal las letras; el texto va en tu HTML.</li>
+          <li><b>Una variación = cambia una sola parte</b> y genera otra vez. Así ves qué mueve cada palabra.</li>
+        </ul>
+      </div>
+      <div class="sec a-in" style="--d:.2s">
+        <div class="galeria" id="galeria"><div class="vacia">Tus imágenes aparecen aquí. Elige una con «Usar como base».</div></div>
+        <div class="base-actual">
+          <img id="base" alt="Tu imagen base">
+          <div><h3>Tu imagen base</h3><p class="nota" id="base-txt"></p>
+            <button type="button" id="olvidar" class="mini">Volver al ejemplo</button></div>
+        </div>
+        <p class="nota"><b>¿Por qué una sola?</b> FLUX no recuerda: cada vez que generas, cambian un poco la cara, el encuadre y los colores. Para animar no generas 24 imágenes por segundo: eliges <b>una base</b> y el movimiento lo pone el código (p5, Three.js, GSAP). Las variaciones sirven para <b>elegir</b>, no para animar.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Lo logré = generaste al menos una imagen y elegiste tu base · se guarda en este navegador</footer>
+</div>
+<script src="../../comun/vivo.js"></script>
+<script>
+
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const EJEMPLOS = [
+    ['gato pirata', 'un gato pirata con parche', 'toca el ukelele', 'en la cubierta de un barco, al amanecer', 0],
+    ['robot panadero', 'un robot redondo de hojalata', 'saca pan del horno', 'en una panadería pequeña', 0],
+    ['perro astronauta', 'un perro con traje de astronauta', 'flota con una pelota', 'en el espacio, con la Tierra detrás', 1],
+    ['taza de café', 'una taza de café humeante', 'sobre una mesa de madera', 'junto a una ventana con lluvia', 2],
+    ['pulpo músico', 'un pulpo sonriente', 'toca cuatro tambores', 'en el fondo del mar, con burbujas', 0],
+  ];
+  // estilos: etiqueta en español, cláusula en inglés (al modelo le rinde más)
+  const ESTILOS = [
+    ['color plano', 'flat color cartoon, bold outlines, limited palette, 1930s animation cel'],
+    ['acuarela', 'soft watercolor illustration, paper texture, gentle light'],
+    ['pixel art', '8-bit pixel art, 32 colors, crisp pixels'],
+    ['línea clara', 'clean line art, ligne claire, flat pastel colors'],
+    ['dibujo de 1928', '1928 black and white cartoon, rubber hose style, thick ink outlines, cream paper, film grain'],
+    ['foto', 'photograph, 50mm lens, natural light, shallow depth of field'],
+  ];
+  const FORMAS = [['horizontal', 'horizontal'], ['cuadrado', 'cuadrado'], ['vertical', 'vertical']];
+  const est = { sujeto: '', accion: '', lugar: '', estilo: 0, forma: 0 };
+  try { Object.assign(est, JSON.parse(localStorage.getItem('s1-receta') || '{}')); } catch (e) {}
+  const guardar = () => { try { localStorage.setItem('s1-receta', JSON.stringify(est)); } catch (e) {} };
+  const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const lista = () => est.sujeto.trim() && est.accion.trim() && est.lugar.trim();
+  const prompt = () => [est.sujeto, est.accion, est.lugar].map((t) => t.trim()).join(' ') + ', ' + ESTILOS[est.estilo][1] + ', no text';
+  function chips(caja, items, activo, al, keep) {
+    if (!keep) caja.innerHTML = ''; else caja.querySelectorAll('button').forEach((b) => b.remove());
+    items.forEach((it, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it[0]; b.setAttribute('aria-pressed', String(activo(i))); b.onclick = () => { al(i); pintar(); }; caja.appendChild(b); });
+  }
+  function pintar() {
+    chips($('ejemplos'), EJEMPLOS, () => false, (i) => { const e = EJEMPLOS[i]; est.sujeto = e[1]; est.accion = e[2]; est.lugar = e[3]; est.estilo = e[4]; for (const k of ['sujeto', 'accion', 'lugar']) $(k).value = est[k]; }, true);
+    chips($('estilos'), ESTILOS, (i) => i === est.estilo, (i) => { est.estilo = i; });
+    chips($('formas'), FORMAS, (i) => i === est.forma, (i) => { est.forma = i; });
+    $('prompt').innerHTML = lista() ? esc(prompt()) : '<span style="opacity:.6">(escribe quién, qué hace y dónde; aquí aparece tu prompt)</span>';
+    if (!$('generar').dataset.ocupado) $('generar').disabled = !lista();
+    const propia = Vivo.esPropia(); $('base').src = Vivo.base();
+    $('base-txt').textContent = propia ? 'La tuya. Las escenas de p5, Three.js, GSAP y HyperFrames la usan desde ahora.' : 'Por ahora, el ejemplo (gato pirata hecho con FLUX en clase). Genera y elige la tuya.';
+    $('olvidar').hidden = !propia; guardar();
+  }
+  function agregar(data, txt) {
+    const gal = $('galeria'); const v = gal.querySelector('.vacia'); if (v) v.remove();
+    const f = document.createElement('figure'); f.innerHTML = '<img alt=""><figcaption><span></span><button type="button">Usar como base</button></figcaption>';
+    f.querySelector('img').src = data; f.querySelector('span').textContent = txt.slice(0, 48) + '…';
+    f.querySelector('button').onclick = async (e) => {
+      try { await Vivo.guardar(data); e.target.textContent = '✓ Es tu base'; pintar(); } catch (err) { $('aviso').textContent = err.message; }
+    };
+    gal.prepend(f); while (gal.children.length > 4) gal.lastElementChild.remove();
+  }
+  const leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || 'dm-01';
+  async function generar() {
+    const btn = $('generar'); if (!lista() || btn.dataset.ocupado) return;
+    btn.dataset.ocupado = '1'; btn.disabled = true; btn.textContent = 'Generando con FLUX… (unos 10 s)'; $('aviso').textContent = '';
+    const t0 = performance.now();
+    try {
+      const r = await fetch(`/api/v1/live/${leccion}/imagen`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt(), orientacion: FORMAS[est.forma][1] }) });
+      if (!r.ok) {
+        let msg = `error ${r.status}`; try { const j = await r.json(); msg = (j.error && (j.error.message || j.error.mensaje)) || j.message || msg; } catch (e) {}
+        throw new Error(r.status === 429 ? 'Se acabó tu cupo de imágenes de hoy: elige entre las que ya tienes o usa el ejemplo.' : msg);
+      }
+      const blob = await r.blob();
+      const data = await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(blob); });
+      agregar(data, prompt()); btn.textContent = `✓ Lista en ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+    } catch (e) { $('aviso').textContent = e.message || 'No se pudo generar'; btn.textContent = 'No se pudo: prueba otra vez'; }
+    setTimeout(() => { delete btn.dataset.ocupado; btn.textContent = 'Generar con FLUX (~10 s)'; pintar(); }, 2200);
+  }
+  $('generar').onclick = generar;
+  $('olvidar').onclick = () => { Vivo.olvidar(); pintar(); };
+  for (const k of ['sujeto', 'accion', 'lugar']) { $(k).value = est[k]; $(k).oninput = (e) => { est[k] = e.target.value; pintar(); }; }
+  pintar();
+})();
+</script>
+</body>
+</html>
