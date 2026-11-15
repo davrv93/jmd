@@ -29,6 +29,11 @@ materials:
     kind: zip
     file: materials/skills-dificil.zip
     objective_ids: [dm-01-o4]
+  - id: dm-01-capas
+    title: "recursos-capas.zip · la escena del gato pirata en 9 capas (SVG con fondo transparente) para el parallax"
+    kind: zip
+    file: materials/recursos-capas.zip
+    objective_ids: [dm-01-o3]
   - id: dm-01-m1
     title: "Black Forest Labs · los modelos FLUX"
     kind: link
@@ -254,8 +259,9 @@ En una frase: p5 dibuja en un canvas; `draw()` se repite FPS veces por segundo y
 En una frase: Three.js arma una escena 3D (cámara, malla y renderer) y tu imagen es la textura.
 
 **Qué vas a hacer**
-1. Prueba postal, relieve (lo claro sale hacia ti), multiplano (tres capas, como la cámara de Disney de 1937) y cubo.
-2. Cambia la altura del relieve (`brillo * 0.35`) o la velocidad de la cámara, y vuelve a ejecutar.
+1. Prueba postal, relieve (lo claro sale hacia ti), multiplano (tres franjas, como la cámara de Disney de 1937) y cubo: con una sola imagen, la profundidad se nota… y la imagen se deforma.
+2. Prueba las **capas**: la misma escena en 9 dibujos con fondo transparente (cielo, sol, nubes, montañas, colinas, mar, barco, olas y gaviotas), cada uno en su plano. «Parallax», «Escena viva» y «Sigue el mouse». Descárgalas de Materiales (`recursos-capas.zip`).
+3. Cambia la distancia de una capa (`PROF`) o la velocidad de la cámara, y vuelve a ejecutar.
 
 **Qué vas a ver:** tu imagen como objeto 3D con profundidad real.
 

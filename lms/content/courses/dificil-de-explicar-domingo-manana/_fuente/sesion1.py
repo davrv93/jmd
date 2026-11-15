@@ -11,7 +11,8 @@ from pathlib import Path
 AQUI = Path(__file__).resolve().parent.parent            # dificil-de-explicar-domingo-manana
 CURSOS = {"dm-01": AQUI, "dt-01": AQUI.parent / "dificil-de-explicar-domingo-tarde"}
 HORA = {"dm-01": "domingo 15 de noviembre, 10:00 a. m.", "dt-01": "domingo 15 de noviembre, 5:30 p. m."}
-COMUNES = ["vivo.js", "vivo.css", "three.module.min.js", "gsap.min.js", "base-ejemplo.webp"]
+COMUNES = ["vivo.js", "vivo.css", "three.module.min.js", "gsap.min.js", "base-ejemplo.webp"] + [f"capa-{n}.svg" for n in
+           ("1-cielo", "2-sol", "3-nubes", "4-montanas", "5-colinas", "6-mar", "7-barco", "8-olas", "9-gaviotas")]
 
 ESCENAS = []
 
@@ -426,6 +427,130 @@ gsap.to(gato, { x: 300, duration: 2 });</pre>
        pie="Willie (1928) se filmó a 24 fps con dibujos «en dos»: 12 dibujos por segundo")
 
 # ════════════════════════════════════════ 05 · p5 en vivo ════════════════════════════════════════
+# Las capas: la escena del gato pirata en 9 dibujos con fondo transparente (_fuente/capas.py). Cada una en su plano.
+CAPAS_COMUN = r"""import * as THREE from 'three';
+
+const escena = new THREE.Scene();
+const camara = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 200);
+const render = new THREE.WebGLRenderer({ antialias: true });
+render.setSize(innerWidth, innerHeight);
+document.body.appendChild(render.domElement);
+
+// distancia de cada capa a la cámara: cielo, sol, nubes, montañas, colinas, mar, barco, olas, gaviotas
+const PROF = [60, 56, 42, 34, 26, 18, 10, 7, 30];
+const carga = new THREE.TextureLoader();
+const capa = CAPAS.map((url, i) => {
+  const tex = carga.load(url); tex.colorSpace = THREE.SRGBColorSpace;
+  // cada plano llena la pantalla a su distancia (+30 % para que el borde no se vea al moverse)
+  const vis = 2 * PROF[i] * Math.tan(THREE.MathUtils.degToRad(20));
+  const alto = Math.max(vis, vis * camara.aspect / (16 / 9)) * 1.3;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(alto * 16 / 9, alto), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+  m.position.z = -PROF[i];
+  m.renderOrder = i === 8 ? 4.5 : i;     // de atrás hacia adelante (las gaviotas van en el cielo)
+  escena.add(m);
+  return m;
+});
+"""
+
+CAPAS_PARALLAX = CAPAS_COMUN + r"""
+let ultimo = 0;
+render.setAnimationLoop((ms) => {
+  if (ms - ultimo < 1000 / FPS) return;
+  ultimo = ms;
+  const t = ms / 1000;
+  // la cámara se desliza sin girar: lo lejano se mueve poco y lo cercano mucho (eso es el parallax)
+  camara.position.x = 1.0 * Math.sin(t * 0.45);         // más de ~1 y el borde de las capas cercanas se asoma
+  camara.position.y = 0.25 * Math.sin(t * 0.3);
+  render.render(escena, camara);
+});
+"""
+
+CAPAS_VIVA = CAPAS_COMUN + r"""
+// el barco se mece desde la línea de flotación (no desde el centro del plano)
+const [, sol, nubes, , , mar, barco, olas, gaviotas] = capa;
+const g = barco.geometry.parameters, px = (930 / 2048 - 0.5) * g.width, py = (0.5 - 1000 / 1152) * g.height;
+barco.geometry.translate(-px, -py, 0); barco.position.x += px; barco.position.y += py;
+const y0 = { mar: mar.position.y, olas: olas.position.y, barco: barco.position.y };
+
+let ultimo = 0;
+render.setAnimationLoop((ms) => {
+  if (ms - ultimo < 1000 / FPS) return;
+  ultimo = ms;
+  const t = ms / 1000;
+  camara.position.x = 0.8 * Math.sin(t * 0.35);           // parallax suave
+  sol.scale.setScalar(1 + 0.02 * Math.sin(t * 1.5));      // el sol late
+  nubes.position.x = -4 + ((t * 0.6) % 8);                // las nubes avanzan
+  mar.position.y = y0.mar + 0.05 * Math.sin(t * 1.2);
+  barco.rotation.z = 0.035 * Math.sin(t * 1.3);           // el barco se mece
+  barco.position.y = y0.barco + 0.06 * Math.sin(t * 1.3 + 0.8);
+  olas.position.x = 0.3 * Math.sin(t * 0.9);
+  olas.position.y = y0.olas + 0.04 * Math.sin(t * 1.8);
+  gaviotas.position.x = -6 + ((t * 1.2) % 12);            // las gaviotas cruzan
+  gaviotas.position.y = 0.4 * Math.sin(t * 2);
+  gaviotas.scale.y = 1 + 0.12 * Math.sin(t * 9);          // y aletean
+  render.render(escena, camara);
+});
+"""
+
+CAPAS_MOUSE = CAPAS_COMUN + r"""
+// la cámara sigue al puntero: mueve el mouse sobre la vista previa
+const meta = { x: 0, y: 0 };
+addEventListener('pointermove', (e) => { meta.x = (e.clientX / innerWidth - 0.5) * 2; meta.y = -(e.clientY / innerHeight - 0.5) * 0.6; });
+
+let ultimo = 0;
+render.setAnimationLoop((ms) => {
+  if (ms - ultimo < 1000 / FPS) return;
+  ultimo = ms;
+  camara.position.x += (meta.x - camara.position.x) * 0.08;   // se acerca de a poco (suave)
+  camara.position.y += (meta.y - camara.position.y) * 0.08;
+  render.render(escena, camara);
+});
+"""
+
+P5_CAPAS = r"""// Capas: 9 dibujos con fondo transparente. Cada uno se mueve según su profundidad (0 = lejos, 1 = cerca)
+let capas = [];
+const PROF = [0, 0.05, 0.15, 0.2, 0.35, 0.5, 0.8, 1, 0.25];
+function preload() { capas = CAPAS.map((url) => loadImage(url)); }
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  frameRate(FPS);
+  imageMode(CENTER);
+}
+
+function draw() {
+  background(16);
+  const t = millis() / 1000;
+  const k = max(width / 2048, height / 1152) * 1.15;      // un poco más grande: el borde no se ve
+  const dx = 70 * sin(t * 0.5), dy = 12 * sin(t * 0.35);
+  capas.forEach((c, i) => {
+    push();
+    translate(width / 2 + dx * PROF[i], height / 2 + dy * PROF[i]);
+    if (i === 2) translate((t * 20) % 160 - 80, 0);          // las nubes avanzan
+    if (i === 6) rotate(0.03 * sin(t * 1.3));                // el barco se mece
+    image(c, 0, 0, 2048 * k, 1152 * k);
+    pop();
+  });
+}
+"""
+
+GSAP_CAPAS = r"""// Capas con línea de tiempo: la cámara entra (cada capa crece según su profundidad) y luego todo vive en bucle
+const PROF = [0, 0.05, 0.15, 0.2, 0.35, 0.5, 0.8, 1, 0.25];
+document.body.innerHTML = CAPAS.map((url, i) =>
+  `<img class="capa" id="c${i}" src="${url}" style="position:absolute;left:-6%;top:-6%;width:112%;height:112%;object-fit:cover">`).join('');
+gsap.ticker.fps(FPS);
+
+// entrada: de lejos a cerca; lo cercano se mueve y crece más
+const tl = gsap.timeline();
+PROF.forEach((p, i) => tl.from('#c' + i, { scale: 1 + 0.5 * p, yPercent: 12 * p, opacity: i ? 0 : 1, duration: 1.6, ease: 'power3.out' }, i * 0.08));
+
+// después, en bucle: paneo suave, barco que se mece, nubes y gaviotas que cruzan
+PROF.forEach((p, i) => gsap.to('#c' + i, { xPercent: -4 * p, duration: 3, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 1.8 }));
+gsap.to('#c6', { rotation: 2, transformOrigin: '45% 87%', duration: 1.4, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+gsap.fromTo('#c2', { x: -60 }, { x: 60, duration: 8, ease: 'none', yoyo: true, repeat: -1 });
+gsap.fromTo('#c8', { xPercent: -40 }, { xPercent: 40, duration: 7, ease: 'none', repeat: -1 });
+"""
+
 P5 = {
     "respira": ("Respira", "La imagen crece y se encoge despacio", """// Respira: la imagen base crece y se encoge, un ciclo cada 3 segundos
 let img;
@@ -536,6 +661,7 @@ function draw() {
   }
 }
 """),
+    "capas": ("Capas (parallax real)", "La escena en 9 capas: cada una se mueve según su profundidad", P5_CAPAS),
 }
 
 THREE = {
@@ -660,6 +786,9 @@ render.setAnimationLoop((ms) => {
   render.render(escena, camara);
 });
 """),
+    "capas_parallax": ("Capas: parallax", "9 capas en planos a distinta distancia: profundidad real, sin deformar", CAPAS_PARALLAX),
+    "capas_viva": ("Capas: escena viva", "El barco se mece, las nubes avanzan, las gaviotas cruzan y el sol late", CAPAS_VIVA),
+    "capas_mouse": ("Capas: sigue el mouse", "La cámara sigue a tu puntero sobre la vista previa", CAPAS_MOUSE),
 }
 
 GSAP = {
@@ -710,6 +839,7 @@ gsap.timeline({ repeat: -1, repeatDelay: 1.2 })
   .from('.carta', { rotationX: -90, opacity: 0, duration: 0.5, ease: 'power2.out', stagger: { grid: [FIL, COL], from: 'center', amount: 1.2 } })
   .to('.carta', { scale: 0.92, duration: 0.3, yoyo: true, repeat: 1, stagger: { grid: [FIL, COL], from: 'edges', amount: 0.6 } }, '+=0.8');
 """),
+    "capas": ("Capas (timeline)", "La cámara entra por las capas y todo queda vivo en bucle", GSAP_CAPAS),
 }
 
 
@@ -732,21 +862,21 @@ vivo_escena("05-p5-en-vivo", "p5.js en vivo: anima tu imagen base", "E05",
             "p5.js: <em>dibuja y anima</em> tu imagen base",
             [("Qué es", "Una biblioteca de JavaScript para dibujar en un <code>canvas</code>, hecha para artistas y diseñadores (Processing Foundation, gratis)."),
              ("Cómo corre", "<code>setup()</code> una vez; <code>draw()</code> se repite <b>FPS</b> veces por segundo (<code>frameRate</code>)."),
-             ("Hoy", "<code>preload</code> carga tu imagen base; <code>millis()</code> da el tiempo. Cambia un número y pulsa Ejecutar.")],
+             ("Hoy", "<code>preload</code> carga tu imagen base; <code>millis()</code> da el tiempo. Prueba también <b>Capas</b>: la escena en 9 dibujos separados.")],
             "p5", P5, "p5", "p5", 12, "Lo logré = tu imagen base se mueve con un ejemplo que cambiaste tú (un número basta)")
 
 vivo_escena("06-three-en-vivo", "Three.js en vivo: tu imagen en 3D", "E06",
             "Three.js: tu imagen base en <em>3D</em>",
             [("Qué es", "La biblioteca más usada para 3D en el navegador, con WebGL (licencia MIT, gratis)."),
              ("Las piezas", "<b>Escena</b> + <b>cámara</b> + <b>malla</b> (geometría y material) + <b>renderer</b> que dibuja cada cuadro."),
-             ("Hoy", "Tu imagen como textura: postal, relieve por brillo, multiplano (profundidad por capas) y cubo.")],
+             ("Hoy", "Con <b>una</b> imagen, el relieve y el multiplano la deforman. Con <b>capas</b> (9 dibujos con fondo transparente, cada uno en su plano) la profundidad es real.")],
             "three", THREE, "three", "three", 12, "Lo logré = tu imagen base en 3D con un número cambiado por ti (relieve, cámara o velocidad)")
 
 vivo_escena("07-gsap-en-vivo", "GSAP en vivo: animación con línea de tiempo", "E07",
             "GSAP: animación con <em>línea de tiempo</em>",
             [("Qué es", "GreenSock Animation Platform: anima propiedades de HTML y SVG (x, y, escala, opacidad). Es de Webflow y desde 2025 es <b>gratis</b>, también para trabajos comerciales."),
              ("Las piezas", "<code>gsap.to / from / fromTo</code>, <code>duration</code> en segundos, <code>ease</code> (la curva) y <code>timeline</code> para encadenar."),
-             ("Por qué importa", "Una línea de tiempo se puede <b>pausar y mover a cualquier segundo</b>. Eso es lo que usa HyperFrames para hacer video.")],
+             ("Por qué importa", "Una línea de tiempo se puede <b>pausar y mover a cualquier segundo</b>: eso usa HyperFrames. Prueba <b>Capas</b> para una entrada de cámara.")],
             "gsap", GSAP, "gsap", "gsap", 10, "Lo logré = tu línea de tiempo corre con una duración o un ease cambiado por ti")
 
 # ════════════════════════════════════════ 08 · HyperFrames ════════════════════════════════════════
@@ -1026,6 +1156,7 @@ def main():
         if curso != AQUI:
             for f in COMUNES:
                 shutil.copy2(AQUI / "live" / "_comun" / f, comun / f)
+            shutil.copy2(AQUI / "materials" / "recursos-capas.zip", curso / "materials" / "recursos-capas.zip")
         for e in ESCENAS:
             d = live / e["carpeta"]
             d.mkdir(parents=True, exist_ok=True)

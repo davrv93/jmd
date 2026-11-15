@@ -7,6 +7,8 @@ window.Vivo = (() => {
   const CLAVE = 'flux-base-v1';
   const COMUN = new URL('../../comun/', location.href).href;
   const EJEMPLO = COMUN + 'base-ejemplo.webp';
+  // la escena del gato pirata en 9 capas (dibujadas en código, _fuente/capas.py), de atrás hacia adelante
+  const CAPAS = ['capa-1-cielo', 'capa-2-sol', 'capa-3-nubes', 'capa-4-montanas', 'capa-5-colinas', 'capa-6-mar', 'capa-7-barco', 'capa-8-olas', 'capa-9-gaviotas'];
   const leer = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const escribir = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
 
@@ -46,7 +48,8 @@ window.Vivo = (() => {
       // p5.loadImage hace fetch() de la imagen antes de dibujarla, y el CSP del LMS no deja hacer fetch a «data:»:
       // para esas URL se responde aquí mismo solo con el tipo (p5 luego la carga con <img>, que sí está permitido).
       `<script>{const f=window.fetch.bind(window);window.fetch=(u,o)=>(typeof u==='string'&&u.startsWith('data:'))?Promise.resolve(new Response(null,{headers:{'content-type':u.slice(5,u.indexOf(';'))}})):f(u,o);}<\/script>`;
-    const datos = `<script>window.BASE=${JSON.stringify(standalone && !esPropia() ? 'base.webp' : b)};window.FPS=${Number(fps) || 24};<\/script>`;
+    const capas = CAPAS.map((n) => (standalone ? 'recursos-capas/' : COMUN) + n + '.svg');
+    const datos = `<script>window.BASE=${JSON.stringify(standalone && !esPropia() ? 'base.webp' : b)};window.FPS=${Number(fps) || 24};window.CAPAS=${JSON.stringify(capas)};<\/script>`;
     let cuerpo = '';
     if (lib === 'p5') cuerpo = `<script src="${p5}"><\/script><script>\n${seguro(codigo)}\n<\/script>`;
     else if (lib === 'three') cuerpo = `<script type="importmap">{"imports":{"three":"${three}"}}<\/script><script type="module">\n${seguro(codigo)}\n<\/script>`;
@@ -130,6 +133,7 @@ window.Vivo = (() => {
       estado.className = 've-estado'; estado.textContent = esPropia()
         ? 'index.html lleva tu imagen dentro: ábrelo con doble clic.'
         : 'index.html busca base.webp: pon tu imagen con ese nombre en la misma carpeta.';
+      if (/CAPAS/.test(ta.value)) estado.textContent += ' Las capas van en la carpeta recursos-capas/ (descárgala de Materiales).';
     };
     pintar(); ejecutar();
     return { ejecutar };
