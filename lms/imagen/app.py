@@ -72,6 +72,20 @@ VOZ_DEFECTO = os.environ.get("IMAGEN_VOZ", "es_MX-claude-high")
 VOCES_DIR = os.environ.get("IMAGEN_VOCES", "/voces")
 VOCES = {VOZ_DEFECTO}
 FORMAS = {"cuadrado": (1.0, 1.0), "vertical": (0.8, 1.0), "horizontal": (1.0, 0.5625)}
+# Respaldo de «máxima»: si Cloudflare se queda sin cupo o falla, FLUX por OpenRouter (de pago, menos de un centavo de
+# dólar por imagen con flux-3-image-klein) con un tope diario para toda la clase que protege el saldo.
+OR_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OR_MODELO = os.environ.get("IMAGEN_OR_MODELO", "black-forest-labs/flux-3-image-klein")
+OR_DIA = int(os.environ.get("IMAGEN_OR_DIA", "150"))
+OR_ASPECTO = {"cuadrado": "1:1", "vertical": "4:5", "horizontal": "16:9"}
+_or_uso = {"dia": "", "n": 0}
+
+
+def _or_disponible() -> bool:
+    hoy = time.strftime("%Y-%m-%d", time.gmtime())
+    if _or_uso["dia"] != hoy:
+        _or_uso.update(dia=hoy, n=0)
+    return bool(OR_KEY) and _or_uso["n"] < OR_DIA
 
 app = FastAPI(title="imagen")
 _cpu = threading.Lock()
@@ -199,7 +213,7 @@ def voz(p: PedidoVoz, authorization: str = Header(default=""), x_aula_nube: str 
 
 @app.get("/salud")
 def salud(x_aula_nube: str | None = Header(default=None)):
-    maxima = bool(CF_CUENTA and CF_TOKEN) and _cf_gastado() < CF_TOPE
+    maxima = (bool(CF_CUENTA and CF_TOKEN) and _cf_gastado() < CF_TOPE) or _or_disponible()
     local = LOCAL and not nube.es_externo(x_aula_nube)
     return {"ok": True, "cargado": sorted(_pipes), "cola": _en_cola, "maxima": maxima, "neurons_hoy": round(_cf_gastado()),
             "calidades": {"baja": local, "media": local, "maxima": maxima},
@@ -243,8 +257,13 @@ def _cloudflare(p: "Pedido") -> Response:
         crudo = base64.b64decode(res["image"])
         _cf_uso["neurons"] = _cf_gastado() + float((res.get("usage") or {}).get("neurons", 173))
     img = Image.open(io.BytesIO(crudo)).convert("RGB")
-    # FLUX entrega cuadrado: se recorta al formato pedido.
-    fa, fh = FORMAS.get(p.orientacion, FORMAS["cuadrado"])
+    log.info("maxima (cloudflare) %dx%d", *img.size)
+    return _formato(img, p.orientacion)
+
+
+def _formato(img, orientacion: str) -> Response:
+    """FLUX entrega cuadrado (o casi): se recorta al formato pedido y sale en JPEG de hasta 1024 px."""
+    fa, fh = FORMAS.get(orientacion, FORMAS["cuadrado"])
     w, h = img.size
     if fa != fh:
         nw, nh = (int(h * fa / fh), h) if fa / fh < w / h else (w, int(w * fh / fa))
@@ -252,8 +271,28 @@ def _cloudflare(p: "Pedido") -> Response:
     img.thumbnail((1024, 1024))
     buf = io.BytesIO()
     img.save(buf, "JPEG", quality=90)
-    log.info("maxima (cloudflare) %dx%d", *img.size)
     return Response(buf.getvalue(), media_type="image/jpeg")
+
+
+def _openrouter(p: "Pedido") -> Response:
+    """Respaldo: FLUX por OpenRouter cuando Cloudflare no puede. Cuenta contra OR_DIA."""
+    import base64
+    import httpx
+    from PIL import Image
+    r = httpx.post("https://openrouter.ai/api/v1/chat/completions", timeout=120.0,
+                   headers={"Authorization": f"Bearer {OR_KEY}", "HTTP-Referer": "https://jmd-learn.online", "X-Title": "JMD imagen (respaldo FLUX)"},
+                   json={"model": OR_MODELO, "modalities": ["image"], "messages": [{"role": "user", "content": p.prompt}],
+                         "image_config": {"aspect_ratio": OR_ASPECTO.get(p.orientacion, "1:1")}})
+    try:
+        d = r.json()
+        url = d["choices"][0]["message"]["images"][0]["image_url"]["url"]
+    except Exception:
+        log.warning("openrouter %s %s", r.status_code, r.text[:300])
+        raise HTTPException(429 if r.status_code == 402 else 502, "el respaldo de imágenes (OpenRouter) no respondió")
+    _or_uso["n"] += 1
+    img = Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1]))).convert("RGB")
+    log.info("maxima (openrouter %s) %dx%d · costo %s · %d hoy", OR_MODELO, *img.size, (d.get("usage") or {}).get("cost"), _or_uso["n"])
+    return _formato(img, p.orientacion)
 
 
 @app.post("/calentar")
@@ -307,7 +346,13 @@ def generar(p: Pedido, request: Request, authorization: str = Header(default="")
         quien = sub if externo else _aula_de(request)
         if quien:
             nube.contar(quien, "imágenes en calidad máxima", MAXIMA_POR_ALUMNO)
-        return _cloudflare(p)
+        try:
+            return _cloudflare(p)
+        except HTTPException as e:
+            if e.status_code in (429, 502, 503) and "cola llena" not in str(e.detail) and _or_disponible():
+                log.warning("cloudflare no pudo (%s %s): respaldo FLUX por OpenRouter", e.status_code, e.detail)
+                return _openrouter(p)
+            raise
     if not LOCAL:
         raise _no_disponible(p.calidad)
     modelo, pasos, lado = CALIDADES.get(p.calidad, CALIDADES["media"])
