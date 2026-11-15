@@ -14,6 +14,11 @@ recording:
   url: ""
   passcode: ""
 materials:
+  - id: ccp-02-video
+    title: "Video · Hoy en clase en 1 minuto: diente y corazón en 3D, habilidades, Claude in Chrome, Gmail y tareas programadas"
+    kind: video
+    file: materials/render/ccp-02-explicador.mp4
+    objective_ids: [ccp-02-o1, ccp-02-o2]
   - id: ccp-02-kit
     title: "kit-render.zip · las 3 plantillas, reglas-de-la-casa.md y PROMPTS.md (descárgalo y descomprímelo)"
     kind: zip
