@@ -1,8 +1,7 @@
-// Árbitro: la escena del estadio (SVG animado a mano), el sonido sintetizado
-// con WebAudio y el flujo del juego. El resultado SIEMPRE lo decide el
-// servidor; aquí solo se dibuja lo que respondió.
-import { api, $, esc, luz } from "./comun.js";
-luz();
+// Sorteo de penales: el arco (SVG animado a mano), el sonido sintetizado con WebAudio y el flujo
+// de la entrada. El premio SIEMPRE lo decide el servidor al registrarse (api/jugar); aquí solo se
+// patea el penal y se sella el cupón. Todos ganan 83 % y uno solo se lleva el 100 %.
+import { api, $ } from "./comun.js";
 
 const NS = "http://www.w3.org/2000/svg";
 const QUIETO = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -48,9 +47,7 @@ function franjas(g, y0, y1) {
   }
 }
 // El parpadeo de las cámaras (@keyframes flash) vive en sorteo.css: la CSP no deja inyectar <style>.
-tribuna($("#tribuna1"), 88, 7);
 tribuna($("#tribuna2"), 44, 4);
-franjas($("#franjas1"), 104, 240);
 franjas($("#franjas2"), 56, 240);
 
 // ---------------------------------------------------------------------------
@@ -184,100 +181,7 @@ function balon(padre, r) {
 }
 
 // ---------------------------------------------------------------------------
-// Escena 1: la falta. Todo es función del tiempo T (ms) y de la tarjeta que
-// dijo el servidor: así la pausa y el movimiento reducido salen gratis.
-// Profundidad: el defensor va un poco más atrás que el delantero.
-const SUELO = 214, SUELO_DEF = 200, SUELO_ARB = 206, ESC1 = 1.3;
-const actores1 = $("#actores1");
-const def = figura(actores1, "rayas");
-const arb = figura(actores1, "arbitro", true);
-const del = figura(actores1, "blanco");
-const bal1 = balon(actores1, 4.2);
-const T_FALTA = 1650, T_PAUSA = 1820, T_LLEGA = 2950, T_TARJETA = 3050, T_FIN1 = 4000;
-const COLOR = { amarilla: "#f5c518", roja: "#d6283c" };
-
-function escena1(T, tarjeta) {
-  // Delantero de blanco: corre con el balón y cae al recibir la falta.
-  let dx, pd;
-  if (T < T_FALTA) {
-    dx = lerp(22, 150, T / T_FALTA);
-    pd = { x: dx, y: SUELO, ...carrera(T / 1000 * 2 * Math.PI * 2.4) };
-  } else {
-    const k = tramo(T, T_FALTA, T_FALTA + 560), kk = entra(k);
-    const rebote = T > T_FALTA + 560 ? Math.sin(tramo(T, T_FALTA + 560, T_FALTA + 820) * Math.PI) * 3 : 0;
-    dx = 150 + 28 * sale(k);
-    pd = {
-      x: dx, y: SUELO, dy: -kk * 4 - rebote, rot: 86 * kk, piv: "pies", incl: 6,
-      piernas: [[lerp(20, -18, k), lerp(30, 12, k)], [lerp(-30, -50, k), lerp(50, 20, k)]],
-      brazos: [[lerp(-30, 160, k), lerp(70, 10, k)], [lerp(30, 140, k), lerp(70, 20, k)]],
-      sombraDx: 30 * kk, sombraRx: 13 + 18 * kk,
-    };
-  }
-  poner(del, { ...pd, s: ESC1 });
-
-  // Defensor de rayas: llega de la derecha y se barre.
-  let px, pf;
-  if (T < 1300) {
-    px = lerp(400, 232, T / 1300);
-    pf = { x: px, y: SUELO_DEF, dir: -1, ...carrera(T / 1000 * 2 * Math.PI * 2.6 + 1) };
-  } else if (T > 2500) {
-    // Se levanta y protesta con los brazos abiertos: «¡fue limpia!».
-    const k = suave(tramo(T, 2500, 3100)), q = 1 - k;
-    const gesto = Math.sin(tramo(T, 3100, T_FIN1) * Math.PI * 3) * 10 * k;
-    px = lerp(200, 262, k);
-    pf = {
-      x: px, y: SUELO_DEF, dir: -1, rot: -62 * q, piv: "cadera", dy: 17 * q, incl: 14 * q - 4 * k,
-      piernas: [[lerp(12, 4, k), lerp(0, 6, k)], [lerp(-10, -4, k), lerp(95, 6, k)]],
-      brazos: [[lerp(-70, 120, k) + gesto, lerp(30, 10, k)], [lerp(-110, 130, k) - gesto, lerp(20, 10, k)]],
-      sombraDx: -18 * q, sombraRx: 13 + 14 * q,
-    };
-  } else {
-    const k = sale(tramo(T, 1300, T_FALTA + 200));
-    px = lerp(232, 200, k);
-    pf = {
-      x: px, y: SUELO_DEF, dir: -1, rot: -62 * k, piv: "cadera", dy: 17 * k, incl: 14 * k,
-      piernas: [[lerp(20, 12, k), lerp(30, 0, k)], [lerp(-20, -10, k), lerp(40, 95, k)]],
-      brazos: [[lerp(-30, -70, k), 30], [lerp(30, -110, k), 20]],
-      sombraDx: -18 * k, sombraRx: 13 + 14 * k,
-    };
-  }
-  poner(def, { ...pf, s: ESC1 });
-
-  // Balón: delante del delantero; tras la falta sigue rodando.
-  let bx;
-  if (T < T_FALTA) bx = dx + 17 + 6 * Math.sin(T / 140);
-  else bx = 150 + 17 + 6 * Math.sin(T_FALTA / 140) + 120 * sale(tramo(T, T_FALTA, T_FALTA + 1500));
-  const salto = T < T_FALTA ? Math.abs(Math.sin(T / 140)) * 2 : 0;
-  bal1.poner(bx, SUELO - salto, bx * 9, 1, SUELO);
-
-  // Árbitro de negro: entra corriendo tras el silbatazo y saca la tarjeta.
-  let ax, pa;
-  if (T < T_PAUSA) { ax = -40; pa = { x: ax, y: SUELO_ARB, ...quieto }; }
-  else if (T < T_LLEGA) {
-    const k = tramo(T, T_PAUSA, T_LLEGA);
-    ax = lerp(-40, 96, sale(k));
-    pa = { x: ax, y: SUELO_ARB, ...carrera(T / 1000 * 2 * Math.PI * 2.5, lerp(1, .5, k)) };
-  } else {
-    const k = suave(tramo(T, T_TARJETA, T_TARJETA + 380));
-    ax = 96;
-    if (tarjeta === "nada") {
-      // «¡Siga!»: los dos brazos al frente, palmas abiertas, y un vaivén.
-      const vai = Math.sin(tramo(T, T_TARJETA + 380, T_FIN1) * Math.PI * 4) * 8 * k;
-      pa = { x: ax, y: SUELO_ARB, piernas: quieto.piernas, incl: 0, brazos: [[lerp(6, 92, k) + vai, lerp(14, 0, k)], [lerp(-6, 80, k) - vai, lerp(14, 0, k)]] };
-    } else {
-      pa = {
-        x: ax, y: SUELO_ARB, piernas: quieto.piernas, incl: -4 * k,
-        brazos: [[lerp(6, 172, k), lerp(14, 0, k)], [lerp(-6, 20, k), lerp(14, 40, k)]],
-        tarjeta: tarjeta ? { k: k, color: COLOR[tarjeta] } : null,
-      };
-    }
-  }
-  poner(arb, { ...pa, s: ESC1 });
-}
-
-// ---------------------------------------------------------------------------
-// Escena 2: el tiro libre, de cara al arco. Barrera de rayas, arquero y el
-// delantero de blanco que patea.
+// El penal, de cara al arco: arquero y el delantero de blanco que patea.
 const actores2 = $("#actores2");
 function deFrente(padre, kit, x, y, s, brazos) {
   const k = KITS[kit] || kit;
@@ -311,28 +215,26 @@ function deFrente(padre, kit, x, y, s, brazos) {
 }
 const ARQ = { camisa: "#1aa37a", manga: "#1aa37a", short: "#103d33", media: "#1aa37a", bota: "#111", piel: "#b98257", pelo: "#1d140e", guante: "#f2f2ee" };
 const arquero = deFrente(actores2, ARQ, 180, 118, .5);
-const barrera = [150, 165, 180, 195].map((x, i) => deFrente(actores2, { ...KITS.rayas, piel: ["#e3b48d", "#9c6b45", "#d7a67c", "#7a4d31"][i] }, x, 168, .7, "barrera"));
 const pateador = figura(actores2, "blanco");
 const bal2 = balon(actores2, 5);
 const T2_PAUSA = 900, T2_PATEA = 1060, T2_LLEGA = 2000, T2_FIN = 3000;
-const B0 = [180, 216];
+const B0 = [180, 196];
 
-// Trayectoria del balón según el resultado: [control, fin, rebote?].
-const TRAYECTOS = {
-  gol: { c: [150, 52], f: [124, 80], s: .42 },
-  palo: { c: [148, 56], f: [109, 84], s: .44, rebote: [74, 150] },
-  atajada: { c: [156, 62], f: [150, 90], s: .46 },
-  afuera: { c: [150, 40], f: [80, 70], s: .44 },
-  barrera: { c: [178, 160], f: [176, 150], s: .72, rebote: [214, 206], hasta: .42 },
+// Destino del balón (siempre gol: todos ganan). El arquero se lanza al otro lado.
+const DESTINOS = {
+  izq: { c: [148, 50], f: [126, 80], lado: 1 },
+  centro: { c: [182, 44], f: [181, 72], lado: 0 },
+  der: { c: [214, 50], f: [236, 80], lado: -1 },
 };
 const bez = (a, c, b, k) => [(1 - k) ** 2 * a[0] + 2 * (1 - k) * k * c[0] + k * k * b[0], (1 - k) ** 2 * a[1] + 2 * (1 - k) * k * c[1] + k * k * b[1]];
+let ladoCentro = 1; // al centro, el arquero se tira a un lado al azar
 
-function escena2(T, resultado) {
+function escena2(T, destino) {
   // El que patea: carrera corta en diagonal, apoyo y remate.
   let p;
   if (T < T2_PAUSA) {
     const k = T / T2_PAUSA;
-    p = { x: lerp(112, 164, k), y: lerp(232, 222, k), s: 1.05, ...carrera(T / 1000 * 2 * Math.PI * 2.2, lerp(1, .6, k)) };
+    p = { x: lerp(118, 166, k), y: lerp(226, 206, k), s: 1.05, ...carrera(T / 1000 * 2 * Math.PI * 2.2, lerp(1, .6, k)) };
     if (T > T2_PAUSA - 220) { // carga la pierna
       const c = tramo(T, T2_PAUSA - 220, T2_PAUSA);
       p.piernas = [[lerp(p.piernas[0][0], -48, c), lerp(p.piernas[0][1], 80, c)], [lerp(p.piernas[1][0], 6, c), lerp(p.piernas[1][1], 8, c)]];
@@ -341,47 +243,30 @@ function escena2(T, resultado) {
     }
   } else {
     const c = sale(tramo(T, T2_PAUSA, T2_PATEA));
-    p = { x: 164 + 4 * c, y: 222, s: 1.05, incl: lerp(-6, 4, c), dy: 0,
+    p = { x: 166 + 4 * c, y: 206, s: 1.05, incl: lerp(-6, 4, c), dy: 0,
       piernas: [[lerp(-48, 74, c), lerp(80, 0, c)], [6, 8]], brazos: [[lerp(-40, -70, c), 40], [lerp(70, 90, c), 30]] };
   }
   poner(pateador, p);
 
-  const tr = resultado ? TRAYECTOS[resultado] : null;
-  // Barrera: salta cuando sale el balón.
-  const sb = Math.sin(tramo(T, T2_PATEA, T2_PATEA + 520) * Math.PI);
-  barrera.forEach((b, i) => b.poner(0, -10 * sb * (i % 2 ? .9 : 1)));
-
-  // Arquero: se lanza hacia donde va el balón (llega o no según el resultado).
-  const kd = suave(tramo(T, T2_PATEA + 240, T2_LLEGA - 120));
+  const tr = destino ? DESTINOS[destino] : null;
+  // Arquero: se lanza al lado contrario del balón.
+  const kd = suave(tramo(T, T2_PATEA + 200, T2_LLEGA - 120));
   let ad = 0, ay = 0, arot = Math.sin(T / 260) * 2;
-  if (tr && resultado !== "barrera") {
-    const alcance = { gol: -30, palo: -34, atajada: -30, afuera: -22 }[resultado];
-    const giro = { gol: -58, palo: -66, atajada: -46, afuera: -30 }[resultado];
-    ad = alcance * kd; ay = -14 * Math.sin(kd * Math.PI * .8); arot = giro * kd;
+  if (tr) {
+    const lado = tr.lado || ladoCentro;
+    ad = 32 * lado * kd; ay = -14 * Math.sin(kd * Math.PI * .8); arot = 60 * lado * kd;
   }
   arquero.poner(ad, ay, arot);
 
   // Balón.
   if (!tr || T < T2_PATEA) { bal2.poner(B0[0], B0[1], 0, 1, B0[1]); return; }
-  const hasta = tr.hasta || 1;
-  const kv = tramo(T, T2_PATEA, lerp(T2_PATEA, T2_LLEGA, hasta));
-  let pos, s, suelo;
-  if (kv < 1) {
-    pos = bez(B0, tr.c, tr.f, sale(kv)); s = lerp(1, tr.s, sale(kv));
-    suelo = lerp(B0[1], resultado === "barrera" ? 168 : 118, sale(kv));
-  } else if (tr.rebote) {
-    const kr = sale(tramo(T, lerp(T2_PATEA, T2_LLEGA, hasta), lerp(T2_PATEA, T2_LLEGA, hasta) + 700));
-    pos = [lerp(tr.f[0], tr.rebote[0], kr), lerp(tr.f[1], tr.rebote[1], kr) - Math.sin(kr * Math.PI) * 18];
-    s = lerp(tr.s, resultado === "barrera" ? .95 : .6, kr);
-    suelo = lerp(resultado === "barrera" ? 168 : 118, tr.rebote[1], kr);
-  } else {
-    pos = tr.f; s = tr.s; suelo = 118;
-    if (resultado === "gol") pos = [tr.f[0] + 2 * Math.sin(T / 40) * Math.exp(-(T - T2_LLEGA) / 300), tr.f[1] + 6 * clamp((T - T2_LLEGA) / 400)];
-  }
-  bal2.poner(pos[0], pos[1], kv * 900, s, suelo);
+  const kv = tramo(T, T2_PATEA, T2_LLEGA);
+  let pos = bez(B0, tr.c, tr.f, sale(kv));
+  if (kv >= 1) pos = [tr.f[0] + 2 * Math.sin(T / 40) * Math.exp(-(T - T2_LLEGA) / 300), tr.f[1] + 6 * clamp((T - T2_LLEGA) / 400)];
+  bal2.poner(pos[0], pos[1], kv * 900, lerp(1, .42, sale(kv)), lerp(B0[1], 118, sale(kv)));
   // La red se mueve con el gol.
   const red = $("#red");
-  if (resultado === "gol" && T > T2_LLEGA) {
+  if (T > T2_LLEGA) {
     const kk = Math.exp(-(T - T2_LLEGA) / 260) * Math.sin((T - T2_LLEGA) / 45);
     red.setAttribute("transform", `translate(${(kk * -1.5).toFixed(2)} ${(kk * 2).toFixed(2)})`);
   } else red.removeAttribute("transform");
@@ -521,220 +406,135 @@ const Sonido = (() => {
 })();
 
 const botonMudo = $("#mudo");
-const pintarMudo = () => { botonMudo.textContent = Sonido.mudo ? "🔇" : "🔊"; botonMudo.setAttribute("aria-pressed", String(Sonido.mudo)); botonMudo.title = Sonido.mudo ? "Activar sonido" : "Silenciar"; };
+const pintarMudo = () => { botonMudo.setAttribute("aria-pressed", String(Sonido.mudo)); botonMudo.setAttribute("aria-label", Sonido.mudo ? "Activar sonido" : "Silenciar"); };
 pintarMudo();
 botonMudo.addEventListener("click", () => { Sonido.iniciar(); Sonido.alternar(); pintarMudo(); });
 
 // ---------------------------------------------------------------------------
-// Sorteo de descuentos (12-11-2026). El premio lo sortea el servidor UNA vez,
-// al registrarse (POST api/jugar, con pesos y cupos). Aquí las tres tarjetas y
-// el tiro libre solo lo revelan:
-//   100 %, 85 % u 83 % (sorteo de scraping: todos ganan) → la persona «adivina» una de sus tres tarjetas;
-//   90 %          → falla las tres y acierta el tiro libre (súper difícil);
-//   50 %          → falla las tres y el tiro libre, y se lleva el premio para todos.
-// Lo que elija no cambia nada: si le toca acertar, el árbitro saca lo que dijo.
-const TOTAL = 3;
+// La entrada: datos → penal → cupón sellado. Un paso a la vez.
 const azar = (n) => Math.floor(Math.random() * n);
-let estado = {}, yo = null, ocupado = false;
-const NOMBRE_T = { amarilla: "amarilla", roja: "roja", nada: "sin tarjeta" };
+const PRECIO = 60; // S/ del taller sin cupón (cursos.json)
+let yo = null, ocupado = false;
 
 function ver(id, si) { $(id).hidden = !si; }
-function escenaActiva(n) {
-  $("#esc1").setAttribute("display", n === 1 ? "inline" : "none");
-  $("#esc2").setAttribute("display", n === 2 ? "inline" : "none");
-}
-function pregunta(txt) {
-  if (txt) { $("#preguntaTxt").textContent = txt; $("#pregunta").hidden = false; $("#estadio").classList.add("pausa"); }
-  else { $("#pregunta").hidden = true; $("#estadio").classList.remove("pausa"); }
-}
-function cartel(tarjeta) {
-  const c = $("#cartel");
-  if (!tarjeta) { c.hidden = true; return; }
-  const cls = { amarilla: "am", roja: "ro", nada: "na" }[tarjeta];
-  c.innerHTML = `<div class="c ${cls}">${tarjeta === "nada" ? "✋" : ""}</div><span>${{ amarilla: "AMARILLA", roja: "ROJA", nada: "¡SIGA!" }[tarjeta]}</span>`;
-  c.hidden = false;
-}
 
-// Arma a la persona a partir de lo que respondió el servidor.
 function entrar(nombre, d) {
-  const pct = Number(d.descuento) || 0;
-  yo = { nombre, d, pct, usados: 0, fin: false, juego: "", acierta: pct === 100 || pct === 85 || pct === 83 ? 1 + azar(TOTAL) : 0 };  // 83 %: sorteo de scraping, todos ganan
-  if (d.repetido || !pct) { yo.fin = true; yo.usados = TOTAL; yo.juego = "repetido"; }
+  yo = { nombre, d, pct: Number(d.descuento) || 0, fin: !!d.repetido };
 }
 
 function pintarYo() {
-  ver("#inscripcion", false); ver("#juego", true);
+  ver("#inscripcion", false);
   $("#nom").textContent = yo.nombre;
-  let bolas = "";
-  for (let i = 0; i < TOTAL; i++) bolas += `<i class="${i < yo.usados ? "gastado" : ""}"></i>`;
-  const r = TOTAL - yo.usados;
-  const resto = yo.fin ? "Terminaste" : r > 0 ? `${r} ${r === 1 ? "jugada" : "jugadas"}` : "Tiro libre";
-  $("#restan").innerHTML = `${resto}<span class="puntos">${bolas}</span>`;
-  ver("#opciones", false); ver("#opcionesTL", false); ver("#nota", false); ver("#segunda", false); ver("#fin", false);
-  const emp = $("#empezar");
-  if (yo.fin) { emp.hidden = true; mostrarPremio(); }
-  else if (r > 0) { emp.hidden = false; emp.textContent = `▶ ${yo.usados === 0 ? "Empezar" : "Siguiente"}: jugada ${yo.usados + 1} de ${TOTAL}`; }
-  else { emp.hidden = true; ver("#segunda", true); }
+  if (yo.fin || !yo.pct) { ver("#juego", false); mostrarPremio(false); return; }
+  ver("#premio", false); ver("#fin", false); ver("#juego", true); ver("#apunta", true);
+  $("#res").textContent = ""; $("#res").className = "res";
+  document.querySelectorAll("#opciones .op").forEach((b) => (b.disabled = false));
 }
 
-function mostrarPremio() {
+function mostrarPremio(recien) {
   const p = yo.pct, d = yo.d;
-  if (!p || !d.codigo) { ver("#fin", true); $("#fin").textContent = "Los cupones de este sorteo ya se repartieron. Gracias por jugar."; return; }
-  ver("#premio", true);
-  $("#premioK").textContent = { tarjeta: "¡ADIVINASTE LA TARJETA!", tiro_libre: "¡TIRO LIBRE ACERTADO!", todos: "PREMIO PARA TODOS", repetido: "YA JUGASTE · ESTE ES TU CUPÓN" }[yo.juego] + (yo.juego === "repetido" ? "" : ` · CUPÓN ${p} %`);
-  $("#premioBig").innerHTML = `${p} %<small>${p === 100 ? "GRATIS" : "DE DESCUENTO"}</small>`;
+  if (!p || !d.codigo) {
+    ver("#juego", true); ver("#apunta", false); ver("#fin", true);
+    $("#fin").textContent = "Los cupones de este sorteo ya se repartieron. Gracias por jugar.";
+    return;
+  }
+  const gratis = p === 100, paga = Math.round(PRECIO * (100 - p) / 100);
+  const premio = $("#premio");
+  premio.classList.toggle("gratis", gratis);
+  premio.classList.remove("sellar");
+  $("#premioBig").textContent = gratis ? "GRATIS" : `${p} %`;
+  $("#premioK").textContent = gratis ? "100 % dscto." : "de descuento";
+  $("#premioT").textContent = d.repetido ? "Ya pateaste tu penal. Este es tu cupón." : gratis ? "¡Golazo! Te llevas el taller gratis." : "¡Gol! Tu cupón ya es tuyo.";
   $("#cod").textContent = d.codigo;
-  $("#vence").textContent = d.vence_texto ? `Úsalo hasta el ${d.vence_texto}.` : "";
+  $("#pagas").innerHTML = gratis
+    ? "No pagas nada por el taller de hoy, <b>5:00&nbsp;–&nbsp;6:30&nbsp;p.&nbsp;m.</b>"
+    : `Pagas <b>S/ ${paga}</b> en lugar de <s>S/ ${PRECIO}</s> por el taller de hoy, <b>5:00&nbsp;–&nbsp;6:30&nbsp;p.&nbsp;m.</b>`;
   $("#usar").href = "canje?c=" + encodeURIComponent(d.codigo);
+  $("#vence").textContent = d.vence_texto ? `Úsalo hasta el ${d.vence_texto}.` : "";
+  ver("#juego", false); ver("#premio", true);
+  if (recien && !QUIETO) { void premio.offsetWidth; premio.classList.add("sellar"); }
 }
 
-function confeti() {
-  const caja = $("#estadio"), colores = ["#f5c518", "#fff", "#d6283c", "#8cc49b"];
-  for (let i = 0; i < 48; i++) {
+function confeti(gratis) {
+  if (QUIETO) return;
+  const caja = $("#entrada"), colores = gratis ? ["#f5c518", "#e3b23c", "#fff3c4", "#8a6200"] : ["#f5c518", "#d40d0d", "#15172d", "#ffffff"];
+  for (let i = 0; i < (gratis ? 80 : 44); i++) {
     const e = document.createElement("i"); e.className = "conf";
-    e.style.cssText = `left:${5 + Math.random() * 90}%;background:${colores[i % 4]};animation-delay:${Math.random() * .8}s`;
-    caja.append(e); setTimeout(() => e.remove(), 3200);
+    e.style.cssText = `left:${3 + Math.random() * 94}%;background:${colores[i % 4]};animation-delay:${Math.random() * .7}s`;
+    caja.append(e); setTimeout(() => e.remove(), 3400);
   }
 }
 
-// Espera a que la persona toque una de las opciones.
-function elegir(caja) {
-  return new Promise((listo) => {
-    const bs = [...document.querySelectorAll(caja + " .btn")];
-    bs.forEach((b) => (b.disabled = false));
-    const f = (ev) => { bs.forEach((b) => { b.disabled = true; b.removeEventListener("click", f); }); listo(ev.currentTarget.dataset.e); };
-    bs.forEach((b) => b.addEventListener("click", f));
-  });
-}
-
-// --- Una jugada: falta, pausa, elección, árbitro, tarjeta. ---
-async function jugada() {
-  if (ocupado || !yo || yo.fin || yo.usados >= TOTAL) return;
-  ocupado = true;
-  Sonido.iniciar();
-  $("#res").className = "res"; $("#res").textContent = "";
-  ver("#empezar", false); cartel(null); escenaActiva(1);
-  let tarjeta = null;
-  const pintar = (T) => escena1(T, tarjeta);
-  try {
-    await correr(pintar, 0, T_PAUSA, [[T_FALTA - 40, () => Sonido.ola(false)]]);
-    pregunta("¿Qué saca el árbitro?");
-    ver("#opciones", true);
-    $("#nota").textContent = "Tu premio ya se sorteó al registrarte: elijas lo que elijas, tu suerte es la misma.";
-    ver("#nota", true);
-    Sonido.tension(.1);
-    const eleccion = await elegir("#opciones");
-    pregunta(null);
-    Sonido.tension(.16);
-    Sonido.silbato();
-    const acierto = yo.usados + 1 === yo.acierta;
-    await correr(pintar, T_PAUSA, T_LLEGA);
-    tarjeta = acierto ? eleccion : ["amarilla", "roja", "nada"].filter((x) => x !== eleccion)[azar(2)];
-    await correr(pintar, T_LLEGA, T_FIN1, [[T_TARJETA + 200, () => { cartel(tarjeta); if (acierto) Sonido.ola(true); }]]);
-    yo.usados++;
-    const r = TOTAL - yo.usados, res = $("#res");
-    if (acierto) {
-      yo.fin = true; yo.juego = "tarjeta";
-      res.className = "res bien";
-      res.innerHTML = `¡Acertaste!<small>El árbitro ${tarjeta === "nada" ? "no sacó tarjeta" : `sacó ${tarjeta}`}, como dijiste. Guarda tu cupón de ${yo.pct} %.</small>`;
-      confeti();
-    } else {
-      const quedan = r > 0 ? `Te ${r === 1 ? "queda 1 jugada" : `quedan ${r} jugadas`}.` : "Era tu última tarjeta, pero te queda el tiro libre.";
-      res.className = "res mal";
-      res.innerHTML = `${{ amarilla: "¡Amarilla!", roja: "¡Roja directa!", nada: "¡Siga, siga!" }[tarjeta]}<small>Tú dijiste ${NOMBRE_T[eleccion]}. ${quedan}</small>`;
-    }
-    pintarYo();
-  } finally { ocupado = false; }
-}
-
-// --- La segunda oportunidad: tiro libre. ---
-async function tiroLibre() {
+// El penal: elige dónde, corre, patea, gol. Después se sella el talón.
+async function penal(destino) {
   if (ocupado || !yo || yo.fin) return;
   ocupado = true;
   Sonido.iniciar();
-  $("#res").className = "res"; $("#res").textContent = "";
-  ver("#segunda", false); cartel(null); escenaActiva(2);
-  let resultado = null;
-  const pintar = (T) => escena2(T, resultado);
-  pintar(0);
-  $("#estadio").scrollIntoView({ behavior: QUIETO ? "auto" : "smooth", block: "center" });
+  document.querySelectorAll("#opciones .op").forEach((b) => (b.disabled = true));
+  ver("#apunta", false);
+  ladoCentro = azar(2) ? 1 : -1;
+  const pintar = (T) => escena2(T, destino);
   try {
     Sonido.silbato(true);
-    await espera(650);
-    await correr(pintar, 0, T2_PAUSA);
-    pregunta("¿Entra el gol?");
-    ver("#opcionesTL", true);
-    $("#nota").textContent = "Súper difícil. Decir sí o no no cambia tu suerte: tu premio ya se sorteó.";
-    ver("#nota", true);
-    Sonido.tension(.08);
-    const eleccion = await elegir("#opcionesTL");
-    pregunta(null);
-    const acierto = yo.pct === 90;
-    const gol = acierto ? eleccion === "si" : eleccion === "no";
-    resultado = gol ? "gol" : ["barrera", "palo", "atajada", "afuera"][azar(4)];
-    Sonido.tension(.16);
-    await correr(pintar, T2_PAUSA, T2_FIN, [
-      [T2_PAUSA + 120, () => Sonido.patada()],
-      [T2_LLEGA - 80, () => Sonido.ola(gol)],
+    Sonido.tension(.14);
+    await espera(450);
+    await correr(pintar, 0, T2_FIN, [
+      [T2_PATEA - 20, () => Sonido.patada()],
+      [T2_LLEGA - 60, () => Sonido.ola(true)],
     ]);
-    const titulo = { gol: "¡GOOOL!", barrera: "¡En la barrera!", palo: "¡Al palo!", atajada: "¡La atajó!", afuera: "¡Se fue afuera!" }[resultado];
-    const dijo = eleccion === "si" ? "que entraba" : "que no entraba";
-    const res = $("#res");
     yo.fin = true;
-    if (acierto) {
-      yo.juego = "tiro_libre";
-      res.className = "res bien";
-      res.innerHTML = `${titulo}<small>Dijiste ${dijo} y acertaste el tiro más difícil: ${yo.pct} % de descuento.</small>`;
-      confeti();
-    } else {
-      yo.juego = "todos";
-      res.className = "res mal";
-      res.innerHTML = `${titulo}<small>Dijiste ${dijo}. No te vas con las manos vacías: aquí está tu ${yo.pct} % de descuento.</small>`;
-    }
-    pintarYo();
-    $("#premio").scrollIntoView({ behavior: QUIETO ? "auto" : "smooth", block: "nearest" });
+    const gratis = yo.pct === 100, res = $("#res");
+    res.textContent = gratis ? "¡GOLAZO!" : "¡GOL!";
+    res.className = "res gol" + (gratis ? " gratis" : "");
+    await espera(1100);
+    mostrarPremio(true);
+    Sonido.patada();
+    confeti(gratis);
+    $("#entrada").scrollIntoView({ behavior: QUIETO ? "auto" : "smooth", block: "start" });
   } finally { ocupado = false; }
 }
+document.querySelectorAll("#opciones .op").forEach((b) => b.addEventListener("click", () => penal(b.dataset.e)));
 
-$("#empezar").addEventListener("click", jugada);
-$("#irTL").addEventListener("click", tiroLibre);
+$("#copiar").addEventListener("click", async () => {
+  const b = $("#copiar");
+  try { await navigator.clipboard.writeText($("#cod").textContent); b.textContent = "Copiado"; }
+  catch (e) { getSelection().selectAllChildren($("#cod")); b.textContent = "Selecciónalo"; }
+  setTimeout(() => (b.textContent = "Copiar"), 2200);
+});
 
 $("#form").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   Sonido.iniciar();
   const btn = $("#quiero"), err = $("#err1"); err.textContent = "";
-  const nombre = $("#nombre").value.trim(), whatsapp = $("#whatsapp").value.replace(/\D/g, "");
+  const nombre = $("#nombre").value.trim().replace(/\s+/g, " "), whatsapp = $("#whatsapp").value.replace(/\D/g, "");
   if (nombre.length < 2) { err.textContent = "Escribe tu nombre."; $("#nombre").focus(); return; }
-  if (!/^9\d{8}$/.test(whatsapp.replace(/^51/, ""))) { err.textContent = "Escribe tu WhatsApp: 9 dígitos y empieza con 9."; $("#whatsapp").focus(); return; }
-  btn.disabled = true;
+  if (!/^9\d{8}$/.test(whatsapp.replace(/^51/, ""))) { err.textContent = "Tu WhatsApp tiene 9 dígitos y empieza con 9."; $("#whatsapp").focus(); return; }
+  btn.disabled = true; btn.querySelector("span").textContent = "Entrando a la cancha…";
   try {
     const d = await api("api/jugar", { method: "POST", body: JSON.stringify({ nombre, whatsapp }) });
     try { localStorage.setItem(LLAVE_DATOS, JSON.stringify({ nombre, whatsapp })); } catch (e) { /* sin memoria: igual juega */ }
-    entrar(nombre.split(/\s+/)[0], d);
-    if (yo.fin) escena1(T_PAUSA - 300, null); // quien vuelve ve la escena quieta y su cupón
+    entrar(nombre.split(" ")[0], d);
+    escena2(0, null);
     pintarYo();
-    $("#juego").scrollIntoView({ behavior: QUIETO ? "auto" : "smooth", block: "start" });
+    $("#entrada").scrollIntoView({ behavior: QUIETO ? "auto" : "smooth", block: "start" });
   } catch (e) {
     err.textContent = e.message;
-  } finally { btn.disabled = false; }
+  } finally { btn.disabled = false; btn.querySelector("span").textContent = estadoCerrado ? "Ver mi cupón" : "Patear mi penal"; }
 });
 $("#nombre").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#whatsapp").focus(); } });
 try { const g = JSON.parse(localStorage.getItem(LLAVE_DATOS)); if (g) { $("#nombre").value = g.nombre || ""; $("#whatsapp").value = g.whatsapp || ""; } } catch (e) { /* nada guardado */ }
 
-// Solo en local: prueba cada camino sin gastar cupones. __demo(100 | 85 | 90 | 50)
+// Solo en local: prueba cada camino sin gastar cupones. __demo(83 | 100, repetido?)
 if (location.hostname === "localhost") window.__demo = (pct, repetido = false) => {
-  ["#premio", "#fin"].forEach((id) => ver(id, false)); $("#res").textContent = ""; cartel(null); escenaActiva(1); escena1(0, null);
-  entrar("Demo", { descuento: pct, codigo: "JMD-" + pct + "-DEMO", vence_texto: "jueves 19 de noviembre de 2026", repetido }); pintarYo(); return yo.acierta;
+  $("#premio").classList.remove("sellar"); escena2(0, null);
+  entrar("Ana", { descuento: pct, codigo: "JMD-" + pct + "-DEMO7", vence_texto: "lunes 16 de noviembre de 2026", repetido }); pintarYo();
 };
 
-// Cuadro inicial de cada escena.
-escena1(0, null);
 escena2(0, null);
-
+let estadoCerrado = false;
 (async () => {
   try {
-    estado = await api("api/estado");
-    if (!estado.abierto) { ver("#cerrado", true); $("#quiero").textContent = "Ver mi resultado"; }
-    $("#cursos").innerHTML = (estado.cursos || []).map((c) => `<div class="curso"><b>${esc(c.titulo)} <span>${esc(c.precio_texto || "")}</span></b><small>${esc((c.fechas || []).join(" · "))}</small><small>${esc(c.bajada || "")}</small></div>`).join("");
+    const estado = await api("api/estado");
+    if (!estado.abierto) { estadoCerrado = true; ver("#cerrado", true); $("#quiero span").textContent = "Ver mi cupón"; }
   } catch (e) { /* sin estado: el formulario igual funciona */ }
 })();
