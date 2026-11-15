@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estudio de diseño · Taller S1</title>
+<!-- Escena «Estudio de diseño» (10b). Fuente: _fuente/estudio.html; _fuente/estudio.sh la copia a dm-01 y dt-01 y pone
+     las fuentes en _comun. Reglas y guías, reglas de composición, imagen propia, quitar fondo, transformaciones y
+     tipografía. Todo corre en el navegador: nada se sube al servidor. Las fuentes se cargan con fetch + FontFace
+     porque la CSP de las escenas solo deja fuentes data:. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.est .esc-cuerpo { gap: .6em; }
+.estudio { display: grid; grid-template-columns: 13.5em minmax(0, 1fr) 17em; gap: .7em; min-height: 0; flex: 1; font-size: clamp(12px, .95vw, 15px); }
+.panel { background: var(--s1); border: 1px solid var(--line); border-radius: 1em; padding: .8em; display: flex; flex-direction: column; gap: .7em; overflow: auto; max-height: 78vh; box-shadow: var(--card-shadow); }
+.panel h3 { margin: 0; font: 800 .72em/1 system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.panel section { display: grid; gap: .45em; }
+.bt { font: 650 .86em/1.1 system-ui, sans-serif; padding: .62em .7em; border-radius: .65em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; text-align: left; display: flex; align-items: center; gap: .5em; }
+.bt:hover { border-color: var(--accent); }
+.bt.pri { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.bt[aria-pressed="true"] { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+.bt svg { width: 1.15em; height: 1.15em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; }
+.fila3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35em; }
+.chip { font: 650 .78em/1 system-ui, sans-serif; padding: .5em .55em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: .3em; }
+.fondos { display: grid; grid-template-columns: repeat(6, 1fr); gap: .3em; }
+.fondos button { aspect-ratio: 1; border-radius: .45em; border: 2px solid transparent; cursor: pointer; }
+.fondos button[aria-pressed="true"] { border-color: var(--accent); }
+select, input[type=text], textarea { font: .86em/1.3 system-ui, sans-serif; padding: .5em .6em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); width: 100%; }
+textarea { min-height: 4.2em; resize: vertical; }
+.ctl { display: grid; grid-template-columns: 6.2em 1fr 2.8em; align-items: center; gap: .45em; font: 600 .78em/1 system-ui, sans-serif; color: var(--muted); }
+.ctl input[type=range] { width: 100%; accent-color: var(--accent); }
+.ctl output { font: 600 .95em/1 var(--mono); color: var(--fg); text-align: right; }
+.ctl input[type=color] { width: 100%; height: 2em; border: 1px solid var(--line2); border-radius: .5em; background: none; padding: 0; }
+.nota { font-size: .76em; color: var(--muted); margin: 0; line-height: 1.4; }
+
+/* Mesa: reglas arriba e izquierda, tablero escalado al centro */
+.mesa { position: relative; display: grid; grid-template-columns: 22px 1fr; grid-template-rows: 22px 1fr; border-radius: 1em; overflow: hidden; border: 1px solid var(--line); min-height: 60vh; background: #1d1c2b; }
+.esquina { background: #262538; border-right: 1px solid #3a3955; border-bottom: 1px solid #3a3955; }
+.rx, .ry { background: #262538; cursor: copy; touch-action: none; }
+.rx { border-bottom: 1px solid #3a3955; } .ry { border-right: 1px solid #3a3955; }
+.rx canvas, .ry canvas { display: block; width: 100%; height: 100%; }
+.vista { position: relative; overflow: hidden; touch-action: none;
+  background-color: #1d1c2b; background-image: radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px); background-size: 18px 18px; }
+.tabla { position: absolute; left: 0; top: 0; transform-origin: 0 0; box-shadow: 0 30px 70px -20px rgba(0,0,0,.7); }
+.tabla .fondo { position: absolute; inset: 0; }
+.capas { position: absolute; inset: 0; overflow: hidden; }
+.capa { position: absolute; transform-origin: 50% 50%; cursor: move; touch-action: none; }
+.capa .cont { width: 100%; height: 100%; display: block; transform-origin: 50% 50%; }
+.capa img.cont { object-fit: fill; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.capa .txt { white-space: pre-wrap; overflow-wrap: break-word; pointer-events: none; paint-order: stroke fill; }
+.sel-caja { position: absolute; inset: 0; outline: calc(2px / var(--s)) solid #6d8cff; pointer-events: none; display: none; }
+.capa.sel .sel-caja { display: block; }
+.asa { position: absolute; width: calc(14px / var(--s)); height: calc(14px / var(--s)); background: #fff; border: calc(2px / var(--s)) solid #6d8cff; border-radius: 50%; pointer-events: auto; touch-action: none; }
+.asa.esc { right: calc(-7px / var(--s)); bottom: calc(-7px / var(--s)); cursor: nwse-resize; }
+.asa.rot { left: 50%; top: calc(-34px / var(--s)); margin-left: calc(-7px / var(--s)); cursor: grab; background: #6d8cff; }
+.asa.rot::after { content: ""; position: absolute; left: 50%; top: 100%; width: calc(2px / var(--s)); height: calc(20px / var(--s)); background: #6d8cff; transform: translateX(-50%); }
+.sobre { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.guia { position: absolute; background: #00d1ff; touch-action: none; z-index: 5; }
+.guia.v { top: -100000px; bottom: -100000px; width: calc(1px / var(--s)); cursor: ew-resize; }
+.guia.h { left: -100000px; right: -100000px; height: calc(1px / var(--s)); cursor: ns-resize; }
+.guia::before { content: ""; position: absolute; inset: calc(-5px / var(--s)); }
+.guia.iman { background: #ff3df2; }
+.etq { position: absolute; z-index: 9; pointer-events: none; font: 700 11px/1 system-ui, sans-serif; color: #0b0b14; background: #00d1ff; padding: 3px 5px; border-radius: 4px; display: none; }
+.pista { position: absolute; left: 30px; bottom: 8px; margin: 0; font: 600 11px/1.3 system-ui, sans-serif; color: rgba(255,255,255,.6); pointer-events: none; }
+.vista.varita { cursor: crosshair; }
+.vista.soltar::after { content: "Suelta tu imagen aquí"; position: absolute; inset: 12px; border: 3px dashed #6d8cff; border-radius: 14px; display: grid; place-items: center; color: #fff; font: 800 22px/1 system-ui; background: rgba(109,140,255,.12); }
+
+/* Fuentes: mosaico con muestra real */
+.fuentes { display: grid; grid-template-columns: 1fr 1fr; gap: .35em; }
+.fuentes button { padding: .5em .4em .45em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; display: grid; gap: .15em; text-align: left; }
+.fuentes button b { font-size: 1.45em; line-height: 1; font-weight: inherit; }
+.fuentes button span { font: 600 .66em/1 system-ui, sans-serif; color: var(--muted); }
+.fuentes button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
+.lista { display: grid; gap: .3em; }
+.lista .it { display: grid; grid-template-columns: 1fr auto auto auto auto; gap: .25em; align-items: center; font: 600 .8em/1.2 system-ui, sans-serif; padding: .4em .5em; border-radius: .55em; border: 1px solid var(--line); background: var(--s2); cursor: pointer; }
+.lista .it.sel { border-color: var(--accent); }
+.lista .it span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lista .it button { font: 700 .9em/1 system-ui; border: 0; background: none; color: var(--muted); cursor: pointer; padding: .2em .3em; border-radius: .3em; }
+.lista .it button:hover { color: var(--fg); background: var(--s3); }
+.vacio { font-size: .8em; color: var(--muted); margin: 0; }
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(10,9,20,.72); padding: 2em; }
+.modal > div { background: var(--s1); border-radius: 1em; padding: 1em; display: grid; gap: .7em; max-width: min(92vw, 900px); max-height: 92vh; }
+.modal img { max-width: 100%; max-height: 70vh; border-radius: .6em; background: repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0 / 20px 20px; }
+@media (max-width: 1000px) { .estudio { grid-template-columns: 1fr; } .mesa { min-height: 58vh; order: -1; } .panel { max-height: none; } }
+</style>
+</head>
+<body>
+<div class="esc est">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Aplicación</span>
+    <span class="esc-num">Taller · S1 · E10b</span>
+  </header>
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Estudio: <em>reglas</em>, recorte y tipografía</h1>
+    <div class="estudio">
+      <aside class="panel" aria-label="Herramientas">
+        <section>
+          <h3>Imagen</h3>
+          <button class="bt pri" id="subir" type="button"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>Subir imagen</button>
+          <input id="archivo" type="file" accept="image/*" hidden>
+          <button class="bt" id="usarBase" type="button"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>Mi imagen base</button>
+          <p class="nota">También puedes arrastrarla o pegarla (Ctrl/⌘ + V).</p>
+        </section>
+        <section>
+          <h3>Texto</h3>
+          <button class="bt" id="masTexto" type="button"><svg viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg>Agregar texto</button>
+          <div class="chips" id="estilosTexto"></div>
+        </section>
+        <section>
+          <h3>Formato</h3>
+          <select id="formato" aria-label="Formato del tablero"></select>
+          <div class="fondos" id="fondos" aria-label="Fondo"></div>
+        </section>
+        <section>
+          <h3>Reglas de composición</h3>
+          <div class="chips" id="reglas"></div>
+        </section>
+        <section>
+          <h3>Guías</h3>
+          <div class="fila3">
+            <button class="chip" id="gCentro" type="button">Centro</button>
+            <button class="chip" id="gMargen" type="button">Márgenes</button>
+            <button class="chip" id="gBorrar" type="button">Borrar</button>
+          </div>
+          <p class="nota">Arrastra desde una regla para crear una guía; devuélvela a la regla para quitarla. Las capas se pegan a las guías.</p>
+        </section>
+        <button class="bt pri" id="exportar" type="button"><svg viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Exportar PNG</button>
+      </aside>
+
+      <section class="mesa" aria-label="Mesa de trabajo">
+        <div class="esquina"></div>
+        <div class="rx" id="rx" title="Arrastra hacia abajo para crear una guía horizontal"><canvas></canvas></div>
+        <div class="ry" id="ry" title="Arrastra hacia la derecha para crear una guía vertical"><canvas></canvas></div>
+        <div class="vista" id="vista">
+          <div class="tabla" id="tabla">
+            <div class="fondo" id="fondo"></div>
+            <div class="capas" id="capas"></div>
+            <svg class="sobre" id="sobre" aria-hidden="true"></svg>
+            <div id="guias"></div>
+          </div>
+          <span class="etq" id="etq"></span>
+          <p class="pista" id="pista">Sube una imagen o agrega un texto para empezar</p>
+        </div>
+      </section>
+
+      <aside class="panel" aria-label="Propiedades">
+        <div id="props"><p class="vacio">Selecciona una capa para transformarla.</p></div>
+        <section>
+          <h3>Capas</h3>
+          <div class="lista" id="lista"></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+  <footer class="esc-pie">Lo logré = exportaste tu PNG con tu imagen sin fondo, al menos dos fuentes y una regla de composición aplicada</footer>
+</div>
+<script src="../../comun/vivo.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const COMUN = new URL('../../comun/', location.href).href;
+  const R = Math.PI / 180;
+
+  // ---------- Fuentes (fetch + FontFace: la CSP solo permite fuentes data:) ----------
+  const FUENTES = [
+    { n: 'Fraunces', f: 'fuente-fraunces-300_600.woff2', i: 'fuente-fraunces-300_600-italica.woff2', w: '300 600', d: 600, t: 'Serif con carácter' },
+    { n: 'Playfair Display', f: 'fuente-playfair.woff2', i: 'fuente-playfair-italica.woff2', w: '400 900', d: 700, t: 'Editorial de revista' },
+    { n: 'Instrument Serif', f: 'fuente-instrument-serif-400.woff2', i: 'fuente-instrument-serif-400-italica.woff2', w: '400', d: 400, t: 'Elegante y fina' },
+    { n: 'Anton', f: 'fuente-anton-400.woff2', w: '400', d: 400, t: 'Póster condensado' },
+    { n: 'Barlow Condensed', f: 'fuente-barlow-condensed-700.woff2', w: '700', d: 700, t: 'Deportiva' },
+    { n: 'Archivo Black', f: 'fuente-archivo-black-400.woff2', w: '400', d: 400, t: 'Pesada y directa' },
+    { n: 'Space Grotesk', f: 'fuente-space-grotesk.woff2', w: '300 700', d: 600, t: 'Tecnológica' },
+    { n: 'Sora', f: 'fuente-sora-400.woff2', w: '400', d: 400, t: 'Moderna geométrica' },
+    { n: 'Outfit', f: 'fuente-outfit-200.woff2', w: '200', d: 200, t: 'Ligera de lujo' },
+    { n: 'IBM Plex Mono', f: 'fuente-ibm-plex-mono-500.woff2', w: '500', d: 500, t: 'Máquina de escribir' },
+    { n: 'Inter', f: 'fuente-inter-400.woff2', w: '400', d: 400, t: 'Texto limpio' },
+  ];
+  const F = Object.fromEntries(FUENTES.map((x) => [x.n, x]));
+  async function cargarFuente(n, archivo, estilo, peso) {
+    const buf = await (await fetch(COMUN + archivo)).arrayBuffer();
+    try { const ff = new FontFace(n, buf, { style: estilo, weight: peso }); await ff.load(); document.fonts.add(ff); return; } catch (e) { /* abajo, con data: */ }
+    const url = await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(new Blob([buf], { type: 'font/woff2' })); });
+    const ff = new FontFace(n, `url(${url})`, { style: estilo, weight: peso }); await ff.load(); document.fonts.add(ff);
+  }
+  const listas = Promise.allSettled(FUENTES.flatMap((x) => [cargarFuente(x.n, x.f, 'normal', x.w)].concat(x.i ? [cargarFuente(x.n, x.i, 'italic', x.w)] : [])))
+    .then(() => { pintar(); });
+
+  // ---------- Estado ----------
+  const FORMATOS = [['Post cuadrado', 1080, 1080], ['Post vertical', 1080, 1350], ['Historia', 1080, 1920], ['Slide', 1920, 1080], ['Portada A4', 1240, 1754]];
+  const FONDOS = [
+    { c: '#ffffff' }, { c: '#f4efe6' }, { c: '#111018' }, { c: '#e8ff3d' }, { c: '#ff5c3d' }, { c: '#1b3cff' },
+    { g: ['#ffd6e7', '#c6d8ff', 135] }, { g: ['#0f2027', '#2c5364', 160] }, { g: ['#ff9a3d', '#ff3d77', 135] }, { g: ['#1d1b38', '#5a49d6', 180] }, { g: ['#d4fc79', '#96e6a1', 120] }, { g: ['#f6d365', '#fda085', 150] },
+  ];
+  const REGLAS = [['tercios', 'Tercios'], ['aurea', 'Áurea'], ['espiral', 'Espiral'], ['columnas', '12 columnas'], ['diagonales', 'Diagonales'], ['margen', 'Margen seguro'], ['centro', 'Centro'], ['reglas', 'Reglas']];
+  const E = { W: 1080, H: 1080, fondo: 6, reglas: new Set(['tercios', 'reglas']), guias: [], capas: [], sel: null, s: 1, ox: 0, oy: 0, varita: false };
+  let nid = 1;
+  const capaSel = () => E.capas.find((c) => c.id === E.sel);
+  const fondoCss = (f) => f.c || `linear-gradient(${f.g[2]}deg, ${f.g[0]}, ${f.g[1]})`;
+
+  // ---------- Tablero: encaje y reglas ----------
+  const vista = $('vista'), tabla = $('tabla');
+  function encajar() {
+    const r = vista.getBoundingClientRect(), m = 28;
+    E.s = Math.min((r.width - m * 2) / E.W, (r.height - m * 2) / E.H);
+    E.ox = (r.width - E.W * E.s) / 2; E.oy = (r.height - E.H * E.s) / 2;
+    tabla.style.width = E.W + 'px'; tabla.style.height = E.H + 'px';
+    tabla.style.transform = `translate(${E.ox}px, ${E.oy}px) scale(${E.s})`;
+    tabla.style.setProperty('--s', E.s);
+    reglasDibujo();
+  }
+  function reglasDibujo() {
+    for (const [id, eje] of [['rx', 'x'], ['ry', 'y']]) {
+      const cv = $(id).querySelector('canvas'), r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+      cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
+      const g = cv.getContext('2d'); g.scale(dpr, dpr); g.clearRect(0, 0, r.width, r.height);
+      const largo = eje === 'x' ? r.width : r.height, o = eje === 'x' ? E.ox : E.oy, total = eje === 'x' ? E.W : E.H;
+      const paso = [10, 20, 50, 100, 200, 250, 500].find((p) => p * E.s >= 46) || 1000;
+      g.fillStyle = 'rgba(109,140,255,.16)';
+      if (eje === 'x') g.fillRect(o, 0, total * E.s, r.height); else g.fillRect(0, o, r.width, total * E.s);
+      g.strokeStyle = '#8d8bb0'; g.fillStyle = '#c9c7e6'; g.font = '600 9px system-ui, sans-serif'; g.lineWidth = 1;
+      const ini = Math.floor(-o / E.s / (paso / 5)) * (paso / 5);
+      for (let v = ini; (v * E.s + o) < largo; v += paso / 5) {
+        const p = Math.round(v * E.s + o) + .5, mayor = Math.abs(v % paso) < 1e-6, alto = mayor ? 22 : (Math.abs(v % (paso / 2)) < 1e-6 ? 10 : 6);
+        g.beginPath();
+        if (eje === 'x') { g.moveTo(p, 22); g.lineTo(p, 22 - alto); } else { g.moveTo(22, p); g.lineTo(22 - alto, p); }
+        g.stroke();
+        if (mayor) {
+          if (eje === 'x') g.fillText(String(Math.round(v)), p + 3, 9);
+          else { g.save(); g.translate(9, p + 3); g.rotate(-Math.PI / 2); g.textAlign = 'right'; g.fillText(String(Math.round(v)), 0, 0); g.restore(); }
+        }
+      }
+      for (const gu of E.guias) if ((gu.o === 'v') === (eje === 'x')) {
+        const p = gu.p * E.s + o; g.fillStyle = '#00d1ff';
+        if (eje === 'x') g.fillRect(p - 1, 0, 2, 22); else g.fillRect(0, p - 1, 22, 2);
+      }
+    }
+  }
+  const aTabla = (cx, cy) => { const r = vista.getBoundingClientRect(); return [(cx - r.left - E.ox) / E.s, (cy - r.top - E.oy) / E.s]; };
+
+  // ---------- Reglas de composición (SVG encima del tablero) ----------
+  function sobreDibujo() {
+    const W = E.W, H = E.H, sv = $('sobre'), t = [];
+    sv.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const ln = (x1, y1, x2, y2, c, d) => t.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="1.5" vector-effect="non-scaling-stroke"${d ? ` stroke-dasharray="${d}"` : ''}/>`);
+    if (E.reglas.has('tercios')) for (const k of [1, 2]) { ln(W * k / 3, 0, W * k / 3, H, '#ff3df2'); ln(0, H * k / 3, W, H * k / 3, '#ff3df2'); }
+    const phi = 0.381966;
+    if (E.reglas.has('aurea')) for (const k of [phi, 1 - phi]) { ln(W * k, 0, W * k, H, '#ffb800', '8 6'); ln(0, H * k, W, H * k, '#ffb800', '8 6'); }
+    if (E.reglas.has('espiral')) {
+      // espiral áurea exacta: rectángulo áureo centrado; en cada paso se corta un cuadrado (izq., arriba, der., abajo)
+      const G = 1.6180339887; let w = W, h = W / G; if (h > H) { h = H; w = H * G; }
+      let x = (W - w) / 2, y = (H - h) / 2, d = `M${x} ${y + h}`;
+      t.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#ffb800" stroke-width="1" stroke-opacity=".5" vector-effect="non-scaling-stroke"/>`);
+      for (let i = 0; i < 12 && w > 1 && h > 1; i++) {
+        const k = i % 4;
+        if (k === 0) { const a = h; d += ` A${a} ${a} 0 0 1 ${x + a} ${y}`; t.push(`<line x1="${x + a}" y1="${y}" x2="${x + a}" y2="${y + h}" stroke="#ffb800" stroke-opacity=".5" vector-effect="non-scaling-stroke"/>`); x += a; w -= a; }
+        else if (k === 1) { const a = w; d += ` A${a} ${a} 0 0 1 ${x + a} ${y + a}`; t.push(`<line x1="${x}" y1="${y + a}" x2="${x + w}" y2="${y + a}" stroke="#ffb800" stroke-opacity=".5" vector-effect="non-scaling-stroke"/>`); y += a; h -= a; }
+        else if (k === 2) { const a = h; d += ` A${a} ${a} 0 0 1 ${x + w - a} ${y + a}`; t.push(`<line x1="${x + w - a}" y1="${y}" x2="${x + w - a}" y2="${y + h}" stroke="#ffb800" stroke-opacity=".5" vector-effect="non-scaling-stroke"/>`); w -= a; }
+        else { const a = w; d += ` A${a} ${a} 0 0 1 ${x} ${y + h - a}`; t.push(`<line x1="${x}" y1="${y + h - a}" x2="${x + w}" y2="${y + h - a}" stroke="#ffb800" stroke-opacity=".5" vector-effect="non-scaling-stroke"/>`); h -= a; }
+      }
+      t.push(`<path d="${d}" fill="none" stroke="#ffb800" stroke-width="2.5" vector-effect="non-scaling-stroke"/>`);
+    }
+    if (E.reglas.has('columnas')) {
+      const mg = W * 0.06, gt = W * 0.02, cw = (W - mg * 2 - gt * 11) / 12;
+      for (let k = 0; k < 12; k++) t.push(`<rect x="${mg + k * (cw + gt)}" y="0" width="${cw}" height="${H}" fill="rgba(255,61,119,.10)"/>`);
+    }
+    if (E.reglas.has('diagonales')) { ln(0, 0, W, H, '#3dffb0'); ln(W, 0, 0, H, '#3dffb0'); const m = Math.min(W, H); ln(0, 0, m, m, '#3dffb0', '6 6'); ln(W, 0, W - m, m, '#3dffb0', '6 6'); }
+    if (E.reglas.has('margen')) { const m = Math.round(Math.min(W, H) * 0.08); t.push(`<rect x="${m}" y="${m}" width="${W - m * 2}" height="${H - m * 2}" fill="none" stroke="#00d1ff" stroke-width="1.5" stroke-dasharray="10 6" vector-effect="non-scaling-stroke"/>`); }
+    if (E.reglas.has('centro')) { ln(W / 2, 0, W / 2, H, '#ffffff', '4 6'); ln(0, H / 2, W, H / 2, '#ffffff', '4 6'); t.push(`<circle cx="${W / 2}" cy="${H / 2}" r="${Math.min(W, H) * .02}" fill="none" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`); }
+    sv.innerHTML = t.join('');
+    $('rx').style.display = $('ry').style.display = $('rx').previousElementSibling.style.display = E.reglas.has('reglas') ? '' : 'none';
+    document.querySelector('.mesa').style.gridTemplateColumns = E.reglas.has('reglas') ? '22px 1fr' : '0 1fr';
+    document.querySelector('.mesa').style.gridTemplateRows = E.reglas.has('reglas') ? '22px 1fr' : '0 1fr';
+  }
+
+  // ---------- Guías ----------
+  function guiasDibujo() {
+    const caja = $('guias'); caja.innerHTML = '';
+    E.guias.forEach((g, i) => {
+      const d = document.createElement('div'); d.className = 'guia ' + g.o; d.dataset.i = i;
+      if (g.o === 'v') d.style.left = g.p + 'px'; else d.style.top = g.p + 'px';
+      d.addEventListener('pointerdown', (ev) => arrastrarGuia(ev, g));
+      d.addEventListener('dblclick', () => { E.guias.splice(E.guias.indexOf(g), 1); guiasDibujo(); });
+      caja.appendChild(d);
+    });
+    reglasDibujo();
+  }
+  function arrastrarGuia(ev, g) {
+    ev.preventDefault(); ev.stopPropagation();
+    const etq = $('etq'), vr = vista.getBoundingClientRect();
+    const mover = (e) => {
+      const [x, y] = aTabla(e.clientX, e.clientY);
+      g.p = Math.round(g.o === 'v' ? x : y);
+      etq.style.display = 'block'; etq.textContent = `${g.o === 'v' ? 'x' : 'y'} ${g.p} px`;
+      etq.style.left = (e.clientX - vr.left + 12) + 'px'; etq.style.top = (e.clientY - vr.top + 12) + 'px';
+      guiasDibujo();
+    };
+    const soltar = (e) => {
+      removeEventListener('pointermove', mover); removeEventListener('pointerup', soltar); etq.style.display = 'none';
+      const fuera = g.o === 'v' ? e.clientX < vr.left + 4 : e.clientY < vr.top + 4;   // de vuelta a la regla: se borra
+      if (fuera || g.p < -E.W || g.p > E.W * 2) { const k = E.guias.indexOf(g); if (k >= 0) E.guias.splice(k, 1); }
+      guiasDibujo();
+    };
+    addEventListener('pointermove', mover); addEventListener('pointerup', soltar);
+  }
+  $('rx').addEventListener('pointerdown', (ev) => { const g = { o: 'h', p: 0 }; E.guias.push(g); arrastrarGuia(ev, g); });
+  $('ry').addEventListener('pointerdown', (ev) => { const g = { o: 'v', p: 0 }; E.guias.push(g); arrastrarGuia(ev, g); });
+  $('gCentro').onclick = () => { E.guias.push({ o: 'v', p: E.W / 2 }, { o: 'h', p: E.H / 2 }); guiasDibujo(); };
+  $('gMargen').onclick = () => { const m = Math.round(Math.min(E.W, E.H) * 0.08); E.guias.push({ o: 'v', p: m }, { o: 'v', p: E.W - m }, { o: 'h', p: m }, { o: 'h', p: E.H - m }); guiasDibujo(); };
+  $('gBorrar').onclick = () => { E.guias = []; guiasDibujo(); };
+
+  // ---------- Capas ----------
+  const filtro = (c) => `brightness(${c.brillo}%) contrast(${c.contraste}%) saturate(${c.sat}%) hue-rotate(${c.tono}deg) blur(${c.blur}px)` + (c.sombra ? ` drop-shadow(0 ${c.sombra * .6}px ${c.sombra}px rgba(0,0,0,.45))` : '');
+  const sombraTxt = (c) => c.sombra ? `0 ${c.sombra * .25}px ${c.sombra}px rgba(0,0,0,.45)` : 'none';
+  function base(tipo) { return { id: nid++, tipo, x: 0, y: 0, w: 400, h: 400, rot: 0, skx: 0, sky: 0, fx: 1, fy: 1, op: 100, brillo: 100, contraste: 100, sat: 100, tono: 0, blur: 0, sombra: 0, mezcla: 'normal', rad: 0 }; }
+  function nuevaImagen(src, nombre) {
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight));
+      const cv = document.createElement('canvas'); cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      const d = cv.toDataURL('image/png');
+      const c = Object.assign(base('img'), { nombre: nombre || 'Imagen', src: d, orig: d, nw: cv.width, nh: cv.height });
+      const f = Math.min(E.W * .7 / cv.width, E.H * .7 / cv.height);
+      c.w = Math.round(cv.width * f); c.h = Math.round(cv.height * f); c.x = Math.round((E.W - c.w) / 2); c.y = Math.round((E.H - c.h) / 2);
+      E.capas.push(c); E.sel = c.id; pintar();
+    };
+    im.src = src;
+  }
+  const ESTILOS = [
+    ['Editorial', { fam: 'Fraunces', peso: 600, ital: true, tam: 120, track: -0.02, alto: 1.0, texto: 'Difícil de\nexplicar' }],
+    ['Póster', { fam: 'Anton', peso: 400, ital: false, tam: 150, track: 0.02, alto: .95, mayus: true, texto: 'Gran estreno' }],
+    ['Revista', { fam: 'Playfair Display', peso: 700, ital: true, tam: 110, track: -0.01, alto: 1.05, texto: 'Edición especial' }],
+    ['Lujo', { fam: 'Outfit', peso: 200, ital: false, tam: 70, track: 0.3, alto: 1.2, mayus: true, texto: 'Colección 2026' }],
+    ['Tech', { fam: 'Space Grotesk', peso: 600, ital: false, tam: 90, track: -0.03, alto: 1.05, texto: 'Hecho con IA' }],
+    ['Máquina', { fam: 'IBM Plex Mono', peso: 500, ital: false, tam: 46, track: 0.04, alto: 1.4, texto: '> escena 10b · estudio' }],
+  ];
+  function nuevoTexto(estilo) {
+    const e = estilo || ESTILOS[0][1];
+    const c = Object.assign(base('txt'), { nombre: 'Texto', texto: e.texto, fam: e.fam, peso: e.peso, ital: !!e.ital, tam: e.tam, track: e.track, alto: e.alto, mayus: !!e.mayus, alin: 'left', color: oscuro() ? '#ffffff' : '#111018', borde: 0, bordeColor: '#000000' });
+    c.w = Math.round(E.W * .8); c.x = Math.round(E.W * .1);
+    const textos = E.capas.filter((k) => k.tipo === 'txt'), ult = textos[textos.length - 1];
+    c.y = ult ? Math.round(ult.y + (ult.h || ult.tam * 1.2) + E.H * .03) : Math.round(E.H * .08);
+    if (c.y > E.H * .85) c.y = Math.round(E.H * .08);
+    E.capas.push(c); E.sel = c.id; pintar();
+  }
+  function oscuro() { const f = FONDOS[E.fondo]; const hex = (f.c || f.g[1]).replace('#', ''); const v = parseInt(hex, 16); return ((v >> 16) * .299 + ((v >> 8) & 255) * .587 + (v & 255) * .114) < 140; }
+
+  function pintarCapas() {
+    const caja = $('capas'); caja.innerHTML = '';
+    for (const c of E.capas) {
+      const d = document.createElement('div'); d.className = 'capa' + (c.id === E.sel ? ' sel' : ''); d.dataset.id = c.id;
+      d.style.left = c.x + 'px'; d.style.top = c.y + 'px'; d.style.width = c.w + 'px';
+      if (c.tipo === 'img') d.style.height = c.h + 'px';
+      d.style.transform = `rotate(${c.rot}deg) skew(${c.skx}deg, ${c.sky}deg)`;
+      d.style.mixBlendMode = c.mezcla; d.style.opacity = c.op / 100;
+      let cont;
+      if (c.tipo === 'img') {
+        cont = document.createElement('img'); cont.src = c.src; cont.alt = ''; cont.style.borderRadius = c.rad + 'px';
+        cont.style.filter = filtro(c);
+      } else {
+        cont = document.createElement('div'); cont.className = 'txt';
+        Object.assign(cont.style, { fontFamily: `"${c.fam}"`, fontWeight: c.peso, fontStyle: c.ital ? 'italic' : 'normal', fontSize: c.tam + 'px', letterSpacing: c.track + 'em', lineHeight: c.alto, textAlign: c.alin, color: c.color, textTransform: c.mayus ? 'uppercase' : 'none', textShadow: sombraTxt(c), filter: `blur(${c.blur}px)` });
+        cont.style.webkitTextStroke = c.borde ? `${c.borde}px ${c.bordeColor}` : '0';
+        cont.textContent = c.texto;
+      }
+      cont.classList.add('cont'); cont.style.transform = `scale(${c.fx}, ${c.fy})`;
+      d.appendChild(cont);
+      d.insertAdjacentHTML('beforeend', '<div class="sel-caja"><span class="asa esc"></span><span class="asa rot"></span></div>');
+      d.addEventListener('pointerdown', (ev) => tocarCapa(ev, c));
+      d.querySelector('.asa.esc').addEventListener('pointerdown', (ev) => escalar(ev, c));
+      d.querySelector('.asa.rot').addEventListener('pointerdown', (ev) => girar(ev, c));
+      caja.appendChild(d);
+      if (c.tipo === 'txt') c.h = d.offsetHeight;
+    }
+    $('pista').style.display = E.capas.length ? 'none' : '';
+  }
+
+  // ---------- Mover, escalar, girar (con imán a guías y centro) ----------
+  function iman(c, x, y) {
+    const tol = 8 / E.s, w = c.w, h = c.h || 0;
+    const vs = E.guias.filter((g) => g.o === 'v').map((g) => g.p).concat([0, E.W / 2, E.W]);
+    const hs = E.guias.filter((g) => g.o === 'h').map((g) => g.p).concat([0, E.H / 2, E.H]);
+    let mejorX = null, mejorY = null;
+    for (const v of vs) for (const [o, k] of [[0, 'l'], [w / 2, 'c'], [w, 'r']]) { const dd = Math.abs(x + o - v); if (dd < tol && (!mejorX || dd < mejorX.d)) mejorX = { d: dd, x: v - o, v }; }
+    for (const v of hs) for (const [o] of [[0], [h / 2], [h]]) { const dd = Math.abs(y + o - v); if (dd < tol && (!mejorY || dd < mejorY.d)) mejorY = { d: dd, y: v - o, v }; }
+    document.querySelectorAll('.guia').forEach((el) => {
+      const g = E.guias[+el.dataset.i];
+      el.classList.toggle('iman', !!g && ((mejorX && g.o === 'v' && g.p === mejorX.v) || (mejorY && g.o === 'h' && g.p === mejorY.v)));
+    });
+    return [mejorX ? mejorX.x : x, mejorY ? mejorY.y : y];
+  }
+  function tocarCapa(ev, c) {
+    if (ev.target.classList.contains('asa')) return;
+    ev.preventDefault();
+    if (E.varita && c.tipo === 'img') { varitaEn(ev, c); return; }
+    if (E.sel !== c.id) { E.sel = c.id; pintar(); }
+    const [x0, y0] = aTabla(ev.clientX, ev.clientY), cx = c.x, cy = c.y;
+    let movio = false;
+    const el = () => document.querySelector(`.capa[data-id="${c.id}"]`);
+    const mover = (e) => {
+      const [x, y] = aTabla(e.clientX, e.clientY); movio = true;
+      [c.x, c.y] = iman(c, Math.round(cx + x - x0), Math.round(cy + y - y0));
+      const d = el(); if (d) { d.style.left = c.x + 'px'; d.style.top = c.y + 'px'; }
+    };
+    const soltar = () => { removeEventListener('pointermove', mover); removeEventListener('pointerup', soltar); document.querySelectorAll('.guia.iman').forEach((g) => g.classList.remove('iman')); if (movio) pintarProps(); };
+    addEventListener('pointermove', mover); addEventListener('pointerup', soltar);
+  }
+  function escalar(ev, c) {
+    ev.preventDefault(); ev.stopPropagation();
+    const cx = c.x + c.w / 2, cy = c.y + (c.h || 0) / 2, [px, py] = aTabla(ev.clientX, ev.clientY), d0 = Math.hypot(px - cx, py - cy) || 1;
+    const w0 = c.w, h0 = c.h, t0 = c.tam;
+    const mover = (e) => {
+      const [x, y] = aTabla(e.clientX, e.clientY), f = Math.max(.05, Math.hypot(x - cx, y - cy) / d0);
+      c.w = Math.round(w0 * f);
+      if (c.tipo === 'img') c.h = Math.round(h0 * f); else c.tam = Math.max(6, Math.round(t0 * f));
+      c.x = Math.round(cx - c.w / 2); c.y = Math.round(cy - (c.tipo === 'img' ? c.h : h0 * f) / 2);
+      pintarCapas();
+    };
+    const soltar = () => { removeEventListener('pointermove', mover); removeEventListener('pointerup', soltar); pintar(); };
+    addEventListener('pointermove', mover); addEventListener('pointerup', soltar);
+  }
+  function girar(ev, c) {
+    ev.preventDefault(); ev.stopPropagation();
+    const cx = c.x + c.w / 2, cy = c.y + (c.h || 0) / 2;
+    const mover = (e) => {
+      const [x, y] = aTabla(e.clientX, e.clientY);
+      let a = Math.atan2(y - cy, x - cx) / R + 90; if (e.shiftKey) a = Math.round(a / 15) * 15;
+      c.rot = Math.round(((a + 540) % 360) - 180);
+      const d = document.querySelector(`.capa[data-id="${c.id}"]`); if (d) d.style.transform = `rotate(${c.rot}deg) skew(${c.skx}deg, ${c.sky}deg)`;
+    };
+    const soltar = () => { removeEventListener('pointermove', mover); removeEventListener('pointerup', soltar); pintar(); };
+    addEventListener('pointermove', mover); addEventListener('pointerup', soltar);
+  }
+  vista.addEventListener('pointerdown', (ev) => { if (ev.target === vista || ev.target.id === 'fondo' || ev.target.id === 'capas') { E.sel = null; pintar(); } });
+
+  // ---------- Quitar fondo (relleno desde los bordes) y varita ----------
+  const cargarImg = (src) => new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = src; });
+  const dist = (d, i, r, g, b) => Math.sqrt((d[i] - r) ** 2 * .3 + (d[i + 1] - g) ** 2 * .59 + (d[i + 2] - b) ** 2 * .11) * 1.7;
+  async function borrarRegion(c, semillas, tol, suave, fuente) {
+    const im = await cargarImg(fuente || c.src), w = im.naturalWidth, h = im.naturalHeight;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d'); g.drawImage(im, 0, 0);
+    const datos = g.getImageData(0, 0, w, h), d = datos.data, fuera = new Uint8Array(w * h), cola = new Int32Array(w * h);
+    let ini = 0, fin = 0;
+    // color de referencia: promedio de las semillas
+    let rr = 0, gg = 0, bb = 0; for (const p of semillas) { rr += d[p * 4]; gg += d[p * 4 + 1]; bb += d[p * 4 + 2]; }
+    rr /= semillas.length; gg /= semillas.length; bb /= semillas.length;
+    for (const p of semillas) if (!fuera[p] && d[p * 4 + 3] > 0 && dist(d, p * 4, rr, gg, bb) <= tol) { fuera[p] = 1; cola[fin++] = p; }
+    while (ini < fin) {
+      const p = cola[ini++], x = p % w, y = (p - x) / w, i = p * 4;
+      for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]) {
+        if (q < 0 || fuera[q]) continue;
+        const k = q * 4;
+        if (d[k + 3] === 0 || dist(d, k, rr, gg, bb) <= tol || dist(d, k, d[i], d[i + 1], d[i + 2]) <= tol * .35) { fuera[q] = 1; cola[fin++] = q; }
+      }
+    }
+    // borde suave: la máscara se difumina unos píxeles
+    let m = new Float32Array(w * h); for (let p = 0; p < w * h; p++) m[p] = fuera[p] ? 0 : 1;
+    for (let pasada = 0; pasada < suave; pasada++) {
+      const n = new Float32Array(w * h);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        let s = 0, k = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < w && yy < h) { s += m[yy * w + xx]; k++; } }
+        n[y * w + x] = Math.min(m[y * w + x], s / k) * .5 + (s / k) * .5;
+      }
+      m = n;
+    }
+    for (let p = 0; p < w * h; p++) d[p * 4 + 3] = Math.round(d[p * 4 + 3] * Math.min(1, m[p]));
+    g.putImageData(datos, 0, 0);
+    c.src = cv.toDataURL('image/png');
+    return fin;
+  }
+  async function quitarFondo(c) {
+    const im = await cargarImg(c.orig), w = im.naturalWidth, h = im.naturalHeight, sem = [];
+    const paso = Math.max(1, Math.round((w + h) / 400));
+    for (let x = 0; x < w; x += paso) sem.push(x, (h - 1) * w + x);
+    for (let y = 0; y < h; y += paso) sem.push(y * w, y * w + w - 1);
+    const n = await borrarRegion(c, sem, c.tol ?? 42, c.suave ?? 2, c.orig);
+    pintar(); return n;
+  }
+  async function varitaEn(ev, c) {
+    // del punto en el tablero al píxel de la imagen: se deshacen giro, sesgo y espejo
+    const [ax, ay] = aTabla(ev.clientX, ev.clientY), cx = c.x + c.w / 2, cy = c.y + c.h / 2;
+    let lx = ax - cx, ly = ay - cy; const a = -c.rot * R;
+    [lx, ly] = [lx * Math.cos(a) - ly * Math.sin(a), lx * Math.sin(a) + ly * Math.cos(a)];
+    const tx = Math.tan(c.skx * R), ty = Math.tan(c.sky * R), det = 1 - tx * ty || 1;
+    [lx, ly] = [(lx - tx * ly) / det, (ly - ty * lx) / det];
+    lx *= c.fx; ly *= c.fy;
+    const u = Math.floor((lx / c.w + .5) * c.nw), v = Math.floor((ly / c.h + .5) * c.nh);
+    if (u < 0 || v < 0 || u >= c.nw || v >= c.nh) return;
+    await borrarRegion(c, [v * c.nw + u], c.tol ?? 42, c.suave ?? 2);
+    pintar();
+  }
+
+  // ---------- Panel de propiedades ----------
+  function control(et, clave, min, max, paso, unidad, c, alCambiar) {
+    const fila = document.createElement('label'); fila.className = 'ctl';
+    fila.innerHTML = `<span>${et}</span><input type="range" min="${min}" max="${max}" step="${paso}" value="${c[clave]}"><output>${c[clave]}${unidad}</output>`;
+    const inp = fila.querySelector('input'), out = fila.querySelector('output');
+    inp.addEventListener('input', () => { c[clave] = +inp.value; out.textContent = inp.value + unidad; (alCambiar || pintarCapas)(); });
+    return fila;
+  }
+  function boton(texto, fn, pri) { const b = document.createElement('button'); b.type = 'button'; b.className = 'bt' + (pri ? ' pri' : ''); b.textContent = texto; b.onclick = fn; return b; }
+  function seccion(titulo, ...hijos) { const s = document.createElement('section'); const h = document.createElement('h3'); h.textContent = titulo; s.append(h, ...hijos); return s; }
+  function pintarProps() {
+    const p = $('props'); p.innerHTML = '';
+    const c = capaSel();
+    if (!c) { p.innerHTML = '<p class="vacio">Selecciona una capa para transformarla.</p>'; return; }
+    const caja = document.createElement('div'); caja.style.cssText = 'display:grid;gap:.8em';
+    if (c.tipo === 'img') {
+      const quitar = boton('Quitar fondo', async (e) => { e.target.textContent = 'Quitando…'; await quitarFondo(c); }, true);
+      const vt = boton('Varita: toca lo que sobra', () => { E.varita = !E.varita; vista.classList.toggle('varita', E.varita); vt.setAttribute('aria-pressed', E.varita); });
+      vt.setAttribute('aria-pressed', E.varita);
+      const rest = boton('Restaurar original', () => { c.src = c.orig; pintar(); });
+      c.tol = c.tol ?? 42; c.suave = c.suave ?? 2;
+      caja.append(seccion('Fondo', quitar, control('Tolerancia', 'tol', 5, 120, 1, '', c, () => {}), control('Borde suave', 'suave', 0, 4, 1, '', c, () => {}), vt, rest,
+        Object.assign(document.createElement('p'), { className: 'nota', textContent: 'Funciona mejor con fondos lisos. Si queda un resto, usa la varita y toca encima.' })));
+    } else {
+      const ta = document.createElement('textarea'); ta.value = c.texto; ta.addEventListener('input', () => { c.texto = ta.value; pintarCapas(); pintarLista(); });
+      const mos = document.createElement('div'); mos.className = 'fuentes';
+      for (const f of FUENTES) {
+        const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', c.fam === f.n);
+        b.innerHTML = `<b style="font-family:'${f.n}';font-weight:${f.d}">Aa</b><span>${f.n}</span>`; b.title = f.t;
+        b.onclick = () => { c.fam = f.n; c.peso = f.d; if (!f.i) c.ital = false; pintar(); };
+        mos.appendChild(b);
+      }
+      const ff = F[c.fam], rango = (ff.w + '').split(' ').map(Number);
+      const est = document.createElement('div'); est.className = 'chips';
+      const chip = (t, on, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t; b.setAttribute('aria-pressed', on); b.onclick = fn; return b; };
+      if (ff.i) est.append(chip('Cursiva', c.ital, () => { c.ital = !c.ital; pintar(); }));
+      est.append(chip('MAYÚS', c.mayus, () => { c.mayus = !c.mayus; pintar(); }));
+      for (const [a, t] of [['left', 'Izq.'], ['center', 'Centro'], ['right', 'Der.']]) est.append(chip(t, c.alin === a, () => { c.alin = a; pintar(); }));
+      const col = document.createElement('label'); col.className = 'ctl'; col.innerHTML = `<span>Color</span><input type="color" value="${c.color}"><output></output>`;
+      col.querySelector('input').addEventListener('input', (e) => { c.color = e.target.value; pintarCapas(); });
+      const bc = document.createElement('label'); bc.className = 'ctl'; bc.innerHTML = `<span>Color borde</span><input type="color" value="${c.bordeColor}"><output></output>`;
+      bc.querySelector('input').addEventListener('input', (e) => { c.bordeColor = e.target.value; pintarCapas(); });
+      const tipo = [ta, mos, est, control('Tamaño', 'tam', 8, 400, 1, '', c), control('Interletra', 'track', -0.1, 0.5, 0.01, '', c), control('Interlínea', 'alto', 0.7, 2, 0.05, '', c)];
+      if (rango.length > 1) tipo.push(control('Peso', 'peso', rango[0], rango[1], 50, '', c));
+      tipo.push(col, control('Borde', 'borde', 0, 12, 0.5, '', c), bc);
+      caja.append(seccion('Tipografía', ...tipo));
+    }
+    const espejo = document.createElement('div'); espejo.className = 'fila2';
+    espejo.append(boton('↔ Espejo', () => { c.fx *= -1; pintar(); }), boton('↕ Voltear', () => { c.fy *= -1; pintar(); }));
+    caja.append(seccion('Transformar',
+      control('Giro', 'rot', -180, 180, 1, '°', c), control('Sesgo X', 'skx', -45, 45, 1, '°', c), control('Sesgo Y', 'sky', -45, 45, 1, '°', c),
+      control('Opacidad', 'op', 0, 100, 1, '%', c), espejo));
+    const mezcla = document.createElement('select');
+    for (const [v, t] of [['normal', 'Normal'], ['multiply', 'Multiplicar'], ['screen', 'Trama'], ['overlay', 'Superponer'], ['soft-light', 'Luz suave'], ['difference', 'Diferencia'], ['luminosity', 'Luminosidad']]) mezcla.add(new Option(t, v, false, c.mezcla === v));
+    mezcla.onchange = () => { c.mezcla = mezcla.value; pintarCapas(); };
+    const efectos = [control('Sombra', 'sombra', 0, 80, 1, '', c), control('Desenfoque', 'blur', 0, 20, .5, 'px', c)];
+    if (c.tipo === 'img') efectos.unshift(control('Brillo', 'brillo', 0, 200, 1, '%', c), control('Contraste', 'contraste', 0, 200, 1, '%', c), control('Saturación', 'sat', 0, 300, 1, '%', c), control('Tono', 'tono', -180, 180, 1, '°', c), control('Esquinas', 'rad', 0, 400, 1, 'px', c));
+    caja.append(seccion('Efectos', ...efectos, mezcla));
+    p.appendChild(caja);
+  }
+  function pintarLista() {
+    const l = $('lista'); l.innerHTML = '';
+    if (!E.capas.length) { l.innerHTML = '<p class="vacio">Todavía no hay capas.</p>'; return; }
+    [...E.capas].reverse().forEach((c) => {
+      const it = document.createElement('div'); it.className = 'it' + (c.id === E.sel ? ' sel' : '');
+      const nombre = c.tipo === 'txt' ? '𝐓 ' + (c.texto.split('\n')[0] || 'Texto') : '▣ ' + c.nombre;
+      it.innerHTML = `<span></span><button title="Subir" type="button">↑</button><button title="Bajar" type="button">↓</button><button title="Duplicar" type="button">⧉</button><button title="Borrar" type="button">✕</button>`;
+      it.querySelector('span').textContent = nombre;
+      const [sb, bj, dp, br] = it.querySelectorAll('button'), i = E.capas.indexOf(c);
+      it.onclick = (e) => { if (e.target.tagName !== 'BUTTON') { E.sel = c.id; pintar(); } };
+      sb.onclick = () => { if (i < E.capas.length - 1) { E.capas.splice(i, 1); E.capas.splice(i + 1, 0, c); pintar(); } };
+      bj.onclick = () => { if (i > 0) { E.capas.splice(i, 1); E.capas.splice(i - 1, 0, c); pintar(); } };
+      dp.onclick = () => duplicar(c);
+      br.onclick = () => { E.capas.splice(i, 1); if (E.sel === c.id) E.sel = null; pintar(); };
+      l.appendChild(it);
+    });
+  }
+  function duplicar(c) { const n = Object.assign({}, c, { id: nid++, x: c.x + 30, y: c.y + 30 }); E.capas.push(n); E.sel = n.id; pintar(); }
+  function pintar() { $('fondo').style.background = fondoCss(FONDOS[E.fondo]); pintarCapas(); pintarProps(); pintarLista(); }
+
+  // ---------- Herramientas ----------
+  FORMATOS.forEach(([n, w, h], i) => $('formato').add(new Option(`${n} · ${w}×${h}`, i)));
+  $('formato').onchange = () => { const [, w, h] = FORMATOS[+$('formato').value]; E.W = w; E.H = h; encajar(); sobreDibujo(); guiasDibujo(); pintar(); };
+  FONDOS.forEach((f, i) => { const b = document.createElement('button'); b.type = 'button'; b.style.background = fondoCss(f); b.setAttribute('aria-label', 'Fondo ' + (i + 1)); b.setAttribute('aria-pressed', i === E.fondo); b.onclick = () => { E.fondo = i; [...$('fondos').children].forEach((x, k) => x.setAttribute('aria-pressed', k === i)); pintar(); }; $('fondos').appendChild(b); });
+  REGLAS.forEach(([k, t]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t; b.setAttribute('aria-pressed', E.reglas.has(k)); b.onclick = () => { E.reglas.has(k) ? E.reglas.delete(k) : E.reglas.add(k); b.setAttribute('aria-pressed', E.reglas.has(k)); sobreDibujo(); requestAnimationFrame(encajar); }; $('reglas').appendChild(b); });
+  ESTILOS.forEach(([t, e]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t; b.style.fontFamily = `"${e.fam}"`; b.onclick = () => nuevoTexto(e); $('estilosTexto').appendChild(b); });
+  $('masTexto').onclick = () => nuevoTexto();
+  $('subir').onclick = () => $('archivo').click();
+  const leerArchivo = (f) => { if (!f || !/^image\//.test(f.type)) return; const r = new FileReader(); r.onload = () => nuevaImagen(r.result, f.name.replace(/\.[^.]+$/, '')); r.readAsDataURL(f); };
+  $('archivo').onchange = (e) => { leerArchivo(e.target.files[0]); e.target.value = ''; };
+  $('usarBase').onclick = () => nuevaImagen(window.Vivo ? Vivo.base() : COMUN + 'base-ejemplo.webp', 'Imagen base');
+  vista.addEventListener('dragover', (e) => { e.preventDefault(); vista.classList.add('soltar'); });
+  vista.addEventListener('dragleave', () => vista.classList.remove('soltar'));
+  vista.addEventListener('drop', (e) => { e.preventDefault(); vista.classList.remove('soltar'); leerArchivo(e.dataTransfer.files[0]); });
+  addEventListener('paste', (e) => { const it = [...(e.clipboardData?.items || [])].find((x) => x.type.startsWith('image/')); if (it) leerArchivo(it.getAsFile()); });
+  addEventListener('keydown', (e) => {
+    if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    const c = capaSel(); if (!c) return;
+    const k = e.shiftKey ? 10 : 1;
+    if (e.key === 'Delete' || e.key === 'Backspace') { E.capas.splice(E.capas.indexOf(c), 1); E.sel = null; pintar(); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft') { c.x -= k; pintarCapas(); e.preventDefault(); }
+    else if (e.key === 'ArrowRight') { c.x += k; pintarCapas(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { c.y -= k; pintarCapas(); e.preventDefault(); }
+    else if (e.key === 'ArrowDown') { c.y += k; pintarCapas(); e.preventDefault(); }
+    else if (e.key === 'Escape') { E.sel = null; E.varita = false; vista.classList.remove('varita'); pintar(); }
+    else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') { duplicar(c); e.preventDefault(); }
+  });
+
+  // ---------- Exportar PNG (se dibuja de nuevo en un canvas, sin guías ni reglas) ----------
+  function lineas(g, texto, ancho) {
+    const out = [];
+    for (const parrafo of texto.split('\n')) {
+      let l = '';
+      for (const p of parrafo.split(/(\s+)/)) { const t = l + p; if (g.measureText(t.trimEnd()).width > ancho && l.trim()) { out.push(l.trimEnd()); l = p.trimStart(); } else l = t; }
+      out.push(l.trimEnd());
+    }
+    return out;
+  }
+  async function exportar() {
+    await listas;
+    const cv = document.createElement('canvas'); cv.width = E.W; cv.height = E.H; const g = cv.getContext('2d');
+    const f = FONDOS[E.fondo];
+    if (f.c) g.fillStyle = f.c; else {
+      const a = (f.g[2] - 90) * R, cx = E.W / 2, cy = E.H / 2, l = Math.abs(E.W * Math.cos(a)) / 2 + Math.abs(E.H * Math.sin(a)) / 2;
+      const gr = g.createLinearGradient(cx - Math.cos(a) * l, cy - Math.sin(a) * l, cx + Math.cos(a) * l, cy + Math.sin(a) * l);
+      gr.addColorStop(0, f.g[0]); gr.addColorStop(1, f.g[1]); g.fillStyle = gr;
+    }
+    g.fillRect(0, 0, E.W, E.H);
+    for (const c of E.capas) {
+      const h = c.h || 0;
+      g.save();
+      g.globalAlpha = c.op / 100;
+      g.globalCompositeOperation = c.mezcla === 'normal' ? 'source-over' : c.mezcla;
+      g.translate(c.x + c.w / 2, c.y + h / 2); g.rotate(c.rot * R); g.transform(1, Math.tan(c.sky * R), Math.tan(c.skx * R), 1, 0, 0); g.scale(c.fx, c.fy);
+      if (c.tipo === 'img') {
+        const im = await cargarImg(c.src);
+        if ('filter' in g) g.filter = filtro(c);
+        if (c.rad) { g.beginPath(); g.roundRect(-c.w / 2, -h / 2, c.w, h, Math.min(c.rad, c.w / 2, h / 2)); g.clip(); }
+        g.drawImage(im, -c.w / 2, -h / 2, c.w, h);
+      } else {
+        g.font = `${c.ital ? 'italic ' : ''}${c.peso} ${c.tam}px "${c.fam}"`;
+        if ('letterSpacing' in g) g.letterSpacing = (c.track * c.tam) + 'px';
+        if ('filter' in g && c.blur) g.filter = `blur(${c.blur}px)`;
+        g.textBaseline = 'middle'; g.textAlign = c.alin;
+        const ls = lineas(g, c.mayus ? c.texto.toUpperCase() : c.texto, c.w), alto = c.alto * c.tam;
+        const x = c.alin === 'left' ? -c.w / 2 : c.alin === 'right' ? c.w / 2 : 0;
+        ls.forEach((t, i) => {
+          const y = -h / 2 + alto * (i + .5);
+          if (c.sombra) { g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = c.sombra; g.shadowOffsetY = c.sombra * .25; }
+          if (c.borde) { g.lineWidth = c.borde * 2; g.strokeStyle = c.bordeColor; g.lineJoin = 'round'; g.strokeText(t, x, y); }
+          g.fillStyle = c.color; g.fillText(t, x, y);
+        });
+      }
+      g.restore();
+    }
+    const url = cv.toDataURL('image/png');
+    const a = document.createElement('a'); a.href = url; a.download = 'mi-diseno.png'; document.body.appendChild(a); a.click(); a.remove();
+    const m = document.createElement('div'); m.className = 'modal';
+    m.innerHTML = '<div><img alt="Tu diseño exportado"><p class="nota">Si no se descargó solo: clic derecho (o mantén presionado) sobre la imagen → «Guardar imagen».</p><button class="bt pri" type="button">Cerrar</button></div>';
+    m.querySelector('img').src = url; m.querySelector('button').onclick = () => m.remove(); m.onclick = (e) => { if (e.target === m) m.remove(); };
+    document.body.appendChild(m);
+  }
+  $('exportar').onclick = exportar;
+
+  // ---------- Arranque ----------
+  new ResizeObserver(() => encajar()).observe(vista);
+  encajar(); sobreDibujo(); guiasDibujo(); pintar();
+  window.__estudio = { E, nuevaImagen, nuevoTexto, quitarFondo, exportar };   // para probar desde la consola
+})();
+</script>
+</body>
+</html>
