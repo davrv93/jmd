@@ -10,9 +10,16 @@
 .nota { font-size: .7em; color: var(--muted); margin: 0; }
 .nota b { color: var(--fg); }
 
-.wi { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2vw; align-items: center; }
-.wi canvas { width: 100%; height: auto; display: block; border-radius: .7em; background: #f3ead6; }
-.wi .esc-lista { font-size: .82em; }
+.wi { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1.2vw; align-items: center; }
+.mk { position: relative; height: 56vh; width: auto; max-width: 100%; aspect-ratio: 2308 / 1920; margin: 0 auto; border-radius: .9em; overflow: hidden; background: #d8d4c8; box-shadow: var(--card-shadow); }
+.mk > * { width: 100%; height: 100%; }
+.ctrl { display: flex; flex-wrap: wrap; gap: .45em; align-items: center; margin: .55em 0 .2em; }
+.boton { font: 700 .72em/1 system-ui, sans-serif; padding: .6em 1em; border-radius: 99px; border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.boton:disabled { opacity: .55; cursor: wait; }
+.chips { display: inline-flex; gap: .3em; }
+.chips button { font: 600 .66em/1 system-ui, sans-serif; padding: .5em .8em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.wi .esc-lista { font-size: .78em; }
 @media (max-width: 900px) { .wi { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -24,41 +31,54 @@
   </header>
   <main class="esc-cuerpo">
 
-    <h1 class="esc-titulo a-in">Referencia: <em>Willie</em> (1928)</h1>
+    <h1 class="esc-titulo a-in">Referencia: <em>Willie</em> (1928), restaurado en HTML</h1>
     <section class="wi">
-      <div class="esc-card a-in" style="--d:.1s">
-        <ul class="esc-lista">
-          <li><span><b>Dominio público</b> desde el 1 de enero de 2024 (Estados Unidos): el Mickey de <i>Steamboat Willie</i>, no el de años después.</span></li>
-          <li><span>Se filmó a <b>24 fps</b> con dibujos <b>«en dos»</b>: 12 dibujos por segundo, cada uno dura dos cuadros.</span></li>
-          <li><span>Estilo «manguera»: brazos y piernas que se doblan como goma, <b>estirar y encoger</b>.</span></li>
-          <li><span>Hoy no la construimos: la pieza «Willie, difícil de explicar» está en <b>Materiales</b> como ejemplo terminado. Ábrela y compara con lo que hiciste.</span></li>
-        </ul>
+      <div class="a-in" style="--d:.1s">
+        <div class="mk" id="mk" aria-label="La escena del silbido de Steamboat Willie, reconstruida en HTML"></div>
+        <div class="ctrl">
+          <button type="button" id="mk-play" class="boton" disabled>▶ Reproducir con su silbido</button>
+          <span class="chips" id="mk-col"><button type="button" data-c="bn" aria-pressed="true">1928 · blanco y negro</button><button type="button" data-c="color" aria-pressed="false">a color</button></span>
+        </div>
+        <p class="nota" id="mk-est" aria-live="polite">Cargando los dibujos…</p>
       </div>
       <div class="esc-card a-in" style="--d:.2s">
-        <canvas id="bote" width="640" height="360" aria-label="Una pelota en unos y en dos"></canvas>
-        <p class="nota">Arriba, <b>en unos</b> (24 dibujos por segundo). Abajo, <b>en dos</b> (12): el salto es el mismo, cambia la textura del movimiento.</p>
+        <ul class="esc-lista">
+          <li><span>La escena del silbido de <i>Steamboat Willie</i>, <b>reconstruida en HTML</b>: 192 dibujos en SVG separados por partes, el decorado, el cielo que pasa por la ventana y el <b>audio original</b>.</span></li>
+          <li><span>Los tiempos están medidos del film: <b>311 cuadros a 24 fps</b>, con dibujos «en dos» (12 por segundo).</span></li>
+          <li><span><b>Dominio público</b> desde el 1 de enero de 2024 (Estados Unidos): el Mickey de 1928, no el de años después.</span></li>
+          <li><span>Hoy es <b>referencia</b>: compara su movimiento hecho a mano con tu imagen base movida por código. El kit completo está en <b>jmd-learn.online/steamboat/</b>.</span></li>
+        </ul>
       </div>
     </section>
   </main>
-  <footer class="esc-pie">Steamboat Willie (1928) en Wikimedia Commons · enlace en Materiales</footer>
+  <footer class="esc-pie">Steamboat Willie (1928), dominio público · kit completo en jmd-learn.online/steamboat/</footer>
 </div>
 <script>
 
-(() => {
-  const c = document.getElementById('bote'), g = c.getContext('2d'), W = c.width, H = c.height, t0 = performance.now();
-  function pelota(y0, t) {
-    const u = (t % 1.2) / 1.2, alto = Math.abs(Math.sin(u * Math.PI)), y = y0 + 120 - alto * 100;
-    const aplasta = alto < 0.12 ? 1 + (0.12 - alto) * 4 : 1;          // estira y encoge al tocar el piso
-    const x = 60 + ((t * 120) % (W - 120));
-    g.fillStyle = '#16151d'; g.beginPath(); g.ellipse(x, y, 22 * aplasta, 22 / aplasta, 0, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = '#16151d55'; g.beginPath(); g.moveTo(0, y0 + 144); g.lineTo(W, y0 + 144); g.stroke();
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const est = $('mk-est'), btn = $('mk-play');
+  try {
+    // el kit restaurado vive en /steamboat/ (mismo sitio): se importa directo, como en el grupo de los lunes
+    const { crearSteamboat, COLORES_1928 } = await import('/steamboat/kit.js');
+    const s = await crearSteamboat($('mk'), { vaiven: true, parpadeo: true, bucle: true,
+      alAvance: (p) => { est.textContent = `Cargando los 192 dibujos… ${Math.round(p * 100)} %`; } });
+    s.cuadro(40);
+    est.textContent = 'Listo. Pulsa ▶ para verlo con su silbido original (24 fps, dibujos «en dos»).';
+    btn.disabled = false;
+    let corre = false;
+    btn.onclick = () => {
+      corre = !corre;
+      if (corre) { s.reproducir(); btn.textContent = '❚❚ Pausa'; } else { s.pausar(); btn.textContent = '▶ Reproducir con su silbido'; }
+    };
+    const COLOR = { tinta: '#121212', cara: '#f3d6b6', gorro: '#f4f1e8', visera: '#1d1b20', orejas: '#121212', guantes: '#121212', pantalon: '#d6452f', zapatos: '#e8b923', cuerpo: '#121212', otros: '#bebebe' };
+    document.querySelectorAll('#mk-col button').forEach((b) => b.onclick = () => {
+      s.colores(b.dataset.c === 'color' ? COLOR : COLORES_1928);
+      document.querySelectorAll('#mk-col button').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+    });
+  } catch (e) {
+    est.textContent = 'No se pudo cargar el kit de Willie: ' + (e.message || e) + '. Ábrelo en jmd-learn.online/steamboat/';
   }
-  (function dibujar(ms) {
-    const t = (ms - t0) / 1000; g.clearRect(0, 0, W, H);
-    pelota(0, Math.floor(t * 24) / 24); pelota(170, Math.floor(t * 12) / 12);
-    g.fillStyle = '#5c5966'; g.font = '600 16px system-ui'; g.fillText('en unos · 24', 10, 20); g.fillText('en dos · 12', 10, 190);
-    requestAnimationFrame(dibujar);
-  })(t0);
 })();
 </script>
 </body>
