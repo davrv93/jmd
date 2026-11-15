@@ -19,6 +19,11 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: g8-02-prompt-a-prompt
+    title: "Video (4:08): la sesión 2 prompt a prompt · nace Milkito"
+    kind: video
+    file: materials/video-g8-02-prompt-a-prompt.mp4
+    objective_ids: [g8-02-o1, g8-02-o2, g8-02-o3]
   - id: g8-02-video-a
     title: "Video corto: skills y plan de trabajo"
     kind: video

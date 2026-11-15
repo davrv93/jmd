@@ -21,6 +21,11 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: g8-03-prompt-a-prompt
+    title: "Video (3:55): la sesión 3 prompt a prompt · Milkito con IA, imágenes y WhatsApp"
+    kind: video
+    file: materials/video-g8-03-prompt-a-prompt.mp4
+    objective_ids: [g8-03-o2, g8-03-o3, g8-03-o5]
   - id: g8-03-kit
     title: "★ clase-03-kit.zip · las 10 skills s3-*, el plan, el prompt, las indicaciones, fondos y el ícono del bot"
     kind: zip

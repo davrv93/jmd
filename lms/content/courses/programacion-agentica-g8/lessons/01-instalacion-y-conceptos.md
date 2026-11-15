@@ -17,6 +17,11 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: g8-01-prompt-a-prompt
+    title: "Video (3:55): la sesión 1 prompt a prompt · Osito, tu primer asistente"
+    kind: video
+    file: materials/video-g8-01-prompt-a-prompt.mp4
+    objective_ids: [g8-01-o2, g8-01-o3]
   - id: g8-01-video
     title: "Video: agente, MCP y skills en 40 segundos"
     kind: video
