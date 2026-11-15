@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar al taller en vivo · JMD Learning</title>
+<meta name="robots" content="noindex">
+<!-- Entrada directa al LIVE del taller «¿Difícil de explicar? ¡No!». Crea la cuenta en el grupo (o entra con la que ya
+     tienes y te suma) y abre el LIVE. Por defecto, grupo del domingo en la mañana; ?g=tarde para el de la tarde. -->
+<style>
+  :root { --bg: #eef0ff; --fg: #16151d; --muted: #5c5966; --line: rgba(60,52,140,.18); --accent: #5a49d6; --bad: #b11f1f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--fg);
+    background: linear-gradient(160deg, #eef0ff 0%, #f6f0fb 55%, #fbf6ee 100%); }
+  main { width: 100%; max-width: 420px; background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 28px 24px;
+    box-shadow: 0 1px 2px rgba(60,52,140,.06), 0 18px 40px -18px rgba(90,73,214,.35); }
+  .k { margin: 0; font: 700 12px/1 system-ui; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  h1 { margin: 10px 0 4px; font-size: 26px; line-height: 1.15; }
+  h1 em { font-style: normal; color: var(--accent); }
+  p.sub { margin: 0 0 18px; color: var(--muted); font-size: 15px; }
+  label { display: block; margin: 14px 0 6px; font-weight: 700; font-size: 14px; }
+  label small { font-weight: 400; color: var(--muted); }
+  input { width: 100%; font: inherit; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #fbfbff; color: var(--fg); }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { width: 100%; margin-top: 20px; font: 700 17px/1 system-ui; padding: 15px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: wait; }
+  .msg { min-height: 1.4em; margin: 12px 0 0; font-size: 14px; color: var(--bad); }
+  .pie { margin: 16px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <p class="k">Taller en vivo · JMD Learning</p>
+  <h1>¿Difícil de explicar? <em>¡No!</em></h1>
+  <p class="sub" id="sub">Escribe tus datos y entras directo a la clase en vivo.</p>
+  <form id="f" novalidate>
+    <label for="nombre">Nombre completo</label>
+    <input id="nombre" autocomplete="name" placeholder="Nombres y apellidos" maxlength="80" required>
+    <label for="correo">Correo <small>(con él vuelves a entrar)</small></label>
+    <input id="correo" type="email" autocomplete="email" placeholder="tu@correo.com" required>
+    <label for="clave">Contraseña <small>(mínimo 8; si ya tienes cuenta, la tuya)</small></label>
+    <input id="clave" type="password" autocomplete="current-password" minlength="8" required>
+    <button id="b" type="submit">Entrar a la clase en vivo</button>
+    <p class="msg" id="msg" role="alert" aria-live="polite"></p>
+  </form>
+  <p class="pie">¿Problemas? Escribe al WhatsApp 986 149 476</p>
+</main>
+<script>
+(() => {
+  // grupo y LIVE: domingo mañana por defecto; ?g=tarde → grupo de la tarde
+  const GRUPOS = {
+    manana: { grupo: 'diseno-ia-domingo-manana', live: '/live/dm-01/', texto: 'Grupo del domingo en la mañana' },
+    tarde: { grupo: 'diseno-ia-domingo-tarde', live: '/live/dt-01/', texto: 'Grupo del domingo en la tarde' },
+  };
+  const g = GRUPOS[new URLSearchParams(location.search).get('g')] || GRUPOS.manana;
+  document.getElementById('sub').textContent = g.texto + ': escribe tus datos y entras directo a la clase en vivo.';
+  const $ = (id) => document.getElementById(id), msg = $('msg'), b = $('b');
+  const post = (url, cuerpo) => fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo || {}) });
+  const texto = async (r) => { try { const j = await r.json(); return (j.error && (j.error.message || j.error.mensaje)) || j.message || ''; } catch (e) { return ''; } };
+  const codigo = async (r) => { try { const j = await r.clone().json(); return j.error && j.error.code; } catch (e) { return ''; } };
+
+  $('f').addEventListener('submit', async (e) => {
+    e.preventDefault(); msg.textContent = '';
+    const name = $('nombre').value.trim().replace(/\s+/g, ' '), email = $('correo').value.trim().toLowerCase(), password = $('clave').value;
+    if (name.split(' ').length < 2) { msg.textContent = 'Escribe tu nombre y apellido.'; return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.textContent = 'Revisa tu correo.'; return; }
+    if (password.length < 8) { msg.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
+    b.disabled = true; b.textContent = 'Entrando…';
+    try {
+      // 1 · cuenta nueva, ya dentro del grupo (abre la sesión)
+      let r = await post(`/api/v1/inscripcion/${g.grupo}`, { name, email, password });
+      if (r.status === 409 || (await codigo(r)) === 'ya_registrado') {
+        // 2 · ya tenía cuenta: entra con su contraseña y se suma al grupo
+        const l = await post('/api/v1/auth/login', { email, password });
+        if (!l.ok) throw new Error(l.status === 401 || l.status === 400 ? 'Ese correo ya tiene cuenta y la contraseña no coincide. Escribe la tuya.' : (await texto(l)) || 'No se pudo entrar.');
+        await post(`/api/v1/inscripcion/${g.grupo}/unirme`, {});
+      } else if (!r.ok) {
+        throw new Error(r.status === 429 ? 'Demasiados intentos: espera un minuto.' : (await texto(r)) || `No se pudo crear la cuenta (${r.status}).`);
+      }
+      b.textContent = '✓ Listo, abriendo la clase…';
+      location.href = g.live;
+    } catch (err) {
+      msg.textContent = err.message || 'No se pudo entrar. Prueba otra vez.';
+      b.disabled = false; b.textContent = 'Entrar a la clase en vivo';
+    }
+  });
+})();
+</script>
+</body>
+</html>
