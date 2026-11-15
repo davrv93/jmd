@@ -27,7 +27,7 @@ BROCHURE = {c["slug"]: c for c in json.load(open(pathlib.Path.home() / "Document
 VIDEOS = pathlib.Path.home() / "Downloads/web-con-ia-jmd"
 WA = "51986149476"
 WA_TXT = "986 149 476"
-HOY = dt.datetime(2026, 11, 13, 16, 0)
+HOY = dt.datetime(2026, 11, 15, 10, 0)
 DIAS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 DIAS_L = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"]
@@ -36,7 +36,7 @@ MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "
 CURSOS = [
     dict(slug="claude-code-pro", grupos=["claude-code-pro-2"], br="claude-code-pro", precio="S/ 100",
          video=("claude-pro2-22/video/renders/claude-code-pro2-22s-whatsapp.mp4", True), acento="#ff8a3d"),
-    dict(slug="web-scraping-etico", grupos=["web-scraping-etico-2"], br="web-scraping-etico", precio="S/ 60",
+    dict(slug="web-scraping-etico", grupos=["web-scraping-etico-2"], br="web-scraping-etico", precio="S/ 15",
          video=("scraping-agente/video/renders/scraping-agente-whatsapp.mp4", False), acento="#ff8a3d"),
     dict(slug="diseno-y-edicion-con-ia", grupos=["dificil-de-explicar-domingo-manana", "dificil-de-explicar-domingo-tarde"],
          br="dificil-de-explicar", precio="S/ 100", acento="#ff5c7a"),
