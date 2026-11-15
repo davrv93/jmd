@@ -33,7 +33,7 @@ func (s *Sorteo) responderChat(texto string) map[string]any {
 	}
 	// saludos
 	if tokens(q, "hola", "buenas", "buenos dias", "buenas tardes", "hey", "holis") {
-		return chatBase("¡Hola! 👋 Soy el asistente de JMD. Puedo contarte sobre el taller **Web scraping ético con IA** (hoy 3:00 p. m.), el sorteo, tu cupón y cómo canjearlo. ¿Qué quieres saber?", []string{"¿Qué cursos hay?", "¿Cómo funciona el sorteo?", "¿Cómo canjeo mi cupón?", "Precio y fechas"})
+		return chatBase("¡Hola! 👋 Soy el asistente de JMD. Puedo contarte sobre el taller **Web scraping ético con IA** (hoy 5:00 p. m.), el sorteo, tu cupón y cómo canjearlo. ¿Qué quieres saber?", []string{"¿Qué cursos hay?", "¿Cómo funciona el sorteo?", "¿Cómo canjeo mi cupón?", "Precio y fechas"})
 	}
 	if tokens(q, "gracias", "muchas gracias") {
 		return chatBase("¡De nada! Si necesitas algo más, aquí estoy. ¿Quieres que te muestre los cursos disponibles?", []string{"Ver cursos", "¿Qué descuento hay?", "¿Cuánto cuesta con descuento?"})
@@ -61,7 +61,7 @@ func (s *Sorteo) responderChat(texto string) map[string]any {
 	case tokens(q, "curso", "cursos", "catalogo", "que ensenan", "aprender"):
 		return chatCatalogo(s)
 	case tokens(q, "hackathon", "hackaton"):
-		return chatBase("El cupón vale solo para el taller **Web scraping ético con IA** de hoy (3:00 – 5:30 p. m.). Para otros cursos, escríbenos por WhatsApp.", []string{"Ver cursos del sorteo", "Hablar por WhatsApp"})
+		return chatBase("El cupón vale solo para el taller **Web scraping ético con IA** de hoy (5:00 – 6:30 p. m.). Para otros cursos, escríbenos por WhatsApp.", []string{"Ver cursos del sorteo", "Hablar por WhatsApp"})
 	case tokens(q, "whatsapp", "contacto", "escribir", "numero"):
 		wa := s.cfg.WhatsApp
 		return chatBase("Escríbenos por WhatsApp al **+"+wa+"**: te respondemos sobre tu cupón, pagos y acceso al aula.", []string{"Abrir WhatsApp", "Ver cursos"})
@@ -75,7 +75,7 @@ func (s *Sorteo) responderChat(texto string) map[string]any {
 	}
 
 	// fallback: muestra catálogo + reglas
-	return chatBase("Puedo ayudarte con esto:\n\n• **Taller**: Web scraping ético con IA, hoy 3:00 – 5:30 p. m. — S/ 60, con tu cupón S/ 10.\n• **Sorteo**: público, sin cuenta; todos los que juegan ganan 83 % de descuento.\n• **Canje**: elige tu curso en /canje?c=TU-CODIGO y valida con tu WhatsApp.\n\n¿Sobre qué quieres que profundice?", []string{"Ver cursos con descuento", "¿Cómo funciona el sorteo?", "¿Cómo canjeo mi cupón?", "Precio y fechas"})
+	return chatBase("Puedo ayudarte con esto:\n\n• **Taller**: Web scraping ético con IA, hoy 5:00 – 6:30 p. m. — S/ 60, con tu cupón S/ 10.\n• **Sorteo**: público, sin cuenta; todos los que juegan ganan 83 % de descuento.\n• **Canje**: elige tu curso en /canje?c=TU-CODIGO y valida con tu WhatsApp.\n\n¿Sobre qué quieres que profundice?", []string{"Ver cursos con descuento", "¿Cómo funciona el sorteo?", "¿Cómo canjeo mi cupón?", "Precio y fechas"})
 }
 
 func tokens(q string, words ...string) bool {
@@ -108,7 +108,7 @@ func chatPrecio(s *Sorteo) map[string]any {
 			b.WriteString("• **" + itoa(p.Descuento) + " %** → S/ " + solesStr(con) + " (en lugar de S/ 60)\n")
 		}
 	}
-	b.WriteString("\nEl cupón vale para el taller de hoy, 3:00 – 5:30 p. m.")
+	b.WriteString("\nEl cupón vale para el taller de hoy, 5:00 – 6:30 p. m.")
 	return chatBase(b.String(), []string{"Ver cursos", "¿Cómo canjeo?", "Fechas y horarios"})
 }
 
@@ -123,7 +123,7 @@ func chatFechas(s *Sorteo, q string) map[string]any {
 }
 
 func sTextoVence() string {
-	return "Tu cupón vale para el taller de hoy, domingo 15 de noviembre, de 3:00 a 5:30 p. m. (Lima). Úsalo en /canje antes de la clase."
+	return "Tu cupón vale para el taller de hoy, domingo 15 de noviembre, de 5:00 a 6:30 p. m. (Lima). Úsalo en /canje antes de la clase."
 }
 
 func chatSorteo(s *Sorteo) map[string]any {
@@ -131,7 +131,7 @@ func chatSorteo(s *Sorteo) map[string]any {
 		"1. Escribe tu nombre y WhatsApp (9 dígitos) y dale a *Quiero jugar*. No necesitas cuenta.\n" +
 		"2. Juega: adivina la tarjeta del árbitro y, si hace falta, el tiro libre.\n" +
 		"3. **Todos ganan** el mismo cupón: **83 %** de descuento → pagas **S/ 10** en lugar de S/ 60.\n\n" +
-		"El sorteo cierra **hoy domingo 15 nov a las 3:00 p. m.** (Lima), cuando empieza el taller."
+		"El sorteo cierra **hoy domingo 15 nov a las 5:00 p. m.** (Lima), cuando empieza el taller."
 	return chatBase(txt, []string{"Quiero jugar", "Ver cursos", "¿Cómo canjeo mi cupón?"})
 }
 
