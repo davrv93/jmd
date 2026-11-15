@@ -8,6 +8,8 @@ objectives:
     title: Instalar un modelo de lenguaje local, elegir cuantización y contexto, y calcular la RAM que necesita
   - id: bwb-01-o2
     title: Medir tokens por segundo en CPU y GPU
+  - id: bwb-01-o3
+    title: Explicar qué es un embedding y cómo un clasificador elige la intención del cliente, con un umbral para pasar a una persona
 recording:
   url: ""
   passcode: ""
@@ -15,6 +17,21 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: bwb-01-teoria-video
+    title: "Video (2:44): embeddings y clasificación, paso a paso en las escenas E05 y E06"
+    kind: video
+    file: materials/bwb-01-embeddings-y-clasificacion.mp4
+    objective_ids: [bwb-01-o3]
+  - id: bwb-01-teoria-pdf
+    title: "PDF: embeddings y clasificación · qué son, ejemplos y cómo se usan en un bot de WhatsApp"
+    kind: pdf
+    file: materials/bwb-01-embeddings-y-clasificacion.pdf
+    objective_ids: [bwb-01-o3]
+  - id: bwb-01-teoria-live
+    title: "Modo LIVE · escenas E05 (embeddings) y E06 (clasificación): corren en tu navegador, sin instalar nada"
+    kind: link
+    url: https://jmd-learn.online/live/bwb-01/
+    objective_ids: [bwb-01-o3]
   - id: bwb-01-m1
     title: Ollama · descargar e instalar (Windows, macOS, Linux)
     kind: link
@@ -49,6 +66,12 @@ cycle:
     phase: reflexion
     description: Corre el modelo con --verbose, anota eval rate y la RAM de ollama ps, y compáralo con las curvas de la escena 4.
     check: Tienes tu cifra de tokens/s y de RAM anotada
+  - id: teoria
+    title: Embeddings y clasificación en el navegador
+    tool: lms
+    phase: conceptualizacion
+    description: "En el modo LIVE abre las escenas E05 y E06 (no instalas nada). En E05 compara el juguete con bge-m3; en E06 haz los retos 1 y 2 del PDF: rompe al juguete con «¿me lo traen a domicilio?» y mueve el umbral."
+    check: Puedes decir qué umbral dejarías en tu bot y por qué
 ---
 
 ## Avance de la sesión
@@ -113,3 +136,23 @@ Un 1.7B Q4 en esa CPU anda por 6 a 8 tokens/s; el mismo 1.7B en una RTX 3050 de 
    ahorran: la mayoría de los turnos se resuelven con plantilla y catálogo, sin modelo.
 
 **Si falla:** `eval rate` sale por debajo de 5 tokens/s → cierra el navegador y vuelve a medir; si sigue, usa `qwen3:0.6b` en Q4.
+
+## 5. Embeddings y clasificación, sin instalar nada · Conceptualización
+
+Antes de que tu bot responda, tiene que saber **qué pide** el cliente. Eso lo hacen dos piezas, y las
+dos corren aquí, en tu navegador, dentro del modo LIVE: **hoy no instalas nada**.
+
+- **Embedding (escena E05).** Convierte la frase en una lista de números. Frases con sentido parecido
+  quedan cerca. Compara el embedding de juguete (64 números, mira letras) con **bge-m3** (1024 números,
+  mira el sentido): «¿cuánto cuesta el polo?» y «¿qué precio tiene el polo?» dan 0,42 con el juguete y
+  0,95 con bge-m3.
+- **Clasificación (escena E06).** Compara el mensaje con los ejemplos de cada intención (saludo,
+  precio, envío, talla, horario, reclamo, persona) y elige la más parecida. Si el parecido queda bajo
+  el **umbral**, el bot no adivina: pasa a una persona. Agrega tus propios ejemplos y mira cómo cambia
+  el examen de 8 mensajes.
+
+El PDF de Materiales trae la teoría completa, los resultados medidos y cuatro retos; el video (2:44)
+recorre las dos escenas paso a paso. En la sesión 3 llevarás esto a un bot real con multilingual-e5-small
+y una regresión logística.
+
+**Si falla:** la escena no carga el mapa → recárgala; los vectores de bge-m3 vienen precalculados en un archivo del LMS.

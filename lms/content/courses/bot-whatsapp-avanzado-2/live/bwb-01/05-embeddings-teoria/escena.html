@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Embeddings: la frase se vuelve números</title>
+<!--
+  Escena del modo LIVE (bwb-01, teoría). Todo corre en el navegador: nada que instalar.
+  1) Texto → vector con un embedding de juguete (../../comun/embed-juguete.js: palabras y trigramas
+     de letras con hashing a 64 números). 2) Coseno entre dos frases: juguete en vivo y bge-m3 real
+     precalculado (../../comun/bge-mapa.json, 1024 números por frase). 3) Mapa 2D de 43 frases de un
+     bot de tienda: clic en una frase y se marcan sus 3 vecinas más parecidas.
+  Reglas: sin recursos externos, menos de 300 elementos y 1 MB, todo se apaga con prefers-reduced-motion.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .22); }
+.esc-titulo { font-size: 1.45em; }
+.esc { height: 100vh; }
+.esc-cuerpo { justify-content: flex-start; overflow: hidden; }
+.e5-grid { flex: 1 1 auto; }
+.e5-c { overflow-y: auto; max-height: 100%; }
+.e5-grid { display: grid; grid-template-columns: 1fr 1fr 1.45fr; gap: 1.2vw; min-height: 0; align-items: stretch; font-size: .86em; }
+.e5-c { padding: .8em 1em; display: grid; gap: .6em; align-content: start; min-width: 0; }
+.e5-c h3 { margin: 0; font-size: .95em; display: flex; gap: .5em; align-items: baseline; }
+.e5-c h3 b { color: var(--accent); font-variant-numeric: tabular-nums; }
+.e5-in { width: 100%; font: 600 .95em/1.3 inherit; font-family: inherit; padding: .5em .7em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); }
+.e5-in:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.e5-et { font-size: .68em; font-weight: 700; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+.e5-nums { margin: 0; font: 600 .7em/1.45 var(--mono); color: var(--fg); background: var(--s2); border-radius: .6em; padding: .5em .7em; word-break: break-word; }
+.e5-piezas { display: flex; flex-wrap: wrap; gap: .3em; }
+.e5-piezas span { font: 600 .66em var(--mono); padding: .15em .45em; border-radius: .4em; background: var(--accent-bg); color: var(--accent); }
+.e5-piezas span.w { background: var(--gold-bg); color: var(--gold); }
+.e5-tira .p { fill: var(--accent); } .e5-tira .n { fill: var(--bad); } .e5-tira .eje { stroke: var(--line2); stroke-width: 1; }
+.e5-btn { font: 700 .7em/1.2 inherit; font-family: inherit; padding: .45em .7em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; text-align: left; }
+.e5-btn:hover { border-color: var(--accent); }
+.e5-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.e5-pares { display: grid; gap: .3em; }
+.e5-bar { display: grid; grid-template-columns: 7.2em 1fr 3.2em; gap: .5em; align-items: center; font-size: .78em; }
+.e5-bar span:first-child { font-weight: 700; color: var(--muted); }
+.e5-bar .b { height: .8em; border-radius: 99px; background: var(--s3); overflow: hidden; }
+.e5-bar .b i { display: block; height: 100%; width: 0; border-radius: 99px; background: var(--gold); transition: width .4s cubic-bezier(.2,.7,.2,1); }
+.e5-bar .b i.r { background: var(--accent); }
+.e5-bar em { font-style: normal; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.e5-lee { margin: 0; font-size: .78em; color: var(--fg); padding-left: .6em; border-left: 3px solid var(--accent); }
+.e5-mapa { width: 100%; height: auto; display: block; background: var(--s2); border-radius: .8em; }
+.e5-mapa circle { cursor: pointer; stroke: var(--s1); stroke-width: 2; transition: r .2s; }
+.e5-mapa circle.nueva { fill: var(--s1) !important; stroke: var(--fg); stroke-width: 2.5; }
+.e5-mapa circle.sel { stroke: var(--fg); stroke-width: 4; }
+.e5-mapa line { stroke: var(--fg); stroke-width: 2; stroke-dasharray: 5 4; opacity: .7; }
+.e5-mapa text { font-size: 15px; font-weight: 700; fill: var(--fg); paint-order: stroke; stroke: var(--s2); stroke-width: 4px; pointer-events: none; }
+.e5-ley { display: flex; flex-wrap: wrap; gap: .35em .7em; font-size: .68em; font-weight: 700; }
+.e5-ley span { display: inline-flex; align-items: center; gap: .3em; }
+.e5-ley i { width: .7em; height: .7em; border-radius: 50%; display: inline-block; }
+.e5-vec { margin: 0; padding: 0; list-style: none; font-size: .74em; display: grid; gap: .2em; }
+.e5-vec li b { font-variant-numeric: tabular-nums; color: var(--accent); }
+.e5-seg { display: flex; gap: .3em; flex-wrap: wrap; }
+@media (max-width: 1100px) { .e5-grid { grid-template-columns: 1fr 1fr; } .e5-grid > :last-child { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { .e5-bar .b i { transition: none; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 760 L168 708 L236 744 L296 690"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="e" cx="1318" cy="104" r="3.5"/><circle class="eg" cx="1384" cy="168" r="4"/><circle class="e p" cx="1440" cy="146" r="3"/><circle class="eg p" cx="168" cy="708" r="4"/><circle class="e" cx="296" cy="690" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Bot avanzado · E05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Un <em>embedding</em> convierte una frase en una lista de números, y frases con sentido parecido quedan cerca</h1>
+    <div class="e5-grid">
+      <section class="esc-card e5-c a-in" style="--d:.1s" aria-label="Texto a vector">
+        <h3>1 · Escribe una frase</h3>
+        <input class="e5-in" id="fa" value="¿cuánto cuesta el polo?" aria-label="Frase para convertir en vector" autocomplete="off">
+        <span class="e5-et">Las piezas que mira el juguete</span>
+        <div class="e5-piezas" id="piezas"></div>
+        <span class="e5-et">Su vector: 64 números (barra arriba = positivo)</span>
+        <svg class="esc-svg e5-tira" id="tira" viewBox="0 0 640 150" role="img" aria-label="Los 64 números del vector como barras"></svg>
+        <p class="e5-nums" id="nums"></p>
+        <p class="e5-lee">Un modelo real como <b>bge-m3</b> hace lo mismo con 1024 números aprendidos de millones de textos: por eso entiende sinónimos, no solo letras.</p>
+      </section>
+
+      <section class="esc-card e5-c a-in" style="--d:.2s" aria-label="Similitud entre dos frases">
+        <h3>2 · ¿Qué tan parecidas son?</h3>
+        <input class="e5-in" id="p1" value="¿cuánto cuesta el polo?" aria-label="Primera frase" autocomplete="off">
+        <input class="e5-in" id="p2" value="¿qué precio tiene el polo?" aria-label="Segunda frase" autocomplete="off">
+        <span class="e5-et">Prueba estos pares</span>
+        <div class="e5-pares" id="pares"></div>
+        <span class="e5-et">Coseno entre los dos vectores (1 = idénticas)</span>
+        <div class="e5-bar"><span>Juguete (letras)</span><div class="b"><i id="bj"></i></div><em id="vj">0,00</em></div>
+        <div class="e5-bar"><span>bge-m3 (sentido)</span><div class="b"><i class="r" id="bb"></i></div><em id="vb">—</em></div>
+        <p class="e5-lee" id="lee"></p>
+      </section>
+
+      <section class="esc-card e5-c a-in" style="--d:.3s" aria-label="Mapa de frases">
+        <div class="esc-fila" style="justify-content:space-between">
+          <h3>3 · El mapa de 43 frases de una tienda</h3>
+          <div class="e5-seg" role="group" aria-label="Qué modelo dibuja el mapa">
+            <button type="button" class="e5-btn" id="m-bge" aria-pressed="true">bge-m3</button>
+            <button type="button" class="e5-btn" id="m-jug" aria-pressed="false">Juguete</button>
+          </div>
+        </div>
+        <svg class="e5-mapa" id="mapa" viewBox="0 0 700 430" role="img" aria-label="Mapa de frases: cada punto es una frase, las cercanas significan algo parecido"></svg>
+        <div class="e5-ley" id="ley"></div>
+        <span class="e5-et" id="sel-t">Haz clic en un punto: se marcan sus 3 frases más parecidas</span>
+        <ul class="e5-vec" id="vec"></ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">bge-m3 precalculado el 15-11-2026 (1024 números por frase); el juguete corre en tu navegador. El mapa aplana los vectores a 2D: las distancias son aproximadas.</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/embed-juguete.js"></script>
+<script>
+(function () {
+  "use strict";
+  var E = window.EmbJuguete, $ = function (id) { return document.getElementById(id); };
+  var COLOR = { saludo: "var(--info)", precio: "var(--accent)", "envío": "var(--ph-or)", talla: "var(--gold)", horario: "var(--ok)", reclamo: "var(--bad)", persona: "var(--ph-ea)" };
+  var D = null, modo = "bge", sel = -1;
+  var fmt = function (x) { return x.toFixed(2).replace(".", ","); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+
+  // 1 · texto → vector
+  function uno() {
+    var f = $("fa").value, v = E.vector(f), r = E.rasgos(f);
+    $("piezas").innerHTML = r.slice(0, 18).map(function (x) {
+      var w = x[0].slice(0, 2) === "w:";
+      return '<span class="' + (w ? "w" : "") + '">' + esc(x[0].slice(2).replace(/ /g, "·")) + "</span>";
+    }).join("") + (r.length > 18 ? '<span>+' + (r.length - 18) + "</span>" : "");
+    var h = "";
+    v.forEach(function (x, i) {
+      var alto = Math.min(70, Math.abs(x) * 160);
+      h += '<rect class="' + (x >= 0 ? "p" : "n") + '" x="' + (i * 10 + 1) + '" y="' + (x >= 0 ? 75 - alto : 75) + '" width="8" height="' + Math.max(alto, .5) + '" rx="2"/>';
+    });
+    $("tira").innerHTML = '<line class="eje" x1="0" y1="75" x2="640" y2="75"/>' + h;
+    $("nums").textContent = "[" + v.slice(0, 12).map(function (x) { return x.toFixed(2); }).join(", ") + ", … 52 más]";
+  }
+
+  // 2 · coseno entre dos frases
+  var PARES = [
+    ["¿cuánto cuesta el polo?", "¿qué precio tiene el polo?", "Mismo sentido, otras palabras"],
+    ["precio", "presio", "Error de tipeo"],
+    ["mi pedido llegó roto", "el producto vino dañado", "Reclamo dicho de dos formas"],
+    ["¿a qué hora abren?", "¿a qué hora llega mi pedido?", "Mismas palabras, otro pedido"],
+    ["hola, buenas tardes", "quiero hacer un reclamo", "Nada que ver"]
+  ];
+  function real(a, b) {
+    if (!D) return null;
+    var i = D.frases.indexOf(a.trim()), j = D.frases.indexOf(b.trim());
+    return i < 0 || j < 0 ? null : D.cos[i][j];
+  }
+  function dos() {
+    var a = $("p1").value, b = $("p2").value;
+    var cj = E.coseno(E.vector(a), E.vector(b)), cb = real(a, b);
+    $("bj").style.width = Math.max(0, cj) * 100 + "%"; $("vj").textContent = fmt(cj);
+    $("bb").style.width = cb == null ? "0%" : cb * 100 + "%"; $("vb").textContent = cb == null ? "—" : fmt(cb);
+    var t;
+    if (cb == null) t = "El juguete compara letras en vivo. bge-m3 solo está precalculado para las frases de los pares y del mapa.";
+    else if (cb > .85) t = "bge-m3 las ve casi iguales: entiende que «cuesta» y «precio» piden lo mismo. El juguete solo ve las letras que comparten.";
+    else if (cj > cb - .35 && cj > .25) t = "Comparten letras, así que el juguete las acerca. bge-m3 mira el sentido: compara con las demás frases, no con el número suelto.";
+    else t = "En bge-m3 hasta dos frases sin relación dan cerca de 0,55. Lo que cuenta es el orden: quién queda más cerca que las demás.";
+    $("lee").textContent = t;
+    Array.prototype.forEach.call($("pares").children, function (btn, k) {
+      btn.setAttribute("aria-pressed", PARES[k][0] === a && PARES[k][1] === b ? "true" : "false");
+    });
+  }
+  $("pares").innerHTML = PARES.map(function (p, k) {
+    return '<button type="button" class="e5-btn" data-k="' + k + '"><b>' + esc(p[2]) + "</b> · " + esc(p[0]) + " ~ " + esc(p[1]) + "</button>";
+  }).join("");
+  $("pares").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var p = PARES[+b.dataset.k]; $("p1").value = p[0]; $("p2").value = p[1]; dos();
+  });
+
+  // 3 · mapa
+  var W = 700, H = 430, PAD = 34, xyJug = null;
+  function intencion(f) { var i = D.frases.indexOf(f); return i < 0 ? "" : D.intencion[i]; }
+  function puntos() {
+    if (modo === "bge") return D.mapa.map(function (f) { return D.xy[f]; });
+    if (!xyJug) xyJug = E.pca2(D.mapa.map(E.vector));
+    return xyJug;
+  }
+  function vecinas(k) {
+    var f = D.mapa[k], lista;
+    if (modo === "bge") {
+      var i = D.frases.indexOf(f);
+      lista = D.mapa.map(function (g, m) { return [m, D.cos[i][D.frases.indexOf(g)]]; });
+    } else {
+      var v = E.vector(f);
+      lista = D.mapa.map(function (g, m) { return [m, E.coseno(v, E.vector(g))]; });
+    }
+    return lista.filter(function (x) { return x[0] !== k; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 3);
+  }
+  function mapa() {
+    var P = puntos(), h = "";
+    var X = function (p) { return PAD + p[0] * (W - 2 * PAD); }, Y = function (p) { return PAD + (1 - p[1]) * (H - 2 * PAD); };
+    var vs = sel >= 0 ? vecinas(sel) : [];
+    vs.forEach(function (x) { h += '<line x1="' + X(P[sel]) + '" y1="' + Y(P[sel]) + '" x2="' + X(P[x[0]]) + '" y2="' + Y(P[x[0]]) + '"/>'; });
+    D.mapa.forEach(function (f, k) {
+      var it = intencion(f), nueva = !it;
+      h += '<circle data-k="' + k + '" class="' + (nueva ? "nueva" : "") + (k === sel ? " sel" : "") + '" cx="' + X(P[k]) + '" cy="' + Y(P[k]) + '" r="' + (k === sel ? 11 : 8) + '" style="fill:' + (COLOR[it] || "var(--s1)") + '"><title>' + esc(f) + (it ? " · " + it : " · frase nueva") + "</title></circle>";
+    });
+    if (sel >= 0) {
+      [sel].concat(vs.map(function (x) { return x[0]; })).forEach(function (k, n) {
+        var x = X(P[k]), anchor = x > W * .62 ? "end" : "start";
+        h += '<text x="' + (x + (anchor === "end" ? -13 : 13)) + '" y="' + (Y(P[k]) + 5 + (n ? 0 : -2)) + '" text-anchor="' + anchor + '">' + esc(D.mapa[k]) + "</text>";
+      });
+    }
+    $("mapa").innerHTML = h;
+    if (sel >= 0) {
+      $("sel-t").textContent = "Las 3 más parecidas a «" + D.mapa[sel] + "» (" + (modo === "bge" ? "bge-m3" : "juguete") + ")";
+      $("vec").innerHTML = vs.map(function (x) {
+        var g = D.mapa[x[0]], it = intencion(g);
+        return "<li><b>" + fmt(x[1]) + "</b> · " + esc(g) + (it ? ' <span class="e5-et">' + esc(it) + "</span>" : "") + "</li>";
+      }).join("");
+    }
+  }
+  $("mapa").addEventListener("click", function (e) {
+    var c = e.target.closest("circle"); if (!c) return;
+    sel = +c.dataset.k; mapa();
+  });
+  function setModo(m) {
+    modo = m; $("m-bge").setAttribute("aria-pressed", m === "bge"); $("m-jug").setAttribute("aria-pressed", m === "jug"); mapa();
+  }
+  $("m-bge").addEventListener("click", function () { setModo("bge"); });
+  $("m-jug").addEventListener("click", function () { setModo("jug"); });
+  $("ley").innerHTML = Object.keys(COLOR).map(function (k) { return '<span><i style="background:' + COLOR[k] + '"></i>' + k + "</span>"; }).join("") +
+    '<span><i style="background:var(--s1);border:2px solid var(--fg)"></i>frase nueva</span>';
+
+  $("fa").addEventListener("input", uno);
+  $("p1").addEventListener("input", dos); $("p2").addEventListener("input", dos);
+  uno(); dos();
+  fetch("../../comun/bge-mapa.json", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (j) {
+    D = j; sel = D.mapa.indexOf("el producto vino dañado"); dos(); mapa();
+  }).catch(function () { $("sel-t").textContent = "No se pudo cargar el mapa precalculado: recarga la escena."; });
+})();
+</script>
+</body>
+</html>

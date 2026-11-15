@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Clasificación: ¿qué pide el cliente?</title>
+<!--
+  Escena del modo LIVE (bwb-01, teoría). Todo corre en el navegador: nada que instalar.
+  Clasificador de intenciones de un bot de tienda por WhatsApp, entrenado en vivo con ejemplos que el
+  alumno edita: embedding de juguete (../../comun/embed-juguete.js) + vecino más cercano o centroide.
+  El umbral decide cuándo el bot responde solo y cuándo pasa a una persona. A la derecha, 8 mensajes de
+  prueba con el resultado del juguete y el de bge-m3 real (precalculado en ../../comun/bge-mapa.json).
+  Reglas: sin recursos externos, menos de 300 elementos y 1 MB, todo se apaga con prefers-reduced-motion.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-cielo { opacity: calc(var(--cielo) * .22); }
+.esc-titulo { font-size: 1.45em; }
+.esc { height: 100vh; }
+.esc-cuerpo { justify-content: flex-start; overflow: hidden; }
+.e6-grid { flex: 1 1 auto; }
+.e6-c { overflow-y: auto; max-height: 100%; }
+.e6-grid { display: grid; grid-template-columns: 1.15fr 1.2fr 1.05fr; gap: 1.2vw; min-height: 0; align-items: stretch; font-size: .84em; }
+.e6-c { padding: .8em 1em; display: grid; gap: .55em; align-content: start; min-width: 0; }
+.e6-c h3 { margin: 0; font-size: .95em; }
+.e6-et { font-size: .66em; font-weight: 700; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+.e6-int { display: grid; grid-template-columns: 5.4em 1fr; gap: .45em; align-items: start; }
+.e6-int > b { font-size: .72em; padding: .2em .5em; border-radius: 999px; color: #fff; text-align: center; }
+.e6-ej { display: flex; flex-wrap: wrap; gap: .25em; }
+.e6-ej button { font: 600 .64em/1.25 inherit; font-family: inherit; padding: .2em .45em; border-radius: .45em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; }
+.e6-ej button:hover { border-color: var(--bad); color: var(--bad); text-decoration: line-through; }
+.e6-ej button.nuevo { border-color: var(--ok); background: var(--ok-bg); }
+.e6-add { display: grid; grid-template-columns: 1fr auto auto; gap: .35em; }
+.e6-in, .e6-sel { font: 600 .8em/1.3 inherit; font-family: inherit; padding: .45em .6em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); min-width: 0; }
+.e6-in:focus-visible, .e6-sel:focus-visible, .e6-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.e6-btn { font: 700 .72em/1.2 inherit; font-family: inherit; padding: .45em .75em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.e6-btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.e6-btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.e6-pre { display: flex; flex-wrap: wrap; gap: .3em; }
+.e6-pre button { font-size: .64em; padding: .3em .55em; }
+.e6-chat { background: var(--s2); border-radius: .9em; padding: .7em; display: grid; gap: .45em; }
+.e6-burb { max-width: 92%; padding: .45em .7em; border-radius: .8em; font-size: .82em; line-height: 1.35; }
+.e6-burb.cli { justify-self: end; background: var(--ok-bg); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); }
+.e6-burb.bot { justify-self: start; background: var(--s1); border: 1px solid var(--line2); }
+.e6-burb.hum { justify-self: start; background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); }
+.e6-burb small { display: block; font-size: .72em; color: var(--muted); font-weight: 700; margin-bottom: .15em; }
+.e6-bar { display: grid; grid-template-columns: 5.2em 1fr 2.8em; gap: .45em; align-items: center; font-size: .72em; }
+.e6-bar span { font-weight: 700; color: var(--muted); }
+.e6-bar.top span { color: var(--fg); }
+.e6-bar .b { position: relative; height: .75em; border-radius: 99px; background: var(--s3); overflow: visible; }
+.e6-bar .b i { display: block; height: 100%; width: 0; border-radius: 99px; transition: width .35s cubic-bezier(.2,.7,.2,1); }
+.e6-bar .b u { position: absolute; top: -.25em; bottom: -.25em; width: 2px; background: var(--fg); opacity: .65; }
+.e6-bar em { font-style: normal; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.e6-umb { display: grid; grid-template-columns: auto 1fr auto; gap: .5em; align-items: center; font-size: .74em; font-weight: 700; }
+.e6-umb input { accent-color: var(--accent); width: 100%; margin: 0; }
+.e6-umb b { color: var(--accent); font-variant-numeric: tabular-nums; }
+.e6-dec { margin: 0; font-size: .78em; font-weight: 700; padding-left: .6em; border-left: 4px solid var(--accent); }
+.e6-dec.hum { border-color: var(--warn); }
+.e6-tab { width: 100%; border-collapse: collapse; font-size: .68em; }
+.e6-tab th { text-align: left; color: var(--muted); font-weight: 700; padding: .25em .3em; border-bottom: 1px solid var(--line2); }
+.e6-tab td { padding: .3em .3em; border-bottom: 1px solid var(--line); vertical-align: top; }
+.e6-tab td.ok { color: var(--ok); font-weight: 800; } .e6-tab td.mal { color: var(--bad); font-weight: 800; }
+.e6-tab tr { cursor: pointer; } .e6-tab tr:hover td { background: var(--accent-bg); }
+.e6-tot { display: flex; gap: .5em; flex-wrap: wrap; }
+.e6-nota { margin: 0; font-size: .72em; color: var(--muted); }
+@media (max-width: 1100px) { .e6-grid { grid-template-columns: 1fr 1fr; } .e6-grid > :last-child { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { .e6-bar .b i { transition: none; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1180 92 L1252 130 L1318 104 L1384 168 L1440 146"/>
+  <path class="tb" pathLength="1" d="M92 760 L168 708 L236 744 L296 690"/>
+  <g><circle class="e" cx="1180" cy="92" r="4"/><circle class="eo" cx="1252" cy="130" r="5"/><circle class="eg p" cx="1384" cy="168" r="4"/><circle class="e" cx="296" cy="690" r="3"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Bot avanzado · E06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Clasificar: el bot compara el mensaje con sus ejemplos y decide qué <em>pide</em> el cliente</h1>
+    <div class="e6-grid">
+      <section class="esc-card e6-c a-in" style="--d:.1s" aria-label="Ejemplos de entrenamiento">
+        <h3>1 · Ejemplos que enseñan al bot</h3>
+        <span class="e6-et">Clic en un ejemplo para quitarlo · agrega los tuyos</span>
+        <div id="ejemplos" style="display:grid;gap:.4em"></div>
+        <div class="e6-add">
+          <input class="e6-in" id="nuevo" placeholder="Escribe un ejemplo nuevo" aria-label="Ejemplo nuevo" autocomplete="off">
+          <select class="e6-sel" id="nuevo-int" aria-label="Intención del ejemplo"></select>
+          <button type="button" class="e6-btn pri" id="agregar">Agregar</button>
+        </div>
+      </section>
+
+      <section class="esc-card e6-c a-in" style="--d:.2s" aria-label="Mensaje del cliente">
+        <h3>2 · Llega un mensaje por WhatsApp</h3>
+        <div class="e6-add" style="grid-template-columns:1fr auto">
+          <input class="e6-in" id="msg" value="¿tienen la talla XL?" aria-label="Mensaje del cliente" autocomplete="off">
+          <button type="button" class="e6-btn pri" id="enviar">Clasificar</button>
+        </div>
+        <div class="e6-pre" id="pre"></div>
+        <div class="esc-fila" style="gap:.4em">
+          <span class="e6-et">Método</span>
+          <button type="button" class="e6-btn" id="m-vec" aria-pressed="true">Vecino más cercano</button>
+          <button type="button" class="e6-btn" id="m-cen" aria-pressed="false">Centroide</button>
+        </div>
+        <div id="barras" style="display:grid;gap:.3em"></div>
+        <div class="e6-umb"><span>Umbral</span><input type="range" id="umb" min="0.10" max="0.70" step="0.01" value="0.32" aria-label="Umbral de confianza"><b id="umb-v">0,32</b></div>
+        <div class="e6-chat" aria-live="polite">
+          <div class="e6-burb cli" id="b-cli"></div>
+          <div class="e6-burb bot" id="b-bot"></div>
+        </div>
+        <p class="e6-dec" id="dec"></p>
+      </section>
+
+      <section class="esc-card e6-c a-in" style="--d:.3s" aria-label="Prueba con mensajes nuevos">
+        <h3>3 · Examen: 8 mensajes que el bot nunca vio</h3>
+        <table class="e6-tab"><thead><tr><th>Mensaje</th><th>Juguete</th><th>bge-m3</th><th>Debía</th></tr></thead><tbody id="tab"></tbody></table>
+        <div class="e6-tot" id="tot"></div>
+        <p class="e6-nota">bge-m3 usa centroide sobre vectores precalculados con los ejemplos originales; el juguete usa tus ejemplos y tu umbral en vivo. Clic en una fila para probarla.</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Vecino más cercano: gana la intención del ejemplo más parecido. Centroide: gana la intención cuyo promedio queda más cerca. Bajo el umbral, el bot no adivina: pasa a una persona.</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/embed-juguete.js"></script>
+<script>
+(function () {
+  "use strict";
+  var E = window.EmbJuguete, $ = function (id) { return document.getElementById(id); };
+  var COLOR = { saludo: "var(--info)", precio: "var(--accent)", "envío": "var(--ph-or)", talla: "var(--gold)", horario: "var(--ok)", reclamo: "var(--bad)", persona: "var(--ph-ea)" };
+  var RESP = {
+    saludo: "¡Hola! Soy el asistente de la tienda. ¿Qué estás buscando hoy?",
+    precio: "El polo básico está a S/ 39 y la casaca a S/ 129. ¿Te paso fotos?",
+    "envío": "Enviamos a todo el Perú: Lima en 24 h y provincia en 2 a 4 días.",
+    talla: "Tenemos de la S a la XL. ¿Qué talla usas normalmente?",
+    horario: "Atendemos de lunes a viernes de 9 a. m. a 7 p. m. y los domingos de 10 a. m. a 2 p. m.",
+    reclamo: "Lamento lo que pasó. Mándame tu número de pedido y una foto, y lo resolvemos hoy.",
+    persona: "Claro, te paso con una persona del equipo."
+  };
+  var INICIAL = {
+    saludo: ["hola, buenas tardes", "buenos días", "holi, ¿qué tal?", "buenas noches", "hola, ¿están atendiendo?"],
+    precio: ["¿cuánto cuesta el polo?", "¿qué precio tiene la casaca?", "¿a cómo está el jean?", "precio de las zapatillas", "¿tienen algún descuento?"],
+    "envío": ["¿hacen envíos a provincia?", "¿cuánto demora el delivery?", "¿me lo mandan hoy a Surco?", "¿llega hasta Arequipa?", "¿cuánto cobran por el envío?"],
+    talla: ["¿tienen talla M?", "¿queda stock en L?", "¿qué tallas tienen?", "¿hay en 40?", "me queda grande, ¿tienen S?"],
+    horario: ["¿a qué hora abren?", "¿atienden los domingos?", "¿hasta qué hora están?", "¿cuál es su horario?", "¿abren en feriado?"],
+    reclamo: ["mi pedido llegó roto", "quiero hacer un reclamo", "nunca llegó mi compra", "me cobraron dos veces", "la casaca vino fallada"],
+    persona: ["¿me atiende un asesor?", "pásame con alguien de la tienda", "¿eres un bot?", "necesito que me llamen", "¿puedo hablar con un humano?"]
+  };
+  var ESPERADO = [
+    ["presio del polo", "precio"], ["¿a qué hora cierran?", "horario"], ["el producto vino dañado", "reclamo"], ["holaaa!!", "saludo"],
+    ["¿tienen la talla XL?", "talla"], ["¿cuánto sale mandarlo a Piura?", "envío"], ["¿quién ganó el partido ayer?", "persona"], ["quiero hablar con una persona", "persona"]
+  ];
+  var INT = Object.keys(INICIAL);
+  var ej = {}, nuevos = {}, metodo = "vec", D = null;
+  INT.forEach(function (k) { ej[k] = INICIAL[k].map(function (f) { return { f: f, v: E.vector(f) }; }); });
+  var fmt = function (x) { return x.toFixed(2).replace(".", ","); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+  var umbral = function () { return +$("umb").value; };
+
+  // Puntaje de cada intención para un mensaje: vecino más cercano o centroide.
+  function puntajes(texto) {
+    var v = E.vector(texto);
+    return INT.map(function (k) {
+      if (!ej[k].length) return { k: k, s: -1, de: "" };
+      if (metodo === "cen") return { k: k, s: E.coseno(v, E.normal(E.media(ej[k].map(function (e) { return e.v; })))), de: "promedio de " + ej[k].length + " ejemplos" };
+      var mejor = ej[k].reduce(function (a, e) { var s = E.coseno(v, e.v); return s > a.s ? { s: s, f: e.f } : a; }, { s: -1, f: "" });
+      return { k: k, s: mejor.s, de: mejor.f };
+    }).sort(function (a, b) { return b.s - a.s; });
+  }
+  function decide(texto) {
+    var p = puntajes(texto), top = p[0];
+    return { p: p, top: top, humano: top.s < umbral() };
+  }
+
+  function pintarEjemplos() {
+    $("ejemplos").innerHTML = INT.map(function (k) {
+      return '<div class="e6-int"><b style="background:' + COLOR[k] + '">' + k + '</b><div class="e6-ej" data-k="' + k + '">' +
+        ej[k].map(function (e, i) { return '<button type="button" data-i="' + i + '" class="' + (nuevos[k + "|" + e.f] ? "nuevo" : "") + '" title="Quitar este ejemplo">' + esc(e.f) + "</button>"; }).join("") + "</div></div>";
+    }).join("");
+  }
+  $("ejemplos").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var k = b.parentNode.dataset.k; ej[k].splice(+b.dataset.i, 1); pintarEjemplos(); todo();
+  });
+  $("nuevo-int").innerHTML = INT.map(function (k) { return '<option value="' + k + '">' + k + "</option>"; }).join("");
+  function agregar() {
+    var f = $("nuevo").value.trim(), k = $("nuevo-int").value; if (!f) return;
+    ej[k].push({ f: f, v: E.vector(f) }); nuevos[k + "|" + f] = 1; $("nuevo").value = ""; pintarEjemplos(); todo();
+  }
+  $("agregar").addEventListener("click", agregar);
+  $("nuevo").addEventListener("keydown", function (e) { if (e.key === "Enter") agregar(); });
+
+  function clasificar() {
+    var t = $("msg").value.trim() || "…", r = decide(t), u = umbral();
+    $("barras").innerHTML = r.p.map(function (x, n) {
+      var w = Math.max(0, x.s) * 100;
+      return '<div class="e6-bar' + (n === 0 ? " top" : "") + '"><span>' + x.k + '</span><div class="b"><i style="width:' + w + "%;background:" + COLOR[x.k] + '"></i><u style="left:' + u * 100 + '%"></u></div><em>' + fmt(Math.max(0, x.s)) + "</em></div>";
+    }).join("");
+    $("b-cli").innerHTML = "<small>Cliente</small>" + esc(t);
+    var b = $("b-bot");
+    if (r.humano) {
+      b.className = "e6-burb hum";
+      b.innerHTML = "<small>Bot · pasa a una persona</small>No estoy seguro de haber entendido. Te paso con una persona del equipo.";
+      $("dec").className = "e6-dec hum";
+      $("dec").textContent = "Lo más parecido es «" + r.top.k + "» con " + fmt(r.top.s) + ", por debajo del umbral " + fmt(u) + ": el bot no adivina y deriva.";
+    } else {
+      b.className = "e6-burb bot";
+      b.innerHTML = "<small>Bot · intención «" + r.top.k + "»</small>" + esc(RESP[r.top.k]);
+      $("dec").className = "e6-dec";
+      $("dec").textContent = "«" + r.top.k + "» con " + fmt(r.top.s) + " (≥ " + fmt(u) + ")" + (metodo === "vec" ? ", por su parecido con «" + r.top.de + "»." : ", comparado con el " + r.top.de + ".") +
+        " Ventaja sobre «" + r.p[1].k + "»: " + fmt(r.top.s - r.p[1].s) + ".";
+    }
+  }
+
+  function bge(f) {
+    if (!D) return null;
+    var a = D.frases.indexOf(f); if (a < 0) return null;
+    var mejor = null;
+    INT.forEach(function (k) {
+      var s = 0, n = 0;
+      D.intenciones[k].forEach(function (g) { var b = D.frases.indexOf(g); if (b >= 0) { s += D.cos[a][b]; n++; } });
+      if (n && (!mejor || s / n > mejor.s)) mejor = { k: k, s: s / n };
+    });
+    return mejor;
+  }
+  function examen() {
+    var okJ = 0, okB = 0;
+    $("tab").innerHTML = ESPERADO.map(function (x) {
+      var r = decide(x[0]), j = r.humano ? "persona" : r.top.k, b = bge(x[0]);
+      var bj = j === x[1], bb = b && b.k === x[1];
+      okJ += bj ? 1 : 0; okB += bb ? 1 : 0;
+      return '<tr data-f="' + esc(x[0]) + '"><td>' + esc(x[0]) + '</td><td class="' + (bj ? "ok" : "mal") + '">' + (r.humano ? "→ persona" : j) + " " + fmt(Math.max(0, r.top.s)) + '</td><td class="' + (bb ? "ok" : "mal") + '">' + (b ? b.k + " " + fmt(b.s) : "…") + "</td><td>" + (x[0].indexOf("partido") >= 0 ? "persona (fuera de tema)" : x[1]) + "</td></tr>";
+    }).join("");
+    $("tot").innerHTML = '<span class="esc-chip ' + (okJ >= 7 ? "ok" : "warn") + '">Juguete: ' + okJ + " de 8</span>" +
+      '<span class="esc-chip ' + (okB >= 7 ? "ok" : "warn") + '">bge-m3: ' + (D ? okB : "…") + " de 8</span>";
+  }
+  $("tab").addEventListener("click", function (e) { var tr = e.target.closest("tr"); if (!tr) return; $("msg").value = tr.dataset.f; clasificar(); });
+
+  $("pre").innerHTML = ESPERADO.map(function (x) { return '<button type="button" class="e6-btn">' + esc(x[0]) + "</button>"; }).join("");
+  $("pre").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; $("msg").value = b.textContent; clasificar(); });
+  function setMetodo(m) { metodo = m; $("m-vec").setAttribute("aria-pressed", m === "vec"); $("m-cen").setAttribute("aria-pressed", m === "cen"); todo(); }
+  $("m-vec").addEventListener("click", function () { setMetodo("vec"); });
+  $("m-cen").addEventListener("click", function () { setMetodo("cen"); });
+  $("umb").addEventListener("input", function () { $("umb-v").textContent = fmt(umbral()); todo(); });
+  $("enviar").addEventListener("click", clasificar);
+  $("msg").addEventListener("keydown", function (e) { if (e.key === "Enter") clasificar(); });
+  function todo() { clasificar(); examen(); }
+
+  pintarEjemplos(); todo();
+  fetch("../../comun/bge-mapa.json", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (j) { D = j; examen(); }).catch(function () {});
+})();
+</script>
+</body>
+</html>
