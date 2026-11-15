@@ -27,6 +27,16 @@
   button:disabled { opacity: .6; cursor: wait; }
   .msg { min-height: 1.4em; margin: 12px 0 0; font-size: 14px; color: var(--bad); }
   .pie { margin: 16px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+  /* Pantalla de espera: ya inscrito, la clase todavía no empieza. */
+  .espera h1 { margin-top: 6px; }
+  .cuando { margin: 14px 0 0; padding: 14px 16px; border-radius: 14px; background: #f3f1ff; font-size: 16px; }
+  .cuando b { display: block; font-size: 19px; color: var(--fg); }
+  .cuenta { margin: 18px 0 4px; text-align: center; font: 800 44px/1 system-ui, -apple-system, sans-serif; letter-spacing: -.02em; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .cuenta-k { margin: 0; text-align: center; font-size: 14px; color: var(--muted); }
+  a.boton { display: block; margin-top: 20px; padding: 15px; border-radius: 12px; background: var(--accent); color: #fff; text-align: center; text-decoration: none; font: 700 17px/1 system-ui; }
+  a.boton.tenue { background: #e7e4fb; color: var(--accent); }
+  .guarda { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+  .guarda code { font: 600 13px/1.4 ui-monospace, Menlo, monospace; color: var(--fg); word-break: break-all; }
 </style>
 </head>
 <body>
@@ -46,16 +56,58 @@
   </form>
   <p class="pie">¿Problemas? Escribe al WhatsApp 986 149 476</p>
 </main>
+<main class="espera" id="espera" hidden>
+  <p class="k">Taller en vivo · JMD Learning</p>
+  <h1 id="eTitulo">¡Listo! Tu lugar está reservado</h1>
+  <p class="cuando">Tu clase es<b id="eHora"></b>por Zoom y en el modo LIVE de JMD Learning.</p>
+  <p class="cuenta" id="eCuenta" aria-live="polite"></p>
+  <p class="cuenta-k" id="eCuentaK">para empezar. Espéranos ✨</p>
+  <a class="boton tenue" id="eEntrar" href="#">Entrar a la clase</a>
+  <p class="guarda">Vuelve a la hora de la clase con este mismo link y entras directo:<br><code id="eLink"></code></p>
+  <p class="pie">¿Problemas? Escribe al WhatsApp 986 149 476</p>
+</main>
 <script>
 (() => {
   // grupo y LIVE: domingo mañana por defecto; ?g=tarde → grupo de la tarde
   const GRUPOS = {
-    manana: { grupo: 'diseno-ia-domingo-manana', live: '/live/dm-01/', texto: 'Grupo del domingo en la mañana' },
-    tarde: { grupo: 'diseno-ia-domingo-tarde', live: '/live/dt-01/', texto: 'Grupo del domingo en la tarde' },
+    manana: { grupo: 'diseno-ia-domingo-manana', live: '/live/dm-01/', texto: 'Grupo del domingo en la mañana',
+      inicio: '2026-11-15T10:00:00-05:00', hora: 'hoy domingo 15 de noviembre, de 10:00 a 11:30 a. m. (hora de Lima)' },
+    tarde: { grupo: 'diseno-ia-domingo-tarde', live: '/live/dt-01/', texto: 'Grupo del domingo en la tarde',
+      inicio: '2026-11-15T17:30:00-05:00', hora: 'hoy domingo 15 de noviembre, de 5:30 a 7:00 p. m. (hora de Lima)' },
   };
   const g = GRUPOS[new URLSearchParams(location.search).get('g')] || GRUPOS.manana;
   document.getElementById('sub').textContent = g.texto + ': escribe tus datos y entras directo a la clase en vivo.';
   const $ = (id) => document.getElementById(id), msg = $('msg'), b = $('b');
+
+  // Antes de la clase (hasta 10 min antes): pantalla de espera con la hora y una cuenta regresiva.
+  // Después: directo al LIVE. Quien ya se inscribió en este navegador no vuelve a llenar nada.
+  const INICIO = new Date(g.inicio).getTime(), ABRE = INICIO - 10 * 60e3, LLAVE = 'taller-inscrito-' + g.grupo;
+  const recordar = (nombre) => { try { localStorage.setItem(LLAVE, nombre); } catch (e) { /* sin memoria */ } };
+  const recordado = () => { try { return localStorage.getItem(LLAVE); } catch (e) { return null; } };
+  function esperar(nombre) {
+    if (Date.now() >= ABRE) { location.href = g.live; return; }
+    document.querySelector('main:not(.espera)').hidden = true; $('espera').hidden = false;
+    $('eTitulo').textContent = '¡Listo' + (nombre ? ', ' + nombre.split(' ')[0] : '') + '! Tu lugar está reservado';
+    $('eHora').textContent = g.hora;
+    $('eLink').textContent = location.href;
+    $('eEntrar').href = g.live;
+    const tic = () => {
+      const ms = INICIO - Date.now();
+      if (Date.now() >= ABRE) {
+        $('eCuenta').textContent = '¡Ya empieza!'; $('eCuentaK').textContent = 'Entra a la clase:';
+        $('eEntrar').classList.remove('tenue'); return;
+      }
+      const h = Math.floor(ms / 3.6e6), m = Math.floor(ms % 3.6e6 / 6e4), s = Math.floor(ms % 6e4 / 1e3);
+      $('eCuenta').textContent = (h ? h + ' h ' : '') + String(m).padStart(h ? 2 : 1, '0') + ' min ' + String(s).padStart(2, '0') + ' s';
+      setTimeout(tic, 1000);
+    };
+    tic();
+  }
+  if (Date.now() < ABRE) {
+    $('sub').textContent = g.texto + ': inscríbete aquí. La clase es ' + g.hora + '.';
+    b.textContent = 'Inscribirme';
+  }
+  if (recordado()) esperar(recordado());
   const post = (url, cuerpo) => fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo || {}) });
   const texto = async (r) => { try { const j = await r.json(); return (j.error && (j.error.message || j.error.mensaje)) || j.message || ''; } catch (e) { return ''; } };
   const codigo = async (r) => { try { const j = await r.clone().json(); return j.error && j.error.code; } catch (e) { return ''; } };
@@ -78,11 +130,12 @@
       } else if (!r.ok) {
         throw new Error(r.status === 429 ? 'Demasiados intentos: espera un minuto.' : (await texto(r)) || `No se pudo crear la cuenta (${r.status}).`);
       }
-      b.textContent = '✓ Listo, abriendo la clase…';
-      location.href = g.live;
+      b.textContent = '✓ Listo';
+      recordar(name);
+      esperar(name);
     } catch (err) {
       msg.textContent = err.message || 'No se pudo entrar. Prueba otra vez.';
-      b.disabled = false; b.textContent = 'Entrar a la clase en vivo';
+      b.disabled = false; b.textContent = Date.now() < ABRE ? 'Inscribirme' : 'Entrar a la clase en vivo';
     }
   });
 })();
