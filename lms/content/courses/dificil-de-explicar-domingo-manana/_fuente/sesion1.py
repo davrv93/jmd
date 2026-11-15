@@ -31,7 +31,7 @@ def html(e, leccion):
     vivo_js = "".join(f'<script src="../../comun/{l}"></script>\n' for l in e["libs"])
     vivo_js += '<script src="../../comun/vivo.js"></script>\n' if e["vivo"] else ""
     cuerpo = e["cuerpo"].replace("{HORA}", HORA[leccion])
-    js = e["js"].replace("{LECCION}", leccion)
+    js = e["js"].replace("{LECCION}", leccion).replace("{CURSO}", CURSOS[leccion].name)
     return f"""<!doctype html>
 <html lang="es">
 <head>
@@ -425,6 +425,76 @@ gsap.to(gato, { x: 300, duration: 2 });</pre>
   requestAnimationFrame(cuadro);
 })();""",
        pie="Willie (1928) se filmó a 24 fps con dibujos «en dos»: 12 dibujos por segundo")
+
+# ════════════════════════════════════════ 04b · Recursos en capas ════════════════════════════════════════
+CAPAS_INFO = [  # archivo, nombre, qué es, profundidad en la vista separada (px)
+    ("capa-1-cielo", "Cielo", "el fondo, opaco", -330), ("capa-2-sol", "Sol", "con su halo", -290), ("capa-3-nubes", "Nubes", "cinco nubes", -220),
+    ("capa-9-gaviotas", "Gaviotas", "en el cielo", -170), ("capa-4-montanas", "Montañas", "lejanas, con bruma", -130), ("capa-5-colinas", "Colinas", "a los lados", -70),
+    ("capa-6-mar", "Mar", "reflejos y el brillo del sol", 0), ("capa-7-barco", "Barco y gato", "el protagonista", 110), ("capa-8-olas", "Olas", "las del frente", 190),
+]
+filas = "".join(
+    f'<li><label><input type="checkbox" checked data-i="{i}"><span class="mini"><img src="../../comun/{a}.svg" alt=""></span>'
+    f'<span><b>{n}</b><small>{q}</small></span></label><a href="../../comun/{a}.svg" download="{a}.svg" title="Descargar {n}">⬇</a></li>'
+    for i, (a, n, q, _) in enumerate(CAPAS_INFO))
+pila = "".join(f'<img class="capa" id="cp{i}" src="../../comun/{a}.svg" alt="" style="--z:{z}px">' for i, (a, _, _, z) in enumerate(CAPAS_INFO))
+escena("04b-recursos-capas", Y("Recursos: la escena en 9 capas", "experiencia", "", 4),
+       "Recursos: la escena en 9 capas", "Experiencia", "ec", "E04b", f"""
+    <h1 class="esc-titulo a-in">Recursos: la escena en <em>9 capas</em></h1>
+    <section class="rc">
+      <div class="a-in" style="--d:.1s">
+        <div class="escen" id="escen"><div class="pila" id="pila">{pila}</div></div>
+        <div class="ctrl"><button type="button" id="separar" class="boton">Separar las capas</button>
+          <span class="nota" id="rc-nota">Pasa el mouse sobre la imagen: cada capa se mueve según su distancia.</span></div>
+      </div>
+      <div class="a-in" style="--d:.2s">
+        <p class="nota" style="margin-bottom:.4em">Dibujadas en código (SVG), con fondo transparente. <b>Con una sola imagen el parallax deforma; con capas, cada una va en su plano</b> y la profundidad es real. Apaga una para ver cuál es.</p>
+        <ul class="lista">{filas}</ul>
+        <a class="grande" id="zip" href="#" download>⬇ Descargar las 9 capas (.zip)</a>
+        <p class="nota">Úsalas en los ejemplos <b>«Capas»</b> de p5, Three.js y GSAP (las siguientes escenas).</p>
+      </div>
+    </section>""",
+       css="""
+.rc { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1.2vw; align-items: start; }
+.escen { position: relative; aspect-ratio: 16 / 9; border-radius: .9em; overflow: hidden; background: #e9e6f7; box-shadow: var(--card-shadow); perspective: 1400px; }
+.pila { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 1.2s cubic-bezier(.2,.7,.2,1); }
+.capa { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform 1.2s cubic-bezier(.2,.7,.2,1), opacity .3s; transform: translate3d(var(--dx, 0px), var(--dy, 0px), 0); }
+.separada .pila { transform: scale(.62) rotateY(-32deg) rotateX(10deg); }
+.separada .capa { transform: translate3d(0, 0, var(--z)); outline: 2px dashed rgba(90,73,214,.35); }
+.capa.off { opacity: 0; }
+.ctrl { display: flex; flex-wrap: wrap; gap: .6em; align-items: center; margin-top: .55em; }
+.boton { font: 700 .72em/1 system-ui, sans-serif; padding: .6em 1em; border-radius: 99px; border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.lista { list-style: none; margin: 0 0 .6em; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .35em; }
+.lista li { display: flex; align-items: center; gap: .4em; background: var(--s1); border: 1px solid var(--line); border-radius: .7em; padding: .3em .45em; }
+.lista label { display: flex; align-items: center; gap: .45em; flex: 1; cursor: pointer; min-width: 0; }
+.lista input { accent-color: var(--accent); }
+.mini { flex: none; width: 3.6em; aspect-ratio: 16 / 9; border-radius: .3em; overflow: hidden; background: repeating-conic-gradient(#d9d6e6 0 25%, #fff 0 50%) 0 0 / 10px 10px; }
+.mini img { width: 100%; height: 100%; display: block; }
+.lista b { display: block; font-size: .7em; } .lista small { display: block; font-size: .58em; color: var(--muted); }
+.lista a { text-decoration: none; font-size: .8em; color: var(--accent); }
+.grande { display: block; text-align: center; font: 700 .85em/1 system-ui, sans-serif; padding: .8em; border-radius: .8em; background: var(--accent); color: var(--on-accent); text-decoration: none; margin-bottom: .4em; }
+@media (max-width: 900px) { .rc { grid-template-columns: 1fr; } }""",
+       js="""
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const PROF = """ + json.dumps([z for *_, z in CAPAS_INFO]) + """;
+  $('zip').href = '/files/{CURSO}/materials/recursos-capas.zip';
+  let separada = false;
+  $('separar').onclick = () => {
+    separada = !separada; $('escen').classList.toggle('separada', separada);
+    $('separar').textContent = separada ? 'Juntar las capas' : 'Separar las capas';
+    $('rc-nota').textContent = separada ? 'Así están apiladas: cada dibujo a su distancia. Lo lejano se mueve poco; lo cercano, mucho.' : 'Pasa el mouse sobre la imagen: cada capa se mueve según su distancia.';
+  };
+  // parallax con el mouse (cuando están juntas): el desplazamiento crece con la cercanía
+  $('escen').addEventListener('pointermove', (e) => {
+    if (separada) return;
+    const r = e.currentTarget.getBoundingClientRect(), mx = (e.clientX - r.left) / r.width - .5, my = (e.clientY - r.top) / r.height - .5;
+    PROF.forEach((z, i) => { const k = (z + 330) / 520; const c = $('cp' + i); c.style.setProperty('--dx', (-mx * 46 * k).toFixed(1) + 'px'); c.style.setProperty('--dy', (-my * 18 * k).toFixed(1) + 'px'); });
+  });
+  $('escen').addEventListener('pointerleave', () => PROF.forEach((_, i) => { $('cp' + i).style.setProperty('--dx', '0px'); $('cp' + i).style.setProperty('--dy', '0px'); }));
+  document.querySelectorAll('.lista input').forEach((ch) => ch.onchange = () => $('cp' + ch.dataset.i).classList.toggle('off', !ch.checked));
+})();""",
+       pie="recursos-capas.zip también está en Materiales · cada capa: 2048×1152, SVG")
+
 
 # ════════════════════════════════════════ 05 · p5 en vivo ════════════════════════════════════════
 # Las capas: la escena del gato pirata en 9 dibujos con fondo transparente (_fuente/capas.py). Cada una en su plano.
