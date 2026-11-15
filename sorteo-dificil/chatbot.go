@@ -75,7 +75,7 @@ func (s *Sorteo) responderChat(texto string) map[string]any {
 	}
 
 	// fallback: muestra catálogo + reglas
-	return chatBase("Puedo ayudarte con esto:\n\n• **Taller**: ¿Difícil de explicar? ¡No!, hoy 5:30 – 7:00 p. m. — S/ 100, con tu cupón S/ 10.\n• **Sorteo**: público, sin cuenta; los 3 primeros entran gratis y el resto gana 90 %.\n• **Canje**: elige tu curso en /canje?c=TU-CODIGO y valida con tu WhatsApp.\n\n¿Sobre qué quieres que profundice?", []string{"Ver cursos con descuento", "¿Cómo funciona el sorteo?", "¿Cómo canjeo mi cupón?", "Precio y fechas"})
+	return chatBase("Puedo ayudarte con esto:\n\n• **Taller**: ¿Difícil de explicar? ¡No!, hoy 5:30 – 7:00 p. m. — S/ 100, con tu cupón S/ 10.\n• **Sorteo**: público, sin cuenta; los 3 primeros entran gratis y el resto puede ganar hasta 90 %.\n• **Canje**: elige tu curso en /canje?c=TU-CODIGO y valida con tu WhatsApp.\n\n¿Sobre qué quieres que profundice?", []string{"Ver cursos con descuento", "¿Cómo funciona el sorteo?", "¿Cómo canjeo mi cupón?", "Precio y fechas"})
 }
 
 func tokens(q string, words ...string) bool {
@@ -130,7 +130,7 @@ func chatSorteo(s *Sorteo) map[string]any {
 	txt := "Sorteo de penales de **¿Difícil de explicar? ¡No!**:\n\n" +
 		"1. Escribe tu nombre y WhatsApp (9 dígitos) y dale a *Quiero jugar*. No necesitas cuenta.\n" +
 		"2. Juega: adivina la tarjeta del árbitro y, si hace falta, el tiro libre.\n" +
-		"3. Los **3 primeros** entran **gratis**; el resto gana **90 %** → pagas **S/ 10** en lugar de S/ 100.\n\n" +
+		"3. Los **3 primeros** entran **gratis**; el resto puede ganar **hasta 90 %** → pagas **S/ 10** en lugar de S/ 100.\n\n" +
 		"El sorteo cierra **hoy domingo 15 nov a las 5:30 p. m.** (Lima), cuando empieza el taller."
 	return chatBase(txt, []string{"Quiero jugar", "Ver cursos", "¿Cómo canjeo mi cupón?"})
 }
