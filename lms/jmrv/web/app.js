@@ -219,7 +219,7 @@ async function download() {
 async function copyUrl() {
   if (!S.current) return;
   await navigator.clipboard.writeText(new URL(S.current.url, location.origin).href);
-  const btn = $("copyBtn"); const before = btn.textContent; btn.textContent = "✓ Copiado";
+  const btn = $("copyBtn"); const before = btn.textContent; btn.textContent = "Copiado";
   setTimeout(() => (btn.textContent = before), 1400);
 }
 async function cutout() {
@@ -478,7 +478,7 @@ function renderTimeline() {
   if (!frames.length) { strip.innerHTML = '<div class="tl-empty">Sin cuadros. Usa «Storyboard automático» o genera una secuencia.</div>'; return; }
   frames.forEach((f, i) => {
     const dur = f.duration || 1 / (S.proj.fps || 24);
-    const w = Math.round(Math.max(56, Math.min(240, dur * 90)) * (S.zoom / 120));
+    const w = Math.round(Math.max(96, Math.min(240, dur * 90)) * (S.zoom / 120));
     const card = document.createElement("figure");
     card.className = "tl-frame" + (i === S.sel ? " selected" : "");
     card.style.width = w + "px";
@@ -508,7 +508,7 @@ function renderTimeline() {
 }
 function renderRuler() {
   const ruler = $("tlRuler");
-  ruler.querySelectorAll(".tick,.tick-label").forEach((n) => n.remove());
+  ruler.querySelectorAll(".tick,.tick-label,.tl-playhead").forEach((n) => n.remove());
   const total = totalDur() || 1;
   const secs = Math.ceil(total);
   const step = secs > 24 ? 5 : secs > 12 ? 2 : 1;
@@ -602,10 +602,16 @@ async function deleteFrame() {
 }
 
 /* ── reproducción ── */
+const ICON = {
+  play: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5 3.3v9.4a.6.6 0 0 0 .9.5l7.4-4.7a.6.6 0 0 0 0-1L5.9 2.8a.6.6 0 0 0-.9.5z"/></svg>',
+  pause: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="4" y="3" width="2.8" height="10" rx=".8"/><rect x="9.2" y="3" width="2.8" height="10" rx=".8"/></svg>',
+  lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>',
+  unlock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 4.9-.7"/></svg>',
+};
 function togglePlay() {
-  if (S.playing) { S.playing = false; clearTimeout(S.playTimer2); $("vPlay").textContent = "▶"; return; }
+  if (S.playing) { S.playing = false; clearTimeout(S.playTimer2); $("vPlay").innerHTML = ICON.play; return; }
   if (!S.proj?.frames.length) return;
-  S.playing = true; $("vPlay").textContent = "⏸";
+  S.playing = true; $("vPlay").innerHTML = ICON.pause;
   const step = () => {
     if (!S.playing) return;
     const dur = (S.proj.frames[S.sel]?.duration || 1 / (S.proj.fps || 24)) * 1000;
@@ -620,13 +626,13 @@ function togglePlay() {
 /* ── storyboard ── */
 async function runStoryboard() {
   if (!S.proj) { setError("Abre un proyecto."); return; }
-  const btn = $("storyboardBtn"); btn.disabled = true; btn.textContent = "✦ Generando…";
+  const btn = $("storyboardBtn"); btn.disabled = true; btn.textContent = "Generando…";
   try {
     S.proj = await api(`/api/studio/projects/${encodeURIComponent(S.proj.id)}/storyboard`, {
       method: "POST", body: JSON.stringify({ count: S.proj.frames.length || 6 }),
     });
     S.sel = 0; renderProjectUI(); setStatus("Storyboard listo", "done");
-  } catch (e) { setError(e.message); } finally { btn.disabled = false; btn.textContent = "✦ Storyboard automático"; }
+  } catch (e) { setError(e.message); } finally { btn.disabled = false; btn.textContent = "Storyboard automático"; }
 }
 
 /* ── versiones ── */
@@ -690,7 +696,7 @@ function renderRenders() {
     div.className = "render-item";
     const url = `/outputs/studio/${S.proj.id}/renders/${r.file}`;
     div.innerHTML = `<span class="mono truncate">${esc(r.file)} ${r.width ? `· ${r.width}×${r.height}` : ""} ${r.duration ? `· ${Number(r.duration).toFixed(1)}s` : ""}</span>
-      <a href="${url}" target="_blank" rel="noopener">abrir ↗</a>`;
+      <a href="${url}" target="_blank" rel="noopener">abrir</a>`;
     box.appendChild(div);
   }
   $("exVerify").disabled = !renders.length;
@@ -789,7 +795,7 @@ $("guidance").addEventListener("input", (e) => ($("guidanceVal").textContent = p
 $("seedLock").addEventListener("click", () => {
   S.seedLocked = !S.seedLocked;
   $("seedLock").classList.toggle("active", S.seedLocked);
-  $("seedLock").textContent = S.seedLocked ? "🔒" : "🔓";
+  $("seedLock").innerHTML = S.seedLocked ? ICON.lock : ICON.unlock;
   if (S.seedLocked && !$("seed").value) $("seed").value = Math.floor(Math.random() * 1000000);
 });
 $("seedDice").addEventListener("click", () => ($("seed").value = Math.floor(Math.random() * 1000000)));
@@ -798,7 +804,7 @@ $("enhanceBtn").addEventListener("click", async () => {
   if (!prompt) { setError("Escribe un prompt primero."); return; }
   const btn = $("enhanceBtn"); btn.disabled = true; btn.textContent = "…";
   try { const { prompt: better } = await api("/api/enhance", { method: "POST", body: JSON.stringify({ prompt }) }); $("prompt").value = better; setError(""); }
-  catch (e) { setError(e.message); } finally { btn.disabled = false; btn.textContent = "✨ Mejorar prompt"; }
+  catch (e) { setError(e.message); } finally { btn.disabled = false; btn.textContent = "Mejorar prompt"; }
 });
 $("framesCount").addEventListener("change", () => { syncSheetCount(); renderSheet(); });
 $("framesCount").addEventListener("input", updateDurHint);
