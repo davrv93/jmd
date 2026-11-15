@@ -81,6 +81,14 @@ textarea { min-height: 4.2em; resize: vertical; }
 .lista .it button { font: 700 .9em/1 system-ui; border: 0; background: none; color: var(--muted); cursor: pointer; padding: .2em .3em; border-radius: .3em; }
 .lista .it button:hover { color: var(--fg); background: var(--s3); }
 .vacio { font-size: .8em; color: var(--muted); margin: 0; }
+.sugeridos { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; }
+.sugeridos button { padding: 0; border: 2px solid transparent; border-radius: .6em; overflow: hidden; cursor: pointer; background: var(--s3); aspect-ratio: 1; display: grid; place-items: center; font: 600 .72em/1.2 system-ui, sans-serif; color: var(--muted); }
+.sugeridos button:hover { border-color: var(--accent); }
+.sugeridos img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.paleta { display: flex; gap: .3em; align-items: center; font-size: .74em; color: var(--muted); }
+.paleta i { width: 1.3em; height: 1.3em; border-radius: 50%; border: 1px solid var(--line2); display: inline-block; }
+details.prompt summary { cursor: pointer; font: 600 .74em/1.3 system-ui, sans-serif; color: var(--muted); }
+details.prompt p { font: .7em/1.45 var(--mono); color: var(--fg); margin: .4em 0 0; word-break: break-word; }
 .modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(10,9,20,.72); padding: 2em; }
 .modal > div { background: var(--s1); border-radius: 1em; padding: 1em; display: grid; gap: .7em; max-width: min(92vw, 900px); max-height: 92vh; }
 .modal img { max-width: 100%; max-height: 70vh; border-radius: .6em; background: repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0 / 20px 20px; }
@@ -480,6 +488,98 @@ textarea { min-height: 4.2em; resize: vertical; }
     const n = await borrarRegion(c, sem, c.tol ?? 42, c.suave ?? 2, c.orig);
     pintar(); return n;
   }
+  // ---------- Fondo sugerido con IA (FLUX de la clase, gratis): estilo + colores de tu imagen ----------
+  const LECCION = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || 'dt-01';
+  const ESTILOS_FONDO = [
+    ['Realista', 'photorealistic studio product photography backdrop, soft diffused key light, subtle reflection on the surface, shallow depth of field'],
+    ['Lujo', 'luxury scene, polished black marble podium, gold accents, dramatic rim light, elegant and premium'],
+    ['Naturaleza', 'natural setting, wet stones and fresh moss, soft morning light, water droplets, cinematic'],
+    ['Artístico', 'expressive oil painting background, bold visible brush strokes, rich painterly textures, gallery art'],
+    ['Acuarela', 'soft watercolor wash background, visible paper texture, delicate color gradients'],
+    ['Minimalista', 'minimal pastel set design, simple geometric pedestals, soft long shadows, clean modern aesthetic'],
+    ['Neón', 'futuristic city at night, glowing neon lights reflected on a wet floor, cyberpunk mood'],
+    ['Verano', 'sunny tropical beach, turquoise sea, warm sand, palm leaf shadows, bright summer light'],
+  ];
+  const NOMBRES_COLOR = [[20, 20, 25, 'black'], [245, 245, 245, 'white'], [128, 128, 128, 'gray'], [195, 198, 205, 'silver'], [212, 175, 55, 'gold'],
+    [30, 50, 120, 'navy blue'], [45, 95, 205, 'blue'], [110, 175, 230, 'sky blue'], [0, 128, 128, 'teal'], [40, 140, 70, 'green'], [150, 185, 90, 'olive green'],
+    [215, 40, 40, 'red'], [130, 20, 40, 'burgundy'], [240, 125, 35, 'orange'], [245, 210, 60, 'yellow'], [240, 150, 180, 'pink'], [130, 60, 170, 'purple'],
+    [200, 175, 225, 'lavender'], [120, 80, 40, 'brown'], [225, 205, 170, 'beige']];
+  async function paletaDe(c) {
+    const im = await cargarImg(c.src), cv = document.createElement('canvas'); cv.width = cv.height = 64;
+    const g = cv.getContext('2d'); g.drawImage(im, 0, 0, 64, 64);
+    const d = g.getImageData(0, 0, 64, 64).data, cubos = new Map();
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 200) continue;
+      const k = (d[i] >> 5) * 64 + (d[i + 1] >> 5) * 8 + (d[i + 2] >> 5), b = cubos.get(k) || [0, 0, 0, 0];
+      b[0] += d[i]; b[1] += d[i + 1]; b[2] += d[i + 2]; b[3]++; cubos.set(k, b);
+    }
+    const top = [...cubos.values()].sort((a, b) => b[3] - a[3]).slice(0, 3).map((b) => [b[0] / b[3], b[1] / b[3], b[2] / b[3]]);
+    const nombre = ([r, g2, b]) => NOMBRES_COLOR.reduce((m, x) => { const dd = (x[0] - r) ** 2 + (x[1] - g2) ** 2 + (x[2] - b) ** 2; return dd < m[0] ? [dd, x[3]] : m; }, [1e9, ''])[1];
+    return top.map((rgb) => ({ hex: '#' + rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join(''), nombre: nombre(rgb) }));
+  }
+  function promptFondo(estilo, que, paleta) {
+    const colores = [...new Set(paleta.map((p) => p.nombre))].join(', ');
+    return `${estilo[1]}, background scene for ${que ? 'a photo of ' + que : 'a product photo'}, empty open space in the center where the subject will be placed, ` +
+      `no product, no objects in the center, no people, no text, no letters, no logos, color palette that harmonizes with ${colores || 'neutral tones'}, high detail`;
+  }
+  async function generarFondo(prompt) {
+    const orientacion = E.W > E.H * 1.15 ? 'horizontal' : E.H > E.W * 1.15 ? 'vertical' : 'cuadrado';
+    const r = await fetch(`/api/v1/live/${LECCION}/imagen`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, orientacion }) });
+    if (!r.ok) {
+      let msg = `error ${r.status}`; try { const j = await r.json(); msg = (j.error && (j.error.message || j.error.mensaje)) || j.message || msg; } catch (e) { /* sin detalle */ }
+      throw new Error(r.status === 429 ? 'Se acabó tu cupo de imágenes de hoy: usa una de las que ya tienes.' : msg);
+    }
+    const blob = await r.blob();
+    return new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(blob); });
+  }
+  function ponerFondo(src, nombre, producto) {
+    const im = new Image();
+    im.onload = () => {
+      const f = Math.max(E.W / im.naturalWidth, E.H / im.naturalHeight), w = Math.round(im.naturalWidth * f), h = Math.round(im.naturalHeight * f);
+      const c = Object.assign(base('img'), { nombre, src, orig: src, nw: im.naturalWidth, nh: im.naturalHeight, w, h, x: Math.round((E.W - w) / 2), y: Math.round((E.H - h) / 2) });
+      E.capas.unshift(c);
+      if (producto && !producto.sombra) producto.sombra = 28;   // el producto «se apoya» en el fondo nuevo
+      pintar();
+    };
+    im.src = src;
+  }
+  function seccionFondoIA(c) {
+    c.fondoIA = c.fondoIA || { estilo: 0, que: '', sugeridos: [] };
+    const st = c.fondoIA, cont = document.createElement('div'); cont.style.cssText = 'display:grid;gap:.5em';
+    const chips = document.createElement('div'); chips.className = 'chips';
+    ESTILOS_FONDO.forEach(([t], i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t; b.setAttribute('aria-pressed', st.estilo === i); b.onclick = () => { st.estilo = i; [...chips.children].forEach((x, k) => x.setAttribute('aria-pressed', k === i)); }; chips.appendChild(b); });
+    const que = document.createElement('input'); que.type = 'text'; que.placeholder = '¿Qué es? (ej.: un perfume azul)'; que.value = st.que; que.oninput = () => { st.que = que.value; };
+    const pal = document.createElement('div'); pal.className = 'paleta'; pal.textContent = 'Colores de tu imagen: …';
+    paletaDe(c).then((p) => { st.paleta = p; pal.innerHTML = 'Colores de tu imagen: ' + p.map((x) => `<i style="background:${x.hex}" title="${x.nombre}"></i>`).join(''); }).catch(() => { pal.textContent = ''; });
+    const det = document.createElement('details'); det.className = 'prompt'; det.innerHTML = '<summary>Ver el prompt que se manda</summary><p></p>';
+    const gal = document.createElement('div'); gal.className = 'sugeridos';
+    const pintarGal = () => {
+      gal.innerHTML = '';
+      st.sugeridos.forEach((x) => {
+        const b = document.createElement('button'); b.type = 'button'; b.title = 'Usar este fondo';
+        if (x.src) { b.innerHTML = '<img alt="">'; b.querySelector('img').src = x.src; b.onclick = () => ponerFondo(x.src, 'Fondo IA · ' + x.estilo, c); }
+        else b.textContent = x.error || 'Generando…';
+        gal.appendChild(b);
+      });
+    };
+    pintarGal();
+    const ir = boton('Sugerir 2 fondos', async (e) => {
+      const bt = e.currentTarget; bt.disabled = true;
+      const estilo = ESTILOS_FONDO[st.estilo], prompt = promptFondo(estilo, st.que.trim(), st.paleta || []);
+      det.querySelector('p').textContent = prompt;
+      const nuevos = [{ estilo: estilo[0] }, { estilo: estilo[0] }]; st.sugeridos = nuevos.concat(st.sugeridos).slice(0, 6); pintarGal();
+      for (const [k, n] of nuevos.entries()) {
+        bt.textContent = `Generando ${k + 1} de 2…`;
+        try { n.src = await generarFondo(prompt + (k ? ', alternative composition' : '')); } catch (err) { n.error = err.message; }
+        pintarGal();
+      }
+      bt.disabled = false; bt.textContent = 'Sugerir 2 fondos más';
+    }, true);
+    cont.append(chips, que, pal, ir, gal, det,
+      Object.assign(document.createElement('p'), { className: 'nota', textContent: 'Toca un fondo para ponerlo detrás de tu imagen. Primero quita el fondo de tu foto.' }));
+    return seccion('Fondo sugerido con IA', cont);
+  }
+
   // Recorte con IA: el servicio recorte-ia del mismo dominio (IS-Net en el servidor; la CSP no deja WebAssembly aquí)
   async function quitarFondoIA(c) {
     const [cab, b64] = c.orig.split(','), bin = atob(b64), u8 = new Uint8Array(bin.length);
@@ -531,6 +631,7 @@ textarea { min-height: 4.2em; resize: vertical; }
       const rest = boton('Restaurar original', () => { c.src = c.orig; pintar(); });
       c.tol = c.tol ?? 42; c.suave = c.suave ?? 2;
       caja.append(seccion('Fondo', quitar, aviso, liso, control('Tolerancia', 'tol', 5, 120, 1, '', c, () => {}), control('Borde suave', 'suave', 0, 4, 1, '', c, () => {}), vt, rest));
+      if (!/^Fondo IA/.test(c.nombre)) caja.append(seccionFondoIA(c));
     } else {
       const ta = document.createElement('textarea'); ta.value = c.texto; ta.addEventListener('input', () => { c.texto = ta.value; pintarCapas(); pintarLista(); });
       const mos = document.createElement('div'); mos.className = 'fuentes';
