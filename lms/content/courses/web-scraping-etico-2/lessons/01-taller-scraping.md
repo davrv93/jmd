@@ -15,6 +15,11 @@ recording:
   url: ""
   passcode: ""
 materials:
+  - id: ws2-01-pasoapaso
+    title: "Video paso a paso: los 5 retos con y sin permiso (2:23, sin voz)"
+    kind: video
+    file: materials/video-ws2-01-paso-a-paso.mp4
+    objective_ids: [ws2-01-o1, ws2-01-o2, ws2-01-o3]
   - id: ws2-01-guia
     title: "Guía paso a paso (PDF): pedir datos con y sin permiso, 5 retos"
     kind: pdf
