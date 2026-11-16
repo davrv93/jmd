@@ -10,7 +10,6 @@ from pathlib import Path
 CURSO = Path(__file__).resolve().parent.parent
 LIVE = CURSO / "live/ipt-01"
 COMUN = CURSO / "live/_comun"
-SISTEMAS = json.loads((Path(__file__).parent / "sistemas.json").read_text(encoding="utf-8"))
 e = html.escape
 
 CSS = """/* IA para todos · sesión 1: estilo mínimo de las escenas (lo escribe _fuente/ipt01.py). */
@@ -79,6 +78,8 @@ window.IPT = (() => {
       abrir(txt.trim()); b.classList.add('ok'); setTimeout(() => b.classList.remove('ok'), 2400); return;
     }
     if (ev.target.closest('[data-abrir-dsh]')) { aLMS({ tipo: 'abrir-dsh' }); avisar('DeepSeek Harness está abierto al lado.'); return; }
+    const v = ev.target.closest('[data-visor]');
+    if (v) { aLMS({ tipo: 'abrir-visor', ruta: v.dataset.visor }); avisar('Abrí el Visor. Si sale vacío, espera a que DeepSeek Harness termine y toca de nuevo.'); return; }
     if (ev.target.closest('[data-clave]')) { aLMS({ tipo: 'dsh-clave' }); avisar('Se abrió una pestaña para guardar tu clave. Vuelve aquí cuando termines.'); }
   });
   return { abrir, copiar };
@@ -136,7 +137,7 @@ ESCENAS.append(("01-hoy", dict(titulo="Hoy, en tres pasos", fase="experiencia", 
     """  <ol class="lista">
     <li><span class="num">1</span><div><b>Tu clave de DeepSeek</b><span>Creas tu cuenta, recargas un poco y guardas tu clave.</span></div></li>
     <li><span class="num">2</span><div><b>Abres DeepSeek Harness</b><span>Tu asistente aparece al lado de esta pantalla, listo para trabajar.</span></div></li>
-    <li><span class="num">3</span><div><b>Eliges un sistema y le pides cosas útiles</b><span>Que te lo explique, que haga un manual, un mapa y «la foto» del sistema.</span></div></li>
+    <li><span class="num">3</span><div><b>Le pides cosas de tu día a día</b><span>Un mensaje difícil, un resumen, una lista de compras o una calculadora de precios: lo que te sirva.</span></div></li>
   </ol>
   <p class="calma">Vamos juntos y a tu ritmo. Si algo no sale a la primera, es normal: levanta la mano y lo vemos.</p>""")))
 
@@ -169,63 +170,72 @@ ESCENAS.append(("03-abrir-dsh", dict(titulo="Abre DeepSeek Harness", fase="exper
   </div>
   <p class="calma">Si te pide una clave, vuelve al paso anterior y guárdala. No pasa nada: se arregla en un minuto.</p>""")))
 
-# 4 · Elige tu sistema (15)
-tarjetas = []
-for i, s in enumerate(SISTEMAS):
-    pedido = (f"Ejecuta en la terminal: aula sistema {s['id']}\n"
-              f"Cuando termine, lee el sistema «{s['nombre']}» que quedó en /trabajo/sistema y cuéntame en 5 líneas simples, "
-              "sin tecnicismos: qué negocio atiende, quién lo usa y las 3 cosas más importantes que hace.")
-    negocio = s["negocio"].split(":")[0].split(".")[0]
-    tarjetas.append(f"""    <article class="tarjeta">
-      <span class="rubro">{e(s['rubro'])}</span>
-      <h2>{e(s['nombre'])}</h2>
-      <p class="para">{e(negocio)}.</p>
-      <button class="boton sec" type="button" data-pedido="{e(pedido)}">Usar este {ICONO}</button>
-    </article>""")
-ESCENAS.append(("04-tu-sistema", dict(titulo="Elige tu sistema", fase="experimentacion", paso="dsh", duracion_min=10, compuerta="lo_logre", dsh=True), pagina(
-    4, "Elige tu sistema", "Elige <em>tu sistema</em>",
-    "Son 15 negocios de práctica, con sus usuarios y reportes. Elige el que más se parezca a tu trabajo: el asistente lo prepara y te lo explica.",
-    '  <div class="rejilla">\n' + "\n".join(tarjetas) + "\n  </div>")))
-
-# 5 · Ejemplos útiles
-EJEMPLOS = [
-    ("Explícamelo como a mi jefe", "Entiende en un minuto un sistema que no conoces.",
-     "Lee el sistema de /trabajo/sistema y explícamelo como a un gerente que no programa: para qué sirve, quién lo usa y qué problema resuelve. Máximo 8 líneas, en español sencillo."),
-    ("¿Quién puede hacer qué?", "Los usuarios y sus permisos, en una tabla clara.",
-     "En /trabajo/sistema busca los roles de usuario y arma una tabla: rol, qué puede hacer y qué no. Al lado de cada fila pon dónde lo viste (archivo:línea). Guárdala en docs/roles.md."),
-    ("Un manual de una página", "Una guía para quien recién empieza a usarlo.",
-     "Escribe un manual de una página para el rol que más usa el sistema de /trabajo/sistema: su tarea diaria en pasos numerados, en lenguaje simple, con un consejo útil al final. Guárdalo en docs/manual.md."),
-    ("El mapa del sistema", "Un dibujo de cómo se conectan sus partes.",
-     "Dibuja el mapa de /trabajo/sistema con un diagrama Mermaid: pantallas, datos principales y cómo se conectan. Guárdalo en docs/mapa.md con una explicación de 5 líneas."),
-    ("La foto del sistema", "El registro de cómo está hoy, para comparar en la próxima clase.",
-     "Ejecuta en la terminal: aula sistema foto\nLuego resúmeme en 6 viñetas lo que dice FOTO/FOTO.md y dime qué archivos quedaron en la carpeta FOTO."),
-    ("Comprueba 5 afirmaciones", "Separa lo que dice el código de lo que falta confirmar.",
-     "Elige 5 afirmaciones de FOTO/FOTO.md y compruébalas en el código de /trabajo/sistema. Para cada una pon «confirmada» o «por verificar», con archivo:línea. Guárdalo en docs/verificacion.md."),
-    ("Mejoras de seguridad", "Tres mejoras concretas, de la más importante a la menos.",
-     "Revisa con calma la seguridad de /trabajo/sistema y dame las 3 mejoras más importantes: dónde está (archivo:línea), por qué importa y cómo se arregla, en 2 líneas cada una."),
-    ("Un correo claro para tu cliente", "Para tu día a día: un mensaje profesional en segundos.",
-     "Escribe un correo breve y amable para un cliente: su pedido llegará 2 días tarde y le ofrecemos envío gratis en su próxima compra. Dame dos versiones: una formal y una cercana."),
+# 4 · Pídele ayuda al instante (respuestas en el chat)
+AYUDA = [
+    ("Un mensaje difícil por WhatsApp", "Para decir algo incómodo sin sonar mal.",
+     "Ayúdame a escribir un mensaje amable por WhatsApp para recordarle a un cliente que me debe S/ 150 desde hace dos semanas. Que no suene a reclamo. Dame dos versiones cortas."),
+    ("Corrige mi texto", "Ortografía y redacción, sin cambiar lo que quieres decir.",
+     "Corrige la ortografía y la redacción de este texto sin cambiar lo que quiero decir, y dime en una lista qué corregiste:\n[pega aquí tu texto]"),
+    ("Explícamelo fácil", "Cualquier tema, con un ejemplo de la vida diaria.",
+     "Explícame qué es la inflación como si tuviera 12 años, con un ejemplo de compras en el mercado. Máximo 6 líneas."),
+    ("Resume un texto largo", "Lo importante en 5 puntos y qué te toca hacer.",
+     "Resume este texto en 5 viñetas y dime al final las 2 cosas que tengo que hacer:\n[pega aquí el texto]"),
+    ("Ideas para vender más", "Para tu negocio o emprendimiento.",
+     "Tengo una pequeña bodega en mi barrio. Dame 5 ideas sencillas y baratas para vender más este mes, con un ejemplo concreto de cada una."),
+    ("Publicaciones para redes", "Textos listos para Facebook o Instagram.",
+     "Escribe 3 publicaciones para Facebook de una pastelería casera que vende tortas por pedido: una de lanzamiento, una de oferta y una de agradecimiento. Tono cercano, con algunos emojis."),
+    ("Prepárame para una entrevista", "Practica antes de ir.",
+     "Voy a una entrevista de trabajo para asistente administrativo. Hazme 5 preguntas que me podrían hacer y dime cómo responder cada una de forma natural y segura."),
+    ("Una receta con lo que tengo", "Cocina con lo que hay en casa.",
+     "Tengo arroz, huevos, cebolla, tomate y atún. Dame una receta fácil para 3 personas en 30 minutos, paso a paso."),
 ]
-ESCENAS.append(("05-ejemplos", dict(titulo="Pídele cosas útiles", fase="experimentacion", paso="dsh", duracion_min=30, compuerta="lo_logre", dsh=True), pagina(
-    5, "Pídele cosas útiles", "Pídele <em>cosas útiles</em>",
-    "Toca un ejemplo: se copia y se abre DeepSeek Harness. Pega con Ctrl+V (⌘V en Mac) y presiona Enter. Puedes cambiar el texto antes de enviarlo.",
-    '  <div class="rejilla">\n' + "\n".join(tarjeta_pedido(i, *x) for i, x in enumerate(EJEMPLOS)) + "\n  </div>")))
+ESCENAS.append(("04-ayuda-al-instante", dict(titulo="Pídele ayuda al instante", fase="experimentacion", paso="dsh", duracion_min=20, compuerta="lo_logre", dsh=True), pagina(
+    4, "Pídele ayuda al instante", "Pídele ayuda <em>al instante</em>",
+    "Toca un ejemplo: se copia y se abre DeepSeek Harness. Pega con Ctrl+V (⌘V en Mac) y presiona Enter. Cambia los datos por los tuyos cuando quieras.",
+    '  <div class="rejilla">\n' + "\n".join(tarjeta_pedido(f"a{i}", *x) for i, x in enumerate(AYUDA)) + "\n  </div>")))
+
+# 5 · Crea algo que puedas usar (archivos que se ven en el Visor)
+CREA = [
+    ("Lista de compras con casillas", "Marca lo que ya compraste desde tu celular.", "compras",
+     "Crea una página web sencilla en la carpeta compras (compras/index.html) con mi lista de compras de la semana agrupada por secciones (frutas y verduras, abarrotes, limpieza), con casillas para marcar lo que ya compré y un botón para borrar lo marcado. Que se vea bonita en el celular y que guarde las marcas en el navegador."),
+    ("Calculadora de precios", "Cuánto cobrar para ganar lo que quieres.", "precios",
+     "Crea en la carpeta precios (precios/index.html) una calculadora simple: escribo cuánto me cuesta un producto y qué ganancia quiero en %, y me dice el precio de venta sin IGV y con IGV (18 %). Letras grandes y claras."),
+    ("Mi semana organizada", "Pendientes de lunes a domingo.", "semana",
+     "Crea en la carpeta semana (semana/index.html) un planificador de lunes a domingo con mañana, tarde y noche, donde pueda escribir mis pendientes y que se guarden en el navegador. Sencillo y bonito."),
+    ("Control de gastos del mes", "Anota y mira en qué se va tu dinero.", "gastos",
+     "Crea en la carpeta gastos (gastos/index.html) una página para anotar mis gastos del mes (fecha, en qué, cuánto y categoría) que me muestre el total y cuánto gasté en cada categoría, y que guarde todo en el navegador."),
+    ("Tarjeta de presentación digital", "Para compartir por WhatsApp.", "tarjeta",
+     "Crea en la carpeta tarjeta (tarjeta/index.html) una tarjeta de presentación digital elegante con mi nombre, a qué me dedico, mi WhatsApp y un botón para escribirme. Usa datos de ejemplo que yo pueda cambiar después."),
+    ("La carta de un restaurante", "Bonita para mostrar en el celular.", "carta",
+     "Crea en la carpeta carta (carta/index.html) la carta de un restaurante de comida criolla con 3 entradas, 4 platos de fondo y 2 postres, con precios en soles. Sin fotos, pero que se vea elegante en el celular."),
+]
+def tarjeta_crea(i, titulo, para, carpeta, pedido):
+    return f"""    <article class="tarjeta">
+      <h2>{e(titulo)}</h2>
+      <p class="para">{e(para)}</p>
+      <pre class="pedido" id="c{i}">{e(pedido)}</pre>
+      <div class="fila">{boton_pedido(f"c{i}")}<button class="boton sec" type="button" data-visor="{carpeta}/index.html">Ver el resultado</button></div>
+    </article>"""
+ESCENAS.append(("05-crea-algo-util", dict(titulo="Crea algo que puedas usar", fase="experimentacion", paso="dsh", duracion_min=30, compuerta="lo_logre", dsh=True), pagina(
+    5, "Crea algo que puedas usar", "Crea algo que <em>puedas usar</em>",
+    "DeepSeek Harness también hace páginas que funcionan. Pide una, espera a que termine y toca «Ver el resultado»: se abre en el Visor, al lado.",
+    '  <div class="rejilla">\n' + "\n".join(tarjeta_crea(i, *x) for i, x in enumerate(CREA)) + "\n  </div>")))
 
 # 6 · Cierre
 ESCENAS.append(("06-cierre", dict(titulo="Tu tarea y lo que sigue", fase="reflexion", paso="ver", duracion_min=5, compuerta="presentes"), pagina(
-    6, "Tu tarea y lo que sigue", "Tu tarea, en <em>tres cosas</em>",
-    "Lo que hiciste hoy ya es la mayor parte. Termínalo con calma esta semana.",
+    6, "Tu tarea y lo que sigue", "Tu tarea: hazlo <em>tuyo</em>",
+    "Lo mejor de hoy es que ya sabes pedir. Esta semana, úsalo para algo real.",
     """  <ol class="lista">
-    <li><span class="num">1</span><div><b>La foto de tu sistema</b><span>La carpeta FOTO (ejemplo «La foto del sistema»).</span></div></li>
-    <li><span class="num">2</span><div><b>Tus 5 afirmaciones comprobadas</b><span>El archivo docs/verificacion.md (ejemplo «Comprueba 5 afirmaciones»).</span></div></li>
-    <li><span class="num">3</span><div><b>Un documento que te sirva</b><span>El manual, el mapa o la tabla de roles: el que más te guste.</span></div></li>
+    <li><span class="num">1</span><div><b>Una ayuda real</b><span>Usa un ejemplo de «Pídele ayuda» con tu caso de verdad: tu mensaje, tu texto, tu negocio.</span></div></li>
+    <li><span class="num">2</span><div><b>Una herramienta para ti</b><span>Pide una de «Crea algo» con tus datos: tu lista, tus precios o tus gastos.</span></div></li>
+    <li><span class="num">3</span><div><b>Comparte tu favorito</b><span>Sube una captura a la tarea del curso y cuéntanos para qué te sirvió.</span></div></li>
   </ol>
   <div class="tarjeta" style="margin-top:16px">
-    <h2>Empaca tu entrega</h2>
-    <pre class="pedido" id="entrega">Empaqueta mi entrega: crea entrega-s1.zip con las carpetas FOTO y docs de /trabajo/sistema, y dime qué archivos incluiste.</pre>
-    """ + boton_pedido("entrega", "Copiar y abrir") + """
+    <h2>¿Qué hiciste hoy?</h2>
+    <pre class="pedido" id="repaso">Dime qué carpetas y archivos creamos hoy en esta carpeta de trabajo y para qué sirve cada uno, en una lista corta.</pre>
+    """ + boton_pedido("repaso", "Copiar y abrir") + """
   </div>
-  <p class="calma">Próxima clase, domingo 22 a las 7:30 p. m.: medimos cuánto gasta el asistente y aprendemos a gastar menos. ¡Buen trabajo hoy!</p>""")))
+  <p class="calma">Próxima clase, domingo 22 a las 7:30 p. m.: aprendemos a pedir mejor y a gastar menos saldo. ¡Buen trabajo hoy!</p>""")))
 
 
 def yaml(id_, m):

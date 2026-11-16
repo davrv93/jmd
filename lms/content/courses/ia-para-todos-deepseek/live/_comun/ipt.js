@@ -23,6 +23,8 @@ window.IPT = (() => {
       abrir(txt.trim()); b.classList.add('ok'); setTimeout(() => b.classList.remove('ok'), 2400); return;
     }
     if (ev.target.closest('[data-abrir-dsh]')) { aLMS({ tipo: 'abrir-dsh' }); avisar('DeepSeek Harness está abierto al lado.'); return; }
+    const v = ev.target.closest('[data-visor]');
+    if (v) { aLMS({ tipo: 'abrir-visor', ruta: v.dataset.visor }); avisar('Abrí el Visor. Si sale vacío, espera a que DeepSeek Harness termine y toca de nuevo.'); return; }
     if (ev.target.closest('[data-clave]')) { aLMS({ tipo: 'dsh-clave' }); avisar('Se abrió una pestaña para guardar tu clave. Vuelve aquí cuando termines.'); }
   });
   return { abrir, copiar };
