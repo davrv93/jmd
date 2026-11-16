@@ -74,6 +74,101 @@ materials:
     kind: zip
     file: materials/kit-foto-del-sistema.zip
     objective_ids: [ipt-02-o2, ipt-02-o4]
+  - id: ipt-02-de-s1-kit
+    title: Kit «Foto del sistema» (skill, AGENTS.sistema.md y foto.mjs; para tu laptop, Ruta A; el aula ya lo trae)
+    kind: zip
+    file: materials/kit-foto-del-sistema.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-muebleria
+    title: "Sistema de práctica «muebleria» · Maderas del Sur · Ventas (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/muebleria.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-papeleria
+    title: "Sistema de práctica «papeleria» · Papelería Útil (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/papeleria.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-abogados
+    title: "Sistema de práctica «abogados» · Estudio Jurídico Paredes & Asociados (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/abogados.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-centro-salud
+    title: "Sistema de práctica «centro-salud» · Centro de Salud Santa Rosa (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/centro-salud.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-consultora-software
+    title: "Sistema de práctica «consultora-software» · Nexa Soluciones TI (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/consultora-software.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-fabrica-bi
+    title: "Sistema de práctica «fabrica-bi» · DataFactory (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/fabrica-bi.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-lab-redes
+    title: "Sistema de práctica «lab-redes» · Laboratorio de Redes Andino (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/lab-redes.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-linea-produccion
+    title: "Sistema de práctica «linea-produccion» · Manufacturas Altiplano (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/linea-produccion.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-botica
+    title: "Sistema de práctica «botica» · Botica Salud Total (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/botica.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-restaurante
+    title: "Sistema de práctica «restaurante» · Sabores del Colca (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/restaurante.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-taller-mecanico
+    title: "Sistema de práctica «taller-mecanico» · Taller Automotriz Los Andes (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/taller-mecanico.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-colegio
+    title: "Sistema de práctica «colegio» · I.E. San Martín (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/colegio.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-transportes
+    title: "Sistema de práctica «transportes» · Transportes Andes Cargo (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/transportes.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-hotel
+    title: "Sistema de práctica «hotel» · Hostal Plaza Mayor (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/hotel.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-sis-constructora
+    title: "Sistema de práctica «constructora» · Constructora Ingeniería Sur (zip para la Ruta A)"
+    kind: zip
+    file: materials/sistemas/constructora.zip
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-m-repo
+    title: DeepSeek Harness · repositorio oficial (código, README, licencia MIT)
+    kind: repo
+    url: https://github.com/deepseek-ai/deepseek-harness
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-m-node
+    title: "Node.js · descarga (solo para tu laptop, Ruta A: dsh pide 24.9 o más; el aula ya lo trae)"
+    kind: link
+    url: https://nodejs.org/
+    objective_ids: [ipt-02-o2]
+  - id: ipt-02-de-s1-m-agents
+    title: AGENTS.md · el formato abierto de instrucciones para agentes
+    kind: doc
+    url: https://agents.md/
+    objective_ids: [ipt-02-o2]
 cycle:
   - id: ver
     title: Ver la clase

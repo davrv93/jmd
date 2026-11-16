@@ -142,7 +142,7 @@ ESCENAS.append(("01-hoy", dict(titulo="Hoy, en tres pasos", fase="experiencia", 
   <p class="calma">Vamos juntos y a tu ritmo. Si algo no sale a la primera, es normal: levanta la mano y lo vemos.</p>""")))
 
 # 2 · Tu clave
-ESCENAS.append(("02-tu-clave", dict(titulo="Tu cuenta y tu clave", fase="experiencia", paso="ver", duracion_min=15, compuerta="lo_logre"), pagina(
+ESCENAS.append(("02-tu-clave", dict(titulo="Tu cuenta y tu clave", fase="experiencia", paso="cuenta", duracion_min=15, compuerta="lo_logre"), pagina(
     2, "Tu cuenta y tu clave", "Tu cuenta y tu <em>clave</em>",
     "Una sola vez. Con tu clave, DeepSeek Harness trabaja con tu propio saldo.",
     """  <ol class="lista">
@@ -189,7 +189,7 @@ AYUDA = [
     ("Una receta con lo que tengo", "Cocina con lo que hay en casa.",
      "Tengo arroz, huevos, cebolla, tomate y atún. Dame una receta fácil para 3 personas en 30 minutos, paso a paso."),
 ]
-ESCENAS.append(("04-ayuda-al-instante", dict(titulo="Pídele ayuda al instante", fase="experimentacion", paso="dsh", duracion_min=20, compuerta="lo_logre", dsh=True), pagina(
+ESCENAS.append(("04-ayuda-al-instante", dict(titulo="Pídele ayuda al instante", fase="experimentacion", paso="ayuda", duracion_min=20, compuerta="lo_logre", dsh=True), pagina(
     4, "Pídele ayuda al instante", "Pídele ayuda <em>al instante</em>",
     "Toca un ejemplo: se copia y se abre DeepSeek Harness. Pega con Ctrl+V (⌘V en Mac) y presiona Enter. Cambia los datos por los tuyos cuando quieras.",
     '  <div class="rejilla">\n' + "\n".join(tarjeta_pedido(f"a{i}", *x) for i, x in enumerate(AYUDA)) + "\n  </div>")))
@@ -216,7 +216,7 @@ def tarjeta_crea(i, titulo, para, carpeta, pedido):
       <pre class="pedido" id="c{i}">{e(pedido)}</pre>
       <div class="fila">{boton_pedido(f"c{i}")}<button class="boton sec" type="button" data-visor="{carpeta}/index.html">Ver el resultado</button></div>
     </article>"""
-ESCENAS.append(("05-crea-algo-util", dict(titulo="Crea algo que puedas usar", fase="experimentacion", paso="dsh", duracion_min=30, compuerta="lo_logre", dsh=True), pagina(
+ESCENAS.append(("05-crea-algo-util", dict(titulo="Crea algo que puedas usar", fase="experimentacion", paso="crear", duracion_min=30, compuerta="lo_logre", dsh=True), pagina(
     5, "Crea algo que puedas usar", "Crea algo que <em>puedas usar</em>",
     "DeepSeek Harness también hace páginas que funcionan. Pide una, espera a que termine y toca «Ver el resultado»: se abre en el Visor, al lado.",
     '  <div class="rejilla">\n' + "\n".join(tarjeta_crea(i, *x) for i, x in enumerate(CREA)) + "\n  </div>")))
