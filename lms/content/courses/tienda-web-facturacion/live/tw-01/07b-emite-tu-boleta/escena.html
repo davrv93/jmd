@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Emite tu boleta de verdad</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica».
+  El alumno emite una boleta con sus fichas (las de la escena 07, guardadas en su navegador) contra
+  facturador-go, el servidor en Go del curso, que vive en https://jmd-learn.online/facturador/ (solo con
+  sesión del LMS) y habla con el ambiente de pruebas de SUNAT. Mismo origen: la CSP de la escena lo permite.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<style id="esc-propio">
+.eb-prod { display: grid; gap: .3em; }
+.eb-fila { display: grid; grid-template-columns: 1fr auto auto; gap: .6em; align-items: center; font-size: .72em; padding: .35em .55em; border-radius: .6em; background: var(--s2); }
+.eb-fila b { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eb-fila .pr { font: 700 .95em var(--mono); color: var(--muted); }
+.eb-cant { display: inline-flex; align-items: center; gap: .3em; }
+.eb-cant button { width: 1.9em; height: 1.9em; border-radius: 50%; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); font: 800 1em system-ui, sans-serif; cursor: pointer; }
+.eb-cant output { min-width: 1.4em; text-align: center; font: 800 1em var(--mono); }
+.eb-cli { display: grid; grid-template-columns: 1.6fr 1fr; gap: .4em; margin-top: .55em; }
+.eb-tot { display: flex; justify-content: space-between; gap: .6em; margin: .6em 0 .5em; font: 600 .72em var(--mono); color: var(--muted); }
+.eb-tot b { color: var(--fg); font-size: 1.25em; }
+.eb-viaje { list-style: none; margin: 0; padding: 0; display: grid; gap: .28em; }
+.eb-viaje li { display: grid; grid-template-columns: 1.5em 5.6em 1fr; gap: .5em; align-items: center; font-size: .68em; padding: .3em .5em; border-radius: .55em; background: var(--s2); opacity: .55; transition: opacity .3s, background .3s; }
+.eb-viaje li .n { width: 1.5em; height: 1.5em; border-radius: 50%; display: grid; place-items: center; font: 800 .85em var(--mono); background: var(--s3); color: var(--muted); }
+.eb-viaje li .t { font: 800 .82em var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.eb-viaje li .d { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.eb-viaje li.ok { opacity: 1; background: var(--ok-bg); }
+.eb-viaje li.ok .n { background: var(--ok); color: var(--s1); }
+.eb-viaje li.ok .d { color: var(--fg); }
+.eb-viaje li.mal { opacity: 1; background: var(--bad-bg); }
+.eb-viaje li.mal .n { background: var(--bad); color: var(--s1); }
+.eb-viaje li.mal .d { color: var(--bad); white-space: normal; }
+.eb-viaje li.va { opacity: 1; }
+.eb-viaje li.va .n { background: var(--accent); color: var(--on-accent); animation: eb-late .8s infinite alternate; }
+@keyframes eb-late { to { transform: scale(1.18); } }
+.eb-boleta { display: grid; grid-template-columns: 1fr auto; gap: .8em; align-items: center; }
+.eb-boleta .num { font: 800 1em var(--mono); }
+.eb-boleta .ley { font-size: .62em; color: var(--muted); }
+.eb-boleta .hash { font: 600 .6em var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.eb-boleta img { width: 5.2em; height: 5.2em; image-rendering: pixelated; background: #fff; border-radius: .4em; padding: .2em; }
+.eb-alt { margin: .5em 0 0; font-size: .64em; padding: .45em .65em; border-radius: .6em; background: var(--bad-bg); color: var(--fg); }
+.eb-alt b { color: var(--bad); }
+.eb-alt code { font: 600 .95em var(--mono); }
+@media (max-width: 860px) {
+  .eb-viaje li { grid-template-columns: 1.5em 1fr; }
+  .eb-viaje li .d { grid-column: 2; white-space: normal; }
+}
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación activa</span>
+    <span class="esc-num">Sesión 1 · E07b</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-cols">
+      <div class="tw-pila">
+        <h1 class="esc-titulo a-in" style="font-size:1.6em">Emite tu boleta <em>de verdad</em></h1>
+        <p class="esc-sub a-in" style="--d:.1s;font-size:.86em">Con tus fichas, en el servidor en Go del curso y en el ambiente de pruebas de SUNAT. Es una boleta real del viaje que vimos, pero sin valor tributario.</p>
+        <div class="tw-card a-in" style="--d:.15s">
+          <h2>Tu venta <span class="esc-chip" id="origen">tus fichas</span></h2>
+          <div class="eb-prod" id="prods"></div>
+          <div class="eb-cli">
+            <input class="tw-in" id="cliNom" maxlength="80" value="Cliente de prueba" aria-label="Nombre del cliente">
+            <input class="tw-in" id="cliDni" maxlength="8" inputmode="numeric" placeholder="DNI (opcional)" aria-label="DNI del cliente (opcional)">
+          </div>
+          <div class="eb-tot" id="tot"></div>
+          <div class="tw-btns">
+            <button type="button" class="tw-btn" id="emitir">Emitir boleta</button>
+            <span class="tw-estado" id="estado" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tw-pila">
+        <div class="tw-card a-in" style="--d:.2s">
+          <h2>El viaje de tu boleta</h2>
+          <ol class="eb-viaje" id="viaje">
+            <li data-k="api"><span class="n">1</span><span class="t">API</span><span class="d">la tienda manda el pedido</span></li>
+            <li data-k="reglas"><span class="n">2</span><span class="t">Reglas</span><span class="d">valida y separa el IGV</span></li>
+            <li data-k="xml"><span class="n">3</span><span class="t">XML UBL</span><span class="d">el formulario oficial</span></li>
+            <li data-k="firma"><span class="n">4</span><span class="t">Firma</span><span class="d">la huella sellada con el certificado</span></li>
+            <li data-k="sunat"><span class="n">5</span><span class="t">SUNAT</span><span class="d">revisa y responde con el CDR</span></li>
+            <li data-k="pdf"><span class="n">6</span><span class="t">PDF</span><span class="d">la copia para tu cliente</span></li>
+          </ol>
+        </div>
+        <div class="tw-card a-in" id="tarjeta" style="--d:.25s" hidden>
+          <h2>Tu boleta</h2>
+          <div class="eb-boleta">
+            <div>
+              <div class="num" id="bNum"></div>
+              <div class="ley" id="bLey"></div>
+              <div class="hash" id="bHash"></div>
+            </div>
+            <img id="bQR" alt="Código QR de la boleta">
+          </div>
+          <div class="tw-btns" style="margin-top:.5em">
+            <a class="tw-btn peq" id="bPdf" download>Descargar el PDF</a>
+            <button type="button" class="tw-btn sec peq" id="alterar">¿Y si cambio una letra?</button>
+          </div>
+          <p class="eb-alt" id="alt" hidden></p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>facturador-go · servidor en Go del curso · SUNAT beta (usuario de prueba MODDATOS) · nada de esto tiene valor tributario</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = TW.$, $$ = TW.$$, el = TW.el;
+  var API = "/facturador/api";
+  var EJEMPLO = [
+    { nom: "Arroz Costeño extra", pres: "5 kg", pr: "24.90" }, { nom: "Leche Gloria azul", pres: "400 g", pr: "4.20" },
+    { nom: "Aceite Primor", pres: "1 L", pr: "11.50" }, { nom: "Azúcar rubia", pres: "1 kg", pr: "4.30" }, { nom: "Pan francés", pres: "unidad", pr: "0.30" }
+  ];
+  function precio(d) { return parseFloat(String((d && d.pr) || "").replace(",", ".")) || 0; }
+  function descripcion(d) { return (String(d.nom || "").trim() + (d.pres ? " " + String(d.pres).trim() : "")).slice(0, 100); }
+  function r2(x) { return Math.round(x * 100 + (x > 0 ? 1e-9 : -1e-9)) / 100; }
+
+  // 1. Productos: las fichas de la escena 07 (localStorage tw-01-fichas); si no hay, los de la bodega.
+  var fichas = (TW.leer("fichas", null) || []).filter(function (d) { return d && String(d.nom || "").trim() && precio(d) > 0; }).slice(0, 5);
+  if (!fichas.length) { fichas = EJEMPLO; $("#origen").textContent = "productos de ejemplo"; }
+  var cant = fichas.map(function (_, i) { return i < 2 ? 1 : 0; });
+
+  function pintarProductos() {
+    var c = $("#prods"); c.textContent = "";
+    fichas.forEach(function (d, i) {
+      var f = el("div", "eb-fila");
+      f.appendChild(el("b", "", descripcion(d)));
+      f.appendChild(el("span", "pr", TW.soles(precio(d))));
+      var ctl = el("span", "eb-cant");
+      var menos = el("button", "", "−"), mas = el("button", "", "+"), out = el("output", "", String(cant[i]));
+      menos.type = mas.type = "button";
+      menos.setAttribute("aria-label", "Quitar uno de " + descripcion(d)); mas.setAttribute("aria-label", "Agregar uno de " + descripcion(d));
+      menos.addEventListener("click", function () { cant[i] = Math.max(0, cant[i] - 1); out.textContent = cant[i]; totales(); });
+      mas.addEventListener("click", function () { cant[i] = Math.min(99, cant[i] + 1); out.textContent = cant[i]; totales(); });
+      ctl.appendChild(menos); ctl.appendChild(out); ctl.appendChild(mas); f.appendChild(ctl);
+      c.appendChild(f);
+    });
+    totales();
+  }
+
+  // El mismo cálculo que el servidor: el precio incluye IGV; la base es el total entre 1.18.
+  function totales() {
+    var base = 0, igv = 0;
+    fichas.forEach(function (d, i) { var t = r2(cant[i] * precio(d)), b = r2(t / 1.18); base += b; igv += r2(t - b); });
+    base = r2(base); igv = r2(igv);
+    var t = $("#tot"); t.textContent = "";
+    t.appendChild(el("span", "", "Base " + TW.soles(base)));
+    t.appendChild(el("span", "", "IGV " + TW.soles(igv)));
+    var tot = el("span", "", "Total "); tot.appendChild(el("b", "", TW.soles(base + igv))); t.appendChild(tot);
+    $("#emitir").disabled = base + igv <= 0;
+  }
+
+  // 2. Conversación con el servidor en Go (mismo origen; nginx deja pasar solo con sesión del LMS).
+  var token = null;
+  function pedir(ruta, cuerpo) {
+    var op = { method: cuerpo ? "POST" : "GET", credentials: "same-origin", cache: "no-store", headers: {} };
+    if (token) op.headers.Authorization = "Bearer " + token;
+    if (cuerpo) { op.headers["Content-Type"] = "application/json"; op.body = JSON.stringify(cuerpo); }
+    return fetch(API + ruta, op).then(function (r) {
+      var tipo = r.headers.get("Content-Type") || "";
+      return (tipo.indexOf("json") >= 0 ? r.json() : r.text()).then(function (d) { return { ok: r.ok, status: r.status, datos: d }; });
+    }, function () { return { ok: false, status: 0, datos: {} }; });
+  }
+  function conToken() {
+    if (token) return Promise.resolve(true);
+    return pedir("/demo").then(function (r) { if (r.ok && r.datos.token) token = r.datos.token; return !!token; });
+  }
+
+  // 3. El viaje: cada estación se enciende con el dato real.
+  function estacion(k, clase, texto) {
+    var li = $('#viaje li[data-k="' + k + '"]'); if (!li) return;
+    li.classList.remove("ok", "mal", "va");
+    if (clase) li.classList.add(clase);
+    if (texto != null) { $(".d", li).textContent = texto; $(".d", li).title = texto; }
+  }
+  function reiniciar() {
+    $$("#viaje li").forEach(function (li) { li.classList.remove("ok", "mal", "va"); });
+    $("#tarjeta").hidden = true; $("#alt").hidden = true;
+  }
+  function secuencia(pasos) {
+    return pasos.reduce(function (p, paso) {
+      return p.then(function () { return new Promise(function (ok) { estacion(paso[0], "va"); setTimeout(function () { estacion(paso[0], paso[1], paso[2]); ok(); }, 480); }); });
+    }, Promise.resolve());
+  }
+  function estado(msg) { $("#estado").textContent = msg || ""; }
+
+  $("#emitir").addEventListener("click", function () {
+    var items = [];
+    fichas.forEach(function (d, i) { if (cant[i] > 0) items.push({ descripcion: descripcion(d), cantidad: cant[i], precio: precio(d) }); });
+    var dni = $("#cliDni").value.replace(/\D/g, "");
+    var nombre = $("#cliNom").value.trim() || "Cliente de prueba";
+    var cuerpo = { tipo: "03", serie: "BGO1", items: items,
+      cliente: dni ? { tipo_doc: "1", num_doc: dni, razon_social: nombre } : { tipo_doc: "0", num_doc: "", razon_social: nombre } };
+    var btn = $("#emitir"); btn.disabled = true; reiniciar(); estado("Enviando a la API…"); estacion("api", "va");
+    conToken().then(function (hay) {
+      if (!hay) throw { msg: "No pude entrar al servidor. Recarga la página del LMS e intenta de nuevo." };
+      return pedir("/comprobantes", cuerpo);
+    }).then(function (r) {
+      if (r.status === 429) throw { msg: "Muchos envíos seguidos: espera un minuto." };
+      if (r.status === 422) {
+        estacion("api", "ok", "POST /api/comprobantes · llegó el pedido");
+        estacion("reglas", "mal", "No pasa: " + ((r.datos.detalles || []).join(" · ") || r.datos.error));
+        throw { msg: "Las reglas frenaron la boleta antes de gastar un número." };
+      }
+      if (!r.ok) throw { msg: (r.datos && r.datos.error) || "El servidor respondió " + r.status + "." };
+      var d = r.datos, c = d.comprobante || {};
+      return pedir("/documentos/" + encodeURIComponent(d.id) + "/xml").then(function (x) { return { d: d, c: c, xml: typeof x.datos === "string" ? x.datos : "" }; });
+    }).then(function (o) {
+      var d = o.d, c = o.c, inter = (d.intercambios || []).slice(-1)[0] || {}, aceptada = d.estado === "aceptado" || d.estado === "observado";
+      estado("");
+      return secuencia([
+        ["api", "ok", "POST /api/comprobantes · " + (c.items || []).length + " producto(s)"],
+        ["reglas", "ok", TW.soles(c.op_gravadas + c.op_exoneradas + c.op_inafectas) + " + IGV " + TW.soles(c.igv).replace("S/ ", "") + " = " + TW.soles(c.total)],
+        ["xml", "ok", d.numero + " · " + o.xml.length.toLocaleString("es-PE") + " caracteres"],
+        ["firma", "ok", "Huella " + d.hash],
+        ["sunat", aceptada ? "ok" : "mal", d.cdr ? "CDR " + d.cdr.codigo + " · " + (aceptada ? "aceptada" : d.cdr.descripcion) + (inter.duracion_ns ? " en " + Math.round(inter.duracion_ns / 1e6) + " ms" : "")
+                                         : ((d.error && d.error.mensaje) || d.estado)],
+        ["pdf", aceptada ? "ok" : "", aceptada ? "Lista, con QR y hash" : "Sin CDR aceptado no se entrega"]
+      ]).then(function () { if (aceptada) mostrarBoleta(d, c); });
+    }).catch(function (e) {
+      estacion("api", $('#viaje li[data-k="reglas"]').classList.contains("mal") ? "ok" : "mal");
+      estado((e && e.msg) || "Algo falló. Intenta de nuevo.");
+    }).then(function () { btn.disabled = false; totales(); });
+  });
+
+  var ultima = null;
+  function mostrarBoleta(d, c) {
+    ultima = c;
+    var q = encodeURIComponent(token), id = encodeURIComponent(d.id);
+    $("#bNum").textContent = "Boleta " + d.numero + " · " + TW.soles(c.total);
+    $("#bLey").textContent = c.leyenda || "";
+    $("#bHash").textContent = "Hash " + d.hash;
+    $("#bQR").src = API + "/documentos/" + id + "/qr.png?token=" + q;
+    $("#bPdf").href = API + "/documentos/" + id + "/pdf?descargar=1&token=" + q;
+    $("#tarjeta").hidden = false;
+  }
+
+  // 4. El experimento de la lámina 3: cambiar una letra después de firmar.
+  $("#alterar").addEventListener("click", function () {
+    var b = $("#alterar"), p = $("#alt");
+    var desc = ultima && ultima.items && ultima.items[0] ? ultima.items[0].descripcion : "Arroz Costeño extra 5 kg";
+    b.disabled = true; p.hidden = false; p.textContent = "Firmando, cambiando una letra y enviando a SUNAT…";
+    pedir("/demo/alterar", { descripcion: desc }).then(function (r) {
+      p.textContent = "";
+      if (!r.ok) { p.textContent = r.status === 429 ? "Muchos envíos seguidos: espera un minuto." : ((r.datos && r.datos.error) || "No se pudo hacer el experimento."); return; }
+      var a = r.datos;
+      p.appendChild(document.createTextNode("Cambiamos «" + a.original + "» por «" + a.alterado + "» después de firmar. Huella: "));
+      p.appendChild(el("code", "", a.hash_original.slice(0, 10) + "…"));
+      p.appendChild(document.createTextNode(" → "));
+      p.appendChild(el("code", "", a.hash_alterado.slice(0, 10) + "…"));
+      p.appendChild(document.createTextNode(". SUNAT respondió en " + a.ms + " ms: "));
+      p.appendChild(el("b", "", (a.aceptado ? "aceptada (?)" : a.codigo + " · " + a.mensaje.split(" - ")[0])));
+    }).then(function () { b.disabled = false; });
+  });
+
+  pintarProductos();
+})();
+</script>
+</body>
+</html>
