@@ -128,6 +128,10 @@ def tarjeta_pedido(i, titulo, para, pedido):
     </article>"""
 
 
+# Escenas hechas a mano (no las escribe este script): no se borran al regenerar.
+# 05b-en-tu-oficio: landing estilo Apple con GSAP y fotos de los cuatro oficios.
+A_MANO = {"05b-en-tu-oficio"}
+
 ESCENAS = []
 
 # 1 · Hoy
@@ -251,7 +255,7 @@ if __name__ == "__main__":
     (COMUN / "ipt.js").write_text(JS, encoding="utf-8")
     nuevas = {id_ for id_, _, _ in ESCENAS}
     for d in sorted(LIVE.iterdir()):
-        if d.is_dir() and d.name not in nuevas:
+        if d.is_dir() and d.name not in nuevas and d.name not in A_MANO:
             shutil.rmtree(d)                       # las escenas viejas siguen en el historial de git
     for id_, meta, pag in ESCENAS:
         d = LIVE / id_; d.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La IA en tu oficio · IA para todos</title>
+<!-- Escena hecha a mano (no la genera _fuente/ipt01.py). Fotos de Pexels (licencia libre) junto a este archivo;
+     GSAP 3.15.1 + ScrollTrigger también van al lado, porque la escena no puede cargar nada de internet. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style>
+:root {
+  --sf: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --tinta: #1d1d1f; --gris: #6e6e73; --gris2: #86868b; --azul: #0071e3; --azul-claro: #2997ff;
+  --fondo: #ffffff; --tile: #f5f5f7; --burbuja: #e8e8ed;
+}
+/* escena.css fija html/body a una pantalla sin scroll; esta escena es una página larga */
+html, body { height: auto; min-height: 100%; }
+html { overflow-y: auto; overflow-x: hidden; }
+body { overflow: visible; background: var(--fondo); color: var(--tinta); font: 400 17px/1.47 var(--sf); letter-spacing: -.022em; -webkit-font-smoothing: antialiased; }
+img { display: block; max-width: 100%; }
+
+/* ---- Portada ---- */
+.portada { text-align: center; padding: clamp(56px, 13vh, 140px) clamp(16px, 4vw, 40px) clamp(40px, 7vh, 80px); }
+.marca { font-weight: 600; font-size: clamp(17px, 1.7vw, 21px); margin: 0 0 10px; }
+.portada h1 { font-weight: 700; font-size: clamp(44px, 8.4vw, 104px); line-height: 1.03; letter-spacing: -.04em; margin: 0; }
+.bajada { font-weight: 500; font-size: clamp(19px, 2vw, 26px); line-height: 1.33; color: var(--gris); max-width: 32em; margin: 22px auto 0; text-wrap: balance; }
+.fila-fotos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(10px, 1.6vw, 22px); max-width: 1180px; margin: clamp(40px, 7vh, 80px) auto 0; }
+.mini { position: relative; display: block; aspect-ratio: 3 / 4; border-radius: clamp(18px, 2.2vw, 30px); overflow: hidden; background: var(--tile); color: #fff; text-decoration: none; }
+.mini img { width: 100%; height: 100%; object-fit: cover; object-position: var(--pos-mini, 50% 50%); }
+.mini::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.6), rgba(0,0,0,0) 42%); }
+.mini span { position: absolute; z-index: 1; left: clamp(14px, 1.6vw, 22px); bottom: clamp(12px, 1.5vw, 20px); font-weight: 600; font-size: clamp(16px, 1.7vw, 22px); text-align: left; }
+.desliza { display: inline-flex; align-items: center; gap: 8px; margin: clamp(28px, 5vh, 48px) 0 0; color: var(--gris); font-size: 15px; }
+.desliza svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---- Cada oficio ---- */
+.oficio { padding: 0 0 clamp(80px, 13vh, 150px); background: var(--fondo); color: var(--tinta); }
+.oficio.gris { --fondo: #f5f5f7; --tile: #ffffff; }
+.oficio.noche { --fondo: #000000; --tinta: #f5f5f7; --gris: #a1a1a6; --gris2: #6e6e73; --tile: #1d1d1f; --burbuja: #2c2c2e; --azul: #0071e3; }
+.escenario { height: min(86vh, 860px); overflow: hidden; }
+.foto { position: relative; margin: 0; width: 100%; height: 100%; overflow: hidden; transform-origin: 50% 55%; }
+.foto img { width: 100%; height: 100%; object-fit: cover; object-position: var(--pos, 50% 40%); }
+.foto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.62), rgba(0,0,0,0) 48%); }
+.foto figcaption { position: absolute; z-index: 1; left: clamp(20px, 5vw, 80px); right: clamp(20px, 5vw, 80px); bottom: clamp(24px, 7vh, 72px); color: #fff; }
+.foto .rubro { display: block; font-weight: 600; font-size: clamp(17px, 1.7vw, 22px); opacity: .92; margin-bottom: 6px; }
+.foto .quien { display: block; font-weight: 700; font-size: clamp(40px, 6.6vw, 88px); line-height: 1.02; letter-spacing: -.04em; }
+.cuerpo { max-width: 1120px; margin: 0 auto; padding: clamp(56px, 11vh, 128px) clamp(16px, 4vw, 40px) 0; }
+.titular { text-align: center; font-weight: 700; font-size: clamp(34px, 5.4vw, 72px); line-height: 1.06; letter-spacing: -.04em; margin: 0 0 clamp(36px, 7vh, 72px); text-wrap: balance; }
+.titular .l { display: block; }
+.titular .l + .l { color: var(--gris2); }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 1.6vw, 22px); }
+.tile { background: var(--tile); border-radius: clamp(22px, 2.4vw, 30px); padding: clamp(24px, 3vw, 44px); display: flex; flex-direction: column; gap: 12px; }
+.tile h3 { font-weight: 700; font-size: clamp(25px, 2.5vw, 34px); line-height: 1.12; letter-spacing: -.035em; margin: 0; }
+.tile .para { margin: 0 0 8px; color: var(--gris); font-size: clamp(17px, 1.4vw, 19px); }
+.escribes { margin: 0 0 -4px 6px; font-size: 13px; color: var(--gris); letter-spacing: 0; }
+.burbuja { margin: 0; background: var(--burbuja); color: var(--tinta); border-radius: 22px 22px 6px 22px; padding: 14px 18px;
+  font: 400 16px/1.45 var(--sf); letter-spacing: -.01em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; padding-top: 14px; }
+.pill { appearance: none; border: 0; border-radius: 980px; padding: 12px 22px; background: var(--azul); color: #fff; cursor: pointer;
+  font: 400 17px/1.18 var(--sf); letter-spacing: -.02em; transition: background-color .2s; }
+.pill:hover { background: #0077ed; }
+.pill.sec { background: transparent; color: var(--azul); box-shadow: inset 0 0 0 1px var(--azul); }
+.pill.sec:hover { background: rgba(0,113,227,.08); }
+.noche .pill.sec { color: var(--azul-claro); box-shadow: inset 0 0 0 1px var(--azul-claro); }
+.pill.ok, .pill.ok:hover { background: #1d8f3a; color: #fff; box-shadow: none; }
+.pill:focus-visible, .mini:focus-visible, .avatar:focus-visible { outline: 3px solid rgba(0,125,250,.6); outline-offset: 3px; }
+.ojo { text-align: center; color: var(--gris); font-size: 17px; max-width: 34em; margin: clamp(26px, 4vh, 40px) auto 0; text-wrap: balance; }
+
+/* ---- Cierre ---- */
+.cierre { background: #000; color: #f5f5f7; text-align: center; padding: clamp(80px, 14vh, 160px) clamp(16px, 4vw, 40px) clamp(48px, 8vh, 80px); }
+.cierre h2 { font-weight: 700; font-size: clamp(36px, 5.6vw, 76px); line-height: 1.05; letter-spacing: -.04em; margin: 0; }
+.cierre h2 .l { display: block; }
+.cierre h2 .l + .l { color: #86868b; }
+.avatares { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(12px, 3.4vw, 44px); margin: clamp(40px, 7vh, 64px) 0 0; }
+.avatar { display: grid; justify-items: center; gap: 12px; color: #f5f5f7; text-decoration: none; font-weight: 600; font-size: clamp(14px, 1.4vw, 17px); border-radius: 16px; }
+.avatar img { width: clamp(66px, 10vw, 132px); aspect-ratio: 1; border-radius: 50%; object-fit: cover; object-position: var(--pos-mini, 50% 50%); }
+.nota { color: #a1a1a6; font-size: clamp(17px, 1.5vw, 21px); max-width: 30em; margin: clamp(40px, 7vh, 64px) auto 0; text-wrap: balance; }
+.creditos { color: #6e6e73; font-size: 12px; margin: 48px 0 0; letter-spacing: 0; }
+
+/* ---- Aviso de ipt.js (el mismo de las demás escenas) ---- */
+.ipt-toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 16px); opacity: 0; pointer-events: none; z-index: 9;
+  background: rgba(29,29,31,.92); color: #fff; border-radius: 14px; padding: 12px 18px; font: 500 15px/1.35 var(--sf); max-width: min(92vw, 560px);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,.5); transition: opacity .2s, transform .2s; text-align: center; backdrop-filter: blur(12px); }
+.ipt-toast.ver { opacity: 1; transform: translate(-50%, 0); }
+
+@media (max-width: 760px) {
+  .fila-fotos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tiles { grid-template-columns: 1fr; }
+  .escenario { height: 62vh; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="portada">
+  <p class="marca">IA para todos</p>
+  <h1>La IA, en tu oficio.</h1>
+  <p class="bajada">Una doctora, un abogado, un diseñador y una informática. Mira cómo les ayuda DeepSeek Harness, elige tu oficio y pídeselo tú con un clic.</p>
+  <nav class="fila-fotos" aria-label="Oficios">
+    <a class="mini" href="#salud" style="--pos-mini: 44% 50%"><img src="salud.webp" alt="Doctora en su consultorio con su laptop"><span>Salud</span></a>
+    <a class="mini" href="#derecho" style="--pos-mini: 49% 40%"><img src="derecho.webp" alt="Abogado revisando documentos en su escritorio"><span>Derecho</span></a>
+    <a class="mini" href="#diseno" style="--pos-mini: 42% 50%"><img src="diseno.webp" alt="Diseñador dibujando un logo en su tableta"><span>Diseño</span></a>
+    <a class="mini" href="#informatica" style="--pos-mini: 74% 50%"><img src="informatica.webp" alt="Informática programando frente a sus pantallas"><span>Informática</span></a>
+  </nav>
+  <p class="desliza">Desliza para ver cada oficio <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></p>
+</header>
+
+<section class="oficio noche" id="salud">
+  <div class="escenario"><figure class="foto" style="--pos: 50% 34%"><img src="salud.webp" alt="" loading="lazy"><figcaption><span class="rubro">Salud</span><span class="quien">Para la doctora.</span></figcaption></figure></div>
+  <div class="cuerpo">
+    <h2 class="titular"><span class="l">Menos papeleo.</span><span class="l">Más tiempo para tu paciente.</span></h2>
+    <div class="tiles">
+      <article class="tile">
+        <h3>Explícale a tu paciente</h3>
+        <p class="para">En palabras simples, listo para mandar por WhatsApp.</p>
+        <p class="escribes">Tú le escribes:</p>
+        <pre class="burbuja" id="s1">Explícale a un paciente de 60 años, con palabras simples y con cariño, qué es la presión alta, qué cambios hacer en su comida y cuándo debe volver a control. Máximo 8 líneas, para enviarlo por WhatsApp.</pre>
+        <div class="acciones"><button class="pill" type="button" data-pedido-de="s1">Usar en DeepSeek</button></div>
+      </article>
+      <article class="tile">
+        <h3>Tu agenda de citas</h3>
+        <p class="para">Turnos de 20 minutos que se guardan solos.</p>
+        <p class="escribes">Tú le escribes:</p>
+        <pre class="burbuja" id="s2">Crea en la carpeta citas (citas/index.html) una agenda de citas para un consultorio: de lunes a viernes, turnos de 20 minutos de 8 a. m. a 1 p. m., donde escriba el nombre del paciente y el motivo, y marque «atendido». Que guarde todo en el navegador y se lea bien en el celular.</pre>
+        <div class="acciones"><button class="pill" type="button" data-pedido-de="s2">Usar en DeepSeek</button><button class="pill sec" type="button" data-visor="citas/index.html">Ver el resultado</button></div>
+      </article>
+    </div>
+    <p class="ojo">Usa nombres inventados, nunca datos reales de tus pacientes. Y lo que diga la IA, lo revisas tú.</p>
+  </div>
+</section>
+
+<section class="oficio gris" id="derecho">
+  <div class="escenario"><figure class="foto" style="--pos: 50% 22%"><img src="derecho.webp" alt="" loading="lazy"><figcaption><span class="rubro">Derecho</span><span class="quien">Para el abogado.</span></figcaption></figure></div>
+  <div class="cuerpo">
+    <h2 class="titular"><span class="l">El contrato, explicado.</span><span class="l">Tus plazos, a la vista.</span></h2>
+    <div class="tiles">
+      <article class="tile">
+        <h3>Explica una cláusula</h3>
+        <p class="para">Para un cliente que no es abogado.</p>
+        <p class="escribes">Tú le escribes:</p>
+        <pre class="burbuja" id="d1">Explícale a un cliente que no es abogado, en palabras simples y con un ejemplo de la vida real, qué significa esta cláusula: «El arrendatario no podrá subarrendar el inmueble sin autorización previa y por escrito del arrendador, bajo causal de resolución del contrato».</pre>
+        <div class="acciones"><button class="pill" type="button" data-pedido-de="d1">Usar en DeepSeek</button></div>
+      </article>
+      <article class="tile">
+        <h3>Tu control de casos</h3>
+        <p class="para">Lo que vence primero, arriba y en rojo.</p>
+        <p class="escribes">Tú le escribes:</p>
+        <pre class="burbuja" id="d2">Crea en la carpeta casos (casos/index.html) un control de casos con cliente, materia, próxima fecha (audiencia o plazo) y estado. Que los ordene por la fecha más cercana, pinte de rojo los que vencen en 3 días o menos y guarde todo en el navegador.</pre>
+        <div class="acciones"><button class="pill" type="button" data-pedido-de="d2">Usar en DeepSeek</button><button class="pill sec" type="button" data-visor="casos/index.html">Ver el resultado</button></div>
+      </article>
+    </div>
+    <p class="ojo">La IA te da el borrador. La revisión y la firma siguen siendo tuyas.</p>
+  </div>
+</section>
+
+<section class="oficio noche" id="diseno">
+  <div class="escenario"><figure class="foto" style="--pos: 40% 80%"><img src="diseno.webp" alt="" loading="lazy"><figcaption><span class="rubro">Diseño</span><span class="quien">Para el diseñador.</span></figcaption></figure></div>
+  <div class="cuerpo">
+    <h2 class="titular"><span class="l">Lo que pide el cliente,</span><span class="l">convertido en ideas.</span></h2>
+    <div class="tiles">
+      <article class="tile">
+        <h3>Del pedido al brief</h3>
+        <p class="para">Lo que te dijo el cliente, ordenado en minutos.</p>
+        <p class="escribes">Tú le escribes:</p>
+        <pre class="burbuja" id="g1">Un cliente me dijo: «quiero un logo para mi cafetería en Barranco, moderno pero cálido, que se note que es café peruano». Conviértelo en un brief de diseño claro: a quién va dirigido, la personalidad de la marca, 3 ideas de concepto y qué evitar.</pre>
+        <div class="acciones"><button class="pill" type="button" data-pedido-de="g1">Usar en DeepSeek</button></div>
+      </article>
+      <article class="tile">
+        <h3>Tu muestrario de colores</h3>
+        <p class="para">Cuatro paletas con su código, listas para copiar.</p>
+        <p class="escribes">Tú le escribes:</p>
+        <pre class="burbuja" id="g2">Crea en la carpeta paletas (paletas/index.html) un muestrario con 4 paletas de color para una cafetería de café peruano: cada una con 5 colores, su código HEX, un botón para copiarlo y un ejemplo de título y botón pintados con esa paleta.</pre>
+        <div class="acciones"><button class="pill" type="button" data-pedido-de="g2">Usar en DeepSeek</button><button class="pill sec" type="button" data-visor="paletas/index.html">Ver el resultado</button></div>
+      </article>
+    </div>
+    <p class="ojo">Úsalo para arrancar rápido. El ojo final sigue siendo el tuyo.</p>
+  </div>
+</section>
+
+<section class="oficio" id="informatica">
+  <div class="escenario"><figure class="foto" style="--pos: 50% 36%"><img src="informatica.webp" alt="" loading="lazy"><figcaption><span class="rubro">Informática</span><span class="quien">Para la informática.</span></figcaption></figure></div>
+  <div class="cuerpo">
+    <h2 class="titular"><span class="l">El error, explicado.</span><span class="l">Tus tareas, en orden.</span></h2>
+    <div class="tiles">
+      <article class="tile">
+        <h3>Explícame este error</h3>
+        <p class="para">Qué significa y cómo arreglarlo, paso a paso.</p>
+        <p class="escribes">Tú le escribes:</p>
+        <pre class="burbuja" id="i1">Explícame en palabras simples qué significa este error y cómo lo arreglo paso a paso: «TypeError: Cannot read properties of undefined (reading 'map')». Muéstrame un código pequeño que falla y el mismo código ya corregido.</pre>
+        <div class="acciones"><button class="pill" type="button" data-pedido-de="i1">Usar en DeepSeek</button></div>
+      </article>
+      <article class="tile">
+        <h3>Tu tablero de tareas</h3>
+        <p class="para">Por hacer, haciendo y hecho, arrastrando con el mouse.</p>
+        <p class="escribes">Tú le escribes:</p>
+        <pre class="burbuja" id="i2">Crea en la carpeta tareas (tareas/index.html) un tablero de tareas con tres columnas: Por hacer, Haciendo y Hecho. Que pueda agregar tareas, moverlas de columna arrastrándolas y que guarde todo en el navegador.</pre>
+        <div class="acciones"><button class="pill" type="button" data-pedido-de="i2">Usar en DeepSeek</button><button class="pill sec" type="button" data-visor="tareas/index.html">Ver el resultado</button></div>
+      </article>
+    </div>
+    <p class="ojo">Pídele que te explique lo que hizo: así aprendes, no solo copias.</p>
+  </div>
+</section>
+
+<section class="cierre">
+  <h2><span class="l">Elige el tuyo.</span><span class="l">Y pídeselo con tus palabras.</span></h2>
+  <nav class="avatares" aria-label="Volver a un oficio">
+    <a class="avatar" href="#salud" style="--pos-mini: 44% 32%"><img src="salud.webp" alt="">Salud</a>
+    <a class="avatar" href="#derecho" style="--pos-mini: 49% 22%"><img src="derecho.webp" alt="">Derecho</a>
+    <a class="avatar" href="#diseno" style="--pos-mini: 62% 50%"><img src="diseno.webp" alt="">Diseño</a>
+    <a class="avatar" href="#informatica" style="--pos-mini: 100% 50%"><img src="informatica.webp" alt="">Informática</a>
+  </nav>
+  <p class="nota">¿Tu oficio no está aquí? Copia cualquier pedido y cambia el ejemplo por uno tuyo. DeepSeek Harness lo entiende igual.</p>
+  <p class="creditos">Fotos: Pexels.</p>
+</section>
+
+<div class="ipt-toast" id="ipt-toast" role="status" aria-live="polite"></div>
+<script src="../../comun/ipt.js"></script>
+<script src="gsap.min.js"></script>
+<script src="ScrollTrigger.min.js"></script>
+<script>
+(() => {
+  const quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Los enlaces a cada oficio bajan suave sin cambiar la dirección del iframe.
+  document.addEventListener('click', (ev) => {
+    const a = ev.target.closest('a[href^="#"]');
+    const destino = a && document.querySelector(a.getAttribute('href'));
+    if (!destino) return;
+    ev.preventDefault();
+    destino.scrollIntoView({ behavior: quieto ? 'auto' : 'smooth', block: 'start' });
+  });
+  if (quieto || !window.gsap || !window.ScrollTrigger) return;   // sin animación todo queda visible
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Una sola entrada al abrir la escena.
+  gsap.timeline({ defaults: { ease: 'power3.out' } })
+    .from('.marca', { y: 16, opacity: 0, duration: .6 })
+    .from('.portada h1', { y: 30, opacity: 0, duration: .9 }, '-=.35')
+    .from('.bajada', { y: 20, opacity: 0, duration: .8 }, '-=.6')
+    .from('.mini', { y: 70, opacity: 0, duration: 1.1, stagger: .09 }, '-=.5')
+    .from('.desliza', { opacity: 0, duration: .6 }, '-=.5');
+
+  // Cada oficio: la foto pasa de tarjeta a pantalla completa mientras bajas, y el titular se enciende.
+  gsap.utils.toArray('.oficio').forEach((s) => {
+    const esc = s.querySelector('.escenario'), foto = s.querySelector('.foto');
+    gsap.fromTo(foto, { scale: .8, borderRadius: 44 }, { scale: 1, borderRadius: 0, ease: 'none',
+      scrollTrigger: { trigger: esc, start: 'top 90%', end: 'top 8%', scrub: .6 } });
+    gsap.from(foto.querySelector('figcaption'), { y: 50, opacity: 0, ease: 'none',
+      scrollTrigger: { trigger: esc, start: 'top 45%', end: 'top 8%', scrub: .6 } });
+    s.querySelectorAll('.titular .l').forEach((l) => gsap.fromTo(l, { opacity: .12 }, { opacity: 1, ease: 'none',
+      scrollTrigger: { trigger: l, start: 'top 90%', end: 'top 60%', scrub: true } }));
+    gsap.from(s.querySelectorAll('.tile'), { y: 56, opacity: 0, duration: .9, stagger: .12, ease: 'power3.out',
+      scrollTrigger: { trigger: s.querySelector('.tiles'), start: 'top 88%', once: true } });
+  });
+  gsap.from('.avatar', { y: 36, opacity: 0, duration: .8, stagger: .08, ease: 'power3.out',
+    scrollTrigger: { trigger: '.avatares', start: 'top 90%', once: true } });
+  // las fotos llegan después: al cargarlas, ScrollTrigger recalcula las alturas
+  window.addEventListener('load', () => ScrollTrigger.refresh());
+})();
+</script>
+</body>
+</html>
