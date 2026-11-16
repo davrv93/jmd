@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El estudio en vivo · OpenMontage</title>
+<!-- Backlot de verdad (no la copia de solo ver de 05b): el del instructor, servido en /backlot/ con la sesión del LMS. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style>
+html, body { height: 100%; margin: 0; overflow: hidden; background: #0d0c16; }
+.marco { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.aviso { position: fixed; inset: 0; display: none; place-items: center; text-align: center; color: #e9e6ff;
+  font: 500 18px/1.5 system-ui, sans-serif; padding: 24px; }
+.aviso strong { display: block; font-size: 24px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<iframe class="marco" id="estudio" src="/backlot/" title="Backlot: el estudio de OpenMontage" allow="clipboard-write; fullscreen"></iframe>
+<div class="aviso" id="aviso"><div><strong>El estudio no responde</strong>Espera unos segundos: se vuelve a intentar solo.</div></div>
+<script>
+// Si el estudio no carga (la Mac del instructor se desconectó), se avisa y se reintenta cada 15 s.
+const marco = document.getElementById("estudio"), aviso = document.getElementById("aviso");
+async function revisar() {
+  try {
+    const r = await fetch("/backlot/api/health", { cache: "no-store" });
+    const ok = r.ok;
+    aviso.style.display = ok ? "none" : "grid";
+    marco.style.visibility = ok ? "visible" : "hidden";
+    if (ok && marco.dataset.caido === "1") { marco.dataset.caido = ""; marco.src = "/backlot/"; }
+    if (!ok) marco.dataset.caido = "1";
+  } catch { aviso.style.display = "grid"; marco.style.visibility = "hidden"; marco.dataset.caido = "1"; }
+}
+setInterval(revisar, 15000);
+</script>
+</body>
+</html>
