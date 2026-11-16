@@ -25,6 +25,24 @@ cycle:
     phase: experiencia
     description: Asiste en vivo o mira la grabación.
     check: Has visto la clase completa (o la grabación)
+  - id: instalar
+    title: Instalar OpenMontage
+    tool: terminal
+    phase: experimentacion
+    description: En la escena 3 copia el comando de instalación y pégalo en la terminal de tu carpeta del proyecto.
+    check: make setup (o los pasos de la alternativa) terminan sin error
+  - id: flujo
+    title: Entender el flujo
+    tool: lms
+    phase: conceptualizacion
+    description: En las escenas 2 y 5 revisa las etapas y el tablero Backlot.
+    check: Puedes nombrar las cinco etapas de producción
+  - id: prompt
+    title: Hacer tu primer video
+    tool: terminal
+    phase: experimentacion
+    description: En la escena 4 copia un prompt de ejemplo y pídelo a tu asistente.
+    check: Tienes un video de 60 segundos generado
   - id: preguntar
     title: Preguntar o responder
     tool: lms
