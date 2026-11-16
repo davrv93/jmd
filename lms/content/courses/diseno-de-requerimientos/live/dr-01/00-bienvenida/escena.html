@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoy armas el mapa de tu proceso · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Sesión 1 · Del pedido al mapa</p>
+  <h1>Hoy armas el mapa de <em>tu</em> proceso</h1>
+  <p class="es-sub">Tú escribes los eventos; DeepSeek te pregunta y busca huecos. Al final eliges un solo tramo para construirlo en las sesiones 2 y 3.</p>
+
+  <div class="es-2">
+    <section class="es-panel">
+      <h2>¿Qué proceso vas a mapear?</h2>
+      <label>Tu negocio o tu trabajo<input type="text" id="negocio" maxlength="120" placeholder="Ej.: Botica San Pedro"></label>
+      <label>El proceso, en pocas palabras<input type="text" id="proceso" maxlength="120" placeholder="Ej.: venta con boleta electrónica"></label>
+      <div class="es-fila">
+        <button type="button" class="btn" id="ejemplo">Usar el ejemplo de la botica</button>
+        <p class="estado" id="estado" role="status" aria-live="polite"></p>
+      </div>
+      <p class="es-nota-al-pie">Se guarda en este navegador y lo usan las escenas siguientes. Puedes cambiarlo cuando quieras.</p>
+    </section>
+
+    <section class="es-panel">
+      <h2>Seis notas, todo el vocabulario</h2>
+      <div class="tipos" id="leyenda"></div>
+      <ol class="explica" style="counter-reset:none">
+        <li><b>Mapa trampa:</b> calienta buscando errores en mapas ajenos, contra DeepSeek.</li>
+        <li><b>Tu pedido:</b> DeepSeek te hace 10 preguntas. No responde por ti.</li>
+        <li><b>Tu mapa:</b> tú escribes los eventos; DeepSeek caza huecos y tú aceptas o descartas.</li>
+        <li><b>Tu tramo:</b> eliges el que más duele y mides qué tan útil fue la IA en tu dominio.</li>
+      </ol>
+    </section>
+  </div>
+</main>
+<script src="../../comun/es.js"></script>
+<script>
+(function () {
+  var s = ES.cargar();
+  var neg = document.getElementById("negocio"), pro = document.getElementById("proceso"), est = document.getElementById("estado");
+  neg.value = s.negocio || ""; pro.value = s.proceso || "";
+  function guardar() {
+    s = ES.cargar(); s.negocio = neg.value.trim(); s.proceso = pro.value.trim(); ES.guardar(s);
+    est.className = "estado bien"; est.textContent = s.proceso ? "Guardado." : "";
+  }
+  neg.addEventListener("input", guardar); pro.addEventListener("input", guardar);
+  document.getElementById("ejemplo").addEventListener("click", function () {
+    neg.value = "Botica San Pedro"; pro.value = "venta con boleta electrónica"; guardar();
+  });
+  var ley = document.getElementById("leyenda");
+  ES.ORDEN_TIPOS.forEach(function (t) {
+    ley.appendChild(ES.nota({ tipo: t, texto: ES.TIPOS[t].ayuda.replace(/^[^«]*«?|»$/g, "") || ES.TIPOS[t].ayuda }, { sinAviso: true }));
+  });
+})();
+</script>
+</body>
+</html>

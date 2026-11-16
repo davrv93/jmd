@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu pedido y 10 preguntas · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Paso 1 de 4 · 5 minutos</p>
+  <h1>Tu pedido, tal cual <em>te lo dijeron</em></h1>
+  <p class="es-sub">DeepSeek no lo va a resolver: te hace 10 preguntas. Las que no puedas responder hoy se vuelven <b>hotspots</b> de tu mapa.</p>
+
+  <div class="es-2">
+    <section class="es-panel">
+      <label>Tu negocio<input type="text" id="negocio" maxlength="120" placeholder="Ej.: Botica San Pedro"></label>
+      <label>El proceso<input type="text" id="proceso" maxlength="120" placeholder="Ej.: venta con boleta electrónica"></label>
+      <label>El pedido (hasta 300 caracteres)<textarea id="pedido" maxlength="300" rows="3" placeholder="Ej.: Quiero un sistema de ventas para mi botica que no se caiga cuando SUNAT falla."></textarea></label>
+      <div class="es-fila">
+        <button type="button" class="btn ia" id="preguntar">DeepSeek: hazme 10 preguntas</button>
+        <button type="button" class="btn chico" id="ejemplo">Usar el ejemplo</button>
+      </div>
+      <p class="estado" id="estado" role="status" aria-live="polite"></p>
+      <div id="respaldo" hidden class="es-col">
+        <p class="es-nota-al-pie">Si la IA de la clase no responde, copia este pedido en DeepSeek (chat o Harness) y pega aquí las preguntas a mano en tu mapa.</p>
+        <button type="button" class="btn chico" id="copiarPrompt">Copiar el pedido para DeepSeek</button>
+      </div>
+    </section>
+
+    <section class="es-panel">
+      <div class="es-fila" style="justify-content:space-between">
+        <h2>Las 10 preguntas</h2>
+        <span class="chk" id="cuentaHot">0 hotspots</span>
+      </div>
+      <div class="es-col" id="lista"><p class="es-nota-al-pie">Todavía no hay preguntas.</p></div>
+    </section>
+  </div>
+</main>
+<script src="../../comun/es.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var s = ES.cargar();
+  $("negocio").value = s.negocio || ""; $("proceso").value = s.proceso || ""; $("pedido").value = s.pedido || "";
+  function guardarCampos() { s = ES.cargar(); s.negocio = $("negocio").value.trim(); s.proceso = $("proceso").value.trim(); s.pedido = $("pedido").value.trim(); ES.guardar(s); }
+  ["negocio", "proceso", "pedido"].forEach(function (id) { $(id).addEventListener("input", guardarCampos); });
+  $("ejemplo").addEventListener("click", function () {
+    if (!$("negocio").value) $("negocio").value = "Botica San Pedro";
+    if (!$("proceso").value) $("proceso").value = "venta con boleta electrónica";
+    $("pedido").value = "Quiero un sistema de ventas para mi botica que no se caiga cuando SUNAT falla.";
+    guardarCampos();
+  });
+
+  function promptManual() {
+    return "Actúa como facilitador de Event Storming. Mi negocio: " + (s.negocio || "—") + ". Proceso: " + (s.proceso || "—") +
+      ". El pedido tal como me lo dijeron: «" + (s.pedido || "") + "». No lo resuelvas ni propongas tecnología: hazme 10 preguntas que debo hacerle al negocio antes de construir, " +
+      "cubriendo actores, eventos, reglas, excepciones, sistemas externos y cómo se comprobará que funciona.";
+  }
+
+  function pintar() {
+    var L = $("lista"); L.innerHTML = "";
+    var hot = s.notas.filter(function (n) { return n.tipo === "hotspot"; }).length;
+    $("cuentaHot").textContent = hot + (hot === 1 ? " hotspot" : " hotspots") + " en tu mapa";
+    if (!s.preguntas.length) { L.appendChild(ES.h("p", { class: "es-nota-al-pie", text: "Todavía no hay preguntas." })); return; }
+    s.preguntas.forEach(function (q, k) {
+      var yaHot = s.notas.some(function (n) { return n.tipo === "hotspot" && n.texto === q.q; });
+      L.appendChild(ES.h("div", { class: "sug" + (yaHot || q.ok ? " hecha" : "") }, [
+        ES.h("span", { class: "mini", style: "background:var(--n-hot)" }),
+        ES.h("div", null, [ES.h("b", { text: (k + 1) + ". " + q.q }), ES.h("span", { text: (q.tema ? q.tema + " · " : "") + q.porque })]),
+        ES.h("div", { class: "es-col", style: "gap:.3em" }, [
+          ES.h("button", { type: "button", class: "btn chico " + (yaHot ? "ok" : "mal"), disabled: yaHot, text: yaHot ? "Es hotspot" : "No sé → hotspot", onclick: function () { aHotspot(k); } }),
+          ES.h("button", { type: "button", class: "btn chico", disabled: yaHot, text: q.ok ? "Respondida ✓" : "La sé", onclick: function () { s = ES.cargar(); s.preguntas[k].ok = !s.preguntas[k].ok; ES.guardar(s); pintar(); } })
+        ])
+      ]));
+    });
+  }
+
+  function aHotspot(k) {
+    s = ES.cargar();
+    var q = s.preguntas[k];
+    if (!s.notas.some(function (n) { return n.tipo === "hotspot" && n.texto === q.q; })) {
+      s.notas.push({ id: ES.nuevoId(), tipo: "hotspot", texto: q.q, origen: "yo" });
+      ES.guardar(s); ES.toast("Hotspot agregado al final de tu mapa: luego lo pones en su lugar.");
+    }
+    pintar();
+  }
+
+  $("preguntar").addEventListener("click", function () {
+    guardarCampos();
+    if ((s.pedido || "").length < 10) { $("estado").className = "estado mal"; $("estado").textContent = "Escribe el pedido (o toca «Usar el ejemplo»)."; $("pedido").focus(); return; }
+    var b = $("preguntar"), t0 = Date.now();
+    b.disabled = true; $("estado").className = "estado"; $("estado").textContent = "DeepSeek está pensando las preguntas…";
+    var rel = setInterval(function () { $("estado").textContent = "DeepSeek está pensando las preguntas… " + Math.round((Date.now() - t0) / 1000) + " s"; }, 1000);
+    ES.ia(ES.ESCENA, s.pedido, ES.empresa(s), null).then(function (x) {
+      clearInterval(rel); b.disabled = false;
+      if (!x.ok) { $("estado").className = "estado mal"; $("estado").textContent = x.msg; $("respaldo").hidden = false; return; }
+      var filas = x.tablas.Preguntas || [];
+      s = ES.cargar();
+      s.preguntas = filas.filter(function (f) { return f && f[0]; }).slice(0, 10).map(function (f) { return { q: String(f[0]).trim(), porque: String(f[1] || "").trim(), tema: String(f[2] || "").trim(), ok: false }; });
+      ES.guardar(s); pintar();
+      $("estado").className = "estado bien"; $("estado").textContent = s.preguntas.length + " preguntas en " + Math.round((Date.now() - t0) / 1000) + " s. Marca las que no puedas responder.";
+    });
+  });
+  $("copiarPrompt").addEventListener("click", function () { ES.copiar(promptManual()).then(function () { ES.toast("Copiado. Pégalo en DeepSeek."); }); });
+  pintar();
+})();
+</script>
+</body>
+</html>

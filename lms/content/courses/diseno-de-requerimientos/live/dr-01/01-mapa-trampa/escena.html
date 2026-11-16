@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minijuego: Mapa trampa · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+</head>
+<body>
+<main class="es">
+  <div class="es-fila" style="justify-content:space-between">
+    <div class="es-col" style="gap:.3em">
+      <p class="es-paso" id="paso">Minijuego · Ronda 1 de 3</p>
+      <h1>Mapa trampa: <em>tú contra DeepSeek</em></h1>
+    </div>
+    <span class="reloj" id="reloj" aria-live="off">1:30</span>
+  </div>
+  <p class="es-sub" id="sub">Cada mapa «lo hizo una IA» y trae <b>4 trampas</b>. Toca la nota que esté mal, o el <b>⋯</b> donde falte un evento. Marcar todo baja tu precisión; marcar poco baja tu exhaustividad.</p>
+
+  <section class="es-panel" id="tablero">
+    <div class="es-fila" style="justify-content:space-between">
+      <h2 id="tema">Botica · venta con boleta</h2>
+      <span class="chk" id="cuenta">0 marcadas</span>
+    </div>
+    <div class="mapa-juego" id="mapa"></div>
+    <div class="es-fila">
+      <button type="button" class="btn pri" id="accion">Empezar ronda</button>
+      <button type="button" class="btn ia" id="iaJuega" hidden>¿Y DeepSeek? Que juegue este mapa</button>
+      <p class="estado" id="estado" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <div class="es-2" id="resultado" hidden>
+    <section class="es-panel">
+      <h2>Las 4 trampas</h2>
+      <div class="metrica" id="metricaTu"></div>
+      <ul class="explica" id="explica"></ul>
+    </section>
+    <section class="es-panel" id="panelIA">
+      <h2>DeepSeek en este mapa</h2>
+      <p class="es-nota-al-pie" id="iaNada">Toca «¿Y DeepSeek?» para que juegue el mismo mapa con las mismas reglas.</p>
+      <div class="metrica" id="metricaIA"></div>
+      <ul class="explica" id="explicaIA"></ul>
+    </section>
+  </div>
+
+  <section class="es-panel" id="final" hidden>
+    <h2>Marcador del grupo</h2>
+    <div class="metrica" id="metricaTotal"></div>
+    <div class="es-fila">
+      <button type="button" class="btn pri" id="publicar">Publicar mi marcador</button>
+      <button type="button" class="btn" id="otraVez">Jugar de nuevo</button>
+    </div>
+    <ol class="ranking" id="ranking"></ol>
+    <p class="es-nota-al-pie">F1 = 2·P·E / (P + E). P: de lo que marcaste, cuánto era trampa. E: de las trampas, cuántas encontraste.</p>
+  </section>
+</main>
+<script src="../../comun/es.js"></script>
+<script>
+(function () {
+  var RONDAS = [
+    { tema: "Botica · venta con boleta", notas: [
+      ["actor", "Cajero"], ["comando", "Registrar venta"], ["evento", "Venta registrada"], ["actor", "Cliente"],
+      ["comando", "Aprobar descuento"], ["evento", "Descuento aprobado"], ["politica", "Cada venta descuenta stock del lote que vence primero"],
+      ["evento", "Stock guardado en Redis"], ["comando", "Emitir boleta"], ["externo", "SUNAT"], ["evento", "Boleta aceptada"], ["evento", "Registrar pago"]],
+      trampas: [
+        ["n4", "actor equivocado", "El descuento lo aprueba el químico farmacéutico o el administrador, no el propio cliente."],
+        ["n8", "solución disfrazada", "Redis es una decisión técnica; el evento del negocio es «Stock descontado»."],
+        ["h11", "evento que falta", "SUNAT también puede rechazar: falta «Boleta rechazada». El mapa solo cubre el camino feliz."],
+        ["n12", "comando disfrazado", "«Registrar pago» es una orden; el evento es «Pago registrado»."]] },
+    { tema: "Clínica · citas médicas", notas: [
+      ["actor", "Paciente"], ["comando", "Reservar cita"], ["evento", "Cita reservada"], ["politica", "Cada cita reservada envía un recordatorio 24 h antes"],
+      ["evento", "Recordatorio enviado"], ["politica", "Si el paciente falta, paga el doble en su próxima cita"], ["actor", "Recepcionista"], ["comando", "Confirmar llegada"],
+      ["evento", "Llegada confirmada"], ["evento", "Cobrar la consulta"], ["evento", "Historia clínica guardada en MongoDB"], ["evento", "Receta entregada"]],
+      trampas: [
+        ["n6", "regla inventada", "Nadie del negocio pidió castigar al paciente: la IA inventó una política."],
+        ["h9", "evento que falta", "Entre la llegada y el cobro falta lo principal: «Consulta realizada»."],
+        ["n10", "comando disfrazado", "«Cobrar la consulta» es una orden; el evento es «Consulta cobrada»."],
+        ["n11", "solución disfrazada", "MongoDB es implementación; el negocio solo necesita «Historia clínica actualizada»."]] },
+    { tema: "Financiera · cobranza de cuotas", notas: [
+      ["actor", "Asesor de cobranza"], ["comando", "Generar cronograma"], ["evento", "Cronograma generado"], ["politica", "Cada cuota vencida envía un aviso por WhatsApp al día siguiente"],
+      ["evento", "Aviso enviado"], ["actor", "Practicante"], ["comando", "Aprobar refinanciación"], ["evento", "Refinanciación aprobada"],
+      ["politica", "Toda refinanciación perdona el 50 % de los intereses"], ["evento", "Registrar pago de cuota"], ["evento", "Pagos sincronizados con Kafka"], ["evento", "Deuda cancelada"]],
+      trampas: [
+        ["n6", "actor equivocado", "Una refinanciación la aprueba el jefe de créditos, no un practicante."],
+        ["n9", "regla inventada", "Perdonar la mitad de los intereses no lo pidió nadie: la IA lo inventó."],
+        ["n10", "comando disfrazado", "«Registrar pago de cuota» es una orden; el evento es «Cuota pagada»."],
+        ["n11", "solución disfrazada", "Kafka es infraestructura; el negocio dice «Pago aplicado a la deuda»."]] }
+  ];
+  var SEG = 90;
+  var $ = function (id) { return document.getElementById(id); };
+  var s = ES.cargar();
+  var J = s.juego && s.juego.res ? s.juego : { r: 0, res: [] };
+  var marcas = {}, fase = "espera", t0 = 0, tic = 0;
+
+  function guardarJuego() { s = ES.cargar(); s.juego = J; ES.guardar(s); }
+  function f1(tp, marcadas, total) {
+    var p = marcadas ? tp / marcadas : 0, e = total ? tp / total : 0;
+    return { p: p, e: e, f1: p + e ? 2 * p * e / (p + e) : 0 };
+  }
+  function metrica(el, m, extra) {
+    el.innerHTML = "";
+    [["F1", m.f1], ["Precisión", m.p], ["Exhaustividad", m.e]].forEach(function (x) {
+      el.appendChild(ES.h("div", null, [ES.h("b", { text: ES.fmt(x[1]) }), ES.h("span", { text: x[0] })]));
+    });
+    if (extra) el.appendChild(ES.h("div", null, [ES.h("b", { text: extra[0] }), ES.h("span", { text: extra[1] })]));
+  }
+
+  function pintarMapa() {
+    var R = RONDAS[J.r], mapa = $("mapa");
+    mapa.innerHTML = "";
+    $("tema").textContent = R.tema;
+    $("paso").textContent = "Minijuego · Ronda " + (J.r + 1) + " de 3";
+    var reales = {}; R.trampas.forEach(function (t) { reales[t[0]] = t; });
+    R.notas.forEach(function (n, k) {
+      var idN = "n" + (k + 1), idH = "h" + (k + 1);
+      var el = ES.nota({ tipo: n[0], texto: n[1] }, { sinAviso: true, pressed: !!marcas[idN], onclick: function () { alternar(idN); } });
+      if (fase === "fin" && reales[idN]) el.classList.add("trampa-real");
+      if (fase === "espera") el.style.filter = "blur(6px)";
+      mapa.appendChild(el);
+      var hu = ES.h("button", { type: "button", class: "hueco" + (fase === "fin" && reales[idH] ? " trampa-real" : ""), "aria-pressed": String(!!marcas[idH]), "aria-label": "Aquí falta un evento (después de la nota " + (k + 1) + ")", text: marcas[idH] ? "!" : "⋯", onclick: function () { alternar(idH); } });
+      if (fase === "espera") hu.style.visibility = "hidden";
+      mapa.appendChild(hu);
+    });
+    var n = Object.keys(marcas).length;
+    $("cuenta").textContent = n + (n === 1 ? " marcada" : " marcadas") + " · hay 4 trampas";
+  }
+
+  function alternar(id) {
+    if (fase !== "juego") return;
+    if (marcas[id]) delete marcas[id]; else marcas[id] = true;
+    pintarMapa();
+  }
+
+  function reloj() {
+    var quedan = Math.max(0, SEG - Math.floor((Date.now() - t0) / 1000));
+    $("reloj").textContent = Math.floor(quedan / 60) + ":" + String(quedan % 60).padStart(2, "0");
+    $("reloj").classList.toggle("poco", quedan <= 15);
+    if (quedan === 0) terminar();
+  }
+
+  function empezar() {
+    marcas = {}; fase = "juego"; t0 = Date.now();
+    $("resultado").hidden = true; $("iaJuega").hidden = true; $("estado").textContent = "";
+    $("accion").textContent = "Listo, revisar";
+    clearInterval(tic); tic = setInterval(reloj, 250); reloj();
+    pintarMapa();
+  }
+
+  function terminar() {
+    if (fase !== "juego") return;
+    clearInterval(tic); fase = "fin";
+    var R = RONDAS[J.r], reales = {};
+    R.trampas.forEach(function (t) { reales[t[0]] = t; });
+    var marcadas = Object.keys(marcas), tp = marcadas.filter(function (k) { return reales[k]; }).length;
+    var m = f1(tp, marcadas.length, 4);
+    J.res[J.r] = { tp: tp, marcadas: marcadas.length, ia: (J.res[J.r] || {}).ia || null };
+    guardarJuego();
+    pintarMapa();
+    metrica($("metricaTu"), m, [tp + "/4", "trampas"]);
+    var ul = $("explica"); ul.innerHTML = "";
+    R.trampas.forEach(function (t) {
+      ul.appendChild(ES.h("li", { class: marcas[t[0]] ? "" : "fallo" }, [ES.h("b", { text: (marcas[t[0]] ? "✓ " : "✗ ") + t[1] + ": " }), t[2]]));
+    });
+    marcadas.filter(function (k) { return !reales[k]; }).forEach(function (k) {
+      var txt = k[0] === "n" ? "«" + R.notas[+k.slice(1) - 1][1] + "» no era trampa." : "El hueco después de la nota " + k.slice(1) + " no era trampa.";
+      ul.appendChild(ES.h("li", { class: "fallo" }, [ES.h("b", { text: "Marca de más: " }), txt]));
+    });
+    pintarIA();
+    $("resultado").hidden = false; $("iaJuega").hidden = false;
+    $("accion").textContent = J.r < RONDAS.length - 1 ? "Siguiente ronda" : "Ver marcador";
+  }
+
+  function pintarIA() {
+    var r = J.res[J.r], ia = r && r.ia;
+    $("metricaIA").innerHTML = ""; $("explicaIA").innerHTML = "";
+    $("iaNada").hidden = !!ia;
+    if (!ia) return;
+    var R = RONDAS[J.r], reales = {};
+    R.trampas.forEach(function (t) { reales[t[0]] = t; });
+    metrica($("metricaIA"), f1(ia.tp, ia.marcas.length, 4), [ia.tp + "/4", "trampas"]);
+    ia.marcas.forEach(function (x) {
+      var donde = x.k[0] === "n" ? "Nota " + x.k.slice(1) + " (" + ((R.notas[+x.k.slice(1) - 1] || [])[1] || "¿?") + ")" : "Hueco tras la nota " + x.k.slice(1);
+      $("explicaIA").appendChild(ES.h("li", { class: reales[x.k] ? "" : "fallo" }, [ES.h("b", { text: (reales[x.k] ? "✓ " : "✗ ") + donde + ": " }), x.motivo || x.trampa]));
+    });
+  }
+
+  function iaJuega() {
+    var R = RONDAS[J.r], b = $("iaJuega");
+    b.disabled = true; $("estado").className = "estado"; $("estado").textContent = "DeepSeek está revisando el mapa…";
+    var muestra = R.notas.map(function (n, k) { return { n: k + 1, tipo: n[0], texto: n[1] }; });
+    ES.ia(ES.ESCENA, "Revisa este mapa de Event Storming (" + R.tema + ") y encuentra sus 4 trampas.", { razon: R.tema, rubro: "reto de revisión", regimen: "Event Storming" }, muestra).then(function (x) {
+      b.disabled = false;
+      if (!x.ok) { $("estado").className = "estado mal"; $("estado").textContent = x.msg; return; }
+      var filas = (x.tablas.Trampas || []), vistas = {}, marcasIA = [];
+      filas.forEach(function (f) {
+        var k = (String(f[0]).toLowerCase().indexOf("hueco") >= 0 ? "h" : "n") + parseInt(f[1], 10);
+        if (vistas[k] || !/^[nh]\d+$/.test(k)) return;
+        vistas[k] = true; marcasIA.push({ k: k, trampa: String(f[2] || ""), motivo: String(f[3] || "") });
+      });
+      var reales = {}; R.trampas.forEach(function (t) { reales[t[0]] = true; });
+      var tp = marcasIA.filter(function (m) { return reales[m.k]; }).length;
+      J.res[J.r] = J.res[J.r] || { tp: 0, marcadas: 0 };
+      J.res[J.r].ia = { tp: tp, marcas: marcasIA };
+      guardarJuego(); pintarIA();
+      $("estado").className = "estado bien"; $("estado").textContent = "DeepSeek encontró " + tp + " de 4.";
+    });
+  }
+
+  function totales() {
+    var tp = 0, marc = 0, iaTp = 0, iaMarc = 0, iaRondas = 0;
+    J.res.forEach(function (r) { if (!r) return; tp += r.tp; marc += r.marcadas; if (r.ia) { iaTp += r.ia.tp; iaMarc += r.ia.marcas.length; iaRondas++; } });
+    return { yo: f1(tp, marc, 12), tp: tp, ia: iaRondas === 3 ? f1(iaTp, iaMarc, 12) : null, iaTp: iaTp };
+  }
+
+  function final() {
+    fase = "final";
+    $("tablero").hidden = true; $("resultado").hidden = true; $("final").hidden = false;
+    $("paso").textContent = "Minijuego · Marcador"; $("reloj").textContent = "";
+    var T = totales();
+    metrica($("metricaTotal"), T.yo, [T.tp + "/12", "trampas"]);
+    if (T.ia) $("metricaTotal").appendChild(ES.h("div", null, [ES.h("b", { text: ES.fmt(T.ia.f1) }), ES.h("span", { text: "F1 de DeepSeek" })]));
+    leerRanking(); clearInterval(tic); tic = setInterval(leerRanking, 5000);
+  }
+
+  function leerRanking() {
+    ES.muroLeer().then(function (ent) {
+      var filas = ent.map(function (e) {
+        var m = /F1 (\d+,\d+)/.exec(e.texto || "");
+        return { nombre: e.nombre, texto: e.texto, f1: m ? parseFloat(m[1].replace(",", ".")) : -1, mia: e.mia };
+      }).sort(function (a, b) { return b.f1 - a.f1; });
+      var ol = $("ranking"); ol.innerHTML = "";
+      if (!filas.length) ol.appendChild(ES.h("li", null, [ES.h("span", { text: "Nadie ha publicado todavía." })]));
+      filas.forEach(function (f, k) {
+        ol.appendChild(ES.h("li", { class: f.mia ? "mia" : "" }, [ES.h("span", { text: (k + 1) + ". " + f.nombre }), ES.h("b", { text: f.texto })]));
+      });
+    });
+  }
+
+  $("accion").addEventListener("click", function () {
+    if (fase === "espera") empezar();
+    else if (fase === "juego") terminar();
+    else if (fase === "fin") {
+      if (J.r < RONDAS.length - 1) { J.r++; guardarJuego(); marcas = {}; fase = "espera"; $("accion").textContent = "Empezar ronda"; $("resultado").hidden = true; $("iaJuega").hidden = true; $("reloj").textContent = "1:30"; $("estado").textContent = ""; pintarMapa(); }
+      else final();
+    }
+  });
+  $("iaJuega").addEventListener("click", iaJuega);
+  $("publicar").addEventListener("click", function () {
+    var T = totales();
+    var txt = "F1 " + ES.fmt(T.yo.f1) + " · " + T.tp + "/12 trampas" + (T.ia ? " · DeepSeek " + ES.fmt(T.ia.f1) : "");
+    ES.muroPublicar(txt).then(function (x) {
+      if (x.estado === 200 || x.estado === 201) { ES.toast("Publicado en el marcador."); leerRanking(); }
+      else ES.toast("No se pudo publicar (" + (x.b && x.b.message || x.estado) + ").");
+    });
+  });
+  $("otraVez").addEventListener("click", function () {
+    J = { r: 0, res: [] }; guardarJuego(); marcas = {}; fase = "espera"; clearInterval(tic);
+    $("final").hidden = true; $("tablero").hidden = false; $("accion").textContent = "Empezar ronda"; $("reloj").textContent = "1:30"; pintarMapa();
+  });
+
+  if (J.res.length === RONDAS.length && J.res[RONDAS.length - 1]) final();
+  else { if (J.res[J.r]) J.r = Math.min(J.r + 1, RONDAS.length - 1); pintarMapa(); }
+})();
+</script>
+</body>
+</html>

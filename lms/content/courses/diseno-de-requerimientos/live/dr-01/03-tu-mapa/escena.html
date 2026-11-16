@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu mapa y la caza de huecos · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Pasos 2 y 3 de 4 · 22 minutos</p>
+  <h1 id="titulo">Tu mapa</h1>
+  <div class="checks" id="checks" aria-live="polite"></div>
+
+  <section class="es-panel">
+    <div class="tipos" id="tipos" role="group" aria-label="Tipo de nota"></div>
+    <div class="es-fila" style="flex-wrap:nowrap">
+      <input type="text" id="texto" maxlength="90" placeholder="Empieza por los eventos, en pasado: «Venta registrada»" aria-label="Texto de la nota">
+      <button type="button" class="btn pri" id="agregar">Agregar</button>
+    </div>
+    <div class="es-fila" id="barraSel" hidden>
+      <span class="es-nota-al-pie" id="selInfo"></span>
+      <button type="button" class="btn chico" id="izq">◀ Mover</button>
+      <button type="button" class="btn chico" id="der">Mover ▶</button>
+      <button type="button" class="btn chico" id="editar">Editar</button>
+      <button type="button" class="btn chico mal" id="borrar">Borrar</button>
+      <button type="button" class="btn chico" id="soltar">Quitar selección</button>
+    </div>
+    <div class="linea" id="linea"></div>
+    <p class="es-nota-al-pie">Toca una nota para moverla, editarla o agregar otra justo después. Lo que escribes se guarda en este navegador.</p>
+  </section>
+
+  <div class="es-2">
+    <section class="es-panel">
+      <div class="es-fila" style="justify-content:space-between">
+        <h2>Paso 3 · Caza de huecos con DeepSeek</h2>
+        <button type="button" class="btn ia" id="huecos">Buscar huecos</button>
+      </div>
+      <p class="estado" id="estado" role="status" aria-live="polite">Necesitas al menos 5 notas. La IA no escribe tu mapa: propone y tú decides.</p>
+      <div class="es-col" id="sugs"></div>
+    </section>
+    <section class="es-panel">
+      <h2>La IA en tu dominio</h2>
+      <div class="metrica" id="metrica"></div>
+      <p class="es-nota-al-pie">Precisión de la IA = sugerencias que aceptaste / sugerencias que hizo. La comparamos en la sesión 3 con los estudios (REFSQ 2026: F1 de 0,66 en clases para el mejor modelo).</p>
+      <details id="detPreg"><summary class="es-nota-al-pie">Tus preguntas del paso 1</summary><div class="es-col" id="preguntas" style="margin-top:.5em"></div></details>
+      <div class="es-fila">
+        <button type="button" class="btn chico" id="copiar">Copiar mapa</button>
+        <button type="button" class="btn chico" id="bajar">Descargar .md</button>
+      </div>
+    </section>
+  </div>
+</main>
+<script src="../../comun/es.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var s = ES.cargar();
+  if (!s.sugs) s.sugs = [];
+  var tipoActual = "evento", sel = "", editando = false;
+
+  function guardar() { ES.guardar(s); }
+  function idx(id) { for (var k = 0; k < s.notas.length; k++) if (s.notas[k].id === id) return k; return -1; }
+
+  // ---- lista de chequeo (la misma de la lámina «Mide tu mapa» y de la tarea del LMS) ----
+  function chequeo() {
+    var ev = s.notas.filter(function (n) { return n.tipo === "evento"; });
+    var malPasado = ev.filter(function (n) { return ES.avisoNota(n); }).length;
+    var sinCausa = 0, hubo = false, causa = false;
+    s.notas.forEach(function (n) {
+      if (n.tipo === "evento") { if (hubo && !causa) sinCausa++; hubo = true; causa = false; }
+      else if (n.tipo === "comando" || n.tipo === "politica" || n.tipo === "externo" || n.tipo === "actor") causa = true;
+    });
+    if (ev.length && s.notas[0] && s.notas[0].tipo === "evento") sinCausa++;
+    var tieneCmd = s.notas.some(function (n) { return n.tipo === "comando"; }) && s.notas.some(function (n) { return n.tipo === "actor"; });
+    return [
+      [ev.length >= 10, ev.length + " de 10 eventos"],
+      [ev.length > 0 && malPasado === 0, malPasado ? malPasado + (malPasado === 1 ? " evento por revisar" : " eventos por revisar") + " (¿en pasado?)" : "Eventos en pasado"],
+      [ev.length > 0 && tieneCmd && sinCausa === 0, sinCausa ? sinCausa + (sinCausa === 1 ? " evento sin quién lo provoca" : " eventos sin quién los provoca") : "Cada evento con quién lo provoca"],
+      [s.notas.some(function (n) { return n.tipo === "externo"; }), "Un sistema externo"],
+      [s.notas.some(function (n) { return n.tipo === "hotspot"; }), "Hotspots a la vista"]
+    ];
+  }
+
+  function pintar() {
+    $("titulo").innerHTML = "";
+    $("titulo").appendChild(document.createTextNode("Tu mapa: "));
+    $("titulo").appendChild(ES.h("em", { text: s.proceso || "tu proceso" }));
+    var C = chequeo(), todos = C.every(function (c) { return c[0]; });
+    $("checks").innerHTML = "";
+    C.forEach(function (c) { $("checks").appendChild(ES.h("span", { class: "chk" + (c[0] ? " si" : ""), text: c[1] })); });
+    if (todos && !s.mapaListo) {
+      s.mapaListo = true; guardar();
+      var nEv = s.notas.filter(function (n) { return n.tipo === "evento"; }).length, nHot = s.notas.filter(function (n) { return n.tipo === "hotspot"; }).length;
+      ES.evidencia("mapa de «" + (s.proceso || "proceso") + "»: " + nEv + " eventos, " + nHot + " hotspots, IA " + s.ia.aceptadas + "/" + s.ia.propuestas + " aceptadas");
+      ES.toast("Tu mapa cumple las cinco casillas. Toca «Lo logré».");
+    }
+    // línea de tiempo
+    var L = $("linea"); L.innerHTML = "";
+    if (!s.notas.length) L.appendChild(ES.h("p", { class: "linea-vacia", text: "Tu mapa está vacío. Escribe el primer evento arriba y toca «Agregar»." }));
+    s.notas.forEach(function (n) {
+      L.appendChild(ES.nota(n, { sel: n.id === sel, onclick: function () { sel = sel === n.id ? "" : n.id; editando = false; pintarBarra(); pintar(); } }));
+    });
+    pintarBarra(); pintarTipos(); pintarSugs(); pintarMetrica(); pintarPreguntas();
+    $("huecos").disabled = s.notas.length < 5;
+  }
+
+  function pintarTipos() {
+    var T = $("tipos"); T.innerHTML = "";
+    ES.ORDEN_TIPOS.forEach(function (t) {
+      T.appendChild(ES.h("button", { type: "button", class: "tipo nota " + ES.TIPOS[t].c, style: "min-height:0;min-width:0;max-width:none", "aria-pressed": String(t === tipoActual), title: ES.TIPOS[t].ayuda, text: ES.TIPOS[t].k,
+        onclick: function () { tipoActual = t; $("texto").placeholder = ES.TIPOS[t].ayuda; pintarTipos(); $("texto").focus(); } }));
+    });
+  }
+
+  function pintarBarra() {
+    var k = idx(sel);
+    $("barraSel").hidden = k < 0;
+    if (k >= 0) $("selInfo").textContent = "Nota " + (k + 1) + " seleccionada: lo nuevo se agrega después de ella.";
+    $("agregar").textContent = editando ? "Guardar cambio" : "Agregar";
+  }
+
+  function agregar() {
+    var t = $("texto").value.trim();
+    if (!t) { $("texto").focus(); return; }
+    var k = idx(sel);
+    if (editando && k >= 0) { s.notas[k].texto = t; s.notas[k].tipo = tipoActual; editando = false; }
+    else {
+      var n = { id: ES.nuevoId(), tipo: tipoActual, texto: t, origen: "yo" };
+      if (k >= 0) { s.notas.splice(k + 1, 0, n); sel = n.id; } else s.notas.push(n);
+    }
+    $("texto").value = ""; guardar(); pintar(); $("texto").focus();
+  }
+  $("agregar").addEventListener("click", agregar);
+  $("texto").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); agregar(); } });
+  $("izq").addEventListener("click", function () { var k = idx(sel); if (k > 0) { var n = s.notas.splice(k, 1)[0]; s.notas.splice(k - 1, 0, n); guardar(); pintar(); } });
+  $("der").addEventListener("click", function () { var k = idx(sel); if (k >= 0 && k < s.notas.length - 1) { var n = s.notas.splice(k, 1)[0]; s.notas.splice(k + 1, 0, n); guardar(); pintar(); } });
+  $("editar").addEventListener("click", function () { var k = idx(sel); if (k < 0) return; editando = true; tipoActual = s.notas[k].tipo; $("texto").value = s.notas[k].texto; pintar(); $("texto").focus(); });
+  $("borrar").addEventListener("click", function () { var k = idx(sel); if (k < 0) return; s.notas.splice(k, 1); sel = ""; editando = false; guardar(); pintar(); });
+  $("soltar").addEventListener("click", function () { sel = ""; editando = false; $("texto").value = ""; pintar(); });
+
+  // ---- DeepSeek: caza de huecos ----
+  function pintarSugs() {
+    var S = $("sugs"); S.innerHTML = "";
+    s.sugs.forEach(function (g, k) {
+      var tp = ES.TIPOS[g.tipo] || ES.TIPOS.evento;
+      var donde = g.donde || "al final";
+      S.appendChild(ES.h("div", { class: "sug" + (g.estado ? " hecha" : "") }, [
+        ES.h("span", { class: "mini", style: "background:var(--n-" + tp.c + ")", title: tp.k }),
+        ES.h("div", null, [ES.h("b", { text: tp.k.toLowerCase() + ": " + g.texto }), ES.h("span", { text: donde + " · " + g.motivo })]),
+        g.estado ? ES.h("span", { class: "chk" + (g.estado === "ok" ? " si" : ""), text: g.estado === "ok" ? "Aceptada" : "Descartada" })
+          : ES.h("div", { class: "es-col", style: "gap:.3em" }, [
+            ES.h("button", { type: "button", class: "btn chico ok", text: "Aceptar", onclick: function () { decidir(k, true); } }),
+            ES.h("button", { type: "button", class: "btn chico mal", text: "Descartar", onclick: function () { decidir(k, false); } })])
+      ]));
+    });
+  }
+
+  function decidir(k, acepta) {
+    var g = s.sugs[k];
+    if (!g || g.estado) return;
+    g.estado = acepta ? "ok" : "no";
+    if (acepta) {
+      s.ia.aceptadas++;
+      var n = { id: ES.nuevoId(), tipo: g.tipo, texto: g.texto, origen: "ia" };
+      if (g.ancla === "") s.notas.unshift(n);
+      else { var a = idx(g.ancla); if (a >= 0) s.notas.splice(a + 1, 0, n); else s.notas.push(n); }
+      // las pendientes que iban en el mismo sitio quedan detrás de la recién aceptada, en orden
+      var orig = g.ancla;
+      s.sugs.forEach(function (o) { if (!o.estado && o.ancla === orig) o.ancla = n.id; });
+    } else s.ia.descartadas++;
+    guardar(); pintar();
+  }
+
+  function pintarMetrica() {
+    var ia = s.ia, pend = s.sugs.filter(function (g) { return !g.estado; }).length;
+    var M = $("metrica"); M.innerHTML = "";
+    [[String(ia.propuestas), "propuestas"], [String(ia.aceptadas), "aceptadas"], [String(ia.descartadas), "descartadas"],
+     [ia.aceptadas + ia.descartadas ? ES.fmt(ia.aceptadas / (ia.aceptadas + ia.descartadas)) : "—", "precisión de la IA" + (pend ? " (" + pend + " por decidir)" : "")]].forEach(function (x) {
+      M.appendChild(ES.h("div", null, [ES.h("b", { text: x[0] }), ES.h("span", { text: x[1] })]));
+    });
+  }
+
+  function pintarPreguntas() {
+    var P = $("preguntas"); P.innerHTML = "";
+    $("detPreg").hidden = !s.preguntas.length;
+    s.preguntas.forEach(function (q, k) { P.appendChild(ES.h("p", { class: "es-nota-al-pie", text: (k + 1) + ". " + q.q + (q.ok ? " ✓" : "") })); });
+  }
+
+  $("huecos").addEventListener("click", function () {
+    if (s.notas.length < 5) return;
+    var b = $("huecos"), t0 = Date.now();
+    b.disabled = true; $("estado").className = "estado"; $("estado").textContent = "DeepSeek está revisando tu mapa…";
+    var rel = setInterval(function () { $("estado").textContent = "DeepSeek está revisando tu mapa… " + Math.round((Date.now() - t0) / 1000) + " s"; }, 1000);
+    var snap = s.notas.map(function (n) { return n.id; }), textos = s.notas.map(function (n) { return n.texto; });
+    var muestra = { pedido: (s.pedido || "").slice(0, 300), mapa: ES.mapaParaIA(s.notas) };
+    ES.ia(ES.ESCENA, "Busca los huecos de mi mapa de «" + (s.proceso || "mi proceso") + "».", ES.empresa(s), muestra).then(function (x) {
+      clearInterval(rel); b.disabled = false;
+      if (!x.ok) { $("estado").className = "estado mal"; $("estado").textContent = x.msg + " Mientras tanto, revisa tu mapa con la lista de chequeo."; return; }
+      var filas = (x.tablas.Huecos || []).filter(function (f) { return f && f[1]; });
+      var nuevas = filas.map(function (f) {
+        var tipo = String(f[0] || "evento").toLowerCase().replace("política", "politica");
+        if (!ES.TIPOS[tipo]) tipo = "evento";
+        var d = parseInt(f[2], 10);
+        var ancla = d > 0 && d <= snap.length ? snap[d - 1] : d === 0 ? "" : "fin";
+        var donde = ancla === "" ? "al inicio" : ancla === "fin" ? "al final" : "después de «" + textos[d - 1] + "»";
+        return { tipo: tipo, texto: String(f[1]).trim().slice(0, 90), motivo: String(f[3] || "").trim().slice(0, 160), ancla: ancla, donde: donde, estado: null };
+      });
+      s = ES.cargar(); if (!s.sugs) s.sugs = [];
+      s.sugs = nuevas.concat(s.sugs.filter(function (g) { return g.estado; })).slice(0, 40);
+      s.ia.propuestas += nuevas.length; guardar(); pintar();
+      $("estado").className = "estado bien"; $("estado").textContent = (x.titulo ? x.titulo + " · " : "") + nuevas.length + " sugerencias. Acepta solo las que tu negocio confirmaría.";
+    });
+  });
+
+  $("copiar").addEventListener("click", function () { ES.copiar(ES.aTexto(s)).then(function () { ES.toast("Mapa copiado."); }); });
+  $("bajar").addEventListener("click", function () { ES.descargar("mapa-" + (s.proceso || "proceso").replace(/[^\wáéíóúñ-]+/gi, "-").slice(0, 40) + ".md", ES.aTexto(s)); });
+
+  $("texto").placeholder = ES.TIPOS.evento.ayuda;
+  pintar();
+})();
+</script>
+</body>
+</html>
