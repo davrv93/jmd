@@ -14,6 +14,12 @@ objectives:
 recording:
   url: ""
   passcode: ""
+materials:
+  - id: ccp2-01-resumen
+    title: "Video resumen de la sesión (2:22): presupuesto de tokens, skills y /compact"
+    kind: video
+    file: materials/grabaciones/ccp2-01-resumen.mp4
+    objective_ids: [ccp2-01-o1, ccp2-01-o2, ccp2-01-o3]
 cycle:
   - id: ver
     title: Ver la clase

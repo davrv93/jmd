@@ -19,6 +19,11 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: dt-01-resumen
+    title: "Video resumen de la sesión (2:16): FLUX, código sin programar y el reto del recorte"
+    kind: video
+    file: materials/grabaciones/dt-01-resumen.mp4
+    objective_ids: [dt-01-o1, dt-01-o2, dt-01-o3, dt-01-o4]
   - id: dt-01-temario
     title: "Programa del taller (PDF, v2)"
     kind: pdf

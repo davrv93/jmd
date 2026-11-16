@@ -14,6 +14,11 @@ recording:
   url: ""
   passcode: ""
 materials:
+  - id: ccp-02-resumen
+    title: "Video resumen de la sesión (2:13): WhatsApp desde un Excel, tareas programadas y gráficos 3D"
+    kind: video
+    file: materials/grabaciones/ccp-02-resumen.mp4
+    objective_ids: [ccp-02-o1, ccp-02-o2, ccp-02-o3]
   - id: ccp-02-video
     title: "Video · Hoy en clase en 1 minuto: diente y corazón en 3D, habilidades, Claude in Chrome, Gmail y tareas programadas"
     kind: video

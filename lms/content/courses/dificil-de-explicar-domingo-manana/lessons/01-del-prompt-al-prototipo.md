@@ -19,6 +19,11 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: dm-01-resumen
+    title: "Video resumen de la sesión (2:11): FLUX, la imagen base, capas y animación en código"
+    kind: video
+    file: materials/grabaciones/dm-01-resumen.mp4
+    objective_ids: [dm-01-o1, dm-01-o2, dm-01-o3, dm-01-o4]
   - id: dm-01-temario
     title: "Programa del taller (PDF, v2)"
     kind: pdf

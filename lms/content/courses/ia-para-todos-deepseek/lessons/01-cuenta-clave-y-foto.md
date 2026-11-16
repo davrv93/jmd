@@ -19,6 +19,11 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: ipt-01-resumen
+    title: "Video resumen de la clase (2:58): instalación, API key y los ejemplos de la clase"
+    kind: video
+    file: materials/grabaciones/ipt-01-resumen.mp4
+    objective_ids: [ipt-01-o1, ipt-01-o2, ipt-01-o3, ipt-01-o4]
   - id: ipt-01-guia-visual
     title: Guía visual de la sesión (12 diapositivas, capturas reales y esquemas rotulados)
     kind: slides

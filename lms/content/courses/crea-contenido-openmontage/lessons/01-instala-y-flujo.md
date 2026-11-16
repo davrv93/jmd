@@ -13,6 +13,11 @@ repo:
   url: https://github.com/calesthio/OpenMontage
   ref: main
 materials:
+  - id: om-01-resumen
+    title: "Video resumen de la sesión (1:53): de una idea a un video con OpenMontage y Backlot"
+    kind: video
+    file: materials/grabaciones/om-01-resumen.mp4
+    objective_ids: [om-01-o1]
   - id: om-01-m1
     title: Repositorio de OpenMontage
     kind: repo

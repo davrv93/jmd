@@ -15,6 +15,11 @@ recording:
   url: ""
   passcode: ""
 materials:
+  - id: bwa-02-resumen
+    title: "Video resumen de la clase (1:57): un chatbot de 3 MB, fine-tuning con LoRA y el cierre"
+    kind: video
+    file: materials/grabaciones/bwa-02-resumen.mp4
+    objective_ids: [bwa-02-o1, bwa-02-o2, bwa-02-o3]
   - id: bwa-02-logro-lora
     title: "Video del logro: IA local con LoRA, sin servidor de IA, en el navegador (35 s)"
     kind: file

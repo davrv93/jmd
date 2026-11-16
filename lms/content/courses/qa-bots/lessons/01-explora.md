@@ -15,6 +15,11 @@ recording:
   url: ""
   passcode: ""
 materials:
+  - id: qab-01-resumen
+    title: "Video resumen de la sesión (2:11): usuarios sintéticos que encuentran los fallos"
+    kind: video
+    file: materials/grabaciones/qab-01-resumen.mp4
+    objective_ids: [qab-01-o1, qab-01-o2, qab-01-o3]
   - id: kit
     title: "Kit de práctica (con los bots y el robot)"
     kind: zip
