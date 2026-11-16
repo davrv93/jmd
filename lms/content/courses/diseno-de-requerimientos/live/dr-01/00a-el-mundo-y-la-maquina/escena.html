@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Un requisito vive en el mundo · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 1 de 3 · Zave y Jackson</p>
+    <h1>Un requisito vive en el <em>mundo</em>, no en la máquina</h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Dos elipses que se cruzan: el mundo y la máquina. El requisito y los supuestos del dominio están en el mundo; la especificación, en la franja compartida; el programa, solo en la máquina.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <defs><clipPath id="clipMundo"><ellipse cx="290" cy="270" rx="270" ry="220"/></clipPath></defs>
+        <ellipse id="zMundo" cx="290" cy="270" rx="270" ry="220" style="fill:var(--z-mundo)"/>
+        <ellipse id="zMaq" cx="580" cy="270" rx="200" ry="170" style="fill:var(--z-maq)"/>
+        <ellipse id="zComun" cx="580" cy="270" rx="200" ry="170" clip-path="url(#clipMundo)" style="fill:var(--z-comun)"/>
+        <g id="lluvia" class="solo-anim" clip-path="url(#clipMundo)"></g>
+        <ellipse id="bMundo" class="trazo" cx="290" cy="270" rx="270" ry="220"/>
+        <ellipse id="bMaq" class="trazo" cx="580" cy="270" rx="200" ry="170" style="stroke:var(--azul)"/>
+        <text id="rMundo" class="rot fuerte" x="290" y="36" text-anchor="middle">EL MUNDO</text>
+        <text id="rMaq" class="rot" x="650" y="86" text-anchor="middle" style="fill:var(--azul)">LA MÁQUINA</text>
+        <path id="guiaComun" class="trazo fino" d="M470 486 L470 414"/>
+        <text id="rComun" class="rot" x="470" y="506" text-anchor="middle">LO COMPARTIDO</text>
+      </svg>
+
+      <div class="nt ficha r" id="fR" data-r="-1.5" style="left:12.5%; top:24%; width:30%">
+        <span class="k">Requisito</span>
+        <div class="fila"><span class="letra">R</span>
+          <div class="capas t"><span class="av">empuje inverso ⇔ avión en la pista</span><span class="bo solo-anim">ninguna venta queda sin comprobante válido</span></div></div>
+      </div>
+      <div class="nt ficha k" id="fK1" data-r="1" style="left:12.5%; top:44%; width:30%">
+        <span class="k">Supuesto del dominio</span>
+        <div class="fila"><span class="letra">K</span>
+          <div class="capas t"><span class="av">ruedas giran ⇔ avión en la pista</span><span class="bo solo-anim">SUNAT acepta toda boleta en minutos</span></div></div>
+        <span class="sello solo-anim" id="sello">FALSO</span>
+      </div>
+      <div class="nt ficha k" id="fK2" data-r="-.8" style="left:12.5%; top:63%; width:30%">
+        <span class="k">Supuesto del dominio</span>
+        <div class="fila"><span class="letra">K</span>
+          <div class="capas t"><span class="av">hay pulsos ⇔ ruedas giran</span><span class="bo solo-anim">la cajera entrega la boleta impresa</span></div></div>
+      </div>
+      <div class="nt ficha s" id="fS" data-r=".8" style="left:50%; top:38%; width:17.5%">
+        <span class="k">Especificación</span>
+        <div class="fila"><span class="letra">S</span>
+          <div class="capas t"><span class="av">habilitar empuje ⇔ hay pulsos</span><span class="bo solo-anim">al confirmar el pago, emitir y enviar la boleta</span></div></div>
+      </div>
+      <div class="nt ficha p" id="fP" data-r="-1" style="left:71%; top:44%; width:22.5%">
+        <span class="k">Programa</span>
+        <div class="capas t mono"><span class="av">if (pulsos) habilitar()</span><span class="bo solo-anim">emitirBoleta(venta)</span></div>
+      </div>
+      <div class="nt hot solo-anim" id="fH" data-r="3" style="left:19%; top:79%; width:26%">
+        <span class="k">Hotspot</span>
+        <div class="capas t"><span class="av">¿Y si la pista está inundada?</span><span class="bo">¿Y si SUNAT rechaza la boleta?</span></div>
+      </div>
+      <div class="nt ev solo-anim" id="fE" data-r="-3" style="left:1%; top:85%; width:17.5%">
+        <span class="k">Evento · faltaba</span>
+        <span class="t">Boleta rechazada por SUNAT</span>
+      </div>
+
+      <p class="formula" id="formula" style="left:66%; top:84%">
+        <span class="fl">S,</span> <span class="fl">K</span> <span class="fl torn" id="torn">⊢<span class="tachon solo-anim" id="tachon"></span></span> <span class="fl">R</span>
+        <span class="que capas"><span id="q1">si K es verdad, R se cumple</span><span id="q2" class="solo-anim">K era falso: R ya no se sostiene</span><span id="q3" class="solo-anim">con el evento nuevo, vuelve a sostenerse</span></span>
+      </p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Dos regiones que se tocan</b><p>Jackson separa el mundo (el negocio, la gente, la pista, la SUNAT) de la máquina, que es tu software. Solo se tocan en una franja: lo que la máquina puede ver o mover.</p></li>
+        <li><b>R: el requisito vive en el mundo</b><p>Su ejemplo clásico: el empuje inverso de un avión solo debe funcionar con el avión en la pista. «Estar en la pista» es un hecho del mundo; ningún programa lo ve directamente.</p></li>
+        <li><b>K: lo que suponemos del mundo</b><p>Para llegar a algo que la máquina sí ve, encadenamos supuestos del dominio: si el avión está en la pista, las ruedas giran; si giran, los sensores mandan pulsos.</p></li>
+        <li><b>S: lo único que construimos</b><p>La especificación solo habla de lo compartido: habilitar el empuje si hay pulsos. El código vive dentro de la máquina. La prueba de que basta: S, K ⊢ R.</p></li>
+        <li><b>Varsovia, 1993</b><p>Pista inundada: el avión tocó tierra, pero las ruedas aquaplanaban y no giraban. K era falso. El software cumplió su S al pie de la letra y aun así R falló: el frenado se retrasó unos 9 segundos y murieron 2 de las 70 personas a bordo.</p><p class="aparte">Jackson (1995) lo cuenta simplificado. El informe oficial del vuelo DLH 2904 habla de sensores de compresión en los dos trenes: el avión tocó con uno solo, sobre agua.</p></li>
+        <li><b>Tu botica también tiene lluvia</b><p>Cada hotspot de tu mapa es un K sin comprobar. Cuando el negocio responde «a veces SUNAT rechaza», aparece el evento que faltaba y el requisito vuelve a sostenerse. Por eso se mapea antes de programar.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Zave y Jackson (1997). Four dark corners of requirements engineering. ACM TOSEM 6(1), 1–30 · Jackson (1995). The world and the machine. ICSE 17 · Informe oficial del accidente del DLH 2904 (Varsovia, 14-09-1993).</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $$ = TEO.$$, fichas = ["#fR", "#fK1", "#fK2", "#fS", "#fP", "#fH"], lluvia = [];
+  function verde() { return getComputedStyle(document.documentElement).getPropertyValue("--verde").trim() || "#1F7A3E"; }
+
+  TEO.escena([
+    function (tl) { // 1. el mundo y la máquina
+      TEO.trazar(tl, "#bMundo", { duration: 1.2 });
+      tl.from("#zMundo", { autoAlpha: 0, duration: .8 }, "-=.6");
+      tl.from("#rMundo", { autoAlpha: 0, y: 8 }, "-=.6");
+      TEO.trazar(tl, "#bMaq", { duration: 1.1 }, "-=.35");
+      tl.from("#zMaq", { autoAlpha: 0, duration: .8 }, "-=.6");
+      tl.from("#rMaq", { autoAlpha: 0, y: 8 }, "-=.6");
+      tl.from("#zComun", { autoAlpha: 0, duration: .9 }, "-=.2");
+      TEO.trazar(tl, "#guiaComun", { duration: .45 }, "-=.45");
+      tl.from("#rComun", { autoAlpha: 0, y: 6 }, "-=.15");
+    },
+    function (tl) { TEO.pegar(tl, "#fR"); },                    // 2. R
+    function (tl) { TEO.pegar(tl, ["#fK1", "#fK2"]); },         // 3. K
+    function (tl) {                                             // 4. S y la fórmula
+      TEO.pegar(tl, "#fS");
+      TEO.pegar(tl, "#fP", "-=.25");
+      tl.from("#formula .fl", { autoAlpha: 0, y: 22, duration: .55, stagger: .14, ease: "back.out(2)" }, "+=.15");
+      tl.from("#q1", { autoAlpha: 0, y: 6, duration: .4 }, "-=.1");
+    },
+    function (tl) {                                             // 5. Varsovia
+      tl.fromTo("#lluvia", { autoAlpha: 0 }, { autoAlpha: 1, duration: .9 });
+      TEO.pegar(tl, "#fH", "-=.2");
+      tl.to("#fK1", { x: -6, duration: .06, repeat: 5, yoyo: true, ease: "none" }, "+=.15");
+      tl.fromTo("#sello", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" });
+      tl.fromTo("#tachon", { autoAlpha: 0, scaleX: 0 }, { autoAlpha: 1, scaleX: 1, duration: .35, ease: "power2.out" }, "+=.1");
+      tl.to("#torn", { color: getComputedStyle(document.documentElement).getPropertyValue("--rojo").trim() || "#B3261E", duration: .3 }, "<");
+      tl.to("#q1", { autoAlpha: 0, duration: .25 }, "<");
+      tl.fromTo("#q2", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .4 });
+    },
+    function (tl) {                                             // 6. la botica
+      tl.to(["#lluvia", "#sello"], { autoAlpha: 0, duration: .5 });
+      tl.to(fichas, { rotationY: 90, duration: .22, stagger: .06, ease: "power1.in" });
+      tl.set(".av", { autoAlpha: 0 });
+      tl.set(".bo", { autoAlpha: 1 });
+      tl.to(fichas, { rotationY: 0, duration: .32, stagger: .06, ease: "power2.out" });
+      TEO.pegar(tl, "#fE", "+=.35");
+      tl.to("#tachon", { autoAlpha: 0, scaleX: 0, duration: .3 }, "+=.2");
+      tl.to("#torn", { color: verde(), duration: .4 }, "<");
+      tl.to("#q2", { autoAlpha: 0, duration: .25 }, "<");
+      tl.fromTo("#q3", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .4 });
+    }
+  ], {
+    preparar: function () {
+      gsap.set(fichas, { transformPerspective: 700 });
+      gsap.set(".bo", { autoAlpha: 0 });
+      gsap.set("#tachon", { rotation: -58, transformOrigin: "50% 50%" });
+      gsap.set(["#q2", "#q3"], { autoAlpha: 0 });
+      // lluvia: trazos finos que caen en bucle solo mientras se ve el paso de Varsovia
+      var g = document.getElementById("lluvia"), ns = "http://www.w3.org/2000/svg";
+      for (var k = 0; k < 46; k++) {
+        var l = document.createElementNS(ns, "line"), x = 30 + Math.random() * 540;
+        l.setAttribute("x1", x); l.setAttribute("y1", 30); l.setAttribute("x2", x - 5); l.setAttribute("y2", 46);
+        l.setAttribute("style", "stroke:var(--azul); stroke-width:1.6; stroke-linecap:round; opacity:.55");
+        g.appendChild(l);
+        lluvia.push(gsap.fromTo(l, { y: 0 }, { y: 470, duration: .7 + Math.random() * .6, ease: "none", repeat: -1, paused: true }).progress(Math.random()));
+      }
+    },
+    alCambiar: function (paso) {
+      lluvia.forEach(function (t) { if (paso === 4 && !TEO.quieto) t.play(); else t.pause(); });
+    }
+  });
+})();
+</script>
+</body>
+</html>

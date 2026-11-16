@@ -4,6 +4,10 @@
    El mapa del alumno vive en localStorage (mismo origen en todas las escenas de la lección). */
 (function () {
   "use strict";
+  try { // el LMS pasa su tema por ?tema=dark|light
+    var tema = new URLSearchParams(location.search).get("tema");
+    if (tema === "dark" || tema === "light") document.documentElement.setAttribute("data-tema", tema);
+  } catch (e) { /* sin parámetros */ }
   var partes = location.pathname.split("/");
   var i = partes.indexOf("live");
   var LECCION = i >= 0 ? decodeURIComponent(partes[i + 1] || "") : "dr-01";
