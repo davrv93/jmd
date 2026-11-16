@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El viaje de una boleta · Tienda web</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Mapa de metro: viewBox 800 × 520. Fila de ida y = 150, fila de vuelta y = 360. */
+  .linea { fill: none; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+  .l1 { stroke: var(--azul); } .l2 { stroke: var(--acento); } .l3 { stroke: var(--verde); }
+  .est { fill: var(--papel); stroke-width: 4.5; }
+  .e0 { stroke: var(--tinta); } .e1 { stroke: var(--azul); } .e2 { stroke: var(--acento); } .e3 { stroke: var(--verde); }
+  .sunat { fill: var(--papel); stroke: var(--acento); stroke-width: 4.5; }
+  .nom { font: 700 14px var(--mono); letter-spacing: .07em; fill: var(--tinta); }
+  .sub { font: 500 12.5px var(--sans); fill: var(--gris); }
+  .ruta { fill: none; stroke: none; }
+  #punto { fill: var(--rojo); filter: drop-shadow(0 0 6px var(--rojo)); }
+  .leyenda { position: absolute; left: 0; top: 0; display: flex; gap: .6em; flex-wrap: wrap; margin: 0; font: 700 1.25cqw/1 var(--mono); }
+  .leyenda span { display: inline-flex; align-items: center; gap: .45em; padding: .4em .75em; border-radius: 999px; background: var(--papel2); border: 1px solid var(--linea); white-space: nowrap; }
+  .leyenda i { width: .8em; height: .8em; border-radius: 50%; display: inline-block; }
+  #narra { font: 650 1.55cqw/1.25 var(--sans); padding: .55em 1em; }
+  #hoy { white-space: nowrap; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Detrás de la tienda · Lámina 1 de 3 · El servidor en Go</p>
+    <h1>Una boleta electrónica es un <em>viaje</em>, no un papel</h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Mapa de metro con once estaciones. Ida, en azul (parte 1, hoy): pedido de la tienda, API, reglas, XML UBL y firma. Vuelta, en naranja (parte 2): sobre SOAP, SUNAT, CDR y aviso. En verde (parte 3): PDF para el cliente y, en un ramal desde SUNAT, el cierre del día con resumen diario y bajas.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="g3">
+          <path id="l3a" class="linea l3" d="M225 360 H70"/>
+          <path id="l3b" class="linea l3" d="M535 360 V462"/>
+        </g>
+        <g id="g2">
+          <path id="l2" class="linea l2" d="M690 150 C780 150 780 360 690 360 H225"/>
+        </g>
+        <g id="g1">
+          <path id="l1" class="linea l1" d="M70 150 H690"/>
+          <circle class="est e0" cx="70" cy="150" r="12"/>
+          <circle class="est e1" cx="225" cy="150" r="12"/>
+          <circle class="est e1" cx="380" cy="150" r="12"/>
+          <circle class="est e1" cx="535" cy="150" r="12"/>
+          <circle class="est e1" cx="690" cy="150" r="12"/>
+          <text class="nom" x="70" y="108" text-anchor="middle">PEDIDO</text><text class="sub s1" x="70" y="127" text-anchor="middle">la tienda pide</text>
+          <text class="nom" x="225" y="108" text-anchor="middle">API</text><text class="sub s1" x="225" y="127" text-anchor="middle">la ventanilla</text>
+          <text class="nom" x="380" y="108" text-anchor="middle">REGLAS</text><text class="sub s1" x="380" y="127" text-anchor="middle">valida y saca el IGV</text>
+          <text class="nom" x="535" y="108" text-anchor="middle">XML UBL</text><text class="sub s1" x="535" y="127" text-anchor="middle">el formulario oficial</text>
+          <text class="nom" x="690" y="108" text-anchor="middle">FIRMA</text><text class="sub s1" x="690" y="127" text-anchor="middle">el sello digital</text>
+        </g>
+        <g id="g2e">
+          <circle class="est e2" cx="690" cy="360" r="12"/>
+          <rect class="sunat" x="521" y="346" width="28" height="28" rx="5"/>
+          <circle class="est e2" cx="380" cy="360" r="12"/>
+          <circle class="est e2" cx="225" cy="360" r="12"/>
+          <text class="nom" x="690" y="397" text-anchor="middle">SOAP</text><text class="sub s2" x="690" y="415" text-anchor="middle">el sobre a SUNAT</text>
+          <!-- SUNAT lleva el rótulo encima: debajo pasa el ramal del cierre del día -->
+          <text class="nom" x="535" y="310" text-anchor="middle">SUNAT</text><text class="sub s2" x="535" y="328" text-anchor="middle">revisa en el acto</text>
+          <text class="nom" x="380" y="397" text-anchor="middle">CDR</text><text class="sub s2" x="380" y="415" text-anchor="middle">el cargo de recepción</text>
+          <text class="nom" x="225" y="397" text-anchor="middle">AVISO</text><text class="sub s2" x="225" y="415" text-anchor="middle">status y webhooks</text>
+        </g>
+        <g id="g3e">
+          <circle class="est e3" cx="70" cy="360" r="12"/>
+          <circle class="est e3" cx="535" cy="462" r="12"/>
+          <text class="nom" x="70" y="397" text-anchor="middle">PDF</text><text class="sub s3" x="70" y="415" text-anchor="middle">la copia del cliente</text>
+          <text class="nom" x="557" y="458">CIERRE DEL DÍA</text><text class="sub s3" x="557" y="476">resumen diario y bajas</text>
+        </g>
+        <path id="llave" class="trazo fino guion solo-anim" d="M212 178 V190 H703 V178"/>
+        <g class="solo-anim">
+          <path id="h1" class="ruta" d="M70 150 H225"/><path id="h2" class="ruta" d="M225 150 H380"/>
+          <path id="h3" class="ruta" d="M380 150 H535"/><path id="h4" class="ruta" d="M535 150 H690"/>
+          <path id="h5" class="ruta" d="M690 150 C780 150 780 360 690 360"/><path id="h6" class="ruta" d="M690 360 H535"/>
+          <path id="h7" class="ruta" d="M535 360 H380"/><path id="h8" class="ruta" d="M380 360 H225"/>
+          <path id="h9" class="ruta" d="M225 360 H70"/>
+        </g>
+        <circle id="punto" class="solo-anim" cx="70" cy="150" r="10"/>
+      </svg>
+
+      <p class="leyenda" id="leyenda">
+        <span id="p1"><i style="background:var(--azul)"></i>Parte 1 · hoy</span>
+        <span id="p2"><i style="background:var(--acento)"></i>Parte 2 · lunes 23</span>
+        <span id="p3"><i style="background:var(--verde)"></i>Parte 3 · lunes 30</span>
+      </p>
+
+      <p class="pastilla solo-anim" id="hoy" style="left:30%; top:40%; width:40%">Hoy recorremos estas cinco estaciones</p>
+
+      <p class="pastilla solo-anim" id="narra" style="left:1.5%; top:87.5%; width:62%"><span class="capas">
+        <span>Pedido de Rosa: 2 arroz y 6 leches · S/ 75.00</span>
+        <span>API: el pedido llega en un mensaje JSON</span>
+        <span>Reglas: base S/ 63.56 + IGV S/ 11.44</span>
+        <span>XML UBL 2.1: 7 611 caracteres, listo</span>
+        <span>Firma: huella e+Jzpqsl… sellada</span>
+        <span>SOAP: va comprimido, con el usuario SOL</span>
+        <span>SUNAT revisa la firma, el RUC y los importes</span>
+        <span>CDR 0: «La Boleta … ha sido aceptada»</span>
+        <span>Aviso: la tienda se entera al instante</span>
+        <span>PDF: la copia con QR para Rosa</span>
+        <span>Todo el viaje: 34 milésimas de segundo</span>
+      </span></p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>El mapa del viaje</b><p>Cuando Rosa compra en tu tienda web, su boleta no se imprime: viaja. Sale de la tienda, cruza un servidor escrito en Go, llega a SUNAT y vuelve con una constancia. Son once estaciones, de ida y vuelta.</p></li>
+        <li><b>Parte 1, hoy: de la venta al XML firmado</b><p>La API recibe el pedido. Las reglas lo validan y separan el IGV. El servidor lo escribe en el formulario oficial de SUNAT (UBL 2.1) y lo sella con el certificado digital de la empresa.</p></li>
+        <li><b>Parte 2: hablar con SUNAT</b><p>El XML viaja comprimido en un sobre SOAP con el usuario SOL. SUNAT lo revisa en el acto y responde con el CDR, la constancia de recepción. Luego el servidor avisa a tu tienda con un webhook firmado.</p></li>
+        <li><b>Parte 3: lo que ve tu cliente</b><p>La copia en PDF con su código QR. Y el cierre del día: el resumen diario de boletas y las bajas, que SUNAT procesa con un ticket que el servidor vigila solo.</p></li>
+        <li><b>El viaje real, medido hoy</b><p>Esta boleta de la Bodega Doña Rosa salió del servidor y volvió aceptada por SUNAT en 34 milésimas de segundo. Lo lento no es la máquina: es tener mal la ficha o el certificado.</p><p class="aparte">Medido en el ambiente de pruebas de SUNAT (beta, usuario MODDATOS), donde nada tiene valor tributario. La primera conexión del día tarda más: unos 0,3 s.</p></li>
+        <li><b>Hoy recorremos la parte 1</b><p>Empezamos por donde entra tu negocio: la estación de las reglas, donde tu ficha de producto se convierte en una línea del XML. Lo vemos en la siguiente lámina.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">facturador-go: servidor en Go que reconstruye Greenter (G. Salas, licencia MIT) · SUNAT, Manual del programador SEE-Del contribuyente (2021) · Tiempos medidos el 16-11-2026 contra SUNAT beta.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, $$ = TEO.$$, narra = [], punto = $("#punto");
+  var est1 = $$("#g1 circle"), est2 = $$("#g2e circle, #g2e rect"), est3 = $$("#g3e circle");
+  var nombres = $$("text.nom");
+
+  function decir(tl, k) { // cambia el letrero de la pastilla
+    if (k > 0) tl.to(narra[k - 1], { autoAlpha: 0, duration: .15 });
+    tl.to(narra[k], { autoAlpha: 1, duration: .2 }, k > 0 ? "<+.08" : undefined);
+  }
+  function enfocar(tl, vis, pos) { // atenúa las partes que no están en vis (por grupos, no por elemento)
+    [["#g1"], ["#g2", "#g2e"], ["#g3", "#g3e"]].forEach(function (grupo, i) {
+      tl.to(grupo, { opacity: vis.indexOf(i + 1) >= 0 ? 1 : .22, duration: .5 }, i ? "<" : pos);
+    });
+  }
+  // fromTo y no from: los subtítulos empiezan ocultos (gsap.set en preparar), y from() iría de 0 a 0.
+  function aparecer(tl, sel, pos) { tl.fromTo(sel, { autoAlpha: 0, y: 5 }, { autoAlpha: 1, y: 0, duration: .4, stagger: .07 }, pos); }
+
+  TEO.escena([
+    function (tl) { // 1. el mapa
+      TEO.trazar(tl, "#l1", { duration: 1 });
+      TEO.trazar(tl, "#l2", { duration: 1.1 }, "-=.15");
+      TEO.trazar(tl, ["#l3a", "#l3b"], { duration: .5 }, "-=.1");
+      tl.from(est1.concat(est2, est3), { scale: 0, transformOrigin: "50% 50%", duration: .35, stagger: .05, ease: "back.out(2.5)" }, .5);
+      aparecer(tl, nombres, "-=.6");
+      tl.from("#leyenda span", { autoAlpha: 0, y: -8, duration: .4, stagger: .12 }, "-=.3");
+    },
+    function (tl) { // 2. parte 1
+      enfocar(tl, [1]);
+      tl.to("#p1", { scale: 1.08, duration: .2, yoyo: true, repeat: 1 }, "<");
+      aparecer(tl, ".s1", "-=.2");
+    },
+    function (tl) { // 3. parte 2
+      enfocar(tl, [1, 2]);
+      aparecer(tl, ".s2", "-=.2");
+    },
+    function (tl) { // 4. parte 3
+      enfocar(tl, [1, 2, 3]);
+      aparecer(tl, ".s3", "-=.2");
+    },
+    function (tl) { // 5. el viaje real
+      tl.fromTo("#narra", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4 });
+      tl.set(punto, { attr: { cx: 70, cy: 150 } });
+      tl.fromTo(punto, { autoAlpha: 0, scale: .3 }, { autoAlpha: 1, scale: 1, duration: .3, transformOrigin: "50% 50%" });
+      decir(tl, 0);
+      for (var k = 1; k <= 9; k++) {
+        TEO.viajar(tl, punto, $("#h" + k), k === 5 ? .9 : .6, "+=.35");
+        decir(tl, k);
+      }
+      tl.to(narra[9], { autoAlpha: 0, duration: .2 }, "+=.8");
+      tl.to(narra[10], { autoAlpha: 1, duration: .3 }, "<+.1");
+      tl.to(punto, { scale: 1.6, autoAlpha: 0, duration: .5 }, "<");
+    },
+    function (tl) { // 6. hoy: la parte 1
+      tl.to("#narra", { autoAlpha: 0, duration: .3 });
+      enfocar(tl, [1], "<");
+      TEO.trazar(tl, "#llave", { duration: .8 });
+      TEO.pegar(tl, "#hoy", "-=.3");
+    }
+  ], {
+    preparar: function () {
+      narra = gsap.utils.toArray("#narra .capas > span");
+      gsap.set(narra, { autoAlpha: 0 });
+      gsap.set(["#narra", punto], { autoAlpha: 0 });
+      gsap.set(".sub", { autoAlpha: 0 });
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu ficha se vuelve XML · Tienda web</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Tres columnas en el viewBox 800 × 520: ficha (x 8–204), reglas (214–458), XML (468–792). */
+  .zona { fill: var(--papel2); stroke: var(--linea); stroke-width: 1; }
+  .prod { position: absolute; background: var(--n-ficha); color: var(--n-tinta); border-radius: .5em; box-shadow: var(--sombra);
+          font-size: 1.55cqw; line-height: 1.25; padding: .7em .8em; display: flex; flex-direction: column; gap: .35em; }
+  .prod .foto { display: flex; align-items: center; justify-content: center; gap: .4em; height: 3.6em; border-radius: .35em; background: #EFE7D6; color: #6B6457; font: 700 .7em var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+  .prod .foto svg { width: 1.8em; height: 1.8em; fill: none; stroke: currentColor; stroke-width: 1.6; }
+  .prod .nom { font-weight: 700; font-size: 1.05em; }
+  .prod .precio { font: 800 1.45em/1 var(--mono); }
+  .prod .dato { display: flex; justify-content: space-between; gap: .5em; font-size: .82em; }
+  .prod .dato span:first-child { color: #6B6457; }
+  .prod .queda { border-radius: .3em; }
+  .etq-queda { align-self: flex-start; font: 700 .62em var(--mono); letter-spacing: .06em; text-transform: uppercase; color: #6B6457; border: 1px dashed #8C8475; border-radius: 99px; padding: .25em .6em; }
+  .codigo { position: absolute; margin: 0; background: var(--papel); border: 1px solid var(--linea); border-radius: .5em; box-shadow: var(--sombra);
+            font: 500 1.3cqw/1.4 var(--mono); padding: .6em .75em; white-space: pre; color: var(--tinta); }
+  .codigo .c { color: var(--gris); }
+  .codigo .t { color: var(--azul); }
+  .codigo .v { color: var(--tinta); font-weight: 700; border-radius: .25em; padding: 0 .15em; }
+  .codigo .ruta { display: block; margin-bottom: .3em; color: var(--acento); font-weight: 700; }
+  .calc { position: absolute; margin: 0; display: flex; flex-direction: column; gap: .45em; }
+  .calc > div { background: var(--papel); border: 1px solid var(--linea); border-radius: .5em; padding: .4em .7em; box-shadow: var(--sombra); }
+  .calc .op { font: 600 1.5cqw/1.2 var(--mono); }
+  .calc .op b { color: var(--acento); }
+  .calc small { display: block; font: 500 1.1cqw/1.2 var(--sans); color: var(--gris); margin-top: .15em; }
+  .vuela { position: absolute; z-index: 5; margin: 0; font: 700 1.25cqw/1 var(--mono); background: var(--acento); color: var(--papel); padding: .3em .5em; border-radius: .3em; white-space: nowrap; pointer-events: none; }
+  #frena .t { font-weight: 600; font-size: .95em; }
+  #frena .sello { top: auto; bottom: -.7em; right: -.3em; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Detrás de la tienda · Lámina 2 de 3 · Del pedido al XML</p>
+    <h1>Tu ficha de producto termina <em>dentro del XML</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Tres columnas. A la izquierda, la ficha del arroz Costeño extra de 5 kg a S/ 24.90, código ARZ-5K, con foto, stock y categoría que se quedan en la tienda. Al centro, el pedido en JSON y el cálculo: 2 por 24.90 da 49.80; entre 1.18 da una base de 42.20; el IGV es 7.60. A la derecha, la línea del XML UBL 2.1 con cada dato en su etiqueta y la leyenda del total en letras.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <rect class="zona" x="8" y="52" width="196" height="440" rx="12"/>
+        <rect class="zona" x="214" y="52" width="244" height="440" rx="12"/>
+        <rect class="zona" x="468" y="52" width="324" height="440" rx="12"/>
+        <text class="rot fuerte" x="106" y="38" text-anchor="middle">TU FICHA</text>
+        <text class="rot fuerte" x="336" y="38" text-anchor="middle">LAS REGLAS</text>
+        <text class="rot fuerte" x="630" y="38" text-anchor="middle">EL XML · UBL 2.1</text>
+      </svg>
+
+      <div class="prod" id="ficha" data-r="-1" style="left:2.6%; top:12.5%; width:22.2%">
+        <div class="foto queda" id="fFoto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2zM9 8V6a3 3 0 0 1 6 0v2"/></svg>foto</div>
+        <span class="nom" id="fNombre">Arroz Costeño extra 5 kg</span>
+        <span class="precio">S/ <span id="fPrecio">24.90</span></span>
+        <span class="dato"><span>Código</span><b id="fCodigo">ARZ-5K</b></span>
+        <span class="dato queda" id="fStock"><span>Stock</span><b>38</b></span>
+        <span class="dato queda" id="fCat"><span>Categoría</span><b>Abarrotes</b></span>
+        <span class="etq-queda solo-anim" id="etqQueda">foto, stock y categoría se quedan en tu tienda</span>
+      </div>
+      <p class="pastilla" id="cant" style="left:3.5%; top:66%; width:20.5%">En la bolsa: <b id="fCant">× 2</b></p>
+
+      <pre class="codigo" id="json" style="left:28.2%; top:12.5%; width:29%"><span class="ruta">POST /api/comprobantes</span><span class="l">{</span>
+<span class="l">  <span class="t">"codigo"</span>: "ARZ-5K",</span>
+<span class="l">  <span class="t">"descripcion"</span>:</span>
+<span class="l">    "Arroz Costeño extra 5 kg",</span>
+<span class="l">  <span class="t">"cantidad"</span>: 2,</span>
+<span class="l">  <span class="t">"precio"</span>: 24.90</span>
+<span class="l">}</span></pre>
+
+      <div class="calc" id="calc" style="left:28.2%; top:40.5%; width:29%">
+        <div id="r1"><span class="op">2 × 24.90 = <b id="cTotal">49.80</b></span><small>lo que paga Rosa (precio con IGV)</small></div>
+        <div id="r2"><span class="op">49.80 ÷ 1.18 = <b id="cBase">42.20</b></span><small>la base: el valor de venta</small></div>
+        <div id="r3"><span class="op">49.80 − 42.20 = <b id="cIgv">7.60</b></span><small>el IGV de 18 %</small></div>
+      </div>
+
+      <div class="nt hot solo-anim" id="frena" data-r="1.5" style="left:28.8%; top:72.5%; width:28%">
+        <span class="k">El servidor no lo deja salir</span>
+        <span class="t">✗ una factura a un cliente sin RUC</span>
+        <span class="t">✗ una boleta de más de S/ 700 sin DNI</span>
+        <span class="sello" id="sello">NO SALE</span>
+      </div>
+
+      <pre class="codigo" id="xml" style="left:59.6%; top:12.5%; width:38.9%"><span class="l c">&lt;cac:InvoiceLine&gt;</span>
+<span class="l">  <span class="t">&lt;cbc:InvoicedQuantity unitCode="NIU"&gt;</span><b class="v" id="xCant">2</b><span class="c">&lt;/…&gt;</span></span>
+<span class="l">  <span class="t">&lt;cbc:LineExtensionAmount&gt;</span><b class="v" id="xBase">42.20</b><span class="c">&lt;/…&gt;</span></span>
+<span class="l">  <span class="c">&lt;cac:PricingReference&gt;</span></span>
+<span class="l">    <span class="t">&lt;cbc:PriceAmount&gt;</span><b class="v" id="xPrecio">24.90</b><span class="c">&lt;/…&gt;</span></span>
+<span class="l">    <span class="t">&lt;cbc:PriceTypeCode&gt;</span>01<span class="c">&lt;/…&gt;</span></span>
+<span class="l">  <span class="c">&lt;cac:TaxTotal&gt;</span></span>
+<span class="l">    <span class="t">&lt;cbc:TaxAmount&gt;</span><b class="v" id="xIgv">7.60</b><span class="c">&lt;/…&gt;</span></span>
+<span class="l">    <span class="t">&lt;cbc:Percent&gt;</span>18<span class="c">&lt;/…&gt;</span></span>
+<span class="l">  <span class="c">&lt;cac:Item&gt;</span></span>
+<span class="l">    <span class="t">&lt;cbc:Description&gt;</span><b class="v" id="xDesc">Arroz Costeño extra 5 kg</b></span>
+<span class="l">    <span class="t">&lt;cbc:ID&gt;</span><b class="v" id="xCod">ARZ-5K</b><span class="c">&lt;/…&gt;</span></span>
+<span class="l c">&lt;/cac:InvoiceLine&gt;</span></pre>
+
+      <div class="nt info" id="ley" data-r="-1" style="left:60.6%; top:72%; width:36%">
+        <span class="k">Leyenda 1000 · el total en letras</span>
+        <span class="t">SON SETENTA Y CINCO CON 00/100 SOLES</span>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Tu ficha, la de hace un rato</b><p>Nombre con presentación, precio, código, foto, stock y categoría: las partes de una buena ficha. Una parte viaja a SUNAT. La foto, el stock y la categoría se quedan en tu tienda.</p></li>
+        <li><b>El pedido llega a la API</b><p>Rosa pone dos bolsas de arroz en su compra. La tienda le manda al servidor un mensaje corto en JSON: qué producto, cuántos y a cuánto. Es todo lo que el servidor necesita.</p></li>
+        <li><b>Las reglas separan el IGV</b><p>El precio que ve tu cliente ya incluye el IGV. El servidor lo separa: divide entre 1.18 para hallar la base, y la diferencia es el impuesto. Todo al céntimo.</p><p class="aparte">IGV de 18 %: 16 % de IGV más 2 % del Impuesto de Promoción Municipal.</p></li>
+        <li><b>Cada dato encuentra su etiqueta</b><p>El XML UBL 2.1 es el formulario oficial: cada dato va en una etiqueta con nombre fijo. Tu producto va en Description; tu precio, en PriceAmount; la base y el IGV, donde SUNAT los busca.</p><p class="aparte">Simplificado: el XML real agrega la moneda (PEN) y algunas etiquetas más. Míralo completo en el visor del servidor.</p></li>
+        <li><b>Lo que el servidor no deja salir</b><p>Una factura a un cliente sin RUC, o una boleta de más de S/ 700 sin DNI, no llegan a SUNAT: el servidor las frena antes con un mensaje claro y sin gastar un número de boleta.</p></li>
+        <li><b>Tus fichas, listas para viajar</b><p>Al final el servidor escribe el total en letras, como pide SUNAT. Ahora arma tus fichas: con nombre y presentación, precio con IGV y código, cada una ya es una línea del XML.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">OASIS (04-11-2013). Universal Business Language v2.1 · SUNAT, guías de elaboración de documentos XML UBL 2.1 · SUNAT, Orientación: una boleta de más de S/ 700 identifica al adquirente (nombre y DNI).</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, $$ = TEO.$$, fig = $(".teo-fig");
+  // Los vuelos: cada dato sale de la ficha o de las reglas y aterriza en su etiqueta del XML.
+  var VUELOS = [["#fNombre", "#xDesc"], ["#fCodigo", "#xCod"], ["#fCant", "#xCant"], ["#fPrecio", "#xPrecio"], ["#cBase", "#xBase"], ["#cIgv", "#xIgv"]];
+  var vuelos = [];
+
+  function pos(el) { // posición del elemento en % de la figura (sirve aunque la ventana cambie de tamaño)
+    var F = fig.getBoundingClientRect(), r = el.getBoundingClientRect();
+    return { left: (r.left - F.left) / F.width * 100 + "%", top: (r.top - F.top) / F.height * 100 + "%" };
+  }
+
+  TEO.escena([
+    function (tl) { // 1. la ficha
+      TEO.pegar(tl, "#ficha");
+      tl.to(".prod .queda", { opacity: .45, duration: .4, stagger: .1 }, "+=.2");
+      tl.fromTo("#etqQueda", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .4 });
+    },
+    function (tl) { // 2. el pedido en JSON
+      TEO.pegar(tl, "#cant");
+      tl.from("#json", { autoAlpha: 0, y: 14, duration: .45 }, "-=.2");
+      tl.from("#json .l, #json .ruta", { autoAlpha: 0, x: -6, duration: .25, stagger: .08 }, "-=.15");
+    },
+    function (tl) { // 3. las reglas
+      tl.from(["#r1", "#r2", "#r3"], { autoAlpha: 0, y: 12, duration: .45, stagger: .55, ease: "back.out(1.6)" });
+    },
+    function (tl) { // 4. cada dato a su etiqueta
+      tl.from("#xml", { autoAlpha: 0, y: 14, duration: .45 });
+      tl.from("#xml .l", { autoAlpha: 0, x: -6, duration: .2, stagger: .05 }, "-=.2");
+      vuelos.forEach(function (v, i) {
+        var t = i === 0 ? "+=.2" : "-=.35";
+        tl.fromTo(v.el, Object.assign({ autoAlpha: 1, scale: 1.15 }, v.desde), Object.assign({ scale: 1, duration: .8, ease: "power2.inOut" }, v.hacia), t);
+        tl.to(v.el, { autoAlpha: 0, duration: .15 });
+        tl.to(v.dest, { backgroundColor: "rgba(196,106,18,.28)", duration: .25 }, "<");
+      });
+    },
+    function (tl) { // 5. lo que no sale
+      TEO.pegar(tl, "#frena");
+      tl.fromTo("#sello", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, "+=.2");
+    },
+    function (tl) { // 6. la leyenda y el puente
+      TEO.pegar(tl, "#ley");
+      tl.from("#ley .t", { autoAlpha: 0, duration: .5 }, "-=.1");
+    }
+  ], {
+    preparar: function () {
+      gsap.set("#sello", { autoAlpha: 0 });
+      VUELOS.forEach(function (par) {
+        var desde = $(par[0]), dest = $(par[1]);
+        var el = document.createElement("p");
+        el.className = "vuela";
+        el.textContent = desde.textContent.replace("× ", "");
+        fig.appendChild(el);
+        gsap.set(el, { autoAlpha: 0 });
+        vuelos.push({ el: el, dest: dest, desde: pos(desde), hacia: pos(dest) });
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>
