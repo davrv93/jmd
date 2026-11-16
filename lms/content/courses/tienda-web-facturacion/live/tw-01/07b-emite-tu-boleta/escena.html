@@ -42,7 +42,7 @@
 .eb-boleta .ley { font-size: .62em; color: var(--muted); }
 .eb-boleta .hash { font: 600 .6em var(--mono); color: var(--muted); overflow-wrap: anywhere; }
 .eb-boleta img { width: 5.2em; height: 5.2em; image-rendering: pixelated; background: #fff; border-radius: .4em; padding: .2em; }
-.eb-alt { margin: .5em 0 0; font-size: .64em; padding: .45em .65em; border-radius: .6em; background: var(--bad-bg); color: var(--fg); }
+.eb-alt { margin: .45em 0 0; font-size: .6em; line-height: 1.35; padding: .4em .6em; border-radius: .6em; background: var(--bad-bg); color: var(--fg); }
 .eb-alt b { color: var(--bad); }
 .eb-alt code { font: 600 .95em var(--mono); }
 @media (max-width: 860px) {
@@ -245,6 +245,7 @@
     $("#bHash").textContent = "Hash " + d.hash;
     $("#bQR").src = API + "/documentos/" + id + "/qr.png?token=" + q;
     $("#bPdf").href = API + "/documentos/" + id + "/pdf?descargar=1&token=" + q;
+    $("#bLey").hidden = false; $("#alt").hidden = true;
     $("#tarjeta").hidden = false;
   }
 
@@ -253,11 +254,12 @@
     var b = $("#alterar"), p = $("#alt");
     var desc = ultima && ultima.items && ultima.items[0] ? ultima.items[0].descripcion : "Arroz Costeño extra 5 kg";
     b.disabled = true; p.hidden = false; p.textContent = "Firmando, cambiando una letra y enviando a SUNAT…";
+    $("#bLey").hidden = true; // el resultado ocupa ese lugar: la escena no tiene scroll
     pedir("/demo/alterar", { descripcion: desc }).then(function (r) {
       p.textContent = "";
       if (!r.ok) { p.textContent = r.status === 429 ? "Muchos envíos seguidos: espera un minuto." : ((r.datos && r.datos.error) || "No se pudo hacer el experimento."); return; }
       var a = r.datos;
-      p.appendChild(document.createTextNode("Cambiamos «" + a.original + "» por «" + a.alterado + "» después de firmar. Huella: "));
+      p.appendChild(document.createTextNode("«" + a.original + "» → «" + a.alterado + "» después de firmar. Huella "));
       p.appendChild(el("code", "", a.hash_original.slice(0, 10) + "…"));
       p.appendChild(document.createTextNode(" → "));
       p.appendChild(el("code", "", a.hash_alterado.slice(0, 10) + "…"));
