@@ -475,6 +475,8 @@
       var hoja = wb.SheetNames[0], filas = hojaAFilas(wb.Sheets[hoja], XLSX);
       ficha.hoja = hoja;
       ficha.tabla = escanearTabla(filas);
+      // Todas las filas, para el visor (02-tu-visor): no enumerable, así no se va a sessionStorage con la mesa.
+      Object.defineProperty(ficha, "filas", { value: filas, enumerable: false });
       ficha.muestraFilas = filas.slice(0, 60).map(function (f) { return f.map(function (c) { return c ? { t: c.t, f: c.f || "" } : null; }); });
       ficha.totalFilas = filas.length;
       ficha.texto = filas.slice(0, 400).map(function (f) { return f.map(function (c) { return c ? c.t : ""; }).join(" | ").replace(/(\s\|\s)+$/, ""); }).filter(function (l) { return l.replace(/[|\s]/g, ""); }).join("\n");
