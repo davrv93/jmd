@@ -329,5 +329,5 @@ lienzo.addEventListener("pointerdown", (ev) => {
 new ResizeObserver(medir).observe(host);
 document.addEventListener("visibilitychange", () => { if (!document.hidden && activo) { t0 = performance.now(); } });
 
-window.Arena3D = { pintar, animar, fase, encender, apagar };
+window.Arena3D = { pintar, animar, fase, encender, apagar, medir };
 if (window.__arena) window.__arena.listo3d();
