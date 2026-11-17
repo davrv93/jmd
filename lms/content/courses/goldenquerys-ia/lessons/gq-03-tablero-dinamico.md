@@ -20,6 +20,11 @@ materials:
     kind: video
     file: materials/gq-03-video-1-adjunta-mira-pregunta.mp4
     objective_ids: [gq-03-o1, gq-03-o2]
+  - id: gq-03-video-2
+    title: "Video 2 (3:52): Mezcla, segmenta y entrena. Varios archivos, segmentos con IA, JMD y tus formas de preguntar"
+    kind: video
+    file: materials/gq-03-video-2-mezcla-segmenta-entrena.mp4
+    objective_ids: [gq-03-o2, gq-03-o3]
   - id: gq-03-factura
     title: "Archivo de muestra · factura de un proveedor (PDF ficticio)"
     kind: pdf
