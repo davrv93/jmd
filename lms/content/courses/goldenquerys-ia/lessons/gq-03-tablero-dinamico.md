@@ -15,6 +15,11 @@ recording:
   url: ""
   passcode: ""
 materials:
+  - id: gq-03-video-1
+    title: "Video 1 (4:02): Adjunta. Mira. Pregunta. Tu visor paso a paso"
+    kind: video
+    file: materials/gq-03-video-1-adjunta-mira-pregunta.mp4
+    objective_ids: [gq-03-o1, gq-03-o2]
   - id: gq-03-factura
     title: "Archivo de muestra · factura de un proveedor (PDF ficticio)"
     kind: pdf
