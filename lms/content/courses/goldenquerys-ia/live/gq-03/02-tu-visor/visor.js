@@ -205,9 +205,16 @@
 
   // ---------------------------------------------------------------- 3 · preguntas: primero reglas
   function R(t, d) { return { t: t, d: d }; }
+  // ¿La frase nombra una columna? Vale el nombre tal cual o sus palabras sueltas: «medio de pago» encuentra «medio_pago».
   function mencion(cols, p) {
-    var mejor = null;
-    cols.forEach(function (c) { var n = plano(c.nombre).trim(); if (n.length >= 3 && p.indexOf(n) >= 0 && (!mejor || n.length > plano(mejor.nombre).length)) mejor = c; });
+    var pp = " " + p.replace(/[^a-z0-9ñ]+/g, " ").trim() + " ", mejor = null, largo = 0;
+    cols.forEach(function (c) {
+      var n = plano(c.nombre).replace(/[^a-z0-9ñ]+/g, " ").trim();
+      if (n.length < 3) return;
+      var partes = n.split(" ").filter(function (w) { return w.length >= 3; });
+      var esta = pp.indexOf(" " + n + " ") >= 0 || (partes.length > 1 && partes.every(function (w) { return pp.indexOf(" " + w + " ") >= 0; }));
+      if (esta && n.length > largo) { mejor = c; largo = n.length; }
+    });
     return mejor;
   }
   // Lo que las reglas saben calcular. Cada pregunta se lleva a una de estas intenciones: por palabras clave o,
@@ -275,8 +282,8 @@
   function sugeridas(f) {
     var V = f.vista, s = [];
     if (V.tabla) {
-      if (V.m) s.push("¿Cuánto suma " + V.m.nombre + "?");
-      if (V.g) s.push("¿Qué " + V.g.nombre.toLowerCase() + " tiene más?");
+      if (V.m) s.push("¿Cuánto suma " + V.m.nombre.replace(/_/g, " ") + "?");
+      if (V.g) s.push("¿Qué " + V.g.nombre.toLowerCase().replace(/_/g, " ") + " tiene más?");
       if (V.d) s.push("¿En qué " + (porTiempo(f, V.d, V.m).unidad) + " hubo más?");
       if (V.m) s.push("¿Cuál es el promedio?");
       s.push("¿Qué me llama la atención de estos datos?");
@@ -744,7 +751,12 @@
     alLeer: recibir,
     alTerminar: function (n) { if (n) { $("paso2").scrollIntoView({ behavior: "smooth", block: "start" }); } },
   });
-  $("form").addEventListener("submit", function (e) { e.preventDefault(); var q = $("q").value; $("q").value = ""; preguntar(q); });
-  $("ent-form").addEventListener("submit", function (e) { e.preventDefault(); entrenar($("ent-q").value, $("ent-i").value); $("ent-q").value = ""; });
+  // Botón y tecla Enter, sin <form>: el iframe del LIVE tiene sandbox sin allow-forms y un submit nunca llega.
+  var enviarPregunta = function () { var q = $("q").value; $("q").value = ""; preguntar(q); };
+  var enviarFrase = function () { entrenar($("ent-q").value, $("ent-i").value); $("ent-q").value = ""; };
+  $("q-ir").addEventListener("click", enviarPregunta);
+  $("q").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); enviarPregunta(); } });
+  $("ent-ir").addEventListener("click", enviarFrase);
+  $("ent-q").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); enviarFrase(); } });
   pintarTodo();
 })();
