@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Lee la foto por secciones</title>
+<!--
+  Escena LIVE ds-01: recorrer FOTO.md en el orden que ahorra contexto. Navegador de 7 secciones con un extracto
+  realista (sistema de ejemplo: taller-mecanico) y «qué buscar aquí». Datos embebidos; todo inline.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ds.css">
+<style id="esc-propio">
+.esc { gap: 1.2vh; }
+.l-cols { display: grid; grid-template-columns: .82fr 1.18fr; gap: 1.4vw; align-items: start; }
+.l-lista { display: grid; gap: .3em; }
+.l-sec { display: grid; grid-template-columns: auto 1fr; gap: .55em; align-items: center; text-align: left; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .7em; padding: .45em .7em; cursor: pointer; box-shadow: var(--card-shadow); }
+.l-sec b { font-size: .8em; }
+.l-sec span { grid-column: 2; font-size: .62em; color: var(--muted); }
+.l-sec i { grid-row: 1 / span 2; width: 1.9em; height: 1.9em; border-radius: .45em; background: var(--accent-bg); color: var(--accent); display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: .72em; }
+.l-sec[aria-selected="true"] { border-color: var(--accent); background: var(--accent-bg); outline: 2px solid var(--accent); }
+.l-sec.leido i { background: var(--ok-bg); color: var(--ok); }
+.l-pan { display: grid; gap: .5em; padding: .8em 1em; }
+.l-pan h2 { margin: 0; font-size: 1.05em; }
+.l-pan .q { margin: 0; font-size: .78em; color: var(--muted); line-height: 1.4; }
+.l-pre { margin: 0; font: 600 .72em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .7em; padding: .7em .9em; white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid rgba(190,185,255,.22); }
+.l-pre .k { color: #8e7dff; } .l-pre .g { color: #7f7aa8; } .l-pre .o { color: #4fd1c5; } .l-pre .w { color: #f4ac5c; }
+.l-tip { margin: 0; font-size: .72em; padding: .45em .7em; border-radius: .6em; background: var(--ok-bg); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); }
+.l-tip b { color: var(--ok); }
+.l-avance { display: flex; align-items: center; gap: .6em; font-size: .7em; color: var(--muted); margin-top: .3vh; }
+.l-avance i { flex: 1; height: .45em; border-radius: .25em; background: var(--s3); overflow: hidden; }
+.l-avance i::before { content: ""; display: block; height: 100%; width: var(--p, 0%); background: var(--ok); transition: width .4s ease-out; }
+@media (max-width: 760px) { .l-cols { grid-template-columns: 1fr; gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Documenta sistemas · S1 · 05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.5em">Lee la foto por secciones, <em>en este orden</em></h1>
+    <p class="esc-sub a-in" style="--d:.1s;font-size:.84em">Ejemplo: <code class="x-c">taller-mecanico</code>. Toca cada sección: el orden va de lo general a la seguridad, y así no relees el árbol.</p>
+
+    <div class="l-cols">
+      <div class="l-lista" id="lista" role="tablist" aria-label="Secciones de la foto"></div>
+      <section class="esc-card l-pan" id="pan" role="tabpanel" aria-live="polite"></section>
+    </div>
+    <div class="l-avance"><span id="av-n">0 de 7</span><i id="av-barra"></i><span>secciones vistas</span></div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Recorre las 7 secciones y pulsa «Lo logré»</span>
+  </footer>
+  <script type="application/json" id="datos">[
+    {"n":"§1","t":"Resumen","q":"Qué sistema es, en una línea, con su modo (completo o genérico), cuántos archivos, roles y entidades, y la huella global.","pre":"<span class=\"k\">Sistema</span>: Taller Automotriz Los Andes (modo completo)\n<span class=\"k\">Archivos</span>: 11 · <span class=\"k\">Roles</span>: 5 · <span class=\"k\">Entidades</span>: 4\n<span class=\"k\">Huella global</span>: <span class=\"o\">9f2a1c7b4e03…</span>","tip":"Si dice <b>modo genérico</b>, el sistema no trae window.SISTEMA: tendrás que leer rutas y permisos a mano."},
+    {"n":"§3","t":"Carga","q":"El orden en que se cargan los scripts y las dependencias externas («ninguna» si no hay). Te dice por dónde empieza todo.","pre":"<span class=\"k\">Orden de carga</span> (de index.html):\n 1. js/config.js      <span class=\"g\"># datos del negocio</span>\n 2. js/seguridad.js   <span class=\"g\"># hash, sesión, permisos</span>\n 3. js/app.js         <span class=\"g\"># rutas y pantallas</span>\n<span class=\"k\">Dependencias externas</span>: ninguna","tip":"<b>Ninguna dependencia externa</b> es buena señal: nada se carga de un CDN ajeno."},
+    {"n":"§6","t":"Modelo de datos","q":"Las entidades con sus campos, tipos, obligatorios, únicos y referencias. El esqueleto del negocio.","pre":"<span class=\"k\">vehiculos</span>\n  placa      texto  <span class=\"w\">único, obligatorio</span>\n  cliente_id ref →  clientes\n  km_actual  número\n<span class=\"k\">ordenes</span>  (servicios + repuestos)\n  estados: abierta → facturada → cerrada","tip":"Mira los <b>únicos</b> y las <b>referencias</b>: ahí están las reglas que el sistema promete cumplir."},
+    {"n":"§7","t":"Roles","q":"Quiénes entran y qué es cada rol. Incluye el rol de solo lectura (el auditor).","pre":"<span class=\"k\">Roles</span>\n  jefe de taller     admin del taller\n  asesor de servicio abre órdenes, cotiza\n  mecánico           ejecuta servicios\n  almacén            repuestos y compras\n  <span class=\"o\">auditor</span>            <span class=\"g\"># solo lectura</span>","tip":"El <b>auditor</b> no crea ni edita nada: si lo vieras crear algo, sería un hallazgo."},
+    {"n":"§8","t":"Matriz","q":"La tabla rol × recurso × acción: quién puede ver, crear, editar, anular, emitir o ejecutar cada cosa.","pre":"<span class=\"k\">recurso \\ rol</span>   jefe asesor mec alm aud\n ordenes.crear     ✔    ✔    ·   ·   ·\n ordenes.anular    ✔    ·    ·   ·   ·\n repuestos.editar  ✔    ·    ·   ✔   ·\n reportes.ver      ✔    ✔    ·   ✔   ✔","tip":"Esta matriz es la base de <b>DESCRIPCION_POR_ROLES.md</b>. Cada celda se cita archivo:línea."},
+    {"n":"§10","t":"Seguridad","q":"Los 14 mecanismos con su estado (presente, débil, no encontrado) y su evidencia archivo:línea. Y la config de «seguridad» frente al contrato seguro.","pre":"<span class=\"k\">Mecanismo</span>            estado        evidencia\n Hash con sal         <span class=\"o\">presente</span>    seguridad.js:22\n Bloqueo por intentos <span class=\"w\">débil</span>       seguridad.js:41\n CSP                  <span class=\"w\">no encontrado</span> index.html\n Permisos en datos    <span class=\"o\">presente</span>    datos.js:88","tip":"Un estado <b>presente</b> sigue siendo una <b>pista</b> hasta que abres su línea. Eso es la escena 8."},
+    {"n":"§12","t":"Hallazgos","q":"Los hallazgos automáticos por riesgo. Cada uno es una pista: confirma o descártalo con su evidencia.","pre":"<span class=\"k\">H-01</span> <span class=\"w\">medio</span>  Sesión guardada en localStorage\n            app.js:12 (persiste al cerrar)\n<span class=\"k\">H-02</span> <span class=\"w\">bajo</span>   innerHTML con dato de usuario\n            app.js:134 (revisar origen)","tip":"Un hallazgo es el inicio de una frase, no el veredicto: <b>ábrelo</b> antes de escribirlo."}
+  ]</script>
+</div>
+<script>
+(function () {
+  try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {}
+  function $(s) { return document.querySelector(s); }
+  var SEC = JSON.parse($("#datos").textContent), lista = $("#lista"), pan = $("#pan"), vistos = {}, bot = [];
+  SEC.forEach(function (s, i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "l-sec"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", "false");
+    var ic = document.createElement("i"); ic.textContent = s.n;
+    var tt = document.createElement("b"); tt.textContent = s.t;
+    var qq = document.createElement("span"); qq.textContent = s.q.split(".")[0] + ".";
+    b.appendChild(ic); b.appendChild(tt); b.appendChild(qq);
+    b.addEventListener("click", function () { ver(i); });
+    lista.appendChild(b); bot.push(b);
+  });
+  function ver(i) {
+    var s = SEC[i];
+    bot.forEach(function (b, j) { b.setAttribute("aria-selected", j === i ? "true" : "false"); });
+    bot[i].classList.add("leido"); vistos[i] = true;
+    pan.textContent = "";
+    var h = document.createElement("h2"); h.textContent = s.n + " · " + s.t; pan.appendChild(h);
+    var q = document.createElement("p"); q.className = "q"; q.textContent = s.q; pan.appendChild(q);
+    var pre = document.createElement("pre"); pre.className = "l-pre"; pre.innerHTML = s.pre; pan.appendChild(pre);
+    var tip = document.createElement("p"); tip.className = "l-tip"; tip.innerHTML = "Qué buscar: " + s.tip; pan.appendChild(tip);
+    var n = Object.keys(vistos).length;
+    $("#av-n").textContent = n + " de 7";
+    $("#av-barra").style.setProperty("--p", Math.round(n * 100 / 7) + "%");
+  }
+  ver(0);
+})();
+</script>
+</body>
+</html>

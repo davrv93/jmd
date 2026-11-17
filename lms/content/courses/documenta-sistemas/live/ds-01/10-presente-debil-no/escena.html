@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · ¿Presente, débil o no encontrado?</title>
+<link rel="icon" href="data:,">
+<!--
+  Juego de la sesión ds-01, sobre el motor Arena JMD (docs/ARENA_JMD.md). Cada alumno es un robot auditor en la
+  misma sala. Recoge un hallazgo de seguridad (mecanismo + su evidencia archivo:línea) y lo lleva a la zona que le
+  toca: Presente, Débil o No encontrado. Un error vale 0 (nunca resta) y la lupa muestra por qué. La reflexión va
+  al muro (ds01-juego) y al final sale la fotito. Los mecanismos y estados salen del skill foto-del-sistema.
+  ?demo=1 entra solo; ?sinred=1 fuerza la práctica local; ?fps=1 muestra los cuadros por segundo.
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #a99cff; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div id="juego"><div class="sin-motor"><div><b>Cargando la sala…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
+<script src="../../arena/arena-jmd.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.ArenaJMD) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
+  }
+
+  // z = zona correcta: "p" presente · "d" débil · "x" no encontrado. ev = la evidencia que se ve en la tarjeta.
+  var CASOS = [
+    { m: "Hash de contraseña", z: "p", ev: "H(p + u.sal) === u.hash  · seguridad.js:21", x: "Compara el hash con sal, no la clave en claro. Está presente." },
+    { m: "Bloqueo por intentos", z: "d", ev: "if (fallos >= 5) lock = true  · seguridad.js:41", x: "Bloquea, pero nunca libera ni expira el bloqueo. Débil." },
+    { m: "Content-Security-Policy", z: "x", ev: "grep -i content-security index.html → (vacío)", x: "No hay <meta> de CSP. No encontrado. Un grep vacío también es evidencia." },
+    { m: "Expiración de sesión", z: "x", ev: "config.js:14 → seguridad: { sesionMin: 0 }", x: "sesionMin 0 significa que la sesión no expira nunca. No encontrado." },
+    { m: "Permisos en la capa de datos", z: "p", ev: "if (accion!=='ver' && rol==='auditor') throw  · datos.js:88", x: "La capa de datos corta al auditor. Presente." },
+    { m: "Sin eval / new Function", z: "p", ev: "grep 'eval(|new Function' js/*.js → (vacío)", x: "No usa eval ni new Function. El mecanismo está presente." },
+    { m: "Sin innerHTML con datos", z: "d", ev: "fila.innerHTML = cli.nombre  · app.js:134", x: "Pinta un dato del usuario con innerHTML. Débil: revisa el escape." },
+    { m: "Checksum del respaldo", z: "x", ev: "exportar(): JSON.stringify(datos) sin hash", x: "El respaldo sale sin checksum: nadie nota si lo editan. No encontrado." },
+    { m: "Confirmación antes de eliminar", z: "p", ev: "if (!confirm('¿Eliminar?')) return  · app.js:210", x: "Pide confirmación antes de borrar. Presente." },
+    { m: "Política de contraseña", z: "d", ev: "if (clave.length < 4) … (solo largo 4)", x: "Acepta claves muy cortas y sin reglas. Débil." },
+    { m: "Validación de entrada", z: "d", ev: "requerido sí; rango y formato no  · app.js:77", x: "Valida que no esté vacío, pero no el rango ni el patrón. Débil." }
+  ];
+  var ZN = { p: "Presente", d: "Débil", x: "No encontrado" };
+
+  var juego = ArenaJMD.crear({
+    raiz: "#juego",
+    titulo: "¿Presente, débil o no encontrado?",
+    curso: "Documenta y audita sistemas con IA", sesion: "Sesión 1 · La foto del sistema",
+    mundo: { ancho: 1600, alto: 1000, tema: "patio" },
+    reglas: ["Pasa sobre un hallazgo para recogerlo.", "Léelo y llévalo a su zona: Presente, Débil o No encontrado.", "Errar no resta: lee la lupa y sigue."],
+    zonas: [
+      { id: "p", x: 1320, y: 60, w: 240, h: 210, nombre: "Presente", color: "#2fa35f", icono: "✓" },
+      { id: "d", x: 1320, y: 395, w: 240, h: 210, nombre: "Débil", color: "#c08a12", icono: "≈" },
+      { id: "x", x: 1320, y: 730, w: 240, h: 210, nombre: "No encontrado", color: "#c23a3a", icono: "∅" }
+    ],
+    muros: [[560, 300, 150, 110], [700, 640, 170, 100], [360, 540, 120, 120]],
+    peligros: [{ tipo: "dron", ruta: [[1080, 120], [1080, 880]], vel: 135, aviso: "¡El dron te hizo soltar el hallazgo! Volvió a su lugar." }],
+    objetos: {
+      cantidad: 9,
+      crear: function (i, v, rnd, M) {
+        var k = (i + v * 9) % CASOS.length, p = M.lugarLibre(rnd, 40, { x: 70, y: 70, w: 950, h: 880 });
+        return { x: p.x, y: p.y, forma: "carta", color: "#7b6cf0", caso: k };
+      }
+    },
+    tarjeta: function (ob) {
+      var c = CASOS[ob.caso];
+      return { etiqueta: "Mecanismo", titulo: c.m, lineas: [c.ev], pie: "¿Presente, débil o no encontrado?" };
+    },
+    entregar: function (ob, zona) {
+      var c = CASOS[ob.caso], ok = zona.id === c.z;
+      return ok
+        ? { ok: true, puntos: 10, titulo: "¡Bien! +10", explicacion: c.x, feed: "clasificó «" + c.m + "»" }
+        : { ok: false, puntos: 0, titulo: "Va a " + ZN[c.z], explicacion: c.x, real: c.ev };
+    },
+    meta: { contador: "clase", texto: "Hallazgos bien clasificados", unidad: "", objetivo: function (n) { return n * 25; } },
+    reflexion: { clave: "ds01-juego", pregunta: "¿Qué mecanismo te costó más clasificar y por qué?", placeholder: "Me costó…", porDefecto: "Un estado «presente» sigue siendo una pista hasta que abro su línea." },
+    resultado: function (s) { return { etiqueta: "Mi ronda", resultado: juego.puntos + " puntos", detalle: s.aciertos + " aciertos de " + s.entregas }; }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Verifica 5 afirmaciones</title>
+<!--
+  Escena LIVE ds-01: la regla anti-invención. 5 afirmaciones del banco de verificación; para cada una se corre su
+  sed -n y se compara. El alumno decide si coincide (hecho) o no (hay que corregir). Ejemplo: taller-mecanico.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ds.css">
+<style id="esc-propio">
+.esc { gap: 1.1vh; }
+.v-intro { display: grid; grid-template-columns: 1fr auto; gap: 1vw; align-items: center; }
+.v-regla { margin: 0; font-size: .78em; padding: .5em .8em; border-radius: .7em; background: var(--gold-bg); border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); max-width: 40em; }
+.v-regla b { color: var(--gold); }
+.v-marc { font: 700 .72em var(--mono); color: var(--muted); white-space: nowrap; }
+.v-marc b { color: var(--ok); }
+.v-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7em; }
+.v-card { border: 1px solid var(--line2); border-radius: .8em; padding: .65em .8em; background: var(--s1); box-shadow: var(--card-shadow); display: grid; gap: .4em; }
+.v-af { margin: 0; font-size: .8em; line-height: 1.3; }
+.v-af .n { font: 700 .82em var(--mono); color: var(--accent); }
+.v-cmd { margin: 0; font: 600 .68em var(--mono); background: var(--s3); color: var(--fg); padding: .3em .5em; border-radius: .4em; }
+.v-btns { display: flex; gap: .4em; }
+.v-b { flex: 1; font: 700 .72em system-ui, sans-serif; padding: .45em .6em; border-radius: .6em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; }
+.v-b:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.v-sal { margin: 0; font: 600 .68em/1.5 var(--mono); background: #14122b; color: #e9e6ff; border-radius: .5em; padding: .5em .7em; white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid rgba(190,185,255,.22); display: none; }
+.v-sal .g { color: #7f7aa8; } .v-sal .o { color: #4fd1c5; } .v-sal .w { color: #f4ac5c; }
+.v-res { margin: 0; font-size: .72em; padding: .4em .6em; border-radius: .5em; display: none; }
+.v-card.ok .v-res { display: block; background: var(--ok-bg); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); }
+.v-card.no .v-res { display: block; background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+.v-card.abierta .v-sal { display: block; }
+.v-res b { text-transform: uppercase; font-size: .9em; letter-spacing: .04em; }
+.v-card.ok .v-res b { color: var(--ok); } .v-card.no .v-res b { color: var(--warn); }
+@media (max-width: 760px) { .v-grid { grid-template-columns: 1fr; } .v-intro { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Documenta sistemas · S1 · 06</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="v-intro">
+      <div>
+        <h1 class="esc-titulo a-in" style="font-size:1.45em">Comprueba, no creas: <em>abre la línea</em></h1>
+        <p class="v-regla a-in" style="--d:.1s">Toma 5 afirmaciones del banco (§13) y corre su <b>sed -n</b>. Lo que coincide es un <b>hecho</b> (va con archivo:línea); lo que no, se corrige antes de seguir. Nunca inventes.</p>
+      </div>
+      <span class="v-marc" id="marc">Comprobadas: <b>0</b> de 5</span>
+    </div>
+    <div class="v-grid" id="grid"></div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Abre la línea de las 5, decide si coincide y pulsa «Lo logré»</span>
+  </footer>
+  <script type="application/json" id="datos">[
+    {"n":"V-1","af":"«El login usa hash con sal», según §10.","cmd":"sed -n '20,24p' js/seguridad.js","sal":"function ck(u, p) {\n  <span class=\"o\">return H(p + u.sal) === u.hash</span>\n      && !u.lock; <span class=\"g\"># compara hash, no clave</span>","ok":true,"x":"Coincide: compara H(p + sal) contra el hash guardado. Es un <b>hecho</b>: seguridad.js:21."},
+    {"n":"V-2","af":"«Hay bloqueo tras 5 intentos», según §10.","cmd":"sed -n '41,45p' js/seguridad.js","sal":"if (u.fallos >= 5) u.lock = true;\n<span class=\"w\"># pero nada vuelve a poner lock = false</span>\n<span class=\"g\"># ni guarda la hora del bloqueo</span>","ok":false,"x":"No del todo: bloquea, pero <b>nunca desbloquea</b> ni expira. El estado real es <b>débil</b>, no «presente»."},
+    {"n":"V-3","af":"«El auditor solo lee», según §8.","cmd":"grep -n \"rol==='auditor'\" js/datos.js","sal":"88: if (accion!=='ver' &amp;&amp; rol==='auditor')\n89:   throw new Error('sin permiso');","ok":true,"x":"Coincide: la capa de datos corta cualquier acción del auditor que no sea ver. <b>Hecho</b>: datos.js:88."},
+    {"n":"V-4","af":"«La config pone sesión de 30 min», según §10.","cmd":"grep -n 'sesionMin' js/config.js","sal":"14: seguridad: { sesionMin: <span class=\"w\">0</span>, … }\n<span class=\"g\"># 0 = la sesión no expira nunca</span>","ok":false,"x":"No: dice 0, y 0 significa <b>no expira</b>. La afirmación de la foto era una pista: corrígela."},
+    {"n":"V-5","af":"«index.html declara una CSP», según §10.","cmd":"grep -ni 'content-security' index.html","sal":"<span class=\"g\"># (sin resultados)</span>","ok":false,"x":"No aparece: el mecanismo es <b>no encontrado</b>. Grep vacío también es evidencia."}
+  ]</script>
+</div>
+<script>
+(function () {
+  try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {}
+  function $(s) { return document.querySelector(s); }
+  var V = JSON.parse($("#datos").textContent), grid = $("#grid"), hechas = {};
+  V.forEach(function (v) {
+    var c = document.createElement("div"); c.className = "v-card";
+    var af = document.createElement("p"); af.className = "v-af"; af.innerHTML = "<span class='n'>" + v.n + "</span> " + v.af; c.appendChild(af);
+    var cmd = document.createElement("p"); cmd.className = "v-cmd"; cmd.textContent = "$ " + v.cmd; c.appendChild(cmd);
+    var sal = document.createElement("pre"); sal.className = "v-sal"; sal.innerHTML = v.sal; c.appendChild(sal);
+    var btns = document.createElement("div"); btns.className = "v-btns";
+    var bOk = document.createElement("button"); bOk.type = "button"; bOk.className = "v-b"; bOk.textContent = "Coincide (hecho)";
+    var bNo = document.createElement("button"); bNo.type = "button"; bNo.className = "v-b"; bNo.textContent = "No coincide";
+    btns.appendChild(bOk); btns.appendChild(bNo); c.appendChild(btns);
+    var res = document.createElement("p"); res.className = "v-res"; c.appendChild(res);
+    function resolver(eligeOk) {
+      c.classList.add("abierta");
+      var acerto = eligeOk === v.ok;
+      c.classList.remove("ok", "no"); c.classList.add(acerto ? "ok" : "no");
+      res.innerHTML = "<b>" + (acerto ? "Bien visto · " : "Mira la línea · ") + "</b>" + v.x;
+      bOk.disabled = bNo.disabled = true; bOk.style.opacity = bNo.style.opacity = ".5";
+      hechas[v.n] = true;
+      $("#marc").innerHTML = "Comprobadas: <b>" + Object.keys(hechas).length + "</b> de 5";
+    }
+    bOk.addEventListener("click", function () { resolver(true); });
+    bNo.addEventListener("click", function () { resolver(false); });
+    grid.appendChild(c);
+  });
+})();
+</script>
+</body>
+</html>

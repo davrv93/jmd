@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Toma la foto del sistema</title>
+<!-- Escena LIVE ds-01: qué deja la foto (FOTO.md, FOTO.json, hashes.txt) y qué es la huella global. Todo inline. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ds.css">
+<style id="esc-propio">
+.esc { gap: 1.4vh; }
+.f-cols { display: grid; grid-template-columns: .95fr 1.05fr; gap: 1.6vw; align-items: start; }
+.f-cmd { margin: 0 0 1vh; }
+.f-flujo { display: grid; grid-template-columns: 1fr auto 1fr; gap: .6em; align-items: center; margin-bottom: 1.2vh; }
+.f-caja { border: 1px solid var(--line2); border-radius: .8em; padding: .7em .8em; background: var(--s1); box-shadow: var(--card-shadow); text-align: center; }
+.f-caja b { display: block; font-size: .82em; }
+.f-caja span { display: block; font-size: .64em; color: var(--muted); margin-top: .15em; }
+.f-flecha { font-size: 1.4em; color: var(--accent); }
+.f-sys { font: 700 .66em var(--mono); color: var(--muted); }
+.f-files { display: grid; gap: .7em; }
+.f-file { border: 1px solid var(--line); border-left: .35em solid var(--accent); border-radius: .7em; padding: .6em .85em; background: var(--s1); box-shadow: var(--card-shadow); }
+.f-file h3 { margin: 0 0 .15em; font: 700 .86em var(--mono); color: var(--accent); }
+.f-file.j { border-left-color: var(--gold); } .f-file.j h3 { color: var(--gold); }
+.f-file.h { border-left-color: var(--ok); } .f-file.h h3 { color: var(--ok); }
+.f-file p { margin: 0; font-size: .72em; color: var(--muted); line-height: 1.35; }
+.f-huella { margin-top: 1vh; padding: .75em .9em; border-radius: .8em; background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.f-huella b { font-size: .8em; } .f-huella p { margin: .2em 0 0; font-size: .72em; color: var(--fg); line-height: 1.4; }
+.f-huella code { font: 700 .92em var(--mono); color: var(--accent); background: var(--s3); padding: .05em .35em; border-radius: .3em; }
+.f-reglas { display: grid; gap: .4em; margin-top: .4vh; }
+.f-reglas li { font-size: .76em; }
+@media (max-width: 760px) { .f-cols { grid-template-columns: 1fr; gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Documenta sistemas · S1 · 04</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.6em">Toma la foto: <em>una radiografía</em> que ahorra contexto</h1>
+
+    <div class="f-cols">
+      <div>
+        <pre class="esc-cmd f-cmd a-in" style="--d:.1s"><span class="p">$</span> aula sistema foto
+<span class="c"># o: bun /opt/skills-curso/foto-del-sistema/motor/foto.mjs /trabajo/sistema</span></pre>
+        <div class="f-flujo a-in" style="--d:.2s">
+          <div class="f-caja"><b>Tu sistema</b><span class="f-sys">index.html · js/*.js · css/*</span></div>
+          <div class="f-flecha" aria-hidden="true">→</div>
+          <div class="f-caja" style="border-color:var(--accent)"><b>FOTO/</b><span>3 archivos</span></div>
+        </div>
+        <p class="esc-sub" style="font-size:.84em">El script <b>lee los archivos sin ejecutarlos</b> (solo carga <code class="x-c">js/config.js</code> en un sandbox). El mismo código da siempre la misma foto: es <b>reproducible</b>.</p>
+        <ul class="esc-lista f-reglas" style="--d:.3s">
+          <li>Repite el comando si el código cambia.</li>
+          <li><code class="x-c">docs/</code>, <code class="x-c">FOTO/</code> y <code class="x-c">skills/</code> no entran a la huella.</li>
+          <li>Lo que sale de un patrón es <b>pista</b>, no prueba.</li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="f-files">
+          <div class="f-file a-in" style="--d:.2s">
+            <h3>FOTO.md</h3>
+            <p>La radiografía para leer: resumen, orden de carga, modelo de datos, roles, matriz de permisos, seguridad (14 mecanismos), hallazgos y un banco de verificación. Lees esto, no el árbol.</p>
+          </div>
+          <div class="f-file j a-in" style="--d:.3s">
+            <h3>FOTO.json</h3>
+            <p>Lo mismo en datos exactos: entidades con sus campos, fórmulas con su código y línea, la matriz rol × recurso × acción. Para cuando necesitas un dato preciso.</p>
+          </div>
+          <div class="f-file h a-in" style="--d:.4s">
+            <h3>hashes.txt</h3>
+            <p>El sha256 de cada archivo. Con <code style="font:inherit">sha256sum -c FOTO/hashes.txt</code> sabes si algo cambió desde la foto.</p>
+          </div>
+        </div>
+        <div class="f-huella a-in" style="--d:.5s">
+          <b>La huella global</b>
+          <p>Un solo hash que resume toda la foto: <code>huella 9f2a1c7b…</code>. Si cambias una coma en un <code class="x-c">.js</code>, la huella cambia. Anota sus <b>12 primeros caracteres</b>: es la firma de lo que documentaste hoy.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Toma tu foto, confirma que <code style="font:inherit">ls FOTO</code> muestra los 3 archivos y pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/ds.js"></script>
+</body>
+</html>

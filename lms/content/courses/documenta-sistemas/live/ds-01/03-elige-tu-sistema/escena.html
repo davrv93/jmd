@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Elige tu sistema de práctica</title>
+<!--
+  Escena del modo LIVE (Documenta y audita sistemas, sesión ds-01). Reglas: sin recursos externos, menos de 300
+  elementos y 1 MB, animaciones CSS, legible con prefers-reduced-motion, claro y oscuro con ?tema=.
+  Interacción: 15 tarjetas filtrables por rubro o por texto (rol, entidad, fórmula). Al elegir, se muestran su
+  negocio, roles, entidades, fórmulas y los comandos del aula (aula sistema <id> y el siguiente paso: la foto).
+  Los datos de los 15 sistemas van embebidos como JSON (salen de VARIANTES.md).
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ds.css">
+<style id="esc-propio">
+body { font-size: clamp(15px, calc(1.18vw + .5vh), 28px); }
+.esc { padding: 1.6vh 3vw 1.4vh; gap: 1.2vh; }
+.x-cab { display: flex; align-items: center; justify-content: space-between; gap: 1.5vw; flex-wrap: wrap; }
+.x-cab .esc-titulo { font-size: 1.5em; }
+.x-el { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.4vw; align-items: start; }
+.x-filtro { display: flex; gap: .4em; flex-wrap: wrap; align-items: center; margin-bottom: .6vh; }
+.x-filtro input { font: inherit; font-size: .78em; padding: .5em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); min-width: 14em; flex: 1; }
+.x-chipf { font: 700 .64em/1 system-ui, -apple-system, sans-serif; padding: .55em .9em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; }
+.x-chipf[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.x-rejilla { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5em; }
+.x-sis { text-align: left; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .8em; padding: .5em .7em; cursor: pointer; display: grid; gap: .1em; box-shadow: var(--card-shadow); }
+.x-sis b { font-size: .8em; line-height: 1.15; }
+.x-sis span { font-size: .64em; color: var(--muted); line-height: 1.2; }
+.x-sis[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); outline: 2px solid var(--accent); }
+.x-sis.mio { border-color: var(--ok); outline: 3px solid var(--ok); background: var(--ok-bg); }
+.x-sis[hidden] { display: none; }
+.x-estado { font-size: .72em; font-weight: 600; color: var(--muted); margin: .4em 0 0; }
+.x-det { display: grid; gap: .35em; padding: .7em 1em; }
+.x-det h2 { margin: 0; font-size: 1.05em; line-height: 1.15; }
+.x-det .id { font: 700 .7em var(--mono); color: var(--accent); }
+.x-bloq { display: grid; gap: .2em; }
+.x-et { font-size: .6em; font-weight: 800; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+.x-fl { display: flex; flex-wrap: wrap; gap: .3em; }
+.x-fl span { font-size: .62em; padding: .15em .6em; border-radius: 999px; background: var(--s3); }
+.x-fl.f span { background: var(--gold-bg); color: var(--gold); font-weight: 700; }
+.x-c { font: 600 .9em var(--mono); background: var(--s3); padding: .05em .4em; border-radius: .35em; }
+.x-cmds { display: grid; gap: .3em; margin-top: .2em; }
+.x-cmds .esc-cmd { font-size: .74em; padding: .5em .8em; }
+.x-cmds p { margin: 0; font-size: .72em; line-height: 1.3; color: var(--muted); }
+.x-btn { font: 700 .74em/1 system-ui, -apple-system, sans-serif; padding: .6em 1.1em; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; justify-self: start; }
+.x-btn:focus-visible, .x-sis:focus-visible, .x-chipf:focus-visible, .x-filtro input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.x-vacio { color: var(--muted); font-size: .76em; margin: 0; }
+@media (max-width: 760px) {
+  .x-el { grid-template-columns: 1fr; gap: 12px; }
+  .x-rejilla { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Documenta sistemas · S1 · 03</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="x-cab">
+      <h1 class="esc-titulo a-in">Elige <em>tu</em> sistema (1 de 15)</h1>
+      <p class="x-vacio">Todos son SPA completas, con roles, reportes y seguridad. No instalas nada: viven en tu aula.</p>
+    </div>
+
+    <div class="x-el">
+      <div>
+        <div class="x-filtro" role="group" aria-label="Filtros">
+          <input type="search" id="q" placeholder="Busca un rol, entidad o fórmula: auditor, OEE, IGV, FEFO…" aria-label="Buscar por rol, entidad o fórmula">
+        </div>
+        <div class="x-filtro" id="areas" role="group" aria-label="Rubro"></div>
+        <div class="x-rejilla" id="rej" aria-live="polite"></div>
+        <p class="x-estado" id="rej-n"></p>
+      </div>
+      <section class="esc-card x-det" id="det" aria-live="polite"></section>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pulsa «Elegí el mío», ábrelo con dos roles en el Visor y luego «Lo logré»</span>
+  </footer>
+  <script type="application/json" id="datos">[{"id":"muebleria","nombre":"Maderas del Sur · Ventas","rubro":"Venta de muebles","areas":["Comercio"],"negocio":"Tienda de muebles en Arequipa: vende, compra a proveedores y controla su stock.","roles":["admin","gerente","vendedor","almacén","auditor"],"entidades":["clientes","productos","proveedores","categorías","vendedores"],"ops":["ventas","compras"],"formulas":["comisión de vendedor","valorización de stock","IGV"]},{"id":"papeleria","nombre":"Papelería Útil","rubro":"Artículos de escritorio y útiles","areas":["Comercio"],"negocio":"Vende en mostrador y atiende pedidos corporativos de útiles.","roles":["admin","gerente","cajero","almacén","auditor"],"entidades":["clientes (personas y empresas)","productos","combos y kits","proveedores"],"ops":["ventas de mostrador y pedidos corporativos","compras"],"formulas":["descuento escalonado por volumen","margen por categoría","punto de reposición y compra sugerida"]},{"id":"abogados","nombre":"Estudio Jurídico Paredes & Asociados","rubro":"Servicios legales","areas":["Servicios profesionales"],"negocio":"Estudio que lleva expedientes y factura por horas, cuota litis y provisiones.","roles":["socio","abogado","asistente","contador","auditor"],"entidades":["clientes","expedientes (materia, juzgado, etapa)","abogados","tarifas"],"ops":["actuaciones con horas","honorarios y provisiones"],"formulas":["horas facturables × tarifa","cuota litis %","plazos en días hábiles","saldo de provisión de fondos"]},{"id":"centro-salud","nombre":"Centro de Salud Santa Rosa","rubro":"Atención de salud","areas":["Salud"],"negocio":"Centro que agenda citas, registra diagnósticos y receta medicamentos.","roles":["director","médico","enfermería","admisión","farmacia","auditor"],"entidades":["pacientes","médicos","medicamentos","seguros"],"ops":["citas y atenciones (diagnóstico, receta)"],"formulas":["edad","IMC con clasificación","dosis pediátrica por peso","copago según seguro","tiempo de espera"]},{"id":"consultora-software","nombre":"Nexa Soluciones TI","rubro":"Consultora de software","areas":["Tecnología","Servicios profesionales"],"negocio":"Consultora que vende proyectos, registra horas y factura por hitos.","roles":["gerente","PM","consultor","comercial","finanzas","auditor"],"entidades":["clientes","proyectos","consultores","propuestas"],"ops":["partes de horas","facturación por hitos"],"formulas":["costo hora cargado","margen del proyecto","valor ganado (PV, EV, CPI)","utilización"]},{"id":"fabrica-bi","nombre":"DataFactory","rubro":"Fábrica de inteligencia de negocios","areas":["Tecnología"],"negocio":"Fábrica que corre pipelines de datos y atiende tickets de soporte.","roles":["líder de datos","ingeniero","analista","cuenta","auditor"],"entidades":["clientes","fuentes de datos","pipelines","tableros"],"ops":["ejecuciones de pipelines","tickets de soporte"],"formulas":["SLA de entrega","costo de cómputo por ejecución","tasa de éxito","puntaje de calidad de datos"]},{"id":"lab-redes","nombre":"Laboratorio de Redes Andino","rubro":"Laboratorio de redes","areas":["Educación","Tecnología"],"negocio":"Laboratorio que reserva equipos, atiende incidencias y planifica direccionamiento.","roles":["coordinador","técnico","docente","estudiante","auditor"],"entidades":["equipos","laboratorios","docentes","prácticas"],"ops":["reservas de laboratorio","incidencias","planes de direccionamiento"],"formulas":["cálculo de subred (red, broadcast, hosts útiles desde IP/CIDR)","ocupación del laboratorio","depreciación lineal"]},{"id":"linea-produccion","nombre":"Manufacturas Altiplano","rubro":"Cadena de producción","areas":["Industria y obra"],"negocio":"Planta que produce con lista de materiales y registra la producción por turno.","roles":["gerente de planta","supervisor","operador","calidad","mantenimiento","auditor"],"entidades":["productos con lista de materiales (BOM)","líneas y estaciones","insumos","turnos"],"ops":["órdenes de producción","registros de producción por turno"],"formulas":["OEE (disponibilidad × rendimiento × calidad)","takt time","costo estándar por BOM","rendimiento a la primera"]},{"id":"botica","nombre":"Botica Salud Total","rubro":"Botica y farmacia","areas":["Salud","Comercio"],"negocio":"Botica que vende con y sin receta y controla lotes y vencimientos.","roles":["químico farmacéutico","cajero","almacén","admin","auditor"],"entidades":["productos","lotes con vencimiento","proveedores","clientes"],"ops":["ventas (con y sin receta)","compras con lote"],"formulas":["margen","alerta de vencimiento en días","salida por vencimiento (FEFO)","descuento por tarjeta"]},{"id":"restaurante","nombre":"Sabores del Colca","rubro":"Restaurante","areas":["Turismo y transporte"],"negocio":"Restaurante con comandas por mesa, recetas e insumos, y cierre de caja.","roles":["administrador","mozo","cocina","cajero","auditor"],"entidades":["mesas","platos con receta","insumos","personal"],"ops":["comandas","cierres de caja"],"formulas":["costo del plato por receta","food cost %","ticket promedio","rotación de mesa","servicio y propina"]},{"id":"taller-mecanico","nombre":"Taller Automotriz Los Andes","rubro":"Taller mecánico","areas":["Industria y obra"],"negocio":"Taller que atiende vehículos con órdenes de trabajo de servicios y repuestos.","roles":["jefe de taller","asesor de servicio","mecánico","almacén","auditor"],"entidades":["clientes","vehículos (placa)","repuestos","mecánicos"],"ops":["órdenes de trabajo (servicios + repuestos)","compras de repuestos"],"formulas":["mano de obra = tiempo estándar × tarifa","margen en repuestos","próximo mantenimiento por km","comisión por técnico"]},{"id":"colegio","nombre":"I.E. San Martín","rubro":"Colegio","areas":["Educación"],"negocio":"Colegio que matricula, registra notas por bimestre y cobra pensiones.","roles":["director","docente","secretaría","tesorería","auditor"],"entidades":["alumnos","apoderados","cursos y secciones","docentes"],"ops":["matrículas","notas por bimestre","pensiones y pagos"],"formulas":["promedio ponderado","escala literal AD/A/B/C","% de asistencia","interés moratorio de pensión","beca %"]},{"id":"transportes","nombre":"Transportes Andes Cargo","rubro":"Transporte de carga","areas":["Turismo y transporte"],"negocio":"Empresa que despacha viajes con carga y controla mantenimiento y combustible.","roles":["gerente de operaciones","despachador","conductor","contabilidad","auditor"],"entidades":["vehículos","conductores","clientes","rutas"],"ops":["viajes con carga","mantenimiento","combustible"],"formulas":["costo por km","margen del viaje","rendimiento km/galón","ocupación de carga"]},{"id":"hotel","nombre":"Hostal Plaza Mayor","rubro":"Hostal","areas":["Turismo y transporte"],"negocio":"Hostal que reserva habitaciones, hace check-in y check-out y registra consumos.","roles":["gerente","recepción","housekeeping","contabilidad","auditor"],"entidades":["habitaciones","huéspedes","tarifas por temporada","servicios"],"ops":["reservas (check-in/out)","consumos"],"formulas":["noches","tarifa por temporada (alta/baja)","ocupación","ADR y RevPAR"]},{"id":"constructora","nombre":"Constructora Ingeniería Sur","rubro":"Construcción","areas":["Industria y obra"],"negocio":"Constructora que valoriza el avance de obra y pide materiales.","roles":["gerente de proyectos","residente","almacenero","administración","auditor"],"entidades":["proyectos","partidas (metrados)","insumos","proveedores"],"ops":["valorizaciones mensuales","requisiciones de materiales"],"formulas":["costo directo","gastos generales %","utilidad %","IGV","avance valorizado","retención de garantía"]}]</script>
+</div>
+<script>
+(function () {
+  try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {}
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function norm(t) { return String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+
+  var SIS = JSON.parse($("#datos").textContent), AREAS = ["Todos"], area = "Todos", mio = "";
+  SIS.forEach(function (s) { s.areas.forEach(function (a) { if (AREAS.indexOf(a) < 0) AREAS.push(a); }); });
+  var rej = $("#rej"), q = $("#q"), cajas = {};
+  SIS.forEach(function (s) {
+    var b = el("button", "x-sis"); b.type = "button"; b.setAttribute("aria-pressed", "false");
+    b.appendChild(el("b", null, s.nombre)); b.appendChild(el("span", null, s.rubro));
+    b.addEventListener("click", function () { seleccionar(s.id); });
+    cajas[s.id] = b; rej.appendChild(b);
+    s.texto = norm([s.nombre, s.rubro, s.negocio, s.roles.join(" "), s.entidades.join(" "), s.ops.join(" "), s.formulas.join(" ")].join(" "));
+  });
+  var barra = $("#areas");
+  AREAS.forEach(function (a) {
+    var b = el("button", "x-chipf", a); b.type = "button"; b.setAttribute("aria-pressed", a === "Todos" ? "true" : "false");
+    b.addEventListener("click", function () { area = a; $$(".x-chipf", barra).forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); }); filtrar(); });
+    barra.appendChild(b);
+  });
+  function filtrar() {
+    var t = norm(q.value.trim()), n = 0;
+    SIS.forEach(function (s) {
+      var ok = (area === "Todos" || s.areas.indexOf(area) >= 0) && (!t || s.texto.indexOf(t) >= 0);
+      cajas[s.id].hidden = !ok; if (ok) n++;
+    });
+    $("#rej-n").textContent = n + " de 15 sistemas" + (n === 0 ? ": prueba con otra palabra" : "");
+  }
+  q.addEventListener("input", filtrar); filtrar();
+  function chips(arr, cls) { var d = el("div", "x-fl" + (cls ? " " + cls : "")); arr.forEach(function (x) { d.appendChild(el("span", null, x)); }); return d; }
+  function bloque(tit, nodo) { var d = el("div", "x-bloq"); d.appendChild(el("span", "x-et", tit)); d.appendChild(nodo); return d; }
+  function seleccionar(id) {
+    var s = SIS.filter(function (x) { return x.id === id; })[0];
+    SIS.forEach(function (x) { cajas[x.id].setAttribute("aria-pressed", x.id === id ? "true" : "false"); });
+    var d = $("#det"); d.textContent = "";
+    d.appendChild(el("span", "id", s.id));
+    d.appendChild(el("h2", null, s.nombre + " · " + s.rubro));
+    var neg = el("p", "x-vacio", s.negocio); neg.style.fontSize = ".74em"; d.appendChild(neg);
+    d.appendChild(bloque("Roles (incluye el auditor, de solo lectura)", chips(s.roles)));
+    d.appendChild(bloque("Entidades", chips(s.entidades)));
+    d.appendChild(bloque("Fórmulas que vas a auditar", chips(s.formulas, "f")));
+    var c = el("div", "x-cmds");
+    var p1 = el("p"); p1.innerHTML = "En la terminal del aula, cópialo a <span class='x-c'>/trabajo/sistema</span>:";
+    var m1 = el("pre", "esc-cmd"); m1.textContent = "aula sistema " + s.id;
+    var p2 = el("p"); p2.innerHTML = "Ábrelo en el <b>Visor</b> (<span class='x-c'>/vista/&lt;tú&gt;/sistema/</span>) y entra con dos roles. En la escena 4 le tomas la foto.";
+    c.appendChild(p1); c.appendChild(m1); c.appendChild(p2); d.appendChild(c);
+    var b = el("button", "x-btn", mio === id ? "✓ Es el mío" : "Elegí el mío"); b.type = "button";
+    b.addEventListener("click", function () {
+      if (mio && cajas[mio]) cajas[mio].classList.remove("mio");
+      mio = id; cajas[id].classList.add("mio"); b.textContent = "✓ Es el mío";
+      est.textContent = "Elegiste «" + s.nombre + "». Corre aula sistema " + s.id + ", ábrelo con dos roles y pulsa «Lo logré».";
+    });
+    d.appendChild(b);
+    var est = el("p", "x-estado"); est.textContent = mio === id ? "Elegiste «" + s.nombre + "»." : ""; d.appendChild(est);
+  }
+  (function () { var d = $("#det"); d.appendChild(el("p", "x-vacio", "¿No sabes cuál? Toca cualquiera para ver su negocio, sus roles, sus entidades y sus fórmulas. Elige el rubro que más te suene: lo vas a documentar entero.")); })();
+})();
+</script>
+</body>
+</html>
