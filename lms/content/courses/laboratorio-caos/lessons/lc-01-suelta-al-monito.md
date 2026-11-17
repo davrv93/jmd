@@ -7,6 +7,10 @@ published: true
 objectives:
   - id: lc-01-o1
     title: Explicar qué es la ingeniería del caos y por qué Netflix soltaba un mono en sus servidores
+  - id: lc-01-o4
+    title: Contar cómo llegó Netflix a Chaos Monkey (la caída de 2008, la mudanza a AWS y el Ejército Simio) y qué principios de diseño lo sostienen
+  - id: lc-01-o5
+    title: Distinguir lo que está documentado sobre sus resultados (las caídas de 2011, 2012 y 2015, evacuar una región en 8 minutos) de lo que nadie publica, como una «tasa de éxito»
   - id: lc-01-o2
     title: Diagnosticar un servidor caído con un health check y curar cuatro fallas típicas (app apagada, disco lleno, base borrada y app atascada)
   - id: lc-01-o3
@@ -31,6 +35,20 @@ cycle:
 # Suelta al monito
 
 Un laboratorio por turnos. El equipo **Monito Tumba Server** ataca y el equipo **Monito Server** defiende un servidor real que vive en su aula.
+
+## Antes de jugar: la teoría (16 minutos)
+
+Cinco láminas animadas cuentan de dónde sale el juego. Cada una trae sus fuentes al pie.
+
+- **Fallar seguido.** El ciclo romper, observar, curar y anotar.
+- **Cómo lo hizo Netflix.** De los tres días sin enviar DVD en 2008 a la mudanza a AWS, Chaos Monkey y el Ejército Simio.
+- **Un experimento con reglas.** Diseñar para fallar (sin estado, redundancia, degradar con gracia, cortacircuitos) y probarlo contra un «estado estable».
+- **Antes y después.** Las caídas de AWS de 2011, 2012 y 2015, cómo le fue a Netflix en cada una y los números que sí están publicados.
+- **Lo que dejó el mono.** Una disciplina, una industria y sus límites.
+
+En la arena, Tumba Server hace de mono, Monito Server es el ingeniero de guardia y `/salud` es el estado estable.
+
+## La arena
 
 1. Entra al LIVE y elige tu equipo en la arena.
 2. **Tumba Server:** en tu turno, toca un servidor de la granja y lánzale hasta dos de los 10 ataques (app, disco, base, fuga de datos, clones, archivos pesados, formularios basura, sesión abierta, clave débil…). Tu monito salta la valla.

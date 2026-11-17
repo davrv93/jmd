@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Los principios: diseñar para fallar y probarlo como experimento</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Estilos solo de esta lámina. Las coordenadas de la figura son del viewBox 800 × 520:
+     left = x / 8 %, top = y / 5.2 %. Arriba, cómo se diseña; abajo, cómo se prueba. */
+  .nt .k { text-transform: none; letter-spacing: .02em; font-size: .72em; }
+  .rot.ch { font-size: 12.5px; letter-spacing: .03em; }
+  .formula { font-size: 4.3cqw; }
+  .formula sup { font-size: .5em; }
+  .formula .que { font-size: .33em; text-transform: none; letter-spacing: .02em; }
+  .pilar { width: 23%; }
+  #cExp { stroke: var(--acento); stroke-width: 3.2; }
+  #radio { stroke: var(--rojo); opacity: 1; }
+  #tRadio { fill: var(--rojo); }
+  #tExp { fill: var(--acento); }
+  #tie { border-radius: 1em; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría · Los principios de ingeniería</p>
+    <h1>El caos de Netflix no es desorden: es un <em>experimento con reglas</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Arriba, una cuenta: treinta servicios con 99,99 por ciento de disponibilidad cada uno dan 99,7 por ciento juntos. Debajo, cuatro principios de diseño: servicios sin estado, redundancia en tres zonas, degradar con gracia y cortacircuitos. Abajo, el experimento: una curva de reproducciones iniciadas por segundo, que es el estado estable; se inyecta una falla y la curva del grupo de experimento apenas se aparta de la del grupo de control, dentro de un radio de explosión pequeño.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="ejes" class="trazo fino" d="M40 262 L40 490 L524 490"/>
+        <text id="tEjeY" class="rot ch" x="40" y="250">reproducciones iniciadas por segundo</text>
+        <text id="tEjeX" class="rot ch" x="524" y="508" text-anchor="end">un día</text>
+        <path id="cCtl" class="trazo" d="M48 440 C120 440 150 352 250 352 C330 352 350 312 516 300"/>
+        <path id="evento" class="trazo fino guion" d="M250 268 L250 490"/>
+        <text id="tEvento" class="rot ch fuerte" x="258" y="282">falla inyectada</text>
+        <path id="cExp" class="trazo" d="M250 352 C272 352 282 388 312 384 C344 380 352 330 516 308"/>
+        <text id="tCtl" class="rot ch" x="452" y="292">control</text>
+        <text id="tExp" class="rot ch" x="400" y="352">experimento</text>
+        <circle id="radio" class="trazo fino guion" cx="312" cy="376" r="46"/>
+        <text id="tRadio" class="rot ch" x="330" y="446">radio de explosión</text>
+      </svg>
+
+      <p class="formula" id="cuenta" style="left:1.5%; top:0%">99,99&nbsp;%<sup>30</sup> ≈ 99,7&nbsp;%<span class="que"><span>30 servicios «excelentes» juntos: más de 2 horas de caída al mes</span></span></p>
+
+      <div class="nt cmd pilar" id="nSE" data-r="-1.2" style="left:1%; top:18.5%"><span class="k">Sin estado</span><span class="t">Cualquier instancia atiende cualquier pedido</span></div>
+      <div class="nt info pilar" id="nRE" data-r="1" style="left:25.7%; top:18.5%"><span class="k">Redundancia</span><span class="t">Tres zonas; funciona completo con dos</span></div>
+      <div class="nt act pilar" id="nDE" data-r="-1" style="left:50.4%; top:18.5%"><span class="k">Degradar con gracia</span><span class="t">Sin recomendaciones, muestra los títulos populares</span></div>
+      <div class="nt pol pilar" id="nCB" data-r="1.4" style="left:75.1%; top:18.5%"><span class="k">Cortacircuitos</span><span class="t">Si un servicio falla mucho, dejan de llamarlo un rato</span></div>
+
+      <div class="nt sis" id="nST" data-r="-1" style="left:68.5%; top:49%; width:30%"><span class="k">Estado estable</span><span class="t">Una medida que dice «todo normal»</span></div>
+      <div class="nt ev" id="nHI" data-r="1.2" style="left:68.5%; top:67.5%; width:30%"><span class="k">Hipótesis</span><span class="t">Si algo falla, la curva no cambia</span></div>
+      <p class="pastilla solo-anim" id="tie" style="left:68%; top:87.5%; width:31.5%">Tu estado estable esta noche: /salud</p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Con 30 piezas, algo siempre falla</b><p>Un ingeniero de Netflix hizo la cuenta: si una aplicación depende de 30 servicios y cada uno funciona el 99,99 % del tiempo, juntos dan 99,7 %. Son más de dos horas de caída al mes, con todos «excelentes». La resistencia no viene gratis: se diseña.</p></li>
+        <li><b>Que perder una máquina no importe</b><p>Servicios sin estado: cualquier instancia atiende cualquier pedido, así que si una muere, otra sigue. Y redundancia: Netflix corre en tres zonas y funciona completo con dos. Eso es justo lo que el mono comprueba cada día.</p></li>
+        <li><b>Fallar a medias, no del todo</b><p>Degradar con gracia: si el sistema de recomendaciones cae, te muestran los títulos populares y la película igual empieza. Y el cortacircuitos, que Netflix publicó en la librería Hystrix: si un servicio falla demasiado, dejan de llamarlo un rato y responden con un plan B.</p></li>
+        <li><b>El experimento parte de lo normal</b><p>Los Principios del caos piden cuatro pasos: definir el «estado estable» con una medida, suponer que se va a mantener, meter una falla del mundo real e intentar refutar esa suposición. En Netflix la medida es cuántas reproducciones empiezan por segundo.</p><p class="aparte">La curva es un dibujo para explicar la idea, no datos de Netflix: ellos publican la forma, no los números.</p></li>
+        <li><b>En producción, con el daño acotado</b><p>Las reglas avanzadas: probar con tráfico real, automatizar para que corra siempre y reducir al mínimo el «radio de explosión». Esta noche tu estado estable es <code>/salud</code>, la falla la pone Tumba Server y el radio de explosión es un servidor de práctica en tu aula.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Christensen, B. (29-02-2012). Fault Tolerance in a High Volume, Distributed System; (26-11-2012). Introducing Hystrix for Resilience Engineering. Netflix Technology Blog. · Schmaus, B. (08-12-2011). Making the Netflix API More Resilient. · Cockcroft, A., Hicks, C. y Orzell, G. (29-04-2011). Lessons Netflix Learned from the AWS Outage. · Cockcroft, A. (31-12-2012). A Closer Look at the Christmas Eve Outage. · Netflix Technology Blog (16-12-2010). 5 Lessons We’ve Learned Using AWS. · Principles of Chaos Engineering, principlesofchaos.org (actualizado en marzo de 2019). · Basiri, A. y otros (2016). Chaos Engineering. IEEE Software 33(3), 35–41.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  TEO.escena([
+    function (tl) { // 1. la cuenta: 30 piezas excelentes no dan un sistema excelente
+      tl.from("#cuenta", { autoAlpha: 0, y: 14, duration: .6 });
+      tl.from("#cuenta .que", { autoAlpha: 0, duration: .5 }, "+=.25");
+    },
+    function (tl) { // 2. sin estado y redundancia
+      TEO.pegar(tl, ["#nSE", "#nRE"], undefined, { stagger: .35 });
+    },
+    function (tl) { // 3. degradar con gracia y cortacircuitos
+      TEO.pegar(tl, ["#nDE", "#nCB"], undefined, { stagger: .35 });
+    },
+    function (tl) { // 4. el experimento: estado estable, hipótesis, falla, ¿se aparta la curva?
+      TEO.trazar(tl, "#ejes", { duration: .6 });
+      tl.from(["#tEjeY", "#tEjeX"], { autoAlpha: 0, duration: .3 }, "-=.2");
+      TEO.trazar(tl, "#cCtl", { duration: 1.3 });
+      TEO.pegar(tl, "#nST", "-=.5");
+      TEO.pegar(tl, "#nHI", "+=.1");
+      tl.from(["#evento", "#tEvento"], { autoAlpha: 0, duration: .35 }, "+=.1");
+      TEO.trazar(tl, "#cExp", { duration: 1.2 });
+      tl.from(["#tCtl", "#tExp"], { autoAlpha: 0, duration: .3 });
+    },
+    function (tl) { // 5. radio de explosión mínimo, y el puente a la arena
+      tl.from("#radio", { autoAlpha: 0, scale: .4, transformOrigin: "50% 50%", duration: .6, ease: "back.out(1.8)" });
+      tl.from("#tRadio", { autoAlpha: 0, duration: .3 }, "-=.2");
+      tl.fromTo("#tie", { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: .45 }, "+=.2");
+    }
+  ], {
+    preparar: function () { gsap.set("#tie", { autoAlpha: 0 }); },
+    textoFin: "Antes y después →"
+  });
+})();
+</script>
+</body>
+</html>
