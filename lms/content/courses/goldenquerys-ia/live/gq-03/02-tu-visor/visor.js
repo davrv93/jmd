@@ -9,6 +9,10 @@
 // Además: «Mezclar» junta varios archivos en una sola tabla (Archivo, Fecha, Concepto, Monto) y «Segmentar con IA»
 // le pide a la IA que reparta los conceptos en hasta 6 segmentos (solo ve la lista de conceptos, sin montos); el
 // tablero se rehace agrupado por segmento.
+// «JMD» cambia el tablero con una frase («agrupa por medio de pago», «solo Yape», «top 5»): primero reglas y, si no
+// entienden, la IA elige entre las opciones que el tablero le ofrece. Y «Entrena a tu visor» guarda las formas de
+// preguntar del alumno con embeddings (POST ../../embeddings, bge-m3): una pregunta parecida a una entrenada se
+// responde con su cálculo, al instante y sin gastar IA.
 (function () {
   "use strict";
   var $ = function (i) { return document.getElementById(i); };
@@ -30,6 +34,15 @@
   }
   function crudo(x) { return isFinite(x) ? n2(x).toFixed(2) : "0.00"; }
   function etiquetaTiempo(k) { var p = k.split("-"); return p.length === 2 ? MES[+p[1] - 1] + " " + p[0] : +p[2] + " " + MES[+p[1] - 1]; }
+
+  // Las filas que cuenta el tablero: todas, menos lo que dejan fuera sus filtros (y el filtro de una pregunta).
+  var filtroPregunta = null;
+  function filas(f) {
+    var V = f.vista, fs = (V.filtros || []).concat(filtroPregunta ? [filtroPregunta] : []);
+    if (!fs.length) return V.datos;
+    return V.datos.filter(function (x) { return fs.every(function (q) { return plano(texto(x[q.col.k])) === q.v; }); });
+  }
+  function ajustes() { return { filtros: [], top: 8, orden: "mayor", tiempo: "", titulo: "" }; }
 
   // ---------------------------------------------------------------- preparar: de la ficha a algo que se puede graficar
   function preparar(f) {
@@ -61,16 +74,17 @@
       g: pref(grupos, /producto|categor|rubro|concepto|tipo|servicio|curso|area|sucursal|medio/) || grupos.filter(function (c) { return !PERSONAL.test(plano(c.nombre)); })[0] || grupos[0] || null,
       d: fechas[0] || null,
     };
+    Object.assign(f.vista, ajustes());
     return f;
   }
   function suma(f, m) {
     var s = 0, n = 0, mn = Infinity, mx = -Infinity;
-    f.vista.datos.forEach(function (x) { var v = m ? num(x[m.k]) : 1; if (!isFinite(v)) return; s += v; n++; if (v < mn) mn = v; if (v > mx) mx = v; });
+    filas(f).forEach(function (x) { var v = m ? num(x[m.k]) : 1; if (!isFinite(v)) return; s += v; n++; if (v < mn) mn = v; if (v > mx) mx = v; });
     return { s: n2(s), n: n, min: n ? mn : NaN, max: n ? mx : NaN, prom: n ? n2(s / n) : NaN };
   }
   function porGrupo(f, g, m) {
     var o = {}, lista = [];
-    f.vista.datos.forEach(function (x) {
+    filas(f).forEach(function (x) {
       var k = texto(x[g.k]) || "(sin dato)", key = plano(k), v = m ? num(x[m.k]) : 1;
       if (!isFinite(v)) v = 0;
       if (!o[key]) { o[key] = { k: k, s: 0, n: 0 }; lista.push(o[key]); }
@@ -81,12 +95,12 @@
   }
   function porTiempo(f, d, m) {
     var dias = {}, meses = {};
-    f.vista.datos.forEach(function (x) {
+    filas(f).forEach(function (x) {
       var iso = fecha(x[d.k]); if (!iso) return;
       var v = m ? num(x[m.k]) : 1; if (!isFinite(v)) v = 0;
       [[dias, iso], [meses, iso.slice(0, 7)]].forEach(function (p) { if (!p[0][p[1]]) p[0][p[1]] = { k: p[1], s: 0, n: 0 }; p[0][p[1]].s += v; p[0][p[1]].n++; });
     });
-    var porMes = Object.keys(meses).length > 1, o = porMes ? meses : dias;
+    var porMes = f.vista.tiempo ? f.vista.tiempo === "mes" : Object.keys(meses).length > 1, o = porMes ? meses : dias;
     var lista = Object.keys(o).sort().map(function (k) { o[k].s = n2(o[k].s); return o[k]; });
     return { unidad: porMes ? "mes" : "día", lista: lista };
   }
@@ -131,12 +145,12 @@
   }
   function tablaPrevia(f, filtro) {
     var V = f.vista, q = plano(filtro || "").trim();
-    var filas = q ? V.datos.filter(function (x) { return x.some(function (c) { return c && plano(c.t).indexOf(q) >= 0; }); }) : V.datos;
+    var base = filas(f), filas2 = q ? base.filter(function (x) { return x.some(function (c) { return c && plano(c.t).indexOf(q) >= 0; }); }) : base;
     var t = el("table", { class: "v-tabla" }, [
       el("thead", null, [el("tr", null, V.cols.map(function (c) { return el("th", { class: c.tipo === "monto" || c.tipo === "entero" ? "num" : null, text: c.nombre }); }))]),
-      el("tbody", null, filas.slice(0, 25).map(function (x) { return el("tr", null, V.cols.map(function (c) { return el("td", { class: c.tipo === "monto" || c.tipo === "entero" ? "num" : null, text: texto(x[c.k]) }); })); })),
+      el("tbody", null, filas2.slice(0, 25).map(function (x) { return el("tr", null, V.cols.map(function (c) { return el("td", { class: c.tipo === "monto" || c.tipo === "entero" ? "num" : null, text: texto(x[c.k]) }); })); })),
     ]);
-    return { nodo: t, total: filas.length };
+    return { nodo: t, total: filas2.length };
   }
   function pintarTablero(f) {
     var cont = $("tablero"); cont.textContent = "";
@@ -149,6 +163,8 @@
       return;
     }
     if (!V.datos.length) { cont.appendChild(el("p", { class: "v-nota", text: "No encontré filas de datos debajo del encabezado. ¿Es la hoja correcta?" })); return; }
+    if (V.titulo) cont.appendChild(el("h2", { class: "v-titulo-t", text: V.titulo }));
+    cont.appendChild(cajaJMD(f));
     if (f.mezcla) cont.appendChild(el("details", { class: "v-det v-mix-det" }, [el("summary", { text: "Junté tus archivos en una sola tabla: Archivo, Fecha, Concepto y Monto. Ver qué tomé de cada uno" }), el("ul", { class: "v-mix-notas" }, f.notas.map(function (n) { return el("li", { text: n }); }))]));
     var dinero = !!(V.m && V.m.tipo === "monto"), S = suma(f, V.m);
     if (V.medidas.length > 1 || V.grupos.length > 1) {
@@ -158,16 +174,20 @@
       ]));
     }
     cont.appendChild(cajaSegmentos(f));
-    var kpis = [ficha("Registros", miles(V.datos.length), "filas con datos")];
+    var kpis = [ficha("Registros", miles(filas(f).length), V.filtros.length ? "de " + miles(V.datos.length) + ", con tus filtros" : "filas con datos")];
     if (V.m) {
       kpis.push(ficha("Total de «" + V.m.nombre + "»", fmt(S.s, dinero), "la suma de todas las filas", "oro"));
       kpis.push(ficha("Promedio por registro", fmt(S.prom, dinero), "de " + fmt(S.min, dinero) + " a " + fmt(S.max, dinero)));
     }
     var G = V.g ? porGrupo(f, V.g, V.m) : null, Tm = V.d ? porTiempo(f, V.d, V.m) : null;
     if (G && G.length) kpis.push(ficha("Primero en «" + V.g.nombre + "»", G[0].k, fmt(G[0].s, dinero) + (V.m && S.s ? " · " + Math.round(G[0].s / S.s * 100) + " % del total" : "")));
+    if (!filas(f).length) cont.appendChild(el("p", { class: "v-aviso", text: "Con estos filtros no queda ninguna fila. Quita un filtro." }));
     cont.appendChild(el("div", { class: "v-kpis" }, kpis));
     var graf = [];
-    if (G && G.length) graf.push(el("div", { class: "v-graf" }, [el("p", { class: "v-graf-t", text: (V.m ? "«" + V.m.nombre + "»" : "Registros") + " por «" + V.g.nombre + "»" + (G.length > 8 ? " · los 8 mayores de " + G.length : "") }), barras(G, dinero, 8)]));
+    if (G && G.length) {
+      var Gv = V.orden === "menor" ? G.slice().reverse() : G;
+      graf.push(el("div", { class: "v-graf" }, [el("p", { class: "v-graf-t", text: (V.m ? "«" + V.m.nombre + "»" : "Registros") + " por «" + V.g.nombre + "»" + (G.length > V.top ? " · los " + V.top + (V.orden === "menor" ? " menores de " : " mayores de ") + G.length : "") }), barras(Gv, dinero, V.top)]));
+    }
     if (Tm && Tm.lista.length > 1) {
       var unMes = Tm.unidad === "día" && Tm.lista[0].k.slice(0, 7) === Tm.lista[Tm.lista.length - 1].k.slice(0, 7);
       graf.push(el("div", { class: "v-graf" }, [el("p", { class: "v-graf-t", text: (V.m ? "«" + V.m.nombre + "»" : "Registros") + " por " + Tm.unidad + (unMes ? " · " + etiquetaTiempo(Tm.lista[0].k.slice(0, 7)) : "") }), columnas(Tm.lista, dinero, unMes)]));
@@ -190,24 +210,59 @@
     cols.forEach(function (c) { var n = plano(c.nombre).trim(); if (n.length >= 3 && p.indexOf(n) >= 0 && (!mejor || n.length > plano(mejor.nombre).length)) mejor = c; });
     return mejor;
   }
-  function reglasTabla(f, q) {
-    var p = plano(q), V = f.vista, m = mencion(V.medidas, p) || V.m, g = mencion(V.grupos, p) || V.g, d = V.d;
-    var dinero = !!(m && m.tipo === "monto"), de = m ? "«" + m.nombre + "»" : "registros";
-    if (/cuant[oa]s (registros|filas|lineas|operaciones|ventas|compras|gastos|hay)\b/.test(p) && !/total|suma/.test(p)) return R("Hay " + miles(V.datos.length) + " registros.", "Conté las filas con datos debajo del encabezado (sin la fila TOTAL).");
-    var tiempo = d && /\b(mes|meses|dia|dias|fecha|cuando|semana)\b/.test(p);
-    if (tiempo) {
-      var T = porTiempo(f, d, m), orden = T.lista.slice().sort(function (a, b) { return b.s - a.s; });
-      if (!orden.length) return null;
-      var x = /\b(menos|menor|peor|baj[oa])\b/.test(p) ? orden[orden.length - 1] : orden[0];
-      return R("El " + T.unidad + " " + (x === orden[0] ? "más alto" : "más bajo") + " fue " + etiquetaTiempo(x.k) + ", con " + fmt(x.s, dinero) + ".", "Sumé " + de + " por " + T.unidad + " con la columna «" + d.nombre + "» (" + T.lista.length + " " + (T.unidad === "mes" ? "meses" : "días") + ").");
-    }
-    if (g && /\b(mas|mayor|top|mejor|principal|menos|menor|peor)\b/.test(p)) {
-      var G = porGrupo(f, g, m), abajo = /\b(menos|menor|peor)\b/.test(p), y = abajo ? G[G.length - 1] : G[0], seg = abajo ? G[G.length - 2] : G[1];
-      return R("En «" + g.nombre + "», " + (abajo ? "lo más bajo" : "lo más alto") + " es «" + y.k + "» con " + fmt(y.s, dinero) + (seg ? ". Le sigue «" + seg.k + "» con " + fmt(seg.s, dinero) : "") + ".", "Sumé " + de + " agrupando por «" + g.nombre + "» (" + G.length + " grupos, " + y.n + " registros en este).");
-    }
-    if (m && /\b(promedio|media)\b/.test(p)) { var S = suma(f, m); return R("El promedio de " + de + " es " + fmt(S.prom, dinero) + " por registro.", "Dividí la suma (" + fmt(S.s, dinero) + ") entre " + miles(S.n) + " registros."); }
-    if (m && /\b(total|suma|sumar|cuanto)\b/.test(p)) { var S2 = suma(f, m); return R("El total de " + de + " es " + fmt(S2.s, dinero) + ".", "Sumé la columna " + de + " en " + miles(S2.n) + " registros" + (f.tabla.totales ? ", sin contar la fila TOTAL del archivo." : ".")); }
+  // Lo que las reglas saben calcular. Cada pregunta se lleva a una de estas intenciones: por palabras clave o,
+  // si no, por parecido con las frases entrenadas (embeddings).
+  var INTENTOS = { total: "El total (la suma)", promedio: "El promedio por registro", cuantos: "Cuántos registros hay", mas: "Lo más alto de un grupo", menos: "Lo más bajo de un grupo", mejor_tiempo: "El mejor día o mes", peor_tiempo: "El peor día o mes" };
+  function limpio(p) { return " " + p.replace(/[^a-z0-9ñ]+/g, " ").trim() + " "; }
+  function valoresDe(f, c) {
+    var o = {}, l = [];
+    f.vista.datos.forEach(function (x) { var t = texto(x[c.k]), k = limpio(plano(t)); if (t && !o[k]) { o[k] = 1; l.push({ ver: t, key: k }); } });
+    return l;
+  }
+  // «…con Yape» → { col: Medio de pago, v: "yape" }: el valor más largo de una columna de grupo que aparece en la frase.
+  function valorMencionado(f, p) {
+    var pp = limpio(p), mejor = null;
+    f.vista.grupos.forEach(function (c) {
+      valoresDe(f, c).forEach(function (a) { if (a.key.length >= 5 && pp.indexOf(a.key) >= 0 && (!mejor || a.key.length > mejor.largo)) mejor = { col: c, v: plano(a.ver), ver: a.ver, largo: a.key.length }; });
+    });
+    return mejor;
+  }
+  function intentoRegex(p, V) {
+    if (/cuant[oa]s (registros|filas|lineas|operaciones|ventas|compras|gastos|hay)\b/.test(p) && !/total|suma/.test(p)) return "cuantos";
+    // de tiempo solo si pregunta por un extremo («¿qué día vendí más?»), no por cualquier frase con «semana» o «mes»
+    if (V.d && (/\bcuando\b/.test(p) || (/\b(mes|meses|dia|dias|fecha|semana)\b/.test(p) && /\b(mas|mejor|mayor|menos|menor|peor|baj[oa]|alt[oa])\b/.test(p)))) return /\b(menos|menor|peor|baj[oa])\b/.test(p) ? "peor_tiempo" : "mejor_tiempo";
+    if (V.g && /\b(menos|menor|peor)\b/.test(p)) return "menos";
+    if (V.g && /\b(mas|mayor|top|mejor|principal)\b/.test(p)) return "mas";
+    if (V.m && /\b(promedio|media)\b/.test(p)) return "promedio";
+    if (V.m && /\b(total|suma|sumar|cuanto)\b/.test(p)) return "total";
     return null;
+  }
+  function ejecutar(f, intento, q) {
+    var p = plano(q), V = f.vista, m = mencion(V.medidas, p) || V.m, g = mencion(V.grupos, p) || V.g, d = V.d;
+    var vm = valorMencionado(f, p);
+    if (vm && g && vm.col === g && (intento === "mas" || intento === "menos")) vm = null;
+    var dinero = !!(m && m.tipo === "monto"), de = m ? "«" + m.nombre + "»" : "registros";
+    var con = (vm ? " Solo «" + vm.ver + "» en «" + vm.col.nombre + "»." : "") + (V.filtros.length ? " Con los filtros de tu tablero." : "");
+    filtroPregunta = vm;
+    try {
+      if (intento === "cuantos") return R("Hay " + miles(filas(f).length) + " registros.", "Conté las filas con datos debajo del encabezado." + con);
+      if (intento === "mejor_tiempo" || intento === "peor_tiempo") {
+        if (!d) return null;
+        var T = porTiempo(f, d, m), orden = T.lista.slice().sort(function (a, b) { return b.s - a.s; });
+        if (!orden.length) return null;
+        var x = intento === "peor_tiempo" ? orden[orden.length - 1] : orden[0];
+        return R("El " + T.unidad + " " + (x === orden[0] ? "más alto" : "más bajo") + " fue " + etiquetaTiempo(x.k) + ", con " + fmt(x.s, dinero) + ".", "Sumé " + de + " por " + T.unidad + " con la columna «" + d.nombre + "» (" + T.lista.length + " " + (T.unidad === "mes" ? "meses" : "días") + ")." + con);
+      }
+      if (intento === "mas" || intento === "menos") {
+        if (!g) return null;
+        var G = porGrupo(f, g, m); if (!G.length) return null;
+        var abajo = intento === "menos", y = abajo ? G[G.length - 1] : G[0], seg = abajo ? G[G.length - 2] : G[1];
+        return R("En «" + g.nombre + "», " + (abajo ? "lo más bajo" : "lo más alto") + " es «" + y.k + "» con " + fmt(y.s, dinero) + (seg ? ". Le sigue «" + seg.k + "» con " + fmt(seg.s, dinero) : "") + ".", "Sumé " + de + " agrupando por «" + g.nombre + "» (" + G.length + " grupos, " + y.n + " registros en este)." + con);
+      }
+      if (intento === "promedio") { if (!m) return null; var S = suma(f, m); return R("El promedio de " + de + " es " + fmt(S.prom, dinero) + " por registro.", "Dividí la suma (" + fmt(S.s, dinero) + ") entre " + miles(S.n) + " registros." + con); }
+      if (intento === "total") { if (!m) return null; var S2 = suma(f, m); return R("El total de " + de + " es " + fmt(S2.s, dinero) + ".", "Sumé la columna " + de + " en " + miles(S2.n) + " registros." + con); }
+      return null;
+    } finally { filtroPregunta = null; }
   }
   function reglasDoc(f, q) {
     var p = plano(q), X = f.reglas || {};
@@ -278,9 +333,10 @@
     })));
     var pie = el("p", { class: "v-resp-pie" }, [el("span", { class: "v-sello " + (o.ia ? "ia" : "regla"), text: o.sello })]);
     if (o.otra) { var b = el("button", { type: "button", class: "v-link", text: "No era eso: preguntarle a la IA" }); b.addEventListener("click", o.otra); pie.appendChild(b); }
+    if (o.ensenar) { var b2 = el("button", { type: "button", class: "v-link", text: "Enseñarle esta pregunta a mi visor" }); b2.addEventListener("click", o.ensenar); pie.appendChild(b2); }
     cuerpo.appendChild(pie);
   }
-  function conIA(f, q, cuerpo) {
+  function conIA(f, q, cuerpo, cerca) {
     var V = f.vista, env = V.tabla ? perfil(f) : ESC.enmascarar(f.texto || "").texto;
     if (!env.trim()) { pintarRespuesta(cuerpo, { t: "Este archivo no trae texto que la IA pueda leer.", mal: true, sello: "Sin enviar nada" }); return; }
     cuerpo.textContent = ""; cuerpo.appendChild(el("p", { class: "v-resp-espera", text: "Preguntándole a la IA (solo ve un resumen, sin datos personales)…" }));
@@ -290,7 +346,8 @@
       var motor = r.motor || {}, quedan = typeof r.restantes === "number" ? " · te quedan " + r.restantes + " preguntas con IA hoy" : "";
       pintarRespuesta(cuerpo, { t: r.resumen || "La IA no dio una respuesta clara. Prueba a preguntarlo de otra forma.", citas: citas, ia: true,
         d: (r.dudas && r.dudas.length ? "Dudas de la IA: " + r.dudas.slice(0, 2).join(" · ") : ""),
-        sello: "IA · " + (motor.gratis ? "modelo gratuito" : "modelo de pago") + " · " + (Math.round(x.ms / 100) / 10 + " s").replace(".", ",") + quedan });
+        sello: "IA · " + (motor.gratis ? "modelo gratuito" : "modelo de pago") + " · " + (Math.round(x.ms / 100) / 10 + " s").replace(".", ",") + quedan,
+        ensenar: V.tabla ? function () { abrirEntrenamiento(q); } : null });
     });
   }
   function preguntar(q, forzarIA) {
@@ -298,13 +355,210 @@
     if (!actual) { GQ.toast("Primero adjunta un archivo."); return; }
     if (q.length < 3) { GQ.toast("Escribe tu pregunta."); return; }
     var f = actual, cuerpo = tarjeta(q, f), t0 = performance.now();
-    var r = forzarIA ? null : (f.vista.tabla ? reglasTabla(f, q) : reglasDoc(f, q));
-    if (r) pintarRespuesta(cuerpo, { t: r.t, d: r.d, sello: "Reglas · " + Math.max(1, Math.round(performance.now() - t0)) + " ms · sin IA", otra: function () { conIA(f, q, cuerpo); } });
-    else conIA(f, q, cuerpo);
+    var aIA = function () { conIA(f, q, cuerpo); };
+    if (forzarIA) return aIA();
+    if (!f.vista.tabla) {
+      var rd = reglasDoc(f, q);
+      if (rd) pintarRespuesta(cuerpo, { t: rd.t, d: rd.d, sello: "Reglas · " + Math.max(1, Math.round(performance.now() - t0)) + " ms · sin IA", otra: aIA }); else aIA();
+      return;
+    }
+    var it = intentoRegex(plano(q), f.vista), r = it ? ejecutar(f, it, q) : null;
+    if (r) { pintarRespuesta(cuerpo, { t: r.t, d: r.d, sello: "Reglas · " + Math.max(1, Math.round(performance.now() - t0)) + " ms · sin IA", otra: aIA }); return; }
+    cuerpo.textContent = ""; cuerpo.appendChild(el("p", { class: "v-resp-espera", text: "Buscando si se parece a algo que ya le enseñaste…" }));
+    parecida(q).then(function (m) {
+      var r2 = m && m.s >= m.umbral ? ejecutar(f, m.i, q) : null;
+      if (r2) pintarRespuesta(cuerpo, { t: r2.t, d: r2.d, otra: aIA, sello: "Entrenada · se parece " + String(Math.round(m.s * 100) / 100).replace(".", ",") + " a «" + m.t + "» · sin IA" });
+      else conIA(f, q, cuerpo, m);
+    });
   }
   function pintarPreguntas(f) {
     var c = $("sugeridas"); c.textContent = "";
     sugeridas(f).forEach(function (q) { var b = el("button", { type: "button", class: "v-chip", text: q }); b.addEventListener("click", function () { preguntar(q); }); c.appendChild(b); });
+  }
+
+  // ---------------------------------------------------------------- JMD: cambia el tablero con una frase
+  // Un cambio es una línea «clave=valor». Las reglas la sacan de la frase; si no pueden, la IA elige entre las
+  // líneas del catálogo y las devuelve como evidencia (el LMS descarta lo que no esté copiado tal cual).
+  var PEDIDO_JMD = "No extraigas datos. Eres JMD, el asistente que cambia un tablero. Lee el pedido del alumno y elige de OPCIONES solo los cambios que pide. En campos devuelve un objeto por cambio: nombre = la clave (medida, agrupar, tiempo, orden, top, filtro o titulo); valor = lo elegido (si es titulo, el título que pide); evidencia = la línea de OPCIONES copiada tal cual. En resumen di en una frase qué cambiaste. Si no se puede con estas opciones, deja campos vacío y explícalo. Pedido del alumno: ";
+  function porNombre(lista, n) { n = plano(n).trim(); return lista.filter(function (c) { return plano(c.nombre).trim() === n; })[0] || null; }
+  function catalogo(f) {
+    var V = f.vista, L = ["TABLERO de «" + f.nombre + "». Ahora: " + estadoTablero(f) + ".", "OPCIONES (una por línea):"];
+    V.medidas.forEach(function (m) { L.push("medida=" + m.nombre); });
+    L.push("medida=conteo de registros");
+    V.grupos.forEach(function (g) { L.push("agrupar=" + g.nombre); });
+    if (V.d) { L.push("tiempo=día"); L.push("tiempo=mes"); }
+    L.push("orden=mayor"); L.push("orden=menor");
+    [3, 5, 8, 10, 15].forEach(function (n) { L.push("top=" + n); });
+    L.push("filtro=ninguno");
+    V.grupos.filter(function (g) { return !PERSONAL.test(plano(g.nombre)); }).forEach(function (g) {
+      var antes = V.filtros; V.filtros = [];
+      porGrupo(f, g, V.m).slice(0, 12).forEach(function (a) { if (a.k !== "(sin dato)") L.push("filtro: " + g.nombre + "=" + a.k); });
+      V.filtros = antes;
+    });
+    L.push("titulo=libre");
+    return ESC.enmascarar(L.join("\n")).texto.slice(0, ESC.LIMITE_IA);
+  }
+  function estadoTablero(f) {
+    var V = f.vista;
+    return (V.m ? "sumo «" + V.m.nombre + "»" : "cuento registros") + (V.g ? ", agrupado por «" + V.g.nombre + "»" : "") + ", " + (V.orden === "menor" ? "los " + V.top + " menores" : "los " + V.top + " mayores") +
+      (V.filtros.length ? ", solo " + V.filtros.map(function (q) { return "«" + q.ver + "»"; }).join(" y ") : ", sin filtros");
+  }
+  // Aplica una línea de cambio y devuelve lo que hizo, en palabras («agrupé por «Medio de pago»»), o "" si no aplica.
+  function aplicarLinea(f, linea, valor) {
+    var V = f.vista, m, c;
+    linea = String(linea || "").trim();
+    if ((m = /^medida=(.+)$/.exec(linea))) {
+      if (/^conteo/.test(plano(m[1]))) { V.m = null; return "ahora cuento registros"; }
+      if ((c = porNombre(V.medidas, m[1]))) { V.m = c; return "ahora sumo «" + c.nombre + "»"; }
+    }
+    if ((m = /^agrupar=(.+)$/.exec(linea)) && (c = porNombre(V.grupos, m[1]))) { V.g = c; return "agrupé por «" + c.nombre + "»"; }
+    if ((m = /^tiempo=(d[ií]a|mes)$/.exec(linea)) && V.d) { V.tiempo = m[1] === "mes" ? "mes" : "día"; return "el gráfico de tiempo va por " + V.tiempo; }
+    if ((m = /^orden=(mayor|menor)$/.exec(linea))) { V.orden = m[1]; return "muestro primero los " + (m[1] === "menor" ? "menores" : "mayores"); }
+    if ((m = /^top=(\d{1,2})$/.exec(linea))) { V.top = Math.min(20, Math.max(3, +m[1])); return "muestro " + V.top + " en el gráfico"; }
+    if (/^filtro=ninguno$/.test(linea)) { if (!V.filtros.length) return "no había filtros"; V.filtros = []; return "quité los filtros"; }
+    if ((m = /^filtro: (.+?)=(.+)$/.exec(linea)) && (c = porNombre(V.grupos, m[1]))) {
+      V.filtros = V.filtros.filter(function (q) { return q.col !== c; }).concat([{ col: c, v: plano(m[2].trim()), ver: m[2].trim() }]);
+      return "dejé solo «" + m[2].trim() + "» en «" + c.nombre + "»";
+    }
+    if (/^titulo=/.test(linea)) { var t = String(valor || linea.slice(7)).replace(/\s+/g, " ").trim().slice(0, 70); if (t && plano(t) !== "libre") { V.titulo = t; return "le puse el título «" + t + "»"; } }
+    return "";
+  }
+  function cambioReglas(f, txt) {
+    var p = plano(txt), V = f.vista, L = [], m, c;
+    if (/\b(quita|quitar|sin|borra|limpia|elimina)\b.*\bfiltros?\b/.test(p)) L.push("filtro=ninguno");
+    if ((m = /\btop\s*(\d{1,2})\b|\blos\s+(\d{1,2})\s+(primeros|mayores|mejores|principales|menores|peores)\b/.exec(p))) L.push("top=" + (m[1] || m[2]));
+    if (/\b(agrupa|agrupar|agrupado|separa|divide|desglosa)\b/.test(p) && (c = mencion(V.grupos, p))) L.push("agrupar=" + c.nombre);
+    if (/\b(suma|sumar|mide|medir|usa|usar|mostrar|muestra)\b/.test(p) && (c = mencion(V.medidas, p)) && !/\bsolo\b/.test(p)) L.push("medida=" + c.nombre);
+    if (/\b(cuenta|contar|conteo)\b.*\b(registros|filas)\b/.test(p)) L.push("medida=conteo de registros");
+    if (/\b(por mes|mensual|meses)\b/.test(p)) L.push("tiempo=mes"); else if (/\b(por dia|diario|dias)\b/.test(p)) L.push("tiempo=día");
+    if (/\b(menor a mayor|los menores|los peores|menos a mas|los que menos)\b/.test(p)) L.push("orden=menor"); else if (/\b(mayor a menor|los mayores|los mejores|los que mas)\b/.test(p)) L.push("orden=mayor");
+    if (/\b(solo|solamente|unicamente|filtra|filtrar|nada mas)\b/.test(p)) { var vm = valorMencionado(f, p); if (vm) L.push("filtro: " + vm.col.nombre + "=" + vm.ver); }
+    if ((m = /\b(?:t[ií]tulo|tit[uú]lalo|ll[aá]malo)\b[:\s]+(?:es\s+|sea\s+|a\s+)?["«“]?(.+?)["»”]?$/i.exec(String(txt).trim()))) L.push("titulo=" + m[1]);
+    return L.length ? L : null;
+  }
+  function foto(V) { return { m: V.m, g: V.g, filtros: V.filtros.slice(), top: V.top, orden: V.orden, tiempo: V.tiempo, titulo: V.titulo }; }
+  function cambiar(f, txt) {
+    txt = String(txt || "").replace(/\s+/g, " ").trim();
+    if (txt.length < 3) { GQ.toast("Escribe qué quieres cambiar."); return; }
+    var V = f.vista, antes = foto(V);
+    var listo = function (hechos, sello, extra) {
+      f.jmd = { pedido: txt, hechos: hechos, sello: sello, antes: hechos.length ? antes : null, extra: extra || "" };
+      f.jmdPidiendo = false; pintarTodo();
+    };
+    var L = cambioReglas(f, txt);
+    if (L) { var h = L.map(function (l) { return aplicarLinea(f, l); }).filter(Boolean); if (h.length) return listo(h, "Reglas · al instante · sin IA"); }
+    f.jmdPidiendo = true; pintarTodo();
+    ESC.entender({ nombre: f.nombre, tipo: "txt", texto: catalogo(f), pregunta: (PEDIDO_JMD + "«" + txt.slice(0, 120) + "»").slice(0, 600) }).then(function (x) {
+      if (x.estado !== "ok") return listo([], "IA · sin respuesta", x.msg || "JMD no pudo responder.");
+      var h = (x.r.campos || []).map(function (cp) { return aplicarLinea(f, cp.evidencia, cp.valor); }).filter(Boolean);
+      listo(h, "IA · " + ((x.r.motor || {}).gratis ? "modelo gratuito" : "modelo de pago") + (typeof x.r.restantes === "number" ? " · te quedan " + x.r.restantes + " con IA hoy" : ""), h.length ? "" : (x.r.resumen || "No encontré cómo hacer ese cambio con lo que tiene tu tablero."));
+    });
+  }
+  function cajaJMD(f) {
+    var V = f.vista, caja = el("div", { class: "v-jmd" });
+    var inp = el("input", { class: "v-q v-jmd-q", id: "jmd-q", type: "text", maxlength: "160", autocomplete: "off", placeholder: "Pídele un cambio a JMD: agrupa por…, solo…, top 5, quita los filtros, ponle de título…", "aria-label": "Pídele un cambio a tu tablero" });
+    var b = el("button", { type: "button", class: "k-btn", text: "Cambiar" });
+    var ir = function () { cambiar(f, inp.value); };
+    b.addEventListener("click", ir);
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); ir(); } });
+    caja.appendChild(el("div", { class: "v-jmd-f" }, [el("span", { class: "v-jmd-n", text: "JMD" }), inp, b]));
+    var ej = [];
+    V.grupos.filter(function (g) { return g !== V.g; }).slice(0, 1).forEach(function (g) { ej.push("Agrupa por " + g.nombre.toLowerCase()); });
+    var gf = V.grupos.filter(function (g) { return g.k !== 0 || !f.mezcla; })[0];
+    if (gf) { var v0 = valoresDe(f, gf)[0]; if (v0) ej.push("Solo " + v0.ver); }
+    ej.push("Top 5"); if (V.filtros.length) ej.push("Quita los filtros");
+    caja.appendChild(el("div", { class: "v-chips" }, ej.map(function (t) { var c = el("button", { type: "button", class: "v-chip", text: t }); c.addEventListener("click", function () { cambiar(f, t); }); return c; })));
+    if (V.filtros.length) caja.appendChild(el("div", { class: "v-chips" }, V.filtros.map(function (q) {
+      var x = el("button", { type: "button", class: "v-chip v-filtro", "aria-label": "Quitar el filtro " + q.ver, text: "Solo «" + q.ver + "» ×" });
+      x.addEventListener("click", function () { V.filtros = V.filtros.filter(function (y) { return y !== q; }); pintarTodo(); });
+      return x;
+    })));
+    if (f.jmdPidiendo) caja.appendChild(el("p", { class: "v-resp-espera", text: "JMD está leyendo tu pedido…" }));
+    else if (f.jmd) {
+      var j = f.jmd, pie = el("p", { class: "v-resp-pie" }, [el("span", { class: "v-sello " + (/^IA/.test(j.sello) ? "ia" : "regla"), text: j.sello })]);
+      if (j.antes) { var d = el("button", { type: "button", class: "v-link", text: "Deshacer" }); d.addEventListener("click", function () { Object.assign(V, j.antes); f.jmd = null; pintarTodo(); }); pie.appendChild(d); }
+      caja.appendChild(el("p", { class: "v-jmd-r" + (j.hechos.length ? "" : " mal") }, [el("b", { text: "JMD: " }), j.hechos.length ? "listo, " + j.hechos.join(" y ") + "." : j.extra]));
+      caja.appendChild(pie);
+    }
+    return caja;
+  }
+
+  // ---------------------------------------------------------------- entrenar las preguntas con embeddings
+  // Cada frase (las de fábrica y las del alumno) se guarda con su intención. Una pregunta nueva se convierte en un
+  // vector (bge-m3, por el LMS) y se compara por coseno con las frases: si se parece lo suficiente a una, se
+  // responde con el cálculo de esa intención. Si el servicio no responde, se compara por trozos de letras.
+  var URL_EMB = new URL("../../embeddings", location.href).href, CLAVE_ENT = "gq03-entrenadas-v1", CLAVE_SEM = "gq03-semillas-v1";
+  var UMBRAL = 0.74, UMBRAL_LOCAL = 0.55;
+  var SEMILLAS = [["total", "¿Cuánto suma en total?"], ["total", "¿Cuánto vendí?"], ["total", "¿Cuánto gasté en total?"], ["promedio", "¿Cuál es el promedio?"], ["promedio", "¿Cuánto es el ticket promedio?"],
+    ["cuantos", "¿Cuántos registros hay?"], ["cuantos", "¿Cuántas ventas hice?"], ["mas", "¿Qué producto se vendió más?"], ["mas", "¿Cuál es el que más pesa?"], ["mas", "¿Dónde se me va más plata?"],
+    ["menos", "¿Qué es lo que menos se vende?"], ["menos", "¿Cuál es el más bajo?"], ["mejor_tiempo", "¿Cuál fue mi mejor mes?"], ["mejor_tiempo", "¿Qué día vendí más?"], ["peor_tiempo", "¿Cuál fue mi peor día?"], ["peor_tiempo", "¿En qué mes me fue peor?"]];
+  function guardado(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
+  function guardar(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  var mias = guardado(CLAVE_ENT) || [], semV = guardado(CLAVE_SEM);
+  if (!Array.isArray(mias)) mias = [];
+  if (!Array.isArray(semV) || semV.length !== SEMILLAS.length) semV = null;
+  function corto4(v) { return v.map(function (x) { return Math.round(x * 10000) / 10000; }); }
+  function vecLocal(t) {   // respaldo sin red: trigramas de letras en 256 casillas
+    var p = "  " + plano(t).replace(/[^a-z0-9ñ]+/g, " ").trim() + "  ", v = new Array(256).fill(0);
+    for (var i = 0; i < p.length - 2; i++) { var h = 0; for (var k = 0; k < 3; k++) h = (h * 31 + p.charCodeAt(i + k)) % 256; v[h]++; }
+    return v;
+  }
+  function coseno(a, b) { var s = 0, na = 0, nb = 0; for (var i = 0; i < a.length; i++) { s += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; } return na && nb ? s / Math.sqrt(na * nb) : 0; }
+  function embeber(textos) {
+    return fetch(URL_EMB, { method: "POST", credentials: "same-origin", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ textos: textos }) })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { return j && Array.isArray(j.vectores) && j.vectores.length === textos.length ? j.vectores.map(corto4) : null; })
+      .catch(function () { return null; });
+  }
+  // parecida(q) → { i: intención, t: frase más parecida, s: parecido, umbral, real } o null
+  function parecida(q) {
+    var faltan = [];
+    if (!semV) SEMILLAS.forEach(function (x) { faltan.push(x[1]); });
+    mias.forEach(function (x) { if (!x.v) faltan.push(x.t); });
+    return embeber([q].concat(faltan)).then(function (V) {
+      var frases = SEMILLAS.map(function (x) { return { i: x[0], t: x[1] }; }).concat(mias.map(function (x) { return { i: x.i, t: x.t, mia: true }; }));
+      var vq, vecs, real = !!V;
+      if (real) {
+        var k = 1;
+        if (!semV) { semV = V.slice(k, k + SEMILLAS.length); k += SEMILLAS.length; guardar(CLAVE_SEM, semV); }
+        mias.forEach(function (x) { if (!x.v) x.v = V[k++]; });
+        guardar(CLAVE_ENT, mias);
+        vq = V[0]; vecs = semV.concat(mias.map(function (x) { return x.v; }));
+      } else { vq = vecLocal(q); vecs = frases.map(function (x) { return vecLocal(x.t); }); }
+      var mejor = null;
+      frases.forEach(function (x, n) { var s = coseno(vq, vecs[n]); if (!mejor || s > mejor.s) mejor = { i: x.i, t: x.t, s: s, mia: !!x.mia }; });
+      if (mejor) { mejor.real = real; mejor.umbral = real ? UMBRAL : UMBRAL_LOCAL; }
+      return mejor;
+    });
+  }
+  function pintarEntrenamiento() {
+    var d = $("ent"); if (!d) return;
+    d.hidden = !(actual && actual.vista.tabla);
+    $("ent-n").textContent = mias.length;
+    var sel = $("ent-i");
+    if (!sel.options.length) Object.keys(INTENTOS).forEach(function (k) { sel.appendChild(el("option", { value: k, text: INTENTOS[k] })); });
+    var ul = $("ent-l"); ul.textContent = "";
+    mias.forEach(function (x) {
+      var b = el("button", { type: "button", class: "v-arch-x", "aria-label": "Olvidar «" + x.t + "»", text: "×" });
+      b.addEventListener("click", function () { mias = mias.filter(function (y) { return y !== x; }); guardar(CLAVE_ENT, mias); pintarEntrenamiento(); });
+      ul.appendChild(el("li", null, [el("span", { class: "v-ent-t", text: "«" + x.t + "»" }), el("span", { class: "v-ent-i", text: "→ " + (INTENTOS[x.i] || x.i) }), b]));
+    });
+    if (!mias.length) ul.appendChild(el("li", { class: "v-ent-vacio", text: "Todavía no le enseñaste ninguna. Ya trae " + SEMILLAS.length + " frases de fábrica." }));
+  }
+  function abrirEntrenamiento(q) { var d = $("ent"); d.hidden = false; d.open = true; $("ent-q").value = q || ""; $("ent-q").focus(); d.scrollIntoView({ behavior: "smooth", block: "center" }); }
+  function entrenar(t, i) {
+    t = String(t || "").replace(/\s+/g, " ").trim().slice(0, 200);
+    var msg = $("ent-msg");
+    if (t.length < 4) { msg.textContent = "Escribe la pregunta como tú la dirías."; return; }
+    if (!INTENTOS[i]) return;
+    if (mias.length >= 40) { msg.textContent = "Ya tienes 40 frases: olvida alguna para enseñar otra."; return; }
+    msg.textContent = "Convirtiendo tu frase en un vector…";
+    embeber([t]).then(function (V) {
+      mias = mias.filter(function (x) { return plano(x.t) !== plano(t); });
+      mias.push({ i: i, t: t, v: V ? V[0] : null });
+      guardar(CLAVE_ENT, mias); pintarEntrenamiento();
+      msg.textContent = V ? "Listo: «" + t + "» quedó como un vector de " + V[0].length + " números. Pregunta algo parecido, con otras palabras, y mira quién responde." : "Guardada. El servicio de embeddings no respondió: por ahora la comparo por letras; se convertirá sola cuando vuelva.";
+    });
   }
 
   // ---------------------------------------------------------------- mezclar varios archivos en una sola tabla
@@ -344,7 +598,7 @@
     return {
       id: "mezcla", mezcla: true, tipo: "mix", nombre: "Mezcla de " + notas.length + " archivos", notas: notas,
       tabla: { columnas: cols, duplicados: [], cuadre: null, totales: null, rucMalos: [], pie: [] },
-      vista: { tabla: true, datos: filas, cols: cols, medidas: [cols[3]], grupos: [cols[0], cols[2]], fechas: hayFecha ? [cols[1]] : [], m: cols[3], g: cols[0], d: hayFecha ? cols[1] : null },
+      vista: Object.assign({ tabla: true, datos: filas, cols: cols, medidas: [cols[3]], grupos: [cols[0], cols[2]], fechas: hayFecha ? [cols[1]] : [], m: cols[3], g: cols[0], d: hayFecha ? cols[1] : null }, ajustes()),
     };
   }
   // La mezcla se rehace sola cuando cambian los archivos; con menos de dos fuentes, desaparece.
@@ -470,6 +724,7 @@
     if (!hay) return;
     pintarTablero(actual);
     pintarPreguntas(actual);
+    pintarEntrenamiento();
     $("q").placeholder = actual.vista.tabla ? "Pregúntale a «" + actual.nombre + "»: ¿qué producto dejó más?, ¿cómo me fue en octubre?" : "Pregúntale a «" + actual.nombre + "»: ¿qué me están cobrando?, ¿cuándo vence?";
   }
   function recibir(f) {
@@ -489,5 +744,6 @@
     alTerminar: function (n) { if (n) { $("paso2").scrollIntoView({ behavior: "smooth", block: "start" }); } },
   });
   $("form").addEventListener("submit", function (e) { e.preventDefault(); var q = $("q").value; $("q").value = ""; preguntar(q); });
+  $("ent-form").addEventListener("submit", function (e) { e.preventDefault(); entrenar($("ent-q").value, $("ent-i").value); $("ent-q").value = ""; });
   pintarTodo();
 })();
