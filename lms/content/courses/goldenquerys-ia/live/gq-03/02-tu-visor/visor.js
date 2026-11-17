@@ -267,7 +267,7 @@
     cuerpo.appendChild(el("p", { class: "v-resp-t" + (o.mal ? " mal" : ""), text: o.t }));
     if (o.d) cuerpo.appendChild(el("p", { class: "v-resp-d", text: o.d }));
     if (o.citas && o.citas.length) cuerpo.appendChild(el("ul", { class: "v-citas" }, o.citas.map(function (c) {
-      return el("li", { class: c.estado }, [el("b", { text: (c.estado === "literal" ? "✓ " : c.estado === "revisa" ? "? " : "✗ ") + c.nombre + ": " + c.valor }), el("span", { text: c.estado === "inventado" ? "no lo encontré en lo que se envió: no te fíes de este dato" : "«" + c.evidencia + "»" })]);
+      return el("li", { class: c.estado }, [el("b", { text: (c.estado === "literal" ? "✓ " : c.estado === "revisa" ? "? " : "✗ ") + String(c.nombre || "dato").replace(/_/g, " ") + ": " + c.valor }), el("span", { text: c.estado === "inventado" ? "no lo encontré en lo que se envió: no te fíes de este dato" : "«" + c.evidencia + "»" })]);
     })));
     var pie = el("p", { class: "v-resp-pie" }, [el("span", { class: "v-sello " + (o.ia ? "ia" : "regla"), text: o.sello })]);
     if (o.otra) { var b = el("button", { type: "button", class: "v-link", text: "No era eso: preguntarle a la IA" }); b.addEventListener("click", o.otra); pie.appendChild(b); }
