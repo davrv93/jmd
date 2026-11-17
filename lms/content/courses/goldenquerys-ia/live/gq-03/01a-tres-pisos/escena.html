@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>No toda pregunta necesita una IA</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Estilos solo de esta lámina. Coordenadas de la figura: viewBox 800 × 520 (left = x / 8 %, top = y / 5.2 %). */
+  .piso { stroke: var(--tinta); stroke-width: 2; fill: none; }
+  .fondo3 { fill: var(--z-maq); } .fondo2 { fill: var(--z-mundo); } .fondo1 { fill: var(--z-comun); }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .props { position: absolute; margin: 0; padding: 0; list-style: none; display: grid; gap: .5em; font: 700 1.5cqw/1.15 var(--mono); letter-spacing: .03em; color: var(--tinta); }
+  .props li { display: flex; align-items: center; gap: .5em; white-space: nowrap; }
+  .props li::before { content: ""; flex: none; width: .6em; height: .6em; border-radius: 50%; background: var(--acento); }
+  .props.caro li::before { background: var(--rojo); }
+  .props.bien li::before { background: var(--verde); }
+  .cifra { position: absolute; margin: 0; font: 700 8.6cqw/1 var(--serif); letter-spacing: -.02em; color: var(--acento); white-space: nowrap; }
+  .cifra-t { position: absolute; margin: 0; font: 700 1.5cqw/1.3 var(--mono); letter-spacing: .04em; color: var(--tinta); }
+  .sello.ok { color: #1F7A3E; border-color: #1F7A3E; font-size: .82em; right: -.6em; top: -.75em; white-space: nowrap; }
+  #narra { white-space: nowrap; }
+  .rot.chico { font-size: 12px; }
+  .teo-fig .nt .t { hyphens: manual; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 1 de 3 · Cómo responde tu visor</p>
+    <h1>No toda pregunta <em>necesita</em> una IA</h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Tres pisos apilados. Abajo, el piso 1, las reglas: al instante, gratis y exactas. En medio, el piso 2, el parecido con frases conocidas. Arriba, el piso 3, la IA: tarda segundos, cuesta y tiene un tope de 20 preguntas al día. La pregunta entra por el piso 1 y solo sube si no la entendieron. A la derecha, el caso FrugalGPT: hasta 98 % menos costo.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <rect id="f3" class="fondo3" x="150" y="30" width="430" height="120" rx="10"/>
+        <rect id="f2" class="fondo2" x="150" y="170" width="430" height="120" rx="10"/>
+        <rect id="f1" class="fondo1" x="150" y="310" width="430" height="120" rx="10"/>
+        <rect id="b3" class="piso" x="150" y="30" width="430" height="120" rx="10"/>
+        <rect id="b2" class="piso" x="150" y="170" width="430" height="120" rx="10"/>
+        <rect id="b1" class="piso" x="150" y="310" width="430" height="120" rx="10"/>
+        <text id="r3" class="rot fuerte" x="566" y="52" text-anchor="end">PISO 3</text>
+        <text id="r2" class="rot fuerte" x="566" y="192" text-anchor="end">PISO 2</text>
+        <text id="r1" class="rot fuerte" x="566" y="332" text-anchor="end">PISO 1</text>
+        <text id="rIn" class="rot chico" x="14" y="354">TU PREGUNTA</text>
+        <path id="aIn" class="trazo flecha" d="M16 372 L140 372"/>
+        <path id="aS1" class="trazo flecha" d="M146 336 C92 330 92 240 142 232"/>
+        <path id="aS2" class="trazo flecha" d="M146 196 C92 190 92 100 142 92"/>
+        <text id="rS" class="rot chico" x="6" y="270">SUBE SOLO</text>
+        <text id="rS2" class="rot chico" x="6" y="287">SI NO LA</text>
+        <text id="rS3" class="rot chico" x="6" y="304">ENTIENDE</text>
+        <circle id="punto" class="solo-anim" cx="16" cy="372" r="9"/>
+      </svg>
+
+      <div class="nt info" id="n1" data-r="-1" style="left:21%; top:65%; width:27%"><span class="k">Reglas</span><span class="t">Total, promedio, más, menos, por día</span><span class="sello ok solo-anim" id="s1">RESPONDIDA</span></div>
+      <ul class="props bien" id="p1" style="left:51.5%; top:67.5%"><li>al instante</li><li>gratis</li><li>exacta</li></ul>
+
+      <div class="nt act" id="n2" data-r="1.2" style="left:21%; top:38%; width:27%"><span class="k">Parecido</span><span class="t">Se parece a una frase que ya conozco</span></div>
+      <ul class="props" id="p2" style="left:51.5%; top:42%"><li>rápido</li><li>aprende tus frases</li></ul>
+
+      <div class="nt cmd" id="n3" data-r="-1.4" style="left:21%; top:11%; width:27%"><span class="k">IA</span><span class="t">Solo lo que nadie entendió abajo</span><span class="sello ok solo-anim" id="s3">RESPONDIDA</span></div>
+      <ul class="props caro" id="p3" style="left:51.5%; top:13.5%"><li>tarda segundos</li><li>cuesta</li><li>tope: 20 al día</li></ul>
+
+      <p class="cita" id="cita" style="left:75.5%; top:6%; width:23.5%">«Primero el modelo barato. El caro, solo si hace falta.»<small>FrugalGPT (2023)</small></p>
+      <p class="cifra" id="cifra" style="left:75.5%; top:44%"><span id="num">98</span>&nbsp;%</p>
+      <p class="cifra-t" id="cifraT" style="left:75.5%; top:62%; width:23.5%">menos costo, igualando al mejor modelo. Es su mejor caso.</p>
+
+      <p class="pastilla solo-anim" id="narra" style="left:4%; top:88%; width:72%"><span class="capas">
+        <span>«¿Cuánto vendí en octubre?»</span>
+        <span>Es una suma: responde el piso 1</span>
+        <span>«¿Qué me llama la atención?»</span>
+        <span>No es una cuenta: sube</span>
+        <span>No se parece a nada conocido: sube</span>
+        <span>Responde la IA, en unos segundos</span>
+      </span></p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Tres pisos para una pregunta</b><p>Tu visor no manda todo a la IA. Cada pregunta entra por el piso 1 y solo sube si ahí no la entendieron. Mientras más abajo se resuelve, más rápida y más barata sale.</p></li>
+        <li><b>Piso 1: las reglas</b><p>Total, promedio, el que más, el que menos, por día. Son cuentas: el visor las hace con tus propias filas, al instante y sin gastar nada. Y son exactas, porque sumar no es adivinar.</p></li>
+        <li><b>Pisos 2 y 3: parecido e IA</b><p>Si tu frase se parece a una que el visor ya conoce, usa esa misma intención y responde con una regla. Solo lo que nadie entendió sube a la IA: tarda unos segundos y cuesta. Por eso tienes 20 preguntas con IA al día.</p></li>
+        <li><b>El caso: FrugalGPT</b><p>En 2023, Chen, Zaharia y Zou probaron esta idea entre modelos de IA: preguntar primero al barato y subir al caro solo si hace falta. Igualaron al mejor modelo con hasta 98 % menos costo.</p><p class="aparte">Ellos escalonan modelos de IA; tu visor pone reglas antes de la IA. La idea es la misma. El 98 % es su mejor resultado («hasta»), no un promedio. La frase entre comillas resume su método; no es una cita textual.</p></li>
+        <li><b>En tu visor</b><p>«¿Cuánto vendí en octubre?» se queda en el piso 1: es una suma. «¿Qué me llama la atención?» no es una cuenta ni se parece a nada conocido: sube hasta la IA. La lámina que sigue abre el piso 2: cómo sabe el visor que dos frases se parecen.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Chen, L., Zaharia, M. y Zou, J. (2023). FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance. arXiv:2305.05176.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, puntas = {}, narra = [], punto = $("#punto"), cuenta = { v: 98 };
+
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .6 }, pos);
+    tl.from(puntas[id], { autoAlpha: 0, duration: .2 }, "-=.1");
+  }
+  function piso(tl, n, pos) { // dibuja el contorno de un piso y enciende su fondo y su rótulo
+    TEO.trazar(tl, "#b" + n, { duration: .7 }, pos);
+    tl.from("#f" + n, { autoAlpha: 0, duration: .5 }, "-=.4");
+    tl.from("#r" + n, { autoAlpha: 0, x: 8, duration: .3 }, "-=.3");
+  }
+  function decir(tl, k, pos) { // cambia el letrero
+    if (k > 0) tl.to(narra[k - 1], { autoAlpha: 0, duration: .15 }, pos);
+    tl.to(narra[k], { autoAlpha: 1, duration: .22 }, k > 0 ? "<+.1" : pos);
+  }
+  function props(tl, sel, pos) { tl.from(sel + " li", { autoAlpha: 0, x: -10, duration: .3, stagger: .14 }, pos); }
+  function noEntiende(tl, sel) { tl.to(sel, { x: -5, duration: .06, repeat: 5, yoyo: true, ease: "none" }, "<"); }
+  function sello(tl, sel) { tl.fromTo(sel, { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, "<"); }
+  function saltar(tl, x, y) { tl.to(punto, { attr: { cx: x, cy: y }, duration: .2, ease: "power1.inOut" }); }
+
+  TEO.escena([
+    function (tl) { // 1. los tres pisos y por dónde entra la pregunta
+      piso(tl, 1); piso(tl, 2, "-=.2"); piso(tl, 3, "-=.2");
+      tl.from("#rIn", { autoAlpha: 0, duration: .3 });
+      flecha(tl, "aIn", "-=.1");
+      flecha(tl, "aS1"); flecha(tl, "aS2", "-=.3");
+      tl.from(["#rS", "#rS2", "#rS3"], { autoAlpha: 0, duration: .35 }, "-=.2");
+    },
+    function (tl) { // 2. piso 1: las reglas
+      TEO.pegar(tl, "#n1");
+      props(tl, "#p1", "-=.1");
+    },
+    function (tl) { // 3. pisos 2 y 3
+      TEO.pegar(tl, "#n2");
+      props(tl, "#p2", "-=.1");
+      TEO.pegar(tl, "#n3", "+=.25");
+      props(tl, "#p3", "-=.1");
+    },
+    function (tl) { // 4. el caso: FrugalGPT
+      tl.from(TEO.palabras($("#cita")), { autoAlpha: 0, y: 12, duration: .4, stagger: .07 });
+      tl.from("#cita small", { autoAlpha: 0, duration: .4 });
+      tl.fromTo("#cifra", { autoAlpha: 0, scale: .8 }, { autoAlpha: 1, scale: 1, duration: .4, ease: "back.out(2)", transformOrigin: "0% 100%" });
+      tl.fromTo(cuenta, { v: 0 }, { v: 98, duration: 1.4, ease: "power2.out", onUpdate: function () { $("#num").textContent = Math.round(cuenta.v); } }, "<");
+      tl.fromTo("#cifraT", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4 });
+    },
+    function (tl) { // 5. dos preguntas recorren los pisos
+      tl.fromTo("#narra", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4 });
+      decir(tl, 0);
+      tl.set(punto, { attr: { cx: 16, cy: 372 } });
+      tl.fromTo(punto, { autoAlpha: 0, scale: .3 }, { autoAlpha: 1, scale: 1, duration: .3, transformOrigin: "50% 50%" });
+      TEO.viajar(tl, punto, $("#aIn"), .55);
+      decir(tl, 1); sello(tl, "#s1");
+      tl.to(punto, { autoAlpha: 0, scale: .3, duration: .2 }, "+=.7");
+      // la segunda pregunta
+      decir(tl, 2);
+      tl.set(punto, { attr: { cx: 16, cy: 372 } });
+      tl.to(punto, { autoAlpha: 1, scale: 1, duration: .2 });
+      TEO.viajar(tl, punto, $("#aIn"), .55);
+      decir(tl, 3); noEntiende(tl, "#n1");
+      saltar(tl, 146, 336); TEO.viajar(tl, punto, $("#aS1"), .55);
+      decir(tl, 4); noEntiende(tl, "#n2");
+      saltar(tl, 146, 196); TEO.viajar(tl, punto, $("#aS2"), .55);
+      decir(tl, 5); sello(tl, "#s3");
+      tl.to(punto, { autoAlpha: 0, scale: .3, duration: .25 }, "+=.3");
+    }
+  ], {
+    preparar: function () {
+      ["aIn", "aS1", "aS2"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); });
+      narra = gsap.utils.toArray("#narra .capas > span");
+      gsap.set(narra, { autoAlpha: 0 });
+      gsap.set("#narra", { autoAlpha: 0 });
+      gsap.set(punto, { autoAlpha: 0 });
+      gsap.set(["#s1", "#s3"], { autoAlpha: 0 });
+      gsap.set(["#cifra", "#cifraT"], { autoAlpha: 0 });
+    },
+    textoFin: "Sigue: el parecido"
+  });
+})();
+</script>
+</body>
+</html>

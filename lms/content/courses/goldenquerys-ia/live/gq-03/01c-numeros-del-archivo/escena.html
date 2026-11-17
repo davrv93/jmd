@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La IA redacta, los números son tuyos</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Estilos solo de esta lámina. Coordenadas de la figura: viewBox 800 × 520 (left = x / 8 %, top = y / 5.2 %). */
+  .caja { position: absolute; margin: 0; background: var(--papel); color: var(--tinta); border: 1px solid var(--linea); border-radius: .5em; box-shadow: var(--sombra); padding: .6em .75em .7em; font: 500 1.5cqw/1.35 var(--sans); }
+  .caja .tit { display: block; margin-bottom: .35em; font: 700 .72em/1.1 var(--mono); letter-spacing: .09em; text-transform: uppercase; color: var(--gris); }
+  .fila { display: grid; grid-template-columns: .85fr 1.3fr auto; gap: .5em; padding: .2em 0; border-top: 1px solid var(--linea); align-items: baseline; }
+  .fila.cab { border-top: 0; font: 700 .72em/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--gris); }
+  .fila b, .par b { font: 700 .95em/1.2 var(--mono); border-radius: .25em; padding: 0 .15em; white-space: nowrap; }
+  .par { display: flex; justify-content: space-between; gap: .6em; padding: .22em 0; border-top: 1px solid var(--linea); align-items: baseline; }
+  .par:first-of-type { border-top: 0; }
+  .par span { color: var(--gris); }
+  .tapa { display: inline-block; width: 4.6em; height: .8em; border-radius: .2em; background: repeating-linear-gradient(90deg, var(--tinta) 0 .5em, var(--gris) .5em .62em); vertical-align: middle; }
+  .tapado { margin-left: .4em; font: 700 .66em/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--acento); }
+  #resp { font-family: var(--serif); font-size: 1.62cqw; line-height: 1.36; }
+  #resp b { border-radius: .25em; padding: 0 .12em; }
+  #resp .evid { display: block; margin-top: .5em; font: 600 .68em/1.3 var(--mono); color: var(--gris); }
+  .sello.ok { color: #1F7A3E; border-color: #1F7A3E; top: auto; bottom: -.9em; right: -.5em; font-size: 1.5cqw; transform: rotate(-6deg); }
+  #mal .t { font-family: var(--mono); font-size: .86em; white-space: nowrap; }
+  #selloMal { top: auto; bottom: -.75em; right: -.5em; }
+  #caso .t b { font-family: var(--mono); white-space: nowrap; border-radius: .2em; padding: 0 .15em; }
+  #ver { font-size: 1.25cqw; }
+  #puente { background: var(--acento); color: var(--papel); border-color: transparent; }
+  .vuela { position: absolute; z-index: 5; margin: 0; font: 700 1.3cqw/1 var(--mono); background: var(--acento); color: var(--papel); padding: .3em .5em; border-radius: .3em; white-space: nowrap; pointer-events: none; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 3 de 3 · Lewis y otros (2020)</p>
+    <h1>La IA redacta; los números <em>los pone tu archivo</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Tres columnas. A la izquierda, tu archivo: cuatro ventas de S/ 89,00, 135,00, 46,80 y 72,00. Al centro, el perfil que arma el visor: 4 ventas, suma S/ 342,80, lo que más dejó fueron las mascarillas, con S/ 135,00 y el cliente va tapado. A la derecha, la respuesta de la IA, redactada con esas cifras y sellada como comprobada. Abajo: una IA que suma sola da S/ 352,80, marcado FALSO; el caso Mata contra Avianca, con multa de US$ 5 000 por seis sentencias inventadas por ChatGPT; y lo que verás en tu tablero: el aviso de la fila TOTAL y los sellos Reglas sin IA e IA.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <text id="rA" class="rot fuerte" x="132" y="34" text-anchor="middle">TU ARCHIVO</text>
+        <text id="rB" class="rot fuerte" x="400" y="34" text-anchor="middle">EL PERFIL</text>
+        <text id="rC" class="rot fuerte" x="668" y="34" text-anchor="middle">LA RESPUESTA</text>
+        <path id="a1" class="trazo flecha" d="M250 120 L282 120"/>
+        <path id="a2" class="trazo flecha" d="M518 120 L550 120"/>
+        <path id="aVer" class="trazo fino" d="M668 232 C668 296 132 296 132 232"/>
+        <g id="gMal"><path id="aMal" class="trazo flecha" d="M52 232 L52 318"/></g>
+      </svg>
+
+      <div class="caja" id="tabla" style="left:2.5%; top:9.5%; width:28%">
+        <span class="tit">ventas.xlsx · 4 filas</span>
+        <div class="fila cab"><span>Cliente</span><span>Producto</span><span>Total</span></div>
+        <div class="fila"><span>Rosa Q.</span><span>Alcohol 1 L</span><b id="t1">89,00</b></div>
+        <div class="fila"><span>Luis M.</span><span>Mascarillas</span><b id="t2">135,00</b></div>
+        <div class="fila"><span>Ana P.</span><span>Suero oral</span><b id="t3">46,80</b></div>
+        <div class="fila"><span>Rosa Q.</span><span>Guantes</span><b id="t4">72,00</b></div>
+      </div>
+
+      <div class="caja" id="perfil" style="left:36%; top:9.5%; width:28%">
+        <span class="tit">lo único que recibe la IA</span>
+        <div class="par"><span>Ventas</span><b id="pN">4</b></div>
+        <div class="par"><span>Suma de Total</span><b id="pSuma">S/ 342,80</b></div>
+        <div class="par"><span>Lo que más dejó</span><b id="pNom">Mascarillas</b></div>
+        <div class="par"><span>con</span><b id="pTop">S/ 135,00</b></div>
+        <div class="par" id="pTapa"><span>Cliente</span><span><i class="tapa"></i><i class="tapado">tapado</i></span></div>
+      </div>
+
+      <div class="caja" id="resp" style="left:69.5%; top:9.5%; width:28%">
+        <span class="tit">la IA lo redacta</span>
+        <span id="rTxt">Vendiste <b id="rSuma">S/ 342,80</b> en 4 ventas. Lo que más dejó: mascarillas, con <b id="rTop">S/ 135,00</b>.</span>
+        <span class="evid" id="evid">evidencia: «342,80» · «135,00»</span>
+        <span class="sello ok solo-anim" id="selloOk">COMPROBADO</span>
+      </div>
+
+      <p class="pastilla solo-anim" id="ver" style="left:25%; top:50.5%; width:50%">cada cifra se busca tal cual; si no aparece, no pasa</p>
+
+      <div class="capa" id="abajo">
+        <div class="nt hot" id="mal" data-r="-1.5" style="left:2.5%; top:63%; width:21%"><span class="k">Si la IA suma sola</span><span class="t">«Total: S/ 352,80»</span><span class="sello solo-anim" id="selloMal">FALSO</span></div>
+        <div class="nt pol" id="caso" data-r="1" style="left:26.5%; top:63%; width:33%"><span class="k">Nueva York · 22 jun 2023</span><span class="t">6 sentencias que no existían, escritas por ChatGPT. Multa: <b>US$ 5 000</b>.</span></div>
+      </div>
+
+      <div class="nt act" id="aviso" data-r="-1" style="left:63%; top:62%; width:35%"><span class="k">En tu tablero</span><span class="t">Ojo con tu archivo: la fila TOTAL no cuadra con la suma</span></div>
+      <p class="pastilla" id="sR" style="left:63%; top:82%; width:21%">Reglas · sin IA</p>
+      <p class="pastilla" id="sI" style="left:86%; top:82%; width:12%">IA</p>
+      <p class="pastilla" id="puente" style="left:63%; top:91%; width:35%">Ahora adjunta tu archivo →</p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>El atajo que tienta</b><p>Tienes cuatro ventas y quieres el total. Lo fácil sería pegarle la tabla a una IA. Pero un modelo de lenguaje predice la palabra que sigue: no hace la cuenta. Puede darte una cifra que suena bien y no es.</p><p class="aparte">La cifra de la nota roja es una ilustración. Suma tú las cuatro filas: da S/ 342,80.</p></li>
+        <li><b>Ya pasó, y costó caro</b><p>El 22 de junio de 2023, un juez federal de Nueva York multó con US$ 5 000 a dos abogados y a su estudio. Presentaron seis sentencias que no existían: las escribió ChatGPT, con jueces y citas. «No pensé que el caso pudiera ser inventado», declaró uno.</p><p class="aparte">Mata v. Avianca, juez P. Kevin Castel. Ahí la IA inventó citas, no sumas; el riesgo es el mismo: texto creíble sin nada que lo respalde.</p></li>
+        <li><b>Tu visor hace la cuenta</b><p>Por eso tu visor suma, agrupa y ordena él mismo, en tu navegador, con reglas que siempre dan lo mismo. Con esos números ya hechos arma un perfil. Y tapa lo personal: clientes, proveedores, DNI, teléfonos y correos no viajan.</p></li>
+        <li><b>La IA solo redacta</b><p>La IA recibe el perfil, no tu tabla: su trabajo es decirlo claro. Cada dato de la respuesta trae su evidencia literal y el visor la busca tal cual. Si no aparece, no pasa.</p><p class="aparte">Lewis y su equipo (2020) midieron que un modelo que consulta documentos antes de escribir da textos más específicos y apegados a los hechos. Tu visor aplica esa idea a tus números.</p></li>
+        <li><b>En tu tablero</b><p>Cada respuesta lleva un sello, «Reglas · sin IA» o «IA»: así sabes quién contestó y con qué. Y si tu archivo trae una fila TOTAL que no cuadra con la suma, el tablero te avisa. Ahora adjunta tu archivo.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Lewis, P., Perez, E., Piktus, A., et al. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. <i>NeurIPS 2020</i>. arXiv:2005.11401. · Mata v. Avianca, Inc., 22-cv-1461 (PKC), S.D.N.Y., Opinion and Order on Sanctions, 22 de junio de 2023.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, fig = $(".teo-fig"), puntas = {}, vuelos = {};
+  // Los vuelos: los cuatro montos van a la suma del perfil; luego la suma y el mayor van a la respuesta.
+  var VUELOS = [["v1", "#t1", "#pSuma"], ["v2", "#t2", "#pSuma"], ["v3", "#t3", "#pSuma"], ["v4", "#t4", "#pSuma"], ["vS", "#pSuma", "#rSuma"], ["vT", "#pTop", "#rTop"]];
+
+  function pos(el) { // posición en % de la figura: aguanta que cambie el tamaño de la ventana
+    var F = fig.getBoundingClientRect(), r = el.getBoundingClientRect();
+    return { left: (r.left - F.left) / F.width * 100 + "%", top: (r.top - F.top) / F.height * 100 + "%" };
+  }
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .45 }, pos);
+    tl.from(puntas[id], { autoAlpha: 0, duration: .2 }, "-=.1");
+  }
+  function volar(tl, k, t) {
+    var v = vuelos[k];
+    tl.fromTo(v.el, Object.assign({ autoAlpha: 1, scale: 1.15 }, v.desde), Object.assign({ scale: 1, duration: .7, ease: "power2.inOut", immediateRender: false }, v.hacia), t);
+    tl.to(v.el, { autoAlpha: 0, duration: .15 });
+  }
+  function entra(tl, sel, t) { tl.fromTo(sel, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .45, ease: "power2.out" }, t); }
+
+  TEO.escena([
+    function (tl) { // 1. el atajo: pegarle la tabla a la IA
+      tl.fromTo("#rA", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 });
+      entra(tl, "#tabla", "-=.2");
+      tl.from("#tabla .fila", { autoAlpha: 0, x: -6, duration: .25, stagger: .1 }, "-=.15");
+      flecha(tl, "aMal", "+=.2");
+      TEO.pegar(tl, "#mal", "-=.1");
+      tl.to("#mal", { x: -6, duration: .06, repeat: 5, yoyo: true, ease: "none" }, "+=.5");
+      tl.fromTo("#selloMal", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" });
+    },
+    function (tl) { // 2. el caso real
+      TEO.pegar(tl, "#caso");
+      tl.fromTo("#caso .t b", { backgroundColor: "rgba(179,38,30,0)" }, { backgroundColor: "rgba(179,38,30,.22)", duration: .4 }, "+=.3");
+    },
+    function (tl) { // 3. el visor hace la cuenta y arma el perfil
+      tl.to(["#abajo", "#gMal"], { opacity: .38, duration: .4 });
+      tl.fromTo("#rB", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 }, "<");
+      flecha(tl, "a1", "-=.1");
+      entra(tl, "#perfil", "-=.2");
+      tl.fromTo("#pN", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      volar(tl, "v1", "+=.1"); volar(tl, "v2", "-=.45"); volar(tl, "v3", "-=.45"); volar(tl, "v4", "-=.45");
+      tl.fromTo("#pSuma", { autoAlpha: 0, scale: 1.5 }, { autoAlpha: 1, scale: 1, duration: .4, ease: "back.out(2)" }, "-=.1");
+      tl.fromTo(["#pTop", "#pNom"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .35 }, "+=.2");
+      tl.to("#t2", { backgroundColor: "rgba(196,106,18,.28)", duration: .3 }, "<");
+      tl.fromTo("#pTapa", { autoAlpha: 0, x: -8 }, { autoAlpha: 1, x: 0, duration: .4 }, "+=.3");
+    },
+    function (tl) { // 4. la IA solo redacta, y cada cifra se comprueba
+      tl.fromTo("#rC", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 });
+      flecha(tl, "a2", "-=.1");
+      entra(tl, "#resp", "-=.2");
+      volar(tl, "vS", "+=.2");
+      tl.fromTo("#rSuma", { autoAlpha: 0 }, { autoAlpha: 1, duration: .25 }, "-=.1");
+      volar(tl, "vT", "-=.1");
+      tl.fromTo("#rTop", { autoAlpha: 0 }, { autoAlpha: 1, duration: .25 }, "-=.1");
+      tl.fromTo("#evid", { autoAlpha: 0 }, { autoAlpha: 1, duration: .35 }, "+=.2");
+      TEO.trazar(tl, "#aVer", { duration: .9 }, "+=.1");
+      tl.fromTo("#ver", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 }, "-=.4");
+      tl.to(["#rSuma", "#rTop", "#pSuma"], { backgroundColor: "rgba(31,122,62,.26)", duration: .3, stagger: .12 });
+      tl.to("#t2", { backgroundColor: "rgba(31,122,62,.26)", duration: .3 }, "<");
+      tl.fromTo("#selloOk", { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, "+=.1");
+    },
+    function (tl) { // 5. en tu tablero, y el puente a la práctica
+      TEO.pegar(tl, "#aviso");
+      tl.fromTo(["#sR", "#sI"], { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .35, stagger: .25, ease: "back.out(1.8)" }, "+=.2");
+      tl.fromTo("#puente", { autoAlpha: 0, scale: .9 }, { autoAlpha: 1, scale: 1, duration: .4, ease: "back.out(2)" }, "+=.3");
+    }
+  ], {
+    preparar: function () {
+      ["a1", "a2", "aMal"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); });
+      VUELOS.forEach(function (v) {
+        var desde = $(v[1]), dest = $(v[2]), el = document.createElement("p");
+        el.className = "vuela";
+        el.textContent = desde.textContent;
+        fig.appendChild(el);
+        gsap.set(el, { autoAlpha: 0 });
+        vuelos[v[0]] = { el: el, desde: pos(desde), hacia: pos(dest) };
+      });
+      gsap.set(["#rA", "#rB", "#rC", "#tabla", "#perfil", "#resp", "#pN", "#pSuma", "#pTop", "#pNom", "#pTapa", "#rSuma", "#rTop", "#evid", "#ver", "#selloMal", "#selloOk", "#sR", "#sI", "#puente"], { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>
