@@ -173,7 +173,7 @@ button { font: inherit; cursor: pointer; }
     fetch(API, { credentials: "same-origin", cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
       .then(aplicar)
-      .catch(function () { decir("Sin conexión con la arena · reintentando…", false); })
+      .catch(function (e) { decir("Sin conexión con la arena (" + (e && e.message || "error") + ") · reintentando…", false); })
       .then(function () { leyendo = false; });
   }
   function enviar(cuerpo, okTxt) {
@@ -188,10 +188,16 @@ button { font: inherit; cursor: pointer; }
       .catch(function () { decir("No se pudo conectar", false); })
       .then(function () { ocupado = false; pintarPanel(); });
   }
-  function decir(t, bien) { aviso = t; avisoOk = bien; var a = document.querySelector(".aviso"); if (a) { a.textContent = t; a.className = "aviso" + (bien ? " ok-msg" : ""); } }
+  function decir(t, bien) {
+    aviso = t; avisoOk = bien;
+    var a = document.querySelector(".aviso");
+    if (!a) { $("panel").innerHTML = '<h2>Arena del monito</h2><p class="aviso"></p>'; a = document.querySelector(".aviso"); }
+    a.textContent = t; a.className = "aviso" + (bien ? " ok-msg" : "");
+  }
 
   /* ---- Pintar ---- */
   function aplicar(d) {
+    d.eventos = d.eventos || []; d.jugadores = d.jugadores || [];
     offset = d.ahora_ms - Date.now();
     var nuevos = [];
     if (ultimoEv !== null) d.eventos.forEach(function (e) { if (e.id > ultimoEv) nuevos.push(e); });

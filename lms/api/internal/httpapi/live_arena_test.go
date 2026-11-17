@@ -130,6 +130,11 @@ func TestLiveArena(t *testing.T) {
 	}
 	yo := func(r resp) map[string]any { m, _ := r.body["yo"].(map[string]any); return m }
 
+	// Arena vacía: las listas viajan como [] y nunca como null (la escena las recorre).
+	if r := e.call("GET", api, profe, false, nil, ""); r.code != 200 || r.body["eventos"] == nil || r.body["jugadores"] == nil {
+		t.Fatalf("arena vacía: %d %s", r.code, r.raw)
+	}
+
 	// Ana ataca (sin aula); Luis defiende y recibe su servidor de práctica.
 	if n := yo(post(ana, map[string]any{"accion": "unir", "equipo": "tumba"}, 200))["equipo"]; n != "tumba" {
 		t.Fatalf("ana: %v", n)

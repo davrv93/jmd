@@ -424,13 +424,17 @@ func (sa *salaArena) vista(p *Principal, now time.Time) map[string]any {
 		}
 		jug = append(jug, x)
 	}
+	eventos := sa.Ev
+	if eventos == nil {
+		eventos = []arenaEvento{} // nunca null: la escena recorre la lista
+	}
 	faltan := int64(0)
 	if !sa.Hasta.IsZero() {
 		faltan = max(0, sa.Hasta.Sub(now).Milliseconds())
 	}
 	out := map[string]any{
 		"fase": sa.Fase, "ronda": sa.Ronda, "faltan_ms": faltan, "ahora_ms": now.UnixMilli(),
-		"tumba": sa.Tumba, "server": sa.Server, "jugadores": jug, "eventos": sa.Ev,
+		"tumba": sa.Tumba, "server": sa.Server, "jugadores": jug, "eventos": eventos,
 		"staff": p.Staff(), "ataques_max": arenaAtaquesMax, "puntuando": sa.pendiente,
 	}
 	if yo := sa.Jug[p.ID]; yo != nil {
