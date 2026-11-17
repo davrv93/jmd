@@ -1,0 +1,126 @@
+/* DeepSeek Harness · sesión 1: piezas compartidas de las escenas (pedido con un clic, campos, casillas).
+   Se apoya en escena.css (variables de color y clases esc-*). */
+
+/* escena.css fija body { height: 100%; overflow: hidden } para láminas de una pantalla: aquí la escena hace scroll normal */
+html, body { height: auto; min-height: 100%; }
+body { overflow-y: auto; overflow-x: hidden; font-size: clamp(15px, calc(.8vw + .4vh), 21px); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.esc.dh { display: block; min-height: 0; max-width: 68em; margin: 0 auto; padding: 1.3em 1.6em 4.6em; }
+.dh .esc-cab { margin-bottom: 1.1em; }
+.dh .esc-fase { font-size: .76em; }
+.dh .esc-cuerpo { justify-content: flex-start; gap: 1em; }
+.dh .esc-titulo { font-size: 2em; text-wrap: balance; }
+.dh .esc-sub { font-size: 1.06em; max-width: 44em; text-wrap: pretty; }
+.dh .esc-card { padding: 1em 1.15em; }
+.dh .esc-card h2, .dh .esc-card h3 { margin: 0 0 .35em; font-size: 1.02em; line-height: 1.25; }
+.dh .esc-card p { font-size: .94em; }
+.dh div.esc-card:not(.dh-regla):not(.dh-doc) > * + * { margin-top: .65em; }
+.dh .esc-card p.dh-et { font-size: .72em; margin: 0 0 .7em; color: var(--muted); }
+.dh div.esc-card > p.dh-et + * { margin-top: 0; }
+.dh code, .dh-dir { font: 600 .9em/1.3 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .4em; padding: .1em .4em; color: var(--fg); overflow-wrap: anywhere; }
+.dh-dir { font-size: 1em; padding: .35em .6em; user-select: all; }
+.dh-et { margin: 0 0 .5em; font-size: .72em; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* Rejillas */
+.dh-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; align-items: stretch; }
+.dh-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9em; align-items: stretch; }
+.dh-g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9em; align-items: stretch; }
+.dh-g5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: .7em; align-items: stretch; }
+.dh-fila { display: flex; flex-wrap: wrap; gap: .7em; align-items: center; }
+
+/* Diagrama de pasos (escena 1) */
+.dh-pasos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.6em; list-style: none; margin: 0; padding: 0; }
+.dh-pasos li { position: relative; display: flex; flex-direction: column; gap: .4em; }
+.dh-pasos li + li::before { content: ""; position: absolute; left: -1.25em; top: 50%; width: .55em; height: .55em; border-top: 2.5px solid var(--accent); border-right: 2.5px solid var(--accent); transform: translateY(-50%) rotate(45deg); }
+.dh-pasos b { font-size: 1.02em; line-height: 1.25; }
+.dh-pasos span { color: var(--muted); font-size: .9em; }
+.dh-n { width: 2em; height: 2em; border-radius: 50%; display: grid; place-items: center; background: var(--accent-bg); color: var(--accent); font: 800 .95em/1 system-ui, sans-serif; flex: none; }
+.dh-docs { display: flex; flex-wrap: wrap; gap: .35em; margin: .2em 0 0; padding: 0; list-style: none; }
+.dh-docs li { font-size: .74em; font-weight: 700; padding: .22em .65em; border-radius: 999px; background: var(--accent-bg); color: var(--accent); border: 1px solid var(--line2); }
+.dh-docs li::before, .dh-docs li + li::before { content: none; }
+.dh-regla { display: flex; gap: .7em; align-items: flex-start; }
+.dh-regla svg { flex: none; width: 1.5em; height: 1.5em; fill: none; stroke: var(--ok); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; margin-top: .1em; }
+.dh-regla b { display: block; line-height: 1.25; }
+.dh-regla span { color: var(--muted); font-size: .9em; }
+
+/* Tarjeta de entregable (escena 5) */
+.dh-doc { display: flex; flex-direction: column; gap: .3em; }
+.dh-doc b { font-size: .98em; line-height: 1.2; }
+.dh-doc span { color: var(--muted); font-size: .86em; line-height: 1.35; }
+.dh-doc code { align-self: flex-start; margin-top: auto; font-size: .72em; }
+.dh-doc small { font: 600 .72em/1.2 var(--mono); color: var(--muted); min-height: 1.2em; }
+.dh-doc code:last-child { margin-bottom: 1.2em; }
+.dh .dh-g5 .esc-card { padding: .85em .9em; }
+
+/* El pedido */
+.dh-pedido { margin: 0 0 .8em; font: 500 .86em/1.55 var(--mono); background: var(--s2); border: 1px solid var(--line2); border-radius: .7em; padding: .8em 1em; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); user-select: text; cursor: text; }
+.dh-dato { background: var(--ok-bg); color: var(--fg); border-radius: .3em; padding: .05em .25em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.dh-hueco { background: var(--warn-bg); color: var(--warn); font-weight: 700; border-radius: .3em; padding: .05em .25em; }
+
+/* Botones */
+.dh-boton { display: inline-flex; align-items: center; gap: .5em; border: 1px solid transparent; border-radius: .75em; padding: .72em 1.1em; background: var(--accent); color: var(--on-accent); font: 700 .95em/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer; text-align: left; transition: transform .15s, filter .15s, background .15s; }
+.dh-boton:hover { filter: brightness(1.07); } .dh-boton:active { transform: translateY(1px); }
+.dh-boton.sec { background: var(--accent-bg); color: var(--accent); border-color: var(--line2); }
+.dh-boton.grande { font-size: 1.1em; padding: .85em 1.3em; }
+.dh-boton.chico { font-size: .82em; padding: .5em .8em; border-radius: .6em; }
+.dh-boton.ok { background: var(--ok); color: var(--s1); }
+.dh-boton svg { width: 1.1em; height: 1.1em; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.dh-boton:focus-visible, .dh-chk:focus-visible, .dh-ej:focus-visible, .dh-campo input:focus-visible, .dh-campo textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Campos sueltos, sin formulario: el iframe no lo permite */
+.dh-campo { display: grid; gap: .35em; align-content: start; }
+.dh-campo label { font-weight: 700; font-size: .92em; }
+.dh-campo input, .dh-campo textarea { width: 100%; font: inherit; font-size: .95em; color: var(--fg); background: var(--s1); border: 1.5px solid var(--line2); border-radius: .65em; padding: .6em .8em; }
+.dh-campo input { font-family: var(--mono); font-size: .88em; }
+.dh-campo textarea { min-height: 5.2em; resize: vertical; line-height: 1.45; }
+.dh-campo ::placeholder { color: var(--muted); opacity: .85; }
+.dh-campo .falta { border-color: var(--warn); background: var(--warn-bg); }
+.dh-estado { margin: 0; font-size: .86em; color: var(--muted); }
+.dh-estado:empty { display: none; }
+.dh-estado.ok { color: var(--ok); font-weight: 700; }
+.dh-estado.ojo { color: var(--warn); font-weight: 700; }
+
+/* Casos de ejemplo (escena 3) */
+.dh-ej { display: flex; flex-direction: column; gap: .3em; text-align: left; font: inherit; color: var(--fg); background: var(--s1); border: 1.5px solid var(--line2); border-radius: .8em; padding: .7em .9em; cursor: pointer; transition: border-color .15s, background .15s; }
+.dh-ej:hover { border-color: var(--accent); }
+.dh-ej[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
+.dh-ej b { font-size: .95em; color: var(--accent); }
+.dh-ej .dh-ej-txt { font-size: .84em; line-height: 1.4; color: var(--muted); }
+.dh-plantilla { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: .4em .5em; font-size: .86em; }
+.dh-plantilla li { background: var(--s2); border: 1px solid var(--line); border-radius: 999px; padding: .2em .75em; }
+.dh-plantilla li b { color: var(--accent); }
+
+/* Casillas de revisión (escena 6) */
+.dh-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: .15em; }
+.dh-chk { display: grid; grid-template-columns: 1.5em 1fr; gap: .65em; align-items: start; width: 100%; text-align: left; font: inherit; font-size: .95em; line-height: 1.35; color: var(--fg); background: transparent; border: 0; border-radius: .5em; padding: .32em .3em; cursor: pointer; }
+.dh-chk:hover { background: var(--s2); }
+.dh-chk i { width: 1.35em; height: 1.35em; border-radius: .35em; border: 2px solid var(--line2); background: var(--s1); display: grid; place-items: center; font-style: normal; font-weight: 900; font-size: .85em; color: transparent; transition: background .15s; }
+.dh-chk[aria-checked="true"] i { background: var(--ok); border-color: var(--ok); color: var(--s1); }
+
+/* Qué deberías ver · Si falla · notas */
+.dh-ver, .dh-falla, .dh-nota { border-radius: .9em; padding: .8em 1em; font-size: .93em; border: 1px solid var(--line); }
+.dh-ver { background: var(--ok-bg); } .dh-falla { background: var(--warn-bg); } .dh-nota { background: var(--info-bg); }
+.dh-ver h3, .dh-falla h3, .dh-nota h3 { margin: 0 0 .25em; font-size: .78em; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.dh-ver h3 { color: var(--ok); } .dh-falla h3 { color: var(--warn); } .dh-nota h3 { color: var(--info); }
+.dh-ver p, .dh-falla p, .dh-nota p { margin: 0; color: var(--fg); }
+.dh-ver p + p, .dh-falla p + p, .dh-nota p + p { margin-top: .35em; }
+.dh-honesto { margin: 0; font-size: .92em; color: var(--muted); border-left: 3px solid var(--line2); padding-left: .8em; max-width: 60em; }
+
+/* Aviso flotante */
+.dh-toast { position: fixed; left: 50%; bottom: 1.3em; transform: translate(-50%, 1em); opacity: 0; pointer-events: none; z-index: 9; background: #16151d; color: #fff; border-radius: .75em; padding: .75em 1em; font: 600 .95em/1.35 system-ui, sans-serif; max-width: min(92vw, 36em); box-shadow: 0 10px 30px -10px rgba(0,0,0,.5); transition: opacity .2s, transform .2s; text-align: center; }
+.dh-toast.ver { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) .dh-toast { background: #ecebf7; color: #14122b; } }
+:root[data-tema="dark"] .dh-toast { background: #ecebf7; color: #14122b; }
+
+/* Pantallas angostas (el panel de DeepSeek Harness abierto al lado achica la escena) */
+@media (max-width: 900px) {
+  .dh-g4, .dh-pasos { grid-template-columns: 1fr 1fr; }
+  .dh-g5 { grid-template-columns: repeat(3, 1fr); }
+  .dh-g3 { grid-template-columns: 1fr; }
+  .dh-pasos li + li::before { content: none; }
+}
+@media (max-width: 620px) {
+  .esc.dh { padding: 1em 1em 4.6em; }
+  .dh-g2, .dh-g4, .dh-g5, .dh-pasos { grid-template-columns: 1fr; }
+  .dh .esc-titulo { font-size: 1.6em; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }

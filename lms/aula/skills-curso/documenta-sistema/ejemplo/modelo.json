@@ -1,0 +1,70 @@
+{
+  "sistema": {
+    "nombre": "Biblioteca Los Olivos (ejemplo)",
+    "url": "ejemplo.invalid/biblioteca/",
+    "caso": "Una bibliotecaria presta un libro a un socio. Quiero saber qué pasa si el socio ya tiene tres libros prestados.",
+    "alcance": "Préstamo de libros en mostrador con los roles bibliotecaria y coordinador. No cubre compras de libros ni multas.",
+    "autor": "alumno de JMD Learning"
+  },
+  "roles": [
+    {"id": "bibliotecaria", "nombre": "Bibliotecaria", "descripcion": "Atiende en mostrador: busca libros y registra préstamos y devoluciones."},
+    {"id": "coordinador", "nombre": "Coordinador", "descripcion": "Revisa el reporte de préstamos y administra los socios."}
+  ],
+  "acciones": [
+    {"modulo": "Catálogo", "nombre": "Buscar libros", "permisos": {"bibliotecaria": "si", "coordinador": "si"}, "evidencia": "evidencia/04-bibliotecaria-get-libros.txt"},
+    {"modulo": "Préstamos", "nombre": "Registrar préstamo", "permisos": {"bibliotecaria": "si", "coordinador": "por-verificar"}, "evidencia": "evidencia/06-bibliotecaria-get-prestamo-html.txt"},
+    {"modulo": "Reportes", "nombre": "Ver reporte de préstamos", "permisos": {"bibliotecaria": "no", "coordinador": "lectura"}, "evidencia": "evidencia/09-coordinador-get-reporte.txt"}
+  ],
+  "proceso": {
+    "nombre": "Préstamo de un libro",
+    "carriles": [
+      {"id": "bibliotecaria", "nombre": "Bibliotecaria"},
+      {"id": "sistema", "nombre": "Sistema"}
+    ],
+    "nodos": [
+      {"id": "inicio", "tipo": "inicio", "carril": "bibliotecaria", "nombre": "Socio pide un libro"},
+      {"id": "t1", "tipo": "tarea", "carril": "bibliotecaria", "nombre": "Buscar el libro en el catálogo"},
+      {"id": "t2", "tipo": "tarea", "carril": "bibliotecaria", "nombre": "Elegir al socio y pedir el préstamo"},
+      {"id": "g1", "tipo": "decision", "carril": "sistema", "nombre": "¿El socio tiene menos de 3 préstamos?"},
+      {"id": "t3", "tipo": "tarea", "carril": "sistema", "nombre": "Registrar el préstamo y la fecha de devolución"},
+      {"id": "t4", "tipo": "tarea", "carril": "sistema", "nombre": "Avisar que llegó al límite"},
+      {"id": "fin1", "tipo": "fin", "carril": "bibliotecaria", "nombre": "Libro entregado"},
+      {"id": "fin2", "tipo": "fin", "carril": "bibliotecaria", "nombre": "Préstamo rechazado"}
+    ],
+    "flujos": [
+      {"de": "inicio", "a": "t1"},
+      {"de": "t1", "a": "t2"},
+      {"de": "t2", "a": "g1"},
+      {"de": "g1", "a": "t3", "nombre": "Sí"},
+      {"de": "g1", "a": "t4", "nombre": "No"},
+      {"de": "t3", "a": "fin1"},
+      {"de": "t4", "a": "fin2"}
+    ]
+  },
+  "clases": [
+    {"nombre": "Libro", "atributos": ["codigo: texto", "titulo: texto", "ejemplares: número entero"], "operaciones": ["buscar()"]},
+    {"nombre": "Socio", "atributos": ["dni: texto", "nombre: texto"], "operaciones": []},
+    {"nombre": "Prestamo", "atributos": ["numero: número entero", "fecha: fecha", "devolucion: fecha"], "operaciones": ["registrar()", "devolver()"]}
+  ],
+  "relaciones": [
+    {"de": "Prestamo", "a": "Libro", "tipo": "asociacion", "nombre": "de", "cardinalidad": "1"},
+    {"de": "Socio", "a": "Prestamo", "tipo": "asociacion", "nombre": "tiene", "cardinalidad": "0..3"}
+  ],
+  "flujos": [
+    {"id": "prestamo-normal", "nombre": "Préstamo dentro del límite", "rol": "Bibliotecaria", "pasos": [
+      {"pantalla": "Ingresar", "accion": "Escribe su usuario y su clave y pulsa Ingresar.", "resultado": "Entra al catálogo."},
+      {"pantalla": "Catálogo", "accion": "Busca el libro por título o código.", "resultado": "Ve los ejemplares disponibles."},
+      {"pantalla": "Préstamo", "accion": "Elige al socio y pulsa Prestar.", "resultado": "El sistema muestra la fecha de devolución."}
+    ]}
+  ],
+  "pantallas": [
+    {"id": "ingresar", "nombre": "Ingresar", "url": "/", "roles": ["Bibliotecaria", "Coordinador"], "campos": ["Usuario", "Clave"], "botones": ["Ingresar"], "tablas": [], "menu": [], "nota": ""},
+    {"id": "catalogo", "nombre": "Catálogo", "url": "/catalogo", "roles": ["Bibliotecaria", "Coordinador"], "campos": ["Buscar libro"], "botones": ["Prestar"], "tablas": [{"nombre": "Libros", "columnas": ["Código", "Título", "Ejemplares"]}], "menu": ["Catálogo", "Préstamos", "Reporte", "Salir"], "nota": ""}
+  ],
+  "por_verificar": [
+    "Si el coordinador puede registrar préstamos: no se probó porque cambia datos."
+  ],
+  "glosario": [
+    {"termino": "Socio", "definicion": "Persona inscrita que puede llevarse libros."}
+  ]
+}
