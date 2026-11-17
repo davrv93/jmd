@@ -46,13 +46,38 @@ window.DH = (() => {
       pre.appendChild(e);
     });
   }
+  // La Tienda Sol da una tienda propia a cada alumno: al pedir /tienda-sol/ redirige a /tienda-sol/<código>/.
+  // La escena la pide sola (mismo origen) y deja la dirección completa en el campo: el alumno no copia nada.
+  const CON_CODIGO = /tienda-sol\/[\w-]{8,}/;
+  let creando = false, falloTienda = false;
+  function tiendaSola() {
+    const c = campo('url');
+    if (!c || creando || CON_CODIGO.test(c.value)) return;
+    if (c.value.trim() && !/tienda-sol\/?$/.test(c.value.trim())) return;   // escribió otro sistema: no se toca
+    creando = true; revisarUrl();
+    fetch('/tienda-sol/', { credentials: 'same-origin', redirect: 'follow', cache: 'no-store' })
+      .then((r) => { const m = /\/tienda-sol\/([\w-]{8,})\//.exec(r.url || ''); if (!m) throw new Error('sin código'); return m[1]; })
+      .then((codigo) => {
+        c.value = location.host + '/tienda-sol/' + codigo + '/';
+        mem.guardar('url', c.value); c.classList.remove('falta'); falloTienda = false;
+        document.querySelectorAll('[data-tienda]').forEach((b) => { b.dataset.copiar = c.value; });
+      })
+      .catch(() => { falloTienda = true; })
+      .then(() => { creando = false; repintar(); });
+  }
   function revisarUrl() {
     const e = document.getElementById('dh-url-estado'); if (!e) return;
     const v = valor('url');
     e.className = 'dh-estado';
-    if (!v) { e.textContent = ''; return; }
-    if (/tienda-sol\/[\w-]{8,}/.test(v)) { e.textContent = 'Dirección guardada: trae el código de tu tienda.'; e.classList.add('ok'); }
-    else { e.textContent = 'Parece que falta el código de tu tienda. Copia la dirección completa, tal como sale en la barra de tu navegador.'; e.classList.add('ojo'); }
+    if (creando) { e.textContent = 'Creando tu tienda de práctica…'; return; }
+    if (CON_CODIGO.test(v)) {
+      e.textContent = 'Tu tienda ya está lista y su dirección quedó guardada. No tienes que copiar nada.'; e.classList.add('ok');
+      document.querySelectorAll('[data-tienda]').forEach((b) => { b.dataset.copiar = v; });
+      return;
+    }
+    if (!v) { e.textContent = falloTienda ? 'No pude crear tu tienda sola. Abre jmd-learn.online/tienda-sol/ en otra pestaña y pega aquí la dirección que te quede.' : ''; if (falloTienda) e.classList.add('ojo'); return; }
+    if (/tienda-sol\/?$/.test(v.trim())) { tiendaSola(); if (falloTienda) { e.textContent = 'No pude crear tu tienda sola. Ábrela en otra pestaña y pega aquí la dirección completa, con su código.'; e.classList.add('ojo'); } return; }
+    e.textContent = 'Usarás tu propio sistema: recuerda que debe ser tuyo o tener permiso, y con una cuenta de prueba.'; e.classList.add('ok');
   }
   const repintar = () => { pedidos.forEach(pintar); revisarUrl(); };
 
@@ -61,6 +86,7 @@ window.DH = (() => {
     if (previo && !c.value) c.value = previo;
     c.addEventListener('input', () => { mem.guardar(n, c.value); c.classList.remove('falta'); repintar(); });
   });
+  tiendaSola();
 
   // Casillas de revisión (botones con role="checkbox"): se recuerdan en dh01.rev
   const casillas = Array.from(document.querySelectorAll('[role="checkbox"]'));
