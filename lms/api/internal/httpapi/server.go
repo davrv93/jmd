@@ -275,6 +275,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/live/{lesson}/karts/tick", s.authed(s.liveKartsTick))
 	mux.Handle("POST /api/v1/live/{lesson}/karts/iniciar", s.authed(s.staff(s.liveKartsIniciar)))
 	mux.Handle("POST /api/v1/live/{lesson}/karts/reiniciar", s.authed(s.staff(s.liveKartsReiniciar)))
+	// Arena del monito (Laboratorio de caos): equipos Tumba Server y Server, por turnos (ver live_arena.go).
+	mux.Handle("GET /api/v1/live/{lesson}/arena", s.authed(s.liveArenaEstado))
+	mux.Handle("POST /api/v1/live/{lesson}/arena", s.authed(s.liveArenaPost))
 	mux.Handle("POST /api/v1/live/{lesson}/video", s.authed(s.liveVideoCrear))
 	mux.Handle("POST /api/v1/live/{lesson}/video/ideas", s.authed(s.liveVideoIdeas))
 	mux.Handle("GET /api/v1/live/{lesson}/video/{id}", s.authed(s.liveVideoEstado))

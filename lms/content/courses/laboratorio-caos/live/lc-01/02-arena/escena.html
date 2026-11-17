@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arena del monito</title>
+<!--
+  ARENA DEL MONITO (Laboratorio de caos, lc-01). Minijuego por turnos del LIVE.
+  Equipo Monito Tumba Server (ataca, no necesita aula) y equipo Monito Server (defiende su servidor
+  de práctica real en /trabajo/monito de su aula). Cada ataque hace saltar al monito sobre la valla
+  hasta el servidor atacado. Los defensores curan con dos botones o con prompts en DeepSeek Harness
+  (panel a la derecha, escena con dsh: true). El estado vive en el servidor: GET/POST
+  /api/v1/live/{lección}/arena (ver lms/api/internal/httpapi/live_arena.go).
+-->
+<style>
+:root {
+  --crema: #fff4de; --punto: rgba(27,31,59,.08); --tinta: #1b1f3b; --suave: #5a5f80; --caja: #ffffff;
+  --banana: #ffc93c; --rojo: #d93a40; --rojo-claro: #ffd9da; --verde: #1e7a4c; --verde-claro: #d3f2e2;
+  --lila: #e9e3ff; --madera: #b07a45; --madera-osc: #7a5230; --pasto: #cfeec2;
+  --redondo: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="light"]) { --crema: #191c33; --punto: rgba(255,201,60,.08); --tinta: #f3eeff; --suave: #b9b6d6; --caja: #24284a; --rojo-claro: #4a2230; --verde-claro: #183d2d; --lila: #2e2a52; --pasto: #203a2a; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--crema); color: var(--tinta); font: 15px/1.45 system-ui, sans-serif; background-image: radial-gradient(var(--punto) 2px, transparent 2px); background-size: 24px 24px; padding: 12px; min-height: 100vh; }
+button { font: inherit; cursor: pointer; }
+.top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.marca { font-family: var(--redondo); font-weight: 800; font-size: 20px; }
+.marca small { display: block; font: 700 11px/1 ui-monospace, Menlo, monospace; letter-spacing: .18em; color: var(--rojo); }
+.fase { display: flex; gap: 8px; align-items: center; font-weight: 800; }
+.pill { border: 3px solid var(--tinta); border-radius: 999px; padding: 4px 12px; background: var(--caja); font-family: var(--redondo); }
+.pill.ataque { background: var(--rojo); color: #fff; }
+.pill.defensa { background: var(--verde); color: #fff; }
+.reloj { font: 800 20px/1 ui-monospace, Menlo, monospace; min-width: 3.2ch; text-align: right; }
+.marcador { display: flex; gap: 8px; align-items: stretch; }
+.marcador div { border: 3px solid var(--tinta); border-radius: 14px; padding: 4px 12px; text-align: center; font-family: var(--redondo); font-weight: 800; box-shadow: 3px 3px 0 var(--tinta); }
+.marcador b { display: block; font-size: 22px; line-height: 1.1; }
+.m-t { background: var(--rojo-claro); } .m-s { background: var(--verde-claro); }
+
+.arena { position: relative; display: grid; grid-template-columns: 1fr 64px 1.25fr; min-height: 280px; border: 4px solid var(--tinta); border-radius: 22px; background: var(--pasto); overflow: hidden; box-shadow: 6px 6px 0 var(--tinta); }
+.zona { padding: 12px; }
+.zona h3 { margin: 0 0 8px; font-family: var(--redondo); font-size: 14px; letter-spacing: .04em; }
+.barrio { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
+.mono { display: flex; flex-direction: column; align-items: center; width: 70px; text-align: center; font-size: 11px; font-weight: 700; line-height: 1.15; }
+.mono .cara { width: 46px; height: 46px; border-radius: 50%; background: var(--caja); border: 3px solid var(--rojo); display: grid; place-items: center; font-size: 26px; }
+.mono.yo .cara { box-shadow: 0 0 0 3px var(--banana); }
+.mono.ausente { opacity: .45; }
+.valla { position: relative; background: repeating-linear-gradient(90deg, transparent 0 6px, var(--madera) 6px 18px, transparent 18px 24px); }
+.valla::before, .valla::after { content: ""; position: absolute; left: 0; right: 0; height: 9px; background: var(--madera-osc); border-radius: 4px; }
+.valla::before { top: 28%; } .valla::after { top: 66%; }
+.granja { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; align-content: start; }
+.srv { position: relative; border: 3px solid var(--tinta); border-radius: 14px; background: var(--caja); padding: 8px 6px 6px; text-align: center; font-size: 12px; font-weight: 700; line-height: 1.2; transition: transform .15s; }
+.srv .rack { font-size: 30px; line-height: 1; }
+.srv .nom { display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srv .est { display: block; font-size: 11px; margin-top: 2px; }
+.srv.ok { background: var(--verde-claro); }
+.srv.caido { background: var(--rojo-claro); }
+.srv.preparando { opacity: .6; }
+.srv.elegible { cursor: pointer; }
+.srv.elegible:hover { transform: translateY(-2px); }
+.srv.blanco { outline: 4px dashed var(--rojo); outline-offset: 2px; }
+.srv.yo { box-shadow: 0 0 0 3px var(--banana); }
+.vacio { color: var(--suave); font-size: 13px; }
+.saltador { position: fixed; z-index: 30; font-size: 34px; pointer-events: none; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.25)); }
+.boom { position: absolute; inset: auto 0 100% 0; font-size: 28px; pointer-events: none; }
+.sacudir { animation: sacudir .45s; }
+@keyframes sacudir { 20%{transform:translateX(-6px) rotate(-3deg)} 40%{transform:translateX(6px) rotate(3deg)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+.cura { animation: cura .9s; }
+@keyframes cura { 30% { box-shadow: 0 0 0 8px rgba(30,122,76,.45); } }
+.cartel { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 5; }
+.cartel span { font-family: var(--redondo); font-weight: 900; font-size: clamp(26px, 5vw, 46px); background: var(--banana); color: #1b1f3b; border: 4px solid #1b1f3b; border-radius: 22px; padding: 6px 22px; box-shadow: 6px 6px 0 #1b1f3b; transform: rotate(-3deg); }
+
+.abajo { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-top: 12px; }
+.caja { background: var(--caja); border: 3px solid var(--tinta); border-radius: 18px; padding: 14px; box-shadow: 4px 4px 0 var(--tinta); }
+.caja h2 { margin: 0 0 8px; font-family: var(--redondo); font-size: 19px; }
+.suave { color: var(--suave); margin: 0 0 10px; }
+.equipos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.eq { border: 3px solid var(--tinta); border-radius: 16px; padding: 12px; text-align: left; color: var(--tinta); box-shadow: 4px 4px 0 var(--tinta); }
+.eq b { display: block; font-family: var(--redondo); font-size: 19px; }
+.eq.t { background: var(--rojo-claro); } .eq.s { background: var(--verde-claro); }
+.eq:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--tinta); }
+.botones { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.bt { border: 3px solid var(--tinta); border-radius: 14px; padding: 10px; font-weight: 800; background: var(--banana); color: #1b1f3b; box-shadow: 0 5px 0 var(--tinta); }
+.bt.rojo { background: var(--rojo); color: #fff; } .bt.verde { background: var(--verde); color: #fff; }
+.bt:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+.bt:not(:disabled):active { transform: translateY(4px); box-shadow: 0 1px 0 var(--tinta); }
+.bt small { display: block; font-weight: 600; font-size: 11px; opacity: .9; }
+.estado { border-radius: 12px; padding: 10px; margin-bottom: 10px; font-weight: 700; }
+.estado.ok { background: var(--verde-claro); } .estado.caido { background: var(--rojo-claro); } .estado.neutro { background: var(--lila); }
+.estado ul { margin: 6px 0 0; padding-left: 18px; font-weight: 600; }
+.prompts { display: grid; gap: 6px; margin-top: 10px; }
+.prompt { text-align: left; border: 2px dashed var(--tinta); border-radius: 12px; background: var(--lila); color: var(--tinta); padding: 8px 10px; font-size: 13px; }
+.prompt b { display: block; font-size: 11px; letter-spacing: .08em; color: var(--suave); }
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow: auto; font-size: 13px; }
+.feed li { border-left: 4px solid var(--suave); padding: 2px 8px; }
+.feed li.ataque { border-color: var(--rojo); } .feed li.defensa { border-color: var(--verde); } .feed li.puntos, .feed li.fase { border-color: var(--banana); font-weight: 700; }
+.staff { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 2px dashed var(--suave); }
+.aviso { min-height: 1.3em; font-weight: 700; color: var(--rojo); margin: 8px 0 0; }
+.ok-msg { color: var(--verde); }
+[hidden] { display: none !important; }
+@media (max-width: 760px) {
+  .arena { grid-template-columns: 1fr; grid-template-rows: auto 26px auto; }
+  .valla { background: repeating-linear-gradient(0deg, transparent 0 4px, var(--madera) 4px 10px, transparent 10px 14px), repeating-linear-gradient(90deg, transparent 0 8px, var(--madera) 8px 20px, transparent 20px 26px); }
+  .valla::before, .valla::after { display: none; }
+  .abajo { grid-template-columns: 1fr; }
+  .equipos { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .sacudir, .cura { animation: none; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="marca"><small>LABORATORIO DE CAOS</small>Arena del monito</div>
+  <div class="fase"><span class="pill" id="fase">Esperando</span><span class="reloj" id="reloj"></span><span id="ronda" class="suave" style="margin:0"></span></div>
+  <div class="marcador"><div class="m-t">🐒 Tumba Server<b id="pt">0</b></div><div class="m-s">🛡️ Server<b id="ps">0</b></div></div>
+</div>
+
+<section class="arena" id="arena">
+  <div class="zona"><h3>🐒 Barrio de los monitos</h3><div class="barrio" id="barrio"></div></div>
+  <div class="valla" aria-hidden="true"></div>
+  <div class="zona"><h3>🖥️ Granja de servidores</h3><div class="granja" id="granja"></div></div>
+  <div class="cartel" id="cartel" hidden><span id="cartel-txt"></span></div>
+</section>
+
+<div class="abajo">
+  <section class="caja" id="panel"></section>
+  <section class="caja">
+    <h2>Lo que pasa</h2>
+    <ul class="feed" id="feed"></ul>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || "lc-01";
+  var API = "/api/v1/live/" + leccion + "/arena";
+  var REDUCIDO = false;
+  try { REDUCIDO = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+  var $ = function (id) { return document.getElementById(id); };
+  var est = null, offset = 0, ultimoEv = null, leyendo = false, ocupado = false, blanco = null, aviso = "", avisoOk = false, faseVista = "";
+
+  var ATAQUES = [
+    { k: "apagar", ic: "🔌", t: "Apagar la app", d: "mata el proceso" },
+    { k: "disco", ic: "💾", t: "Llenar el disco", d: "relleno en /tmp" },
+    { k: "base", ic: "🗑️", t: "Borrar la base", d: "adiós tienda.db" },
+    { k: "atascar", ic: "🐢", t: "Atascar la app", d: "la deja lentísima" }
+  ];
+  var ICONO = { apagar: "🔌", disco: "💾", base: "🗑️", atascar: "🐢", reiniciar: "🩹", limpiar: "🧹" };
+  var FALLA = {
+    app: ["🔌", "La app está apagada", "Botón «Reiniciar app»"],
+    disco: ["💾", "El disco /tmp está lleno", "Botón «Limpiar disco»"],
+    base: ["🗑️", "Borraron la base de datos", "Pídeselo a DeepSeek Harness (prompt 2)"],
+    lenta: ["🐢", "La app está atascada", "Pídeselo a DeepSeek Harness (prompt 3)"],
+    sin_lab: ["📦", "Tu laboratorio no está instalado", "Botón «Reinstalar laboratorio»"],
+    aula: ["💤", "Tu aula no responde", "Botón «Reinstalar laboratorio»"]
+  };
+  var PROMPTS = [
+    ["1 · Diagnóstico general", "Usa la skill monito-server: diagnostica mi servidor de /trabajo/monito y cúralo. Al final dime el código de /salud."],
+    ["2 · Me borraron la base", "Me borraron la base de la tienda: restáurala desde el respaldo con la skill monito-server y comprueba que /salud dé 200."],
+    ["3 · La app está lentísima", "Mi tienda responde lentísimo: busca qué la atasca en /trabajo/monito y quítalo sin reiniciar nada. Comprueba /salud."]
+  ];
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function jug(n) { if (!est) return null; for (var i = 0; i < est.jugadores.length; i++) if (est.jugadores[i].n === n) return est.jugadores[i]; return null; }
+
+  /* ---- Red ---- */
+  function leer() {
+    if (leyendo) return;
+    leyendo = true;
+    fetch(API, { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+      .then(aplicar)
+      .catch(function () { decir("Sin conexión con la arena · reintentando…", false); })
+      .then(function () { leyendo = false; });
+  }
+  function enviar(cuerpo, okTxt) {
+    if (ocupado) return;
+    ocupado = true; pintarPanel();
+    fetch(API, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo) })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (x) {
+        if (x.ok) { if (okTxt) decir(okTxt, true); aplicar(x.d); }
+        else decir((x.d && x.d.error && x.d.error.message) || "No se pudo", false);
+      })
+      .catch(function () { decir("No se pudo conectar", false); })
+      .then(function () { ocupado = false; pintarPanel(); });
+  }
+  function decir(t, bien) { aviso = t; avisoOk = bien; var a = document.querySelector(".aviso"); if (a) { a.textContent = t; a.className = "aviso" + (bien ? " ok-msg" : ""); } }
+
+  /* ---- Pintar ---- */
+  function aplicar(d) {
+    offset = d.ahora_ms - Date.now();
+    var nuevos = [];
+    if (ultimoEv !== null) d.eventos.forEach(function (e) { if (e.id > ultimoEv) nuevos.push(e); });
+    if (d.eventos.length) ultimoEv = d.eventos[d.eventos.length - 1].id; else if (ultimoEv === null) ultimoEv = 0;
+    est = d;
+    if (blanco !== null && (!jug(blanco) || jug(blanco).equipo !== "server")) blanco = null;
+    pintarArriba(); pintarArena(); pintarPanel(); pintarFeed();
+    nuevos.forEach(animar);
+    if (d.fase !== faseVista) { if (faseVista) cartel(d.fase); faseVista = d.fase; }
+  }
+  function pintarArriba() {
+    var f = $("fase"), nombres = { lobby: "Eligiendo equipos", ataque: "¡Ataca Tumba Server!", defensa: "¡Defiende Server!", marcador: est.puntuando ? "Revisando servidores…" : "Marcador" };
+    f.textContent = nombres[est.fase] || est.fase;
+    f.className = "pill " + est.fase;
+    $("ronda").textContent = est.ronda ? "Ronda " + est.ronda : "";
+    $("pt").textContent = est.tumba; $("ps").textContent = est.server;
+  }
+  function reloj() {
+    if (!est || !(est.fase === "ataque" || est.fase === "defensa")) { $("reloj").textContent = ""; return; }
+    var fin = est.ahora_ms + est.faltan_ms, s = Math.max(0, Math.ceil((fin - (Date.now() + offset)) / 1000));
+    $("reloj").textContent = s + "s";
+  }
+  function pintarArena() {
+    var yoN = est.yo ? est.yo.n : -1, barrio = $("barrio"), granja = $("granja"), hb = "", hg = "";
+    var atacando = est.yo && est.yo.equipo === "tumba" && est.fase === "ataque";
+    est.jugadores.forEach(function (j) {
+      if (j.equipo === "tumba") {
+        hb += '<div class="mono' + (j.n === yoN ? " yo" : "") + (j.presente ? "" : " ausente") + '" id="mono-' + j.n + '"><div class="cara">🐒</div>' + esc(j.nombre) + '<span class="suave" style="margin:0">' + j.puntos + ' pts</span></div>';
+      } else if (j.equipo === "server") {
+        var cls = j.lab !== "listo" ? "preparando" : (j.salud === "ok" ? "ok" : (j.salud === "caido" ? "caido" : ""));
+        var icos = (j.fallas || []).map(function (f) { return (FALLA[f] || ["❓"])[0]; }).join(" ");
+        var estado = j.lab === "preparando" ? "instalando…" : j.lab === "error" ? "sin laboratorio" : j.salud === "ok" ? "✅ en pie" : j.salud === "caido" ? "❌ " + icos : "…";
+        hg += '<div class="srv ' + cls + (j.n === yoN ? " yo" : "") + (atacando && j.lab === "listo" ? " elegible" : "") + (blanco === j.n ? " blanco" : "") + '" id="srv-' + j.n + '" data-n="' + j.n + '"><div class="rack">🖥️</div><span class="nom">' + esc(j.nombre) + '</span><span class="est">' + estado + '</span><span class="suave" style="margin:0">' + j.puntos + ' pts</span></div>';
+      }
+    });
+    barrio.innerHTML = hb || '<span class="vacio">Nadie en el equipo Tumba Server todavía.</span>';
+    granja.innerHTML = hg || '<span class="vacio">Nadie defiende todavía.</span>';
+  }
+  $("granja").addEventListener("click", function (ev) {
+    var c = ev.target.closest(".srv.elegible"); if (!c) return;
+    blanco = Number(c.dataset.n); pintarArena(); pintarPanel();
+  });
+
+  function pintarPanel() {
+    if (!est) return;
+    var p = $("panel"), yo = est.yo, h = "";
+    if (!yo || !yo.equipo) {
+      h = '<h2>Elige tu equipo</h2><p class="suave">Tumba Server ataca desde cualquier celular. Server defiende un servidor real en su aula con ayuda de DeepSeek Harness.</p>' +
+        '<div class="equipos"><button class="eq t" data-eq="tumba"><b>🐒 Monito Tumba Server</b>Aprieta botones y tumba los servidores del otro lado de la valla.</button>' +
+        '<button class="eq s" data-eq="server"><b>🛡️ Monito Server</b>Cuida tu servidor: botones y prompts para curarlo.</button></div>';
+    } else if (yo.equipo === "tumba") {
+      var b = blanco !== null ? jug(blanco) : null, quedan = est.ataques_max - (yo.ataques || 0), puede = est.fase === "ataque" && quedan > 0 && b && !ocupado;
+      h = '<h2>🐒 Eres Monito Tumba Server</h2>';
+      h += est.fase === "ataque"
+        ? '<p class="suave">' + (b ? 'Tu blanco: <b>' + esc(b.nombre) + '</b>. ' : 'Toca un servidor de la granja para elegir tu blanco. ') + 'Te quedan <b>' + quedan + '</b> ataques esta ronda.</p>'
+        : '<p class="suave">' + (est.fase === "defensa" ? "Ahora defiende el equipo Server: mira si logran curarse." : "Espera a que el profe abra la ronda.") + '</p>';
+      h += '<div class="botones">' + ATAQUES.map(function (a) { return '<button class="bt rojo" data-at="' + a.k + '"' + (puede ? "" : " disabled") + '>' + a.ic + " " + a.t + "<small>" + a.d + "</small></button>"; }).join("") + "</div>";
+    } else {
+      var fallas = yo.fallas || [], enDef = est.fase === "defensa" && yo.lab === "listo" && !ocupado;
+      h = '<h2>🛡️ Eres Monito Server</h2>';
+      if (yo.lab === "preparando") h += '<div class="estado neutro">📦 Instalando tu servidor en tu aula… (unos segundos)</div>';
+      else if (yo.lab === "error") h += '<div class="estado caido">No se pudo instalar tu laboratorio. Prueba «Reinstalar laboratorio».</div>';
+      else if (yo.salud === "ok") h += '<div class="estado ok">✅ Tu servidor está en pie: http://127.0.0.1:7070</div>';
+      else h += '<div class="estado caido">❌ Tu servidor está caído<ul>' + fallas.map(function (f) { var x = FALLA[f] || ["❓", f, ""]; return "<li>" + x[0] + " " + esc(x[1]) + " → <i>" + esc(x[2]) + "</i></li>"; }).join("") + "</ul></div>";
+      h += '<p class="suave">' + (est.fase === "defensa" ? "¡Tu turno! Usa los botones y los prompts antes de que acabe el tiempo." : est.fase === "ataque" ? "Te están atacando: prepárate, los botones se encienden en la defensa." : "Los botones se encienden en tu turno de defensa.") + "</p>";
+      h += '<div class="botones"><button class="bt verde" data-def="reiniciar"' + (enDef ? "" : " disabled") + '>🩹 Reiniciar app<small>cura la app apagada</small></button>' +
+        '<button class="bt verde" data-def="limpiar"' + (enDef ? "" : " disabled") + '>🧹 Limpiar disco<small>cura el disco lleno</small></button></div>';
+      h += '<div class="prompts"><p class="suave" style="margin:6px 0 0">La base borrada y la app atascada se curan con <b>DeepSeek Harness</b> (panel de la derecha). Toca un prompt para copiarlo y pégalo allá:</p>' +
+        PROMPTS.map(function (x, i) { return '<button class="prompt" data-pr="' + i + '"><b>' + esc(x[0]) + "</b>" + esc(x[1]) + "</button>"; }).join("") + "</div>";
+      h += '<p style="margin:10px 0 0"><button class="bt" data-prep="1"' + (yo.lab === "preparando" || ocupado ? " disabled" : "") + '>📦 Reinstalar laboratorio</button></p>';
+    }
+    if (est.staff) {
+      h += '<div class="staff"><button class="bt" data-st="iniciar">▶ Abrir ronda</button><button class="bt" data-st="siguiente">⏭ Siguiente turno</button><button class="bt rojo" data-st="reiniciar">↺ Reiniciar arena</button>' +
+        (yo && yo.equipo ? '<button class="bt" data-eq="' + (yo.equipo === "tumba" ? "server" : "tumba") + '">Cambiarme de equipo</button>' : "") + "</div>";
+    }
+    h += '<p class="aviso' + (avisoOk ? " ok-msg" : "") + '">' + esc(aviso) + "</p>";
+    p.innerHTML = h;
+  }
+  $("panel").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button"); if (!b || b.disabled) return;
+    if (b.dataset.eq) enviar({ accion: "unir", equipo: b.dataset.eq }, b.dataset.eq === "server" ? "¡Bienvenido al equipo Server! Instalando tu servidor…" : "¡Bienvenido al equipo Tumba Server!");
+    else if (b.dataset.at) enviar({ accion: "atacar", objetivo: blanco, ataque: b.dataset.at }, "¡Ataque lanzado!");
+    else if (b.dataset.def) enviar({ accion: "defender", defensa: b.dataset.def }, "");
+    else if (b.dataset.prep) enviar({ accion: "preparar" }, "Reinstalando tu laboratorio…");
+    else if (b.dataset.st) enviar({ accion: b.dataset.st }, "");
+    else if (b.dataset.pr) copiar(PROMPTS[Number(b.dataset.pr)][1]);
+  });
+  function copiar(t) {
+    var ok = function () { decir("Prompt copiado: pégalo en DeepSeek Harness", true); };
+    var plan = function () { var ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); ok(); } catch (e) { decir("Selecciona el texto y cópialo", false); } ta.remove(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, plan); else plan();
+  }
+  function pintarFeed() {
+    $("feed").innerHTML = est.eventos.slice(-14).reverse().map(function (e) {
+      return '<li class="' + e.tipo + '">' + (ICONO[e.accion] ? ICONO[e.accion] + " " : "") + esc(e.texto) + "</li>";
+    }).join("") || '<li>Todavía no pasa nada.</li>';
+  }
+
+  /* ---- Animaciones ---- */
+  function cartel(fase) {
+    var t = { ataque: "¡Sueltan al monito! 🐒", defensa: "¡A curar! 🛡️", marcador: "¡Tiempo! ⏱️" }[fase];
+    if (!t) return;
+    $("cartel-txt").textContent = t; $("cartel").hidden = false;
+    setTimeout(function () { $("cartel").hidden = true; }, 1600);
+  }
+  function animar(e) {
+    if (e.tipo === "defensa") { var s = $("srv-" + e.a); if (s) { s.classList.remove("cura"); void s.offsetWidth; s.classList.add("cura"); } return; }
+    if (e.tipo !== "ataque") return;
+    var origen = $("mono-" + e.de), destino = $("srv-" + e.a);
+    if (!destino) return;
+    var golpe = function () {
+      destino.classList.remove("sacudir"); void destino.offsetWidth; destino.classList.add("sacudir");
+      var b = document.createElement("div"); b.className = "boom"; b.textContent = "💥" + (ICONO[e.accion] || "");
+      destino.appendChild(b);
+      if (b.animate && !REDUCIDO) b.animate([{ transform: "translateY(0)", opacity: 1 }, { transform: "translateY(-26px)", opacity: 0 }], { duration: 1100, easing: "ease-out" }).onfinish = function () { b.remove(); };
+      else setTimeout(function () { b.remove(); }, 1100);
+    };
+    if (!origen || REDUCIDO || !document.body.animate) { golpe(); return; }
+    var a = origen.getBoundingClientRect(), z = destino.getBoundingClientRect();
+    var x0 = a.left + a.width / 2 - 17, y0 = a.top + 4, x1 = z.left + z.width / 2 - 17, y1 = z.top + 6;
+    var alto = Math.max(90, Math.abs(x1 - x0) * 0.45);
+    var m = document.createElement("div"); m.className = "saltador"; m.textContent = "🐒"; m.style.left = x0 + "px"; m.style.top = y0 + "px";
+    document.body.appendChild(m);
+    var dx = x1 - x0, dy = y1 - y0;
+    var ida = m.animate([
+      { transform: "translate(0,0) rotate(0)" },
+      { transform: "translate(" + dx * 0.5 + "px," + (Math.min(0, dy) - alto) + "px) rotate(-200deg)", offset: 0.5 },
+      { transform: "translate(" + dx + "px," + dy + "px) rotate(-360deg)" }
+    ], { duration: 900, easing: "cubic-bezier(.3,.7,.4,1)", fill: "forwards" });
+    ida.onfinish = function () {
+      golpe();
+      var vuelta = m.animate([
+        { transform: "translate(" + dx + "px," + dy + "px)", opacity: 1 },
+        { transform: "translate(" + dx * 0.5 + "px," + (Math.min(0, dy) - alto * 0.6) + "px)", opacity: 1, offset: 0.5 },
+        { transform: "translate(0,0)", opacity: 0.2 }
+      ], { duration: 800, delay: 350, easing: "ease-in-out", fill: "forwards" });
+      vuelta.onfinish = function () { m.remove(); };
+    };
+  }
+
+  leer();
+  setInterval(leer, 1000);
+  setInterval(reloj, 250);
+})();
+</script>
+</body>
+</html>
