@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Genera con el motor</title>
+<!-- Escena del modo LIVE: Diseño de interfaces, sesión 1 (di-01). Aplicación (paso «rediseno»): Motor UI incrustado.
+     El alumno escribe qué interfaz necesita y el motor (reglas locales, sin IA externa) arma un panel o una landing
+     aplicando la escala tipográfica modular, el contraste WCAG AA (corrige el color y lo explica) y el espaciado de 8.
+     Se sirve en /motor-ui/ detrás de la sesión del LMS; el iframe es del mismo origen (CSP frame-src 'self'). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/di.css">
+<style id="esc-propio">
+  html, body { height: 100%; }
+  body { overflow: hidden; }
+  .motor { display: grid; grid-template-rows: auto 1fr; height: 100%; gap: 1.2vh; padding: 2.2vh 2.4vw; box-sizing: border-box; }
+  .motor-cab { display: grid; gap: .5vh; }
+  .motor-cab h1 { margin: 0; font-size: clamp(20px, 2.6vw, 34px); line-height: 1.1; }
+  .motor-cab h1 b { color: var(--acento, #c8553d); }
+  .motor-cab p { margin: 0; color: var(--gris, #6e6e73); font-size: clamp(13px, 1.4vw, 17px); max-width: 70ch; }
+  .motor-tips { display: flex; flex-wrap: wrap; gap: .5vw .8vw; margin-top: .4vh; }
+  .motor-tips span { font: 600 clamp(11px,1.1vw,13px)/1 var(--mono, ui-monospace, Menlo, monospace); padding: .5em .8em; border-radius: 999px; background: color-mix(in srgb, var(--acento, #c8553d) 12%, transparent); color: var(--acento, #c8553d); white-space: nowrap; }
+  .motor-marco { position: relative; border: 1px solid var(--linea, rgba(0,0,0,.14)); border-radius: 14px; overflow: hidden; background: #fff; min-height: 0; }
+  .motor-marco iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+  .motor-aviso { position: absolute; inset: 0; display: grid; place-content: center; gap: 1vh; text-align: center; padding: 6vh 2vw; color: var(--gris, #6e6e73); background: var(--papel2, #eae5da); }
+  .motor-aviso b { color: var(--tinta, #16181d); font-size: clamp(16px,1.8vw,22px); }
+  .motor-aviso span { font-size: clamp(13px,1.3vw,16px); max-width: 52ch; }
+  .motor-pie { font-size: clamp(12px,1.2vw,15px); color: var(--gris, #6e6e73); }
+  .motor-pie b { color: var(--tinta, #16181d); }
+  @media (max-width: 760px) { .motor { padding: 2vh 4vw; } }
+  @media (prefers-reduced-motion: reduce) { .motor-marco iframe { loading: eager; } }
+</style>
+</head>
+<body data-escena="14b-genera-con-el-motor">
+<div class="motor">
+  <div class="motor-cab">
+    <h1>Pídele una interfaz y mira la <b>teoría aplicada</b></h1>
+    <p>Escribe en español lo que necesitas —un panel o una página— y el motor la arma con reglas locales, sin IA externa. Fíjate en lo de hoy: la escala tipográfica, el espaciado de 8 y, sobre todo, cómo <b>corrige el color para que pase contraste AA</b> y te dice por qué.</p>
+    <div class="motor-tips">
+      <span>escala modular</span><span>contraste AA 4,5:1</span><span>espaciado de 8</span><span>un solo acento</span>
+    </div>
+  </div>
+  <div class="motor-marco">
+    <iframe id="motor-ui" title="Motor UI · generador de interfaces" src="/motor-ui/" loading="lazy"></iframe>
+    <div class="motor-aviso" id="motor-aviso" hidden>
+      <b>El generador se está activando</b>
+      <span>Si no carga, el motor aún no está arriba en el servidor. Mientras tanto, sigue con tu rediseño en Figma o Penpot; aquí lo verás apenas esté listo.</span>
+    </div>
+  </div>
+  <p class="motor-pie">Prueba: <b>«panel para administrar estudiantes, matrículas y pagos pendientes con filtros por estado»</b> o <b>«landing elegante para una tienda de ropa con catálogo y testimonios»</b>. El resultado lo puedes descargar como HTML que abre con doble clic.</p>
+</div>
+<script>
+  // Si el iframe no resuelve (motor aún no desplegado), muestra el aviso. Mismo origen: podemos inspeccionar onload.
+  (function () {
+    var f = document.getElementById("motor-ui"), aviso = document.getElementById("motor-aviso");
+    var ok = false;
+    f.addEventListener("load", function () {
+      try {
+        var d = f.contentDocument;
+        // El generador trae un <title> propio; una página de error del LMS no.
+        if (d && /Motor UI/i.test(d.title || "")) { ok = true; aviso.hidden = true; return; }
+      } catch (e) { ok = true; aviso.hidden = true; return; } // cross-doc cargado: lo damos por bueno
+      if (!ok) aviso.hidden = false;
+    });
+    setTimeout(function () { if (!ok) aviso.hidden = false; }, 6000);
+  })();
+</script>
+</body>
+</html>
