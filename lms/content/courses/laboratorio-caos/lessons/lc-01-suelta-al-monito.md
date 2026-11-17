@@ -18,7 +18,31 @@ objectives:
 recording:
   url: ""
   passcode: ""
-materials: []
+materials:
+  - id: lc-01-video-monito
+    title: "Video: Suelta al monito, en 15 segundos"
+    kind: file
+    file: materials/video-lc-01-suelta-al-monito.mp4
+  - id: lc-01-video-equipos
+    title: "Video: los dos equipos, Tumba Server contra Server"
+    kind: file
+    file: materials/video-lc-01-equipos.mp4
+  - id: lc-01-video-mecanismo
+    title: "Video: cómo funciona la arena, turno por turno"
+    kind: file
+    file: materials/video-lc-01-mecanismo.mp4
+  - id: lc-01-video-netflix
+    title: "Video: por qué Netflix soltó un mono en sus servidores"
+    kind: file
+    file: materials/video-lc-01-netflix.mp4
+  - id: lc-01-video-jefes
+    title: "Video: los jefes de la arena"
+    kind: file
+    file: materials/video-lc-01-jefes.mp4
+  - id: lc-01-video-ema
+    title: "Video: Ema, el Rey Mono, y el Ozaru"
+    kind: file
+    file: materials/video-lc-01-ema-y-el-ozaru.mp4
 cycle:
   - id: ver
     tool: zoom

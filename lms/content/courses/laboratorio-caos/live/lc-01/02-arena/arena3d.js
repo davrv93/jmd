@@ -170,8 +170,9 @@ function crearOzaru() {
   [-1, 1].forEach((s) => { const b = caja(0.16, 0.045, 0.04, M.negro, 0.12 * s, 0.155, 0.36); b.rotation.z = 0.3 * s; cab.add(b); });
   c.add(esfera(0.46, M.azul, 0, 0.56, 0, 1.03, 0.92, 1.02), esfera(0.3, M.azulClaro, 0, 0.42, 0.21, 1, 0.75, 0.66));
   [-1, 1].forEach((s) => {
-    const h = esfera(0.2, M.banana, 0.52 * s, 0.98, 0, 1.75, 0.55, 1.25);
-    h.rotation.z = -0.5 * s;
+    // Hombreras sobre los hombros (no a la altura de la cabeza: ahí parecían orejas amarillas y tapaban las de verdad).
+    const h = esfera(0.17, M.banana, 0.5 * s, 0.84, 0, 1.45, 0.5, 1.15);
+    h.rotation.z = -0.42 * s;
     c.add(h, esfera(0.13, M.banana, 0.3 * s, 0.2, 0.12, 1, 1.2, 0.8));
   });
   u.brazos.forEach((b) => b.scale.set(1.5, 1.2, 1.5));

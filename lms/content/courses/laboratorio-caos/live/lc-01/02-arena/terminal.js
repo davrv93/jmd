@@ -12,6 +12,7 @@
   var A = window.__arena;
   var $ = function (id) { return document.getElementById(id); };
   var caja = $("term"), sal = $("term-sal"), inp = $("term-in"), btn = $("term-btn"), ps = $("term-ps");
+  var abrir2 = $("term-abrir");
   if (!A || !A.enviar || !caja || !sal || !inp || !btn) return;
 
   var MAX_LINEAS = 50, MAX_IA = 10, ESPERA_IA = 30000;
@@ -476,6 +477,7 @@
   function abrir(si, sinFoco) {
     abierta = !!si;
     caja.hidden = !abierta;
+    if (abrir2) abrir2.hidden = abierta;   // el acceso grande sobre los paneles solo se ve con la terminal cerrada
     btn.setAttribute("aria-expanded", abierta ? "true" : "false");
     guarda(abierta ? "1" : "0");
     if (!abierta) { cancelarIA(); pend = null; return; }
@@ -534,5 +536,6 @@
   }, 500);
 
   btn.hidden = false;
+  if (abrir2) { abrir2.hidden = false; abrir2.addEventListener("click", function () { abrir(true); }); }
   if (guarda() === "1") abrir(true, true);
 })();
