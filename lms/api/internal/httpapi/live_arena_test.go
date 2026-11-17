@@ -262,3 +262,21 @@ func TestArenaLeerSalud(t *testing.T) {
 		}
 	}
 }
+
+// Los ataques de disco son un estado del juego: ninguno escribe datos de verdad (nada de /dev/zero ni de
+// count mayor que cero), para que treinta alumnos atacando a la vez no le quiten memoria ni disco al servidor.
+func TestArenaSinVolcados(t *testing.T) {
+	for nombre, script := range arenaAtaques {
+		if strings.Contains(script, "/dev/zero") || strings.Contains(script, "/dev/urandom") {
+			t.Errorf("el ataque %s escribe datos reales: %s", nombre, script)
+		}
+	}
+	for _, nombre := range []string{"disco", "pesados"} {
+		if s := arenaAtaques[nombre]; !strings.Contains(s, "count=0") || !strings.Contains(s, "seek=") {
+			t.Errorf("el ataque %s debe crear archivos huecos (dd seek=… count=0): %s", nombre, s)
+		}
+	}
+	if strings.Contains(arenaChequeo, "df -m") {
+		t.Error("el chequeo debe medir el cupo de la tienda (tamaño aparente), no el espacio real")
+	}
+}

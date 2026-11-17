@@ -16,8 +16,10 @@ package httpapi
 // caído suma 100 al equipo Tumba (repartidos entre quienes lo atacaron esa ronda).
 //
 // Seguridad: los ataques son scripts fijos (el cliente solo elige el nombre), nunca texto del alumno.
-// El disco se llena solo en /tmp (tmpfs de 64 MB por aula) y deja 4 MB libres; nada toca /trabajo salvo
-// la carpeta del laboratorio. Ningún ataque usa CPU ni red: el servidor compartido no lo nota.
+// El «disco lleno» es un estado del juego, no un volcado real: la tienda tiene un cupo de 64 MB sobre el
+// tamaño aparente de /tmp y los ataques de disco crean archivos huecos (sparse), que dicen pesar y no
+// ocupan memoria ni disco. Nada toca /trabajo salvo la carpeta del laboratorio. Ningún ataque usa CPU,
+// memoria, disco ni red: el servidor compartido no lo nota aunque ataquen todos a la vez.
 //
 // GET  /api/v1/live/{lesson}/arena            estado
 // POST /api/v1/live/{lesson}/arena {accion}   unir | atacar | defender | iniciar | siguiente | reiniciar | mover
@@ -47,25 +49,31 @@ const (
 	arenaVigiaCada  = 4 * time.Second
 	arenaVigiaFin   = 20 * time.Minute // sin peticiones, el vigía se apaga
 	arenaPuntos     = 100
-	arenaLibreMinMB = 8 // la app se declara enferma con menos de esto libre en /tmp
+	arenaLibreMinMB = 8 // la app se declara enferma con menos de esto libre en su cupo de /tmp
 )
+
+// arenaLibre define en el aula la función libre: cuántos MB le quedan al «disco» de la tienda. Es un cupo
+// de 64 MB sobre el tamaño aparente de los archivos de /tmp (lo mismo que calcula servidor.js), no el
+// espacio real: df no lo muestra, ls -la sí.
+const arenaLibre = `libre() { o=$(find /tmp -type f -exec stat -c %s {} + 2>/dev/null | awk '{s+=$1} END{print int(s/1048576)}'); echo $((64-${o:-0})); }
+`
 
 var arenaCuota = cuota{cap: 30, porSeg: 8}
 
 // Ataques: nombre → script fijo que se corre en el aula del defensor. Los cuatro primeros tienen botón o
 // receta en la skill; los otros seis no: el equipo Server tiene que investigar (síntoma en el panel, causa en
-// /salud, en config/, en los procesos o en la base). Todos acotados: el disco deja 4 MB libres en /tmp, los
-// clones no pasan de 12 (24 procesos de 256) y nada usa CPU ni red.
+// /salud, en config/, en los procesos o en la base). Todos acotados: los de disco no escriben datos (archivos
+// huecos con dd seek, nunca /dev/zero), los clones no pasan de 12 (24 procesos de 256) y nada usa CPU ni red.
 var arenaAtaques = map[string]string{
 	"apagar":  `pkill -f "[m]onito/servidor.js"; true`,
-	"disco":   `a=$(df -m /tmp | awk 'NR==2{print $4}'); n=$((a-4)); [ "$n" -gt 0 ] && dd if=/dev/zero of=/tmp/.monito-relleno-$(date +%s) bs=1M count=$n 2>/dev/null; true`,
+	"disco":   arenaLibre + `n=$(( $(libre) - 4 )); [ "$n" -gt 0 ] && dd if=/dev/null of=/tmp/.monito-relleno-$(date +%s) bs=1M seek=$n count=0 2>/dev/null; true`,
 	"base":    `rm -f /trabajo/monito/tienda.db; true`,
 	"atascar": `mkdir -p /trabajo/monito/config && echo "el monito estuvo aquí" > /trabajo/monito/config/lento.flag`,
 	"fuga":    `cd /trabajo/monito && mkdir -p publico && [ -s tienda.db ] && cp tienda.db publico/clientes-$(date +%s).db; true`,
 	"clones": `n=$(pgrep -f "[m]onito-clon" | wc -l); i=0
 while [ $((n+i)) -lt 12 ] && [ $i -lt 6 ]; do (nohup sh -c 'while :; do sleep 30; done' monito-clon >/dev/null 2>&1 &); i=$((i+1)); done; true`,
-	"pesados": `mkdir -p /tmp/subidas; a=$(df -m /tmp | awk 'NR==2{print $4}'); n=$((a-4)); i=0
-while [ "$n" -ge 5 ]; do dd if=/dev/zero of=/tmp/subidas/foto-$(date +%s)-$i.raw bs=1M count=5 2>/dev/null || break; n=$((n-5)); i=$((i+1)); done; true`,
+	"pesados": arenaLibre + `mkdir -p /tmp/subidas; n=$(( $(libre) - 4 )); i=0
+while [ "$n" -ge 5 ] && [ "$i" -lt 16 ]; do dd if=/dev/null of=/tmp/subidas/foto-$(date +%s)-$i.raw bs=1M seek=5 count=0 2>/dev/null || break; n=$((n-5)); i=$((i+1)); done; true`,
 	"formulario": `cd /trabajo/monito && [ -s tienda.db ] || exit 0
 cat > .formulario.js <<'FIN_JS'
 import { Database } from "bun:sqlite";
@@ -96,11 +104,11 @@ var arenaDefensas = map[string]string{
 var arenaNombreDefensa = map[string]string{"reiniciar": "reinició su app", "limpiar": "limpió su disco"}
 
 // Chequeo de salud: marcas de texto y el JSON de /salud, que arenaLeerSalud entiende.
-const arenaChequeo = `cd /trabajo/monito 2>/dev/null || { echo SIN_LAB; exit 0; }
+const arenaChequeo = arenaLibre + `cd /trabajo/monito 2>/dev/null || { echo SIN_LAB; exit 0; }
 pgrep -f "[m]onito/servidor.js" >/dev/null && echo APP_SI || echo APP_NO
 curl -s -m 3 -w '\nHTTP_%{http_code}\n' http://127.0.0.1:7070/salud
 [ -f config/lento.flag ] && echo LENTO
-df -m /tmp | awk 'NR==2{print "LIBRE_"$4}'
+echo "LIBRE_$(libre)"
 [ -s tienda.db ] && echo BASE_SI || echo BASE_NO
 [ "$(pgrep -f "[m]onito-clon" | wc -l)" -ge 2 ] && echo CLONES
 true`
@@ -353,6 +361,20 @@ func (s *Server) vigilarArena(sa *salaArena) {
 			sa.puntuar(now)
 		}
 		sa.mu.Unlock()
+	}
+}
+
+// revisarYa actualiza la salud de un defensor sin esperar al vigía: tras un ataque o una defensa, el cambio
+// se ve en el siguiente sondeo del cliente (un segundo) y no hasta cuatro después.
+func (s *Server) revisarYa(sa *salaArena, id string) {
+	r, ok := s.chequearArena([]string{id})[id]
+	if !ok {
+		return
+	}
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
+	if j := sa.Jug[id]; j != nil && j.Equipo == "server" && j.Lab == "listo" {
+		j.Salud, j.Fallas, j.Chequeo = r.salud, r.fallas, time.Now()
 	}
 }
 
@@ -656,12 +678,14 @@ func (s *Server) arenaAtacar(w http.ResponseWriter, sa *salaArena, p *Principal,
 	d.Atacado[p.ID] = true
 	sa.evento(arenaEvento{Tipo: "ataque", De: yo.N, A: d.N, Accion: ataque, Texto: yo.Nombre + " " + arenaNombreAtaque[ataque] + " " + d.Nombre}, now)
 	vista := sa.vista(p, now)
-	destino := aula.Nombre(d.ID)
+	destinoID := d.ID
+	destino := aula.Nombre(destinoID)
 	sa.mu.Unlock()
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 		_, _ = s.Aula.Exec(ctx, destino, script)
+		s.revisarYa(sa, destinoID)
 	}()
 	writeJSON(w, 200, vista)
 }
@@ -697,6 +721,7 @@ func (s *Server) arenaDefender(w http.ResponseWriter, sa *salaArena, p *Principa
 	if err != nil || !strings.Contains(out, "OK") {
 		msg = "No funcionó a la primera. Pídele ayuda a DeepSeek Harness."
 	}
+	s.revisarYa(sa, p.ID)
 
 	sa.mu.Lock()
 	defer sa.mu.Unlock()

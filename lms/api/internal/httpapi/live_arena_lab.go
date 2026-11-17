@@ -18,7 +18,7 @@ cat > servidor.js <<'FIN_SERVIDOR'
 // Tienda del monito: el servidor que tu equipo debe mantener en pie (Laboratorio de caos, JMD Learning).
 // Escucha en 127.0.0.1:7070. GET /salud responde 200 si todo está bien y 503 con la lista de fallas.
 import { Database } from "bun:sqlite";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 
 const DIR = "/trabajo/monito";
 const BASE = DIR + "/tienda.db";
@@ -29,7 +29,16 @@ const PUBLICO = DIR + "/publico";
 const DEBILES = ["123456", "12345678", "123456789", "admin", "password", "monito", "qwerty", "111111", "abc123"];
 
 function sh(cmd) { return Bun.spawnSync(["sh", "-c", cmd]).stdout.toString().trim(); }
-function libreMB() { return Number((sh("df -m /tmp").split("\n")[1] || "").trim().split(/\s+/)[3] || 0); }
+// El disco de la tienda es un cupo de 64 MB sobre lo que dicen pesar los archivos de /tmp (ls -la), no el espacio real (df).
+const CUPO_MB = 64;
+function pesoDe(dir, nivel) {
+  let b = 0;
+  for (const n of lista(dir)) {
+    try { const s = lstatSync(dir + "/" + n); if (s.isDirectory()) { if (nivel < 4) b += pesoDe(dir + "/" + n, nivel + 1); } else if (s.isFile()) b += s.size; } catch {}
+  }
+  return b;
+}
+function libreMB() { return CUPO_MB - Math.floor(pesoDe("/tmp", 0) / 1048576); }
 function conBase(f) { const db = new Database(BASE, { readonly: true }); try { return f(db); } finally { db.close(); } }
 function productos() { return conBase((db) => db.query("select nombre, precio, stock from productos order by nombre").all()); }
 function lista(dir) { try { return readdirSync(dir); } catch { return []; } }
@@ -133,16 +142,16 @@ Eres del equipo Monito Server. Tu servidor es una tienda en Bun con SQLite. Trab
 
 - App: /trabajo/monito/servidor.js, escucha en 127.0.0.1:7070. Salud: curl -s -m 3 http://127.0.0.1:7070/salud (200 = sana; 503 trae la lista de fallas).
 - Base: /trabajo/monito/tienda.db. Respaldo: /trabajo/monito/respaldo/tienda.db. Nunca borres ni modifiques el respaldo.
-- Disco: la app necesita al menos 8 MB libres en /tmp (df -m /tmp).
+- Disco: la tienda tiene un cupo de 64 MB en /tmp y necesita al menos 8 libres. Es un cupo de la tienda, no del sistema: df no lo muestra. /salud lo dice en libre_mb y ls -la muestra cuánto pesa cada archivo.
 
 ## 1. Diagnóstico (siempre primero, en un solo comando)
 
-cd /trabajo/monito; pgrep -f "[m]onito/servidor.js" || echo APP_APAGADA; curl -s -m 3 http://127.0.0.1:7070/salud; echo; df -m /tmp; ls -la . config; ls -la /tmp | head -20
+cd /trabajo/monito; pgrep -f "[m]onito/servidor.js" || echo APP_APAGADA; curl -s -m 3 http://127.0.0.1:7070/salud; echo; ls -la . config; ls -laS /tmp /tmp/*/ 2>/dev/null | head -30
 
 ## 2. Recetas
 
 - App apagada (no hay proceso): sh /trabajo/monito/arrancar.sh (imprime OK si quedó corriendo).
-- Disco lleno (menos de 8 MB libres en /tmp): mira qué ocupa espacio con du -sh /tmp/* /tmp/.[!.]* 2>/dev/null | sort -h | tail y borra solo lo que sea basura del ataque. No borres nada fuera de /tmp.
+- Disco lleno (libre_mb menor que 8 en /salud): mira qué archivos pesan más con ls -laS /tmp /tmp/*/ 2>/dev/null | head -30 (du y df no sirven aquí: mira el tamaño que muestra ls) y borra solo lo que sea basura del ataque. No borres nada fuera de /tmp.
 - Base borrada o vacía: cp /trabajo/monito/respaldo/tienda.db /trabajo/monito/tienda.db. Si el respaldo no existe: cd /trabajo/monito && bun crear-base.js.
 - App atascada (curl tarda más de 3 s o hace timeout): revisa /trabajo/monito/config/; si hay un archivo raro como lento.flag, bórralo. No hace falta reiniciar.
 

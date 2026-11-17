@@ -10,7 +10,8 @@
   Equipo Monito Tumba Server (ataca, no necesita aula) y equipo Monito Server (defiende su servidor
   de práctica real en /trabajo/monito de su aula). Cada ataque hace saltar al monito sobre la valla
   hasta el servidor atacado. Los defensores curan con dos botones o con prompts en DeepSeek Harness
-  (panel a la derecha, escena con dsh: true). El estado vive en el servidor: GET/POST
+  (panel a la derecha, escena con dsh: true). El alumno no instala ni activa nada: su servidor arranca
+  solo al entrar al equipo, y la vista 3D y las cinemáticas (cine.js) van encendidas para todos. El estado vive en el servidor: GET/POST
   /api/v1/live/{lección}/arena (ver lms/api/internal/httpapi/live_arena.go).
 -->
 <style>
@@ -71,6 +72,7 @@ button { font: inherit; cursor: pointer; }
 .cura { animation: cura .9s; }
 @keyframes cura { 30% { box-shadow: 0 0 0 8px rgba(30,122,76,.45); } }
 .cartel { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 5; }
+#cartel3d { place-items: start center; padding-top: 11%; }
 .cartel span { font-family: var(--redondo); font-weight: 900; font-size: clamp(26px, 5vw, 46px); background: var(--banana); color: #1b1f3b; border: 4px solid #1b1f3b; border-radius: 22px; padding: 6px 22px; box-shadow: 6px 6px 0 #1b1f3b; transform: rotate(-3deg); }
 
 .escenario { position: relative; height: clamp(300px, 46vw, 520px); border: 4px solid var(--tinta); border-radius: 22px; overflow: hidden; box-shadow: 6px 6px 0 var(--tinta); background: #fff4de; }
@@ -82,6 +84,37 @@ button { font: inherit; cursor: pointer; }
 .et3d.ausente { opacity: .5; }
 .et3d.srv.ok { background: #d3f2e2; } .et3d.srv.caido { background: #ffd9da; } .et3d.srv.prep { opacity: .75; }
 .burbuja3d { position: absolute; transform: translate(-50%, -100%); font-size: 30px; pointer-events: none; }
+.et3d.jefe { font-weight: 800; border-width: 3px; }
+.et3d.jefe.ema { background: #d3f2e2; } .et3d.jefe.oz { background: #dfe8ff; }
+.luna { position: absolute; left: 20px; top: 14px; width: 78px; height: 78px; border-radius: 50%; opacity: 0; pointer-events: none; z-index: 5;
+  background: radial-gradient(circle at 34% 30%, #fffbe6 0 18%, #fff3c4 46%, #f2dc8f 100%); box-shadow: 0 0 0 6px rgba(255,243,196,.35), 0 0 34px 12px rgba(255,243,196,.55); }
+.luna::before, .luna::after { content: ""; position: absolute; border-radius: 50%; background: rgba(205,180,90,.45); }
+.luna::before { width: 16px; height: 16px; left: 46px; top: 20px; } .luna::after { width: 11px; height: 11px; left: 24px; top: 48px; }
+.cine-barra { position: absolute; left: 0; right: 0; height: 0; background: #1b1f3b; transition: height .35s ease; pointer-events: none; z-index: 4; }
+.cine-barra.a { top: 0; } .cine-barra.b { bottom: 0; }
+.escenario.en-cine .cine-barra { height: 9%; }
+.escena-wrap { position: relative; }
+.ficha { position: absolute; left: 14px; bottom: 14px; z-index: 8; width: min(400px, calc(100% - 28px)); display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start;
+  background: var(--caja); color: var(--tinta); border: 4px solid #1b1f3b; border-left-width: 12px; border-radius: 18px; padding: 10px 12px 12px; box-shadow: 6px 6px 0 #1b1f3b; pointer-events: none; overflow: hidden; }
+.ficha.problema { border-left-color: var(--rojo); } .ficha.cura { border-left-color: var(--verde); } .ficha.fallo { border-left-color: #e08a00; } .ficha.fase { border-left-color: var(--banana); }
+.ficha-ic { font-size: 38px; line-height: 1; }
+.ficha.mini .ficha-ic { font-size: 26px; }
+.ficha-k { display: block; font: 800 11px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--suave); }
+.ficha.problema .ficha-k { color: var(--rojo); } .ficha.cura .ficha-k { color: var(--verde); } .ficha.fallo .ficha-k { color: #c97800; }
+.ficha-t { display: block; font-family: var(--redondo); font-weight: 800; font-size: 20px; line-height: 1.15; padding-right: 58px; }
+.ficha-q { display: block; font-size: 12px; font-weight: 700; color: var(--suave); margin-top: 2px; }
+.ficha-c { margin: 6px 0 0; font-size: 14px; line-height: 1.35; }
+.ficha-pw { margin-top: 8px; border: 2px dashed var(--tinta); border-radius: 12px; background: var(--lila); padding: 6px 9px; }
+.ficha-pw b { display: block; font: 800 10px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .12em; color: var(--suave); }
+.ficha-pw code { font: 600 12.5px/1.35 ui-monospace, Menlo, monospace; white-space: normal; overflow-wrap: anywhere; }
+.ficha-x { position: absolute; right: 6px; top: 6px; border: 2px solid var(--tinta); border-radius: 999px; background: var(--caja); color: var(--tinta); font-weight: 800; font-size: 12px; padding: 1px 8px; pointer-events: auto; }
+.ficha-barra { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: var(--banana); transform-origin: 0 50%; }
+@keyframes ficha-barra { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.conceptos { margin-top: 10px; border-top: 2px dashed var(--suave); padding-top: 8px; font-size: 13px; }
+.conceptos summary { font-weight: 800; cursor: pointer; font-family: var(--redondo); }
+.conceptos ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; max-height: 240px; overflow: auto; }
+.conceptos li b { display: block; } .conceptos li span { display: block; color: var(--suave); }
+.conceptos li code { display: block; margin-top: 3px; font: 600 12px/1.35 ui-monospace, Menlo, monospace; background: var(--lila); border-radius: 8px; padding: 4px 7px; white-space: normal; overflow-wrap: anywhere; }
 .vista { border: 3px solid var(--tinta); border-radius: 999px; background: var(--caja); color: var(--tinta); font-weight: 800; padding: 4px 12px; }
 .blancos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
 .blancos button { border: 2px solid var(--tinta); border-radius: 999px; background: var(--caja); color: var(--tinta); padding: 3px 10px; font-weight: 700; font-size: 13px; }
@@ -121,6 +154,14 @@ button { font: inherit; cursor: pointer; }
   .abajo { grid-template-columns: 1fr; }
   .equipos { grid-template-columns: 1fr; }
   .escenario { height: 62vw; min-height: 260px; }
+  .luna { width: 52px; height: 52px; left: 12px; top: 10px; }
+  .escena-wrap { padding-bottom: 176px; }
+  .escena-wrap::after { content: "Aquí salen los conceptos y los prompts de la partida"; position: absolute; left: 0; right: 0; bottom: 0; height: 166px; display: grid; place-items: center; text-align: center; padding: 0 18px; border: 3px dashed var(--suave); border-radius: 14px; color: var(--suave); font-size: 13px; font-weight: 700; }
+  .ficha { left: 0; bottom: 0; width: 100%; height: 166px; padding: 7px 9px 9px; gap: 8px; border-radius: 14px; box-shadow: 3px 3px 0 #1b1f3b; z-index: 9; }
+  .ficha-ic { font-size: 26px; } .ficha-t { font-size: 16px; }
+  .ficha-c { font-size: 12.5px; line-height: 1.3; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ficha-pw { margin-top: 4px; padding: 3px 7px; } .ficha-pw b { display: none; }
+  .ficha-pw code { font-size: 11px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 }
 @media (prefers-reduced-motion: reduce) { .sacudir, .cura { animation: none; } }
 </style>
@@ -133,9 +174,12 @@ button { font: inherit; cursor: pointer; }
   <div class="marcador"><div class="m-t">🐒 Tumba Server<b id="pt">0</b></div><div class="m-s">🛡️ Server<b id="ps">0</b></div></div>
 </div>
 
-<section class="escenario" id="escenario3d" hidden aria-label="Arena en 3D: los monitos a la izquierda de la valla y los servidores a la derecha">
+<div class="escena-wrap">
+<section class="escenario" id="escenario3d" hidden aria-label="Arena en 3D: los monitos a la izquierda de la valla y los servidores a la derecha. Ema, el Rey Mono, cuida los servidores; el Ozaru crece con la luna en el turno de ataque">
   <canvas id="lienzo3d"></canvas>
+  <div class="luna" id="luna3d" aria-hidden="true"></div>
   <div id="etiquetas3d"></div>
+  <div class="cine-barra a" aria-hidden="true"></div><div class="cine-barra b" aria-hidden="true"></div>
   <div class="cartel" id="cartel3d" hidden><span id="cartel3d-txt"></span></div>
 </section>
 
@@ -145,16 +189,34 @@ button { font: inherit; cursor: pointer; }
   <div class="zona"><h3>🖥️ Granja de servidores</h3><div class="granja" id="granja"></div></div>
   <div class="cartel" id="cartel" hidden><span id="cartel-txt"></span></div>
 </section>
+<aside class="ficha" id="ficha" hidden aria-live="polite">
+  <div class="ficha-ic" id="ficha-ic" aria-hidden="true"></div>
+  <div>
+    <small class="ficha-k" id="ficha-k"></small>
+    <b class="ficha-t" id="ficha-t"></b>
+    <span class="ficha-q" id="ficha-q"></span>
+    <p class="ficha-c" id="ficha-c"></p>
+    <div class="ficha-pw" id="ficha-pw"><b>EL PROMPT QUE LO LOGRA</b><code id="ficha-p"></code></div>
+  </div>
+  <button class="ficha-x" id="ficha-x" type="button" aria-label="Pasar a la siguiente">Saltar</button>
+  <i class="ficha-barra" id="ficha-barra" aria-hidden="true"></i>
+</aside>
+</div>
 
 <div class="abajo">
   <section class="caja" id="panel"></section>
   <section class="caja">
     <h2>Lo que pasa</h2>
     <ul class="feed" id="feed"></ul>
+    <details class="conceptos" id="conceptos" hidden>
+      <summary>📚 Conceptos de la partida (<span id="conceptos-n">0</span>)</summary>
+      <ul id="conceptos-ul"></ul>
+    </details>
   </section>
 </div>
 
 <script src="../../comun/gsap.min.js"></script>
+<script src="cine.js"></script>
 <script>
 (function () {
   "use strict";
@@ -178,7 +240,7 @@ button { font: inherit; cursor: pointer; }
     if (!j || j.equipo !== "server" || j.lab !== "listo" || !est.yo || est.yo.equipo !== "tumba") return;
     blanco = n; pintarArena(); pintarPanel(); sync3d();
   }
-  window.__arena = { elegir: elegir, listo3d: function () { activar3d(ls("monito-vista") !== "2d"); } };
+  window.__arena = { elegir: elegir, en3d: function () { return en3d; }, listo3d: function () { activar3d(ls("monito-vista") !== "2d"); } };
 
   var ATAQUES = [
     { k: "apagar", ic: "🔌", t: "Apagar la app", d: "mata el proceso" },
@@ -195,7 +257,7 @@ button { font: inherit; cursor: pointer; }
   var ICONO = { apagar: "🔌", disco: "💾", base: "🗑️", atascar: "🐢", fuga: "🏃", clones: "👥", pesados: "📦", formulario: "✍️", sesion: "🔓", clave: "🔑", reiniciar: "🩹", limpiar: "🧹" };
   var FALLA = {
     app: ["🔌", "La app está apagada", "Botón «Reiniciar app»"],
-    disco: ["💾", "El disco /tmp está lleno", "Botón «Limpiar disco»… si no basta, investiga qué lo llena"],
+    disco: ["💾", "El disco /tmp está lleno", "Botón «Limpiar disco»… si no basta, mira qué archivos pesan más"],
     base: ["🗑️", "Borraron la base de datos", "Pídeselo a DeepSeek Harness (prompt 2)"],
     lenta: ["🐢", "La app está atascada", "Pídeselo a DeepSeek Harness (prompt 3)"],
     fuga: ["🏃", "Algo de tu tienda está a la vista de todos", "Investiga: ¿qué se puede descargar?"],
@@ -203,8 +265,8 @@ button { font: inherit; cursor: pointer; }
     datos: ["✍️", "Hay datos raros en la tienda", "Investiga: revisa los productos"],
     sesion: ["🔓", "Quedó una puerta abierta", "Investiga: ¿quién sigue conectado?"],
     clave: ["🔑", "La seguridad del admin no aguanta", "Investiga: ¿qué protege al admin?"],
-    sin_lab: ["📦", "Tu laboratorio no está instalado", "Botón «Reinstalar laboratorio»"],
-    aula: ["💤", "Tu aula no responde", "Botón «Reinstalar laboratorio»"]
+    sin_lab: ["⚙️", "Tu servidor se está reponiendo", "Vuelve solo en unos segundos"],
+    aula: ["💤", "Tu aula no respondió", "Vuelve sola en unos segundos"]
   };
   var PROMPTS = [
     ["1 · Diagnóstico general", "Usa la skill monito-server: diagnostica mi servidor de /trabajo/monito y cúralo. Al final dime el código de /salud."],
@@ -251,11 +313,27 @@ button { font: inherit; cursor: pointer; }
     var nuevos = [];
     if (ultimoEv !== null) d.eventos.forEach(function (e) { if (e.id > ultimoEv) nuevos.push(e); });
     if (d.eventos.length) ultimoEv = d.eventos[d.eventos.length - 1].id; else if (ultimoEv === null) ultimoEv = 0;
+    var previo = est;
     est = d;
     if (blanco !== null && (!jug(blanco) || jug(blanco).equipo !== "server")) blanco = null;
     pintarArriba(); pintarArena(); pintarPanel(); pintarFeed(); sync3d();
     nuevos.forEach(function (e) { if (en3d) window.Arena3D.animar(e); else animar(e); });
     if (d.fase !== faseVista) { if (faseVista) cartel(d.fase); faseVista = d.fase; if (en3d) window.Arena3D.fase(d.fase); }
+    if (window.Cine) { try { window.Cine.alEstado(previo, d, nuevos); } catch (e) {} }
+    reponer();
+  }
+  // El servidor del defensor arranca solo. Si algo falló (aula dormida, archivos borrados), se vuelve a pedir
+  // sin que el alumno haga nada: hasta 5 intentos, uno cada 10 s, y nunca durante el turno de ataque.
+  var intentos = 0, ultimoIntento = 0;
+  function reponer() {
+    var yo = est && est.yo;
+    if (!yo || yo.equipo !== "server") { intentos = 0; return; }
+    var fallas = yo.fallas || [], roto = yo.lab === "error" || (yo.lab === "listo" && (fallas.indexOf("sin_lab") >= 0 || fallas.indexOf("aula") >= 0));
+    if (!roto) { if (yo.lab === "listo") intentos = 0; return; }
+    if (est.fase === "ataque" || ocupado || intentos >= 5 || Date.now() - ultimoIntento < 10000) return;
+    intentos++; ultimoIntento = Date.now();
+    fetch(API, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "preparar" }) })
+      .then(function (r) { return r.ok ? r.json() : null; }).then(function (x) { if (x) aplicar(x); }).catch(function () {});
   }
   function pintarArriba() {
     var f = $("fase"), nombres = { lobby: "Eligiendo equipos", ataque: "¡Ataca Tumba Server!", defensa: "¡Defiende Server!", marcador: est.puntuando ? "Revisando servidores…" : "Marcador" };
@@ -278,7 +356,7 @@ button { font: inherit; cursor: pointer; }
       } else if (j.equipo === "server") {
         var cls = j.lab !== "listo" ? "preparando" : (j.salud === "ok" ? "ok" : (j.salud === "caido" ? "caido" : ""));
         var icos = (j.fallas || []).map(function (f) { return (FALLA[f] || ["❓"])[0]; }).join(" ");
-        var estado = j.lab === "preparando" ? "instalando…" : j.lab === "error" ? "sin laboratorio" : j.salud === "ok" ? "✅ en pie" : j.salud === "caido" ? "❌ " + icos : "…";
+        var estado = j.lab === "preparando" ? "arrancando…" : j.lab === "error" ? "arrancando…" : j.salud === "ok" ? "✅ en pie" : j.salud === "caido" ? "❌ " + icos : "…";
         hg += '<div class="srv ' + cls + (j.n === yoN ? " yo" : "") + (atacando && j.lab === "listo" ? " elegible" : "") + (blanco === j.n ? " blanco" : "") + '" id="srv-' + j.n + '" data-n="' + j.n + '"><div class="rack">🖥️</div><span class="nom">' + esc(j.nombre) + '</span><span class="est">' + estado + '</span><span class="suave" style="margin:0">' + j.puntos + ' pts</span></div>';
       }
     });
@@ -312,8 +390,8 @@ button { font: inherit; cursor: pointer; }
     } else {
       var fallas = yo.fallas || [], enDef = est.fase === "defensa" && yo.lab === "listo" && !ocupado;
       h = '<h2>🛡️ Eres Monito Server</h2>';
-      if (yo.lab === "preparando") h += '<div class="estado neutro">📦 Instalando tu servidor en tu aula… (unos segundos)</div>';
-      else if (yo.lab === "error") h += '<div class="estado caido">No se pudo instalar tu laboratorio. Prueba «Reinstalar laboratorio».</div>';
+      if (yo.lab === "preparando" || (yo.lab === "error" && intentos < 5)) h += '<div class="estado neutro">⚙️ Tu servidor está arrancando solo… (unos segundos)</div>';
+      else if (yo.lab === "error") h += '<div class="estado caido">Tu servidor no arrancó. Avísale al profe y toca «Arrancar de nuevo».</div>';
       else if (yo.salud === "ok") h += '<div class="estado ok">✅ Tu servidor está en pie: http://127.0.0.1:7070</div>';
       else h += '<div class="estado caido">❌ Tu servidor está caído<ul>' + fallas.map(function (f) { var x = FALLA[f] || ["❓", f, ""]; return "<li>" + x[0] + " " + esc(x[1]) + " → <i>" + esc(x[2]) + "</i></li>"; }).join("") + "</ul></div>";
       h += '<p class="suave">' + (est.fase === "defensa" ? "¡Tu turno! Usa los botones y los prompts antes de que acabe el tiempo." : est.fase === "ataque" ? "Te están atacando: prepárate, los botones se encienden en la defensa." : "Los botones se encienden en tu turno de defensa.") + "</p>";
@@ -321,7 +399,7 @@ button { font: inherit; cursor: pointer; }
         '<button class="bt verde" data-def="limpiar"' + (enDef ? "" : " disabled") + '>🧹 Limpiar disco<small>cura el disco lleno</small></button></div>';
       h += '<div class="prompts"><p class="suave" style="margin:6px 0 0">Para lo demás usa <b>DeepSeek Harness</b> (panel de la derecha). Ojo: hay ataques que ningún prompt de aquí cura. Ahí tienes que pensar qué pedirle. Toca un prompt para copiarlo:</p>' +
         PROMPTS.map(function (x, i) { return '<button class="prompt" data-pr="' + i + '"><b>' + esc(x[0]) + "</b>" + esc(x[1]) + "</button>"; }).join("") + "</div>";
-      h += '<p style="margin:10px 0 0"><button class="bt" data-prep="1"' + (yo.lab === "preparando" || ocupado ? " disabled" : "") + '>📦 Reinstalar laboratorio</button></p>';
+      if ((yo.lab === "error" && intentos >= 5) || est.staff) h += '<p style="margin:10px 0 0"><button class="bt" data-prep="1"' + (yo.lab === "preparando" || ocupado ? " disabled" : "") + '>↻ Arrancar de nuevo mi servidor</button></p>';
     }
     if (est.staff) {
       h += '<div class="staff"><button class="bt" data-st="iniciar">▶ Abrir ronda</button><button class="bt" data-st="siguiente">⏭ Siguiente turno</button><button class="bt rojo" data-st="reiniciar">↺ Reiniciar arena</button>' +
@@ -333,10 +411,10 @@ button { font: inherit; cursor: pointer; }
   $("panel").addEventListener("click", function (ev) {
     var b = ev.target.closest("button"); if (!b || b.disabled) return;
     if (b.dataset.bl) { elegir(Number(b.dataset.bl)); return; }
-    if (b.dataset.eq) enviar({ accion: "unir", equipo: b.dataset.eq }, b.dataset.eq === "server" ? "¡Bienvenido al equipo Server! Instalando tu servidor…" : "¡Bienvenido al equipo Tumba Server!");
+    if (b.dataset.eq) enviar({ accion: "unir", equipo: b.dataset.eq }, b.dataset.eq === "server" ? "¡Bienvenido al equipo Server! Tu servidor ya está arrancando." : "¡Bienvenido al equipo Tumba Server!");
     else if (b.dataset.at) enviar({ accion: "atacar", objetivo: blanco, ataque: b.dataset.at }, "¡Ataque lanzado!");
     else if (b.dataset.def) enviar({ accion: "defender", defensa: b.dataset.def }, "");
-    else if (b.dataset.prep) enviar({ accion: "preparar" }, "Reinstalando tu laboratorio…");
+    else if (b.dataset.prep) { intentos = 0; enviar({ accion: "preparar" }, "Arrancando tu servidor…"); }
     else if (b.dataset.st) enviar({ accion: b.dataset.st }, "");
     else if (b.dataset.pr) copiar(PROMPTS[Number(b.dataset.pr)][1]);
   });
@@ -356,7 +434,8 @@ button { font: inherit; cursor: pointer; }
     var t = { ataque: "¡Sueltan al monito! 🐒", defensa: "¡A curar! 🛡️", marcador: "¡Tiempo! ⏱️" }[fase];
     if (!t) return;
     $("cartel-txt").textContent = t; $("cartel").hidden = false;
-    $("cartel3d-txt").textContent = t; $("cartel3d").hidden = false;
+    // En 3D, la noche y el amanecer ya tienen su cinemática y su ficha: el cartel taparía al Ozaru y a Ema.
+    $("cartel3d-txt").textContent = t; $("cartel3d").hidden = !!(window.Cine && fase !== "marcador");
     if (window.gsap && !REDUCIDO) window.gsap.fromTo("#cartel3d span, #cartel span", { scale: 0.2, rotation: -14, opacity: 0 }, { scale: 1, rotation: -3, opacity: 1, duration: 0.45, ease: "back.out(2.4)" });
     setTimeout(function () { $("cartel").hidden = true; $("cartel3d").hidden = true; }, 1700);
   }
