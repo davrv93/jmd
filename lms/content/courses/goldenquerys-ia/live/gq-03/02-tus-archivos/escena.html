@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tus archivos sobre la mesa</title>
+<link rel="icon" href="data:,">
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 2 (gq-03). Experiencia: el alumno pone sobre la «mesa» dos o tres
+     archivos suyos (o las muestras ficticias de materials/archivos-muestra). Se leen con FileReader y quedan en
+     sessionStorage (se borran al cerrar la pestaña); nada se sube. Voto de predicción gq03-sin-ia. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<link rel="stylesheet" href="../../comun/gq3.css">
+<link rel="stylesheet" href="../../comun/escaner.css">
+<style id="esc-propio">
+.b2-viaje { display: grid; grid-template-columns: auto 1fr auto 1fr auto; align-items: center; gap: .5em; font-size: .7em; }
+.b2-viaje div { display: grid; justify-items: center; gap: .25em; text-align: center; color: var(--muted); }
+.b2-viaje svg { width: 3.2em; height: 3.2em; }
+.b2-viaje .lin { height: 2px; background: repeating-linear-gradient(90deg, var(--line2) 0 6px, transparent 6px 11px); }
+.b2-viaje .no { position: relative; }
+.b2-viaje .no::after { content: ""; position: absolute; left: 50%; top: 50%; width: 1.4em; height: 1.4em; margin: -.7em; border-radius: 50%; background: var(--bad-bg); border: 2px solid var(--bad); }
+.b2-viaje .no::before { content: ""; position: absolute; left: 50%; top: 50%; width: 1.1em; height: 2px; margin-left: -.55em; background: var(--bad); transform: rotate(45deg); z-index: 1; }
+.b2-viaje .c1 { fill: none; stroke: var(--fg); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.b2-viaje .c2 { fill: var(--ok-bg); stroke: var(--ok); stroke-width: 2.2; }
+.b2-viaje .c3 { fill: var(--s3); stroke: var(--muted); stroke-width: 2.2; }
+.b2-cuenta { margin: 0; font-size: .74em; color: var(--muted); }
+.b2-cuenta b { color: var(--fg); }
+#prediccion .k-ops { grid-template-columns: 1fr; }
+@media (prefers-reduced-motion: reduce) { .b2-viaje * { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">GoldenQuerys · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo k-titulo-p a-in">Tus archivos <em class="oro">sobre la mesa</em></h1>
+    <p class="esc-sub k-sub-p a-in" style="--d:.08s">Pon dos o tres archivos de tu negocio: un PDF (factura, boleta, recibo, estado de cuenta) y un Excel o CSV. Si no trajiste, carga las muestras de una botica inventada.</p>
+    <div class="k-taller">
+      <div class="k-col a-in" style="--d:.15s">
+        <div class="k-caja" id="zona"></div>
+        <div class="k-btns"><button type="button" class="k-btn sec" id="b-todas">Cargar las 8 muestras</button><button type="button" class="k-btn sec" id="b-vaciar">Vaciar mi mesa</button></div>
+        <p class="k-promesa"><span><b>Nada se sube.</b> Tu navegador abre el archivo con FileReader y lo lee aquí mismo. Más tarde, y solo si tú lo pides, saldrá hacia la IA el texto con tus datos personales tapados.</span></p>
+      </div>
+      <div class="k-col a-in" style="--d:.25s">
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-regla)">Tu mesa</p>
+          <ul class="x-mesa" id="mesa"></ul>
+          <p class="b2-cuenta" id="cuenta"></p>
+        </div>
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-regla)">Por dónde viaja tu archivo</p>
+          <div class="b2-viaje" role="img" aria-label="Tu archivo va de tu disco a tu navegador. No va al servidor de la clase. Solo el texto tapado, y si tú lo pides, va a la IA.">
+            <div><svg viewBox="0 0 40 40" aria-hidden="true"><path class="c1" d="M10 4 h14 l8 8 v24 h-22 z M24 4 v8 h8"/></svg>tu archivo</div>
+            <span class="lin"></span>
+            <div><svg viewBox="0 0 40 40" aria-hidden="true"><rect class="c2" x="4" y="7" width="32" height="24" rx="3"/><path class="c1" d="M14 36 h12 M20 31 v5"/></svg>tu navegador</div>
+            <span class="lin no"></span>
+            <div><svg viewBox="0 0 40 40" aria-hidden="true"><rect class="c3" x="8" y="5" width="24" height="30" rx="3"/><path class="c1" d="M13 13 h14 M13 20 h14 M13 27 h8"/></svg>el servidor</div>
+          </div>
+        </div>
+        <div class="k-caja k-voto" id="prediccion" data-voto="gq03-sin-ia" data-c="oro">
+          <p class="k-q" style="--c:var(--oro)">Predice: ¿cuántos de tus archivos se pueden ordenar sin IA?</p>
+          <div class="k-ops">
+            <button data-op="pocos">Casi ninguno: sin IA no se puede</button>
+            <button data-op="mitad">Más o menos la mitad</button>
+            <button data-op="casi-todos">Casi todos: la IA solo para lo raro</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Lo que pones en la mesa se borra al cerrar esta pestaña · pulsa «Lo logré» cuando tengas al menos un archivo</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq3.js"></script>
+<script src="../../comun/gq.js"></script>
+<script src="../../comun/escaner.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (i) { return document.getElementById(i); };
+  var z = ESC.zona($("zona"), {
+    multiple: true, titulo: "Suelta aquí tus archivos", sub: "o toca para elegirlos · PDF, Excel, CSV o texto", aceptar: ".pdf,.xlsx,.xls,.ods,.csv,.txt",
+    muestras: ["factura-compra.pdf", "ventas.xlsx", "gastos.csv"],
+  });
+  ESC.listaMesa($("mesa"), { vacia: "Tu mesa está vacía: suelta un archivo o carga las muestras." });
+  function contar() {
+    var l = ESC.mesa.lista(), pdf = l.filter(function (f) { return f.tipo === "pdf"; }).length, tab = l.filter(function (f) { return !!f.tabla; }).length;
+    var c = $("cuenta"); c.textContent = "";
+    if (!l.length) return;
+    c.appendChild(ESC.el("b", { text: l.length + (l.length === 1 ? " archivo" : " archivos") }));
+    c.appendChild(document.createTextNode(" en tu mesa · " + pdf + " PDF · " + tab + (tab === 1 ? " tabla" : " tablas") + " · " + (l.length - pdf - tab) + ((l.length - pdf - tab) === 1 ? " otro" : " otros") + ". Las escenas que siguen los usan sin volver a cargarlos."));
+  }
+  document.addEventListener("esc-mesa", contar); contar();
+  $("b-todas").addEventListener("click", function () { z.cargar(ESC.MUESTRAS.map(function (m) { return { muestra: m.archivo }; })); });
+  $("b-vaciar").addEventListener("click", function () { ESC.mesa.vaciar(); GQ.toast("Tu mesa quedó vacía."); });
+})();
+</script>
+</body>
+</html>

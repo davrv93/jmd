@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Lee tu PDF con reglas</title>
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 2 (gq-03). Experimentación: pdf.js 6.4.299 (compilación legacy,
+     isEvalSupported:false, worker del mismo origen) saca el texto del PDF del alumno y las reglas de _comun/escaner.js
+     marcan RUC (con el dígito verificador módulo 11 de SUNAT), DNI, fechas, montos en S/, serie-número, correos y
+     teléfonos, y el tipo de documento por palabras clave. Con el RUC del alumno, la categoría: venta o compra. Un PDF
+     escaneado da 0 caracteres. Voto gq03-pdf-tipo. Nada se sube. -->
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<link rel="stylesheet" href="../../comun/gq3.css">
+<link rel="stylesheet" href="../../comun/escaner.css">
+<style id="esc-propio">
+
+.e5-ruc { display: grid; gap: .45em; }
+.e5-ruc label { font-size: .74em; font-weight: 800; }
+.e5-ruc .k-fila input { font-family: var(--mono); letter-spacing: .04em; }
+.e5-mini { display: grid; justify-items: center; gap: .3em; }
+.e5-mini canvas { max-width: 100%; height: auto; border-radius: .4em; box-shadow: 0 8px 22px -12px rgba(20,18,43,.55); background: #fff; }
+.e5-mini p { margin: 0; font-size: .64em; color: var(--muted); }
+.e5-cuenta { display: grid; gap: .4em; }
+.e5-dig { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: .2em; font: 700 .7em/1.2 var(--mono); text-align: center; }
+.e5-dig span { padding: .25em 0; border-radius: .3em; background: var(--s2); }
+.e5-dig .p { background: none; color: var(--muted); font-weight: 600; font-size: .9em; }
+.e5-dig .x { background: var(--x-ruc-bg); color: var(--x-ruc); }
+.e5-dig .v { background: var(--ok-bg); color: var(--ok); }
+.e5-dig .v.mal { background: var(--bad-bg); color: var(--bad); }
+.e5-formula { margin: 0; font: 600 .7em/1.5 var(--mono); color: var(--muted); }
+.e5-formula b { color: var(--fg); }
+.e5-vacio { display: grid; place-items: center; text-align: center; min-height: 10em; color: var(--muted); font-size: .8em; border: 1.5px dashed var(--line2); border-radius: 1em; padding: 1em; }
+.e5 .k-ops { grid-template-columns: repeat(auto-fit, minmax(8.5em, 1fr)); }
+@media (prefers-reduced-motion: reduce) { .e5 * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">GoldenQuerys · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo k-titulo-p a-in">Lee tu PDF <em class="oro">con reglas</em></h1>
+    <p class="esc-sub k-sub-p a-in" style="--d:.08s">Factura, boleta, recibo por honorarios o estado de cuenta: el texto sale del PDF y cada patrón se pinta de su color. El RUC, además, se comprueba con su dígito verificador.</p>
+    <div class="k-taller e5">
+      <div class="k-col e5-izq a-in" style="--d:.15s">
+        <div class="k-caja" id="zona"></div>
+        <div class="k-caja e5-ruc">
+          <label for="miruc">Tu RUC, para saber si es venta o compra</label>
+          <div class="k-fila"><input id="miruc" inputmode="numeric" maxlength="11" autocomplete="off" placeholder="11 dígitos"><button type="button" class="k-btn sec" id="b-muestra">El de la botica de muestra</button></div>
+          <p class="k-mini">Se queda en esta pestaña. Si el RUC de arriba del comprobante es el tuyo, lo emitiste tú: <b>venta</b>. Si el tuyo aparece como cliente: <b>compra</b>.</p>
+        </div>
+        <div class="k-caja e5-mini" id="mini" hidden><canvas id="lienzo" aria-label="Primera página del PDF" role="img"></canvas><p id="mini-t"></p></div>
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-regla)">De tu mesa</p>
+          <ul class="x-mesa" id="mesa"></ul>
+        </div>
+      </div>
+      <div class="k-col e5-der a-in" style="--d:.25s">
+        <div class="k-caja x-ficha" id="ficha"><div class="e5-vacio"><p>Aquí sale la ficha de tu PDF.<br>Prueba con la <b>factura</b> y luego con la <b>nota escaneada</b>.</p></div></div>
+        <div class="k-caja" id="caja-texto" hidden>
+          <p class="k-q" style="--c:var(--x-ruc)">El texto que vieron las reglas</p>
+          <p class="x-leyenda"><span><i style="background:var(--x-ruc)"></i>RUC</span><span><i style="background:var(--x-dni)"></i>DNI</span><span><i style="background:var(--x-fecha)"></i>fecha</span><span><i style="background:var(--x-monto)"></i>monto</span><span><i style="background:var(--x-serie)"></i>serie-número</span><span><i style="background:var(--x-correo)"></i>correo</span><span><i style="background:var(--x-tel)"></i>teléfono</span></p>
+          <pre class="x-texto" id="texto"></pre>
+        </div>
+        <div class="k-caja e5-cuenta" id="cuenta" hidden>
+          <p class="k-q" style="--c:var(--x-ruc)">Así se comprueba un RUC</p>
+          <div class="e5-dig" id="dig" aria-hidden="true"></div>
+          <p class="e5-formula" id="formula"></p>
+        </div>
+        <div class="k-caja k-voto e5" data-voto="gq03-pdf-tipo" data-c="oro">
+          <p class="k-q" style="--c:var(--oro)">¿Qué PDF le diste a las reglas?</p>
+          <div class="k-ops">
+            <button data-op="factura">Una factura</button>
+            <button data-op="boleta">Una boleta</button>
+            <button data-op="honorarios">Un recibo por honorarios</button>
+            <button data-op="banco">Un estado de cuenta</button>
+            <button data-op="otro">Otro documento</button>
+            <button data-op="muestra">Una muestra</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">El PDF se lee en tu navegador y no se sube · al terminar, pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq3.js"></script>
+<script src="../../comun/gq.js"></script>
+<script src="../../comun/escaner.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (i) { return document.getElementById(i); };
+  var esDoc = function (f) { return !f.tabla; };
+  var actual = null, inp = $("miruc");
+  inp.value = ESC.miRuc();
+
+  function cuentaRuc(R) {
+    var r = (R.ruc[0] || {}).valor, caja = $("cuenta");
+    if (!r) { caja.hidden = true; return; }
+    var c = ESC.rucCuenta(r), d = $("dig"); d.textContent = "";
+    for (var i = 0; i < 11; i++) d.appendChild(ESC.el("span", { class: i < 10 ? "x" : "v" + (c.ok ? "" : " mal"), text: r.charAt(i) }));
+    [5, 4, 3, 2, 7, 6, 5, 4, 3, 2].forEach(function (p) { d.appendChild(ESC.el("span", { class: "p", text: "×" + p })); });
+    d.appendChild(ESC.el("span", { class: "p", text: "" }));
+    var f = $("formula"); f.textContent = "";
+    f.appendChild(document.createTextNode("Suma de productos: " + c.productos.join(" + ") + " = "));
+    f.appendChild(ESC.el("b", { text: String(c.suma) }));
+    f.appendChild(document.createTextNode(" · resto entre 11: " + c.resto + " · 11 − " + c.resto + " = " + (11 - c.resto) + (11 - c.resto >= 10 ? " → " + c.digito : "") + " · el último dígito es " + r.charAt(10) + ": "));
+    f.appendChild(ESC.el("b", { text: c.ok ? "cuadra ✓" : "no cuadra ✗" }));
+    caja.hidden = false;
+  }
+  function mostrar(f, recienLeido) {
+    actual = f;
+    f.categoria = ESC.categoria(f, ESC.miRuc());
+    ESC.pintarFicha($("ficha"), f, { miRuc: ESC.miRuc() });
+    $("caja-texto").hidden = !!f.sinTexto;
+    if (!f.sinTexto) ESC.resaltar($("texto"), f.texto, ESC.marcasReglas(f.reglas), 7000);
+    cuentaRuc(f.reglas);
+    $("mini").hidden = true;
+    if (recienLeido && f.tipo === "pdf") ESC.miniatura($("lienzo"), f, 240).then(function (ok) {
+      if (!ok) return;
+      $("mini").hidden = false;
+      $("mini-t").textContent = f.sinTexto ? "Tus ojos leen la nota; las reglas, 0 caracteres." : "Página 1 de " + f.paginas;
+    });
+    lista.elegir(f.id);
+  }
+  ESC.zona($("zona"), {
+    titulo: "Suelta aquí tu PDF", sub: "o toca para elegirlo · también .txt o una foto", aceptar: ".pdf,.txt,.png,.jpg,.jpeg,.webp",
+    muestras: ["factura-compra.pdf", "boleta-venta.pdf", "recibo-honorarios.pdf", "extracto-banco.pdf", "nota-credito-escaneada.pdf"],
+    alLeer: function (f) {
+      if (f.tabla) { GQ.toast("Eso es una tabla: su ficha sale mejor en la escena del Excel."); }
+      if (f.muestra && !ESC.miRuc()) { ESC.miRuc(ESC.MI_RUC_MUESTRA); inp.value = ESC.MI_RUC_MUESTRA; GQ.toast("Puse el RUC de la botica de muestra para decidir venta o compra."); }
+      mostrar(f, true);
+      GQ.pedir("/evidencia", { escena: GQ.escena || "05-lee-tu-pdf", tipo: "hallazgo", detalle: "ficha de PDF: " + ((f.reglas.tipo && f.reglas.tipo.nombre) || (f.sinTexto ? "sin texto" : "sin tipo")) });
+    },
+  });
+  var lista = ESC.listaMesa($("mesa"), { filtro: esDoc, alElegir: function (f) { mostrar(f, false); }, vacia: "Aún no hay PDF en tu mesa." });
+  function cambiarRuc(v) {
+    ESC.miRuc(v); inp.value = ESC.miRuc();
+    if (actual) mostrar(actual, false);
+  }
+  inp.addEventListener("input", function () { var v = inp.value.replace(/\D/g, ""); if (v.length === 11 || !v) cambiarRuc(v); });
+  $("b-muestra").addEventListener("click", function () { cambiarRuc(ESC.MI_RUC_MUESTRA); });
+  var previos = ESC.mesa.lista().filter(esDoc);
+  if (previos.length) mostrar(previos[previos.length - 1], false);
+})();
+</script>
+</body>
+</html>

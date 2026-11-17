@@ -3,34 +3,50 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Un número no decide nada</title>
-<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 2 (gq-03). Experiencia: el gancho, el recorrido de hoy y el voto
-     de entrada (gq03-bienvenida). El mini tablero usa números reales de botica.sqlite (octubre de 2026, ventas emitidas,
-     date(fecha) entre el 1 y el 31): 400 ventas, S/ 8 595,76; SJL 2 558,80 · Los Olivos 2 143,60 · Surco 1 965,96 ·
-     Lince 1 927,40; la línea son los totales de enero a octubre de 2026 (v_ventas_mensuales). -->
+<title>Escena · Tus archivos ya saben cosas</title>
+<link rel="icon" href="data:,">
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 2 (gq-03), «pregúntale a tus propios archivos». Experiencia: el
+     gancho, el recorrido de hoy y el voto de entrada (gq03-archivo-pesado). El escáner de la derecha usa la factura de
+     muestra (materials/archivos-muestra/factura-compra.pdf, ficticia): lo que las reglas sacan sin IA y lo único que
+     queda para la IA. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/gq.css">
 <link rel="stylesheet" href="../../comun/gq3.css">
+<link rel="stylesheet" href="../../comun/escaner.css">
 <style id="esc-propio">
-.b1 { display: grid; grid-template-columns: 1.05fr .95fr; gap: 2.4vw; align-items: center; }
-.b1-izq { display: grid; gap: 2.2vh; min-width: 0; }
-.b1-titulo { font-size: 2.45em; }
-.b1-der { display: grid; gap: 1.4vh; min-width: 0; }
-.b1 .mt { font-size: 1.12em; }
+.b1 { display: grid; grid-template-columns: 1.02fr .98fr; gap: 2.4vw; align-items: center; }
+.b1-izq, .b1-der { display: grid; gap: 2vh; min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.b1-titulo { font-size: 2.4em; }
+.esc { --scan: 3.2s; }
+.scan { position: relative; display: grid; grid-template-columns: 1.1fr .9fr; gap: 1em; align-items: center; }
+.hoja { position: relative; overflow: hidden; background: #fffdf8; color: #1b1b1f; border-radius: .7em; padding: .9em 1em; box-shadow: 0 14px 30px -16px rgba(20,18,43,.55); font: 600 .62em/1.75 var(--mono); border: 1px solid rgba(0,0,0,.08); }
+.hoja b { display: block; font: 800 1.12em/1.3 system-ui, sans-serif; margin-bottom: .3em; }
+.hoja p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hoja .mk { border-radius: .2em; padding: 0 .15em; animation: b1-marca .4s ease-out both; animation-delay: var(--d); }
+.hoja .mk.r { --mc: rgba(29,78,216,.18); } .hoja .mk.s { --mc: rgba(109,40,217,.16); } .hoja .mk.f { --mc: rgba(4,120,87,.18); } .hoja .mk.m { --mc: rgba(202,138,4,.26); }
+.hoja .libre { color: #6b6b75; font-style: italic; }
+.hoja::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3.2em; background: linear-gradient(180deg, rgba(90,73,214,0), rgba(90,73,214,.22) 70%, rgba(90,73,214,.55)); border-bottom: 2px solid #7b6cf0; transform: translateY(-3.4em); animation: b1-barre var(--scan) cubic-bezier(.4,0,.4,1) .3s 2 both; pointer-events: none; }
+.salen { list-style: none; margin: 0; padding: 0; display: grid; gap: .4em; font-size: .7em; }
+.salen li { display: flex; align-items: center; gap: .45em; padding: .35em .55em; border-radius: .6em; background: var(--s1); border: 1px solid var(--line); box-shadow: var(--card-shadow); animation: esc-entra .4s ease-out both; animation-delay: var(--d); min-width: 0; }
+.salen li span { flex: 1; min-width: 0; font-family: var(--mono); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.salen li i { font-style: normal; font-weight: 800; font-size: .86em; padding: .1em .5em; border-radius: 999px; white-space: nowrap; }
+.salen li i.re { background: var(--x-regla-bg); color: var(--x-regla); }
+.salen li i.ia { background: var(--x-ia-bg); color: var(--x-ia); }
+.salen li.q { border-style: dashed; }
 .b1-pie { margin: 0; font-size: .7em; color: var(--muted); }
 .b1-pie b { color: var(--fg); }
 #entrada .k-ops { grid-template-columns: 1fr 1fr; }
-.mt .bar { transform-box: fill-box; transform-origin: left center; animation: b1-crece .7s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, .5s); }
-.mt .lin { stroke-dasharray: 1; stroke-dashoffset: 1; animation: esc-trazo 1.2s ease-out .7s forwards; }
-.mt-dec { animation: esc-entra .45s ease-out 1.3s both; }
-@keyframes b1-crece { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes b1-barre { 0% { transform: translateY(-3.4em); } 100% { transform: translateY(14em); } }
+@keyframes b1-marca { from { background: transparent; } to { background: var(--mc); } }
 @media (max-width: 760px) {
   .b1 { grid-template-columns: 1fr; gap: 14px; }
   .b1-titulo { font-size: 1.7em !important; }
+  .scan { grid-template-columns: 1fr; }
   #entrada .k-ops { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mt .lin { stroke-dashoffset: 0; }
+  .hoja::after { display: none; }
+  .hoja .mk { background: var(--mc); }
 }
 </style>
 </head>
@@ -44,53 +60,47 @@
   <main class="esc-cuerpo">
     <div class="b1">
       <div class="b1-izq">
-        <h1 class="esc-titulo b1-titulo a-in">Un número no decide nada.<br><em class="oro">Tú sí.</em></h1>
-        <p class="esc-sub a-in" style="--d:.12s">Hoy tus tres preguntas de oro se vuelven un tablero que vuelve a preguntar cada vez que mueves un filtro. Y cada número termina en una frase: «si pasa esto, entonces haré aquello».</p>
+        <h1 class="esc-titulo b1-titulo a-in">Tus archivos ya saben cosas.<br><em class="oro">Hoy les preguntamos.</em></h1>
+        <p class="esc-sub a-in" style="--d:.12s">Facturas en PDF, tu Excel de ventas, el estado de cuenta del banco. Primero los escaneas con reglas, que no cuestan nada y no sacan tus datos de tu compu. Después, solo para lo que las reglas no pueden, con IA.</p>
         <div class="k-kolb a-in" style="--d:.25s" aria-label="El recorrido de hoy">
-          <div class="on" style="--c:var(--ph-ec)"><b>Experiencia</b><span>retomas tu negocio y tus 3 consultas</span></div>
-          <div style="--c:var(--ph-ca)"><b>Conceptos</b><span>qué gráfico va y qué es dinámico</span></div>
-          <div style="--c:var(--ph-ea)"><b>Práctica</b><span>tu tablero, cuadrado con su SQL</span></div>
-          <div style="--c:var(--ph-or)"><b>Reflexión</b><span>el tablero que miente y tus decisiones</span></div>
+          <div class="on" style="--c:var(--ph-ec)"><b>Experiencia</b><span>traes tus propios archivos</span></div>
+          <div style="--c:var(--ph-ca)"><b>Conceptos</b><span>tres clases de datos y cuándo va la IA</span></div>
+          <div style="--c:var(--ph-ea)"><b>Práctica</b><span>escanear, preguntar y verificar</span></div>
+          <div style="--c:var(--ph-or)"><b>Reflexión</b><span>dónde se detienen las reglas</span></div>
         </div>
       </div>
       <div class="b1-der">
-        <div class="mt a-in" style="--d:.3s" role="img" aria-label="Mini tablero de la botica en octubre de 2026: 400 ventas por S/ 8 595,76; San Juan de Lurigancho vendió S/ 2 558,80, Los Olivos S/ 2 143,60, Surco S/ 1 965,96 y Lince S/ 1 927,40; la línea de enero a octubre sube hasta julio y baja en septiembre. Debajo, una decisión en ámbar: si una sede baja de S/ 2 000 en el mes, reviso su horario; hoy toca con Surco y Lince.">
-          <div class="mt-cab"><b>Botica · <span>tablero</span></b><span class="mt-fil on">01-10-2026</span><span class="mt-fil on">31-10-2026</span><span class="mt-fil">todas las sedes</span></div>
-          <div class="mt-kpis">
-            <div class="mt-kpi"><small>Ventas</small><b>S/ 8 595,76</b></div>
-            <div class="mt-kpi"><small>Boletas</small><b>400</b></div>
-            <div class="mt-kpi"><small>Ticket</small><b>S/ 21,49</b></div>
-          </div>
-          <div class="mt-graf">
-            <div class="mt-panel"><small>¿Qué sede vendió más?</small>
-              <svg viewBox="0 0 200 84" aria-hidden="true">
-                <text x="0" y="13">SJL</text><rect class="bar" x="58" y="4" width="130" height="12" rx="3" style="--d:.5s"/>
-                <text x="0" y="33">Los Olivos</text><rect class="bar b2" x="58" y="24" width="108.9" height="12" rx="3" style="--d:.6s"/>
-                <text x="0" y="53">Surco</text><rect class="bar b2" x="58" y="44" width="99.9" height="12" rx="3" style="--d:.7s"/>
-                <text x="0" y="73">Lince</text><rect class="bar b2" x="58" y="64" width="97.9" height="12" rx="3" style="--d:.8s"/>
-                <line class="eje" x1="58" y1="0" x2="58" y2="80"/>
-              </svg>
+        <div class="k-caja a-in" style="--d:.3s">
+          <div class="scan" role="img" aria-label="Una factura de muestra pasa por el escáner. Sin IA salen el RUC 20982631841 con su dígito verificador correcto, la serie F001-00004587, la fecha 14/10/2026 y el total de S/ 1 077,10. Lo único que queda para la IA es entender una nota escrita a mano: si el proveedor cambia algo en la próxima entrega.">
+            <div class="hoja" aria-hidden="true">
+              <b>Distribuidora Ruraq Hampi S.A.C.</b>
+              <p>R.U.C. N° <span class="mk r" style="--d:.9s">20982631841</span></p>
+              <p>FACTURA ELECTRÓNICA <span class="mk s" style="--d:1.2s">F001-00004587</span></p>
+              <p>Fecha de emisión: <span class="mk f" style="--d:1.6s">14/10/2026</span></p>
+              <p>Paracetamol x 100 ..... 190.00</p>
+              <p>Amoxicilina x 100 ..... 280.00</p>
+              <p>IMPORTE TOTAL <span class="mk m" style="--d:2.2s">S/ 1,077.10</span></p>
+              <p class="libre">«Ojo: en noviembre sube»</p>
             </div>
-            <div class="mt-panel"><small>¿Sube o baja mes a mes? (2026)</small>
-              <svg viewBox="0 0 200 84" aria-hidden="true">
-                <line class="eje" x1="4" y1="76" x2="196" y2="76"/>
-                <path class="lin" pathLength="1" d="M10 44.6 L30 54 L50 47.4 L70 51.4 L90 41.1 L110 30.3 L130 14.4 L150 40.7 L170 65.1 L190 50.9"/>
-                <text x="4" y="86">ene</text><text x="178" y="86">oct</text>
-              </svg>
-            </div>
+            <ul class="salen" aria-hidden="true">
+              <li style="--d:1s"><span>RUC 20982631841 ✓</span><i class="re">regla</i></li>
+              <li style="--d:1.3s"><span>F001-00004587</span><i class="re">regla</i></li>
+              <li style="--d:1.7s"><span>2026-10-14</span><i class="re">regla</i></li>
+              <li style="--d:2.3s"><span>S/ 1 077,10</span><i class="re">regla</i></li>
+              <li class="q" style="--d:2.9s"><span>¿qué sube y cuándo?</span><i class="ia">IA</i></li>
+            </ul>
           </div>
-          <p class="mt-dec">Si una sede baja de S/ 2 000 en el mes, entonces reviso su horario · hoy toca: Surco y Lince</p>
         </div>
-        <div class="k-caja k-voto a-in" id="entrada" style="--d:.5s" data-voto="gq03-bienvenida" data-c="oro">
-          <p class="k-q" style="--c:var(--oro)">¿Qué haces hoy con los números de tu negocio?</p>
+        <div class="k-caja k-voto a-in" id="entrada" style="--d:.5s" data-voto="gq03-archivo-pesado" data-c="oro">
+          <p class="k-q" style="--c:var(--oro)">¿Qué archivo te quita más tiempo cada mes?</p>
           <div class="k-ops">
-            <button data-op="miro">Los miro y ahí queda</button>
-            <button data-op="intuicion">Decido más por intuición</button>
-            <button data-op="reglas">Tengo reglas: si pasa X, hago Y</button>
-            <button data-op="nunca">Casi no los miro</button>
+            <button data-op="comprobantes">Facturas y boletas en PDF</button>
+            <button data-op="excel">El Excel de ventas</button>
+            <button data-op="banco">El estado de cuenta del banco</button>
+            <button data-op="honorarios">Recibos por honorarios y planillas</button>
           </div>
         </div>
-        <p class="b1-pie a-in" style="--d:.6s">Al final de la clase, tu tablero tendrá <b>tres decisiones</b> como la de arriba, con tus números.</p>
+        <p class="b1-pie a-in" style="--d:.6s">Al final de la clase tendrás <b>tus archivos clasificados</b> y sabrás cuántos necesitaron IA de verdad.</p>
       </div>
     </div>
   </main>

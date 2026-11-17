@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · ¿Regla o IA?</title>
+<link rel="icon" href="data:,">
+<!--
+  «¿Regla o IA?» · juego de la sesión 2 de GoldenQuerys (gq-03), sobre el motor Arena JMD (docs/ARENA_JMD.md).
+  Cada alumno es un robot en el mismo patio. Cada tarjeta trae una tarea con tus archivos (sacar el RUC, sumar una
+  columna, ¿reclamo o felicitación?, clasificar un gasto por su descripción…) y la llevas a «Regla» o a «IA». Al acertar,
+  un bono: qué regla lo resuelve o qué le mandas a la IA (+5). Un error vale 0 (nunca resta) y la lupa explica por qué.
+  El dron «la prisa» solo te hace soltar la tarjeta. La barra de la clase suma los puntos de todos. Al final: tu título,
+  la reflexión al muro (gq03-juego-regla-ia) y tu fotito; el resultado queda en esta pantalla para la fotito de la
+  escena de cierre (localStorage gq03-regla-ia-ultimo).
+  ?demo=1 entra solo; ?sinred=1 fuerza la práctica local; ?fps=1 muestra los cuadros por segundo.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; overflow: hidden; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #f2c14e; margin-bottom: 6px; }
+  @media (prefers-reduced-motion: reduce) { .sin-motor { transition: none; } }
+</style>
+</head>
+<body>
+<div id="juego"><div class="sin-motor"><div><b>Preparando el patio…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
+<script src="../../arena/arena-jmd.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.ArenaJMD) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
+  }
+
+  var LADO = { regla: { n: "Regla", c: "#0f766e" }, ia: { n: "IA", c: "#7c3aed" } };
+  // ---------- la baraja: z = dónde va; x = por qué; b = el bono [pregunta, opciones (la 1.ª es la buena), explicación] ----------
+  var CARTAS = [
+    { z: "regla", t: "Sacar el RUC del proveedor de una factura", x: "11 dígitos que empiezan en 10, 15, 16, 17 o 20, y el último cuadra con el módulo 11. Sin costo y sin equivocarse.",
+      b: ["¿Qué regla lo encuentra?", ["11 dígitos y su dígito verificador", "Buscar la palabra «empresa»", "Pedírselo a la IA"], "El dígito verificador además atrapa los RUC mal copiados."] },
+    { z: "regla", t: "Sumar la columna Total de tu Excel", x: "Sumar es aritmética: una fórmula da el número exacto. Una IA puede equivocarse sumando.",
+      b: ["La suma no cuadra con la fila TOTAL. ¿Qué buscas?", ["Filas duplicadas o montos escritos como texto", "Le creo a la fila TOTAL", "Borro la fila TOTAL"], "En ventas.xlsx la diferencia era justo una fila pegada dos veces."] },
+    { z: "regla", t: "Encontrar la fecha de emisión", x: "Un patrón día/mes/año: la regla la encuentra y la pasa a aaaa-mm-dd.",
+      b: ["En Perú, «05/10/2026» es…", ["5 de octubre", "10 de mayo", "No se puede saber"], "En Perú va día/mes/año. Un programa en inglés lo leería al revés: por eso la regla la decides tú."] },
+    { z: "regla", t: "Saber si es factura o boleta", x: "La serie lo dice: F001 es factura y B001 es boleta. Y la palabra «factura electrónica» lo confirma.",
+      b: ["B001-00012873 es…", ["Una boleta", "Una factura", "Un recibo por honorarios"], "B de boleta; los recibos por honorarios llevan E001."] },
+    { z: "regla", t: "Encontrar filas repetidas en tu Excel", x: "Dos filas con todas sus celdas iguales: la regla las compara una por una.",
+      b: ["Encontraste dos filas idénticas. ¿Qué haces?", ["Reviso si se cobró o pagó dos veces antes de borrar", "Las borro sin mirar", "Las dejo: no importa"], "Una fila repetida puede ser un error… o dos ventas iguales. Revisa el comprobante."] },
+    { z: "regla", t: "Encontrar el encabezado cuando hay títulos arriba", x: "La primera fila con tres o más celdas de texto seguidas es el encabezado; lo de arriba son títulos.",
+      b: ["¿Cuál es el encabezado?", ["La primera fila con varias celdas de texto", "Siempre la fila 1", "La fila más larga"], "En ventas.xlsx era la fila 4: arriba estaban el nombre de la botica y el título del reporte."] },
+    { z: "regla", t: "Tapar DNI, celulares y correos antes de enviar", x: "Tienen patrón: 8 dígitos, 9 dígitos que empiezan en 9, una arroba. La regla los tapa sin mirar el sentido.",
+      b: ["Un RUC que empieza en 10…", ["Lleva adentro el DNI de una persona: se tapa", "Es de una empresa: se deja", "Es un teléfono"], "RUC 10 = DNI de su dueño + dígito verificador. El de una empresa (20…) es público."] },
+    { z: "regla", t: "Saber si una factura es venta o compra", x: "Compara el RUC del emisor con el tuyo: si es el tuyo, la emitiste tú.",
+      b: ["El RUC de arriba es el tuyo. Es…", ["Una venta: la emitiste tú", "Una compra", "Un gasto"], "Si tu RUC aparece abajo, como cliente, es una compra."] },
+    { z: "regla", t: "¿El banco me pagó lo de Yape? Buscar «YAPE» en el estado de cuenta", x: "Parece que hay que entender, pero es una búsqueda literal: la palabra está o no está.",
+      b: ["¿Por qué basta una regla?", ["Porque busco una palabra exacta", "Porque la IA no lee bancos", "Porque es un PDF"], "Si lo que buscas se escribe siempre igual, es una regla."] },
+    { z: "ia", t: "¿El cliente reclama o felicita? (mensaje de WhatsApp)", x: "El tono no tiene patrón: «¡qué rápido llegó!» puede ser ironía. Hay que entender.",
+      b: ["¿Qué le mandas a la IA?", ["El mensaje con el celular tapado", "El chat entero con nombres y números", "Solo una captura"], "Lo personal se tapa antes: la IA no necesita el celular para entender el tono."] },
+    { z: "ia", t: "Clasificar un gasto por su descripción: «taxi al banco para depositar»", x: "¿Transporte, banco o venta? Ninguna palabra clave lo decide sola: hay que entender la frase.",
+      b: ["¿Cómo sabes que la IA acertó?", ["Le pido la cita del texto y la busco", "Le pregunto si está segura", "Si suena bien, está bien"], "Preguntarle si está segura no sirve: busca su cita en el texto."] },
+    { z: "ia", t: "Resumir en una línea el correo del proveedor", x: "Un resumen es entender y elegir lo importante: trabajo de IA.",
+      b: ["La IA dice «sube a S/ 31.50». ¿Qué revisas?", ["Que «S/ 31.50» esté literal en el correo", "Nada: es IA", "Que el resumen sea corto"], "Cada dato del resumen tiene que estar en el texto."] },
+    { z: "ia", t: "Sacar el motivo de una nota de crédito escrito a mano por el cajero", x: "Texto libre, con las palabras de cada quien: no hay un patrón que lo encuentre.",
+      b: ["La IA devuelve un motivo sin cita. Es…", ["Inventado hasta que encuentres la cita", "Seguro, porque lo dijo la IA", "Bueno si tiene confianza alta"], "La confianza que da el modelo no reemplaza a la cita."] },
+    { z: "ia", t: "Agrupar 200 comentarios de clientes por tema", x: "Los temas no vienen escritos: hay que leer y agrupar por sentido.",
+      b: ["¿Qué haces antes de mandarlos?", ["Tapo nombres y celulares", "Nada: son comentarios", "Los mando con el DNI para que se entiendan"], "Un comentario puede traer un nombre: revisa el texto tapado antes de enviar."] },
+    { z: "ia", t: "¿El contrato del local tiene una penalidad escondida?", x: "Hay que leer y entender cláusulas: la IA ayuda, con su cita para cada cosa.",
+      b: ["La IA dice «cláusula 7», pero el contrato tiene 6. Es…", ["Inventado: no aparece en el texto", "Un error menor", "Cierto: la IA lo vio"], "Si la cita no aparece, el campo es inventado."] },
+    { z: "ia", t: "¿De qué se queja el proveedor en su correo?", x: "Entender una queja es leer entre líneas: va con IA.",
+      b: ["¿Qué modelo usas primero?", ["Uno gratis, y de pago solo si falla", "Siempre el más caro", "Ninguno: lo adivino"], "Gratis primero, de pago como respaldo y con tope."] },
+  ];
+  var MANO = 8;
+  var ANCHO = 1800, ALTO = 1100;
+  var ZONAS = [
+    { id: "regla", x: 60, y: 300, w: 330, h: 500, nombre: "Regla · hay un patrón", color: LADO.regla.c },
+    { id: "ia", x: 1410, y: 300, w: 330, h: 500, nombre: "IA · hay que entender", color: LADO.ia.c },
+  ];
+  var CAMPO = { x: 440, y: 70, w: 920, h: 960 };
+
+  function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function rgba(hex, a) { var n = parseInt(hex.slice(1), 16); return "rgba(" + (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")"; }
+  // Cada zona es una pizarra: la regla dibuja un patrón y su regla; la IA, un texto libre con un globo de idea.
+  function pintarZona(g, z, t, resalta) {
+    var pulso = resalta ? (Math.sin(t * 5) + 1) / 2 : 0;
+    g.save();
+    g.fillStyle = rgba(z.color, .18 + pulso * .14); rr(g, z.x - 10, z.y - 10, z.w + 20, z.h + 20, 26); g.fill();
+    g.fillStyle = "#fffdf6"; g.strokeStyle = z.color; g.lineWidth = resalta ? 7 : 5; rr(g, z.x, z.y, z.w, z.h, 20); g.fill(); g.stroke();
+    var cx = z.x + 30, cy = z.y + 50, w = z.w - 60;
+    g.textAlign = "left"; g.textBaseline = "alphabetic";
+    if (z.id === "regla") {
+      g.fillStyle = z.color; g.font = "800 30px ui-monospace, Menlo, monospace"; g.fillText("\\d{11}", cx, cy + 20);
+      g.fillStyle = "#1b1b1f"; g.font = "700 22px ui-monospace, Menlo, monospace";
+      ["20982631841 ✓", "14/10/2026", "S/ 1,077.10", "F001-00004587"].forEach(function (s, i) {
+        g.fillStyle = rgba(z.color, .12); rr(g, cx, cy + 50 + i * 52, w, 40, 8); g.fill();
+        g.fillStyle = "#1b1b1f"; g.fillText(s, cx + 14, cy + 78 + i * 52);
+      });
+      g.strokeStyle = z.color; g.lineWidth = 6; g.lineCap = "round";
+      g.beginPath(); g.moveTo(cx, cy + 290); g.lineTo(cx + w, cy + 290); g.stroke();
+      for (var k = 0; k <= 10; k++) { g.beginPath(); g.moveTo(cx + k * w / 10, cy + 290); g.lineTo(cx + k * w / 10, cy + 290 - (k % 5 ? 14 : 26)); g.stroke(); }
+    } else {
+      g.fillStyle = "#6b6b75"; g.font = "italic 600 22px Georgia, serif";
+      ["«qué rápido llegó…»", "«taxi al banco para", "  depositar»", "«sube a S/ 31.50", "  desde noviembre»"].forEach(function (s, i) { g.fillText(s, cx, cy + 20 + i * 36); });
+      g.fillStyle = rgba(z.color, .16); g.beginPath(); g.ellipse(cx + w / 2, cy + 270, w / 2.4, 46, 0, 0, 7); g.fill();
+      g.fillStyle = z.color; g.font = "800 26px system-ui, sans-serif"; g.textAlign = "center"; g.fillText("¿qué quiere decir?", cx + w / 2, cy + 279);
+      [[cx + w / 2 - 70, cy + 330, 12], [cx + w / 2 - 92, cy + 352, 7]].forEach(function (c) { g.fillStyle = rgba(z.color, .3); g.beginPath(); g.arc(c[0], c[1], c[2], 0, 7); g.fill(); });
+    }
+    g.restore();
+  }
+
+  var mio = { justos: 0, porLado: { regla: 0, ia: 0 }, errados: {} };
+  function bono(k) { // la buena rota de lugar según la carta
+    var b = CARTAS[k].b, r = k % 3, op = b[1].slice(r).concat(b[1].slice(0, r));
+    return { pregunta: "Bono: " + b[0], opciones: op, correcta: (3 - r) % 3, explicacion: b[2] };
+  }
+  function guardarResultado(r) { try { localStorage.setItem("gq03-regla-ia-ultimo", JSON.stringify(r)); } catch (e) {} }
+
+  var juego = ArenaJMD.crear({
+    raiz: "#juego",
+    titulo: "¿Regla o IA?",
+    subtitulo: "Cada tarjeta trae una tarea con tus archivos. Llévala a «Regla» o a «IA».",
+    curso: "GoldenQuerys con IA",
+    sesion: "Sesión 2 · Pregúntale a tus propios archivos",
+    fecha: "Martes 17 de noviembre de 2026",
+    hashtag: "#GoldenQuerys",
+    duracion: 180, duraciones: [180, 300], duracionPractica: 120,
+    mundo: { ancho: ANCHO, alto: ALTO, tema: "patio" },
+    jugador: { accesorio: "casco" },
+    salida: { x: 800, y: 470, w: 200, h: 160 },
+    reglas: [
+      "Pasa sobre una tarjeta: trae una tarea con tus archivos.",
+      "Llévala a «Regla» si hay un patrón, o a «IA» si hay que entender.",
+      "Al acertar, una pregunta rápida (+5). Errar no resta: la lupa te enseña.",
+    ],
+    anuncio: "regla o IA",
+    muros: [
+      { x: 600, y: 250, w: 160, h: 80 }, { x: 1040, y: 250, w: 160, h: 80 },
+      { x: 600, y: 770, w: 160, h: 80 }, { x: 1040, y: 770, w: 160, h: 80 },
+    ],
+    zonas: ZONAS.map(function (z) { return Object.assign({ pintar: pintarZona }, z); }),
+    peligros: [
+      { tipo: "dron", nombre: "la prisa", ruta: [[900, 110], [900, 990]], vel: 120, radio: 30,
+        aviso: "¡La prisa te hizo soltar la tarjeta! Volvió a su lugar.", avisoSinCarga: "Ojo con el dron de la prisa." },
+      { tipo: "dron", nombre: "la prisa", ruta: [[470, 550], [1330, 550]], vel: 95, radio: 30,
+        aviso: "¡Otra vez la prisa! La tarjeta volvió a su lugar.", avisoSinCarga: "Mira el dron antes de cruzar." },
+    ],
+    decor: [
+      { tipo: "planta", x: 470, y: 90 }, { tipo: "planta", x: 1330, y: 90 }, { tipo: "planta", x: 470, y: 1010 }, { tipo: "planta", x: 1330, y: 1010 },
+      { tipo: "cristal", x: 900, y: 420, color: "#f2c14e", s: .9 },
+      { tipo: "texto", x: 900, y: 700, texto: "patrón → regla · sentido → IA", px: 28, color: "rgba(90,73,214,.22)" },
+    ],
+    objetos: {
+      cantidad: MANO, prefijo: "tarea",
+      crear: function (i, v, rnd, M) {
+        var base = (juego ? juego.ronda().semilla : 0) % CARTAS.length;
+        var k = (i * 5 + v * 3 + base) % CARTAS.length;
+        var celda = { x: CAMPO.x + (i % 4) * CAMPO.w / 4 + 20, y: CAMPO.y + Math.floor(i / 4) % 2 * CAMPO.h / 2 + 40, w: CAMPO.w / 4 - 40, h: CAMPO.h / 2 - 80 };
+        var p = M.lugarLibre(rnd, 40, celda), c = CARTAS[k];
+        return { x: p.x, y: p.y, forma: "carta", color: "#c48709", carta: k, texto: c.t.length > 18 ? c.t.slice(0, 17) + "…" : c.t };
+      },
+    },
+    tarjeta: function (ob) {
+      var c = CARTAS[ob.carta];
+      return { etiqueta: "Tarea", color: "#c48709", titulo: c.t, pie: "Regla a la izquierda; IA a la derecha. Espacio o «Soltar» la deja." };
+    },
+    entregar: function (ob, zona) {
+      var c = CARTAS[ob.carta], ok = zona.id === c.z;
+      if (ok) {
+        mio.justos++; mio.porLado[c.z]++;
+        var b = bono(ob.carta);
+        return { ok: true, puntos: 10, titulo: "¡Va con " + LADO[c.z].n + "! +10", explicacion: c.x, feed: "llevó una tarea a " + LADO[c.z].n,
+          bonus: { pregunta: b.pregunta, opciones: b.opciones, correcta: b.correcta, puntos: 5, segundos: 14, explicacion: b.explicacion } };
+      }
+      mio.errados[c.z] = (mio.errados[c.z] || 0) + 1;
+      return { ok: false, puntos: 0, titulo: "Esa iba con " + LADO[c.z].n, explicacion: c.x, real: c.z === "regla" ? "Tiene un patrón: no hace falta pagar a una IA." : "No hay patrón: hay que entender el sentido.", feed: "aprendió cuándo va " + LADO[c.z].n };
+    },
+    meta: { contador: "archivos", texto: "Archivos ordenados de la clase", unidad: "pts", objetivo: function (n) { return Math.max(120, n * 40); }, logro: "la clase ordenó todos sus archivos" },
+    reflexion: { clave: "gq03-juego-regla-ia", pregunta: "¿Cómo decides si una tarea va con regla o con IA?", placeholder: "Si hay un patrón…", porDefecto: "Si hay un patrón, regla; si hay que entender, IA con su cita." },
+    alRonda: function () { mio = { justos: 0, porLado: { regla: 0, ia: 0 }, errados: {} }; },
+    resultado: function (s) {
+      var pts = juego.puntos, total = s.entregas;
+      var titulo = mio.justos >= 5 && s.bonus >= 3 ? "Regla primero, IA con cita" : mio.justos >= 5 && s.fallos <= 1 ? "Ojo de auditor" : mio.justos >= 2 ? "Patrón o sentido" : total ? "Primer escaneo" : "De paseo por el patio";
+      var peor = "", n = 0;
+      Object.keys(mio.errados).forEach(function (k) { if (mio.errados[k] > n) { n = mio.errados[k]; peor = k; } });
+      guardarResultado({ pts: pts, titulo: titulo, justos: mio.justos, total: total });
+      return { etiqueta: "Mi ronda de regla o IA", titulo: titulo, resultado: pts + " puntos",
+        detalle: mio.justos + " de " + total + " bien · " + mio.porLado.regla + " con regla, " + mio.porLado.ia + " con IA" + (peor ? " · repasar: " + LADO[peor].n : "") };
+    },
+  });
+})();
+</script>
+</body>
+</html>

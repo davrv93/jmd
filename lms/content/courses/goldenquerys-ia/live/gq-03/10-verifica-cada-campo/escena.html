@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Cada campo con su cita</title>
+<link rel="icon" href="data:,">
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 2 (gq-03). Experimentación: cada campo de la IA se busca en el
+     texto que se mandó (la cita literal, con los espacios normalizados): verde si aparece y dice el valor, ámbar si
+     aparece pero el valor salió de otra forma, rojo si no aparece (inventado). Usa la última respuesta de la escena 08
+     (sessionStorage gq03-ia-ultima) o una respuesta de práctica ESCRITA PARA EL EJERCICIO sobre el correo de muestra,
+     con un campo sembrado sin cita (fecha_entrega). Voto gq03-inventado (con respuesta) que registra la evidencia
+     «hallazgo». -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<link rel="stylesheet" href="../../comun/gq3.css">
+<link rel="stylesheet" href="../../comun/escaner.css">
+<style id="esc-propio">
+.e10-fuente { display: flex; flex-wrap: wrap; gap: .4em; align-items: center; }
+.e10-fuente button { font: 700 .7em/1 system-ui, sans-serif; padding: .5em .85em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; min-height: 36px; }
+.e10-fuente button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.e10-aviso { margin: 0; font-size: .72em; padding: .5em .75em; border-radius: .6em; background: var(--warn-bg); }
+.e10-cuenta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45em; }
+.e10-cuenta div { border-radius: .7em; padding: .45em .6em; background: var(--s1); border: 1px solid var(--line); display: grid; }
+.e10-cuenta b { font-size: 1.4em; line-height: 1.05; }
+.e10-cuenta span { font-size: .64em; color: var(--muted); font-weight: 700; }
+.e10-cuenta .v b { color: var(--ok); } .e10-cuenta .a b { color: var(--warn); } .e10-cuenta .r b { color: var(--bad); }
+.e10-oculto .x-est { visibility: hidden; }
+#inventado .k-ops { grid-template-columns: repeat(auto-fit, minmax(9em, 1fr)); }
+@media (max-width: 760px) { .e10-cuenta { grid-template-columns: 1fr 1fr 1fr; } }
+@media (prefers-reduced-motion: reduce) { .e10 * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">GoldenQuerys · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo k-titulo-p a-in">Cada campo <em class="oro">con su cita</em></h1>
+    <p class="esc-sub k-sub-p a-in" style="--d:.08s">Toca cada campo: si su cita está en el texto, se marca. Lo que no aparece es inventado, aunque suene razonable.</p>
+    <div class="k-taller e10">
+      <div class="k-col a-in" style="--d:.15s">
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-ia)">¿Qué respuesta revisas?</p>
+          <div class="e10-fuente" role="group" aria-label="Qué respuesta revisar"><button type="button" id="f-mia" aria-pressed="false">Mi última respuesta</button><button type="button" id="f-practica" aria-pressed="true">La de práctica</button></div>
+          <p class="e10-aviso" id="aviso"></p>
+        </div>
+        <div class="k-caja e10-oculto" id="caja-campos">
+          <p class="k-q" style="--c:var(--x-ia)">Los campos de la IA</p>
+          <table class="x-campos"><thead><tr><th>Campo</th><th>Valor</th><th>Cita</th><th></th></tr></thead><tbody id="campos"></tbody></table>
+          <div class="k-btns"><button type="button" class="k-btn sec" id="b-revelar">Pasarle la regla a todos</button></div>
+          <div class="e10-cuenta" id="cuenta" hidden>
+            <div class="v"><b id="n-v">0</b><span>con su cita</span></div>
+            <div class="a"><b id="n-a">0</b><span>revisa: el valor cambió</span></div>
+            <div class="r"><b id="n-r">0</b><span>inventados</span></div>
+          </div>
+        </div>
+        <div class="k-caja k-voto" id="inventado" data-voto="gq03-inventado" data-correcta="entrega" data-c="oro"
+             data-explica="La fecha de entrega no tiene cita: el correo solo dice «llegará con dos días de retraso». La vigencia sí tiene cita («desde el 1 de noviembre»); sale en ámbar porque la IA la escribió como 2026-11-01.">
+          <p class="k-q" style="--c:var(--oro)">En la respuesta de práctica, ¿qué campo es inventado?</p>
+          <div class="k-ops">
+            <button data-op="proveedor">proveedor</button>
+            <button data-op="precio">precio nuevo</button>
+            <button data-op="vigencia">vigencia</button>
+            <button data-op="entrega">fecha entrega</button>
+          </div>
+        </div>
+      </div>
+      <div class="k-col a-in" style="--d:.25s">
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-dni)" id="titulo-texto">El texto que vio la IA</p>
+          <pre class="x-texto" id="texto">Cargando…</pre>
+          <p class="x-leyenda"><span><i style="background:var(--ok)"></i>la cita está y dice el valor</span><span><i style="background:var(--warn)"></i>la cita está, el valor cambió</span><span><i style="background:var(--bad)"></i>no aparece: inventado</span></p>
+        </div>
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-regla)">La regla, en una línea</p>
+          <p class="k-mini">Busca la cita tal cual (sin importar los espacios). <b>Aparece y dice el valor:</b> vale. <b>Aparece pero el valor salió de otra forma</b> (una fecha convertida, un número redondeado): revísalo tú. <b>No aparece:</b> es inventado. El servidor de la clase hace la misma búsqueda y descarta lo que no encuentra; tú lo compruebas con tus ojos.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">La IA no se revisa a sí misma: la revisas tú · al terminar, pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq3.js"></script>
+<script src="../../comun/gq.js"></script>
+<script src="../../comun/escaner.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (i) { return document.getElementById(i); }, E = ESC.el;
+  // Respuesta de práctica: la escribimos para el ejercicio (no la dio un modelo). Un campo no tiene cita.
+  var PRACTICA = {
+    tipo_documento: "Correo de un proveedor", categoria: "compra", confianza: .84,
+    resumen: "El proveedor sube la amoxicilina de 500 mg a S/ 31.50 desde el 1 de noviembre y avisa un retraso en el pedido del 3 de noviembre.",
+    campos: [
+      { nombre: "proveedor", valor: "Distribuidora Ruraq Hampi S.A.C.", evidencia: "Ejecutivo comercial · Distribuidora Ruraq Hampi S.A.C." },
+      { nombre: "precio_nuevo", valor: "S/ 31.50", evidencia: "sube de S/ 28.00 a S/ 31.50 la caja" },
+      { nombre: "vigencia", valor: "2026-11-01", evidencia: "desde el 1 de noviembre" },
+      { nombre: "fecha_entrega", valor: "2026-11-05", evidencia: "la nueva fecha de entrega es el 5 de noviembre" },
+    ],
+  };
+  var datos = null, revelado = false;
+  function leerUltima() { try { var v = sessionStorage.getItem("gq03-ia-ultima"); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  var ultima = leerUltima();
+
+  function pintar(marcar) {
+    if (!datos) return;
+    var ver = ESC.verificar(datos.r.campos, datos.texto), tb = $("campos"); tb.textContent = "";
+    var marcas = [];
+    ver.forEach(function (c, k) {
+      if (revelado && c.ini >= 0) marcas.push({ ini: c.ini, fin: c.fin, clase: c.estado + (marcar === k ? " activa" : ""), titulo: c.nombre });
+      else if (marcar === k && c.ini >= 0) marcas.push({ ini: c.ini, fin: c.fin, clase: c.estado + " activa", titulo: c.nombre });
+      var tr = E("tr", { "data-k": String(k), tabindex: "0", title: "Buscar su cita" }, [
+        E("td", { text: String(c.nombre).replace(/_/g, " ") }), E("td", null, E("b", { text: String(c.valor) })), E("td", null, E("q", { text: c.evidencia || "(sin cita)" })),
+        E("td", null, E("span", { class: "x-est " + c.estado, text: c.estado === "literal" ? "con cita" : c.estado === "revisa" ? "revisa" : "inventado" })),
+      ]);
+      var buscar = function () {
+        pintar(k);
+        if (c.ini < 0) GQ.toast("«" + String(c.evidencia || "").slice(0, 50) + "» no aparece en el texto.", 3200);
+      };
+      tr.addEventListener("click", buscar); tr.addEventListener("keydown", function (e) { if (e.key === "Enter") buscar(); });
+      tb.appendChild(tr);
+    });
+    var hechas = ESC.resaltar($("texto"), datos.texto, marcas, 14000);
+    var act = hechas.filter(function (m) { return /activa/.test(m.className); })[0];
+    if (act) act.scrollIntoView({ block: "center", behavior: "smooth" });
+    $("caja-campos").classList.toggle("e10-oculto", !revelado);
+    if (revelado) {
+      var n = { literal: 0, revisa: 0, inventado: 0 }; ver.forEach(function (c) { n[c.estado]++; });
+      $("n-v").textContent = n.literal; $("n-a").textContent = n.revisa; $("n-r").textContent = n.inventado; $("cuenta").hidden = false;
+    } else $("cuenta").hidden = true;
+  }
+  function usar(cual) {
+    revelado = false;
+    $("f-mia").setAttribute("aria-pressed", String(cual === "mia")); $("f-practica").setAttribute("aria-pressed", String(cual === "practica"));
+    var av = $("aviso");
+    if (cual === "mia") {
+      datos = { texto: ultima.texto, r: ultima.r };
+      av.textContent = "Tu respuesta de «" + ultima.nombre + "». El servidor ya descartó los campos sin cita" + (ultima.r.dudas && ultima.r.dudas.length ? " (míralo en sus dudas)" : "") + ": revisa igual que cada cita diga el valor.";
+      $("titulo-texto").textContent = "El texto que mandaste (ya tapado)";
+      pintar(); return;
+    }
+    av.textContent = "Respuesta de práctica: la escribimos para este ejercicio sobre el correo de muestra, con un campo sembrado que no está en el texto. Encuéntralo.";
+    $("titulo-texto").textContent = "El correo de muestra, ya tapado";
+    fetch("/files/goldenquerys-ia/materials/archivos-muestra/correo-proveedor.txt", { credentials: "same-origin" }).then(function (r) { if (!r.ok) throw 0; return r.text(); })
+      .then(function (t) { datos = { texto: ESC.enmascarar(t.replace(/^﻿/, "").replace(/\r\n?/g, "\n")).texto, r: PRACTICA }; pintar(); })
+      .catch(function () { $("texto").textContent = "No pude traer el correo de muestra. Recarga la escena."; });
+  }
+  $("f-mia").addEventListener("click", function () { if (ultima) usar("mia"); else GQ.toast("Aún no tienes una respuesta de la IA: hazla en la escena 08 o usa la de práctica."); });
+  $("f-practica").addEventListener("click", function () { usar("practica"); });
+  $("b-revelar").addEventListener("click", function () { revelado = true; pintar(); });
+  $("inventado").addEventListener("k-voto", function (e) {
+    var op = e.detail.opcion;
+    GQ.pedir("/evidencia", { escena: GQ.escena || "10-verifica-cada-campo", tipo: "hallazgo", detalle: "campo sin cita elegido: " + op + (op === "entrega" ? " (correcto)" : "") }).then(function (r) {
+      GQ.toast(r.ok ? "Hallazgo registrado. Pulsa «Lo logré» cuando termines." : "Lo guardé en tu pantalla; el LIVE no respondió.");
+    });
+  });
+  if (!ultima) $("f-mia").title = "Hazla primero en la escena 08";
+  usar("practica");
+})();
+</script>
+</body>
+</html>

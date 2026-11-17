@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Escanea tu Excel o CSV sin IA</title>
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 2 (gq-03). Experimentación: el alumno suelta su Excel o CSV (o una
+     muestra: ventas.xlsx, gastos.csv) y las reglas de _comun/escaner.js arman la ficha: fila de encabezado, tipo de cada
+     columna, vacíos, duplicados, formatos de fecha, RUC con el dígito mal y si la fila TOTAL cuadra. Todo en el
+     navegador (FileReader + SheetJS 0.18.5); nada se sube. Voto gq03-hallazgo-tabla (registra la evidencia «hallazgo»)
+     y muro gq03-tabla-muro. -->
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<link rel="stylesheet" href="../../comun/gq3.css">
+<link rel="stylesheet" href="../../comun/escaner.css">
+<style id="esc-propio">
+.e4 { align-items: start; }
+
+.e4-reglas { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; font-size: .7em; color: var(--muted); }
+.e4-reglas li { display: grid; grid-template-columns: 6.6em 1fr; gap: .5em; }
+.e4-reglas b { color: var(--fg); }
+.e4-vacio { display: grid; place-items: center; text-align: center; min-height: 12em; color: var(--muted); font-size: .8em; border: 1.5px dashed var(--line2); border-radius: 1em; padding: 1em; }
+.e4-vacio svg { width: 6em; height: auto; margin-bottom: .4em; }
+.e4-vacio .r { fill: var(--s3); } .e4-vacio .h { fill: var(--x-regla-bg); stroke: var(--x-regla); stroke-width: 1.5; } .e4-vacio .t { fill: var(--x-monto-bg); }
+.e4 .k-ops { grid-template-columns: repeat(auto-fit, minmax(10.5em, 1fr)); }
+.e4-ley { display: flex; flex-wrap: wrap; gap: .3em .8em; font-size: .62em; color: var(--muted); }
+.e4-ley span::before { content: ""; display: inline-block; width: .85em; height: .85em; border-radius: .2em; margin-right: .3em; vertical-align: -.1em; background: var(--c); }
+@media (max-width: 760px) { .e4-reglas li { grid-template-columns: 1fr; gap: 0; } }
+@media (prefers-reduced-motion: reduce) { .e4 * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">GoldenQuerys · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo k-titulo-p a-in">Escanea tu Excel <em class="oro">sin IA</em></h1>
+    <p class="esc-sub k-sub-p a-in" style="--d:.08s">Suelta tu Excel o CSV de ventas, gastos o cobranzas. Unas pocas reglas arman su ficha en milisegundos: las tienes a la izquierda, por si quieres revisarlas.</p>
+    <div class="k-taller e4">
+      <div class="k-col e4-izq a-in" style="--d:.15s">
+        <div class="k-caja" id="zona"></div>
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-regla)">De tu mesa</p>
+          <ul class="x-mesa" id="mesa"></ul>
+        </div>
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-regla)">Las reglas que usé</p>
+          <ul class="e4-reglas">
+            <li><b>Encabezado</b><span>la primera fila con 3 o más celdas de texto seguidas; lo de arriba son títulos</span></li>
+            <li><b>Tipo</b><span>lo que tienen 6 de cada 10 celdas: fecha, monto, RUC, DNI, serie-número; pocos valores que se repiten son categoría</span></li>
+            <li><b>Fechas</b><span>día/mes/año, como en Perú; todas pasan a aaaa-mm-dd</span></li>
+            <li><b>Duplicado</b><span>dos filas con todas sus celdas iguales</span></li>
+            <li><b>Fila TOTAL</b><span>empieza con «total»; su monto se compara con la suma de las filas</span></li>
+          </ul>
+        </div>
+        <div class="k-caja k-voto" id="hallazgo" data-voto="gq03-hallazgo-tabla" data-c="oro">
+          <p class="k-q" style="--c:var(--oro)">¿Qué encontró la ficha de tu tabla?</p>
+          <div class="k-ops">
+            <button data-op="duplicados">Filas duplicadas</button>
+            <button data-op="total">Un total que no cuadra</button>
+            <button data-op="fechas">Fechas en varios formatos</button>
+            <button data-op="ruc">Un RUC con error</button>
+            <button data-op="vacios">Columnas con huecos</button>
+            <button data-op="limpio">Nada raro: estaba limpio</button>
+          </div>
+        </div>
+      </div>
+      <div class="k-col e4-der a-in" style="--d:.25s">
+        <div class="k-caja x-ficha" id="ficha">
+          <div class="e4-vacio" id="vacio">
+            <div>
+              <svg viewBox="0 0 120 80" aria-hidden="true"><rect class="t" x="4" y="4" width="112" height="10" rx="3"/><rect class="h" x="4" y="20" width="112" height="12" rx="3"/><rect class="r" x="4" y="38" width="112" height="9" rx="3"/><rect class="r" x="4" y="52" width="112" height="9" rx="3"/><rect class="t" x="4" y="66" width="112" height="10" rx="3"/></svg>
+              <p>Aquí sale la ficha de tu tabla.<br>Prueba con <b>ventas.xlsx</b>: tiene más de una sorpresa.</p>
+            </div>
+          </div>
+        </div>
+        <div id="previa"></div>
+        <p class="e4-ley" id="ley" hidden><span style="--c:var(--x-regla-bg)">encabezado</span><span style="--c:var(--x-monto-bg)">fila TOTAL</span><span style="--c:var(--bad-bg)">duplicada</span><span style="--c:var(--line2)">celda vacía</span></p>
+        <div class="k-caja k-muro" data-muro="gq03-tabla-muro" data-color="var(--oro)" data-pregunta="¿Qué te dijo la ficha que no sabías? (sin nombres ni números de nadie)" data-placeholder="No sabía que…" data-max="4"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Tu archivo se lee en tu navegador y no se sube · al terminar, pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq3.js"></script>
+<script src="../../comun/gq.js"></script>
+<script src="../../comun/escaner.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (i) { return document.getElementById(i); };
+  var esTabla = function (f) { return !!f.tabla; };
+  function mostrar(f) {
+    ESC.pintarFicha($("ficha"), f, { miRuc: ESC.miRuc() });
+    ESC.pintarTabla($("previa"), f, 45);
+    $("ley").hidden = false;
+    lista.elegir(f.id);
+  }
+  ESC.zona($("zona"), {
+    titulo: "Suelta aquí tu Excel o CSV", sub: "o toca para elegirlo · .xlsx, .xls o .csv", aceptar: ".xlsx,.xls,.ods,.csv,.tsv",
+    muestras: ["ventas.xlsx", "gastos.csv"],
+    alLeer: function (f) {
+      if (!f.tabla) { GQ.toast("Ese archivo no es una tabla: llévalo a la escena del PDF."); return; }
+      mostrar(f);
+    },
+  });
+  var lista = ESC.listaMesa($("mesa"), { filtro: esTabla, alElegir: mostrar, vacia: "Aún no hay tablas en tu mesa." });
+  var previas = ESC.mesa.lista().filter(esTabla);
+  if (previas.length) mostrar(previas[previas.length - 1]);
+
+  var NOM = { duplicados: "filas duplicadas", total: "un total que no cuadra", fechas: "fechas en varios formatos", ruc: "un RUC con error", vacios: "columnas con huecos", limpio: "nada raro" };
+  $("hallazgo").addEventListener("k-voto", function (e) {
+    var op = e.detail.opcion;
+    GQ.pedir("/evidencia", { escena: GQ.escena || "04-escanea-tu-excel", tipo: "hallazgo", detalle: "ficha de tabla: " + (NOM[op] || op) }).then(function (r) {
+      GQ.toast(r.ok ? "Hallazgo registrado. Pulsa «Lo logré» cuando termines." : "Lo guardé en tu pantalla; el LIVE no respondió.");
+    });
+  });
+})();
+</script>
+</body>
+</html>

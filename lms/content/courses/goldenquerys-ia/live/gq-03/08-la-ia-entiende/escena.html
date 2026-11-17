@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · La IA entiende lo que la regla no</title>
+<link rel="icon" href="data:,">
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 2 (gq-03). Experimentación: el alumno elige un archivo de su mesa;
+     el navegador tapa DNI, celulares, correos, cuentas y RUC de persona (y lo que el alumno añada); el alumno revisa el
+     texto tapado y lo manda a POST ../../entender (OpenRouter: modelos gratis primero, uno barato de pago como
+     respaldo, con tope). Muestra tipo, categoría, confianza, resumen, campos con su cita, el modelo, si fue gratis y
+     cuántas consultas quedan. Mientras la ruta no esté desplegada responde 404: la escena lo dice y enseña lo que se
+     mandaría. La última respuesta queda en sessionStorage (gq03-ia-ultima) para la escena 10. Voto gq03-mandarias. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<link rel="stylesheet" href="../../comun/gq3.css">
+<link rel="stylesheet" href="../../comun/escaner.css">
+<style id="esc-propio">
+.e8-tapa { display: flex; flex-wrap: wrap; gap: .35em; font-size: .74em; }
+.e8-extra { display: flex; flex-wrap: wrap; gap: .3em; }
+.e8-extra button { font: 700 .66em/1 system-ui, sans-serif; padding: .35em .6em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s2); color: var(--fg); cursor: pointer; min-height: 30px; }
+.e8-check { display: flex; gap: .6em; align-items: flex-start; font-size: .76em; line-height: 1.35; cursor: pointer; }
+.e8-check input { width: 1.25em; height: 1.25em; margin-top: .1em; accent-color: var(--accent); flex: none; }
+.e8 textarea { width: 100%; min-height: 3.6em; resize: vertical; font: 500 .78em/1.35 system-ui, sans-serif; padding: .55em .75em; border-radius: .7em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); }
+.e8 textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.e8-vista { display: flex; gap: .3em; }
+.e8-vista button { font: 700 .68em/1 system-ui, sans-serif; padding: .45em .8em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--muted); cursor: pointer; min-height: 32px; }
+.e8-vista button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.e8-cab { display: flex; flex-wrap: wrap; gap: .4em; align-items: center; justify-content: space-between; }
+.e8-n { font-size: .66em; color: var(--muted); }
+.e8-json { margin: 0; max-height: 12em; overflow: auto; font: 500 .62em/1.5 var(--mono); padding: .6em .8em; border-radius: .6em; background: #14122b; color: #e9e6ff; white-space: pre-wrap; overflow-wrap: anywhere; }
+#mandar .k-ops { grid-template-columns: 1fr; }
+@media (prefers-reduced-motion: reduce) { .e8 * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">GoldenQuerys · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo k-titulo-p a-in">La IA entiende <em class="oro">lo que la regla no</em></h1>
+    <p class="esc-sub k-sub-p a-in" style="--d:.08s">Elige un archivo de tu mesa. Tu navegador tapa lo personal, tú lo revisas y recién entonces sale hacia la IA: para clasificarlo, resumirlo y sacar lo que no tiene un patrón fijo.</p>
+    <div class="k-taller e8">
+      <div class="k-col a-in" style="--d:.15s">
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-regla)">Elige un archivo</p>
+          <ul class="x-mesa" id="mesa"></ul>
+          <div id="zona"></div>
+        </div>
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-dni)">Lo que se tapa antes de salir</p>
+          <div class="e8-tapa" id="tapa"><span class="x-nada" style="font-size:.7em">Elige un archivo.</span></div>
+          <label class="k-mini" for="extra">Los nombres no tienen patrón: si ves uno, escríbelo y se tapa.</label>
+          <div class="k-fila"><input id="extra" maxlength="60" autocomplete="off" placeholder="Un nombre o una dirección"><button type="button" class="k-btn sec" id="b-extra">Tapar</button></div>
+          <div class="e8-extra" id="extras"></div>
+        </div>
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--x-ia)">Pregúntale</p>
+          <label class="k-mini" for="preg">Opcional: lo que quieres saber de este archivo.</label>
+          <textarea id="preg" maxlength="600" placeholder="¿Qué cambia desde noviembre y qué debo hacer?"></textarea>
+          <label class="e8-check"><input type="checkbox" id="revise"><span>Revisé el texto tapado de la derecha: no queda nada personal que no quiera mandar.</span></label>
+          <div class="k-btns"><button type="button" class="k-btn oro" id="b-ia" disabled>Entender con IA</button></div>
+          <p class="k-mini">Primero prueba con modelos gratis; si no responden, pasa a uno barato de pago. Tienes un tope de consultas al día.</p>
+        </div>
+        <div class="k-caja k-voto" id="mandar" data-voto="gq03-mandarias" data-correcta="tapar" data-c="oro"
+             data-explica="Un DNI, un celular o un correo identifican a una persona: son datos personales (Ley 29733), y mandarlos a un servidor en otro país es un flujo transfronterizo. La IA no los necesita para entender el documento.">
+          <p class="k-q" style="--c:var(--oro)">¿Mandarías a una IA gratis una boleta con el DNI y el celular de tu cliente?</p>
+          <div class="k-ops">
+            <button data-op="si">Sí: es solo una boleta</button>
+            <button data-op="tapar">No sin tapar antes el DNI y el celular</button>
+            <button data-op="nunca">Nunca mando nada a una IA</button>
+          </div>
+        </div>
+      </div>
+      <div class="k-col a-in" style="--d:.25s">
+        <div class="k-caja">
+          <div class="e8-cab">
+            <p class="k-q" style="--c:var(--x-dni)">Lo que sale de tu compu</p>
+            <div class="e8-vista" role="group" aria-label="Qué texto ver"><button type="button" id="v-tapado" aria-pressed="true">Lo que se manda</button><button type="button" id="v-original" aria-pressed="false">Tu original</button></div>
+          </div>
+          <pre class="x-texto" id="texto">Elige un archivo de tu mesa o carga una muestra.</pre>
+          <p class="e8-n" id="n"></p>
+        </div>
+        <div class="x-ia" id="ia" aria-live="polite">
+          <div class="x-ia-cab"><b>La respuesta de la IA</b></div>
+          <p class="k-mini">Aquí aparece el tipo de documento, la categoría, un resumen y los campos que la IA encontró, cada uno con su cita en el texto.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Solo sale el texto tapado, y solo cuando tú lo mandas · al terminar, pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq3.js"></script>
+<script src="../../comun/gq.js"></script>
+<script src="../../comun/escaner.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (i) { return document.getElementById(i); }, E = ESC.el;
+  var actual = null, extras = [], env = null, vista = "tapado", ultima = null, ocupado = false;
+  var NOM = { dni: "DNI", tel: "celular o teléfono", correo: "correo", cuenta: "cuenta bancaria", ruc10: "RUC de persona", extra: "lo que añadiste" };
+
+  function unicos(a) { return a.filter(function (x, i) { return a.indexOf(x) === i; }); }
+  function camposReglas(f) {
+    var R = f.reglas;
+    return {
+      ruc: unicos(R.ruc.filter(function (r) { return r.valido && !r.persona; }).map(function (r) { return r.valor; })).slice(0, 6),
+      fechas: unicos(R.fechas.map(function (x) { return x.iso; })).slice(0, 8),
+      montos: unicos(R.montos.map(function (x) { return x.n; })).slice(0, 10),
+      series: unicos(R.series.map(function (x) { return x.valor; })).slice(0, 6),
+      total: R.total ? R.total.n : null,
+      tipo_por_regla: R.tipo && R.tipo.puntos >= 3 ? R.tipo.nombre : "",
+    };
+  }
+  function nombreSeguro(f) { return ESC.enmascarar(f.nombre, extras).texto; }
+
+  function pintarTexto(marcarCampo) {
+    var pre = $("texto");
+    if (!actual) return;
+    if (vista === "tapado") {
+      var marcas = env.tramos.map(function (t) { return { ini: t.ini, fin: t.fin, clase: t.clase, titulo: "Tapado: " + (NOM[t.clase] || t.clase) }; });
+      if (marcarCampo && marcarCampo.ini >= 0) marcas.push({ ini: marcarCampo.ini, fin: marcarCampo.fin, clase: marcarCampo.estado + " activa", titulo: "Cita de «" + marcarCampo.nombre + "»" });
+      var hechas = ESC.resaltar(pre, env.texto.slice(0, ESC.LIMITE_IA), marcas, ESC.LIMITE_IA);
+      var act = hechas.filter(function (m) { return /activa/.test(m.className); })[0];
+      if (act) act.scrollIntoView({ block: "center", behavior: "smooth" });
+    } else ESC.resaltar(pre, actual.texto, ESC.marcasReglas(actual.reglas), 7000);
+    var n = env.texto.length;
+    $("n").textContent = ESC.miles(Math.min(n, ESC.LIMITE_IA)) + " de 12 000 caracteres" + (n > ESC.LIMITE_IA ? " · el archivo es más largo: se manda solo el comienzo" : "") + " · nombre que se manda: «" + nombreSeguro(actual) + "»";
+  }
+  function recalcular() {
+    if (!actual) return;
+    env = ESC.enmascarar(actual.texto, extras);
+    var t = $("tapa"); t.textContent = "";
+    Object.keys(env.cuenta).forEach(function (k) { if (env.cuenta[k]) t.appendChild(ESC.chip(env.cuenta[k] + " " + NOM[k], k === "extra" ? "" : k === "ruc10" ? "dni" : k === "cuenta" ? "" : k)); });
+    if (!env.total) t.appendChild(E("span", { class: "x-nada", style: "font-size:.7em", text: "Las reglas no encontraron DNI, celulares, correos ni cuentas. Revisa igual los nombres." }));
+    var x = $("extras"); x.textContent = "";
+    extras.forEach(function (p, i) {
+      var b = E("button", { type: "button", title: "Dejar de tapar", text: p + " ×" });
+      b.addEventListener("click", function () { extras.splice(i, 1); recalcular(); });
+      x.appendChild(b);
+    });
+    pintarTexto();
+    $("revise").checked = false; listo();
+  }
+  function listo() { $("b-ia").disabled = ocupado || !actual || actual.sinTexto || !$("revise").checked; }
+  function elegir(f) {
+    actual = f; extras = [];
+    if (f.sinTexto) { $("texto").textContent = "«" + f.nombre + "» no tiene texto: es una imagen. Ni las reglas ni esta IA de texto pueden leerla. Elige otro archivo."; $("n").textContent = ""; $("tapa").textContent = ""; listo(); return; }
+    recalcular(); lista.elegir(f.id);
+  }
+
+  ESC.zona($("zona"), { titulo: "O suelta otro archivo", sub: "PDF, Excel, CSV o texto", muestras: ["correo-proveedor.txt", "factura-compra.pdf", "recibo-honorarios.pdf"], textoMuestras: "Muestras:", alLeer: elegir });
+  var lista = ESC.listaMesa($("mesa"), { filtro: function (f) { return !f.sinTexto; }, alElegir: elegir, vacia: "Tu mesa está vacía: carga una muestra aquí abajo." });
+  $("revise").addEventListener("change", listo);
+  $("b-extra").addEventListener("click", function () {
+    var v = $("extra").value.trim();
+    if (v.length < 2) { GQ.toast("Escribe al menos dos letras."); return; }
+    if (extras.indexOf(v) < 0) extras.push(v); $("extra").value = ""; recalcular();
+  });
+  $("extra").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("b-extra").click(); } });
+  function verVista(v) { vista = v; $("v-tapado").setAttribute("aria-pressed", String(v === "tapado")); $("v-original").setAttribute("aria-pressed", String(v === "original")); pintarTexto(); }
+  $("v-tapado").addEventListener("click", function () { verVista("tapado"); });
+  $("v-original").addEventListener("click", function () { verVista("original"); });
+
+  // ---------- la respuesta ----------
+  var ia = $("ia");
+  function cab(t) { ia.textContent = ""; ia.appendChild(E("div", { class: "x-ia-cab" }, [E("b", { text: t })])); }
+  function corto(m) { return String(m || "").split("/").pop(); }
+  function pintarRespuesta(x) {
+    var r = x.r, m = r.motor || {};
+    cab("La IA respondió en " + (Math.round((m.ms || x.ms) / 100) / 10) + " s");
+    ia.firstChild.appendChild(E("div", { class: "x-motor" }, [
+      E("span", { text: corto(m.modelo) || "modelo" }),
+      E("span", { class: m.gratis ? "gratis" : "pago", text: m.gratis ? "gratis" : "de pago" }),
+      m.intentos ? E("span", { text: m.intentos + (m.intentos === 1 ? " intento" : " intentos") }) : null,
+      E("span", { text: ESC.miles(m.tokens_entrada || 0) + " tokens de entrada · " + ESC.miles(m.tokens_salida || 0) + " de salida" }),
+      typeof r.restantes === "number" ? E("span", { text: "te quedan " + r.restantes + " hoy" + (typeof r.restantes_pago === "number" ? " (" + r.restantes_pago + " de pago)" : "") }) : null,
+    ]));
+    var conf = Math.max(0, Math.min(1, +r.confianza || 0));
+    ia.appendChild(E("div", { class: "x-res" }, [
+      E("div", null, [E("small", { text: "Qué es" }), E("b", { text: r.tipo_documento || "—" })]),
+      E("div", null, [E("small", { text: "Categoría" }), E("b", { text: r.categoria || "—" })]),
+      E("div", null, [E("small", { text: "Confianza que declara" }), E("b", { text: Math.round(conf * 100) + " %" }), E("div", { class: "x-conf" }, E("i", { style: "--p:" + Math.round(conf * 100) + "%" }))]),
+    ]));
+    if (r.resumen) ia.appendChild(E("p", { class: "x-resumen-ia", text: r.resumen }));
+    var ver = ESC.verificar(r.campos, x.enviado.texto);
+    if (ver.length) {
+      var tb = E("tbody");
+      ver.forEach(function (c, k) {
+        var tr = E("tr", { "data-k": String(k), tabindex: "0", title: "Ver su cita en el texto" }, [
+          E("td", { text: String(c.nombre).replace(/_/g, " ") }), E("td", null, E("b", { text: String(c.valor) })), E("td", null, E("q", { text: c.evidencia || "(sin cita)" })),
+          E("td", null, E("span", { class: "x-est " + c.estado, text: c.estado === "literal" ? "con cita" : c.estado === "revisa" ? "revisa" : "inventado" })),
+        ]);
+        var ir = function () { verVista("tapado"); pintarTexto(c); };
+        tr.addEventListener("click", ir); tr.addEventListener("keydown", function (e) { if (e.key === "Enter") ir(); });
+        tb.appendChild(tr);
+      });
+      ia.appendChild(E("table", { class: "x-campos" }, [E("thead", null, E("tr", null, [E("th", { text: "Campo" }), E("th", { text: "Valor" }), E("th", { text: "Cita" }), E("th", { text: "" })])), tb]));
+      ia.appendChild(E("p", { class: "k-mini", text: "Toca un campo para ver su cita marcada en el texto. En la escena 10 lo revisas a fondo." }));
+    }
+    if (r.dudas && r.dudas.length) ia.appendChild(E("ul", { class: "x-dudas" }, r.dudas.slice(0, 5).map(function (d) { return E("li", { text: d }); })));
+    // la mesa y la escena 10 se enteran
+    try { sessionStorage.setItem("gq03-ia-ultima", JSON.stringify({ nombre: actual.nombre, texto: x.enviado.texto, r: r, cuando: Date.now() })); } catch (e) {}
+    actual.ia = { tipo_documento: r.tipo_documento, categoria: r.categoria, confianza: r.confianza, resumen: r.resumen, modelo: m.modelo, gratis: !!m.gratis };
+    var porRegla = ESC.categoria(actual, ESC.miRuc());
+    actual.categoria = porRegla.cat ? porRegla : { cat: r.categoria || "", origen: "ia", motivo: "IA (" + corto(m.modelo) + "): " + String(r.resumen || "").slice(0, 110) };
+    ESC.mesa.guardar(actual);
+  }
+  function pintarEstado(x) {
+    if (x.estado === "ok") return pintarRespuesta(x);
+    cab(x.estado === "pronto" ? "El paso con IA llega muy pronto" : "La IA no respondió esta vez");
+    ia.appendChild(E("p", { class: "x-aviso " + (x.estado === "pronto" ? "pronto" : x.estado === "cupo" ? "cupo" : "mal"), text: x.msg }));
+    if (x.estado === "pronto") {
+      ia.appendChild(E("p", { class: "k-mini", text: "Esto es, tal cual, lo que se mandaría (el texto va recortado aquí para que se lea):" }));
+      var muestraEnv = Object.assign({}, x.cuerpo, { texto: x.cuerpo.texto.slice(0, 420) + (x.cuerpo.texto.length > 420 ? "…" : "") });
+      ia.appendChild(E("pre", { class: "e8-json", text: JSON.stringify(muestraEnv, null, 2) }));
+    }
+  }
+  $("b-ia").addEventListener("click", function () {
+    if (!actual || !env) return;
+    ocupado = true; listo();
+    var cuerpo = { nombre: nombreSeguro(actual), tipo: actual.tipo, texto: env.texto.slice(0, ESC.LIMITE_IA), campos_reglas: camposReglas(actual), categorias: ESC.CATEGORIAS, pregunta: $("preg").value.trim() };
+    cab("Preguntando a la IA…");
+    var seg = E("b", { text: "0 s" }), nota = E("span", { text: "Con toda la clase a la vez puede tardar de 10 a 25 segundos." });
+    ia.appendChild(E("div", { class: "x-espera" }, [E("i", { "aria-hidden": "true" }), E("span", null, [seg, document.createTextNode(" · ")]), nota]));
+    var t0 = Date.now(), reloj = setInterval(function () {
+      var s = Math.round((Date.now() - t0) / 1000); seg.textContent = s + " s";
+      if (s === 12) nota.textContent = "Los modelos gratis están ocupados: si no responden, pasa al de pago.";
+    }, 500);
+    $("revise").checked = false; // cada envío gasta una consulta: para mandar otra vez, se revisa otra vez
+    ESC.entender(cuerpo).then(function (x) {
+      clearInterval(reloj); ocupado = false; listo();
+      if (!x.enviado) x.enviado = cuerpo;
+      x.cuerpo = cuerpo;
+      pintarEstado(x);
+    });
+  });
+
+  var previos = ESC.mesa.lista().filter(function (f) { return !f.sinTexto; });
+  if (previos.length) elegir(previos.filter(function (f) { return /correo|\.txt$/.test(f.nombre); })[0] || previos[previos.length - 1]);
+})();
+</script>
+</body>
+</html>

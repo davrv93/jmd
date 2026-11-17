@@ -2,53 +2,88 @@
 id: gq-03
 starts_at: 2026-11-17T18:30:00-05:00
 duration: 60
-title: "Curso · Sesión 2: el tablero dinámico y la decisión"
+title: "Curso · Sesión 2: pregúntale a tus propios archivos"
 published: true
 objectives:
   - id: gq-03-o1
-    title: Elegir el gráfico que responde cada pregunta de oro (tarjeta, barras, línea o tabla) por la forma de su resultado
+    title: Escanear sin IA tus propios Excel, CSV y PDF y armar la ficha de cada uno (encabezado, tipos de columna, vacíos, duplicados, fila de totales; RUC con su dígito verificador, DNI, fechas, montos, serie-número, correos y teléfonos)
   - id: gq-03-o2
-    title: Construir con IA un tablero cuyos filtros vuelven a consultar la API y comprobar que cada número cuadra con su SQL verificada
+    title: Decidir qué va con reglas y qué necesita IA (costo, precisión, privacidad y reproducibilidad) y mandarle a la IA solo el texto con los datos personales tapados
   - id: gq-03-o3
-    title: Convertir cada número en una decisión con la forma «si pasa X, entonces haré Y»
+    title: Verificar cada campo que entrega la IA contra su cita literal en el texto y exportar tu lote clasificado (CSV o JSON) para tu tablero
 recording:
   url: ""
   passcode: ""
 materials:
+  - id: gq-03-factura
+    title: "Archivo de muestra · factura de un proveedor (PDF ficticio)"
+    kind: pdf
+    file: materials/archivos-muestra/factura-compra.pdf
+    objective_ids: [gq-03-o1]
+  - id: gq-03-boleta
+    title: "Archivo de muestra · boleta de una venta (PDF ficticio)"
+    kind: pdf
+    file: materials/archivos-muestra/boleta-venta.pdf
+    objective_ids: [gq-03-o1]
+  - id: gq-03-recibo
+    title: "Archivo de muestra · recibo por honorarios (PDF ficticio)"
+    kind: pdf
+    file: materials/archivos-muestra/recibo-honorarios.pdf
+    objective_ids: [gq-03-o1, gq-03-o2]
+  - id: gq-03-extracto
+    title: "Archivo de muestra · estado de cuenta del banco (PDF ficticio)"
+    kind: pdf
+    file: materials/archivos-muestra/extracto-banco.pdf
+    objective_ids: [gq-03-o1]
+  - id: gq-03-escaneo
+    title: "Archivo de muestra · nota de crédito escaneada, solo imagen (PDF ficticio)"
+    kind: pdf
+    file: materials/archivos-muestra/nota-credito-escaneada.pdf
+    objective_ids: [gq-03-o1, gq-03-o2]
+  - id: gq-03-ventas
+    title: "Archivo de muestra · ventas.xlsx, un Excel desordenado de octubre"
+    kind: file
+    file: materials/archivos-muestra/ventas.xlsx
+    objective_ids: [gq-03-o1]
+  - id: gq-03-gastos
+    title: "Archivo de muestra · gastos.csv, separado por punto y coma"
+    kind: file
+    file: materials/archivos-muestra/gastos.csv
+    objective_ids: [gq-03-o1, gq-03-o2]
+  - id: gq-03-correo
+    title: "Archivo de muestra · correo de un proveedor (texto libre)"
+    kind: file
+    file: materials/archivos-muestra/correo-proveedor.txt
+    objective_ids: [gq-03-o2, gq-03-o3]
   - id: gq-03-kit
     title: goldenquerys-kit.zip · las 5 bases, la API de solo lectura, el skill del dashboard y el plan de trabajo
     kind: zip
     file: materials/goldenquerys-kit.zip
-    objective_ids: [gq-03-o1, gq-03-o2]
-  - id: gq-03-repaso
-    title: "Repaso en video: la sesión 1 en 37 segundos"
-    kind: file
-    file: materials/video-gq-02.mp4
-    objective_ids: [gq-03-o2]
-  - id: gq-03-chartjs
-    title: Chart.js 4.4 · la librería de gráficos que usa el skill del tablero
+    objective_ids: [gq-03-o3]
+  - id: gq-03-ziemann
+    title: "Ziemann, Eren y El-Osta (2016) · Gene name errors are widespread in the scientific literature, Genome Biology 17: 177"
     kind: doc
-    url: https://www.chartjs.org/docs/4.4.1/
-    objective_ids: [gq-03-o1, gq-03-o2]
-  - id: gq-03-sqlite-fechas
-    title: SQLite · funciones de fecha (date, strftime) para filtros que no cortan el día
-    kind: doc
-    url: https://www.sqlite.org/lang_datefunc.html
-    objective_ids: [gq-03-o2]
-  - id: gq-03-cleveland
-    title: "Cleveland y McGill (1984) · Graphical perception, JASA 79(387): 531–554"
-    kind: doc
-    url: https://doi.org/10.1080/01621459.1984.10478080
+    url: https://doi.org/10.1186/s13059-016-1044-7
     objective_ids: [gq-03-o1]
-  - id: gq-03-challenger
-    title: "Informe de la comisión del Challenger (1986), cap. VI · figuras 6 y 7"
+  - id: gq-03-bruford
+    title: "Bruford et al. (2020) · Guidelines for human gene nomenclature, Nature Genetics 52: 754–758"
     kind: doc
-    url: https://www.nasa.gov/history/rogersrep/v1ch6.htm
+    url: https://doi.org/10.1038/s41588-020-0669-3
     objective_ids: [gq-03-o1]
-  - id: gq-03-gollwitzer
-    title: "Gollwitzer y Sheeran (2006) · metaanálisis de los planes «si…, entonces…»"
+  - id: gq-03-ley29733
+    title: "Ley N.º 29733 y su Reglamento (D. S. 016-2024-JUS) · Protección de Datos Personales, compendio del Minjusdh"
     kind: doc
-    url: https://doi.org/10.1016/S0065-2601(06)38002-1
+    url: https://spijweb.minjus.gob.pe/wp-content/uploads/2025/12/Compendio_Proteccion_Datos_Personales.pdf
+    objective_ids: [gq-03-o2]
+  - id: gq-03-atil
+    title: "Atil et al. (2024) · Non-determinism of «deterministic» LLM settings, arXiv:2408.04667"
+    kind: doc
+    url: https://arxiv.org/abs/2408.04667
+    objective_ids: [gq-03-o2]
+  - id: gq-03-avianca
+    title: "Mata v. Avianca, Inc., 22-cv-1461 (S.D.N.Y. 2023) · resolución de sanciones del 22 de junio de 2023"
+    kind: doc
+    url: https://www.nhd.uscourts.gov/sites/default/files/pdf/Mata-v-Avianca-sanctions-order.PDF
     objective_ids: [gq-03-o3]
 cycle:
   - id: ver
@@ -57,196 +92,209 @@ cycle:
     phase: experiencia
     description: Asiste en vivo al LIVE o mira la grabación.
     check: Has visto la clase completa (o la grabación)
-  - id: retomar
-    title: Tu negocio y tus tres consultas
+  - id: traer
+    title: Tus archivos sobre la mesa
     tool: lms
     phase: experiencia
-    description: Retomas tu negocio y tus tres consultas de la sesión 1, o las armas con un pedido si te la perdiste.
-    check: 'curl -s localhost:8766/api/salud responde "ok": true y hay tres archivos en goldenquerys/consultas/'
-  - id: graficos
-    title: Cada pregunta, su gráfico
+    description: Cargas en la escena dos o tres archivos tuyos (PDF, Excel o CSV) o los de muestra. Se leen en tu navegador y nada se sube.
+    check: Tu mesa muestra al menos un archivo leído
+  - id: datos
+    title: Tres clases de datos
     tool: lms
     phase: conceptualizacion
-    description: Tarjeta, barras, línea o tabla según la forma del resultado de tu SQL; las barras, desde cero.
-    check: Sabes qué gráfico le toca a cada una de tus tres preguntas
-  - id: construir
-    title: Tu tablero dinámico
+    description: Estructurados, semiestructurados y no estructurados, y por qué el tipo de cada columna lo decides tú y no el programa.
+    check: Sabes decir de qué clase es cada uno de tus archivos
+  - id: escanear
+    title: Escanea tu Excel o CSV sin IA
     tool: lms
     phase: experimentacion
-    description: La IA construye goldenquerys/dashboard/index.html siguiendo el skill (T3, T4 y T4b) y tú lo pruebas en el visor.
-    check: Abre en el visor, tiene 3 tarjetas y 2 gráficos con datos reales, cambia con las fechas y la caja muestra su SQL
+    description: Las reglas encuentran el encabezado, el tipo de cada columna, las celdas vacías, los duplicados y si la fila TOTAL cuadra.
+    check: Tienes la ficha de tu tabla y registraste tu hallazgo
+  - id: pdf
+    title: Lee tu PDF con reglas
+    tool: lms
+    phase: experimentacion
+    description: Del texto del PDF salen el RUC (con su dígito verificador), el DNI, las fechas, los montos, la serie-número, los correos y los teléfonos, y el tipo de documento por palabras clave.
+    check: Tienes la ficha de tu PDF y sabes si es venta, compra u otra cosa
   - id: juego
-    title: ¿Qué gráfico va?
+    title: ¿Regla o IA?
     tool: lms
     phase: conceptualizacion
-    description: Juego de la clase. Cada pregunta de oro trae lo que devuelve su SQL y la llevas al gráfico que la responde.
+    description: Juego de la clase. Cada tarjeta trae una tarea y la llevas a «Regla» o a «IA».
     check: Jugaste una ronda y publicaste tu reflexión
-  - id: dinamico
-    title: Dinámico es volver a preguntar
-    tool: lms
-    phase: conceptualizacion
-    description: Cada filtro arma un SQL nuevo y la API consulta tus datos en ese momento; el filtro también puede meter una impureza.
-    check: Cambias las fechas y sabes explicar por qué cambian los números
-  - id: cuadrar
-    title: Cada número cuadra
+  - id: entender
+    title: La IA entiende lo que la regla no
     tool: lms
     phase: experimentacion
-    description: El número del visor, el de curl con el mismo SQL y el de «-- Verificado:» son el mismo (T5).
-    check: Registraste tu hallazgo y T5 está hecha en el plan
-  - id: decidir
-    title: Tus tres decisiones
+    description: Tapas tus datos personales en el navegador y le pides a la IA que clasifique, resuma y saque los campos sin patrón fijo.
+    check: Revisaste tu texto tapado antes de enviarlo y viste qué modelo respondió
+  - id: verificar
+    title: Cada campo con su cita
     tool: lms
     phase: experimentacion
-    description: Escribes una regla «si…, entonces…» por pregunta y la IA la pone bajo su gráfico con un semáforo.
-    check: Tres reglas en el tablero, cada una con número, umbral, acción y cuándo
+    description: Buscas en el texto la cita de cada campo de la IA; lo que no aparece es inventado.
+    check: Marcaste qué campo no tenía cita y registraste tu hallazgo
+  - id: lote
+    title: Tu lote clasificado
+    tool: lms
+    phase: experimentacion
+    description: Clasificas varios archivos con reglas y solo los dudosos con IA, cuentas cuántos la necesitaron y exportas el lote para tu tablero.
+    check: Descargaste lote.csv o lote.json
   - id: entregar
-    title: Insignia y proyecto final
+    title: Insignia y tarea
     tool: lms
     phase: experimentacion
-    description: Enciendes tu insignia, descargas tu fotito, dices en el muro qué te llevas y anotas el proyecto final.
+    description: Enciendes tu insignia, descargas tu fotito, dices en el muro qué te llevas y anotas la tarea.
     check: Tu fotito descargada y tu línea en el muro de cierre
 ---
 
 **Martes 17 de noviembre, 6:30 – 7:30 pm (hora de Lima).** Última sesión del curso.
 
-Conviertes tus tres preguntas de oro en un tablero con filtros, tarjetas y gráficos que vuelve a consultar
-tus datos cada vez que mueves un filtro, compruebas que cada número cuadra con su SQL verificada y escribes
-la decisión que tomarías con cada uno.
+Traes tus propios archivos (facturas y boletas en PDF, tu Excel de ventas, el estado de cuenta del banco) y les
+preguntas cosas. Primero con reglas, que no cuestan nada, no sacan tus datos de tu compu y dan siempre la misma
+respuesta. Después, solo para lo que las reglas no pueden, con IA: con tus datos personales tapados y cada respuesta
+con su cita en el texto.
 
 ## Avance de la clase
 
-Un número no decide nada: tú sí. Hoy cada pregunta de oro se vuelve un gráfico vivo y termina en una frase:
-«si pasa esto, entonces haré aquello».
+Tus archivos ya saben cosas. Hoy les preguntamos: primero reglas, luego IA.
 
 ### Bloques (60 minutos)
 
-- 0:00 a 0:02 · Bienvenida: un número no decide nada (voto).
-- 0:02 a 0:04 · Repaso: la sesión 1 en 37 segundos (video y voto).
-- 0:04 a 0:09 · Tu negocio y tus tres consultas: tres caminos, un pedido para cada uno.
-- 0:09 a 0:14 · Teoría: cada pregunta pide su gráfico (Cleveland y McGill; el Challenger).
-- 0:14 a 0:18 · Encarga tu tablero: la IA construye mientras jugamos (voto de predicción).
-- 0:18 a 0:25 · Juego: ¿qué gráfico va?
-- 0:25 a 0:29 · Teoría: dinámico es volver a preguntar (Shneiderman; el filtro que corta el día).
-- 0:29 a 0:35 · Pruébalo en el visor: los criterios de T3, T4 y T4b (voto).
-- 0:35 a 0:40 · Cada número cuadra con su SQL: T5 con tus tres preguntas (hallazgo y muro).
-- 0:40 a 0:44 · Reto: el tablero que miente (voto y muro).
-- 0:44 a 0:48 · Teoría: un número sin decisión es adorno (Gollwitzer).
-- 0:48 a 0:53 · Tus tres decisiones «si…, entonces…», al tablero con su semáforo (muro).
-- 0:53 a 0:56 · Muestra tu tablero: tu postal y tu línea en el muro.
-- 0:56 a 1:00 · Ticket de salida, tu insignia, tu fotito y el proyecto final.
+- 0:00 a 0:02 · Bienvenida: tus archivos ya saben cosas (voto).
+- 0:02 a 0:05 · Tus archivos sobre la mesa: se leen en tu navegador y nada se sube (voto de predicción).
+- 0:05 a 0:10 · Teoría: tres clases de datos (Abiteboul; los genes que Excel volvió fechas).
+- 0:10 a 0:16 · Escanea tu Excel o CSV sin IA: encabezado, columnas, vacíos, duplicados y la fila TOTAL (hallazgo y muro).
+- 0:16 a 0:22 · Lee tu PDF con reglas: RUC con su dígito verificador, DNI, fechas, montos, serie, correos y teléfonos (voto).
+- 0:22 a 0:25 · Reflexión: ¿dónde se detienen las reglas? (voto y muro).
+- 0:25 a 0:32 · Juego: ¿regla o IA?
+- 0:32 a 0:37 · Teoría: primero la regla (costo, precisión, privacidad y reproducibilidad).
+- 0:37 a 0:43 · La IA entiende lo que la regla no, con lo personal tapado (voto).
+- 0:43 a 0:47 · Teoría: si no está en el texto, es inventado (Mata contra Avianca).
+- 0:47 a 0:51 · Verifica cada campo con su cita (hallazgo).
+- 0:51 a 0:57 · Clasifica tu lote, expórtalo y llévalo a tu tablero (voto).
+- 0:57 a 1:00 · Ticket de salida, tu insignia, tu fotito y la tarea.
 
-## 1. Tu negocio y tus tres consultas · Experiencia
+## 1. Tus archivos sobre la mesa · Experiencia
 
-**¿Viniste a la sesión 1?** Pega en DeepSeek Harness:
+Trae dos o tres archivos de tu negocio: un PDF (factura, boleta, recibo por honorarios, estado de cuenta) y un Excel o
+CSV (ventas, gastos, cobranzas). Los sueltas en la escena y tu navegador los lee con FileReader: **nada se sube**. Si no
+trajiste, usa los de muestra: son de una botica ficticia, la Botica Santa Kantuta, y todos sus nombres, RUC, DNI,
+teléfonos y correos se inventaron para la clase.
 
-```text
-Retoma GoldenQuerys, sesión 2. Si no existe /trabajo/goldenquerys (tu aula puede ser nueva), no lo busques más: pregúntame cuál era mi negocio (botica, polleria, ferreteria, academia o courier) y, cuando te responda con BASE, ejecuta curl -fsSL -o /tmp/gq.zip https://raw.githubusercontent.com/davrv93/jmd/main/lms/content/courses/goldenquerys-ia/materials/goldenquerys-kit.zip && unzip -oq /tmp/gq.zip -d /trabajo && echo BASE > /trabajo/goldenquerys/MI_NEGOCIO.txt (cambiando BASE por mi respuesta). Cuando exista: corre sh /trabajo/goldenquerys/arrancar.sh, comprueba curl -s localhost:8766/api/salud, lee goldenquerys/MI_NEGOCIO.txt y goldenquerys/PLAN_TRABAJO.md y lista goldenquerys/consultas/*.sql. Dime en una tabla corta cada consulta con su «-- Pregunta:», su número y si ya tiene «-- Verificado:». Si tengo menos de 3 consultas, dímelo y no escribas nada todavía.
-```
+Lo que cargas queda en tu «mesa» mientras la pestaña del LIVE esté abierta; al cerrarla se borra.
 
-**¿Tienes una o dos consultas?** La IA propone las que faltan, las prueba y las contrasta:
+## 2. Tres clases de datos · Conceptos
 
-```text
-Tengo menos de 3 consultas en goldenquerys/consultas/. Propón las que faltan para llegar a 3 preguntas de oro de mi negocio, cada una con la decisión que permite tomar. Escribe su SQL, pruébala con curl contra /api/consulta, contrástala con una consulta independiente más simple (filas base, otra ruta, bordes: anuladas, fechas con hora, JOIN que duplica) y guárdala en goldenquerys/consultas/<negocio>-<tema>.sql con «-- Pregunta:», «-- Decisión:» y «-- Contrastado:» arriba. NO escribas «-- Verificado:»: lo escribo yo cuando revise tus números.
-```
-
-**¿Te perdiste la sesión 1?** En la escena toca tu negocio y el pedido queda copiado. Este es el de la botica;
-los otros cambian solo el nombre y la base:
-
-```text
-Me perdí la sesión 1. Mi negocio es: Botica (base botica). 1) Ejecuta este comando y dime qué imprimió: curl -fsSL -o /tmp/gq.zip https://raw.githubusercontent.com/davrv93/jmd/main/lms/content/courses/goldenquerys-ia/materials/goldenquerys-kit.zip && unzip -oq /tmp/gq.zip -d /trabajo && echo botica > /trabajo/goldenquerys/MI_NEGOCIO.txt && sh /trabajo/goldenquerys/arrancar.sh . 2) Lee goldenquerys/AGENTS.md y goldenquerys/skill-dashboard/SKILL.md, reemplaza <<NEGOCIO>> en goldenquerys/PLAN_TRABAJO.md y haz T1 con curl -s "localhost:8766/api/esquema?db=botica". 3) Propón 3 preguntas de oro para el dueño, cada una con su decisión; escribe su SQL, pruébala con curl contra /api/consulta y contrástala con una consulta más simple (filas base, otra ruta y bordes: anuladas, fechas con hora, JOIN que duplica). 4) Guárdalas en goldenquerys/consultas/<negocio>-<tema>.sql con «-- Pregunta:», «-- Decisión:» y «-- Contrastado:» arriba. NO escribas «-- Verificado:» ni marques T2: eso lo hago yo. Termina con una tabla: pregunta, número y prueba.
-```
-
-**Si falla:** `curl -s localhost:8766/api/salud` debe responder `"ok": true`; si no, `sh /trabajo/goldenquerys/arrancar.sh`.
-
-## 2. Cada pregunta pide su gráfico · Conceptos
-
-| La pregunta | Lo que devuelve tu SQL | El gráfico |
+| Clase | Ejemplo | Cómo se ordena |
 |---|---|---|
-| ¿Cuánto? | una fila con un número | tarjeta |
-| ¿Quién más, quién menos? | pocas filas con nombre y número | barras ordenadas que empiezan en cero |
-| ¿Sube o baja? | fechas en orden | línea |
-| ¿A quién llamo? | una lista con nombres, teléfonos y montos | tabla |
+| Estructurado | tu Excel de ventas | reglas de columna: encabezado, tipo, vacíos, duplicados, totales |
+| Semiestructurado | una factura en PDF | reglas de patrón: «RUC», «F001-», «S/», fechas |
+| No estructurado | el correo de un proveedor | aquí la regla se detiene: hay que entender |
 
-Cleveland y McGill (1984) midieron que comparamos mejor posiciones sobre una misma escala que ángulos o áreas:
-barras antes que torta. Y el Challenger (1986): la noche antes del lanzamiento se compararon solo los vuelos que
-habían tenido daño en las juntas; con los 24 vuelos se veía que los 4 más fríos lo habían tenido. Un gráfico
-necesita la forma correcta y todas las filas, también las que dan cero.
+Abiteboul (1997) llamó semiestructurados a los datos cuya estructura es irregular o implícita: está, pero no en una
+tabla. Y aun lo estructurado miente cuando el programa adivina el tipo: Excel convertía nombres de genes como SEPT2 en
+la fecha «2-sep»; Ziemann, Eren y El-Osta (2016) encontraron ese error en 704 de 3 597 artículos con listas de genes en
+Excel (19,6 %), y en 2020 el comité que nombra los genes humanos los renombró (SEPT1 pasó a SEPTIN1 y MARCH1 a MARCHF1;
+Bruford et al., 2020). El tipo de cada columna lo decide tu regla, no el programa.
 
-## 3. Encarga tu tablero · Aplicación
+## 3. Escanea tu Excel o CSV sin IA · Aplicación
+
+La escena arma la ficha de tu tabla con reglas que puedes leer:
+
+- **Encabezado:** la primera fila con tres o más celdas de texto seguidas; lo de arriba son títulos.
+- **Tipo de cada columna:** fecha, monto, RUC, DNI, serie-número, categoría (pocos valores que se repiten) o texto libre.
+- **Fechas:** cuántos formatos conviven (fecha de Excel, «03/10/2026», «2026-10-05», «6-oct-2026») y todas a aaaa-mm-dd.
+  En Perú va día/mes/año.
+- **Vacíos y duplicados:** cuántas celdas vacías tiene cada columna y qué filas son idénticas.
+- **Fila TOTAL:** si la suma de las filas cuadra con lo que dice el total, y si no, por cuánto.
+
+En `ventas.xlsx` la fila TOTAL dice S/ 765,80 y las filas suman S/ 803,80: la diferencia, S/ 38,00, es justo la fila
+22, pegada dos veces. En `gastos.csv` el total cuadra… porque incluye un gasto repetido, y un RUC tiene el dígito
+verificador mal.
+
+## 4. Lee tu PDF con reglas · Aplicación
+
+Del texto del PDF, sin IA:
+
+- **RUC:** 11 dígitos que empiezan en 10, 15, 16, 17 o 20, y el último es el dígito verificador de SUNAT: cada uno de
+  los diez primeros se multiplica por 5, 4, 3, 2, 7, 6, 5, 4, 3 y 2; se suma; el dígito es 11 menos el resto de
+  dividir entre 11 (si da 10 es 0 y si da 11 es 1). Un RUC que empieza en 10 lleva adentro el DNI de una persona.
+- **DNI** (8 dígitos), **fechas**, **montos en S/**, **serie-número** (F001-123, B001-…, E001-… de los recibos por
+  honorarios), **correos** y **teléfonos**.
+- **Tipo de documento** por palabras clave: factura, boleta, nota de crédito, recibo por honorarios, estado de cuenta,
+  planilla.
+- **Venta o compra:** escribe tu RUC. Si el RUC de arriba (el del emisor) es el tuyo, es venta; si el tuyo aparece
+  como cliente, es compra.
+
+Un PDF escaneado (solo imagen) da 0 caracteres: ahí las reglas se detienen.
+
+## 5. ¿Regla o IA? · Conceptos
+
+Juego de la clase. Cada tarjeta trae una tarea: sacar el RUC, sumar una columna, ¿reclamo o felicitación?, clasificar un
+gasto por su descripción libre… La llevas a «Regla» o a «IA»; al acertar, una pregunta rápida (+5). Errar no resta: la
+lupa explica por qué.
+
+## 6. Primero la regla · Conceptos
+
+| | Regla | IA |
+|---|---|---|
+| Costo | S/ 0, milisegundos, en tu navegador | tokens: gratis con tope o de pago, segundos |
+| Precisión | exacta donde hay patrón; ciega al sentido | entiende el sentido; puede inventar |
+| Privacidad | el archivo no sale de tu compu | el texto viaja a un servidor, a menudo en otro país |
+| Reproducibilidad | el mismo archivo da siempre lo mismo | puede cambiar de una vez a otra |
+
+La Ley N.º 29733 define dato personal como «toda información sobre una persona natural que la identifica o la hace
+identificable», y mandar datos personales a un destinatario en otro país es un flujo transfronterizo (Reglamento,
+D. S. 016-2024-JUS). Por eso, antes de enviar, se tapan el DNI, los teléfonos, los correos, las cuentas y los RUC de
+persona. Y sobre la reproducibilidad: Atil et al. (2024) corrieron cinco modelos configurados para ser deterministas,
+diez veces cada tarea, y la precisión varió hasta 15 %; casi nunca dieron diez veces el mismo texto.
+
+## 7. La IA entiende lo que la regla no · Aplicación
+
+En la escena eliges un archivo de tu mesa y ves lado a lado tu texto y el texto tapado. Si hay un nombre que tapar,
+lo escribes. Lo revisas y recién entonces lo mandas. La IA devuelve el tipo de documento, la categoría (venta, compra,
+gasto, bancario, planilla u otro), su confianza, un resumen y los campos sin patrón fijo, cada uno con su cita. La
+escena muestra qué modelo respondió, si fue gratis o de pago y cuántas consultas te quedan hoy (20 al día, 6 de pago).
+
+Con toda la clase a la vez la respuesta puede tardar de 10 a 25 segundos.
+
+## 8. Si no está en el texto, es inventado · Conceptos
+
+En 2023 dos abogados de Nueva York presentaron a un juez seis sentencias que no existían, con citas y todo, sacadas de
+ChatGPT; cuando dudaron, le preguntaron al mismo ChatGPT si eran reales y dijo que sí. El juez P. Kevin Castel los multó
+con US$ 5 000 (Mata v. Avianca, 22 de junio de 2023). La regla de hoy: cada campo de la IA trae su cita literal; la
+buscas en el texto. Si aparece y dice el valor, vale. Si aparece pero no dice el valor, revísalo. Si no aparece, es
+inventado.
+
+## 9. Clasifica tu lote · Aplicación
+
+Cargas varios archivos (o las ocho muestras), escribes tu RUC y las reglas clasifican primero. Solo los que quedan «por
+decidir» van a la IA, uno por uno. La escena cuenta cuántos salieron por regla, cuántos necesitaron IA y cuántos no
+tenían texto, y exporta `lote.csv` o `lote.json` con archivo, tipo, categoría, origen (regla o IA), confianza, fecha,
+RUC del emisor, serie-número, total y motivo.
+
+Para llevarlo a tu tablero, la escena copia este pedido con tu lote adentro (en lugar de `<<LOTE>>`):
 
 ```text
-Tareas T3, T4 y T4b del plan. Lee goldenquerys/skill-dashboard/SKILL.md y síguelo al pie de la letra. Construye goldenquerys/dashboard/index.html con mis 3 consultas de goldenquerys/consultas/ como centro: 1) usa el SQL de cada una tal cual y solo agrégale los filtros (fecha desde y hasta, y sede o local si mi base lo tiene); 2) elige el widget por la forma del resultado: un solo número → tarjeta KPI; pocas categorías para comparar → barras ordenadas que empiezan en cero; fechas en orden → línea; una lista para actuar (nombres, teléfonos, montos) → tabla; 3) completa lo que pide el skill (3 KPI, 2 gráficos, la tabla y la caja de pregunta con /api/pregunta); 4) encima de cada widget, su pregunta en una línea; 5) por defecto, las fechas del periodo de mis consultas (si no tienen fechas, del 2025-01-01 al 2026-10-31). Prueba cada consulta con curl antes de usarla y marca T3 y T4 solo si cumplen su criterio. Al terminar dime en 4 líneas qué widget responde cada pregunta y por qué, y qué escribir en el visor.
+Guarda tal cual, sin cambiar nada, este lote de mis archivos (lo exporté en la clase de GoldenQuerys) en goldenquerys/archivos/lote.csv: <<LOTE>> Luego, con python3 y sqlite3 (sin instalar nada), crea goldenquerys/bases/misarchivos.sqlite con una tabla archivos que tenga esas mismas columnas (total_soles y confianza como números). Comprueba con curl -s "localhost:8766/api/consulta?db=misarchivos" --get --data-urlencode "sql=SELECT categoria, origen, COUNT(*) AS archivos, SUM(total_soles) AS soles FROM archivos GROUP BY categoria, origen" y muéstrame el resultado en una tabla. Si curl no responde, corre antes sh /trabajo/goldenquerys/arrancar.sh; si no existe /trabajo/goldenquerys, crea solo la carpeta goldenquerys/archivos y dame la tabla con python3. NO inventes filas ni completes celdas vacías.
 ```
 
-La IA tarda de 3 a 6 minutos. Mientras trabaja, la clase juega.
-
-## 4. Juego: ¿qué gráfico va? · Conceptos
-
-Cada carta trae una pregunta de oro y lo que devuelve su SQL (cuántas filas y qué columnas). La llevas a la
-tarjeta, las barras, la línea o la tabla; al acertar, eliges la decisión que permite (+5). Errar no resta: la
-lupa explica por qué. Quien llega tarde practica solo y su reflexión cuenta igual.
-
-## 5. Dinámico es volver a preguntar · Conceptos
-
-Filtro → SQL con el filtro → `/api/consulta` → gráfico. En la botica, septiembre de 2026 lo ganó Los Olivos
-(S/ 2 375,52) y octubre, SJL (S/ 2 558,80): una foto de septiembre te habría mandado a la sede equivocada. El
-filtro también es SQL: con `fecha <= '2026-10-31'` el 31 queda fuera porque la fecha trae hora (385 ventas en vez
-de 400). El filtro va con `date(fecha)`.
-
-## 6. Pruébalo en el visor · Aplicación
-
-En el visor, `goldenquerys/dashboard/index.html`: ¿cada pregunta tiene su gráfico?, ¿cambian todos los números al
-mover las fechas?, ¿entra el último día del mes?, ¿la caja de pregunta muestra su SQL? Si algo falla:
+Y para sumarlo a tu tablero:
 
 ```text
-Revisa goldenquerys/dashboard/index.html contra el criterio de T3, T4 y T4b del plan: 1) que todas las llamadas usen la ruta absoluta /api/…; 2) que al cambiar cualquier filtro se vuelvan a consultar TODOS los widgets (destruye cada gráfico antes de volver a crearlo); 3) que el filtro de fechas use date(fecha) para que el último día entre completo; 4) que la caja de pregunta muestre su SQL. Corrige lo que falle y dime en 3 líneas qué cambiaste.
+Con la base misarchivos (tabla archivos), agrega a mi tablero goldenquerys/dashboard/index.html una tarjeta «Mis archivos» que responda: ¿cuánto fue venta, compra y gasto según mis archivos?, con barras que empiezan en cero y debajo cuántos archivos salieron por regla y cuántos necesitaron IA. Usa el SQL tal cual con /api/consulta y muestra ese SQL en la caja. No toques mis tres preguntas de oro. Si mi tablero no existe todavía, crea solo esa tarjeta en goldenquerys/dashboard/archivos.html. Al terminar dime qué escribir en el visor.
 ```
 
-Si un gráfico no va con su pregunta, cambia los `__`:
+## Tarea · Aplicación
 
-```text
-En mi tablero, el widget de la pregunta «__» debe ser __ (tarjeta, barras, línea o tabla), porque su consulta devuelve __. Cámbialo sin tocar su SQL y dime qué cambiaste.
-```
+Hasta el domingo 22 de noviembre:
 
-## 7. Cada número cuadra con su SQL · Aplicación
+1. Escanea al menos cinco archivos reales de tu negocio en las escenas de la clase (siguen abiertas): la ficha de cada
+   uno sale sin IA.
+2. Pasa por IA solo los que queden «por decidir», con lo personal tapado, y verifica cada campo con su cita.
+3. Exporta tu `lote.csv`, llévalo a tu aula con el primer pedido y súmalo a tu tablero con el segundo.
+4. Comparte en el grupo de la clase una línea: cuántos de tus archivos salieron por regla y cuántos necesitaron IA.
 
-El número del visor, el de curl con el mismo SQL y el de `-- Verificado:` tienen que ser el mismo.
-
-```text
-Tarea T5 con mis tres preguntas. Para cada widget de goldenquerys/dashboard/index.html: 1) dime qué consulta de goldenquerys/consultas/ usa y qué fechas pone el filtro; 2) con las fechas de su «-- Verificado:» (o de su «-- Contrastado:» si aún no lo firmé), ejecuta con curl el MISMO SQL que manda el tablero; 3) muéstrame una tabla: widget | número por curl | número verificado | ¿cuadra?; 4) si alguno no cuadra, explícame en una línea por qué (filtro de fecha que corta el día, JOIN que duplica, anuladas u otra pregunta) y corrígelo en el tablero. NO marques T5: lo marco yo cuando vea el mismo número en el visor.
-```
-
-Cuando los tres cuadren, T5 la marcas tú:
-
-```text
-Ya vi en el visor los mismos números que tus curl y que mis «-- Verificado:». Marca T5 hecha en goldenquerys/PLAN_TRABAJO.md y muéstrame el plan completo.
-```
-
-## 8. El tablero que miente · Reflexión
-
-Tres tableros con los mismos números de la botica. En uno, el eje de las barras empieza en S/ 1 900: SJL vendió
-33 % más que Lince, pero su barra se ve 24 veces más larga (el factor de mentira de Tufte, aquí unas 70 veces).
-Las barras, siempre desde cero.
-
-## 9. Tus tres decisiones · Aplicación
-
-Pregunta → número → referencia → «si…, entonces…». Gollwitzer llamó a esos planes intenciones de implementación;
-en un metaanálisis de 94 pruebas, planear así ayudó a cumplir metas con un efecto de medio a grande
-(Gollwitzer y Sheeran, 2006, d = 0,65). Primero la IA trae tus números con algo para comparar:
-
-```text
-Para cada una de mis 3 preguntas de oro de goldenquerys/consultas/, dame en una tabla el número que muestra hoy mi tablero y una referencia para compararlo (el mes anterior, el promedio de los meses anteriores o el mismo mes del año pasado: la que tenga sentido), sacada con curl. NO escribas decisiones: te las dicto yo en el siguiente mensaje.
-```
-
-Después escribes tus tres reglas en la escena, que arma este pedido con tus palabras:
-
-```text
-Mis decisiones: 1) Si __, entonces __. 2) Si __, entonces __. 3) Si __, entonces __. Agrégalas a goldenquerys/dashboard/index.html: debajo del widget de cada pregunta, un recuadro «Decisión» con la frase y un semáforo que se recalcula con los filtros: ámbar si con los datos filtrados se cumple el «si» (toca actuar) y verde si no. Guárdalas también como «-- Decisión:» en su consulta. No cambies ningún SQL; si una condición no se puede calcular con los datos, pregúntame antes de inventar. Al terminar dime qué semáforo está en ámbar hoy.
-```
-
-## Proyecto final · Aplicación
-
-Hasta el domingo 22 de noviembre, en tu aula: `goldenquerys/dashboard/index.html` con tus tres preguntas de oro,
-cada una con su SQL verificada (`-- Verificado:` escrito por ti), su gráfico y su decisión «si…, entonces…» con
-semáforo; y en `goldenquerys/PLAN_TRABAJO.md`, de T1 a T5 hechas. Comparte tu postal del tablero en el grupo de
-la clase. El lunes, abre tu tablero con las fechas de la semana y mira qué semáforo está en ámbar.
+El proyecto final del curso sigue siendo tu tablero con tres preguntas de oro verificadas; la tarjeta «Mis archivos» se
+suma como cuarta pregunta.

@@ -28,7 +28,7 @@
   // y la frase de la fotito cuando el alumno no escribió la suya. Fuera de una ruta conocida vale la sesión 1.
   var SESIONES = {
     "gq-02": { clase: "Sesión 1 · Tus tres preguntas de oro", fecha: "Martes 10 de noviembre de 2026", pfx: "gq02-", frase: "Antes de creerle a un número, reviso su SQL." },
-    "gq-03": { clase: "Sesión 2 · El tablero dinámico y la decisión", fecha: "Martes 17 de noviembre de 2026", pfx: "gq03-", frase: "Cada número de mi tablero termina en una decisión." },
+    "gq-03": { clase: "Sesión 2 · Pregúntale a tus propios archivos", fecha: "Martes 17 de noviembre de 2026", pfx: "gq03-", frase: "Primero reglas; la IA solo para entender, y cada dato con su cita." },
   };
   var SES = SESIONES[LECCION] || SESIONES["gq-02"];
   var CLASE = SES.clase;
