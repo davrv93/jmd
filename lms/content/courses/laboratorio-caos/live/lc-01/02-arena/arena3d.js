@@ -492,7 +492,12 @@ let ancho = 2, alto = 1, extension = 6.5, compacto = false;
 function destinoCamara(fase) {
   // La distancia sale de lo ocupado: con pocos jugadores la cámara se acerca; con muchos, o en un
   // lienzo angosto, se aleja hasta que entren todos.
-  const z = Math.max(9.5, (extension + (fase === "ataque" || fase === "defensa" ? 1.4 : 0)) / (Math.tan(THREE.MathUtils.degToRad(19)) * (ancho / alto))), y = z * 0.47;
+  let z = Math.max(9.5, (extension + (fase === "ataque" || fase === "defensa" ? 1.4 : 0)) / (Math.tan(THREE.MathUtils.degToRad(19)) * (ancho / alto)));
+  // También a lo alto: Ema y el Ozaru se paran adelante (z = 5.2). En un lienzo ancho la distancia que basta para
+  // el ancho deja sus pies (y medio cuerpo) bajo el borde inferior; la cámara se aleja hasta que entren.
+  const FRENTE = 6.0, MEDIO = THREE.MathUtils.degToRad(19 - 1.2);
+  while (z < 22 && Math.atan2(z * 0.47, z - FRENTE) > Math.atan2(z * 0.47 - 1, z + 0.4) + MEDIO) z += 0.25;
+  const y = z * 0.47;
   if (fase === "ataque") return { px: -1.5, py: y - 0.3, pz: z - 0.4, lx: -0.2, ly: 1.0, lz: -0.4 };
   if (fase === "defensa") return { px: 1.6, py: y - 0.3, pz: z - 0.4, lx: 0.6, ly: 1.0, lz: -0.4 };
   return { px: 0, py: y, pz: z, lx: 0.2, ly: 1.0, lz: -0.4 };
