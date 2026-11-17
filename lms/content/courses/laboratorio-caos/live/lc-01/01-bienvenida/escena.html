@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Suelta al monito</title>
+<html lang="es"><head><meta charset="utf-8"><link rel="icon" href="data:,"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Suelta al monito</title>
 <style>
 :root{--crema:#fff4de;--tinta:#1b1f3b;--suave:#5a5f80;--caja:#fff;--banana:#ffc93c;--rojo:#d93a40;--rojo-claro:#ffd9da;--verde:#1e7a4c;--verde-claro:#d3f2e2;--lila:#e9e3ff;--redondo:ui-rounded,"SF Pro Rounded","Nunito","Varela Round",system-ui,sans-serif}
 @media (prefers-color-scheme:dark){:root:not([data-tema="light"]){--crema:#191c33;--tinta:#f3eeff;--suave:#b9b6d6;--caja:#24284a;--rojo-claro:#4a2230;--verde-claro:#183d2d;--lila:#2e2a52}}
@@ -19,7 +19,7 @@ p{margin:0}.suave{color:var(--suave)}
 </style>
 </head><body><main>
 <div><div class="kicker">LABORATORIO DE CAOS</div><h1>¿Qué pasa si sueltas<br>un <span>monito</span> en tu servidor?</h1></div>
-<p class="suave">En 2011 Netflix creó <b>Chaos Monkey</b>: un programa que apagaba servidores al azar en horario de trabajo. Si el sistema aguantaba al mono, aguantaba la vida real. Hoy jugamos a eso, por turnos y sin que ningún servidor de verdad salga herido.</p>
+<p class="suave">Netflix lo hace desde hace años con <b>Chaos Monkey</b>, un programa que apaga sus propios servidores al azar en pleno horario de oficina. Si el sistema aguanta al mono, aguanta la vida real. Hoy jugamos a eso, por turnos y sin que ningún servidor de verdad salga herido.</p>
 <div class="grid">
   <div class="caja t"><div class="ico">🐒</div><h2>Monito Tumba Server</h2><p>Atacas desde el celular o la laptop. En tu turno eliges un servidor de la granja y le lanzas hasta <b>2 ataques</b> de 10: desde apagar la app o borrar la base hasta el jutsu de clones, la fuga de datos o la clave débil. Tu monito salta la valla.</p></div>
   <div class="caja s"><div class="ico">🛡️</div><h2>Monito Server</h2><p>Cuidas un servidor <b>real</b> en tu aula: una tienda en Bun con su base SQLite y un respaldo. En tu turno lo curas con <b>botones</b> y con <b>prompts</b> en DeepSeek Harness. Ojo: varios ataques no tienen botón ni receta.</p></div>
@@ -30,4 +30,21 @@ p{margin:0}.suave{color:var(--suave)}
 <li><b>Un respaldo que no se prueba no es un respaldo</b>: hoy vas a restaurar uno de verdad.</li>
 <li><b>Runbook</b>: una receta escrita para curar cada falla. La skill <code>monito-server</code> es exactamente eso, y la IA la sigue.</li>
 </ul></div>
+<script src="../../comun/gsap.min.js"></script>
+<script>
+(function () {
+  // Entrada con GSAP. Los estados iniciales los pone el script: sin GSAP todo queda visible.
+  if (!window.gsap) return;
+  var quieto = false; try { quieto = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+  if (quieto) return;
+  var tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+  tl.from(".kicker", { y: -14, opacity: 0, duration: .35 })
+    .from("h1", { y: 26, opacity: 0, duration: .5 }, "-=.15")
+    .from("h1 span", { scale: .3, rotation: 10, duration: .5, ease: "back.out(2.6)" }, "-=.25")
+    .from("main > p", { y: 16, opacity: 0, duration: .4 }, "-=.2")
+    .from(".caja", { y: 34, opacity: 0, duration: .45, stagger: .11, ease: "back.out(1.5)" }, "-=.1")
+    .from(".ico", { scale: 0, rotation: -40, duration: .45, stagger: .11, ease: "back.out(3)" }, "<+.15");
+  gsap.to("h1 span", { rotation: 2, duration: 1.6, yoyo: true, repeat: -1, ease: "sine.inOut", delay: 2 });
+})();
+</script>
 </main></body></html>

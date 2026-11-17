@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Arena del monito</title>
+<link rel="icon" href="data:,">
 <!--
   ARENA DEL MONITO (Laboratorio de caos, lc-01). Minijuego por turnos del LIVE.
   Equipo Monito Tumba Server (ataca, no necesita aula) y equipo Monito Server (defiende su servidor
@@ -72,6 +73,19 @@ button { font: inherit; cursor: pointer; }
 .cartel { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 5; }
 .cartel span { font-family: var(--redondo); font-weight: 900; font-size: clamp(26px, 5vw, 46px); background: var(--banana); color: #1b1f3b; border: 4px solid #1b1f3b; border-radius: 22px; padding: 6px 22px; box-shadow: 6px 6px 0 #1b1f3b; transform: rotate(-3deg); }
 
+.escenario { position: relative; height: clamp(300px, 46vw, 520px); border: 4px solid var(--tinta); border-radius: 22px; overflow: hidden; box-shadow: 6px 6px 0 var(--tinta); background: #fff4de; }
+.escenario canvas { width: 100%; height: 100%; display: block; touch-action: manipulation; }
+#etiquetas3d { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.et3d { position: absolute; transform: translate(-50%, -100%); font: 700 11px/1.2 system-ui, sans-serif; color: #1b1f3b; background: rgba(255,255,255,.9); border: 2px solid #1b1f3b; border-radius: 9px; padding: 1px 6px; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.et3d.yo { background: var(--banana); }
+.et3d.oculta { display: none; }
+.et3d.ausente { opacity: .5; }
+.et3d.srv.ok { background: #d3f2e2; } .et3d.srv.caido { background: #ffd9da; } .et3d.srv.prep { opacity: .75; }
+.burbuja3d { position: absolute; transform: translate(-50%, -100%); font-size: 30px; pointer-events: none; }
+.vista { border: 3px solid var(--tinta); border-radius: 999px; background: var(--caja); color: var(--tinta); font-weight: 800; padding: 4px 12px; }
+.blancos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.blancos button { border: 2px solid var(--tinta); border-radius: 999px; background: var(--caja); color: var(--tinta); padding: 3px 10px; font-weight: 700; font-size: 13px; }
+.blancos button.sel { background: var(--rojo); color: #fff; }
 .abajo { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-top: 12px; }
 .caja { background: var(--caja); border: 3px solid var(--tinta); border-radius: 18px; padding: 14px; box-shadow: 4px 4px 0 var(--tinta); }
 .caja h2 { margin: 0 0 8px; font-family: var(--redondo); font-size: 19px; }
@@ -106,6 +120,7 @@ button { font: inherit; cursor: pointer; }
   .valla::before, .valla::after { display: none; }
   .abajo { grid-template-columns: 1fr; }
   .equipos { grid-template-columns: 1fr; }
+  .escenario { height: 62vw; min-height: 260px; }
 }
 @media (prefers-reduced-motion: reduce) { .sacudir, .cura { animation: none; } }
 </style>
@@ -114,8 +129,15 @@ button { font: inherit; cursor: pointer; }
 <div class="top">
   <div class="marca"><small>LABORATORIO DE CAOS</small>Arena del monito</div>
   <div class="fase"><span class="pill" id="fase">Esperando</span><span class="reloj" id="reloj"></span><span id="ronda" class="suave" style="margin:0"></span></div>
+  <button class="vista" id="vista" type="button" hidden>Vista 2D</button>
   <div class="marcador"><div class="m-t">🐒 Tumba Server<b id="pt">0</b></div><div class="m-s">🛡️ Server<b id="ps">0</b></div></div>
 </div>
+
+<section class="escenario" id="escenario3d" hidden aria-label="Arena en 3D: los monitos a la izquierda de la valla y los servidores a la derecha">
+  <canvas id="lienzo3d"></canvas>
+  <div id="etiquetas3d"></div>
+  <div class="cartel" id="cartel3d" hidden><span id="cartel3d-txt"></span></div>
+</section>
 
 <section class="arena" id="arena">
   <div class="zona"><h3>🐒 Barrio de los monitos</h3><div class="barrio" id="barrio"></div></div>
@@ -132,6 +154,7 @@ button { font: inherit; cursor: pointer; }
   </section>
 </div>
 
+<script src="../../comun/gsap.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -141,6 +164,21 @@ button { font: inherit; cursor: pointer; }
   try { REDUCIDO = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
   var $ = function (id) { return document.getElementById(id); };
   var est = null, offset = 0, ultimoEv = null, leyendo = false, ocupado = false, blanco = null, aviso = "", avisoOk = false, faseVista = "";
+  var en3d = false;
+  function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ""; localStorage.setItem(k, v); } catch (e) { return ""; } }
+  function sync3d() { if (en3d && est) window.Arena3D.pintar(est, blanco, est.yo ? est.yo.n : -1); }
+  function activar3d(si) {
+    en3d = !!(si && window.Arena3D && window.gsap);
+    $("escenario3d").hidden = !en3d; $("arena").hidden = en3d;
+    $("vista").hidden = !window.Arena3D; $("vista").textContent = en3d ? "Vista 2D" : "Vista 3D";
+    if (window.Arena3D) { if (en3d) { window.Arena3D.encender(); window.Arena3D.fase(est ? est.fase : "lobby"); sync3d(); } else window.Arena3D.apagar(); }
+  }
+  function elegir(n) {
+    var j = jug(n);
+    if (!j || j.equipo !== "server" || j.lab !== "listo" || !est.yo || est.yo.equipo !== "tumba") return;
+    blanco = n; pintarArena(); pintarPanel(); sync3d();
+  }
+  window.__arena = { elegir: elegir, listo3d: function () { activar3d(ls("monito-vista") !== "2d"); } };
 
   var ATAQUES = [
     { k: "apagar", ic: "🔌", t: "Apagar la app", d: "mata el proceso" },
@@ -215,9 +253,9 @@ button { font: inherit; cursor: pointer; }
     if (d.eventos.length) ultimoEv = d.eventos[d.eventos.length - 1].id; else if (ultimoEv === null) ultimoEv = 0;
     est = d;
     if (blanco !== null && (!jug(blanco) || jug(blanco).equipo !== "server")) blanco = null;
-    pintarArriba(); pintarArena(); pintarPanel(); pintarFeed();
-    nuevos.forEach(animar);
-    if (d.fase !== faseVista) { if (faseVista) cartel(d.fase); faseVista = d.fase; }
+    pintarArriba(); pintarArena(); pintarPanel(); pintarFeed(); sync3d();
+    nuevos.forEach(function (e) { if (en3d) window.Arena3D.animar(e); else animar(e); });
+    if (d.fase !== faseVista) { if (faseVista) cartel(d.fase); faseVista = d.fase; if (en3d) window.Arena3D.fase(d.fase); }
   }
   function pintarArriba() {
     var f = $("fase"), nombres = { lobby: "Eligiendo equipos", ataque: "¡Ataca Tumba Server!", defensa: "¡Defiende Server!", marcador: est.puntuando ? "Revisando servidores…" : "Marcador" };
@@ -249,8 +287,9 @@ button { font: inherit; cursor: pointer; }
   }
   $("granja").addEventListener("click", function (ev) {
     var c = ev.target.closest(".srv.elegible"); if (!c) return;
-    blanco = Number(c.dataset.n); pintarArena(); pintarPanel();
+    elegir(Number(c.dataset.n));
   });
+  $("vista").addEventListener("click", function () { ls("monito-vista", en3d ? "2d" : "3d"); activar3d(!en3d); });
 
   function pintarPanel() {
     if (!est) return;
@@ -265,6 +304,10 @@ button { font: inherit; cursor: pointer; }
       h += est.fase === "ataque"
         ? '<p class="suave">' + (b ? 'Tu blanco: <b>' + esc(b.nombre) + '</b>. ' : 'Toca un servidor de la granja para elegir tu blanco. ') + 'Te quedan <b>' + quedan + '</b> ataques esta ronda.</p>'
         : '<p class="suave">' + (est.fase === "defensa" ? "Ahora defiende el equipo Server: mira si logran curarse." : "Espera a que el profe abra la ronda.") + '</p>';
+      if (est.fase === "ataque") {
+        var listos = est.jugadores.filter(function (j) { return j.equipo === "server" && j.lab === "listo"; });
+        h += '<div class="blancos">' + (listos.map(function (j) { return '<button data-bl="' + j.n + '"' + (blanco === j.n ? ' class="sel"' : "") + ">🖥️ " + esc(j.nombre) + (j.salud === "caido" ? " ❌" : "") + "</button>"; }).join("") || '<span class="suave" style="margin:0">Todavía no hay servidores listos.</span>') + "</div>";
+      }
       h += '<div class="botones">' + ATAQUES.map(function (a) { return '<button class="bt rojo" data-at="' + a.k + '"' + (puede ? "" : " disabled") + '>' + a.ic + " " + a.t + "<small>" + a.d + "</small></button>"; }).join("") + "</div>";
     } else {
       var fallas = yo.fallas || [], enDef = est.fase === "defensa" && yo.lab === "listo" && !ocupado;
@@ -289,6 +332,7 @@ button { font: inherit; cursor: pointer; }
   }
   $("panel").addEventListener("click", function (ev) {
     var b = ev.target.closest("button"); if (!b || b.disabled) return;
+    if (b.dataset.bl) { elegir(Number(b.dataset.bl)); return; }
     if (b.dataset.eq) enviar({ accion: "unir", equipo: b.dataset.eq }, b.dataset.eq === "server" ? "¡Bienvenido al equipo Server! Instalando tu servidor…" : "¡Bienvenido al equipo Tumba Server!");
     else if (b.dataset.at) enviar({ accion: "atacar", objetivo: blanco, ataque: b.dataset.at }, "¡Ataque lanzado!");
     else if (b.dataset.def) enviar({ accion: "defender", defensa: b.dataset.def }, "");
@@ -312,7 +356,9 @@ button { font: inherit; cursor: pointer; }
     var t = { ataque: "¡Sueltan al monito! 🐒", defensa: "¡A curar! 🛡️", marcador: "¡Tiempo! ⏱️" }[fase];
     if (!t) return;
     $("cartel-txt").textContent = t; $("cartel").hidden = false;
-    setTimeout(function () { $("cartel").hidden = true; }, 1600);
+    $("cartel3d-txt").textContent = t; $("cartel3d").hidden = false;
+    if (window.gsap && !REDUCIDO) window.gsap.fromTo("#cartel3d span, #cartel span", { scale: 0.2, rotation: -14, opacity: 0 }, { scale: 1, rotation: -3, opacity: 1, duration: 0.45, ease: "back.out(2.4)" });
+    setTimeout(function () { $("cartel").hidden = true; $("cartel3d").hidden = true; }, 1700);
   }
   function animar(e) {
     if (e.tipo === "defensa") { var s = $("srv-" + e.a); if (s) { s.classList.remove("cura"); void s.offsetWidth; s.classList.add("cura"); } return; }
@@ -354,5 +400,6 @@ button { font: inherit; cursor: pointer; }
   setInterval(reloj, 250);
 })();
 </script>
+<script type="module" src="arena3d.js"></script>
 </body>
 </html>
