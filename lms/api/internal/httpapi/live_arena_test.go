@@ -17,7 +17,7 @@ type aulaArena struct {
 	execs map[string][]string
 }
 
-type labFalso struct{ app, base, disco, lento bool }
+type labFalso struct{ app, base, disco, lento, fuga, clones, datos, sesion, clave bool }
 
 func (a *aulaArena) lab(nombre string) *labFalso {
 	if a.labs == nil {
@@ -55,7 +55,19 @@ func (a *aulaArena) Exec(_ context.Context, nombre string, cmd ...string) (strin
 		} else {
 			b.WriteString("APP_NO\n")
 		}
-		if l.app && l.base && !l.disco && !l.lento {
+		var js []string
+		for k, v := range map[string]bool{"fuga": l.fuga, "datos": l.datos, "sesion": l.sesion, "clave": l.clave} {
+			if v {
+				js = append(js, `"`+k+`"`)
+			}
+		}
+		if l.app && !l.lento {
+			b.WriteString(`{"ok":false,"fallas":[` + strings.Join(js, ",") + `]}` + "\n")
+		}
+		if l.clones {
+			b.WriteString("CLONES\n")
+		}
+		if l.app && l.base && !l.disco && !l.lento && len(js) == 0 && !l.clones {
 			b.WriteString("HTTP_200\n")
 		} else {
 			b.WriteString("HTTP_503\n")
@@ -82,6 +94,18 @@ func (a *aulaArena) Exec(_ context.Context, nombre string, cmd ...string) (strin
 		l.base = false
 	case arenaAtaques["atascar"]:
 		l.lento = true
+	case arenaAtaques["fuga"]:
+		l.fuga = true
+	case arenaAtaques["clones"]:
+		l.clones = true
+	case arenaAtaques["pesados"]:
+		l.disco = true
+	case arenaAtaques["formulario"]:
+		l.datos = true
+	case arenaAtaques["sesion"]:
+		l.sesion = true
+	case arenaAtaques["clave"]:
+		l.clave = true
 	case arenaDefensas["reiniciar"]:
 		l.app = true
 		return "OK", nil
@@ -191,6 +215,13 @@ func TestLiveArena(t *testing.T) {
 	if p := yo(e.call("GET", api, ana, false, nil, ""))["puntos"]; p != float64(arenaPuntos) {
 		t.Fatalf("puntos de Ana: %v", p)
 	}
+	// Ronda 2: un ataque sin receta (fuga de datos) también tumba el servidor.
+	post(profe, map[string]any{"accion": "iniciar"}, 200)
+	post(ana, map[string]any{"accion": "atacar", "objetivo": luisN, "ataque": "fuga"}, 200)
+	esperar(t, "fuga aplicada", func() bool { return fa.estado(nombreLuis).fuga })
+	if s, f := arenaLeerSalud(func() string { o, _ := fa.Exec(t.Context(), nombreLuis, arenaChequeo); return o }()); s != "caido" || !strings.Contains(strings.Join(f, " "), "fuga") {
+		t.Fatalf("fuga no detectada: %s %v", s, f)
+	}
 	ev := e.call("GET", api, ana, false, nil, "").body["eventos"].([]any)
 	if len(ev) < 5 {
 		t.Fatalf("eventos: %v", ev)
@@ -220,6 +251,9 @@ func TestArenaLeerSalud(t *testing.T) {
 		{"APP_SI\nHTTP_503\nLIBRE_3\nBASE_NO", "caido", "disco base"},
 		{"SIN_LAB", "caido", "sin_lab"},
 		{"APP_SI\nHTTP_503\nLIBRE_60\nBASE_SI", "caido", "app"},
+		{"APP_SI\n{\"ok\":false,\"fallas\":[\"datos\",\"clave\"],\"libre_mb\":60}\nHTTP_503\nLIBRE_60\nBASE_SI", "caido", "datos clave"},
+		{"APP_SI\n{\"ok\":false,\"fallas\":[\"disco\"]}\nHTTP_503\nLIBRE_3\nBASE_SI\nCLONES", "caido", "disco clones"},
+		{"APP_SI\n{\"ok\":true,\"fallas\":[],\"libre_mb\":60}\nHTTP_200\nLIBRE_60\nBASE_SI", "ok", ""},
 	}
 	for _, c := range casos {
 		s, f := arenaLeerSalud(c.out)

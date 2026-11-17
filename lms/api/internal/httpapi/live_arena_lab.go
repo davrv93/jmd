@@ -12,34 +12,46 @@ package httpapi
 // Termina imprimiendo LAB_OK si la app contesta en /salud.
 const arenaInstalador = `set -e
 cd /trabajo/monito
-mkdir -p config respaldo /trabajo/.agents/skills/monito-server
+mkdir -p config/sesiones respaldo /trabajo/.agents/skills/monito-server
 
 cat > servidor.js <<'FIN_SERVIDOR'
 // Tienda del monito: el servidor que tu equipo debe mantener en pie (Laboratorio de caos, JMD Learning).
 // Escucha en 127.0.0.1:7070. GET /salud responde 200 si todo está bien y 503 con la lista de fallas.
 import { Database } from "bun:sqlite";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 
-const BASE = "/trabajo/monito/tienda.db";
-const LENTO = "/trabajo/monito/config/lento.flag";
+const DIR = "/trabajo/monito";
+const BASE = DIR + "/tienda.db";
+const LENTO = DIR + "/config/lento.flag";
+const ADMIN = DIR + "/config/admin.json";
+const SESIONES = DIR + "/config/sesiones";
+const PUBLICO = DIR + "/publico";
+const DEBILES = ["123456", "12345678", "123456789", "admin", "password", "monito", "qwerty", "111111", "abc123"];
 
-function libreMB() {
-  const r = Bun.spawnSync(["df", "-m", "/tmp"]);
-  const fila = r.stdout.toString().trim().split("\n")[1] || "";
-  return Number(fila.trim().split(/\s+/)[3] || 0);
-}
-
-function productos() {
-  const db = new Database(BASE, { readonly: true });
-  try { return db.query("select nombre, precio, stock from productos order by nombre").all(); }
-  finally { db.close(); }
-}
+function sh(cmd) { return Bun.spawnSync(["sh", "-c", cmd]).stdout.toString().trim(); }
+function libreMB() { return Number((sh("df -m /tmp").split("\n")[1] || "").trim().split(/\s+/)[3] || 0); }
+function conBase(f) { const db = new Database(BASE, { readonly: true }); try { return f(db); } finally { db.close(); } }
+function productos() { return conBase((db) => db.query("select nombre, precio, stock from productos order by nombre").all()); }
+function lista(dir) { try { return readdirSync(dir); } catch { return []; } }
 
 function fallas() {
   const f = [];
   if (!existsSync(BASE)) f.push("base");
-  else { try { if (productos().length === 0) f.push("base"); } catch { f.push("base"); } }
+  else {
+    try {
+      if (productos().length === 0) f.push("base");
+      const malas = conBase((db) => db.query("select count(*) n from productos where precio <= 0 or stock < 0 or trim(nombre) = ''").get().n);
+      if (malas > 0) f.push("datos");
+    } catch { f.push("base"); }
+  }
   if (libreMB() < 8) f.push("disco");
+  try {
+    const c = String(JSON.parse(readFileSync(ADMIN, "utf8")).clave || "");
+    if (c.length < 10 || DEBILES.includes(c.toLowerCase())) f.push("clave");
+  } catch { f.push("clave"); }
+  if (lista(SESIONES).some((n) => { try { return /nunca/.test(readFileSync(SESIONES + "/" + n, "utf8")); } catch { return false; } })) f.push("sesion");
+  if (lista(PUBLICO).length > 0) f.push("fuga");
+  if (Number(sh("pgrep -f '[m]onito-clon' | wc -l")) >= 2) f.push("clones");
   return f;
 }
 
@@ -52,6 +64,11 @@ Bun.serve({
     if (url.pathname === "/salud") {
       const f = fallas();
       return Response.json({ ok: f.length === 0, fallas: f, libre_mb: libreMB() }, { status: f.length ? 503 : 200 });
+    }
+    if (url.pathname.startsWith("/publico/")) { // lo que esté aquí lo ve cualquiera
+      const nombre = url.pathname.slice("/publico/".length).replace(/[^\w.-]/g, "");
+      if (nombre && existsSync(PUBLICO + "/" + nombre)) return new Response(Bun.file(PUBLICO + "/" + nombre));
+      return new Response("no existe", { status: 404 });
     }
     try {
       const filas = productos().map((p) => "<li>" + p.nombre + " · S/ " + p.precio.toFixed(2) + " · stock " + p.stock + "</li>").join("");
@@ -125,9 +142,13 @@ cd /trabajo/monito; pgrep -f "[m]onito/servidor.js" || echo APP_APAGADA; curl -s
 ## 2. Recetas
 
 - App apagada (no hay proceso): sh /trabajo/monito/arrancar.sh (imprime OK si quedó corriendo).
-- Disco lleno (menos de 8 MB libres en /tmp): busca los archivos grandes con ls -laS /tmp | head y borra solo los de relleno (por ejemplo /tmp/.monito-relleno-*). No borres nada fuera de /tmp ni archivos que no reconozcas como basura.
+- Disco lleno (menos de 8 MB libres en /tmp): mira qué ocupa espacio con du -sh /tmp/* /tmp/.[!.]* 2>/dev/null | sort -h | tail y borra solo lo que sea basura del ataque. No borres nada fuera de /tmp.
 - Base borrada o vacía: cp /trabajo/monito/respaldo/tienda.db /trabajo/monito/tienda.db. Si el respaldo no existe: cd /trabajo/monito && bun crear-base.js.
 - App atascada (curl tarda más de 3 s o hace timeout): revisa /trabajo/monito/config/; si hay un archivo raro como lento.flag, bórralo. No hace falta reiniciar.
+
+## Fallas sin receta
+
+El equipo Tumba Server tiene ataques que no están aquí. Si /salud trae una falla que no reconoces (por ejemplo datos, clave, sesion, fuga o clones), investiga la causa antes de tocar nada: revisa los procesos (ps -ef), config/ (admin.json y sesiones/), publico/, /tmp y la base (con bun y bun:sqlite). Corrige la causa, no el síntoma, y explica en una línea qué encontraste.
 
 ## 3. Comprobación (obligatoria)
 
@@ -140,14 +161,15 @@ curl -s -m 3 -o /dev/null -w '%{http_code}' http://127.0.0.1:7070/salud debe dar
 - Responde en 3 líneas como máximo: qué estaba roto, qué hiciste y el código de /salud.
 FIN_SKILL
 
-rm -f /tmp/.monito-relleno-* config/lento.flag
-[ -s tienda.db ] || bun crear-base.js >/dev/null
+# Reinstalar no cura ataques: solo repone lo que falte y reinicia la app.
+[ -f config/admin.json ] || echo "{\"usuario\":\"admin\",\"clave\":\"$(head -c 18 /dev/urandom | base64 | tr -d '/+=')\"}" > config/admin.json
+# La base solo nace en la primera instalación: si ya hay respaldo, restaurarla es parte del reto.
+[ -s tienda.db ] || [ -s respaldo/tienda.db ] || bun crear-base.js >/dev/null
 [ -s respaldo/tienda.db ] || cp tienda.db respaldo/tienda.db
-sh arrancar.sh >/dev/null || true
-for i in 1 2 3 4 5 6 7 8 9 10; do
-  c=$(curl -s -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:7070/salud || true)
-  [ "$c" = "200" ] && { echo LAB_OK; exit 0; }
+# Listo = la app corre (aunque esté enferma: curarla es el juego).
+for i in 1 2 3; do
+  [ "$(sh arrancar.sh 2>/dev/null)" = "OK" ] && { echo LAB_OK; exit 0; }
   sleep 1
 done
-echo "LAB_FALLO $c"
+echo LAB_FALLO
 `

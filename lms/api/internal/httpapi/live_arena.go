@@ -24,8 +24,10 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -50,16 +52,37 @@ const (
 
 var arenaCuota = cuota{cap: 30, porSeg: 8}
 
-// Ataques: nombre → script fijo que se corre en el aula del defensor.
+// Ataques: nombre → script fijo que se corre en el aula del defensor. Los cuatro primeros tienen botón o
+// receta en la skill; los otros seis no: el equipo Server tiene que investigar (síntoma en el panel, causa en
+// /salud, en config/, en los procesos o en la base). Todos acotados: el disco deja 4 MB libres en /tmp, los
+// clones no pasan de 12 (24 procesos de 256) y nada usa CPU ni red.
 var arenaAtaques = map[string]string{
 	"apagar":  `pkill -f "[m]onito/servidor.js"; true`,
 	"disco":   `a=$(df -m /tmp | awk 'NR==2{print $4}'); n=$((a-4)); [ "$n" -gt 0 ] && dd if=/dev/zero of=/tmp/.monito-relleno-$(date +%s) bs=1M count=$n 2>/dev/null; true`,
 	"base":    `rm -f /trabajo/monito/tienda.db; true`,
 	"atascar": `mkdir -p /trabajo/monito/config && echo "el monito estuvo aquí" > /trabajo/monito/config/lento.flag`,
+	"fuga":    `cd /trabajo/monito && mkdir -p publico && [ -s tienda.db ] && cp tienda.db publico/clientes-$(date +%s).db; true`,
+	"clones": `n=$(pgrep -f "[m]onito-clon" | wc -l); i=0
+while [ $((n+i)) -lt 12 ] && [ $i -lt 6 ]; do (nohup sh -c 'while :; do sleep 30; done' monito-clon >/dev/null 2>&1 &); i=$((i+1)); done; true`,
+	"pesados": `mkdir -p /tmp/subidas; a=$(df -m /tmp | awk 'NR==2{print $4}'); n=$((a-4)); i=0
+while [ "$n" -ge 5 ]; do dd if=/dev/zero of=/tmp/subidas/foto-$(date +%s)-$i.raw bs=1M count=5 2>/dev/null || break; n=$((n-5)); i=$((i+1)); done; true`,
+	"formulario": `cd /trabajo/monito && [ -s tienda.db ] || exit 0
+cat > .formulario.js <<'FIN_JS'
+import { Database } from "bun:sqlite";
+const db = new Database("/trabajo/monito/tienda.db");
+const ins = db.prepare("insert into productos (nombre, precio, stock) values (?, ?, ?)");
+for (const f of [["", 4.5, 10], ["Mango", -3, 5], ["   ", 0, -10], ["Piña piña piña piña piña", 99999, -1]]) ins.run(...f);
+db.close();
+FIN_JS
+bun .formulario.js >/dev/null 2>&1; rm -f .formulario.js; true`,
+	"sesion": `mkdir -p /trabajo/monito/config/sesiones && echo '{"usuario":"admin","creada":"'$(date +%s)'","expira":"nunca"}' > /trabajo/monito/config/sesiones/admin-$(date +%s).json`,
+	"clave":  `mkdir -p /trabajo/monito/config && echo '{"usuario":"admin","clave":"123456"}' > /trabajo/monito/config/admin.json`,
 }
 
 var arenaNombreAtaque = map[string]string{
 	"apagar": "apagó la app de", "disco": "llenó el disco de", "base": "borró la base de", "atascar": "atascó la app de",
+	"fuga": "soltó a los monitos en fuga con los datos de", "clones": "hizo el jutsu de clones en", "pesados": "subió archivos pesados a",
+	"formulario": "llenó mal los formularios de", "sesion": "dejó la sesión abierta en", "clave": "le puso una clave débil a",
 }
 
 // Defensas con botón (las otras fallas se curan con DeepSeek Harness).
@@ -72,13 +95,15 @@ var arenaDefensas = map[string]string{
 
 var arenaNombreDefensa = map[string]string{"reiniciar": "reinició su app", "limpiar": "limpió su disco"}
 
-// Chequeo de salud: marcas de texto que arenaLeerSalud entiende.
+// Chequeo de salud: marcas de texto y el JSON de /salud, que arenaLeerSalud entiende.
 const arenaChequeo = `cd /trabajo/monito 2>/dev/null || { echo SIN_LAB; exit 0; }
 pgrep -f "[m]onito/servidor.js" >/dev/null && echo APP_SI || echo APP_NO
-echo "HTTP_$(curl -s -m 3 -o /dev/null -w '%{http_code}' http://127.0.0.1:7070/salud)"
+curl -s -m 3 -w '\nHTTP_%{http_code}\n' http://127.0.0.1:7070/salud
 [ -f config/lento.flag ] && echo LENTO
 df -m /tmp | awk 'NR==2{print "LIBRE_"$4}'
-[ -s tienda.db ] && echo BASE_SI || echo BASE_NO`
+[ -s tienda.db ] && echo BASE_SI || echo BASE_NO
+[ "$(pgrep -f "[m]onito-clon" | wc -l)" -ge 2 ] && echo CLONES
+true`
 
 type arenaJugador struct {
 	ID       string
@@ -241,26 +266,46 @@ func (s *salaArena) puntuar(now time.Time) {
 	s.evento(arenaEvento{Tipo: "puntos", Texto: fmt.Sprintf("Ronda %d: %d servidores en pie (+%d Server) y %d caídos (+%d Tumba)", s.Ronda, sanos, rs, caidos, rt)}, now)
 }
 
-// arenaLeerSalud traduce la salida de arenaChequeo a (salud, fallas).
+// arenaLeerSalud traduce la salida de arenaChequeo a (salud, fallas): las marcas del shell más las fallas que
+// la propia tienda declara en /salud (datos, clave, sesión, fuga…).
 func arenaLeerSalud(out string) (string, []string) {
 	if strings.Contains(out, "SIN_LAB") {
 		return "caido", []string{"sin_lab"}
 	}
 	fallas := []string{}
+	agregar := func(f string) {
+		if f != "" && !slices.Contains(fallas, f) {
+			fallas = append(fallas, f)
+		}
+	}
 	http200 := false
-	for _, l := range strings.Fields(out) {
+	for _, l := range strings.Split(out, "\n") {
+		l = strings.TrimSpace(l)
+		if strings.HasPrefix(l, "{") {
+			var s struct {
+				Fallas []string `json:"fallas"`
+			}
+			if json.Unmarshal([]byte(l), &s) == nil {
+				for _, f := range s.Fallas {
+					agregar(f)
+				}
+			}
+			continue
+		}
 		switch {
 		case l == "APP_NO":
-			fallas = append(fallas, "app")
+			agregar("app")
 		case l == "LENTO":
-			fallas = append(fallas, "lenta")
+			agregar("lenta")
 		case l == "BASE_NO":
-			fallas = append(fallas, "base")
+			agregar("base")
+		case l == "CLONES":
+			agregar("clones")
 		case l == "HTTP_200":
 			http200 = true
 		case strings.HasPrefix(l, "LIBRE_"):
 			if n, err := strconv.Atoi(strings.TrimPrefix(l, "LIBRE_")); err == nil && n < arenaLibreMinMB {
-				fallas = append(fallas, "disco")
+				agregar("disco")
 			}
 		}
 	}
@@ -472,6 +517,11 @@ func (s *Server) liveArenaPost(w http.ResponseWriter, r *http.Request, p *Princi
 		if yo == nil || yo.Equipo != "server" {
 			sa.mu.Unlock()
 			writeErr(w, 409, "no_defensor", "solo el equipo Server tiene servidor que preparar")
+			return
+		}
+		if sa.Fase == "ataque" {
+			sa.mu.Unlock()
+			writeErr(w, 409, "no_es_tu_turno", "no puedes reinstalar mientras te atacan")
 			return
 		}
 		yo.Lab = "preparando"

@@ -33,8 +33,8 @@ cycle:
 Un laboratorio por turnos. El equipo **Monito Tumba Server** ataca y el equipo **Monito Server** defiende un servidor real que vive en su aula.
 
 1. Entra al LIVE y elige tu equipo en la arena.
-2. **Tumba Server:** en tu turno, toca un servidor de la granja y lánzale hasta dos ataques. Tu monito salta la valla.
-3. **Server:** en tu turno, cura tu servidor. La app apagada y el disco lleno tienen botón. La base borrada y la app atascada se curan con prompts en DeepSeek Harness, que usa la skill `monito-server`.
+2. **Tumba Server:** en tu turno, toca un servidor de la granja y lánzale hasta dos de los 10 ataques (app, disco, base, fuga de datos, clones, archivos pesados, formularios basura, sesión abierta, clave débil…). Tu monito salta la valla.
+3. **Server:** en tu turno, cura tu servidor. La app apagada y el disco lleno tienen botón; la base borrada y la app atascada, prompt. Los otros ataques no tienen receta: investiga con DeepSeek Harness y la skill `monito-server`.
 4. Al final de cada defensa el LMS revisa la salud de cada servidor (`/salud`): cada uno en pie suma 100 al equipo Server y cada uno caído suma 100 al equipo Tumba.
 
 Tu servidor queda en `/trabajo/monito`: puedes abrirlo con `curl -s http://127.0.0.1:7070/salud` desde la terminal del aula.
