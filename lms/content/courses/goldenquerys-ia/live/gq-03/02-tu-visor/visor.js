@@ -408,13 +408,13 @@
     var V = f.vista, m, c;
     linea = String(linea || "").trim();
     if ((m = /^medida=(.+)$/.exec(linea))) {
-      if (/^conteo/.test(plano(m[1]))) { V.m = null; return "ahora cuento registros"; }
-      if ((c = porNombre(V.medidas, m[1]))) { V.m = c; return "ahora sumo «" + c.nombre + "»"; }
+      if (/^conteo/.test(plano(m[1]))) { if (!V.m) return ""; V.m = null; return "ahora cuento registros"; }
+      if ((c = porNombre(V.medidas, m[1]))) { if (V.m === c) return ""; V.m = c; return "ahora sumo «" + c.nombre + "»"; }
     }
-    if ((m = /^agrupar=(.+)$/.exec(linea)) && (c = porNombre(V.grupos, m[1]))) { V.g = c; return "agrupé por «" + c.nombre + "»"; }
-    if ((m = /^tiempo=(d[ií]a|mes)$/.exec(linea)) && V.d) { V.tiempo = m[1] === "mes" ? "mes" : "día"; return "el gráfico de tiempo va por " + V.tiempo; }
-    if ((m = /^orden=(mayor|menor)$/.exec(linea))) { V.orden = m[1]; return "muestro primero los " + (m[1] === "menor" ? "menores" : "mayores"); }
-    if ((m = /^top=(\d{1,2})$/.exec(linea))) { V.top = Math.min(20, Math.max(3, +m[1])); return "muestro " + V.top + " en el gráfico"; }
+    if ((m = /^agrupar=(.+)$/.exec(linea)) && (c = porNombre(V.grupos, m[1]))) { if (V.g === c) return ""; V.g = c; return "agrupé por «" + c.nombre + "»"; }
+    if ((m = /^tiempo=(d[ií]a|mes)$/.exec(linea)) && V.d) { var u = m[1] === "mes" ? "mes" : "día"; if (V.tiempo === u || (!V.tiempo && porTiempo(f, V.d, V.m).unidad === u)) return ""; V.tiempo = u; return "el gráfico de tiempo va por " + u; }
+    if ((m = /^orden=(mayor|menor)$/.exec(linea))) { if (V.orden === m[1]) return ""; V.orden = m[1]; return "muestro primero los " + (m[1] === "menor" ? "menores" : "mayores"); }
+    if ((m = /^top=(\d{1,2})$/.exec(linea))) { var n = Math.min(20, Math.max(3, +m[1])); if (V.top === n) return ""; V.top = n; return "muestro " + n + " en el gráfico"; }
     if (/^filtro=ninguno$/.test(linea)) { if (!V.filtros.length) return "no había filtros"; V.filtros = []; return "quité los filtros"; }
     if ((m = /^filtro: (.+?)=(.+)$/.exec(linea)) && (c = porNombre(V.grupos, m[1]))) {
       V.filtros = V.filtros.filter(function (q) { return q.col !== c; }).concat([{ col: c, v: plano(m[2].trim()), ver: m[2].trim() }]);
@@ -450,7 +450,8 @@
     f.jmdPidiendo = true; pintarTodo();
     ESC.entender({ nombre: f.nombre, tipo: "txt", texto: catalogo(f), pregunta: (PEDIDO_JMD + "«" + txt.slice(0, 120) + "»").slice(0, 600) }).then(function (x) {
       if (x.estado !== "ok") return listo([], "IA · sin respuesta", x.msg || "JMD no pudo responder.");
-      var h = (x.r.campos || []).map(function (cp) { return aplicarLinea(f, cp.evidencia, cp.valor); }).filter(Boolean);
+      var pideTitulo = /titul|llama|nombr/.test(plano(txt));   // la IA a veces pone un título que nadie pidió
+      var h = (x.r.campos || []).filter(function (cp) { return pideTitulo || !/^titulo/.test(String(cp.evidencia || "")); }).map(function (cp) { return aplicarLinea(f, cp.evidencia, cp.valor); }).filter(Boolean);
       listo(h, "IA · " + ((x.r.motor || {}).gratis ? "modelo gratuito" : "modelo de pago") + (typeof x.r.restantes === "number" ? " · te quedan " + x.r.restantes + " con IA hoy" : ""), h.length ? "" : (x.r.resumen || "No encontré cómo hacer ese cambio con lo que tiene tu tablero."));
     });
   }
