@@ -6,6 +6,9 @@
 //   2. El tablero se arma solo con reglas: totales, grupos, meses y avisos. Sin IA y al instante.
 //   3. Cada pregunta se intenta primero con reglas. Si las reglas no la entienden, va a la IA, que no recibe el
 //      archivo: recibe un resumen ya calculado (sumas por grupo y por mes) con los datos personales tapados.
+// Además: «Mezclar» junta varios archivos en una sola tabla (Archivo, Fecha, Concepto, Monto) y «Segmentar con IA»
+// le pide a la IA que reparta los conceptos en hasta 6 segmentos (solo ve la lista de conceptos, sin montos); el
+// tablero se rehace agrupado por segmento.
 (function () {
   "use strict";
   var $ = function (i) { return document.getElementById(i); };
@@ -88,6 +91,8 @@
     return { unidad: porMes ? "mes" : "día", lista: lista };
   }
 
+  function chipDe(f) { return f.mezcla ? el("span", { class: "x-ico v-mix-ico", "aria-hidden": "true", text: "MIX" }) : ESC.chipTipo(f.tipo); }
+
   // ---------------------------------------------------------------- 2 · el tablero
   function ficha(titulo, valor, nota, clase) {
     return el("div", { class: "v-kpi " + (clase || "") }, [el("span", { class: "v-kpi-t", text: titulo }), el("b", { class: "v-kpi-v", text: valor }), nota ? el("span", { class: "v-kpi-n", text: nota }) : null]);
@@ -136,7 +141,7 @@
   function pintarTablero(f) {
     var cont = $("tablero"); cont.textContent = "";
     var V = f.vista;
-    cont.appendChild(el("div", { class: "v-cab" }, [ESC.chipTipo(f.tipo), el("b", { text: f.nombre }), el("span", { class: "v-cab-n", text: V.tabla ? miles(V.datos.length) + " registros · " + V.cols.length + " columnas" + (f.hoja ? " · hoja «" + f.hoja + "»" : "") : miles(f.caracteres || 0) + " caracteres" })]));
+    cont.appendChild(el("div", { class: "v-cab" }, [chipDe(f), el("b", { text: f.nombre }), el("span", { class: "v-cab-n", text: V.tabla ? miles(V.datos.length) + " registros · " + V.cols.length + " columnas" + (f.hoja ? " · hoja «" + f.hoja + "»" : "") : miles(f.caracteres || 0) + " caracteres" })]));
     if (!V.tabla) { // PDF o texto: la ficha que arman las reglas
       if (f.sinTexto) cont.appendChild(el("p", { class: "v-nota", text: "Este archivo es una imagen escaneada: no trae texto que se pueda leer. Prueba con otro, o con una foto pasada por un lector de texto (OCR)." }));
       var caja = el("div", { class: "x-ficha" }); cont.appendChild(caja);
@@ -144,6 +149,7 @@
       return;
     }
     if (!V.datos.length) { cont.appendChild(el("p", { class: "v-nota", text: "No encontré filas de datos debajo del encabezado. ¿Es la hoja correcta?" })); return; }
+    if (f.mezcla) cont.appendChild(el("details", { class: "v-det v-mix-det" }, [el("summary", { text: "Junté tus archivos en una sola tabla: Archivo, Fecha, Concepto y Monto. Ver qué tomé de cada uno" }), el("ul", { class: "v-mix-notas" }, f.notas.map(function (n) { return el("li", { text: n }); }))]));
     var dinero = !!(V.m && V.m.tipo === "monto"), S = suma(f, V.m);
     if (V.medidas.length > 1 || V.grupos.length > 1) {
       cont.appendChild(el("div", { class: "v-ctl" }, [
@@ -151,6 +157,7 @@
         V.grupos.length > 1 ? selector("Agrupado por", V.grupos, V.g, function (c) { V.g = c; pintarTodo(); }) : null,
       ]));
     }
+    cont.appendChild(cajaSegmentos(f));
     var kpis = [ficha("Registros", miles(V.datos.length), "filas con datos")];
     if (V.m) {
       kpis.push(ficha("Total de «" + V.m.nombre + "»", fmt(S.s, dinero), "la suma de todas las filas", "oro"));
@@ -300,16 +307,159 @@
     sugeridas(f).forEach(function (q) { var b = el("button", { type: "button", class: "v-chip", text: q }); b.addEventListener("click", function () { preguntar(q); }); c.appendChild(b); });
   }
 
+  // ---------------------------------------------------------------- mezclar varios archivos en una sola tabla
+  function cel(t) { return { t: String(t), n: null, esNum: false, f: "" }; }
+  function celNum(v) { return { t: fmt(v, true), n: v, esNum: true, f: "" }; }
+  function celFecha(iso) { return iso ? { t: iso.slice(8) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4), n: null, esNum: false, f: iso } : null; }
+  function colConcepto(V) {
+    var txt = V.cols.filter(function (c) { return (c.tipo === "texto" || c.tipo === "categoria") && c.k !== SEG_K && !PERSONAL.test(plano(c.nombre)); });
+    return txt.filter(function (c) { return /producto|concepto|descrip|detalle|item|articulo|servicio|glosa|rubro|categor/.test(plano(c.nombre)); })[0] || (V.g && V.g.k !== SEG_K && !PERSONAL.test(plano(V.g.nombre)) ? V.g : null) || txt[0] || null;
+  }
+  // Entra a la mezcla lo que tiene un monto: las tablas con columna de montos y los PDF o textos con un total.
+  function fuentesMezcla() { return archivos.filter(function (f) { return !f.mezcla && ((f.vista.tabla && f.vista.m && f.vista.datos.length) || (!f.vista.tabla && f.reglas && f.reglas.total)); }); }
+  function armarMezcla() {
+    var filas = [], notas = [];
+    fuentesMezcla().forEach(function (f) {
+      var V = f.vista;
+      if (V.tabla) {
+        var kc = colConcepto(V);
+        V.datos.forEach(function (x) {
+          var v = num(x[V.m.k]);
+          filas.push([cel(f.nombre), V.d ? celFecha(fecha(x[V.d.k])) : null, cel(kc ? texto(x[kc.k]) || "(sin dato)" : "(sin concepto)"), celNum(isFinite(v) ? v : 0)]);
+        });
+        notas.push("«" + f.nombre + "»: " + miles(V.datos.length) + " filas · el monto sale de «" + V.m.nombre + "»" + (kc ? " · el concepto, de «" + kc.nombre + "»" : "") + (V.d ? " · la fecha, de «" + V.d.nombre + "»" : ""));
+      } else {
+        var X = f.reglas;
+        filas.push([cel(f.nombre), celFecha(X.fechas && X.fechas[0] ? X.fechas[0].iso : ""), cel(X.tipo && X.tipo.id ? X.tipo.nombre : "Documento"), celNum(X.total.n)]);
+        notas.push("«" + f.nombre + "»: 1 fila · su total, su primera fecha y su tipo de documento");
+      }
+    });
+    var cols = [
+      { nombre: "Archivo", k: 0, tipo: "categoria", nombreTipo: "categoría", vacios: 0 },
+      { nombre: "Fecha", k: 1, tipo: "fecha", nombreTipo: "fecha", vacios: 0 },
+      { nombre: "Concepto", k: 2, tipo: "texto", nombreTipo: "texto libre", vacios: 0 },
+      { nombre: "Monto", k: 3, tipo: "monto", nombreTipo: "monto", vacios: 0 },
+    ];
+    var hayFecha = filas.some(function (x) { return x[1]; });
+    return {
+      id: "mezcla", mezcla: true, tipo: "mix", nombre: "Mezcla de " + notas.length + " archivos", notas: notas,
+      tabla: { columnas: cols, duplicados: [], cuadre: null, totales: null, rucMalos: [], pie: [] },
+      vista: { tabla: true, datos: filas, cols: cols, medidas: [cols[3]], grupos: [cols[0], cols[2]], fechas: hayFecha ? [cols[1]] : [], m: cols[3], g: cols[0], d: hayFecha ? cols[1] : null },
+    };
+  }
+  // La mezcla se rehace sola cuando cambian los archivos; con menos de dos fuentes, desaparece.
+  function refrescarMezcla() {
+    var habia = archivos.filter(function (f) { return f.mezcla; })[0];
+    if (!habia) return;
+    archivos = archivos.filter(function (f) { return !f.mezcla; });
+    if (fuentesMezcla().length < 2) { if (actual === habia) actual = archivos[archivos.length - 1] || null; return; }
+    var M = armarMezcla(); archivos.unshift(M); if (actual === habia) actual = M;
+  }
+  function mezclar() {
+    archivos = archivos.filter(function (f) { return !f.mezcla; });
+    var M = armarMezcla(); archivos.unshift(M); actual = M; pintarTodo();
+    $("paso2").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // ---------------------------------------------------------------- segmentar con IA
+  // La IA solo recibe la lista numerada de conceptos (sin montos ni columnas de personas) y devuelve, por segmento,
+  // los números que le tocan. Lo que no alcanzó a ver hereda el segmento de un concepto con la misma primera palabra.
+  var SEG_K = 900, SEG_MAX = 150;
+  var PEDIDO_SEG = "No extraigas datos. Tarea: reparte TODOS los elementos numerados de la LISTA en segmentos por su significado (qué tipo de producto, servicio o gasto es), nunca por su orden. Máximo 6 segmentos, con nombres descriptivos de 1 a 3 palabras (prohibido «Segmento 1»). En campos, un objeto por segmento: nombre = el segmento; valor = los números de TODOS sus elementos separados por comas, cada número en un solo segmento; evidencia = uno de sus elementos copiado tal cual, sin el número. En resumen, el criterio en una frase.";
+  function colSegmentable(V) { var g = V.g && V.g.k !== SEG_K && V.g.nombre !== "Archivo" ? V.g : null; return g || colConcepto(V); }
+  function quitarSegmentos(f) {
+    var V = f.vista, no = function (c) { return c.k !== SEG_K; };
+    V.cols = V.cols.filter(no); V.grupos = V.grupos.filter(no);
+    if (V.g && V.g.k === SEG_K) V.g = (f.seg && V.grupos.filter(function (c) { return c.nombre === f.seg.col; })[0]) || V.grupos[0] || null;
+    V.datos.forEach(function (x) { delete x[SEG_K]; });
+    f.seg = null; f.segMsg = "";
+  }
+  function aplicarSegmentos(f, c, lista, r) {
+    var mapa = {}, porIA = 0, nombres = [];
+    (r.campos || []).forEach(function (cp) {
+      var seg = String(cp.nombre || "").replace(/_/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
+      if (!seg) return;
+      nombres.push(seg);
+      (String(cp.valor).match(/\d+/g) || []).forEach(function (n) { var it = lista[+n - 1]; if (it && !mapa[plano(it.k)]) { mapa[plano(it.k)] = seg; porIA++; } });
+    });
+    var flojo = !nombres.length || nombres.filter(function (n) { return /^(segmento|grupo|categoria|bloque|parte)\s*\d+$/.test(plano(n)); }).length >= nombres.length / 2 || porIA < Math.min(lista.length, 8) * 0.5;
+    if (flojo) return null;
+    var porPalabra = {};
+    Object.keys(mapa).forEach(function (k) { var w = k.split(/\s+/)[0]; if (w.length >= 4 && !porPalabra[w]) porPalabra[w] = mapa[k]; });
+    var V = f.vista, vistos = {}, porRegla = 0, otros = 0;
+    quitarSegmentos(f);
+    V.datos.forEach(function (x) {
+      var k = plano(texto(x[c.k]) || "(sin dato)"), seg = mapa[k];
+      if (!seg) { seg = porPalabra[k.split(/\s+/)[0]] || ""; if (!vistos[k]) { vistos[k] = 1; if (seg) porRegla++; else otros++; } }
+      x[SEG_K] = cel(seg || "Otros");
+    });
+    var col = { nombre: "Segmento", k: SEG_K, tipo: "categoria", nombreTipo: "categoría, propuesta por la IA", vacios: 0 };
+    V.cols.push(col); V.grupos.unshift(col); V.g = col;
+    var motor = r.motor || {};
+    f.seg = { col: c.nombre, criterio: r.resumen || "", gratis: !!motor.gratis, porIA: porIA, porRegla: porRegla, otros: otros, restantes: r.restantes };
+    return f.seg;
+  }
+  function segmentar(f, criterio) {
+    var V = f.vista, c = colSegmentable(V);
+    if (!c) { f.segMsg = "No encuentro una columna de texto para segmentar."; pintarTodo(); return; }
+    if (PERSONAL.test(plano(c.nombre))) { f.segMsg = "«" + c.nombre + "» tiene datos de personas y no se envía a la IA. Elige otra columna en «Agrupado por»."; pintarTodo(); return; }
+    var lista = porGrupo(f, c, V.m).filter(function (a) { return a.k !== "(sin dato)"; }).slice(0, SEG_MAX);
+    if (lista.length < 3) { f.segMsg = "«" + c.nombre + "» tiene muy pocos valores distintos: no hace falta segmentar."; pintarTodo(); return; }
+    var env = ESC.enmascarar("LISTA DE «" + c.nombre + "» A SEGMENTAR (cada línea es un elemento numerado):\n" + lista.map(function (a, i) { return (i + 1) + ". " + a.k; }).join("\n")).texto.slice(0, ESC.LIMITE_IA);
+    criterio = String(criterio || "").replace(/\s+/g, " ").trim().slice(0, 100);
+    f.segPidiendo = true; f.segMsg = ""; pintarTodo();
+    var pedir = function (extra) { return ESC.entender({ nombre: f.nombre, tipo: "txt", texto: env, pregunta: (PEDIDO_SEG + (criterio ? " Criterio pedido: " + criterio + "." : "") + (extra || "")).slice(0, 600) }); };
+    var cerrar = function (msg) { f.segPidiendo = false; f.segMsg = msg || ""; pintarTodo(); };
+    pedir("").then(function (x) {
+      if (x.estado !== "ok") return cerrar(x.msg || "La IA no pudo responder.");
+      if (aplicarSegmentos(f, c, lista, x.r)) return cerrar("");
+      return pedir(" Agrupa por significado.").then(function (y) {   // respondió con flojera («Segmento 1…»): un segundo intento
+        if (y.estado !== "ok") return cerrar(y.msg || "La IA no pudo responder.");
+        cerrar(aplicarSegmentos(f, c, lista, y.r) ? "" : "La IA no logró repartir bien tus conceptos. Vuelve a intentar o escríbele un criterio (por ejemplo: «por tipo de gasto»).");
+      });
+    });
+  }
+  function cajaSegmentos(f) {
+    var V = f.vista, c = f.seg ? null : colSegmentable(V), caja = el("div", { class: "v-seg" });
+    if (f.segPidiendo) { caja.appendChild(el("p", { class: "v-resp-espera", text: "La IA está repartiendo tus conceptos en segmentos (solo ve la lista de nombres, sin montos)…" })); return caja; }
+    if (f.seg) {
+      var G = porGrupo(f, V.cols.filter(function (x) { return x.k === SEG_K; })[0], V.m), dinero = !!(V.m && V.m.tipo === "monto");
+      caja.appendChild(el("p", { class: "v-seg-t" }, [el("b", { text: "Segmentos que propuso la IA para «" + f.seg.col + "»" }), f.seg.criterio ? " · " + f.seg.criterio : ""]));
+      caja.appendChild(el("div", { class: "v-seg-chips" }, G.map(function (a) { return el("span", { class: "v-seg-chip", text: a.k + " · " + fmt(a.s, dinero) }); })));
+      var quitar = el("button", { type: "button", class: "v-link", text: "Quitar segmentos" }), otra = el("button", { type: "button", class: "v-link", text: "Volver a segmentar" });
+      quitar.addEventListener("click", function () { quitarSegmentos(f); pintarTodo(); });
+      otra.addEventListener("click", function () { quitarSegmentos(f); pintarTodo(); var i = $("criterio"); if (i) i.focus(); });
+      caja.appendChild(el("p", { class: "v-resp-pie" }, [
+        el("span", { class: "v-sello ia", text: "IA · " + (f.seg.gratis ? "modelo gratuito" : "modelo de pago") + " · " + f.seg.porIA + " conceptos repartidos" + (f.seg.porRegla ? " · " + f.seg.porRegla + " por regla (misma primera palabra)" : "") + (f.seg.otros ? " · " + f.seg.otros + " en «Otros»" : "") }), otra, quitar]));
+      caja.appendChild(el("p", { class: "v-privado", text: "Es una propuesta: revísala en «Ver mis filas» (columna Segmento) antes de decidir con ella." }));
+      return caja;
+    }
+    if (!c) return el("span");
+    var inp = el("input", { class: "v-busca v-seg-in", id: "criterio", type: "text", maxlength: "100", placeholder: "Criterio (opcional): por tipo de gasto, por familia de producto…", "aria-label": "Criterio para segmentar" });
+    var b = el("button", { type: "button", class: "k-btn sec", text: "Segmentar «" + c.nombre + "» con IA" });
+    b.addEventListener("click", function () { segmentar(f, inp.value); });
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); segmentar(f, inp.value); } });
+    caja.appendChild(el("div", { class: "v-seg-f" }, [inp, b]));
+    caja.appendChild(el("p", { class: "v-privado" + (f.segMsg ? " mal" : ""), text: f.segMsg || "La IA propone hasta 6 segmentos y tu tablero se rehace por segmento. Solo ve la lista de nombres de «" + c.nombre + "», sin montos. Gasta 1 de tus preguntas con IA." }));
+    return caja;
+  }
+
   // ---------------------------------------------------------------- 1 · los archivos
   function pintarLista() {
     var c = $("lista"); c.textContent = "";
     archivos.forEach(function (f) {
-      var b = el("button", { type: "button", class: "v-arch" + (f === actual ? " sel" : ""), "aria-pressed": f === actual ? "true" : "false" }, [ESC.chipTipo(f.tipo), el("span", { text: f.nombre })]);
+      var b = el("button", { type: "button", class: "v-arch" + (f === actual ? " sel" : ""), "aria-pressed": f === actual ? "true" : "false" }, [chipDe(f), el("span", { text: f.nombre })]);
       b.addEventListener("click", function () { actual = f; pintarTodo(); });
       var x = el("button", { type: "button", class: "v-arch-x", "aria-label": "Quitar " + f.nombre, text: "×" });
-      x.addEventListener("click", function () { archivos = archivos.filter(function (g) { return g !== f; }); if (actual === f) actual = archivos[archivos.length - 1] || null; pintarTodo(); });
-      c.appendChild(el("span", { class: "v-arch-w" }, [b, x]));
+      x.addEventListener("click", function () { archivos = archivos.filter(function (g) { return g !== f; }); if (actual === f) actual = archivos[archivos.length - 1] || null; refrescarMezcla(); pintarTodo(); });
+      c.appendChild(el("span", { class: "v-arch-w" + (f.mezcla ? " mix" : "") }, [b, x]));
     });
+    var fm = fuentesMezcla();
+    if (fm.length >= 2 && !archivos.some(function (f) { return f.mezcla; })) {
+      var bm = el("button", { type: "button", class: "k-btn oro v-mezclar", text: "Mezclar mis " + fm.length + " archivos" });
+      bm.addEventListener("click", mezclar);
+      c.appendChild(bm);
+    }
   }
   function pintarTodo() {
     var hay = !!actual;
@@ -325,8 +475,10 @@
   function recibir(f) {
     preparar(f);
     archivos = archivos.filter(function (g) { return g.nombre !== f.nombre; });
-    archivos.push(f); if (archivos.length > 8) archivos.shift();
-    actual = f; pintarTodo();
+    archivos.push(f);
+    var propios = archivos.filter(function (g) { return !g.mezcla; });
+    if (propios.length > 8) archivos = archivos.filter(function (g) { return g !== propios[0]; });
+    actual = f; refrescarMezcla(); pintarTodo();
   }
 
   ESC.zona($("zona"), {
