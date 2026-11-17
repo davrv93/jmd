@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tu insignia, tu fotito y la tarea</title>
+<!-- Escena del modo LIVE: Diseño de interfaces, sesión 1 (di-01). Cierre: insignia (avance real del ciclo, se
+     enciende con 3 de 4 pasos), ticket de salida (voto di01-salida-aa con respuesta, muro di01-cierre y voto
+     di01-como), la fotito (afiche con la escala y la paleta del alumno, el resultado del juego y lo que se lleva)
+     y la tarea con botón de copiar. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/di.css">
+<style id="esc-propio">
+.b15 { display: grid; grid-template-columns: .75fr 1.25fr; gap: 2vw; align-items: start; }
+.b15-ins { display: grid; gap: 1.1vh; justify-items: center; text-align: center; }
+.b15-ins svg { width: min(100%, 14em); height: auto; overflow: visible; }
+.b15.apagada .badge { filter: grayscale(1); opacity: .5; }
+.b15.go:not(.apagada) .badge { animation: b15-enciende .8s ease-out .3s both; }
+@keyframes b15-enciende { from { filter: grayscale(1); opacity: .5; } to { filter: none; opacity: 1; } }
+.b15-prog { display: grid; gap: .35em; width: 100%; max-width: 17em; }
+.b15-prog .n { font-size: 1.5em; font-weight: 800; line-height: 1; }
+.b15-prog .n small { font-size: .45em; color: var(--muted); font-weight: 700; }
+.b15-pips { display: flex; gap: .3em; }
+.b15-pips i { flex: 1; height: .55em; border-radius: .3em; background: var(--s3); }
+.b15-pips i.ok { background: var(--di); }
+.b15-estado { font-size: .72em; color: var(--muted); }
+.b15-estado b { color: var(--ok); }
+.b15.apagada .b15-estado b { color: var(--warn); }
+.b15-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; align-items: start; }
+.b15-ticket { margin: 0; font-size: .78em; font-weight: 800; color: var(--di); }
+.b15-ticket span { color: var(--muted); font-weight: 600; }
+.b15-foto .k-foto img { width: min(100%, 12em); }
+.b15-tarea p { margin: 0; font-size: .74em; line-height: 1.45; }
+.b15-tarea code { font: 700 .92em var(--mono); color: var(--di); }
+@media (max-width: 760px) { .b15, .b15-dos { grid-template-columns: 1fr; gap: 14px; } .b15-ins svg { width: 11em; } }
+@media (prefers-reduced-motion: reduce) { .b15.go:not(.apagada) .badge { animation: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Diseño de interfaces · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.85em">Te vas con <em>criterio</em>, no con gustos</h1>
+    <div class="b15 apagada" id="b15">
+      <div class="b15-ins a-in" style="--d:.1s">
+        <svg viewBox="0 0 600 600" role="img" aria-label="Insignia de la sesión 1 de Diseño de interfaces: un cuadrado de esquinas redondas con retícula, las letras Aa y los siete escalones de la escala 1,25.">
+          <defs>
+            <pattern id="ret8" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0 H0 V24" fill="none" stroke="#ffffff" stroke-opacity=".09" stroke-width="2"/></pattern>
+          </defs>
+          <g class="badge">
+            <rect x="20" y="20" width="560" height="560" rx="132" fill="#16181d"/>
+            <rect x="20" y="20" width="560" height="560" rx="132" fill="url(#ret8)"/>
+            <rect x="44" y="44" width="512" height="512" rx="112" fill="none" stroke="#ff9e6e" stroke-width="6"/>
+            <text x="96" y="318" font-size="210" font-weight="600" fill="#ffffff" font-family="'Iowan Old Style', Charter, Palatino, Georgia, serif">Aa</text>
+            <g fill="#ff9e6e">
+              <rect x="384" y="150" width="12" height="16" rx="3"/><rect x="404" y="146" width="14" height="20" rx="3"/><rect x="426" y="140" width="16" height="26" rx="3"/>
+              <rect x="450" y="132" width="20" height="34" rx="3"/><rect x="478" y="120" width="25" height="46" rx="3" fill="#ffffff"/>
+            </g>
+            <text x="96" y="400" font-size="34" font-weight="800" fill="#ffffff" font-family="system-ui, sans-serif">Fundamentos que se ven</text>
+            <text x="96" y="446" font-size="24" font-weight="600" fill="#cfcad8" font-family="system-ui, sans-serif">Jerarquía · escala · 8 pt · AA</text>
+            <text x="96" y="506" font-size="22" font-weight="700" fill="#ff9e6e" font-family="system-ui, sans-serif">Diseño de interfaces · Sesión 1</text>
+          </g>
+        </svg>
+        <div class="b15-prog">
+          <div class="n"><span id="p-done">0</span> <small>de <span id="p-total">4</span> pasos del ciclo</small></div>
+          <div class="b15-pips" id="p-pips"></div>
+          <div class="b15-estado" id="p-estado">Se enciende con 3 de 4 pasos (cada «Lo logré» suma).</div>
+        </div>
+      </div>
+
+      <div class="k-pila a-in" style="--d:.2s">
+        <div class="b15-dos">
+          <div class="k-pila">
+            <p class="b15-ticket">Ticket de salida <span>· tres respuestas, un minuto</span></p>
+            <div class="k-caja k-voto" data-voto="di01-salida-aa" data-correcta="45"
+                 data-explica="4,5:1 para el texto normal; 3:1 para el texto grande (24 px, o 18,66 px en negrita), los bordes de los campos y los íconos. Y sin redondear.">
+              <p class="k-q" style="--c:var(--di)">¿Cuánto contraste pide AA para el texto normal?</p>
+              <div class="k-ops"><button data-op="3">3:1</button><button data-op="45">4,5:1</button><button data-op="7">7:1</button></div>
+            </div>
+            <div class="k-caja k-muro" id="muro" data-muro="di01-cierre" data-color="var(--di)" data-pregunta="En una línea: ¿qué te llevas de hoy?" data-placeholder="Hoy me llevo…" data-max="4"></div>
+            <div class="k-caja k-voto" data-voto="di01-como">
+              <p class="k-q" style="--c:var(--di)">¿Cómo te vas?</p>
+              <div class="k-ops"><button data-op="solo">Ya lo puedo hacer</button><button data-op="agente">Con el agente, sí</button><button data-op="practicar">Necesito practicar</button></div>
+            </div>
+          </div>
+          <div class="k-pila">
+            <div class="k-caja b15-foto">
+              <p class="k-q" style="--c:var(--di)">Tu fotito de la sesión</p>
+              <div id="foto"></div>
+              <button type="button" class="k-btn sec" id="b-foto">Armar mi fotito</button>
+            </div>
+            <div class="k-caja b15-tarea">
+              <p class="k-q" style="--c:var(--ph-ea)">Tarea · antes del martes 24</p>
+              <p>Tu pantalla original y la rediseñada con tus tokens, <b>lado a lado</b>, más tu <code>tokens.json</code> y tus tres problemas. La revisamos con la misma prueba de los 5 segundos.</p>
+              <div class="k-links"><button type="button" class="k-btn sec" id="b-tarea">Copiar la tarea</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Sesión 2: martes 24 de noviembre, 9:15 p. m. · componentes, estados y el prototipo que se recorre</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/di.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var raiz = $("b15"), UMBRAL = 3, yo = { nombre: "Alumno" };
+  function pips(done, total) {
+    var p = $("p-pips"); p.textContent = "";
+    for (var k = 0; k < total; k++) { var i = document.createElement("i"); if (k < done) i.className = "ok"; p.appendChild(i); }
+  }
+  function pintar(j) {
+    var done = +j.done, total = +j.total;
+    if (!(done >= 0) || !(total > 0)) return;
+    $("p-done").textContent = done; $("p-total").textContent = total; pips(done, total);
+    var e = $("p-estado"), falta = UMBRAL - done, b = document.createElement("b"); e.textContent = "";
+    if (done >= UMBRAL) { raiz.classList.remove("apagada"); b.textContent = "Insignia encendida."; e.appendChild(b); e.appendChild(document.createTextNode(" Umbral: " + UMBRAL + " de " + total + " pasos (ver, diagnóstico, tokens y rediseño).")); }
+    else { raiz.classList.add("apagada"); b.textContent = "Te " + (falta === 1 ? "falta 1 paso" : "faltan " + falta + " pasos"); e.appendChild(b); e.appendChild(document.createTextNode(" para encenderla: vuelve a una escena y pulsa «Lo logré».")); }
+  }
+  pips(0, 4);
+  DI.pedir("/api/v1/lessons/" + DI.leccion + "/progress").then(function (r) { if (r.ok && r.datos) pintar(r.datos); setTimeout(function () { raiz.classList.add("go"); }, 50); });
+
+  function armar() {
+    var u = DI.leer("juego", null), refl = DI.leer("muro-di01-cierre", "") || DI.leer("muro-di01-juego", "");
+    var t = DI.tokens(), done = $("p-done").textContent, total = $("p-total").textContent;
+    var cv = DI.fotito({
+      nombre: yo.nombre,
+      etiqueta: u ? "Juego · ¿pasa AA o no?" : "Sesión 1 · mi sistema",
+      resultado: u ? u.puntos + " puntos · " + u.titulo : "Escala " + String(t.razon).replace(".", ",") + " y acento " + t.acento.toUpperCase(),
+      detalle: (u && u.detalle ? u.detalle + " · " : "") + done + " de " + total + " pasos del ciclo",
+      reflexion: refl,
+    });
+    DI.mostrarFoto($("foto"), cv, "diseno-interfaces-sesion-1-" + DI.slug(yo.nombre) + ".png");
+    $("b-foto").textContent = "Volver a armar mi fotito";
+  }
+  $("b-foto").addEventListener("click", armar);
+  $("muro").addEventListener("k-muro", function () { armar(); });
+
+  var TAREA = "Tarea · Diseño de interfaces, sesión 1 (antes del martes 24 de noviembre, 9:15 p. m.)\n" +
+    "- Tu pantalla original y la rediseñada con tus tokens, lado a lado (Figma o Penpot).\n" +
+    "- Tu tokens.json (color, tamaño, espacio, radio y sombra) y tus tres problemas en una línea cada uno.\n" +
+    "- La revisamos con la prueba de los 5 segundos: ¿se ve primero lo que importa?\n" +
+    "- Sesión 2: martes 24, 9:15 p. m. Componentes, estados y el prototipo que se recorre.";
+  $("b-tarea").addEventListener("click", function () {
+    var b = this, o = b.textContent;
+    DI.copiar(TAREA).then(function (ok) { b.textContent = ok ? "✓ Copiada" : "No pude copiar"; setTimeout(function () { b.textContent = o; }, 1800); });
+  });
+
+  DI.yo().then(function (u) { yo.nombre = u.nombre; setTimeout(armar, 400); });
+})();
+</script>
+</body>
+</html>

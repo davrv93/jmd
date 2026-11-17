@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · La prueba de los 5 segundos</title>
+<!-- Escena del modo LIVE: Diseño de interfaces, sesión 1 (di-01). Experiencia: la pantalla de inventario de
+     «Ferretería Don Lucho» se ve 5 segundos y se tapa; después, dos votos y la revelación del aviso escondido. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/di.css">
+<link rel="stylesheet" href="../../comun/pantalla.css">
+<style id="esc-propio">
+.b2 { display: grid; grid-template-columns: 1.62fr 1fr; gap: 2.2vw; align-items: start; }
+.b2-izq { display: grid; gap: 1.2vh; min-width: 0; }
+.b2-escena { position: relative; }
+.b2-telon { position: absolute; inset: 26px 0 0 0; z-index: 3; border-radius: 0 0 .8em .8em; display: grid; place-items: center; text-align: center; padding: 1.2em; background:
+  repeating-linear-gradient(135deg, rgba(255,255,255,.04) 0 12px, transparent 12px 24px), #1b1830; color: #f1eef9; }
+.b2-telon[hidden] { display: none; }
+.b2-telon h2 { margin: 0 0 .3em; font-size: 1.25em; line-height: 1.2; }
+.b2-telon p { margin: 0 auto .9em; max-width: 26em; font-size: .78em; color: #c9c4e3; }
+.b2-reloj { position: absolute; z-index: 4; top: 40px; right: 14px; width: 74px; height: 74px; display: grid; place-items: center; border-radius: 50%; background: rgba(20,18,43,.88); color: #fff; font: 800 30px/1 system-ui, sans-serif; box-shadow: 0 8px 24px -8px rgba(0,0,0,.5); }
+.b2-reloj[hidden] { display: none; }
+.b2-reloj svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.b2-reloj circle { fill: none; stroke: #ff9e6e; stroke-width: 5; stroke-dasharray: 202; stroke-dashoffset: 0; }
+.b2-reloj.va circle { animation: b2-vacia 5s linear forwards; }
+@keyframes b2-vacia { to { stroke-dashoffset: 202; } }
+.b2-pie { margin: 0; font-size: .7em; color: var(--muted); }
+.b2-der { display: grid; gap: 1.4vh; min-width: 0; }
+.b2-votos { display: grid; gap: 1.2vh; transition: opacity .3s ease-out; }
+.b2-votos.espera { opacity: .45; pointer-events: none; }
+.b2-espera { margin: 0; font-size: .72em; font-weight: 700; color: var(--di); }
+.b2-revela { display: grid; gap: .5em; }
+.b2-revela[hidden] { display: none; }
+.b2-dato { margin: 0; font-size: .78em; line-height: 1.45; }
+.b2-dato b { color: var(--di); }
+.b2-chip { display: inline-block; font: 700 .9em var(--mono); padding: .05em .4em; border-radius: .3em; background: #fff; color: #b5b5b5; border: 1px solid var(--line2); }
+@media (max-width: 760px) {
+  .b2 { grid-template-columns: 1fr; gap: 14px; }
+  .b2-telon h2 { font-size: 1em; }
+  .b2-telon p { display: none; }
+  .b2-reloj { width: 52px; height: 52px; font-size: 22px; top: 32px; right: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .b2-reloj.va circle { animation: none; } .b2-votos { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Diseño de interfaces · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.9em">Cinco segundos: <em>¿qué hace esta pantalla?</em></h1>
+    <div class="b2">
+      <div class="b2-izq a-in" style="--d:.1s">
+        <div class="b2-escena">
+          <div class="k-marco">
+            <div class="k-marco-barra" aria-hidden="true"><i></i><i></i><i></i><span>inventario.donlucho.pe · Sistema de Inventarios</span></div>
+            <div id="pantalla"></div>
+          </div>
+          <div class="b2-telon" id="telon">
+            <div>
+              <h2 id="telon-tit">Mírala 5 segundos. Solo 5.</h2>
+              <p id="telon-txt">Es la pantalla que usa a diario el dueño de una ferretería. No la estudies: mírala como la mira él cuando entra un cliente.</p>
+              <button type="button" class="k-btn di" id="ver">Mostrar 5 segundos</button>
+            </div>
+          </div>
+          <div class="b2-reloj" id="reloj" hidden aria-live="off"><svg viewBox="0 0 74 74" aria-hidden="true"><circle cx="37" cy="37" r="32"/></svg><span id="seg">5</span></div>
+        </div>
+        <p class="b2-pie">La prueba de los 5 segundos: una pantalla que se entiende sola dice en 5 s qué es, qué hago aquí y qué pasa hoy.</p>
+      </div>
+
+      <div class="b2-der a-in" style="--d:.25s">
+        <p class="b2-espera" id="espera">Primero mira la pantalla: los votos se abren al taparse.</p>
+        <div class="b2-votos espera" id="votos">
+          <div class="k-caja k-voto" data-voto="di01-primero">
+            <p class="k-q" style="--c:var(--di)">¿Qué viste primero?</p>
+            <div class="k-ops">
+              <button data-op="letrero">El letrero rojo de bienvenida</button>
+              <button data-op="eliminar">El botón ELIMINAR</button>
+              <button data-op="tabla">La tabla de productos</button>
+              <button data-op="faltan">Que faltan productos</button>
+            </div>
+          </div>
+          <div class="k-caja k-voto" data-voto="di01-aviso">
+            <p class="k-q" style="--c:var(--di)">¿Viste algún aviso importante para el dueño?</p>
+            <div class="k-ops">
+              <button data-op="si">Sí, lo vi</button>
+              <button data-op="no">No vi ninguno</button>
+            </div>
+          </div>
+        </div>
+        <div class="k-caja b2-revela" id="revela" hidden>
+          <p class="b2-dato">Lo que el dueño necesitaba ver primero era <b>que 3 productos se están acabando</b>. Estaba ahí: al pie, en cursiva de 11 px y gris <span class="b2-chip">#B5B5B5</span> sobre blanco, un contraste de 2,05:1.</p>
+          <p class="b2-dato">Mientras tanto, lo más grande de la pantalla le daba la bienvenida, todos los días.</p>
+          <div class="k-links"><button type="button" class="k-btn sec" id="otra">Verla otra vez, sin reloj</button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Perfetti, C. (2005). <i>5-second tests: measuring your site's content pages</i>. User Interface Engineering.</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/di.js"></script>
+<script src="../../comun/pantalla.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var pf = Pantalla.montar($("pantalla"), "fea");
+  var telon = $("telon"), reloj = $("reloj"), seg = $("seg"), votos = $("votos"), t = 0;
+
+  function abrirVotos() { votos.classList.remove("espera"); $("espera").hidden = true; }
+  function tapar(fin) {
+    telon.hidden = false; reloj.hidden = true; reloj.classList.remove("va");
+    if (fin) {
+      $("telon-tit").textContent = "Tiempo. ¿Qué viste?";
+      $("telon-txt").textContent = "Responde a la derecha sin volver a mirarla. Sé honesto: aquí nadie se equivoca, la pantalla es la que falla.";
+      $("ver").textContent = "Mostrarla otra vez 5 segundos";
+      abrirVotos();
+    }
+  }
+  $("ver").addEventListener("click", function () {
+    clearInterval(t);
+    pf.querySelectorAll(".pf-ojo").forEach(function (e) { e.classList.remove("pf-ojo"); });
+    telon.hidden = true; reloj.hidden = false; reloj.classList.remove("va"); void reloj.offsetWidth; reloj.classList.add("va");
+    var n = 5; seg.textContent = n;
+    t = setInterval(function () { n--; if (n <= 0) { clearInterval(t); tapar(true); } else seg.textContent = n; }, 1000);
+  });
+  function revelar() { $("revela").hidden = false; }
+  document.addEventListener("k-voto", revelar);
+  if (DI.leer("voto-di01-primero", "") || DI.leer("voto-di01-aviso", "")) { abrirVotos(); revelar(); $("ver").textContent = "Mostrarla otra vez 5 segundos"; }
+  $("otra").addEventListener("click", function () {
+    clearInterval(t); telon.hidden = true; reloj.hidden = true;
+    var av = pf.querySelector('[data-zona="aviso"]'); if (av) av.classList.add("pf-ojo");
+  });
+})();
+</script>
+</body>
+</html>

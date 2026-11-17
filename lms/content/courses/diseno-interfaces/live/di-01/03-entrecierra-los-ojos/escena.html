@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Entrecierra los ojos</title>
+<!-- Escena del modo LIVE: Diseño de interfaces, sesión 1 (di-01). Reflexión: la prueba de entrecerrar los ojos
+     (desenfoque y sin color) y el mapa de calor del grupo: cada toque es un voto di01-mancha con su celda. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/di.css">
+<link rel="stylesheet" href="../../comun/pantalla.css">
+<style id="esc-propio">
+.b3 { display: grid; grid-template-columns: 1.62fr 1fr; gap: 2.2vw; align-items: start; }
+.b3-izq { display: grid; gap: 1.1vh; min-width: 0; }
+.b3-ctrl { display: flex; flex-wrap: wrap; gap: .6em 1em; align-items: center; }
+.b3-ctrl .k-rango { flex: 1 1 12em; max-width: 20em; }
+.b3-lienzo { position: relative; }
+.b3 .pf { filter: blur(calc(var(--u) * var(--blur, 0))) grayscale(var(--gris, 0)); transition: filter .35s ease-out; }
+.b3-capa { position: absolute; left: 0; right: 0; bottom: 0; top: 26px; z-index: 2; cursor: crosshair; touch-action: manipulation; }
+.b3-capa canvas { width: 100%; height: 100%; display: block; }
+.b3-der { display: grid; gap: 1.3vh; min-width: 0; }
+.b3-paso { margin: 0; font-size: .8em; line-height: 1.45; }
+.b3-paso b { color: var(--di); }
+.b3-cuenta { margin: 0; font-size: .72em; color: var(--muted); }
+.b3-cuenta b { color: var(--fg); }
+.b3-ley { display: flex; align-items: center; gap: .5em; font-size: .66em; color: var(--muted); }
+.b3-ley i { width: 7em; height: .6em; border-radius: .3em; background: linear-gradient(90deg, rgba(255,45,135,.15), rgba(255,45,135,.95)); }
+@media (max-width: 760px) { .b3 { grid-template-columns: 1fr; gap: 14px; } }
+@media (prefers-reduced-motion: reduce) { .b3 .pf { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Diseño de interfaces · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.9em">Entrecierra los ojos: <em>¿qué manchas quedan?</em></h1>
+    <div class="b3">
+      <div class="b3-izq a-in" style="--d:.1s">
+        <div class="b3-ctrl">
+          <button class="k-tog" data-tog="entrecerrar" id="t-ent">Entrecerrar los ojos</button>
+          <button class="k-tog" data-tog="gris" id="t-gris">Sin color</button>
+          <label class="k-rango"><span>Desenfoque: <b id="v-blur">0</b></span><input type="range" id="blur" min="0" max="12" step="1" value="0"></label>
+        </div>
+        <div class="b3-lienzo">
+          <div class="k-marco">
+            <div class="k-marco-barra" aria-hidden="true"><i></i><i></i><i></i><span>inventario.donlucho.pe · Sistema de Inventarios</span></div>
+            <div id="pantalla"></div>
+          </div>
+          <div class="b3-capa" id="capa" role="button" tabindex="0" aria-label="Toca la mancha de la pantalla que más te jala el ojo. Tu toque se suma al mapa de calor del grupo."><canvas id="calor" aria-hidden="true"></canvas></div>
+        </div>
+        <div class="b3-ley" aria-hidden="true"><span>pocos</span><i></i><span>muchos toques del grupo</span></div>
+      </div>
+
+      <div class="b3-der a-in" style="--d:.25s">
+        <div class="k-caja">
+          <p class="b3-paso"><b>1.</b> Pulsa «Entrecerrar los ojos». Las letras desaparecen y solo quedan manchas: así ve la pantalla alguien con apuro, o sin lentes.</p>
+          <p class="b3-paso"><b>2.</b> <b>Toca la mancha</b> que más te jala el ojo. Tu toque se suma al mapa del grupo.</p>
+          <p class="b3-cuenta" id="cuenta">Aún no hay toques.</p>
+        </div>
+        <div class="k-caja k-muro" data-muro="di01-problemas" data-color="var(--di)" data-pregunta="3. Nombra un problema de esta pantalla, en una línea" data-placeholder="El aviso importante está chiquito y gris…" data-max="5"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>La prueba de entrecerrar los ojos: si al desenfocar la pantalla no queda una mancha clara, la pantalla no tiene protagonista.</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/di.js"></script>
+<script src="../../comun/pantalla.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var pf = Pantalla.montar($("pantalla"), "fea");
+  var COLS = 12, FILAS = 8, CLAVE = "di01-mancha";
+  var mio = DI.leer("mancha", ""), datos = { total: 0, opciones: {} };
+
+  function blur(n) { pf.style.setProperty("--blur", n); $("blur").value = n; $("v-blur").textContent = n; $("t-ent").setAttribute("aria-pressed", String(n >= 4)); }
+  $("blur").addEventListener("input", function () { blur(+this.value); });
+  document.addEventListener("k-tog", function (e) {
+    if (e.detail.nombre === "entrecerrar") blur(e.detail.on ? 7 : 0);
+    if (e.detail.nombre === "gris") pf.style.setProperty("--gris", e.detail.on ? 1 : 0);
+  });
+
+  // ---- el mapa de calor ----
+  var cv = $("calor"), capa = $("capa");
+  function pintar() {
+    var r = capa.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+    var g = cv.getContext("2d"); g.scale(dpr, dpr); g.clearRect(0, 0, r.width, r.height);
+    var ops = datos.opciones || {}, max = 0;
+    Object.keys(ops).forEach(function (k) { if (ops[k] > max) max = ops[k]; });
+    var cw = r.width / COLS, ch = r.height / FILAS, rad = Math.max(cw, ch) * 1.1;
+    Object.keys(ops).forEach(function (k) {
+      var m = /^c(\d+)-(\d+)$/.exec(k); if (!m || !ops[k]) return;
+      var x = (+m[1] + .5) * cw, y = (+m[2] + .5) * ch, a = .25 + .65 * ops[k] / max;
+      var gr = g.createRadialGradient(x, y, 0, x, y, rad);
+      gr.addColorStop(0, "rgba(255,45,135," + a.toFixed(2) + ")"); gr.addColorStop(1, "rgba(255,45,135,0)");
+      g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    });
+    if (mio) {
+      var mm = /^c(\d+)-(\d+)$/.exec(mio);
+      if (mm) { var x = (+mm[1] + .5) * cw, y = (+mm[2] + .5) * ch; g.lineWidth = 3; g.strokeStyle = "#14122b"; g.beginPath(); g.arc(x, y, 11, 0, 7); g.stroke(); g.strokeStyle = "#fff"; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, 14, 0, 7); g.stroke(); }
+    }
+    var n = datos.total || 0;
+    $("cuenta").innerHTML = n ? "<b>" + n + (n === 1 ? " toque" : " toques") + "</b> del grupo" + (mio ? " · el círculo es el tuyo (puedes cambiarlo)" : " · falta el tuyo") : "Aún no hay toques. Sé el primero.";
+  }
+  function tocar(cx, cy) {
+    var r = capa.getBoundingClientRect();
+    var c = Math.max(0, Math.min(COLS - 1, Math.floor((cx - r.left) / r.width * COLS)));
+    var f = Math.max(0, Math.min(FILAS - 1, Math.floor((cy - r.top) / r.height * FILAS)));
+    var op = "c" + c + "-" + f;
+    if (mio && datos.opciones && datos.opciones[mio]) datos.opciones[mio]--; else datos.total = (datos.total || 0) + 1;
+    datos.opciones = datos.opciones || {}; datos.opciones[op] = (datos.opciones[op] || 0) + 1;
+    mio = op; DI.guardar("mancha", op); pintar();
+    DI.votar(CLAVE, op).then(function (r) { if (r.ok && r.datos && typeof r.datos.total === "number") { datos = r.datos; pintar(); } });
+  }
+  capa.addEventListener("click", function (e) { tocar(e.clientX, e.clientY); });
+  capa.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); var r = capa.getBoundingClientRect(); tocar(r.left + r.width / 2, r.top + r.height * .1); DI.toast("Marcaste el centro de arriba. Con el mouse o el dedo puedes elegir otra mancha."); }
+  });
+  function refrescar() {
+    if (document.visibilityState === "hidden") return;
+    DI.votos(CLAVE).then(function (r) { if (r.ok && r.datos && typeof r.datos.total === "number") { datos = r.datos; pintar(); } });
+  }
+  addEventListener("resize", pintar);
+  pintar(); refrescar(); setInterval(refrescar, 4000);
+})();
+</script>
+</body>
+</html>

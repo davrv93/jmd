@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tus tokens con el agente</title>
+<!-- Escena del modo LIVE: Diseño de interfaces, sesión 1 (di-01). Aplicación (paso «tokens»): el pedido para
+     DeepSeek Harness se arma con LOS valores del alumno (su escala de la escena 7 y su paleta de la 11, guardadas en
+     el navegador). El agente escribe /trabajo/diseno/tokens.json (DTCG 2025.10), mide el contraste con python3 y
+     corrige lo que no pase. Luego el alumno pega aquí el JSON y lo descarga como archivo para Figma o Penpot; si el
+     agente no responde, descarga los tokens armados en la propia escena. Los pedidos fijos van también en el yaml. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/di.css">
+<style id="esc-propio">
+.b13 { display: grid; grid-template-columns: 1.08fr .92fr; gap: 2.2vw; align-items: start; }
+.b13-col { display: grid; gap: 1.2vh; min-width: 0; }
+.b13-h { margin: 0; font-size: .9em; display: flex; gap: .5em; align-items: baseline; }
+.b13-h i { font-style: normal; display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--di-bg); color: var(--di); font-size: .9em; font-weight: 800; flex: none; }
+.b13-mis { display: flex; flex-wrap: wrap; gap: .4em .9em; align-items: center; font-size: .7em; color: var(--muted); }
+.b13-mis b { color: var(--fg); font-family: var(--mono); }
+.b13-sw { display: inline-flex; gap: 3px; vertical-align: middle; }
+.b13-sw i { width: 1.15em; height: 1.15em; border-radius: .3em; border: 1px solid rgba(0,0,0,.15); }
+.b13-pega { width: 100%; min-height: 6.5em; resize: vertical; font: 500 .68em/1.45 var(--mono); padding: .6em .8em; border-radius: .7em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); }
+.b13-pega:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.b13-pasos { margin: 0; padding: 0 0 0 1.2em; display: grid; gap: .35em; font-size: .72em; line-height: 1.45; }
+.b13-pasos b { color: var(--fg); }
+.b13-ojo { margin: 0; font-size: .66em; color: var(--muted); padding: .5em .7em; border-radius: .6em; background: var(--s2); }
+@media (max-width: 760px) { .b13 { grid-template-columns: 1fr; gap: 14px; } }
+@media (prefers-reduced-motion: reduce) { .b13 * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Diseño de interfaces · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.85em">Tus tokens: <em>el agente los escribe y los revisa</em></h1>
+    <div class="b13">
+      <div class="b13-col a-in" style="--d:.1s">
+        <h2 class="b13-h"><i>1</i>Pídele tu archivo de tokens</h2>
+        <p class="b13-mis" id="mis"></p>
+        <pre class="k-pedido" data-titulo="Pedido 1 · ya trae tus valores" id="p1"></pre>
+        <div class="k-pedido-pie"><button class="k-btn di" type="button" id="b1" data-dsh>Copiar y abrir DeepSeek Harness</button><span class="k-nota">Pégalo con Ctrl+V y espera su tabla de contraste.</span></div>
+        <pre class="k-pedido" data-titulo="Pedido 2 · el archivo para copiar" id="p2"></pre>
+        <div class="k-pedido-pie"><button class="k-btn sec" type="button" id="b2">Copiar el pedido 2</button></div>
+      </div>
+
+      <div class="b13-col a-in" style="--d:.2s">
+        <h2 class="b13-h"><i>2</i>Llévalo a Figma o a Penpot</h2>
+        <div class="k-caja">
+          <label class="k-q" for="pega" style="--c:var(--di)">Pega aquí el JSON que te mostró el agente</label>
+          <textarea class="b13-pega" id="pega" spellcheck="false" placeholder='{ "color": { "acento": { "$type": "color", … } } }'></textarea>
+          <div class="k-links"><button type="button" class="k-btn di" id="bajar">Descargar tokens.json</button><button type="button" class="k-btn sec" id="plan-b">El agente no responde: descargar los míos</button></div>
+          <p class="k-pie" id="estado">El archivo se arma en tu navegador; no se sube a ningún lado.</p>
+        </div>
+        <div class="k-caja">
+          <ol class="b13-pasos">
+            <li><b>Figma:</b> sin nada seleccionado, abre <b>Variables</b> en el panel derecho, crea una colección y <b>arrastra tokens.json</b> adentro. Se crean color, tamaño, espacio y radio; la sombra y la tipografía las salta.</li>
+            <li><b>Penpot:</b> pestaña <b>Tokens</b> → <b>Tools</b> (abajo) → <b>Import</b> → elige tokens.json.</li>
+          </ol>
+          <p class="b13-ojo">Figma documenta la importación en su guía de modos, que menciona los planes de pago. Si en tu plan gratis no aparece, crea a mano las diez variables de color (son pocas) o usa Penpot, que es gratis y abierto.</p>
+        </div>
+        <ul class="k-check" data-check="di01-tokens" data-listo="Listo: pulsa «Lo logré» en el panel de la clase.">
+          <li><label><input type="checkbox"><span></span><em><code>tokens.json</code> con color, tamaño, espacio, radio y sombra</em></label></li>
+          <li><label><input type="checkbox"><span></span><em>La tabla del agente dice que todo pasa AA</em></label></li>
+          <li><label><input type="checkbox"><span></span><em>Mis variables ya están en Figma o en Penpot</em></label></li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Formato: Design Tokens Community Group (2025). Design Tokens Format Module 2025.10. Lo importan Figma y Penpot.</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/di.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var t = DI.tokens(), esc = DI.escala(t.base, t.razon), lista = esc.map(function (s) { return s.px; }).join(", ");
+  var COL = ["acento", "texto", "suave", "borde", "linea", "fondo", "superficie", "exito", "aviso", "error"];
+  var NOM = { acento: "acento", texto: "texto", suave: "texto suave", borde: "borde", linea: "línea", fondo: "fondo", superficie: "superficie", exito: "éxito", aviso: "aviso", error: "error" };
+
+  var mis = $("mis"); mis.innerHTML = "";
+  var s1 = document.createElement("span"); s1.innerHTML = "Tu escala: <b>" + lista.replace(/, /g, " · ") + "</b>"; mis.appendChild(s1);
+  var s2 = document.createElement("span"); s2.textContent = "Tu paleta: "; var sw = document.createElement("span"); sw.className = "b13-sw";
+  ["acento", "texto", "suave", "borde", "exito", "aviso", "error"].forEach(function (k) { var i = document.createElement("i"); i.style.background = t[k]; i.title = NOM[k] + " " + t[k]; sw.appendChild(i); });
+  s2.appendChild(sw); mis.appendChild(s2);
+
+  var P1 = "Crea la carpeta /trabajo/diseno y dentro el archivo tokens.json con mi sistema de diseño, en el formato Design Tokens (DTCG 2025.10), con estos valores:\n" +
+    "- Escala tipográfica: base " + t.base + " px, razón " + t.razon + ": " + lista + " px (nómbralos xs, sm, base, md, lg, xl y 2xl dentro del grupo «tamano»).\n" +
+    "- Espacios (retícula de 8), grupo «espacio»: 4, 8, 12, 16, 24, 32, 48 y 64 px.\n" +
+    "- Radios, grupo «radio»: sm 4, md 8 y lg 12 px. Sombras, grupo «sombra»: suave (0 1px 3px, negro al 12 %) y alta (0 8px 24px, negro al 18 %).\n" +
+    "- Colores, grupo «color»: " + COL.map(function (k) { return NOM[k] + " " + t[k]; }).join(", ") + ".\n" +
+    "- Fuente, grupo «fuente»: Inter. Y dos estilos en «tipografia»: título (" + esc[5].px + " px, 600) y cuerpo (" + esc[2].px + " px, 400, interlineado 1,5).\n" +
+    "Reglas del formato: cada token lleva $type, $value y $description en español; los colores van como objeto {\"colorSpace\": \"srgb\", \"components\": [r, g, b] de 0 a 1, \"alpha\": 1, \"hex\": \"#rrggbb\"}; las medidas como {\"value\": N, \"unit\": \"px\"}.\n" +
+    "Después mide el contraste de texto, texto suave, acento, éxito, aviso y error sobre el fondo y sobre la superficie, y del borde sobre el fondo, con la fórmula de WCAG 2.2 (calcúlalo con python3 y no redondees). Meta: 4,5:1 para todo lo que es texto y 3:1 para el borde. Si algo no pasa, oscurécelo sin cambiar su tono, actualiza tokens.json y dime qué cambiaste. Termina con una tabla: color · sobre qué · razón · ¿pasa?";
+  var P2 = "Muéstrame /trabajo/diseno/tokens.json completo en un solo bloque de código, sin comentarios, para copiarlo tal cual. Antes, compruébalo con python3 -m json.tool; si no es JSON válido, corrígelo. Después explícame en una línea para qué sirve cada grupo: color, tamano, espacio, radio, sombra y tipografia.";
+  $("p1").textContent = P1; $("p2").textContent = P2;
+  $("b1").setAttribute("data-copiar-texto", P1); $("b2").setAttribute("data-copiar-texto", P2);
+
+  // ---- del texto pegado a un archivo ----
+  function limpiar(txt) { return String(txt || "").replace(/^\s*```[a-z]*\s*$/gim, "").trim(); }
+  $("bajar").addEventListener("click", function () {
+    var txt = limpiar($("pega").value), est = $("estado");
+    if (!txt) { $("pega").focus(); DI.toast("Primero pega el JSON que te mostró el agente (pedido 2)."); return; }
+    var obj;
+    try { obj = JSON.parse(txt); } catch (e) { est.textContent = "No es JSON válido: " + e.message + ". Pídele al agente que lo corrija con python3 -m json.tool."; DI.toast("Ese texto no es JSON válido todavía."); return; }
+    var grupos = Object.keys(obj || {}), falta = ["color", "espacio", "radio"].filter(function (g) { return grupos.indexOf(g) < 0; });
+    var ok = DI.descargarTexto(JSON.stringify(obj, null, 2) + "\n", "tokens.json");
+    est.textContent = (ok ? "Descargado: tokens.json (" + grupos.length + " grupos: " + grupos.join(", ") + ")." : "Tu navegador no dejó descargar.") + (falta.length ? " Ojo: le falta " + falta.join(", ") + "." : "");
+    DI.guardar("tokens-json", obj);
+  });
+  $("plan-b").addEventListener("click", function () {
+    var obj = DI.dtcg(DI.tokens());
+    var ok = DI.descargarTexto(JSON.stringify(obj, null, 2) + "\n", "tokens.json");
+    $("estado").textContent = ok ? "Descargado: tokens.json armado con tu escala y tu paleta (sin la revisión del agente: compruébala en la escena del contraste)." : "Tu navegador no dejó descargar.";
+  });
+})();
+</script>
+</body>
+</html>

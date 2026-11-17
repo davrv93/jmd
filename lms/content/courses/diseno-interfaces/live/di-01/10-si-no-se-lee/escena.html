@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Si no se lee, no existe</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520. Arriba: dos muestras de texto (x 16–380) y la fórmula (x 420–790). Al medio: los umbrales.
+     Abajo: el color que no va solo (x 16–380) y el caso del censo (x 420–790). left = x / 8 %, top = y / 5.2 %. */
+  .muestra { position: absolute; margin: 0; padding: .7em .9em; background: #FFFFFF; border-radius: .35em; box-shadow: var(--sombra); font: 600 1.9cqw/1.25 var(--sans); }
+  .muestra small { display: block; margin-top: .45em; font: 700 .62em/1 var(--mono); letter-spacing: .06em; color: #4A4F5A; }
+  .muestra .r { position: absolute; right: -.6em; top: -.75em; font: 800 .8em/1 var(--mono); padding: .3em .5em; border-radius: .3em; color: #fff; }
+  .formula { font-size: 3.6cqw; }
+  #nCenso .sello { top: auto; bottom: -1em; right: -.6em; }
+  .formula .que { font-size: .3em; }
+  .ficha .t { font-weight: 600; }
+  .ficha .num { font: 800 1.9em/1 var(--serif); color: var(--c); }
+  .chips { position: absolute; display: flex; flex-direction: column; gap: .6em; font-size: 1.6cqw; }
+  .chip { display: flex; align-items: center; gap: .7em; padding: .55em .8em; background: var(--n-ficha); color: var(--n-tinta); border-radius: .35em; box-shadow: var(--sombra); }
+  .chip .p { font: 700 .95em/1.2 var(--sans); flex: 1; }
+  .chip .e { display: inline-flex; align-items: center; gap: .35em; font: 700 .85em/1 var(--sans); padding: .3em .55em; border-radius: .3em; }
+  .chip .e::before { content: ""; width: .7em; height: .7em; border-radius: 50%; background: currentColor; }
+  .chip .solo { width: 1em; height: 1em; border-radius: 50%; }
+  .chip .k { font: 700 .62em/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; width: 5.6em; }
+  #paleta { position: absolute; left: 3%; right: 3%; top: 42%; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1.6%; }
+  .sw { border-radius: .4em; box-shadow: var(--sombra); overflow: hidden; background: var(--n-ficha); font-size: 1.35cqw; }
+  .sw i { display: block; height: 4.2em; }
+  .sw b { display: block; padding: .45em .55em 0; font: 700 1em/1.15 var(--sans); color: var(--n-tinta); }
+  .sw span { display: block; padding: .2em .55em .55em; font: 700 .9em/1.2 var(--mono); color: #4A4F5A; }
+  @media (prefers-reduced-motion: reduce) { .teo-fig * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 3 de 3 · Contraste (WCAG 2.2)</p>
+    <h1>Si no se lee, <em>no existe</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Arriba, dos muestras del mismo aviso sobre blanco: en gris claro mide 2,05 a 1; en tinta oscura, 16,88 a 1; al lado, la fórmula del contraste de WCAG 2.2. Al medio, tres fichas con los umbrales AA: 4,5 a 1 para texto normal, 3 a 1 para texto grande y 3 a 1 para bordes e íconos. Abajo a la izquierda, un estado de stock marcado solo con un punto de color frente al mismo estado con punto y palabra. Abajo a la derecha, el dato del censo 2017: más de 1,5 millones de peruanos declararon dificultad para ver aun con anteojos. Al final, la paleta de la ferretería: un acento, tres neutros y tres colores semánticos con su contraste.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="aFormula" class="trazo flecha" d="M392 92 C404 92 408 92 418 92"/>
+      </svg>
+
+      <div class="capa" id="cArriba">
+        <p class="muestra" id="mGris" data-r="-1" style="left:2.5%; top:5%; width:43%; color:#B5B5B5"><i>* Atención: hay 3 productos con stock por debajo del mínimo.</i><small>#B5B5B5 SOBRE BLANCO</small><span class="r" style="background:#B3261E">2,05:1</span></p>
+        <p class="muestra" id="mTinta" data-r=".8" style="left:2.5%; top:23%; width:43%; color:#1A1D23">3 productos por reponer hoy<small>#1A1D23 SOBRE BLANCO</small><span class="r" style="background:#1F7A3E">16,88:1</span></p>
+        <p class="formula" id="formula" style="left:54%; top:11%">
+          <span class="fl">(L₁ + 0,05)</span> <span class="fl">/</span> <span class="fl">(L₂ + 0,05)</span>
+          <span class="que capas"><span id="q1">L = luminancia relativa: 0 es negro, 1 es blanco</span></span>
+        </p>
+      </div>
+
+      <div class="capa" id="cUmbrales">
+        <div class="nt ficha k" id="u1" data-r="-1" style="left:3%; top:42%; width:29%"><span class="k">Texto normal · 1.4.3</span><span class="num">4,5:1</span><span class="t">Todo lo que se lee: tablas, etiquetas, avisos</span></div>
+        <div class="nt ficha s" id="u2" data-r=".8" style="left:35.5%; top:42%; width:29%"><span class="k">Texto grande · 1.4.3</span><span class="num">3:1</span><span class="t">Desde 24 px, o 18,66 px en negrita</span></div>
+        <div class="nt ficha r" id="u3" data-r="-.6" style="left:68%; top:42%; width:29%"><span class="k">Bordes e íconos · 1.4.11</span><span class="num">3:1</span><span class="t">El borde de un campo, un ícono, una línea de gráfico</span></div>
+      </div>
+
+      <div class="chips" id="cColor" style="left:2.5%; top:72%; width:44%">
+        <div class="chip" id="ch1"><span class="k">Así no</span><span class="p">Pintura látex 4 L</span><span class="solo" style="background:#B3261E"></span></div>
+        <div class="chip" id="ch2"><span class="k">Así sí</span><span class="p">Pintura látex 4 L</span><span class="e" style="color:#B3261E; background:#FBEDEC">Agotado</span></div>
+      </div>
+
+      <div class="nt hot" id="nCenso" data-r="1.2" style="left:55%; top:73%; width:38%">
+        <span class="k">Censo 2017 · INEI</span>
+        <span class="t">1 550 196 peruanos declararon dificultad para ver, aun usando anteojos.</span>
+        <span class="sello solo-anim" id="sello">2,05:1 NO PASA</span>
+      </div>
+
+      <div id="paleta" class="solo-anim">
+        <div class="sw"><i style="background:#0B63CE"></i><b>Acento</b><span>5,69:1</span></div>
+        <div class="sw"><i style="background:#1A1D23"></i><b>Texto</b><span>16,88:1</span></div>
+        <div class="sw"><i style="background:#5B6270"></i><b>Texto suave</b><span>6,12:1</span></div>
+        <div class="sw"><i style="background:#8A919E"></i><b>Borde</b><span>3,17:1</span></div>
+        <div class="sw"><i style="background:#1F7A3E"></i><b>Éxito</b><span>5,36:1</span></div>
+        <div class="sw"><i style="background:#A15C00"></i><b>Aviso</b><span>5,18:1</span></div>
+        <div class="sw"><i style="background:#B3261E"></i><b>Error</b><span>6,53:1</span></div>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>El contraste se mide</b><p>No es gusto: es una razón entre la luz del texto y la del fondo. El aviso de la ferretería, gris claro sobre blanco, da 2,05:1. El mismo texto en tinta oscura da 16,88:1.</p><p class="aparte">La fórmula es de WCAG 2.2. Va de 1:1 (igual) a 21:1 (negro sobre blanco). Ojo: no se redondea; 4,49 no es 4,5.</p></li>
+        <li><b>4,5 para leer, 3 para ver</b><p>El nivel AA pide 4,5:1 para el texto normal y 3:1 para el texto grande. Y desde WCAG 2.1, también 3:1 para lo que no es texto: el borde de un campo, un ícono, la línea de un gráfico.</p></li>
+        <li><b>El color nunca va solo</b><p>Un puntito rojo no dice «agotado» a quien no distingue el rojo. Pon el color y la palabra, o un ícono. Cerca de 1 de cada 12 hombres de origen europeo confunde el rojo con el verde.</p><p class="aparte">WCAG 2.2, criterio 1.4.1 (uso del color). La cifra es de Birch (2012); en otras poblaciones es menor, pero nunca cero.</p></li>
+        <li><b>Más de un millón y medio</b><p>En el censo de 2017, 1 550 196 peruanos dijeron tener dificultad para ver aun con anteojos. Para ellos, y para cualquiera con el celular al sol, el aviso gris de la ferretería no existe.</p><p class="aparte">INEI (2019), Perfil sociodemográfico de la población con discapacidad, 2017. Es la discapacidad más frecuente: 48,3 %.</p></li>
+        <li><b>La paleta que sí pasa</b><p>Un acento, una familia de neutros y tres semánticos: éxito, aviso y error. Cada uno con su número sobre blanco. El borde gris pasa 3:1 para bordes, pero no sirve para texto. Ahora lo compruebas tú.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">W3C (2024). Web Content Accessibility Guidelines (WCAG) 2.2, criterios 1.4.1, 1.4.3 y 1.4.11, y definición de luminancia relativa · Birch, J. (2012). Worldwide prevalence of red-green color deficiency. JOSA A 29(3), 313–320 · INEI (2019). Perfil sociodemográfico de la población con discapacidad, 2017.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, punta;
+  TEO.escena([
+    function (tl) { // 1. dos muestras y la fórmula
+      TEO.pegar(tl, ["#mGris", "#mTinta"]);
+      tl.from("#mGris .r, #mTinta .r", { autoAlpha: 0, scale: .4, duration: .3, stagger: .2 }, "+=.1");
+      TEO.trazar(tl, "#aFormula", { duration: .4 });
+      tl.from(punta, { autoAlpha: 0, duration: .2 }, "-=.1");
+      tl.from("#formula .fl", { autoAlpha: 0, y: 18, duration: .5, stagger: .14, ease: "back.out(2)" });
+      tl.from("#q1", { autoAlpha: 0, y: 6, duration: .4 }, "-=.1");
+    },
+    function (tl) { // 2. los umbrales AA
+      TEO.pegar(tl, ["#u1", "#u2", "#u3"]);
+    },
+    function (tl) { // 3. el color no va solo
+      tl.from("#ch1", { autoAlpha: 0, x: -20, duration: .4 });
+      tl.from("#ch2", { autoAlpha: 0, x: -20, duration: .4 }, "+=.3");
+    },
+    function (tl) { // 4. el censo
+      TEO.pegar(tl, "#nCenso");
+      tl.to("#mGris", { x: -6, duration: .06, repeat: 5, yoyo: true, ease: "none" }, "+=.2");
+      tl.fromTo("#sello", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" });
+    },
+    function (tl) { // 5. la paleta que pasa
+      tl.to(["#cUmbrales", "#cColor"], { autoAlpha: 0, duration: .4 });
+      tl.to("#nCenso", { opacity: .35, duration: .4 }, "<");
+      tl.fromTo("#paleta", { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 });
+      tl.from(".sw", { autoAlpha: 0, y: 22, duration: .45, stagger: .09, ease: "back.out(1.7)" }, "<");
+    }
+  ], {
+    preparar: function () {
+      punta = TEO.punta($("#aFormula"));
+      gsap.set("#sello", { autoAlpha: 0 });
+    }
+  });
+})();
+</script>
+</body>
+</html>

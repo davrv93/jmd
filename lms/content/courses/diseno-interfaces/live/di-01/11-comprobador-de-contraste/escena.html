@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Comprobador de contraste</title>
+<!-- Escena del modo LIVE: Diseño de interfaces, sesión 1 (di-01). Conceptos: el comprobador de contraste. Calcula la
+     razón con la luminancia relativa de WCAG 2.2 (umbral 0,04045) y no redondea (4,49 no pasa). Trae los colores de
+     la pantalla fea, «Arreglar» oscurece o aclara sin cambiar el tono, y a la derecha se arma la paleta del alumno
+     (1 acento, neutros y 3 semánticos), que se guarda en el navegador y llega a la escena de tokens. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/di.css">
+<style id="esc-propio">
+.b11 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 2.2vw; align-items: start; }
+.b11-izq, .b11-der { display: grid; gap: 1.2vh; min-width: 0; }
+.b11-pre { border-radius: 1em; border: 1px solid var(--line2); padding: 1.1em 1.3em; display: grid; gap: .7em; box-shadow: var(--card-shadow); }
+.b11-pre .n { margin: 0; font: 400 16px/1.4 Inter, system-ui, sans-serif; }
+.b11-pre .g { margin: 0; font: 700 24px/1.2 Inter, system-ui, sans-serif; }
+.b11-pre .ui { display: flex; gap: 14px; align-items: center; }
+.b11-pre .campo { flex: 1; height: 40px; border: 2px solid; border-radius: 8px; display: flex; align-items: center; padding: 0 12px; font: 400 14px Inter, system-ui, sans-serif; opacity: .9; }
+.b11-pre svg { width: 34px; height: 34px; flex: none; }
+.b11-razon { display: flex; align-items: baseline; gap: .6em; flex-wrap: wrap; }
+.b11-razon b { font: 800 2.6em/1 system-ui, sans-serif; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.b11-razon span { font-size: .72em; color: var(--muted); }
+.b11-ver { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5em; }
+.b11-ver div { border-radius: .7em; padding: .5em .65em; font-size: .7em; line-height: 1.3; border: 1.5px solid; }
+.b11-ver div b { display: block; font-size: 1.2em; }
+.b11-ver .si { border-color: var(--ok); background: var(--ok-bg); }
+.b11-ver .si b::before { content: "✓ Pasa · "; color: var(--ok); }
+.b11-ver .no { border-color: var(--bad); background: var(--bad-bg); }
+.b11-ver .no b::before { content: "✗ No pasa · "; color: var(--bad); }
+.b11-ctrl { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+.b11-col { display: flex; align-items: center; gap: .5em; font-size: .74em; font-weight: 700; }
+.b11-col input[type="color"] { width: 44px; height: 44px; padding: 2px; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); cursor: pointer; flex: none; }
+.b11-col input[type="text"] { width: 6.5em; min-height: 40px; font: 700 .95em var(--mono); padding: .3em .5em; border-radius: .5em; border: 1.5px solid var(--line2); background: var(--s2); color: var(--fg); text-transform: uppercase; }
+.b11-pres { display: flex; flex-wrap: wrap; gap: .35em; }
+.b11-pres button { font: 700 .66em/1.1 system-ui, sans-serif; min-height: 34px; padding: .35em .65em; border-radius: 999px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; gap: .4em; }
+.b11-pres button i { width: 1.1em; height: 1.1em; border-radius: 50%; border: 1px solid rgba(0,0,0,.2); }
+.b11-pal { display: grid; gap: .3em; }
+.b11-tok { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; gap: .55em; align-items: center; padding: .3em .45em; border-radius: .6em; font-size: .72em; }
+.b11-tok:hover { background: var(--s2); }
+.b11-tok input[type="color"] { width: 34px; height: 34px; padding: 1px; border-radius: .45em; border: 1px solid var(--line2); background: var(--s1); cursor: pointer; }
+.b11-tok b { display: block; }
+.b11-tok small { display: block; color: var(--muted); font: 600 .9em var(--mono); }
+.b11-tok em { font: 700 1em var(--mono); font-style: normal; font-variant-numeric: tabular-nums; }
+.b11-tok .e { font-weight: 800; font-size: .9em; padding: .15em .45em; border-radius: .35em; }
+.b11-tok .e.si { color: var(--ok); background: var(--ok-bg); }
+.b11-tok .e.no { color: var(--bad); background: var(--bad-bg); }
+.b11-tok button { font: 700 .9em system-ui, sans-serif; border: 0; background: none; color: var(--accent); cursor: pointer; padding: .3em; min-height: 32px; text-align: left; }
+@media (prefers-reduced-motion: reduce) { .b11 * { transition: none !important; animation: none !important; } }
+@media (max-width: 760px) { .b11 { grid-template-columns: 1fr; gap: 14px; } .b11-ver { grid-template-columns: 1fr; } .b11-ctrl { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Diseño de interfaces · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.9em">Comprueba el contraste: <em>¿pasa AA o no?</em></h1>
+    <div class="b11">
+      <div class="b11-izq a-in" style="--d:.1s">
+        <div class="b11-pre" id="pre" aria-live="polite">
+          <p class="n">Texto normal, 16 px: 3 productos por reponer hoy.</p>
+          <p class="g">Texto grande, 24 px</p>
+          <div class="ui"><span class="campo" id="campo">Borde de un campo</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path id="ico" d="M12 3 L22 20 H2 Z M12 9 V14 M12 17 V17.5" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div class="b11-razon"><b id="razon">—</b><span id="razon-txt"></span></div>
+        <div class="b11-ver" id="ver">
+          <div id="v1"><b>4,5:1</b>Texto normal</div>
+          <div id="v2"><b>3:1</b>Texto grande (24 px, o 18,66 px negrita)</div>
+          <div id="v3"><b>3:1</b>Bordes e íconos</div>
+        </div>
+        <div class="b11-ctrl">
+          <label class="b11-col"><input type="color" id="c-fg" value="#b5b5b5" aria-label="Color del texto">Texto <input type="text" id="t-fg" value="#B5B5B5" maxlength="7" aria-label="Color del texto en hexadecimal"></label>
+          <label class="b11-col"><input type="color" id="c-bg" value="#ffffff" aria-label="Color del fondo">Fondo <input type="text" id="t-bg" value="#FFFFFF" maxlength="7" aria-label="Color del fondo en hexadecimal"></label>
+        </div>
+        <div class="k-links">
+          <button type="button" class="k-btn di" id="arreglar">Arreglar sin cambiar el tono</button>
+          <button type="button" class="k-btn sec" id="invertir">Invertir</button>
+        </div>
+        <div class="b11-pres" id="pres" aria-label="Colores de la pantalla fea"></div>
+      </div>
+
+      <div class="b11-der a-in" style="--d:.2s">
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--di)">Tu paleta, sobre fondo blanco</p>
+          <div class="b11-pal" id="pal"></div>
+          <p class="k-pie">Cambia un color con su cuadrito; «Probar» lo pasa al comprobador. Se guarda en este navegador y va a tus tokens.</p>
+        </div>
+        <p class="k-nota"><b>Sin redondear:</b> WCAG pide 4,5:1 y 4,49:1 no pasa. Por eso aquí verás siempre dos decimales cortados, nunca redondeados hacia arriba.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>W3C (2024). WCAG 2.2: 1.4.3 Contraste (mínimo) y 1.4.11 Contraste no textual, nivel AA. Luminancia relativa con el umbral 0,04045.</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/di.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var fg = "#b5b5b5", bg = "#ffffff";
+  var PRES = [
+    ["El aviso gris", "#b5b5b5", "#ffffff"], ["Botón ELIMINAR", "#ffffff", "#ff0000"], ["Botón NUEVO", "#ffffff", "#2ecc40"],
+    ["Botón SALIR", "#ffffff", "#ff851b"], ["El buscador", "#bbbbbb", "#ffffff"], ["El letrero", "#ffd400", "#d40000"], ["Acento con blanco", "#ffffff", "#0b63ce"],
+  ];
+  var TOK = [["acento", "Acento", 4.5], ["texto", "Texto", 4.5], ["suave", "Texto suave", 4.5], ["borde", "Borde de campos", 3], ["exito", "Éxito", 4.5], ["aviso", "Aviso", 4.5], ["error", "Error", 4.5]];
+
+  function pintar() {
+    var r = DI.contraste(fg, bg), pre = $("pre");
+    pre.style.background = bg; pre.style.color = fg;
+    $("campo").style.borderColor = fg; $("ico").setAttribute("stroke", fg);
+    $("razon").textContent = DI.ratio(r);
+    $("razon-txt").textContent = r >= 7 ? "pasa incluso AAA (7:1)" : r >= 4.5 ? "pasa AA para todo" : r >= 3 ? "solo texto grande, bordes e íconos" : "no pasa para nada";
+    [["v1", 4.5], ["v2", 3], ["v3", 3]].forEach(function (v) { $(v[0]).className = r >= v[1] ? "si" : "no"; });
+    $("c-fg").value = fg; $("c-bg").value = bg; $("t-fg").value = fg.toUpperCase(); $("t-bg").value = bg.toUpperCase();
+  }
+  function poner(a, b) { if (DI.hexRgb(a)) fg = DI.rgbHex(DI.hexRgb(a)); if (DI.hexRgb(b)) bg = DI.rgbHex(DI.hexRgb(b)); pintar(); }
+  $("c-fg").addEventListener("input", function () { poner(this.value, bg); });
+  $("c-bg").addEventListener("input", function () { poner(fg, this.value); });
+  ["t-fg", "t-bg"].forEach(function (id) {
+    $(id).addEventListener("change", function () { var v = this.value.trim(); if (!/^#/.test(v)) v = "#" + v; if (!DI.hexRgb(v)) { DI.toast("Escribe un color como #1A1D23"); pintar(); return; } if (id === "t-fg") poner(v, bg); else poner(fg, v); });
+  });
+  $("invertir").addEventListener("click", function () { poner(bg, fg); });
+  $("arreglar").addEventListener("click", function () {
+    var antes = fg, r = DI.contraste(fg, bg);
+    if (r >= 4.5) { DI.toast("Ya pasa 4,5:1. No hace falta tocarlo."); return; }
+    var nuevo = DI.ajustar(fg, bg, 4.5);
+    if (DI.contraste(nuevo, bg) < 4.5) { // el texto ya no puede alejarse más (p. ej. blanco): se mueve el fondo
+      var fondo = DI.ajustar(bg, fg, 4.5), antesBg = bg;
+      if (DI.contraste(fg, fondo) >= 4.5) { poner(fg, fondo); DI.toast("El texto ya no da más: cambié el fondo, " + antesBg.toUpperCase() + " → " + fondo.toUpperCase() + ". Ahora da " + DI.ratio(DI.contraste(fg, fondo)) + ".", 3800); return; }
+      DI.toast("Con estos dos no llego a 4,5:1 sin cambiar el tono. Prueba otro color."); return;
+    }
+    poner(nuevo, bg); DI.toast(antes.toUpperCase() + " → " + nuevo.toUpperCase() + ": el mismo tono, " + (DI.luminancia(nuevo) < DI.luminancia(antes) ? "más oscuro" : "más claro") + ". Ahora da " + DI.ratio(DI.contraste(nuevo, bg)) + ".", 3800);
+  });
+  var pres = $("pres");
+  PRES.forEach(function (p) {
+    var b = document.createElement("button"); b.type = "button";
+    var i = document.createElement("i"); i.style.background = p[2]; i.style.boxShadow = "inset 0 0 0 .3em " + p[1];
+    b.appendChild(i); b.appendChild(document.createTextNode(p[0]));
+    b.addEventListener("click", function () { poner(p[1], p[2]); }); pres.appendChild(b);
+  });
+
+  // ---- la paleta del alumno ----
+  function paleta() {
+    var t = DI.tokens(), cont = $("pal"); cont.textContent = "";
+    TOK.forEach(function (k) {
+      var fila = document.createElement("div"); fila.className = "b11-tok";
+      var inp = document.createElement("input"); inp.type = "color"; inp.value = t[k[0]]; inp.setAttribute("aria-label", "Color " + k[1]);
+      inp.addEventListener("change", function () { var o = {}; o[k[0]] = this.value; DI.guardarTokens(o); paleta(); });
+      var d = document.createElement("div"); var b = document.createElement("b"); b.textContent = k[1]; var s = document.createElement("small"); s.textContent = t[k[0]].toUpperCase() + " · meta " + String(k[2]).replace(".", ",") + ":1";
+      d.appendChild(b); d.appendChild(s);
+      var r = DI.contraste(t[k[0]], t.fondo), e = document.createElement("span");
+      e.className = "e " + (r >= k[2] ? "si" : "no"); e.textContent = DI.ratio(r);
+      var pr = document.createElement("button"); pr.type = "button"; pr.textContent = "Probar";
+      pr.addEventListener("click", function () { poner(t[k[0]], t.fondo); });
+      fila.appendChild(inp); fila.appendChild(d); fila.appendChild(e); fila.appendChild(pr); cont.appendChild(fila);
+    });
+  }
+  pintar(); paleta();
+})();
+</script>
+</body>
+</html>

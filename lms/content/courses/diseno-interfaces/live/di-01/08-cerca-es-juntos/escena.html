@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lo que está cerca se lee junto</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520. Arriba a la izquierda los 36 puntos (x 60–310, y 60–285); arriba a la derecha dos formularios
+     (x 420–790); abajo la papeleta mariposa (x 30–560) y su nota (x 575–790). left = x / 8 %, top = y / 5.2 %. */
+  .pt { fill: var(--tinta); }
+  #nVotos .sello { top: auto; bottom: -1em; right: -.5em; }
+  .agujero { fill: var(--papel); stroke: var(--tinta); stroke-width: 2; }
+  .agujero.mal { fill: var(--rojo); stroke: var(--rojo); }
+  .guia { stroke: var(--gris); stroke-width: 1.6; fill: none; stroke-dasharray: 4 4; }
+  .med { fill: var(--rojo); }
+  #voto { fill: var(--rojo); filter: drop-shadow(0 0 5px var(--rojo)); }
+  .form { position: absolute; padding: .8em .9em; background: var(--n-ficha); color: var(--n-tinta); box-shadow: var(--sombra); border-radius: 3px; font-size: 1.6cqw; }
+  .form .k { display: block; font: 700 .7em/1.1 var(--mono); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .7em; }
+  .form .mal-k { color: #B3261E; } .form .bien-k { color: #1F7A3E; }
+  .form .lab { display: block; font: 600 .9em/1.1 var(--sans); }
+  .form .campo { display: block; height: 1.9em; border: 2px solid #8A919E; border-radius: .3em; background: #fff; }
+  .form.mal .lab { margin: .75em 0; }
+  .form.bien .lab { margin: 0 0 .32em; }
+  .form.bien .campo { margin-bottom: 1.05em; }
+  .form .tag { position: absolute; right: .5em; font: 700 .7em/1 var(--mono); color: #fff; background: #B3261E; padding: .15em .35em; border-radius: .25em; }
+  .form.bien .tag { background: #1F7A3E; }
+  .boleta { position: absolute; margin: 0; font: 700 1.45cqw/1.15 var(--sans); color: var(--tinta); white-space: nowrap; }
+  .boleta small { display: block; font: 500 .78em/1.2 var(--mono); color: var(--gris); }
+  .boleta.der { text-align: left; }
+  .boleta.izq { text-align: right; }
+  #cGrilla { position: absolute; left: 4%; right: 4%; top: 74%; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2%; align-items: end; }
+  .paso8 { display: grid; gap: .35em; justify-items: start; font: 700 1.5cqw/1.1 var(--mono); color: var(--tinta); }
+  .paso8 i { display: block; height: 1.2em; background: var(--acento); border-radius: 2px; }
+  .paso8 small { font: 500 .8em/1.2 var(--sans); color: var(--gris); white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { .teo-fig * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 2 de 3 · Proximidad (Gestalt)</p>
+    <h1>Lo que está <em>cerca</em> se lee junto</h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Arriba a la izquierda, 36 puntos en una cuadrícula pareja; luego se acercan de dos en dos y se ven tres columnas. Arriba a la derecha, dos formularios: en el primero la etiqueta Teléfono queda a la misma distancia de dos campos; en el segundo, cada etiqueta está a 8 px de su campo y los grupos a 24 px. Abajo, la papeleta mariposa de Palm Beach, Florida, 2000: Bush y Gore a la izquierda, Buchanan y McReynolds a la derecha, y los agujeros en una sola columna al medio; el segundo agujero, que muchos votantes de Gore marcaron, era de Buchanan. Al final, la escala de espacios de 8 en 8.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="puntos"></g>
+        <g id="papeleta" class="capa-svg">
+          <path class="guia" d="M300 352 V500"/>
+          <circle class="agujero" id="h3" cx="300" cy="372" r="8"/>
+          <circle class="agujero" id="h4" cx="300" cy="404" r="8"/>
+          <circle class="agujero" id="h5" cx="300" cy="436" r="8"/>
+          <circle class="agujero" id="h6" cx="300" cy="468" r="8"/>
+          <path class="trazo fino" id="fBush" d="M236 372 H284"/>
+          <path class="trazo fino" id="fGore" d="M236 436 H284"/>
+          <path class="trazo fino" id="fBuch" d="M364 404 H316"/>
+          <path class="trazo fino" id="fMcr" d="M364 468 H316"/>
+          <path id="lectura" class="trazo guion solo-anim" d="M206 452 C246 470 286 446 298 414"/>
+          <circle id="voto" class="solo-anim" cx="206" cy="452" r="7"/>
+        </g>
+      </svg>
+
+      <p class="boleta izq" id="bBush" style="right:71.5%; top:68.5%">George W. Bush<small>Republicano · agujero 3</small></p>
+      <p class="boleta izq" id="bGore" style="right:71.5%; top:80.8%">Al Gore<small>Demócrata · agujero 5</small></p>
+      <p class="boleta der" id="bBuch" style="left:46.5%; top:74.6%">Pat Buchanan<small>Reforma · agujero 4</small></p>
+      <p class="boleta der" id="bMcr" style="left:46.5%; top:86.9%">David McReynolds<small>Socialista · agujero 6</small></p>
+
+      <div class="form mal" id="fMal" data-r="-1" style="left:51%; top:6%; width:21%">
+        <span class="k mal-k">Así no</span>
+        <span class="lab">Nombre</span><span class="campo"></span>
+        <span class="lab">Teléfono</span><span class="campo"></span>
+        <span class="tag solo-anim" style="top:52%">¿de cuál?</span>
+      </div>
+      <div class="form bien" id="fBien" data-r="1" style="left:75%; top:6%; width:21%">
+        <span class="k bien-k">Así sí</span>
+        <span class="lab">Nombre</span><span class="campo"></span>
+        <span class="lab">Teléfono</span><span class="campo"></span>
+        <span class="tag solo-anim" style="top:30%">8</span>
+        <span class="tag solo-anim" style="top:55%">24</span>
+      </div>
+
+      <p class="pastilla solo-anim" id="ley" style="left:4%; top:58.5%; width:38%">Proximidad: lo cercano se agrupa</p>
+
+      <div class="nt hot" id="nVotos" data-r="1.2" style="left:69%; top:66%; width:28.5%">
+        <span class="k">Palm Beach, Florida · 2000</span>
+        <span class="t">Más de 2 000 votos de Gore cayeron en Buchanan. Bush ganó Florida por 537.</span>
+        <span class="sello solo-anim" id="sello">2.º AGUJERO</span>
+      </div>
+
+      <div id="cGrilla" class="solo-anim">
+        <div class="paso8"><i style="width:.5em"></i>4<small>medio paso</small></div>
+        <div class="paso8"><i style="width:1em"></i>8<small>dentro del grupo</small></div>
+        <div class="paso8"><i style="width:2em"></i>16<small>entre piezas</small></div>
+        <div class="paso8"><i style="width:3em"></i>24<small>entre grupos</small></div>
+        <div class="paso8"><i style="width:4em"></i>32<small>entre secciones</small></div>
+        <div class="paso8"><i style="width:6em"></i>48<small>márgenes</small></div>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Nadie ve 36 puntos</b><p>Mira el cuadrado: 36 puntos a la misma distancia. Nadie ve grupos ahí, solo una mancha pareja. Así se ve una pantalla donde todo está igual de separado.</p></li>
+        <li><b>Acércalos y aparecen grupos</b><p>Solo cambiamos los espacios, nada más, y ahora ves tres columnas. Lo que está cerca se lee junto: la Gestalt lo describió hace un siglo y se llama ley de proximidad.</p><p class="aparte">Wertheimer (1923). No hace falta una caja ni una línea: el espacio en blanco ya agrupa.</p></li>
+        <li><b>En un formulario</b><p>Si la etiqueta «Teléfono» queda a la misma distancia de dos campos, el ojo duda de cuál es. La regla: 8 px entre la etiqueta y su campo, y 24 px o más hasta el grupo siguiente.</p></li>
+        <li><b>La papeleta mariposa, Florida 2000</b><p>En Palm Beach los nombres iban en dos páginas y los agujeros en una sola columna al medio. Gore era el segundo nombre de la izquierda, pero el segundo agujero era de Buchanan. Más de 2 000 votantes de Gore marcaron el equivocado.</p><p class="aparte">Bush ganó Florida por 537 votos, y con Florida, la presidencia (Wand y otros, 2001, con datos de 3 053 condados).</p></li>
+        <li><b>Tu pantalla, en pasos de 8</b><p>Para no adivinar espacios usamos solo múltiplos de 8: 8 dentro de un grupo, 16 o 24 entre grupos, 32 o 48 entre secciones. En la escena que sigue le ponemos la retícula encima a una pantalla.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Wertheimer, M. (1923). Untersuchungen zur Lehre von der Gestalt II. Psychologische Forschung 4, 301–350 · Wand, J. N., Shotts, K. W., Sekhon, J. S., Mebane, W. R., Herron, M. C. y Brady, H. E. (2001). The Butterfly Did It: The Aberrant Vote for Buchanan in Palm Beach County, Florida. American Political Science Review 95(4), 793–810 · Google, Material Design: retícula de 8 dp.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, $$ = TEO.$$, cols = [[], [], [], [], [], []];
+  // los 36 puntos se crean aquí (en el HTML serían 36 etiquetas más)
+  var g = $("#puntos");
+  for (var r = 0; r < 6; r++) for (var c = 0; c < 6; c++) {
+    var p = document.createElementNS(g.namespaceURI, "circle");
+    p.setAttribute("class", "pt"); p.setAttribute("cx", 70 + c * 46); p.setAttribute("cy", 66 + r * 42); p.setAttribute("r", 7);
+    g.appendChild(p); cols[c].push(p);
+  }
+  var JUNTOS = [72, 104, 170, 202, 268, 300];
+
+  TEO.escena([
+    function (tl) { // 1. la cuadrícula pareja
+      tl.from(".pt", { autoAlpha: 0, scale: 0, transformOrigin: "50% 50%", duration: .35, stagger: { each: .02, from: "random" } });
+    },
+    function (tl) { // 2. se acercan de dos en dos: tres columnas
+      cols.forEach(function (col, c) { tl.to(col, { attr: { cx: JUNTOS[c] }, duration: .9, ease: "power3.inOut" }, c ? "<" : undefined); });
+      tl.fromTo("#ley", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4 }, "+=.1");
+    },
+    function (tl) { // 3. los dos formularios
+      TEO.pegar(tl, ["#fMal", "#fBien"]);
+      tl.from("#fMal .tag, #fBien .tag", { autoAlpha: 0, scale: .5, duration: .3, stagger: .15 }, "+=.1");
+    },
+    function (tl) { // 4. la papeleta mariposa
+      tl.from(["#bBush", "#bGore", "#bBuch", "#bMcr"], { autoAlpha: 0, y: 8, duration: .35, stagger: .1 });
+      tl.from(".agujero", { autoAlpha: 0, scale: 0, transformOrigin: "50% 50%", duration: .3, stagger: .08 }, "-=.2");
+      TEO.trazar(tl, ["#fBush", "#fBuch", "#fGore", "#fMcr"], { duration: .35, stagger: .12 });
+      TEO.trazar(tl, "#lectura", { duration: 1.1 }, "+=.2");
+      tl.fromTo("#voto", { autoAlpha: 0 }, { autoAlpha: 1, duration: .15 }, "<");
+      TEO.viajar(tl, $("#voto"), $("#lectura"), 1.1, "<");
+      tl.to("#h4", { fill: TEO.color("--rojo", "#B3261E"), stroke: TEO.color("--rojo", "#B3261E"), duration: .2 });
+      tl.to("#bBuch", { x: -5, duration: .06, repeat: 5, yoyo: true, ease: "none" });
+      TEO.pegar(tl, "#nVotos", "+=.1");
+      tl.fromTo("#sello", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" });
+    },
+    function (tl) { // 5. la escala de espacios
+      tl.to(["#papeleta", "#bBush", "#bGore", "#bBuch", "#bMcr", "#nVotos"], { autoAlpha: 0, duration: .45 });
+      tl.fromTo("#cGrilla", { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 });
+      tl.from(".paso8", { autoAlpha: 0, y: 14, duration: .4, stagger: .1, ease: "back.out(1.7)" }, "<");
+      tl.from(".paso8 i", { scaleX: 0, transformOrigin: "0 50%", duration: .4, stagger: .1 }, "<+.1");
+    }
+  ], {
+    preparar: function () {
+      gsap.set(["#voto", "#sello"], { autoAlpha: 0 });
+    }
+  });
+})();
+</script>
+</body>
+</html>

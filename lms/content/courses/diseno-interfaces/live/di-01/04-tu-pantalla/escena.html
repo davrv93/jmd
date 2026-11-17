@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tu pantalla y sus tres problemas</title>
+<!-- Escena del modo LIVE: Diseño de interfaces, sesión 1 (di-01). Reflexión (paso «diagnostico»): el alumno pega,
+     arrastra o elige la captura de SU pantalla; se queda en su navegador (data: URL, nunca se sube). Le aplica las
+     dos pruebas (5 segundos y entrecerrar) y publica sus tres problemas en el muro di01-mis-problemas. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/di.css">
+<style id="esc-propio">
+.b4 { display: grid; grid-template-columns: 1.45fr 1fr; gap: 2.2vw; align-items: start; }
+.b4-izq { display: grid; gap: 1.1vh; min-width: 0; }
+.b4-ctrl { display: flex; flex-wrap: wrap; gap: .6em 1em; align-items: center; }
+.b4-ctrl .k-rango { flex: 1 1 10em; max-width: 16em; }
+.b4-zona { position: relative; min-height: 22em; display: grid; place-items: center; border-radius: 1em; border: 2px dashed color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--s1) 85%, transparent); text-align: center; padding: 1.2em; }
+.b4-zona.sobre { border-color: var(--di); background: var(--di-bg); }
+.b4-zona h2 { margin: 0 0 .3em; font-size: 1.1em; }
+.b4-zona p { margin: 0 auto .9em; max-width: 26em; font-size: .76em; color: var(--muted); }
+.b4-zona kbd { font: 700 .9em var(--mono); padding: .1em .4em; border-radius: .3em; background: var(--s2); border: 1px solid var(--line2); }
+.b4-ver { position: relative; border-radius: .8em; overflow: hidden; border: 1px solid var(--line2); background: #fff; box-shadow: var(--card-shadow); }
+.b4-ver[hidden] { display: none; }
+.b4-ver img { display: block; width: 100%; height: auto; max-height: 62vh; object-fit: contain; filter: blur(var(--blur, 0px)) grayscale(var(--gris, 0)); transition: filter .3s ease-out; background: #fff; }
+.b4-tapa { position: absolute; inset: 0; display: grid; place-items: center; background: #1b1830; color: #f1eef9; text-align: center; padding: 1em; font-size: .9em; }
+.b4-tapa[hidden] { display: none; }
+.b4-tapa b { display: block; font-size: 1.3em; margin-bottom: .3em; }
+.b4-reloj { position: absolute; top: 10px; right: 10px; min-width: 2.2em; padding: .2em .5em; border-radius: 999px; background: rgba(20,18,43,.86); color: #fff; font: 800 1.1em/1.3 system-ui, sans-serif; text-align: center; }
+.b4-reloj[hidden] { display: none; }
+.b4-privado { margin: 0; font-size: .66em; color: var(--muted); }
+.b4-der { display: grid; gap: 1.3vh; min-width: 0; }
+.b4-guia { margin: 0; padding: 0; list-style: none; display: grid; gap: .4em; }
+.b4-guia li { font-size: .74em; line-height: 1.4; padding-left: 1.2em; position: relative; }
+.b4-guia li::before { content: ""; position: absolute; left: 0; top: .5em; width: .5em; height: .5em; border-radius: 2px; background: var(--di); }
+.b4-guia b { color: var(--fg); }
+@media (max-width: 760px) { .b4 { grid-template-columns: 1fr; gap: 14px; } .b4-zona { min-height: 14em; } }
+@media (prefers-reduced-motion: reduce) { .b4-ver img { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Diseño de interfaces · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.9em">Ahora <em>tu pantalla</em>: las dos pruebas y sus tres problemas</h1>
+    <div class="b4">
+      <div class="b4-izq a-in" style="--d:.1s">
+        <div class="b4-zona" id="zona">
+          <div>
+            <h2>Trae tu captura</h2>
+            <p>Pégala con <kbd>Ctrl</kbd>+<kbd>V</kbd> (en Mac <kbd>Cmd</kbd>+<kbd>V</kbd>), arrástrala aquí o elígela de tus archivos. En Windows, <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> recorta un pedazo de la pantalla.</p>
+            <label class="k-btn di" for="archivo">Elegir imagen</label>
+            <input type="file" id="archivo" accept="image/*" hidden>
+          </div>
+        </div>
+        <div class="b4-ver" id="ver" hidden>
+          <img id="img" alt="Tu captura de pantalla">
+          <div class="b4-tapa" id="tapa" hidden><div><b id="tapa-tit">Tiempo.</b><span id="tapa-txt">¿Qué viste primero? ¿Era lo importante?</span></div></div>
+          <span class="b4-reloj" id="reloj" hidden>5</span>
+        </div>
+        <div class="b4-ctrl" id="ctrl" hidden>
+          <button type="button" class="k-btn sec" id="cinco">Prueba de los 5 segundos</button>
+          <button class="k-tog" data-tog="gris">Sin color</button>
+          <label class="k-rango"><span>Entrecerrar: <b id="v-blur">0</b></span><input type="range" id="blur" min="0" max="12" step="1" value="0"></label>
+          <button type="button" class="k-btn sec" id="otra">Cambiar captura</button>
+        </div>
+        <p class="b4-privado">Tu captura no sale de tu computadora: no se sube a ningún lado. La subes tú en la entrega de la sesión.</p>
+      </div>
+
+      <div class="b4-der a-in" style="--d:.25s">
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--di)">Cuatro preguntas para encontrar los problemas</p>
+          <ul class="b4-guia">
+            <li><b>Protagonista:</b> en 5 segundos, ¿qué se ve primero? ¿Es lo que más importa?</li>
+            <li><b>Letra:</b> ¿cuántos tamaños distintos cuentas? ¿Hay letras chicas o grises?</li>
+            <li><b>Espacio:</b> ¿lo que va junto está junto? ¿Los bordes izquierdos se alinean?</li>
+            <li><b>Color:</b> ¿cada color significa algo, o solo decora?</li>
+          </ul>
+        </div>
+        <div class="k-caja k-muro" data-muro="di01-mis-problemas" data-color="var(--di)" data-pregunta="Los tres problemas de tu pantalla" data-placeholder="1) … 2) … 3) …" data-max-largo="200" data-max="4"></div>
+        <ul class="k-check" data-check="di01-diagnostico">
+          <li><label><input type="checkbox"><span></span><em>Le hice la prueba de los 5 segundos</em></label></li>
+          <li><label><input type="checkbox"><span></span><em>La entrecerré: ¿quedó una mancha clara?</em></label></li>
+          <li><label><input type="checkbox"><span></span><em>Publiqué mis tres problemas</em></label></li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Guarda tu captura y tus tres problemas: son la mitad de la tarea de hoy (antes y después).</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/di.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var img = $("img"), zona = $("zona"), avisado = false, t = 0;
+
+  function mostrar(dataUrl) {
+    img.onload = function () {
+      zona.hidden = true; $("ver").hidden = false; $("ctrl").hidden = false;
+      if (!avisado) { avisado = true; DI.evidencia("captura", "cargó su captura y le aplicó las pruebas"); }
+    };
+    img.onerror = function () { DI.toast("No pude abrir esa imagen. Prueba con una captura PNG o JPG."); };
+    img.src = dataUrl;
+  }
+  function leerArchivo(f) {
+    if (!f || !/^image\//.test(f.type)) { DI.toast("Eso no parece una imagen. Prueba con una captura PNG o JPG."); return; }
+    if (f.size > 15 * 1024 * 1024) { DI.toast("La imagen es muy pesada (más de 15 MB). Recórtala un poco."); return; }
+    var r = new FileReader(); r.onload = function () { mostrar(r.result); }; r.readAsDataURL(f);
+  }
+  $("archivo").addEventListener("change", function () { leerArchivo(this.files && this.files[0]); this.value = ""; });
+  document.addEventListener("paste", function (e) {
+    var it = e.clipboardData && e.clipboardData.items ? Array.prototype.slice.call(e.clipboardData.items) : [];
+    for (var i = 0; i < it.length; i++) if (it[i].type && it[i].type.indexOf("image/") === 0) { e.preventDefault(); leerArchivo(it[i].getAsFile()); return; }
+  });
+  ["dragenter", "dragover"].forEach(function (ev) { zona.addEventListener(ev, function (e) { e.preventDefault(); zona.classList.add("sobre"); }); });
+  ["dragleave", "drop"].forEach(function (ev) { zona.addEventListener(ev, function (e) { e.preventDefault(); zona.classList.remove("sobre"); }); });
+  zona.addEventListener("drop", function (e) { leerArchivo(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); });
+  $("otra").addEventListener("click", function () { $("archivo").click(); });
+
+  // prueba de los 5 segundos sobre SU captura
+  $("cinco").addEventListener("click", function () {
+    clearInterval(t); $("tapa").hidden = true; var n = 5, rel = $("reloj"); rel.hidden = false; rel.textContent = n;
+    t = setInterval(function () { n--; if (n <= 0) { clearInterval(t); rel.hidden = true; $("tapa").hidden = false; } else rel.textContent = n; }, 1000);
+  });
+  $("tapa").addEventListener("click", function () { this.hidden = true; });
+  $("blur").addEventListener("input", function () {
+    $("v-blur").textContent = this.value;
+    var px = this.value * Math.max(.6, img.getBoundingClientRect().width / 900); img.style.setProperty("--blur", px.toFixed(1) + "px");
+  });
+  document.addEventListener("k-tog", function (e) { if (e.detail.nombre === "gris") img.style.setProperty("--gris", e.detail.on ? 1 : 0); });
+})();
+</script>
+</body>
+</html>

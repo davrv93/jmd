@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · ¿Pasa AA o no?</title>
+<link rel="icon" href="data:,">
+<!--
+  «¿Pasa AA o no?» · juego de la sesión 1 de Diseño de interfaces, sobre el motor Arena JMD (docs/ARENA_JMD.md).
+  Cada alumno es un robot JMD en el mismo taller y ve a los demás en vivo. Las muestras son pares de colores reales
+  (de la pantalla fea de la ferretería y de la paleta arreglada) con su USO: texto normal, texto grande, borde o
+  ícono. El mismo par puede pasar como título y no como texto: eso es lo que se aprende. Llévala a «Pasa AA» o a
+  «No pasa». Acertar da +10 y un bono: «¿cuánto da?» (+5). Errar vale 0 y la lupa muestra la razón y la meta.
+  La razón se calcula aquí con la luminancia relativa de WCAG 2.2 (umbral 0,04045), sin redondear.
+  Al final: título, reflexión al muro (di01-juego) y la fotito. El resultado queda en el navegador (di01-juego)
+  para la fotito de la escena de cierre. ?demo=1 entra solo; ?sinred=1 fuerza la práctica local.
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #ff9e6e; margin-bottom: 6px; }
+  @media (prefers-reduced-motion: reduce) { .sin-motor { animation: none; } }
+</style>
+</head>
+<body>
+<div id="juego"><div class="sin-motor"><div><b>Cargando el taller…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
+<script src="../../arena/arena-jmd.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.ArenaJMD) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
+  }
+
+  // ---------- contraste WCAG 2.2 ----------
+  function lin(v) { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+  function lum(h) { h = h.replace("#", ""); return 0.2126 * lin(parseInt(h.slice(0, 2), 16)) + 0.7152 * lin(parseInt(h.slice(2, 4), 16)) + 0.0722 * lin(parseInt(h.slice(4, 6), 16)); }
+  function razon(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+  function txt(r) { return (Math.floor(r * 100) / 100).toFixed(2).replace(".", ",") + ":1"; }
+
+  // ---------- la baraja: t = texto | grande | borde | icono ----------
+  var USOS = { texto: { n: "Texto normal", meta: 4.5 }, grande: { n: "Texto grande", meta: 3 }, borde: { n: "Borde de un campo", meta: 3 }, icono: { n: "Ícono", meta: 3 } };
+  var CARTAS = [
+    { q: "El aviso de stock de la pantalla fea", fg: "#b5b5b5", bg: "#ffffff", t: "texto", d: "11 px, cursiva" },
+    { q: "El botón ELIMINAR", fg: "#ffffff", bg: "#ff0000", t: "texto", d: "17 px en negrita: no llega a «grande» (18,66 px)" },
+    { q: "El botón NUEVO", fg: "#ffffff", bg: "#2ecc40", t: "texto", d: "15 px en negrita" },
+    { q: "El letrero de bienvenida", fg: "#ffd400", bg: "#d40000", t: "grande", d: "27 px: texto grande" },
+    { q: "El menú azul", fg: "#ffffff", bg: "#0074d9", t: "texto", d: "13 px en negrita" },
+    { q: "El texto del buscador", fg: "#bbbbbb", bg: "#ffffff", t: "texto", d: "12 px" },
+    { q: "Título «Inventario»", fg: "#1a1d23", bg: "#ffffff", t: "grande", d: "31 px" },
+    { q: "Texto secundario de la tabla", fg: "#5b6270", bg: "#ffffff", t: "texto", d: "14 px" },
+    { q: "Borde gris del buscador", fg: "#8a919e", bg: "#ffffff", t: "borde", d: "1 px alrededor del campo" },
+    { q: "Borde muy clarito", fg: "#d5d9e0", bg: "#ffffff", t: "borde", d: "1 px alrededor del campo" },
+    { q: "Botón «Nuevo producto»", fg: "#ffffff", bg: "#0b63ce", t: "texto", d: "14 px en negrita" },
+    { q: "Ícono de alerta amarillo", fg: "#f59e0b", bg: "#ffffff", t: "icono", d: "un triángulo de 20 px" },
+    { q: "Ícono de alerta ámbar oscuro", fg: "#a15c00", bg: "#ffffff", t: "icono", d: "un triángulo de 20 px" },
+    { q: "Precio en verde chillón", fg: "#16a34a", bg: "#ffffff", t: "texto", d: "16 px" },
+    { q: "Etiqueta «Agotado»", fg: "#b3261e", bg: "#fbedec", t: "texto", d: "12 px en negrita, sobre rosado" },
+    { q: "Naranja de marca en un título", fg: "#e8590c", bg: "#ffffff", t: "grande", d: "25 px" },
+    { q: "Naranja de marca en un enlace", fg: "#e8590c", bg: "#ffffff", t: "texto", d: "14 px" },
+    { q: "Gris clarito para la fecha", fg: "#9ca3af", bg: "#ffffff", t: "texto", d: "14 px" },
+  ];
+  CARTAS.forEach(function (c) { c.r = razon(c.fg, c.bg); c.pasa = c.r >= USOS[c.t].meta; });
+
+  function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  // la muestra en el piso: una ficha con su fondo y, encima, el texto, el borde o el ícono en su color
+  function pintarMuestra(g, x, y, s, t, d) {
+    var c = CARTAS[d.carta];
+    g.save(); g.translate(x, y); g.scale(s, s);
+    g.fillStyle = "rgba(0,0,0,.28)"; g.beginPath(); g.ellipse(0, 24, 30, 6, 0, 0, 7); g.fill();
+    g.fillStyle = c.bg; g.strokeStyle = "#14122b"; g.lineWidth = 2.5; rr(g, -34, -22, 68, 44, 9); g.fill(); g.stroke();
+    if (c.t === "borde") { g.strokeStyle = c.fg; g.lineWidth = 3; rr(g, -24, -12, 48, 24, 5); g.stroke(); }
+    else if (c.t === "icono") { g.strokeStyle = c.fg; g.lineWidth = 4; g.lineJoin = "round"; g.beginPath(); g.moveTo(0, -14); g.lineTo(15, 12); g.lineTo(-15, 12); g.closePath(); g.stroke(); g.fillStyle = c.fg; g.fillRect(-2, -4, 4, 9); }
+    else { g.fillStyle = c.fg; g.font = (c.t === "grande" ? "800 24px" : "700 17px") + " system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(c.t === "grande" ? "Aa" : "Aa 12", 0, 1); }
+    g.restore();
+  }
+  function pintarZona(color, signo) {
+    return function (g, z, t, resalta) {
+      g.save();
+      g.fillStyle = "rgba(255,255,255,.92)"; g.strokeStyle = resalta ? "#ffffff" : color; g.lineWidth = resalta ? 8 : 5;
+      rr(g, z.x, z.y, z.w, z.h, 22); g.fill(); g.stroke();
+      g.strokeStyle = color; g.lineWidth = 14; g.lineCap = "round"; g.lineJoin = "round"; g.beginPath();
+      var cx = z.x + z.w / 2, cy = z.y + z.h * .52; // el motor ya escribe el nombre de la zona encima
+      if (signo === "si") { g.moveTo(cx - 52, cy); g.lineTo(cx - 14, cy + 40); g.lineTo(cx + 58, cy - 40); }
+      else { g.moveTo(cx - 44, cy - 44); g.lineTo(cx + 44, cy + 44); g.moveTo(cx + 44, cy - 44); g.lineTo(cx - 44, cy + 44); }
+      g.stroke(); g.restore();
+    };
+  }
+
+  var mio = { bien: 0, mal: 0, bonos: 0, grandes: 0 };
+  function carta(ob) { return CARTAS[ob.carta]; }
+  function lupa(c) {
+    var u = USOS[c.t];
+    return "Da " + txt(c.r) + " y " + u.n.toLowerCase() + " pide " + String(u.meta).replace(".", ",") + ":1. " + (c.pasa ? "Pasa." : "No pasa.") +
+      (c.t === "grande" ? " Como texto grande (24 px o más) basta 3:1." : c.t === "borde" || c.t === "icono" ? " Lo que no es texto pide 3:1 (WCAG 1.4.11)." : "");
+  }
+
+  var juego = ArenaJMD.crear({
+    raiz: "#juego",
+    titulo: "¿Pasa AA o no?",
+    subtitulo: "El taller del contraste: cada muestra trae dos colores y para qué se usan. Tú decides si se lee.",
+    curso: "Diseño de interfaces",
+    sesion: "Sesión 1 · Fundamentos que se ven",
+    fecha: "Martes 17 de noviembre de 2026",
+    hashtag: "#DiseñoUI",
+    duracion: 180, duraciones: [180, 300], duracionPractica: 120,
+    mundo: { ancho: 1700, alto: 1000, tema: "patio" },
+    jugador: { accesorio: "audifonos" },
+    salida: { x: 80, y: 420, w: 220, h: 200 },
+    reglas: [
+      "Pasa sobre una muestra: trae dos colores y su uso (texto, título, borde o ícono).",
+      "¿Se lee? Llévala a «Pasa AA». ¿No? A «No pasa».",
+      "Si aciertas, adivina cuánto da (+5). Errar no resta: la lupa te muestra la razón.",
+    ],
+    zonas: [
+      { id: "si", x: 1380, y: 70, w: 260, h: 250, nombre: "Pasa AA", color: "#1f7a3e", pintar: pintarZona("#1f7a3e", "si") },
+      { id: "no", x: 1380, y: 680, w: 260, h: 250, nombre: "No pasa", color: "#b3261e", pintar: pintarZona("#b3261e", "no") },
+    ],
+    muros: [[520, 220, 150, 110], [900, 640, 170, 110], [380, 760, 140, 100], [1060, 260, 110, 150]],
+    peligros: [
+      { tipo: "dron", nombre: "el dron", ruta: [[1250, 120], [1250, 900]], vel: 140, radio: 28,
+        aviso: "¡El dron te hizo soltar la muestra! Volvió a su lugar.", avisoSinCarga: "¡Cuidado con el dron! Cruza cuando pase." },
+      { tipo: "roca", nombre: "el rollo de papel", ruta: [[340, 560], [1120, 560]], vel: 115, radio: 24,
+        aviso: "¡El rollo de papel te hizo soltar la muestra!", avisoSinCarga: "¡Ojo con el rollo de papel!" },
+    ],
+    decor: [
+      { tipo: "planta", x: 180, y: 140 }, { tipo: "planta", x: 760, y: 950 }, { tipo: "planta", x: 1600, y: 500 },
+      { tipo: "texto", x: 190, y: 700, texto: "ENTRADA", px: 30, color: "rgba(60,52,140,.28)" },
+      { tipo: "texto", x: 760, y: 120, texto: "4,5 : 1", px: 46, color: "rgba(60,52,140,.18)" },
+      { tipo: "texto", x: 640, y: 470, texto: "3 : 1", px: 40, color: "rgba(60,52,140,.16)" },
+    ],
+    objetos: {
+      cantidad: 8, prefijo: "mu",
+      crear: function (i, v, rnd, M) {
+        var base = (juego ? juego.ronda().semilla : 0) % CARTAS.length;
+        var k = (i * 7 + v * 5 + base) % CARTAS.length;
+        var p = M.lugarLibre(rnd, 44, { x: 70, y: 80, w: 1160, h: 860 });
+        return { x: p.x, y: p.y, forma: "carta", carta: k, pintar: pintarMuestra, texto: USOS[CARTAS[k].t].n };
+      },
+    },
+    tarjeta: function (ob) {
+      var c = carta(ob), u = USOS[c.t];
+      setTimeout(function () { // la muestra de verdad, con sus dos colores, dentro de la carta
+        var b = document.querySelector(".aj-carta-dato b");
+        if (b) { b.style.color = c.fg; b.style.background = c.bg; b.style.padding = "2px 10px"; b.style.borderRadius = "6px"; b.style.border = "1px solid rgba(0,0,0,.25)"; b.style.fontSize = c.t === "grande" ? "24px" : "16px"; }
+      }, 0);
+      return { etiqueta: u.n + " · meta " + String(u.meta).replace(".", ",") + ":1", color: "#5a49d6", titulo: c.q,
+        destacadoEtiqueta: "Muestra", destacado: c.t === "borde" ? "▢ borde" : c.t === "icono" ? "▲ ícono" : "3 productos",
+        lineas: ["color  " + c.fg.toUpperCase(), "fondo  " + c.bg.toUpperCase(), "uso    " + c.d],
+        pie: "¿Se lee? → «Pasa AA» (arriba a la derecha). ¿No? → «No pasa» (abajo). Espacio o «Soltar» la deja." };
+    },
+    entregar: function (ob, zona) {
+      var c = carta(ob), dijo = zona.id === "si";
+      if (dijo === c.pasa) {
+        mio.bien++; if (c.t === "grande" && c.pasa) mio.grandes++;
+        var reales = [c.r, c.r * (c.r > 6 ? .55 : 1.7), c.r * (c.r > 6 ? 1.35 : .6)].map(txt), orden = [0, 1, 2], s = (c.q.length + c.fg.charCodeAt(2)) % 3;
+        orden = orden.slice(s).concat(orden.slice(0, s));
+        return { ok: true, puntos: 10, titulo: c.pasa ? "¡Se lee! +10" : "¡Bien visto, no pasa! +10", feed: c.pasa ? "aprobó una muestra" : "cazó un contraste bajo",
+          bonus: { pregunta: "Bono: ¿cuánto da este contraste?", opciones: orden.map(function (k) { return reales[k]; }), correcta: orden.indexOf(0), puntos: 5, segundos: 12, explicacion: lupa(c) } };
+      }
+      mio.mal++;
+      return { ok: false, puntos: 0, titulo: c.pasa ? "Sí pasaba" : "No pasaba", explicacion: lupa(c), feed: "aprendió de una muestra" };
+    },
+    meta: { contador: "taller", texto: "Contrastes revisados por la clase", unidad: "pts", objetivo: function (n) { return Math.max(120, n * 40); }, logro: "la clase revisó todo el taller" },
+    reflexion: { clave: "di01-juego", pregunta: "¿Qué color de tu pantalla vas a revisar primero?", placeholder: "Voy a revisar…", porDefecto: "Antes de elegir un color, mido su contraste." },
+    alRonda: function () { mio = { bien: 0, mal: 0, bonos: 0, grandes: 0 }; },
+    resultado: function (s) {
+      var titulo = s.aciertos >= 6 && s.bonus >= 3 ? "Ojo de lupa AA" : s.aciertos >= 4 && s.fallos <= 1 ? "Guardián del contraste" : s.aciertos >= 2 ? "Contraste en mano" : s.entregas ? "Primer contraste" : "Visita al taller";
+      var r = { etiqueta: "Mi ronda en el taller", titulo: titulo, resultado: juego.puntos + " puntos", detalle: s.aciertos + " de " + s.entregas + " bien · " + s.bonus + " razones adivinadas" };
+      try { localStorage.setItem("di01-juego", JSON.stringify({ puntos: juego.puntos, titulo: titulo, detalle: r.detalle })); } catch (e) {}
+      return r;
+    },
+  });
+})();
+</script>
+</body>
+</html>

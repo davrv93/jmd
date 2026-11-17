@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · La retícula de 8</title>
+<!-- Escena del modo LIVE: Diseño de interfaces, sesión 1 (di-01). Conceptos: el mismo formulario «al ojo» y «en pasos
+     de 8», con la retícula de 8 px encima (de verdad: el formulario va a tamaño real), las medidas de cada espacio
+     calculadas en vivo y las líneas de los bordes izquierdos. Voto di01-etiqueta (respuesta: 8). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/di.css">
+<style id="esc-propio">
+.b9 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2.6vw; align-items: start; }
+.b9-izq, .b9-der { display: grid; gap: 1.3vh; min-width: 0; }
+.b9-ctrl { display: flex; flex-wrap: wrap; gap: .5em .7em; align-items: center; }
+.b9-mesa { display: grid; place-items: start center; }
+/* El formulario va a tamaño real: 8 px de la retícula son 8 px de pantalla. */
+.fm { position: relative; width: 100%; max-width: 456px; background: #fff; color: #1a1d23; border-radius: 12px; box-shadow: 0 1px 2px rgba(20,18,43,.08), 0 18px 40px -20px rgba(20,18,43,.45);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; line-height: 16px; --t: .45s; }
+.fm * { box-sizing: border-box; transition: margin var(--t) ease-out, padding var(--t) ease-out, height var(--t) ease-out; }
+.fm .in { padding: 24px; }
+.fm h3 { margin: 0; font-size: 20px; line-height: 24px; font-weight: 600; }
+.fm .sub { margin: 8px 0 0; color: #5b6270; }
+.fm .lab { display: block; margin: 24px 0 8px; font-weight: 600; }
+.fm .campo { display: flex; align-items: center; height: 40px; padding: 0 12px; border: 1px solid #8a919e; border-radius: 8px; color: #1a1d23; }
+.fm .nota { height: 64px; align-items: flex-start; padding-top: 12px; color: #5b6270; }
+.fm .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.fm .dos .lab { margin-top: 24px; }
+.fm .btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 32px; }
+.fm .btn { display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 8px; font-weight: 600; }
+.fm .btn.sec { border: 1px solid #8a919e; }
+.fm .btn.pri { background: #0b63ce; color: #fff; }
+/* «Al ojo»: los mismos elementos con espacios inventados y bordes izquierdos que no coinciden */
+.fm.ojo .in { padding: 13px 19px 17px; }
+.fm.ojo h3 { margin-left: 3px; }
+.fm.ojo .sub { margin: 1px 0 0 9px; }
+.fm.ojo .lab { margin: 22px 0 13px 11px; }
+.fm.ojo .dos .lab { margin: 5px 0 13px 6px; }
+.fm.ojo .campo { height: 37px; }
+.fm.ojo .grupo3 .lab { margin-top: 9px; }
+.fm.ojo .nota { height: 58px; }
+.fm.ojo .btns { margin: 17px 6px 0 0; justify-content: center; }
+/* capas de ayuda */
+.fm .ret { position: absolute; inset: 0; border-radius: 12px; pointer-events: none; opacity: 0; transition: opacity .25s ease-out;
+           background: linear-gradient(rgba(255,45,135,.22) 1px, transparent 1px) 0 0 / 8px 8px, linear-gradient(90deg, rgba(255,45,135,.22) 1px, transparent 1px) 0 0 / 8px 8px; }
+.fm.con-ret .ret { opacity: 1; }
+.fm .capa { position: absolute; inset: 0; pointer-events: none; }
+.fm .guia { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed; }
+.fm .med { position: absolute; transform: translateY(-50%); font: 700 10px/1 ui-monospace, Menlo, monospace; padding: 2px 3px; border-radius: 4px; color: #fff; white-space: nowrap; }
+.fm .med::before { content: ""; position: absolute; right: 100%; top: 50%; width: 6px; border-top: 2px solid; border-color: inherit; }
+.b9-lee { margin: 0; font-size: .8em; line-height: 1.5; }
+.b9-lee b { color: var(--di); }
+.b9-cuenta { margin: 0; font-size: .74em; font-weight: 700; }
+.b9-cuenta .mal { color: var(--bad); } .b9-cuenta .bien { color: var(--ok); }
+@media (max-width: 760px) { .b9 { grid-template-columns: 1fr; gap: 14px; } }
+@media (prefers-reduced-motion: reduce) { .fm, .fm * { --t: 0s; transition: none !important; } .fm .ret { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Diseño de interfaces · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.9em">El espacio no se adivina: <em>va de 8 en 8</em></h1>
+    <div class="b9">
+      <div class="b9-izq a-in" style="--d:.1s">
+        <div class="b9-ctrl">
+          <div class="k-seg" data-seg="modo"><button data-v="ojo" aria-pressed="true">Al ojo</button><button data-v="ocho" aria-pressed="false">En pasos de 8</button></div>
+          <button class="k-tog" data-tog="ret" aria-pressed="true">Retícula de 8</button>
+          <button class="k-tog" data-tog="med" aria-pressed="true">Medidas</button>
+          <button class="k-tog" data-tog="bor">Bordes izquierdos</button>
+        </div>
+        <div class="b9-mesa">
+          <div class="fm ojo con-ret" id="fm" role="img" aria-label="Formulario «Pedido de reposición» con producto, cantidad, fecha de entrega, una nota para el proveedor y los botones Cancelar y Enviar pedido. Con los espacios al ojo, cada etiqueta queda más lejos de su campo que del campo anterior y los bordes izquierdos no coinciden; en pasos de 8, cada etiqueta está a 8 px de su campo, los grupos a 24 px y todo arranca en la misma línea.">
+            <div class="in" id="in">
+              <h3 data-b>Pedido de reposición</h3>
+              <p class="sub" data-b>Para Distribuidora Lima · entrega en tienda</p>
+              <span class="lab" data-b>Producto</span>
+              <span class="campo" data-b>Cemento portland tipo I · 42,5 kg</span>
+              <div class="dos">
+                <div><span class="lab" data-b>Cantidad (bolsas)</span><span class="campo" data-b>20</span></div>
+                <div><span class="lab">Entrega</span><span class="campo">jueves 19/11</span></div>
+              </div>
+              <div class="grupo3"><span class="lab" data-b>Nota para el proveedor</span><span class="campo nota" data-b>Llamar antes de llegar: la calle es angosta.</span></div>
+              <div class="btns" data-b><span class="btn sec">Cancelar</span><span class="btn pri">Enviar pedido</span></div>
+            </div>
+            <div class="ret"></div>
+            <div class="capa" id="capa"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="b9-der a-in" style="--d:.2s">
+        <div class="k-caja">
+          <p class="b9-lee">Con los espacios <b>al ojo</b>, cada etiqueta queda más cerca del campo de arriba que del suyo: el ojo empareja mal. Pasa a <b>en pasos de 8</b> y mira cómo cada pieza cae en la retícula.</p>
+          <p class="b9-cuenta" id="cuenta"></p>
+          <p class="k-nota"><b>¿Por qué 8?</b> Se parte bien (4, 2, 1) y al escalar la pantalla a 1,5× o 2× sigue dando píxeles enteros. Y con pocas medidas posibles, nadie inventa una nueva.</p>
+        </div>
+        <div class="k-caja k-voto" data-voto="di01-etiqueta" data-correcta="8"
+             data-explica="8 px: la etiqueta tiene que estar más cerca de su campo (8) que del grupo anterior (24). Si las dos distancias se parecen, el ojo no sabe de quién es la etiqueta.">
+          <p class="k-q" style="--c:var(--di)">¿Cuánto espacio va entre una etiqueta y su campo?</p>
+          <div class="k-ops"><button data-op="8">8 px</button><button data-op="24">24 px</button><button data-op="48">48 px</button></div>
+        </div>
+        <p class="k-nota">La escala de espacios de la clase: <b>4 · 8 · 12 · 16 · 24 · 32 · 48 · 64</b>. Va a tu tokens.json como «espacio».</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Wertheimer (1923), ley de proximidad · Google, Material Design: retícula de 8 dp.</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/di.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var fm = $("fm"), capa = $("capa"), verMed = true, verBor = false, t = 0;
+
+  function medir() {
+    capa.textContent = "";
+    var F = fm.getBoundingClientRect(), bs = Array.prototype.slice.call(fm.querySelectorAll("[data-b]"));
+    var malos = 0, total = 0;
+    if (verMed) {
+      for (var i = 1; i < bs.length; i++) {
+        var a = bs[i - 1].getBoundingClientRect(), b = bs[i].getBoundingClientRect(), gap = Math.round(b.top - a.bottom);
+        if (gap < 0) continue;
+        total++;
+        var ok = gap % 8 === 0 || gap === 4 || gap === 12, m = document.createElement("span");
+        if (!ok) malos++;
+        m.className = "med"; m.textContent = gap; m.style.background = m.style.borderColor = ok ? "#1f7a3e" : "#b3261e";
+        m.style.right = "4px"; m.style.top = (a.bottom - F.top + gap / 2) + "px"; // en el margen derecho de la tarjeta
+        capa.appendChild(m);
+      }
+    }
+    if (verBor) {
+      var xs = {};
+      bs.concat(Array.prototype.slice.call(fm.querySelectorAll(".btn.sec"))).forEach(function (el) { if (!el.classList.contains("btns")) xs[Math.round(el.getBoundingClientRect().left - F.left)] = 1; });
+      var lista = Object.keys(xs).map(Number).sort(function (p, q) { return p - q; });
+      lista.forEach(function (x) { var g = document.createElement("span"); g.className = "guia"; g.style.left = x + "px"; g.style.borderColor = lista.length > 2 ? "#b3261e" : "#1f7a3e"; capa.appendChild(g); });
+    }
+    var c = $("cuenta");
+    c.innerHTML = fm.classList.contains("ojo")
+      ? '<span class="mal">' + (malos || "Varios") + " de " + (total || "los") + " espacios no caen en la retícula.</span>"
+      : '<span class="bien">Todos los espacios son 8, 24 o 32: caen en la retícula.</span>';
+  }
+  function luego() { clearTimeout(t); t = setTimeout(medir, DI.quieto ? 0 : 480); }
+  document.addEventListener("k-seg", function (e) { if (e.detail.nombre === "modo") { fm.classList.toggle("ojo", e.detail.v === "ojo"); capa.textContent = ""; luego(); } });
+  document.addEventListener("k-tog", function (e) {
+    if (e.detail.nombre === "ret") fm.classList.toggle("con-ret", e.detail.on);
+    if (e.detail.nombre === "med") { verMed = e.detail.on; medir(); }
+    if (e.detail.nombre === "bor") { verBor = e.detail.on; medir(); }
+  });
+  addEventListener("resize", luego);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(medir);
+  medir();
+})();
+</script>
+</body>
+</html>
