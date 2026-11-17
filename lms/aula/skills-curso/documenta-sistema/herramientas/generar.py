@@ -12,7 +12,8 @@ Entregables:
   02-clases.mmd   (+ .svg y .png)   diagrama de clases (Mermaid)
   03-roles-y-acciones.md (+ .csv)   matriz de quién puede hacer qué
   04-flujos.md    (+ flujo-*.mmd/.svg/.png)   flujos paso a paso
-  pantalla-*.svg/.png               esquemas de pantalla (no son capturas)
+  pantalla-*.jpg                    captura real de la pantalla (si el modelo trae «captura»)
+  pantalla-*.svg/.png               esquema de la pantalla, cuando no hay captura
   manual.md y manual.pdf            el manual
   index.html                        todo junto, para el Visor
 """
@@ -116,6 +117,10 @@ def validar(m: dict) -> list[str]:
     for i, f in enumerate(m.get("flujos") or []):
         if not f.get("pasos"):
             p.append(f"flujos[{i}] («{f.get('nombre', '')}») no tiene pasos.")
+    for i, pa in enumerate(m.get("pantallas") or []):
+        cap = pa.get("captura")
+        if cap and (not isinstance(cap, str) or cap.startswith(("/", "..")) or ".." in cap.split("/") or not cap.lower().endswith((".jpg", ".jpeg", ".png"))):
+            p.append(f"pantallas[{i}].captura = «{cap}»: debe ser una ruta dentro de la documentación, como capturas/catalogo.jpg.")
     malas = _claves_prohibidas(m)
     if malas:
         p.append("El modelo no puede guardar credenciales. Quita: " + ", ".join(malas) + ".")
@@ -123,6 +128,27 @@ def validar(m: dict) -> list[str]:
     if secreto and len(secreto) >= 4 and secreto in json.dumps(m, ensure_ascii=False):
         p.append("La clave de la cuenta de prueba aparece escrita dentro de modelo.json. Bórrala: las credenciales no van en ningún archivo.")
     return p
+
+
+# ───────────────────────── capturas ─────────────────────────
+
+def preparar_captura(carpeta: str, ruta_rel: str, destino: str) -> bool:
+    """Copia reducida de una captura real para el manual: JPEG de hasta 1100 px de ancho y alto acotado."""
+    origen = os.path.join(carpeta, ruta_rel)
+    if not os.path.isfile(origen):
+        return False
+    try:
+        from PIL import Image
+        with Image.open(origen) as im:
+            im = im.convert("RGB")
+            if im.width > 1100:
+                im = im.resize((1100, max(1, round(im.height * 1100 / im.width))), Image.LANCZOS)
+            if im.height > im.width * 1.45:  # captura de página entera: en el manual va la parte de arriba
+                im = im.crop((0, 0, im.width, int(im.width * 1.45)))
+            im.save(destino, "JPEG", quality=80, optimize=True)
+        return True
+    except Exception:  # noqa: BLE001 - una imagen dañada no debe tumbar el manual
+        return False
 
 
 # ───────────────────────── piezas de texto ─────────────────────────
@@ -173,10 +199,11 @@ def escribir_flujos(m: dict, carpeta: str, ids: list[str]) -> None:
         f.write("\n".join(md))
 
 
-def manual_md(m: dict, carpeta: str, ids_flujo: list[str], ids_pant: list[str]) -> str:
+def manual_md(m: dict, carpeta: str, ids_flujo: list[str], ids_pant: list[str], con_captura: set | None = None) -> str:
     sis = m.get("sistema") or {}
     roles = m.get("roles") or []
     pr = m.get("proceso") or {}
+    con_captura = con_captura or set()
     hoy = sis.get("fecha") or datetime.date.today().strftime("%d-%m-%Y")
     carriles = {c.get("id"): c.get("nombre") or c.get("id") for c in pr.get("carriles") or []}
     tipos = {"inicio": "Inicio", "fin": "Fin", "tarea": "Tarea", "decision": "Decisión"}
@@ -185,7 +212,9 @@ def manual_md(m: dict, carpeta: str, ids_flujo: list[str], ids_pant: list[str]) 
          f"Dirección: {sis.get('url', '—')}", f"Fecha: {hoy}", f"Elaborado por: {sis.get('autor', 'alumno de JMD Learning')} con DeepSeek Harness", "",
          "Documento generado a partir de un recorrido real con una cuenta de prueba. No contiene credenciales.", "",
          "## 1. Alcance", "", sis.get("alcance") or sis.get("caso", ""), "",
-         "> Cómo leer este manual: lo que dice «Por verificar» no se comprobó en el recorrido. Los dibujos de pantalla son esquemas, no capturas.", "",
+         "> Cómo leer este manual: lo que dice «Por verificar» no se comprobó en el recorrido. "
+         + ("Las pantallas con captura son imágenes reales tomadas con la cuenta de prueba; las demás son esquemas." if con_captura
+            else "Los dibujos de pantalla son esquemas, no capturas."), "",
          "## 2. Roles", "", "| Rol | Qué hace en el sistema |", "|---|---|"]
     L += [f"| {_celda(r.get('nombre') or r.get('id'))} | {_celda(r.get('descripcion', ''))} |" for r in roles]
     L += ["", "---", "", f"## 3. Proceso: {pr.get('nombre', '')}", "", "![Proceso del caso en notación BPMN](01-proceso.png)", "",
@@ -209,7 +238,10 @@ def manual_md(m: dict, carpeta: str, ids_flujo: list[str], ids_pant: list[str]) 
                 L.append("- Botones: " + ", ".join(map(str, pa["botones"])))
             if pa.get("nota"):
                 L.append("- Nota: " + str(pa["nota"]))
-            L += ["", f"![Esquema de «{pa.get('nombre', pid)}» (no es una captura)](pantalla-{pid}.png)", ""]
+            if pid in con_captura:
+                L += ["", f"![Pantalla «{pa.get('nombre', pid)}»: captura real tomada con la cuenta de prueba](pantalla-{pid}.jpg)", ""]
+            else:
+                L += ["", f"![Esquema de «{pa.get('nombre', pid)}» (no es una captura)](pantalla-{pid}.png)", ""]
     L += ["---", "", "## 6. Roles y acciones", "",
           "**Sí** = lo hace · **Solo lectura** = lo ve · **No** = el sistema se lo niega · **Por verificar** = no se comprobó.", "", matriz_md(m), "",
           "---", "", "## 7. Datos que maneja el sistema", "", "![Diagrama de clases](02-clases.png)", "",
@@ -231,9 +263,10 @@ def manual_md(m: dict, carpeta: str, ids_flujo: list[str], ids_pant: list[str]) 
     return "\n".join(L) + "\n"
 
 
-def indice_html(m: dict, carpeta: str, ids_flujo: list[str], ids_pant: list[str]) -> str:
+def indice_html(m: dict, carpeta: str, ids_flujo: list[str], ids_pant: list[str], con_captura: set | None = None) -> str:
     sis = m.get("sistema") or {}
     e = html.escape
+    con_captura = con_captura or set()
 
     def tabla(md: str) -> str:
         filas = [[c.strip() for c in x.strip().strip("|").split("|")] for x in md.splitlines() if x.startswith("|")]
@@ -249,8 +282,11 @@ def indice_html(m: dict, carpeta: str, ids_flujo: list[str], ids_pant: list[str]
 
     flujos = "".join(f"<h3>{e(f.get('nombre', fid))} <small>· {e(str(f.get('rol', '')))}</small></h3><img src='flujo-{fid}.svg' alt='Flujo {e(f.get('nombre', fid))}'>"
                      for f, fid in zip(m.get("flujos") or [], ids_flujo))
-    pants = "".join(f"<figure><img src='pantalla-{pid}.svg' alt='Esquema de {e(p.get('nombre', pid))}'><figcaption>{e(p.get('nombre', pid))} · esquema, no captura</figcaption></figure>"
-                    for p, pid in zip(m.get("pantallas") or [], ids_pant))
+    pants = "".join(
+        (f"<figure><a href='{e(str(p.get('captura')))}'><img src='{e(str(p.get('captura')))}' alt='Captura de {e(p.get('nombre', pid))}'></a><figcaption>{e(p.get('nombre', pid))} · captura real</figcaption></figure>"
+         if pid in con_captura else
+         f"<figure><img src='pantalla-{pid}.svg' alt='Esquema de {e(p.get('nombre', pid))}'><figcaption>{e(p.get('nombre', pid))} · esquema, no captura</figcaption></figure>")
+        for p, pid in zip(m.get("pantallas") or [], ids_pant))
     return f"""<!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Documentación · {e(sis.get('nombre', ''))}</title>
@@ -279,7 +315,7 @@ pre{{background:var(--card);border:1px solid var(--line);border-radius:10px;padd
 <h2>4 · Flujos</h2>{flujos}
 <h2>5 · Pantallas</h2><div class="g">{pants or '<p class="m">Sin esquemas de pantalla.</p>'}</div>
 <h2>6 · Por verificar</h2><ul>{''.join(f'<li>{e(str(x))}</li>' for x in (m.get('por_verificar') or ['Nada pendiente en este recorrido.']))}</ul>
-<p class="m">Generado con el skill documenta-sistema. Sin credenciales. Los dibujos de pantalla son esquemas, no capturas.</p>
+<p class="m">Generado con el skill documenta-sistema. Sin credenciales. Las pantallas marcadas «captura real» son imágenes del sistema; las marcadas «esquema» son dibujos.</p>
 </main></body></html>
 """
 
@@ -308,6 +344,7 @@ def generar(carpeta: str) -> int:
         diagramas.diagrama_proceso(m["proceso"], os.path.join(carpeta, "01-proceso"))
         diagramas.diagrama_clases(m["clases"], m.get("relaciones") or [], os.path.join(carpeta, "02-clases"))
         ids_flujo, ids_pant = [], []
+        con_captura: set = set()
         for i, f in enumerate(m.get("flujos") or [], 1):
             fid = _ident(f.get("id") or i)
             fid = fid if fid not in ids_flujo else f"{fid}-{i}"
@@ -317,19 +354,24 @@ def generar(carpeta: str) -> int:
             pid = _ident(pa.get("id") or i)
             pid = pid if pid not in ids_pant else f"{pid}-{i}"
             ids_pant.append(pid)
-            diagramas.diagrama_pantalla(pa, os.path.join(carpeta, f"pantalla-{pid}"))
+            if pa.get("captura") and preparar_captura(carpeta, pa["captura"], os.path.join(carpeta, f"pantalla-{pid}.jpg")):
+                con_captura.add(pid)
+            else:
+                if pa.get("captura"):
+                    print(f"AVISO: la pantalla «{pa.get('nombre', pid)}» nombra {pa['captura']}, que no existe o no se pudo leer: sale con esquema.")
+                diagramas.diagrama_pantalla(pa, os.path.join(carpeta, f"pantalla-{pid}"))
     except ValueError as e:
         print(f"El modelo no se puede dibujar: {e}\nCorrige modelo.json y vuelve a correr.")
         return 1
     escribir_matriz(m, carpeta)
     escribir_flujos(m, carpeta, ids_flujo)
-    md = manual_md(m, carpeta, ids_flujo, ids_pant)
+    md = manual_md(m, carpeta, ids_flujo, ids_pant, con_captura)
     with open(os.path.join(carpeta, "manual.md"), "w", encoding="utf-8") as f:
         f.write(md)
     paginas = pdf.md_a_pdf(md, os.path.join(carpeta, "manual.pdf"), base_dir=carpeta, pie="Manual · " + str((m.get("sistema") or {}).get("nombre", "")))
     with open(os.path.join(carpeta, "index.html"), "w", encoding="utf-8") as f:
-        f.write(indice_html(m, carpeta, ids_flujo, ids_pant))
-    print(f"GENERADO en {carpeta}: BPMN, clases, matriz, {len(ids_flujo)} flujo(s), {len(ids_pant)} pantalla(s) y manual.pdf de {paginas} páginas.")
+        f.write(indice_html(m, carpeta, ids_flujo, ids_pant, con_captura))
+    print(f"GENERADO en {carpeta}: BPMN, clases, matriz, {len(ids_flujo)} flujo(s), {len(ids_pant)} pantalla(s) ({len(con_captura)} con captura real) y manual.pdf de {paginas} páginas.")
     return comprobar(carpeta)
 
 
@@ -380,6 +422,15 @@ def comprobar(carpeta: str) -> int:
         sin_ev = sum(1 for a in m.get("acciones") or [] if not a.get("evidencia"))
         if sin_ev:
             avisos.append(f"{sin_ev} acción(es) de la matriz no citan evidencia")
+        usadas = {str(pa.get("captura")) for pa in m.get("pantallas") or [] if pa.get("captura")}
+        dir_cap = os.path.join(carpeta, "capturas")
+        hay = sorted("capturas/" + n for n in os.listdir(dir_cap) if n.lower().endswith((".jpg", ".jpeg", ".png"))) if os.path.isdir(dir_cap) else []
+        sueltas = [c for c in hay if c not in usadas]
+        if sueltas:
+            avisos.append("hay capturas que ninguna pantalla del modelo usa: " + ", ".join(sueltas[:6]) + ". Ponlas en «captura» de su pantalla y regenera")
+        for c in usadas:
+            if not os.path.isfile(os.path.join(carpeta, c)):
+                avisos.append(f"el modelo nombra {c}, que no existe: esa pantalla salió con esquema")
     except (OSError, ValueError):
         pend = 0
     for a in avisos:
@@ -396,13 +447,20 @@ def prueba() -> int:
     destino = "/tmp/documenta-prueba"
     shutil.rmtree(destino, ignore_errors=True)
     os.makedirs(destino)
-    shutil.copy(os.path.join(os.path.dirname(AQUI), "ejemplo", "modelo.json"), destino)
     try:
         import httpx  # noqa: F401
-        import PIL  # noqa: F401
+        from PIL import Image
     except ImportError as e:
         print(f"NO LISTO: falta {e.name}. Corre los scripts con «python3» (el de /opt/venv).")
         return 1
+    # El ejemplo más una captura de mentira, para probar también el camino de las capturas reales.
+    with open(os.path.join(os.path.dirname(AQUI), "ejemplo", "modelo.json"), encoding="utf-8") as f:
+        m = json.load(f)
+    os.makedirs(os.path.join(destino, "capturas"))
+    Image.new("RGB", (1280, 800), "#e8eef7").save(os.path.join(destino, "capturas", "ingresar.jpg"), "JPEG")
+    m["pantallas"][0]["captura"] = "capturas/ingresar.jpg"
+    with open(os.path.join(destino, "modelo.json"), "w", encoding="utf-8") as f:
+        json.dump(m, f, ensure_ascii=False)
     rc = generar(destino)
     shutil.rmtree(destino, ignore_errors=True)
     print("LISTO: el skill documenta-sistema funciona en esta aula." if rc == 0 else "NO LISTO: copia el mensaje completo y avisa al instructor.")

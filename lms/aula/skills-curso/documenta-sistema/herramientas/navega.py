@@ -24,6 +24,24 @@ biblioteca estándar. Respeta HTTPS_PROXY y NO_PROXY del aula.
   navega.py sesiones                  qué sesiones hay
   navega.py salir [--todas]           borra la sesión (cookies y token)
 
+Navegador real (servicio compartido de la clase; saca capturas):
+
+  navega.py web abrir URL             abre la página en un Chromium de verdad
+  navega.py web ver                   vuelve a resumir la página (elementos numerados)
+  navega.py web escribir N "valor"    escribe en el campo N
+  navega.py web escribir N --usuario  escribe DOC_USUARIO   (--clave escribe DOC_CLAVE)
+  navega.py web clic N|"texto" [--ingreso]
+                                      --ingreso deja pasar el envío del formulario de ingreso
+  navega.py web elegir N "opción"     elige en una lista
+  navega.py web tecla Enter [--ingreso]
+  navega.py web atras
+  navega.py web captura NOMBRE [--completa]
+                                      guarda capturas/NOMBRE.jpg y el resumen como evidencia
+  navega.py web cerrar                cierra el navegador de esa sesión
+
+Los números de los elementos cambian en cada resumen: usa siempre los del último.
+Si el navegador no responde, sigue con las órdenes de texto de arriba.
+
 La cuenta de prueba se pasa por el entorno, nunca en archivos:
 
   DOC_USUARIO=cajero DOC_CLAVE='…' python3 navega.py entrar --sesion cajero
@@ -49,6 +67,7 @@ except ImportError:  # pragma: no cover
 
 DOC_DIR = os.environ.get("DOC_DIR", "/trabajo/documentacion")
 SES_DIR = os.environ.get("DOC_SESIONES", "/tmp/documenta-sesiones")
+NAVEGADOR = os.environ.get("DOC_NAVEGADOR", "http://navegador:8090").rstrip("/")
 AGENTE = "documenta-sistema/1.0 (alumno JMD Learning; cuenta de prueba; solo lectura)"
 SECRETO = re.compile(r"(token|clave|password|passwd|contrase|secret|authorization|jwt|api[_-]?key|session|cookie)", re.I)
 OCULTO = "«oculto»"
@@ -67,7 +86,7 @@ def cargar(nombre: str) -> dict:
         with open(_ruta_sesion(nombre), encoding="utf-8") as f:
             return json.load(f)
     except (OSError, ValueError):
-        return {"nombre": nombre, "base": "", "actual": "", "cookies": [], "token": "", "usuario": ""}
+        return {"nombre": nombre, "base": "", "actual": "", "cookies": [], "token": "", "usuario": "", "web_id": "", "web_url": ""}
 
 
 def guardar(nombre: str, s: dict) -> None:
@@ -289,7 +308,7 @@ def _tipo(v) -> str:
 
 # ───────────────────────── evidencia ─────────────────────────
 
-def _evidencia(nombre_sesion: str, metodo: str, url: str, estado: int, cuerpo: str) -> str:
+def _evidencia(nombre_sesion: str, metodo: str, url: str, estado, cuerpo: str) -> str:
     carpeta = os.path.join(DOC_DIR, "evidencia")
     os.makedirs(carpeta, exist_ok=True)
     n = len([f for f in os.listdir(carpeta) if re.match(r"^\d{2,3}-", f)]) + 1
@@ -474,6 +493,196 @@ def orden_matriz(rutas: list[str]) -> None:
         print(lineas[-1])
     print("\nUsa estos estados para llenar «permisos» en modelo.json: 200 → si (o lectura), 401/403 → no. Lo que no probaste va «por-verificar».")
 
+# ───────────────────────── navegador real (servicio compartido) ─────────────────────────
+
+RESPALDO = ("Sigue en modo texto, que no depende del navegador: «navega.py abrir URL», «entrar», «ver», «api» y «matriz». "
+            "El manual saldrá con esquemas en lugar de capturas.")
+
+
+class SinNavegador(Exception):
+    pass
+
+
+def _web(metodo: str, ruta: str, cuerpo: dict | None = None, binario: bool = False):
+    """Llama al servicio del navegador SIN proxy (vive en la red del aula)."""
+    try:
+        with httpx.Client(trust_env=False, timeout=90) as c:
+            r = c.request(metodo, NAVEGADOR + ruta, json=cuerpo if cuerpo is not None else None)
+    except httpx.HTTPError as e:
+        raise SinNavegador(f"El navegador de la clase no responde ({type(e).__name__}). " + RESPALDO)
+    if binario and r.status_code == 200:
+        return r.status_code, r.content
+    try:
+        dato = r.json()
+    except ValueError:
+        dato = {"ok": False, "error": f"respuesta {r.status_code} sin JSON"}
+    return r.status_code, dato
+
+
+def _web_fin(msg: str, codigo: int = 2) -> None:
+    print(tapar_texto(msg))
+    sys.exit(codigo)
+
+
+def _web_sesion_nueva(s: dict) -> None:
+    estado, dato = _web("POST", "/sesion", {})
+    if estado == 429:
+        raise SinNavegador("El navegador de la clase está lleno ahora (" + str(dato.get("error", "sin cupo")) + "). "
+                           "Espera un minuto y repite, o cierra tus otras sesiones con «web cerrar». " + RESPALDO)
+    if estado != 200 or not isinstance(dato, dict) or not dato.get("id"):
+        raise SinNavegador(f"El navegador de la clase no pudo abrir una sesión (estado {estado}). " + RESPALDO)
+    s["web_id"] = dato["id"]
+
+
+def _web_accion(nombre: str, s: dict, cuerpo: dict, reintenta_ir: bool = False) -> dict:
+    if not s.get("web_id"):
+        if not reintenta_ir:
+            _web_fin(f"La sesión «{nombre}» todavía no tiene navegador abierto. Empieza con: navega.py web abrir URL --sesion {nombre}", 1)
+        _web_sesion_nueva(s)
+    estado, dato = _web("POST", f"/sesion/{s['web_id']}/accion", cuerpo)
+    if estado in (404, 410):
+        s["web_id"] = ""
+        if reintenta_ir:
+            _web_sesion_nueva(s)
+            estado, dato = _web("POST", f"/sesion/{s['web_id']}/accion", cuerpo)
+        else:
+            guardar(nombre, s)
+            _web_fin(f"El navegador de la sesión «{nombre}» se cerró (pasa a los 10 minutos sin uso o a los 40 de abierto). "
+                     f"Vuelve a abrir e ingresar: navega.py web abrir URL --sesion {nombre}", 1)
+    if not isinstance(dato, dict):
+        dato = {"ok": False, "error": f"respuesta {estado} inesperada"}
+    return dato
+
+
+def _web_mostrar(nombre: str, s: dict, etiqueta: str, dato: dict, extra: str = "", evidencia: bool = True) -> None:
+    if not dato.get("ok"):
+        guardar(nombre, s)
+        _web_fin("El navegador no pudo: " + str(dato.get("error", "error sin detalle"))
+                 + "\nPide «navega.py web ver» para ver los elementos numerados de ahora y repite con el número correcto.", 1)
+    url = str(dato.get("url") or "")
+    s["web_url"] = url
+    s["web_pagina"] = str(dato.get("pagina") or "")[:6000]
+    if url and not s.get("base"):
+        s["base"] = url
+    guardar(nombre, s)
+    partes = [f"Estado: {dato.get('estado') if dato.get('estado') is not None else '—'} · navegador real", str(dato.get("pagina") or "")]
+    bloq = dato.get("bloqueadas") or []
+    if bloq:
+        partes.append("BLOQUEADAS (el navegador es de solo lectura; estas peticiones NO llegaron al sistema):\n" + "\n".join("  " + str(b) for b in bloq[:20]))
+    if s.get("base") and url and urlsplit(url).netloc and urlsplit(url).netloc != urlsplit(s["base"]).netloc:
+        partes.append(f"AVISO: saliste del sistema ({urlsplit(url).netloc}). Vuelve con «web atras»: solo se documenta el sistema autorizado.")
+    texto = "\n".join(p for p in partes if p)
+    if not evidencia:
+        print(tapar_texto(f"{etiqueta}\n{texto}\n{extra}"))
+        return
+    ev = _evidencia(nombre, "WEB", url or "http://navegador/", dato.get("estado") if dato.get("estado") is not None else "—", texto)
+    print(tapar_texto(f"{etiqueta}\n{texto}\n{extra}\nGuardado en {ev}"))
+
+
+def _web_n(valor: str) -> dict:
+    return {"n": int(valor)} if valor.isdigit() else {"texto": valor}
+
+
+def orden_web(nombre: str, s: dict, args: list[str]) -> None:
+    if not args:
+        _web_fin("Uso: navega.py web abrir URL | ver | clic N | escribir N valor | elegir N opción | tecla Enter | atras | captura NOMBRE | cerrar", 1)
+    sub, resto = args[0], args[1:]
+    marcas = {m for m in resto if m in ("--ingreso", "--escribir", "--usuario", "--clave", "--completa")}
+    resto = [a for a in resto if a not in marcas]
+    escribe = "--ingreso" in marcas or "--escribir" in marcas
+    aviso = ""
+    if "--escribir" in marcas:
+        aviso = "AVISO: esta acción pudo cambiar datos del sistema. Solo vale si el caso lo pide y es un ambiente de prueba. Anótalo en «por_verificar»."
+    try:
+        if sub == "abrir":
+            if not resto or not re.match(r"^https?://", resto[0]):
+                _web_fin("Uso: navega.py web abrir https://direccion-del-sistema/", 1)
+            if s.get("base") and urlsplit(resto[0]).netloc != urlsplit(s["base"]).netloc:
+                _web_fin(f"Fuera del sistema: {urlsplit(resto[0]).netloc} no es {urlsplit(s['base']).netloc}. Solo se navega el sistema autorizado.", 1)
+            dato = _web_accion(nombre, s, {"accion": "ir", "url": resto[0]}, reintenta_ir=True)
+            _web_mostrar(nombre, s, f"ABRIR {resto[0]}", dato, f"\nDirección del sistema: {dato.get('url', '')}")
+        elif sub == "ver":
+            _web_mostrar(nombre, s, "VER", _web_accion(nombre, s, {"accion": "ver"}))
+        elif sub == "clic":
+            if not resto:
+                _web_fin("Uso: navega.py web clic N   |   navega.py web clic \"texto del botón\" [--ingreso]", 1)
+            cuerpo = {"accion": "clic", **_web_n(resto[0])}
+            if escribe:
+                cuerpo["escribe"] = True
+            dato = _web_accion(nombre, s, cuerpo)
+            if "--ingreso" in marcas and dato.get("ok"):
+                dentro = "(password)" not in str(dato.get("pagina", ""))
+                if dentro:
+                    s["usuario"] = os.environ.get("DOC_USUARIO", "") or s.get("usuario", "")
+                aviso = ("INGRESO: dentro" + (f" como «{s['usuario']}»" if s.get("usuario") else "") + f" (sesión «{nombre}», navegador real). La clave no se guardó."
+                         if dentro else "INGRESO: parece que NO entró: la página sigue pidiendo la clave. Lee el mensaje de la página; no adivines claves.")
+            _web_mostrar(nombre, s, f"CLIC {resto[0]}", dato, aviso)
+        elif sub == "escribir":
+            if not resto or not resto[0].isdigit():
+                _web_fin("Uso: navega.py web escribir N \"valor\"   |   web escribir N --usuario   |   web escribir N --clave", 1)
+            if "--usuario" in marcas or "--clave" in marcas:
+                var = "DOC_USUARIO" if "--usuario" in marcas else "DOC_CLAVE"
+                valor = os.environ.get(var, "")
+                if not valor:
+                    _web_fin(f"Falta {var} en el entorno. Pásalo en el mismo comando, sin escribirlo en archivos:\n  {var}='…' python3 navega.py web escribir {resto[0]} --{'usuario' if var == 'DOC_USUARIO' else 'clave'}", 1)
+                que = "el usuario de la cuenta de prueba" if var == "DOC_USUARIO" else "la clave (no se muestra ni se guarda)"
+            else:
+                if len(resto) < 2:
+                    _web_fin("Falta el valor: navega.py web escribir N \"valor\"", 1)
+                if re.search(r"^\[" + resto[0] + r"\][^\n]*\(password\)", s.get("web_pagina", ""), re.M):
+                    _web_fin(f"El campo [{resto[0]}] es de clave: no la escribas en el comando. Usa:\n  DOC_CLAVE='…' python3 navega.py web escribir {resto[0]} --clave", 1)
+                valor, que = resto[1], f"«{resto[1]}»"
+            dato = _web_accion(nombre, s, {"accion": "escribir", "n": int(resto[0]), "valor": valor})
+            _web_mostrar(nombre, s, f"ESCRIBIR en [{resto[0]}]: {que}", dato, evidencia=False)
+        elif sub == "elegir":
+            if len(resto) < 2 or not resto[0].isdigit():
+                _web_fin("Uso: navega.py web elegir N \"opción\"", 1)
+            _web_mostrar(nombre, s, f"ELEGIR en [{resto[0]}]: «{resto[1]}»", _web_accion(nombre, s, {"accion": "elegir", "n": int(resto[0]), "valor": resto[1]}), evidencia=False)
+        elif sub == "tecla":
+            cuerpo = {"accion": "tecla", "tecla": resto[0] if resto else "Enter"}
+            if escribe:
+                cuerpo["escribe"] = True
+            dato = _web_accion(nombre, s, cuerpo)
+            if "--ingreso" in marcas and dato.get("ok"):
+                dentro = "(password)" not in str(dato.get("pagina", ""))
+                aviso = "INGRESO: dentro (navegador real). La clave no se guardó." if dentro else "INGRESO: parece que NO entró: la página sigue pidiendo la clave."
+            _web_mostrar(nombre, s, f"TECLA {cuerpo['tecla']}", dato, aviso)
+        elif sub == "atras":
+            _web_mostrar(nombre, s, "ATRÁS", _web_accion(nombre, s, {"accion": "atras"}))
+        elif sub == "captura":
+            if not resto:
+                _web_fin("Uso: navega.py web captura NOMBRE [--completa]   (por ejemplo: web captura catalogo)", 1)
+            if not s.get("web_id"):
+                _web_fin(f"La sesión «{nombre}» no tiene navegador abierto. Empieza con: navega.py web abrir URL --sesion {nombre}", 1)
+            lema = re.sub(r"[^a-z0-9]+", "-", resto[0].lower().rsplit(".jp", 1)[0]).strip("-")[:40] or "pantalla"
+            dato = _web_accion(nombre, s, {"accion": "ver"})
+            if dato.get("ok") and "(password)" in str(dato.get("pagina", "")) and s.get("usuario"):
+                pass  # la pantalla de ingreso se puede capturar: el navegador enmascara la clave
+            estado, img = _web("GET", f"/sesion/{s['web_id']}/captura" + ("?completa=1" if "--completa" in marcas else ""), binario=True)
+            if estado != 200 or not isinstance(img, (bytes, bytearray)) or img[:2] != b"\xff\xd8":
+                error = img.get("error") if isinstance(img, dict) else ""
+                _web_fin(f"No se pudo sacar la captura (estado {estado}{': ' + str(error) if error else ''}). Deja esa pantalla sin «captura»: saldrá con esquema.", 1)
+            carpeta = os.path.join(DOC_DIR, "capturas")
+            os.makedirs(carpeta, exist_ok=True)
+            with open(os.path.join(carpeta, lema + ".jpg"), "wb") as f:
+                f.write(img)
+            _web_mostrar(nombre, s, f"CAPTURA {lema}", dato,
+                         f"\nCAPTURA guardada: capturas/{lema}.jpg ({len(img) // 1024} KB). En modelo.json, en esa pantalla: \"captura\": \"capturas/{lema}.jpg\"")
+        elif sub == "cerrar":
+            if s.get("web_id"):
+                try:
+                    _web("DELETE", f"/sesion/{s['web_id']}")
+                except SinNavegador:
+                    pass
+            s["web_id"] = ""
+            guardar(nombre, s)
+            print(f"Navegador de la sesión «{nombre}» cerrado.")
+        else:
+            _web_fin(f"No conozco «web {sub}». Mira: navega.py ayuda", 1)
+    except SinNavegador as e:
+        guardar(nombre, s)
+        _web_fin(str(e), 2)
+
 
 def main(argv: list[str]) -> int:
     if len(argv) < 2 or argv[1] in ("-h", "--help", "ayuda"):
@@ -506,6 +715,8 @@ def main(argv: list[str]) -> int:
         mostrar(nombre, s, "GET", r)
     elif orden == "entrar":
         orden_entrar(nombre, s, args)
+    elif orden == "web":
+        orden_web(nombre, s, args)
     elif orden == "api":
         escribir = "--escribir" in args
         args = [a for a in args if a != "--escribir"]
@@ -534,15 +745,21 @@ def main(argv: list[str]) -> int:
         if os.path.isdir(SES_DIR):
             for f in sorted(os.listdir(SES_DIR)):
                 x = cargar(f[:-5])
-                print(f"- {f[:-5]}: usuario «{x.get('usuario') or '—'}» · {'token' if x.get('token') else 'cookie' if x.get('cookies') else 'sin ingresar'} · {x.get('base', '')}")
+                print(f"- {f[:-5]}: usuario «{x.get('usuario') or '—'}» · {'token' if x.get('token') else 'cookie' if x.get('cookies') else 'por navegador' if x.get('web_id') and x.get('usuario') else 'sin ingresar'} · {'navegador abierto · ' if x.get('web_id') else ''}{x.get('base', '')}")
         else:
             print("No hay sesiones.")
     elif orden == "salir":
         if os.path.isdir(SES_DIR):
             for f in os.listdir(SES_DIR):
                 if "--todas" in args or f == os.path.basename(_ruta_sesion(nombre)):
+                    web_id = cargar(f[:-5]).get("web_id")
+                    if web_id:
+                        try:
+                            _web("DELETE", f"/sesion/{web_id}")
+                        except SinNavegador:
+                            pass
                     os.remove(os.path.join(SES_DIR, f))
-        print("Sesión borrada: no quedan cookies ni token.")
+        print("Sesión borrada: no quedan cookies ni token, y el navegador quedó cerrado.")
     else:
         sys.exit(f"No conozco la orden «{orden}». Mira: navega.py ayuda")
     return 0

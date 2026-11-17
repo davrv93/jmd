@@ -20,7 +20,7 @@ repo:
   ref: main
 materials:
   - id: dh-01-kit-documenta
-    title: "Kit «documenta-sistema» (el skill de la clase: navegador de texto con sesión, generador de BPMN, clases, matriz, flujos y manual en PDF)"
+    title: "Kit «documenta-sistema» (el skill de la clase: maneja el navegador, saca capturas y genera BPMN, clases, matriz, flujos y manual en PDF)"
     kind: zip
     file: materials/kit-documenta-sistema.zip
     objective_ids: [dh-01-o3, dh-01-o4]
@@ -157,8 +157,8 @@ cycle:
     title: El agente entra y recorre
     tool: terminal
     phase: experiencia
-    description: En la escena 4 copia el pedido. El agente inicia sesión con las cuentas de prueba, recorre según tu caso y deja la bitácora. Solo navega y lee.
-    check: Existe documentacion/evidencia/bitacora.md y el agente listó pantallas y rutas
+    description: En la escena 4 copia el pedido. El agente abre el navegador, inicia sesión con las cuentas de prueba, recorre según tu caso, saca capturas y deja la bitácora. Solo navega y lee.
+    check: Existen documentacion/capturas/ y documentacion/evidencia/bitacora.md
   - id: documentar
     title: Generar la documentación
     tool: terminal
@@ -195,7 +195,7 @@ dirección y una cuenta de prueba, y DeepSeek Harness entra, recorre y te deja c
 | 1 · Hoy | Ves el camino del caso al manual | Conoces las tres reglas |
 | 2 · Abre dsh | Abres DeepSeek Harness y preparas el aula | El agente dice «LISTO» |
 | 3 · Tu caso | Abres tu Tienda Sol y escribes el caso | Dirección con código y caso listos |
-| 4 · Entra y recorre | El agente inicia sesión con dos roles y recorre | `documentacion/evidencia/bitacora.md` |
+| 4 · Entra y recorre | El agente abre el navegador, inicia sesión con dos roles y saca capturas | `documentacion/capturas/` y la bitácora |
 | 5 · Los documentos | El agente genera todo | «COMPROBACIÓN: todo en orden» |
 | 6 · Revisa con criterio | Corriges y regeneras | El manual cambió |
 | 7 · Tu sistema y tarea | Lo apuntas a un sistema tuyo | Entrega enviada |
@@ -206,10 +206,10 @@ dirección y una cuenta de prueba, y DeepSeek Harness entra, recorre y te deja c
 2. Entras con una cuenta de prueba, nunca con tu cuenta real. Las claves no se guardan en ningún archivo.
 3. El agente solo navega y lee: no crea, no cambia y no borra.
 
-**Qué es y qué no es.** En tu aula el agente navega **en modo texto**: inicia sesión de verdad, lee cada página,
-sus formularios y la API con la sesión abierta, pero no dibuja la pantalla ni saca capturas. Por eso el manual
-lleva **esquemas de pantalla**, no capturas. Para capturas reales hace falta un navegador gráfico, que hoy el aula
-no tiene.
+**Cómo navega el agente.** Maneja un **navegador real**, compartido por toda la clase: abre las páginas, escribe en
+los campos, hace clic y saca **capturas**, que van dentro del manual. Es de solo lectura: todo envío de datos queda
+bloqueado, salvo el del formulario de ingreso. Si el navegador está ocupado, el agente sigue en **modo texto** (lee
+las páginas y la API con la sesión iniciada) y el manual sale con esquemas de pantalla en lugar de capturas.
 
 ## Antes de la clase
 
@@ -221,8 +221,8 @@ no tiene.
 
 **Objetivo:** dsh abierto y el skill `documenta-sistema` instalado.
 
-Copia el pedido de la escena 2. El agente revisa si el skill está en `/trabajo/.agents/skills/documenta-sistema`;
-si falta, lo descarga del repositorio del curso y corre la autoprueba:
+Copia el pedido de la escena 2. El agente descarga la última versión del skill del repositorio del curso, la deja
+en `/trabajo/.agents/skills/documenta-sistema` y corre la autoprueba:
 
 ```bash
 python3 /trabajo/.agents/skills/documenta-sistema/herramientas/generar.py --prueba
@@ -247,18 +247,24 @@ Quiero saber qué pasa si el efectivo no alcanza».
 
 **Objetivo:** que el agente inicie sesión con cada rol y recorra lo que tu caso toca.
 
-El pedido de la escena 4 le da al agente el caso, la dirección y las dos cuentas de prueba. El skill usa un
-navegador de texto con sesión:
+El pedido de la escena 4 le da al agente el caso, la dirección y las dos cuentas de prueba. El skill maneja el
+navegador con órdenes cortas (`H` es la carpeta `herramientas` del skill):
 
 ```bash
-python3 H/navega.py abrir "DIRECCIÓN" --sesion cajero
-DOC_USUARIO=cajero DOC_CLAVE='…' python3 H/navega.py entrar --api /api/login --sesion cajero
-python3 H/navega.py matriz /api/productos /api/reporte
+python3 H/navega.py web abrir "DIRECCIÓN" --sesion cajero
+DOC_USUARIO=cajero python3 H/navega.py web escribir 1 --usuario --sesion cajero
+DOC_CLAVE='…' python3 H/navega.py web escribir 2 --clave --sesion cajero
+python3 H/navega.py web clic 3 --ingreso --sesion cajero
+python3 H/navega.py web captura catalogo --sesion cajero
 ```
 
-**Qué deberías ver:** `INGRESO: dentro como «cajero»`, la lista de pantallas, formularios y rutas, y la bitácora en
+Cada respuesta trae la página resumida con sus elementos numerados; el agente usa esos números para escribir y
+hacer clic. Cuando un botón guardaría datos, el navegador lo bloquea y lo muestra como `BLOQUEADAS`.
+
+**Qué deberías ver:** `INGRESO: dentro` con cada rol, las capturas en `documentacion/capturas/` y la bitácora en
 `documentacion/evidencia/bitacora.md`. **Si falla:** estado 410 → tu tienda venció: abre Tienda Sol otra vez y
-pega la dirección nueva.
+pega la dirección nueva. «El navegador está lleno» → espera un minuto y pide «intenta de nuevo»; si sigue, el
+agente continúa en modo texto y el manual sale con esquemas.
 
 ## 5 · Los documentos
 
@@ -272,7 +278,7 @@ El agente escribe un solo archivo, `documentacion/modelo.json`, y `generar.py` h
 | `02-clases.mmd` (+ `.svg`) | Diagrama de clases en Mermaid: qué datos guarda el sistema |
 | `03-roles-y-acciones.md` (+ `.csv`) | Quién puede hacer qué, con evidencia |
 | `04-flujos.md` | Paso a paso: pantalla, acción y resultado |
-| `manual.pdf` | El manual completo |
+| `manual.pdf` | El manual completo, con las capturas |
 | `index.html` | Todo junto, para verlo en el Visor |
 
 **Qué deberías ver:** `COMPROBACIÓN: todo en orden`. **Si falla:** «El modelo tiene problemas» → pídele al agente
@@ -286,7 +292,7 @@ El agente escribe rápido; tú decides si está bien.
 - ¿Cada «Sí» de la matriz tiene evidencia y lo no probado dice «Por verificar»?
 - ¿Las clases y sus datos existen en el sistema?
 - ¿El manual lo entiende alguien que nunca vio el sistema?
-- ¿Ninguna clave aparece en ningún archivo?
+- ¿Ninguna clave aparece en ningún archivo ni en ninguna captura?
 
 Pide la corrección en una frase. El agente cambia `modelo.json` y regenera: nunca se editan a mano los archivos
 generados.
