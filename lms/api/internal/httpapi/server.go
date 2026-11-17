@@ -283,6 +283,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/live/{lesson}/video/{id}", s.authed(s.liveVideoEstado))
 	mux.Handle("GET /api/v1/live/{lesson}/video/{id}/mp4", s.authed(s.liveVideoMP4))
 	mux.Handle("POST /api/v1/live/{lesson}/analizar", s.authed(s.liveAnalizar))
+	mux.Handle("POST /api/v1/live/{lesson}/entender", s.authed(s.liveEntender))   // GoldenQuerys: reglas primero, después IA con topes (ver live_entender.go)
 	mux.Handle("POST /api/v1/live/{lesson}/escenario", s.authed(s.liveEscenario)) // Hoja JMD: escenario nuevo con la clave de la clase
 	mux.Handle("POST /api/v1/live/{lesson}/musica", s.authed(s.liveMusicaCrear))
 	mux.Handle("GET /api/v1/live/{lesson}/musica/{id}", s.authed(s.liveMusicaEstado))
