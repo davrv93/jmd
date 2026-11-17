@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Muestra tu tablero</title>
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 2 (gq-03). Experimentación: la muestra. El alumno toma una captura
+     de su tablero, la pega o la elige aquí y la escena arma una postal PNG (1080 × 1350) con su nombre y su primera
+     decisión, para compartir en el chat de Zoom o en el grupo. La imagen NO sale de su navegador (el LMS no guarda
+     imágenes del muro): solo se registra la evidencia «captura» y su línea en el muro gq03-muestra. Voto gq03-widget. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<link rel="stylesheet" href="../../comun/gq3.css">
+<style id="esc-propio">
+.m10-zona { display: grid; gap: .6em; justify-items: center; text-align: center; padding: 1em; border-radius: 1em; border: 2px dashed color-mix(in srgb, var(--oro) 55%, transparent); background: color-mix(in srgb, var(--oro) 6%, var(--s1)); outline: none; }
+.m10-zona:focus-visible, .m10-zona.encima { border-style: solid; box-shadow: 0 0 0 4px var(--oro-bg); }
+.m10-zona svg { width: 2.6em; height: 2.6em; color: var(--oro); }
+.m10-zona p { margin: 0; font-size: .78em; }
+.m10-zona small { font-size: .66em; color: var(--muted); }
+.m10-zona kbd { font: 700 .92em var(--mono); padding: .05em .4em; border-radius: .3em; border: 1px solid var(--line2); background: var(--s2); }
+.m10 .k-foto img { width: min(100%, 15em); }
+.m10-priv { margin: 0; font-size: .68em; color: var(--muted); }
+#widget .k-ops { grid-template-columns: repeat(auto-fit, minmax(7.5em, 1fr)); }
+@media (prefers-reduced-motion: reduce) { .m10-zona { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">GoldenQuerys · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in" style="font-size:2em">Muestra tu tablero</h1>
+      <p class="esc-sub a-in" style="--d:.08s;font-size:.92em">Tres voluntarios comparten pantalla 30 segundos: su pregunta, su gráfico y su decisión. Los demás, tu postal y una línea en el muro.</p>
+    </div>
+    <div class="k-cols m10">
+      <div class="k-pila a-in" style="--d:.15s">
+        <div class="m10-zona" id="zona" tabindex="0" aria-label="Pega aquí la captura de tu tablero o elige una imagen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.6"/></svg>
+          <p><b>Toma la captura de tu tablero en el visor</b> y pégala aquí con <kbd>Ctrl</kbd>+<kbd>V</kbd>.</p>
+          <small>Windows: <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> · Mac: <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd> · celular: el botón de captura</small>
+          <button class="k-btn sec" type="button" id="b-elegir">Elegir una imagen</button>
+          <input type="file" id="archivo" accept="image/*" hidden>
+        </div>
+        <div id="foto"></div>
+        <p class="m10-priv">Tu imagen no se sube al LMS: queda en tu compu. Descárgala y compártela en el chat de Zoom o en el grupo de la clase.</p>
+      </div>
+      <div class="k-pila a-in" style="--d:.3s">
+        <div class="k-caja k-muro" data-muro="gq03-muestra" data-color="var(--oro)" data-pregunta="Tu tablero en una línea: negocio, el número que más te sorprendió y tu decisión" data-placeholder="Botica · SJL S/ 2 558,80 · si baja de 2 000, reviso horario" data-max="5" data-max-largo="200"></div>
+        <div class="k-caja k-voto" id="widget" data-voto="gq03-widget" data-c="oro">
+          <p class="k-q" style="--c:var(--oro)">¿Qué parte de tu tablero te sirvió más para decidir?</p>
+          <div class="k-ops">
+            <button data-op="kpi">Las tarjetas</button>
+            <button data-op="barras">Las barras</button>
+            <button data-op="linea">La línea</button>
+            <button data-op="tabla">La tabla</button>
+            <button data-op="caja">La caja de pregunta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Pega tu captura, descarga tu postal y escribe tu línea en el muro</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq3.js"></script>
+<script src="../../comun/gq.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var zona = $("zona"), archivo = $("archivo"), yo = { nombre: "Alumno" }, registrada = false;
+  GQ.yo().then(function (u) { yo.nombre = u.nombre; });
+
+  function decision() {
+    var d = GQ.leer("decisiones", []), f = d && d[0];
+    return f && f[0] && f[1] ? "Si " + String(f[0]).trim() + ", entonces " + String(f[1]).trim() + "." : "";
+  }
+  function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function lineas(g, t, ancho, max) {
+    var p = String(t).split(/\s+/), out = [], l = "";
+    p.forEach(function (w) { var k = l ? l + " " + w : w; if (g.measureText(k).width > ancho && l) { out.push(l); l = w; } else l = k; });
+    if (l) out.push(l);
+    if (out.length > max) { out = out.slice(0, max); out[max - 1] = out[max - 1].replace(/\s*\S*$/, "") + "…"; }
+    return out;
+  }
+  // postal 1080 × 1350: la captura encajada, el nombre y la primera decisión
+  function postal(img) {
+    var W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H;
+    var g = c.getContext("2d"), F = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+    var fondo = g.createLinearGradient(0, 0, W, H); fondo.addColorStop(0, "#14122b"); fondo.addColorStop(.6, "#231a3f"); fondo.addColorStop(1, "#3a2a12");
+    g.fillStyle = fondo; g.fillRect(0, 0, W, H);
+    g.fillStyle = "#f2c14e"; g.font = "800 30px " + F; g.fillText("JMD Learning · GoldenQuerys con IA", 72, 100);
+    g.fillStyle = "#ffffff"; g.font = "800 62px " + F; g.fillText("Mi tablero dinámico", 72, 176);
+    // la captura, encajada sin deformar
+    var bx = 72, by = 222, bw = W - 144, bh = 760;
+    g.fillStyle = "rgba(255,255,255,.06)"; rr(g, bx, by, bw, bh, 28); g.fill();
+    var k = Math.min((bw - 32) / img.width, (bh - 32) / img.height), iw = img.width * k, ih = img.height * k;
+    var ix = bx + (bw - iw) / 2, iy = by + (bh - ih) / 2;
+    g.save(); rr(g, ix, iy, iw, ih, 16); g.clip(); g.drawImage(img, ix, iy, iw, ih); g.restore();
+    g.strokeStyle = "rgba(242,193,78,.55)"; g.lineWidth = 3; rr(g, ix, iy, iw, ih, 16); g.stroke();
+    // nombre y decisión
+    g.fillStyle = "#ffffff"; g.font = "800 46px " + F; g.fillText(String(yo.nombre).slice(0, 40), 72, 1060);
+    g.fillStyle = "#e9bd52"; g.font = "600 27px " + F; g.fillText("Sesión 2 · Martes 17 de noviembre de 2026", 72, 1104);
+    var d = decision();
+    if (d) {
+      g.fillStyle = "rgba(244,172,92,.16)"; rr(g, 72, 1132, W - 144, 128, 22); g.fill();
+      g.fillStyle = "#f4ac5c"; g.beginPath(); g.arc(108, 1196, 12, 0, 7); g.fill();
+      g.fillStyle = "#fff6e6"; g.font = "600 30px " + F;
+      lineas(g, d, W - 230, 2).forEach(function (l, i) { g.fillText(l, 136, 1186 + i * 40 - (i ? 0 : 0)); });
+    }
+    g.fillStyle = "rgba(243,238,220,.72)"; g.font = "600 26px " + F; g.textAlign = "center"; g.fillText("jmd-learn.online  ·  #GoldenQuerys", W / 2, 1310);
+    return c;
+  }
+  function usar(file) {
+    if (!file || !/^image\//.test(file.type)) { GQ.toast("Eso no es una imagen: toma la captura y pégala con Ctrl+V."); return; }
+    var lector = new FileReader();
+    lector.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        GQ.mostrarFoto($("foto"), postal(img), "goldenquerys-mi-tablero-" + GQ.slug(yo.nombre) + ".png");
+        zona.querySelector("p").textContent = "Listo. ¿Otra captura? Pégala de nuevo.";
+        if (!registrada) {
+          registrada = true;
+          GQ.pedir("/evidencia", { escena: GQ.escena || "10-muestra-tu-tablero", tipo: "captura", detalle: "postal del tablero" }).then(function (r) {
+            GQ.toast(r.ok ? "Postal lista: el instructor ve que la armaste. Descárgala y compártela." : "Postal lista. Descárgala y compártela.");
+          });
+        }
+      };
+      img.onerror = function () { GQ.toast("No pude leer esa imagen. Prueba con otra captura."); };
+      img.src = lector.result;
+    };
+    lector.readAsDataURL(file);
+  }
+  $("b-elegir").addEventListener("click", function () { archivo.click(); });
+  archivo.addEventListener("change", function () { if (archivo.files && archivo.files[0]) usar(archivo.files[0]); });
+  document.addEventListener("paste", function (e) {
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    for (var i = 0; i < items.length; i++) if (items[i].kind === "file" && /^image\//.test(items[i].type)) { e.preventDefault(); usar(items[i].getAsFile()); return; }
+  });
+  ["dragenter", "dragover"].forEach(function (t) { zona.addEventListener(t, function (e) { e.preventDefault(); zona.classList.add("encima"); }); });
+  ["dragleave", "drop"].forEach(function (t) { zona.addEventListener(t, function () { zona.classList.remove("encima"); }); });
+  zona.addEventListener("drop", function (e) { e.preventDefault(); var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) usar(f); });
+})();
+</script>
+</body>
+</html>

@@ -284,6 +284,7 @@ def escribir_escenas():
         (d / "escena.yaml").write_text("\n".join(y) + "\n", encoding="utf-8")
 
 
+# course.yaml lista las tres lecciones: gq-02 y gq-03 (lessons/ y live/) se escriben a mano y este script no las toca.
 def escribir_curso():
     (CURSO / "course.yaml").write_text(f"""id: {CURSO_ID}
 title: "GoldenQuerys con IA: genera reportes dinámicamente"
@@ -299,11 +300,11 @@ proyecto_final: >
 requisitos:
   - Una laptop con Chrome o Edge (todo corre en tu aula del LMS)
   - Ganas de preguntarle cosas a los datos; no hace falta saber SQL
-dedicacion: "1 sesión en vivo de 85 minutos"
+dedicacion: "Charla gratuita el 3 de noviembre y 2 sesiones en vivo de 1 hora: martes 10 y 17 de noviembre, de 6:30 a 7:30 pm"
 modules:
   - id: gq
     title: "GoldenQuerys · reportes dinámicos con IA"
-    lessons: [{LECCION}]
+    lessons: [{LECCION}, gq-02, gq-03]
 agenda: {{nombre: "GoldenQuerys con IA", grupo: "Grupo 1", area: datos, minutos: 85}}
 """, encoding="utf-8")
 

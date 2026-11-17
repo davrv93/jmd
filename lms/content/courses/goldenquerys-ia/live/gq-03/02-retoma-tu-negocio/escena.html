@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tu negocio y tus tres consultas</title>
+<!-- Escena del modo LIVE: GoldenQuerys con IA, sesión 2 (gq-03). Experiencia: retomar el negocio y las tres consultas
+     de la sesión 1 por uno de tres caminos: A (vino), B (se la perdió: kit + tres consultas contrastadas en un pedido)
+     y C (tiene una o dos). Los pedidos salen de ../../comun/gq3.js, igual que el panel de comandos (escena.yaml). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/gq.css">
+<link rel="stylesheet" href="../../comun/gq3.css">
+<style id="esc-propio">
+.b2 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.6vw; align-items: start; }
+.b2-col { display: grid; gap: 1.1vh; min-width: 0; align-content: start; }
+.b2 .k-pedido { max-height: 30vh; overflow-y: auto; }
+.b2-giros { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.2em, 1fr)); gap: .5em; }
+.b2-giro { font: inherit; color: inherit; text-align: left; cursor: pointer; background: var(--s1); border: 1px solid var(--line); border-left: .35em solid var(--c); border-radius: .8em; padding: .5em .75em; min-height: 44px; box-shadow: var(--card-shadow); touch-action: manipulation; transition: transform .15s ease-out; }
+.b2-giro:hover, .b2-giro:focus-visible { transform: translateY(-2px); outline: 2px solid var(--c); outline-offset: 2px; }
+.b2-giro b { display: block; font-size: .84em; }
+.b2-giro span { display: block; font-size: .6em; color: var(--muted); margin-top: .1em; }
+.b2-giro.ok { background: color-mix(in srgb, var(--c) 12%, var(--s1)); }
+.b2-giro.ok b::after { content: "  ✓ copiado"; color: var(--ok); font-size: .8em; }
+.b2-c { display: grid; gap: .45em; }
+.b2-falla { margin: 0; font-size: .72em; color: var(--muted); }
+.b2-falla code { font: 700 .95em var(--mono); color: var(--fg); background: var(--s2); padding: .1em .4em; border-radius: .35em; }
+@media (max-width: 760px) {
+  .b2 { grid-template-columns: 1fr; gap: 14px; }
+  .b2 .k-pedido { max-height: none; }
+}
+@media (prefers-reduced-motion: reduce) { .b2-giro { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">GoldenQuerys · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in" style="font-size:2em">Tu negocio y <em class="oro">tus tres consultas</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s;font-size:.95em">Elige tu camino, copia el pedido y pégalo en DeepSeek Harness (Ctrl+V). En cinco minutos todos tenemos tres consultas listas.</p>
+    </div>
+    <div class="b2">
+      <div class="b2-col a-in" style="--d:.2s">
+        <p class="k-et"><i>A</i>Viniste a la sesión 1</p>
+        <pre class="k-pedido" data-titulo="Retoma tu negocio" data-pedido="retoma"></pre>
+        <div class="k-pedido-pie">
+          <button class="k-btn oro" type="button" data-pedido-copiar="retoma" data-dsh>Copiar y abrir DeepSeek Harness</button>
+        </div>
+        <p class="k-et" style="margin-top:.5em"><i>B</i>Te perdiste la sesión 1: toca tu negocio</p>
+        <div class="b2-giros" id="giros"></div>
+        <p class="k-mini">El pedido baja el kit, arranca tus datos y deja tres consultas <b>contrastadas</b>. El «verificado» lo firmas tú cuando mires sus números.</p>
+      </div>
+      <div class="b2-col a-in" style="--d:.35s">
+        <div class="k-caja b2-c">
+          <p class="k-et"><i>C</i>Tienes una o dos consultas</p>
+          <p class="k-mini">La IA propone las que faltan, las prueba y las contrasta. Tú decides si se quedan.</p>
+          <div class="k-links"><button class="k-btn sec" type="button" data-pedido-copiar="completa" data-dsh>Copiar «completa mis tres»</button></div>
+        </div>
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--oro)">Antes de seguir, comprueba</p>
+          <ul class="k-check" data-check="gq03-negocio" data-listo="Listo: tu negocio responde y tienes tus tres. Pulsa «Lo logré» en el panel de la clase.">
+            <li><label><input type="checkbox"><span></span><em><code>curl -s localhost:8766/api/salud</code> dice <code>"ok": true</code></em></label></li>
+            <li><label><input type="checkbox"><span></span><em>La IA me mostró mis tres consultas, cada una con su número</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Sé cuáles ya tienen <code>-- Verificado:</code> y cuáles firmo hoy</em></label></li>
+          </ul>
+        </div>
+        <p class="b2-falla">¿No responde? En la terminal: <code>sh /trabajo/goldenquerys/arrancar.sh</code> <button class="k-btn sec" type="button" data-copiar-texto="sh /trabajo/goldenquerys/arrancar.sh" style="margin-left:.3em;min-height:36px;padding:.3em .8em;font-size:.9em">Copiar</button></p>
+        <div class="k-caja k-voto" data-voto="gq03-negocio" data-c="oro">
+          <p class="k-q" style="--c:var(--oro)">¿Con qué negocio trabajas hoy?</p>
+          <div class="k-ops">
+            <button data-op="botica">Botica</button>
+            <button data-op="polleria">Pollería</button>
+            <button data-op="ferreteria">Ferretería</button>
+            <button data-op="academia">Academia</button>
+            <button data-op="courier">Courier</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Con las tres casillas marcadas, pulsa «Lo logré»</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/gq3.js"></script>
+<script src="../../comun/gq.js"></script>
+<script>
+(function () {
+  "use strict";
+  var caja = document.getElementById("giros");
+  GQ3.NEGOCIOS.forEach(function (n) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "b2-giro"; b.style.setProperty("--c", n.c);
+    var t = document.createElement("b"); t.textContent = n.nom; var s = document.createElement("span"); s.textContent = n.txt;
+    b.appendChild(t); b.appendChild(s); caja.appendChild(b);
+    b.addEventListener("click", function () {
+      GQ.copiar(GQ3.PEDIDOS["nuevo-" + n.db]).then(function (ok) {
+        Array.prototype.forEach.call(caja.children, function (x) { x.classList.toggle("ok", ok && x === b); });
+        if (ok) { GQ.abrirDsh(); GQ.toast("Pedido de " + n.nom + " copiado: pégalo en DeepSeek Harness (Ctrl+V)."); }
+        else GQ.toast("No pude copiar: usa el panel de comandos de la clase.");
+      });
+      // de paso, cuenta su negocio en el voto de la clase
+      var v = document.querySelector('[data-voto="gq03-negocio"] button[data-op="' + n.db + '"]');
+      if (v && v.getAttribute("aria-pressed") !== "true") v.click();
+    });
+  });
+})();
+</script>
+</body>
+</html>

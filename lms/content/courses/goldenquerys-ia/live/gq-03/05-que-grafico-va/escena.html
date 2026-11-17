@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escena · ¿Qué gráfico va?</title>
+<link rel="icon" href="data:,">
+<!--
+  «¿Qué gráfico va?» · juego de la sesión 2 de GoldenQuerys, sobre el motor Arena JMD (docs/ARENA_JMD.md).
+  Cada alumno es un robot en el mismo patio. Las cartas traen una pregunta de oro con lo que devuelve su SQL
+  (cuántas filas y qué columnas): el alumno la lleva al gráfico que la responde (tarjeta, barras, línea o tabla).
+  Al acertar, un bono: ¿qué decisión permite? Un error vale 0 (nunca resta) y la lupa explica por qué. Los drones
+  de las notificaciones solo te hacen soltar la carta. La barra de la clase suma los puntos de todos. Al final:
+  tu título, la reflexión al muro (gq03-juego) y tu fotito; el resultado queda en esta pantalla para la fotito de
+  la escena de cierre (localStorage gq03-juego-ultimo).
+  Números reales de las bases del kit (materials/kit/goldenquerys/bases/*.sqlite). Los nombres van con iniciales y
+  los teléfonos tapados: son datos ficticios, pero se ven como de verdad.
+  ?demo=1 entra solo; ?sinred=1 fuerza la práctica local; ?fps=1 muestra los cuadros por segundo.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #14122b; overflow: hidden; }
+  .sin-motor { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; color: #f3f1ff; font: 500 16px/1.5 system-ui, sans-serif; }
+  .sin-motor b { display: block; font-size: 22px; color: #f2c14e; margin-bottom: 6px; }
+  @media (prefers-reduced-motion: reduce) { .sin-motor { transition: none; } }
+</style>
+</head>
+<body>
+<div id="juego"><div class="sin-motor"><div><b>Preparando el patio…</b>Si no aparece en unos segundos, recarga la escena.</div></div></div>
+<script src="../../arena/arena-jmd.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.ArenaJMD) {
+    document.getElementById("juego").innerHTML = '<div class="sin-motor"><div><b>El juego se está actualizando</b>Recarga la escena en un minuto. Si sigue igual, avísale al instructor.</div></div>';
+    return;
+  }
+
+  var NEG = {
+    botica: { n: "Botica", c: "#0b8a5f" }, polleria: { n: "Pollería", c: "#c2410c" }, ferreteria: { n: "Ferretería", c: "#475569" },
+    academia: { n: "Academia", c: "#5a49d6" }, courier: { n: "Courier", c: "#a4185c" },
+  };
+  var GRAF = {
+    kpi: { n: "tarjeta", c: "#c48709" }, barras: { n: "barras", c: "#2b6cb0" },
+    linea: { n: "línea", c: "#1f7a3e" }, tabla: { n: "tabla", c: "#8e3b8a" },
+  };
+
+  // ---------- la baraja: g = el gráfico que responde, f = lo que devuelve su SQL, d = decisiones (la 1.ª es la buena) ----------
+  var CARTAS = [
+    { neg: "botica", g: "kpi", q: "¿Cuánto vendimos en octubre de 2026?", f: ["1 fila", "ventas_soles: 8 595,76"],
+      x: "Una fila con un solo número: tarjeta grande. Ponle al lado con qué compararla (septiembre: S/ 7 404,90).",
+      d: ["Si baja del mes anterior, reviso precios y stock", "Ninguna: es solo para saber", "Cambiar el color del logo"] },
+    { neg: "polleria", g: "kpi", q: "¿Cuál fue el ticket promedio en salón en octubre?", f: ["1 fila", "ticket: 71,92 · pedidos: 199"],
+      x: "Un promedio es un solo número: tarjeta. En barras sería una barra solitaria que no compara nada.",
+      d: ["Si baja de S/ 70, ofrezco un combo para subirlo", "Contratar otro repartidor", "Ninguna: es solo para saber"] },
+    { neg: "ferreteria", g: "kpi", q: "¿Cuánto nos deben hoy los clientes a crédito?", f: ["1 fila", "saldo: 163 897,15 · facturas: 263"],
+      x: "El saldo por cobrar es un solo número: tarjeta. Quién debe, con su monto, ya es otra pregunta: tabla.",
+      d: ["Si pasa de S/ 150 000, freno el crédito nuevo hasta cobrar", "Comprar más cemento", "Ninguna: es solo para saber"] },
+    { neg: "academia", g: "kpi", q: "¿Cuántas cuotas vencidas siguen sin pagar?", f: ["1 fila", "cuotas: 723"],
+      x: "Un conteo es un solo número: tarjeta. Si vas a llamar a cada apoderado, eso ya es una tabla.",
+      d: ["Si pasan de 600, armo una campaña de cobranza esta semana", "Abrir otra sede", "Ninguna: es solo para saber"] },
+    { neg: "botica", g: "barras", q: "¿Qué sede vendió más en octubre de 2026?", f: ["4 filas · sede | soles", "SJL · 2 558,80", "Los Olivos · 2 143,60", "Surco · 1 965,96", "Lince · 1 927,40"],
+      x: "Pocas sedes con un número cada una: barras ordenadas que empiezan en cero. Se ve quién gana sin leer los números.",
+      d: ["Si una sede baja de S/ 2 000, reviso su horario", "Cerrar todas las sedes", "Ninguna: es solo para saber"] },
+    { neg: "polleria", g: "barras", q: "¿Qué día de la semana vendemos más?", f: ["7 filas · día | soles", "domingo · 218 091,10", "sábado · 174 458,00", "…", "martes · 76 010,20"],
+      x: "Siete días para comparar: barras. El domingo vende casi tres veces lo del martes.",
+      d: ["Si el martes vende menos de la mitad del domingo, lanzo una promo de martes", "Cerrar los domingos", "Ninguna: es solo para saber"] },
+    { neg: "courier", g: "barras", q: "¿Qué zona cumple menos el plazo de entrega?", f: ["8 filas · zona | % a tiempo", "Lima Norte · 78,9 %", "Callao · 80,8 %", "Lima Sur · 83,9 %", "…"],
+      x: "Ocho zonas con un porcentaje: barras ordenadas. La peor queda primero y salta a la vista.",
+      d: ["Si una zona baja del 80 %, refuerzo su ruta con otro repartidor", "Subir todos los precios", "Ninguna: es solo para saber"] },
+    { neg: "botica", g: "barras", q: "¿Con qué medio pagan más los clientes?", f: ["4 filas · medio | soles", "efectivo · 78 777,88", "Yape · 63 756,20", "tarjeta · 34 318,70", "Plin · 17 527,22"],
+      x: "Cuatro medios de pago para comparar: barras desde cero. En una torta, efectivo y Yape parecerían casi iguales.",
+      d: ["Si Yape alcanza al efectivo, pongo un segundo QR en caja", "Dejar de aceptar tarjeta", "Ninguna: es solo para saber"] },
+    { neg: "botica", g: "linea", q: "¿Las ventas suben o bajan mes a mes?", f: ["22 filas · mes | soles", "2026-07 · 11 634,12", "2026-08 · 9 439,28", "2026-09 · 7 404,90", "2026-10 · 8 595,76"],
+      x: "Fechas en orden: línea. Se ve que julio fue el pico y septiembre el bache.",
+      d: ["Si dos meses seguidos bajan, reviso qué cambió: precios, horario o competencia", "Cambiar el logo", "Ninguna: es solo para saber"] },
+    { neg: "ferreteria", g: "linea", q: "¿Cobramos más cada mes?", f: ["22 filas · mes | cobrado", "2026-07 · 177 623,53", "2026-08 · 180 852,30", "2026-09 · 199 205,23", "2026-10 · 212 308,69"],
+      x: "Meses en orden: línea. La cobranza sube cuatro meses seguidos.",
+      d: ["Si la cobranza cae un mes, llamo primero a los que más deben", "Despedir al cobrador", "Ninguna: es solo para saber"] },
+    { neg: "academia", g: "linea", q: "¿La nota de los simulacros mejora mes a mes?", f: ["22 filas · mes | nota", "2026-07 · 14,30", "2026-08 · 13,70", "2026-09 · 14,14", "2026-10 · 14,49"],
+      x: "Un promedio por mes, en orden: línea. Así ves si el ciclo va mejorando.",
+      d: ["Si baja dos meses seguidos, refuerzo los cursos con más errores", "Subir la pensión", "Ninguna: es solo para saber"] },
+    { neg: "courier", g: "linea", q: "¿Crecen los envíos mes a mes?", f: ["22 filas · mes | envíos", "2026-07 · 466", "2026-08 · 393", "2026-09 · 398", "2026-10 · 402"],
+      x: "Envíos por mes: línea. Después de julio se quedan cerca de 400.",
+      d: ["Si pasan de 450 al mes, contrato un repartidor más", "Cerrar la zona del Callao", "Ninguna: es solo para saber"] },
+    { neg: "academia", g: "tabla", q: "¿A qué apoderados llamo esta semana?", f: ["234 filas · alumno | teléfono | deuda", "Jessica R. T. · 960 8•• ••• · 4 160,00", "Karina Q. R. · 986 2•• ••• · 3 640,00", "…"],
+      x: "Vas a llamar uno por uno: nombre, teléfono y monto en la misma fila. Eso es una tabla.",
+      d: ["Llamar primero a los de mayor deuda y anotar la fecha de pago", "Hacer un gráfico de torta", "Ninguna: es solo para saber"] },
+    { neg: "ferreteria", g: "tabla", q: "¿Quién nos debe más y desde hace cuántos días?", f: ["135 filas · cliente | deuda | días", "Elena G. N. · 6 705,99 · 536", "Valeria A. C. · 6 339,08 · 588", "…"],
+      x: "Para cobrar necesitas cada cliente con su monto y sus días: tabla ordenada por deuda.",
+      d: ["Si pasa de 90 días, le pido un abono antes de venderle más", "Bajar todos los precios", "Ninguna: es solo para saber"] },
+    { neg: "botica", g: "tabla", q: "¿Qué clientes fieles ya no vuelven, para escribirles?", f: ["51 filas · cliente | distrito | última compra", "Kiara T. T. · Puente Piedra · 23-03-2026", "Piero P. R. · Comas · 21-03-2026", "…"],
+      x: "Vas a escribirle a cada uno: nombre, distrito y última compra en una fila. Tabla.",
+      d: ["Mandarles un cupón por WhatsApp esta semana", "Cerrar la botica", "Ninguna: es solo para saber"] },
+    { neg: "courier", g: "tabla", q: "¿Qué envíos siguen en ruta, con su código y destino?", f: ["20 filas · código | destino | zona", "GQ2610008472 · Huancayo", "GQ2610008483 · Villa María del Triunfo", "…"],
+      x: "Hay que rastrear cada envío: código, destino y zona en la misma fila. Tabla.",
+      d: ["Llamar hoy a la zona de cada envío atrasado", "Hacer una línea por mes", "Ninguna: es solo para saber"] },
+  ];
+  var MANO = 9; // cartas en el patio a la vez
+
+  // ---------- el mapa: 1800 × 1100, un gráfico en cada esquina ----------
+  var ANCHO = 1800, ALTO = 1100;
+  var ZONAS = [
+    { id: "kpi", x: 50, y: 50, w: 300, h: 240, nombre: "Tarjeta · un número", color: GRAF.kpi.c, colorTexto: "#1c1300" },
+    { id: "barras", x: 1450, y: 50, w: 300, h: 240, nombre: "Barras · comparar", color: GRAF.barras.c },
+    { id: "linea", x: 50, y: 810, w: 300, h: 240, nombre: "Línea · en el tiempo", color: GRAF.linea.c },
+    { id: "tabla", x: 1450, y: 810, w: 300, h: 240, nombre: "Tabla · para actuar", color: GRAF.tabla.c },
+  ];
+  var CAMPO = { x: 390, y: 70, w: 1020, h: 960 }; // donde aparecen las cartas
+
+  function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function rgba(hex, a) { var n = parseInt(hex.slice(1), 16); return "rgba(" + (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")"; }
+  // Cada zona es una pizarra con el dibujo de su gráfico; al llegar con una carta, el borde late.
+  function pintarZona(g, z, t, resalta) {
+    var pulso = resalta ? (Math.sin(t * 5) + 1) / 2 : 0;
+    g.save();
+    g.fillStyle = rgba(z.color, .18 + pulso * .14); rr(g, z.x - 10, z.y - 10, z.w + 20, z.h + 20, 26); g.fill();
+    g.fillStyle = "#fffdf6"; g.strokeStyle = z.color; g.lineWidth = resalta ? 7 : 5; rr(g, z.x, z.y, z.w, z.h, 20); g.fill(); g.stroke();
+    var cx = z.x + 34, cy = z.y + 40, w = z.w - 68, h = z.h - 96;
+    g.strokeStyle = z.color; g.fillStyle = z.color; g.lineCap = "round"; g.lineJoin = "round";
+    if (z.id === "kpi") {
+      g.fillStyle = rgba(z.color, .12); rr(g, cx, cy, w, h, 14); g.fill();
+      g.fillStyle = "#6b4a00"; g.font = "700 22px system-ui, sans-serif"; g.textAlign = "left"; g.textBaseline = "alphabetic"; g.fillText("Ventas del mes", cx + 18, cy + 34);
+      g.fillStyle = z.color; g.font = "800 50px system-ui, sans-serif"; g.fillText("S/ 8 596", cx + 16, cy + 92);
+    } else if (z.id === "barras") {
+      [1, .82, .64, .45].forEach(function (k, i) { g.globalAlpha = i ? .7 : 1; rr(g, cx, cy + i * 34, w * k, 24, 6); g.fill(); });
+      g.globalAlpha = 1; g.lineWidth = 3; g.beginPath(); g.moveTo(cx - 2, cy - 6); g.lineTo(cx - 2, cy + 136); g.stroke();
+    } else if (z.id === "linea") {
+      g.lineWidth = 3; g.globalAlpha = .4; g.beginPath(); g.moveTo(cx, cy + h); g.lineTo(cx + w, cy + h); g.stroke(); g.globalAlpha = 1;
+      g.lineWidth = 7; g.beginPath();
+      [[0, .7], [.15, .55], [.3, .62], [.45, .4], [.6, .45], [.75, .18], [.9, .3], [1, .22]].forEach(function (p, i) { var px = cx + p[0] * w, py = cy + p[1] * h; if (i) g.lineTo(px, py); else g.moveTo(px, py); });
+      g.stroke();
+    } else {
+      for (var r = 0; r < 4; r++) for (var c = 0; c < 3; c++) {
+        g.globalAlpha = r ? .35 : .85; rr(g, cx + c * (w / 3), cy + r * 33, w / 3 - 10, 22, 5); g.fill();
+      }
+      g.globalAlpha = 1;
+    }
+    g.restore();
+  }
+
+  // ---------- mi ronda ----------
+  var mio = { justos: 0, porGraf: {}, errados: {} };
+  function cartaDe(ob) { return CARTAS[ob.carta]; }
+  function decisiones(k) { // la buena rota de lugar según la carta, para que no siempre sea la primera
+    var d = CARTAS[k].d, r = k % 3, op = d.slice(r).concat(d.slice(0, r));
+    return { opciones: op, correcta: (3 - r) % 3 };
+  }
+  function guardarResultado(r) { try { localStorage.setItem("gq03-juego-ultimo", JSON.stringify(r)); } catch (e) {} }
+
+  var juego = ArenaJMD.crear({
+    raiz: "#juego",
+    titulo: "¿Qué gráfico va?",
+    subtitulo: "Cada pregunta de oro trae lo que devuelve su SQL. Llévala al gráfico que la responde.",
+    curso: "GoldenQuerys con IA",
+    sesion: "Sesión 2 · El tablero dinámico y la decisión",
+    fecha: "Martes 17 de noviembre de 2026",
+    hashtag: "#GoldenQuerys",
+    duracion: 180, duraciones: [180, 300], duracionPractica: 120,
+    mundo: { ancho: ANCHO, alto: ALTO, tema: "patio" },
+    jugador: { accesorio: "gorra" },
+    salida: { x: 800, y: 470, w: 200, h: 160 },
+    reglas: [
+      "Pasa sobre una carta: trae una pregunta y lo que devuelve su SQL.",
+      "Llévala a su gráfico: tarjeta, barras, línea o tabla.",
+      "Al acertar, elige la decisión que permite (+5). Errar no resta: la lupa te enseña.",
+    ],
+    anuncio: "al tablero",
+    muros: [
+      { x: 560, y: 300, w: 170, h: 90 }, { x: 1070, y: 300, w: 170, h: 90 },
+      { x: 560, y: 710, w: 170, h: 90 }, { x: 1070, y: 710, w: 170, h: 90 },
+    ],
+    zonas: ZONAS.map(function (z) { return Object.assign({ pintar: pintarZona }, z); }),
+    peligros: [
+      { tipo: "dron", nombre: "la notificación", ruta: [[420, 550], [1380, 550]], vel: 140, radio: 30,
+        aviso: "¡Te distrajo una notificación y soltaste la carta! Volvió a su lugar.", avisoSinCarga: "¡Cuidado con el dron de las notificaciones!" },
+      { tipo: "dron", nombre: "la notificación", ruta: [[900, 120], [900, 980]], vel: 105, radio: 30,
+        aviso: "¡Otra notificación! La carta volvió a su lugar: búscala otra vez.", avisoSinCarga: "Mira el dron antes de cruzar." },
+    ],
+    decor: [
+      { tipo: "planta", x: 420, y: 90 }, { tipo: "planta", x: 1380, y: 90 }, { tipo: "planta", x: 420, y: 1010 }, { tipo: "planta", x: 1380, y: 1010 },
+      { tipo: "cristal", x: 900, y: 420, color: "#f2c14e", s: .9 },
+      { tipo: "texto", x: 900, y: 690, texto: "pregunta → gráfico", px: 30, color: "rgba(90,73,214,.22)" },
+    ],
+    objetos: {
+      cantidad: MANO, prefijo: "carta",
+      crear: function (i, v, rnd, M) {
+        var base = (juego ? juego.ronda().semilla : 0) % CARTAS.length;
+        var k = (i * 7 + v * 5 + base) % CARTAS.length;
+        // cada carta tiene su celda (3 × 3) dentro del campo: así sus rótulos no se enciman
+        var celda = { x: CAMPO.x + (i % 3) * CAMPO.w / 3 + 20, y: CAMPO.y + Math.floor(i / 3) % 3 * CAMPO.h / 3 + 20, w: CAMPO.w / 3 - 40, h: CAMPO.h / 3 - 40 };
+        var p = M.lugarLibre(rnd, 40, celda), c = CARTAS[k];
+        return { x: p.x, y: p.y, forma: "carta", color: NEG[c.neg].c, carta: k, texto: c.q.length > 18 ? c.q.slice(0, 17) + "…" : c.q };
+      },
+    },
+    tarjeta: function (ob) {
+      var c = cartaDe(ob), n = NEG[c.neg];
+      return { etiqueta: n.n, color: n.c, titulo: c.q, destacadoEtiqueta: "Su SQL devuelve", destacado: c.f[0], lineas: c.f.slice(1),
+        pie: "Tarjeta y barras, arriba; línea y tabla, abajo. Espacio o «Soltar» la deja." };
+    },
+    entregar: function (ob, zona) {
+      var c = cartaDe(ob), ok = zona.id === c.g;
+      if (ok) {
+        mio.justos++; mio.porGraf[c.g] = (mio.porGraf[c.g] || 0) + 1;
+        var dd = decisiones(ob.carta);
+        return { ok: true, puntos: 10, titulo: "¡Va en " + GRAF[c.g].n + "! +10", explicacion: c.x, feed: "puso su pregunta en " + GRAF[c.g].n,
+          bonus: { pregunta: "Bono: ¿qué decisión permite este gráfico?", opciones: dd.opciones, correcta: dd.correcta, puntos: 5, segundos: 14,
+            explicacion: "Un gráfico sirve si cambia lo que haces: «" + c.d[0] + "»." } };
+      }
+      mio.errados[c.g] = (mio.errados[c.g] || 0) + 1;
+      return { ok: false, puntos: 0, titulo: "Esa iba en " + GRAF[c.g].n, explicacion: c.x, real: "Mira la forma: " + c.f[0] + ".", feed: "aprendió dónde va una " + GRAF[c.g].n };
+    },
+    meta: { contador: "tablero", texto: "Tablero de la clase", unidad: "pts", objetivo: function (n) { return Math.max(120, n * 40); }, logro: "el tablero de la clase está completo" },
+    reflexion: { clave: "gq03-juego", pregunta: "¿Cómo eliges el gráfico de una pregunta?", placeholder: "Primero miro…", porDefecto: "Primero miro la forma del resultado; después elijo el gráfico." },
+    alRonda: function () { mio = { justos: 0, porGraf: {}, errados: {} }; },
+    resultado: function (s) {
+      var pts = juego.puntos, total = s.entregas;
+      var titulo = mio.justos >= 4 && s.bonus >= 3 ? "Del gráfico a la decisión" : mio.justos >= 5 && s.fallos <= 1 ? "Ojo de analista" : mio.justos >= 2 ? "Cada pregunta, su gráfico" : total ? "Primer tablero" : "De paseo por el patio";
+      var peor = "", n = 0;
+      Object.keys(mio.errados).forEach(function (k) { if (mio.errados[k] > n) { n = mio.errados[k]; peor = k; } });
+      guardarResultado({ pts: pts, titulo: titulo, justos: mio.justos, total: total });
+      return { etiqueta: "Mi ronda en el tablero", titulo: titulo, resultado: pts + " puntos",
+        detalle: mio.justos + " gráficos justos de " + total + " · " + s.bonus + " decisiones" + (peor ? " · repasar: " + GRAF[peor].n : "") };
+    },
+  });
+})();
+</script>
+</body>
+</html>

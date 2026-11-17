@@ -1,4 +1,4 @@
-// gq.js · kit de las escenas LIVE de GoldenQuerys (gq-02 en adelante). Script clásico, sin módulos:
+// gq.js · kit de las escenas LIVE de GoldenQuerys (gq-02 y gq-03). Script clásico, sin módulos:
 //   <link rel="stylesheet" href="../../comun/escena.css">
 //   <link rel="stylesheet" href="../../comun/gq.css">
 //   <script src="../../comun/gq.js"></script>            (al final del body)
@@ -24,9 +24,16 @@
   var ESCENA = M[2] || "";
   var BASE = "/api/v1/live/" + encodeURIComponent(LECCION);
   var CURSO = "GoldenQuerys con IA · reportes dinámicos";
-  var CLASE = "Sesión 1 · Tus tres preguntas de oro";
-  var FECHA = "Martes 10 de noviembre de 2026";
-  var PFX = "gq02-";
+  // Lo que cambia por sesión: el rótulo y la fecha de la fotito, el prefijo de lo que se guarda en esta pantalla
+  // y la frase de la fotito cuando el alumno no escribió la suya. Fuera de una ruta conocida vale la sesión 1.
+  var SESIONES = {
+    "gq-02": { clase: "Sesión 1 · Tus tres preguntas de oro", fecha: "Martes 10 de noviembre de 2026", pfx: "gq02-", frase: "Antes de creerle a un número, reviso su SQL." },
+    "gq-03": { clase: "Sesión 2 · El tablero dinámico y la decisión", fecha: "Martes 17 de noviembre de 2026", pfx: "gq03-", frase: "Cada número de mi tablero termina en una decisión." },
+  };
+  var SES = SESIONES[LECCION] || SESIONES["gq-02"];
+  var CLASE = SES.clase;
+  var FECHA = SES.fecha;
+  var PFX = SES.pfx;
 
   // ---------- tema del LMS (?tema=dark|light) ----------
   try {
@@ -393,7 +400,7 @@
     ctx.textAlign = "center";
     var refl = String(d.reflexion || "").trim();
     ctx.font = "italic 500 37px " + FUENTE;
-    var ls = envolver(ctx, refl ? "«" + refl + "»" : "«Antes de creerle a un número, reviso su SQL.»", W - 250, 4);
+    var ls = envolver(ctx, "«" + (refl || SES.frase) + "»", W - 250, 4);
     var y0 = 1112 - (ls.length - 1) * 24;
     ctx.fillStyle = "#f6f2e4"; ls.forEach(function (l, j) { ctx.fillText(l, W / 2, y0 + j * 48); });
     // pie
