@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Entradas sin validar</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 1 (sc-01). Experiencia: dos simuladores DEFENSIVOS.
+     1) Inyección SQL: una tabla de tres usuarios inventados que vive en este archivo y un evaluador de juguete del
+        WHERE (comparaciones, AND, OR, paréntesis y comentarios). A la izquierda la consulta concatenada; a la derecha
+        la parametrizada. No hay base de datos ni red: todo es JavaScript sobre el arreglo USUARIOS.
+     2) XSS: lo que escribe el alumno se analiza con DOMParser (documento inerte: no ejecuta scripts ni carga
+        imágenes) y se vuelve a dibujar solo con etiquetas de formato, sin atributos. Si traía un script o un
+        manejador, se MUESTRA como texto lo que el navegador habría ejecutado. Nada de lo escrito se ejecuta.
+     Mapeo comprobado en owasp.org/Top10/2025 (A05 Injection): CWE-89, CWE-79 y CWE-20. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b6-cab { display: flex; flex-wrap: wrap; gap: .6em 1.2em; align-items: center; justify-content: space-between; }
+.b6-ent { display: grid; gap: .6em; }
+.b6-tabla { width: 100%; border-collapse: collapse; font: 600 .68em/1.3 var(--mono); }
+.b6-tabla th, .b6-tabla td { text-align: left; padding: .3em .6em; border-bottom: 1px solid var(--line); }
+.b6-tabla th { color: var(--muted); font-weight: 700; }
+.b6-arr { display: grid; grid-template-columns: 1.3fr .7fr; gap: 1.4vw; align-items: start; }
+.b6-pag { background: #ffffff; color: #1a1d23; border: 1px solid #d5d9e0; border-radius: .45em; padding: .6em .75em; font-size: .72em; line-height: 1.4; min-height: 5.5em; overflow-wrap: anywhere; }
+.b6-pag h4 { margin: 0 0 .4em; font-size: .9em; color: #5b6270; font-weight: 700; }
+.sc-lado .b6-pag .com { margin: 0 0 .3em; font-size: 1em; }
+.b6-pag .com > b { color: #0b5d6b; margin-right: .3em; }
+.b6-pag .rec { display: inline-block; font: 700 .85em var(--mono); padding: 0 .35em; border-radius: .25em; background: #e9edf0; color: #4f5d66; }
+.b6-pag h1, .b6-pag h2, .b6-pag h3 { display: inline; margin: 0; font-size: 1.5em; line-height: 1.2; }
+.b6-retos { display: flex; flex-wrap: wrap; gap: .5em 1em; align-items: center; font-size: .74em; }
+.b6-retos .sc-tag { font-size: .95em; }
+.k-q code { font: 700 .95em var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .3em; padding: .05em .3em; }
+.b6-reto { display: inline-flex; gap: .5em; align-items: center; padding: .4em .7em; border-radius: .45em; background: var(--s2); border: 1px solid var(--line); color: var(--muted); font-weight: 700; }
+.b6-reto::before { content: ""; width: .9em; height: .9em; border-radius: 2px; border: 2px solid var(--line2); }
+.b6-reto.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: var(--ok-bg); }
+.b6-reto.ok::before { background: var(--ok); border-color: var(--ok); }
+@media (max-width: 760px) { .b6-arr { grid-template-columns: 1fr; gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { .b6-reto { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Seguridad con IA · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="b6-cab">
+      <h1 class="esc-titulo a-in">Lo que escribe el usuario <em>no es código</em>… hasta que lo pegas</h1>
+      <div class="k-seg" data-seg="sim" role="group" aria-label="Simulador">
+        <button type="button" data-v="sql" aria-pressed="true">1 · Inyección SQL</button>
+        <button type="button" data-v="xss" aria-pressed="false">2 · XSS</button>
+      </div>
+    </div>
+
+    <!-- ============ 1 · Inyección SQL ============ -->
+    <section class="k-pila" id="sim-sql" aria-label="Simulador de inyección SQL">
+      <div class="b6-arr">
+        <div class="k-caja b6-ent">
+          <p class="k-q"><span>Un login de mentira. Tu cuenta es <code>ana</code> y tu clave, <code>mango-42</code>.</span></p>
+          <div class="sc-campos">
+            <label class="sc-campo" for="u">Usuario<input id="u" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="60"></label>
+            <label class="sc-campo" for="c">Clave (visible, para aprender)<input id="c" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="60"></label>
+          </div>
+          <div class="sc-chips" id="chips-sql">
+            <span class="et">Prueba con:</span>
+            <button type="button" data-u="ana" data-c="mango-42">Ana con su clave</button>
+            <button type="button" data-u="ana" data-c="1234">Clave equivocada</button>
+            <button type="button" data-u="ana" data-c="' OR '1'='1">Una comilla en la clave</button>
+          </div>
+        </div>
+        <div class="k-caja">
+          <p class="k-q"><span>La tabla <code>usuarios</code> (inventada, vive en esta página)</span></p>
+          <table class="b6-tabla">
+            <thead><tr><th>id</th><th>usuario</th><th>clave</th><th>rol</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>admin</td><td>••••••</td><td>administrador</td></tr>
+              <tr><td>2</td><td>ana</td><td>mango-42</td><td>cliente</td></tr>
+              <tr><td>3</td><td>luis</td><td>••••••</td><td>cliente</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="sc-par">
+        <div class="sc-lado mal">
+          <h3><span>Vulnerable</span> La consulta se arma pegando texto</h3>
+          <pre class="sc-sal"><span class="c">// así lo escribió el asistente</span>
+$sql = "… WHERE usuario = '$usuario' AND clave = '$clave'";</pre>
+          <p>Lo que le llega a la base de datos:</p>
+          <pre class="sc-sal" id="sql-mal"></pre>
+          <p class="sc-ver neutro" id="ver-sql-mal" aria-live="polite"></p>
+        </div>
+        <div class="sc-lado bien">
+          <h3><span>Corregido</span> Consulta parametrizada</h3>
+          <pre class="sc-sal"><span class="c">// la consulta y los datos viajan por separado</span>
+$st = $db->prepare("… WHERE usuario = ? AND clave = ?");</pre>
+          <p>Lo que le llega a la base de datos:</p>
+          <pre class="sc-sal" id="sql-bien"></pre>
+          <p class="sc-ver neutro" id="ver-sql-bien" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 2 · XSS ============ -->
+    <section class="k-pila" id="sim-xss" aria-label="Simulador de XSS" hidden>
+      <div class="k-caja b6-ent">
+        <p class="k-q">Los comentarios de una tienda de mentira. Escribe el tuyo.</p>
+        <label class="sc-campo" for="x">Comentario<input id="x" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="200"></label>
+        <div class="sc-chips" id="chips-xss">
+          <span class="et">Prueba con:</span>
+          <button type="button" data-x="Llegó rápido, gracias.">Un comentario normal</button>
+          <button type="button" data-x="&lt;h2&gt;OFERTA&lt;/h2&gt; visita mi tienda">Con formato</button>
+          <button type="button" data-x="&lt;script&gt;alert(&quot;hola&quot;)&lt;/script&gt;">Con un script</button>
+        </div>
+      </div>
+      <div class="sc-par">
+        <div class="sc-lado mal">
+          <h3><span>Vulnerable</span> El texto se pinta como HTML</h3>
+          <pre class="sc-sal"><span class="c">// PHP</span>
+echo "&lt;p&gt;" . $comentario . "&lt;/p&gt;";
+<span class="c">// JavaScript</span>
+caja.innerHTML = comentario;</pre>
+          <p>Lo que vería quien abra la página:</p>
+          <div class="b6-pag"><h4>Comentarios</h4><p class="com"><b>Rosa:</b>Todo bien, lo recomiendo.</p><p class="com"><b>Tú:</b><span id="pag-mal"></span></p></div>
+          <p class="sc-ver neutro" id="ver-xss-mal" aria-live="polite"></p>
+        </div>
+        <div class="sc-lado bien">
+          <h3><span>Corregido</span> El texto se escapa al pintarlo</h3>
+          <pre class="sc-sal"><span class="c">// PHP</span>
+echo "&lt;p&gt;" . htmlspecialchars($comentario, ENT_QUOTES, 'UTF-8') . "&lt;/p&gt;";
+<span class="c">// JavaScript</span>
+caja.textContent = comentario;</pre>
+          <p>Lo que vería quien abra la página:</p>
+          <div class="b6-pag"><h4>Comentarios</h4><p class="com"><b>Rosa:</b>Todo bien, lo recomiendo.</p><p class="com"><b>Tú:</b><span id="pag-bien"></span></p></div>
+          <p class="sc-ver neutro" id="ver-xss-bien" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <div class="b6-retos" aria-live="polite">
+      <span class="b6-reto" id="reto1">Reto 1: entra sin saber la clave (y prueba lo mismo en el lado corregido)</span>
+      <span class="b6-reto" id="reto2">Reto 2: logra que el lado vulnerable «ejecute» un script</span>
+      <span id="tag"></span>
+    </div>
+    <p class="k-nota"><b>La idea que te llevas:</b> validar el formato y el largo ayuda (CWE-20), pero el arreglo de fondo es no mezclar datos con código: consulta parametrizada al guardar o buscar, y escape al pintar. <b>Estos datos son inventados y viven en esta página.</b> En un sistema real esto se prueba solo si es tuyo o con permiso escrito.</p>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Con los dos retos, pulsa «Lo logré». Aquí nada se ejecuta: el simulador analiza tu texto y te muestra qué pasaría.</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = SC.$, esc = SC.esc;
+
+  // ================= 1 · Inyección SQL =================
+  var USUARIOS = [
+    { id: 1, usuario: "admin", clave: "Raiz-Falsa-2026", rol: "administrador" },
+    { id: 2, usuario: "ana", clave: "mango-42", rol: "cliente" },
+    { id: 3, usuario: "luis", clave: "cometa-17", rol: "cliente" },
+  ];
+
+  // Parte el texto del WHERE en fichas. Devuelve null si una comilla queda sin cerrar o hay algo que no entiende.
+  function fichas(s) {
+    var out = [], i = 0, m;
+    while (i < s.length) {
+      var ch = s[i];
+      if (/\s/.test(ch)) { i++; continue; }
+      if (ch === "#" || (ch === "-" && s[i + 1] === "-" && (i + 2 >= s.length || /\s/.test(s[i + 2])))) break; // comentario: se ignora el resto
+      if (ch === "'") {
+        var j = i + 1, v = "";
+        for (;;) {
+          if (j >= s.length) return null;
+          if (s[j] === "'") { if (s[j + 1] === "'") { v += "'"; j += 2; continue; } break; }
+          v += s[j++];
+        }
+        out.push({ t: "txt", v: v }); i = j + 1; continue;
+      }
+      if ((m = /^[0-9]+/.exec(s.slice(i)))) { out.push({ t: "num", v: +m[0] }); i += m[0].length; continue; }
+      if ((m = /^[A-Za-z_][A-Za-z0-9_]*/.exec(s.slice(i)))) {
+        var w = m[0].toUpperCase();
+        out.push(/^(AND|OR|NOT|TRUE|FALSE)$/.test(w) ? { t: w } : { t: "col", v: m[0].toLowerCase() }); i += m[0].length; continue;
+      }
+      if (ch === "=" || ch === "(" || ch === ")") { out.push({ t: ch }); i++; continue; }
+      if (s.slice(i, i + 2) === "!=" || s.slice(i, i + 2) === "<>") { out.push({ t: "!=" }); i += 2; continue; }
+      return null;
+    }
+    return out;
+  }
+  // Evalúa el WHERE para una fila: O → Y → NO → comparación. Lanza si la sintaxis no cierra.
+  function cumple(tk, fila) {
+    var p = 0;
+    function valor() {
+      var k = tk[p++];
+      if (!k) throw new Error("sintaxis");
+      if (k.t === "txt" || k.t === "num") return k.v;
+      if (k.t === "TRUE") return 1;
+      if (k.t === "FALSE") return 0;
+      if (k.t === "col") { if (!(k.v in fila)) throw new Error("columna"); return fila[k.v]; }
+      throw new Error("sintaxis");
+    }
+    function verdad(v) { return typeof v === "number" ? v !== 0 : (parseFloat(v) || 0) !== 0; }
+    function comp() {
+      if (tk[p] && tk[p].t === "(") { p++; var r = o(); if (!tk[p] || tk[p].t !== ")") throw new Error("sintaxis"); p++; return r; }
+      var a = valor();
+      if (tk[p] && (tk[p].t === "=" || tk[p].t === "!=")) { var op = tk[p++].t, b = valor(), ig = String(a).toLowerCase() === String(b).toLowerCase(); return op === "=" ? ig : !ig; }
+      return verdad(a);
+    }
+    function no() { if (tk[p] && tk[p].t === "NOT") { p++; return !no(); } return comp(); }
+    function y() { var r = no(); while (tk[p] && tk[p].t === "AND") { p++; var d = no(); r = r && d; } return r; }
+    function o() { var r = y(); while (tk[p] && tk[p].t === "OR") { p++; var d = y(); r = r || d; } return r; }
+    var res = o();
+    if (p < tk.length) throw new Error("sintaxis");
+    return res;
+  }
+  function consultaConcatenada(u, c) {
+    var where = "usuario = '" + u + "' AND clave = '" + c + "'";
+    var tk = fichas(where);
+    if (!tk) return { error: true };
+    try { return { filas: USUARIOS.filter(function (f) { return cumple(tk, f); }) }; } catch (e) { return { error: true }; }
+  }
+  function consultaParametrizada(u, c) {
+    return { filas: USUARIOS.filter(function (f) { return f.usuario === u.toLowerCase() && f.clave === c; }) };
+  }
+
+  var retos = SC.leer("retos", {}) || {};
+  function pintarRetos() {
+    $("#reto1").classList.toggle("ok", !!retos.sql); $("#reto2").classList.toggle("ok", !!retos.xss);
+    if (retos.sql && retos.xss && !retos.avisado) { retos.avisado = 1; SC.guardar("retos", retos); SC.toast("Dos de dos. Pulsa «Lo logré» en el panel de la clase."); }
+  }
+  function veredicto(el, clase, titulo, detalle) {
+    el.className = "sc-ver " + clase; el.textContent = titulo;
+    if (detalle) el.appendChild(SC.el("small", "", detalle));
+  }
+
+  function pintarSql() {
+    var u = $("#u").value, c = $("#c").value;
+    $("#sql-mal").innerHTML = "SELECT * FROM usuarios\nWHERE usuario = '<mark class=\"dato\">" + esc(u) + "</mark>' AND clave = '<mark class=\"dato\">" + esc(c) + "</mark>'";
+    $("#sql-bien").innerHTML = "SELECT * FROM usuarios\nWHERE usuario = ? AND clave = ?\n<span class=\"c\">-- datos, aparte:</span> [ <mark class=\"ok\">" + esc(JSON.stringify(u)) + "</mark>, <mark class=\"ok\">" + esc(JSON.stringify(c)) + "</mark> ]";
+    var mal = consultaConcatenada(u, c), bien = consultaParametrizada(u, c);
+    var entraBien = bien.filas.length === 1;
+    if (!u && !c) {
+      veredicto($("#ver-sql-mal"), "neutro", "Escribe un usuario y una clave, o toca un ejemplo.");
+      veredicto($("#ver-sql-bien"), "neutro", "Aquí verás lo mismo, con la consulta corregida.");
+      return;
+    }
+    if (mal.error) veredicto($("#ver-sql-mal"), "mal", "La base rechazó la consulta: error de sintaxis.", "No entró, pero mira lo que ya sabe quien escribió eso: su texto llega a la consulta sin tratar. Una comilla suelta rompió el SQL.");
+    else if (!mal.filas.length) veredicto($("#ver-sql-mal"), "neutro", "0 filas. No entra.", "Usuario o clave no coinciden. Hasta aquí, todo parece normal.");
+    else if (entraBien && mal.filas.length === 1 && mal.filas[0].id === bien.filas[0].id) veredicto($("#ver-sql-mal"), "neutro", "1 fila. Entra como " + mal.filas[0].usuario + ".", "Era su usuario y su clave: todo normal. Por eso este fallo pasa las pruebas.");
+    else {
+      veredicto($("#ver-sql-mal"), "mal", "ENTRÓ como " + mal.filas[0].usuario + " (" + mal.filas[0].rol + ") sin saber su clave.",
+        "La consulta devolvió " + mal.filas.length + (mal.filas.length === 1 ? " fila" : " filas") + " y el código tomó la primera. El texto de la clave dejó de ser un dato: ahora es parte del SQL.");
+      if (!retos.sql) { retos.sql = 1; SC.guardar("retos", retos); }
+    }
+    if (entraBien) veredicto($("#ver-sql-bien"), "bien", "1 fila. Entra como " + bien.filas[0].usuario + ".", "Con su usuario y su clave, como debe ser.");
+    else veredicto($("#ver-sql-bien"), "bien", "0 filas. No entra.", /['"\-#;]/.test(u + c) ? "La comilla es un carácter más del dato. La base busca una clave que sea exactamente ese texto, y no existe." : "Usuario o clave no coinciden.");
+    pintarRetos();
+  }
+  ["#u", "#c"].forEach(function (s) { $(s).addEventListener("input", pintarSql); });
+  $("#chips-sql").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    $("#u").value = b.getAttribute("data-u"); $("#c").value = b.getAttribute("data-c"); pintarSql();
+  });
+
+  // ================= 2 · XSS =================
+  var FORMATO = { B: 1, I: 1, U: 1, S: 1, EM: 1, STRONG: 1, SMALL: 1, H1: 1, H2: 1, H3: 1, P: 1, BR: 1, SPAN: 1, UL: 1, OL: 1, LI: 1, A: 1, CODE: 1 };
+  // Recorre el árbol INERTE que devuelve DOMParser y arma una copia segura. Lo peligroso no se copia: se anota.
+  function copiaSegura(nodo, destino, peligros) {
+    Array.prototype.forEach.call(nodo.childNodes, function (n) {
+      if (n.nodeType === 3) { destino.appendChild(document.createTextNode(n.textContent)); return; }
+      if (n.nodeType !== 1) return;
+      var tag = n.tagName.toUpperCase();
+      Array.prototype.forEach.call(n.attributes, function (a) {
+        if (/^on/i.test(a.name)) peligros.push(a.value || a.name);
+        else if (/^\s*javascript:/i.test(a.value)) peligros.push(a.value.replace(/^\s*javascript:/i, ""));
+      });
+      if (tag === "SCRIPT") { peligros.push(n.textContent.trim() || "(un script traído de otro sitio)"); return; }
+      if (tag === "STYLE") return;
+      if (FORMATO[tag]) { var c = document.createElement(tag === "P" ? "span" : tag.toLowerCase()); destino.appendChild(c); copiaSegura(n, c, peligros); return; }
+      destino.appendChild(SC.el("span", "rec", "<" + tag.toLowerCase() + ">"));
+      copiaSegura(n, destino, peligros);
+    });
+  }
+  function pintarXss() {
+    var t = $("#x").value, mal = $("#pag-mal"), bien = $("#pag-bien");
+    mal.textContent = ""; bien.textContent = t;
+    if (!t) {
+      veredicto($("#ver-xss-mal"), "neutro", "Escribe un comentario o toca un ejemplo.");
+      veredicto($("#ver-xss-bien"), "neutro", "Aquí verás el mismo texto, escapado.");
+      return;
+    }
+    var peligros = [], hayEtiquetas = false;
+    try {
+      var doc = new DOMParser().parseFromString("<body>" + t + "</body>", "text/html");
+      hayEtiquetas = doc.body.querySelector("*") !== null || (doc.head && doc.head.querySelector("script, style") !== null);
+      if (doc.head) copiaSegura(doc.head, mal, peligros);
+      copiaSegura(doc.body, mal, peligros);
+    } catch (e) { mal.textContent = t; }
+    if (peligros.length) {
+      veredicto($("#ver-xss-mal"), "mal", "El navegador habría EJECUTADO esto, con la sesión de quien abra la página:", peligros.join(" · ").slice(0, 220));
+      $("#ver-xss-mal").appendChild(SC.el("small", "", "Es una simulación: aquí no se ejecutó nada. En una página real, ese código podría leer lo que ve el usuario o actuar en su nombre."));
+      if (!retos.xss) { retos.xss = 1; SC.guardar("retos", retos); }
+    } else if (hayEtiquetas) veredicto($("#ver-xss-mal"), "mal", "Tu texto cambió la página: el navegador obedeció tus etiquetas.", "Si acepta un título, acepta también un script. El dato ya se está leyendo como código.");
+    else veredicto($("#ver-xss-mal"), "neutro", "Se ve normal.", "Con texto simple los dos lados se ven igual. El fallo aparece cuando el texto trae etiquetas.");
+    veredicto($("#ver-xss-bien"), "bien", hayEtiquetas ? "Se muestra tal cual, como texto. Nada se interpreta." : "Se ve normal.",
+      hayEtiquetas ? "Al navegador le llega: " + esc(t).slice(0, 160) : "Y seguirá viéndose como texto, escriba lo que escriba el usuario.");
+    pintarRetos();
+  }
+  $("#x").addEventListener("input", pintarXss);
+  $("#chips-xss").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    $("#x").value = b.getAttribute("data-x"); pintarXss();
+  });
+
+  // ================= pestañas =================
+  document.addEventListener("k-seg", function (e) {
+    if (e.detail.nombre !== "sim") return;
+    $("#sim-sql").hidden = e.detail.v !== "sql"; $("#sim-xss").hidden = e.detail.v !== "xss";
+  });
+  $("#tag").appendChild(SC.etiqueta("A05", "CWE-89 · CWE-79"));
+  pintarSql(); pintarXss(); pintarRetos();
+})();
+</script>
+</body>
+</html>

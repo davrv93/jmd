@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Permisos de más y el error que cuenta demasiado</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 1 (sc-01). Experiencia: dos simuladores DEFENSIVOS con
+     datos inventados que viven en este archivo (personas, direcciones, rutas y versiones son de mentira).
+     1) «Cambio el número del pedido y veo el de otro»: falta comprobar el dueño. Al lado, el arreglo.
+     2) El error que cuenta demasiado: lo que ve el usuario cuando el detalle interno sale a la pantalla, frente al
+        mensaje genérico con código de referencia y el detalle en el registro.
+     No hay red ni servidor: la «tienda» es el arreglo PEDIDOS. El dominio es tienda.example (reservado para ejemplos).
+     Mapeos comprobados en owasp.org/Top10/2025: CWE-639 y CWE-862 → A01; CWE-209 → A10. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b7-cab { display: flex; flex-wrap: wrap; gap: .6em 1.2em; align-items: center; justify-content: space-between; }
+.b7-nav { display: flex; flex-wrap: wrap; gap: .6em 1em; align-items: center; }
+.b7-ses { font-size: .72em; font-weight: 700; color: var(--muted); }
+.b7-ses b { color: var(--fg); }
+.b7-ped { background: #ffffff; color: #1a1d23; border: 1px solid #d5d9e0; border-radius: .45em; padding: .6em .8em; font-size: .72em; line-height: 1.45; min-height: 6.6em; display: grid; gap: .15em; align-content: start; }
+.b7-ped b { font-size: 1.1em; }
+.b7-ped span { color: #4f5d66; }
+.b7-ped.no { place-content: center; text-align: center; color: #4f5d66; font-weight: 700; }
+.b7-regala { margin: 0; padding-left: 1.3em; font-size: .72em; line-height: 1.45; display: grid; gap: .2em; }
+@media (prefers-reduced-motion: reduce) { .b7-ped { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Seguridad con IA · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="b7-cab">
+      <h1 class="esc-titulo a-in">Entraste con tu cuenta. <em>¿Y esto de quién es?</em></h1>
+      <div class="k-seg" data-seg="sim" role="group" aria-label="Simulador">
+        <button type="button" data-v="ped" aria-pressed="true">1 · El pedido de otro</button>
+        <button type="button" data-v="err" aria-pressed="false">2 · El error que cuenta demasiado</button>
+      </div>
+    </div>
+
+    <!-- ============ 1 · El pedido de otro ============ -->
+    <section class="k-pila" id="sim-ped" aria-label="Simulador: el pedido de otro cliente">
+      <div class="k-caja">
+        <div class="b7-nav">
+          <div class="sc-url">
+            <span class="dom">tienda.example/pedidos/</span>
+            <button type="button" id="menos" aria-label="Pedido anterior">−</button>
+            <input id="num" type="text" inputmode="numeric" maxlength="5" aria-label="Número de pedido" value="1041">
+            <button type="button" id="mas" aria-label="Pedido siguiente">+</button>
+          </div>
+          <span class="b7-ses">Sesión iniciada: <b>Ana Ríos</b> (cliente n.º 7). Sus pedidos son el 1041 y el 1043.</span>
+        </div>
+        <p class="k-nota">Ana abre su pedido y mira la dirección de la página. ¿Qué pasa si cambia el número? Usa − y +.</p>
+      </div>
+      <div class="sc-par">
+        <div class="sc-lado mal">
+          <h3><span>Vulnerable</span> Busca por número y devuelve lo que encuentre</h3>
+          <pre class="sc-sal"><span class="c">// comprueba que hay sesión… y nada más</span>
+SELECT * FROM pedidos WHERE id = ?</pre>
+          <div class="b7-ped" id="ped-mal"></div>
+          <p class="sc-ver neutro" id="ver-ped-mal" aria-live="polite"></p>
+        </div>
+        <div class="sc-lado bien">
+          <h3><span>Corregido</span> Busca por número y por dueño</h3>
+          <pre class="sc-sal"><span class="c">// el dueño sale de la sesión, nunca de la URL</span>
+SELECT * FROM pedidos WHERE id = ? AND cliente_id = ?</pre>
+          <div class="b7-ped" id="ped-bien"></div>
+          <p class="sc-ver neutro" id="ver-ped-bien" aria-live="polite"></p>
+        </div>
+      </div>
+      <div class="k-cols mitad">
+        <p class="k-nota"><b>Fíjate:</b> las dos consultas están parametrizadas. No hay inyección, y aun así una falla. Son preguntas distintas de la lista: A05 pregunta qué pasa con el texto del usuario; A01, de quién es el dato. <span id="tag-ped"></span></p>
+        <article class="sc-hall duda">
+          <p class="sc-ceja">Otros permisos de más que suele dejar el código generado</p>
+          <ul class="sc-lista sin">
+            <li><span>La aplicación se conecta a la base como <code>root</code> (lo viste en la caza).</span></li>
+            <li><span>Una ruta de administración que comprueba que hay sesión, pero no el rol (CWE-862).</span></li>
+            <li><span>Una clave de API con todos los permisos, cuando solo hacía falta leer.</span></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ 2 · El error que cuenta demasiado ============ -->
+    <section class="k-pila" id="sim-err" aria-label="Simulador: el error que cuenta demasiado" hidden>
+      <div class="k-caja">
+        <div class="b7-nav">
+          <div class="sc-url"><span class="dom">tienda.example/pedidos/<b>abc</b></span></div>
+          <button type="button" class="k-btn" id="b-err">Pedir esa dirección</button>
+          <span class="b7-ses">Alguien escribe letras donde iba un número. El programa no lo esperaba.</span>
+        </div>
+      </div>
+      <div class="sc-par">
+        <div class="sc-lado mal">
+          <h3><span>Vulnerable</span> El detalle interno sale a la pantalla</h3>
+          <pre class="sc-sal" id="err-mal"><span class="c">Pulsa «Pedir esa dirección».</span></pre>
+          <ol class="b7-regala" id="regala" hidden>
+            <li><b>La versión exacta.</b> Con ella se buscan fallos conocidos de esa versión.</li>
+            <li><b>Las rutas del servidor.</b> Dónde vive el código y cómo se llaman sus archivos.</li>
+            <li><b>Cómo se arma la consulta.</b> El dato de la URL llegó al SQL sin tratar: una invitación a probar una inyección.</li>
+          </ol>
+          <p class="sc-ver neutro" id="ver-err-mal" aria-live="polite">Aquí verás lo que recibe el usuario.</p>
+        </div>
+        <div class="sc-lado bien">
+          <h3><span>Corregido</span> Mensaje genérico y el detalle al registro</h3>
+          <pre class="sc-sal" id="err-bien"><span class="c">Pulsa «Pedir esa dirección».</span></pre>
+          <pre class="sc-sal" id="err-log" hidden></pre>
+          <p class="sc-ver neutro" id="ver-err-bien" aria-live="polite">Y aquí, lo que recibe con el arreglo.</p>
+        </div>
+      </div>
+      <div class="k-cols mitad">
+        <p class="k-nota"><b>El arreglo tiene tres partes.</b> Validar primero (<code>abc</code> no es un número de pedido: se responde «no encontrado» sin llegar a la base). Atrapar lo inesperado y responder con un mensaje genérico y un código de referencia. Y escribir el detalle en el registro, que solo lee el equipo. En PHP, además, <code>display_errors = Off</code> en producción. <span id="tag-err"></span></p>
+        <p class="k-nota">CWE-209 está en A10, la categoría nueva de 2025. Si la causa es que el modo de depuración quedó encendido, también es un tema de configuración (A02). Las categorías se solapan: lo que importa es que lo encuentres. <b>Rutas, versiones y personas de esta escena son inventadas.</b></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Datos de mentira que viven en esta página. En un sistema real: solo en los tuyos o con permiso escrito.</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = SC.$, YO = 7;
+  var PEDIDOS = {
+    1040: { cliente: 12, nombre: "Luis Paredes", dir: "Av. Inventada 123, dpto. 4", que: "2 × cuaderno A4, 1 × mochila", total: "S/ 148.00" },
+    1041: { cliente: 7, nombre: "Ana Ríos", dir: "Jr. de Mentira 456", que: "1 × teclado", total: "S/ 89.90" },
+    1042: { cliente: 31, nombre: "Rosa Quispe", dir: "Calle Ficticia 789, int. B", que: "3 × tinta negra", total: "S/ 64.50" },
+    1043: { cliente: 7, nombre: "Ana Ríos", dir: "Jr. de Mentira 456", que: "1 × cable USB-C", total: "S/ 19.00" },
+  };
+
+  function ficha(caja, p, n) {
+    caja.textContent = ""; caja.className = "b7-ped" + (p ? "" : " no");
+    if (!p) { caja.textContent = "404 · No encontramos el pedido " + n; return; }
+    caja.appendChild(SC.el("b", "", "Pedido " + n + " · " + p.total));
+    caja.appendChild(SC.el("span", "", "Cliente: " + p.nombre));
+    caja.appendChild(SC.el("span", "", "Entrega: " + p.dir));
+    caja.appendChild(SC.el("span", "", "Contenido: " + p.que));
+  }
+  function ver(el, clase, titulo, detalle) { el.className = "sc-ver " + clase; el.textContent = titulo; if (detalle) el.appendChild(SC.el("small", "", detalle)); }
+
+  function pintarPedido() {
+    var n = parseInt($("#num").value, 10), p = PEDIDOS[n] || null;
+    if (!(n > 0)) { ficha($("#ped-mal"), null, "…"); ficha($("#ped-bien"), null, "…"); ver($("#ver-ped-mal"), "neutro", "Escribe un número de pedido."); ver($("#ver-ped-bien"), "neutro", "Escribe un número de pedido."); return; }
+    // vulnerable: WHERE id = ?
+    ficha($("#ped-mal"), p, n);
+    if (!p) ver($("#ver-ped-mal"), "neutro", "Ese pedido no existe.", "Prueba con los números de al lado.");
+    else if (p.cliente === YO) ver($("#ver-ped-mal"), "neutro", "Es tu pedido. Todo normal.", "Por eso el fallo pasa las pruebas: quien lo prueba mira su propio pedido.");
+    else ver($("#ver-ped-mal"), "mal", "Estás viendo el pedido de " + p.nombre + ".", "Su dirección y lo que compró. Ana no rompió nada: solo cambió un número en la dirección de la página.");
+    // corregido: WHERE id = ? AND cliente_id = ?
+    var mio = p && p.cliente === YO ? p : null;
+    ficha($("#ped-bien"), mio, n);
+    if (mio) ver($("#ver-ped-bien"), "bien", "Es tu pedido: se muestra.");
+    else if (p) ver($("#ver-ped-bien"), "bien", "No es tuyo: para ti, no existe.", "Responde igual que con un pedido que no existe. Así ni siquiera confirma qué números hay.");
+    else ver($("#ver-ped-bien"), "neutro", "Ese pedido no existe.");
+  }
+  function mover(d) { var n = parseInt($("#num").value, 10) || 1041; $("#num").value = Math.max(1, n + d); pintarPedido(); }
+  $("#menos").addEventListener("click", function () { mover(-1); });
+  $("#mas").addEventListener("click", function () { mover(1); });
+  $("#num").addEventListener("input", function () { this.value = this.value.replace(/\D/g, ""); pintarPedido(); });
+  $("#tag-ped").appendChild(SC.etiqueta("A01", "CWE-639"));
+  $("#tag-err").appendChild(SC.etiqueta("A10", "CWE-209"));
+  pintarPedido();
+
+  // ---------- el error ----------
+  var E = SC.esc;
+  var TRAZA =
+    "HTTP/1.1 500 Internal Server Error\n" +
+    "X-Powered-By: <mark>PHP/8.1.2</mark>\n\n" +
+    E("Fatal error: Uncaught PDOException: SQLSTATE[42S22]:\n") +
+    "<mark>" + E("Column not found: 1054 Unknown column 'abc' in 'where clause'") + "</mark>\n" +
+    E("in ") + "<mark>/var/www/tienda/app/Pedidos.php</mark>:48\n" +
+    E("Stack trace:\n#0 ") + "<mark>/var/www/tienda/app/Pedidos.php</mark>" + E("(48): PDO->query(") + "<mark>" + E("'SELECT * FROM pedidos WHERE id = abc'") + "</mark>)\n" +
+    E("#1 ") + "<mark>/var/www/tienda/public/index.php</mark>" + E("(12): Pedidos->ver('abc')\n#2 {main}");
+  $("#b-err").addEventListener("click", function () {
+    $("#err-mal").innerHTML = TRAZA;
+    $("#regala").hidden = false;
+    ver($("#ver-err-mal"), "mal", "El usuario recibió tres regalos.", "Ninguno le hacía falta para saber que algo falló.");
+    $("#err-bien").textContent = "HTTP/1.1 404 Not Found\n\nNo encontramos ese pedido.\n\n— y si el fallo fuera de verdad inesperado —\n\nHTTP/1.1 500 Internal Server Error\n\nAlgo salió mal de nuestro lado y ya quedó registrado.\nSi escribes a soporte, menciona el código E-7F3A21.";
+    var log = $("#err-log"); log.hidden = false; log.textContent = "";
+    log.appendChild(SC.el("span", "c", "# registro del servidor · solo lo lee el equipo\n"));
+    log.appendChild(document.createTextNode("2026-11-18 19:58:03 ERROR E-7F3A21 PDOException 1054\n  Unknown column 'abc' · app/Pedidos.php:48\n  ruta /pedidos/abc · cliente 7"));
+    ver($("#ver-err-bien"), "bien", "El detalle no se pierde: cambia de lector.", "El usuario sabe que falló y tiene un código. El equipo tiene todo lo demás, con ese mismo código.");
+  });
+
+  document.addEventListener("k-seg", function (e) {
+    if (e.detail.nombre !== "sim") return;
+    $("#sim-ped").hidden = e.detail.v !== "ped"; $("#sim-err").hidden = e.detail.v !== "err";
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · ¿En qué categoría cae?</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 1 (sc-01). Reflexión: repaso rápido de ocho casos,
+     uno por uno. El alumno elige la categoría del OWASP Top 10:2025; si falla, puede volver a intentar y cuenta solo
+     el primer intento. Todo ocurre dentro de la escena (no usa Arena). Al terminar marca su resultado en el voto
+     sc01-repaso para verlo junto al del grupo.
+     Mapeos comprobados en la «List of Mapped CWEs» de cada categoría (owasp.org/Top10/2025, 18-11-2026):
+     CWE-639 → A01 · CWE-798 → A07 · CWE-79 → A05 · CWE-209 → A10 · CWE-916 y CWE-759 → A04 · CWE-307 → A07 ·
+     CWE-778 → A09 · CWE-1004 y CWE-614 → A02. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b9 { display: grid; grid-template-columns: 1.2fr .8fr; gap: 1.8vw; align-items: start; }
+.b9-caso { min-height: 13.5em; }
+.b9-caso h2 { font-size: 1.05em; line-height: 1.35; font-weight: 700; }
+.b9-pips { display: flex; gap: .3em; }
+.b9-pips i { flex: 1; height: .5em; border-radius: .2em; background: var(--s3); }
+.b9-pips i.si { background: var(--ok); }
+.b9-pips i.no { background: var(--warn); }
+.b9-pips i.ya { outline: 2px solid var(--accent); outline-offset: 1px; }
+.b9-res { font: 800 2.2em/1 var(--mono); margin: 0; }
+.b9-res small { font: 600 .32em/1.3 system-ui, sans-serif; color: var(--muted); display: block; margin-top: .5em; }
+@media (max-width: 760px) { .b9 { grid-template-columns: 1fr; gap: 12px; } .b9-caso { min-height: 0; } }
+@media (prefers-reduced-motion: reduce) { .b9-caso { animation: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Seguridad con IA · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Repaso rápido: <em>¿en qué categoría cae?</em></h1>
+    <p class="esc-sub a-in" style="--d:.08s">Ocho casos, sin reloj. Lee, elige la categoría y mira el porqué. Cuenta el primer intento.</p>
+
+    <div class="b9 a-in" style="--d:.16s">
+      <div class="k-pila">
+        <div class="b9-pips" id="pips" aria-hidden="true"></div>
+        <article class="sc-hall b9-caso" id="caso" aria-live="polite"></article>
+      </div>
+      <div class="k-pila">
+        <div class="k-caja">
+          <p class="b9-res"><span id="n-ok">0</span> de 8<small id="msg">a la primera</small></p>
+          <div class="k-links"><button type="button" class="k-btn sec" id="b-otra">Empezar de nuevo</button></div>
+        </div>
+        <div class="k-caja k-voto" id="voto" data-voto="sc01-repaso" hidden>
+          <p class="k-q">Marca tu resultado y míralo junto al del grupo</p>
+          <div class="k-ops">
+            <button type="button" data-op="r8">8 de 8</button>
+            <button type="button" data-op="r6">6 o 7</button>
+            <button type="button" data-op="r4">4 o 5</button>
+            <button type="button" data-op="r0">3 o menos</button>
+          </div>
+        </div>
+        <p class="k-nota">Las categorías se solapan, y OWASP lo dice. Si dudaste entre dos, no es grave: en una revisión real anotas las dos y sigues. Lo que no puede pasar es no verlo.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Categorías del OWASP Top 10:2025. No frena la clase: si llegas tarde, juega igual.</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var CATS = ["A01", "A02", "A04", "A05", "A07", "A09", "A10"];
+  var CASOS = [
+    { q: "Con la sesión iniciada, cambias el número de la dirección /api/facturas/5012 por 5013 y la API te devuelve la factura de otro cliente.", cat: "A01", cwe: "CWE-639",
+      por: "Sabe quién eres, pero no comprueba que la factura sea tuya. Es control de acceso: el dato cambió de dueño y nadie preguntó." },
+    { q: "En el repositorio hay una línea así:  const token = \"sk-EJEMPLO-no-es-real-000\";", cat: "A07", cwe: "CWE-798",
+      por: "Una credencial escrita dentro del código. OWASP la pone en fallos de autenticación: quien tiene el archivo, tiene la llave." },
+    { q: "El buscador muestra lo que escribiste con  resultado.innerHTML = \"Buscaste: \" + texto;", cat: "A05", cwe: "CWE-79",
+      por: "El texto del usuario llega al navegador como HTML. Es XSS, y el XSS es inyección: un dato que se ejecuta como código." },
+    { q: "Cuando la base de datos no responde, la página muestra la ruta /var/www/app/db.php, la consulta y la versión del motor.", cat: "A10", cwe: "CWE-209",
+      por: "Un mensaje de error con información sensible. Es la categoría nueva de 2025: el programa no supo qué hacer con lo inesperado." },
+    { q: "Las contraseñas de los usuarios se guardan con MD5, sin sal.", cat: "A04", cwe: "CWE-916",
+      por: "Un hash rápido y sin sal no protege una contraseña. Fallo criptográfico: el dato sensible está guardado con algo débil." },
+    { q: "El login deja probar contraseñas sin parar: no espera, no bloquea y no pide nada más.", cat: "A07", cwe: "CWE-307",
+      por: "No limita los intentos de autenticación. Era el «octavo fallo» de la caza: el que no está en ninguna línea." },
+    { q: "Los inicios de sesión fallidos no se anotan en ningún lado. Si alguien prueba mil claves esta noche, mañana no hay rastro.", cat: "A09", cwe: "CWE-778",
+      por: "Registro insuficiente. Sin registro no hay alerta, y sin alerta te enteras tarde o nunca." },
+    { q: "La cookie de sesión se crea sin HttpOnly ni Secure, con los valores por defecto del lenguaje.", cat: "A02", cwe: "CWE-1004",
+      por: "El código funciona; lo que quedó mal es la configuración. Los valores por defecto casi nunca son los seguros." },
+  ];
+
+  var est = SC.leer("repaso", null) || {}; est.r = est.r || []; // r[i]: 1 = a la primera, 2 = con ayuda
+  var caso = SC.$("#caso"), i = Math.min(est.r.length, CASOS.length);
+
+  function pips() {
+    var p = SC.$("#pips"); p.textContent = "";
+    CASOS.forEach(function (_, k) { var x = SC.el("i", est.r[k] === 1 ? "si" : est.r[k] === 2 ? "no" : ""); if (k === i) x.classList.add("ya"); p.appendChild(x); });
+    var ok = est.r.filter(function (v) { return v === 1; }).length;
+    SC.$("#n-ok").textContent = ok;
+    var fin = est.r.length >= CASOS.length;
+    SC.$("#voto").hidden = !fin;
+    SC.$("#msg").textContent = !fin ? "a la primera · caso " + Math.min(i + 1, CASOS.length) + " de " + CASOS.length
+      : ok === 8 ? "a la primera. Ya tienes la lista en la cabeza." : ok >= 6 ? "a la primera. Muy bien: repasa las que dudaste." : ok >= 4 ? "a la primera. Vas bien: vuelve a la escena de la lista." : "a la primera. Para eso es el repaso: juega otra ronda.";
+  }
+
+  function pintar() {
+    pips();
+    caso.textContent = "";
+    if (i >= CASOS.length) {
+      caso.className = "sc-hall b9-caso bien";
+      caso.appendChild(SC.el("p", "sc-ceja", "Repaso terminado"));
+      caso.appendChild(SC.el("h2", "", "Ocho casos, siete categorías."));
+      caso.appendChild(SC.el("p", "", "Marca tu resultado a la derecha. Con estos mismos ojos vas a mirar el login de la tarea."));
+      return;
+    }
+    var c = CASOS[i], fallo = false;
+    caso.className = "sc-hall b9-caso";
+    caso.appendChild(SC.el("p", "sc-ceja", "Caso " + (i + 1) + " de " + CASOS.length));
+    caso.appendChild(SC.el("h2", "", c.q));
+    var aviso = SC.el("p", "k-nota", "");
+    var ops = SC.opciones(CATS, function (id, b, caja) {
+      if (id !== c.cat) { fallo = true; b.classList.add("no"); b.disabled = true; aviso.textContent = "No es " + id + " (" + SC.cat(id).es + "). Prueba otra."; return; }
+      est.r[i] = fallo ? 2 : 1; SC.guardar("repaso", est);
+      SC.$$("button", caja).forEach(function (x) { x.disabled = true; }); b.classList.add("si");
+      caso.className = "sc-hall b9-caso " + (fallo ? "duda" : "bien");
+      aviso.remove();
+      caso.appendChild(SC.etiqueta(c.cat, c.cwe));
+      caso.appendChild(SC.el("p", "", c.por));
+      var sig = SC.el("button", "k-btn", i + 1 < CASOS.length ? "Siguiente caso" : "Ver mi resultado");
+      sig.addEventListener("click", function () { i++; pintar(); });
+      caso.appendChild(sig); pips();
+      try { sig.focus({ preventScroll: true }); } catch (e) {}
+      if (window.innerWidth <= 760) SC.aLaVista(sig);
+    });
+    caso.appendChild(ops); caso.appendChild(aviso);
+  }
+  SC.$("#b-otra").addEventListener("click", function () { est = { r: [] }; SC.guardar("repaso", est); i = 0; pintar(); });
+  pintar();
+})();
+</script>
+</body>
+</html>

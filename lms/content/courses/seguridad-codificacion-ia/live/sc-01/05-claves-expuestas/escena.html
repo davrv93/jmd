@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Claves expuestas</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 1 (sc-01). Experiencia: un detector de secretos de
+     juguete. El alumno pega código y ocho reglas (expresiones regulares) marcan lo que parece una clave. Todo ocurre
+     en el navegador: no hay fetch, no se guarda en localStorage y nada sale de la página. Las claves del ejemplo son
+     visiblemente falsas. A la derecha: por qué pasa y qué hacer si la clave ya se subió (rotar, variable de entorno,
+     .gitignore, historial de git). Mapeo comprobado en owasp.org/Top10/2025: CWE-798 → A07; CWE-321 → A04. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b5 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.8vw; align-items: start; }
+.b5-res { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; }
+.b5-res li { display: grid; grid-template-columns: 3.2em minmax(0, 1fr); gap: .6em; align-items: baseline; font-size: .74em; line-height: 1.35; padding: .4em .6em; border-radius: .45em; background: var(--bad-bg); border: 1px solid color-mix(in srgb, var(--bad) 30%, transparent); }
+.b5-res li b { font: 800 .95em var(--mono); color: var(--bad); }
+.b5-res li code { display: block; font: 600 .92em var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.b5-priv { border-left: 4px solid var(--sc); padding-left: .8em; }
+@media (max-width: 760px) { .b5 { grid-template-columns: 1fr; gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { .b5-res li { animation: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ec">Experiencia</span>
+    <span class="esc-num">Seguridad con IA · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">La clave quedó <em>dentro del código</em></h1>
+    <p class="esc-sub a-in" style="--d:.08s">El primero de los tres fallos de cerca. Una clave escrita en un archivo viaja a donde viaje el archivo: al repositorio, a la copia de respaldo, a la captura que compartes para pedir ayuda.</p>
+
+    <div class="b5 a-in" style="--d:.16s">
+      <div class="k-pila">
+        <div class="k-caja">
+          <p class="k-q">Detector de secretos (de juguete)</p>
+          <label class="sc-campo" for="txt">Pega o edita el código. Se revisa mientras escribes.
+            <textarea id="txt" spellcheck="false" autocomplete="off" autocapitalize="off" rows="8"></textarea>
+          </label>
+          <div class="k-links">
+            <button type="button" class="k-btn sec" id="b-ej">Volver al ejemplo</button>
+            <button type="button" class="k-btn sec" id="b-vac">Vaciar</button>
+          </div>
+          <p class="sc-ver neutro" id="ver" aria-live="polite"></p>
+          <ul class="b5-res" id="res" aria-label="Posibles claves encontradas"></ul>
+          <p class="k-nota b5-priv"><b>Nada sale de esta página.</b> El texto se revisa en tu navegador, con las reglas de esta escena, y no se guarda ni se envía. Aun así, practica con claves de mentira.</p>
+        </div>
+        <p class="k-nota"><b>Ponlo a prueba.</b> Cambia una clave por <code>process.env.NOMBRE</code> y mira cómo desaparece del informe. Después esconde otra en una variable llamada <code>dato</code>: ¿la encuentra? Un detector así reconoce formas, no entiende el código. Es una red, no una garantía. Herramientas abiertas como gitleaks o TruffleHog hacen esto mismo sobre todo el repositorio y su historial.</p>
+      </div>
+
+      <div class="k-pila">
+        <article class="sc-hall mal">
+          <p class="sc-ceja">Por qué pasa con código generado</p>
+          <ul class="sc-lista sin">
+            <li><span>El ejemplo de la documentación trae la clave en la misma línea, y el asistente repite ese patrón.</span></li>
+            <li><span>Le pegas tu clave en el chat «para que funcione» y te la devuelve dentro del archivo.</span></li>
+            <li><span>El archivo <code>.env</code> existe, pero nadie lo puso en <code>.gitignore</code> y sube con todo lo demás.</span></li>
+          </ul>
+          <div id="tag"></div>
+          <p class="k-nota">Si lo que quedó en el código es una llave de cifrado (CWE-321), la categoría es A04.</p>
+        </article>
+        <article class="sc-hall bien">
+          <p class="sc-ceja">Si la clave ya se subió, en este orden</p>
+          <ol class="sc-lista">
+            <li><span><b>Rótala.</b> Revócala en el panel del proveedor y crea otra. Borrarla del código no deshace que ya estuvo expuesta.</span></li>
+            <li><span><b>Sácala del código.</b> Pásala a una variable de entorno: <code>process.env.API_KEY</code> en Node, <code>getenv('API_KEY')</code> en PHP.</span></li>
+            <li><span><b>Protege el archivo.</b> Añade <code>.env</code> al <code>.gitignore</code> y deja un <code>.env.example</code> con los nombres, sin valores.</span></li>
+            <li><span><b>Recuerda el historial.</b> La clave sigue en los commits anteriores. Por eso rotar va primero: limpiar el historial ayuda, pero no lo reemplaza.</span></li>
+          </ol>
+          <pre class="esc-cmd"><span class="c"># .gitignore</span>
+.env
+.env.*
+!.env.example</pre>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Todas las claves de esta escena son de mentira: ninguna abre nada.</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var EJEMPLO = [
+    "// config.js · así lo devolvió el asistente",
+    "const OPENAI_API_KEY = \"sk-EJEMPLO-no-es-real-000\";",
+    "const db = \"mysql://admin:clave-de-ejemplo-123@localhost/tienda\";",
+    "const password = \"no-es-una-clave-real\";",
+    "const AWS_ID = \"AKIAEJEMPLOFALSO0000\";",
+    "const puerto = 3000;",
+    "const stripe = process.env.STRIPE_KEY;   // bien: viene del entorno",
+  ].join("\n");
+
+  // Reglas del detector. Las siete primeras reconocen una forma concreta; la última, un nombre sospechoso con un
+  // valor fijo entre comillas. v: qué grupo de la coincidencia es el secreto (0 = todo).
+  var REGLAS = [
+    { n: "Clave con prefijo de proveedor (sk-, pk-, rk-)", re: /\b(?:sk|pk|rk)[-_][A-Za-z0-9_-]{12,}/g, v: 0 },
+    { n: "Identificador de clave de AWS", re: /\bAKIA[0-9A-Z]{16}\b/g, v: 0 },
+    { n: "Token de GitHub", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/g, v: 0 },
+    { n: "Clave de API de Google", re: /\bAIza[0-9A-Za-z_-]{30,}/g, v: 0 },
+    { n: "Llave privada", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/g, v: 0 },
+    { n: "Token con forma de JWT", re: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/g, v: 0 },
+    { n: "Contraseña dentro de una cadena de conexión", re: /\b[a-z][a-z0-9+.-]*:\/\/[^\s:@\/'"]+:([^\s@\/'"]+)@/gi, v: 1 },
+    { n: "Valor fijo en una variable con nombre de secreto", generica: true, v: 2,
+      re: /[\w$]*(?:password|passwd|clave|contrasena|contraseña|secret|secreto|token|api_?key)[\w$]*\s*[:=]\s*(['"`])([^'"`\n]{6,})\1/gi },
+  ];
+  // Muestra el principio y esconde el resto: ni en clase se pasea una clave completa por la pantalla compartida.
+  function tapar(s) { s = String(s); return s.length <= 8 ? s.slice(0, 2) + "••••" : s.slice(0, 6) + "••••••" + s.slice(-2); }
+
+  function revisar(texto) {
+    var hallazgos = [];
+    texto.split("\n").forEach(function (linea, i) {
+      var especificas = 0;
+      REGLAS.forEach(function (r) {
+        if (r.generica && especificas) return; // la regla concreta ya explicó esta línea
+        r.re.lastIndex = 0;
+        var m;
+        while ((m = r.re.exec(linea))) {
+          hallazgos.push({ linea: i + 1, regla: r.n, valor: m[r.v] || m[0] });
+          if (!r.generica) especificas++;
+          if (m.index === r.re.lastIndex) r.re.lastIndex++;
+        }
+      });
+    });
+    return hallazgos;
+  }
+
+  var txt = SC.$("#txt"), res = SC.$("#res"), ver = SC.$("#ver");
+  function pintar() {
+    var texto = txt.value, h = revisar(texto), lineas = texto ? texto.split("\n").length : 0;
+    res.textContent = "";
+    h.forEach(function (x) {
+      var li = SC.el("li"), d = SC.el("span");
+      li.appendChild(SC.el("b", "", "L" + x.linea));
+      d.appendChild(document.createTextNode(x.regla));
+      d.appendChild(SC.el("code", "", tapar(x.valor)));
+      li.appendChild(d); res.appendChild(li);
+    });
+    if (!texto.trim()) { ver.className = "sc-ver neutro"; ver.textContent = "Pega código para revisarlo."; }
+    else if (h.length) { ver.className = "sc-ver mal"; ver.textContent = (h.length === 1 ? "1 posible clave" : h.length + " posibles claves") + " en " + lineas + (lineas === 1 ? " línea" : " líneas") + ". Revisa cada una: puede haber falsas alarmas."; }
+    else { ver.className = "sc-ver neutro"; ver.textContent = "Ninguna regla saltó en " + lineas + (lineas === 1 ? " línea" : " líneas") + ". Eso no prueba que no haya claves: solo que ninguna tiene una forma conocida."; }
+  }
+  txt.addEventListener("input", pintar);
+  SC.$("#b-ej").addEventListener("click", function () { txt.value = EJEMPLO; pintar(); });
+  SC.$("#b-vac").addEventListener("click", function () { txt.value = ""; pintar(); txt.focus(); });
+  SC.$("#tag").appendChild(SC.etiqueta("A07", "CWE-798"));
+  txt.value = EJEMPLO; pintar();
+})();
+</script>
+</body>
+</html>

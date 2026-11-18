@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Caza los fallos</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 1 (sc-01). Práctica central. Un login «generado por
+     IA» en PHP y otro en Node, con los mismos 7 fallos sembrados. El código es TEXTO: se pinta con textContent y no se
+     ejecuta. El alumno toca una línea; si tiene fallo lee por qué y elige su categoría del OWASP Top 10:2025; luego ve
+     el arreglo. Marcador: encontrados, categoría a la primera y falsas alarmas. El avance queda en el navegador.
+     Mapeos CWE → categoría comprobados en las páginas de owasp.org/Top10/2025 (18-11-2026):
+     CWE-798 → A07 · CWE-916 → A04 · CWE-89 y CWE-79 → A05 · CWE-209 → A10 · CWE-1004 y CWE-614 → A02 · CWE-532 → A09 ·
+     CWE-307 → A07. Voto sc01-dificil al terminar. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b4 { display: grid; grid-template-columns: 1.3fr .7fr; gap: 1.6vw; align-items: start; }
+.b4-cab { display: flex; flex-wrap: wrap; gap: .6em 1.2em; align-items: center; justify-content: space-between; }
+.b4-der { position: sticky; top: 1.2vh; }
+.b4-como { margin: 0; padding-left: 1.2em; font-size: .76em; line-height: 1.5; display: grid; gap: .25em; }
+.b4-fin { border-left-color: var(--sc); }
+.sc-ln.vacia { pointer-events: none; min-height: 1.6em; }
+@media (max-width: 760px) { .b4 { grid-template-columns: 1fr; gap: 12px; } .b4-der { position: static; } }
+@media (prefers-reduced-motion: reduce) { .sc-ln { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Seguridad con IA · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="b4-cab">
+      <h1 class="esc-titulo a-in">Caza los fallos: <em>funciona, pero…</em></h1>
+      <div class="k-seg" data-seg="leng" role="group" aria-label="Lenguaje del ejemplo">
+        <button type="button" data-v="php" aria-pressed="true">PHP</button>
+        <button type="button" data-v="node" aria-pressed="false">Node</button>
+      </div>
+    </div>
+    <p class="esc-sub a-in" style="--d:.08s">Le pedimos un login a un asistente y esto devolvió. Entra, valida y redirige. Hay <b>7 fallos</b>: toca la línea donde veas uno. Este código es solo texto: aquí no se ejecuta nada.</p>
+
+    <div class="b4 a-in" style="--d:.16s">
+      <div class="sc-cod" id="cod" aria-label="Código del login. Cada línea es un botón."></div>
+
+      <div class="k-pila b4-der">
+        <div class="k-caja">
+          <div class="sc-marc" aria-live="polite">
+            <span class="ok"><b id="m-enc">0</b>de 7 fallos</span>
+            <span><b id="m-cat">0</b>categorías a la primera</span>
+            <span><b id="m-fal">0</b>falsas alarmas</span>
+          </div>
+          <div class="k-links">
+            <button type="button" class="k-btn sec mini" id="b-pista">Dame una pista</button>
+            <button type="button" class="k-btn sec mini" id="b-ver">Ver los que faltan</button>
+            <button type="button" class="k-btn sec mini" id="b-otra">De nuevo</button>
+          </div>
+        </div>
+        <article class="sc-hall" id="ficha" aria-live="polite">
+          <p class="sc-ceja">Cómo se juega</p>
+          <ol class="b4-como">
+            <li>Lee el código como si mañana fuera a producción.</li>
+            <li>Toca la línea donde veas un fallo de seguridad.</li>
+            <li>Lee por qué lo es y elige su categoría OWASP.</li>
+          </ol>
+        </article>
+        <article class="sc-hall b4-fin" id="fin" hidden>
+          <p class="sc-ceja">El octavo no está en ninguna línea</p>
+          <p><b>Nada limita los intentos.</b> Se pueden probar contraseñas sin parar y el login no espera ni bloquea (CWE-307, en A07). Lo que <b>falta</b> no se ve leyendo línea por línea: para eso sirve la lista.</p>
+          <div class="k-voto" data-voto="sc01-dificil" style="display:grid; gap:.5em">
+            <p class="k-q">¿Cuál fue el más difícil de ver?</p>
+            <div class="k-ops">
+              <button type="button" data-op="clave">La clave en el código</button>
+              <button type="button" data-op="md5">El MD5</button>
+              <button type="button" data-op="consulta">La consulta</button>
+              <button type="button" data-op="error">El error</button>
+              <button type="button" data-op="cookie">La cookie</button>
+              <button type="button" data-op="registro">El registro</button>
+              <button type="button" data-op="nombre">El nombre pintado</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Con 5 de 7 ya puedes pulsar «Lo logré». Las categorías son del OWASP Top 10:2025.</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var CATS = ["A01", "A02", "A04", "A05", "A07", "A09", "A10"];
+
+  // Los 7 fallos. cat y cwe: comprobados en la «List of Mapped CWEs» de cada categoría (owasp.org/Top10/2025).
+  var FALLOS = {
+    cred: { cat: "A07", cwe: "CWE-798", t: "La clave de la base, escrita en el archivo",
+      por: "La contraseña de la base de datos está dentro del código. Quien vea el archivo (el repositorio, una copia, una captura de pantalla) ya la tiene. Y además entra como root, con todos los permisos.",
+      nota: "OWASP pone las credenciales dentro del código (CWE-798) en A07. Si lo que queda en el código es una llave de cifrado (CWE-321), cae en A04.",
+      php: "$db = new mysqli(getenv('DB_HOST'), getenv('DB_USER'),\n                 getenv('DB_PASS'), 'tienda');\n// y un usuario de base con solo los permisos que la app necesita",
+      node: "const db = mysql.createPool({\n  host: process.env.DB_HOST, user: process.env.DB_USER,\n  password: process.env.DB_PASS, database: 'tienda' });\n// y un usuario de base con solo los permisos que la app necesita" },
+    md5: { cat: "A04", cwe: "CWE-916", t: "La contraseña se protege con MD5",
+      por: "MD5 se calcula muy rápido, y eso es justo lo malo para una contraseña: quien robe la tabla puede probar candidatas a gran velocidad. Tampoco lleva sal, así que dos claves iguales dan el mismo resultado.",
+      nota: "A07 menciona las contraseñas mal guardadas, pero remite a A04: ahí está CWE-916 (hash de contraseña con poco esfuerzo de cómputo).",
+      php: "// al registrar\n$hash = password_hash($_POST['clave'], PASSWORD_DEFAULT);\n// al entrar\nif (password_verify($_POST['clave'], $fila['clave'])) { … }",
+      node: "// al registrar (paquete bcrypt)\nconst hash = await bcrypt.hash(req.body.clave, 12);\n// al entrar\nif (await bcrypt.compare(req.body.clave, fila.clave)) { … }" },
+    sqli: { cat: "A05", cwe: "CWE-89", t: "La consulta se arma con el texto del usuario",
+      por: "Lo que escribe el usuario se pega dentro del SQL. Si escribe una comilla, su texto deja de ser un dato y pasa a ser parte de la consulta. Es la inyección SQL: la probamos en el simulador dentro de un rato.",
+      php: "$st = $db->prepare('SELECT * FROM usuarios WHERE usuario = ?');\n$st->bind_param('s', $usuario);\n$st->execute();",
+      node: "const [filas] = await db.execute(\n  'SELECT * FROM usuarios WHERE usuario = ?', [usuario]);" },
+    error: { cat: "A10", cwe: "CWE-209", t: "El error le cuenta todo al usuario",
+      por: "Si algo falla, el usuario recibe el mensaje interno: la consulta completa, nombres de tablas, rutas del servidor. Es un mapa gratis para quien busca por dónde entrar.",
+      nota: "CWE-209 está en A10, la categoría nueva de 2025. A02 también habla de errores demasiado informativos: las categorías se solapan, y OWASP lo reconoce.",
+      php: "error_log($e->getMessage());        // el detalle, al registro\nhttp_response_code(500);\ndie('No pudimos iniciar tu sesión. Intenta de nuevo.');",
+      node: "console.error(err);                  // el detalle, al registro\nres.status(500).send('No pudimos iniciar tu sesión. Intenta de nuevo.');" },
+    cookie: { cat: "A02", cwe: "CWE-1004", t: "La cookie de sesión va sin protección",
+      por: "La cookie se crea con los valores por defecto. Sin HttpOnly, cualquier script de la página puede leerla. Sin Secure, puede viajar por una conexión sin cifrar.",
+      nota: "CWE-1004 (cookie sensible sin HttpOnly) y CWE-614 (sin Secure) están en A02.",
+      php: "setcookie('sesion', $token, [\n  'httponly' => true, 'secure' => true, 'samesite' => 'Lax' ]);",
+      node: "res.cookie('sesion', token,\n  { httpOnly: true, secure: true, sameSite: 'lax' });" },
+    log: { cat: "A09", cwe: "CWE-532", t: "La contraseña queda en el registro",
+      por: "La clave en texto claro se escribe en el registro. Los registros se guardan mucho tiempo, se copian a otros sistemas y los lee más gente que la base de datos.",
+      php: "error_log('Inicio de sesión correcto, usuario id ' . $fila['id']);\n// registra también los intentos fallidos, nunca la clave",
+      node: "console.log('Inicio de sesión correcto, usuario id', filas[0].id);\n// registra también los intentos fallidos, nunca la clave" },
+    xss: { cat: "A05", cwe: "CWE-79", t: "El nombre del usuario se pinta tal cual",
+      por: "Lo que el usuario escribió vuelve a la página sin escapar. Si trae etiquetas HTML, el navegador las interpreta: es XSS. De paso, el mensaje confirma qué usuarios no existen.",
+      php: "http_response_code(401);\necho '<p>Usuario o clave incorrectos.</p>';\n// si tienes que mostrar un dato: htmlspecialchars($dato, ENT_QUOTES, 'UTF-8')",
+      node: "res.status(401).send('<p>Usuario o clave incorrectos.</p>');\n// si tienes que mostrar un dato, escápalo o usa el motor de plantillas" },
+  };
+
+  // Cada línea: [texto, id del fallo | "" , nota si no hay fallo]
+  var CODIGO = {
+    php: { archivo: "login.php", lineas: [
+      ["<?php"],
+      ["// login.php · lo devolvió el asistente y «funciona»"],
+      ["$db = new mysqli('localhost', 'root', 'clave-de-ejemplo-123', 'tienda');", "cred"],
+      [""],
+      ["$usuario = $_POST['usuario'];", "", "Aquí entra el dato, y entra sin validar. Pero el daño ocurre donde se usa: sigue ese dato hacia abajo."],
+      ["$clave   = md5($_POST['clave']);", "md5"],
+      [""],
+      ["$sql = \"SELECT * FROM usuarios WHERE usuario = '$usuario' AND clave = '$clave'\";", "sqli"],
+      ["try {"],
+      ["    $res = $db->query($sql);", "", "Aquí se ejecuta la consulta, pero el fallo está donde se armó. Mira una línea más arriba del try."],
+      ["} catch (Exception $e) {"],
+      ["    die(\"Error: \" . $e->getMessage() . \" en la consulta \" . $sql);", "error"],
+      ["}"],
+      [""],
+      ["if ($res->num_rows === 1) {", "", "Pedir exactamente una fila está bien."],
+      ["    $fila  = $res->fetch_assoc();"],
+      ["    $token = bin2hex(random_bytes(32));", "", "Esta línea está bien: random_bytes es la forma correcta de crear un token imposible de adivinar."],
+      ["    guardar_sesion($db, $fila['id'], $token);"],
+      ["    setcookie('sesion', $token);", "cookie"],
+      ["    error_log(\"Entró $usuario con la clave \" . $_POST['clave']);", "log"],
+      ["    header('Location: /panel.php');"],
+      ["} else {"],
+      ["    echo \"<p>No existe el usuario \" . $usuario . \"</p>\";", "xss"],
+      ["}"],
+    ] },
+    node: { archivo: "login.js", lineas: [
+      ["// login.js · lo devolvió el asistente y «funciona»"],
+      ["const express = require('express');"],
+      ["const mysql   = require('mysql2/promise');"],
+      ["const crypto  = require('crypto');"],
+      ["const app = express();"],
+      ["app.use(express.urlencoded({ extended: false }));"],
+      [""],
+      ["const db = mysql.createPool({ host: 'localhost', user: 'root', password: 'clave-de-ejemplo-123', database: 'tienda' });", "cred"],
+      [""],
+      ["app.post('/login', async (req, res) => {"],
+      ["  const usuario = req.body.usuario;", "", "Aquí entra el dato, y entra sin validar. Pero el daño ocurre donde se usa: sigue ese dato hacia abajo."],
+      ["  const clave = crypto.createHash('md5').update(req.body.clave).digest('hex');", "md5"],
+      ["  try {"],
+      ["    const sql = `SELECT * FROM usuarios WHERE usuario = '${usuario}' AND clave = '${clave}'`;", "sqli"],
+      ["    const [filas] = await db.query(sql);", "", "Aquí se ejecuta la consulta, pero el fallo está donde se armó: la línea de arriba."],
+      ["    if (filas.length === 1) {", "", "Pedir exactamente una fila está bien."],
+      ["      const token = crypto.randomBytes(32).toString('hex');", "", "Esta línea está bien: randomBytes es la forma correcta de crear un token imposible de adivinar."],
+      ["      await guardarSesion(filas[0].id, token);"],
+      ["      res.cookie('sesion', token);", "cookie"],
+      ["      console.log('Entró', usuario, 'con la clave', req.body.clave);", "log"],
+      ["      return res.redirect('/panel');"],
+      ["    }"],
+      ["    res.send(`<p>No existe el usuario ${usuario}</p>`);", "xss"],
+      ["  } catch (err) {"],
+      ["    res.status(500).send(err.stack);", "error"],
+      ["  }"],
+      ["});"],
+    ] },
+  };
+
+  var cod = SC.$("#cod"), ficha = SC.$("#ficha"), fin = SC.$("#fin");
+  var leng = SC.leer("caza-leng", "php") === "node" ? "node" : "php";
+  var est, botones;
+
+  function cargar() { est = SC.leer("caza-" + leng, null) || {}; est.ok = est.ok || {}; est.cat = est.cat || {}; est.rev = est.rev || {}; est.fal = est.fal || {}; est.mal = est.mal || {}; est.pistas = est.pistas || 0; }
+  function salvar() { SC.guardar("caza-" + leng, est); }
+  function lineaDe(fid) { var L = CODIGO[leng].lineas; for (var i = 0; i < L.length; i++) if (L[i][1] === fid) return i + 1; return 0; }
+  function resueltos() { return Object.keys(FALLOS).filter(function (f) { return est.cat[f]; }).length; }
+
+  function marcador() {
+    var enc = Object.keys(FALLOS).filter(function (f) { return est.ok[f]; }).length;
+    SC.$("#m-enc").textContent = enc;
+    SC.$("#m-cat").textContent = Object.keys(FALLOS).filter(function (f) { return est.cat[f] === 1; }).length;
+    SC.$("#m-fal").textContent = Object.keys(est.fal).length;
+    var todo = Object.keys(FALLOS).every(function (f) { return est.ok[f] || est.rev[f]; });
+    fin.hidden = !todo;
+    SC.$("#b-pista").disabled = todo; SC.$("#b-ver").disabled = todo;
+  }
+
+  function pintarLineas() {
+    botones.forEach(function (b, i) {
+      var fid = CODIGO[leng].lineas[i][1];
+      b.classList.remove("hall", "listo", "limpia", "pista");
+      if (fid && (est.ok[fid] || est.rev[fid])) { b.classList.add("hall"); if (est.cat[fid]) b.classList.add("listo"); }
+      else if (!fid && est.fal[i + 1]) b.classList.add("limpia");
+    });
+  }
+
+  function fichaVacia(ceja, texto, clase) {
+    ficha.className = "sc-hall" + (clase ? " " + clase : "");
+    ficha.textContent = "";
+    ficha.appendChild(SC.el("p", "sc-ceja", ceja));
+    ficha.appendChild(SC.el("p", "", texto));
+  }
+
+  function fichaFallo(fid) {
+    var f = FALLOS[fid], n = lineaDe(fid), hecho = !!est.cat[fid];
+    ficha.className = "sc-hall " + (hecho ? "bien" : "mal");
+    ficha.textContent = "";
+    ficha.appendChild(SC.el("p", "sc-ceja", "Línea " + n + " · " + (est.ok[fid] ? "fallo encontrado" : "fallo que faltaba")));
+    ficha.appendChild(SC.el("h2", "", f.t));
+    ficha.appendChild(SC.el("p", "", f.por));
+    if (!hecho) {
+      var q = SC.el("p", "", ""); q.appendChild(SC.el("b", "", "¿En qué categoría del OWASP Top 10 cae?")); ficha.appendChild(q);
+      var aviso = SC.el("p", "k-nota", "");
+      ficha.appendChild(SC.opciones(CATS, function (id, b) {
+        if (id === f.cat) { est.cat[fid] = est.mal[fid] ? 2 : 1; salvar(); pintarLineas(); marcador(); fichaFallo(fid); }
+        else { est.mal[fid] = 1; salvar(); b.classList.add("no"); b.disabled = true; aviso.textContent = "No es " + id + " (" + SC.cat(id).es + "). Vuelve a leer el porqué y prueba otra."; }
+      }));
+      ficha.appendChild(aviso);
+      return;
+    }
+    ficha.appendChild(SC.etiqueta(f.cat, f.cwe));
+    if (f.nota) ficha.appendChild(SC.el("p", "k-nota", f.nota));
+    var a = SC.el("p", "", ""); a.appendChild(SC.el("b", "", "Así se corrige:")); ficha.appendChild(a);
+    ficha.appendChild(SC.el("pre", "", f[leng]));
+    var faltan = 7 - Object.keys(FALLOS).filter(function (x) { return est.ok[x] || est.rev[x]; }).length;
+    if (faltan) ficha.appendChild(SC.el("p", "k-nota", faltan === 1 ? "Queda 1 fallo por encontrar." : "Quedan " + faltan + " fallos por encontrar."));
+  }
+
+  function tocar(i) {
+    var fila = CODIGO[leng].lineas[i], fid = fila[1];
+    botones.forEach(function (b, k) { b.setAttribute("aria-pressed", String(k === i)); });
+    if (fid) {
+      if (!est.ok[fid] && !est.rev[fid]) { est.ok[fid] = 1; salvar(); }
+      pintarLineas(); marcador(); fichaFallo(fid);
+    } else {
+      if (!est.fal[i + 1]) { est.fal[i + 1] = 1; salvar(); }
+      pintarLineas(); marcador();
+      fichaVacia("Línea " + (i + 1) + " · aquí no hay fallo", fila[2] || "Esta línea no tiene un fallo por sí sola. Cuenta como falsa alarma: no pasa nada, es mejor preguntar de más que de menos. Sigue buscando.", "duda");
+    }
+    if (window.innerWidth <= 760) SC.aLaVista(ficha);
+  }
+
+  function armar() {
+    cargar();
+    cod.textContent = ""; botones = [];
+    var cab = SC.el("div", "sc-cod-cab"); cab.appendChild(SC.el("span", "", CODIGO[leng].archivo)); cab.appendChild(SC.el("span", "", "generado por un asistente")); cod.appendChild(cab);
+    CODIGO[leng].lineas.forEach(function (fila, i) {
+      var txt = fila[0], b;
+      if (!txt) { b = SC.el("div", "sc-ln vacia", " "); b.setAttribute("aria-hidden", "true"); }
+      else {
+        b = SC.el("button", "sc-ln");
+        if (/^\s*\/\//.test(txt)) b.appendChild(SC.el("span", "c", txt)); else b.textContent = txt;
+        b.setAttribute("aria-pressed", "false");
+        b.setAttribute("aria-label", "Línea " + (i + 1) + ": " + txt.trim());
+        b.addEventListener("click", function () { tocar(i); });
+      }
+      botones.push(b); cod.appendChild(b);
+    });
+    pintarLineas(); marcador();
+    ficha.className = "sc-hall";
+    if (resueltos() || Object.keys(est.ok).length) fichaVacia("Sigues donde lo dejaste", "Toca una línea marcada para volver a ver su ficha, o sigue buscando las que faltan.");
+  }
+
+  SC.$("#b-pista").addEventListener("click", function () {
+    var falta = Object.keys(FALLOS).filter(function (f) { return !est.ok[f] && !est.rev[f]; });
+    if (!falta.length) return;
+    var n = lineaDe(falta[0]), desde = Math.max(1, n - 2), hasta = Math.min(botones.length, n + 2);
+    est.pistas++; salvar();
+    botones.forEach(function (b, k) { b.classList.toggle("pista", k + 1 >= desde && k + 1 <= hasta); });
+    fichaVacia("Pista", "Hay un fallo sin encontrar entre las líneas " + desde + " y " + hasta + ". Léelas con esta pregunta: ¿qué pasa si alguien con malas intenciones ve o escribe esto?", "duda");
+    SC.aLaVista(botones[n - 1]);
+  });
+  SC.$("#b-ver").addEventListener("click", function () {
+    Object.keys(FALLOS).forEach(function (f) { if (!est.ok[f]) est.rev[f] = 1; });
+    salvar(); pintarLineas(); marcador();
+    fichaVacia("Los que faltaban", "Quedaron marcados en rojo. Toca cada uno para leer por qué es un fallo y ponerle su categoría.", "duda");
+  });
+  SC.$("#b-otra").addEventListener("click", function () { SC.guardar("caza-" + leng, null); armar(); fichaVacia("De nuevo", "Marcador en cero. Toca la línea donde veas un fallo."); });
+  document.addEventListener("k-seg", function (e) {
+    if (e.detail.nombre !== "leng") return;
+    leng = e.detail.v === "node" ? "node" : "php"; SC.guardar("caza-leng", leng); armar();
+  });
+
+  SC.$$("[data-seg=leng] button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-v") === leng)); });
+  armar();
+})();
+</script>
+</body>
+</html>

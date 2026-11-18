@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Pídele la revisión a la IA… y compruébala</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 1 (sc-01). Experimentación: tres pedidos listos para
+     copiar y pegar en el asistente que use cada alumno (no depende del aula ni de DeepSeek Harness), las tres
+     comprobaciones de una respuesta y un ejercicio: tres respuestas de una IA sobre el login de la caza, ¿cuál aceptas?
+     (voto sc01-acepto con respuesta correcta y explicación). Las respuestas A, B y C son inventadas para la clase. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b8 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.8vw; align-items: start; }
+.b8-resp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1vw; align-items: stretch; }
+.b8-resp article { --c: var(--line2); }
+.b8-resp h3 { display: flex; gap: .5em; align-items: baseline; }
+.b8-resp h3 b { font: 800 1.2em var(--mono); color: var(--sc); }
+.b8-resp p { font-size: .72em; }
+.b8-resp .dice { font-family: var(--mono); font-size: .66em; line-height: 1.5; background: var(--s2); border-radius: .4em; padding: .55em .7em; }
+.b8-h2 { margin: .4vh 0 0; font-size: 1.05em; }
+.b8-h2 span { color: var(--muted); font-weight: 600; font-size: .78em; }
+@media (max-width: 760px) { .b8, .b8-resp { grid-template-columns: 1fr; gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { .b8-resp article { animation: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Seguridad con IA · Sesión 1</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Pídele la revisión a la IA… <em>y compruébala</em></h1>
+    <p class="esc-sub a-in" style="--d:.08s">La misma IA que escribió el fallo puede ayudarte a encontrarlo, si se lo pides bien y no le crees a ciegas. Tres pedidos, en orden. Sirven en el asistente que uses.</p>
+
+    <div class="b8 a-in" style="--d:.16s">
+      <div class="k-pila">
+        <div class="k-seg" data-seg="ped" role="group" aria-label="Pedido">
+          <button type="button" data-v="0" aria-pressed="true">1 · Revisa con la lista</button>
+          <button type="button" data-v="1" aria-pressed="false">2 · La línea y la prueba</button>
+          <button type="button" data-v="2" aria-pressed="false">3 · Corrige solo esto</button>
+        </div>
+        <pre class="k-pedido" id="pedido" data-titulo="" tabindex="0"></pre>
+        <div class="k-pedido-pie">
+          <button type="button" class="k-btn" id="b-copiar">Copiar el pedido</button>
+          <span class="k-nota" id="para"></span>
+        </div>
+      </div>
+
+      <article class="sc-hall bien">
+        <p class="sc-ceja">Cómo comprobar lo que responde</p>
+        <ol class="sc-lista">
+          <li><span><b>Cita archivo y línea.</b> Y esa línea existe y dice lo que la IA afirma. Ábrela y mírala.</span></li>
+          <li><span><b>El fallo se reproduce.</b> Hay una prueba que hoy falla por culpa de ese fallo. Si no se puede demostrar, queda «sin confirmar».</span></li>
+          <li><span><b>El arreglo trae su prueba.</b> La misma prueba pasa después del cambio, y no cambió nada más.</span></li>
+        </ol>
+        <p class="k-nota"><b>Dos cosas de las que desconfiar.</b> Los fallos inventados: líneas, funciones o archivos que no existen, dichos con total seguridad. Y el «ya está seguro»: ninguna revisión demuestra que no quedan fallos; solo dice que no encontró más.</p>
+      </article>
+    </div>
+
+    <h2 class="b8-h2">Tres respuestas de una IA <span>· le pediste revisar el login de la caza (un solo archivo, login.php). ¿Cuál aceptas?</span></h2>
+    <div class="b8-resp">
+      <article class="sc-hall" id="r-a">
+        <h3><b>A</b> «Ya está seguro»</h3>
+        <p class="dice">Revisé tu código y apliqué las mejores prácticas de seguridad. Ahora cumple con OWASP y está listo para producción. ¡Buen trabajo!</p>
+        <p class="por" hidden><b>No.</b> No cita ninguna línea, no demuestra nada y no dice qué cambió. Y «cumple con OWASP» no existe: el Top 10 es una lista de riesgos, no un sello.</p>
+      </article>
+      <article class="sc-hall" id="r-b">
+        <h3><b>B</b> Un hallazgo con su prueba</h3>
+        <p class="dice">Hallazgo 1 · login.php, línea 8 · A05 Injection (CWE-89). La consulta se arma pegando $usuario y $clave. Prueba: con una comilla en la clave, el login debe responder «no entra»; hoy entra. Arreglo: consulta preparada, solo en esa línea. Sin revisar: el límite de intentos (no veo dónde se maneja).</p>
+        <p class="por" hidden><b>Esta, para comprobarla.</b> Cita archivo y línea, propone una prueba que hoy falla, acota el arreglo y avisa lo que no revisó. Aceptarla no es creerle: es tener algo que puedes verificar.</p>
+      </article>
+      <article class="sc-hall" id="r-c">
+        <h3><b>C</b> Un hallazgo «crítico»</h3>
+        <p class="dice">Hallazgo crítico · auth_helper.php, línea 214: validarToken() usa un algoritmo inseguro. Reescribí todo el módulo de autenticación con una arquitectura más robusta (12 archivos nuevos).</p>
+        <p class="por" hidden><b>No.</b> Tu proyecto tiene un solo archivo: auth_helper.php y validarToken() no existen. Es un fallo inventado. Y además cambia 12 archivos que nadie pidió.</p>
+      </article>
+    </div>
+    <div class="k-caja k-voto" id="voto" data-voto="sc01-acepto" data-correcta="b"
+         data-explica="La B. No porque «suene» mejor, sino porque se puede comprobar: tiene línea, prueba y un arreglo acotado. La A promete sin mostrar nada. La C suena experta, pero habla de un archivo que no existe.">
+      <p class="k-q">¿Cuál aceptas?</p>
+      <div class="k-ops">
+        <button type="button" data-op="a">La A</button>
+        <button type="button" data-op="b">La B</button>
+        <button type="button" data-op="c">La C</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Copia el pedido 1, pégalo en tu asistente con el login de la caza y compara. Después, «Lo logré».</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var PEDIDOS = [
+    { t: "Pedido 1 · Revisión con la lista", para: "Pégalo en tu asistente y, debajo, tu código.",
+      x: "Actúa como revisor de seguridad. Revisa el código que pego abajo usando el OWASP Top 10:2025 como lista de revisión, categoría por categoría (de A01 a A10).\n\n" +
+         "Para cada hallazgo dame: archivo y línea, la categoría, por qué es un fallo y qué podría pasar.\n" +
+         "Si en una categoría no encuentras nada, escribe «sin hallazgos».\n" +
+         "No inventes: si no estás seguro de algo, márcalo como «por confirmar».\n" +
+         "No corrijas nada todavía.\n\n" +
+         "[pega aquí tu código]" },
+    { t: "Pedido 2 · La línea y la prueba que lo demuestra", para: "Cambia __ por el número del hallazgo que quieras comprobar.",
+      x: "Sobre el hallazgo n.º __: cítame la línea exacta, tal como está en mi código.\n\n" +
+         "Después dame una prueba que lo demuestre: una prueba automatizada (o los pasos a mano) que hoy falle por culpa de ese fallo y que pase cuando esté corregido. La voy a correr en mi propio proyecto, en mi máquina.\n\n" +
+         "Si no puedes demostrarlo, dime que el hallazgo queda «sin confirmar»." },
+    { t: "Pedido 3 · Corrige solo esto y explícame el cambio", para: "Un hallazgo por vez: así puedes revisar cada cambio.",
+      x: "Corrige únicamente el hallazgo n.º __. No cambies nada más: ni nombres, ni formato, ni otras funciones.\n\n" +
+         "Muéstrame el cambio como antes y después.\n" +
+         "Explícame en dos líneas por qué el código nuevo cierra el fallo.\n" +
+         "Dime qué prueba debo correr para comprobarlo." },
+  ];
+  var pre = SC.$("#pedido"), para = SC.$("#para"), actual = 0;
+  function mostrar(i) { actual = i; pre.setAttribute("data-titulo", PEDIDOS[i].t); pre.textContent = PEDIDOS[i].x; para.textContent = PEDIDOS[i].para; pre.scrollTop = 0; }
+  document.addEventListener("k-seg", function (e) { if (e.detail.nombre === "ped") mostrar(+e.detail.v || 0); });
+  SC.$("#b-copiar").addEventListener("click", function () {
+    var b = this;
+    SC.copiar(PEDIDOS[actual].x).then(function (ok) {
+      b.textContent = ok ? "✓ Copiado" : "No pude copiar"; b.classList.toggle("ok", !!ok);
+      SC.toast(ok ? "Copiado. Pégalo en tu asistente con Ctrl+V (Cmd+V en Mac)." : "Tu navegador no dejó copiar: selecciona el texto y cópialo a mano.");
+      setTimeout(function () { b.textContent = "Copiar el pedido"; b.classList.remove("ok"); }, 2200);
+    });
+  });
+  mostrar(0);
+
+  // Al votar se abre el porqué de cada respuesta y se marca cuál sirve.
+  function revelar() {
+    SC.$$(".b8-resp .por").forEach(function (p) { p.hidden = false; });
+    SC.$("#r-a").classList.add("mal"); SC.$("#r-c").classList.add("mal"); SC.$("#r-b").classList.add("bien");
+  }
+  SC.$("#voto").addEventListener("k-voto", revelar);
+  if (SC.leer("voto-sc01-acepto", "")) revelar();
+})();
+</script>
+</body>
+</html>
