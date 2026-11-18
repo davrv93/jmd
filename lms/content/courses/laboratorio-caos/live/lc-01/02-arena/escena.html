@@ -133,6 +133,7 @@ button { font: inherit; cursor: pointer; }
 .botones { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .bt { border: 3px solid var(--tinta); border-radius: 14px; padding: 10px; font-weight: 800; background: var(--banana); color: #1b1f3b; box-shadow: 0 5px 0 var(--tinta); }
 .bt.rojo { background: var(--rojo); color: #fff; } .bt.verde { background: var(--verde); color: #fff; }
+.bt.oz { background: linear-gradient(135deg, #1b1f3b, #2d3a8c); color: #ffd76a; box-shadow: 0 0 0 2px #ffc93c inset; } .bt.oz.armado { background: linear-gradient(135deg, #ffc93c, #ff9d2e); color: #1b1f3b; }
 .bt:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
 .bt:not(:disabled):active { transform: translateY(4px); box-shadow: 0 1px 0 var(--tinta); }
 .bt small { display: block; font-weight: 600; font-size: 11px; opacity: .9; }
@@ -406,6 +407,7 @@ button { font: inherit; cursor: pointer; }
   });
   $("vista").addEventListener("click", function () { ls("monito-vista", en3d ? "2d" : "3d"); activar3d(!en3d); });
 
+  var ozArmado = false;   // Golpe Ozaru: se arma con su botón y sale con el siguiente ataque que se elija
   function pintarPanel() {
     if (!est) return;
     var p = $("panel"), yo = est.yo, h = "";
@@ -414,7 +416,9 @@ button { font: inherit; cursor: pointer; }
         '<div class="equipos"><button class="eq t" data-eq="tumba"><b>🐒 Monito Tumba Server</b>Aprieta botones y tumba los servidores del otro lado de la valla.</button>' +
         '<button class="eq s" data-eq="server"><b>🛡️ Monito Server</b>Cuida tu servidor: botones y prompts para curarlo.</button></div>';
     } else if (yo.equipo === "tumba") {
-      var b = blanco !== null ? jug(blanco) : null, quedan = est.ataques_max - (yo.ataques || 0), puede = est.fase === "ataque" && quedan > 0 && b && !ocupado;
+      var b = blanco !== null ? jug(blanco) : null, quedan = est.ataques_max - (yo.ataques || 0);
+      if (!(est.super && yo.super_libre && est.fase === "ataque")) ozArmado = false;
+      var puede = est.fase === "ataque" && (quedan > 0 || ozArmado) && b && !ocupado;
       h = '<h2>🐒 Eres Monito Tumba Server</h2>';
       h += est.fase === "ataque"
         ? '<p class="suave">' + (b ? 'Tu blanco: <b>' + esc(b.nombre) + '</b>. ' : 'Toca un servidor de la granja para elegir tu blanco. ') + 'Te quedan <b>' + quedan + '</b> ataques esta ronda.</p>'
@@ -424,6 +428,7 @@ button { font: inherit; cursor: pointer; }
         h += '<div class="blancos">' + (listos.map(function (j) { return '<button data-bl="' + j.n + '"' + (blanco === j.n ? ' class="sel"' : "") + ">🖥️ " + esc(j.nombre) + (j.salud === "caido" ? " ❌" : "") + "</button>"; }).join("") || '<span class="suave" style="margin:0">Todavía no hay servidores listos.</span>') + "</div>";
       }
       if (est.kernel_restan !== undefined) h += '<p style="margin:0 0 10px"><button class="bt rojo" data-kp="1"' + (est.kernel_libre && !(yo.ataques > 0) && !ocupado ? "" : " disabled") + '>💥 KERNEL PANIC: apaga a todos<small>quedan ' + est.kernel_restan + ' en la partida · 1 por ronda · pide tus 2 ataques</small></button></p>';
+      if (est.super) h += '<p style="margin:0 0 10px"><button class="bt oz' + (ozArmado ? " armado" : "") + '" data-oz="1"' + (est.fase === "ataque" && yo.super_libre && !ocupado ? "" : " disabled") + '>🌕 ' + (!yo.super_libre ? "Golpe Ozaru: ya lo usaste" : ozArmado ? "GOLPE OZARU listo: ahora elige el ataque" : "GOLPE OZARU: tu superpoder") + '<small>' + (ozArmado ? "toca aquí otra vez para guardarlo" : "atraviesa el escudo y deja 2 fallas a la vez · 1 vez por partida · no gasta tus ataques") + '</small></button></p>';
       h += '<div class="botones">' + ATAQUES.map(function (a) { return '<button class="bt rojo" data-at="' + a.k + '"' + (puede ? "" : " disabled") + '>' + a.ic + " " + a.t + "<small>" + a.d + "</small></button>"; }).join("") + "</div>";
     } else {
       var fallas = yo.fallas || [], enDef = est.fase === "defensa" && yo.lab === "listo" && !ocupado;
@@ -441,7 +446,7 @@ button { font: inherit; cursor: pointer; }
       if ((yo.lab === "error" && intentos >= 5) || est.staff) h += '<p style="margin:10px 0 0"><button class="bt" data-prep="1"' + (yo.lab === "preparando" || ocupado ? " disabled" : "") + '>↻ Arrancar de nuevo mi servidor</button></p>';
     }
     if (est.staff) {
-      h += '<div class="staff"><button class="bt" data-st="iniciar">▶ Abrir ronda</button><button class="bt" data-st="siguiente">⏭ Siguiente turno</button>' + (est.kernel_libre ? '<button class="bt rojo" data-kp="1">💥 Kernel panic</button>' : "") + '<button class="bt rojo" data-st="reiniciar">↺ Reiniciar arena</button>' +
+      h += '<div class="staff"><button class="bt" data-st="iniciar">▶ Abrir ronda</button><button class="bt" data-st="siguiente">⏭ Siguiente turno</button>' + (est.kernel_libre ? '<button class="bt rojo" data-kp="1">💥 Kernel panic</button>' : "") + '<button class="bt rojo" data-st="reiniciar">↺ Reiniciar arena</button>' + (est.super ? '<button class="bt" data-st="limpiar">🧹 Quitar ausentes</button>' : "") +
         (yo && yo.equipo ? '<button class="bt" data-eq="' + (yo.equipo === "tumba" ? "server" : "tumba") + '">Cambiarme de equipo</button>' : "") + "</div>";
     }
     h += '<p class="aviso' + (avisoOk ? " ok-msg" : "") + '">' + esc(aviso) + "</p>";
@@ -451,6 +456,8 @@ button { font: inherit; cursor: pointer; }
     var b = ev.target.closest("button"); if (!b || b.disabled) return;
     if (b.dataset.bl) { elegir(Number(b.dataset.bl)); return; }
     if (b.dataset.eq) enviar({ accion: "unir", equipo: b.dataset.eq }, b.dataset.eq === "server" ? "¡Bienvenido al equipo Server! Tu servidor ya está arrancando." : "¡Bienvenido al equipo Tumba Server!");
+    else if (b.dataset.oz) { ozArmado = !ozArmado; pintarPanel(); }
+    else if (b.dataset.at && ozArmado) { ozArmado = false; enviar({ accion: "super", objetivo: blanco, ataque: b.dataset.at }, "🌕 ¡Golpe Ozaru! Dos fallas a la vez"); }
     else if (b.dataset.at) enviar({ accion: "atacar", objetivo: blanco, ataque: b.dataset.at }, "¡Ataque lanzado!");
     else if (b.dataset.def) enviar({ accion: "defender", defensa: b.dataset.def }, "");
     else if (b.dataset.kp) enviar({ accion: "kernel_panic" }, "💥 ¡Kernel panic lanzado!");

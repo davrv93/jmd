@@ -7,7 +7,7 @@ package httpapi
 // SQLite en 127.0.0.1:7070 y un respaldo). Los atacantes no necesitan aula: eligen un servidor y un
 // ataque, y el LMS lo ejecuta en el aula de ese defensor con docker exec. Va por turnos:
 //
-//	lobby → ataque (35 s) → defensa (75 s) → marcador → (el instructor abre la ronda siguiente)
+//	lobby → ataque (35 s) → defensa (55 s) → marcador → (el instructor abre la ronda siguiente)
 //
 // Durante la defensa el defensor puede usar dos botones (reiniciar la app, limpiar el disco); las otras
 // dos fallas (base borrada, app atascada) se curan con prompts en DeepSeek Harness, que lee la skill
@@ -22,7 +22,7 @@ package httpapi
 // memoria, disco ni red: el servidor compartido no lo nota aunque ataquen todos a la vez.
 //
 // GET  /api/v1/live/{lesson}/arena            estado
-// POST /api/v1/live/{lesson}/arena {accion}   unir | atacar | defender | escudo | kernel_panic | iniciar | siguiente | reiniciar | mover
+// POST /api/v1/live/{lesson}/arena {accion}   unir | atacar | defender | escudo | kernel_panic | super | iniciar | siguiente | reiniciar | mover | limpiar
 
 import (
 	"context"
@@ -42,7 +42,7 @@ import (
 
 const (
 	arenaAtaque     = 35 * time.Second
-	arenaDefensa    = 75 * time.Second
+	arenaDefensa    = 55 * time.Second
 	arenaMax        = 40
 	arenaAtaquesMax = 2 // por atacante y por turno de ataque
 	// Escudo: el defensor «cierra sus conexiones externas» un rato corto, una vez por ronda, durante el ataque.
@@ -137,6 +137,7 @@ type arenaJugador struct {
 	Objetivo    int             // tumba: n del servidor que eligió (solo para la UI)
 	EscudoHasta time.Time       // server: hasta cuándo rechaza ataques (conexiones cerradas)
 	EscudoRonda int             // server: ronda en la que ya usó su escudo
+	SuperUsado  bool            // tumba: ya gastó su Golpe Ozaru en esta partida
 }
 
 type arenaEvento struct {
@@ -167,6 +168,7 @@ type salaArena struct {
 	vigia       bool
 	ultimaPet   time.Time
 	cuotas      map[string]*cubeta
+	guardado    []byte // huella de lo último que se escribió en disco (ver live_arena_super.go)
 }
 
 var salasArena = struct {
@@ -174,12 +176,17 @@ var salasArena = struct {
 	m map[string]*salaArena
 }{m: map[string]*salaArena{}}
 
-func salaArenaDe(leccion string) *salaArena {
+func salaArenaDe(leccion string) *salaArena { return salaArenaCon(leccion, "") }
+
+// salaArenaCon devuelve la sala de la lección; si todavía no existe, la recupera del disco (dir) o la crea.
+func salaArenaCon(leccion, dir string) *salaArena {
 	salasArena.Lock()
 	defer salasArena.Unlock()
 	s := salasArena.m[leccion]
 	if s == nil {
-		s = &salaArena{Leccion: leccion, Fase: "lobby", Jug: map[string]*arenaJugador{}, cuotas: map[string]*cubeta{}}
+		if s = cargarArena(dir, leccion, time.Now()); s == nil {
+			s = &salaArena{Leccion: leccion, Fase: "lobby", Jug: map[string]*arenaJugador{}, cuotas: map[string]*cubeta{}}
+		}
 		salasArena.m[leccion] = s
 	}
 	return s
@@ -229,7 +236,7 @@ func (s *salaArena) avanzar(now time.Time) {
 	}
 }
 
-// El tiempo se acorta con cada ronda: ataque 35, 31, 27, 23 y 19 s; defensa 75, 66, 57, 48 y 39 s.
+// El tiempo se acorta con cada ronda: ataque 35, 31, 27, 23 y 19 s; defensa 55, 46, 37, 30 y 30 s (nunca menos de 30).
 func arenaDurAtaque(ronda int) time.Duration {
 	return max(15*time.Second, arenaAtaque-time.Duration(max(0, ronda-1))*4*time.Second)
 }
@@ -387,7 +394,9 @@ func (s *Server) vigilarArena(sa *salaArena) {
 		if sa.Fase == "marcador" {
 			sa.puntuar(now)
 		}
+		foto := sa.instantanea()
 		sa.mu.Unlock()
+		s.guardarArena(sa, foto)
 	}
 }
 
@@ -472,7 +481,7 @@ func (s *Server) liveArenaSala(w http.ResponseWriter, r *http.Request, p *Princi
 	if !s.aulaListo(w) {
 		return nil, time.Time{}
 	}
-	sa := salaArenaDe(l.ID)
+	sa := salaArenaCon(l.ID, s.DataDir)
 	now := time.Now()
 	sa.mu.Lock()
 	if !sa.cuota(p.ID, now) {
@@ -518,6 +527,7 @@ func (sa *salaArena) vista(p *Principal, now time.Time) map[string]any {
 			}
 		} else {
 			x["ataques"] = j.Ataques
+			x["super_usado"] = j.SuperUsado
 		}
 		jug = append(jug, x)
 	}
@@ -534,11 +544,13 @@ func (sa *salaArena) vista(p *Principal, now time.Time) map[string]any {
 		"tumba": sa.Tumba, "server": sa.Server, "jugadores": jug, "eventos": eventos,
 		"staff": p.Staff(), "ataques_max": arenaAtaquesMax, "puntuando": sa.pendiente,
 		"kernel_libre": sa.Fase == "ataque" && sa.kernelRonda != sa.Ronda && sa.kernelUsos < arenaKernelMax, "kernel_restan": arenaKernelMax - sa.kernelUsos,
+		"super":    true, // la escena enseña el Golpe Ozaru y «Quitar ausentes» solo si el servidor los conoce
 		"escudo_s": int(arenaEscudo.Seconds()), "rondas_max": arenaRondasMax, "fin": sa.Ronda >= arenaRondasMax && sa.Fase == "marcador" && !sa.pendiente,
 	}
 	if yo := sa.Jug[p.ID]; yo != nil {
 		out["yo"] = map[string]any{"n": yo.N, "equipo": yo.Equipo, "ataques": yo.Ataques, "lab": yo.Lab,
 			"salud": yo.Salud, "fallas": yo.Fallas, "mensaje": yo.Mensaje, "puntos": yo.Puntos,
+			"super_libre":  yo.Equipo == "tumba" && !yo.SuperUsado,
 			"escudo_libre": yo.Equipo == "server" && yo.EscudoRonda != sa.Ronda, "escudo_ms": max(0, yo.EscudoHasta.Sub(now).Milliseconds())}
 	}
 	return out
@@ -571,6 +583,8 @@ func (s *Server) liveArenaPost(w http.ResponseWriter, r *http.Request, p *Princi
 		s.arenaEscudar(w, sa, p, now)
 	case "kernel_panic":
 		s.arenaKernelPanic(w, sa, p, now)
+	case "super":
+		s.arenaSuper(w, sa, p, in.Objetivo, in.Ataque, now)
 	case "preparar":
 		yo := sa.Jug[p.ID]
 		if yo == nil || yo.Equipo != "server" {
@@ -588,7 +602,7 @@ func (s *Server) liveArenaPost(w http.ResponseWriter, r *http.Request, p *Princi
 		sa.mu.Unlock()
 		go s.prepararLab(sa, p.ID)
 		writeJSON(w, 200, vista)
-	case "iniciar", "siguiente", "reiniciar", "mover":
+	case "iniciar", "siguiente", "reiniciar", "mover", "limpiar":
 		defer sa.mu.Unlock()
 		if !p.Staff() {
 			forbidden(w)
@@ -627,7 +641,14 @@ func (s *Server) liveArenaPost(w http.ResponseWriter, r *http.Request, p *Princi
 			for _, j := range sa.Jug {
 				j.Puntos, j.Ataques, j.Atacado, j.Mensaje = 0, 0, nil, ""
 				j.EscudoRonda, j.EscudoHasta = 0, time.Time{}
+				j.SuperUsado = false
 			}
+		case "limpiar":
+			if sa.Fase == "ataque" || sa.Fase == "defensa" {
+				writeErr(w, 409, "ronda_en_curso", "espera a que termine la ronda para quitar a los ausentes")
+				return
+			}
+			sa.quitarAusentes(p.ID, now)
 		case "mover":
 			j := sa.porN(in.N)
 			if j == nil || (in.Equipo != "tumba" && in.Equipo != "server") {

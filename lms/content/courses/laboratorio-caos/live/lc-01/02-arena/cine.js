@@ -128,6 +128,13 @@
 
   /* ---- De eventos y estados a cinemáticas ---- */
   function deAtaque(est, e) {
+    if (e.accion === "super") {
+      var d0 = jug(est, e.de), a0 = jug(est, e.a);
+      encolar({ tipo: "super", clase: "problema", ic: "🌕", k: "Superpoder del equipo Tumba", t: "¡Golpe Ozaru!", a: e.a, icono: "🌕",
+        c: "Dos fallas a la vez, y el escudo no alcanza. En la vida real los problemas llegan juntos: cura primero lo que te deja a ciegas (la app apagada) y después lo demás.",
+        q: (d0 ? corto(d0.nombre) : "Un monito") + " → servidor de " + (a0 ? corto(a0.nombre) : "…"), dur: 4.6, clave: "p:super" });
+      return;
+    }
     var p = PROBLEMA[e.accion];
     if (!p) return;
     var de = jug(est, e.de), a = jug(est, e.a), mio = e.a === yoN || e.de === yoN, lleno = !vistoP[e.accion] || mio;

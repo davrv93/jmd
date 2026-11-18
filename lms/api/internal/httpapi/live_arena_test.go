@@ -352,7 +352,7 @@ func TestLiveArenaEscudoYKong(t *testing.T) {
 	}
 	post(profe, map[string]any{"accion": "kernel_panic"}, 200) // el instructor también puede lanzarlo (1 de 2)
 	// Cinco rondas y se acaba; el tiempo se acorta; el kernel panic se agota a la segunda.
-	if arenaDurAtaque(1) != 35*time.Second || arenaDurAtaque(5) != 19*time.Second || arenaDurDefensa(1) != 75*time.Second || arenaDurDefensa(5) != 39*time.Second {
+	if arenaDurAtaque(1) != 35*time.Second || arenaDurAtaque(5) != 19*time.Second || arenaDurDefensa(1) != 55*time.Second || arenaDurDefensa(5) != 30*time.Second {
 		t.Fatalf("duraciones: %v %v %v %v", arenaDurAtaque(1), arenaDurAtaque(5), arenaDurDefensa(1), arenaDurDefensa(5))
 	}
 	for ronda := 2; ronda <= 5; ronda++ {

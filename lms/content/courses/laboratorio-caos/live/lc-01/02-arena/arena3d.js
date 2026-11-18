@@ -397,6 +397,29 @@ function ozGolpe() {
     .to(ozaru.scale, { y: g, duration: 0.4, ease: "elastic.out(1.1, 0.45)" }, 0.61);
 }
 
+// Golpe Ozaru (el superpoder del equipo Tumba): ruge mirando la luna y golpea dos veces, más fuerte.
+function ozSuper() {
+  if (!noche || QUIETO) return;
+  if (ozTl) ozTl.kill();
+  const u = ozaru.userData, g = OZ_GRANDE, br = u.brazos.map((b) => b.rotation);
+  ozaru.position.copy(POS.ozGrande); ozaru.scale.setScalar(g);
+  ozTl = gsap.timeline();
+  ozTl.to(u.cabeza.rotation, { x: -0.6, duration: 0.25, ease: "power2.out" }, 0)
+    .to(ozaru.scale, { x: g * 1.14, y: g * 1.14, z: g * 1.14, duration: 0.35, ease: "power2.out" }, 0)
+    .add(() => { onda(ozaru.position.x, ozaru.position.z, 0xffc93c, 6); }, 0.3)
+    .to(u.cabeza.rotation, { x: 0, duration: 0.2 }, 0.5);
+  [0.7, 1.45].forEach((t, i) => {
+    ozTl.to(ozaru.position, { y: 2.2, duration: 0.26, ease: "power2.out" }, t)
+      .to(br, { x: -2.6, duration: 0.26, ease: "power2.out" }, t)
+      .to(ozaru.position, { y: 0, duration: 0.18, ease: "power3.in" }, t + 0.3)
+      .to(br, { x: 0, duration: 0.14, ease: "power3.in" }, t + 0.34)
+      .add(() => { onda(ozaru.position.x, ozaru.position.z, i ? 0xff5a3c : 0xff8a5c, 13); temblar(0.3); }, t + 0.48)
+      .to(ozaru.scale, { y: g * 0.95, duration: 0.07 }, t + 0.48)
+      .to(ozaru.scale, { y: g * 1.14, duration: 0.3, ease: "elastic.out(1.1, 0.45)" }, t + 0.55);
+  });
+  ozTl.to(ozaru.scale, { x: g, y: g, z: g, duration: 0.5, ease: "power2.inOut" }, 2.3);
+}
+
 // ---- Ema, el Rey Mono: salta, esquiva y gira el bastón ----
 let emaTl = null;
 function emaListo() { ema.rotation.set(0, -0.75, 0); ema.userData.baston.rotation.set(0, 0, 0); }
@@ -476,9 +499,10 @@ function camCine(d, pausa) {
     .to(cam, Object.assign({ duration: 0.9, ease: "power2.inOut" }, destinoCamara(faseActual)), "+=" + pausa);
 }
 function cine(c, rapido) {
-  host.classList.toggle("en-cine", c.tipo === "luna" || c.tipo === "ema");
+  host.classList.toggle("en-cine", c.tipo === "luna" || c.tipo === "ema" || c.tipo === "super");
   if (c.tipo === "luna") { if (!QUIETO) camCine({ px: -2.4, py: 3.6, pz: 5.2, lx: -5.2, ly: 2.7, lz: -6.4 }, 2.2); }
   else if (c.tipo === "ema") { if (!QUIETO) camCine({ px: 3.9, py: 2.7, pz: 11.2, lx: 1.2, ly: 1.2, lz: 5.2 }, 1.5); emaEntrada(); }
+  else if (c.tipo === "super") { if (!QUIETO) camCine({ px: -2.4, py: 3.6, pz: 5.2, lx: -5.2, ly: 2.7, lz: -6.4 }, 2.6); ozSuper(); }
   else if (c.tipo === "cura") emaIr(c.a, true, rapido, c.icono);
   else if (c.tipo === "fallo") emaIr(c.a, false, rapido, c.icono);
   else if (c.tipo === "final") { if (c.a !== undefined && c.a !== null) emaIr(c.a, false, false, c.icono); else emaEntrada(); }
