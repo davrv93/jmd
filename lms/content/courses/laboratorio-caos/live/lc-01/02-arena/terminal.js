@@ -115,16 +115,16 @@
 
   /* ---------- reglas: [acción, [expresión, peso]…] ---------- */
   var R_TUMBA = [
-    ["apagar", [/\bp?kill(all)?\b|\bapag|\bmata|\bmato\b/, 3], [/shutdown|poweroff|\bhalt\b|\bstop\b|\bdeten|desenchuf|desconect/, 3], [/\btumba|\bbota\b|\bbaja(r)? (la |el )?(app|servidor)|\bcae|\bcaig/, 2]],
-    ["disco", [/\bdisco\b|\bdisk\b/, 3], [/\bllena|\brellen|sin espacio|\bespacio\b|\bdd\b|fallocate/, 1.5]],
-    ["base", [/\bbase\b|\bbd\b|\bdb\b|tienda\.db|sqlite|\bdrop\b|\btabla/, 3], [/\brm\b|\bborra|\belimin/, 1]],
-    ["atascar", [/atasc|\blent|tortuga|\bsleep\b|cuelg|colga|congel|freez|\blag\b|\btraba|ralenti|\bslow/, 3]],
-    ["fuga", [/\bfuga|filtr|\bleak|exfiltr|\bscp\b|\bpublic|\bexpon|\brob(a|ar|o) /, 3], [/sac(a|ar) (los |sus )?datos|datos a la calle/, 3]],
-    ["clones", [/\bclon|\bfork|\bbomb|jutsu|multiplic|\bprocesos|naruto|kage|:\|:/, 3]],
-    ["pesados", [/pesad|gigante|enorme|\bupload|\bfotos?\b/, 3], [/sub(e|ir|o) (unos |muchos |los )?archivos|archivos grandes/, 3]],
-    ["formulario", [/formulario|\bform\b|basura|\bspam|\binsert\b|inyec/, 3], [/datos (malos|raros|falsos|basura)/, 3]],
-    ["sesion", [/\bsesion|\bsession|\bcookie|\btoken|puerta abierta/, 3]],
-    ["clave", [/\bclave|contrasena|password|passwd|123456|credencial/, 3]]
+    ["apagar", [/\bapagon|\bp?kill(all)?\b|\bapag|\bmata|\bmato\b/, 3], [/shutdown|poweroff|\bhalt\b|\bstop\b|\bdeten|desenchuf|desconect/, 3], [/\btumba|\bbota\b|\bbaja(r)? (la |el )?(app|servidor)|\bcae|\bcaig/, 2]],
+    ["disco", [/llenadisco|tragadisco|\bdisco\b|\bdisk\b/, 3], [/\bllena|\brellen|sin espacio|\bespacio\b|\bdd\b|fallocate/, 1.5]],
+    ["base", [/borrabase|adiosbase|\bbase\b|\bbd\b|\bdb\b|tienda\.db|sqlite|\bdrop\b|\btabla/, 3], [/\brm\b|\bborra|\belimin/, 1]],
+    ["atascar", [/\bmelaza|atasc|\blent|tortuga|\bsleep\b|cuelg|colga|congel|freez|\blag\b|\btraba|ralenti|\bslow/, 3]],
+    ["fuga", [/chismoso|\bfuga|filtr|\bleak|exfiltr|\bscp\b|\bpublic|\bexpon|\brob(a|ar|o) /, 3], [/sac(a|ar) (los |sus )?datos|datos a la calle/, 3]],
+    ["clones", [/multimono|clonador|\bclon|\bfork|\bbomb|jutsu|multiplic|\bprocesos|naruto|kage|:\|:/, 3]],
+    ["pesados", [/\bmudanza|pesad|gigante|enorme|\bupload|\bfotos?\b/, 3], [/sub(e|ir|o) (unos |muchos |los )?archivos|archivos grandes/, 3]],
+    ["formulario", [/basurero|formulario|\bform\b|basura|\bspam|\binsert\b|inyec/, 3], [/datos (malos|raros|falsos|basura)/, 3]],
+    ["sesion", [/puertaabierta|puerta\.sh|\bsesion|\bsession|\bcookie|\btoken|puerta abierta/, 3]],
+    ["clave", [/clave123|\bclave|contrasena|password|passwd|123456|credencial/, 3]]
   ];
   var R_SERVER = [
     ["reiniciar", [/\brestart|reinici|\breboot/, 3], [/\barranc|\blevant|\bstart\b|\bprend|\benciend|\brevive|resucit|\bup\b/, 3], [/bun .*servidor|arrancar\.sh/, 3]],
@@ -173,6 +173,10 @@
         "  formulario  llena de basura el formulario de Luis",
         "  sesion      deja la sesión abierta en el 2",
         "  clave       ponle clave débil a Ana",
+        "SCRIPTS DEL MONO (de juguete, hacen lo mismo que los ataques): sh <script> al <número o nombre>",
+        "  apagon.sh · llenadisco.sh · borrabase.sh · melaza.sh · chismoso.sh",
+        "  multimono.sh · mudanza.sh · basurero.sh · puertaabierta.sh · clave123.sh",
+        "  ejemplo:  sh multimono.sh al 3   ·   bash borrabase.sh a Luis   ·   sh apagon.sh al azar",
         "¿A quién? Su número (míralo con ls), su nombre o «al azar». Si no dices, uso tu blanco elegido.",
         "VER: status o ls · ayuda · clear · salir"]);
     } else {
