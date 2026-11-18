@@ -138,6 +138,8 @@ type arenaJugador struct {
 	EscudoHasta time.Time       // server: hasta cuándo rechaza ataques (conexiones cerradas)
 	EscudoRonda int             // server: ronda en la que ya usó su escudo
 	SuperUsado  bool            // tumba: ya gastó su Golpe Ozaru en esta partida
+	Derribado   bool            // server, con «sin cura»: cayó tras un ataque y queda caído hasta reiniciar la arena
+	Verdugos    map[string]bool // server: ids de quienes lo derribaron (cobran sus puntos en las rondas siguientes)
 }
 
 type arenaEvento struct {
@@ -157,6 +159,7 @@ type salaArena struct {
 	Ronda       int
 	Hasta       time.Time
 	Jug         map[string]*arenaJugador
+	SinCura     bool // el profe selló a Ema: nadie cura y lo que cae queda caído (ver live_arena_super.go)
 	sigN        int
 	Ev          []arenaEvento
 	sigEv       int
@@ -276,7 +279,7 @@ func (s *salaArena) puntuar(now time.Time) {
 		if d.Equipo != "server" || d.Lab != "listo" {
 			continue
 		}
-		if d.Salud == "ok" {
+		if d.Salud == "ok" && !(s.SinCura && d.Derribado) {
 			sanos++
 			d.Puntos += arenaPuntos
 			rs += arenaPuntos
@@ -285,7 +288,11 @@ func (s *salaArena) puntuar(now time.Time) {
 		caidos++
 		rt += arenaPuntos
 		var quienes []*arenaJugador
-		for id := range d.Atacado {
+		de := d.Atacado
+		if len(de) == 0 && s.SinCura {
+			de = d.Verdugos // nadie lo tocó esta ronda: cobran quienes lo derribaron
+		}
+		for id := range de {
 			if a := s.Jug[id]; a != nil {
 				quienes = append(quienes, a)
 			}
@@ -389,6 +396,7 @@ func (s *Server) vigilarArena(sa *salaArena) {
 		for id, r := range res {
 			if j := sa.Jug[id]; j != nil {
 				j.Salud, j.Fallas, j.Chequeo = r.salud, r.fallas, now
+				sa.marcarDerribo(j)
 			}
 		}
 		if sa.Fase == "marcador" {
@@ -411,6 +419,7 @@ func (s *Server) revisarYa(sa *salaArena, id string) {
 	defer sa.mu.Unlock()
 	if j := sa.Jug[id]; j != nil && j.Equipo == "server" && j.Lab == "listo" {
 		j.Salud, j.Fallas, j.Chequeo = r.salud, r.fallas, time.Now()
+		sa.marcarDerribo(j)
 	}
 }
 
@@ -521,7 +530,8 @@ func (sa *salaArena) vista(p *Principal, now time.Time) map[string]any {
 		x := map[string]any{"n": j.N, "nombre": j.Nombre, "equipo": j.Equipo, "puntos": j.Puntos, "staff": j.Staff,
 			"presente": now.Sub(j.Visto) <= 30*time.Second}
 		if j.Equipo == "server" {
-			x["lab"], x["salud"], x["fallas"] = j.Lab, j.Salud, j.Fallas
+			x["lab"] = j.Lab
+			x["salud"], x["fallas"] = sa.saludVista(j)
 			if j.EscudoHasta.After(now) {
 				x["escudo_ms"] = j.EscudoHasta.Sub(now).Milliseconds()
 			}
@@ -544,12 +554,14 @@ func (sa *salaArena) vista(p *Principal, now time.Time) map[string]any {
 		"tumba": sa.Tumba, "server": sa.Server, "jugadores": jug, "eventos": eventos,
 		"staff": p.Staff(), "ataques_max": arenaAtaquesMax, "puntuando": sa.pendiente,
 		"kernel_libre": sa.Fase == "ataque" && sa.kernelRonda != sa.Ronda && sa.kernelUsos < arenaKernelMax, "kernel_restan": arenaKernelMax - sa.kernelUsos,
+		"sin_cura": sa.SinCura,
 		"super":    true, // la escena enseña el Golpe Ozaru y «Quitar ausentes» solo si el servidor los conoce
 		"escudo_s": int(arenaEscudo.Seconds()), "rondas_max": arenaRondasMax, "fin": sa.Ronda >= arenaRondasMax && sa.Fase == "marcador" && !sa.pendiente,
 	}
 	if yo := sa.Jug[p.ID]; yo != nil {
+		miSalud, misFallas := sa.saludVista(yo)
 		out["yo"] = map[string]any{"n": yo.N, "equipo": yo.Equipo, "ataques": yo.Ataques, "lab": yo.Lab,
-			"salud": yo.Salud, "fallas": yo.Fallas, "mensaje": yo.Mensaje, "puntos": yo.Puntos,
+			"salud": miSalud, "fallas": misFallas, "mensaje": yo.Mensaje, "puntos": yo.Puntos,
 			"super_libre":  yo.Equipo == "tumba" && !yo.SuperUsado,
 			"escudo_libre": yo.Equipo == "server" && yo.EscudoRonda != sa.Ronda, "escudo_ms": max(0, yo.EscudoHasta.Sub(now).Milliseconds())}
 	}
@@ -602,7 +614,7 @@ func (s *Server) liveArenaPost(w http.ResponseWriter, r *http.Request, p *Princi
 		sa.mu.Unlock()
 		go s.prepararLab(sa, p.ID)
 		writeJSON(w, 200, vista)
-	case "iniciar", "siguiente", "reiniciar", "mover", "limpiar":
+	case "iniciar", "siguiente", "reiniciar", "mover", "limpiar", "sin_cura":
 		defer sa.mu.Unlock()
 		if !p.Staff() {
 			forbidden(w)
@@ -642,7 +654,10 @@ func (s *Server) liveArenaPost(w http.ResponseWriter, r *http.Request, p *Princi
 				j.Puntos, j.Ataques, j.Atacado, j.Mensaje = 0, 0, nil, ""
 				j.EscudoRonda, j.EscudoHasta = 0, time.Time{}
 				j.SuperUsado = false
+				j.Derribado, j.Verdugos = false, nil
 			}
+		case "sin_cura":
+			sa.sellarEma(!sa.SinCura, now)
 		case "limpiar":
 			if sa.Fase == "ataque" || sa.Fase == "defensa" {
 				writeErr(w, 409, "ronda_en_curso", "espera a que termine la ronda para quitar a los ausentes")
@@ -869,6 +884,10 @@ func (s *Server) arenaDefender(w http.ResponseWriter, sa *salaArena, p *Principa
 	case !ok:
 		sa.mu.Unlock()
 		writeErr(w, 400, "defensa_invalida", "defensa desconocida")
+		return
+	case sa.SinCura:
+		sa.mu.Unlock()
+		writeErr(w, 409, "sin_cura", "Ema está sellado: en esta partida nadie cura. Lo que cae, queda caído")
 		return
 	case sa.Fase != "defensa":
 		sa.mu.Unlock()

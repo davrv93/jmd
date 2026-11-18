@@ -292,6 +292,7 @@ button { font: inherit; cursor: pointer; }
   ];
   var ICONO = { apagar: "🔌", disco: "💾", base: "🗑️", atascar: "🐢", fuga: "🏃", clones: "👥", pesados: "📦", formulario: "✍️", sesion: "🔓", clave: "🔑", reiniciar: "🩹", limpiar: "🧹" };
   var FALLA = {
+    sin_cura: ["🚫", "Derribado: Ema está sellado y nadie cura", "queda caído hasta que el profe reinicie la arena"],
     app: ["🔌", "La app está apagada", "Botón «Reiniciar app»"],
     disco: ["💾", "El disco /tmp está lleno", "Botón «Limpiar disco»… si no basta, mira qué archivos pesan más"],
     base: ["🗑️", "Borraron la base de datos", "Pídeselo a DeepSeek Harness (prompt 2)"],
@@ -437,16 +438,17 @@ button { font: inherit; cursor: pointer; }
       else if (yo.lab === "error") h += '<div class="estado caido">Tu servidor no arrancó. Avísale al profe y toca «Arrancar de nuevo».</div>';
       else if (yo.salud === "ok") h += '<div class="estado ok">✅ Tu servidor está en pie: http://127.0.0.1:7070</div>';
       else h += '<div class="estado caido">❌ Tu servidor está caído<ul>' + fallas.map(function (f) { var x = FALLA[f] || ["❓", f, ""]; return "<li>" + x[0] + " " + esc(x[1]) + " → <i>" + esc(x[2]) + "</i></li>"; }).join("") + "</ul></div>";
-      h += '<p class="suave">' + (est.fase === "defensa" ? "¡Tu turno! Usa los botones y los prompts antes de que acabe el tiempo." : est.fase === "ataque" ? "Te están atacando: prepárate, los botones se encienden en la defensa." : "Los botones se encienden en tu turno de defensa.") + "</p>";
+      if (est.sin_cura) h += '<div class="estado caido">🚫 Ema está sellado: en esta partida nadie cura. Si tu servidor cae, queda caído. Tu única defensa es cerrar conexiones a tiempo.</div>';
+      h += '<p class="suave">' + (est.sin_cura ? (est.fase === "ataque" ? "Te están atacando: cierra tus conexiones en el momento justo." : "Mira qué te tumbaron y piensa cómo lo habrías evitado: esta vez no se puede curar.") : est.fase === "defensa" ? "¡Tu turno! Usa los botones y los prompts antes de que acabe el tiempo." : est.fase === "ataque" ? "Te están atacando: prepárate, los botones se encienden en la defensa." : "Los botones se encienden en tu turno de defensa.") + "</p>";
       if (yo.escudo_libre !== undefined) h += '<p style="margin:0 0 10px"><button class="bt" data-esc="1"' + (est.fase === "ataque" && yo.escudo_libre && yo.lab === "listo" && !ocupado ? "" : " disabled") + '>🛡️ ' + (yo.escudo_ms > 0 ? "Conexiones cerradas: " + Math.ceil(yo.escudo_ms / 1000) + " s" : "Cerrar conexiones " + (est.escudo_s || 10) + " s") + '<small>mientras te atacan, los ataques rebotan · 1 vez por ronda</small></button></p>';
-      h += '<div class="botones"><button class="bt verde" data-def="reiniciar"' + (enDef ? "" : " disabled") + '>🩹 Reiniciar app<small>cura la app apagada</small></button>' +
+      if (!est.sin_cura) h += '<div class="botones"><button class="bt verde" data-def="reiniciar"' + (enDef ? "" : " disabled") + '>🩹 Reiniciar app<small>cura la app apagada</small></button>' +
         '<button class="bt verde" data-def="limpiar"' + (enDef ? "" : " disabled") + '>🧹 Limpiar disco<small>cura el disco lleno</small></button></div>';
-      h += '<div class="prompts"><p class="suave" style="margin:6px 0 0">Para lo demás usa <b>DeepSeek Harness</b> (panel de la derecha). Ojo: hay ataques que ningún prompt de aquí cura. Ahí tienes que pensar qué pedirle. Toca un prompt para copiarlo:</p>' +
+      if (!est.sin_cura) h += '<div class="prompts"><p class="suave" style="margin:6px 0 0">Para lo demás usa <b>DeepSeek Harness</b> (panel de la derecha). Ojo: hay ataques que ningún prompt de aquí cura. Ahí tienes que pensar qué pedirle. Toca un prompt para copiarlo:</p>' +
         PROMPTS.map(function (x, i) { return '<button class="prompt" data-pr="' + i + '"><b>' + esc(x[0]) + "</b>" + esc(x[1]) + "</button>"; }).join("") + "</div>";
       if ((yo.lab === "error" && intentos >= 5) || est.staff) h += '<p style="margin:10px 0 0"><button class="bt" data-prep="1"' + (yo.lab === "preparando" || ocupado ? " disabled" : "") + '>↻ Arrancar de nuevo mi servidor</button></p>';
     }
     if (est.staff) {
-      h += '<div class="staff"><button class="bt" data-st="iniciar">▶ Abrir ronda</button><button class="bt" data-st="siguiente">⏭ Siguiente turno</button>' + (est.kernel_libre ? '<button class="bt rojo" data-kp="1">💥 Kernel panic</button>' : "") + '<button class="bt rojo" data-st="reiniciar">↺ Reiniciar arena</button>' + (est.super ? '<button class="bt" data-st="limpiar">🧹 Quitar ausentes</button>' : "") +
+      h += '<div class="staff"><button class="bt" data-st="iniciar">▶ Abrir ronda</button><button class="bt" data-st="siguiente">⏭ Siguiente turno</button>' + (est.kernel_libre ? '<button class="bt rojo" data-kp="1">💥 Kernel panic</button>' : "") + '<button class="bt rojo" data-st="reiniciar">↺ Reiniciar arena</button>' + (est.super ? '<button class="bt" data-st="limpiar">🧹 Quitar ausentes</button>' : "") + (est.sin_cura !== undefined ? '<button class="bt' + (est.sin_cura ? " verde" : " rojo") + '" data-st="sin_cura">' + (est.sin_cura ? "✅ Dejar que Ema cure" : "🚫 Sellar a Ema: nadie cura") + '</button>' : "") +
         (yo && yo.equipo ? '<button class="bt" data-eq="' + (yo.equipo === "tumba" ? "server" : "tumba") + '">Cambiarme de equipo</button>' : "") + "</div>";
     }
     h += '<p class="aviso' + (avisoOk ? " ok-msg" : "") + '">' + esc(aviso) + "</p>";

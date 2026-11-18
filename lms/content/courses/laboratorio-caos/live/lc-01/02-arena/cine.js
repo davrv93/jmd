@@ -199,7 +199,8 @@
         encolar({ tipo: "luna", clase: "fase", ic: "🌕", k: "Cae la noche", t: "El Ozaru crece con la luna", c: "Un problema chiquito que nadie mira se vuelve gigante. Hoy lo soltamos a propósito, para aprender a contenerlo.", dur: 3.6 });
       } else if (est.fase === "defensa") {
         vaciar();
-        encolar({ tipo: "ema", clase: "fase", ic: "🌅", k: "Amanece", t: "Ema, el Rey Mono, entra a curar", c: "Primero diagnostica, después cura: pídele a la IA que mire /salud antes de tocar nada.", dur: 3.4 });
+        if (est.sin_cura) encolar({ tipo: "luna", clase: "fase", ic: "🚫", k: "Amanece", t: "Ema está sellado: nadie cura", c: "Lo que cayó, queda caído. En producción también pasa: hay fallas que no se arreglan a tiempo. Lo que te salva es prevenir, no curar.", dur: 3.6 });
+        else encolar({ tipo: "ema", clase: "fase", ic: "🌅", k: "Amanece", t: "Ema, el Rey Mono, entra a curar", c: "Primero diagnostica, después cura: pídele a la IA que mire /salud antes de tocar nada.", dur: 3.4 });
       }
     }
     (nuevos || []).forEach(function (e) {
@@ -209,7 +210,7 @@
     });
     est.jugadores.forEach(function (j) {
       var a = antes[j.n];
-      if (j.equipo !== "server" || !a || a.lab !== "listo" || j.lab !== "listo" || a.salud !== "caido") return;
+      if (est.sin_cura || j.equipo !== "server" || !a || a.lab !== "listo" || j.lab !== "listo" || a.salud !== "caido") return;
       var ahora = j.fallas || [];
       if (tiene(ahora, "aula") || tiene(ahora, "sin_lab")) return;
       var ciega = tiene(ahora, "app") || tiene(ahora, "lenta");

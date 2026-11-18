@@ -170,3 +170,93 @@ func TestArenaSalaEnDisco(t *testing.T) {
 		t.Fatalf("limpiar: %d %s", r.code, r.raw)
 	}
 }
+
+// Ema sellado: los botones de cura no hacen nada y lo que cae queda caído en el marcador aunque se arregle.
+func TestLiveArenaSinCura(t *testing.T) {
+	e := newEnv(t)
+	fa := &aulaArena{}
+	e.setAula(fa)
+	profe := e.login("profe@x.test", "profe1234")
+	ana := e.register("ana@x.test")
+	luis := e.register("luis@x.test")
+	mia := e.register("mia@x.test")
+	salasArena.Lock()
+	salasArena.m = map[string]*salaArena{}
+	salasArena.Unlock()
+	const api = "/api/v1/live/l1/arena"
+	post := func(tok string, cuerpo map[string]any, quiere int) resp {
+		t.Helper()
+		r := e.call("POST", api, tok, false, cuerpo, "")
+		if r.code != quiere {
+			t.Fatalf("%v: %d %s", cuerpo, r.code, r.raw)
+		}
+		return r
+	}
+	yo := func(r resp) map[string]any { m, _ := r.body["yo"].(map[string]any); return m }
+	post(ana, map[string]any{"accion": "unir", "equipo": "tumba"}, 200)
+	luisN := int(yo(post(luis, map[string]any{"accion": "unir", "equipo": "server"}, 200))["n"].(float64))
+	post(mia, map[string]any{"accion": "unir", "equipo": "server"}, 200)
+	for _, tok := range []string{luis, mia} {
+		esperar(t, "lab listo", func() bool { return yo(e.call("GET", api, tok, false, nil, ""))["lab"] == "listo" })
+	}
+	// El vigía tarda 4 s en pasar: la prueba revisa la salud y puntúa a mano, como hace él.
+	puntuar := func() {
+		sa := salaArenaDe("l1")
+		sa.mu.Lock()
+		var ids []string
+		for id, j := range sa.Jug {
+			if j.Equipo == "server" {
+				ids = append(ids, id)
+			}
+		}
+		sa.mu.Unlock()
+		res := e.s.chequearArena(ids)
+		sa.mu.Lock()
+		for id, r := range res {
+			j := sa.Jug[id]
+			j.Salud, j.Fallas = r.salud, r.fallas
+			sa.marcarDerribo(j)
+		}
+		sa.puntuar(time.Now())
+		sa.mu.Unlock()
+	}
+	post(ana, map[string]any{"accion": "sin_cura"}, 403)
+	if r := post(profe, map[string]any{"accion": "sin_cura"}, 200); r.body["sin_cura"] != true {
+		t.Fatalf("sin_cura: %v", r.body["sin_cura"])
+	}
+
+	// Ronda 1: Ana apaga la app de Luis. Mía no recibe nada.
+	post(profe, map[string]any{"accion": "iniciar"}, 200)
+	post(ana, map[string]any{"accion": "atacar", "objetivo": luisN, "ataque": "apagar"}, 200)
+	esperar(t, "Luis caído", func() bool { return yo(e.call("GET", api, luis, false, nil, ""))["salud"] == "caido" })
+	post(profe, map[string]any{"accion": "siguiente"}, 200)
+	post(luis, map[string]any{"accion": "defender", "defensa": "reiniciar"}, 409) // el botón no cura
+	// Luis lo arregla por su cuenta (como haría con la IA): su app vuelve, pero sigue contando como caído.
+	for n := range fa.labs {
+		fa.mu.Lock()
+		fa.labs[n].app = true
+		fa.mu.Unlock()
+	}
+	post(profe, map[string]any{"accion": "siguiente"}, 200)
+	puntuar()
+	r := e.call("GET", api, luis, false, nil, "")
+	if r.body["tumba"].(float64) != 100 || r.body["server"].(float64) != 100 || yo(r)["salud"] != "caido" {
+		t.Fatalf("ronda 1: tumba=%v server=%v salud de Luis=%v", r.body["tumba"], r.body["server"], yo(r)["salud"])
+	}
+
+	// Ronda 2 sin ataques: Luis sigue caído para el marcador y Ana vuelve a cobrar.
+	post(profe, map[string]any{"accion": "iniciar"}, 200)
+	post(profe, map[string]any{"accion": "siguiente"}, 200)
+	post(profe, map[string]any{"accion": "siguiente"}, 200)
+	puntuar()
+	r = e.call("GET", api, ana, false, nil, "")
+	if r.body["tumba"].(float64) != 200 || r.body["server"].(float64) != 200 || yo(r)["puntos"].(float64) != 200 {
+		t.Fatalf("ronda 2: tumba=%v server=%v puntos de Ana=%v", r.body["tumba"], r.body["server"], yo(r)["puntos"])
+	}
+
+	// El profe deja que Ema cure otra vez: Luis, que ya estaba arreglado, vuelve a estar en pie.
+	post(profe, map[string]any{"accion": "sin_cura"}, 200)
+	if s := yo(e.call("GET", api, luis, false, nil, ""))["salud"]; s != "ok" {
+		t.Fatalf("al quitar el sello Luis debe verse en pie: %v", s)
+	}
+}

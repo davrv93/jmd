@@ -112,6 +112,51 @@ func (sa *salaArena) quitarAusentes(yoID string, now time.Time) int {
 	return n
 }
 
+// --- Ema sellado: nadie cura ----------------------------------------------------------------------
+//
+// Con «sin cura» (lo enciende y apaga el profe, POST {accion: "sin_cura"}) los botones de cura no hacen
+// nada y un servidor que cae después de un ataque queda caído hasta que se reinicie la arena, aunque su
+// dueño lo arregle a mano o con la IA: en el marcador sigue contando para el equipo Tumba cada ronda.
+// Un servidor que nunca cayó (por ejemplo, porque cerró conexiones a tiempo) sigue sumando para Server.
+
+func (sa *salaArena) sellarEma(si bool, now time.Time) {
+	sa.SinCura = si
+	if si {
+		for _, j := range sa.Jug { // lo que ya está caído por un ataque de esta ronda, queda caído
+			sa.marcarDerribo(j)
+		}
+		sa.evento(arenaEvento{Tipo: "fase", Accion: "sin_cura", Texto: "El profe selló a Ema 🚫: en esta partida nadie cura. Lo que cae, queda caído"}, now)
+		return
+	}
+	for _, j := range sa.Jug {
+		j.Derribado, j.Verdugos = false, nil
+	}
+	sa.evento(arenaEvento{Tipo: "fase", Accion: "con_cura", Texto: "Ema vuelve a curar ✅: los servidores que se arreglen cuentan otra vez"}, now)
+}
+
+// marcarDerribo se llama con el candado tomado, cada vez que llega la salud de un servidor.
+func (sa *salaArena) marcarDerribo(j *arenaJugador) {
+	if !sa.SinCura || j.Derribado || j.Equipo != "server" || j.Salud != "caido" || len(j.Atacado) == 0 {
+		return
+	}
+	j.Derribado = true
+	j.Verdugos = make(map[string]bool, len(j.Atacado))
+	for id := range j.Atacado {
+		j.Verdugos[id] = true
+	}
+}
+
+// saludVista: lo que ve la escena. Un derribado sale caído aunque su app ya responda.
+func (sa *salaArena) saludVista(j *arenaJugador) (string, []string) {
+	if sa.SinCura && j.Derribado {
+		if len(j.Fallas) == 0 {
+			return "caido", []string{"sin_cura"}
+		}
+		return "caido", j.Fallas
+	}
+	return j.Salud, j.Fallas
+}
+
 // --- sala en disco -------------------------------------------------------------------------------
 
 type arenaGuardada struct {
@@ -124,6 +169,7 @@ type arenaGuardada struct {
 	Server      int             `json:"server"`
 	SigN        int             `json:"sig_n"`
 	Pendiente   bool            `json:"pendiente"`
+	SinCura     bool            `json:"sin_cura"`
 	KernelRonda int             `json:"kernel_ronda"`
 	KernelUsos  int             `json:"kernel_usos"`
 	Jug         []*arenaJugador `json:"jugadores"`
@@ -138,9 +184,15 @@ func arenaRuta(dir, leccion string) string {
 // instantanea arma lo que se guarda. Se llama con el candado de la sala tomado.
 func (sa *salaArena) instantanea() arenaGuardada {
 	g := arenaGuardada{Leccion: sa.Leccion, Fase: sa.Fase, Ronda: sa.Ronda, Hasta: sa.Hasta, Tumba: sa.Tumba, Server: sa.Server,
-		SigN: sa.sigN, Pendiente: sa.pendiente, KernelRonda: sa.kernelRonda, KernelUsos: sa.kernelUsos}
+		SigN: sa.sigN, Pendiente: sa.pendiente, SinCura: sa.SinCura, KernelRonda: sa.kernelRonda, KernelUsos: sa.kernelUsos}
 	for _, j := range sa.Jug {
 		c := *j
+		if j.Verdugos != nil {
+			c.Verdugos = make(map[string]bool, len(j.Verdugos))
+			for k, v := range j.Verdugos {
+				c.Verdugos[k] = v
+			}
+		}
 		c.Fallas = append([]string(nil), j.Fallas...)
 		c.Atacado = make(map[string]bool, len(j.Atacado))
 		for k, v := range j.Atacado {
@@ -203,7 +255,7 @@ func cargarArena(dir, leccion string, now time.Time) *salaArena {
 		return nil
 	}
 	sa := &salaArena{Leccion: leccion, Fase: g.Fase, Ronda: g.Ronda, Hasta: g.Hasta, Tumba: g.Tumba, Server: g.Server,
-		sigN: g.SigN, pendiente: g.Pendiente, kernelRonda: g.KernelRonda, kernelUsos: g.KernelUsos,
+		sigN: g.SigN, pendiente: g.Pendiente, SinCura: g.SinCura, kernelRonda: g.KernelRonda, kernelUsos: g.KernelUsos,
 		Jug: map[string]*arenaJugador{}, cuotas: map[string]*cubeta{}}
 	switch sa.Fase {
 	case "lobby", "ataque", "defensa", "marcador":
