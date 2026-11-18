@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Los números de hoy · Menos chat, más orquesta</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  .teo-ceja, .nt .k, .cita small, .rot, .pastilla { text-transform: none !important; letter-spacing: .02em !important; }
+  .nt.oro { background: #E9C25A; box-shadow: 0 0 0 2px #8A6A00 inset, var(--sombra); }
+  .nt .t.mono { hyphens: none; overflow-wrap: anywhere; }
+  .nt .t small { display: block; font-weight: 500; opacity: .85; margin-top: .2em; }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .sello.ok { color: #1F7A3E; border-color: #1F7A3E; }
+  .nt.ficha .sello { top: -1.5em; right: -.8em; }
+  .marco { fill: none; stroke: var(--gris); stroke-width: 1.6; stroke-dasharray: 6 7; }
+
+  .bAntes { fill: var(--papel3); stroke: var(--tinta); stroke-width: 2; }
+  .bDesp { fill: var(--acento); stroke: var(--tinta); stroke-width: 2; }
+  .cuadro { display: inline-block; width: .9em; height: .9em; vertical-align: -.1em; border: 1.5px solid var(--tinta); margin-left: .3em; }
+  .cuadro.antes { background: var(--papel3); } .cuadro.desp { background: var(--acento); }
+  #vA1, #vD1, #vA3, #vD3 { font-size: 1.9cqw; padding: .25em .2em; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Lo medido hoy · tokens por segundo</p>
+    <h1>Tres agentes no corrían a la vez: <em>hacían cola</em></h1>
+  </header>
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Gráfico de barras en tokens por segundo. Un agente solo: 14,6 antes del ajuste y 24,3 después. Tres agentes, en total: 16,2 antes y 38,8 después. A la derecha, la causa (Ollama atendía en cola por falta de RAM) y el ajuste aplicado.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="eje" class="trazo" d="M70 440 L520 440"/>
+        <rect id="bA1" class="bAntes" x="100" y="309" width="70" height="131"/>
+        <rect id="bD1" class="bDesp" x="180" y="221" width="70" height="219"/>
+        <rect id="bA3" class="bAntes" x="320" y="294" width="70" height="146"/>
+        <rect id="bD3" class="bDesp" x="400" y="91" width="70" height="349"/>
+      </svg>
+      <p class="pastilla" id="vA1" style="left:12.50%; top:52.9%; width:8.75%">14,6</p>
+      <p class="pastilla" id="vD1" style="left:22.50%; top:36.0%; width:8.75%">24,3</p>
+      <p class="pastilla" id="vA3" style="left:40.00%; top:50.0%; width:8.75%">16,2</p>
+      <p class="pastilla" id="vD3" style="left:50.00%; top:11.0%; width:8.75%">38,8</p>
+      <p class="pastilla" id="g1" style="left:12.5%; top:87%; width:18.75%">1 agente</p>
+      <p class="pastilla" id="g3" style="left:40%; top:87%; width:18.75%">3 agentes, total</p>
+      <p class="pastilla" id="ley" style="left:9%; top:0%; width:48%"><span class="cuadro antes"></span> antes <span class="cuadro desp"></span> después · tok/s</p>
+      <div class="nt hot" id="nCola" data-r="1.2" style="left:68%; top:4%; width:30%"><span class="k">La causa</span><span class="t">Ollama los atendía en cola: eligió 1 en paralelo con 92 % de swap usado</span></div>
+      <div class="nt ficha s" id="nAj" data-r="-1" style="left:68%; top:38%; width:30%"><span class="k">El ajuste</span><span class="t mono">liberar RAM<br>OLLAMA_FLASH_ATTENTION=1<br>OLLAMA_KV_CACHE_TYPE=q8_0<br>OLLAMA_NUM_PARALLEL=3</span></div>
+      <div class="nt info" id="nRes" data-r=".8" style="left:68%; top:74%; width:30%"><span class="k">Resultado</span><span class="t">+66 % un agente · 2,4× los tres · 13,3 tok/s cada uno</span></div>
+    </figure>
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Un agente solo: 14,6 tok/s</b><p>Antes de tocar nada, un agente Qwen 14B generaba 14,6 tokens por segundo. Esa es la línea base.</p></li>
+        <li><b>Tres a la vez: 16,2 en total</b><p>Con tres agentes «en paralelo», el total apenas subió a 16,2. Casi lo mismo que uno solo: no trabajaban a la vez, hacían cola.</p></li>
+        <li><b>La causa: la máquina sin aire</b><p>Ollama decide solo cuántas conversaciones atiende a la vez. Con la RAM apretada, 92 % de swap usado, eligió una. Las otras dos esperaban su turno.</p></li>
+        <li><b>El ajuste</b><p>Liberar RAM, activar flash attention, guardar la caché KV en q8_0 (ocupa menos memoria por conversación) y pedir tres en paralelo de forma explícita.</p></li>
+        <li><b>Después: paralelo de verdad</b><p>Un agente pasó a 24,3 tok/s (+66 %). Los tres juntos, a 38,8 en total (2,4×), unos 13,3 cada uno.</p><p class="aparte">Configurar «tres en paralelo» no garantiza paralelismo. Hay que medirlo.</p></li>
+      </ol>
+    </aside>
+  </div>
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Fuente: trabajo propio de JMD Learning, 18-11-2026. Orquestador en Node sin dependencias; qwen2.5-coder:14b en Ollama sobre una Mac M4 Pro de 24 GB.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+
+  var $ = TEO.$, puntas = {};
+  function puntasDe(ids) { ids.forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); }); }
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .5 }, pos);
+    tl.from(puntas[id], { autoAlpha: 0, duration: .2 }, "-=.1");
+  }
+  function sello(tl, sel, pos) {
+    return tl.fromTo(sel, { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, pos);
+  }
+
+  function crecer(tl, bar, val, pos) {
+    tl.from(bar, { scaleY: 0, transformOrigin: "50% 100%", duration: .9, ease: "power2.out" }, pos);
+    tl.from(val, { autoAlpha: 0, y: 8, duration: .3 }, "-=.2");
+  }
+  TEO.escena([
+    function (tl) { TEO.trazar(tl, "#eje", { duration: .6 }); tl.from(["#ley", "#g1"], { autoAlpha: 0, duration: .4 }); crecer(tl, "#bA1", "#vA1"); },
+    function (tl) { tl.from("#g3", { autoAlpha: 0, duration: .4 }); crecer(tl, "#bA3", "#vA3"); },
+    function (tl) { TEO.pegar(tl, "#nCola"); },
+    function (tl) { TEO.pegar(tl, "#nAj"); },
+    function (tl) { crecer(tl, "#bD1", "#vD1"); crecer(tl, "#bD3", "#vD3", "-=.3"); TEO.pegar(tl, "#nRes"); }
+  ], { textoFin: "Fin de los números" });
+})();
+</script>
+</body>
+</html>
