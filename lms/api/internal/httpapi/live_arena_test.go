@@ -280,3 +280,106 @@ func TestArenaSinVolcados(t *testing.T) {
 		t.Error("el chequeo debe medir el cupo de la tienda (tamaño aparente), no el espacio real")
 	}
 }
+
+// Escudo temporal del defensor y Chaos Kong (apagar a todos): reglas, límites por ronda y lo que ve la escena.
+func TestLiveArenaEscudoYKong(t *testing.T) {
+	e := newEnv(t)
+	e.setAula(&aulaArena{})
+	profe := e.login("profe@x.test", "profe1234")
+	ana := e.register("ana@x.test")
+	beto := e.register("beto@x.test")
+	luis := e.register("luis@x.test")
+	mia := e.register("mia@x.test")
+	salasArena.Lock()
+	salasArena.m = map[string]*salaArena{}
+	salasArena.Unlock()
+	const api = "/api/v1/live/l1/arena"
+	post := func(tok string, cuerpo map[string]any, quiere int) resp {
+		t.Helper()
+		r := e.call("POST", api, tok, false, cuerpo, "")
+		if r.code != quiere {
+			t.Fatalf("%v: %d %s", cuerpo, r.code, r.raw)
+		}
+		return r
+	}
+	yo := func(r resp) map[string]any { m, _ := r.body["yo"].(map[string]any); return m }
+	post(ana, map[string]any{"accion": "unir", "equipo": "tumba"}, 200)
+	post(beto, map[string]any{"accion": "unir", "equipo": "tumba"}, 200)
+	luisN := int(yo(post(luis, map[string]any{"accion": "unir", "equipo": "server"}, 200))["n"].(float64))
+	miaN := int(yo(post(mia, map[string]any{"accion": "unir", "equipo": "server"}, 200))["n"].(float64))
+	for _, tok := range []string{luis, mia} {
+		tok := tok
+		esperar(t, "lab listo", func() bool { return yo(e.call("GET", api, tok, false, nil, ""))["lab"] == "listo" })
+	}
+	// Fuera del turno de ataque no hay escudo ni Kong.
+	post(luis, map[string]any{"accion": "escudo"}, 409)
+	post(ana, map[string]any{"accion": "kernel_panic"}, 409)
+	post(profe, map[string]any{"accion": "iniciar"}, 200)
+	// Luis cierra conexiones: el ataque rebota y Ana NO gasta su ataque; a Mía sí le entra.
+	r := post(luis, map[string]any{"accion": "escudo"}, 200)
+	if yo(r)["escudo_libre"] != false || yo(r)["escudo_ms"].(float64) <= 0 {
+		t.Fatalf("escudo de Luis: %v", yo(r))
+	}
+	post(luis, map[string]any{"accion": "escudo"}, 409) // una vez por ronda
+	post(ana, map[string]any{"accion": "escudo"}, 409)  // los monos no tienen escudo
+	post(ana, map[string]any{"accion": "atacar", "objetivo": luisN, "ataque": "apagar"}, 409)
+	if n := yo(e.call("GET", api, ana, false, nil, ""))["ataques"]; n != float64(0) {
+		t.Fatalf("el rebote gastó un ataque: %v", n)
+	}
+	post(ana, map[string]any{"accion": "atacar", "objetivo": miaN, "ataque": "disco"}, 200)
+	// Ana ya gastó un ataque: no puede soltar a Kong. Beto sí, y Luis se salva por el escudo.
+	post(ana, map[string]any{"accion": "kernel_panic"}, 409)
+	r = post(beto, map[string]any{"accion": "kernel_panic"}, 200)
+	if yo(r)["ataques"] != float64(arenaAtaquesMax) || r.body["kernel_libre"] != false {
+		t.Fatalf("tras Kong: yo=%v kernel_libre=%v", yo(r), r.body["kernel_libre"])
+	}
+	post(beto, map[string]any{"accion": "kernel_panic"}, 409)  // una vez por ronda para todo el equipo
+	post(profe, map[string]any{"accion": "kernel_panic"}, 409) // tampoco el instructor en la misma ronda
+	ult := ""
+	for _, ev := range e.call("GET", api, profe, false, nil, "").body["eventos"].([]any) {
+		if m := ev.(map[string]any); m["accion"] == "kernel" {
+			ult = m["texto"].(string)
+		}
+	}
+	if !strings.Contains(ult, "se apagaron 1 servidores") || !strings.Contains(ult, "1 se salvaron") {
+		t.Fatalf("evento de kernel panic: %q", ult)
+	}
+	// Reiniciar la arena devuelve escudo y Kong.
+	post(profe, map[string]any{"accion": "reiniciar"}, 200)
+	post(profe, map[string]any{"accion": "iniciar"}, 200)
+	if r := e.call("GET", api, luis, false, nil, ""); r.body["kernel_libre"] != true || r.body["kernel_restan"] != float64(2) || yo(r)["escudo_libre"] != true {
+		t.Fatalf("tras reiniciar: kernel_libre=%v yo=%v", r.body["kernel_libre"], yo(r))
+	}
+	post(profe, map[string]any{"accion": "kernel_panic"}, 200) // el instructor también puede lanzarlo (1 de 2)
+	// Cinco rondas y se acaba; el tiempo se acorta; el kernel panic se agota a la segunda.
+	if arenaDurAtaque(1) != 35*time.Second || arenaDurAtaque(5) != 19*time.Second || arenaDurDefensa(1) != 75*time.Second || arenaDurDefensa(5) != 39*time.Second {
+		t.Fatalf("duraciones: %v %v %v %v", arenaDurAtaque(1), arenaDurAtaque(5), arenaDurDefensa(1), arenaDurDefensa(5))
+	}
+	for ronda := 2; ronda <= 5; ronda++ {
+		post(profe, map[string]any{"accion": "siguiente"}, 200)      // → defensa
+		post(profe, map[string]any{"accion": "siguiente"}, 200)      // → marcador
+		r := post(profe, map[string]any{"accion": "siguiente"}, 200) // → ronda siguiente
+		if r.body["ronda"] != float64(ronda) || r.body["rondas_max"] != float64(5) {
+			t.Fatalf("ronda %d: %v de %v", ronda, r.body["ronda"], r.body["rondas_max"])
+		}
+		if ronda == 2 {
+			post(ana, map[string]any{"accion": "kernel_panic"}, 200) // 2 de 2
+		}
+		if ronda == 3 {
+			post(beto, map[string]any{"accion": "kernel_panic"}, 409) // agotado
+		}
+	}
+	post(profe, map[string]any{"accion": "siguiente"}, 200) // → defensa de la 5
+	post(profe, map[string]any{"accion": "siguiente"}, 200) // → marcador final
+	post(profe, map[string]any{"accion": "siguiente"}, 409) // no hay sexta ronda
+	post(profe, map[string]any{"accion": "iniciar"}, 409)
+	fin := false
+	for _, ev := range e.call("GET", api, profe, false, nil, "").body["eventos"].([]any) {
+		if m := ev.(map[string]any); m["accion"] == "fin" {
+			fin = true
+		}
+	}
+	if !fin {
+		t.Fatal("falta el evento de fin del juego")
+	}
+}

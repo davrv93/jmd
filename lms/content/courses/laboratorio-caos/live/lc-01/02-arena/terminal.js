@@ -173,6 +173,7 @@
         "  formulario  llena de basura el formulario de Luis",
         "  sesion      deja la sesión abierta en el 2",
         "  clave       ponle clave débil a Ana",
+        "KERNEL PANIC (2 por partida, 1 por ronda, pide tus 2 ataques): kernel panic · tumba a todos",
         "SCRIPTS DEL MONO (de juguete, hacen lo mismo que los ataques): sh <script> al <número o nombre>",
         "  apagon.sh · llenadisco.sh · borrabase.sh · melaza.sh · chismoso.sh",
         "  multimono.sh · mudanza.sh · basurero.sh · puertaabierta.sh · clave123.sh",
@@ -183,6 +184,7 @@
       lineas(["CUIDAR TU SERVIDOR (en tu turno de defensa):",
         "  reiniciar   systemctl restart app · reinicia mi app",
         "  limpiar     limpia el disco · rm /tmp/relleno",
+        "ESCUDO (mientras te atacan, 1 vez por ronda, dura poco): cierra conexiones · ufw deny · firewall",
         "VER (cuando quieras):",
         "  curl /salud · df -h · status o ls",
         "CON DEEPSEEK HARNESS (te copio el prompt, se cura en tu aula):",
@@ -438,6 +440,19 @@
       if (/\btumba|\batac/.test(t)) { unir("tumba"); return; }
       if (/\bserver|\bdefen|\bcuid|\bproteg|\bcura/.test(t)) { unir("server"); return; }
       linea("Primero elige equipo: escribe tumba (atacar) o server (cuidar un servidor). También puedes usar los botones.", "mal");
+      return;
+    }
+    // Reglas nuevas del juego (solo si el servidor ya las trae): kernel panic y escudo temporal.
+    if (eq === "tumba" && /kernel|\bpanic|tumba\w* a todos|apaga\w* (a )?todos?|todos los serv/.test(t)) {
+      if (est().kernel_restan === undefined) { linea("✋ El kernel panic todavía no está activado en este servidor.", "mal"); return; }
+      linea("→ entendí: 💥 KERNEL PANIC, apagar a todos los servidores (quedan " + est().kernel_restan + " en la partida)", "ent");
+      if (!A.enviar({ accion: "kernel_panic" }, "¡Kernel panic lanzado!", function (ok, msg) { linea(ok ? "💥 " + msg : "✋ " + msg + " No envié nada más.", ok ? "ok" : "mal"); })) ocupadoTxt();
+      return;
+    }
+    if (eq === "server" && /cierr\w* .*(conexi|puert)|\bfirewall|iptables|\bufw\b|\bescudo|bloque\w* .*(trafico|puert|conexi|entrada)|desconect\w* .*(internet|red)|modo avion/.test(t)) {
+      if ((est().yo || {}).escudo_libre === undefined) { linea("✋ El escudo todavía no está activado en este servidor.", "mal"); return; }
+      linea("→ entendí: 🛡️ cerrar las conexiones externas de tu servidor por " + (est().escudo_s || 10) + " s (una vez por ronda, mientras te atacan)", "ent");
+      if (!A.enviar({ accion: "escudo" }, "Conexiones cerradas", function (ok, msg) { linea(ok ? "🛡️ " + msg + ": los ataques rebotan mientras dure." : "✋ " + msg, ok ? "ok" : "mal"); })) ocupadoTxt();
       return;
     }
     if (eq === "tumba") {

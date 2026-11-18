@@ -22,7 +22,7 @@ package httpapi
 // memoria, disco ni red: el servidor compartido no lo nota aunque ataquen todos a la vez.
 //
 // GET  /api/v1/live/{lesson}/arena            estado
-// POST /api/v1/live/{lesson}/arena {accion}   unir | atacar | defender | iniciar | siguiente | reiniciar | mover
+// POST /api/v1/live/{lesson}/arena {accion}   unir | atacar | defender | escudo | kernel_panic | iniciar | siguiente | reiniciar | mover
 
 import (
 	"context"
@@ -45,6 +45,12 @@ const (
 	arenaDefensa    = 75 * time.Second
 	arenaMax        = 40
 	arenaAtaquesMax = 2 // por atacante y por turno de ataque
+	// Escudo: el defensor «cierra sus conexiones externas» un rato corto, una vez por ronda, durante el ataque.
+	arenaEscudo = 10 * time.Second
+	// Kernel panic: apaga a todos de golpe. El equipo Tumba lo tiene 2 veces por partida, y solo una por ronda.
+	arenaKernelMax = 2
+	// La partida dura 5 rondas y cada ronda da menos tiempo (ver arenaDurAtaque y arenaDurDefensa).
+	arenaRondasMax  = 5
 	arenaMaxEv      = 60
 	arenaVigiaCada  = 4 * time.Second
 	arenaVigiaFin   = 20 * time.Minute // sin peticiones, el vigía se apaga
@@ -114,21 +120,23 @@ echo "LIBRE_$(libre)"
 true`
 
 type arenaJugador struct {
-	ID       string
-	N        int
-	Nombre   string
-	Equipo   string // tumba | server
-	Staff    bool
-	Visto    time.Time
-	Puntos   int
-	Ataques  int    // usados en el turno de ataque actual
-	Lab      string // server: preparando | listo | error
-	Salud    string // server: ok | caido | ? (sin chequear)
-	Fallas   []string
-	Chequeo  time.Time
-	Atacado  map[string]bool // ids de quienes lo atacaron esta ronda
-	Mensaje  string          // último resultado de una defensa con botón
-	Objetivo int             // tumba: n del servidor que eligió (solo para la UI)
+	ID          string
+	N           int
+	Nombre      string
+	Equipo      string // tumba | server
+	Staff       bool
+	Visto       time.Time
+	Puntos      int
+	Ataques     int    // usados en el turno de ataque actual
+	Lab         string // server: preparando | listo | error
+	Salud       string // server: ok | caido | ? (sin chequear)
+	Fallas      []string
+	Chequeo     time.Time
+	Atacado     map[string]bool // ids de quienes lo atacaron esta ronda
+	Mensaje     string          // último resultado de una defensa con botón
+	Objetivo    int             // tumba: n del servidor que eligió (solo para la UI)
+	EscudoHasta time.Time       // server: hasta cuándo rechaza ataques (conexiones cerradas)
+	EscudoRonda int             // server: ronda en la que ya usó su escudo
 }
 
 type arenaEvento struct {
@@ -142,21 +150,23 @@ type arenaEvento struct {
 }
 
 type salaArena struct {
-	mu        sync.Mutex
-	Leccion   string
-	Fase      string // lobby | ataque | defensa | marcador
-	Ronda     int
-	Hasta     time.Time
-	Jug       map[string]*arenaJugador
-	sigN      int
-	Ev        []arenaEvento
-	sigEv     int
-	Tumba     int
-	Server    int
-	pendiente bool // hay que puntuar la ronda con el próximo chequeo completo
-	vigia     bool
-	ultimaPet time.Time
-	cuotas    map[string]*cubeta
+	mu          sync.Mutex
+	Leccion     string
+	Fase        string // lobby | ataque | defensa | marcador
+	Ronda       int
+	Hasta       time.Time
+	Jug         map[string]*arenaJugador
+	sigN        int
+	Ev          []arenaEvento
+	sigEv       int
+	Tumba       int
+	Server      int
+	pendiente   bool // hay que puntuar la ronda con el próximo chequeo completo
+	kernelRonda int  // ronda del último kernel panic (uno por ronda)
+	kernelUsos  int  // kernel panics usados en la partida (máximo arenaKernelMax)
+	vigia       bool
+	ultimaPet   time.Time
+	cuotas      map[string]*cubeta
 }
 
 var salasArena = struct {
@@ -219,18 +229,26 @@ func (s *salaArena) avanzar(now time.Time) {
 	}
 }
 
+// El tiempo se acorta con cada ronda: ataque 35, 31, 27, 23 y 19 s; defensa 75, 66, 57, 48 y 39 s.
+func arenaDurAtaque(ronda int) time.Duration {
+	return max(15*time.Second, arenaAtaque-time.Duration(max(0, ronda-1))*4*time.Second)
+}
+func arenaDurDefensa(ronda int) time.Duration {
+	return max(30*time.Second, arenaDefensa-time.Duration(max(0, ronda-1))*9*time.Second)
+}
+
 func (s *salaArena) abrirRonda(now time.Time) {
 	s.Ronda++
-	s.Fase, s.Hasta = "ataque", now.Add(arenaAtaque)
+	s.Fase, s.Hasta = "ataque", now.Add(arenaDurAtaque(s.Ronda))
 	s.pendiente = false
 	for _, j := range s.Jug {
 		j.Ataques, j.Atacado, j.Mensaje = 0, map[string]bool{}, ""
 	}
-	s.evento(arenaEvento{Tipo: "fase", Accion: "ataque", Texto: fmt.Sprintf("Ronda %d: ¡ataca el equipo Tumba Server!", s.Ronda)}, now)
+	s.evento(arenaEvento{Tipo: "fase", Accion: "ataque", Texto: fmt.Sprintf("Ronda %d de %d: ¡ataca el equipo Tumba Server! (%d s)", s.Ronda, arenaRondasMax, int(arenaDurAtaque(s.Ronda).Seconds()))}, now)
 }
 
 func (s *salaArena) abrirDefensa(now time.Time) {
-	s.Fase, s.Hasta = "defensa", now.Add(arenaDefensa)
+	s.Fase, s.Hasta = "defensa", now.Add(arenaDurDefensa(s.Ronda))
 	s.evento(arenaEvento{Tipo: "fase", Accion: "defensa", Texto: "¡Turno del equipo Server: a curar los servidores!"}, now)
 }
 
@@ -272,6 +290,15 @@ func (s *salaArena) puntuar(now time.Time) {
 	s.Server += rs
 	s.Tumba += rt
 	s.evento(arenaEvento{Tipo: "puntos", Texto: fmt.Sprintf("Ronda %d: %d servidores en pie (+%d Server) y %d caídos (+%d Tumba)", s.Ronda, sanos, rs, caidos, rt)}, now)
+	if s.Ronda >= arenaRondasMax {
+		gana := "¡Empate!"
+		if s.Tumba > s.Server {
+			gana = "Gana el equipo Tumba Server 🐒"
+		} else if s.Server > s.Tumba {
+			gana = "Gana el equipo Server 🛡️"
+		}
+		s.evento(arenaEvento{Tipo: "fase", Accion: "fin", Texto: fmt.Sprintf("Fin del juego tras %d rondas. %s (Tumba %d · Server %d)", arenaRondasMax, gana, s.Tumba, s.Server)}, now)
+	}
 }
 
 // arenaLeerSalud traduce la salida de arenaChequeo a (salud, fallas): las marcas del shell más las fallas que
@@ -486,6 +513,9 @@ func (sa *salaArena) vista(p *Principal, now time.Time) map[string]any {
 			"presente": now.Sub(j.Visto) <= 30*time.Second}
 		if j.Equipo == "server" {
 			x["lab"], x["salud"], x["fallas"] = j.Lab, j.Salud, j.Fallas
+			if j.EscudoHasta.After(now) {
+				x["escudo_ms"] = j.EscudoHasta.Sub(now).Milliseconds()
+			}
 		} else {
 			x["ataques"] = j.Ataques
 		}
@@ -503,10 +533,13 @@ func (sa *salaArena) vista(p *Principal, now time.Time) map[string]any {
 		"fase": sa.Fase, "ronda": sa.Ronda, "faltan_ms": faltan, "ahora_ms": now.UnixMilli(),
 		"tumba": sa.Tumba, "server": sa.Server, "jugadores": jug, "eventos": eventos,
 		"staff": p.Staff(), "ataques_max": arenaAtaquesMax, "puntuando": sa.pendiente,
+		"kernel_libre": sa.Fase == "ataque" && sa.kernelRonda != sa.Ronda && sa.kernelUsos < arenaKernelMax, "kernel_restan": arenaKernelMax - sa.kernelUsos,
+		"escudo_s": int(arenaEscudo.Seconds()), "rondas_max": arenaRondasMax, "fin": sa.Ronda >= arenaRondasMax && sa.Fase == "marcador" && !sa.pendiente,
 	}
 	if yo := sa.Jug[p.ID]; yo != nil {
 		out["yo"] = map[string]any{"n": yo.N, "equipo": yo.Equipo, "ataques": yo.Ataques, "lab": yo.Lab,
-			"salud": yo.Salud, "fallas": yo.Fallas, "mensaje": yo.Mensaje, "puntos": yo.Puntos}
+			"salud": yo.Salud, "fallas": yo.Fallas, "mensaje": yo.Mensaje, "puntos": yo.Puntos,
+			"escudo_libre": yo.Equipo == "server" && yo.EscudoRonda != sa.Ronda, "escudo_ms": max(0, yo.EscudoHasta.Sub(now).Milliseconds())}
 	}
 	return out
 }
@@ -534,6 +567,10 @@ func (s *Server) liveArenaPost(w http.ResponseWriter, r *http.Request, p *Princi
 		s.arenaAtacar(w, sa, p, in.Objetivo, in.Ataque, now)
 	case "defender":
 		s.arenaDefender(w, sa, p, in.Defensa, now)
+	case "escudo":
+		s.arenaEscudar(w, sa, p, now)
+	case "kernel_panic":
+		s.arenaKernelPanic(w, sa, p, now)
 	case "preparar":
 		yo := sa.Jug[p.ID]
 		if yo == nil || yo.Equipo != "server" {
@@ -564,6 +601,10 @@ func (s *Server) liveArenaPost(w http.ResponseWriter, r *http.Request, p *Princi
 				return
 			}
 			sa.puntuar(now)
+			if sa.Ronda >= arenaRondasMax {
+				writeErr(w, 409, "juego_terminado", fmt.Sprintf("ya se jugaron las %d rondas: mira el marcador y pulsa «Reiniciar arena» para otra partida", arenaRondasMax))
+				return
+			}
 			sa.abrirRonda(now)
 		case "siguiente":
 			switch sa.Fase {
@@ -573,13 +614,19 @@ func (s *Server) liveArenaPost(w http.ResponseWriter, r *http.Request, p *Princi
 				sa.cerrarRonda(now)
 			default:
 				sa.puntuar(now)
+				if sa.Ronda >= arenaRondasMax {
+					writeErr(w, 409, "juego_terminado", fmt.Sprintf("ya se jugaron las %d rondas: mira el marcador y pulsa «Reiniciar arena» para otra partida", arenaRondasMax))
+					return
+				}
 				sa.abrirRonda(now)
 			}
 		case "reiniciar":
 			sa.Fase, sa.Ronda, sa.Hasta, sa.Tumba, sa.Server, sa.pendiente = "lobby", 0, time.Time{}, 0, 0, false
 			sa.Ev = nil
+			sa.kernelRonda, sa.kernelUsos = 0, 0
 			for _, j := range sa.Jug {
 				j.Puntos, j.Ataques, j.Atacado, j.Mensaje = 0, 0, nil, ""
+				j.EscudoRonda, j.EscudoHasta = 0, time.Time{}
 			}
 		case "mover":
 			j := sa.porN(in.N)
@@ -670,6 +717,12 @@ func (s *Server) arenaAtacar(w http.ResponseWriter, sa *salaArena, p *Principal,
 		writeErr(w, 409, "objetivo_invalido", "ese servidor no existe o todavía se está preparando")
 		return
 	}
+	if d.EscudoHasta.After(now) {
+		faltan := int(d.EscudoHasta.Sub(now).Seconds()) + 1
+		sa.mu.Unlock()
+		writeErr(w, 409, "con_escudo", fmt.Sprintf("%s cerró sus conexiones: prueba en %d s o ataca a otro (no gastaste tu ataque)", d.Nombre, faltan))
+		return
+	}
 	yo.Ataques++
 	yo.Objetivo = objetivo
 	if d.Atacado == nil {
@@ -687,6 +740,100 @@ func (s *Server) arenaAtacar(w http.ResponseWriter, sa *salaArena, p *Principal,
 		_, _ = s.Aula.Exec(ctx, destino, script)
 		s.revisarYa(sa, destinoID)
 	}()
+	writeJSON(w, 200, vista)
+}
+
+// arenaEscudar: el defensor cierra sus conexiones externas unos segundos (una vez por ronda, solo mientras atacan).
+// Mientras dura, los ataques a su servidor rebotan sin gastar el ataque del mono. No cura nada: solo gana tiempo.
+func (s *Server) arenaEscudar(w http.ResponseWriter, sa *salaArena, p *Principal, now time.Time) {
+	defer sa.mu.Unlock()
+	yo := sa.Jug[p.ID]
+	switch {
+	case yo == nil || yo.Equipo != "server":
+		writeErr(w, 409, "no_defensor", "solo el equipo Server puede cerrar conexiones")
+		return
+	case yo.Lab != "listo":
+		writeErr(w, 409, "sin_lab", "tu servidor todavía se está preparando")
+		return
+	case sa.Fase != "ataque":
+		writeErr(w, 409, "no_es_el_momento", "el escudo se usa mientras ataca el equipo Tumba")
+		return
+	case yo.EscudoRonda == sa.Ronda:
+		writeErr(w, 409, "escudo_usado", "ya cerraste tus conexiones en esta ronda")
+		return
+	}
+	yo.EscudoRonda, yo.EscudoHasta = sa.Ronda, now.Add(arenaEscudo)
+	sa.evento(arenaEvento{Tipo: "defensa", De: yo.N, A: yo.N, Accion: "escudo", Texto: fmt.Sprintf("%s cerró sus conexiones externas por %d s 🛡️", yo.Nombre, int(arenaEscudo.Seconds()))}, now)
+	writeJSON(w, 200, sa.vista(p, now))
+}
+
+// arenaKernelPanic: apaga la app de todos los servidores listos y sin escudo, de un golpe. Una vez por
+// ronda y dos por partida para todo el equipo Tumba (o el instructor); a quien lo lanza le gasta sus ataques del turno. Es el ataque
+// que tiene botón de cura («Reiniciar app»): obliga a todos a reaccionar sin dejar a nadie sin salida.
+func (s *Server) arenaKernelPanic(w http.ResponseWriter, sa *salaArena, p *Principal, now time.Time) {
+	yo := sa.Jug[p.ID]
+	esTumba := yo != nil && yo.Equipo == "tumba"
+	switch {
+	case !esTumba && !p.Staff():
+		sa.mu.Unlock()
+		writeErr(w, 409, "no_atacante", "solo el equipo Tumba Server (o el instructor) provoca un kernel panic")
+		return
+	case sa.Fase != "ataque":
+		sa.mu.Unlock()
+		writeErr(w, 409, "no_es_tu_turno", "el kernel panic solo se lanza en el turno de ataque")
+		return
+	case sa.kernelUsos >= arenaKernelMax:
+		sa.mu.Unlock()
+		writeErr(w, 409, "kernel_agotado", fmt.Sprintf("el kernel panic ya se usó %d veces en esta partida", arenaKernelMax))
+		return
+	case sa.kernelRonda == sa.Ronda:
+		sa.mu.Unlock()
+		writeErr(w, 409, "kernel_usado", "ya hubo un kernel panic en esta ronda")
+		return
+	case esTumba && yo.Ataques > 0:
+		sa.mu.Unlock()
+		writeErr(w, 409, "sin_ataques", "el kernel panic pide tus ataques completos: ya gastaste uno en esta ronda")
+		return
+	}
+	sa.kernelRonda = sa.Ronda
+	sa.kernelUsos++
+	quien, de := "El instructor", -1
+	if esTumba {
+		yo.Ataques = arenaAtaquesMax
+		quien, de = yo.Nombre, yo.N
+	}
+	var ids []string
+	salvados := 0
+	for _, d := range sa.Jug {
+		if d.Equipo != "server" || d.Lab != "listo" {
+			continue
+		}
+		if d.EscudoHasta.After(now) {
+			salvados++
+			continue
+		}
+		if d.Atacado == nil {
+			d.Atacado = map[string]bool{}
+		}
+		d.Atacado[p.ID] = true
+		ids = append(ids, d.ID)
+	}
+	texto := fmt.Sprintf("%s provocó un KERNEL PANIC 💥: se apagaron %d servidores de golpe (quedan %d)", quien, len(ids), arenaKernelMax-sa.kernelUsos)
+	if salvados > 0 {
+		texto += fmt.Sprintf(" (%d se salvaron con el escudo)", salvados)
+	}
+	sa.evento(arenaEvento{Tipo: "ataque", De: de, A: -1, Accion: "kernel", Texto: texto}, now)
+	vista := sa.vista(p, now)
+	sa.mu.Unlock()
+	script := arenaAtaques["apagar"]
+	for _, id := range ids {
+		go func(id string) {
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			defer cancel()
+			_, _ = s.Aula.Exec(ctx, aula.Nombre(id), script)
+			s.revisarYa(sa, id)
+		}(id)
+	}
 	writeJSON(w, 200, vista)
 }
 

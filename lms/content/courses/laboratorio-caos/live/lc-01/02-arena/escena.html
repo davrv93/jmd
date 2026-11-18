@@ -376,7 +376,7 @@ button { font: inherit; cursor: pointer; }
     var f = $("fase"), nombres = { lobby: "Eligiendo equipos", ataque: "¡Ataca Tumba Server!", defensa: "¡Defiende Server!", marcador: est.puntuando ? "Revisando servidores…" : "Marcador" };
     f.textContent = nombres[est.fase] || est.fase;
     f.className = "pill " + est.fase;
-    $("ronda").textContent = est.ronda ? "Ronda " + est.ronda : "";
+    $("ronda").textContent = est.fin ? "Fin del juego" : est.ronda ? "Ronda " + est.ronda + (est.rondas_max ? " de " + est.rondas_max : "") : "";
     $("pt").textContent = est.tumba; $("ps").textContent = est.server;
   }
   function reloj() {
@@ -423,6 +423,7 @@ button { font: inherit; cursor: pointer; }
         var listos = est.jugadores.filter(function (j) { return j.equipo === "server" && j.lab === "listo"; });
         h += '<div class="blancos">' + (listos.map(function (j) { return '<button data-bl="' + j.n + '"' + (blanco === j.n ? ' class="sel"' : "") + ">🖥️ " + esc(j.nombre) + (j.salud === "caido" ? " ❌" : "") + "</button>"; }).join("") || '<span class="suave" style="margin:0">Todavía no hay servidores listos.</span>') + "</div>";
       }
+      if (est.kernel_restan !== undefined) h += '<p style="margin:0 0 10px"><button class="bt rojo" data-kp="1"' + (est.kernel_libre && !(yo.ataques > 0) && !ocupado ? "" : " disabled") + '>💥 KERNEL PANIC: apaga a todos<small>quedan ' + est.kernel_restan + ' en la partida · 1 por ronda · pide tus 2 ataques</small></button></p>';
       h += '<div class="botones">' + ATAQUES.map(function (a) { return '<button class="bt rojo" data-at="' + a.k + '"' + (puede ? "" : " disabled") + '>' + a.ic + " " + a.t + "<small>" + a.d + "</small></button>"; }).join("") + "</div>";
     } else {
       var fallas = yo.fallas || [], enDef = est.fase === "defensa" && yo.lab === "listo" && !ocupado;
@@ -432,6 +433,7 @@ button { font: inherit; cursor: pointer; }
       else if (yo.salud === "ok") h += '<div class="estado ok">✅ Tu servidor está en pie: http://127.0.0.1:7070</div>';
       else h += '<div class="estado caido">❌ Tu servidor está caído<ul>' + fallas.map(function (f) { var x = FALLA[f] || ["❓", f, ""]; return "<li>" + x[0] + " " + esc(x[1]) + " → <i>" + esc(x[2]) + "</i></li>"; }).join("") + "</ul></div>";
       h += '<p class="suave">' + (est.fase === "defensa" ? "¡Tu turno! Usa los botones y los prompts antes de que acabe el tiempo." : est.fase === "ataque" ? "Te están atacando: prepárate, los botones se encienden en la defensa." : "Los botones se encienden en tu turno de defensa.") + "</p>";
+      if (yo.escudo_libre !== undefined) h += '<p style="margin:0 0 10px"><button class="bt" data-esc="1"' + (est.fase === "ataque" && yo.escudo_libre && yo.lab === "listo" && !ocupado ? "" : " disabled") + '>🛡️ ' + (yo.escudo_ms > 0 ? "Conexiones cerradas: " + Math.ceil(yo.escudo_ms / 1000) + " s" : "Cerrar conexiones " + (est.escudo_s || 10) + " s") + '<small>mientras te atacan, los ataques rebotan · 1 vez por ronda</small></button></p>';
       h += '<div class="botones"><button class="bt verde" data-def="reiniciar"' + (enDef ? "" : " disabled") + '>🩹 Reiniciar app<small>cura la app apagada</small></button>' +
         '<button class="bt verde" data-def="limpiar"' + (enDef ? "" : " disabled") + '>🧹 Limpiar disco<small>cura el disco lleno</small></button></div>';
       h += '<div class="prompts"><p class="suave" style="margin:6px 0 0">Para lo demás usa <b>DeepSeek Harness</b> (panel de la derecha). Ojo: hay ataques que ningún prompt de aquí cura. Ahí tienes que pensar qué pedirle. Toca un prompt para copiarlo:</p>' +
@@ -439,7 +441,7 @@ button { font: inherit; cursor: pointer; }
       if ((yo.lab === "error" && intentos >= 5) || est.staff) h += '<p style="margin:10px 0 0"><button class="bt" data-prep="1"' + (yo.lab === "preparando" || ocupado ? " disabled" : "") + '>↻ Arrancar de nuevo mi servidor</button></p>';
     }
     if (est.staff) {
-      h += '<div class="staff"><button class="bt" data-st="iniciar">▶ Abrir ronda</button><button class="bt" data-st="siguiente">⏭ Siguiente turno</button><button class="bt rojo" data-st="reiniciar">↺ Reiniciar arena</button>' +
+      h += '<div class="staff"><button class="bt" data-st="iniciar">▶ Abrir ronda</button><button class="bt" data-st="siguiente">⏭ Siguiente turno</button>' + (est.kernel_libre ? '<button class="bt rojo" data-kp="1">💥 Kernel panic</button>' : "") + '<button class="bt rojo" data-st="reiniciar">↺ Reiniciar arena</button>' +
         (yo && yo.equipo ? '<button class="bt" data-eq="' + (yo.equipo === "tumba" ? "server" : "tumba") + '">Cambiarme de equipo</button>' : "") + "</div>";
     }
     h += '<p class="aviso' + (avisoOk ? " ok-msg" : "") + '">' + esc(aviso) + "</p>";
@@ -451,6 +453,8 @@ button { font: inherit; cursor: pointer; }
     if (b.dataset.eq) enviar({ accion: "unir", equipo: b.dataset.eq }, b.dataset.eq === "server" ? "¡Bienvenido al equipo Server! Tu servidor ya está arrancando." : "¡Bienvenido al equipo Tumba Server!");
     else if (b.dataset.at) enviar({ accion: "atacar", objetivo: blanco, ataque: b.dataset.at }, "¡Ataque lanzado!");
     else if (b.dataset.def) enviar({ accion: "defender", defensa: b.dataset.def }, "");
+    else if (b.dataset.kp) enviar({ accion: "kernel_panic" }, "💥 ¡Kernel panic lanzado!");
+    else if (b.dataset.esc) enviar({ accion: "escudo" }, "🛡️ Conexiones cerradas: los ataques rebotan");
     else if (b.dataset.prep) { intentos = 0; enviar({ accion: "preparar" }, "Arrancando tu servidor…"); }
     else if (b.dataset.st) enviar({ accion: b.dataset.st }, "");
     else if (b.dataset.pr) copiar(PROMPTS[Number(b.dataset.pr)][1]);
