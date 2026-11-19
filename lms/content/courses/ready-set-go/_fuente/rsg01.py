@@ -98,7 +98,7 @@ escena("00-bienvenida", "Bienvenida: hoy tu héroe se mueve", "experiencia", "ve
   ["Movimiento y choques", "15 min", "Gravedad, salto y paredes: mueves los números y ves qué cambia. Construyes tu primer nivel con clics."],
   ["Cuatro perseguidores", "10 min", "Así «pensaban» los fantasmas de Pac-Man: cada uno sigue una regla. Programas las tuyas y ves su objetivo y su camino."],
   ["Animación", "10 min", "Tu héroe camina porque pasan muchos dibujos muy rápido. Abres una hoja de sprites y la controlas."],
-  ["Tu juego", "15 min", "Eliges fútbol o plataformas, lo juegas con tu héroe, miras sus algoritmos con rayos X y te lo llevas."],
+  ["Tu juego", "15 min", "Juegas TU juego con tus números y tu regla de rival (Plataformas o Laberinto), miras sus algoritmos con rayos X y descargas tu ZIP: tu entregable."],
   ["Cierre", "5 min", "Revisas lo que ya sabes hacer y qué traer para la próxima clase."]
 ];
 var mapa = $("#mapa"), det = $("#det");
@@ -739,15 +739,15 @@ img.src = "heroe.png";""",
        comentario="Interacción: hoja de sprites real (heroe.png, hermana de esta escena, sacada de Forja). Se elige animación, velocidad y cuadro; el atlas se actualiza.")
 
 # ---------------------------------------------------------------- 06 · elige tu juego
-escena("06-elige-tu-juego", "Elige tu juego: fútbol o plataformas", "experimentacion", "construir", 15,
-       MARCO.format(src="/forja/?clase=rsg-01&abrir=juegos", pasos="<li>Elige <b>Plataformas</b> o <b>Fútbol</b> y juega con tu héroe</li><li>Pulsa <b>V</b>: rayos X</li><li>Abre un <b>algoritmo</b> y lee su código</li><li><b>Descargar este juego (ZIP)</b></li>"),
-       "Pulsa «Lo logré» cuando tu héroe se mueva en tu juego y tengas el ZIP descargado",
+escena("06-elige-tu-juego", "Tu juego: con tus números y tu regla", "experimentacion", "construir", 15,
+       MARCO.format(src="/forja/?clase=rsg-01&abrir=juegos", pasos="<li>Lee <b>«De tu clase»</b>: tus números y tu regla</li><li><b>Plataformas</b> salta con tus números · en <b>Laberinto</b> los rivales usan tu regla</li><li>Pulsa <b>V</b>: rayos X, ves su objetivo y su ruta</li><li><b>Descargar este juego (ZIP)</b>: tu entregable</li>"),
+       "Pulsa «Lo logré» cuando hayas jugado TU juego (con tus números o tu regla) y tengas el ZIP descargado",
        css=".esc-cuerpo { gap: 1vh; } .esc { padding-top: 1.2vh; padding-bottom: 1.2vh; gap: 1vh; }",
        comentario="Incrusta Forja abriendo directo las plantillas de juego (?abrir=juegos). El juego corre con Phaser 4 dentro del estudio.")
 
 # ---------------------------------------------------------------- 07 · cierre
 escena("07-cierre", "Cierre: tu héroe ya se mueve", "reflexion", "cierre", 5, """
-    <div class="x-fila"><h1 class="esc-titulo a-in">Hoy tu héroe <em>ya se mueve</em></h1><span class="esc-chip ok a-in" id="cuenta" aria-live="polite">0 de 3</span></div>
+    <div class="x-fila"><h1 class="esc-titulo a-in">Hoy tu héroe <em>ya se mueve</em></h1><span class="esc-chip ok a-in" id="cuenta" aria-live="polite">0 de 4</span></div>
     <div class="x-tres">
       <section class="esc-card a-in" style="--d:.15s"><h2>¿Qué puedes hacer ahora?</h2><div class="x-col" id="logros" role="group" aria-label="Lo que ya sabes hacer"></div></section>
       <section class="esc-card a-in" style="--d:.3s"><h2>Para la próxima clase</h2><ul class="esc-lista" style="font-size:.86em"><li>Guarda a tu héroe con el corazón</li><li>Crea 2 rivales y márcalos con ★: ese es tu elenco</li><li>Juega el Laberinto con rayos X (tecla V) y cuenta cuántas celdas visita el rival</li><li>Abre juego.js de tu ZIP y cambia un número</li></ul></section>
@@ -756,8 +756,8 @@ escena("07-cierre", "Cierre: tu héroe ya se mueve", "reflexion", "cierre", 5, "
     <section class="esc-card a-in" style="--d:.6s"><span class="x-et">La regla del taller</span><p style="font-size:1em;color:var(--fg)"><b>Tú describes la mecánica. La IA elige la tecnología.</b> La galería de la sala <b>rsg-01</b> sigue abierta en jmd-learn.online/forja: vota por tus favoritos.</p></section>""",
        "Pulsa «Lo logré» cuando hayas marcado lo que ya sabes hacer",
        js="""var n = 0;
-[["Pedirle a la IA una mecánica con un buen prompt", "mecánica + contexto + límite + prueba"], ["Mover a mi héroe con gravedad y hacerlo chocar con el nivel", "velocidad, salto y cuerpos sólidos"], ["Animar a mi héroe con su hoja de sprites", "cuadros, atlas y velocidad"]].forEach(function (t) {
+[["Pedirle a la IA una mecánica con un buen prompt", "mecánica + contexto + límite + prueba"], ["Mover a mi héroe con gravedad y hacerlo chocar con el nivel", "velocidad, salto y cuerpos sólidos"], ["Darle a mi rival una regla y llevarla a mi juego", "objetivo + camino más corto (BFS)"], ["Animar a mi héroe con su hoja de sprites", "cuadros, atlas y velocidad"]].forEach(function (t) {
   var b = el("button", "x-it"); b.type = "button"; b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); var s = el("span", null, t[0]); s.appendChild(el("small", null, t[1])); b.appendChild(s);
-  b.onclick = function () { var v = b.getAttribute("aria-checked") !== "true"; b.setAttribute("aria-checked", String(v)); n += v ? 1 : -1; $("#cuenta").textContent = n + " de 3"; }; $("#logros").appendChild(b);
+  b.onclick = function () { var v = b.getAttribute("aria-checked") !== "true"; b.setAttribute("aria-checked", String(v)); n += v ? 1 : -1; $("#cuenta").textContent = n + " de 4"; }; $("#logros").appendChild(b);
 });""",
        compuerta="ninguna", comentario="Interacción: autoevaluación de los tres objetivos de la clase. Nada se guarda.")
