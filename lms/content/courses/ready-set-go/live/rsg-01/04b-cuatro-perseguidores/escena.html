@@ -20,6 +20,7 @@
 .pm-fila { display: grid; grid-template-columns: 1em 4.6em 1fr 3.6em; gap: .45em; align-items: center; font-size: .8em; margin: .3em 0; }
 .pm-fila select, .pm-fila input { font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .5em; padding: .3em .4em; min-width: 0; }
 .pm-fila input:disabled { opacity: .35; }
+.pm-cual { font: inherit; font-size: .8em; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .5em; padding: .3em .4em; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -56,6 +57,8 @@
         <section class="esc-card a-in" style="--d:.35s"><span class="x-et">Programa a tus perseguidores</span>
           <div id="reglas" role="group" aria-label="Reglas de los perseguidores"></div>
           <div class="x-fila" style="margin-top:.4em"><button class="x-btn" id="orig" type="button">Volver a las reglas de 1980</button></div>
+          <div class="x-fila" style="margin-top:.5em"><span style="font-size:.8em">Llevar a mi juego la regla del</span><select id="cual" aria-label="Qué regla llevar a tu juego" class="pm-cual"><option value="0">Rojo</option><option value="1" selected>Rosa</option><option value="2">Celeste</option><option value="3">Naranja</option></select><button class="x-btn pri" id="llevar" type="button">⇢ Llevar a mi juego</button></div>
+          <p class="x-det" id="llevado" aria-live="polite" style="font-size:.8em;min-height:1.3em;margin:.3em 0 0"></p>
         </section>
         <section class="esc-card a-in" style="--d:.45s"><span class="x-et">Así se escribe en tu juego (rivales.js)</span><pre class="x-cod" id="cod"></pre></section>
         <section class="esc-card a-in" style="--d:.55s"><span class="x-et">Retos</span><div class="x-col" id="retos" role="group" aria-label="Retos" style="margin-top:.4em"></div></section>
@@ -69,6 +72,9 @@
 function $(s, r) { return (r || document).querySelector(s); }
 function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
 function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+// «Llevar a mi juego»: guarda lo que el alumno decidió en este navegador (mismo origen que /forja/). La Forja lo pone en
+// el datos.js de SU juego, el que prueba en la escena «Elige tu juego» y el que descarga en el ZIP. Sin IA, sin servidor.
+function llevarAMiJuego(nuevos) { try { var a = JSON.parse(localStorage.getItem("forja.ajustes") || "{}") || {}; for (var k in nuevos) a[k] = nuevos[k]; localStorage.setItem("forja.ajustes", JSON.stringify(a)); return true; } catch (e) { return false; } }
 var M = ["###################", "#........#........#", "#.##.###.#.###.##.#", "#.................#", "#.##.#.#####.#.##.#", "#....#...#...#....#", "####.###.#.###.####", "#.................#", "#.##.###.#.###.##.#", "#........#........#", "###################"];
 var C = 32, COLS = 19, FILAS = 11, cv = $("#lab"), x = cv.getContext("2d");
 var DIR = { u: [0, -1], l: [-1, 0], d: [0, 1], r: [1, 0] }, ORDEN = ["u", "l", "d", "r"], OPUESTA = { u: "d", d: "u", l: "r", r: "l" };
@@ -237,6 +243,10 @@ $("#modo").onclick = function () { modo = modo === "perseguir" ? "dispersarse" :
 $("#ver").onclick = function () { verGuias = !verGuias; this.setAttribute("aria-pressed", String(verGuias)); };
 $("#reset").onclick = function () { llenarPuntos(); comidos = 0; reiniciar(); marcador("Pulsa una flecha para empezar"); };
 $("#orig").onclick = function () { PERS.forEach(function (p) { p.regla = { tipo: p.orig.tipo, n: p.orig.n }; p.sync(); }); codigo(); };
+$("#llevar").onclick = function () {
+  var p = PERS[+$("#cual").value], r = { tipo: p.regla.tipo, n: +p.regla.n || 0 }, nombre = TIPOS.filter(function (t) { return t[0] === r.tipo; })[0][1].replace("N", r.n);
+  $("#llevado").textContent = llevarAMiJuego({ rival: r }) ? "✓ Tus rivales usarán la regla del " + p.nombre + ": «" + nombre + "». Juégala en «Elige tu juego» → Laberinto, y va en tu ZIP." : "No se pudo guardar en este navegador.";
+};
 cv.addEventListener("pointerdown", function () { cv.focus(); });
 $$("[data-vel]").forEach(function (b) { b.onclick = function () { PJ = VEL[b.dataset.vel][0]; PP = VEL[b.dataset.vel][1]; tJ = tP = 0; $$("[data-vel]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); }); }; });
 </script>

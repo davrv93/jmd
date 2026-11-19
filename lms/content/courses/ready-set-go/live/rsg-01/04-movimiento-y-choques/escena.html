@@ -31,7 +31,9 @@
         <span class="x-et">Tu primer nivel · clic en una celda pone o quita un muro · <span class="x-k">←</span> <span class="x-k">→</span> moverte · <span class="x-k">espacio</span> saltar</span>
         <canvas id="sim" width="640" height="360" tabindex="0" aria-label="Simulador: un héroe con gravedad en un nivel de celdas"></canvas>
         <div class="x-fila"><button class="x-btn" data-k="izq" type="button">◀</button><button class="x-btn" data-k="der" type="button">▶</button><button class="x-btn" data-k="salto" type="button">⤒ Saltar</button>
-          <button class="x-btn" id="caja" type="button" aria-pressed="false">Ver caja de choque</button><button class="x-btn" id="reinicio" type="button">Reiniciar nivel</button></div>
+          <button class="x-btn" id="caja" type="button" aria-pressed="false">Ver caja de choque</button><button class="x-btn" id="reinicio" type="button">Reiniciar nivel</button>
+          <button class="x-btn pri" id="llevar" type="button">⇢ Llevar a mi juego</button></div>
+        <p class="x-det" id="llevado" aria-live="polite" style="font-size:.82em;min-height:1.4em"></p>
       </section>
       <div class="x-col">
         <section class="esc-card a-in" style="--d:.25s"><span class="x-et">Tres números mandan</span>
@@ -57,6 +59,9 @@ this.physics.add.collider(heroe, suelo);</pre></section>
 function $(s, r) { return (r || document).querySelector(s); }
 function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
 function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+// «Llevar a mi juego»: guarda lo que el alumno decidió en este navegador (mismo origen que /forja/). La Forja lo pone en
+// el datos.js de SU juego, el que prueba en la escena «Elige tu juego» y el que descarga en el ZIP. Sin IA, sin servidor.
+function llevarAMiJuego(nuevos) { try { var a = JSON.parse(localStorage.getItem("forja.ajustes") || "{}") || {}; for (var k in nuevos) a[k] = nuevos[k]; localStorage.setItem("forja.ajustes", JSON.stringify(a)); return true; } catch (e) { return false; } }
 var C = 40, COLS = 16, FILAS = 9, cv = $("#sim"), x = cv.getContext("2d"), K = {}, verCaja = false;
 var BASE = ["................", "................", "................", "..........###...", "................", "......###.......", "................", "..##............", "################"];
 var mapa, H;
@@ -98,6 +103,10 @@ $$("[data-k]").forEach(function (b) { ["pointerdown", "pointerup", "pointerleave
 cv.addEventListener("pointerdown", function (e) { var r = cv.getBoundingClientRect(), c = Math.floor((e.clientX - r.left) / r.width * COLS), f = Math.floor((e.clientY - r.top) / r.height * FILAS); if (f >= 0 && f < FILAS - 1 && c >= 0 && c < COLS) { mapa[f][c] = mapa[f][c] ? 0 : 1; if (choca(H.x, H.y)) mapa[f][c] = 0; } cv.focus(); });
 $("#caja").onclick = function () { verCaja = !verCaja; this.setAttribute("aria-pressed", String(verCaja)); };
 $("#reinicio").onclick = reiniciar; [G, S, V].forEach(function (i) { i.oninput = leer; });
+$("#llevar").onclick = function () {
+  var g = +G.value, ok = llevarAMiJuego({ gravedad: g, salto: +S.value, velocidad: +V.value });
+  $("#llevado").textContent = ok ? "✓ Guardado en tu juego: gravedad " + g + " · salto " + S.value + " · velocidad " + V.value + ". Lo verás en «Elige tu juego» (Plataformas) y en tu ZIP." + (g < 300 ? " Ojo: en tu juego la gravedad mínima es 300, para que puedas aterrizar." : "") : "No se pudo guardar en este navegador.";
+};
 leer();
 </script>
 </body>

@@ -43,6 +43,7 @@ class Plataformas extends Phaser.Scene {
     // <<<
     this.leer = Forja.controles(this); this.puntos = 0; this.inicio = this.time.now; this.enSuelo = true;
     this.texto = Forja.marcador(this); this.pinta();
+    if (D.ajustesDeClase && /gravedad|salto|velocidad/.test(D.ajustesDeClase)) { const av = Forja.aviso(this, 'Física de tu clase\ngravedad ' + F.gravedad + ' · salto ' + F.salto + ' · velocidad ' + F.velocidad); this.time.delayedCall(3000, () => av.destroy()); }
   }
 
   pinta() { this.texto.setText('Monedas ' + this.puntos + '   Vidas ' + this.heroe.getData('vidas')); }

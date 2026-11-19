@@ -21,7 +21,10 @@ CIELO = """<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xM
 AYUDAS = """(function () { try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {} })();
 function $(s, r) { return (r || document).querySelector(s); }
 function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
-function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }"""
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+// «Llevar a mi juego»: guarda lo que el alumno decidió en este navegador (mismo origen que /forja/). La Forja lo pone en
+// el datos.js de SU juego, el que prueba en la escena «Elige tu juego» y el que descarga en el ZIP. Sin IA, sin servidor.
+function llevarAMiJuego(nuevos) { try { var a = JSON.parse(localStorage.getItem("forja.ajustes") || "{}") || {}; for (var k in nuevos) a[k] = nuevos[k]; localStorage.setItem("forja.ajustes", JSON.stringify(a)); return true; } catch (e) { return false; } }"""
 
 FASES = {"experiencia": ("ec", "Experiencia"), "reflexion": ("or", "Reflexión"), "conceptualizacion": ("ca", "Concepto"), "experimentacion": ("ea", "Práctica")}
 
@@ -404,7 +407,9 @@ escena("04-movimiento-y-choques", "Movimiento y choques: mueve los números", "e
         <span class="x-et">Tu primer nivel · clic en una celda pone o quita un muro · <span class="x-k">←</span> <span class="x-k">→</span> moverte · <span class="x-k">espacio</span> saltar</span>
         <canvas id="sim" width="640" height="360" tabindex="0" aria-label="Simulador: un héroe con gravedad en un nivel de celdas"></canvas>
         <div class="x-fila"><button class="x-btn" data-k="izq" type="button">◀</button><button class="x-btn" data-k="der" type="button">▶</button><button class="x-btn" data-k="salto" type="button">⤒ Saltar</button>
-          <button class="x-btn" id="caja" type="button" aria-pressed="false">Ver caja de choque</button><button class="x-btn" id="reinicio" type="button">Reiniciar nivel</button></div>
+          <button class="x-btn" id="caja" type="button" aria-pressed="false">Ver caja de choque</button><button class="x-btn" id="reinicio" type="button">Reiniciar nivel</button>
+          <button class="x-btn pri" id="llevar" type="button">⇢ Llevar a mi juego</button></div>
+        <p class="x-det" id="llevado" aria-live="polite" style="font-size:.82em;min-height:1.4em"></p>
       </section>
       <div class="x-col">
         <section class="esc-card a-in" style="--d:.25s"><span class="x-et">Tres números mandan</span>
@@ -464,6 +469,10 @@ $$("[data-k]").forEach(function (b) { ["pointerdown", "pointerup", "pointerleave
 cv.addEventListener("pointerdown", function (e) { var r = cv.getBoundingClientRect(), c = Math.floor((e.clientX - r.left) / r.width * COLS), f = Math.floor((e.clientY - r.top) / r.height * FILAS); if (f >= 0 && f < FILAS - 1 && c >= 0 && c < COLS) { mapa[f][c] = mapa[f][c] ? 0 : 1; if (choca(H.x, H.y)) mapa[f][c] = 0; } cv.focus(); });
 $("#caja").onclick = function () { verCaja = !verCaja; this.setAttribute("aria-pressed", String(verCaja)); };
 $("#reinicio").onclick = reiniciar; [G, S, V].forEach(function (i) { i.oninput = leer; });
+$("#llevar").onclick = function () {
+  var g = +G.value, ok = llevarAMiJuego({ gravedad: g, salto: +S.value, velocidad: +V.value });
+  $("#llevado").textContent = ok ? "✓ Guardado en tu juego: gravedad " + g + " · salto " + S.value + " · velocidad " + V.value + ". Lo verás en «Elige tu juego» (Plataformas) y en tu ZIP." + (g < 300 ? " Ojo: en tu juego la gravedad mínima es 300, para que puedas aterrizar." : "") : "No se pudo guardar en este navegador.";
+};
 leer();""",
        css="#sim { width: 100%; height: auto; aspect-ratio: 16 / 9; display: block; margin: .5em 0; border-radius: .7em; background: var(--s2); border: 1px solid var(--line2); cursor: crosshair; touch-action: none; }",
        comentario="Interacción: simulador propio en lienzo (gravedad, salto, velocidad y choque con celdas). Clic pone o quita muros. Tres retos que se marcan solos.")
@@ -494,6 +503,8 @@ escena("04b-cuatro-perseguidores", "Cuatro perseguidores: reglas que parecen int
         <section class="esc-card a-in" style="--d:.35s"><span class="x-et">Programa a tus perseguidores</span>
           <div id="reglas" role="group" aria-label="Reglas de los perseguidores"></div>
           <div class="x-fila" style="margin-top:.4em"><button class="x-btn" id="orig" type="button">Volver a las reglas de 1980</button></div>
+          <div class="x-fila" style="margin-top:.5em"><span style="font-size:.8em">Llevar a mi juego la regla del</span><select id="cual" aria-label="Qué regla llevar a tu juego" class="pm-cual"><option value="0">Rojo</option><option value="1" selected>Rosa</option><option value="2">Celeste</option><option value="3">Naranja</option></select><button class="x-btn pri" id="llevar" type="button">⇢ Llevar a mi juego</button></div>
+          <p class="x-det" id="llevado" aria-live="polite" style="font-size:.8em;min-height:1.3em;margin:.3em 0 0"></p>
         </section>
         <section class="esc-card a-in" style="--d:.45s"><span class="x-et">Así se escribe en tu juego (rivales.js)</span><pre class="x-cod" id="cod"></pre></section>
         <section class="esc-card a-in" style="--d:.55s"><span class="x-et">Retos</span><div class="x-col" id="retos" role="group" aria-label="Retos" style="margin-top:.4em"></div></section>
@@ -668,6 +679,10 @@ $("#modo").onclick = function () { modo = modo === "perseguir" ? "dispersarse" :
 $("#ver").onclick = function () { verGuias = !verGuias; this.setAttribute("aria-pressed", String(verGuias)); };
 $("#reset").onclick = function () { llenarPuntos(); comidos = 0; reiniciar(); marcador("Pulsa una flecha para empezar"); };
 $("#orig").onclick = function () { PERS.forEach(function (p) { p.regla = { tipo: p.orig.tipo, n: p.orig.n }; p.sync(); }); codigo(); };
+$("#llevar").onclick = function () {
+  var p = PERS[+$("#cual").value], r = { tipo: p.regla.tipo, n: +p.regla.n || 0 }, nombre = TIPOS.filter(function (t) { return t[0] === r.tipo; })[0][1].replace("N", r.n);
+  $("#llevado").textContent = llevarAMiJuego({ rival: r }) ? "✓ Tus rivales usarán la regla del " + p.nombre + ": «" + nombre + "». Juégala en «Elige tu juego» → Laberinto, y va en tu ZIP." : "No se pudo guardar en este navegador.";
+};
 cv.addEventListener("pointerdown", function () { cv.focus(); });
 $$("[data-vel]").forEach(function (b) { b.onclick = function () { PJ = VEL[b.dataset.vel][0]; PP = VEL[b.dataset.vel][1]; tJ = tP = 0; $$("[data-vel]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); }); }; });""",
        css="""#lab { width: 100%; height: auto; aspect-ratio: 19 / 11; display: block; margin: .5em 0; border-radius: 1em; background: #0d0b1f; border: 1px solid rgba(139,123,255,.35); box-shadow: 0 14px 34px rgba(20,16,50,.28), inset 0 0 0 1px rgba(255,255,255,.04); touch-action: none; }
@@ -677,7 +692,8 @@ $$("[data-vel]").forEach(function (b) { b.onclick = function () { PJ = VEL[b.dat
 .pm-fuente { font-size: .7em; color: var(--muted); margin: .45em 0 0; }
 .pm-fila { display: grid; grid-template-columns: 1em 4.6em 1fr 3.6em; gap: .45em; align-items: center; font-size: .8em; margin: .3em 0; }
 .pm-fila select, .pm-fila input { font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .5em; padding: .3em .4em; min-width: 0; }
-.pm-fila input:disabled { opacity: .35; }""",
+.pm-fila input:disabled { opacity: .35; }
+.pm-cual { font: inherit; font-size: .8em; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .5em; padding: .3em .4em; }""",
        comentario="Interacción: laberinto propio en lienzo con 4 perseguidores. Cada uno elige en cada celda la salida (sin media vuelta) más cercana a su objetivo, como en Pac-Man (1980). El alumno cambia la regla de cada uno y ve su objetivo, su camino y el código.")
 
 # ---------------------------------------------------------------- 05 · hoja de sprites

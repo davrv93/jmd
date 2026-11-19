@@ -78,7 +78,8 @@ class Laberinto extends Phaser.Scene {
     this.capaX = this.add.graphics().setDepth(940);
     this.leer = Forja.controles(this); this.fin = false; this.inicio = this.time.now;
     this.texto = Forja.marcador(this);
-    this.libres = libres; this.r = r;
+    this.libres = libres; this.r = r; this.dirHeroe = { c: 1, f: 0 };
+    if (D.rival) { const av = Forja.aviso(this, 'Tus rivales usan TU regla:\n' + D.rival.nombre); this.time.delayedCall(3000, () => av.destroy()); }
   }
 
   // >>> estados
@@ -89,16 +90,45 @@ class Laberinto extends Phaser.Scene {
     e.setData('piensa', e.getData('piensa') - dt);
     if (e.getData('piensa') <= 0) {
       e.setData('piensa', 0.35);
-      const cerca = Math.abs(yo.c - tu.c) + Math.abs(yo.f - tu.f) <= 6;
-      e.setData('estado', cerca ? 'persigue' : 'patrulla');
       let destino = tu;
-      if (!cerca) { destino = e.getData('destino'); if (!destino || (destino.c === yo.c && destino.f === yo.f)) destino = this.libres[Math.floor(this.r() * this.libres.length)]; e.setData('destino', destino); }
+      if (D.rival) { e.setData('estado', 'tu regla'); destino = this.celdaLibreCerca(this.objetivoRegla(e, yo, tu)); }
+      else {
+        const cerca = Math.abs(yo.c - tu.c) + Math.abs(yo.f - tu.f) <= 6;
+        e.setData('estado', cerca ? 'persigue' : 'patrulla');
+        if (!cerca) { destino = e.getData('destino'); if (!destino || (destino.c === yo.c && destino.f === yo.f)) destino = this.libres[Math.floor(this.r() * this.libres.length)]; e.setData('destino', destino); }
+      }
+      e.setData('objetivo', destino);
       const res = bfs(this.mapa, yo, destino); e.setData({ ruta: res.ruta, visitadas: res.visitadas });
     }
     const ruta = e.getData('ruta'), sig = ruta[1] || ruta[0];
     if (!sig) return;
-    const p = centro(sig.c, sig.f), dx = p.x - e.x, dy = p.y + 14 - e.y, d = Math.hypot(dx, dy), v = (e.getData('estado') === 'persigue' ? 104 : 70) * dt;
+    const p = centro(sig.c, sig.f), dx = p.x - e.x, dy = p.y + 14 - e.y, d = Math.hypot(dx, dy), v = ({ persigue: 104, 'tu regla': 92 }[e.getData('estado')] || 70) * dt;
     if (d <= v) { e.setPosition(p.x, p.y + 14); ruta.shift(); } else { e.x += dx / d * v; e.y += dy / d * v; if (Math.abs(dx) > 1) e.setFlipX(dx < 0); }
+  }
+  // <<<
+
+  // >>> reglas
+  // TU REGLA. Si en la clase programaste a un perseguidor y pulsaste «Llevar a mi juego», está en datos.js (D.rival).
+  // Cada rival calcula una CELDA OBJETIVO con tu regla y va hacia ella por el camino más corto (BFS).
+  // Es la idea de los fantasmas de Pac-Man (1980): la «inteligencia» es solo cómo se elige el objetivo.
+  objetivoRegla(e, yo, tu) {
+    const R = D.rival, d = this.dirHeroe, n = R.n, i = this.rivales.indexOf(e);
+    const esquina = i === 0 ? { c: COLS - 2, f: 1 } : { c: 1, f: FILAS - 2 };
+    if (R.tipo === 'celda') return tu;
+    if (R.tipo === 'delante') return { c: tu.c + d.c * n, f: tu.f + d.f * n };
+    if (R.tipo === 'pinza') { // la flecha que va del OTRO rival a «n delante de ti», duplicada
+      const t = { c: tu.c + d.c * n, f: tu.f + d.f * n }, otro = celda(this.rivales[1 - i].x, this.rivales[1 - i].y - 14);
+      return { c: 2 * t.c - otro.c, f: 2 * t.f - otro.f };
+    }
+    if (R.tipo === 'indeciso') return Math.hypot(yo.c - tu.c, yo.f - tu.f) > n ? tu : esquina;
+    if (R.tipo === 'azar') { let a = e.getData('azar'); if (!a || (a.c === yo.c && a.f === yo.f)) { a = this.libres[Math.floor(this.r() * this.libres.length)]; e.setData('azar', a); } return a; }
+    return esquina;
+  }
+  // El objetivo puede caer en un muro o fuera del mapa: se usa la celda libre más cercana.
+  celdaLibreCerca(o) {
+    let mejor = this.libres[0], md = Infinity;
+    for (const x of this.libres) { const dd = (x.c - o.c) ** 2 + (x.f - o.f) ** 2; if (dd < md) { md = dd; mejor = x; } }
+    return mejor;
   }
   // <<<
 
@@ -106,10 +136,11 @@ class Laberinto extends Phaser.Scene {
     const dt = ms / 1000, h = this.heroe, c = this.leer();
     if (c.repetir) { this.scene.restart(); return; }
     if (c.rayosX) Forja.rayosX(this);
-    this.texto.setText('Gemas ' + this.gemas.countActive() + '   Vidas ' + h.getData('vidas'));
+    this.texto.setText('Gemas ' + this.gemas.countActive() + '   Vidas ' + h.getData('vidas') + (D.rival ? '   Regla: ' + D.rival.nombre : ''));
     if (this.fin) { h.setVelocity(0, 0); return; }
     const m = Math.hypot(c.x, c.y) || 1, vel = Math.min(175, D.fisica.velocidad * 0.7);
     h.setVelocity(c.x / m * vel, c.y / m * vel); if (c.x) h.setFlipX(c.x < 0);
+    if (c.x || c.y) this.dirHeroe = Math.abs(c.x) >= Math.abs(c.y) ? { c: Math.sign(c.x), f: 0 } : { c: 0, f: Math.sign(c.y) };
     h.setData('inmune', Math.max(0, h.getData('inmune') - dt)); h.setAlpha(h.getData('inmune') > 0 && Math.floor(h.getData('inmune') * 14) % 2 ? 0.45 : 1);
     h.play('heroe:' + (h.getData('inmune') > 1 ? 'dano' : c.x || c.y ? 'caminar' : 'quieto'), true); h.setDepth(h.y);
     for (const e of this.rivales) {
@@ -130,7 +161,8 @@ class Laberinto extends Phaser.Scene {
   dibujarX() { // rayos X: la ruta que calculó cada rival con BFS y cuántas celdas tuvo que visitar
     const g = this.capaX.clear(); let info = '';
     this.rivales.forEach((e, i) => {
-      const ruta = e.getData('ruta'), col = e.getData('estado') === 'persigue' ? 0xff7a66 : 0xc6ff4a;
+      const ruta = e.getData('ruta'), col = { persigue: 0xff7a66, 'tu regla': 0x4de1ff }[e.getData('estado')] || 0xc6ff4a;
+      const o = e.getData('objetivo'); if (o) { const q = centro(o.c, o.f); g.lineStyle(3, col, 0.9); g.strokeCircle(q.x, q.y, 16); }
       g.lineStyle(4, col, 0.9);
       for (let k = 0; k < ruta.length - 1; k++) { const a = centro(ruta[k].c, ruta[k].f), b = centro(ruta[k + 1].c, ruta[k + 1].f); g.lineBetween(a.x, a.y, b.x, b.y); }
       g.fillStyle(col, 1); for (const p of ruta) { const q = centro(p.c, p.f); g.fillCircle(q.x, q.y, 5); }

@@ -7,6 +7,7 @@ import { banco, sonar } from './motor/sonido.js';
 import { zipProyecto, armarProyecto, paginaEnMemoria, plantillas, extracto, grabarVideo, modeloGLB } from './motor/exportar.js';
 import { zip, pngDeLienzo } from './motor/zip.js';
 import { gif } from './motor/gif.js';
+import { tomarDeLaURL, leerAjustes, borrarAjustes, resumenAjustes } from './motor/ajustes.js';
 
 export function iniciarMas(A) {
   const { R, $, el, aviso, bajar } = A;
@@ -83,6 +84,9 @@ export function iniciarMas(A) {
 
   // ---------------------------------------------------------------- plantillas de juego (el mismo código que se exporta, corriendo aquí)
   let plantilla = lee('forja.plantilla', 'plataformas'), enMemoria = null, vista = 'algoritmos', PL = [];
+  // Ajustes de la clase: llegan guardados desde las escenas del LIVE («Llevar a mi juego») o por la dirección.
+  const deURL = tomarDeLaURL();
+  if (deURL) { plantilla = deURL.rival && deURL.salto == null ? 'laberinto' : 'plataformas'; guarda('forja.plantilla', plantilla); }
   const marco = $('marcoJuego');
   async function arrancarJuego() {
     PL = PL.length ? PL : await plantillas();
@@ -99,7 +103,13 @@ export function iniciarMas(A) {
     const caja = $('explica');
     for (const b of $('pExplica').children) { b.setAttribute('aria-selected', String(b.dataset.v === vista)); b.onclick = () => { vista = b.dataset.v; explicar(meta, proyecto); }; }
     if (vista === 'algoritmos') {
-      caja.replaceChildren(el('p', { class: 'nota' }, 'Cada tarjeta es un trozo real de juego.js. En el juego pulsa V (rayos X) para ver lo que el código «piensa».'), ...meta.algoritmos.map((a, i) => {
+      const aj = leerAjustes(), deClase = [];
+      if (Object.keys(aj).length) {
+        const quitar = el('button', { type: 'button', class: 'chip' }, 'Quitar'); quitar.onclick = () => { borrarAjustes(); aviso('Ajustes de la clase quitados'); arrancarJuego(); };
+        const usa = (aj.rival ? 'La regla del rival se usa en Laberinto. ' : '') + (aj.salto != null || aj.gravedad != null || aj.velocidad != null ? 'Los números de física se usan en Plataformas.' : '');
+        const p = el('p', { class: 'nota clase' }); p.append(el('b', {}, 'De tu clase: '), resumenAjustes(aj) + '. ' + usa + ' Van en datos.js de tu ZIP. ', quitar); deClase.push(p);
+      }
+      caja.replaceChildren(...deClase, el('p', { class: 'nota' }, 'Cada tarjeta es un trozo real de juego.js. En el juego pulsa V (rayos X) para ver lo que el código «piensa».'), ...meta.algoritmos.map((a, i) => {
         const d = el('details', { class: 'algoritmo' }); d.open = i === 0;
         d.append(el('summary', {}, a.nombre), el('p', {}, a.idea), el('pre', {}, extracto(proyecto.juego, a.id) || '(sin extracto)'), el('p', { class: 'prueba' }, 'Pruébalo: ' + a.prueba)); return d;
       }));
