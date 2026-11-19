@@ -10,7 +10,10 @@ class Plataformas extends Phaser.Scene {
     // >>> nivel
     // El nivel es una lista de datos (N): qué columnas tienen suelo y dónde va cada plataforma.
     // Aquí esos datos se convierten en cuerpos sólidos que no se mueven (staticGroup).
-    const suelo = this.physics.add.staticGroup(), plats = this.physics.add.staticGroup();
+    // Si en datos.js hay «oscilacion» (plataformas que flotan), las plataformas sí se mueven: grupo con física,
+    // sin gravedad (no se caen) e inamovible (el héroe no las empuja).
+    this.flotan = !!(D.oscilacion && D.oscilacion.amp > 0 && D.oscilacion.vel > 0);
+    const suelo = this.physics.add.staticGroup(), plats = this.flotan ? this.physics.add.group({ allowGravity: false, immovable: true }) : this.physics.add.staticGroup();
     N.suelo.forEach((hay, columna) => { if (hay) suelo.create(columna * 64 + 32, 476 + 32, 'suelo'); });
     for (const p of N.plataformas) for (let i = 0; i < p.w; i++) {
       const s = plats.create(p.x + i * 64 + 32, p.y + 15, i === 0 ? 'plat_izq' : i === p.w - 1 ? 'plat_der' : 'plat_cen');
@@ -22,6 +25,18 @@ class Plataformas extends Phaser.Scene {
     for (const m of N.monedas) this.monedas.create(m.x, m.y, 'objetos').setScale(46 / 64).play('moneda').setData('vale', 1);
     this.monedas.create(N.gema.x, N.gema.y, 'objetos').setScale(58 / 64).play('gema').setData('vale', 5);
     this.monedas.create(N.corazon.x, N.corazon.y, 'objetos').setScale(58 / 64).play('corazon').setData('vida', 1);
+    // Plataformas que flotan: cada una se lleva sus losetas y lo que tiene encima (monedas, gema, corazón).
+    // Cada plataforma tiene su fase: i · 2,4 rad (casi 140°), así ninguna sube y baja al mismo tiempo que otra.
+    if (this.flotan) {
+      const A = D.oscilacion.amp, w = D.oscilacion.vel;
+      this.onda = N.plataformas.map((p, i) => {
+        const fase = i * 2.4, dentro = (o) => o.x > p.x && o.x < p.x + p.w * 64;
+        const piezas = [...plats.getChildren().filter((o) => dentro(o) && o.y === p.y + 15), ...this.monedas.getChildren().filter((o) => dentro(o) && o.y < p.y && o.y > p.y - 110)];
+        for (const o of piezas) { o.setData('base', o.y).setY(o.y + A * Math.sin(fase)); o.body.setVelocityY(A * w * Math.cos(fase)); } // como en t = 0
+        return { fase, piezas };
+      });
+      this.reloj = 0; this.physics.world.on('worldstep', this.oscilar, this);   // oscilar() corre en cada paso de la física
+    }
 
     this.enemigos = N.enemigos.map((e) => {
       const s = Forja.cuerpo(this.physics.add.sprite(e.x, 400, 'enemigo', 'caminar_0'), D.enemigo); s.play('enemigo:caminar'); s.setData({ min: e.min, max: e.max, dir: -1, vivo: true });
@@ -29,7 +44,7 @@ class Plataformas extends Phaser.Scene {
     });
     this.heroe = Forja.cuerpo(this.physics.add.sprite(N.inicio.x, N.inicio.y - 90, 'heroe', 'quieto_0'), D.heroe);
     this.heroe.setData({ vidas: 3, inmune: 0, golpe: 0, gana: false, seguro: N.inicio.x });
-    this.physics.add.collider(this.heroe, suelo); this.physics.add.collider(this.heroe, plats);
+    this.physics.add.collider(this.heroe, suelo); this.physics.add.collider(this.heroe, plats, (h, pieza) => { this.sobre = pieza; }); // sobre = la loseta que pisa
     this.physics.add.overlap(this.heroe, this.monedas, (h, m) => {
       if (m.getData('vida')) h.setData('vidas', Math.min(5, h.getData('vidas') + 1)); else this.puntos += m.getData('vale');
       this.chispas.explode(m.getData('vale') === 1 ? 6 : 14, m.x, m.y); Forja.sonar(this, m.getData('vale') === 1 ? 'moneda' : 'celebrar', 0.4); m.destroy(); this.pinta();
@@ -43,10 +58,37 @@ class Plataformas extends Phaser.Scene {
     // <<<
     this.leer = Forja.controles(this); this.puntos = 0; this.inicio = this.time.now; this.enSuelo = true;
     this.texto = Forja.marcador(this); this.pinta();
-    if (D.ajustesDeClase && /gravedad|salto|velocidad/.test(D.ajustesDeClase)) { const av = Forja.aviso(this, 'Física de tu clase\ngravedad ' + F.gravedad + ' · salto ' + F.salto + ' · velocidad ' + F.velocidad); this.time.delayedCall(3000, () => av.destroy()); }
+    const deClase = [];
+    if (D.ajustesDeClase && /gravedad|salto|velocidad/.test(D.ajustesDeClase)) deClase.push('gravedad ' + F.gravedad + ' · salto ' + F.salto + ' · velocidad ' + F.velocidad);
+    if (D.ajustesDeClase && D.oscilacion) deClase.push('plataformas ' + (this.flotan ? 'que flotan' : 'quietas') + ': A ' + D.oscilacion.amp + ' px · ω ' + String(D.oscilacion.vel).replace('.', ','));
+    if (deClase.length) { const av = Forja.aviso(this, 'Física de tu clase\n' + deClase.join('\n')); this.time.delayedCall(3000, () => av.destroy()); }
   }
 
   pinta() { this.texto.setText('Monedas ' + this.puntos + '   Vidas ' + this.heroe.getData('vidas')); }
+
+  // >>> oscilar
+  // Plataformas que flotan: la altura de cada pieza sigue una función seno.
+  //     y = base + A · sin(ω · t + fase)
+  // A (amplitud) = cuántos píxeles sube y baja desde su altura de base.
+  // ω (omega, en radianes por segundo) = qué tan rápido: una subida y bajada completa tarda 2π / ω segundos.
+  // fase = desfase: en qué punto de la onda empieza cada plataforma, para que no se muevan todas igual.
+  // La «y» no se cambia a mano: se le da la velocidad que pide la función, que es su derivada A · ω · cos(ω · t + fase).
+  // Así la física sabe que la plataforma se mueve y lleva al héroe encima sin que la atraviese ni tiemble.
+  // Corre en cada paso de la física (60 por segundo, dt = 1/60 s), no en cada cuadro: igual de suave aunque el equipo vaya lento.
+  oscilar(dt) {
+    const A = D.oscilacion.amp, w = D.oscilacion.vel, t = (this.reloj += dt);   // t = segundos desde que empezó el nivel
+    for (const p of this.onda) for (const o of p.piezas) {
+      if (!o.body) continue;                                                     // esa moneda ya la recogiste
+      const y = o.getData('base') + A * Math.sin(w * t + p.fase);                // dónde debería estar ahora
+      const v = A * w * Math.cos(w * t + p.fase);                                // la derivada: qué tan rápido sube o baja
+      o.body.setVelocityY(v + (y - o.body.center.y) * 8);                        // + un empujoncito si se desvió un poco
+    }
+    // Si el héroe está parado en una pieza que flota, viaja con ella: le damos su misma velocidad vertical.
+    // (Sin esto, con A · ω² mayor que la gravedad la plataforma bajaría más rápido de lo que cae el héroe y se despegaría.)
+    if (this.sobre?.body) this.heroe.body.setVelocityY(this.sobre.body.velocity.y);
+    this.sobre = null;
+  }
+  // <<<
 
   choque(e) {
     const h = this.heroe; if (!e.getData('vivo') || h.getData('gana')) return;
