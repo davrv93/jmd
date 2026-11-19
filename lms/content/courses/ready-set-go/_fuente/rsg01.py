@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Genera las escenas LIVE de la Clase 1 de Ready Set Go (rsg-01): python3 _fuente/rsg01.py
 
-Secuencia (112 min de 90: el profesor elige qué abreviar): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano) · 01c los que
+Secuencia (102 min de 90: el profesor elige qué abreviar): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano) · 01c los que
 cambiaron las reglas · 02 Forja: tu héroe · 03 de la mecánica a la tecnología · 03b y 03c láminas de la física de Sonic
 (a mano: aceleración por cuadro; rampas, loop y salto con seno y coseno) · 04 movimiento y choques (con los números de Sonic
-y una plataforma que flota con un seno) · 04b lámina «ningún rival piensa» (a mano) · 04c programa tu rival · 05 hoja de
-sprites · 06 elige tu juego · 07 cierre.
+y una plataforma que flota con un seno) · 04b lámina «ningún rival piensa» (a mano) · 04c programa tu rival · 06 elige tu
+juego · 07 cierre. La hoja de sprites se pasó a la Clase 3 (live/rsg-03/01-hoja-de-sprites, también se genera aquí).
 Las escenas 01 y 05/heroe.png no se generan aquí. Reglas del modo LIVE: sin recursos externos, menos de 300 elementos
 y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion. Nada usa <form>: el marco no lo permite.
 El campo «paso» va vacío: la lección rsg-01 no define un ciclo de pasos, y el LMS rechaza un paso que no exista ahí.
@@ -31,9 +31,9 @@ function llevarAMiJuego(nuevos) { try { var a = JSON.parse(localStorage.getItem(
 FASES = {"experiencia": ("ec", "Experiencia"), "reflexion": ("or", "Reflexión"), "conceptualizacion": ("ca", "Concepto"), "experimentacion": ("ea", "Práctica")}
 
 
-def escena(id_, titulo, fase, paso, minutos, cuerpo, nota, js="", css="", compuerta="lo_logre", umbral=80, comentario="", logro=True):
+def escena(id_, titulo, fase, paso, minutos, cuerpo, nota, js="", css="", compuerta="lo_logre", umbral=80, comentario="", logro=True, leccion="rsg-01"):
     ph, nombre = FASES[fase]
-    num = id_.split("-")[0]
+    num, clase = id_.split("-")[0], leccion.split("-")[1].lstrip("0")
     html = f"""<!doctype html>
 <html lang="es">
 <head>
@@ -41,7 +41,7 @@ def escena(id_, titulo, fase, paso, minutos, cuerpo, nota, js="", css="", compue
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Escena · {titulo}</title>
 <!--
-  Escena del modo LIVE (Ready Set Go, clase rsg-01). Generada por _fuente/rsg01.py: edita ahí, no aquí.
+  Escena del modo LIVE (Ready Set Go, clase {leccion}). Generada por _fuente/rsg01.py: edita ahí, no aquí.
   Reglas: sin recursos externos, menos de 300 elementos y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion.
   {comentario}
 -->
@@ -55,7 +55,7 @@ def escena(id_, titulo, fase, paso, minutos, cuerpo, nota, js="", css="", compue
 <body>
 {CIELO}
 <div class="esc">
-  <header class="esc-cab"><span class="esc-fase" data-ph="{ph}">{nombre}</span><span class="esc-num">Ready Set Go · C1 · E{num}</span></header>
+  <header class="esc-cab"><span class="esc-fase" data-ph="{ph}">{nombre}</span><span class="esc-num">Ready Set Go · C{clase} · E{num}</span></header>
   <main class="esc-cuerpo">
 {cuerpo}
   </main>
@@ -68,7 +68,7 @@ def escena(id_, titulo, fase, paso, minutos, cuerpo, nota, js="", css="", compue
 </body>
 </html>
 """
-    d = AQUI / id_
+    d = AQUI.parent / leccion / id_
     d.mkdir(parents=True, exist_ok=True)
     (d / "escena.html").write_text(html, encoding="utf-8")
     logro = "true" if logro else "false"
@@ -100,7 +100,6 @@ escena("00-bienvenida", "Bienvenida: hoy tu héroe se mueve", "experiencia", "ve
   ["Física de Sonic", "12 min", "Dos láminas: Sonic acelera sumando un poquito cada cuadro, y en rampas y loops reparte su velocidad con seno y coseno."],
   ["Movimiento y choques", "15 min", "Gravedad, salto y paredes: pruebas los números de Sonic, eliges los tuyos y haces flotar una plataforma con un seno. Construyes tu primer nivel con clics."],
   ["Rivales con reglas", "14 min", "Lámina: ningún fantasma de Pac-Man piensa, solo cambia a dónde apunta. Luego programas a tu rival y lo llevas a tu juego."],
-  ["Animación", "10 min", "Tu héroe camina porque pasan muchos dibujos muy rápido. Abres una hoja de sprites y la controlas."],
   ["Tu juego", "15 min", "Juegas TU juego con tus números y tu regla de rival (Plataformas o Laberinto), miras sus algoritmos con rayos X y descargas tu ZIP: tu entregable."],
   ["Cierre", "5 min", "Revisas lo que ya sabes hacer y qué traer para la próxima clase."]
 ];
@@ -524,9 +523,9 @@ $$("[data-vel]").forEach(function (b) { b.onclick = function () { PJ = VEL[b.dat
 .pm-cual { font: inherit; font-size: .8em; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .5em; padding: .3em .4em; }""",
        comentario="Interacción: laberinto propio en lienzo con 4 perseguidores. Cada uno elige en cada celda la salida (sin media vuelta) más cercana a su objetivo, como en Pac-Man (1980). El alumno cambia la regla de cada uno y ve su objetivo, su camino y el código.")
 
-# ---------------------------------------------------------------- 05 · hoja de sprites
+# ---------------------------------------------------------------- Clase 3 · 01 · hoja de sprites (pasó de la Clase 1 a la 3 el 19-11-2026)
 ANIMS = [("quieto", 6, 6), ("caminar", 8, 12), ("correr", 8, 16), ("saltar", 8, 10), ("golpe", 6, 14), ("dano", 4, 10), ("morir", 8, 10), ("celebrar", 8, 12), ("agachado", 4, 6)]
-escena("05-spritesheet", "Animación: la hoja de sprites", "conceptualizacion", "demo", 10, """
+escena("01-hoja-de-sprites", "Animación: la hoja de sprites", "conceptualizacion", "demo", 10, """
     <h1 class="esc-titulo a-in">Animación: <em>muchos dibujos, muy rápido</em></h1>
     <div class="x-dos">
       <section class="esc-card a-in" style="--d:.15s"><span class="x-et">heroe.png · UNA imagen de 512 × 576 con 72 cuadros de 64 px · toca un cuadro</span>
@@ -564,7 +563,7 @@ $("#hoja").addEventListener("pointerdown", function (e) { var r = this.getBoundi
 img.onload = function () { elegir(1); (function bucle(t) { requestAnimationFrame(bucle); var dt = (t - antes) / 1000; antes = t; if (pausa) return; acum += dt * +$("#fps").value; if (acum >= 1) { cuadro = (cuadro + Math.floor(acum)) % ANIMS[fila][1]; acum %= 1; pinta(); } })(antes); };
 img.src = "heroe.png";""",
        css="#hoja { width: auto; height: auto; max-width: 100%; max-height: 62vh; display: block; margin: .5em auto 0; border-radius: .6em; background: repeating-conic-gradient(var(--s2) 0% 25%, var(--s3) 0% 50%) 0 0 / 24px 24px; cursor: pointer; aspect-ratio: 512 / 576; }\n#vista { width: 9em; height: 9em; flex: none; border-radius: .8em; background: var(--s2); border: 1px solid var(--line2); image-rendering: pixelated; }\n#anims .x-btn { font-size: .66em; padding: .5em .8em; }",
-       comentario="Interacción: hoja de sprites real (heroe.png, hermana de esta escena, sacada de Forja). Se elige animación, velocidad y cuadro; el atlas se actualiza.")
+       comentario="Interacción: hoja de sprites real (heroe.png, hermana de esta escena, sacada de Forja). Se elige animación, velocidad y cuadro; el atlas se actualiza.", leccion="rsg-03")
 
 # ---------------------------------------------------------------- 06 · elige tu juego
 escena("06-elige-tu-juego", "Tu juego: con tus números y tu regla", "experimentacion", "construir", 15,
@@ -584,7 +583,7 @@ escena("07-cierre", "Cierre: tu héroe ya se mueve", "reflexion", "cierre", 5, "
     <section class="esc-card a-in" style="--d:.6s"><span class="x-et">La regla del taller</span><p style="font-size:1em;color:var(--fg)"><b>Tú describes la mecánica. La IA elige la tecnología.</b> La galería de la sala <b>rsg-01</b> sigue abierta en jmd-learn.online/forja: vota por tus favoritos.</p></section>""",
        "Pulsa «Lo logré» cuando hayas marcado lo que ya sabes hacer",
        js="""var n = 0;
-[["Pedirle a la IA una mecánica con un buen prompt", "mecánica + contexto + límite + prueba"], ["Mover a mi héroe con gravedad y hacerlo chocar con el nivel", "velocidad, salto y cuerpos sólidos"], ["Darle a mi rival una regla y llevarla a mi juego", "objetivo + camino más corto (BFS)"], ["Animar a mi héroe con su hoja de sprites", "cuadros, atlas y velocidad"]].forEach(function (t) {
+[["Pedirle a la IA una mecánica con un buen prompt", "mecánica + contexto + límite + prueba"], ["Mover a mi héroe con gravedad y hacerlo chocar con el nivel", "velocidad, salto y cuerpos sólidos"], ["Darle a mi rival una regla y llevarla a mi juego", "objetivo + camino más corto (BFS)"], ["Explicar cómo corre Sonic", "un poquito cada cuadro, seno y coseno"]].forEach(function (t) {
   var b = el("button", "x-it"); b.type = "button"; b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); var s = el("span", null, t[0]); s.appendChild(el("small", null, t[1])); b.appendChild(s);
   b.onclick = function () { var v = b.getAttribute("aria-checked") !== "true"; b.setAttribute("aria-checked", String(v)); n += v ? 1 : -1; $("#cuenta").textContent = n + " de 4"; }; $("#logros").appendChild(b);
 });""",

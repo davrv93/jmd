@@ -15,6 +15,7 @@ objectives:
 Tu juego ya funciona; hoy se ve y se escucha como uno profesional.
 
 - **Arte con IA:** personajes, fondos y objetos generados y convertidos en sprites.
+- **Hoja de sprites:** tu héroe camina porque pasan muchos dibujos muy rápido; la abres y la controlas.
 - **Animación:** pantallas de inicio, cambios de nivel y efectos con GSAP.
 - **Música y sonido:** una banda sonora hecha con IA y sonidos retro con Howler.js.
 

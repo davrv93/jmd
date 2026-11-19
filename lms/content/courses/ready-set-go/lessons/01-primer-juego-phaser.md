@@ -6,7 +6,7 @@ published: true
 objectives:
   - {id: rsg-01-o1, title: "Pasar de una mecánica a la tecnología que la resuelve con un buen prompt"}
   - {id: rsg-01-o2, title: "Mover al héroe con Arcade Physics y chocar con paredes de un tilemap"}
-  - {id: rsg-01-o3, title: "Animar al personaje con un spritesheet"}
+  - {id: rsg-01-o3, title: "Explicar el movimiento de Sonic: aceleración por cuadro, seno y coseno"}
 materials:
   - id: rsg-01-v1
     title: "Video · ¿El primer videojuego? Tennis for Two, 1958 (Brookhaven Lab)"
@@ -44,6 +44,7 @@ tecnología.
 
 - **De la mecánica a la tecnología:** cómo pedirle a la IA lo que quieres que pase en el juego.
 - **Movimiento y choques:** Arcade Physics para el héroe y un tilemap para las paredes.
-- **Animación:** el personaje camina, salta o patea con su spritesheet.
+- **La física de Sonic:** acelera un poquito cada cuadro; en rampas y loops reparte su velocidad
+  con seno y coseno, y con un seno haces flotar tus plataformas.
 
 Eliges tu juego —fútbol o plataformas— y terminas la clase con el héroe moviéndose en pantalla.
