@@ -39,6 +39,7 @@
         <canvas id="lab" width="608" height="352" tabindex="0" aria-label="Laberinto: tu héroe y cuatro perseguidores que siguen reglas"></canvas>
         <div class="x-fila"><button class="x-btn" data-d="u" type="button" aria-label="Arriba">▲</button><button class="x-btn" data-d="l" type="button" aria-label="Izquierda">◀</button><button class="x-btn" data-d="d" type="button" aria-label="Abajo">▼</button><button class="x-btn" data-d="r" type="button" aria-label="Derecha">▶</button>
           <button class="x-btn" id="modo" type="button" aria-pressed="false">Modo: perseguir</button><button class="x-btn" id="ver" type="button" aria-pressed="true">Objetivos y caminos</button><button class="x-btn" id="reset" type="button">Reiniciar</button></div>
+        <div class="x-fila" role="group" aria-label="Velocidad"><span class="x-et" style="margin:0">Velocidad</span><button class="x-btn" data-vel="lento" type="button" aria-pressed="true">Lento</button><button class="x-btn" data-vel="normal" type="button" aria-pressed="false">Normal</button><button class="x-btn" data-vel="rapido" type="button" aria-pressed="false">Rápido</button></div>
         <p class="x-det" id="marcador" aria-live="polite">Pulsa una flecha para empezar. Antes de moverte, mira a dónde apunta cada uno.</p>
       </section>
       <div class="x-col">
@@ -173,7 +174,8 @@ function dibuja(fr, frP) {
     x.fillStyle = "#14122b"; x.beginPath(); x.arc(q[0] - 4 + DIR[p.dir][0] * 1.5, q[1] - 2 + DIR[p.dir][1] * 1.5, 1.7, 0, 6.283); x.arc(q[0] + 4 + DIR[p.dir][0] * 1.5, q[1] - 2 + DIR[p.dir][1] * 1.5, 1.7, 0, 6.283); x.fill();
   });
 }
-var PJ = .16, PP = .2, tJ = 0, tP = 0, antes = performance.now();
+// Segundos por celda (tú, perseguidores). Empieza en «Lento» para poder explicar mientras se juega.
+var VEL = { lento: [.34, .42], normal: [.22, .27], rapido: [.15, .18] }, PJ = VEL.lento[0], PP = VEL.lento[1], tJ = 0, tP = 0, antes = performance.now();
 reiniciar(); codigo(); PERS.forEach(function (p) { p.sync(); }); marcador("Pulsa una flecha para empezar");
 (function bucle(t) {
   requestAnimationFrame(bucle);
@@ -195,6 +197,7 @@ $("#ver").onclick = function () { verGuias = !verGuias; this.setAttribute("aria-
 $("#reset").onclick = function () { reiniciar(); marcador("Pulsa una flecha para empezar"); };
 $("#orig").onclick = function () { PERS.forEach(function (p) { p.regla = { tipo: p.orig.tipo, n: p.orig.n }; p.sync(); }); codigo(); };
 cv.addEventListener("pointerdown", function () { cv.focus(); });
+$$("[data-vel]").forEach(function (b) { b.onclick = function () { PJ = VEL[b.dataset.vel][0]; PP = VEL[b.dataset.vel][1]; tJ = tP = 0; $$("[data-vel]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); }); }; });
 </script>
 </body>
 </html>
