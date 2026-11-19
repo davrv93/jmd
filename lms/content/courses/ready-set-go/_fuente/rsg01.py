@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Genera las escenas LIVE de la Clase 1 de Ready Set Go (rsg-01): python3 _fuente/rsg01.py
 
-Secuencia (94 min de 90): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano) · 01b historia por décadas · 01c los que
-cambiaron las reglas · 02 Forja: tu héroe · 03 de la mecánica
-a la tecnología · 04 movimiento y choques · 04b lámina «ningún rival piensa» (a mano) · 04c programa tu rival · 05 hoja de sprites · 06 elige tu juego · 07 cierre.
+Secuencia (112 min de 90: el profesor elige qué abreviar): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano) · 01c los que
+cambiaron las reglas · 02 Forja: tu héroe · 03 de la mecánica a la tecnología · 03b y 03c láminas de la física de Sonic
+(a mano: aceleración por cuadro; rampas, loop y salto con seno y coseno) · 04 movimiento y choques (con los números de Sonic
+y una plataforma que flota con un seno) · 04b lámina «ningún rival piensa» (a mano) · 04c programa tu rival · 05 hoja de
+sprites · 06 elige tu juego · 07 cierre.
 Las escenas 01 y 05/heroe.png no se generan aquí. Reglas del modo LIVE: sin recursos externos, menos de 300 elementos
 y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion. Nada usa <form>: el marco no lo permite.
 El campo «paso» va vacío: la lección rsg-01 no define un ciclo de pasos, y el LMS rechaza un paso que no exista ahí.
@@ -92,10 +94,11 @@ escena("00-bienvenida", "Bienvenida: hoy tu héroe se mueve", "experiencia", "ve
        "Pulsa «Lo logré» cuando tengas el navegador abierto, el sonido encendido y las manos en el teclado",
        js="""var PASOS = [
   ["Carrera", "6 min", "Jugamos todos una carrera de plataformas. Mientras juegas, fíjate: ¿qué cosas pasan en pantalla? Esas son las mecánicas."],
-  ["Historia", "11 min", "Setenta años en once minutos: de un osciloscopio a los juegos que haces tú. Cada juego famoso inventó una mecánica que hoy vas a usar."],
+  ["Historia", "5 min", "Diez juegos que cambiaron las reglas: cada uno inventó una mecánica que hoy vas a usar."],
   ["Tu héroe", "15 min", "En Forja describes a tu héroe con una frase, lo afinas y lo publicas en la galería de la clase."],
   ["Mecánica → tecnología", "10 min", "Cada cosa que quieres que pase tiene una tecnología que la resuelve. Aprendes a pedirla con un buen prompt."],
-  ["Movimiento y choques", "15 min", "Gravedad, salto y paredes: mueves los números y ves qué cambia. Construyes tu primer nivel con clics."],
+  ["Física de Sonic", "12 min", "Dos láminas: Sonic acelera sumando un poquito cada cuadro, y en rampas y loops reparte su velocidad con seno y coseno."],
+  ["Movimiento y choques", "15 min", "Gravedad, salto y paredes: pruebas los números de Sonic, eliges los tuyos y haces flotar una plataforma con un seno. Construyes tu primer nivel con clics."],
   ["Rivales con reglas", "14 min", "Lámina: ningún fantasma de Pac-Man piensa, solo cambia a dónde apunta. Luego programas a tu rival y lo llevas a tu juego."],
   ["Animación", "10 min", "Tu héroe camina porque pasan muchos dibujos muy rápido. Abres una hoja de sprites y la controlas."],
   ["Tu juego", "15 min", "Juegas TU juego con tus números y tu regla de rival (Plataformas o Laberinto), miras sus algoritmos con rayos X y descargas tu ZIP: tu entregable."],
@@ -113,186 +116,8 @@ mapa.firstChild.click();
   var b = el("button", "x-it"); b.type = "button"; b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); b.appendChild(el("span", null, t));
   b.onclick = function () { b.setAttribute("aria-checked", b.getAttribute("aria-checked") === "true" ? "false" : "true"); }; $("#lista").appendChild(b);
 });""",
-       css=".x-mapa { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: .4em; margin: .5em 0; } .x-mapa .x-it { grid-template-columns: 1fr; justify-items: start; gap: .3em; font-size: .8em; }\n@media (max-width: 900px) { .x-mapa { grid-template-columns: repeat(2, 1fr); } }",
+       css=".x-mapa { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .4em; margin: .5em 0; } .x-mapa .x-it { grid-template-columns: 1fr; justify-items: start; gap: .3em; font-size: .8em; }\n@media (max-width: 900px) { .x-mapa { grid-template-columns: repeat(2, 1fr); } }",
        compuerta="presentes", umbral=100, comentario="Interacción: tocar un paso del mapa muestra qué se hace; lista previa con casillas. Nada se guarda.")
-
-# ---------------------------------------------------------------- 01b · historia por décadas
-# Cada entrada: año, juego, quién, la idea que aportó y dónde aparece esa idea en el taller. Datos históricos verificables;
-# solo texto: no se usan imágenes, logos ni personajes de ningún juego.
-DECADAS = [
-    ("1950–60", "Los laboratorios", "Nadie vendía juegos: los hacían científicos en sus ratos libres, en máquinas del tamaño de un cuarto.", [
-        (1958, "Tennis for Two", "William Higinbotham, laboratorio de Brookhaven", "Un partido de tenis en la pantalla de un osciloscopio: una pelota con gravedad que rebota.", "Gravedad y rebote: la escena «Movimiento y choques» de hoy"),
-        (1962, "Spacewar!", "Steve Russell y compañeros, MIT", "Dos naves se disparan mientras una estrella las atrae. Se copió de laboratorio en laboratorio: el primer juego que «se compartió».", "Dos jugadores y física: la plantilla Fútbol"),
-    ]),
-    ("1970", "Nace la industria", "El juego sale del laboratorio: llega al bar, al salón recreativo y a la sala de la casa.", [
-        (1972, "Pong", "Atari · Allan Alcorn", "Dos paletas y una pelota. Tan simple que cualquiera lo entendía sin instrucciones: el primer gran éxito comercial.", "Rebote y marcador: la plantilla Fútbol"),
-        (1972, "Magnavox Odyssey", "Ralph Baer", "La primera consola doméstica: el juego se conecta al televisor de la casa.", "Jugar en casa: tu juego corre en cualquier navegador"),
-        (1978, "Space Invaders", "Taito · Tomohiro Nishikado", "Oleadas de enemigos que aceleran cuando quedan pocos, y una tabla de récords que todos querían encabezar.", "Curva de dificultad: la plantilla Runner"),
-    ]),
-    ("1980", "La edad de oro", "Aparecen los personajes, los géneros y, tras la crisis de 1983, el renacer con las consolas japonesas.", [
-        (1980, "Pac-Man", "Namco · Toru Iwatani", "Un personaje con cara y cuatro fantasmas que se comportan distinto: cada uno persigue a su manera.", "Rivales con estados: Clase 2 y la plantilla Laberinto"),
-        (1981, "Donkey Kong", "Nintendo · Shigeru Miyamoto", "Saltar obstáculos para subir: define el juego de plataformas. Su héroe saltarín sería luego Mario.", "Salto y gravedad: la plantilla Plataformas"),
-        (1984, "Tetris", "Alexey Pajitnov, Unión Soviética", "Piezas que caen y líneas que desaparecen. Sin historia ni personajes: pura mecánica, y nunca pasó de moda.", "Una regla simple, bien pulida, basta"),
-        (1985, "Super Mario Bros.", "Nintendo", "El mundo se desplaza con el héroe y cada nivel enseña una idea nueva sin decir una palabra.", "Cámara que sigue y nivel como datos: la plantilla Plataformas"),
-    ]),
-    ("1990", "El salto al 3D", "Las máquinas ya pueden dibujar mundos con profundidad. Hay que inventar cómo moverse y cómo mirar.", [
-        (1991, "Street Fighter II", "Capcom", "Peleas uno contra uno con personajes distintos y combinaciones de golpes: los «combos».", "Animación de golpe y cajas de choque: rayos X (tecla V)"),
-        (1993, "Doom", "id Software", "Disparos en primera persona, partidas en red y niveles que los propios jugadores podían crear y compartir.", "Motor y datos separados: datos.js y juego.js de tu ZIP"),
-        (1996, "Super Mario 64", "Nintendo", "Resuelve el 3D: una palanca para moverse en cualquier dirección y una cámara que el jugador controla.", "La cámara también se diseña"),
-        (1996, "Pokémon Rojo y Verde", "Game Freak · Satoshi Tajiri", "Coleccionar criaturas e intercambiarlas con un amigo por cable: jugar es también compartir.", "Tu elenco de personajes y la galería de la clase"),
-    ]),
-    ("2000", "Mundos y gente conectada", "Internet entra en los juegos: mundos enormes, millones de personas a la vez y públicos nuevos.", [
-        (2000, "The Sims", "Maxis · Will Wright", "No hay que ganar: se simula la vida de unas personas con necesidades. El jugador inventa su propia historia.", "Reglas simples que producen situaciones inesperadas"),
-        (2001, "Grand Theft Auto III", "DMA Design", "Una ciudad en 3D para recorrer con libertad: el «mundo abierto» moderno.", "Un mundo es datos: más datos, más mundo"),
-        (2004, "World of Warcraft", "Blizzard", "Millones de jugadores en el mismo mundo, que sigue existiendo cuando apagas la computadora.", "Sala compartida: la carrera y la galería de hoy"),
-        (2006, "Wii Sports", "Nintendo", "Se juega moviendo el cuerpo: abuelos y niños jugando juntos. El control también es diseño.", "Teclado y botones táctiles leen lo mismo: comun.js"),
-    ]),
-    ("2010", "Independientes y móviles", "Hacer y publicar un juego deja de ser cosa de grandes empresas: un equipo pequeño llega a todo el mundo.", [
-        (2011, "Minecraft", "Mojang · Markus Persson", "Un mundo de bloques generado por reglas donde el juego es crear. Es el videojuego más vendido de la historia.", "Generar con reglas y una semilla: así funciona Forja"),
-        (2015, "Undertale", "Toby Fox", "Hecho casi por una sola persona, con gráficos sencillos. Demostró que una buena idea pesa más que un gran presupuesto.", "Tú también puedes: de eso trata este taller"),
-        (2016, "Pokémon GO", "Niantic", "El mapa del juego es tu ciudad: realidad aumentada y GPS sacan a millones a caminar.", "El celular como consola: tu juego funciona en móvil"),
-        (2017, "Fortnite Battle Royale", "Epic Games", "Cien jugadores, queda uno. Gratis, en todas las plataformas a la vez y con temporadas que lo renuevan.", "Publicar y actualizar: Clase 4"),
-    ]),
-    ("2020", "Hoy: todos crean", "Los jugadores ya no solo juegan: crean. Y las herramientas con IA acortan el camino de la idea al juego.", [
-        (2020, "Among Us", "InnerSloth (salió en 2018)", "Un juego pequeño que explotó dos años después: mentir, deducir y votar. La mecánica es la conversación.", "Una mecánica social no necesita grandes gráficos"),
-        (2021, "Roblox", "Roblox Corporation (existe desde 2006)", "Más que un juego, una plataforma: millones de experiencias creadas por sus propios jugadores.", "Crear y compartir: la galería de la sala rsg-01"),
-        (2026, "Tu juego", "Tú, con IA", "Describes la mecánica y la IA elige la tecnología. Lo que antes pedía un equipo y meses, hoy empieza en una clase.", "Empieza en la siguiente escena"),
-    ]),
-]
-# Videos de referencia comprobados el 12-11-2026 (existen y son de la institución que se indica). Para el resto de
-# juegos el botón arma una búsqueda de YouTube: así ningún enlace queda roto ni apunta a una copia no autorizada.
-VIDEOS = {"Tennis for Two": ("u6mu5B-YZU8", "Brookhaven Lab"), "Spacewar!": ("_L1HeZ2kPck", "Computer History Museum")}
-# Réplicas jugables: SOLO la mecánica, con formas, colores y nombres propios. No copian el arte, los personajes, la
-# música ni los niveles de ningún juego (las mecánicas no tienen derechos de autor; lo demás, sí).
-DEMOS = {0: "rebote", 1: "paletas", 2: "rivales", 5: "semilla"}
-datos_decadas = [{"d": d, "t": t, "r": r, "m": DEMOS.get(k, ""), "j": [{"a": a, "n": n, "q": q, "i": i, "h": h, "v": VIDEOS.get(n, ("", ""))[0], "c": VIDEOS.get(n, ("", ""))[1]} for a, n, q, i, h in js]} for k, (d, t, r, js) in enumerate(DECADAS)]
-escena("01b-historia-por-decadas", "Historia: setenta años de videojuegos", "reflexion", "", 8, """
-    <div class="x-fila"><h1 class="esc-titulo a-in">Setenta años de <em>videojuegos</em></h1><span class="esc-chip a-in" id="vistas" aria-live="polite">1 de 7 décadas</span></div>
-    <div class="x-linea a-in" id="linea" role="tablist" aria-label="Décadas"></div>
-    <section class="esc-card x-regla a-in" style="--d:.2s" aria-live="polite"><span class="x-et" id="dTitulo"></span><p id="dResumen" style="font-size:1em;color:var(--fg)"></p></section>
-    <div class="x-juegos" id="juegos" aria-live="polite"></div>
-    <section class="esc-card x-prueba a-in" style="--d:.3s" id="prueba">
-      <div><span class="x-et" id="mTitulo"></span><p id="mAyuda"></p><p class="x-marca" id="mMarca" aria-live="polite"></p><p class="x-nota">Réplica propia de la mecánica: formas y colores nuestros, no el juego original.</p></div>
-      <canvas id="demo" width="720" height="200" tabindex="0" aria-label="Réplica jugable de la mecánica de la década"></canvas>
-    </section>
-    <p class="x-copiado" id="copiado" aria-live="polite"></p>""",
-       "Pulsa «Lo logré» cuando hayas recorrido las siete décadas y probado al menos una réplica. Los videos también están en los materiales de la clase",
-       js="var D = " + json.dumps(datos_decadas, ensure_ascii=False) + r""";
-var vistas = {}, linea = $("#linea"), caja = $("#juegos"), actual = 0;
-// Los enlaces se arman aquí y se copian al portapapeles: la escena no puede abrir pestañas (va en un marco aislado).
-var YT = "https:" + "//www.youtube.com/";
-function enlace(j) { return j.v ? YT + "watch?v=" + j.v : YT + "results?search_query=" + encodeURIComponent(j.n + " " + j.a + " gameplay"); }
-function copiar(url) {
-  var c = $("#copiado"), listo = function () { c.textContent = "Enlace copiado. Abre una pestaña nueva y pégalo: " + url; };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(listo, function () { c.textContent = "Copia este enlace: " + url; }); else c.textContent = "Copia este enlace: " + url;
-}
-function ver(k) {
-  actual = k; vistas[k] = 1; var d = D[k];
-  $$(".x-dec", linea).forEach(function (b, i) { b.setAttribute("aria-selected", i === k ? "true" : "false"); if (vistas[i]) b.classList.add("vista"); });
-  $("#dTitulo").textContent = d.d + " · " + d.t; $("#dResumen").textContent = d.r; $("#copiado").textContent = "";
-  caja.innerHTML = "";
-  d.j.forEach(function (j, i) {
-    var c = el("article", "esc-card x-juego a-in"); c.style.setProperty("--d", i * 0.07 + "s");
-    var cab = el("div", "x-cab"); cab.appendChild(el("span", "x-anio", String(j.a))); var t = el("div"); t.appendChild(el("h2", null, j.n)); t.appendChild(el("small", null, j.q)); cab.appendChild(t); c.appendChild(cab);
-    c.appendChild(el("p", "x-idea", j.i)); var h = el("p", "x-hoy"); h.appendChild(el("b", null, "En el taller: ")); h.appendChild(document.createTextNode(j.h)); c.appendChild(h);
-    if (j.a < 2026) { var b = el("button", "x-btn x-yt", j.v ? "▶ Video · " + j.c : "▶ Buscar en YouTube"); b.type = "button"; b.onclick = function () { copiar(enlace(j)); }; c.appendChild(b); }
-    caja.appendChild(c);
-  });
-  $("#vistas").textContent = Object.keys(vistas).length + " de " + D.length + " décadas";
-  $("#prueba").hidden = !d.m; if (d.m) arrancar(d.m);
-}
-D.forEach(function (d, k) { var b = el("button", "x-dec"); b.type = "button"; b.setAttribute("role", "tab"); b.appendChild(el("b", null, d.d)); b.appendChild(el("span", null, d.t + (d.m ? " ▸" : ""))); b.onclick = function () { ver(k); }; linea.appendChild(b); });
-
-// ---- réplicas jugables: cuatro mecánicas en un lienzo de 720 x 200. Flechas y espacio (clic en el lienzo primero) o el dedo.
-var cv = $("#demo"), x = cv.getContext("2d"), W = 720, H = 200, K = {}, P = { x: 0, y: 0, dentro: false }, demo = null, antes = performance.now();
-function col(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
-function azar(s) { return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
-var DEMOS = {
-  rebote: { titulo: "Pruébalo · una pelota con gravedad", ayuda: "Espacio o clic golpea la pelota cuando está de tu lado. Hazla pasar la red.",
-    inicia: function () { this.b = { x: 120, y: 60, vx: 0, vy: 0 }; this.lado = 0; this.pases = 0; this.rastro = []; },
-    golpe: function () { var b = this.b, mio = (this.lado === 0) === (b.x < W / 2); if (mio && b.y > 60) { b.vx = (this.lado === 0 ? 1 : -1) * (230 + Math.random() * 60); b.vy = -330; this.lado = 1 - this.lado; this.pases++; } },
-    paso: function (dt) { var b = this.b; if (K.salto) { K.salto = false; this.golpe(); } b.vy += 620 * dt; b.x += b.vx * dt; b.y += b.vy * dt;
-      if (b.y > H - 26) { b.y = H - 26; b.vy *= -0.62; b.vx *= 0.86; }
-      if (Math.abs(b.x - W / 2) < 6 && b.y > H - 70) { b.vx *= -0.5; b.x = W / 2 + (b.x < W / 2 ? -7 : 7); }
-      if (b.x < 12 || b.x > W - 12) { b.vx *= -0.7; b.x = Math.max(12, Math.min(W - 12, b.x)); }
-      this.rastro.push([b.x, b.y]); if (this.rastro.length > 26) this.rastro.shift(); },
-    pinta: function () { var g = "#7dffa6"; x.fillStyle = "#06140c"; x.fillRect(0, 0, W, H); x.strokeStyle = g; x.lineWidth = 2; x.beginPath(); x.moveTo(20, H - 18); x.lineTo(W - 20, H - 18); x.moveTo(W / 2, H - 18); x.lineTo(W / 2, H - 70); x.stroke();
-      this.rastro.forEach(function (p, i) { x.globalAlpha = i / 40; x.fillStyle = g; x.beginPath(); x.arc(p[0], p[1], 4, 0, 6.283); x.fill(); }); x.globalAlpha = 1; x.fillStyle = "#eafff1"; x.beginPath(); x.arc(this.b.x, this.b.y, 7, 0, 6.283); x.fill(); },
-    marca: function () { return this.pases + " pases · le toca al lado " + (this.lado === 0 ? "izquierdo" : "derecho"); } },
-  paletas: { titulo: "Pruébalo · dos paletas y una pelota", ayuda: "Mueve tu paleta (izquierda) con ↑ ↓ o con el cursor. Gana quien llegue a 5.",
-    inicia: function () { this.yo = H / 2; this.el = H / 2; this.p = [0, 0]; this.saca(1); },
-    saca: function (dir) { this.b = { x: W / 2, y: H / 2, vx: 250 * dir, vy: (Math.random() - 0.5) * 220 }; },
-    paso: function (dt) { var b = this.b; if (this.p[0] >= 5 || this.p[1] >= 5) return;
-      if (P.dentro) this.yo += (P.y - this.yo) * Math.min(1, dt * 14); this.yo += ((K.abajo ? 1 : 0) - (K.arriba ? 1 : 0)) * 260 * dt; this.yo = Math.max(34, Math.min(H - 34, this.yo));
-      this.el += Math.max(-170 * dt, Math.min(170 * dt, b.y - this.el)); // la otra paleta sigue la pelota, pero con velocidad limitada: por eso se le puede ganar
-      b.x += b.vx * dt; b.y += b.vy * dt; if (b.y < 10 || b.y > H - 10) { b.vy *= -1; b.y = Math.max(10, Math.min(H - 10, b.y)); }
-      if (b.vx < 0 && b.x < 44 && b.x > 26 && Math.abs(b.y - this.yo) < 40) { b.vx = Math.abs(b.vx) * 1.06; b.vy += (b.y - this.yo) * 5; }
-      if (b.vx > 0 && b.x > W - 44 && b.x < W - 26 && Math.abs(b.y - this.el) < 40) { b.vx = -Math.abs(b.vx) * 1.06; b.vy += (b.y - this.el) * 5; }
-      if (b.x < -20) { this.p[1]++; this.saca(1); } if (b.x > W + 20) { this.p[0]++; this.saca(-1); } },
-    pinta: function () { x.fillStyle = col("--s2"); x.fillRect(0, 0, W, H); x.fillStyle = col("--accent"); x.beginPath(); x.roundRect(28, this.yo - 34, 12, 68, 6); x.fill(); x.fillStyle = col("--warn"); x.beginPath(); x.roundRect(W - 40, this.el - 34, 12, 68, 6); x.fill(); x.fillStyle = col("--fg"); x.beginPath(); x.arc(this.b.x, this.b.y, 8, 0, 6.283); x.fill(); },
-    marca: function () { var f = this.p[0] >= 5 ? " · ¡Ganaste!" : this.p[1] >= 5 ? " · Ganó la máquina" : ""; return "Tú " + this.p[0] + " – " + this.p[1] + " Máquina" + f; } },
-  rivales: { titulo: "Pruébalo · rivales con carácter", ayuda: "Muévete con las flechas o el cursor y junta las 8 semillas. Cada rival te busca a su manera.",
-    inicia: function () { var r = azar(7); this.yo = { x: 60, y: 100, dx: 1, dy: 0 }; this.s = []; for (var i = 0; i < 8; i++) this.s.push({ x: 150 + r() * 520, y: 30 + r() * 140, v: true });
-      this.r = [{ x: 660, y: 40, n: "directo", c: "--bad" }, { x: 660, y: 160, n: "se adelanta", c: "--warn" }, { x: 360, y: 20, n: "tímido", c: "--info" }]; this.atrapado = 0; },
-    paso: function (dt) { var y = this.yo, dx = (K.der ? 1 : 0) - (K.izq ? 1 : 0), dy = (K.abajo ? 1 : 0) - (K.arriba ? 1 : 0);
-      if (P.dentro && !dx && !dy) { var ax = P.x - y.x, ay = P.y - y.y, d0 = Math.hypot(ax, ay); if (d0 > 8) { dx = ax / d0; dy = ay / d0; } }
-      var m = Math.hypot(dx, dy); if (m) { y.dx = dx / m; y.dy = dy / m; y.x += y.dx * 170 * dt; y.y += y.dy * 170 * dt; } y.x = Math.max(12, Math.min(W - 12, y.x)); y.y = Math.max(12, Math.min(H - 12, y.y));
-      this.s.forEach(function (q) { if (q.v && Math.hypot(q.x - y.x, q.y - y.y) < 16) q.v = false; });
-      var self = this; this.r.forEach(function (e) {
-        var tx = y.x, ty = y.y, d = Math.hypot(y.x - e.x, y.y - e.y), v = 84;
-        if (e.n === "se adelanta") { tx = y.x + y.dx * 90; ty = y.y + y.dy * 90; }          // apunta a donde vas a estar
-        if (e.n === "tímido" && d < 110) { tx = e.x - (y.x - e.x); ty = e.y - (y.y - e.y); v = 100; } // de cerca, huye
-        var ex = tx - e.x, ey = ty - e.y, m2 = Math.hypot(ex, ey) || 1; e.x += ex / m2 * v * dt; e.y += ey / m2 * v * dt; e.x = Math.max(12, Math.min(W - 12, e.x)); e.y = Math.max(12, Math.min(H - 12, e.y)); e.tx = tx; e.ty = ty;
-        if (d < 18) { self.atrapado++; y.x = 60; y.y = 100; } }); },
-    pinta: function () { x.fillStyle = col("--s2"); x.fillRect(0, 0, W, H); var y = this.yo;
-      this.s.forEach(function (q) { if (q.v) { x.fillStyle = col("--ok"); x.beginPath(); x.arc(q.x, q.y, 5, 0, 6.283); x.fill(); } });
-      this.r.forEach(function (e) { x.strokeStyle = col(e.c); x.globalAlpha = 0.35; x.setLineDash([4, 5]); x.beginPath(); x.moveTo(e.x, e.y); x.lineTo(e.tx || e.x, e.ty || e.y); x.stroke(); x.setLineDash([]); x.globalAlpha = 1; x.fillStyle = col(e.c); x.beginPath(); x.roundRect(e.x - 10, e.y - 10, 20, 20, 5); x.fill(); x.fillStyle = col("--fg"); x.font = "700 11px system-ui, sans-serif"; x.textAlign = "center"; x.fillText(e.n, e.x, e.y - 15); });
-      x.fillStyle = col("--accent"); x.beginPath(); x.arc(y.x, y.y, 10, 0, 6.283); x.fill(); },
-    marca: function () { var n = this.s.filter(function (q) { return !q.v; }).length; return n + " de 8 semillas · te atraparon " + this.atrapado + (n === 8 ? " · ¡Listo!" : ""); } },
-  semilla: { titulo: "Pruébalo · un mundo que sale de un número", ayuda: "Clic o espacio cambia la semilla; ← → la sube o la baja de uno en uno. La misma semilla da siempre el mismo mundo.",
-    inicia: function () { this.n = 2011; this.hacer(); },
-    hacer: function () { var r = azar(this.n * 7919 + 1), h = 5 + r() * 3, cols = []; for (var i = 0; i < 36; i++) { h += (r() - 0.5) * 2.2; h = Math.max(2, Math.min(8, h)); cols.push({ h: Math.round(h), arbol: r() < 0.16, agua: false }); } this.cols = cols; },
-    paso: function () { if (K.salto) { K.salto = false; this.n = Math.floor(Math.random() * 9000) + 1; this.hacer(); } if (K.der) { K.der = false; this.n++; this.hacer(); } if (K.izq) { K.izq = false; this.n = Math.max(1, this.n - 1); this.hacer(); } },
-    pinta: function () { x.fillStyle = "#9fd4ff"; x.fillRect(0, 0, W, H); var c = 20;
-      this.cols.forEach(function (k, i) { for (var f = 0; f < k.h; f++) { x.fillStyle = f === k.h - 1 ? "#5fbf5a" : f > k.h - 4 ? "#9a6b43" : "#8b8f98"; x.fillRect(i * c, H - (f + 1) * c, c - 1, c - 1); }
-        if (k.arbol) { var top = H - k.h * c; x.fillStyle = "#6b4a2b"; x.fillRect(i * c + 7, top - 2 * c, 6, 2 * c); x.fillStyle = "#2f8f4e"; x.fillRect(i * c - c / 2, top - 4 * c, 2 * c, 2 * c); } }); },
-    marca: function () { return "Semilla " + this.n + " · 36 columnas generadas con reglas"; } }
-};
-function arrancar(id) { demo = DEMOS[id]; demo.inicia(); $("#mTitulo").textContent = demo.titulo; $("#mAyuda").textContent = demo.ayuda; }
-(function bucle(t) { requestAnimationFrame(bucle); var dt = Math.min(0.04, (t - antes) / 1000); antes = t; if (!demo || $("#prueba").hidden) return; demo.paso(dt); demo.pinta(); var m = demo.marca(); if ($("#mMarca").textContent !== m) $("#mMarca").textContent = m; })(antes);
-var TEC = { ArrowLeft: "izq", ArrowRight: "der", ArrowUp: "arriba", ArrowDown: "abajo", " ": "salto" };
-cv.addEventListener("keydown", function (e) { var k = TEC[e.key]; if (k) { e.preventDefault(); e.stopPropagation(); K[k] = true; } });
-cv.addEventListener("keyup", function (e) { var k = TEC[e.key]; if (k) K[k] = false; });
-cv.addEventListener("blur", function () { K = {}; });
-function puntero(e) { var r = cv.getBoundingClientRect(); P.x = (e.clientX - r.left) / r.width * W; P.y = (e.clientY - r.top) / r.height * H; P.dentro = true; }
-cv.addEventListener("pointermove", puntero); cv.addEventListener("pointerleave", function () { P.dentro = false; });
-cv.addEventListener("pointerdown", function (e) { puntero(e); cv.focus(); K.salto = true; });
-// las flechas cambian de década solo si no se está jugando en el lienzo
-addEventListener("keydown", function (e) { if (document.activeElement === cv) return; if (e.key === "ArrowRight" && actual < D.length - 1) ver(actual + 1); if (e.key === "ArrowLeft" && actual > 0) ver(actual - 1); });
-ver(0);""",
-       css=""".esc { padding-top: 1.4vh; padding-bottom: 1.2vh; gap: 1.2vh; }
-.esc-cuerpo { gap: 1vh; }
-.x-linea { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .4em; position: relative; }
-.x-linea::before { content: ""; position: absolute; left: 2%; right: 2%; top: 50%; height: 2px; background: var(--line2); z-index: 0; }
-.x-dec { position: relative; z-index: 1; display: grid; gap: .1em; justify-items: center; text-align: center; font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .9em; padding: .35em .3em; cursor: pointer; transition: transform .2s, border-color .2s, background .2s; }
-.x-dec b { font: 800 .9em var(--mono); } .x-dec span { font-size: .6em; color: var(--muted); line-height: 1.2; }
-.x-dec:hover { transform: translateY(-.15em); border-color: var(--accent); }
-.x-dec.vista b { color: var(--ok); }
-.x-dec[aria-selected="true"] { background: var(--accent); border-color: var(--accent); transform: translateY(-.2em); } .x-dec[aria-selected="true"] b, .x-dec[aria-selected="true"] span { color: var(--on-accent); }
-.x-regla { padding: .5em 1em; }
-.x-juegos { display: grid; grid-template-columns: repeat(auto-fit, minmax(12em, 1fr)); gap: .8vw; min-height: 0; }
-.x-juego { display: grid; gap: .35em; align-content: start; padding: .6em .8em; }
-.x-cab { display: flex; gap: .6em; align-items: center; } .x-cab h2 { margin: 0; font-size: .98em; line-height: 1.15; } .x-cab small { color: var(--muted); font-size: .64em; }
-.x-anio { font: 800 .9em var(--mono); color: var(--accent); background: var(--accent-bg); border-radius: .5em; padding: .2em .45em; }
-.x-idea { font-size: .78em !important; color: var(--fg) !important; line-height: 1.35; }
-.x-hoy { font-size: .68em !important; border-top: 1px dashed var(--line2); padding-top: .35em; } .x-hoy b { color: var(--ok); }
-.x-yt { justify-self: start; font-size: .62em; padding: .45em .8em; }
-.x-prueba { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.1fr); gap: 1vw; align-items: center; padding: .6em .9em; }
-.x-prueba p { font-size: .76em; color: var(--muted); margin: .2em 0 0; } .x-prueba .x-marca { color: var(--accent); font-weight: 700; font-family: var(--mono); min-height: 1.3em; } .x-prueba .x-nota { font-size: .6em; }
-#demo { width: auto; max-width: 100%; height: auto; aspect-ratio: 720 / 200; max-height: 20vh; justify-self: end; display: block; border-radius: .7em; border: 1px solid var(--line2); cursor: crosshair; touch-action: none; }
-.x-copiado { font-size: .66em; color: var(--ok); min-height: 1.3em; margin: 0; overflow-wrap: anywhere; user-select: all; }
-@media (max-width: 900px) { .x-linea { grid-template-columns: repeat(4, 1fr); } .x-linea::before { display: none; } .x-prueba { grid-template-columns: minmax(0, 1fr); } }""",
-       comentario="Interacción: línea de tiempo de siete décadas; cuatro llevan una réplica jugable de su mecánica (formas propias, no el juego original). Cada juego ofrece un enlace de YouTube que se copia. Solo texto: sin imágenes, logos ni personajes de ningún juego.")
 
 # ---------------------------------------------------------------- 01c · los que cambiaron las reglas
 DIEZ = [
@@ -412,45 +237,57 @@ escena("04-movimiento-y-choques", "Movimiento y choques: mueve los números", "e
         <p class="x-det" id="llevado" aria-live="polite" style="font-size:.82em;min-height:1.4em"></p>
       </section>
       <div class="x-col">
-        <section class="esc-card a-in" style="--d:.25s"><span class="x-et">Tres números mandan</span>
-          <label class="x-campo">Gravedad<input id="g" type="range" min="0" max="2600" step="50" value="1700"><output id="og"></output></label>
+        <section class="esc-card a-in" style="--d:.25s"><div class="x-fila" style="justify-content:space-between"><span class="x-et">Tres números mandan</span><button class="x-btn" id="sonic" type="button" title="Los de Sonic the Hedgehog (Sega, 1991), pasados a segundos">Números de Sonic</button></div>
+          <label class="x-campo">Gravedad<input id="g" type="range" min="0" max="2600" step="4" value="1700"><output id="og"></output></label>
           <label class="x-campo">Salto<input id="s" type="range" min="200" max="1100" step="10" value="700"><output id="os"></output></label>
           <label class="x-campo">Velocidad<input id="v" type="range" min="60" max="420" step="10" value="220"><output id="ov"></output></label>
           <p class="x-det" id="lee" aria-live="polite" style="font-size:.84em;min-height:3.2em"></p>
+          <span class="x-et" style="margin-top:.5em">Plataforma que flota · y = base + A · sin(ω · t)</span>
+          <label class="x-campo">A · cuánto<input id="amp" type="range" min="0" max="120" step="5" value="40"><output id="oamp"></output></label>
+          <label class="x-campo">ω · rapidez<input id="w" type="range" min="0" max="4" step="0.1" value="1.5"><output id="ow"></output></label>
         </section>
         <section class="esc-card a-in" style="--d:.35s"><span class="x-et">Así está escrito en tu juego (juego.js)</span>
 <pre class="x-cod"><span class="c">// la gravedad tira hacia abajo en cada cuadro; saltar es una velocidad hacia arriba</span>
 h.setVelocityX(direccion * <span class="k">F.velocidad</span>);
 if (salto &amp;&amp; enElPiso) h.setVelocityY(-<span class="k">F.salto</span>);
+<span class="c">// la plataforma que flota: su altura es un seno</span>
+p.y = base + <span class="k">A</span> * Math.sin(<span class="k">ω</span> * t);
 <span class="c">// y el nivel es una lista: cada celda sólida es un cuerpo que no deja pasar</span>
 this.physics.add.collider(heroe, suelo);</pre></section>
         <section class="esc-card a-in" style="--d:.45s"><span class="x-et">Retos</span><div class="x-col" id="retos" role="group" aria-label="Retos" style="margin-top:.4em"></div></section>
       </div>
     </div>""",
-       "Pulsa «Lo logré» cuando hayas completado los tres retos",
+       "Pulsa «Lo logré» cuando hayas completado los cuatro retos",
        js=r"""var C = 40, COLS = 16, FILAS = 9, cv = $("#sim"), x = cv.getContext("2d"), K = {}, verCaja = false;
 var BASE = ["................", "................", "................", "..........###...", "................", "......###.......", "................", "..##............", "################"];
 var mapa, H;
-function reiniciar() { mapa = BASE.map(function (f) { return f.split("").map(function (c) { return c === "#" ? 1 : 0; }); }); H = { x: 60, y: 200, vx: 0, vy: 0, w: 24, h: 32, piso: false, max: 0 }; }
+function reiniciar() { mapa = BASE.map(function (f) { return f.split("").map(function (c) { return c === "#" ? 1 : 0; }); }); H = { x: 60, y: 200, vx: 0, vy: 0, w: 24, h: 32, piso: false, max: 0, enP: false }; }
+// Plataforma que flota (cols 13-15): y = base + A·sin(ω·t). Se pisa desde arriba y te lleva; no choca de lado.
+var P = { x: 520, w: 120, h: 14, base: 180, y: 180, t: 0 };
+function sobreP(px) { return px + H.w / 2 > P.x && px - H.w / 2 < P.x + P.w; }
 function solido(px, py) { var c = Math.floor(px / C), f = Math.floor(py / C); if (c < 0 || c >= COLS) return true; if (f < 0) return false; if (f >= FILAS) return true; return mapa[f][c] === 1; }
 function choca(nx, ny) { return solido(nx - H.w / 2, ny - H.h) || solido(nx + H.w / 2 - 1, ny - H.h) || solido(nx - H.w / 2, ny - 1) || solido(nx + H.w / 2 - 1, ny - 1) || solido(nx - H.w / 2, ny - H.h / 2) || solido(nx + H.w / 2 - 1, ny - H.h / 2); }
 reiniciar();
-var G = $("#g"), S = $("#s"), V = $("#v"), antes = performance.now(), cumplidos = {};
+var G = $("#g"), S = $("#s"), V = $("#v"), A = $("#amp"), W = $("#w"), antes = performance.now(), cumplidos = {};
 function leer() {
   var g = +G.value, s = +S.value, alto = g > 0 ? s * s / (2 * g) : Infinity;
   $("#og").textContent = g; $("#os").textContent = s; $("#ov").textContent = V.value;
   $("#lee").innerHTML = g > 0 ? "Altura del salto = salto² ÷ (2 × gravedad) = <b>" + Math.round(alto) + " px</b>, o sea <b>" + (alto / C).toFixed(1) + " celdas</b>." : "<b>Gravedad 0:</b> nada lo baja. Salta y mira cómo se va para siempre.";
   if (g > 0 && alto < 2 * C) reto(0); if (g === 0) reto(2);
+  var a = +A.value, w = +W.value; $("#oamp").textContent = a + " px"; $("#ow").textContent = String(w).replace(".", ",");
 }
 function reto(i) { if (cumplidos[i]) return; cumplidos[i] = 1; var b = $$("#retos .x-it")[i]; if (b) b.setAttribute("aria-checked", "true"); }
-["Baja el salto hasta que ya no alcance 2 celdas de alto", "Construye una escalera de 3 escalones y súbela", "Pon la gravedad en 0 y salta: ¿qué pasa?"].forEach(function (t) { var b = el("div", "x-it"); b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); b.appendChild(el("span", null, t)); $("#retos").appendChild(b); });
+["Baja el salto hasta que ya no alcance 2 celdas de alto", "Construye una escalera de 3 escalones y súbela", "Pon la gravedad en 0 y salta: ¿qué pasa?", "Súbete a la plataforma que flota y deja que te lleve"].forEach(function (t) { var b = el("div", "x-it"); b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); b.appendChild(el("span", null, t)); $("#retos").appendChild(b); });
 function paso(dt) {
+  P.t += dt; P.y = P.base + (+A.value) * Math.sin((+W.value) * P.t);
+  if (H.enP) { if (sobreP(H.x)) H.y = P.y; else { H.enP = false; H.piso = false; } }   // la plataforma lo lleva
   var dir = (K.der ? 1 : 0) - (K.izq ? 1 : 0); H.vx = dir * +V.value;
   if (K.salto && H.piso) { H.vy = -S.value; H.piso = false; }
   H.vy += +G.value * dt;
   var nx = H.x + H.vx * dt; if (!choca(nx, H.y)) H.x = nx;
-  var ny = H.y + H.vy * dt;
+  var antesY = H.y, ny = H.y + H.vy * dt; H.enP = false;
   if (!choca(H.x, ny)) { H.y = ny; H.piso = false; } else { if (H.vy > 0) { H.y = Math.floor((ny - 1) / C) * C; H.piso = true; } H.vy = 0; }
+  if (H.vy >= 0 && sobreP(H.x) && antesY <= P.y + 1 && H.y >= P.y) { H.y = P.y; H.vy = 0; H.piso = true; H.enP = true; if (+A.value > 0 && +W.value > 0) reto(3); }
   if (H.y < -400 || H.y > 600) { H.x = 60; H.y = 200; H.vy = 0; }
   if (H.piso && H.y <= (FILAS - 4) * C) reto(1);
 }
@@ -458,6 +295,9 @@ function dibuja() {
   var e = getComputedStyle(document.documentElement), acento = e.getPropertyValue("--accent").trim(), linea = e.getPropertyValue("--line2").trim();
   x.clearRect(0, 0, 640, 360);
   for (var f = 0; f < FILAS; f++) for (var c = 0; c < COLS; c++) { if (mapa[f][c]) { x.fillStyle = acento; x.globalAlpha = .85; x.fillRect(c * C + 1, f * C + 1, C - 2, C - 2); x.globalAlpha = 1; } else { x.strokeStyle = linea; x.lineWidth = 1; x.strokeRect(c * C + .5, f * C + .5, C, C); } }
+  var am = +A.value, cx = P.x + P.w / 2;   // recorrido de la plataforma: de base − A a base + A
+  if (am > 0) { x.save(); x.setLineDash([4, 5]); x.strokeStyle = "#5fc28f"; x.lineWidth = 2; x.beginPath(); x.moveTo(cx, P.base - am); x.lineTo(cx, P.base + am + P.h); x.stroke(); x.restore(); }
+  x.fillStyle = "#5fc28f"; x.beginPath(); x.roundRect(P.x + 2, P.y, P.w - 4, P.h, 5); x.fill(); x.strokeStyle = "#14122b"; x.lineWidth = 2; x.stroke();
   x.fillStyle = "#ff8a3d"; x.beginPath(); x.roundRect(H.x - H.w / 2 - 3, H.y - H.h - 6, H.w + 6, H.h + 6, 9); x.fill();
   x.fillStyle = "#14122b"; x.beginPath(); x.arc(H.x - 4, H.y - H.h + 8, 3.4, 0, 6.283); x.arc(H.x + 6, H.y - H.h + 8, 3.4, 0, 6.283); x.fill();
   if (verCaja) { x.strokeStyle = "#c6ff4a"; x.lineWidth = 2; x.strokeRect(H.x - H.w / 2, H.y - H.h, H.w, H.h); x.fillStyle = "#c6ff4a"; x.font = "700 12px monospace"; x.fillText("vx " + Math.round(H.vx) + "  vy " + Math.round(H.vy) + (H.piso ? "  en el piso" : "  en el aire"), 8, 16); }
@@ -468,14 +308,16 @@ addEventListener("keydown", function (e) { var k = TEC[e.key]; if (k) { e.preven
 $$("[data-k]").forEach(function (b) { ["pointerdown", "pointerup", "pointerleave", "pointercancel"].forEach(function (ev, i) { b.addEventListener(ev, function (e) { e.preventDefault(); K[b.dataset.k] = i === 0; }); }); });
 cv.addEventListener("pointerdown", function (e) { var r = cv.getBoundingClientRect(), c = Math.floor((e.clientX - r.left) / r.width * COLS), f = Math.floor((e.clientY - r.top) / r.height * FILAS); if (f >= 0 && f < FILAS - 1 && c >= 0 && c < COLS) { mapa[f][c] = mapa[f][c] ? 0 : 1; if (choca(H.x, H.y)) mapa[f][c] = 0; } cv.focus(); });
 $("#caja").onclick = function () { verCaja = !verCaja; this.setAttribute("aria-pressed", String(verCaja)); };
-$("#reinicio").onclick = reiniciar; [G, S, V].forEach(function (i) { i.oninput = leer; });
+$("#reinicio").onclick = reiniciar; [G, S, V, A, W].forEach(function (i) { i.oninput = leer; });
+// Sonic Physics Guide, por cuadro a 60 cuadros por segundo: velocidad tope 6 → 360 px/s; salto 6,5 → 390 px/s; gravedad 0,21875 → 787,5 px/s² (el control va de 4 en 4: 788).
+$("#sonic").onclick = function () { G.value = 788; S.value = 390; V.value = 360; leer(); $("#llevado").textContent = "Estos son los de Sonic (1991): corre a 360, salta a 390 y cae con 788. Pruébalos y luego elige los tuyos."; };
 $("#llevar").onclick = function () {
-  var g = +G.value, ok = llevarAMiJuego({ gravedad: g, salto: +S.value, velocidad: +V.value });
-  $("#llevado").textContent = ok ? "✓ Guardado en tu juego: gravedad " + g + " · salto " + S.value + " · velocidad " + V.value + ". Lo verás en «Elige tu juego» (Plataformas) y en tu ZIP." + (g < 300 ? " Ojo: en tu juego la gravedad mínima es 300, para que puedas aterrizar." : "") : "No se pudo guardar en este navegador.";
+  var g = +G.value, a = +A.value, w = +W.value, ok = llevarAMiJuego({ gravedad: g, salto: +S.value, velocidad: +V.value, oscilacion: { amp: a, vel: w } });
+  $("#llevado").textContent = ok ? "✓ Guardado en tu juego: gravedad " + g + " · salto " + S.value + " · velocidad " + V.value + " · plataformas " + (a > 0 && w > 0 ? "que flotan (A " + a + " px · ω " + String(w).replace(".", ",") + ")" : "quietas") + ". Lo verás en «Elige tu juego» (Plataformas) y en tu ZIP." + (g < 300 ? " Ojo: en tu juego la gravedad mínima es 300, para que puedas aterrizar." : "") : "No se pudo guardar en este navegador.";
 };
 leer();""",
        css="#sim { width: 100%; height: auto; aspect-ratio: 16 / 9; display: block; margin: .5em 0; border-radius: .7em; background: var(--s2); border: 1px solid var(--line2); cursor: crosshair; touch-action: none; }",
-       comentario="Interacción: simulador propio en lienzo (gravedad, salto, velocidad y choque con celdas). Clic pone o quita muros. Tres retos que se marcan solos.")
+       comentario="Interacción: simulador propio en lienzo (gravedad, salto, velocidad y choque con celdas) y una plataforma que flota con y = base + A·sin(ωt). Clic pone o quita muros. Botón con los números de Sonic. Cuatro retos que se marcan solos.")
 
 # ---------------------------------------------------------------- 04c · programa tu rival (práctica de la lámina 04b)
 # La teoría está en la lámina 04b-ningun-rival-piensa (formato teoria-animada, escrita a mano, no la genera este script).

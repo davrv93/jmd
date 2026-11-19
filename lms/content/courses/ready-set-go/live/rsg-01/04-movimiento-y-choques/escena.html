@@ -7,7 +7,7 @@
 <!--
   Escena del modo LIVE (Ready Set Go, clase rsg-01). Generada por _fuente/rsg01.py: edita ahí, no aquí.
   Reglas: sin recursos externos, menos de 300 elementos y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion.
-  Interacción: simulador propio en lienzo (gravedad, salto, velocidad y choque con celdas). Clic pone o quita muros. Tres retos que se marcan solos.
+  Interacción: simulador propio en lienzo (gravedad, salto, velocidad y choque con celdas) y una plataforma que flota con y = base + A·sin(ωt). Clic pone o quita muros. Botón con los números de Sonic. Cuatro retos que se marcan solos.
 -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/rsg.css">
@@ -36,23 +36,28 @@
         <p class="x-det" id="llevado" aria-live="polite" style="font-size:.82em;min-height:1.4em"></p>
       </section>
       <div class="x-col">
-        <section class="esc-card a-in" style="--d:.25s"><span class="x-et">Tres números mandan</span>
-          <label class="x-campo">Gravedad<input id="g" type="range" min="0" max="2600" step="50" value="1700"><output id="og"></output></label>
+        <section class="esc-card a-in" style="--d:.25s"><div class="x-fila" style="justify-content:space-between"><span class="x-et">Tres números mandan</span><button class="x-btn" id="sonic" type="button" title="Los de Sonic the Hedgehog (Sega, 1991), pasados a segundos">Números de Sonic</button></div>
+          <label class="x-campo">Gravedad<input id="g" type="range" min="0" max="2600" step="4" value="1700"><output id="og"></output></label>
           <label class="x-campo">Salto<input id="s" type="range" min="200" max="1100" step="10" value="700"><output id="os"></output></label>
           <label class="x-campo">Velocidad<input id="v" type="range" min="60" max="420" step="10" value="220"><output id="ov"></output></label>
           <p class="x-det" id="lee" aria-live="polite" style="font-size:.84em;min-height:3.2em"></p>
+          <span class="x-et" style="margin-top:.5em">Plataforma que flota · y = base + A · sin(ω · t)</span>
+          <label class="x-campo">A · cuánto<input id="amp" type="range" min="0" max="120" step="5" value="40"><output id="oamp"></output></label>
+          <label class="x-campo">ω · rapidez<input id="w" type="range" min="0" max="4" step="0.1" value="1.5"><output id="ow"></output></label>
         </section>
         <section class="esc-card a-in" style="--d:.35s"><span class="x-et">Así está escrito en tu juego (juego.js)</span>
 <pre class="x-cod"><span class="c">// la gravedad tira hacia abajo en cada cuadro; saltar es una velocidad hacia arriba</span>
 h.setVelocityX(direccion * <span class="k">F.velocidad</span>);
 if (salto &amp;&amp; enElPiso) h.setVelocityY(-<span class="k">F.salto</span>);
+<span class="c">// la plataforma que flota: su altura es un seno</span>
+p.y = base + <span class="k">A</span> * Math.sin(<span class="k">ω</span> * t);
 <span class="c">// y el nivel es una lista: cada celda sólida es un cuerpo que no deja pasar</span>
 this.physics.add.collider(heroe, suelo);</pre></section>
         <section class="esc-card a-in" style="--d:.45s"><span class="x-et">Retos</span><div class="x-col" id="retos" role="group" aria-label="Retos" style="margin-top:.4em"></div></section>
       </div>
     </div>
   </main>
-  <footer class="esc-pie"><span class="esc-nota">Pulsa «Lo logré» cuando hayas completado los tres retos</span></footer>
+  <footer class="esc-pie"><span class="esc-nota">Pulsa «Lo logré» cuando hayas completado los cuatro retos</span></footer>
 </div>
 <script>
 (function () { try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {} })();
@@ -65,26 +70,33 @@ function llevarAMiJuego(nuevos) { try { var a = JSON.parse(localStorage.getItem(
 var C = 40, COLS = 16, FILAS = 9, cv = $("#sim"), x = cv.getContext("2d"), K = {}, verCaja = false;
 var BASE = ["................", "................", "................", "..........###...", "................", "......###.......", "................", "..##............", "################"];
 var mapa, H;
-function reiniciar() { mapa = BASE.map(function (f) { return f.split("").map(function (c) { return c === "#" ? 1 : 0; }); }); H = { x: 60, y: 200, vx: 0, vy: 0, w: 24, h: 32, piso: false, max: 0 }; }
+function reiniciar() { mapa = BASE.map(function (f) { return f.split("").map(function (c) { return c === "#" ? 1 : 0; }); }); H = { x: 60, y: 200, vx: 0, vy: 0, w: 24, h: 32, piso: false, max: 0, enP: false }; }
+// Plataforma que flota (cols 13-15): y = base + A·sin(ω·t). Se pisa desde arriba y te lleva; no choca de lado.
+var P = { x: 520, w: 120, h: 14, base: 180, y: 180, t: 0 };
+function sobreP(px) { return px + H.w / 2 > P.x && px - H.w / 2 < P.x + P.w; }
 function solido(px, py) { var c = Math.floor(px / C), f = Math.floor(py / C); if (c < 0 || c >= COLS) return true; if (f < 0) return false; if (f >= FILAS) return true; return mapa[f][c] === 1; }
 function choca(nx, ny) { return solido(nx - H.w / 2, ny - H.h) || solido(nx + H.w / 2 - 1, ny - H.h) || solido(nx - H.w / 2, ny - 1) || solido(nx + H.w / 2 - 1, ny - 1) || solido(nx - H.w / 2, ny - H.h / 2) || solido(nx + H.w / 2 - 1, ny - H.h / 2); }
 reiniciar();
-var G = $("#g"), S = $("#s"), V = $("#v"), antes = performance.now(), cumplidos = {};
+var G = $("#g"), S = $("#s"), V = $("#v"), A = $("#amp"), W = $("#w"), antes = performance.now(), cumplidos = {};
 function leer() {
   var g = +G.value, s = +S.value, alto = g > 0 ? s * s / (2 * g) : Infinity;
   $("#og").textContent = g; $("#os").textContent = s; $("#ov").textContent = V.value;
   $("#lee").innerHTML = g > 0 ? "Altura del salto = salto² ÷ (2 × gravedad) = <b>" + Math.round(alto) + " px</b>, o sea <b>" + (alto / C).toFixed(1) + " celdas</b>." : "<b>Gravedad 0:</b> nada lo baja. Salta y mira cómo se va para siempre.";
   if (g > 0 && alto < 2 * C) reto(0); if (g === 0) reto(2);
+  var a = +A.value, w = +W.value; $("#oamp").textContent = a + " px"; $("#ow").textContent = String(w).replace(".", ",");
 }
 function reto(i) { if (cumplidos[i]) return; cumplidos[i] = 1; var b = $$("#retos .x-it")[i]; if (b) b.setAttribute("aria-checked", "true"); }
-["Baja el salto hasta que ya no alcance 2 celdas de alto", "Construye una escalera de 3 escalones y súbela", "Pon la gravedad en 0 y salta: ¿qué pasa?"].forEach(function (t) { var b = el("div", "x-it"); b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); b.appendChild(el("span", null, t)); $("#retos").appendChild(b); });
+["Baja el salto hasta que ya no alcance 2 celdas de alto", "Construye una escalera de 3 escalones y súbela", "Pon la gravedad en 0 y salta: ¿qué pasa?", "Súbete a la plataforma que flota y deja que te lleve"].forEach(function (t) { var b = el("div", "x-it"); b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); b.appendChild(el("span", null, t)); $("#retos").appendChild(b); });
 function paso(dt) {
+  P.t += dt; P.y = P.base + (+A.value) * Math.sin((+W.value) * P.t);
+  if (H.enP) { if (sobreP(H.x)) H.y = P.y; else { H.enP = false; H.piso = false; } }   // la plataforma lo lleva
   var dir = (K.der ? 1 : 0) - (K.izq ? 1 : 0); H.vx = dir * +V.value;
   if (K.salto && H.piso) { H.vy = -S.value; H.piso = false; }
   H.vy += +G.value * dt;
   var nx = H.x + H.vx * dt; if (!choca(nx, H.y)) H.x = nx;
-  var ny = H.y + H.vy * dt;
+  var antesY = H.y, ny = H.y + H.vy * dt; H.enP = false;
   if (!choca(H.x, ny)) { H.y = ny; H.piso = false; } else { if (H.vy > 0) { H.y = Math.floor((ny - 1) / C) * C; H.piso = true; } H.vy = 0; }
+  if (H.vy >= 0 && sobreP(H.x) && antesY <= P.y + 1 && H.y >= P.y) { H.y = P.y; H.vy = 0; H.piso = true; H.enP = true; if (+A.value > 0 && +W.value > 0) reto(3); }
   if (H.y < -400 || H.y > 600) { H.x = 60; H.y = 200; H.vy = 0; }
   if (H.piso && H.y <= (FILAS - 4) * C) reto(1);
 }
@@ -92,6 +104,9 @@ function dibuja() {
   var e = getComputedStyle(document.documentElement), acento = e.getPropertyValue("--accent").trim(), linea = e.getPropertyValue("--line2").trim();
   x.clearRect(0, 0, 640, 360);
   for (var f = 0; f < FILAS; f++) for (var c = 0; c < COLS; c++) { if (mapa[f][c]) { x.fillStyle = acento; x.globalAlpha = .85; x.fillRect(c * C + 1, f * C + 1, C - 2, C - 2); x.globalAlpha = 1; } else { x.strokeStyle = linea; x.lineWidth = 1; x.strokeRect(c * C + .5, f * C + .5, C, C); } }
+  var am = +A.value, cx = P.x + P.w / 2;   // recorrido de la plataforma: de base − A a base + A
+  if (am > 0) { x.save(); x.setLineDash([4, 5]); x.strokeStyle = "#5fc28f"; x.lineWidth = 2; x.beginPath(); x.moveTo(cx, P.base - am); x.lineTo(cx, P.base + am + P.h); x.stroke(); x.restore(); }
+  x.fillStyle = "#5fc28f"; x.beginPath(); x.roundRect(P.x + 2, P.y, P.w - 4, P.h, 5); x.fill(); x.strokeStyle = "#14122b"; x.lineWidth = 2; x.stroke();
   x.fillStyle = "#ff8a3d"; x.beginPath(); x.roundRect(H.x - H.w / 2 - 3, H.y - H.h - 6, H.w + 6, H.h + 6, 9); x.fill();
   x.fillStyle = "#14122b"; x.beginPath(); x.arc(H.x - 4, H.y - H.h + 8, 3.4, 0, 6.283); x.arc(H.x + 6, H.y - H.h + 8, 3.4, 0, 6.283); x.fill();
   if (verCaja) { x.strokeStyle = "#c6ff4a"; x.lineWidth = 2; x.strokeRect(H.x - H.w / 2, H.y - H.h, H.w, H.h); x.fillStyle = "#c6ff4a"; x.font = "700 12px monospace"; x.fillText("vx " + Math.round(H.vx) + "  vy " + Math.round(H.vy) + (H.piso ? "  en el piso" : "  en el aire"), 8, 16); }
@@ -102,10 +117,12 @@ addEventListener("keydown", function (e) { var k = TEC[e.key]; if (k) { e.preven
 $$("[data-k]").forEach(function (b) { ["pointerdown", "pointerup", "pointerleave", "pointercancel"].forEach(function (ev, i) { b.addEventListener(ev, function (e) { e.preventDefault(); K[b.dataset.k] = i === 0; }); }); });
 cv.addEventListener("pointerdown", function (e) { var r = cv.getBoundingClientRect(), c = Math.floor((e.clientX - r.left) / r.width * COLS), f = Math.floor((e.clientY - r.top) / r.height * FILAS); if (f >= 0 && f < FILAS - 1 && c >= 0 && c < COLS) { mapa[f][c] = mapa[f][c] ? 0 : 1; if (choca(H.x, H.y)) mapa[f][c] = 0; } cv.focus(); });
 $("#caja").onclick = function () { verCaja = !verCaja; this.setAttribute("aria-pressed", String(verCaja)); };
-$("#reinicio").onclick = reiniciar; [G, S, V].forEach(function (i) { i.oninput = leer; });
+$("#reinicio").onclick = reiniciar; [G, S, V, A, W].forEach(function (i) { i.oninput = leer; });
+// Sonic Physics Guide, por cuadro a 60 cuadros por segundo: velocidad tope 6 → 360 px/s; salto 6,5 → 390 px/s; gravedad 0,21875 → 787,5 px/s² (el control va de 4 en 4: 788).
+$("#sonic").onclick = function () { G.value = 788; S.value = 390; V.value = 360; leer(); $("#llevado").textContent = "Estos son los de Sonic (1991): corre a 360, salta a 390 y cae con 788. Pruébalos y luego elige los tuyos."; };
 $("#llevar").onclick = function () {
-  var g = +G.value, ok = llevarAMiJuego({ gravedad: g, salto: +S.value, velocidad: +V.value });
-  $("#llevado").textContent = ok ? "✓ Guardado en tu juego: gravedad " + g + " · salto " + S.value + " · velocidad " + V.value + ". Lo verás en «Elige tu juego» (Plataformas) y en tu ZIP." + (g < 300 ? " Ojo: en tu juego la gravedad mínima es 300, para que puedas aterrizar." : "") : "No se pudo guardar en este navegador.";
+  var g = +G.value, a = +A.value, w = +W.value, ok = llevarAMiJuego({ gravedad: g, salto: +S.value, velocidad: +V.value, oscilacion: { amp: a, vel: w } });
+  $("#llevado").textContent = ok ? "✓ Guardado en tu juego: gravedad " + g + " · salto " + S.value + " · velocidad " + V.value + " · plataformas " + (a > 0 && w > 0 ? "que flotan (A " + a + " px · ω " + String(w).replace(".", ",") + ")" : "quietas") + ". Lo verás en «Elige tu juego» (Plataformas) y en tu ZIP." + (g < 300 ? " Ojo: en tu juego la gravedad mínima es 300, para que puedas aterrizar." : "") : "No se pudo guardar en este navegador.";
 };
 leer();
 </script>

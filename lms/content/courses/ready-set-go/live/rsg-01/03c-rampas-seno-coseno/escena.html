@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Una rampa es un seno y un coseno</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. Flechas de la rampa: 1 px por cuadro = 20 px. La parábola, 1 px = 1 px del juego. */
+  .suelo { fill: var(--papel2); }
+  .heroe rect { fill: var(--acento); stroke: var(--tinta); stroke-width: 2; }
+  .heroe circle { fill: var(--tinta); }
+  .vec line, .vec path { stroke-width: 4; stroke-linecap: round; fill: none; }
+  .vec path.cabeza { stroke-linejoin: round; }
+  #vGsp line, #vGsp path, #vLoop line, #vLoop path { stroke: var(--acento); }
+  #pX { stroke: var(--azul); stroke-width: 4; } #pY { stroke: var(--rojo); stroke-width: 4; }
+  #vSalto line, #vSalto path { stroke: var(--verde); }
+  #parabola { fill: none; stroke: var(--verde); stroke-width: 3; stroke-dasharray: 2 7; stroke-linecap: round; }
+  #barX { fill: var(--azul); } #barY { fill: var(--rojo); }
+  .valor { font: 700 15px var(--mono); fill: var(--tinta); }
+  #onda { fill: none; stroke: var(--acento); stroke-width: 4; stroke-linecap: round; }
+  #plataforma rect { fill: var(--n-info); stroke: var(--tinta); stroke-width: 2; }
+  #puntoOnda { fill: var(--acento); stroke: var(--papel); stroke-width: 2; }
+  .regla { width: 25%; }
+  .regla .t.mono { font-size: .9em; }
+  #formula, #fOnda { font: 650 1.65cqw/1.2 var(--mono); padding: .5em 1.1em; white-space: nowrap; }
+  #narra { font: 650 1.45cqw/1.25 var(--sans); padding: .5em 1em; white-space: nowrap; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 2 de 2 · Sonic the Hedgehog (Sega, 1991)</p>
+    <h1>Una rampa es <em>un seno y un coseno</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Un piso plano que sube en una rampa de 30 grados. La velocidad sobre el piso se reparte en horizontal, X igual a velocidad por coseno del ángulo, y vertical, Y igual a menos velocidad por seno. La rampa resta 0,125 por seno del ángulo en cada cuadro. En un loop el ángulo da la vuelta completa y las barras de horizontal y vertical cambian. El salto sale perpendicular al piso y dibuja una parábola. Al final, una onda seno y una plataforma que sube y baja con ella.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <!-- A · la rampa -->
+        <g id="escRampa">
+          <path class="suelo" d="M30 400 H260 L500 261.4 H770 V500 H30 Z"/>
+          <path id="piso" class="trazo" d="M30 400 H260 L500 261.4 H770"/>
+          <line id="refPlano" class="trazo fino guion solo-anim" x1="260" y1="400" x2="420" y2="400"/>
+          <path id="arco" class="trazo solo-anim" d="M325 400 A65 65 0 0 0 316.3 367.5"/>
+          <text id="rTheta" class="rot fuerte solo-anim" x="334" y="392">θ = 30°</text>
+          <g id="descomp">
+            <path id="pY" class="solo-anim" d="M372.5 317.7 V257.7"/>
+            <path id="pX" class="solo-anim" d="M372.5 257.7 H476.4"/>
+          </g>
+          <path id="parabola" class="solo-anim" d="M372.5 317.7 L382.2 277.3 L392.0 242.3 L401.7 212.9 L411.4 188.9 L421.2 170.3 L430.9 157.3 L440.6 149.7 L450.3 147.5 L460.1 150.9 L469.8 159.7 L479.5 174.0 L489.3 193.7 L499.0 218.9 L508.1 246.4"/>
+          <g id="vSalto" class="vec solo-anim" transform="translate(372.5 317.7) rotate(-120)"><g id="vSaltoIn"><line x1="0" y1="0" x2="126" y2="0"/><path class="cabeza" d="M114 -10 L130 0 L114 10"/></g></g>
+          <g id="vGsp" class="vec" transform="translate(150 385)"><g id="vGspIn"><line x1="0" y1="0" x2="116" y2="0"/><path class="cabeza" d="M104 -10 L120 0 L104 10"/></g></g>
+          <g id="heroe" class="heroe" transform="translate(150 385)"><g id="heroeIn"><rect x="-14" y="-14" width="28" height="28" rx="8"/><circle cx="-4" cy="-4" r="2.8"/><circle cx="6" cy="-4" r="2.8"/></g></g>
+        </g>
+        <!-- B · el loop -->
+        <g id="escLoop" class="solo-anim">
+          <path class="suelo" d="M60 392 H600 V500 H60 Z"/>
+          <path class="trazo" d="M60 392 H600"/>
+          <circle class="trazo" cx="330" cy="260" r="132"/>
+          <line class="trazo fino guion" x1="680" y1="260" x2="780" y2="260"/>
+          <rect id="barX" x="690" y="260" width="34" height="0"/>
+          <rect id="barY" x="736" y="260" width="34" height="0"/>
+          <text class="rot" x="707" y="398" text-anchor="middle">X</text>
+          <text class="rot" x="753" y="398" text-anchor="middle">↑</text>
+          <text class="rot" x="330" y="420" text-anchor="middle">0°</text>
+          <text class="rot" x="474" y="265">90°</text>
+          <text class="rot" x="330" y="116" text-anchor="middle">180°</text>
+          <text class="rot" x="186" y="265" text-anchor="end">270°</text>
+          <text id="valX" class="valor" x="707" y="424" text-anchor="middle">6</text>
+          <text id="valY" class="valor" x="753" y="424" text-anchor="middle">0</text>
+          <g id="vLoop" class="vec" transform="translate(330 378)"><line x1="0" y1="0" x2="80" y2="0"/><path class="cabeza" d="M68 -9 L82 0 L68 9"/></g>
+          <g id="heroeLoop" class="heroe" transform="translate(330 378)"><rect x="-14" y="-14" width="28" height="28" rx="8"/><circle cx="-4" cy="-4" r="2.8"/><circle cx="6" cy="-4" r="2.8"/></g>
+        </g>
+        <!-- C · la onda -->
+        <g id="escSeno" class="solo-anim">
+          <line class="trazo fino guion" x1="80" y1="300" x2="590" y2="300"/>
+          <path id="onda" d="M100 300.0 L105 290.9 L110 281.9 L115 273.2 L120 265.0 L125 257.4 L130 250.5 L135 244.5 L140 239.4 L145 235.3 L150 232.4 L155 230.6 L160 230.0 L165 230.6 L170 232.4 L175 235.3 L180 239.4 L185 244.5 L190 250.5 L195 257.4 L200 265.0 L205 273.2 L210 281.9 L215 290.9 L220 300.0 L225 309.1 L230 318.1 L235 326.8 L240 335.0 L245 342.6 L250 349.5 L255 355.5 L260 360.6 L265 364.7 L270 367.6 L275 369.4 L280 370.0 L285 369.4 L290 367.6 L295 364.7 L300 360.6 L305 355.5 L310 349.5 L315 342.6 L320 335.0 L325 326.8 L330 318.1 L335 309.1 L340 300.0 L345 290.9 L350 281.9 L355 273.2 L360 265.0 L365 257.4 L370 250.5 L375 244.5 L380 239.4 L385 235.3 L390 232.4 L395 230.6 L400 230.0 L405 230.6 L410 232.4 L415 235.3 L420 239.4 L425 244.5 L430 250.5 L435 257.4 L440 265.0 L445 273.2 L450 281.9 L455 290.9 L460 300.0 L465 309.1 L470 318.1 L475 326.8 L480 335.0 L485 342.6 L490 349.5 L495 355.5 L500 360.6 L505 364.7 L510 367.6 L515 369.4 L520 370.0 L525 369.4 L530 367.6 L535 364.7 L540 360.6 L545 355.5 L550 349.5 L555 342.6 L560 335.0 L565 326.8 L570 318.1 L575 309.1 L580 300.0"/>
+          <path id="cotaA" class="trazo fino" d="M160 300 V230 M150 230 H170"/>
+          <path id="cotaP" class="trazo fino" d="M100 400 H340 M100 392 V408 M340 392 V408"/>
+          <circle id="puntoOnda" cx="100" cy="300" r="8"/>
+          <line class="trazo fino guion" x1="610" y1="300" x2="760" y2="300"/>
+          <g id="plataforma"><rect x="630" y="290" width="110" height="20" rx="5"/><g class="heroe" transform="translate(685 276)"><rect x="-14" y="-14" width="28" height="28" rx="8"/><circle cx="-4" cy="-4" r="2.8"/><circle cx="6" cy="-4" r="2.8"/></g></g>
+        </g>
+      </svg>
+
+      <p class="pastilla solo-anim" id="formula" style="left:4%; top:2%">X = Gsp · cos θ &nbsp;&nbsp; Y = −Gsp · sin θ</p>
+
+      <div class="capa" id="notasRampa">
+        <div class="nt act regla" id="nGsp" data-r="-1.2" style="left:65%; top:38%"><span class="k">Velocidad sobre el piso</span><span class="t mono">Gsp = 6</span></div>
+        <div class="nt cmd regla" id="nX" data-r="1" style="left:37%; top:33%"><span class="k">Avanza</span><span class="t mono">X = 6 · cos 30° = 5,2</span></div>
+        <div class="nt hot regla" id="nY" data-r="-1.4" style="left:13%; top:52%"><span class="k">Sube</span><span class="t mono">Y = −6 · sin 30° = −3</span></div>
+        <div class="nt pol regla" id="nFrena" data-r="1.3" style="left:4%; top:20%; width:35%"><span class="k">Cada cuadro en la rampa</span><span class="t mono">Gsp −= 0,125 · sin 30° = 0,0625</span></div>
+      </div>
+      <div class="capa solo-anim" id="notasSalto">
+        <div class="nt info regla" id="nSalto" data-r="-1" style="left:4%; top:22%; width:30%"><span class="k">Salto (6,5)</span><span class="t mono">X −= 6,5 · sin θ<br>Y −= 6,5 · cos θ</span></div>
+        <div class="nt sis regla" id="nGrav" data-r="1.2" style="left:70%; top:12%; width:26%"><span class="k">Gravedad</span><span class="t mono">Y += 0,21875 cada cuadro</span></div>
+      </div>
+
+      <p class="pastilla solo-anim" id="narra" style="left:4%; top:12%"><span class="capas">
+        <span>0° · piso: todo es X</span>
+        <span>90° · pared: todo es vertical</span>
+        <span>180° · techo: X va al revés</span>
+        <span>270° · bajando por la otra pared</span>
+        <span>360° · de vuelta al piso, sin código especial</span>
+      </span></p>
+
+      <div class="capa solo-anim" id="notasSeno">
+        <p class="pastilla" id="fOnda" style="left:4%; top:4%">y = base + A · sin(ω · t)</p>
+        <div class="nt act regla" id="nA" data-r="-1.2" style="left:24%; top:28%; width:23%"><span class="k">A · amplitud</span><span class="t">cuánto sube y baja</span></div>
+        <div class="nt cmd regla" id="nW" data-r="1" style="left:10%; top:81%; width:30%"><span class="k">ω · velocidad</span><span class="t">qué tan rápido da la vuelta</span></div>
+        <div class="nt ficha k" id="fPuente" data-r="-.8" style="left:58%; top:80%; width:38%"><span class="k">Escena 04</span><span class="t">eliges A y ω → «Llevar a mi juego»: tus plataformas flotan</span></div>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>En el piso, toda la velocidad es X</b><p>Sonic guarda una sola velocidad: la que lleva sobre el piso, Gsp. En cada cuadro la reparte en horizontal y vertical según el ángulo del piso. En plano el ángulo es 0: todo va a X.</p></li>
+        <li><b>En la rampa: coseno y seno</b><p>A 30° la misma velocidad 6 se reparte: X = 6 · cos 30° = 5,2 y Y = −6 · sin 30° = −3. El coseno dice cuánto avanza; el seno, cuánto sube.</p><p class="aparte">Y es negativa porque en la pantalla la y crece hacia abajo.</p></li>
+        <li><b>La rampa frena al subir</b><p>En cada cuadro resta 0,125 · sin θ a la velocidad: subiendo una rampa de 30° pierde 0,0625 por cuadro; bajando, la gana. Es una gravedad que solo actúa sobre el piso.</p></li>
+        <li><b>El loop: la misma regla, dando la vuelta</b><p>No hay código especial para el loop. El ángulo del piso gira de 0° a 360° y el coseno y el seno reparten la velocidad: en la pared todo es vertical; en el techo, X va al revés.</p></li>
+        <li><b>Saltar sale perpendicular al piso</b><p>El salto resta 6,5 · sin θ a X y 6,5 · cos θ a Y: sale perpendicular a la rampa y se suma a lo que ya traía. Después la gravedad, 0,21875 por cuadro, dibuja una parábola.</p></li>
+        <li><b>Y para flotar: y = A · sin(ωt)</b><p>El seno también mueve cosas solas: A dice cuánto suben y bajan, ω qué tan rápido. En la escena 04 eliges A y ω, y tus plataformas flotan en tu juego.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Sonic Retro. Sonic Physics Guide: «Slope Physics» y «Jumping» (info.sonicretro.org, consultado el 19-11-2026) · Sega (1991). Sonic the Hedgehog [Mega Drive]. La parábola usa salto 6,5 y gravedad 0,21875 con la velocidad 6 de la rampa. El héroe y los escenarios son propios.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, narra = [], ambiente = null;
+  var R = 132, CX = 330, CY = 260;   // loop
+  function loopEn(a) { // a = ángulo del piso en grados (0 en el suelo, 90 en la pared derecha…)
+    var r = a * Math.PI / 180, phi = Math.PI / 2 - r, x = CX + (R - 14) * Math.cos(phi), y = CY + (R - 14) * Math.sin(phi);
+    var t = "translate(" + x.toFixed(1) + " " + y.toFixed(1) + ") rotate(" + (-a).toFixed(1) + ")";
+    $("#heroeLoop").setAttribute("transform", t); $("#vLoop").setAttribute("transform", t);
+    var cx = Math.cos(r), sy = Math.sin(r), hX = Math.abs(cx) * 110, hY = Math.abs(sy) * 110;
+    $("#barX").setAttribute("height", hX.toFixed(1)); $("#barX").setAttribute("y", (cx >= 0 ? 260 - hX : 260).toFixed(1));
+    $("#barY").setAttribute("height", hY.toFixed(1)); $("#barY").setAttribute("y", (sy >= 0 ? 260 - hY : 260).toFixed(1));
+    $("#valX").textContent = (6 * cx).toFixed(1).replace(".", ",").replace("-0,0", "0,0");
+    $("#valY").textContent = (6 * sy).toFixed(1).replace(".", ",").replace("-0,0", "0,0");
+  }
+  function decir(tl, k) {
+    if (k > 0) tl.to(narra[k - 1], { autoAlpha: 0, duration: .15 });
+    tl.to(narra[k], { autoAlpha: 1, duration: .2 }, k > 0 ? "<+.08" : undefined);
+  }
+  var est = { x: 150, y: 385, a: 0, s: 1 };   // el héroe y su flecha de velocidad, dibujados a mano (no con x/y de GSAP)
+  function dibujar() {
+    var t = "translate(" + est.x.toFixed(1) + " " + est.y.toFixed(1) + ") rotate(" + est.a.toFixed(1) + ")";
+    $("#heroe").setAttribute("transform", t); $("#vGsp").setAttribute("transform", t + " scale(" + est.s.toFixed(3) + " 1)");
+  }
+  // Salto desde la rampa de 30° con Gsp 6: X = 6·cos30 − 6,5·sin30 = 1,946; Y = −6·sin30 − 6,5·cos30 = −8,629; gravedad 0,21875.
+  var X0 = 1.946, Y0 = -8.629, G = 0.21875, CUADROS = 69.5;   // cae al piso alto a los 69,5 cuadros (x 508)
+
+  TEO.escena([
+    function (tl) { // 1. piso plano: todo es X
+      TEO.trazar(tl, "#piso", { duration: 1 });
+      tl.from("#heroeIn", { autoAlpha: 0, scale: .3, transformOrigin: "50% 50%", duration: .4, ease: "back.out(2)" });
+      tl.from("#vGspIn", { autoAlpha: 0, scaleX: 0, transformOrigin: "0% 50%", duration: .5 });
+      tl.fromTo("#formula", { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: .4 });
+    },
+    function (tl) { // 2. la rampa: el vector se reparte en coseno y seno
+      tl.to(est, { x: 252, y: 385, duration: .6, ease: "power1.in", onUpdate: dibujar });
+      tl.to(est, { x: 372.5, y: 317.7, a: -30, duration: .8, ease: "power1.out", onUpdate: dibujar });
+      TEO.pegar(tl, "#nGsp");
+      tl.fromTo("#refPlano", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      TEO.trazar(tl, "#arco", { duration: .4 });
+      tl.fromTo("#rTheta", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      TEO.trazar(tl, "#pY", { duration: .5 });
+      TEO.trazar(tl, "#pX", { duration: .5 });
+      TEO.pegar(tl, "#nX", "-=.1");
+      TEO.pegar(tl, "#nY");
+    },
+    function (tl) { // 3. la pendiente frena
+      TEO.pegar(tl, "#nFrena");
+      tl.to(est, { s: .82, duration: .9, ease: "power1.inOut", onUpdate: dibujar });
+    },
+    function (tl) { // 4. el loop: la misma regla dando la vuelta
+      tl.to(["#escRampa", "#notasRampa"], { autoAlpha: 0, duration: .4 });
+      tl.fromTo("#escLoop", { autoAlpha: 0 }, { autoAlpha: 1, duration: .5 });
+      tl.fromTo("#narra", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      var o = { a: 0 };
+      decir(tl, 0);
+      [90, 180, 270, 360].forEach(function (fin, i) {
+        tl.to(o, { a: fin, duration: 1.4, ease: "none", onUpdate: function () { loopEn(o.a); } });
+        decir(tl, i + 1);
+      });
+    },
+    function (tl) { // 5. saltar: perpendicular al piso, y luego la parábola
+      tl.to(["#escLoop", "#narra"], { autoAlpha: 0, duration: .4 });
+      tl.to("#escRampa", { autoAlpha: 1, duration: .5 });
+      tl.to("#descomp", { opacity: .15, duration: .3 }, "<");
+      tl.fromTo("#notasSalto", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.fromTo("#vSalto", { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 });
+      tl.fromTo("#vSaltoIn", { scaleX: 0 }, { scaleX: 1, transformOrigin: "0% 50%", duration: .5 }, "<");
+      TEO.pegar(tl, "#nSalto");
+      tl.to("#vGsp", { autoAlpha: 0, duration: .3 });
+      tl.fromTo("#parabola", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 }, "<");
+      var j = { t: 0 };
+      tl.to(j, { t: 1, duration: 2.3, ease: "none", onUpdate: function () {   // la física real, a media velocidad
+        var n = j.t * CUADROS;
+        est.x = 372.5 + X0 * n; est.y = 317.7 + Y0 * n + G * n * n / 2; est.a = -30 - 330 * j.t; dibujar();
+      } });
+      TEO.pegar(tl, "#nGrav", "-=1.2");
+    },
+    function (tl) { // 6. y para flotar: la onda seno
+      tl.to(["#escRampa", "#notasSalto", "#formula"], { autoAlpha: 0, duration: .4 });
+      tl.fromTo("#escSeno", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.trazar(tl, "#onda", { duration: 1.4, ease: "none" });
+      tl.fromTo("#notasSeno", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.fromTo("#fOnda", { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: .4 });
+      tl.fromTo("#cotaA", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      TEO.pegar(tl, "#nA", "-=.1");
+      tl.fromTo("#cotaP", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      TEO.pegar(tl, "#nW", "-=.1");
+      TEO.pegar(tl, "#fPuente");
+    }
+  ], {
+    preparar: function () {
+      narra = gsap.utils.toArray("#narra .capas > span");
+      gsap.set(narra, { autoAlpha: 0 });
+      gsap.set(["#formula", "#narra", "#escLoop", "#escSeno", "#notasSeno", "#notasSalto", "#vSalto", "#parabola", "#rTheta", "#refPlano", "#cotaA", "#cotaP"], { autoAlpha: 0 });
+      loopEn(0); dibujar();
+      // Ambiente del paso 6 (fuera del timeline maestro): la plataforma y el punto siguen la misma onda.
+      var o = { t: 0 }, onda = $("#onda"), L = onda.getTotalLength();
+      ambiente = gsap.to(o, { t: 1, duration: 2.4, ease: "none", repeat: -1, paused: true, onUpdate: function () {
+        var p = onda.getPointAtLength((o.t * L / 2) % L);   // media onda del dibujo = un periodo
+        $("#puntoOnda").setAttribute("cx", p.x); $("#puntoOnda").setAttribute("cy", p.y);
+        $("#plataforma").setAttribute("transform", "translate(0 " + (-70 * Math.sin(2 * Math.PI * o.t)).toFixed(1) + ")");
+      } });
+    },
+    alCambiar: function (paso) { if (ambiente) { if (paso === 5 && !TEO.quieto) ambiente.play(); else ambiente.pause(); } },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sonic no corre de golpe (Sega, 1991)</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %.
+     Gráfica: tiempo x = 80 + 4·cuadro; velocidad y = 440 − 45·v (px por cuadro). Pista: 1 px = 1 px del juego. */
+  .curva { fill: none; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; }
+  #cAcc { stroke: var(--acento); } #cFreno { stroke: var(--rojo); } #cFric { stroke: var(--verde); stroke-dasharray: 9 7; }
+  #pista { stroke: var(--linea); stroke-width: 10; stroke-linecap: round; }
+  #heroe rect { fill: var(--acento); stroke: var(--tinta); stroke-width: 2; }
+  #heroe circle { fill: var(--tinta); }
+  #punto { fill: var(--acento); stroke: var(--papel); stroke-width: 2.5; }
+  .regla { width: 25%; }
+  #contador { font: 700 1.55cqw/1.2 var(--mono); padding: .5em 1em; white-space: nowrap; }
+  .comp { position: absolute; top: 20%; width: 42%; }
+  .comp .t { font-size: 1.05em; line-height: 1.45; }
+  .comp .t b { font: 700 1.05em var(--mono); }
+  #conv { font-size: 1.35cqw; white-space: nowrap; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 1 de 2 · Sonic the Hedgehog (Sega, 1991)</p>
+    <h1>Sonic no corre de golpe: <em>suma un poquito cada cuadro</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Arriba, una pista donde el héroe arranca lento y acelera. Abajo, la gráfica de su velocidad: sube en línea recta 0,046875 píxeles por cuadro hasta el tope de 6, en 128 cuadros, unos 2 segundos. Al frenar cae 0,5 por cuadro, diez veces más rápido; al soltar, la fricción la baja de a poco. Al final, los números de Sonic pasados a píxeles por segundo para probarlos en tu héroe.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="grafica">
+          <text class="rot" x="80" y="40">LA PISTA</text>
+          <line id="pista" x1="80" y1="64" x2="740" y2="64"/>
+          <path id="aX" class="trazo flecha" d="M80 440 H750"/>
+          <path id="aY" class="trazo flecha" d="M80 440 V92"/>
+          <text id="rY" class="rot" x="94" y="104">VELOCIDAD · PX POR CUADRO</text>
+          <text id="rX" class="rot" x="748" y="506" text-anchor="end">TIEMPO · CUADROS (60 POR SEGUNDO)</text>
+          <text class="rot fuerte" x="66" y="176" text-anchor="end">6</text>
+          <text class="rot fuerte" x="66" y="446" text-anchor="end">0</text>
+          <path id="lTope" class="trazo fino guion" d="M80 170 H740"/>
+          <text id="r128" class="rot fuerte solo-anim" x="592" y="462" text-anchor="middle">128 ≈ 2,1 s</text>
+          <path id="cAcc" class="curva" d="M80 440 L592 170 L740 170"/>
+          <path id="cFreno" class="curva" d="M600 170 L648 440"/>
+          <path id="cFric" class="curva" d="M600 170 L740 244"/>
+          <path id="v1" d="M80 440 L592 170" fill="none"/>
+          <path id="v2" d="M592 170 L740 170" fill="none"/>
+          <circle id="punto" class="solo-anim" cx="80" cy="440" r="8"/>
+          <g id="heroe" transform="translate(80 64)"><rect x="-13" y="-13" width="26" height="26" rx="7"/><circle cx="-4" cy="-3" r="2.6"/><circle cx="5" cy="-3" r="2.6"/></g>
+        </g>
+      </svg>
+
+      <p class="pastilla solo-anim" id="contador" style="left:24%; top:0%">cuadro 0 · velocidad 0,00</p>
+
+      <div class="capa" id="notas">
+        <div class="nt info regla" id="nAcc" data-r="-1.3" style="left:12%; top:36%"><span class="k">Acelerar</span><span class="t">+0,046875 por cuadro</span></div>
+        <div class="nt act regla" id="nTope" data-r="1.1" style="left:56%; top:19%"><span class="k">Tope</span><span class="t">6 px por cuadro</span></div>
+        <div class="nt hot regla" id="nFreno" data-r="-1" style="left:49%; top:62%; width:23%"><span class="k">Frenar</span><span class="t">−0,5 por cuadro: diez veces más fuerte</span></div>
+        <div class="nt pol" id="nFric" data-r="1.6" style="left:81.5%; top:57%; width:18%"><span class="k">Soltar</span><span class="t">−0,046875: se desliza</span></div>
+      </div>
+
+      <div class="capa solo-anim" id="numeros">
+        <div class="nt ficha r comp" id="fSonic" data-r="-1" style="left:5%"><span class="k">Sonic, en píxeles por segundo</span><span class="t">corre a <b>360</b><br>gravedad <b>787,5</b><br>salto <b>390</b></span></div>
+        <div class="nt ficha k comp" id="fTu" data-r="1" style="left:53%"><span class="k">Tu héroe, en la escena 04</span><span class="t">botón <b>«Números de Sonic»</b><br>y luego <b>los tuyos</b><br>→ «Llevar a mi juego»</span></div>
+        <p class="pastilla" id="conv" style="left:19%; top:72%">px por cuadro × 60 = px por segundo · px por cuadro² × 3600 = px por segundo²</p>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Sesenta fotos por segundo</b><p>El juego avanza en cuadros: 60 por segundo. En cada cuadro le suma un número fijo a la velocidad. Arriba va la pista; abajo, la velocidad cuadro a cuadro.</p></li>
+        <li><b>Acelerar: un poquito cada cuadro</b><p>Mientras aprietas la flecha, Sonic suma 0,046875 píxeles por cuadro. Tarda 128 cuadros, unos 2 segundos, en llegar al tope de 6. Por eso arranca lento y luego vuela.</p><p class="aparte">0,046875 es 12/256: el juego cuenta en subpíxeles, 256 por píxel.</p></li>
+        <li><b>Frenar: diez veces más fuerte</b><p>Si aprietas hacia atrás, resta 0,5 por cuadro y se detiene en 12 cuadros. Que el freno responda rápido es lo que se siente «preciso» al jugar.</p></li>
+        <li><b>Soltar: la fricción</b><p>Si no aprietas nada, resta lo mismo que al acelerar: 0,046875. Se desliza un buen tramo antes de parar. Tres números, tres sensaciones distintas.</p></li>
+        <li><b>Tus números</b><p>Pasados a segundos, Sonic corre a 360 px/s, cae con gravedad 787,5 px/s² y salta a 390 px/s. En la escena 04 los pruebas en tu héroe y luego eliges los tuyos.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Sonic Retro. Sonic Physics Guide: «Running», «Air State» y «Jumping» (info.sonicretro.org, consultado el 19-11-2026) · Sega (1991). Sonic the Hedgehog [Mega Drive]. El héroe y la pista de esta lámina son propios.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, puntas = {}, punto = $("#punto"), cont = $("#contador");
+  var DUR1 = 3, DUR2 = DUR1 * 37 / 128;   // 128 cuadros acelerando; 37 cuadros más al tope (hasta el borde de la gráfica)
+  function flecha(tl, id, pos) { TEO.trazar(tl, "#" + id, { duration: .6 }, pos); tl.fromTo(puntas[id], { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 }, "-=.1"); }
+  function recorrer(tl, path, dur, pos) { // como TEO.viajar, pero a ritmo constante: el tiempo de la gráfica avanza parejo
+    var L = path.getTotalLength(), o = { t: 0 };
+    return tl.to(o, { t: 1, duration: dur, ease: "none", onUpdate: function () { var p = path.getPointAtLength(o.t * L); punto.setAttribute("cx", p.x); punto.setAttribute("cy", p.y); } }, pos);
+  }
+  function mostrar(f) { cont.textContent = "cuadro " + Math.round(f) + " · velocidad " + Math.min(6, f * 0.046875).toFixed(2).replace(".", ","); }
+
+  TEO.escena([
+    function (tl) { // 1. pista, ejes y héroe
+      flecha(tl, "aY"); flecha(tl, "aX", "-=.3");
+      tl.from(["#rY", "#rX"], { autoAlpha: 0, y: 6, duration: .4, stagger: .1 });
+      tl.from("#pista", { autoAlpha: 0, duration: .4 }, "-=.2");
+      tl.from("#heroe", { autoAlpha: 0, scale: .3, transformOrigin: "50% 50%", duration: .4, ease: "back.out(2)" });
+    },
+    function (tl) { // 2. acelerar: la curva, el punto, el héroe y el contador, sincronizados
+      tl.fromTo("#lTope", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.fromTo(cont, { autoAlpha: 0, y: -6 }, { autoAlpha: 1, y: 0, duration: .3 });
+      tl.fromTo(punto, { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 });
+      var c = { f: 0 }, L1 = $("#v1").getTotalLength(), L = $("#cAcc").getTotalLength();
+      tl.addLabel("corre");
+      tl.fromTo("#cAcc", { strokeDashoffset: L }, { strokeDashoffset: L - L1, duration: DUR1, ease: "none" }, "corre");
+      recorrer(tl, $("#v1"), DUR1, "corre");
+      tl.fromTo("#heroe", { x: 80 }, { x: 464, duration: DUR1, ease: "power1.in" }, "corre");   // aceleración constante: posición ∝ t²
+      tl.fromTo(c, { f: 0 }, { f: 128, duration: DUR1, ease: "none", onUpdate: function () { mostrar(c.f); } }, "corre");
+      tl.addLabel("tope");
+      tl.to("#cAcc", { strokeDashoffset: 0, duration: DUR2, ease: "none" }, "tope");
+      recorrer(tl, $("#v2"), DUR2, "tope");
+      tl.to("#heroe", { x: 686, duration: DUR2, ease: "none" }, "tope");
+      tl.fromTo("#r128", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 }, "tope");
+      TEO.pegar(tl, "#nAcc");
+      TEO.pegar(tl, "#nTope", "-=.2");
+    },
+    function (tl) { // 3. frenar
+      tl.to([punto, cont], { autoAlpha: 0, duration: .25 });
+      TEO.trazar(tl, "#cFreno", { duration: .5 });
+      TEO.pegar(tl, "#nFreno", "-=.1");
+    },
+    function (tl) { // 4. soltar: la fricción
+      tl.fromTo("#cFric", { autoAlpha: 0, clipPath: "inset(0 100% 0 0)" }, { autoAlpha: 1, clipPath: "inset(0 0% 0 0)", duration: 1.2, ease: "none" });
+      TEO.pegar(tl, "#nFric", "-=.2");
+    },
+    function (tl) { // 5. tus números
+      tl.to("#grafica", { opacity: .12, duration: .5 });
+      tl.to("#notas", { autoAlpha: 0, duration: .4 }, "<");
+      tl.fromTo("#numeros", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, ["#fSonic", "#fTu"]);
+      tl.fromTo("#conv", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4 });
+    }
+  ], {
+    preparar: function () {
+      ["aX", "aY"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); });
+      var L = $("#cAcc").getTotalLength();
+      gsap.set("#cAcc", { strokeDasharray: L + " " + L, strokeDashoffset: L });
+      gsap.set(["#lTope", "#r128", "#cFric", punto, cont, "#numeros"], { autoAlpha: 0 });   // #cFreno lo oculta TEO.trazar
+    },
+    textoFin: "A la siguiente lámina"
+  });
+})();
+</script>
+</body>
+</html>
