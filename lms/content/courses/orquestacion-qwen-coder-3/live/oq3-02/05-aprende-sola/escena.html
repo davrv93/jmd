@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aprende sola · Orquestación con Qwen Coder</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  .teo-ceja, .nt .k, .cita small, .rot, .pastilla { text-transform: none !important; letter-spacing: .02em !important; }
+  .nt.oro { background: #E9C25A; box-shadow: 0 0 0 2px #8A6A00 inset, var(--sombra); }
+  .nt .t.mono { hyphens: none; overflow-wrap: anywhere; }
+  .nt .t small { display: block; font-weight: 500; opacity: .85; margin-top: .2em; }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .sello.ok { color: #1F7A3E; border-color: #1F7A3E; }
+  .rot { font-size: 14px; }
+
+  #g1 .t, #g2 .t, #v2 .t { font-size: .9em; font-weight: 600; }
+  #lRes { font-size: 1.9cqw; }
+  .nt .sello { font-size: .85em; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Sesión 2 · Reglas aprendidas y memoria del revisor</p>
+    <h1>Cada error corregido <em>deja una regla</em></h1>
+  </header>
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Arriba, el ciclo de aprendizaje: una verificación falla, luego queda en verde, Claude Haiku escribe una regla y la regla entra en el prompt de las tareas siguientes. Debajo, las dos reglas reales: usar String(v) tras verificar null y nunca typeof v distinto de string; y usar los nombres exactos al desestructurar. Resultado: 4 de 4 módulos al primer intento. Abajo, la memoria del revisor: marcaba la misma falsa alarma en cada corrida; se anota no marques X porque el enunciado dice Y, y las observaciones bajan a cero.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="b1" class="trazo flecha" d="M188 50 L212 50"/>
+        <path id="b2" class="trazo flecha" d="M388 50 L412 50"/>
+        <path id="b3" class="trazo flecha" d="M588 50 L612 50"/>
+        <path id="b4" class="trazo flecha" d="M236 362 L262 362"/>
+        <path id="b5" class="trazo flecha" d="M590 362 L618 362"/>
+        <path id="linea" class="trazo fino guion" d="M10 286 L790 286"/>
+      </svg>
+      <div class="nt hot" id="c1" data-r="-1" style="left:1%; top:3%; width:22%"><span class="k">1</span><span class="t">Una verificación falla</span></div>
+      <div class="nt info" id="c2" data-r="1" style="left:27%; top:3%; width:22%"><span class="k">2</span><span class="t">Se repara y queda en verde</span></div>
+      <div class="nt cmd" id="c3" data-r="-1" style="left:52%; top:3%; width:21.5%"><span class="k">3 · Claude Haiku</span><span class="t">Escribe la regla</span></div>
+      <div class="nt pol" id="c4" data-r="1" style="left:77%; top:3%; width:22%"><span class="k">4</span><span class="t">Entra al prompt de lo que sigue</span></div>
+      <div class="nt ficha k" id="g1" data-r="-.5" style="left:1%; top:22%; width:48%"><span class="k">Regla real · de excel</span><span class="t">Para convertir a string, usa String(v) tras verificar null; nunca typeof v !== 'string', que descarta números.</span></div>
+      <div class="nt ficha k" id="g2" data-r=".5" style="left:51%; top:22%; width:48%"><span class="k">Regla real · de ventas</span><span class="t">Al desestructurar, usa los nombres exactos de las propiedades; nunca otros nombres, que devuelven undefined y rompen cálculos.</span></div>
+      <p class="pastilla" id="lRes" style="left:24%; top:47%; width:52%">4 de 4 módulos al primer intento</p>
+      <div class="nt hot" id="v1" data-r="-1" style="left:1%; top:62%; width:28%"><span class="k">Revisor · Qwen</span><span class="t">La misma falsa alarma, corrida tras corrida</span><span class="sello solo-anim" id="sV">otra vez</span></div>
+      <div class="nt ficha p" id="v2" data-r=".6" style="left:33%; top:58%; width:40%"><span class="k">Memoria del revisor · sesion</span><span class="t">No marques que validarLogin deba devolver «Datos incompletos» cuando usuarios no es un arreglo: el enunciado dice que devuelve «Usuario o contraseña incorrectos».</span></div>
+      <div class="nt info" id="v3" data-r="-1" style="left:78%; top:63%; width:21%"><span class="k">Resultado</span><span class="t">0 observaciones</span></div>
+    </figure>
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Un error que se corrige</b><p>Una verificación falla, la tarea se repara y queda en verde. Ese par, el error y su arreglo, vale oro: dice exactamente qué no sabía el modelo.</p></li>
+        <li><b>Haiku lo convierte en regla</b><p>Claude Haiku escribe una regla con la forma «Para X, usa A; nunca B». Sin valores de la prueba: así el oráculo sigue siendo independiente y no se filtra.</p></li>
+        <li><b>La regla viaja</b><p>La regla entra en el prompt de todas las tareas siguientes. Estas son las dos que se escribieron solas el 19-11-2026, de excel y de ventas.</p></li>
+        <li><b>Resultado</b><p>Con las reglas puestas, los 4 módulos pasaron al primer intento. Lo que costó una reparación en un módulo ya no se repite en el siguiente.</p></li>
+        <li><b>El revisor también se equivoca</b><p>El revisor marcaba la misma falsa alarma corrida tras corrida: que validarLogin debía devolver «Datos incompletos» si usuarios no es un arreglo. El enunciado dice lo contrario.</p></li>
+        <li><b>Memoria del revisor</b><p>Ahora se anota «No marques X: el enunciado dice Y». El revisor la lee antes de revisar y no la repite: 0 observaciones.</p></li>
+      </ol>
+    </aside>
+  </div>
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Fuente: trabajo propio de JMD Learning, 18 y 19-11-2026. Orquestador en Node sin dependencias; Qwen2.5-Coder 14b en una MacBook M4 Pro de 24 GB (Ollama al inicio, luego llama.cpp).</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+
+  var $ = TEO.$, puntas = {};
+  function puntasDe(ids) { ids.forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); }); }
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .5 }, pos);
+    tl.from(puntas[id], { autoAlpha: 0, duration: .2 }, "-=.1");
+  }
+  function sello(tl, sel, pos) {
+    return tl.fromTo(sel, { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, pos);
+  }
+
+  TEO.escena([
+    function (tl) { TEO.pegar(tl, "#c1"); flecha(tl, "b1"); TEO.pegar(tl, "#c2"); },
+    function (tl) { flecha(tl, "b2"); TEO.pegar(tl, "#c3"); },
+    function (tl) { flecha(tl, "b3"); TEO.pegar(tl, "#c4"); TEO.pegar(tl, ["#g1", "#g2"]); },
+    function (tl) { tl.from("#lRes", { autoAlpha: 0, scale: .8, duration: .45, ease: "back.out(2)" }); },
+    function (tl) { TEO.trazar(tl, "#linea", { duration: .8 }); TEO.pegar(tl, "#v1"); sello(tl, "#sV", "+=.2"); },
+    function (tl) { flecha(tl, "b4"); TEO.pegar(tl, "#v2"); flecha(tl, "b5"); TEO.pegar(tl, "#v3"); tl.to("#sV", { autoAlpha: 0, duration: .3 }); }
+  ], {
+    preparar: function () { puntasDe(["b1", "b2", "b3", "b4", "b5"]); gsap.set("#sV", { autoAlpha: 0 }); },
+    textoFin: "Fin del aprendizaje"
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Qué mejora lo arregló? · Orquestación con Qwen Coder</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  .jg { max-width: 1240px; min-height: 100vh; margin: 0 auto; padding: 4vh 4vw; display: grid; gap: 2.4vh; align-content: center; }
+  .ceja { font: 700 .75em/1 var(--mono); color: var(--acento); margin: 0; }
+  h1 { margin: 0; font: 600 clamp(1.6em, 3.2vw, 2.7em)/1.08 var(--serif); }
+  h1 em { color: var(--acento); }
+  .sub { margin: 0; color: var(--gris); max-width: 46em; }
+  .tablero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2.4vw; align-items: start; }
+  .caso { background: var(--n-act); color: var(--n-tinta); box-shadow: var(--sombra); padding: 1.1em 1.2em 1.3em; transform: rotate(-.6deg); display: grid; gap: .7em; min-height: 13em; align-content: start; }
+  .num { margin: 0; font: 700 .72em/1 var(--mono); opacity: .8; }
+  .prob { margin: 0; font: 650 1.25em/1.3 var(--serif); }
+  .resp { margin: 0; font-size: .95em; min-height: 3em; }
+  .resp b { display: block; font: 800 .8em/1.2 var(--mono); margin-bottom: .2em; }
+  .resp.bien b { color: #1F7A3E; } .resp.mal b { color: #B3261E; }
+  .ops { display: grid; gap: .5em; }
+  .op { font: inherit; font-weight: 650; text-align: left; border-radius: 10px; padding: .6em .9em; border: 2px solid var(--linea); background: var(--papel2); color: var(--tinta); cursor: pointer; transition: background .2s, border-color .2s, transform .15s; }
+  .op:hover:not([disabled]) { background: var(--papel3); transform: translateX(3px); }
+  .op:focus-visible, .btn:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  .op.bien { background: #B9DFA3; border-color: #1F7A3E; color: #16181D; }
+  .op.mal { background: #F2C4D8; border-color: #B3261E; color: #16181D; }
+  .op[disabled] { cursor: default; }
+  .pie { display: flex; gap: .8em; align-items: center; flex-wrap: wrap; }
+  .marcador { font: 700 .9em var(--mono); color: var(--gris); margin-right: auto; }
+  .btn { font: 700 .9em var(--sans); border-radius: 999px; padding: .6em 1.2em; border: 1px solid var(--linea); background: var(--papel2); color: var(--tinta); cursor: pointer; }
+  .btn.pri { background: var(--tinta); color: var(--papel); border-color: transparent; }
+  .btn[disabled] { opacity: .38; cursor: default; }
+  .sinjs { margin: 0; padding-left: 1.2em; display: grid; gap: .4em; }
+  html.js .sinjs-caja { display: none; }
+  html:not(.js) .tablero, html:not(.js) .pie { display: none; }
+  @media (prefers-reduced-motion: reduce) { .op { transition: none; } .op:hover:not([disabled]) { transform: none; } }
+  @media (max-width: 860px) { .tablero { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add("js");</script>
+<main class="jg">
+  <p class="ceja">Práctica · 7 problemas reales de las corridas del 18 y 19-11-2026</p>
+  <h1>¿Qué mejora <em>lo arregló</em>?</h1>
+  <p class="sub">Lee el problema y elige la mejora que lo resolvió. Si fallas, te decimos qué hace esa mejora y vuelves a intentar. Cuenta solo el primer intento.</p>
+  <section class="tablero">
+    <div class="caso">
+      <p class="num" id="num">Problema 1 de 7</p>
+      <p class="prob" id="prob"></p>
+      <p class="resp" id="resp" aria-live="polite"></p>
+    </div>
+    <div class="ops" id="ops" role="group" aria-label="Mejoras"></div>
+  </section>
+  <div class="pie">
+    <span class="marcador" id="marcador">0 al primer intento</span>
+    <button type="button" class="btn" id="otra">Empezar de nuevo</button>
+    <button type="button" class="btn pri" id="sigc" disabled>Siguiente problema →</button>
+  </div>
+  <div class="sinjs-caja">
+    <ol class="sinjs">
+      <li>Para corregir una sola línea, Qwen reescribía el archivo entero: unos 500 tokens por reparación. → <b>Parches BUSCAR/REEMPLAZAR</b></li>
+      <li>El 0 salía como celda vacía en el CSV, y los ejemplos del enunciado no lo notaron. → <b>Oráculo oculto</b></li>
+      <li>El revisor anotaba en cada corrida que validarLogin debía devolver «Datos incompletos», cuando el enunciado dice otra cosa. → <b>Memoria del revisor</b></li>
+      <li>Una reparación fallaba, se volvía a intentar y volvía a fallar, sin final. → <b>Escalado sin ciclos</b></li>
+      <li>El 14b generaba unos 12 tok/s, lejos del techo físico de unos 30. → <b>Decodificación especulativa</b></li>
+      <li>Tras arreglar la desestructuración en un módulo, el módulo siguiente podía caer en lo mismo. → <b>Reglas aprendidas</b></li>
+      <li>Con el cargador puesto, la GPU rendía 14–16 tok/s en lugar de 33. → <b>Quitar el bajo consumo</b></li>
+    </ol>
+  </div>
+</main>
+<script>
+(function () {
+  var MEJORAS = [
+    { id: "esp", nombre: "Decodificación especulativa", hace: "acelera la generación: no corrige ningún error" },
+    { id: "par", nombre: "Parches BUSCAR/REEMPLAZAR", hace: "reduce los tokens de cada reparación" },
+    { id: "ora", nombre: "Oráculo oculto", hace: "detecta errores con pruebas que nadie ve" },
+    { id: "esc", nombre: "Escalado sin ciclos", hace: "pone tope a las reparaciones: 1 local, 1 con Claude y se corta" },
+    { id: "reg", nombre: "Reglas aprendidas", hace: "evita que el mismo error vuelva en la tarea siguiente" },
+    { id: "mem", nombre: "Memoria del revisor", hace: "evita que el revisor repita una falsa alarma" },
+    { id: "baj", nombre: "Quitar el bajo consumo", hace: "devuelve a la GPU su velocidad normal" }
+  ];
+  var CASOS = [
+    { texto: "Para corregir una sola línea, Qwen reescribía el archivo entero: unos 500 tokens por reparación.", ok: "par", por: "Con parches pide solo lo que cambia: entre 60 y 220 tokens." },
+    { texto: "El 0 salía como celda vacía en el CSV, y los ejemplos del enunciado no lo notaron.", ok: "ora", por: "Una de las 17 pruebas ocultas tenía un 0. Los ejemplos, no." },
+    { texto: "El revisor anotaba en cada corrida que validarLogin debía devolver «Datos incompletos», cuando el enunciado dice otra cosa.", ok: "mem", por: "Se anota «No marques X: el enunciado dice Y» y la observación desaparece." },
+    { texto: "Una reparación fallaba, se volvía a intentar y volvía a fallar, sin final.", ok: "esc", por: "Una reparación local, una con Claude y se corta: nunca hay un bucle." },
+    { texto: "El 14b generaba unos 12 tok/s, lejos del techo físico de unos 30.", ok: "esp", por: "El 0.5b adivina y el 14b confirma en una pasada: ×2,2 con el mismo modelo." },
+    { texto: "Tras arreglar la desestructuración en un módulo, el módulo siguiente podía caer en lo mismo.", ok: "reg", por: "Haiku escribió «usa los nombres exactos de las propiedades» y entró al prompt de lo que seguía." },
+    { texto: "Con el cargador puesto, la GPU rendía 14–16 tok/s en lugar de 33.", ok: "baj", por: "La Mac tenía activado el modo de bajo consumo. Al quitarlo, la corrida 7 volvió a 32,3 tok/s." }
+  ];
+  var nombre = {}; MEJORAS.forEach(function (m) { nombre[m.id] = m; });
+  var $ = function (id) { return document.getElementById(id); };
+  var i = 0, aciertos = 0, primero = true, resuelto = false;
+  MEJORAS.forEach(function (m) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "op"; b.textContent = m.nombre; b.setAttribute("data-id", m.id);
+    b.addEventListener("click", function () { elegir(m.id, b); });
+    $("ops").appendChild(b);
+  });
+  function botones() { return Array.prototype.slice.call(document.querySelectorAll(".op")); }
+  function mostrar() {
+    var c = CASOS[i]; primero = true; resuelto = false;
+    $("num").textContent = "Problema " + (i + 1) + " de " + CASOS.length;
+    $("prob").textContent = c.texto;
+    $("resp").className = "resp"; $("resp").innerHTML = "";
+    botones().forEach(function (b) { b.className = "op"; b.disabled = false; });
+    $("sigc").disabled = true;
+    $("sigc").textContent = i < CASOS.length - 1 ? "Siguiente problema →" : "Ver resultado";
+  }
+  function escribir(clase, titulo, texto) {
+    var r = $("resp"); r.className = "resp " + clase; r.innerHTML = "";
+    var b = document.createElement("b"); b.textContent = titulo; r.appendChild(b);
+    r.appendChild(document.createTextNode(texto));
+  }
+  function elegir(id, b) {
+    if (resuelto) return;
+    var c = CASOS[i];
+    if (id === c.ok) {
+      resuelto = true; if (primero) aciertos++;
+      b.classList.add("bien");
+      botones().forEach(function (x) { x.disabled = true; });
+      escribir("bien", primero ? "Correcto, al primer intento" : "Correcto", c.por);
+      $("sigc").disabled = false; $("sigc").focus();
+    } else {
+      primero = false; b.classList.add("mal"); b.disabled = true;
+      escribir("mal", "Esa no fue", "«" + nombre[id].nombre + "» " + nombre[id].hace + ". Prueba otra.");
+    }
+    $("marcador").textContent = aciertos + " al primer intento";
+  }
+  $("sigc").addEventListener("click", function () {
+    if (i < CASOS.length - 1) { i++; mostrar(); return; }
+    $("num").textContent = "Resultado";
+    $("prob").textContent = aciertos + " de " + CASOS.length + " al primer intento.";
+    escribir("bien", "Siete mejoras, siete problemas distintos", "Ninguna sola bastaba: la corrida bajó de 595 a 155 segundos porque se sumaron todas, y el oráculo cuidó que la calidad no bajara.");
+    $("sigc").disabled = true;
+  });
+  $("otra").addEventListener("click", function () { i = 0; aciertos = 0; $("marcador").textContent = "0 al primer intento"; mostrar(); });
+  mostrar();
+})();
+</script>
+</body>
+</html>

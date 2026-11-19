@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reparar sin ciclos · Orquestación con Qwen Coder</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  .teo-ceja, .nt .k, .cita small, .rot, .pastilla { text-transform: none !important; letter-spacing: .02em !important; }
+  .nt.oro { background: #E9C25A; box-shadow: 0 0 0 2px #8A6A00 inset, var(--sombra); }
+  .nt .t.mono { hyphens: none; overflow-wrap: anywhere; }
+  .nt .t small { display: block; font-weight: 500; opacity: .85; margin-top: .2em; }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .sello.ok { color: #1F7A3E; border-color: #1F7A3E; }
+  .rot { font-size: 14px; }
+
+  #nReg .t small { font-size: .9em; font-weight: 600; opacity: 1; margin-top: .25em; }
+  #nPar .t.mono { font-size: .88em; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Sesión 2 · Parches y escalado</p>
+    <h1>Una reparación local, una con Claude <em>y se corta</em></h1>
+  </header>
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Flujo de reparación: la verificación falla y Qwen repara en local con un parche BUSCAR y REEMPLAZAR. Si pasa, la tarea queda lista. Si falla, se hace una sola reparación con Claude, que usa claude -p sin herramientas. Si tampoco pasa, se corta: no hay tercer intento. Abajo, cómo se ve un parche y qué pasa si no calza.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="a1" class="trazo flecha" d="M140 240 L172 240"/>
+        <path id="a2" class="trazo flecha" d="M316 240 L370 240"/>
+        <path id="a3" class="trazo flecha" d="M246 204 C246 110 300 44 370 44"/>
+        <path id="a4" class="trazo flecha" d="M456 204 L456 78"/>
+        <path id="a5" class="trazo flecha" d="M540 240 L596 240"/>
+        <text id="t3" class="rot" x="196" y="128">pasa</text>
+        <text id="t2" class="rot" x="322" y="228">falla</text>
+        <text id="t4" class="rot" x="466" y="146">pasa</text>
+        <text id="t5" class="rot" x="547" y="228">falla</text>
+      </svg>
+      <div class="nt hot" id="n0" data-r="-1" style="left:1%; top:40%; width:16%"><span class="k">Verificación</span><span class="t">Falla</span></div>
+      <div class="nt act" id="n1" data-r="1" style="left:22%; top:40%; width:17%"><span class="k">1 · Qwen, en local</span><span class="t">Repara con un parche</span></div>
+      <div class="nt info" id="nOk" data-r="-.6" style="left:47%; top:3%; width:20%"><span class="k">Tarea</span><span class="t">Lista</span></div>
+      <div class="nt cmd" id="n3" data-r=".8" style="left:47%; top:40%; width:20%"><span class="k">2 · Claude, una vez</span><span class="t">claude -p, sin herramientas<small>parche de ~200 tokens en ~6 s</small></span></div>
+      <div class="nt fantasma" id="n4" data-r="-1" style="left:75%; top:40%; width:23.5%"><span class="k">3 · Se corta</span><span class="t">Queda marcada; no hay tercer intento</span></div>
+      <div class="nt ficha s" id="nPar" data-r="-.5" style="left:1%; top:66%; width:45%"><span class="k">Así se pide el parche</span><span class="t mono">&lt;&lt;&lt;&lt;&lt;&lt;&lt; BUSCAR<br>(líneas tal cual del archivo)<br>=======<br>(las líneas nuevas)<br>&gt;&gt;&gt;&gt;&gt;&gt;&gt; FIN</span></div>
+      <div class="nt ficha p" id="nReg" data-r=".5" style="left:50%; top:66%; width:48%"><span class="k">Reglas del parche</span><span class="t"><small>60–220 tokens en vez de ~500 del archivo entero</small><small>Si no calza o es ambiguo, se pide el archivo completo</small><small>Qwen lo envolvía en ```js: ahora se quitan esas cercas</small></span></div>
+    </figure>
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Falla la verificación</b><p>Una prueba no pasa. Antes, Qwen reescribía el archivo entero para corregir una línea: unos 500 tokens cada vez.</p></li>
+        <li><b>Reparar con un parche</b><p>Ahora devuelve solo lo que cambia, en bloques BUSCAR y REEMPLAZAR: entre 60 y 220 tokens. Mismos tok/s, mucho menos que generar.</p></li>
+        <li><b>Si el parche no calza</b><p>Si el texto a buscar no está o aparece dos veces, no se aplica a medias: se pide el archivo completo. Y un hallazgo: los parches de Qwen fallaban porque los envolvía en ```js. Ahora esas cercas se quitan antes de aplicar.</p></li>
+        <li><b>Si pasa, lista</b><p>La tarea vuelve a verificarse y, si pasa, queda lista. En la mayoría de los casos, aquí termina.</p></li>
+        <li><b>Si falla, UNA vez con Claude</b><p>Tras una reparación local fallida, una sola reparación con Claude, por <code>claude -p</code> y sin herramientas. En la corrida con Ollama arregló con un parche de unos 200 tokens en unos 6 segundos.</p></li>
+        <li><b>Si tampoco, se corta</b><p>No hay tercer intento ni bucle. La tarea queda marcada y el oráculo impide que llegue a «listo». Un ciclo infinito gasta tiempo y no garantiza nada.</p></li>
+      </ol>
+    </aside>
+  </div>
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Fuente: trabajo propio de JMD Learning, 18 y 19-11-2026. Orquestador en Node sin dependencias; Qwen2.5-Coder 14b en una MacBook M4 Pro de 24 GB (Ollama al inicio, luego llama.cpp).</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+
+  var $ = TEO.$, puntas = {};
+  function puntasDe(ids) { ids.forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); }); }
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .5 }, pos);
+    tl.from(puntas[id], { autoAlpha: 0, duration: .2 }, "-=.1");
+  }
+  function sello(tl, sel, pos) {
+    return tl.fromTo(sel, { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, pos);
+  }
+
+  TEO.escena([
+    function (tl) { TEO.pegar(tl, "#n0"); flecha(tl, "a1"); TEO.pegar(tl, "#n1"); },
+    function (tl) { TEO.pegar(tl, "#nPar"); },
+    function (tl) { TEO.pegar(tl, "#nReg"); },
+    function (tl) { flecha(tl, "a3"); tl.from("#t3", { autoAlpha: 0, duration: .3 }); TEO.pegar(tl, "#nOk"); },
+    function (tl) {
+      tl.to(["#nPar", "#nReg"], { opacity: .35, duration: .4 });
+      flecha(tl, "a2"); tl.from("#t2", { autoAlpha: 0, duration: .3 }); TEO.pegar(tl, "#n3");
+      flecha(tl, "a4"); tl.from("#t4", { autoAlpha: 0, duration: .3 });
+    },
+    function (tl) { flecha(tl, "a5"); tl.from("#t5", { autoAlpha: 0, duration: .3 }); TEO.pegar(tl, "#n4"); }
+  ], {
+    preparar: function () { puntasDe(["a1", "a2", "a3", "a4", "a5"]); },
+    textoFin: "Fin de la reparación"
+  });
+})();
+</script>
+</body>
+</html>
