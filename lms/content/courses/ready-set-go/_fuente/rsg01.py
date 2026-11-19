@@ -3,7 +3,7 @@
 
 Secuencia (94 min de 90): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano) · 01b historia por décadas · 01c los que
 cambiaron las reglas · 02 Forja: tu héroe · 03 de la mecánica
-a la tecnología · 04 movimiento y choques · 05 hoja de sprites · 06 elige tu juego · 07 cierre.
+a la tecnología · 04 movimiento y choques · 04b cuatro perseguidores (Pac-Man) · 05 hoja de sprites · 06 elige tu juego · 07 cierre.
 Las escenas 01 y 05/heroe.png no se generan aquí. Reglas del modo LIVE: sin recursos externos, menos de 300 elementos
 y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion. Nada usa <form>: el marco no lo permite.
 El campo «paso» va vacío: la lección rsg-01 no define un ciclo de pasos, y el LMS rechaza un paso que no exista ahí.
@@ -93,6 +93,7 @@ escena("00-bienvenida", "Bienvenida: hoy tu héroe se mueve", "experiencia", "ve
   ["Tu héroe", "15 min", "En Forja describes a tu héroe con una frase, lo afinas y lo publicas en la galería de la clase."],
   ["Mecánica → tecnología", "10 min", "Cada cosa que quieres que pase tiene una tecnología que la resuelve. Aprendes a pedirla con un buen prompt."],
   ["Movimiento y choques", "15 min", "Gravedad, salto y paredes: mueves los números y ves qué cambia. Construyes tu primer nivel con clics."],
+  ["Cuatro perseguidores", "10 min", "Así «pensaban» los fantasmas de Pac-Man: cada uno sigue una regla. Programas las tuyas y ves su objetivo y su camino."],
   ["Animación", "10 min", "Tu héroe camina porque pasan muchos dibujos muy rápido. Abres una hoja de sprites y la controlas."],
   ["Tu juego", "15 min", "Eliges fútbol o plataformas, lo juegas con tu héroe, miras sus algoritmos con rayos X y te lo llevas."],
   ["Cierre", "5 min", "Revisas lo que ya sabes hacer y qué traer para la próxima clase."]
@@ -466,6 +467,174 @@ $("#reinicio").onclick = reiniciar; [G, S, V].forEach(function (i) { i.oninput =
 leer();""",
        css="#sim { width: 100%; height: auto; aspect-ratio: 16 / 9; display: block; margin: .5em 0; border-radius: .7em; background: var(--s2); border: 1px solid var(--line2); cursor: crosshair; touch-action: none; }",
        comentario="Interacción: simulador propio en lienzo (gravedad, salto, velocidad y choque con celdas). Clic pone o quita muros. Tres retos que se marcan solos.")
+
+# ---------------------------------------------------------------- 04b · cuatro perseguidores
+escena("04b-cuatro-perseguidores", "Cuatro perseguidores: reglas que parecen inteligencia", "experimentacion", "", 10, """
+    <h1 class="esc-titulo a-in">Cuatro perseguidores: <em>reglas que parecen inteligencia</em></h1>
+    <div class="x-dos">
+      <section class="esc-card a-in" style="--d:.15s">
+        <span class="x-et">Laberinto de reglas · <span class="x-k">←</span> <span class="x-k">↑</span> <span class="x-k">→</span> <span class="x-k">↓</span> moverte · la cruz es el objetivo de cada perseguidor y la línea, su camino</span>
+        <canvas id="lab" width="608" height="352" tabindex="0" aria-label="Laberinto: tu héroe y cuatro perseguidores que siguen reglas"></canvas>
+        <div class="x-fila"><button class="x-btn" data-d="u" type="button" aria-label="Arriba">▲</button><button class="x-btn" data-d="l" type="button" aria-label="Izquierda">◀</button><button class="x-btn" data-d="d" type="button" aria-label="Abajo">▼</button><button class="x-btn" data-d="r" type="button" aria-label="Derecha">▶</button>
+          <button class="x-btn" id="modo" type="button" aria-pressed="false">Modo: perseguir</button><button class="x-btn" id="ver" type="button" aria-pressed="true">Objetivos y caminos</button><button class="x-btn" id="reset" type="button">Reiniciar</button></div>
+        <p class="x-det" id="marcador" aria-live="polite">Pulsa una flecha para empezar. Antes de moverte, mira a dónde apunta cada uno.</p>
+      </section>
+      <div class="x-col">
+        <section class="esc-card a-in" style="--d:.25s"><span class="x-et">Así «pensaban» los fantasmas de Pac-Man (Namco, 1980)</span>
+          <p class="pm-intro">Ninguno piensa. En cada cruce, cada uno toma la salida que lo deja <b>más cerca de su celda objetivo</b>, en línea recta, y nunca da media vuelta. Solo cambia <b>cómo calcula su objetivo</b>:</p>
+          <ul class="esc-lista pm-reglas">
+            <li><span><i class="pm-p" style="background:#ff4d4d"></i><b>Rojo · el cazador:</b> tu celda.</span></li>
+            <li><span><i class="pm-p" style="background:#ff7ad9"></i><b>Rosa · la emboscada:</b> 4 celdas delante de ti.</span></li>
+            <li><span><i class="pm-p" style="background:#4de1ff"></i><b>Celeste · la pinza:</b> mira 2 celdas delante de ti, traza la flecha desde el rojo hasta ahí y la duplica.</span></li>
+            <li><span><i class="pm-p" style="background:#ffb347"></i><b>Naranja · el indeciso:</b> lejos (más de 8 celdas) te persigue; cerca, huye a su esquina.</span></li>
+          </ul>
+          <p class="pm-fuente">Diseño de Toru Iwatani. Reglas documentadas en «The Pac-Man Dossier» (Jamey Pittman). El laberinto y los personajes de aquí son propios.</p>
+        </section>
+        <section class="esc-card a-in" style="--d:.35s"><span class="x-et">Programa a tus perseguidores</span>
+          <div id="reglas" role="group" aria-label="Reglas de los perseguidores"></div>
+          <div class="x-fila" style="margin-top:.4em"><button class="x-btn" id="orig" type="button">Volver a las reglas de 1980</button></div>
+        </section>
+        <section class="esc-card a-in" style="--d:.45s"><span class="x-et">Así se escribe en tu juego (rivales.js)</span><pre class="x-cod" id="cod"></pre></section>
+        <section class="esc-card a-in" style="--d:.55s"><span class="x-et">Retos</span><div class="x-col" id="retos" role="group" aria-label="Retos" style="margin-top:.4em"></div></section>
+      </div>
+    </div>""",
+       "Pulsa «Lo logré» cuando hayas cumplido los tres retos",
+       js=r"""var M = ["###################", "#........#........#", "#.##.###.#.###.##.#", "#.................#", "#.##.#.#####.#.##.#", "#....#...#...#....#", "####.###.#.###.####", "#.................#", "#.##.###.#.###.##.#", "#........#........#", "###################"];
+var C = 32, COLS = 19, FILAS = 11, cv = $("#lab"), x = cv.getContext("2d");
+var DIR = { u: [0, -1], l: [-1, 0], d: [0, 1], r: [1, 0] }, ORDEN = ["u", "l", "d", "r"], OPUESTA = { u: "d", d: "u", l: "r", r: "l" };
+var TIPOS = [["celda", "tu celda"], ["delante", "N celdas delante de ti"], ["pinza", "pinza con el rojo (N delante)"], ["indeciso", "te persigue si está a más de N"], ["esquina", "se queda en su esquina"], ["azar", "al azar"]];
+var CON_N = { delante: 1, pinza: 1, indeciso: 1 };
+var PERS = [
+  { id: "rojo", nombre: "Rojo", color: "#ff4d4d", esq: [COLS - 1, -1], ini: [8, 3], orig: { tipo: "celda", n: 0 } },
+  { id: "rosa", nombre: "Rosa", color: "#ff7ad9", esq: [0, -1], ini: [9, 3], orig: { tipo: "delante", n: 4 } },
+  { id: "celeste", nombre: "Celeste", color: "#4de1ff", esq: [COLS - 1, FILAS], ini: [10, 3], orig: { tipo: "pinza", n: 2 } },
+  { id: "naranja", nombre: "Naranja", color: "#ffb347", esq: [0, FILAS], ini: [11, 3], orig: { tipo: "indeciso", n: 8 } }
+];
+var J, corriendo = false, modo = "perseguir", verGuias = true, atrapado = 0, vivoDesde = 0, record = 0, cumplidos = {}, quiere = "l";
+function libre(c, f) { return f >= 0 && f < FILAS && c >= 0 && c < COLS && M[f][c] !== "#"; }
+function d2(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1]; return dx * dx + dy * dy; }
+function reiniciar() {
+  J = { c: 9, f: 9, pc: 9, pf: 9, dir: "l" }; quiere = "l"; corriendo = false; vivoDesde = 0;
+  PERS.forEach(function (p) { p.c = p.ini[0]; p.f = p.ini[1]; p.pc = p.c; p.pf = p.f; p.dir = "l"; if (!p.regla) p.regla = { tipo: p.orig.tipo, n: p.orig.n }; });
+}
+function objetivo(p) {
+  if (modo === "dispersarse") return p.esq;
+  var r = p.regla, d = DIR[J.dir], yo = [J.c, J.f];
+  if (r.tipo === "celda") return yo;
+  if (r.tipo === "delante") return [J.c + d[0] * r.n, J.f + d[1] * r.n];
+  if (r.tipo === "pinza") { var t = [J.c + d[0] * r.n, J.f + d[1] * r.n], R = PERS[0]; return [2 * t[0] - R.c, 2 * t[1] - R.f]; }
+  if (r.tipo === "indeciso") return d2([p.c, p.f], yo) > r.n * r.n ? yo : p.esq;
+  if (r.tipo === "azar") { if (!p.azar || (p.c === p.azar[0] && p.f === p.azar[1]) || Math.random() < .08) p.azar = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * FILAS)]; return p.azar; }
+  return p.esq;
+}
+// En cada celda: la salida (sin media vuelta) que deja más cerca el objetivo; empate → arriba, izquierda, abajo, derecha.
+function elegir(c, f, dir, obj) {
+  var mejor = null, md = Infinity;
+  ORDEN.forEach(function (k) { if (k === OPUESTA[dir]) return; var n = [c + DIR[k][0], f + DIR[k][1]]; if (!libre(n[0], n[1])) return; var dd = d2(n, obj); if (dd < md) { md = dd; mejor = k; } });
+  return mejor || OPUESTA[dir];
+}
+function camino(p, obj) {
+  var c = p.c, f = p.f, dir = p.dir, pts = [[c, f]];
+  for (var i = 0; i < 14; i++) { dir = elegir(c, f, dir, obj); c += DIR[dir][0]; f += DIR[dir][1]; pts.push([c, f]); if (c === obj[0] && f === obj[1]) break; }
+  return pts;
+}
+function pasoJugador() {
+  J.pc = J.c; J.pf = J.f;
+  if (libre(J.c + DIR[quiere][0], J.f + DIR[quiere][1])) J.dir = quiere;
+  if (libre(J.c + DIR[J.dir][0], J.f + DIR[J.dir][1])) { J.c += DIR[J.dir][0]; J.f += DIR[J.dir][1]; }
+}
+function pasoPerseguidores() {
+  PERS.forEach(function (p) { p.pc = p.c; p.pf = p.f; p.dir = elegir(p.c, p.f, p.dir, objetivo(p)); p.c += DIR[p.dir][0]; p.f += DIR[p.dir][1]; });
+}
+function revisarCaptura(t) {
+  var hit = PERS.some(function (p) { return (p.c === J.c && p.f === J.f) || (p.c === J.pc && p.f === J.pf && p.pc === J.c && p.pf === J.f); });
+  if (!hit) return;
+  atrapado++; var s = (t - vivoDesde) / 1000; record = Math.max(record, s);
+  reiniciar(); marcador("¡Te atraparon! Duraste " + s.toFixed(1) + " s. Pulsa una flecha para seguir.");
+}
+function original() { return PERS.every(function (p) { return p.regla.tipo === p.orig.tipo && +p.regla.n === p.orig.n; }); }
+function marcador(t) { $("#marcador").textContent = t + "  ·  Atrapado " + atrapado + " " + (atrapado === 1 ? "vez" : "veces") + "  ·  Récord " + record.toFixed(1) + " s"; }
+function reto(i) { if (cumplidos[i]) return; cumplidos[i] = 1; var b = $$("#retos .x-it")[i]; if (b) b.setAttribute("aria-checked", "true"); }
+["Pon a los 4 con la regla «tu celda»: ¿por qué ahora se estorban y van en fila?", "Con las reglas de 1980, sobrevive 20 segundos", "Cambia el modo a «dispersarse»: ¿a dónde se va cada uno?"].forEach(function (t) { var b = el("div", "x-it"); b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); b.appendChild(el("span", null, t)); $("#retos").appendChild(b); });
+function codigo() {
+  var L = ["<span class=\"c\">// en cada cruce: la salida (sin media vuelta) que deja más cerca el objetivo</span>"];
+  PERS.forEach(function (p) {
+    var r = p.regla, v = p.id, e;
+    if (r.tipo === "celda") e = "jugador.celda";
+    else if (r.tipo === "delante") e = "delante(jugador, <span class=\"k\">" + r.n + "</span>)";
+    else if (r.tipo === "pinza") e = "doble(delante(jugador, <span class=\"k\">" + r.n + "</span>), rojo)";
+    else if (r.tipo === "indeciso") e = "distancia(" + v + ", jugador) > <span class=\"k\">" + r.n + "</span> ? jugador.celda : " + v + ".esquina";
+    else if (r.tipo === "azar") e = "celdaAlAzar()";
+    else e = v + ".esquina";
+    L.push((v + ".objetivo").padEnd(17) + "= " + e + ";");
+  });
+  $("#cod").innerHTML = L.join("\n");
+  if (PERS.every(function (p) { return p.regla.tipo === "celda"; })) reto(0);
+}
+PERS.forEach(function (p) {
+  var fila = el("div", "pm-fila"), dot = el("i", "pm-p"), nom = el("b", null, p.nombre), sel = document.createElement("select"), num = document.createElement("input");
+  dot.style.background = p.color; sel.setAttribute("aria-label", "Regla de " + p.nombre); num.type = "number"; num.min = "0"; num.max = "12"; num.setAttribute("aria-label", "N de " + p.nombre);
+  TIPOS.forEach(function (t) { var o = document.createElement("option"); o.value = t[0]; o.textContent = t[1]; sel.appendChild(o); });
+  p.sel = sel; p.num = num;
+  function sync() { sel.value = p.regla.tipo; num.value = p.regla.n; num.disabled = !CON_N[p.regla.tipo]; }
+  p.sync = sync;
+  sel.onchange = function () { p.regla.tipo = sel.value; if (CON_N[sel.value] && !+p.regla.n) p.regla.n = sel.value === "indeciso" ? 8 : sel.value === "pinza" ? 2 : 4; sync(); codigo(); };
+  num.oninput = function () { p.regla.n = Math.max(0, Math.min(12, Math.round(+num.value || 0))); codigo(); };
+  fila.appendChild(dot); fila.appendChild(nom); fila.appendChild(sel); fila.appendChild(num); $("#reglas").appendChild(fila);
+});
+function dibuja(fr, frP) {
+  var e = getComputedStyle(document.documentElement), acento = e.getPropertyValue("--accent").trim(), fondo = e.getPropertyValue("--s2").trim();
+  x.clearRect(0, 0, 608, 352);
+  for (var f = 0; f < FILAS; f++) for (var c = 0; c < COLS; c++) if (M[f][c] === "#") { x.fillStyle = acento; x.globalAlpha = .8; x.fillRect(c * C, f * C, C, C); x.globalAlpha = 1; }
+  function pos(o, k) { return [((o.pc + (o.c - o.pc) * k) + .5) * C, ((o.pf + (o.f - o.pf) * k) + .5) * C]; }
+  if (verGuias) PERS.forEach(function (p) {
+    var obj = objetivo(p), pts = camino(p, obj);
+    x.strokeStyle = p.color; x.globalAlpha = .75; x.lineWidth = 3; x.setLineDash([6, 6]); x.beginPath();
+    pts.forEach(function (q, i) { var px = (q[0] + .5) * C, py = (q[1] + .5) * C; if (i) x.lineTo(px, py); else x.moveTo(px, py); }); x.stroke(); x.setLineDash([]);
+    var ox = Math.max(.5, Math.min(COLS - .5, obj[0] + .5)) * C, oy = Math.max(.5, Math.min(FILAS - .5, obj[1] + .5)) * C;
+    x.lineWidth = 2.5; x.beginPath(); x.arc(ox, oy, 10, 0, 6.283); x.moveTo(ox - 15, oy); x.lineTo(ox + 15, oy); x.moveTo(ox, oy - 15); x.lineTo(ox, oy + 15); x.stroke(); x.globalAlpha = 1;
+  });
+  var h = pos(J, frP);
+  x.fillStyle = "#ff8a3d"; x.beginPath(); x.roundRect(h[0] - 12, h[1] - 12, 24, 24, 7); x.fill();
+  x.fillStyle = "#14122b"; x.beginPath(); x.arc(h[0] - 4 + DIR[J.dir][0] * 3, h[1] - 3 + DIR[J.dir][1] * 3, 2.6, 0, 6.283); x.arc(h[0] + 5 + DIR[J.dir][0] * 3, h[1] - 3 + DIR[J.dir][1] * 3, 2.6, 0, 6.283); x.fill();
+  PERS.forEach(function (p) {
+    var q = pos(p, fr);
+    x.fillStyle = p.color; x.beginPath(); x.moveTo(q[0], q[1] - 14); x.lineTo(q[0] + 13, q[1]); x.lineTo(q[0], q[1] + 14); x.lineTo(q[0] - 13, q[1]); x.closePath(); x.fill();
+    x.fillStyle = "#fff"; x.beginPath(); x.arc(q[0] - 4, q[1] - 2, 3.4, 0, 6.283); x.arc(q[0] + 4, q[1] - 2, 3.4, 0, 6.283); x.fill();
+    x.fillStyle = "#14122b"; x.beginPath(); x.arc(q[0] - 4 + DIR[p.dir][0] * 1.5, q[1] - 2 + DIR[p.dir][1] * 1.5, 1.7, 0, 6.283); x.arc(q[0] + 4 + DIR[p.dir][0] * 1.5, q[1] - 2 + DIR[p.dir][1] * 1.5, 1.7, 0, 6.283); x.fill();
+  });
+}
+var PJ = .16, PP = .2, tJ = 0, tP = 0, antes = performance.now();
+reiniciar(); codigo(); PERS.forEach(function (p) { p.sync(); }); marcador("Pulsa una flecha para empezar");
+(function bucle(t) {
+  requestAnimationFrame(bucle);
+  var dt = Math.min(.05, (t - antes) / 1000); antes = t;
+  if (corriendo) {
+    tJ += dt; tP += dt;
+    while (tJ >= PJ) { tJ -= PJ; pasoJugador(); revisarCaptura(t); }
+    while (corriendo && tP >= PP) { tP -= PP; pasoPerseguidores(); revisarCaptura(t); }
+    if (corriendo) { var s = (t - vivoDesde) / 1000; if (s >= 20 && original() && modo === "perseguir") reto(1); if (Math.floor(s * 4) !== Math.floor((s - dt) * 4)) marcador("Sigues vivo: " + s.toFixed(1) + " s"); }
+  }
+  dibuja(corriendo ? tP / PP : 1, corriendo ? tJ / PJ : 1);
+})(antes);
+function mover(d) { quiere = d; if (!corriendo) { corriendo = true; vivoDesde = performance.now(); tJ = tP = 0; } }
+var TEC = { ArrowUp: "u", w: "u", ArrowLeft: "l", a: "l", ArrowDown: "d", s: "d", ArrowRight: "r", d: "r" };
+addEventListener("keydown", function (e) { var k = TEC[e.key]; if (k && document.activeElement && !/^(SELECT|INPUT)$/.test(document.activeElement.tagName)) { e.preventDefault(); mover(k); } });
+$$("[data-d]").forEach(function (b) { b.addEventListener("pointerdown", function (e) { e.preventDefault(); mover(b.dataset.d); }); });
+$("#modo").onclick = function () { modo = modo === "perseguir" ? "dispersarse" : "perseguir"; this.textContent = "Modo: " + modo; this.setAttribute("aria-pressed", String(modo === "dispersarse")); if (modo === "dispersarse") reto(2); };
+$("#ver").onclick = function () { verGuias = !verGuias; this.setAttribute("aria-pressed", String(verGuias)); };
+$("#reset").onclick = function () { reiniciar(); marcador("Pulsa una flecha para empezar"); };
+$("#orig").onclick = function () { PERS.forEach(function (p) { p.regla = { tipo: p.orig.tipo, n: p.orig.n }; p.sync(); }); codigo(); };
+cv.addEventListener("pointerdown", function () { cv.focus(); });""",
+       css="""#lab { width: 100%; height: auto; aspect-ratio: 19 / 11; display: block; margin: .5em 0; border-radius: .7em; background: var(--s2); border: 1px solid var(--line2); touch-action: none; }
+.pm-intro { font-size: .84em; margin: .35em 0 .45em; }
+.pm-reglas li { font-size: .82em; }
+.pm-p { display: inline-block; width: .7em; height: .7em; transform: rotate(45deg); border-radius: .12em; margin-right: .5em; flex: none; }
+.pm-fuente { font-size: .7em; color: var(--muted); margin: .45em 0 0; }
+.pm-fila { display: grid; grid-template-columns: 1em 4.6em 1fr 3.6em; gap: .45em; align-items: center; font-size: .8em; margin: .3em 0; }
+.pm-fila select, .pm-fila input { font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .5em; padding: .3em .4em; min-width: 0; }
+.pm-fila input:disabled { opacity: .35; }""",
+       comentario="Interacción: laberinto propio en lienzo con 4 perseguidores. Cada uno elige en cada celda la salida (sin media vuelta) más cercana a su objetivo, como en Pac-Man (1980). El alumno cambia la regla de cada uno y ve su objetivo, su camino y el código.")
 
 # ---------------------------------------------------------------- 05 · hoja de sprites
 ANIMS = [("quieto", 6, 6), ("caminar", 8, 12), ("correr", 8, 16), ("saltar", 8, 10), ("golpe", 6, 14), ("dano", 4, 10), ("morir", 8, 10), ("celebrar", 8, 12), ("agachado", 4, 6)]
