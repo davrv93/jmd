@@ -13,8 +13,8 @@ objectives:
   - id: qa-01-o4
     title: "Publicar un portal de resultados con reproducción paso a paso y monitorear la disponibilidad con alertas en Grafana"
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/dPB-I8pVTdAjzvqBOUk2Y04G-k7FigIP6-mYGPKgq8m7eYgAyvyApS7rjcRWxnYS.ROK4CB4JmFIufgqP"
+  passcode: "DHKpd1REz2IIjo-vOAAAIAAAAGccF3-QJIrUMKkkmL9-10xq6kreN4viZ3hpj9b-tEfGIMpmXcME1Qt0RUWJHpmGfjAwMDAwNA"
 materials:
   - id: qa-01-m0
     title: "qa-taller-kit.zip · Tienda Sol, pruebas con POM, motores, portal y monitoreo"

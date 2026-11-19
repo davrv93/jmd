@@ -13,8 +13,8 @@ objectives:
   - id: de-03-o4
     title: Sacar de la misma pieza el flyer de 1080 × 1350 y el estado de 1080 × 1920
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/Sezf4aMM5qXtqsCZVi7O_icIofjfl9mc3OVzteZCz1ilNQx4jFK_k5HrXcFSLsaV.kKrzt036EpUbnn2d"
+  passcode: "DNNcrhhX4pvDV2U3kwAAIAAAAFU3a3PG7mEwlefHroMjaODTPpid-fVTFcwXJrgtgm08wql64d-C-FNk759twuFifjAwMDAwNA"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

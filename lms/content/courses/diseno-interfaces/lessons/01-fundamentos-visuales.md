@@ -9,8 +9,8 @@ objectives:
   - {id: di-01-o3, title: "Elegir una paleta de 1 acento + 1 neutro + 3 semánticos que pase contraste AA (4.5:1) y comprobarla"}
   - {id: di-01-o4, title: "Escribir los tokens del sistema (color, tipografía, espacio, radio, sombra) en un archivo que el agente pueda leer"}
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/QH7xJuKLN6I5vEuN_YueMQi3KyP9-iQ6Udk2vYjsNDTIrHzHOS3o7pqmt8owlh0.gdjvRo7xqDMRsx2Y"
+  passcode: "DDS_KMXfMp3lR16rvgAAIAAAAPlB0E1QwoV3nLqILG6Hy8guusRheIIeZpdkVTzM3eyDJTFRLNA6Q-wpok5X3WkfqDAwMDAwNA"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

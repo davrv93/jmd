@@ -12,8 +12,8 @@ objectives:
   - id: cs-02-o3
     title: Ordenar las medidas para llevarlas a la API de tu empresa
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/4A2LjJSQhSpzXWBkgQtv-2spPnxwGtR_jdycOY8SwitG6Y1yAjF9OctBfpWso6z5.oT8EGIsl5gbiDNTD"
+  passcode: "DHtvLhCq4H7AoWEcZAAAIAAAAERi320WryGv74ZW0x6zuH5Cau0DgvWCXooZ3JMFP3c-Z2qqSvzqREErIjMlnLilZDAwMDAwNA"
 materials:
   - id: cs-02-m1
     title: OWASP API Security Top 10 2023

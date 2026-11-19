@@ -8,8 +8,8 @@ objectives:
   - {id: pt-02-o2, title: "Construir el grafo del código con Graphify y consultarlo"}
   - {id: pt-02-o3, title: "Que el agente entienda el proyecto sin releerlo entero"}
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/w1sErFuT1-tx3lDgdBEGHrZ8eHFK4suRbI09Yc0lZBRhIZJDwhsM6GLqC277eCk.hNQDmk0mjebi4Me4"
+  passcode: "DPuOIPPfuNiM53hhfAAAIAAAAGpclrntCzL953XS_KfPsR3BelvfsA-vFFpVN74_6Gkydo7NWdhxXKXIepKdWt7h3zAwMDAwNA"
 materials:
   - id: pt-02-video-cortex
     title: "Video corto: Cortex, la memoria del agente"

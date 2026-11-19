@@ -13,8 +13,8 @@ objectives:
   - id: de-01-o4
     title: Construir con tu agente la pieza «Willie, difícil de explicar» y empezar la tuya
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/4Y-O36r5fQHtoGliuNemPRMmBQ4Jcz2TIlTF-FjkojLU0FJhsIiQzTI-aPTh5ez-.7ltGrPOp_Uz5Hiqd"
+  passcode: "DPf5UcZ7gaI3JkTF_wAAIAAAAEG545Jt8XC76TcFKQJJ8-UBXx3rJOjrzUVCPeYAV1fZ41WcNm-R5aYTScycnfzfuzAwMDAwNA"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

@@ -16,8 +16,8 @@ objectives:
   - id: lc-01-o3
     title: Restaurar una base desde un respaldo y comprobar que el sistema volvió a estar sano
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/iGUxTDF4kiJertcErnmdEw3Du9FpGW5hcp7ByeVSfAS7yilHMOC_pp9BMmu3QsFh.Gg9u9gOojWuAZrE6"
+  passcode: "DD9QINC1sqjbDvLSBgAAIAAAAHfLdH8QpA7d9-1MpzohK2IHZDffiHlNnNyLFsLH8MdmyvsDhFl8PUhYS9h5jvuhojAwMDAwNA"
 materials:
   - id: lc-01-video-monito
     title: "Video: Suelta al monito, en 15 segundos"

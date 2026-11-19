@@ -11,8 +11,8 @@ objectives:
   - id: bwa-01-o3
     title: Medir tokens por segundo en CPU y GPU y entender qué son los embeddings y para qué sirven en un bot
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/GyY_tcXRcsJOHKX8uZ0lels7nyueXizDLeeYb92_Qiw1dIC92qMKhzZy7eer1nM.R6j4CqfZLoCKhSbs"
+  passcode: "DPvooLt213-mLY-TEgAAIAAAAOe0oxq62Xf1f2xm-c8Y6E3Jeu2rcuHo9icpNRQjMPUQT3VcdaaYin8ZO-6kHdcmNTAwMDAwNA"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

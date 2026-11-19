@@ -39,6 +39,10 @@ MANUALES = {
     "2026-10-21 21:16": "g4-03",   # «en esta sesión 3 … un asistente de WhatsApp»
     "2026-11-07 18:42": "ccp-01",  # «la primera de las 4 sesiones» de Claude Code PRO
     "2026-11-12 18:11": "py-01",   # Python, «primera» sesión, sala personal
+    # 19-11-2026: dos clases a la misma hora; bwb-01 y tw-01 no las dicta el anfitrión de esta cuenta.
+    "2026-11-15 19:26": "ipt-01",  # «una inteligencia artificial llamada DeepSeek… unirme al grupo»
+    "2026-11-16 21:40": "pt-03",   # consumo de tokens de Claude, Haiku/Sonnet/Opus: Potencia tus agentes
+    "2026-11-17 19:16": "lc-01",   # «la sesión del día de hoy trata sobre el laboratorio del caos»
 }
 
 
@@ -165,8 +169,10 @@ def emparejar(reuniones, lecciones):
             if l:
                 pares[l["id"]] = (r, dur, ini, l)
             continue
-        cerca = sorted((abs((ini - l["inicio"]).total_seconds()) / 60, l) for l in lecciones
-                       if l["inicio"] and -ANTES <= (ini - l["inicio"]).total_seconds() / 60 <= DESPUES)
+        # key: con dos clases a la misma hora (grupos paralelos) la tupla compararía los dict y revienta.
+        cerca = sorted(((abs((ini - l["inicio"]).total_seconds()) / 60, l) for l in lecciones
+                        if l["inicio"] and -ANTES <= (ini - l["inicio"]).total_seconds() / 60 <= DESPUES),
+                       key=lambda par: par[0])
         if not cerca:
             sueltas.append((ini, dur, r.get("topic", "")))
             continue
@@ -187,7 +193,10 @@ def escribir(leccion, url, codigo):
     if not n and not re.search(r"(?m)^recording:", t.split("\n---\n", 1)[0]):
         # La lección no trae el bloque: va antes de repo:, materials: o cycle:, lo que aparezca primero.
         fm, cuerpo = t.split("\n---\n", 1)
-        fm, n = re.subn(r"(?m)^(?=(?:repo|materials|cycle):)", f'recording:\n  url: "{limpio(url)}"\n  passcode: "{limpio(codigo)}"\n', fm, count=1)
+        bloque = f'recording:\n  url: "{limpio(url)}"\n  passcode: "{limpio(codigo)}"'
+        fm, n = re.subn(r"(?m)^(?=(?:repo|materials|cycle):)", bloque + "\n", fm, count=1)
+        if not n:   # sin ninguno de los tres: al final del front matter
+            fm, n = fm.rstrip("\n") + "\n" + bloque, 1
         nuevo = fm + "\n---\n" + cuerpo
     if n:
         open(leccion["ruta"], "w").write(nuevo)

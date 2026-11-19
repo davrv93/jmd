@@ -7,6 +7,9 @@ objectives:
   - {id: pt-03-o1, title: "Comprimir lo que el agente responde con Caveman"}
   - {id: pt-03-o2, title: "Armar el flujo completo: RTK + Cortex + Graphify + Caveman"}
   - {id: pt-03-o3, title: "Medir el antes y el después y dejarlo por escrito"}
+recording:
+  url: "https://us06web.zoom.us/rec/share/1Ay9XQ1CJcnS54gqOJJcmfeD6DBsnCMNzNfBl85gz3XA8tv4taQyXpfoaPSMNkAk.fwsVixVj80V0M6kR"
+  passcode: "DKGaSwpvId0F9Mt5oAAAIAAAADIUS9iSB-9OdJjAThvMVdcqSNAY2rLiaXc1dGW6P_XXtIbsAVmd3PrqGD6IWunMIDAwMDAwNA"
 ---
 ## Clase 3 · Caveman y la medición del ahorro
 

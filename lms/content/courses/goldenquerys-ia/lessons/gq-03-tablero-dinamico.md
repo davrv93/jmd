@@ -12,8 +12,8 @@ objectives:
   - id: gq-03-o3
     title: Comprobar cada dato que da la IA contra su cita y saber qué de tu archivo viaja a la IA y qué no
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/9sBSgG4Pjy38MzA3uJvtBSjmO1mfGKUKGqEXgPQJ-JZqdxOyFVZTpOm1RpwqIqpi.KbpFv9DKQUQ6H79O"
+  passcode: "DAkar5zTR8EPlae4twAAIAAAAKZVJ2nwRAEuZJkrfD5trw9ue0yIje4yaiqUa9qmstG1baK8jurtQOVh3U0SAvjIzzAwMDAwNA"
 materials:
   - id: gq-03-video-1
     title: "Video 1 (4:02): Adjunta. Mira. Pregunta. Tu visor paso a paso"

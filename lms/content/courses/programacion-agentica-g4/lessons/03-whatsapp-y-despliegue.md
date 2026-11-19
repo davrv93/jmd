@@ -13,6 +13,9 @@ objectives:
     title: "Entender qué es una herramienta del agente y ver un MCP en acción"
   - id: g4-03-o5
     title: "Probar con bun test, un smoke de Playwright y un teléfono real, y medir el tiempo de respuesta (p50 y p95)"
+recording:
+  url: "https://us06web.zoom.us/rec/share/XqLlqqgXZsBNc09psabLcWUceFc31qHHF3jcR_Ns2ea5_gmMxpt5u1IgulBSlGia.LfjeSk5uo_YMBUNo"
+  passcode: "DF-OpLNXQCmdEwmJTgAAIAAAAJrSbrx-HRw9t-xbejKpnnb1rMN7pQGQAZ3leATm99WyFsrmx0seiDpAWH63pj5h_jAwMDAwNA"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

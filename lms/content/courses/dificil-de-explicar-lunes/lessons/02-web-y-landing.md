@@ -13,8 +13,8 @@ objectives:
   - id: dl-02-o4
     title: Publicar la landing en una URL y probarla en el teléfono con el botón de WhatsApp real
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/NltQhzn7xv0PLJp6oRfn5XK2xTlKIW1pZeqh0rn2OWF6TRFYaYUwZZkZnjnZV8Lq.pANY5n--znS_nrsG"
+  passcode: "DAaWvdx0Sdmb5XCb9AAAIAAAAGxH0azOcqQG2O9-6lCEhn7sTa-7yRUmRAlc-oLOw6kZGhFauOxPR_YFlTkIfyDZ1jAwMDAwNA"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

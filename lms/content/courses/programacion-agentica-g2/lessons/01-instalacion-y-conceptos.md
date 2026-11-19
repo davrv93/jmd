@@ -10,8 +10,8 @@ objectives:
   - id: g2-01-o3
     title: Conocer reglas, ahorro de contexto, MCP y las skills, y escribir tu primera skill
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/hgWqvwHOU0RUxR5aCUJAj8XuG6qIIOrZwxJn0BfZeowTZ9whX6zlXVZ-mhg8srpf.SIhSIVHbHe1iCyhG"
+  passcode: "DJ_qJtfjQ9I1w3kWEQAAIAAAANjBoCN532vHcij73MKAV1ysLoNGRlbb2Eu9-j8iT0VO-l5VsjfFt3c3MiP7qFB7DjAwMDAwNA"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

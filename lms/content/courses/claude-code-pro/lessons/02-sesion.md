@@ -11,8 +11,8 @@ objectives:
   - id: ccp-02-o3
     title: "Medir lo que Claude escribe en el mismo render sin reglas y con reglas, y bajarlo a la mitad"
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/gQPNMr_KezZtOp45NwlYhBg-tVkyAowYtSOA63kwnCs-QUgL5j5uDjgfqfyayqsk.GanHowe6qulwbiPd"
+  passcode: "DCqUtbhXhVYhY6sUegAAIAAAABZYJh7-5f8aQRZFxo-WxvjoJw8We06Ex5P-uGEg8HlmaxqNt4skIrqCcBeyX_G-KTAwMDAwNA"
 materials:
   - id: ccp-02-resumen
     title: "Video resumen de la sesión (2:13): WhatsApp desde un Excel, tareas programadas y gráficos 3D"

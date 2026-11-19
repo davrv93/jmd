@@ -13,8 +13,8 @@ objectives:
   - id: g6-02-o4
     title: Probar el asistente con usuarios reales y medir tiempos
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/6wzTLyCnq-tz989XJKUSuRc-x5FYP1hWLT7nIVHPgxUvuZgwBjnDhsBQ81LYWxSQ.Mn7f3gM7xbj_d3KJ"
+  passcode: "DM3xZV5IsZyYfQx1IQAAIAAAAD8hRyfmJpV3yuyRt1FozASfHb66yo7kbIvDbAC1d3cuNs-tsyNyBKCB3T5BTwc67DAwMDAwNA"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

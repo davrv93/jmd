@@ -13,8 +13,8 @@ objectives:
   - id: dhc-01-o4
     title: Separar lo observado en archivo de lo por verificar en la foto y comprobar 5 afirmaciones contra el código
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/Uh1KpL4KbOXUaVMeugV4Jsw4UsUlCj4wjRthuk8_kCEjc4zbFtXpi-iKqJ-NxnY6.Y3Np6x1tT1uKIIA7"
+  passcode: "DMcQbDMctVKvaAyDTQAAIAAAAPOlswWEjqPEZM-sWH4CqHFHaRuhzMmT_QfpJyTPnOLNvakoo-lu6nXOAcHxH8zpKDAwMDAwNA"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

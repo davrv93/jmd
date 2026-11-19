@@ -8,6 +8,9 @@ objectives:
   - {id: py-01-o2, title: "Crear un entorno virtual (venv) y fijar dependencias en requirements.txt"}
   - {id: py-01-o3, title: "Escribir programas con variables, condicionales, bucles y funciones"}
   - {id: py-01-o4, title: "Correr el mismo script en python:3.11 y python:3.13 con Docker"}
+recording:
+  url: "https://us06web.zoom.us/rec/share/Y0jpSUTG_uGtnQ8FXKTDhtGi3u5IqfXWAJx8iebWX65E7dghuk2mjDYdDhVyQUq6.nonmUKz2SpQN5_fL"
+  passcode: "DGeN-agzPF1xXHYiDQAAIAAAAPpUe8SoDx2P6r-DT5vc1C8xtrqD1nMiL3nOXKihc8dMks8zFAQEIbRmBJ-1O07KIjAwMDAwNA"
 materials:
   - id: py-01-video
     title: "Video: tu entorno de Python en un minuto"

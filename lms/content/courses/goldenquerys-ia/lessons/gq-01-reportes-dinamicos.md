@@ -12,8 +12,8 @@ objectives:
   - id: gq-01-o3
     title: Trabajar con un agente como un profesional, con un skill y un plan de trabajo de criterios verificables
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/xM7wOJCGxHgHH3Ehhl-GwtYnQxv8P5SYQaVw1XBYNTKyOY0yNS1W8unWqIYdZYB0.74Vkpv7_dIMPzBOn"
+  passcode: "DAHjEhpUKomdLtiFlAAAIAAAAGpA-5z5pkxHzIxdUv6VVmRDEJH7Q0-zE9b6CoE_q2CSg4E9WLp-oIQI6XZLcq59ljAwMDAwNA"
 materials:
   - id: gq-01-kit
     title: goldenquerys-kit.zip · las 5 bases, la API de solo lectura, el skill del dashboard y el plan de trabajo
