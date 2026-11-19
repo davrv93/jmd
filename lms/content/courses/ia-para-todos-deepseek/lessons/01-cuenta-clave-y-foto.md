@@ -13,8 +13,8 @@ objectives:
   - id: ipt-01-o4
     title: Crear una herramienta útil (lista, calculadora, planificador o control de gastos) y verla funcionar en el Visor
 recording:
-  url: "https://us06web.zoom.us/rec/share/vJj77L-5EfEjciQ57R9w0JKW0jl3MKCWiaoP0t8Tgub1RW-DYMODjWqPBd_C_DOA.ctikxTuzBSvOKnvD"
-  passcode: "DADwHYPLdJrPMBcM1QAAIAAAADdsh935DiQ-18X-V3t2jQMyAxmfUqzKXvNuC3kv2K_PeO_FdBD-XeSwJF7y8y5_6DAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/QGwiaSvSLuBY3VHgo6r2sSds-STnKCsiVqPi__CJdiznByWzDUj2x9OdigkZfaBO.xOSJzH7FBD-a24x2?pwd=DNOP5hpxtBJCxqpvegAAIAAAAFMDZ-fvTFo7Aau8HYJy71iudjYQKgrYYSMC7movcS4V4eLxj5InYDHO26TImZ5SCjAwMDAwNA"
+  passcode: "#6PZ0$5h"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

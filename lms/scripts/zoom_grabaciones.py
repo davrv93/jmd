@@ -185,10 +185,26 @@ def emparejar(reuniones, lecciones):
     return pares, sueltas
 
 
-def escribir(leccion, url, codigo):
+def detalle(tok, r):
+    """(enlace, código) de una grabación. La lista no trae la clave de 8 caracteres que pide la página de
+    Zoom: trae `recording_play_passcode`, un token largo que Zoom rechaza si se escribe a mano («Wrong
+    passcode»). Ese token va en el enlace como ?pwd=…, que abre sin pedir nada; la clave real sale del
+    detalle de la reunión y queda como respaldo visible."""
+    uuid = urllib.parse.quote(urllib.parse.quote(r["uuid"], safe=""), safe="")   # Zoom pide doble codificación
+    estado, d = pedir(f"https://api.zoom.us/v2/meetings/{uuid}/recordings", {"Authorization": "Bearer " + tok})
+    if estado != 200:
+        d = {}
+    url, juego = r["share_url"], d.get("recording_play_passcode") or r.get("recording_play_passcode") or ""
+    if juego and "pwd=" not in url:
+        url += ("&" if "?" in url else "?") + "pwd=" + juego
+    return url, d.get("password") or ""
+
+
+def escribir(leccion, url, codigo, rehacer=False):
     t = open(leccion["ruta"]).read()
     limpio = lambda s: s.replace("\\", "").replace('"', "")
-    nuevo, n = re.subn(r'(?m)^recording:\n  url: ""\n  passcode: ".*"$',
+    previo = r'(?:|https://[^"]*zoom\.us/rec/share/[^"]*)' if rehacer else ""
+    nuevo, n = re.subn(r'(?m)^recording:\n  url: "' + previo + r'"\n  passcode: ".*"$',
                        f'recording:\n  url: "{limpio(url)}"\n  passcode: "{limpio(codigo)}"', t, count=1)
     if not n and not re.search(r"(?m)^recording:", t.split("\n---\n", 1)[0]):
         # La lección no trae el bloque: va antes de repo:, materials: o cycle:, lo que aparezca primero.
@@ -209,6 +225,7 @@ def main():
     p.add_argument("--desde", default="2026-10-01", help="AAAA-MM-DD")
     p.add_argument("--hasta", default=dt.date.today().isoformat(), help="AAAA-MM-DD")
     p.add_argument("--curso", default="", help="prefijo del id del curso (p. ej. programacion-agentica)")
+    p.add_argument("--rehacer", action="store_true", help="reescribe también los enlaces de Zoom ya puestos")
     a = p.parse_args()
 
     c = credenciales()
@@ -223,11 +240,13 @@ def main():
     for lid in sorted(pares, key=lambda k: pares[k][2]):
         r, dur, ini, l = pares[lid]
         hora = ini.astimezone(LIMA).strftime("%d-%m %H:%M")
-        codigo = r.get("password") or r.get("recording_play_passcode") or ""
-        if l["url"]:
-            estado = "ya tenía enlace: no se toca"
-        elif a.aplicar:
-            estado = "escrita" if escribir(l, r["share_url"], codigo) else "no se pudo escribir"
+        zoom = "zoom.us/rec/share/" in (l["url"] or "")
+        if l["url"] and not (a.rehacer and zoom):
+            print(f"  {lid:<10} {l['curso']:<34} {hora} · {dur:>3} min · ya tenía enlace: no se toca")
+            continue
+        url, codigo = detalle(tok, r)
+        if a.aplicar:
+            estado = "escrita" if escribir(l, url, codigo, a.rehacer) else "no se pudo escribir"
             escritas += estado == "escrita"
         else:
             estado = "se escribiría"

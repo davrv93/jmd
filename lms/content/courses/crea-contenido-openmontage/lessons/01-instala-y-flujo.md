@@ -7,8 +7,8 @@ objectives:
   - id: om-01-o1
     title: Instalar OpenMontage y conectar tu asistente de IA
 recording:
-  url: "https://us06web.zoom.us/rec/share/x_LVURum02y_9VKb0D-1DuF-tb7qNgEt42bhkf6bE1S4ojPIVUeNz3ZBt2vLqatZ.GOdKINL2uNWrcsaM"
-  passcode: "DOeqf0QmFNLc8UQoQQAAIAAAAKkyXJkyKU_RZXJClm_sUuSI2fuJ8FphQ4uO71BG5tcnDKrrlrucY8va3vk2fYhknDAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/JWBry0CJJfvjexg9jYQGuokPlHB3qoOjbtnX-R-GWFSrZCfc_VgCylBiRYNn3nkv.iSSKdQ-l8lcUnBMx?pwd=DAQ77c1z8GrKtSnSfAAAIAAAAAhgf7h5wvR2whvvHnxwpD4e0X8ppyqSHJ1zZBsc5zzHUSymn0UWL4v1o32nQLjAXjAwMDAwNA"
+  passcode: "!$#=0mNd"
 repo:
   url: https://github.com/calesthio/OpenMontage
   ref: main

@@ -8,8 +8,8 @@ objectives:
   - {id: pt-03-o2, title: "Armar el flujo completo: RTK + Cortex + Graphify + Caveman"}
   - {id: pt-03-o3, title: "Medir el antes y el después y dejarlo por escrito"}
 recording:
-  url: "https://us06web.zoom.us/rec/share/1Ay9XQ1CJcnS54gqOJJcmfeD6DBsnCMNzNfBl85gz3XA8tv4taQyXpfoaPSMNkAk.fwsVixVj80V0M6kR"
-  passcode: "DKGaSwpvId0F9Mt5oAAAIAAAADIUS9iSB-9OdJjAThvMVdcqSNAY2rLiaXc1dGW6P_XXtIbsAVmd3PrqGD6IWunMIDAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/ObrsINBH5AvPI3296rrMYa6Uf0oGrPO8cfDBCwhmSIDzGKbZw-iwNbVkFV1F36KT.twuOv-r8jfdJDjd7?pwd=DO1MLK1A18ganTYhCgAAIAAAAGtDn6l6zRPbMCvEZCGaH38BzkpDu9ADxa5saZ7hDRtr9Ml0G9XWFNRG0-EYETjAHTAwMDAwNA"
+  passcode: "fa=uXWe4"
 ---
 ## Clase 3 · Caveman y la medición del ahorro
 

@@ -12,8 +12,8 @@ objectives:
   - id: bwa-02-o3
     title: "Presentar tu bot funcionando y decidir qué mejorar después"
 recording:
-  url: "https://us06web.zoom.us/rec/share/nC7rpK3vLHPhfqkqqqXisaaWBnrgWU9Zt6LHffCYfbbQBLoZyZ46_kbjsj5bMkk.P4X1XwaWA6_jUwn2"
-  passcode: "DC00P2ArYX4B3k8_PAAAIAAAAM-jaDbc_kI1WV7pr0xgfC9nSc5vamJiZxOorVrhnIdqpgVun46sxZup7CKbEOJFGzAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/R0nbMcOKxWQl5Ab0LsL_n93rRWXmyRmAPbXTzWJIH2s5tA2ig0Z-U1fRGBtGJJk.F3Hyc-Fc3nkaehlH?pwd=DBqjkx6rqYNwlh4rfwAAIAAAANl1QVM1mKlDPu1R_vrcovGl1JDc1nrUt6rV_faDcp8-dxX8vRPxLT4uQwamlJiKfjAwMDAwNA"
+  passcode: "QKxf4*1M"
 materials:
   - id: bwa-02-resumen
     title: "Video resumen de la clase (1:57): un chatbot de 3 MB, fine-tuning con LoRA y el cierre"

@@ -11,8 +11,8 @@ objectives:
   - id: g8-01-o3
     title: Elegir un camino de integración gratuito y diseñar tu asistente con un primer prototipo en OpenCode
 recording:
-  url: "https://us06web.zoom.us/rec/share/ct4A1093kqjgWwlIDzMfQm54ltJpPhDWc6bMbuHykVlLxEaqZ1L-dzp6lw5LyOiu.tJe_vl_gU0iYm5cn"
-  passcode: "DONCoxeug8uMmrlnggAAIAAAAECfnIpNpCGr-UdczZR-eF_Sbmk_pliyXPPzhKo_fl-gs58v2huRqKRXVOKqLv1YfTAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/MwoEvuPm1nGVKJXdmLSBKZyi4pfUaQZgbw93D8am-SJ-OwgC7hKBxQC9fABJpsYd.dy-xWzPxl9yKExSK?pwd=DMZjE92B16N4iLraFwAAIAAAAOKQDq8M09v68G0a9p_La78xG8D2PYJacnFToiaL4947mh8_A1Pex1WYiIoT4W2emDAwMDAwNA"
+  passcode: "t7r&zF&q"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

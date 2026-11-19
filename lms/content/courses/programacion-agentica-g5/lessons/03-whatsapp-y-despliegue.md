@@ -17,8 +17,8 @@ objectives:
   - id: g5-03-o5
     title: "Probar con bun test, un smoke de Playwright y un teléfono real, y medir el tiempo de respuesta (p50 y p95)"
 recording:
-  url: "https://us06web.zoom.us/rec/share/F3NiZsmY3Yq0gzwcjRKMQcqIGN-gOt56GLKXbxze0yp5ntoZIMQPWmTXWBcjR5bC.RgmZ6OEnRTJZEVR0"
-  passcode: "DDDAgv7Q4sACa44Z7wAAIAAAACgwNMcXRMXForCNmcoL1Hf42wH72CfhpHsxIXIQ0WKHE46WKmMW6nwwTDFJG6wZDTAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/dA33HsdxAeTkBiNTOoy2fsOGdX-9vq3m-6U2UhMbdQY0g7_hhYVSLhvYJ-dAnjMx.0kGRGO8Lgb0JaT6H?pwd=DHpltLHPeXoZ2KhSUwAAIAAAACdWbRsPwC-NhWIQ3pGmYI8sifaYpYVpdc1swMr8_OqBpfNaCOApGl4SCTDiJ9da3TAwMDAwNA"
+  passcode: "Ti+3gjN#"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

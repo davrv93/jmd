@@ -13,8 +13,8 @@ objectives:
   - id: dt-01-o4
     title: Explicar cómo HyperFrames convierte HTML y GSAP en video, y pedir tu pieza a un agente con las seis partes
 recording:
-  url: "https://us06web.zoom.us/rec/share/XcNKYV-My3YyZZal7WRuctH3xUCuHd2FYHJ4pWMlellL0HKi4ZTMDZ4yPBiP0sYY.L9KGzoDGWErZgMUK"
-  passcode: "DMxN5b7uuu5yUyPZHgAAIAAAAETYhU2AIjtJlXYCPetT8EbM5k_ylhAUK53XHEc-y-Oo7bQnYSthjHXPJmH-7bamgjAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/wz02p9P96RpXkj3Mlb67heQQG-3_cKo4k5X8KFIs2khHzvFgiZ0cPbz7nxsQDLL8.GgNDb2nRVlerNYao?pwd=DIUIn51PHsp56ZV9VwAAIAAAAL0yE5yoUmwXBBNppnIGbfcBqB3ld22aAUW6o7n2_5v_8EOzu4x3WbxTsYQdC2GbljAwMDAwNA"
+  passcode: "NyGaD4n&"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

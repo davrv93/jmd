@@ -11,8 +11,8 @@ objectives:
   - id: mco-01-o3
     title: Leer los números y los fallos reales de una orquesta local con Qwen
 recording:
-  url: "https://us06web.zoom.us/rec/share/L_wvzG2m6MFpHOxrZyFO7Bb4-R5_klLOlMcbPYBzgOS7qL0lniYLWVry68vOuAc.Ybhq-_zySx6gt4vJ"
-  passcode: "DHcGVMAaH7PpvNUrpgAAIAAAADY8UNRAJiKSD_5nRpn0gRw1I2jb8OsEvaU6CJSkvZFwRZcoHGlOBpcDBbJbGf3NIzAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/WA4s3GrHRkdz0rmfQpSZMlKTGeZW4dPQrgO3vcUzdvnN-7ja4xd7LAi3nKFtzwI.BbVMXFF68GlriMwh?pwd=DIMg9g_Zw09Sb4dAVQAAIAAAACpaWhYuF8ze51ScuNJ_AqOyrxE3ah1IaHc4azmjKGKBpZoUmfk-8wWxdC_uulckfzAwMDAwNA"
+  passcode: ".WS0pC@3"
 cycle:
   - id: ver
     title: La pregunta de hoy

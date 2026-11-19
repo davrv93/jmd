@@ -12,8 +12,8 @@ objectives:
   - id: qab-01-o3
     title: "Convertir el fallo en una prueba de Playwright que lo reproduce"
 recording:
-  url: "https://us06web.zoom.us/rec/share/Q6ehWJynaLCfxmCMu_OnorevTGTHN7Zwgx61ORqYkRf49LAZWCgHpkMoA1k5agDR.r5p96MdAuOwL7PCf"
-  passcode: "DP8WsZcz883uRiuoWgAAIAAAAJzwdBmQEBDqv9gPtMObTEbehiw93TET2hiLXRF6rzqwLknBaghuSXYlXZf0SaD7TDAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/qAAafuJWe_XzsOeSs4kClXoh1Q_2u1D990ECLO5UduQE7d9XcJ5fPiLTNYOxLIvm.nh6V1_7OXE9h-Bak?pwd=DCQMqevzlM_1te5vlQAAIAAAAExNgIuehGyvdMMrY-go8RcHYdVgqL-QKJts4PqFY6Pngn7bxrvbEQjffrG_ouLrWTAwMDAwNA"
+  passcode: "iy358*!h"
 materials:
   - id: qab-01-resumen
     title: "Video resumen de la sesión (2:11): usuarios sintéticos que encuentran los fallos"

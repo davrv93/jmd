@@ -11,8 +11,8 @@ objectives:
   - id: sc-01-o3
     title: Pedirle a la IA una revisión de seguridad y comprobar lo que responde
 recording:
-  url: "https://us06web.zoom.us/rec/share/mitZT9ROHUlSdhboSaw0ePO2XxEG2X8PRNoV-wYm-DbLa6D7u_3hQ322QQQu20__.IiwJdhHSk8vgzBoi"
-  passcode: "DG78rxPQ38Xl02tlAQAAIAAAAG2oKoA8dHZBWl10tAFfN72iicwTckW1JchrRWy4qMaFz8QibP6lfx-xYYXqX3DCbTAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/OWOAO1BQV0hxfvHT3akbYeLWDisiraCaLx5WeaS-qr__3aEdmNFH29dtfjQoo8Rg.sU0P1Z7pmXfJ7fiS?pwd=DFDiWbZA7g52_KMFGQAAIAAAAPmfTWdr9lO_zm187XCdaocLEqCPqVfFmNN2aEMmmJAUzCLYYCnaFj5ZoPl8vfFk8TAwMDAwNA"
+  passcode: "V0eE6&f?"
 materials:
   - id: sc-01-m1
     title: OWASP Top 10:2025 · los riesgos más críticos de las aplicaciones web

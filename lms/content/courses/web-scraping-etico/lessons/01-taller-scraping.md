@@ -11,8 +11,8 @@ objectives:
   - id: ws-01-o3
     title: Extraer con Python en un servidor EC2 usando sesión (cookie y token) y exportar a CSV y JSON
 recording:
-  url: "https://us06web.zoom.us/rec/share/mJBaf_u7LVDFWFb9nsfbgbHBWCd89UhxufWFprzNLcBpBVvCxtridqmPaut3ewLR.eChHdtTiblemHygI"
-  passcode: "DEI6cc392kqek8c3GwAAIAAAALOJvg_syswj_5oh8dllqDdUuzeL0-5PwZfHYAkMrKhfzwSQuOIBw5ciq_EaaRXoPzAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/uNenXNF6Xjr1ThkRlw1aO5-xE7UfrlEK_h4F5UzC4a307HXfwavCskWp2Y2BK3Zs.F7aB4Pimd8Wlhc3l?pwd=DMOEoJkrmQjE6OvMogAAIAAAAE_FaBrFwy6tpWmbOiGhb_0JYLslyiD2ezMujg3vmQ_miXFT4XaKUZLTn6YvmeFl5DAwMDAwNA"
+  passcode: "El^P7.J!"
 materials:
   - id: ws-01-m1
     title: Tampermonkey · extensión para scripts en el navegador

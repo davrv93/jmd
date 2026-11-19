@@ -13,8 +13,8 @@ objectives:
   - id: dhc-02-o4
     title: Acotar archivos, líneas por comando, alcance de búsqueda, resumen reutilizado y tareas por rol, y dejar un informe y una rutina reproducible
 recording:
-  url: "https://us06web.zoom.us/rec/share/QEKW2gIkE7X3_cCWJ667q5g0ORSqjT7TO3ObK1sGfOdIb3K4MieBVRc6midTnR2Q.MCcWpqr2AtCDjsWa"
-  passcode: "DDOZOXWjObplyUBNvgAAIAAAAGJEpmPMPdA_aJvwU8ov94hFL8zz6O-AoG-t-Z-Q_YHYmjHjDraACKfMcPKCwAUMtzAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/Nm3hCIvm0GDJgAtGYSe0XyLiDCbTD1dkLTThv88TwIn4VBkvypo_JuYJrJq40Udl.sqkoYKCLK3pVjR8d?pwd=DEMoRy8cP2p7r3Zq2gAAIAAAALzT5zQ5LaIrH-JmbCNL6qrCBlB4HrU_85H4h5oPsIqqG4VI8lDWPsB8e18O6H5i5jAwMDAwNA"
+  passcode: "L#mFqjb9"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

@@ -12,8 +12,8 @@ objectives:
   - id: ccp2-01-o3
     title: "Elegir modelo por tarea y decidir cuándo usar /clear, /compact o una sesión nueva"
 recording:
-  url: "https://us06web.zoom.us/rec/share/wD6q04wZj5Vi0iNVtjM9EA3tLrD7hORJQnE4M92PYXS6aQ-SzMrBsLb_KN40g41U.pTaVaFgcVCfHorxF"
-  passcode: "DKTS1s5hCh9TcvFCnQAAIAAAAAQe9ZbJsWc4HR5B0o2EolPP_rRNab38euARPA8m9EIzxrABkso3no9heDhjrt3HgzAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/AfnD2DbZcwTqcBH9dYAlFg87i_TijIj9XY9q6UhUarwB6d_XJYUQvBYU9Hv7SD0p.0XQ_3XCTIFU6d3lm?pwd=DA9dXgrYFb45s5yjHgAAIAAAAFekUeyGgukPq968DRCSvJbaoJtbWVZ0R0K3przTk3XTgWoXeC43_GkP0DAmQaoyXjAwMDAwNA"
+  passcode: "Y%N86C=8"
 materials:
   - id: ccp2-01-resumen
     title: "Video resumen de la sesión (2:22): presupuesto de tokens, skills y /compact"

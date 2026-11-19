@@ -12,8 +12,8 @@ objectives:
   - id: gq-02-o3
     title: Verificar con tres pruebas el SQL que escribe la IA antes de confiar en el número
 recording:
-  url: "https://us06web.zoom.us/rec/share/Bo74qIXohVh23SDO787s7SsvP8v0LKyK1he1UzbzwLK30TXqTZNporE0cPwpWiyS.lTGyImdzdeCsR0fv"
-  passcode: "DKdFE26BEdSsD2hFaQAAIAAAAJECMdpBv8Hqf39FNxoyipAzALmcws8xrWLHfw9v0daaB0zuycfUmtbxafhObhksrDAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/bZhkoJch0fVoTiT43F-EDUccgaN46w7Lq3dGStVI6zfl-hIFZrAYENefs-aRLNSf.Hzae5rfBjL9LEQHP?pwd=DC8XCV_aCN4fWM15NgAAIAAAAHHmwcBR9yYHj52o8W9kJXRSF528sziu62kh9yQFMyOv5KARYzvYGeGLCmdKps3WEjAwMDAwNA"
+  passcode: "5@XF6kQ0"
 materials:
   - id: gq-02-video-a
     title: "Video corto: las tres preguntas de oro"

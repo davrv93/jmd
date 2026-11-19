@@ -13,8 +13,8 @@ objectives:
   - id: dl-01-o4
     title: Hacer que una página reaccione a la animación (notas, agua, avisos)
 recording:
-  url: "https://us06web.zoom.us/rec/share/DrZIb5S51Xd96q7ZEwVvkMFyZBb_jY4LVKabGtMDKRi90wjFsYHgxrQjKisec4vk.UfaOaW41_9hgLBoR"
-  passcode: "DNtgCJff6a_AQCSSuQAAIAAAAP6PugIsmXTSKHcc7gDn2Blyr32bZTZxfwulZUi4PrWW66umVQrNd8dPBJrdKiQE1DAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/NNkvy-MYiVjMnuDE9Rj5z6IjR1wchgL4lGDgxoIsN32I-IX1tVQDmup4fb2eJHuP.JLrkwKK3ZJG35c64?pwd=DNPAO8XRKimtTkDq4AAAIAAAAMTz4y_HPz8DwrttEbeNNlb-4-5DPNLXwgST7bOaO4jQZMU1SbU3eBYm7DV8FYJeYjAwMDAwNA"
+  passcode: "iVi&2eHY"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main

@@ -11,8 +11,8 @@ objectives:
   - id: ccp-01-o3
     title: "Elegir modelo por tarea y decidir cuándo usar /clear, /compact o una sesión nueva"
 recording:
-  url: "https://us06web.zoom.us/rec/share/bAyfZp7RL_WeNIqPMBPYMdJtRvwxKTitVdbVMUdAQAnWJEZKMUfsO5NZX4fEzZvm.OcfETc4iKum8rc0-"
-  passcode: "DDttjxuDk5fnhDCtGAAAIAAAAEoI61sf0i2-kSlVAw9_Afx22mGZsAhKr6VrogJwd4NNTQPXY3W6zg4Ucwc3CRnxIjAwMDAwNA"
+  url: "https://us06web.zoom.us/rec/share/kCSxGaa2mtG1XTf-LxHtzs7Jtps_1G0FHMUAptJKovS2bMDDUPUlTcnFK7OF6HnB.oY6rLsRJHUUcGhTO?pwd=DL8IDtG6ZhjqjeTMIQAAIAAAAABuCF7VtBfymWpRI0ngky9-kaUY3QGWF_sjCriENbUej7MNz7uxwngn56RioQ6rODAwMDAwNA"
+  passcode: "*wOfMJ2^"
 cycle:
   - id: ver
     title: Ver la clase
