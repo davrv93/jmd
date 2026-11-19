@@ -1,0 +1,210 @@
+{
+ "titulo": "Laboratorio · estructuras de datos y comprehension",
+ "meta": 6,
+ "ejercicios": [
+  {
+   "id": "estructura",
+   "titulo": "Cada dato en su estructura",
+   "consigna": "Tu tienda guarda cuatro cosas distintas. Completa los cuatro huecos (____) eligiendo la estructura que pide cada comentario:\n[lista]  ·  (tupla)  ·  {dict con llave: valor}  ·  {conjunto}\nLuego pulsa Ejecutar y mira cuántas categorías quedaron.",
+   "codigo": "pedidos = ____      # en orden de llegada: \"P-001\", \"P-002\", \"P-003\"\nubicacion = ____    # latitud y longitud de la tienda, no cambian: -12.05, -77.04\nstock = ____        # unidades por producto: arroz 40, azucar 12, aceite 3\ncategorias = ____   # sin repetir: \"abarrotes\", \"limpieza\", \"abarrotes\"\n\nprint(pedidos[0], ubicacion, stock[\"aceite\"], len(categorias))\n",
+   "pista": "Lista con corchetes: [\"P-001\", \"P-002\", \"P-003\"]. Tupla con paréntesis: (-12.05, -77.04). Dict con llave: valor: {\"arroz\": 40, \"azucar\": 12, \"aceite\": 3}. Conjunto con llaves y sin dos puntos: {\"abarrotes\", \"limpieza\", \"abarrotes\"} (el repetido se va solo).",
+   "solucion": "pedidos = [\"P-001\", \"P-002\", \"P-003\"]\nubicacion = (-12.05, -77.04)\nstock = {\"arroz\": 40, \"azucar\": 12, \"aceite\": 3}\ncategorias = {\"abarrotes\", \"limpieza\", \"abarrotes\"}\n\nprint(pedidos[0], ubicacion, stock[\"aceite\"], len(categorias))\n",
+   "pruebas": [
+    [
+     "pedidos es una lista con los 3 pedidos en orden",
+     "type(pedidos) is list and pedidos == ['P-001', 'P-002', 'P-003']"
+    ],
+    [
+     "ubicacion es una tupla (-12.05, -77.04)",
+     "type(ubicacion) is tuple and ubicacion == (-12.05, -77.04)"
+    ],
+    [
+     "stock es un dict: arroz 40, azucar 12, aceite 3",
+     "type(stock) is dict and stock == {'arroz': 40, 'azucar': 12, 'aceite': 3}"
+    ],
+    [
+     "categorias es un set con 2 categorías",
+     "type(categorias) is set and categorias == {'abarrotes', 'limpieza'}"
+    ]
+   ]
+  },
+  {
+   "id": "cambiar",
+   "titulo": "Agregar, cambiar y quitar",
+   "consigna": "Llegó movimiento a la tienda. Reemplaza cada línea ____ por una instrucción:\n1. El pedido \"P-003\" va al final de la lista.\n2. Se vendieron 2 aceites: resta 2 a su stock.\n3. Entra \"fideos\" con 25 unidades.\n4. Agrega otra vez la categoría \"abarrotes\" con .add() y mira qué pasa con el set.",
+   "codigo": "pedidos = [\"P-001\", \"P-002\"]\nstock = {\"arroz\": 40, \"aceite\": 3}\ncategorias = {\"abarrotes\", \"limpieza\"}\n\n____   # 1. \"P-003\" al final de pedidos\n____   # 2. resta 2 al stock de \"aceite\"\n____   # 3. \"fideos\" con 25 unidades\n____   # 4. agrega \"abarrotes\" al set\n\nprint(pedidos)\nprint(stock)\nprint(categorias, len(categorias))\n",
+   "pista": "pedidos.append(\"P-003\") · stock[\"aceite\"] = stock[\"aceite\"] - 2 (o stock[\"aceite\"] -= 2) · stock[\"fideos\"] = 25 · categorias.add(\"abarrotes\"). El set no guarda repetidos: sigue con 2.",
+   "solucion": "pedidos = [\"P-001\", \"P-002\"]\nstock = {\"arroz\": 40, \"aceite\": 3}\ncategorias = {\"abarrotes\", \"limpieza\"}\n\npedidos.append(\"P-003\")\nstock[\"aceite\"] -= 2\nstock[\"fideos\"] = 25\ncategorias.add(\"abarrotes\")\n\nprint(pedidos)\nprint(stock)\nprint(categorias, len(categorias))\n",
+   "pruebas": [
+    [
+     "\"P-003\" quedó al final de pedidos",
+     "pedidos == ['P-001', 'P-002', 'P-003']"
+    ],
+    [
+     "Quedan 1 aceite",
+     "stock.get('aceite') == 1"
+    ],
+    [
+     "\"fideos\" tiene 25 unidades",
+     "stock.get('fideos') == 25"
+    ],
+    [
+     "Usaste .add() y el set sigue con 2 categorías",
+     "'.add(' in codigo and categorias == {'abarrotes', 'limpieza'}"
+    ]
+   ]
+  },
+  {
+   "id": "buscar",
+   "titulo": "¿Ya existe este código?",
+   "consigna": "Tienes 100 000 códigos guardados de dos formas: en una lista y como llaves de un dict.\nCompleta existe(codigo, coleccion) para que devuelva True si el código está y False si no. Usa in: funciona igual con la lista y con el dict.\nDespués mira los tiempos: la lista revisa uno por uno; el dict va directo a la llave.",
+   "codigo": "import time\n\ncodigos_lista = list(range(100_000))        # 100 000 códigos en una lista\ncodigos_dict = dict.fromkeys(codigos_lista)  # los mismos, como llaves de un dict\n\ndef existe(codigo, coleccion):\n    return ____\n\nt0 = time.perf_counter()\nfor _ in range(100):\n    existe(99_999, codigos_lista)\nt_lista = time.perf_counter() - t0\n\nt0 = time.perf_counter()\nfor _ in range(100):\n    existe(99_999, codigos_dict)\nt_dict = time.perf_counter() - t0\n\nprint(\"¿Está en la lista?\", existe(99_999, codigos_lista))\nprint(\"¿Está en el dict? \", existe(99_999, codigos_dict))\nprint(f\"100 búsquedas · lista: {t_lista * 1000:.1f} ms · dict: {t_dict * 1000:.3f} ms\")\n",
+   "pista": "La palabra in pregunta si algo está dentro: return codigo in coleccion",
+   "solucion": "import time\n\ncodigos_lista = list(range(100_000))        # 100 000 códigos en una lista\ncodigos_dict = dict.fromkeys(codigos_lista)  # los mismos, como llaves de un dict\n\ndef existe(codigo, coleccion):\n    return codigo in coleccion\n\nt0 = time.perf_counter()\nfor _ in range(100):\n    existe(99_999, codigos_lista)\nt_lista = time.perf_counter() - t0\n\nt0 = time.perf_counter()\nfor _ in range(100):\n    existe(99_999, codigos_dict)\nt_dict = time.perf_counter() - t0\n\nprint(\"¿Está en la lista?\", existe(99_999, codigos_lista))\nprint(\"¿Está en el dict? \", existe(99_999, codigos_dict))\nprint(f\"100 búsquedas · lista: {t_lista * 1000:.1f} ms · dict: {t_dict * 1000:.3f} ms\")\n",
+   "pruebas": [
+    [
+     "Encuentra un código que sí está (lista y dict)",
+     "existe(99_999, codigos_lista) is True and existe(99_999, codigos_dict) is True"
+    ],
+    [
+     "Dice False si el código no está",
+     "existe(123_456, codigos_lista) is False and existe(123_456, codigos_dict) is False"
+    ],
+    [
+     "Funciona con otras colecciones",
+     "existe('arroz', {'arroz': 40}) is True and existe(7, [1, 2]) is False"
+    ],
+    [
+     "El dict fue más rápido que la lista",
+     "t_dict < t_lista"
+    ]
+   ]
+  },
+  {
+   "id": "lista-de-dicts",
+   "titulo": "Tu inventario: una lista de dicts",
+   "consigna": "Cada producto es un dict; el inventario es una lista de esos dicts (así lo devolverá tu API).\n1. Agrega el tercer producto: Detergente, precio 6.5, stock 2, categoría \"limpieza\".\n2. Calcula cuánto vale el stock del aceite (precio × stock) leyendo el dict, sin escribir el número a mano.",
+   "codigo": "productos = [\n    {\"nombre\": \"Arroz\", \"precio\": 4.5, \"stock\": 40, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Aceite\", \"precio\": 9.9, \"stock\": 3, \"categoria\": \"abarrotes\"},\n    ____  # Detergente: precio 6.5, stock 2, categoría \"limpieza\"\n]\n\nfor p in productos:\n    print(f\"{p['nombre']}: S/ {p['precio']} · {p['stock']} u.\")\n\nvalor_aceite = ____   # precio × stock del aceite (productos[1])\nprint(f\"El aceite en stock vale S/ {valor_aceite:.2f}\")\n",
+   "pista": "Copia la forma de los otros: {\"nombre\": \"Detergente\", \"precio\": 6.5, \"stock\": 2, \"categoria\": \"limpieza\"}. El aceite es productos[1]: productos[1][\"precio\"] * productos[1][\"stock\"]",
+   "solucion": "productos = [\n    {\"nombre\": \"Arroz\", \"precio\": 4.5, \"stock\": 40, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Aceite\", \"precio\": 9.9, \"stock\": 3, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Detergente\", \"precio\": 6.5, \"stock\": 2, \"categoria\": \"limpieza\"},\n]\n\nfor p in productos:\n    print(f\"{p['nombre']}: S/ {p['precio']} · {p['stock']} u.\")\n\nvalor_aceite = productos[1][\"precio\"] * productos[1][\"stock\"]\nprint(f\"El aceite en stock vale S/ {valor_aceite:.2f}\")\n",
+   "pruebas": [
+    [
+     "El inventario tiene 3 productos",
+     "type(productos) is list and len(productos) == 3"
+    ],
+    [
+     "El tercero es el Detergente con sus 4 datos",
+     "productos[2] == {'nombre': 'Detergente', 'precio': 6.5, 'stock': 2, 'categoria': 'limpieza'}"
+    ],
+    [
+     "valor_aceite es 29.70",
+     "abs(valor_aceite - 29.7) < 1e-9"
+    ],
+    [
+     "Lo calculaste leyendo el dict, no a mano",
+     "'29.7' not in codigo"
+    ]
+   ]
+  },
+  {
+   "id": "for-a-comprehension",
+   "titulo": "El mismo for, en una línea",
+   "consigna": "Arriba, un for arma la lista de precios con IGV (18 %). Escribe lo mismo como list comprehension en con_igv2.\nForma: [lo_que_guardas for p in productos]. Las dos listas deben salir iguales.",
+   "codigo": "productos = [\n    {\"nombre\": \"Arroz\", \"precio\": 4.5, \"stock\": 40, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Aceite\", \"precio\": 9.9, \"stock\": 3, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Detergente\", \"precio\": 6.5, \"stock\": 2, \"categoria\": \"limpieza\"},\n    {\"nombre\": \"Fideos\", \"precio\": 2.8, \"stock\": 25, \"categoria\": \"abarrotes\"},\n]\n\n# Con for: precio con IGV, redondeado a 2 decimales\ncon_igv = []\nfor p in productos:\n    con_igv.append(round(p[\"precio\"] * 1.18, 2))\n\n# Lo mismo con list comprehension\ncon_igv2 = [____ for p in productos]\n\nprint(con_igv)\nprint(con_igv2)\nprint(\"¿Iguales?\", con_igv == con_igv2)\n",
+   "pista": "Lo que va antes del for es lo mismo que estaba dentro del append(): round(p[\"precio\"] * 1.18, 2)",
+   "solucion": "productos = [\n    {\"nombre\": \"Arroz\", \"precio\": 4.5, \"stock\": 40, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Aceite\", \"precio\": 9.9, \"stock\": 3, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Detergente\", \"precio\": 6.5, \"stock\": 2, \"categoria\": \"limpieza\"},\n    {\"nombre\": \"Fideos\", \"precio\": 2.8, \"stock\": 25, \"categoria\": \"abarrotes\"},\n]\n\n# Con for: precio con IGV, redondeado a 2 decimales\ncon_igv = []\nfor p in productos:\n    con_igv.append(round(p[\"precio\"] * 1.18, 2))\n\n# Lo mismo con list comprehension\ncon_igv2 = [round(p[\"precio\"] * 1.18, 2) for p in productos]\n\nprint(con_igv)\nprint(con_igv2)\nprint(\"¿Iguales?\", con_igv == con_igv2)\n",
+   "pruebas": [
+    [
+     "con_igv2 es igual a con_igv",
+     "con_igv2 == con_igv and len(con_igv2) == 4"
+    ],
+    [
+     "con_igv2 es una list comprehension",
+     "__import__('re').search(r'con_igv2\\s*=\\s*\\[.+\\bfor\\b.+\\bin\\b.+\\]', codigo) is not None"
+    ],
+    [
+     "Imprime «¿Iguales? True»",
+     "'¿Iguales? True' in salida"
+    ]
+   ]
+  },
+  {
+   "id": "bajo-stock",
+   "titulo": "Comprehension con if: qué reponer",
+   "consigna": "Completa bajo_stock(productos, limite): devuelve los nombres de los productos con stock MENOR que el límite.\nLa forma es [lo_que_guardas for p in productos if condición]. Esta misma línea irá luego en tu API.",
+   "codigo": "productos = [\n    {\"nombre\": \"Arroz\", \"precio\": 4.5, \"stock\": 40, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Aceite\", \"precio\": 9.9, \"stock\": 3, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Detergente\", \"precio\": 6.5, \"stock\": 2, \"categoria\": \"limpieza\"},\n    {\"nombre\": \"Fideos\", \"precio\": 2.8, \"stock\": 25, \"categoria\": \"abarrotes\"},\n]\n\ndef bajo_stock(productos, limite=5):\n    return [p[\"nombre\"] for p in productos if ____]\n\nprint(bajo_stock(productos))       # límite 5\nprint(bajo_stock(productos, 30))   # límite 30\n",
+   "pista": "La condición compara el stock de cada producto con el límite: p[\"stock\"] < limite",
+   "solucion": "productos = [\n    {\"nombre\": \"Arroz\", \"precio\": 4.5, \"stock\": 40, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Aceite\", \"precio\": 9.9, \"stock\": 3, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Detergente\", \"precio\": 6.5, \"stock\": 2, \"categoria\": \"limpieza\"},\n    {\"nombre\": \"Fideos\", \"precio\": 2.8, \"stock\": 25, \"categoria\": \"abarrotes\"},\n]\n\ndef bajo_stock(productos, limite=5):\n    return [p[\"nombre\"] for p in productos if p[\"stock\"] < limite]\n\nprint(bajo_stock(productos))       # límite 5\nprint(bajo_stock(productos, 30))   # límite 30\n",
+   "pruebas": [
+    [
+     "Con límite 5: Aceite y Detergente",
+     "bajo_stock(productos) == ['Aceite', 'Detergente']"
+    ],
+    [
+     "Con límite 30: Aceite, Detergente y Fideos",
+     "bajo_stock(productos, 30) == ['Aceite', 'Detergente', 'Fideos']"
+    ],
+    [
+     "Usa el límite que le pasan",
+     "bajo_stock([{'nombre': 'X', 'stock': 0}, {'nombre': 'Y', 'stock': 9}], 1) == ['X']"
+    ],
+    [
+     "Es una comprehension con if",
+     "__import__('re').search(r'\\[.+\\bfor\\b.+\\bif\\b.+\\]', codigo) is not None"
+    ]
+   ]
+  },
+  {
+   "id": "dict-comprehension",
+   "titulo": "Dict comprehension: precio por nombre",
+   "consigna": "Arma precio_de: un dict cuya llave es el nombre y cuyo valor es el precio, con una dict comprehension.\nForma: {llave: valor for p in productos}. Así buscar el precio de algo es ir directo: precio_de[\"Aceite\"].",
+   "codigo": "productos = [\n    {\"nombre\": \"Arroz\", \"precio\": 4.5, \"stock\": 40, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Aceite\", \"precio\": 9.9, \"stock\": 3, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Detergente\", \"precio\": 6.5, \"stock\": 2, \"categoria\": \"limpieza\"},\n    {\"nombre\": \"Fideos\", \"precio\": 2.8, \"stock\": 25, \"categoria\": \"abarrotes\"},\n]\n\nprecio_de = {____: ____ for p in productos}\n\nprint(precio_de)\nprint(\"Aceite:\", precio_de[\"Aceite\"])\n",
+   "pista": "La llave es p[\"nombre\"] y el valor es p[\"precio\"]: {p[\"nombre\"]: p[\"precio\"] for p in productos}",
+   "solucion": "productos = [\n    {\"nombre\": \"Arroz\", \"precio\": 4.5, \"stock\": 40, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Aceite\", \"precio\": 9.9, \"stock\": 3, \"categoria\": \"abarrotes\"},\n    {\"nombre\": \"Detergente\", \"precio\": 6.5, \"stock\": 2, \"categoria\": \"limpieza\"},\n    {\"nombre\": \"Fideos\", \"precio\": 2.8, \"stock\": 25, \"categoria\": \"abarrotes\"},\n]\n\nprecio_de = {p[\"nombre\"]: p[\"precio\"] for p in productos}\n\nprint(precio_de)\nprint(\"Aceite:\", precio_de[\"Aceite\"])\n",
+   "pruebas": [
+    [
+     "precio_de es un dict de 4 productos",
+     "type(precio_de) is dict and len(precio_de) == 4"
+    ],
+    [
+     "precio_de[\"Aceite\"] es 9.9",
+     "precio_de.get('Aceite') == 9.9"
+    ],
+    [
+     "Cada nombre tiene su precio",
+     "precio_de == {'Arroz': 4.5, 'Aceite': 9.9, 'Detergente': 6.5, 'Fideos': 2.8}"
+    ],
+    [
+     "Es una dict comprehension",
+     "__import__('re').search(r'precio_de\\s*=\\s*\\{.+:.+\\bfor\\b.+\\}', codigo) is not None"
+    ]
+   ]
+  },
+  {
+   "id": "timeit",
+   "titulo": "Mídelo con timeit",
+   "consigna": "¿Cuál es más rápido, el for o la comprehension? No lo adivines: mídelo.\n1. Completa con_comprehension() para que devuelva la misma lista que con_for().\n2. Calcula veces = t_for / t_comp. Si sale mayor que 1, la comprehension fue más rápida.\nEjecuta dos o tres veces: los milisegundos cambian un poco cada vez.",
+   "codigo": "import timeit\n\nnumeros = list(range(10_000))\n\ndef con_for():\n    dobles = []\n    for n in numeros:\n        dobles.append(n * 2)\n    return dobles\n\ndef con_comprehension():\n    return ____   # la misma lista, en una línea\n\nt_for = timeit.timeit(con_for, number=50)\nt_comp = timeit.timeit(con_comprehension, number=50)\nveces = ____\n\nprint(\"¿Misma lista?\", con_for() == con_comprehension())\nprint(f\"for: {t_for * 1000:.1f} ms · comprehension: {t_comp * 1000:.1f} ms\")\nprint(f\"for ÷ comprehension = {veces:.2f}  (mayor que 1: ganó la comprehension)\")\n",
+   "pista": "La lista es [n * 2 for n in numeros]. Y veces = t_for / t_comp",
+   "solucion": "import timeit\n\nnumeros = list(range(10_000))\n\ndef con_for():\n    dobles = []\n    for n in numeros:\n        dobles.append(n * 2)\n    return dobles\n\ndef con_comprehension():\n    return [n * 2 for n in numeros]\n\nt_for = timeit.timeit(con_for, number=50)\nt_comp = timeit.timeit(con_comprehension, number=50)\nveces = t_for / t_comp\n\nprint(\"¿Misma lista?\", con_for() == con_comprehension())\nprint(f\"for: {t_for * 1000:.1f} ms · comprehension: {t_comp * 1000:.1f} ms\")\nprint(f\"for ÷ comprehension = {veces:.2f}  (mayor que 1: ganó la comprehension)\")\n",
+   "pruebas": [
+    [
+     "con_comprehension() da la misma lista que con_for()",
+     "con_comprehension() == con_for()"
+    ],
+    [
+     "con_comprehension usa una list comprehension",
+     "__import__('re').search(r'return\\s*\\[.+\\bfor\\b.+\\bin\\b.+\\]', codigo) is not None"
+    ],
+    [
+     "Mediste los dos con timeit",
+     "codigo.count('timeit.timeit(') >= 2 and t_for > 0 and t_comp > 0"
+    ],
+    [
+     "veces = t_for / t_comp",
+     "abs(veces - t_for / t_comp) < 1e-9"
+    ]
+   ]
+  }
+ ]
+}

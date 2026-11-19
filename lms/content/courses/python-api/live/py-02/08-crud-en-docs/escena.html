@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E08 · Tu CRUD en /docs</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/py01.css">
+<style id="esc-propio">
+body { font-size: clamp(14px, calc(1vw + .55vh), 26px); }
+.esc-cielo { opacity: calc(var(--cielo) * .45); }
+.cr-cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1.6vw; align-items: start; }
+.cr-col { display: grid; gap: 1.1vh; align-content: start; min-width: 0; }
+.cr-m { display: inline-block; min-width: 3.9em; text-align: center; padding: .05em .4em; margin-right: .3em; border-radius: .35em; font: 800 .82em var(--mono); color: #fff; vertical-align: .05em; }
+.cr-m.get { background: #2f6fb3; } .cr-m.post { background: #1f8a4c; } .cr-m.put { background: #b07a00; } .cr-m.del { background: #b8343f; }
+.cr-col .k-pasos > li > b { font-size: .8em; }
+.cr-col .k-pasos .esc-cmd { font-size: .66em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cr-dos { display: grid; gap: .35em; min-width: 0; }
+.cr-cod { font: 700 .9em var(--mono); color: var(--ok); }
+.cr-cod.mal { color: var(--bad); }
+.cr-422 { margin: 0; font: 600 .66em/1.5 var(--mono); background: var(--term); color: #e6eefb; border-radius: .8em; padding: .6em .9em; border: 1px solid rgba(169,208,245,.22); white-space: pre-wrap; overflow-wrap: anywhere; }
+.cr-422 .k { color: #84b9ee; } .cr-422 .s { color: #9be39f; } .cr-422 .r { color: #ffd43b; } .cr-422 .c { color: #7f93ad; }
+.cr-lee { margin: 0; font-size: .7em; color: var(--muted); }
+.cr-lee b { color: var(--fg); }
+@media (max-width: 760px) { .cr-cols { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1120 130 C1170 70 1230 190 1290 130 S1410 70 1470 140"/>
+  <path class="tb" pathLength="1" d="M70 660 C120 600 180 720 240 660 S360 600 420 670"/>
+  <g><circle class="eo" cx="1120" cy="130" r="5"/><circle class="e" cx="1290" cy="130" r="3.5"/><circle class="eg" cx="1470" cy="140" r="4"/><circle class="e" cx="70" cy="660" r="3.5"/><circle class="eo" cx="240" cy="660" r="4.5"/><circle class="eg" cx="420" cy="670" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Python · Clase 2 · E08</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Tu <em>CRUD</em> en /docs</h1>
+      <p class="esc-sub a-in" style="--d:.1s">En Swagger: abre una ruta, pulsa <b>Try it out</b>, pega el body y pulsa <b>Execute</b>. Mira el código de respuesta.</p>
+    </div>
+
+    <div class="cr-cols">
+      <div class="cr-col esc-card a-in" style="--d:.2s">
+        <ol class="k-pasos">
+          <li><b><span class="cr-m post">POST</span>/productos · crea dos productos → <span class="cr-cod">201</span></b>
+            <div class="cr-dos"><pre class="esc-cmd">{"nombre": "Arroz", "precio": 4.5, "stock": 40, "categoria": "abarrotes"}</pre>
+            <pre class="esc-cmd">{"nombre": "Detergente", "precio": 6.5, "stock": 2, "categoria": "limpieza"}</pre></div></li>
+          <li><b><span class="cr-m get">GET</span>/productos · lista → <span class="cr-cod">200</span> <small>· ves los dos, con id 1 y 2</small></b></li>
+          <li><b><span class="cr-m put">PUT</span>/productos/{producto_id} · en producto_id pon <code>1</code> y sube el precio → <span class="cr-cod">200</span></b>
+            <pre class="esc-cmd">{"nombre": "Arroz", "precio": 5.2, "stock": 38, "categoria": "abarrotes"}</pre></li>
+          <li><b><span class="cr-m del">DELETE</span>/productos/{producto_id} · borra el <code>2</code> → <span class="cr-cod">204</span> <small>· pídelo con GET: ahora da <span class="cr-cod mal">404</span></small></b></li>
+          <li><b><span class="cr-m post">POST</span>/productos · manda un body malo → <span class="cr-cod mal">422</span></b>
+            <pre class="esc-cmd">{"nombre": "Aceite", "precio": -3, "stock": "muchos", "categoria": "abarrotes"}</pre></li>
+        </ol>
+      </div>
+
+      <div class="cr-col a-in" style="--d:.4s">
+        <pre class="cr-422" aria-label="Ejemplo de respuesta 422"><span class="c">// 422 · así responde FastAPI (recortado)</span>
+{<span class="k">"detail"</span>: [
+  { <span class="k">"loc"</span>: [<span class="s">"body"</span>, <span class="r">"precio"</span>],
+    <span class="k">"msg"</span>: <span class="s">"Input should be greater than 0"</span> },
+  { <span class="k">"loc"</span>: [<span class="s">"body"</span>, <span class="r">"stock"</span>],
+    <span class="k">"msg"</span>: <span class="s">"Input should be a valid integer…"</span> }
+]}</pre>
+        <p class="cr-lee"><b>loc</b> dice dónde está el error (en el body, campo <code>precio</code>). <b>msg</b> dice qué regla falló. Tu función ni se ejecutó: Pydantic lo frenó antes.</p>
+        <div class="k-caja k-muro" id="muro" data-muro="py02-422" data-max="4" data-color="var(--ph-ea)"
+             data-pregunta="¿Qué te dijo el 422? Copia un loc y su msg" data-placeholder="stock: Input should be a valid integer"></div>
+        <div class="k-caja">
+          <ul class="k-check" data-check="py02-crud" data-listo="CRUD completo. Pulsa «Lo logré» en el panel.">
+            <li><label><input type="checkbox"><span></span><em>Creé 2 productos (201)</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Los listé con GET (200)</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Edité uno con PUT (200)</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Borré uno (204) y luego me dio 404</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Vi el 422 y leí su <code>detail</code></em></label></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">¿Reiniciaste fastapi dev y desaparecieron tus productos? Es normal: viven en un dict en memoria</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/py01.js"></script>
+<script>
+/* Lo que publicas en el muro sobre el 422 queda como evidencia de esta escena. */
+document.getElementById("muro").addEventListener("k-muro", function (e) {
+  var t = String(e.detail.texto || "");
+  if (t !== PY.leer("evi-422", "")) { PY.guardar("evi-422", t); PY.evidencia("hallazgo", "422: " + t); }
+});
+</script>
+</body>
+</html>

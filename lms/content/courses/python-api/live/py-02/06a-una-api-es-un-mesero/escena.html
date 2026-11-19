@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Una API es un mesero que habla HTTP</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. Arriba cliente → FastAPI → productos (y 60–280); abajo, el código. */
+  .caja { fill: var(--papel2); stroke: var(--tinta); stroke-width: 2.4; }
+  .caja.srv { fill: var(--papel3); }
+  .linea { stroke: var(--tinta); stroke-width: 2; opacity: .55; }
+  .fila { font: 700 15px var(--mono); fill: var(--tinta); }
+  .via { fill: none; stroke: var(--gris); stroke-width: 2; stroke-dasharray: 4 6; }
+  #sobre rect, #sobreR rect { fill: var(--n-cmd); stroke: var(--tinta); stroke-width: 2; }
+  #sobreR rect { fill: var(--n-info); }
+  #sobreMal rect { fill: var(--n-hot); stroke: var(--tinta); stroke-width: 2; }
+  #sobre path, #sobreR path, #sobreMal path { fill: none; stroke: var(--tinta); stroke-width: 1.6; }
+  #puerta { stroke: var(--rojo); stroke-width: 6; stroke-linecap: round; }
+  .ventana { fill: var(--papel); stroke: var(--tinta); stroke-width: 2.4; }
+  .barraurl { fill: var(--papel2); stroke: var(--linea); }
+  .metodo { font: 800 14px var(--mono); fill: #fff; text-anchor: middle; dominant-baseline: central; }
+  .ruta { font: 600 15px var(--mono); fill: var(--tinta); dominant-baseline: central; }
+  .codigo { width: 46%; }
+  .codigo .t.mono { white-space: pre-wrap; font-size: .9em; }
+  .verbo { width: 21%; }
+  .marca { border-radius: .2em; padding: 0 .1em; }
+  #pPide, #pTrae, #pConv, #p422, #pSwagger, #pFinal { white-space: nowrap; }
+  #fFinal { width: 64%; }
+  #fFinal .t.mono { font-size: 1.25em; white-space: pre; line-height: 1.45; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 4 de 4 · FastAPI, Pydantic y Swagger</p>
+    <h1>Una API es <em>un mesero que habla HTTP</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Un cliente envía GET /productos/2 a FastAPI, que busca en el dict de productos y responde 200 con el JSON del producto. Cuatro verbos forman el CRUD: POST crea con 201, GET lee con 200, PUT edita con 200 y DELETE borra con 204. El decorador @app.get une la ruta con la función y convierte el 2 en número. Un modelo Pydantic revisa los datos: un precio de -3 se detiene en la puerta y vuelve un 422. Con tipos y decoradores, FastAPI escribe solo la página /docs de Swagger.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="escena">
+          <g id="cli">
+            <rect class="caja" x="30" y="96" width="150" height="130" rx="14"/>
+            <text class="rot fuerte" x="48" y="124">CLIENTE</text>
+            <rect class="barraurl" x="48" y="140" width="114" height="18" rx="9"/>
+            <line class="linea" x1="48" y1="176" x2="160" y2="176"/><line class="linea" x1="48" y1="192" x2="140" y2="192"/><line class="linea" x1="48" y1="208" x2="150" y2="208"/>
+          </g>
+          <g id="srv">
+            <rect class="caja srv" x="300" y="70" width="210" height="182" rx="14"/>
+            <text class="rot fuerte" x="320" y="98">FASTAPI · MAIN.PY</text>
+            <text class="fila" x="320" y="134">@app.get(…)</text>
+            <text class="fila" x="320" y="160">@app.post(…)</text>
+            <text class="fila" x="320" y="186">@app.put(…)</text>
+            <text class="fila" x="320" y="212">@app.delete(…)</text>
+            <line id="puerta" x1="300" y1="82" x2="300" y2="240"/>
+          </g>
+          <g id="coc">
+            <rect class="caja" x="620" y="96" width="150" height="130" rx="14"/>
+            <text class="rot fuerte" x="638" y="124">PRODUCTOS</text>
+            <text class="fila" x="638" y="164">1: arroz</text>
+            <text class="fila" x="638" y="192">2: azúcar</text>
+          </g>
+          <path class="via" d="M184 140 H296"/><path class="via" d="M514 160 H616"/><path class="via" d="M296 196 H184"/>
+          <g id="sobre"><rect x="-30" y="-15" width="60" height="30" rx="4"/><path d="M-30 -15 L0 4 L30 -15"/></g>
+          <g id="sobreR"><rect x="-30" y="-15" width="60" height="30" rx="4"/><path d="M-30 -15 L0 4 L30 -15"/></g>
+          <g id="sobreMal"><rect x="-30" y="-15" width="60" height="30" rx="4"/><path d="M-30 -15 L0 4 L30 -15"/></g>
+        </g>
+        <g id="swagger" class="solo-anim">
+          <rect class="ventana" x="150" y="40" width="500" height="290" rx="14"/>
+          <rect class="barraurl" x="170" y="58" width="460" height="26" rx="13"/>
+          <text class="ruta" x="188" y="71">127.0.0.1:8000/docs</text>
+          <g id="filasSw"></g>
+        </g>
+      </svg>
+
+      <div class="capa" id="etiquetas">
+        <p class="pastilla" id="pPide" style="left:16.5%; top:16%">GET /productos/2</p>
+        <p class="pastilla" id="pTrae" style="left:5%; top:47%">200 · {"nombre": "azúcar", "stock": 5}</p>
+      </div>
+      <div class="capa solo-anim" id="crud">
+        <div class="nt info verbo" id="vPost" data-r="-1" style="left:3%; top:62%"><span class="k">POST /productos</span><span class="t">crear · 201</span></div>
+        <div class="nt cmd verbo" id="vGet" data-r=".8" style="left:27%; top:62%"><span class="k">GET /productos/{id}</span><span class="t">leer · 200</span></div>
+        <div class="nt act verbo" id="vPut" data-r="-.6" style="left:51%; top:62%"><span class="k">PUT /productos/{id}</span><span class="t">editar · 200</span></div>
+        <div class="nt hot verbo" id="vDel" data-r="1.1" style="left:75%; top:62%"><span class="k">DELETE /productos/{id}</span><span class="t">borrar · 204</span></div>
+        <p class="pastilla" id="pNo" style="left:28%; top:80%">¿Y si el id no existe? → 404</p>
+      </div>
+      <div class="capa solo-anim" id="codigo">
+        <div class="nt cmd codigo" id="nRuta" data-r="-.8" style="left:3%; top:58%"><span class="k">La ruta, unida a tu función</span><span class="t mono">@app.get("/productos/<span class="marca" id="mId">{id}</span>")
+def ver(<span class="marca" id="mInt">id: int</span>):
+    return productos[id]</span></div>
+        <p class="pastilla" id="pConv" style="left:5%; top:89%">"2" llega como texto → id: int lo vuelve 2</p>
+        <div class="nt pol codigo" id="nModelo" data-r="1" style="left:52%; top:58%"><span class="k">Pydantic revisa la comanda</span><span class="t mono">class Producto(BaseModel):
+    nombre: str
+    precio: float = Field(gt=0)
+    stock: int = Field(ge=0)</span><span class="sello solo-anim" id="s422">422</span></div>
+        <p class="pastilla solo-anim" id="p422" style="left:4%; top:47%">422 · "Input should be greater than 0"</p>
+      </div>
+      <p class="pastilla solo-anim" id="pSwagger" style="left:14%; top:70%">tus tipos + tus decoradores → /openapi.json → /docs</p>
+      <div class="capa solo-anim" id="final">
+        <div class="nt ficha s" id="fFinal" data-r="-.6" style="left:17%; top:22%"><span class="k">Tu API, en tres pasos</span><span class="t mono">pip install "fastapi[standard]"
+fastapi dev main.py
+# abre http://127.0.0.1:8000/docs</span></div>
+        <p class="pastilla" id="pFinal" style="left:20%; top:64%">5 rutas · 1 modelo · 0 líneas de documentación a mano</p>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Un pedido, una respuesta</b><p>Una API es un mesero: el cliente pide con un método y una ruta, <code>GET /productos/2</code>, y recibe un código y un JSON: 200 y el producto. El cliente puede ser una web, una app o Excel.</p></li>
+        <li><b>Cuatro verbos para un inventario</b><p>POST crea, GET lee, PUT edita y DELETE borra: el CRUD. Cada respuesta trae un código: 201 creado, 200 bien, 204 borrado sin contenido y 404 si el id no existe.</p></li>
+        <li><b>El decorador conecta la ruta</b><p><code>@app.get("/productos/{id}")</code> une esa ruta con tu función. El «2» de la URL llega como texto; <code>id: int</code> lo convierte en número, y si mandan «abc», FastAPI responde 422 por ti.</p></li>
+        <li><b>Pydantic revisa la comanda</b><p>Un modelo dice cómo debe venir un producto: nombre texto, precio mayor que 0, stock entero. Si llega precio −3, FastAPI responde 422 y dice qué campo falló, sin que escribas un solo <code>if</code>.</p></li>
+        <li><b>Swagger se escribe solo</b><p>Con tus tipos y decoradores, FastAPI arma la especificación OpenAPI y la página <code>/docs</code>. Ahí pruebas cada ruta con «Try it out», sin Postman ni código extra.</p></li>
+        <li><b>Tu API, en minutos</b><p>Instalas FastAPI, escribes <code>main.py</code> con cinco rutas y un modelo, y abres <code>/docs</code>. Es lo que haces ahora, en la escena siguiente.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Fielding, R., Nottingham, M. y Reschke, J. (2022). RFC 9110: HTTP Semantics, §9 y §15. IETF · Ramírez, S. FastAPI, documentación (fastapi.tiangolo.com/es/) · Pydantic, documentación (docs.pydantic.dev) · OpenAPI Initiative. OpenAPI Specification 3.1.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, NS = "http://www.w3.org/2000/svg";
+  function svg(tag, at, txt) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; return e; }
+  // Swagger UI pinta cada método con su color: GET azul, POST verde, PUT naranja, DELETE rojo.
+  [["GET", "#61AFFE", "/productos"], ["GET", "#61AFFE", "/productos/{id}"], ["POST", "#49CC90", "/productos"], ["PUT", "#FCA130", "/productos/{id}"], ["DELETE", "#F93E3E", "/productos/{id}"]].forEach(function (r, i) {
+    var y = 104 + i * 44, g = svg("g", { "class": "filaSw" });
+    g.appendChild(svg("rect", { x: 170, y: y, width: 460, height: 36, rx: 6, fill: r[1], "fill-opacity": ".16", stroke: r[1], "stroke-width": 2 }));
+    g.appendChild(svg("rect", { x: 178, y: y + 6, width: 76, height: 24, rx: 4, fill: r[1] }));
+    g.appendChild(svg("text", { "class": "metodo", x: 216, y: y + 18 }, r[0]));
+    g.appendChild(svg("text", { "class": "ruta", x: 268, y: y + 18 }, r[2]));
+    $("#filasSw").appendChild(g);
+  });
+
+  TEO.escena([
+    function (tl) { // 1. pedido y respuesta
+      tl.from(["#cli", "#srv", "#coc"], { autoAlpha: 0, y: 14, duration: .45, stagger: .15 });
+      tl.fromTo("#pPide", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.fromTo("#sobre", { autoAlpha: 1, x: 150, y: 140 }, { x: 400, y: 140, duration: 1, ease: "power1.inOut" });
+      tl.to("#sobre", { x: 690, y: 160, duration: .6, ease: "power1.inOut" });
+      tl.to("#sobre", { autoAlpha: 0, duration: .15 });
+      tl.fromTo("#sobreR", { autoAlpha: 0, x: 400, y: 196 }, { autoAlpha: 1, duration: .15 });
+      tl.to("#sobreR", { x: 130, duration: .9, ease: "power1.inOut" });
+      tl.fromTo("#pTrae", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 });
+    },
+    function (tl) { // 2. CRUD
+      tl.fromTo("#crud", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, ["#vPost", "#vGet", "#vPut", "#vDel"]);
+      tl.fromTo("#pNo", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 });
+    },
+    function (tl) { // 3. el decorador
+      tl.to("#crud", { autoAlpha: 0, duration: .35 });
+      tl.fromTo("#codigo", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#nRuta");
+      tl.to("#mId", { backgroundColor: "rgba(255, 214, 92, 1)", duration: .35 });
+      tl.to("#mInt", { backgroundColor: "rgba(255, 214, 92, 1)", duration: .35 });
+      tl.fromTo("#pConv", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 });
+    },
+    function (tl) { // 4. Pydantic: el 422
+      tl.to(["#etiquetas", "#sobreR"], { autoAlpha: 0, duration: .3 });
+      TEO.pegar(tl, "#nModelo");
+      tl.fromTo("#sobreMal", { autoAlpha: 0, x: 105, y: 140 }, { autoAlpha: 1, duration: .2 });
+      tl.to("#sobreMal", { x: 266, duration: .9, ease: "power2.in" });
+      tl.fromTo("#puerta", { opacity: 0 }, { opacity: 1, duration: .15 });
+      tl.to("#sobreMal", { x: 252, rotation: -12, duration: .15, yoyo: true, repeat: 1 });
+      tl.fromTo("#s422", { autoAlpha: 0, scale: 1.9 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.5)" });
+      tl.to("#sobreMal", { x: 105, y: 196, rotation: 0, duration: .8, ease: "power1.inOut" });
+      tl.fromTo("#p422", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 });
+    },
+    function (tl) { // 5. Swagger
+      tl.to(["#escena", "#codigo"], { autoAlpha: 0, duration: .4 });
+      tl.fromTo("#swagger", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 });
+      tl.from(".filaSw", { autoAlpha: 0, x: -20, duration: .35, stagger: .15 });
+      tl.fromTo("#pSwagger", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .4 });
+    },
+    function (tl) { // 6. tu API
+      tl.to(["#swagger", "#pSwagger"], { autoAlpha: 0, duration: .35 });
+      tl.fromTo("#final", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#fFinal");
+      tl.fromTo("#pFinal", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .4 });
+    }
+  ], {
+    preparar: function () {
+      gsap.set("#sobre", { x: 150, y: 140, autoAlpha: 0 });
+      gsap.set("#sobreR", { x: 400, y: 196, autoAlpha: 0 });
+      gsap.set("#sobreMal", { x: 105, y: 140, autoAlpha: 0 });
+      gsap.set("#puerta", { opacity: 0 });
+      gsap.set(["#pPide", "#pTrae", "#crud", "#pNo", "#codigo", "#pConv", "#s422", "#p422", "#swagger", "#pSwagger", "#final", "#pFinal"], { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buscar en un dict es ir directo</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. Arriba la lista (y 20–230), abajo el set (y 260–500). */
+  .zona { fill: var(--papel2); stroke: var(--linea); stroke-width: 1.5; }
+  .celda { fill: var(--papel); stroke: var(--tinta); stroke-width: 2; }
+  .marca { fill: var(--n-hot); opacity: 0; }
+  .marca.ok { fill: var(--n-info); }
+  .dato { font: 700 16px var(--mono); fill: var(--tinta); text-anchor: middle; dominant-baseline: central; }
+  .idx { font: 600 12px var(--mono); fill: var(--gris); text-anchor: middle; }
+  #puntero { fill: var(--rojo); }
+  .flecha { fill: none; stroke: var(--acento); stroke-width: 3; stroke-linecap: round; }
+  #caja rect { fill: var(--n-pol); stroke: var(--tinta); stroke-width: 2; }
+  #caja text { font: 800 18px var(--mono); fill: #16181D; text-anchor: middle; dominant-baseline: central; }
+  #llave rect { fill: var(--n-act); stroke: var(--tinta); stroke-width: 2; }
+  #llave text { font: 800 17px var(--mono); fill: #16181D; text-anchor: middle; dominant-baseline: central; }
+  #barLista { fill: var(--rojo); } #barSet { fill: var(--verde); }
+  .valor { font: 700 17px var(--mono); fill: var(--tinta); }
+  .codigo { width: 38%; }
+  .codigo .t.mono { white-space: pre-wrap; }
+  #cuentaL, #cuentaS { white-space: nowrap; }
+  #pVeces { font-size: 2.1cqw; white-space: nowrap; }
+  #pError { white-space: nowrap; }
+  #fApi { width: 70%; }
+  #fApi .t.mono { font-size: 1.2em; white-space: pre; line-height: 1.35; }
+  #pApi { white-space: nowrap; font-size: 1.55cqw; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 2 de 4 · Tablas hash</p>
+    <h1>Buscar en una lista es <em>preguntarle a cada uno</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Arriba, una lista de códigos: para saber si Z99 está, un puntero la recorre uno por uno hasta el final; con un millón de códigos son un millón de comparaciones. Abajo, un set: la clave Z99 pasa por hash(), que da el número de casilla, y la búsqueda va directo en un paso. Medido con timeit: 3,2 milisegundos en la lista contra 13 nanosegundos en el set. Las claves deben ser fijas: una tupla sí, una lista no. En la API, un dict por id hace que GET /productos/2 vaya directo.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="arriba">
+          <rect class="zona" x="20" y="14" width="760" height="222" rx="16"/>
+          <text class="rot fuerte" x="40" y="46">LISTA · ¿ESTÁ «Z99»?</text>
+          <g id="celdasL"></g>
+          <text class="dato" x="690" y="92">…</text>
+          <path id="puntero" d="M71 124 l-9 14 h18 z"/>
+        </g>
+        <g id="abajo">
+          <rect class="zona" x="20" y="252" width="760" height="252" rx="16"/>
+          <text class="rot fuerte" x="40" y="284">SET O DICT · ¿ESTÁ «Z99»?</text>
+          <g id="llave"><rect x="40" y="306" width="84" height="48" rx="8"/><text x="82" y="330">Z99</text></g>
+          <path id="fEntra" class="flecha" d="M128 330 H166"/>
+          <g id="caja"><rect x="170" y="304" width="130" height="52" rx="10"/><text x="235" y="330">hash()</text></g>
+          <path id="fSalto" class="flecha" d="M304 330 C 470 330, 659 322, 659 392"/>
+          <g id="celdasS"></g>
+        </g>
+        <g id="barras" class="solo-anim">
+          <text class="rot fuerte" x="60" y="94">TIMEIT · BUSCAR EL ÚLTIMO DE 1 000 000</text>
+          <text class="valor" x="60" y="172">in lista</text>
+          <rect id="barLista" x="190" y="146" width="560" height="40" rx="4"/>
+          <text class="valor" x="190" y="134">3,2 ms por búsqueda</text>
+          <text class="valor" x="60" y="282">in set</text>
+          <rect id="barSet" x="190" y="256" width="3" height="40" rx="1"/>
+          <text class="valor" x="204" y="282">0,000013 ms (13 ns)</text>
+        </g>
+      </svg>
+
+      <div class="capa" id="notas">
+        <div class="nt cmd codigo" id="nLista" data-r="-.8" style="left:5%; top:29%"><span class="k">Recorre de uno en uno</span><span class="t mono">"Z99" in codigos_lista</span></div>
+        <p class="pastilla" id="cuentaL" style="left:50%; top:31%">0 comparaciones</p>
+        <div class="nt info codigo" id="nSet" data-r="1" style="left:5%; top:74%; width:34%"><span class="k">Calcula dónde está</span><span class="t mono">"Z99" in codigos_set</span></div>
+        <p class="pastilla" id="cuentaS" style="left:50%; top:90.5%">1 paso, sin recorrer</p>
+      </div>
+      <p class="pastilla solo-anim" id="pVeces" style="left:24%; top:66%">≈ 240 000 veces más rápido</p>
+
+      <div class="capa solo-anim" id="hashables">
+        <div class="nt info codigo" id="nOk" data-r="-1" style="left:6%; top:24%; width:42%"><span class="k">Clave fija: sí</span><span class="t mono">ubicacion = {(-12.05, -77.04): "Lima"}</span></div>
+        <div class="nt hot codigo" id="nNo" data-r="1.2" style="left:54%; top:24%; width:40%"><span class="k">Clave que puede cambiar: no</span><span class="t mono">{["arroz"]: 12}</span><span class="sello solo-anim" id="sNo">TypeError</span></div>
+        <p class="pastilla" id="pError" style="left:28%; top:56%">TypeError: unhashable type: 'list'</p>
+      </div>
+
+      <div class="capa solo-anim" id="api">
+        <div class="nt ficha s" id="fApi" data-r="-.6" style="left:14%; top:20%"><span class="k">Tu API, hoy: un dict por id</span><span class="t mono">productos = {
+  1: {"nombre": "arroz",  "stock": 12},
+  2: {"nombre": "azúcar", "stock": 5},
+}
+productos[2]</span></div>
+        <p class="pastilla" id="pApi" style="left:20%; top:70%">GET /productos/2 → productos[2]: directo</p>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>La lista revisa uno por uno</b><p>Para saber si «Z99» está en una lista, Python la compara elemento por elemento, desde el primero. Si está al final, o no está, revisa todos: con un millón de códigos, un millón de comparaciones.</p></li>
+        <li><b>El set calcula dónde buscar</b><p>Un set o un dict pasa la clave por <code>hash()</code>, que la convierte en un número, y ese número dice en qué casilla está. Va directo: un paso, tenga mil o un millón.</p><p class="aparte">Simplificado: Python usa tablas más grandes y resuelve cuando dos claves caen en la misma casilla.</p></li>
+        <li><b>Medido: unas 240 000 veces</b><p>Con <code>timeit</code>, buscar el último de un millón tarda 3,2 ms en la lista y 13 nanosegundos en el set. Una búsqueda no se nota; mil por segundo en tu API, sí.</p></li>
+        <li><b>Por eso la clave no puede cambiar</b><p>Si una clave cambiara, su número de casilla ya no serviría. Por eso Python solo acepta claves fijas: una tupla sí, una lista no.</p></li>
+        <li><b>Tu API busca por id en un dict</b><p>Guarda los productos en un dict cuya clave es el id. <code>GET /productos/2</code> será <code>productos[2]</code>: directo, sin recorrer todo el inventario.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Python Wiki. «TimeComplexity» (wiki.python.org/moin/TimeComplexity): <code>in</code> es O(n) en list y O(1) en promedio en set y dict. Medición propia con <code>timeit</code> (mejor de 5), Python 3.13.7, Apple M4 Pro, 19-11-2026.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, NS = "http://www.w3.org/2000/svg";
+  var CODIGOS = ["A17", "B03", "C88", "D21", "E45", "F09", "G62", "H30", "K14"];
+  function svg(tag, at, txt) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; return e; }
+  // Lista: 9 celdas, «…» y la última (Z99). Set: 10 casillas; Z99 cae en la 7.
+  CODIGOS.concat(["Z99"]).forEach(function (c, i) {
+    var x = i < 9 ? 40 + i * 70 : 712, g = $("#celdasL");
+    g.appendChild(svg("rect", { "class": "celda", x: x, y: 70, width: 62, height: 44, rx: 6 }));
+    g.appendChild(svg("rect", { "class": "marca" + (i === 9 ? " ok" : ""), id: "m" + i, x: x + 2, y: 72, width: 58, height: 40, rx: 5 }));
+    g.appendChild(svg("text", { "class": "dato", x: x + 31, y: 92 }, c));
+  });
+  for (var i = 0; i < 10; i++) {
+    var x = 330 + i * 44, g = $("#celdasS");
+    g.appendChild(svg("rect", { "class": "celda", x: x, y: 398, width: 40, height: 40, rx: 5 }));
+    if (i === 7) g.appendChild(svg("rect", { "class": "marca ok", id: "s7", x: x + 2, y: 400, width: 36, height: 36, rx: 4 }));
+    if (i === 7) g.appendChild(svg("text", { "class": "dato", x: x + 20, y: 418, style: "font-size:13px" }, "Z99"));
+    g.appendChild(svg("text", { "class": "idx", x: x + 20, y: 456 }, String(i)));
+  }
+  function cuenta(n) { $("#cuentaL").textContent = n > 9 ? "1 000 000 comparaciones" : n + (n === 1 ? " comparación" : " comparaciones"); }
+
+  TEO.escena([
+    function (tl) { // 1. la lista revisa uno por uno
+      TEO.pegar(tl, "#nLista");
+      tl.fromTo("#cuentaL", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.fromTo("#puntero", { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 });
+      var o = { n: 0 };
+      for (var k = 0; k < 10; k++) {
+        var dx = k < 9 ? k * 70 : 672;
+        tl.to("#puntero", { x: dx, duration: k < 9 ? .22 : .5, ease: "power1.inOut" });
+        tl.fromTo("#m" + k, { opacity: 0 }, { opacity: k === 9 ? 1 : .8, duration: .12 });
+        if (k < 9) tl.to("#m" + k, { opacity: .25, duration: .2 });
+        tl.to(o, { n: k + 1, duration: .01, onUpdate: function () { cuenta(Math.round(o.n)); } }, "<");
+      }
+    },
+    function (tl) { // 2. el set calcula dónde buscar
+      TEO.pegar(tl, "#nSet");
+      tl.from("#llave", { autoAlpha: 0, x: -30, duration: .4 });
+      TEO.trazar(tl, "#fEntra", { duration: .3 });
+      tl.from("#caja", { autoAlpha: 0, scale: .6, transformOrigin: "50% 50%", duration: .4, ease: "back.out(2)" });
+      TEO.trazar(tl, "#fSalto", { duration: .8, ease: "power2.in" });
+      tl.fromTo("#s7", { opacity: 0 }, { opacity: 1, duration: .25 });
+      tl.fromTo("#cuentaS", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .35 });
+    },
+    function (tl) { // 3. medido
+      tl.to(["#arriba", "#abajo"], { opacity: .08, duration: .45 });
+      tl.to("#notas", { autoAlpha: 0, duration: .35 }, "<");
+      tl.fromTo("#barras", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.from("#barLista", { scaleX: 0, transformOrigin: "0% 50%", duration: 1.6, ease: "power1.in" });
+      tl.from("#barSet", { scaleX: 0, transformOrigin: "0% 50%", duration: .2 });
+      tl.fromTo("#pVeces", { autoAlpha: 0, scale: .8 }, { autoAlpha: 1, scale: 1, duration: .45, ease: "back.out(2)" });
+    },
+    function (tl) { // 4. claves fijas
+      tl.to(["#barras", "#pVeces"], { autoAlpha: 0, duration: .35 });
+      tl.fromTo("#hashables", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#nOk");
+      TEO.pegar(tl, "#nNo");
+      tl.fromTo("#sNo", { autoAlpha: 0, scale: 1.8 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.5)" });
+      tl.fromTo("#pError", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .35 });
+    },
+    function (tl) { // 5. tu API
+      tl.to("#hashables", { autoAlpha: 0, duration: .35 });
+      tl.fromTo("#api", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#fApi");
+      tl.fromTo("#pApi", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4 });
+    }
+  ], {
+    preparar: function () {
+      gsap.set(["#cuentaL", "#cuentaS", "#puntero", "#barras", "#pVeces", "#hashables", "#sNo", "#pError", "#api", "#pApi"], { autoAlpha: 0 });
+      cuenta(0);
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>

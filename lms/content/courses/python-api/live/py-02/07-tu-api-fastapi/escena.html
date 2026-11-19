@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E07 · Tu API con FastAPI</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/py01.css">
+<style id="esc-propio">
+body { font-size: clamp(14px, calc(1vw + .55vh), 26px); }
+.esc-cielo { opacity: calc(var(--cielo) * .45); }
+.ap-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 1.6vw; align-items: start; }
+.ap-col { display: grid; gap: 1.1vh; align-content: start; min-width: 0; }
+.ap-col .k-pasos { gap: .5em; }
+.ap-dos { display: grid; gap: .35em; min-width: 0; }
+.ap-arch { display: flex; align-items: center; justify-content: space-between; gap: .6em; flex-wrap: wrap; font: 600 .76em system-ui, -apple-system, sans-serif; color: var(--muted); }
+.ap-arch b { color: var(--fg); }
+.ap-code { max-height: 64vh; overflow: auto; font-size: .7em; }
+.ap-lee { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5em; }
+.ap-lee div { border-radius: .7em; padding: .45em .6em; background: var(--s2); border: 1.5px solid var(--line2); font-size: .66em; line-height: 1.35; }
+.ap-lee b { display: block; font: 800 1em var(--mono); color: var(--accent); }
+.ap-avisos { display: flex; flex-wrap: wrap; gap: .4em; }
+.ap-avisos .esc-chip { white-space: normal; border-radius: .7em; font-size: .64em; line-height: 1.35; }
+@media (max-width: 1100px) and (min-width: 761px) { .ap-lee { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .ap-cols { grid-template-columns: 1fr; } .ap-code { max-height: none; } .ap-lee { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1120 130 C1170 70 1230 190 1290 130 S1410 70 1470 140"/>
+  <path class="tb" pathLength="1" d="M70 660 C120 600 180 720 240 660 S360 600 420 670"/>
+  <g><circle class="eo" cx="1120" cy="130" r="5"/><circle class="e" cx="1290" cy="130" r="3.5"/><circle class="eg" cx="1470" cy="140" r="4"/><circle class="e" cx="70" cy="660" r="3.5"/><circle class="eo" cx="240" cy="660" r="4.5"/><circle class="eg" cx="420" cy="670" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Python · Clase 2 · E07</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="k-so-cab">
+      <h1 class="esc-titulo a-in">Tu API con <em>FastAPI</em></h1>
+      <div class="k-so a-in" style="--d:.1s" data-so-tabs></div>
+    </div>
+
+    <div class="ap-cols">
+      <div class="ap-col a-in" style="--d:.2s">
+        <div class="esc-card">
+          <ol class="k-pasos" data-so="win">
+            <li><b>Una carpeta nueva para tu API</b><pre class="esc-cmd"><span class="p">PS&gt; </span>mkdir mi-api; cd mi-api</pre></li>
+            <li><b>Crea el venv y actívalo <small>· si PowerShell lo bloquea: <code>Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</code></small></b><div class="ap-dos"><pre class="esc-cmd"><span class="p">PS&gt; </span>py -m venv .venv</pre><pre class="esc-cmd"><span class="p">PS&gt; </span>.venv\Scripts\Activate.ps1</pre></div></li>
+            <li><b>Instala FastAPI <small>· con las comillas: los corchetes son parte del nombre</small></b><pre class="esc-cmd"><span class="p">(.venv) PS&gt; </span>pip install "fastapi[standard]"</pre></li>
+            <li><b>Crea <code>main.py</code> y pega el código de la derecha</b><pre class="esc-cmd"><span class="p">(.venv) PS&gt; </span>code main.py</pre></li>
+            <li><b>Levántala <small>· se recarga sola cada vez que guardas</small></b><pre class="esc-cmd"><span class="p">(.venv) PS&gt; </span>fastapi dev main.py</pre></li>
+          </ol>
+          <ol class="k-pasos" data-so="mac linux">
+            <li><b>Una carpeta nueva para tu API</b><pre class="esc-cmd"><span class="p">$ </span>mkdir mi-api && cd mi-api</pre></li>
+            <li><b>Crea el venv y actívalo</b><div class="ap-dos"><pre class="esc-cmd"><span class="p">$ </span>python3 -m venv .venv</pre><pre class="esc-cmd"><span class="p">$ </span>source .venv/bin/activate</pre></div></li>
+            <li><b>Instala FastAPI <small>· con las comillas: los corchetes son parte del nombre</small></b><pre class="esc-cmd"><span class="p">(.venv) $ </span>pip install "fastapi[standard]"</pre></li>
+            <li><b>Crea <code>main.py</code> y pega el código de la derecha</b><pre class="esc-cmd"><span class="p">(.venv) $ </span>code main.py</pre></li>
+            <li><b>Levántala <small>· se recarga sola cada vez que guardas</small></b><pre class="esc-cmd"><span class="p">(.venv) $ </span>fastapi dev main.py</pre></li>
+          </ol>
+        </div>
+        <pre class="k-sal">Server started at http://127.0.0.1:8000
+Documentation at http://127.0.0.1:8000/docs</pre>
+        <div class="k-caja">
+          <ul class="k-check" data-check="py02-fastapi" data-listo="Listo: toma la captura de /docs y pulsa «Lo logré» en el panel.">
+            <li><label><input type="checkbox"><span></span><em>Veo <code>(.venv)</code> y <code>pip install</code> terminó bien</em></label></li>
+            <li><label><input type="checkbox"><span></span><em><code>fastapi dev main.py</code> dice «Server started»</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Abrí <code>http://127.0.0.1:8000/docs</code> en mi navegador</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Swagger muestra mis <b>5 rutas</b>: GET, GET, POST, PUT y DELETE</em></label></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="ap-col a-in" style="--d:.4s">
+        <div class="ap-arch"><span>Archivo <b>main.py</b> · 38 líneas con código</span>
+          <span class="k-links"><button class="k-btn" type="button" id="b-copiar">Copiar main.py</button><button class="k-link" type="button" data-abrir="http://127.0.0.1:8000/docs">Abrir /docs</button></span></div>
+<pre class="k-py ap-code" id="codigo">from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+app = FastAPI(title="Inventario de mi tienda")
+
+
+class Producto(BaseModel):
+    """Lo que el cliente manda en el body de POST y PUT."""
+    nombre: str
+    precio: float = Field(gt=0)  # mayor que 0
+    stock: int = Field(ge=0)     # 0 o más
+    categoria: str
+
+
+# La «base de datos»: un dict en memoria. Llave = id, valor = el producto
+productos: dict[int, dict] = {}
+siguiente_id = 1
+
+
+def buscar(producto_id: int) -&gt; dict:
+    if producto_id not in productos:  # en un dict se va directo a la llave
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return productos[producto_id]
+
+
+@app.get("/productos")
+def listar():
+    return list(productos.values())
+
+
+@app.get("/productos/{producto_id}")
+def ver(producto_id: int):
+    return buscar(producto_id)
+
+
+@app.post("/productos", status_code=201)
+def crear(producto: Producto):
+    global siguiente_id
+    nuevo = {"id": siguiente_id, **producto.model_dump()}  # id + los 4 campos
+    productos[siguiente_id] = nuevo
+    siguiente_id += 1
+    return nuevo
+
+
+@app.put("/productos/{producto_id}")
+def editar(producto_id: int, producto: Producto):
+    buscar(producto_id)  # si no existe, responde 404
+    productos[producto_id] = {"id": producto_id, **producto.model_dump()}
+    return productos[producto_id]
+
+
+@app.delete("/productos/{producto_id}", status_code=204)
+def borrar(producto_id: int):
+    buscar(producto_id)
+    del productos[producto_id]
+</pre>
+        <div class="ap-lee">
+          <div><b>Producto</b>el modelo Pydantic: valida tipos y reglas (<code>gt=0</code>, <code>ge=0</code>) antes de entrar</div>
+          <div><b>productos</b>un dict en memoria: si reinicias, se vacía (la base de datos llega en la clase 3)</div>
+          <div><b>@app.get(…)</b>cada decorador une un método HTTP y una ruta con tu función</div>
+        </div>
+        <div class="ap-avisos">
+          <span class="esc-chip warn">«fastapi: command not found» o «no se reconoce»: activa el venv</span>
+          <span class="esc-chip warn">«address already in use»: <code>fastapi dev main.py --port 8001</code></span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Toma una captura de /docs con tus 5 rutas y súbela · luego «Lo logré»</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/py01.js"></script>
+<script>
+(function () {
+  var b = document.getElementById("b-copiar"), texto = document.getElementById("codigo").textContent;
+  b.addEventListener("click", function () {
+    PY.copiar(texto).then(function (ok) {
+      b.textContent = ok ? "✓ Copiado" : "No pude copiar"; b.classList.toggle("ok", !!ok);
+      setTimeout(function () { b.textContent = "Copiar main.py"; b.classList.remove("ok"); }, 2200);
+    });
+  });
+})();
+</script>
+</body>
+</html>

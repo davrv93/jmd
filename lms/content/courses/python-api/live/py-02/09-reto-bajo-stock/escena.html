@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E09 · Reto: bajo stock y categorías</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/py01.css">
+<style id="esc-propio">
+body { font-size: clamp(14px, calc(1vw + .55vh), 26px); }
+.r-cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1.6vw; align-items: start; }
+.r-col { display: grid; gap: 1.1vh; align-content: start; min-width: 0; }
+.r-pide { display: flex; flex-wrap: wrap; gap: .4em; }
+.r-pide .esc-chip { font-size: .66em; }
+.r-hueco { display: inline-block; min-width: 3.2em; text-align: center; border-bottom: 2px dashed #ffd43b; color: #ffd43b; }
+.r-cab { display: flex; align-items: center; justify-content: space-between; gap: .6em; flex-wrap: wrap; font: 600 .74em system-ui, -apple-system, sans-serif; color: var(--muted); }
+.r-cab b { color: var(--fg); }
+.r-cab .k-links { gap: .35em; }
+.r-sol[hidden] { display: none !important; }
+.r-col .k-py { font-size: .7em; }
+.r-pistas { margin: 0; padding-left: 1.2em; display: grid; gap: .35em; font-size: .74em; }
+.r-pistas li::marker { color: var(--accent); font-weight: 800; }
+.r-orden { display: grid; gap: .45em; }
+.r-orden h2 { margin: 0; font-size: .74em; display: flex; align-items: center; gap: .5em; }
+.r-orden h2::before { content: "!"; display: grid; place-items: center; width: 1.4em; height: 1.4em; border-radius: 50%; background: var(--warn); color: #fff; font-weight: 900; flex: none; }
+.r-orden p { margin: 0; font-size: .7em; color: var(--muted); }
+.r-filas { display: grid; gap: .3em; font: 700 .66em var(--mono); }
+.r-filas div { display: flex; align-items: center; gap: .5em; padding: .35em .6em; border-radius: .5em; background: var(--s2); border: 1.5px solid var(--line2); overflow-wrap: anywhere; }
+.r-filas .bien { border-color: var(--ok); background: var(--ok-bg); }
+.r-filas i { font-style: normal; color: var(--muted); font-weight: 600; }
+@media (max-width: 760px) { .r-cols { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1120 130 C1170 70 1230 190 1290 130 S1410 70 1470 140"/>
+  <path class="tb" pathLength="1" d="M70 660 C120 600 180 720 240 660 S360 600 420 670"/>
+  <g><circle class="eo" cx="1120" cy="130" r="5"/><circle class="e" cx="1290" cy="130" r="3.5"/><circle class="eg" cx="1470" cy="140" r="4"/><circle class="e" cx="70" cy="660" r="3.5"/><circle class="eo" cx="240" cy="660" r="4.5"/><circle class="eg" cx="420" cy="670" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Python · Clase 2 · E09</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Reto: <em>¿qué hay que reponer?</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Agrega dos rutas a tu <code>main.py</code>: <code>GET /productos/bajo-stock?limite=5</code> y <code>GET /categorias</code>.</p>
+    </div>
+
+    <div class="r-cols">
+      <div class="r-col a-in" style="--d:.25s">
+        <div class="r-pide"><span class="esc-chip">list comprehension con if</span><span class="esc-chip">query parameter</span><span class="esc-chip">set</span><span class="esc-chip">sorted()</span><span class="esc-chip">orden de las rutas</span></div>
+        <div class="r-cab"><span>Completa los 3 huecos</span>
+          <span class="k-links"><button class="k-btn sec" type="button" id="b-copiar">Copiar con huecos</button><button class="k-btn sec" type="button" id="b-sol">Ver solución</button></span></div>
+<pre class="k-py" id="con-huecos"># Pégalo en main.py ANTES de @app.get("/productos/{producto_id}")
+
+@app.get("/productos/bajo-stock")
+def bajo_stock(limite: int = 5):
+    return [HUECO1 for p in productos.values() if HUECO2]
+
+
+@app.get("/categorias")
+def categorias():
+    return sorted(HUECO3)</pre>
+<pre class="k-py r-sol" id="sol" hidden># Pégalo en main.py ANTES de @app.get("/productos/{producto_id}")
+
+@app.get("/productos/bajo-stock")
+def bajo_stock(limite: int = 5):
+    return [p for p in productos.values() if p["stock"] &lt; limite]
+
+
+@app.get("/categorias")
+def categorias():
+    return sorted({p["categoria"] for p in productos.values()})</pre>
+        <div class="esc-card">
+          <ol class="r-pistas">
+            <li><code>limite: int = 5</code> en la función se vuelve <code>?limite=5</code> en la URL. Swagger lo muestra como un campo.</li>
+            <li><code>productos.values()</code> te da cada producto, que es un dict. El filtro es el mismo del ejercicio 6 del laboratorio.</li>
+            <li>Para las categorías: un <b>set</b> comprehension quita los repetidos y <code>sorted()</code> lo devuelve como lista ordenada (JSON no tiene set).</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="r-col a-in" style="--d:.45s">
+        <div class="esc-card r-orden">
+          <h2>El orden de las rutas importa</h2>
+          <p>FastAPI revisa las rutas de arriba hacia abajo y usa la primera que encaja.</p>
+          <div class="r-filas">
+            <div class="bien">1 · /productos/bajo-stock <i>← primero la fija</i></div>
+            <div class="bien">2 · /productos/{producto_id} <i>← después la variable</i></div>
+          </div>
+          <p>Al revés, <code>bajo-stock</code> se toma como un <code>producto_id</code>, no es un número y la respuesta es <b>422</b>: «Input should be a valid integer».</p>
+        </div>
+        <div class="esc-card">
+          <ol class="k-pasos">
+            <li><b>Guarda <code>main.py</code>: <code>fastapi dev</code> se recarga solo</b><span></span></li>
+            <li><b>En /docs, prueba <code>bajo-stock</code> con límite 5</b>
+              <pre class="k-sal">[{"id": 2, "nombre": "Detergente", "precio": 6.5, "stock": 2, "categoria": "limpieza"}]</pre></li>
+            <li><b>Y <code>/categorias</code></b>
+              <pre class="k-sal">["abarrotes", "limpieza"]</pre></li>
+          </ol>
+        </div>
+        <div class="k-caja k-muro" data-muro="py02-reto" data-max="4" data-color="var(--ph-ea)"
+             data-pregunta="Pega lo que respondió /categorias en tu API" data-placeholder='["abarrotes", "limpieza"]'></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Prueba primero sin mirar la solución · captura de /docs con las 7 rutas · luego «Lo logré»</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/py01.js"></script>
+<script>
+/* Corre después de py01.js (que resalta el código al cargar): así los huecos conservan su estilo. */
+function iniciarReto() {
+  var pre = document.getElementById("con-huecos"), sol = document.getElementById("sol"), b = document.getElementById("b-sol");
+  var texto = pre.textContent.replace(/HUECO\d/g, "___");
+  pre.innerHTML = pre.innerHTML.replace(/HUECO\d/g, '<span class="r-hueco">___</span>');
+  document.getElementById("b-copiar").addEventListener("click", function () {
+    var t = this; PY.copiar(texto).then(function (ok) { var a = t.textContent; t.textContent = ok ? "✓ Copiado" : "No pude copiar"; setTimeout(function () { t.textContent = a; }, 2000); });
+  });
+  b.addEventListener("click", function () {
+    var ver = sol.hidden; sol.hidden = !ver; pre.hidden = ver; b.textContent = ver ? "Volver a los huecos" : "Ver solución";
+  });
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciarReto); else iniciarReto();
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Una comprehension es un for que construye</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. Arriba el flujo (y 40–280), abajo el código. */
+  .celda { fill: var(--papel); stroke: var(--tinta); stroke-width: 2; }
+  .celda.vacia { fill: none; stroke-dasharray: 5 5; }
+  .dato { font: 700 17px var(--mono); fill: var(--tinta); text-anchor: middle; dominant-baseline: central; }
+  .via rect { fill: var(--n-cmd); stroke: var(--tinta); stroke-width: 1.5; }
+  .via.sale rect { fill: var(--n-info); }
+  .via.no rect { fill: var(--n-hot); }
+  .via text { font: 700 15px var(--mono); fill: #16181D; text-anchor: middle; dominant-baseline: central; }
+  .maquina rect { fill: var(--n-act); stroke: var(--tinta); stroke-width: 2.4; }
+  .maquina text { font: 800 16px var(--mono); fill: #16181D; text-anchor: middle; dominant-baseline: central; }
+  #puerta rect { fill: var(--n-pol); }
+  .riel { stroke: var(--linea); stroke-width: 2; stroke-dasharray: 3 6; }
+  #barFor { fill: var(--azul); } #barComp { fill: var(--verde); }
+  .valor { font: 700 17px var(--mono); fill: var(--tinta); }
+  .codigo { width: 45%; }
+  .codigo .t.mono { white-space: pre-wrap; font-size: .9em; }
+  .ex, .it, .si { border-radius: .2em; padding: 0 .1em; }
+  #pMedida, #pRegla, #pReto { white-space: nowrap; }
+  #pMedida { font-size: 1.9cqw; }
+  #fReto { width: 70%; }
+  #fReto .t.mono { font-size: 1.6em; white-space: pre; line-height: 1.4; }
+  .hueco { display: inline-block; min-width: 5.5em; border-bottom: .14em solid var(--rojo); }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 3 de 4 · List comprehension</p>
+    <h1>Una comprehension es <em>un for que construye una lista</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Una lista de precios pasa uno por uno por una máquina que les suma el IGV y sale una lista nueva. Primero con un for y append, luego con una comprehension de una línea. Con un if al final, una puerta deja pasar solo los productos con stock menor que 5. Medido con timeit sobre un millón de precios: 18,3 ms con for y 15,5 ms con comprehension. Cuando hay dos for o efectos como imprimir o guardar, conviene volver al for. Al final, el reto: una ruta de la API que devuelve los productos con poco stock.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="flujo">
+          <text class="rot fuerte" x="56" y="40">PRECIOS</text>
+          <text class="rot fuerte" x="644" y="40">CON_IGV</text>
+          <g id="izq"></g><g id="der"></g>
+          <line class="riel" x1="156" y1="155" x2="326" y2="155"/><line class="riel" x1="476" y1="155" x2="636" y2="155"/>
+          <g class="maquina" id="maq"><rect x="326" y="118" width="150" height="74" rx="12"/><text x="401" y="146">round(</text><text x="401" y="167">p * 1.18, 2)</text></g>
+          <g id="viajeros"></g>
+        </g>
+        <g id="filtro" class="solo-anim">
+          <text class="rot fuerte" x="56" y="40">PRODUCTOS · STOCK</text>
+          <text class="rot fuerte" x="610" y="40">BAJO_STOCK</text>
+          <g class="maquina" id="puerta"><rect x="340" y="100" width="120" height="110" rx="12"/><text x="400" y="140">if</text><text x="400" y="166">stock &lt; 5</text></g>
+          <g id="izqF"></g><g id="derF"></g><g id="viajerosF"></g>
+        </g>
+        <g id="barras" class="solo-anim">
+          <text class="rot fuerte" x="60" y="70">TIMEIT · 1 000 000 PRECIOS</text>
+          <text class="valor" x="60" y="140">for + append</text>
+          <rect id="barFor" x="250" y="114" width="500" height="40" rx="4"/>
+          <text class="valor" x="250" y="104">18,3 ms</text>
+          <text class="valor" x="60" y="226">comprehension</text>
+          <rect id="barComp" x="250" y="200" width="424" height="40" rx="4"/>
+          <text class="valor" x="250" y="190">15,5 ms</text>
+        </g>
+      </svg>
+
+      <div class="capa" id="notas1">
+        <div class="nt cmd codigo" id="nFor" data-r="-.8" style="left:4%; top:62%"><span class="k">Con for</span><span class="t mono">con_igv = []
+<span class="it">for p in precios</span>:
+    con_igv.append(<span class="ex">round(p * 1.18, 2)</span>)</span></div>
+        <div class="nt info codigo" id="nComp" data-r="1" style="left:52%; top:62%"><span class="k">Con comprehension</span><span class="t mono">con_igv = [<span class="ex">round(p * 1.18, 2)</span> <span class="it">for p in precios</span>]</span></div>
+      </div>
+      <div class="capa solo-anim" id="notas2">
+        <div class="nt act codigo" id="nFiltro" data-r="-1" style="left:8%; top:64%; width:84%"><span class="k">Con if: solo entran los que cumplen</span><span class="t mono">bajo_stock = [p["nombre"] for p in productos <span class="si">if p["stock"] &lt; 5</span>]</span></div>
+      </div>
+      <p class="pastilla solo-anim" id="pMedida" style="left:22%; top:60%">≈ 15 % menos tiempo, y una línea en vez de tres</p>
+      <div class="capa solo-anim" id="cuando">
+        <div class="nt hot codigo" id="nAnidada" data-r="-1.2" style="left:5%; top:18%; width:46%"><span class="k">Dos for y dos if</span><span class="t mono">[c for f in tabla if f for c in f if c]</span><span class="sello solo-anim" id="sIlegible">¿?</span></div>
+        <div class="nt pol codigo" id="nEfecto" data-r="1" style="left:55%; top:18%; width:40%"><span class="k">Hace algo más que construir</span><span class="t">imprime, guarda en disco o llama a otra API → <b>for</b></span></div>
+        <p class="pastilla" id="pRegla" style="left:14%; top:58%">Si no la lees en voz alta de corrido, usa un for</p>
+      </div>
+      <div class="capa solo-anim" id="reto">
+        <div class="nt ficha s" id="fReto" data-r="-.6" style="left:12%; top:26%"><span class="k">Reto de hoy · GET /productos/bajo-stock?limite=5</span><span class="t mono">return [p for p in <span class="hueco"></span>
+        if <span class="hueco"></span>]</span></div>
+        <p class="pastilla" id="pReto" style="left:24%; top:60%">Completa los huecos en tu API (escena 9)</p>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>El for que construye</b><p>Muchos for hacen lo mismo: empiezan con una lista vacía, recorren otra y agregan algo transformado. Aquí, cada precio sale con IGV: por 1,18 y redondeado a 2 decimales.</p></li>
+        <li><b>La misma idea, en una línea</b><p>Una list comprehension lo dice en una sola expresión: «qué» agregas, en amarillo, y «de dónde» sale, en el recuadro. Mismo resultado, sin lista vacía ni <code>append</code>.</p></li>
+        <li><b>Con un if, también filtra</b><p>Al final puedes poner un <code>if</code>: solo entran los que lo cumplen. Así sale, en una línea, la lista de productos con poco stock.</p></li>
+        <li><b>Medido: un poco más rápida</b><p>Con <code>timeit</code> y un millón de precios: 18,3 ms con for y 15,5 ms con comprehension, porque no busca ni llama a <code>append</code> en cada vuelta. La razón principal para usarla sigue siendo que se lee mejor.</p></li>
+        <li><b>Cuándo volver al for</b><p>Si lleva dos for y dos if, o si además imprime, guarda o llama a algo, usa un for: se lee y se depura mejor. La comprehension es para construir una lista, nada más.</p></li>
+        <li><b>En tu API: el reto de hoy</b><p>La ruta de productos con poco stock es una comprehension sobre tu dict de productos. Hoy completas los huecos en tu propia API.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Python Software Foundation. «Listas por comprensión», Tutorial de Python 3, §5.1.3 · Warsaw, B. (2000). PEP 202: List Comprehensions. Medición propia con <code>timeit</code> (mejor de 5), Python 3.13.7, Apple M4 Pro, 19-11-2026. IGV del Perú: 18 %.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, NS = "http://www.w3.org/2000/svg";
+  var ENTRA = ["10.0", "25.5", "4.0", "12.0"], SALE = ["11.8", "30.09", "4.72", "14.16"];
+  var PROD = [["arroz", 12], ["azúcar", 3], ["aceite", 7], ["sal", 2]];
+  function svg(tag, at, txt) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; return e; }
+  function chip(padre, id, texto, ancho, clase) {   // dibujado en el origen: GSAP lo mueve con x / y
+    var g = svg("g", { id: id, "class": "via " + (clase || "") });
+    g.appendChild(svg("rect", { x: -ancho / 2, y: -17, width: ancho, height: 34, rx: 17 }));
+    g.appendChild(svg("text", { x: 0, y: 0 }, texto)); padre.appendChild(g); return g;
+  }
+  var Y = function (i) { return 80 + i * 50; };
+  for (var i = 0; i < 4; i++) {
+    $("#izq").appendChild(svg("rect", { "class": "celda", x: 50, y: Y(i) - 20, width: 100, height: 40, rx: 6 }));
+    $("#izq").appendChild(svg("text", { "class": "dato", x: 100, y: Y(i) }, ENTRA[i]));
+    $("#der").appendChild(svg("rect", { "class": "celda vacia", x: 640, y: Y(i) - 20, width: 110, height: 40, rx: 6 }));
+    chip($("#viajeros"), "vi" + i, ENTRA[i], 78);
+    chip($("#viajeros"), "vo" + i, SALE[i], 96, "sale");
+    $("#izqF").appendChild(svg("text", { "class": "dato", x: 110, y: Y(i), style: "font-size:15px" }, PROD[i][0] + " · " + PROD[i][1]));
+    chip($("#viajerosF"), "fi" + i, PROD[i][0], 104, PROD[i][1] < 5 ? "sale" : "no");
+  }
+
+  TEO.escena([
+    function (tl) { // 1. el for que construye
+      tl.from("#izq > *", { autoAlpha: 0, x: -20, duration: .3, stagger: .05 });
+      tl.from("#maq", { autoAlpha: 0, scale: .7, transformOrigin: "50% 50%", duration: .4, ease: "back.out(2)" });
+      TEO.pegar(tl, "#nFor");
+      for (var k = 0; k < 4; k++) {
+        tl.fromTo("#vi" + k, { autoAlpha: 1 }, { x: 401, y: 155, duration: .5, ease: "power1.in" });
+        tl.to("#vi" + k, { autoAlpha: 0, duration: .12 });
+        tl.fromTo("#vo" + k, { autoAlpha: 0 }, { autoAlpha: 1, duration: .12 }, "<");
+        tl.to("#vo" + k, { x: 695, y: Y(k), duration: .5, ease: "power1.out" });
+      }
+    },
+    function (tl) { // 2. la misma idea en una línea
+      TEO.pegar(tl, "#nComp");
+      tl.to(".ex", { backgroundColor: "rgba(255, 214, 92, 1)", duration: .4 });
+      tl.to(".it", { boxShadow: "0 0 0 .14em #9E3B00", duration: .4 });
+    },
+    function (tl) { // 3. con if, filtra
+      tl.to("#flujo", { autoAlpha: 0, duration: .35 });
+      tl.to("#notas1", { autoAlpha: 0, duration: .35 }, "<");
+      tl.fromTo("#filtro", { autoAlpha: 0 }, { autoAlpha: 1, duration: .35 });
+      tl.fromTo("#notas2", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#nFiltro");
+      tl.to(".si", { backgroundColor: "rgba(255, 255, 255, .85)", boxShadow: "0 0 0 .14em #6B3FA0", duration: .35 });
+      var fila = 0;
+      for (var k = 0; k < 4; k++) {
+        tl.fromTo("#fi" + k, { autoAlpha: 1 }, { x: 400, y: 155, duration: .45, ease: "power1.in" });
+        if (PROD[k][1] < 5) { tl.to("#fi" + k, { x: 672, y: Y(fila), duration: .45, ease: "power1.out" }); fila++; }
+        else tl.to("#fi" + k, { y: 300, autoAlpha: 0, rotation: 20, duration: .45, ease: "power2.in" });
+      }
+    },
+    function (tl) { // 4. medido
+      tl.to(["#filtro", "#notas2"], { autoAlpha: 0, duration: .35 });
+      tl.fromTo("#barras", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.from("#barFor", { scaleX: 0, transformOrigin: "0% 50%", duration: 1.2, ease: "none" });
+      tl.from("#barComp", { scaleX: 0, transformOrigin: "0% 50%", duration: 1.2 * 15.5 / 18.3, ease: "none" }, "<");
+      tl.fromTo("#pMedida", { autoAlpha: 0, scale: .85 }, { autoAlpha: 1, scale: 1, duration: .4, ease: "back.out(2)" });
+    },
+    function (tl) { // 5. cuándo volver al for
+      tl.to(["#barras", "#pMedida"], { autoAlpha: 0, duration: .35 });
+      tl.fromTo("#cuando", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#nAnidada");
+      tl.fromTo("#sIlegible", { autoAlpha: 0, scale: 1.8 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.5)" });
+      TEO.pegar(tl, "#nEfecto");
+      tl.fromTo("#pRegla", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4 });
+    },
+    function (tl) { // 6. el reto
+      tl.to("#cuando", { autoAlpha: 0, duration: .35 });
+      tl.fromTo("#reto", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#fReto");
+      tl.fromTo("#pReto", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4 });
+    }
+  ], {
+    preparar: function () {
+      for (var k = 0; k < 4; k++) {
+        gsap.set("#vi" + k, { x: 100, y: Y(k), autoAlpha: 0 });
+        gsap.set("#vo" + k, { x: 401, y: 155, autoAlpha: 0 });
+        gsap.set("#fi" + k, { x: 110, y: Y(k), autoAlpha: 0 });
+      }
+      gsap.set(["#filtro", "#notas2", "#barras", "#pMedida", "#cuando", "#sIlegible", "#reto", "#pReto"], { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>

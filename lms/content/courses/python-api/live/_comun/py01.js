@@ -1,4 +1,4 @@
-// py01.js · kit de las escenas de «Python: de cero a tu API» (clase 1, py-01). Script clásico, sin módulos:
+// py01.js · kit de las escenas de «Python: de cero a tu API» (clases 1 y 2: py-01, py-02). Script clásico, sin módulos:
 //   <link rel="stylesheet" href="../../comun/py01.css">
 //   <script src="../../comun/py01.js"></script>            (al final del body)
 //
@@ -27,6 +27,13 @@
   var CURSO = "Python: de cero a tu API";
   var CLASE = "Clase 1 · Entorno profesional y sintaxis esencial";
   var FECHA = "Jueves 12 de noviembre de 2026";
+  var NUM = 1, FRASE = "Hoy dejé listo mi entorno de Python: versiones, venv y Docker.";
+  // La clase 2 usa el mismo kit: cambian los textos de la fotito. El localStorage sigue con «py01-» (compatible).
+  if (LECCION === "py-02") {
+    CLASE = "Clase 2 · Estructuras de datos y tu API con FastAPI";
+    FECHA = "Jueves 19 de noviembre de 2026";
+    NUM = 2; FRASE = "Hoy armé mi API de inventario con FastAPI y la probé en /docs.";
+  }
 
   // ---------- utilidades ----------
   function $(sel, raiz) { return (raiz || document).querySelector(sel); }
@@ -149,7 +156,7 @@
   }
 
   // ---------- resaltado de Python (pre.k-py, code.k-py) ----------
-  var KW = "def|return|if|elif|else|for|while|in|not|and|or|try|except|finally|import|from|as|class|with|pass|break|continue|True|False|None|lambda";
+  var KW = "def|return|if|elif|else|for|while|in|not|and|or|try|except|finally|import|from|as|class|with|pass|break|continue|True|False|None|lambda" + (NUM > 1 ? "|raise|global|del|is" : "");
   var BI = "print|range|len|int|str|float|bool|list|dict|set|tuple|sum|input|type|round|sorted|open";
   var RX = new RegExp("(#[^\\n]*)|([fFrRbB]?\"(?:[^\"\\\\\\n]|\\\\.)*\"|[fFrRbB]?'(?:[^'\\\\\\n]|\\\\.)*')|\\b(" + KW + ")\\b|\\b(" + BI + ")(?=\\()|\\b(\\d+(?:\\.\\d+)?)\\b", "g");
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
@@ -414,7 +421,7 @@
     // reflexión
     var refl = String(d.reflexion || "").trim();
     ctx.font = "italic 500 38px " + FONT;
-    var ls = envolver(ctx, refl ? "«" + refl + "»" : "«Hoy dejé listo mi entorno de Python: versiones, venv y Docker.»", W - 260, 4);
+    var ls = envolver(ctx, refl ? "«" + refl + "»" : "«" + FRASE + "»", W - 260, 4);
     var y0 = 1112 - (ls.length - 1) * 25;
     ctx.fillStyle = "#f2f7ff"; ls.forEach(function (l, j) { ctx.fillText(l, W / 2, y0 + j * 50); });
     // pie
@@ -453,7 +460,7 @@
       canvas.toBlob(function (b) {
         try {
           var n = (docAnfitrion() ? window.parent : window).navigator;
-          n.share({ files: [new File([b], archivo, { type: "image/png" })], title: "Mi clase 1 de Python" }).then(function () { ok(true); }).catch(function () { ok(false); });
+          n.share({ files: [new File([b], archivo, { type: "image/png" })], title: "Mi clase " + NUM + " de Python" }).then(function () { ok(true); }).catch(function () { ok(false); });
         } catch (e) { ok(false); }
       }, "image/png");
     });
@@ -506,7 +513,7 @@
   else montar();
 
   window.PY = {
-    leccion: LECCION, escena: ESCENA, curso: CURSO, clase: CLASE, fecha: FECHA,
+    leccion: LECCION, escena: ESCENA, curso: CURSO, clase: CLASE, fecha: FECHA, numero: NUM,
     pedir: pedir, toast: toast, copiar: copiar, abrir: abrir, yo: yo, leer: leer, guardar: guardar, hash: hash, slug: slug,
     so: so, ponerSO: ponerSO, sistemas: SISTEMAS, evidencia: evidencia, resaltar: resaltarTexto,
     avatares: AVATARES, avatarPorNombre: avatarPorNombre, dibujarAvatar: dibujarAvatar, avatarCanvas: avatarCanvas,

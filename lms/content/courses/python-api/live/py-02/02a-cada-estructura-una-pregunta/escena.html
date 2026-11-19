@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cada estructura responde una pregunta</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. Cuatro cuadrantes de 370 × 230. */
+  .zona { fill: var(--papel2); stroke: var(--linea); stroke-width: 1.5; }
+  .celda { fill: var(--papel); stroke: var(--tinta); stroke-width: 2; }
+  .celda.fija { fill: var(--papel3); }
+  .dato { font: 700 17px var(--mono); fill: var(--tinta); text-anchor: middle; dominant-baseline: central; }
+  .idx { font: 600 13px var(--mono); fill: var(--gris); text-anchor: middle; }
+  .tipo { font: 800 26px var(--mono); fill: var(--acento); }
+  .preg { font: 600 15px var(--sans); fill: var(--tinta); }
+  .chip rect { fill: var(--n-info); stroke: var(--tinta); stroke-width: 1.5; }
+  .chip.dup rect { fill: var(--n-hot); }
+  .chip text { font: 700 15px var(--mono); fill: #16181D; text-anchor: middle; dominant-baseline: central; }
+  #bolsa { fill: none; stroke: var(--tinta); stroke-width: 2.4; stroke-dasharray: 7 6; }
+  .flecha { fill: none; stroke: var(--acento); stroke-width: 3; stroke-linecap: round; }
+  #candado path, #candado rect { fill: none; stroke: var(--rojo); stroke-width: 3; stroke-linejoin: round; }
+  .codigo { width: 44%; }
+  .codigo .t.mono { font-size: .86em; white-space: pre-wrap; }
+  #fJson { width: 66%; }
+  #fJson .t.mono { font-size: 1.3em; white-space: pre; line-height: 1.35; }
+  #pGet { font-size: 1.6cqw; white-space: nowrap; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 1 de 4 · Estructuras de datos de Python</p>
+    <h1>Cada estructura <em>responde una pregunta</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Cuatro cuadrantes. Lista: pedidos en fila, en orden, con repetidos, y append agrega aceite al final. Tupla: las coordenadas de la tienda, fijas, con un candado; cambiarlas da TypeError. Diccionario: arroz apunta a 12 y azúcar a 5; se busca por nombre. Conjunto: una bolsa con abarrotes y limpieza; el segundo abarrotes no entra. Al final, el inventario es una lista de diccionarios, que es el JSON que devuelve la API.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="cuadros">
+          <!-- list -->
+          <g id="qList">
+            <rect class="zona" x="20" y="14" width="370" height="236" rx="16"/>
+            <text class="tipo" x="40" y="50">list</text><text class="preg" x="112" y="48">¿en qué orden?</text>
+            <g id="celdasList">
+              <rect class="celda" x="40" y="74" width="78" height="44" rx="6"/><rect class="celda" x="122" y="74" width="78" height="44" rx="6"/>
+              <rect class="celda" x="204" y="74" width="78" height="44" rx="6"/><rect class="celda" x="286" y="74" width="78" height="44" rx="6"/>
+            </g>
+            <g id="datosList"><text class="dato" x="79" y="96">arroz</text><text class="dato" x="161" y="96">azúcar</text><text class="dato" x="243" y="96">arroz</text></g>
+            <text id="dAceite" class="dato" x="325" y="96">aceite</text>
+            <g id="idxList"><text class="idx" x="79" y="136">0</text><text class="idx" x="161" y="136">1</text><text class="idx" x="243" y="136">2</text><text class="idx" x="325" y="136">3</text></g>
+          </g>
+          <!-- tuple -->
+          <g id="qTuple">
+            <rect class="zona" x="410" y="14" width="370" height="236" rx="16"/>
+            <text class="tipo" x="430" y="50">tuple</text><text class="preg" x="518" y="48">¿qué no debe cambiar?</text>
+            <g id="celdasTuple"><rect class="celda fija" x="452" y="74" width="120" height="44" rx="6"/><rect class="celda fija" x="580" y="74" width="120" height="44" rx="6"/></g>
+            <text class="dato" x="512" y="96" id="lat">-12.05</text><text class="dato" x="640" y="96" id="lon">-77.04</text>
+            <text class="idx" x="512" y="136">latitud</text><text class="idx" x="640" y="136">longitud</text>
+            <g transform="translate(726 78)"><g id="candado"><rect x="0" y="16" width="30" height="24" rx="4"/><path d="M6 16 V9 a9 9 0 0 1 18 0 V16"/></g></g>
+          </g>
+          <!-- dict -->
+          <g id="qDict">
+            <rect class="zona" x="20" y="268" width="370" height="236" rx="16"/>
+            <text class="tipo" x="40" y="304">dict</text><text class="preg" x="112" y="302">¿cuánto hay de…?</text>
+            <rect class="celda" x="40" y="326" width="120" height="40" rx="6"/><text class="dato" x="100" y="346">"arroz"</text>
+            <rect class="celda" x="40" y="376" width="120" height="40" rx="6"/><text class="dato" x="100" y="396">"azúcar"</text>
+            <path id="fArroz" class="flecha" d="M166 346 H232"/><path id="fAzucar" class="flecha" d="M166 396 H232"/>
+            <rect id="vArroz" class="celda" x="240" y="326" width="64" height="40" rx="6"/><text class="dato" x="272" y="346">12</text>
+            <rect class="celda" x="240" y="376" width="64" height="40" rx="6"/><text class="dato" x="272" y="396">5</text>
+            <text class="idx" x="100" y="436">clave</text><text class="idx" x="272" y="436">valor</text>
+          </g>
+          <!-- set -->
+          <g id="qSet">
+            <rect class="zona" x="410" y="268" width="370" height="236" rx="16"/>
+            <text class="tipo" x="430" y="304">set</text><text class="preg" x="490" y="302">¿ya está?</text>
+            <ellipse id="bolsa" cx="595" cy="370" rx="150" ry="48"/>
+            <g transform="translate(530 370)"><g class="chip" id="cAbarrotes"><rect x="-62" y="-17" width="124" height="34" rx="17"/><text>abarrotes</text></g></g>
+            <g transform="translate(668 370)"><g class="chip" id="cLimpieza"><rect x="-58" y="-17" width="116" height="34" rx="17"/><text>limpieza</text></g></g>
+            <g transform="translate(530 370)"><g class="chip dup" id="cDup"><rect x="-62" y="-17" width="124" height="34" rx="17"/><text>abarrotes</text></g></g>
+          </g>
+        </g>
+      </svg>
+
+      <div class="capa" id="notas">
+        <div class="nt cmd codigo" id="nList" data-r="-.8" style="left:5%; top:30%"><span class="k">Una fila que cambia</span><span class="t mono">pedidos = ["arroz", "azúcar", "arroz"]
+pedidos.append("aceite")</span></div>
+        <div class="nt hot codigo" id="nTuple" data-r="1" style="left:53.5%; top:30%"><span class="k">Fija: no se toca</span><span class="t mono">tienda = (-12.05, -77.04)
+tienda[0] = 0</span><span class="sello solo-anim" id="sTuple">TypeError</span></div>
+        <div class="nt act codigo" id="nDict" data-r="-1" style="left:5%; top:85%"><span class="k">Por nombre, directo</span><span class="t mono">stock = {"arroz": 12, "azúcar": 5}
+stock["arroz"]   # 12</span></div>
+        <div class="nt info codigo" id="nSet" data-r="1.2" style="left:53.5%; top:85%"><span class="k">Cada cosa una vez</span><span class="t mono">cats = {"abarrotes", "limpieza", "abarrotes"}
+len(cats)   # 2</span></div>
+      </div>
+
+      <div class="capa solo-anim" id="puente">
+        <div class="nt ficha s" id="fJson" data-r="-.6" style="left:17%; top:22%"><span class="k">Tu inventario: una lista de dicts</span><span class="t mono">productos = [
+  {"id": 1, "nombre": "arroz",  "stock": 12},
+  {"id": 2, "nombre": "azúcar", "stock": 5},
+]</span></div>
+        <p class="pastilla" id="pGet" style="left:22%; top:72%">GET /productos → responde esto mismo, en JSON</p>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>list: ¿en qué orden?</b><p>Una lista guarda cosas en fila, en el orden en que llegan. Admite repetidos y se puede cambiar: <code>append</code> agrega al final. Le preguntas por posición: <code>pedidos[0]</code> es el primero.</p></li>
+        <li><b>tuple: ¿qué no debe cambiar?</b><p>Una tupla también va en orden, pero queda fija: si intentas cambiarla, Python responde <code>TypeError</code>. Sirve para datos que van juntos y no se tocan, como las coordenadas de tu tienda.</p></li>
+        <li><b>dict: ¿cuánto hay de…?</b><p>Un diccionario une una clave con su valor. No buscas por posición sino por nombre: <code>stock["arroz"]</code> responde 12 sin revisar lo demás. Las claves no se repiten.</p></li>
+        <li><b>set: ¿ya está?</b><p>Un conjunto guarda cada cosa una sola vez y sin orden. Si agregas «abarrotes» dos veces, queda uno. Sirve para quitar repetidos y para preguntar si algo ya existe.</p></li>
+        <li><b>Tu inventario: una lista de dicts</b><p>Combinadas responden todo: la lista da el orden y cada dict, los campos de un producto. Eso mismo, en JSON, es lo que hoy devolverá tu API en <code>GET /productos</code>.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Python Software Foundation. «Estructuras de datos», Tutorial de Python 3, §5 (docs.python.org/es/3/tutorial/datastructures.html). Coordenadas aproximadas del centro de Lima.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  function entra(tl, sel, pos) { return tl.fromTo(sel, { autoAlpha: 0 }, { autoAlpha: 1, duration: .45 }, pos); }
+  TEO.escena([
+    function (tl) { // 1. list
+      entra(tl, "#qList");
+      tl.from("#celdasList rect", { scaleY: 0, transformOrigin: "50% 100%", duration: .35, stagger: .08 }, "-=.1");
+      tl.from("#datosList text", { autoAlpha: 0, y: -24, duration: .4, stagger: .18, ease: "back.out(2)" });
+      tl.from("#idxList text", { autoAlpha: 0, duration: .3, stagger: .06 }, "-=.2");
+      TEO.pegar(tl, "#nList");
+      tl.fromTo("#dAceite", { autoAlpha: 0, x: 60 }, { autoAlpha: 1, x: 0, duration: .6, ease: "power2.out" });
+    },
+    function (tl) { // 2. tuple
+      entra(tl, "#qTuple");
+      tl.from("#celdasTuple rect", { scaleX: 0, transformOrigin: "50% 50%", duration: .35, stagger: .1 }, "-=.1");
+      tl.from(["#lat", "#lon"], { autoAlpha: 0, duration: .3, stagger: .15 });
+      tl.fromTo("#candado", { autoAlpha: 0, y: -14 }, { autoAlpha: 1, y: 0, duration: .45, ease: "bounce.out" });
+      TEO.pegar(tl, "#nTuple");
+      tl.fromTo("#sTuple", { autoAlpha: 0, scale: 1.8 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.5)" });
+    },
+    function (tl) { // 3. dict
+      entra(tl, "#qDict");
+      TEO.trazar(tl, ["#fArroz", "#fAzucar"], { duration: .5, stagger: .2 });
+      TEO.pegar(tl, "#nDict");
+      tl.fromTo("#vArroz", { fill: TEO.color("--papel", "#F4F1EA") }, { fill: TEO.color("--n-act", "#F6DC6E"), duration: .4, ease: "power1.inOut" });
+    },
+    function (tl) { // 4. set
+      entra(tl, "#qSet");
+      TEO.trazar(tl, "#bolsa", { duration: .7 });
+      tl.from(["#cAbarrotes", "#cLimpieza"], { autoAlpha: 0, y: -60, duration: .5, stagger: .2, ease: "back.out(1.6)" });
+      TEO.pegar(tl, "#nSet");
+      tl.fromTo("#cDup", { autoAlpha: 0, x: -120, y: -110 }, { autoAlpha: 1, x: 0, y: -40, duration: .6, ease: "power2.in" });
+      tl.to("#cDup", { x: -60, y: -150, rotation: -25, autoAlpha: 0, duration: .6, ease: "power2.out" });
+    },
+    function (tl) { // 5. tu inventario: una lista de dicts
+      tl.to("#cuadros", { opacity: .12, duration: .5 });
+      tl.to("#notas", { autoAlpha: 0, duration: .4 }, "<");
+      tl.fromTo("#puente", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#fJson");
+      tl.fromTo("#pGet", { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: .45 });
+    }
+  ], {
+    preparar: function () {
+      gsap.set(["#qList", "#qTuple", "#qDict", "#qSet", "#dAceite", "#candado", "#sTuple", "#cDup", "#puente", "#pGet"], { autoAlpha: 0 });
+      gsap.set("#cDup", { x: -120, y: -110 });
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>
