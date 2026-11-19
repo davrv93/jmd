@@ -12,10 +12,10 @@
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/rsg.css">
 <style id="esc-propio">
-#lab { width: 100%; height: auto; aspect-ratio: 19 / 11; display: block; margin: .5em 0; border-radius: .7em; background: var(--s2); border: 1px solid var(--line2); touch-action: none; }
+#lab { width: 100%; height: auto; aspect-ratio: 19 / 11; display: block; margin: .5em 0; border-radius: 1em; background: #0d0b1f; border: 1px solid rgba(139,123,255,.35); box-shadow: 0 14px 34px rgba(20,16,50,.28), inset 0 0 0 1px rgba(255,255,255,.04); touch-action: none; }
 .pm-intro { font-size: .84em; margin: .35em 0 .45em; }
 .pm-reglas li { font-size: .82em; }
-.pm-p { display: inline-block; width: .7em; height: .7em; transform: rotate(45deg); border-radius: .12em; margin-right: .5em; flex: none; }
+.pm-p { display: inline-block; width: .72em; height: .72em; border-radius: 50%; margin-right: .5em; flex: none; vertical-align: -.05em; box-shadow: 0 0 .5em currentColor; }
 .pm-fuente { font-size: .7em; color: var(--muted); margin: .45em 0 0; }
 .pm-fila { display: grid; grid-template-columns: 1em 4.6em 1fr 3.6em; gap: .45em; align-items: center; font-size: .8em; margin: .3em 0; }
 .pm-fila select, .pm-fila input { font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .5em; padding: .3em .4em; min-width: 0; }
@@ -35,7 +35,7 @@
     <h1 class="esc-titulo a-in">Cuatro perseguidores: <em>reglas que parecen inteligencia</em></h1>
     <div class="x-dos">
       <section class="esc-card a-in" style="--d:.15s">
-        <span class="x-et">Laberinto de reglas · <span class="x-k">←</span> <span class="x-k">↑</span> <span class="x-k">→</span> <span class="x-k">↓</span> moverte · la cruz es el objetivo de cada perseguidor y la línea, su camino</span>
+        <span class="x-et">Laberinto de reglas · <span class="x-k">←</span> <span class="x-k">↑</span> <span class="x-k">→</span> <span class="x-k">↓</span> moverte · come los puntos · el anillo es el objetivo de cada perseguidor y la línea, su camino</span>
         <canvas id="lab" width="608" height="352" tabindex="0" aria-label="Laberinto: tu héroe y cuatro perseguidores que siguen reglas"></canvas>
         <div class="x-fila"><button class="x-btn" data-d="u" type="button" aria-label="Arriba">▲</button><button class="x-btn" data-d="l" type="button" aria-label="Izquierda">◀</button><button class="x-btn" data-d="d" type="button" aria-label="Abajo">▼</button><button class="x-btn" data-d="r" type="button" aria-label="Derecha">▶</button>
           <button class="x-btn" id="modo" type="button" aria-pressed="false">Modo: perseguir</button><button class="x-btn" id="ver" type="button" aria-pressed="true">Objetivos y caminos</button><button class="x-btn" id="reset" type="button">Reiniciar</button></div>
@@ -112,6 +112,8 @@ function pasoJugador() {
   J.pc = J.c; J.pf = J.f;
   if (libre(J.c + DIR[quiere][0], J.f + DIR[quiere][1])) J.dir = quiere;
   if (libre(J.c + DIR[J.dir][0], J.f + DIR[J.dir][1])) { J.c += DIR[J.dir][0]; J.f += DIR[J.dir][1]; }
+  var k = J.c + "," + J.f;
+  if (puntos[k]) { puntos[k] = 0; comidos++; if (!Object.keys(puntos).some(function (q) { return puntos[q]; })) llenarPuntos(); }
 }
 function pasoPerseguidores() {
   PERS.forEach(function (p) { p.pc = p.c; p.pf = p.f; p.dir = elegir(p.c, p.f, p.dir, objetivo(p)); p.c += DIR[p.dir][0]; p.f += DIR[p.dir][1]; });
@@ -123,7 +125,7 @@ function revisarCaptura(t) {
   reiniciar(); marcador("¡Te atraparon! Duraste " + s.toFixed(1) + " s. Pulsa una flecha para seguir.");
 }
 function original() { return PERS.every(function (p) { return p.regla.tipo === p.orig.tipo && +p.regla.n === p.orig.n; }); }
-function marcador(t) { $("#marcador").textContent = t + "  ·  Atrapado " + atrapado + " " + (atrapado === 1 ? "vez" : "veces") + "  ·  Récord " + record.toFixed(1) + " s"; }
+function marcador(t) { $("#marcador").textContent = t + "  ·  Puntos " + comidos + "  ·  Atrapado " + atrapado + " " + (atrapado === 1 ? "vez" : "veces") + "  ·  Récord " + record.toFixed(1) + " s"; }
 function reto(i) { if (cumplidos[i]) return; cumplidos[i] = 1; var b = $$("#retos .x-it")[i]; if (b) b.setAttribute("aria-checked", "true"); }
 ["Pon a los 4 con la regla «tu celda»: ¿por qué ahora se estorban y van en fila?", "Con las reglas de 1980, sobrevive 20 segundos", "Cambia el modo a «dispersarse»: ¿a dónde se va cada uno?"].forEach(function (t) { var b = el("div", "x-it"); b.setAttribute("role", "checkbox"); b.setAttribute("aria-checked", "false"); b.appendChild(el("i", null, "✓")); b.appendChild(el("span", null, t)); $("#retos").appendChild(b); });
 function codigo() {
@@ -152,31 +154,70 @@ PERS.forEach(function (p) {
   num.oninput = function () { p.regla.n = Math.max(0, Math.min(12, Math.round(+num.value || 0))); codigo(); };
   fila.appendChild(dot); fila.appendChild(nom); fila.appendChild(sel); fila.appendChild(num); $("#reglas").appendChild(fila);
 });
-function dibuja(fr, frP) {
-  var e = getComputedStyle(document.documentElement), acento = e.getPropertyValue("--accent").trim(), fondo = e.getPropertyValue("--s2").trim();
-  x.clearRect(0, 0, 608, 352);
-  for (var f = 0; f < FILAS; f++) for (var c = 0; c < COLS; c++) if (M[f][c] === "#") { x.fillStyle = acento; x.globalAlpha = .8; x.fillRect(c * C, f * C, C, C); x.globalAlpha = 1; }
-  function pos(o, k) { return [((o.pc + (o.c - o.pc) * k) + .5) * C, ((o.pf + (o.f - o.pf) * k) + .5) * C]; }
-  if (verGuias) PERS.forEach(function (p) {
-    var obj = objetivo(p), pts = camino(p, obj);
-    x.strokeStyle = p.color; x.globalAlpha = .75; x.lineWidth = 3; x.setLineDash([6, 6]); x.beginPath();
-    pts.forEach(function (q, i) { var px = (q[0] + .5) * C, py = (q[1] + .5) * C; if (i) x.lineTo(px, py); else x.moveTo(px, py); }); x.stroke(); x.setLineDash([]);
+// ── Dibujo: lienzo a la resolución real de la pantalla, laberinto de neón pintado una sola vez ──
+var DPR = Math.min(2, window.devicePixelRatio || 1), QUIETO = matchMedia("(prefers-reduced-motion: reduce)").matches;
+cv.width = 608 * DPR; cv.height = 352 * DPR; x.setTransform(DPR, 0, 0, DPR, 0, 0);
+var fondoLab = document.createElement("canvas"); fondoLab.width = cv.width; fondoLab.height = cv.height;
+(function pintarLaberinto() {
+  var g = fondoLab.getContext("2d"); g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  var cielo = g.createLinearGradient(0, 0, 0, 352); cielo.addColorStop(0, "#1a1536"); cielo.addColorStop(1, "#0d0b1f");
+  g.fillStyle = cielo; g.fillRect(0, 0, 608, 352);
+  // Los pasillos se trazan como una red de líneas gruesas y redondeadas: primero el borde luminoso, encima el piso.
+  function red(ancho, color, brillo) {
+    g.save(); g.lineCap = "round"; g.lineJoin = "round"; g.lineWidth = ancho; g.strokeStyle = color;
+    if (brillo) { g.shadowColor = brillo; g.shadowBlur = 16; }
+    g.beginPath();
+    for (var f = 0; f < FILAS; f++) for (var c = 0; c < COLS; c++) if (libre(c, f)) {
+      var cx = (c + .5) * C, cy = (f + .5) * C;
+      g.moveTo(cx, cy); g.lineTo(cx + .01, cy);
+      if (libre(c + 1, f)) { g.moveTo(cx, cy); g.lineTo(cx + C, cy); }
+      if (libre(c, f + 1)) { g.moveTo(cx, cy); g.lineTo(cx, cy + C); }
+    }
+    g.stroke(); g.restore();
+  }
+  red(C * .92, "#8b7bff", "rgba(139,123,255,.85)");
+  red(C * .74, "#231e4a");
+})();
+var puntos = {}, comidos = 0;
+function llenarPuntos() { puntos = {}; for (var f = 0; f < FILAS; f++) for (var c = 0; c < COLS; c++) if (libre(c, f) && !(f === 3 && c >= 8 && c <= 11)) puntos[c + "," + f] = 1; }
+function ojos(px, py, dir, sep, r, rp, mira) {
+  x.fillStyle = "#fff"; x.beginPath(); x.arc(px - sep, py, r, 0, 6.283); x.arc(px + sep, py, r, 0, 6.283); x.fill();
+  x.fillStyle = "#1a1530"; x.beginPath(); x.arc(px - sep + DIR[dir][0] * mira, py + DIR[dir][1] * mira, rp, 0, 6.283); x.arc(px + sep + DIR[dir][0] * mira, py + DIR[dir][1] * mira, rp, 0, 6.283); x.fill();
+}
+function dibuja(fr, frP, t) {
+  x.clearRect(0, 0, 608, 352); x.drawImage(fondoLab, 0, 0, 608, 352);
+  x.fillStyle = "#f7e6a6"; x.beginPath();
+  for (var k in puntos) { var a = k.split(","), px = (+a[0] + .5) * C, py = (+a[1] + .5) * C; x.moveTo(px + 2.3, py); x.arc(px, py, 2.3, 0, 6.283); }
+  x.fill();
+  function pos(o, k2) { return [((o.pc + (o.c - o.pc) * k2) + .5) * C, ((o.pf + (o.f - o.pf) * k2) + .5) * C]; }
+  var pulso = QUIETO ? .5 : (Math.sin(t / 280) + 1) / 2;
+  if (verGuias) PERS.forEach(function (p, i) {
+    var obj = objetivo(p), pts = camino(p, obj), off = (i - 1.5) * 2.6;
+    x.save(); x.strokeStyle = p.color; x.lineCap = "round"; x.lineJoin = "round";
+    x.globalAlpha = .4; x.lineWidth = 4; x.beginPath();
+    pts.forEach(function (q, j) { var px = (q[0] + .5) * C + off, py = (q[1] + .5) * C + off; if (j) x.lineTo(px, py); else x.moveTo(px, py); });
+    x.stroke();
     var ox = Math.max(.5, Math.min(COLS - .5, obj[0] + .5)) * C, oy = Math.max(.5, Math.min(FILAS - .5, obj[1] + .5)) * C;
-    x.lineWidth = 2.5; x.beginPath(); x.arc(ox, oy, 10, 0, 6.283); x.moveTo(ox - 15, oy); x.lineTo(ox + 15, oy); x.moveTo(ox, oy - 15); x.lineTo(ox, oy + 15); x.stroke(); x.globalAlpha = 1;
+    x.globalAlpha = .9; x.lineWidth = 2; x.beginPath(); x.arc(ox, oy, 7 + pulso * 4, 0, 6.283); x.stroke();
+    x.fillStyle = p.color; x.globalAlpha = .7; x.beginPath(); x.arc(ox, oy, 2.6, 0, 6.283); x.fill();
+    x.restore();
   });
-  var h = pos(J, frP);
-  x.fillStyle = "#ff8a3d"; x.beginPath(); x.roundRect(h[0] - 12, h[1] - 12, 24, 24, 7); x.fill();
-  x.fillStyle = "#14122b"; x.beginPath(); x.arc(h[0] - 4 + DIR[J.dir][0] * 3, h[1] - 3 + DIR[J.dir][1] * 3, 2.6, 0, 6.283); x.arc(h[0] + 5 + DIR[J.dir][0] * 3, h[1] - 3 + DIR[J.dir][1] * 3, 2.6, 0, 6.283); x.fill();
-  PERS.forEach(function (p) {
-    var q = pos(p, fr);
-    x.fillStyle = p.color; x.beginPath(); x.moveTo(q[0], q[1] - 14); x.lineTo(q[0] + 13, q[1]); x.lineTo(q[0], q[1] + 14); x.lineTo(q[0] - 13, q[1]); x.closePath(); x.fill();
-    x.fillStyle = "#fff"; x.beginPath(); x.arc(q[0] - 4, q[1] - 2, 3.4, 0, 6.283); x.arc(q[0] + 4, q[1] - 2, 3.4, 0, 6.283); x.fill();
-    x.fillStyle = "#14122b"; x.beginPath(); x.arc(q[0] - 4 + DIR[p.dir][0] * 1.5, q[1] - 2 + DIR[p.dir][1] * 1.5, 1.7, 0, 6.283); x.arc(q[0] + 4 + DIR[p.dir][0] * 1.5, q[1] - 2 + DIR[p.dir][1] * 1.5, 1.7, 0, 6.283); x.fill();
+  var h = pos(J, frP), salto = QUIETO ? 0 : Math.sin(t / 170) * 1.3;
+  x.save(); x.shadowColor = "rgba(255,138,61,.85)"; x.shadowBlur = 16;
+  var gh = x.createLinearGradient(0, h[1] - 11, 0, h[1] + 11); gh.addColorStop(0, "#ffb57a"); gh.addColorStop(1, "#ff7428");
+  x.fillStyle = gh; x.beginPath(); x.roundRect(h[0] - 11, h[1] - 11 + salto, 22, 22, 8); x.fill(); x.restore();
+  ojos(h[0], h[1] - 2 + salto, J.dir, 4.3, 3.4, 1.8, 1.4);
+  PERS.forEach(function (p, i) {
+    var q = pos(p, fr), b = QUIETO ? 0 : Math.sin(t / 230 + i * 1.7) * 1.6;
+    x.save(); x.shadowColor = p.color; x.shadowBlur = 18;
+    var gr = x.createRadialGradient(q[0] - 4, q[1] - 5 + b, 1, q[0], q[1] + b, 13); gr.addColorStop(0, "#ffffff"); gr.addColorStop(.3, p.color); gr.addColorStop(1, p.color);
+    x.fillStyle = gr; x.beginPath(); x.arc(q[0], q[1] + b, 11.5, 0, 6.283); x.fill(); x.restore();
+    ojos(q[0], q[1] - 1.5 + b, p.dir, 4.2, 3.5, 1.8, 1.5);
   });
 }
 // Segundos por celda (tú, perseguidores). Empieza en «Lento» para poder explicar mientras se juega.
-var VEL = { lento: [.34, .42], normal: [.22, .27], rapido: [.15, .18] }, PJ = VEL.lento[0], PP = VEL.lento[1], tJ = 0, tP = 0, antes = performance.now();
-reiniciar(); codigo(); PERS.forEach(function (p) { p.sync(); }); marcador("Pulsa una flecha para empezar");
+var VEL = { lento: [.5, .6], normal: [.32, .38], rapido: [.2, .24] }, PJ = VEL.lento[0], PP = VEL.lento[1], tJ = 0, tP = 0, antes = performance.now();
+llenarPuntos(); reiniciar(); codigo(); PERS.forEach(function (p) { p.sync(); }); marcador("Pulsa una flecha para empezar");
 (function bucle(t) {
   requestAnimationFrame(bucle);
   var dt = Math.min(.05, (t - antes) / 1000); antes = t;
@@ -186,7 +227,7 @@ reiniciar(); codigo(); PERS.forEach(function (p) { p.sync(); }); marcador("Pulsa
     while (corriendo && tP >= PP) { tP -= PP; pasoPerseguidores(); revisarCaptura(t); }
     if (corriendo) { var s = (t - vivoDesde) / 1000; if (s >= 20 && original() && modo === "perseguir") reto(1); if (Math.floor(s * 4) !== Math.floor((s - dt) * 4)) marcador("Sigues vivo: " + s.toFixed(1) + " s"); }
   }
-  dibuja(corriendo ? tP / PP : 1, corriendo ? tJ / PJ : 1);
+  dibuja(corriendo ? tP / PP : 1, corriendo ? tJ / PJ : 1, t);
 })(antes);
 function mover(d) { quiere = d; if (!corriendo) { corriendo = true; vivoDesde = performance.now(); tJ = tP = 0; } }
 var TEC = { ArrowUp: "u", w: "u", ArrowLeft: "l", a: "l", ArrowDown: "d", s: "d", ArrowRight: "r", d: "r" };
@@ -194,7 +235,7 @@ addEventListener("keydown", function (e) { var k = TEC[e.key]; if (k && document
 $$("[data-d]").forEach(function (b) { b.addEventListener("pointerdown", function (e) { e.preventDefault(); mover(b.dataset.d); }); });
 $("#modo").onclick = function () { modo = modo === "perseguir" ? "dispersarse" : "perseguir"; this.textContent = "Modo: " + modo; this.setAttribute("aria-pressed", String(modo === "dispersarse")); if (modo === "dispersarse") reto(2); };
 $("#ver").onclick = function () { verGuias = !verGuias; this.setAttribute("aria-pressed", String(verGuias)); };
-$("#reset").onclick = function () { reiniciar(); marcador("Pulsa una flecha para empezar"); };
+$("#reset").onclick = function () { llenarPuntos(); comidos = 0; reiniciar(); marcador("Pulsa una flecha para empezar"); };
 $("#orig").onclick = function () { PERS.forEach(function (p) { p.regla = { tipo: p.orig.tipo, n: p.orig.n }; p.sync(); }); codigo(); };
 cv.addEventListener("pointerdown", function () { cv.focus(); });
 $$("[data-vel]").forEach(function (b) { b.onclick = function () { PJ = VEL[b.dataset.vel][0]; PP = VEL[b.dataset.vel][1]; tJ = tP = 0; $$("[data-vel]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); }); }; });
