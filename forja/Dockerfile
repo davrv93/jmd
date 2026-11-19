@@ -2,6 +2,9 @@
 FROM node:22-slim
 WORKDIR /app
 COPY package.json package-lock.json ./
+# onnxruntime-node intenta bajar binarios de GPU (CUDA) al instalarse y esa descarga da 404 (19-11-2026).
+# La Forja corre el modelo en CPU: se salta la parte de CUDA, el runtime de CPU viene en el paquete.
+ENV ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm_config_onnxruntime_node_install_cuda=skip
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 COPY servidor.mjs embeddings-hijo.mjs ./
 COPY web ./web
