@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ningún rival piensa (Iwatani, 1980)</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Coordenadas del viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %.
+     Laberinto de 11 × 7 celdas de 52: centro de la celda (c, f) = (42 + 52c, 146 + 52f). */
+  .pasillo-borde { fill: none; stroke: var(--tinta); stroke-width: 44; stroke-linecap: square; stroke-linejoin: miter; }
+  .pasillo { fill: none; stroke: var(--papel); stroke-width: 37; stroke-linecap: square; stroke-linejoin: miter; }
+  .ficha-r { stroke: var(--tinta); stroke-width: 2; }
+  #rojo { fill: var(--n-hot); } #rosa { fill: var(--n-sis); } #celeste { fill: var(--n-cmd); } #naranja { fill: var(--n-ev); }
+  .anillo { fill: none; stroke-width: 3.5; }
+  :root { --c-rosa: #C2477F; --c-nar: #C46A12; }
+  @media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) { --c-rosa: #F29AC4; --c-nar: #F5A04A; } }
+  :root[data-tema="dark"] { --c-rosa: #F29AC4; --c-nar: #F5A04A; }
+  #oRojo { stroke: var(--rojo); } #oRosa { stroke: var(--c-rosa); } #oCel { stroke: var(--azul); } #oNar { stroke: var(--c-nar); }
+  #heroe rect { fill: var(--acento); stroke: var(--tinta); stroke-width: 2; }
+  #heroe circle { fill: var(--tinta); }
+  .ruta { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 7; }
+  #rutaRojo { stroke: var(--rojo); } #rutaRosa { stroke: var(--c-rosa); } #rutaCel { stroke: var(--azul); } #rutaNar { stroke: var(--c-nar); }
+  .num { font: 700 13px var(--mono); fill: var(--gris); }
+  .dist { font-size: 1.25cqw; padding: .3em .7em; white-space: nowrap; }
+  .regla { width: 26%; }
+  .regla .t { font-size: .95em; }
+  .codigo { position: absolute; left: 2%; top: 24%; width: 66%; display: grid; grid-template-columns: 1fr 1fr; gap: 1.4em 3%; align-content: start; }
+  .codigo .nt { position: relative; }
+  .codigo .t.mono { font-size: .82em; }
+  #narra { font: 650 1.45cqw/1.25 var(--sans); padding: .5em 1em; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría · Toru Iwatani · Pac-Man (Namco, 1980)</p>
+    <h1>Ningún rival piensa: solo cambia <em>a dónde apunta</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Un laberinto de cuatro manzanas. En cada cruce, un rival toma la salida que lo deja más cerca de su objetivo y nunca da media vuelta. El rojo apunta a tu celda; el rosa, a 4 celdas delante de ti; el celeste duplica la flecha que va del rojo a 2 celdas delante de ti; el naranja te persigue si está lejos y se va a su esquina si está cerca. Al final, las cuatro reglas escritas como código.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="lab">
+          <path id="labBorde" class="pasillo-borde" d="M94 198 H510 M94 302 H510 M94 406 H510 M94 198 V406 M302 198 V406 M510 198 V406"/>
+          <path id="labPiso" class="pasillo" d="M94 198 H510 M94 302 H510 M94 406 H510 M94 198 V406 M302 198 V406 M510 198 V406"/>
+        </g>
+        <!-- rutas punteadas (se muestran con from autoAlpha) y caminos invisibles para el viaje -->
+        <path id="rutaRojo" class="ruta solo-anim" d="M94 406 H302 V302 H510 V198"/>
+        <path id="rutaRosa" class="ruta solo-anim" d="M510 406 V302 H406"/>
+        <path id="rutaCel" class="ruta solo-anim" d="M510 198 V406"/>
+        <path id="rutaNar" class="ruta solo-anim" d="M510 406 H94"/>
+        <path id="v1" d="M94 406 H302" fill="none"/>
+        <path id="v2" d="M302 406 V302" fill="none"/>
+        <path id="v3" d="M302 302 H510" fill="none"/>
+        <path id="v4" d="M510 302 V198" fill="none"/>
+        <!-- elección en el primer cruce -->
+        <path id="aArriba" class="trazo flecha solo-anim" d="M94 388 V348"/>
+        <path id="aDerecha" class="trazo flecha solo-anim" d="M112 406 H154"/>
+        <!-- «4 delante» y la pinza -->
+        <path id="aDelante" class="trazo guion solo-anim" d="M216 302 H392"/>
+        <g id="numeros" class="solo-anim"><text class="num" x="246" y="278">1</text><text class="num" x="298" y="278">2</text><text class="num" x="350" y="278">3</text><text class="num" x="402" y="278">4</text></g>
+        <path id="aPinza" class="trazo guion solo-anim" d="M94 198 L302 302 L510 406" style="stroke:var(--azul)"/>
+        <circle id="dosDelante" class="solo-anim" cx="302" cy="302" r="7" style="fill:var(--azul)"/>
+        <circle id="radio" class="trazo fino guion solo-anim" cx="198" cy="302" r="208" style="stroke:var(--c-nar); opacity:1"/>
+        <!-- objetivos -->
+        <circle id="oRojo" class="anillo solo-anim" cx="510" cy="198" r="22"/>
+        <circle id="oRosa" class="anillo solo-anim" cx="406" cy="302" r="22"/>
+        <circle id="oCel" class="anillo solo-anim" cx="510" cy="406" r="22"/>
+        <circle id="oNar" class="anillo solo-anim" cx="198" cy="302" r="22"/>
+        <!-- personajes -->
+        <g id="heroe" transform="translate(510 198)"><rect x="-15" y="-15" width="30" height="30" rx="8"/><circle cx="-5" cy="-4" r="3"/><circle cx="6" cy="-4" r="3"/></g>
+        <circle id="rojo" class="ficha-r" cx="94" cy="406" r="16"/>
+        <circle id="rosa" class="ficha-r solo-anim" cx="510" cy="406" r="16"/>
+        <circle id="celeste" class="ficha-r solo-anim" cx="510" cy="198" r="16"/>
+        <circle id="naranja" class="ficha-r solo-anim" cx="510" cy="406" r="16"/>
+      </svg>
+
+      <p class="pastilla dist solo-anim" id="dArriba" style="left:.5%; top:65%">↑ 8,5</p>
+      <p class="pastilla dist solo-anim" id="dDerecha" style="left:15%; top:83.5%">→ 8,1 ✓</p>
+
+      <div class="nt hot regla" id="nRojo" data-r="-1.4" style="left:73%; top:10%"><span class="k">Rojo · el cazador</span><span class="t">objetivo: tu celda</span></div>
+      <div class="nt sis regla" id="nRosa" data-r="1.2" style="left:73%; top:32%"><span class="k">Rosa · la emboscada</span><span class="t">objetivo: 4 celdas delante de ti</span></div>
+      <div class="nt cmd regla" id="nCel" data-r="-.9" style="left:73%; top:54%"><span class="k">Celeste · la pinza</span><span class="t">el doble de la flecha rojo → 2 delante de ti</span></div>
+      <div class="nt ev regla" id="nNar" data-r="1.5" style="left:73%; top:76%"><span class="k">Naranja · el indeciso</span><span class="t">lejos: te persigue · cerca: a su esquina</span></div>
+
+      <div class="codigo solo-anim" id="codigo">
+        <div class="nt hot" data-r="-1"><span class="k">rojo.objetivo</span><span class="t mono">= tu.celda</span></div>
+        <div class="nt sis" data-r="1"><span class="k">rosa.objetivo</span><span class="t mono">= delante(tú, 4)</span></div>
+        <div class="nt cmd" data-r=".8"><span class="k">celeste.objetivo</span><span class="t mono">= doble(rojo → delante(tú, 2))</span></div>
+        <div class="nt ev" data-r="-1.2"><span class="k">naranja.objetivo</span><span class="t mono">= lejos ? tu.celda : su.esquina</span></div>
+      </div>
+
+      <p class="pastilla solo-anim" id="narra" style="left:2%; top:4%; width:62%"><span class="capas">
+        <span>Cruce: → queda a 8,1; ↑ a 8,5. Toma →</span>
+        <span>Cruce: empate, 5 y 5. Arriba va primero</span>
+        <span>Cruce: → a 3,6; ↑ a 4,1. Toma →</span>
+        <span>Cruce: ↑ a 1 celda. ¡Te alcanzó!</span>
+        <span>Lejos de ti: te persigue</span>
+        <span>Cerca de ti: cambia de objetivo, a su esquina</span>
+        <span>Elige una regla → «Llevar a mi juego»</span>
+      </span></p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>En cada cruce, la salida más cercana</b><p>El rival mide en línea recta cuánto le faltaría desde cada salida hasta su objetivo y toma la menor. Nunca da media vuelta. No ve el laberinto ni calcula rutas: solo compara dos o tres números.</p></li>
+        <li><b>Rojo · el cazador</b><p>Su objetivo es tu celda. Repite la misma regla en cada cruce y llega hasta ti. Un rival así es fácil de esquivar; cuatro con objetivos distintos, no.</p><p class="aparte">Si dos salidas empatan, el juego prefiere arriba, izquierda, abajo y derecha, en ese orden.</p></li>
+        <li><b>Rosa · la emboscada</b><p>Apunta 4 celdas delante de ti, hacia donde vas. No te sigue: te espera. Por eso aparece de frente justo cuando huyes del rojo.</p><p class="aparte">En el original, si miras hacia arriba apunta 4 arriba y 4 a la izquierda: un error de cálculo que se quedó en el juego.</p></li>
+        <li><b>Celeste · la pinza</b><p>Toma la celda 2 delante de ti, traza la flecha desde el rojo hasta ahí y la duplica. Si el rojo viene por detrás, el celeste llega por el otro lado y te encierra.</p></li>
+        <li><b>Naranja · el indeciso</b><p>Si está lejos, te persigue como el rojo. Cuando se acerca, cambia de objetivo y se va a su esquina. Por eso parece que duda.</p><p class="aparte">En el original el límite es 8 celdas de un laberinto de 28 × 31; aquí, a escala, 4.</p></li>
+        <li><b>Tu rival, tu regla</b><p>Cuatro personalidades, un solo algoritmo: lo único distinto es el objetivo. En la escena que sigue eliges una regla, cambias su número y la llevas a tu juego con un clic.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Pittman, J. (2009). The Pac-Man Dossier. Gamasutra · Namco (1980). Pac-Man [arcade], diseño de Toru Iwatani. Laberinto y personajes de esta lámina: propios.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, puntas = {}, narra = [], rojo = $("#rojo");
+  var C = function (c, f) { return { x: 42 + 52 * c, y: 146 + 52 * f }; };
+
+  function flecha(tl, id, pos) { TEO.trazar(tl, "#" + id, { duration: .5 }, pos); tl.fromTo(puntas[id], { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 }, "-=.1"); }
+  function decir(tl, k) {
+    if (k > 0) tl.to(narra[k - 1], { autoAlpha: 0, duration: .15 });
+    tl.to(narra[k], { autoAlpha: 1, duration: .2 }, k > 0 ? "<+.08" : undefined);
+  }
+  function ir(tl, ficha, x, y, dur, pos) { return tl.to(ficha, { attr: { cx: x, cy: y }, duration: dur || .9, ease: "power1.inOut" }, pos); }
+  function aparecer(tl, sel, pos) { return tl.fromTo(sel, { autoAlpha: 0, scale: .3, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2)" }, pos); }
+  function anillo(tl, sel, pos) { return tl.fromTo(sel, { autoAlpha: 0, scale: 2.2, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .45 }, pos); }
+
+  TEO.escena([
+    function (tl) { // 1. el laberinto, tú, el rojo y su elección en el primer cruce
+      TEO.trazar(tl, "#labBorde", { duration: 1.3 });
+      tl.from("#labPiso", { autoAlpha: 0, duration: .6 }, "-=.5");
+      aparecer(tl, "#heroe");
+      aparecer(tl, "#rojo", "-=.15");
+      anillo(tl, "#oRojo");
+      flecha(tl, "aArriba");
+      tl.fromTo("#dArriba", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .3 });
+      flecha(tl, "aDerecha");
+      tl.fromTo("#dDerecha", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .3 });
+    },
+    function (tl) { // 2. el cazador recorre su camino: la misma regla en cada cruce
+      tl.to(["#aArriba", "#aDerecha", puntas.aArriba, puntas.aDerecha, "#dArriba", "#dDerecha"], { autoAlpha: 0, duration: .25 });
+      TEO.pegar(tl, "#nRojo");
+      tl.fromTo("#rutaRojo", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 });
+      tl.fromTo("#narra", { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: .35 });
+      decir(tl, 0); TEO.viajar(tl, rojo, $("#v1"), .9);
+      decir(tl, 1); TEO.viajar(tl, rojo, $("#v2"), .6);
+      decir(tl, 2); TEO.viajar(tl, rojo, $("#v3"), .9);
+      decir(tl, 3); TEO.viajar(tl, rojo, $("#v4"), .6);
+      tl.to("#heroe", { scale: 1.25, duration: .15, yoyo: true, repeat: 1, transformOrigin: "50% 50%" });
+    },
+    function (tl) { // 3. la emboscada: tú en otro sitio, 4 delante
+      tl.to(["#narra", "#rutaRojo", "#oRojo"], { autoAlpha: 0, duration: .3 });
+      tl.to(rojo, { autoAlpha: 0, duration: .25 }, "<");
+      tl.to("#heroe", { x: C(3, 3).x, y: C(3, 3).y, duration: .6, ease: "power2.inOut" });
+      ir(tl, rojo, C(1, 1).x, C(1, 1).y, .01);
+      TEO.pegar(tl, "#nRosa");
+      tl.fromTo("#aDelante", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 });
+      tl.fromTo("#numeros text", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, stagger: .12, duration: .25 });
+      anillo(tl, "#oRosa");
+      aparecer(tl, "#rosa");
+      tl.fromTo("#rutaRosa", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      ir(tl, "#rosa", 510, 302, .6); ir(tl, "#rosa", 406, 302, .6);
+    },
+    function (tl) { // 4. la pinza: el rojo detrás, el celeste por el otro lado
+      tl.to(["#rosa", "#rutaRosa", "#oRosa", "#aDelante", "#numeros"], { autoAlpha: .18, duration: .3 });
+      tl.to(rojo, { autoAlpha: 1, duration: .3 }, "<");
+      TEO.pegar(tl, "#nCel");
+      tl.fromTo("#aPinza", { autoAlpha: 0 }, { autoAlpha: 1, duration: .5 });
+      tl.fromTo("#dosDelante", { autoAlpha: 0, scale: .2, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .3 }, "-=.25");
+      anillo(tl, "#oCel");
+      aparecer(tl, "#celeste");
+      tl.fromTo("#rutaCel", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      ir(tl, "#celeste", 510, 406, 1.1);
+    },
+    function (tl) { // 5. el indeciso: lejos persigue, cerca se va
+      tl.to(["#rosa", "#rutaRosa", "#oRosa", "#aDelante", "#numeros", "#celeste", "#rutaCel", "#oCel", "#aPinza", "#dosDelante"], { autoAlpha: 0, duration: .3 });
+      tl.to(rojo, { autoAlpha: .18, duration: .3 }, "<");
+      TEO.pegar(tl, "#nNar");
+      tl.fromTo("#radio", { autoAlpha: 0 }, { autoAlpha: .9, duration: .5 });
+      aparecer(tl, "#naranja");
+      anillo(tl, "#oNar");
+      tl.fromTo("#rutaNar", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.to("#narra", { autoAlpha: 1, duration: .3 });
+      decir(tl, 4);
+      ir(tl, "#naranja", 378, 406, 1.1);
+      decir(tl, 5);
+      tl.to("#oNar", { attr: { cx: 42, cy: 458 }, duration: .6, ease: "power2.inOut" }, "<");
+      ir(tl, "#naranja", 94, 406, 1.2);
+    },
+    function (tl) { // 6. puente: las cuatro reglas como código
+      tl.to(["#lab", "#heroe", "#naranja", "#rutaNar", "#oNar", "#radio"], { opacity: .14, duration: .5 });
+      tl.to(rojo, { autoAlpha: 0, duration: .3 }, "<");
+      decir(tl, 6);
+      tl.fromTo("#codigo", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, gsap.utils.toArray("#codigo .nt"));
+    }
+  ], {
+    preparar: function () {
+      ["aArriba", "aDerecha"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); });
+      narra = gsap.utils.toArray("#narra .capas > span");
+      gsap.set(narra, { autoAlpha: 0 });
+      gsap.set(["#heroe"], { x: C(9, 1).x, y: C(9, 1).y });
+      gsap.set(["#narra", "#rosa", "#celeste", "#naranja", "#codigo", "#rutaRojo", "#rutaRosa", "#rutaCel", "#rutaNar",
+        "#aDelante", "#numeros text", "#aPinza", "#dosDelante", "#radio", "#oRojo", "#oRosa", "#oCel", "#oNar", "#dArriba", "#dDerecha"], { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>

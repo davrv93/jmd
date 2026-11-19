@@ -3,7 +3,7 @@
 
 Secuencia (94 min de 90): 00 bienvenida · 01 carrera (Isla Gomita, hecha a mano) · 01b historia por décadas · 01c los que
 cambiaron las reglas · 02 Forja: tu héroe · 03 de la mecánica
-a la tecnología · 04 movimiento y choques · 04b cuatro perseguidores (Pac-Man) · 05 hoja de sprites · 06 elige tu juego · 07 cierre.
+a la tecnología · 04 movimiento y choques · 04b lámina «ningún rival piensa» (a mano) · 04c programa tu rival · 05 hoja de sprites · 06 elige tu juego · 07 cierre.
 Las escenas 01 y 05/heroe.png no se generan aquí. Reglas del modo LIVE: sin recursos externos, menos de 300 elementos
 y 1 MB, animación solo CSS, todo se apaga con prefers-reduced-motion. Nada usa <form>: el marco no lo permite.
 El campo «paso» va vacío: la lección rsg-01 no define un ciclo de pasos, y el LMS rechaza un paso que no exista ahí.
@@ -96,7 +96,7 @@ escena("00-bienvenida", "Bienvenida: hoy tu héroe se mueve", "experiencia", "ve
   ["Tu héroe", "15 min", "En Forja describes a tu héroe con una frase, lo afinas y lo publicas en la galería de la clase."],
   ["Mecánica → tecnología", "10 min", "Cada cosa que quieres que pase tiene una tecnología que la resuelve. Aprendes a pedirla con un buen prompt."],
   ["Movimiento y choques", "15 min", "Gravedad, salto y paredes: mueves los números y ves qué cambia. Construyes tu primer nivel con clics."],
-  ["Cuatro perseguidores", "10 min", "Así «pensaban» los fantasmas de Pac-Man: cada uno sigue una regla. Programas las tuyas y ves su objetivo y su camino."],
+  ["Rivales con reglas", "14 min", "Lámina: ningún fantasma de Pac-Man piensa, solo cambia a dónde apunta. Luego programas a tu rival y lo llevas a tu juego."],
   ["Animación", "10 min", "Tu héroe camina porque pasan muchos dibujos muy rápido. Abres una hoja de sprites y la controlas."],
   ["Tu juego", "15 min", "Juegas TU juego con tus números y tu regla de rival (Plataformas o Laberinto), miras sus algoritmos con rayos X y descargas tu ZIP: tu entregable."],
   ["Cierre", "5 min", "Revisas lo que ya sabes hacer y qué traer para la próxima clase."]
@@ -477,9 +477,10 @@ leer();""",
        css="#sim { width: 100%; height: auto; aspect-ratio: 16 / 9; display: block; margin: .5em 0; border-radius: .7em; background: var(--s2); border: 1px solid var(--line2); cursor: crosshair; touch-action: none; }",
        comentario="Interacción: simulador propio en lienzo (gravedad, salto, velocidad y choque con celdas). Clic pone o quita muros. Tres retos que se marcan solos.")
 
-# ---------------------------------------------------------------- 04b · cuatro perseguidores
-escena("04b-cuatro-perseguidores", "Cuatro perseguidores: reglas que parecen inteligencia", "experimentacion", "", 10, """
-    <h1 class="esc-titulo a-in">Cuatro perseguidores: <em>reglas que parecen inteligencia</em></h1>
+# ---------------------------------------------------------------- 04c · programa tu rival (práctica de la lámina 04b)
+# La teoría está en la lámina 04b-ningun-rival-piensa (formato teoria-animada, escrita a mano, no la genera este script).
+escena("04c-programa-tu-rival", "Programa tu rival y llévalo a tu juego", "experimentacion", "", 8, """
+    <h1 class="esc-titulo a-in">Programa tu rival: <em>elige su regla y llévala a tu juego</em></h1>
     <div class="x-dos">
       <section class="esc-card a-in" style="--d:.15s">
         <span class="x-et">Laberinto de reglas · <span class="x-k">←</span> <span class="x-k">↑</span> <span class="x-k">→</span> <span class="x-k">↓</span> moverte · come los puntos · el anillo es el objetivo de cada perseguidor y la línea, su camino</span>
@@ -490,17 +491,8 @@ escena("04b-cuatro-perseguidores", "Cuatro perseguidores: reglas que parecen int
         <p class="x-det" id="marcador" aria-live="polite">Pulsa una flecha para empezar. Antes de moverte, mira a dónde apunta cada uno.</p>
       </section>
       <div class="x-col">
-        <section class="esc-card a-in" style="--d:.25s"><span class="x-et">Así «pensaban» los fantasmas de Pac-Man (Namco, 1980)</span>
-          <p class="pm-intro">Ninguno piensa. En cada cruce, cada uno toma la salida que lo deja <b>más cerca de su celda objetivo</b>, en línea recta, y nunca da media vuelta. Solo cambia <b>cómo calcula su objetivo</b>:</p>
-          <ul class="esc-lista pm-reglas">
-            <li><span><i class="pm-p" style="background:#ff4d4d"></i><b>Rojo · el cazador:</b> tu celda.</span></li>
-            <li><span><i class="pm-p" style="background:#ff7ad9"></i><b>Rosa · la emboscada:</b> 4 celdas delante de ti.</span></li>
-            <li><span><i class="pm-p" style="background:#4de1ff"></i><b>Celeste · la pinza:</b> mira 2 celdas delante de ti, traza la flecha desde el rojo hasta ahí y la duplica.</span></li>
-            <li><span><i class="pm-p" style="background:#ffb347"></i><b>Naranja · el indeciso:</b> lejos (más de 8 celdas) te persigue; cerca, huye a su esquina.</span></li>
-          </ul>
-          <p class="pm-fuente">Diseño de Toru Iwatani. Reglas documentadas en «The Pac-Man Dossier» (Jamey Pittman). El laberinto y los personajes de aquí son propios.</p>
-        </section>
-        <section class="esc-card a-in" style="--d:.35s"><span class="x-et">Programa a tus perseguidores</span>
+        <section class="esc-card a-in" style="--d:.25s"><span class="x-et">Programa a tus perseguidores</span>
+          <p class="pm-intro">Lo de la lámina: en cada cruce, la salida más cercana a su <b>objetivo</b>. Aquí cambias cómo calcula ese objetivo cada uno.</p>
           <div id="reglas" role="group" aria-label="Reglas de los perseguidores"></div>
           <div class="x-fila" style="margin-top:.4em"><button class="x-btn" id="orig" type="button">Volver a las reglas de 1980</button></div>
           <div class="x-fila" style="margin-top:.5em"><span style="font-size:.8em">Llevar a mi juego la regla del</span><select id="cual" aria-label="Qué regla llevar a tu juego" class="pm-cual"><option value="0">Rojo</option><option value="1" selected>Rosa</option><option value="2">Celeste</option><option value="3">Naranja</option></select><button class="x-btn pri" id="llevar" type="button">⇢ Llevar a mi juego</button></div>
@@ -517,10 +509,10 @@ var DIR = { u: [0, -1], l: [-1, 0], d: [0, 1], r: [1, 0] }, ORDEN = ["u", "l", "
 var TIPOS = [["celda", "tu celda"], ["delante", "N celdas delante de ti"], ["pinza", "pinza con el rojo (N delante)"], ["indeciso", "te persigue si está a más de N"], ["esquina", "se queda en su esquina"], ["azar", "al azar"]];
 var CON_N = { delante: 1, pinza: 1, indeciso: 1 };
 var PERS = [
-  { id: "rojo", nombre: "Rojo", color: "#ff4d4d", esq: [COLS - 1, -1], ini: [8, 3], orig: { tipo: "celda", n: 0 } },
-  { id: "rosa", nombre: "Rosa", color: "#ff7ad9", esq: [0, -1], ini: [9, 3], orig: { tipo: "delante", n: 4 } },
-  { id: "celeste", nombre: "Celeste", color: "#4de1ff", esq: [COLS - 1, FILAS], ini: [10, 3], orig: { tipo: "pinza", n: 2 } },
-  { id: "naranja", nombre: "Naranja", color: "#ffb347", esq: [0, FILAS], ini: [11, 3], orig: { tipo: "indeciso", n: 8 } }
+  { id: "rojo", nombre: "Rojo", color: "#E2546B", linea: "#B3261E", esq: [COLS - 1, -1], ini: [8, 3], orig: { tipo: "celda", n: 0 } },
+  { id: "rosa", nombre: "Rosa", color: "#F2C4D8", linea: "#C2477F", esq: [0, -1], ini: [9, 3], orig: { tipo: "delante", n: 4 } },
+  { id: "celeste", nombre: "Celeste", color: "#8DBBE8", linea: "#2B6CB0", esq: [COLS - 1, FILAS], ini: [10, 3], orig: { tipo: "pinza", n: 2 } },
+  { id: "naranja", nombre: "Naranja", color: "#F5A04A", linea: "#C46A12", esq: [0, FILAS], ini: [11, 3], orig: { tipo: "indeciso", n: 8 } }
 ];
 var J, corriendo = false, modo = "perseguir", verGuias = true, atrapado = 0, vivoDesde = 0, record = 0, cumplidos = {}, quiere = "l";
 function libre(c, f) { return f >= 0 && f < FILAS && c >= 0 && c < COLS && M[f][c] !== "#"; }
@@ -602,9 +594,8 @@ cv.width = 608 * DPR; cv.height = 352 * DPR; x.setTransform(DPR, 0, 0, DPR, 0, 0
 var fondoLab = document.createElement("canvas"); fondoLab.width = cv.width; fondoLab.height = cv.height;
 (function pintarLaberinto() {
   var g = fondoLab.getContext("2d"); g.setTransform(DPR, 0, 0, DPR, 0, 0);
-  var cielo = g.createLinearGradient(0, 0, 0, 352); cielo.addColorStop(0, "#1a1536"); cielo.addColorStop(1, "#0d0b1f");
-  g.fillStyle = cielo; g.fillRect(0, 0, 608, 352);
-  // Los pasillos se trazan como una red de líneas gruesas y redondeadas: primero el borde luminoso, encima el piso.
+  g.fillStyle = "#F4F1EA"; g.fillRect(0, 0, 608, 352);   // papel, como las láminas de teoría
+  // Los pasillos se trazan como una red de líneas gruesas: primero el borde de tinta, encima el piso de papel.
   function red(ancho, color, brillo) {
     g.save(); g.lineCap = "round"; g.lineJoin = "round"; g.lineWidth = ancho; g.strokeStyle = color;
     if (brillo) { g.shadowColor = brillo; g.shadowBlur = 16; }
@@ -617,8 +608,8 @@ var fondoLab = document.createElement("canvas"); fondoLab.width = cv.width; fond
     }
     g.stroke(); g.restore();
   }
-  red(C * .92, "#8b7bff", "rgba(139,123,255,.85)");
-  red(C * .74, "#231e4a");
+  red(C * .9, "#16181D");
+  red(C * .78, "#FBF8F1");
 })();
 var puntos = {}, comidos = 0;
 function llenarPuntos() { puntos = {}; for (var f = 0; f < FILAS; f++) for (var c = 0; c < COLS; c++) if (libre(c, f) && !(f === 3 && c >= 8 && c <= 11)) puntos[c + "," + f] = 1; }
@@ -628,33 +619,30 @@ function ojos(px, py, dir, sep, r, rp, mira) {
 }
 function dibuja(fr, frP, t) {
   x.clearRect(0, 0, 608, 352); x.drawImage(fondoLab, 0, 0, 608, 352);
-  x.fillStyle = "#f7e6a6"; x.beginPath();
+  x.fillStyle = "rgba(22,24,29,.38)"; x.beginPath();
   for (var k in puntos) { var a = k.split(","), px = (+a[0] + .5) * C, py = (+a[1] + .5) * C; x.moveTo(px + 2.3, py); x.arc(px, py, 2.3, 0, 6.283); }
   x.fill();
   function pos(o, k2) { return [((o.pc + (o.c - o.pc) * k2) + .5) * C, ((o.pf + (o.f - o.pf) * k2) + .5) * C]; }
   var pulso = QUIETO ? .5 : (Math.sin(t / 280) + 1) / 2;
   if (verGuias) PERS.forEach(function (p, i) {
     var obj = objetivo(p), pts = camino(p, obj), off = (i - 1.5) * 2.6;
-    x.save(); x.strokeStyle = p.color; x.lineCap = "round"; x.lineJoin = "round";
-    x.globalAlpha = .4; x.lineWidth = 4; x.beginPath();
+    x.save(); x.strokeStyle = p.linea; x.lineCap = "round"; x.lineJoin = "round";
+    x.globalAlpha = .85; x.lineWidth = 2.6; x.setLineDash([2, 6]); x.beginPath();
     pts.forEach(function (q, j) { var px = (q[0] + .5) * C + off, py = (q[1] + .5) * C + off; if (j) x.lineTo(px, py); else x.moveTo(px, py); });
-    x.stroke();
+    x.stroke(); x.setLineDash([]);
     var ox = Math.max(.5, Math.min(COLS - .5, obj[0] + .5)) * C, oy = Math.max(.5, Math.min(FILAS - .5, obj[1] + .5)) * C;
-    x.globalAlpha = .9; x.lineWidth = 2; x.beginPath(); x.arc(ox, oy, 7 + pulso * 4, 0, 6.283); x.stroke();
-    x.fillStyle = p.color; x.globalAlpha = .7; x.beginPath(); x.arc(ox, oy, 2.6, 0, 6.283); x.fill();
+    x.globalAlpha = 1; x.lineWidth = 2.6; x.beginPath(); x.arc(ox, oy, 8 + pulso * 3, 0, 6.283); x.stroke();
     x.restore();
   });
   var h = pos(J, frP), salto = QUIETO ? 0 : Math.sin(t / 170) * 1.3;
-  x.save(); x.shadowColor = "rgba(255,138,61,.85)"; x.shadowBlur = 16;
-  var gh = x.createLinearGradient(0, h[1] - 11, 0, h[1] + 11); gh.addColorStop(0, "#ffb57a"); gh.addColorStop(1, "#ff7428");
-  x.fillStyle = gh; x.beginPath(); x.roundRect(h[0] - 11, h[1] - 11 + salto, 22, 22, 8); x.fill(); x.restore();
-  ojos(h[0], h[1] - 2 + salto, J.dir, 4.3, 3.4, 1.8, 1.4);
+  // Papel y tinta, como la lámina: colores planos y borde de tinta, sin brillos ni degradados.
+  x.lineWidth = 2; x.strokeStyle = "#16181D";
+  x.fillStyle = "#9A4F08"; x.beginPath(); x.roundRect(h[0] - 11, h[1] - 11 + salto, 22, 22, 7); x.fill(); x.stroke();
+  ojos(h[0], h[1] - 2 + salto, J.dir, 4.3, 3.2, 1.8, 1.4);
   PERS.forEach(function (p, i) {
-    var q = pos(p, fr), b = QUIETO ? 0 : Math.sin(t / 230 + i * 1.7) * 1.6;
-    x.save(); x.shadowColor = p.color; x.shadowBlur = 18;
-    var gr = x.createRadialGradient(q[0] - 4, q[1] - 5 + b, 1, q[0], q[1] + b, 13); gr.addColorStop(0, "#ffffff"); gr.addColorStop(.3, p.color); gr.addColorStop(1, p.color);
-    x.fillStyle = gr; x.beginPath(); x.arc(q[0], q[1] + b, 11.5, 0, 6.283); x.fill(); x.restore();
-    ojos(q[0], q[1] - 1.5 + b, p.dir, 4.2, 3.5, 1.8, 1.5);
+    var q = pos(p, fr), b = QUIETO ? 0 : Math.sin(t / 230 + i * 1.7) * 1.2;
+    x.fillStyle = p.color; x.strokeStyle = "#16181D"; x.lineWidth = 2; x.beginPath(); x.arc(q[0], q[1] + b, 11.5, 0, 6.283); x.fill(); x.stroke();
+    ojos(q[0], q[1] - 1.5 + b, p.dir, 4.2, 3.3, 1.8, 1.5);
   });
 }
 // Segundos por celda (tú, perseguidores). Empieza en «Lento» para poder explicar mientras se juega.
@@ -685,11 +673,9 @@ $("#llevar").onclick = function () {
 };
 cv.addEventListener("pointerdown", function () { cv.focus(); });
 $$("[data-vel]").forEach(function (b) { b.onclick = function () { PJ = VEL[b.dataset.vel][0]; PP = VEL[b.dataset.vel][1]; tJ = tP = 0; $$("[data-vel]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); }); }; });""",
-       css="""#lab { width: 100%; height: auto; aspect-ratio: 19 / 11; display: block; margin: .5em 0; border-radius: 1em; background: #0d0b1f; border: 1px solid rgba(139,123,255,.35); box-shadow: 0 14px 34px rgba(20,16,50,.28), inset 0 0 0 1px rgba(255,255,255,.04); touch-action: none; }
+       css="""#lab { width: 100%; height: auto; aspect-ratio: 19 / 11; display: block; margin: .5em 0; border-radius: .5em; background: #F4F1EA; border: 1px solid rgba(22,24,29,.3); box-shadow: 0 6px 18px rgba(22,24,29,.12); touch-action: none; }
 .pm-intro { font-size: .84em; margin: .35em 0 .45em; }
-.pm-reglas li { font-size: .82em; }
-.pm-p { display: inline-block; width: .72em; height: .72em; border-radius: 50%; margin-right: .5em; flex: none; vertical-align: -.05em; box-shadow: 0 0 .5em currentColor; }
-.pm-fuente { font-size: .7em; color: var(--muted); margin: .45em 0 0; }
+.pm-p { display: inline-block; width: .8em; height: .8em; border-radius: 50%; margin-right: .5em; flex: none; vertical-align: -.08em; border: 2px solid #16181D; }
 .pm-fila { display: grid; grid-template-columns: 1em 4.6em 1fr 3.6em; gap: .45em; align-items: center; font-size: .8em; margin: .3em 0; }
 .pm-fila select, .pm-fila input { font: inherit; color: var(--fg); background: var(--s1); border: 1px solid var(--line2); border-radius: .5em; padding: .3em .4em; min-width: 0; }
 .pm-fila input:disabled { opacity: .35; }
