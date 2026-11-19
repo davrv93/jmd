@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capas y oráculo · Orquestación con Qwen Coder</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  .teo-ceja, .nt .k, .cita small, .rot, .pastilla { text-transform: none !important; letter-spacing: .02em !important; }
+  .nt.oro { background: #E9C25A; box-shadow: 0 0 0 2px #8A6A00 inset, var(--sombra); }
+  .nt .t.mono { hyphens: none; overflow-wrap: anywhere; }
+  .nt .t small { display: block; font-weight: 500; opacity: .85; margin-top: .2em; }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .sello.ok { color: #1F7A3E; border-color: #1F7A3E; }
+  .nt.ficha .sello { top: -1.5em; right: -.8em; }
+  .marco { fill: none; stroke: var(--gris); stroke-width: 1.6; stroke-dasharray: 6 7; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 3 de 3 · Las capas de comprobación</p>
+    <h1>La prueba que el agente <em>nunca ve</em> es la que manda</h1>
+  </header>
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="A la izquierda, seis capas apiladas: sintaxis, análisis estático, pruebas del tester, oro (pruebas ocultas), revisión de pares y gate. Un archivo, fechas.js, cae por las capas y se detiene en la de oro. A la derecha, el árbitro: si el oro pasa y las pruebas del tester fallan, se repara el tester, no el código.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="h1" class="trazo flecha" d="M556 128 L604 222"/>
+        <path id="h2" class="trazo flecha" d="M708 128 L660 222"/>
+        <path id="h3" class="trazo flecha" d="M632 292 L632 352"/>
+      </svg>
+      <div class="nt cmd" id="c1" data-r="-0.6" style="left:3%; top:2.0%; width:45%"><span class="k">Capa 1 · sintaxis</span><span class="t"><code>node --check</code>: que el archivo se pueda leer</span></div>
+      <div class="nt cmd" id="c2" data-r="0.6" style="left:3%; top:18.2%; width:45%"><span class="k">Capa 2 · estático</span><span class="t">Prohíbe eval, child_process, red y process.env</span></div>
+      <div class="nt act" id="c3" data-r="-0.6" style="left:3%; top:34.4%; width:45%"><span class="k">Capa 3 · pruebas</span><span class="t">Las escribe un tester que no ve el código</span></div>
+      <div class="nt oro" id="c4" data-r="0.6" style="left:3%; top:50.6%; width:45%"><span class="k">Capa 4 · oro</span><span class="t">Pruebas ocultas: ningún agente las ve</span></div>
+      <div class="nt pol" id="c5" data-r="-0.6" style="left:3%; top:66.8%; width:45%"><span class="k">Capa 5 · revisión de pares</span><span class="t">Otro agente compara código y especificación</span></div>
+      <div class="nt info" id="c6" data-r="0.6" style="left:3%; top:83.0%; width:45%"><span class="k">Gate · Claude</span><span class="t">Revisa antes de integrar</span></div>
+      <div class="nt ficha s solo-anim" id="chipF" style="left:49%; top:2%; width:12%"><span class="t mono">fechas.js</span><span class="sello solo-anim" id="sF">detenido</span></div>
+      <div class="nt ficha k solo-anim" id="chipC" style="left:49%; top:2%; width:12%"><span class="t mono">csv.js</span><span class="sello ok solo-anim" id="sC">listo</span></div>
+      <div class="nt oro" id="aOro" data-r="-1.4" style="left:62%; top:12%; width:16%"><span class="k">Oro</span><span class="t">✓ pasa</span></div>
+      <div class="nt hot" id="aTes" data-r="1.4" style="left:81%; top:12%; width:17%"><span class="k">Tester</span><span class="t">✗ falla</span></div>
+      <div class="nt sis" id="aArb" data-r="-.6" style="left:66%; top:43%; width:26%"><span class="k">Árbitro</span><span class="t">¿Quién se equivocó?</span></div>
+      <div class="nt info" id="aRep" data-r=".8" style="left:62%; top:69%; width:35%"><span class="k">Decisión</span><span class="t">Se repara el tester, no el código</span></div>
+    </figure>
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Primero, lo barato</b><p>Sintaxis con <code>node --check</code> y un análisis estático que prohíbe eval, child_process, la red y process.env. Cuestan milisegundos y descartan lo peor sin gastar un solo token.</p></li>
+        <li><b>Un tester que no ve el código</b><p>Las pruebas las escribe otro agente, solo con la especificación. Así no se contagia de los errores del programador. Pero también puede equivocarse.</p></li>
+        <li><b>El oráculo: la prueba oculta</b><p>El orquestador escribe pruebas de aceptación que ningún agente ve: la capa oro. No se pueden ajustar para «pasar». Aquí se detuvo fechas.js en las tres corridas.</p></li>
+        <li><b>El árbitro: ¿quién se equivocó?</b><p>Si el oro pasa pero las pruebas del tester fallan, el código está bien y el tester está mal. Entonces se repara el tester, no el código.</p></li>
+        <li><b>Pares y gate</b><p>Otro agente compara el código con la especificación y, al final, Claude revisa antes de integrar. csv.js pasó en verde por todas las capas.</p></li>
+      </ol>
+    </aside>
+  </div>
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Fuente: trabajo propio de JMD Learning, 18-11-2026. Orquestador en Node sin dependencias; qwen2.5-coder:14b en Ollama sobre una Mac M4 Pro de 24 GB.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+
+  var $ = TEO.$, puntas = {};
+  function puntasDe(ids) { ids.forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); }); }
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .5 }, pos);
+    tl.from(puntas[id], { autoAlpha: 0, duration: .2 }, "-=.1");
+  }
+  function sello(tl, sel, pos) {
+    return tl.fromTo(sel, { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, pos);
+  }
+
+  TEO.escena([
+    function (tl) { TEO.pegar(tl, ["#c1", "#c2"]); },
+    function (tl) { TEO.pegar(tl, "#c3"); },
+    function (tl) {
+      TEO.pegar(tl, "#c4");
+      tl.fromTo("#chipF", { autoAlpha: 0, top: "2%" }, { autoAlpha: 1, duration: .3 });
+      tl.to("#chipF", { top: "50%", duration: 1.4, ease: "power1.in" });
+      tl.to("#chipF", { x: -5, duration: .06, repeat: 5, yoyo: true, ease: "none" });
+      sello(tl, "#sF");
+    },
+    function (tl) {
+      TEO.pegar(tl, ["#aOro", "#aTes"]); flecha(tl, "h1"); flecha(tl, "h2", "<");
+      TEO.pegar(tl, "#aArb"); flecha(tl, "h3"); TEO.pegar(tl, "#aRep");
+    },
+    function (tl) {
+      TEO.pegar(tl, ["#c5", "#c6"]);
+      tl.to("#chipF", { autoAlpha: 0, duration: .3 });
+      tl.fromTo("#chipC", { autoAlpha: 0, top: "2%" }, { autoAlpha: 1, duration: .3 });
+      tl.to("#chipC", { top: "83%", duration: 2, ease: "power1.inOut" });
+      sello(tl, "#sC");
+    }
+  ], {
+    preparar: function () { puntasDe(["h1", "h2", "h3"]); gsap.set(["#chipF", "#chipC", "#sF", "#sC"], { autoAlpha: 0 }); },
+    textoFin: "Fin de la teoría 3"
+  });
+})();
+</script>
+</body>
+</html>

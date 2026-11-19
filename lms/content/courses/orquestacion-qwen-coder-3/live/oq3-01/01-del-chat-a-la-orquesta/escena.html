@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Del chat a la orquesta · Orquestación con Qwen Coder</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  .teo-ceja, .nt .k, .cita small, .rot, .pastilla { text-transform: none !important; letter-spacing: .02em !important; }
+  .nt.oro { background: #E9C25A; box-shadow: 0 0 0 2px #8A6A00 inset, var(--sombra); }
+  .nt .t.mono { hyphens: none; overflow-wrap: anywhere; }
+  .nt .t small { display: block; font-weight: 500; opacity: .85; margin-top: .2em; }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .sello.ok { color: #1F7A3E; border-color: #1F7A3E; }
+  .nt.ficha .sello { top: -1.5em; right: -.8em; }
+  .marco { fill: none; stroke: var(--gris); stroke-width: 1.6; stroke-dasharray: 6 7; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 1 de 3 · Del chat a la orquesta</p>
+    <h1>Un chat responde; una orquesta <em>comprueba</em></h1>
+  </header>
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="A la izquierda, el chat: tú preguntas, un modelo responde y la respuesta queda sin revisar. Al centro, por qué no escala: un solo hilo, un solo modelo y tú como único control de calidad. A la derecha, la orquesta: un planificador, tres ejecutores, una verificación por capas y un gate.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="a1" class="trazo flecha" d="M120 92 L120 186"/>
+        <path id="a2" class="trazo flecha" d="M120 262 L120 352"/>
+        <rect id="marco" class="trazo fino guion" x="512" y="14" width="272" height="496" rx="14"/>
+        <path id="o1" class="trazo flecha" d="M648 108 L648 168"/>
+        <path id="o2" class="trazo flecha" d="M648 232 L648 292"/>
+        <path id="o3" class="trazo flecha" d="M648 356 L648 416"/>
+      </svg>
+      <div class="capa" id="capaChat">
+        <div class="nt act" id="nTu" data-r="-1.2" style="left:3%; top:5%; width:26%"><span class="k">Tú</span><span class="t">Una pregunta en el chat</span></div>
+        <div class="nt sis" id="nMod" data-r="1" style="left:3%; top:37%; width:26%"><span class="k">Un modelo</span><span class="t">Un solo hilo de conversación</span></div>
+        <div class="nt ev" id="nResp" data-r="-.8" style="left:3%; top:69%; width:26%"><span class="k">Respuesta</span><span class="t">«Listo, ya funciona»</span><span class="sello solo-anim" id="sResp">sin revisar</span></div>
+      </div>
+      <div class="capa" id="capaPorque">
+        <div class="nt fantasma" id="f1" data-r="1.4" style="left:35%; top:8%; width:26%"><span class="k">Un solo hilo</span><span class="t">El contexto crece y lo primero se olvida</span></div>
+        <div class="nt fantasma" id="f2" data-r="-1.2" style="left:35%; top:38%; width:26%"><span class="k">Un solo modelo</span><span class="t">Escribe el código y decide si está bien</span></div>
+        <div class="nt hot" id="f3" data-r="1" style="left:35%; top:68%; width:26%"><span class="k">Nadie verifica</span><span class="t">Tú eres el control de calidad, al final</span></div>
+      </div>
+      <div class="nt cmd" id="q1" data-r="-1" style="left:67%; top:7%; width:28%"><span class="k">Planificador</span><span class="t">Claude parte el trabajo</span></div>
+      <div class="nt act" id="q2" data-r="1" style="left:67%; top:32%; width:28%"><span class="k">Tres ejecutores</span><span class="t">Qwen, en paralelo</span></div>
+      <div class="nt pol" id="q3" data-r="-1" style="left:67%; top:57%; width:28%"><span class="k">Verificación</span><span class="t">Cinco capas de pruebas</span></div>
+      <div class="nt info" id="q4" data-r="1" style="left:67%; top:81%; width:28%"><span class="k">Gate</span><span class="t">Nada entra sin revisar</span></div>
+    </figure>
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Tú preguntas, un modelo responde</b><p>Así trabaja casi todo el mundo hoy: una pregunta, un hilo, un modelo. Para una idea, un correo o un borrador funciona muy bien.</p></li>
+        <li><b>La respuesta suena segura</b><p>El modelo dice «listo, ya funciona». Suena bien, pero nadie lo comprobó: el modelo no ejecutó nada y tú no tuviste tiempo de probarlo todo.</p></li>
+        <li><b>Por qué un chat no escala</b><p>Un solo hilo que crece y olvida. Un solo modelo que escribe el código y también decide si está bien. Y tú, al final, como único control de calidad.</p></li>
+        <li><b>El salto: orquestar</b><p>Una orquesta reparte el trabajo entre varios agentes y pone en medio algo que no se deja convencer: las pruebas. El valor no está en el modelo, está en la verificación.</p></li>
+      </ol>
+    </aside>
+  </div>
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Fuente: trabajo propio de JMD Learning, 18-11-2026. Orquestador en Node sin dependencias; qwen2.5-coder:14b en Ollama sobre una Mac M4 Pro de 24 GB.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+
+  var $ = TEO.$, puntas = {};
+  function puntasDe(ids) { ids.forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); }); }
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .5 }, pos);
+    tl.from(puntas[id], { autoAlpha: 0, duration: .2 }, "-=.1");
+  }
+  function sello(tl, sel, pos) {
+    return tl.fromTo(sel, { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, pos);
+  }
+
+  TEO.escena([
+    function (tl) { TEO.pegar(tl, "#nTu"); flecha(tl, "a1"); TEO.pegar(tl, "#nMod"); },
+    function (tl) { flecha(tl, "a2"); TEO.pegar(tl, "#nResp"); sello(tl, "#sResp", "+=.2"); },
+    function (tl) { TEO.pegar(tl, ["#f1", "#f2", "#f3"]); },
+    function (tl) {
+      tl.to(["#capaChat", "#capaPorque"], { opacity: .3, duration: .5 });
+      TEO.trazar(tl, "#marco", { duration: 1 }, "<");
+      TEO.pegar(tl, "#q1"); flecha(tl, "o1"); TEO.pegar(tl, "#q2"); flecha(tl, "o2");
+      TEO.pegar(tl, "#q3"); flecha(tl, "o3"); TEO.pegar(tl, "#q4");
+    }
+  ], {
+    preparar: function () { puntasDe(["a1", "a2", "o1", "o2", "o3"]); gsap.set("#sResp", { autoAlpha: 0 }); },
+    textoFin: "Fin de la teoría 1"
+  });
+})();
+</script>
+</body>
+</html>
