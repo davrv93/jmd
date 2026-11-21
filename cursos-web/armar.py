@@ -27,13 +27,15 @@ BROCHURE = {c["slug"]: c for c in json.load(open(pathlib.Path.home() / "Document
 VIDEOS = pathlib.Path.home() / "Downloads/web-con-ia-jmd"
 WA = "51986149476"
 WA_TXT = "986 149 476"
-HOY = dt.datetime(2026, 11, 15, 10, 0)
+HOY = dt.datetime(2026, 11, 21, 3, 0)
 DIAS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 DIAS_L = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"]
 
 # slug web, grupos del LMS, slug del brochure, precio, video promo (ruta, vertical?), color de acento
 CURSOS = [
+    # Pedido el 21-11-2026: lun 23, mar 24 y mié 25 nov, 3:00 p. m. Ruleta de descuentos en /sorteo-videos/ (piso S/ 18, 1 gratis).
+    dict(slug="videos-con-ia-para-tu-negocio", grupos=["videos-ia-negocio"], br=None, precio="S/ 25", acento="#ff8a3d"),
     dict(slug="claude-code-pro", grupos=["claude-code-pro-2"], br="claude-code-pro", precio="S/ 100",
          video=("claude-pro2-22/video/renders/claude-code-pro2-22s-whatsapp.mp4", True), acento="#ff8a3d"),
     dict(slug="web-scraping-etico", grupos=["web-scraping-etico-2"], br="web-scraping-etico", precio="S/ 15",
@@ -218,6 +220,9 @@ def pagina(c, resumenes):
         y, ses = leer_curso(cid)
         if ses and ses[-1]["ini"] > HOY:
             datos.append((cid, y, ses))
+    if not datos:  # todos sus grupos ya terminaron: sale del índice (su página vieja queda en web/)
+        print(f"-- {c['slug']:<30} sin sesiones futuras: fuera del índice")
+        return
     y0 = datos[0][1]
     br = BROCHURE.get(c["br"]) if c.get("br") else None
     titulo = re.sub(r"\s*·\s*(Grupo \d+|Grupo del domingo.*)$", "", y0["title"]).strip()
