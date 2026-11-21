@@ -23,6 +23,7 @@ Qué trae el kit:
 | `.claude/agents/revisor.md` | Subagente de solo lectura, con modelo haiku. Recalcula totales y devuelve OK o FALLA. |
 | `.claude/skills/build-dashboard/` | La skill de dashboards de Anthropic (Apache 2.0). |
 | `.claude/hooks/solo-lectura.py` + `.claude/settings.json` | El hook que impide escribir en la base. |
+| `agregar.py` | Agrega `tokens.csv` para el dashboard y le inyecta los datos. Lo determinista no lo hace el modelo. |
 
 ## 1. Línea base: tú solo, sin subagentes (8 min)
 
@@ -49,18 +50,32 @@ Escribe `/context` y anota otra vez **Messages**. Ese es tu número de después.
 
 ## 3. El dashboard, con el equipo completo (20 min)
 
+Tu ventana principal solo reparte el trabajo, así que no necesita Opus. Cambia el modelo:
+
 ```text
-Encarga al subagente constructor un dashboard.html de mis tokens a partir de tokens.csv, con la
-skill build-dashboard:
-- 4 KPI: tokens de salida, cache leída, % de salida de subagentes, días activos
-- salida por día, en barras apiladas: principal contra subagentes
-- dona por modelo
-- tabla por sesión, ordenable
-- filtro por proyecto
-Después pide al subagente revisor que lo revise. A mí dame solo el resumen, en 5 líneas.
+/model sonnet
+```
+
+```text
+Pide al subagente constructor un dashboard.html de mis tokens con la skill build-dashboard:
+4 KPI (salida, cache leída, % de salida de subagentes, días activos), salida por día apilada
+principal contra subagentes, dona por modelo, tabla de sesiones ordenable y filtro por proyecto.
+Luego pide al subagente revisor que lo revise. A mí dame solo 5 líneas.
 ```
 
 Abre `dashboard.html` en el navegador. Luego escribe `/context` y `/usage`.
+
+Qué hace barato este paso:
+- `agregar.py` agrega las miles de filas de `tokens.csv` en unas decenas y las inyecta en el HTML.
+  El modelo nunca escribe los datos, y escribir es lo más caro.
+- El constructor (sonnet) carga la skill en **su** ventana, no en la tuya.
+- El revisor (haiku) compara con `python3 agregar.py --resumen` en vez de releer el CSV.
+
+Para refrescar el dashboard otro día, sin gastar un token:
+
+```bash
+python3 tokens_a_csv.py && python3 agregar.py --html dashboard.html
+```
 
 ## 4. El guardia: un chat que solo puede leer (15 min)
 

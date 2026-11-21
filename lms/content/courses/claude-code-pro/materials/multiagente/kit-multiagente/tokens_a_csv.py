@@ -40,7 +40,9 @@ def leer_tipo(meta):
 
 
 def filas_de(jsonl, proyecto, sesion, agente, tipo, desde):
-    vistos = set()  # una misma respuesta aparece en varias líneas (una por bloque): contar una vez
+    # Claude Code escribe una línea por bloque de la respuesta, todas con el mismo id de mensaje,
+    # y el uso va creciendo: la última línea trae la salida completa. Nos quedamos con esa.
+    por_id = {}
     with open(jsonl, encoding="utf-8", errors="replace") as f:
         for linea in f:
             try:
@@ -52,27 +54,31 @@ def filas_de(jsonl, proyecto, sesion, agente, tipo, desde):
             m = d.get("message") or {}
             u = m.get("usage") or {}
             clave = m.get("id") or d.get("requestId")
-            if not u or not clave or clave in vistos:
-                continue
-            vistos.add(clave)
-            try:
-                t = dt.datetime.fromisoformat(d["timestamp"].replace("Z", "+00:00")).astimezone(LIMA)
-            except (KeyError, ValueError):
-                continue
-            if t < desde:
+            if not u or not clave:
                 continue
             modelo = m.get("model", "")
             if modelo.startswith("<"):  # respuestas sintéticas del propio Claude Code
                 continue
-            yield {
-                "fecha": t.date().isoformat(), "hora": t.strftime("%H:%M"),
+            previo = por_id.get(clave)
+            if previo and (u.get("output_tokens") or 0) < previo[1]["salida"]:
+                continue
+            try:
+                t = dt.datetime.fromisoformat(d["timestamp"].replace("Z", "+00:00")).astimezone(LIMA)
+            except (KeyError, ValueError):
+                continue
+            ts = previo[0] if previo else t  # la hora es la del primer bloque
+            por_id[clave] = (ts, {
+                "fecha": ts.date().isoformat(), "hora": ts.strftime("%H:%M"),
                 "proyecto": proyecto, "sesion": sesion[:8], "agente": agente, "tipo_agente": tipo,
                 "modelo": modelo,
                 "entrada": u.get("input_tokens", 0) or 0,
                 "cache_escrita": u.get("cache_creation_input_tokens", 0) or 0,
                 "cache_leida": u.get("cache_read_input_tokens", 0) or 0,
                 "salida": u.get("output_tokens", 0) or 0,
-            }
+            })
+    for ts, fila in por_id.values():
+        if ts >= desde:
+            yield fila
 
 
 def nombre_proyecto(carpeta):
