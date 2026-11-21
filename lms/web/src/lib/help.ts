@@ -16,6 +16,16 @@ export const HELP: Record<string, HelpTopic> = {
       "«Horario» muestra en qué cursos estás matriculado, todas tus fechas y si dos clases se cruzan.",
     ],
   },
+  pase: {
+    title: "Pase libre",
+    points: [
+      "Con el pase libre tienes todos los cursos sin costo.",
+      "Cada fila es un curso. Ábrela y elige uno de sus grupos con los botones de arriba.",
+      "Punto dorado: grupo por empezar. Punto verde: en curso. Punto gris: ya dictado.",
+      "En un grupo que viene, «Inscribirme gratis» te deja dentro y lo verás en Aprender y en Horario.",
+      "En un grupo ya dictado, «Ver las clases de este grupo» te muestra sus clases y grabaciones. Puedes elegir más de un grupo.",
+    ],
+  },
   curso: {
     title: "Curso",
     points: [

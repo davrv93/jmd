@@ -383,8 +383,38 @@ export interface TicketSorteo {
   nombre?: string;
 }
 
+/** Pase libre (/pase/): todo el catálogo agrupado por curso. La grabación viaja solo en los grupos donde ya está. */
+export interface PaseSesion {
+  id?: string;
+  titulo: string;
+  inicio?: string;
+  minutos: number;
+  publicada: boolean;
+  tiene_grabacion: boolean;
+  grabacion?: { url: string; passcode?: string };
+}
+export interface PaseGrupo {
+  id: string;
+  slug: string;
+  grupo: string;
+  estado: "dictado" | "en_curso" | "proximo";
+  inicio?: string;
+  fin?: string;
+  inscrito: boolean;
+  grabaciones: number;
+  sesiones: PaseSesion[];
+}
+export interface PaseCurso {
+  nombre: string;
+  area?: string;
+  descripcion: string;
+  grupos: PaseGrupo[];
+}
+
 export const api = {
   config: () => req<AuthConfig>("GET", "/api/v1/auth/config"),
+  pase: () => req<{ cursos: PaseCurso[]; ahora: string }>("GET", "/api/v1/pase"),
+  paseUnirme: (curso: string) => req<{ cohorts: string[]; curso: string }>("POST", "/api/v1/pase/unirme", { curso }),
   // Botón «Abrir DeepSeek Harness» (página /deepseek/).
   dshEstado: () => req<DshEstado>("GET", "/api/v1/dsh"),
   dshClave: (clave: string) => req<{ clave: DshEstado["clave"]; propia: boolean }>("POST", "/api/v1/dsh/clave", { clave }),

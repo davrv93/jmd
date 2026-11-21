@@ -158,6 +158,12 @@ export default component$(() => {
                   {n.label}
                 </Link>
               ))}
+              {me.cohorts.includes("pase-libre") && (
+                <Link href="/pase/" class={path.startsWith("/pase/") ? "on" : ""}>
+                  <Icon name="grad" size={15} />
+                  Pase libre
+                </Link>
+              )}
               {isStaff(me) && (
                 <Link href="/instructor/" class={path.startsWith("/instructor/") ? "on" : ""}>
                   <Icon name="users" size={15} />

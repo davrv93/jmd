@@ -159,6 +159,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/patrocinio/{codigo}", s.patrocinioInscribir)
 	mux.Handle("POST /api/v1/patrocinio/{codigo}/unirme", s.authed(s.patrocinioUnirme))
 	// Sorteo de cupos (ver sorteo.go): página pública + sorteo del staff.
+	// Pase libre: catálogo completo y grupos gratis para quien tiene la cohorte «pase-libre».
+	mux.Handle("GET /api/v1/pase", s.authed(s.paseCatalogo))
+	mux.Handle("POST /api/v1/pase/unirme", s.authed(s.paseUnirme))
 	mux.HandleFunc("GET /api/v1/sorteo/{id}", s.sorteoInfo)
 	mux.HandleFunc("POST /api/v1/sorteo/{id}/participar", s.sorteoParticipar)
 	mux.HandleFunc("GET /api/v1/sorteo/{id}/ticket/{valor}", s.sorteoTicket)
