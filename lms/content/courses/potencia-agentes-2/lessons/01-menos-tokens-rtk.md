@@ -1,7 +1,7 @@
 ---
 id: pt2-01
 title: "Clase 1 · Menos tokens: RTK y el ahorro de contexto"
-starts_at: 2026-11-22T11:30:00-05:00
+starts_at: 2026-11-22T11:45:00-05:00
 published: true
 objectives:
   - {id: pt2-01-o1, title: "Medir cuánto contexto gasta tu agente hoy, con números"}
@@ -26,7 +26,7 @@ cycle:
     title: Ver la clase
     tool: zoom
     phase: experiencia
-    description: "Asiste en vivo el domingo 22 de noviembre de 11:30 a. m. a 12:45 p. m. (hora de Lima) o mira la grabación."
+    description: "Asiste en vivo el domingo 22 de noviembre de 11:45 a. m. a 12:45 p. m. (hora de Lima) o mira la grabación."
     check: "Viste la clase completa o la grabación"
   - id: medir
     title: Medir tu línea base
@@ -62,7 +62,7 @@ cycle:
 
 ## Clase 1 · Menos tokens: RTK y el ahorro de contexto
 
-**Domingo 22 de noviembre, 11:30 a. m. – 12:45 p. m. (hora de Lima).**
+**Domingo 22 de noviembre, 11:45 a. m. – 12:45 p. m. (hora de Lima). Con sorteo especial al cierre.**
 
 Una sesión con agente se paga en contexto: cada archivo que se lee, cada log que se pega,
 cada «muéstrame el repo entero». En esta clase se mide ese gasto y se corta.
