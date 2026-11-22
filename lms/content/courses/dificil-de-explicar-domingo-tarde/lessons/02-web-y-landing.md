@@ -19,6 +19,11 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
+  - id: dt-02-resumen
+    title: "Video resumen de la sesión (1:26): texto sin letras rotas, recorte seguro, estudio 3D, 100 flyers y diseño de tu web"
+    kind: video
+    file: materials/video-resumen-s2.mp4
+    objective_ids: [dt-02-o1, dt-02-o2]
   - id: dt-02-temario
     title: Programa del taller (PDF, v2)
     kind: pdf
