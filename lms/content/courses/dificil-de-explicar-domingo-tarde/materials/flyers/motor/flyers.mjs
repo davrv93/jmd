@@ -13,6 +13,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { conPack, fondoPack, fotoPack, CSS_PACK } from './estilo.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, arr) => {
@@ -112,9 +113,12 @@ export function valida(b0) {
   }
   // tipografías
   const T = b.tipografias;
+  if (b.pack) { T.titulo = b.pack.titulo.familia; T.cuerpo = b.pack.cuerpo.familia; }
+  else {
   if (!TITULO_OK.includes(T.titulo)) { c.push(`titulo: fuente «${T.titulo}» no válida`); T.titulo = 'archivo-black'; }
   if (!CUERPO_OK.includes(T.cuerpo)) { c.push(`cuerpo: fuente «${T.cuerpo}» no válida`); T.cuerpo = 'inter'; }
   if (T.cuerpo === T.titulo) { T.cuerpo = T.titulo === 'inter' ? 'sora' : 'inter'; c.push('cuerpo: igual al título'); }
+  }
   if (!REGLAS.visuales.includes(b.visual)) { c.push(`visual «${b.visual}» no existe`); b.visual = VISUAL_RUBRO[b.rubro] || 'estrella'; }
   if (!REGLAS.familias.some((f) => f.id === b.familia)) { c.push('familia desconocida'); b.familia = 'heroe'; }
   if (!REGLAS.formatos[b.formato]) b.formato = 'feed';
@@ -188,18 +192,19 @@ export async function html(b, A = { k: {}, col: {} }) {
   const F = REGLAS.formatos[b.formato], W = F.ancho, H = F.alto, Z = F.zona_segura;
   const AW = W - 2 * Z.lados, AH = H - Z.arriba - Z.abajo, P = b.paleta;
   const tf = b.tipografias.titulo, cf = b.tipografias.cuerpo;
-  const [t64, c64] = await Promise.all([fuente64(tf), fuente64(cf)]);
-  const may = MAYUS.has(tf);
+  const K = b.pack;
+  const [t64, c64] = K ? [K.titulo.b64, K.cuerpo.b64] : await Promise.all([fuente64(tf), fuente64(cf)]);
+  const may = K ? K.titulo.mayus : MAYUS.has(tf);
   // T: bloque de texto medible. o.bg = color real debajo; o.c = color del texto; o.mh = alto máximo.
   const T = (k, txt, size, o = {}) => {
     const bg = o.bg || P.fondo, c = A.col[k] || o.c || P.texto;
-    return `<div data-t="${k}" data-bg="${bg}" class="t ${o.cls || ''}" style="font-size:${(size * (A.k[k] || 1)).toFixed(1)}px;color:${c};${o.mh ? `max-height:${o.mh}px;` : ''}${o.st || ''}">${esc(txt)}</div>`;
+    return `<div data-t="${k}" data-bg="${bg}" class="t ${o.cls || ''}" style="font-size:${(size * (A.k[k] || 1)).toFixed(1)}px;color:${c};${o.mh ? `max-height:${o.mh}px;` : ''}${o.st || ''}">${o.ico || ''}${esc(txt)}</div>`;
   };
   const G = (k, txt, size, o = {}) => T(k, txt, size, { ...o, cls: 'tit ' + (o.cls || '') });
-  const pill = (k, txt, size, o = {}) => { const bg = o.bg || P.acento; return T(k, txt, size, { bg, c: o.c || (o.bg ? P.fondo : P.texto_acento), cls: 'pill ' + (o.cls || ''), st: `background:${bg};` + (o.st || '') }); };
-  const V = (st = '', vt = b.visual) => `<div class="vis" style="${st}">${visual(vt, P)}</div>`;
+  const pill = (k, txt, size, o = {}) => { const bg = o.bg || P.acento; if (K && k === 'cta' && /whats/i.test(txt)) o.ico = K.iconos.whatsapp; return T(k, txt, size, { bg, c: o.c || (o.bg ? P.fondo : P.texto_acento), cls: 'pill ' + (o.cls || ''), st: `background:${bg};` + (o.st || ''), ico: o.ico }); };
+  const V = (st = '', vt = b.visual) => K ? `<div class="vis" style="${st}">${fotoPack(b, vt === 'otra' ? 'foto2' : 'foto')}</div>` : `<div class="vis" style="${st}">${visual(vt, P)}</div>`;
   const kicker = (st = '') => T('nombre', b.nombre, E.xs, { cls: 'kick', st });
-  const marca = (o = {}) => T('marca', b.marca, E.xs, { cls: 'marca', ...o });
+  const marca = (o = {}) => T('marca', b.marca, E.xs, { cls: 'marca', ...(K && String(b.marca).startsWith('@') ? { ico: K.iconos.instagram } : {}), ...o });
   const hist = b.formato === 'historia';
   let cuerpo = '', sangrado = '';
 
@@ -208,7 +213,7 @@ export async function html(b, A = { k: {}, col: {} }) {
       cuerpo = `<div class="col c" style="height:100%;gap:20px">
         ${kicker()}${G('gancho', b.gancho, E.xxl, { mh: AH * 0.24 })}
         <div style="position:relative;flex:1 1 0;min-height:160px;width:100%;display:flex;justify-content:center">
-          <div class="disco" style="background:${P.superficie}"></div>${V('height:100%;width:100%')}
+          ${K ? V('height:100%;aspect-ratio:4/5;max-width:100%') : `<div class="disco" style="background:${P.superficie}"></div>${V('height:100%;width:100%')}`}
           <div class="sello" style="background:${P.acento}">${T('oferta', b.oferta, E.m, { bg: P.acento, c: P.texto_acento, mh: 150, st: 'width:190px;text-align:center' })}</div>
         </div>
         ${G('producto', b.producto, E.l, { mh: 140 })}${T('beneficio', b.beneficio, E.s, { mh: 130, st: 'max-width:86%' })}
@@ -216,8 +221,8 @@ export async function html(b, A = { k: {}, col: {} }) {
       break;
     case 'dividido':
       sangrado = hist
-        ? `<div class="panel" style="left:0;top:0;width:${W}px;height:${H * 0.46}px;background:${P.superficie}"><div class="vis" style="position:absolute;left:15%;top:${Z.arriba * 0.6}px;width:70%;height:${H * 0.46 - Z.arriba * 0.8}px">${visual(b.visual, P)}</div></div>`
-        : `<div class="panel" style="left:0;top:0;width:${W * 0.44}px;height:${H}px;background:${P.superficie}"><div class="vis" style="position:absolute;left:6%;top:22%;width:88%;height:56%">${visual(b.visual, P)}</div></div>`;
+        ? (K ? `<div class="panel" style="left:0;top:0;width:${W}px;height:${H * 0.46}px">${fotoPack(b, 'foto', { radio: '0', sombra: false })}</div>` : `<div class="panel" style="left:0;top:0;width:${W}px;height:${H * 0.46}px;background:${P.superficie}"><div class="vis" style="position:absolute;left:15%;top:${Z.arriba * 0.6}px;width:70%;height:${H * 0.46 - Z.arriba * 0.8}px">${visual(b.visual, P)}</div></div>`)
+        : (K ? `<div class="panel" style="left:0;top:0;width:${W * 0.44}px;height:${H}px">${fotoPack(b, 'foto', { radio: '0', sombra: false })}</div>` : `<div class="panel" style="left:0;top:0;width:${W * 0.44}px;height:${H}px;background:${P.superficie}"><div class="vis" style="position:absolute;left:6%;top:22%;width:88%;height:56%">${visual(b.visual, P)}</div></div>`);
       cuerpo = hist
         ? `<div class="col" style="position:absolute;left:0;right:0;bottom:0;height:${AH - (H * 0.46 - Z.arriba) - 40}px;gap:22px;justify-content:flex-end">${kicker()}${G('gancho', b.gancho, E.xxl, { mh: 330 })}${T('producto', b.producto, E.m, { mh: 120 })}${T('beneficio', b.beneficio, E.s, { mh: 130 })}<div class="fila izq">${pill('oferta', b.oferta, E.m)}</div><div class="fila izq">${pill('cta', b.cta, E.s, { bg: P.texto, c: P.fondo })}${marca()}</div></div>`
         : `<div class="col" style="margin-left:${W * 0.44 - Z.lados + 48}px;height:100%;gap:26px;justify-content:center">${kicker()}${G('gancho', b.gancho, E.xl, { mh: 420 })}${T('producto', b.producto, E.m, { mh: 120 })}${T('beneficio', b.beneficio, E.s, { mh: 170 })}<div class="fila izq">${pill('oferta', b.oferta, E.m)}</div><div class="fila izq" style="flex-direction:column;align-items:flex-start">${pill('cta', b.cta, E.s, { bg: P.texto, c: P.fondo })}${marca()}</div></div>`;
@@ -228,13 +233,13 @@ export async function html(b, A = { k: {}, col: {} }) {
         <div style="height:10px;width:180px;background:${P.acento};flex:none"></div>
         ${G('producto', b.producto, E.l, { mh: 140 })}${T('beneficio', b.beneficio, E.s, { mh: 130, st: 'max-width:70%' })}
         <div style="flex:1 1 0;min-height:0"></div>
-        <div class="fila izq" style="justify-content:space-between;align-items:flex-end"><div class="col" style="gap:16px;align-items:flex-start">${pill('oferta', b.oferta, E.m)}${pill('cta', b.cta, E.s, { bg: P.texto, c: P.fondo })}${marca()}</div>${V('width:240px;height:240px;flex:none')}</div></div>`;
+        <div class="fila izq" style="justify-content:space-between;align-items:flex-end"><div class="col" style="gap:16px;align-items:flex-start">${pill('oferta', b.oferta, E.m)}${pill('cta', b.cta, E.s, { bg: P.texto, c: P.fondo })}${marca()}</div>${V(K ? (hist ? 'width:420px;height:560px;flex:none' : 'width:380px;height:460px;flex:none') : 'width:240px;height:240px;flex:none')}</div></div>`;
       break;
     case 'collage': {
       const papel = aclara(P.superficie, 0.15);
       const tp = asegura(P.texto, papel, 4.5);
-      sangrado = `<div class="recorte" style="left:${W * 0.08}px;top:${H * (hist ? 0.27 : 0.25)}px;width:${W * 0.5}px;height:${W * 0.5}px;transform:rotate(-6deg);background:${P.superficie}">${visual(b.visual, P)}<i class="cinta" style="background:${P.acento}"></i></div>
-        <div class="recorte" style="left:${W * 0.5}px;top:${H * (hist ? 0.33 : 0.33)}px;width:${W * 0.38}px;height:${W * 0.38}px;transform:rotate(5deg);background:${aclara(P.acento, .55)}">${visual(b.visual === 'estrella' ? 'hoja' : 'estrella', P)}<i class="cinta" style="background:${P.texto};opacity:.5"></i></div>`;
+      sangrado = `<div class="recorte" style="left:${W * 0.08}px;top:${H * (hist ? 0.27 : 0.25)}px;width:${W * 0.5}px;height:${W * 0.5}px;transform:rotate(-6deg);background:${K ? '#FBFAF7' : P.superficie}">${K ? fotoPack(b, 'foto', { radio: '0', sombra: false }) : visual(b.visual, P)}<i class="cinta" style="background:${P.acento}"></i></div>
+        <div class="recorte" style="left:${W * 0.5}px;top:${H * (hist ? 0.33 : 0.33)}px;width:${W * 0.38}px;height:${W * 0.38}px;transform:rotate(5deg);background:${K ? '#FBFAF7' : aclara(P.acento, .55)}">${K ? fotoPack(b, 'foto2', { radio: '0', sombra: false }) : visual(b.visual === 'estrella' ? 'hoja' : 'estrella', P)}<i class="cinta" style="background:${P.texto};opacity:.5"></i></div>`;
       cuerpo = `<div class="col" style="height:100%;gap:22px;justify-content:space-between">
         <div class="col" style="gap:18px;align-items:flex-start">${kicker()}
           <div class="tira" style="background:${papel};transform:rotate(-2deg)">${G('gancho', b.gancho, E.xl, { bg: papel, c: tp, mh: 260 })}</div></div>
@@ -246,7 +251,7 @@ export async function html(b, A = { k: {}, col: {} }) {
     }
     case 'cupon': {
       const S = P.superficie, ts = P.texto;
-      cuerpo = `<div class="col c" style="height:100%;gap:28px;justify-content:center">${kicker()}
+      cuerpo = `<div class="col c" style="height:100%;gap:28px;justify-content:center">${kicker()}${K ? V('width:100%;flex:1 1 0;min-height:140px') : ''}
         <div class="ticket" style="background:${S};--hueco:${P.fondo}">
           <div class="col c" style="gap:14px">${G('gancho', b.gancho, E.xl, { bg: S, c: ts, mh: 220 })}${T('producto', b.producto, E.m, { bg: S, c: ts, mh: 120 })}</div>
           <div class="corte" style="border-color:${ts}"></div>
@@ -306,8 +311,8 @@ export async function html(b, A = { k: {}, col: {} }) {
 
   const safe = { l: Z.lados, t: Z.arriba, r: W - Z.lados, b: H - Z.abajo };
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><style>
-@font-face{font-family:T;src:url(data:font/woff2;base64,${t64}) format('woff2');font-weight:100 900}
-@font-face{font-family:C;src:url(data:font/woff2;base64,${c64}) format('woff2');font-weight:100 900}
+@font-face{font-family:T;src:url(data:font/woff2;base64,${t64}) format('woff2');font-weight:${K ? K.titulo.rango : '100 900'}}
+@font-face{font-family:C;src:url(data:font/woff2;base64,${c64}) format('woff2');font-weight:${K ? K.cuerpo.rango : '100 900'}}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:${W}px;height:${H}px;overflow:hidden;background:${P.fondo}}
 #lienzo{position:relative;width:${W}px;height:${H}px;background:${P.fondo};overflow:hidden;font-family:C,sans-serif;color:${P.texto}}
@@ -315,11 +320,12 @@ html,body{width:${W}px;height:${H}px;overflow:hidden;background:${P.fondo}}
 #area{position:absolute;left:${Z.lados}px;top:${Z.arriba}px;width:${AW}px;height:${AH}px}
 .col{display:flex;flex-direction:column}.c{align-items:center;text-align:center}
 .t{overflow:visible;line-height:1.28;flex:none;max-width:100%}
-.tit{font-family:T,serif;font-weight:${PESO_TITULO[tf] || 400};line-height:1.06;letter-spacing:-.01em;${may ? 'text-transform:uppercase;' : ''}}
+.tit{font-family:T,serif;font-weight:${K ? K.titulo.peso : (PESO_TITULO[tf] || 400)};line-height:${K ? K.titulo.interlineado : 1.06};letter-spacing:${K ? K.titulo.tracking : '-.01em'};${may ? 'text-transform:uppercase;' : ''}}${K ? CSS_PACK : ''}
+#lienzo{font-weight:${K ? K.cuerpo.peso : 400}}
 .kick{text-transform:uppercase;letter-spacing:.22em;font-size:${E.xs}px;opacity:1}
 .marca{font-family:C,sans-serif;white-space:nowrap}
 .mono{font-family:C,monospace}
-.pill{display:inline-block;padding:.42em 1em;border-radius:999px;white-space:nowrap;font-weight:600;line-height:1.1}
+.pill{display:inline-block;padding:.42em 1em;border-radius:${K ? (/999/.test(K.radio) ? '999px' : K.radio.split(' ')[0]) : '999px'};white-space:nowrap;font-weight:600;line-height:1.1}
 .fila{display:flex;gap:24px;align-items:center;justify-content:center;flex-wrap:wrap;flex:none;width:100%}.fila.izq{justify-content:flex-start}
 .vis{display:flex;align-items:center;justify-content:center;position:relative}.vis svg{width:100%;height:100%;display:block}
 .disco{position:absolute;aspect-ratio:1;height:100%;max-width:100%;border-radius:50%;left:50%;transform:translateX(-50%)}
@@ -338,8 +344,8 @@ html,body{width:${W}px;height:${H}px;overflow:hidden;background:${P.fondo}}
 .caja{flex:1 1 0;min-width:0;border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:10px}
 .flecha{font-size:72px;align-self:center;font-family:C,sans-serif}
 .banda{margin:0 -${Z.lados + 140}px;padding:34px ${Z.lados + 140}px;transform:rotate(-5deg);flex:none}
-.tarjeta{width:100%;border-radius:40px;padding:56px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px;box-shadow:0 24px 60px rgba(0,0,0,.22);flex:0 1 auto;min-height:0;overflow:hidden}
-</style></head><body><div id="lienzo">${patron(b.id, P, W, H)}${sangrado}<div id="area">${cuerpo}</div></div>
+.tarjeta{width:100%;border-radius:${K ? (/999/.test(K.radio) ? '32px' : K.radio.split(' ')[0]) : '40px'};padding:56px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px;box-shadow:0 24px 60px rgba(0,0,0,.22);flex:0 1 auto;min-height:0;overflow:hidden}
+</style></head><body><div id="lienzo">${K ? fondoPack(b, W, H) : patron(b.id, P, W, H)}${sangrado}<div id="area">${cuerpo}</div></div>
 <script>window.__SAFE=${JSON.stringify(safe)};</script></body></html>`;
 }
 
@@ -426,7 +432,7 @@ async function contacto(cdp, pg, lista, ruta) {
   const celdas = lista.map((x) => `<figure><img src="data:image/webp;base64,${fs.readFileSync(x.mini).toString('base64')}"><figcaption>${esc(x.id)} · ${esc(x.rubro)}</figcaption></figure>`).join('');
   const filas = Math.ceil(lista.length / col), H = 150 + filas * (chh + 44);
   await cdp.manda('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false }, pg.s);
-  await cdp.manda('Page.setDocumentContent', { frameId: pg.frame, html: `<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#141414;color:#eee;font:20px/1.3 system-ui,sans-serif;width:${W}px}h1{margin:0;padding:40px 40px 10px;font-size:40px}p{margin:0 40px 20px;color:#aaa}main{display:grid;grid-template-columns:repeat(${col},${cw}px);gap:12px 14px;padding:0 40px}figure{margin:0}img{width:${cw}px;height:${chh}px;object-fit:contain;background:#000;display:block}figcaption{font-size:14px;color:#aaa;padding-top:4px;white-space:nowrap;overflow:hidden}</style><h1>${lista.length} flyers · reglas + DeepSeek + motor HTML</h1><p>El texto no lo dibuja la IA: lo compone el navegador. Difícil de explicar · Sesión 2</p><main>${celdas}</main>` }, pg.s);
+  await cdp.manda('Page.setDocumentContent', { frameId: pg.frame, html: `<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#141414;color:#eee;font:20px/1.3 system-ui,sans-serif;width:${W}px}h1{margin:0;padding:40px 40px 10px;font-size:40px}p{margin:0 40px 20px;color:#aaa}main{display:grid;grid-template-columns:repeat(${col},${cw}px);gap:12px 14px;padding:0 40px}figure{margin:0}img{width:${cw}px;height:${chh}px;object-fit:contain;background:#000;display:block}figcaption{font-size:14px;color:#aaa;padding-top:4px;white-space:nowrap;overflow:hidden}</style><h1>${lista.length} flyers · reglas + DeepSeek + packs de estilo</h1><p>Fotos reales, texturas y tipografía por rubro. El texto lo compone el navegador. Difícil de explicar · Sesión 2</p><main>${celdas}</main>` }, pg.s);
   await cdp.manda('Runtime.evaluate', { expression: 'Promise.all([...document.images].map(i=>i.decode().catch(()=>0)))', awaitPromise: true }, pg.s);
   const shot = await cdp.manda('Page.captureScreenshot', { format: 'webp', quality: 80, clip: { x: 0, y: 0, width: W, height: H, scale: 1 } }, pg.s);
   fs.writeFileSync(ruta, Buffer.from(shot.data, 'base64'));
@@ -446,7 +452,7 @@ async function main() {
     if (!args.html) console.log('No encontré Chrome: dejo los flyers como HTML (define CHROME=/ruta para tener WebP/PNG medidos).');
     for (const [n, b0] of briefs.entries()) {
       b0.id = b0.id || 'f' + String(n + 1).padStart(3, '0');
-      const { brief: b, correcciones } = valida(b0);
+      const { brief: b, correcciones } = valida(args['sin-estilo'] ? b0 : conPack(b0));
       const ruta = path.join(salida, `${b.id}-${b.rubro}-${b.familia}`.toLowerCase().replace(/[^a-z0-9-]/g, '') + '.html');
       fs.writeFileSync(ruta, await html(b));
       console.log(ruta, correcciones.length ? 'reglas: ' + correcciones.join('; ') : '');
@@ -463,7 +469,7 @@ async function main() {
       while (i < briefs.length) {
         const b0 = briefs[i++];
         b0.id = b0.id || 'f' + String(i).padStart(3, '0');
-        const { brief: b, correcciones } = valida(b0);
+        const { brief: b, correcciones } = valida(args['sin-estilo'] ? b0 : conPack(b0));
         const nombre = `${b.id}-${b.rubro}-${b.familia}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
         const ext = args.png ? 'png' : 'webp';
         const s = [{ ruta: path.join(salida, `${nombre}.${ext}`), formato: ext, calidad: 82 }];
@@ -471,8 +477,8 @@ async function main() {
         const r = await renderiza(cdp, pg, b, s);
         if (correcciones.length) conCorreccion++;
         if (r.arreglos.length) conAjuste++;
-        informe.push({ id: b.id, archivo: path.basename(s[0].ruta), mini: args.mini ? `${b.id}.webp` : null, rubro: b.rubro, familia: b.familia, formato: b.formato, nombre: b.nombre, gancho: b.gancho, tono: b.tono || '', paleta: b.paleta, tipografias: b.tipografias, correcciones_brief: correcciones, ajustes_render: r.arreglos, vueltas: r.vueltas, pendientes: r.pendientes, _mini: args.mini ? path.join(args.mini, `${b.id}.webp`) : s[0].ruta });
-        process.stdout.write(`${b.id} ${b.familia} vueltas=${r.vueltas}${r.pendientes.length ? ' PENDIENTE ' + JSON.stringify(r.detalle) : ''}\n`);
+        informe.push({ id: b.id, pack: b.pack ? b.pack.id : null, foto: b.pack && b.pack.foto ? b.pack.foto.archivo : null, archivo: path.basename(s[0].ruta), mini: args.mini ? `${b.id}.webp` : null, rubro: b.rubro, familia: b.familia, formato: b.formato, nombre: b.nombre, gancho: b.gancho, tono: b.tono || '', paleta: b.paleta, tipografias: b.tipografias, correcciones_brief: correcciones, ajustes_render: r.arreglos, vueltas: r.vueltas, pendientes: r.pendientes, _mini: args.mini ? path.join(args.mini, `${b.id}.webp`) : s[0].ruta });
+        process.stdout.write(`${b.id} ${b.rubro} ${b.familia} ${b.pack ? b.pack.id : ''} vueltas=${r.vueltas}${r.pendientes.length ? ' PENDIENTE ' + JSON.stringify(r.detalle) : ''}\n`);
       }
     }));
     informe.sort((a, b) => a.id.localeCompare(b.id));

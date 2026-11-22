@@ -66,7 +66,7 @@ Los adornos pueden salirse al borde. El texto, nunca.
 - **Precios, teléfonos y testimonios** salen del cliente o no salen. Sin precio, el flyer dice «Consulta precios».
 - Sin emojis ni signos de exclamación repetidos.
 - No se nombran platos de cerdo, alcohol, terror ni temas sobrenaturales: el validador reemplaza esas palabras.
-- Los visuales son formas vectoriales (frasco, taza, caja, plato, bolsa, tubo, pastel, laptop, teléfono, prenda, libro, edificio, engranaje, hoja y estrella). No gastan el cupo de FLUX. Si usas una foto o un render 3D, va **detrás** del texto, nunca con texto dentro.
+- **Desde el 22-11-2026 cada brief pasa por `clasificar()` de la biblioteca de estilos** (`live/_comun/estilos-clasificar.js`, `motor/estilo.mjs`): el pack decide paleta 60-30-10 con AA verificado, par tipográfico, foto real del rubro (Pexels/CC0, con tinte hacia la paleta y máscara del pack), textura CC0, grano e iconos Phosphor. Las fotos nunca llevan texto encima y no se usan las que muestran una marca ajena legible (`marca_visible`). Con `--sin-estilo` el motor vuelve a los visuales vectoriales de antes, que no gastan el cupo de FLUX.
 
 ## 7. Comprobación automática después de renderizar
 
