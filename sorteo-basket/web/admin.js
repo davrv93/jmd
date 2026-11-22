@@ -32,7 +32,7 @@
   function grupoTxt(pid, gid) {
     const p = datos.premios.find((x) => x.id === pid);
     const g = p && p.grupos && p.grupos.find((x) => x.id === gid);
-    return g ? g.id + ' · ' + g.dias + ', ' + g.hora : (p && p.dias ? 'Lun 23, mar 24 y mié 25 nov' : '');
+    return g ? g.id + ' · ' + g.dias + ', ' + g.hora : (p && p.dias ? p.dias : '');
   }
   function telTxt(t) { return t.slice(0, 3) + ' ' + t.slice(3, 6) + ' ' + t.slice(6); }
   // «S/ 17,50»: en céntimos, dos decimales con coma
@@ -41,8 +41,8 @@
     return 'S/ ' + Math.floor(c / 100) + ',' + String(c % 100).padStart(2, '0');
   }
   function webTxt() { const w = datos.consuelo.premio; return 'Acceso web S/ ' + w.precio + ' (' + w.vigencia + ', curso del catálogo)'; }
-  function corto(id) { return id === 'qwen' ? 'Qwen Coder' : 'Videos con IA'; }
-  function precios(pct) { return datos.premios.map((p) => corto(p.id) + ' ' + soles(p.precio, pct)).join(' · '); }
+  function corto(id) { const p = datos.premios.find((x) => x.id === id); return p ? p.corto || p.nombre : id; }
+  function precios(pct) { return datos.premios.filter((p) => (datos.consuelo.especial_cursos || []).includes(p.id) && p.precio).map((p) => corto(p.id) + ' ' + soles(p.precio, pct)).join(' · '); }
   // premioDe: texto del premio de un jugador (cupo, 80 % o porcentaje que paga)
   function premioDe(j) {
     if (j.gano) {

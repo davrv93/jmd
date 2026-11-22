@@ -204,7 +204,7 @@ func TestPrimerosEnLlegarATres(t *testing.T) {
 	j, r := juegoPrueba(t)
 	defer forzarAcierto(j)()
 	ps := []*Jugador{}
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 10; i++ {
 		ps = append(ps, entrar(t, j, i))
 	}
 	// rondas: cada ronda todos aciertan uno, en orden. Los 6 primeros en llegar a 3 ganan.
@@ -216,15 +216,19 @@ func TestPrimerosEnLlegarATres(t *testing.T) {
 			}
 		}
 	}
-	if len(vic) != 6 {
-		t.Fatalf("ganadores = %d, quería 6", len(vic))
+	total := 0
+	for _, p := range j.cfg.Premios {
+		total += p.Cupos
+	}
+	if len(vic) != total {
+		t.Fatalf("ganadores = %d, quería %d", len(vic), total)
 	}
 	for i, v := range vic {
 		if v.Orden != i+1 || v.Jugador != ps[i].ID {
 			t.Fatalf("ganador %d = %s (orden %d), quería %s", i, v.Jugador, v.Orden, ps[i].ID)
 		}
 	}
-	for _, p := range ps[6:] {
+	for _, p := range ps[total:] {
 		if p.Gano != 0 || p.Aciertos < 3 {
 			t.Fatalf("%s llegó a %d y gano=%d; sin cupos no gana pero sigue jugando", p.ID, p.Aciertos, p.Gano)
 		}
@@ -269,11 +273,15 @@ func TestReparticionDePremios(t *testing.T) {
 			}
 		}
 		restore()
-		if cuenta["qwen"] != 3 || cuenta["videos"] != 3 {
-			t.Fatalf("vuelta %d: reparto %v, quería 3 + 3", vuelta, cuenta)
+		total := 0
+		for _, p := range j.cfg.Premios {
+			if cuenta[p.ID] != p.Cupos || j.est.Restantes[p.ID] != 0 {
+				t.Fatalf("vuelta %d: %s salió %d veces (cupos %d), quedan %d", vuelta, p.ID, cuenta[p.ID], p.Cupos, j.est.Restantes[p.ID])
+			}
+			total += p.Cupos
 		}
-		if j.est.Restantes["qwen"] != 0 || j.est.Restantes["videos"] != 0 || len(j.est.Ganadores) != 6 {
-			t.Fatalf("restantes %v, ganadores %d", j.est.Restantes, len(j.est.Ganadores))
+		if len(j.est.Ganadores) != total {
+			t.Fatalf("ganadores %d, quería %d", len(j.est.Ganadores), total)
 		}
 	}
 }
@@ -340,7 +348,7 @@ func TestPersistencia(t *testing.T) {
 	if p2 == nil || p2.Aciertos != 3 || p2.Gano != 1 || k.porID[q.ID].Aciertos != 1 {
 		t.Fatalf("no se recuperó el jugador: %+v", p2)
 	}
-	if len(k.est.Ganadores) != 1 || k.Quedan() != 5 {
+	if len(k.est.Ganadores) != 1 || k.Quedan() != 7 {
 		t.Fatalf("ganadores %d, quedan %d", len(k.est.Ganadores), k.Quedan())
 	}
 	// tras reiniciar el servidor se puede seguir tirando con el mismo token
@@ -351,7 +359,7 @@ func TestPersistencia(t *testing.T) {
 		t.Fatal(err)
 	}
 	k.Reiniciar()
-	if k.Quedan() != 6 || len(k.est.Jugadores) != 0 || k.PorToken(p.Token) != nil {
+	if k.Quedan() != 8 || len(k.est.Jugadores) != 0 || k.PorToken(p.Token) != nil {
 		t.Fatal("reiniciar no limpió")
 	}
 }
@@ -495,5 +503,56 @@ func TestMigracionConsuelos(t *testing.T) {
 	j.Cerrar(true)
 	if len(j.est.AccesoWeb) != 2 || len(j.est.Especiales) != 1 {
 		t.Fatalf("web %d, especiales %d", len(j.est.AccesoWeb), len(j.est.Especiales))
+	}
+}
+
+// Estado en vivo del 21-11 (3 ganadores de videos y 1 de qwen, restantes viejos {qwen: 2, videos: 0}) con la
+// config nueva: qwen y videos quedan en 0, los 4 cursos nuevos con 1 cupo, y 4 ganadores nuevos se los llevan.
+func TestCuposDesdeConfig(t *testing.T) {
+	vivo := `{"abierto":true,"cerrado":false,"restantes":{"qwen":2,"videos":0},
+		"jugadores":[{"id":"r1","token":"t1","nombre":"Raymond Uno","tel":"911111111","aciertos":3,"tiros":5,"gano":1},
+			{"id":"p2","token":"t2","nombre":"Paul Dos","tel":"922222222","aciertos":3,"tiros":6,"gano":2},
+			{"id":"m3","token":"t3","nombre":"Mark Tres","tel":"933333333","aciertos":3,"tiros":7,"gano":3},
+			{"id":"g4","token":"t4","nombre":"Raul Gamboa","tel":"944444444","aciertos":3,"tiros":8,"gano":4}],
+		"ganadores":[{"orden":1,"jugador":"r1","premio":"videos"},{"orden":2,"jugador":"p2","premio":"videos"},
+			{"orden":3,"jugador":"m3","premio":"videos"},{"orden":4,"jugador":"g4","premio":"qwen","grupo":"G2"}],
+		"especiales":[],"acceso_web":{}}`
+	for vuelta := 0; vuelta < 100; vuelta++ {
+		j, r := juegoPrueba(t)
+		if err := j.Cargar([]byte(vivo)); err != nil {
+			t.Fatal(err)
+		}
+		j.ahora = r.ahora
+		want := map[string]int{"qwen": 0, "videos": 0, "documenta": 1, "tutoriales": 1, "cerebros": 1, "gsap": 1}
+		for id, n := range want {
+			if j.est.Restantes[id] != n {
+				t.Fatalf("restantes %v, quería %v", j.est.Restantes, want)
+			}
+		}
+		restore := forzarAcierto(j)
+		vistos := map[string]bool{}
+		var nuevos []*Jugador
+		for i := 0; i < 6; i++ {
+			nuevos = append(nuevos, entrar(t, j, i))
+		}
+		for ronda := 0; ronda < 3; ronda++ {
+			for _, p := range nuevos {
+				if _, v := tiroPerfecto(t, j, r, p.ID); v != nil {
+					if vistos[v.Premio] || want[v.Premio] != 1 || v.Grupo != "" {
+						t.Fatalf("premio repetido o inválido: %+v", v.Ganador)
+					}
+					vistos[v.Premio] = true
+				}
+			}
+		}
+		restore()
+		if len(vistos) != 4 || len(j.est.Ganadores) != 8 || j.Quedan() != 0 {
+			t.Fatalf("nuevos %v, ganadores %d, quedan %d", vistos, len(j.est.Ganadores), j.Quedan())
+		}
+		for i, g := range j.est.Ganadores[:4] {
+			if g.Orden != i+1 || (i < 3 && g.Premio != "videos") || (i == 3 && (g.Premio != "qwen" || g.Grupo != "G2")) {
+				t.Fatalf("ganador viejo cambiado: %+v", g)
+			}
+		}
 	}
 }

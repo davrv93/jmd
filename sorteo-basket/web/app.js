@@ -152,17 +152,20 @@
     if (!cfg) return;
     for (const id of ['premios-entrada', 'premios-juego']) {
       const box = $(id);
-      box.replaceChildren(...cfg.premios.map(tarjetaPremio));
+      // solo los premios con cupos; si ya no queda ninguno, todos (marcados «Agotado»)
+      const vivos = cfg.premios.filter((p) => quedan(p) > 0);
+      box.replaceChildren(...(vivos.length ? vivos : cfg.premios).map(tarjetaPremio));
     }
+    // una sola ficha con el total: con 6 tipos de premio no caben fichas por premio en 360 px
+    const total = cfg.premios.reduce((a, p) => a + quedan(p), 0);
     for (const id of ['cupos-barra', 'cupos-tira']) {
-      $(id).replaceChildren(...cfg.premios.map((p) => {
-        const q = restantes[p.id] != null ? restantes[p.id] : p.cupos;
-        const s = el('span', p.id === 'videos' ? 'v' : '', (p.id === 'qwen' ? 'Qwen ' : 'Videos ') + q + '/' + p.cupos);
-        s.title = p.nombre + ': quedan ' + q + ' cupos';
-        return s;
-      }));
+      const f = el('span', total ? '' : 'v', total === 0 ? 'Cupos agotados' : total === 1 ? 'Queda 1 cupo' : 'Quedan ' + total + ' cupos');
+      f.title = cfg.premios.filter((p) => quedan(p) > 0).map((p) => p.nombre + ': ' + quedan(p)).join(' · ');
+      $(id).replaceChildren(f);
     }
   }
+  function quedan(p) { return restantes[p.id] != null ? restantes[p.id] : p.cupos; }
+  function cortoDe(p) { return p ? p.corto || p.nombre : 'un cupo'; }
   function quedanCupos() { return Object.values(restantes).reduce((a, b) => a + b, 0); }
 
   // ---------- estado del servidor ----------
@@ -669,7 +672,7 @@
     } else if (yo.gano) {
       const g = ganadores.find((x) => x[0] === yo.gano);
       const p = g && premioDe(g[5]);
-      t = p ? 'Ganaste ' + (p.id === 'qwen' ? 'Qwen Coder' : 'Videos con IA') + (g[6] ? ', ' + g[6] : '') + '. Sigue jugando.' : 'Ganaste un cupo.';
+      t = p ? 'Ganaste ' + cortoDe(p) + (g[6] ? ', ' + g[6] : '') + '. Sigue jugando.' : 'Ganaste un cupo.';
     } else if (quedanCupos() === 0) {
       t = 'Cupos agotados. La cancha sigue abierta para jugar.';
     } else if (faltan <= 0) {
@@ -711,7 +714,7 @@
       if (p.gano) {
         const g = ganadores.find((x) => x[0] === p.gano);
         const pr = g && premioDe(g[5]);
-        nom.appendChild(el('small', 'premio-tag', 'Ganó ' + (pr ? (pr.id === 'qwen' ? 'Qwen Coder' : 'Videos con IA') : 'un cupo') + (g && g[6] ? ' · ' + g[6] : '')));
+        nom.appendChild(el('small', 'premio-tag', 'Ganó ' + cortoDe(pr) + (g && g[6] ? ' · ' + g[6] : '')));
       } else {
         nom.appendChild(el('small', null, p.n === 1 ? '1 tiro' : p.n + ' tiros'));
       }
@@ -761,13 +764,12 @@
     const cartas = $('rev-cartas'), grupos = $('rev-grupos'), fin = $('rev-final'), ok = $('rev-ok');
     grupos.hidden = true; fin.hidden = true; ok.hidden = true;
     $('rev-sub').textContent = 'Sorteando tu premio entre los cupos que quedan…';
-    const els = cfg.premios.map((p) => {
+    // solo las cartas de premios que tenían cupo al ganar (el propio cuenta uno más)
+    const els = cfg.premios.filter((p) => (restantes[p.id] || 0) + (p.id === premioID ? 1 : 0) > 0).map((p) => {
       const c = el('div', 'carta');
       c.appendChild(el('b', null, p.nombre));
       c.appendChild(el('span', null, p.etiqueta));
       c.dataset.id = p.id;
-      const q = (restantes[p.id] || 0) + (p.id === premioID ? 1 : 0);
-      if (q <= 0) c.classList.add('vacia');
       return c;
     });
     cartas.replaceChildren(...els);
@@ -915,6 +917,8 @@
     return 'S/ ' + Math.floor(c / 100) + ',' + String(c % 100).padStart(2, '0');
   }
   function nombreCorto(p) { return p.id === 'qwen' ? 'Orquestación con Qwen Coder' : p.nombre; }
+  // cursos en vivo a los que se aplica el 80 % (con precio)
+  function cursosEspecial() { return cfg.premios.filter((p) => (cfg.consuelo.especial_cursos || []).includes(p.id) && p.precio); }
   function lista(xs) { return xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' y ' + xs[xs.length - 1]; }
   function enlace(cls, texto, href) {
     const a = el('a', cls, texto);
@@ -950,7 +954,7 @@
     if (mio.esp) {
       resto.appendChild(el('p', 'mio-sub', 'Te tocó el premio único del sorteo: pagas solo el ' + mio.paga + ' % del curso en vivo que elijas.'));
       const ul = el('ul', 'mio-precios');
-      for (const p of cfg.premios) {
+      for (const p of cursosEspecial()) {
         const li = el('li');
         const n = el('span', null, nombreCorto(p));
         n.appendChild(el('s', null, 'Precio normal S/ ' + p.precio));
@@ -961,7 +965,7 @@
       resto.appendChild(ul);
       resto.appendChild(el('p', 'mio-nota', 'El descuento vale para uno de los dos cursos. Elige cuál y avísale al profe por WhatsApp.'));
       if (cfg.whatsapp) {
-        const precios = cfg.premios.map((p) => nombreCorto(p) + ' ' + soles(p.precio, mio.paga)).join(' o ');
+        const precios = cursosEspecial().map((p) => nombreCorto(p) + ' ' + soles(p.precio, mio.paga)).join(' o ');
         resto.appendChild(enlace('boton-grande', 'Avisar al profe', 'https://wa.me/' + cfg.whatsapp + '?text=' + encodeURIComponent(saludo() + ' En el sorteo basket me tocó el ' + descuento + ' % de descuento (' + precios + '). Elijo el curso: ')));
       }
     } else {

@@ -27,9 +27,10 @@ type Grupo struct {
 type Premio struct {
 	ID       string  `json:"id"`
 	Nombre   string  `json:"nombre"`
+	Corto    string  `json:"corto,omitempty"`
 	Etiqueta string  `json:"etiqueta"`
 	Cupos    int     `json:"cupos"`
-	Precio   int     `json:"precio"`
+	Precio   int     `json:"precio,omitempty"` // opcional; lo usan los cursos del descuento especial
 	Grupos   []Grupo `json:"grupos,omitempty"`
 	Dias     string  `json:"dias,omitempty"`
 }
@@ -52,6 +53,7 @@ type Consuelo struct {
 	EspecialPagaPct int       `json:"especial_paga_pct"`
 	EspecialCupos   int       `json:"especial_cupos"`
 	EspecialTexto   string    `json:"especial_texto"`
+	EspecialCursos  []string  `json:"especial_cursos"` // cursos en vivo (con precio) a los que se aplica
 	Premio          PremioWeb `json:"premio"`
 }
 
@@ -93,8 +95,8 @@ func (c Config) validar() error {
 		return errors.New("config.json: meta, espera_ms, premios y medidor son obligatorios")
 	}
 	for _, p := range c.Premios {
-		if p.ID == "" || p.Cupos < 0 || p.Precio <= 0 {
-			return errors.New("config.json: cada premio necesita id, cupos ≥ 0 y precio")
+		if p.ID == "" || p.Cupos < 0 || p.Precio < 0 {
+			return errors.New("config.json: cada premio necesita id y cupos ≥ 0")
 		}
 	}
 	if c.Consuelo.EspecialCupos < 0 || c.Consuelo.EspecialPagaPct <= 0 || c.Consuelo.EspecialPagaPct > 100 {
@@ -102,6 +104,11 @@ func (c Config) validar() error {
 	}
 	if c.Consuelo.Premio.Precio <= 0 || c.Consuelo.Premio.Texto == "" {
 		return errors.New("config.json: consuelo.premio necesita texto y precio")
+	}
+	for _, id := range c.Consuelo.EspecialCursos {
+		if p := c.premio(id); p == nil || p.Precio <= 0 {
+			return errors.New("config.json: consuelo.especial_cursos debe nombrar premios con precio")
+		}
 	}
 	return nil
 }
@@ -246,8 +253,15 @@ func (j *Juego) indexar() {
 		j.porTok[p.Token] = p
 		j.porID[p.ID] = p
 	}
-	if j.est.Restantes == nil {
-		j.est.Restantes = map[string]int{}
+	// los cupos que quedan salen de config.json: cupos − ganadores que ya tienen ese premio (nunca negativo).
+	// Así se pueden agregar premios o cerrar uno (cupos = sus ganadores) sin tocar estado.json.
+	j.est.Restantes = map[string]int{}
+	usados := map[string]int{}
+	for _, g := range j.est.Ganadores {
+		usados[g.Premio]++
+	}
+	for _, p := range j.cfg.Premios {
+		j.est.Restantes[p.ID] = max(0, p.Cupos-usados[p.ID])
 	}
 	if j.est.Ganadores == nil {
 		j.est.Ganadores = []Ganador{}
