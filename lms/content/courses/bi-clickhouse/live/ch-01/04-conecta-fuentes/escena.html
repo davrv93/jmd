@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Conecta tus fuentes: Excel, OneDrive, Access, bases y macros</title>
+<!-- Escena del modo LIVE (Dashboards y BI con IA, sesión ch-01). Sin recursos externos. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style id="esc-propio">
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; align-items: start; }
+.g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2vw; align-items: start; }
+.col { display: grid; gap: 1.3vh; }
+.esc-card p, .esc-card li { font-size: .7em; line-height: 1.45; }
+.esc-card h3 { margin: .2em 0 .3em; font-size: .85em; }
+.esc-card pre.esc-cmd { font-size: .58em; white-space: pre-wrap; }
+.tb { width: 100%; border-collapse: collapse; font-size: .62em; }
+.tb th, .tb td { text-align: left; padding: .3em .45em; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tb th { color: var(--muted); font-size: .9em; letter-spacing: .05em; text-transform: uppercase; }
+.tb td.n { font: 700 1em var(--mono); text-align: right; }
+.big { font: 800 2.1em var(--mono); color: var(--accent); }
+.muted { color: var(--muted); }
+@media (max-width: 860px) { .g2, .g3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1200 760 L1270 700 L1340 735 L1420 680"/>
+  <g><circle class="e" cx="1200" cy="760" r="4"/><circle class="eo" cx="1270" cy="700" r="5"/><circle class="e" cx="1340" cy="735" r="3.5"/><circle class="eg" cx="1420" cy="680" r="4"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="920" cy="60" r="1.6"/><circle class="eo p" style="--p:.7s" cx="1500" cy="120" r="1.7"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ca">Conceptualización</span>
+    <span class="esc-num">Dashboards y BI · S1 · 04/09</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Conecta <em>tus fuentes</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Cada fuente entra a ClickHouse por un camino distinto. Elige la tuya; hoy practicamos con un CSV.</p>
+    </div>
+    <div class="g3"><section class="esc-card a-in" style="--d:0.2s"><span class="cc-et">Excel o CSV</span><p>En ClickHouse Cloud: crea un servicio, abre la consola SQL y <b>sube el archivo</b>. Si es Excel, guárdalo antes como <b>CSV UTF-8</b>.</p><p>Si el archivo está en internet:</p><pre class="esc-cmd">SELECT * FROM url(&#x27;https://…/ventas.csv&#x27;, &#x27;CSVWithNames&#x27;) LIMIT 10</pre></section><section class="esc-card a-in" style="--d:0.3s"><span class="cc-et">OneDrive o Google Drive</span><p>Comparte el archivo como «cualquiera con el enlace» y usa el <b>enlace de descarga directa</b> con <code>url()</code>, igual que el CSV de la izquierda. Así, cuando cambies el archivo, ClickHouse lee la versión nueva.</p></section><section class="esc-card a-in" style="--d:0.4s"><span class="cc-et">Access</span><p>Exporta cada tabla a CSV (Datos externos › Exportar › Archivo de texto) y súbela. Si Access se queda corto, ese es justo el momento de pasar a ClickHouse.</p></section><section class="esc-card a-in" style="--d:0.5s"><span class="cc-et">Bases de datos</span><p>ClickHouse lee directo de PostgreSQL y MySQL, sin copiar a mano:</p><pre class="esc-cmd">SELECT * FROM postgresql(&#x27;host:5432&#x27;, &#x27;mi_base&#x27;, &#x27;ventas&#x27;, &#x27;usuario&#x27;, &#x27;clave&#x27;) LIMIT 10</pre></section><section class="esc-card a-in" style="--d:0.6s"><span class="cc-et">Tu macro</span><p>Pega tu macro VBA en Claude y pídele:</p><pre class="esc-cmd">Explícame en 5 pasos qué hace esta macro y escríbela como una consulta SQL de ClickHouse.</pre></section><section class="esc-card a-in" style="--d:0.7s" id="voto"><span class="cc-et">Encuesta</span></section></div>
+  </main>
+  <footer class="esc-pie"><span>Datos de clientes, DNI o teléfonos: no los pegues en Claude. Pásale solo los nombres de las columnas y filas inventadas.</span></footer>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  CC.montarCopiar(document);
+  CC.votos($("voto"), "04-conecta-fuentes", "¿Cuál es tu fuente principal?", [
+    { id: "excel", t: "Excel o CSV" }, { id: "drive", t: "OneDrive o Drive" },
+    { id: "access", t: "Access" }, { id: "bd", t: "Base de datos" }, { id: "macro", t: "Macros" }]);
+})();
+</script>
+</body>
+</html>

@@ -8,6 +8,9 @@ objectives:
   - {id: ch-01-o1, title: "Llevar tus datos de Excel, OneDrive, Access o una base de datos a ClickHouse"}
   - {id: ch-01-o2, title: "Pedirle a Claude el prompt y la consulta, y verificar lo que responde"}
   - {id: ch-01-o3, title: "Limpiar y estructurar los datos sin perder filas ni totales"}
+materials:
+  - {id: ch-01-sucio, title: "ventas-sucio.csv · ventas de 4 boticas (ene–oct 2026) con errores a propósito para limpiar", kind: file, file: materials/ventas-sucio.csv, objective_ids: [ch-01-o1, ch-01-o3]}
+  - {id: ch-01-limpio, title: "ventas-ejemplo.csv · los mismos datos ya limpios, para comparar", kind: file, file: materials/ventas-ejemplo.csv, objective_ids: [ch-01-o3]}
 ---
 ## Sesión 1 · Conecta, limpia y estructura tus datos
 

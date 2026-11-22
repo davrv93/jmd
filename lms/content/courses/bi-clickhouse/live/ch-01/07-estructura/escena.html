@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Estructura: tabla de hechos y catálogos con los tipos correctos</title>
+<!-- Escena del modo LIVE (Dashboards y BI con IA, sesión ch-01). Sin recursos externos. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style id="esc-propio">
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; align-items: start; }
+.g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2vw; align-items: start; }
+.col { display: grid; gap: 1.3vh; }
+.esc-card p, .esc-card li { font-size: .7em; line-height: 1.45; }
+.esc-card h3 { margin: .2em 0 .3em; font-size: .85em; }
+.esc-card pre.esc-cmd { font-size: .58em; white-space: pre-wrap; }
+.tb { width: 100%; border-collapse: collapse; font-size: .62em; }
+.tb th, .tb td { text-align: left; padding: .3em .45em; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tb th { color: var(--muted); font-size: .9em; letter-spacing: .05em; text-transform: uppercase; }
+.tb td.n { font: 700 1em var(--mono); text-align: right; }
+.big { font: 800 2.1em var(--mono); color: var(--accent); }
+.muted { color: var(--muted); }
+@media (max-width: 860px) { .g2, .g3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1200 760 L1270 700 L1340 735 L1420 680"/>
+  <g><circle class="e" cx="1200" cy="760" r="4"/><circle class="eo" cx="1270" cy="700" r="5"/><circle class="e" cx="1340" cy="735" r="3.5"/><circle class="eg" cx="1420" cy="680" r="4"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="920" cy="60" r="1.6"/><circle class="eo p" style="--p:.7s" cx="1500" cy="120" r="1.7"/></g>
+</svg>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Dashboards y BI · S1 · 07/09</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Estructura: <em>hechos y catálogos</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">La tabla de hechos guarda cada venta. Los catálogos guardan el nombre oficial de cada sede y categoría.</p>
+    </div>
+    <div class="g2"><div class="col"><section class="esc-card a-in" style="--d:0.2s"><span class="cc-et">Catálogos: el nombre oficial</span><pre class="esc-cmd">CREATE TABLE dim_sede (sede LowCardinality(String))
+ENGINE = MergeTree ORDER BY sede;
+INSERT INTO dim_sede VALUES (&#x27;Arequipa&#x27;),(&#x27;Lima Centro&#x27;),(&#x27;Miraflores&#x27;),(&#x27;Surco&#x27;);
+
+CREATE TABLE dim_categoria (categoria LowCardinality(String))
+ENGINE = MergeTree ORDER BY categoria;
+INSERT INTO dim_categoria VALUES (&#x27;Bebés&#x27;),(&#x27;Cuidado personal&#x27;),
+  (&#x27;Dermocosmética&#x27;),(&#x27;Medicamentos&#x27;),(&#x27;Suplementos&#x27;);</pre></section><section class="esc-card a-in" style="--d:0.3s"><span class="cc-et">Tabla de hechos con sus tipos</span><pre class="esc-cmd">CREATE TABLE ventas (
+  fecha     Date,
+  sede      LowCardinality(String),
+  categoria LowCardinality(String),
+  unidades  UInt32,
+  venta     Decimal(12, 2),
+  margen    Nullable(Decimal(5, 3))
+) ENGINE = MergeTree ORDER BY (fecha, sede, categoria);</pre></section></div><div class="col"><section class="esc-card a-in" style="--d:0.4s"><span class="cc-et">Pasar de crudo a limpio</span><pre class="esc-cmd">INSERT INTO ventas
+SELECT DISTINCT
+  toDate(parseDateTimeBestEffortOrNull(trim(c.fecha))) AS fecha,
+  s.sede,
+  k.categoria,
+  toUInt32(trim(c.unidades)),
+  toDecimal64(trim(c.venta), 2),
+  toDecimal32OrNull(trim(c.margen), 3)
+FROM ventas_crudo AS c
+INNER JOIN dim_sede AS s ON lowerUTF8(trim(c.sede)) = lowerUTF8(s.sede)
+INNER JOIN dim_categoria AS k ON lowerUTF8(trim(c.categoria)) = lowerUTF8(k.categoria);</pre></section><section class="esc-card a-in" style="--d:0.5s"><span class="cc-et">¿Por qué estos tipos?</span><p><b>Date</b> para poder agrupar por mes. <b>Decimal</b> para dinero: con decimales flotantes, S/ 0,10 + S/ 0,20 no da exacto. <b>LowCardinality</b> para textos que se repiten mucho, como la sede.</p></section></div></div>
+  </main>
+  <footer class="esc-pie"><span>El catálogo también te avisa: una sede escrita de una forma nueva no cruza con el catálogo, y al contar filas lo ves.</span></footer>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  CC.montarCopiar(document);
+  
+})();
+</script>
+</body>
+</html>
