@@ -363,7 +363,7 @@ func TestPersistencia(t *testing.T) {
 		t.Fatal(err)
 	}
 	k.Reiniciar()
-	if k.Quedan() != 8 || len(k.est.Jugadores) != 0 || k.PorToken(p.Token) != nil {
+	if k.Quedan() != total || len(k.est.Jugadores) != 0 || k.PorToken(p.Token) != nil {
 		t.Fatal("reiniciar no limpió")
 	}
 }
