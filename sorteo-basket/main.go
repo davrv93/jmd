@@ -219,7 +219,7 @@ func (j *Juego) Publico(on map[string]bool) []byte {
 			}
 		}
 		out["esp"] = esp
-		out["nc"] = len(j.est.Consuelos)
+		out["nc"] = len(j.est.AccesoWeb)
 	}
 	b, _ := json.Marshal(out)
 	return b
@@ -233,9 +233,9 @@ func (j *Juego) cfgPublica() map[string]any {
 
 // yo: datos del propio jugador, con su descuento si ya se sorteó. Se llama con j.mu tomado.
 func (j *Juego) yo(p *Jugador) map[string]any {
-	paga, esp := j.consuelo(p.ID)
+	con, paga := j.consuelo(p.ID)
 	return map[string]any{"t": "yo", "id": p.ID, "token": p.Token, "corto": corto(p.Nombre), "s": p.Semilla,
-		"num": p.Num, "a": p.Aciertos, "n": p.Tiros, "gano": p.Gano, "paga": paga, "esp": esp}
+		"num": p.Num, "a": p.Aciertos, "n": p.Tiros, "gano": p.Gano, "con": con, "paga": paga}
 }
 
 func faseJSON(f *Fase, espera int) map[string]any {
@@ -649,13 +649,13 @@ func (j *Juego) Panel(on map[string]bool, conectados int) map[string]any {
 		Gano     int    `json:"gano"`
 		EnLinea  bool   `json:"on"`
 		Hora     string `json:"hora"`
+		Consuelo string `json:"con"`
 		Paga     int    `json:"paga"`
-		Especial bool   `json:"esp"`
 	}
 	js := []fila{}
 	for _, p := range j.est.Jugadores {
-		paga, esp := j.consuelo(p.ID)
-		js = append(js, fila{p.ID, p.Nombre, corto(p.Nombre), p.Tel, p.Semilla, p.Num, p.Aciertos, p.Tiros, p.Gano, on[p.ID], p.Creado.In(lima).Format("15:04"), paga, esp})
+		con, paga := j.consuelo(p.ID)
+		js = append(js, fila{p.ID, p.Nombre, corto(p.Nombre), p.Tel, p.Semilla, p.Num, p.Aciertos, p.Tiros, p.Gano, on[p.ID], p.Creado.In(lima).Format("15:04"), con, paga})
 	}
 	type gan struct {
 		Orden   int    `json:"orden"`

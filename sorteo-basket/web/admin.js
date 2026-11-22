@@ -40,6 +40,7 @@
     const c = Math.round(precio * pct);
     return 'S/ ' + Math.floor(c / 100) + ',' + String(c % 100).padStart(2, '0');
   }
+  function webTxt() { const w = datos.consuelo.premio; return 'Acceso web S/ ' + w.precio + ' (' + w.vigencia + ', curso del catálogo)'; }
   function corto(id) { return id === 'qwen' ? 'Qwen Coder' : 'Videos con IA'; }
   function precios(pct) { return datos.premios.map((p) => corto(p.id) + ' ' + soles(p.precio, pct)).join(' · '); }
   // premioDe: texto del premio de un jugador (cupo, 80 % o porcentaje que paga)
@@ -48,7 +49,8 @@
       const g = datos.ganadores.find((x) => x.orden === j.gano);
       return g ? 'Cupo 100 %: ' + nombrePremio(g.premio) + (g.grupo ? ', grupo ' + g.grupo : '') : 'Cupo 100 %';
     }
-    if (j.paga) return (j.esp ? (datos.consuelo.especial_texto || '80 % de descuento') + ', paga ' : 'Paga ') + j.paga + ' %: ' + precios(j.paga);
+    if (j.con === 'esp') return (datos.consuelo.especial_texto || '80 % de descuento') + ', paga ' + j.paga + ' %: ' + precios(j.paga);
+    if (j.con === 'web') return webTxt();
     if (!j.n) return 'No tiró';
     return datos.cerrado ? 'Sin premio' : 'Se sortea al cerrar';
   }
@@ -95,7 +97,7 @@
     const js = [...d.jugadores].sort((a, b) => (a.gano || 1e9) - (b.gano || 1e9) || b.a - a.a || a.n - b.n);
     $('njug').textContent = '(' + js.length + ')';
     const filas = js.map((j) => {
-      const tr = el('tr', j.gano ? 'gano' : j.esp ? 'esp' : '');
+      const tr = el('tr', j.gano ? 'gano' : j.con === 'esp' ? 'esp' : '');
       const c = el('td');
       const img = el('img');
       img.src = Muneco.retrato(j.s, 60);
@@ -130,17 +132,18 @@
       const gr = p && p.grupos && p.grupos.find((x) => x.id === g.grupo);
       lin.push(g.orden + '. ' + g.nombre + ' · ' + telTxt(g.tel) + ' · ' + nombrePremio(g.premio) + (gr ? ', grupo ' + gr.id + ' (' + gr.dias + ', ' + gr.hora + ')' : p && p.dias ? ' (' + p.dias + ')' : ''));
     }
-    const esp = js.filter((j) => j.esp && !j.gano);
+    const esp = js.filter((j) => j.con === 'esp' && !j.gano);
     if (esp.length) {
-      lin.push('', (datos.consuelo.especial_texto || '80 % de descuento').toUpperCase());
+      lin.push('', (datos.consuelo.especial_texto || '80 % de descuento').toUpperCase() + ' (curso en vivo)');
       for (const j of esp) lin.push(fila(j, 'paga ' + j.paga + ' %: ' + precios(j.paga)));
     }
-    const otros = js.filter((j) => j.paga && !j.esp && !j.gano).sort((a, b) => a.paga - b.paga || a.nombre.localeCompare(b.nombre));
-    if (otros.length) {
-      lin.push('', 'DESCUENTOS');
-      for (const j of otros) lin.push(fila(j, 'paga ' + j.paga + ' %: ' + precios(j.paga)));
+    const web = js.filter((j) => j.con === 'web' && !j.gano).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    if (web.length) {
+      const w = datos.consuelo.premio;
+      lin.push('', 'ACCESO WEB S/ ' + w.precio + ' (' + w.vigencia + ', cualquier curso del catálogo; no incluye ' + w.no_incluye + ')');
+      for (const j of web) lin.push(fila(j, 'acceso web S/ ' + w.precio));
     }
-    const sin = js.filter((j) => !j.gano && !j.paga);
+    const sin = js.filter((j) => !j.gano && !j.con);
     if (sin.length) {
       lin.push('', datos.cerrado ? 'SIN PREMIO (no tiraron)' : 'SIN PREMIO TODAVÍA (los descuentos se sortean al cerrar)');
       for (const j of sin) lin.push(fila(j, j.n + ' tiros'));

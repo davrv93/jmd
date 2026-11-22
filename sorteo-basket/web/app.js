@@ -854,7 +854,8 @@
     $('ceremonia').hidden = true;
     $('cer-fiesta').replaceChildren();
   }
-  function miConsuelo() { return yo && yo.paga && !yo.gano ? { paga: yo.paga, esp: !!yo.esp } : null; }
+  // consuelo propio: «esp» (80 % de descuento en un curso en vivo) o «web» (acceso web por S/ 10)
+  function miConsuelo() { return yo && yo.con && !yo.gano ? { tipo: yo.con, paga: yo.paga, esp: yo.con === 'esp' } : null; }
   function pasosCeremonia() {
     const pasos = ganadores.map((g, i) => ({ k: 'g' + g[0], tipo: 'g', g, i }));
     for (const e of especiales) pasos.push({ k: 'esp' + e[0], tipo: 'esp', e });
@@ -869,7 +870,7 @@
     const idx = Math.floor(lento / ms);
     const escena = $('cer-escena');
     const paso = idx < pasos.length ? pasos[idx] : null;
-    const clave = paso ? paso.k : 'fin:' + ganadores.length + ':' + especiales.length + ':' + (miConsuelo() ? miConsuelo().paga : 0);
+    const clave = paso ? paso.k : 'fin:' + ganadores.length + ':' + especiales.length + ':' + (miConsuelo() ? miConsuelo().tipo : '');
     if (clave === cerClave && forzar !== true) return;
     const primera = cerClave === '';
     cerClave = clave;
@@ -903,7 +904,7 @@
     }
     $('cer-t').textContent = ganadores.length === 1 ? 'El ganador' : 'Los ganadores';
     let pie = 'El profe escribirá por WhatsApp a cada ganador para inscribirlo.';
-    if (conConsuelo > especiales.length) pie += ' Quienes tiraron al menos una vez tienen un descuento: cada uno lo ve en su pantalla.';
+    if (conConsuelo > 0 && cfg.consuelo.premio) pie += ' Quienes tiraron al menos una vez ganaron ' + cfg.consuelo.premio.texto.charAt(0).toLowerCase() + cfg.consuelo.premio.texto.slice(1) + ' por S/ ' + cfg.consuelo.premio.precio + ': cada uno lo ve en su pantalla.';
     $('cer-pie').textContent = pie;
     $('cer-pie').hidden = false;
   }
@@ -914,47 +915,65 @@
     return 'S/ ' + Math.floor(c / 100) + ',' + String(c % 100).padStart(2, '0');
   }
   function nombreCorto(p) { return p.id === 'qwen' ? 'Orquestación con Qwen Coder' : p.nombre; }
+  function lista(xs) { return xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' y ' + xs[xs.length - 1]; }
+  function enlace(cls, texto, href) {
+    const a = el('a', cls, texto);
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    return a;
+  }
+  // «Hola, soy Ana R.» sin doble punto (el nombre corto ya termina en punto)
+  function saludo() { return 'Hola, soy ' + yo.corto + (yo.corto.endsWith('.') ? '' : '.'); }
   function tarjetaMia(animar) {
     const mio = miConsuelo();
-    const d = el('article', 'mio' + (mio.esp ? ' esp' : ''));
+    const web = cfg.consuelo.premio;
+    const d = el('article', 'mio' + (mio.esp ? ' esp' : ' web'));
     d.appendChild(el('span', 'mio-etq', 'Tu resultado, ' + yo.corto));
-    // sello: línea chica + número enorme («Pagas el» / «50 %»; el especial, «80 %» / «de descuento»)
-    const NB = '\u00a0';
+    // sello: línea chica + número enorme («Acceso web» / «S/ 10» / «por 1 año»; el especial, «80 %» / «de descuento»)
+    const NB = ' ';
     const num = el('p', 'mio-num');
     const caja = el('span', 'mio-caja');
-    const pre = el('span', 'mio-pre', 'Pagas el');
-    const grande = el('span', 'mio-grande', mio.paga + NB + '%');
-    const post = el('span', 'mio-post', '');
+    const pre = el('span', 'mio-pre');
+    const grande = el('span', 'mio-grande');
+    const post = el('span', 'mio-post');
     caja.append(pre, grande, post);
     num.appendChild(caja);
-    num.setAttribute('aria-label', mio.esp ? (100 - mio.paga) + ' % de descuento' : 'Pagas el ' + mio.paga + ' %');
+    const descuento = 100 - mio.paga;
+    num.setAttribute('aria-label', mio.esp ? descuento + ' % de descuento' : 'Acceso web por S/ ' + web.precio);
     d.appendChild(num);
     const final = () => {
-      if (mio.esp) { pre.textContent = ''; grande.textContent = (100 - mio.paga) + NB + '%'; post.textContent = 'de descuento'; }
-      else { pre.textContent = 'Pagas el'; grande.textContent = mio.paga + NB + '%'; post.textContent = ''; }
+      if (mio.esp) { pre.textContent = ''; grande.textContent = descuento + NB + '%'; post.textContent = 'de descuento'; }
+      else { pre.textContent = 'Acceso web'; grande.textContent = 'S/' + NB + web.precio; post.textContent = 'por ' + web.vigencia; }
     };
     const resto = el('div', 'mio-resto');
-    resto.appendChild(el('p', 'mio-sub', mio.esp
-      ? 'Te tocó el premio único del sorteo: pagas solo el ' + mio.paga + ' % del curso que elijas.'
-      : 'Tienes ' + (100 - mio.paga) + ' % de descuento en el curso que elijas.'));
-    const ul = el('ul', 'mio-precios');
-    for (const p of cfg.premios) {
-      const li = el('li');
-      const n = el('span', null, nombreCorto(p));
-      n.appendChild(el('s', null, 'Precio normal S/ ' + p.precio));
-      li.appendChild(n);
-      li.appendChild(el('b', null, soles(p.precio, mio.paga)));
-      ul.appendChild(li);
-    }
-    resto.appendChild(ul);
-    resto.appendChild(el('p', 'mio-nota', 'El descuento vale para uno de los dos cursos. Elige cuál y avísale al profe por WhatsApp.'));
-    if (cfg.whatsapp) {
-      const a = el('a', 'boton-grande', 'Avisar al profe');
-      const precios = cfg.premios.map((p) => nombreCorto(p) + ' ' + soles(p.precio, mio.paga)).join(' o ');
-      a.href = 'https://wa.me/' + cfg.whatsapp + '?text=' + encodeURIComponent('Hola, soy ' + yo.corto + '. En el sorteo basket me tocó pagar el ' + mio.paga + ' % (' + precios + '). Elijo el curso: ');
-      a.target = '_blank';
-      a.rel = 'noopener';
-      resto.appendChild(a);
+    if (mio.esp) {
+      resto.appendChild(el('p', 'mio-sub', 'Te tocó el premio único del sorteo: pagas solo el ' + mio.paga + ' % del curso en vivo que elijas.'));
+      const ul = el('ul', 'mio-precios');
+      for (const p of cfg.premios) {
+        const li = el('li');
+        const n = el('span', null, nombreCorto(p));
+        n.appendChild(el('s', null, 'Precio normal S/ ' + p.precio));
+        li.appendChild(n);
+        li.appendChild(el('b', null, soles(p.precio, mio.paga)));
+        ul.appendChild(li);
+      }
+      resto.appendChild(ul);
+      resto.appendChild(el('p', 'mio-nota', 'El descuento vale para uno de los dos cursos. Elige cuál y avísale al profe por WhatsApp.'));
+      if (cfg.whatsapp) {
+        const precios = cfg.premios.map((p) => nombreCorto(p) + ' ' + soles(p.precio, mio.paga)).join(' o ');
+        resto.appendChild(enlace('boton-grande', 'Avisar al profe', 'https://wa.me/' + cfg.whatsapp + '?text=' + encodeURIComponent(saludo() + ' En el sorteo basket me tocó el ' + descuento + ' % de descuento (' + precios + '). Elijo el curso: ')));
+      }
+    } else {
+      resto.appendChild(el('p', 'mio-sub', 'Acceso web por ' + web.vigencia + ' a cualquier curso del catálogo: ' + lista(web.incluye) + '.'));
+      if (web.no_incluye) resto.appendChild(el('p', 'mio-aviso', 'No incluye ' + web.no_incluye + '.'));
+      resto.appendChild(el('p', 'mio-nota', 'Elige tu curso en el catálogo y avísale al profe por WhatsApp.'));
+      const botones = el('div', 'mio-botones');
+      if (web.url_catalogo) botones.appendChild(enlace('boton-grande boton-catalogo', 'Ver el catálogo', web.url_catalogo));
+      if (cfg.whatsapp) {
+        botones.appendChild(enlace('boton-grande', 'Avisar al profe', 'https://wa.me/' + cfg.whatsapp + '?text=' + encodeURIComponent(saludo() + ' En el sorteo basket me tocó el acceso web por S/ ' + web.precio + ' (' + web.vigencia + ', cualquier curso del catálogo). Quiero el curso: ')));
+      }
+      resto.appendChild(botones);
     }
     d.appendChild(resto);
     const listo = () => {
@@ -966,23 +985,39 @@
       if (animar) fiesta();
     };
     if (!animar || reducido.matches) { listo(); return d; }
-    // rueda: el texto salta entre los porcentajes posibles, cada vez más lento, y cae en el propio
     resto.hidden = true;
     num.classList.add('rueda');
-    const opciones = cfg.consuelo.paga_pct.slice();
-    if (mio.esp) opciones.push(mio.paga);
-    let i = 0, paso = 50;
-    const meta = opciones.indexOf(mio.paga);
-    const vueltas = opciones.length * 3 + meta; // ≈ 1,7 s
-
-    const tic = () => {
-      grande.textContent = opciones[i % opciones.length] + NB + '%';
-      if (i >= vueltas) { listo(); return; }
-      i++;
-      paso = Math.min(300, paso * 1.15);
-      setTimeout(tic, paso);
-    };
-    setTimeout(tic, 250);
+    let i = 0, paso = 45;
+    if (mio.esp) {
+      // el descuento sube de 0 a 80 %, cada vez más lento
+      post.textContent = 'de descuento';
+      const pasos = 16;
+      const tic = () => {
+        const v = Math.round(descuento * (1 - Math.pow(1 - i / pasos, 2.2)));
+        grande.textContent = v + NB + '%';
+        if (i >= pasos) { listo(); return; }
+        i++;
+        paso = Math.min(220, paso * 1.12);
+        setTimeout(tic, paso);
+      };
+      setTimeout(tic, 250);
+    } else {
+      // tragamonedas: las cifras giran y se clavan una por una en el precio (es solo la animación)
+      pre.textContent = 'Acceso web';
+      post.textContent = 'por ' + web.vigencia;
+      const cifras = String(web.precio).split('');
+      const fijas = [];
+      const tic = () => {
+        const giro = cifras.map((c, k) => (k < fijas.length ? c : String(Math.floor(Math.random() * 10)))).join('');
+        grande.textContent = 'S/' + NB + giro;
+        i++;
+        if (i % 7 === 0) fijas.push(1);
+        if (fijas.length > cifras.length) { listo(); return; }
+        paso = Math.min(160, paso * 1.06);
+        setTimeout(tic, paso);
+      };
+      setTimeout(tic, 250);
+    }
     return d;
   }
   function tarjetaEspecial(e) {

@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -355,7 +356,7 @@ func TestPersistencia(t *testing.T) {
 	}
 }
 
-// Al cerrar: exactamente un 80 % (paga 20 %), los demás que tiraron pagan 30, 50 o 60 %; ganadores y
+// Al cerrar: exactamente un 80 % (paga 20 %) y, para los demás que tiraron, el acceso web por S/ 10; ganadores y
 // quienes no tiraron quedan fuera.
 func TestConsuelos(t *testing.T) {
 	j, r := juegoPrueba(t)
@@ -374,44 +375,41 @@ func TestConsuelos(t *testing.T) {
 	for _, p := range ps[2:11] {
 		tiroPerfecto(t, j, r, p.ID)
 	}
-	if len(j.est.Consuelos) != 0 {
-		t.Fatal("no debe haber descuentos antes de cerrar")
+	if len(j.est.AccesoWeb)+len(j.est.Especiales) != 0 {
+		t.Fatal("no debe haber premios de consuelo antes de cerrar")
 	}
 	j.Cerrar(true)
-	if len(j.est.Especiales) != 1 {
-		t.Fatalf("especiales = %d, quería 1", len(j.est.Especiales))
-	}
-	esp := 0
+	esp, web := 0, 0
 	for _, p := range ps {
-		paga, e := j.consuelo(p.ID)
+		con, paga := j.consuelo(p.ID)
 		switch {
 		case p.Gano > 0 || p.Tiros == 0:
-			if paga != 0 || e {
-				t.Fatalf("%s (gano=%d, tiros=%d) no debe tener descuento: %d", p.ID, p.Gano, p.Tiros, paga)
+			if con != "" {
+				t.Fatalf("%s (gano=%d, tiros=%d) no debe tener consuelo: %q", p.ID, p.Gano, p.Tiros, con)
 			}
-		case e:
+		case con == "esp":
 			esp++
 			if paga != 20 {
 				t.Fatalf("el especial paga %d, quería 20", paga)
 			}
+		case con == "web":
+			web++
 		default:
-			if paga != 30 && paga != 50 && paga != 60 {
-				t.Fatalf("paga %d, quería 30, 50 o 60", paga)
-			}
+			t.Fatalf("%s tiró y no ganó, pero no tiene consuelo", p.ID)
 		}
 	}
-	if esp != 1 || len(j.est.Consuelos) != 9 {
-		t.Fatalf("especial %d, con descuento %d (quería 1 y 9)", esp, len(j.est.Consuelos))
+	if esp != 1 || web != 8 {
+		t.Fatalf("especial %d, acceso web %d (quería 1 y 8)", esp, web)
 	}
 	// cerrar otra vez no vuelve a sortear
-	antes, _ := json.Marshal(j.est.Consuelos)
+	antes, _ := json.Marshal(j.est.AccesoWeb)
 	antesE := j.est.Especiales[0]
 	j.Cerrar(true)
 	j.Cerrar(false)
 	j.Cerrar(true)
-	despues, _ := json.Marshal(j.est.Consuelos)
+	despues, _ := json.Marshal(j.est.AccesoWeb)
 	if string(antes) != string(despues) || j.est.Especiales[0] != antesE || len(j.est.Especiales) != 1 {
-		t.Fatal("cerrar dos veces cambió los descuentos")
+		t.Fatal("cerrar dos veces cambió los premios de consuelo")
 	}
 	// sobrevive a un reinicio del servidor
 	b, err := j.Volcar()
@@ -423,29 +421,28 @@ func TestConsuelos(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, p := range ps {
-		a, ae := j.consuelo(p.ID)
-		bb, be := k.consuelo(p.ID)
-		if a != bb || ae != be {
-			t.Fatalf("%s: %d/%v antes, %d/%v después del reinicio", p.ID, a, ae, bb, be)
+		a1, a2 := j.consuelo(p.ID)
+		b1, b2 := k.consuelo(p.ID)
+		if a1 != b1 || a2 != b2 {
+			t.Fatalf("%s: %s/%d antes, %s/%d después del reinicio", p.ID, a1, a2, b1, b2)
 		}
 	}
-	// quien llega después y tira recibe su descuento al volver a cerrar, sin un segundo 80 %
+	// quien llega después y tira recibe el premio web al volver a cerrar, sin un segundo 80 %
 	k.ahora = r.ahora
 	k.Cerrar(false)
 	tarde := entrar(t, k, 15)
 	tiroPerfecto(t, k, r, tarde.ID)
 	k.Cerrar(true)
-	if paga, e := k.consuelo(tarde.ID); e || (paga != 30 && paga != 50 && paga != 60) {
-		t.Fatalf("el que llegó tarde: paga %d, especial %v", paga, e)
+	if con, _ := k.consuelo(tarde.ID); con != "web" {
+		t.Fatalf("el que llegó tarde: %q", con)
 	}
 	if len(k.est.Especiales) != 1 {
 		t.Fatal("salió un segundo 80 %")
 	}
 }
 
-// Los tres porcentajes salen con la misma probabilidad y el 80 % cae en cualquiera.
-func TestConsuelosReparto(t *testing.T) {
-	cuenta := map[int]int{}
+// El 80 % cae en cualquiera de los que tiraron, con la misma probabilidad.
+func TestEspecialAlAzar(t *testing.T) {
 	especial := map[int]int{}
 	for v := 0; v < 600; v++ {
 		j, _ := juegoPrueba(t)
@@ -456,23 +453,47 @@ func TestConsuelosReparto(t *testing.T) {
 			ps = append(ps, p)
 		}
 		j.Cerrar(true)
+		n := 0
 		for i, p := range ps {
-			paga, e := j.consuelo(p.ID)
-			if e {
+			if con, _ := j.consuelo(p.ID); con == "esp" {
 				especial[i]++
-			} else {
-				cuenta[paga]++
+				n++
 			}
 		}
-	}
-	for _, pct := range []int{30, 50, 60} {
-		if f := float64(cuenta[pct]) / 3000; f < 0.29 || f > 0.38 {
-			t.Fatalf("paga %d %% salió %.3f, quería ≈ 1/3", pct, f)
+		if n != 1 || len(j.est.AccesoWeb) != 5 {
+			t.Fatalf("especiales %d, web %d", n, len(j.est.AccesoWeb))
 		}
 	}
 	for i := 0; i < 6; i++ {
 		if especial[i] < 60 || especial[i] > 145 {
 			t.Fatalf("el 80 %% cayó %d veces en el jugador %d de 600 (quería ≈ 100)", especial[i], i)
 		}
+	}
+}
+
+// Datos guardados con el formato anterior («pagas el 30/50/60 %»): al cargar pasan al premio web; el especial queda.
+func TestMigracionConsuelos(t *testing.T) {
+	viejo := `{"abierto":false,"cerrado":true,"restantes":{"qwen":0,"videos":0},
+		"jugadores":[{"id":"a1","token":"ta","nombre":"Ana Ruiz","tiros":3},{"id":"b2","token":"tb","nombre":"Beto Paz","tiros":2},
+			{"id":"c3","token":"tc","nombre":"Carla Soto","tiros":1},{"id":"d4","token":"td","nombre":"Dora Luna","tiros":0}],
+		"ganadores":[],"consuelos":{"a1":20,"b2":50,"c3":30},"especiales":["a1"]}`
+	j := NuevoJuego(cfgPrueba(t))
+	if err := j.Cargar([]byte(viejo)); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"a1": "esp", "b2": "web", "c3": "web", "d4": ""}
+	for id, w := range want {
+		if con, _ := j.consuelo(id); con != w {
+			t.Fatalf("%s: %q, quería %q", id, con, w)
+		}
+	}
+	b, _ := j.Volcar()
+	if strings.Contains(string(b), `"consuelos"`) {
+		t.Fatal("el formato viejo sigue en el archivo")
+	}
+	// cerrar de nuevo no cambia nada
+	j.Cerrar(true)
+	if len(j.est.AccesoWeb) != 2 || len(j.est.Especiales) != 1 {
+		t.Fatalf("web %d, especiales %d", len(j.est.AccesoWeb), len(j.est.Especiales))
 	}
 }

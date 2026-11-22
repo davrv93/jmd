@@ -45,12 +45,23 @@ type Medidor struct {
 	ProbLejos    float64 `json:"prob_lejos"`
 }
 
-// Consuelo: descuento para quien tiró al menos una vez y no ganó un cupo al 100 %. Se sortea al cerrar.
+// Consuelo: para quien tiró al menos una vez y no ganó un cupo al 100 %. Se sortea al cerrar: especial_cupos
+// personas (una) con el descuento grande en un curso en vivo y, todos los demás, el premio web (acceso a un
+// curso del catálogo por un precio fijo).
 type Consuelo struct {
-	PagaPct         []int  `json:"paga_pct"`
-	EspecialPagaPct int    `json:"especial_paga_pct"`
-	EspecialCupos   int    `json:"especial_cupos"`
-	EspecialTexto   string `json:"especial_texto"`
+	EspecialPagaPct int       `json:"especial_paga_pct"`
+	EspecialCupos   int       `json:"especial_cupos"`
+	EspecialTexto   string    `json:"especial_texto"`
+	Premio          PremioWeb `json:"premio"`
+}
+
+type PremioWeb struct {
+	Texto       string   `json:"texto"`
+	Precio      int      `json:"precio"`
+	Vigencia    string   `json:"vigencia"`
+	Incluye     []string `json:"incluye"`
+	NoIncluye   string   `json:"no_incluye"`
+	URLCatalogo string   `json:"url_catalogo"`
 }
 
 type Config struct {
@@ -86,13 +97,11 @@ func (c Config) validar() error {
 			return errors.New("config.json: cada premio necesita id, cupos ≥ 0 y precio")
 		}
 	}
-	if len(c.Consuelo.PagaPct) == 0 || c.Consuelo.EspecialCupos < 0 {
-		return errors.New("config.json: consuelo.paga_pct es obligatorio")
+	if c.Consuelo.EspecialCupos < 0 || c.Consuelo.EspecialPagaPct <= 0 || c.Consuelo.EspecialPagaPct > 100 {
+		return errors.New("config.json: consuelo.especial_paga_pct va de 1 a 100")
 	}
-	for _, v := range append([]int{c.Consuelo.EspecialPagaPct}, c.Consuelo.PagaPct...) {
-		if v <= 0 || v > 100 {
-			return errors.New("config.json: los porcentajes de pago van de 1 a 100")
-		}
+	if c.Consuelo.Premio.Precio <= 0 || c.Consuelo.Premio.Texto == "" {
+		return errors.New("config.json: consuelo.premio necesita texto y precio")
 	}
 	return nil
 }
@@ -130,9 +139,11 @@ type Estado struct {
 	Jugadores []*Jugador     `json:"jugadores"`
 	Ganadores []Ganador      `json:"ganadores"`
 	Creado    time.Time      `json:"creado"`
-	// Consuelos: jugador → porcentaje del precio que paga. Especiales: los del descuento grande, en orden.
-	Consuelos  map[string]int `json:"consuelos"`
-	Especiales []string       `json:"especiales"`
+	// Especiales: los del descuento grande, en orden. AccesoWeb: los del premio web.
+	Especiales []string        `json:"especiales"`
+	AccesoWeb  map[string]bool `json:"acceso_web"`
+	// Consuelos: formato anterior (jugador → % que paga). Solo se lee para convertirlo al cargar.
+	Consuelos map[string]int `json:"consuelos,omitempty"`
 }
 
 // Fase: lo que el servidor manda antes de cada tiro. El medidor vale tri(e/P + X), con e los ms desde que se emitió.
@@ -225,7 +236,7 @@ func (j *Juego) estadoNuevo() Estado {
 		r[p.ID] = p.Cupos
 	}
 	return Estado{Abierto: j.cfg.AbiertoAlIni, Restantes: r, Jugadores: []*Jugador{}, Ganadores: []Ganador{}, Creado: j.ahora().UTC(),
-		Consuelos: map[string]int{}, Especiales: []string{}}
+		Especiales: []string{}, AccesoWeb: map[string]bool{}}
 }
 
 func (j *Juego) indexar() {
@@ -241,12 +252,28 @@ func (j *Juego) indexar() {
 	if j.est.Ganadores == nil {
 		j.est.Ganadores = []Ganador{}
 	}
-	if j.est.Consuelos == nil {
-		j.est.Consuelos = map[string]int{}
-	}
 	if j.est.Especiales == nil {
 		j.est.Especiales = []string{}
 	}
+	if j.est.AccesoWeb == nil {
+		j.est.AccesoWeb = map[string]bool{}
+	}
+	// migración: los «pagas el X %» de antes pasan al premio web; el especial sigue siendo especial
+	for id := range j.est.Consuelos {
+		if !j.esEspecial(id) {
+			j.est.AccesoWeb[id] = true
+		}
+	}
+	j.est.Consuelos = nil
+}
+
+func (j *Juego) esEspecial(id string) bool {
+	for _, e := range j.est.Especiales {
+		if e == id {
+			return true
+		}
+	}
+	return false
 }
 
 // Cargar reemplaza el estado por uno leído del disco.
@@ -545,7 +572,7 @@ func (j *Juego) premiar(p *Jugador) *Victoria {
 	p.Gano = g.Orden
 	j.est.Ganadores = append(j.est.Ganadores, g)
 	// quien gana un cupo al 100 % (por ejemplo, tras reabrir) deja su descuento; el especial vuelve a sortearse al cerrar
-	delete(j.est.Consuelos, p.ID)
+	delete(j.est.AccesoWeb, p.ID)
 	for i, id := range j.est.Especiales {
 		if id == p.ID {
 			j.est.Especiales = append(j.est.Especiales[:i], j.est.Especiales[i+1:]...)
@@ -573,13 +600,13 @@ func (j *Juego) Cerrar(cerrado bool) {
 	}
 }
 
-// consolar sortea los descuentos entre quienes tiraron al menos una vez, no ganaron un cupo y todavía no
-// tienen descuento. Cerrar dos veces no vuelve a sortear: solo entran los que aparecieron después.
-// El descuento grande (especial_cupos) sale una sola vez en todo el sorteo, entre esos mismos jugadores.
+// consolar reparte los premios de consuelo entre quienes tiraron al menos una vez, no ganaron un cupo y todavía
+// no tienen premio. Cerrar dos veces no vuelve a sortear: solo entran los que aparecieron después. El descuento
+// grande (especial_cupos) sale una sola vez en todo el sorteo; los demás reciben el premio web.
 func (j *Juego) consolar() {
 	var nuevos []*Jugador
 	for _, p := range j.est.Jugadores {
-		if _, ya := j.est.Consuelos[p.ID]; !ya && p.Tiros >= 1 && p.Gano == 0 {
+		if p.Tiros >= 1 && p.Gano == 0 && !j.est.AccesoWeb[p.ID] && !j.esEspecial(p.ID) {
 			nuevos = append(nuevos, p)
 		}
 	}
@@ -591,23 +618,22 @@ func (j *Juego) consolar() {
 	c := j.cfg.Consuelo
 	for _, p := range nuevos {
 		if len(j.est.Especiales) < c.EspecialCupos {
-			j.est.Consuelos[p.ID] = c.EspecialPagaPct
 			j.est.Especiales = append(j.est.Especiales, p.ID)
 			continue
 		}
-		j.est.Consuelos[p.ID] = c.PagaPct[j.azar(len(c.PagaPct))]
+		j.est.AccesoWeb[p.ID] = true
 	}
 }
 
-// Consuelo devuelve el porcentaje que paga un jugador (0 si no tiene descuento) y si es del descuento grande.
-func (j *Juego) consuelo(id string) (int, bool) {
-	pct := j.est.Consuelos[id]
-	for _, e := range j.est.Especiales {
-		if e == id {
-			return pct, true
-		}
+// consuelo: «esp» (descuento grande, con el % que paga), «web» (premio web) o «» si no tiene.
+func (j *Juego) consuelo(id string) (string, int) {
+	if j.esEspecial(id) {
+		return "esp", j.cfg.Consuelo.EspecialPagaPct
 	}
-	return pct, false
+	if j.est.AccesoWeb[id] {
+		return "web", 0
+	}
+	return "", 0
 }
 
 func (j *Juego) Reiniciar() {
