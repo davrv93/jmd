@@ -58,12 +58,79 @@
   #c7Toque { fill: var(--rojo); }
   #c7Onda { fill: none; stroke: var(--rojo); stroke-width: 2.4; }
   #c7Flash { fill: #FFFFFF; opacity: 0; }
+
+  /* ---- Identidad del Taller de diseño (la misma de _comun/taller.css), solo sobre los tokens de teoria.css.
+     Las fuentes (Fraunces, Inter, IBM Plex Mono) las carga taller.js con FontFace; sin él, quedan las del sistema. ---- */
+  :root {
+    --papel: #F4F1EA; --papel2: #EBE7DE; --papel3: #DED8CC;
+    --tinta: #1A1917; --gris: #57534B; --linea: rgba(26, 25, 23, .14);
+    --acento: #C4421B; --azul: #3D5A80; --rojo: #A1192B; --verde: #2E6A3C;
+    --z-mundo: rgba(196, 66, 27, .06); --z-maq: rgba(61, 90, 128, .09); --z-comun: rgba(196, 66, 27, .16);
+    --sombra: 0 1px 2px rgba(26, 25, 23, .08), 0 12px 26px -14px rgba(60, 40, 20, .34);
+    --n-ev: #E9BE95; --n-cmd: #C3D3E2; --n-act: #E7DBA4; --n-pol: #D5C9DE; --n-hot: #DFA59F; --n-sis: #EAD2D8; --n-info: #CBDBBB; --n-ficha: #FBF9F4; --n-tinta: #1A1917;
+    --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-tema="light"]) {
+      --papel: #141312; --papel2: #1C1B19; --papel3: #252320;
+      --tinta: #EDE9E0; --gris: #B3ADA2; --linea: rgba(237, 233, 224, .14);
+      --acento: #F06A42; --azul: #9DB4D6; --rojo: #F2848C; --verde: #86C995;
+      --z-mundo: rgba(240, 106, 66, .07); --z-maq: rgba(157, 180, 214, .1); --z-comun: rgba(240, 106, 66, .18);
+      --sombra: 0 1px 2px rgba(0, 0, 0, .4), 0 16px 30px -14px rgba(0, 0, 0, .75);
+    }
+  }
+  :root[data-tema="dark"] {
+    --papel: #141312; --papel2: #1C1B19; --papel3: #252320;
+    --tinta: #EDE9E0; --gris: #B3ADA2; --linea: rgba(237, 233, 224, .14);
+    --acento: #F06A42; --azul: #9DB4D6; --rojo: #F2848C; --verde: #86C995;
+    --z-mundo: rgba(240, 106, 66, .07); --z-maq: rgba(157, 180, 214, .1); --z-comun: rgba(240, 106, 66, .18);
+    --sombra: 0 1px 2px rgba(0, 0, 0, .4), 0 16px 30px -14px rgba(0, 0, 0, .75);
+  }
+  ::selection { background: var(--acento); color: var(--papel); }
+  /* folio en vez de la «ceja» sobre el título */
+  .folio { display: flex; align-items: center; gap: 1em; padding-bottom: .7em; margin-bottom: 1.4vh; border-bottom: 1px solid var(--linea); font: 500 .74em/1 var(--sans); color: var(--gris); }
+  .folio .marca { font: italic 400 1.3em/1 var(--serif); color: var(--tinta); }
+  .folio .sep { width: 1px; height: 1.1em; background: var(--linea); }
+  .folio .der { margin-left: auto; display: flex; align-items: center; gap: .9em; }
+  .tl-tema { appearance: none; border: 1px solid var(--linea); background: transparent; color: var(--gris); width: 2.2em; height: 2.2em; border-radius: 50%; display: inline-grid; place-items: center; cursor: pointer; }
+  .tl-tema:hover { color: var(--tinta); border-color: var(--gris); }
+  .tl-tema svg { width: 1.1em; height: 1.1em; }
+  .teo h1 { font: 400 clamp(1.6em, 2.9vw, 3.1em)/1.02 var(--serif); letter-spacing: -.022em; font-variation-settings: "opsz" 144, "SOFT" 30; text-wrap: balance; }
+  .teo h1 em { font-weight: 300; }
+  /* la monoespaciada solo tiene peso 500: nada de negritas sintéticas */
+  .rot, .et, .nt .k, .cita small, .muestra .r, .esc span, .formula .que, .nivel span, .teo-tecla, .pastilla, .sello { font-weight: 500; }
+  .rot { letter-spacing: .12em; }
+  .nt { border-radius: 3px; }
+  .nt .t { font-weight: 600; }
+  .sello { color: var(--rojo); border-color: var(--rojo); background: color-mix(in srgb, var(--papel) 92%, transparent); }
+  .sello.si { color: var(--verde); border-color: var(--verde); }
+  /* relato: número en Fraunces en vez de la barra de color a la izquierda */
+  .teo-relato ol { counter-reset: paso; }
+  .teo-relato li { counter-increment: paso; border-left: 0; padding: .15em 0 .15em 2em; position: relative; }
+  .teo-relato li::before { content: counter(paso); position: absolute; left: 0; top: .05em; font: italic 300 1.25em/1 var(--serif); color: var(--gris); }
+  html.teo-js .teo-relato li.ahora { border-left: 0; }
+  .teo-relato li.ahora::before { color: var(--acento); font-size: 1.9em; top: -.05em; }
+  .teo-relato li b { font-weight: 500; letter-spacing: -.01em; }
+  .teo-relato li.ahora b { font-size: 1.55em; line-height: 1.12; }
+  /* controles del taller: rectángulos suaves, acento solo en «Siguiente» */
+  .teo-btn { border-radius: 10px; font-weight: 600; background: var(--papel); border-color: color-mix(in srgb, var(--tinta) 22%, transparent); transition: background .2s, border-color .2s, transform .12s; }
+  .teo-btn:hover { background: var(--papel2); border-color: var(--gris); }
+  .teo-btn:active { transform: translateY(1px); }
+  .teo-btn.pri { background: var(--acento); color: var(--papel); }
+  .teo-btn.pri:hover { filter: none; background: color-mix(in srgb, var(--acento) 86%, var(--tinta)); }
+  .teo-btn[disabled] { opacity: 1; background: transparent; color: var(--gris); border-style: dashed; }
+  .teo-btn svg { width: 1.1em; height: 1.1em; vertical-align: -.18em; }
+  .teo-punto { border-width: 1.5px; }
+  .teo-fuente { font-size: .66em; }
+  .teo { overflow-x: clip; }
 </style>
 </head>
 <body>
 <main class="teo">
   <header>
-    <p class="teo-ceja">Teoría · Diseño y animación · 7 ideas</p>
+    <div class="folio"><span class="marca">Taller de diseño</span><span class="sep" aria-hidden="true"></span><span>Teoría · Diseño y animación</span><span class="der"><span>7 ideas</span><button class="tl-tema" type="button" data-tl-tema></button></span></div>
     <h1>Diseñar es decidir <em>qué se ve primero</em></h1>
   </header>
 
@@ -328,13 +395,14 @@
       <button type="button" class="teo-btn" id="ant">← Anterior</button>
       <div class="teo-puntos"></div>
       <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
-      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso" aria-label="Repetir este paso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4.5h4.5"/></svg></button>
       <button type="button" class="teo-btn" id="todo">Ver todo</button>
       <span class="teo-tecla">← → o espacio</span>
     </div>
     <p class="teo-fuente">Williams, R. (2015). The Non-Designer's Design Book, 4.ª ed. Peachpit · W3C (2023). WCAG 2.2 · Müller-Brockmann, J. (1981). Grid Systems in Graphic Design. Niggli · Liu, R. et al. (2023). Character-Aware Models Improve Visual Text Rendering. ACL · Pharr, M., Jakob, W. y Humphreys, G. (2023). Physically Based Rendering, 4.ª ed. MIT Press · Thomas, F. y Johnston, O. (1981). The Illusion of Life. Abbeville · Fessenden, T. (2018). Scrolling and Attention. Nielsen Norman Group.</p>
   </footer>
 </main>
+<script src="../../comun/taller.js"></script>
 <script src="../../comun/gsap.min.js"></script>
 <script src="../../comun/teoria.js"></script>
 <script>
