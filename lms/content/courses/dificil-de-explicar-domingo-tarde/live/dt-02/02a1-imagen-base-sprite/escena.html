@@ -8,190 +8,208 @@
      Genera la imagen base con FLUX (POST /api/v1/live/{lección}/imagen, cupo por alumno) sobre un fondo liso de un color
      y la recorta en el navegador con un relleno desde los bordes: solo se borra el fondo que toca el borde, así que
      ninguna parte del personaje o del producto puede desaparecer. La IA de recorte (/recorte/quitar) es opcional y
-     solo sirve para comparar: lo que la IA borró y el recorte seguro conservó se pinta en rojo. -->
-<link rel="stylesheet" href="../../comun/escena.css">
+     solo sirve para comparar: lo que la IA borró y el recorte seguro conservó se pinta en rojo.
+     Estado vacío: un perfume de ejemplo (render 3D del estudio, ejemplo-perfume-verde.webp) ya recortado con el
+     mismo algoritmo, para que la mesa nunca arranque con dos cuadros vacíos. Identidad: _comun/taller.css. -->
+<link rel="stylesheet" href="../../comun/taller.css">
 <style id="esc-propio">
-.esc-titulo { font-size: 1.32em; }
-.obj { font-size: .8em; margin: .2em 0 0; color: var(--muted); max-width: 62em; }
-.obj b { color: var(--fg); }
-.ib { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2vw; align-items: start; }
-.sec { display: grid; gap: .5em; min-width: 0; }
-.chips { display: flex; flex-wrap: wrap; gap: .3em; align-items: center; }
-.chips .t { font-size: .66em; color: var(--muted); font-weight: 700; margin-right: .2em; }
-.chips button { font: 600 .68em/1 system-ui, sans-serif; padding: .5em .8em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
-.chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-.chips button .sw { display: inline-block; width: .9em; height: .9em; border-radius: .2em; vertical-align: -.12em; margin-right: .35em; border: 1px solid rgba(0,0,0,.25); }
-.caso { font-size: .72em; margin: 0; padding: .55em .75em; border-radius: .7em; background: var(--s1); border: 1px solid var(--line2); }
-.caso b { color: var(--accent); }
-.receta { display: grid; grid-template-columns: auto 1fr; gap: .35em .6em; align-items: center; }
-.receta label { font-size: .7em; font-weight: 700; }
-.receta label small { display: block; font-weight: 400; color: var(--muted); }
-.receta input { width: 100%; font: .78em/1.3 system-ui, sans-serif; padding: .42em .6em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
-.prompt { font: .66em/1.45 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .8em; padding: .55em .75em; margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 14vh; overflow: auto; }
-.grande { width: 100%; font: 700 .88em/1 system-ui, sans-serif; padding: .78em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; }
-.grande:disabled { opacity: .55; cursor: wait; }
-.fila { display: flex; gap: .4em; flex-wrap: wrap; }
-.fila button, .fila a { font: 700 .7em/1 system-ui, sans-serif; padding: .55em .85em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; text-decoration: none; }
-.fila button:disabled { opacity: .5; cursor: default; }
-.fila a { border-color: var(--ok); color: var(--ok); }
-.aviso { font-size: .7em; margin: 0; min-height: 1.2em; color: var(--muted); }
-.aviso.mal { color: var(--bad); font-weight: 700; }
-.aviso.ok { color: var(--ok); font-weight: 700; }
-.pasos { margin: 0; padding-left: 1.3em; font-size: .7em; display: grid; gap: .15em; }
-.pasos b { color: var(--fg); }
-.lienzos { display: grid; grid-template-columns: 1fr 1fr; gap: .5em; }
-.lienzos figure { margin: 0; display: grid; gap: .25em; }
-.lienzos figcaption { font-size: .62em; color: var(--muted); font-weight: 700; }
-.lienzos canvas { width: 100%; height: auto; display: block; border-radius: .6em; border: 1px solid var(--line2);
-  background-color: #fff; background-image: linear-gradient(45deg, #d9d9de 25%, transparent 25%), linear-gradient(-45deg, #d9d9de 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #d9d9de 75%), linear-gradient(-45deg, transparent 75%, #d9d9de 75%);
-  background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0; }
-.cifras { display: flex; flex-wrap: wrap; gap: .3em; }
-.cifras span { font: 700 .62em/1 var(--mono); padding: .4em .6em; border-radius: 99px; background: var(--s2); border: 1px solid var(--line2); }
-.cifras span.ok { color: var(--ok); border-color: var(--ok); }
-.cifras span.mal { color: var(--bad); border-color: var(--bad); }
-.bien { margin: 0; padding: .55em .75em .55em 1.9em; font-size: .68em; border-radius: .7em; background: var(--s1); border: 1px solid var(--line2); }
-.bien li { margin: .12em 0; }
-.entrega { font-size: .68em; margin: 0; color: var(--muted); }
-.entrega b { color: var(--fg); }
-@media (max-width: 900px) { .ib { grid-template-columns: 1fr; } .lienzos { grid-template-columns: 1fr; } body { overflow-y: auto; } }
+.laminas { display: grid; grid-template-columns: repeat(2, minmax(0, min(calc(50% - 11px), calc(100vh - 23rem)))); gap: clamp(10px, 1.2vw, 22px); }
+.tl-mesa { grid-template-columns: minmax(0, 1.8fr) minmax(320px, .9fr); align-self: center; }
+.laminas .tl-lienzo { aspect-ratio: 1; }
+.laminas canvas { width: 100%; height: 100%; object-fit: contain; }
+.lado { display: grid; gap: .9rem; }
+.pie-mesa { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem 1.4rem; }
+.principio { margin: 0; font: italic 400 1rem/1.4 var(--display); color: var(--tinta-2); max-width: 46ch; }
+.principio b { font-style: normal; font-weight: 500; color: var(--tinta); }
+.caso { margin: 0; font-size: .86rem; color: var(--tinta-2); }
+.caso b { color: var(--tinta); font-weight: 600; }
+.cupo { margin: .1rem 0 0; font-size: .78rem; color: var(--tinta-3); text-align: center; }
+@media (max-width: 960px) { .laminas { gap: 10px; } }
 </style>
 </head>
 <body>
-<div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ea">Experimentación</span>
-    <span class="esc-num">DOMINGO · S2 · SPRITE 1</span>
+<div class="tl">
+  <header class="tl-folio">
+    <span class="marca">Taller de diseño</span><span class="sep" aria-hidden="true"></span>
+    <span class="ocultable">Sesión 2 · De la imagen al sprite</span>
+    <span class="derecha"><span class="cuenta">Sprite 1 de 5</span><button class="tl-tema" type="button" data-tl-tema></button></span>
   </header>
-  <main class="esc-cuerpo">
+
+  <div class="tl-cabeza">
     <div>
-      <h1 class="esc-titulo">Imagen base → <em>sprite animado</em> · paso 1: la base y un recorte que no se come nada</h1>
-      <p class="obj"><b>Objetivo:</b> una imagen de tu producto o de la mascota de tu negocio, sobre fondo liso, recortada sin perder ni un pedazo, lista para hacer las poses.</p>
+      <h1 class="tl-titulo">Una base limpia y un recorte <em>que no se come nada</em></h1>
+      <p class="tl-lead">Tu producto o tu mascota sobre fondo liso, recortado sin perder un pedazo: la materia prima de las poses.</p>
     </div>
+    <ol class="tl-pasos" id="pasos" aria-label="Avance">
+      <li><span>Describe</span></li><li><span>Genera</span></li><li><span>Recorta</span></li><li><span>Descarga</span></li>
+    </ol>
+  </div>
 
-    <section class="ib">
-      <div class="sec">
-        <div class="chips" id="rubros"><span class="t">Caso de prueba:</span></div>
-        <p class="caso" id="caso"></p>
-        <div class="receta">
-          <label>Qué es<small>producto o mascota</small></label><input id="sujeto" type="text" maxlength="200">
-          <label>Detalle<small>material, colores</small></label><input id="detalle" type="text" maxlength="200">
-        </div>
-        <div class="chips" id="estilos"><span class="t">Estilo:</span></div>
-        <div class="chips" id="fondos"><span class="t">Fondo liso:</span></div>
-        <pre class="prompt" id="prompt" aria-label="Pedido que se envía"></pre>
-        <button id="generar" type="button" class="grande">Generar mi imagen base (unos 10 s)</button>
-        <p class="aviso" id="aviso" aria-live="polite">Escríbelo en español: el servicio traduce tu pedido al inglés antes de dibujar.</p>
-        <ol class="pasos">
-          <li>Elige el <b>caso de tu rubro</b> y cambia «Qué es» por tu producto o tu mascota.</li>
-          <li>Deja el <b>fondo liso</b>. Si tu producto es verde, cambia a magenta o azul.</li>
-          <li>Genera. Si no te gusta, cambia <b>una sola palabra</b> y vuelve a generar (5 por día).</li>
-          <li>Pulsa <b>Recorte seguro</b> y revisa los bordes sobre el cuadriculado.</li>
-          <li>Descarga <code>base.png</code>. Si quieres, pulsa <b>Comparar con IA</b>: lo rojo es lo que la IA habría borrado.</li>
-        </ol>
+  <main class="tl-mesa">
+    <section class="tl-col" aria-label="Resultado">
+      <div class="laminas">
+        <figure class="tl-lamina">
+          <figcaption><b>Antes</b> tu imagen base</figcaption>
+          <div class="tl-lienzo"><canvas id="cv-base" width="512" height="512" aria-label="Imagen base"></canvas><span class="tl-sello" id="sello-a" hidden>Ejemplo</span></div>
+        </figure>
+        <figure class="tl-lamina">
+          <figcaption><b>Después</b> <span id="cap-rec">recorte seguro</span></figcaption>
+          <div class="tl-lienzo"><canvas id="cv-rec" width="512" height="512" aria-label="Imagen recortada"></canvas><span class="tl-sello" id="sello-b" hidden>Ejemplo</span></div>
+        </figure>
       </div>
-
-      <div class="sec">
-        <div class="lienzos">
-          <figure><figcaption>1 · Tu imagen base</figcaption><canvas id="cv-base" width="512" height="512" aria-label="Imagen base"></canvas></figure>
-          <figure><figcaption id="cap-rec">2 · Recorte seguro</figcaption><canvas id="cv-rec" width="512" height="512" aria-label="Imagen recortada"></canvas></figure>
+      <div class="pie-mesa">
+        <div class="tl-acciones">
+          <button id="recortar" type="button" class="tl-btn tinta" disabled>Recorte seguro</button>
+          <button id="comparar" type="button" class="tl-btn" disabled>Comparar con IA</button>
+          <a id="descargar" class="tl-btn primario" hidden download="base.png">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></svg>Descargar base.png</a>
+          <button id="subir" type="button" class="tl-btn texto">Usar una foto mía</button>
+          <input id="archivo" type="file" accept="image/png,image/jpeg,image/webp" hidden aria-label="Elegir una foto">
         </div>
-        <div class="fila">
-          <button id="recortar" type="button" disabled>Recorte seguro</button>
-          <button id="comparar" type="button" disabled>Comparar con IA</button>
-          <a id="descargar" hidden download="base.png">Descargar base.png</a>
-          <button id="subir" type="button">Usar una foto mía</button>
-          <input id="archivo" type="file" accept="image/png,image/jpeg,image/webp" hidden>
-        </div>
-        <div class="cifras" id="cifras"></div>
-        <ul class="bien">
-          <li><b>Salió bien si:</b> el fondo es cuadriculado de borde a borde,</li>
-          <li>el producto conserva tapas, asas, letras del envase y reflejos,</li>
-          <li>no queda un halo del color del fondo al ampliar,</li>
-          <li>y, si comparas con IA, todo lo rojo sigue dentro de tu <code>base.png</code>: no se perdió ninguna parte.</li>
-        </ul>
-        <p class="entrega"><b>Qué entregar:</b> <code>base.png</code> con fondo transparente y, en tu ficha, el pedido que usaste. Sigue con las poses en la escena siguiente.</p>
+        <div class="tl-cifras" id="cifras" aria-live="polite"></div>
       </div>
+      <p class="principio"><b>Recorte seguro:</b> solo se borra el fondo que toca el borde; lo que está dentro del dibujo nunca se toca.</p>
     </section>
+
+    <aside class="tl-col" aria-label="Controles">
+      <div class="tl-panel lado">
+        <div class="tl-grupo">
+          <span class="tl-etq" id="et-rubros">Caso de prueba</span>
+          <div class="tl-seg" id="rubros" role="group" aria-labelledby="et-rubros"></div>
+          <p class="caso" id="caso"></p>
+        </div>
+
+        <div class="tl-grupo tl-prompt">
+          <span class="tl-etq">Tu pedido <small>cambia una parte a la vez</small></span>
+          <div class="tl-ficha" data-k="producto"><label class="k" for="sujeto">Producto</label><input class="tl-input" id="sujeto" type="text" maxlength="200" placeholder="qué es: tu producto o tu mascota"></div>
+          <div class="tl-ficha" data-k="detalle"><label class="k" for="detalle">Detalle</label><input class="tl-input" id="detalle" type="text" maxlength="200" placeholder="material, colores, vista"></div>
+          <div class="tl-ficha" data-k="estilo"><span class="k" id="et-estilos">Estilo</span><div class="tl-seg" id="estilos" role="group" aria-labelledby="et-estilos"></div></div>
+          <div class="tl-ficha" data-k="fondo"><span class="k" id="et-fondos">Fondo</span><div class="tl-seg" id="fondos" role="group" aria-labelledby="et-fondos"></div></div>
+          <details class="tl-plegable">
+            <summary>Pedido completo que se envía</summary>
+            <div class="cuerpo"><p class="tl-texto-prompt" id="prompt" aria-label="Pedido que se envía"></p></div>
+          </details>
+        </div>
+
+        <div class="tl-grupo">
+          <button id="generar" type="button" class="tl-btn primario ancho">Generar mi imagen base</button>
+          <p class="cupo">Unos 10 s · 5 imágenes por día · escríbelo en español</p>
+          <p class="tl-estado" id="aviso" aria-live="polite"></p>
+        </div>
+
+        <details class="tl-plegable">
+          <summary>Cómo hacerlo</summary>
+          <div class="cuerpo">
+            <ol>
+              <li>Elige tu <b>caso</b> y cambia «Producto» por lo tuyo.</li>
+              <li>Deja el <b>fondo liso</b>. Si tu producto es verde, usa magenta o azul.</li>
+              <li>Genera. Si no te gusta, cambia <b>una sola palabra</b>.</li>
+              <li>Pulsa <b>Recorte seguro</b> y revisa los bordes sobre el tablero.</li>
+              <li>Descarga <code>base.png</code>. Con <b>Comparar con IA</b>, lo rojo es lo que la IA habría borrado.</li>
+            </ol>
+            <p><b>Salió bien si</b> el tablero se ve de borde a borde, el producto conserva tapas, asas y reflejos, y no queda halo del color del fondo.</p>
+            <p><b>Entrega:</b> <code>base.png</code> transparente y, en tu ficha, el pedido que usaste.</p>
+          </div>
+        </details>
+      </div>
+    </aside>
   </main>
-  <footer class="esc-pie">El recorte seguro solo borra el fondo que toca el borde de la imagen: lo que está dentro del dibujo nunca se toca · canvas 2D, sin GPU</footer>
 </div>
+<script src="../../comun/taller.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
   const leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || 'dt-02';
   const RUBROS = [
     ['Perfume', 'un frasco de perfume de vidrio ámbar con tapa dorada', 'vidrio con reflejos suaves, etiqueta lisa sin letras', 0,
-      'Perfume: el reto es el vidrio. La IA suele borrar la parte transparente y los reflejos; el recorte seguro los conserva.'],
+      '<b>El reto es el vidrio.</b> La IA suele borrar lo transparente y los reflejos; el recorte seguro los conserva.'],
     ['Comida', 'una hamburguesa doble con queso y lechuga', 'pan brillante con ajonjolí, vista de tres cuartos', 0,
-      'Comida: el reto son los bordes irregulares (lechuga, ajonjolí). Pide el plato o el producto solo, sin mesa ni mantel.'],
+      '<b>El reto son los bordes irregulares.</b> Pide el plato solo, sin mesa ni mantel.'],
     ['Producto', 'una zapatilla deportiva blanca con suela naranja', 'vista de perfil, cordones blancos', 1,
-      'Producto: el reto es lo blanco. Sobre fondo blanco el recorte se come la zapatilla; por eso el fondo va de color.'],
+      '<b>El reto es lo blanco.</b> Sobre fondo blanco el recorte se come la zapatilla: por eso el fondo va de color.'],
     ['Empresa', 'una mascota: un búho de color azul marino con lentes redondos', 'cuerpo entero de perfil, estilo amable y profesional', 1,
-      'Empresa: la mascota es la que luego corre en tu landing. Pide cuerpo entero de perfil: así las poses salen alineadas.'],
+      '<b>La mascota es la que corre en tu landing.</b> Pide cuerpo entero de perfil: así las poses salen alineadas.'],
   ];
   const ESTILOS = [
-    ['foto de estudio', 'foto de producto de estudio, luz suave, nítida'],
-    ['ilustración plana', 'ilustración de color plano con contorno grueso, paleta limitada'],
+    ['Foto de estudio', 'foto de producto de estudio, luz suave, nítida'],
+    ['Ilustración plana', 'ilustración de color plano con contorno grueso, paleta limitada'],
     ['3D suave', 'render 3D suave tipo arcilla, luz de estudio'],
   ];
   const FONDOS = [
-    ['verde', '#00ff00', 'verde puro #00FF00'],
-    ['magenta', '#ff00ff', 'magenta puro #FF00FF'],
-    ['azul', '#0047ff', 'azul puro #0047FF'],
+    ['Verde', '#00ff00', 'verde puro #00FF00'],
+    ['Magenta', '#ff00ff', 'magenta puro #FF00FF'],
+    ['Azul', '#0047ff', 'azul puro #0047FF'],
   ];
   const est = { rubro: 0, sujeto: RUBROS[0][1], detalle: RUBROS[0][2], estilo: 0, fondo: 0 };
   try { Object.assign(est, JSON.parse(localStorage.getItem('dt02-base') || '{}')); } catch (e) {}
   const guardar = () => { try { localStorage.setItem('dt02-base', JSON.stringify(est)); localStorage.setItem('dt02-sujeto', est.sujeto); } catch (e) {} };
 
+  const partes = () => [
+    ['producto', est.sujeto.trim()], ['detalle', est.detalle.trim()], ['estilo', ESTILOS[est.estilo][1]],
+    ['', 'objeto completo y centrado con margen alrededor, sobre fondo liso de un solo color'], ['fondo', FONDOS[est.fondo][2]],
+    ['', 'sin sombra, sin suelo, sin degradado, sin texto'],
+  ];
   const prompt = () => `${est.sujeto.trim()}, ${est.detalle.trim()}, ${ESTILOS[est.estilo][1]}, ` +
     `objeto completo y centrado con margen alrededor, sobre fondo liso de un solo color ${FONDOS[est.fondo][2]}, ` +
     `sin sombra, sin suelo, sin degradado, sin texto`;
+  const COLOR = { producto: '#c4421b', detalle: '#9a7b3c', estilo: '#4f6b5e', fondo: '#5a6378' };
 
-  function chips(caja, items, activo, al) {
-    caja.querySelectorAll('button').forEach((b) => b.remove());
+  function seg(caja, items, activo, al, muestra) {
+    caja.replaceChildren();
     items.forEach((it, i) => {
       const b = document.createElement('button'); b.type = 'button';
-      if (caja.id === 'fondos') { const s = document.createElement('span'); s.className = 'sw'; s.style.background = it[1]; b.appendChild(s); }
+      if (muestra) { const s = document.createElement('span'); s.className = 'muestra'; s.style.background = it[1]; b.appendChild(s); }
       b.appendChild(document.createTextNode(it[0]));
       b.setAttribute('aria-pressed', String(activo(i)));
       b.onclick = () => { al(i); pintar(); };
       caja.appendChild(b);
     });
   }
+  function pintarPrompt() {
+    const p = $('prompt'); p.replaceChildren();
+    partes().forEach(([k, t], i) => {
+      if (i) p.appendChild(document.createTextNode(i === 4 ? ' ' : ', '));
+      if (k) { const m = document.createElement('mark'); m.style.setProperty('--c', COLOR[k]); m.textContent = t; p.appendChild(m); }
+      else p.appendChild(document.createTextNode(t));
+    });
+  }
   function pintar() {
-    chips($('rubros'), RUBROS, (i) => i === est.rubro, (i) => {
+    seg($('rubros'), RUBROS, (i) => i === est.rubro, (i) => {
       est.rubro = i; est.sujeto = RUBROS[i][1]; est.detalle = RUBROS[i][2]; est.estilo = RUBROS[i][3];
       $('sujeto').value = est.sujeto; $('detalle').value = est.detalle;
     });
-    chips($('estilos'), ESTILOS, (i) => i === est.estilo, (i) => { est.estilo = i; });
-    chips($('fondos'), FONDOS, (i) => i === est.fondo, (i) => { est.fondo = i; });
-    $('caso').textContent = RUBROS[est.rubro][4];
-    $('prompt').textContent = prompt();
+    seg($('estilos'), ESTILOS, (i) => i === est.estilo, (i) => { est.estilo = i; });
+    seg($('fondos'), FONDOS, (i) => i === est.fondo, (i) => { est.fondo = i; }, true);
+    $('caso').innerHTML = RUBROS[est.rubro][4];
+    pintarPrompt();
     if (!$('generar').dataset.ocupado) $('generar').disabled = est.sujeto.trim().length < 3;
-    guardar();
+    guardar(); avance();
   }
 
   // ---------- lienzos
   const cvB = $('cv-base'), cvR = $('cv-rec');
-  let fuente = null, mascaraSegura = null, W = 0, H = 0;
+  let fuente = null, mascaraSegura = null, W = 0, H = 0, ejemplo = false, recortado = false;
   function cargar(src) {
     return new Promise((ok, mal) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => mal(new Error('no pude leer esa imagen')); im.src = src; });
   }
+  function marcarEjemplo(si) { ejemplo = si; $('sello-a').hidden = !si; $('sello-b').hidden = !si; }
+  function avance() { Taller.pasos('pasos', ejemplo || !fuente ? 0 : !recortado ? 2 : 3); }
   function ponerBase(im) {
     const esc = Math.min(1, 768 / Math.max(im.width, im.height));
     W = Math.round(im.width * esc); H = Math.round(im.height * esc);
     for (const c of [cvB, cvR]) { c.width = W; c.height = H; }
-    const g = cvB.getContext('2d'); g.clearRect(0, 0, W, H); g.drawImage(im, 0, 0, W, H);
+    const g = cvB.getContext('2d', { willReadFrequently: true }); g.clearRect(0, 0, W, H); g.drawImage(im, 0, 0, W, H);
     cvR.getContext('2d').clearRect(0, 0, W, H);
-    fuente = g.getImageData(0, 0, W, H); mascaraSegura = null;
+    fuente = g.getImageData(0, 0, W, H); mascaraSegura = null; recortado = false;
     $('recortar').disabled = false; $('comparar').disabled = true; $('descargar').hidden = true;
-    $('cifras').innerHTML = ''; $('cap-rec').textContent = '2 · Recorte seguro';
+    $('cifras').replaceChildren(); $('cap-rec').textContent = 'recorte seguro';
+    marcarEjemplo(false); avance();
   }
 
   // Recorte seguro: el color del fondo sale del borde (mediana); se rellena desde los cuatro bordes y solo se
   // vuelve transparente lo que es parecido al fondo Y está conectado con el borde. Un reflejo verde dentro del
   // frasco no toca el borde, así que se queda. Los píxeles del contorno quedan semitransparentes y sin tinte.
-  function recorteSeguro() {
+  function recorteSeguro(silencio) {
     const p = fuente.data, n = W * H;
     const borde = [];
     for (let x = 0; x < W; x++) borde.push(x, (H - 1) * W + x);
@@ -225,29 +243,32 @@
       }
       mascaraSegura[i] = 1; opacos++;
     }
-    const g = cvR.getContext('2d'); g.clearRect(0, 0, W, H); g.putImageData(out, 0, 0);
-    $('descargar').href = cvR.toDataURL('image/png'); $('descargar').hidden = false;
+    const g = cvR.getContext('2d', { willReadFrequently: true }); g.clearRect(0, 0, W, H); g.putImageData(out, 0, 0);
+    recortado = true;
+    if (!ejemplo) { $('descargar').href = cvR.toDataURL('image/png'); $('descargar').hidden = false; }
     $('comparar').disabled = false;
-    $('cap-rec').textContent = '2 · Recorte seguro (fondo liso)';
+    $('cap-rec').textContent = 'recorte seguro';
     const pct = Math.round(100 * opacos / n);
-    $('cifras').innerHTML = '';
-    cifra(`fondo detectado rgb(${bg.join(', ')})`, '');
-    cifra(`objeto: ${pct} % de la imagen`, pct > 3 && pct < 90 ? 'ok' : 'mal');
+    $('cifras').replaceChildren();
+    cifra(`fondo rgb(${bg.join(', ')})`, '');
+    cifra(`objeto ${pct} % de la imagen`, pct > 3 && pct < 90 ? 'ok' : 'mal');
+    avance();
+    if (silencio) return;
     if (pct >= 90) aviso('El fondo no es liso: casi nada se borró. Vuelve a generar con fondo liso o elige otro color.', 'mal');
     else if (pct <= 3) aviso('Casi todo se borró: el producto tiene el mismo color que el fondo. Cambia el color del fondo.', 'mal');
     else aviso('Recorte listo. Revisa los bordes y descarga base.png.', 'ok');
   }
   function cifra(t, c) { const s = document.createElement('span'); s.textContent = t; if (c) s.className = c; $('cifras').appendChild(s); }
-  function aviso(t, c) { $('aviso').textContent = t; $('aviso').className = 'aviso' + (c ? ' ' + c : ''); }
+  function aviso(t, c) { $('aviso').textContent = t; $('aviso').className = 'tl-estado' + (c ? ' ' + c : ''); }
 
   // Comparar con la IA: se manda la base al servicio de recorte de la clase y se cuentan los píxeles del objeto
   // que la IA dejó transparentes. Esos se pintan en rojo sobre el recorte seguro: es lo que se habría perdido.
   async function compararIA() {
-    const b = $('comparar'); b.disabled = true; b.textContent = 'La IA está recortando…';
+    const b = $('comparar'); b.disabled = true; b.setAttribute('aria-busy', 'true'); b.textContent = 'La IA está recortando';
     try {
       const datos = await new Promise((ok) => cvB.toBlob(ok, 'image/png'));
       const r = await fetch('/recorte/quitar', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: datos });
-      if (!r.ok) throw new Error(r.status === 429 ? 'el servicio de recorte está ocupado: prueba en un minuto' : `el recorte con IA respondió ${r.status}`);
+      if (!r.ok) throw new Error(r.status === 429 ? 'El servicio de recorte está ocupado: prueba en un minuto.' : `El recorte con IA respondió ${r.status}.`);
       const blob = await r.blob();
       const url = await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(blob); });
       const im = await cargar(url);
@@ -263,18 +284,19 @@
         if (ia[i * 4 + 3] < 40) { perdidos++; v[i * 4] = 230; v[i * 4 + 1] = 30; v[i * 4 + 2] = 40; v[i * 4 + 3] = 255; }
       }
       gr.putImageData(vista, 0, 0);
-      $('cap-rec').textContent = '2 · En rojo: lo que la IA habría borrado';
+      $('cap-rec').textContent = 'en rojo, lo que la IA habría borrado';
       const pct = objeto ? (100 * perdidos / objeto) : 0;
-      cifra(`partes rescatadas: ${pct.toFixed(1)} % del objeto`, pct > 0.5 ? 'mal' : 'ok');
-      aviso(pct > 0.5 ? 'La IA se comía partes de tu imagen (en rojo). Tu base.png descargada NO las pierde.' :
+      cifra(`rescatado ${pct.toFixed(1)} % del objeto`, pct > 0.5 ? 'mal' : 'ok');
+      aviso(pct > 0.5 ? 'La IA se comía partes de tu imagen (en rojo). Tu base.png descargada no las pierde.' :
         'La IA y el recorte seguro coinciden. Tu base.png ya estaba bien.', pct > 0.5 ? 'mal' : 'ok');
     } catch (e) { aviso(String(e.message || e), 'mal'); }
-    finally { b.textContent = 'Comparar con IA'; b.disabled = false; }
+    finally { b.removeAttribute('aria-busy'); b.textContent = 'Comparar con IA'; b.disabled = false; }
   }
 
   async function generar() {
     const btn = $('generar'); if (btn.dataset.ocupado) return;
-    btn.dataset.ocupado = '1'; btn.disabled = true; btn.textContent = 'Dibujando… (unos 10 s)'; aviso('');
+    btn.dataset.ocupado = '1'; btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Dibujando'; aviso('');
+    Taller.pasos('pasos', 1);
     const t0 = performance.now();
     try {
       const r = await fetch(`/api/v1/live/${encodeURIComponent(leccion)}/imagen`, {
@@ -290,7 +312,17 @@
       ponerBase(await cargar(url));
       aviso(`Lista en ${((performance.now() - t0) / 1000).toFixed(1)} s. Ahora pulsa «Recorte seguro».`, 'ok');
     } catch (e) { aviso(String(e.message || 'No se pudo generar'), 'mal'); }
-    finally { delete btn.dataset.ocupado; btn.textContent = 'Generar mi imagen base (unos 10 s)'; pintar(); }
+    finally { delete btn.dataset.ocupado; btn.removeAttribute('aria-busy'); btn.textContent = 'Generar mi imagen base'; pintar(); }
+  }
+
+  // Estado vacío: el perfume de ejemplo ya recortado, para ver el antes y el después antes de gastar el cupo.
+  async function mostrarEjemplo() {
+    try {
+      ponerBase(await cargar('ejemplo-perfume-verde.webp'));
+      marcarEjemplo(true); recorteSeguro(true);
+      $('recortar').disabled = true;
+      aviso('Así queda: un perfume sobre verde y su recorte seguro. Genera el tuyo o usa una foto.', '');
+    } catch (e) { aviso('Genera tu imagen base o usa una foto tuya.', ''); }
   }
 
   $('generar').onclick = generar;
@@ -304,6 +336,7 @@
   };
   for (const k of ['sujeto', 'detalle']) { $(k).value = est[k]; $(k).oninput = (e) => { est[k] = e.target.value; pintar(); }; }
   pintar();
+  mostrarEjemplo();
 })();
 </script>
 </body>

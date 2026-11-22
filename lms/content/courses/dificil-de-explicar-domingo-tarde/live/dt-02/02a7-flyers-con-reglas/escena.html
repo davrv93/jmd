@@ -7,83 +7,123 @@
 <!-- Escena del modo LIVE (dt-02, domingo tarde). El flyer se compone en el navegador: la IA (o tu imagen base) pone
      solo la imagen y el texto va en una capa con fuentes reales, así nunca sale con letras deformes. Las reglas son
      las de materials/flyers/reglas.json (jerarquía, máximo de palabras, 60-30-10, contraste AA, palabras prohibidas)
-     y se comprueban en vivo. Las fuentes se cargan con fetch + FontFace porque la CSP solo admite font-src data:. -->
-<link rel="stylesheet" href="../../comun/escena.css">
+     y se comprueban en vivo. Las fuentes se cargan con fetch + FontFace porque la CSP solo admite font-src data:.
+     «Describe tu negocio» elige el estilo (fuentes, paleta, textura, maqueta y la foto que se pide a FLUX) con
+     clasificar(texto): usa window.clasificar si lo carga el pack de estilos y, si no, el clasificador local de abajo.
+     Cuatro maquetas con retícula de 80 px: portada, dividido, tipográfico y marco. Identidad: _comun/taller.css. -->
+<link rel="stylesheet" href="../../comun/taller.css">
 <style id="esc-propio">
-.esc-titulo { font-size: 1.3em; }
-.obj { font-size: .8em; margin: .2em 0 0; color: var(--muted); max-width: 64em; }
-.obj b { color: var(--fg); }
-.fl { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 1.2vw; align-items: start; }
-.sec { display: grid; gap: .45em; min-width: 0; }
-.chips { display: flex; flex-wrap: wrap; gap: .3em; align-items: center; }
-.chips .t { font-size: .66em; color: var(--muted); font-weight: 700; margin-right: .2em; }
-.chips button { font: 600 .68em/1 system-ui, sans-serif; padding: .5em .8em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
-.chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-.caso { font-size: .7em; margin: 0; padding: .5em .7em; border-radius: .7em; background: var(--s1); border: 1px solid var(--line2); }
-.campos { display: grid; grid-template-columns: auto 1fr auto; gap: .3em .5em; align-items: center; }
-.campos label { font-size: .68em; font-weight: 700; }
-.campos input { width: 100%; font: .76em/1.3 system-ui, sans-serif; padding: .38em .55em; border-radius: .55em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
-.campos .n { font: 700 .6em var(--mono); color: var(--muted); white-space: nowrap; }
-.campos .n.mal { color: var(--bad); }
-.reglas { list-style: none; margin: 0; padding: 0; display: grid; gap: .18em; font-size: .66em; }
-.reglas li { display: flex; gap: .45em; align-items: baseline; }
-.reglas li b { flex: none; width: 1.2em; text-align: center; }
-.reglas li.ok b { color: var(--ok); } .reglas li.mal b { color: var(--bad); } .reglas li.mal { color: var(--fg); }
-.pasos { margin: 0; padding-left: 1.3em; font-size: .68em; display: grid; gap: .12em; }
-.vista canvas { width: 100%; max-width: 420px; height: auto; display: block; margin: 0 auto; border-radius: .6em; box-shadow: var(--card-shadow); }
-.fila { display: flex; gap: .4em; flex-wrap: wrap; justify-content: center; }
-.fila button, .fila a { font: 700 .7em/1 system-ui, sans-serif; padding: .55em .85em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; text-decoration: none; }
-.fila a.ok { border-color: var(--ok); color: var(--ok); }
-.fila a[aria-disabled="true"] { opacity: .45; pointer-events: none; }
-.aviso { font-size: .68em; margin: 0; min-height: 1.1em; color: var(--muted); text-align: center; }
-.aviso.mal { color: var(--bad); font-weight: 700; }
-.entrega { font-size: .66em; margin: 0; color: var(--muted); }
-.entrega b { color: var(--fg); }
-@media (max-width: 900px) { .fl { grid-template-columns: 1fr; } body { overflow-y: auto; } }
+.tl-mesa.fl { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); }
+.vista { display: grid; gap: .8rem; justify-items: center; position: sticky; top: 1rem; }
+.vista .tl-lienzo { width: 100%; max-width: min(100%, calc((100vh - 27rem) * .8)); background: var(--hundido); }
+.vista canvas { aspect-ratio: 4 / 5; }
+.vista .tl-acciones { justify-content: center; }
+.controles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.1rem; align-items: start; }
+.controles > .tl-panel { display: grid; gap: 1rem; align-content: start; }
+.describe { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
+.pack { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .8rem; align-items: center; padding: .75rem .85rem; border-radius: var(--r); background: var(--hundido); }
+.pack .paleta { display: flex; grid-row: span 2; }
+.pack .paleta i { width: 1.35rem; height: 2.4rem; display: block; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+.pack .paleta i:first-child { border-radius: 6px 0 0 6px; } .pack .paleta i:last-child { border-radius: 0 6px 6px 0; }
+.pack b { font: 400 1.15rem/1.1 var(--display); }
+.pack span { font-size: .78rem; color: var(--tinta-2); }
+.campos { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .32rem .6rem; align-items: center; }
+.campos label { font: 600 .74rem/1.2 var(--texto); color: var(--tinta-2); }
+.campos .tl-input { padding: .5rem .65rem; font-size: .9rem; }
+.campos .n { font: 500 .72rem var(--mono); color: var(--tinta-3); white-space: nowrap; font-variant-numeric: tabular-nums; min-width: 2.6rem; text-align: right; }
+.campos .n.mal { color: var(--mal); }
+.reglas { list-style: none; margin: 0; padding: 0; display: grid; gap: .22rem; font-size: .8rem; }
+.reglas li { display: grid; grid-template-columns: .9rem minmax(0, 1fr); gap: .5rem; align-items: baseline; color: var(--tinta-2); }
+.reglas li i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--ok); transform: translateY(-.05em); }
+.reglas li.mal { color: var(--tinta); } .reglas li.mal i { background: var(--mal); box-shadow: 0 0 0 3px var(--mal-suave); }
+.marcador { font: 500 .78rem var(--mono); color: var(--tinta-2); margin-left: auto; font-variant-numeric: tabular-nums; }
+.marcador.ok { color: var(--ok); }
+@media (max-width: 1400px) { .controles { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 960px) { .tl-mesa.fl { grid-template-columns: minmax(0, 1fr); } .vista { position: static; } .vista .tl-lienzo { max-width: 100%; } }
+@media (max-width: 520px) { .campos { grid-template-columns: minmax(0, 1fr) auto; } .campos label { grid-column: 1 / -1; margin-top: .3rem; } }
 </style>
 </head>
 <body>
-<div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ea">Experimentación</span>
-    <span class="esc-num">DOMINGO · S2 · FLYERS</span>
+<div class="tl">
+  <header class="tl-folio">
+    <span class="marca">Taller de diseño</span><span class="sep" aria-hidden="true"></span>
+    <span class="ocultable">Sesión 2 · Flyers</span>
+    <span class="derecha"><span class="cuenta">8 reglas</span><button class="tl-tema" type="button" data-tl-tema></button></span>
   </header>
-  <main class="esc-cuerpo">
+
+  <div class="tl-cabeza">
     <div>
-      <h1 class="esc-titulo">Flyers con reglas: <em>la IA pone la imagen, el texto lo pone el código</em></h1>
-      <p class="obj"><b>Objetivo:</b> un flyer de tu negocio que pase las ocho reglas, con letras perfectas, listo para tu estado de WhatsApp. Mira antes la galería de 100 flyers hechos con estas mismas reglas.</p>
+      <h1 class="tl-titulo">La IA pone la imagen; <em>el texto lo pone el código</em></h1>
+      <p class="tl-lead">Un flyer de tu negocio con letras perfectas, que pase las ocho reglas y se entienda en tres segundos.</p>
     </div>
-    <section class="fl">
-      <div class="sec">
-        <div class="chips" id="rubros"><span class="t">Caso de prueba:</span></div>
-        <p class="caso" id="caso"></p>
-        <div class="campos" id="campos"></div>
-        <div class="chips" id="disenos"><span class="t">Diseño:</span></div>
-        <ul class="reglas" id="reglas" aria-live="polite"></ul>
-        <ol class="pasos">
-          <li>Elige tu rubro y <b>cambia cada campo</b> por los datos reales de tu negocio.</li>
-          <li>Pon tu imagen: <b>sube tu base.png</b> (escena de sprites) o el PNG de tu <b>render 3D</b>, o pide un fondo con FLUX.</li>
-          <li>Corrige hasta que las <b>ocho reglas</b> queden en verde.</li>
-          <li>Descarga el PNG, súbelo a tu estado y pide a alguien que te diga qué ofreces en 3 segundos.</li>
-        </ol>
+    <ol class="tl-pasos" id="pasos" aria-label="Avance">
+      <li><span>Describe</span></li><li><span>Escribe</span></li><li><span>Imagen</span></li><li><span>Descarga</span></li>
+    </ol>
+  </div>
+
+  <main class="tl-mesa fl">
+    <section class="vista" aria-label="Vista previa">
+      <div class="tl-lienzo"><canvas id="cv" width="1080" height="1350" aria-label="Vista previa del flyer"></canvas></div>
+      <div class="tl-acciones">
+        <a id="bajar" class="tl-btn primario" download="flyer.png" aria-disabled="true" role="button">Descargar flyer.png</a>
+        <button id="subir" type="button" class="tl-btn">Subir mi imagen</button>
+        <input id="archivo" type="file" accept="image/png,image/jpeg,image/webp" hidden aria-label="Elegir una imagen">
+        <button id="flux" type="button" class="tl-btn">Fondo con FLUX</button>
+        <button id="quitar" type="button" class="tl-btn texto">Sin imagen</button>
+        <button id="galeria" type="button" class="tl-btn texto" hidden>Copiar enlace de la galería de 100</button>
       </div>
-      <div class="sec vista">
-        <canvas id="cv" width="1080" height="1350" aria-label="Vista previa del flyer"></canvas>
-        <div class="fila">
-          <button id="subir" type="button">Subir mi imagen</button>
-          <input id="archivo" type="file" accept="image/png,image/jpeg,image/webp" hidden>
-          <button id="flux" type="button">Fondo con FLUX</button>
-          <button id="quitar" type="button">Sin imagen</button>
-          <a id="bajar" class="ok" download="flyer.png" aria-disabled="true">Descargar flyer.png</a>
-          <button id="galeria" type="button" hidden>Copiar enlace de la galería de 100</button>
+      <p class="tl-estado" id="aviso" aria-live="polite">FLUX nunca dibuja letras aquí: el texto lo pone el navegador.</p>
+    </section>
+
+    <section class="controles" aria-label="Controles">
+      <div class="tl-panel">
+        <div class="tl-grupo">
+          <label class="tl-etq" for="describe">Describe tu negocio en palabras <small>elige fuentes, paleta y textura</small></label>
+          <div class="describe">
+            <input class="tl-input" id="describe" type="text" maxlength="160" placeholder="p. ej. cafetería de especialidad en Miraflores">
+            <button id="aplicar" type="button" class="tl-btn tinta">Elegir estilo</button>
+          </div>
+          <div class="pack" id="pack" aria-live="polite"><div class="paleta" id="paleta"></div><b id="pack-nombre"></b><span id="pack-nota"></span></div>
         </div>
-        <p class="aviso" id="aviso">Escribe en español. FLUX nunca dibuja letras aquí: el texto lo pone el navegador.</p>
-        <p class="entrega"><b>Qué entregar:</b> flyer.png (1080 × 1350) con las ocho reglas en verde. <b>Salió bien si</b> alguien que no conoce tu negocio dice qué vendes, cuánto cuesta y cómo pedirlo, mirándolo 3 segundos.</p>
+        <div class="tl-grupo">
+          <span class="tl-etq" id="et-rubros">Ejemplos para probar</span>
+          <div class="tl-seg" id="rubros" role="group" aria-labelledby="et-rubros"></div>
+        </div>
+        <div class="tl-grupo">
+          <span class="tl-etq" id="et-maq">Maqueta</span>
+          <div class="tl-seg" id="maquetas" role="group" aria-labelledby="et-maq"></div>
+          <span class="tl-etq" id="et-dis">Estilo</span>
+          <div class="tl-seg" id="disenos" role="group" aria-labelledby="et-dis"></div>
+        </div>
+        <details class="tl-plegable">
+          <summary>Cómo hacerlo</summary>
+          <div class="cuerpo">
+            <ol>
+              <li>Describe tu negocio y pulsa <b>Elegir estilo</b>, o prueba un ejemplo.</li>
+              <li>Cambia <b>cada texto</b> por los datos reales de tu negocio.</li>
+              <li>Pon tu imagen: <b>base.png</b> de los sprites, tu render 3D o un fondo con FLUX.</li>
+              <li>Ajusta hasta que las <b>ocho reglas</b> queden en verde y descarga.</li>
+            </ol>
+            <p><b>Salió bien si</b> alguien que no conoce tu negocio dice qué vendes, cuánto cuesta y cómo pedirlo en 3 segundos.</p>
+            <p><b>Entrega:</b> <code>flyer.png</code> (1080 × 1350) con las ocho reglas en verde.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="tl-panel">
+        <div class="tl-grupo">
+          <span class="tl-etq">Textos del flyer <small>palabras usadas / máximo</small></span>
+          <div class="campos" id="campos"></div>
+        </div>
+        <div class="tl-grupo">
+          <span class="tl-etq">Las ocho reglas <span class="marcador" id="marcador"></span></span>
+          <ul class="reglas" id="reglas" aria-live="polite"></ul>
+        </div>
       </div>
     </section>
   </main>
-  <footer class="esc-pie">Reglas: jerarquía gancho → producto → beneficio → oferta → botón → marca · 60-30-10 · contraste AA 4,5:1 · sin emojis ni palabras vetadas</footer>
 </div>
+<script src="../../comun/taller.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -96,53 +136,108 @@
     ['gancho', 'Gancho', 6, 42], ['producto', 'Producto', 5, 34], ['beneficio', 'Beneficio', 12, 90],
     ['oferta', 'Oferta', 6, 30], ['cta', 'Botón', 4, 26], ['marca', 'Marca', 3, 28], ['whatsapp', 'WhatsApp', 3, 16],
   ];
-  const RUBROS = [
-    ['Perfume', 'Perfume: lujo sobrio. Fondo oscuro, acento dorado, serif elegante. El frasco es el héroe.', 1,
-      { gancho: 'Tu aroma habla primero', producto: 'Parfum Ámbar 100 ml', beneficio: 'Notas de vainilla y madera que duran todo el día', oferta: 'S/ 89 · envío gratis', cta: 'Pídelo por WhatsApp', marca: 'Casa Ámbar', whatsapp: '987 654 321' },
-      'un frasco de perfume de vidrio ámbar con tapa dorada sobre seda oscura, luz lateral suave, foto de producto, sin texto'],
-    ['Comida', 'Comida: apetito. Colores cálidos, letra gruesa, el precio se lee de lejos.', 0,
-      { gancho: 'Hoy se come rico', producto: 'Hamburguesa doble con queso', beneficio: 'Carne de res a la parrilla, pan artesanal y papas nativas', oferta: 'Combo S/ 24', cta: 'Pide tu combo', marca: 'La Parrilla 22', whatsapp: '987 654 321' },
-      'una hamburguesa doble con queso y papas fritas sobre tabla de madera, foto de comida cálida, sin texto'],
-    ['Producto', 'Producto: claridad. Fondo claro, acento fuerte, una sola cifra grande.', 2,
-      { gancho: 'Corre más, pesa menos', producto: 'Zapatilla Aire 2', beneficio: 'Suela de 180 g y malla que respira en todo el recorrido', oferta: 'S/ 149 · tallas 36-44', cta: 'Separa tu talla', marca: 'Paso Firme', whatsapp: '987 654 321' },
-      'una zapatilla deportiva blanca con suela naranja flotando, fondo claro de estudio, foto de producto, sin texto'],
-    ['Empresa', 'Empresa: confianza. Azul profundo, letra limpia, el beneficio en datos concretos.', 3,
-      { gancho: 'Tu contabilidad al día', producto: 'Asesoría contable mensual', beneficio: 'Declaraciones a tiempo y reporte de caja cada semana', oferta: 'Primer mes S/ 0', cta: 'Agenda tu cita', marca: 'Cuentas Claras', whatsapp: '987 654 321' },
-      'una oficina luminosa y ordenada con escritorio, laptop y plantas, foto corporativa, sin personas, sin texto'],
-  ];
-  // diseño: fondo 60 · superficie 30 · acento 10 · texto · texto sobre acento · fuentes [título, cuerpo]
+  // Estilos (packs): nombre · fondo 60 · superficie 30 · acento 10 · texto · texto sobre acento · tipografía · oficio.
+  // Los índices 1, 3, 4 y 5 son los que mide la regla de contraste.
   const DISENOS = [
-    ['Cálido', '#fff3df', '#ffd59a', '#b8321a', '#2a160c', '#ffffff', ['Anton', 'Inter']],
-    ['Lujo', '#17111c', '#2c2233', '#d8b46a', '#f6efe6', '#17111c', ['Playfair', 'Inter']],
-    ['Claro', '#f3f5f8', '#dde4ee', '#c2410c', '#101828', '#ffffff', ['Archivo Black', 'Inter']],
-    ['Corporativo', '#0b2545', '#13315c', '#f4d35e', '#ffffff', '#0b2545', ['Sora', 'Inter']],
+    ['Lujo sobrio', '#12100e', '#1f1b17', '#c9a45c', '#f3ede2', '#12100e',
+      { disp: 'Fraunces', peso: 300, estilo: 'italic', cuerpo: 'Inter' },
+      { maqueta: 'marco', decor: 'marco', radio: 0, grano: .1, nota: 'Fraunces itálica ligera · carbón y latón' }],
+    ['Artesanal', '#ece2d2', '#e0d2bb', '#9c3d1e', '#2a1c12', '#fff7ec',
+      { disp: 'Fraunces', peso: 600, estilo: 'normal', cuerpo: 'Inter' },
+      { maqueta: 'tipografico', decor: 'sello', radio: 999, grano: .09, nota: 'Fraunces seminegra · papel kraft y terracota' }],
+    ['Repostería', '#f6efe9', '#ead9cf', '#7e2340', '#2b1419', '#ffffff',
+      { disp: 'Playfair', peso: 600, estilo: 'normal', cuerpo: 'Inter', italica: true },
+      { maqueta: 'portada', decor: 'arco', radio: 999, grano: .05, nota: 'Playfair con itálica · marfil y frambuesa' }],
+    ['Tecnología', '#0d0f12', '#171b21', '#c8f04b', '#e9edf2', '#0d0f12',
+      { disp: 'Space Grotesk', peso: 600, estilo: 'normal', cuerpo: 'Inter' },
+      { maqueta: 'dividido', decor: 'reticula', radio: 6, grano: .06, nota: 'Space Grotesk · grafito y lima' }],
+    ['Moda', '#e8e4de', '#d9d3ca', '#c93a22', '#121212', '#ffffff',
+      { disp: 'Anton', peso: 400, estilo: 'normal', cuerpo: 'Inter', mayus: true, realce: true },
+      { maqueta: 'tipografico', decor: 'bloque', radio: 0, grano: .07, nota: 'Anton condensada · piedra y rojo' }],
+    ['Corporativo', '#f4f3ef', '#e7e8ec', '#1d4ed8', '#0f1b2d', '#ffffff',
+      { disp: 'Sora', peso: 600, estilo: 'normal', cuerpo: 'Inter' },
+      { maqueta: 'dividido', decor: 'datos', radio: 10, grano: 0, nota: 'Sora · tiza, tinta azul y cobalto' }],
+    ['Cálido', '#f3e7d3', '#e8d3b0', '#b8321a', '#2a160c', '#ffffff',
+      { disp: 'Anton', peso: 400, estilo: 'normal', cuerpo: 'Inter', mayus: true },
+      { maqueta: 'portada', decor: 'circulo', radio: 999, grano: .08, nota: 'Anton · trigo y bermellón' }],
+    ['Editorial', '#f4f1ea', '#e9e4da', '#c4421b', '#1a1917', '#ffffff',
+      { disp: 'Fraunces', peso: 400, estilo: 'normal', cuerpo: 'Inter', italica: true },
+      { maqueta: 'portada', decor: 'circulo', radio: 8, grano: .06, nota: 'Fraunces e Inter · papel y bermellón' }],
   ];
-  const FUENTES = [['Anton', 'fuente-anton-400.woff2'], ['Inter', 'fuente-inter-400.woff2'], ['Playfair', 'fuente-playfair.woff2'],
-    ['Archivo Black', 'fuente-archivo-black-400.woff2'], ['Sora', 'fuente-sora-400.woff2']];
+  const MAQUETAS = [['portada', 'Portada'], ['dividido', 'Dividido'], ['tipografico', 'Tipográfico'], ['marco', 'Marco']];
+  const FUENTES = { Anton: ['fuente-anton-400.woff2', {}], Playfair: ['fuente-playfair.woff2', { weight: '400 900' }],
+    'Playfair-i': ['fuente-playfair-italica.woff2', { weight: '400 900', style: 'italic' }, 'Playfair'],
+    'Space Grotesk': ['fuente-space-grotesk.woff2', { weight: '300 700' }], Sora: ['fuente-sora-400.woff2', { weight: '100 800' }] };
+  const usarFuentes = (D) => Promise.all(Object.entries(FUENTES)
+    .filter(([k, v]) => (v[2] || k) === D[6].disp)
+    .map(([k, [arch, desc, fam]]) => Taller.cargarFuente(fam || k, arch, desc)));
+
+  const RUBROS = [ // nombre, nota, estilo, datos, pedido para FLUX, imagen de ejemplo, descripción
+    ['Perfume', 'Lujo sobrio: fondo oscuro, acento latón y serif ligera. El frasco es el héroe.', 0,
+      { gancho: 'Tu aroma habla primero', producto: 'Parfum Ámbar 100 ml', beneficio: 'Notas de vainilla y madera que duran todo el día', oferta: 'S/ 89 · envío gratis', cta: 'Pídelo por WhatsApp', marca: 'Casa Ámbar', whatsapp: '987 654 321' },
+      'un frasco de perfume de vidrio ámbar con tapa dorada sobre seda oscura, luz lateral suave, foto de producto, sin texto', 'perfume-recorte.webp', 'perfumería de lujo con fragancias de autor'],
+    ['Café', 'Artesanal: papel kraft, serif con cuerpo y un sello. El titular hace de imagen.', 1,
+      { gancho: 'Café de altura, tostado hoy', producto: 'Blend Villa Rica 250 g', beneficio: 'Granos tostados cada mañana en pequeños lotes', oferta: '2 bolsas S/ 45', cta: 'Pide tu bolsa', marca: 'Tostaduría Molle', whatsapp: '987 654 321' },
+      'granos de café tostado y una taza de cerámica sobre madera clara, luz de mañana, foto cálida, sin texto', '', 'cafetería artesanal, café de especialidad'],
+    ['Postres', 'Repostería: marfil, frambuesa profunda y una foto enmarcada en arco.', 2,
+      { gancho: 'Celebra con algo rico', producto: 'Torta de fresas', beneficio: 'Bizcocho de vainilla, crema fresca y fresas del día', oferta: 'Desde S/ 65', cta: 'Separa tu torta', marca: 'Dulce Lima', whatsapp: '987 654 321' },
+      'una torta de fresas con crema sobre un plato de cerámica, fondo liso cálido, foto de estudio, sin texto', 'postre-foto.webp', 'pastelería y postres por encargo'],
+    ['Tecnología', 'Tecnología: grafito, lima ácida y retícula técnica. Cifras grandes.', 3,
+      { gancho: 'Trabaja sin cables, rinde más', producto: 'Audífonos Pulso X2', beneficio: '40 horas de batería y cancelación de ruido activa', oferta: 'S/ 199 · garantía 1 año', cta: 'Reserva el tuyo', marca: 'Pulso Audio', whatsapp: '987 654 321' },
+      'unos audífonos inalámbricos negros flotando sobre fondo grafito, luz de borde, foto de producto, sin texto', '', 'tienda de tecnología y accesorios'],
+    ['Ropa', 'Moda: condensada enorme en mayúsculas, piedra y un rojo. Poco texto, mucho peso.', 4,
+      { gancho: 'Nueva temporada', producto: 'Casacas de lino', beneficio: 'Cortes rectos, telas frescas y tallas de la S a la XL', oferta: '20 % hasta el domingo', cta: 'Separa tu talla', marca: 'Casa Lino', whatsapp: '987 654 321' },
+      'una casaca de lino color arena colgada en un gancho de madera sobre pared clara, foto de moda, sin texto', '', 'tienda de ropa y moda'],
+    ['Empresa', 'Corporativo: tiza, tinta azul y datos concretos. Confianza antes que adorno.', 5,
+      { gancho: 'Tu contabilidad al día', producto: 'Asesoría contable mensual', beneficio: 'Declaraciones a tiempo y reporte de caja cada semana', oferta: 'Primer mes S/ 0', cta: 'Agenda tu cita', marca: 'Cuentas Claras', whatsapp: '987 654 321' },
+      'una oficina luminosa y ordenada con escritorio, laptop y plantas, foto corporativa, sin personas, sin texto', '', 'estudio contable para empresas'],
+    ['Comida', 'Cálido: trigo, bermellón y letra gruesa. El precio se lee de lejos.', 6,
+      { gancho: 'Hoy se come rico', producto: 'Hamburguesa doble con queso', beneficio: 'Carne de res a la parrilla, pan artesanal y papas nativas', oferta: 'Combo S/ 24', cta: 'Pide tu combo', marca: 'La Parrilla 22', whatsapp: '987 654 321' },
+      'una hamburguesa doble con queso y papas fritas sobre tabla de madera, foto de comida cálida, sin texto', '', 'hamburguesería y comida rápida'],
+  ];
   const VETADAS = ['cerdo', 'chicharrón', 'chicharron', 'lechón', 'lechon', 'tocino', 'jamón', 'jamon', 'chancho', 'panceta', 'cerveza', 'pisco', 'vino', 'terror', 'fantasma', 'espíritu', 'espiritu', 'embrujad'];
 
-  const est = { rubro: 0, diseno: 1, datos: { ...RUBROS[0][3] } };
-  try { const g = JSON.parse(localStorage.getItem('dt02-flyer') || 'null'); if (g && g.datos) Object.assign(est, g); } catch (e) {}
-  const guardar = () => { try { localStorage.setItem('dt02-flyer', JSON.stringify(est)); } catch (e) {} };
-  let imagen = null;
+  // Clasificador local: palabras clave → estilo. Si el pack de estilos publica window.clasificar(texto), manda ese.
+  const CLAVES = [
+    [0, /perfum|fragan|aroma|joy|reloj|lujo|cosm[eé]t|maquill|spa\b|belleza/],
+    [1, /caf[eé]|barista|tostad|panader|artesan|t[eé]\b|infusi|cacao|chocolate|org[aá]nic|miel/],
+    [2, /postre|torta|pastel|repost|dulce|helad|galleta|cupcake|bizcoch|panet/],
+    [3, /tecnolog|celular|laptop|computad|software|\bapp\b|aplicaci|gamer|electr[oó]n|aud[ií]fono|internet|digital|program/],
+    [4, /ropa|moda|polo|vestido|zapat|boutique|casaca|jean|calzado|textil|lencer|accesorio/],
+    [5, /empresa|contab|consultor|abogad|legal|b2b|asesor|corporat|log[ií]stic|inmobili|seguro|financ|recursos humanos|estudio/],
+    [6, /comida|hamburgues|pollo|restaur|men[uú]|cevich|pizza|parrill|anticuch|sandwich|delivery|cocina/],
+  ];
+  function clasificarLocal(t) {
+    const s = (t || '').toLowerCase();
+    for (const [i, re] of CLAVES) if (re.test(s)) return i;
+    return 7;
+  }
+  function clasificar(t) {
+    if (typeof window.clasificar === 'function') {
+      try { const r = window.clasificar(t); const i = DISENOS.findIndex((d) => r && (r.pack === d[0] || r.nombre === d[0])); if (i >= 0) return i; } catch (e) {}
+    }
+    return clasificarLocal(t);
+  }
 
-  // ---------- fuentes reales (fetch + FontFace)
-  const cargadas = Promise.all(FUENTES.map(async ([fam, arch]) => {
-    try { const buf = await (await fetch('../../comun/' + arch)).arrayBuffer(); const f = new FontFace(fam, buf); await f.load(); document.fonts.add(f); } catch (e) {}
-  }));
+  const est = { rubro: 0, diseno: 0, maqueta: 'marco', describe: RUBROS[0][6], datos: { ...RUBROS[0][3] } };
+  try { const g = JSON.parse(localStorage.getItem('dt02-flyer') || 'null'); if (g && g.datos) Object.assign(est, g); } catch (e) {}
+  if (!DISENOS[est.diseno]) est.diseno = 0;
+  if (!MAQUETAS.some((m) => m[0] === est.maqueta)) est.maqueta = DISENOS[est.diseno][7].maqueta;
+  const guardar = () => { try { localStorage.setItem('dt02-flyer', JSON.stringify(est)); } catch (e) {} };
+  let imagen = null, imagenPropia = false;
 
   // ---------- formulario
   const caja = $('campos');
   for (const [id, et] of CAMPOS) {
     const l = document.createElement('label'); l.htmlFor = 'f-' + id; l.textContent = et;
-    const i = document.createElement('input'); i.id = 'f-' + id; i.type = 'text'; i.maxLength = 120;
-    i.oninput = () => { est.datos[id] = i.value; pintar(); };
+    const i = document.createElement('input'); i.id = 'f-' + id; i.type = 'text'; i.maxLength = 120; i.className = 'tl-input';
+    i.oninput = () => { est.datos[id] = i.value; est.editado = true; pintar(); };
     const n = document.createElement('span'); n.className = 'n'; n.id = 'n-' + id;
     caja.append(l, i, n);
   }
-  function chips(c, items, activo, al) {
-    c.querySelectorAll('button').forEach((b) => b.remove());
-    items.forEach((it, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it[0]; b.setAttribute('aria-pressed', String(activo(i))); b.onclick = () => { al(i); pintar(true); }; c.appendChild(b); });
+  function seg(c, items, activo, al) {
+    c.replaceChildren();
+    items.forEach((it, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it; b.setAttribute('aria-pressed', String(activo(i))); b.onclick = () => al(i); c.appendChild(b); });
   }
 
   // ---------- reglas
@@ -168,72 +263,280 @@
     ];
   }
 
-  // ---------- dibujo del flyer (1080 × 1350, margen 72, retícula de 8)
+  // ---------- dibujo del flyer (1080 × 1350, margen 80, retícula de 8)
   const cv = $('cv'), g = cv.getContext('2d');
+  const W = 1080, H = 1350, M = 80;
+  const mezcla = (a, b, t) => { const p = (h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)); const x = p(a), y = p(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+  let grano = null;
+  function hacerGrano() {
+    const c = document.createElement('canvas'); c.width = c.height = 240; const x = c.getContext('2d'); const im = x.createImageData(240, 240);
+    for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; }
+    x.putImageData(im, 0, 0); grano = g.createPattern(c, 'repeat');
+  }
   function envolver(t, max) {
     const pal = (t || '').split(/\s+/).filter(Boolean), lin = []; let l = '';
     for (const p of pal) { const k = l ? l + ' ' + p : p; if (g.measureText(k).width > max && l) { lin.push(l); l = p; } else l = k; }
     if (l) lin.push(l); return lin;
   }
-  function dibujar() {
-    const d = est.datos, D = DISENOS[est.diseno], [ft, fc] = D[6], M = 72, W = 1080, H = 1350;
-    g.fillStyle = D[1]; g.fillRect(0, 0, W, H);
-    // imagen: ocupa la franja media; si es un PNG recortado flota sobre la superficie
-    const iy = 392, ih = 560;
-    g.fillStyle = D[2]; g.beginPath(); g.roundRect(M, iy, W - 2 * M, ih, 32); g.fill();
+  const fDisp = (D, s, italica) => `${italica ? 'italic' : D[6].estilo} ${D[6].peso} ${s}px "${D[6].disp}", Georgia, serif`;
+  const fCuerpo = (peso, s) => `${peso} ${s}px "Inter", system-ui, sans-serif`;
+  // ajusta el tamaño para que el texto quepa en maxLin líneas de ancho maxW
+  function ajustar(texto, fuente, maxW, maxLin, desde, hasta, track = -.02) {
+    let s = desde, lin;
+    for (; s >= hasta; s -= 2) { g.font = fuente(s); g.letterSpacing = `${(track * s).toFixed(1)}px`; lin = envolver(texto, maxW); if (lin.length <= maxLin && lin.every((l) => g.measureText(l).width <= maxW)) break; }
+    s = Math.max(s, hasta); g.font = fuente(s); g.letterSpacing = `${(track * s).toFixed(1)}px`; lin = envolver(texto, maxW).slice(0, maxLin);
+    return { s, lin };
+  }
+  function texto(t, x, y, fuente, color, alin = 'left', track = 0) {
+    g.font = fuente; g.fillStyle = color; g.textAlign = alin; g.letterSpacing = `${track}px`; g.fillText(t, x, y); g.textAlign = 'left'; g.letterSpacing = '0px';
+  }
+  function boton(D, x, y, alin = 'left') {
+    const d = est.datos, alto = 104, r = Math.min(D[7].radio, alto / 2);
+    g.font = fCuerpo(600, 36); g.letterSpacing = '0px';
+    const tw = g.measureText(d.cta || '').width, ancho = Math.min(W - 2 * M, tw + 76 + 44);
+    const bx = alin === 'center' ? x - ancho / 2 : x;
+    g.fillStyle = D[3]; g.beginPath(); g.roundRect(bx, y, ancho, alto, r); g.fill();
+    g.fillStyle = D[5]; g.fillText(d.cta || '', bx + 44, y + 64);
+    // flecha dibujada (no un carácter)
+    const ax = bx + 44 + tw + 22, ay = y + alto / 2;
+    g.strokeStyle = D[5]; g.lineWidth = 3.5; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath(); g.moveTo(ax, ay); g.lineTo(ax + 28, ay); g.moveTo(ax + 16, ay - 12); g.lineTo(ax + 28, ay); g.lineTo(ax + 16, ay + 12); g.stroke();
+    return { x: bx, ancho, alto };
+  }
+  function whatsapp(D, x, y, alin = 'left', tono) {
+    texto('WHATSAPP', x, y, fCuerpo(600, 19), tono || mezcla(D[4], D[1], .35), alin, 3);
+    texto(est.datos.whatsapp || '', x, y + 40, fCuerpo(500, 34), D[4], alin, .5);
+  }
+  function foto(x, y, w, h, forma, D) {
+    g.save(); g.beginPath();
+    if (forma === 'arco') { g.moveTo(x, y + h); g.lineTo(x, y + w / 2); g.arc(x + w / 2, y + w / 2, w / 2, Math.PI, 0); g.lineTo(x + w, y + h); g.closePath(); }
+    else g.roundRect(x, y, w, h, forma === 'recto' ? 0 : 24);
+    g.clip();
     if (imagen) {
-      g.save(); g.beginPath(); g.roundRect(M, iy, W - 2 * M, ih, 32); g.clip();
-      const r = Math.min((W - 2 * M) / imagen.width, ih / imagen.height) * (imagen.recortada ? .92 : 1);
-      const esc = imagen.recortada ? r : Math.max((W - 2 * M) / imagen.width, ih / imagen.height);
-      const w = imagen.width * esc, h = imagen.height * esc;
-      g.drawImage(imagen, (W - w) / 2, iy + (ih - h) / 2, w, h); g.restore();
+      if (imagen.recortada) {
+        g.fillStyle = D[2]; g.fillRect(x, y, w, h);
+        const k = Math.min(w * .82 / imagen.width, h * .82 / imagen.height), iw = imagen.width * k, ih = imagen.height * k;
+        g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 50; g.shadowOffsetY = 24;
+        g.drawImage(imagen, x + (w - iw) / 2, y + h - ih - h * .07, iw, ih);
+      } else {
+        const k = Math.max(w / imagen.width, h / imagen.height), iw = imagen.width * k, ih = imagen.height * k;
+        g.drawImage(imagen, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih);
+      }
+    } else { g.fillStyle = D[2]; g.fillRect(x, y, w, h); }
+    g.restore();
+  }
+  function flotante(cx, base, maxW, maxH) { // imagen recortada que flota con sombra
+    const k = Math.min(maxW / imagen.width, maxH / imagen.height), iw = imagen.width * k, ih = imagen.height * k;
+    g.save(); g.fillStyle = 'rgba(0,0,0,.28)'; g.filter = 'blur(18px)'; g.beginPath(); g.ellipse(cx, base - 6, iw * .42, 18, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    g.save(); g.shadowColor = 'rgba(0,0,0,.3)'; g.shadowBlur = 40; g.shadowOffsetY = 18; g.drawImage(imagen, cx - iw / 2, base - ih, iw, ih); g.restore();
+  }
+  function decor(D, zona) {
+    const tipo = D[7].decor, [x, y, w, h] = zona;
+    g.save();
+    if (tipo === 'reticula') {
+      g.strokeStyle = mezcla(D[1], D[4], .1); g.lineWidth = 1;
+      for (let gx = x; gx <= x + w; gx += 80) { g.beginPath(); g.moveTo(gx + .5, y); g.lineTo(gx + .5, y + h); g.stroke(); }
+      for (let gy = y; gy <= y + h; gy += 80) { g.beginPath(); g.moveTo(x, gy + .5); g.lineTo(x + w, gy + .5); g.stroke(); }
+      g.strokeStyle = D[3]; g.lineWidth = 2;
+      for (const [mx, my] of [[x + 80, y + 160], [x + w - 80, y + 160], [x + 80, y + h - 160], [x + w - 80, y + h - 160]]) { g.beginPath(); g.moveTo(mx - 14, my); g.lineTo(mx + 14, my); g.moveTo(mx, my - 14); g.lineTo(mx, my + 14); g.stroke(); }
+      const [mon, num] = precio(); const { s: ns } = ajustar(num, (z) => fDisp(D, z), Math.min(h - 420, 900), 1, Math.min(340, w * .62), 80, -.04);
+      g.font = fDisp(D, ns); g.letterSpacing = `${(-.04 * ns).toFixed(1)}px`; g.fillStyle = D[3]; g.textAlign = 'center';
+      g.save(); g.translate(x + w / 2, y + h / 2); g.rotate(-Math.PI / 2); g.fillText(num, 0, ns * .34); g.restore();
+      g.letterSpacing = '0px'; if (mon) { g.font = fCuerpo(600, 26); g.fillStyle = D[4]; g.fillText(mon, x + w / 2, y + 150); }
+      g.textAlign = 'left';
+    } else if (tipo === 'datos') {
+      const n = 5, bw = (w - 4 * 24) / n, alt = [.35, .5, .45, .7, .95];
+      for (let i = 0; i < n; i++) { g.fillStyle = i === n - 1 ? D[3] : mezcla(D[2], D[4], .12); const bh = h * .7 * alt[i]; g.fillRect(x + i * (bw + 24), y + h - bh, bw, bh); }
+      g.fillStyle = mezcla(D[1], D[4], .35); g.fillRect(x, y + h + 10, w, 2);
+    } else if (tipo === 'sello') {
+      const cx = x + w / 2, cy = y + h / 2, r = Math.min(w, h) / 2 - 8;
+      g.strokeStyle = D[3]; g.lineWidth = 2.5; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke();
+      g.beginPath(); g.arc(cx, cy, r - 58, 0, Math.PI * 2); g.stroke();
+      const t = `${(est.datos.marca || '').toUpperCase()} · ${(est.datos.producto || '').toUpperCase()} · `;
+      g.font = fCuerpo(600, 22); g.fillStyle = D[3]; g.textAlign = 'center';
+      const paso = (Math.PI * 2) / Math.max(24, t.length);
+      for (let i = 0; i < t.length; i++) { const a = -Math.PI / 2 + i * paso; g.save(); g.translate(cx + Math.cos(a) * (r - 30), cy + Math.sin(a) * (r - 30)); g.rotate(a + Math.PI / 2); g.fillText(t[i], 0, 8); g.restore(); }
+      const [mon, num] = precio(); g.font = fCuerpo(600, 24); g.letterSpacing = '3px'; if (mon) g.fillText(mon, cx, cy - 34); g.letterSpacing = '0px'; g.font = fDisp(D, 92); g.fillText(num, cx, cy + 46);
+      g.textAlign = 'left';
+    } else if (tipo === 'circulo') {
+      g.fillStyle = mezcla(D[1], D[3], .14); g.beginPath(); g.arc(x + w / 2, y + h / 2, Math.min(w, h) / 2, 0, Math.PI * 2); g.fill();
+    } else if (tipo === 'bloque') {
+      g.fillStyle = D[3]; g.fillRect(x, y, w, h);
+    } else if (tipo === 'arco') {
+      g.fillStyle = D[2]; g.beginPath(); g.moveTo(x, y + h); g.lineTo(x, y + w / 2); g.arc(x + w / 2, y + w / 2, w / 2, Math.PI, 0); g.lineTo(x + w, y + h); g.fill();
     }
-    g.fillStyle = D[4]; g.textBaseline = 'alphabetic';
-    // gancho (xxl 101) y producto (l 57)
-    g.font = `${ft === 'Playfair' ? '700 ' : ''}101px "${ft}", serif`;
-    let y = M + 96;
-    const lg = envolver(d.gancho, W - 2 * M).slice(0, 2);
-    if (lg.length > 1) { g.font = `${ft === 'Playfair' ? '700 ' : ''}84px "${ft}", serif`; }
-    for (const l of envolver(d.gancho, W - 2 * M).slice(0, 2)) { g.fillText(l, M, y); y += lg.length > 1 ? 92 : 104; }
-    g.font = `400 43px "${fc}", sans-serif`; g.globalAlpha = .86;
-    g.fillText((d.producto || '').slice(0, 40), M, Math.min(y + 8, iy - 32)); g.globalAlpha = 1;
-    // beneficio (m 43) bajo la imagen
-    y = iy + ih + 64; g.font = `400 40px "${fc}", sans-serif`;
-    for (const l of envolver(d.beneficio, W - 2 * M).slice(0, 2)) { g.fillText(l, M, y); y += 52; }
-    // oferta (xl 76)
-    g.font = `${ft === 'Playfair' ? '700 ' : ''}76px "${ft}", serif`; g.fillStyle = D[3];
-    g.fillText((d.oferta || '').slice(0, 32), M, y + 46);
-    // botón y marca
-    const by = H - M - 104;
-    g.font = `700 40px "${fc}", sans-serif`;
-    const tx = (d.cta || '') + (d.whatsapp ? ' · ' + d.whatsapp : ''), bw = Math.min(W - 2 * M, g.measureText(tx).width + 88);
-    g.fillStyle = D[3]; g.beginPath(); g.roundRect(M, by, bw, 104, 52); g.fill();
-    g.fillStyle = D[5]; g.fillText(tx, M + 44, by + 66);
-    g.fillStyle = D[4]; g.font = `400 32px "${fc}", sans-serif`; g.globalAlpha = .8; g.textAlign = 'right';
-    g.fillText((d.marca || '').toUpperCase(), W - M, by - 28); g.textAlign = 'left'; g.globalAlpha = 1;
+    g.restore();
+  }
+  function titular(D, zona, maxLin, desde, hasta, alin = 'left') {
+    const [x, y, w] = zona, mayus = D[6].mayus, t = mayus ? (est.datos.gancho || '').toUpperCase() : (est.datos.gancho || '');
+    const track = mayus ? .005 : -.025;
+    const { s, lin } = ajustar(t, (z) => fDisp(D, z), w, maxLin, desde, hasta, track);
+    const lh = mayus ? s * .98 : s * 1.02; let yy = y + s * .82;
+    lin.forEach((l, i) => {
+      const ult = i === lin.length - 1 && lin.length > 1;
+      g.font = fDisp(D, s, D[6].italica && ult); g.letterSpacing = `${(track * s).toFixed(1)}px`;
+      g.fillStyle = D[6].realce && ult ? D[3] : D[4]; g.textAlign = alin;
+      g.fillText(l, alin === 'center' ? x + w / 2 : x, yy); yy += lh;
+    });
+    g.textAlign = 'left'; g.letterSpacing = '0px';
+    return yy - lh + s * .2;
+  }
+  function bloqueTexto(D, x, y, w, alin = 'left', tam = 32) {
+    const d = est.datos, cx = alin === 'center' ? x + w / 2 : x;
+    texto(d.producto || '', cx, y, fCuerpo(600, tam), D[4], alin);
+    g.font = fCuerpo(400, tam - 4); const lin = envolver(d.beneficio, w).slice(0, 3);
+    let yy = y + tam * 1.45;
+    for (const l of lin) { texto(l, cx, yy, fCuerpo(400, tam - 4), mezcla(D[4], D[1], .22), alin); yy += (tam - 4) * 1.38; }
+    return yy;
+  }
+  // oferta: la línea base va en yBase; devuelve el tamaño usado
+  function medirOferta(D, w, desde) { return ajustar(est.datos.oferta || '', (z) => fDisp(D, z), w, 1, desde, 44, D[6].mayus ? 0 : -.02); }
+  function oferta(D, x, yBase, w, alin = 'left', desde = 96) {
+    const { s, lin } = medirOferta(D, w, desde);
+    g.font = fDisp(D, s); g.fillStyle = D[3]; g.textAlign = alin; g.letterSpacing = `${((D[6].mayus ? 0 : -.02) * s).toFixed(1)}px`;
+    g.fillText(lin[0] || '', alin === 'center' ? x + w / 2 : alin === 'right' ? x + w : x, yBase); g.textAlign = 'left'; g.letterSpacing = '0px';
+    return s;
+  }
+  function lineasBeneficio(w, tam) { g.font = fCuerpo(400, tam - 4); g.letterSpacing = '0px'; return Math.max(1, envolver(est.datos.beneficio, w).slice(0, 3).length); }
+  // bloque producto + beneficio apoyado sobre una línea base inferior (la última línea del beneficio)
+  function bloqueAbajo(D, x, ultima, w, tam) {
+    const n = lineasBeneficio(w, tam), prod = ultima - (n - 1) * (tam - 4) * 1.38 - tam * 1.45;
+    bloqueTexto(D, x, prod, w, 'left', tam); return prod - tam;
+  }
+  function precio() {
+    const o = est.datos.oferta || ''; const m = o.match(/S\/\s?(\d+(?:[.,]\d+)?)/i); if (m) return ['S/', m[1]];
+    const n = o.match(/\d+(?:[.,]\d+)?/g); return ['', n ? n.reduce((a, b) => (b.length > a.length ? b : a)) : ''];
+  }
+  function marca(D, x, y, alin = 'left', color) {
+    texto((est.datos.marca || '').toUpperCase(), x, y, fCuerpo(600, 22), color || D[4], alin, 5);
   }
 
+  const MAQ = {
+    portada(D) {
+      marca(D, M, M + 18); texto((est.datos.producto || '').toUpperCase(), W - M, M + 18, fCuerpo(500, 20), mezcla(D[4], D[1], .35), 'right', 3);
+      g.fillStyle = mezcla(D[1], D[4], .2); g.fillRect(M, M + 44, W - 2 * M, 2);
+      const fin = titular(D, [M, M + 84, W - 2 * M], 3, 150, 80);
+      const cta = H - M - 104, base = cta - 56, colW = 520;
+      const tope = bloqueAbajo(D, M, base, colW, 32);
+      oferta(D, W - M - 360, base, 360, 'right', 92);
+      const iy = fin + 36, ih = tope - 44 - iy;
+      if (imagen && !imagen.recortada) foto(M, iy, W - 2 * M, ih, 'redondo', D);
+      else {
+        decor(D, [W / 2 - ih * .55, iy, ih * 1.1, ih]);
+        if (imagen) flotante(W / 2, iy + ih - 10, W - 2 * M, ih * .96);
+      }
+      boton(D, M, cta);
+      whatsapp(D, W - M, cta + 44, 'right');
+    },
+    dividido(D) {
+      const pw = Math.round(W * .56), cw = pw - M - 56;
+      g.fillStyle = D[2]; g.fillRect(0, 0, pw, H);
+      marca(D, M, M + 18);
+      const fin = titular(D, [M, M + 120, cw], 4, 112, 64);
+      g.fillStyle = D[3]; g.fillRect(M, fin + 28, 96, 8);
+      const cta = H - M - 104 - 96, ofS = medirOferta(D, cw, 84).s, ofBase = cta - 56;
+      oferta(D, M, ofBase, cw, 'left', 84);
+      bloqueAbajo(D, M, ofBase - ofS - 30, cw, 30);
+      boton(D, M, cta);
+      whatsapp(D, M, H - M - 40);
+      // lado derecho: foto a sangre, producto flotando o el gráfico del estilo
+      if (imagen && !imagen.recortada) foto(pw, 0, W - pw, H, 'recto', D);
+      else {
+        decor(D, D[7].decor === 'datos' ? [pw + 64, 420, W - pw - 128, 520] : [pw, 0, W - pw, H]);
+        if (imagen) flotante(pw + (W - pw) / 2, H - 260, W - pw - 80, H * .52);
+      }
+      texto((est.datos.producto || '').toUpperCase(), W - 48, H - 48, fCuerpo(500, 18), mezcla(D[4], D[1], .4), 'right', 3);
+    },
+    tipografico(D) {
+      marca(D, M, M + 18); texto(est.datos.whatsapp || '', W - M, M + 18, fCuerpo(500, 22), mezcla(D[4], D[1], .35), 'right', 1);
+      g.fillStyle = mezcla(D[1], D[4], .2); g.fillRect(M, M + 44, W - 2 * M, 2);
+      const fin = titular(D, [M, M + 96, W - 2 * M], 3, D[6].mayus ? 250 : 196, 90);
+      if (D[7].decor === 'bloque') { g.fillStyle = D[3]; g.fillRect(M, fin + 30, 140, 14); }
+      const by = H - M - 120, lado = (imagen || D[7].decor !== 'bloque') ? 380 : 0;
+      const tw = W - 2 * M - (lado ? lado + 56 : 0), ofS = medirOferta(D, tw, 116).s, ofBase = by - 64;
+      oferta(D, M, ofBase, tw, 'left', 116);
+      const tope = bloqueAbajo(D, M, ofBase - ofS - 34, tw, 32);
+      if (!lado && !imagen) { // moda: la cifra de la oferta, enorme y en contorno, llena el aire entre titular y texto
+        const [, num] = precio(), y0 = fin + 80, y1 = tope - 36, alto = y1 - y0;
+        if (num && alto > 160) {
+          const t = num + (/%/.test(est.datos.oferta || '') ? '%' : '');
+          const { s: ns } = ajustar(t, (z) => fDisp(D, z), W - 2 * M, 1, Math.min(alto / .74, 640), 120, 0);
+          g.font = fDisp(D, ns); g.letterSpacing = '0px'; g.strokeStyle = D[3]; g.lineWidth = 3; g.textAlign = 'right';
+          g.strokeText(t, W - M, y0 + ns * .74); g.textAlign = 'left';
+        }
+      }
+      if (lado) {
+        const zy = Math.max(fin + 60, 0), zh = by - 48 - zy, t = Math.min(lado, zh);
+        const z = [W - M - t, by - 48 - t, t, t];
+        if (imagen) { if (imagen.recortada) flotante(z[0] + t / 2, z[1] + t, t, t); else foto(...z, 'redondo', D); }
+        else decor(D, z);
+      }
+      // barra de llamada a la acción a todo el ancho
+      const r = Math.min(D[7].radio, 60);
+      g.fillStyle = D[3]; g.beginPath(); g.roundRect(M, by, W - 2 * M, 120, r); g.fill();
+      texto(est.datos.cta || '', M + 48, by + 74, fCuerpo(600, 40), D[5]);
+      texto((est.datos.marca || '').toUpperCase(), W - M - 48, by + 70, fCuerpo(600, 22), D[5], 'right', 4);
+    },
+    marco(D) {
+      g.strokeStyle = D[3]; g.lineWidth = 2; g.strokeRect(40, 40, W - 80, H - 80);
+      g.globalAlpha = .45; g.lineWidth = 1; g.strokeRect(52, 52, W - 104, H - 104); g.globalAlpha = 1;
+      marca(D, W / 2, M + 50, 'center', D[3]);
+      const fin = titular(D, [M + 20, M + 96, W - 2 * M - 40], 2, 112, 64, 'center');
+      const iy = fin + 30, ih = H - 470 - iy;
+      if (imagen) { if (imagen.recortada) flotante(W / 2, iy + ih, W - 2 * M, ih); else foto(W / 2 - ih * .4, iy, ih * .8, ih, 'arco', D); }
+      else { g.strokeStyle = mezcla(D[1], D[3], .5); g.lineWidth = 1.5; g.beginPath(); g.arc(W / 2, iy + ih / 2, ih * .42, 0, Math.PI * 2); g.stroke(); }
+      const ty = H - 440;
+      texto((est.datos.producto || '').toUpperCase(), W / 2, ty + 34, fCuerpo(500, 24), D[4], 'center', 5);
+      g.font = fCuerpo(400, 28); const lin = envolver(est.datos.beneficio, 720).slice(0, 2); let yy = ty + 84;
+      for (const l of lin) { texto(l, W / 2, yy, fCuerpo(400, 28), mezcla(D[4], D[1], .25), 'center'); yy += 38; }
+      oferta(D, M, yy + 50, W - 2 * M, 'center', 64);
+      boton(D, W / 2, H - M - 104 - 70, 'center');
+      texto('WHATSAPP ' + (est.datos.whatsapp || ''), W / 2, H - M - 22, fCuerpo(500, 22), mezcla(D[4], D[1], .3), 'center', 3);
+    },
+  };
+  function dibujar() {
+    const D = DISENOS[est.diseno];
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.filter = 'none';
+    g.fillStyle = D[1]; g.fillRect(0, 0, W, H);
+    (MAQ[est.maqueta] || MAQ.portada)(D);
+    if (D[7].grano) {
+      if (!grano) hacerGrano();
+      g.globalAlpha = D[7].grano; g.globalCompositeOperation = lum(D[1]) > .4 ? 'multiply' : 'screen';
+      g.fillStyle = grano; g.fillRect(0, 0, W, H);
+      g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    }
+    g.restore();
+  }
+
+  function pintarPack() {
+    const D = DISENOS[est.diseno];
+    $('paleta').replaceChildren(...[D[1], D[2], D[3], D[4]].map((c) => { const i = document.createElement('i'); i.style.background = c; return i; }));
+    $('pack-nombre').textContent = D[0];
+    $('pack-nota').textContent = D[7].nota;
+  }
   function pintar(rehacer) {
-    chips($('rubros'), RUBROS, (i) => i === est.rubro, (i) => { est.rubro = i; est.datos = { ...RUBROS[i][3] }; est.diseno = RUBROS[i][2]; imagen = null; });
-    chips($('disenos'), DISENOS, (i) => i === est.diseno, (i) => { est.diseno = i; });
-    $('caso').textContent = RUBROS[est.rubro][1];
+    seg($('rubros'), RUBROS.map((r) => r[0]), (i) => i === est.rubro && !est.editado, (i) => usarRubro(i));
+    seg($('maquetas'), MAQUETAS.map((m) => m[1]), (i) => MAQUETAS[i][0] === est.maqueta, (i) => { est.maqueta = MAQUETAS[i][0]; pintar(); });
+    seg($('disenos'), DISENOS.map((d) => d[0]), (i) => i === est.diseno, (i) => { est.diseno = i; usarFuentes(DISENOS[i]).then(() => pintar()); pintar(); });
     for (const [id, , mp, mc] of CAMPOS) {
       const inp = $('f-' + id); if (rehacer || document.activeElement !== inp) inp.value = est.datos[id] || '';
       const p = palabras(est.datos[id]), n = $('n-' + id);
       n.textContent = `${p}/${mp}`; n.className = 'n' + (p > mp || (est.datos[id] || '').length > mc ? ' mal' : '');
     }
+    if (rehacer || document.activeElement !== $('describe')) $('describe').value = est.describe || '';
     const rs = reglas(), ok = rs.filter((r) => r[0]).length;
-    $('reglas').innerHTML = '';
-    for (const [bien, txt] of rs) { const li = document.createElement('li'); li.className = bien ? 'ok' : 'mal'; li.innerHTML = `<b>${bien ? '✓' : '×'}</b><span></span>`; li.querySelector('span').textContent = txt; $('reglas').appendChild(li); }
-    dibujar(); guardar();
+    $('reglas').replaceChildren(...rs.map(([bien, txt]) => { const li = document.createElement('li'); li.className = bien ? 'ok' : 'mal'; const i = document.createElement('i'); i.setAttribute('aria-hidden', 'true'); const s = document.createElement('span'); s.textContent = (bien ? '' : 'Pendiente: ') + txt; li.append(i, s); return li; }));
+    $('marcador').textContent = `${ok} de ${rs.length}`; $('marcador').className = 'marcador' + (ok === rs.length ? ' ok' : '');
+    pintarPack(); dibujar(); guardar();
     const listo = ok === rs.length;
     $('bajar').setAttribute('aria-disabled', String(!listo));
     const faltan = rs.length - ok;
     $('bajar').textContent = listo ? 'Descargar flyer.png' : (faltan === 1 ? 'Falta 1 regla' : `Faltan ${faltan} reglas`);
+    Taller.pasos('pasos', !est.editado ? 0 : !listo ? 1 : !imagenPropia ? 2 : 3);
   }
-  $('bajar').onclick = () => { try { $('bajar').href = cv.toDataURL('image/png'); } catch (e) {} };
+  $('bajar').onclick = (e) => { if ($('bajar').getAttribute('aria-disabled') === 'true') { e.preventDefault(); return; } try { $('bajar').href = cv.toDataURL('image/png'); } catch (err) {} };
 
-  function aviso(t, mal) { $('aviso').textContent = t; $('aviso').className = 'aviso' + (mal ? ' mal' : ''); }
+  function aviso(t, mal) { $('aviso').textContent = t; $('aviso').className = 'tl-estado' + (mal ? ' mal' : ''); }
   const leer = (blob) => new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(blob); });
   const cargar = (src) => new Promise((ok, mal) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => mal(new Error('no pude leer esa imagen')); im.src = src; });
   function tieneAlfa(im) {
@@ -241,21 +544,43 @@
     x.drawImage(im, 0, 0, 64, 64); const p = x.getImageData(0, 0, 64, 64).data;
     return p[3] < 20 || p[63 * 4 + 3] < 20 || p[(63 * 64) * 4 + 3] < 20;
   }
+  async function imagenEjemplo(i) {
+    const arch = RUBROS[i][5]; imagen = null; imagenPropia = false;
+    if (!arch) return;
+    try { imagen = await cargar(arch); imagen.recortada = tieneAlfa(imagen); } catch (e) { imagen = null; }
+  }
+  async function usarRubro(i) {
+    est.rubro = i; est.datos = { ...RUBROS[i][3] }; est.diseno = RUBROS[i][2]; est.maqueta = DISENOS[est.diseno][7].maqueta;
+    est.describe = RUBROS[i][6]; est.editado = false;
+    pintar(true);
+    await Promise.all([usarFuentes(DISENOS[est.diseno]), imagenEjemplo(i)]);
+    pintar(true);
+    aviso('Ejemplo: ' + RUBROS[i][1]);
+  }
+  $('aplicar').onclick = async () => {
+    const t = $('describe').value.trim(); est.describe = t;
+    if (t.length < 3) { aviso('Escribe en pocas palabras qué vendes y a quién.', true); return; }
+    est.diseno = clasificar(t); est.editado = true; est.maqueta = DISENOS[est.diseno][7].maqueta;
+    await usarFuentes(DISENOS[est.diseno]); pintar();
+    aviso(`Estilo «${DISENOS[est.diseno][0]}»: ${DISENOS[est.diseno][7].nota}. Ahora cambia los textos.`);
+  };
+  $('describe').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); $('aplicar').click(); } };
+  $('describe').oninput = (e) => { est.describe = e.target.value; guardar(); };
   $('subir').onclick = () => $('archivo').click();
   $('archivo').onchange = async () => {
     const f = $('archivo').files && $('archivo').files[0]; if (!f) return;
-    try { imagen = await cargar(await leer(f)); imagen.recortada = tieneAlfa(imagen); pintar(); aviso(imagen.recortada ? 'Imagen recortada: flota sobre el color de la superficie.' : 'Imagen puesta.'); } catch (e) { aviso(e.message, true); }
+    try { imagen = await cargar(await leer(f)); imagen.recortada = tieneAlfa(imagen); imagenPropia = true; pintar(); aviso(imagen.recortada ? 'Imagen recortada: flota sobre el fondo con su sombra.' : 'Foto puesta: se recorta para llenar su marco.'); } catch (e) { aviso(e.message, true); }
   };
-  $('quitar').onclick = () => { imagen = null; pintar(); };
+  $('quitar').onclick = () => { imagen = null; imagenPropia = false; pintar(); aviso('Sin imagen: la maqueta usa su gráfico propio.'); };
   $('flux').onclick = async (e) => {
-    const b = e.target; b.disabled = true; b.textContent = 'Dibujando… (10 s)';
+    const b = e.currentTarget; b.disabled = true; b.setAttribute('aria-busy', 'true'); b.textContent = 'Dibujando';
     try {
       const r = await fetch(`/api/v1/live/${encodeURIComponent(leccion)}/imagen`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: `${(est.datos.producto || '').trim()}: ${RUBROS[est.rubro][4]}, sin letras ni logotipos`, orientacion: 'horizontal' }) });
-      if (!r.ok) throw new Error(r.status === 429 ? 'Se acabó tu cupo de imágenes de hoy: sube tu base.png.' : `el servicio de imagen respondió ${r.status}`);
-      imagen = await cargar(await leer(await r.blob())); imagen.recortada = false; pintar(); aviso('Fondo listo. El texto sigue siendo del navegador.');
+      if (!r.ok) throw new Error(r.status === 429 ? 'Se acabó tu cupo de imágenes de hoy: sube tu base.png.' : `El servicio de imagen respondió ${r.status}.`);
+      imagen = await cargar(await leer(await r.blob())); imagen.recortada = false; imagenPropia = true; pintar(); aviso('Fondo listo. El texto sigue siendo del navegador.');
     } catch (err) { aviso(String(err.message || err), true); }
-    finally { b.disabled = false; b.textContent = 'Fondo con FLUX'; }
+    finally { b.disabled = false; b.removeAttribute('aria-busy'); b.textContent = 'Fondo con FLUX'; }
   };
 
   // galería: solo se muestra el botón si existe; el iframe del LIVE no abre pestañas, así que se copia el enlace
@@ -274,8 +599,8 @@
     }
   })();
 
-  cargadas.then(() => pintar(true));
   pintar(true);
+  Promise.all([Taller.fuentes, usarFuentes(DISENOS[est.diseno]), est.editado ? null : imagenEjemplo(est.rubro)]).then(() => pintar(true));
 })();
 </script>
 </body>
