@@ -75,7 +75,7 @@ La **plataforma para desarrolladores/API** (`platform.deepseek.com`) no es la mi
 
 **Fuentes (31-10-2026)**: FAQ oficial (*How to Top Up?*, *Does the balance expire?*, *Is a refund possible?*, *Incorrect Top-up Balance*); `https://api-docs.deepseek.com/quick_start/pricing` (nota sobre saldo recargado y de cortesía).
 
-### Precios publicados (consultados el 31-10-2026)
+### Precios publicados (consultados el 31-10-2026; sin cambios al 22-11-2026)
 
 Fuente: `https://api-docs.deepseek.com/quick_start/pricing`. Moneda: **USD** por millón de tokens. DeepSeek avisa que puede cambiar los precios y recomienda revisar la página.
 
@@ -91,7 +91,7 @@ Fuente: `https://api-docs.deepseek.com/quick_start/pricing`. Moneda: **USD** por
 - **Diferencia de caché:** un token de entrada que acierta la caché cuesta una fracción (en Flash, $0.003 frente a $0.15 en horario valle; ~50 veces menos). «Fallo» es el precio normal de entrada.
 - **Pico:** el precio de pico es el doble que el de valle. Pico = 01:00–04:00 y 06:00–10:00 UTC, lunes a viernes, sin contar feriados públicos de China. Mi conversión (verifícala): en hora de Lima corresponde a ~20:00–23:00 y ~01:00–05:00. El día de la semana que cuenta es el UTC.
 - Nombres de modelo vigentes en esa página: `deepseek-flash` (servido por DeepSeek-V4.1-Flash-1017) y `deepseek-v4-pro` (DeepSeek-V4-Pro-0813). Los nombres antiguos `deepseek-v4-flash` y `deepseek-v4-flash-vision-exp` siguen funcionando y se cobran como Flash.
-- **Búsqueda y descarga web (Search/Fetch):** $0.75 por cada 1 000 peticiones exitosas, cada una. Usándolas desde DeepSeek Harness hoy son **gratis**, pero el cobro por petición empieza a las **00:00 de Pekín del 1-nov-2026** (= 11:00 a. m. del 31-oct-2026 en Lima, según mi conversión). Avisa a los alumnos.
+- **Búsqueda y descarga web (Search/Fetch):** la API suelta de Search y la de Fetch cuestan $0.75 por cada 1 000 peticiones exitosas, cada una. **Cambio del 18-11-2026, 12:00 de Pekín (= 17-11-2026, 11:00 p. m. en Lima):** las búsquedas y descargas web que el modelo dispara durante una llamada (como las de DeepSeek Harness) ya no se cobran aparte: sus resultados entran al contexto y se pagan como tokens de entrada. Verificado el 22-11-2026.
 - No hay precio en soles publicado.
 
 ---

@@ -226,6 +226,7 @@ Tarea de referencia: «describe qué puede hacer cada rol de mi sistema».
 | 2 · Dónde ver el uso | Leer una página de uso; llenar la ficha | 3 de 4 ejercicios; 6 campos |
 | 3 · Corrida A | Ver cómo crece el contexto sin foto | Explicas por qué se factura ≈ 9× lo leído |
 | 4 · Corrida B | Repetir con foto y 5 verificaciones | Tabla A/B con relaciones |
+| 4b · Mide en tu oficio | Un clic: la misma pregunta sin ficha y con ficha, en tu aula | Tabla «Sin ficha / Con ficha» y respuesta revisada |
 | 5 · Calidad | Calificar 4 respuestas con 5 criterios | 16 de 20 casillas |
 | 6 · Palancas | Mover cinco palancas | Ahorro sin «Ahorro inválido» |
 | 7 · Informe | Generar informe y rutina | Archivos en tu commit |
@@ -293,6 +294,17 @@ Tarea de referencia: «describe qué puede hacer cada rol de mi sistema».
 **Qué deberías ver:** en la estimación, B usa 7 llamadas y ≈ 6,7 veces menos entrada que A. Es la relación de este ejemplo, no una promesa.
 **Si falla:** con 0 fragmentos todo queda «por verificar»: la calidad baja.
 
+## 4b · Mide en tu oficio
+
+**Objetivo:** medir lo mismo que A y B, pero con un caso de tu trabajo y sin escribir comandos.
+
+1. Elige bodega, taller, peluquería o contador (o el más parecido a tu oficio).
+2. Toca «1 · Sin ficha», pega en DeepSeek Harness y espera: crea los cuadernos de ejemplo, la ficha y la respuesta correcta, y mide la pregunta sin ficha.
+3. Toca «2 · Con ficha y comparar»: mide la misma pregunta leyendo primero la ficha y te da una tabla.
+
+**Qué deberías ver:** con ficha, menos tokens de entrada y menos llamadas, y la misma respuesta que la clave. Es la relación de tu caso, no una promesa.
+**Si falla:** «Aún no me diste tu clave» → «Guardar mi clave». «Sin saldo (402)» → recarga o anota los números del profesor. De domingo a jueves, de 8 a 11 p. m. (Lima), el token cuesta el doble: compara tokens, no dólares.
+
 ## 5 · Calidad y trampas
 
 **Objetivo:** aplicar 5 criterios y rechazar un ahorro que baja la calidad.
@@ -326,6 +338,8 @@ Tarea de referencia: «describe qué puede hacer cada rol de mi sistema».
 
 ## Tarea
 
+**Para todos (sin programar):** repite «Mide en tu oficio» con una pregunta de tu trabajo. Sube una captura de la tabla «Sin ficha / Con ficha» y escribe dos frases: cuántas veces menos leyó con la ficha y si la respuesta salió bien. Si quieres ir más allá, sigue con la versión completa:
+
 - Corre A (sin foto) y B (con foto) sobre **tu** sistema. En el aula guarda lo que imprime `aula dsh "…" | tee` en
   `docs/medicion/A.txt` y `B.txt` (respuesta + resumen de uso); en la laptop, `A.jsonl`, `A.md`, `B.jsonl` y `B.md`.
   En las dos rutas, cruza los tokens con el panel **Usage** de la plataforma.
@@ -333,4 +347,4 @@ Tarea de referencia: «describe qué puede hacer cada rol de mi sistema».
 - Escribe `docs/RUTINA.md`: cinco pasos que otra persona repita sin ti.
 - Haz `git add docs/ && git commit -m "sesión 2: consumo medido A/B y rutina"` y entrega URL + commit desde el LMS.
 
-Precios del 31-10-2026 solo como ejemplo: verifica los vigentes.
+Precios del 31-10-2026 (siguen iguales al 22-11-2026) solo como ejemplo: verifica los vigentes.

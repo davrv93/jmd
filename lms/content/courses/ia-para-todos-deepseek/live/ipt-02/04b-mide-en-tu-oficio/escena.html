@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mide en tu oficio · IA para todos</title>
+<!-- Hecha a mano para la sesión 2: un clic copia el pedido y abre DeepSeek Harness al lado, como en la sesión 1 (ipt.js). -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ipt.css">
+<style>
+  .ipt h2.sub { font: 700 21px/1.25 system-ui, sans-serif; margin: 34px 0 12px; }
+  .lista.pasos { margin-bottom: 26px; }
+  details.ver { border-top: 1px solid var(--line); padding-top: 8px; }
+  details.ver summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  details.ver .pedido { margin-top: 8px; font-size: 13px; }
+  details.ver .pedido + .pedido { margin-top: 10px; }
+  .tarjeta .fila .boton { margin-top: 0; }
+  .rejilla.dos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="ipt">
+  <p class="ipt-paso">Sesión 2 · Mide en tu oficio</p>
+  <h1>La misma pregunta, <em>sin ficha y con ficha</em></h1>
+  <p class="ipt-sub">Una ficha es un resumen corto de tu negocio: qué hay en cada cuaderno y qué datos valen. Vas a medir cuánto lee el asistente sin ella y con ella, y a revisar que la respuesta siga bien.</p>
+
+  <ol class="lista pasos">
+    <li><span class="num">1</span><div><b>Elige tu oficio</b><span>Si el tuyo no está, usa el más parecido: citas y cobros como la peluquería, plazos y papeles como el contador.</span></div></li>
+    <li><span class="num">2</span><div><b>Toca «1 · Sin ficha»</b><span>Pega en DeepSeek Harness (Ctrl+V o ⌘V) y presiona Enter. Espera a que termine: de 1 a 3 minutos.</span></div></li>
+    <li><span class="num">3</span><div><b>Toca «2 · Con ficha y comparar»</b><span>Al final verás una tabla con lo que leyó cada vez y si la respuesta coincide con la correcta.</span></div></li>
+  </ol>
+
+  <div class="rejilla dos">
+    <article class="tarjeta">
+      <p class="rubro">Bodega</p>
+      <h2>¿Cuánto me deben de fiado?</h2>
+      <p class="para">Cuadernos mezclados: ventas del mes, fiados, una lista de precios vieja y otra nueva.</p>
+      <div class="fila"><button class="boton" type="button" data-pedido-de="bA">1 · Sin ficha</button><button class="boton sec" type="button" data-pedido-de="bB">2 · Con ficha y comparar</button></div>
+      <details class="ver"><summary>Ver lo que se pega</summary>
+<pre class="pedido" id="bA">Vamos a medir cuánto lee el asistente. Hazlo todo sin preguntarme:
+1. Crea la carpeta /trabajo/oficio/bodega con datos de ejemplo de una bodega de barrio en Lima, desordenados como un cuaderno real:
+   - ventas-del-mes.txt: 300 líneas de ventas (fecha, producto, cantidad, soles). Genéralas con un pequeño script de node, no una por una.
+   - cuaderno-1.txt y cuaderno-2.txt: apuntes mezclados, unas 40 líneas cada uno.
+   - notas-celular.txt: recordatorios sueltos.
+   - lista-precios-octubre.txt (ya no vale) y lista-precios-noviembre.txt (la vigente).
+   Reparte los fiados entre cuaderno-2.txt y notas-celular.txt: 7 personas, cuánto deben y desde cuándo; 2 de ellas ya pagaron.
+2. Escribe la ficha en /trabajo/oficio/fichas/bodega.md, de 10 a 15 líneas: qué hay en cada archivo, dónde están los fiados y qué lista de precios vale. Sin totales.
+3. Escribe la respuesta correcta en /trabajo/oficio/fichas/bodega-clave.txt: total de fiados pendientes y quién debe más. Haz la suma con la terminal, no a ojo.
+4. Ejecuta en la terminal, tal cual:
+DEEPSEEK_API_KEY= aula dsh "Trabaja solo en /trabajo/oficio/bodega. ¿Cuánto me deben en total de fiado, sin contar a quienes ya pagaron, y quién me debe más?" 2>&1 | tee /trabajo/oficio/bodega-A.txt
+5. Muéstrame la respuesta y el RESUMEN DE USO tal cual, sin cambiar los números.</pre>
+<pre class="pedido" id="bB">Ahora la misma pregunta CON ficha, y compáralas. Hazlo sin preguntarme:
+1. Ejecuta en la terminal, tal cual:
+DEEPSEEK_API_KEY= aula dsh "Lee primero /trabajo/oficio/fichas/bodega.md y abre en /trabajo/oficio/bodega solo los archivos que la ficha indique. ¿Cuánto me deben en total de fiado, sin contar a quienes ya pagaron, y quién me debe más?" 2>&1 | tee /trabajo/oficio/bodega-B.txt
+2. Lee /trabajo/oficio/bodega-A.txt, /trabajo/oficio/bodega-B.txt y /trabajo/oficio/fichas/bodega-clave.txt.
+3. Dame una tabla con dos columnas, «Sin ficha» y «Con ficha», y estas filas: lo que leyó (tokens de entrada), de eso lo que ya había leído (caché acierto), lo que escribió (tokens de salida), llamadas al modelo, segundos y «¿coincide con la clave?». Copia los números tal cual de los dos RESUMEN DE USO.
+4. Cierra con dos frases simples: cuántas veces menos leyó con la ficha y si la respuesta salió igual de bien. Si con la ficha leyó más o se equivocó, dilo.</pre>
+      </details>
+    </article>
+
+    <article class="tarjeta">
+      <p class="rubro">Taller mecánico</p>
+      <h2>¿Qué autos entrego hoy y cuánto me deben?</h2>
+      <p class="para">Órdenes del año, las de este mes, notas del maestro y pagos por Yape.</p>
+      <div class="fila"><button class="boton" type="button" data-pedido-de="tA">1 · Sin ficha</button><button class="boton sec" type="button" data-pedido-de="tB">2 · Con ficha y comparar</button></div>
+      <details class="ver"><summary>Ver lo que se pega</summary>
+<pre class="pedido" id="tA">Vamos a medir cuánto lee el asistente. Hazlo todo sin preguntarme:
+1. Crea la carpeta /trabajo/oficio/taller con datos de ejemplo de un taller mecánico en Lima, desordenados como un cuaderno real:
+   - ordenes-del-anio.txt: 300 líneas de órdenes ya cerradas (fecha, placa, trabajo, soles). Genéralas con un pequeño script de node, no una por una.
+   - ordenes-noviembre.txt: 8 autos de este mes con placa, dueño, trabajo y precio.
+   - notas-del-maestro.txt: en qué va cada auto; 3 ya están listos.
+   - pagos-yape.txt: adelantos de algunos dueños.
+   - repuestos-pedidos.txt y whatsapp-clientes.txt: mensajes sueltos.
+2. Escribe la ficha en /trabajo/oficio/fichas/taller.md, de 10 a 15 líneas: qué hay en cada archivo, dónde se ve si un auto está listo y dónde están los pagos. Sin totales.
+3. Escribe la respuesta correcta en /trabajo/oficio/fichas/taller-clave.txt: qué autos están listos y cuánto le falta pagar a cada dueño. Haz las cuentas con la terminal, no a ojo.
+4. Ejecuta en la terminal, tal cual:
+DEEPSEEK_API_KEY= aula dsh "Trabaja solo en /trabajo/oficio/taller. ¿Qué autos ya están listos para entregar y cuánto le falta pagar a cada dueño?" 2>&1 | tee /trabajo/oficio/taller-A.txt
+5. Muéstrame la respuesta y el RESUMEN DE USO tal cual, sin cambiar los números.</pre>
+<pre class="pedido" id="tB">Ahora la misma pregunta CON ficha, y compáralas. Hazlo sin preguntarme:
+1. Ejecuta en la terminal, tal cual:
+DEEPSEEK_API_KEY= aula dsh "Lee primero /trabajo/oficio/fichas/taller.md y abre en /trabajo/oficio/taller solo los archivos que la ficha indique. ¿Qué autos ya están listos para entregar y cuánto le falta pagar a cada dueño?" 2>&1 | tee /trabajo/oficio/taller-B.txt
+2. Lee /trabajo/oficio/taller-A.txt, /trabajo/oficio/taller-B.txt y /trabajo/oficio/fichas/taller-clave.txt.
+3. Dame una tabla con dos columnas, «Sin ficha» y «Con ficha», y estas filas: lo que leyó (tokens de entrada), de eso lo que ya había leído (caché acierto), lo que escribió (tokens de salida), llamadas al modelo, segundos y «¿coincide con la clave?». Copia los números tal cual de los dos RESUMEN DE USO.
+4. Cierra con dos frases simples: cuántas veces menos leyó con la ficha y si la respuesta salió igual de bien. Si con la ficha leyó más o se equivocó, dilo.</pre>
+      </details>
+    </article>
+
+    <article class="tarjeta">
+      <p class="rubro">Peluquería</p>
+      <h2>¿Cuánto cobro el martes?</h2>
+      <p class="para">Agenda en cuaderno, citas por WhatsApp, precios viejos y nuevos, descuento a frecuentes.</p>
+      <div class="fila"><button class="boton" type="button" data-pedido-de="pA">1 · Sin ficha</button><button class="boton sec" type="button" data-pedido-de="pB">2 · Con ficha y comparar</button></div>
+      <details class="ver"><summary>Ver lo que se pega</summary>
+<pre class="pedido" id="pA">Vamos a medir cuánto lee el asistente. Hazlo todo sin preguntarme:
+1. Crea la carpeta /trabajo/oficio/peluqueria con datos de ejemplo de una peluquería en Lima, desordenados como un cuaderno real:
+   - historial-del-anio.txt: 300 líneas de atenciones pasadas (fecha, clienta, servicio, soles). Genéralas con un pequeño script de node, no una por una.
+   - agenda-cuaderno.txt: citas del próximo martes; algunas tachadas.
+   - whatsapp-citas.txt: confirmaciones y cancelaciones; vale lo último que dijo cada clienta.
+   - precios-2025.txt (ya no vale) y precios-2026.txt (el vigente).
+   - clientas-frecuentes.txt: ellas tienen 10 % de descuento.
+2. Escribe la ficha en /trabajo/oficio/fichas/peluqueria.md, de 10 a 15 líneas: qué hay en cada archivo, dónde se confirman las citas, qué precios valen y quién tiene descuento. Sin totales.
+3. Escribe la respuesta correcta en /trabajo/oficio/fichas/peluqueria-clave.txt: citas confirmadas del martes, servicio de cada una y total a cobrar con descuentos. Haz las cuentas con la terminal, no a ojo.
+4. Ejecuta en la terminal, tal cual:
+DEEPSEEK_API_KEY= aula dsh "Trabaja solo en /trabajo/oficio/peluqueria. ¿Qué citas confirmadas tengo el próximo martes, con qué servicio, y cuánto voy a cobrar en total ese día con los descuentos?" 2>&1 | tee /trabajo/oficio/peluqueria-A.txt
+5. Muéstrame la respuesta y el RESUMEN DE USO tal cual, sin cambiar los números.</pre>
+<pre class="pedido" id="pB">Ahora la misma pregunta CON ficha, y compáralas. Hazlo sin preguntarme:
+1. Ejecuta en la terminal, tal cual:
+DEEPSEEK_API_KEY= aula dsh "Lee primero /trabajo/oficio/fichas/peluqueria.md y abre en /trabajo/oficio/peluqueria solo los archivos que la ficha indique. ¿Qué citas confirmadas tengo el próximo martes, con qué servicio, y cuánto voy a cobrar en total ese día con los descuentos?" 2>&1 | tee /trabajo/oficio/peluqueria-B.txt
+2. Lee /trabajo/oficio/peluqueria-A.txt, /trabajo/oficio/peluqueria-B.txt y /trabajo/oficio/fichas/peluqueria-clave.txt.
+3. Dame una tabla con dos columnas, «Sin ficha» y «Con ficha», y estas filas: lo que leyó (tokens de entrada), de eso lo que ya había leído (caché acierto), lo que escribió (tokens de salida), llamadas al modelo, segundos y «¿coincide con la clave?». Copia los números tal cual de los dos RESUMEN DE USO.
+4. Cierra con dos frases simples: cuántas veces menos leyó con la ficha y si la respuesta salió igual de bien. Si con la ficha leyó más o se equivocó, dilo.</pre>
+      </details>
+    </article>
+
+    <article class="tarjeta">
+      <p class="rubro">Contador</p>
+      <h2>¿Qué declaración vence primero?</h2>
+      <p class="para">Historial del año, avance de octubre y de noviembre, correos y un cronograma de ejemplo.</p>
+      <div class="fila"><button class="boton" type="button" data-pedido-de="cA">1 · Sin ficha</button><button class="boton sec" type="button" data-pedido-de="cB">2 · Con ficha y comparar</button></div>
+      <details class="ver"><summary>Ver lo que se pega</summary>
+<pre class="pedido" id="cA">Vamos a medir cuánto lee el asistente. Hazlo todo sin preguntarme:
+1. Crea la carpeta /trabajo/oficio/contador con datos de ejemplo de un estudio contable pequeño en Lima, desordenados como un cuaderno real:
+   - historial-declaraciones.txt: 300 líneas de declaraciones ya presentadas (periodo, RUC, cliente, estado). Genéralas con un pequeño script de node, no una por una.
+   - clientes.txt: 10 clientes con RUC inventado y régimen.
+   - avance-octubre.txt (ya cerrado) y avance-noviembre.txt (el vigente): qué le falta a cada cliente.
+   - correos-clientes.txt: documentos que mandaron o que faltan.
+   - cronograma-ejemplo.txt: fecha de vencimiento según el último dígito del RUC. Es inventado, solo para practicar.
+2. Escribe la ficha en /trabajo/oficio/fichas/contador.md, de 10 a 15 líneas: qué hay en cada archivo, qué avance vale y dónde están los vencimientos. Sin totales.
+3. Escribe la respuesta correcta en /trabajo/oficio/fichas/contador-clave.txt: clientes con la declaración de este mes pendiente y cuál vence primero. Revísalo con la terminal, no a ojo.
+4. Ejecuta en la terminal, tal cual:
+DEEPSEEK_API_KEY= aula dsh "Trabaja solo en /trabajo/oficio/contador. ¿Qué clientes tienen pendiente la declaración de este mes y cuál vence primero?" 2>&1 | tee /trabajo/oficio/contador-A.txt
+5. Muéstrame la respuesta y el RESUMEN DE USO tal cual, sin cambiar los números.</pre>
+<pre class="pedido" id="cB">Ahora la misma pregunta CON ficha, y compáralas. Hazlo sin preguntarme:
+1. Ejecuta en la terminal, tal cual:
+DEEPSEEK_API_KEY= aula dsh "Lee primero /trabajo/oficio/fichas/contador.md y abre en /trabajo/oficio/contador solo los archivos que la ficha indique. ¿Qué clientes tienen pendiente la declaración de este mes y cuál vence primero?" 2>&1 | tee /trabajo/oficio/contador-B.txt
+2. Lee /trabajo/oficio/contador-A.txt, /trabajo/oficio/contador-B.txt y /trabajo/oficio/fichas/contador-clave.txt.
+3. Dame una tabla con dos columnas, «Sin ficha» y «Con ficha», y estas filas: lo que leyó (tokens de entrada), de eso lo que ya había leído (caché acierto), lo que escribió (tokens de salida), llamadas al modelo, segundos y «¿coincide con la clave?». Copia los números tal cual de los dos RESUMEN DE USO.
+4. Cierra con dos frases simples: cuántas veces menos leyó con la ficha y si la respuesta salió igual de bien. Si con la ficha leyó más o se equivocó, dilo.</pre>
+      </details>
+    </article>
+  </div>
+
+  <h2 class="sub">Qué mirar en la tabla</h2>
+  <ul class="lista">
+    <li><div><b>Lo que leyó · tokens de entrada</b><span>Un token es un pedacito de texto de 3 o 4 letras. Más lectura, más gasto.</span></div></li>
+    <li><div><b>Lo que ya había leído · caché acierto</b><span>Lo que se repite de un paso a otro, DeepSeek lo cobra unas 50 veces más barato.</span></div></li>
+    <li><div><b>Lo que escribió · tokens de salida</b><span>Es lo más caro por token: pide respuestas cortas cuando puedas.</span></div></li>
+    <li><div><b>¿Coincide con la clave?</b><span>Si con la ficha gasta menos pero se equivoca, no es ahorro.</span></div></li>
+  </ul>
+  <p class="cuidado">De domingo a jueves, de 8 a 11 p. m. (Lima), DeepSeek cobra el doble por token. Esta clase cruza esa hora: compara tokens, no dólares.</p>
+
+  <h2 class="sub">Si algo falla</h2>
+  <ul class="lista">
+    <li><div><b>«Aún no me diste tu clave»</b><span>Guarda tu clave y vuelve a tocar el mismo botón.</span></div></li>
+    <li><div><b>«No tiene saldo (402)»</b><span>Recarga en platform.deepseek.com o mira la pantalla del profesor y anota sus números.</span></div></li>
+    <li><div><b>Pasan más de 3 minutos</b><span>Espera un poco más. Si se corta, escribe en DeepSeek Harness «sigue donde te quedaste» y presiona Enter.</span></div></li>
+  </ul>
+  <div class="fila" style="margin-top:16px"><button class="boton sec" type="button" data-clave>Guardar mi clave</button><button class="boton sec" type="button" data-abrir-dsh>Abrir DeepSeek Harness</button></div>
+</main>
+<div class="ipt-toast" id="ipt-toast" role="status" aria-live="polite"></div>
+<script src="../../comun/ipt.js"></script>
+</body>
+</html>
