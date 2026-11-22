@@ -4,73 +4,96 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>E12 · Landing con estilo</title>
-<!-- Escena generada desde live/_plantilla; estilos propios solo en #esc-propio. Sin comandos: el prompt va al chat de jmd. -->
-<link rel="stylesheet" href="../../comun/escena.css">
+<!-- Escena del LIVE dt-02. Identidad del taller: ../../comun/taller.css y taller.js; propios en #esc-propio. Sin comandos: el prompt va al chat de jmd.
+     Cada diseño se muestra como una miniatura dibujada con CSS (colores y letra de esa estética), no como una lista. -->
+<link rel="stylesheet" href="../../comun/taller.css">
 <style id="esc-propio">
-.esc-grid-2 > * { min-width: 0; } .esc-titulo { overflow-wrap: anywhere; }
-.s2 { grid-template-columns: 1fr 1fr; align-items: start; gap: 1.6vw; }
-.paso { display: flex; gap: .6em; align-items: baseline; margin: 0 0 .35em; font-weight: 700; }
-.paso i { font-style: normal; display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .8em; flex: none; }
-.bloque { margin-bottom: 1.2vh; }
-textarea#texto { width: 100%; height: 22vh; resize: none; font: .76em/1.4 var(--mono); padding: .7em .8em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
-textarea#texto:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.fila { display: flex; gap: .5em; align-items: center; margin-top: .4em; font-size: .72em; color: var(--muted); }
-.lnk { background: none; border: 0; color: var(--accent); text-decoration: underline; cursor: pointer; padding: 0; font: inherit; }
-.estilos { display: grid; grid-template-columns: 1fr 1fr; gap: .45em; }
-.estilos button { text-align: left; font: .7em/1.25 system-ui, sans-serif; padding: .55em .7em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; display: grid; gap: .15em; }
-.estilos button b { font-size: 1.1em; display: flex; align-items: center; gap: .45em; }
-.estilos button b::before { content: ''; width: 1.1em; height: 1.1em; border-radius: .3em; background: var(--sw); flex: none; border: 1px solid rgba(0,0,0,.15); }
-.estilos button small { color: var(--muted); }
-.estilos button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-.estilos button[aria-pressed="true"] small { color: inherit; opacity: .85; }
-#copiar { width: 100%; font: 700 1em/1 system-ui, sans-serif; padding: .9em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; box-shadow: var(--card-shadow); }
-#copiar.ok { background: var(--ok); }
-.despues { font-size: .76em; margin: .6em 0 0; padding-left: 1.2em; }
-.despues li { margin: .2em 0; }
-.nota { font-size: .7em; color: var(--muted); margin: .8vh 0 0; }
-pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; white-space: pre-wrap; word-break: break-word; }
-.eleg { font-size: .78em; margin: .5em 0 0; padding: .6em .8em; border-radius: .7em; background: var(--s1); border: 1px solid var(--line2); }
-.eleg b { color: var(--accent); }
+.le { grid-template-columns: minmax(0, .9fr) minmax(0, 1.35fr); }
+.pasos-col { display: grid; gap: 1.2rem; }
+.galeria { display: grid; gap: 1rem; align-content: start; }
+.estilos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(10px, 1vw, 18px); }
+.estilos button { appearance: none; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; display: grid; gap: .45rem; color: var(--tinta); }
+.estilos .mini { position: relative; aspect-ratio: 4 / 3; border-radius: var(--r); overflow: hidden; background: var(--m-bg); color: var(--m-fg); box-shadow: var(--sombra-1); outline: 1px solid var(--regla); outline-offset: -1px;
+  display: grid; align-content: end; padding: 9% 9% 10%; gap: 6%; transition: transform .3s var(--ease), box-shadow .3s; }
+.estilos .mini i { font: var(--m-font); font-style: var(--m-estilo, normal); text-transform: var(--m-caso, none); letter-spacing: var(--m-track, -.01em); line-height: .95; font-size: clamp(14px, 1.5vw, 30px); }
+.estilos .mini u { text-decoration: none; justify-self: start; font: 600 clamp(8px, .62vw, 12px)/1 Inter, system-ui, sans-serif; padding: .55em .9em; border-radius: var(--m-r, 99px); background: var(--m-ac); color: var(--m-on); }
+.estilos .mini::before { content: ""; position: absolute; inset: 0; background: var(--m-deco, none); pointer-events: none; }
+.estilos .mini > * { position: relative; }
+.estilos button:hover .mini { transform: translateY(-3px); box-shadow: var(--sombra-2); }
+.estilos button[aria-pressed="true"] .mini { outline: 2px solid var(--acento); outline-offset: 3px; }
+.estilos b { font: 600 .86rem/1.2 var(--texto); display: flex; gap: .4rem; align-items: baseline; }
+.estilos button[aria-pressed="true"] b { color: var(--acento); }
+.estilos small { font: 400 .76rem/1.35 var(--texto); color: var(--tinta-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.eleg { margin: 0; font: 400 1.05rem/1.45 var(--display); color: var(--tinta-2); }
+.eleg b { font-weight: 500; color: var(--tinta); }
+.eleg code { font-size: .78rem; }
+.nota { margin: 0; font-size: .84rem; color: var(--tinta-2); }
+/* las ocho estéticas en miniatura */
+.m-dificil { --m-bg: #efd5da; --m-fg: #1a1917; --m-ac: #1a1917; --m-on: #efd5da; --m-font: 400 1em "Archivo Black", Inter, sans-serif; --m-r: 4px; }
+.m-dificil i { justify-self: start; background: #fffdf8; padding: .12em .3em .18em; transform: rotate(-2.5deg); box-shadow: 2px 3px 0 rgba(26,25,23,.12); }
+.m-apple { --m-bg: #f5f5f7; --m-fg: #1d1d1f; --m-ac: #0071e3; --m-on: #fff; --m-font: 600 1em Inter, system-ui, sans-serif; --m-track: -.03em; }
+.m-huawei { --m-bg: #1c1c1e; --m-fg: #e9e9ec; --m-ac: #d5d7dc; --m-on: #1c1c1e; --m-font: 200 1em Outfit, Inter, sans-serif; --m-track: .01em; --m-deco: radial-gradient(60% 50% at 75% 30%, rgba(220,224,232,.22), transparent 70%); }
+.m-nova5t { --m-bg: linear-gradient(135deg, #5b3bd6, #c03d8a); --m-fg: #fff; --m-ac: #fff; --m-on: #4a2fb8; --m-font: 700 1em Sora, Inter, sans-serif; }
+.m-express { --m-bg: #ffd400; --m-fg: #111; --m-ac: #111; --m-on: #ffd400; --m-font: 400 1em Anton, Impact, sans-serif; --m-caso: uppercase; --m-track: 0; --m-r: 0; }
+.m-inmersivo { --m-bg: linear-gradient(180deg, rgba(20,12,6,.1), rgba(20,12,6,.75)), linear-gradient(135deg, #8a5a2e, #3b2412); --m-fg: #f6efe6; --m-ac: #f6efe6; --m-on: #3b2412; --m-font: 600 1em Playfair, Georgia, serif; --m-estilo: italic; }
+.m-ipad { --m-bg: #0a0a0a; --m-fg: #f5f5f7; --m-ac: #2997ff; --m-on: #fff; --m-font: 600 1em Inter, system-ui, sans-serif; --m-track: -.03em; --m-deco: linear-gradient(#2a2a2c, #2a2a2c) 70% 28% / 34% 30% no-repeat; }
+.m-gta6 { --m-bg: linear-gradient(180deg, #ff5f8f 0%, #ff9a3c 70%, #2a1240 70%); --m-fg: #2a1240; --m-ac: #2a1240; --m-on: #ffd27a; --m-font: 400 1em Anton, Impact, sans-serif; --m-caso: uppercase; --m-track: .01em; --m-deco: repeating-linear-gradient(180deg, transparent 0 9px, rgba(255,255,255,.18) 9px 11px) 50% 20% / 46% 40% no-repeat; }
+@media (max-width: 1280px) { .estilos { grid-template-columns: repeat(2, minmax(0, 1fr)); } .estilos .mini i { font-size: clamp(16px, 2.6vw, 30px); } }
+@media (max-width: 960px) { .le { grid-template-columns: minmax(0, 1fr); } .galeria { order: -1; } }
 </style>
 </head>
 <body>
-<main class="esc-cuerpo" data-ph="ec">
-  <header class="esc-cabecera">
-    <span class="esc-num">LUNES · S1 · E12</span>
-    <span class="esc-fase">Experimentación</span>
-    <h1 class="esc-titulo">Landing con estilo: el mismo negocio en 8 diseños</h1>
-    <p class="esc-sub">Pegas el texto del cliente, eliges el diseño, copias el prompt y lo pegas en el chat de <code>jmd</code>. Sin archivos ni comandos: el agente arma la landing. Cambiar de diseño es volver a pedirlo.</p>
+<div class="tl">
+  <header class="tl-folio">
+    <span class="marca">Taller de diseño</span><span class="sep" aria-hidden="true"></span>
+    <span class="ocultable">Sesión 2 · Web y landing</span>
+    <span class="derecha"><span class="cuenta">Landing</span><button class="tl-tema" type="button" data-tl-tema></button></span>
   </header>
 
-  <section class="esc-grid-2 s2">
+  <div class="tl-cabeza">
     <div>
-      <div class="bloque">
-        <p class="paso"><i>1</i> Pega lo que te escribió el cliente (o usa el ejemplo del taller)</p>
-        <textarea id="texto" spellcheck="false" aria-label="Texto del cliente"></textarea>
-        <div class="fila"><span id="cuenta"></span> · <button class="lnk" id="ejemplo" type="button">ejemplo: el taller</button> · <button class="lnk" id="ejemplo2" type="button">ejemplo: pollería</button> · <button class="lnk" id="borrar" type="button">borrar</button></div>
-      </div>
-      <div class="bloque">
-        <p class="paso"><i>3</i> Copia el prompt y pégalo en el chat de <code>jmd</code> (Enter)</p>
-        <button id="copiar" type="button">Copiar prompt</button>
-        <ol class="despues">
-          <li>El agente usa el skill de landing y te dice la ruta al terminar.</li>
-          <li>Abre <code id="ruta">/trabajo/landing/sitio-dificil/index.html</code> en el Visor.</li>
-          <li>Elige <b>otro diseño</b>, copia y pega de nuevo: mismo contenido, otra landing. Compara las dos.</li>
-          <li>Si sale <code>[completar]</code>, el cliente no dio ese dato: agrégalo al texto y vuelve a pedirlo.</li>
-        </ol>
-        <pre class="esc-cmd" id="cmd" aria-label="Prompt que se copia"></pre>
-      </div>
+      <h1 class="tl-titulo">Landing con estilo: <em>el mismo negocio en ocho diseños</em></h1>
+      <p class="tl-lead">Pegas el texto del cliente, eliges el diseño y copias el pedido al chat de <code>jmd</code>. Cambiar de diseño es volver a pedirlo.</p>
     </div>
-    <div>
-      <div class="bloque">
-        <p class="paso"><i>2</i> Elige el diseño</p>
-        <div class="estilos" id="estilos" role="group" aria-label="Diseño"></div>
-        <p class="eleg" id="eleg"></p>
+  </div>
+
+  <main class="tl-mesa le">
+    <section class="tl-panel pasos-col" aria-label="Pedido">
+      <div class="tl-grupo">
+        <p class="tl-paso"><span class="n">1</span>Pega lo que te escribió el cliente</p>
+        <textarea class="tl-input texto-cliente" id="texto" spellcheck="false" aria-label="Texto del cliente"></textarea>
+        <div class="tl-enlaces"><span id="cuenta"></span><span>Ejemplos:</span><button id="ejemplo" type="button">El taller</button><button id="ejemplo2" type="button">Pollería</button><button id="borrar" type="button">Borrar</button></div>
       </div>
-      <p class="nota">Lo logré = tu landing abre en el Visor en el diseño que elegiste. También puedes escribir el prompt a tu manera: lo que importa es el texto del cliente y el nombre del diseño. Los diseños están <i>inspirados</i> en esas estéticas: sin logos ni fuentes de marca.</p>
-    </div>
-  </section>
-</main>
+      <div class="tl-grupo">
+        <p class="tl-paso"><span class="n">3</span>Copia el pedido y pégalo en el chat de <code>jmd</code></p>
+        <button id="copiar" type="button" class="tl-btn primario ancho">Copiar prompt</button>
+        <details class="tl-plegable">
+          <summary>Qué pasa después</summary>
+          <div class="cuerpo">
+            <ol class="despues">
+              <li>El agente usa el skill de landing y te dice la ruta al terminar.</li>
+              <li>Abre <code id="ruta">/trabajo/landing/sitio-dificil/index.html</code> en el Visor.</li>
+              <li>Elige <b>otro diseño</b>, copia y pega de nuevo: mismo contenido, otra landing. Compara las dos.</li>
+              <li>Si sale <code>[completar]</code>, el cliente no dio ese dato: agrégalo al texto y vuelve a pedirlo.</li>
+            </ol>
+            <p class="nota"><b>Lo logré:</b> tu landing abre en el Visor en el diseño que elegiste. Los diseños están <i>inspirados</i> en esas estéticas: sin logos ni fuentes de marca.</p>
+          </div>
+        </details>
+        <details class="tl-plegable">
+          <summary>Pedido completo que se copia</summary>
+          <div class="cuerpo"><pre class="tl-pre" id="cmd" aria-label="Prompt que se copia"></pre></div>
+        </details>
+      </div>
+    </section>
+
+    <section class="galeria" aria-label="Diseños">
+      <p class="tl-paso"><span class="n">2</span>Elige el diseño</p>
+      <div class="estilos" id="estilos" role="group" aria-label="Diseño"></div>
+      <p class="eleg" id="eleg" aria-live="polite"></p>
+    </section>
+  </main>
+</div>
+<script src="../../comun/taller.js"></script>
 <script>
 (() => {
   const ESTILOS = [
@@ -108,11 +131,12 @@ pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; w
   const guardar = (k, v) => { try { localStorage.setItem('e12l-' + k, v); } catch (e) {} };
   const leer = (k) => { try { return localStorage.getItem('e12l-' + k); } catch (e) { return null; } };
 
+  for (const [f, a, d] of [['Archivo Black', 'fuente-archivo-black-400.woff2', {}], ['Outfit', 'fuente-outfit-200.woff2', { weight: '100 900' }], ['Sora', 'fuente-sora-400.woff2', { weight: '100 800' }], ['Anton', 'fuente-anton-400.woff2', {}], ['Playfair', 'fuente-playfair-italica.woff2', { weight: '400 900', style: 'italic' }]]) Taller.cargarFuente(f, a, d);
   const caja = $('estilos');
   for (const [id, nombre, como, rubros, sw] of ESTILOS) {
     const b = document.createElement('button');
-    b.type = 'button'; b.dataset.e = id; b.style.setProperty('--sw', sw);
-    b.innerHTML = '<b></b><small></small>';
+    b.type = 'button'; b.dataset.e = id;
+    b.innerHTML = '<span class="mini m-' + id + '" aria-hidden="true"><i>Tu negocio</i><u>Escríbenos</u></span><b></b><small></small>';
     b.querySelector('b').textContent = nombre;
     b.querySelector('small').textContent = como;
     b.title = rubros;
@@ -131,7 +155,7 @@ pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; w
   function pintar() {
     for (const b of caja.children) b.setAttribute('aria-pressed', String(b.dataset.e === estilo));
     const e = ESTILOS.find((x) => x[0] === estilo);
-    $('eleg').innerHTML = 'Elegiste <b></b> · <code>--estilo ' + estilo + '</code> · va bien para: <span></span>';
+    $('eleg').innerHTML = 'Elegiste <b></b>, que va bien para <span></span>. <code>--estilo ' + estilo + '</code>';
     $('eleg').querySelector('b').textContent = e[1];
     $('eleg').querySelector('span').textContent = e[3].toLowerCase();
     cmd.textContent = comando();
@@ -139,7 +163,6 @@ pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; w
     const n = texto.value.trim().length;
     $('cuenta').textContent = n ? n + ' caracteres' : 'vacío: pega el texto o usa un ejemplo';
     btn.disabled = n < 15;
-    btn.style.opacity = n < 15 ? .5 : 1;
   }
 
   async function copiar(t) {
@@ -154,7 +177,7 @@ pre#cmd { max-height: 12vh; overflow: auto; font-size: .6em; margin: .6em 0 0; w
 
   btn.onclick = async () => {
     const ok = await copiar(comando());
-    btn.textContent = ok ? '✓ Copiado: pégalo en el chat de jmd' : 'No pude copiar: selecciona el texto de abajo';
+    btn.textContent = ok ? 'Copiado: pégalo en el chat de jmd' : 'No pude copiar: selecciona el texto de abajo';
     btn.classList.toggle('ok', ok);
     if (!ok) { const r = document.createRange(); r.selectNodeContents(cmd); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
     setTimeout(() => { btn.textContent = 'Copiar prompt'; btn.classList.remove('ok'); }, 3500);
