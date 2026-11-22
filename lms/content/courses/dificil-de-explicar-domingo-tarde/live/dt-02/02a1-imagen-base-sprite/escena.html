@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imagen base y recorte seguro · Taller S2</title>
+<!-- Escena del modo LIVE (dt-02, domingo tarde). Paso 1 del ejercicio «imagen base → sprite animado».
+     Genera la imagen base con FLUX (POST /api/v1/live/{lección}/imagen, cupo por alumno) sobre un fondo liso de un color
+     y la recorta en el navegador con un relleno desde los bordes: solo se borra el fondo que toca el borde, así que
+     ninguna parte del personaje o del producto puede desaparecer. La IA de recorte (/recorte/quitar) es opcional y
+     solo sirve para comparar: lo que la IA borró y el recorte seguro conservó se pinta en rojo. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-titulo { font-size: 1.32em; }
+.obj { font-size: .8em; margin: .2em 0 0; color: var(--muted); max-width: 62em; }
+.obj b { color: var(--fg); }
+.ib { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2vw; align-items: start; }
+.sec { display: grid; gap: .5em; min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: .3em; align-items: center; }
+.chips .t { font-size: .66em; color: var(--muted); font-weight: 700; margin-right: .2em; }
+.chips button { font: 600 .68em/1 system-ui, sans-serif; padding: .5em .8em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chips button .sw { display: inline-block; width: .9em; height: .9em; border-radius: .2em; vertical-align: -.12em; margin-right: .35em; border: 1px solid rgba(0,0,0,.25); }
+.caso { font-size: .72em; margin: 0; padding: .55em .75em; border-radius: .7em; background: var(--s1); border: 1px solid var(--line2); }
+.caso b { color: var(--accent); }
+.receta { display: grid; grid-template-columns: auto 1fr; gap: .35em .6em; align-items: center; }
+.receta label { font-size: .7em; font-weight: 700; }
+.receta label small { display: block; font-weight: 400; color: var(--muted); }
+.receta input { width: 100%; font: .78em/1.3 system-ui, sans-serif; padding: .42em .6em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+.prompt { font: .66em/1.45 var(--mono); background: var(--s2); border: 1px solid var(--line); border-radius: .8em; padding: .55em .75em; margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 14vh; overflow: auto; }
+.grande { width: 100%; font: 700 .88em/1 system-ui, sans-serif; padding: .78em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.grande:disabled { opacity: .55; cursor: wait; }
+.fila { display: flex; gap: .4em; flex-wrap: wrap; }
+.fila button, .fila a { font: 700 .7em/1 system-ui, sans-serif; padding: .55em .85em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; text-decoration: none; }
+.fila button:disabled { opacity: .5; cursor: default; }
+.fila a { border-color: var(--ok); color: var(--ok); }
+.aviso { font-size: .7em; margin: 0; min-height: 1.2em; color: var(--muted); }
+.aviso.mal { color: var(--bad); font-weight: 700; }
+.aviso.ok { color: var(--ok); font-weight: 700; }
+.pasos { margin: 0; padding-left: 1.3em; font-size: .7em; display: grid; gap: .15em; }
+.pasos b { color: var(--fg); }
+.lienzos { display: grid; grid-template-columns: 1fr 1fr; gap: .5em; }
+.lienzos figure { margin: 0; display: grid; gap: .25em; }
+.lienzos figcaption { font-size: .62em; color: var(--muted); font-weight: 700; }
+.lienzos canvas { width: 100%; height: auto; display: block; border-radius: .6em; border: 1px solid var(--line2);
+  background-color: #fff; background-image: linear-gradient(45deg, #d9d9de 25%, transparent 25%), linear-gradient(-45deg, #d9d9de 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #d9d9de 75%), linear-gradient(-45deg, transparent 75%, #d9d9de 75%);
+  background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0; }
+.cifras { display: flex; flex-wrap: wrap; gap: .3em; }
+.cifras span { font: 700 .62em/1 var(--mono); padding: .4em .6em; border-radius: 99px; background: var(--s2); border: 1px solid var(--line2); }
+.cifras span.ok { color: var(--ok); border-color: var(--ok); }
+.cifras span.mal { color: var(--bad); border-color: var(--bad); }
+.bien { margin: 0; padding: .55em .75em .55em 1.9em; font-size: .68em; border-radius: .7em; background: var(--s1); border: 1px solid var(--line2); }
+.bien li { margin: .12em 0; }
+.entrega { font-size: .68em; margin: 0; color: var(--muted); }
+.entrega b { color: var(--fg); }
+@media (max-width: 900px) { .ib { grid-template-columns: 1fr; } .lienzos { grid-template-columns: 1fr; } body { overflow-y: auto; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">DOMINGO · S2 · SPRITE 1</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo">Imagen base → <em>sprite animado</em> · paso 1: la base y un recorte que no se come nada</h1>
+      <p class="obj"><b>Objetivo:</b> una imagen de tu producto o de la mascota de tu negocio, sobre fondo liso, recortada sin perder ni un pedazo, lista para hacer las poses.</p>
+    </div>
+
+    <section class="ib">
+      <div class="sec">
+        <div class="chips" id="rubros"><span class="t">Caso de prueba:</span></div>
+        <p class="caso" id="caso"></p>
+        <div class="receta">
+          <label>Qué es<small>producto o mascota</small></label><input id="sujeto" type="text" maxlength="200">
+          <label>Detalle<small>material, colores</small></label><input id="detalle" type="text" maxlength="200">
+        </div>
+        <div class="chips" id="estilos"><span class="t">Estilo:</span></div>
+        <div class="chips" id="fondos"><span class="t">Fondo liso:</span></div>
+        <pre class="prompt" id="prompt" aria-label="Pedido que se envía"></pre>
+        <button id="generar" type="button" class="grande">Generar mi imagen base (unos 10 s)</button>
+        <p class="aviso" id="aviso" aria-live="polite">Escríbelo en español: el servicio traduce tu pedido al inglés antes de dibujar.</p>
+        <ol class="pasos">
+          <li>Elige el <b>caso de tu rubro</b> y cambia «Qué es» por tu producto o tu mascota.</li>
+          <li>Deja el <b>fondo liso</b>. Si tu producto es verde, cambia a magenta o azul.</li>
+          <li>Genera. Si no te gusta, cambia <b>una sola palabra</b> y vuelve a generar (5 por día).</li>
+          <li>Pulsa <b>Recorte seguro</b> y revisa los bordes sobre el cuadriculado.</li>
+          <li>Descarga <code>base.png</code>. Si quieres, pulsa <b>Comparar con IA</b>: lo rojo es lo que la IA habría borrado.</li>
+        </ol>
+      </div>
+
+      <div class="sec">
+        <div class="lienzos">
+          <figure><figcaption>1 · Tu imagen base</figcaption><canvas id="cv-base" width="512" height="512" aria-label="Imagen base"></canvas></figure>
+          <figure><figcaption id="cap-rec">2 · Recorte seguro</figcaption><canvas id="cv-rec" width="512" height="512" aria-label="Imagen recortada"></canvas></figure>
+        </div>
+        <div class="fila">
+          <button id="recortar" type="button" disabled>Recorte seguro</button>
+          <button id="comparar" type="button" disabled>Comparar con IA</button>
+          <a id="descargar" hidden download="base.png">Descargar base.png</a>
+          <button id="subir" type="button">Usar una foto mía</button>
+          <input id="archivo" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+        </div>
+        <div class="cifras" id="cifras"></div>
+        <ul class="bien">
+          <li><b>Salió bien si:</b> el fondo es cuadriculado de borde a borde,</li>
+          <li>el producto conserva tapas, asas, letras del envase y reflejos,</li>
+          <li>no queda un halo del color del fondo al ampliar,</li>
+          <li>y, si comparas con IA, todo lo rojo sigue dentro de tu <code>base.png</code>: no se perdió ninguna parte.</li>
+        </ul>
+        <p class="entrega"><b>Qué entregar:</b> <code>base.png</code> con fondo transparente y, en tu ficha, el pedido que usaste. Sigue con las poses en la escena siguiente.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">El recorte seguro solo borra el fondo que toca el borde de la imagen: lo que está dentro del dibujo nunca se toca · canvas 2D, sin GPU</footer>
+</div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || 'dt-02';
+  const RUBROS = [
+    ['Perfume', 'un frasco de perfume de vidrio ámbar con tapa dorada', 'vidrio con reflejos suaves, etiqueta lisa sin letras', 0,
+      'Perfume: el reto es el vidrio. La IA suele borrar la parte transparente y los reflejos; el recorte seguro los conserva.'],
+    ['Comida', 'una hamburguesa doble con queso y lechuga', 'pan brillante con ajonjolí, vista de tres cuartos', 0,
+      'Comida: el reto son los bordes irregulares (lechuga, ajonjolí). Pide el plato o el producto solo, sin mesa ni mantel.'],
+    ['Producto', 'una zapatilla deportiva blanca con suela naranja', 'vista de perfil, cordones blancos', 1,
+      'Producto: el reto es lo blanco. Sobre fondo blanco el recorte se come la zapatilla; por eso el fondo va de color.'],
+    ['Empresa', 'una mascota: un búho de color azul marino con lentes redondos', 'cuerpo entero de perfil, estilo amable y profesional', 1,
+      'Empresa: la mascota es la que luego corre en tu landing. Pide cuerpo entero de perfil: así las poses salen alineadas.'],
+  ];
+  const ESTILOS = [
+    ['foto de estudio', 'foto de producto de estudio, luz suave, nítida'],
+    ['ilustración plana', 'ilustración de color plano con contorno grueso, paleta limitada'],
+    ['3D suave', 'render 3D suave tipo arcilla, luz de estudio'],
+  ];
+  const FONDOS = [
+    ['verde', '#00ff00', 'verde puro #00FF00'],
+    ['magenta', '#ff00ff', 'magenta puro #FF00FF'],
+    ['azul', '#0047ff', 'azul puro #0047FF'],
+  ];
+  const est = { rubro: 0, sujeto: RUBROS[0][1], detalle: RUBROS[0][2], estilo: 0, fondo: 0 };
+  try { Object.assign(est, JSON.parse(localStorage.getItem('dt02-base') || '{}')); } catch (e) {}
+  const guardar = () => { try { localStorage.setItem('dt02-base', JSON.stringify(est)); localStorage.setItem('dt02-sujeto', est.sujeto); } catch (e) {} };
+
+  const prompt = () => `${est.sujeto.trim()}, ${est.detalle.trim()}, ${ESTILOS[est.estilo][1]}, ` +
+    `objeto completo y centrado con margen alrededor, sobre fondo liso de un solo color ${FONDOS[est.fondo][2]}, ` +
+    `sin sombra, sin suelo, sin degradado, sin texto`;
+
+  function chips(caja, items, activo, al) {
+    caja.querySelectorAll('button').forEach((b) => b.remove());
+    items.forEach((it, i) => {
+      const b = document.createElement('button'); b.type = 'button';
+      if (caja.id === 'fondos') { const s = document.createElement('span'); s.className = 'sw'; s.style.background = it[1]; b.appendChild(s); }
+      b.appendChild(document.createTextNode(it[0]));
+      b.setAttribute('aria-pressed', String(activo(i)));
+      b.onclick = () => { al(i); pintar(); };
+      caja.appendChild(b);
+    });
+  }
+  function pintar() {
+    chips($('rubros'), RUBROS, (i) => i === est.rubro, (i) => {
+      est.rubro = i; est.sujeto = RUBROS[i][1]; est.detalle = RUBROS[i][2]; est.estilo = RUBROS[i][3];
+      $('sujeto').value = est.sujeto; $('detalle').value = est.detalle;
+    });
+    chips($('estilos'), ESTILOS, (i) => i === est.estilo, (i) => { est.estilo = i; });
+    chips($('fondos'), FONDOS, (i) => i === est.fondo, (i) => { est.fondo = i; });
+    $('caso').textContent = RUBROS[est.rubro][4];
+    $('prompt').textContent = prompt();
+    if (!$('generar').dataset.ocupado) $('generar').disabled = est.sujeto.trim().length < 3;
+    guardar();
+  }
+
+  // ---------- lienzos
+  const cvB = $('cv-base'), cvR = $('cv-rec');
+  let fuente = null, mascaraSegura = null, W = 0, H = 0;
+  function cargar(src) {
+    return new Promise((ok, mal) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => mal(new Error('no pude leer esa imagen')); im.src = src; });
+  }
+  function ponerBase(im) {
+    const esc = Math.min(1, 768 / Math.max(im.width, im.height));
+    W = Math.round(im.width * esc); H = Math.round(im.height * esc);
+    for (const c of [cvB, cvR]) { c.width = W; c.height = H; }
+    const g = cvB.getContext('2d'); g.clearRect(0, 0, W, H); g.drawImage(im, 0, 0, W, H);
+    cvR.getContext('2d').clearRect(0, 0, W, H);
+    fuente = g.getImageData(0, 0, W, H); mascaraSegura = null;
+    $('recortar').disabled = false; $('comparar').disabled = true; $('descargar').hidden = true;
+    $('cifras').innerHTML = ''; $('cap-rec').textContent = '2 · Recorte seguro';
+  }
+
+  // Recorte seguro: el color del fondo sale del borde (mediana); se rellena desde los cuatro bordes y solo se
+  // vuelve transparente lo que es parecido al fondo Y está conectado con el borde. Un reflejo verde dentro del
+  // frasco no toca el borde, así que se queda. Los píxeles del contorno quedan semitransparentes y sin tinte.
+  function recorteSeguro() {
+    const p = fuente.data, n = W * H;
+    const borde = [];
+    for (let x = 0; x < W; x++) borde.push(x, (H - 1) * W + x);
+    for (let y = 0; y < H; y++) borde.push(y * W, y * W + W - 1);
+    const canal = (k) => borde.map((i) => p[i * 4 + k]).sort((a, b) => a - b)[borde.length >> 1];
+    const bg = [canal(0), canal(1), canal(2)];
+    const dist = (i) => Math.abs(p[i * 4] - bg[0]) + Math.abs(p[i * 4 + 1] - bg[1]) + Math.abs(p[i * 4 + 2] - bg[2]);
+    const TOL = 120, BLANDO = 230;
+    const fondo = new Uint8Array(n); const cola = new Int32Array(n); let cab = 0, fin = 0;
+    for (const i of borde) if (!fondo[i] && dist(i) < TOL) { fondo[i] = 1; cola[fin++] = i; }
+    while (cab < fin) {
+      const i = cola[cab++], x = i % W, y = (i / W) | 0;
+      const vec = [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, y > 0 ? i - W : -1, y < H - 1 ? i + W : -1];
+      for (const j of vec) if (j >= 0 && !fondo[j] && dist(j) < TOL) { fondo[j] = 1; cola[fin++] = j; }
+    }
+    const out = new ImageData(new Uint8ClampedArray(p), W, H), q = out.data;
+    const dom = bg.indexOf(Math.max(...bg));
+    let opacos = 0;
+    mascaraSegura = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      if (fondo[i]) { q[i * 4 + 3] = 0; continue; }
+      const x = i % W, y = (i / W) | 0;
+      const pegado = (x > 0 && fondo[i - 1]) || (x < W - 1 && fondo[i + 1]) || (y > 0 && fondo[i - W]) || (y < H - 1 && fondo[i + W]);
+      if (pegado) {
+        const d = dist(i);
+        if (d < BLANDO) q[i * 4 + 3] = Math.round(255 * Math.max(.25, (d - TOL) / (BLANDO - TOL)));
+        // quitar el tinte del fondo en el contorno (despill)
+        const otros = [0, 1, 2].filter((k) => k !== dom);
+        const tope = Math.max(q[i * 4 + otros[0]], q[i * 4 + otros[1]]);
+        if (q[i * 4 + dom] > tope) q[i * 4 + dom] = tope;
+      }
+      mascaraSegura[i] = 1; opacos++;
+    }
+    const g = cvR.getContext('2d'); g.clearRect(0, 0, W, H); g.putImageData(out, 0, 0);
+    $('descargar').href = cvR.toDataURL('image/png'); $('descargar').hidden = false;
+    $('comparar').disabled = false;
+    $('cap-rec').textContent = '2 · Recorte seguro (fondo liso)';
+    const pct = Math.round(100 * opacos / n);
+    $('cifras').innerHTML = '';
+    cifra(`fondo detectado rgb(${bg.join(', ')})`, '');
+    cifra(`objeto: ${pct} % de la imagen`, pct > 3 && pct < 90 ? 'ok' : 'mal');
+    if (pct >= 90) aviso('El fondo no es liso: casi nada se borró. Vuelve a generar con fondo liso o elige otro color.', 'mal');
+    else if (pct <= 3) aviso('Casi todo se borró: el producto tiene el mismo color que el fondo. Cambia el color del fondo.', 'mal');
+    else aviso('Recorte listo. Revisa los bordes y descarga base.png.', 'ok');
+  }
+  function cifra(t, c) { const s = document.createElement('span'); s.textContent = t; if (c) s.className = c; $('cifras').appendChild(s); }
+  function aviso(t, c) { $('aviso').textContent = t; $('aviso').className = 'aviso' + (c ? ' ' + c : ''); }
+
+  // Comparar con la IA: se manda la base al servicio de recorte de la clase y se cuentan los píxeles del objeto
+  // que la IA dejó transparentes. Esos se pintan en rojo sobre el recorte seguro: es lo que se habría perdido.
+  async function compararIA() {
+    const b = $('comparar'); b.disabled = true; b.textContent = 'La IA está recortando…';
+    try {
+      const datos = await new Promise((ok) => cvB.toBlob(ok, 'image/png'));
+      const r = await fetch('/recorte/quitar', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: datos });
+      if (!r.ok) throw new Error(r.status === 429 ? 'el servicio de recorte está ocupado: prueba en un minuto' : `el recorte con IA respondió ${r.status}`);
+      const blob = await r.blob();
+      const url = await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(blob); });
+      const im = await cargar(url);
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0, W, H);
+      const ia = g.getImageData(0, 0, W, H).data;
+      const gr = cvR.getContext('2d', { willReadFrequently: true });
+      const vista = gr.getImageData(0, 0, W, H), v = vista.data;
+      let perdidos = 0, objeto = 0;
+      for (let i = 0; i < W * H; i++) {
+        if (!mascaraSegura[i]) continue;
+        objeto++;
+        if (ia[i * 4 + 3] < 40) { perdidos++; v[i * 4] = 230; v[i * 4 + 1] = 30; v[i * 4 + 2] = 40; v[i * 4 + 3] = 255; }
+      }
+      gr.putImageData(vista, 0, 0);
+      $('cap-rec').textContent = '2 · En rojo: lo que la IA habría borrado';
+      const pct = objeto ? (100 * perdidos / objeto) : 0;
+      cifra(`partes rescatadas: ${pct.toFixed(1)} % del objeto`, pct > 0.5 ? 'mal' : 'ok');
+      aviso(pct > 0.5 ? 'La IA se comía partes de tu imagen (en rojo). Tu base.png descargada NO las pierde.' :
+        'La IA y el recorte seguro coinciden. Tu base.png ya estaba bien.', pct > 0.5 ? 'mal' : 'ok');
+    } catch (e) { aviso(String(e.message || e), 'mal'); }
+    finally { b.textContent = 'Comparar con IA'; b.disabled = false; }
+  }
+
+  async function generar() {
+    const btn = $('generar'); if (btn.dataset.ocupado) return;
+    btn.dataset.ocupado = '1'; btn.disabled = true; btn.textContent = 'Dibujando… (unos 10 s)'; aviso('');
+    const t0 = performance.now();
+    try {
+      const r = await fetch(`/api/v1/live/${encodeURIComponent(leccion)}/imagen`, {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt(), orientacion: 'cuadrado' }),
+      });
+      if (!r.ok) {
+        let msg = `error ${r.status}`; try { const j = await r.json(); msg = (j.error && (j.error.message || j.error.mensaje)) || j.message || msg; } catch (e) {}
+        throw new Error(r.status === 429 ? 'Se acabó tu cupo de imágenes de hoy: usa una foto tuya con «Usar una foto mía».' : msg);
+      }
+      const blob = await r.blob();
+      const url = await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(blob); });
+      ponerBase(await cargar(url));
+      aviso(`Lista en ${((performance.now() - t0) / 1000).toFixed(1)} s. Ahora pulsa «Recorte seguro».`, 'ok');
+    } catch (e) { aviso(String(e.message || 'No se pudo generar'), 'mal'); }
+    finally { delete btn.dataset.ocupado; btn.textContent = 'Generar mi imagen base (unos 10 s)'; pintar(); }
+  }
+
+  $('generar').onclick = generar;
+  $('recortar').onclick = () => { try { recorteSeguro(); } catch (e) { aviso(String(e.message || e), 'mal'); } };
+  $('comparar').onclick = compararIA;
+  $('subir').onclick = () => $('archivo').click();
+  $('archivo').onchange = async () => {
+    const f = $('archivo').files && $('archivo').files[0]; if (!f) return;
+    const url = await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(f); });
+    try { ponerBase(await cargar(url)); aviso('Foto cargada. Funciona mejor si el fondo es liso.', ''); } catch (e) { aviso(e.message, 'mal'); }
+  };
+  for (const k of ['sujeto', 'detalle']) { $(k).value = est[k]; $(k).oninput = (e) => { est[k] = e.target.value; pintar(); }; }
+  pintar();
+})();
+</script>
+</body>
+</html>

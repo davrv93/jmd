@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flyers con reglas · Taller S2</title>
+<!-- Escena del modo LIVE (dt-02, domingo tarde). El flyer se compone en el navegador: la IA (o tu imagen base) pone
+     solo la imagen y el texto va en una capa con fuentes reales, así nunca sale con letras deformes. Las reglas son
+     las de materials/flyers/reglas.json (jerarquía, máximo de palabras, 60-30-10, contraste AA, palabras prohibidas)
+     y se comprueban en vivo. Las fuentes se cargan con fetch + FontFace porque la CSP solo admite font-src data:. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-titulo { font-size: 1.3em; }
+.obj { font-size: .8em; margin: .2em 0 0; color: var(--muted); max-width: 64em; }
+.obj b { color: var(--fg); }
+.fl { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 1.2vw; align-items: start; }
+.sec { display: grid; gap: .45em; min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: .3em; align-items: center; }
+.chips .t { font-size: .66em; color: var(--muted); font-weight: 700; margin-right: .2em; }
+.chips button { font: 600 .68em/1 system-ui, sans-serif; padding: .5em .8em; border-radius: 99px; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.caso { font-size: .7em; margin: 0; padding: .5em .7em; border-radius: .7em; background: var(--s1); border: 1px solid var(--line2); }
+.campos { display: grid; grid-template-columns: auto 1fr auto; gap: .3em .5em; align-items: center; }
+.campos label { font-size: .68em; font-weight: 700; }
+.campos input { width: 100%; font: .76em/1.3 system-ui, sans-serif; padding: .38em .55em; border-radius: .55em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+.campos .n { font: 700 .6em var(--mono); color: var(--muted); white-space: nowrap; }
+.campos .n.mal { color: var(--bad); }
+.reglas { list-style: none; margin: 0; padding: 0; display: grid; gap: .18em; font-size: .66em; }
+.reglas li { display: flex; gap: .45em; align-items: baseline; }
+.reglas li b { flex: none; width: 1.2em; text-align: center; }
+.reglas li.ok b { color: var(--ok); } .reglas li.mal b { color: var(--bad); } .reglas li.mal { color: var(--fg); }
+.pasos { margin: 0; padding-left: 1.3em; font-size: .68em; display: grid; gap: .12em; }
+.vista canvas { width: 100%; max-width: 420px; height: auto; display: block; margin: 0 auto; border-radius: .6em; box-shadow: var(--card-shadow); }
+.fila { display: flex; gap: .4em; flex-wrap: wrap; justify-content: center; }
+.fila button, .fila a { font: 700 .7em/1 system-ui, sans-serif; padding: .55em .85em; border-radius: .6em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; text-decoration: none; }
+.fila a.ok { border-color: var(--ok); color: var(--ok); }
+.fila a[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.aviso { font-size: .68em; margin: 0; min-height: 1.1em; color: var(--muted); text-align: center; }
+.aviso.mal { color: var(--bad); font-weight: 700; }
+.entrega { font-size: .66em; margin: 0; color: var(--muted); }
+.entrega b { color: var(--fg); }
+@media (max-width: 900px) { .fl { grid-template-columns: 1fr; } body { overflow-y: auto; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">DOMINGO · S2 · FLYERS</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo">Flyers con reglas: <em>la IA pone la imagen, el texto lo pone el código</em></h1>
+      <p class="obj"><b>Objetivo:</b> un flyer de tu negocio que pase las ocho reglas, con letras perfectas, listo para tu estado de WhatsApp. Mira antes la galería de 100 flyers hechos con estas mismas reglas.</p>
+    </div>
+    <section class="fl">
+      <div class="sec">
+        <div class="chips" id="rubros"><span class="t">Caso de prueba:</span></div>
+        <p class="caso" id="caso"></p>
+        <div class="campos" id="campos"></div>
+        <div class="chips" id="disenos"><span class="t">Diseño:</span></div>
+        <ul class="reglas" id="reglas" aria-live="polite"></ul>
+        <ol class="pasos">
+          <li>Elige tu rubro y <b>cambia cada campo</b> por los datos reales de tu negocio.</li>
+          <li>Pon tu imagen: <b>sube tu base.png</b> (escena de sprites) o el PNG de tu <b>render 3D</b>, o pide un fondo con FLUX.</li>
+          <li>Corrige hasta que las <b>ocho reglas</b> queden en verde.</li>
+          <li>Descarga el PNG, súbelo a tu estado y pide a alguien que te diga qué ofreces en 3 segundos.</li>
+        </ol>
+      </div>
+      <div class="sec vista">
+        <canvas id="cv" width="1080" height="1350" aria-label="Vista previa del flyer"></canvas>
+        <div class="fila">
+          <button id="subir" type="button">Subir mi imagen</button>
+          <input id="archivo" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+          <button id="flux" type="button">Fondo con FLUX</button>
+          <button id="quitar" type="button">Sin imagen</button>
+          <a id="bajar" class="ok" download="flyer.png" aria-disabled="true">Descargar flyer.png</a>
+          <button id="galeria" type="button" hidden>Copiar enlace de la galería de 100</button>
+        </div>
+        <p class="aviso" id="aviso">Escribe en español. FLUX nunca dibuja letras aquí: el texto lo pone el navegador.</p>
+        <p class="entrega"><b>Qué entregar:</b> flyer.png (1080 × 1350) con las ocho reglas en verde. <b>Salió bien si</b> alguien que no conoce tu negocio dice qué vendes, cuánto cuesta y cómo pedirlo, mirándolo 3 segundos.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="esc-pie">Reglas: jerarquía gancho → producto → beneficio → oferta → botón → marca · 60-30-10 · contraste AA 4,5:1 · sin emojis ni palabras vetadas</footer>
+</div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const leccion = (location.pathname.match(/\/live\/([^/]+)\//) || [])[1] || 'dt-02';
+  const CURSO = 'dificil-de-explicar-domingo-tarde';
+  // La galería la publica el motor de flyers; si aún no está, el enlace queda oculto.
+  const GALERIAS = ['salida/index.html', 'salida/galeria.html', 'galeria/index.html', 'index.html'].map((r) => `/files/${CURSO}/materials/flyers/${r}`);
+
+  const CAMPOS = [ // id, etiqueta, máx. palabras, máx. caracteres
+    ['gancho', 'Gancho', 6, 42], ['producto', 'Producto', 5, 34], ['beneficio', 'Beneficio', 12, 90],
+    ['oferta', 'Oferta', 6, 30], ['cta', 'Botón', 4, 26], ['marca', 'Marca', 3, 28], ['whatsapp', 'WhatsApp', 3, 16],
+  ];
+  const RUBROS = [
+    ['Perfume', 'Perfume: lujo sobrio. Fondo oscuro, acento dorado, serif elegante. El frasco es el héroe.', 1,
+      { gancho: 'Tu aroma habla primero', producto: 'Parfum Ámbar 100 ml', beneficio: 'Notas de vainilla y madera que duran todo el día', oferta: 'S/ 89 · envío gratis', cta: 'Pídelo por WhatsApp', marca: 'Casa Ámbar', whatsapp: '987 654 321' },
+      'un frasco de perfume de vidrio ámbar con tapa dorada sobre seda oscura, luz lateral suave, foto de producto, sin texto'],
+    ['Comida', 'Comida: apetito. Colores cálidos, letra gruesa, el precio se lee de lejos.', 0,
+      { gancho: 'Hoy se come rico', producto: 'Hamburguesa doble con queso', beneficio: 'Carne de res a la parrilla, pan artesanal y papas nativas', oferta: 'Combo S/ 24', cta: 'Pide tu combo', marca: 'La Parrilla 22', whatsapp: '987 654 321' },
+      'una hamburguesa doble con queso y papas fritas sobre tabla de madera, foto de comida cálida, sin texto'],
+    ['Producto', 'Producto: claridad. Fondo claro, acento fuerte, una sola cifra grande.', 2,
+      { gancho: 'Corre más, pesa menos', producto: 'Zapatilla Aire 2', beneficio: 'Suela de 180 g y malla que respira en todo el recorrido', oferta: 'S/ 149 · tallas 36-44', cta: 'Separa tu talla', marca: 'Paso Firme', whatsapp: '987 654 321' },
+      'una zapatilla deportiva blanca con suela naranja flotando, fondo claro de estudio, foto de producto, sin texto'],
+    ['Empresa', 'Empresa: confianza. Azul profundo, letra limpia, el beneficio en datos concretos.', 3,
+      { gancho: 'Tu contabilidad al día', producto: 'Asesoría contable mensual', beneficio: 'Declaraciones a tiempo y reporte de caja cada semana', oferta: 'Primer mes S/ 0', cta: 'Agenda tu cita', marca: 'Cuentas Claras', whatsapp: '987 654 321' },
+      'una oficina luminosa y ordenada con escritorio, laptop y plantas, foto corporativa, sin personas, sin texto'],
+  ];
+  // diseño: fondo 60 · superficie 30 · acento 10 · texto · texto sobre acento · fuentes [título, cuerpo]
+  const DISENOS = [
+    ['Cálido', '#fff3df', '#ffd59a', '#b8321a', '#2a160c', '#ffffff', ['Anton', 'Inter']],
+    ['Lujo', '#17111c', '#2c2233', '#d8b46a', '#f6efe6', '#17111c', ['Playfair', 'Inter']],
+    ['Claro', '#f3f5f8', '#dde4ee', '#c2410c', '#101828', '#ffffff', ['Archivo Black', 'Inter']],
+    ['Corporativo', '#0b2545', '#13315c', '#f4d35e', '#ffffff', '#0b2545', ['Sora', 'Inter']],
+  ];
+  const FUENTES = [['Anton', 'fuente-anton-400.woff2'], ['Inter', 'fuente-inter-400.woff2'], ['Playfair', 'fuente-playfair.woff2'],
+    ['Archivo Black', 'fuente-archivo-black-400.woff2'], ['Sora', 'fuente-sora-400.woff2']];
+  const VETADAS = ['cerdo', 'chicharrón', 'chicharron', 'lechón', 'lechon', 'tocino', 'jamón', 'jamon', 'chancho', 'panceta', 'cerveza', 'pisco', 'vino', 'terror', 'fantasma', 'espíritu', 'espiritu', 'embrujad'];
+
+  const est = { rubro: 0, diseno: 1, datos: { ...RUBROS[0][3] } };
+  try { const g = JSON.parse(localStorage.getItem('dt02-flyer') || 'null'); if (g && g.datos) Object.assign(est, g); } catch (e) {}
+  const guardar = () => { try { localStorage.setItem('dt02-flyer', JSON.stringify(est)); } catch (e) {} };
+  let imagen = null;
+
+  // ---------- fuentes reales (fetch + FontFace)
+  const cargadas = Promise.all(FUENTES.map(async ([fam, arch]) => {
+    try { const buf = await (await fetch('../../comun/' + arch)).arrayBuffer(); const f = new FontFace(fam, buf); await f.load(); document.fonts.add(f); } catch (e) {}
+  }));
+
+  // ---------- formulario
+  const caja = $('campos');
+  for (const [id, et] of CAMPOS) {
+    const l = document.createElement('label'); l.htmlFor = 'f-' + id; l.textContent = et;
+    const i = document.createElement('input'); i.id = 'f-' + id; i.type = 'text'; i.maxLength = 120;
+    i.oninput = () => { est.datos[id] = i.value; pintar(); };
+    const n = document.createElement('span'); n.className = 'n'; n.id = 'n-' + id;
+    caja.append(l, i, n);
+  }
+  function chips(c, items, activo, al) {
+    c.querySelectorAll('button').forEach((b) => b.remove());
+    items.forEach((it, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it[0]; b.setAttribute('aria-pressed', String(activo(i))); b.onclick = () => { al(i); pintar(true); }; c.appendChild(b); });
+  }
+
+  // ---------- reglas
+  const palabras = (t) => (t || '').trim().split(/\s+/).filter(Boolean).length;
+  const lum = (hex) => { const v = [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16) / 255).map((c) => c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4)); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]; };
+  const contraste = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  function reglas() {
+    const d = est.datos, D = DISENOS[est.diseno];
+    const todo = CAMPOS.map(([id]) => d[id] || '').join(' ');
+    const largos = CAMPOS.filter(([id, , mp, mc]) => palabras(d[id]) > mp || (d[id] || '').length > mc).map((c) => c[1].toLowerCase());
+    const vacios = CAMPOS.filter(([id]) => !(d[id] || '').trim()).map((c) => c[1].toLowerCase());
+    const veta = VETADAS.filter((v) => todo.toLowerCase().includes(v));
+    const wa = (d.whatsapp || '').replace(/\D/g, '');
+    return [
+      [!vacios.length, vacios.length ? 'Falta: ' + vacios.join(', ') : 'Las seis capas de la jerarquía están completas'],
+      [!largos.length, largos.length ? 'Demasiado largo: ' + largos.join(', ') : 'Cada texto cabe en su máximo de palabras'],
+      [/\d/.test(d.oferta || ''), 'La oferta lleva una cifra concreta (precio, medida o fecha)'],
+      [/^(pide|pídelo|compra|separa|agenda|reserva|escribe|cotiza|prueba|llama|visita|recoge|reserva)/i.test((d.cta || '').trim()), 'El botón empieza con un verbo (Pide, Separa, Agenda…)'],
+      [wa.length === 9 && wa[0] === '9', 'WhatsApp de 9 dígitos que empieza en 9'],
+      [contraste(D[4], D[1]) >= 4.5 && contraste(D[5], D[3]) >= 4.5, `Contraste AA: texto ${contraste(D[4], D[1]).toFixed(1)}:1 · botón ${contraste(D[5], D[3]).toFixed(1)}:1`],
+      [!/\p{Extended_Pictographic}/u.test(todo) && !/!!|¡¡/.test(todo), 'Sin emojis ni signos repetidos'],
+      [!veta.length, veta.length ? 'Palabra vetada en este taller: ' + veta.join(', ') : 'Sin palabras vetadas'],
+    ];
+  }
+
+  // ---------- dibujo del flyer (1080 × 1350, margen 72, retícula de 8)
+  const cv = $('cv'), g = cv.getContext('2d');
+  function envolver(t, max) {
+    const pal = (t || '').split(/\s+/).filter(Boolean), lin = []; let l = '';
+    for (const p of pal) { const k = l ? l + ' ' + p : p; if (g.measureText(k).width > max && l) { lin.push(l); l = p; } else l = k; }
+    if (l) lin.push(l); return lin;
+  }
+  function dibujar() {
+    const d = est.datos, D = DISENOS[est.diseno], [ft, fc] = D[6], M = 72, W = 1080, H = 1350;
+    g.fillStyle = D[1]; g.fillRect(0, 0, W, H);
+    // imagen: ocupa la franja media; si es un PNG recortado flota sobre la superficie
+    const iy = 392, ih = 560;
+    g.fillStyle = D[2]; g.beginPath(); g.roundRect(M, iy, W - 2 * M, ih, 32); g.fill();
+    if (imagen) {
+      g.save(); g.beginPath(); g.roundRect(M, iy, W - 2 * M, ih, 32); g.clip();
+      const r = Math.min((W - 2 * M) / imagen.width, ih / imagen.height) * (imagen.recortada ? .92 : 1);
+      const esc = imagen.recortada ? r : Math.max((W - 2 * M) / imagen.width, ih / imagen.height);
+      const w = imagen.width * esc, h = imagen.height * esc;
+      g.drawImage(imagen, (W - w) / 2, iy + (ih - h) / 2, w, h); g.restore();
+    }
+    g.fillStyle = D[4]; g.textBaseline = 'alphabetic';
+    // gancho (xxl 101) y producto (l 57)
+    g.font = `${ft === 'Playfair' ? '700 ' : ''}101px "${ft}", serif`;
+    let y = M + 96;
+    const lg = envolver(d.gancho, W - 2 * M).slice(0, 2);
+    if (lg.length > 1) { g.font = `${ft === 'Playfair' ? '700 ' : ''}84px "${ft}", serif`; }
+    for (const l of envolver(d.gancho, W - 2 * M).slice(0, 2)) { g.fillText(l, M, y); y += lg.length > 1 ? 92 : 104; }
+    g.font = `400 43px "${fc}", sans-serif`; g.globalAlpha = .86;
+    g.fillText((d.producto || '').slice(0, 40), M, Math.min(y + 8, iy - 32)); g.globalAlpha = 1;
+    // beneficio (m 43) bajo la imagen
+    y = iy + ih + 64; g.font = `400 40px "${fc}", sans-serif`;
+    for (const l of envolver(d.beneficio, W - 2 * M).slice(0, 2)) { g.fillText(l, M, y); y += 52; }
+    // oferta (xl 76)
+    g.font = `${ft === 'Playfair' ? '700 ' : ''}76px "${ft}", serif`; g.fillStyle = D[3];
+    g.fillText((d.oferta || '').slice(0, 32), M, y + 46);
+    // botón y marca
+    const by = H - M - 104;
+    g.font = `700 40px "${fc}", sans-serif`;
+    const tx = (d.cta || '') + (d.whatsapp ? ' · ' + d.whatsapp : ''), bw = Math.min(W - 2 * M, g.measureText(tx).width + 88);
+    g.fillStyle = D[3]; g.beginPath(); g.roundRect(M, by, bw, 104, 52); g.fill();
+    g.fillStyle = D[5]; g.fillText(tx, M + 44, by + 66);
+    g.fillStyle = D[4]; g.font = `400 32px "${fc}", sans-serif`; g.globalAlpha = .8; g.textAlign = 'right';
+    g.fillText((d.marca || '').toUpperCase(), W - M, by - 28); g.textAlign = 'left'; g.globalAlpha = 1;
+  }
+
+  function pintar(rehacer) {
+    chips($('rubros'), RUBROS, (i) => i === est.rubro, (i) => { est.rubro = i; est.datos = { ...RUBROS[i][3] }; est.diseno = RUBROS[i][2]; imagen = null; });
+    chips($('disenos'), DISENOS, (i) => i === est.diseno, (i) => { est.diseno = i; });
+    $('caso').textContent = RUBROS[est.rubro][1];
+    for (const [id, , mp, mc] of CAMPOS) {
+      const inp = $('f-' + id); if (rehacer || document.activeElement !== inp) inp.value = est.datos[id] || '';
+      const p = palabras(est.datos[id]), n = $('n-' + id);
+      n.textContent = `${p}/${mp}`; n.className = 'n' + (p > mp || (est.datos[id] || '').length > mc ? ' mal' : '');
+    }
+    const rs = reglas(), ok = rs.filter((r) => r[0]).length;
+    $('reglas').innerHTML = '';
+    for (const [bien, txt] of rs) { const li = document.createElement('li'); li.className = bien ? 'ok' : 'mal'; li.innerHTML = `<b>${bien ? '✓' : '×'}</b><span></span>`; li.querySelector('span').textContent = txt; $('reglas').appendChild(li); }
+    dibujar(); guardar();
+    const listo = ok === rs.length;
+    $('bajar').setAttribute('aria-disabled', String(!listo));
+    const faltan = rs.length - ok;
+    $('bajar').textContent = listo ? 'Descargar flyer.png' : (faltan === 1 ? 'Falta 1 regla' : `Faltan ${faltan} reglas`);
+  }
+  $('bajar').onclick = () => { try { $('bajar').href = cv.toDataURL('image/png'); } catch (e) {} };
+
+  function aviso(t, mal) { $('aviso').textContent = t; $('aviso').className = 'aviso' + (mal ? ' mal' : ''); }
+  const leer = (blob) => new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(blob); });
+  const cargar = (src) => new Promise((ok, mal) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => mal(new Error('no pude leer esa imagen')); im.src = src; });
+  function tieneAlfa(im) {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 64; const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(im, 0, 0, 64, 64); const p = x.getImageData(0, 0, 64, 64).data;
+    return p[3] < 20 || p[63 * 4 + 3] < 20 || p[(63 * 64) * 4 + 3] < 20;
+  }
+  $('subir').onclick = () => $('archivo').click();
+  $('archivo').onchange = async () => {
+    const f = $('archivo').files && $('archivo').files[0]; if (!f) return;
+    try { imagen = await cargar(await leer(f)); imagen.recortada = tieneAlfa(imagen); pintar(); aviso(imagen.recortada ? 'Imagen recortada: flota sobre el color de la superficie.' : 'Imagen puesta.'); } catch (e) { aviso(e.message, true); }
+  };
+  $('quitar').onclick = () => { imagen = null; pintar(); };
+  $('flux').onclick = async (e) => {
+    const b = e.target; b.disabled = true; b.textContent = 'Dibujando… (10 s)';
+    try {
+      const r = await fetch(`/api/v1/live/${encodeURIComponent(leccion)}/imagen`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: `${(est.datos.producto || '').trim()}: ${RUBROS[est.rubro][4]}, sin letras ni logotipos`, orientacion: 'horizontal' }) });
+      if (!r.ok) throw new Error(r.status === 429 ? 'Se acabó tu cupo de imágenes de hoy: sube tu base.png.' : `el servicio de imagen respondió ${r.status}`);
+      imagen = await cargar(await leer(await r.blob())); imagen.recortada = false; pintar(); aviso('Fondo listo. El texto sigue siendo del navegador.');
+    } catch (err) { aviso(String(err.message || err), true); }
+    finally { b.disabled = false; b.textContent = 'Fondo con FLUX'; }
+  };
+
+  // galería: solo se muestra el botón si existe; el iframe del LIVE no abre pestañas, así que se copia el enlace
+  let galeriaURL = '';
+  async function copiar(t) {
+    try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+    try { await window.parent.navigator.clipboard.writeText(t); return true; } catch (e) {}
+    const a = document.createElement('textarea'); a.value = t; a.style.position = 'fixed'; a.style.opacity = '0';
+    document.body.appendChild(a); a.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    a.remove(); return ok;
+  }
+  $('galeria').onclick = async () => { const ok = await copiar(galeriaURL); aviso(ok ? 'Enlace copiado: pégalo en otra pestaña del navegador.' : 'Abre en otra pestaña: ' + galeriaURL, !ok); };
+  (async () => {
+    for (const url of GALERIAS) {
+      try { const r = await fetch(url, { credentials: 'same-origin' }); if (r.ok && /html/.test(r.headers.get('content-type') || '')) { galeriaURL = location.origin + url; $('galeria').hidden = false; return; } } catch (e) {}
+    }
+  })();
+
+  cargadas.then(() => pintar(true));
+  pintar(true);
+})();
+</script>
+</body>
+</html>

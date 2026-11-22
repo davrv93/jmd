@@ -59,11 +59,17 @@ cycle:
     description: "Diez rondas compartidas para 20 alumnos: responde sobre el pedido en seis partes, cámara y animación; después golpea hongos o revienta globos. El concepto vale 100 puntos y la destreza hasta 40."
     check: "Terminas el repaso y puedes explicar una idea que aplicarás en el pedido de tu landing"
   - id: sprites
-    title: Tu mascota en sprites, sin dibujar frame por frame
-    tool: jmd
+    title: "Imagen base → sprite animado: tu producto o tu mascota"
+    tool: lms
     phase: experimentacion
-    description: "Una pose canónica de tu mascota, ocho ediciones sobre esa misma imagen y un atlas recortado con el hocico y la base como ancla. En el LIVE el recorte y el ancla se calculan en vivo, sin GPU."
-    check: El atlas se reproduce a 12 fps en tu landing y el cuerpo no tiembla
+    description: "Una imagen base de tu producto o de la mascota de tu negocio sobre fondo liso de un color (el pedido se escribe en español y se traduce solo), un recorte seguro que no borra partes, seis poses, un atlas anclado por la cabeza y la base, y el atlas corriendo en tu landing. El recorte y el ancla se calculan en el navegador, sin GPU."
+    check: "Tienes base.png con fondo transparente sin partes perdidas y el atlas se reproduce a 12 fps en tu landing sin que el cuerpo tiemble"
+  - id: flyers
+    title: "Flyers con reglas: la IA pone la imagen, el texto lo pone el código"
+    tool: lms
+    phase: experimentacion
+    description: "Mira la galería de 100 flyers hechos con las mismas reglas y arma el tuyo: gancho, producto, beneficio, oferta, botón y marca, con 60-30-10, contraste AA y letras reales. Tu base.png o un fondo de FLUX sin texto va en la franja de imagen."
+    check: "Tu flyer.png de 1080 × 1350 pasa las ocho reglas y otra persona dice qué vendes, cuánto cuesta y cómo pedirlo en 3 segundos"
   - id: musica
     title: "Música con Flash Lite: intención, partitura y sonido"
     tool: jmd
