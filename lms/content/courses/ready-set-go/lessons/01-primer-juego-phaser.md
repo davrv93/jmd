@@ -7,6 +7,9 @@ objectives:
   - {id: rsg-01-o1, title: "Pasar de una mecánica a la tecnología que la resuelve con un buen prompt"}
   - {id: rsg-01-o2, title: "Mover al héroe con Arcade Physics y chocar con paredes de un tilemap"}
   - {id: rsg-01-o3, title: "Explicar el movimiento de Sonic: aceleración por cuadro, seno y coseno"}
+recording:
+  url: "https://us06web.zoom.us/rec/share/O74Qatu-mrnze3eH3BBH7BumAsynK82ch24mtfC0IL_Elsj6tkCG8g7sRRr--4O3.i7uYmCa4DM8_nnCJ?pwd=DGotPapDETDermGuQgAAIAAAAEUqgQm7omeNojhRjsUaowrzh2-24rkb7oTUS8A-CJ01i_Wsg3zI8CtPrwcRTsi9zDAwMDAwNA"
+  passcode: "pWCc9EX*"
 materials:
   - id: rsg-01-v1
     title: "Video · ¿El primer videojuego? Tennis for Two, 1958 (Brookhaven Lab)"

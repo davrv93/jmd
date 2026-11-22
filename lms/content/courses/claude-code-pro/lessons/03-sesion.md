@@ -11,8 +11,8 @@ objectives:
   - id: ccp-03-o3
     title: "Construir un tablero de ventas como artifact y comprobar sus cifras"
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/VvOeV4Xc4cuEcZtuJhSYXNFz_deh2DxWTo852QTk6CqVYsjyOR9TsfM7_-zUCQcF.V62-Eu8Qq9CGd_nU?pwd=DLnCYad2QBMC29VIUQAAIAAAAIYdXOL-JimmOPbQPxQhAIBQN_4Umf7huPEHEfznz4L-VdOg-ER6hnzhMYmFxcpBADAwMDAwNA"
+  passcode: "AWu9@%n8"
 materials:
   - id: ccp-03-ventas
     title: "ventas-ejemplo.csv · ventas de 4 boticas (ene–oct 2026) para hacer el tablero en claude.ai"
