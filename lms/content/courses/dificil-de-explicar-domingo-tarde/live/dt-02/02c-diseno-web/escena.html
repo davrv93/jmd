@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E02c · Diseña tu web sin programar</title>
+<!-- Escena del LIVE dt-02. Estilos propios solo en #esc-propio. El pedido va al chat de jmd; la skill es diseno-web. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<style id="esc-propio">
+.esc-grid-2 > * { min-width: 0; } .esc-titulo { overflow-wrap: anywhere; }
+.esc-cuerpo > * { min-width: 0; max-width: 100%; } .esc-sub, .despues, .nota { overflow-wrap: anywhere; }
+.s2 { grid-template-columns: 1.05fr .95fr; align-items: start; gap: 1.6vw; }
+.paso { display: flex; gap: .6em; align-items: baseline; margin: 0 0 .35em; font-weight: 700; }
+.paso i { font-style: normal; display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .8em; flex: none; }
+.bloque { margin-bottom: 1.2vh; }
+textarea#texto { width: 100%; height: 17vh; resize: none; font: .74em/1.4 var(--mono); padding: .7em .8em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); }
+textarea#texto:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fila { display: flex; flex-wrap: wrap; gap: .3em .5em; align-items: center; margin-top: .4em; font-size: .7em; color: var(--muted); }
+.lnk { background: none; border: 0; color: var(--accent); text-decoration: underline; cursor: pointer; padding: 0; font: inherit; }
+.opciones { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; margin-bottom: .5em; }
+.opciones.cuatro { grid-template-columns: 1fr 1fr; }
+.opciones button { text-align: left; font: .68em/1.25 system-ui, sans-serif; padding: .5em .7em; border-radius: .7em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; display: grid; gap: .1em; min-height: 44px; }
+.opciones button b { font-size: 1.08em; }
+.opciones button small { color: var(--muted); }
+.opciones button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.opciones button[aria-pressed="true"] small { color: inherit; opacity: .85; }
+#copiar { width: 100%; font: 700 1em/1 system-ui, sans-serif; padding: .9em; border: 0; border-radius: .8em; background: var(--accent); color: var(--on-accent); cursor: pointer; box-shadow: var(--card-shadow); min-height: 44px; }
+#copiar.ok { background: var(--ok); }
+.despues { font-size: .72em; margin: .5em 0 0; padding-left: 1.2em; }
+.despues li { margin: .18em 0; }
+.nota { font-size: .68em; color: var(--muted); margin: .8vh 0 0; }
+pre#cmd { max-height: 10vh; overflow: auto; font-size: .56em; margin: .5em 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.recibes { display: grid; grid-template-columns: 1fr 1fr; gap: .25em .8em; font-size: .7em; margin: 0; padding: 0; list-style: none; counter-reset: r; }
+.recibes li { counter-increment: r; display: flex; gap: .45em; align-items: baseline; }
+.recibes li::before { content: counter(r, decimal-leading-zero); font: 700 .85em/1 var(--mono); color: var(--accent); }
+.reglas { display: flex; flex-wrap: wrap; gap: .3em; margin: .2em 0 0; padding: 0; list-style: none; }
+.reglas li { font: .62em/1.2 var(--mono); padding: .35em .55em; border-radius: .5em; border: 1px solid var(--line2); background: var(--s1); }
+.ejemplos { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+.ejemplos button { padding: 0; border: 1px solid var(--line2); border-radius: .7em; overflow: hidden; background: var(--s1); cursor: pointer; text-align: left; color: var(--fg); }
+.ejemplos img { display: block; width: 100%; aspect-ratio: 1440 / 980; object-fit: cover; object-position: top; background: var(--s2, #ddd); }
+.ejemplos span { display: block; padding: .4em .6em; font: 600 .66em/1.2 system-ui, sans-serif; }
+#visor { position: fixed; inset: 0; background: rgba(0,0,0,.82); display: none; z-index: 50; }
+#visor.abierto { display: grid; grid-template-rows: auto 1fr; }
+#visor header { display: flex; justify-content: space-between; align-items: center; padding: .6em 1em; color: #fff; font: 600 .8em/1.2 system-ui, sans-serif; }
+#visor header button { min-width: 44px; min-height: 44px; border-radius: .6em; border: 1px solid rgba(255,255,255,.5); background: transparent; color: #fff; font: 600 1em system-ui, sans-serif; cursor: pointer; padding: 0 1em; }
+#visor div { overflow: auto; padding: 0 1em 1em; }
+#visor img { display: block; width: 100%; max-width: 1440px; margin: 0 auto; border-radius: .4em; }
+@media (max-width: 760px) {
+  .s2 { grid-template-columns: 1fr; }
+  .opciones, .opciones.cuatro, .recibes { grid-template-columns: 1fr; }
+  textarea#texto { height: 24vh; }
+  pre#cmd { max-height: 30vh; }
+}
+</style>
+</head>
+<body>
+<main class="esc-cuerpo" data-ph="cc">
+  <header class="esc-cabecera">
+    <span class="esc-num">DOMINGO · S2 · E02c</span>
+    <span class="esc-fase">Conceptualización</span>
+    <h1 class="esc-titulo">Diseña tu web sin programar: el tablero que aprueba el cliente</h1>
+    <p class="esc-sub">Antes de construir, se diseña y se aprueba. Pegas el texto del cliente, eliges qué vas a diseñar y copias el pedido al chat de <code>jmd</code>. El agente usa la skill <code>diseno-web</code> y te entrega un tablero: wireframes, portada a 1280 y 360 px, guía de estilo y checklist. Sin una línea de código de la web.</p>
+  </header>
+
+  <section class="esc-grid-2 s2">
+    <div>
+      <div class="bloque">
+        <p class="paso"><i>1</i> Pega lo que te escribió el cliente (o usa un ejemplo)</p>
+        <textarea id="texto" spellcheck="false" aria-label="Texto del cliente"></textarea>
+        <div class="fila"><span id="cuenta"></span> · <button class="lnk" id="ej1" type="button">perfumería</button> · <button class="lnk" id="ej2" type="button">restaurante</button> · <button class="lnk" id="ej3" type="button">productos</button> · <button class="lnk" id="ej4" type="button">empresa</button> · <button class="lnk" id="borrar" type="button">borrar</button></div>
+      </div>
+      <div class="bloque">
+        <p class="paso"><i>2</i> Elige qué diseñas y el carácter</p>
+        <div class="opciones" id="tipos" role="group" aria-label="Qué diseñas"></div>
+        <div class="opciones cuatro" id="caracter" role="group" aria-label="Carácter visual"></div>
+      </div>
+      <div class="bloque">
+        <p class="paso"><i>3</i> Copia el pedido y pégalo en el chat de <code>jmd</code> (Enter)</p>
+        <button id="copiar" type="button">Copiar pedido</button>
+        <ol class="despues">
+          <li>El agente llena <code>diseno.json</code>, corre el motor y corrige hasta que diga «Reglas cumplidas».</li>
+          <li>Abre <code>/trabajo/diseno-web/tablero.html</code> en el Visor.</li>
+          <li>Revisa la portada a 360 px: ¿el botón se ve antes de la línea roja del pliegue?</li>
+          <li>Lo que salga en <code>[completar]</code> se lo pides al cliente. No se inventa.</li>
+        </ol>
+        <pre class="esc-cmd" id="cmd" aria-label="Pedido que se copia"></pre>
+      </div>
+    </div>
+    <div>
+      <div class="bloque">
+        <p class="paso"><i>→</i> Lo que recibes en un solo HTML</p>
+        <ol class="recibes">
+          <li>Objetivo, público y acción</li>
+          <li>Mapa del sitio</li>
+          <li>Wireframes en gris 1280 y 360</li>
+          <li>Portada en alta fidelidad</li>
+          <li>Guía de estilo con contrastes</li>
+          <li>Componentes</li>
+          <li>Reglas de dimensión</li>
+          <li>Checklist de revisión</li>
+        </ol>
+      </div>
+      <div class="bloque">
+        <p class="paso"><i>→</i> Las medidas que el motor revisa</p>
+        <ul class="reglas">
+          <li>360 · 768 · 1280 px</li><li>contenedor 1200</li><li>12 columnas · canal 24</li><li>pliegue 720 y 640</li>
+          <li>táctil ≥ 44 px</li><li>línea 45–75 caracteres</li><li>espacios de 8 px</li><li>contraste ≥ 4,5:1</li><li>menú ≤ 5</li>
+        </ul>
+      </div>
+      <div class="bloque">
+        <p class="paso"><i>→</i> Dos tableros terminados (clic para verlos completos)</p>
+        <div class="ejemplos">
+          <button type="button" data-png="perfumeria"><img alt="Portada del tablero de una perfumería" loading="lazy" src="/files/dificil-de-explicar-domingo-tarde/materials/diseno-web-ejemplos/perfumeria-tablero-portada.png"><span>Perfumería · Ámbar &amp; Nácar</span></button>
+          <button type="button" data-png="restaurante"><img alt="Portada del tablero de un restaurante criollo" loading="lazy" src="/files/dificil-de-explicar-domingo-tarde/materials/diseno-web-ejemplos/restaurante-tablero-portada.png"><span>Restaurante · Fogón de Barranco</span></button>
+        </div>
+      </div>
+      <p class="nota">Lo logré = tu tablero abre en el Visor con «reglas cumplidas» arriba a la derecha. En tu computadora: descarga <b>skill-diseno-web.zip</b> de Materiales y corre <code>bash instalar.sh .</code>; funciona igual con Claude Code, OpenCode o <code>jmd</code>. Después de aprobado, la landing se construye con la escena anterior, con el mismo contenido.</p>
+    </div>
+  </section>
+</main>
+<div id="visor" role="dialog" aria-modal="true" aria-label="Tablero completo">
+  <header><span id="visor-t"></span><button type="button" id="cerrar">Cerrar</button></header>
+  <div><img id="visor-img" alt=""></div>
+</div>
+<script>
+(() => {
+  const BASE = '/files/dificil-de-explicar-domingo-tarde/materials/diseno-web-ejemplos/';
+  const TIPOS = [
+    ['landing', 'Landing de una página', 'Una sola meta: que escriban por WhatsApp'],
+    ['web', 'Web de varias páginas', 'Inicio, catálogo o carta, nosotros y contacto'],
+  ];
+  const CARACTER = [
+    ['sobrio y premium', 'Sobrio y premium', 'Perfumes, joyería sin modelos, cosmética'],
+    ['cálido y casero', 'Cálido y casero', 'Restaurantes, panaderías, comida'],
+    ['moderno y vibrante', 'Moderno y vibrante', 'Productos para público joven, tiendas'],
+    ['corporativo y confiable', 'Corporativo y confiable', 'Empresas, servicios, consultoras'],
+  ];
+  const EJ = {
+    ej1: ['Hola, vendo perfumes de autor en Lima con el nombre Ámbar & Nácar.',
+      'La gente no sabe qué aroma elegir, por eso asesoro por WhatsApp según lo que ya usan.',
+      'Tengo amaderados, florales, cítricos y orientales. Hago entregas en Lima y empaque de regalo.',
+      'Pedidos por WhatsApp al 987 654 321.'].join('\n'),
+    ej2: ['Somos Fogón de Barranco, comida criolla en Barranco.',
+      'Damos menú del día y carta: lomo saltado, ají de gallina, ceviche y arroz con mariscos.',
+      'Atendemos de 12:00 a 4:00 p. m., también delivery a Barranco y Chorrillos.',
+      'Reservas y pedidos por WhatsApp al 987 654 321.'].join('\n'),
+    ej3: ['Hola, vendo termos y loncheras de acero con la marca Ruta Verde en Arequipa.',
+      'Tengo 3 tamaños y 5 colores, se pueden personalizar con nombre.',
+      'Envío a todo el Perú por agencia. Pedidos por WhatsApp al 987 654 321.'].join('\n'),
+    ej4: ['Somos Andes Contable, un estudio contable en Trujillo para pequeñas empresas.',
+      'Llevamos contabilidad, planillas y declaraciones a SUNAT.',
+      'Queremos que las empresas agenden una primera reunión gratuita por WhatsApp al 987 654 321.'].join('\n'),
+  };
+  const $ = (id) => document.getElementById(id);
+  const texto = $('texto'), cmd = $('cmd'), btn = $('copiar');
+  const guardar = (k, v) => { try { localStorage.setItem('dt02-dw-' + k, v); } catch (e) {} };
+  const leer = (k) => { try { return localStorage.getItem('dt02-dw-' + k); } catch (e) { return null; } };
+  let tipo = 'landing', car = 'sobrio y premium';
+
+  function botones(caja, lista, get, set) {
+    for (const [id, nombre, como] of lista) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.v = id;
+      b.innerHTML = '<b></b><small></small>';
+      b.querySelector('b').textContent = nombre;
+      b.querySelector('small').textContent = como;
+      b.onclick = () => { set(id); pintar(); };
+      caja.appendChild(b);
+    }
+  }
+  botones($('tipos'), TIPOS, () => tipo, (v) => { tipo = v; guardar('tipo', v); });
+  botones($('caracter'), CARACTER, () => car, (v) => { car = v; guardar('car', v); });
+
+  function pedido() {
+    const limpio = texto.value.replace(/\r/g, '').split('\n').map((l) => l.replace(/\s+$/, '')).join('\n').trim();
+    const que = tipo === 'landing' ? 'una landing de una sola página' : 'una web de varias páginas (Inicio, Catálogo o Carta, Nosotros y Contacto)';
+    return [
+      'Usa la skill diseno-web para DISEÑAR (no programar) ' + que + ' para este negocio, con carácter visual ' + car + '.',
+      'La skill está en /trabajo/.agents/skills/diseno-web, ~/.config/jmd/skills/diseno-web o /opt/skills-curso/diseno-web. Si no encuentras motor/tablero.mjs, descárgalo:',
+      'B=https://raw.githubusercontent.com/davrv93/jmd/main/lms/aula/skills-curso/diseno-web/motor; for f in tablero.mjs diseno.plantilla.json capturar.sh ejemplos/perfumeria.json ejemplos/restaurante.json; do curl -fsSL --create-dirs -o /trabajo/diseno-web/motor/$f $B/$f; done',
+      'Pasos: 1) copia motor/diseno.plantilla.json a /trabajo/diseno-web/diseno.json y llénalo con el texto del cliente (guíate por motor/ejemplos/); 2) ejecuta node <carpeta del motor>/tablero.mjs /trabajo/diseno-web/diseno.json --salida /trabajo/diseno-web/tablero.html; 3) si sale ERROR, corrige diseno.json (no el HTML) y repite hasta «Reglas cumplidas».',
+      'Reglas: anchos 360, 768 y 1280 px; contenedor de 1200 px; 12 columnas con canal de 24 px; nombre, promesa y botón de acción antes del pliegue (720 px en laptop, 640 en teléfono); áreas táctiles de 44 px como mínimo; líneas de 45 a 75 caracteres; espaciado en múltiplos de 8 px; contraste de 4,5:1 en el texto; menú de 5 opciones como máximo. No inventes precios, cifras, premios ni opiniones: déjalos en [completar]. En las fotos descritas, personas sin aretes ni joyas.',
+      'Si no puedes ejecutar el motor, escribe tú /trabajo/diseno-web/tablero.html (un solo archivo) con: objetivo y público, mapa del sitio, wireframes en gris por sección a 1280 y 360 px, portada en alta fidelidad a 1280 y 360 px con el pliegue marcado, guía de estilo (paleta con contrastes, tipografías y escala, espaciado de 8 px, botones y sus estados, iconos), componentes y checklist.',
+      'No escribas el código de la web: es un diseño para que el cliente lo apruebe. Al terminar dime la ruta del tablero y la lista de [completar] que debo pedirle al cliente.',
+      '',
+      'Texto del cliente:',
+      limpio || '(pega aquí el texto del cliente)',
+      ''
+    ].join('\n');
+  }
+
+  function pintar() {
+    for (const b of $('tipos').children) b.setAttribute('aria-pressed', String(b.dataset.v === tipo));
+    for (const b of $('caracter').children) b.setAttribute('aria-pressed', String(b.dataset.v === car));
+    cmd.textContent = pedido();
+    const n = texto.value.trim().length;
+    $('cuenta').textContent = n ? n + ' caracteres' : 'vacío: pega el texto o usa un ejemplo';
+    btn.disabled = n < 15;
+    btn.style.opacity = n < 15 ? .5 : 1;
+  }
+
+  async function copiar(t) {
+    try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+    try { await window.parent.navigator.clipboard.writeText(t); return true; } catch (e) {}
+    const a = document.createElement('textarea');
+    a.value = t; a.style.position = 'fixed'; a.style.opacity = '0';
+    document.body.appendChild(a); a.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    a.remove(); return ok;
+  }
+
+  btn.onclick = async () => {
+    const ok = await copiar(pedido());
+    btn.textContent = ok ? 'Copiado: pégalo en el chat de jmd' : 'No pude copiar: selecciona el texto de abajo';
+    btn.classList.toggle('ok', ok);
+    if (!ok) { const r = document.createRange(); r.selectNodeContents(cmd); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+    setTimeout(() => { btn.textContent = 'Copiar pedido'; btn.classList.remove('ok'); }, 3500);
+  };
+  texto.oninput = () => { guardar('texto', texto.value); pintar(); };
+  for (const id of Object.keys(EJ)) $(id).onclick = () => {
+    texto.value = EJ[id]; guardar('texto', EJ[id]);
+    if (id === 'ej1') car = 'sobrio y premium';
+    if (id === 'ej2') car = 'cálido y casero';
+    if (id === 'ej3') car = 'moderno y vibrante';
+    if (id === 'ej4') car = 'corporativo y confiable';
+    guardar('car', car); pintar(); texto.focus();
+  };
+  $('borrar').onclick = () => { texto.value = ''; guardar('texto', ''); pintar(); texto.focus(); };
+
+  const visor = $('visor');
+  for (const b of document.querySelectorAll('.ejemplos button')) b.onclick = () => {
+    $('visor-img').src = BASE + b.dataset.png + '-tablero.png';
+    $('visor-img').alt = 'Tablero completo: ' + b.textContent;
+    $('visor-t').textContent = b.textContent + ' · tablero completo';
+    visor.classList.add('abierto'); $('cerrar').focus();
+  };
+  const cerrar = () => visor.classList.remove('abierto');
+  $('cerrar').onclick = cerrar;
+  visor.onclick = (e) => { if (e.target === visor) cerrar(); };
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
+
+  const t0 = leer('texto'), tp = leer('tipo'), c0 = leer('car');
+  texto.value = t0 !== null ? t0 : EJ.ej1;
+  if (tp && TIPOS.some((x) => x[0] === tp)) tipo = tp;
+  if (c0 && CARACTER.some((x) => x[0] === c0)) car = c0;
+  pintar();
+})();
+</script>
+</body>
+</html>

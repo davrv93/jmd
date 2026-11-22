@@ -39,6 +39,31 @@ materials:
     kind: doc
     url: https://playwright.dev/docs/intro
     objective_ids: [dt-02-o4]
+  - id: dt-02-skill-diseno-web
+    title: "skill-diseno-web.zip · diseña tu web sin programar: tablero con wireframes, portada a 1280 y 360 px, guía de estilo y checklist (instalar.sh)"
+    kind: zip
+    file: materials/skill-diseno-web.zip
+    objective_ids: [dt-02-o1]
+  - id: dt-02-diseno-web-perfumeria
+    title: "Tablero de diseño de ejemplo · perfumería (PNG completo)"
+    kind: file
+    file: materials/diseno-web-ejemplos/perfumeria-tablero.png
+    objective_ids: [dt-02-o1]
+  - id: dt-02-diseno-web-perfumeria-portada
+    title: "Tablero de diseño de ejemplo · perfumería, portada a 1280 y 360 px (PNG)"
+    kind: file
+    file: materials/diseno-web-ejemplos/perfumeria-tablero-portada.png
+    objective_ids: [dt-02-o1]
+  - id: dt-02-diseno-web-restaurante
+    title: "Tablero de diseño de ejemplo · restaurante (PNG completo)"
+    kind: file
+    file: materials/diseno-web-ejemplos/restaurante-tablero.png
+    objective_ids: [dt-02-o1]
+  - id: dt-02-diseno-web-restaurante-portada
+    title: "Tablero de diseño de ejemplo · restaurante, portada a 1280 y 360 px (PNG)"
+    kind: file
+    file: materials/diseno-web-ejemplos/restaurante-tablero-portada.png
+    objective_ids: [dt-02-o1]
 cycle:
   - id: ver
     title: Ver la clase
