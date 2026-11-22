@@ -26,6 +26,31 @@ modules:
     lessons: [pa-01, pa-02]      # ids de las sesiones, en orden
 ```
 
+### Identidad del curso (opcional)
+
+Cómo se ve el curso en Inicio, Mis cursos, el Catálogo y la cabecera de su página:
+
+```yaml
+identidad:
+  color: magenta     # violeta · indigo · azul · petroleo · teal · verde · oliva · ambar · coral · magenta · ciruela · pizarra
+  icono: palette     # glifo de web/src/components/icon.tsx (lista en api/internal/content/identidad.go)
+  nivel: "Desde cero"   # opcional: «Desde cero», «Intermedio» o «Avanzado»
+  frase: "La promesa del curso en una línea."
+  resultado:          # «Qué vas a poder hacer», 2 o 3 cosas que empiezan con un verbo
+    - "Publicar…"
+  portada: identidad/portada.webp   # opcional: imagen propia (.webp/.jpg/.png/.svg, hasta 400 KB)
+```
+
+Todo es opcional. Lo que falta se toma de otro grupo con el mismo `agenda.nombre` y, si nadie lo
+tiene, del área (`agenda.area`: color e icono) y del curso (`description` para la frase,
+`proyecto_final` para el resultado). Sin `portada`, el portal dibuja una portada del área con el
+glifo y el color del curso. Un color, icono o nivel que no existe se avisa en el log y se ignora:
+no tumba la carga del contenido.
+
+**Miniaturas de las sesiones:** `miniaturas/<id-de-la-sesión>.webp` (hasta 120 KB). Las genera
+`lms/scripts/miniaturas.mjs` a partir de la primera escena LIVE; una sesión sin miniatura muestra
+la portada del curso con su número.
+
 ## Sesión (`lessons/*.md`)
 
 ```yaml
