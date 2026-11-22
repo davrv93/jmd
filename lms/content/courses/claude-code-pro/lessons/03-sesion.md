@@ -19,18 +19,33 @@ materials:
     kind: file
     file: materials/web/ventas-ejemplo.csv
     objective_ids: [ccp-03-o3]
+  - id: ccp-03-excel
+    title: "ventas-boticas-2026.xlsx · los mismos datos en Excel, con formato de tabla"
+    kind: file
+    file: materials/web/ventas-boticas-2026.xlsx
+    objective_ids: [ccp-03-o3]
+  - id: ccp-03-plugin-video
+    title: "Video · cómo instalar el plugin Research Academy en claude.ai (1 min, trae el panel Tablero)"
+    kind: video
+    file: materials/web/instalar-research-academy.mp4
+    objective_ids: [ccp-03-o1, ccp-03-o3]
+  - id: ccp-03-plugin
+    title: "Research Academy · guía de instalación del plugin (marketplace davrv93/claude-research)"
+    kind: doc
+    url: https://github.com/davrv93/claude-research/blob/main/plugins/research-academy/skills/research-academy/references/instalacion.md
+    objective_ids: [ccp-03-o1]
   - id: ccp-03-skill-web
     title: "build-dashboard.zip · el manual de tableros de Anthropic, para subirlo en claude.ai (Configuración › Capacidades › Skills)"
     kind: zip
     file: materials/web/build-dashboard.zip
     objective_ids: [ccp-03-o2, ccp-03-o3]
   - id: ccp-03-kit
-    title: "kit-multiagente.zip · 3 subagentes, la skill build-dashboard, el hook solo-lectura y tokens_a_csv.py (descomprímelo en una carpeta nueva)"
+    title: "Opcional (Claude Code) · kit-multiagente.zip · 3 subagentes, la skill build-dashboard, el hook solo-lectura y tokens_a_csv.py (descomprímelo en una carpeta nueva)"
     kind: zip
     file: materials/multiagente/kit-multiagente.zip
     objective_ids: [ccp-03-o1, ccp-03-o2, ccp-03-o3]
   - id: ccp-03-prompts
-    title: "PROMPTS.md · los pasos y los prompts de la sesión, del 0 al entregable"
+    title: "Opcional (Claude Code) · PROMPTS.md · la versión de la sesión en la terminal"
     kind: doc
     file: materials/multiagente/PROMPTS.md
     objective_ids: [ccp-03-o1, ccp-03-o2, ccp-03-o3]
@@ -40,17 +55,17 @@ materials:
     url: https://github.com/anthropics/knowledge-work-plugins/blob/main/data/skills/build-dashboard/SKILL.md
     objective_ids: [ccp-03-o2, ccp-03-o3]
   - id: ccp-03-doc-subagentes
-    title: "Claude Code · subagentes (ventana propia, herramientas, modelo)"
+    title: "Opcional · Claude Code · subagentes (ventana propia, herramientas, modelo)"
     kind: doc
     url: https://code.claude.com/docs/en/sub-agents
     objective_ids: [ccp-03-o1]
   - id: ccp-03-doc-skills
-    title: "Claude Code · skills (descripción, carga progresiva, menos de 500 líneas)"
+    title: "Opcional · Claude Code · skills (descripción, carga progresiva, menos de 500 líneas)"
     kind: doc
     url: https://code.claude.com/docs/en/skills
     objective_ids: [ccp-03-o2]
   - id: ccp-03-doc-hooks
-    title: "Claude Code · hooks (PreToolUse, código de salida 2)"
+    title: "Opcional · Claude Code · hooks (PreToolUse, código de salida 2)"
     kind: doc
     url: https://code.claude.com/docs/en/hooks
     objective_ids: [ccp-03-o2, ccp-03-o3]
@@ -86,16 +101,21 @@ cycle:
     title: Entregar el entregable 3
     tool: git
     phase: experimentacion
-    description: "Dashboard funcionando y chat que responde 20 preguntas de evaluación con 18 o más correctas y ninguna escritura posible."
+    description: "Tu tablero publicado desde claude.ai, el plan que Claude te propuso y lo que cambiaste, la captura de la comprobación de cifras y tus dos notas (pedido vago y pedido conducido)."
     check: La entrega aparece en «Mis notas»
 ---
 
 ## Objetivo
 
-Repartir el trabajo entre agentes sin que el contexto principal se infle.
+Conducir a Claude en claude.ai hasta un tablero de ventas que sirva para decidir: decir la decisión, pedir un plan antes de construir, cambiar una cosa a la vez y comprobar las cifras. Lo hacemos con el manual de tableros de Anthropic (skill build-dashboard) o con el panel Tablero del plugin Research Academy.
 
 Regla de todo el curso: **cada sesión empieza con una línea base y termina con una medición.** Nada se afirma sin número.
 
 ## Entregable 3
 
-Dashboard funcionando y chat que responde 20 preguntas de evaluación con 18 o más correctas y ninguna escritura posible.
+En «Mis notas»:
+
+1. El enlace de tu tablero publicado (en el artifact, «Publicar»).
+2. El plan que Claude te propuso y lo que cambiaste.
+3. La captura de la comprobación de cifras: el total de una sede según Claude y según tu Excel.
+4. Tus dos notas del 1 al 10: el pedido de una frase y el pedido conducido.
