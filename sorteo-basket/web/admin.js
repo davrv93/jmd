@@ -35,6 +35,23 @@
     return g ? g.id + ' · ' + g.dias + ', ' + g.hora : (p && p.dias ? 'Lun 23, mar 24 y mié 25 nov' : '');
   }
   function telTxt(t) { return t.slice(0, 3) + ' ' + t.slice(3, 6) + ' ' + t.slice(6); }
+  // «S/ 17,50»: en céntimos, dos decimales con coma
+  function soles(precio, pct) {
+    const c = Math.round(precio * pct);
+    return 'S/ ' + Math.floor(c / 100) + ',' + String(c % 100).padStart(2, '0');
+  }
+  function corto(id) { return id === 'qwen' ? 'Qwen Coder' : 'Videos con IA'; }
+  function precios(pct) { return datos.premios.map((p) => corto(p.id) + ' ' + soles(p.precio, pct)).join(' · '); }
+  // premioDe: texto del premio de un jugador (cupo, 80 % o porcentaje que paga)
+  function premioDe(j) {
+    if (j.gano) {
+      const g = datos.ganadores.find((x) => x.orden === j.gano);
+      return g ? 'Cupo 100 %: ' + nombrePremio(g.premio) + (g.grupo ? ', grupo ' + g.grupo : '') : 'Cupo 100 %';
+    }
+    if (j.paga) return (j.esp ? (datos.consuelo.especial_texto || '80 % de descuento') + ', paga ' : 'Paga ') + j.paga + ' %: ' + precios(j.paga);
+    if (!j.n) return 'No tiró';
+    return datos.cerrado ? 'Sin premio' : 'Se sortea al cerrar';
+  }
 
   function pintar(d) {
     datos = d;
@@ -78,7 +95,7 @@
     const js = [...d.jugadores].sort((a, b) => (a.gano || 1e9) - (b.gano || 1e9) || b.a - a.a || a.n - b.n);
     $('njug').textContent = '(' + js.length + ')';
     const filas = js.map((j) => {
-      const tr = el('tr', j.gano ? 'gano' : '');
+      const tr = el('tr', j.gano ? 'gano' : j.esp ? 'esp' : '');
       const c = el('td');
       const img = el('img');
       img.src = Muneco.retrato(j.s, 60);
@@ -87,15 +104,66 @@
       tr.appendChild(c);
       tr.appendChild(td(j.nombre));
       tr.appendChild(td(telTxt(j.tel)));
+      const pr = td(premioDe(j));
+      pr.className = 'premio-col';
+      tr.appendChild(pr);
       tr.appendChild(td(String(j.a)));
       tr.appendChild(td(String(j.n)));
       tr.appendChild(td(j.on ? 'Sí' : 'No'));
       tr.appendChild(td(j.hora));
       return tr;
     });
-    if (!filas.length) { const tr = el('tr', 'vacio'); const c = td('Nadie ha entrado todavía.'); c.colSpan = 7; tr.appendChild(c); filas.push(tr); }
+    if (!filas.length) { const tr = el('tr', 'vacio'); const c = td('Nadie ha entrado todavía.'); c.colSpan = 8; tr.appendChild(c); filas.push(tr); }
     $('jugadores').replaceChildren(...filas);
   }
+
+  // Copiar lista: texto plano para pegar en WhatsApp o en una hoja
+  function textoLista() {
+    const fecha = new Date().toLocaleDateString('es-PE', { timeZone: 'America/Lima', day: 'numeric', month: 'long' });
+    const lin = ['Sorteo basket, ' + fecha, ''];
+    const js = datos.jugadores;
+    const fila = (j, extra) => j.nombre + ' · ' + telTxt(j.tel) + ' · ' + extra;
+    lin.push('CUPOS 100 %');
+    if (!datos.ganadores.length) lin.push('(ninguno)');
+    for (const g of datos.ganadores) {
+      const p = datos.premios.find((x) => x.id === g.premio);
+      const gr = p && p.grupos && p.grupos.find((x) => x.id === g.grupo);
+      lin.push(g.orden + '. ' + g.nombre + ' · ' + telTxt(g.tel) + ' · ' + nombrePremio(g.premio) + (gr ? ', grupo ' + gr.id + ' (' + gr.dias + ', ' + gr.hora + ')' : p && p.dias ? ' (' + p.dias + ')' : ''));
+    }
+    const esp = js.filter((j) => j.esp && !j.gano);
+    if (esp.length) {
+      lin.push('', (datos.consuelo.especial_texto || '80 % de descuento').toUpperCase());
+      for (const j of esp) lin.push(fila(j, 'paga ' + j.paga + ' %: ' + precios(j.paga)));
+    }
+    const otros = js.filter((j) => j.paga && !j.esp && !j.gano).sort((a, b) => a.paga - b.paga || a.nombre.localeCompare(b.nombre));
+    if (otros.length) {
+      lin.push('', 'DESCUENTOS');
+      for (const j of otros) lin.push(fila(j, 'paga ' + j.paga + ' %: ' + precios(j.paga)));
+    }
+    const sin = js.filter((j) => !j.gano && !j.paga);
+    if (sin.length) {
+      lin.push('', datos.cerrado ? 'SIN PREMIO (no tiraron)' : 'SIN PREMIO TODAVÍA (los descuentos se sortean al cerrar)');
+      for (const j of sin) lin.push(fila(j, j.n + ' tiros'));
+    }
+    return lin.join('\n');
+  }
+  async function copiar() {
+    if (!datos) return;
+    const t = textoLista();
+    try {
+      await navigator.clipboard.writeText(t);
+    } catch (e) {
+      const ta = el('textarea', 'copia');
+      ta.value = t;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    toast('Lista copiada: ' + datos.jugadores.length + ' jugadores.');
+  }
+  $('b-copiar').addEventListener('click', copiar);
+  window.__textoLista = () => (datos ? textoLista() : '');
 
   let toastTimer = 0;
   function toast(t) {

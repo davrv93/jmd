@@ -20,6 +20,7 @@
   let ganadores = []; // [orden, id, corto, s, num, premio, grupo]
   let verTodo = false;
   let cerBase = null;
+  let especiales = [], conConsuelo = 0; // [id, corto, s, num]
 
   // ---------- conexión ----------
   function conectar() {
@@ -50,7 +51,10 @@
     switch (m.t) {
       case 'cfg': cfg = m; pintarPremios(); break;
       case 'muestra': muestra = m.s; pintarVista(); break;
-      case 'yo': entrarAlJuego(m); break;
+      case 'yo':
+        if (yo && yo.id === m.id) { Object.assign(yo, m); pintarMensaje(); if (cerrado) pasoCeremonia(); }
+        else entrarAlJuego(m);
+        break;
       case 'fase':
         fase = m; faseEn = performance.now(); listoEn = faseEn + (m.w || 0); tirando = false;
         clearTimeout(tiroTimer);
@@ -173,6 +177,8 @@
     jugadores.clear();
     for (const [k, v] of nuevos) jugadores.set(k, v);
     ganadores = m.g || [];
+    especiales = m.esp || [];
+    conConsuelo = m.nc || 0;
     if (yo) {
       const p = jugadores.get(yo.id);
       if (p) { yo.a = Math.max(yo.a, p.a); yo.n = Math.max(yo.n, p.n); yo.gano = p.gano; }
@@ -829,13 +835,16 @@
   $('rev-ok').addEventListener('click', () => { $('revelar').hidden = true; revelando = false; pintarMensaje(); });
 
   // ---------- ceremonia ----------
-  let cerTimer = 0, cerMostrados = -1;
+  // Pasos, todas las pantallas al mismo compás (desde la hora de cierre del servidor): cada ganador del 100 %,
+  // luego el 80 % de descuento (público) y al final, en cada pantalla, el resultado propio.
+  let cerTimer = 0, cerClave = '';
   function abrirCeremonia() {
     $('ceremonia').hidden = false;
     $('revelar').hidden = true;
-    cerMostrados = -1;
+    cerClave = '';
     $('cer-lista').replaceChildren();
     $('cer-escena').replaceChildren();
+    $('cer-mio').replaceChildren();
     clearInterval(cerTimer);
     cerTimer = setInterval(pasoCeremonia, 200);
     pasoCeremonia();
@@ -845,42 +854,159 @@
     $('ceremonia').hidden = true;
     $('cer-fiesta').replaceChildren();
   }
-  function pasoCeremonia() {
+  function miConsuelo() { return yo && yo.paga && !yo.gano ? { paga: yo.paga, esp: !!yo.esp } : null; }
+  function pasosCeremonia() {
+    const pasos = ganadores.map((g, i) => ({ k: 'g' + g[0], tipo: 'g', g, i }));
+    for (const e of especiales) pasos.push({ k: 'esp' + e[0], tipo: 'esp', e });
+    if (miConsuelo()) pasos.push({ k: 'mio', tipo: 'mio' });
+    return pasos;
+  }
+  function pasoCeremonia(forzar) {
+    if ($('ceremonia').hidden || cerBase == null) return;
     const ms = cfg ? cfg.revelar : 3200;
-    const n = ganadores.length;
+    const pasos = pasosCeremonia();
     const lento = performance.now() - cerBase;
-    const idx = Math.min(n, Math.floor(lento / ms)); // cuántos ya se revelaron
+    const idx = Math.floor(lento / ms);
     const escena = $('cer-escena');
-    if (n === 0) {
-      if (cerMostrados !== 0) {
-        cerMostrados = 0;
-        escena.replaceChildren(el('p', 'cer-vacio', 'Esta vez nadie llegó a ' + (cfg ? cfg.meta : 3) + ' encestes.'));
-        $('cer-pie').hidden = true;
-      }
-      return;
-    }
-    // el que se está revelando ahora (o el último, al terminar)
-    const actual = Math.min(idx, n - 1);
-    if (actual !== cerMostrados) {
-      const primera = cerMostrados === -1;
-      cerMostrados = actual;
-      escena.replaceChildren(tarjetaGanador(ganadores[actual], actual));
-      // los anteriores pasan a la lista
-      const lista = $('cer-lista');
-      lista.replaceChildren(...ganadores.slice(0, actual).map(filaGanador));
-      if (!primera || lento < ms * (actual + 0.6)) fiesta();
-    }
-    if (idx >= n) {
-      const lista = $('cer-lista');
-      if (lista.children.length !== n) lista.replaceChildren(...ganadores.map(filaGanador));
-      $('cer-pie').hidden = false;
-      escena.hidden = true;
-      $('cer-t').textContent = n === 1 ? 'El ganador' : 'Los ganadores';
-      clearInterval(cerTimer);
-    } else {
+    const paso = idx < pasos.length ? pasos[idx] : null;
+    const clave = paso ? paso.k : 'fin:' + ganadores.length + ':' + especiales.length + ':' + (miConsuelo() ? miConsuelo().paga : 0);
+    if (clave === cerClave && forzar !== true) return;
+    const primera = cerClave === '';
+    cerClave = clave;
+    const enVivo = !primera || (paso && lento < ms * (idx + 0.6));
+    if (paso) {
       escena.hidden = false;
       $('cer-pie').hidden = true;
+      $('cer-mio').replaceChildren();
+      $('cer-t').textContent = paso.tipo === 'mio' ? 'Tu resultado' : 'Los ganadores';
+      if (paso.tipo === 'g') escena.replaceChildren(tarjetaGanador(paso.g, paso.i));
+      else if (paso.tipo === 'esp') escena.replaceChildren(tarjetaEspecial(paso.e));
+      else escena.replaceChildren(tarjetaMia(true));
+      const previos = pasos.slice(0, idx).filter((x) => x.tipo !== 'mio');
+      $('cer-lista').replaceChildren(...previos.map((x) => (x.tipo === 'g' ? filaGanador(x.g) : filaEspecial(x.e))));
+      if (enVivo && paso.tipo !== 'mio') fiesta();
+      return;
     }
+    // final: resultado propio arriba, luego la lista completa
+    // la tarjeta propia del paso anterior pasa tal cual (si su rueda sigue girando, termina ahí)
+    const previa = escena.querySelector('.mio');
+    escena.hidden = true;
+    const mio = miConsuelo();
+    if (previa && mio) $('cer-mio').replaceChildren(previa);
+    else $('cer-mio').replaceChildren(...(mio ? [tarjetaMia(!guardado.leer('basket-consuelo-' + yo.id))] : []));
+    escena.replaceChildren();
+    const filas = ganadores.map(filaGanador).concat(especiales.map(filaEspecial));
+    $('cer-lista').replaceChildren(...filas);
+    if (!filas.length) {
+      escena.hidden = false;
+      escena.replaceChildren(el('p', 'cer-vacio', 'Esta vez nadie llegó a ' + (cfg ? cfg.meta : 3) + ' encestes.'));
+    }
+    $('cer-t').textContent = ganadores.length === 1 ? 'El ganador' : 'Los ganadores';
+    let pie = 'El profe escribirá por WhatsApp a cada ganador para inscribirlo.';
+    if (conConsuelo > especiales.length) pie += ' Quienes tiraron al menos una vez tienen un descuento: cada uno lo ve en su pantalla.';
+    $('cer-pie').textContent = pie;
+    $('cer-pie').hidden = false;
+  }
+
+  // Dinero: «S/ 17,50» (dos decimales con coma). Se calcula en céntimos para no redondear mal.
+  function soles(precio, pct) {
+    const c = Math.round(precio * pct);
+    return 'S/ ' + Math.floor(c / 100) + ',' + String(c % 100).padStart(2, '0');
+  }
+  function nombreCorto(p) { return p.id === 'qwen' ? 'Orquestación con Qwen Coder' : p.nombre; }
+  function tarjetaMia(animar) {
+    const mio = miConsuelo();
+    const d = el('article', 'mio' + (mio.esp ? ' esp' : ''));
+    d.appendChild(el('span', 'mio-etq', 'Tu resultado, ' + yo.corto));
+    // sello: línea chica + número enorme («Pagas el» / «50 %»; el especial, «80 %» / «de descuento»)
+    const NB = '\u00a0';
+    const num = el('p', 'mio-num');
+    const caja = el('span', 'mio-caja');
+    const pre = el('span', 'mio-pre', 'Pagas el');
+    const grande = el('span', 'mio-grande', mio.paga + NB + '%');
+    const post = el('span', 'mio-post', '');
+    caja.append(pre, grande, post);
+    num.appendChild(caja);
+    num.setAttribute('aria-label', mio.esp ? (100 - mio.paga) + ' % de descuento' : 'Pagas el ' + mio.paga + ' %');
+    d.appendChild(num);
+    const final = () => {
+      if (mio.esp) { pre.textContent = ''; grande.textContent = (100 - mio.paga) + NB + '%'; post.textContent = 'de descuento'; }
+      else { pre.textContent = 'Pagas el'; grande.textContent = mio.paga + NB + '%'; post.textContent = ''; }
+    };
+    const resto = el('div', 'mio-resto');
+    resto.appendChild(el('p', 'mio-sub', mio.esp
+      ? 'Te tocó el premio único del sorteo: pagas solo el ' + mio.paga + ' % del curso que elijas.'
+      : 'Tienes ' + (100 - mio.paga) + ' % de descuento en el curso que elijas.'));
+    const ul = el('ul', 'mio-precios');
+    for (const p of cfg.premios) {
+      const li = el('li');
+      const n = el('span', null, nombreCorto(p));
+      n.appendChild(el('s', null, 'Precio normal S/ ' + p.precio));
+      li.appendChild(n);
+      li.appendChild(el('b', null, soles(p.precio, mio.paga)));
+      ul.appendChild(li);
+    }
+    resto.appendChild(ul);
+    resto.appendChild(el('p', 'mio-nota', 'El descuento vale para uno de los dos cursos. Elige cuál y avísale al profe por WhatsApp.'));
+    if (cfg.whatsapp) {
+      const a = el('a', 'boton-grande', 'Avisar al profe');
+      const precios = cfg.premios.map((p) => nombreCorto(p) + ' ' + soles(p.precio, mio.paga)).join(' o ');
+      a.href = 'https://wa.me/' + cfg.whatsapp + '?text=' + encodeURIComponent('Hola, soy ' + yo.corto + '. En el sorteo basket me tocó pagar el ' + mio.paga + ' % (' + precios + '). Elijo el curso: ');
+      a.target = '_blank';
+      a.rel = 'noopener';
+      resto.appendChild(a);
+    }
+    d.appendChild(resto);
+    const listo = () => {
+      final();
+      num.classList.remove('rueda');
+      num.classList.add('sello');
+      resto.hidden = false;
+      guardado.poner('basket-consuelo-' + yo.id, '1');
+      if (animar) fiesta();
+    };
+    if (!animar || reducido.matches) { listo(); return d; }
+    // rueda: el texto salta entre los porcentajes posibles, cada vez más lento, y cae en el propio
+    resto.hidden = true;
+    num.classList.add('rueda');
+    const opciones = cfg.consuelo.paga_pct.slice();
+    if (mio.esp) opciones.push(mio.paga);
+    let i = 0, paso = 50;
+    const meta = opciones.indexOf(mio.paga);
+    const vueltas = opciones.length * 3 + meta; // ≈ 1,7 s
+
+    const tic = () => {
+      grande.textContent = opciones[i % opciones.length] + NB + '%';
+      if (i >= vueltas) { listo(); return; }
+      i++;
+      paso = Math.min(300, paso * 1.15);
+      setTimeout(tic, paso);
+    };
+    setTimeout(tic, 250);
+    return d;
+  }
+  function tarjetaEspecial(e) {
+    const d = tarjetaGanador([0, e[0], e[1], e[2], e[3], '', ''], 1);
+    const tx = d.lastChild;
+    tx.querySelector('.g-orden').textContent = 'Premio único';
+    const pr = tx.querySelector('.g-premio');
+    const pct = cfg.consuelo.especial_paga_pct;
+    pr.replaceChildren(el('b', null, cfg.consuelo.especial_texto || (100 - pct) + ' % de descuento'),
+      document.createTextNode('Paga solo el ' + pct + ' % del curso que elija.'));
+    return d;
+  }
+  function filaEspecial(e) {
+    const li = el('li', 'esp');
+    li.appendChild(el('b', 'o', (100 - cfg.consuelo.especial_paga_pct) + '\u00a0%'));
+    const img = el('img');
+    img.src = Muneco.retrato(e[2], 88);
+    img.alt = '';
+    li.appendChild(img);
+    const s = el('span');
+    s.appendChild(el('strong', null, e[1]));
+    s.appendChild(document.createTextNode((cfg.consuelo.especial_texto || 'Descuento') + ' en el curso que elija'));
+    li.appendChild(s);
+    return li;
   }
   function textoPremio(g) {
     const p = premioDe(g[5]);

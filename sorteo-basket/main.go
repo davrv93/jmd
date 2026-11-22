@@ -211,6 +211,15 @@ func (j *Juego) Publico(on map[string]bool) []byte {
 		"ahora": time.Now().UnixMilli()}
 	if j.est.Cerrado {
 		out["ceT"] = j.ahora().Sub(j.est.CerradoEn).Milliseconds()
+		// el descuento grande se anuncia en público; los demás porcentajes solo los ve cada jugador
+		esp := [][]any{}
+		for _, id := range j.est.Especiales {
+			if p := j.porID[id]; p != nil {
+				esp = append(esp, []any{p.ID, corto(p.Nombre), p.Semilla, p.Num})
+			}
+		}
+		out["esp"] = esp
+		out["nc"] = len(j.est.Consuelos)
 	}
 	b, _ := json.Marshal(out)
 	return b
@@ -218,12 +227,15 @@ func (j *Juego) Publico(on map[string]bool) []byte {
 
 func (j *Juego) cfgPublica() map[string]any {
 	return map[string]any{"t": "cfg", "meta": j.cfg.Meta, "espera": j.cfg.EsperaMs, "premios": j.cfg.Premios,
-		"taller": j.cfg.Taller, "titulo": j.cfg.Titulo, "revelar": j.cfg.RevelarMs}
+		"taller": j.cfg.Taller, "titulo": j.cfg.Titulo, "revelar": j.cfg.RevelarMs, "consuelo": j.cfg.Consuelo,
+		"whatsapp": j.cfg.WhatsApp}
 }
 
-func yo(p *Jugador) map[string]any {
+// yo: datos del propio jugador, con su descuento si ya se sorteó. Se llama con j.mu tomado.
+func (j *Juego) yo(p *Jugador) map[string]any {
+	paga, esp := j.consuelo(p.ID)
 	return map[string]any{"t": "yo", "id": p.ID, "token": p.Token, "corto": corto(p.Nombre), "s": p.Semilla,
-		"num": p.Num, "a": p.Aciertos, "n": p.Tiros, "gano": p.Gano}
+		"num": p.Num, "a": p.Aciertos, "n": p.Tiros, "gano": p.Gano, "paga": paga, "esp": esp}
 }
 
 func faseJSON(f *Fase, espera int) map[string]any {
@@ -423,13 +435,37 @@ func (h *hub) atender(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// avisarPersonales manda a cada pantalla con jugador su propio resultado (tras cerrar el sorteo).
+func (h *hub) avisarPersonales() {
+	h.mu.Lock()
+	pares := map[*cliente]string{}
+	for c := range h.clientes {
+		if c.jid != "" {
+			pares[c] = c.jid
+		}
+	}
+	h.mu.Unlock()
+	for c, id := range pares {
+		h.j.mu.Lock()
+		p := h.j.porID[id]
+		var m map[string]any
+		if p != nil {
+			m = h.j.yo(p)
+		}
+		h.j.mu.Unlock()
+		if m != nil {
+			enviar(c, m)
+		}
+	}
+}
+
 func (h *hub) vincular(c *cliente, p *Jugador) {
 	h.mu.Lock()
 	c.jid = p.ID
 	h.sucio = true
 	h.mu.Unlock()
 	h.j.mu.Lock()
-	m := yo(p)
+	m := h.j.yo(p)
 	h.j.mu.Unlock()
 	enviar(c, m)
 	if f, w := h.j.NuevaFase(p.ID); f != nil {
@@ -570,7 +606,7 @@ func main() {
 	mux.HandleFunc("GET /api/admin/estado", admin(nil))
 	mux.HandleFunc("POST /api/admin/abrir", admin(func() { j.Abrir(true) }))
 	mux.HandleFunc("POST /api/admin/pausar", admin(func() { j.Abrir(false) }))
-	mux.HandleFunc("POST /api/admin/cerrar", admin(func() { j.Cerrar(true) }))
+	mux.HandleFunc("POST /api/admin/cerrar", admin(func() { j.Cerrar(true); go h.avisarPersonales() }))
 	mux.HandleFunc("POST /api/admin/reabrir", admin(func() { j.Cerrar(false) }))
 	mux.HandleFunc("POST /api/admin/reiniciar", admin(func() {
 		if b, err := j.Volcar(); err == nil {
@@ -613,10 +649,13 @@ func (j *Juego) Panel(on map[string]bool, conectados int) map[string]any {
 		Gano     int    `json:"gano"`
 		EnLinea  bool   `json:"on"`
 		Hora     string `json:"hora"`
+		Paga     int    `json:"paga"`
+		Especial bool   `json:"esp"`
 	}
 	js := []fila{}
 	for _, p := range j.est.Jugadores {
-		js = append(js, fila{p.ID, p.Nombre, corto(p.Nombre), p.Tel, p.Semilla, p.Num, p.Aciertos, p.Tiros, p.Gano, on[p.ID], p.Creado.In(lima).Format("15:04")})
+		paga, esp := j.consuelo(p.ID)
+		js = append(js, fila{p.ID, p.Nombre, corto(p.Nombre), p.Tel, p.Semilla, p.Num, p.Aciertos, p.Tiros, p.Gano, on[p.ID], p.Creado.In(lima).Format("15:04"), paga, esp})
 	}
 	type gan struct {
 		Orden   int    `json:"orden"`
@@ -638,5 +677,5 @@ func (j *Juego) Panel(on map[string]bool, conectados int) map[string]any {
 		gs = append(gs, gan{g.Orden, p.Nombre, p.Tel, g.Premio, g.Grupo, g.Tiros, g.Hora.In(lima).Format("15:04:05"), p.Semilla, p.Num})
 	}
 	return map[string]any{"abierto": j.est.Abierto, "cerrado": j.est.Cerrado, "restantes": j.est.Restantes,
-		"premios": j.cfg.Premios, "meta": j.cfg.Meta, "jugadores": js, "ganadores": gs, "conectados": conectados}
+		"premios": j.cfg.Premios, "meta": j.cfg.Meta, "consuelo": j.cfg.Consuelo, "jugadores": js, "ganadores": gs, "conectados": conectados}
 }

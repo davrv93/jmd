@@ -29,6 +29,7 @@ type Premio struct {
 	Nombre   string  `json:"nombre"`
 	Etiqueta string  `json:"etiqueta"`
 	Cupos    int     `json:"cupos"`
+	Precio   int     `json:"precio"`
 	Grupos   []Grupo `json:"grupos,omitempty"`
 	Dias     string  `json:"dias,omitempty"`
 }
@@ -44,6 +45,14 @@ type Medidor struct {
 	ProbLejos    float64 `json:"prob_lejos"`
 }
 
+// Consuelo: descuento para quien tiró al menos una vez y no ganó un cupo al 100 %. Se sortea al cerrar.
+type Consuelo struct {
+	PagaPct         []int  `json:"paga_pct"`
+	EspecialPagaPct int    `json:"especial_paga_pct"`
+	EspecialCupos   int    `json:"especial_cupos"`
+	EspecialTexto   string `json:"especial_texto"`
+}
+
 type Config struct {
 	Titulo       string   `json:"titulo"`
 	Taller       string   `json:"taller"`
@@ -55,6 +64,8 @@ type Config struct {
 	RevelarMs    int      `json:"revelar_ms"`
 	Premios      []Premio `json:"premios"`
 	Medidor      Medidor  `json:"medidor"`
+	Consuelo     Consuelo `json:"consuelo"`
+	WhatsApp     string   `json:"whatsapp"`
 }
 
 func (c Config) premio(id string) *Premio {
@@ -71,8 +82,16 @@ func (c Config) validar() error {
 		return errors.New("config.json: meta, espera_ms, premios y medidor son obligatorios")
 	}
 	for _, p := range c.Premios {
-		if p.ID == "" || p.Cupos < 0 {
-			return errors.New("config.json: cada premio necesita id y cupos ≥ 0")
+		if p.ID == "" || p.Cupos < 0 || p.Precio <= 0 {
+			return errors.New("config.json: cada premio necesita id, cupos ≥ 0 y precio")
+		}
+	}
+	if len(c.Consuelo.PagaPct) == 0 || c.Consuelo.EspecialCupos < 0 {
+		return errors.New("config.json: consuelo.paga_pct es obligatorio")
+	}
+	for _, v := range append([]int{c.Consuelo.EspecialPagaPct}, c.Consuelo.PagaPct...) {
+		if v <= 0 || v > 100 {
+			return errors.New("config.json: los porcentajes de pago van de 1 a 100")
 		}
 	}
 	return nil
@@ -111,6 +130,9 @@ type Estado struct {
 	Jugadores []*Jugador     `json:"jugadores"`
 	Ganadores []Ganador      `json:"ganadores"`
 	Creado    time.Time      `json:"creado"`
+	// Consuelos: jugador → porcentaje del precio que paga. Especiales: los del descuento grande, en orden.
+	Consuelos  map[string]int `json:"consuelos"`
+	Especiales []string       `json:"especiales"`
 }
 
 // Fase: lo que el servidor manda antes de cada tiro. El medidor vale tri(e/P + X), con e los ms desde que se emitió.
@@ -202,7 +224,8 @@ func (j *Juego) estadoNuevo() Estado {
 	for _, p := range j.cfg.Premios {
 		r[p.ID] = p.Cupos
 	}
-	return Estado{Abierto: j.cfg.AbiertoAlIni, Restantes: r, Jugadores: []*Jugador{}, Ganadores: []Ganador{}, Creado: j.ahora().UTC()}
+	return Estado{Abierto: j.cfg.AbiertoAlIni, Restantes: r, Jugadores: []*Jugador{}, Ganadores: []Ganador{}, Creado: j.ahora().UTC(),
+		Consuelos: map[string]int{}, Especiales: []string{}}
 }
 
 func (j *Juego) indexar() {
@@ -217,6 +240,12 @@ func (j *Juego) indexar() {
 	}
 	if j.est.Ganadores == nil {
 		j.est.Ganadores = []Ganador{}
+	}
+	if j.est.Consuelos == nil {
+		j.est.Consuelos = map[string]int{}
+	}
+	if j.est.Especiales == nil {
+		j.est.Especiales = []string{}
 	}
 }
 
@@ -515,6 +544,14 @@ func (j *Juego) premiar(p *Jugador) *Victoria {
 	}
 	p.Gano = g.Orden
 	j.est.Ganadores = append(j.est.Ganadores, g)
+	// quien gana un cupo al 100 % (por ejemplo, tras reabrir) deja su descuento; el especial vuelve a sortearse al cerrar
+	delete(j.est.Consuelos, p.ID)
+	for i, id := range j.est.Especiales {
+		if id == p.ID {
+			j.est.Especiales = append(j.est.Especiales[:i], j.est.Especiales[i+1:]...)
+			break
+		}
+	}
 	return &Victoria{Ganador: g, Corto: corto(p.Nombre), Semilla: p.Semilla, Num: p.Num}
 }
 
@@ -532,7 +569,45 @@ func (j *Juego) Cerrar(cerrado bool) {
 	j.est.Cerrado = cerrado
 	if cerrado {
 		j.est.CerradoEn = j.ahora().UTC()
+		j.consolar()
 	}
+}
+
+// consolar sortea los descuentos entre quienes tiraron al menos una vez, no ganaron un cupo y todavía no
+// tienen descuento. Cerrar dos veces no vuelve a sortear: solo entran los que aparecieron después.
+// El descuento grande (especial_cupos) sale una sola vez en todo el sorteo, entre esos mismos jugadores.
+func (j *Juego) consolar() {
+	var nuevos []*Jugador
+	for _, p := range j.est.Jugadores {
+		if _, ya := j.est.Consuelos[p.ID]; !ya && p.Tiros >= 1 && p.Gano == 0 {
+			nuevos = append(nuevos, p)
+		}
+	}
+	// orden al azar (Fisher-Yates con crypto/rand)
+	for i := len(nuevos) - 1; i > 0; i-- {
+		k := j.azar(i + 1)
+		nuevos[i], nuevos[k] = nuevos[k], nuevos[i]
+	}
+	c := j.cfg.Consuelo
+	for _, p := range nuevos {
+		if len(j.est.Especiales) < c.EspecialCupos {
+			j.est.Consuelos[p.ID] = c.EspecialPagaPct
+			j.est.Especiales = append(j.est.Especiales, p.ID)
+			continue
+		}
+		j.est.Consuelos[p.ID] = c.PagaPct[j.azar(len(c.PagaPct))]
+	}
+}
+
+// Consuelo devuelve el porcentaje que paga un jugador (0 si no tiene descuento) y si es del descuento grande.
+func (j *Juego) consuelo(id string) (int, bool) {
+	pct := j.est.Consuelos[id]
+	for _, e := range j.est.Especiales {
+		if e == id {
+			return pct, true
+		}
+	}
+	return pct, false
 }
 
 func (j *Juego) Reiniciar() {

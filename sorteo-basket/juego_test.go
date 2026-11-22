@@ -354,3 +354,125 @@ func TestPersistencia(t *testing.T) {
 		t.Fatal("reiniciar no limpió")
 	}
 }
+
+// Al cerrar: exactamente un 80 % (paga 20 %), los demás que tiraron pagan 30, 50 o 60 %; ganadores y
+// quienes no tiraron quedan fuera.
+func TestConsuelos(t *testing.T) {
+	j, r := juegoPrueba(t)
+	restore := forzarAcierto(j)
+	ps := []*Jugador{}
+	for i := 0; i < 12; i++ {
+		ps = append(ps, entrar(t, j, i))
+	}
+	// 2 ganadores: los dos primeros meten 3
+	for k := 0; k < 3; k++ {
+		tiroPerfecto(t, j, r, ps[0].ID)
+		tiroPerfecto(t, j, r, ps[1].ID)
+	}
+	restore()
+	// del 2 al 10 tiran una vez; el 11 no tira
+	for _, p := range ps[2:11] {
+		tiroPerfecto(t, j, r, p.ID)
+	}
+	if len(j.est.Consuelos) != 0 {
+		t.Fatal("no debe haber descuentos antes de cerrar")
+	}
+	j.Cerrar(true)
+	if len(j.est.Especiales) != 1 {
+		t.Fatalf("especiales = %d, quería 1", len(j.est.Especiales))
+	}
+	esp := 0
+	for _, p := range ps {
+		paga, e := j.consuelo(p.ID)
+		switch {
+		case p.Gano > 0 || p.Tiros == 0:
+			if paga != 0 || e {
+				t.Fatalf("%s (gano=%d, tiros=%d) no debe tener descuento: %d", p.ID, p.Gano, p.Tiros, paga)
+			}
+		case e:
+			esp++
+			if paga != 20 {
+				t.Fatalf("el especial paga %d, quería 20", paga)
+			}
+		default:
+			if paga != 30 && paga != 50 && paga != 60 {
+				t.Fatalf("paga %d, quería 30, 50 o 60", paga)
+			}
+		}
+	}
+	if esp != 1 || len(j.est.Consuelos) != 9 {
+		t.Fatalf("especial %d, con descuento %d (quería 1 y 9)", esp, len(j.est.Consuelos))
+	}
+	// cerrar otra vez no vuelve a sortear
+	antes, _ := json.Marshal(j.est.Consuelos)
+	antesE := j.est.Especiales[0]
+	j.Cerrar(true)
+	j.Cerrar(false)
+	j.Cerrar(true)
+	despues, _ := json.Marshal(j.est.Consuelos)
+	if string(antes) != string(despues) || j.est.Especiales[0] != antesE || len(j.est.Especiales) != 1 {
+		t.Fatal("cerrar dos veces cambió los descuentos")
+	}
+	// sobrevive a un reinicio del servidor
+	b, err := j.Volcar()
+	if err != nil {
+		t.Fatal(err)
+	}
+	k := NuevoJuego(cfgPrueba(t))
+	if err := k.Cargar(b); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range ps {
+		a, ae := j.consuelo(p.ID)
+		bb, be := k.consuelo(p.ID)
+		if a != bb || ae != be {
+			t.Fatalf("%s: %d/%v antes, %d/%v después del reinicio", p.ID, a, ae, bb, be)
+		}
+	}
+	// quien llega después y tira recibe su descuento al volver a cerrar, sin un segundo 80 %
+	k.ahora = r.ahora
+	k.Cerrar(false)
+	tarde := entrar(t, k, 15)
+	tiroPerfecto(t, k, r, tarde.ID)
+	k.Cerrar(true)
+	if paga, e := k.consuelo(tarde.ID); e || (paga != 30 && paga != 50 && paga != 60) {
+		t.Fatalf("el que llegó tarde: paga %d, especial %v", paga, e)
+	}
+	if len(k.est.Especiales) != 1 {
+		t.Fatal("salió un segundo 80 %")
+	}
+}
+
+// Los tres porcentajes salen con la misma probabilidad y el 80 % cae en cualquiera.
+func TestConsuelosReparto(t *testing.T) {
+	cuenta := map[int]int{}
+	especial := map[int]int{}
+	for v := 0; v < 600; v++ {
+		j, _ := juegoPrueba(t)
+		ps := []*Jugador{}
+		for i := 0; i < 6; i++ {
+			p := entrar(t, j, i)
+			p.Tiros = 1
+			ps = append(ps, p)
+		}
+		j.Cerrar(true)
+		for i, p := range ps {
+			paga, e := j.consuelo(p.ID)
+			if e {
+				especial[i]++
+			} else {
+				cuenta[paga]++
+			}
+		}
+	}
+	for _, pct := range []int{30, 50, 60} {
+		if f := float64(cuenta[pct]) / 3000; f < 0.29 || f > 0.38 {
+			t.Fatalf("paga %d %% salió %.3f, quería ≈ 1/3", pct, f)
+		}
+	}
+	for i := 0; i < 6; i++ {
+		if especial[i] < 60 || especial[i] > 145 {
+			t.Fatalf("el 80 %% cayó %d veces en el jugador %d de 600 (quería ≈ 100)", especial[i], i)
+		}
+	}
+}
