@@ -5,93 +5,83 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tu mascota corre en la landing · Taller S2</title>
 <!-- Escena del modo LIVE (sesión 2, grupo de los jueves). Simula la landing ya publicada con el zorro animándose en
-     canvas 2D a partir de atlas.png (8 tiles de 256×130, alfa, ancla en x=243 / y=119). Sin GPU y sin peticiones. -->
-<link rel="stylesheet" href="../../comun/escena.css">
+     canvas 2D a partir de atlas.png (8 tiles de 256×130, alfa, ancla en x=243 / y=119). Sin GPU y sin peticiones.
+     Identidad del taller: ../../comun/taller.css y taller.js; la landing simulada toma la paleta del tema. -->
+<link rel="stylesheet" href="../../comun/taller.css">
 <style id="esc-propio">
-.esc-titulo { font-size: 1.5em; }
-.esc-sub { font-size: .9em; }
-.esc-cuerpo { gap: 1.2vh; justify-content: center; }
-.esc-grid-2 { align-items: start; }
-.demo { padding: .7em .8em; display: grid; gap: .55em; }
-.demo canvas { width: 100%; max-width: 640px; margin: 0 auto; height: auto; display: block; border-radius: .6em; }
-.mandos { display: flex; flex-wrap: wrap; align-items: center; gap: .45em .9em; font-size: .74em; }
-.mandos label { display: flex; align-items: center; gap: .45em; color: var(--muted); font-weight: 600; }
-.mandos input[type=range] { width: 7.5em; accent-color: var(--accent); }
-.mandos output { font: 700 .95em var(--mono); color: var(--fg); }
-.lado { display: grid; gap: .55em; align-content: start; }
-.pedido { padding: .7em .9em; display: grid; gap: .5em; }
-.pedido h3 { margin: 0; font-size: .86em; }
-.pedido p { margin: 0; font-size: .76em; color: var(--muted); }
-.pedido .esc-cmd { font-size: .66em; max-height: none; }
-.pedido button { font: 700 .86em/1 system-ui, sans-serif; padding: .6em 1em; border: 0; border-radius: .7em; background: var(--accent); color: var(--on-accent); cursor: pointer; }
-.pedido button.ok { background: var(--ok); }
-.chequeo { display: grid; gap: .3em; margin: 0; padding: 0; list-style: none; }
-.chequeo li { display: flex; gap: .55em; align-items: baseline; font-size: .76em; color: var(--muted); }
-.chequeo li b { color: var(--fg); }
-.chequeo .tick { color: var(--ok); font-weight: 800; flex: none; }
-.logre { display: flex; align-items: center; gap: .6em; }
-.logre button { font: 700 .8em/1 system-ui, sans-serif; padding: .55em .9em; border-radius: .65em; border: 1px solid var(--ok); background: var(--ok-bg); color: var(--ok); cursor: pointer; }
-.logre button[aria-pressed="true"] { background: var(--ok); color: #fff; }
-@media (max-width: 760px) {
-  body { overflow-y: auto; }
-  .esc-titulo { font-size: 1.15em; }
-  .esc-grid-2 { grid-template-columns: 1fr; }
-  .pedido .esc-cmd { font-size: .6em; max-height: 6.2em; overflow: auto; }
-  .pedido p { display: none; }
-}
+.demo { display: grid; gap: .9rem; }
+.demo .tl-lienzo { background: var(--hundido); background-image: none; }
+.demo canvas { width: 100%; height: auto; display: block; }
+.mandos { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem 1.5rem; }
+.pedido { display: grid; gap: .7rem; }
+@media (min-width: 961px) { .tl-mesa { align-self: center; } }
+.pedido h2 { margin: 0; font: 400 1.35rem/1.15 var(--display); letter-spacing: -.01em; }
+.pedido p { margin: 0; font-size: .88rem; color: var(--tinta-2); }
+.pedido pre { margin: 0; font: 400 .82rem/1.5 var(--texto); color: var(--tinta); background: var(--hundido); border-radius: var(--r); padding: .9rem 1rem; white-space: pre-wrap; word-break: break-word; }
+.pedido .tl-btn.copiado { background: var(--ok); border-color: var(--ok); color: var(--sobre-acento); }
+.chequeo { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.chequeo li { display: grid; grid-template-columns: .9rem minmax(0, 1fr); gap: .55rem; align-items: baseline; font-size: .88rem; color: var(--tinta-2); }
+.chequeo li b { color: var(--tinta); font-weight: 600; }
+.chequeo i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--ok); transform: translateY(-.05em); }
+.chequeo i.mal { background: var(--mal); } .chequeo i.info { background: transparent; border: 1.5px solid var(--tinta-3); }
+.chequeo .v { font: 500 .8rem var(--mono); color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+.logre { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+.logre button[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: var(--sobre-acento); }
+.chip { font: 500 .8rem var(--texto); color: var(--tinta-2); }
+.chip.ok { color: var(--ok); font-weight: 600; }
 </style>
 </head>
 <body>
-<div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ea">Experimentación</span>
-    <span class="esc-num">DOMINGO · S2 · SPRITE 5</span>
+<div class="tl">
+  <header class="tl-folio">
+    <span class="marca">Taller de diseño</span><span class="sep" aria-hidden="true"></span>
+    <span class="ocultable">Sesión 2 · De la imagen al sprite</span>
+    <span class="derecha"><span class="cuenta">Sprite 5 de 5</span><button class="tl-tema" type="button" data-tl-tema></button></span>
   </header>
 
-  <main class="esc-cuerpo">
+  <div class="tl-cabeza">
     <div>
-      <h1 class="esc-titulo">Tu mascota corre en la landing, <em>sin un solo video</em></h1>
-      <p class="esc-sub">Ocho PNG y cuarenta líneas de canvas: la misma landing se mueve igual en un teléfono de gama baja.</p>
+      <h1 class="tl-titulo">Tu mascota corre en la landing, <em>sin un solo video</em></h1>
+      <p class="tl-lead">Ocho PNG y cuarenta líneas de canvas: la misma landing se mueve igual en un teléfono de gama baja.</p>
     </div>
+  </div>
 
-    <div class="esc-grid-2">
-      <div class="esc-card demo">
-        <canvas id="cv" aria-label="Landing de ejemplo con el zorro corriendo"></canvas>
-        <div class="mandos">
-          <label>fps <input id="fps" type="range" min="6" max="24" value="12"><output id="fps-v">12</output></label>
-          <label>velocidad <input id="vel" type="range" min="0" max="240" value="90"><output id="vel-v">90</output></label>
-          <label><input id="espejo" type="checkbox"> Mirar a la izquierda</label>
-        </div>
+  <main class="tl-mesa">
+    <section class="tl-col demo" aria-label="Landing de ejemplo">
+      <div class="tl-lienzo"><canvas id="cv" aria-label="Landing de ejemplo con el zorro corriendo"></canvas></div>
+      <div class="mandos">
+        <label class="tl-rango">fps <input id="fps" type="range" min="6" max="24" value="12"><output id="fps-v">12</output></label>
+        <label class="tl-rango">Velocidad <input id="vel" type="range" min="0" max="240" value="90"><output id="vel-v">90</output></label>
+        <label class="tl-check"><input id="espejo" type="checkbox"> Mirar a la izquierda</label>
       </div>
+    </section>
 
-      <div class="lado">
-        <div class="esc-card pedido">
-          <h3>El pedido, tal cual, para tu agente</h3>
-          <p>Cópialo y pégalo en el chat de <code>jmd</code>. Cambia «zorro» por tu mascota o tu producto. Escríbelo en español.</p>
-          <pre class="esc-cmd" id="txt">Pon el atlas de mi mascota (un zorro) en mi landing:
+    <aside class="tl-col">
+      <div class="tl-panel pedido">
+        <h2>El pedido para tu agente</h2>
+        <p>Cópialo en el chat de <code>jmd</code> y cambia «zorro» por tu mascota o tu producto.</p>
+        <pre id="txt">Pon el atlas de mi mascota (un zorro) en mi landing:
 1) usa atlas.png y base.png que descargué en las escenas anteriores (súbelos a /trabajo/landing/sprites/);
 2) dibuja el atlas en un canvas de la portada a 12 fps, anclado por el hocico y la base;
 3) que no tape el botón de WhatsApp y que a 393 px no se desborde;
 4) con «reducir movimiento» activo, muestra solo base.png quieta;
 5) no toques nada más de la landing.</pre>
-          <button id="copiar" type="button">Copiar pedido</button>
-        </div>
+        <div class="tl-acciones"><button id="copiar" type="button" class="tl-btn tinta">Copiar pedido</button></div>
+      </div>
 
-        <div class="esc-card pedido">
-          <h3>Antes de decir que está listo</h3>
-          <ul class="chequeo" id="chequeo"></ul>
-          <div class="logre">
-            <button id="logre" type="button" aria-pressed="false">Lo logré</button>
-            <span class="esc-chip" id="chip">mide y comprueba</span>
-          </div>
+      <div class="tl-panel pedido">
+        <h2>Antes de decir que está listo</h2>
+        <ul class="chequeo" id="chequeo"></ul>
+        <div class="logre">
+          <button id="logre" type="button" class="tl-btn" aria-pressed="false">Lo logré</button>
+          <span class="chip" id="chip">mide y comprueba</span>
         </div>
       </div>
-    </div>
+    </aside>
   </main>
-
-  <footer class="esc-pie">El visor de la landing es canvas 2D: se ve igual en el proyector y en tu teléfono · siguiente: el render de tu producto en 3D</footer>
 </div>
 
+<script src="../../comun/taller.js"></script>
 <script src="datos.js"></script>
 <script>
 (() => {
@@ -101,12 +91,13 @@
   const { atlas: A } = SPR;
 
   function medir() {
-    const dpr = Math.min(2, devicePixelRatio || 1);
+    const dpr = Math.min(3, Math.max(devicePixelRatio || 1, (cv.clientWidth || AN) / AN));
     cv.width = AN * dpr; cv.height = AL * dpr;
     cv.style.aspectRatio = AN + ' / ' + AL;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  medir();
+  medir(); requestAnimationFrame(medir); addEventListener('resize', medir);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
   // ---- comprobaciones reales sobre el atlas
   const cabezas = A.tiles.map(t => t.by0);
@@ -120,7 +111,7 @@
     ['Ninguna pose toca el borde', `${A.w - Math.max(...A.tiles.map(t => t.bx1))} px de margen`, A.tiles.every(t => t.bx1 < t.w - 4 && t.by1 < t.h - 2)],
   ];
   $('chequeo').innerHTML = filas.map(([k, v, ok]) =>
-    `<li><span class="tick">${ok === true ? '✓' : ok === false ? '·' : '→'}</span><span><b>${k}</b> · ${v}</span></li>`).join('');
+    `<li><i class="${ok === true ? '' : ok === false ? 'mal' : 'info'}" aria-hidden="true"></i><span><b>${k}</b> <span class="v">${v}</span></span></li>`).join('');
 
   // ---- la landing de mentira
   const img = new Image();
@@ -146,36 +137,36 @@
     const t = ms / 1000;
 
     ctx.clearRect(0, 0, AN, AL);
+    const HOJA = css('--hoja'), HUND = css('--hundido'), TINTA = css('--tinta'), TINTA2 = css('--tinta-2'), REGLA = css('--regla-2'), ACENTO = css('--acento'), SOBRE = css('--sobre-acento');
     // ventana
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = HOJA;
     redondo(10, 8, AN - 20, AL - 18, 10); ctx.fill();
-    ctx.strokeStyle = 'rgba(60,52,140,.16)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.strokeStyle = REGLA; ctx.lineWidth = 1; ctx.stroke();
     // barra
-    ctx.fillStyle = '#f2f0f8';
+    ctx.fillStyle = HUND;
     redondo(10, 8, AN - 20, 26, 10); ctx.fill();
-    ctx.fillStyle = '#f2f0f8'; ctx.fillRect(10, 24, AN - 20, 10);
-    ['#e05c5c', '#e0b25c', '#5cc27a'].forEach((c, i) => {
-      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(26 + i * 14, 21, 4, 0, Math.PI * 2); ctx.fill();
-    });
-    ctx.fillStyle = '#8a879a'; ctx.font = '600 10px system-ui, sans-serif';
+    ctx.fillRect(10, 24, AN - 20, 10);
+    for (let i = 0; i < 3; i++) { ctx.fillStyle = REGLA; ctx.beginPath(); ctx.arc(26 + i * 14, 21, 4, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = TINTA2; ctx.font = '500 10px Inter, system-ui, sans-serif';
     ctx.fillText('tu-negocio.pe', 78, 25);
 
     // contenido
-    ctx.fillStyle = '#16151d'; ctx.font = '800 22px system-ui, sans-serif';
-    ctx.fillText('Tu negocio, en una', 34, 82);
-    ctx.fillText('landing que se mueve', 34, 110);
-    ctx.fillStyle = '#5c5966'; ctx.font = '400 12px system-ui, sans-serif';
-    ctx.fillText('Sin video, sin plugins: ocho dibujos y un poco de código.', 34, 132);
+    ctx.fillStyle = TINTA; ctx.font = '400 30px Fraunces, Georgia, serif';
+    ctx.fillText('Tu negocio, en una', 34, 86);
+    ctx.font = 'italic 300 30px Fraunces, Georgia, serif'; ctx.fillStyle = ACENTO;
+    ctx.fillText('landing que se mueve', 34, 118);
+    ctx.fillStyle = TINTA2; ctx.font = '400 12px Inter, system-ui, sans-serif';
+    ctx.fillText('Sin video, sin plugins: ocho dibujos y un poco de código.', 34, 142);
 
     // botón
-    ctx.fillStyle = '#136a33';
-    redondo(34, 148, 178, 34, 8); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = '700 12px system-ui, sans-serif';
-    ctx.fillText('Escríbenos por WhatsApp', 50, 170);
+    ctx.fillStyle = ACENTO;
+    redondo(34, 158, 190, 36, 8); ctx.fill();
+    ctx.fillStyle = SOBRE; ctx.font = '600 12px Inter, system-ui, sans-serif';
+    ctx.fillText('Escríbenos por WhatsApp', 52, 181);
 
     // suelo
     const suelo = 262;
-    ctx.strokeStyle = 'rgba(60,52,140,.18)'; ctx.lineWidth = 1;
+    ctx.strokeStyle = REGLA; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(24, suelo + .5); ctx.lineTo(AN - 24, suelo + .5); ctx.stroke();
 
     // el zorro
@@ -194,7 +185,7 @@
     }
 
     // pista del frame
-    ctx.fillStyle = '#8a879a'; ctx.font = '600 10px system-ui, sans-serif';
+    ctx.fillStyle = TINTA2; ctx.font = '500 10px Inter, system-ui, sans-serif';
     ctx.fillText(`frame ${(Math.floor(t * fps) % 8) + 1}/8 · ${fps} fps`, AN - 108, AL - 12);
 
     requestAnimationFrame(pintar);
@@ -218,17 +209,18 @@
   }
   $('copiar').onclick = async (e) => {
     const ok = await copiar($('txt').textContent.trim());
-    e.target.textContent = ok ? '✓ Copiado: pégalo en el aula' : 'No pude copiar: selecciona el texto';
-    e.target.classList.toggle('ok', ok);
-    setTimeout(() => { e.target.textContent = 'Copiar pedido'; e.target.classList.remove('ok'); }, 2600);
+    const b = e.currentTarget;
+    b.textContent = ok ? 'Copiado: pégalo en el aula' : 'No pude copiar: selecciona el texto';
+    b.classList.toggle('copiado', ok);
+    setTimeout(() => { b.textContent = 'Copiar pedido'; b.classList.remove('copiado'); }, 2600);
   };
 
   $('logre').onclick = (e) => {
-    const on = e.target.getAttribute('aria-pressed') !== 'true';
-    e.target.setAttribute('aria-pressed', String(on));
-    e.target.textContent = on ? '✓ Lo logré' : 'Lo logré';
-    $('chip').textContent = on ? 'mascota en la landing' : 'mide y comprueba';
-    $('chip').className = 'esc-chip' + (on ? ' ok' : '');
+    const b = e.currentTarget, on = b.getAttribute('aria-pressed') !== 'true';
+    b.setAttribute('aria-pressed', String(on));
+    b.textContent = 'Lo logré';
+    $('chip').textContent = on ? 'Mascota en la landing' : 'mide y comprueba';
+    $('chip').className = 'chip' + (on ? ' ok' : '');
   };
 })();
 </script>
