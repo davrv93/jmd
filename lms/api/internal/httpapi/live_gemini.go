@@ -163,14 +163,22 @@ type geminiParte struct {
 }
 
 // geminiJSON manda el pedido a la cadena y devuelve el JSON del primer modelo que responde bien.
+// Desde el 22-11-2026, si el pedido es solo texto, primero se prueban los modelos gratis de OpenRouter
+// (los mismos de live_entender: LMS_ENTENDER_GRATIS o entenderGratisDefecto) porque Gemini tardaba
+// demasiado en clase. Gemini queda de respaldo y sigue siendo el único para audio.
 func geminiJSON(ctx context.Context, sistema string, partes []geminiParte, maxTokens int) (map[string]any, string, error) {
-	key := geminiClave()
-	if key == "" {
-		return nil, "", errors.New("el servidor no tiene GEMINI_API_KEY")
-	}
 	conAudio := false
 	for _, p := range partes {
 		conAudio = conAudio || p.Audio != ""
+	}
+	if !conAudio {
+		if out, modelo, err := openrouterGratisJSON(ctx, sistema, partes); err == nil {
+			return out, modelo, nil
+		}
+	}
+	key := geminiClave()
+	if key == "" {
+		return nil, "", errors.New("el servidor no tiene GEMINI_API_KEY")
 	}
 	cadena := geminiCadena(ctx, conAudio)
 	var ultimo error = errors.New("no hay modelos de Gemini disponibles")
@@ -200,6 +208,67 @@ func geminiJSON(ctx context.Context, sistema string, partes []geminiParte, maxTo
 				geminiEstado.Unlock()
 			}
 		}
+	}
+	return nil, "", ultimo
+}
+
+// openrouterGratisTimeout es lo más que se espera a cada modelo gratis antes de pasar al siguiente.
+var openrouterGratisTimeout = 12 * time.Second
+
+// openrouterGratisJSON prueba los modelos gratis de OpenRouter en orden. Un modelo que falla
+// descansa un minuto (en el mismo mapa que Gemini, con prefijo «or:») para no hacer esperar al siguiente.
+func openrouterGratisJSON(ctx context.Context, sistema string, partes []geminiParte) (map[string]any, string, error) {
+	key := strings.TrimSpace(os.Getenv("OPENROUTER_API_KEY"))
+	if key == "" {
+		return nil, "", errors.New("sin OPENROUTER_API_KEY")
+	}
+	var texto strings.Builder
+	for _, p := range partes {
+		if texto.Len() > 0 {
+			texto.WriteString("\n\n")
+		}
+		texto.WriteString(p.Texto)
+	}
+	var ultimo error = errors.New("no hay modelos gratis disponibles")
+	for _, modelo := range entenderModelosGratis() {
+		if ctx.Err() != nil {
+			break
+		}
+		geminiEstado.Lock()
+		hasta, descansa := geminiEstado.descanso["or:"+modelo]
+		geminiEstado.Unlock()
+		if descansa && time.Now().Before(hasta) {
+			continue
+		}
+		mensajes := []map[string]any{
+			{"role": "system", "content": sistema},
+			{"role": "user", "content": texto.String()},
+		}
+		if strings.Contains(strings.ToLower(modelo), "gemma") {
+			mensajes = []map[string]any{{"role": "user",
+				"content": sistema + "\n\nResponde SOLO el objeto JSON, sin ``` ni texto alrededor.\n\n" + texto.String()}}
+		}
+		c, cancel := context.WithTimeout(ctx, openrouterGratisTimeout)
+		resp, status, motivo := entenderPedir(c, key, modelo, mensajes, true)
+		if status == 400 && c.Err() == nil {
+			resp, status, motivo = entenderPedir(c, key, modelo, mensajes, false)
+		}
+		cancel()
+		if motivo == "" {
+			txt := resp.contenido
+			if i, j := strings.Index(txt, "{"), strings.LastIndex(txt, "}"); i >= 0 && j > i {
+				txt = txt[i : j+1]
+			}
+			var m map[string]any
+			if json.Unmarshal([]byte(txt), &m) == nil {
+				return m, modelo, nil
+			}
+			motivo = "no devolvió JSON"
+		}
+		ultimo = fmt.Errorf("%s: %s", modelo, motivo)
+		geminiEstado.Lock()
+		geminiEstado.descanso["or:"+modelo] = time.Now().Add(time.Minute)
+		geminiEstado.Unlock()
 	}
 	return nil, "", ultimo
 }
