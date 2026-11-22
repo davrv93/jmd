@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Antes y después: cuánto se llenó la memoria</title>
+<title>Escena · Antes y después: pedido vago contra pedido conducido</title>
 <!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-03). Sin recursos externos; animaciones solo CSS. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/ccp.css">
@@ -48,22 +48,22 @@
   <main class="esc-cuerpo">
     <div>
       <h1 class="esc-titulo a-in">Antes y <em>después</em></h1>
-      <p class="esc-sub a-in" style="--d:.1s">La misma pregunta, dos veces: Claude solo y con un ayudante. Aquí ves, en vivo, cuánto se llenó la memoria de Claude en todo el grupo.</p>
+      <p class="esc-sub a-in" style="--d:.1s">El mismo tablero, dos veces: con un pedido vago y con un pedido conducido. Estas son las notas del grupo, en vivo.</p>
     </div>
     <div class="s3">
       <div class="s3-col">
         <section class="esc-card a-in" style="--d:.2s">
-          <span class="cc-et">Lo típico del grupo · fila Messages</span>
+          <span class="cc-et">Nota típica del grupo · de 1 a 10</span>
           <div class="a10-med">
-            <div class="a10-num"><span>Claude solo</span><b id="m-antes">—</b><small id="n-antes">esperando la escena 2</small></div>
-            <div class="a10-num d"><span>Con ayudante</span><b id="m-desp">—</b><small id="n-desp">esperando la escena 6</small></div>
+            <div class="a10-num"><span>Pedido vago</span><b id="m-antes">—</b><small id="n-antes">esperando la escena 2</small></div>
+            <div class="a10-num d"><span>Pedido conducido</span><b id="m-desp">—</b><small id="n-desp">esperando la escena 6</small></div>
             <div class="cc-delta" id="delta">—</div>
           </div>
           <p class="a10-mio" id="mio" style="margin-top:.6em"></p>
         </section>
         <div class="a10-dos">
-          <section class="esc-card a-in" style="--d:.3s"><span class="cc-et">Claude solo (escena 2)</span><div class="cc-barras" id="g-antes"></div></section>
-          <section class="esc-card a-in" style="--d:.35s"><span class="cc-et">Con ayudante (escena 6)</span><div class="cc-barras" id="g-desp"></div></section>
+          <section class="esc-card a-in" style="--d:.3s"><span class="cc-et">Pedido vago (escena 2) · nota de 1 a 10</span><div class="cc-barras" id="g-antes"></div></section>
+          <section class="esc-card a-in" style="--d:.35s"><span class="cc-et">Pedido conducido (escena 6) · nota de 1 a 10</span><div class="cc-barras" id="g-desp"></div></section>
         </div>
       </div>
       <div class="s3-col">
@@ -72,15 +72,15 @@
       </div>
     </div>
   </main>
-  <footer class="esc-pie"><span>Ojo: la memoria de Claude quedó más limpia, pero el gasto no bajó igual: los ayudantes también consumen. Míralo con /usage.</span></footer>
+  <footer class="esc-pie"><span>La diferencia no es el modelo: es cómo lo conduces.</span></footer>
 </div>
 <script src="../../comun/ccp.js"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   function datosDe(en) {
-    return (en || []).map(function (e) { var m = /([\d ]{2,9})\s*tokens/.exec(e.texto || ""); return m ? { n: +m[1].replace(/\s/g, ""), nombre: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
-      .filter(function (d) { return d && d.n > 0; }).sort(function (a, b) { return b.n - a.n; });
+    return (en || []).map(function (e) { var m = /(\d{1,2})\s*(?:de|\/)\s*10\b/.exec(e.texto || ""); return m ? { n: +m[1], nombre: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
+      .filter(function (d) { return d && d.n >= 1 && d.n <= 10; }).sort(function (a, b) { return b.n - a.n; });
   }
   function mediana(ds) { var o = ds.map(function (d) { return d.n; }).sort(function (a, b) { return a - b; }); if (!o.length) return 0; return o.length % 2 ? o[(o.length - 1) / 2] : (o[o.length / 2 - 1] + o[o.length / 2]) / 2; }
   function barras(id, ds, max) {
@@ -90,18 +90,18 @@
       var f = CC.el("div", "cc-barra" + (d.mia ? " mia" : ""));
       f.appendChild(CC.el("span", "n", d.nombre));
       var b = CC.el("span", "b"), i = CC.el("i"); i.style.setProperty("--w", Math.max(3, d.n / max * 100) + "%"); b.appendChild(i); f.appendChild(b);
-      f.appendChild(CC.el("span", "v", CC.num(d.n)));
+      f.appendChild(CC.el("span", "v", d.n + "/10"));
       g.appendChild(f);
     });
   }
   var A = [], D = [];
   function pintar() {
-    var max = Math.max(1, A[0] ? A[0].n : 0, D[0] ? D[0].n : 0);
+    var max = 10;
     barras("g-antes", A, max); barras("g-desp", D, max);
     var ma = mediana(A), md = mediana(D);
-    $("m-antes").textContent = ma ? CC.num(ma) : "—"; $("n-antes").textContent = A.length ? A.length + (A.length === 1 ? " medición" : " mediciones") : "esperando la escena 2";
-    $("m-desp").textContent = md ? CC.num(md) : "—"; $("n-desp").textContent = D.length ? D.length + (D.length === 1 ? " medición" : " mediciones") : "esperando la escena 6";
-    if (ma && md) { var p = Math.round((md - ma) / ma * 100); $("delta").textContent = (p > 0 ? "+" : p < 0 ? "−" : "") + Math.abs(p) + " %"; $("delta").classList.toggle("mal", p >= 0); }
+    $("m-antes").textContent = ma ? ma + " de 10" : "—"; $("n-antes").textContent = A.length ? A.length + (A.length === 1 ? " nota" : " notas") : "esperando la escena 2";
+    $("m-desp").textContent = md ? md + " de 10" : "—"; $("n-desp").textContent = D.length ? D.length + (D.length === 1 ? " nota" : " notas") : "esperando la escena 6";
+    if (ma && md) { var p = Math.round((md - ma) / ma * 100); $("delta").textContent = (p > 0 ? "+" : p < 0 ? "−" : "") + Math.abs(p) + " %"; $("delta").classList.toggle("mal", p <= 0); }
     else $("delta").textContent = "—";
   }
   function traer() {
@@ -111,16 +111,15 @@
   traer(); setInterval(traer, 5000);
   var antes = CC.leer("antes", null), desp = CC.leer("despues", null), mio = $("mio");
   if (antes && antes.tok && desp && desp.tok) {
-    var p = Math.round((desp.tok - antes.tok) / antes.tok * 100);
-    mio.textContent = ""; mio.appendChild(CC.el("b", "", "Tu medición: "));
-    mio.append(CC.num(antes.tok) + " → " + CC.num(desp.tok) + " tokens (" + (p > 0 ? "+" : p < 0 ? "−" : "") + Math.abs(p) + " %). " +
-      (p < 0 ? "Tu ventana quedó más limpia: el explorador leyó por ti." : "No bajó: revisa que hiciste /clear antes de cada pedido y que Claude usó el explorador."));
-  } else { mio.textContent = "Tu comparación aparece aquí cuando publiques en las escenas 2 y 6."; }
-  CC.votos($("voto"), "10-antes-y-despues", "¿Cuándo NO usarías un subagente?", [
-    { id: "corta", t: "Una tarea corta: lo hago en la ventana principal" }, { id: "mismo", t: "Cuando necesito ver todo el detalle yo mismo" },
-    { id: "cuota", t: "Cuando estoy cerca del límite de 5 horas" }, { id: "siempre", t: "Siempre conviene usarlo" }
+    mio.textContent = ""; mio.appendChild(CC.el("b", "", "Tu nota: "));
+    mio.append(antes.tok + "/10 con pedido vago → " + desp.tok + "/10 conducido. " +
+      (desp.tok > antes.tok ? "Conducir mejoró tu tablero." : "No mejoró: revisa si pediste el plan antes de construir."));
+  } else { mio.textContent = "Tu comparación aparece aquí cuando publiques tus notas en las escenas 2 y 6."; }
+  CC.votos($("voto"), "10-antes-y-despues", "¿Qué paso te ayudó más?", [
+    { id: "decision", t: "Decir para qué es el tablero" }, { id: "plan", t: "Pedir el plan antes de construir" },
+    { id: "uno", t: "Un cambio a la vez" }, { id: "cifras", t: "Comprobar las cifras" }
   ]);
-  CC.muro($("muro"), "10-antes-y-despues", "Una pregunta que te quedó", { placeholder: "Ej.: ¿El subagente hereda mi CLAUDE.md?", max: 160 });
+  CC.muro($("muro"), "10-antes-y-despues", "Una pregunta que te quedó", { placeholder: "Ej.: ¿Puedo usar mi propio Excel de ventas?", max: 160 });
 })();
 </script>
 </body>

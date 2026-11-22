@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · El guardia: Claude no puede borrar tus datos</title>
+<title>Escena · Comprueba las cifras antes de creerle</title>
 <!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-03). Sin recursos externos; animaciones solo CSS. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/ccp.css">
@@ -39,47 +39,43 @@
   </header>
   <main class="esc-cuerpo">
     <div>
-      <h1 class="esc-titulo a-in">El guardia: Claude <em>no puede borrar</em> tus datos</h1>
-      <p class="esc-sub a-in" style="--d:.1s">Tu kit trae un guardia automático (un <b>hook</b>): revisa cada cosa que Claude quiere hacer y no lo deja cambiar ni borrar la base de datos. Hoy lo ponemos a prueba.</p>
+      <h1 class="esc-titulo a-in">Comprueba las cifras <em>antes de creerle</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Un tablero bonito con números equivocados es peor que no tener tablero. Antes de mostrarlo, comprueba dos o tres cifras.</p>
     </div>
     <div class="s3">
       <section class="esc-card a-in" style="--d:.2s">
         <ol class="cc-pasos">
-          <li><h3>Instala DuckDB (una base de datos pequeña)</h3>
-            <div class="cuerpo"><pre class="esc-cmd">curl https://install.duckdb.org | sh</pre><p class="cc-nota">En Windows: <code>winget install DuckDB.cli</code>.</p></div></li>
-          <li><h3>Crea la base tú mismo, fuera de Claude</h3>
-            <div class="cuerpo"><pre class="esc-cmd">duckdb tokens.duckdb -c &quot;CREATE TABLE t AS SELECT * FROM read_csv_auto(&#x27;tokens.csv&#x27;)&quot;</pre><p class="cc-nota">Si se lo pides a Claude, el guardia no lo deja. Es justo lo que queremos.</p></div></li>
-          <li><h3>Mira el guardia y ponlo a prueba</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/hooks</pre><pre class="esc-cmd">Borra de tokens.duckdb las filas del modelo haiku.</pre><p class="cc-nota">Tiene que salir <b>Bloqueado por el hook solo-lectura</b>: el guardia no lo dejó borrar. Haz captura: es parte de la tarea.</p></div></li>
-          <li><h3>Ahora pregunta algo normal: eso sí pasa</h3>
-            <div class="cuerpo"><pre class="esc-cmd">Con duckdb -readonly tokens.duckdb: ¿qué día gasté más tokens de salida y en qué proyecto?</pre></div></li>
+          <li><h3>Pide a Claude que lo calcule de nuevo</h3>
+            <div class="cuerpo"><pre class="esc-cmd">Calcula con código el total de ventas por sede y dime si coincide con lo que muestra el tablero.</pre></div></li>
+          <li><h3>Compruébalo tú</h3>
+            <div class="cuerpo"><p class="cc-nota">Abre <b>ventas-ejemplo.csv</b> en Excel o Google Sheets y suma la columna <b>venta</b> de una sede. Compárala con el tablero.</p></div></li>
+          <li><h3>Si no cuadra, dilo con el dato exacto</h3>
+            <div class="cuerpo"><pre class="esc-cmd">Las cifras de Lima no coinciden con mi Excel. Revisa el cálculo y corrígelo.</pre></div></li>
         </ol>
       </section>
       <div class="s3-col">
         <section class="esc-card a-in" style="--d:.3s">
-          <span class="cc-et">Qué deja pasar el guardia</span>
+          <span class="cc-et">Qué revisar siempre</span>
           <table class="s3-tabla">
-            <tr><th>Lo que Claude intenta</th><th>El guardia</th></tr>
-            <tr><td><code>duckdb -readonly tokens.duckdb "SELECT …"</code></td><td>Leer o consultar: <b>pasa</b></td></tr>
-            <tr><td><code>duckdb tokens.duckdb "DELETE …"</code></td><td>Borrar filas: <b>bloqueado</b></td></tr>
-            <tr><td><code>duckdb -readonly … "DROP TABLE t"</code></td><td>Borrar la tabla: <b>bloqueado</b></td></tr>
-            <tr><td><code>duckdb tokens.duckdb "SELECT 1"</code></td><td>Abrir sin el candado <code>-readonly</code>: <b>bloqueado</b></td></tr>
+            <tr><th>Revisa</th><th>Cómo</th></tr>
+            <tr><td><b>Totales</b></td><td>Suma una sede o un mes en Excel y compara.</td></tr>
+            <tr><td><b>Periodos</b></td><td>Que estén todos los meses y ninguno repetido.</td></tr>
+            <tr><td><b>Que el gráfico empiece en cero</b></td><td>Si no, una diferencia pequeña parece enorme.</td></tr>
+            <tr><td><b>Que no falten categorías</b></td><td>Cuenta las sedes y categorías: deben estar todas.</td></tr>
           </table>
-          <p class="cc-nota">Cuando el guardia bloquea, Claude recibe el aviso y lo intenta de nuevo, esta vez solo leyendo.</p>
         </section>
         <section class="esc-card a-in" style="--d:.4s" id="voto"></section>
       </div>
     </div>
   </main>
-  <footer class="esc-pie"><span>Una regla escrita es un pedido: Claude puede olvidarla. Un guardia es una cerradura: no olvida.</span></footer>
+  <footer class="esc-pie"><span>Claude puede equivocarse con los números. Comprobar es parte del trabajo.</span></footer>
 </div>
 <script src="../../comun/ccp.js"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  CC.votos($("voto"), "08-el-guardia", "¿Te lo bloqueó?", [
-    { id: "si", t: "Sí: «Bloqueado por el hook solo-lectura»" }, { id: "no", t: "No: lo borró (avisa al profe)" },
-    { id: "nopy", t: "Error: no encuentra python3" }, { id: "noduck", t: "Aún no instalo DuckDB" }
+  CC.votos($("voto"), "08-el-guardia", "¿Cuadraron las cifras?", [
+    { id: "si", t: "Sí, a la primera" }, { id: "corregi", t: "Tuve que pedir corrección" }, { id: "no", t: "No cuadran todavía" }
   ]);
 })();
 </script>

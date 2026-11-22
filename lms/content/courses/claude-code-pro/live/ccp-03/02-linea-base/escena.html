@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · Punto de partida: Claude solo, sin ayuda</title>
+<title>Escena · Punto de partida: un tablero pedido en una sola frase</title>
 <!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-03). Sin recursos externos; animaciones solo CSS. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/ccp.css">
@@ -39,30 +39,27 @@
   </header>
   <main class="esc-cuerpo">
     <div>
-      <h1 class="esc-titulo a-in">Punto de partida: Claude <em>solo</em>, sin ayuda</h1>
-      <p class="esc-sub a-in" style="--d:.1s">Los datos son tu propio uso de Claude. Primero Claude los lee solo y medimos cuánto se le llenó la mesa de trabajo (su memoria de la conversación).</p>
+      <h1 class="esc-titulo a-in">Punto de partida: <em>una sola frase</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Primero le pedimos el tablero a Claude con una sola frase, como lo haría cualquiera, y le ponemos nota. Así veremos cuánto mejora cuando lo conducimos.</p>
     </div>
     <div class="s3">
       <section class="esc-card a-in" style="--d:.2s">
         <ol class="cc-pasos">
-          <li><h3>Prepara la carpeta y saca tus datos de uso</h3>
-            <div class="cuerpo"><pre class="esc-cmd">mkdir mi-tablero &amp;&amp; cd mi-tablero</pre>
-            <p class="cc-nota">Descomprime ahí <b>kit-multiagente.zip</b>. Debe quedar la carpeta <code>.claude/</code> junto a <code>tokens_a_csv.py</code>.</p>
-            <pre class="esc-cmd">python3 tokens_a_csv.py --dias 30</pre>
-            <p class="cc-nota">En Windows: <code>py tokens_a_csv.py --dias 30</code>, y en <code>.claude/settings.json</code> cambia <code>python3</code> por <code>py</code>. Este programa revisa tu historial de Claude en tu computadora y crea la tabla <b>tokens.csv</b>. No envía nada a internet.</p></div></li>
-          <li><h3>Abre Claude Code y empieza de cero</h3>
-            <div class="cuerpo"><pre class="esc-cmd">claude</pre><pre class="esc-cmd">/clear</pre></div></li>
-          <li><h3>Pega este pedido</h3>
-            <div class="cuerpo"><pre class="esc-cmd">Lee tokens.csv y respóndeme en 5 líneas: total de tokens de salida por modelo, el día con más salida y qué porcentaje de la salida hicieron los subagentes. No uses subagentes.</pre></div></li>
-          <li><h3>Mide cuánto se llenó</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/context</pre><p class="cc-nota">Busca la fila <b>Messages</b> y anota el número: es cuánto ocupa la conversación en la memoria de Claude. Menos es mejor.</p></div></li>
+          <li><h3>Abre un chat nuevo en claude.ai</h3>
+            <div class="cuerpo"><p class="cc-nota">Entra a <b>claude.ai</b> y pulsa «Nuevo chat». Empezar de cero evita que Claude se confunda con conversaciones anteriores.</p></div></li>
+          <li><h3>Adjunta ventas-ejemplo.csv</h3>
+            <div class="cuerpo"><p class="cc-nota">Usa el clip de la caja de mensaje o arrastra el archivo. Son ventas de ejemplo de una cadena de boticas: fecha, sede, categoría, unidades, venta y margen.</p></div></li>
+          <li><h3>Pide solo esto</h3>
+            <div class="cuerpo"><pre class="esc-cmd">Hazme un dashboard con estos datos.</pre><p class="cc-nota">A propósito, sin más detalles: es el pedido que hace casi todo el mundo.</p></div></li>
+          <li><h3>Mira el resultado y ponle nota</h3>
+            <div class="cuerpo"><p class="cc-nota">El tablero aparece a la derecha como <b>artifact</b>. Pregúntate: ¿me ayuda a decidir algo? Ponle nota del 1 al 10 aquí al lado.</p></div></li>
         </ol>
       </section>
       <div class="s3-col">
         <section class="esc-card a-in" style="--d:.3s">
-          <span class="cc-et">Medidor · fila Messages de /context</span>
-          <div class="cc-fila"><input class="cc-in s3-in" id="n" inputmode="numeric" autocomplete="off" placeholder="ej. 18400" aria-label="Tokens de la fila Messages"><button type="button" class="cc-btn" id="pub">Publicar</button></div>
-          <div class="s3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>palabras (tokens) en la memoria de Claude</span></div>
+          <span class="cc-et">Tu nota · pedido de una sola frase</span>
+          <div class="cc-fila"><input class="cc-in s3-in" id="n" inputmode="numeric" autocomplete="off" placeholder="ej. 5" aria-label="Nota del 1 al 10 para tu tablero"><button type="button" class="cc-btn" id="pub">Publicar</button></div>
+          <div class="s3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>de 10: qué tan útil es tu tablero</span></div>
           <p class="cc-nota" id="msg"></p>
           <div class="cc-barras" id="grupo" aria-label="Las mediciones del grupo"></div>
           <p class="s3-res" id="resumen"></p>
@@ -70,7 +67,7 @@
       </div>
     </div>
   </main>
-  <footer class="esc-pie"><span>En la escena 6 repetimos lo mismo con un ayudante y comparamos los dos números.</span></footer>
+  <footer class="esc-pie"><span>En la escena 6 lo conducimos paso a paso y volvemos a poner nota.</span></footer>
 </div>
 <script src="../../comun/ccp.js"></script>
 <script>
@@ -79,7 +76,7 @@
 
   function grupo(en) {
     var g = $("grupo"); g.textContent = "";
-    var ds = (en || []).map(function (e) { var m = /([\d ]{2,9})\s*tokens/.exec(e.texto || ""); return m ? { n: +m[1].replace(/\s/g, ""), nombre: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
+    var ds = (en || []).map(function (e) { var m = /(\d{1,2})\s*de 10/.exec(e.texto || "") || /([\d ]{2,9})\s*tokens/.exec(e.texto || ""); return m ? { n: +m[1].replace(/\s/g, ""), nombre: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
       .filter(function (d) { return d && d.n > 0; }).sort(function (a, b) { return b.n - a.n; });
     if (!ds.length) { $("resumen").textContent = "Cuando el grupo publique, aquí aparecen sus números."; return; }
     var max = ds[0].n;
@@ -93,23 +90,23 @@
     var o = ds.map(function (d) { return d.n; }).sort(function (a, b) { return a - b; });
     var med = o.length % 2 ? o[(o.length - 1) / 2] : (o[o.length / 2 - 1] + o[o.length / 2]) / 2;
     $("resumen").textContent = ""; $("resumen").append("Mediana del grupo: ");
-    $("resumen").appendChild(CC.el("b", "", CC.num(med) + " tokens"));
-    $("resumen").append(" en Messages (" + ds.length + (ds.length === 1 ? " medición)." : " mediciones)."));
+    $("resumen").appendChild(CC.el("b", "", CC.num(med) + " de 10"));
+    $("resumen").append(" (" + ds.length + (ds.length === 1 ? " nota)." : " notas)."));
   }
   var caja = document.createElement("div"); caja.hidden = true; document.body.appendChild(caja);
   var muro = CC.muro(caja, "02-linea-base", "", { alPintar: grupo });
   var previo = CC.leer("antes", null); if (previo && previo.tok) $("n").value = previo.tok;
-  function pintar() { var v = +String($("n").value).replace(/[^\d]/g, ""); $("tok-n").textContent = v ? CC.num(v) : "—"; return v; }
+  function pintar() { var v = +String($("n").value).replace(/[^\d]/g, ""); if (v > 10) v = 10; $("tok-n").textContent = v ? CC.num(v) : "—"; return v; }
   $("n").addEventListener("input", pintar); pintar();
   $("pub").addEventListener("click", function () {
     var v = pintar(), b = this;
-    if (!v) { $("msg").textContent = "Escribe el número de la fila Messages de /context."; $("n").focus(); return; }
+    if (!v) { $("msg").textContent = "Escribe una nota del 1 al 10."; $("n").focus(); return; }
     CC.guardar("antes", { tok: v }); b.disabled = true;
-    CC.evidencia("hallazgo", "Claude solo: Messages = " + v + " tokens").then(function (r) {
+    CC.evidencia("hallazgo", "Pedido de una frase: nota " + v + " de 10").then(function (r) {
       $("msg").textContent = r.ok ? "✓ Publicado como evidencia. Pulsa «Lo logré»." : "Lo guardé en este navegador.";
       b.disabled = false;
     });
-    muro.publicar(CC.num(v) + " tokens · Claude solo");
+    muro.publicar(v + " de 10 · pedido de una frase");
   });
 
 })();

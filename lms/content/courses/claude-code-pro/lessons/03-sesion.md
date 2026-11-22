@@ -1,19 +1,29 @@
 ---
 id: ccp-03
-title: "Sesión 3 · Multiagente y contexto acotado"
+title: "Sesión 3 · Conducir a Claude para hacer un tablero"
 published: true
 starts_at: 2026-11-21T19:30:00-05:00
 objectives:
   - id: ccp-03-o1
-    title: "Repartir el trabajo entre subagentes de lectura, construcción y revisión, con worktrees en paralelo"
+    title: "Conducir a Claude en claude.ai: decir la decisión, pedir un plan y cambiar una cosa a la vez"
   - id: ccp-03-o2
-    title: "Escribir hooks y skills propias, y saber cuándo se activan"
+    title: "Entender la mesa de Claude y los manuales (skills), y subir el de tableros"
   - id: ccp-03-o3
-    title: "Construir el dashboard y un chat de texto a SQL con guardas de solo lectura"
+    title: "Construir un tablero de ventas como artifact y comprobar sus cifras"
 recording:
   url: ""
   passcode: ""
 materials:
+  - id: ccp-03-ventas
+    title: "ventas-ejemplo.csv · ventas de 4 boticas (ene–oct 2026) para hacer el tablero en claude.ai"
+    kind: file
+    file: materials/web/ventas-ejemplo.csv
+    objective_ids: [ccp-03-o3]
+  - id: ccp-03-skill-web
+    title: "build-dashboard.zip · el manual de tableros de Anthropic, para subirlo en claude.ai (Configuración › Capacidades › Skills)"
+    kind: zip
+    file: materials/web/build-dashboard.zip
+    objective_ids: [ccp-03-o2, ccp-03-o3]
   - id: ccp-03-kit
     title: "kit-multiagente.zip · 3 subagentes, la skill build-dashboard, el hook solo-lectura y tokens_a_csv.py (descomprímelo en una carpeta nueva)"
     kind: zip

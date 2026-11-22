@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · El equipo: uno lee, otro arma, otro revisa</title>
+<title>Escena · Conducir: 4 pasos para un buen tablero</title>
 <!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-03). Sin recursos externos; animaciones solo CSS. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/ccp.css">
@@ -39,78 +39,76 @@
   </header>
   <main class="esc-cuerpo">
     <div>
-      <h1 class="esc-titulo a-in">El equipo: <em>uno lee, otro arma, otro revisa</em></h1>
-      <p class="esc-sub a-in" style="--d:.1s">Primero, la misma pregunta del inicio, pero ahora la lee un ayudante. Después, los tres ayudantes arman el tablero. A ti solo te llegan resúmenes cortos.</p>
+      <h1 class="esc-titulo a-in">Conducir: <em>4 pasos</em> para un buen tablero</h1>
+      <p class="esc-sub a-in" style="--d:.1s">Ahora en claude.ai, con chat nuevo. Tú decides qué tiene que responder el tablero; Claude pone el trabajo. Copia cada pedido, uno por uno.</p>
     </div>
     <div class="s3">
       <section class="esc-card a-in" style="--d:.2s">
         <ol class="cc-pasos">
-          <li><h3>Mira el equipo</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/agents</pre><p class="cc-nota"><b>explorador</b> (lee, no puede cambiar nada), <b>constructor</b> (arma el tablero) y <b>revisor</b> (revisa, no puede cambiar nada). Cada uno es una ficha de texto en <code>.claude/agents/</code>.</p></div></li>
-          <li><h3>La misma pregunta, ahora con un ayudante</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/clear</pre><pre class="esc-cmd">Usa el subagente explorador para leer tokens.csv y responder: total de tokens de salida por modelo, el día con más salida y qué porcentaje de la salida hicieron los subagentes. Tú no abras el archivo. Respóndeme en 5 líneas.</pre><p class="cc-nota">Después escribe <code>/context</code> y publica aquí al lado el número de <b>Messages</b>.</p></div></li>
-          <li><h3>El tablero, con un modelo más barato</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/model sonnet</pre><p class="cc-nota">Tu Claude principal solo reparte trabajo, así que basta un modelo más barato (Sonnet). Las sumas las hace un programa (<code>agregar.py</code>), que no cobra.</p><pre class="esc-cmd">Pide al subagente constructor un dashboard.html de mis tokens con la skill build-dashboard: 4 KPI (salida, cache leída, % de salida de subagentes, días activos), salida por día apilada principal contra subagentes, dona por modelo, tabla de sesiones ordenable y filtro por proyecto. Luego pide al subagente revisor que lo revise. A mí dame solo 5 líneas.</pre><p class="cc-nota">Abre <b>dashboard.html</b> en el navegador. Si el revisor marca alguna FALLA, pide: «Que el constructor corrija solo las FALLA del revisor».</p></div></li>
-          <li><h3>Cierra con dos números</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/context</pre><pre class="esc-cmd">/usage</pre><p class="cc-nota">Tu memoria quedó más limpia, pero los ayudantes también gastan de tu cuota: <code>/usage</code> lo muestra. Para actualizar el tablero otro día, sin gastar nada: <code>python3 tokens_a_csv.py</code> y <code>python3 agregar.py --html dashboard.html</code>.</p></div></li>
+          <li><h3>Chat nuevo, adjunta ventas-ejemplo.csv y di para qué es</h3>
+            <div class="cuerpo"><pre class="esc-cmd">Soy dueño de 4 boticas. Quiero saber qué sede y qué categoría venden más, cómo van las ventas mes a mes y dónde baja el margen.</pre></div></li>
+          <li><h3>Pide el plan antes de construir</h3>
+            <div class="cuerpo"><pre class="esc-cmd">Antes de hacer nada, propón: 3 o 4 cifras clave, 3 gráficos (cada uno con la pregunta que responde) y los filtros. No construyas todavía.</pre><p class="cc-nota">Lee el plan. Si algo no te sirve para decidir, dilo ahora: cambiar el plan es gratis, rehacer el tablero no.</p></div></li>
+          <li><h3>Revisa el plan y aprueba</h3>
+            <div class="cuerpo"><pre class="esc-cmd">Me gusta. Constrúyelo como artifact con la skill build-dashboard, en un solo archivo, con filtros por sede y por mes.</pre></div></li>
+          <li><h3>Un cambio a la vez</h3>
+            <div class="cuerpo"><pre class="esc-cmd">Cambia el gráfico circular por barras ordenadas de mayor a menor.</pre><p class="cc-nota">Un pedido por mensaje. Si pides cinco cosas juntas, alguna se pierde.</p></div></li>
         </ol>
       </section>
       <div class="s3-col">
         <section class="esc-card a-in" style="--d:.3s">
-          <span class="cc-et">Medidor · fila Messages de /context</span>
-          <div class="cc-fila"><input class="cc-in s3-in" id="n" inputmode="numeric" autocomplete="off" placeholder="ej. 18400" aria-label="Tokens de la fila Messages"><button type="button" class="cc-btn" id="pub">Publicar</button></div>
-          <div class="s3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>palabras (tokens) en la memoria de Claude</span></div>
+          <span class="cc-et">Tu nota · de 10: qué tan útil es tu tablero</span>
+          <div class="cc-fila"><input class="cc-in s3-in" id="n" inputmode="numeric" autocomplete="off" placeholder="ej. 8" aria-label="Nota de 1 a 10"><button type="button" class="cc-btn" id="pub">Publicar</button></div>
+          <div class="s3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>de 10: qué tan útil es tu tablero</span></div>
           <p class="cc-nota" id="msg"></p>
-          <div class="cc-barras" id="grupo" aria-label="Las mediciones del grupo"></div>
+          <div class="cc-barras" id="grupo" aria-label="Las notas del grupo"></div>
           <p class="s3-res" id="resumen"></p>
         </section>
         <section class="esc-card a-in" style="--d:.4s" id="muro"></section>
       </div>
     </div>
   </main>
-  <footer class="esc-pie"><span>Prueba del profe: el mismo tablero costó la mitad (de US$ 1,45 a 0,74) con este equipo.</span></footer>
+  <footer class="esc-pie"><span>Conducir es decidir tú qué se responde; Claude pone el trabajo.</span></footer>
 </div>
 <script src="../../comun/ccp.js"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-
+  var RX = /(\d{1,2})\s*(?:de|\/)\s*10\b/;
   function grupo(en) {
     var g = $("grupo"); g.textContent = "";
-    var ds = (en || []).map(function (e) { var m = /([\d ]{2,9})\s*tokens/.exec(e.texto || ""); return m ? { n: +m[1].replace(/\s/g, ""), nombre: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
-      .filter(function (d) { return d && d.n > 0; }).sort(function (a, b) { return b.n - a.n; });
-    if (!ds.length) { $("resumen").textContent = "Cuando el grupo publique, aquí aparecen sus números."; return; }
-    var max = ds[0].n;
+    var ds = (en || []).map(function (e) { var m = RX.exec(e.texto || ""); return m ? { n: +m[1], nombre: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
+      .filter(function (d) { return d && d.n >= 1 && d.n <= 10; }).sort(function (a, b) { return b.n - a.n; });
+    if (!ds.length) { $("resumen").textContent = "Cuando el grupo publique, aquí aparecen sus notas."; return; }
     ds.slice(0, 20).forEach(function (d) {
       var f = CC.el("div", "cc-barra" + (d.mia ? " mia" : ""));
       f.appendChild(CC.el("span", "n", d.nombre));
-      var b = CC.el("span", "b"), i = CC.el("i"); i.style.setProperty("--w", Math.max(3, d.n / max * 100) + "%"); b.appendChild(i); f.appendChild(b);
-      f.appendChild(CC.el("span", "v", CC.num(d.n)));
+      var b = CC.el("span", "b"), i = CC.el("i"); i.style.setProperty("--w", Math.max(3, d.n * 10) + "%"); b.appendChild(i); f.appendChild(b);
+      f.appendChild(CC.el("span", "v", d.n + "/10"));
       g.appendChild(f);
     });
     var o = ds.map(function (d) { return d.n; }).sort(function (a, b) { return a - b; });
     var med = o.length % 2 ? o[(o.length - 1) / 2] : (o[o.length / 2 - 1] + o[o.length / 2]) / 2;
-    $("resumen").textContent = ""; $("resumen").append("Mediana del grupo: ");
-    $("resumen").appendChild(CC.el("b", "", CC.num(med) + " tokens"));
-    $("resumen").append(" en Messages (" + ds.length + (ds.length === 1 ? " medición)." : " mediciones)."));
+    $("resumen").textContent = ""; $("resumen").append("Nota típica del grupo: ");
+    $("resumen").appendChild(CC.el("b", "", med + " de 10"));
+    $("resumen").append(" (" + ds.length + (ds.length === 1 ? " nota)." : " notas)."));
   }
   var caja = document.createElement("div"); caja.hidden = true; document.body.appendChild(caja);
   var muro = CC.muro(caja, "06-el-equipo", "", { alPintar: grupo });
-  var previo = CC.leer("despues", null); if (previo && previo.tok) $("n").value = previo.tok;
-  function pintar() { var v = +String($("n").value).replace(/[^\d]/g, ""); $("tok-n").textContent = v ? CC.num(v) : "—"; return v; }
+  var previo = CC.leer("despues", null); if (previo && previo.tok && previo.tok <= 10) $("n").value = previo.tok;
+  function pintar() { var v = +String($("n").value).replace(/[^\d]/g, ""); if (v > 10) v = 0; $("tok-n").textContent = v ? v : "—"; return v; }
   $("n").addEventListener("input", pintar); pintar();
   $("pub").addEventListener("click", function () {
     var v = pintar(), b = this;
-    if (!v) { $("msg").textContent = "Escribe el número de la fila Messages de /context."; $("n").focus(); return; }
+    if (!v) { $("msg").textContent = "Escribe una nota de 1 a 10."; $("n").focus(); return; }
     CC.guardar("despues", { tok: v }); b.disabled = true;
-    CC.evidencia("hallazgo", "con explorador: Messages = " + v + " tokens").then(function (r) {
-      $("msg").textContent = r.ok ? "✓ Publicado como evidencia. Pulsa «Lo logré»." : "Lo guardé en este navegador.";
+    CC.evidencia("hallazgo", "pedido conducido: " + v + " de 10").then(function (r) {
+      $("msg").textContent = r.ok ? "Publicado como evidencia. Pulsa «Lo logré»." : "Lo guardé en este navegador.";
       b.disabled = false;
     });
-    muro.publicar(CC.num(v) + " tokens · con explorador");
+    muro.publicar(v + " de 10 · pedido conducido");
   });
-
-  CC.muro($("muro"), "06-el-equipo-dashboard", "¿Qué te sorprendió de tu dashboard?", { placeholder: "Ej.: el 60 % de mi salida la escribieron subagentes", max: 160 });
+  CC.muro($("muro"), "06-el-equipo-dashboard", "¿Qué cambiaste del plan que te propuso Claude?", { placeholder: "Ej.: le pedí ver el margen por sede, no por día", max: 160 });
 })();
 </script>
 </body>
