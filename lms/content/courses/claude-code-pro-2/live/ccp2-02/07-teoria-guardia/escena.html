@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Un pedido se olvida, una cerradura no</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Coordenadas del viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. */
+  #zModelo { fill: var(--z-mundo); }
+  #zFuera { fill: var(--z-maq); }
+  .poste { fill: var(--tinta); }
+  #barrera { stroke: var(--rojo); stroke-width: 7; stroke-linecap: round; }
+  .cil { fill: var(--papel); stroke: var(--tinta); stroke-width: 2.4; }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .nt .t.mono { font-size: .95em; }
+  #nInstr .t { font-size: .95em; }
+  #narra { white-space: nowrap; }
+  .halo { position: absolute; inset: -3px; border: 2px solid var(--n-hot); border-radius: 4px; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Opcional · solo Claude Code · Guardias automáticos (hooks)</p>
+    <h1>Un pedido se puede olvidar; <em>una cerradura no</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Un recorrido de izquierda a derecha. Dentro de Claude está el pedido que le diste y la acción que decide hacer. Fuera de Claude hay un guardia automático, una puerta que revisa cada acción antes de que llegue a la base de datos. Sin la puerta, en Replit, una orden de borrar llegó a la base real aunque el pedido lo prohibía; con la puerta, la orden de borrar se frena y solo pasa la de leer.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <rect id="zModelo" x="16" y="16" width="470" height="330" rx="18"/>
+        <rect id="bModelo" class="trazo fino guion" x="16" y="16" width="470" height="330" rx="18"/>
+        <text id="rModelo" class="rot fuerte" x="34" y="44">DENTRO DE CLAUDE · LO QUE RECUERDA</text>
+        <rect id="zFuera" x="500" y="16" width="284" height="488" rx="18"/>
+        <rect id="bFuera" class="trazo fino" x="500" y="16" width="284" height="488" rx="18"/>
+        <text id="rFuera" class="rot fuerte" x="516" y="44">FUERA · EL GUARDIA</text>
+
+        <path id="a1" class="trazo flecha" d="M180 262 L246 262"/>
+        <path id="a2" class="trazo flecha" d="M452 262 L566 262"/>
+        <path id="a3" class="trazo flecha" d="M594 262 L654 262"/>
+
+        <g id="puerta">
+          <path id="gGuion" class="trazo fino guion" d="M580 156 L580 204"/>
+          <rect class="poste" x="575" y="204" width="10" height="32" rx="3"/>
+          <rect class="poste" x="575" y="290" width="10" height="32" rx="3"/>
+          <line id="barrera" x1="580" y1="238" x2="580" y2="288"/>
+        </g>
+
+        <g id="db">
+          <path class="cil" d="M660 222 L660 300 A50 12 0 0 0 760 300 L760 222"/>
+          <ellipse class="cil" cx="710" cy="222" rx="50" ry="12"/>
+          <path class="trazo fino" d="M660 248 A50 12 0 0 0 760 248 M660 274 A50 12 0 0 0 760 274"/>
+        </g>
+        <circle id="punto" class="solo-anim" cx="180" cy="262" r="9"/>
+      </svg>
+
+      <div class="nt pol" id="nInstr" data-r="-1.2" style="left:5%; top:12%; width:36%">
+        <span class="k">El pedido que le diste</span>
+        <div class="capas t"><span class="av">«No cambies nada sin mi permiso»</span><span class="bo solo-anim">«Solo puedes leer la base, nunca borrar»</span></div>
+        <span class="sello solo-anim" id="sello">OLVIDADO</span>
+      </div>
+      <div class="nt cmd" id="nClaude" data-r="1" style="left:5%; top:43%; width:17.5%"><span class="k">Claude</span><span class="t">Decide qué hacer</span></div>
+      <div class="nt act" id="nTool" data-r="-.8" style="left:31%; top:43%; width:25.5%">
+        <span class="k">Lo que va a hacer</span>
+        <div class="capas t mono"><span class="c0">Rehacer la base</span><span class="c1 solo-anim">Borrar filas</span><span class="c2 solo-anim">Solo leer</span></div>
+      </div>
+      <div class="capa" id="cPuerta">
+        <div class="nt sis" id="nGate" data-r="1.4" style="left:65%; top:13%; width:31%">
+          <span class="k">Guardia automático (hook)</span>
+          <div class="capas t"><span class="av">Revisa cada acción y frena lo prohibido</span><span class="bo solo-anim">solo-lectura.py: deja leer, no borrar</span></div>
+        </div>
+      </div>
+      <div class="nt info" id="nDB" data-r="-1" style="left:80%; top:64%; width:18%">
+        <span class="k">Base de datos</span>
+        <div class="capas t"><span class="av">La real</span><span class="bo solo-anim">tokens.duckdb</span></div>
+      </div>
+      <div class="nt hot solo-anim" id="nBorrada" data-r="2" style="left:64%; top:80%; width:33%"><span class="k">Borrada</span><span class="t">Datos de 1 206 personas y 1 196 empresas</span><span class="halo solo-anim" id="halo"></span></div>
+
+      <p class="cita solo-anim" id="cita" style="left:4%; top:70%; width:56%">«Inaceptable. Nunca debería ser posible.»<small>Amjad Masad, director de Replit · 20-07-2025</small></p>
+
+      <p class="pastilla solo-anim" id="narra" style="left:4%; top:74%; width:56%"><span class="capas">
+        <span>Le dijeron: no toques nada</span>
+        <span>Igual borró la base real</span>
+        <span>«Entré en pánico», escribió</span>
+        <span>El guardia frena la orden</span>
+        <span>Claude recibe el aviso</span>
+        <span>Pide solo leer → pasa</span>
+        <span>entregable 2: nada se puede borrar</span>
+      </span></p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Una regla escrita es un pedido</b><p>Lo que escribes en CLAUDE.md o en el chat es un pedido. Claude casi siempre lo cumple, pero puede olvidarlo, sobre todo en una conversación larga con muchas otras cosas que recordar.</p></li>
+        <li><b>El guardia vive fuera de Claude</b><p>Un hook es un guardia automático: un pequeño programa que revisa cada acción antes de que ocurra y frena las prohibidas. No depende de la memoria de Claude: es una cerradura.</p></li>
+        <li><b>Replit, julio de 2025</b><p>Un empresario le pidió a su asistente de IA que no cambiara nada sin permiso. Aun así, el asistente borró la base de datos y luego escribió: «Fue un error catastrófico de mi parte».</p><p class="aparte">Era una app de prueba y los datos se recuperaron, aunque la IA había dicho que no se podía.</p></li>
+        <li><b>La solución no fue otro pedido</b><p>Replit no le pidió a la IA más cuidado. Separó la base de pruebas de la real y creó un modo en que la IA solo planifica. Son cerraduras: no dependen de que la IA recuerde.</p></li>
+        <li><b>Con un guardia, la orden se frena</b><p>La misma orden de borrar llega a la puerta y el guardia la detiene. Claude recibe un aviso con el motivo y cambia su pedido a solo leer, que sí pasa.</p></li>
+        <li><b>En tu caso: solo-lectura.py</b><p>Tu kit trae un guardia que deja leer tu base de tokens pero no borrar ni cambiar nada. El entregable 2 pide que nada se pueda borrar: eso no se promete con un pedido, se asegura con un guardia. Lo pruebas en la escena 8.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Fuentes: Business Insider (22-07-2025) y heise online (25-07-2025) sobre Replit · Amjad Masad en X (20-07-2025) · Documentación de Claude Code: hooks.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, puntas = {}, narra = [], pulso = null, punto = $("#punto");
+
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .5 }, pos);
+    tl.from(puntas[id], { autoAlpha: 0, duration: .2 }, "-=.1");
+  }
+  function decir(tl, k, nodo) {
+    narra.forEach(function (s, i) { if (i !== k) tl.to(s, { autoAlpha: 0, duration: .12 }, i === 0 ? undefined : "<"); });
+    tl.to(narra[k], { autoAlpha: 1, duration: .2 });
+    if (nodo) tl.to(nodo, { scale: 1.1, duration: .16, yoyo: true, repeat: 1, ease: "power2.out" }, "<");
+  }
+  function tool(tl, k) { // cambia el comando de la llamada (capas)
+    tl.to("#nTool .capas > span", { autoAlpha: 0, duration: .15 });
+    tl.to("#nTool .c" + k, { autoAlpha: 1, duration: .2 });
+  }
+
+  TEO.escena([
+    function (tl) { // 1. la regla en el contexto
+      tl.from(["#zModelo", "#bModelo"], { autoAlpha: 0, duration: .6 });
+      tl.from("#rModelo", { autoAlpha: 0, y: 8 }, "-=.3");
+      TEO.pegar(tl, ["#nClaude", "#nInstr"]);
+      flecha(tl, "a1");
+      TEO.pegar(tl, "#nTool", "-=.1");
+      tl.to("#nInstr", { autoAlpha: .55, duration: .8 }, "+=.3");
+    },
+    function (tl) { // 2. la puerta fuera del modelo
+      tl.to("#nInstr", { autoAlpha: 1, duration: .3 });
+      tl.from(["#zFuera", "#bFuera"], { autoAlpha: 0, duration: .6 });
+      tl.from("#rFuera", { autoAlpha: 0, y: 8 }, "-=.3");
+      flecha(tl, "a2");
+      tl.from("#puerta", { autoAlpha: 0, y: -14, duration: .5 });
+      TEO.pegar(tl, "#nGate", "-=.2");
+      flecha(tl, "a3");
+      tl.from("#db", { autoAlpha: 0, y: 14, duration: .5 }, "-=.2");
+      TEO.pegar(tl, "#nDB", "-=.2");
+    },
+    function (tl) { // 3. Replit: sin puerta, la orden llega
+      tl.to(["#puerta", "#cPuerta"], { autoAlpha: .14, duration: .4 });
+      tl.fromTo("#narra", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .3 });
+      decir(tl, 0, "#nInstr");
+      tl.set(punto, { attr: { cx: 180, cy: 262 } });
+      tl.fromTo(punto, { autoAlpha: 0, scale: .3 }, { autoAlpha: 1, scale: 1, duration: .3, transformOrigin: "50% 50%" });
+      TEO.viajar(tl, punto, $("#a1"), .6);
+      decir(tl, 1, "#nTool");
+      TEO.viajar(tl, punto, $("#a2"), .7);
+      TEO.viajar(tl, punto, $("#a3"), .5);
+      tl.to(punto, { autoAlpha: 0, duration: .2 });
+      tl.to("#db", { x: -5, duration: .06, repeat: 7, yoyo: true, ease: "none" });
+      tl.to("#db", { autoAlpha: .35, duration: .4 });
+      TEO.pegar(tl, "#nBorrada", "-=.2");
+      tl.fromTo("#sello", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, "+=.2");
+      decir(tl, 2);
+    },
+    function (tl) { // 4. la respuesta: controles fuera del modelo
+      tl.to("#narra", { autoAlpha: 0, duration: .25 });
+      tl.fromTo("#cita", { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 });
+      tl.from(TEO.palabras($("#cita")), { autoAlpha: 0, y: 12, duration: .4, stagger: .08 }, "<");
+      tl.from("#cita small", { autoAlpha: 0, duration: .4 });
+      tl.to("#nBorrada", { autoAlpha: 0, duration: .4 }, "+=.3");
+      tl.to("#db", { autoAlpha: 1, duration: .5 }, "<");
+      tl.to(["#puerta", "#cPuerta"], { autoAlpha: 1, duration: .5 });
+    },
+    function (tl) { // 5. con hook: la orden rebota y el SELECT pasa
+      tl.to("#cita", { autoAlpha: 0, duration: .3 });
+      tl.to("#sello", { autoAlpha: 0, duration: .2 }, "<");
+      tool(tl, 1);
+      tl.to("#narra", { autoAlpha: 1, duration: .25 });
+      tl.set(punto, { attr: { cx: 180, cy: 262 } });
+      tl.fromTo(punto, { autoAlpha: 0, scale: .3 }, { autoAlpha: 1, scale: 1, duration: .3, transformOrigin: "50% 50%" });
+      TEO.viajar(tl, punto, $("#a1"), .5);
+      TEO.viajar(tl, punto, $("#a2"), .7);
+      tl.to(punto, { attr: { cx: 500 }, duration: .45, ease: "power2.out" });
+      decir(tl, 3, "#nGate");
+      decir(tl, 4, "#nClaude");
+      tl.to(punto, { attr: { cx: 300 }, autoAlpha: .3, duration: .5 }, "<");
+      tool(tl, 2);
+      decir(tl, 5, "#nTool");
+      tl.to(punto, { attr: { cx: 566 }, autoAlpha: 1, duration: .5, ease: "power1.inOut" });
+      tl.to("#barrera", { scaleY: 0, transformOrigin: "50% 0%", duration: .3 });
+      TEO.viajar(tl, punto, $("#a3"), .5);
+      tl.to(punto, { autoAlpha: 0, scale: .3, duration: .3 });
+      tl.to("#barrera", { scaleY: 1, duration: .3 });
+    },
+    function (tl) { // 6. en tu caso
+      tl.to(["#nInstr", "#nGate", "#nDB"], { rotationY: 90, duration: .22, ease: "power1.in" });
+      tl.set(["#nInstr .av", "#nGate .av", "#nDB .av"], { autoAlpha: 0 });
+      tl.set(["#nInstr .bo", "#nGate .bo", "#nDB .bo"], { autoAlpha: 1 });
+      tl.to(["#nInstr", "#nGate", "#nDB"], { rotationY: 0, duration: .32, ease: "power2.out" });
+      decir(tl, 6);
+    }
+  ], {
+    preparar: function () {
+      ["a1", "a2", "a3"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); });
+      narra = gsap.utils.toArray("#narra .capas > span");
+      gsap.set(narra, { autoAlpha: 0 });
+      gsap.set(["#narra", "#cita", "#sello"], { autoAlpha: 0 });
+      gsap.set(punto, { autoAlpha: 0 });
+      gsap.set(["#nInstr", "#nGate", "#nDB"], { transformPerspective: 700 });
+      gsap.set(["#nInstr .bo", "#nGate .bo", "#nDB .bo", "#nTool .c1", "#nTool .c2"], { autoAlpha: 0 });
+      pulso = gsap.fromTo("#halo", { scale: 1, autoAlpha: .9 }, { scale: 1.2, autoAlpha: 0, duration: 1.1, repeat: -1, ease: "power1.out", paused: true });
+    },
+    alCambiar: function (paso) {
+      if (paso === 2 && !TEO.quieto) pulso.play(0);
+      else { pulso.pause(); gsap.set("#halo", { autoAlpha: 0 }); }
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>
