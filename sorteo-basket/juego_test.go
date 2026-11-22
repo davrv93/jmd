@@ -348,7 +348,11 @@ func TestPersistencia(t *testing.T) {
 	if p2 == nil || p2.Aciertos != 3 || p2.Gano != 1 || k.porID[q.ID].Aciertos != 1 {
 		t.Fatalf("no se recuperó el jugador: %+v", p2)
 	}
-	if len(k.est.Ganadores) != 1 || k.Quedan() != 7 {
+	total := 0
+	for _, pr := range cfgPrueba(t).Premios {
+		total += pr.Cupos
+	}
+	if len(k.est.Ganadores) != 1 || k.Quedan() != total-1 {   // depende de config.json: no fijar el número
 		t.Fatalf("ganadores %d, quedan %d", len(k.est.Ganadores), k.Quedan())
 	}
 	// tras reiniciar el servidor se puede seguir tirando con el mismo token
