@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crucigrama IA · Contra el reloj con semilla</title>
+<meta name="description" content="Crucigrama de inteligencia artificial generado a partir de una semilla. Misma semilla, mismo tablero: compite contra el reloj, revisa tus respuestas y exporta el anuncio del ganador.">
+<meta name="theme-color" content="#fbf8f3">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/base.css">
+<link rel="stylesheet" href="static/crucigrama.css">
+</head>
+<body>
+<main>
+  <div class="marca"><svg viewBox="0 0 200 200" fill="none" width="28" height="28"><g fill="#1B2559"><circle cx="38" cy="78" r="6"/><circle cx="52" cy="112" r="6"/><circle cx="84" cy="118" r="6"/><circle cx="92" cy="88" r="6"/><circle cx="120" cy="80" r="6"/><circle cx="146" cy="74" r="6"/></g><path d="M38 78 92 88 120 80 146 74M92 88 84 118 52 112 38 78" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M100 86v90M114 84v90M128 82v90M142 80v90" stroke="#3B5BDB" stroke-width="5" stroke-linecap="round"/><path d="M92 176q40 14 64-6" stroke="#1B2559" stroke-width="5" stroke-linecap="round"/><path d="M160 60l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#D9A441"/></svg>JMD Learning</div>
+
+  <div class="kick">JUEGO CONTRA EL RELOJ · SEMILLA COMPARTIDA</div>
+  <h1>Crucigrama <span>IA</span></h1>
+  <p class="lead">Misma semilla, mismo tablero. Resuelve las palabras de inteligencia artificial lo más rápido que puedas.</p>
+
+  <div class="chips">
+    <span class="dest">El mejor tiempo gana</span>
+    <span>Tablero por semilla</span>
+    <span>Partidas guardadas en tu navegador</span>
+  </div>
+
+  <!-- 1. Inscripción -->
+  <section class="card" id="inscripcion">
+    <h2>Escribe tu nombre y elige la semilla</h2>
+    <p class="soft small">La semilla define el tablero: compártela para que todos jueguen el mismo crucigrama. Déjala vacía para una al azar.</p>
+    <form id="form" autocomplete="off" novalidate>
+      <label for="nombre">Nombre y apellido</label>
+      <input type="text" id="nombre" name="nombre" maxlength="40" placeholder="Ej.: Ana Pérez" required>
+      <label for="semilla">Semilla (opcional, letras y números)</label>
+      <div class="row">
+        <input type="text" id="semilla" name="semilla" maxlength="12" placeholder="Ej.: K7Q2ZP" class="mono" style="text-transform:uppercase">
+        <button class="btn ghost" type="button" id="azar" style="flex:0 0 auto;margin-top:0">Al azar</button>
+      </div>
+      <button class="btn" type="submit" id="empezar">Empezar a jugar</button>
+      <div class="err" id="err1" aria-live="polite"></div>
+    </form>
+    <div id="reanudar" hidden>
+      <p class="small soft" style="margin-top:12px">Tienes una partida sin terminar: <b id="reanudarQuien"></b> · semilla <b class="mono" id="reanudarSemilla"></b>.</p>
+      <div class="acciones">
+        <button class="btn dark" type="button" id="btnReanudar">Reanudar partida</button>
+        <button class="btn ghost" type="button" id="btnDescartar">Descartar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Juego -->
+  <section class="card juego" id="juego" hidden>
+    <div class="hola">
+      <div class="quien">Hola, <b id="nom"></b></div>
+      <div class="semilla" title="Semilla del tablero"><span class="k">SEMILLA</span><b class="mono" id="semillaActual"></b><button type="button" class="mini" id="copiarSemilla" aria-label="Copiar semilla">Copiar</button></div>
+    </div>
+    <div class="barra">
+      <div class="reloj"><span class="k">TIEMPO</span><b id="reloj">00:00.0</b></div>
+      <div class="prog"><span class="k">CELDAS</span><b><span id="nLlenas">0</span>/<span id="nTot">0</span></b></div>
+      <div class="prog"><span class="k">PALABRAS</span><b><span id="nOk">0</span>/<span id="nPal">0</span></b></div>
+    </div>
+    <div class="aviso" id="aviso" hidden aria-live="polite"></div>
+    <div class="grilla" id="tablero" role="grid" aria-label="Crucigrama"></div>
+    <div class="acciones">
+      <button class="btn" type="button" id="revisar">Revisar</button>
+      <button class="btn ghost" type="button" id="pausar">Pausar</button>
+      <button class="btn ghost" type="button" id="reiniciar">Reiniciar</button>
+      <button class="btn ghost" type="button" id="abandonar">Salir</button>
+    </div>
+    <div class="pistas" id="pistas"></div>
+  </section>
+
+  <!-- 3. Resultado -->
+  <section class="card dark" id="resultado" hidden>
+    <div class="kick" id="resTitulo" style="color:#f2a57f">¡CRUCIGRAMA COMPLETO!</div>
+    <div class="big mono" id="resTiempo">00:00.0</div>
+    <p class="soft" id="resDetalle"></p>
+    <div class="cuenta">
+      <div><b id="resOk">0</b><span>PALABRAS</span></div>
+      <div><b id="resRev">0</b><span>REVISIONES</span></div>
+      <div><b id="resMejor">–</b><span>MEJOR SEMILLA</span></div>
+    </div>
+    <h2 style="margin-top:18px">Anuncio del ganador</h2>
+    <pre class="anuncio" id="anuncio"></pre>
+    <canvas id="lienzo" width="1080" height="1080" hidden></canvas>
+    <div class="acciones">
+      <button class="btn" type="button" id="copiarAnuncio">Copiar texto</button>
+      <button class="btn ghost claro" type="button" id="pngAnuncio">Descargar PNG</button>
+      <button class="btn ghost claro" type="button" id="txtAnuncio">Descargar TXT</button>
+      <button class="btn ghost claro" type="button" id="compartirAnuncio" hidden>Compartir</button>
+    </div>
+    <div class="acciones">
+      <button class="btn dark" type="button" id="otraVez">Jugar otra vez (misma semilla)</button>
+      <button class="btn ghost claro" type="button" id="nuevaSemilla">Nueva semilla</button>
+    </div>
+    <div class="err" id="err3" aria-live="polite" style="color:#ffb199"></div>
+  </section>
+
+  <!-- 4. Historial -->
+  <section class="card historial" id="historial">
+    <h2>Partidas guardadas</h2>
+    <p class="soft small">Se guardan solo en este navegador (localStorage). Puedes exportarlas a JSON y volver a importarlas.</p>
+    <div class="cuenta">
+      <div><b id="hPartidas">0</b><span>PARTIDAS</span></div>
+      <div><b id="hCompletas">0</b><span>COMPLETAS</span></div>
+      <div><b id="hMejor">–</b><span>MEJOR TIEMPO</span></div>
+    </div>
+    <div class="tabla-envoltura"><table id="tablaPartidas"><thead><tr><th>Fecha</th><th>Jugador</th><th>Semilla</th><th>Tiempo</th><th>Palabras</th><th></th></tr></thead><tbody></tbody></table></div>
+    <p class="soft small" id="sinPartidas">Aún no hay partidas.</p>
+    <div class="acciones">
+      <button class="btn ghost" type="button" id="exportarJson">Exportar JSON</button>
+      <button class="btn ghost" type="button" id="importarJson">Importar JSON</button>
+      <button class="btn ghost" type="button" id="borrarTodo">Borrar todo</button>
+      <input type="file" id="archivoJson" accept="application/json,.json" hidden>
+    </div>
+    <div class="err" id="err4" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">Crucigrama IA · JMD Learning · El tablero se genera en tu navegador a partir de la semilla; nada se envía a ningún servidor.</p>
+</main>
+<script type="module" src="static/app.js"></script>
+</body>
+</html>
