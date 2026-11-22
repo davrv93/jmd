@@ -31,6 +31,11 @@ type Course struct {
 	// LIVE (todo inline, sin CDN, menos de 1 MB). PortadaPath es la ruta en disco, ya validada.
 	Portada     string `yaml:"portada" json:"-"`
 	PortadaPath string `yaml:"-" json:"-"`
+
+	// Identidad (opcional): color, glifo, frase, resultado e imagen del curso en el portal del alumno
+	// (ver identidad.go). Ident es la identidad ya completada con los valores heredados y del área.
+	Identidad *Identidad `yaml:"identidad" json:"-"`
+	Ident     Identidad  `yaml:"-" json:"-"`
 }
 
 // CourseAgenda es el nombre corto, el grupo, el área y la duración de las sesiones de un curso.
@@ -68,6 +73,8 @@ type Lesson struct {
 	BodyMD    string `yaml:"-" json:"-"`
 	BodyHTML  string `yaml:"-" json:"content_html"`
 	SourceRel string `yaml:"-" json:"-"`
+	// MiniaturaPath es la miniatura de la sesión (miniaturas/<id>.webp en el curso), si existe.
+	MiniaturaPath string `yaml:"-" json:"-"`
 }
 
 // Objective es un objetivo de aprendizaje de la sesión.
