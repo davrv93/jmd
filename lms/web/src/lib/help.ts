@@ -7,13 +7,29 @@ export interface HelpTopic {
 
 export const HELP: Record<string, HelpTopic> = {
   inicio: {
-    title: "Aprender",
+    title: "Inicio",
     points: [
-      "Aprendes con el ciclo de Kolb: experiencia, reflexión, conceptos y aplicación.",
-      "«Continuar» te lleva a la última sesión que abriste en este navegador.",
-      "Cada curso muestra tu avance: pasos del ciclo que marcaste como hechos.",
-      "«Próximas entregas» lista las tareas pendientes, la más cercana primero.",
-      "«Horario» muestra en qué cursos estás matriculado, todas tus fechas y si dos clases se cruzan.",
+      "Arriba está tu próxima clase: «Entrar» abre el LIVE cuando la clase está por empezar y, antes, la sesión.",
+      "«Pendiente» muestra hasta tres tareas por entregar, primero las vencidas.",
+      "«Tu avance» tiene un anillo por curso: afuera las sesiones hechas, adentro (en oro) las tareas entregadas.",
+      "«Tu siguiente paso» te sugiere cursos que vienen, según las áreas que ya llevaste.",
+      "«Tu camino» cuenta los cursos que terminaste; la línea punteada es lo que terminarás pronto.",
+    ],
+  },
+  catalogo: {
+    title: "Catálogo",
+    points: [
+      "Aquí están todos los cursos que empiezan pronto y los que ya están en curso.",
+      "Filtra por área con los botones de arriba; el filtro vale para las dos vistas.",
+      "«Línea de tiempo» muestra las próximas 8 semanas: un punto por sesión y la línea dorada es hoy. Toca un punto para ver su fecha.",
+      "«Inscribirme» abre la inscripción por enlace. Si el grupo no la tiene, «Quiero inscribirme» abre WhatsApp con un mensaje listo.",
+    ],
+  },
+  perfil: {
+    title: "Perfil",
+    points: [
+      "Desde aquí llegas a tus logros y certificados, tu horario, tus proyectos, los recursos y el estudio.",
+      "El tema claro u oscuro se cambia desde el menú de tu cuenta (tus iniciales, arriba a la derecha).",
     ],
   },
   pase: {
@@ -81,6 +97,8 @@ export const HELP: Record<string, HelpTopic> = {
 export const SHORTCUTS: [string, string][] = [
   ["?", "Abrir o cerrar esta ayuda"],
   ["g i", "Ir a Inicio"],
+  ["g c", "Ir a Mis cursos"],
+  ["g k", "Ir al Catálogo"],
   ["g p", "Ir a Proyectos"],
   ["g e", "Ir a Prácticas"],
   ["g n", "Ir a Notas"],

@@ -47,7 +47,24 @@ export interface AuthConfig {
   oidc: boolean;
   issuer?: string;
 }
-export interface CourseSummary {
+/** Identidad del curso (course.yaml «identidad:», ya completada por el servidor con la del área). */
+export interface Identidad {
+  color: string;
+  icono: string;
+  frase: string;
+  resultado: string[];
+  nivel?: string;
+  /** Imagen de portada propia del curso; sin ella, la portada se dibuja en el navegador. */
+  portada_url?: string;
+}
+/** Nombre sin grupo ni emojis, grupo, área e identidad: lo que el portal del alumno muestra de un curso. */
+export interface CursoMarca {
+  nombre?: string;
+  grupo?: string;
+  area?: string;
+  identidad?: Identidad;
+}
+export interface CourseSummary extends CursoMarca {
   id: string;
   slug: string;
   title: string;
@@ -67,6 +84,8 @@ export interface LessonSummary {
   objetivos?: string[];
   steps: number;
   steps_done: number;
+  /** Miniatura de la sesión (su primera escena LIVE); "" si no tiene. */
+  miniatura?: string;
 }
 export interface AssignmentSummary {
   id: string;
@@ -78,7 +97,7 @@ export interface AssignmentSummary {
   score?: number | null;
   submission_id?: string;
 }
-export interface Course {
+export interface Course extends CursoMarca {
   id: string;
   slug: string;
   title: string;
@@ -411,8 +430,40 @@ export interface PaseCurso {
   grupos: PaseGrupo[];
 }
 
+/** Catálogo (/catalogo/): un grupo que viene o está en curso. Sin datos de otros alumnos. */
+export interface CatalogoSesion {
+  n: number;
+  titulo: string;
+  inicio: string;
+  minutos: number;
+}
+export interface CatalogoCurso {
+  id: string;
+  slug: string;
+  nombre: string;
+  grupo: string;
+  area: string;
+  identidad: Identidad;
+  inicio: string;
+  fin: string;
+  estado: "proximo" | "en_curso";
+  minutos: number;
+  sesiones: CatalogoSesion[];
+  inscrito: boolean;
+  /** /inscripcion/<grupo>/ cuando la inscripción por enlace está abierta. */
+  inscripcion?: string;
+  /** Recomendado para quien pregunta (orden 1 = el primero) y por qué. */
+  recomendado?: { razon: string; puntos: number; orden: number };
+}
+export interface Catalogo {
+  ahora: string;
+  cursos: CatalogoCurso[];
+  areas: string[];
+}
+
 export const api = {
   config: () => req<AuthConfig>("GET", "/api/v1/auth/config"),
+  catalogo: () => req<Catalogo>("GET", "/api/v1/catalogo"),
   pase: () => req<{ cursos: PaseCurso[]; ahora: string }>("GET", "/api/v1/pase"),
   paseUnirme: (curso: string) => req<{ cohorts: string[]; curso: string }>("POST", "/api/v1/pase/unirme", { curso }),
   // Botón «Abrir DeepSeek Harness» (página /deepseek/).
