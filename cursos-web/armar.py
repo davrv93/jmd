@@ -27,13 +27,17 @@ BROCHURE = {c["slug"]: c for c in json.load(open(pathlib.Path.home() / "Document
 VIDEOS = pathlib.Path.home() / "Downloads/web-con-ia-jmd"
 WA = "51986149476"
 WA_TXT = "986 149 476"
-HOY = dt.datetime(2026, 11, 21, 3, 0)
+HOY = dt.datetime(2026, 11, 22, 13, 0)
 DIAS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 DIAS_L = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"]
 
 # slug web, grupos del LMS, slug del brochure, precio, video promo (ruta, vertical?), color de acento
 CURSOS = [
+    # Pedido el 22-11-2026: vie 27 nov, 4 y 11 dic, 3:00 p. m., S/ 40. Dictado por ponente certificado DTPC®. Brochure PDF.
+    dict(slug="design-thinking-con-claude", grupos=["design-thinking-claude"], br=None, precio="S/ 40",
+         video=("design-thinking/design-thinking-venta-57s.mp4", True), acento="#E58B63",
+         pdf=pathlib.Path.home() / "Downloads/brochures-jmd/design-thinking-claude/Design-Thinking-con-Claude.pdf"),
     # Pedido el 21-11-2026: lun 23, mar 24 y mié 25 nov, 3:00 p. m. Ruleta de descuentos en /sorteo-videos/ (piso S/ 18, 1 gratis).
     dict(slug="videos-con-ia-para-tu-negocio", grupos=["videos-ia-negocio"], br=None, precio="S/ 25", acento="#ff8a3d"),
     dict(slug="claude-code-pro", grupos=["claude-code-pro-2"], br="claude-code-pro", precio="S/ 100",
@@ -129,7 +133,7 @@ def qr_svg(url, ruta):
     js = ('const QR=require("qrcode"),fs=require("fs");QR.toString(process.argv[1],{type:"svg",errorCorrectionLevel:"M",margin:1,'
           'color:{dark:"#1d1406",light:"#ffffff"}},(e,s)=>{if(e)throw e;fs.writeFileSync(process.argv[2],s)});')
     subprocess.run(["node", "-e", js, url, str(ruta)], check=True,
-                   env={**os.environ, "NODE_PATH": str(VIDEOS / "plugin35/tools/node_modules")})
+                   env={**os.environ, "NODE_PATH": os.environ.get("NODE_PATH") or str(VIDEOS / "plugin35/tools/node_modules")})  # la carpeta de plugin35 se puede borrar: NODE_PATH manda
 
 
 def video_web(origen, destino, vertical):
@@ -269,6 +273,10 @@ def pagina(c, resumenes):
         clase = "video vert" if vert else "video"
         video_html = ('<h2>El curso en un minuto</h2><div class="' + clase + '"><figure><video src="promo.mp4" poster="promo.jpg" '
                       'controls playsinline preload="none"></video></figure>' + lado + '</div>')
+    pdf_html = ""
+    if c.get("pdf"):  # brochure para descargar, copiado junto a la página
+        (carpeta / "brochure.pdf").write_bytes(pathlib.Path(c["pdf"]).read_bytes())
+        pdf_html = '\n      <a class="boton sec" href="brochure.pdf" download>Descargar brochure (PDF)</a>'
     aprende_html = ""
     if aprendes:
         aprende_html = '<h2>Qué vas a aprender</h2><ul class="lista">' + "".join(f"<li>{esc(a)}</li>" for a in aprendes) + "</ul>"
@@ -292,7 +300,7 @@ def pagina(c, resumenes):
     </div>
     <div class="acciones">
       <a class="boton wa" href="{esc(wa)}">Inscríbete por WhatsApp</a>
-      <a class="boton sec" href="#fechas">Ver fechas</a>
+      <a class="boton sec" href="#fechas">Ver fechas</a>{pdf_html}
     </div>
   </header>
   {video_html}
