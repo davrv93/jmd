@@ -25,6 +25,6 @@ El contrato entre módulos está en `CONTRATO.md`.
 ## Pruebas
 
 ```bash
-node --test crucigrama-ia/tests/
+node --test 'crucigrama-ia/tests/*.test.mjs'
 node crucigrama-ia/prueba-navegador.mjs   # recorrido completo con Playwright (Chromium)
 ```

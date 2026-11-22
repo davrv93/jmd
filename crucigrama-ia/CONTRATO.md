@@ -3,7 +3,7 @@
 Proyecto estático: `crucigrama-ia/web/index.html` + módulos ES en `crucigrama-ia/web/static/`.
 Idioma del código y la UI: español. Sin dependencias externas. Sin backend.
 Estilo visual: reutiliza los tokens de `static/base.css` (JMD Learning: --bg, --card, --line, --txt, --soft, --orange, --ok, --bad, clases .card .btn .kick .pill .cuenta).
-Pruebas: `node --test crucigrama-ia/tests/` (archivos *.test.mjs, Node 20+, sin paquetes npm).
+Pruebas: `node --test 'crucigrama-ia/tests/*.test.mjs'` (archivos *.test.mjs, Node 20+, sin paquetes npm).
 
 ## static/semilla.js
 - `export function normalizarSemilla(texto)` → string en MAYÚSCULAS, solo [A-Z0-9], máx 12 chars; vacío → '' .

@@ -1,10 +1,13 @@
 // Recorrido completo en Chromium: inscripción → resolver con la solución → resultado → historial.
 // Uso: node crucigrama-ia/prueba-navegador.mjs  (requiere playwright instalado globalmente)
-import { chromium } from 'playwright';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// Playwright: el del proyecto si existe, si no el global (PLAYWRIGHT_RUTA permite indicar otro).
+const pw = await import('playwright').catch(() => import(process.env.PLAYWRIGHT_RUTA || '/opt/node-tools/node_modules/playwright/index.js'));
+const chromium = (pw.default && pw.default.chromium) || pw.chromium;
 
 const raiz = path.join(path.dirname(fileURLToPath(import.meta.url)), 'web');
 const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
