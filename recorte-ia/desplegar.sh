@@ -10,6 +10,10 @@ scp -i "$LLAVE" Dockerfile app.py nginx.conf $H:recorte-ia/
 ssh -i "$LLAVE" $H bash -s <<'REMOTO'
 set -euo pipefail
 cd ~/recorte-ia
+# Respaldo de la imagen viva para volver atrás: sudo docker tag recorte-ia:antes-AAAAMMDD-HHMM recorte-ia:1 y relanzar.
+if sudo docker image inspect recorte-ia:1 >/dev/null 2>&1; then
+  ETQ="antes-$(date +%Y%m%d-%H%M)"; sudo docker tag recorte-ia:1 "recorte-ia:$ETQ"; echo "respaldo: recorte-ia:$ETQ"
+fi
 sudo docker build -q -t recorte-ia:1 . >/dev/null
 sudo docker rm -f recorte-ia >/dev/null 2>&1 || true
 sudo docker run -d --name recorte-ia --restart unless-stopped --memory 2000m --memory-swap 2300m --cpus 1.6 \
@@ -28,5 +32,6 @@ PY
 fi
 for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:18710/salud && break; sleep 1; done
 curl -s -o /dev/null -w 'recorte HTTPS: %{http_code}\n' https://jmd-learn.online/recorte/salud
+sudo docker logs --tail 3 recorte-ia
 sudo docker ps --filter name=recorte-ia --format '{{.Names}} {{.Status}}'
 REMOTO
