@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diseñar es decidir qué se ve primero (7 ideas)</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Siete paneles (capas) en la misma figura: uno por paso. Coordenadas del viewBox 800 × 520:
+     left = x / 8 %, top = y / 5.2 %. */
+  .teo-fig .capa > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .hoja { fill: var(--papel2); }
+  .bloque { fill: var(--tinta); fill-opacity: .8; }
+  .bloque.suave { fill-opacity: .4; }
+  .bloque.ac { fill: var(--acento); fill-opacity: 1; }
+  .bloque.img { fill: var(--acento); fill-opacity: .22; stroke: var(--acento); stroke-width: 1.6; }
+  .guia { stroke: var(--rojo); stroke-width: 1.6; stroke-dasharray: 5 5; fill: none; }
+  .et { position: absolute; margin: 0; font: 700 1.2cqw/1.15 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--gris); white-space: nowrap; }
+  .et.fuerte { color: var(--tinta); }
+  .sw { stroke: var(--linea); stroke-width: 1.5; }
+  .muestra { position: absolute; border-radius: 3px; box-shadow: var(--sombra); padding: .55em .8em .6em; font-size: 1.75cqw; display: flex; flex-direction: column; gap: .3em; }
+  .muestra .aa { font: 600 2.3em/1 var(--serif); }
+  .muestra .r { font: 700 .72em/1.15 var(--mono); letter-spacing: .05em; }
+  .sello.si { color: #1F7A3E; border-color: #1F7A3E; }
+  .rejilla { opacity: .55; }
+  .esc { position: absolute; margin: 0; display: flex; align-items: baseline; gap: .7em; white-space: nowrap; color: var(--tinta); }
+  .esc b { font-family: var(--serif); font-weight: 600; line-height: 1; }
+  .esc b.sans { font-family: var(--sans); font-weight: 500; }
+  .esc span { font: 700 1.15cqw/1 var(--mono); letter-spacing: .06em; color: var(--gris); }
+  .chip { fill: var(--acento); fill-opacity: .55; }
+  .ficha .letra.sans { font-family: var(--sans); }
+  .zona { fill: var(--z-mundo); stroke: var(--gris); stroke-width: 1.2; stroke-dasharray: 4 4; }
+  .zona.cta { fill: var(--acento); fill-opacity: .35; }
+  .lamina { stroke: var(--tinta); stroke-width: 2; }
+  .lamina.img { fill: var(--z-comun); }
+  .lamina.txt { fill: var(--papel); fill-opacity: .85; }
+  .linea-txt { stroke: var(--tinta); stroke-width: 3; stroke-linecap: round; }
+  .con { stroke: var(--gris); stroke-width: 1.3; stroke-dasharray: 3 5; fill: none; }
+  .vidrio { fill: var(--z-maq); stroke: var(--tinta); stroke-width: 2.4; }
+  .tapa { fill: var(--tinta); }
+  .cuello { fill: var(--papel3); stroke: var(--tinta); stroke-width: 2; }
+  .etiqueta { fill: var(--papel); stroke: var(--tinta); stroke-width: 1.4; }
+  .liquido { fill: var(--acento); fill-opacity: .45; }
+  .brillo { fill: #FFFFFF; fill-opacity: .75; }
+  .luz { fill: var(--acento); }
+  .rayo { stroke: var(--acento); stroke-width: 2.2; stroke-linecap: round; fill: none; }
+  .haz { stroke: var(--acento); stroke-width: 1.6; stroke-dasharray: 4 6; fill: none; }
+  .rot.chico { font-size: 12px; }
+  #c5Bloom { fill: var(--acento); filter: blur(7px); opacity: .55; }
+  #c5Sombra { fill: var(--tinta); fill-opacity: .38; filter: blur(2px); }
+  .bola { fill: var(--acento); }
+  .bola.fan { fill: none; stroke: var(--gris); stroke-width: 1.6; stroke-dasharray: 3 4; }
+  #c6Pelota { fill: var(--rojo); }
+  .tel { fill: var(--papel2); stroke: var(--tinta); stroke-width: 2.2; }
+  .gris { fill: var(--papel3); stroke: var(--gris); stroke-width: 1.3; }
+  .cta { fill: var(--verde); }
+  .pliegue { stroke: var(--rojo); stroke-width: 2; stroke-dasharray: 7 6; fill: none; }
+  #c7Toque { fill: var(--rojo); }
+  #c7Onda { fill: none; stroke: var(--rojo); stroke-width: 2.4; }
+  #c7Flash { fill: #FFFFFF; opacity: 0; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría · Diseño y animación · 7 ideas</p>
+    <h1>Diseñar es decidir <em>qué se ve primero</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Siete paneles, uno por paso. 1: un flyer desordenado se ordena con proximidad, alineación, repetición y contraste. 2: tres paletas 60-30-10 (perfume, comida, empresa) y dos muestras de contraste, dorado sobre crema 2,0 a 1 (no pasa) y dorado sobre negro 7,2 a 1 (pasa). 3: escala tipográfica 16, 20, 25, 31 y 39 píxeles sobre una retícula de 8, con una familia para títulos y otra para texto. 4: la anatomía de un flyer (gancho, marca, producto, beneficio, oferta, botón) con su lectura en Z, y la imagen de IA sin letras debajo de una capa de texto aparte. 5: un frasco de perfume con luz principal, de relleno y de contra, entorno HDRI y los efectos PBR, ACES, brillo, sombra de contacto y foco. 6: una pelota que rebota en nueve cuadros, con tres poses clave, intermedios más juntos arriba y un ciclo que vuelve al inicio; debajo, imagen base, poses, recorte limpio y animación. 7: tres teléfonos, wireframe, mockup y prototipo, con la línea del primer scroll y un solo botón principal.">
+
+      <!-- ============ 1 · JERARQUÍA (Williams) ============ -->
+      <div class="capa" id="c1">
+        <svg viewBox="0 0 800 520" aria-hidden="true">
+          <text class="rot fuerte" x="0" y="18">1 · JERARQUÍA</text>
+          <rect id="c1Fondo" class="hoja" x="40" y="44" width="250" height="450" rx="4"/>
+          <rect id="c1Hoja" class="trazo" x="40" y="44" width="250" height="450" rx="4"/>
+          <path id="c1Guia" class="guia" d="M64 50 L64 488"/>
+          <rect id="b1" class="bloque" x="64" y="72" width="200" height="34"/>
+          <rect id="b2" class="bloque suave" x="64" y="116" width="150" height="12"/>
+          <rect id="b3" class="bloque img" x="64" y="146" width="202" height="160"/>
+          <rect id="b4" class="bloque suave" x="64" y="322" width="190" height="9"/>
+          <rect id="b5" class="bloque suave" x="64" y="338" width="150" height="9"/>
+          <rect id="b6" class="bloque ac" x="64" y="372" width="120" height="30"/>
+          <rect id="b7" class="bloque ac" x="64" y="430" width="202" height="40" rx="6"/>
+        </svg>
+        <p class="et fuerte" style="left:5%; top:96%"><span class="capas"><span id="c1Antes" class="solo-anim">Antes: todo pide atención</span><span id="c1Desp">Después: se lee en orden</span></span></p>
+        <p class="cita" id="c1Cita" style="left:44%; top:5%; width:53%">«Si los elementos no son iguales, hazlos muy distintos.»<small>Robin Williams (2015)</small></p>
+        <div class="nt cmd" id="c1n1" data-r="-1.2" style="left:44%; top:38%; width:25%"><span class="k">Proximidad</span><span class="t">Lo que va junto, se agrupa</span></div>
+        <div class="nt act" id="c1n2" data-r="1" style="left:72%; top:38%; width:25%"><span class="k">Alineación</span><span class="t">Nada queda puesto al azar</span></div>
+        <div class="nt info" id="c1n3" data-r=".8" style="left:44%; top:64%; width:25%"><span class="k">Repetición</span><span class="t">El mismo color para lo mismo</span></div>
+        <div class="nt ev" id="c1n4" data-r="-1" style="left:72%; top:64%; width:25%"><span class="k">Contraste</span><span class="t">Si no es igual, muy distinto</span></div>
+      </div>
+
+      <!-- ============ 2 · COLOR (60-30-10 y WCAG) ============ -->
+      <div class="capa solo-anim" id="c2">
+        <svg viewBox="0 0 800 520" aria-hidden="true">
+          <text class="rot fuerte" x="0" y="18">2 · COLOR CON INTENCIÓN</text>
+          <text class="rot" x="258" y="56" text-anchor="middle">60 %</text>
+          <text class="rot" x="420" y="56" text-anchor="middle">30 %</text>
+          <text class="rot" x="492" y="56" text-anchor="middle">10 %</text>
+          <text class="rot fuerte fila" x="0" y="106">PERFUME</text>
+          <rect class="sw" x="150" y="70" width="216" height="64" style="fill:#1B1A1F"/>
+          <rect class="sw" x="366" y="70" width="108" height="64" style="fill:#F3ECDD"/>
+          <rect class="sw" x="474" y="70" width="36" height="64" style="fill:#C9A24A"/>
+          <text class="rot fuerte fila" x="0" y="216">COMIDA</text>
+          <rect class="sw" x="150" y="180" width="216" height="64" style="fill:#FFF4E0"/>
+          <rect class="sw" x="366" y="180" width="108" height="64" style="fill:#2F6B3A"/>
+          <rect class="sw" x="474" y="180" width="36" height="64" style="fill:#C8412B"/>
+          <text class="rot fuerte fila" x="0" y="326">EMPRESA</text>
+          <rect class="sw" x="150" y="290" width="216" height="64" style="fill:#F2F4F7"/>
+          <rect class="sw" x="366" y="290" width="108" height="64" style="fill:#12355B"/>
+          <rect class="sw" x="474" y="290" width="36" height="64" style="fill:#F2A23A"/>
+        </svg>
+        <p class="et" style="left:18.75%; top:27.3%">negro · crema · dorado del frasco</p>
+        <p class="et" style="left:18.75%; top:48.5%">crema · albahaca · tomate</p>
+        <p class="et" style="left:18.75%; top:69.6%">gris claro · azul de marca · ámbar</p>
+        <p class="et fuerte" style="left:0%; top:80%">El 10 % es para lo que se toca: precio y botón</p>
+        <div class="muestra" id="mA" data-r="-1.5" style="left:68%; top:8%; width:29%; background:#F3ECDD; color:#C9A24A"><span class="aa">S/ 89</span><span class="r" style="color:#1B1A1F">Dorado sobre crema · 2,0 : 1</span><span class="sello solo-anim" id="selloA">NO</span></div>
+        <div class="muestra" id="mB" data-r="1.2" style="left:68%; top:39%; width:29%; background:#1B1A1F; color:#C9A24A"><span class="aa">S/ 89</span><span class="r" style="color:#F3ECDD">Dorado sobre negro · 7,2 : 1</span><span class="sello si solo-anim" id="selloB">SÍ</span></div>
+        <div class="nt info" id="c2n" data-r="-.8" style="left:68%; top:72%; width:29%"><span class="k">WCAG 2.2 · 1.4.3</span><span class="t">Texto: 4,5 : 1 o más. Texto grande: 3 : 1</span></div>
+      </div>
+
+      <!-- ============ 3 · TIPOGRAFÍA Y RETÍCULA (Müller-Brockmann) ============ -->
+      <div class="capa solo-anim" id="c3">
+        <svg viewBox="0 0 800 520" aria-hidden="true">
+          <defs><pattern id="p8" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1.1" style="fill:var(--gris)"/></pattern></defs>
+          <text class="rot fuerte" x="0" y="18">3 · LETRA Y RETÍCULA</text>
+          <rect id="c3Rejilla" class="rejilla" x="16" y="40" width="440" height="456" style="fill:url(#p8)"/>
+          <rect class="chip" x="40" y="390" width="16" height="24"/>
+          <rect class="chip" x="76" y="390" width="32" height="24"/>
+          <rect class="chip" x="128" y="390" width="48" height="24"/>
+          <rect class="chip" x="196" y="390" width="64" height="24"/>
+          <rect class="chip" x="280" y="390" width="96" height="24"/>
+        </svg>
+        <p class="esc" style="left:5%; top:61%"><b class="sans" style="font-size:2cqw">Texto que se lee</b><span>16 px</span></p>
+        <p class="esc" style="left:5%; top:51%"><b class="sans" style="font-size:2.5cqw">Destacado</b><span>20 px</span></p>
+        <p class="esc" style="left:5%; top:39%"><b style="font-size:3.13cqw">Subtítulo</b><span>25 px</span></p>
+        <p class="esc" style="left:5%; top:25.5%"><b style="font-size:3.9cqw">Título</b><span>31 px</span></p>
+        <p class="esc" style="left:5%; top:9%"><b style="font-size:4.88cqw">Gancho</b><span>39 px · ×1,25</span></p>
+        <p class="et" style="left:5%; top:81.5%">8</p>
+        <p class="et" style="left:9.5%; top:81.5%">16</p>
+        <p class="et" style="left:16%; top:81.5%">24</p>
+        <p class="et" style="left:24.5%; top:81.5%">32</p>
+        <p class="et" style="left:35%; top:81.5%">48</p>
+        <p class="et fuerte" style="left:5%; top:88%">Márgenes y espacios: múltiplos de 8 px</p>
+        <div class="nt ficha r" id="c3f1" data-r="-1" style="left:61%; top:7%; width:36%"><div class="fila"><span class="letra">Aa</span><span class="t">Títulos: una familia con serifa</span></div></div>
+        <div class="nt ficha k" id="c3f2" data-r="1" style="left:61%; top:30%; width:36%"><div class="fila"><span class="letra sans">Aa</span><span class="t">Texto: una familia sin serifa</span></div></div>
+        <p class="cita" id="c3Cita" style="left:61%; top:58%; width:37%">«La retícula es una ayuda, no una garantía.»<small>Josef Müller-Brockmann (1981)</small></p>
+      </div>
+
+      <!-- ============ 4 · ANATOMÍA DEL FLYER ============ -->
+      <div class="capa solo-anim" id="c4">
+        <svg viewBox="0 0 800 520" aria-hidden="true">
+          <text class="rot fuerte" x="0" y="18">4 · ANATOMÍA DEL FLYER</text>
+          <rect id="c4Fondo" class="hoja" x="40" y="40" width="260" height="455" rx="4"/>
+          <rect id="c4Hoja" class="trazo" x="40" y="40" width="260" height="455" rx="4"/>
+          <rect class="zona" x="58" y="58" width="150" height="48"/>
+          <rect class="zona" x="218" y="58" width="64" height="48"/>
+          <rect class="zona" x="58" y="118" width="224" height="190"/>
+          <rect class="zona" x="58" y="318" width="224" height="44"/>
+          <rect class="zona" x="58" y="372" width="118" height="104"/>
+          <rect class="zona cta" x="186" y="420" width="96" height="56" rx="6"/>
+          <path id="c4Z" class="trazo" style="stroke:var(--rojo)" d="M76 96 L264 96 L100 456 L262 462"/>
+          <circle id="c4Punto" class="solo-anim" cx="76" cy="96" r="9" style="fill:var(--rojo)"/>
+          <g id="c4A">
+            <polygon class="lamina img" points="420,190 690,190 760,260 490,260"/>
+            <path class="trazo fino" d="M560 245 C570 215 600 215 610 245 Z"/>
+          </g>
+          <g id="c4B">
+            <polygon class="lamina txt" points="420,70 690,70 760,140 490,140"/>
+            <path class="linea-txt" d="M470 92 L560 92 M488 110 L640 110 M640 126 L700 126"/>
+          </g>
+          <path class="con" d="M420 70 L420 190 M760 140 L760 260"/>
+        </svg>
+        <p class="et z" style="left:8.25%; top:14.2%">1 Gancho</p>
+        <p class="et z" style="left:28.3%; top:14.2%">2 Marca</p>
+        <p class="et z" style="left:8.25%; top:24.5%">3 Producto</p>
+        <p class="et z" style="left:25%; top:63.5%">4 Beneficio</p>
+        <p class="et z" style="left:8.25%; top:73.5%">5 Oferta</p>
+        <p class="et z fuerte" style="left:24.3%; top:84%">6 Botón</p>
+        <p class="et fuerte" id="c4etB" style="left:53%; top:7.5%">Capa 2 · texto en HTML o SVG</p>
+        <p class="et fuerte" id="c4etA" style="left:53%; top:53%">Capa 1 · imagen de IA, sin letras</p>
+        <div class="nt hot" id="c4n1" data-r="1.2" style="left:44%; top:62%; width:27%"><span class="k">Texto dentro de la imagen</span><span class="t">Pides <span style="white-space:nowrap">«S/ 49.90»</span> y sale <span style="white-space:nowrap">«S/ 4G.9O»</span></span><span class="sello solo-anim" id="c4sello">NO</span></div>
+        <div class="nt cmd" id="c4n2" data-r="-1" style="left:73%; top:62%; width:26%"><span class="k">Capa aparte</span><span class="t">El precio se escribe y se corrige en un segundo</span></div>
+      </div>
+
+      <!-- ============ 5 · RENDER DE PRODUCTO ============ -->
+      <div class="capa solo-anim" id="c5">
+        <svg viewBox="0 0 800 520" aria-hidden="true">
+          <text class="rot fuerte" x="0" y="18">5 · RENDER DE PRODUCTO</text>
+          <g id="c5Fondo"><path id="c5Domo" class="trazo fino" d="M30 452 A260 402 0 0 1 550 452"/></g>
+          <path id="c5Suelo" class="trazo" d="M20 452 L560 452"/>
+          <ellipse id="c5Sombra" cx="290" cy="452" rx="78" ry="8"/>
+          <g id="c5Frasco">
+            <rect class="tapa" x="262" y="200" width="56" height="40" rx="6"/>
+            <rect class="cuello" x="278" y="240" width="24" height="22"/>
+            <rect class="vidrio" x="225" y="262" width="130" height="190" rx="18"/>
+            <rect id="c5Liquido" class="liquido" x="233" y="318" width="114" height="126" rx="12"/>
+            <rect class="etiqueta" x="252" y="350" width="76" height="40" rx="3"/>
+          </g>
+          <rect id="c5Brillo" class="brillo" x="238" y="276" width="11" height="150" rx="5"/>
+          <rect id="c5Borde" class="brillo" x="343" y="284" width="5" height="140" rx="2.5"/>
+          <circle id="c5Bloom" cx="292" cy="212" r="24"/>
+          <g id="c5Key">
+            <circle class="luz" cx="90" cy="170" r="13"/>
+            <path class="rayo" d="M90 148 V140 M90 192 V200 M68 170 H60 M112 170 H120 M74 154 L68 148 M106 186 L112 192 M106 154 L112 148 M74 186 L68 192"/>
+            <text class="rot" x="34" y="128">PRINCIPAL 45°</text>
+          </g>
+          <path id="c5hazKey" class="haz" d="M106 184 L226 290"/>
+          <g id="c5Fill">
+            <circle class="luz" cx="500" cy="330" r="9" style="opacity:.65"/>
+            <text class="rot" x="462" y="306">RELLENO</text>
+          </g>
+          <path id="c5hazFill" class="haz" d="M488 334 L360 356"/>
+          <g id="c5Back">
+            <circle class="luz" cx="472" cy="160" r="10"/>
+            <text class="rot" x="440" y="134">CONTRA</text>
+          </g>
+          <path id="c5hazBack" class="haz" d="M462 170 L352 280"/>
+        </svg>
+        <p class="et" id="c5etDomo" style="left:25%; top:16%">Entorno HDRI</p>
+        <div class="nt ev" id="c5n1" data-r="-1" style="left:72%; top:3%; width:27%"><span class="k">PBR</span><span class="t">Material físico: vidrio, metal, rugosidad</span></div>
+        <div class="nt cmd" id="c5n2" data-r=".8" style="left:72%; top:22%; width:27%"><span class="k">HDRI + 3 luces</span><span class="t">Un cuarto real que da los reflejos</span></div>
+        <div class="nt act" id="c5n3" data-r="-.6" style="left:72%; top:41%; width:27%"><span class="k">ACES</span><span class="t">Mapeo de tonos: luces sin quemar</span></div>
+        <div class="nt pol" id="c5n4" data-r="1" style="left:72%; top:60%; width:27%"><span class="k">Bloom</span><span class="t">Brillo leve donde la luz es fuerte</span></div>
+        <div class="nt info" id="c5n5" data-r="-.8" style="left:72%; top:79%; width:27%"><span class="k">Oclusión y foco</span><span class="t">Sombra de contacto, fondo suave</span></div>
+      </div>
+
+      <!-- ============ 6 · SPRITES (Thomas y Johnston) ============ -->
+      <div class="capa solo-anim" id="c6">
+        <svg viewBox="0 0 800 520" aria-hidden="true">
+          <text class="rot fuerte" x="0" y="18">6 · SPRITES Y TIEMPO</text>
+          <path id="c6Suelo" class="trazo" d="M40 320 L560 320"/>
+          <ellipse class="bola clave" cx="80" cy="306" rx="26" ry="14"/>
+          <ellipse class="bola fan" cx="135" cy="208" rx="18" ry="22"/>
+          <ellipse class="bola fan" cx="190" cy="142.5" rx="20" ry="20"/>
+          <ellipse class="bola fan" cx="245" cy="103" rx="20" ry="20"/>
+          <ellipse class="bola clave" cx="300" cy="90" rx="20" ry="20"/>
+          <ellipse class="bola fan" cx="355" cy="103" rx="20" ry="20"/>
+          <ellipse class="bola fan" cx="410" cy="142.5" rx="20" ry="20"/>
+          <ellipse class="bola fan" cx="465" cy="208" rx="18" ry="22"/>
+          <ellipse class="bola clave" cx="520" cy="306" rx="26" ry="14"/>
+          <ellipse id="c6Pelota" class="solo-anim" cx="80" cy="306" rx="26" ry="14"/>
+          <path id="c6Ciclo" class="trazo" d="M520 336 C520 392 80 392 80 338"/>
+          <path id="c6f1" class="trazo fino" d="M180 462 L200 462"/>
+          <path id="c6f2" class="trazo fino" d="M384 462 L404 462"/>
+          <path id="c6f3" class="trazo fino" d="M588 462 L608 462"/>
+        </svg>
+        <p class="et fuerte" style="left:6%; top:52%">Clave 1</p>
+        <p class="et fuerte" style="left:34%; top:5.5%">Clave 5</p>
+        <p class="et fuerte" style="left:59%; top:52%">Clave 9 = 1</p>
+        <p class="et" id="c6etCiclo" style="left:30%; top:76.5%">El ciclo cierra: vuelve al inicio</p>
+        <div class="nt pol" id="c6n1" data-r="-1" style="left:72%; top:6%; width:27%"><span class="k">Pose a pose</span><span class="t">Primero las claves, luego los intermedios</span></div>
+        <div class="nt act" id="c6n2" data-r="1" style="left:72%; top:32%; width:27%"><span class="k">Tiempo</span><span class="t">Cuadros juntos: lento. Separados: rápido</span></div>
+        <div class="nt ficha s" id="c6p1" data-r="-1" style="left:0%; top:82%; width:22%"><span class="k">1</span><span class="t">Imagen base</span></div>
+        <div class="nt ficha s" id="c6p2" data-r=".8" style="left:25.5%; top:82%; width:22%"><span class="k">2</span><span class="t">Poses sobre ella</span></div>
+        <div class="nt ficha s" id="c6p3" data-r="-.6" style="left:51%; top:82%; width:22%"><span class="k">3</span><span class="t">Recorte limpio</span></div>
+        <div class="nt ficha r" id="c6p4" data-r="1" style="left:76.5%; top:82%; width:22%"><span class="k">4</span><span class="t">Atlas a 12 fps</span></div>
+      </div>
+
+      <!-- ============ 7 · DISEÑAR UNA WEB (NN/g) ============ -->
+      <div class="capa solo-anim" id="c7">
+        <svg viewBox="0 0 800 520" aria-hidden="true">
+          <text class="rot fuerte" x="0" y="18">7 · DISEÑAR UNA WEB</text>
+          <text class="rot" x="135" y="46" text-anchor="middle">WIREFRAME</text>
+          <text class="rot" x="400" y="46" text-anchor="middle">MOCKUP</text>
+          <text class="rot" x="665" y="46" text-anchor="middle">PROTOTIPO</text>
+          <g id="c7t1">
+            <rect class="tel" x="40" y="56" width="190" height="344" rx="20"/>
+            <rect class="gris pz" x="56" y="74" width="158" height="12"/>
+            <rect class="gris pz" x="56" y="100" width="140" height="20"/>
+            <rect class="gris pz" x="56" y="128" width="104" height="9"/>
+            <rect class="gris pz" x="56" y="146" width="158" height="62"/>
+            <path class="trazo fino pz" d="M56 146 L214 208 M214 146 L56 208"/>
+            <rect class="gris pz" x="56" y="216" width="158" height="26" rx="13"/>
+            <rect class="gris pz" x="56" y="264" width="158" height="52"/>
+            <rect class="gris pz" x="56" y="326" width="158" height="56"/>
+          </g>
+          <g id="c7t2">
+            <rect class="tel" x="305" y="56" width="190" height="344" rx="20"/>
+            <rect class="bloque suave pz" x="321" y="74" width="158" height="12"/>
+            <rect class="bloque pz" x="321" y="100" width="140" height="20"/>
+            <rect class="bloque suave pz" x="321" y="128" width="104" height="9"/>
+            <rect class="bloque img pz" x="321" y="146" width="158" height="62"/>
+            <rect class="cta pz" x="321" y="216" width="158" height="26" rx="13"/>
+            <rect class="gris pz" x="321" y="264" width="158" height="52"/>
+            <rect class="gris pz" x="321" y="326" width="158" height="56"/>
+          </g>
+          <g id="c7t3">
+            <rect class="tel" x="570" y="56" width="190" height="344" rx="20"/>
+            <rect class="bloque suave pz" x="586" y="74" width="158" height="12"/>
+            <rect class="bloque pz" x="586" y="100" width="140" height="20"/>
+            <rect class="bloque suave pz" x="586" y="128" width="104" height="9"/>
+            <rect class="bloque img pz" x="586" y="146" width="158" height="62"/>
+            <rect class="cta pz" x="586" y="216" width="158" height="26" rx="13"/>
+            <rect id="c7Flash" class="solo-anim" x="586" y="216" width="158" height="26" rx="13"/>
+            <rect class="gris pz" x="586" y="264" width="158" height="52"/>
+            <rect class="gris pz" x="586" y="326" width="158" height="56"/>
+          </g>
+          <path id="c7a1" class="trazo" d="M238 330 L294 330"/>
+          <path id="c7a2" class="trazo" d="M503 330 L559 330"/>
+          <path id="c7Pliegue" class="pliegue" d="M20 252 L780 252"/>
+          <circle id="c7Onda" class="solo-anim" cx="680" cy="229" r="9"/>
+          <circle id="c7Toque" class="solo-anim" cx="680" cy="229" r="9"/>
+        </svg>
+        <div class="nt info" id="c7n1" data-r="-.8" style="left:2%; top:80%; width:46%"><span class="k">57 % del tiempo de lectura</span><span class="t">ocurre arriba de la línea roja, antes del primer scroll</span></div>
+        <div class="nt act" id="c7n2" data-r=".8" style="left:52%; top:80%; width:46%"><span class="k">Una sola acción principal</span><span class="t">Un botón, un color, arriba de la línea</span></div>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Lo que se ve primero, se lee primero</b><p>El mismo flyer, con los mismos datos, puede gritar todo a la vez o guiar la mirada. Williams lo resume en cuatro principios: proximidad, alineación, repetición y contraste. Aplicados en ese orden, el desorden se vuelve jerarquía.</p><p class="aparte">Su consejo sobre el contraste: si es tímido, no funciona («Don't be a wimp»).</p></li>
+        <li><b>El color tiene un trabajo</b><p>60 % para el fondo, 30 % para lo que acompaña y 10 % para lo que se toca: el precio o el botón. La paleta sale del producto: el frasco, el tomate, el logo. Y todo texto debe pasar 4,5 : 1 de contraste.</p><p class="aparte">El 60-30-10 es una regla práctica de la decoración de interiores, no un estudio. El 4,5 : 1 sí es norma (WCAG 2.2, criterio 1.4.3; 3 : 1 para texto grande). El mismo dorado no pasa sobre crema y sí sobre negro.</p></li>
+        <li><b>Dos familias y una medida</b><p>Una familia para los títulos y otra para el texto; con más, el diseño se ve improvisado. Los tamaños no se eligen a ojo: crecen en escala (aquí ×1,25: 16, 20, 25, 31 y 39 px). Los espacios, en múltiplos de 8.</p><p class="aparte">La retícula de 8 px es una convención de la industria (Material Design la usa), no una ley. Müller-Brockmann la pensó como ayuda: el criterio sigue siendo tuyo.</p></li>
+        <li><b>Un flyer se recorre en Z</b><p>Gancho arriba a la izquierda, marca a la derecha, producto al centro, beneficio y oferta abajo, y el botón al final del recorrido. Regla de oro: la IA hace la imagen sin letras y el texto va en otra capa, en HTML o SVG.</p><p class="aparte">El modelo de imagen recibe tu frase en trozos de palabras, no letra por letra: por eso deletrea mal (Liu et al., 2023). Un precio o un WhatsApp mal escrito cuesta la venta. La lectura en Z es una pauta para piezas con poco texto, no una ley.</p></li>
+        <li><b>Lo profesional es la luz</b><p>El mismo frasco se ve barato o de lujo según cómo se ilumine. Material físico (PBR), luz de tres puntos y un entorno HDRI que da los reflejos; después, el mapeo de tonos ACES, un brillo leve, la sombra de contacto y el foco. Esos son los «plugins».</p><p class="aparte">En Three.js: MeshPhysicalMaterial, un HDRI con PMREMGenerator, ACESFilmicToneMapping y los pases UnrealBloomPass, GTAOPass y BokehPass. Cada pase gasta GPU: enciéndelos para la toma final.</p></li>
+        <li><b>Animar es decidir el tiempo</b><p>Primero las poses clave, después los intermedios. Cuadros juntos se ven lentos; separados, rápidos: por eso la pelota frena arriba y acelera al caer. El último cuadro debe llevar al primero, o el ciclo salta.</p><p class="aparte">Para tu mascota: imagen base, poses editadas sobre esa misma imagen, un recorte que no se coma el personaje y el atlas a 12 fps. Thomas y Johnston lo llaman «pose a pose» y «entradas y salidas lentas».</p></li>
+        <li><b>Una web se diseña antes de programarse</b><p>Wireframe: cajas grises para decidir el orden. Mockup: color, letra e imágenes reales. Prototipo: ya se puede tocar. Lo que se ve antes del primer scroll se lleva el 57 % del tiempo de lectura: ahí va la promesa y una sola acción, tu botón de WhatsApp.</p><p class="aparte">Fessenden (2018), NN/g: 120 personas y más de 130 000 fijaciones de la mirada en pantallas de 1920 × 1080. En el teléfono esa línea cae más arriba: revisa a 393 px.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Williams, R. (2015). The Non-Designer's Design Book, 4.ª ed. Peachpit · W3C (2023). WCAG 2.2 · Müller-Brockmann, J. (1981). Grid Systems in Graphic Design. Niggli · Liu, R. et al. (2023). Character-Aware Models Improve Visual Text Rendering. ACL · Pharr, M., Jakob, W. y Humphreys, G. (2023). Physically Based Rendering, 4.ª ed. MIT Press · Thomas, F. y Johnston, O. (1981). The Illusion of Life. Abbeville · Fessenden, T. (2018). Scrolling and Attention. Nielsen Norman Group.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, $$ = TEO.$$;
+  var capas = $$(".teo-fig > .capa"), pie = $(".teo-fuente");
+  var FUENTES = [
+    "Williams, R. (2015). The Non-Designer's Design Book, 4.ª ed. Peachpit Press. Cap. 1: los cuatro principios; cap. 5: contraste.",
+    "W3C (2023). Web Content Accessibility Guidelines (WCAG) 2.2, criterio 1.4.3 Contraste (mínimo). La regla 60-30-10 es práctica de oficio, no un resultado experimental.",
+    "Müller-Brockmann, J. (1981). Grid Systems in Graphic Design / Raster Systeme für die visuelle Gestaltung. Niggli. La retícula de 8 px: convención de Material Design (Google).",
+    "Liu, R., Garrette, D., Saharia, C. et al. (2023). Character-Aware Models Improve Visual Text Rendering. ACL 2023. La lectura en Z es una pauta de diseño, no un hallazgo experimental.",
+    "Pharr, M., Jakob, W. y Humphreys, G. (2023). Physically Based Rendering: From Theory to Implementation, 4.ª ed. MIT Press. · Documentación de three.js (postprocesado y mapeo de tonos).",
+    "Thomas, F. y Johnston, O. (1981). The Illusion of Life: Disney Animation. Abbeville Press. Principios: pose a pose, tiempo, entradas y salidas lentas.",
+    "Fessenden, T. (2018). Scrolling and Attention. Nielsen Norman Group (eyetracking, 120 participantes, más de 130 000 fijaciones)."
+  ];
+  // Panel 1: posiciones del flyer desordenado (el HTML trae el orden final, que es lo que se ve sin GSAP).
+  var BLOQUES = ["#b1", "#b2", "#b3", "#b4", "#b5", "#b6", "#b7"].map(function (s) { return $(s); });
+  var DESORDEN = [
+    { x: 110, y: 160, width: 110, height: 14 }, { x: 72, y: 98, width: 170, height: 12 },
+    { x: 118, y: 196, width: 140, height: 110 }, { x: 56, y: 334, width: 150, height: 9 },
+    { x: 126, y: 366, width: 150, height: 9 }, { x: 190, y: 410, width: 80, height: 14 },
+    { x: 56, y: 440, width: 110, height: 22 }
+  ];
+  var ORDEN = [], puntas = {}, pelota = $("#c6Pelota"), rebote = null;
+  // Pelota a 12 fps: los nueve cuadros del panel 6.
+  var CUADROS = [[80, 306, 26, 14], [135, 208, 18, 22], [190, 142.5, 20, 20], [245, 103, 20, 20], [300, 90, 20, 20],
+                 [355, 103, 20, 20], [410, 142.5, 20, 20], [465, 208, 18, 22], [520, 306, 26, 14]];
+
+  function cambiar(tl, k) {
+    tl.to(capas[k - 1], { autoAlpha: 0, duration: .35 });
+    tl.fromTo(capas[k], { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+  }
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .45 }, pos);
+    tl.fromTo(puntas[id], { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 }, "-=.1");
+  }
+  function cada(tl, prop, dur) { // mueve una sola propiedad de los siete bloques a su lugar final
+    BLOQUES.forEach(function (b, i) {
+      var v = {}; prop.forEach(function (p) { v[p] = ORDEN[i][p]; });
+      tl.to(b, { attr: v, duration: dur || .7, ease: "power2.inOut" }, i ? "<" : "<.15");
+    });
+  }
+
+  TEO.escena([
+    function (tl) { // 1 · jerarquía
+      tl.fromTo("#c1Fondo", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 });
+      TEO.trazar(tl, "#c1Hoja", { duration: .8 }, "<");
+      tl.fromTo(BLOQUES, { autoAlpha: 0 }, { autoAlpha: 1, duration: .25, stagger: .05 });
+      tl.fromTo("#c1Antes", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.from(TEO.palabras($("#c1Cita")), { autoAlpha: 0, y: 10, duration: .35, stagger: .06 }, "-=.1");
+      tl.from("#c1Cita small", { autoAlpha: 0, duration: .3 });
+      TEO.pegar(tl, "#c1n1", "+=.3"); cada(tl, ["y"]);
+      TEO.pegar(tl, "#c1n2", "+=.2");
+      tl.fromTo("#c1Guia", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 }, "<.2");
+      cada(tl, ["x"]);
+      TEO.pegar(tl, "#c1n3", "+=.2");
+      tl.to(["#b6", "#b7"], { fill: TEO.color("--acento", "#9A4F08"), duration: .5 }, "<.2");
+      TEO.pegar(tl, "#c1n4", "+=.2"); cada(tl, ["width", "height"], .8);
+      tl.to("#c1Antes", { autoAlpha: 0, duration: .25 });
+      tl.fromTo("#c1Desp", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+    },
+    function (tl) { // 2 · color
+      cambiar(tl, 1);
+      tl.fromTo("#c2 .sw", { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: .4, stagger: .07, ease: "power2.out" });
+      tl.fromTo("#c2 .rot.fila, #c2 .et", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3, stagger: .06 }, "<.3");
+      TEO.pegar(tl, "#mA", "+=.2");
+      tl.fromTo("#selloA", { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .3, ease: "back.out(2)" });
+      TEO.pegar(tl, "#mB", "+=.2");
+      tl.fromTo("#selloB", { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .3, ease: "back.out(2)" });
+      TEO.pegar(tl, "#c2n", "+=.15");
+    },
+    function (tl) { // 3 · tipografía y retícula
+      cambiar(tl, 2);
+      tl.fromTo("#c3Rejilla", { autoAlpha: 0 }, { autoAlpha: .55, duration: .5 });
+      TEO.pegar(tl, ["#c3f1", "#c3f2"]);
+      tl.fromTo("#c3 .esc", { autoAlpha: 0, x: -14 }, { autoAlpha: 1, x: 0, duration: .4, stagger: .2 });
+      tl.fromTo("#c3 .chip", { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: .3, stagger: .1 });
+      tl.fromTo("#c3 .et", { autoAlpha: 0 }, { autoAlpha: 1, duration: .25, stagger: .08 }, "<");
+      tl.from(TEO.palabras($("#c3Cita")), { autoAlpha: 0, y: 10, duration: .35, stagger: .06 });
+      tl.from("#c3Cita small", { autoAlpha: 0, duration: .3 });
+    },
+    function (tl) { // 4 · anatomía del flyer y capa de texto
+      cambiar(tl, 3);
+      tl.fromTo("#c4Fondo", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      TEO.trazar(tl, "#c4Hoja", { duration: .7 }, "<");
+      tl.fromTo("#c4 .zona", { autoAlpha: 0 }, { autoAlpha: 1, duration: .25, stagger: .12 });
+      tl.fromTo("#c4 .et.z", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .25, stagger: .12 }, "<");
+      TEO.trazar(tl, "#c4Z", { duration: 1.5, ease: "power1.inOut" }, "+=.15");
+      tl.fromTo("#c4Punto", { autoAlpha: 0 }, { autoAlpha: 1, duration: .15 }, "<");
+      TEO.viajar(tl, $("#c4Punto"), $("#c4Z"), 1.5, "<");
+      tl.to("#c4Punto", { autoAlpha: 0, duration: .25 });
+      tl.fromTo("#c4A", { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: .45 }, "+=.1");
+      tl.fromTo("#c4etA", { autoAlpha: 0 }, { autoAlpha: 1, duration: .25 });
+      tl.fromTo("#c4B", { autoAlpha: 0, y: -40 }, { autoAlpha: 1, y: 0, duration: .6, ease: "bounce.out" });
+      tl.fromTo(["#c4etB", "#c4 .con"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .25 });
+      TEO.pegar(tl, "#c4n1", "+=.2");
+      tl.fromTo("#c4sello", { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .3, ease: "back.out(2)" });
+      TEO.pegar(tl, "#c4n2", "+=.2");
+    },
+    function (tl) { // 5 · render de producto
+      cambiar(tl, 4);
+      TEO.trazar(tl, ["#c5Suelo", "#c5Domo"], { duration: .9 });
+      tl.fromTo("#c5etDomo", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.fromTo("#c5Frasco", { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: .45 }, "<");
+      TEO.pegar(tl, "#c5n1", "+=.15");
+      tl.fromTo("#c5Key", { autoAlpha: 0, scale: 0, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2)" }, "<.2");
+      tl.fromTo(["#c5hazKey", "#c5Brillo"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .35 });
+      TEO.pegar(tl, "#c5n2", "+=.15");
+      tl.fromTo(["#c5Fill", "#c5Back"], { autoAlpha: 0, scale: 0, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .35, stagger: .15, ease: "back.out(2)" }, "<.2");
+      tl.fromTo(["#c5hazFill", "#c5hazBack", "#c5Borde"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .35 });
+      TEO.pegar(tl, "#c5n3", "+=.15");
+      tl.fromTo("#c5Liquido", { fillOpacity: .12 }, { fillOpacity: .45, duration: .6 }, "<.2");
+      TEO.pegar(tl, "#c5n4", "+=.15");
+      tl.fromTo("#c5Bloom", { autoAlpha: 0 }, { autoAlpha: .55, duration: .5 }, "<.2");
+      TEO.pegar(tl, "#c5n5", "+=.15");
+      tl.fromTo("#c5Sombra", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 }, "<.2");
+      tl.fromTo("#c5Fondo", { filter: "blur(0px)" }, { filter: "blur(2.5px)", duration: .6 });
+    },
+    function (tl) { // 6 · sprites
+      cambiar(tl, 5);
+      TEO.trazar(tl, "#c6Suelo", { duration: .6 });
+      tl.fromTo("#c6 .bola.clave", { autoAlpha: 0, scale: 0, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .3, stagger: .2, ease: "back.out(2)" });
+      tl.fromTo("#c6 .et.fuerte", { autoAlpha: 0 }, { autoAlpha: 1, duration: .25, stagger: .2 }, "<");
+      TEO.pegar(tl, "#c6n1", "+=.1");
+      tl.fromTo("#c6 .bola.fan", { autoAlpha: 0 }, { autoAlpha: 1, duration: .2, stagger: .1 }, "+=.1");
+      TEO.pegar(tl, "#c6n2", "+=.1");
+      flecha(tl, "c6Ciclo", "+=.1");
+      tl.fromTo("#c6etCiclo", { autoAlpha: 0 }, { autoAlpha: 1, duration: .25 });
+      TEO.pegar(tl, ["#c6p1", "#c6p2", "#c6p3", "#c6p4"], "+=.1");
+      flecha(tl, "c6f1"); flecha(tl, "c6f2"); flecha(tl, "c6f3");
+    },
+    function (tl) { // 7 · diseñar una web
+      cambiar(tl, 6);
+      ["#c7t1", "#c7t2", "#c7t3"].forEach(function (t, i) {
+        tl.fromTo(t, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .4 }, i ? "+=.05" : undefined);
+        tl.fromTo(t + " .pz", { autoAlpha: 0 }, { autoAlpha: 1, duration: .18, stagger: .05 });
+        if (i < 2) flecha(tl, "c7a" + (i + 1));
+      });
+      tl.fromTo("#c7Pliegue", { autoAlpha: 0 }, { autoAlpha: 1, duration: .35 });
+      TEO.pegar(tl, "#c7n1", "+=.1");
+      tl.fromTo("#c7Toque", { autoAlpha: 0, scale: .3, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .3 }, "+=.2");
+      tl.fromTo("#c7Onda", { autoAlpha: .9, scale: 1, transformOrigin: "50% 50%" }, { autoAlpha: 0, scale: 3, duration: .6, immediateRender: false });
+      tl.fromTo("#c7Flash", { autoAlpha: 0 }, { autoAlpha: .55, duration: .15, yoyo: true, repeat: 1 }, "<");
+      tl.to("#c7Toque", { autoAlpha: 0, duration: .25 }, "+=.1");
+      TEO.pegar(tl, "#c7n2", "<");
+    }
+  ], {
+    preparar: function () {
+      BLOQUES.forEach(function (b, i) {
+        ORDEN[i] = { x: +b.getAttribute("x"), y: +b.getAttribute("y"), width: +b.getAttribute("width"), height: +b.getAttribute("height") };
+        gsap.set(b, { attr: DESORDEN[i] });
+      });
+      gsap.set(["#b6", "#b7"], { fill: TEO.color("--tinta", "#16181D") });
+      gsap.set(capas.slice(1), { autoAlpha: 0 });
+      gsap.set(["#c4Punto", "#c7Onda", "#c7Toque", pelota], { autoAlpha: 0 });
+      ["c6Ciclo", "c6f1", "c6f2", "c6f3", "c7a1", "c7a2"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); gsap.set(puntas[id], { autoAlpha: 0 }); });
+      // La pelota de verdad, a 12 fps: bucle de ambiente fuera del timeline maestro.
+      rebote = gsap.timeline({ repeat: -1, paused: true, repeatDelay: .25 });
+      CUADROS.forEach(function (c, i) { rebote.set(pelota, { attr: { cx: c[0], cy: c[1], rx: c[2], ry: c[3] } }, i / 12); });
+      rebote.to({}, { duration: 1 / 12 });
+    },
+    alCambiar: function (paso) {
+      if (pie) pie.textContent = FUENTES[paso] || pie.textContent;
+      if (paso === 5 && !TEO.quieto) { gsap.set(pelota, { autoAlpha: 1 }); rebote.play(0); }
+      else { rebote.pause(); gsap.set(pelota, { autoAlpha: 0 }); }
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>
