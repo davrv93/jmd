@@ -65,6 +65,7 @@ func (s *Server) courses(w http.ResponseWriter, r *http.Request, p *Principal) {
 			"id": c.ID, "slug": c.Slug, "title": c.Title, "role": roleIn(p), "description": c.Description,
 			"cohorts": c.Cohorts, "lessons_total": total, "lessons_published": published,
 			"examples_total": len(s.visibleExamples(p, c.ID)),
+			"nombre":         c.Nombre(), "grupo": grupoDeCurso(c), "area": c.Area(), "identidad": identidadVista(c),
 		})
 	}
 	writeJSON(w, 200, out)
@@ -97,6 +98,7 @@ func (s *Server) course(w http.ResponseWriter, r *http.Request, p *Principal) {
 			lessons = append(lessons, map[string]any{
 				"id": l.ID, "title": l.Title, "starts_at": l.StartsAt, "published": l.Published,
 				"objectives": len(l.Objectives), "objetivos": objetivos, "steps": len(l.Cycle), "steps_done": done[l.ID],
+				"miniatura": miniaturaURL(l),
 			})
 		}
 		modules = append(modules, map[string]any{"id": m.ID, "title": m.Title, "lessons": lessons})
@@ -111,6 +113,7 @@ func (s *Server) course(w http.ResponseWriter, r *http.Request, p *Principal) {
 		"modules": modules, "assignments": assignments, "examples_total": len(s.visibleExamples(p, c.ID)),
 		"proyecto_final": c.ProyectoFinal, "requisitos": c.Requisitos, "dedicacion": c.Dedicacion,
 		"portada": c.PortadaPath != "",
+		"nombre":  c.Nombre(), "grupo": grupoDeCurso(c), "area": c.Area(), "identidad": identidadVista(c),
 	})
 }
 

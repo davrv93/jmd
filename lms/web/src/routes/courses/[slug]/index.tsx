@@ -1,4 +1,4 @@
-import { component$, useContext, useSignal, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
+import { component$, useContext, useSignal, useStore, useStyles$, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, useLocation, type DocumentHead, type StaticGenerateHandler } from "@builder.io/qwik-city";
 import { api, errMsg, fmtDate, LEVEL, rel, requireLogin, STATUS, type Course, type ExampleSummary } from "~/lib/api";
 import { SessionContext, isStaff } from "~/lib/session";
@@ -6,11 +6,15 @@ import { getParam, pathId, setParams, setTitle } from "~/lib/url";
 import { modToken, PHASE_BY_ID } from "~/lib/kolb";
 import { Icon } from "~/components/icon";
 import { Crumbs, Empty, ErrorState, lessonState, Loading, Ring, Status, Tabs } from "~/components/ui";
-import { Ahora, pasoActual, type PasoActual } from "~/components/ahora";
+import { pasoActual, type PasoActual } from "~/components/ahora";
 import { OpinionesCursoSeccion } from "~/components/opiniones";
 import { temaActual } from "~/lib/live";
+import { identidadDe, nombreArea, nombreDe } from "~/lib/marca";
+import { Portada } from "~/components/portada";
+import CSS from "./curso.css?inline";
 
 export default component$(() => {
+  useStyles$(CSS);
   const loc = useLocation();
   const session = useContext(SessionContext);
   const st = useStore<{ c: Course | null; ex: ExampleSummary[] | null; error: string; paso: PasoActual | null; opiniones: number }>({ c: null, ex: null, error: "", paso: null, opiniones: 0 });
@@ -59,27 +63,61 @@ export default component$(() => {
     }
   const next = lessons.find((l) => l.published && l.steps_done < l.steps) ?? lessons[0];
   const staff = isStaff(session.me);
+  const id = identidadDe(c);
+  const nombre = nombreDe(c);
+  let nSesion = 0;
 
   return (
     <>
-      <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { label: c.title }]} />
-      <div class="head">
-        <Ring pct={t ? (100 * d) / t : 0} size={58} />
-        <div class="grow">
-          <h1>{c.title}</h1>
-          <p>{c.description}</p>
+      <Crumbs items={[{ href: "/courses/", label: "Mis cursos" }, { label: nombre }]} />
+      <header class="cp-cab" data-idc={id.color}>
+        <Portada class="cp-portada" nombre={nombre} area={c.area} identidad={id} aspecto={5.2} />
+        <div class="cp-cab-in">
+          <p class="cp-meta">
+            {nombreArea(c.area)}
+            {c.grupo && ` · ${c.grupo}`}
+            {id.nivel && ` · ${id.nivel}`}
+          </p>
+          <h1>{nombre}</h1>
+          {id.frase && <p class="cp-frase">{id.frase}</p>}
         </div>
-        <div class="row">
-          {staff && (
-            <Link class="btn ghost sm" href={`/instructor/${c.slug}/`}>
-              <Icon name="users" size={14} /> Avance de alumnos
-            </Link>
+      </header>
+      <div class="cp-resumen" data-idc={id.color}>
+        {id.resultado.length > 0 && (
+          <section class="cp-resultado" aria-labelledby="cp-res-t">
+            <h2 id="cp-res-t">Qué vas a poder hacer</h2>
+            <ul>
+              {id.resultado.map((r) => (
+                <li key={r}><Icon name="check" size={15} /> {r}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <div class="cp-acciones">
+          <Ring pct={t ? (100 * d) / t : 0} size={58} label={`${Math.round(t ? (100 * d) / t : 0)}% de los pasos hechos`} />
+          {st.paso && next ? (
+            <span class="cp-av">
+              <span>Ahora · {next.title.split(" · ")[0]} · paso {st.paso.n} de {st.paso.total}</span>
+              <b class="cp-paso">{st.paso.step.title}</b>
+            </span>
+          ) : (
+            <span class="cp-av">
+              <b>{d} de {t} pasos</b>
+              <span>{lessons.filter((l) => l.published).length} {lessons.filter((l) => l.published).length === 1 ? "sesión publicada" : "sesiones publicadas"}</span>
+            </span>
           )}
-          {next && !st.paso && (
-            <Link class="btn" href={`/lessons/${next.id}/`}>
-              <Icon name="play" size={15} /> {d > 0 ? "Repasar" : "Empezar"}
-            </Link>
-          )}
+          {(staff || next) && <span class="row cp-botones">
+            {staff && (
+              <Link class="btn ghost sm" href={`/instructor/${c.slug}/`}>
+                <Icon name="users" size={14} /> Avance de alumnos
+              </Link>
+            )}
+            {next && (
+              <Link class="btn" href={`/lessons/${next.id}/`}>
+                <Icon name="play" size={15} /> {st.paso ? (d > 0 ? "Continuar" : "Empezar") : d > 0 ? "Repasar" : "Empezar"}
+              </Link>
+            )}
+          </span>}
         </div>
       </div>
 
@@ -90,17 +128,6 @@ export default component$(() => {
           src={`/api/v1/courses/${encodeURIComponent(c.id)}/portada${temaActual() ? `?tema=${temaActual()}` : ""}`}
           title={`Portada de ${c.title}`}
           sandbox="allow-scripts allow-same-origin"
-        />
-      )}
-
-      {st.paso && next && (
-        <Ahora
-          compacto
-          etiqueta={`Ahora · ${next.title.split(" · ")[0]} · paso ${st.paso.n} de ${st.paso.total}`}
-          fase={st.paso.fase.token}
-          titulo={st.paso.step.title}
-          accion={d > 0 ? "Continuar" : "Empezar"}
-          href={`/lessons/${next.id}/`}
         />
       )}
 
@@ -120,9 +147,15 @@ export default component$(() => {
           <Empty icon="layers" title="Sin sesiones todavía" text="El instructor publicará aquí las sesiones del curso." />
         ) : (
           <div class="stack">
-            {(c.proyecto_final || c.requisitos?.length || c.dedicacion) && (
+            {c.description && (
+              <details class="cp-sobre">
+                <summary>Sobre este curso</summary>
+                <p>{c.description}</p>
+              </details>
+            )}
+            {((c.proyecto_final && !id.resultado.includes(c.proyecto_final.replace(/\s+/g, " ").trim())) || c.requisitos?.length || c.dedicacion) && (
               <div class="ficha" data-testid="ficha-curso">
-                {c.proyecto_final && (
+                {c.proyecto_final && !id.resultado.includes(c.proyecto_final.replace(/\s+/g, " ").trim()) && (
                   <section class="ficha-proy" aria-labelledby="proy-t">
                     <span class="lead-ico"><Icon name="target" /></span>
                     <div>
@@ -154,22 +187,30 @@ export default component$(() => {
               const ls = m.lessons.filter((l) => l.published || staff);
               return (
                 <section key={m.id} data-ph={modToken(mi)}>
-                  <div class="section-t"><Icon name="layers" /> {m.title}</div>
+                  {ls.length !== 1 && <div class="section-t"><Icon name="layers" /> {m.title}</div>}
                   {ls.length === 0 ? (
                     <p class="sm faint">Sin sesiones publicadas todavía.</p>
                   ) : (
                     <div class="list">
-                      {ls.map((l, i) => {
+                      {ls.map((l) => {
                         const s = lessonState(l.steps_done, l.steps, l.published);
+                        const n = ++nSesion;
                         return (
-                          <Link key={l.id} class="item franja" href={`/lessons/${l.id}/`}>
-                            <span class={s.cls} data-tip={s.label}><Icon name={s.icon} size={20} /></span>
+                          <Link key={l.id} class="item cp-ses" href={`/lessons/${l.id}/`}>
+                            <span class="cp-mini" data-idc={id.color}>
+                              {l.miniatura ? (
+                                <img src={l.miniatura} alt="" loading="lazy" decoding="async" width={160} height={90} />
+                              ) : (
+                                <Portada nombre={nombre} area={c.area} identidad={id} aspecto={16 / 9} n={n} />
+                              )}
+                              {l.miniatura && <span class="cp-mini-n" aria-hidden="true">{n}</span>}
+                            </span>
                             <span class="grow">
                               <div class="t">{l.title}</div>
-                              <div class="d row" style="gap:.8rem">
-                                <span>Sesión {i + 1}</span>
+                              <div class="d row" style="gap:.3rem .8rem">
+                                <span class={`cp-estado ${s.cls}`}><Icon name={s.icon} size={13} /> {s.label}</span>
+                                {!/^(sesi[oó]n|clase)\s/i.test(l.title) && <span>Sesión {n}</span>}
                                 {l.starts_at && <span title={fmtDate(l.starts_at)}><Icon name="calendar" size={12} /> {fmtDate(l.starts_at, false)}</span>}
-                                <span><Icon name="target" size={12} /> {l.objectives} objetivos</span>
                                 <span><Icon name="cycle" size={12} /> {l.steps_done}/{l.steps} pasos</span>
                               </div>
                               {l.objetivos && l.objetivos.length > 0 && (
@@ -180,7 +221,6 @@ export default component$(() => {
                                 </ul>
                               )}
                             </span>
-                            {!l.published && <span class="badge warn"><Icon name="lock" size={12} /> borrador</span>}
                             <Icon name="chevronRight" class="faint" />
                           </Link>
                         );

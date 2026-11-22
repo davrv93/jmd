@@ -30,14 +30,14 @@ const TEMAS: { id: Tema; label: string; icon: string }[] = [
 ];
 const MARCA = `<svg class="mark" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1.5 14.1 9.9 22.5 12 14.1 14.1 12 22.5 9.9 14.1 1.5 12 9.9 9.9z"/></svg>`;
 
-// Navegación principal: aprender primero, después las herramientas y el cierre.
+// Navegación principal del alumno: cuatro destinos. Lo demás vive dentro de ellos: Horario, Proyectos y
+// Recursos en Mis cursos (y en Perfil); Logros y Estudio en Perfil. `match` decide qué pestaña queda
+// marcada en cada página, para que el alumno siempre sepa dónde está.
 const NAV = [
-  { href: "/courses/", label: "Aprender", icon: "home", match: ["/courses/", "/lessons/"] },
-  { href: "/horario/", label: "Horario", icon: "calendar", match: ["/horario/"] },
-  { href: "/projects/", label: "Proyectos", icon: "task", match: ["/projects/", "/assignments/", "/examples/"] },
-  { href: "/links/", label: "Recursos", icon: "link", match: ["/links/"] },
-  { href: "/studio/", label: "Estudio", icon: "wand", match: ["/studio/"] },
-  { href: "/grades/", label: "Logros", icon: "award", match: ["/grades/"] },
+  { href: "/inicio/", label: "Inicio", icon: "home", match: ["/inicio/"] },
+  { href: "/courses/", label: "Mis cursos", icon: "book", match: ["/courses/", "/lessons/", "/projects/", "/assignments/", "/examples/", "/links/", "/horario/", "/live/"] },
+  { href: "/catalogo/", label: "Catálogo", icon: "compass", match: ["/catalogo/", "/pase/", "/inscripcion/"] },
+  { href: "/perfil/", label: "Perfil", icon: "user", match: ["/perfil/", "/grades/", "/studio/", "/deepseek/"] },
 ];
 
 export default component$(() => {
@@ -104,7 +104,7 @@ export default component$(() => {
         return;
       }
       if (Date.now() - g < 1200) {
-        const to = { i: "/courses/", p: "/projects/", e: "/examples/", n: "/grades/", l: "/links/" }[e.key];
+        const to = { i: "/inicio/", c: "/courses/", k: "/catalogo/", p: "/projects/", e: "/examples/", n: "/grades/", l: "/links/" }[e.key];
         if (to) nav(to);
         g = 0;
       }
@@ -144,7 +144,7 @@ export default component$(() => {
       <div class={`cielo${isLogin ? "" : " tenue"}`} dangerouslySetInnerHTML={CIELO} />
       <header class="top" style={isLive ? "display:none" : undefined} aria-hidden={isLive ? "true" : undefined}>
         <div class="in">
-          <Link class="brand" href={me ? "/courses/" : "/"}>
+          <Link class="brand" href={me ? (isStaff(me) ? "/courses/" : "/inicio/") : "/"}>
             <span style="display:inline-flex" dangerouslySetInnerHTML={MARCA} />
             <span>
               JMD <small>Programación agéntica</small>
@@ -158,12 +158,6 @@ export default component$(() => {
                   {n.label}
                 </Link>
               ))}
-              {me.cohorts.includes("pase-libre") && (
-                <Link href="/pase/" class={path.startsWith("/pase/") ? "on" : ""}>
-                  <Icon name="grad" size={15} />
-                  Pase libre
-                </Link>
-              )}
               {isStaff(me) && (
                 <Link href="/instructor/" class={path.startsWith("/instructor/") ? "on" : ""}>
                   <Icon name="users" size={15} />
@@ -197,7 +191,9 @@ export default component$(() => {
                       ))}
                     </div>
                   </div>
+                  <Link href="/perfil/" onClick$={() => (menu.value = false)}><Icon name="user" /> Mi perfil</Link>
                   <Link href="/grades/" onClick$={() => (menu.value = false)}><Icon name="award" /> Mis logros</Link>
+                  <Link href="/horario/" onClick$={() => (menu.value = false)}><Icon name="calendar" /> Mi horario</Link>
                   <button type="button" onClick$={() => ((session.helpOpen = true), (menu.value = false))}><Icon name="keyboard" /> Ayuda y atajos</button>
                   <button type="button" onClick$={() => ((menu.value = false), logout())}><Icon name="logout" /> Salir</button>
                   <div class="tema" role="group" aria-label="Tema de la interfaz">

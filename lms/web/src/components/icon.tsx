@@ -86,9 +86,26 @@ const P: Record<string, string> = {
   panelIzquierda: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
   maximizar: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
   restaurar: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
+  // Glifos de identidad de los cursos (course.yaml identidad.icono) y del catálogo.
+  gamepad: '<path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6l-.7 6.2A3 3 0 0 0 5 18c1 0 2-.5 2.6-1.4L9 15h6l1.4 1.6c.6.9 1.6 1.4 2.6 1.4a3 3 0 0 0 3-3.2l-.7-6.2a4 4 0 0 0-4-3.6z"/>',
+  film: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 7.5h4M3 12h18M3 16.5h4M17 7.5h4M17 16.5h4"/>',
+  palette: '<circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20c.9 0 1.7-.7 1.7-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.8-1.7 1.7-1.7h2A5.6 5.6 0 0 0 22 11c0-5-4.5-9-10-9z"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/>',
+  database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
+  bug: '<path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7.1V6a3 3 0 1 1 6 0v1.1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6zM12 20v-9M6.5 13H3M21 13h-3.5M6 9 3.5 7M18 9l2.5-2M6 17l-2.5 2M18 17l2.5 2"/>',
+  layout: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+  phone: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
+  brain: '<path d="M12 5a3 3 0 1 0-5.9.8A4 4 0 0 0 4 13a4 4 0 0 0 2 6.5A3 3 0 0 0 12 19zM12 5a3 3 0 1 1 5.9.8A4 4 0 0 1 20 13a4 4 0 0 1-2 6.5A3 3 0 0 1 12 19z"/><path d="M12 5v14M8.5 10A2.5 2.5 0 0 0 11 12.5M15.5 10A2.5 2.5 0 0 1 13 12.5"/>',
+  store: '<path d="M3 9l1.5-5h15L21 9M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v8h14v-8M10 21v-5h4v5"/>',
+  compass: '<circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.1 6.3-6.3 2.1 2.1-6.3z"/>',
+  route: '<circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/>',
+  whatsapp: '<path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.6z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.3-1.8-1-.8.8a4 4 0 0 1-2.4-2.4l.8-.8-1-1.8z"/>',
 };
 
 export type IconName = keyof typeof P;
+
+/** Trazos de un icono (caja 24×24) para dibujarlo dentro de otro SVG, como el glifo de una portada. */
+export const iconoTrazos = (name: string): string => P[name] ?? P.sparkles;
 
 export const Icon = component$((props: { name: string; size?: number; class?: string; label?: string }) => {
   const s = props.size ?? 16;

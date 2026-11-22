@@ -251,7 +251,7 @@ export default component$(() => {
       </aside>
 
       <article style="min-width:0">
-        <Crumbs items={[{ href: "/courses/", label: "Aprender" }, { href: `/courses/${l.course.slug}/`, label: l.course.title }, { label: l.module.title }]} />
+        <Crumbs items={[{ href: "/courses/", label: "Mis cursos" }, { href: `/courses/${l.course.slug}/`, label: l.course.title }, { label: l.module.title }]} />
         <div class="head card" data-ph={modToken(modIndex)}>
           <div class="grow">
             <h1>{l.title}</h1>

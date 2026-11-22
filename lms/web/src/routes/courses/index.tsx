@@ -1,96 +1,53 @@
-import { component$, useContext, useStore, useVisibleTask$, $ } from "@builder.io/qwik";
+import { component$, useContext, useStore, useStyles$, useVisibleTask$, $ } from "@builder.io/qwik";
 import { Link, type DocumentHead } from "@builder.io/qwik-city";
-import { api, crucesPendientes, errMsg, fmtDate, proximaClase, rel, requireLogin, STATUS, type AssignmentSummary, type Certificate, type Course, type Horario, type LessonSummary } from "~/lib/api";
-import { SessionContext } from "~/lib/session";
+import { api, crucesPendientes, errMsg, proximaClase, requireLogin, type Certificate, type Course, type Horario, type LessonSummary } from "~/lib/api";
+import { SessionContext, isStaff } from "~/lib/session";
 import { setTitle } from "~/lib/url";
+import { avanceCurso, fDia, fHora, identidadDe, nombreDe } from "~/lib/marca";
 import { Icon } from "~/components/icon";
-import { Empty, ErrorState, Loading, Status } from "~/components/ui";
+import { Empty, ErrorState, Loading } from "~/components/ui";
 import { Ahora, pasoActual, type PasoActual } from "~/components/ahora";
-import { Hex, rutaDe } from "~/components/habilidad";
+import { Portada } from "~/components/portada";
+import CSS from "./mis-cursos.css?inline";
 
-// Mi aprendizaje (inicio). Sigue el patrón del LMS: arriba «Ahora» (el siguiente paso de verdad, con
-// su comprobación), luego lo que viene esta semana y tu ruta. El método (las fases) se explica en
-// Ayuda; aquí solo se ve como el punto de color de cada paso.
+// Mis cursos: arriba «Ahora» (el siguiente paso de verdad, con su comprobación); debajo, los cursos
+// con su portada, en curso primero y luego los terminados; y a mano lo que antes estaba en la barra:
+// horario, proyectos, recursos y estudio. La próxima clase, lo pendiente y lo que viene viven en Inicio.
 
-interface AhoraInicio {
+interface AhoraCurso {
   curso: Course;
   leccion: LessonSummary;
   paso: PasoActual | null;
 }
 
-interface Semana {
-  tipo: "clase" | "tarea";
-  fecha: string;
-  titulo: string;
-  detalle: string;
-  href: string;
-  estado?: string;
-}
-
-const DIA = new Intl.DateTimeFormat("es-PE", { day: "numeric", timeZone: "America/Lima" });
-const MES = new Intl.DateTimeFormat("es-PE", { month: "short", timeZone: "America/Lima" });
-const HORA = new Intl.DateTimeFormat("es-PE", { hour: "numeric", minute: "2-digit", timeZone: "America/Lima" });
-const FECHA = new Intl.DateTimeFormat("es-PE", { weekday: "short", day: "numeric", month: "short", timeZone: "America/Lima" });
-const HOY = new Intl.DateTimeFormat("es-PE", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Lima" });
-
 /** La clase en la que va el alumno: la primera publicada sin terminar (o la última publicada). */
 function claseActual(c: Course, certs: Certificate[] = []): LessonSummary | null {
   const ls = c.modules.flatMap((m) => m.lessons).filter((l) => l.published);
-  // Una clase con su insignia ya ganada no es «la de ahora», aunque le falten pasos marcados.
   const ganada = (id: string) => certs.some((x) => x.ambito === "clase" && x.lesson_id === id && x.estado === "valido");
   return ls.find((l) => !ganada(l.id) && l.steps > 0 && l.steps_done < l.steps) ?? ls.find((l) => !ganada(l.id)) ?? ls[ls.length - 1] ?? null;
 }
 
-
-/** Familia y grupo de un curso: «Programación agéntica · Grupo 2» → familia + «Grupo 2». */
-function familiaDe(c: Course): { familia: string; grupo: string } {
-  const seg = c.title.split(" · ").map((x) => x.trim());
-  const g = seg.length > 1 && /^Grupo\b/i.test(seg[seg.length - 1]) ? seg.pop()! : "";
-  return { familia: seg.join(" · "), grupo: g };
-}
-const VACIAS = new Set(["de", "del", "la", "el", "los", "las", "y", "e", "con", "a", "en", "tu", "un", "una", "para", "por", "no", "que", "lo", "más", "mas", "cero"]);
-/** Monograma de la familia: dos iniciales de palabras con peso (o su emoji inicial). */
-function monograma(familia: string): string {
-  const emoji = familia.match(/^\p{Extended_Pictographic}/u);
-  if (emoji) return emoji[0];
-  const pal = familia.replace(/\(.*?\)/g, " ").split(/[^\p{L}\p{N}+]+/u).filter((w) => w && !VACIAS.has(w.toLowerCase()));
-  const ini = pal.slice(0, 2).map((w) => w[0].toUpperCase()).join("");
-  return ini || familia.slice(0, 2).toUpperCase();
-}
-/** Paleta de lomos (matices oklch que se ven bien a la misma luminosidad; sin amarillos turbios). */
-const MATICES = [285, 335, 20, 50, 150, 190, 230, 260, 310, 120];
-/** Matiz preferido por familia (FNV-1a), estable entre sesiones y cuentas. */
-function tonoBase(familia: string): number {
-  let h = 0x811c9dc5;
-  for (const ch of familia) { h ^= ch.codePointAt(0)!; h = Math.imul(h, 0x01000193) >>> 0; }
-  return h % MATICES.length;
-}
-/** Asigna a cada familia un matiz distinto: el preferido o, si ya está tomado, el siguiente libre. */
-function tonos(familias: string[]): Map<string, number> {
-  const usados = new Set<number>(), out = new Map<string, number>();
-  for (const f of familias) {
-    let i = tonoBase(f);
-    for (let k = 0; k < MATICES.length && usados.has(i); k++) i = (i + 1) % MATICES.length;
-    usados.add(i);
-    out.set(f, MATICES[i]);
-  }
-  return out;
-}
 /** Porcentaje de pasos hechos sobre las clases publicadas. */
-function avance(c: Course): { pct: number; clases: number; hechas: number } {
-  let d = 0, t = 0, clases = 0, hechas = 0;
+function pctPasos(c: Course): number {
+  let d = 0, t = 0;
   for (const m of c.modules) for (const l of m.lessons) if (l.published) {
-    clases++;
     d += Math.min(l.steps_done, l.steps);
     t += l.steps;
-    if (l.steps > 0 && l.steps_done >= l.steps) hechas++;
   }
-  return { pct: t ? (100 * d) / t : 0, clases, hechas };
+  return t ? (100 * d) / t : 0;
 }
 
+const ATAJOS = [
+  { href: "/horario/", icon: "calendar", t: "Mi horario" },
+  { href: "/projects/", icon: "task", t: "Proyectos y tareas" },
+  { href: "/links/", icon: "link", t: "Recursos" },
+  { href: "/studio/", icon: "wand", t: "Estudio" },
+];
+
 export default component$(() => {
+  useStyles$(CSS);
   const session = useContext(SessionContext);
-  const st = useStore<{ courses: Course[] | null; error: string; faltaCert: boolean; ahora: AhoraInicio | null; horario: Horario | null; certs: Certificate[] }>({
+  const st = useStore<{ courses: Course[] | null; error: string; faltaCert: boolean; ahora: AhoraCurso | null; horario: Horario | null; certs: Certificate[] }>({
     courses: null,
     certs: [],
     error: "",
@@ -103,13 +60,13 @@ export default component$(() => {
     st.error = "";
     try {
       const list = await api.courses();
-      // Si falla el horario, el inicio sigue funcionando: solo faltan la próxima clase y los cruces.
+      // Si falla el horario, la página sigue: solo faltan la próxima fecha de cada curso y los cruces.
       api.horario().then((h) => (st.horario = h)).catch(() => undefined);
       const certs = api.misCertificados().catch(() => [] as Certificate[]);
       st.courses = await Promise.all(list.map((c) => api.course(c.slug)));
       st.certs = await certs;
       // El curso «de ahora»: el que tiene avance sin terminar; si no hay, el primero.
-      const abiertos = st.courses.filter((x) => { const a = avance(x); return a.pct > 0 && a.pct < 100; }).sort((x, y) => avance(y).pct - avance(x).pct);
+      const abiertos = st.courses.filter((x) => { const a = pctPasos(x); return a > 0 && a < 100; }).sort((x, y) => pctPasos(y) - pctPasos(x));
       const c = abiertos[0] ?? st.courses[0];
       const l = c ? claseActual(c, st.certs) : null;
       if (c && l) {
@@ -123,8 +80,8 @@ export default component$(() => {
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async ({ track }) => {
-    session.help = "inicio";
-    setTitle("Aprender");
+    session.help = "curso";
+    setTitle("Mis cursos");
     track(() => session.loaded);
     if (!session.loaded) return;
     // Aviso para alumnos que aún no confirmaron su nombre y correo para el certificado.
@@ -132,75 +89,62 @@ export default component$(() => {
     await load();
   });
 
-
-  // Esta semana: clases en vivo de los próximos 7 días y tareas pendientes, por fecha.
   const ahoraMs = Date.now();
-  const semana: Semana[] = [];
-  // Con varios cursos (el instructor ve los tres grupos), cada fila dice de qué grupo es.
-  const varios = (st.courses?.length ?? 0) > 1;
-  const grupoDe = (c: Course) => (varios ? `${c.title.includes(" · ") ? c.title.split(" · ").slice(1).join(" · ") : c.title} · ` : "");
-  const partes = (titulo: string) => {
-    const seg = titulo.split(" · ");
-    const i = seg.findIndex((s) => /^Clase \d+/.test(s));
-    return i < 0 ? { num: seg[0], resto: seg.slice(1).join(" · ") } : { num: seg[i], resto: seg.slice(i + 1).join(" · ") };
-  };
-  const pendientes: (AssignmentSummary & { course: string })[] = [];
-  for (const c of st.courses ?? []) {
-    for (const m of c.modules)
-      for (const l of m.lessons)
-        if (l.published && l.starts_at) {
-          const t = Date.parse(l.starts_at);
-          if (t > ahoraMs - 3 * 3600e3 && t < ahoraMs + 7 * 86400e3) {
-            const { num, resto } = partes(l.title);
-            semana.push({ tipo: "clase", fecha: l.starts_at, titulo: `${num} en vivo`, detalle: `${grupoDe(c)}${resto || l.title} · ${HORA.format(new Date(t))}`, href: `/lessons/${l.id}/` });
-          }
-        }
-    for (const a of c.assignments)
-      if (a.status === "pending" || a.status === "overdue") {
-        pendientes.push({ ...a, course: c.title });
-        semana.push({ tipo: "tarea", fecha: a.due_at ?? "9999", titulo: a.title, detalle: `${grupoDe(c)}${a.due_at ? `Vence ${rel(a.due_at)} · ${a.max_score} puntos` : "Sin fecha límite"}`, href: `/assignments/${a.id}/`, estado: a.status });
-      }
-  }
-  semana.sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-  const first = session.me?.name.split(" ")[0] ?? "";
+  const clases = st.horario?.clases ?? [];
+  const cruces = crucesPendientes(clases, ahoraMs).length;
   const ah = st.ahora;
-  // Agenda: primero lo que pasa en vivo, luego las entregas abiertas; lo vencido se agrupa en una
-  // sola línea (suele ser de grupos anteriores y no debe tapar lo de esta semana).
-  const enVivo = semana.filter((s) => s.tipo === "clase");
-  const entregas = semana.filter((s) => s.tipo === "tarea" && s.estado !== "overdue");
-  const vencidas = semana.filter((s) => s.estado === "overdue");
-  const agenda = [...enVivo, ...entregas].slice(0, 5);
-  const rutaCurso = ah?.curso ?? st.courses?.[0];
-  const ruta = rutaCurso ? rutaCurso.modules.flatMap((m) => m.lessons).filter((l) => l.published) : [];
-  // «Clase 2»: el número sale del orden en el curso, no del título (que a veces empieza por «Grupo 8»).
   const claseN = (c: Course, id: string) => `Clase ${c.modules.flatMap((m) => m.lessons).filter((x) => x.published).findIndex((x) => x.id === id) + 1}`;
-  const habRuta = rutaCurso ? rutaDe(rutaCurso, st.certs) : null;
-  // Cursos agrupados por familia (el instructor ve «Programación agéntica» una vez, con sus grupos
-  // dentro); el curso de ahora va primero y, luego, los empezados.
-  const familias: { familia: string; cursos: Course[] }[] = [];
-  for (const c of st.courses ?? []) {
-    const { familia } = familiaDe(c);
-    const f = familias.find((x) => x.familia === familia);
-    if (f) f.cursos.push(c);
-    else familias.push({ familia, cursos: [c] });
-  }
-  const peso = (f: { cursos: Course[] }) => (f.cursos.some((c) => c.id === rutaCurso?.id) ? 2 : f.cursos.some((c) => avance(c).pct > 0) ? 1 : 0);
-  familias.sort((x, y) => peso(y) - peso(x));
-  const matiz = tonos(familias.map((f) => f.familia));
-  const clasesHorario = st.horario?.clases ?? [];
-  const cruces = crucesPendientes(clasesHorario, ahoraMs).length;
-  /** «Próxima: dom 8 nov, 9:00 p. m.» de un curso, o vacío si no tiene fecha por delante. */
-  const proxima = (slug: string) => {
-    const k = proximaClase(clasesHorario.filter((x) => x.curso_slug === slug), ahoraMs);
-    return k ? `Próxima: ${FECHA.format(new Date(k.inicio)).replace(/\./g, "")}, ${HORA.format(new Date(k.inicio))}` : "";
+  const finDe = (slug: string) => Math.max(0, ...clases.filter((k) => k.curso_slug === slug).map((k) => Date.parse(k.fin)));
+  const totalSes = (slug: string) => clases.filter((k) => k.curso_slug === slug).length;
+  const proxima = (slug: string) => proximaClase(clases.filter((k) => k.curso_slug === slug), ahoraMs);
+  const terminado = (c: Course) => {
+    const f = finDe(c.slug);
+    return f > 0 ? f < ahoraMs : pctPasos(c) >= 100;
+  };
+  const staff = isStaff(session.me);
+  const enCurso = (st.courses ?? []).filter((c) => !terminado(c)).sort((a, b) => (proxima(a.slug)?.inicio ?? "9").localeCompare(proxima(b.slug)?.inicio ?? "9"));
+  const hechos = (st.courses ?? []).filter(terminado).sort((a, b) => finDe(b.slug) - finDe(a.slug));
+
+  const tarjeta = (c: Course) => {
+    const id = identidadDe(c);
+    const nombre = nombreDe(c);
+    const v = avanceCurso(c, totalSes(c.slug));
+    const k = proxima(c.slug);
+    const pct = v.sesiones ? Math.round((100 * v.hechas) / v.sesiones) : 0;
+    return (
+      <li key={c.id}>
+        <Link class="mc-card" href={`/courses/${c.slug}/`} data-idc={id.color} data-testid="curso">
+          <Portada class="mc-portada" nombre={nombre} area={c.area} identidad={id} aspecto={2.6} />
+          <span class="mc-cuerpo">
+            <b class="mc-nombre">{nombre}</b>
+            <span class="mc-grupo">{c.grupo || (c.title.split(" · ").slice(1).join(" · ") || " ")}</span>
+            <span class="mc-prox">
+              {k ? (
+                <><Icon name="calendar" size={13} /> Próxima: {fDia(k.inicio)}, {fHora(k.inicio)}</>
+              ) : terminado(c) ? (
+                v.hechas >= v.sesiones ? <><Icon name="checkCircle" size={13} /> Terminado</> : <><Icon name="clock" size={13} /> Cerrado · puedes repasarlo</>
+              ) : (
+                <>{v.sesiones} {v.sesiones === 1 ? "sesión" : "sesiones"}</>
+              )}
+            </span>
+            <span class="mc-barra" role="img" aria-label={`${v.hechas} de ${v.sesiones} sesiones hechas`}>
+              <i style={`width:${pct}%`} />
+            </span>
+            <span class="mc-pie">
+              {v.hechas} de {v.sesiones} {v.sesiones === 1 ? "sesión hecha" : "sesiones hechas"}
+              {v.tareas > 0 && ` · ${v.entregadas} de ${v.tareas} ${v.tareas === 1 ? "tarea" : "tareas"}`}
+            </span>
+          </span>
+        </Link>
+      </li>
+    );
   };
 
   return (
-    <>
-      <div class="inicio-cab">
-        <h1>{first ? `Hola, ${first}` : "Aprender"}</h1>
-        <span class="inicio-hoy">{(() => { const h = HOY.format(new Date(ahoraMs)); return h.charAt(0).toUpperCase() + h.slice(1); })()}</span>
+    <div class="mc">
+      <div class="mc-cab">
+        <h1>Mis cursos</h1>
+        {st.courses && st.courses.length > 0 && <span class="mc-sub">{enCurso.length} en curso · {hechos.length} {hechos.length === 1 ? "terminado" : "terminados"}</span>}
       </div>
 
       {st.error && <ErrorState message={st.error} retry$={load} />}
@@ -208,7 +152,7 @@ export default component$(() => {
 
       {ah && ah.paso && (
         <Ahora
-          etiqueta={`${claseN(ah.curso, ah.leccion.id)} · paso ${ah.paso.n} de ${ah.paso.total} · ${familiaDe(ah.curso).familia}`}
+          etiqueta={`${claseN(ah.curso, ah.leccion.id)} · paso ${ah.paso.n} de ${ah.paso.total} · ${nombreDe(ah.curso)}`}
           titulo={ah.paso.step.title}
           descripcion={ah.paso.step.description}
           check={ah.paso.step.check}
@@ -216,15 +160,6 @@ export default component$(() => {
           href={`/lessons/${ah.leccion.id}/`}
           avance={`${ah.paso.hechos} de ${ah.paso.total} pasos`}
           pct={ah.paso.total ? (100 * ah.paso.hechos) / ah.paso.total : 0}
-        />
-      )}
-      {ah && !ah.paso && (
-        <Ahora
-          etiqueta="Ahora"
-          titulo={pendientes.length ? `Entrega: ${pendientes[0].title}` : "Vas al día: terminaste las clases publicadas"}
-          descripcion={pendientes.length ? "Hiciste todos los pasos de las clases publicadas. Falta tu proyecto." : "Cuando el instructor publique la siguiente clase, aparecerá aquí."}
-          accion={pendientes.length ? "Ir al proyecto" : "Ver mis logros"}
-          href={pendientes.length ? `/assignments/${pendientes[0].id}/` : "/grades/"}
         />
       )}
 
@@ -247,183 +182,49 @@ export default component$(() => {
         </Link>
       )}
 
-      {st.courses && (
-        <>
-          {(semana.length > 0 || ruta.length > 0) && (
-            <div class="inicio-cols">
-              <section aria-labelledby="semana-t" class="agenda">
-                <h2 id="semana-t" class="h2-sec">
-                  Esta semana
-                  {(enVivo.length > 0 || entregas.length > 0) && (
-                    <span class="h2-sub">
-                      {enVivo.length > 0 && `${enVivo.length} en vivo`}
-                      {enVivo.length > 0 && entregas.length > 0 && " · "}
-                      {entregas.length > 0 && `${entregas.length} ${entregas.length === 1 ? "entrega" : "entregas"}`}
-                    </span>
-                  )}
-                </h2>
-                {agenda.length === 0 ? (
-                  <div class="agenda-vacia">
-                    <span class="agenda-vacia__ico"><Icon name="checkCircle" size={20} /></span>
-                    <span>
-                      <b>Nada en vivo ni por entregar esta semana</b>
-                      <div class="sm muted">Cuando haya una clase o una entrega cerca, aparecerá aquí.</div>
-                    </span>
-                  </div>
-                ) : (
-                  <div class="semana" data-testid="esta-semana">
-                    {agenda.map((s) => {
-                      const d = new Date(s.fecha);
-                      const valida = !isNaN(d.getTime());
-                      return (
-                        <Link key={s.tipo + s.href} class={`it ${s.tipo}`} href={s.href}>
-                          <span class="dia">
-                            {valida ? (
-                              <>
-                                <b>{DIA.format(d)}</b>
-                                <span>{MES.format(d).replace(".", "")}</span>
-                              </>
-                            ) : (
-                              <Icon name="task" />
-                            )}
-                          </span>
-                          <span class="grow" style="min-width:0">
-                            <b>{s.titulo}</b>
-                            <div class="sm muted" title={valida ? fmtDate(s.fecha) : undefined}>{s.detalle}</div>
-                          </span>
-                          {s.estado ? <Status s={STATUS[s.estado] ?? STATUS.pending} /> : <span class="badge accent"><Icon name="video" size={12} /> En vivo</span>}
-                          <Icon name="chevronRight" size={14} class="faint it-chev" />
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-                {vencidas.length > 0 && (
-                  <Link class="agenda-vencidas" href="/projects/" data-testid="vencidas">
-                    <Icon name="alert" size={14} />
-                    <span class="grow">
-                      {vencidas.length === 1 ? "1 entrega vencida" : `${vencidas.length} entregas vencidas`}
-                      <span class="muted"> · aún puedes entregarlas</span>
-                    </span>
-                    Revisar <Icon name="chevronRight" size={14} />
-                  </Link>
-                )}
-                {enVivo.length + entregas.length > agenda.length && (
-                  <Link class="semana-mas" href="/projects/">
-                    {enVivo.length + entregas.length - agenda.length} más · Ver todos los proyectos <Icon name="chevronRight" size={14} />
-                  </Link>
-                )}
-              </section>
+      <nav class="mc-atajos" aria-label="Tus herramientas">
+        {ATAJOS.map((a) => (
+          <Link key={a.href} href={a.href}>
+            <Icon name={a.icon} size={15} /> {a.t}
+          </Link>
+        ))}
+        {staff && (
+          <Link href="/instructor/agenda/">
+            <Icon name="users" size={15} /> Agenda del instructor
+          </Link>
+        )}
+      </nav>
 
-              {ruta.length > 0 && rutaCurso && (
-                <section aria-labelledby="ruta-t" class="ruta-sec">
-                  <h2 id="ruta-t" class="h2-sec">Tu ruta</h2>
-                  <div class="ruta-card">
-                    <Link class="ruta-cab" href={`/courses/${rutaCurso.slug}/`}>
-                      <span class="grow" style="min-width:0">
-                        <b class="ruta-curso">{familiaDe(rutaCurso).familia}</b>
-                        <span class="ruta-meta">
-                          {familiaDe(rutaCurso).grupo && <span class="curso-grupo">{familiaDe(rutaCurso).grupo}</span>}
-                          {habRuta?.ganadas ?? 0} de {ruta.length} {ruta.length === 1 ? "habilidad" : "habilidades"}
-                          {habRuta?.certCurso ? " · certificado obtenido" : ` · certificado al completar ${ruta.length === 1 ? "la clase" : `las ${ruta.length}`}`}
-                        </span>
-                      </span>
-                      <Icon name="chevronRight" size={16} class="faint" />
-                    </Link>
-                  <ol class="ruta" data-testid="tu-ruta">
-                    {ruta.map((l, i) => {
-                      const hab = habRuta?.clases[i];
-                      const ganada = !!hab?.cert;
-                      const hecha = ganada || (l.steps > 0 && l.steps_done >= l.steps);
-                      const actual = ah?.leccion.id === l.id && !hecha;
-                      const f = l.starts_at ? new Date(l.starts_at) : null;
-                      const { num, resto } = partes(l.title);
-                      return (
-                        <li key={l.id} class={ganada ? "ok gana" : hecha ? "ok" : actual ? "on" : ""}>
-                          <Link href={`/lessons/${l.id}/`} class={actual ? "actual" : ""} aria-current={actual ? "step" : undefined}>
-                            <span class="ruta-pto ruta-hex"><Hex estado={ganada ? "ganada" : actual ? "camino" : "pendiente"} n={i + 1} size="1.75rem" /></span>
-                            <span class="grow" style="min-width:0">
-                              <span class="ruta-num">{num}{f ? ` · ${DIA.format(f)} ${MES.format(f).replace(".", "")}` : ""}</span>
-                              <b>{resto || l.title}</b>
-                              <span class="ruta-est">{ganada ? "Habilidad ganada" : hecha ? "Pasos completos · insignia en camino" : actual ? `En curso · ${l.steps_done} de ${l.steps} pasos` : l.steps_done > 0 ? `${l.steps_done} de ${l.steps} pasos` : "Próxima"}</span>
-                            </span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                  </div>
-                </section>
-              )}
-            </div>
-          )}
-
-          <section aria-labelledby="cursos-t" class="cursos">
-            <h2 id="cursos-t" class="h2-sec">
-              Mis cursos {st.courses.length > 1 && <span class="h2-sub">{st.courses.length}</span>}
-              {st.courses.length > 0 && <Link class="h2-enlace" href="/horario/"><Icon name="calendar" size={14} /> Ver mi horario</Link>}
-            </h2>
-            {st.courses.length === 0 && <Empty icon="book" title="Todavía no estás en ningún curso" text="Pide al instructor que te añada a tu grupo; aparecerá aquí." />}
-            <div class="cursos-grid">
-              {familias.map(({ familia, cursos }) => {
-                const uno = cursos.length === 1 ? cursos[0] : null;
-                const h = matiz.get(familia) ?? 285;
-                const cab = (
-                  <>
-                    <span class="curso-lomo" aria-hidden="true">{monograma(familia)}</span>
-                    <span class="curso-cuerpo">
-                      <b class="curso-tit">{familia}</b>
-                      {uno ? (
-                        <span class="curso-meta">
-                          {uno && familiaDe(uno).grupo && <span class="curso-grupo">{familiaDe(uno).grupo}</span>}
-                          {avance(uno).clases} {avance(uno).clases === 1 ? "clase" : "clases"} · {uno.assignments.length} {uno.assignments.length === 1 ? "proyecto" : "proyectos"}
-                          {proxima(uno.slug) && <span class="curso-prox">{proxima(uno.slug)}</span>}
-                        </span>
-                      ) : (
-                        <span class="curso-meta">{cursos.length} grupos</span>
-                      )}
-                    </span>
-                  </>
-                );
-                return uno ? (
-                  <Link key={uno.id} class={`curso-card${avance(uno).pct > 0 ? " empezado" : ""}`} style={`--h:${h}`} href={`/courses/${uno.slug}/`} data-testid="curso">
-                    {cab}
-                    <span class="curso-av" title={`${Math.round(Math.max(avance(uno).pct, (100 * rutaDe(uno, st.certs).ganadas) / (avance(uno).clases || 1)))} % del curso`}>
-                      <i style={`width:${Math.round(Math.max(avance(uno).pct, (100 * rutaDe(uno, st.certs).ganadas) / (avance(uno).clases || 1)))}%`} />
-                    </span>
-                    <span class="curso-pie">
-                      {rutaDe(uno, st.certs).ganadas > 0 ? `${rutaDe(uno, st.certs).ganadas} de ${avance(uno).clases} habilidades` : avance(uno).pct >= 100 ? "Completo" : avance(uno).pct > 0 ? `${Math.round(avance(uno).pct)} % · ${avance(uno).hechas} de ${avance(uno).clases} clases` : "Sin empezar"}
-                      <Icon name="chevronRight" size={14} class="faint" />
-                    </span>
-                  </Link>
-                ) : (
-                  <div key={familia} class="curso-card varios" style={`--h:${h}`} data-testid="curso-familia">
-                    {cab}
-                    <ul class="curso-grupos">
-                      {cursos.map((c) => {
-                        const { grupo } = familiaDe(c);
-                        const a = avance(c);
-                        return (
-                          <li key={c.id}>
-                            <Link href={`/courses/${c.slug}/`}>
-                              <span class="grow">{grupo || "Grupo 1"}{proxima(c.slug) && <span class="curso-prox">{proxima(c.slug)}</span>}</span>
-                              <span class="xs muted">{a.clases} {a.clases === 1 ? "clase" : "clases"}</span>
-                              {a.pct > 0 && <span class="xs gold">{Math.round(a.pct)} %</span>}
-                              <Icon name="chevronRight" size={14} class="faint" />
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        </>
+      {st.courses && st.courses.length === 0 && (
+        <Empty icon="book" title="Todavía no estás en ningún curso" text="Mira lo que empieza pronto en el Catálogo y elige tu primer curso.">
+          <Link class="btn sm" href="/catalogo/">Ver el catálogo</Link>
+        </Empty>
       )}
-    </>
+
+      {enCurso.length > 0 && (
+        <section aria-labelledby="mc-curso-t">
+          <h2 id="mc-curso-t" class="mc-h2">En curso</h2>
+          <ul class="mc-grid">{enCurso.map(tarjeta)}</ul>
+        </section>
+      )}
+      {hechos.length > 0 && (
+        <section aria-labelledby="mc-hechos-t">
+          <h2 id="mc-hechos-t" class="mc-h2">Terminados</h2>
+          <ul class="mc-grid">{hechos.map(tarjeta)}</ul>
+        </section>
+      )}
+      {st.courses && st.courses.length > 0 && (
+        <Link class="mc-mas" href="/catalogo/">
+          <Icon name="compass" size={18} />
+          <span class="grow">
+            <b>¿Qué sigue?</b>
+            <span>Mira los cursos que empiezan en las próximas semanas.</span>
+          </span>
+          <Icon name="chevronRight" size={16} />
+        </Link>
+      )}
+    </div>
   );
 });
 
-export const head: DocumentHead = { title: "Aprender" };
+export const head: DocumentHead = { title: "Mis cursos" };

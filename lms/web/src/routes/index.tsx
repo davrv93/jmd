@@ -7,8 +7,8 @@ import { Icon } from "~/components/icon";
 
 const LETRAS = `<svg class="jmd-svg" viewBox="0 0 560 270" role="img" aria-label="JMD en constelación">${jmd({ x: 12, y: 8, dibujar: true })}</svg>`;
 
-// Sin ?next=, el alumno entra a Mi horario (calendario, sus cursos y ofertas) y el staff a los cursos.
-const destino = (next: string, me: Parameters<typeof isStaff>[0]) => next || (isStaff(me) ? "/courses/" : "/horario/");
+// Sin ?next=, el alumno entra a Inicio (su próxima clase, lo pendiente y lo que viene) y el staff a los cursos.
+const destino = (next: string, me: Parameters<typeof isStaff>[0]) => next || (isStaff(me) ? "/courses/" : "/inicio/");
 
 export default component$(() => {
   const session = useContext(SessionContext);

@@ -79,6 +79,7 @@ func Load(dir string) (*Catalog, error) {
 		c.courseByID[course.ID] = course
 	}
 	sort.Slice(c.courses, func(i, j int) bool { return c.courses[i].Title < c.courses[j].Title })
+	resolverIdentidades(c.courses)
 	if c.agenda, err = loadAgenda(dir); err != nil {
 		return nil, err
 	}
@@ -115,6 +116,7 @@ func loadCourse(dir string, c *Catalog) (*Course, error) {
 		}
 		course.PortadaPath = full
 	}
+	validarIdentidad(dir, &course)
 
 	lessons := map[string]*Lesson{}
 	files, _ := filepath.Glob(filepath.Join(dir, "lessons", "*.md"))
@@ -129,6 +131,7 @@ func loadCourse(dir string, c *Catalog) (*Course, error) {
 		}
 		l.CourseID = course.ID
 		l.SourceRel, _ = filepath.Rel(dir, f)
+		l.MiniaturaPath = miniaturaDe(dir, l.ID)
 		for i := range l.Materials {
 			m := &l.Materials[i]
 			if m.File != "" && m.URL == "" {

@@ -210,6 +210,7 @@ Paleta fría de tinta sobre lavanda, con un violeta protagonista, un oro de apoy
 - **Degradado de marca** (hero-a, hero-b, hero-c): índigo #4f3fd1 a violeta #7c3aed a orquídea #9d4edd (oscuro: #3b2fa8, #6d2fd1, #8e3fc9). Solo en la tarjeta de acción principal y en el filete del login.
 - **Fases de Kolb** (phase-ec violeta, phase-or teal, phase-ca oro, phase-ea magenta): recorrido de la sesión, `data-ph`.
 - **Tipos de recurso** (kind-link azul, kind-repo morado, kind-pdf rojo suave; documentación usa el teal de fase, descarga el ámbar de aviso, diapositivas el oro, vídeo el magenta): `data-k`.
+- **Identidad de curso** (`data-idc` → `--idc`, 11-2026): doce colores con nombre (violeta, indigo, azul, petroleo, teal, verde, oliva, ambar, coral, magenta, ciruela, pizarra) que cada curso elige en `course.yaml identidad.color`. `--idc` pasa 3:1 sobre la superficie en claro y en oscuro y solo pinta marcas (anillos, puntos de la línea de tiempo, barras, cuadritos junto al nombre); el texto nunca lo toma. `--idc-deep`, `--idc-deep2` y `--idc-luz` son el fondo y la luz de la portada dibujada y no cambian con el tema.
 - **Áreas de curso** (`data-area` → `--ar`): agéntica = phase-ec, diseño = phase-ea, datos = kind-link, seguridad = phase-or, QA = area-qa (oliva), requerimientos = area-req (azul petróleo), infra = faint. Las dos propias de la agenda (oscuro: #5cc8e4 y #a9d46a) existen para que ningún punto de área diga «aviso» (naranja) ni se confunda con el violeta agéntico.
 
 ### Neutral
@@ -325,6 +326,12 @@ Esquinas suaves y escalonadas: 4px para código y teclas, 6px para elementos de 
 
 ### Tarjeta de marca (hero card)
 La acción principal de la pantalla: degradado hero-a → hero-b (la agenda a 135°, dos paradas; «Ahora» y la bienvenida a 118° con hero-c), radio de 20px, texto blanco con secundarios al 82-88 %, halo de marca. En la agenda reparte una columna de hora (display tabular, «hasta» y duración) y otra de qué (título, grupo · sesión, cuenta regresiva), con el botón blanco «Entrar a la mesa» y fantasmas blancos. En vivo, un punto blanco con latido (1.6s, `cubic-bezier(.16,1,.3,1)`) que se apaga con `prefers-reduced-motion`. La selección de texto dentro va en blanco al 30 %.
+
+### Portada de curso y tarjeta de la próxima clase (11-2026)
+Cada curso tiene una portada dibujada en el navegador (`components/portada.tsx`): fondo `--idc-deep`, un motivo por área (red de agentes, círculos y trazo de diseño, barras de datos, panal de seguridad, lista con escaneo de QA, notas de Event Storming, contenedores de infraestructura) y el glifo del curso en una moneda clara a la derecha; la semilla es el nombre del curso. Es arte: igual en los dos temas, sin texto salvo el número de la sesión en las miniaturas. En Inicio, la tarjeta de acción («Tu próxima clase») toma el color y la portada del curso en lugar del degradado de marca, con botón blanco «Entrar»; sigue siendo una sola por pantalla.
+
+### Gráficos del portal del alumno
+`components/graficos.tsx`, con el método del skill dataviz: anillos dobles por curso (sesiones en `--idc`, tareas en oro) en múltiplos pequeños con su leyenda en texto; cinta de 8 semanas tipo Gantt (un punto por sesión, hoy en oro, puntos huecos = ya pasó) con tooltip por foco y por toque y su lista de fechas; escalera de cursos terminados (sólida hasta hoy, discontinua lo inscrito que termina después). Rejilla de 1 px, cifras tabulares solo en ejes y listas.
 
 ### Habilidad (hexágono de insignia)
 Lo que el alumno va ganando tiene una sola forma en todo el producto: un hexágono (`components/habilidad.tsx`, `<Hex>`). Cada clase es una habilidad con su insignia Open Badges; el curso completo da el certificado (el mismo hexágono con el icono de premio). Tres estados y nada más:
