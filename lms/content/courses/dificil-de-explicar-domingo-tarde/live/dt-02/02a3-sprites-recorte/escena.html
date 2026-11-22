@@ -5,101 +5,84 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Del verde al alfa · Taller S2</title>
 <!-- Escena del modo LIVE (sesión 2, grupo de los jueves). El laboratorio corre en el navegador: lee los píxeles de
-     verde.webp con canvas 2D y calcula el alfa en vivo, sin servidor y sin GPU. atlas.png trae el ancla de cada frame. -->
-<link rel="stylesheet" href="../../comun/escena.css">
+     verde.webp con canvas 2D y calcula el alfa en vivo, sin servidor y sin GPU. atlas.png trae el ancla de cada frame.
+     Identidad del taller: ../../comun/taller.css y taller.js. -->
+<link rel="stylesheet" href="../../comun/taller.css">
 <style id="esc-propio">
-.esc-titulo { font-size: 1.45em; }
-.esc-sub { font-size: .88em; max-width: 60em; }
-.esc-cuerpo { gap: 1.1vh; justify-content: center; }
-.esc-grid-2 { align-items: start; }
-.lab { padding: .6em .8em .5em; display: grid; gap: .45em; }
-.lab canvas { width: 100%; max-width: 560px; margin: 0 auto; height: auto; display: block; border-radius: .6em; background: var(--s3); }
-.mandos { display: flex; flex-wrap: wrap; align-items: center; gap: .4em .9em; font-size: .72em; }
-.mandos label { display: flex; align-items: center; gap: .4em; color: var(--muted); font-weight: 600; }
-.mandos input[type=range] { width: 8em; accent-color: var(--accent); }
-.mandos input[type=radio] { accent-color: var(--accent); }
-.mandos output { font: 700 .95em var(--mono); color: var(--fg); }
-.mandos .sep { flex: 1; }
-.cifras { display: flex; flex-wrap: wrap; gap: .35em; }
-.cifra { font: 700 .7em/1 var(--mono); padding: .32em .58em; border-radius: .45em; background: var(--s2); border: 1px solid var(--line); }
-.cifra.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
-.cifra.mal { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
-.lado { display: grid; gap: .5em; align-content: start; }
-.paso { border: 1px solid var(--line); border-radius: .9em; background: var(--s1); box-shadow: var(--card-shadow); overflow: hidden; }
-.paso > summary { list-style: none; cursor: pointer; display: flex; gap: .7em; align-items: center; padding: .45em .9em; font-weight: 700; font-size: .8em; }
-.paso > summary::-webkit-details-marker { display: none; }
-.paso > summary i { font-style: normal; display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--s3); color: var(--muted); font-size: .8em; flex: none; }
-.paso[open] > summary i { background: var(--accent); color: var(--on-accent); }
-.paso > div { padding: .3em .95em .7em; border-top: 1px solid var(--line); }
-.paso p { margin: 0; font-size: .76em; color: var(--muted); }
-.paso p b { color: var(--fg); }
-.ancla { padding: .55em .7em .5em; display: grid; gap: .4em; }
-.ancla canvas { width: 100%; max-width: 400px; margin: 0 auto; height: auto; display: block; }
-@media (max-width: 760px) {
-  body { overflow-y: auto; }
-  .esc-titulo { font-size: 1.15em; }
-  .esc-grid-2 { grid-template-columns: 1fr; }
-  .mandos input[type=range] { width: 6em; }
-  .lado .paso:nth-of-type(3) { display: none; }
-}
+.tl-mesa.recorte { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-self: start; }
+@media (max-width: 960px) { .tl-mesa.recorte { grid-template-columns: minmax(0, 1fr); } .lab canvas { max-height: none; } }
+.lab, .ancla { display: grid; gap: .9rem; }
+.lab canvas { width: 100%; max-height: calc(100vh - 26rem); object-fit: contain; display: block; border-radius: var(--r); }
+.ancla canvas { width: 100%; display: block; border-radius: var(--r); background: var(--hundido); }
+.mandos { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem 1.4rem; }
+.mandos .tl-datos { margin-left: auto; }
+.rotulo { margin: 0; display: flex; align-items: baseline; gap: .6rem; font: 500 .8rem/1.2 var(--texto); color: var(--tinta-2); }
+.rotulo b { font: italic 400 1.1rem/1 var(--display); color: var(--tinta); }
+.ideas { display: grid; gap: 0; }
+.ideas .tl-plegable > summary { gap: .7rem; }
+.ideas .tl-plegable > summary .n { font: italic 300 1.3rem/1 var(--display); color: var(--acento); min-width: 1.1rem; }
+.ideas .tl-plegable .cuerpo { padding-left: 1.8rem; }
+.ideas .tl-plegable:last-child { border-bottom: 1px solid var(--regla); padding-bottom: .5rem; }
 </style>
 </head>
 <body>
-<div class="esc">
-  <header class="esc-cab">
-    <span class="esc-fase" data-ph="ea">Experimentación</span>
-    <span class="esc-num">DOMINGO · S2 · SPRITE 3</span>
+<div class="tl">
+  <header class="tl-folio">
+    <span class="marca">Taller de diseño</span><span class="sep" aria-hidden="true"></span>
+    <span class="ocultable">Sesión 2 · De la imagen al sprite</span>
+    <span class="derecha"><span class="cuenta">Sprite 3 de 5</span><button class="tl-tema" type="button" data-tl-tema></button></span>
   </header>
 
-  <main class="esc-cuerpo">
+  <div class="tl-cabeza">
     <div>
-      <h1 class="esc-titulo">Del verde al alfa, y del alfa al <em>ancla</em></h1>
-      <p class="esc-sub">Dos decisiones separan una imagen suelta de una animación: qué píxeles sobran y a qué punto se agarra el dibujo.</p>
+      <h1 class="tl-titulo">Del verde al alfa, y del alfa <em>al ancla</em></h1>
+      <p class="tl-lead">Dos decisiones separan una imagen suelta de una animación: qué píxeles sobran y a qué punto se agarra el dibujo.</p>
     </div>
+  </div>
 
-    <div class="esc-grid-2">
-      <div class="esc-card lab">
-        <canvas id="cv" aria-label="Laboratorio de recorte: el verde se vuelve transparente"></canvas>
+  <main class="tl-mesa recorte">
+    <section class="tl-panel lab" aria-label="Laboratorio de recorte">
+      <p class="rotulo"><b>Recorte por color</b> el verde se vuelve transparente</p>
+      <canvas id="cv" aria-label="Laboratorio de recorte: el verde se vuelve transparente"></canvas>
+      <div class="mandos">
+        <label class="tl-rango">Umbral <input id="umbral" type="range" min="30" max="170" value="96"><output id="umbral-v">96</output></label>
+        <label class="tl-check"><input id="despill" type="checkbox" checked> Limpiar reborde</label>
+        <span class="tl-datos" aria-live="polite"><span class="cifra" id="opaco">—</span><span class="cifra" id="halo">—</span></span>
+      </div>
+    </section>
+
+    <aside class="tl-col">
+      <section class="tl-panel ancla" aria-label="Ancla de la animación">
+        <p class="rotulo"><b>El ancla</b> la misma animación, dos puntos fijos</p>
+        <canvas id="anclas" aria-label="La misma animación anclada por el centro y por el hocico"></canvas>
         <div class="mandos">
-          <label>Umbral <input id="umbral" type="range" min="30" max="170" value="96"><output id="umbral-v">96</output></label>
-          <label><input id="despill" type="checkbox" checked> Limpiar reborde</label>
-          <span class="sep"></span>
-          <span class="cifras"><span class="cifra" id="opaco">—</span><span class="cifra" id="halo">—</span></span>
-        </div>
-      </div>
-
-      <div class="lado">
-        <div class="esc-card ancla">
-          <canvas id="anclas" aria-label="La misma animación anclada por el centro y por el hocico"></canvas>
-          <div class="mandos">
-            <label><input type="radio" name="ancla" value="centro"> ancla: centro de la caja</label>
-            <label><input type="radio" name="ancla" value="cabeza" checked> ancla: cabeza + hocico</label>
-            <span class="sep"></span>
-            <span class="cifra ok" id="desvio">desvío 0 px</span>
+          <div class="tl-seg" role="radiogroup" aria-label="Punto de ancla">
+            <label><input type="radio" name="ancla" value="centro"><span>Centro de la caja</span></label>
+            <label><input type="radio" name="ancla" value="cabeza" checked><span>Cabeza + hocico</span></label>
           </div>
+          <span class="tl-datos" aria-live="polite"><span class="cifra ok" id="desvio">desvío 0 px</span></span>
         </div>
+      </section>
 
-        <details class="paso" open>
-          <summary><i>1</i> El fondo se pide verde, nunca blanco</summary>
-          <div><p>El pelaje claro se confunde con el blanco. Con <b>#00FF00</b> el corte es una resta: si el verde domina, es fondo.</p></div>
+      <div class="ideas">
+        <details class="tl-plegable paso" open>
+          <summary><span class="n">1</span>El fondo se pide verde, nunca blanco</summary>
+          <div class="cuerpo"><p>El pelaje claro se confunde con el blanco. Con <b>#00FF00</b> el corte es una resta: si el verde domina, es fondo.</p></div>
         </details>
-
-        <details class="paso">
-          <summary><i>2</i> El borde siempre miente</summary>
-          <div><p>Los píxeles a medio camino entre el zorro y el fondo conservan verde. Si no se limpian queda un <b>halo</b> que se nota al ampliar. Mueve el umbral y míralo.</p></div>
+        <details class="tl-plegable paso">
+          <summary><span class="n">2</span>El borde siempre miente</summary>
+          <div class="cuerpo"><p>Los píxeles a medio camino entre el zorro y el fondo conservan verde. Si no se limpian queda un <b>halo</b> que se nota al ampliar. Mueve el umbral y míralo.</p></div>
         </details>
-
-        <details class="paso">
-          <summary><i>3</i> Se ancla lo que no se mueve</summary>
-          <div><p>La cola y las patas cambian de forma en cada pose: si anclas por el centro de la caja, el cuerpo se corre 10 px. Ancla por la <b>cabeza</b> y por el <b>hocico</b>.</p></div>
+        <details class="tl-plegable paso">
+          <summary><span class="n">3</span>Se ancla lo que no se mueve</summary>
+          <div class="cuerpo"><p>La cola y las patas cambian de forma en cada pose: si anclas por el centro de la caja, el cuerpo se corre 10 px. Ancla por la <b>cabeza</b> y por el <b>hocico</b>.</p></div>
         </details>
       </div>
-    </div>
+    </aside>
   </main>
-
-  <footer class="esc-pie">Todo el cálculo ocurre en tu navegador: canvas 2D, ni un píxel sale de la página</footer>
 </div>
 
+<script src="../../comun/taller.js"></script>
 <script src="datos.js"></script>
 <script>
 (() => {
@@ -109,7 +92,7 @@
   const AN = 560, AL = 400, AN2 = 360, AL2 = 150;
 
   function medir(c, w, h) {
-    const dpr = Math.min(2, devicePixelRatio || 1);
+    const dpr = Math.min(3, Math.max(devicePixelRatio || 1, (c.clientWidth || w) / w));
     c.width = w * dpr; c.height = h * dpr;
     c.style.aspectRatio = w + ' / ' + h;
     c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -117,11 +100,16 @@
   medir(cv, AN, AL); medir(canclas, AN2, AL2);
 
   // damero para que se vea la transparencia
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const pat = document.createElement('canvas'); pat.width = pat.height = 16;
   const pctx = pat.getContext('2d');
-  pctx.fillStyle = '#e9e6f2'; pctx.fillRect(0, 0, 16, 16);
-  pctx.fillStyle = '#d6d2e6'; pctx.fillRect(0, 0, 8, 8); pctx.fillRect(8, 8, 8, 8);
-  const damero = ctx.createPattern(pat, 'repeat');
+  let damero = null;
+  function hacerDamero() {
+    pctx.fillStyle = css('--tablero-a') || '#fff'; pctx.fillRect(0, 0, 16, 16);
+    pctx.fillStyle = css('--tablero-b') || '#e6e1d6'; pctx.fillRect(0, 0, 8, 8); pctx.fillRect(8, 8, 8, 8);
+    damero = ctx.createPattern(pat, 'repeat');
+  }
+  hacerDamero();
 
   let fuente = null, ancho = 0, alto = 0;
 
@@ -168,8 +156,12 @@
     $('halo').className = 'cifra ' + (limpio ? 'ok' : 'mal');
   }
 
-  if (innerWidth < 760) for (const d of document.querySelectorAll('.lado .paso')) d.open = false;
+  if (innerWidth < 760) for (const d of document.querySelectorAll('.ideas .paso')) d.open = false;
 
+  const retema = () => { hacerDamero(); recortar(); };
+  addEventListener('tl-tema', retema);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retema);
+  requestAnimationFrame(() => { medir(cv, AN, AL); medir(canclas, AN2, AL2); recortar(); });
   $('umbral').oninput = (e) => { $('umbral-v').textContent = e.target.value; recortar(); };
   $('despill').onchange = recortar;
 
@@ -190,11 +182,11 @@
       if (acum > 1 / 6) { acum = 0; frameA = (frameA + 1) % 8; }
     }
     cta.clearRect(0, 0, AN2, AL2);
-    cta.strokeStyle = 'rgba(90,73,214,.5)'; cta.setLineDash([4, 4]); cta.lineWidth = 1;
+    cta.strokeStyle = css('--acento'); cta.globalAlpha = .55; cta.setLineDash([4, 4]); cta.lineWidth = 1;
     const lineaPies = CABEZA + (A.tiles[0].ay - A.tiles[0].by0) * S;
     cta.beginPath(); cta.moveTo(X, 6); cta.lineTo(X, AL2 - 4); cta.stroke();
     cta.beginPath(); cta.moveTo(6, lineaPies); cta.lineTo(AN2 - 6, lineaPies); cta.stroke();
-    cta.setLineDash([]);
+    cta.setLineDash([]); cta.globalAlpha = 1;
 
     if (imgA.complete && imgA.naturalWidth) {
       const t = tiles[frameA];
@@ -203,10 +195,10 @@
       cta.drawImage(imgA, t.x, t.y, t.w, t.h, dx, dy, t.w * S, t.h * S);
     }
 
-    cta.fillStyle = '#5a49d6'; cta.font = '700 11px system-ui, sans-serif';
+    const kf = AN2 / Math.max(AN2, canclas.clientWidth || AN2); cta.fillStyle = css('--acento'); cta.font = `600 ${(14 * kf).toFixed(1)}px Inter, system-ui, sans-serif`;
     cta.fillText(modo === 'cabeza' ? 'cabeza fija' : 'centro de la caja fijo', 8, 16);
-    cta.fillStyle = '#8a879a'; cta.font = '600 10px system-ui, sans-serif';
-    cta.fillText(`frame ${frameA + 1}/8`, AN2 - 62, 16);
+    cta.fillStyle = css('--tinta-2'); cta.font = `500 ${(13 * kf).toFixed(1)}px Inter, system-ui, sans-serif`;
+    cta.textAlign = 'right'; cta.fillText(`frame ${frameA + 1}/8`, AN2 - 8, 16); cta.textAlign = 'left';
   }
 
   function bucle(t) {
