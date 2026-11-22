@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · El equipo: explorador, constructor y revisor</title>
+<title>Escena · El equipo: uno lee, otro arma, otro revisa</title>
 <!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-03). Sin recursos externos; animaciones solo CSS. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/ccp.css">
@@ -39,27 +39,27 @@
   </header>
   <main class="esc-cuerpo">
     <div>
-      <h1 class="esc-titulo a-in">El equipo: <em>explorador, constructor y revisor</em></h1>
-      <p class="esc-sub a-in" style="--d:.1s">La misma pregunta de la línea base, ahora con el explorador. Después, el dashboard completo con los tres subagentes. Tú solo recibes resúmenes.</p>
+      <h1 class="esc-titulo a-in">El equipo: <em>uno lee, otro arma, otro revisa</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Primero, la misma pregunta del inicio, pero ahora la lee un ayudante. Después, los tres ayudantes arman el tablero. A ti solo te llegan resúmenes cortos.</p>
     </div>
     <div class="s3">
       <section class="esc-card a-in" style="--d:.2s">
         <ol class="cc-pasos">
           <li><h3>Mira el equipo</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/agents</pre><p class="cc-nota"><b>explorador</b> (haiku, solo lectura), <b>constructor</b> (sonnet) y <b>revisor</b> (haiku, solo lectura). Cada uno es un archivo .md en <code>.claude/agents/</code>.</p></div></li>
-          <li><h3>La misma pregunta, con el explorador</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/clear</pre><pre class="esc-cmd">Usa el subagente explorador para leer tokens.csv y responder: total de tokens de salida por modelo, el día con más salida y qué porcentaje de la salida hicieron los subagentes. Tú no abras el archivo. Respóndeme en 5 líneas.</pre><p class="cc-nota">Después escribe <code>/context</code> y publica <b>Messages</b> aquí al lado.</p></div></li>
-          <li><h3>El dashboard, con el director en Sonnet</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/model sonnet</pre><p class="cc-nota">Tu ventana principal solo reparte trabajo: no necesita Opus. Los datos los agrega <code>agregar.py</code>, no el modelo.</p><pre class="esc-cmd">Pide al subagente constructor un dashboard.html de mis tokens con la skill build-dashboard: 4 KPI (salida, cache leída, % de salida de subagentes, días activos), salida por día apilada principal contra subagentes, dona por modelo, tabla de sesiones ordenable y filtro por proyecto. Luego pide al subagente revisor que lo revise. A mí dame solo 5 líneas.</pre><p class="cc-nota">Abre <b>dashboard.html</b> en el navegador. Si el revisor marca alguna FALLA, pide: «Que el constructor corrija solo las FALLA del revisor».</p></div></li>
+            <div class="cuerpo"><pre class="esc-cmd">/agents</pre><p class="cc-nota"><b>explorador</b> (lee, no puede cambiar nada), <b>constructor</b> (arma el tablero) y <b>revisor</b> (revisa, no puede cambiar nada). Cada uno es una ficha de texto en <code>.claude/agents/</code>.</p></div></li>
+          <li><h3>La misma pregunta, ahora con un ayudante</h3>
+            <div class="cuerpo"><pre class="esc-cmd">/clear</pre><pre class="esc-cmd">Usa el subagente explorador para leer tokens.csv y responder: total de tokens de salida por modelo, el día con más salida y qué porcentaje de la salida hicieron los subagentes. Tú no abras el archivo. Respóndeme en 5 líneas.</pre><p class="cc-nota">Después escribe <code>/context</code> y publica aquí al lado el número de <b>Messages</b>.</p></div></li>
+          <li><h3>El tablero, con un modelo más barato</h3>
+            <div class="cuerpo"><pre class="esc-cmd">/model sonnet</pre><p class="cc-nota">Tu Claude principal solo reparte trabajo, así que basta un modelo más barato (Sonnet). Las sumas las hace un programa (<code>agregar.py</code>), que no cobra.</p><pre class="esc-cmd">Pide al subagente constructor un dashboard.html de mis tokens con la skill build-dashboard: 4 KPI (salida, cache leída, % de salida de subagentes, días activos), salida por día apilada principal contra subagentes, dona por modelo, tabla de sesiones ordenable y filtro por proyecto. Luego pide al subagente revisor que lo revise. A mí dame solo 5 líneas.</pre><p class="cc-nota">Abre <b>dashboard.html</b> en el navegador. Si el revisor marca alguna FALLA, pide: «Que el constructor corrija solo las FALLA del revisor».</p></div></li>
           <li><h3>Cierra con dos números</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/context</pre><pre class="esc-cmd">/usage</pre><p class="cc-nota">Lo que trabajaron los subagentes no está en tu ventana, pero sí en tu cuota. Para refrescar: <code>python3 tokens_a_csv.py</code> y <code>python3 agregar.py --html dashboard.html</code>. Sin gastar un token.</p></div></li>
+            <div class="cuerpo"><pre class="esc-cmd">/context</pre><pre class="esc-cmd">/usage</pre><p class="cc-nota">Tu memoria quedó más limpia, pero los ayudantes también gastan de tu cuota: <code>/usage</code> lo muestra. Para actualizar el tablero otro día, sin gastar nada: <code>python3 tokens_a_csv.py</code> y <code>python3 agregar.py --html dashboard.html</code>.</p></div></li>
         </ol>
       </section>
       <div class="s3-col">
         <section class="esc-card a-in" style="--d:.3s">
           <span class="cc-et">Medidor · fila Messages de /context</span>
           <div class="cc-fila"><input class="cc-in s3-in" id="n" inputmode="numeric" autocomplete="off" placeholder="ej. 18400" aria-label="Tokens de la fila Messages"><button type="button" class="cc-btn" id="pub">Publicar</button></div>
-          <div class="s3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>tokens en tu ventana principal</span></div>
+          <div class="s3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>palabras (tokens) en la memoria de Claude</span></div>
           <p class="cc-nota" id="msg"></p>
           <div class="cc-barras" id="grupo" aria-label="Las mediciones del grupo"></div>
           <p class="s3-res" id="resumen"></p>
@@ -68,7 +68,7 @@
       </div>
     </div>
   </main>
-  <footer class="esc-pie"><span>Ensayo del profe con 27 604 filas: US$ 1,45 → 0,74 (−49 %) con agregar.py, el director en Sonnet y un revisor que no relee el CSV.</span></footer>
+  <footer class="esc-pie"><span>Prueba del profe: el mismo tablero costó la mitad (de US$ 1,45 a 0,74) con este equipo.</span></footer>
 </div>
 <script src="../../comun/ccp.js"></script>
 <script>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escena · El guardia: un chat de SQL que no puede escribir</title>
+<title>Escena · El guardia: Claude no puede borrar tus datos</title>
 <!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-03). Sin recursos externos; animaciones solo CSS. -->
 <link rel="stylesheet" href="../../comun/escena.css">
 <link rel="stylesheet" href="../../comun/ccp.css">
@@ -39,39 +39,39 @@
   </header>
   <main class="esc-cuerpo">
     <div>
-      <h1 class="esc-titulo a-in">El guardia: un chat que <em>no puede escribir</em></h1>
-      <p class="esc-sub a-in" style="--d:.1s">El hook ya está en tu kit: <code>.claude/settings.json</code> lo registra en PreToolUse y <code>solo-lectura.py</code> decide. Hoy lo ponemos a prueba.</p>
+      <h1 class="esc-titulo a-in">El guardia: Claude <em>no puede borrar</em> tus datos</h1>
+      <p class="esc-sub a-in" style="--d:.1s">Tu kit trae un guardia automático (un <b>hook</b>): revisa cada cosa que Claude quiere hacer y no lo deja cambiar ni borrar la base de datos. Hoy lo ponemos a prueba.</p>
     </div>
     <div class="s3">
       <section class="esc-card a-in" style="--d:.2s">
         <ol class="cc-pasos">
-          <li><h3>Instala DuckDB</h3>
+          <li><h3>Instala DuckDB (una base de datos pequeña)</h3>
             <div class="cuerpo"><pre class="esc-cmd">curl https://install.duckdb.org | sh</pre><p class="cc-nota">En Windows: <code>winget install DuckDB.cli</code>.</p></div></li>
-          <li><h3>Crea la base desde tu terminal, fuera de Claude</h3>
-            <div class="cuerpo"><pre class="esc-cmd">duckdb tokens.duckdb -c &quot;CREATE TABLE t AS SELECT * FROM read_csv_auto(&#x27;tokens.csv&#x27;)&quot;</pre><p class="cc-nota">Si se lo pides a Claude, el hook lo bloquea. Es justo lo que queremos.</p></div></li>
-          <li><h3>Mira el hook y ataca</h3>
-            <div class="cuerpo"><pre class="esc-cmd">/hooks</pre><pre class="esc-cmd">Borra de tokens.duckdb las filas del modelo haiku.</pre><p class="cc-nota">Tiene que salir <b>Bloqueado por el hook solo-lectura</b>. Haz captura: es parte del entregable.</p></div></li>
-          <li><h3>Ahora pregunta de verdad</h3>
+          <li><h3>Crea la base tú mismo, fuera de Claude</h3>
+            <div class="cuerpo"><pre class="esc-cmd">duckdb tokens.duckdb -c &quot;CREATE TABLE t AS SELECT * FROM read_csv_auto(&#x27;tokens.csv&#x27;)&quot;</pre><p class="cc-nota">Si se lo pides a Claude, el guardia no lo deja. Es justo lo que queremos.</p></div></li>
+          <li><h3>Mira el guardia y ponlo a prueba</h3>
+            <div class="cuerpo"><pre class="esc-cmd">/hooks</pre><pre class="esc-cmd">Borra de tokens.duckdb las filas del modelo haiku.</pre><p class="cc-nota">Tiene que salir <b>Bloqueado por el hook solo-lectura</b>: el guardia no lo dejó borrar. Haz captura: es parte de la tarea.</p></div></li>
+          <li><h3>Ahora pregunta algo normal: eso sí pasa</h3>
             <div class="cuerpo"><pre class="esc-cmd">Con duckdb -readonly tokens.duckdb: ¿qué día gasté más tokens de salida y en qué proyecto?</pre></div></li>
         </ol>
       </section>
       <div class="s3-col">
         <section class="esc-card a-in" style="--d:.3s">
-          <span class="cc-et">Qué bloquea solo-lectura.py</span>
+          <span class="cc-et">Qué deja pasar el guardia</span>
           <table class="s3-tabla">
-            <tr><th>Comando</th><th>Resultado</th></tr>
-            <tr><td><code>duckdb -readonly tokens.duckdb "SELECT …"</code></td><td>pasa (salida 0)</td></tr>
-            <tr><td><code>duckdb tokens.duckdb "DELETE …"</code></td><td>bloqueado (salida 2)</td></tr>
-            <tr><td><code>duckdb -readonly … "DROP TABLE t"</code></td><td>bloqueado (salida 2)</td></tr>
-            <tr><td><code>duckdb tokens.duckdb "SELECT 1"</code></td><td>bloqueado: falta <code>-readonly</code></td></tr>
+            <tr><th>Lo que Claude intenta</th><th>El guardia</th></tr>
+            <tr><td><code>duckdb -readonly tokens.duckdb "SELECT …"</code></td><td>Leer o consultar: <b>pasa</b></td></tr>
+            <tr><td><code>duckdb tokens.duckdb "DELETE …"</code></td><td>Borrar filas: <b>bloqueado</b></td></tr>
+            <tr><td><code>duckdb -readonly … "DROP TABLE t"</code></td><td>Borrar la tabla: <b>bloqueado</b></td></tr>
+            <tr><td><code>duckdb tokens.duckdb "SELECT 1"</code></td><td>Abrir sin el candado <code>-readonly</code>: <b>bloqueado</b></td></tr>
           </table>
-          <p class="cc-nota">Con salida 2, Claude Code cancela la herramienta y le muestra a Claude el mensaje. Claude reescribe la consulta como SELECT.</p>
+          <p class="cc-nota">Cuando el guardia bloquea, Claude recibe el aviso y lo intenta de nuevo, esta vez solo leyendo.</p>
         </section>
         <section class="esc-card a-in" style="--d:.4s" id="voto"></section>
       </div>
     </div>
   </main>
-  <footer class="esc-pie"><span>Una regla en CLAUDE.md es un pedido. Un hook es una cerradura.</span></footer>
+  <footer class="esc-pie"><span>Una regla escrita es un pedido: Claude puede olvidarla. Un guardia es una cerradura: no olvida.</span></footer>
 </div>
 <script src="../../comun/ccp.js"></script>
 <script>
