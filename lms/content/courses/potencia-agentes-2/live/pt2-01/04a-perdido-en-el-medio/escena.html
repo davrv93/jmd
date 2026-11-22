@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perdido en el medio (Liu et al.)</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Coordenadas del viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %.
+     Eje x: posición 1 → x 90, posición 20 → x 520. Eje y: 50 % → y 430, 80 % → y 130 (10 px por punto). */
+  .doc { fill: var(--tinta); opacity: .22; }
+  #dato { fill: var(--n-hot); stroke: var(--tinta); stroke-width: 1.5; }
+  #curva { stroke: var(--acento); stroke-width: 4; }
+  .pto { fill: var(--tinta); }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .rot.chico { font-size: 12px; letter-spacing: .1em; }
+  .valor { width: 14%; }
+  .lado { width: 26%; }
+  #sello { top: auto; bottom: -2.3em; right: -5.2em; font-size: .9em; }
+  #pBase { white-space: nowrap; }
+  .eje-x { position: absolute; left: 9%; top: 95%; width: 58%; margin: 0; text-align: center; font: 700 1.25cqw/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gris); }
+  .eje-x .capas { display: grid; } .eje-x .capas > span { grid-area: 1 / 1; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 1 de 2 · Liu et al., 2024</p>
+    <h1>Más contexto no es <em>más memoria</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Gráfico en forma de U: aciertos de GPT-3.5 según dónde está el documento con la respuesta entre 20 documentos. 75,8 % si está primero, 53,8 % si está en el décimo y 63,2 % si está último. Una línea punteada marca 56,1 %, lo que acierta sin leer ningún documento: en el medio acierta menos que sin leer. Luego se aplica a un log de pruebas donde el error queda en el medio y a RTK, que deja el error al frente.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="ejeY" class="trazo fino" d="M70 450 L70 120"/>
+        <path id="ejeX" class="trazo fino" d="M70 450 L545 450"/>
+        <text class="rot chico" x="62" y="176" text-anchor="end">75</text>
+        <text class="rot chico" x="62" y="326" text-anchor="end">60</text>
+        <text class="rot chico" x="62" y="434" text-anchor="end">50</text>
+        <text id="rAciertos" class="rot fuerte" x="70" y="104" text-anchor="start">% DE ACIERTOS</text>
+        <path id="base" class="trazo guion" d="M70 369 L545 369"/>
+        <g id="docs"></g>
+        <rect id="dato" x="82" y="462" width="16" height="22" rx="2"/>
+        <path id="curva" class="trazo" d="M90 172 C 120 300, 150 345, 180.5 358 C 220 375, 260 392, 293.7 392 C 330 392, 370 382, 406.8 376 C 450 368, 490 330, 520 298"/>
+        <circle class="pto" id="p1" cx="90" cy="172" r="6"/>
+        <circle class="pto" id="p5" cx="180.5" cy="358" r="5"/>
+        <circle class="pto" id="p10" cx="293.7" cy="392" r="6"/>
+        <circle class="pto" id="p15" cx="406.8" cy="376" r="5"/>
+        <circle class="pto" id="p20" cx="520" cy="298" r="6"/>
+        <circle id="punto" class="solo-anim" cx="90" cy="172" r="9"/>
+      </svg>
+
+      <div class="nt info valor" id="v1" data-r="-1.5" style="left:14%; top:24%"><span class="k">1.º de 20</span><span class="t">75,8 %</span></div>
+      <div class="nt hot valor" id="v10" data-r="1.2" style="left:30%; top:56%"><span class="k">10.º · el medio</span><span class="t">53,8 %</span><span class="sello solo-anim" id="sello">PEOR QUE NO LEER</span></div>
+      <div class="nt info valor" id="v20" data-r="-1" style="left:58%; top:42%"><span class="k">20.º · último</span><span class="t">63,2 %</span></div>
+      <p class="pastilla" id="pBase" style="left:49%; top:74%">sin documentos · 56,1 %</p>
+
+      <div class="nt cmd lado" id="nExp" data-r="1.2" style="left:72%; top:6%"><span class="k">El experimento</span><span class="t">Una pregunta y 20 documentos (~4 000 tokens). Solo uno tiene la respuesta.</span></div>
+      <div class="nt sis lado solo-anim" id="nCaso" data-r="-1.4" style="left:72%; top:38%"><span class="k">Tu agente</span><span class="t">Un test falla: el log trae cientos de líneas y el error queda en el medio.</span></div>
+      <div class="nt info lado solo-anim" id="nRtk" data-r="1.6" style="left:72%; top:68%"><span class="k">Con RTK</span><span class="t">Llega el fallo y el resumen: el dato queda al frente.</span></div>
+
+      <p class="eje-x"><span class="capas"><span class="av">Posición del documento con la respuesta →</span><span class="bo solo-anim">Posición de la línea del error en el log →</span></span></p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>El experimento de Stanford</b><p>Le dieron al modelo una pregunta y 20 documentos de Wikipedia, unos 4 000 tokens. Solo uno tenía la respuesta. Después movieron ese documento del primer lugar al último, sin cambiar nada más.</p></li>
+        <li><b>La curva en U</b><p>Si la respuesta estaba primero, GPT-3.5 acertaba el 75,8 %. En el décimo lugar, el 53,8 %. Al final se recupera: 63,2 %. Lee bien el principio y el final, y se pierde en el medio.</p></li>
+        <li><b>Peor que no leer</b><p>Sin ningún documento, solo con lo que ya sabía, el modelo acertaba el 56,1 %. Con la respuesta en el medio acertó menos: darle el dato enterrado entre otros fue peor que no dárselo.</p><p class="aparte">Datos de la tabla 6 del artículo (GPT-3.5-Turbo, 20 documentos). Los modelos actuales degradan menos, pero Anthropic (2025) confirma que la precisión cae a medida que crece el contexto («context rot»).</p></li>
+        <li><b>Tu agente también tiene un medio</b><p>Cuando tu agente corre las pruebas, lee el log completo: cientos de líneas de casos que pasan y, perdido entre ellas, el único error que importa. Es el mismo experimento, con tu código.</p></li>
+        <li><b>Recortar es poner el dato al frente</b><p>RTK no solo ahorra tokens: deja el fallo y el resumen, y lo que sobra no entra. Lo que el agente necesita queda al principio, donde mejor lo lee. Ahora veamos cuánto ahorra de verdad.</p><p class="aparte">Simplificación: RTK filtra la salida de comandos como git, tests o builds. No reordena lo que el agente lee con sus propias herramientas.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Liu, N. F., Lin, K., Hewitt, J., Paranjape, A., Bevilacqua, M., Petroni, F. y Liang, P. (2024). Lost in the Middle: How Language Models Use Long Contexts. <i>Transactions of the ACL</i> 12, 157–173. Anthropic (2025). Effective context engineering for AI agents.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, punto = $("#punto"), NS = "http://www.w3.org/2000/svg";
+  var X = function (p) { return 90 + (p - 1) * (430 / 19); };
+
+  // Los 20 documentos (o líneas del log) bajo el eje.
+  var g = $("#docs");
+  for (var i = 1; i <= 20; i++) {
+    var r = document.createElementNS(NS, "rect");
+    r.setAttribute("class", "doc"); r.setAttribute("x", X(i) - 8); r.setAttribute("y", 462);
+    r.setAttribute("width", 16); r.setAttribute("height", 22); r.setAttribute("rx", 2);
+    g.appendChild(r);
+  }
+
+  TEO.escena([
+    function (tl) { // 1. el experimento
+      TEO.trazar(tl, ["#ejeY", "#ejeX"], { duration: .7 });
+      tl.from("#rAciertos", { autoAlpha: 0, duration: .3 }, "-=.3");
+      tl.from(".doc", { autoAlpha: 0, y: 10, duration: .25, stagger: .04 });
+      tl.fromTo("#dato", { autoAlpha: 0, scale: .4, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2)" });
+      TEO.pegar(tl, "#nExp");
+    },
+    function (tl) { // 2. se mueve el dato y se dibuja la U
+      tl.fromTo(punto, { autoAlpha: 0, scale: .3, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .3 });
+      tl.fromTo("#p1", { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 });
+      TEO.pegar(tl, "#v1");
+      TEO.trazar(tl, "#curva", { duration: 3, ease: "none" }, "+=.1");
+      TEO.viajar(tl, punto, $("#curva"), 3, "<");
+      tl.to("#dato", { attr: { x: X(20) - 8 }, duration: 3, ease: "none" }, "<");
+      tl.fromTo(["#p5", "#p10", "#p15", "#p20"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .2, stagger: .72 }, "<+.75");
+      TEO.pegar(tl, "#v10", "-=1.6");
+      TEO.pegar(tl, "#v20");
+    },
+    function (tl) { // 3. peor que no leer
+      tl.fromTo("#base", { autoAlpha: 0 }, { autoAlpha: 1, duration: .6 });
+      tl.from("#pBase", { autoAlpha: 0, y: 8, duration: .35 });
+      tl.to(punto, { attr: { cx: 293.7, cy: 392 }, duration: .8, ease: "power2.inOut" }, "+=.2");
+      tl.to("#dato", { attr: { x: X(10) - 8 }, duration: .8, ease: "power2.inOut" }, "<");
+      tl.to("#v10", { x: -6, duration: .06, repeat: 5, yoyo: true, ease: "none" });
+      tl.fromTo("#sello", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" });
+    },
+    function (tl) { // 4. tu agente también tiene un medio
+      tl.to(".eje-x .av", { autoAlpha: 0, duration: .25 });
+      tl.to(".eje-x .bo", { autoAlpha: 1, duration: .3 });
+      tl.to(".doc", { scaleY: .55, transformOrigin: "50% 100%", duration: .25, stagger: .02 }, "<");
+      TEO.pegar(tl, "#nCaso", "+=.1");
+      tl.to("#dato", { scale: 1.25, transformOrigin: "50% 50%", duration: .2, yoyo: true, repeat: 1 });
+    },
+    function (tl) { // 5. con RTK el dato queda al frente
+      tl.to(".doc", { autoAlpha: 0, duration: .35, stagger: { each: .02, from: "end" } });
+      tl.to("#dato", { attr: { x: X(1) - 8 }, duration: .9, ease: "power3.inOut" }, "-=.1");
+      tl.to(punto, { attr: { cx: 90, cy: 172 }, duration: .9, ease: "power3.inOut" }, "<");
+      TEO.pegar(tl, "#nRtk", "+=.1");
+    }
+  ], {
+    preparar: function () {
+      gsap.set(punto, { autoAlpha: 0 });
+      gsap.set("#base", { autoAlpha: 0 });
+      gsap.set("#dato", { autoAlpha: 0 });
+      gsap.set(["#p1", "#p5", "#p10", "#p15", "#p20"], { autoAlpha: 0 });
+      gsap.set(".eje-x .bo", { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la teoría 1"
+  });
+})();
+</script>
+</body>
+</html>
