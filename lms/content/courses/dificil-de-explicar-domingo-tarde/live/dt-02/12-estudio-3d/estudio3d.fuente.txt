@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -25,7 +26,7 @@ const fuente3D = new FontLoader().parse(fuenteJSON);
 
 // ---------- Catálogo ----------
 const PLANTILLAS = {
-  perfume: { color: '#7a3b12', material: 'vidrio', marca: 'AURORA', linea: 'Eau de parfum · 50 ml', luz: 'lujo', sup: 'marmol-negro', acento: 'oro', fondo: '#16120e' },
+  perfume: { color: '#7a3b12', material: 'vidrio', marca: 'AURORA', linea: 'Eau de parfum · 50 ml', luz: 'lujo', sup: 'marmol-negro', acento: 'oro', fondo: '#221a12' },
   caja:    { color: '#b9c4b1', material: 'satinado', marca: 'Aurora', linea: 'Crema facial · 50 g', luz: 'ventana', sup: 'lino', acento: 'oro', fondo: '#e7ded3' },
   cafe:    { color: '#1e1a17', material: 'mate', marca: 'Chanchamayo', linea: 'Café de altura · 250 g', luz: 'ventana', sup: 'madera', acento: 'cobre', fondo: '#cfc2b0', calido: true },
   plato:   { color: '#3a1d12', material: 'brillante', marca: 'Dulce Lima', linea: 'Torta de chocolate', luz: 'gourmet', sup: 'madera', acento: 'oro', fondo: '#3b2a1f' },
@@ -43,11 +44,11 @@ const SUPERFICIES = {
 const ACENTOS = { oro: '#e0bb72', plata: '#d9dde2', cobre: '#d08a5c', negro: '#2a2826' };
 // Presets fotográficos: luz principal, relleno, contras, luz de fondo, softboxes del entorno y exposición.
 const PRESETS = {
-  lujo: { hdri: 'oscuro', envI: 0.22, exp: 1.0, fondo: '#16120e',
+  lujo: { hdri: 'oscuro', envI: 0.22, exp: 1.0, fondo: '#221a12',
     clave: ['#ffe4c4', 2.2, [-4, 5.5, 3.5]], relleno: ['#d9e2ff', 0.12, [5, 2, 4]],
     rims: [['#ffd6a0', 4.5, [-3.5, 5.2, -3.5]], ['#ffffff', 3.5, [3.5, 5.2, -3.5]]],
-    fondoLuz: ['#c79a62', 30, [0, 3.2, -1]], supK: 0.8,
-    forms: [[[-3.2, 3.2, 1.2], [0.7, 3.4], 7], [[3.2, 3.2, -0.8], [0.5, 3.4], 5], [[0, 6, 0.6], [4, 1.2], 1.2]], sombra: 0.55 },
+    fondoLuz: ['#d9a865', 110, [0, 2.6, 0.5]], supK: 0.8,
+    forms: [[[-2.6, 1.5, 1.6], [0.45, 4], 11], [[2.8, 1.5, -0.4], [0.35, 4], 8], [[0, 6, 0.6], [4, 1.2], 1.2]], sombra: 0.55 },
   ventana: { hdri: 'ventana', envI: 0.75, exp: 1.0, fondo: '#e8e1d6',
     clave: ['#fff3e2', 3.0, [-6, 4.2, 1.2]], relleno: ['#eef3ff', 0.35, [5, 2.5, 4]],
     rims: [['#fff1dc', 1.2, [2.5, 3.5, -5]]],
@@ -59,14 +60,14 @@ const PRESETS = {
     fondoLuz: ['#ffffff', 12, [0, 3, -1]],
     forms: [[[0, 6, 1], [5, 3], 2.2], [[-4, 2, 2], [1, 4.5], 3.5], [[4, 2, 1.5], [1, 4.5], 3]], sombra: 0.32 },
   gourmet: { hdri: 'calido', envI: 0.55, exp: 1.02, fondo: '#3b2a1f',
-    clave: ['#ffcf98', 3.4, [-3, 3.6, -3.2]], relleno: ['#ffdcb0', 0.5, [3.5, 2, 4.5]],
+    clave: ['#ffcf98', 2.7, [-3, 3.6, -3.2]], relleno: ['#ffdcb0', 0.5, [3.5, 2, 4.5]],
     rims: [['#ffb46a', 3.0, [3.5, 2.6, -4]]],
     fondoLuz: ['#ff9f55', 16, [0.5, 2.8, -1]],
     forms: [[[-3.5, 2.4, -2.5], [2, 3.5], 5], [[3, 2, 3], [2.5, 2.5], 1.2]], sombra: 0.5 },
   tecno: { hdri: 'estudio', envI: 0.25, exp: 1.0, fondo: '#1b2330',
-    clave: ['#e9f1ff', 2.0, [-3.5, 5.5, 3.5]], relleno: ['#7fb4ff', 0.25, [5, 2, 4]],
+    clave: ['#e9f1ff', 1.2, [-3.5, 5.5, 3.5]], relleno: ['#7fb4ff', 0.2, [5, 2, 4]],
     rims: [['#59c8ff', 5.5, [-4, 4.6, -3.5]], ['#a58cff', 4.5, [4, 4.6, -3.5]]],
-    fondoLuz: ['#4f86c9', 26, [0, 3, -1]], supK: 0.35,
+    fondoLuz: ['#4f86c9', 26, [0, 3, -1]], supK: 0.12,
     forms: [[[-3.4, 1.8, -1], [0.4, 5.5], 9, '#7fd6ff'], [[3.4, 1.8, -1], [0.4, 5.5], 8, '#b9a6ff'], [[0, 6, 1.5], [3.5, 1], 1.5]], sombra: 0.55 },
 };
 
@@ -175,6 +176,7 @@ function aplicarSuperficie() {
   supMat.specularIntensity = 0.3; // sin esto las contras de atrás queman la superficie pulida
   supMat.color.multiplyScalar(PRESETS[est.luz].supK ?? 1);
   supMat.needsUpdate = true;
+  ajustarReflejo();
   invalidar();
 }
 
@@ -235,6 +237,10 @@ async function construirEntorno() {
   if (envRT) envRT.dispose();
   envRT = nuevo; envClave = clave_;
   scene.environment = envRT.texture;
+  // Con scene.environment three ignora envMapIntensity del material: la superficie y el ciclorama llevan el
+  // entorno asignado a mano para poder bajarle el reflejo (si no, los softboxes queman el mármol pulido).
+  supMat.envMap = envRT.texture; cicloMat.envMap = envRT.texture; supMat.needsUpdate = true; cicloMat.needsUpdate = true;
+  if (actual) actual.g.traverse((o) => { if (o.material && o.material.userData && o.material.userData.envK !== undefined) { o.material.envMap = envRT.texture; o.material.needsUpdate = true; } });
   invalidar();
 }
 
@@ -288,6 +294,57 @@ function renderContacto() {
 }
 function esDelProducto(o) { let p = o; while (p) { if (actual && p === actual.g) return true; p = p.parent; } return false; }
 
+// ---------- Reflejo suave en superficies pulidas (espejo plano difuminado y atenuado) ----------
+const REFLEJO = { 'marmol-negro': 0.26, 'marmol-blanco': 0.16, terrazo: 0.1, madera: 0.06 };
+const reflejo = new Reflector(new THREE.PlaneGeometry(SUP_W, SUP_D), {
+  textureWidth: 512, textureHeight: 512, clipBias: 0.003, multisample: 0,
+  shader: {
+    name: 'ReflejoSuave',
+    uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, fuerza: { value: 0.3 }, centro: { value: new THREE.Vector3() }, radio: { value: 1 } },
+    vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vW;
+      void main() { vUv = textureMatrix * vec4(position, 1.0); vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform sampler2D tDiffuse; uniform float fuerza, radio; uniform vec3 centro; varying vec4 vUv; varying vec3 vW;
+      void main() {
+        vec2 uv = vUv.xy / vUv.w; float d = length(vW.xz - centro.xz) / radio;
+        float o = 0.0025 * (0.4 + d * 2.0); vec3 r = vec3(0.0);
+        for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) r += texture2D(tDiffuse, uv + vec2(float(i), float(j)) * o).rgb;
+        r /= 9.0; r = 1.3 * r / (1.0 + r); // comprime los brillos: los filos del vidrio no deben rayar el reflejo
+        float k = fuerza * (1.0 - smoothstep(0.15, 1.6, d));
+        gl_FragColor = vec4(r, k);
+      }`,
+  },
+});
+reflejo.rotation.x = -Math.PI / 2;
+reflejo.material.transparent = true; reflejo.material.depthWrite = false;
+reflejo.renderOrder = 1;
+{
+  const orig = reflejo.onBeforeRender;
+  reflejo.onBeforeRender = (r, s, cam) => {
+    if (cam !== camera) return; // ni la sombra de contacto ni el desenfoque piden otro reflejo
+    const cv = contacto.visible; contacto.visible = false;
+    // El vidrio con transmisión se ve en el reflejo solo como dos filos brillantes: se oculta y queda el líquido.
+    const vidrios = [];
+    if (actual) actual.g.traverse((o) => { if (o.visible && o.material && o.material.transmission > 0) { vidrios.push(o); o.visible = false; } });
+    orig.call(reflejo, r, s, cam);
+    vidrios.forEach((o) => { o.visible = true; });
+    contacto.visible = cv;
+  };
+}
+scene.add(reflejo);
+function ajustarReflejo() {
+  const k = REFLEJO[est.sup] || 0;
+  reflejo.visible = k > 0 && est.nivel >= 3; // el reflejo es una pasada completa más: solo en calidad alta
+  reflejo.material.uniforms.fuerza.value = k;
+  reflejo.position.set(0, 0.0015, superficie.position.z);
+  if (actual) {
+    const caja = new THREE.Box3().setFromObject(actual.g), c = caja.getCenter(new THREE.Vector3()), sz = caja.getSize(new THREE.Vector3());
+    reflejo.material.uniforms.centro.value.copy(c); reflejo.material.uniforms.radio.value = Math.max(0.6, sz.y * 1.1);
+  }
+  const pr = renderer.getPixelRatio(), w = Math.max(256, Math.round(ancho * pr * (est.nivel >= 3 ? 0.6 : 0.4))), h = Math.max(256, Math.round(alto * pr * (est.nivel >= 3 ? 0.6 : 0.4)));
+  reflejo.getRenderTarget().setSize(w, h);
+}
+
+
 // ---------- Postproceso ----------
 const composer = new EffectComposer(renderer);
 const pRender = new RenderPass(scene, camera);
@@ -312,6 +369,8 @@ const C = (hex) => new THREE.Color(hex);
 function lum(hex) { const c = C(hex); return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; }
 function mezcla(hex, otro, t) { return '#' + C(hex).lerp(C(otro), t).getHexString(); }
 const fis = (o) => new THREE.MeshPhysicalMaterial(o);
+// Reflejo propio del entorno con intensidad propia (scene.environment ignora envMapIntensity).
+function envPropio(m, k) { m.userData.envK = k; m.envMapIntensity = k; if (envRT) m.envMap = envRT.texture; return m; }
 function malla(geo, mat, x = 0, y = 0, z = 0, sombra = true) {
   const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = sombra; m.receiveShadow = true; return m;
 }
@@ -390,7 +449,10 @@ const construir = {
     // Líquido: opaco y con algo de emisión, para que se lea a través del vidrio (la transmisión solo ve lo opaco).
     if (est.material === 'vidrio') {
       const r = R - 0.075, base = 0.2, tope = H * 0.78;
-      const liq = fis({ color: est.color, roughness: 0.4, clearcoat: 0, envMapIntensity: 0.3, emissive: mezcla(est.color, '#000000', 0.25), emissiveIntensity: 0.18 });
+      const liq = fis({ color: est.color, roughness: 0.4, clearcoat: 0, emissive: mezcla(est.color, '#ffb45a', 0.35), emissiveIntensity: 0.75 });
+      envPropio(liq, 0.2);
+      // Volumen falso: el líquido brilla de frente y se oscurece hacia los bordes (camino más largo dentro del vidrio).
+      liq.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance *= pow(abs(dot(normalize(normal), normalize(vViewPosition))), 2.2) * 1.15;'); };
       g.add(malla(torno([[0, base], [r * 0.9, base], [r, base + 0.06], [r, tope - 0.03], [r * 0.97, tope], [0, tope]], 96), liq, 0, 0, 0, false));
       // Tubo del atomizador
       g.add(malla(new THREE.CylinderGeometry(0.018, 0.018, H - 0.1, 12), fis({ color: '#ffffff', roughness: 0.1, transmission: 0.6, thickness: 0.05 }), 0.05, (H - 0.1) / 2 + 0.12, 0, false));
@@ -404,7 +466,7 @@ const construir = {
     const tapa = malla(tapaGeo, tapaMat, 0, H + 0.16, 0); tapa.rotation.y = Math.PI / 8; g.add(tapa);
     // Serigrafía en el vidrio: texto con relieve sutil (bumpMap del mismo lienzo).
     const [c, gx] = lienzo(1024, 512);
-    const tinta = est.acento === 'negro' ? '#141210' : (lum(est.color) > 0.5 && est.material !== 'vidrio' ? '#1b1a17' : '#f4ead8');
+    const tinta = est.material === 'vidrio' ? '#140e08' : (lum(est.color) > 0.45 ? '#1b1a17' : '#f4ead8');
     if (est.imagen) conImagen(gx, 1024, 512);
     else {
       gx.textAlign = 'center'; gx.textBaseline = 'middle'; gx.fillStyle = tinta;
@@ -461,11 +523,10 @@ const construir = {
     const g = new THREE.Group();
     // Lata de café: cuerpo con rebordes enrollados arriba y abajo, tapa a presión y etiqueta de papel kraft.
     const R = 0.56, H = 1.48;
-    const lataM = metal(est.color, est.material === 'brillante' ? 0.18 : 0.42, true);
-    lataM.metalness = est.material === 'mate' || est.material === 'satinado' ? 0.35 : 0.9;
-    lataM.color.set(est.color);
+    // Hojalata pintada: sin cepillado (el cepillado radial en la tapa parecía un disco de vinilo).
+    const lataM = fis({ color: est.color, metalness: est.material === 'metal' ? 1 : 0.45, roughness: est.material === 'brillante' ? 0.22 : est.material === 'mate' ? 0.5 : 0.36, clearcoat: est.material === 'mate' ? 0.15 : 0.6, clearcoatRoughness: 0.2 });
     g.add(malla(torno([[0, 0.01], [R - 0.02, 0.0], [R + 0.012, 0.025], [R + 0.012, 0.06], [R, 0.08], [R, H - 0.1], [R + 0.014, H - 0.07], [R + 0.014, H - 0.03], [R - 0.01, H], [0, H]], 128, false), lataM));
-    const tapaM = metal(mezcla(est.color, '#000000', 0.15), 0.35, true); tapaM.metalness = lataM.metalness;
+    const tapaM = lataM.clone(); tapaM.color.set(mezcla(est.color, '#000000', 0.12));
     g.add(malla(torno([[0, H + 0.13], [R - 0.04, H + 0.13], [R + 0.025, H + 0.1], [R + 0.03, H + 0.02], [R + 0.01, H - 0.02], [R + 0.0, H - 0.02]], 128), tapaM));
     // Etiqueta kraft envolvente
     const [c, gx] = lienzo(2048, 820);
@@ -551,6 +612,14 @@ const construir = {
     for (const [x, z, rot, t] of frutos) {
       if (t === 'f') { const f = malla(fresaGeo, fresa, x, topY + 0.1, z); f.rotation.set(0.5, rot, 0.3); g.add(f); }
       else { const b = malla(new THREE.SphereGeometry(0.06, 24, 16), arandano, x, topY + 0.1, z); g.add(b); }
+    }
+    const framb = fis({ color: '#9e1030', roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.2, sheen: 0.6, sheenColor: '#ff6080' });
+    const dru = new THREE.SphereGeometry(0.022, 10, 8);
+    for (let k = 0; k < 7; k++) {
+      const a = (k / 7) * Math.PI * 2 + 0.3, rr = R - 0.14, fx = Math.cos(a) * rr, fz = Math.sin(a) * rr;
+      const fr = new THREE.Group(); fr.position.set(fx, topY + 0.1, fz);
+      for (let j = 0; j < 26; j++) { const u = rnd() * Math.PI * 2, v = Math.acos(1 - rnd() * 1.6); const d = malla(dru, framb, Math.sin(v) * Math.cos(u) * 0.06, Math.cos(v) * 0.075, Math.sin(v) * Math.sin(u) * 0.06, false); fr.add(d); }
+      fr.children.forEach((c) => { c.castShadow = true; }); g.add(fr);
     }
     for (let i = 0; i < 3; i++) { const h = malla(new THREE.SphereGeometry(0.09, 20, 10), hoja, -0.02 + i * 0.07, topY + 0.2, 0.02 - i * 0.05); h.scale.set(1, 0.12, 0.5); h.rotation.set(0.3, i * 2.1, 0.4); g.add(h); }
     // Tarjeta de mesa
@@ -645,6 +714,7 @@ function reconstruir() {
   actual = construir[est.plantilla]();
   scene.add(actual.g);
   csSucio = true;
+  ajustarReflejo();
   invalidar();
 }
 fuentesListas.then(() => { if (actual) reconstruir(); });
@@ -697,6 +767,7 @@ const NIVELES = { 3: 'alta', 2: 'media', 1: 'ligera' };
 function aplicarNivel(n) {
   est.nivel = n;
   pBloom.enabled = n >= 3;
+  ajustarReflejo();
   pBokeh.enabled = est.desenfoque && n >= 2;
   pGrano.enabled = n >= 2;
   clave.castShadow = n >= 2;
@@ -728,6 +799,7 @@ function ajustarTam() {
   renderer.domElement.style.width = '100%'; renderer.domElement.style.height = '100%';
   composer.setPixelRatio(pr); composer.setSize(ancho, alto);
   camera.aspect = ancho / alto; camera.updateProjectionMatrix();
+  ajustarReflejo();
   if (actual && !viaje) irCamaraSuave();
   invalidar();
 }
@@ -823,7 +895,7 @@ const COLORES = [
   [/amarill|mostaza/, '#e8b923'], [/naranja|mandarina|coral/, '#e46a2e'], [/beige|crema\b|arena|nude/, '#e3d3bd'], [/marron|chocolate|cafe oscuro|terracota/, '#5a3220'],
 ];
 const MAPA_ESTILO = {
-  lujo: { luz: 'lujo', sup: 'marmol-negro', fondo: '#16120e', acento: 'oro' },
+  lujo: { luz: 'lujo', sup: 'marmol-negro', fondo: '#221a12', acento: 'oro' },
   minimal: { luz: 'blanco', sup: 'marmol-blanco', fondo: '#efedea', acento: 'plata' },
   natural: { luz: 'ventana', sup: 'lino', fondo: '#e4ddd0', acento: 'oro' },
   vibrante: { luz: 'blanco', sup: 'terrazo', fondo: '#f2b9a0', acento: 'plata' },
@@ -980,8 +1052,8 @@ requestAnimationFrame(bucle);
   let n = 0, t0 = 0;
   const paso = (t) => {
     if (est.calidad !== 'auto') return;
-    if (n === 4) t0 = t;
-    if (n < 24) { n++; dibujar(); requestAnimationFrame(paso); return; }
+    if (n === 8) t0 = t; // los primeros cuadros compilan shaders: no cuentan
+    if (n < 28) { n++; dibujar(); requestAnimationFrame(paso); return; }
     const prom = (t - t0) / 20;
     if (prom > 55) aplicarNivel(1); else if (prom > 30) aplicarNivel(2);
     invalidar();
