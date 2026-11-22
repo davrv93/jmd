@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="../../comun/taller.css">
 <style id="esc-propio">
 .laminas { display: grid; grid-template-columns: repeat(2, minmax(0, min(calc(50% - 11px), calc(100vh - 23rem)))); gap: clamp(10px, 1.2vw, 22px); }
-.tl-mesa { grid-template-columns: minmax(0, 1.8fr) minmax(320px, .9fr); align-self: center; }
+@media (min-width: 961px) { .tl-mesa { grid-template-columns: minmax(0, 1.75fr) minmax(340px, 1fr); align-self: center; } }
 .laminas .tl-lienzo { aspect-ratio: 1; }
 .laminas canvas { width: 100%; height: 100%; object-fit: contain; }
 .lado { display: grid; gap: .9rem; }
@@ -217,6 +217,11 @@
     const canal = (k) => borde.map((i) => p[i * 4 + k]).sort((a, b) => a - b)[borde.length >> 1];
     const bg = [canal(0), canal(1), canal(2)];
     const dist = (i) => Math.abs(p[i * 4] - bg[0]) + Math.abs(p[i * 4 + 1] - bg[1]) + Math.abs(p[i * 4 + 2] - bg[2]);
+    // ¿El fondo es liso? Si menos del 85 % del borde se parece a su color mediano, es una foto con escenario
+    // (rocas, plantas, mesa): el relleno por color se comería el producto. Entonces recorta la IA segura del
+    // servidor (/recorte/quitar: modelo + umbral con histéresis + huecos rellenos), que no borra el interior.
+    let cerca = 0; for (const i of borde) if (dist(i) < 60) cerca++;
+    if (!silencio && cerca / borde.length < 0.85) return recorteIA();
     const TOL = 120, BLANDO = 230;
     const fondo = new Uint8Array(n); const cola = new Int32Array(n); let cab = 0, fin = 0;
     for (const i of borde) if (!fondo[i] && dist(i) < TOL) { fondo[i] = 1; cola[fin++] = i; }
@@ -257,6 +262,35 @@
     if (pct >= 90) aviso('El fondo no es liso: casi nada se borró. Vuelve a generar con fondo liso o elige otro color.', 'mal');
     else if (pct <= 3) aviso('Casi todo se borró: el producto tiene el mismo color que el fondo. Cambia el color del fondo.', 'mal');
     else aviso('Recorte listo. Revisa los bordes y descarga base.png.', 'ok');
+  }
+  // Foto con escenario: el recorte lo hace el servicio de la clase en modo seguro (nunca deja huecos dentro
+  // del producto). El resultado pasa a ser el recorte de la escena y su alfa, la máscara del objeto.
+  async function recorteIA() {
+    const b = $('recortar'); if (b) { b.disabled = true; b.setAttribute('aria-busy', 'true'); }
+    aviso('Tu foto tiene un fondo con detalle: la recorta la IA en modo seguro (unos 6 s)…');
+    $('cifras').replaceChildren();
+    try {
+      const datos = await new Promise((ok) => cvB.toBlob(ok, 'image/png'));
+      const r = await fetch('/recorte/quitar?modo=seguro', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: datos });
+      if (!r.ok) throw new Error(r.status === 429 ? 'El servicio de recorte está ocupado: prueba en un minuto.' : `El recorte con IA respondió ${r.status}.`);
+      const blob = await r.blob();
+      const url = await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(blob); });
+      const im = await cargar(url);
+      const g = cvR.getContext('2d', { willReadFrequently: true }); g.clearRect(0, 0, W, H); g.drawImage(im, 0, 0, W, H);
+      const a = g.getImageData(0, 0, W, H).data;
+      mascaraSegura = new Uint8Array(W * H); let opacos = 0;
+      for (let i = 0; i < W * H; i++) if (a[i * 4 + 3] > 40) { mascaraSegura[i] = 1; opacos++; }
+      recortado = true;
+      if (!ejemplo) { $('descargar').href = cvR.toDataURL('image/png'); $('descargar').hidden = false; }
+      $('comparar').disabled = true;
+      $('cap-rec').textContent = 'recorte seguro con IA (fondo con detalle)';
+      const pct = Math.round(100 * opacos / (W * H));
+      cifra('fondo con detalle: recorte con IA segura', '');
+      cifra(`objeto ${pct} % de la imagen`, pct > 3 && pct < 90 ? 'ok' : 'mal');
+      avance();
+      aviso('Recorte listo. Para sprites, lo ideal sigue siendo generar la base sobre fondo liso.', 'ok');
+    } catch (e) { aviso(String(e.message || e), 'mal'); }
+    finally { if (b) { b.removeAttribute('aria-busy'); b.disabled = false; } }
   }
   function cifra(t, c) { const s = document.createElement('span'); s.textContent = t; if (c) s.className = c; $('cifras').appendChild(s); }
   function aviso(t, c) { $('aviso').textContent = t; $('aviso').className = 'tl-estado' + (c ? ' ' + c : ''); }
