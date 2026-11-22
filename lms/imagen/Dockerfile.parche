@@ -1,6 +1,10 @@
-# Parche rápido del servicio de imagen para la nube del kit robo-local-nube: parte de la imagen que YA corre en
-# el servidor (con torch, diffusers y Piper) y solo cambia el código. No baja nada pesado ni depende de la caché.
-#   sudo docker tag jmd/imagen:latest jmd/imagen:antes-nube
-#   sudo docker build -f lms/imagen/Dockerfile.parche -t jmd/imagen:latest lms/imagen
-FROM jmd/imagen:antes-nube
+# Parche rápido del servicio de imagen: parte de la imagen que YA corre en el servidor (con torch, diffusers y
+# Piper) y solo cambia el código. No baja nada pesado ni depende de la caché.
+#   F=$(date +%Y%m%d-%H%M); sudo docker tag jmd/imagen:latest jmd/imagen:antes-$F
+#   sudo docker build -f lms/imagen/Dockerfile.parche --build-arg BASE=jmd/imagen:antes-$F -t jmd/imagen:latest lms/imagen
+#   sudo docker run --rm --network none -e IMAGEN_LOCAL=0 jmd/imagen:latest python -m unittest test_app
+#   cd ~/jmd && sudo docker compose --profile imagen up -d --no-build --no-deps imagen
+# Vuelta atrás: sudo docker tag jmd/imagen:antes-$F jmd/imagen:latest y el mismo «up».
+ARG BASE=jmd/imagen:antes-nube
+FROM ${BASE}
 COPY app.py nube.py test_app.py /app/

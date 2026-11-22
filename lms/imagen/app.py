@@ -18,9 +18,12 @@ import gc
 import io
 import logging
 import os
+import re
 import socket
 import threading
 import time
+from collections import OrderedDict
+from urllib.parse import quote
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import Response
@@ -86,6 +89,223 @@ def _or_disponible() -> bool:
     if _or_uso["dia"] != hoy:
         _or_uso.update(dia=hoy, n=0)
     return bool(OR_KEY) and _or_uso["n"] < OR_DIA
+
+# ---------------------------------------------------------------------------------------------------------------
+# Traducción del prompt al inglés (FLUX y sd-turbo entienden inglés; los alumnos escriben en español).
+# Cadena, de la más barata a la de último recurso, con un presupuesto total de tiempo:
+#   1. modelos gratuitos de OpenRouter (IMAGEN_TRADUCIR_MODELOS, 4 s cada uno);
+#   2. DeepSeek por OpenRouter (IMAGEN_TRADUCIR_RESPALDO, de pago y muy barato, sin razonamiento);
+#   3. Cloudflare Workers AI (IMAGEN_TRADUCIR_CF, ~1,2 neurons por prompt, el mismo token que FLUX);
+#   4. glosario mínimo palabra a palabra (nunca falla).
+# Si OpenRouter dice 401/402/403 (llave vencida o sin saldo) se salta OpenRouter 10 minutos.
+# Los textos entre comillas («…», “…”, "…") son lo que el alumno quiere ver escrito: no se traducen.
+# Caché LRU en memoria. En el log solo va el modelo usado y los ms, nunca el prompt del alumno.
+# ---------------------------------------------------------------------------------------------------------------
+TRAD_MODELOS = [m.strip() for m in os.environ.get(
+    "IMAGEN_TRADUCIR_MODELOS",
+    "google/gemma-4-26b-a4b-it:free,google/gemma-4-31b-it:free,nvidia/nemotron-3.5-lightning:free").split(",") if m.strip()]
+TRAD_RESPALDO = os.environ.get("IMAGEN_TRADUCIR_RESPALDO", "deepseek/deepseek-v4.1-flash").strip()
+TRAD_CF = os.environ.get("IMAGEN_TRADUCIR_CF", "@cf/meta/llama-3.1-8b-instruct-fast").strip()
+TRAD_TIMEOUT = float(os.environ.get("IMAGEN_TRADUCIR_TIMEOUT", "4"))
+TRAD_PRESUPUESTO = float(os.environ.get("IMAGEN_TRADUCIR_PRESUPUESTO", "9"))  # s para OpenRouter; Cloudflare tiene los suyos
+TRAD_CACHE = int(os.environ.get("IMAGEN_TRADUCIR_CACHE", "1024"))
+TRAD_ACTIVA = os.environ.get("IMAGEN_TRADUCIR", "1") != "0"
+TRAD_SISTEMA = (
+    "You turn image-generation prompts written in Spanish (or any language) into one concise English prompt for the "
+    "FLUX image model. Translate faithfully: keep every object, color, material, light, style and composition detail; "
+    "do not add new elements. Tokens like QTXT1 or QTXT2 are placeholders for literal text: copy them unchanged, "
+    "inside double quotes. Answer with the English prompt only: no notes, no preamble, no quotes around the answer.")
+_trad_lock = threading.Lock()
+_trad_cache: "OrderedDict[str, tuple[str, str]]" = OrderedDict()
+_trad_or_pausa = {"hasta": 0.0}
+
+_COMILLAS = re.compile(r'«([^«»]{1,200})»|“([^“”]{1,200})”|"([^"]{1,200})"')
+_ACENTOS = set("áéíóúñü¿¡ÁÉÍÓÚÑÜ")
+_ES = set("de la el los las un una unos unas con sin sobre para por del al en y o que se su sus muy más fondo "
+          "luz estilo foto imagen color colores cálida cálido suave dorada dorado blanco blanca negro negra "
+          "mesa botella comida producto personaje hecho hecha tipo como entre bajo junto".split())
+_EN = set("the a an of with without on in and or for to at by from into over under its their very more background "
+          "light style photo image color colors warm soft golden white black table bottle food product character "
+          "made like between next".split())
+_GLOSARIO = {
+    "el": "the", "la": "the", "los": "the", "las": "the", "un": "a", "una": "a", "unos": "some", "unas": "some",
+    "de": "of", "del": "of the", "al": "to the", "con": "with", "sin": "without", "sobre": "on", "en": "in", "y": "and",
+    "o": "or", "para": "for", "por": "by", "entre": "between", "bajo": "under", "junto": "next to", "muy": "very",
+    "botella": "bottle", "frasco": "bottle", "perfume": "perfume", "dorada": "golden", "dorado": "golden",
+    "plateado": "silver", "plateada": "silver", "mármol": "marble", "marmol": "marble", "madera": "wood",
+    "vidrio": "glass", "cristal": "crystal", "luz": "light", "suave": "soft", "fondo": "background", "blanco": "white",
+    "blanca": "white", "negro": "black", "negra": "black", "rojo": "red", "roja": "red", "azul": "blue",
+    "verde": "green", "amarillo": "yellow", "amarilla": "yellow", "rosado": "pink", "rosada": "pink", "rosa": "pink",
+    "morado": "purple", "morada": "purple", "naranja": "orange", "gris": "gray", "cálida": "warm", "cálido": "warm",
+    "fría": "cool", "frío": "cool", "estudio": "studio", "foto": "photo", "fotografía": "photography",
+    "producto": "product", "productos": "products", "comida": "food", "plato": "dish", "taza": "cup",
+    "café": "coffee", "mesa": "table", "cocina": "kitchen", "hamburguesa": "burger", "ensalada": "salad",
+    "postre": "dessert", "pastel": "cake", "torta": "cake", "fruta": "fruit", "frutas": "fruits", "flor": "flower",
+    "flores": "flowers", "hojas": "leaves", "cielo": "sky", "mar": "sea", "playa": "beach", "montaña": "mountain",
+    "ciudad": "city", "calle": "street", "noche": "night", "día": "day", "atardecer": "sunset", "letras": "lettering",
+    "texto": "text", "cartel": "poster", "afiche": "poster", "volante": "flyer", "personaje": "character",
+    "mujer": "woman", "hombre": "man", "niño": "boy", "niña": "girl", "gato": "cat", "perro": "dog", "caja": "box",
+    "bolsa": "bag", "zapatos": "shoes", "ropa": "clothing", "vestido": "dress", "reloj": "watch", "lujo": "luxury",
+    "elegante": "elegant", "moderno": "modern", "moderna": "modern", "minimalista": "minimalist",
+    "realista": "realistic", "ilustración": "illustration", "dibujo": "drawing", "acuarela": "watercolor",
+    "sombra": "shadow", "sombras": "shadows", "brillo": "glow", "reflejo": "reflection", "agua": "water",
+    "hielo": "ice", "verano": "summer", "invierno": "winter", "grande": "large", "pequeño": "small",
+    "pequeña": "small", "calidad": "quality", "detallado": "detailed", "detallada": "detailed", "logo": "logo",
+    "empresa": "company", "tienda": "shop", "vitrina": "shop window", "iluminación": "lighting", "cerca": "close",
+}
+
+
+def _sacar_literales(texto: str) -> tuple[str, list[str]]:
+    """Cambia cada texto entre comillas por "QTXTn": el modelo no lo traduce y luego se devuelve tal cual."""
+    literales: list[str] = []
+
+    def _cambio(m):
+        literales.append(next(g for g in m.groups() if g is not None))
+        return f'"QTXT{len(literales)}"'
+
+    return _COMILLAS.sub(_cambio, texto), literales
+
+
+def _poner_literales(texto: str, literales: list[str]) -> str:
+    for i, lit in enumerate(literales, 1):
+        token = f"QTXT{i}"
+        if token in texto:
+            texto = re.sub(r'["«“”»\']*' + token + r'["«“”»\']*', f'"{lit}"', texto)
+        else:  # el modelo se lo comió: se agrega al final para que FLUX igual lo escriba
+            texto = texto.rstrip(" .") + f', with the text "{lit}"'
+    return texto
+
+
+def _es_ingles(texto: str) -> bool:
+    """True si el prompt (sin sus textos literales) ya está en inglés: no se gasta una llamada."""
+    sin_lit, _ = _sacar_literales(texto)
+    sin_lit = re.sub(r'"QTXT\d+"', " ", sin_lit)
+    if any(c in _ACENTOS for c in sin_lit):
+        return False
+    palabras = re.findall(r"[a-zA-Z']+", sin_lit.lower())
+    es = sum(w in _ES for w in palabras)
+    en = sum(w in _EN for w in palabras)
+    return en > es
+
+
+def _glosario(texto: str) -> str:
+    def _palabra(m):
+        w = m.group(0)
+        t = _GLOSARIO.get(w.lower())
+        return t if t is not None else w
+    return re.sub(r"[A-Za-zÁÉÍÓÚÑÜáéíóúñü]+", _palabra, texto)
+
+
+def _limpiar_salida(txt: str, original: str) -> str | None:
+    txt = (txt or "").strip()
+    if not txt:
+        return None
+    txt = re.sub(r"^(english( prompt)?|prompt|translation)\s*:\s*", "", txt, flags=re.I)
+    txt = " ".join(l.strip() for l in txt.splitlines() if l.strip())
+    if len(txt) >= 2 and txt[0] == txt[-1] and txt[0] in "\"'" and txt.count(txt[0]) == 2:
+        txt = txt[1:-1].strip()
+    if not txt or len(txt) > 3 * len(original) + 300:
+        return None
+    return txt
+
+
+def _por_openrouter(modelo: str, texto: str, timeout: float) -> str | None:
+    import httpx
+
+    r = httpx.post("https://openrouter.ai/api/v1/chat/completions", timeout=timeout,
+                   headers={"Authorization": f"Bearer {OR_KEY}", "HTTP-Referer": "https://jmd-learn.online",
+                            "X-Title": "JMD imagen (traducir prompt)"},
+                   json={"model": modelo, "temperature": 0.2, "max_tokens": 400, "reasoning": {"enabled": False},
+                         "messages": [{"role": "system", "content": TRAD_SISTEMA}, {"role": "user", "content": texto}]})
+    if r.status_code in (401, 402, 403):
+        _trad_or_pausa["hasta"] = time.time() + 600
+        log.warning("traducir: OpenRouter %s (llave vencida o sin saldo): se salta 10 min", r.status_code)
+        return None
+    if r.status_code != 200:
+        return None
+    try:
+        return r.json()["choices"][0]["message"]["content"]
+    except Exception:
+        return None
+
+
+def _por_cloudflare(texto: str, timeout: float) -> str | None:
+    import httpx
+
+    if not (CF_CUENTA and CF_TOKEN and TRAD_CF) or _cf_gastado() >= CF_TOPE:
+        return None
+    r = httpx.post(f"{CF_API}/accounts/{CF_CUENTA}/ai/run/{TRAD_CF}", timeout=timeout,
+                   headers={"Authorization": f"Bearer {CF_TOKEN}"},
+                   json={"temperature": 0.2, "max_tokens": 400,
+                         "messages": [{"role": "system", "content": TRAD_SISTEMA}, {"role": "user", "content": texto}]})
+    if r.status_code != 200:
+        return None
+    try:
+        res = r.json()["result"]
+        salida = res["response"]
+    except Exception:
+        return None
+    if not isinstance(salida, str):
+        return None
+    _cf_uso["neurons"] = _cf_gastado() + float((res.get("usage") or {}).get("neurons", 1.2) or 1.2)
+    return salida
+
+
+def traducir(prompt: str) -> tuple[str, str, int]:
+    """(prompt en inglés, modelo usado, ms). Nunca lanza: en el peor caso devuelve el glosario sobre el original."""
+    t0 = time.time()
+    texto = (prompt or "").strip()
+    ms = lambda: int((time.time() - t0) * 1000)  # noqa: E731
+    if not texto:
+        return texto, "vacio", 0
+    if not TRAD_ACTIVA or _es_ingles(texto):
+        return texto, "ya-en-ingles" if TRAD_ACTIVA else "desactivada", ms()
+    with _trad_lock:
+        hit = _trad_cache.get(texto)
+        if hit:
+            _trad_cache.move_to_end(texto)
+            log.info("traducir: cache (%s) %d ms", hit[1], ms())
+            return hit[0], "cache:" + hit[1], ms()
+    base, literales = _sacar_literales(texto)
+    candidatos: list[tuple[str, str]] = []
+    if OR_KEY:
+        candidatos += [("or", m) for m in TRAD_MODELOS]
+        if TRAD_RESPALDO:
+            candidatos.append(("or", TRAD_RESPALDO))
+    candidatos.append(("cf", TRAD_CF))
+    for prov, modelo in candidatos:
+        t1 = time.time()
+        try:
+            if prov == "or":
+                resto = TRAD_PRESUPUESTO - (time.time() - t0)
+                if time.time() < _trad_or_pausa["hasta"] or resto < 0.5:
+                    continue
+                crudo = _por_openrouter(modelo, base, min(TRAD_TIMEOUT, resto))
+            else:
+                crudo = _por_cloudflare(base, TRAD_TIMEOUT)
+        except Exception as e:  # timeout, red, JSON roto: siguiente modelo
+            log.warning("traducir: %s falló (%s) en %d ms", modelo, type(e).__name__, int((time.time() - t1) * 1000))
+            continue
+        en = _limpiar_salida(crudo, base)
+        if not en:
+            log.warning("traducir: %s sin respuesta útil en %d ms", modelo, int((time.time() - t1) * 1000))
+            continue
+        en = _poner_literales(en, literales)
+        with _trad_lock:
+            _trad_cache[texto] = (en, modelo)
+            _trad_cache.move_to_end(texto)
+            while len(_trad_cache) > TRAD_CACHE:
+                _trad_cache.popitem(last=False)
+        log.info("traducir: %s %d ms", modelo, ms())
+        return en, modelo, ms()
+    en = _poner_literales(_glosario(base), literales)
+    log.warning("traducir: todos los modelos fallaron, glosario %d ms", ms())
+    return en, "glosario", ms()
+
+
+class PedidoTraducir(BaseModel):
+    texto: str
+
 
 app = FastAPI(title="imagen")
 _cpu = threading.Lock()
@@ -346,15 +566,21 @@ def generar(p: Pedido, request: Request, authorization: str = Header(default="")
         quien = sub if externo else _aula_de(request)
         if quien:
             nube.contar(quien, "imágenes en calidad máxima", MAXIMA_POR_ALUMNO)
+        en, trad_modelo, trad_ms = traducir(p.prompt)
+        p = p.model_copy(update={"prompt": en})
         try:
-            return _cloudflare(p)
+            r = _cloudflare(p)
         except HTTPException as e:
             if e.status_code in (429, 502, 503) and "cola llena" not in str(e.detail) and _or_disponible():
                 log.warning("cloudflare no pudo (%s %s): respaldo FLUX por OpenRouter", e.status_code, e.detail)
-                return _openrouter(p)
-            raise
+                r = _openrouter(p)
+            else:
+                raise
+        return _con_traduccion(r, en, trad_modelo, trad_ms)
     if not LOCAL:
         raise _no_disponible(p.calidad)
+    en, trad_modelo, trad_ms = traducir(p.prompt)
+    p = p.model_copy(update={"prompt": en})
     modelo, pasos, lado = CALIDADES.get(p.calidad, CALIDADES["media"])
     ancho, alto = _dimensiones(p.orientacion, lado)
     with _estado:
@@ -379,4 +605,23 @@ def generar(p: Pedido, request: Request, authorization: str = Header(default="")
             _en_cola -= 1
     buf = io.BytesIO()
     img.save(buf, "JPEG", quality=88)
-    return Response(buf.getvalue(), media_type="image/jpeg")
+    return _con_traduccion(Response(buf.getvalue(), media_type="image/jpeg"), en, trad_modelo, trad_ms)
+
+
+def _con_traduccion(r: Response, en: str, modelo: str, ms: int) -> Response:
+    """Cabeceras para quien quiera mostrar el prompt que de verdad recibió el modelo (URL-encoded: ASCII seguro)."""
+    r.headers["X-Prompt-En"] = quote(en[:1500], safe=" ,.")
+    r.headers["X-Traduccion-Modelo"] = quote(modelo, safe="/:@.-_")
+    r.headers["X-Traduccion-Ms"] = str(ms)
+    return r
+
+
+@app.post("/traducir")
+def traducir_ruta(p: PedidoTraducir, authorization: str = Header(default=""), x_aula_nube: str | None = Header(default=None)):
+    """Prompt de imagen al inglés para otros servicios (p. ej. los sprites del LMS en Go). Mismo token que /generar."""
+    _autorizar(authorization, x_aula_nube)
+    texto = (p.texto or "").strip()
+    if not texto or len(texto) > 1000:
+        raise HTTPException(400, "texto vacío o demasiado largo")
+    en, modelo, ms = traducir(texto)
+    return {"en": en, "modelo": modelo, "ms": ms}

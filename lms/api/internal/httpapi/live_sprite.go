@@ -146,6 +146,93 @@ func cfPedido(ctx context.Context, modelo string, cuerpo io.Reader, tipo string)
 	return "data:" + mime + ";base64," + out.Result.Image, neuronas, nil
 }
 
+// spriteTraducirTimeout: lo más que la hoja espera la traducción (SPRITE_TRADUCIR_TIMEOUT, p. ej. "6s").
+func spriteTraducirTimeout() time.Duration {
+	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv("SPRITE_TRADUCIR_TIMEOUT"))); err == nil && d > 0 {
+		return d
+	}
+	return 6 * time.Second
+}
+
+// imagenTraducir pasa un texto al inglés con el servicio imagen de la clase (POST /traducir, el mismo
+// token que /generar). FLUX entiende inglés y los alumnos escriben en español. Nunca frena la hoja:
+// si el servicio no responde a tiempo o falla, devuelve el texto original y false.
+// SPRITE_TRADUCIR=0 la apaga.
+func imagenTraducir(ctx context.Context, texto string) (string, bool) {
+	if strings.TrimSpace(os.Getenv("SPRITE_TRADUCIR")) == "0" || strings.TrimSpace(texto) == "" {
+		return texto, false
+	}
+	url := strings.TrimRight(os.Getenv("IMAGEN_URL"), "/")
+	if url == "" {
+		url = "http://imagen:8000"
+	}
+	cuerpo, _ := json.Marshal(map[string]string{"texto": texto})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url+"/traducir", bytes.NewReader(cuerpo))
+	if err != nil {
+		return texto, false
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if tok := os.Getenv("LMS_AULA_TOKEN"); tok != "" {
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		slog.Warn("sprite: traducción no disponible, sigue en el idioma original", "err", err)
+		return texto, false
+	}
+	defer resp.Body.Close()
+	var out struct {
+		En     string `json:"en"`
+		Modelo string `json:"modelo"`
+		Ms     int    `json:"ms"`
+	}
+	if resp.StatusCode != 200 || json.NewDecoder(io.LimitReader(resp.Body, 64<<10)).Decode(&out) != nil ||
+		strings.TrimSpace(out.En) == "" {
+		slog.Warn("sprite: traducción fallida, sigue en el idioma original", "estado", resp.StatusCode)
+		return texto, false
+	}
+	// Solo el modelo y los ms: el texto del alumno no va al log.
+	slog.Info("sprite: traducción", "modelo", out.Modelo, "ms", out.Ms)
+	return strings.TrimSpace(out.En), true
+}
+
+// spriteTraducir traduce la mascota y las poses en paralelo (dos pedidos) dentro de un solo plazo.
+// Las poses viajan juntas separadas por «; » y solo se usan si vuelven las mismas que se mandaron;
+// si no, se quedan las originales.
+func spriteTraducir(ctx context.Context, animal string, poses []string) (string, []string) {
+	ctx, cancel := context.WithTimeout(ctx, spriteTraducirTimeout())
+	defer cancel()
+	var wg sync.WaitGroup
+	animalEn, posesEn := animal, poses
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		animalEn, _ = imagenTraducir(ctx, animal)
+	}()
+	go func() {
+		defer wg.Done()
+		junto, ok := imagenTraducir(ctx, strings.Join(poses, "; "))
+		if !ok {
+			return
+		}
+		partes := strings.Split(strings.TrimRight(junto, ". "), ";")
+		if len(partes) != len(poses) {
+			return
+		}
+		limpias := make([]string, 0, len(partes))
+		for _, p := range partes {
+			v := strings.TrimSpace(p)
+			if v == "" {
+				return
+			}
+			limpias = append(limpias, v)
+		}
+		posesEn = limpias
+	}()
+	wg.Wait()
+	return animalEn, posesEn
+}
+
 // cfHoja: una sola generación con las seis poses en rejilla 3x2. Medido: FLUX.2 klein no usa la
 // imagen de referencia (la ignora aunque se mande), así que la consistencia se consigue dibujando
 // las seis poses en la MISMA imagen, no en seis llamadas.
@@ -241,7 +328,9 @@ func (s *Server) liveSprite(w http.ResponseWriter, r *http.Request, p *Principal
 	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
 	defer cancel()
 
-	hoja, neuronas, err := cfHoja(ctx, in.Animal, poses)
+	// FLUX entiende inglés: la mascota y las poses se traducen antes (o siguen tal cual si no se puede).
+	animalEn, posesEn := spriteTraducir(ctx, in.Animal, poses)
+	hoja, neuronas, err := cfHoja(ctx, animalEn, posesEn)
 	if err != nil {
 		// el error del modelo trae identificadores y nombres de campos: se traduce a algo que
 		// se pueda leer en clase, y el detalle queda en el log del servidor.
