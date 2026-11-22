@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Pruebas automáticas hasta verlas en verde</title>
+<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-04). Sin recursos externos; animaciones solo CSS. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style id="esc-propio">
+.s3 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 1.6vw; align-items: start; }
+.s3-col { display: grid; gap: 1.3vh; }
+.cc-pasos .cc-nota b { color: var(--fg); }
+.s3-tok { display: flex; align-items: baseline; gap: .5em; margin: .3em 0; }
+.s3-tok .esc-big { font-size: 2.2em; }
+.s3-tok span:last-child { font-size: .68em; color: var(--muted); font-weight: 700; }
+.s3-in { font: 800 1.1em var(--mono); width: 6em; }
+.esc-card p.s3-res { font-size: .64em; color: var(--muted); margin: .4em 0 0; }
+.s3-res b { color: var(--fg); }
+.s3-tabla { width: 100%; border-collapse: collapse; font-size: .62em; }
+.s3-tabla th, .s3-tabla td { text-align: left; padding: .3em .4em; border-bottom: 1px solid var(--line); vertical-align: top; }
+.s3-tabla th { color: var(--muted); font-size: .9em; letter-spacing: .05em; text-transform: uppercase; }
+.s3-tabla code, .cc-nota code, .cc-check code { font: 700 .95em var(--mono); color: var(--accent); }
+.esc-card .s4-sal { margin: .35em 0 0; font: 600 .56em/1.45 var(--mono); color: var(--muted); background: var(--accent-bg); border-radius: .6em; padding: .45em .8em; white-space: pre-wrap; }
+.esc-card .s4-sal b { color: var(--ok); }
+.esc-card .s4-sal i { color: var(--bad); font-style: normal; }
+.esc-card .s4-mini { display: flex; gap: .5em; align-items: center; flex-wrap: wrap; font-size: .62em; color: var(--muted); }
+.esc-card > .esc-cmd, .esc-card > .cp-env > .esc-cmd, [data-panel] > .esc-cmd, [data-panel] > .cp-env > .esc-cmd { font-size: .62em; }
+.s4-mini .cc-in { width: 5em; font: 700 1em var(--mono); }
+.s4-verde { display: flex; gap: .6em; align-items: baseline; flex-wrap: wrap; }
+.s4-verde .cc-in { width: 3.6em; font: 800 1.1em var(--mono); text-align: center; }
+.s4-verde span { font-size: .7em; color: var(--muted); font-weight: 700; }
+
+@media (max-width: 860px) { .s3 { grid-template-columns: 1fr; } .s3-tabla { font-size: .8em; } .esc-card .s4-sal, .esc-card .s4-mini, .esc-card .s4-ver { font-size: .74em; } .esc-card > .esc-cmd, .esc-card > .cp-env > .esc-cmd, [data-panel] > .esc-cmd, [data-panel] > .cp-env > .esc-cmd { font-size: .78em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1200 760 L1270 700 L1340 735 L1420 680"/>
+  <g><circle class="e" cx="1200" cy="760" r="4"/><circle class="eo" cx="1270" cy="700" r="5"/><circle class="e" cx="1340" cy="735" r="3.5"/><circle class="eg" cx="1420" cy="680" r="4"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="920" cy="60" r="1.6"/><circle class="eo p" style="--p:.7s" cx="1500" cy="120" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Claude Code PRO · S4 · 09/11</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Pruebas automáticas: <em>hasta verlas en verde</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Un caso de QA lo pruebas tú una vez. Una prueba automática la corre la máquina cada vez que cambias algo, en un segundo. Sin instalar nada: Node ya trae su probador.</p>
+    </div>
+    <div class="s3">
+      <section class="esc-card a-in" style="--d:.2s">
+        <ol class="cc-pasos">
+          <li><h3>Pruebas de las reglas</h3>
+            <div class="cuerpo"><pre class="esc-cmd">Escribe pruebas con node:test, sin instalar nada, en la carpeta pruebas/: que la duración total sea el final del último clip, que lib.js avise los errores (duración 0, texto largo, dos imágenes a la vez) y que video/index.html tenga cada clip con su inicio y su duración. Córrelas y arregla hasta que pasen.</pre></div></li>
+          <li><h3>Pruebas del MP4</h3>
+            <div class="cuerpo"><pre class="esc-cmd">Agrega pruebas/video.test.js que revise salida/mi-video.mp4 con ffprobe: que dure lo mismo que la línea de tiempo, que tenga duración × 30 cuadros y que la música no se quede muda antes del final (usa silencedetect de ffmpeg). Ojo: el audio del MP4 siempre dura lo mismo que el video, aunque la música se acabe antes.</pre></div></li>
+          <li><h3>Córrelas tú</h3>
+            <div class="cuerpo"><pre class="esc-cmd">node --test</pre><p class="s4-sal">Lo que importa está al final:
+<b>ℹ pass 12</b>   las que pasaron (tu número puede ser otro)
+<b>ℹ fail 0</b>    ninguna falló: todo en verde</p></div></li>
+        </ol>
+      </section>
+      <div class="s3-col">
+        <section class="esc-card a-in" style="--d:.3s">
+          <span class="cc-et">Tus pruebas</span>
+          <div class="s4-verde"><input class="cc-in" id="ok" inputmode="numeric" autocomplete="off" placeholder="12" aria-label="Pruebas que pasaron"><span>pasaron, de</span><input class="cc-in" id="tot" inputmode="numeric" autocomplete="off" placeholder="12" aria-label="Pruebas en total"><button type="button" class="cc-btn" id="pub">Publicar</button></div>
+          <p class="cc-nota" id="msg"></p>
+          <p class="cc-nota" id="grupo"></p>
+        </section>
+        <section class="esc-card a-in" style="--d:.35s">
+          <span class="cc-et">Rómpelo a propósito</span>
+          <p class="cc-nota">En <b>proyecto.json</b> cambia la duración de la música a <b>10</b>. Vuelve a exportar y renderizar (escena 6) y corre <code>node --test</code>. Debe salir en rojo:</p>
+          <p class="s4-sal"><i>✖ tiene música y no se queda muda antes del final
+  hay silencio desde el segundo 9.974458</i></p>
+          <p class="cc-nota">Devuelve la música a 15, renderiza otra vez y vuelve a verde. Así sabes que la prueba de verdad vigila.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Opcional, en casa: pide a Claude una prueba con Playwright que use editor.html como una persona (descarga un navegador de unos cientos de MB).</span></footer>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var caja = document.createElement("div"); caja.hidden = true; document.body.appendChild(caja);
+  var muro = CC.muro(caja, "09-pruebas", "", { alPintar: function (en) {
+    var ds = (en || []).map(function (e) { var m = /(\d+) de (\d+) pruebas/.exec(e.texto || ""); return m ? [+m[1], +m[2]] : null; }).filter(Boolean);
+    var v = ds.filter(function (d) { return d[0] === d[1]; }).length;
+    $("grupo").textContent = ds.length ? v + " de " + ds.length + " personas tienen todo en verde." : "";
+  } });
+  var previo = CC.leer("pruebas4", null); if (previo) { $("ok").value = previo.ok; $("tot").value = previo.tot; }
+  $("pub").addEventListener("click", function () {
+    var ok = +String($("ok").value).replace(/[^\d]/g, ""), tot = +String($("tot").value).replace(/[^\d]/g, ""), b = this;
+    if (!tot || ok > tot) { $("msg").textContent = "Escribe cuántas pasaron y cuántas hay en total."; return; }
+    CC.guardar("pruebas4", { ok: ok, tot: tot }); b.disabled = true;
+    var texto = ok + " de " + tot + " pruebas en verde";
+    CC.evidencia("hallazgo", texto).then(function (r) {
+      $("msg").textContent = (ok === tot ? "Todo en verde. " : "Aún hay rojas: pégale a Claude el mensaje del ✖. ") + (r.ok ? "Publicado como evidencia." : "Lo guardé en este navegador.");
+      b.disabled = false;
+    });
+    muro.publicar(texto);
+  });
+})();
+</script>
+</body>
+</html>

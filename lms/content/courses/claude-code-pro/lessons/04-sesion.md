@@ -13,6 +13,32 @@ objectives:
 recording:
   url: ""
   passcode: ""
+materials:
+  - id: ccp-04-kit
+    title: "editor-video.zip · 3 imágenes, una música suave y proyecto-ejemplo.json para armar tu editor (descomprímelo en una carpeta nueva)"
+    kind: zip
+    file: materials/editor-video/editor-video.zip
+    objective_ids: [ccp-04-o1, ccp-04-o2, ccp-04-o3]
+  - id: ccp-04-hyperframes
+    title: "HyperFrames · guía de inicio (documentación oficial)"
+    kind: doc
+    url: https://hyperframes.heygen.com/quickstart
+    objective_ids: [ccp-04-o2]
+  - id: ccp-04-hyperframes-codigo
+    title: "HyperFrames · código abierto en GitHub (Apache 2.0)"
+    kind: doc
+    url: https://github.com/heygen-com/hyperframes
+    objective_ids: [ccp-04-o2]
+  - id: ccp-04-ffmpeg
+    title: "FFmpeg · descarga (HyperFrames lo necesita para armar el MP4)"
+    kind: doc
+    url: https://ffmpeg.org/download.html
+    objective_ids: [ccp-04-o2]
+  - id: ccp-04-node-test
+    title: "Node.js · el probador integrado (node --test), para las pruebas automáticas"
+    kind: doc
+    url: https://nodejs.org/api/test.html
+    objective_ids: [ccp-04-o3]
 cycle:
   - id: ver
     title: Ver la clase
@@ -43,7 +69,7 @@ Regla de todo el curso: **cada sesión empieza con una línea base y termina con
 ## Qué vas a necesitar
 
 - Claude Code con tu plan Pro.
-- Node.js 22 o superior y Google Chrome.
+- Node.js 22 o superior, FFmpeg y Google Chrome (compruébalo con `npx hyperframes doctor`).
 - Unas imágenes y una canción tuyas, o las del kit de la sesión.
 
 ## Entregable 4

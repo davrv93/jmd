@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Conducir 2: el editor, pieza por pieza</title>
+<!-- Escena del modo LIVE (Claude Code PRO, sesión ccp-04). Sin recursos externos; animaciones solo CSS. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style id="esc-propio">
+.s3 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 1.6vw; align-items: start; }
+.s3-col { display: grid; gap: 1.3vh; }
+.cc-pasos .cc-nota b { color: var(--fg); }
+.s3-tok { display: flex; align-items: baseline; gap: .5em; margin: .3em 0; }
+.s3-tok .esc-big { font-size: 2.2em; }
+.s3-tok span:last-child { font-size: .68em; color: var(--muted); font-weight: 700; }
+.s3-in { font: 800 1.1em var(--mono); width: 6em; }
+.esc-card p.s3-res { font-size: .64em; color: var(--muted); margin: .4em 0 0; }
+.s3-res b { color: var(--fg); }
+.s3-tabla { width: 100%; border-collapse: collapse; font-size: .62em; }
+.s3-tabla th, .s3-tabla td { text-align: left; padding: .3em .4em; border-bottom: 1px solid var(--line); vertical-align: top; }
+.s3-tabla th { color: var(--muted); font-size: .9em; letter-spacing: .05em; text-transform: uppercase; }
+.s3-tabla code, .cc-nota code, .cc-check code { font: 700 .95em var(--mono); color: var(--accent); }
+.esc-card .s4-sal { margin: .35em 0 0; font: 600 .56em/1.45 var(--mono); color: var(--muted); background: var(--accent-bg); border-radius: .6em; padding: .45em .8em; white-space: pre-wrap; }
+.esc-card .s4-sal b { color: var(--ok); }
+.esc-card .s4-sal i { color: var(--bad); font-style: normal; }
+.esc-card .s4-mini { display: flex; gap: .5em; align-items: center; flex-wrap: wrap; font-size: .62em; color: var(--muted); }
+.esc-card > .esc-cmd, .esc-card > .cp-env > .esc-cmd, [data-panel] > .esc-cmd, [data-panel] > .cp-env > .esc-cmd { font-size: .62em; }
+.s4-mini .cc-in { width: 5em; font: 700 1em var(--mono); }
+.cc-tabs { margin-bottom: .55em; }
+.esc-card .s4-ver { margin: .45em 0 0; font-size: .6em; color: var(--muted); padding-left: .9em; border-left: 3px solid var(--ok); }
+.s4-ver b { color: var(--fg); }
+
+@media (max-width: 860px) { .s3 { grid-template-columns: 1fr; } .s3-tabla { font-size: .8em; } .esc-card .s4-sal, .esc-card .s4-mini, .esc-card .s4-ver { font-size: .74em; } .esc-card > .esc-cmd, .esc-card > .cp-env > .esc-cmd, [data-panel] > .esc-cmd, [data-panel] > .cp-env > .esc-cmd { font-size: .78em; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1200 760 L1270 700 L1340 735 L1420 680"/>
+  <g><circle class="e" cx="1200" cy="760" r="4"/><circle class="eo" cx="1270" cy="700" r="5"/><circle class="e" cx="1340" cy="735" r="3.5"/><circle class="eg" cx="1420" cy="680" r="4"/></g>
+  <g><circle class="e p" style="--p:.2s" cx="320" cy="140" r="1.8"/><circle class="eg p" style="--p:1.1s" cx="920" cy="60" r="1.6"/><circle class="eo p" style="--p:.7s" cx="1500" cy="120" r="1.7"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Claude Code PRO · S4 · 05/11</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Conducir 2: <em>pieza por pieza</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Una pieza por mensaje. Cuando Claude termine cada una, ábrela, pruébala y recién pide la siguiente. Copia cada pedido tal cual o ajústalo a tu plan.</p>
+    </div>
+    <div class="s3">
+      <section class="esc-card a-in" style="--d:.2s" id="piezas">
+        <div class="cc-tabs" role="tablist">
+          <button type="button" class="cc-tab" data-tab="p1">1 · Línea de tiempo</button>
+          <button type="button" class="cc-tab" data-tab="p2">2 · Agregar y guardar</button>
+          <button type="button" class="cc-tab" data-tab="p3">3 · Exportar</button>
+          <button type="button" class="cc-tab" data-tab="p4">4 · Corregir</button>
+        </div>
+        <div data-panel="p1">
+          <pre class="esc-cmd">Pieza 1: haz editor.html y lib.js. La página muestra la línea de tiempo en tres pistas (imágenes, textos, música), una vista previa 16:9 con un deslizador de tiempo y un botón Reproducir, y un panel para editar el clip que elijo. Empieza con los clips de proyecto-ejemplo.json. Que se abra con doble clic, sin instalar nada.</pre>
+          <p class="s4-ver"><b>Qué deberías ver:</b> abre <b>editor.html</b> con doble clic. Tres pistas de colores; al mover el deslizador cambian la imagen y el texto de la vista previa.</p>
+        </div>
+        <div data-panel="p2" hidden>
+          <pre class="esc-cmd">Pieza 2: agrega botones para sumar una imagen, un texto o una música, para quitar un clip y para guardar proyecto.json. Muestra en rojo los errores que encuentra lib.js: duración 0 o negativa, un texto de más de 40 letras y dos imágenes a la vez.</pre>
+          <p class="s4-ver"><b>Qué deberías ver:</b> escribe un texto larguísimo en un clip: debe salir un aviso en rojo. Luego guarda tu proyecto y mueve <b>proyecto.json</b> de Descargas a la carpeta <b>editor-video</b>.</p>
+        </div>
+        <div data-panel="p3" hidden>
+          <pre class="esc-cmd">Pieza 3: haz exportar.js. Con «node exportar.js proyecto.json video» debe revisar el proyecto con lib.js, copiar imágenes y música a video/assets y escribir video/index.html como composición de HyperFrames, con cada clip en su segundo. Después corre npx hyperframes check video y corrige lo que salga.</pre>
+          <p class="s4-ver"><b>Pruébalo tú</b> en otra terminal, dentro de <b>editor-video</b>:</p>
+          <pre class="esc-cmd">node exportar.js proyecto.json video</pre>
+          <p class="s4-sal">Algo como: <b>Listo: video/index.html · 7 clips · 15 s</b></p>
+        </div>
+        <div data-panel="p4" hidden>
+          <p class="cc-nota" style="margin-bottom:.4em">Cuando algo falle, di <b>el segundo, lo que ves y lo que esperabas</b>. Así lo encontró este curso al preparar la clase:</p>
+          <pre class="esc-cmd">En la vista previa, en el segundo 7, aparece una pastilla negra vacía donde no debería haber texto. Corrígelo y no toques nada más.</pre>
+          <p class="s4-ver"><b>Por qué funciona:</b> Claude no tiene que adivinar dónde mirar. Un pedido vago («no funciona») lo hace leer todo y llena la mesa.</p>
+        </div>
+      </section>
+      <div class="s3-col">
+        <section class="esc-card a-in" style="--d:.3s">
+          <span class="cc-et">Tu nota · pedido conducido</span>
+          <div class="cc-fila"><input class="cc-in s3-in" id="n" inputmode="numeric" autocomplete="off" placeholder="ej. 8" aria-label="Nota del 1 al 10"><button type="button" class="cc-btn" id="pub">Publicar</button></div>
+          <div class="s3-tok" aria-live="polite"><span class="esc-big" id="tok-n">—</span><span>de 10: ¿sirve para hacer un video de 15 s?</span></div>
+          <p class="s4-mini"><label for="mesa">Opcional · qué tan llena quedó la mesa según <code>/context</code>:</label> <input class="cc-in" id="mesa" inputmode="numeric" autocomplete="off" placeholder="%"> %</p>
+          <p class="cc-nota" id="msg"></p>
+          <div class="cc-barras" id="grupo" aria-label="Las notas del grupo"></div>
+          <p class="s3-res" id="resumen"></p>
+        </section>
+        <section class="esc-card a-in" style="--d:.4s" id="muro"></section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Un pedido por mensaje. Si pides cinco cosas juntas, alguna se pierde.</span></footer>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  CC.pestanas($("piezas"), "piezas4");
+  var RX = /(\d{1,2})\s*(?:de|\/)\s*10\b/;
+  function grupo(en) {
+    var g = $("grupo"); g.textContent = "";
+    var ds = (en || []).map(function (e) { var m = RX.exec(e.texto || ""); return m ? { n: +m[1], nombre: e.mia ? "Tú" : e.nombre, mia: e.mia } : null; })
+      .filter(function (d) { return d && d.n >= 1 && d.n <= 10; }).sort(function (a, b) { return b.n - a.n; });
+    if (!ds.length) { $("resumen").textContent = "Cuando el grupo publique, aquí aparecen sus notas."; return; }
+    ds.slice(0, 20).forEach(function (d) {
+      var f = CC.el("div", "cc-barra" + (d.mia ? " mia" : ""));
+      f.appendChild(CC.el("span", "n", d.nombre));
+      var b = CC.el("span", "b"), i = CC.el("i"); i.style.setProperty("--w", Math.max(3, d.n * 10) + "%"); b.appendChild(i); f.appendChild(b);
+      f.appendChild(CC.el("span", "v", d.n + "/10"));
+      g.appendChild(f);
+    });
+    var o = ds.map(function (d) { return d.n; }).sort(function (a, b) { return a - b; });
+    var med = o.length % 2 ? o[(o.length - 1) / 2] : (o[o.length / 2 - 1] + o[o.length / 2]) / 2;
+    $("resumen").textContent = ""; $("resumen").append("Nota típica del grupo: ");
+    $("resumen").appendChild(CC.el("b", "", med + " de 10"));
+    $("resumen").append(" (" + ds.length + (ds.length === 1 ? " nota)." : " notas)."));
+  }
+  var caja = document.createElement("div"); caja.hidden = true; document.body.appendChild(caja);
+  var muro = CC.muro(caja, "05-construir", "", { alPintar: grupo });
+  var previo = CC.leer("despues", null);
+  if (previo && previo.tok && previo.tok <= 10) $("n").value = previo.tok;
+  if (previo && previo.mesa) $("mesa").value = previo.mesa;
+  function pintar() { var v = +String($("n").value).replace(/[^\d]/g, ""); if (v > 10) v = 0; $("tok-n").textContent = v ? v : "—"; return v; }
+  $("n").addEventListener("input", pintar); pintar();
+  $("pub").addEventListener("click", function () {
+    var v = pintar(), b = this, mesa = +String($("mesa").value).replace(/[^\d]/g, "");
+    if (!v) { $("msg").textContent = "Escribe una nota del 1 al 10."; $("n").focus(); return; }
+    if (mesa > 100) mesa = 0;
+    CC.guardar("despues", { tok: v, mesa: mesa || null }); b.disabled = true;
+    var texto = v + " de 10 · pedido conducido" + (mesa ? " · mesa " + mesa + " %" : "");
+    CC.evidencia("hallazgo", texto).then(function (r) {
+      $("msg").textContent = r.ok ? "Publicado como evidencia. Pulsa «Lo logré»." : "Lo guardé en este navegador.";
+      b.disabled = false;
+    });
+    muro.publicar(texto);
+  });
+
+  CC.muro($("muro"), "05-construir-arreglos", "¿Qué tuviste que corregir?", { placeholder: "Ej.: la música no paraba al pausar", max: 160 });
+})();
+</script>
+</body>
+</html>

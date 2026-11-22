@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Un video puede verse bien y mentir · Claude Code PRO</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Coordenadas del viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. */
+  .cas { fill: var(--papel); }
+  #zRoja { fill: var(--rojo); fill-opacity: .12; }
+  #halo { fill: none; stroke: var(--rojo); stroke-width: 4; }
+  .eje { stroke: var(--tinta); stroke-width: 2.5; fill: none; }
+  .ven { fill: var(--papel); }
+  .barra-tit { fill: var(--papel2); }
+  .onda { fill: var(--verde); fill-opacity: .75; }
+  #plano { stroke: var(--rojo); stroke-width: 3; stroke-dasharray: 6 5; fill: none; }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .riesgo { width: 21%; font-size: 1.5cqw; }
+  #fMiente { width: 38%; }
+  #fMiente .letra { font-size: 1.5em; white-space: nowrap; }
+  .red { width: 37%; font-size: 1.5cqw; }
+  #pPuente { white-space: nowrap; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 2 de 2 · Calidad por riesgo</p>
+    <h1>Un video puede verse bien <em>y mentir</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="A la izquierda, un cuadro de cuatro casillas: qué tan probable es que falle y qué tan grave sería. Arriba a la derecha, lo más riesgoso: la duración, la música y los textos. A la derecha, un reproductor dice que el audio dura 15 segundos, pero la onda de la música se apaga en el segundo 10: el video miente. Abajo, tres redes para atrapar fallos: pruebas automáticas, casos de QA y mirar los cuadros.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <!-- Matriz de riesgo -->
+        <g id="gMat">
+          <rect class="cas" x="62" y="70" width="178" height="196"/>
+          <rect class="cas" x="242" y="70" width="178" height="196"/>
+          <rect class="cas" x="62" y="268" width="178" height="196"/>
+          <rect class="cas" x="242" y="268" width="178" height="196"/>
+          <rect id="zRoja" x="242" y="70" width="178" height="196"/>
+        </g>
+        <path id="ejeX" class="eje" d="M60 466 H430"/>
+        <path id="ejeY" class="eje" d="M60 466 V60"/>
+        <text id="rX" class="rot" x="430" y="494" text-anchor="end">QUÉ TAN PROBABLE →</text>
+        <text id="rY" class="rot" x="0" y="0" text-anchor="end" transform="translate(42 62) rotate(-90)">QUÉ TAN GRAVE →</text>
+        <rect id="halo" class="solo-anim" x="242" y="70" width="178" height="196" rx="4"/>
+
+        <!-- Reproductor -->
+        <g id="gRep">
+          <rect class="ven" x="470" y="70" width="310" height="190" rx="10"/>
+          <rect class="barra-tit" x="471" y="71" width="308" height="30" rx="9"/>
+          <text class="rot" x="486" y="92">MI-VIDEO.MP4</text>
+          <g id="onda"></g>
+          <path id="plano" d="M666 180 H760"/>
+          <text class="rot" x="488" y="244">0 S</text>
+          <text class="rot" x="666" y="244" text-anchor="middle">10 S</text>
+          <text class="rot" x="764" y="244" text-anchor="end">15 S</text>
+        </g>
+        <path id="bRep" class="trazo" d="M480 70 H770 Q780 70 780 80 V250 Q780 260 770 260 H480 Q470 260 470 250 V80 Q470 70 480 70 Z"/>
+      </svg>
+
+      <div class="nt hot riesgo" id="nDur" data-r="-1.2" style="left:31%; top:15%"><span class="k">Alto</span><span class="t">Dura otra cosa</span></div>
+      <div class="nt hot riesgo" id="nMus" data-r="1" style="left:32%; top:27.5%"><span class="k">Alto</span><span class="t">Música muda al final</span></div>
+      <div class="nt hot riesgo" id="nTxt" data-r="-.8" style="left:31%; top:40%"><span class="k">Alto</span><span class="t">Texto cortado</span></div>
+      <div class="capa" id="cBajos">
+      <div class="nt ev riesgo" id="nFal" data-r="1.2" style="left:9%; top:22%"><span class="k">Grave, raro</span><span class="t">Falta una imagen</span></div>
+      <div class="nt act riesgo" id="nOrd" data-r="-1" style="left:31.5%; top:64%"><span class="k">Medio</span><span class="t">Imágenes en otro orden</span></div>
+      <div class="nt fantasma riesgo" id="nCol" data-r="1" style="left:9%; top:68%"><span class="k">Bajo</span><span class="t">Un color un poco distinto</span></div>
+      </div>
+
+      <div class="nt ficha r solo-anim" id="fMiente" data-r="1" style="left:60%; top:51%">
+        <span class="k">Lo que dice el archivo</span>
+        <div class="fila"><span class="letra">15,0 s</span><span class="t">de audio</span></div>
+        <span class="t">Pero la música se acaba en el segundo 10.</span>
+        <span class="sello" id="sello">MIENTE</span>
+      </div>
+
+      <div class="nt cmd red solo-anim" id="r1" data-r="-1" style="left:59%; top:56%"><span class="k">1 · Pruebas automáticas</span><span class="t">Lo de siempre, cada vez, en 1 segundo</span></div>
+      <div class="nt act red solo-anim" id="r2" data-r="1" style="left:61%; top:71%"><span class="k">2 · Casos de QA</span><span class="t">A mano, con criterio, por riesgo</span></div>
+      <div class="nt info red solo-anim" id="r3" data-r="-.8" style="left:59%; top:86%"><span class="k">3 · Tus ojos</span><span class="t">Cuadro a cuadro, lo que nadie pensó</span></div>
+
+      <p class="pastilla solo-anim" id="pPuente" style="left:12%; top:3%">Escena 8: los casos · Escena 9: las pruebas</p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>No se puede probar todo</b><p>El tiempo alcanza para pocas pruebas. Por eso se empieza por lo que haría más daño y lo que más fácil puede fallar. A eso se le llama probar por riesgo.</p></li>
+        <li><b>Cada riesgo, a su casilla</b><p>Pregúntate dos cosas: ¿qué tan probable es que falle? ¿Qué tan grave sería? Lo de arriba a la derecha se prueba primero: la duración, la música y los textos.</p></li>
+        <li><b>Un video que se ve bien pero miente</b><p>Al preparar esta clase, la música se acabó en el segundo 10 de un video de 15. El archivo decía «audio: 15,0 s», porque el MP4 rellena con silencio. Leer la duración no basta: hay que buscar el silencio.</p><p class="aparte">Lo comprobamos con ffprobe (la duración) y con silencedetect de ffmpeg (el silencio).</p></li>
+        <li><b>Tres redes para atrapar fallos</b><p>Las pruebas automáticas atrapan lo de siempre, cada vez y en un segundo. Los casos de QA, lo que pide criterio. Y tus ojos, cuadro a cuadro, lo que nadie pensó.</p></li>
+        <li><b>En tu video: lo rojo primero</b><p>Ahora Claude escribe los casos ordenados por riesgo y tú los pruebas. Cada fallo que encuentres se vuelve una prueba automática, para que no vuelva.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Fuente: ISTQB, Certified Tester Foundation Level Syllabus v4.0 (2023), §5.2 Gestión del riesgo (nivel de riesgo = probabilidad × impacto). Caso: render de prueba de esta clase, 21-11-2026.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, latido = null;
+
+  // La onda de la música: barras hasta el segundo 10 (x = 666) y nada después.
+  (function () {
+    var g = $("#onda"), NS = "http://www.w3.org/2000/svg";
+    for (var i = 0; i < 30; i++) {
+      var x = 490 + i * 5.9, h = 18 + 46 * Math.abs(Math.sin(i * 1.7) * Math.cos(i * .45));
+      var r = document.createElementNS(NS, "rect");
+      r.setAttribute("class", "onda"); r.setAttribute("x", x.toFixed(1)); r.setAttribute("y", (180 - h / 2).toFixed(1));
+      r.setAttribute("width", "3.6"); r.setAttribute("height", h.toFixed(1)); r.setAttribute("rx", "1.5");
+      g.appendChild(r);
+    }
+  })();
+
+  TEO.escena([
+    function (tl) { // 1. los ejes
+      tl.fromTo("#gMat rect.cas", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4, stagger: .08 });
+      TEO.trazar(tl, ["#ejeX", "#ejeY"], { duration: .7 }, "<");
+      tl.fromTo(["#rX", "#rY"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 });
+    },
+    function (tl) { // 2. cada riesgo a su casilla
+      tl.fromTo("#zRoja", { autoAlpha: 0 }, { autoAlpha: 1, duration: .5 });
+      TEO.pegar(tl, ["#nDur", "#nMus", "#nTxt"]);
+      TEO.pegar(tl, ["#nFal", "#nOrd", "#nCol"], "+=.1");
+    },
+    function (tl) { // 3. el caso real: el video miente
+      TEO.trazar(tl, "#bRep", { duration: .8 });
+      tl.fromTo("#gRep", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 }, "<.2");
+      tl.fromTo("#onda rect", { scaleY: 0, transformOrigin: "50% 50%" }, { scaleY: 1, duration: .25, stagger: .03 });
+      tl.fromTo("#plano", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.fromTo("#fMiente", { autoAlpha: 0, y: -24, scale: 1.12, rotation: -6 }, { autoAlpha: 1, y: 0, scale: 1, rotation: 1, duration: .6, ease: "back.out(1.8)" }, "+=.2");
+      tl.fromTo("#sello", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, "+=.6");
+    },
+    function (tl) { // 4. tres redes
+      tl.to("#fMiente", { autoAlpha: 0, duration: .35 });
+      tl.to("#gRep", { opacity: .35, duration: .35 }, "<");
+      tl.to("#bRep", { opacity: .35, duration: .35 }, "<");
+      ["#r1", "#r2", "#r3"].forEach(function (id, i) {
+        tl.fromTo(id, { autoAlpha: 0, x: 30 }, { autoAlpha: 1, x: 0, duration: .45 }, i ? "-=.2" : ">");
+      });
+    },
+    function (tl) { // 5. lo rojo primero
+      tl.to("#cBajos", { opacity: .3, duration: .4 });
+      tl.fromTo("#halo", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 });
+      tl.fromTo("#pPuente", { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: .4 });
+    }
+  ], {
+    preparar: function () {
+      gsap.set(["#gRep", "#fMiente", "#sello", "#r1", "#r2", "#r3", "#pPuente", "#halo", "#zRoja", "#gMat rect.cas", "#rX", "#rY"], { autoAlpha: 0 });
+      latido = gsap.to("#halo", { strokeOpacity: .25, duration: .7, yoyo: true, repeat: -1, paused: true, ease: "sine.inOut" });
+    },
+    alCambiar: function (paso) {
+      if (paso === 4 && !TEO.quieto) latido.play(); else { latido.pause(); gsap.set("#halo", { strokeOpacity: 1 }); }
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>
