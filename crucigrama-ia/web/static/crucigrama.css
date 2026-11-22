@@ -1,0 +1,192 @@
+/* Crucigrama IA: grilla, pistas, barra, acciones, anuncio, historial y semilla. Se apoya en base.css. */
+[hidden] { display: none !important; }
+:root { --celda-bg: #fffdf9; --celda-en: #fbe3d6; --celda-act: #f6c2aa; --ok-l: #dff3e8; --bad-l: #fde2d3; }
+
+/* ----- grilla ----- */
+.grilla {
+  --n: 13;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  width: min(100%, calc(var(--n) * 44px));
+  margin: 12px auto 0;
+  background: var(--dark);
+  border: 2px solid var(--dark);
+  border-radius: 10px;
+  overflow: hidden;
+  container-type: inline-size;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.celda {
+  position: relative;
+  aspect-ratio: 1;
+  min-width: 0;
+  background: var(--celda-bg);
+  transition: background .12s ease;
+}
+.celda.negra { background: var(--dark); }
+.celda.en-palabra { background: var(--celda-en); }
+.celda.activa { background: var(--celda-act); box-shadow: inset 0 0 0 2px var(--orange); z-index: 1; }
+.celda.ok { background: var(--ok-l); }
+.celda.ok input { color: var(--ok); }
+.celda.mal { background: var(--bad-l); }
+.celda.mal input { color: var(--bad); text-decoration: line-through; text-decoration-thickness: 2px; }
+.celda.activa.ok, .celda.activa.mal { box-shadow: inset 0 0 0 2px var(--orange); }
+
+.celda input {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--txt);
+  text-align: center;
+  text-transform: uppercase;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(14px, 3.4vw, 22px);
+  font-size: clamp(14px, calc(58cqi / var(--n)), 24px);
+  line-height: 1;
+  caret-color: transparent;
+  cursor: pointer;
+}
+.celda input:focus { outline: none; }
+.celda input:disabled { color: var(--txt); opacity: 1; -webkit-text-fill-color: var(--txt); cursor: default; }
+.celda.ok input:disabled { color: var(--ok); -webkit-text-fill-color: var(--ok); }
+.celda.mal input:disabled { color: var(--bad); -webkit-text-fill-color: var(--bad); }
+.celda input::selection { background: transparent; }
+.grilla.bloqueada .celda { cursor: default; }
+
+.numero {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: clamp(7px, 1.6vw, 10px);
+  font-size: clamp(7px, calc(26cqi / var(--n)), 11px);
+  line-height: 1;
+  color: var(--soft);
+  pointer-events: none;
+  z-index: 1;
+}
+.celda.activa .numero, .celda.en-palabra .numero { color: var(--orange-d); }
+
+/* ----- pistas ----- */
+.pistas { display: grid; gap: 14px; margin-top: 14px; }
+@media (min-width: 520px) { .pistas { grid-template-columns: 1fr 1fr; } }
+.pistas h3 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--orange-d);
+  margin-bottom: 6px;
+}
+.pistas ol { list-style: none; display: grid; gap: 4px; }
+.pista {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+}
+.pista:hover { background: #f6efe7; }
+.pista:focus-visible { outline: 2px solid var(--orange); outline-offset: 1px; }
+.pista b { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; color: var(--soft); min-width: 2ch; text-align: right; }
+.pista.activa { background: var(--celda-en); border-color: var(--orange); }
+.pista.activa b { color: var(--orange-d); }
+.pista.ok { color: #8a7a6c; background: #f6f2ec; }
+.pista.ok span { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.pista.ok b { color: var(--ok); }
+.pista.ok b::after { content: ' ✓'; }
+.pistas.bloqueada .pista { cursor: default; }
+
+/* ----- barra: reloj y progreso ----- */
+.barra { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 10px; margin-top: 12px; }
+.barra .k { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10.5px; letter-spacing: .12em; color: var(--soft); }
+.reloj b, .barra b { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: clamp(26px, 8vw, 34px); font-weight: 700; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.reloj.pausado b { color: var(--soft); }
+.prog { text-align: right; }
+.prog b { color: var(--orange-d); }
+.barra .meter { grid-column: 1 / -1; margin-top: 4px; }
+
+/* ----- acciones ----- */
+.acciones { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.acciones .btn { flex: 1 1 140px; width: auto; margin-top: 0; padding: 12px 16px; font-size: 15px; }
+@media (max-width: 400px) { .acciones { flex-direction: column; } .acciones .btn { flex: none; width: 100%; } }
+
+/* ----- anuncio del ganador ----- */
+.anuncio { margin-top: 14px; background: var(--dark); color: #fff; border-radius: 20px; padding: 20px; border: 2px solid var(--orange); animation: aparece .5s cubic-bezier(.2, 1.3, .4, 1); }
+.anuncio .k { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: .14em; color: #f2a57f; font-weight: 700; }
+.anuncio pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(14px, 4vw, 17px);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(255, 255, 255, .07);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 10px;
+  user-select: all;
+}
+.anuncio .acciones .btn { background: var(--orange); }
+.anuncio .acciones .btn.ghost { color: #fff; border-color: #fff; }
+.anuncio canvas { display: block; width: 100%; max-width: 320px; height: auto; margin: 12px auto 0; border-radius: 14px; }
+@keyframes aparece { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ----- historial ----- */
+.historial { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 12px; border: 1.5px solid var(--line); border-radius: 14px; background: #fff; }
+.historial table { width: 100%; min-width: 440px; border-collapse: collapse; font-size: 13.5px; }
+.historial th, .historial td { padding: 8px 10px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+.historial th { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--soft); background: #faf6f1; position: sticky; top: 0; }
+.historial tr:last-child td { border-bottom: 0; }
+.historial td.t, .historial td.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-variant-numeric: tabular-nums; }
+.historial tr.mejor td { background: #fdeeb0; }
+.historial tr.mejor td.t { color: var(--ok); }
+.historial td .pill { font-size: 11px; }
+.historial .borrar { background: none; border: 0; color: var(--bad); font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; padding: 2px 4px; }
+.historial .vacio { padding: 18px; text-align: center; color: var(--soft); font-size: 14px; }
+
+/* ----- semilla ----- */
+.semilla { display: flex; gap: 8px; align-items: stretch; margin-top: 12px; }
+.semilla code, .semilla .valor {
+  flex: 1;
+  min-width: 0;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(22px, 6.6vw, 32px);
+  font-weight: 700;
+  letter-spacing: .1em;
+  background: #fff;
+  color: var(--ink);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 14px;
+  text-align: center;
+  user-select: all;
+  word-break: break-all;
+  display: grid;
+  place-items: center;
+}
+.semilla .btn { width: auto; margin-top: 0; flex: none; padding: 10px 16px; font-size: 14px; border-radius: 14px; }
+.semilla .btn.copiado { background: var(--ok); }
+
+/* ----- movimiento reducido ----- */
+@media (prefers-reduced-motion: reduce) {
+  .celda, .pista { transition: none; }
+  .anuncio { animation: none; }
+}
