@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cada estado responde una pregunta · Tienda web</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: preguntas arriba (y 20–190), línea de estados en y 300, mensajes abajo (y 380–510). */
+  .zona { fill: var(--papel2); stroke: var(--linea); stroke-width: 1; }
+  .nodo { fill: var(--papel); stroke: var(--tinta); stroke-width: 3; }
+  .nodo.lleno { fill: var(--verde); stroke: var(--verde); }
+  .est { position: absolute; margin: 0; transform: translateX(-50%); font: 700 1.2cqw/1.2 var(--mono); text-align: center; color: var(--tinta); background: var(--papel); border: 1px solid var(--linea); border-radius: 999px; padding: .4em .7em; white-space: nowrap; box-shadow: var(--sombra); }
+  .preg .t { font-weight: 700; }
+  .preg.peq { font-size: .92em; }
+  .wa { position: absolute; background: var(--n-ficha); color: var(--n-tinta); border-radius: .6em; box-shadow: var(--sombra); padding: .75em .9em; font: 500 1.15cqw/1.45 var(--sans); border-left: .45em solid #1F7A3E; }
+  .wa .k { display: block; font: 700 .82em/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #1F7A3E; margin-bottom: .35em; }
+  .wa .cmdo { font: 700 1em/1 var(--mono); color: #2B6CB0; }
+  .letrero { position: absolute; margin: 0; font: 800 1.35cqw/1.25 var(--mono); color: #F4F1EA; background: #1F7A3E; border-radius: .45em; padding: .5em .8em; text-align: center; }
+  .dato { position: absolute; margin: 0; font: 700 1.15cqw/1.2 var(--mono); color: var(--tinta); background: var(--papel); border: 1px dashed var(--linea); border-radius: .4em; padding: .45em .65em; white-space: nowrap; }
+  .dato b { color: var(--acento); }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Detrás del pedido · Lámina 1 de 2 · Estados y mensajes</p>
+    <h1>Cada estado <em>responde una pregunta</em> antes de que te la hagan</h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Arriba, cuatro preguntas típicas de un cliente: ¿me llegó el pedido?, ¿te llegó mi Yape?, ¿ya está pagado?, ¿cuándo recojo? Al centro, una línea con los cinco estados del pedido: recibido, pago por confirmar, pagado, listo para recoger y entregado. Una línea punteada une cada pregunta con su estado y la pregunta queda respondida, porque el cliente ve el mismo estado que tú. Abajo, una respuesta rápida de WhatsApp Business para el momento del pago confirmado, y dos datos: hasta 50 respuestas rápidas y hasta 20 etiquetas.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <rect class="zona" x="12" y="18" width="776" height="168" rx="12"/>
+        <text class="rot fuerte" x="30" y="40">EL CHAT SIN ESTADOS</text>
+        <path id="g1" class="trazo fino guion solo-anim" d="M112 116 C112 200 80 230 80 284"/>
+        <path id="g2" class="trazo fino guion solo-anim" d="M300 120 C300 210 240 230 240 284"/>
+        <path id="g3" class="trazo fino guion solo-anim" d="M492 114 C492 200 400 230 400 284"/>
+        <path id="g4" class="trazo fino guion solo-anim" d="M684 118 C684 200 560 230 560 284"/>
+        <path id="linea" class="trazo" d="M80 300 H720"/>
+        <circle id="n1" class="nodo" cx="80" cy="300" r="13"/>
+        <circle id="n2" class="nodo" cx="240" cy="300" r="13"/>
+        <circle id="n3" class="nodo" cx="400" cy="300" r="13"/>
+        <circle id="n4" class="nodo" cx="560" cy="300" r="13"/>
+        <circle id="n5" class="nodo" cx="720" cy="300" r="13"/>
+      </svg>
+
+      <div class="nt hot preg" id="q1" data-r="-2" style="left:3.5%; top:11%; width:21%"><span class="t">¿Me llegó el pedido?</span></div>
+      <div class="nt hot preg" id="q2" data-r="1.5" style="left:27%; top:13%; width:21%"><span class="t">¿Te llegó mi Yape?</span></div>
+      <div class="nt hot preg" id="q3" data-r="-1" style="left:51%; top:10.5%; width:21%"><span class="t">¿Ya está pagado?</span></div>
+      <div class="nt hot preg" id="q4" data-r="2" style="left:75%; top:12.5%; width:21%"><span class="t">¿Cuándo recojo?</span></div>
+
+      <p class="est" id="e1" style="left:10%; top:62%">Recibido</p>
+      <p class="est" id="e2" style="left:30%; top:62%">Pago por confirmar</p>
+      <p class="est" id="e3" style="left:50%; top:62%">Pagado</p>
+      <p class="est" id="e4" style="left:70%; top:62%">Listo para recoger</p>
+      <p class="est" id="e5" style="left:90%; top:62%">Entregado</p>
+
+      <p class="letrero solo-anim" id="visto" style="left:29%; top:24%; width:42%">Lo que tu cliente ve, ya no lo pregunta</p>
+
+      <div class="wa" id="wa" style="left:3%; top:73%; width:52%">
+        <span class="k">Respuesta rápida · WhatsApp Business</span>
+        <span class="cmdo">/pagado</span> → «Tu pago está confirmado. Tu pedido N.° 1042 ya está en preparación.»
+      </div>
+      <p class="dato" id="d50" style="left:59%; top:76%">Hasta <b>50</b> respuestas rápidas</p>
+      <p class="dato" id="d20" style="left:59%; top:86%">Hasta <b>20</b> etiquetas para ordenar chats</p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Sin estados, el cliente pregunta</b><p>Si tu cliente no ve en qué va su pedido, te escribe: «¿Te llegó mi Yape?», «¿Cuándo recojo?». Cada pregunta es un mensaje que respondes a mano, y casi siempre son las mismas.</p></li>
+        <li><b>Cinco estados en una línea</b><p>Tu tienda mueve cada pedido por cinco estados: recibido, pago por confirmar, pagado, listo para recoger y entregado. Y el cliente ve el mismo estado que tú, en su número de pedido.</p></li>
+        <li><b>Cada pregunta encuentra su estado</b><p>«¿Me llegó el pedido?» lo responde Recibido; «¿Te llegó mi Yape?», Pago por confirmar; «¿Ya está pagado?», Pagado; «¿Cuándo recojo?», Listo para recoger. Lo que se ve, ya no se pregunta.</p></li>
+        <li><b>Un mensaje por cada momento</b><p>Para lo que sí escribes, guarda una respuesta rápida por momento. En WhatsApp Business escribes «/» y eliges. Caben hasta 50, y con las etiquetas ordenas tus chats por estado.</p><p class="aparte">En algunos teléfonos las etiquetas ahora se llaman «listas»; funcionan igual.</p></li>
+        <li><b>Ahora, tus cinco mensajes</b><p>Enseguida verás los estados en tu tienda y las reglas para confirmar un pago. Al final, en la escena 7, copias tus cinco mensajes con el nombre de tu negocio.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">WhatsApp, Centro de ayuda: «Cómo usar las respuestas rápidas» (máximo 50) y «Cómo usar las etiquetas» (hasta 20), faq.whatsapp.com, consultado el 23-11-2026. Los estados son los de tu tienda en este curso.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$;
+
+  TEO.escena([
+    function (tl) { // 1. las preguntas llegan
+      TEO.pegar(tl, ["#q1", "#q2", "#q3", "#q4"]);
+    },
+    function (tl) { // 2. la línea de estados
+      TEO.trazar(tl, "#linea", { duration: .8 });
+      tl.from(["#n1", "#n2", "#n3", "#n4", "#n5"], { scale: 0, transformOrigin: "50% 50%", duration: .3, stagger: .12, ease: "back.out(2)" }, "-=.4");
+      tl.from(["#e1", "#e2", "#e3", "#e4", "#e5"], { autoAlpha: 0, y: 10, duration: .3, stagger: .12 }, "<");
+    },
+    function (tl) { // 3. cada pregunta apunta a su estado y queda respondida
+      ["g1", "g2", "g3", "g4"].forEach(function (g, i) {
+        TEO.trazar(tl, "#" + g, { duration: .45 }, i ? "<+.25" : ">");
+      });
+      tl.to(["#n1", "#n2", "#n3", "#n4"], { fill: TEO.color("--verde", "#1F7A3E"), stroke: TEO.color("--verde", "#1F7A3E"), duration: .3, stagger: .15 }, "+=.1");
+      tl.fromTo(["#q1", "#q2", "#q3", "#q4"], { filter: "grayscale(0) opacity(1)" }, { filter: "grayscale(.7) opacity(.45)", duration: .4 }, "<+.2");
+      tl.fromTo("#visto", { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: .45, ease: "back.out(1.8)" });
+    },
+    function (tl) { // 4. un mensaje por momento
+      TEO.pegar(tl, "#wa");
+      tl.from(["#d50", "#d20"], { autoAlpha: 0, x: 14, duration: .35, stagger: .2 }, "+=.1");
+    },
+    function (tl) { // 5. puente
+      tl.to("#visto", { autoAlpha: .4, duration: .3 });
+      tl.to("#n5", { fill: TEO.color("--verde", "#1F7A3E"), stroke: TEO.color("--verde", "#1F7A3E"), duration: .3 }, "<");
+      tl.fromTo("#wa", { boxShadow: "0 0 0 0 rgba(31,122,62,0)" }, { boxShadow: "0 0 0 .4em rgba(31,122,62,.25)", duration: .5 }, "<");
+    }
+  ], {
+    preparar: function () {
+      gsap.set("#visto", { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la lámina"
+  });
+})();
+</script>
+</body>
+</html>

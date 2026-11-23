@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La captura no es el pago · Tienda web</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: lo que te mandan (x 12–372), lo que está en tu app (x 428–788), reglas abajo. */
+  .zona { fill: var(--papel2); stroke: var(--linea); stroke-width: 1; }
+  .doc { position: absolute; background: var(--n-ficha); color: var(--n-tinta); border-radius: .5em; box-shadow: var(--sombra);
+         padding: .8em .9em; font: 500 1.15cqw/1.5 var(--sans); }
+  .doc .k { display: block; font: 700 .82em/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #6B3FA0; margin-bottom: .4em; }
+  .doc .monto { display: block; font: 800 2em/1.1 var(--serif); color: #6B3FA0; margin: .1em 0 .25em; }
+  .doc .fila { display: block; white-space: nowrap; }
+  .doc .fila i { font-style: normal; opacity: .7; }
+  .doc .sello { top: auto; bottom: -.6em; right: -.4em; font-size: 1.35em; }
+  .app { position: absolute; background: var(--n-ficha); color: var(--n-tinta); border-radius: .5em; box-shadow: var(--sombra); padding: .75em .9em; font: 500 1.15cqw/1.45 var(--sans); border-top: .4em solid #1F7A3E; }
+  .app .k { display: block; font: 700 .82em/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #1F7A3E; margin-bottom: .4em; }
+  .app .mov { display: flex; justify-content: space-between; gap: 1em; border-top: 1px dashed #B9B1A2; padding: .35em 0; white-space: nowrap; }
+  .app .mov b { color: #1F7A3E; }
+  .app .mov.gris { opacity: .55; }
+  .chk { position: absolute; margin: 0; font: 700 1.15cqw/1.25 var(--mono); color: var(--tinta); background: var(--papel); border: 1px solid var(--linea); border-radius: .45em; padding: .4em .6em; white-space: nowrap; box-shadow: var(--sombra); }
+  .chk::before { content: "✓ "; color: var(--verde); }
+  #reglas .t { display: block; font-weight: 600; }
+  .veredicto { position: absolute; margin: 0; font: 800 1.3cqw/1.25 var(--mono); color: #F4F1EA; background: #1F7A3E; border-radius: .45em; padding: .5em .8em; text-align: center; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Detrás del pedido · Lámina 2 de 2 · Confirmar un pago</p>
+    <h1>La captura <em>no es</em> el pago: el pago está en tu app</h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="A la izquierda, lo que te mandan: la captura de un yapeo de ejemplo con monto de 75 soles, nombre, fecha, hora, número de operación y código de seguridad. Una nota cuenta que existe un Yape falso que fabrica esas capturas, y la captura recibe el sello FALSO. A la derecha, lo que está en tu app: la lista de Movimientos donde sí aparece el yapeo, más tres formas de comprobarlo que recomienda Yape: Movimientos, Mostrar saldo y notificaciones. Abajo, las cuatro comprobaciones antes de pasar el pedido a Pagado: monto, nombre, fecha y hora, y verlo en tu app.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <rect class="zona" x="12" y="40" width="360" height="292" rx="12"/>
+        <rect id="zApp" class="zona" x="428" y="40" width="360" height="292" rx="12"/>
+        <text class="rot fuerte" x="192" y="30" text-anchor="middle">LO QUE TE MANDAN</text>
+        <text id="rApp" class="rot fuerte" x="608" y="30" text-anchor="middle">LO QUE ESTÁ EN TU APP</text>
+        <path id="aComp" class="trazo flecha" d="M376 186 H420"/>
+      </svg>
+
+      <div class="doc" id="cap" data-r="-1.5" style="left:4%; top:12%; width:39%">
+        <span class="k">Captura · ejemplo</span>
+        <span class="fila">¡Yapeaste!</span>
+        <span class="monto">S/ 75.00</span>
+        <span class="fila">Ana Rojas</span>
+        <span class="fila"><i>23 nov 2026 · 9:41 p. m.</i></span>
+        <span class="fila"><i>N.° de operación</i> 08251437</span>
+        <span class="fila"><i>Código de seguridad</i> 4 2 7</span>
+        <span class="sello solo-anim" id="falso">FALSO</span>
+      </div>
+
+      <div class="nt hot solo-anim" id="caso" data-r="1.2" style="left:22%; top:44%; width:30%">
+        <span class="k">Caso real · Andina, 2024</span>
+        <span class="t">Un «Yape falso» autocompleta nombre, monto, la animación y hasta un SMS de confirmación</span>
+      </div>
+
+      <div class="app" id="app" style="left:56.5%; top:12%; width:39%">
+        <span class="k">Yape · Movimientos</span>
+        <span class="mov"><span>Ana Rojas · 9:41 p. m.</span><b>+ S/ 75.00</b></span>
+        <span class="mov gris"><span>Luis T. · 7:12 p. m.</span><span>+ S/ 32.50</span></span>
+        <span class="mov gris"><span>Carla M. · 6:05 p. m.</span><span>+ S/ 18.00</span></span>
+      </div>
+      <p class="chk" id="c1" style="left:56.5%; top:45%">Aparece en Movimientos</p>
+      <p class="chk" id="c2" style="left:56.5%; top:53%">«Mostrar saldo»: ¿subió?</p>
+      <p class="chk" id="c3" style="left:76.5%; top:45%">Notificación activada</p>
+
+      <div class="nt ficha s" id="reglas" data-r="-.6" style="left:3%; top:67%; width:58%">
+        <span class="k">Antes de pasar el pedido a «Pagado»</span>
+        <span class="t">1 · El monto cuadra con el pedido</span>
+        <span class="t">2 · El nombre coincide con quien paga</span>
+        <span class="t">3 · La fecha y la hora calzan</span>
+        <span class="t">4 · Lo ves en TU app o banca móvil, no en la foto</span>
+      </div>
+      <p class="veredicto solo-anim" id="ok" style="left:64%; top:72%; width:33%">Recién ahí: Pago por confirmar → Pagado</p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Te llega una captura</b><p>Tu cliente paga y te manda la foto del voucher: monto, nombre, fecha, hora y número de operación. Parece que está todo. ¿Ya puedes entregar el pedido?</p></li>
+        <li><b>Hay apps que fabrican capturas</b><p>En 2024, la Agencia Andina describió un «Yape falso» que autocompleta el nombre, el monto, la animación y hasta un SMS de confirmación. La captura tenía todo… y no había ningún pago.</p></li>
+        <li><b>El pago está en tu app</b><p>Yape lo dice claro: revisa que el yapeo aparezca en tus Movimientos, usa «Mostrar saldo» para ver si subió y activa las notificaciones. Los yapeos llegan al instante. Si es transferencia, mira los movimientos de tu banca móvil.</p><p class="aparte">Yape agrega un código de seguridad de 3 dígitos: sale en la confirmación de quien paga y en la notificación de quien recibe.</p></li>
+        <li><b>Cuatro comprobaciones, siempre</b><p>Antes de pasar el pedido a Pagado: el monto cuadra, el nombre coincide, la fecha y la hora calzan, y lo ves en tu app, no en la foto. Si algo no cuadra, el pedido se queda en Pago por confirmar.</p></li>
+        <li><b>Ponlo a prueba</b><p>Ahora verás estas reglas dentro de tu tienda y luego, en el juego «¿Cuadra el pago?», decides voucher por voucher si confirmas o pides la captura correcta.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Yape, Centro de ayuda: «¿Cómo identifico un yapeo falso?» y «¿Cómo puedo verificar que he recibido un pago por Yape?» (yape.com.pe, consultado el 23-11-2026) · BCP (2024). Guía de prevención de riesgos digitales: «Yapeo falso» · Agencia Andina (24-08-2024). «¿Cómo funciona el Yape falso?». La captura es un ejemplo, no un pago real.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, punta;
+
+  TEO.escena([
+    function (tl) { // 1. la captura
+      TEO.pegar(tl, "#cap");
+      tl.from("#cap .fila, #cap .monto", { autoAlpha: 0, x: -6, duration: .25, stagger: .07 }, "-=.25");
+    },
+    function (tl) { // 2. el caso real y el sello
+      TEO.pegar(tl, "#caso");
+      tl.fromTo("#falso", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .4, ease: "back.out(2.2)" }, "+=.3");
+    },
+    function (tl) { // 3. lo que está en tu app
+      TEO.trazar(tl, "#aComp", { duration: .4 });
+      tl.from(punta, { autoAlpha: 0, duration: .2 }, "-=.1");
+      tl.from("#rApp", { autoAlpha: 0, y: 6, duration: .3 }, "<");
+      TEO.pegar(tl, "#app", "-=.1");
+      tl.from("#app .mov", { autoAlpha: 0, x: 8, duration: .25, stagger: .1 }, "-=.2");
+      tl.from(["#c1", "#c2", "#c3"], { autoAlpha: 0, y: 8, duration: .3, stagger: .18 }, "+=.1");
+    },
+    function (tl) { // 4. las cuatro comprobaciones
+      TEO.pegar(tl, "#reglas");
+      tl.from("#reglas .t", { autoAlpha: 0, x: -8, duration: .25, stagger: .15 }, "-=.2");
+    },
+    function (tl) { // 5. puente
+      tl.fromTo("#ok", { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: .45, ease: "back.out(1.8)" });
+    }
+  ], {
+    preparar: function () {
+      punta = TEO.punta($("#aComp"));
+      gsap.set(["#falso", "#ok"], { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>
