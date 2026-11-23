@@ -349,13 +349,15 @@
     var pedido = ("Redacta la SRS del módulo «" + (s.tramo || "mi módulo") + "» con apetito de " + apetitoTxt(s.apetito) + ", respetando los no-gos.").slice(0, 300);
     var emp = { razon: (s.negocio || "Mi negocio").slice(0, 120), rubro: (s.tramo || "mi módulo").slice(0, 120), regimen: "Shape Up" };
     // Dos pedidos cortos (el texto y luego los modelos UML con los mismos actores): uno solo no cabe en el límite de la IA.
-    ES.ia(ES.ESCENA, pedido, emp, muestra()).then(function (x) {
+    // Si la IA devuelve un JSON cortado, se reintenta una vez antes de rendirse.
+    function iaR(esc, ped, m) { return ES.ia(esc, ped, emp, m).then(function (y) { return y.ok ? y : ES.ia(esc, ped, emp, m); }); }
+    iaR(ES.ESCENA, pedido, muestra()).then(function (x) {
       if (!x.ok || !filas(x.tablas, "Requisitos").length) return x;
       $("estado").textContent = "Texto listo. Ahora los modelos UML…";
       var m = muestra(); m.actores = filas(x.tablas, "Actores").map(function (f) { return txt(f[0], 40); });
       m.requisitos = filas(x.tablas, "Requisitos").map(function (f) { return txt(f[0], 120); });
       var ped = ("Modelos UML de la SRS del módulo «" + (s.tramo || "mi módulo") + "».").slice(0, 300);
-      return Promise.all([ES.ia("03c-srs-uml", ped, emp, m), ES.ia("03d-srs-uml2", ped, emp, m)]).then(function (us) {
+      return Promise.all([iaR("03c-srs-uml", ped, m), iaR("03d-srs-uml2", ped, m)]).then(function (us) {
         var base = plantilla(), ok = 0;
         ["CasosDeUso", "Flujo", "Clases", "Secuencia"].forEach(function (k) {
           var u = us.filter(function (y) { return y.ok && filas(y.tablas, k).length; })[0];
