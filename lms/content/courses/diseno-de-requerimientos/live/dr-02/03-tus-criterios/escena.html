@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seis criterios que se pueden comprobar · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+<style>
+  textarea { width: 100%; }
+  .crit { display: grid; grid-template-columns: auto 1fr auto; gap: .6em; align-items: start; padding: .55em .6em; border-radius: 8px; background: var(--papel, #fff); box-shadow: 0 1px 2px rgba(0,0,0,.12); margin-bottom: .45em; }
+  .crit .n { font: 800 1.1em/1.2 var(--serif, Georgia); min-width: 1.4em; }
+  .crit .txt { min-width: 0; overflow-wrap: anywhere; }
+  .crit .av { display: block; font-size: .85em; color: #B3261E; margin-top: .25em; }
+  .crit.ok .av { color: #1F7A3E; }
+  .crit .txt b { color: var(--acento, #C46A12); }
+  .recuerda { font-size: .92em; }
+</style>
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Paso 3 de 4 · 15 minutos</p>
+  <h1>Seis criterios que <em>se pueden comprobar</em></h1>
+  <p class="es-sub">Cada elemento de tu solución se vuelve frases «Dado…, cuando…, entonces…». Si no se puede comprobar, no es un criterio. Son el contrato con la IA en la sesión 3.</p>
+
+  <div class="es-2">
+    <section class="es-panel">
+      <label>Nuevo criterio<textarea id="nuevo" rows="3" maxlength="400" placeholder="Dado que SUNAT no responde, cuando la cajera emite una boleta, entonces la venta se registra y la boleta queda pendiente."></textarea></label>
+      <p class="es-nota-al-pie" id="vivo" aria-live="polite"></p>
+      <div class="es-fila">
+        <button type="button" class="btn pri" id="agregar">Agregar criterio</button>
+        <button type="button" class="btn chico" id="plantilla">Escribir con la plantilla</button>
+        <button type="button" class="btn chico" id="ejemplo">Ver 3 ejemplos de la botica</button>
+      </div>
+      <details class="recuerda" open>
+        <summary>Tu solución (del pitch)</summary>
+        <p id="solucion" class="es-nota-al-pie"></p>
+      </details>
+      <p class="es-nota-al-pie">Un buen criterio dice en qué situación (Dado), qué pasa (cuando) y qué se observa (entonces). Cambia «rápido» o «fácil» por una cifra o por algo que se ve en pantalla.</p>
+    </section>
+
+    <section class="es-panel">
+      <div class="es-fila" style="justify-content:space-between">
+        <h2>Tus criterios</h2>
+        <span class="chk" id="cuenta">0 de 6 comprobables</span>
+      </div>
+      <div id="lista"></div>
+      <div class="es-fila">
+        <button type="button" class="btn" id="copiar">Copiar pitch y criterios para la sesión 3</button>
+      </div>
+      <p class="estado" id="estado" role="status" aria-live="polite"></p>
+    </section>
+  </div>
+</main>
+<script src="../../comun/es.js"></script>
+<script src="../../comun/sh.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var s = SH.cargar();
+  $("solucion").textContent = s.pitch.solucion || "Todavía no escribiste la solución en el paso 2.";
+
+  function resaltar(t) {
+    var frag = document.createDocumentFragment();
+    String(t).split(/(\b(?:dado|dada|dados|dadas|cuando|entonces)\b)/i).forEach(function (p) {
+      if (/^(dado|dada|dados|dadas|cuando|entonces)$/i.test(p)) frag.appendChild(ES.h("b", { text: p })); else if (p) frag.appendChild(document.createTextNode(p));
+    });
+    return frag;
+  }
+
+  function pintar() {
+    var L = $("lista"); L.innerHTML = "";
+    var buenos = 0;
+    if (!s.criterios.length) L.appendChild(ES.h("p", { class: "es-nota-al-pie", text: "Todavía no hay criterios." }));
+    s.criterios.forEach(function (c, k) {
+      var r = SH.revisar(c); if (r.ok) buenos++;
+      var txt = ES.h("div", { class: "txt" }); txt.appendChild(resaltar(c));
+      txt.appendChild(ES.h("span", { class: "av", text: r.ok ? "Se puede comprobar." : r.avisos.join(" · ") }));
+      L.appendChild(ES.h("div", { class: "crit" + (r.ok ? " ok" : "") }, [
+        ES.h("span", { class: "n", text: String(k + 1) }), txt,
+        ES.h("div", { class: "es-col", style: "gap:.3em" }, [
+          ES.h("button", { type: "button", class: "btn chico", text: "Editar", "aria-label": "Editar el criterio " + (k + 1), onclick: function () { $("nuevo").value = c; quitar(k); $("nuevo").focus(); vivo(); } }),
+          ES.h("button", { type: "button", class: "btn chico", text: "Quitar", "aria-label": "Quitar el criterio " + (k + 1), onclick: function () { quitar(k); } })
+        ])
+      ]));
+    });
+    $("cuenta").textContent = buenos + " de 6 comprobables";
+    var est = $("estado");
+    if (buenos >= 6) { est.className = "estado bien"; est.textContent = "Tienes " + buenos + " criterios comprobables. Ahora toca «Lo logré»."; }
+    else { est.className = "estado"; est.textContent = "Te faltan " + (6 - buenos) + " criterios comprobables."; }
+  }
+  function quitar(k) { s = SH.cargar(); s.criterios.splice(k, 1); SH.guardar(s); pintar(); }
+  function vivo() {
+    var t = $("nuevo").value.trim(), v = $("vivo");
+    if (!t) { v.textContent = ""; return; }
+    var r = SH.revisar(t);
+    v.textContent = r.ok ? "Bien: se puede comprobar." : "Revisa: " + r.avisos.join(" · ");
+    v.style.color = r.ok ? "#1F7A3E" : "#B3261E";
+  }
+  $("nuevo").addEventListener("input", vivo);
+  $("agregar").addEventListener("click", function () {
+    var t = $("nuevo").value.trim().replace(/\s+/g, " ");
+    if (t.length < 15) { $("nuevo").focus(); return; }
+    s = SH.cargar(); s.criterios.push(t); SH.guardar(s); $("nuevo").value = ""; vivo(); pintar();
+    if (SH.revisar(t).ok) ES.evidencia("criterio: " + t.slice(0, 160));
+  });
+  $("plantilla").addEventListener("click", function () {
+    $("nuevo").value = "Dado que …, cuando …, entonces …"; $("nuevo").focus(); $("nuevo").setSelectionRange(10, 11); vivo();
+  });
+  $("ejemplo").addEventListener("click", function () {
+    var ej = [
+      "Dado que SUNAT no responde, cuando la cajera emite una boleta, entonces la venta se registra y la boleta queda en estado pendiente.",
+      "Dado una boleta pendiente, cuando SUNAT vuelve a responder, entonces la boleta se envía sola y pasa a aceptada sin que nadie la toque.",
+      "Dado que hay boletas pendientes al cierre, cuando la cajera cuadra la caja, entonces ve la lista de pendientes con su cantidad y su total."
+    ];
+    ES.toast("Tres ejemplos agregados: ahora escribe los tuyos.");
+    s = SH.cargar(); ej.forEach(function (e) { if (s.criterios.indexOf(e) < 0) s.criterios.push(e); }); SH.guardar(s); pintar();
+  });
+  $("copiar").addEventListener("click", function () { ES.copiar(SH.texto(SH.cargar())).then(function () { ES.toast("Copiado: guárdalo para la sesión 3."); }); });
+  pintar();
+})();
+</script>
+</body>
+</html>

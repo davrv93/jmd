@@ -1,7 +1,9 @@
-/* Motor de las escenas de teoría de dr-01. Cada escena arma UN timeline de GSAP partido en pasos: el
-   profesor o el alumno avanza con «Siguiente», las flechas, la barra espaciadora o los puntos. Hacia
-   atrás se rebobina rápido. Sin GSAP, o con «reducir movimiento», todo queda visible y quieto.
-   Uso: TEO.escena([function (tl) {…paso 1…}, function (tl) {…paso 2…}], { alCambiar: fn(paso) }). */
+/* teoria.js — motor de las láminas de teoría animadas (skill teoria-animada).
+   Cada lámina arma UN timeline de GSAP partido en pasos: el profesor o el alumno avanza con «Siguiente», las
+   flechas, la barra espaciadora o los puntos. Hacia atrás se rebobina rápido. Sin GSAP, o con «reducir
+   movimiento», todo queda visible y quieto.
+   Uso: TEO.escena([function (tl) {…paso 1…}, function (tl) {…paso 2…}],
+                   { preparar: fn(), alCambiar: fn(paso), textoFin: "Fin de la teoría" }). */
 (function () {
   "use strict";
   var raiz = document.documentElement;
@@ -15,7 +17,15 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var TEO = window.TEO = { quieto: quieto, $: $, $$: $$ };
-  function lista(sel) { return typeof sel === "string" ? $$(sel) : [].concat(sel); }
+  // Acepta un selector, un elemento o un arreglo que mezcle selectores y elementos.
+  function lista(sel) {
+    return [].concat(sel).reduce(function (acc, x) { return acc.concat(typeof x === "string" ? $$(x) : [x]); }, []);
+  }
+
+  // Lee un color del tema actual (para animar hacia --rojo, --verde… y que respete claro y oscuro).
+  TEO.color = function (variable, porDefecto) {
+    return getComputedStyle(raiz).getPropertyValue(variable).trim() || porDefecto;
+  };
 
   // Dibuja trazos SVG (caminos, elipses, líneas) como si se trazaran a mano.
   TEO.trazar = function (tl, sel, vars, pos) {
@@ -81,9 +91,14 @@
     if (opciones.preparar) opciones.preparar();
 
     var n = pasos.length, tl = gsap.timeline({ paused: true });
-    pasos.forEach(function (armar, i) { tl.addLabel("p" + i, i ? "+=0.05" : 0); armar(tl); });
-    tl.addLabel("p" + n, "+=0.05");
-    TEO.tl = tl;
+    // Entre paso y paso va una pausa REAL de 0,05 s (un tween vacío) y luego el rótulo. Un rótulo con
+    // "+=0.05" no alarga el timeline: el paso siguiente empezaría 0,05 s antes de su rótulo y, al
+    // detenerse ahí, ya se vería un poco animado.
+    var pausa = function () { tl.to({}, { duration: 0.05 }); };
+    pasos.forEach(function (armar, i) { if (i) pausa(); tl.addLabel("p" + i); armar(tl); });
+    pausa();
+    tl.addLabel("p" + n);
+    TEO.tl = tl; TEO.n = n;
 
     var relato = $$(".teo-relato li"), puntos = $(".teo-puntos");
     var sig = $("#sig"), ant = $("#ant"), rep = $("#rep"), todo = $("#todo");
@@ -106,7 +121,7 @@
         if (k === actual) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
       });
       if (ant) ant.disabled = actual <= 0;
-      if (sig) { sig.disabled = actual >= n - 1; sig.textContent = actual >= n - 1 ? "Fin de la teoría" : "Siguiente →"; }
+      if (sig) { sig.disabled = actual >= n - 1; sig.textContent = actual >= n - 1 ? (opciones.textoFin || "Fin de la teoría") : "Siguiente →"; }
       if (todo) todo.disabled = actual >= n - 1;
       if (opciones.alCambiar) opciones.alCambiar(actual);
     }
@@ -135,6 +150,7 @@
       marcar(); animarRelato();
     }
     TEO.ir = ir;
+    TEO.paso = function () { return actual; };
 
     if (sig) sig.addEventListener("click", function () { ir(actual + 1); });
     if (ant) ant.addEventListener("click", function () { ir(actual - 1); });

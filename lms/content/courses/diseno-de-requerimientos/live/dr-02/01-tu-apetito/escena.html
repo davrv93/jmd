@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El apetito de tu módulo · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+<style>
+  .tallas { display: flex; flex-wrap: wrap; gap: .5em; }
+  .tallas .btn[aria-pressed="true"] { outline: 3px solid var(--acento, #C46A12); outline-offset: 1px; }
+  .caja { display: grid; grid-template-columns: 1fr 1fr; gap: .8em; }
+  .caja > div { border: 2px solid var(--linea, #ccc); border-radius: 10px; padding: .6em; min-height: 8em; }
+  .caja > div.fuera { border-style: dashed; }
+  .caja h3 { margin: 0 0 .4em; font-size: .95em; }
+  .pieza { display: flex; justify-content: space-between; gap: .5em; align-items: center; padding: .35em .5em; border-radius: 6px; background: var(--papel, #fff); margin-bottom: .35em; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .pieza span { min-width: 0; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Paso 1 de 4 · 10 minutos</p>
+  <h1>¿Cuánto <em>vale</em> tu módulo?</h1>
+  <p class="es-sub">No calcules cuánto se demora: decide cuánto tiempo estás dispuesto a darle. Después reparte las piezas: lo que entra en ese tiempo y lo que queda fuera.</p>
+
+  <div class="es-2">
+    <section class="es-panel">
+      <h2>El apetito</h2>
+      <p class="es-nota-al-pie" id="tramoTxt"></p>
+      <div class="tallas" role="group" aria-label="Talla del apetito">
+        <button type="button" class="btn" data-c="1" data-u="semanas" data-t="proyecto pequeño">Pequeño · 1 semana</button>
+        <button type="button" class="btn" data-c="2" data-u="semanas" data-t="proyecto pequeño">Pequeño · 2 semanas</button>
+        <button type="button" class="btn" data-c="6" data-u="semanas" data-t="proyecto grande">Grande · 6 semanas</button>
+      </div>
+      <div class="es-fila">
+        <label>O tu propio número<input type="number" id="cantidad" min="1" max="60" step="1" placeholder="Ej.: 3" style="width:6em"></label>
+        <label>Unidad<select id="unidad"><option value="días">días</option><option value="semanas" selected>semanas</option></select></label>
+      </div>
+      <p class="estado" id="estadoA" role="status" aria-live="polite"></p>
+      <p class="es-nota-al-pie">En Shape Up el apetito tiene dos tallas: proyectos pequeños de una o dos semanas, o uno grande de seis. Si tu realidad es otra, escribe tu número: lo importante es que sea un límite, no un cálculo.</p>
+    </section>
+
+    <section class="es-panel">
+      <div class="es-fila" style="justify-content:space-between">
+        <h2>Las piezas</h2>
+        <span class="chk" id="cuenta">0 entran · 0 fuera</span>
+      </div>
+      <div class="es-fila">
+        <input type="text" id="nueva" maxlength="80" placeholder="Agrega una pieza (Ej.: Reenviar boletas pendientes)" style="flex:1;min-width:0">
+        <button type="button" class="btn chico" id="agregar">Agregar</button>
+      </div>
+      <div class="caja">
+        <div><h3>Entra en el apetito</h3><div id="entra"></div></div>
+        <div class="fuera"><h3>Queda fuera</h3><div id="fuera"></div></div>
+      </div>
+      <p class="estado" id="estadoP" role="status" aria-live="polite"></p>
+    </section>
+  </div>
+</main>
+<script src="../../comun/es.js"></script>
+<script src="../../comun/sh.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var s = SH.cargar();
+  if (!s.piezas.length && s.eventos.length) { s.piezas = s.eventos.map(function (t) { return { texto: t, entra: true }; }); SH.guardar(s); }
+  $("tramoTxt").textContent = s.tramo ? "Tu tramo: " + s.tramo : "Escribe tu tramo en la bienvenida, o agrega aquí las piezas a mano.";
+
+  function pintarTalla() {
+    var a = s.apetito;
+    document.querySelectorAll(".tallas .btn").forEach(function (b) { b.setAttribute("aria-pressed", String(String(a.cantidad) === b.dataset.c && a.unidad === b.dataset.u)); });
+    $("cantidad").value = a.cantidad || ""; $("unidad").value = a.unidad || "semanas";
+    $("estadoA").className = "estado" + (a.cantidad ? " bien" : "");
+    $("estadoA").textContent = a.cantidad ? "Tu apetito: " + a.cantidad + " " + a.unidad + (a.talla ? " (" + a.talla + ")" : "") + ". Es un límite: no se extiende." : "";
+  }
+  document.querySelectorAll(".tallas .btn").forEach(function (b) {
+    b.addEventListener("click", function () { s = SH.cargar(); s.apetito = { cantidad: b.dataset.c, unidad: b.dataset.u, talla: b.dataset.t }; SH.guardar(s); pintarTalla(); });
+  });
+  function propio() {
+    s = SH.cargar();
+    var c = parseInt($("cantidad").value, 10);
+    s.apetito = { cantidad: c > 0 ? String(c) : "", unidad: $("unidad").value, talla: "" };
+    SH.guardar(s); pintarTalla();
+  }
+  $("cantidad").addEventListener("input", propio); $("unidad").addEventListener("change", propio);
+
+  function pintar() {
+    var E = $("entra"), F = $("fuera"); E.innerHTML = ""; F.innerHTML = "";
+    s.piezas.forEach(function (p, k) {
+      var el = ES.h("div", { class: "pieza" }, [
+        ES.h("span", { text: p.texto }),
+        ES.h("div", { class: "es-fila", style: "gap:.3em;flex-wrap:nowrap" }, [
+          ES.h("button", { type: "button", class: "btn chico", text: p.entra ? "Sacar" : "Meter", "aria-label": (p.entra ? "Sacar " : "Meter ") + p.texto, onclick: function () { s = SH.cargar(); s.piezas[k].entra = !s.piezas[k].entra; SH.guardar(s); pintar(); } }),
+          ES.h("button", { type: "button", class: "btn chico", text: "×", "aria-label": "Quitar " + p.texto, onclick: function () { s = SH.cargar(); s.piezas.splice(k, 1); SH.guardar(s); pintar(); } })
+        ])
+      ]);
+      (p.entra ? E : F).appendChild(el);
+    });
+    var e = s.piezas.filter(function (p) { return p.entra; }).length, f = s.piezas.length - e;
+    $("cuenta").textContent = e + " entran · " + f + " fuera";
+    var est = $("estadoP");
+    if (!s.piezas.length) { est.className = "estado"; est.textContent = "Agrega las piezas de tu módulo."; }
+    else if (!f) { est.className = "estado mal"; est.textContent = "Si todo entra, el apetito no está decidiendo nada: saca al menos una pieza."; }
+    else if (!e) { est.className = "estado mal"; est.textContent = "Deja dentro lo que sí vale ese tiempo."; }
+    else { est.className = "estado bien"; est.textContent = "Lo que quedó fuera va a tus no-gos en el pitch."; }
+  }
+  function agregar() {
+    var t = $("nueva").value.trim();
+    if (t.length < 3) { $("nueva").focus(); return; }
+    s = SH.cargar(); s.piezas.push({ texto: t, entra: true }); SH.guardar(s); $("nueva").value = ""; pintar();
+  }
+  $("agregar").addEventListener("click", agregar);
+  $("nueva").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); agregar(); } });
+  pintarTalla(); pintar();
+})();
+</script>
+</body>
+</html>

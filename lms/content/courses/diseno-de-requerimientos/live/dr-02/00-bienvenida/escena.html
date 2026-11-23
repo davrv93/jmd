@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoy le pones precio y forma a tu módulo · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Sesión 2 · Darle forma al módulo con Shape Up</p>
+  <h1>Hoy le pones <em>precio</em> y forma a tu módulo</h1>
+  <p class="es-sub">En la sesión 1 elegiste el tramo que más duele. Hoy decides cuánto tiempo vale, escribes su pitch de una página y lo conviertes en criterios que la IA tendrá que cumplir en la sesión 3.</p>
+
+  <div class="es-2">
+    <section class="es-panel">
+      <h2>Tu módulo</h2>
+      <p class="estado" id="origen" role="status" aria-live="polite"></p>
+      <label>Tu negocio o tu trabajo<input type="text" id="negocio" maxlength="120" placeholder="Ej.: Botica San Pedro"></label>
+      <label>El tramo que elegiste (de qué evento a qué evento)<input type="text" id="tramo" maxlength="160" placeholder="Ej.: Venta registrada → Boleta aceptada por SUNAT"></label>
+      <div class="es-fila">
+        <button type="button" class="btn" id="ejemplo">Usar el ejemplo de la botica</button>
+        <p class="estado" id="estado" role="status" aria-live="polite"></p>
+      </div>
+      <p class="es-nota-al-pie">Si en la sesión 1 usaste este mismo navegador, tu tramo ya aparece aquí. Si no, escríbelo. Se guarda en este navegador.</p>
+    </section>
+
+    <section class="es-panel">
+      <h2>La clase de hoy</h2>
+      <ol class="explica">
+        <li><b>Teoría:</b> el apetito, dar forma en trazo grueso y el pitch de cinco piezas (Ryan Singer, Shape Up).</li>
+        <li><b>Tu apetito:</b> cuánto vale tu módulo y qué piezas entran.</li>
+        <li><b>Tu pitch:</b> las cinco piezas en una página, y DeepSeek lo critica como si tuviera que construirlo.</li>
+        <li><b>Tus criterios:</b> al menos seis frases Dado, cuando, entonces que se puedan comprobar.</li>
+        <li><b>Publica:</b> compártelo con el grupo y guárdalo para la sesión 3.</li>
+      </ol>
+    </section>
+  </div>
+</main>
+<script src="../../comun/es.js"></script>
+<script src="../../comun/sh.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var s = SH.cargar();
+  $("negocio").value = s.negocio || ""; $("tramo").value = s.tramo || "";
+  $("origen").className = "estado" + (s.eventos.length ? " bien" : "");
+  $("origen").textContent = s.eventos.length ? "Trajimos tu tramo de la sesión 1 con " + s.eventos.length + " eventos." : "No encontramos tu mapa de la sesión 1 en este navegador.";
+  function guardar() {
+    s = SH.cargar(); s.negocio = $("negocio").value.trim(); s.tramo = $("tramo").value.trim(); SH.guardar(s);
+    $("estado").className = "estado bien"; $("estado").textContent = s.tramo ? "Guardado." : "";
+  }
+  $("negocio").addEventListener("input", guardar); $("tramo").addEventListener("input", guardar);
+  $("ejemplo").addEventListener("click", function () {
+    s = SH.cargar(); var E = SH.EJEMPLO;
+    s.negocio = E.negocio; s.tramo = E.tramo; s.eventos = E.eventos.slice();
+    SH.guardar(s); $("negocio").value = s.negocio; $("tramo").value = s.tramo;
+    $("estado").className = "estado bien"; $("estado").textContent = "Listo: usamos el ejemplo de la botica.";
+  });
+})();
+</script>
+</body>
+</html>

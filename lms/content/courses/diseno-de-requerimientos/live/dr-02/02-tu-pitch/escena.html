@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu pitch y la crítica de DeepSeek · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+<style>
+  .pz-cab { display: flex; justify-content: space-between; align-items: baseline; gap: .5em; }
+  .pz-cab small { opacity: .75; font-variant-numeric: tabular-nums; }
+  textarea { width: 100%; }
+  .grav { font: 700 .72em/1 var(--mono, monospace); letter-spacing: .08em; text-transform: uppercase; padding: .25em .45em; border-radius: 4px; color: #fff; }
+  .grav.alta { background: #B3261E; } .grav.media { background: #C46A12; } .grav.baja { background: #4A4F5A; }
+  .hoja { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Paso 2 de 4 · 25 minutos</p>
+  <h1>Tu pitch en <em>una página</em></h1>
+  <p class="es-sub">Cinco piezas, en trazo grueso. Después DeepSeek lo lee como si tuviera que construirlo en tu apetito y te dice dónde se cae. Tú decides qué corriges.</p>
+
+  <div class="es-2">
+    <section class="es-panel">
+      <p class="es-nota-al-pie" id="cabecera"></p>
+      <label><span class="pz-cab"><b>1 · Problema</b><small id="c-problema"></small></span><textarea id="problema" rows="3" maxlength="600" placeholder="Qué pasa hoy sin la solución, con un caso concreto."></textarea></label>
+      <p class="es-nota-al-pie"><b>2 · Apetito:</b> <span id="apetito"></span></p>
+      <label><span class="pz-cab"><b>3 · Solución en trazo grueso</b><small id="c-solucion"></small></span><textarea id="solucion" rows="4" maxlength="900" placeholder="Los elementos: lugares, botones, qué pasa. Nada de colores ni pantallas."></textarea></label>
+      <label><span class="pz-cab"><b>4 · Agujeros de conejo y su parche</b><small id="c-agujeros"></small></span><textarea id="agujeros" rows="3" maxlength="600" placeholder="Lo que podría comerse el tiempo y cómo lo resuelves desde ya."></textarea></label>
+      <label><span class="pz-cab"><b>5 · No-gos</b><small id="c-nogos"></small></span><textarea id="nogos" rows="2" maxlength="500" placeholder="Lo que NO entra en este apetito."></textarea></label>
+      <div class="es-fila">
+        <span class="chk hoja" id="hoja">0 palabras</span>
+        <button type="button" class="btn chico" id="ejemplo">Usar el ejemplo de la botica</button>
+      </div>
+    </section>
+
+    <section class="es-panel">
+      <div class="es-fila" style="justify-content:space-between">
+        <h2>La crítica</h2>
+        <span class="chk" id="cuenta">0 atendidas</span>
+      </div>
+      <button type="button" class="btn ia" id="criticar">DeepSeek: critica mi pitch como si fueras a construirlo</button>
+      <p class="estado" id="estado" role="status" aria-live="polite"></p>
+      <p class="estado" id="veredicto" role="status" aria-live="polite"></p>
+      <div id="respaldo" hidden class="es-col">
+        <p class="es-nota-al-pie">Si la IA de la clase no responde, copia tu pitch con el pedido y pégalo en DeepSeek (chat o Harness).</p>
+        <button type="button" class="btn chico" id="copiarPrompt">Copiar el pitch y el pedido para DeepSeek</button>
+      </div>
+      <div class="es-col" id="lista"><p class="es-nota-al-pie">Todavía no hay críticas.</p></div>
+    </section>
+  </div>
+</main>
+<script src="../../comun/es.js"></script>
+<script src="../../comun/sh.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var CAMPOS = ["problema", "solucion", "agujeros", "nogos"];
+  var s = SH.cargar();
+
+  // Primera vez: la solución y los no-gos parten de las piezas del paso 1.
+  if (!s.pitch.solucion && s.piezas.some(function (p) { return p.entra; })) s.pitch.solucion = s.piezas.filter(function (p) { return p.entra; }).map(function (p) { return p.texto; }).join(". ") + ".";
+  if (!s.pitch.nogos && s.piezas.some(function (p) { return !p.entra; })) s.pitch.nogos = "No entra: " + s.piezas.filter(function (p) { return !p.entra; }).map(function (p) { return p.texto; }).join(", ") + ".";
+  SH.guardar(s);
+
+  function apetitoTxt() { var a = s.apetito; return a.cantidad ? a.cantidad + " " + a.unidad + (a.talla ? " (" + a.talla + ")" : "") : "todavía no lo fijaste (vuelve al paso 1)"; }
+  function palabras(t) { return (t || "").trim().split(/\s+/).filter(Boolean).length; }
+  function contar() {
+    var tot = 0;
+    CAMPOS.forEach(function (c) { var n = palabras(s.pitch[c]); tot += n; $("c-" + c).textContent = n + " pal."; });
+    var h = $("hoja");
+    h.textContent = tot + " palabras · " + (tot <= 350 ? "cabe en una página" : "más de una página: recorta");
+    h.style.color = tot <= 350 ? "" : "#B3261E";
+  }
+  function llenar() {
+    $("cabecera").textContent = (s.tramo ? "Tramo: " + s.tramo : "Sin tramo: escríbelo en la bienvenida.") + (s.negocio ? " · " + s.negocio : "");
+    $("apetito").textContent = apetitoTxt();
+    CAMPOS.forEach(function (c) { $(c).value = s.pitch[c] || ""; });
+    contar();
+  }
+  CAMPOS.forEach(function (c) {
+    $(c).addEventListener("input", function () { s = SH.cargar(); s.pitch[c] = $(c).value; SH.guardar(s); contar(); });
+  });
+  $("ejemplo").addEventListener("click", function () {
+    s = SH.cargar(); var E = SH.EJEMPLO;
+    if (!s.tramo) { s.tramo = E.tramo; s.negocio = E.negocio; }
+    if (!s.apetito.cantidad) s.apetito = { cantidad: "2", unidad: "semanas", talla: "proyecto pequeño" };
+    s.pitch = JSON.parse(JSON.stringify(E.pitch)); SH.guardar(s); llenar();
+  });
+
+  function pedido() { return ("Critica mi pitch como si tuvieras que construirlo en " + apetitoTxt() + ". Tramo: " + (s.tramo || "mi módulo")).slice(0, 300); }
+  function muestra() {
+    return { pitch: { problema: s.pitch.problema, apetito: apetitoTxt(), solucion: s.pitch.solucion, agujeros_de_conejo: s.pitch.agujeros, no_gos: s.pitch.nogos,
+      entra: s.piezas.filter(function (p) { return p.entra; }).map(function (p) { return p.texto; }),
+      queda_fuera: s.piezas.filter(function (p) { return !p.entra; }).map(function (p) { return p.texto; }) } };
+  }
+
+  function pintar() {
+    var L = $("lista"); L.innerHTML = "";
+    var hechas = s.criticas.filter(function (c) { return c.ok; }).length;
+    $("cuenta").textContent = hechas + " de " + s.criticas.length + " atendidas";
+    if (!s.criticas.length) { L.appendChild(ES.h("p", { class: "es-nota-al-pie", text: "Todavía no hay críticas." })); return; }
+    s.criticas.forEach(function (c, k) {
+      L.appendChild(ES.h("div", { class: "sug" + (c.ok ? " hecha" : "") }, [
+        ES.h("span", { class: "grav " + c.gravedad, text: c.gravedad }),
+        ES.h("div", null, [ES.h("b", { text: c.pieza + ": " + c.problema }), ES.h("span", { text: c.arreglo })]),
+        ES.h("button", { type: "button", class: "btn chico " + (c.ok ? "ok" : ""), text: c.ok ? "Corregido" : "Lo corregí", onclick: function () { s = SH.cargar(); s.criticas[k].ok = !s.criticas[k].ok; SH.guardar(s); pintar(); } })
+      ]));
+    });
+  }
+
+  $("criticar").addEventListener("click", function () {
+    s = SH.cargar();
+    var faltan = CAMPOS.filter(function (c) { return palabras(s.pitch[c]) < 4; });
+    if (faltan.length) { $("estado").className = "estado mal"; $("estado").textContent = "Completa las cinco piezas antes de pedir la crítica (o usa el ejemplo)."; $(faltan[0]).focus(); return; }
+    var b = $("criticar"), t0 = Date.now();
+    b.disabled = true; $("estado").className = "estado"; $("estado").textContent = "DeepSeek está leyendo tu pitch…";
+    var rel = setInterval(function () { $("estado").textContent = "DeepSeek está leyendo tu pitch… " + Math.round((Date.now() - t0) / 1000) + " s"; }, 1000);
+    ES.ia(ES.ESCENA, pedido(), { razon: (s.negocio || "Mi negocio").slice(0, 120), rubro: (s.tramo || "mi módulo").slice(0, 120), regimen: "Shape Up" }, muestra()).then(function (x) {
+      clearInterval(rel); b.disabled = false;
+      if (!x.ok) { $("estado").className = "estado mal"; $("estado").textContent = x.msg; $("respaldo").hidden = false; return; }
+      var filas = x.tablas.Criticas || [];
+      s = SH.cargar();
+      s.criticas = filas.filter(function (f) { return f && f[1]; }).slice(0, 8).map(function (f) {
+        var g = String(f[3] || "media").toLowerCase(); if (["alta", "media", "baja"].indexOf(g) < 0) g = "media";
+        return { pieza: String(f[0] || "pitch").trim(), problema: String(f[1]).trim(), arreglo: String(f[2] || "").trim(), gravedad: g, ok: false };
+      });
+      SH.guardar(s); pintar();
+      $("estado").className = "estado bien"; $("estado").textContent = s.criticas.length + " críticas en " + Math.round((Date.now() - t0) / 1000) + " s. Corrige tu pitch y márcalas.";
+      $("veredicto").className = "estado"; $("veredicto").textContent = x.titulo ? "Veredicto: " + x.titulo : "";
+      ES.evidencia("pitch criticado: " + s.criticas.length + " críticas, " + s.criticas.filter(function (c) { return c.gravedad === "alta"; }).length + " graves");
+    });
+  });
+  $("copiarPrompt").addEventListener("click", function () {
+    var t = "Actúa como un desarrollador con experiencia que va a construir este módulo con el método Shape Up (Ryan Singer). " + pedido() +
+      ". Revisa: problema concreto, apetito, solución en trazo grueso, agujeros de conejo con su parche y no-gos. No lo reescribas: dame de 4 a 8 críticas con su arreglo y su gravedad.\n\n" + SH.texto(SH.cargar());
+    ES.copiar(t).then(function () { ES.toast("Copiado. Pégalo en DeepSeek."); });
+  });
+  llenar(); pintar();
+})();
+</script>
+</body>
+</html>

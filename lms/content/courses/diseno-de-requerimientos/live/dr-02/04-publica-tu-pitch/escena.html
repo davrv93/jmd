@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Publica tu pitch · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+<style>
+  pre.doc { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 22em; overflow: auto; font: .88em/1.45 var(--mono, monospace); background: var(--papel, #fff); padding: .8em; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.12); margin: 0; }
+</style>
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Paso 4 de 4 · 8 minutos</p>
+  <h1>Tu apuesta, <em>a la mesa</em></h1>
+  <p class="es-sub">En Shape Up los pitches se presentan en la mesa de apuestas. Publica el tuyo al grupo, mira los demás y guarda el documento: en la sesión 3 la IA construye contra tus criterios.</p>
+
+  <div class="es-2">
+    <section class="es-panel">
+      <div class="metrica" id="metrica"></div>
+      <pre class="doc" id="doc"></pre>
+      <div class="es-fila">
+        <button type="button" class="btn pri" id="publicar">Publicar mi pitch al grupo</button>
+        <button type="button" class="btn" id="copiar">Copiar</button>
+        <button type="button" class="btn" id="bajar">Descargar .md</button>
+      </div>
+      <p class="estado" id="estado" role="status" aria-live="polite"></p>
+    </section>
+    <section class="es-panel">
+      <h2>La mesa de apuestas del grupo</h2>
+      <ol class="ranking" id="muro"></ol>
+    </section>
+  </div>
+</main>
+<script src="../../comun/es.js"></script>
+<script src="../../comun/sh.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var s = SH.cargar();
+  var ok = s.criterios.filter(function (c) { return SH.revisar(c).ok; }).length;
+  var at = s.criticas.filter(function (c) { return c.ok; }).length;
+  var ap = s.apetito.cantidad ? s.apetito.cantidad + " " + s.apetito.unidad : "—";
+  [[ap, "apetito"], [s.piezas.filter(function (p) { return !p.entra; }).length, "piezas fuera"], [at + "/" + s.criticas.length, "críticas atendidas"], [ok, "criterios comprobables"]].forEach(function (x) {
+    $("metrica").appendChild(ES.h("div", null, [ES.h("b", { text: String(x[0]) }), ES.h("span", { text: x[1] })]));
+  });
+  $("doc").textContent = SH.texto(s);
+
+  function resumen() { return (s.tramo || "mi módulo") + " · apetito " + ap + " · " + ok + " criterios · no-go: " + (s.pitch.nogos || "—"); }
+  $("publicar").addEventListener("click", function () {
+    var est = $("estado");
+    if (!s.apetito.cantidad || (s.pitch.solucion || "").length < 10) { est.className = "estado mal"; est.textContent = "Te falta el apetito (paso 1) o la solución (paso 2)."; return; }
+    if (ok < 6) { est.className = "estado mal"; est.textContent = "Llega a 6 criterios comprobables (paso 3) antes de publicar."; return; }
+    ES.muroPublicar(resumen()).then(function (x) {
+      if (x.estado === 200 || x.estado === 201) {
+        est.className = "estado bien"; est.textContent = "Publicado en la mesa de apuestas.";
+        ES.evidencia("pitch: " + resumen().slice(0, 170)); leerMuro();
+      } else { est.className = "estado mal"; est.textContent = "No se pudo publicar (" + ((x.b && x.b.message) || x.estado) + ")."; }
+    });
+  });
+  $("copiar").addEventListener("click", function () { ES.copiar(SH.texto(SH.cargar())).then(function () { ES.toast("Copiado: guárdalo para la sesión 3."); }); });
+  $("bajar").addEventListener("click", function () { ES.descargar("pitch-" + (s.negocio || "modulo").toLowerCase().replace(/[^a-z0-9áéíóúñ]+/gi, "-") + ".md", SH.texto(SH.cargar())); });
+
+  function leerMuro() {
+    ES.muroLeer().then(function (ent) {
+      var ol = $("muro"); ol.innerHTML = "";
+      if (!ent.length) ol.appendChild(ES.h("li", null, [ES.h("span", { text: "Nadie ha publicado su pitch todavía." })]));
+      ent.forEach(function (e) { ol.appendChild(ES.h("li", { class: e.mia ? "mia" : "" }, [ES.h("b", { text: e.nombre }), ES.h("span", { text: e.texto })])); });
+    });
+  }
+  leerMuro(); setInterval(leerMuro, 6000);
+})();
+</script>
+</body>
+</html>
