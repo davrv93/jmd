@@ -7,8 +7,8 @@ objectives:
   - id: om-02-o1
     title: Escribir un guion por escenas y generar voz y música
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/kfMHgQNCqgTidZMOdttteSJHbqS2ELoGqVaGfLAqMUjAEYkFbC-al8qJfSGfxb1g.iH-_oBqzSSHB1799?pwd=DN2vSVq4-JeDHE-qOwAAIAAAAPXPxnaEhknhI0YxBAEmpw1ObnlYmPOfI0RbgOE4njFJLpdY61cxSp2Q6h4y7IGRWDAwMDAwNA"
+  passcode: "+7=%ZxYB"
 repo:
   url: https://github.com/calesthio/OpenMontage
   ref: main

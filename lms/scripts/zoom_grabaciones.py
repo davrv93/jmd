@@ -43,6 +43,7 @@ MANUALES = {
     "2026-11-15 19:26": "ipt-01",  # «una inteligencia artificial llamada DeepSeek… unirme al grupo»
     "2026-11-16 21:40": "pt-03",   # consumo de tokens de Claude, Haiku/Sonnet/Opus: Potencia tus agentes
     "2026-11-17 19:16": "lc-01",   # «la sesión del día de hoy trata sobre el laboratorio del caos»
+    "2026-11-22 19:28": "ipt-02",  # plugin editor .zip en DeepSeek Harness; bwb-02 lo dicta otra persona
     "2026-11-22 15:07": "qab-02",  # sesión de trabajo del Instituto QA (bot con avatar, ficha del fallo, oráculo): confirmada por el usuario como QA Bots sesión 2
 }
 

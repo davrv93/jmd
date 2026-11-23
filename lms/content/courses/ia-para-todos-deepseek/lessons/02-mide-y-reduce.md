@@ -13,8 +13,8 @@ objectives:
   - id: ipt-02-o4
     title: Acotar archivos, líneas por comando, alcance de búsqueda, resumen reutilizado y tareas por rol, y dejar un informe y una rutina reproducible
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/8JExa9qxhhmDFzEeELQv1JrfegmRyGx9Y1qbUL9q1Cti_Lr_NdD18CY6eGZUJpha.ycKUsqnhZxd8vzOr?pwd=DFlpAe5lcMz77gC1LwAAIAAAANZ1EakkyRTqM1yUbrVw7zGxNWVe0TE4hPKFK_p_FTZeWzJo0HRTZwF_mZnmd_JqFjAwMDAwNA"
+  passcode: "1qtq%cF!"
 repo:
   url: https://github.com/davrv93/jmd
   ref: main
