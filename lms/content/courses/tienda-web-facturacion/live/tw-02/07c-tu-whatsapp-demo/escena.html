@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Demo: tu tienda envía los mensajes por WhatsApp</title>
+<!--
+  Escena del modo LIVE · «Tienda web con facturación electrónica», sesión 2.
+  Demo SIMULADA: no se envía ningún mensaje real. Usa los datos que el alumno llenó en 07-tus-mensajes
+  (TW.leer("cobro")) y compara los dos caminos de la lámina 07b: API oficial de Meta y Evolution Go.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/tw.css">
+<style id="esc-propio">
+.wd-camino { display: flex; gap: .5em; flex-wrap: wrap; }
+.wd-camino .tw-btn[aria-pressed="false"] { color: var(--accent); background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.wd-camino .tw-btn[data-c="meta"][aria-pressed="true"] { background: #2B6CB0; border-color: #2B6CB0; color: #fff; }
+.wd-camino .tw-btn[data-c="evo"][aria-pressed="true"] { background: #9A4F08; border-color: #9A4F08; color: #fff; }
+.wd-estados { list-style: none; margin: .2em 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: .35em; }
+.wd-estados li { font-size: .58em; font-weight: 700; text-align: center; padding: .55em .3em; border-radius: .6em; border: 1px solid var(--line); color: var(--muted); background: var(--s2); transition: background .3s, color .3s, border-color .3s; }
+.wd-estados li.hecho { background: color-mix(in srgb, var(--ok) 16%, var(--s1)); color: var(--fg); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.wd-estados li.ahora { background: var(--ok); color: #fff; border-color: var(--ok); }
+.wd-flujo { width: 100%; height: auto; max-height: 8.5em; display: block; }
+.wd-flujo .caja { fill: var(--s2); stroke: var(--line); stroke-width: 1.5; }
+.wd-flujo .caja.api { stroke-width: 2.5; }
+.wd-flujo text { fill: var(--fg); font: 700 15px system-ui, sans-serif; }
+.wd-flujo text.sub { fill: var(--muted); font: 600 12px system-ui, sans-serif; }
+.wd-flujo .via { fill: none; stroke: var(--line); stroke-width: 3; }
+.wd-flujo .vuelta { fill: none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 6 6; }
+.wd-flujo .vuelta.activa { stroke: var(--ok); }
+.wd-flujo .bola { fill: var(--accent); }
+.wd-flujo .bola.vuelve { fill: var(--ok); }
+.wd-paso { font-size: .7em; margin: .3em 0 0; min-height: 3.2em; }
+.wd-chips { display: flex; gap: .4em; flex-wrap: wrap; min-height: 1.8em; }
+.wd-chip { font: 700 .56em/1.3 var(--mono); letter-spacing: .02em; padding: .35em .7em; border-radius: 999px; background: var(--info-bg); color: var(--info); }
+.wd-chip.aviso { background: var(--warn-bg); color: var(--warn); }
+.wd-chip.dinero { background: var(--gold-bg); color: var(--gold); }
+.wd-top { display: flex; align-items: center; gap: .6em; padding: .8em .9em; background: #075E54; color: #fff; }
+.wd-top .av { width: 2.2em; height: 2.2em; border-radius: 50%; background: #25D366; display: grid; place-items: center; font-weight: 800; color: #073b33; }
+.wd-top b { display: block; font-size: .95em; }
+.wd-top small { opacity: .85; font-size: .78em; }
+.wd-chat { overflow-y: auto; padding: .8em .7em; display: flex; flex-direction: column; gap: .5em; background: color-mix(in srgb, #25D366 6%, var(--papel)); }
+:root[data-tema="dark"] .wd-chat { background: #15141c; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="light"]) .wd-chat { background: #15141c; } }
+.wd-b { max-width: 84%; padding: .5em .7em .35em; border-radius: .7em; font-size: .9em; line-height: 1.35; box-shadow: 0 1px 1px rgba(0,0,0,.12); animation: wd-in .35s ease-out both; }
+.wd-b.yo { align-self: flex-start; background: #fff; color: #16151d; border-top-left-radius: .15em; }
+.wd-b.tienda { align-self: flex-end; background: #DCF8C6; color: #16151d; border-top-right-radius: .15em; }
+.wd-b small { display: block; text-align: right; font-size: .72em; opacity: .6; margin-top: .2em; }
+.wd-dia { align-self: center; font: 700 .7em var(--mono); padding: .25em .7em; border-radius: .5em; background: rgba(0,0,0,.08); color: inherit; }
+.wd-escribe { align-self: flex-end; font-size: .78em; opacity: .7; font-style: italic; }
+.wd-pie { padding: .55em .8em; font-size: .78em; opacity: .75; border-top: 1px solid rgba(0,0,0,.08); }
+@keyframes wd-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .wd-b { animation: none; } .wd-estados li { transition: none; } }
+@media (max-width: 860px) { .wd-estados li { font-size: .72em; } .wd-paso { font-size: .85em; } .wd-chip { font-size: .7em; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación activa</span>
+    <span class="esc-num">Sesión 2 · E07c</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="tw-cols">
+      <div class="tw-pila">
+        <h1 class="esc-titulo a-in" style="font-size:1.55em">Tu tienda <em>envía los mensajes</em> sola</h1>
+        <p class="esc-sub a-in" style="--d:.1s;font-size:.88em">Demo simulada: no se envía nada de verdad. Elige un camino y mueve el pedido por sus estados; mira qué pasa en el WhatsApp de tu cliente.</p>
+
+        <div class="tw-card a-in" style="--d:.15s">
+          <h2>1 · Elige el camino</h2>
+          <div class="wd-camino" role="group" aria-label="Camino para enlazar WhatsApp">
+            <button type="button" class="tw-btn" data-c="meta" aria-pressed="true">Oficial · API de Meta</button>
+            <button type="button" class="tw-btn" data-c="evo" aria-pressed="false">No oficial · Evolution Go</button>
+          </div>
+        </div>
+
+        <div class="tw-card a-in" style="--d:.2s">
+          <h2>2 · Mueve el pedido <span class="esc-chip" id="num">N.° 1042</span></h2>
+          <ol class="wd-estados" id="estados">
+            <li>Recibido</li><li>Pago por confirmar</li><li>Pagado</li><li>Listo para recoger</li><li>Entregado</li>
+          </ol>
+          <div class="tw-btns" style="margin-top:.6em;display:flex;gap:.5em;flex-wrap:wrap">
+            <button type="button" class="tw-btn" id="sig">Siguiente estado</button>
+            <button type="button" class="tw-btn sec" id="todo">Ver todo el pedido</button>
+            <button type="button" class="tw-btn sec peq" id="reini">Reiniciar</button>
+          </div>
+        </div>
+
+        <div class="tw-card a-in" style="--d:.25s">
+          <h2>3 · Cómo viaja el mensaje</h2>
+          <svg class="wd-flujo" viewBox="0 0 600 210" role="img" aria-labelledby="wd-desc">
+            <desc id="wd-desc">Tu tienda envía el mensaje a la API; la API lo entrega en el WhatsApp de tu cliente. Cuando el cliente responde, la API avisa a tu tienda por un webhook, en la línea punteada de abajo.</desc>
+            <rect class="caja" x="10" y="40" width="150" height="80" rx="14"/>
+            <text x="85" y="76" text-anchor="middle">Tu tienda</text>
+            <text class="sub" x="85" y="98" text-anchor="middle">cambia el estado</text>
+            <rect class="caja api" id="cajaApi" x="225" y="40" width="150" height="80" rx="14"/>
+            <text x="300" y="76" text-anchor="middle" id="apiT">API de Meta</text>
+            <text class="sub" x="300" y="98" text-anchor="middle" id="apiS">nube de WhatsApp</text>
+            <rect class="caja" x="440" y="40" width="150" height="80" rx="14"/>
+            <text x="515" y="76" text-anchor="middle">WhatsApp</text>
+            <text class="sub" x="515" y="98" text-anchor="middle">de tu cliente</text>
+            <path id="ida" class="via" d="M160 80 H440"/>
+            <path id="vuelta" class="vuelta" d="M515 120 C515 185 85 185 85 120"/>
+            <text class="sub" x="300" y="200" text-anchor="middle">webhook: «el cliente respondió»</text>
+            <circle id="bola" class="bola" r="9" cx="160" cy="80" opacity="0"/>
+          </svg>
+          <p class="wd-paso" id="paso">Pulsa «Siguiente estado» para enviar el primer mensaje.</p>
+          <div class="wd-chips" id="chips"></div>
+        </div>
+      </div>
+
+      <div class="tw-pila">
+        <div class="tw-cel a-in" style="--d:.2s">
+          <div class="tw-cel-pant">
+            <div class="wd-top"><span class="av" id="ini">B</span><div><b id="negTop">Tu negocio</b><small id="via">vía API oficial de Meta</small></div></div>
+            <div class="wd-chat" id="chat" aria-live="polite"></div>
+            <div class="wd-pie" id="pie">Así lo ve tu cliente en su celular.</div>
+          </div>
+        </div>
+        <p class="tw-nota a-in" style="--d:.3s">Los mensajes salen de lo que llenaste en la escena 7. Para conectarlo de verdad: con Meta necesitas un número dedicado y tu cuenta de negocio; con Evolution Go, un servidor y un número de prueba.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Prueba los dos caminos y fíjate qué cambia en el estado «Listo para recoger»</span>
+  </footer>
+</div>
+<script src="../../comun/tw.js"></script>
+
+<script>
+(function () {
+  var $ = TW.$, $$ = TW.$$, el = TW.el;
+  var quieto = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var d = TW.leer("cobro", {});
+  var NEG = d.neg || "Bodega Doña Rosa", N = "N.° 1042";
+  function v(k, def) { return String(d[k] || def).trim().replace(/\.+$/, ""); }
+  var MSG = [
+    function () { return "Hola, recibimos tu pedido " + N + " en " + NEG + ". Puedes pagar por Yape o Plin al " + v("yape", "987 654 321") + " (" + v("tit", "Rosa Quispe") + "). Envíanos la captura y lo verificamos."; },
+    function () { return "Recibimos tu captura del pedido " + N + ". La estamos verificando en nuestra cuenta y te confirmamos en breve."; },
+    function () { return "Tu pago está confirmado. Tu pedido " + N + " ya está en preparación. ¡Gracias por tu compra en " + NEG + "!"; },
+    function () { return "Tu pedido " + N + " está listo. Puedes recogerlo en " + v("rec", "Av. Los Olivos 123, de lunes a sábado de 9 a. m. a 6 p. m.") + ". Muestra tu número de pedido al llegar."; },
+    function () { return "Entregamos tu pedido " + N + ". ¿Todo llegó bien? Respóndenos por aquí y te ayudamos."; }
+  ];
+  // Hora simulada de cada mensaje: el cliente escribió el lunes; «Listo» y «Entregado» salen al día siguiente (fuera de las 24 h).
+  var HORA = [["lun", "10:02"], ["lun", "10:15"], ["lun", "10:40"], ["mar", "11:30"], ["mar", "16:05"]];
+  var camino = "meta", i = -1, ocupado = false, ventana = true, cola = null, gen = 0;
+
+  $("#negTop").textContent = NEG;
+  $("#ini").textContent = NEG.trim().charAt(0).toUpperCase() || "T";
+
+  function chip(txt, cls) { var c = el("span", "wd-chip" + (cls ? " " + cls : ""), txt); $("#chips").appendChild(c); }
+  function burbuja(txt, quien, hora) {
+    var b = el("div", "wd-b " + quien); b.appendChild(document.createTextNode(txt)); b.appendChild(el("small", "", hora));
+    $("#chat").appendChild(b); $("#chat").scrollTop = $("#chat").scrollHeight; return b;
+  }
+  function dia(txt) { $("#chat").appendChild(el("div", "wd-dia", txt)); }
+
+  function pintarCamino() {
+    $$(".wd-camino .tw-btn").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.c === camino)); });
+    var meta = camino === "meta";
+    $("#apiT").textContent = meta ? "API de Meta" : "Evolution Go";
+    $("#apiS").textContent = meta ? "nube de WhatsApp" : "tu servidor + QR";
+    $("#cajaApi").style.stroke = meta ? "#2B6CB0" : "#9A4F08";
+    $("#via").textContent = meta ? "vía API oficial de Meta" : "vía Evolution Go (no oficial)";
+  }
+
+  function reiniciar() {
+    gen++; i = -1; ventana = true; ocupado = false; if (cola) { clearTimeout(cola); cola = null; }
+    $("#chat").textContent = ""; $("#chips").textContent = "";
+    $$("#estados li").forEach(function (li) { li.className = ""; });
+    $("#vuelta").classList.remove("activa");
+    $("#bola").setAttribute("opacity", "0");
+    dia("Lunes");
+    burbuja("Hola, quiero hacer un pedido.", "yo", "9:58");
+    $("#paso").textContent = "Tu cliente te escribió el lunes a las 9:58: se abre la ventana de 24 horas. Pulsa «Siguiente estado».";
+    $("#sig").disabled = false; $("#todo").disabled = false;
+  }
+
+  function viajar(pathId, vuelve, alFin) {
+    var p = $("#" + pathId), bola = $("#bola"), L = p.getTotalLength();
+    bola.classList.toggle("vuelve", !!vuelve);
+    if (quieto) { alFin(); return; }
+    var t0 = null, dur = vuelve ? 1100 : 900;
+    bola.setAttribute("opacity", "1");
+    function paso(t) {
+      if (t0 === null) t0 = t;
+      var k = Math.min(1, (t - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2, pt = p.getPointAtLength(L * e);
+      bola.setAttribute("cx", pt.x); bola.setAttribute("cy", pt.y);
+      if (k < 1) requestAnimationFrame(paso); else { bola.setAttribute("opacity", "0"); alFin(); }
+    }
+    requestAnimationFrame(paso);
+  }
+
+  function siguiente(alFin) {
+    if (ocupado || i >= 4) { if (alFin) alFin(); return; }
+    ocupado = true; i++; var g = gen;
+    var lis = $$("#estados li");
+    lis.forEach(function (li, k) { li.className = k < i ? "hecho" : (k === i ? "ahora" : ""); });
+    if (i === 3) { dia("Martes"); ventana = false; }
+    $("#chips").textContent = "";
+    var meta = camino === "meta";
+    $("#paso").textContent = "1 · Tu tienda pasa el pedido a «" + lis[i].textContent + "» y llama a " + (meta ? "la API de Meta" : "Evolution Go") + " con el mensaje.";
+    var escribe = el("div", "wd-escribe", NEG + " está escribiendo…");
+    viajar("ida", false, function () {
+      if (g !== gen) return;
+      $("#chat").appendChild(escribe); $("#chat").scrollTop = $("#chat").scrollHeight;
+      cola = setTimeout(function () {
+        if (g !== gen) return;
+        escribe.remove();
+        burbuja(MSG[i](), "tienda", HORA[i][1]);
+        $("#paso").textContent = "2 · " + (meta ? "Meta entrega el mensaje" : "Evolution Go lo envía desde tu número vinculado") + " y tu cliente lo lee al instante.";
+        if (meta) {
+          if (ventana) { chip("Ventana de 24 h abierta: mensaje libre"); chip("Mensaje de servicio: dentro de los 1.000 gratis del mes", "dinero"); }
+          else { chip("Pasaron más de 24 h: solo plantilla aprobada", "aviso"); chip("Plantilla de utilidad: se cobra por mensaje entregado", "dinero"); }
+        } else {
+          chip("Sesión vinculada por QR: sin plantillas ni cobro de Meta");
+          chip("No oficial: WhatsApp puede bloquear el número", "aviso");
+        }
+        if (i === 4) {
+          cola = setTimeout(function () {
+            if (g !== gen) return;
+            burbuja("Sí, todo perfecto. ¡Gracias!", "yo", "16:20");
+            $("#vuelta").classList.add("activa");
+            $("#paso").textContent = "3 · Tu cliente respondió: la API avisa a tu tienda por un webhook y el pedido queda cerrado.";
+            viajar("vuelta", true, function () {
+              if (g !== gen) return;
+              chip("Webhook recibido: el cliente confirmó la entrega");
+              if (meta) chip("Su respuesta abre otra ventana de 24 h");
+              ocupado = false; $("#sig").disabled = true; $("#todo").disabled = true; if (alFin) alFin();
+            });
+          }, quieto ? 0 : 1100);
+        } else { ocupado = false; if (alFin) alFin(); }
+      }, quieto ? 0 : 900);
+    });
+  }
+
+  $("#sig").addEventListener("click", function () { siguiente(); });
+  $("#todo").addEventListener("click", function () {
+    $("#todo").disabled = true;
+    var g = gen;
+    (function uno() { if (g === gen && i < 4) siguiente(function () { if (g === gen) cola = setTimeout(uno, quieto ? 0 : 700); }); })();
+  });
+  $("#reini").addEventListener("click", reiniciar);
+  $$(".wd-camino .tw-btn").forEach(function (b) {
+    b.addEventListener("click", function () { if (camino === b.dataset.c) return; camino = b.dataset.c; pintarCamino(); reiniciar(); });
+  });
+  pintarCamino();
+  reiniciar();
+})();
+</script>
+</body>
+</html>
