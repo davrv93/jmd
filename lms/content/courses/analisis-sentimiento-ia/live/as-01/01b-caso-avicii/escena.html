@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caso Avicii · Análisis de sentimiento con IA</title>
+<style>
+:root{--bg:#f7f6f2;--panel:#fff;--ink:#1b1d24;--mut:#5c6170;--line:#e3e1da;--ac:#1f6feb;--pos:#1a7f5a;--neg:#c2410c;--neu:#8a8f9c;
+  --a-sencillo:#7c3aed;--a-true:#0e7490;--a-stories:#ca8a04;--a-avici:#db2777;--a-tim:#334155;--grid:#ecebe6}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--panel:#171a21;--ink:#e9ecf2;--mut:#9aa1ae;--line:#2a2f3a;--ac:#6ea8ff;--pos:#4cc38a;--neg:#ff8a5c;--neu:#8c93a1;
+  --a-sencillo:#a78bfa;--a-true:#22d3ee;--a-stories:#facc15;--a-avici:#f472b6;--a-tim:#cbd5e1;--grid:#232733}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;padding:0 max(16px,env(safe-area-inset-left)) 0 max(16px,env(safe-area-inset-right))}
+.wrap{max-width:980px;margin:0 auto;padding:40px 0 64px}
+.ceja{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.08;margin:8px 0 12px;letter-spacing:-.02em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--ac)}
+h2{font-size:24px;margin:48px 0 8px;letter-spacing:-.01em}
+.lead{font-size:18px;color:var(--mut);max-width:66ch}
+.aviso{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--ac);border-radius:10px;padding:14px 16px;font-size:15px;color:var(--mut);margin:18px 0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:22px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi b{display:block;font-size:28px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi span{font-size:14px;color:var(--mut)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:12px;overflow-x:auto}
+.panel svg{display:block;width:100%;height:auto;min-width:600px}
+.panel svg#g3{min-width:300px}
+.halo{paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
+.nota{font-size:14px;color:var(--mut);margin:8px 0 0}
+.leyenda{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--mut);margin-top:8px}
+.leyenda i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+p,li{max-width:70ch}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h3{font-size:16px;margin:0}
+.card .meta{font-size:13px;color:var(--mut);margin:2px 0 8px}
+.card svg{width:100%;height:70px;display:block}
+.card .acc{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
+button,.btn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 10px;cursor:pointer;text-decoration:none}
+button:focus-visible,.btn:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.rot{font-size:12px;color:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.n{font-variant-numeric:tabular-nums}
+.ayuda{background:var(--panel);border:2px solid var(--pos);border-radius:14px;padding:18px 20px;margin-top:40px}
+.ayuda h2{margin-top:0}
+.fuentes li{font-size:14px;color:var(--mut);margin-bottom:4px}
+a{color:var(--ac)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="ceja">Caso real · Laboratorio · 8 minutos</div>
+  <h1>Música alegre, <em>letras tristes</em>: Avicii en datos</h1>
+  <p class="lead">Tim Bergling (Avicii) llenó festivales con canciones que se sienten luminosas. ¿Qué dicen sus letras cuando se las mira por separado de la música? Este informe compara las dos capas en <b>24 canciones</b> de 2011 a 2019.</p>
+  <div class="aviso">Aquí no se publican letras ni audio. La música se describe con datos públicos (tonalidad, tempo y valencia de Spotify) y con <b>progresiones armónicas ilustrativas</b> genéricas: <b>no son las grabaciones ni las melodías</b>. Las letras se resumen solo en cifras y temas agregados. El informe no diagnostica a nadie: la letra de una canción no es la persona, y casi todas tienen varios autores.</div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <h2>El contexto, según fuentes públicas</h2>
+  <p>Entre 2011 y 2015 Avicii pasó de un éxito de club, <i>Levels</i>, a giras por arenas en todo el mundo. Según el sitio oficial del documental <i>Avicii: True Stories</i> (Levan Tsikurishvili, 2017), llegó a tocar más de 800 shows, y en 2015 «el estrés, la ansiedad y la enfermedad» lo estaban desgastando [1]. En el documental cuenta que encontró mucha resistencia cuando quiso dejar las giras [2]. Anunció su retiro de los escenarios el 29 de marzo de 2016 [3] y dio su último show el 28 de agosto de 2016 en Ibiza [1]. Murió el 20 de abril de 2018 en Mascate, Omán, a los 28 años [4]. Su familia creó después la Tim Bergling Foundation, que trabaja por la salud mental de los jóvenes y la prevención del suicidio [5]. El álbum <i>TIM</i> (2019) se terminó con sus colaboradores a partir de sus maquetas.</p>
+
+  <h2>1 · Música contra letra</h2>
+  <p>Cada punto es una canción. A la derecha, música más «luminosa» (valencia de Spotify o, si falta, una estimación por modo y tempo: círculo hueco). Arriba, letra más positiva. El cuadrante de abajo a la derecha es el caso que buscamos: <b>suena alegre y dice algo triste</b>.</p>
+  <div class="panel"><svg id="g1" viewBox="0 0 720 520" role="img" aria-label="Dispersión de canciones: índice musical contra polaridad de la letra"></svg>
+    <div class="leyenda" id="ley1"></div></div>
+
+  <h2>2 · Cómo cambió con los años</h2>
+  <p>Promedio de cada lanzamiento: polaridad de la letra y de la música.</p>
+  <div class="panel"><svg id="g2" viewBox="0 0 720 320" role="img" aria-label="Evolución por álbum de la polaridad de letra y música"></svg>
+    <div class="leyenda"><span><i style="background:var(--ac)"></i>Música</span><span><i style="background:var(--neg)"></i>Letra</span></div></div>
+
+  <h2>3 · Rueda de emociones del corpus</h2>
+  <p>Intensidad media de las 8 emociones básicas de Plutchik en las letras.</p>
+  <div class="panel"><svg id="g3" viewBox="0 0 520 520" role="img" aria-label="Rueda de Plutchik con la intensidad media de cada emoción"></svg></div>
+
+  <h2>4 · La brecha, canción por canción</h2>
+  <p>Brecha = índice musical − polaridad de la letra. Cuanto más larga hacia la derecha, más alegre suena frente a lo que dice.</p>
+  <div class="panel"><svg id="g4" viewBox="0 0 720 640" role="img" aria-label="Barras de brecha entre música y letra por canción"></svg></div>
+
+  <h2>5 · Temas recurrentes</h2>
+  <p>Etiquetas propias de cada letra, agregadas (no son palabras de las letras).</p>
+  <div class="panel"><svg id="g5" viewBox="0 0 720 420" role="img" aria-label="Frecuencia de temas en el corpus"></svg></div>
+
+  <h2>6 · Progresiones armónicas ilustrativas</h2>
+  <p>Para escuchar «qué color» tiene cada tonalidad y tempo: una progresión <b>genérica</b> (I–V–vi–IV en mayor, i–VI–III–VII en menor) en la tonalidad y el BPM reales de cada canción. <b>Progresión armónica ilustrativa, no es la grabación ni la melodía.</b> Puedes escucharla aquí.</p>
+  <div class="cards" id="cards"></div>
+
+  <h2>Tabla de datos</h2>
+  <div class="panel"><table id="tabla"></table></div>
+  <p class="nota">El dataset (sin letras) está en la tabla de arriba.</p>
+
+  <h2>Método</h2>
+  <ul>
+    <li><b>Música:</b> tonalidad, BPM, energía y valencia («happiness») de Spotify, consultadas en tunebat.com y songdata.io, contrastadas con TheoryTab de Hooktheory (transcripción humana), Mixgraph, Beatport, SongBPM y 12notez. Cuando las fuentes discrepan, casi siempre entre una tonalidad mayor y su relativa menor, se marca «dudosa». Ocho canciones no tienen valencia publicada: su índice musical se estima por modo y tempo y se dibuja hueco.</li>
+    <li><b>Letra:</b> valoración con un LLM (Claude) aplicando la misma rúbrica a cada canción. El modelo trabajó con su conocimiento de cada letra: <b>no se descargaron ni guardaron letras</b>. Es un análisis exploratorio que conviene validar a mano, como enseña el curso.
+      <ol><li>¿El yo de la canción expresa malestar (soledad, miedo, cansancio, pérdida) o bienestar (gozo, gratitud, esperanza)?</li><li>¿Ese estado domina el estribillo o solo aparece en un verso?</li><li>¿La canción termina en esperanza, en resignación o en el mismo malestar?</li><li>Intensidad 0–1 de cada emoción básica de Plutchik presente.</li><li>Temas recurrentes (etiquetas propias, sin citar la letra).</li></ol></li>
+    <li><b>Índice musical:</b> 2 × valencia − 1, en la escala −1..1, para compararlo con la polaridad de la letra.</li>
+  </ul>
+
+  <h2>Conclusiones prudentes</h2>
+  <ul id="concl"></ul>
+  <h3>Limitaciones</h3>
+  <ul>
+    <li>La muestra es pequeña (24 canciones) y elegida a mano entre sencillos y temas de álbum.</li>
+    <li>La valencia de Spotify es un modelo opaco: mide «cómo suena», no lo que la música significa para alguien.</li>
+    <li>La polaridad de la letra la valoró un modelo de IA y no se validó contra lectores humanos.</li>
+    <li>Casi todas las letras tienen coautores (Aloe Blacc, Vargas &amp; Lagola, Chris Martin, Sandro Cavazza…), y algunas son versiones. No describen necesariamente lo que sentía Tim.</li>
+    <li>Contraste no es causa: muchas canciones de pop bailable tienen letras melancólicas.</li>
+  </ul>
+
+  <h2>Fuentes</h2>
+  <ol class="fuentes">
+    <li>Sitio oficial de <i>Avicii: True Stories</i>: aviciitruestories.com.</li>
+    <li>SVT Kulturnyheterna, «Avicii i nya filmen: ”Mötte mycket motstånd när jag ville sluta turnera”», 25-10-2017; Variety, entrevista al director, 11-09-2017.</li>
+    <li>Rolling Stone, «Avicii Retires From Touring via Open Letter to Fans», 29-03-2016.</li>
+    <li>Reuters, «Avicii, Swedish electronic dance music artist and DJ, dead at 28», 20-04-2018; Variety, comunicado de su equipo, 20-04-2018.</li>
+    <li>Tim Bergling Foundation: timberglingfoundation.org («About us»).</li>
+    <li>Datos musicales: tunebat.com, songdata.io, hooktheory.com (TheoryTab), mixgraph.io, beatport.com, songbpm.com, 12notez.in, consultados el 23-11-2026.</li>
+    <li>Plutchik, R. (1980). <i>Emotion: A Psychoevolutionary Synthesis</i>. Harper &amp; Row.</li>
+  </ol>
+
+  <div class="ayuda" role="note">
+    <h2>Si este tema te toca de cerca</h2>
+    <p>Sentirse mal detrás de una sonrisa es más común de lo que parece, y pedir ayuda funciona. En el Perú, la <b>Línea 113 Salud, opción 5</b> (Minsa) brinda orientación psicológica <b>gratuita las 24 horas</b> desde cualquier fijo o celular. También por WhatsApp o Telegram al <b>955 557 000</b> o al <b>952 842 623</b>. Fuente: gob.pe, «Línea 113 Salud».</p>
+    <p>Si tú o alguien cercano está en peligro inmediato, acude a la emergencia del establecimiento de salud más cercano o pide ayuda a alguien de confianza ahora mismo.</p>
+  </div>
+</div>
+<script>
+const D=[{"titulo": "Levels", "anio": 2011, "album": "Sencillo", "tonalidad": "C# menor", "tonica": "C#", "modo": "menor", "bpm": 126, "energia": 83, "valencia_spotify": 35, "valencia_musical": 0.35, "valencia_estimada": false, "musica": -0.3, "letra": 0.6, "brecha": -0.9, "fuente_musica": "tunebat; hooktheory", "dudosa": false, "nota": "Letra mínima: un sample vocal de Etta James.", "coautoria": "sample de Etta James", "temas": ["euforia"], "emociones": {"alegria": 0.7, "confianza": 0.3, "miedo": 0, "sorpresa": 0, "tristeza": 0, "aversion": 0, "ira": 0, "anticipacion": 0.5}, "progresion": "i–VI–III–VII", "acordes": ["C#m", "A", "E", "B"], "midi": "assets/midi/levels.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHRB4A/1gEBAIYCADAAADBIACQPUgAkEBIAJBESACRJVCOdoA9AACAQAAAgEQAAIElAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAqQO0gAkD9IAJBCSACRL1COdoA7AACAPwAAgEIAAIEvAAqQPUgAkEBIAJBESACRJVCOdoA9AACAQAAAgEQAAIElAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAqQO0gAkD9IAJBCSACRL1COdoA7AACAPwAAgEIAAIEvAAD/LwA=", "notas": [[61, 64, 68], [57, 61, 64], [59, 64, 68], [59, 63, 66]], "bajos": [37, 45, 40, 47]}, {"titulo": "Silhouettes", "anio": 2012, "album": "Sencillo", "tonalidad": "F menor", "tonica": "F", "modo": "menor", "bpm": 128, "energia": 86, "valencia_spotify": 52, "valencia_musical": 0.52, "valencia_estimada": false, "musica": 0.04, "letra": 0.2, "brecha": -0.16, "fuente_musica": "tunebat; hooktheory", "dudosa": false, "nota": "", "coautoria": "Salem Al Fakir y otros", "temas": ["nostalgia", "juventud"], "emociones": {"alegria": 0.4, "confianza": 0, "miedo": 0, "sorpresa": 0, "tristeza": 0.4, "aversion": 0, "ira": 0, "anticipacion": 0.4}, "progresion": "i–VI–III–VII", "acordes": ["Fm", "C#", "Ab", "Eb"], "midi": "assets/midi/silhouettes.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHJw4A/1gEBAIYCADAAADBIACQPEgAkEFIAJBESACRKVCOdoA8AACAQQAAgEQAAIEpAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAqQPEgAkD9IAJBESACRLFCOdoA8AACAPwAAgEQAAIEsAAqQOkgAkD9IAJBDSACRJ1COdoA6AACAPwAAgEMAAIEnAAqQPEgAkEFIAJBESACRKVCOdoA8AACAQQAAgEQAAIEpAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAqQPEgAkD9IAJBESACRLFCOdoA8AACAPwAAgEQAAIEsAAqQOkgAkD9IAJBDSACRJ1COdoA6AACAPwAAgEMAAIEnAAD/LwA=", "notas": [[60, 65, 68], [61, 65, 68], [60, 63, 68], [58, 63, 67]], "bajos": [41, 37, 44, 39]}, {"titulo": "Wake Me Up", "anio": 2013, "album": "True", "tonalidad": "B menor", "tonica": "B", "modo": "menor", "bpm": 124, "energia": 78, "valencia_spotify": 64, "valencia_musical": 0.64, "valencia_estimada": false, "musica": 0.28, "letra": -0.2, "brecha": 0.48, "fuente_musica": "hooktheory (B menor); tunebat (D mayor)", "dudosa": true, "nota": "Spotify la lista en D mayor, su relativa.", "coautoria": "Aloe Blacc, Mike Einziger", "temas": ["sentirse perdido", "juventud", "búsqueda"], "emociones": {"alegria": 0.2, "confianza": 0, "miedo": 0.4, "sorpresa": 0, "tristeza": 0.5, "aversion": 0, "ira": 0, "anticipacion": 0.5}, "progresion": "i–VI–III–VII", "acordes": ["Bm", "G", "D", "A"], "midi": "assets/midi/wake-me-up.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHYh4A/1gEBAIYCADAAADBIACQO0gAkD5IAJBCSACRL1COdoA7AACAPgAAgEIAAIEvAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkD5IAJBCSACRL1COdoA7AACAPgAAgEIAAIEvAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAD/LwA=", "notas": [[59, 62, 66], [59, 62, 67], [57, 62, 66], [57, 61, 64]], "bajos": [47, 43, 38, 45]}, {"titulo": "Hey Brother", "anio": 2013, "album": "True", "tonalidad": "G menor", "tonica": "G", "modo": "menor", "bpm": 125, "energia": 78, "valencia_spotify": 46, "valencia_musical": 0.46, "valencia_estimada": false, "musica": -0.08, "letra": 0.4, "brecha": -0.48, "fuente_musica": "tunebat; songdata; hooktheory", "dudosa": false, "nota": "", "coautoria": "Ash Pournouri y otros", "temas": ["lealtad", "apoyo"], "emociones": {"alegria": 0.3, "confianza": 0.8, "miedo": 0, "sorpresa": 0, "tristeza": 0.3, "aversion": 0, "ira": 0, "anticipacion": 0.3}, "progresion": "i–VI–III–VII", "acordes": ["Gm", "Eb", "Bb", "F"], "midi": "assets/midi/hey-brother.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHUwAA/1gEBAIYCADAAADBIACQOkgAkD5IAJBDSACRK1COdoA6AACAPgAAgEMAAIErAAqQOkgAkD9IAJBDSACRJ1COdoA6AACAPwAAgEMAAIEnAAqQOkgAkD5IAJBBSACRLlCOdoA6AACAPgAAgEEAAIEuAAqQOUgAkDxIAJBBSACRKVCOdoA5AACAPAAAgEEAAIEpAAqQOkgAkD5IAJBDSACRK1COdoA6AACAPgAAgEMAAIErAAqQOkgAkD9IAJBDSACRJ1COdoA6AACAPwAAgEMAAIEnAAqQOkgAkD5IAJBBSACRLlCOdoA6AACAPgAAgEEAAIEuAAqQOUgAkDxIAJBBSACRKVCOdoA5AACAPAAAgEEAAIEpAAD/LwA=", "notas": [[58, 62, 67], [58, 63, 67], [58, 62, 65], [57, 60, 65]], "bajos": [43, 39, 46, 41]}, {"titulo": "You Make Me", "anio": 2013, "album": "True", "tonalidad": "Eb menor", "tonica": "Eb", "modo": "menor", "bpm": 125, "energia": 73, "valencia_spotify": 50, "valencia_musical": 0.5, "valencia_estimada": false, "musica": 0.0, "letra": 0.4, "brecha": -0.4, "fuente_musica": "mixgraph (Eb menor); tunebat (F# mayor)", "dudosa": true, "nota": "Fuentes en relativas distintas.", "coautoria": "Salem Al Fakir", "temas": ["amor"], "emociones": {"alegria": 0.5, "confianza": 0.3, "miedo": 0, "sorpresa": 0, "tristeza": 0, "aversion": 0, "ira": 0, "anticipacion": 0.5}, "progresion": "i–VI–III–VII", "acordes": ["Ebm", "B", "F#", "C#"], "midi": "assets/midi/you-make-me.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHUwAA/1gEBAIYCADAAADBIACQOkgAkD9IAJBCSACRJ1COdoA6AACAPwAAgEIAAIEnAAqQO0gAkD9IAJBCSACRL1COdoA7AACAPwAAgEIAAIEvAAqQOkgAkD1IAJBCSACRKlCOdoA6AACAPQAAgEIAAIEqAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAqQOkgAkD9IAJBCSACRJ1COdoA6AACAPwAAgEIAAIEnAAqQO0gAkD9IAJBCSACRL1COdoA7AACAPwAAgEIAAIEvAAqQOkgAkD1IAJBCSACRKlCOdoA6AACAPQAAgEIAAIEqAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAD/LwA=", "notas": [[58, 63, 66], [59, 63, 66], [58, 61, 66], [61, 65, 68]], "bajos": [39, 47, 42, 37]}, {"titulo": "Addicted to You", "anio": 2013, "album": "True", "tonalidad": "C# menor", "tonica": "C#", "modo": "menor", "bpm": 128, "energia": 79, "valencia_spotify": 30, "valencia_musical": 0.3, "valencia_estimada": false, "musica": -0.4, "letra": -0.1, "brecha": -0.3, "fuente_musica": "tunebat; songdata; hooktheory", "dudosa": false, "nota": "", "coautoria": "Mac Davis y otros", "temas": ["dependencia", "amor"], "emociones": {"alegria": 0.3, "confianza": 0, "miedo": 0.3, "sorpresa": 0, "tristeza": 0.4, "aversion": 0, "ira": 0, "anticipacion": 0.4}, "progresion": "i–VI–III–VII", "acordes": ["C#m", "A", "E", "B"], "midi": "assets/midi/addicted-to-you.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHJw4A/1gEBAIYCADAAADBIACQPUgAkEBIAJBESACRJVCOdoA9AACAQAAAgEQAAIElAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAqQO0gAkD9IAJBCSACRL1COdoA7AACAPwAAgEIAAIEvAAqQPUgAkEBIAJBESACRJVCOdoA9AACAQAAAgEQAAIElAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAqQO0gAkD9IAJBCSACRL1COdoA7AACAPwAAgEIAAIEvAAD/LwA=", "notas": [[61, 64, 68], [57, 61, 64], [59, 64, 68], [59, 63, 66]], "bajos": [37, 45, 40, 47]}, {"titulo": "Hope There's Someone", "anio": 2013, "album": "True", "tonalidad": "F# menor", "tonica": "F#", "modo": "menor", "bpm": 128, "energia": null, "valencia_spotify": null, "valencia_musical": 0.42, "valencia_estimada": true, "musica": -0.16, "letra": -0.6, "brecha": 0.44, "fuente_musica": "hooktheory", "dudosa": false, "nota": "Versión de una canción de Antony and the Johnsons.", "coautoria": "versión (letra de Anohni)", "temas": ["miedo a la oscuridad", "soledad"], "emociones": {"alegria": 0, "confianza": 0, "miedo": 0.7, "sorpresa": 0, "tristeza": 0.7, "aversion": 0, "ira": 0, "anticipacion": 0.3}, "progresion": "i–VI–III–VII", "acordes": ["F#m", "D", "A", "E"], "midi": "assets/midi/hope-there-s-someone.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHJw4A/1gEBAIYCADAAADBIACQOUgAkD1IAJBCSACRKlCOdoA5AACAPQAAgEIAAIEqAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAqQOUgAkD1IAJBCSACRKlCOdoA5AACAPQAAgEIAAIEqAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAD/LwA=", "notas": [[57, 61, 66], [57, 62, 66], [57, 61, 64], [59, 64, 68]], "bajos": [42, 38, 45, 40]}, {"titulo": "Liar Liar", "anio": 2013, "album": "True", "tonalidad": "B menor", "tonica": "B", "modo": "menor", "bpm": 125, "energia": null, "valencia_spotify": null, "valencia_musical": 0.41, "valencia_estimada": true, "musica": -0.18, "letra": -0.4, "brecha": 0.22, "fuente_musica": "hooktheory; 12notez", "dudosa": false, "nota": "", "coautoria": "coautores", "temas": ["engaño"], "emociones": {"alegria": 0, "confianza": 0, "miedo": 0, "sorpresa": 0, "tristeza": 0.4, "aversion": 0.3, "ira": 0.5, "anticipacion": 0}, "progresion": "i–VI–III–VII", "acordes": ["Bm", "G", "D", "A"], "midi": "assets/midi/liar-liar.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHUwAA/1gEBAIYCADAAADBIACQO0gAkD5IAJBCSACRL1COdoA7AACAPgAAgEIAAIEvAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkD5IAJBCSACRL1COdoA7AACAPgAAgEIAAIEvAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAD/LwA=", "notas": [[59, 62, 66], [59, 62, 67], [57, 62, 66], [57, 61, 64]], "bajos": [47, 43, 38, 45]}, {"titulo": "Shame on Me", "anio": 2013, "album": "True", "tonalidad": "E menor", "tonica": "E", "modo": "menor", "bpm": 126, "energia": 84, "valencia_spotify": 43, "valencia_musical": 0.43, "valencia_estimada": false, "musica": -0.14, "letra": -0.3, "brecha": 0.16, "fuente_musica": "hooktheory (E menor); tunebat (B menor)", "dudosa": true, "nota": "", "coautoria": "coautores", "temas": ["culpa"], "emociones": {"alegria": 0.2, "confianza": 0, "miedo": 0, "sorpresa": 0, "tristeza": 0.4, "aversion": 0.3, "ira": 0, "anticipacion": 0}, "progresion": "i–VI–III–VII", "acordes": ["Em", "C", "G", "D"], "midi": "assets/midi/shame-on-me.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHRB4A/1gEBAIYCADAAADBIACQO0gAkEBIAJBDSACRKFCOdoA7AACAQAAAgEMAAIEoAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQO0gAkEBIAJBDSACRKFCOdoA7AACAQAAAgEMAAIEoAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAD/LwA=", "notas": [[59, 64, 67], [60, 64, 67], [59, 62, 67], [57, 62, 66]], "bajos": [40, 36, 43, 38]}, {"titulo": "The Days", "anio": 2014, "album": "Sencillo", "tonalidad": "C mayor", "tonica": "C", "modo": "mayor", "bpm": 127, "energia": 74, "valencia_spotify": 56, "valencia_musical": 0.56, "valencia_estimada": false, "musica": 0.12, "letra": 0.7, "brecha": -0.58, "fuente_musica": "tunebat; songbpm; Wikipedia", "dudosa": false, "nota": "", "coautoria": "Brandon Flowers, Robbie Williams y otros", "temas": ["vivir el momento", "juventud"], "emociones": {"alegria": 0.8, "confianza": 0.3, "miedo": 0, "sorpresa": 0, "tristeza": 0, "aversion": 0, "ira": 0, "anticipacion": 0.6}, "progresion": "I–V–vi–IV", "acordes": ["C", "G", "Am", "F"], "midi": "assets/midi/the-days.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHNXgA/1gEBAIYCADAAADBIACQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkDxIAJBASACRLVCOdoA5AACAPAAAgEAAAIEtAAqQOUgAkDxIAJBBSACRKVCOdoA5AACAPAAAgEEAAIEpAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkDxIAJBASACRLVCOdoA5AACAPAAAgEAAAIEtAAqQOUgAkDxIAJBBSACRKVCOdoA5AACAPAAAgEEAAIEpAAD/LwA=", "notas": [[60, 64, 67], [59, 62, 67], [57, 60, 64], [57, 60, 65]], "bajos": [36, 43, 45, 41]}, {"titulo": "The Nights", "anio": 2014, "album": "Sencillo", "tonalidad": "F# mayor", "tonica": "F#", "modo": "mayor", "bpm": 126, "energia": 84, "valencia_spotify": 65, "valencia_musical": 0.65, "valencia_estimada": false, "musica": 0.3, "letra": 0.5, "brecha": -0.2, "fuente_musica": "tunebat; songbpm (F# mayor); hooktheory (D# menor)", "dudosa": true, "nota": "Spotify en F# mayor; TheoryTab en su relativa menor.", "coautoria": "Nicholas Furlong y otros", "temas": ["consejo de un padre", "vivir el momento"], "emociones": {"alegria": 0.6, "confianza": 0.4, "miedo": 0, "sorpresa": 0, "tristeza": 0.2, "aversion": 0, "ira": 0, "anticipacion": 0.6}, "progresion": "I–V–vi–IV", "acordes": ["F#", "C#", "Ebm", "B"], "midi": "assets/midi/the-nights.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHRB4A/1gEBAIYCADAAADBIACQOkgAkD1IAJBCSACRKlCOdoA6AACAPQAAgEIAAIEqAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAqQOkgAkD9IAJBCSACRJ1COdoA6AACAPwAAgEIAAIEnAAqQO0gAkD9IAJBCSACRL1COdoA7AACAPwAAgEIAAIEvAAqQOkgAkD1IAJBCSACRKlCOdoA6AACAPQAAgEIAAIEqAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAqQOkgAkD9IAJBCSACRJ1COdoA6AACAPwAAgEIAAIEnAAqQO0gAkD9IAJBCSACRL1COdoA7AACAPwAAgEIAAIEvAAD/LwA=", "notas": [[58, 61, 66], [61, 65, 68], [58, 63, 66], [59, 63, 66]], "bajos": [42, 37, 39, 47]}, {"titulo": "Waiting for Love", "anio": 2015, "album": "Stories", "tonalidad": "F# menor", "tonica": "F#", "modo": "menor", "bpm": 128, "energia": 74, "valencia_spotify": 61, "valencia_musical": 0.61, "valencia_estimada": false, "musica": 0.22, "letra": 0.4, "brecha": -0.18, "fuente_musica": "tunebat; hooktheory", "dudosa": false, "nota": "", "coautoria": "Martin Garrix, Simon Aldred y otros", "temas": ["esperanza", "amor"], "emociones": {"alegria": 0.5, "confianza": 0.4, "miedo": 0, "sorpresa": 0, "tristeza": 0, "aversion": 0, "ira": 0, "anticipacion": 0.7}, "progresion": "i–VI–III–VII", "acordes": ["F#m", "D", "A", "E"], "midi": "assets/midi/waiting-for-love.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHJw4A/1gEBAIYCADAAADBIACQOUgAkD1IAJBCSACRKlCOdoA5AACAPQAAgEIAAIEqAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAqQOUgAkD1IAJBCSACRKlCOdoA5AACAPQAAgEIAAIEqAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAD/LwA=", "notas": [[57, 61, 66], [57, 62, 66], [57, 61, 64], [59, 64, 68]], "bajos": [42, 38, 45, 40]}, {"titulo": "Broken Arrows", "anio": 2015, "album": "Stories", "tonalidad": "G mayor", "tonica": "G", "modo": "mayor", "bpm": 116, "energia": 67, "valencia_spotify": 29, "valencia_musical": 0.29, "valencia_estimada": false, "musica": -0.42, "letra": 0.1, "brecha": -0.52, "fuente_musica": "tunebat; hooktheory", "dudosa": false, "nota": "", "coautoria": "Zac Brown y otros", "temas": ["apoyo", "heridas"], "emociones": {"alegria": 0, "confianza": 0.5, "miedo": 0, "sorpresa": 0, "tristeza": 0.5, "aversion": 0, "ira": 0, "anticipacion": 0.4}, "progresion": "I–V–vi–IV", "acordes": ["G", "D", "Em", "C"], "midi": "assets/midi/broken-arrows.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMH5HkA/1gEBAIYCADAAADBIACQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQO0gAkEBIAJBDSACRKFCOdoA7AACAQAAAgEMAAIEoAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQO0gAkEBIAJBDSACRKFCOdoA7AACAQAAAgEMAAIEoAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAD/LwA=", "notas": [[59, 62, 67], [57, 62, 66], [59, 64, 67], [60, 64, 67]], "bajos": [43, 38, 40, 36]}, {"titulo": "Talk to Myself", "anio": 2015, "album": "Stories", "tonalidad": "Bb menor", "tonica": "Bb", "modo": "menor", "bpm": 122, "energia": null, "valencia_spotify": null, "valencia_musical": 0.4, "valencia_estimada": true, "musica": -0.2, "letra": -0.4, "brecha": 0.2, "fuente_musica": "hooktheory", "dudosa": false, "nota": "", "coautoria": "Sterling Fox y otros", "temas": ["soledad"], "emociones": {"alegria": 0, "confianza": 0, "miedo": 0.3, "sorpresa": 0, "tristeza": 0.6, "aversion": 0, "ira": 0, "anticipacion": 0}, "progresion": "i–VI–III–VII", "acordes": ["Bbm", "F#", "C#", "Ab"], "midi": "assets/midi/talk-to-myself.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHgRsA/1gEBAIYCADAAADBIACQOkgAkD1IAJBBSACRLlCOdoA6AACAPQAAgEEAAIEuAAqQOkgAkD1IAJBCSACRKlCOdoA6AACAPQAAgEIAAIEqAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAqQPEgAkD9IAJBESACRLFCOdoA8AACAPwAAgEQAAIEsAAqQOkgAkD1IAJBBSACRLlCOdoA6AACAPQAAgEEAAIEuAAqQOkgAkD1IAJBCSACRKlCOdoA6AACAPQAAgEIAAIEqAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAqQPEgAkD9IAJBESACRLFCOdoA8AACAPwAAgEQAAIEsAAD/LwA=", "notas": [[58, 61, 65], [58, 61, 66], [61, 65, 68], [60, 63, 68]], "bajos": [46, 42, 37, 44]}, {"titulo": "Without You", "anio": 2017, "album": "AVĪCI (01)", "tonalidad": "D mayor", "tonica": "D", "modo": "mayor", "bpm": 134, "energia": 86, "valencia_spotify": 30, "valencia_musical": 0.3, "valencia_estimada": false, "musica": -0.4, "letra": -0.3, "brecha": -0.1, "fuente_musica": "songdata; songbpm (D mayor); hooktheory (B menor)", "dudosa": true, "nota": "", "coautoria": "Sandro Cavazza y otros", "temas": ["ruptura", "seguir adelante"], "emociones": {"alegria": 0, "confianza": 0, "miedo": 0, "sorpresa": 0, "tristeza": 0.6, "aversion": 0, "ira": 0, "anticipacion": 0.4}, "progresion": "I–V–vi–IV", "acordes": ["D", "A", "Bm", "G"], "midi": "assets/midi/without-you.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMG1REA/1gEBAIYCADAAADBIACQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkD5IAJBCSACRL1COdoA7AACAPgAAgEIAAIEvAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkD5IAJBCSACRL1COdoA7AACAPgAAgEIAAIEvAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAD/LwA=", "notas": [[57, 62, 66], [57, 61, 64], [59, 62, 66], [59, 62, 67]], "bajos": [38, 45, 47, 43]}, {"titulo": "Lonely Together", "anio": 2017, "album": "AVĪCI (01)", "tonalidad": "F mayor", "tonica": "F", "modo": "mayor", "bpm": 103, "energia": 67, "valencia_spotify": 27, "valencia_musical": 0.27, "valencia_estimada": false, "musica": -0.46, "letra": -0.4, "brecha": -0.06, "fuente_musica": "songdata (F mayor); hooktheory (D menor)", "dudosa": true, "nota": "", "coautoria": "Rita Ora y otros", "temas": ["soledad", "noche"], "emociones": {"alegria": 0.2, "confianza": 0, "miedo": 0.3, "sorpresa": 0, "tristeza": 0.6, "aversion": 0, "ira": 0, "anticipacion": 0}, "progresion": "I–V–vi–IV", "acordes": ["F", "C", "Dm", "Bb"], "midi": "assets/midi/lonely-together.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMI43wA/1gEBAIYCADAAADBIACQOUgAkDxIAJBBSACRKVCOdoA5AACAPAAAgEEAAIEpAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQOUgAkD5IAJBBSACRJlCOdoA5AACAPgAAgEEAAIEmAAqQOkgAkD5IAJBBSACRLlCOdoA6AACAPgAAgEEAAIEuAAqQOUgAkDxIAJBBSACRKVCOdoA5AACAPAAAgEEAAIEpAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQOUgAkD5IAJBBSACRJlCOdoA5AACAPgAAgEEAAIEmAAqQOkgAkD5IAJBBSACRLlCOdoA6AACAPgAAgEEAAIEuAAD/LwA=", "notas": [[57, 60, 65], [60, 64, 67], [57, 62, 65], [58, 62, 65]], "bajos": [41, 36, 38, 46]}, {"titulo": "Friend of Mine", "anio": 2017, "album": "AVĪCI (01)", "tonalidad": "Bb mayor", "tonica": "Bb", "modo": "mayor", "bpm": 110, "energia": null, "valencia_spotify": null, "valencia_musical": 0.51, "valencia_estimada": true, "musica": 0.02, "letra": 0.6, "brecha": -0.58, "fuente_musica": "mixgraph; Cifra Club (Bb); 12notez (G menor)", "dudosa": true, "nota": "", "coautoria": "Vargas & Lagola y otros", "temas": ["amistad", "gratitud"], "emociones": {"alegria": 0.6, "confianza": 0.8, "miedo": 0, "sorpresa": 0, "tristeza": 0, "aversion": 0, "ira": 0, "anticipacion": 0}, "progresion": "I–V–vi–IV", "acordes": ["Bb", "F", "Gm", "Eb"], "midi": "assets/midi/friend-of-mine.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMIUq4A/1gEBAIYCADAAADBIACQOkgAkD5IAJBBSACRLlCOdoA6AACAPgAAgEEAAIEuAAqQOUgAkDxIAJBBSACRKVCOdoA5AACAPAAAgEEAAIEpAAqQOkgAkD5IAJBDSACRK1COdoA6AACAPgAAgEMAAIErAAqQOkgAkD9IAJBDSACRJ1COdoA6AACAPwAAgEMAAIEnAAqQOkgAkD5IAJBBSACRLlCOdoA6AACAPgAAgEEAAIEuAAqQOUgAkDxIAJBBSACRKVCOdoA5AACAPAAAgEEAAIEpAAqQOkgAkD5IAJBDSACRK1COdoA6AACAPgAAgEMAAIErAAqQOkgAkD9IAJBDSACRJ1COdoA6AACAPwAAgEMAAIEnAAD/LwA=", "notas": [[58, 62, 65], [57, 60, 65], [58, 62, 67], [58, 63, 67]], "bajos": [46, 41, 43, 39]}, {"titulo": "SOS", "anio": 2019, "album": "TIM", "tonalidad": "F menor", "tonica": "F", "modo": "menor", "bpm": 100, "energia": 64, "valencia_spotify": 38, "valencia_musical": 0.38, "valencia_estimada": false, "musica": -0.24, "letra": -0.6, "brecha": 0.36, "fuente_musica": "songdata; hooktheory (F menor); mixgraph (Ab mayor)", "dudosa": true, "nota": "Terminada tras su muerte; Aloe Blacc contó que partió de notas de Tim.", "coautoria": "Aloe Blacc y otros", "temas": ["pedir ayuda", "sentirse perdido"], "emociones": {"alegria": 0, "confianza": 0, "miedo": 0.6, "sorpresa": 0, "tristeza": 0.7, "aversion": 0, "ira": 0, "anticipacion": 0.4}, "progresion": "i–VI–III–VII", "acordes": ["Fm", "C#", "Ab", "Eb"], "midi": "assets/midi/sos.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMJJ8AA/1gEBAIYCADAAADBIACQPEgAkEFIAJBESACRKVCOdoA8AACAQQAAgEQAAIEpAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAqQPEgAkD9IAJBESACRLFCOdoA8AACAPwAAgEQAAIEsAAqQOkgAkD9IAJBDSACRJ1COdoA6AACAPwAAgEMAAIEnAAqQPEgAkEFIAJBESACRKVCOdoA8AACAQQAAgEQAAIEpAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAqQPEgAkD9IAJBESACRLFCOdoA8AACAPwAAgEQAAIEsAAqQOkgAkD9IAJBDSACRJ1COdoA6AACAPwAAgEMAAIEnAAD/LwA=", "notas": [[60, 65, 68], [61, 65, 68], [60, 63, 68], [58, 63, 67]], "bajos": [41, 37, 44, 39]}, {"titulo": "Heaven", "anio": 2019, "album": "TIM", "tonalidad": "A mayor", "tonica": "A", "modo": "mayor", "bpm": 122, "energia": 87, "valencia_spotify": 52, "valencia_musical": 0.52, "valencia_estimada": false, "musica": 0.04, "letra": 0.5, "brecha": -0.46, "fuente_musica": "tunebat; songbpm; klangio", "dudosa": false, "nota": "Escrita con Chris Martin.", "coautoria": "Chris Martin", "temas": ["amor", "gratitud"], "emociones": {"alegria": 0.7, "confianza": 0.6, "miedo": 0, "sorpresa": 0, "tristeza": 0, "aversion": 0, "ira": 0, "anticipacion": 0}, "progresion": "I–V–vi–IV", "acordes": ["A", "E", "F#m", "D"], "midi": "assets/midi/heaven.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHgRsA/1gEBAIYCADAAADBIACQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAqQOUgAkD1IAJBCSACRKlCOdoA5AACAPQAAgEIAAIEqAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAqQOUgAkD1IAJBCSACRKlCOdoA5AACAPQAAgEIAAIEqAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAD/LwA=", "notas": [[57, 61, 64], [59, 64, 68], [57, 61, 66], [57, 62, 66]], "bajos": [45, 40, 42, 38]}, {"titulo": "Tough Love", "anio": 2019, "album": "TIM", "tonalidad": "Ab mayor", "tonica": "Ab", "modo": "mayor", "bpm": 108, "energia": 75, "valencia_spotify": 62, "valencia_musical": 0.62, "valencia_estimada": false, "musica": 0.24, "letra": 0.2, "brecha": 0.04, "fuente_musica": "tunebat", "dudosa": false, "nota": "", "coautoria": "Agnes, Vargas & Lagola", "temas": ["amor difícil"], "emociones": {"alegria": 0.4, "confianza": 0.5, "miedo": 0, "sorpresa": 0, "tristeza": 0.3, "aversion": 0, "ira": 0, "anticipacion": 0}, "progresion": "I–V–vi–IV", "acordes": ["Ab", "Eb", "Fm", "C#"], "midi": "assets/midi/tough-love.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMIeiMA/1gEBAIYCADAAADBIACQPEgAkD9IAJBESACRLFCOdoA8AACAPwAAgEQAAIEsAAqQOkgAkD9IAJBDSACRJ1COdoA6AACAPwAAgEMAAIEnAAqQPEgAkEFIAJBESACRKVCOdoA8AACAQQAAgEQAAIEpAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAqQPEgAkD9IAJBESACRLFCOdoA8AACAPwAAgEQAAIEsAAqQOkgAkD9IAJBDSACRJ1COdoA6AACAPwAAgEMAAIEnAAqQPEgAkEFIAJBESACRKVCOdoA8AACAQQAAgEQAAIEpAAqQPUgAkEFIAJBESACRJVCOdoA9AACAQQAAgEQAAIElAAD/LwA=", "notas": [[60, 63, 68], [58, 63, 67], [60, 65, 68], [61, 65, 68]], "bajos": [44, 39, 41, 37]}, {"titulo": "Fades Away", "anio": 2019, "album": "TIM", "tonalidad": "C mayor", "tonica": "C", "modo": "mayor", "bpm": 134, "energia": null, "valencia_spotify": null, "valencia_musical": 0.6, "valencia_estimada": true, "musica": 0.2, "letra": -0.4, "brecha": 0.6, "fuente_musica": "12notez", "dudosa": false, "nota": "", "coautoria": "Noonie Bao y otros", "temas": ["pérdida", "recuerdo"], "emociones": {"alegria": 0, "confianza": 0, "miedo": 0.3, "sorpresa": 0, "tristeza": 0.6, "aversion": 0, "ira": 0, "anticipacion": 0}, "progresion": "I–V–vi–IV", "acordes": ["C", "G", "Am", "F"], "midi": "assets/midi/fades-away.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMG1REA/1gEBAIYCADAAADBIACQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkDxIAJBASACRLVCOdoA5AACAPAAAgEAAAIEtAAqQOUgAkDxIAJBBSACRKVCOdoA5AACAPAAAgEEAAIEpAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkDxIAJBASACRLVCOdoA5AACAPAAAgEAAAIEtAAqQOUgAkDxIAJBBSACRKVCOdoA5AACAPAAAgEEAAIEpAAD/LwA=", "notas": [[60, 64, 67], [59, 62, 67], [57, 60, 64], [57, 60, 65]], "bajos": [36, 43, 45, 41]}, {"titulo": "Peace of Mind", "anio": 2019, "album": "TIM", "tonalidad": "E menor", "tonica": "E", "modo": "menor", "bpm": 110, "energia": null, "valencia_spotify": null, "valencia_musical": 0.36, "valencia_estimada": true, "musica": -0.28, "letra": -0.3, "brecha": 0.02, "fuente_musica": "beatport; chordify; 12notez", "dudosa": false, "nota": "", "coautoria": "Vargas & Lagola y otros", "temas": ["presión", "ritmo de vida", "descanso"], "emociones": {"alegria": 0, "confianza": 0, "miedo": 0.4, "sorpresa": 0, "tristeza": 0.4, "aversion": 0, "ira": 0, "anticipacion": 0.5}, "progresion": "i–VI–III–VII", "acordes": ["Em", "C", "G", "D"], "midi": "assets/midi/peace-of-mind.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMIUq4A/1gEBAIYCADAAADBIACQO0gAkEBIAJBDSACRKFCOdoA7AACAQAAAgEMAAIEoAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQO0gAkEBIAJBDSACRKFCOdoA7AACAQAAAgEMAAIEoAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAD/LwA=", "notas": [[59, 64, 67], [60, 64, 67], [59, 62, 67], [57, 62, 66]], "bajos": [40, 36, 43, 38]}, {"titulo": "Heart Upon My Sleeve", "anio": 2019, "album": "TIM", "tonalidad": "E menor", "tonica": "E", "modo": "menor", "bpm": 126, "energia": null, "valencia_spotify": null, "valencia_musical": 0.42, "valencia_estimada": true, "musica": -0.16, "letra": -0.2, "brecha": 0.04, "fuente_musica": "12notez", "dudosa": false, "nota": "Versión vocal con Imagine Dragons.", "coautoria": "Imagine Dragons", "temas": ["vulnerabilidad"], "emociones": {"alegria": 0, "confianza": 0.3, "miedo": 0.2, "sorpresa": 0, "tristeza": 0.4, "aversion": 0, "ira": 0, "anticipacion": 0}, "progresion": "i–VI–III–VII", "acordes": ["Em", "C", "G", "D"], "midi": "assets/midi/heart-upon-my-sleeve.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMHRB4A/1gEBAIYCADAAADBIACQO0gAkEBIAJBDSACRKFCOdoA7AACAQAAAgEMAAIEoAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQO0gAkEBIAJBDSACRKFCOdoA7AACAQAAAgEMAAIEoAAqQPEgAkEBIAJBDSACRJFCOdoA8AACAQAAAgEMAAIEkAAqQO0gAkD5IAJBDSACRK1COdoA7AACAPgAAgEMAAIErAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAD/LwA=", "notas": [[59, 64, 67], [60, 64, 67], [59, 62, 67], [57, 62, 66]], "bajos": [40, 36, 43, 38]}, {"titulo": "Hold the Line", "anio": 2019, "album": "TIM", "tonalidad": "A mayor", "tonica": "A", "modo": "mayor", "bpm": 98, "energia": null, "valencia_spotify": null, "valencia_musical": 0.46, "valencia_estimada": true, "musica": -0.08, "letra": 0.2, "brecha": -0.28, "fuente_musica": "mixgraph", "dudosa": false, "nota": "", "coautoria": "A R I Z O N A", "temas": ["resistir"], "emociones": {"alegria": 0, "confianza": 0.4, "miedo": 0, "sorpresa": 0, "tristeza": 0.3, "aversion": 0, "ira": 0, "anticipacion": 0.5}, "progresion": "I–V–vi–IV", "acordes": ["A", "E", "F#m", "D"], "midi": "assets/midi/hold-the-line.mid", "midi_b64": "TVRoZAAAAAYAAAABAeBNVHJrAAABIQD/UQMJV5QA/1gEBAIYCADAAADBIACQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAqQOUgAkD1IAJBCSACRKlCOdoA5AACAPQAAgEIAAIEqAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAqQOUgAkD1IAJBASACRLVCOdoA5AACAPQAAgEAAAIEtAAqQO0gAkEBIAJBESACRKFCOdoA7AACAQAAAgEQAAIEoAAqQOUgAkD1IAJBCSACRKlCOdoA5AACAPQAAgEIAAIEqAAqQOUgAkD5IAJBCSACRJlCOdoA5AACAPgAAgEIAAIEmAAD/LwA=", "notas": [[57, 61, 64], [59, 64, 68], [57, 61, 66], [57, 62, 66]], "bajos": [45, 40, 42, 38]}];
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const AC={"Sencillo":"--a-sencillo","True":"--a-true","Stories":"--a-stories","AVĪCI (01)":"--a-avici","TIM":"--a-tim"};
+const NS="http://www.w3.org/2000/svg";
+const el=(t,a={},p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
+const txt=(p,x,y,s,a={})=>{const t=el("text",Object.assign({x,y,fill:css("--mut"),"font-size":12},a),p);t.textContent=s;return t};
+const prom=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const f2=x=>(x>0?"+":"")+x.toFixed(2);
+
+function kpis(){
+  const menor=D.filter(d=>d.modo==="menor").length, bpm=prom(D.map(d=>d.bpm));
+  const gap=D.filter(d=>d.musica>0&&d.letra<0).length;
+  const items=[[D.length,"canciones (2011–2019)"],[Math.round(100*menor/D.length)+" %","en tonalidad menor"],[Math.round(bpm),"BPM promedio"],
+    [f2(prom(D.map(d=>d.letra))),"polaridad media de las letras"],[f2(prom(D.map(d=>d.musica))),"índice musical medio"],[gap,"suenan alegres con letra negativa"]];
+  document.getElementById("kpis").innerHTML=items.map(([b,s])=>`<div class="kpi"><b>${b}</b><span>${s}</span></div>`).join("");
+}
+
+function g1(){
+  const s=document.getElementById("g1"),W=720,H=520,m={l:56,r:20,t:20,b:48};
+  const X=v=>m.l+(v+1)/2*(W-m.l-m.r), Y=v=>m.t+(1-(v+1)/2)*(H-m.t-m.b);
+  el("rect",{x:X(0),y:Y(0),width:X(1)-X(0),height:Y(-1)-Y(0),fill:css("--neg"),opacity:.07},s);
+  for(let v=-1;v<=1.001;v+=.5){el("line",{x1:X(v),x2:X(v),y1:m.t,y2:H-m.b,stroke:css("--grid")},s);el("line",{x1:m.l,x2:W-m.r,y1:Y(v),y2:Y(v),stroke:css("--grid")},s);
+    txt(s,X(v),H-m.b+16,v.toFixed(1),{"text-anchor":"middle"});txt(s,m.l-8,Y(v)+4,v.toFixed(1),{"text-anchor":"end"});}
+  el("line",{x1:X(0),x2:X(0),y1:m.t,y2:H-m.b,stroke:css("--mut"),"stroke-width":1.2},s);el("line",{x1:m.l,x2:W-m.r,y1:Y(0),y2:Y(0),stroke:css("--mut"),"stroke-width":1.2},s);
+  txt(s,W-m.r,H-10,"Música más luminosa →",{"text-anchor":"end"});txt(s,14,m.t+6,"Letra más positiva ↑",{transform:`rotate(-90 14 ${m.t+6})`,"text-anchor":"end"});
+  txt(s,X(.98),Y(-.95),"suena alegre · dice algo triste",{"text-anchor":"end",fill:css("--neg"),"font-weight":600});
+  // etiquetas sin encimarse: se ordenan por altura y se separan al menos 13 px si caen en la misma franja horizontal
+  const lab=D.map(d=>({d,x:X(d.musica)+10,y:Y(d.letra)+4})).sort((a,b)=>a.y-b.y||a.x-b.x);
+  lab.forEach((l,i)=>{for(let j=0;j<i;j++){const o=lab[j];if(Math.abs(o.x-l.x)<110&&l.y-o.y<13)l.y=o.y+13;}});
+  const capaP=el("g",{},s),capaT=el("g",{},s);
+  lab.forEach(({d,x,y})=>{const c=css(AC[d.album]);const cx=X(d.musica),cy=Y(d.letra);
+    if(Math.abs(y-(cy+4))>2)el("line",{x1:cx+7,y1:cy,x2:x-2,y2:y-4,stroke:css("--mut"),"stroke-width":.6},capaP);
+    const g=el("g",{},capaP);el("circle",{cx,cy,r:7,fill:d.valencia_estimada?css("--panel"):c,stroke:c,"stroke-width":2},g);
+    const ti=el("title",{},g);ti.textContent=`${d.titulo} (${d.anio}, ${d.album}) · música ${f2(d.musica)} · letra ${f2(d.letra)}`;
+    txt(capaT,x,y,d.titulo,{fill:css("--ink"),"font-size":11,class:"halo"});});
+  document.getElementById("ley1").innerHTML=Object.keys(AC).map(a=>`<span><i style="background:var(${AC[a]})"></i>${a==="Sencillo"?"Sencillos":a}</span>`).join("")+`<span><i style="border:2px solid var(--mut)"></i>valencia estimada</span>`;
+}
+
+function g2(){
+  const s=document.getElementById("g2"),W=720,H=320,m={l:56,r:24,t:20,b:56};
+  const grupos=[["Sencillos 2011–12",d=>d.album==="Sencillo"&&d.anio<=2012],["True 2013",d=>d.album==="True"],["Sencillos 2014",d=>d.album==="Sencillo"&&d.anio===2014],
+    ["Stories 2015",d=>d.album==="Stories"],["AVĪCI (01) 2017",d=>d.album==="AVĪCI (01)"],["TIM 2019",d=>d.album==="TIM"]];
+  const pts=grupos.map(([n,f])=>{const a=D.filter(f);return{n,mus:prom(a.map(d=>d.musica)),let:prom(a.map(d=>d.letra)),k:a.length}});
+  const X=i=>m.l+i*(W-m.l-m.r)/(pts.length-1), Y=v=>m.t+(1-(v+1)/2)*(H-m.t-m.b);
+  for(let v=-1;v<=1.001;v+=.5){el("line",{x1:m.l,x2:W-m.r,y1:Y(v),y2:Y(v),stroke:css("--grid")},s);txt(s,m.l-8,Y(v)+4,v.toFixed(1),{"text-anchor":"end"});}
+  [["mus","--ac"],["let","--neg"]].forEach(([k,c])=>{el("polyline",{points:pts.map((p,i)=>`${X(i)},${Y(p[k])}`).join(" "),fill:"none",stroke:css(c),"stroke-width":3},s);
+    pts.forEach((p,i)=>{el("circle",{cx:X(i),cy:Y(p[k]),r:5,fill:css(c)},s);});});
+  pts.forEach((p,i)=>{txt(s,X(i),H-m.b+18,p.n,{"text-anchor":"middle","font-size":11});txt(s,X(i),H-m.b+34,p.k+" canc.",{"text-anchor":"middle","font-size":10});});
+}
+
+function g3(){
+  const s=document.getElementById("g3"),C=260,R=200;
+  const E=[["alegria","Alegría","#f2c14e"],["confianza","Confianza","#7cc46b"],["miedo","Miedo","#2e9e6b"],["sorpresa","Sorpresa","#3aa6c9"],
+           ["tristeza","Tristeza","#4a6fd1"],["aversion","Aversión","#9b59b6"],["ira","Ira","#d9534f"],["anticipacion","Anticipación","#f0883e"]];
+  const vals=E.map(([k])=>prom(D.map(d=>d.emociones[k]))), mx=Math.max(...vals);
+  [.25,.5,.75,1].forEach(f=>el("circle",{cx:C,cy:C,r:R*f,fill:"none",stroke:css("--grid")},s));
+  E.forEach(([k,n,c],i)=>{const a0=(i/8)*2*Math.PI-Math.PI/2-Math.PI/8,a1=a0+Math.PI/4-.04,r=30+(R-30)*(vals[i]/mx);
+    const p=(a,rr)=>[C+rr*Math.cos(a),C+rr*Math.sin(a)];const[x0,y0]=p(a0,30),[x1,y1]=p(a0,r),[x2,y2]=p(a1,r),[x3,y3]=p(a1,30);
+    el("path",{d:`M${x0},${y0} L${x1},${y1} A${r},${r} 0 0 1 ${x2},${y2} L${x3},${y3} A30,30 0 0 0 ${x0},${y0}Z`,fill:c,opacity:.85},s);
+    const am=(a0+a1)/2,[lx,ly]=p(am,R+26);txt(s,lx,ly,n,{"text-anchor":"middle",fill:css("--ink"),"font-size":13});txt(s,lx,ly+15,vals[i].toFixed(2),{"text-anchor":"middle"});});
+}
+
+function g4(){
+  const s=document.getElementById("g4"),W=720,m={l:170,r:30,t:10,b:30};const a=[...D].sort((x,y)=>y.brecha-x.brecha);
+  const H=m.t+m.b+a.length*25;s.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  const mx=Math.max(...a.map(d=>Math.abs(d.brecha)))+.18,X=v=>m.l+(v+mx)/(2*mx)*(W-m.l-m.r);
+  el("line",{x1:X(0),x2:X(0),y1:m.t,y2:H-m.b,stroke:css("--mut")},s);
+  a.forEach((d,i)=>{const y=m.t+i*25;const c=d.brecha>0?css("--neg"):css("--pos");
+    el("rect",{x:Math.min(X(0),X(d.brecha)),y:y+4,width:Math.abs(X(d.brecha)-X(0)),height:16,rx:3,fill:c,opacity:.85},s);
+    txt(s,m.l-8,y+16,d.titulo,{"text-anchor":"end",fill:css("--ink")});txt(s,X(d.brecha)+(d.brecha>0?6:-6),y+16,f2(d.brecha),{"text-anchor":d.brecha>0?"start":"end","font-size":11});});
+  txt(s,X(mx),H-8,"música más alegre que la letra →",{"text-anchor":"end"});
+}
+
+function g5(){
+  const s=document.getElementById("g5"),W=720,m={l:170,r:30,t:10,b:10};const cnt={};
+  D.forEach(d=>d.temas.forEach(t=>cnt[t]=(cnt[t]||0)+1));const a=Object.entries(cnt).sort((x,y)=>y[1]-x[1]).slice(0,14);
+  const H=m.t+m.b+a.length*28;s.setAttribute("viewBox",`0 0 ${W} ${H}`);const mx=a[0][1],X=v=>m.l+v/mx*(W-m.l-m.r);
+  a.forEach(([t,n],i)=>{const y=m.t+i*28;const neg=/sol|mied|pérd|perd|presi|culp|engañ|depend|ayuda|ruptura|heridas|vulner|oscur/.test(t);
+    el("rect",{x:m.l,y:y+5,width:X(n)-m.l,height:18,rx:3,fill:neg?css("--neg"):css("--ac"),opacity:.8},s);
+    txt(s,m.l-8,y+18,t,{"text-anchor":"end",fill:css("--ink")});txt(s,X(n)+6,y+18,n,{});});
+}
+
+let ctx=null,activos=[];
+function parar(){activos.forEach(o=>{try{o.stop()}catch(e){}});activos=[];document.querySelectorAll("button[data-i]").forEach(b=>b.textContent="Escuchar");}
+function tocar(i,btn){
+  if(btn.textContent!=="Escuchar"){parar();return;}parar();
+  ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();const d=D[i],beat=60/d.bpm,t0=ctx.currentTime+.05;btn.textContent="Detener";
+  const hz=n=>440*Math.pow(2,(n-69)/12);
+  for(let c=0;c<8;c++){const notas=d.notas[c%4],start=t0+c*4*beat,end=start+4*beat-.05;
+    [...notas,d.bajos[c%4]].forEach((n,j)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type=j===3?"sine":"triangle";o.frequency.value=hz(n);
+      g.gain.setValueAtTime(0,start);g.gain.linearRampToValueAtTime(j===3?.18:.09,start+.03);g.gain.exponentialRampToValueAtTime(.001,end);
+      o.connect(g).connect(ctx.destination);o.start(start);o.stop(end+.02);activos.push(o);});}
+  setTimeout(()=>{if(btn.textContent==="Detener")btn.textContent="Escuchar";},8*4*beat*1000+200);
+}
+function cards(){
+  const box=document.getElementById("cards");
+  D.forEach((d,i)=>{const div=document.createElement("div");div.className="card";
+    const href="data:audio/midi;base64,"+d.midi_b64;
+    div.innerHTML=`<h3>${d.titulo}</h3><div class="meta">${d.tonalidad}${d.dudosa?" (dudosa)":""} · ${d.bpm} BPM · ${d.progresion}: ${d.acordes.join(" – ")}</div>
+      <svg viewBox="0 0 320 70" aria-label="Piano-roll de la progresión ilustrativa"></svg>
+      <div class="acc"><button data-i="${i}">Escuchar</button><span class="rot">ilustrativa · no es la canción</span></div>`;
+    box.appendChild(div);const s=div.querySelector("svg");const lo=34,hi=72,Yn=n=>66-(n-lo)/(hi-lo)*62;
+    for(let c=0;c<8;c++){const x=4+c*39;[...d.notas[c%4],d.bajos[c%4]].forEach((n,j)=>el("rect",{x,y:Yn(n)-2,width:36,height:4,rx:1.5,fill:j===3?css("--mut"):css(AC[d.album]),opacity:j===3?.6:.9},s));}
+    div.querySelector("button").addEventListener("click",e=>tocar(i,e.currentTarget));});
+}
+function tabla(){
+  const t=document.getElementById("tabla");
+  t.innerHTML="<thead><tr><th>Canción</th><th>Año</th><th>Lanzamiento</th><th>Tonalidad</th><th>BPM</th><th>Valencia</th><th>Música</th><th>Letra</th><th>Brecha</th></tr></thead><tbody>"+
+  D.map(d=>`<tr><td>${d.titulo}</td><td class="n">${d.anio}</td><td>${d.album}</td><td>${d.tonalidad}${d.dudosa?" *":""}</td><td class="n">${d.bpm}</td><td class="n">${d.valencia_spotify??"est. "+Math.round(d.valencia_musical*100)}</td><td class="n">${f2(d.musica)}</td><td class="n">${f2(d.letra)}</td><td class="n">${f2(d.brecha)}</td></tr>`).join("")+"</tbody>";
+}
+function conclusiones(){
+  const neg=D.filter(d=>d.letra<0),tim=D.filter(d=>d.album==="TIM"),early=D.filter(d=>d.anio<=2014);
+  const top=[...D].sort((a,b)=>b.brecha-a.brecha).slice(0,3).map(d=>d.titulo).join(", ");
+  const items=[
+    `En ${neg.length} de ${D.length} canciones la letra tiene polaridad negativa, aunque el tempo medio ronda los ${Math.round(prom(D.map(d=>d.bpm)))} BPM, un pulso de pista de baile.`,
+    `Las brechas más grandes entre «cómo suena» y «qué dice» están en ${top}.`,
+    `La polaridad media de las letras pasa de ${f2(prom(early.map(d=>d.letra)))} (2011–2014) a ${f2(prom(tim.map(d=>d.letra)))} en TIM (2019), mientras la música se mantiene en un rango parecido.`,
+    `Lectura prudente: los datos muestran un contraste estético, música luminosa sobre letras de soledad, búsqueda o cansancio. No prueban lo que sentía su autor. Para eso están sus propias palabras en el documental y los comunicados de su familia.`];
+  document.getElementById("concl").innerHTML=items.map(x=>`<li>${x}</li>`).join("");
+}
+function todo(){kpis();["g1","g2","g3","g4","g5"].forEach(id=>document.getElementById(id).innerHTML="");g1();g2();g3();g4();g5();}
+todo();cards();tabla();conclusiones();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",todo);
+</script>
+</body>
+</html>
