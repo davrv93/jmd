@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu decisión · Análisis de sentimiento con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+<link rel="stylesheet" href="../../comun/as.css">
+<style>
+  .muro { display: grid; grid-template-columns: repeat(auto-fill, minmax(14em, 1fr)); gap: .6em; }
+  .muro .m { background: var(--s2); border-radius: .7em; padding: .6em .8em; font-size: .78em; border-left: 4px solid var(--accent); animation: as-sube .4s ease both; }
+  .muro .m small { display: block; color: var(--muted); margin-top: .3em; font-size: .85em; }
+  .res li { font-size: .8em; }
+</style>
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Práctica · 10 minutos</p>
+  <h1>Del dato a la <em>decisión</em></h1>
+  <p class="es-sub">Un análisis solo sirve si cambia algo. Mira tu resumen del laboratorio y escribe qué harías el lunes: qué arreglas primero, a quién llamas o qué dejas de hacer.</p>
+
+  <div class="es-2">
+    <section class="es-panel">
+      <h2>Tu resumen</h2>
+      <ul class="res" id="resumen"><li>Todavía no guardaste un resumen: vuelve al Laboratorio y pulsa «Listo».</li></ul>
+      <label>Mi decisión (máximo 200 caracteres)
+        <textarea id="decision" rows="3" maxlength="200" placeholder="Ej.: Esta semana reviso el delivery de Surco: llamo a los 5 clientes con nota 0–3 y cambio el horario del repartidor."></textarea></label>
+      <div class="es-fila">
+        <span class="chk" id="cuenta">0 / 200</span>
+        <button type="button" class="btn pri" id="publicar">Publicar en el muro</button>
+      </div>
+      <p class="estado" id="estado" role="status" aria-live="polite"></p>
+      <p class="es-nota-al-pie">Una buena decisión dice qué, quién y cuándo, y se puede comprobar en la próxima medición.</p>
+    </section>
+    <section class="es-panel">
+      <div class="es-fila" style="justify-content:space-between"><h2>El muro de la clase</h2><button type="button" class="btn chico" id="refrescar">Actualizar</button></div>
+      <div class="muro" id="muro"><p class="es-nota-al-pie">Todavía no hay decisiones publicadas.</p></div>
+    </section>
+  </div>
+</main>
+<script src="../../comun/as.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var st = AS.cargar(), r = st.resumen;
+  if (r) {
+    var L = $("resumen"); L.innerHTML = "";
+    var t = Math.max(1, r.total);
+    [r.titulo + ": " + r.total + " textos",
+     Math.round(r.pos / t * 100) + " % positivos · " + Math.round(r.neu / t * 100) + " % neutros · " + Math.round(r.neg / t * 100) + " % negativos",
+     r.nps != null ? "NPS: " + r.nps : null,
+     "Emoción dominante: " + r.dominante].concat(r.alertas.slice(0, 3)).concat(r.patrones.slice(0, 2).map(function (p) { return "Patrón: " + p; })).filter(Boolean)
+      .forEach(function (x) { L.appendChild(AS.h("li", { text: x })); });
+  }
+  $("decision").value = st.decision || "";
+  function contar() { $("cuenta").textContent = $("decision").value.length + " / 200"; }
+  $("decision").addEventListener("input", function () { st = AS.cargar(); st.decision = $("decision").value; AS.guardar(st); contar(); });
+  contar();
+  function leer() {
+    AS.muroLeer().then(function (E) {
+      var M = $("muro"); M.innerHTML = "";
+      if (!E.length) { M.appendChild(AS.h("p", { class: "es-nota-al-pie", text: "Todavía no hay decisiones publicadas." })); return; }
+      E.forEach(function (e) { M.appendChild(AS.h("div", { class: "m" }, [e.texto || "", AS.h("small", { text: e.nombre || e.autor || "" })])); });
+    });
+  }
+  $("publicar").addEventListener("click", function () {
+    var t = $("decision").value.trim();
+    if (t.length < 15) { $("estado").className = "estado mal"; $("estado").textContent = "Escribe tu decisión con un poco más de detalle."; $("decision").focus(); return; }
+    var pref = r ? "[" + r.titulo + "] " : "";
+    AS.muroPublicar((pref + t).slice(0, 200)).then(function (x) {
+      if (x.estado >= 200 && x.estado < 300) { $("estado").className = "estado bien"; $("estado").textContent = "Publicado."; AS.evidencia("decisión publicada"); leer(); }
+      else { $("estado").className = "estado mal"; $("estado").textContent = "No se pudo publicar ahora. Copia tu decisión y compártela en el chat."; }
+    });
+  });
+  $("refrescar").addEventListener("click", leer);
+  leer(); setInterval(leer, 15000);
+})();
+</script>
+</body>
+</html>

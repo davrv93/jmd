@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qué sienten tus datos · Análisis de sentimiento con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+<link rel="stylesheet" href="../../comun/as.css">
+<style>
+  .preg { font-size: 1.05em; font-weight: 700; margin: 0; }
+  .preg em { font-style: normal; color: var(--accent); }
+</style>
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Sesión 1 · gratis · Análisis de sentimiento con IA</p>
+  <h1>¿Qué sienten <em>tus datos</em>?</h1>
+  <p class="es-sub">Tus clientes, tus alumnos, tu equipo y hasta el libro que te gusta escriben lo que sienten. Hoy aprendes a leerlo con IA: polaridad, emociones, temas y patrones, con números que te ayudan a decidir.</p>
+
+  <div class="es-2">
+    <section class="es-panel">
+      <h2>La clase de hoy · 60 minutos</h2>
+      <ol class="explica">
+        <li><b>Teoría (15 min):</b> polaridad y emociones con la rueda de Plutchik, el NPS, y por qué hay que validar a la IA contra personas.</li>
+        <li><b>Laboratorio (25 min):</b> encuestas de alumnos, reseñas de una botica, mensajes de un equipo y el Quijote, procesados al instante. Luego, tus propios textos.</li>
+        <li><b>Tu decisión (10 min):</b> qué harías el lunes con lo que encontraste, publicado en el muro.</li>
+        <li><b>Cierre (5 min):</b> lo que viene en las sesiones 2 y 3.</li>
+      </ol>
+    </section>
+    <section class="es-panel">
+      <h2>Antes de empezar</h2>
+      <p class="preg">¿Qué textos te gustaría <em>entender mejor</em>?</p>
+      <div class="es-fila" id="opciones"></div>
+      <p class="estado" id="estado" role="status" aria-live="polite"></p>
+      <p class="es-nota-al-pie">Sesiones 2 y 3: domingo 29 de noviembre y domingo 6 de diciembre, 10:15 p. m. (hora de Lima).</p>
+    </section>
+  </div>
+</main>
+<script src="../../comun/as.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var OPC = ["Encuestas de clientes", "Reseñas en redes", "Encuestas de alumnos", "Mensajes de mi equipo", "WhatsApp de mi negocio", "Un libro o un texto"];
+  var st = AS.cargar();
+  function pintar() {
+    $("opciones").innerHTML = "";
+    OPC.forEach(function (o) {
+      var on = st.interes === o;
+      $("opciones").appendChild(AS.h("button", { type: "button", class: "btn" + (on ? " pri" : ""), "aria-pressed": String(on), text: o, onclick: function () {
+        st = AS.cargar(); st.interes = o; AS.guardar(st); pintar();
+        $("estado").className = "estado bien"; $("estado").textContent = "Anotado. En el laboratorio podrás traer tus propios textos.";
+        AS.evidencia("interés: " + o);
+      } }));
+    });
+  }
+  pintar();
+})();
+</script>
+</body>
+</html>

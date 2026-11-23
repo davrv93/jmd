@@ -1,0 +1,93 @@
+/* Event Storming en el LIVE (dr-01). Encima de escena.css. Las notas usan los colores de Brandolini y
+   texto oscuro en los dos temas: son papel pegado en la pared. */
+:root {
+  --n-ev: #F5A04A; --n-cmd: #8DBBE8; --n-act: #F6DC6B; --n-pol: #C3A6E0; --n-hot: #E2546B; --n-ext: #F2C4D8;
+  --n-tinta: #16181D;
+}
+html, body { height: auto; min-height: 100%; }
+body { overflow: auto; background-attachment: fixed; }
+.es { position: relative; min-height: 100vh; padding: 2.4vh 3vw 4vh; display: flex; flex-direction: column; gap: 1.6vh; max-width: 1500px; margin: 0 auto; }
+.es h1 { margin: 0; font-size: 1.9em; line-height: 1.1; font-weight: 800; letter-spacing: -.02em; }
+.es h1 em { font-style: normal; color: var(--accent); }
+.es h2 { margin: 0; font-size: 1.05em; font-weight: 800; }
+.es-paso { margin: 0; font: 700 .7em var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.es-sub { margin: 0; color: var(--muted); max-width: 52em; }
+.es-fila { display: flex; gap: .7em; flex-wrap: wrap; align-items: center; }
+.es-col { display: flex; flex-direction: column; gap: .7em; }
+.es-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2em; align-items: start; }
+.es-panel { background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .9em 1.1em; box-shadow: var(--card-shadow); display: flex; flex-direction: column; gap: .7em; min-width: 0; }
+.es-nota-al-pie { font-size: .72em; color: var(--muted); margin: 0; }
+
+/* Campos y botones (sin <form>: el sandbox no los admite) */
+.es label { font-size: .75em; font-weight: 700; color: var(--muted); display: flex; flex-direction: column; gap: .3em; }
+.es input[type=text], .es input[type=number], .es textarea, .es select {
+  font: inherit; font-size: .85em; color: var(--fg); background: var(--s2); border: 1px solid var(--line2); border-radius: .55em; padding: .5em .7em; width: 100%;
+}
+.es textarea { resize: vertical; min-height: 4.5em; }
+.es input:focus, .es textarea:focus, .es select:focus, .es button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 1px; }
+.btn { font: inherit; font-size: .8em; font-weight: 700; border-radius: .6em; padding: .5em .95em; border: 1px solid var(--line2); background: var(--s1); color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; gap: .4em; }
+.btn:hover { background: var(--s2); }
+.btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.btn.pri:hover { filter: brightness(1.08); }
+.btn.ia { background: #3b5bdb; color: #fff; border-color: transparent; }
+.btn.ok { background: var(--ok-bg); color: var(--ok); }
+.btn.mal { background: var(--bad-bg); color: var(--bad); }
+.btn.chico { font-size: .68em; padding: .3em .6em; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* Notas */
+.nota { position: relative; color: var(--n-tinta); padding: .55em .7em .65em; min-width: 7.5em; max-width: 12em; min-height: 5.2em; display: flex; flex-direction: column; gap: .25em; box-shadow: 0 3px 8px rgba(0,0,0,.18); border: 2px solid transparent; text-align: left; font: inherit; cursor: pointer; }
+.nota .k { font: 700 .55em var(--mono); letter-spacing: .08em; }
+.nota .t { font-size: .78em; font-weight: 650; line-height: 1.25; overflow-wrap: anywhere; }
+.nota .aviso { font-size: .55em; font-weight: 700; background: rgba(255,255,255,.65); border-radius: .4em; padding: .1em .35em; align-self: flex-start; }
+.nota.ev { background: var(--n-ev); } .nota.cmd { background: var(--n-cmd); } .nota.act { background: var(--n-act); }
+.nota.pol { background: var(--n-pol); } .nota.hot { background: var(--n-hot); } .nota.ext { background: var(--n-ext); }
+.nota.sel { border-color: var(--n-tinta); box-shadow: 0 0 0 3px var(--accent), 0 6px 14px rgba(0,0,0,.25); }
+.nota.ia::after { content: "IA"; position: absolute; top: .3em; right: .35em; font: 700 .5em var(--mono); background: var(--n-tinta); color: #fff; border-radius: .3em; padding: .05em .3em; }
+.linea { display: flex; flex-wrap: wrap; gap: .55em; align-items: stretch; padding: .8em; border-radius: .9em; background: color-mix(in srgb, var(--s2) 70%, transparent); border: 1px dashed var(--line2); min-height: 7em; }
+.linea-vacia { color: var(--muted); font-size: .8em; align-self: center; margin: 0 auto; }
+.tipos { display: flex; gap: .4em; flex-wrap: wrap; }
+.tipo { font: 700 .62em var(--mono); letter-spacing: .06em; color: var(--n-tinta); border: 2px solid transparent; border-radius: .4em; padding: .45em .65em; cursor: pointer; }
+.tipo[aria-pressed=true] { border-color: var(--n-tinta); box-shadow: 0 0 0 2px var(--accent); }
+
+/* Lista de chequeo */
+.checks { display: flex; flex-wrap: wrap; gap: .4em; }
+.chk { font-size: .66em; font-weight: 700; padding: .3em .7em; border-radius: 999px; background: var(--s3); color: var(--muted); border: 1px solid var(--line); }
+.chk.si { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.chk.si::before { content: "✓ "; }
+.chk:not(.si)::before { content: "○ "; }
+
+/* Sugerencias y preguntas de la IA */
+.sug { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .6em; align-items: center; padding: .55em .65em; border-radius: .7em; background: var(--s2); border: 1px solid var(--line); }
+.sug .mini { width: 1.1em; height: 1.1em; border-radius: .25em; }
+.sug b { font-size: .8em; }
+.sug span { display: block; font-size: .68em; color: var(--muted); }
+.sug.hecha { opacity: .55; }
+.estado { font-size: .75em; color: var(--muted); margin: 0; min-height: 1.2em; }
+.estado.mal { color: var(--bad); }
+.estado.bien { color: var(--ok); }
+.metrica { display: flex; gap: 1.2em; flex-wrap: wrap; }
+.metrica div { display: flex; flex-direction: column; }
+.metrica b { font-size: 1.5em; line-height: 1; font-variant-numeric: tabular-nums; }
+.metrica span { font-size: .66em; color: var(--muted); }
+
+/* Juego */
+.mapa-juego { display: flex; flex-wrap: wrap; gap: .25em; align-items: stretch; }
+.hueco { width: 1.7em; border-radius: .5em; border: 2px dashed var(--line2); background: transparent; color: var(--muted); font: 700 .8em var(--mono); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+.hueco[aria-pressed=true] { border-style: solid; border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+.mapa-juego .nota[aria-pressed=true] { border-color: var(--bad); box-shadow: 0 0 0 3px var(--bad); }
+.mapa-juego .nota[aria-pressed=true]::before { content: "✗ trampa"; position: absolute; bottom: -.75em; left: .4em; font: 700 .5em var(--mono); background: var(--bad); color: #fff; padding: .1em .35em; border-radius: .3em; }
+.nota.trampa-real, .hueco.trampa-real { outline: 3px solid var(--ok); outline-offset: 2px; }
+.reloj { font: 800 1.6em var(--mono); font-variant-numeric: tabular-nums; }
+.reloj.poco { color: var(--bad); }
+.explica { display: grid; gap: .4em; margin: 0; padding: 0; list-style: none; }
+.explica li { font-size: .74em; background: var(--s2); border-radius: .6em; padding: .45em .7em; border-left: 4px solid var(--ok); }
+.explica li.fallo { border-left-color: var(--bad); }
+.ranking { margin: 0; padding: 0; list-style: none; display: grid; gap: .35em; }
+.ranking li { display: flex; justify-content: space-between; gap: 1em; font-size: .8em; background: var(--s2); border-radius: .5em; padding: .4em .7em; }
+.ranking li.mia { outline: 2px solid var(--accent); }
+
+.toast { position: fixed; left: 50%; bottom: 3vh; transform: translateX(-50%); background: var(--fg); color: var(--s1); padding: .55em 1em; border-radius: .7em; font-size: .78em; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 9; }
+.toast.ver { opacity: 1; }
+
+@media (max-width: 900px) { .es-2 { grid-template-columns: minmax(0, 1fr); } }

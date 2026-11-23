@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laboratorio de sentimiento · Análisis de sentimiento con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+<link rel="stylesheet" href="../../comun/as.css">
+</head>
+<body>
+<main class="es">
+  <p class="es-paso">Laboratorio · 25 minutos</p>
+  <h1>Laboratorio de <em>sentimiento</em></h1>
+  <p class="es-sub">Elige un conjunto de textos o trae los tuyos. En segundos ves qué sienten, de qué hablan, dónde se concentran las quejas y qué patrones se repiten.</p>
+
+  <section class="es-panel">
+    <h2>1 · Elige qué analizar</h2>
+    <div class="as-cards" id="cards"></div>
+    <details id="propios">
+      <summary class="btn chico" style="width:max-content">O analiza tus propios textos (CSV o pegados)</summary>
+      <div class="es-col" style="margin-top:.6em">
+        <label>Pega tus textos: uno por línea, o un CSV con encabezados (texto, fecha, nota 0–10, grupo)
+          <textarea id="pegado" rows="6" maxlength="60000" placeholder="texto,fecha,nota,grupo&#10;&quot;La atención fue rápida y amable&quot;,2026-11-20,9,Lima&#10;&quot;El pedido llegó tarde otra vez&quot;,2026-11-21,4,Surco"></textarea></label>
+        <div class="es-fila">
+          <label class="btn chico" style="flex-direction:row;color:var(--fg)">Subir CSV o TXT <input type="file" id="archivo" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+          <button type="button" class="btn ia" id="conIA">Analizar con la IA de la clase (DeepSeek)</button>
+          <button type="button" class="btn chico" id="sinIA">Estimación rápida sin IA</button>
+        </div>
+        <p class="es-nota-al-pie" id="detectado">La IA de la clase analiza hasta 120 textos (en lotes de 40); el resto se estima con un léxico. Tus textos solo se usan para esta clasificación.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="es-panel as-proc" id="proc" hidden>
+    <div class="es-fila" style="justify-content:space-between"><h2 id="procTit">Procesando…</h2><span class="chk" id="procN"></span></div>
+    <div class="as-barra"><i id="procBarra"></i></div>
+    <div class="as-etapas" id="etapas"></div>
+  </section>
+
+  <div id="resultado" hidden class="es-col" style="gap:1em">
+    <div class="as-kpis" id="kpis"></div>
+    <div class="as-grid">
+      <section class="es-panel"><h2>Polaridad</h2><div id="polaridad"></div></section>
+      <section class="es-panel"><h2>Rueda de emociones (Plutchik)</h2><div id="rueda"></div></section>
+    </div>
+    <section class="es-panel"><div class="es-fila" style="justify-content:space-between"><h2>Árbol de emociones</h2><span class="es-nota-al-pie">emoción → tema → frases · toca para abrir</span></div><div class="as-arbol" id="arbol"></div></section>
+    <div class="as-grid">
+      <section class="es-panel"><h2>Mapa de calor: tema × sentimiento</h2><div id="calor"></div></section>
+      <section class="es-panel"><h2 id="tendTit">Tendencia</h2><div id="tendencia"></div></section>
+    </div>
+    <div class="as-grid">
+      <section class="es-panel"><h2>Palabras clave por emoción</h2><div class="as-claves" id="claves"></div></section>
+      <section class="es-panel"><h2>Patrones y alertas</h2><div class="es-col" id="patrones"></div></section>
+    </div>
+    <section class="es-panel">
+      <div class="es-fila" style="justify-content:space-between">
+        <p class="as-pie" id="fuente"></p>
+        <div class="es-fila"><button type="button" class="btn chico" id="exportar">Exportar CSV etiquetado</button><button type="button" class="btn pri chico" id="listo">Listo: llevar el resumen a «Tu decisión»</button></div>
+      </div>
+    </section>
+  </div>
+</main>
+<script src="../../comun/datos-sentimiento.js"></script>
+<script src="../../comun/as.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var h = AS.h, S = AS.s, EMO = AS.EMO;
+  var D = window.DATOS_SENT || {};
+  var actual = null; // {titulo, sub, fuente, filas, R, nota}
+
+  // ---------- tarjetas ----------
+  Object.keys(D).forEach(function (k) {
+    var d = D[k];
+    $("cards").appendChild(h("button", { type: "button", class: "as-ds", "aria-pressed": "false", "data-k": k, onclick: function () { elegir(k); } },
+      [h("span", { class: "n", text: d.filas.length + " textos" }), h("b", { text: d.titulo }), h("small", { text: d.sub })]));
+  });
+  function marcar(k) { Array.prototype.forEach.call(document.querySelectorAll(".as-ds"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-k") === k)); }); }
+
+  // ---------- procesamiento animado ----------
+  var ETAPAS = ["Leer textos", "Limpiar", "Polaridad", "Emociones", "Temas", "Patrones", "Indicadores"];
+  function etapas(hasta, activa) {
+    var E = $("etapas"); E.innerHTML = "";
+    ETAPAS.forEach(function (n, k) { E.appendChild(h("span", { class: k < hasta ? "hecha" : (k === activa ? "activa" : ""), text: n })); });
+    $("procBarra").style.width = Math.round(hasta / ETAPAS.length * 100) + "%";
+  }
+  function animarProceso(n, titulo) {
+    $("proc").hidden = false; $("procTit").textContent = titulo; $("procN").textContent = n + " textos";
+    var paso = AS.quieto() ? 0 : 230;
+    return new Promise(function (ok) {
+      var k = 0; etapas(0, 0);
+      (function sig() { k++; etapas(k, k); if (k < ETAPAS.length) setTimeout(sig, paso); else ok(); })();
+    });
+  }
+
+  function elegir(k) {
+    var d = D[k]; marcar(k);
+    animarProceso(d.filas.length, "Analizando «" + d.titulo + "»").then(function () {
+      mostrar({ titulo: d.titulo, sub: d.sub, fuente: d.fuente + " · Etiquetas preparadas con IA y revisadas.", filas: d.filas, nota: d.nota, seg: d.seg });
+    });
+  }
+
+  // ---------- datos propios ----------
+  $("archivo").addEventListener("change", function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    if (f.size > 600000) { AS.toast("El archivo pesa más de 600 KB: recórtalo a 400 filas."); return; }
+    var r = new FileReader(); r.onload = function () { $("pegado").value = String(r.result || ""); detectar(); }; r.readAsText(f);
+  });
+  $("pegado").addEventListener("input", detectar);
+  function detectar() {
+    var T = AS.leerTabla($("pegado").value);
+    $("detectado").textContent = T.filas.length ? "Detecté " + T.filas.length + " textos · " + T.columnas + ". La IA de la clase analiza hasta 120; el resto se estima con léxico." : "La IA de la clase analiza hasta 120 textos (en lotes de 40); el resto se estima con un léxico.";
+    return T;
+  }
+  function propios(usarIA) {
+    var T = detectar();
+    if (T.filas.length < 3) { AS.toast("Pega al menos 3 textos."); $("pegado").focus(); return; }
+    marcar("");
+    if (!usarIA) {
+      animarProceso(T.filas.length, "Estimación rápida con léxico").then(function () {
+        mostrar({ titulo: "Tus textos", sub: T.columnas, fuente: "Estimación con léxico (sin IA): úsala como primer vistazo, no como verdad.", filas: T.filas.map(function (f) { return Object.assign({}, f, AS.lexico(f.t)); }), nota: "nota 0–10", seg: "Grupo" });
+      });
+      return;
+    }
+    var b = $("conIA"); b.disabled = true;
+    $("proc").hidden = false; $("procTit").textContent = "DeepSeek está leyendo tus textos…"; $("procN").textContent = T.filas.length + " textos"; etapas(1, 2);
+    var t0 = Date.now();
+    AS.conIA(T.filas, function (hechos, total) { $("procTit").textContent = "DeepSeek: lote " + hechos + " de " + total + " · " + Math.round((Date.now() - t0) / 1000) + " s"; etapas(2 + Math.round(hechos / total * 3), 2 + Math.round(hechos / total * 3)); }).then(function (x) {
+      b.disabled = false; etapas(ETAPAS.length, -1);
+      if (x.fallo && !x.conIA) AS.toast(x.fallo + " Usé la estimación con léxico.");
+      mostrar({ titulo: "Tus textos", sub: T.columnas, fuente: x.conIA + " textos clasificados por DeepSeek" + (T.filas.length - x.conIA > 0 ? " y " + (T.filas.length - x.conIA) + " estimados con léxico" : "") + ". Revisa una muestra a mano antes de decidir.", filas: x.filas, nota: "nota 0–10", seg: "Grupo" });
+      AS.evidencia("analizó " + T.filas.length + " textos propios con IA");
+    });
+  }
+  $("conIA").addEventListener("click", function () { propios(true); });
+  $("sinIA").addEventListener("click", function () { propios(false); });
+
+  // ---------- pintar ----------
+  function mostrar(A) {
+    actual = A; A.R = AS.analizar(A.filas);
+    $("resultado").hidden = false;
+    kpis(A); polaridad(A); rueda(A); arbol(A); calor(A); tendencia(A); claves(A); patrones(A);
+    $("fuente").textContent = A.titulo + " · " + A.sub + " · " + A.fuente;
+    setTimeout(function () { $("kpis").scrollIntoView({ behavior: AS.quieto() ? "auto" : "smooth", block: "start" }); }, 120);
+  }
+  function kpi(cls, et, val, suf, sub, delay) {
+    var b = h("b", { text: "0" });
+    var el = h("div", { class: "as-kpi " + (cls || ""), style: "animation-delay:" + (delay || 0) + "ms" }, [h("small", { text: et }), b, h("span", { text: sub || "" })]);
+    if (typeof val === "number") AS.contar(b, val, suf); else b.textContent = val;
+    return el;
+  }
+  function kpis(A) {
+    var R = A.R, K = $("kpis"); K.innerHTML = "";
+    var p = function (k) { return Math.round((R.pol[k] || 0) / Math.max(1, R.total) * 100); };
+    K.appendChild(kpi("", "Textos", R.total, "", A.titulo, 0));
+    K.appendChild(kpi("pos", "Positivo", p("pos"), " %", (R.pol.pos || 0) + " textos", 60));
+    K.appendChild(kpi("neu", "Neutro", p("neu"), " %", (R.pol.neu || 0) + " textos", 120));
+    K.appendChild(kpi("neg", "Negativo", p("neg"), " %", (R.pol.neg || 0) + " textos", 180));
+    if (R.nps != null) K.appendChild(kpi(R.nps >= 0 ? "pos" : "neg", "NPS", R.nps, "", R.pro + " promotores · " + R.det + " detractores", 240));
+    var dom = EMO.filter(function (e) { return e.id === R.dominante; })[0];
+    K.appendChild(kpi("", "Emoción dominante", dom ? dom.id : "—", "", dom ? R.emo[dom.id] + " textos" : "", 300));
+    K.appendChild(kpi("", "Con sarcasmo", R.sarc, "", "la polaridad real, no la literal", 360));
+  }
+
+  function polaridad(A) {
+    var R = A.R, P = $("polaridad"); P.innerHTML = "";
+    var tot = Math.max(1, R.total), r = 52, C = 2 * Math.PI * r, acc = 0;
+    var svg = S("svg", { viewBox: "0 0 300 140", class: "as-svg", role: "img", "aria-label": "Polaridad: " + R.pol.pos + " positivos, " + R.pol.neu + " neutros, " + R.pol.neg + " negativos" });
+    svg.appendChild(S("circle", { cx: 70, cy: 70, r: r, fill: "none", stroke: "var(--s3)", "stroke-width": 22 }));
+    ["pos", "neu", "neg"].forEach(function (k, idx) {
+      var frac = (R.pol[k] || 0) / tot, arc = S("circle", { cx: 70, cy: 70, r: r, fill: "none", stroke: AS.COLPOL[k], "stroke-width": 22, "stroke-dasharray": "0 " + C, "stroke-dashoffset": -acc * C, transform: "rotate(-90 70 70)" });
+      arc.style.transition = "stroke-dasharray .9s ease " + idx * 0.15 + "s";
+      svg.appendChild(arc); acc += frac;
+      setTimeout(function () { arc.setAttribute("stroke-dasharray", (frac * C) + " " + C); }, 30);
+      svg.appendChild(S("rect", { x: 160, y: 34 + idx * 26, width: 12, height: 12, rx: 3, fill: AS.COLPOL[k] }));
+      svg.appendChild(S("text", { x: 180, y: 44 + idx * 26, text: AS.NOMPOL[k] + " · " + Math.round(frac * 100) + " %" }));
+    });
+    svg.appendChild(S("text", { x: 70, y: 66, "text-anchor": "middle", style: "font-size:20px;font-weight:800", text: Math.round(((R.pol.pos || 0) - (R.pol.neg || 0)) / tot * 100) }));
+    svg.appendChild(S("text", { x: 70, y: 84, "text-anchor": "middle", class: "tenue", text: "balance" }));
+    P.appendChild(svg);
+    var segs = Object.keys(R.seg);
+    if (segs.length) {
+      P.appendChild(h("p", { class: "es-nota-al-pie", text: "Por " + (A.seg || "grupo").toLowerCase() + " (positivo · neutro · negativo, y balance)" }));
+      var box = h("div", { class: "as-segs" });
+      segs.sort(function (a, b) { var x = R.seg[a], y = R.seg[b]; return (y.pos - y.neg) / (y.pos + y.neu + y.neg) - (x.pos - x.neg) / (x.pos + x.neu + x.neg); }).forEach(function (sg) {
+        var v = R.seg[sg], t = v.pos + v.neu + v.neg, neta = Math.round((v.pos - v.neg) / t * 100);
+        var bars = ["pos", "neu", "neg"].map(function (k) { return h("i", { style: "background:" + AS.COLPOL[k], "data-w": (v[k] / t * 100).toFixed(1) }); });
+        box.appendChild(h("div", { class: "as-seg" }, [h("span", { text: sg }), h("div", { class: "pila" }, bars), h("span", { class: "neta", style: "color:" + (neta >= 0 ? "var(--ok)" : "var(--bad)"), text: (neta > 0 ? "+" : "") + neta })]));
+        setTimeout(function () { bars.forEach(function (b) { b.style.width = b.getAttribute("data-w") + "%"; }); }, 60);
+      });
+      P.appendChild(box);
+    }
+  }
+
+  function rueda(A) {
+    var R = A.R, W = $("rueda"); W.innerHTML = "";
+    var max = Math.max.apply(null, EMO.map(function (e) { return R.emo[e.id]; }).concat([1]));
+    var svg = S("svg", { viewBox: "-160 -150 320 300", class: "as-svg", role: "img", "aria-label": "Rueda de Plutchik: " + EMO.map(function (e) { return e.id + " " + R.emo[e.id]; }).join(", ") });
+    [40, 80, 120].forEach(function (rr) { svg.appendChild(S("circle", { cx: 0, cy: 0, r: rr, fill: "none", stroke: "var(--line2)", "stroke-dasharray": "2 4" })); });
+    EMO.forEach(function (e, k) {
+      var ang = k * 45, n = R.emo[e.id], L = 18 + 102 * (n / max), w = 18 + 10 * (n / max);
+      var g = S("g", { transform: "rotate(" + ang + ")" });
+      var it = R.emoInt[e.id], tot = Math.max(1, it[0] + it[1] + it[2]);
+      // pétalo: base clara, encima la parte de intensidad alta
+      var petalo = function (len, op) { return S("path", { d: "M0,0 C" + (-w) + "," + (-len * 0.35) + " " + (-w * 0.7) + "," + (-len * 0.85) + " 0," + (-len) + " C" + (w * 0.7) + "," + (-len * 0.85) + " " + w + "," + (-len * 0.35) + " 0,0 Z", fill: e.c, "fill-opacity": op, stroke: e.c, "stroke-width": 1 }); };
+      var p1 = petalo(L, 0.35), p2 = petalo(L * (it[1] + it[2]) / tot, 0.6), p3 = petalo(L * it[2] / tot, 0.95);
+      [p1, p2, p3].forEach(function (p) { p.style.transformOrigin = "0 0"; p.style.transform = "scale(0)"; p.style.transition = "transform .8s cubic-bezier(.2,.8,.2,1) " + (k * 0.06) + "s"; g.appendChild(p); setTimeout(function () { p.style.transform = "scale(1)"; }, 40); });
+      g.appendChild(S("title", { text: e.id + ": " + n + " textos (intensidad alta " + it[2] + ", media " + it[1] + ", baja " + it[0] + ")" }));
+      svg.appendChild(g);
+      var rad = (ang - 90) * Math.PI / 180, lx = Math.cos(rad) * 138, ly = Math.sin(rad) * 132;
+      svg.appendChild(S("text", { x: lx.toFixed(1), y: ly.toFixed(1), "text-anchor": Math.abs(lx) < 10 ? "middle" : (lx > 0 ? "start" : "end"), "dominant-baseline": "middle", text: e.id + " " + n }));
+    });
+    W.appendChild(svg);
+    W.appendChild(h("div", { class: "as-leyenda" }, [h("span", null, [h("i", { style: "background:var(--muted);opacity:.35" }), "baja"]), h("span", null, [h("i", { style: "background:var(--muted);opacity:.6" }), "media"]), h("span", null, [h("i", { style: "background:var(--muted)" }), "alta intensidad"]), h("span", { text: "Opuestos: alegría–tristeza, confianza–aversión, miedo–ira, sorpresa–anticipación" })]));
+  }
+
+  function arbol(A) {
+    var R = A.R, T = $("arbol"); T.innerHTML = "";
+    var orden = EMO.filter(function (e) { return R.arbol[e.id]; }).sort(function (a, b) { return R.emo[b.id] - R.emo[a.id]; });
+    var max = Math.max.apply(null, orden.map(function (e) { return R.emo[e.id]; }).concat([1]));
+    orden.forEach(function (e, k) {
+      var asp = R.arbol[e.id], claves = Object.keys(asp).sort(function (a, b) { return asp[b].length - asp[a].length; });
+      var bar = h("i"); var d = h("details", { style: "--c:" + e.c }, [h("summary", null, [h("span", { class: "nom", text: e.id }), h("span", { class: "bar" }, [bar]), h("span", { class: "cnt", text: String(R.emo[e.id]) })])]);
+      if (k === 0) d.open = true;
+      setTimeout(function () { bar.style.width = (R.emo[e.id] / max * 100) + "%"; }, 80 + k * 60);
+      var mx2 = asp[claves[0]].length;
+      claves.slice(0, 6).forEach(function (a, m) {
+        var b2 = h("i"); var fr = asp[a].slice().sort(function (x, y) { return (y.i || 0) - (x.i || 0); }).slice(0, 3);
+        var d2 = h("details", { style: "--c:" + e.c }, [h("summary", null, [h("span", { class: "nom", text: a }), h("span", { class: "bar" }, [b2]), h("span", { class: "cnt", text: String(asp[a].length) })]),
+          h("div", { class: "frases" }, fr.map(function (f) { return h("div", { class: "frase", style: "--p:" + AS.COLPOL[f.p] }, ["«" + f.t + "»", h("small", { text: [f.s, f.f ? f.f.split("-").reverse().join("/") : "", f.n != null ? "nota " + f.n : "", f.x ? "sarcasmo" : ""].filter(Boolean).join(" · ") })]); }))]);
+        if (k === 0 && m === 0) d2.open = true;
+        d.appendChild(d2);
+        d.addEventListener("toggle", function () { if (d.open) b2.style.width = (asp[a].length / mx2 * 100) + "%"; });
+        if (d.open) setTimeout(function () { b2.style.width = (asp[a].length / mx2 * 100) + "%"; }, 200);
+      });
+      T.appendChild(d);
+    });
+  }
+
+  function calor(A) {
+    var R = A.R, C = $("calor"); C.innerHTML = "";
+    var asp = Object.keys(R.asp).sort(function (a, b) { var x = R.asp[a], y = R.asp[b]; return (y.pos + y.neu + y.neg) - (x.pos + x.neu + x.neg); }).slice(0, 9);
+    var tabla = h("table", { class: "as-calor" });
+    tabla.appendChild(h("tr", null, [h("th", { text: "Tema" }), h("th", { text: "Positivo" }), h("th", { text: "Neutro" }), h("th", { text: "Negativo" }), h("th", { text: "Balance" })]));
+    asp.forEach(function (a) {
+      var v = R.asp[a], t = v.pos + v.neu + v.neg, neta = (v.pos - v.neg) / t;
+      var celda = function (k, base) { var f = v[k] / t; var td = h("td", { text: Math.round(f * 100) + " %", title: v[k] + " de " + t }); setTimeout(function () { td.style.background = "color-mix(in srgb, " + base + " " + Math.round(12 + f * 78) + "%, #ffffff)"; }, 60); return td; };
+      var nt = h("td", { text: (neta > 0 ? "+" : "") + Math.round(neta * 100) });
+      setTimeout(function () { nt.style.background = neta >= 0 ? "color-mix(in srgb, #2e9e57 " + Math.round(15 + neta * 70) + "%, #ffffff)" : "color-mix(in srgb, #d8453c " + Math.round(15 - neta * 70) + "%, #ffffff)"; }, 60);
+      tabla.appendChild(h("tr", null, [h("th", { text: a + " (" + t + ")" }), celda("pos", "#2e9e57"), celda("neu", "#9aa0aa"), celda("neg", "#d8453c"), nt]));
+    });
+    C.appendChild(tabla);
+  }
+
+  function tendencia(A) {
+    var R = A.R, T = $("tendencia"); T.innerHTML = "";
+    var k = Object.keys(R.tiempo).sort(function (a, b) { return R.tiempo[a].orden < R.tiempo[b].orden ? -1 : 1; });
+    $("tendTit").textContent = k.length && k[0].indexOf("Cap.") === 0 ? "Tendencia por capítulo" : "Tendencia por semana";
+    if (k.length < 2) { T.appendChild(h("p", { class: "es-nota-al-pie", text: "Sin fechas: agrega una columna de fecha para ver la tendencia." })); return; }
+    var W = 300, H = 150, x0 = 28, y0 = 12, ww = W - x0 - 8, hh = H - 40;
+    var svg = S("svg", { viewBox: "0 0 " + W + " " + H, class: "as-svg", role: "img", "aria-label": "Tendencia del balance de sentimiento y de los textos negativos" });
+    var maxNeg = Math.max.apply(null, k.map(function (x) { return R.tiempo[x].neg; }).concat([1]));
+    svg.appendChild(S("line", { x1: x0, y1: y0 + hh / 2, x2: x0 + ww, y2: y0 + hh / 2, stroke: "var(--line2)", "stroke-dasharray": "3 3" }));
+    svg.appendChild(S("text", { x: 2, y: y0 + 4, class: "tenue", text: "+100" })); svg.appendChild(S("text", { x: 2, y: y0 + hh, class: "tenue", text: "−100" }));
+    var pts = [];
+    k.forEach(function (x, m) {
+      var v = R.tiempo[x], t = v.pos + v.neu + v.neg, neta = (v.pos - v.neg) / t, cx = x0 + (k.length === 1 ? ww / 2 : m * ww / (k.length - 1));
+      var bh = v.neg / maxNeg * hh * 0.45;
+      var r = S("rect", { x: cx - 6, y: y0 + hh - bh, width: 12, height: bh, rx: 2, fill: "var(--bad)", "fill-opacity": 0.28 }); svg.appendChild(r);
+      pts.push([cx, y0 + hh / 2 - neta * hh / 2]);
+      var lbl = x.indexOf("Cap.") === 0 ? x.replace("Cap. ", "") : x.slice(8, 10) + "/" + x.slice(5, 7);
+      if (k.length <= 12 || m % Math.ceil(k.length / 10) === 0) svg.appendChild(S("text", { x: cx, y: H - 12, "text-anchor": "middle", class: "tenue", style: "font-size:9px", text: lbl }));
+    });
+    var d = pts.map(function (p, m) { return (m ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ");
+    var linea = S("path", { d: d, fill: "none", stroke: "var(--accent)", "stroke-width": 2.5, "stroke-linejoin": "round" });
+    svg.appendChild(linea);
+    pts.forEach(function (p) { svg.appendChild(S("circle", { cx: p[0], cy: p[1], r: 3, fill: "var(--accent)" })); });
+    T.appendChild(svg);
+    try { var L = linea.getTotalLength(); if (L && !AS.quieto()) { linea.style.strokeDasharray = L; linea.style.strokeDashoffset = L; linea.getBoundingClientRect(); linea.style.transition = "stroke-dashoffset 1.2s ease"; linea.style.strokeDashoffset = 0; } } catch (e) { /* sin animación */ }
+    T.appendChild(h("div", { class: "as-leyenda" }, [h("span", null, [h("i", { style: "background:var(--accent)" }), "balance (positivos − negativos)"]), h("span", null, [h("i", { style: "background:var(--bad);opacity:.35" }), "textos negativos"])]));
+  }
+
+  function claves(A) {
+    var R = A.R, C = $("claves"); C.innerHTML = "";
+    EMO.filter(function (e) { return R.emo[e.id] > 0; }).sort(function (a, b) { return R.emo[b.id] - R.emo[a.id]; }).slice(0, 6).forEach(function (e) {
+      var c = R.clave[e.id], top = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }).slice(0, 7);
+      C.appendChild(h("div", { class: "fila" }, [h("b", { style: "color:" + e.c, text: e.id }), h("div", { class: "as-chips" }, top.map(function (w) { return h("span", { class: "as-chip", style: "font-size:" + (0.85 + Math.min(0.5, c[w] / 10)) + "em", text: w }); }))]));
+    });
+  }
+
+  function patrones(A) {
+    var R = A.R, P = $("patrones"); P.innerHTML = "";
+    if (R.alertas.length) R.alertas.forEach(function (a) { P.appendChild(h("div", { class: "as-alerta", text: "Alerta: " + a.texto })); });
+    else P.appendChild(h("div", { class: "as-alerta ok", text: "Sin alertas: ningún tema concentra quejas." }));
+    P.appendChild(h("p", { class: "es-nota-al-pie", text: "Grupos de frases parecidas (comparten palabras y polaridad):" }));
+    var box = h("div", { class: "as-pat" });
+    if (!R.patrones.length) box.appendChild(h("p", { class: "es-nota-al-pie", text: "No hay grupos de 3 o más frases parecidas." }));
+    R.patrones.forEach(function (g) {
+      box.appendChild(h("div", { class: "p", style: "--c:" + AS.COLPOL[g.p] }, [h("b", { text: g.n + " textos " + AS.NOMPOL[g.p] + "s" }), " sobre «" + g.aspecto + "» · claves: " + g.claves.join(", "), h("div", { class: "es-nota-al-pie", text: "Ej.: «" + g.ejemplo.slice(0, 140) + "»" })]));
+    });
+    P.appendChild(box);
+  }
+
+  $("exportar").addEventListener("click", function () { if (actual) AS.descargar("sentimiento-" + actual.titulo.toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".csv", AS.aCSV(actual.filas)); });
+  $("listo").addEventListener("click", function () {
+    if (!actual) return;
+    var R = actual.R, st = AS.cargar();
+    st.resumen = { titulo: actual.titulo, total: R.total, pos: R.pol.pos, neu: R.pol.neu, neg: R.pol.neg, nps: R.nps, dominante: R.dominante, alertas: R.alertas.map(function (a) { return a.texto; }), patrones: R.patrones.map(function (g) { return g.n + " textos " + AS.NOMPOL[g.p] + "s sobre " + g.aspecto; }) };
+    AS.guardar(st); AS.evidencia("laboratorio: " + actual.titulo + ", " + R.total + " textos, dominante " + R.dominante);
+    AS.toast("Resumen guardado. Pasa a «Tu decisión».");
+  });
+  // Arranca con el primer ejemplo para que la escena nunca esté vacía.
+  var primero = Object.keys(D)[0]; if (primero) setTimeout(function () { elegir(primero); }, 300);
+})();
+</script>
+</body>
+</html>
