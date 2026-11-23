@@ -354,10 +354,14 @@
       $("estado").textContent = "Texto listo. Ahora los modelos UML…";
       var m = muestra(); m.actores = filas(x.tablas, "Actores").map(function (f) { return txt(f[0], 40); });
       m.requisitos = filas(x.tablas, "Requisitos").map(function (f) { return txt(f[0], 120); });
-      return ES.ia("03c-srs-uml", ("Modelos UML de la SRS del módulo «" + (s.tramo || "mi módulo") + "».").slice(0, 300), emp, m).then(function (u) {
-        var base = plantilla();
-        ["CasosDeUso", "Flujo", "Clases", "Secuencia"].forEach(function (k) { x.tablas[k] = u.ok && filas(u.tablas, k).length ? u.tablas[k] : base[k]; });
-        x.umlIA = u.ok; return x;
+      var ped = ("Modelos UML de la SRS del módulo «" + (s.tramo || "mi módulo") + "».").slice(0, 300);
+      return Promise.all([ES.ia("03c-srs-uml", ped, emp, m), ES.ia("03d-srs-uml2", ped, emp, m)]).then(function (us) {
+        var base = plantilla(), ok = 0;
+        ["CasosDeUso", "Flujo", "Clases", "Secuencia"].forEach(function (k) {
+          var u = us.filter(function (y) { return y.ok && filas(y.tablas, k).length; })[0];
+          if (u) { x.tablas[k] = u.tablas[k]; ok++; } else x.tablas[k] = base[k];
+        });
+        x.umlIA = ok === 4; return x;
       });
     }).then(function (x) {
       clearInterval(rel);
