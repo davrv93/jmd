@@ -347,7 +347,19 @@
     $("estado").className = "estado"; $("estado").textContent = "DeepSeek está redactando tu SRS…";
     var rel = setInterval(function () { $("estado").textContent = "DeepSeek está redactando tu SRS… " + Math.round((Date.now() - t0) / 1000) + " s"; }, 1000);
     var pedido = ("Redacta la SRS del módulo «" + (s.tramo || "mi módulo") + "» con apetito de " + apetitoTxt(s.apetito) + ", respetando los no-gos.").slice(0, 300);
-    ES.ia(ES.ESCENA, pedido, { razon: (s.negocio || "Mi negocio").slice(0, 120), rubro: (s.tramo || "mi módulo").slice(0, 120), regimen: "Shape Up" }, muestra()).then(function (x) {
+    var emp = { razon: (s.negocio || "Mi negocio").slice(0, 120), rubro: (s.tramo || "mi módulo").slice(0, 120), regimen: "Shape Up" };
+    // Dos pedidos cortos (el texto y luego los modelos UML con los mismos actores): uno solo no cabe en el límite de la IA.
+    ES.ia(ES.ESCENA, pedido, emp, muestra()).then(function (x) {
+      if (!x.ok || !filas(x.tablas, "Requisitos").length) return x;
+      $("estado").textContent = "Texto listo. Ahora los modelos UML…";
+      var m = muestra(); m.actores = filas(x.tablas, "Actores").map(function (f) { return txt(f[0], 40); });
+      m.requisitos = filas(x.tablas, "Requisitos").map(function (f) { return txt(f[0], 120); });
+      return ES.ia("03c-srs-uml", ("Modelos UML de la SRS del módulo «" + (s.tramo || "mi módulo") + "».").slice(0, 300), emp, m).then(function (u) {
+        var base = plantilla();
+        ["CasosDeUso", "Flujo", "Clases", "Secuencia"].forEach(function (k) { x.tablas[k] = u.ok && filas(u.tablas, k).length ? u.tablas[k] : base[k]; });
+        x.umlIA = u.ok; return x;
+      });
+    }).then(function (x) {
       clearInterval(rel);
       if (!x.ok || !filas(x.tablas, "Requisitos").length) {
         b.disabled = false;
@@ -358,7 +370,7 @@
       construir(x.tablas, x.titulo, "ia").then(function (r) {
         b.disabled = false;
         $("estado").className = "estado bien";
-        $("estado").textContent = "Documento listo en " + Math.round((Date.now() - t0) / 1000) + " s: " + r.rf + " requisitos funcionales y 4 diagramas UML" + (r.fallos ? " (" + r.fallos + " sin dibujar: su código va en el .md)" : "") + ". Revísalo antes de descargarlo.";
+        $("estado").textContent = "Documento listo en " + Math.round((Date.now() - t0) / 1000) + " s: " + r.rf + " requisitos funcionales y 4 diagramas UML" + (r.fallos ? " (" + r.fallos + " sin dibujar: su código va en el .md)" : "") + (x.umlIA ? "" : "; los modelos UML salieron de la plantilla porque la IA no respondió a tiempo") + ". Revísalo antes de descargarlo.";
         ES.evidencia("SRS generada: " + r.rf + " requisitos, trazabilidad a " + s.criterios.length + " criterios");
       });
     });
