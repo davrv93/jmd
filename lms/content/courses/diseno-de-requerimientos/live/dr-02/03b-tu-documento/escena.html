@@ -100,7 +100,7 @@
   function filas(t, nombre) { return (t && t[nombre] || []).filter(function (f) { return Array.isArray(f) && f.length; }); }
   function normalizar(t, titulo) {
     var d = { titulo: txt(titulo, 80) || (s.tramo || "Mi módulo"),
-      definiciones: filas(t, "Definiciones").map(function (f) { return { termino: txt(f[0], 50), definicion: txt(f[1], 200) }; }).filter(function (x) { return x.termino; }),
+      definiciones: (filas(t, "Definiciones").length ? filas(t, "Definiciones") : DEF_BASE()).map(function (f) { return { termino: txt(f[0], 50), definicion: txt(f[1], 200) }; }).filter(function (x) { return x.termino; }),
       actores: filas(t, "Actores").map(function (f) { return { actor: txt(f[0], 40), tipo: /sistema/i.test(f[1]) ? "sistema externo" : "persona", objetivo: txt(f[2], 160) }; }).filter(function (x) { return x.actor; }),
       casos: filas(t, "CasosDeUso").map(function (f) { return { actor: txt(f[0], 40), caso: txt(f[1], 60) }; }).filter(function (x) { return x.caso; }),
       rf: filas(t, "Requisitos").map(function (f) {
@@ -116,6 +116,13 @@
     var nombres = d.actores.map(function (a) { return a.actor.toLowerCase(); });
     d.casos.forEach(function (c) { if (nombres.indexOf(c.actor.toLowerCase()) < 0 && d.actores.length) c.actor = d.actores[0].actor; });
     return d;
+  }
+  function DEF_BASE() {
+    var out = [["Apetito", "Tiempo máximo que el negocio decide invertir en este módulo; si no alcanza, se recorta el alcance (Shape Up)."],
+      ["No-go", "Algo que queda fuera del alcance a propósito para respetar el apetito."],
+      ["Criterio de aceptación", "Condición Dado / cuando / entonces que permite comprobar si un requisito se cumple."]];
+    if (s.eventos.length) out.push(["Evento de dominio", "Hecho del negocio en pasado, tomado del Event Storming de la sesión 1 (p. ej. «" + String(s.eventos[0]).slice(0, 40) + "»)."]);
+    return out;
   }
   function ident(v) {
     var t = String(v || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9_ ]/g, " ").trim();
