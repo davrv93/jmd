@@ -12,8 +12,8 @@ objectives:
   - id: qab-02-o3
     title: "Avisar solo cuando algo cambia: fallo nuevo, conocido o resuelto"
 recording:
-  url: ""
-  passcode: ""
+  url: "https://us06web.zoom.us/rec/share/RrfTSWc4-05euMLRQEpEgdPyCWnI-pA3pZtM5egI0ZMA62es5bLumwXPoZ1MEGZe.BW2z8RG8HAtEcPYk?pwd=DAHS_gaZIGy92Qk1RQAAIAAAAAnSQ3VxH2ULHuYC4WPZzBO93w1mIBdveweianF8jEJANFmeMLDHnt9tYPG33xhDcTAwMDAwNA"
+  passcode: "310P?X4E"
 materials:
   - id: kit
     title: "Kit de práctica (con los bots y el robot)"
