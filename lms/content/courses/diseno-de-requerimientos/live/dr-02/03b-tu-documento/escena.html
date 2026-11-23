@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu documento formal de requerimientos · Requerimientos con IA</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/es.css">
+<style>
+  .acciones { display: flex; flex-wrap: wrap; gap: .5em; }
+  .resumen { display: flex; flex-wrap: wrap; gap: .4em .9em; font-size: .92em; }
+  .resumen b { font-variant-numeric: tabular-nums; }
+  /* El documento es papel en los dos temas: blanco, tinta oscura, tipografía sobria. */
+  #hoja { display: none; background: #fff; color: #1b1d22; border: 1px solid #d8d9de; border-radius: 6px;
+    padding: clamp(18px, 4vw, 48px); margin-top: 1em; font: 15px/1.55 Georgia, "Iowan Old Style", "Times New Roman", serif; }
+  #hoja.listo { display: block; }
+  #hoja h1 { font: 700 1.7em/1.2 Georgia, serif; margin: 0 0 .2em; }
+  #hoja h2 { font: 700 1.15em/1.3 Georgia, serif; margin: 1.6em 0 .5em; padding-bottom: .2em; border-bottom: 1px solid #c9cbd2; }
+  #hoja h3 { font: 700 1em/1.3 Georgia, serif; margin: 1.1em 0 .4em; }
+  #hoja p, #hoja li { margin: .35em 0; }
+  #hoja table { width: 100%; border-collapse: collapse; margin: .5em 0 1em; font: 13.5px/1.4 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  #hoja th, #hoja td { border: 1px solid #c9cbd2; padding: .35em .5em; text-align: left; vertical-align: top; }
+  #hoja th { background: #f0f1f4; font-weight: 600; }
+  #hoja .cod { font: 600 12px/1 ui-monospace, Menlo, Consolas, monospace; white-space: nowrap; }
+  #hoja .portada { border-bottom: 2px solid #1b1d22; padding-bottom: 1em; margin-bottom: 1em; }
+  #hoja .meta { font: 13px/1.5 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #4a4f5a; }
+  #hoja .fig { margin: .6em 0 1.2em; padding: .6em; border: 1px solid #e3e4e8; border-radius: 4px; overflow-x: auto; text-align: center; }
+  #hoja .fig svg { max-width: 100%; height: auto; }
+  #hoja .pie { font: italic 12.5px/1.4 Georgia, serif; color: #4a4f5a; margin-top: .3em; }
+  #hoja .aviso { font: 12px/1.4 -apple-system, Arial, sans-serif; color: #8a5a00; }
+  .codigo-error { white-space: pre-wrap; font: 12px/1.4 ui-monospace, monospace; text-align: left; }
+  @media print {
+    body { background: #fff !important; }
+    main > :not(#hoja), .no-imprimir { display: none !important; }
+    #hoja { border: 0; padding: 0; margin: 0; }
+    #hoja h2 { break-after: avoid; }
+    #hoja .fig, #hoja table { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<main class="es">
+  <p class="es-paso no-imprimir">Paso 3b · 10 minutos</p>
+  <h1 class="no-imprimir">Tu pitch, convertido en un <em>documento formal</em></h1>
+  <p class="es-sub no-imprimir">Con tu pitch y tus criterios, DeepSeek redacta la especificación de requisitos (SRS) con la estructura de ISO/IEC/IEEE 29148 y sus modelos UML: casos de uso, actividad, clases y secuencia. Tú la revisas: la IA redacta, tú respondes por ella.</p>
+
+  <section class="es-panel no-imprimir">
+    <div class="resumen" id="resumen"></div>
+    <div class="acciones" style="margin-top:.7em">
+      <button type="button" class="btn ia" id="generar">Generar documento formal con DeepSeek</button>
+      <button type="button" class="btn chico" id="plantilla">Armarlo sin IA (plantilla)</button>
+      <button type="button" class="btn chico" id="ejemplo">Usar el ejemplo de la botica</button>
+    </div>
+    <p class="estado" id="estado" role="status" aria-live="polite"></p>
+    <div class="acciones" id="bajadas" hidden>
+      <button type="button" class="btn chico" id="md">Descargar .md (con Mermaid)</button>
+      <button type="button" class="btn chico" id="html">Descargar .html</button>
+      <button type="button" class="btn chico" id="imprimir">Imprimir / Guardar como PDF</button>
+    </div>
+    <p class="es-nota-al-pie" id="notaPdf" hidden>Si no se abre el cuadro de impresión, descarga el .html, ábrelo en tu navegador y pulsa Ctrl+P (Cmd+P en Mac) › «Guardar como PDF».</p>
+  </section>
+
+  <article id="hoja" aria-label="Especificación de requisitos de software"></article>
+</main>
+<script src="../../comun/es.js"></script>
+<script src="../../comun/sh.js"></script>
+<script src="../../comun/mermaid-11.4.1.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var s = SH.cargar();
+  var ULTIMO = null;          // {d: datos, svgs: {}, mm: {}} del último documento
+
+  mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "neutral",
+    fontFamily: "-apple-system, Segoe UI, Roboto, Arial, sans-serif", flowchart: { htmlLabels: false }, sequence: { mirrorActors: false } });
+
+  // ───────── datos del alumno ─────────
+  function apetitoTxt(a) { return a && a.cantidad ? a.cantidad + " " + a.unidad + (a.talla ? " (" + a.talla + ")" : "") : "sin fijar"; }
+  function criteriosOk() { return s.criterios.filter(function (c) { return SH.revisar(c).ok; }); }
+  function resumen() {
+    var R = $("resumen"); R.innerHTML = "";
+    [["Módulo", s.tramo || "sin tramo"], ["Negocio", s.negocio || "—"], ["Apetito", apetitoTxt(s.apetito)],
+     ["Pitch", ["problema", "solucion", "agujeros", "nogos"].filter(function (k) { return (s.pitch[k] || "").trim().length > 10; }).length + " de 4 piezas"],
+     ["Criterios comprobables", criteriosOk().length + " de " + s.criterios.length]].forEach(function (x) {
+      R.appendChild(ES.h("span", null, [x[0] + ": ", ES.h("b", { text: String(x[1]) })]));
+    });
+  }
+  function muestra() {
+    return { pitch: { problema: s.pitch.problema, apetito: apetitoTxt(s.apetito), solucion: s.pitch.solucion,
+      agujeros_de_conejo: s.pitch.agujeros, no_gos: s.pitch.nogos },
+      entra: s.piezas.filter(function (p) { return p.entra; }).map(function (p) { return p.texto; }).slice(0, 12),
+      queda_fuera: s.piezas.filter(function (p) { return !p.entra; }).map(function (p) { return p.texto; }).slice(0, 12),
+      eventos_sesion1: s.eventos.slice(0, 12),
+      criterios: s.criterios.slice(0, 12).map(function (c, k) { return (k + 1) + ". " + String(c).slice(0, 220); }) };
+  }
+
+  // ───────── normalizar lo que llega (IA o plantilla) ─────────
+  function txt(v, n) { return String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, n || 240); }
+  function filas(t, nombre) { return (t && t[nombre] || []).filter(function (f) { return Array.isArray(f) && f.length; }); }
+  function normalizar(t, titulo) {
+    var d = { titulo: txt(titulo, 80) || (s.tramo || "Mi módulo"),
+      definiciones: filas(t, "Definiciones").map(function (f) { return { termino: txt(f[0], 50), definicion: txt(f[1], 200) }; }).filter(function (x) { return x.termino; }),
+      actores: filas(t, "Actores").map(function (f) { return { actor: txt(f[0], 40), tipo: /sistema/i.test(f[1]) ? "sistema externo" : "persona", objetivo: txt(f[2], 160) }; }).filter(function (x) { return x.actor; }),
+      casos: filas(t, "CasosDeUso").map(function (f) { return { actor: txt(f[0], 40), caso: txt(f[1], 60) }; }).filter(function (x) { return x.caso; }),
+      rf: filas(t, "Requisitos").map(function (f) {
+        var p = txt(f[2], 10); if (["Debe", "Debería", "Podría"].indexOf(p) < 0) p = "Debe";
+        var c = parseInt(f[3], 10); if (!(c >= 1 && c <= s.criterios.length)) c = 0;
+        return { requisito: txt(f[0], 260), actor: txt(f[1], 40), prioridad: p, criterio: c }; }).filter(function (x) { return x.requisito; }),
+      rnf: filas(t, "NoFuncionales").map(function (f) { return { categoria: txt(f[0], 40) || "Calidad", requisito: txt(f[1], 260) }; }).filter(function (x) { return x.requisito; }),
+      reglas: filas(t, "Reglas").map(function (f) { return txt(f[0], 240); }).filter(Boolean),
+      flujo: filas(t, "Flujo").map(function (f) { return { paso: txt(f[0], 70), decision: /decis/i.test(f[1]), no: txt(f[2], 60) }; }).filter(function (x) { return x.paso; }),
+      clases: filas(t, "Clases").map(function (f) { return { clase: ident(f[0]) || "Entidad", atributos: txt(f[1], 160).split(/\s*,\s*/).map(ident).filter(Boolean).slice(0, 6), rel: ident(f[2]), mult: txt(f[3], 20) }; }),
+      secuencia: filas(t, "Secuencia").map(function (f) { return { desde: txt(f[0], 30), hacia: txt(f[1], 30), mensaje: txt(f[2], 70) }; }).filter(function (x) { return x.desde && x.hacia && x.mensaje; }) };
+    // Un caso de uso sin actor conocido se cuelga del primer actor.
+    var nombres = d.actores.map(function (a) { return a.actor.toLowerCase(); });
+    d.casos.forEach(function (c) { if (nombres.indexOf(c.actor.toLowerCase()) < 0 && d.actores.length) c.actor = d.actores[0].actor; });
+    return d;
+  }
+  function ident(v) {
+    var t = String(v || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9_ ]/g, " ").trim();
+    if (!t) return "";
+    var p = t.split(/\s+/);
+    return p.length > 1 ? p.map(function (w, i) { return i ? w.charAt(0).toUpperCase() + w.slice(1) : w; }).join("") : p[0];
+  }
+
+  // ───────── respaldo sin IA ─────────
+  function plantilla() {
+    var entra = s.piezas.filter(function (p) { return p.entra; }).map(function (p) { return p.texto; });
+    if (!entra.length) entra = (s.pitch.solucion || "Registrar el caso principal").split(/[.;]\s*|,\s+y\s+|\s+y\s+un[oa]?\s+/).filter(function (x) { return x.trim().length > 6; }).slice(0, 5);
+    var crit = s.criterios;
+    var t = {
+      Definiciones: [["Apetito", "Tiempo máximo que el negocio decide invertir en este módulo (Shape Up)."], ["No-go", "Algo que queda fuera del alcance a propósito."]],
+      Actores: [["Usuario del negocio", "persona", "Usar el módulo en su trabajo diario"], ["Responsable", "persona", "Revisar el resultado y tomar decisiones"]],
+      CasosDeUso: entra.slice(0, 6).map(function (e) { return ["Usuario del negocio", e.slice(0, 50)]; }),
+      Requisitos: entra.slice(0, 8).map(function (e, k) { return ["El sistema debe permitir: " + e.replace(/\.$/, "") + ".", "Usuario del negocio", "Debe", k < crit.length ? k + 1 : 0]; }),
+      NoFuncionales: [["Eficiencia de desempeño", "(por completar) Tiempo de respuesta máximo, en segundos, de la acción principal."], ["Fiabilidad", "(por completar) Qué pasa si falla un servicio externo y en cuánto tiempo se recupera."], ["Usabilidad", "(por completar) Cuántos pasos o minutos le toma a un usuario nuevo completar el caso principal."]],
+      Reglas: (s.pitch.agujeros || "").split(/[.;]\s*/).filter(function (x) { return x.trim().length > 8; }).slice(0, 4).map(function (x) { return [x.trim() + "."]; }),
+      Flujo: (s.eventos.length ? s.eventos : entra).slice(0, 7).map(function (e) { return [e, "accion", ""]; }),
+      Clases: claseDesdeEventos(),
+      Secuencia: [["Usuario del negocio", "Sistema", (entra[0] || "Solicitar acción").slice(0, 40)], ["Sistema", "Base de datos", "Guardar registro"], ["Base de datos", "Sistema", "Confirmar guardado"], ["Sistema", "Usuario del negocio", "Mostrar resultado"]]
+    };
+    if (!t.Reglas.length) t.Reglas = [["(por completar) Regla del negocio que el sistema debe respetar."]];
+    return t;
+  }
+  function claseDesdeEventos() {
+    var vistas = {}, out = [];
+    s.eventos.forEach(function (e) { var w = ident(String(e).split(/\s+/)[0]); if (w && w.length > 2 && !vistas[w]) { vistas[w] = 1; out.push(w.charAt(0).toUpperCase() + w.slice(1)); } });
+    if (!out.length) out = ["Registro"];
+    return out.slice(0, 4).map(function (c, k, a) { return [c, "id, estado, fecha", a[k + 1] || "", "1 a muchos"]; });
+  }
+
+  // ───────── Mermaid ─────────
+  function et(v) { return String(v).replace(/["`#;{}<>|[\]()]/g, " ").replace(/\s+/g, " ").trim() || "—"; }
+  function mmActividad(d) {
+    var L = ["flowchart TD", "  I((Inicio))"], prev = "I", noFin = [];
+    d.flujo.forEach(function (p, k) {
+      var id = "P" + k;
+      L.push(p.decision ? '  ' + id + '{"' + et(p.paso) + '"}' : '  ' + id + '["' + et(p.paso) + '"]');
+      L.push("  " + prev + (prev.charAt(0) === "P" && d.flujo[+prev.slice(1)].decision ? " -->|Sí| " : " --> ") + id);
+      if (p.decision) { var n = "N" + k; L.push('  ' + n + '["' + et(p.no || "Termina sin completar") + '"]'); L.push("  " + id + " -->|No| " + n); noFin.push(n); }
+      prev = id;
+    });
+    L.push("  F((Fin))");
+    L.push("  " + prev + (prev !== "I" && d.flujo[+prev.slice(1)] && d.flujo[+prev.slice(1)].decision ? " -->|Sí| F" : " --> F"));
+    noFin.forEach(function (n) { L.push("  " + n + " --> F"); });
+    return L.join("\n");
+  }
+  function mmClases(d) {
+    var L = ["classDiagram"], nombres = d.clases.map(function (c) { return c.clase; });
+    d.clases.forEach(function (c) {
+      L.push("  class " + c.clase + " {");
+      c.atributos.forEach(function (a) { L.push("    +" + a); });
+      L.push("  }");
+    });
+    d.clases.forEach(function (c) {
+      if (!c.rel || nombres.indexOf(c.rel) < 0 || c.rel === c.clase) return;
+      var m = /muchos a muchos/i.test(c.mult) ? ['"*"', '"*"'] : /1 a 1/.test(c.mult) ? ['"1"', '"1"'] : ['"1"', '"*"'];
+      L.push("  " + c.clase + " " + m[0] + " --> " + m[1] + " " + c.rel);
+    });
+    return L.join("\n");
+  }
+  function mmSecuencia(d) {
+    var L = ["sequenceDiagram"], ids = {}, n = 0;
+    function pid(nombre) { var k = nombre.toLowerCase(); if (!ids[k]) { ids[k] = "P" + (n++); L.push("  participant " + ids[k] + " as " + et(nombre)); } return ids[k]; }
+    var cuerpo = d.secuencia.map(function (m) { var a = pid(m.desde), b = pid(m.hacia); return "  " + a + "->>" + b + ": " + et(m.mensaje).replace(/:/g, " "); });
+    return L.concat(cuerpo).join("\n");
+  }
+  function mmCasosMd(d) {   // versión Mermaid para el .md (en pantalla va el SVG UML propio)
+    var L = ["flowchart LR"], ids = {};
+    d.actores.forEach(function (a, k) { ids[a.actor.toLowerCase()] = "A" + k; L.push('  A' + k + '["' + et(a.actor) + ' (actor)"]'); });
+    L.push('  subgraph S["' + et(d.titulo) + '"]');
+    d.casos.forEach(function (c, k) { L.push('    C' + k + '(["' + et(c.caso) + '"])'); });
+    L.push("  end");
+    d.casos.forEach(function (c, k) { L.push("  " + (ids[c.actor.toLowerCase()] || "A0") + " --- C" + k); });
+    return L.join("\n");
+  }
+  var nSvg = 0;
+  function render(codigo) {
+    var id = "mm" + (++nSvg);
+    return mermaid.parse(codigo).then(function () { return mermaid.render(id, codigo); }).then(function (r) { return r.svg; })
+      .catch(function (e) { var x = document.getElementById("d" + id); if (x) x.remove(); return null; });
+  }
+
+  // ───────── casos de uso: SVG UML propio (actor como figura, elipses, límite del sistema) ─────────
+  function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function partir(t, n) { var p = String(t).split(" "), out = [], a = ""; p.forEach(function (w) { if ((a + " " + w).trim().length > n && a) { out.push(a); a = w; } else a = (a + " " + w).trim(); }); if (a) out.push(a); return out.slice(0, 3); }
+  function svgCasos(d) {
+    var pers = d.actores.filter(function (a) { return a.tipo === "persona"; }), sist = d.actores.filter(function (a) { return a.tipo !== "persona"; });
+    if (!pers.length && d.actores.length) { pers = [d.actores[0]]; sist = d.actores.slice(1); }
+    var nC = Math.max(1, d.casos.length), H = Math.max(260, 70 + nC * 64), W = 760, bx = 200, bw = 360, pos = {};
+    var o = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '" font-family="-apple-system, Segoe UI, Roboto, Arial, sans-serif" font-size="13">',
+      '<rect x="' + bx + '" y="10" width="' + bw + '" height="' + (H - 20) + '" fill="#fafafa" stroke="#1b1d22" stroke-width="1.4"/>'];
+    partir(d.titulo, 42).forEach(function (l, i) { o.push('<text x="' + (bx + bw / 2) + '" y="' + (30 + i * 15) + '" text-anchor="middle" font-weight="700">' + esc(l) + "</text>"); });
+    d.casos.forEach(function (c, k) {
+      var cy = 70 + k * 64 + 20, cx = bx + bw / 2;
+      pos["c" + k] = [cx, cy];
+      o.push('<ellipse cx="' + cx + '" cy="' + cy + '" rx="150" ry="24" fill="#fff" stroke="#1b1d22" stroke-width="1.2"/>');
+      var ls = partir(c.caso, 34);
+      ls.forEach(function (l, i) { o.push('<text x="' + cx + '" y="' + (cy + 4 + (i - (ls.length - 1) / 2) * 14) + '" text-anchor="middle">' + esc(l) + "</text>"); });
+    });
+    function figura(a, x, y) {
+      o.push('<g stroke="#1b1d22" stroke-width="1.4" fill="none"><circle cx="' + x + '" cy="' + (y - 26) + '" r="9"/><line x1="' + x + '" y1="' + (y - 17) + '" x2="' + x + '" y2="' + (y + 8) + '"/>' +
+        '<line x1="' + (x - 14) + '" y1="' + (y - 8) + '" x2="' + (x + 14) + '" y2="' + (y - 8) + '"/><line x1="' + x + '" y1="' + (y + 8) + '" x2="' + (x - 11) + '" y2="' + (y + 26) + '"/><line x1="' + x + '" y1="' + (y + 8) + '" x2="' + (x + 11) + '" y2="' + (y + 26) + '"/></g>');
+      partir(a.actor, 18).forEach(function (l, i) { o.push('<text x="' + x + '" y="' + (y + 42 + i * 14) + '" text-anchor="middle">' + esc(l) + "</text>"); });
+    }
+    function caja(a, x, y) {
+      o.push('<rect x="' + (x - 62) + '" y="' + (y - 24) + '" width="124" height="48" fill="#fff" stroke="#1b1d22" stroke-width="1.2"/><text x="' + x + '" y="' + (y - 8) + '" text-anchor="middle" font-size="11">«sistema»</text>');
+      partir(a.actor, 18).forEach(function (l, i) { o.push('<text x="' + x + '" y="' + (y + 8 + i * 13) + '" text-anchor="middle">' + esc(l) + "</text>"); });
+    }
+    function lado(lista, x, dib) {
+      lista.forEach(function (a, k) { var y = (H / (lista.length + 1)) * (k + 1); pos["a" + a.actor.toLowerCase()] = [x, y]; dib(a, x, y); });
+    }
+    lado(pers, 80, figura); lado(sist, W - 90, caja);
+    d.casos.forEach(function (c, k) {
+      var a = pos["a" + c.actor.toLowerCase()] || pos["a" + (pers[0] ? pers[0].actor.toLowerCase() : "")], p = pos["c" + k];
+      if (!a || !p) return;
+      var izq = a[0] < bx, x1 = izq ? a[0] + 18 : a[0] - 62, x2 = izq ? p[0] - 150 : p[0] + 150;
+      o.push('<line x1="' + x1 + '" y1="' + a[1] + '" x2="' + x2 + '" y2="' + p[1] + '" stroke="#1b1d22" stroke-width="1"/>');
+    });
+    o.push("</svg>");
+    return o.join("");
+  }
+
+  // ───────── el documento ─────────
+  function fecha() { return new Date().toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" }); }
+  function nogosLista() { return (s.pitch.nogos || "").replace(/^no entra:\s*/i, "").split(/[.;]\s*|,\s*/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length > 2; }); }
+  function tabla(cab, filas) {
+    return "<table><thead><tr>" + cab.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+      filas.map(function (f) { return "<tr>" + f.map(function (c, i) { return "<td" + (i === 0 ? ' class="cod"' : "") + ">" + esc(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+  }
+  function fig(svg, codigo, pie) {
+    return '<div class="fig">' + (svg || '<p class="aviso">No se pudo dibujar este diagrama. Su código Mermaid va en el .md.</p><div class="codigo-error">' + esc(codigo) + "</div>") + '</div><p class="pie">' + esc(pie) + "</p>";
+  }
+  function armarHTML(d, svgs, mm) {
+    var crit = s.criterios, rf = d.rf, H = [];
+    H.push('<div class="portada"><p class="meta">Especificación de requisitos de software (SRS) · ISO/IEC/IEEE 29148:2018, cláusula 9.6</p>');
+    H.push("<h1>" + esc(d.titulo) + "</h1>");
+    H.push('<p class="meta">' + esc(s.negocio || "Mi negocio") + " · Módulo: " + esc(s.tramo || "—") + "<br>Versión 1.0 · " + esc(fecha()) + "</p></div>");
+    H.push("<h3>Control de versiones</h3>" + tabla(["Versión", "Fecha", "Autor", "Cambio"], [["1.0", fecha(), "Equipo del módulo (redacción asistida por IA)", "Primera versión a partir del pitch y los criterios de la sesión 2"]]));
+    H.push("<h2>1. Introducción</h2><h3>1.1 Propósito</h3><p>Este documento especifica los requisitos del módulo «" + esc(s.tramo || d.titulo) + "» para que se pueda construir, probar y aceptar dentro del apetito acordado.</p>");
+    H.push("<h3>1.2 Alcance</h3><p><b>Problema que resuelve:</b> " + esc(s.pitch.problema || "—") + "</p><p><b>Apetito:</b> " + esc(apetitoTxt(s.apetito)) + ". Lo que no quepa en ese tiempo se recorta; no se alarga el plazo.</p>");
+    var ng = nogosLista();
+    H.push("<p><b>Fuera del alcance (no-gos):</b></p><ul>" + (ng.length ? ng.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") : "<li>—</li>") + "</ul>");
+    H.push("<h3>1.3 Perspectiva del producto</h3><p>El módulo cubre este tramo del proceso del negocio, tomado del Event Storming de la sesión 1:</p><p>" + esc(s.eventos.length ? s.eventos.join(" → ") : (s.tramo || "—")) + "</p>");
+    H.push("<h3>1.4 Funciones del producto</h3>" + fig(svgs.casos, mm.casosMd, "Figura 1. Diagrama de casos de uso (UML)."));
+    H.push("<h3>1.5 Características de los usuarios</h3>" + tabla(["Actor", "Tipo", "Objetivo"], d.actores.map(function (a) { return [a.actor, a.tipo, a.objetivo]; })));
+    var ag = (s.pitch.agujeros || "").trim();
+    H.push("<h3>1.6 Limitaciones y riesgos</h3><p>" + (ag ? esc(ag) : "—") + "</p>");
+    H.push("<h3>1.7 Definiciones</h3>" + tabla(["Término", "Definición"], d.definiciones.map(function (x) { return [x.termino, x.definicion]; })));
+    H.push("<h2>2. Referencias</h2><ul><li>ISO/IEC/IEEE 29148:2018. Systems and software engineering — Life cycle processes — Requirements engineering.</li><li>ISO/IEC 25010:2023. Systems and software quality models (características de calidad de los requisitos no funcionales).</li><li>OMG. Unified Modeling Language (UML) 2.5.1, 2017.</li><li>Singer, R. (2019). Shape Up: Stop Running in Circles and Ship Work that Matters. Basecamp.</li></ul>");
+    H.push("<h2>3. Requisitos específicos</h2><h3>3.1 Requisitos funcionales</h3>" + tabla(["ID", "Requisito", "Actor", "Prioridad", "Se verifica con"],
+      rf.map(function (r, k) { return ["RF-" + pad(k + 1), r.requisito, r.actor, r.prioridad, r.criterio ? "CA-" + pad(r.criterio) : "Sin criterio"]; })));
+    var sin = rf.filter(function (r) { return !r.criterio; }).length;
+    if (sin) H.push('<p class="aviso">' + sin + " requisito" + (sin > 1 ? "s no tienen" : " no tiene") + " criterio de aceptación que lo verifique: escríbelo antes de construir.</p>");
+    H.push("<h3>3.2 Requisitos no funcionales</h3>" + tabla(["ID", "Característica (ISO/IEC 25010)", "Requisito"], d.rnf.map(function (r, k) { return ["RNF-" + pad(k + 1), r.categoria, r.requisito]; })));
+    H.push("<h3>3.3 Reglas de negocio</h3>" + tabla(["ID", "Regla"], d.reglas.map(function (r, k) { return ["RN-" + pad(k + 1), r]; })));
+    H.push("<h3>3.4 Modelos</h3>" + fig(svgs.actividad, mm.actividad, "Figura 2. Diagrama de actividad del flujo principal (UML).") +
+      fig(svgs.clases, mm.clases, "Figura 3. Diagrama de clases del dominio (UML).") + fig(svgs.secuencia, mm.secuencia, "Figura 4. Diagrama de secuencia del caso central (UML)."));
+    H.push("<h2>4. Verificación</h2><h3>4.1 Criterios de aceptación</h3>" + (crit.length ? tabla(["ID", "Criterio (Dado / cuando / entonces)", "Estado"],
+      crit.map(function (c, k) { return ["CA-" + pad(k + 1), c, SH.revisar(c).ok ? "Comprobable" : "Por revisar"]; })) : "<p>Todavía no hay criterios: vuelve al paso 3.</p>"));
+    H.push("<h3>4.2 Matriz de trazabilidad</h3>" + tabla(["Requisito", "Criterios que lo verifican"], rf.map(function (r, k) { return ["RF-" + pad(k + 1), r.criterio ? "CA-" + pad(r.criterio) : "—"]; })));
+    H.push("<h2>5. Información de soporte</h2><p><b>Solución en trazo grueso (pitch):</b> " + esc(s.pitch.solucion || "—") + "</p><p class=\"meta\">Borrador redactado con ayuda de IA a partir del pitch del equipo. Revísalo antes de usarlo: la IA redacta, el equipo responde por el contenido.</p>");
+    return H.join("");
+  }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+  function armarMD(d, mm) {
+    var M = [], crit = s.criterios;
+    M.push("# " + d.titulo, "", "Especificación de requisitos de software (SRS) · ISO/IEC/IEEE 29148:2018, cláusula 9.6", "",
+      (s.negocio || "Mi negocio") + " · Módulo: " + (s.tramo || "—") + " · Versión 1.0 · " + fecha(), "",
+      "| Versión | Fecha | Autor | Cambio |", "|---|---|---|---|", "| 1.0 | " + fecha() + " | Equipo del módulo (redacción asistida por IA) | Primera versión |", "",
+      "## 1. Introducción", "", "### 1.1 Propósito", "Requisitos del módulo «" + (s.tramo || d.titulo) + "» para construirlo, probarlo y aceptarlo dentro del apetito.", "",
+      "### 1.2 Alcance", "**Problema:** " + (s.pitch.problema || "—"), "", "**Apetito:** " + apetitoTxt(s.apetito), "", "**Fuera del alcance (no-gos):**");
+    nogosLista().forEach(function (x) { M.push("- " + x); });
+    M.push("", "### 1.3 Perspectiva del producto", s.eventos.join(" → ") || s.tramo || "—", "", "### 1.4 Funciones del producto (casos de uso)", "", "```mermaid", mm.casosMd, "```", "",
+      "### 1.5 Características de los usuarios", "", "| Actor | Tipo | Objetivo |", "|---|---|---|");
+    d.actores.forEach(function (a) { M.push("| " + md(a.actor) + " | " + a.tipo + " | " + md(a.objetivo) + " |"); });
+    M.push("", "### 1.6 Limitaciones y riesgos", s.pitch.agujeros || "—", "", "### 1.7 Definiciones", "", "| Término | Definición |", "|---|---|");
+    d.definiciones.forEach(function (x) { M.push("| " + md(x.termino) + " | " + md(x.definicion) + " |"); });
+    M.push("", "## 2. Referencias", "- ISO/IEC/IEEE 29148:2018", "- ISO/IEC 25010:2023", "- OMG UML 2.5.1 (2017)", "- Singer, R. (2019). Shape Up. Basecamp.", "",
+      "## 3. Requisitos específicos", "", "### 3.1 Requisitos funcionales", "", "| ID | Requisito | Actor | Prioridad | Se verifica con |", "|---|---|---|---|---|");
+    d.rf.forEach(function (r, k) { M.push("| RF-" + pad(k + 1) + " | " + md(r.requisito) + " | " + md(r.actor) + " | " + r.prioridad + " | " + (r.criterio ? "CA-" + pad(r.criterio) : "Sin criterio") + " |"); });
+    M.push("", "### 3.2 Requisitos no funcionales", "", "| ID | Característica | Requisito |", "|---|---|---|");
+    d.rnf.forEach(function (r, k) { M.push("| RNF-" + pad(k + 1) + " | " + md(r.categoria) + " | " + md(r.requisito) + " |"); });
+    M.push("", "### 3.3 Reglas de negocio", "");
+    d.reglas.forEach(function (r, k) { M.push("- **RN-" + pad(k + 1) + "** " + r); });
+    M.push("", "### 3.4 Modelos", "", "Actividad del flujo principal:", "", "```mermaid", mm.actividad, "```", "", "Clases del dominio:", "", "```mermaid", mm.clases, "```", "",
+      "Secuencia del caso central:", "", "```mermaid", mm.secuencia, "```", "", "## 4. Verificación", "", "### 4.1 Criterios de aceptación", "");
+    crit.forEach(function (c, k) { M.push("- **CA-" + pad(k + 1) + "** " + c + (SH.revisar(c).ok ? "" : " _(por revisar)_")); });
+    M.push("", "### 4.2 Matriz de trazabilidad", "", "| Requisito | Criterios |", "|---|---|");
+    d.rf.forEach(function (r, k) { M.push("| RF-" + pad(k + 1) + " | " + (r.criterio ? "CA-" + pad(r.criterio) : "—") + " |"); });
+    M.push("", "## 5. Información de soporte", "", "**Solución en trazo grueso:** " + (s.pitch.solucion || "—"), "", "_Borrador redactado con ayuda de IA. El equipo responde por el contenido._");
+    return M.join("\n");
+  }
+  function md(t) { return String(t).replace(/\|/g, "/"); }
+
+  function construir(t, titulo, origen) {
+    var d = normalizar(t, titulo);
+    var mm = { actividad: mmActividad(d), clases: mmClases(d), secuencia: mmSecuencia(d), casosMd: mmCasosMd(d) };
+    var svgs = { casos: svgCasos(d) };
+    return Promise.all([render(mm.actividad), render(mm.clases), render(mm.secuencia)]).then(function (r) {
+      svgs.actividad = r[0]; svgs.clases = r[1]; svgs.secuencia = r[2];
+      ULTIMO = { d: d, svgs: svgs, mm: mm, origen: origen };
+      var hoja = $("hoja"); hoja.innerHTML = armarHTML(d, svgs, mm); hoja.classList.add("listo");
+      $("bajadas").hidden = false;
+      s = SH.cargar(); s.srs = { tablas: t, titulo: titulo, origen: origen }; SH.guardar(s);
+      var fallos = r.filter(function (x) { return !x; }).length;
+      return { rf: d.rf.length, fallos: fallos };
+    });
+  }
+
+  // ───────── botones ─────────
+  $("generar").addEventListener("click", function () {
+    s = SH.cargar(); resumen();
+    if (["problema", "solucion"].some(function (k) { return (s.pitch[k] || "").trim().length < 10; })) {
+      $("estado").className = "estado mal"; $("estado").textContent = "Completa tu pitch en el paso 2 (o usa el ejemplo de la botica)."; return;
+    }
+    var b = $("generar"), t0 = Date.now(); b.disabled = true;
+    $("estado").className = "estado"; $("estado").textContent = "DeepSeek está redactando tu SRS…";
+    var rel = setInterval(function () { $("estado").textContent = "DeepSeek está redactando tu SRS… " + Math.round((Date.now() - t0) / 1000) + " s"; }, 1000);
+    var pedido = ("Redacta la SRS del módulo «" + (s.tramo || "mi módulo") + "» con apetito de " + apetitoTxt(s.apetito) + ", respetando los no-gos.").slice(0, 300);
+    ES.ia(ES.ESCENA, pedido, { razon: (s.negocio || "Mi negocio").slice(0, 120), rubro: (s.tramo || "mi módulo").slice(0, 120), regimen: "Shape Up" }, muestra()).then(function (x) {
+      clearInterval(rel);
+      if (!x.ok || !filas(x.tablas, "Requisitos").length) {
+        b.disabled = false;
+        $("estado").className = "estado mal";
+        $("estado").textContent = (x.msg || "La IA no devolvió requisitos.") + " Arma el documento con «Armarlo sin IA» y complétalo a mano.";
+        return;
+      }
+      construir(x.tablas, x.titulo, "ia").then(function (r) {
+        b.disabled = false;
+        $("estado").className = "estado bien";
+        $("estado").textContent = "Documento listo en " + Math.round((Date.now() - t0) / 1000) + " s: " + r.rf + " requisitos funcionales y 4 diagramas UML" + (r.fallos ? " (" + r.fallos + " sin dibujar: su código va en el .md)" : "") + ". Revísalo antes de descargarlo.";
+        ES.evidencia("SRS generada: " + r.rf + " requisitos, trazabilidad a " + s.criterios.length + " criterios");
+      });
+    });
+  });
+  $("plantilla").addEventListener("click", function () {
+    s = SH.cargar();
+    construir(plantilla(), s.tramo || "Mi módulo", "plantilla").then(function (r) {
+      $("estado").className = "estado"; $("estado").textContent = "Documento armado sin IA con tu pitch: " + r.rf + (r.rf === 1 ? " requisito." : " requisitos.") + " Completa lo que dice «(por completar)».";
+    });
+  });
+  $("ejemplo").addEventListener("click", function () {
+    s = SH.cargar(); var E = SH.EJEMPLO;
+    s.negocio = E.negocio; s.tramo = E.tramo; s.eventos = E.eventos.slice();
+    if (!s.apetito.cantidad) s.apetito = { cantidad: "2", unidad: "semanas", talla: "proyecto pequeño" };
+    s.pitch = JSON.parse(JSON.stringify(E.pitch));
+    if (!s.criterios.length) s.criterios = ["Dado que SUNAT no responde, cuando la cajera cobra una venta, entonces la boleta queda en la lista de pendientes con su hora",
+      "Dado 3 boletas pendientes, cuando SUNAT vuelve a responder, entonces las 3 quedan aceptadas en menos de 10 minutos",
+      "Dado una boleta rechazada dos veces, cuando la jefa abre la lista, entonces ve el motivo del rechazo que devolvió SUNAT"];
+    SH.guardar(s); resumen(); $("estado").className = "estado"; $("estado").textContent = "Ejemplo cargado. Pulsa «Generar documento formal».";
+  });
+  function nombreBase() { return "srs-" + ((s.negocio || "modulo") + "-" + (s.tramo || "")).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60); }
+  $("md").addEventListener("click", function () { if (ULTIMO) ES.descargar(nombreBase() + ".md", armarMD(ULTIMO.d, ULTIMO.mm)); });
+  $("html").addEventListener("click", function () {
+    if (!ULTIMO) return;
+    var css = Array.prototype.map.call(document.querySelectorAll("style"), function (x) { return x.textContent; }).join("\n").replace(/#hoja\s*\{\s*display:\s*none;/, "#hoja {").replace(/main > :not\(#hoja\),\s*\.no-imprimir/, ".no-imprimir");
+    var doc = '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(ULTIMO.d.titulo) + " · SRS</title><style>body{margin:0;background:#eef0f3}main{max-width:900px;margin:24px auto}" + css + "</style></head><body><main><article id=\"hoja\" class=\"listo\">" + $("hoja").innerHTML + "</article></main></body></html>";
+    var a = ES.h("a", { href: URL.createObjectURL(new Blob([doc], { type: "text/html" })), download: nombreBase() + ".html" });
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  });
+  $("imprimir").addEventListener("click", function () {
+    $("notaPdf").hidden = false;
+    try { window.print(); } catch (e) { /* el marco puede no permitirlo: queda la nota */ }
+  });
+
+  resumen();
+  // Si ya generó antes, lo vuelve a mostrar.
+  if (s.srs && s.srs.tablas) construir(s.srs.tablas, s.srs.titulo, s.srs.origen).then(function () { $("estado").className = "estado"; $("estado").textContent = "Este es tu último documento. Puedes generarlo de nuevo si cambiaste el pitch."; });
+})();
+</script>
+</body>
+</html>
