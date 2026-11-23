@@ -39,6 +39,23 @@
   </section>
 
   <div id="resultado" hidden class="es-col" style="gap:1em">
+    <section class="es-panel as-nube-panel" id="nubePanel">
+      <div class="es-fila" style="justify-content:space-between">
+        <h2>Nube de palabras</h2>
+        <div class="es-fila as-sel" role="group" aria-label="Qué frases entran en la nube">
+          <button type="button" class="btn chico pri" data-pol="todas" aria-pressed="true">Todas</button>
+          <button type="button" class="btn chico" data-pol="pos" aria-pressed="false">Positivas</button>
+          <button type="button" class="btn chico" data-pol="neu" aria-pressed="false">Neutras</button>
+          <button type="button" class="btn chico" data-pol="neg" aria-pressed="false">Negativas</button>
+        </div>
+      </div>
+      <div class="as-nube" id="nube"></div>
+      <div class="es-fila" style="justify-content:space-between">
+        <div class="as-leyenda"><span><i style="background:var(--ok)"></i>más positiva</span><span><i style="background:var(--muted)"></i>neutra o mezclada</span><span><i style="background:var(--bad)"></i>más negativa</span><span>tamaño = en cuántos textos aparece · toca una palabra para filtrar el tablero</span></div>
+        <span id="filtro" hidden><button type="button" class="btn chico mal" id="quitarFiltro">Quitar filtro</button></span>
+      </div>
+      <p class="estado" id="filtroTxt" role="status" aria-live="polite"></p>
+    </section>
     <div class="as-kpis" id="kpis"></div>
     <div class="as-grid">
       <section class="es-panel"><h2>Polaridad</h2><div id="polaridad"></div></section>
@@ -140,10 +157,88 @@
   function mostrar(A) {
     actual = A; A.R = AS.analizar(A.filas);
     $("resultado").hidden = false;
-    kpis(A); polaridad(A); rueda(A); arbol(A); calor(A); tendencia(A); claves(A); patrones(A);
+    NUBE.pol = "todas"; NUBE.palabra = ""; marcarSel();
+    nube(); tablero(A);
     $("fuente").textContent = A.titulo + " · " + A.sub + " · " + A.fuente;
-    setTimeout(function () { $("kpis").scrollIntoView({ behavior: AS.quieto() ? "auto" : "smooth", block: "start" }); }, 120);
+    setTimeout(function () { $("nubePanel").scrollIntoView({ behavior: AS.quieto() ? "auto" : "smooth", block: "start" }); }, 120);
   }
+  function tablero(A) { kpis(A); polaridad(A); rueda(A); arbol(A); calor(A); tendencia(A); claves(A); patrones(A); }
+
+  // ---------- nube de palabras ----------
+  var STOPN = {};
+  ("a al algo algun alguna algunas alguno algunos ante antes aqui asi aun aunque bajo bien cada casi como con contra cual cuales cuando de del desde donde dos e el ella ellas ello ellos en entre era eran eres es esa esas ese eso esos esta estaba estaban estamos estan estar estas este esto estos estoy fue fueron fui ha habia hace hacer hacia han hasta hay he hoy la las le les lo los mas me mi mia mis mismo mucha muchas mucho muchos muy nada ni no nos nosotros o os otra otras otro otros para pero poco por porque pues que quien se sea ser si sido siempre sin sobre solo son su sus tal tambien tan tanto te tenia tengo tiene tienen todo todos tu tus un una uno unos usted ya yo vez veces dia dias mes semana ahi alla ahora entonces luego despues igual creo parece podia puede pueden sabia quiero seria sera toda todas cosa cosas otra pues dijo vuestra merced don cuanto senor tan muy " +
+   "the and for are but not you all any can her was one our out his has had have this that with they them from your what when which will would there their been were then than into just also very more most some such only other about over after before because could should these those while where who why how its it's i me my we he she him us is am be do does did of to in on at by an or as so if no yes " +
+   "o os um uma uns umas do da dos das no na nos nas ao aos pelo pela pelos pelas para com sem que se nao sim mas como mais muito muita muitos muitas eu ele ela eles elas voce voces meu minha seu sua isso isto aquilo esse essa este esta foi ser estar tem ter ja ate quando onde tambem entao bem").split(" ").forEach(function (w) { if (w) STOPN[w] = 1; });
+  var NUBE = { pol: "todas", palabra: "" };
+  function normN(t) { return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+  function tokens(t) {
+    var out = {}, crudo = String(t || "").toLowerCase().match(/[a-záéíóúüñç]+/g) || [];
+    crudo.forEach(function (w) { var n = normN(w); if (n.length > 2 && !STOPN[n] && !/^\d+$/.test(n)) out[n] = out[n] || w; });
+    return out;
+  }
+  function conPalabra(f, n) { return !!tokens(f.t)[n]; }
+  function marcarSel() { Array.prototype.forEach.call(document.querySelectorAll(".as-sel button"), function (b) { var on = b.getAttribute("data-pol") === NUBE.pol; b.setAttribute("aria-pressed", String(on)); b.classList.toggle("pri", on); }); }
+  Array.prototype.forEach.call(document.querySelectorAll(".as-sel button"), function (b) {
+    b.addEventListener("click", function () { NUBE.pol = b.getAttribute("data-pol"); marcarSel(); nube(); if (NUBE.palabra) filtrar(NUBE.palabra, NUBE.forma); });
+  });
+  var medidor = null;
+  function ancho(txt, px) { if (!medidor) medidor = document.createElement("canvas").getContext("2d"); medidor.font = "700 " + px + "px system-ui, -apple-system, Segoe UI, Roboto, sans-serif"; return medidor.measureText(txt).width; }
+  function nube() {
+    var N = $("nube"); N.innerHTML = "";
+    if (!actual) return;
+    var filas = actual.filas.filter(function (f) { return NUBE.pol === "todas" || f.p === NUBE.pol; });
+    var c = {};
+    filas.forEach(function (f) {
+      var tk = tokens(f.t), v = f.p === "pos" ? 1 : f.p === "neg" ? -1 : 0;
+      Object.keys(tk).forEach(function (n) { var e = c[n] = c[n] || { n: n, forma: {}, k: 0, s: 0, pos: 0, neu: 0, neg: 0 }; e.k++; e.s += v; e[f.p]++; e.forma[tk[n]] = (e.forma[tk[n]] || 0) + 1; });
+    });
+    var lista = Object.keys(c).map(function (n) { var e = c[n]; e.w = Object.keys(e.forma).sort(function (a, b) { return e.forma[b] - e.forma[a] || (a < b ? -1 : 1); })[0]; e.m = e.s / e.k; return e; })
+      .filter(function (e) { return e.k >= 2; }).sort(function (a, b) { return b.k - a.k || (a.n < b.n ? -1 : 1); }).slice(0, 70);
+    if (!lista.length) { N.appendChild(h("p", { class: "es-nota-al-pie", text: "No hay palabras que se repitan en estas frases." })); return; }
+    var angosto = (N.clientWidth || 800) < 560, W = angosto ? 420 : 800, H = angosto ? 520 : 380, max = lista[0].k, min = lista[lista.length - 1].k;
+    var svg = S("svg", { viewBox: "0 0 " + W + " " + H, class: "as-svg as-nube-svg", role: "img", "aria-label": "Nube de palabras: " + lista.slice(0, 12).map(function (e) { return e.w + " " + e.k; }).join(", ") });
+    var cajas = [], idx = 0;
+    lista.forEach(function (e) {
+      var px = Math.round((angosto ? 12 : 13) + (angosto ? 26 : 39) * Math.sqrt((e.k - min) / Math.max(1, max - min)));
+      var w = ancho(e.w, px) + 6, hh = px * 1.05, ok = null;
+      for (var t = 0; t < 2400 && !ok; t++) {
+        var a = t * 0.18, r = 2.2 * a;
+        var x = W / 2 + r * Math.cos(a) * (angosto ? 1 : 1.6) - w / 2, y = H / 2 + r * Math.sin(a) - hh / 2;
+        if (x < 4 || y < 4 || x + w > W - 4 || y + hh > H - 4) continue;
+        var choca = cajas.some(function (b) { return x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + hh > b.y; });
+        if (!choca) ok = { x: x, y: y, w: w, h: hh };
+      }
+      if (!ok) return;
+      cajas.push(ok);
+      var col = e.m > 0.2 ? "var(--ok)" : e.m < -0.2 ? "var(--bad)" : "var(--muted)";
+      var pct = function (k) { return Math.round(e[k] / e.k * 100) + " %"; };
+      var info = e.w + " · en " + e.k + " textos · " + pct("pos") + " positivos, " + pct("neu") + " neutros, " + pct("neg") + " negativos";
+      var tx = S("text", { x: (ok.x + ok.w / 2).toFixed(1), y: (ok.y + ok.h * 0.8).toFixed(1), "text-anchor": "middle", class: "as-palabra" + (NUBE.palabra === e.n ? " sel" : ""), style: "fill:" + col + ";font-size:" + px + "px", tabindex: "0", role: "button", "aria-label": info, "data-n": e.n, text: e.w });
+      tx.appendChild(S("title", { text: info }));
+      tx.style.animationDelay = Math.min(1.2, idx * 0.018) + "s"; idx++;
+      var ver = function () { $("filtroTxt").className = "estado"; $("filtroTxt").textContent = info + (NUBE.palabra ? "" : " · toca para filtrar"); };
+      tx.addEventListener("mouseenter", ver); tx.addEventListener("focus", ver);
+      var elegirP = function () { if (NUBE.palabra === e.n) quitar(); else filtrar(e.n, e.w); };
+      tx.addEventListener("click", elegirP);
+      tx.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); elegirP(); } });
+      svg.appendChild(tx);
+    });
+    N.appendChild(svg);
+  }
+  function filtrar(n, forma) {
+    NUBE.palabra = n; NUBE.forma = forma;
+    var sub = actual.filas.filter(function (f) { return conPalabra(f, n) && (NUBE.pol === "todas" || f.p === NUBE.pol); });
+    tablero(Object.assign({}, actual, { filas: sub, R: AS.analizar(sub), titulo: actual.titulo + " · «" + forma + "»" }));
+    $("filtro").hidden = false;
+    $("filtroTxt").className = "estado bien"; $("filtroTxt").textContent = "Filtrando el tablero: " + sub.length + " textos con «" + forma + "»" + (NUBE.pol === "todas" ? "" : " (" + AS.NOMPOL[NUBE.pol] + "s)") + ".";
+    Array.prototype.forEach.call(document.querySelectorAll(".as-palabra"), function (t) { t.classList.toggle("sel", t.getAttribute("data-n") === n); });
+  }
+  function quitar() {
+    NUBE.palabra = ""; $("filtro").hidden = true; $("filtroTxt").textContent = "";
+    Array.prototype.forEach.call(document.querySelectorAll(".as-palabra"), function (t) { t.classList.remove("sel"); });
+    tablero(actual);
+  }
+  $("quitarFiltro").addEventListener("click", quitar);
   function kpi(cls, et, val, suf, sub, delay) {
     var b = h("b", { text: "0" });
     var el = h("div", { class: "as-kpi " + (cls || ""), style: "animation-delay:" + (delay || 0) + "ms" }, [h("small", { text: et }), b, h("span", { text: sub || "" })]);
