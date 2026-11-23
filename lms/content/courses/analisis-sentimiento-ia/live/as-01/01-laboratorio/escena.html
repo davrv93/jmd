@@ -49,9 +49,17 @@
           <button type="button" class="btn chico" data-pol="neg" aria-pressed="false">Negativas</button>
         </div>
       </div>
+      <div class="as-nube-ley">
+        <p><b>Tamaño</b> = en cuántos textos aparece · <b>Color</b> = sentimiento promedio de los textos donde aparece (no el de la palabra sola)</p>
+        <div class="as-leyenda"><span><i style="background:var(--ok)"></i>verde: aparece sobre todo en textos positivos</span><span><i style="background:var(--muted)"></i>gris: textos neutros o mezclados</span><span><i style="background:var(--bad)"></i>rojo: aparece sobre todo en textos negativos</span></div>
+      </div>
       <div class="as-nube" id="nube"></div>
-      <div class="es-fila" style="justify-content:space-between">
-        <div class="as-leyenda"><span><i style="background:var(--ok)"></i>más positiva</span><span><i style="background:var(--muted)"></i>neutra o mezclada</span><span><i style="background:var(--bad)"></i>más negativa</span><span>tamaño = en cuántos textos aparece · toca una palabra para filtrar el tablero</span></div>
+      <div class="as-nube-info" id="nubeInfo" role="status" aria-live="polite"><b>Pasa el cursor o toca una palabra</b> para ver por qué tiene ese color y en qué frases aparece. Con un clic filtras todo el tablero.</div>
+      <details class="as-porque" id="porque">
+        <summary id="porqueTit">¿Por qué «verdad» sale en rojo?</summary>
+        <div id="porqueTxt"></div>
+      </details>
+      <div class="es-fila" style="justify-content:flex-end">
         <span id="filtro" hidden><button type="button" class="btn chico mal" id="quitarFiltro">Quitar filtro</button></span>
       </div>
       <p class="estado" id="filtroTxt" role="status" aria-live="polite"></p>
@@ -190,7 +198,7 @@
     var c = {};
     filas.forEach(function (f) {
       var tk = tokens(f.t), v = f.p === "pos" ? 1 : f.p === "neg" ? -1 : 0;
-      Object.keys(tk).forEach(function (n) { var e = c[n] = c[n] || { n: n, forma: {}, k: 0, s: 0, pos: 0, neu: 0, neg: 0 }; e.k++; e.s += v; e[f.p]++; e.forma[tk[n]] = (e.forma[tk[n]] || 0) + 1; });
+      Object.keys(tk).forEach(function (n) { var e = c[n] = c[n] || { n: n, forma: {}, k: 0, s: 0, pos: 0, neu: 0, neg: 0, ej: { pos: [], neu: [], neg: [] } }; e.k++; e.s += v; e[f.p]++; e.forma[tk[n]] = (e.forma[tk[n]] || 0) + 1; if (e.ej[f.p].length < 3) e.ej[f.p].push(f.t); });
     });
     var lista = Object.keys(c).map(function (n) { var e = c[n]; e.w = Object.keys(e.forma).sort(function (a, b) { return e.forma[b] - e.forma[a] || (a < b ? -1 : 1); })[0]; e.m = e.s / e.k; return e; })
       .filter(function (e) { return e.k >= 2; }).sort(function (a, b) { return b.k - a.k || (a.n < b.n ? -1 : 1); }).slice(0, 70);
@@ -216,7 +224,9 @@
       var tx = S("text", { x: (ok.x + ok.w / 2).toFixed(1), y: (ok.y + ok.h * 0.8).toFixed(1), "text-anchor": "middle", class: "as-palabra" + (NUBE.palabra === e.n ? " sel" : ""), style: "fill:" + col + ";font-size:" + px + "px", tabindex: "0", role: "button", "aria-label": info, "data-n": e.n, text: e.w });
       tx.appendChild(S("title", { text: info }));
       tx.style.animationDelay = Math.min(1.2, idx * 0.018) + "s"; idx++;
-      var ver = function () { $("filtroTxt").className = "estado"; $("filtroTxt").textContent = info + (NUBE.palabra ? "" : " · toca para filtrar"); };
+      var expl = explicar(e);
+      tx.querySelector("title").textContent = expl.corto;
+      var ver = function () { pintarInfo(e, expl); };
       tx.addEventListener("mouseenter", ver); tx.addEventListener("focus", ver);
       var elegirP = function () { if (NUBE.palabra === e.n) quitar(); else filtrar(e.n, e.w); };
       tx.addEventListener("click", elegirP);
@@ -224,6 +234,43 @@
       svg.appendChild(tx);
     });
     N.appendChild(svg);
+    porqueNota(lista);
+  }
+  function recorte(t, w) {
+    var nt = normN(t), i = nt.indexOf(normN(w)); if (i < 0) i = 0;
+    var a = Math.max(0, i - 45), b = Math.min(t.length, i + w.length + 55);
+    return (a > 0 ? "…" : "") + t.slice(a, b).trim() + (b < t.length ? "…" : "");
+  }
+  function explicar(e) {
+    var pc = function (k) { return Math.round(e[k] / e.k * 100); };
+    var color, porque, dom, P = pc("pos"), Ng = pc("neg"), Ne = pc("neu");
+    if (e.m > 0.2) { color = "verde"; dom = "pos"; porque = "se ve verde porque suele aparecer en frases positivas"; }
+    else if (e.m < -0.2) { color = "roja"; dom = "neg"; porque = "se ve roja porque suele aparecer en frases negativas"; }
+    else { color = "gris"; dom = Ne >= Math.max(P, Ng) ? "neu" : (P >= Ng ? "pos" : "neg"); porque = dom === "neu" ? "se ve gris porque aparece sobre todo en frases neutras" : "se ve gris porque positivos y negativos casi se compensan"; }
+    var mayor = dom === "neu" ? Ne + " % neutros" : dom === "pos" ? P + " % positivos, " + Ng + " % negativos" : Ng + " % negativos, " + P + " % positivos";
+    var ej = e.ej[dom].concat(e.ej.pos, e.ej.neu, e.ej.neg).filter(function (x, k, A) { return A.indexOf(x) === k; }).slice(0, 2).map(function (t) { return recorte(t, e.w); });
+    return { color: color, dom: dom, mayor: mayor, porque: porque, ej: ej,
+      corto: e.w + " · en " + e.k + " textos · " + mayor + " → " + porque + (ej[0] ? ". Ej.: «" + ej[0] + "»" : "") };
+  }
+  function pintarInfo(e, x) {
+    var I = $("nubeInfo"); I.innerHTML = "";
+    I.appendChild(h("p", null, [h("b", { text: "«" + e.w + "»" }), " · en " + e.k + " textos · " + x.mayor + " → " + x.porque + "."]));
+    I.appendChild(h("p", { class: "as-mini", text: "Positivos " + Math.round(e.pos / e.k * 100) + " % · neutros " + Math.round(e.neu / e.k * 100) + " % · negativos " + Math.round(e.neg / e.k * 100) + " %" + (NUBE.pol !== "todas" ? " (solo frases " + AS.NOMPOL[NUBE.pol] + "s)" : "") }));
+    x.ej.forEach(function (t) { I.appendChild(h("p", { class: "as-ej", text: "«" + t + "»" })); });
+    if (!NUBE.palabra) I.appendChild(h("p", { class: "as-mini", text: "Clic para filtrar el tablero con esta palabra." }));
+  }
+  function porqueNota(lista) {
+    var rojas = lista.filter(function (e) { return e.m < -0.2; });
+    var v = rojas.filter(function (e) { return e.n === "verdad"; })[0] || rojas[0];
+    $("porqueTit").textContent = "¿Por qué «" + (v ? v.w : "verdad") + "» sale en rojo?";
+    var T = $("porqueTxt"); T.innerHTML = "";
+    T.appendChild(h("p", { text: "La nube no juzga cada palabra: le da a cada una el sentimiento promedio de los textos donde aparece. Una palabra neutra, como «verdad», hereda el tono de su contexto: si la gente la usa para quejarse («la verdad, el pedido llegó tarde»), sale en rojo." }));
+    if (v) {
+      var x = explicar(v);
+      T.appendChild(h("p", { text: "En estos datos, «" + v.w + "» aparece en " + v.k + " textos y " + x.mayor + "" + (v.m < -0.2 ? "; por eso sale en rojo." : ".") }));
+      x.ej.forEach(function (t) { T.appendChild(h("p", { class: "as-ej", text: "«" + t + "»" })); });
+    }
+    T.appendChild(h("p", { text: "Es un sesgo típico del análisis por co-ocurrencia (contar qué palabras salen juntas): mide asociación, no significado. Antes de concluir, toca la palabra y lee sus frases." }));
   }
   function filtrar(n, forma) {
     NUBE.palabra = n; NUBE.forma = forma;
