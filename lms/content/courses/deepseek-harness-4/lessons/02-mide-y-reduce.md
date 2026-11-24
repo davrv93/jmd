@@ -2,7 +2,7 @@
 id: dh4-02
 title: "Sesión 2 · Mide y reduce el consumo"
 published: true
-starts_at: 2026-12-01T18:00:00-05:00
+starts_at: 2026-12-15T18:00:00-05:00
 objectives:
   - id: dh4-02-o1
     title: Medir una corrida del agente con tiempo, llamadas, tokens (acierto de caché, fallo y salida) y CPU/RAM, y decir de dónde sale cada número
@@ -79,7 +79,7 @@ cycle:
     title: Ver la clase
     tool: zoom
     phase: experiencia
-    description: Asiste en vivo (martes 1 de diciembre, 6:00 p. m. Lima) o mira la grabación. Abre el modo LIVE para tocar las siete escenas.
+    description: Asiste en vivo (martes 15 de diciembre, 6:00 p. m. Lima) o mira la grabación. Abre el modo LIVE para tocar las siete escenas.
     check: Has visto la clase completa (o la grabación)
   - id: donde-ver
     title: Saber de dónde sale cada número

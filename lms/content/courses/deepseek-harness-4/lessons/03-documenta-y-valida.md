@@ -2,7 +2,7 @@
 id: dh4-03
 title: "Sesión 3 · Describe por roles, audita y valida tu sistema"
 published: true
-starts_at: 2026-12-15T18:00:00-05:00
+starts_at: 2026-12-22T18:00:00-05:00
 objectives:
   - id: dh4-03-o1
     title: Describir cada rol de tu sistema (pantallas, qué puede y qué NO puede) con evidencia archivo:línea que se pueda comprobar
@@ -89,7 +89,7 @@ cycle:
     title: Ver la clase y repasar los cuatro entregables
     tool: zoom
     phase: experiencia
-    description: "Asiste en vivo (martes 15 de diciembre, 6:00 p. m.) o mira la grabación. En la escena 1 marca lo que trae cada documento."
+    description: "Asiste en vivo (martes 22 de diciembre, 6:00 p. m.) o mira la grabación. En la escena 1 marca lo que trae cada documento."
     check: Puedes nombrar los cuatro documentos y decir de dónde sale cada uno
   - id: roles
     title: Describir un rol con evidencia

@@ -2,7 +2,7 @@
 id: dh4-01
 title: "Sesión 1 · Cuenta, clave y la foto de tu sistema"
 published: true
-starts_at: 2026-11-24T18:00:00-05:00
+starts_at: 2026-12-01T18:00:00-05:00
 objectives:
   - id: dh4-01-o1
     title: Crear tu cuenta de la plataforma de DeepSeek, ver tu saldo y guardar una API key en un gestor de contraseñas sin pegarla en ningún chat
@@ -169,7 +169,7 @@ cycle:
     title: Ver la clase y abrir el mapa del día
     tool: zoom
     phase: experiencia
-    description: Asiste en vivo (martes 24 de noviembre, 6:00 p. m.) o mira la grabación. En la escena 1 marca tu lista previa.
+    description: Asiste en vivo (martes 1 de diciembre, 6:00 p. m.) o mira la grabación. En la escena 1 marca tu lista previa.
     check: Abriste la terminal de tu aula del LIVE y tienes un gestor de contraseñas
   - id: cuenta
     title: Crear la cuenta y ver el saldo
