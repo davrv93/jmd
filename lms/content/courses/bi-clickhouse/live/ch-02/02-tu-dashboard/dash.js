@@ -562,7 +562,16 @@
       }
       reglas = ordenar(rs.filter(Array.isArray).map(function (f) {
         return { tipo: String(f[0] || ""), columna: String(f[1] || ""), de: f[2] == null ? "" : String(f[2]), a: f[3] == null ? "" : String(f[3]), motivo: String(f[4] || "").slice(0, 160), gravedad: ["alta", "media", "baja"].indexOf(f[5]) >= 0 ? f[5] : "media", on: true, origen: "ia" };
-      }).filter(function (r) { return TIPOS.indexOf(r.tipo) >= 0; }));
+      }).filter(function (r) { return TIPOS.indexOf(r.tipo) >= 0; }).reduce(function (acc, r) {
+        // «unificar» con * : la IA señala la columna y el navegador arma una regla por variante.
+        if (r.tipo === "unificar" && (limpiarTxt(r.de) === "*" || vacio(r.de))) {
+          var col = T.cab[columnaIdx(r.columna)];
+          reglasLocales().filter(function (x) { return x.tipo === "unificar" && x.columna === col; }).forEach(function (x) {
+            x.on = true; x.origen = "ia"; x.gravedad = r.gravedad; acc.push(x);
+          });
+        } else acc.push(r);
+        return acc;
+      }, []));
       if (esc.titulo) estado("estado2", "IA: " + esc.titulo + (esc.nota ? " — " + esc.nota : ""), "bien");
       else estado("estado2", "La IA propuso " + reglas.length + " reglas. Acepta solo las que tengan sentido.", "bien");
       pintarPropuesta();
