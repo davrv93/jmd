@@ -17,6 +17,8 @@ import pathlib
 import re
 import subprocess
 import urllib.parse
+import argparse
+import shutil
 
 import yaml
 
@@ -142,8 +144,10 @@ CURSOS = [
     dict(slug="seguridad-con-ia", grupos=["seguridad-codificacion-ia"], br="seguridad-codificacion-ia", precio="S/ 100", acento="#e10600"),
     dict(slug="potencia-tus-agentes", grupos=["potencia-agentes-2"], br="potencia-agentes", precio=None, acento="#f3c45a"),
     dict(slug="dashboards-bi-con-ia", grupos=["bi-clickhouse"], br=None, precio="S/ 50", antes="S/ 80", acento="#f6cf47"),
-    dict(slug="programacion-agentica", grupos=["programacion-agentica-g9", "programacion-agentica-g10"], br="programacion-agentica",
-         precio="S/ 100", video=("vibecoding-g9/renders/vibecoding-g9-25s-whatsapp.mp4", True), acento="#e10600"),
+    # G9 cambió de contenido el 24-11-2026 (landing, chatbot web, WhatsApp con Evolution Go): textos del LMS, no del brochure.
+    dict(slug="programacion-agentica", grupos=["programacion-agentica-g9"], br=None,
+         precio="S/ 80", video=("vibecoding-g9/renders/vibecoding-g9-25s-whatsapp.mp4", True), acento="#e10600"),
+    dict(slug="construye-tu-asistente-personal", grupos=["programacion-agentica-g10"], br=None, precio="S/ 35", acento="#f6cf47"),
     dict(slug="pruebas-y-qa-con-ia", grupos=["pruebas-qa-ia-2"], br="pruebas-qa-ia", precio="S/ 100", acento="#9be37d"),
     # Los 7 cursos nuevos (flyer «Nuevos cursos», 11-11-2026): sin brochure, salen del LMS. Precios del flyer.
     dict(slug="orquestacion-qwen-coder", grupos=["orquestacion-qwen-coder"], br=None, precio="S/ 50", acento="#ff8a3d"),
@@ -584,11 +588,198 @@ def descubrir():
 
 
 if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description="Genera /cursos (HTML estático) a partir del LMS y el brochure")
+    ap.add_argument("--json", dest="json", default=None,
+                    help="Escribe un JSON con todos los datos para el sitio (por ejemplo: datos/sitio.json)")
+    args = ap.parse_args()
+
     WEB.mkdir(parents=True, exist_ok=True)
     res = []
     todos = descubrir()
     for c in todos:
         pagina(c, res)
     indice(res)
+
+    def _copiar_si_existe(src, dst):
+        src = pathlib.Path(src)
+        if not src.exists():
+            return False
+        dst = pathlib.Path(dst)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        return True
+
+    def exportar_sitio_json(ruta_json: str):
+        """JSON para reconstruir el sitio (Astro) sin volver a leer HTML.
+
+        Nota: además copia (si existen) los assets ya generados en web/<slug>/ hacia sitio/public/<slug>/
+        para que el build de Astro los incluya (promo.mp4/.jpg, brochure.pdf, qr.svg).
+        """
+        ruta = pathlib.Path(ruta_json)
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        public = (AQUI / "sitio" / "public")
+        public.mkdir(parents=True, exist_ok=True)
+
+        # Index (solo grupos aún no empezados): replica la regla actual.
+        cursos_index = []
+        cursos_por_slug = {c["slug"]: c for c in todos}
+        for r in sorted(res, key=lambda x: x["primera"]):
+            cursos_index.append({
+                "slug": r["slug"],
+                "titulo": r["titulo"],
+                "bajada": r["bajada"],
+                "precio": r.get("precio"),
+                "acento": r["acento"],
+                "primera": r["primera"].isoformat() + "-05:00",
+                "grupos": r["grupos"],
+                "marcas": [
+                    {
+                        "cohorte": co,
+                        "nombre": n,
+                        "inicio": i.isoformat() + "-05:00",
+                    }
+                    for (co, n, i) in (r.get("marcas") or [])
+                ],
+            })
+
+        # Cursos (detalle por slug para /<slug>/)
+        cursos_detalle = []
+        for c in todos:
+            datos = []
+            for cid in c["grupos"]:
+                y, ses = leer_curso(cid)
+                if ses and ses[-1]["ini"] > HOY:
+                    datos.append((cid, y, ses))
+            if not datos:
+                continue
+
+            y0 = datos[0][1]
+            br = BROCHURE.get(c["br"]) if c.get("br") else None
+            titulo = re.sub(r"\s*·\s*(Grupo \d+|Grupo del domingo.*)$", "", y0["title"]).strip()
+            titulo = re.sub(r"^[^\wÁÉÍÓÚ¿¡]+", "", titulo).strip()
+            if c["slug"] == "diseno-y-edicion-con-ia":
+                titulo = "¿Difícil de explicar? ¡No! Diseño y edición con IA"
+
+            bajada = (br or {}).get("bajada") or " ".join(str(y0.get("description", "")).split())
+            aprendes = (br or {}).get("aprenderas") or []
+            proyecto = " ".join(str(y0.get("proyecto_final") or "").split())
+            requisitos = y0.get("requisitos") or []
+            area = ((y0.get("agenda") or {}).get("area") or "").strip() or None
+
+            # Formato y chip (próximo inicio futuro)
+            primera_futura = min(s["ini"] for _, _, ses in datos for s in ses if s["ini"] > HOY)
+            chip = f"Próximo inicio: {DIAS_L[primera_futura.weekday()].lower()} {primera_futura.day} de {['enero','febrero','marzo','abril','mayo','junio','julio','agosto','setiembre','octubre','noviembre','diciembre'][primera_futura.month - 1]}"
+            n_ses = len(datos[0][2])
+            min_ses = int((datos[0][2][0]["fin"] - datos[0][2][0]["ini"]).total_seconds() // 60)
+            dur = f"{min_ses // 60} h" + (f" {min_ses % 60} min" if min_ses % 60 else "") if min_ses >= 60 else f"{min_ses} min"
+            formato = f"{n_ses} sesión en vivo de {dur}" if n_ses == 1 else f"{n_ses} sesiones en vivo de {dur}"
+
+            msg = f"Hola, quiero inscribirme en el curso {titulo}"
+            wa = f"https://wa.me/{WA}?text={urllib.parse.quote(msg)}"
+
+            # Assets ya publicados en web/<slug>/ → sitio/public/<slug>/
+            carpeta_web = WEB / c["slug"]
+            carpeta_pub = public / c["slug"]
+            _copiar_si_existe(carpeta_web / "promo.mp4", carpeta_pub / "promo.mp4")
+            _copiar_si_existe(carpeta_web / "promo.jpg", carpeta_pub / "promo.jpg")
+            _copiar_si_existe(carpeta_web / "brochure.pdf", carpeta_pub / "brochure.pdf")
+            _copiar_si_existe(carpeta_web / "qr.svg", carpeta_pub / "qr.svg")
+            qr_txt = ""
+            try:
+                if (carpeta_web / "qr.svg").exists():
+                    qr_txt = (carpeta_web / "qr.svg").read_text(encoding="utf-8")
+            except Exception:
+                qr_txt = ""
+
+            grupos = []
+            for cid, y, ses in datos:
+                nombre = nombre_grupo(y, cid)
+                empezo = ses[0]["ini"] <= HOY
+                co = cohorte_de(cid)
+                inicio = ses[0]["ini"].isoformat() + "-05:00"
+                grupos.append({
+                    "id": cid,
+                    "nombre": nombre,
+                    "cohorte": co,
+                    "inicio": inicio,
+                    "empezo": bool(empezo),
+                    "sesiones": [
+                        {
+                            "titulo": limpiar_titulo(s["titulo"]),
+                            "ini": s["ini"].isoformat() + "-05:00",
+                            "fin": s["fin"].isoformat() + "-05:00",
+                            "fecha_corta": fecha_corta(s["ini"]),
+                            "rango": rango(s["ini"], s["fin"]),
+                        }
+                        for s in ses
+                    ],
+                })
+
+            cursos_detalle.append({
+                "slug": c["slug"],
+                "titulo": titulo,
+                "bajada": bajada,
+                "area": area,
+                "acento": c["acento"],
+                "precio": c.get("precio"),
+                "antes": c.get("antes"),
+                "nota_precio": c.get("nota_precio"),
+                "formato": formato,
+                "chip": chip,
+                "wa": wa,
+                "wa_txt": WA_TXT,
+                "qr_svg": qr_txt,
+                "aprendes": aprendes,
+                "proyecto": proyecto,
+                "requisitos": requisitos,
+                "tiene_video": bool((public / c["slug"] / "promo.mp4").exists() or (carpeta_web / "promo.mp4").exists()),
+                "video_vertical": bool(c.get("video", (None, False))[1]) if c.get("video") else False,
+                "tiene_pdf": bool((public / c["slug"] / "brochure.pdf").exists() or (carpeta_web / "brochure.pdf").exists()),
+                "grupos": grupos,
+            })
+
+        # Modalidad web
+        web_cursos = []
+        for w in WEB_CURSOS:
+            y = yaml.safe_load(open(LMS / w["lms"] / "course.yaml"))
+            titulo = re.sub(r"\s*\(modalidad web\)\s*$", "", y["title"]).strip()
+            bajada = " ".join(str(y.get("description", "")).split())
+            bajada = re.sub(r"^Curso a tu ritmo, en video\.\s*", "", bajada)
+            area = ((y.get("agenda") or {}).get("area") or "").strip() or None
+            web_cursos.append({
+                "lms": w["lms"],
+                "cohorte": w["lms"],
+                "titulo": titulo,
+                "bajada": bajada,
+                "repo": w.get("repo"),
+                "acento": w["acento"],
+                "area": area,
+                "precio": "S/ 10",
+                "oferta": "o 3 cursos por S/ 20",
+            })
+
+        out = {
+            "generado": dt.datetime.now(dt.timezone(dt.timedelta(hours=-5))).isoformat(),
+            "hoy": HOY.isoformat() + "-05:00",
+            "codigo": bool(CODIGO),
+            "whatsapp": {"numero": WA, "texto": WA_TXT},
+            "urls": {"rutas": "/rutas/", "inscripcion_web": INSCRIPCION_WEB},
+            "ui": {
+                "titulo": "Próximos cursos en vivo",
+                "bajada": "Cursos prácticos con IA, en vivo por Zoom. Elige el tuyo y escríbenos por WhatsApp para inscribirte.",
+                "bajada_codigo": "¿Tienes un código? Marca tus cursos y canjéalo aquí mismo.",
+                "titulo_web": "Cursos en modalidad web",
+                "bajada_web": "A tu ritmo, con videos paso a paso y un repositorio con los ejemplos listos para Windows y Mac. S/ 10 por curso, o elige 3 cursos por S/ 20 en total. Pagas por Yape y adjuntas la foto del pago.",
+                "cta_web": "Inscríbete en modalidad web",
+            },
+            "index": {"cursos": cursos_index, "web_cursos": web_cursos},
+            "cursos": cursos_detalle,
+        }
+        ruta.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"ok JSON {ruta}")
+
+    if args.json:
+        exportar_sitio_json(args.json)
+
     if os.environ.get("GRUPOS_JSON"):  # para el catálogo de códigos de inscripcion-web
         pathlib.Path(os.environ["GRUPOS_JSON"]).write_text(json.dumps([g for c in todos for g in c["grupos"]]))

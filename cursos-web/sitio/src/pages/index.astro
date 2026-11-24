@@ -1,0 +1,136 @@
+---
+import Base from '../layouts/Base.astro';
+import sitio from '../../../datos/sitio.json';
+
+const base = import.meta.env.BASE_URL;
+const ui = sitio.ui;
+const cursos = sitio.index.cursos;
+const webCursos = sitio.index.web_cursos;
+
+const totalCursos = cursos.length;
+const totalGrupos = cursos.reduce((a, c) => a + (c.grupos || 0), 0);
+
+const areas = [
+  { k: 'todas', t: 'Todas' },
+  { k: 'agentica', t: 'Agéntica' },
+  { k: 'diseno', t: 'Diseño' },
+  { k: 'datos', t: 'Datos' },
+  { k: 'requerimientos', t: 'Requerimientos' },
+  { k: 'infra', t: 'Infra' },
+  { k: 'qa', t: 'QA' },
+  { k: 'seguridad', t: 'Seguridad' },
+  { k: 'web', t: 'Web' }
+];
+
+---
+<Base title="Cursos en vivo · JMD Learning" description="Próximos cursos en vivo de JMD Learning y cursos en modalidad web a tu ritmo: IA, agentes, diseño, datos y seguridad.">
+  <div class="wrap">
+    <p class="brand">✦ JMD Learning</p>
+
+    <header class="hero">
+      <h1>{ui.titulo}</h1>
+      <p class="lede">
+        {ui.bajada}{sitio.codigo ? ' ' + ui.bajada_codigo : ''}
+      </p>
+
+      <div class="stats" aria-label="Resumen">
+        <div class="stat"><b id="st-cursos" data-n={totalCursos}>{totalCursos}</b><span>cursos con inicio</span></div>
+        <div class="stat"><b id="st-grupos" data-n={totalGrupos}>{totalGrupos}</b><span>grupos por empezar</span></div>
+      </div>
+
+      <div class="actions">
+        <a class="btn wa" href={`https://wa.me/${sitio.whatsapp.numero}?text=${encodeURIComponent('Hola, quiero información de los cursos de JMD Learning')}`}>WhatsApp {sitio.whatsapp.texto}</a>
+        <a class="btn sec" href={sitio.urls.rutas}>Ver rutas profesionales</a>
+      </div>
+
+      <div class="filters" role="toolbar" aria-label="Filtrar por área">
+        {areas.map((a) => (
+          <button class="chip" type="button" data-area={a.k} aria-pressed={a.k === 'todas' ? 'true' : 'false'}>
+            {a.t}
+          </button>
+        ))}
+      </div>
+    </header>
+
+    <div class="grid" id="vivos">
+      {cursos.map((c) => (
+        <div class="card" style={`--acento:${c.acento}`} data-inicios={c.marcas.map((m) => m.inicio).join(',')} data-area={(c.area || '')}>
+          <a class="main" href={base + c.slug + '/'}>
+            <span class="when cuando">{/** actualizado por ocultar.js **/}{/* texto inicial build-time */}{new Date(c.primera).toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'America/Lima' })}</span>
+            <b>{c.titulo}</b>
+            <p>{c.bajada}</p>
+            <span class="foot pie" data-precio={c.precio || 'Precio por WhatsApp'}>{(c.precio || 'Precio por WhatsApp') + ' · ' + c.grupos + (c.grupos === 1 ? ' grupo' : ' grupos')}</span>
+          </a>
+          {sitio.codigo ? (
+            <div class="marks">
+              {c.marcas.length === 1 ? (
+                <span data-inicio={c.marcas[0].inicio}>
+                  <label class="marcar">
+                    <input type="checkbox" data-cohorte={c.marcas[0].cohorte} data-nombre={`${c.titulo} · ${c.marcas[0].nombre}`} />
+                    <span>Marcar</span>
+                  </label>
+                </span>
+              ) : (
+                c.marcas.map((m) => (
+                  <span data-inicio={m.inicio}>
+                    <label class="marcar">
+                      <input type="checkbox" data-cohorte={m.cohorte} data-nombre={`${c.titulo} · ${m.nombre}`} />
+                      <span>{`Marcar ${m.nombre}`}</span>
+                    </label>
+                  </span>
+                ))
+              )}
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
+
+    <p class="empty" id="vivos-vacio" hidden>
+      Todos los grupos anunciados ya empezaron. Escríbenos por WhatsApp y te avisamos del próximo, o mira los cursos en modalidad web, que empiezas cuando quieras.
+    </p>
+    <p class="empty area-empty" id="area-vacio">
+      No hay cursos visibles en esta área en este momento.
+    </p>
+
+    <section class="section" id="modalidad-web">
+      <h2>{ui.titulo_web}</h2>
+      <p class="sub">{ui.bajada_web}</p>
+      <div class="actions"><a class="btn wa" href={sitio.urls.inscripcion_web}>{ui.cta_web}</a></div>
+
+      <div class="grid">
+        {webCursos.map((w) => (
+          <div class="card" style={`--acento:${w.acento}`} data-area={(w.area || '')}>
+            <div class="main" style="text-decoration:none">
+              <span class="when">A tu ritmo · en video</span>
+              <b>{w.titulo}</b>
+              <p>{w.bajada}</p>
+              {w.repo ? (
+                <a class="foot" href={w.repo} rel="noopener">Ver el repositorio en GitHub</a>
+              ) : (
+                <span class="foot" style="opacity:.75">Repositorio y videos: en preparación</span>
+              )}
+              <span class="foot">{w.precio} · {w.oferta}</span>
+            </div>
+            {sitio.codigo ? (
+              <div class="marks">
+                <label class="marcar">
+                  <input type="checkbox" data-cohorte={w.cohorte} data-nombre={w.titulo} />
+                  <span>Marcar</span>
+                </label>
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <footer>JMD Learning · jmd-learn.online · WhatsApp {sitio.whatsapp.texto}</footer>
+  </div>
+
+  {sitio.codigo ? <script slot="scripts" src={base + 'marcar.js'} defer></script> : null}
+  <script slot="scripts" src={base + 'vendor/gsap/gsap.min.js'} defer></script>
+  <script slot="scripts" src={base + 'vendor/gsap/ScrollTrigger.min.js'} defer></script>
+  <script slot="scripts" src={base + 'vendor/gsap/Flip.min.js'} defer></script>
+  <script slot="scripts" src={base + 'scripts/index.js'} defer></script>
+</Base>

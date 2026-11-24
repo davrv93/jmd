@@ -45,7 +45,7 @@
     "@media (min-width:640px){#mc-velo{align-items:center}}" +
     "#mc-modal{background:#1a1512;color:#fbf5ec;border:1px solid #33291f;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:20px 18px 24px}" +
     "@media (min-width:640px){#mc-modal{border-radius:20px}}" +
-    "#mc-modal h2{font-family:'EB Garamond',Georgia,serif;font-size:30px;margin:0 0 6px}" +
+    "#mc-modal h2{font-family:'Iowan Old Style',Georgia,serif;font-size:30px;margin:0 0 6px}" +
     "#mc-modal .sub{color:#c8baa6;margin:0 0 14px;font-size:15px}" +
     "#mc-modal label.campo{display:grid;gap:6px;font-weight:700;font-size:14px;margin-bottom:12px}" +
     "#mc-modal input[type=text],#mc-modal input[type=email],#mc-modal input[type=tel]{font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid #4a3c2d;background:#0f0c0a;color:#fbf5ec;width:100%}" +

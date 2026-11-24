@@ -1,0 +1,138 @@
+---
+import Base from '../../layouts/Base.astro';
+import sitio from '../../../../datos/sitio.json';
+
+export function getStaticPaths() {
+  return sitio.cursos.map((c) => ({ params: { slug: c.slug } }));
+}
+
+const { slug } = Astro.params;
+const curso = sitio.cursos.find((c) => c.slug === slug);
+if (!curso) throw new Error('Curso no encontrado: ' + slug);
+
+const base = import.meta.env.BASE_URL;
+const desc = `${curso.bajada} ${curso.formato}. Inscripción por WhatsApp.`.slice(0, 300);
+
+const grupos = curso.grupos || [];
+const gruposNoEmpezados = grupos.filter((g) => !g.empezo);
+const precioTexto = curso.precio || 'Consulta por WhatsApp';
+
+---
+<Base title={`${curso.titulo} · JMD Learning`} description={desc}>
+  <div class="wrap" style={`--acento:${curso.acento}`}>
+    <a class="brand" href={base}>✦ JMD Learning · Cursos en vivo</a>
+
+    <header class="course-head">
+      <p class="pill" data-chip>{curso.chip}</p>
+      <h1 style="margin:0;font-family:ui-serif, 'Iowan Old Style', Georgia, Times, serif; font-size: clamp(36px, 7vw, 64px); line-height:1.04;">{curso.titulo}</h1>
+      <p class="lede">{curso.bajada}</p>
+
+      <div class="facts">
+        <div class="fact"><span>Formato</span><b>{curso.formato}</b></div>
+        <div class="fact"><span>Dónde</span><b>En vivo por Zoom</b></div>
+        <div class="fact"><span>Grupos</span><b data-ngrupos>{gruposNoEmpezados.length} {gruposNoEmpezados.length === 1 ? 'grupo' : 'grupos'} con fecha</b></div>
+        <div class="fact"><span>Inversión</span>{curso.precio ? (
+          <b class="price">{curso.precio}{curso.antes ? <s>{curso.antes}</s> : null}</b>
+        ) : (
+          <b>{precioTexto}</b>
+        )}{curso.nota_precio ? <span style="text-transform:none;letter-spacing:0;display:block;margin-top:4px;color:var(--suave);font-weight:800">{curso.nota_precio}</span> : null}</div>
+      </div>
+
+      <div class="actions">
+        <a class="btn wa" href={curso.wa}>Inscríbete por WhatsApp</a>
+        <a class="btn sec" href="#fechas">Ver fechas</a>
+        {curso.tiene_pdf ? <a class="btn sec" href="brochure.pdf" download>Descargar brochure (PDF)</a> : null}
+      </div>
+    </header>
+
+    {curso.tiene_video ? (
+      <section class="section">
+        <h2>El curso en un minuto</h2>
+        <div class={curso.video_vertical ? 'video vert' : 'video'}>
+          <figure class="prose" style="padding:0; overflow:hidden">
+            <video src="promo.mp4" poster="promo.jpg" controls playsinline preload="none" style="display:block;width:100%;height:auto;background:#000"></video>
+          </figure>
+          {curso.video_vertical ? (
+            <div class="prose"><b>Mira el video</b><p class="sub" style="margin:6px 0 0">Un resumen de lo que vas a construir en el curso.</p></div>
+          ) : null}
+        </div>
+      </section>
+    ) : null}
+
+    {curso.aprendes && curso.aprendes.length ? (
+      <section class="section">
+        <h2>Qué vas a aprender</h2>
+        <ul class="list">
+          {curso.aprendes.map((a) => (<li>{a}</li>))}
+        </ul>
+      </section>
+    ) : null}
+
+    <section class="section">
+      <h2 id="fechas">Fechas y horarios</h2>
+      <p class="sub">Elige tu grupo. Todas las sesiones son en vivo por Zoom, en hora de Lima.</p>
+      <div class="groups grupos">
+        {grupos.map((g) => (
+          <div class="group grupo" data-inicio={g.inicio}>
+            <h3>{g.nombre}{g.empezo ? ' · en curso' : ''}</h3>
+            {g.sesiones.map((s) => (
+              <div class="ses">
+                <span class="cuando">{s.fecha_corta}</span>
+                <span class="que">{s.titulo}</span>
+                <span class="hora">{s.rango} (hora de Lima)</span>
+              </div>
+            ))}
+            {sitio.codigo && !g.empezo && g.cohorte ? (
+              <label class="marcar">
+                <input type="checkbox" data-cohorte={g.cohorte} data-nombre={`${curso.titulo} · ${g.nombre}`} />
+                <span>Marcar este curso</span>
+              </label>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      <p class="empty vacio" hidden>
+        Los grupos de este curso ya empezaron. Escríbenos por WhatsApp y te avisamos cuando abra el próximo, o <a href={base}>mira los próximos cursos</a>.
+      </p>
+    </section>
+
+    {curso.proyecto ? (
+      <section class="section">
+        <h2>Tu proyecto final</h2>
+        <div class="prose"><p style="margin:0">{curso.proyecto}</p></div>
+      </section>
+    ) : null}
+
+    {curso.requisitos && curso.requisitos.length ? (
+      <section class="section">
+        <h2>Qué necesitas</h2>
+        <ul class="list">
+          {curso.requisitos.map((r) => (<li>{r}</li>))}
+        </ul>
+      </section>
+    ) : null}
+
+    <section class="insc">
+      <div>
+        <h2 style="margin:0">Inscríbete</h2>
+        <ol class="steps">
+          <li>Escanea el código o toca el botón: se abre WhatsApp con tu mensaje listo.</li>
+          <li>Dinos qué grupo prefieres y te enviamos los datos de pago.</li>
+          <li>Recibes tu acceso al aula virtual y el enlace de Zoom.</li>
+        </ol>
+        <a class="btn wa" href={curso.wa}>WhatsApp {curso.wa_txt}</a>
+      </div>
+      <div class="qr">
+        <img src="qr.svg" alt="Código QR que abre WhatsApp para inscribirte" />
+        <p>Escanea para inscribirte</p>
+      </div>
+    </section>
+
+    <footer>JMD Learning · <a href={base}>Todos los cursos</a> · jmd-learn.online</footer>
+  </div>
+
+  {sitio.codigo ? <script slot="scripts" src={base + 'marcar.js'} defer></script> : null}
+  <script slot="scripts" src={base + 'vendor/gsap/gsap.min.js'} defer></script>
+  <script slot="scripts" src={base + 'vendor/gsap/ScrollTrigger.min.js'} defer></script>
+  <script slot="scripts" src={base + 'scripts/curso.js'} defer></script>
+</Base>
