@@ -35,6 +35,25 @@ dialog{border:1px solid var(--borde);border-radius:16px;background:var(--tarjeta
 dialog::backdrop{background:rgba(10,12,25,.6)}
 dialog img{max-width:100%;max-height:75vh;display:block;margin:0 auto;border-radius:8px}
 .vacio{color:var(--suave);text-align:center;padding:40px 0}
+.pestanas{display:flex;gap:6px;margin:0 0 16px;border-bottom:1px solid var(--borde)}
+.pestana{background:transparent;color:var(--suave);border:0;border-bottom:3px solid transparent;border-radius:0;padding:10px 12px;font:600 15px system-ui;cursor:pointer}
+.pestana[aria-selected=true]{color:var(--tinta);border-bottom-color:var(--azul)}
+.caja{background:var(--tarjeta);border:1px solid var(--borde);border-radius:16px;padding:16px;margin:0 0 14px}
+.caja h2{font-size:17px;margin:0 0 10px}
+.fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.fila label{font:600 13px system-ui;color:var(--suave)}
+.fila input,.fila select{margin:4px 0 0}
+select{width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--borde);background:var(--fondo);color:var(--tinta);font:inherit}
+.grupos{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;max-height:260px;overflow:auto;border:1px solid var(--borde);border-radius:10px;padding:8px;margin:6px 0}
+.grupos label{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--tinta);font-weight:400}
+.grupos input{width:auto;margin:2px 0 0}
+.grupos small{color:var(--suave)}
+.cod{font:700 17px ui-monospace,Menlo,monospace;letter-spacing:.04em}
+.tabla{width:100%;border-collapse:collapse;font-size:14px}
+.tabla td,.tabla th{padding:8px 6px;border-bottom:1px solid var(--borde);text-align:left;vertical-align:top}
+.tabla th{font:700 11px ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--suave)}
+.inactivo{opacity:.55}
+@media (max-width:640px){.tabla thead{display:none}.tabla tr{display:block;border-bottom:1px solid var(--borde);padding:8px 0}.tabla td{display:block;border:0;padding:3px 0}}
 @media (max-width:480px){.tarjeta{grid-template-columns:72px 1fr}.tarjeta .mini{width:72px;height:100px}}
 </style>
 </head>
@@ -48,6 +67,11 @@ dialog img{max-width:100%;max-height:75vh;display:block;margin:0 auto;border-rad
 
 <main id="panel" hidden>
   <h1>Inscripciones web</h1>
+  <div class="pestanas" role="tablist">
+    <button class="pestana" role="tab" data-p="solicitudes" aria-selected="true">Solicitudes Yape</button>
+    <button class="pestana" role="tab" data-p="codigos" aria-selected="false">Códigos</button>
+  </div>
+  <div id="pSolicitudes">
   <p class="sub" id="resumen"></p>
   <div class="barra">
     <button class="filtro" data-f="pendiente" aria-pressed="true">Pendientes</button>
@@ -57,6 +81,27 @@ dialog img{max-width:100%;max-height:75vh;display:block;margin:0 auto;border-rad
     <button class="sec" id="recargar" style="margin-left:auto">Actualizar</button>
   </div>
   <div id="lista"></div>
+  </div>
+
+  <div id="pCodigos" hidden>
+    <form class="caja" id="fCodigo">
+      <h2>Crear código</h2>
+      <div class="fila">
+        <label>Código<input id="cCodigo" placeholder="Vacío = JMD-XXXX-XXXX" maxlength="32" autocomplete="off"></label>
+        <label>Máximo de cursos<select id="cMax"><option value="0">Todos</option></select></label>
+        <label>Usos<input id="cUsos" type="number" min="1" max="1000" value="1"></label>
+        <label>Vence<input id="cVence" type="date"></label>
+      </div>
+      <label style="display:block;margin-top:10px;font:600 13px system-ui;color:var(--suave)">Cursos permitidos <small style="font-weight:400">(ninguno marcado = todo el catálogo vigente)</small></label>
+      <div class="grupos" id="cGrupos"></div>
+      <label style="font:600 13px system-ui;color:var(--suave)">Nota<input id="cNota" maxlength="200" placeholder="Para quién es o por qué"></label>
+      <p class="nota" id="cError" role="alert"></p>
+      <button class="ok" id="cCrear">Crear código</button>
+      <div id="cListo" class="caja" style="margin-top:12px" hidden></div>
+    </form>
+    <div class="caja"><h2>Códigos</h2><div id="cLista"></div></div>
+    <div class="caja"><h2>Canjes</h2><div id="cCanjes"></div></div>
+  </div>
 </main>
 
 <dialog id="dFoto"><img id="dFotoImg" alt="Captura del Yape"><div class="acciones" style="justify-content:flex-end"><button class="sec" data-cerrar>Cerrar</button></div></dialog>
@@ -137,16 +182,18 @@ dialog img{max-width:100%;max-height:75vh;display:block;margin:0 auto;border-rad
     try { const r = await api('foto/' + id); if (!r.ok) return; const u = URL.createObjectURL(await r.blob()); img.src = u; img.onclick = () => { $('#dFotoImg').src = u; $('#dFoto').showModal(); }; } catch {}
   }
 
-  function confirmar(titulo, texto, conMotivo, accion) {
+  function confirmar(titulo, texto, conMotivo, accion, etiqueta, despues) {
     const d = $('#dConf'); $('#dConfT').textContent = titulo; $('#dConfX').textContent = texto; $('#dConfE').textContent = '';
     const m = $('#dConfMotivo'); m.hidden = !conMotivo; m.value = '';
-    const si = $('#dConfSi'); si.className = conMotivo ? 'no' : 'ok'; si.textContent = conMotivo ? 'Rechazar' : 'Aprobar';
+    const textoSi = etiqueta || (conMotivo ? 'Rechazar' : 'Aprobar');
+    const si = $('#dConfSi'); si.className = conMotivo || etiqueta ? 'no' : 'ok'; si.textContent = textoSi;
     si.disabled = false;
     si.onclick = async () => {
       if (conMotivo && !m.value.trim()) { $('#dConfE').textContent = 'Escribe el motivo.'; return; }
       si.disabled = true; si.textContent = 'Un momento…';
-      try { await accion(m.value.trim()); d.close(); await cargar(); }
-      catch (x) { $('#dConfE').textContent = x.message; si.disabled = false; si.textContent = conMotivo ? 'Rechazar' : 'Aprobar'; await cargar(); }
+      const recargar = despues || cargar;
+      try { await accion(m.value.trim()); d.close(); await recargar(); }
+      catch (x) { $('#dConfE').textContent = x.message; si.disabled = false; si.textContent = textoSi; await recargar(); }
     };
     d.showModal(); if (conMotivo) m.focus();
   }
@@ -156,6 +203,114 @@ dialog img{max-width:100%;max-height:75vh;display:block;margin:0 auto;border-rad
     if (r.status === 429) { salir('Demasiados intentos. Espera unos minutos.'); return; }
     datos = await r.json(); $('#entrar').hidden = true; $('#panel').hidden = false; pintar();
   }
+
+  // ---------- códigos ----------
+  let cod = { codigos: [], canjes: [], catalogo: [], vigentes: [] };
+  const tituloDe = c => (cod.catalogo.find(e => e.cohorte === c) || { titulo: c }).titulo;
+  const el = (tag, cls, txt) => { const x = document.createElement(tag); if (cls) x.className = cls; if (txt != null) x.textContent = txt; return x; };
+
+  async function cargarCodigos() {
+    const r = await api('codigos'); cod = await r.json();
+    const max = $('#cMax'); const sel = max.value; max.textContent = '';
+    max.append(new Option('Todos', '0'));
+    for (let i = 1; i <= Math.min(cod.vigentes.length, 30); i++) max.append(new Option(String(i), String(i)));
+    max.value = sel || '0';
+    const g = $('#cGrupos'); const marcadas = new Set([...g.querySelectorAll('input:checked')].map(i => i.value)); g.textContent = '';
+    for (const e of cod.vigentes) {
+      const l = el('label'); const i = el('input'); i.type = 'checkbox'; i.value = e.cohorte; i.checked = marcadas.has(e.cohorte);
+      const t = el('span'); t.append(el('span', null, e.titulo), document.createElement('br'), el('small', null, e.cohorte + (e.tipo === 'web' ? ' · web' : ' · en vivo')));
+      l.append(i, t); g.append(l);
+    }
+    pintarCodigos();
+  }
+
+  function pintarCodigos() {
+    const L = $('#cLista'); L.textContent = '';
+    if (!cod.codigos.length) L.append(el('p', 'vacio', 'Aún no hay códigos.'));
+    else {
+      const t = el('table', 'tabla'); t.innerHTML = '<thead><tr><th>Código</th><th>Usos</th><th>Cursos</th><th>Vence</th><th></th></tr></thead>';
+      const tb = el('tbody');
+      for (const k of cod.codigos) {
+        const tr = el('tr', k.activo ? '' : 'inactivo');
+        const c1 = el('td'); c1.append(el('div', 'cod', k.codigo)); if (k.nota) c1.append(el('div', 'datos', k.nota));
+        const c2 = el('td', null, `${k.usados} de ${k.usos} · quedan ${Math.max(0, k.usos - k.usados)}`);
+        const c3 = el('td', null, (k.max ? 'hasta ' + k.max : 'todos') + ' · ' + (k.permitidas && k.permitidas.length ? k.permitidas.length + ' permitidos' : 'todo el catálogo'));
+        const c4 = el('td', null, k.vence || 'no vence');
+        const c5 = el('td');
+        if (k.activo) {
+          const cp = el('button', 'sec', 'Copiar'); cp.type = 'button';
+          cp.onclick = async () => { try { await navigator.clipboard.writeText(k.codigo); cp.textContent = '¡Copiado!'; } catch {} setTimeout(() => { cp.textContent = 'Copiar'; }, 1500); };
+          const d = el('button', 'no', 'Desactivar'); d.type = 'button';
+          d.onclick = () => confirmar('¿Desactivar ' + k.codigo + '?', 'Nadie más podrá canjearlo. Los canjes hechos se quedan.', false, async () => {
+            const r = await api('codigos/' + encodeURIComponent(k.codigo) + '/desactivar', { method: 'POST', body: '{}' });
+            if (!r.ok) throw new Error('No se pudo desactivar.');
+          }, 'Desactivar', cargarCodigos);
+          c5.append(cp, ' ', d);
+        } else c5.textContent = 'desactivado';
+        tr.append(c1, c2, c3, c4, c5); tb.append(tr);
+      }
+      t.append(tb); L.append(t);
+    }
+    const C = $('#cCanjes'); C.textContent = '';
+    if (!cod.canjes.length) { C.append(el('p', 'vacio', 'Aún no hay canjes.')); return; }
+    const t = el('table', 'tabla'); t.innerHTML = '<thead><tr><th>Persona</th><th>Cursos</th><th>Código</th><th></th></tr></thead>';
+    const tb = el('tbody');
+    for (const x of cod.canjes) {
+      const tr = el('tr');
+      const a = el('td'); a.append(el('strong', null, x.nombre), el('div', 'datos', x.email), el('div', 'datos', '+' + x.telefono), el('div', 'estado ' + (x.cuenta === 'nueva' ? 'e-aprobada' : 'e-pendiente'), 'cuenta ' + x.cuenta + ' · ' + fecha(x.fecha)));
+      const b = el('td'); x.cohortes.forEach(c => b.append(el('span', 'chip', tituloDe(c))));
+      const c = el('td', 'cod', x.codigo); c.style.fontSize = '13px';
+      const d = el('td'); const acc = el('div', 'acciones');
+      const gen = el('button', 'wa', 'Enviar enlace por WhatsApp'); gen.type = 'button';
+      const cop = el('button', 'sec', 'Copiar enlace'); cop.type = 'button';
+      const nota = el('div', 'nota');
+      const pedir = async () => {
+        const r = await api('canjes/' + x.id + '/enlace', { method: 'POST', body: '{}' }); const j = await r.json();
+        if (!r.ok) throw new Error(j.error || 'No se pudo generar el enlace.'); return j.enlace;
+      };
+      gen.onclick = async () => {
+        const v = window.open('', '_blank'); nota.textContent = '';
+        try {
+          const e = await pedir();
+          const nombres = x.cohortes.map(tituloDe).join(', ');
+          const msg = `Hola ${x.nombre.split(' ')[0]}, ya estás inscrito en: ${nombres}.\n\nEntra al aula con este enlace (vale 7 días; al abrirlo quedas conectado):\n${e}\n\nTu usuario es tu correo ${x.email}. — JMD Learning`;
+          const url = 'https://wa.me/' + x.telefono + '?text=' + encodeURIComponent(msg);
+          if (v) v.location = url; else location.href = url;
+        } catch (err) { if (v) v.close(); nota.textContent = err.message; }
+      };
+      cop.onclick = async () => {
+        nota.textContent = '';
+        try { await navigator.clipboard.writeText(await pedir()); cop.textContent = '¡Copiado!'; setTimeout(() => { cop.textContent = 'Copiar enlace'; }, 2000); }
+        catch (err) { nota.textContent = err.message; }
+      };
+      acc.append(gen, cop); d.append(acc, nota);
+      tr.append(a, b, c, d); tb.append(tr);
+    }
+    t.append(tb); C.append(t);
+  }
+
+  $('#fCodigo').addEventListener('submit', async e => {
+    e.preventDefault(); $('#cError').textContent = ''; const b = $('#cCrear'); b.disabled = true;
+    try {
+      const body = { codigo: $('#cCodigo').value.trim(), max: +$('#cMax').value, usos: +$('#cUsos').value || 1, vence: $('#cVence').value,
+        permitidas: [...document.querySelectorAll('#cGrupos input:checked')].map(i => i.value), nota: $('#cNota').value.trim() };
+      const r = await api('codigos', { method: 'POST', body: JSON.stringify(body) }); const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'No se pudo crear.');
+      const L = $('#cListo'); L.hidden = false; L.textContent = '';
+      L.append(el('div', 'datos', 'Código creado:'), el('div', 'cod', j.codigo));
+      const cp = el('button', 'sec', 'Copiar código'); cp.type = 'button';
+      cp.onclick = async () => { try { await navigator.clipboard.writeText(j.codigo); cp.textContent = '¡Copiado!'; } catch {} };
+      L.append(cp);
+      $('#cCodigo').value = ''; $('#cNota').value = '';
+      await cargarCodigos();
+    } catch (x) { $('#cError').textContent = x.message; } finally { b.disabled = false; }
+  });
+
+  document.querySelectorAll('.pestana').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.pestana').forEach(x => x.setAttribute('aria-selected', String(x === t)));
+    $('#pSolicitudes').hidden = t.dataset.p !== 'solicitudes'; $('#pCodigos').hidden = t.dataset.p !== 'codigos';
+    if (t.dataset.p === 'codigos') cargarCodigos().catch(() => {});
+  }));
 
   document.querySelectorAll('[data-cerrar]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
   document.querySelectorAll('.filtro').forEach(b => b.addEventListener('click', () => {

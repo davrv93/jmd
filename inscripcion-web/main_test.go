@@ -38,7 +38,8 @@ func servidorPrueba(t *testing.T, lms http.HandlerFunc) (*Servidor, *httptest.Se
 	t.Cleanup(l.Close)
 	s := &Servidor{datos: t.TempDir(), cfg: cfg, clave: claveAdmin, lmsURL: l.URL, lmsClave: strings.Repeat("k", 40),
 		cliente: l.Client(), limite: nuevoLimitador(5, time.Hour), fallos: nuevoLimitador(10, time.Minute),
-		origenes: []string{"https://jmd-learn.online"}, ahora: time.Now}
+		origenes: []string{"https://jmd-learn.online"}, ahora: time.Now,
+		limCanje: nuevoLimitador(100, time.Hour), limValidar: nuevoLimitador(100, time.Hour), limCodigo: nuevoLimitador(100, time.Hour)}
 	if err := validarConfig(cfg); err != nil {
 		t.Fatal(err)
 	}

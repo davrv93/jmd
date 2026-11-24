@@ -68,6 +68,15 @@ type Config struct {
 	PrecioPaquete int     `json:"precio_paquete"`
 	CursosPaquete int     `json:"cursos_paquete"`
 	Cursos        []Curso `json:"cursos"`
+	// Catalogo: los grupos que se pueden canjear con un código (los web y los en vivo que aún no terminan).
+	Catalogo []Entrada `json:"catalogo"`
+}
+
+type Entrada struct {
+	Cohorte string `json:"cohorte"`
+	Titulo  string `json:"titulo"`
+	Tipo    string `json:"tipo"`  // web | vivo
+	Hasta   string `json:"hasta"` // RFC 3339; vacío = sin fin. Pasada esa hora ya no se canjea.
 }
 
 func (c *Config) curso(id string) *Curso {
@@ -123,6 +132,14 @@ type Servidor struct {
 	fallos   *limitador
 	origenes []string
 	ahora    func() time.Time
+
+	// Códigos de canje (codigos.go): su propio candado, para no frenar el formulario de Yape.
+	cmu        sync.Mutex
+	codigos    []*Codigo
+	canjes     []*Canje
+	limCanje   *limitador
+	limValidar *limitador
+	limCodigo  *limitador
 }
 
 // ---------- persistencia ----------
@@ -449,26 +466,37 @@ func (s *Servidor) inscribirEnLMS(ctx context.Context, sol *Solicitud) (*respues
 	if len(sol.Cursos) == 1 {
 		destino = s.cfg.curso(sol.Cursos[0]).Destino
 	}
-	body, _ := json.Marshal(map[string]any{"email": sol.Email, "name": sol.Nombre, "cohorts": cohortes, "destino": destino})
+	out, code, err := s.lmsInscribir(ctx, sol.Email, sol.Nombre, cohortes, destino)
+	if err == nil {
+		return out, nil
+	}
+	if code == 422 && len(out.Faltan) > 0 {
+		return nil, fmt.Errorf("todavía no existen en el LMS: %s. No se inscribió en nada; apruébala cuando estén", strings.Join(out.Faltan, ", "))
+	}
+	return nil, err
+}
+
+// lmsInscribir llama a la ruta interna del LMS. Devuelve la respuesta, el código HTTP y un error legible.
+// La respuesta trae el enlace de acceso: quien llama decide a quién se lo muestra.
+func (s *Servidor) lmsInscribir(ctx context.Context, email, nombre string, cohortes []string, destino string) (*respuestaLMS, int, error) {
+	body, _ := json.Marshal(map[string]any{"email": email, "name": nombre, "cohorts": cohortes, "destino": destino})
 	req, _ := http.NewRequestWithContext(ctx, "POST", s.lmsURL+"/api/v1/interno/inscripcion", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Interno-Clave", s.lmsClave)
 	res, err := s.cliente.Do(req)
 	if err != nil {
-		return nil, errors.New("el LMS no respondió")
+		return &respuestaLMS{}, 0, errors.New("el LMS no respondió")
 	}
 	defer res.Body.Close()
 	var out respuestaLMS
 	_ = json.NewDecoder(io.LimitReader(res.Body, 1<<16)).Decode(&out)
 	switch {
 	case res.StatusCode == 200 && out.Enlace != "":
-		return &out, nil
-	case res.StatusCode == 422 && len(out.Faltan) > 0:
-		return nil, fmt.Errorf("todavía no existen en el LMS: %s. No se inscribió en nada; apruébala cuando estén", strings.Join(out.Faltan, ", "))
+		return &out, 200, nil
 	case out.Mensaje != "":
-		return nil, fmt.Errorf("el LMS dijo: %s", out.Mensaje)
+		return &out, res.StatusCode, fmt.Errorf("el LMS dijo: %s", out.Mensaje)
 	}
-	return nil, fmt.Errorf("el LMS respondió %d", res.StatusCode)
+	return &out, res.StatusCode, fmt.Errorf("el LMS respondió %d", res.StatusCode)
 }
 
 func (s *Servidor) apiAprobar(w http.ResponseWriter, r *http.Request) {
@@ -574,6 +602,12 @@ func (s *Servidor) rutas() http.Handler {
 	m.HandleFunc("POST /api/admin/aprobar/{id}", s.admin(s.apiAprobar))
 	m.HandleFunc("POST /api/admin/rechazar/{id}", s.admin(s.apiRechazar))
 	m.HandleFunc("POST /api/admin/borrar/{id}", s.admin(s.apiBorrar))
+	m.HandleFunc("POST /api/codigo/validar", s.apiCodigoValidar)
+	m.HandleFunc("POST /api/codigo/canje", s.apiCodigoCanje)
+	m.HandleFunc("GET /api/admin/codigos", s.admin(s.apiCodigosLista))
+	m.HandleFunc("POST /api/admin/codigos", s.admin(s.apiCodigoCrear))
+	m.HandleFunc("POST /api/admin/codigos/{codigo}/desactivar", s.admin(s.apiCodigoDesactivar))
+	m.HandleFunc("POST /api/admin/canjes/{id}/enlace", s.admin(s.apiCanjeEnlace))
 	return cabeceras(m)
 }
 
@@ -592,6 +626,16 @@ func leerConfig(datos string) (Config, error) {
 func validarConfig(c Config) error {
 	if c.PrecioUno <= 0 || c.PrecioPaquete <= 0 || c.CursosPaquete < 2 || len(c.Cursos) < c.CursosPaquete {
 		return errors.New("config.json: precios o cantidad de cursos inválidos")
+	}
+	for _, e := range c.Catalogo {
+		if e.Cohorte == "" || e.Titulo == "" {
+			return fmt.Errorf("config.json: catálogo incompleto %q", e.Cohorte)
+		}
+		if e.Hasta != "" {
+			if _, err := time.Parse(time.RFC3339, e.Hasta); err != nil {
+				return fmt.Errorf("config.json: «hasta» de %s: %v", e.Cohorte, err)
+			}
+		}
 	}
 	for _, k := range c.Cursos {
 		if k.ID == "" || k.Cohorte == "" || k.Titulo == "" || !strings.HasPrefix(k.Destino, "/") {
@@ -613,11 +657,15 @@ func main() {
 	s := &Servidor{datos: datos, cfg: cfg, clave: os.Getenv("ADMIN_CLAVE"), lmsURL: strings.TrimRight(envOr("LMS_URL", "http://lms:8080"), "/"),
 		lmsClave: os.Getenv("LMS_INTERNO_CLAVE"), cliente: &http.Client{Timeout: 20 * time.Second},
 		limite: nuevoLimitador(12, time.Hour), fallos: nuevoLimitador(10, 15*time.Minute),
-		origenes: strings.Split(envOr("ORIGENES", "https://jmd-learn.online"), ","), ahora: func() time.Time { return time.Now().In(lima) }}
+		origenes: strings.Split(envOr("ORIGENES", "https://jmd-learn.online"), ","), ahora: func() time.Time { return time.Now().In(lima) },
+		limCanje: nuevoLimitador(10, time.Hour), limValidar: nuevoLimitador(30, time.Hour), limCodigo: nuevoLimitador(20, 10*time.Minute)}
 	if len(s.clave) < 16 || len(s.lmsClave) < 32 {
 		log.Fatal("faltan ADMIN_CLAVE (≥16) o LMS_INTERNO_CLAVE (≥32)")
 	}
 	if err := s.cargar(); err != nil {
+		log.Fatal(err)
+	}
+	if err := s.cargarCodigos(); err != nil {
 		log.Fatal(err)
 	}
 	srv := &http.Server{Addr: ":" + envOr("PORT", "18766"), Handler: s.rutas(), ReadHeaderTimeout: 10 * time.Second,
