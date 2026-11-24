@@ -1,7 +1,7 @@
 ---
 id: ds-01
 title: "Sesión 1 · La foto del sistema y la lectura por secciones"
-published: true
+published: false
 starts_at: 2026-11-29T19:30:00-05:00
 objectives:
   - id: ds-01-o1
