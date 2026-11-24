@@ -9,6 +9,7 @@ objectives:
   - {id: ch-01-o2, title: "Pedirle a Claude o DeepSeek la consulta de limpieza y verificar lo que responde"}
   - {id: ch-01-o3, title: "Limpiar y estructurar los datos sin perder filas ni totales"}
 materials:
+  - {id: ch-01-repo-ejemplos, title: "Repo en GitHub · ejemplos para levantar en Windows y Mac con Docker (videos 1–4)", kind: link, url: https://github.com/davrv93/clickhouse-bi-ejemplos}
   - {id: ch-01-resumen, title: "Video · Sesión 1 paso a paso: Docker en Windows, Mac y Linux, carga y limpieza en ClickHouse", kind: video, file: materials/grabaciones/ch-01-resumen.mp4, objective_ids: [ch-01-o1, ch-01-o2, ch-01-o3]}
   - {id: ch-01-v01, title: "Video 1 · Docker en Windows, Mac y Linux, paso a paso", kind: video, file: materials/grabaciones/01-docker-windows-mac-linux.mp4}
   - {id: ch-01-v02, title: "Video 2 · Tu primer contenedor y la persistencia", kind: video, file: materials/grabaciones/02-contenedor-y-persistencia.mp4}

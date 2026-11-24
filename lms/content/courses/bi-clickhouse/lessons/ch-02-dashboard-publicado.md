@@ -9,6 +9,7 @@ objectives:
   - {id: ch-02-o2, title: "Adjuntar tu archivo, aceptar las reglas de limpieza que propone la IA y obtener tu dashboard"}
   - {id: ch-02-o3, title: "Llevar los datos a tu servidor ClickHouse y compartir el dashboard con tu equipo"}
 materials:
+  - {id: ch-02-repo-ejemplos, title: "Repo en GitHub · ejemplos para levantar en Windows y Mac con Docker (videos 5–14)", kind: link, url: https://github.com/davrv93/clickhouse-bi-ejemplos}
   - {id: ch-02-v05, title: "Video 5 · De las preguntas de negocio a los KPIs", kind: video, file: materials/grabaciones/05-preguntas-a-kpis.mp4}
   - {id: ch-02-v06, title: "Video 6 · Importar Excel, PDF y Word", kind: video, file: materials/grabaciones/06-importar-excel-pdf-word.mp4}
   - {id: ch-02-v07, title: "Video 7 · Reglas de IA para unir fuentes distintas", kind: video, file: materials/grabaciones/07-reglas-ia-unir-fuentes.mp4}
