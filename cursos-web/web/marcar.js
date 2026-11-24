@@ -12,6 +12,8 @@
     demasiados_cursos: "Marcaste más cursos de los que permite tu código.",
     curso_no_permitido: "Tu código no incluye uno de los cursos marcados.",
     datos: "Revisa tus datos: nombre, correo y celular.",
+    curso_no_disponible: "Uno de los cursos marcados ya no está disponible.",
+    servicio: "El aula no respondió. Inténtalo en unos minutos.",
     limite: "Hiciste muchos intentos seguidos. Espera unos minutos y vuelve a probar."
   };
 
@@ -63,6 +65,14 @@
   document.head.appendChild(css);
 
   var casillas = Array.prototype.slice.call(document.querySelectorAll("input[data-cohorte]"));
+  // El filtro de la página deshabilita las casillas de grupos que ya empezaron: salen de la selección guardada.
+  function quitarCerradas() {
+    var cerradas = casillas.filter(function (x) { return x.disabled; }).map(function (x) { return x.getAttribute("data-cohorte"); });
+    var antes = marcados.length;
+    marcados = marcados.filter(function (m) { return cerradas.indexOf(m.c) < 0; });
+    if (marcados.length !== antes) guardar(marcados);
+  }
+  quitarCerradas();
   if (!casillas.length && !marcados.length) return;
 
   var barra = document.createElement("div");
@@ -99,7 +109,7 @@
   function estaMarcado(c) { return marcados.some(function (m) { return m.c === c; }); }
 
   function sincronizar() {
-    casillas.forEach(function (x) { x.checked = estaMarcado(x.getAttribute("data-cohorte")); });
+    casillas.forEach(function (x) { x.checked = !x.disabled && estaMarcado(x.getAttribute("data-cohorte")); });
     var n = marcados.length;
     $("mc-cuenta").textContent = n === 1 ? "1 curso marcado" : n + " cursos marcados";
     barra.classList.toggle("on", n > 0);
@@ -182,13 +192,16 @@
     post("validar", { codigo: codigo }).then(function (d) {
       if (d.ok) {
         maximo = typeof d.max === "number" ? d.max : null;
-        permitidas = Array.isArray(d.permitidas) && d.permitidas.length ? d.permitidas : null;
+        // permitidas: [{cohorte, titulo, tipo, hasta}] (también acepta una lista de cadenas); todos = sin restricción
+        permitidas = (!d.todos && Array.isArray(d.permitidas) && d.permitidas.length)
+          ? d.permitidas.map(function (x) { return typeof x === "string" ? x : x.cohorte; }) : null;
         var t = maximo ? "Tu código permite " + maximo + (maximo === 1 ? " curso" : " cursos") : "Código válido";
+        if (typeof d.restantes === "number") t += " · quedan " + d.restantes + (d.restantes === 1 ? " uso" : " usos");
         var v = d.vence ? fecha(d.vence) : "";
         est.className = "estado bien"; est.textContent = t + (v ? " · vence el " + v : "") + ".";
       } else {
         permitidas = null; maximo = null;
-        est.className = "estado mal"; est.textContent = d.mensaje || MENSAJES[d.codigo] || "No pudimos validar el código.";
+        est.className = "estado mal"; est.textContent = d.mensaje || MENSAJES[d.error] || "No pudimos validar el código.";
       }
       pintarLista();
     }).catch(function () {
@@ -261,11 +274,15 @@
     post("canje", { codigo: codigo, nombre: nombre, email: email, telefono: tel, cohortes: cursos, web: $("mc-web").value })
       .then(function (d) {
         if (d._status === 200 && d.ok !== false) exito(d, cursos);
-        else error(d.mensaje || MENSAJES[d.codigo] || "No pudimos completar la inscripción. Inténtalo de nuevo.");
+        else error(d.mensaje || MENSAJES[d.error] || "No pudimos completar la inscripción. Inténtalo de nuevo.");
       })
       .catch(function () { error("Sin conexión. Vuelve a intentarlo."); })
       .then(function () { b.disabled = false; b.textContent = "Inscribirme"; });
   });
 
+  document.addEventListener("cursos:filtrado", function () {
+    quitarCerradas(); sincronizar();
+    if (velo.classList.contains("on") && !$("mc-paso1").hidden) pintarLista();
+  });
   sincronizar();
 })();

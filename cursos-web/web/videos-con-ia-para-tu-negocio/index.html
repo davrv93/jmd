@@ -13,6 +13,7 @@
 <style>
   :root { --fondo:#0f0c0a; --tarjeta:#1a1512; --linea:#33291f; --tinta:#fbf5ec; --suave:#c8baa6; --acento:#ff8a3d; }
   * { box-sizing:border-box; margin:0; padding:0; }
+  [hidden] { display:none !important; }
   body { background:radial-gradient(120% 60% at 50% 0%, #2c2219 0%, var(--fondo) 55%); color:var(--tinta);
     font-family:Inter, -apple-system, "Helvetica Neue", Arial, sans-serif; line-height:1.5; }
   a { color:inherit; }
@@ -68,13 +69,13 @@
 <div class="envoltura">
   <a class="marca" href="../">✦ JMD Learning · Cursos en vivo</a>
   <header>
-    <p class="chip">Próximo inicio: martes 24 de noviembre</p>
+    <p class="chip" data-chip>Próximo inicio: martes 24 de noviembre</p>
     <h1>Videos con IA para tu negocio</h1>
     <p class="bajada">Haz los videos de tu negocio con IA, sin saber editar: guion que vende, imágenes y clips de tu producto, voz natural, música, subtítulos automáticos y formato vertical para estados de WhatsApp, TikTok y Reels. Tres sesiones en vivo de 1 h 15 min por Zoom (hora de Lima): lunes 23, martes 24 y miércoles 25 de noviembre, de 3:00 p. m. a 4:15 p. m. Inversión: S/ 25.</p>
     <div class="datos">
       <div class="dato"><span>Formato</span><b>3 sesiones en vivo de 1 h 15 min</b></div>
       <div class="dato"><span>Dónde</span><b>En vivo por Zoom</b></div>
-      <div class="dato"><span>Grupos</span><b>1 grupo con fecha</b></div>
+      <div class="dato"><span>Grupos</span><b data-ngrupos>1 grupo con fecha</b></div>
       <div class="dato"><span>Inversión</span><b class="precio">S/ 25</b></div>
     </div>
     <div class="acciones">
@@ -86,7 +87,8 @@
   
   <h2 id="fechas">Fechas y horarios</h2>
   <p class="sub">Elige tu grupo. Todas las sesiones son en vivo por Zoom, en hora de Lima.</p>
-  <div class="grupos"><div class="grupo"><h3>Grupo 1 · en curso</h3><div class="ses"><span class="cuando">lun 23 nov</span><span class="que">Sesión 1 · Del producto al guion: el video que vende</span><span class="hora">3:00 – 4:15 p. m. (hora de Lima)</span></div><div class="ses"><span class="cuando">mar 24 nov</span><span class="que">Sesión 2 · Imagen, voz y música con IA</span><span class="hora">3:00 – 4:15 p. m. (hora de Lima)</span></div><div class="ses"><span class="cuando">mié 25 nov</span><span class="que">Sesión 3 · Edición, subtítulos y publicación</span><span class="hora">3:00 – 4:15 p. m. (hora de Lima)</span></div></div></div>
+  <div class="grupos"><div class="grupo" data-inicio="2026-11-23T15:00:00-05:00"><h3>Grupo 1 · en curso</h3><div class="ses"><span class="cuando">lun 23 nov</span><span class="que">Sesión 1 · Del producto al guion: el video que vende</span><span class="hora">3:00 – 4:15 p. m. (hora de Lima)</span></div><div class="ses"><span class="cuando">mar 24 nov</span><span class="que">Sesión 2 · Imagen, voz y música con IA</span><span class="hora">3:00 – 4:15 p. m. (hora de Lima)</span></div><div class="ses"><span class="cuando">mié 25 nov</span><span class="que">Sesión 3 · Edición, subtítulos y publicación</span><span class="hora">3:00 – 4:15 p. m. (hora de Lima)</span></div></div></div>
+  <p class="vacio caja" hidden>Los grupos de este curso ya empezaron. Escríbenos por WhatsApp y te avisamos cuando abra el próximo, o <a href="../">mira los próximos cursos</a>.</p>
   <h2>Tu proyecto final</h2><div class="caja"><p>Tres videos cortos de tu propio negocio (producto, oferta y testimonio o «cómo se hace»), con voz, música y subtítulos, listos para publicar.</p></div>
   <h2>Qué necesitas</h2><ul class="lista"><li>Un celular o una laptop con Windows, macOS o Linux</li><li>Fotos o videos de tus productos (los del celular sirven)</li><li>Una cuenta en jmd-learn.online</li></ul>
   <section class="inscripcion">
@@ -103,6 +105,53 @@
   </section>
   <footer>JMD Learning · <a href="../">Todos los cursos</a> · jmd-learn.online</footer>
 </div>
-
+<script>
+/* Regla del usuario: en /cursos solo lo que aún no comienza, siempre. La página es estática, así que al abrirla
+   (y cada minuto) se ocultan los grupos cuya primera sesión ya pasó: tarjetas, casillas «Marcar» y grupos de cada curso. */
+(function () {
+  var D = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"], M = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"];
+  var DL = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"], ML = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "setiembre", "octubre", "noviembre", "diciembre"];
+  function lima(t) { return new Date(t - 5 * 3600e3); }
+  function filtrar() {
+    var ahora = Date.now();
+    var paso = function (v) { var t = Date.parse(v); return !isNaN(t) && t <= ahora; };
+    document.querySelectorAll("[data-inicio]").forEach(function (e) {
+      var fue = paso(e.getAttribute("data-inicio"));
+      e.hidden = fue;
+      e.querySelectorAll("input[data-cohorte]").forEach(function (i) { i.disabled = fue; if (fue) i.checked = false; });
+    });
+    document.querySelectorAll("[data-inicios]").forEach(function (c) {
+      var quedan = c.getAttribute("data-inicios").split(",").filter(function (v) { return v && !paso(v); });
+      c.hidden = quedan.length === 0;
+      if (!quedan.length) return;
+      var d = lima(Math.min.apply(null, quedan.map(Date.parse)));
+      var cu = c.querySelector(".cuando"); if (cu) cu.textContent = D[d.getUTCDay()] + " " + d.getUTCDate() + " " + M[d.getUTCMonth()];
+      var pie = c.querySelector(".pie[data-precio]"); if (pie) pie.textContent = pie.getAttribute("data-precio") + " · " + quedan.length + (quedan.length === 1 ? " grupo" : " grupos");
+    });
+    var vivos = document.getElementById("vivos");
+    if (vivos) {
+      var vis = Array.prototype.some.call(vivos.children, function (c) { return !c.hidden; });
+      var v = document.getElementById("vivos-vacio"); if (v) v.hidden = vis;
+    }
+    var grupos = document.querySelectorAll(".grupos > .grupo[data-inicio]");
+    if (grupos.length) {
+      var abiertos = Array.prototype.filter.call(grupos, function (g) { return !g.hidden; });
+      var vac = document.querySelector(".grupos + .vacio"); if (vac) vac.hidden = abiertos.length > 0;
+      var ng = document.querySelector("[data-ngrupos]");
+      if (ng) ng.textContent = abiertos.length + (abiertos.length === 1 ? " grupo" : " grupos") + " por empezar";
+      var chip = document.querySelector("[data-chip]");
+      if (chip) {
+        if (abiertos.length) {
+          var p = lima(Math.min.apply(null, abiertos.map(function (g) { return Date.parse(g.getAttribute("data-inicio")); })));
+          chip.textContent = "Próximo inicio: " + DL[p.getUTCDay()] + " " + p.getUTCDate() + " de " + ML[p.getUTCMonth()];
+        } else chip.textContent = "Grupos de este curso ya iniciados";
+      }
+    }
+    document.dispatchEvent(new CustomEvent("cursos:filtrado"));
+  }
+  filtrar();
+  setInterval(filtrar, 60000);
+})();
+</script><script src="../marcar.js" defer></script>
 </body>
 </html>

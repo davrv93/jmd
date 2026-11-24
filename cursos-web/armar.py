@@ -21,8 +21,8 @@ import urllib.parse
 import yaml
 
 AQUI = pathlib.Path(__file__).resolve().parent
-WEB = AQUI / "web"
-LMS = pathlib.Path.home() / "Documents/jmd/lms/content/courses"
+WEB = pathlib.Path(os.environ.get("CURSOS_WEB") or AQUI / "web")  # en el servidor, la carpeta de la nueva versión
+LMS = pathlib.Path(os.environ.get("CURSOS_LMS") or pathlib.Path.home() / "Documents/jmd/lms/content/courses")
 # Marcar cursos + canje de código (backend en inscripcion-web: /inscripcion-web/api/codigo/{validar,canje}).
 # Se enciende solo cuando ese backend responde; con CODIGO=0 en el entorno las páginas salen sin casillas ni barra.
 CODIGO = os.environ.get("CODIGO", "1") == "1"
@@ -50,13 +50,67 @@ def casilla(cohorte, nombre, texto="Marcar"):
             f'<span>{esc(texto)}</span></label>')
 
 
+OCULTAR = """<script>
+/* Regla del usuario: en /cursos solo lo que aún no comienza, siempre. La página es estática, así que al abrirla
+   (y cada minuto) se ocultan los grupos cuya primera sesión ya pasó: tarjetas, casillas «Marcar» y grupos de cada curso. */
+(function () {
+  var D = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"], M = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"];
+  var DL = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"], ML = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "setiembre", "octubre", "noviembre", "diciembre"];
+  function lima(t) { return new Date(t - 5 * 3600e3); }
+  function filtrar() {
+    var ahora = Date.now();
+    var paso = function (v) { var t = Date.parse(v); return !isNaN(t) && t <= ahora; };
+    document.querySelectorAll("[data-inicio]").forEach(function (e) {
+      var fue = paso(e.getAttribute("data-inicio"));
+      e.hidden = fue;
+      e.querySelectorAll("input[data-cohorte]").forEach(function (i) { i.disabled = fue; if (fue) i.checked = false; });
+    });
+    document.querySelectorAll("[data-inicios]").forEach(function (c) {
+      var quedan = c.getAttribute("data-inicios").split(",").filter(function (v) { return v && !paso(v); });
+      c.hidden = quedan.length === 0;
+      if (!quedan.length) return;
+      var d = lima(Math.min.apply(null, quedan.map(Date.parse)));
+      var cu = c.querySelector(".cuando"); if (cu) cu.textContent = D[d.getUTCDay()] + " " + d.getUTCDate() + " " + M[d.getUTCMonth()];
+      var pie = c.querySelector(".pie[data-precio]"); if (pie) pie.textContent = pie.getAttribute("data-precio") + " · " + quedan.length + (quedan.length === 1 ? " grupo" : " grupos");
+    });
+    var vivos = document.getElementById("vivos");
+    if (vivos) {
+      var vis = Array.prototype.some.call(vivos.children, function (c) { return !c.hidden; });
+      var v = document.getElementById("vivos-vacio"); if (v) v.hidden = vis;
+    }
+    var grupos = document.querySelectorAll(".grupos > .grupo[data-inicio]");
+    if (grupos.length) {
+      var abiertos = Array.prototype.filter.call(grupos, function (g) { return !g.hidden; });
+      var vac = document.querySelector(".grupos + .vacio"); if (vac) vac.hidden = abiertos.length > 0;
+      var ng = document.querySelector("[data-ngrupos]");
+      if (ng) ng.textContent = abiertos.length + (abiertos.length === 1 ? " grupo" : " grupos") + " por empezar";
+      var chip = document.querySelector("[data-chip]");
+      if (chip) {
+        if (abiertos.length) {
+          var p = lima(Math.min.apply(null, abiertos.map(function (g) { return Date.parse(g.getAttribute("data-inicio")); })));
+          chip.textContent = "Próximo inicio: " + DL[p.getUTCDay()] + " " + p.getUTCDate() + " de " + ML[p.getUTCMonth()];
+        } else chip.textContent = "Grupos de este curso ya iniciados";
+      }
+    }
+    document.dispatchEvent(new CustomEvent("cursos:filtrado"));
+  }
+  filtrar();
+  setInterval(filtrar, 60000);
+})();
+</script>"""
+
+
 def pie_codigo(prefijo):
-    return f'<script src="{prefijo}marcar.js" defer></script>' if CODIGO else ""
-BROCHURE = {c["slug"]: c for c in json.load(open(pathlib.Path.home() / "Documents/jmd/brochures/salida/cursos.json"))}
+    return OCULTAR + (f'<script src="{prefijo}marcar.js" defer></script>' if CODIGO else "")
+_BR_MAC = pathlib.Path.home() / "Documents/jmd/brochures/salida/cursos.json"
+_BR_COPIA = AQUI / "datos/brochure-cursos.json"  # copia en git: el servidor no tiene la carpeta de brochures
+if _BR_MAC.exists():
+    _BR_COPIA.write_bytes(_BR_MAC.read_bytes())
+BROCHURE = {c["slug"]: c for c in json.load(open(_BR_COPIA))}
 VIDEOS = pathlib.Path.home() / "Downloads/web-con-ia-jmd"
 WA = "51986149476"
 WA_TXT = "986 149 476"
-HOY = dt.datetime(2026, 11, 24, 9, 0)  # actualizar en cada regeneración (hora de Lima)
+HOY = dt.datetime.now(dt.timezone(dt.timedelta(hours=-5))).replace(tzinfo=None)  # ahora mismo, hora de Lima
 DIAS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 DIAS_L = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"]
@@ -107,7 +161,7 @@ CURSOS = [
 WEB_CURSOS = [
     dict(lms="web-clickhouse", repo="https://github.com/davrv93/clickhouse-bi-ejemplos", acento="#f6cf47"),
     dict(lms="web-sorteos", repo="https://github.com/davrv93/sorteos-con-ia-ejemplos", acento="#ff5c7a"),
-    dict(lms="web-agente-voz", repo=None, acento="#7cc6ff"),
+    dict(lms="web-agente-voz", repo="https://github.com/davrv93/agente-voz-gemini", acento="#7cc6ff"),
     dict(lms="web-qa-bots", repo="https://github.com/davrv93/qa-bots-ejemplos", acento="#9be37d"),
 ]
 INSCRIPCION_WEB = "https://jmd-learn.online/inscripcion-web/"
@@ -186,26 +240,46 @@ def esc(s):
 
 
 def qr_svg(url, ruta):
+    """QR en SVG (oscuro sobre blanco). Usa la librería qrcode de Python; si no está (en el Mac), la de Node."""
+    try:
+        import qrcode
+    except ImportError:
+        qrcode = None
+    if qrcode:
+        q = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, border=1)
+        q.add_data(url)
+        q.make(fit=True)
+        m = q.get_matrix()
+        n = len(m)
+        d = "".join(f"M{x} {y}h1v1h-1z" for y, fila in enumerate(m) for x, v in enumerate(fila) if v)
+        ruta.write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {n} {n}" shape-rendering="crispEdges">'
+                        f'<rect width="{n}" height="{n}" fill="#ffffff"/><path fill="#1d1406" d="{d}"/></svg>')
+        return
     js = ('const QR=require("qrcode"),fs=require("fs");QR.toString(process.argv[1],{type:"svg",errorCorrectionLevel:"M",margin:1,'
           'color:{dark:"#1d1406",light:"#ffffff"}},(e,s)=>{if(e)throw e;fs.writeFileSync(process.argv[2],s)});')
     subprocess.run(["node", "-e", js, url, str(ruta)], check=True,
-                   env={**os.environ, "NODE_PATH": os.environ.get("NODE_PATH") or str(VIDEOS / "plugin35/tools/node_modules")})  # la carpeta de plugin35 se puede borrar: NODE_PATH manda
+                   env={**os.environ, "NODE_PATH": os.environ.get("NODE_PATH") or "/Users/david.roncal/Downloads/PjgFactSalud_completo/output/taller-grupo-3/video/node_modules"})
 
 
 def video_web(origen, destino, vertical):
+    """True si el video queda en la página. En el servidor no están los originales: se reusa el que ya estaba publicado."""
+    if not origen.exists():
+        return destino.exists()
     if destino.exists() and destino.stat().st_mtime > origen.stat().st_mtime:
-        return
+        return True
     escala = "720:1280" if vertical else "1280:720"
     subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(origen), "-vf", f"scale={escala}:force_original_aspect_ratio=decrease,pad={escala}:(ow-iw)/2:(oh-ih)/2",
                     "-c:v", "libx264", "-crf", "27", "-preset", "slow", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "96k",
                     "-movflags", "+faststart", str(destino)], check=True)
     subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-ss", "3", "-i", str(destino), "-frames:v", "1", "-q:v", "4",
                     str(destino.with_suffix(".jpg"))], check=True)
+    return True
 
 
 CSS = """
   :root { --fondo:#0f0c0a; --tarjeta:#1a1512; --linea:#33291f; --tinta:#fbf5ec; --suave:#c8baa6; --acento:ACENTO; }
   * { box-sizing:border-box; margin:0; padding:0; }
+  [hidden] { display:none !important; }
   body { background:radial-gradient(120% 60% at 50% 0%, #2c2219 0%, var(--fondo) 55%); color:var(--tinta);
     font-family:Inter, -apple-system, "Helvetica Neue", Arial, sans-serif; line-height:1.5; }
   a { color:inherit; }
@@ -320,21 +394,24 @@ def pagina(c, resumenes):
         nombre = nombre_grupo(y, cid)
         empezo = ses[0]["ini"] <= HOY
         co = cohorte_de(cid)
-        marcas.append((co, nombre))
-        bloques.append(f'<div class="grupo"><h3>{esc(nombre)}{" · en curso" if empezo else ""}</h3>{filas}'
-                       f'{casilla(co, titulo + " · " + nombre, "Marcar este curso")}</div>')
+        ini = ses[0]["ini"].isoformat() + "-05:00"
+        if not empezo:  # regla del usuario: en /cursos solo lo que aún no comienza
+            marcas.append((co, nombre, ses[0]["ini"]))
+        bloques.append(f'<div class="grupo" data-inicio="{ini}"><h3>{esc(nombre)}{" · en curso" if empezo else ""}</h3>{filas}'
+                       f'{"" if empezo else casilla(co, titulo + " · " + nombre, "Marcar este curso")}</div>')
     video_html = ""
     if c.get("video"):
         ruta, vert = c["video"]
         dest = carpeta / "promo.mp4"
-        video_web(VIDEOS / ruta, dest, vert)
+        hay_video = video_web(VIDEOS / ruta, dest, vert)
         lado = ('<div class="caja"><b>Mira el video</b><p class="sub" style="margin:6px 0 0">Un resumen de lo que vas a construir en el curso.</p></div>' if vert else "")
         clase = "video vert" if vert else "video"
         video_html = ('<h2>El curso en un minuto</h2><div class="' + clase + '"><figure><video src="promo.mp4" poster="promo.jpg" '
-                      'controls playsinline preload="none"></video></figure>' + lado + '</div>')
+                      'controls playsinline preload="none"></video></figure>' + lado + '</div>') if hay_video else ""
     pdf_html = ""
-    if c.get("pdf"):  # brochure para descargar, copiado junto a la página
-        (carpeta / "brochure.pdf").write_bytes(pathlib.Path(c["pdf"]).read_bytes())
+    if c.get("pdf") and (pathlib.Path(c["pdf"]).exists() or (carpeta / "brochure.pdf").exists()):  # en el servidor se reusa el publicado
+        if pathlib.Path(c["pdf"]).exists():
+            (carpeta / "brochure.pdf").write_bytes(pathlib.Path(c["pdf"]).read_bytes())
         pdf_html = '\n      <a class="boton sec" href="brochure.pdf" download>Descargar brochure (PDF)</a>'
     aprende_html = ""
     if aprendes:
@@ -348,13 +425,13 @@ def pagina(c, resumenes):
 <div class="envoltura">
   <a class="marca" href="../">✦ JMD Learning · Cursos en vivo</a>
   <header>
-    <p class="chip">{esc(chip)}</p>
+    <p class="chip" data-chip>{esc(chip)}</p>
     <h1>{esc(titulo)}</h1>
     <p class="bajada">{esc(bajada)}</p>
     <div class="datos">
       <div class="dato"><span>Formato</span><b>{esc(formato)}</b></div>
       <div class="dato"><span>Dónde</span><b>En vivo por Zoom</b></div>
-      <div class="dato"><span>Grupos</span><b>{len(datos)} {"grupo" if len(datos) == 1 else "grupos"} con fecha</b></div>
+      <div class="dato"><span>Grupos</span><b data-ngrupos>{len(datos)} {"grupo" if len(datos) == 1 else "grupos"} con fecha</b></div>
       <div class="dato"><span>Inversión</span>{precio_html}</div>
     </div>
     <div class="acciones">
@@ -367,6 +444,7 @@ def pagina(c, resumenes):
   <h2 id="fechas">Fechas y horarios</h2>
   <p class="sub">Elige tu grupo. Todas las sesiones son en vivo por Zoom, en hora de Lima.</p>
   <div class="grupos">{"".join(bloques)}</div>
+  <p class="vacio caja" hidden>Los grupos de este curso ya empezaron. Escríbenos por WhatsApp y te avisamos cuando abra el próximo, o <a href="../">mira los próximos cursos</a>.</p>
   {proyecto_html}
   {req_html}
   <section class="inscripcion">
@@ -388,35 +466,32 @@ def pagina(c, resumenes):
 </html>
 """
     (carpeta / "index.html").write_text(h, encoding="utf-8")
-    resumenes.append(dict(slug=c["slug"], titulo=titulo, bajada=bajada, primera=primera, precio=precio, acento=c["acento"],
-                          grupos=len(datos), marcas=marcas))
+    if marcas:  # solo grupos que aún no empiezan entran al índice
+        resumenes.append(dict(slug=c["slug"], titulo=titulo, bajada=bajada, primera=min(m[2] for m in marcas), precio=precio,
+                              acento=c["acento"], grupos=len(marcas), marcas=marcas))
+    else:
+        print(f"-- {c['slug']:<30} todos sus grupos ya empezaron: fuera del índice (la página sigue en su URL)")
+        return
     print(f"ok {c['slug']:30s} {len(datos)} grupo(s), inicio {primera:%d-%m %H:%M}, precio {precio}")
 
 
 def indice(res):
     res.sort(key=lambda r: r["primera"])
     def marcas_html(r):
-        ms = [(co, n) for co, n in r.get("marcas", []) if co]
-        if not ms:
-            return ""
+        ms = r.get("marcas", [])
         if len(ms) == 1:
-            return '<div class="marcas">' + casilla(ms[0][0], r["titulo"] + " · " + ms[0][1]) + "</div>"
-        return '<div class="marcas">' + "".join(casilla(co, r["titulo"] + " · " + n, "Marcar " + n) for co, n in ms) + "</div>"
+            co, n, i = ms[0]
+            return (f'<div class="marcas"><span data-inicio="{i.isoformat()}-05:00">'
+                    + casilla(co, r["titulo"] + " · " + n) + "</span></div>")
+        return '<div class="marcas">' + "".join(
+            f'<span data-inicio="{i.isoformat()}-05:00">' + casilla(co, r["titulo"] + " · " + n, "Marcar " + n) + "</span>"
+            for co, n, i in ms) + "</div>"
     tarjetas = "".join(
-        f'<div class="curso" style="--acento:{r["acento"]}"><a class="ir" href="{r["slug"]}/"><span class="cuando">{esc(fecha_corta(r["primera"]))}</span>'
-        f'<b>{esc(r["titulo"])}</b><p>{esc(r["bajada"])}</p><span class="pie">{esc(r["precio"] or "Precio por WhatsApp")} · '
+        f'<div class="curso" data-inicios="{",".join(i.isoformat() + "-05:00" for _, _, i in r["marcas"])}" style="--acento:{r["acento"]}"><a class="ir" href="{r["slug"]}/"><span class="cuando">{esc(fecha_corta(r["primera"]))}</span>'
+        f'<b>{esc(r["titulo"])}</b><p>{esc(r["bajada"])}</p><span class="pie" data-precio="{esc(r["precio"] or "Precio por WhatsApp")}">{esc(r["precio"] or "Precio por WhatsApp")} · '
         f'{r["grupos"]} {"grupo" if r["grupos"] == 1 else "grupos"}</span></a>{marcas_html(r)}</div>' for r in res)
 
-    def fija(cid, href, acento, cuando, titulo, texto, pie):
-        _, ses = leer_curso(cid)
-        co = cohorte_de(cid) if ses and ses[-1]["ini"] > HOY else None
-        return (f'<div class="curso" style="--acento:{acento}"><a class="ir" href="{href}"><span class="cuando">{esc(cuando)}</span>'
-                f'<b>{esc(titulo)}</b><p>{esc(texto)}</p><span class="pie">{esc(pie)}</span></a>'
-                + (f'<div class="marcas">{casilla(co, titulo)}</div>' if co and CODIGO else "") + "</div>")
-    fijas = (fija("crea-contenido-openmontage", "../openmontage/", "#ff5c7a", "En curso · última sesión dom 6 dic",
-                  "Crea contenido con OpenMontage", "Produce videos para tu negocio con un agente de IA.", "S/ 50 con certificado")
-             + fija("ready-set-go", "../readysetgo/", "#9be37d", "En curso · hackathon dom 13 dic",
-                    "Ready Set Go! Haz tu videojuego con IA", "Curso y hackathon del domingo 13 de diciembre.", "Curso S/ 30 · con hackathon S/ 40"))
+    fijas = ""  # OpenMontage y Ready Set Go ya empezaron: regla «solo lo que aún no comienza»
     extra = """
   .cursos { display:grid; gap:14px; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); margin-top:20px; }
   .curso { display:grid; align-content:start; gap:10px; background:var(--tarjeta); border:1px solid var(--linea); border-top:4px solid var(--acento); border-radius:18px; padding:16px; }
@@ -444,9 +519,10 @@ def indice(res):
     <p class="bajada">Cursos prácticos con IA, en vivo por Zoom. Elige el tuyo y escríbenos por WhatsApp para inscribirte.{" ¿Tienes un código? Marca tus cursos y canjéalo aquí mismo." if CODIGO else ""}</p>
     <div class="acciones"><a class="boton wa" href="{esc(wa)}">WhatsApp {WA_TXT}</a><a class="boton sec" href="/rutas/">Ver rutas profesionales</a></div>
   </header>
-  <div class="cursos">{tarjetas}
+  <div class="cursos" id="vivos">{tarjetas}
     {fijas}
   </div>
+  <p class="vacio caja" id="vivos-vacio" hidden>Todos los grupos anunciados ya empezaron. Escríbenos por WhatsApp y te avisamos del próximo, o mira los cursos en modalidad web, que empiezas cuando quieras.</p>
   <section class="oferta" id="modalidad-web">
     <h2>Cursos en modalidad web</h2>
     <p class="sub">A tu ritmo, con videos paso a paso y un repositorio con los ejemplos listos para Windows y Mac. S/ 10 por curso, o elige 3 cursos por S/ 20 en total. Pagas por Yape y adjuntas la foto del pago.</p>
@@ -462,9 +538,56 @@ def indice(res):
     (WEB / "index.html").write_text(h, encoding="utf-8")
 
 
+# Cursos del LMS que no se anuncian en /cursos: eventos con premio y cursos de otro instructor.
+EXCLUIR = ("hackathon-", "python-api")
+ACENTOS = ["#ff8a3d", "#7cc6ff", "#9be37d", "#f6cf47", "#ff5c7a", "#5cc8cd"]
+
+
+def slug_de(t):
+    import unicodedata
+    t = unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", "-", t).strip("-")
+
+
+def descubrir():
+    """CURSOS más lo nuevo del LMS: un grupo nuevo se suma a su curso (mismo agenda.nombre); un curso nuevo tiene su página."""
+    cursos = [dict(c, grupos=[g for g in c["grupos"] if (LMS / g / "course.yaml").exists()]) for c in CURSOS]
+    conocidos = {g for c in cursos for g in c["grupos"]}
+    por_nombre = {}
+    for c in cursos:
+        for g in c["grupos"]:
+            n = ((yaml.safe_load(open(LMS / g / "course.yaml")) or {}).get("agenda") or {}).get("nombre")
+            if n:
+                por_nombre.setdefault(n, c)
+    nuevos = {}
+    for f in sorted(LMS.glob("*/course.yaml")):
+        cid = f.parent.name
+        if cid in conocidos or cid.startswith("web-") or cid.startswith(EXCLUIR):
+            continue
+        n = ((yaml.safe_load(open(f)) or {}).get("agenda") or {}).get("nombre")
+        if not n:
+            continue  # sin agenda no es un curso en vivo con horario
+        _, ses = leer_curso(cid)
+        if not ses or ses[-1]["ini"] <= HOY:
+            continue
+        if n in por_nombre:
+            por_nombre[n]["grupos"].append(cid)
+            print(f"+ grupo nuevo {cid} → {por_nombre[n]['slug']}")
+        elif ses[0]["ini"] > HOY:  # curso nuevo: solo si aún no empieza (no se crean páginas de cursos ya en marcha)
+            e = nuevos.setdefault(n, dict(slug=slug_de(n), grupos=[], br=None, precio=None,
+                                          acento=ACENTOS[len(nuevos) % len(ACENTOS)]))
+            e["grupos"].append(cid)
+    for n, e in nuevos.items():
+        print(f"+ curso nuevo {e['slug']} ({', '.join(e['grupos'])}): precio por WhatsApp")
+    return cursos + list(nuevos.values())
+
+
 if __name__ == "__main__":
     WEB.mkdir(parents=True, exist_ok=True)
     res = []
-    for c in CURSOS:
+    todos = descubrir()
+    for c in todos:
         pagina(c, res)
     indice(res)
+    if os.environ.get("GRUPOS_JSON"):  # para el catálogo de códigos de inscripcion-web
+        pathlib.Path(os.environ["GRUPOS_JSON"]).write_text(json.dumps([g for c in todos for g in c["grupos"]]))
