@@ -138,12 +138,14 @@ CURSOS = [
          br="ingenieria-de-requerimientos", precio="S/ 40", acento="#9be37d"),
     dict(slug="tienda-web-facturacion", grupos=["tienda-web-facturacion", "tienda-web-facturacion-2"], br=None,
          precio="S/ 25", antes="S/ 50", video=("tienda35/video/renders/tienda-virtual-35s.mp4", False), acento="#5cc8cd"),
+    dict(slug="deepseek-el-orquestador", grupos=["deepseek-orquestador"], br=None, precio="S/ 40", acento="#4d6bfe"),
+    dict(slug="analisis-de-sentimiento-con-ia", grupos=["analisis-sentimiento-ia"], br=None, precio="S/ 30", acento="#6d4aff"),
     dict(slug="deepseek-harness", grupos=["deepseek-harness", "deepseek-harness-4"], br="deepseek-harness", precio="S/ 40", acento="#7cc6ff"),
     dict(slug="diseno-de-interfaces", grupos=["diseno-interfaces"], br="diseno-interfaces", precio="S/ 40",
          nota_precio="las tres sesiones", acento="#ff5c7a"),
     dict(slug="seguridad-con-ia", grupos=["seguridad-codificacion-ia"], br="seguridad-codificacion-ia", precio="S/ 100", acento="#e10600"),
     dict(slug="potencia-tus-agentes", grupos=["potencia-agentes-2"], br="potencia-agentes", precio=None, acento="#f3c45a"),
-    dict(slug="dashboards-bi-con-ia", grupos=["bi-clickhouse"], br=None, precio="S/ 50", antes="S/ 80", acento="#f6cf47"),
+    dict(slug="dashboards-bi-con-ia", grupos=["bi-clickhouse"], br=None, precio="S/ 35", acento="#f6cf47"),
     # G9 cambió de contenido el 24-11-2026 (landing, chatbot web, WhatsApp con Evolution Go): textos del LMS, no del brochure.
     dict(slug="programacion-agentica", grupos=["programacion-agentica-g9"], br=None,
          precio="S/ 80", video=("vibecoding-g9/renders/vibecoding-g9-25s-whatsapp.mp4", True), acento="#e10600"),
@@ -187,6 +189,10 @@ def tarjetas_web():
     return "".join(out)
 
 
+# Cursos ya iniciados que se siguen ofreciendo: solo con sus sesiones pendientes, numeradas desde 1 (pedido 24-11-2026).
+SOLO_PENDIENTES = {"analisis-sentimiento-ia"}
+
+
 def leer_curso(cid):
     y = yaml.safe_load(open(LMS / cid / "course.yaml"))
     lecciones = {}
@@ -210,6 +216,10 @@ def leer_curso(cid):
             minutos = (y.get("agenda") or {}).get("minutos") or fm.get("duration") or 90
             ses.append(dict(titulo=fm.get("title") or mod["title"], ini=ini, fin=ini + dt.timedelta(minutes=minutos)))
     ses.sort(key=lambda s: s["ini"])
+    if cid in SOLO_PENDIENTES:  # ya empezó, pero se vende lo que queda: sin las sesiones pasadas y renumerado 1, 2…
+        ses = [x for x in ses if x["ini"] > HOY]
+        for n, x in enumerate(ses, 1):
+            x["titulo"] = re.sub(r"^(Grupo \d+ · )?Sesión \d+", f"Sesión {n}", x["titulo"])
     return y, ses
 
 
