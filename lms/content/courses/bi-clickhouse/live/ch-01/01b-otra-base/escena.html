@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reportes en otra base</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Coordenadas del viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. */
+  #zVende { fill: var(--z-mundo); }
+  #zReporta { fill: var(--z-maq); }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 2 de 3 · OLTP y OLAP</p>
+    <h1>La base que vende <em>no es</em> la base que reporta</h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="A la izquierda, la base que vende (OLTP) registra cada venta de la caja. Si el reporte del año corre en esa misma base, la caja se pone lenta. A la derecha, ClickHouse (OLAP) recibe una copia de los datos y responde los reportes. Abajo, DuckDB también guarda por columnas pero vive dentro de un programa, sin servidor; ClickHouse es un servidor para muchos usuarios.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="gVende">
+          <rect id="zVende" x="30" y="70" width="290" height="270" rx="18"/>
+          <rect id="bVende" class="trazo" x="30" y="70" width="290" height="270" rx="18"/>
+          <text id="rVende" class="rot fuerte" x="175" y="56" text-anchor="middle">LA QUE VENDE · OLTP</text>
+        </g>
+        <rect id="zReporta" x="480" y="70" width="290" height="270" rx="18"/>
+        <rect id="bReporta" class="trazo" x="480" y="70" width="290" height="270" rx="18"/>
+        <text id="rReporta" class="rot fuerte" x="625" y="56" text-anchor="middle">LA QUE REPORTA · OLAP</text>
+        <path id="a1" class="trazo guion flecha" d="M326 205 L470 205"/>
+        <text id="rCopia" class="rot" x="398" y="190" text-anchor="middle">COPIA</text>
+        <circle id="punto" class="solo-anim" cx="326" cy="205" r="9"/>
+      </svg>
+
+      <div class="nt ev" id="nVenta" data-r="-1.5" style="left:7%; top:20%; width:28%"><span class="k">Caja · 7:42 p. m.</span><span class="t">Venta B001-1024 · S/ 18,50. Miles de escrituras pequeñas al día.</span></div>
+      <div class="nt hot solo-anim" id="nRep" data-r="1.5" style="left:7%; top:44%; width:28%"><span class="k">Reporte del año</span><span class="t">Suma dos años de ventas en la misma base.</span><span class="sello solo-anim" id="sello">LENTA</span></div>
+      <div class="nt info" id="nCH" data-r="-1" style="left:63%; top:24%; width:28%"><span class="k">ClickHouse</span>
+        <div class="capas t"><span class="av">Recibe la copia y responde los reportes. La caja sigue rápida.</span><span class="bo solo-anim">Tu dashboard lee de aquí, no del sistema de la botica.</span></div></div>
+      <div class="nt pol solo-anim" id="nDuck" data-r="1" style="left:7%; top:72%; width:40%"><span class="k">DuckDB · licencia MIT</span><span class="t">También guarda por columnas, pero vive dentro de tu programa, sin servidor. Ideal para una sola laptop.</span></div>
+      <div class="nt cmd solo-anim" id="nServ" data-r="-1" style="left:53%; top:72%; width:40%"><span class="k">ClickHouse · Apache 2.0</span><span class="t">Es un servidor: muchos usuarios y tableros consultan a la vez.</span></div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>La base que vende</b><p>El sistema de la caja registra cada venta al instante: miles de escrituras pequeñas al día. Se llama OLTP, procesamiento de transacciones, y está hecho para eso.</p></li>
+        <li><b>El reporte pesado, en la misma base</b><p>Si el reporte del año suma dos años de ventas en esa misma base, compite con la caja por el disco y la memoria. Quien está pagando espera.</p><p class="aparte">Escenario ilustrativo: cuánto se demora depende de cada sistema, pero la competencia por recursos es la misma.</p></li>
+        <li><b>Una copia para reportar</b><p>La solución es separar: los datos se copian a una base analítica, OLAP, y los reportes corren allí. ClickHouse es esa base. La caja vuelve a ir rápida.</p></li>
+        <li><b>¿Y DuckDB?</b><p>DuckDB también guarda por columnas, pero vive dentro de tu programa, sin servidor. ClickHouse es un servidor: muchas personas y tableros lo consultan a la vez. Para un equipo, conviene ClickHouse.</p></li>
+        <li><b>En tu botica</b><p>El sistema de la botica sigue vendiendo en su base. Tu dashboard lee de ClickHouse, con una copia que tú controlas. Eso es lo que armamos hoy.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">ClickHouse Docs. «What is OLAP?» y «What is ClickHouse?». clickhouse.com/docs · DuckDB, README y licencia MIT. github.com/duckdb/duckdb · ClickHouse, LICENSE (Apache 2.0). github.com/ClickHouse/ClickHouse</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, puntas = {}, punto = $("#punto");
+  TEO.escena([
+    function (tl) { // 1. la base que vende
+      TEO.trazar(tl, "#bVende", { duration: 1 });
+      tl.from("#zVende", { autoAlpha: 0, duration: .6 }, "-=.5");
+      tl.from("#rVende", { autoAlpha: 0, y: 8 }, "-=.4");
+      TEO.pegar(tl, "#nVenta");
+    },
+    function (tl) { // 2. el reporte pesado
+      TEO.pegar(tl, "#nRep");
+      tl.to("#gVende", { x: -5, duration: .06, repeat: 7, yoyo: true, ease: "none" }, "+=.15");
+      tl.fromTo("#sello", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" });
+    },
+    function (tl) { // 3. una copia para reportar
+      TEO.trazar(tl, "#bReporta", { duration: 1 });
+      tl.from("#zReporta", { autoAlpha: 0, duration: .6 }, "-=.5");
+      tl.from("#rReporta", { autoAlpha: 0, y: 8 }, "-=.4");
+      TEO.trazar(tl, "#a1", { duration: .6 });
+      tl.from(puntas.a1, { autoAlpha: 0, duration: .2 }, "-=.1");
+      tl.from("#rCopia", { autoAlpha: 0, duration: .3 }, "<");
+      tl.fromTo(punto, { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 });
+      TEO.viajar(tl, punto, $("#a1"), .8);
+      tl.to(punto, { autoAlpha: 0, duration: .2 });
+      TEO.pegar(tl, "#nCH");
+      tl.to("#sello", { autoAlpha: 0, duration: .3 });
+    },
+    function (tl) { // 4. DuckDB y ClickHouse
+      TEO.pegar(tl, ["#nDuck", "#nServ"]);
+    },
+    function (tl) { // 5. en tu botica: la nota de ClickHouse gira
+      tl.to("#nCH", { rotationY: 90, duration: .22, ease: "power1.in" });
+      tl.set("#nCH .av", { autoAlpha: 0 });
+      tl.set("#nCH .bo", { autoAlpha: 1 });
+      tl.to("#nCH", { rotationY: 0, duration: .32, ease: "power2.out" });
+    }
+  ], {
+    preparar: function () {
+      puntas.a1 = TEO.punta($("#a1"));
+      gsap.set([punto, "#sello"], { autoAlpha: 0 });
+      gsap.set("#nCH", { transformPerspective: 700 });
+      gsap.set("#nCH .bo", { autoAlpha: 0 });
+    }
+  });
+})();
+</script>
+</body>
+</html>

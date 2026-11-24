@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Refresco y publicación</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Coordenadas del viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. */
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .t.mono { hyphens: none; overflow-wrap: anywhere; }
+  .nt .t { hyphens: manual; }
+  .caja { width: 26%; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 3 de 3 · ClickHouse</p>
+    <h1>Un archivo es una foto; <em>el servidor se actualiza solo</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Arriba, el dashboard descargado como archivo, marcado FOTO: muestra los datos del día en que se descargó. Abajo, el camino del servidor: la tabla ventas_dashboard alimenta una vista materializada refrescable que cada hora recalcula la tabla resumen ventas_mes, y de ahí lee un tablero conectado como Grafana, Metabase o CH-UI.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="a1" class="trazo flecha" d="M244 222 L298 222"/>
+        <path id="a2" class="trazo flecha" d="M532 222 L570 222"/>
+        <path id="a3" class="trazo flecha" d="M676 272 C676 350 600 392 534 392"/>
+        <circle id="punto" class="solo-anim" cx="244" cy="222" r="9"/>
+      </svg>
+      <div class="nt fantasma" id="nFoto" data-r="-1.5" style="left:4%; top:5%; width:44%"><span class="k">dashboard-ventas.html</span><span class="t">Muestra los datos del día en que lo descargaste. Para verlo al día, hay que descargarlo otra vez.</span><span class="sello solo-anim" id="sello">FOTO</span></div>
+      <div class="nt info caja" id="nTabla" data-r="1" style="left:4%; top:36%"><span class="k">Tabla</span><span class="t mono">ventas_dashboard</span></div>
+      <div class="nt cmd caja" id="nVista" data-r="-1" style="left:38%; top:36%; width:28%"><span class="k">Vista refrescable</span><span class="t mono">REFRESH EVERY 1 HOUR</span></div>
+      <div class="nt pol caja" id="nRes" data-r="1" style="left:72%; top:36%; width:25%"><span class="k">Resumen</span>
+        <div class="capas t"><span class="av mono">ventas_mes</span><span class="bo solo-anim">6 080 filas → 40 (10 meses × 4 sedes)</span></div></div>
+      <div class="nt act solo-anim" id="nTab" data-r="-1" style="left:38%; top:68%; width:28%"><span class="k">Tablero conectado</span><span class="t">Grafana, Metabase o CH-UI leen de ClickHouse</span></div>
+      <p class="pastilla solo-anim" id="narra" style="left:4%; top:90%; width:62%">Hoy: el archivo · mañana: el tablero conectado</p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>El archivo es una foto</b><p>El dashboard que descargas es un archivo que abre sin internet y se envía por correo o WhatsApp. Pero es una foto: muestra los datos del día en que lo bajaste.</p></li>
+        <li><b>En el servidor, una tabla</b><p>El SQL que genera tu dashboard crea la tabla ventas_dashboard en tu ClickHouse con tus filas limpias. Ahí viven los datos, no en el archivo.</p></li>
+        <li><b>Una vista que se refresca sola</b><p>Una vista materializada refrescable vuelve a calcular el resumen cada hora: REFRESH EVERY 1 HOUR. Nadie corre la macro; el servidor lo hace.</p><p class="aparte">Para forzarlo ahora: SYSTEM REFRESH VIEW ventas_mes_mv.</p></li>
+        <li><b>Probado con tus datos de ejemplo</b><p>Con las ventas de ejemplo, la vista resumió 6 080 filas en 40, diez meses por cuatro sedes, y la venta total cuadró al céntimo: S/ 5 562 110,68.</p><p class="aparte">Prueba hecha en ClickHouse 26.10 con el mismo SQL que descargarás.</p></li>
+        <li><b>Publicar</b><p>Un tablero como Grafana, Metabase o CH-UI se conecta a ClickHouse y siempre muestra lo último. Hoy compartes el archivo; cuando tengas servidor, compartes el tablero.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">ClickHouse Docs. «Refreshable materialized view». clickhouse.com/docs · Prueba propia en ClickHouse 26.10 con ventas-dashboard.sql.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, puntas = {}, punto = $("#punto");
+  function flecha(tl, id, pos) { TEO.trazar(tl, "#" + id, { duration: .5 }, pos); tl.from(puntas[id], { autoAlpha: 0, duration: .2 }, "-=.1"); }
+  function sellar(tl, id, pos) { tl.fromTo("#" + id, { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, pos); }
+  function girar(tl, id) {
+    tl.to("#" + id, { rotationY: 90, duration: .22, ease: "power1.in" });
+    tl.set("#" + id + " .av", { autoAlpha: 0 }); tl.set("#" + id + " .bo", { autoAlpha: 1 });
+    tl.to("#" + id, { rotationY: 0, duration: .32, ease: "power2.out" });
+  }
+
+  TEO.escena([
+    function (tl) { TEO.pegar(tl, "#nFoto"); sellar(tl, "sello", "+=.15"); },    function (tl) { tl.to("#nFoto", { autoAlpha: .45, duration: .4 }); TEO.pegar(tl, "#nTabla"); },    function (tl) { flecha(tl, "a1"); TEO.pegar(tl, "#nVista", "-=.1"); flecha(tl, "a2"); TEO.pegar(tl, "#nRes", "-=.1"); tl.set(punto, { attr: { cx: 244, cy: 222 } }); tl.fromTo(punto, { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 }); TEO.viajar(tl, punto, $("#a1"), .5); tl.set(punto, { autoAlpha: 0 }); tl.set(punto, { attr: { cx: 532, cy: 222 } }); tl.set(punto, { autoAlpha: 1 }); TEO.viajar(tl, punto, $("#a2"), .4); tl.to(punto, { autoAlpha: 0, duration: .2 }); },    function (tl) { girar(tl, "nRes"); },    function (tl) { flecha(tl, "a3"); TEO.pegar(tl, "#nTab", "-=.1"); tl.fromTo("#narra", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4 }, "+=.2"); }
+  ], {
+    preparar: function () {
+      ["a1", "a2", "a3"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); });
+      gsap.set([punto, "#sello", "#narra"], { autoAlpha: 0 }); gsap.set("#nRes", { transformPerspective: 700 }); gsap.set("#nRes .bo", { autoAlpha: 0 });
+    }
+  });
+})();
+</script>
+</body>
+</html>

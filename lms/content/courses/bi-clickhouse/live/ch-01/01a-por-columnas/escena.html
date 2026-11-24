@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guardar por columnas</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Coordenadas del viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. */
+  .celda { fill: none; stroke: var(--tinta); stroke-width: 1.2; opacity: .55; }
+  .val { font: 500 12px var(--mono); fill: var(--tinta); }
+  .cab { font: 700 12px var(--mono); letter-spacing: .08em; fill: var(--gris); }
+  #barrido { fill: var(--n-hot); opacity: .5; }
+  #colVenta { fill: var(--n-info); }
+  .der { width: 40%; }
+  .t.mono { hyphens: none; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 1 de 3 · ClickHouse</p>
+    <h1>Para sumar millones de filas, <em>guarda por columnas</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Una tabla de ventas con columnas fecha, sede, categoría y venta. Guardada por filas, para sumar la venta hay que leer todas las columnas de cada fila; guardada por columnas, como hace ClickHouse, se lee solo la columna venta. Excel tiene un tope de 1 048 576 filas por hoja.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <rect id="barrido" class="solo-anim" x="36" y="120" width="368" height="40" rx="4"/>
+        <g id="otras">
+          <g id="c0"><text class="cab" x="85" y="108" text-anchor="middle">FECHA</text><rect class="celda" x="40" y="120" width="90" height="40"/><text class="val" x="85" y="145" text-anchor="middle">03-01</text><rect class="celda" x="40" y="160" width="90" height="40"/><text class="val" x="85" y="185" text-anchor="middle">03-01</text><rect class="celda" x="40" y="200" width="90" height="40"/><text class="val" x="85" y="225" text-anchor="middle">03-02</text><rect class="celda" x="40" y="240" width="90" height="40"/><text class="val" x="85" y="265" text-anchor="middle">03-02</text><rect class="celda" x="40" y="280" width="90" height="40"/><text class="val" x="85" y="305" text-anchor="middle">03-03</text><rect class="celda" x="40" y="320" width="90" height="40"/><text class="val" x="85" y="345" text-anchor="middle">03-03</text></g>
+          <g id="c1"><text class="cab" x="175" y="108" text-anchor="middle">SEDE</text><rect class="celda" x="130" y="120" width="90" height="40"/><text class="val" x="175" y="145" text-anchor="middle">Lima C.</text><rect class="celda" x="130" y="160" width="90" height="40"/><text class="val" x="175" y="185" text-anchor="middle">Surco</text><rect class="celda" x="130" y="200" width="90" height="40"/><text class="val" x="175" y="225" text-anchor="middle">Lima C.</text><rect class="celda" x="130" y="240" width="90" height="40"/><text class="val" x="175" y="265" text-anchor="middle">Callao</text><rect class="celda" x="130" y="280" width="90" height="40"/><text class="val" x="175" y="305" text-anchor="middle">Surco</text><rect class="celda" x="130" y="320" width="90" height="40"/><text class="val" x="175" y="345" text-anchor="middle">Callao</text></g>
+          <g id="c2"><text class="cab" x="265" y="108" text-anchor="middle">CATEG.</text><rect class="celda" x="220" y="120" width="90" height="40"/><text class="val" x="265" y="145" text-anchor="middle">Genéricos</text><rect class="celda" x="220" y="160" width="90" height="40"/><text class="val" x="265" y="185" text-anchor="middle">Cuidado</text><rect class="celda" x="220" y="200" width="90" height="40"/><text class="val" x="265" y="225" text-anchor="middle">Genéricos</text><rect class="celda" x="220" y="240" width="90" height="40"/><text class="val" x="265" y="265" text-anchor="middle">Bebé</text><rect class="celda" x="220" y="280" width="90" height="40"/><text class="val" x="265" y="305" text-anchor="middle">Cuidado</text><rect class="celda" x="220" y="320" width="90" height="40"/><text class="val" x="265" y="345" text-anchor="middle">Genéricos</text></g>
+        </g>
+        <g id="c3">
+          <rect id="colVenta" class="solo-anim" x="310" y="88" width="90" height="274" rx="6"/>
+          <text class="cab" x="355" y="108" text-anchor="middle">VENTA</text><rect class="celda" x="310" y="120" width="90" height="40"/><text class="val" x="355" y="145" text-anchor="middle">18,50</text><rect class="celda" x="310" y="160" width="90" height="40"/><text class="val" x="355" y="185" text-anchor="middle">42,00</text><rect class="celda" x="310" y="200" width="90" height="40"/><text class="val" x="355" y="225" text-anchor="middle">9,90</text><rect class="celda" x="310" y="240" width="90" height="40"/><text class="val" x="355" y="265" text-anchor="middle">65,30</text><rect class="celda" x="310" y="280" width="90" height="40"/><text class="val" x="355" y="305" text-anchor="middle">27,80</text><rect class="celda" x="310" y="320" width="90" height="40"/><text class="val" x="355" y="345" text-anchor="middle">12,40</text>
+        </g>
+        <text id="rTabla" class="rot fuerte" x="220" y="62" text-anchor="middle">TUS VENTAS</text>
+      </svg>
+
+      <div class="nt cmd der" id="nFilas" data-r="-1" style="left:56%; top:12%"><span class="k">Por filas · PostgreSQL, MySQL</span><span class="t">Cada venta se guarda junta. Ideal para registrar una venta a la vez; para sumar todas, lee todas las columnas.</span></div>
+      <div class="nt info der" id="nCols" data-r="1" style="left:56%; top:38%"><span class="k">Por columnas · ClickHouse</span><span class="t">Cada columna se guarda junta. Para sumar la venta lee solo esa columna, y los valores parecidos se comprimen mejor.</span></div>
+      <div class="nt hot solo-anim" id="nExcel" data-r="-1.5" style="left:56%; top:64%; width:30%"><span class="k">Excel · tope por hoja</span><span class="t">1 048 576 filas. Lo que pase de ahí no cabe.</span><span class="sello solo-anim" id="sello">NO CABE</span></div>
+      <div class="nt ev solo-anim" id="nTuyo" data-r="1.2" style="left:4%; top:75%; width:48%"><span class="k">Tu caso · 4 boticas, 6 144 ventas</span><span class="t mono">SELECT sede, sum(venta) … lee solo 2 columnas</span></div>
+      <p class="pastilla solo-anim" id="narra" style="left:56%; top:88%; width:40%">Siguiente: tu ClickHouse con Docker</p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Tu Excel: una venta por fila</b><p>Cada venta ocupa una fila con su fecha, sede, categoría y monto. Para registrar una venta, eso es perfecto. La pregunta es qué pasa cuando quieres sumar todas.</p></li>
+        <li><b>Por filas: lees todo para sumar</b><p>Las bases que venden, como PostgreSQL o MySQL, guardan cada fila junta. Para sumar la venta tienen que pasar por todas las columnas de todas las filas.</p></li>
+        <li><b>Por columnas: lees solo lo que pides</b><p>ClickHouse es una base analítica (OLAP) que guarda cada columna junta. Para sumar la venta lee solo esa columna. Menos disco leído, respuesta más rápida.</p><p class="aparte">ClickHouse es de código abierto (licencia Apache 2.0) y también existe en la nube como ClickHouse Cloud.</p></li>
+        <li><b>Excel no llega</b><p>Una hoja de Excel admite 1 048 576 filas. Una cadena con varios años de ventas por ticket pasa ese tope, y el archivo ya no abre completo.</p></li>
+        <li><b>En tu caso</b><p>Tus ventas de 4 boticas son 6 144 filas. Para saber cuánto vendió cada sede, ClickHouse lee solo sede y venta. Ahora levantamos tu propio ClickHouse con Docker.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">ClickHouse Docs. «What is ClickHouse?» y «Row-oriented vs. column-oriented storage». clickhouse.com/docs · Microsoft Support. «Excel specifications and limits».</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$;
+  TEO.escena([
+    function (tl) { // 1. la tabla
+      tl.from("#rTabla", { autoAlpha: 0, y: 8, duration: .4 });
+      tl.from(".celda", { autoAlpha: 0, scale: .6, transformOrigin: "50% 50%", duration: .25, stagger: .012 }, "-=.1");
+      tl.from(".val, .cab", { autoAlpha: 0, duration: .3, stagger: .008 }, "-=.3");
+    },
+    function (tl) { // 2. por filas: el barrido pasa fila por fila
+      TEO.pegar(tl, "#nFilas");
+      tl.fromTo("#barrido", { autoAlpha: 0, attr: { y: 120 } }, { autoAlpha: .55, duration: .2 });
+      for (var i = 1; i < 6; i++) tl.to("#barrido", { attr: { y: 120 + i * 40 }, duration: .28, ease: "power1.inOut" }, "+=.08");
+      tl.to("#barrido", { autoAlpha: 0, duration: .3 }, "+=.2");
+    },
+    function (tl) { // 3. por columnas: solo la venta
+      tl.to("#otras", { opacity: .28, duration: .5 });
+      tl.to("#c3", { x: 26, duration: .5, ease: "power2.out" }, "<");
+      tl.fromTo("#colVenta", { autoAlpha: 0 }, { autoAlpha: .75, duration: .4 });
+      TEO.pegar(tl, "#nCols", "-=.1");
+    },
+    function (tl) { // 4. Excel no llega
+      TEO.pegar(tl, "#nExcel");
+      tl.fromTo("#sello", { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, "+=.15");
+    },
+    function (tl) { // 5. tu caso
+      TEO.pegar(tl, "#nTuyo");
+      tl.fromTo("#narra", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4 }, "+=.2");
+    }
+  ], {
+    preparar: function () {
+      gsap.set("#barrido", { autoAlpha: 0 });
+      gsap.set("#colVenta", { autoAlpha: 0 });
+      gsap.set(["#sello", "#narra"], { autoAlpha: 0 });
+    }
+  });
+})();
+</script>
+</body>
+</html>

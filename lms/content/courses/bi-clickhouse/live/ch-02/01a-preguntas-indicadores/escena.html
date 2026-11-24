@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>De la pregunta al indicador</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* Coordenadas del viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. */
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .t.mono { hyphens: none; overflow-wrap: anywhere; }
+  .preg { width: 38%; } .ind { width: 43%; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 1 de 3 · Stephen Few</p>
+    <h1>Cada cifra del dashboard <em>responde una pregunta</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Arriba, la definición de dashboard de Stephen Few. Debajo, preguntas de negocio a la izquierda y, unidas por flechas, el indicador que las responde con su fórmula: venta del mes contra el mes anterior, y margen como ganancia entre venta. Abajo, el ticket promedio marcado OJO porque sin columna de tickets se calcula como venta entre filas.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="a1" class="trazo flecha" d="M342 210 L416 210"/>
+        <path id="a2" class="trazo flecha" d="M342 318 L416 318"/>
+        <path id="a3" class="trazo flecha" d="M342 426 L416 426"/>
+      </svg>
+      <p class="cita" id="cita" style="left:4%; top:3%; width:92%">«Un dashboard es una presentación visual de la información más importante para lograr uno o más objetivos, reunida en una sola pantalla para vigilarla de un vistazo.»<small>Few (2004) · traducción propia</small></p>
+      <div class="nt ev preg" id="q1" data-r="-1" style="left:4%; top:34%"><span class="k">Pregunta</span><span class="t">¿Vendemos más que el mes pasado?</span></div>
+      <div class="nt cmd ind" id="i1" data-r="1" style="left:53%; top:34%"><span class="k">Venta del mes vs. mes anterior</span><span class="t mono">sum(venta) por mes</span></div>
+      <div class="nt ev preg" id="q2" data-r="1" style="left:4%; top:55%"><span class="k">Pregunta</span><span class="t">¿Cuánto ganamos de verdad?</span></div>
+      <div class="nt cmd ind" id="i2" data-r="-1" style="left:53%; top:55%"><span class="k">Margen</span><span class="t mono">ganancia ÷ venta</span></div>
+      <div class="nt ev preg solo-anim" id="q3" data-r="-1" style="left:4%; top:76%"><span class="k">Pregunta</span><span class="t">¿Cuánto gasta cada cliente?</span></div>
+      <div class="nt hot ind solo-anim" id="i3" data-r="1.2" style="left:53%; top:76%"><span class="k">Ticket promedio</span>
+        <div class="capas t"><span class="av mono">venta ÷ tickets</span><span class="bo solo-anim mono">venta ÷ filas (sin tickets)</span></div><span class="sello solo-anim" id="sello">OJO</span></div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>La definición</b><p>Stephen Few definió el dashboard en 2004: lo más importante para un objetivo, en una sola pantalla, para vigilarlo de un vistazo. Lo que no sirve al objetivo sobra.</p></li>
+        <li><b>Primero la pregunta</b><p>Cada cifra nace de una pregunta de negocio. «¿Vendemos más que el mes pasado?» se responde con la venta del mes contra la del mes anterior.</p></li>
+        <li><b>La fórmula, a la vista</b><p>«¿Cuánto ganamos de verdad?» no es la venta: es el margen, ganancia entre venta. Escribir la fórmula evita que dos personas lean la misma cifra de dos formas.</p></li>
+        <li><b>Una cifra que engaña</b><p>El ticket promedio es venta entre número de tickets. Si tu archivo no trae tickets, la cifra sale de dividir entre filas, y ya no responde la misma pregunta.</p><p class="aparte">Por eso tu dashboard dice debajo de cada cifra cómo se calculó.</p></li>
+        <li><b>En tu dashboard</b><p>Hoy respondes cuatro preguntas: cuánto vendimos, cuánto gastó cada cliente, cuánto ganamos y qué se cayó. Escribe la tuya antes de abrir el laboratorio.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Few, S. (2004). «Dashboard Confusion». Intelligent Enterprise. La cita es traducción propia.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, puntas = {}, punto = $("#punto");
+  function flecha(tl, id, pos) { TEO.trazar(tl, "#" + id, { duration: .5 }, pos); tl.from(puntas[id], { autoAlpha: 0, duration: .2 }, "-=.1"); }
+  function sellar(tl, id, pos) { tl.fromTo("#" + id, { autoAlpha: 0, scale: 2.6 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" }, pos); }
+  function girar(tl, id) {
+    tl.to("#" + id, { rotationY: 90, duration: .22, ease: "power1.in" });
+    tl.set("#" + id + " .av", { autoAlpha: 0 }); tl.set("#" + id + " .bo", { autoAlpha: 1 });
+    tl.to("#" + id, { rotationY: 0, duration: .32, ease: "power2.out" });
+  }
+
+  TEO.escena([
+    function (tl) { tl.from(TEO.palabras($("#cita")), { autoAlpha: 0, y: 12, duration: .35, stagger: .04 }); tl.from("#cita small", { autoAlpha: 0, duration: .4 }); },    function (tl) { TEO.pegar(tl, "#q1"); flecha(tl, "a1"); TEO.pegar(tl, "#i1", "-=.1"); },    function (tl) { TEO.pegar(tl, "#q2"); flecha(tl, "a2"); TEO.pegar(tl, "#i2", "-=.1"); },    function (tl) { TEO.pegar(tl, "#q3"); flecha(tl, "a3"); TEO.pegar(tl, "#i3", "-=.1"); girar(tl, "i3"); sellar(tl, "sello", "+=.1"); },    function (tl) { tl.to("#cita", { autoAlpha: .35, duration: .5 }); }
+  ], {
+    preparar: function () {
+      ["a1", "a2", "a3"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); });
+      gsap.set("#sello", { autoAlpha: 0 }); gsap.set("#i3", { transformPerspective: 700 }); gsap.set("#i3 .bo", { autoAlpha: 0 });
+    }
+  });
+})();
+</script>
+</body>
+</html>

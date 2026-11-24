@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Levanta tu servidor ClickHouse</title>
+<!-- Escena del modo LIVE (Dashboards y BI con IA). Los comandos son los del video de la sesión 1 (ClickHouse 26.10, probado en Mac). Sin recursos externos. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style id="esc-propio">
+body { overflow-y: auto; }
+.esc { min-height: 100vh; }
+.esc-cuerpo { justify-content: flex-start; }
+.g2 { display: grid; grid-template-columns: 1.55fr 1fr; gap: 1.6vw; align-items: start; }
+.col { display: grid; gap: 1.3vh; }
+.pasos { display: grid; gap: 1.1vh; margin-top: 1.1vh; }
+.paso { display: grid; grid-template-columns: 2em 1fr; gap: .8em; align-items: start; background: var(--s1); border: 1px solid var(--line); border-radius: .9em; padding: .8em 1em; box-shadow: var(--card-shadow); }
+.paso .num { width: 1.7em; height: 1.7em; border-radius: 50%; display: grid; place-items: center; font: 800 .8em var(--mono); background: var(--accent-bg); color: var(--accent); }
+.paso h3 { margin: 0 0 .2em; font-size: .82em; }
+.paso p { margin: 0 0 .45em; font-size: .68em; color: var(--muted); line-height: 1.45; }
+.paso pre.esc-cmd { font-size: .58em; white-space: pre; overflow-x: auto; padding-right: 6em; }
+.paso code { font: 600 .95em var(--mono); }
+.esc-card p, .esc-card li { font-size: .7em; line-height: 1.45; }
+.esc-card pre.esc-cmd { font-size: .58em; white-space: pre-wrap; }
+@media (max-width: 860px) { .g2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Dashboards y BI · S1 · 08/13</span>
+  </header>
+  <main class="esc-cuerpo">
+    <div>
+      <h1 class="esc-titulo a-in">Levanta <em>tu propio ClickHouse</em></h1>
+      <p class="esc-sub a-in" style="--d:.1s">Los mismos comandos del video de la sesión, en Windows, Mac o Linux. Copia, pega y comprueba.</p>
+    </div>
+    <div class="g2">
+      <div class="a-in" style="--d:.2s" id="tabs">
+        <div class="cc-tabs" role="tablist" aria-label="Sistema operativo">
+          <button type="button" class="cc-tab" data-tab="win">Windows</button>
+          <button type="button" class="cc-tab" data-tab="mac">Mac</button>
+          <button type="button" class="cc-tab" data-tab="lin">Linux</button>
+        </div>
+        <div class="pasos">
+<div class="panel" data-panel="win">
+<section class="paso"><span class="num">1</span><div><h3>Instala Docker · Windows 10 u 11</h3>
+<p>Abre PowerShell como administrador y activa WSL 2. Luego reinicia la PC.</p>
+<pre class="esc-cmd">wsl --install</pre>
+<p>Instala Docker Desktop desde docker.com/products/docker-desktop y ábrelo hasta que diga «Engine running».</p>
+</div></section>
+<section class="paso"><span class="num">2</span><div><h3>Levanta ClickHouse</h3><p>En PowerShell cada línea termina con el acento grave (`), no con la barra.</p><pre class="esc-cmd">docker run -d --name ch-taller `
+  -p 8123:8123 -p 9000:9000 `
+  -e CLICKHOUSE_USER=taller -e CLICKHOUSE_PASSWORD=taller123 `
+  -e CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1 `
+  -v ch_datos:/var/lib/clickhouse `
+  --ulimit nofile=262144:262144 `
+  clickhouse/clickhouse-server</pre></div></section>
+<section class="paso"><span class="num">3</span><div><h3>Comprueba que responde</h3><p>Debe contestar <b>Ok.</b> También puedes abrir <code>http://localhost:8123/play</code> en Chrome (usuario <code>taller</code>, clave <code>taller123</code>).</p><pre class="esc-cmd">curl.exe http://localhost:8123/ping</pre></div></section>
+<section class="paso"><span class="num">4</span><div><h3>Entra al cliente</h3><p>Ya puedes escribir SQL. Sigue con la práctica de carga en esta misma ventana.</p><pre class="esc-cmd">docker exec -it ch-taller clickhouse-client --user taller --password taller123</pre></div></section>
+</div>
+<div class="panel" data-panel="mac">
+<section class="paso"><span class="num">1</span><div><h3>Instala Docker · Mac (chip Apple o Intel)</h3>
+<p>Instala Docker Desktop desde docker.com/products/docker-desktop, eligiendo tu tipo de chip. Ábrelo hasta que diga «Engine running».</p>
+</div></section>
+<section class="paso"><span class="num">2</span><div><h3>Levanta ClickHouse</h3><p>La primera vez descarga la imagen; tarda uno o dos minutos.</p><pre class="esc-cmd">docker run -d --name ch-taller \
+  -p 8123:8123 -p 9000:9000 \
+  -e CLICKHOUSE_USER=taller -e CLICKHOUSE_PASSWORD=taller123 \
+  -e CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1 \
+  -v ch_datos:/var/lib/clickhouse \
+  --ulimit nofile=262144:262144 \
+  clickhouse/clickhouse-server</pre></div></section>
+<section class="paso"><span class="num">3</span><div><h3>Comprueba que responde</h3><p>Debe contestar <b>Ok.</b> También puedes abrir <code>http://localhost:8123/play</code> en Chrome (usuario <code>taller</code>, clave <code>taller123</code>).</p><pre class="esc-cmd">curl http://localhost:8123/ping</pre></div></section>
+<section class="paso"><span class="num">4</span><div><h3>Entra al cliente</h3><p>Ya puedes escribir SQL. Sigue con la práctica de carga en esta misma ventana.</p><pre class="esc-cmd">docker exec -it ch-taller clickhouse-client --user taller --password taller123</pre></div></section>
+</div>
+<div class="panel" data-panel="lin">
+<section class="paso"><span class="num">1</span><div><h3>Instala Docker · Linux (Ubuntu, Debian, Fedora)</h3>
+<p>Instala Docker con el script oficial y agrega tu usuario al grupo docker. Cierra sesión y vuelve a entrar.</p>
+<pre class="esc-cmd">curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER</pre>
+</div></section>
+<section class="paso"><span class="num">2</span><div><h3>Levanta ClickHouse</h3><p>La primera vez descarga la imagen; tarda uno o dos minutos.</p><pre class="esc-cmd">docker run -d --name ch-taller \
+  -p 8123:8123 -p 9000:9000 \
+  -e CLICKHOUSE_USER=taller -e CLICKHOUSE_PASSWORD=taller123 \
+  -e CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1 \
+  -v ch_datos:/var/lib/clickhouse \
+  --ulimit nofile=262144:262144 \
+  clickhouse/clickhouse-server</pre></div></section>
+<section class="paso"><span class="num">3</span><div><h3>Comprueba que responde</h3><p>Debe contestar <b>Ok.</b> También puedes abrir <code>http://localhost:8123/play</code> en Chrome (usuario <code>taller</code>, clave <code>taller123</code>).</p><pre class="esc-cmd">curl http://localhost:8123/ping</pre></div></section>
+<section class="paso"><span class="num">4</span><div><h3>Entra al cliente</h3><p>Ya puedes escribir SQL. Sigue con la práctica de carga en esta misma ventana.</p><pre class="esc-cmd">docker exec -it ch-taller clickhouse-client --user taller --password taller123</pre></div></section>
+</div>
+        </div>
+      </div>
+      <div class="col">
+        <section class="esc-card a-in" style="--d:.3s" id="voto"><span class="cc-et">¿Cómo vas?</span></section>
+        <section class="esc-card a-in" style="--d:.4s"><span class="cc-et">Si algo falla</span><ul class="cc-check" id="lista">
+<li data-id="puerto"><b>Puerto ocupado:</b> otro programa usa el 8123. Cambia <code>-p 8123:8123</code> por <code>-p 18123:8123</code> y usa ese puerto.</li>
+<li data-id="nombre"><b>«name is already in use»:</b> ya lo creaste. Enciéndelo con <code>docker start ch-taller</code>.</li>
+<li data-id="motor"><b>«Cannot connect to the Docker daemon»:</b> abre Docker Desktop y espera a que diga «Engine running».</li></ul>
+<p class="cc-check-pie" id="lista-pie"></p></section>
+      </div>
+    </div>
+  </main>
+  <footer class="esc-pie"><span>Tus datos viven en el volumen ch_datos: si apagas la PC, siguen ahí. Para encenderlo otro día: docker start ch-taller.</span></footer>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var so = /Win/i.test(navigator.platform || navigator.userAgent) ? "win" : /Mac/i.test(navigator.platform || "") ? "mac" : /Linux/i.test(navigator.platform || "") ? "lin" : "";
+  if (so && !CC.leer("tab-bi-docker1", "")) CC.guardar("tab-bi-docker1", so);
+  CC.pestanas($("tabs"), "bi-docker1");
+  CC.montarCopiar(document);
+  CC.votos($("voto"), "04b-levanta-docker", "¿Tu ClickHouse ya respondió «Ok.»?", [
+    { id: "ok", t: "Sí, respondió Ok." }, { id: "docker", t: "Me falta instalar Docker" },
+    { id: "error", t: "Me sale un error" }, { id: "mira", t: "Solo miro la demo" }]);
+  CC.checklist($("lista"), "bi-docker1-fallas");
+})();
+</script>
+</body>
+</html>

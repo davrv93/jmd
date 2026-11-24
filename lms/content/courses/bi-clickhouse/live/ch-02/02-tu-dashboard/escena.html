@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tu dashboard de ventas</title>
+<!-- Escena del modo LIVE (Dashboards y BI con IA, sesión ch-02). Sin recursos externos: las librerías
+     (SheetJS, pdf.js, mammoth) están fijadas en live/_comun y se cargan solo cuando hacen falta.
+     El archivo del alumno se procesa en su navegador; a la IA solo va un perfil resumido. -->
+<link rel="stylesheet" href="../../comun/ccp.css">
+<style>
+:root {
+  --bg: #f5f5f7; --card: #ffffff; --fg: #1d1d1f; --muted: #6e6e73; --line: rgba(0,0,0,.08); --line2: rgba(0,0,0,.14);
+  --accent: #0071e3; --accent-bg: rgba(0,113,227,.09); --on-accent: #fff;
+  --bar: #0071e3; --bar2: #9cc3f0; --ok: #1d7d36; --ok-bg: rgba(36,138,61,.1); --bad: #c4001a; --bad-bg: rgba(215,0,21,.08);
+  --warn: #9a5b00; --warn-bg: rgba(178,105,0,.1);
+  --sombra: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px -12px rgba(0,0,0,.18);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="light"]) {
+    --bg: #000000; --card: #1c1c1e; --fg: #f5f5f7; --muted: #a1a1a6; --line: rgba(255,255,255,.1); --line2: rgba(255,255,255,.18);
+    --accent: #2997ff; --accent-bg: rgba(41,151,255,.14); --on-accent: #001a33;
+    --bar: #2997ff; --bar2: #2c4a6b; --ok: #30d158; --ok-bg: rgba(48,209,88,.13); --bad: #ff453a; --bad-bg: rgba(255,69,58,.14);
+    --warn: #ffb340; --warn-bg: rgba(255,179,64,.13); --sombra: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+  }
+}
+:root[data-tema="dark"] {
+  --bg: #000000; --card: #1c1c1e; --fg: #f5f5f7; --muted: #a1a1a6; --line: rgba(255,255,255,.1); --line2: rgba(255,255,255,.18);
+  --accent: #2997ff; --accent-bg: rgba(41,151,255,.14); --on-accent: #001a33;
+  --bar: #2997ff; --bar2: #2c4a6b; --ok: #30d158; --ok-bg: rgba(48,209,88,.13); --bad: #ff453a; --bad-bg: rgba(255,69,58,.14);
+  --warn: #ffb340; --warn-bg: rgba(255,179,64,.13); --sombra: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 15px/1.47 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+.pag { max-width: 1180px; margin: 0 auto; padding: 22px 28px 48px; }
+.cab { display: flex; align-items: center; gap: 12px; color: var(--muted); font: 600 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.cab .fase { color: #a4185c; }
+.cab .num { margin-left: auto; }
+h1 { margin: 10px 0 4px; font-size: clamp(30px, 4.2vw, 48px); line-height: 1.06; font-weight: 700; letter-spacing: -.025em; }
+.sub { margin: 0 0 22px; color: var(--muted); font-size: clamp(15px, 1.5vw, 19px); max-width: 52em; }
+.paso { background: var(--card); border-radius: 18px; box-shadow: var(--sombra); padding: 22px 24px; margin-bottom: 16px; }
+.paso > header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.paso > header .n { font: 700 12px var(--mono); color: var(--accent); background: var(--accent-bg); border-radius: 999px; padding: 4px 10px; }
+.paso > header h2 { margin: 0; font-size: 21px; font-weight: 650; letter-spacing: -.01em; }
+.paso > header p { margin: 0; color: var(--muted); font-size: 14px; flex-basis: 100%; }
+.bloqueado { opacity: .45; pointer-events: none; }
+.btn { appearance: none; border: 0; border-radius: 999px; padding: 10px 18px; font: 600 14px/1.2 inherit; font-family: inherit; cursor: pointer; background: var(--accent); color: var(--on-accent); min-height: 40px; }
+.btn.sec { background: var(--accent-bg); color: var(--accent); }
+.btn.peq { padding: 7px 13px; min-height: 34px; font-size: 13px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn:focus-visible, select:focus-visible, .zona:focus-visible, .regla input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.fila { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.zona { border: 1.5px dashed var(--line2); border-radius: 14px; padding: 26px 18px; text-align: center; cursor: pointer; transition: background .2s, border-color .2s; }
+.zona.encima { background: var(--accent-bg); border-color: var(--accent); }
+.zona b { display: block; font-size: 17px; margin-bottom: 4px; }
+.zona span { color: var(--muted); font-size: 13.5px; }
+.estado { margin: 12px 0 0; font-size: 14px; color: var(--muted); min-height: 1.4em; }
+.estado.mal { color: var(--bad); }
+.estado.bien { color: var(--ok); }
+.privado { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+.tabla-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; }
+table.vista { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.vista th, table.vista td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+table.vista th { font-weight: 600; color: var(--muted); background: var(--bg); position: sticky; top: 0; }
+table.vista td.esp { background: var(--warn-bg); }
+.g2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 16px; align-items: start; }
+.roles { display: grid; gap: 6px; }
+.rol { display: grid; grid-template-columns: minmax(0, 1fr) 132px; gap: 8px; align-items: center; font-size: 13.5px; }
+.rol code { font: 600 12.5px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+select { font: inherit; font-size: 13.5px; padding: 6px 8px; border-radius: 9px; border: 1px solid var(--line2); background: var(--card); color: var(--fg); min-height: 34px; max-width: 100%; }
+.reglas { display: grid; gap: 8px; }
+.regla { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.regla.off { opacity: .5; }
+.regla input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); }
+.regla .q { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.regla .q code { font: 600 12.5px var(--mono); background: var(--bg); border-radius: 5px; padding: 1px 5px; }
+.regla .m { color: var(--muted); font-size: 13px; }
+.regla .af { font: 600 12px var(--mono); color: var(--muted); white-space: nowrap; }
+.chip { display: inline-block; font: 700 10.5px var(--mono); letter-spacing: .05em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; margin-right: 6px; vertical-align: 1px; }
+.chip.alta { background: var(--bad-bg); color: var(--bad); } .chip.media { background: var(--warn-bg); color: var(--warn); } .chip.baja { background: var(--accent-bg); color: var(--accent); }
+.cuadre { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.cuadre div { background: var(--bg); border-radius: 12px; padding: 10px 12px; }
+.cuadre small { display: block; color: var(--muted); font-size: 12px; }
+.cuadre b { font-size: 17px; font-variant-numeric: tabular-nums; }
+.filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-bottom: 14px; }
+.filtros label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.kpi { background: var(--bg); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+.kpi small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 500; }
+.kpi .v { display: block; font-size: clamp(22px, 2.6vw, 32px); font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .d { font-size: 12.5px; color: var(--muted); }
+.kpi .d.baja { color: var(--bad); } .kpi .d.sube { color: var(--ok); }
+.alerta { margin: 14px 0 0; border-radius: 14px; padding: 12px 16px; font-size: 14.5px; display: grid; gap: 4px; }
+.alerta.mal { background: var(--bad-bg); color: var(--fg); border-left: 4px solid var(--bad); }
+.alerta.bien { background: var(--ok-bg); border-left: 4px solid var(--ok); }
+.alerta b { font-weight: 650; }
+.graficos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.graf { background: var(--bg); border-radius: 14px; padding: 14px 16px 10px; min-width: 0; }
+.graf.ancho { grid-column: 1 / -1; }
+.graf h3 { margin: 0 0 2px; font-size: 15px; font-weight: 650; }
+.graf p { margin: 0 0 8px; color: var(--muted); font-size: 12.5px; }
+.graf svg { display: block; width: 100%; height: auto; overflow: visible; }
+.graf svg text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: var(--fg); }
+.graf svg .eje { font-size: 11px; fill: var(--muted); }
+.graf svg .val { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.graf svg .b { fill: var(--bar2); }
+.graf svg .b.hi { fill: var(--bar); }
+.graf svg .b.mal { fill: var(--bad); }
+.graf svg .linea { stroke: var(--line2); stroke-width: 1; }
+.graf svg g.cl { cursor: pointer; }
+.vacio { color: var(--muted); font-size: 13.5px; padding: 18px 0; }
+.lleva { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.lleva > div { background: var(--bg); border-radius: 14px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; }
+.lleva h3 { margin: 0; font-size: 15px; }
+.lleva p { margin: 0; color: var(--muted); font-size: 13px; }
+pre.sql { margin: 0; font: 12px/1.5 var(--mono); background: #1d1d1f; color: #f5f5f7; border-radius: 10px; padding: 10px 12px; overflow-x: auto; max-height: 180px; white-space: pre; }
+.cargando::after { content: ""; display: inline-block; width: 12px; height: 12px; margin-left: 8px; border: 2px solid var(--accent); border-right-color: transparent; border-radius: 50%; animation: gira .8s linear infinite; vertical-align: -1px; }
+@keyframes gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .cargando::after { animation: none; } }
+@media (max-width: 900px) {
+  .g2, .lleva { grid-template-columns: 1fr; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .graficos { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .pag { padding: 16px 16px 40px; }
+  .paso { padding: 18px 16px; border-radius: 16px; }
+  .rol { grid-template-columns: minmax(0, 1fr) 118px; }
+}
+</style>
+</head>
+<body>
+<div class="pag">
+  <div class="cab"><span class="fase">● Experimentación</span><span>Laboratorio</span><span class="num">Dashboards y BI · S2 · 05/08</span></div>
+  <h1>Tu dashboard de ventas</h1>
+  <p class="sub">Adjunta tu archivo, acepta las reglas de limpieza que propone la IA y obtén tu dashboard ejecutivo. Luego lo descargas y lo cargas en tu ClickHouse.</p>
+
+  <section class="paso" id="p1" aria-labelledby="h1p">
+    <header><span class="n">1</span><h2 id="h1p">Adjunta tu archivo</h2><p>Excel (.xlsx, .xls), CSV, PDF con una tabla o Word (.docx) con una tabla. Si no tienes uno a la mano, usa el ejemplo de 4 boticas.</p></header>
+    <div class="zona" id="zona" tabindex="0" role="button" aria-label="Elegir archivo de ventas">
+      <b>Suelta aquí tu archivo o haz clic para elegirlo</b>
+      <span>.xlsx · .xls · .csv · .pdf · .docx — hasta 25 MB</span>
+    </div>
+    <input type="file" id="archivo" accept=".xlsx,.xls,.xlsm,.ods,.csv,.txt,.tsv,.pdf,.docx" hidden>
+    <div class="fila" style="margin-top:12px"><button type="button" class="btn sec" id="ejemplo">Usar el ejemplo (4 boticas, 6 144 filas)</button></div>
+    <p class="estado" id="estado1" role="status"></p>
+    <div class="tabla-wrap" id="vistaWrap" hidden><table class="vista" id="vista"></table></div>
+    <p class="privado">Tu archivo se lee aquí, en tu navegador. A la IA solo va un perfil: nombres de columnas, conteos, hasta 20 valores de texto por columna y 4 filas de ejemplo.</p>
+  </section>
+
+  <section class="paso bloqueado" id="p2" aria-labelledby="h2p">
+    <header><span class="n">2</span><h2 id="h2p">La IA propone, tú decides</h2><p>Revisa qué es cada columna y acepta o rechaza cada regla de limpieza. Nada se aplica sin tu visto bueno.</p></header>
+    <div class="fila">
+      <button type="button" class="btn" id="pedirIA">Proponer reglas con IA</button>
+      <button type="button" class="btn sec" id="pedirLocal">Reglas automáticas (sin IA)</button>
+    </div>
+    <p class="estado" id="estado2" role="status"></p>
+    <div class="g2" id="propuesta" hidden>
+      <div>
+        <h3 style="margin:6px 0 8px;font-size:15px">Qué es cada columna</h3>
+        <div class="roles" id="roles"></div>
+      </div>
+      <div>
+        <h3 style="margin:6px 0 8px;font-size:15px">Reglas de limpieza <span id="cuentaReglas" style="color:var(--muted);font-weight:500"></span></h3>
+        <div class="reglas" id="reglas"></div>
+        <div class="cuadre" id="cuadre"></div>
+        <div class="fila" style="margin-top:12px"><button type="button" class="btn" id="aplicar">Aplicar y ver mi dashboard</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="paso bloqueado" id="p3" aria-labelledby="h3p">
+    <header><span class="n">3</span><h2 id="h3p" >Tu dashboard</h2><p id="dashSub">Cifras clave, ventas por mes, sede y categoría, y la alerta de caída. Toca una barra de sede para filtrar.</p></header>
+    <div id="dash">
+      <div class="filtros">
+        <label>Sede <select id="fSede"></select></label>
+        <label>Categoría <select id="fCat"></select></label>
+        <label>Desde <select id="fDesde"></select></label>
+        <label>Hasta <select id="fHasta"></select></label>
+        <button type="button" class="btn sec peq" id="fLimpiar">Quitar filtros</button>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div id="alerta"></div>
+      <div class="graficos">
+        <div class="graf ancho"><h3>Ventas por mes</h3><p id="gMesSub">S/ por mes · el último mes, resaltado</p><div id="gMes"></div></div>
+        <div class="graf"><h3>Venta por sede</h3><p>S/ y margen de cada sede</p><div id="gSede"></div></div>
+        <div class="graf"><h3>Venta por categoría</h3><p>S/ de cada categoría</p><div id="gCat"></div></div>
+        <div class="graf ancho"><h3 id="gTopT">Productos más vendidos</h3><p id="gTopSub">Los 10 de mayor venta</p><div id="gTop"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="paso bloqueado" id="p4" aria-labelledby="h4p">
+    <header><span class="n">4</span><h2 id="h4p">Llévalo contigo</h2><p>El dashboard como un archivo que abres sin internet, y el SQL para cargar tus datos limpios en tu servidor ClickHouse.</p></header>
+    <div class="lleva">
+      <div><h3>Dashboard en un archivo</h3><p>Un .html que se abre en cualquier navegador y puedes enviar a tu equipo.</p><button type="button" class="btn" id="bajarHTML">Descargar dashboard</button></div>
+      <div><h3>SQL para ClickHouse</h3><p>CREATE TABLE, tus filas limpias y una vista que se refresca sola cada hora.</p><button type="button" class="btn" id="bajarSQL">Descargar ventas-dashboard.sql</button></div>
+      <div><h3>Solo la tabla</h3><p>El CREATE TABLE para revisarlo o pegarlo en Play (localhost:8123/play).</p><button type="button" class="btn sec" id="copiarCreate">Copiar CREATE TABLE</button></div>
+    </div>
+    <pre class="sql" id="createSQL" style="margin-top:12px" hidden></pre>
+  </section>
+</div>
+<script src="../../comun/ccp.js"></script>
+<script src="dash.js"></script>
+</body>
+</html>
