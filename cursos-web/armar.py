@@ -539,7 +539,8 @@ def indice(res):
 
 
 # Cursos del LMS que no se anuncian en /cursos: eventos con premio y cursos de otro instructor.
-EXCLUIR = ("hackathon-", "python-api")
+# documenta-sistemas: «horario por confirmar»; el usuario dijo que no va (24-11-2026).
+EXCLUIR = ("hackathon-", "python-api", "documenta-sistemas")
 ACENTOS = ["#ff8a3d", "#7cc6ff", "#9be37d", "#f6cf47", "#ff5c7a", "#5cc8cd"]
 
 
