@@ -6,7 +6,7 @@ y escribe docs/HORARIO_INSTRUCTOR.md con:
   - las clases que faltan, día por día;
   - un resumen por curso con su enlace de inscripción (si el grupo está en LMS_INSCRIPCION);
   - los cruces: clases que se pisan, clases seguidas sin 15 minutos de margen,
-    clases en la franja que el instructor no puede (lunes a jueves de 6 a 9 p. m.)
+    clases en la franja que el instructor no puede (lunes y jueves de 6 a 9 p. m.)
     y en el sábado bíblico (viernes desde 6 p. m. hasta el sábado 6:30 p. m.).
 
 Uso (desde ~/Documents/jmd):
@@ -98,8 +98,8 @@ def cruces(clases):
     franja = []
     for c in clases:
         d, t0, t1 = c["ini"].weekday(), c["ini"].time(), c["fin"].time()
-        if d <= 3 and t0 < D.time(21) and t1 > D.time(18):
-            franja.append(("Lunes a jueves entre 6 y 9 p. m.", c))
+        if d in (0, 3) and t0 < D.time(21) and t1 > D.time(18):
+            franja.append(("Lunes o jueves entre 6 y 9 p. m.", c))
         if (d == 4 and t1 > D.time(18)) or (d == 5 and t0 < D.time(18, 30)):
             franja.append(("Sábado bíblico", c))
     return malos, franja
@@ -119,7 +119,7 @@ def escribir(clases, abiertos, desde):
          "Para regenerarlo: `python3 lms/scripts/horario_instructor.py` (instrucciones dentro del script).",
          "",
          "Reglas del instructor: no da clases del viernes a la puesta del sol al sábado a la puesta del sol "
-         "(sábado bíblico), ni de lunes a jueves entre 6:00 y 9:00 p. m. Entre clases deja al menos 15 minutos.",
+         "(sábado bíblico), ni lunes y jueves entre 6:00 y 9:00 p. m. Entre clases deja al menos 15 minutos.",
          "",
          "## Cruces pendientes",
          ""]
@@ -135,7 +135,7 @@ def escribir(clases, abiertos, desde):
         n += 1
         L.append(f"{n}. **Dato contradictorio**: {aviso}")
     if franja:
-        L += ["", "Las clases en la franja de lunes a jueves de 6 a 9 p. m. pueden ser de otro instructor; "
+        L += ["", "Las clases en la franja de lunes y jueves de 6 a 9 p. m. pueden ser de otro instructor; "
               "si las dicta él, hay que moverlas."]
     if not n:
         L.append("Ninguno.")
