@@ -1,7 +1,7 @@
 ---
 id: dr3-03
 title: "Sesión 3 · La IA construye, tú compruebas"
-published: true
+published: false
 starts_at: 2026-12-20T10:00:00-05:00
 objectives:
   - id: dr3-03-o1

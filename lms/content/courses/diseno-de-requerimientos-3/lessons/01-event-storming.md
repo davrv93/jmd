@@ -1,7 +1,7 @@
 ---
 id: dr3-01
 title: "Sesión 1 · Del pedido al mapa: Event Storming con IA"
-published: true
+published: false
 starts_at: 2026-12-06T10:00:00-05:00
 objectives:
   - id: dr3-01-o1

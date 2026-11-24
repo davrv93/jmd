@@ -1,7 +1,7 @@
 ---
 id: dr3-02
 title: "Sesión 2 · Darle forma al módulo con Shape Up"
-published: true
+published: false
 starts_at: 2026-12-13T10:00:00-05:00
 objectives:
   - id: dr3-02-o1
