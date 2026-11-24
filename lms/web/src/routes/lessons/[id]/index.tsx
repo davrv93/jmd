@@ -168,6 +168,8 @@ export default component$(() => {
   const numClase = (st.c?.modules.flatMap((m) => m.lessons).filter((x) => x.published || staff).findIndex((x) => x.id === l.id) ?? -1) + 1;
   const insignia = st.certs.find((c) => c.ambito === "clase" && c.lesson_id === l.id && c.estado === "valido");
   const modIndex = Math.max(0, st.c?.modules.findIndex((m) => m.id === l.module.id) ?? 0);
+  // Los ```prompt de la lección también en «Mi ruta», que es la pestaña que se abre primero.
+  const prompts = l.content_html.match(/<pre><code class="language-prompt">[\s\S]*?<\/code><\/pre>/g) ?? [];
 
   const tabs = [
     { id: "ruta", label: "Mi ruta", icon: "cycle", count: totalSteps - done },
@@ -326,6 +328,16 @@ export default component$(() => {
                 </div>
                 <ol class="pasos">{l.cycle.map((s, i) => stepRow(s, i))}</ol>
               </section>
+
+              {prompts.length > 0 && (
+                <section class="card" aria-labelledby="prompts-t" data-testid="prompts-ruta">
+                  <div class="pasos-cab">
+                    <h2 id="prompts-t">{prompts.length === 1 ? "Prompt para copiar" : "Prompts para copiar"}</h2>
+                    <span>{prompts.length}</span>
+                  </div>
+                  <Prose html={prompts.join("")} />
+                </section>
+              )}
 
             </div>
             <aside class="stack">
