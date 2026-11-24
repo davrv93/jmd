@@ -1,0 +1,21 @@
+id: 07-entrega-y-cierre
+titulo: "Entrega, certificado e insignia"
+fase: experimentacion
+paso: entregar
+duracion_min: 8
+lo_logre: false
+evidencia: ninguna
+compuerta: ninguna
+comandos:
+  - titulo: "En el aula, entra primero a tu sistema"
+    cmd: "cd /trabajo/sistema"
+  - titulo: "Confirma que tienes los cuatro documentos y la foto"
+    cmd: "ls docs/ FOTO/"
+  - titulo: "Cada cita archivo:línea de tus documentos debe existir"
+    cmd: "grep -ohE '(js|css)/[A-Za-z0-9_.-]+:[0-9]+|index\\.html:[0-9]+' docs/*.md | sort -u | while IFS=: read f n; do [ -f \"$f\" ] && [ \"$(wc -l < \"$f\")\" -ge \"$n\" ] || echo \"NO EXISTE: $f:$n\"; done"
+  - titulo: "Foto final y comprobación de los hashes"
+    cmd: "node skills/foto-del-sistema/motor/foto.mjs . && shasum -a 256 -c FOTO/hashes.txt"
+  - titulo: "Entrega por repositorio: sube y anota el commit"
+    cmd: "git add docs FOTO && git commit -m \"docs: sesión 3 · roles, auditoría, mapa y dudas\" && git push && git rev-parse HEAD"
+  - titulo: "Entrega por zip (si no usas git)"
+    cmd: "zip -r entrega-s3.zip docs FOTO"

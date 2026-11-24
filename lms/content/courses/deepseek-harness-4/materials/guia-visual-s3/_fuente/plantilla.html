@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<style>
+:root{--ink:#1f2a37;--mut:#4a5565;--bg:#f6f8fb;--blue:#3b57e8;--line:#c9d2de;--warn:#fff4d6;--warnln:#e0b44c;--ok:#e7f6ec;--okln:#4fa36a;--bad:#fdeaea;--badln:#d46a6a}
+*{box-sizing:border-box;margin:0}
+html,body{width:1600px;height:900px;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;overflow:hidden}
+.slide{width:1600px;height:900px;padding:56px 56px;display:grid;grid-template-columns:500px 1fr;column-gap:44px;align-items:center}
+.n{position:absolute;right:64px;top:30px;font-size:28px;color:var(--mut);font-weight:600}
+h1{font-size:64px;line-height:1.08;font-weight:800;letter-spacing:-.5px}
+/* variante: esquema ancho (columna de texto más estrecha) */
+.ancha{grid-template-columns:400px 1fr}.ancha h1{font-size:54px}.ancha ol li{font-size:30px}
+ol{list-style:none;padding:0;margin-top:40px;counter-reset:s}
+ol li{counter-increment:s;font-size:32px;line-height:1.25;margin:0 0 22px 62px;position:relative}
+ol li::before{content:counter(s);position:absolute;left:-62px;top:-2px;width:44px;height:44px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;font-size:28px;text-align:center;line-height:44px}
+ol li b{font-weight:700}
+.vis{position:relative;width:100%}
+.frame{position:relative;width:100%;aspect-ratio:16/10;background:#fff;border:2px solid var(--line);border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.frame img{width:100%;height:100%;object-fit:contain;display:block}.frame .crop{width:100%;height:100%;background-repeat:no-repeat}
+.tag{display:inline-block;margin-top:16px;padding:6px 20px;border-radius:999px;font-size:28px;font-weight:700}
+.tag.real{background:var(--ok);color:#1d6b3a;border:2px solid var(--okln)}
+.tag.esq{background:var(--warn);color:#7a5a00;border:2px solid var(--warnln)}
+/* esquemas inline */
+.sch{width:100%;height:100%;padding:26px 34px;display:flex;flex-direction:column;justify-content:center;gap:22px;font-size:34px}
+.row{display:flex;align-items:center;gap:20px;padding:18px 24px;border-radius:14px;border:2px solid var(--line);background:#fff}
+.row.ok{background:var(--ok);border-color:var(--okln)}.row.bad{background:var(--bad);border-color:var(--badln)}
+.row .ic{font-size:44px;width:56px;text-align:center}
+.row small{display:block;font-size:28px;color:var(--mut)}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+.mail{border:2px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+.mail .h{background:#e8edf4;padding:14px 24px;font-size:28px;color:var(--mut)}
+.mail .b{padding:24px 28px;font-size:34px;line-height:1.35}
+.code{display:inline-block;margin:10px 0;padding:8px 26px;border:2px dashed var(--blue);border-radius:10px;font-size:48px;letter-spacing:10px;font-weight:700;color:var(--blue)}
+.grid3{display:grid;gap:20px}
+.err{display:grid;grid-template-columns:130px 1fr;align-items:center;gap:20px;padding:16px 22px;border-radius:14px;border:2px solid var(--line);background:#fff}
+.err .c{font-size:54px;font-weight:800;color:var(--blue)}
+.err .t{font-size:34px;font-weight:700}.err .s{font-size:28px;color:var(--mut)}
+.chk{display:flex;gap:18px;align-items:center;font-size:34px;padding:12px 8px;border-bottom:2px solid #eef1f6}
+.chk i{font-style:normal;display:inline-block;width:44px;height:44px;border:3px solid var(--blue);border-radius:8px;flex:none}
+
+/* ---- clases propias de la guía S3 ---- */
+.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:22px;width:100%}
+.cd{border:2px solid var(--line);border-radius:14px;background:#fff;padding:16px 18px;font-size:27px;line-height:1.25}
+.cd h4{font-size:30px;margin-bottom:8px}.cd .mono{font-size:23px;word-break:break-all}
+.cd.ok{background:var(--ok);border-color:var(--okln)}.cd.warn{background:var(--warn);border-color:var(--warnln)}.cd.bad{background:var(--bad);border-color:var(--badln)}
+.tb{border-collapse:collapse;width:100%;font-size:29px;margin:0}
+.tbw{padding:20px 26px;width:100%}
+.tb th,.tb td{padding:9px 14px;border-bottom:2px solid #e3e8ef;text-align:center}
+.tb th{color:var(--mut);font-size:26px}.tb td:first-child,.tb th:first-child{text-align:left;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:26px}
+.tb .v{background:#e8edff;font-weight:800}
+.term{background:#14122b;color:#e9e6ff;border-radius:14px;padding:22px 26px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:26px;line-height:1.5;width:100%;white-space:pre-wrap}
+.term .p{color:#8e7dff}.term .g{color:#6ee7a0}.term .r{color:#ff9b9b}.term .y{color:#f4d27a}.term .c{color:#9a96c4}
+.pill{display:inline-block;padding:4px 18px;border-radius:999px;font-size:26px;font-weight:700;border:2px solid transparent;margin:0 6px 6px 0}
+.pill.ok{background:var(--ok);color:#1d6b3a;border-color:var(--okln)}.pill.warn{background:var(--warn);color:#7a5a00;border-color:var(--warnln)}.pill.bad{background:var(--bad);color:#8a2b2b;border-color:var(--badln)}
+.col2{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px;width:100%}
+.big{font-size:84px;font-weight:800;line-height:1}
+.ck{display:flex;gap:18px;align-items:center;font-size:30px;padding:10px 6px;border-bottom:2px solid #eef1f6}
+.ck i{font-style:normal;display:inline-block;width:40px;height:40px;border:3px solid var(--blue);border-radius:8px;flex:none}
+</style></head><body>
+<div class="slide" id="slide">
+ <div><h1 id="titulo"></h1><ol id="pasos"></ol></div>
+ <div class="vis"><div class="frame" id="frame"></div><span class="tag" id="tag"></span></div>
+</div>
+<span class="n" id="num"></span>
+<script>
+/* el script de construcción rellena window.SLIDE y llama a render() */
+window.render=function(s){
+ document.getElementById('slide').classList.toggle('ancha',!!s.ancha);
+ document.getElementById('titulo').textContent=s.titulo;
+ document.getElementById('pasos').innerHTML=s.pasos.map(p=>'<li>'+p+'</li>').join('');
+ const fr=document.getElementById('frame');
+ if(s.crop){const[x,y,w,h,W=1440,H=900]=s.crop;fr.style.aspectRatio=w+'/'+h;const sc=fr.clientWidth/w;fr.innerHTML='<div class="crop" style="background-image:url('+s.imagen+');background-size:'+(W*sc)+'px '+(H*sc)+'px;background-position:-'+(x*sc)+'px -'+(y*sc)+'px"></div>';}
+ else fr.innerHTML=s.imagen?'<img src="'+s.imagen+'" alt="">':s.html;
+ const t=document.getElementById('tag');const real=/^(captura real|salida real|datos reales)/.test(s.tipo);t.className='tag '+(real?'real':'esq');t.textContent=s.tipo;
+ document.getElementById('num').textContent=s.n+' / '+s.total;
+};
+</script></body></html>
