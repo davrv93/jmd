@@ -2,7 +2,7 @@
 id: sc-02
 title: "Sesión 2 · PHP y Node: las vulnerabilidades de siempre"
 published: true
-starts_at: 2026-11-25T19:30:00-05:00
+starts_at: 2026-11-25T19:45:00-05:00
 objectives:
   - id: sc-02-o1
     title: Encontrar y corregir inyección SQL y XSS en PHP y en Node

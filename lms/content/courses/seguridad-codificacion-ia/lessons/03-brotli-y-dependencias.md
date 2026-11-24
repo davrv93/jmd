@@ -2,7 +2,7 @@
 id: sc-03
 title: "Sesión 3 · Brotli y las dependencias que se olvidan"
 published: true
-starts_at: 2026-12-02T19:30:00-05:00
+starts_at: 2026-12-02T19:45:00-05:00
 objectives:
   - id: sc-03-o1
     title: Entender cómo una librería de compresión desactualizada (como Brotli) pone en riesgo a todo el servidor
