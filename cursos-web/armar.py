@@ -23,11 +23,40 @@ import yaml
 AQUI = pathlib.Path(__file__).resolve().parent
 WEB = AQUI / "web"
 LMS = pathlib.Path.home() / "Documents/jmd/lms/content/courses"
+# Marcar cursos + canje de código (backend en inscripcion-web: /inscripcion-web/api/codigo/{validar,canje}).
+# Se enciende solo cuando ese backend responde; con CODIGO=0 en el entorno las páginas salen sin casillas ni barra.
+CODIGO = os.environ.get("CODIGO", "1") == "1"
+_USOS = None
+
+
+def cohorte_de(cid):
+    """La cohorte propia del curso (la que no comparte con ningún otro course.yaml); None si no tiene."""
+    global _USOS
+    if _USOS is None:
+        _USOS = {}
+        for f in LMS.glob("*/course.yaml"):
+            for co in (yaml.safe_load(open(f)) or {}).get("cohorts") or []:
+                _USOS[co] = _USOS.get(co, 0) + 1
+    for co in (yaml.safe_load(open(LMS / cid / "course.yaml")) or {}).get("cohorts") or []:
+        if _USOS.get(co) == 1:
+            return co
+    return None
+
+
+def casilla(cohorte, nombre, texto="Marcar"):
+    if not (CODIGO and cohorte):
+        return ""
+    return (f'<label class="marcar"><input type="checkbox" data-cohorte="{esc(cohorte)}" data-nombre="{esc(nombre)}">'
+            f'<span>{esc(texto)}</span></label>')
+
+
+def pie_codigo(prefijo):
+    return f'<script src="{prefijo}marcar.js" defer></script>' if CODIGO else ""
 BROCHURE = {c["slug"]: c for c in json.load(open(pathlib.Path.home() / "Documents/jmd/brochures/salida/cursos.json"))}
 VIDEOS = pathlib.Path.home() / "Downloads/web-con-ia-jmd"
 WA = "51986149476"
 WA_TXT = "986 149 476"
-HOY = dt.datetime(2026, 11, 22, 13, 0)
+HOY = dt.datetime(2026, 11, 24, 9, 0)  # actualizar en cada regeneración (hora de Lima)
 DIAS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 DIAS_L = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"]
@@ -73,6 +102,33 @@ CURSOS = [
 ]
 
 
+# Cursos en modalidad web (a tu ritmo, en video). Se pagan por Yape en /inscripcion-web/ y se aprueban en su panel.
+# repo=None mientras el curso no esté publicado en el LMS: no se promete lo que no se puede ver.
+WEB_CURSOS = [
+    dict(lms="web-clickhouse", repo="https://github.com/davrv93/clickhouse-bi-ejemplos", acento="#f6cf47"),
+    dict(lms="web-sorteos", repo="https://github.com/davrv93/sorteos-con-ia-ejemplos", acento="#ff5c7a"),
+    dict(lms="web-agente-voz", repo=None, acento="#7cc6ff"),
+    dict(lms="web-qa-bots", repo="https://github.com/davrv93/qa-bots-ejemplos", acento="#9be37d"),
+]
+INSCRIPCION_WEB = "https://jmd-learn.online/inscripcion-web/"
+
+
+def tarjetas_web():
+    out = []
+    for w in WEB_CURSOS:
+        y = yaml.safe_load(open(LMS / w["lms"] / "course.yaml"))
+        titulo = re.sub(r"\s*\(modalidad web\)\s*$", "", y["title"]).strip()
+        bajada = " ".join(str(y.get("description", "")).split())
+        bajada = re.sub(r"^Curso a tu ritmo, en video\.\s*", "", bajada)
+        repo = (f'<a class="enl" href="{esc(w["repo"])}" rel="noopener">Ver el repositorio en GitHub</a>' if w["repo"]
+                else '<span class="enl gris">Repositorio y videos: en preparación</span>')
+        out.append(f'<div class="curso" style="--acento:{w["acento"]}"><span class="cuando">A tu ritmo · en video</span>'
+                   f'<b>{esc(titulo)}</b><p>{esc(bajada)}</p>{repo}'
+                   f'<span class="pie">S/ 10 · o 3 cursos por S/ 20</span>'
+                   f'<div class="marcas">{casilla(w["lms"], titulo)}</div></div>')
+    return "".join(out)
+
+
 def leer_curso(cid):
     y = yaml.safe_load(open(LMS / cid / "course.yaml"))
     lecciones = {}
@@ -87,7 +143,7 @@ def leer_curso(cid):
     for mod in y.get("modules", []):
         for lid in mod.get("lessons", []):
             fm = lecciones.get(lid)
-            if not fm or not fm.get("starts_at"):
+            if not fm or not fm.get("starts_at") or fm.get("published") is False:  # despublicada: no se anuncia
                 continue
             ini = fm["starts_at"]
             if isinstance(ini, str):
@@ -256,14 +312,17 @@ def pagina(c, resumenes):
     else:
         precio_html = '<b>Consulta por WhatsApp</b>'
     # grupos y sesiones
-    bloques = []
+    bloques, marcas = [], []
     for cid, y, ses in datos:
         filas = "".join(
             f'<div class="ses"><span class="cuando">{esc(fecha_corta(s["ini"]))}</span><span class="que">{esc(limpiar_titulo(s["titulo"]))}</span>'
             f'<span class="hora">{esc(rango(s["ini"], s["fin"]))} (hora de Lima)</span></div>' for s in ses)
         nombre = nombre_grupo(y, cid)
         empezo = ses[0]["ini"] <= HOY
-        bloques.append(f'<div class="grupo"><h3>{esc(nombre)}{" · en curso" if empezo else ""}</h3>{filas}</div>')
+        co = cohorte_de(cid)
+        marcas.append((co, nombre))
+        bloques.append(f'<div class="grupo"><h3>{esc(nombre)}{" · en curso" if empezo else ""}</h3>{filas}'
+                       f'{casilla(co, titulo + " · " + nombre, "Marcar este curso")}</div>')
     video_html = ""
     if c.get("video"):
         ruta, vert = c["video"]
@@ -324,46 +383,79 @@ def pagina(c, resumenes):
   </section>
   <footer>JMD Learning · <a href="../">Todos los cursos</a> · jmd-learn.online</footer>
 </div>
+{pie_codigo("../")}
 </body>
 </html>
 """
     (carpeta / "index.html").write_text(h, encoding="utf-8")
     resumenes.append(dict(slug=c["slug"], titulo=titulo, bajada=bajada, primera=primera, precio=precio, acento=c["acento"],
-                          grupos=len(datos)))
+                          grupos=len(datos), marcas=marcas))
     print(f"ok {c['slug']:30s} {len(datos)} grupo(s), inicio {primera:%d-%m %H:%M}, precio {precio}")
 
 
 def indice(res):
     res.sort(key=lambda r: r["primera"])
+    def marcas_html(r):
+        ms = [(co, n) for co, n in r.get("marcas", []) if co]
+        if not ms:
+            return ""
+        if len(ms) == 1:
+            return '<div class="marcas">' + casilla(ms[0][0], r["titulo"] + " · " + ms[0][1]) + "</div>"
+        return '<div class="marcas">' + "".join(casilla(co, r["titulo"] + " · " + n, "Marcar " + n) for co, n in ms) + "</div>"
     tarjetas = "".join(
-        f'<a class="curso" href="{r["slug"]}/" style="--acento:{r["acento"]}"><span class="cuando">{esc(fecha_corta(r["primera"]))}</span>'
+        f'<div class="curso" style="--acento:{r["acento"]}"><a class="ir" href="{r["slug"]}/"><span class="cuando">{esc(fecha_corta(r["primera"]))}</span>'
         f'<b>{esc(r["titulo"])}</b><p>{esc(r["bajada"])}</p><span class="pie">{esc(r["precio"] or "Precio por WhatsApp")} · '
-        f'{r["grupos"]} {"grupo" if r["grupos"] == 1 else "grupos"}</span></a>' for r in res)
+        f'{r["grupos"]} {"grupo" if r["grupos"] == 1 else "grupos"}</span></a>{marcas_html(r)}</div>' for r in res)
+
+    def fija(cid, href, acento, cuando, titulo, texto, pie):
+        _, ses = leer_curso(cid)
+        co = cohorte_de(cid) if ses and ses[-1]["ini"] > HOY else None
+        return (f'<div class="curso" style="--acento:{acento}"><a class="ir" href="{href}"><span class="cuando">{esc(cuando)}</span>'
+                f'<b>{esc(titulo)}</b><p>{esc(texto)}</p><span class="pie">{esc(pie)}</span></a>'
+                + (f'<div class="marcas">{casilla(co, titulo)}</div>' if co and CODIGO else "") + "</div>")
+    fijas = (fija("crea-contenido-openmontage", "../openmontage/", "#ff5c7a", "En curso · última sesión dom 6 dic",
+                  "Crea contenido con OpenMontage", "Produce videos para tu negocio con un agente de IA.", "S/ 50 con certificado")
+             + fija("ready-set-go", "../readysetgo/", "#9be37d", "En curso · hackathon dom 13 dic",
+                    "Ready Set Go! Haz tu videojuego con IA", "Curso y hackathon del domingo 13 de diciembre.", "Curso S/ 30 · con hackathon S/ 40"))
     extra = """
   .cursos { display:grid; gap:14px; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); margin-top:20px; }
-  .curso { display:grid; align-content:start; gap:6px; text-decoration:none; background:var(--tarjeta); border:1px solid var(--linea); border-top:4px solid var(--acento); border-radius:18px; padding:16px; }
-  .curso:hover, .curso:focus-visible { border-color:var(--acento); outline:none; }
+  .curso { display:grid; align-content:start; gap:10px; background:var(--tarjeta); border:1px solid var(--linea); border-top:4px solid var(--acento); border-radius:18px; padding:16px; }
+  .curso:hover, .curso:focus-within { border-color:var(--acento); }
+  .curso .ir { display:grid; gap:6px; text-decoration:none; border-radius:10px; }
+  .curso .ir:focus-visible { outline:3px solid #fff; outline-offset:4px; }
+  .marcas { display:flex; flex-wrap:wrap; gap:8px; }
   .curso .cuando { color:var(--acento); font-weight:800; font-size:14px; text-transform:uppercase; letter-spacing:.06em; }
   .curso b { font-size:19px; line-height:1.25; }
   .curso p { color:var(--suave); font-size:14px; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
   .curso .pie { font-weight:700; font-size:14px; }
+  .curso .enl { font-weight:700; font-size:14px; color:var(--acento); }
+  .curso .enl.gris { color:var(--suave); font-weight:600; }
+  .oferta { margin-top:56px; display:grid; gap:12px; }
+  .oferta h2 { margin:0; }
+  .oferta .sub { margin:0; max-width:720px; }
 """
     wa = f"https://wa.me/{WA}?text={urllib.parse.quote('Hola, quiero información de los cursos de JMD Learning')}"
-    h = CABEZA.format(titulo="Cursos en vivo", desc="Próximos cursos en vivo de JMD Learning: IA, agentes, diseño, datos y seguridad. Inscripción por WhatsApp.",
+    h = CABEZA.format(titulo="Cursos en vivo", desc="Próximos cursos en vivo de JMD Learning y cursos en modalidad web a tu ritmo: IA, agentes, diseño, datos y seguridad.",
                       css=CSS.replace("ACENTO", "#f3c45a") + extra) + f"""<body>
 <div class="envoltura">
   <p class="marca">✦ JMD Learning</p>
   <header>
     <h1>Próximos cursos en vivo</h1>
-    <p class="bajada">Cursos prácticos con IA, en vivo por Zoom. Elige el tuyo y escríbenos por WhatsApp para inscribirte.</p>
+    <p class="bajada">Cursos prácticos con IA, en vivo por Zoom. Elige el tuyo y escríbenos por WhatsApp para inscribirte.{" ¿Tienes un código? Marca tus cursos y canjéalo aquí mismo." if CODIGO else ""}</p>
     <div class="acciones"><a class="boton wa" href="{esc(wa)}">WhatsApp {WA_TXT}</a><a class="boton sec" href="/rutas/">Ver rutas profesionales</a></div>
   </header>
   <div class="cursos">{tarjetas}
-    <a class="curso" href="../openmontage/" style="--acento:#ff5c7a"><span class="cuando">dom 15 nov</span><b>Crea contenido con OpenMontage</b><p>Produce videos para tu negocio con un agente de IA.</p><span class="pie">S/ 50 con certificado</span></a>
-    <a class="curso" href="../readysetgo/" style="--acento:#9be37d"><span class="cuando">jue 19 nov</span><b>Ready Set Go! Haz tu videojuego con IA</b><p>Curso y hackathon del domingo 13 de diciembre.</p><span class="pie">Curso S/ 30 · con hackathon S/ 40</span></a>
+    {fijas}
   </div>
+  <section class="oferta" id="modalidad-web">
+    <h2>Cursos en modalidad web</h2>
+    <p class="sub">A tu ritmo, con videos paso a paso y un repositorio con los ejemplos listos para Windows y Mac. S/ 10 por curso, o elige 3 cursos por S/ 20 en total. Pagas por Yape y adjuntas la foto del pago.</p>
+    <div class="acciones"><a class="boton wa" href="{INSCRIPCION_WEB}">Inscríbete en modalidad web</a></div>
+    <div class="cursos">{tarjetas_web()}</div>
+  </section>
   <footer>JMD Learning · jmd-learn.online · WhatsApp {WA_TXT}</footer>
 </div>
+{pie_codigo("")}
 </body>
 </html>
 """
