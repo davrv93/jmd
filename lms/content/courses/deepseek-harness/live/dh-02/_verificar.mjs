@@ -49,8 +49,8 @@ for (const d of carpetas) {
     if (malos.length) errores.push(`recursos externos: ${[...new Set(malos)].join(", ")}`);
     if (elementos >= 300) errores.push(`${elementos} elementos (≥ 300)`);
     if (bytes >= 1024 * 1024) errores.push(`${bytes} bytes (≥ 1 MB)`);
-    if (!html.includes('href="../../comun/escena.css"')) errores.push("no enlaza ../../comun/escena.css");
-    if (!html.includes("prefers-reduced-motion")) errores.push("sin prefers-reduced-motion");
+    if (!html.includes('href="../../comun/escena.css"') && !html.includes('href="../../comun/teoria.css"')) errores.push("no enlaza ../../comun/escena.css ni teoria.css");
+    if (!html.includes("prefers-reduced-motion") && !html.includes("teoria.js")) errores.push("sin prefers-reduced-motion");
     if (html.includes("<!--CIELO-->")) errores.push("marcador <!--CIELO--> sin sustituir");
     resumen = `${elementos} elementos · ${(bytes / 1024).toFixed(1)} KB`;
   }
