@@ -136,7 +136,7 @@ CURSOS = [
          br="ingenieria-de-requerimientos", precio="S/ 40", acento="#9be37d"),
     dict(slug="tienda-web-facturacion", grupos=["tienda-web-facturacion", "tienda-web-facturacion-2"], br=None,
          precio="S/ 25", antes="S/ 50", video=("tienda35/video/renders/tienda-virtual-35s.mp4", False), acento="#5cc8cd"),
-    dict(slug="deepseek-harness", grupos=["deepseek-harness"], br="deepseek-harness", precio="S/ 40", acento="#7cc6ff"),
+    dict(slug="deepseek-harness", grupos=["deepseek-harness", "deepseek-harness-4"], br="deepseek-harness", precio="S/ 40", acento="#7cc6ff"),
     dict(slug="diseno-de-interfaces", grupos=["diseno-interfaces"], br="diseno-interfaces", precio="S/ 40",
          nota_precio="las tres sesiones", acento="#ff5c7a"),
     dict(slug="seguridad-con-ia", grupos=["seguridad-codificacion-ia"], br="seguridad-codificacion-ia", precio="S/ 100", acento="#e10600"),
