@@ -2,11 +2,11 @@
 id: g9-03
 starts_at: 2026-12-12T19:00:00-05:00
 duration: 120
-title: "Grupo 9 · Clase 3 · Tu chatbot de WhatsApp: wireframe, prototipo, Lit, Bun + Elysia, PostgreSQL y pruebas"
+title: "Grupo 9 · Clase 3 · Tu chatbot en WhatsApp con Evolution Go"
 published: true
 objectives:
   - id: g9-03-o6
-    title: "Escribir TU prompt (sin copiar) para que tu agente convierta tu Robo de la sesión 2 en un robot 3D, y que ese mismo robot conteste por WhatsApp"
+    title: "Conectar el chatbot web de la clase 2 a WhatsApp: el mismo faq.json y el mismo backend responden los mensajes que llegan por Evolution Go"
   - id: g9-03-o1
     title: "Diseñar antes de programar: flujos con sus errores, wireframe en gris y prototipo navegable de la bandeja"
   - id: g9-03-o2
@@ -115,11 +115,11 @@ cycle:
     description: Asiste en vivo o mira la grabación. Ten tu aula abierta en el LMS y los dos teléfonos a mano (el de pruebas y otro que le escribe).
     check: Has visto la clase completa (o la grabación)
   - id: mejora
-    title: "Tu Robo: 3D, voz, imagen y WhatsApp"
+    title: "Tu chatbot web: WhatsApp con Evolution Go"
     tool: lms
     phase: experimentacion
-    description: "En el LIVE, con tus propios prompts: tu Robo en 3D leyendo el asistente.json de la sesión 2; que hable, te escuche y cambie según su ánimo; su escenario con FLUX; y, con el QR del LIVE, que conteste por WhatsApp avisando que es un bot."
-    check: "Tu Robo se ve en el Visor, responde con voz y contesta por WhatsApp desde otro celular"
+    description: "En el LIVE, conectas el chatbot web de la clase 2 (faq.json + backend) a WhatsApp con Evolution Go: escaneas el QR, recibes mensajes por webhook y respondes con las mismas reglas del bot (FAQ primero; si no está en la FAQ, no inventa y ofrece WhatsApp/humano)."
+    check: "Tu backend recibe 3 mensajes reales y los responde; el primer mensaje avisa que es un bot"
   - id: wireframe
     title: "Diseñar: plan, wireframe y prototipo"
     tool: jmd
@@ -148,7 +148,7 @@ cycle:
 
 ## Avance de la clase
 
-**En vivo:** tu Robo de la sesión 2 cobra vida en 3D con un prompt que escribes tú (lo califican reglas + IA y lo construye tu agente), y luego ese mismo robot contesta por WhatsApp desde tu número vinculado con Evolution Go. Sin comandos para copiar: hoy se entrena el criterio.
+**En vivo:** conectas el chatbot web de la clase 2 a WhatsApp con Evolution Go. El mismo `faq.json` y el mismo backend responden los mensajes que llegan por webhook, sin llaves en el frontend y sin inventar: si no está en la FAQ, ofrece pasar a una persona.
 
 Hoy construyes, dentro de tu aula, un chatbot que atiende por WhatsApp.
 Un cliente escribe al número de pruebas del equipo, el modelo «clase» le responde con los datos de tu negocio

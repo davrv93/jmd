@@ -1,17 +1,15 @@
 ---
 id: g9-02
 starts_at: 2026-12-06T18:30:00-05:00
-title: "Grupo 9 · Clase 2 · Construir un asistente con skills, plan de trabajo y Edge AI"
+title: "Grupo 9 · Clase 2 · Chatbot básico web"
 published: true
 objectives:
   - id: g9-02-o1
-    title: Instalar y usar los 14 skills del taller con tu modelo (OpenCode con el gateway, Claude Code u Ollama)
+    title: "Escribir el conocimiento tipo FAQ de tu negocio como faq.json (preguntas con 3–4 variantes, respuestas cortas)"
   - id: g9-02-o2
-    title: Convertir un pedido vago en un plan de trabajo con tareas verificables y seguirlo en vivo con la pantalla de obra
+    title: "Construir con el agente un chatbot web básico: widget (HTML/CSS/JS) embebido en tu landing + backend mínimo (Node o Bun) que responde desde faq.json y usa el modelo del gateway solo cuando no hay match"
   - id: g9-02-o3
-    title: Correr un modelo de lenguaje, voz a texto y generación de imágenes en tu laptop y elegir el nivel que cabe en tu máquina
-  - id: g9-02-o4
-    title: Probar el asistente con usuarios reales y medir tiempos
+    title: "Probar el chatbot con 3 personas reales y medir tiempos de respuesta"
 recording:
   url: ""
   passcode: ""
@@ -19,112 +17,52 @@ repo:
   url: https://github.com/davrv93/jmd
   ref: main
 materials:
-  - id: g9-02-temario
-    title: Temario del curso (3 sesiones, PDF)
-    kind: pdf
-    file: materials/temario-curso.pdf
-    objective_ids: [g9-02-o1, g9-02-o2, g9-02-o3, g9-02-o4]
-  - id: g9-02-taller
-    title: taller-agentico.zip · skills, herramienta obra y el asistente Tecnosito (backend + frontend)
-    kind: zip
-    file: materials/taller-agentico.zip
-    objective_ids: [g9-02-o1, g9-02-o2, g9-02-o3]
-  - id: g9-02-skills
-    title: skills-taller.zip · los 14 skills, instalar.sh, AGENTS.md y prompts para Ollama
-    kind: zip
-    file: materials/skills-taller.zip
-    objective_ids: [g9-02-o1]
-  - id: g9-02-plan-robo
-    title: Plan de trabajo de Robo (plantilla para personalizar)
-    kind: doc
-    file: materials/plan-robo/PLAN_TRABAJO.md
-    objective_ids: [g9-02-o1, g9-02-o2]
-  - id: g9-02-prompt-robo
-    title: Prompt para armar tu Robo desde cero (se pega a jmd)
-    kind: doc
-    file: materials/plan-robo/PROMPT_ARMAR_ROBO.md
-    objective_ids: [g9-02-o2]
-  - id: g9-02-capturas
-    title: "Capturas de referencia: chatbot, robot, flyers, obra en vivo"
-    kind: slides
-    file: materials/clase-02-capturas.pdf
-    slides_dir: materials/clase-02-capturas
-    objective_ids: [g9-02-o2, g9-02-o3, g9-02-o4]
   - id: g9-02-m1
     title: Descargar Ollama
     kind: link
     url: https://ollama.com/download
-    objective_ids: [g9-02-o3]
+    objective_ids: [g9-02-o2]
   - id: g9-02-m2
     title: Modelo qwen3 en Ollama
     kind: link
     url: https://ollama.com/library/qwen3
-    objective_ids: [g9-02-o3]
-  - id: g9-02-m3
-    title: faster-whisper (voz a texto en tu máquina)
-    kind: doc
-    url: https://github.com/SYSTRAN/faster-whisper
-    objective_ids: [g9-02-o3]
-  - id: g9-02-m4
-    title: sd-turbo en Hugging Face (nivel rápida)
-    kind: link
-    url: https://huggingface.co/stabilityai/sd-turbo
-    objective_ids: [g9-02-o3]
-  - id: g9-02-m5
-    title: sdxl-turbo en Hugging Face (nivel buena)
-    kind: link
-    url: https://huggingface.co/stabilityai/sdxl-turbo
-    objective_ids: [g9-02-o3]
-  - id: g9-02-m6
-    title: FLUX.2 Klein 4B para mflux (nivel máxima, solo Apple Silicon)
-    kind: link
-    url: https://huggingface.co/mflux-community/flux2-klein-4b-mflux-q4
-    objective_ids: [g9-02-o3]
-  - id: g9-02-m7
-    title: mflux (difusión con MLX en Mac)
-    kind: doc
-    url: https://github.com/filipstrand/mflux
-    objective_ids: [g9-02-o3]
-  - id: g9-02-m8
-    title: Three.js · documentación (el avatar 3D)
-    kind: doc
-    url: https://threejs.org/docs/
     objective_ids: [g9-02-o2]
-  - id: g9-02-m9
-    title: FastAPI · documentación (el backend del asistente)
-    kind: doc
-    url: https://fastapi.tiangolo.com/
+  - id: g9-02-ejemplo
+    title: "Ejemplo en vivo: chatbot de JMD Learning"
+    kind: link
+    url: https://jmd-learn.online/chatbot/
     objective_ids: [g9-02-o2]
-  - id: g9-02-m10
-    title: Playwright · introducción (capturas y pruebas del navegador)
-    kind: doc
-    url: https://playwright.dev/docs/intro
-    objective_ids: [g9-02-o4]
 cycle:
   - id: ver
     title: Ver la clase
     tool: zoom
     phase: experiencia
-    description: Asiste en vivo o mira la grabación. Ten abierta la carpeta del taller en VS Code y una terminal lista.
+    description: Asiste en vivo o mira la grabación. Ten a mano tu landing de la clase 1 (o un index.html simple) y una terminal lista.
     check: Has visto la clase completa (o la grabación)
-  - id: relevar
-    title: "Preparar tu máquina: diagnóstico y Ollama"
+  - id: faq
+    title: "Escribir tu FAQ en faq.json"
+    tool: editor
+    phase: conceptualizacion
+    description: "Escribe el conocimiento de tu negocio como un archivo faq.json con preguntas (3–4 variantes) y respuestas cortas, listas para que el bot responda sin inventar."
+    check: "faq.json es JSON válido y tiene al menos 10 entradas con variantes reales"
+  - id: widget
+    title: "Agregar el widget de chat a tu landing"
+    tool: web
+    phase: experimentacion
+    description: "Inserta un widget de chat (HTML/CSS/JS, sin frameworks) en tu landing de la clase 1: abre/cierra, envía mensajes y muestra respuestas."
+    check: "En celular se puede chatear y el botón no tapa el contenido"
+  - id: backend
+    title: "Backend mínimo con fallback al gateway"
     tool: terminal
     phase: experiencia
-    description: "Descomprime taller-agentico.zip, crea el entorno virtual, instala los requisitos y corre el diagnóstico: anota el nivel de imagen que te toca. Instala Ollama desde ollama.com y descarga qwen3:1.7b la noche anterior, nunca en el aula."
-    check: "python osito/backend/diagnostico.py imprime tu nivel de imagen y ollama list muestra qwen3:1.7b"
-  - id: plan
-    title: "Instalar los skills y escribir el plan de trabajo"
-    tool: opencode
-    phase: conceptualizacion
-    description: "Dentro de la carpeta del taller, corre el instalador: copia los 14 skills y genera AGENTS.md y prompts/. Activa el modo piedra y pide a tu agente, con el skill plan-de-trabajo, un PLAN_TRABAJO.md con seis tareas y criterio de aceptación sí o no."
-    check: "bash instalar.sh termina con «Skills encontrados : 14» y existe PLAN_TRABAJO.md con 6 tareas"
-  - id: construir
-    title: "Construir con la obra en vivo y probar voz e imagen"
-    tool: opencode
-    phase: experimentacion
-    description: "Inicia la obra con las seis tareas, abre obra.html y deja que el agente ejecute el plan marcando cada paso cuando esté verificado. Después dicta una pregunta por micrófono y pide un flyer con fecha, hora y precio: revisa los datos extraídos y corrige uno a propósito."
-    check: "Obra al 100 % y una captura del flyer con los datos correctos"
+    description: "Levanta un backend pequeño (Node o Bun) que responde primero desde faq.json y, solo si no hay match, consulta al modelo del gateway con la FAQ como contexto (apiKey en GATEWAY_API_KEY, nunca en el frontend)."
+    check: "Una pregunta del FAQ responde con fuente=faq; una fuera responde «no sé» y ofrece WhatsApp"
+  - id: probar
+    title: "Probar con 3 personas y medir"
+    tool: lms
+    phase: reflexion
+    description: "Haz 3 pruebas reales: mide tiempos, detecta confusiones y ajusta faq.json sin cambiar el comportamiento seguro (no inventar)."
+    check: "Tienes 3 tiempos y 3 hallazgos (o 3 confirmaciones) anotados"
   - id: preguntar
     title: Preguntar o responder
     tool: lms
@@ -135,346 +73,154 @@ cycle:
     title: Entregar la tarea 2
     tool: git
     phase: experimentacion
-    description: Sube el repositorio clase-02 con faq.json, capturas/ y REFLEXION.md y entrégalo desde el LMS (URL + commit).
+    description: Sube el repositorio clase-02 con faq.json, el widget, el backend y capturas de pruebas, y entrégalo desde el LMS (URL + commit).
     check: La entrega aparece en «Mis notas» con estado en cola
 ---
 
 ## Avance de la clase
 
-Hoy construyes un asistente de ventas que corre entero en tu laptop, sin nube.
-Conversa con un modelo local, te escucha por el micrófono y genera un flyer de oferta.
-Tu agente escribe el código. Tú le das skills, un plan de trabajo y verificas cada paso.
-Al final tendrás el asistente respondiendo preguntas de tu tienda y con flyer (la voz es opcional: la enciendes tú).
-Y una hoja de pruebas hecha con otro equipo, con tiempos medidos.
+Hoy conviertes tu landing de la clase 1 en un producto que **responde solo**: un **chatbot web básico**.
+Primero escribes el conocimiento real de tu negocio como `faq.json`. Luego lo conectas a un widget
+de chat embebido en tu landing y a un backend mínimo.
 
-### El ciclo de esta clase
+Importante: el bot **responde desde tu FAQ**. Solo cuando no hay match consulta al modelo del gateway.
+Y aun así se rige por una regla: **si no está en la FAQ, dice que no sabe y ofrece WhatsApp**.
 
-Esta sesión se recorre con el **ciclo de aprendizaje**. Las secciones no van en el orden de las
-fases: la clase alterna construir y entender. El título de cada sección lleva su fase al final.
+Clase en vivo: *iba a ser sábado*; pasa a **domingo 06-12-2026**, de **6:30 a 8:30 p. m.** (hora de Lima).
 
-| Fase | En esta clase |
-|---|---|
-| **1 · Experiencia** | Secciones 0, 2, 4 y 5: preparas la máquina, instalas los skills, levantas la obra y construyes el asistente. |
-| **2 · Reflexión** | Secciones 6 y 7: pruebas voz e imagen, y mides con otro equipo. |
-| **3 · Conceptos** | Secciones 1 y 3: qué es Edge AI y qué es un plan de trabajo. |
-| **4 · Aplicación** | Sección 8 y «Tareas»: preparas la clase 3 y entregas el repositorio `clase-02`. |
+| Bloque | Fase | Qué haces | Comprobación |
+|---|---|---|---|
+| 1 · FAQ | Conceptualización | Escribes `faq.json` con variantes reales | JSON válido y ≥ 10 entradas |
+| 2 · Widget | Experimentación | Insertas el chat en tu landing | En celular abre/cierra y conversa |
+| 3 · Backend | Experiencia | Sirves `/api/chat` y lees `faq.json` | `curl` responde 200 |
+| 4 · Fallback | Experimentación | Llamas al gateway solo si no hay match | Fuera del FAQ: «no sé» + WhatsApp |
+| 5 · Pruebas | Reflexión | Pruebas con 3 personas y mides | 3 tiempos anotados |
 
-### Bloques de la clase (2 horas)
+## 1. Qué problema resuelve tu chatbot · Conceptualización
 
-- Antes de clase, en casa · Preparar tu laptop (sección 0).
-- 0:00 a 0:10 · Apertura: qué es Edge AI (sección 1).
-- 0:10 a 0:25 · Instalar los skills y el modo piedra (sección 2).
-- 0:25 a 0:40 · Plan de trabajo y obra (secciones 3 y 4).
-- 0:40 a 1:10 · Construir el asistente (sección 5).
-- 1:10 a 1:30 · Voz y flyer (sección 6).
-- 1:30 a 1:50 · Probar y medir (sección 7).
-- 1:50 a 2:00 · Cierre y tareas (sección 8).
+Un chatbot útil no es el que “habla bonito”, sino el que **reduce fricción**: responde lo repetitivo
+(horarios, pagos, delivery, requisitos) y **pasa a humano** cuando no sabe.
 
-## 0. Antes de la clase: preparar tu laptop · Experiencia
+Regla del curso: tu bot no “adivina” ni “rellena”. Si no está en tu `faq.json`, responde:
+«No lo sé todavía. Si quieres, escríbenos por WhatsApp y te ayudamos.»
 
-En una frase: bajas en casa todo lo pesado, porque la red del aula no lo aguanta.
+**Si falla:** si el bot inventa, el problema no es el modelo: es que no le pusiste la regla o no
+le diste el contexto correcto.
 
-Son unos 40 minutos y son obligatorios. Lo que descargas pesa varios GB.
+## 2. Escribe tu faq.json · Conceptualización
 
-**Qué vas a hacer**
-1. Descarga `taller-agentico.zip` (lo tienes en Materiales) y descomprímelo en una carpeta sin espacios.
-2. Abre esa carpeta en VS Code, abre la terminal y crea el entorno de Python:
-   ```bash
-   cd taller-agentico
-   python3 -m venv .venv && source .venv/bin/activate   # en Windows: .venv\Scripts\activate
-   pip install -r osito/backend/requirements.txt
-   ```
-3. Corre el diagnóstico y anota el nivel de imagen que te toca:
-   ```bash
-   python osito/backend/diagnostico.py
-   ```
-4. Instala Ollama (enlace en Materiales) y baja el modelo de chat:
-   ```bash
-   ollama pull qwen3:1.7b
-   ollama list
-   ```
-5. Baja el modelo de imagen. Copia solo la línea cuyo nombre coincide con tu diagnóstico:
-   ```bash
-   # sd-turbo (2,4 GB)
-   HF_HUB_DISABLE_XET=1 python -c "from huggingface_hub import snapshot_download as s; s('stabilityai/sd-turbo', allow_patterns=['*.json','*.txt','tokenizer/*','scheduler/*','*/*.fp16.safetensors'])"
-   # sdxl-turbo (7 GB)
-   HF_HUB_DISABLE_XET=1 python -c "from huggingface_hub import snapshot_download as s; s('stabilityai/sdxl-turbo', allow_patterns=['*.json','*.txt','tokenizer*/*','scheduler/*','*/*.fp16.safetensors'])"
-   # flux2-klein (4,6 GB), solo Mac con 16 GB; antes corre: pip install mflux
-   HF_HUB_DISABLE_XET=1 python -c "from huggingface_hub import snapshot_download as s; s('mflux-community/flux2-klein-4b-mflux-q4')"
-   ```
-**Qué vas a ver:** `ollama list` muestra `qwen3:1.7b`. El diagnóstico termina con «Nivel maximo de imagen para esta
-maquina:» y un nombre.
+Tu FAQ es un archivo de conocimiento **corto y verificable**. Cada entrada:
 
-**Si falla:** Si la descarga se queda quieta, cancela y repítela. El `HF_HUB_DISABLE_XET=1` de delante es obligatorio.
-Si no tienes GPU, es normal: cada imagen tardará de 20 a 60 segundos. Sigues igual.
+- `questions`: 3–4 variantes reales (con palabras distintas; con y sin tilde).
+- `answer`: 1–2 frases, sin marketing innecesario.
 
-## 1. Apertura: qué es Edge AI · Conceptos
+Pídele al agente que lo escriba y luego revísalo como si fueras cliente.
 
-En una frase: Edge AI es correr la inteligencia artificial en tu propia laptop, sin mandar nada a internet.
+```prompt
+# faq.json de mi negocio
+Escribe un archivo faq.json para mi negocio.
 
-Analogía: es cocinar en casa en vez de pedir delivery. Más lento, pero nadie ve tu receta.
+Formato exacto:
+- Un arreglo JSON.
+- Cada elemento tiene: {"questions": [..], "answer": "..."}.
 
-Tres ventajas para una tienda: funciona sin internet, no cuesta por uso y tus precios no salen de tu máquina.
-El precio es otro: los modelos son más pequeños y tu laptop marca el límite.
+Reglas:
+- 10 a 15 entradas.
+- Cada "questions" tiene 3 o 4 variantes (palabras distintas, con y sin tilde, sin repetir la misma frase).
+- Cada "answer" tiene 1 o 2 frases, concretas, sin inventar.
+- Español neutro.
 
-Hoy corren tres modelos en tu máquina: Ollama para el texto, whisper para la voz y uno de difusión para la imagen.
-Ollama no genera imágenes. Un modelo de lenguaje produce texto; las imágenes las hace otro tipo de modelo.
+Mi negocio:
+- Nombre: [NOMBRE]
+- Qué vendo/hago: [OFERTA]
+- Ciudad: [CIUDAD]
+- WhatsApp para escalar: https://wa.me/[NUMERO_CON_51]?text=[MENSAJE]
 
-**Qué vas a hacer**
-1. Mira la demo del instructor: pregunta por micrófono, respuesta en texto (la voz se enciende con el parlante), flyer generado.
-2. Comprueba que tu modelo de chat responde:
-   ```bash
-   ollama run qwen3:1.7b "Di hola en una frase"
-   ```
-3. Apaga el wifi diez segundos y repite el comando.
+Temas mínimos: horario, dirección o zona, precios o cómo cotizar, medios de pago, tiempos de entrega/atención, cambios/devoluciones, contacto, reservas/citas (si aplica).
 
-**Qué vas a ver:** Ollama responde igual con el wifi apagado. Eso es Edge AI.
-
-**Si falla:** Si dice que no encuentra el modelo, vuelve a correr `ollama pull qwen3:1.7b`.
-
-## 2. Instalar los skills y el modo piedra · Experiencia
-
-En una frase: instalas 14 skills que le enseñan a tu agente cómo trabajar en este taller.
-
-Analogía: un skill es una ficha de instrucciones que el agente lee solo cuando la necesita.
-Los 14 vienen dentro de `taller-agentico.zip` y también sueltos en `skills-taller.zip` (lo tienes en Materiales).
-Hoy usas `planificacion-proyecto`, `plan-de-trabajo`, `obra-en-vivo`, `imagenes-locales`, `pruebas-de-uso`,
-`pruebas-de-rendimiento` y `piedra`. Los de diseño quedan para la clase 3.
-
-El modo piedra es un skill que hace al agente responder corto: sin saludos ni relleno.
-Deja cifras, rutas y comandos exactos. Ahorra los tokens de salida, que son los más caros.
-No toca el código ni los commits. Para volver a lo normal escribes `modo normal`.
-
-**Qué vas a hacer**
-1. Instala los skills. El comando genera el `AGENTS.md` que OpenCode lee al arrancar:
-   ```bash
-   cd taller-agentico
-   bash instalar.sh .
-   ```
-2. Abre OpenCode en esa misma carpeta:
-   ```bash
-   opencode
-   ```
-3. Activa el modo piedra. Escribe en el chat:
-   ```text
-   modo piedra
-   ```
-4. Pide un plan sin skill. Escribe:
-   ```prompt
-   Quiero un asistente para mi tienda que responda preguntas sobre productos y horarios. Hazme un plan.
-   ```
-5. Pide lo mismo con skill:
-   ```prompt
-   Usa el skill planificacion-proyecto y hazme el plan para ese mismo asistente.
-   ```
-**Qué vas a ver:** `instalar.sh` termina con «Skills encontrados : 14». El agente contesta «Modo piedra activo.» y responde corto.
-El segundo plan tiene usuario, «hecho significa», riesgos y «no entra». El primero es una lista suelta.
-
-**Si falla:** Si no dice 14, revisa que estás dentro de `taller-agentico`. Repite el comando: no rompe nada.
-
-## 3. El plan de trabajo · Conceptos
-
-En una frase: un plan de trabajo convierte un pedido vago en tareas cortas que se pueden probar.
-
-Analogía: es la lista de pedidos del día. Cada pedido tiene un «entregado: sí o no».
-La regla que manda: ninguna tarea sin forma de probarla. «Funciona» no es una prueba. «El `curl` devuelve `fuente: faq`» sí lo es.
-
-Las seis tareas de hoy, de 15 minutos cada una:
-
-- T1 · Cargar las preguntas de tu tienda en `faq.json`. Prueba: el chat responde una con `fuente: "faq"`.
-- T2 · Cambiar el nombre y el saludo del asistente. Prueba: la pantalla saluda con el nombre nuevo.
-- T3 · Responder tres preguntas de la tienda. Prueba: las tres salen bien o dice «No estoy seguro de eso todavía».
-- T4 · Transcribir el micrófono a texto. Prueba: grabas 3 segundos y ves el texto antes de enviarlo.
-- T5 · Generar el flyer de una oferta. Prueba: fecha, hora y precio salen exactos en la imagen.
-- T6 · Pasar pruebas de uso con otro equipo. Prueba: hoja con 3 tareas y severidad de cada hallazgo.
-
-**Qué vas a hacer**
-1. En OpenCode, con el modo piedra activo, escribe:
-   ```prompt
-   Usa el skill plan-de-trabajo. Escribe PLAN_TRABAJO.md con seis tareas: cargar faq.json, nombre y saludo, tres preguntas de la tienda, micrófono a texto, flyer de una oferta, pruebas de uso. Cada tarea con un criterio de aceptación que devuelva sí o no.
-   ```
-2. Abre `PLAN_TRABAJO.md` y lee cada criterio.
-3. Si un criterio dice «funciona» o «se ve bien», pide que lo cambie por un comando o una acción concreta.
-
-**Qué vas a ver:** Un archivo con una tabla de seis filas: ID, tarea, criterio y estado. Todas en `pendiente`.
-
-**Si falla:** Si el agente escribe más de seis tareas, pídele que las junte. Si borra una, pídele que la devuelva: nunca se renumeran.
-
-### En el LIVE: «Diseña tu Robo con tus palabras»
-
-Antes del plan, la escena **Diseña tu Robo** es una mesa en blanco: nombre del Robo, tu negocio,
-su personalidad, el saludo y tres preguntas con **tus** respuestas. La escena arma el `asistente.json`
-real y te da dos salidas: el comando para la terminal (`cat > asistente.json`) o el prompt para `jmd`.
-Nada viene precargado: el ejemplo de la cafetería es solo un botón para ver el formato. Al final
-publicas tu Robo en el **muro del grupo** y ves los de los demás.
-
-### En el aula del LIVE: tu plan ya está escrito
-
-Si trabajas en el aula del LIVE, no hace falta escribir el plan desde cero: ya existe uno para construir Robo, el asistente de esta clase. Tú lo personalizas y tu agente lo ejecuta.
-
-**Qué vas a hacer**
-1. En la terminal del aula:
-   ```sh
-   aula nuevo plan-robo
-   ```
-2. Abre `plan-robo` en el visor. También puedes descargar «Plan de trabajo de Robo» y el prompt en Materiales, o ver el ejemplo «Plan de trabajo de Robo».
-3. Abre `jmd` y pega el prompt que está al inicio del plan. El agente te hace 6 preguntas sobre tu negocio, reescribe `PLAN_TRABAJO.md` con tus datos y lo construye tarea por tarea con los skills `s2-robo-*` (chat, avatar, voz, imagen, flyer y pruebas).
-
-**Qué vas a ver:** `grep -c '<<[A-Z0-9_]*>>' /trabajo/plan-robo/PLAN_TRABAJO.md` imprime `0` (ningún marcador sin llenar) y cada tarea termina con su criterio en verde.
-
-**Si falla:** Si `aula nuevo plan-robo` dice «no existe la plantilla», tu aula es anterior a esta clase: pide al instructor que la reinicie. Si `jmd` no encuentra los skills `s2-*`, escribe `/skill s2-robo-aula` y revisa el nombre.
-
-## 4. La obra: ver el avance en pantalla · Experiencia
-
-En una frase: la obra es una página que muestra cuánto del plan está hecho, paso por paso.
-
-Analogía: es el tablero de pedidos de la cocina. Cada pedido pasa de pendiente a listo a la vista de todos.
-La maneja `obra/obra.py` (viene en `taller-agentico.zip`). El agente la actualiza con comandos; nunca edita el archivo a mano.
-
-**Qué vas a hacer**
-1. Crea la obra con las seis tareas:
-   ```bash
-   python3 obra/obra.py iniciar "Asistente de la tienda" --pasos \
-     "Cargar el corpus" "Nombre y saludo" "Tres preguntas de la tienda" \
-     "Micrófono a texto" "Flyer de la oferta" "Pruebas de uso"
-   ```
-2. Sirve la pantalla en una segunda terminal:
-   ```bash
-   python3 obra/obra.py servir
-   ```
-3. Abre `http://localhost:8787/obra.html` en Chrome y déjala visible en media pantalla.
-4. Dile al agente cómo marcar el avance. Pégale esto en OpenCode:
-   ```prompt
-   Usa el skill obra-en-vivo. Al terminar y verificar cada tarea del plan, corre python3 obra/obra.py paso "<texto del paso>". No marques nada sin ejecutar su criterio.
-   ```
-**Qué vas a ver:** La barra en 0 % y seis pasos pendientes. Cada paso cerrado muestra la hora real en que se marcó.
-
-**Si falla:** Si el puerto 8787 está ocupado, agrega `--puerto 8797` al comando `servir` y cambia la URL.
-Si la barra avanza más rápido de lo que tú comprobaste, frena al agente: «reabre el paso, no está verificado».
-
-## 5. Construir el asistente · Experiencia
-
-En una frase: arrancas el asistente y tu agente ejecuta el plan, una tarea a la vez.
-
-El asistente vive en la carpeta `osito/`: un avatar 3D que conversa, escucha y genera imágenes. La voz (opcional) la activas tú con el parlante: arranca apagada.
-El backend es Python (FastAPI) y sirve también la pantalla. Su memoria de tu tienda es `osito/backend/faq.json`.
-Cada entrada de ese archivo tiene varias formas de la pregunta, una respuesta y un ánimo:
-
-```json
-{
-  "preguntas": ["cuál es el horario", "a qué hora abren", "hasta qué hora atienden"],
-  "respuesta": "Atendemos de lunes a sábado de 9 de la mañana a 8 de la noche.",
-  "animo": "feliz"
-}
+Antes de escribir el JSON final, propón la lista de 10–15 temas (títulos) y espera mi “ok”.
 ```
 
-Los ánimos válidos son `feliz`, `pensando`, `sorprendido`, `triste`, `emocionado` y `neutral`.
-Si Ollama no responde, el asistente busca la pregunta más parecida en `faq.json`.
-Si no la encuentra, dice «No estoy seguro de eso todavía». No es un error: es negarse a inventar.
+**Si falla:** si te salen respuestas largas, recuérdale: «máximo 2 frases». Si te faltan variantes,
+pídele: «cada pregunta con 4 formas, sin sinónimos obvios repetidos».
 
-**Qué vas a hacer**
-1. Arranca el asistente en una tercera terminal:
-   ```bash
-   bash osito/arrancar.sh
-   ```
-2. Abre `http://localhost:8765` en Chrome. Entra siempre por `localhost`: el micrófono solo funciona ahí.
-3. Pide al agente la tarea T1 con las preguntas de tu tienda:
-   ```prompt
-   Tarea T1 del plan. Reemplaza osito/backend/faq.json con 10 preguntas de mi tienda: horario, envíos, pagos, cambios y stock. Cada entrada con tres formas de la pregunta, una respuesta de dos frases y un ánimo válido. Ejecuta el criterio y marca el paso en la obra.
-   ```
-4. Reinicia el asistente con Ctrl+C y otra vez `bash osito/arrancar.sh`: el corpus se carga una sola vez.
-5. Pide T2 y T3, una por una. Para T2:
-   ```prompt
-   Tarea T2. Cambia el nombre del asistente a «Tienda Bot» (variable OSITO_NOMBRE y constante NOMBRE_OSITO en osito/frontend/app.js) y el saludo a «Hola, ¿qué producto buscas hoy?». Ejecuta el criterio y marca el paso.
-   ```
-6. Lee el diff de cada cambio antes de aceptar. Verifica tú el criterio: abre la pantalla y pregunta.
+## 3. Inserta el widget de chat en tu landing · Experimentación
 
-**Qué vas a ver:** La pantalla saluda con el nombre nuevo. Al preguntar el horario, responde con tu texto. La obra marca 3 de 6.
+El widget vive en el frontend (tu landing), pero **no tiene llaves** ni decide nada serio: solo
+manda el texto y muestra la respuesta.
 
-**Si falla:** Si el puerto 8765 está ocupado, arranca con `OSITO_PUERTO=8766 bash osito/arrancar.sh`.
-Si el asistente inventa respuestas, es Ollama hablando solo. Para probar solo tu corpus: `OSITO_OLLAMA_URL=http://localhost:1 bash osito/arrancar.sh`.
+Requisitos mínimos del widget:
 
-## 6. Voz y flyer · Reflexión
+- Botón flotante “Chat”.
+- Ventana con historial, input y enviar.
+- Se ve bien en celular (no tapa el botón de WhatsApp de tu landing).
 
-En una frase: dictas una pregunta por micrófono y pides un flyer de oferta con datos exactos.
+**Si falla:** si no te muestra nada, abre la consola del navegador y mira si hay error de CORS o
+si la URL del backend está mal.
 
-Un modelo de difusión aprende a pintar, no a escribir. Si le pides «Oferta 20 %», dibuja garabatos que parecen letras.
-Por eso el flyer se hace en tres pasos: el modelo de texto saca fecha, hora y precio; el de difusión pinta solo el fondo; Python escribe el texto encima.
-Analogía: uno toma el pedido, otro pinta el cartel y un tercero pega las letras.
+## 4. Backend mínimo: FAQ primero, gateway solo si no hay match · Experiencia
 
-**Qué vas a hacer**
-1. Pulsa el botón del micrófono, di «¿hacen envíos a domicilio?» y espera.
-2. Lee el texto que aparece en el campo antes de enviarlo. Corrígelo si entendió otra cosa. Envía. Esa es la T4.
-3. Pide el flyer escribiendo en el chat del asistente:
-   ```prompt
-   Flyer para la liquidación de verano, sábado 18 de octubre a las 10 am, todo a S/ 20
-   ```
-4. Mira el bloque «Datos del flyer» junto a la imagen. Comprueba fecha, hora y precio. Esa es la T5.
-5. Cambia un dato a propósito (la hora) y regenera. Pásale ese flyer a alguien de otro equipo sin decirle nada.
+El backend (Node o Bun) cumple tres trabajos:
 
-**Qué vas a ver:** El texto dictado aparece antes de enviarse. El flyer trae título, fecha, hora y precio legibles, iguales al pedido.
-El bloque de datos dice quién los puso: `regex` u `ollama`.
-Si tu compañero no nota la hora cambiada, anótalo: es un hallazgo de severidad 4.
+1. Lee `faq.json`.
+2. Intenta hacer match (normaliza: minúsculas, sin tildes, sin signos).
+3. Si no hay match, consulta al modelo del gateway usando **GATEWAY_API_KEY** en el servidor.
 
-**Si falla:** Si el micrófono no responde, entra por `http://localhost:8765`, no por la IP.
-Si la imagen tarda más de un minuto, es normal sin GPU. Si sale negra, espera: el sistema reintenta solo.
+```prompt
+# Widget + backend del chatbot (con criterios de aceptación)
+Construye un chatbot web básico para mi landing de la clase 1.
 
-## 7. Probar y medir · Reflexión
+Frontend (sin frameworks):
+- Un widget embebible (HTML/CSS/JS) que se puede pegar en mi landing.
+- Enviar mensaje por fetch a POST /api/chat y mostrar la respuesta.
 
-En una frase: otra persona usa tu asistente cinco minutos y tú anotas, sin ayudar.
+Backend (elige UNO: Node o Bun):
+- Un servidor HTTP con POST /api/chat.
+- Lee faq.json (en la raíz del proyecto).
+- Responde primero desde faq.json.
+- Solo si no hay match, llama al modelo del gateway OpenAI-compatible:
+  - Base URL: [LA_DEL_GATEWAY]
+  - API key: variable de entorno GATEWAY_API_KEY (nunca en el frontend).
+  - Pasa la FAQ como contexto (por ejemplo en un mensaje de sistema o como bloque de contexto) y exige la regla de “no inventar”.
 
-Un asistente que «a ti te funciona» no está probado. Hoy pruebas el de otro equipo y ellos el tuyo.
-La severidad de un hallazgo va de 1 a 4. Uno es cosmético; dos molesta; tres frena al usuario.
-Cuatro es crítico: un dato incorrecto y el usuario no lo notó.
+Reglas del bot (OBLIGATORIO):
+- Si la respuesta no está en la FAQ, debe decir exactamente que no lo sabe y ofrecer WhatsApp.
+- Nunca inventa precios, stock, horarios ni direcciones.
 
-**Qué vas a hacer**
-1. Dale a tu probador tres tareas sin explicarle nada: preguntar algo del corpus, preguntar algo que no sabe, pedir un flyer por voz con fecha, hora y precio.
-2. Pídele que piense en voz alta. Anota lo que hace y lo que dice, literal.
-3. Escribe una línea por hallazgo: severidad, qué pasó y corrección propuesta.
-4. Mide el chat en la terminal del asistente: cada petición imprime `POST /api/chat -> 200 en 1730 ms`.
-5. Mide la velocidad del modelo:
-   ```bash
-   ollama run qwen3:1.7b --verbose "hola" 2>&1 | grep "eval rate"
-   ```
-6. Anota los `segundos` que devuelve el flyer: la primera imagen y la segunda por separado.
+Salida esperada:
+- Un comando para correrlo en local.
+- Un ejemplo de curl para probar /api/chat.
 
-**Qué vas a ver:** Chat bajo 5 segundos; modelo sobre 15 tokens por segundo; la segunda imagen mucho más rápida que la primera.
-Mide tres veces y quédate con la del medio. Marca T6 en la obra: barra al 100 %.
+Criterios de aceptación (sí/no):
+1) Con una pregunta del FAQ, responde con el texto del FAQ.
+2) Con una pregunta fuera del FAQ, responde “No lo sé” (o equivalente claro) y ofrece WhatsApp.
+3) El frontend no contiene ninguna clave ni baseURL privada.
+4) Responde en menos de 8 s en una laptop promedio (si el FAQ hace match, menos de 200 ms).
+```
 
-**Si falla:** Si el chat pasa de 15 segundos, cierra lo que no uses: dos modelos a la vez saturan la CPU.
+**Si falla:**
 
-## 8. Cierre: preparar la clase 3 en casa · Aplicación
+- `401` o `403`: tu variable `GATEWAY_API_KEY` no está en esa terminal.
+- CORS: permite solo el origen de tu landing en local (`http://localhost:...`).
+- El modelo “se sale” de la regla: refuerza el prompt del backend: “responde SOLO con FAQ; si no, no sabes”.
 
-En una frase: la próxima clase el asistente atiende por WhatsApp, y dos cosas se hacen en casa.
+## 5. Prueba con 3 personas y mide · Reflexión
 
-**Qué vas a hacer**
-1. Baja la imagen de Evolution API con Docker. La red del aula no la aguanta:
-   ```bash
-   docker pull evoapicloud/evolution-api:latest
-   docker images | grep evolution
-   ```
-2. Consigue un número de WhatsApp de pruebas para el equipo. Nunca el personal de nadie: un chip prepago sirve.
-3. Deja `taller-agentico` con la obra al 100 % y `faq.json` con tus preguntas.
+Tu trabajo aquí no es “ver si funciona”, sino **medir** y **detectar confusiones**.
 
-**Qué vas a ver:** `docker images` muestra `evoapicloud/evolution-api`. El instructor confirma la etiqueta exacta en el hilo.
+1. Pide a 3 personas que hagan 3 preguntas (una del FAQ, una fuera y una con faltas de ortografía).
+2. Mide el tiempo desde “Enviar” hasta respuesta. Anota 3 tiempos.
+3. Anota 3 hallazgos (o 3 confirmaciones), por ejemplo: “no entendió ‘horariooo’ → agregar variante”.
 
-**Si falla:** Si Docker no baja la imagen, publica el error completo en el hilo de la sesión.
+**Si falla:** si tarda mucho en fallback, tu bot debe responder igual de seguro: “no sé + WhatsApp”.
+El tiempo lento es un hallazgo, no una excusa para inventar.
 
 ## Palabras de hoy · Conceptos
 
-- **Edge AI**: la inteligencia artificial corre en tu laptop, no en un servidor de internet.
-- **Modelo**: el programa entrenado que produce texto, transcribe voz o pinta una imagen.
-- **Skill**: una carpeta con instrucciones que el agente lee cuando tu pedido encaja con su descripción.
-- **Plan de trabajo**: lista de tareas cortas, cada una con una prueba que dice sí o no.
-- **Obra**: la pantalla de `obra.py` que muestra qué tareas del plan van hechas y a qué hora.
-- **Corpus**: las preguntas y respuestas de tu tienda, guardadas en `faq.json`.
-- **Whisper**: el modelo que convierte lo que dices al micrófono en texto.
-- **Modelo de difusión**: el modelo que pinta imágenes a partir de una descripción. No sabe escribir.
-- **Flyer**: la imagen de oferta con fondo pintado y texto exacto puesto encima por Python.
-- **Nivel de imagen**: qué modelo de difusión aguanta tu laptop; lo dice `diagnostico.py`.
+**FAQ**: lista de preguntas frecuentes, escrita para responder sin improvisar. **Widget**: componente pequeño embebido en tu página.
+**Backend**: servidor que guarda llaves y toma decisiones. **Gateway**: un endpoint OpenAI-compatible que expone un modelo con tu clave.
+**Fallback**: plan B cuando no hay match en la FAQ.
 
 ## Tareas · Aplicación
 
-- Tarea 2: añade 10 preguntas nuevas a `faq.json`, prueba 3 por voz y guarda las capturas en `capturas/`.
-- Escribe `REFLEXION.md` con 5 líneas y sube todo al repositorio `clase-02`.
-- Entrégalo desde la tarea 2 del LMS (URL + commit) antes del 20-10-2026 a las 23:59.
+**Tarea 2 · Tu chatbot web responde con tu FAQ**: entrega `faq.json`, tu widget y tu backend, más 3 pruebas con capturas y tiempos. Detalle y rúbrica en la pestaña Tareas.
