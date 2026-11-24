@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel · Inscripción web</title>
+<style>
+:root{--fondo:#f6f1e7;--tarjeta:#fffdf8;--borde:#e0d6c2;--tinta:#14172b;--suave:#555a72;--azul:#4d6bfe;--verde:#1f7a4d;--rojo:#a3261c;--oro:#a8841c;--wa:#128c4a;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--fondo:#0b0d1c;--tarjeta:#141833;--borde:#2a2f55;--tinta:#f3eee2;--suave:#aab0c8;--azul:#7d93ff;--verde:#5fd39a;--rojo:#ff8a7e;--oro:#d9b44a;--wa:#3ccf7a;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:900px;margin:0 auto;padding:20px 16px 60px}
+h1{font:700 26px/1.1 Georgia,serif;margin:0 0 4px}
+.sub{color:var(--suave);margin:0 0 16px}
+.barra{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.filtro{border:1.5px solid var(--borde);background:transparent;color:inherit;border-radius:999px;padding:8px 14px;font:600 14px system-ui;cursor:pointer}
+.filtro[aria-pressed=true]{border-color:var(--azul);color:var(--azul)}
+.tarjeta{display:grid;grid-template-columns:96px 1fr;gap:14px;background:var(--tarjeta);border:1px solid var(--borde);border-radius:16px;padding:14px;margin:10px 0}
+.tarjeta .mini{width:96px;height:132px;object-fit:cover;border-radius:10px;border:1px solid var(--borde);cursor:zoom-in;background:var(--fondo)}
+.tarjeta h3{margin:0 0 2px;font-size:17px}
+.datos{color:var(--suave);font-size:14px;word-break:break-word}
+.monto{font:700 20px/1 ui-monospace,Menlo,monospace;margin:6px 0}
+.chip{display:inline-block;border:1px solid var(--borde);border-radius:999px;padding:2px 10px;font-size:13px;margin:2px 4px 2px 0}
+.estado{font:700 11px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.e-pendiente{color:var(--oro)}.e-aprobada{color:var(--verde)}.e-rechazada{color:var(--rojo)}
+.acciones{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+button,.boton{font:600 14px/1 system-ui;border:0;border-radius:10px;padding:11px 14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.ok{background:var(--verde);color:#fff}.no{background:transparent;color:var(--rojo);border:1.5px solid var(--rojo)}
+.wa{background:var(--wa);color:#fff}.sec{background:transparent;color:var(--tinta);border:1.5px solid var(--borde)}
+.nota{color:var(--rojo);font-weight:600;font-size:14px;margin-top:6px}
+.entrar{max-width:380px;margin:60px auto;background:var(--tarjeta);border:1px solid var(--borde);border-radius:16px;padding:20px}
+input,textarea{width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--borde);background:var(--fondo);color:var(--tinta);font:inherit;margin:8px 0}
+dialog{border:1px solid var(--borde);border-radius:16px;background:var(--tarjeta);color:var(--tinta);max-width:min(560px,92vw);padding:18px}
+dialog::backdrop{background:rgba(10,12,25,.6)}
+dialog img{max-width:100%;max-height:75vh;display:block;margin:0 auto;border-radius:8px}
+.vacio{color:var(--suave);text-align:center;padding:40px 0}
+@media (max-width:480px){.tarjeta{grid-template-columns:72px 1fr}.tarjeta .mini{width:72px;height:100px}}
+</style>
+</head>
+<body>
+<div class="entrar" id="entrar" hidden>
+  <h1>Panel de inscripción</h1>
+  <p class="sub">Escribe la clave del panel.</p>
+  <form id="fEntrar"><input type="password" id="clave" autocomplete="current-password" aria-label="Clave del panel"><button class="ok" style="width:100%;justify-content:center">Entrar</button></form>
+  <p class="nota" id="eEntrar" role="alert"></p>
+</div>
+
+<main id="panel" hidden>
+  <h1>Inscripciones web</h1>
+  <p class="sub" id="resumen"></p>
+  <div class="barra">
+    <button class="filtro" data-f="pendiente" aria-pressed="true">Pendientes</button>
+    <button class="filtro" data-f="aprobada" aria-pressed="false">Aprobadas</button>
+    <button class="filtro" data-f="rechazada" aria-pressed="false">Rechazadas</button>
+    <button class="filtro" data-f="todas" aria-pressed="false">Todas</button>
+    <button class="sec" id="recargar" style="margin-left:auto">Actualizar</button>
+  </div>
+  <div id="lista"></div>
+</main>
+
+<dialog id="dFoto"><img id="dFotoImg" alt="Captura del Yape"><div class="acciones" style="justify-content:flex-end"><button class="sec" data-cerrar>Cerrar</button></div></dialog>
+<dialog id="dConf">
+  <h3 id="dConfT" style="margin-top:0"></h3><p id="dConfX" class="datos"></p>
+  <textarea id="dConfMotivo" rows="3" maxlength="200" placeholder="Motivo (lo verá el alumno)" hidden></textarea>
+  <p class="nota" id="dConfE"></p>
+  <div class="acciones" style="justify-content:flex-end"><button class="sec" data-cerrar>Cancelar</button><button id="dConfSi" class="ok">Confirmar</button></div>
+</dialog>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  let clave = '', datos = { solicitudes: [], config: { cursos: [] } }, filtro = 'pendiente';
+  try { clave = sessionStorage.getItem('iw-clave') || ''; } catch {}
+
+  async function api(ruta, opc = {}) {
+    const r = await fetch('api/admin/' + ruta, { ...opc, headers: { 'X-Clave': clave, 'Content-Type': 'application/json', ...(opc.headers || {}) } });
+    if (r.status === 401) { salir('Clave incorrecta.'); throw new Error('Clave incorrecta.'); }
+    return r;
+  }
+  function salir(msg) { clave = ''; try { sessionStorage.removeItem('iw-clave'); } catch {} $('#panel').hidden = true; $('#entrar').hidden = false; $('#eEntrar').textContent = msg || ''; }
+
+  const curso = id => datos.config.cursos.find(c => c.id === id) || { corto: id, titulo: id };
+  const fecha = t => new Date(t).toLocaleString('es-PE', { timeZone: 'America/Lima', dateStyle: 'medium', timeStyle: 'short' });
+
+  function mensajeWA(s) {
+    const nombres = s.cursos.map(c => curso(c).titulo).join(', ');
+    const nom = s.nombre.split(' ')[0];
+    if (s.estado === 'aprobada') return `Hola ${nom}, ¡confirmamos tu Yape! Ya estás inscrito en: ${nombres}.\n\nEntra al aula con este enlace (vale 7 días; al abrirlo quedas conectado):\n${s.enlace}\n\nTu usuario es tu correo ${s.email}. Cualquier duda, escríbenos por aquí. — JMD Learning`;
+    return `Hola ${nom}, revisamos tu inscripción a ${nombres} y no pudimos confirmarla: ${s.motivo}. Escríbenos por aquí y lo resolvemos. — JMD Learning`;
+  }
+
+  function pintar() {
+    const todas = datos.solicitudes;
+    const n = e => todas.filter(s => s.estado === e).length;
+    $('#resumen').textContent = `${n('pendiente')} pendientes · ${n('aprobada')} aprobadas · ${n('rechazada')} rechazadas`;
+    const lista = $('#lista'); lista.textContent = '';
+    const ver = todas.filter(s => filtro === 'todas' || s.estado === filtro);
+    if (!ver.length) { lista.innerHTML = '<p class="vacio">No hay solicitudes aquí.</p>'; return; }
+    for (const s of ver) {
+      const t = document.createElement('article'); t.className = 'tarjeta';
+      t.innerHTML = `<img class="mini" alt="Captura del Yape"><div>
+        <div class="estado e-${s.estado}"></div><h3></h3>
+        <div class="datos dEmail"></div><div class="datos dTel"></div>
+        <div class="monto"></div><div class="cursos"></div><div class="datos dExtra"></div>
+        <div class="nota"></div><div class="acciones"></div></div>`;
+      t.querySelector('.estado').textContent = s.estado + ' · ' + fecha(s.creada);
+      t.querySelector('h3').textContent = s.nombre;
+      t.querySelector('.dEmail').textContent = s.email;
+      t.querySelector('.dTel').textContent = '+' + s.telefono;
+      t.querySelector('.monto').textContent = 'S/ ' + s.monto;
+      s.cursos.forEach(c => { const ch = document.createElement('span'); ch.className = 'chip'; ch.textContent = curso(c).corto; t.querySelector('.cursos').append(ch); });
+      t.querySelector('.dExtra').textContent = [s.operacion && ('Operación ' + s.operacion), s.estado === 'aprobada' && (s.cuenta_nueva ? 'Cuenta nueva' : 'Cuenta que ya existía'), s.motivo && ('Motivo: ' + s.motivo)].filter(Boolean).join(' · ');
+      t.querySelector('.nota').textContent = s.nota || '';
+      cargarFoto(s.id, t.querySelector('.mini'));
+      const acc = t.querySelector('.acciones');
+      const boton = (txt, cls, fn) => { const b = document.createElement('button'); b.className = cls; b.textContent = txt; b.onclick = fn; acc.append(b); return b; };
+      if (s.estado === 'pendiente') {
+        boton('Aprobar e inscribir', 'ok', () => confirmar('¿Aprobar e inscribir?', `${s.nombre} · S/ ${s.monto} · ${s.cursos.map(c => curso(c).corto).join(', ')}. Se crea o reutiliza su cuenta y se genera su enlace de acceso.`, false, async () => {
+          const r = await api('aprobar/' + s.id, { method: 'POST', body: '{}' }); const j = await r.json();
+          if (!r.ok) throw new Error(j.error || 'No se pudo aprobar.');
+        }));
+        boton('Rechazar', 'no', () => confirmar('Rechazar solicitud', `${s.nombre} · S/ ${s.monto}`, true, async motivo => {
+          const r = await api('rechazar/' + s.id, { method: 'POST', body: JSON.stringify({ motivo }) }); const j = await r.json();
+          if (!r.ok) throw new Error(j.error || 'No se pudo rechazar.');
+        }));
+      } else {
+        const wa = document.createElement('a'); wa.className = 'boton wa'; wa.target = '_blank'; wa.rel = 'noopener';
+        wa.textContent = 'Enviar por WhatsApp'; wa.href = 'https://wa.me/' + s.telefono + '?text=' + encodeURIComponent(mensajeWA(s)); acc.append(wa);
+        if (s.enlace) { const b = boton('Copiar enlace', 'sec', async () => { try { await navigator.clipboard.writeText(s.enlace); b.textContent = '¡Copiado!'; } catch { b.textContent = 'No se pudo copiar'; } setTimeout(() => { b.textContent = 'Copiar enlace'; }, 2000); }); }
+      }
+      lista.append(t);
+    }
+  }
+
+  async function cargarFoto(id, img) {
+    try { const r = await api('foto/' + id); if (!r.ok) return; const u = URL.createObjectURL(await r.blob()); img.src = u; img.onclick = () => { $('#dFotoImg').src = u; $('#dFoto').showModal(); }; } catch {}
+  }
+
+  function confirmar(titulo, texto, conMotivo, accion) {
+    const d = $('#dConf'); $('#dConfT').textContent = titulo; $('#dConfX').textContent = texto; $('#dConfE').textContent = '';
+    const m = $('#dConfMotivo'); m.hidden = !conMotivo; m.value = '';
+    const si = $('#dConfSi'); si.className = conMotivo ? 'no' : 'ok'; si.textContent = conMotivo ? 'Rechazar' : 'Aprobar';
+    si.disabled = false;
+    si.onclick = async () => {
+      if (conMotivo && !m.value.trim()) { $('#dConfE').textContent = 'Escribe el motivo.'; return; }
+      si.disabled = true; si.textContent = 'Un momento…';
+      try { await accion(m.value.trim()); d.close(); await cargar(); }
+      catch (x) { $('#dConfE').textContent = x.message; si.disabled = false; si.textContent = conMotivo ? 'Rechazar' : 'Aprobar'; await cargar(); }
+    };
+    d.showModal(); if (conMotivo) m.focus();
+  }
+
+  async function cargar() {
+    const r = await api('solicitudes');
+    if (r.status === 429) { salir('Demasiados intentos. Espera unos minutos.'); return; }
+    datos = await r.json(); $('#entrar').hidden = true; $('#panel').hidden = false; pintar();
+  }
+
+  document.querySelectorAll('[data-cerrar]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+  document.querySelectorAll('.filtro').forEach(b => b.addEventListener('click', () => {
+    filtro = b.dataset.f; document.querySelectorAll('.filtro').forEach(x => x.setAttribute('aria-pressed', String(x === b))); pintar();
+  }));
+  $('#recargar').onclick = () => cargar().catch(() => {});
+  $('#fEntrar').addEventListener('submit', e => {
+    e.preventDefault(); clave = $('#clave').value.trim();
+    try { sessionStorage.setItem('iw-clave', clave); } catch {}
+    cargar().catch(() => {});
+  });
+  if (clave) cargar().catch(() => {}); else salir();
+})();
+</script>
+</body>
+</html>
