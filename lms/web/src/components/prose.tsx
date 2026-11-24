@@ -5,6 +5,7 @@ import { api, ApiError } from "~/lib/api";
 // laboratorio SOLO en los bloques marcados por quien escribe:
 //   ```run-python  → editable + «Probar» (ejecuta en el servidor: python, node, bash, go)
 //   ```live-html   → editable + vista previa en un iframe (html, css)
+//   ```prompt      → tarjeta «Copiar prompt» (una primera línea «# título» se muestra y no se copia)
 // Cualquier otro bloque lleva solo el botón de copiar: no se ejecuta nada.
 
 function slug(t: string): string {
@@ -60,7 +61,8 @@ export const Prose = component$((props: { html: string; toc?: boolean }) => {
       (pre as HTMLElement).dataset.lab = "1";
       const serverLang = run ? SERVER_RUN[base] : undefined;
       const isPreview = preview && PREVIEW.has(base);
-      if (serverLang || isPreview) pre.replaceWith(lab(raw, base, serverLang, isPreview));
+      if (base === "prompt") pre.replaceWith(promptCard(raw));
+      else if (serverLang || isPreview) pre.replaceWith(lab(raw, base, serverLang, isPreview));
       else addCopy(pre as HTMLElement);
     });
     const h = location.hash.slice(1);
@@ -117,6 +119,96 @@ function addCopy(pre: HTMLElement) {
     }
   };
   pre.appendChild(b);
+}
+
+// Tarjeta de prompt: el texto se lee cómodo y un botón grande lo copia tal cual.
+// Si el portapapeles no está disponible (http, permiso denegado), selecciona el texto y lo dice.
+let promptSeq = 0;
+function promptCard(raw: string): HTMLElement {
+  let text = raw.replace(/\n+$/, "");
+  let title = "";
+  const m = /^#\s+(.+)\n/.exec(text);
+  if (m) {
+    title = m[1].trim();
+    text = text.slice(m[0].length).replace(/^\n+/, "");
+  }
+  const id = `prompt-${++promptSeq}`;
+  const wrap = document.createElement("section");
+  wrap.className = "prompt-card";
+  wrap.setAttribute("aria-labelledby", `${id}-t`);
+
+  const head = document.createElement("div");
+  head.className = "prompt-card__head";
+  const label = document.createElement("div");
+  label.className = "prompt-card__label";
+  label.id = `${id}-t`;
+  label.textContent = "Prompt · pégalo en tu asistente";
+  head.appendChild(label);
+  const mini = document.createElement("button");
+  mini.type = "button";
+  mini.className = "icon-btn prompt-card__mini";
+  mini.title = "Copiar prompt";
+  mini.setAttribute("aria-label", "Copiar prompt");
+  mini.innerHTML = COPY_SVG;
+  head.appendChild(mini);
+  wrap.appendChild(head);
+
+  if (title) {
+    const h = document.createElement("div");
+    h.className = "prompt-card__title";
+    h.textContent = title;
+    wrap.appendChild(h);
+  }
+  const body = document.createElement("div");
+  body.className = "prompt-card__text";
+  body.id = `${id}-x`;
+  body.tabIndex = 0;
+  body.setAttribute("role", "region");
+  body.setAttribute("aria-label", title ? `Prompt: ${title}` : "Texto del prompt");
+  body.textContent = text;
+  wrap.appendChild(body);
+
+  const foot = document.createElement("div");
+  foot.className = "prompt-card__foot";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "prompt-card__copy";
+  const LABEL = `${COPY_SVG}<span>Copiar prompt</span>`;
+  btn.innerHTML = LABEL;
+  foot.appendChild(btn);
+  const live = document.createElement("span");
+  live.className = "prompt-card__status";
+  live.setAttribute("aria-live", "polite");
+  foot.appendChild(live);
+  wrap.appendChild(foot);
+
+  let timer = 0;
+  async function copy() {
+    window.clearTimeout(timer);
+    try {
+      if (!navigator.clipboard || !window.isSecureContext) throw new Error("sin portapapeles");
+      await navigator.clipboard.writeText(text);
+      wrap.classList.add("is-copied");
+      btn.innerHTML = "<span>Copiado ✓</span>";
+      live.textContent = "Prompt copiado. Pégalo en tu asistente.";
+      timer = window.setTimeout(() => {
+        wrap.classList.remove("is-copied");
+        btn.innerHTML = LABEL;
+        live.textContent = "";
+      }, 2200);
+    } catch {
+      const sel = window.getSelection();
+      const r = document.createRange();
+      r.selectNodeContents(body);
+      sel?.removeAllRanges();
+      sel?.addRange(r);
+      body.focus();
+      live.textContent = "Selecciona y copia con Ctrl+C / ⌘C";
+    }
+  }
+  btn.onclick = copy;
+  mini.onclick = copy;
+  return wrap;
 }
 
 // Laboratorio: código visible y copiable; «Probar» abre el editor y ejecuta (servidor) o previsualiza.

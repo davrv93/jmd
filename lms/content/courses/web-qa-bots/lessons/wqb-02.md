@@ -58,3 +58,16 @@ idea a la Tienda Sol del repositorio.
 
 **Entregable 2:** la captura del robot en http://127.0.0.1:3200 y la del vigía avisando la caída y la
 recuperación.
+
+## Prompts de esta parte
+
+Pégalos en tu asistente de código (Claude Code, OpenCode, Cursor…) abierto en la carpeta del repositorio. Cada uno dice qué archivo tocar y cómo comprobarlo.
+
+```prompt
+# Paso 3 · Vigila: decidir cuándo avisar
+Lee vigia/vigia.mjs. Hoy avisa solo cuando el estado cambia (arriba → caído y caído → arriba).
+Agrega un tercer aviso: «lenta», cuando 3 sondeos seguidos tarden más de 1500 ms, y que no se
+repita hasta que vuelva a estar rápida. Sin dependencias nuevas. Dime cómo lo pruebo con
+docker compose sin tocar el código de la tienda.
+```
+

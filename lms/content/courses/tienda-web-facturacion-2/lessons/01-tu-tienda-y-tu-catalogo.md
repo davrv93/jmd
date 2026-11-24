@@ -2,7 +2,7 @@
 id: tw2-01
 title: "Sesión 1 · Tu tienda y tu catálogo"
 published: true
-starts_at: 2026-11-21T21:45:00-05:00
+# starts_at: 2026-11-21T21:45:00-05:00  # liberado el 18-11-2026 para Orquestación con Qwen Coder (0 inscritos)
 duration: 45
 objectives:
   - id: tw2-01-o1

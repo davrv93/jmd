@@ -54,7 +54,7 @@ También puedes hacerlo en la página **http://127.0.0.1:8090**, en la pestaña 
 
 Pega este prompt en Claude, DeepSeek u otro asistente, en una carpeta vacía:
 
-```text
+```prompt
 Crea la función entender(wav_bytes) que mande un audio WAV a gemini-3.5-flash-lite (generateContent)
 y devuelva un JSON.
 - El audio va como parte inlineData {mimeType: "audio/wav", data: base64}, junto a la instrucción

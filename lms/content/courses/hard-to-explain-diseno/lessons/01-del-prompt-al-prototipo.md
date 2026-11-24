@@ -376,7 +376,7 @@ que se ejecuta sin opinar.
 **Qué vas a hacer**
 1. Escribe el pedido vago de tu propia pieza en una línea.
 2. Con la skill `pedido-seis-partes`, pídele al agente que lo complete:
-   ```text
+   ```prompt
    Usa la skill pedido-seis-partes. Mi pedido vago es: [tu línea]. Devuélveme el pedido completo
    con las seis partes etiquetadas y deja entre corchetes lo que solo yo sé.
    ```
@@ -441,7 +441,7 @@ En una frase: pegas el prompt del taller y el agente escribe la pieza entera.
 
 **Qué vas a hacer**
 1. En tu carpeta, con `willie.svg` al lado, abre el agente y escribe:
-   ```text
+   ```prompt
    usa las skills pedido-seis-partes y animacion-abierta
    ```
 2. Pega el prompt completo de «Prompt para ejecutar» (Materiales). Confirma los archivos que
@@ -466,7 +466,7 @@ En una frase: comparas lo pedido con lo obtenido y corriges con palabras exactas
 1. Recorre las diez escenas con `?t=` en el inicio de cada una (0, 2, 4, 6, 10, 13, 16, 18, 19).
 2. Toma una captura de la escena que peor salió.
 3. Escribe un segundo pedido con el lugar, el cambio y el límite:
-   ```text
+   ```prompt
    En la escena 4, el zoom al plano medio llega tarde: debe terminar en el segundo 9,5, no en el 10.
    Ajusta solo eso y dime qué línea cambiaste.
    ```

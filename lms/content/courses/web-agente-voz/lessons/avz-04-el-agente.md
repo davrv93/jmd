@@ -54,7 +54,7 @@ También puedes hacerlo en la página **http://127.0.0.1:8090**, en la pestaña 
 
 Pega este prompt en Claude, DeepSeek u otro asistente, en una carpeta vacía:
 
-```text
+```prompt
 Arma el agente en tres etapas y mide cuánto tarda cada una:
 1. ESCUCHAR: entender(wav) con gemini-3.5-flash-lite → JSON.
 2. PENSAR: pensar(lo_que_entendio, datos_del_negocio, historial) con gemini-3.5-flash-lite.

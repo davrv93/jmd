@@ -85,7 +85,7 @@ Sin Git: en GitHub, botón **Code › Download ZIP**. Abre **http://127.0.0.1:81
 
 Copia esta plantilla, cambia lo que está entre corchetes y pégala en tu agente:
 
-```text
+```prompt
 Rol: eres desarrollador web full stack y diseñador de juegos para eventos en vivo.
 
 Contexto: hago un sorteo para [mi clase / mi tienda / mi evento] de [número] personas. Lo abren

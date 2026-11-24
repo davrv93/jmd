@@ -54,7 +54,7 @@ También puedes hacerlo en la página **http://127.0.0.1:8090**, en la pestaña 
 
 Pega este prompt en Claude, DeepSeek u otro asistente, en una carpeta vacía:
 
-```text
+```prompt
 Crea un servidor en Python (http.server, sin dependencias) y una página HTML de un solo archivo.
 - La página graba el micrófono con MediaRecorder o acepta un archivo de audio (también .ogg de WhatsApp)
   y lo convierte en el navegador a WAV mono de 16 kHz con OfflineAudioContext.

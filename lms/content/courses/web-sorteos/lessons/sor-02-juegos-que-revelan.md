@@ -76,7 +76,7 @@ La imagen corre `go test` antes de compilar: si una prueba falla, no se levanta.
 
 Cuando algo sale mal, no pidas «arréglalo» a secas. Di el lugar, el cambio y qué no tocar:
 
-```text
+```prompt
 En web/index.html, el botón «Girar» se ve detrás de la ruleta en el celular (pantalla de 390 px).
 Muévelo debajo de la ruleta y súbele el contraste. No toques nada más: ni el servidor ni los premios.
 Comprobación: una captura a 390 × 844 donde el botón se vea completo.

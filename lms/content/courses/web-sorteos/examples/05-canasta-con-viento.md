@@ -34,7 +34,7 @@ docker compose up -d --build
 
 Cópialo, cambia los datos por los tuyos y pégalo en tu agente.
 
-```text
+```prompt
 Rol: eres desarrollador de juegos web en tiempo real.
 
 Contexto: al final de mi clase en vivo quiero un minijuego de habilidad para sortear 2 cupos. Juegan

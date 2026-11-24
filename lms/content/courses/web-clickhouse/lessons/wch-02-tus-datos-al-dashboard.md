@@ -33,3 +33,38 @@ Diez videos cortos, del 5 al 14. Cada uno termina en algo que funciona en tu má
 - **14 · Caso final:** de los tres archivos al tablero con un solo comando.
 
 **Entregable:** tu dashboard funcionando con tus datos (o con los de ejemplo).
+
+## Prompts de esta parte
+
+Cópialos en orden. Cada uno corresponde a un video; el repositorio los tiene en la carpeta `prompts/`.
+
+```prompt
+# Video 7 · Reglas de IA para unir fuentes distintas
+Eres analista de datos. Te paso el PERFIL de mi tabla de ventas (no los datos). Propón reglas de limpieza en JSON con la forma {"reglas":[...]}. Cada regla tiene: id, columna, problema (qué ves en el perfil), regla (en una frase), accion (una de: recortar_y_capitalizar, convertir_fecha, quitar_duplicados, dejar_vacio_como_nulo, convertir_tipo), parametros y verificacion (cómo compruebo que funcionó). No inventes columnas ni valores que no estén en el perfil. No rellenes datos que faltan con promedios: es mejor dejarlos vacíos y decirlo.
+```
+
+```prompt
+# Video 10 · El dashboard estilo Apple
+Crea una página HTML de un solo archivo, sin frameworks ni librerías, con un tablero de ventas
+que consulte mi tabla ventas_tablero en ClickHouse por su API HTTP:
+http://127.0.0.1:8123/?add_http_cors_header=1&default_format=JSON&user=…&password=…&query=…
+Columnas: fecha (Date), sede, categoria, unidades, venta (Decimal), margen (puede ser nulo).
+Muestra arriba 4 KPIs: venta total, unidades, margen ponderado por venta (sin contar los nulos)
+y la variación del último mes frente al anterior. Debajo: venta por mes (línea), venta por sede
+y por categoría (barras horizontales ordenadas) y lo más vendido por sede × categoría (tabla).
+Estilo Apple: fondo #FFFFFF y #F5F5F7, texto #1D1D1F y #6E6E73, un solo acento #0071E3,
+apoyo #34C759 y #FF9F0A; tipografía del sistema, esquinas de 18 px, sombras suaves, mucho aire.
+Usuario y clave por parámetros de la URL. Si una consulta falla, muestra el error en la página.
+```
+
+```prompt
+# Video 11 · Filtros y alerta de caída
+Agrega a mi tablero:
+1. Filtros de sede, categoría y período (desde / hasta, por mes). Llénalos con los valores
+   que hay en la tabla. Al cambiar uno, recalcula todo: KPIs, gráficos y tabla.
+2. Una alerta arriba de los KPIs: compara el último mes del período con el anterior, sede
+   por sede (respetando el filtro de categoría). Si alguna cae más de 15 %, muéstrala en rojo
+   con la sede, el porcentaje y los dos montos. Si no, un aviso verde que lo diga.
+3. Escapa los valores de los filtros antes de ponerlos en el SQL.
+No cambies el estilo.
+```

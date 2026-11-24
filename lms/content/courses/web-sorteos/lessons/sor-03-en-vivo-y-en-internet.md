@@ -63,7 +63,7 @@ velocidad del medidor.
 
 Cuando tu sorteo funciona en tu computadora, este pedido lo deja en internet con HTTPS:
 
-```text
+```prompt
 Rol: eres administrador de sistemas Linux.
 
 Contexto: tengo un servidor Ubuntu con Docker y nginx, y el dominio [midominio.com] con HTTPS.

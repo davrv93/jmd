@@ -54,7 +54,7 @@ También puedes hacerlo en la página **http://127.0.0.1:8090**, en la pestaña 
 
 Pega este prompt en Claude, DeepSeek u otro asistente, en una carpeta vacía:
 
-```text
+```prompt
 Crea un script en Python 3.12, solo con la biblioteca estándar (urllib, json, base64), que convierta
 un texto en voz con la API de Gemini.
 - Modelo: gemini-3.8-flash-tts, endpoint POST

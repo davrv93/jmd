@@ -64,3 +64,24 @@ positivo del oráculo: en local los cuatro bots comparten una tienda. Arreglar e
 paso 2b.
 
 **Entregable 3:** el enlace al pull request con la corrección y la prueba en verde.
+
+## Prompts de esta parte
+
+Pégalos en tu asistente de código (Claude Code, OpenCode, Cursor…) abierto en la carpeta del repositorio. Cada uno dice qué archivo tocar y cómo comprobarlo.
+
+```prompt
+# Paso 4 · Repara: que la IA proponga la corrección
+Esta prueba falla en rojo: <ruta de la spec>. La regla que rompe la app es: <una línea>.
+La evidencia del bot es: <captura o pasos>.
+Arregla la APP, no la prueba. Haz el cambio mínimo. Después corre la prueba y todo
+pruebas/specs/ y muéstrame que pasan en verde. Si para arreglarlo tienes que cambiar la prueba,
+detente y explícame por qué antes de hacerlo.
+```
+
+```prompt
+# Paso 5 · Repara: el pull request para que tú apruebes
+Crea una rama fix/<regla>, haz commit del arreglo y de la prueba, y abre el pull request con
+gh pr create. En la descripción pon: la regla rota, la evidencia del bot (pasos y captura),
+qué cambiaste y la salida de la prueba en verde. No hagas merge: lo apruebo yo.
+```
+

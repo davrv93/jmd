@@ -30,3 +30,12 @@ Curso en modalidad web: mira los videos en orden y replica cada paso en tu máqu
 **Para practicar:** descarga el repositorio de GitHub (botón *Code › Download ZIP* si no usas Git) y sigue su README; cada paso dice qué video lo explica. Los dos CSV de abajo son los mismos datos de ejemplo.
 
 **Entregable:** tus datos cargados, limpios y comprobados en ClickHouse.
+
+## Prompt de esta parte
+
+Pégalo en Claude, DeepSeek u otro asistente junto con el perfil de tu tabla (`docker compose run --rm herramientas perfil_sql.py`). La IA ve el perfil, nunca tus datos.
+
+```prompt
+# Video 4 · Reglas de limpieza a partir del perfil
+Eres analista de datos. Te paso el PERFIL de mi tabla en ClickHouse (no los datos). Propón reglas de limpieza en JSON con la forma {"reglas":[...]}. Cada regla tiene: id, columna, problema (lo que ves en el perfil), regla (una frase), sql (una expresión de ClickHouse que devuelve el valor limpio de esa columna a partir de la columna original; para las filas repetidas escribe exactamente DISTINCT) y verificacion (una consulta SQL que compruebe que la regla funcionó). La tabla limpia debe tener fecha de tipo Date. No inventes columnas ni valores que no estén en el perfil. No rellenes los datos que faltan: es mejor dejarlos nulos y decirlo.
+```

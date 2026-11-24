@@ -1,7 +1,7 @@
 ---
 id: oq-03
 title: "Sesión 3 · Un proyecto real orquestado de punta a punta, medido y verificado"
-starts_at: 2026-11-29T08:00:00-05:00
+# starts_at: 2026-11-29T08:00:00-05:00  # liberado el 18-11-2026 para Orquestación con Qwen Coder (0 inscritos)
 published: true
 ---
 ## Sesión 3 · Un proyecto real orquestado de punta a punta, medido y verificado

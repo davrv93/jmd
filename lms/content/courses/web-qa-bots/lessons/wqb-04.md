@@ -79,3 +79,30 @@ contenedor: nunca llega al navegador ni a los registros.
 
 **Entregable final:** la captura de tu WhatsApp con una sugerencia del bot, el nombre de la IA que usaste y
 la salida de `npm test` con tu prueba nueva en verde.
+
+## Prompts de esta parte
+
+Pégalos en tu asistente de código (Claude Code, OpenCode, Cursor…) abierto en la carpeta del repositorio. Cada uno dice qué archivo tocar y cómo comprobarlo.
+
+```prompt
+# Paso 6 · Proyecto final: el bot QA con la IA inyectada (1 de 3)
+Lee bot-qa/src/app.js y bot-qa/src/servidor.js. Explícame en 5 líneas qué es la inyección de
+dependencias en este bot: qué recibe crearApp, dónde se decide qué IA y qué WhatsApp se usan,
+y por qué las pruebas de bot-qa/test/ no necesitan llave ni teléfono.
+```
+
+```prompt
+# Paso 6 · Proyecto final: el bot QA con la IA inyectada (2 de 3)
+Agrega a bot-qa un proveedor de IA nuevo sin tocar app.js: <nombre> con su URL base compatible
+con OpenAI. Solo cambia bot-qa/src/llm/index.js y .env.example. Agrega una prueba en
+bot-qa/test/ que compruebe que la fábrica lo elige con LLM_PROVEEDOR=<nombre>. Corre
+docker compose run --rm bot-qa npm test y muéstrame que todo pasa.
+```
+
+```prompt
+# Paso 6 · Proyecto final: el bot QA con la IA inyectada (3 de 3)
+Agrega a bot-qa/conocimiento.json la regla <id> de la tienda: qué dice la regla, qué archivo la
+implementa y qué función buscar. Luego escribe una prueba en bot-qa/test/ que mande ese fallo por
+WhatsApp (con el LLM falso) y compruebe que a la IA le llegó el trozo correcto del archivo.
+```
+

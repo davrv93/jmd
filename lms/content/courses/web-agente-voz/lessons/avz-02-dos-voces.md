@@ -54,7 +54,7 @@ También puedes hacerlo en la página **http://127.0.0.1:8090**, en la pestaña 
 
 Pega este prompt en Claude, DeepSeek u otro asistente, en una carpeta vacía:
 
-```text
+```prompt
 Agrega una función dialogo(lineas, voces) al script anterior.
 - lineas es una lista de (personaje, texto, estilo); voces es {personaje: voz}. Máximo 2 personajes.
 - Cada línea es una parte distinta de contents con speechMetadata: {speaker, style}.

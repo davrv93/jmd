@@ -54,7 +54,7 @@ También puedes hacerlo en la página **http://127.0.0.1:8090**, en la pestaña 
 
 Pega este prompt en Claude, DeepSeek u otro asistente, en una carpeta vacía:
 
-```text
+```prompt
 Revisa mi agente de voz como lo haría un auditor:
 1. ¿La llave de Gemini puede llegar al navegador por algún camino (HTML, JS, respuestas JSON, logs)?
 2. ¿Qué pasa si alguien manda 1000 pedidos o un audio de 2 horas? Propón límites concretos.

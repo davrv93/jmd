@@ -2,7 +2,7 @@
 id: tw2-02
 title: "Sesión 2 · Pedidos y pagos por WhatsApp"
 published: true
-starts_at: 2026-11-28T21:45:00-05:00
+# starts_at: 2026-11-28T21:45:00-05:00  # liberado el 18-11-2026 para Orquestación con Qwen Coder (0 inscritos)
 duration: 45
 objectives:
   - id: tw2-02-o1

@@ -81,7 +81,7 @@ Comprobación: ?t=7 muestra el paneo quieto a mitad; la pieza dura 20,0 s y term
 Cuando algo sale mal, no se repite el pedido entero ni se dice «mejóralo». Se señala el lugar, el
 cambio y el límite:
 
-```text
+```prompt
 En la pantalla Datos, a 393 px, el botón «Reservar cita» queda debajo del teclado. Súbelo sobre el
 teclado y no cambies nada más. Dime qué archivos tocaste.
 ```

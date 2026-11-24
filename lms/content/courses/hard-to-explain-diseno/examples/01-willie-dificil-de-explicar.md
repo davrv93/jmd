@@ -32,14 +32,14 @@ pequeños. Termina con «Skills encontrados : 2».
 
 Abre el agente en la carpeta y escribe primero:
 
-```text
+```prompt
 usa las skills pedido-seis-partes y animacion-abierta
 ```
 
 Después pega el prompt completo. Son las seis partes: rol, contexto, tarea, límites, formato y
 comprobación.
 
-```text
+```prompt
 Rol: Eres animador 2D y desarrollador front-end. Trabajas solo con herramientas abiertas: HTML, CSS,
 SVG y JavaScript sin librerías. No usas servicios de video por IA ni recursos de internet.
 

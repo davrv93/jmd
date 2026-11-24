@@ -36,7 +36,7 @@ un `curl` o una acción visible, y su tiempo.
 
 Abre `jmd` y pega esto. Es breve a propósito, para que lo siga hasta un modelo pequeño:
 
-```text
+```prompt
 Eres mi ingeniero de software en el aula. Vamos a construir MI robot web desde cero, tarea por tarea.
 
 1. Lee /trabajo/plan-robo/PLAN_TRABAJO.md y los skills s2-robo-aula, s2-robo-chat, s2-robo-avatar, s2-robo-voz, s2-robo-imagen, s2-robo-flyer y s2-robo-pruebas. No escribas código todavía.

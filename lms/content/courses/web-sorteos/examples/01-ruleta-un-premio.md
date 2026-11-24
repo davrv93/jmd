@@ -33,7 +33,7 @@ docker compose up -d --build
 
 Cópialo, cambia los datos por los tuyos y pégalo en tu agente.
 
-```text
+```prompt
 Rol: eres desarrollador web full stack y diseñador de juegos para clases en vivo.
 
 Contexto: doy una clase por Zoom a unas 15 personas. Al final quiero sortear un premio. Abren el

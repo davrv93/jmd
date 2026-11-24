@@ -1,7 +1,7 @@
 ---
 id: oq-02
 title: "Sesión 2 · Herramientas, memoria y contexto acotado: agentes que no se pisan"
-starts_at: 2026-11-22T08:00:00-05:00
+# starts_at: 2026-11-22T08:00:00-05:00  # liberado el 18-11-2026 para Orquestación con Qwen Coder (0 inscritos)
 published: true
 ---
 ## Sesión 2 · Herramientas, memoria y contexto acotado: agentes que no se pisan

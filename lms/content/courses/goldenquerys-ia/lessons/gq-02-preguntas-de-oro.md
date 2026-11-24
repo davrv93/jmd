@@ -125,7 +125,7 @@ Hoy la IA escribe el SQL de tus tres preguntas de oro y tú lo pruebas antes de 
 
 **¿Viniste a la charla?** Pega en DeepSeek Harness:
 
-```text
+```prompt
 Retoma GoldenQuerys. Si no existe /trabajo/goldenquerys, dímelo y no hagas nada más. Si existe: corre sh /trabajo/goldenquerys/arrancar.sh, comprueba curl -s localhost:8766/api/salud, lee goldenquerys/MI_NEGOCIO.txt y goldenquerys/PLAN_TRABAJO.md y dime en 3 líneas: mi negocio, sus 3 tablas clave y qué tareas ya están hechas.
 ```
 
@@ -179,7 +179,7 @@ título, el tablero de la clase y tu fotito.
 
 Pega en DeepSeek Harness:
 
-```text
+```prompt
 Tarea T2 con verificación. Para cada una de mis 3 consultas de goldenquerys/consultas/: 1) ejecútala con curl contra /api/consulta y dime filas y total; 2) aplica las 3 pruebas: cuenta las filas base sin agrupar, compara el total con una consulta independiente más simple y revisa los bordes (anuladas, fechas con hora, JOIN que duplica, DISTINCT); 3) si una prueba falla, corrige el SQL y explícame en una línea qué impureza tenía; 4) agrega arriba de cada archivo «-- Decisión:» y «-- Contrastado:» con la prueba y su número. NO escribas «-- Verificado:» ni marques T2: eso lo hago yo después de revisar tus números. Termina diciéndome qué debo mirar en cada consulta.
 ```
 

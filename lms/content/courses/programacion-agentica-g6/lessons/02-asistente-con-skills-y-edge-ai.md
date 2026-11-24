@@ -260,11 +260,11 @@ No toca el código ni los commits. Para volver a lo normal escribes `modo normal
    modo piedra
    ```
 4. Pide un plan sin skill. Escribe:
-   ```text
+   ```prompt
    Quiero un asistente para mi tienda que responda preguntas sobre productos y horarios. Hazme un plan.
    ```
 5. Pide lo mismo con skill:
-   ```text
+   ```prompt
    Usa el skill planificacion-proyecto y hazme el plan para ese mismo asistente.
    ```
 **Qué vas a ver:** `instalar.sh` termina con «Skills encontrados : 14». El agente contesta «Modo piedra activo.» y responde corto.
@@ -290,7 +290,7 @@ Las seis tareas de hoy, de 15 minutos cada una:
 
 **Qué vas a hacer**
 1. En OpenCode, con el modo piedra activo, escribe:
-   ```text
+   ```prompt
    Usa el skill plan-de-trabajo. Escribe PLAN_TRABAJO.md con seis tareas: cargar faq.json, nombre y saludo, tres preguntas de la tienda, micrófono a texto, flyer de una oferta, pruebas de uso. Cada tarea con un criterio de aceptación que devuelva sí o no.
    ```
 2. Abre `PLAN_TRABAJO.md` y lee cada criterio.
@@ -336,7 +336,7 @@ La maneja `obra/obra.py` (viene en `taller-agentico.zip`). El agente la actualiz
    ```
 3. Abre `http://localhost:8787/obra.html` en Chrome y déjala visible en media pantalla.
 4. Dile al agente cómo marcar el avance. Pégale esto en OpenCode:
-   ```text
+   ```prompt
    Usa el skill obra-en-vivo. Al terminar y verificar cada tarea del plan, corre python3 obra/obra.py paso "<texto del paso>". No marques nada sin ejecutar su criterio.
    ```
 **Qué vas a ver:** La barra en 0 % y seis pasos pendientes. Cada paso cerrado muestra la hora real en que se marcó.
@@ -371,12 +371,12 @@ Si no la encuentra, dice «No estoy seguro de eso todavía». No es un error: es
    ```
 2. Abre `http://localhost:8765` en Chrome. Entra siempre por `localhost`: el micrófono solo funciona ahí.
 3. Pide al agente la tarea T1 con las preguntas de tu tienda:
-   ```text
+   ```prompt
    Tarea T1 del plan. Reemplaza osito/backend/faq.json con 10 preguntas de mi tienda: horario, envíos, pagos, cambios y stock. Cada entrada con tres formas de la pregunta, una respuesta de dos frases y un ánimo válido. Ejecuta el criterio y marca el paso en la obra.
    ```
 4. Reinicia el asistente con Ctrl+C y otra vez `bash osito/arrancar.sh`: el corpus se carga una sola vez.
 5. Pide T2 y T3, una por una. Para T2:
-   ```text
+   ```prompt
    Tarea T2. Cambia el nombre del asistente a «Tienda Bot» (variable OSITO_NOMBRE y constante NOMBRE_OSITO en osito/frontend/app.js) y el saludo a «Hola, ¿qué producto buscas hoy?». Ejecuta el criterio y marca el paso.
    ```
 6. Lee el diff de cada cambio antes de aceptar. Verifica tú el criterio: abre la pantalla y pregunta.
@@ -398,7 +398,7 @@ Analogía: uno toma el pedido, otro pinta el cartel y un tercero pega las letras
 1. Pulsa el botón del micrófono, di «¿hacen envíos a domicilio?» y espera.
 2. Lee el texto que aparece en el campo antes de enviarlo. Corrígelo si entendió otra cosa. Envía. Esa es la T4.
 3. Pide el flyer escribiendo en el chat del asistente:
-   ```text
+   ```prompt
    Flyer para la liquidación de verano, sábado 18 de octubre a las 10 am, todo a S/ 20
    ```
 4. Mira el bloque «Datos del flyer» junto a la imagen. Comprueba fecha, hora y precio. Esa es la T5.

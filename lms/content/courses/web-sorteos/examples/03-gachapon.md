@@ -34,7 +34,7 @@ docker compose up -d --build
 
 Cópialo, cambia los datos por los tuyos y pégalo en tu agente.
 
-```text
+```prompt
 Rol: eres desarrollador web full stack y diseñador de juegos con animación.
 
 Contexto: tengo una academia con varios talleres. Quiero un sorteo de cupones de descuento con forma

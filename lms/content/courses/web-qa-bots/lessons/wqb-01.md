@@ -66,3 +66,36 @@ Con la misma semilla repiten los mismos recorridos: un fallo que encuentran hoy 
 
 **Entregable 1:** la captura de un fallo encontrado por los bots, la prueba que lo reproduce en rojo y dos
 líneas sobre qué usuario real lo habría sufrido.
+
+## Prompts de esta parte
+
+Pégalos en tu asistente de código (Claude Code, OpenCode, Cursor…) abierto en la carpeta del repositorio. Cada uno dice qué archivo tocar y cómo comprobarlo.
+
+```prompt
+# Paso 1 · Explora: un bot nuevo con otra personalidad
+Lee bots/bots.mjs. Hay cuatro personas (Rosa, Luis, Mía y Beto) en la constante PERSONAS.
+Agrega una quinta persona, «Nora», adulta mayor que lee todo dos veces, escribe despacio y
+siempre paga con un billete grande. Usa el mismo formato de las otras personas y no cambies
+las reglas del oráculo. Al terminar, dime qué líneas cambiaste y cómo la veo trabajar en
+http://127.0.0.1:3300.
+```
+
+```prompt
+# Paso 2 · Explora: del fallo a la prueba que lo reproduce
+Te paso la ficha de un fallo que encontró un bot (regla, pasos, peticiones y la spec generada).
+Conviértela en una prueba de Playwright en pruebas/specs/ que use los Page Objects de
+pruebas/pages/. La prueba debe FALLAR hoy por el mismo motivo que vio el bot. No arregles la
+app. Explícame en dos líneas qué afirma la prueba.
+
+<pega aquí la ficha del fallo>
+```
+
+```prompt
+# Paso 2b · Explora: un oráculo que no se equivoque
+En bots/bots.mjs, la regla «reporte-no-cuadra» compara el total del reporte con las ventas del
+propio bot. Cuando los cuatro bots comparten la misma tienda (BASE_URL local), salta aunque no
+haya un fallo: es un falso positivo. Corrige el oráculo para que compare el reporte con la suma
+de las ventas de TODOS los bots de esa tienda, sin tocar la app. Explícame cómo compruebo que con
+BUGS=0 ya no aparece y que con BUGS=1 sigue detectando los fallos reales.
+```
+

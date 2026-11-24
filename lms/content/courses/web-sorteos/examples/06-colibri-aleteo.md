@@ -33,7 +33,7 @@ docker compose up -d --build
 
 Cópialo, cambia los datos por los tuyos y pégalo en tu agente.
 
-```text
+```prompt
 Rol: eres desarrollador web y director de arte.
 
 Contexto: tengo una marca y quiero un sorteo de descuento que se vea premium en el celular, con un
