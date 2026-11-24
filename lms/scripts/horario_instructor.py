@@ -69,7 +69,7 @@ def cargar(desde):
         for f in sorted(glob.glob(os.path.join(carpeta, "lessons", "*.md"))):
             lt = open(f, encoding="utf-8").read().split("\n---", 1)[0]
             s = campo(lt, "starts_at")
-            if not s:
+            if not s or campo(lt, "published") == "false":   # despublicada: su horario queda libre
                 continue
             ini = D.datetime.fromisoformat(s).astimezone(LIMA)
             if ini.date() < desde:
