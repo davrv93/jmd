@@ -39,6 +39,8 @@ type Server struct {
 	// queda en «<grupo>-pago» (sin acceso al curso) y se le pide coordinar el pago por WhatsApp (WhatsAppPago).
 	CuposGratis  map[string]int
 	WhatsAppPago string
+	// InternoClave autoriza POST /api/v1/interno/inscripcion (servicio inscripcion-web). Vacía = la ruta no existe.
+	InternoClave string
 	PublicURL    string // https://lms.<dominio> (para las URLs de las preguntas)
 	SessionTTL   time.Duration
 	Web          fs.FS          // build del front; nil = solo API
@@ -153,6 +155,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/auth/register", s.register)
 	mux.HandleFunc("GET /api/v1/inscripcion/{grupo}", s.inscripcionInfo)
 	mux.HandleFunc("POST /api/v1/inscripcion/{grupo}", s.inscribirse)
+	mux.HandleFunc("POST /api/v1/interno/inscripcion", s.internoInscripcion)
 	mux.Handle("POST /api/v1/inscripcion/{grupo}/unirme", s.authed(s.unirseAGrupo))
 	// Patrocinadores: eligen hasta 5 cursos y crean su cuenta sin pago (ver patrocinio.go).
 	mux.HandleFunc("GET /api/v1/patrocinio/{codigo}", s.patrocinioInfo)

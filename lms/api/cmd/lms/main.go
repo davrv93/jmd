@@ -105,6 +105,7 @@ func run() error {
 		Inscripcion:   listaEntorno("LMS_INSCRIPCION"),
 		CuposGratis:   cuposEntorno("LMS_INSCRIPCION_CUPOS"),
 		WhatsAppPago:  strings.TrimSpace(os.Getenv("LMS_INSCRIPCION_WHATSAPP")),
+		InternoClave:  strings.TrimSpace(os.Getenv("LMS_INTERNO_CLAVE")),
 		PublicURL:     strings.TrimRight(env("LMS_PUBLIC_URL", "http://localhost:8080"), "/"),
 		Web:           webdist.FS(),
 		DataDir:       dataDir,
