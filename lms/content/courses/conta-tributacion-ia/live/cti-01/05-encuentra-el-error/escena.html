@@ -27,6 +27,20 @@ td { color:#16181d; border-bottom-color:#e3e5ea !important; }
 .expl { margin:.3em 0 0; padding-left:1.2em; font-size:.82em; line-height:1.4; }
 .expl li { margin:.45em 0; }
 .expl b { display:block; }
+/* Un color por error: la celda y su explicación llevan el mismo color y número. */
+#tb td.e-dup   { --ec:#2563eb; --ef:#dbe7ff; }
+#tb td.e-serie { --ec:#d97706; --ef:#fdecc8; }
+#tb td.e-nc    { --ec:#7c3aed; --ef:#ece3ff; }
+#tb td.e-cf    { --ec:#dc2626; --ef:#fde0e0; }
+#tb td.e-total { --ec:#059669; --ef:#d6f5e8; }
+#tb td[class*="e-"] { background: var(--ef) !important; box-shadow: inset 4px 0 0 var(--ec); border-left:0 !important; color:#16181d; position:relative; font-weight:800; }
+#tb td[class*="e-"]::after { content: attr(data-n); position:absolute; top:3px; right:4px; min-width:1.35em; height:1.35em; border-radius:50%; background:var(--ec); color:#fff; font:800 .62em/1.35em system-ui,sans-serif; text-align:center; }
+.expl { list-style:none; padding-left:0; }
+.expl li { border-left:4px solid var(--ec); padding:.2em 0 .2em .6em; }
+.expl li .num { display:inline-block; min-width:1.4em; height:1.4em; margin-right:.4em; border-radius:50%; background:var(--ec); color:#fff; font:800 .8em/1.4em system-ui,sans-serif; text-align:center; }
+.expl li.e-dup{--ec:#2563eb} .expl li.e-serie{--ec:#d97706} .expl li.e-nc{--ec:#7c3aed} .expl li.e-cf{--ec:#dc2626} .expl li.e-total{--ec:#059669}
+.expl b { display:inline; }
+.expl p { margin:.2em 0 0; }
 </style>
 </head>
 <body>
@@ -124,8 +138,11 @@ td { color:#16181d; border-bottom-color:#e3e5ea !important; }
       orden.forEach(function (id) {
         if (!found[id]) return;
         var li = document.createElement("li");
+        li.className = "e-" + id;
+        var num = document.createElement("span"); num.className = "num"; num.textContent = orden.indexOf(id) + 1;
         var b = document.createElement("b"); b.textContent = EXPL[id][0];
-        li.appendChild(b); li.appendChild(document.createTextNode(EXPL[id][1]));
+        var t = document.createElement("p"); t.textContent = EXPL[id][1];
+        li.appendChild(num); li.appendChild(b); li.appendChild(t);
         lista.appendChild(li);
       });
       var k = Object.keys(found).length;
@@ -135,7 +152,8 @@ td { color:#16181d; border-bottom-color:#e3e5ea !important; }
     function marcar(id) {
       found[id] = true;
       document.querySelectorAll('#tb td[data-err="' + id + '"]').forEach(function (td) {
-        td.classList.remove("wrong"); td.classList.add("found");
+        td.classList.remove("wrong"); td.classList.add("found", "e-" + id);
+        td.setAttribute("data-n", orden.indexOf(id) + 1);
       });
     }
     document.getElementById("tb").addEventListener("click", function (e) {
