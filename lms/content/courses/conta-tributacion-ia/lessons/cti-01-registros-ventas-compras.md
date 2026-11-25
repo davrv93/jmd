@@ -12,6 +12,10 @@ objectives:
   - {id: cti-01-o2, title: "Registrar compras y clasificar si dan crédito fiscal, sustentando el motivo."}
   - {id: cti-01-o3, title: "Usar IA para generar plantillas y detectar inconsistencias sin inventar datos."}
 materials:
+  - id: cti-01-video-ventajas
+    title: "Video · Ventajas de la IA en registros y tributación (1:40)"
+    kind: video
+    file: materials/grabaciones/ventajas-ia-contabilidad.mp4
   - id: cti-01-live
     title: "LIVE · Sesión 1 (inicio)"
     kind: link
