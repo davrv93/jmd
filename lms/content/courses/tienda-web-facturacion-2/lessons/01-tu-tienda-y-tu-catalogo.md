@@ -2,8 +2,9 @@
 id: tw2-01
 title: "Sesión 1 · Tu tienda y tu catálogo"
 published: true
-# starts_at: 2026-11-21T21:45:00-05:00  # liberado el 18-11-2026 para Orquestación con Qwen Coder (0 inscritos)
-duration: 45
+# 24-11-2026: el Grupo 2 pasa a dos domingos
+starts_at: 2026-12-06T09:00:00-05:00
+duration: 50
 objectives:
   - id: tw2-01-o1
     title: "Recorrer una tienda web como cliente: buscar, filtrar, ordenar, ver una ficha y armar la bolsa"

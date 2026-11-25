@@ -1,9 +1,10 @@
 ---
 id: tw2-03
-title: "Sesión 3 · Facturación, cuentas y reportes"
+title: "Sesión 2 · Facturación, cuentas y reportes"
 published: true
-# starts_at: 2026-12-05T21:45:00-05:00  # liberado el 18-11-2026 para Orquestación con Qwen Coder (0 inscritos)
-duration: 45
+# 24-11-2026: sesión 2 de 2 del Grupo 2
+starts_at: 2026-12-13T09:00:00-05:00
+duration: 50
 objectives:
   - id: tw2-03-o1
     title: "Explicar con tus palabras qué es un comprobante electrónico y por qué se envía a SUNAT"
