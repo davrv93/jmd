@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proyecto de hoy · DeepSeek, el orquestador</title>
+  <link rel="stylesheet" href="../../comun/escena.css"><link rel="stylesheet" href="../../comun/dsh.css">
+  <style>
+    .pj{--c1:var(--accent);--c2:var(--ph-or);--c3:var(--gold);--c4:var(--ph-ea);--c5:var(--info)}
+    .pj .esc-cuerpo{gap:1.1em}
+    .pj-top{display:grid;grid-template-columns:1.35fr 1fr;gap:1.4em;align-items:end}
+    .pj-eye{display:inline-flex;gap:.5em;align-items:center;font:800 .72em/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+    .pj-eye b{display:inline-block;width:.55em;height:.55em;border-radius:50%;background:var(--accent);animation:pj-lat 1.6s ease-in-out infinite}
+    @keyframes pj-lat{50%{opacity:.25}}
+    .pj h1{font:800 clamp(1.9em,4.2vw,3.1em)/1.02 system-ui,sans-serif;letter-spacing:-.035em;margin:.25em 0 .2em}
+    .pj h1 em{font-style:normal;color:var(--accent);background:linear-gradient(transparent 62%,var(--accent-bg) 0)}
+    .pj-lead{color:var(--muted);font-size:1.02em;margin:0;max-width:40em}
+    .pj-specs{display:grid;grid-template-columns:repeat(3,1fr);gap:.5em}
+    .pj-spec{border:1px solid var(--line2);border-radius:.9em;padding:.65em .75em;background:var(--s1)}
+    .pj-spec b{display:block;font:800 1.5em/1 system-ui;letter-spacing:-.03em}
+    .pj-spec span{font:700 .66em/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .pj-main{display:grid;grid-template-columns:1.35fr 1fr;gap:1.4em;align-items:start}
+    .pj-stage{margin:0;border:1px solid var(--line2);border-radius:1.1em;background:var(--s1);box-shadow:var(--card-shadow);overflow:hidden}
+    .pj-stage-h{display:flex;justify-content:space-between;align-items:center;gap:.6em;padding:.65em .9em;border-bottom:1px solid var(--line);font:700 .72em var(--mono);letter-spacing:.06em;color:var(--muted)}
+    .pj-stage-h .dots i{display:inline-block;width:.6em;height:.6em;border-radius:50%;background:var(--line2);margin-right:.3em}
+    .pj-tabs span{padding:.25em .6em;border-radius:.5em}.pj-tabs .on{background:var(--accent-bg);color:var(--accent)}
+    .pj-svg{display:block;width:100%;height:auto}
+    .pj-svg .ed{fill:none;stroke:var(--line2);stroke-width:2.2}
+    .pj-svg .ed.trab{stroke:var(--info);stroke-dasharray:7 7;animation:pj-mar .7s linear infinite}
+    .pj-svg .ed.listo{stroke:var(--ok)}
+    @keyframes pj-mar{to{stroke-dashoffset:-14}}
+    .pj-svg .nd rect{fill:var(--s2);stroke:var(--line2);stroke-width:1.6;transition:stroke .3s,fill .3s}
+    .pj-svg .nd.trab rect{stroke:var(--info);fill:var(--info-bg)}
+    .pj-svg .nd.listo rect{stroke:var(--ok);fill:var(--ok-bg)}
+    .pj-svg .nd.raiz rect{stroke:var(--accent);fill:var(--accent-bg);stroke-width:2.2}
+    .pj-svg .t{fill:var(--fg);font:700 13px system-ui,sans-serif}
+    .pj-svg .m{fill:var(--muted);font:600 10.5px ui-monospace,Menlo,monospace}
+    .pj-svg .st{font:800 10px ui-monospace,Menlo,monospace;letter-spacing:.06em}
+    .pj-svg .nd .st{fill:var(--muted)}.pj-svg .nd.trab .st{fill:var(--info)}.pj-svg .nd.listo .st{fill:var(--ok)}.pj-svg .nd.raiz .st{fill:var(--accent)}
+    .pj-svg .ic{fill:none;stroke:var(--fg);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+    .pj-foot{display:flex;justify-content:space-between;gap:.8em;padding:.6em .9em;border-top:1px solid var(--line);font:600 .78em var(--mono);color:var(--muted)}
+    .pj-foot b{color:var(--fg)}
+    .pj-side{display:grid;gap:.8em}
+    .pj-card{border:1px solid var(--line2);border-radius:1em;background:var(--s1);padding:.85em 1em}
+    .pj-card h2{font:800 .7em/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 .6em}
+    .pj-tema p{margin:0;font-size:.98em}
+    .pj-tema strong{color:var(--accent)}
+    .pj-chips{display:flex;flex-wrap:wrap;gap:.35em;margin-top:.6em}
+    .pj-chips span{font:700 .72em var(--mono);padding:.3em .6em;border-radius:99em;border:1px solid var(--line2);color:var(--fg)}
+    .pj-ent{display:grid;grid-template-columns:1fr 1fr;gap:.5em}
+    .pj-ent div{border-radius:.75em;padding:.6em .7em;background:var(--s2)}
+    .pj-ent b{display:block;font:800 1.05em system-ui}
+    .pj-ent span{font-size:.78em;color:var(--muted)}
+    .pj-ok{list-style:none;margin:0;padding:0;display:grid;gap:.35em;font-size:.9em}
+    .pj-ok li{display:grid;grid-template-columns:1.2em 1fr;gap:.45em;align-items:start}
+    .pj-ok svg{width:1.1em;height:1.1em;margin-top:.15em;color:var(--ok)}
+    .pj-crono{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line2);border-radius:1em;overflow:hidden;background:var(--s1)}
+    .pj-crono div{padding:.7em .85em;border-right:1px solid var(--line)}.pj-crono div:last-child{border-right:0}
+    .pj-crono b{display:block;font:800 .72em var(--mono);letter-spacing:.08em;color:var(--accent)}
+    .pj-crono span{font-size:.88em}
+    @media(max-width:900px){.pj-top,.pj-main{grid-template-columns:1fr}.pj-crono{grid-template-columns:1fr 1fr}.pj-crono div:nth-child(2){border-right:0}.pj-crono div:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+    @media(max-width:480px){.pj-ent{grid-template-columns:1fr 1fr}.pj-crono{grid-template-columns:1fr}.pj-crono div{border-right:0;border-bottom:1px solid var(--line)}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+<main class="esc dsh pj">
+  <header class="esc-cab"><span class="esc-fase" data-ph="ea">Experimentación</span><span class="esc-num">Proyecto de hoy</span></header>
+  <section class="esc-cuerpo">
+    <div class="pj-top">
+      <div>
+        <p class="pj-eye"><b></b>El proyecto de hoy</p>
+        <h1>Un video de 20 segundos, <em>orquestado</em></h1>
+        <p class="pj-lead">Tú diriges, la orquesta ejecuta. Cinco subagentes de DeepSeek arman un video sobre <strong>fastText y chatbots multiuso</strong> con HyperFrames, p5.js y la voz de Gemini Flash. Tú solo revisas y decides.</p>
+      </div>
+      <div class="pj-specs">
+        <div class="pj-spec"><b>20 s</b><span>duración</span></div>
+        <div class="pj-spec"><b>5</b><span>subagentes</span></div>
+        <div class="pj-spec"><b>0</b><span>GPU</span></div>
+      </div>
+    </div>
+
+    <div class="pj-main">
+      <figure class="pj-stage" aria-label="Flujo de la orquesta: el orquestador delega en cinco subagentes en orden. Guionista con Gemini Flash Lite escribe el guion; voz con Gemini Flash TTS graba la narración; animador con p5.js dibuja las escenas; montador con HyperFrames une imagen y voz en un mp4 de 20 segundos; revisor comprueba duración, voz y texto.">
+        <div class="pj-stage-h"><span class="dots"><i></i><i></i><i></i></span><span class="pj-tabs"><span class="on">Flujo</span> <span>Carriles</span></span><span>orquesta-visor.html</span></div>
+        <svg class="pj-svg" viewBox="0 0 640 322" aria-hidden="true">
+          <g id="eds"></g>
+          <g class="nd raiz" transform="translate(220,12)">
+            <rect width="200" height="58" rx="12"/>
+            <path class="ic" d="M20 22v14M14 29h12M30 20l6 9-6 9" transform="translate(0,0)"/>
+            <text class="t" x="48" y="27">Orquestador</text>
+            <text class="st" x="48" y="45" id="raiz-st">DIRIGIENDO · 0/5</text>
+          </g>
+          <g id="nds"></g>
+        </svg>
+        <figcaption class="pj-foot"><span>Mira tu orquesta trabajar: <b>orquesta_visor</b> → pestaña <b>Flujo</b></span><span id="pj-t">0,0 s</span></figcaption>
+      </figure>
+
+      <div class="pj-side">
+        <article class="pj-card pj-tema">
+          <h2>El tema del video</h2>
+          <p><strong>fastText y chatbots multiuso:</strong> modelos ligeros y portables. Caben en megas, responden en milisegundos, corren en cualquier laptop y se llevan a donde sea.</p>
+          <div class="pj-chips"><span>sin GPU</span><span>offline</span><span>milisegundos</span><span>portable</span></div>
+        </article>
+        <article class="pj-card">
+          <h2>Entregables</h2>
+          <div class="pj-ent">
+            <div><b>video.mp4</b><span>20 s · 1080×1920 o 1920×1080</span></div>
+            <div><b>guion.md</b><span>3 a 4 frases, de Flash Lite</span></div>
+            <div><b>voz.wav</b><span>Gemini Flash TTS</span></div>
+            <div><b>orquesta-visor.html</b><span>prueba del flujo</span></div>
+          </div>
+        </article>
+        <article class="pj-card">
+          <h2>Está listo cuando</h2>
+          <ul class="pj-ok">
+            <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Dura 20 s (±0,5 s) y la voz termina antes del cierre.</span></li>
+            <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Cada escena del p5 coincide con su frase del guion.</span></li>
+            <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>El revisor lo aprobó y el visor muestra los 5 en verde.</span></li>
+          </ul>
+        </article>
+      </div>
+    </div>
+
+    <div class="pj-crono" aria-label="Cronograma de la práctica">
+      <div><b>0–5 MIN</b><span>Reparte los roles con un pedido</span></div>
+      <div><b>5–20 MIN</b><span>La orquesta trabaja; tú miras el Flujo</span></div>
+      <div><b>20–30 MIN</b><span>Revisas, corriges, vuelves a lanzar</span></div>
+      <div><b>30–35 MIN</b><span>Mostramos los videos</span></div>
+    </div>
+
+    <div class="esc-card">
+      <div class="dsh-fila" style="justify-content:space-between"><div><p class="dsh-et">Pedido copiable</p><h2>Arranca tu orquesta</h2></div><button class="dsh-boton" type="button" data-pedido-de="p-proy">Copiar y abrir DeepSeek Harness</button></div>
+      <pre class="dsh-pedido" id="p-proy" data-pedido><code>Actúa como orquestador. Objetivo: un video de 20 segundos sobre fastText y chatbots multiuso (ligeros, portables, sin GPU). No programes tú: delega con tarea_fondo en cinco subagentes, en este orden, pasando a cada uno la salida del anterior:
+1. guionista: con Gemini Flash Lite escribe guion.md, 3 o 4 frases, máximo 45 palabras.
+2. voz: con Gemini Flash TTS genera voz.wav a partir de guion.md; que dure menos de 19 segundos.
+3. animador: con p5.js dibuja una escena por frase (nodos, palabras que se agrupan, un chat que responde), sin imágenes externas.
+4. montador: con HyperFrames une las escenas y voz.wav en video.mp4 de 20 segundos (1080x1920), pasa hyperframes check y renderiza.
+5. revisor: comprueba duración, que la voz termine antes del cierre y que cada escena coincida con su frase; si algo falla, devuelve el trabajo al subagente correspondiente.
+Mientras trabajan, ejecuta orquesta_visor cada vez que cambie un estado. Al final muéstrame la ruta de video.mp4 y el informe del revisor. Nunca escribas claves de API en archivos ni en el chat.</code></pre>
+    </div>
+  </section>
+</main>
+<div class="dsh-toast" id="dsh-toast" role="status" aria-live="polite"></div><script src="../../comun/dsh.js"></script>
+<script>
+(function(){
+  var NS="http://www.w3.org/2000/svg";
+  var A=[
+    {n:"Guionista",m:"Gemini Flash Lite",ic:"M6 6h12M6 11h12M6 16h7"},
+    {n:"Voz",m:"Gemini Flash TTS",ic:"M8 9v6M12 6v12M16 9v6M4 11v2M20 11v2"},
+    {n:"Animador",m:"p5.js",ic:"M5 18c3-9 11-9 14 0M12 5v4"},
+    {n:"Montador",m:"HyperFrames",ic:"M4 6h16v12H4zM10 9l5 3-5 3z"},
+    {n:"Revisor",m:"checa y aprueba",ic:"M5 12l4 4 10-10"}
+  ];
+  var W=120,H=96,G=8,X0=(640-(W*5+G*4))/2,Y=212;
+  var eds=document.getElementById("eds"),nds=document.getElementById("nds");
+  var E=[],N=[];
+  A.forEach(function(a,i){
+    var x=X0+i*(W+G),cx=x+W/2,p=document.createElementNS(NS,"path");
+    p.setAttribute("d","M320 70 C320 150 "+cx+" 140 "+cx+" "+Y);p.setAttribute("class","ed");eds.appendChild(p);E.push(p);
+    var g=document.createElementNS(NS,"g");g.setAttribute("class","nd");g.setAttribute("transform","translate("+x+","+Y+")");
+    g.innerHTML='<rect width="'+W+'" height="'+H+'" rx="12"/><path class="ic" transform="translate(12,10)" d="'+a.ic+'"/>'+
+      '<text class="t" x="12" y="54">'+a.n+'</text><text class="m" x="12" y="70">'+a.m+'</text><text class="st" x="12" y="86">EN COLA</text>';
+    nds.appendChild(g);N.push(g);
+  });
+  var rst=document.getElementById("raiz-st"),reloj=document.getElementById("pj-t");
+  function pintar(k,parcial){
+    N.forEach(function(g,i){
+      var s=i<k?"listo":(i===k?"trab":"");g.setAttribute("class","nd "+s);E[i].setAttribute("class","ed "+s);
+      g.querySelector(".st").textContent=s==="listo"?"LISTO":(s==="trab"?"TRABAJANDO":"EN COLA");
+    });
+    rst.textContent=(k>=5?"VIDEO LISTO":"DIRIGIENDO")+" · "+Math.min(k,5)+"/5";
+    reloj.textContent=(k>=5?20:Math.min(20,k*4+parcial*4)).toFixed(1).replace(".",",")+" s";
+  }
+  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){pintar(5,0);return;}
+  var paso=0,t0=performance.now(),DUR=1700;
+  function tick(now){
+    var f=(now-t0)/DUR;
+    if(f>=1){paso++;t0=now;f=0;if(paso>6){paso=0;}}
+    pintar(Math.min(paso,5),paso<5?f:0);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
