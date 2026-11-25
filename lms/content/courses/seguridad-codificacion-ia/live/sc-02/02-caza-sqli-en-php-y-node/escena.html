@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Caza SQLi</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 2 (sc-02). Caza de SQLi: dos ejemplos lado a lado.
+     PHP (PDO): concatenación vs prepare/execute. Node (mysql2): template literal vs placeholders. El alumno toca una
+     línea; si es la vulnerable, queda marcada y se muestra el arreglo. Todo es texto: no se ejecuta nada. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b2 { display: grid; grid-template-columns: 1.25fr .75fr; gap: 1.6vw; align-items: start; }
+.b2-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; }
+.b2-cols h2 { margin: 0 0 .4em; font-size: .92em; color: var(--muted); }
+.b2-der { position: sticky; top: 1.2vh; }
+.sc-ln.vacia { pointer-events: none; min-height: 1.6em; }
+@media (max-width: 760px) { .b2 { grid-template-columns: 1fr; gap: 12px; } .b2-cols { grid-template-columns: 1fr; } .b2-der { position: static; } }
+@media (prefers-reduced-motion: reduce) { .sc-ln { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Seguridad con IA · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Caza SQLi: <em>el dato no se pega</em></h1>
+    <p class="esc-sub a-in" style="--d:.08s">Toca la línea vulnerable en cada ejemplo. Pista mental: si el texto del usuario aparece dentro del SQL, <b>cruzó la frontera</b>. Aquí no hay base de datos: el código es solo texto.</p>
+
+    <div class="b2 a-in" style="--d:.16s">
+      <div class="b2-cols">
+        <section>
+          <h2>PHP · PDO</h2>
+          <div class="sc-cod" id="php" aria-label="Ejemplo PHP. Cada línea es un botón."></div>
+        </section>
+        <section>
+          <h2>Node · mysql2</h2>
+          <div class="sc-cod" id="node" aria-label="Ejemplo Node. Cada línea es un botón."></div>
+        </section>
+      </div>
+      <div class="k-pila b2-der">
+        <div class="k-caja">
+          <div class="sc-marc" aria-live="polite">
+            <span class="ok"><b id="m-ok">0</b>de 2</span>
+            <span><b id="m-fal">0</b>falsas alarmas</span>
+          </div>
+          <div class="k-links">
+            <button type="button" class="k-btn sec mini" id="b-pista">Dame una pista</button>
+            <button type="button" class="k-btn sec mini" id="b-ver">Ver las dos</button>
+            <button type="button" class="k-btn sec mini" id="b-otra">De nuevo</button>
+          </div>
+        </div>
+        <article class="sc-hall" id="ficha" aria-live="polite">
+          <p class="sc-ceja">Cómo se juega</p>
+          <ol class="sc-lista">
+            <li><span><b>Toca una línea.</b> Si es el fallo, se marca.</span></li>
+            <li><span><b>Lee el porqué.</b> No memorices: entiende la frontera.</span></li>
+            <li><span><b>Mira el arreglo.</b> Parametrizar separa código y dato.</span></li>
+          </ol>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Si encontraste las 2, pulsa «Lo logré». En tu proyecto, busca concatenaciones en SQL.</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var EJ = {
+    php: { archivo: "repo/UsuarioRepo.php", lineas: [
+      ["// devuelve el usuario por id"],
+      ["$id = $_GET['id'];"],
+      ["$sql = \"SELECT id, nombre FROM usuarios WHERE id = $id\";", "php-sqli"],
+      ["$fila = $pdo->query($sql)->fetch();"],
+      [""],
+      ["// así se corrige"],
+      ["$st = $pdo->prepare('SELECT id, nombre FROM usuarios WHERE id = ?');"],
+      ["$st->execute([$id]);"],
+      ["$fila = $st->fetch();"],
+    ] },
+    node: { archivo: "routes/usuarios.js", lineas: [
+      ["// GET /usuarios?id=..."],
+      ["const id = req.query.id;"],
+      ["const sql = `SELECT id, nombre FROM usuarios WHERE id = ${id}`;", "node-sqli"],
+      ["const [rows] = await db.query(sql);"],
+      [""],
+      ["// así se corrige"],
+      ["const [rows] = await db.execute('SELECT id, nombre FROM usuarios WHERE id = ?', [id]);"],
+    ] },
+  };
+
+  var ficha = SC.$("#ficha");
+  var est = SC.leer("sqli", null) || { ok: {}, fal: 0 };
+
+  function marcador() {
+    var ok = Object.keys(est.ok).length;
+    SC.$("#m-ok").textContent = ok;
+    SC.$("#m-fal").textContent = est.fal;
+    SC.$("#b-pista").disabled = ok >= 2;
+    SC.$("#b-ver").disabled = ok >= 2;
+  }
+
+  function fichaVacia(ceja, texto, clase) {
+    ficha.className = "sc-hall" + (clase ? " " + clase : "");
+    ficha.textContent = "";
+    ficha.appendChild(SC.el("p", "sc-ceja", ceja));
+    ficha.appendChild(SC.el("p", "", texto));
+  }
+
+  function fichaFallo(id) {
+    var esPhp = id === "php-sqli";
+    ficha.className = "sc-hall bien";
+    ficha.textContent = "";
+    ficha.appendChild(SC.el("p", "sc-ceja", (esPhp ? "PHP" : "Node") + " · fallo encontrado"));
+    ficha.appendChild(SC.el("h2", "", "Inyección SQL por concatenación"));
+    ficha.appendChild(SC.el("p", "", "El valor del usuario aparece dentro del SQL. Si trae una comilla o un operador, el motor puede interpretarlo como parte de la consulta. No es que \"falten comillas\": el problema es mezclar roles."));
+    var a = SC.el("p", "", ""); a.appendChild(SC.el("b", "", "Así se corrige (parametrizar):")); ficha.appendChild(a);
+    var pre = SC.el("pre", "", "");
+    pre.textContent = esPhp
+      ? "$st = $pdo->prepare('SELECT id, nombre FROM usuarios WHERE id = ?');\n$st->execute([$id]);"
+      : "const [rows] = await db.execute('SELECT id, nombre FROM usuarios WHERE id = ?', [id]);";
+    ficha.appendChild(pre);
+    var faltan = 2 - Object.keys(est.ok).length;
+    if (faltan) ficha.appendChild(SC.el("p", "k-nota", faltan === 1 ? "Queda 1 por encontrar." : "Quedan " + faltan + " por encontrar."));
+  }
+
+  function pintar(cajaId, ej, claveOk) {
+    var cont = SC.$(cajaId); cont.textContent = "";
+    var cab = SC.el("div", "sc-cod-cab");
+    cab.appendChild(SC.el("span", "", ej.archivo));
+    cab.appendChild(SC.el("span", "", "ejemplo inventado"));
+    cont.appendChild(cab);
+    ej.lineas.forEach(function (fila, i) {
+      var txt = fila[0], fid = fila[1] || "";
+      var b;
+      if (!txt) { b = SC.el("div", "sc-ln vacia", " "); b.setAttribute("aria-hidden", "true"); cont.appendChild(b); return; }
+      b = SC.el("button", "sc-ln");
+      if (/^\s*\/\//.test(txt)) b.appendChild(SC.el("span", "c", txt)); else b.textContent = txt;
+      b.setAttribute("aria-pressed", "false");
+      b.setAttribute("aria-label", "Línea " + (i + 1) + ": " + txt.trim());
+      if (fid && est.ok[fid]) b.classList.add("hall", "listo");
+      b.addEventListener("click", function () {
+        cont.querySelectorAll(".sc-ln").forEach(function (x) { x.setAttribute("aria-pressed", "false"); });
+        b.setAttribute("aria-pressed", "true");
+        if (fid) {
+          if (!est.ok[fid]) { est.ok[fid] = 1; SC.guardar("sqli", est); }
+          b.classList.add("hall", "listo");
+          marcador(); fichaFallo(fid);
+        } else {
+          est.fal++; SC.guardar("sqli", est);
+          marcador();
+          fichaVacia("Aquí no hay SQLi", "Esta línea puede ser fea o incompleta, pero la inyección ocurre donde el dato entra al SQL. Busca la línea donde se arma el texto de la consulta.", "duda");
+        }
+      });
+      cont.appendChild(b);
+    });
+  }
+
+  function render() {
+    pintar("#php", EJ.php, "php-sqli");
+    pintar("#node", EJ.node, "node-sqli");
+    marcador();
+    if (Object.keys(est.ok).length) fichaVacia("Sigues donde lo dejaste", "Toca una línea marcada para volver a ver su explicación, o busca la que falta.");
+  }
+
+  SC.$("#b-otra").addEventListener("click", function () { est = { ok: {}, fal: 0 }; SC.guardar("sqli", est); render(); fichaVacia("De nuevo", "Marcador en cero. Toca la línea vulnerable en cada ejemplo."); });
+  SC.$("#b-ver").addEventListener("click", function () { est.ok["php-sqli"] = 1; est.ok["node-sqli"] = 1; SC.guardar("sqli", est); render(); fichaVacia("Las dos quedan marcadas", "Toca cada una para leer el porqué y ver el arreglo.", "duda"); });
+  SC.$("#b-pista").addEventListener("click", function () {
+    var falta = est.ok["php-sqli"] ? "node" : "php";
+    fichaVacia("Pista", "Busca una línea con un SQL que incluya una variable dentro del texto. Si aparece ${...} o una concatenación con + o con . dentro de la consulta, es la puerta.", "duda");
+    try { SC.$("#" + falta).scrollIntoView({ block: "nearest" }); } catch (e) {}
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

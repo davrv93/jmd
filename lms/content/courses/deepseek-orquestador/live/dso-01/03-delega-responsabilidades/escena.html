@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delega responsabilidades · DeepSeek, el orquestador</title>
+  <link rel="stylesheet" href="../../comun/escena.css">
+  <style>
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+    .tab { width: 100%; border-collapse: collapse; font-size: .95em; }
+    .tab th, .tab td { border-bottom: 1px solid var(--line); padding: .7em .4em; vertical-align: top; }
+    .tab th { text-align: left; font-size: .75em; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .asig { display: flex; flex-wrap: wrap; gap: .35em; }
+    .a { border: 1px solid var(--line2); background: var(--s1); color: var(--fg); border-radius: 999px; padding: .25em .6em;
+      font: 700 .78em/1 var(--mono); cursor: pointer; }
+    .a[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+    .score { display:flex; gap:.6em; align-items:center; }
+    .score b { font: 800 .95em var(--mono); }
+    .regla { display:flex; gap:.7em; align-items:flex-start; }
+    .regla svg { width: 1.4em; height: 1.4em; flex:none; fill:none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; margin-top:.05em; }
+    @media (max-width: 900px) { .tab th:nth-child(2), .tab td:nth-child(2) { display:none; } }
+  </style>
+</head>
+<body>
+  <main class="esc">
+    <header class="esc-cab"><span class="esc-fase" data-ph="ea">Experimentación</span><span class="esc-num">4 / 8</span></header>
+    <section class="esc-cuerpo">
+      <h1 class="esc-titulo">Delega <em>responsabilidades</em></h1>
+      <p class="esc-sub">El juego: elige quién hace cada tarea en un proyecto chico. No hay un “agente mago”: la verificación también se delega.</p>
+
+      <div class="esc-card">
+        <div class="score"><span class="esc-chip">Tu puntaje</span> <b id="sc">0 / 6</b> <span style="color:var(--muted)">· apunta a separar producción y verificación</span></div>
+        <table class="tab" aria-label="Tareas y asignación por rol">
+          <thead><tr><th>Tarea</th><th>Qué se espera</th><th>Quién</th></tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+
+      <div class="esc-card regla">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        <div>
+          <b>Regla operativa</b>
+          <p style="margin:.15em 0 0; color:var(--muted)">Quien produce un cambio <em>no</em> lo da por verificado. El orquestador decide quién verifica y con qué evidencia.</p>
+        </div>
+      </div>
+    </section>
+    <footer class="esc-pie">Tip: si dudas, asigna primero la verificación; luego el resto cae por su propio peso.</footer>
+  </main>
+
+  <script>
+    (function () {
+      var ROLES = [
+        { id: 'prog', t: 'Programador' },
+        { id: 'test', t: 'Probador' },
+        { id: 'rev',  t: 'Revisor' },
+        { id: 'orq',  t: 'Orquestador' },
+      ];
+      var filas = [
+        { t: 'Definir criterios de aceptación', e: 'Reglas y ejemplos (válido / inválido).', ok: 'orq' },
+        { t: 'Implementar la validación', e: 'Código + manejo de errores.', ok: 'prog' },
+        { t: 'Diseñar casos de prueba', e: 'Tabla de casos + datos de entrada.', ok: 'test' },
+        { t: 'Ejecutar pruebas y evidencias', e: 'Comandos, resultados y capturas/logs.', ok: 'test' },
+        { t: 'Revisión de cambios', e: 'Leer diff + buscar riesgos y omisiones.', ok: 'rev' },
+        { t: 'Aprobar para integrar', e: 'Decidir “entra / no entra” con evidencia.', ok: 'orq' },
+      ];
+      var key = 'dso01.asig';
+      var prev = '';
+      try { prev = localStorage.getItem(key) || ''; } catch (e) {}
+      var asig = {};
+      prev.split(',').forEach(function (p) { var kv = p.split(':'); if (kv.length === 2) asig[kv[0]] = kv[1]; });
+      var tb = document.getElementById('tb');
+      var sc = document.getElementById('sc');
+
+      function guardar() {
+        try {
+          var s = filas.map(function (_, i) { return i + ':' + (asig[i] || ''); }).join(',');
+          localStorage.setItem(key, s);
+        } catch (e) {}
+      }
+
+      function puntaje() {
+        var ok = 0;
+        filas.forEach(function (f, i) { if (asig[i] === f.ok) ok++; });
+        if (sc) sc.textContent = ok + ' / ' + filas.length;
+      }
+
+      function pintar() {
+        tb.textContent = '';
+        filas.forEach(function (f, i) {
+          var tr = document.createElement('tr');
+          var td1 = document.createElement('td'); td1.innerHTML = '<b>' + f.t + '</b>';
+          var td2 = document.createElement('td'); td2.textContent = f.e;
+          var td3 = document.createElement('td');
+          var g = document.createElement('div'); g.className = 'asig'; g.setAttribute('role', 'group'); g.setAttribute('aria-label', 'Asignación para: ' + f.t);
+          ROLES.forEach(function (r) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'a';
+            b.textContent = r.t;
+            b.dataset.i = String(i);
+            b.dataset.r = r.id;
+            b.setAttribute('aria-pressed', asig[i] === r.id ? 'true' : 'false');
+            b.addEventListener('click', function () {
+              asig[i] = r.id;
+              guardar();
+              pintar();
+              puntaje();
+            });
+            g.appendChild(b);
+          });
+          td3.appendChild(g);
+          tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+          tb.appendChild(tr);
+        });
+      }
+
+      pintar();
+      puntaje();
+    })();
+  </script>
+</body>
+</html>

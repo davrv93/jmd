@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La entrada del usuario es dato, no código</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520. Modelo espacial: frontera dato/código. Cada paso arma una parte y termina en un estado quieto. */
+  .fr { position: absolute; left: 6%; top: 17%; width: 88%; height: 58%; border-radius: 18px; border: 2px solid color-mix(in srgb, var(--tinta) 16%, transparent); background: color-mix(in srgb, var(--papel) 92%, var(--tinta) 8%); }
+  .fr::before { content: ""; position: absolute; left: 50%; top: 7%; bottom: 7%; width: 2px; background: color-mix(in srgb, var(--tinta) 18%, transparent); }
+  .fr h3 { position: absolute; top: 6%; margin: 0; font: 800 1.1em var(--serif); }
+  .fr .izq { left: 8%; }
+  .fr .der { right: 8%; }
+  .ej { font: 700 1.05em/1.15 var(--mono); letter-spacing: .01em; }
+  .ej small { font: 700 .78em/1.2 system-ui, sans-serif; color: #4A4F5A; }
+  .oktxt { font-weight: 700; color: var(--ok); }
+  .badtxt { font-weight: 700; color: var(--bad); }
+  @media (prefers-reduced-motion: reduce) { .teo-fig * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría · Frontera dato/código</p>
+    <h1>La entrada del usuario es <em>dato</em>, no código</h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Una lámina con una frontera al medio. A la izquierda está la zona de dato; a la derecha, la zona de código. En el paso 2 aparece un ejemplo de consulta SQL construida concatenando texto del usuario y una flecha roja cruza la frontera. En el paso 3 aparece una consulta parametrizada y la flecha verde se queda del lado del dato. En el paso 4 se muestra el mismo patrón en el navegador: innerHTML interpreta y textContent solo muestra. En el paso 5 aparece la regla final: si el dato cruza a código, hay inyección.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <path id="fleR" class="trazo" d="M168 300 C260 250, 340 250, 420 300"/>
+        <path id="fleG" class="trazo" d="M168 364 C260 314, 340 314, 420 364"/>
+      </svg>
+
+      <div class="fr" aria-hidden="true">
+        <h3 class="izq">dato</h3>
+        <h3 class="der">código</h3>
+      </div>
+
+      <div class="nt cmd" id="p1" data-r="-1" style="left:7%; top:16%; width:40%"><span class="k">Punto de partida</span><span class="t">Lo que llega de afuera (URL, body, cookie) <b>no es confiable</b>. Pero no es un fallo hasta que lo usas.</span></div>
+
+      <div class="nt hot" id="p2" data-r="1" style="left:7%; top:38%; width:40%"><span class="k">SQL</span><span class="t ej">"... WHERE id = " + id <small class="badtxt">(concatenar)</small></span></div>
+      <div class="nt ev" id="p2b" data-r="-1.2" style="left:56%; top:39%; width:37%"><span class="k">Lo que se rompe</span><span class="t">Una comilla puede cambiar el significado. El dato <b>cruza</b> y se interpreta como orden.</span></div>
+
+      <div class="nt info" id="p3" data-r=".8" style="left:7%; top:60%; width:38%"><span class="k">SQL</span><span class="t ej">"... WHERE id = ?" <small class="oktxt">(parametrizar)</small></span></div>
+      <div class="nt act" id="p3b" data-r="-1" style="left:56%; top:60%; width:37%"><span class="k">La frontera se respeta</span><span class="t">La consulta es el código. El valor viaja por separado y <b>siempre</b> se trata como dato.</span></div>
+
+      <div class="nt pol" id="p4" data-r="1.1" style="left:7%; top:80%; width:86%"><span class="k">Navegador</span><span class="t"><span class="badtxt">innerHTML</span> interpreta etiquetas. <span class="oktxt">textContent</span> solo muestra texto. Es el mismo patrón: dato que se vuelve código.</span></div>
+
+      <p class="pastilla" id="p5" style="left:17%; top:8%; width:66%">Regla práctica: si el dato entra a un intérprete, <b>no lo pegues</b>. Parametriza, escapa o valida.</p>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>El dato entra por una puerta</b><p>URL, body, cookie: cualquier entrada externa llega como texto. No es «malo» por sí mismo: el fallo ocurre donde se usa.</p></li>
+        <li><b>Concatenar cruza la frontera</b><p>Si pegas el texto del usuario dentro de un SQL, el motor ya no ve un dato: ve parte de una orden.</p><p class="aparte">Esto también pasa con HTML, comandos de shell o expresiones.</p></li>
+        <li><b>Parametrizar separa roles</b><p>En una consulta parametrizada, el SQL es el código y el valor viaja aparte. La comilla deja de ser un operador.</p></li>
+        <li><b>XSS es la misma idea</b><p>En el navegador, <code>innerHTML</code> interpreta. Si el dato trae etiquetas, se ejecuta como parte de la página.</p></li>
+        <li><b>Tu regla de bolsillo</b><p>Si un dato llega a un intérprete, pregúntate: ¿se queda como dato o puede volverse orden? Tu trabajo es sostener esa frontera.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">OWASP Foundation (2021). OWASP Top Ten 2021: A03:2021 – Injection.</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  "use strict";
+  TEO.escena([
+    function (tl) { // 1
+      TEO.pegar(tl, "#p1");
+    },
+    function (tl) { // 2
+      TEO.pegar(tl, "#p2");
+      TEO.trazar(tl, "#fleR", { duration: .7 }, "+=.05");
+      TEO.pegar(tl, "#p2b", "+=.15");
+    },
+    function (tl) { // 3
+      TEO.pegar(tl, "#p3");
+      TEO.trazar(tl, "#fleG", { duration: .7 }, "+=.05");
+      TEO.pegar(tl, "#p3b", "+=.15");
+    },
+    function (tl) { // 4
+      TEO.pegar(tl, "#p4");
+    },
+    function (tl) { // 5
+      tl.fromTo("#p5", { autoAlpha: 0, y: -10 }, { autoAlpha: 1, y: 0, duration: .5, ease: "back.out(1.8)" });
+    }
+  ], {
+    preparar: function () { gsap.set(["#fleR", "#fleG"], { autoAlpha: 1 }); gsap.set("#p5", { autoAlpha: 0 }); },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · ¿En qué categoría cae?</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 2 (sc-02). Repaso: 6 casos, sin reloj. El alumno
+     elige la categoría del OWASP Top Ten 2021; cuenta el primer intento. Al final vota sc02-repaso. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b7 { display: grid; grid-template-columns: 1.2fr .8fr; gap: 1.8vw; align-items: start; }
+.b7-caso { min-height: 12.5em; }
+.b7-caso h2 { font-size: 1.02em; line-height: 1.35; font-weight: 700; }
+.b7-pips { display: flex; gap: .3em; }
+.b7-pips i { flex: 1; height: .5em; border-radius: .2em; background: var(--s3); }
+.b7-pips i.si { background: var(--ok); }
+.b7-pips i.no { background: var(--warn); }
+.b7-pips i.ya { outline: 2px solid var(--accent); outline-offset: 1px; }
+.b7-res { font: 800 2.2em/1 var(--mono); margin: 0; }
+.b7-res small { font: 600 .32em/1.3 system-ui, sans-serif; color: var(--muted); display: block; margin-top: .5em; }
+@media (max-width: 760px) { .b7 { grid-template-columns: 1fr; gap: 12px; } .b7-caso { min-height: 0; } }
+@media (prefers-reduced-motion: reduce) { .b7-caso { animation: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Seguridad con IA · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Repaso rápido: <em>¿en qué categoría cae?</em></h1>
+    <p class="esc-sub a-in" style="--d:.08s">Seis casos de hoy, sin reloj. Lee, elige la categoría y mira el porqué. Cuenta el primer intento.</p>
+
+    <div class="b7 a-in" style="--d:.16s">
+      <div class="k-pila">
+        <div class="b7-pips" id="pips" aria-hidden="true"></div>
+        <article class="sc-hall b7-caso" id="caso" aria-live="polite"></article>
+      </div>
+      <div class="k-pila">
+        <div class="k-caja">
+          <p class="b7-res"><span id="n-ok">0</span> de 6<small id="msg">a la primera</small></p>
+          <div class="k-links"><button type="button" class="k-btn sec" id="b-otra">Empezar de nuevo</button></div>
+        </div>
+        <div class="k-caja k-voto" id="voto" data-voto="sc02-repaso" hidden>
+          <p class="k-q">Marca tu resultado y míralo junto al del grupo</p>
+          <div class="k-ops">
+            <button type="button" data-op="r6">6 de 6</button>
+            <button type="button" data-op="r4">4 o 5</button>
+            <button type="button" data-op="r2">2 o 3</button>
+            <button type="button" data-op="r0">1 o 0</button>
+          </div>
+        </div>
+        <p class="k-nota">Las categorías se solapan. Si dudaste entre dos, no pasa nada: en una revisión real anotas ambas y sigues. Lo que no puede pasar es no verlo.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Categorías del OWASP Top Ten 2021. Juega igual aunque llegues tarde.</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  // OWASP Top Ten 2021 (códigos oficiales y nombre corto para el juego).
+  var CATS = [
+    { id: "A01", corto: "Acceso" },
+    { id: "A02", corto: "Cripto" },
+    { id: "A03", corto: "Inyección" },
+    { id: "A05", corto: "Config" },
+    { id: "A07", corto: "Auth" },
+    { id: "A08", corto: "Integridad" },
+    { id: "A09", corto: "Registro" },
+  ];
+  var CASOS = [
+    { q: "Un endpoint arma el SQL así: `... WHERE id = ${id}` y el id viene de la URL.", cat: "A03",
+      por: "Inyección: el dato del usuario se pegó dentro del SQL. El motor lo puede interpretar como orden." },
+    { q: "La página muestra un comentario con `innerHTML = comentario`.", cat: "A03",
+      por: "XSS es inyección. El navegador interpreta el dato como HTML y puede ejecutar lo que venga." },
+    { q: "Un merge profundo acepta cualquier clave del request y mezcla sobre un objeto por defecto.", cat: "A08",
+      por: "Integridad: el dato no solo cambia valores, puede colarse como metadato (prototipo) y alterar el programa." },
+    { q: "Un controlador hace `$prefs = unserialize($_POST['prefs']);`.", cat: "A08",
+      por: "Integridad: deserializar reconstruye estructuras desde un texto externo. Con datos de usuario es una puerta peligrosa." },
+    { q: "En producción la app muestra el stack trace completo y la consulta cuando falla la base de datos.", cat: "A05",
+      por: "Configuración insegura: debug encendido o manejo de errores que expone detalles internos." },
+    { q: "Un servicio usa una contraseña hardcodeada en el repo para conectar a la base de datos.", cat: "A07",
+      por: "Fallo de identificación y autenticación: credenciales dentro del código. Quien ve el repo, tiene la llave." },
+  ];
+
+  function ops(alElegir) {
+    var caja = SC.el("div", "sc-ops");
+    caja.setAttribute("role", "group");
+    caja.setAttribute("aria-label", "Categorías OWASP Top Ten 2021");
+    CATS.forEach(function (c) {
+      var b = SC.el("button");
+      b.appendChild(SC.el("b", "", c.id));
+      b.appendChild(document.createTextNode(c.corto));
+      b.setAttribute("data-cat", c.id);
+      b.addEventListener("click", function () { alElegir(c.id, b, caja); });
+      caja.appendChild(b);
+    });
+    return caja;
+  }
+
+  var est = SC.leer("repaso-2021", null) || { r: [] }; // r[i]: 1 = a la primera, 2 = con ayuda
+  var caso = SC.$("#caso"), i = Math.min(est.r.length, CASOS.length);
+
+  function pips() {
+    var p = SC.$("#pips"); p.textContent = "";
+    CASOS.forEach(function (_, k) {
+      var x = SC.el("i", est.r[k] === 1 ? "si" : est.r[k] === 2 ? "no" : "");
+      if (k === i) x.classList.add("ya");
+      p.appendChild(x);
+    });
+    var ok = est.r.filter(function (v) { return v === 1; }).length;
+    SC.$("#n-ok").textContent = ok;
+    var fin = est.r.length >= CASOS.length;
+    SC.$("#voto").hidden = !fin;
+    SC.$("#msg").textContent = !fin ? "a la primera · caso " + Math.min(i + 1, CASOS.length) + " de " + CASOS.length
+      : ok === 6 ? "a la primera. Ya tienes el mapa." : ok >= 4 ? "a la primera. Bien: repasa las que dudaste." : "a la primera. Juega otra ronda.";
+  }
+
+  function pintar() {
+    pips();
+    caso.textContent = "";
+    if (i >= CASOS.length) {
+      caso.className = "sc-hall b7-caso bien";
+      caso.appendChild(SC.el("p", "sc-ceja", "Repaso terminado"));
+      caso.appendChild(SC.el("h2", "", "Seis casos, varias categorías."));
+      caso.appendChild(SC.el("p", "", "Marca tu resultado a la derecha."));
+      return;
+    }
+    var c = CASOS[i], fallo = false;
+    caso.className = "sc-hall b7-caso";
+    caso.appendChild(SC.el("p", "sc-ceja", "Caso " + (i + 1) + " de " + CASOS.length));
+    caso.appendChild(SC.el("h2", "", c.q));
+    var aviso = SC.el("p", "k-nota", "");
+    var o = ops(function (id, b, caja) {
+      if (id !== c.cat) { fallo = true; b.classList.add("no"); b.disabled = true; aviso.textContent = "No es " + id + ". Prueba otra."; return; }
+      est.r[i] = fallo ? 2 : 1; SC.guardar("repaso-2021", est);
+      SC.$$("button", caja).forEach(function (x) { x.disabled = true; }); b.classList.add("si");
+      caso.className = "sc-hall b7-caso " + (fallo ? "duda" : "bien");
+      aviso.remove();
+      var tag = SC.el("span", "sc-tags");
+      var t1 = SC.el("span", "sc-tag"); t1.appendChild(SC.el("b", "", c.cat)); t1.appendChild(document.createTextNode(" OWASP 2021"));
+      tag.appendChild(t1);
+      caso.appendChild(tag);
+      caso.appendChild(SC.el("p", "", c.por));
+      var sig = SC.el("button", "k-btn", i + 1 < CASOS.length ? "Siguiente caso" : "Ver mi resultado");
+      sig.addEventListener("click", function () { i++; pintar(); });
+      caso.appendChild(sig); pips();
+      try { sig.focus({ preventScroll: true }); } catch (e) {}
+      if (window.innerWidth <= 760) SC.aLaVista(sig);
+    });
+    caso.appendChild(o);
+    caso.appendChild(aviso);
+  }
+  SC.$("#b-otra").addEventListener("click", function () { est = { r: [] }; SC.guardar("repaso-2021", est); i = 0; pintar(); });
+  pintar();
+})();
+</script>
+</body>
+</html>

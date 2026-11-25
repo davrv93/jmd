@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Tarea y cierre</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 2 (sc-02). Cierre: tarea con plantilla copiable,
+     muro sc02-cierre y voto de salida sc02-como. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b8 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.8vw; align-items: start; }
+.b8-preg { margin: 0; padding: 0; list-style: none; display: grid; gap: .35em; }
+.b8-preg li { display: grid; grid-template-columns: 2.8em minmax(0, 1fr); gap: .6em; align-items: baseline; font-size: .76em; line-height: 1.4; }
+.b8-preg b { font: 800 1em var(--mono); color: var(--sc); }
+@media (max-width: 760px) { .b8 { grid-template-columns: 1fr; gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { .b8 * { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Seguridad con IA · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Te llevas una <em>frontera</em>, no un truco</h1>
+    <div class="b8 a-in" style="--d:.1s">
+      <div class="k-pila">
+        <article class="sc-hall" style="--c:var(--sc)">
+          <p class="sc-ceja">Tarea · trae evidencia</p>
+          <h2>Dos hallazgos, comprobables</h2>
+          <ol class="sc-lista">
+            <li><span><b>1 de dependencias.</b> Corre <code>npm audit</code> o <code>composer audit</code>. Trae un aviso: paquete, versión, por qué te afecta y qué harías.</span></li>
+            <li><span><b>1 de código.</b> Encuentra en tu proyecto un caso real de SQLi/XSS/merge profundo/unserialize (o demuestra que no hay en ese archivo). Trae <b>archivo y línea</b> y el cambio mínimo para corregirlo.</span></li>
+          </ol>
+          <pre class="k-pedido" id="p-plant" data-titulo="Plantilla de entrega">Entrega · sesión 2
+
+Proyecto: ______   Lenguaje: PHP / Node
+
+Hallazgo 1 (dependencias)
+- Herramienta: npm audit / composer audit
+- Paquete y versión: 
+- Qué dice el aviso (resumen): 
+- ¿Me afecta en producción?: 
+- Acción: actualizar / reemplazar / aceptar (con nota)
+
+Hallazgo 2 (código)
+- Tipo: SQLi / XSS / prototipo / unserialize
+- Archivo y línea: 
+- Por qué es un fallo: 
+- Prueba o pasos para reproducir: 
+- Arreglo mínimo (antes/después): 
+</pre>
+          <div class="k-pedido-pie">
+            <button type="button" class="k-btn" data-copiar-de="#p-plant">Copiar la plantilla</button>
+          </div>
+          <p class="k-nota"><b>Solo en tu máquina.</b> Lo aprendido se aplica en tus sistemas o con permiso escrito.</p>
+        </article>
+        <div class="k-caja k-muro" data-muro="sc02-cierre" data-pregunta="En una línea: ¿qué cambió hoy en tu forma de leer código?" data-placeholder="Hoy voy a…" data-max="4"></div>
+      </div>
+
+      <div class="k-pila">
+        <div class="k-caja">
+          <p class="k-q">La frontera (tu lista de bolsillo)</p>
+          <ul class="b8-preg" id="pregs"></ul>
+          <div class="k-links"><button type="button" class="k-btn sec" id="b-lista">Copiar la lista</button></div>
+        </div>
+        <div class="k-caja k-voto" data-voto="sc02-como">
+          <p class="k-q">¿Cómo te vas?</p>
+          <div class="k-ops">
+            <button type="button" data-op="veo">Ahora lo veo más rápido</button>
+            <button type="button" data-op="dudo">Todavía dudo</button>
+            <button type="button" data-op="pract">Necesito practicar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Gracias por venir. Si entregas la tarea, esto se vuelve hábito.</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var LISTA = [
+    ["1", "¿Algún dato externo se pegó dentro de SQL/HTML/una orden?"],
+    ["2", "¿Ese dato cruza como texto o se interpreta como estructura/código?"],
+    ["3", "¿La defensa está donde debe (servidor), o solo en la interfaz?"],
+    ["4", "¿Qué depende de paquetes? ¿Los auditaste?"],
+  ];
+  var ul = SC.$("#pregs");
+  LISTA.forEach(function (p) {
+    var li = SC.el("li");
+    li.appendChild(SC.el("b", "", p[0]));
+    li.appendChild(SC.el("span", "", p[1]));
+    ul.appendChild(li);
+  });
+  var txt = "Lista de bolsillo · Seguridad con IA, sesión 2\n" + LISTA.map(function (p) { return "- " + p[0] + ". " + p[1]; }).join("\n");
+  SC.$("#b-lista").addEventListener("click", function () {
+    var b = this, antes = b.textContent;
+    SC.copiar(txt).then(function (ok) { b.textContent = ok ? "✓ Copiado" : "No pude copiar"; setTimeout(function () { b.textContent = antes; }, 2000); });
+  });
+})();
+</script>
+</body>
+</html>

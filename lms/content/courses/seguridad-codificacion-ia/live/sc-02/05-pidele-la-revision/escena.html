@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Pídele la revisión</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 2 (sc-02). Experimentación: tres pedidos listos para
+     copiar y pegar en DeepSeek Harness (o el asistente que use el alumno), para auditar un archivo por SQLi/XSS y dos
+     fallos menos obvios. Regla: evidencia y prueba o queda «por confirmar». Mini-ejercicio con voto sc02-acepto. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b5 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.8vw; align-items: start; }
+.b5-resp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1vw; align-items: stretch; }
+.b5-resp article { --c: var(--line2); }
+.b5-resp h3 { display: flex; gap: .5em; align-items: baseline; }
+.b5-resp h3 b { font: 800 1.2em var(--mono); color: var(--sc); }
+.b5-resp p { font-size: .72em; }
+.b5-resp .dice { font-family: var(--mono); font-size: .66em; line-height: 1.5; background: var(--s2); border-radius: .4em; padding: .55em .7em; }
+.b5-h2 { margin: .4vh 0 0; font-size: 1.05em; }
+.b5-h2 span { color: var(--muted); font-weight: 600; font-size: .78em; }
+@media (max-width: 760px) { .b5, .b5-resp { grid-template-columns: 1fr; gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { .b5-resp article { animation: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Seguridad con IA · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Pídele la revisión a la IA… <em>y exige evidencia</em></h1>
+    <p class="esc-sub a-in" style="--d:.08s">Tres pedidos, en orden. Funcionan en DeepSeek Harness o en cualquier asistente. La regla: <b>archivo:línea + prueba</b>, o el hallazgo queda «por confirmar».</p>
+
+    <div class="b5 a-in" style="--d:.16s">
+      <div class="k-pila">
+        <div class="k-seg" data-seg="ped" role="group" aria-label="Pedido">
+          <button type="button" data-v="0" aria-pressed="true">1 · Caza con lista</button>
+          <button type="button" data-v="1" aria-pressed="false">2 · Evidencia y prueba</button>
+          <button type="button" data-v="2" aria-pressed="false">3 · Arreglo mínimo</button>
+        </div>
+        <pre class="k-pedido" id="pedido" data-titulo="" tabindex="0"></pre>
+        <div class="k-pedido-pie">
+          <button type="button" class="k-btn" id="b-copiar">Copiar el pedido</button>
+          <span class="k-nota" id="para"></span>
+        </div>
+      </div>
+
+      <article class="sc-hall bien">
+        <p class="sc-ceja">Cómo comprobar lo que responde</p>
+        <ol class="sc-lista">
+          <li><span><b>Archivo y línea.</b> La línea existe y dice lo que afirma. Ábrela y mírala.</span></li>
+          <li><span><b>Se puede reproducir.</b> Hay una prueba o pasos concretos que hoy fallan por culpa del fallo.</span></li>
+          <li><span><b>El arreglo es acotado.</b> Cambia solo lo necesario y trae la prueba que ahora pasa.</span></li>
+        </ol>
+        <p class="k-nota"><b>Dos señales de humo.</b> Inventar archivos o funciones que no existen. Y la frase «ya está seguro»: ninguna revisión demuestra que no queden fallos; solo dice que no encontró más.</p>
+      </article>
+    </div>
+
+    <h2 class="b5-h2">Tres respuestas de una IA <span>· le pediste revisar un solo archivo. ¿Cuál aceptas?</span></h2>
+    <div class="b5-resp">
+      <article class="sc-hall" id="r-a">
+        <h3><b>A</b> «Cumple con OWASP»</h3>
+        <p class="dice">Revisé tu archivo y ahora cumple con OWASP. Está listo para producción. No veo más vulnerabilidades.</p>
+        <p class="por" hidden><b>No.</b> No cita archivo:línea, no propone prueba y promete algo que no se puede prometer.</p>
+      </article>
+      <article class="sc-hall" id="r-b">
+        <h3><b>B</b> Un hallazgo comprobable</h3>
+        <p class="dice">Hallazgo 1 · usuarios.php, línea 41 · SQLi por concatenación. Evidencia: la línea arma el SQL pegando $id. Prueba: con id = 1 OR 1=1, la consulta devuelve más de un usuario. Arreglo mínimo: cambiar esa consulta a prepare/execute. Sin revisar: el límite de intentos.</p>
+        <p class="por" hidden><b>Esta, para comprobarla.</b> Tiene evidencia, una prueba reproducible y un arreglo acotado. Aceptarla no es creerle: es tener algo que puedes verificar.</p>
+      </article>
+      <article class="sc-hall" id="r-c">
+        <h3><b>C</b> Una reescritura grande</h3>
+        <p class="dice">Hallazgo crítico · reescribí tu autenticación con una arquitectura más robusta. Cambié 14 archivos y agregué nuevas dependencias.</p>
+        <p class="por" hidden><b>No.</b> Cambia mucho sin pedirlo y no demuestra nada. Si hay un fallo, primero se corrige con un cambio mínimo y su prueba.</p>
+      </article>
+    </div>
+    <div class="k-caja k-voto" id="voto" data-voto="sc02-acepto" data-correcta="b"
+         data-explica="La B: evidencia (archivo y línea), prueba reproducible y arreglo mínimo. La A promete sin demostrar. La C reescribe sin control.">
+      <p class="k-q">¿Cuál aceptas?</p>
+      <div class="k-ops">
+        <button type="button" data-op="a">La A</button>
+        <button type="button" data-op="b">La B</button>
+        <button type="button" data-op="c">La C</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Copia el pedido 1, pégalo con un archivo real de tu proyecto y compara. Después, «Lo logré».</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var PEDIDOS = [
+    { t: "Pedido 1 · Caza con lista", para: "Pégalo en DeepSeek Harness y, debajo, un solo archivo.",
+      x: "Actúa como revisor de seguridad. Revisa el archivo que pego abajo buscando específicamente:\n" +
+         "- Inyección SQL (concatenación, template literals, query strings)\n" +
+         "- XSS (innerHTML, plantillas armadas con texto, echo sin escapar)\n" +
+         "- Merge profundo con claves especiales (__proto__/constructor/prototype)\n" +
+         "- Deserialización insegura (unserialize, eval, parseos peligrosos)\n\n" +
+         "Para cada hallazgo dame: archivo y línea, por qué es un fallo, y un ejemplo de input que lo explota (solo como texto).\n" +
+         "Si no puedes demostrarlo, marca el hallazgo como «por confirmar».\n" +
+         "No corrijas nada todavía.\n\n" +
+         "[pega aquí UN archivo]" },
+    { t: "Pedido 2 · Evidencia y prueba", para: "Cambia __ por el número del hallazgo.",
+      x: "Sobre el hallazgo n.º __: cítame la línea exacta tal como está en mi archivo.\n\n" +
+         "Después dame una prueba que lo demuestre: pasos concretos (o una prueba automatizada) que hoy falle por culpa del fallo y que pase cuando esté corregido.\n\n" +
+         "Si no se puede reproducir, dime que el hallazgo queda «por confirmar»." },
+    { t: "Pedido 3 · Arreglo mínimo + explicación", para: "Un hallazgo por vez: así puedes revisar cada cambio.",
+      x: "Corrige únicamente el hallazgo n.º __. No cambies nada más: ni nombres, ni formato, ni otras funciones.\n\n" +
+         "Muéstrame el cambio como antes y después.\n" +
+         "Explícame en dos líneas por qué el código nuevo cierra el fallo.\n" +
+         "Dime qué prueba debo correr para comprobarlo." },
+  ];
+  var pre = SC.$("#pedido"), para = SC.$("#para"), actual = 0;
+  function mostrar(i) { actual = i; pre.setAttribute("data-titulo", PEDIDOS[i].t); pre.textContent = PEDIDOS[i].x; para.textContent = PEDIDOS[i].para; pre.scrollTop = 0; }
+  document.addEventListener("k-seg", function (e) { if (e.detail.nombre === "ped") mostrar(+e.detail.v || 0); });
+  SC.$("#b-copiar").addEventListener("click", function () {
+    var b = this;
+    SC.copiar(PEDIDOS[actual].x).then(function (ok) {
+      b.textContent = ok ? "✓ Copiado" : "No pude copiar";
+      b.classList.toggle("ok", !!ok);
+      SC.toast(ok ? "Copiado. Pégalo con Ctrl+V (Cmd+V en Mac)." : "Tu navegador no dejó copiar: selecciona el texto y cópialo a mano.");
+      setTimeout(function () { b.textContent = "Copiar el pedido"; b.classList.remove("ok"); }, 2200);
+    });
+  });
+  mostrar(0);
+
+  function revelar() {
+    SC.$$(".b5-resp .por").forEach(function (p) { p.hidden = false; });
+    SC.$("#r-a").classList.add("mal"); SC.$("#r-c").classList.add("mal"); SC.$("#r-b").classList.add("bien");
+  }
+  SC.$("#voto").addEventListener("k-voto", revelar);
+  if (SC.leer("voto-sc02-acepto", "")) revelar();
+})();
+</script>
+</body>
+</html>

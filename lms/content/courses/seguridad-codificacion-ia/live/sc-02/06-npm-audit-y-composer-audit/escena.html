@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Audita dependencias</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 2 (sc-02). Auditoría de dependencias:
+     npm audit y composer audit. No corre comandos: solo enseña el flujo, qué leer y qué no hacer a ciegas. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b6 { display: grid; grid-template-columns: 1.05fr .95fr; gap: 1.8vw; align-items: start; }
+.b6-der { display: grid; gap: .9em; }
+.b6-lista { margin: 0; padding-left: 1.05em; font-size: .78em; line-height: 1.45; }
+.b6-lista li { margin: .35em 0; }
+.b6-k { display: grid; gap: .6em; }
+.b6-k pre { margin: 0; }
+@media (max-width: 760px) { .b6 { grid-template-columns: 1fr; gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { .b6 * { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Seguridad con IA · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Audita dependencias: <em>no es magia, es inventario</em></h1>
+    <p class="esc-sub a-in" style="--d:.08s">La IA puede agregar paquetes sin que te des cuenta. Tu defensa mínima es saber qué instalaste, qué tiene avisos y cómo arreglarlo sin romper todo.</p>
+
+    <div class="b6 a-in" style="--d:.16s">
+      <div class="k-pila">
+        <div class="k-seg" data-seg="aud" role="group" aria-label="Herramienta">
+          <button type="button" data-v="0" aria-pressed="true">Node · npm</button>
+          <button type="button" data-v="1" aria-pressed="false">PHP · composer</button>
+        </div>
+
+        <article class="sc-hall" id="panel">
+          <p class="sc-ceja" id="ceja">Node</p>
+          <h2 id="tit">Flujo mínimo (sin automatismos)</h2>
+          <div class="b6-k">
+            <pre class="k-pedido" id="cmd" data-titulo="Comandos"></pre>
+            <div class="k-pedido-pie">
+              <button type="button" class="k-btn" id="b-copiar">Copiar comandos</button>
+              <span class="k-nota" id="nota"></span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="b6-der">
+        <article class="sc-hall bien">
+          <p class="sc-ceja">Qué mirar en el resultado</p>
+          <ol class="b6-lista">
+            <li><b>Qué paquete es.</b> No el tuyo: el que se instaló.</li>
+            <li><b>Por qué te afecta.</b> ¿Lo usas en producción o solo en desarrollo?</li>
+            <li><b>El arreglo.</b> ¿Hay versión segura sin romper cambios? Si no, anota el riesgo.</li>
+          </ol>
+          <p class="k-nota">Un fix automático puede actualizar muchas cosas. Si lo haces, hazlo con un commit, y corre tus pruebas.</p>
+        </article>
+
+        <div class="k-caja k-check" data-check="sc02-audit" aria-label="Checklist">
+          <li><label><input type="checkbox"><span></span><em>Identifiqué el paquete y su versión</em></label></li>
+          <li><label><input type="checkbox"><span></span><em>Entendí si me afecta en producción</em></label></li>
+          <li><label><input type="checkbox"><span></span><em>Decidí una acción: actualizar, reemplazar o aceptar con nota</em></label></li>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>El objetivo no es “cero avisos”: es tener control. Si ya lo hiciste en tu proyecto, «Lo logré».</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var BLOQUES = [
+    { ceja: "Node", nota: "Corre esto en la raíz del proyecto Node.",
+      cmd: "# Inventario\nnpm ls --depth=0\n\n# Auditoría\nnpm audit\n\n# Si decides arreglar automático (cuidado)\nnpm audit fix\n" },
+    { ceja: "PHP", nota: "Corre esto en la raíz del proyecto PHP.",
+      cmd: "# Inventario\ncomposer show --direct\n\n# Auditoría\ncomposer audit\n" },
+  ];
+  var pre = SC.$("#cmd"), ceja = SC.$("#ceja"), nota = SC.$("#nota"), actual = 0;
+  function mostrar(i) {
+    actual = i;
+    ceja.textContent = BLOQUES[i].ceja;
+    pre.setAttribute("data-titulo", "Comandos · " + BLOQUES[i].ceja);
+    pre.textContent = BLOQUES[i].cmd;
+    nota.textContent = BLOQUES[i].nota;
+  }
+  document.addEventListener("k-seg", function (e) { if (e.detail.nombre === "aud") mostrar(+e.detail.v || 0); });
+  SC.$("#b-copiar").addEventListener("click", function () {
+    var b = this, antes = b.textContent;
+    SC.copiar(BLOQUES[actual].cmd).then(function (ok) { b.textContent = ok ? "✓ Copiado" : "No pude copiar"; setTimeout(function () { b.textContent = antes; }, 2000); });
+  });
+  mostrar(0);
+})();
+</script>
+</body>
+</html>

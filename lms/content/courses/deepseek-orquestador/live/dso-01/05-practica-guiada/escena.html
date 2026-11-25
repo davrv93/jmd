@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Práctica guiada · DeepSeek, el orquestador</title>
+  <link rel="stylesheet" href="../../comun/escena.css">
+  <link rel="stylesheet" href="../../comun/dsh.css">
+  <style>
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+    .dos { display:grid; grid-template-columns: 1.1fr .9fr; gap: 1.2vw; align-items: start; }
+    .pasos { margin:0; padding:0; list-style:none; display:grid; gap:.45em; }
+    .pasos li { display:grid; grid-template-columns: 2.2em 1fr; gap:.6em; align-items: baseline; }
+    .n { width: 2em; height: 2em; border-radius: 50%; display:grid; place-items:center; background: var(--accent-bg); color: var(--accent);
+      font: 800 .92em/1 system-ui, sans-serif; }
+    @media (max-width: 980px) { .dos { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="esc dsh">
+    <header class="esc-cab"><span class="esc-fase" data-ph="ea">Experimentación</span><span class="esc-num">6 / 8</span></header>
+    <section class="esc-cuerpo">
+      <h1 class="esc-titulo">Práctica guiada: arma tu <em>orquesta</em></h1>
+      <p class="esc-sub">Objetivo: salir con 3 subagentes definidos (programador, probador, revisor) y una secuencia de trabajo donde la verificación tiene lugar.</p>
+
+      <div class="dos">
+        <div class="esc-card">
+          <p class="dsh-et">1) Elige tu mini proyecto</p>
+          <div class="dsh-g2">
+            <button type="button" class="dsh-boton sec" data-copiar="Validar RUC (11 dígitos) y DNI (8 dígitos). Regla: solo números; rechazar longitudes incorrectas; respuesta con tipo y errores." data-aviso="Caso copiado. Pégalo en el campo Tarea y ajústalo.">Mini proyecto A: validar RUC/DNI</button>
+            <button type="button" class="dsh-boton sec" data-copiar="Validar un formulario (nombre, email, teléfono). Regla: email debe tener @ y dominio; teléfono solo dígitos y longitud mínima; mensajes de error por campo." data-aviso="Caso copiado. Pégalo en el campo Tarea y ajústalo.">Mini proyecto B: validar formulario</button>
+          </div>
+          <p class="dsh-et" style="margin-top:1em">2) Completa tu caso</p>
+          <div class="dsh-g2">
+            <div class="dsh-campo">
+              <label for="pp">Proyecto</label>
+              <input id="pp" data-campo="proyecto" data-nombre="Proyecto" placeholder="Ej.: validador-form" data-vacio="(pon un nombre)">
+            </div>
+            <div class="dsh-campo">
+              <label for="st">Stack / entorno</label>
+              <input id="st" data-campo="stack" data-nombre="Stack" placeholder="Ej.: Node, repo local" data-vacio="(describe el stack)">
+            </div>
+            <div class="dsh-campo" style="grid-column:1/-1">
+              <label for="tt">Tarea</label>
+              <textarea id="tt" data-campo="tarea" data-nombre="Tarea" placeholder="Pega el mini proyecto y ajústalo." data-vacio="(describe la tarea)"></textarea>
+            </div>
+          </div>
+          <p class="dsh-et" style="margin-top:1em">3) Ejecuta la corrida</p>
+          <ol class="pasos">
+            <li><span class="n">1</span><span>Orquestador define subagentes y pasos.</span></li>
+            <li><span class="n">2</span><span>Programador propone implementación (sin autoaprobar).</span></li>
+            <li><span class="n">3</span><span>Probador diseña y ejecuta pruebas (con evidencia).</span></li>
+            <li><span class="n">4</span><span>Revisor revisa riesgos y omisiones.</span></li>
+          </ol>
+        </div>
+
+        <div class="esc-card">
+          <p class="dsh-et">Pedido (un clic)</p>
+          <div class="dsh-fila" style="justify-content:space-between">
+            <button type="button" class="dsh-boton" data-pedido-de="p-corrida">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+              Copiar y abrir DeepSeek Harness
+            </button>
+            <button type="button" class="dsh-boton sec chico" data-abrir-dsh>Solo abrir</button>
+          </div>
+          <pre class="dsh-pedido" id="p-corrida" data-pedido><code>
+Actúa como orquestador.
+
+Proyecto: {proyecto}
+Stack/entorno: {stack}
+Tarea: {tarea}
+
+Define 3 subagentes (programador, probador, revisor). Para cada uno: rol, alcance (qué puede tocar), salida esperada.
+
+Luego ejecuta una corrida corta en 4 pasos:
+1) orquestador define el plan y lo que se verifica
+2) programador propone la implementación (sin declarar “listo”)
+3) probador crea y ejecuta pruebas con evidencias
+4) revisor revisa riesgos y aprueba o bloquea con argumentos
+
+En cada paso, incluye: qué hiciste, qué evidencia produjiste y qué podría salir mal.
+          </code></pre>
+
+          <p class="dsh-et" style="margin-top:1em">Checklist (verificación)</p>
+          <p style="margin:0; color:var(--muted); font-size:.9em">Marca lo que sí ocurrió. Se guarda en este navegador (<span id="dsh-cuenta">0</span>).</p>
+          <ul class="dsh-lista" aria-label="Checklist de verificación">
+            <li><button type="button" class="dsh-chk" role="checkbox" aria-checked="false"><i>✓</i><span>El probador usó datos concretos (no inventó resultados).</span></button></li>
+            <li><button type="button" class="dsh-chk" role="checkbox" aria-checked="false"><i>✓</i><span>El revisor pidió evidencia, no solo “suena bien”.</span></button></li>
+            <li><button type="button" class="dsh-chk" role="checkbox" aria-checked="false"><i>✓</i><span>El plan separó producción y verificación.</span></button></li>
+            <li><button type="button" class="dsh-chk" role="checkbox" aria-checked="false"><i>✓</i><span>La salida esperada quedó explícita (formato y criterio).</span></button></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div class="dsh-toast" id="dsh-toast" role="status" aria-live="polite"></div>
+  <script src="../../comun/dsh.js"></script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Prototipo y unserialize</title>
+<!-- Escena del modo LIVE: Seguridad en codificación con IA, sesión 2 (sc-02). Dos fallos menos obvios:
+     1) Contaminación de prototipos en Node: merge profundo que acepta __proto__/constructor/prototype.
+     2) Deserialización insegura en PHP: unserialize() sobre datos del usuario.
+     El alumno marca la línea peligrosa en cada pestaña; luego ve el arreglo. Código es TEXTO. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/sc.css">
+<style id="esc-propio">
+.b4 { display: grid; grid-template-columns: 1.2fr .8fr; gap: 1.8vw; align-items: start; }
+.b4-der { position: sticky; top: 1.2vh; }
+.b4-h2 { margin: 0 0 .4em; font-size: .92em; color: var(--muted); }
+.sc-ln.vacia { pointer-events: none; min-height: 1.6em; }
+@media (max-width: 760px) { .b4 { grid-template-columns: 1fr; gap: 12px; } .b4-der { position: static; } }
+@media (prefers-reduced-motion: reduce) { .sc-ln { transition: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Seguridad con IA · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in">Dos fallos raros: <em>cuando el dato cambia el programa</em></h1>
+    <p class="esc-sub a-in" style="--d:.08s">No son los de siempre, pero nacen igual: un dato que el programa interpreta como estructura o como comportamiento. Elige una pestaña, toca la línea peligrosa y mira el arreglo.</p>
+
+    <div class="b4 a-in" style="--d:.16s">
+      <div class="k-pila">
+        <div class="k-seg" data-seg="tema" role="group" aria-label="Tema">
+          <button type="button" data-v="proto" aria-pressed="true">Node · Prototipo</button>
+          <button type="button" data-v="unser" aria-pressed="false">PHP · unserialize</button>
+        </div>
+        <h2 class="b4-h2" id="sub">Node · merge profundo</h2>
+        <div class="sc-cod" id="cod" aria-label="Código del ejemplo. Cada línea es un botón."></div>
+      </div>
+
+      <div class="k-pila b4-der">
+        <div class="k-caja">
+          <div class="sc-marc" aria-live="polite">
+            <span class="ok"><b id="m-ok">0</b>de 2</span>
+            <span><b id="m-fal">0</b>falsas alarmas</span>
+          </div>
+          <div class="k-links">
+            <button type="button" class="k-btn sec mini" id="b-pista">Dame una pista</button>
+            <button type="button" class="k-btn sec mini" id="b-ver">Ver las dos</button>
+            <button type="button" class="k-btn sec mini" id="b-otra">De nuevo</button>
+          </div>
+        </div>
+        <article class="sc-hall" id="ficha" aria-live="polite">
+          <p class="sc-ceja">La pregunta</p>
+          <p>¿Este dato solo cambia <b>valores</b>, o puede cambiar <b>estructura</b> y <b>comportamiento</b>?</p>
+          <p class="k-nota">En prototipos, un campo especial puede colarse como metadato. En unserialize, un texto puede reconstruir objetos.</p>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Si encontraste las 2, pulsa «Lo logré». En tu proyecto, busca merge profundo con datos externos y unserialize().</span>
+  </footer>
+</div>
+<script src="../../comun/sc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var TEMAS = {
+    proto: {
+      sub: "Node · merge profundo",
+      key: "proto",
+      malo: "p-poll",
+      archivo: "utils/merge.js",
+      lineas: [
+        ["// mezcla config por defecto con un objeto del request"],
+        ["function mergeDeep(dst, src) {"],
+        ["  for (const k in src) {"],
+        ["    const v = src[k];"],
+        ["    if (v && typeof v === 'object') {"],
+        ["      dst[k] = dst[k] || {};"],
+        ["      mergeDeep(dst[k], v);", "p-poll"],
+        ["    } else {"],
+        ["      dst[k] = v;"],
+        ["    }"],
+        ["  }"],
+        ["  return dst;"],
+        ["}"],
+      ],
+      titulo: "Contaminación de prototipos por merge profundo",
+      por: "El código recorre claves del objeto del usuario y las mezcla recursivamente. Si el usuario envía una clave especial como __proto__, constructor o prototype, puede colarse en el prototipo y afectar otras partes del programa.",
+      fix: "function seguro(dst, src) {\n  const peligrosas = { __proto__: 1, constructor: 1, prototype: 1 };\n  for (const k of Object.keys(src)) {\n    if (peligrosas[k]) continue;\n    const v = src[k];\n    if (v && typeof v === 'object' && !Array.isArray(v)) {\n      dst[k] = dst[k] && typeof dst[k] === 'object' ? dst[k] : {};\n      seguro(dst[k], v);\n    } else dst[k] = v;\n  }\n  return dst;\n}",
+    },
+    unser: {
+      sub: "PHP · unserialize",
+      key: "unser",
+      malo: "u-unser",
+      archivo: "controllers/prefs.php",
+      lineas: [
+        ["// lee preferencias del usuario"],
+        ["$raw = $_POST['prefs'];"],
+        ["$prefs = unserialize($raw);", "u-unser"],
+        ["// ... usa $prefs para pintar la página"],
+        [""],
+        ["// así se corrige"],
+        ["$prefs = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);"],
+        ["if (!is_array($prefs)) { throw new Exception('prefs inválidas'); }"],
+      ],
+      titulo: "Deserialización insegura",
+      por: "unserialize reconstruye estructuras (y potencialmente objetos) desde un texto controlado por el usuario. No es \"parsear JSON\": es pedirle a PHP que recree lo que venga. Si el dato viene de afuera, es una puerta peligrosa.",
+      fix: "$prefs = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);\nif (!is_array($prefs)) { throw new Exception('prefs inválidas'); }\n// Si heredaste unserialize: no lo uses con datos externos."
+    }
+  };
+
+  var ficha = SC.$("#ficha"), cod = SC.$("#cod"), sub = SC.$("#sub");
+  var tema = SC.leer("raro-tema", "proto"); if (!TEMAS[tema]) tema = "proto";
+  var est = SC.leer("raros", null) || { ok: {}, fal: 0 };
+
+  function marcador() {
+    SC.$("#m-ok").textContent = Object.keys(est.ok).length;
+    SC.$("#m-fal").textContent = est.fal;
+    SC.$("#b-pista").disabled = Object.keys(est.ok).length >= 2;
+    SC.$("#b-ver").disabled = Object.keys(est.ok).length >= 2;
+  }
+  function fichaVacia(ceja, texto, clase) {
+    ficha.className = "sc-hall" + (clase ? " " + clase : "");
+    ficha.textContent = "";
+    ficha.appendChild(SC.el("p", "sc-ceja", ceja));
+    ficha.appendChild(SC.el("p", "", texto));
+  }
+  function fichaFallo(fid) {
+    var t = TEMAS[tema];
+    ficha.className = "sc-hall bien";
+    ficha.textContent = "";
+    ficha.appendChild(SC.el("p", "sc-ceja", (tema === "proto" ? "Node" : "PHP") + " · fallo encontrado"));
+    ficha.appendChild(SC.el("h2", "", t.titulo));
+    ficha.appendChild(SC.el("p", "", t.por));
+    var a = SC.el("p", "", ""); a.appendChild(SC.el("b", "", "Así se corrige:")); ficha.appendChild(a);
+    ficha.appendChild(SC.el("pre", "", t.fix));
+    var faltan = 2 - Object.keys(est.ok).length;
+    if (faltan) ficha.appendChild(SC.el("p", "k-nota", faltan === 1 ? "Queda 1 por encontrar." : "Quedan " + faltan + " por encontrar."));
+  }
+
+  function armar() {
+    var t = TEMAS[tema];
+    sub.textContent = t.sub;
+    cod.textContent = "";
+    var cab = SC.el("div", "sc-cod-cab");
+    cab.appendChild(SC.el("span", "", t.archivo));
+    cab.appendChild(SC.el("span", "", "ejemplo inventado"));
+    cod.appendChild(cab);
+    t.lineas.forEach(function (fila, i) {
+      var txt = fila[0], fid = fila[1] || "";
+      var b;
+      if (!txt) { b = SC.el("div", "sc-ln vacia", " "); b.setAttribute("aria-hidden", "true"); cod.appendChild(b); return; }
+      b = SC.el("button", "sc-ln");
+      if (/^\s*\/\//.test(txt)) b.appendChild(SC.el("span", "c", txt)); else b.textContent = txt;
+      b.setAttribute("aria-pressed", "false");
+      b.setAttribute("aria-label", "Línea " + (i + 1) + ": " + txt.trim());
+      if (fid && est.ok[fid]) b.classList.add("hall", "listo");
+      b.addEventListener("click", function () {
+        SC.$$(".sc-ln", cod).forEach(function (x) { x.setAttribute("aria-pressed", "false"); });
+        b.setAttribute("aria-pressed", "true");
+        if (fid) {
+          if (!est.ok[fid]) { est.ok[fid] = 1; SC.guardar("raros", est); }
+          b.classList.add("hall", "listo");
+          marcador(); fichaFallo(fid);
+        } else {
+          est.fal++; SC.guardar("raros", est);
+          marcador();
+          fichaVacia("Aquí no es", "No todo lo feo es el fallo. La pregunta es: ¿este dato puede colarse como metadato (prototipo) o reconstruir algo (unserialize)?", "duda");
+        }
+      });
+      cod.appendChild(b);
+    });
+    marcador();
+  }
+
+  document.addEventListener("k-seg", function (e) {
+    if (e.detail.nombre !== "tema") return;
+    tema = TEMAS[e.detail.v] ? e.detail.v : "proto";
+    SC.guardar("raro-tema", tema);
+    armar();
+    fichaVacia("Cambia el ojo", "Toca la línea peligrosa del ejemplo. Si no la encuentras, usa la pista.");
+  });
+
+  SC.$("#b-otra").addEventListener("click", function () { est = { ok: {}, fal: 0 }; SC.guardar("raros", est); armar(); fichaVacia("De nuevo", "Marcador en cero. Marca la línea peligrosa en cada pestaña."); });
+  SC.$("#b-ver").addEventListener("click", function () { est.ok["p-poll"] = 1; est.ok["u-unser"] = 1; SC.guardar("raros", est); armar(); fichaVacia("Quedan marcadas", "Ahora toca cada pestaña y lee el porqué y su corrección.", "duda"); });
+  SC.$("#b-pista").addEventListener("click", function () {
+    var txt = tema === "proto"
+      ? "Pista: mira el merge recursivo. ¿Qué pasa si la clave del usuario es __proto__?"
+      : "Pista: busca una función que reconozca el dato como \"estructura\" (unserialize).";
+    fichaVacia("Pista", txt, "duda");
+  });
+
+  SC.$$('[data-seg=tema] button').forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-v") === tema)); });
+  armar();
+  if (Object.keys(est.ok).length) fichaVacia("Sigues donde lo dejaste", "Toca una línea marcada para volver a ver su explicación, o cambia de pestaña para buscar la otra.");
+})();
+</script>
+</body>
+</html>

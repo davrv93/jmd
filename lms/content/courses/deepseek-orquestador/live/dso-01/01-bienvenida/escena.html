@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bienvenida · DeepSeek, el orquestador</title>
+  <link rel="stylesheet" href="../../comun/escena.css">
+  <style>
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+    .voto { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1vw; }
+    .op { display: flex; flex-direction: column; gap: .35em; align-items: flex-start; width: 100%; text-align: left; cursor: pointer;
+      border: 1px solid var(--line); border-radius: 1em; padding: 1em 1.1em; background: var(--s1); box-shadow: var(--card-shadow);
+      transition: transform .15s, border-color .15s, background .15s; }
+    .op:hover { transform: translateY(-1px); border-color: var(--accent); }
+    .op[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
+    .op b { font-size: 1.02em; }
+    .op span { color: var(--muted); font-size: .88em; }
+    .mini { display: grid; grid-template-columns: 1fr auto; gap: .8em; align-items: center; }
+    .agenda { margin: 0; padding: 0; list-style: none; display: grid; gap: .55em; max-width: 56em; }
+    .agenda li { display: grid; grid-template-columns: 7.2em 1fr; gap: .8em; align-items: baseline; }
+    .agenda code { justify-self: start; }
+    @media (max-width: 900px) { .voto { grid-template-columns: 1fr; } .agenda li { grid-template-columns: 1fr; gap: .25em; } }
+  </style>
+</head>
+<body>
+  <main class="esc">
+    <header class="esc-cab"><span class="esc-fase" data-ph="ec">Experiencia</span><span class="esc-num">1 / 8</span></header>
+    <section class="esc-cuerpo">
+      <div class="mini">
+        <div>
+          <h1 class="esc-titulo">Tu orquesta empieza hoy</h1>
+          <p class="esc-sub">Vas a crear subagentes, repartir responsabilidades y decidir cuándo conviene llamar a otra IA en vez de forzar el mismo modelo para todo.</p>
+        </div>
+        <div class="esc-card" style="padding:.9em 1em">
+          <div class="esc-chip ok" title="Duración">75 min</div>
+          <div class="esc-chip" title="Lección">dso-01</div>
+        </div>
+      </div>
+
+      <div class="esc-card">
+        <p class="esc-chip" style="margin:0 0 .7em">Voto rápido</p>
+        <h2 style="margin:.1em 0 .6em; font-size:1.05em">¿Qué tarea te gustaría delegar a un equipo de agentes?</h2>
+        <div class="voto" role="group" aria-label="Opciones de voto">
+          <button type="button" class="op" data-op="pruebas" aria-pressed="false"><b>Pruebas y verificación</b><span>Casos, checks y evidencias reales.</span></button>
+          <button type="button" class="op" data-op="backend" aria-pressed="false"><b>Backend de un endpoint</b><span>API, validaciones, errores y logs.</span></button>
+          <button type="button" class="op" data-op="frontend" aria-pressed="false"><b>Un formulario completo</b><span>Campos, mensajes, estados y accesibilidad.</span></button>
+          <button type="button" class="op" data-op="docs" aria-pressed="false"><b>Documentación útil</b><span>Guías, diagramas y decisiones.</span></button>
+        </div>
+        <p id="v-estado" style="margin:.8em 0 0; color:var(--muted); font-size:.9em">Tu elección se guarda en este navegador.</p>
+      </div>
+
+      <div class="esc-card">
+        <h2 style="margin:0 0 .6em; font-size:1.05em">Agenda de la sesión</h2>
+        <ol class="agenda">
+          <li><code>01</code><span>Bienvenida y tu voto</span></li>
+          <li><code>01a</code><span>Lámina: «Un orquestador no programa: dirige»</span></li>
+          <li><code>02</code><span>Crea tus subagentes (rol, alcance, salida)</span></li>
+          <li><code>03</code><span>Delega responsabilidades (juego corto)</span></li>
+          <li><code>04</code><span>Reutiliza IA externa (criterio y prompt)</span></li>
+          <li><code>05</code><span>Práctica guiada (3 subagentes en DeepSeek Harness)</span></li>
+          <li><code>06</code><span>Lo que falló (y la regla de verificación)</span></li>
+          <li><code>07</code><span>Tarea y cierre (adelanto sesión 2)</span></li>
+        </ol>
+      </div>
+    </section>
+    <footer class="esc-pie">DeepSeek, el orquestador · Sesión 1</footer>
+  </main>
+
+  <script>
+    (function () {
+      var key = 'dso01.voto';
+      var estado = document.getElementById('v-estado');
+      var ops = Array.from(document.querySelectorAll('.op'));
+      function setSel(v) {
+        ops.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.op === v ? 'true' : 'false'); });
+        if (estado) estado.textContent = v ? ('Elegiste: ' + v + '. Puedes cambiarlo cuando quieras.') : 'Tu elección se guarda en este navegador.';
+      }
+      var previo = '';
+      try { previo = localStorage.getItem(key) || ''; } catch (e) {}
+      if (previo) setSel(previo);
+      ops.forEach(function (b) {
+        b.addEventListener('click', function () {
+          var v = b.dataset.op;
+          try { localStorage.setItem(key, v); } catch (e) {}
+          setSel(v);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
