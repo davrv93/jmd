@@ -2,8 +2,8 @@
 id: tw2-01
 title: "Sesión 1 · Tu tienda y tu catálogo"
 published: true
-# 24-11-2026: el Grupo 2 pasa a dos domingos
-starts_at: 2026-12-06T09:00:00-05:00
+# 24-11-2026: el Grupo 2 son dos sesiones, martes 1 y 8 dic
+starts_at: 2026-12-01T19:45:00-05:00
 duration: 50
 objectives:
   - id: tw2-01-o1

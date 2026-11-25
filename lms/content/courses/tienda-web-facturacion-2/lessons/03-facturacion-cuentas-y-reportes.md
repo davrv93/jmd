@@ -3,7 +3,7 @@ id: tw2-03
 title: "Sesión 2 · Facturación, cuentas y reportes"
 published: true
 # 24-11-2026: sesión 2 de 2 del Grupo 2
-starts_at: 2026-12-13T09:00:00-05:00
+starts_at: 2026-12-08T19:45:00-05:00
 duration: 50
 objectives:
   - id: tw2-03-o1

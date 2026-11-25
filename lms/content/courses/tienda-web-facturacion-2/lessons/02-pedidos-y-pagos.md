@@ -2,7 +2,7 @@
 id: tw2-02
 title: "Sesión 1 · Pedidos y pagos por WhatsApp"
 published: true
-# Sin fecha propia (24-11-2026): el Grupo 2 son dos sesiones; pedidos y pagos van dentro de la sesión 1 del 6 dic.
+# Sin fecha propia (24-11-2026): el Grupo 2 son dos sesiones; pedidos y pagos van dentro de la sesión 1 del martes 1 dic.
 duration: 45
 objectives:
   - id: tw2-02-o1

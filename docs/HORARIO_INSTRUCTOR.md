@@ -1,6 +1,6 @@
 # Horario del instructor · JMD Learning
 
-Generado el 24-11-2026 22:38 (hora de Lima) desde el contenido del LMS, con las clases desde el martes 24 de noviembre. Para regenerarlo: `python3 lms/scripts/horario_instructor.py` (instrucciones dentro del script).
+Generado el 24-11-2026 22:46 (hora de Lima) desde el contenido del LMS, con las clases desde el martes 24 de noviembre. Para regenerarlo: `python3 lms/scripts/horario_instructor.py` (instrucciones dentro del script).
 
 Reglas del instructor: no da clases del viernes a la puesta del sol al sábado a la puesta del sol (sábado bíblico), ni lunes y jueves entre 6:00 y 9:00 p. m. Entre clases deja al menos 15 minutos.
 
@@ -15,14 +15,12 @@ Reglas del instructor: no da clases del viernes a la puesta del sol al sábado a
 7. **Seguidas sin 15 min de margen** el domingo 29 de noviembre: IA para todos: DeepSeek Harness · Grupo 1 (7:30 p. m. a 9:00 p. m.) y Crea contenido con OpenMontage · Grupo 1 (9:00 p. m. a 10:00 p. m.).
 8. **Seguidas sin 15 min de margen** el miércoles 2 de diciembre: DeepSeek · Grupo 1 (6:30 p. m. a 7:45 p. m.) y Seguridad con IA · Grupo 1 (7:45 p. m. a 9:15 p. m.).
 9. **Seguidas sin 15 min de margen** el miércoles 2 de diciembre: Seguridad con IA · Grupo 1 (7:45 p. m. a 9:15 p. m.) y Elaboración de tutoriales en video · Grupo 1 (9:15 p. m. a 10:30 p. m.).
-10. **Seguidas sin 15 min de margen** el domingo 6 de diciembre: Elaboración de tutoriales en video · Grupo 1 (8:00 a. m. a 9:00 a. m.) y Tienda web con facturación · Grupo 2 (9:00 a. m. a 9:50 a. m.).
-11. **Seguidas sin 15 min de margen** el domingo 6 de diciembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y Dashboards y BI con IA · Grupo 1 (3:00 p. m. a 5:00 p. m.).
-12. **Seguidas sin 15 min de margen** el domingo 13 de diciembre: PWA: app móvil ágil · Grupo 1 (8:00 a. m. a 9:00 a. m.) y Tienda web con facturación · Grupo 2 (9:00 a. m. a 9:50 a. m.).
-13. **Lunes o jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 1, lunes 30 de noviembre de 7:30 p. m. a 9:00 p. m.
-14. **Lunes o jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 3 de diciembre de 7:30 p. m. a 9:00 p. m.
-15. **Lunes o jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 10 de diciembre de 7:30 p. m. a 9:00 p. m.
-16. **Lunes o jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 17 de diciembre de 7:30 p. m. a 9:00 p. m.
-17. **Dato contradictorio**: Chatbot avanzado (Grupo 2): el LMS lo tiene los domingos a las 7:30 p. m., pero su video promocional anuncia domingos 15, 22 y 29 de noviembre de 2:00 a 3:00 p. m. Si vale la hora del video, se cruza con Claude Code PRO Grupo 2 (domingos 2:00 a 3:00 p. m.). Hay que decidir cuál es la buena y corregir el otro.
+10. **Seguidas sin 15 min de margen** el domingo 6 de diciembre: Claude Code PRO · Grupo 2 (2:00 p. m. a 3:00 p. m.) y Dashboards y BI con IA · Grupo 1 (3:00 p. m. a 5:00 p. m.).
+11. **Lunes o jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 1, lunes 30 de noviembre de 7:30 p. m. a 9:00 p. m.
+12. **Lunes o jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 3 de diciembre de 7:30 p. m. a 9:00 p. m.
+13. **Lunes o jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 10 de diciembre de 7:30 p. m. a 9:00 p. m.
+14. **Lunes o jueves entre 6 y 9 p. m.**: Requerimientos con IA · Grupo 2, jueves 17 de diciembre de 7:30 p. m. a 9:00 p. m.
+15. **Dato contradictorio**: Chatbot avanzado (Grupo 2): el LMS lo tiene los domingos a las 7:30 p. m., pero su video promocional anuncia domingos 15, 22 y 29 de noviembre de 2:00 a 3:00 p. m. Si vale la hora del video, se cruza con Claude Code PRO Grupo 2 (domingos 2:00 a 3:00 p. m.). Hay que decidir cuál es la buena y corregir el otro.
 
 Las clases en la franja de lunes y jueves de 6 a 9 p. m. pueden ser de otro instructor; si las dicta él, hay que moverlas.
 
@@ -56,12 +54,12 @@ Las clases en la franja de lunes y jueves de 6 a 9 p. m. pueden ser de otro inst
 | Tienda web con facturación | Grupo 1 | 1: lun 30/11 | 9:15 p. m. a 10:00 p. m. | cerrada |
 | Orquestación con Qwen Coder | Grupo 2 | 1: lun 30/11 | 10:15 p. m. a 11:15 p. m. | cerrada |
 | DeepSeek Harness | Grupo 4 | 3: mar 1/12, mar 15/12, mar 22/12 | 6:00 p. m. a 7:30 p. m. | cerrada |
-| Elaboración de tutoriales en video | Grupo 1 | 3: mié 2/12, dom 6/12, sáb 12/12 | 8:00 a. m. a 9:00 a. m.; 9:15 p. m. a 10:30 p. m. | cerrada |
+| Tienda web con facturación | Grupo 2 | 2: mar 1/12, mar 8/12 | 7:45 p. m. a 8:35 p. m. | cerrada |
+| Elaboración de tutoriales en video | Grupo 1 | 3: mié 2/12, dom 6/12, sáb 12/12 | 8:00 a. m. a 9:15 a. m.; 9:15 p. m. a 10:30 p. m. | cerrada |
 | Requerimientos con IA | Grupo 2 | 3: jue 3/12, jue 10/12, jue 17/12 | 7:30 p. m. a 9:00 p. m. | cerrada |
 | Programación agéntica | Grupo 9 | 3: sáb 5/12, dom 6/12, sáb 12/12 | 6:30 p. m. a 8:30 p. m.; 7:00 p. m. a 9:00 p. m. | cerrada |
-| Tienda web con facturación | Grupo 2 | 2: dom 6/12, dom 13/12 | 9:00 a. m. a 9:50 a. m. | cerrada |
 | Construye tu asistente personal | Grupo 10 | 3: lun 7/12, mar 8/12, mié 9/12 | 9:00 p. m. a 11:00 p. m. | cerrada |
-| PWA: app móvil ágil | Grupo 1 | 3: dom 13/12, mar 15/12, mié 16/12 | 8:00 a. m. a 9:00 a. m.; 9:15 p. m. a 10:30 p. m. | cerrada |
+| PWA: app móvil ágil | Grupo 1 | 3: dom 13/12, mar 15/12, mié 16/12 | 8:00 a. m. a 9:15 a. m.; 9:15 p. m. a 10:30 p. m. | cerrada |
 | Chatbot Avanzado | Grupo 1 | 3: dom 13/12, jue 17/12, sáb 19/12 | 11:45 a. m. a 1:00 p. m.; 7:00 p. m. a 8:15 p. m.; 9:15 p. m. a 10:30 p. m. | cerrada |
 | Hackathon Ready Set Go! | Hackathon | 1: dom 13/12 | 1:30 p. m. a 7:15 p. m. | cerrada |
 | GSAP avanzado: animaciones web | Grupo 1 | 3: dom 13/12, sáb 19/12, dom 20/12 | 7:30 p. m. a 8:45 p. m.; 8:00 a. m. a 9:15 a. m.; 8:30 p. m. a 9:45 p. m. | cerrada |
@@ -116,6 +114,7 @@ Las clases en la franja de lunes y jueves de 6 a 9 p. m. pueden ser de otro inst
 ### Martes 1 de diciembre
 - 6:00 p. m. a 7:30 p. m. · **DeepSeek Harness · Grupo 4** · Sesión 1 · Cuenta, clave y la foto de tu sistema
 - 7:30 p. m. a 9:00 p. m. · **DeepSeek Harness · Grupo 1 (lo dicta otra persona)** · Sesión 3 · Describe por roles, audita y valida tu sistema
+- 7:45 p. m. a 8:35 p. m. · **Tienda web con facturación · Grupo 2** · Sesión 1 · Tu tienda y tu catálogo
 - 9:15 p. m. a 10:45 p. m. · **Diseño de interfaces · Grupo 1** · Sesión 3 · Del diseño al código: tokens, responsive y accesibilidad
 
 ### Miércoles 2 de diciembre
@@ -134,8 +133,7 @@ Las clases en la franja de lunes y jueves de 6 a 9 p. m. pueden ser de otro inst
 - 7:00 p. m. a 9:00 p. m. · **Programación agéntica · Grupo 9** · Grupo 9 · Clase 1 · Tu landing con IA
 
 ### Domingo 6 de diciembre
-- 8:00 a. m. a 9:00 a. m. · **Elaboración de tutoriales en video · Grupo 1** · Sesión 2 · Pantallas simuladas, animación y voz con IA
-- 9:00 a. m. a 9:50 a. m. · **Tienda web con facturación · Grupo 2** · Sesión 1 · Tu tienda y tu catálogo
+- 8:00 a. m. a 9:15 a. m. · **Elaboración de tutoriales en video · Grupo 1** · Sesión 2 · Pantallas simuladas, animación y voz con IA
 - 11:30 a. m. a 12:45 p. m. · **Potencia tus agentes · Grupo 2** · Clase 3 · Caveman y la medición del ahorro
 - 2:00 p. m. a 3:00 p. m. · **Claude Code PRO · Grupo 2** · Sesión 4 · Pruebas medidas y despliegue
 - 3:00 p. m. a 5:00 p. m. · **Dashboards y BI con IA · Grupo 1** · Sesión 2 · De tus datos al dashboard ejecutivo
@@ -147,6 +145,7 @@ Las clases en la franja de lunes y jueves de 6 a 9 p. m. pueden ser de otro inst
 - 9:00 p. m. a 11:00 p. m. · **Construye tu asistente personal · Grupo 10** · Grupo 10 · Clase 1 · Tu asistente virtual: herramientas, tipos y primer prototipo
 
 ### Martes 8 de diciembre
+- 7:45 p. m. a 8:35 p. m. · **Tienda web con facturación · Grupo 2** · Sesión 2 · Facturación, cuentas y reportes
 - 9:00 p. m. a 11:00 p. m. · **Construye tu asistente personal · Grupo 10** · Grupo 10 · Clase 2 · Construir un asistente con skills, plan de trabajo y Edge AI
 
 ### Miércoles 9 de diciembre
@@ -164,8 +163,7 @@ Las clases en la franja de lunes y jueves de 6 a 9 p. m. pueden ser de otro inst
 - 9:15 p. m. a 10:30 p. m. · **Elaboración de tutoriales en video · Grupo 1** · Sesión 3 · Edición, música y publicación de tu tutorial
 
 ### Domingo 13 de diciembre
-- 8:00 a. m. a 9:00 a. m. · **PWA: app móvil ágil · Grupo 1** · Sesión 1 · Historias de usuario y tu primera PWA instalable
-- 9:00 a. m. a 9:50 a. m. · **Tienda web con facturación · Grupo 2** · Sesión 2 · Facturación, cuentas y reportes
+- 8:00 a. m. a 9:15 a. m. · **PWA: app móvil ágil · Grupo 1** · Sesión 1 · Historias de usuario y tu primera PWA instalable
 - 11:45 a. m. a 1:00 p. m. · **Chatbot Avanzado · Grupo 1** · Sesión 1 · Arquitectura de un cerebro de IA: conocimiento, reglas y memoria
 - 1:30 p. m. a 7:15 p. m. · **Hackathon Ready Set Go! · Hackathon** · Hackathon Ready Set Go! · Tu videojuego de fútbol con IA
 - 7:30 p. m. a 8:45 p. m. · **GSAP avanzado: animaciones web · Grupo 1** · Sesión 1 · Líneas de tiempo, easing y coreografía
