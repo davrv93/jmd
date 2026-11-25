@@ -22,6 +22,11 @@
 table { background:#ffffff; color:#16181d; }
 th { background:#eef0f4 !important; color:#3a3f4b !important; }
 td { color:#16181d; border-bottom-color:#e3e5ea !important; }
+.revelar { margin:.4em 0 .6em; padding:.45em .9em; border-radius:8px; border:1px solid var(--cti); background:transparent; color:inherit; font:700 .85em system-ui,sans-serif; cursor:pointer; }
+.revelar:hover { background: color-mix(in srgb, var(--cti) 18%, transparent); }
+.expl { margin:.3em 0 0; padding-left:1.2em; font-size:.82em; line-height:1.4; }
+.expl li { margin:.45em 0; }
+.expl b { display:block; }
 </style>
 </head>
 <body>
@@ -43,25 +48,25 @@ td { color:#16181d; border-bottom-color:#e3e5ea !important; }
             </thead>
             <tbody id="tb">
               <tr>
-                <td>Venta</td><td>FA</td><td>F001</td><td>1205</td><td class="btn" data-err="t1">4130.00</td><td>3500.00</td><td>630.00</td><td>-</td>
+                <td>Venta</td><td>FA</td><td>F001</td><td>1205</td><td class="btn" data-err="total">4310.00</td><td>3500.00</td><td>630.00</td><td>-</td>
               </tr>
               <tr>
-                <td>Venta</td><td>FA</td><td class="btn" data-err="s1">F00l</td><td>1206</td><td>2950.00</td><td>2543.10</td><td>406.90</td><td>-</td>
+                <td>Venta</td><td>FA</td><td class="btn" data-err="serie">F00l</td><td>1206</td><td>2950.00</td><td>2500.00</td><td>450.00</td><td>-</td>
               </tr>
               <tr>
-                <td>Venta</td><td>FA</td><td>F001</td><td class="btn" data-err="d1">1210</td><td>4720.00</td><td>4068.97</td><td>651.03</td><td>-</td>
+                <td>Venta</td><td>FA</td><td>F001</td><td class="btn" data-err="dup">1210</td><td>4720.00</td><td>4000.00</td><td>720.00</td><td>-</td>
               </tr>
               <tr>
-                <td>Venta</td><td>FA</td><td>F001</td><td class="btn" data-err="d2">1210</td><td>4720.00</td><td>4068.97</td><td>651.03</td><td>-</td>
+                <td>Venta</td><td>FA</td><td>F001</td><td class="btn" data-err="dup">1210</td><td>4720.00</td><td>4000.00</td><td>720.00</td><td>-</td>
               </tr>
               <tr>
-                <td>Venta</td><td class="btn" data-err="nc1">NC</td><td>FC01</td><td>15</td><td>118.00</td><td>101.72</td><td>16.28</td><td>-</td>
+                <td>Venta</td><td class="btn" data-err="nc">NC</td><td>FC01</td><td>15</td><td class="btn" data-err="nc">118.00</td><td class="btn" data-err="nc">100.00</td><td class="btn" data-err="nc">18.00</td><td>-</td>
               </tr>
               <tr>
-                <td>Compra</td><td>BO</td><td>B901</td><td>121</td><td>236.00</td><td>236.00</td><td>0.00</td><td class="btn" data-err="cf1">SI</td>
+                <td>Compra</td><td>BO</td><td>B901</td><td>121</td><td>236.00</td><td>236.00</td><td>0.00</td><td class="btn" data-err="cf">SI</td>
               </tr>
               <tr>
-                <td>Compra</td><td>FA</td><td>F305</td><td>340</td><td>944.00</td><td>813.79</td><td>130.21</td><td>SI</td>
+                <td>Compra</td><td>FA</td><td>F305</td><td>340</td><td>944.00</td><td>800.00</td><td>144.00</td><td>SI</td>
               </tr>
               <tr>
                 <td>Compra</td><td>RH</td><td>RH01</td><td>79</td><td>700.00</td><td>700.00</td><td>0.00</td><td>NO</td>
@@ -76,6 +81,8 @@ td { color:#16181d; border-bottom-color:#e3e5ea !important; }
             <p class="k-q" style="--c:var(--cti)">Progreso</p>
             <p class="mini">Errores encontrados: <span class="badge" id="n">0/5</span></p>
             <p class="mini" id="msg">Haz clic en una celda sospechosa.</p>
+            <button type="button" id="revelar" class="revelar">Revelar todos</button>
+            <ol id="expl" class="expl"></ol>
           </div>
           <div class="k-caja k-voto" data-voto="cti01-errores">
             <p class="k-q" style="--c:var(--ph-or)">Voto: ¿cuál viste primero?</p>
@@ -98,36 +105,57 @@ td { color:#16181d; border-bottom-color:#e3e5ea !important; }
 
   <script>
   (function () {
+    // Una explicación por error. Las celdas que comparten data-err son el mismo error.
+    var EXPL = {
+      dup:   ["Correlativo duplicado (F001-1210, dos veces)", "Cada comprobante tiene una serie y un número únicos. Si aparece dos veces, la venta se declara doble: pagas IGV de más. Antes de declarar, ordena por serie y número y busca repetidos."],
+      serie: ["Serie mal escrita (F00l)", "La última letra es una «l» minúscula, no un «1». Para SUNAT es otra serie, que no existe: el comprobante no se puede validar. Pasa en datos digitados o copiados de un PDF."],
+      nc:    ["Nota de crédito con signo positivo", "Una nota de crédito (NC) anula o rebaja una venta: total, base e IGV van en negativo (-118.00, -100.00, -18.00). En positivo suma ventas en vez de restarlas."],
+      cf:    ["Crédito fiscal con boleta (BO)", "La boleta de venta no da derecho a crédito fiscal: solo la factura con IGV desagregado. Además su IGV es 0.00, así que no hay nada que descontar. Debe ir «NO»."],
+      total: ["Total que no cuadra (F001-1205)", "Base 3500.00 + IGV 630.00 = 4130.00, pero dice 4310.00: dos cifras invertidas. Comprueba siempre Base + IGV = Total, y que IGV = Base × 18 %."]
+    };
+    var orden = ["dup", "serie", "nc", "cf", "total"];
     var found = {};
-    var total = 5;
+    var total = orden.length;
     var msg = document.getElementById("msg");
     var n = document.getElementById("n");
-    function upd() {
+    var lista = document.getElementById("expl");
+    function pintar() {
+      lista.innerHTML = "";
+      orden.forEach(function (id) {
+        if (!found[id]) return;
+        var li = document.createElement("li");
+        var b = document.createElement("b"); b.textContent = EXPL[id][0];
+        li.appendChild(b); li.appendChild(document.createTextNode(EXPL[id][1]));
+        lista.appendChild(li);
+      });
       var k = Object.keys(found).length;
       n.textContent = k + "/" + total;
-      if (k >= total) msg.textContent = "Listo: encontraste los 5. Ahora explica por qué cada uno es riesgo.";
+      if (k >= total) msg.textContent = "Listo: los 5 errores, con su explicación abajo.";
+    }
+    function marcar(id) {
+      found[id] = true;
+      document.querySelectorAll('#tb td[data-err="' + id + '"]').forEach(function (td) {
+        td.classList.remove("wrong"); td.classList.add("found");
+      });
     }
     document.getElementById("tb").addEventListener("click", function (e) {
-      var td = e.target.closest("td.btn");
+      var td = e.target.closest("td");
       if (!td) return;
       var id = td.dataset.err;
-      if (!id) return;
-      if (found[id]) { msg.textContent = "Ese ya estaba marcado."; return; }
-      // Todos los td con data-err son errores
-      found[id] = true;
-      td.classList.remove("wrong");
-      td.classList.add("found");
-      msg.textContent = "Bien: marcaste un error (" + id + ").";
-      upd();
-    });
-
-    // Permite clic en celdas sin error para feedback
-    document.querySelectorAll("#tb td:not(.btn)").forEach(function (td) {
-      td.addEventListener("click", function () {
+      if (!id) {
         td.classList.add("wrong");
-        msg.textContent = "Revisa: esa celda no era una de las 5 (pista: mira correlativo/serie/signo/crédito/cuadre).";
+        msg.textContent = "Esa celda está bien. Pista: correlativo, serie, signo, crédito o cuadre.";
         setTimeout(function () { td.classList.remove("wrong"); }, 700);
-      });
+        return;
+      }
+      if (found[id]) { msg.textContent = "Ese ya estaba marcado."; return; }
+      marcar(id);
+      msg.textContent = "Bien: " + EXPL[id][0] + ".";
+      pintar();
+    });
+    document.getElementById("revelar").addEventListener("click", function () {
+      orden.forEach(marcar);
+      pintar();
     });
   })();
   </script>
