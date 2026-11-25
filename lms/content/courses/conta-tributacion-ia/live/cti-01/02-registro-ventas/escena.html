@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CTI-01 · Registro de ventas</title>
+  <link rel="stylesheet" href="../../comun/escena.css">
+  <link rel="stylesheet" href="../../comun/cti.css">
+  <link rel="stylesheet" href="../../comun/hoja.css">
+  <style>
+    .grid { display:grid; grid-template-columns: 1fr 2.1fr; gap: 1.2em; align-items:start; }
+    .mini { font-size:.85em; color:var(--muted); }
+    .k-caja code { font: 700 .92em/1 var(--mono); }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="esc">
+    <header class="esc-cab">
+      <span class="esc-fase" data-ph="ex">Experimentación</span>
+      <span class="esc-num">CTI-01 · Práctica</span>
+    </header>
+
+    <main class="esc-cuerpo">
+      <h1 class="esc-titulo">Registro de ventas · 25 comprobantes</h1>
+      <div class="grid">
+        <aside class="k-col">
+          <div class="k-caja">
+            <p class="k-q" style="--c:var(--cti)">Tu tarea</p>
+            <ol class="k-lista">
+              <li>Completa <b>Base</b>, <b>IGV</b> y <b>Total</b> (columnas I–K) usando la tasa en <code>C1</code>.</li>
+              <li>Usa fórmulas y relleno (arrastrar) para repetir el cálculo.</li>
+              <li>Cuando una celda esté mal: mira el <b>tooltip</b> (pasa el mouse).</li>
+              <li>En filas marcadas como <b>supuesto</b>, aplica la tasa solo para practicar el cálculo.</li>
+              <li>Al final: <b>Exporta a Excel (.xlsx)</b>.</li>
+            </ol>
+            <p class="mini">Tip: si el total está en H, un camino típico es <code>Base = REDONDEAR(H/(1+tasa),2)</code>, <code>IGV = H-Base</code>, <code>Total = H</code>.</p>
+          </div>
+          <div class="k-caja">
+            <p class="k-q" style="--c:var(--ph-or)">Archivos</p>
+            <p class="mini">CSV de entrada (para IA o para importar en la hoja):</p>
+            <p><a class="k-link" download href="ventas.csv">Descargar ventas.csv</a></p>
+          </div>
+          <div class="k-caja">
+            <p class="k-q" style="--c:var(--ph-az)">Base legal (tasas)</p>
+            <p class="mini">Tasa aplicable: <b>18%</b> (= 16% IGV + 2% IPM). IGV: TUO IGV/ISC (D.S. 055-99-EF), cap. V, art. 17. IPM: D. Leg. 776, art. 76.
+              Fuentes: sunat.gob.pe/legislacion/igv/ley/capitul5.pdf y orientacion.sunat.gob.pe/3053-concepto-tasa-y-operaciones-gravadas-igv-empresas · verificado: <b>2026-11-25</b>.</p>
+          </div>
+          <div class="k-caja">
+            <p class="k-q" style="--c:var(--ph-or)">SIRE (referencia)</p>
+            <p class="mini">Norma base del SIRE (para contexto del formato): R.S. 000112-2021/SUNAT.
+              Fuente: sire.sunat.gob.pe (enlace a resolución) · verificado: <b>2026-11-25</b>.</p>
+          </div>
+        </aside>
+
+        <section class="k-caja" style="padding:.8em">
+          <div id="hoja"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="esc-pie">
+      <span>Validación: verde OK · amarillo alerta · rojo error (tooltip con motivo).</span>
+    </footer>
+  </div>
+
+  <script src="../../comun/hoja-motor.js"></script>
+  <script src="../../comun/hoja-xlsx.js"></script>
+  <script src="../../comun/hoja.js"></script>
+  <script>
+  (function () {
+    var estilos = [
+      {},
+      { b: 1, fg: "#0b1220", bg: "#e7f5ff", a: "c" },
+      { b: 1, fg: "#0b1220", bg: "#fff8db" },
+      { f: "0.00" },
+      { f: "0.00%", a: "c" }
+    ];
+
+    var filas = [
+      ["2026-10-01","FA","F001",1201,"20100001005","Edifica Norte SAC","Alquiler oficina (oct)",3540.00],
+      ["2026-10-02","FA","F001",1202,"20100001013","Constructora Río SAC","Alquiler almacén (oct)",2360.00],
+      ["2026-10-03","BO","B001",5101,"20100001021","Servicios Miraflores SAC","Servicio de mantenimiento",590.00],
+      ["2026-10-04","FA","F001",1203,"20100001030","Logística Santa Ana SAC","Alquiler cochera (oct)",472.00],
+      ["2026-10-05","FA","F001",1204,"20100001048","Inversiones Sur SAC","Cuota administración",1180.00],
+      ["2026-10-06","FA","F001",1205,"20100001056","Comercial Andina SAC","Alquiler local (oct)",4130.00],
+      ["2026-10-07","FA","F001",1206,"20100001064","Hotel Costa SAC","Alquiler oficina (oct)",2950.00],
+      ["2026-10-08","FA","F001",1207,"20100001072","Transporte Ruta SAC","Servicio de estacionamiento",354.00],
+      ["2026-10-09","FA","F001",1208,"20100001081","Clínica Central SAC","Alquiler consultorio (oct)",2360.00],
+      ["2026-10-10","FA","F001",1209,"20100001099","Agro Export SAC","Servicio administrativo",1770.00],
+      ["2026-10-11","FA","F001",1210,"20100001102","Compañía El Bosque SAC","Alquiler oficina (oct)",4720.00],
+      ["2026-10-12","FA","F001",1211,"20100001111","Sistemas Lima SAC","Alquiler estacionamiento (oct)",236.00],
+      ["2026-10-13","FA","F001",1212,"20100001129","Mercado Norte SAC","Servicio de limpieza",944.00],
+      ["2026-10-14","FA","F001",1213,"20100001137","Tech Sur SAC","Alquiler local (oct)",3540.00],
+      ["2026-10-15","FA","F001",1214,"20100001145","Servicios Arenas SAC","Alquiler oficina (oct)",2360.00],
+      ["2026-10-16","FA","F001",1215,"20100001153","Restaurante Sol SAC","Alquiler terraza (oct)",1180.00],
+      ["2026-10-17","FA","F001",1216,"20100001161","Textiles Mar SAC","Servicio de mantenimiento",708.00],
+      ["2026-10-18","FA","F001",1217,"20100001170","Insumos Perú SAC","Venta dpto 501 (supuesto: gravada)",295000.00],
+      ["2026-10-19","FA","F001",1218,"20100001188","Inversiones Prado SAC","Separación/arras dpto 502 (supuesto)",5900.00],
+      ["2026-10-20","FA","F001",1219,"20100001196","Comercio Oeste SAC","Alquiler local (oct)",4720.00],
+      ["2026-10-21","FA","F001",1220,"20100001200","Servicios Delta SAC","Alquiler oficina (oct)",3540.00],
+      ["2026-10-22","NC","FC01",15,"20100001129","Mercado Norte SAC","Nota de crédito por descuento",-118.00],
+      ["2026-10-23","FA","F001",1221,"20100001218","Constructora Altura SAC","Servicio administrativo",2360.00],
+      ["2026-10-24","BO","B001",5102,"20100001226","Panadería Centro SAC","Servicio de estacionamiento",118.00],
+      ["2026-10-25","FA","F001",1222,"20100001234","Comercial Surco SAC","Venta dpto 503 (supuesto: gravada)",236000.00]
+    ];
+
+    var c = [];
+      c.push(["A1","Parámetros",1]);
+      c.push(["B1","Tasa IGV",1]);
+      c.push(["C1",0.18,4]);
+    c.push(["A2","Fecha",1]);
+    c.push(["B2","Tipo",1]);
+    c.push(["C2","Serie",1]);
+    c.push(["D2","Número",1]);
+    c.push(["E2","RUC",1]);
+    c.push(["F2","Cliente",1]);
+    c.push(["G2","Concepto",1]);
+    c.push(["H2","Total comprobante",1]);
+    c.push(["I2","Base",1]);
+    c.push(["J2","IGV",1]);
+    c.push(["K2","Total",1]);
+
+    for (var i = 0; i < filas.length; i++) {
+      var f = 3 + i;
+      var r = filas[i];
+      c.push(["A" + f, r[0], 0]);
+      c.push(["B" + f, r[1], 0]);
+      c.push(["C" + f, r[2], 0]);
+      c.push(["D" + f, r[3], 0]);
+      c.push(["E" + f, r[4], 0]);
+      c.push(["F" + f, r[5], 0]);
+      c.push(["G" + f, r[6], 0]);
+      c.push(["H" + f, r[7], 3]);
+      c.push(["I" + f, "", 2]);
+      c.push(["J" + f, "", 2]);
+      c.push(["K" + f, "", 2]);
+    }
+
+    // Ejemplo (fila 3): deja una fórmula lista para que el estudiante copie hacia abajo.
+    c.push(["I3", "=REDONDEAR(H3/(1+$C$1),2)", 2]);
+    c.push(["J3", "=REDONDEAR(H3-I3,2)", 2]);
+    c.push(["K3", "=H3", 2]);
+
+    var datos = {
+      estilos: estilos,
+      activa: 0,
+      hojas: [{
+        n: "Ventas",
+        dim: [11, 27],
+        fz: [1, 2],
+        w: { A: 10, B: 6, C: 7, D: 7, E: 13, F: 20, G: 28, H: 14, I: 12, J: 12, K: 12 },
+        c: c
+      }]
+    };
+
+    function r2(x) { return Math.round((x + Number.EPSILON) * 100) / 100; }
+
+    var hoja = HojaJMD.montar(document.getElementById("hoja"), {
+      datos: datos,
+      nombreArchivo: "cti-01-registro-ventas.xlsx",
+      nombreCSV: "cti-01-registro-ventas",
+      filtros: { desdeFila: 3, columnas: ["B","C","E","F"] },
+      validarCelda: function (ctx) {
+        var ref = ctx.ref;
+        if (!/^[IJK]\d+$/.test(ref)) return null;
+        var fila = parseInt(ref.slice(1), 10);
+        if (fila < 3 || fila > 27) return null;
+        var tasa = ctx.libro.valor(ctx.hoja, "C1");
+        tasa = (typeof tasa === "number" && isFinite(tasa)) ? tasa : 0.18;
+        var total = ctx.libro.valor(ctx.hoja, "H" + fila);
+        if (typeof total !== "number" || !isFinite(total) || total === 0) {
+          return { marca: "amb", tip: "Fila sin total (H" + fila + ")" };
+        }
+        var base = r2(total / (1 + tasa));
+        var igv = r2(total - base);
+        var esperado = (ref[0] === "I") ? base : (ref[0] === "J") ? igv : total;
+        var v = ctx.valor;
+        if (v == null || v === "") return { marca: "amb", tip: "Falta completar" };
+        if (typeof v !== "number" || !isFinite(v)) return { marca: "mal", tip: "Debe ser número" };
+        var ok = Math.abs(v - esperado) <= 0.01;
+        return ok
+          ? { marca: "ok", tip: "OK" }
+          : { marca: "mal", tip: "Esperado: " + esperado + " (según H" + fila + " y C1)" };
+      }
+    });
+    hoja.decir("Completa I–K desde la fila 3. Puedes usar filtros y exportar a .xlsx / .csv.");
+  })();
+  </script>
+</body>
+</html>

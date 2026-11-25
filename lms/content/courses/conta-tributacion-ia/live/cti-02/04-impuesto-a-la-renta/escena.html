@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CTI-02 · Renta</title>
+  <link rel="stylesheet" href="../../comun/escena.css">
+  <link rel="stylesheet" href="../../comun/cti.css">
+  <link rel="stylesheet" href="../../comun/hoja.css">
+  <style>
+    .grid { display:grid; grid-template-columns: 1fr 2.15fr; gap: 1.2em; align-items:start; }
+    .mini { font-size:.85em; color:var(--muted); }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="esc">
+    <header class="esc-cab">
+      <span class="esc-fase" data-ph="ex">Experimentación</span>
+      <span class="esc-num">CTI-02 · Renta</span>
+    </header>
+
+    <main class="esc-cuerpo">
+      <h1 class="esc-titulo">Impuesto a la renta: General vs RMT (tasas verificadas)</h1>
+      <div class="grid">
+        <aside class="k-col">
+          <div class="k-caja">
+            <p class="k-q" style="--c:var(--cti)">Qué hacer</p>
+            <ol class="k-lista">
+              <li>Completa ingresos y gastos (celdas amarillas).</li>
+              <li>Observa el impuesto anual estimado en General y RMT.</li>
+              <li>En RMT: observa pago a cuenta (1% mensual si aplica).</li>
+              <li>Exporta a Excel (.xlsx).</li>
+            </ol>
+          </div>
+          <div class="k-caja">
+            <p class="k-q" style="--c:var(--ph-az)">Base legal (verificada)</p>
+            <ul class="k-lista">
+              <li><b>Régimen General</b>: tasa 29.50% para personas jurídicas. Fuente: sunat.gob.pe/legislacion/renta/ley/capvii.pdf (art. 55) · verificado <b>2026-11-25</b>.</li>
+              <li><b>RMT</b>: 10% hasta 15 UIT y 29.5% por el exceso; pago a cuenta 1% si ingresos netos ≤ 300 UIT. Fuente: sunat.gob.pe/legislacion/mypeIR/dl1269.pdf (arts. 5 y 6) · verificado <b>2026-11-25</b>.</li>
+              <li><b>UIT 2026</b>: 5,500 (D.S. 301-2025-EF). Fuente: sunat.gob.pe/indicestasas/uit.html · verificado <b>2026-11-25</b>.</li>
+            </ul>
+            <p class="mini">Si tu realidad usa otros parámetros (coeficientes, ingresos reales), edítalos y deja evidencia.</p>
+          </div>
+        </aside>
+
+        <section class="k-caja" style="padding:.8em">
+          <div id="hoja"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="esc-pie"><span>Recuerda: esto es práctica; en un caso real se sustentan deducciones y régimen.</span></footer>
+  </div>
+
+  <script src="../../comun/hoja-motor.js"></script>
+  <script src="../../comun/hoja-xlsx.js"></script>
+  <script src="../../comun/hoja.js"></script>
+  <script>
+  (function () {
+    var estilos = [
+      {},
+      { b: 1, fg: "#0b1220", bg: "#e7f5ff", a: "c" },
+      { b: 1, fg: "#0b1220", bg: "#fff8db" },
+      { f: "0.00" },
+      { f: "0.00%", a: "c" }
+    ];
+
+    var c = [];
+    c.push(["A1","Parámetros",1]);
+    c.push(["A2","UIT 2026",1]);
+    c.push(["B2",5500,2]);
+    c.push(["A3","Ingresos netos anuales",1]);
+    c.push(["B3",360000,2]);
+    c.push(["A4","Gastos deducibles (estim.)",1]);
+    c.push(["B4",240000,2]);
+    c.push(["A5","Renta neta (utilidad)",1]);
+    c.push(["B5","=B3-B4",3]);
+
+    c.push(["A7","RÉGIMEN GENERAL",1]);
+    c.push(["A8","Tasa (personas jurídicas)",1]);
+    c.push(["B8",0.295,4]);
+    c.push(["A9","Impuesto anual estimado",1]);
+    c.push(["B9","=REDONDEAR(MAX(0,B5)*B8,2)",3]);
+    c.push(["A10","Pago a cuenta mensual (coef.)",1]);
+    c.push(["B10",0,2]);
+    c.push(["C10","(coef. editable; depende del caso)",0]);
+    c.push(["A11","Pago a cuenta estimado (mes)",1]);
+    c.push(["B11","=REDONDEAR(B3/12*B10,2)",3]);
+
+    c.push(["A13","RMT (RÉGIMEN MYPE TRIBUTARIO)",1]);
+    c.push(["A14","Tramo 1: hasta 15 UIT",1]);
+    c.push(["B14",0.10,4]);
+    c.push(["A15","Tramo 2: exceso",1]);
+    c.push(["B15",0.295,4]);
+    c.push(["A16","Impuesto anual estimado (RMT)",1]);
+    c.push(["B16","=REDONDEAR(MAX(0,MIN(B5,15*B2))*B14 + MAX(0,B5-15*B2)*B15,2)",3]);
+    c.push(["A17","Pago a cuenta (1% mensual si ingresos ≤ 300 UIT)",1]);
+    c.push(["B17","=SI(B3<=(300*B2),REDONDEAR((B3/12)*0.01,2),0)",3]);
+
+    var datos = {
+      estilos: estilos,
+      activa: 0,
+      hojas: [{ n: "Renta", dim: [3, 17], fz: [1, 1], w: { A: 30, B: 16, C: 28 }, c: c }]
+    };
+
+    HojaJMD.montar(document.getElementById("hoja"), {
+      datos: datos,
+      nombreArchivo: "cti-02-renta-general-vs-rmt.xlsx",
+      nombreCSV: "cti-02-renta",
+      validarCelda: function (ctx) {
+        // Validación suave: amarillos no deben estar vacíos
+        if (ctx.estilo && ctx.estilo.bg === "#fff8db") {
+          if (ctx.valor == null || ctx.valor === "") return { marca: "amb", tip: "Completa este dato" };
+        }
+        return null;
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
