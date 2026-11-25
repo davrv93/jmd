@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El prototipo se recorre</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  .flow { position: absolute; left: 4%; right: 4%; top: 30%; bottom: 8%; border-radius: 1em; background: var(--n-ficha); box-shadow: var(--sombra); overflow: hidden; }
+  .flow svg { width: 100%; height: 100%; }
+  .box { fill: #fff; stroke: rgba(0,0,0,.18); stroke-width: 2; rx: 18; }
+  .t1 { font: 800 22px/1.1 var(--serif); fill: #1a1d23; }
+  .t2 { font: 700 13px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; fill: #5b6270; }
+  .arr { fill: none; stroke: rgba(11,99,206,.9); stroke-width: 4; stroke-linecap: round; }
+  .chip { fill: rgba(0,0,0,.06); stroke: rgba(0,0,0,.12); stroke-width: 1.5; rx: 999; }
+  .chipT { font: 800 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; fill: #4a4f5a; }
+  @media (prefers-reduced-motion: reduce) { .teo-fig * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 3 de 3 · Flujos</p>
+    <h1>El prototipo no se mira: <em>se recorre</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Tres cajas: Lista, Detalle y Formulario unidas por flechas de ida y vuelta. Encima se agregan chips de estados para recordar que cada pantalla tiene vacío, cargando, error, éxito y sin permiso.">
+      <svg viewBox="0 0 800 520" aria-hidden="true"></svg>
+      <div class="flow" id="flow">
+        <svg viewBox="0 0 800 320" aria-hidden="true">
+          <path id="a1" class="arr" d="M240 156 C290 156 300 156 352 156" opacity="0"/>
+          <path id="a2" class="arr" d="M496 156 C546 156 556 156 608 156" opacity="0"/>
+          <path id="a3" class="arr" d="M608 192 C556 220 546 220 496 248" opacity="0"/>
+          <path id="a4" class="arr" d="M352 248 C300 220 290 220 240 192" opacity="0"/>
+          <g id="boxes" opacity="0">
+            <rect class="box" x="80" y="92" width="160" height="128"/>
+            <rect class="box" x="352" y="92" width="160" height="128"/>
+            <rect class="box" x="608" y="92" width="160" height="128"/>
+            <text class="t2" x="104" y="126">Pantalla 1</text>
+            <text class="t1" x="104" y="156">Lista</text>
+            <text class="t2" x="376" y="126">Pantalla 2</text>
+            <text class="t1" x="376" y="156">Detalle</text>
+            <text class="t2" x="632" y="126">Pantalla 3</text>
+            <text class="t1" x="632" y="156">Formulario</text>
+          </g>
+          <g id="chips" opacity="0">
+            <rect class="chip" x="96" y="202" width="128" height="26"/><text class="chipT" x="110" y="220">5 estados</text>
+            <rect class="chip" x="368" y="202" width="128" height="26"/><text class="chipT" x="382" y="220">5 estados</text>
+            <rect class="chip" x="624" y="202" width="128" height="26"/><text class="chipT" x="638" y="220">5 estados</text>
+          </g>
+        </svg>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Tres pantallas</b><p>Lista → detalle → formulario. Eso es todo lo que necesitas para probar una idea.</p></li>
+        <li><b>Ida</b><p>El prototipo tiene que dejarte avanzar sin pensar: tocas una fila, llegas al detalle; tocas “Editar”, llegas al formulario.</p></li>
+        <li><b>Vuelta</b><p>También hay que volver: cerrar el modal, volver al detalle, volver a la lista.</p></li>
+        <li><b>Estados en cada pantalla</b><p>Vacío, cargando, error, éxito y sin permiso existen en lista, detalle y formulario.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Wroblewski, L. (2008). <i>Web Form Design</i>. Rosenfeld Media. (Prototipar para probar flujo y fricción antes de construir).</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = TEO.$, punta = null;
+  TEO.escena([
+    function (tl) { tl.to("#boxes", { opacity: 1, duration: .25 }); tl.from("#boxes .box", { autoAlpha: 0, y: 10, duration: .35, stagger: .08 }); },
+    function (tl) { TEO.trazar(tl, "#a1", { duration: .35 }); tl.to("#a1", { opacity: 1, duration: 0 }, "<"); },
+    function (tl) { TEO.trazar(tl, "#a2", { duration: .35 }); tl.to("#a2", { opacity: 1, duration: 0 }, "<"); },
+    function (tl) { TEO.trazar(tl, ["#a3", "#a4"], { duration: .4, stagger: .05 }); tl.to(["#a3", "#a4"], { opacity: 1, duration: 0 }, "<"); tl.to("#chips", { opacity: 1, duration: .2 }, "+=.1"); }
+  ]);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · ¿Qué estado falta?</title>
+<!-- Juego de estados: tres mini pantallas y un voto (di02-falta). Luego se revela la correcta. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/di.css">
+<style id="esc-propio">
+.b03 { display: grid; grid-template-columns: 1.2fr .8fr; gap: 2.2vw; align-items: start; }
+.b03-izq { min-width: 0; display: grid; gap: 1.1vh; }
+.b03-minis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2vw; }
+.mini { border: 1px solid var(--line2); border-radius: .9em; background: #fff; overflow: hidden; box-shadow: 0 18px 50px -44px rgba(0,0,0,.55); }
+.mini .bar { padding: .55em .7em; background: #f5f6f8; font: 800 .62em/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: #5b6270; }
+.mini .c { padding: .75em .75em .85em; display: grid; gap: .55em; }
+.pill { display: inline-flex; align-items: center; gap: .35em; font: 800 .7em/1 var(--sans); padding: .25em .5em; border-radius: 999px; background: rgba(11,99,206,.12); color: #0b63ce; }
+.pill svg { width: 1.05em; height: 1.05em; display: block; }
+.pill.no { background: rgba(161,92,0,.14); color: #a15c00; }
+.sk i { display: block; height: .6em; border-radius: .3em; background: rgba(0,0,0,.08); }
+.sk i.w { width: 66%; }
+.sk i.m { width: 90%; }
+.sk i.s { width: 45%; }
+.msg { margin: 0; font-size: .74em; line-height: 1.35; color: #4a4f5a; }
+.b03-der { min-width: 0; display: grid; gap: 1.1vh; }
+.b03-rev { display: grid; gap: .55em; }
+.b03-rev[hidden] { display: none; }
+.b03-rev p { margin: 0; font-size: .76em; line-height: 1.45; }
+.b03-rev b { color: var(--di); }
+@media (max-width: 760px) { .b03 { grid-template-columns: 1fr; gap: 14px; } .b03-minis { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .b03 * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="or">Reflexión</span>
+    <span class="esc-num">Diseño de interfaces · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.85em">Juego: <em>¿qué estado falta diseñar?</em></h1>
+    <div class="b03">
+      <div class="b03-izq a-in" style="--d:.1s">
+        <div class="b03-minis" aria-label="Tres mini pantallas">
+          <div class="mini">
+            <div class="bar">Lista · vacío</div>
+            <div class="c">
+              <span class="pill">＋ Crear pedido</span>
+              <p class="msg"><b>Aún no hay pedidos.</b> Empieza creando el primero.</p>
+              <div class="sk" aria-hidden="true"><i class="m"></i><i class="w"></i><i class="s"></i></div>
+            </div>
+          </div>
+          <div class="mini">
+            <div class="bar">Detalle · sin permiso</div>
+            <div class="c">
+              <span class="pill no">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <path d="M7 17L17 7"></path>
+                </svg>
+                Acceso restringido
+              </span>
+              <p class="msg">Necesitas el rol <b>Administrador</b> para ver este pedido.</p>
+              <p class="msg">Acción: pedir acceso o cambiar de cuenta.</p>
+            </div>
+          </div>
+          <div class="mini">
+            <div class="bar">Formulario · error</div>
+            <div class="c">
+              <span class="pill" style="background:rgba(179,38,30,.12);color:#b3261e">! No se pudo guardar</span>
+              <p class="msg">Se perdió la conexión. Reintenta en 10 s.</p>
+              <span class="pill">↻ Reintentar</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="b03-der a-in" style="--d:.22s">
+        <div class="k-caja k-voto" data-voto="di02-falta">
+          <p class="k-q" style="--c:var(--di)">De estos tres: ¿qué estado falta aquí?</p>
+          <div class="k-ops">
+            <button data-op="permiso">Sin permiso</button>
+            <button data-op="cargando">Cargando</button>
+            <button data-op="vacio">Vacío</button>
+          </div>
+        </div>
+        <div class="k-caja b03-rev" id="rev" hidden>
+          <p><b>Correcta:</b> cargando.</p>
+          <p>Entre “toqué” y “apareció”, hay silencio. Si no lo diseñas, se siente congelado. El esqueleto explica qué viene.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Hurff, S. (2015). UI Stack: no diseñes solo el ideal.</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/di.js"></script>
+<script>
+(function () {
+  "use strict";
+  var rev = document.getElementById("rev");
+  function mostrar() { rev.hidden = false; }
+  document.addEventListener("k-voto", function (e) {
+    if (e.detail && e.detail.clave === "di02-falta") mostrar();
+  });
+  if (DI.leer("voto-di02-falta", "")) mostrar();
+})();
+</script>
+</body>
+</html>

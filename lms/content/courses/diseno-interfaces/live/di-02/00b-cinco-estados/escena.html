@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Los cinco estados</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+  <style>
+  .stack { position: absolute; left: 5%; right: 5%; top: 30%; bottom: 6%; display: grid; grid-template-columns: 1fr 1fr; gap: 2.2%; align-content: start; }
+  /* No recortar texto: el verificador de capturas marca overflow hidden como causa de frases cortadas. */
+  .s-card { border-radius: .9em; background: var(--n-ficha); box-shadow: var(--sombra); padding: 1.05em 1.1em; display: grid; gap: .45em; position: relative; overflow: visible; }
+  .s-card b { font: 820 1.35em/1.15 var(--serif); color: var(--n-tinta); }
+  .s-card p { margin: 0; font-size: 1.48cqw; line-height: 1.35; color: #4a4f5a; }
+  .s-tag { position: absolute; right: .9em; top: .9em; font: 800 .9em/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; padding: .35em .55em; border-radius: .5em; background: rgba(0,0,0,.06); color: #5b6270; }
+  .s-ic { width: 2.2em; height: 2.2em; border-radius: .7em; display: grid; place-items: center; background: rgba(11,99,206,.12); color: #0b63ce; }
+  .s-ic svg { width: 1.25em; height: 1.25em; display: block; }
+  .s-card.err .s-ic { background: rgba(179,38,30,.12); color: var(--rojo); }
+  .s-card.ok .s-ic { background: rgba(31,122,62,.12); color: var(--verde); }
+  .s-card.no .s-ic { background: rgba(161,92,0,.14); color: var(--naranja); }
+  .s-card.blank .s-ic { background: rgba(91,98,112,.12); color: #5b6270; }
+  .s-card.load .s-ic { background: rgba(11,99,206,.12); color: #0b63ce; }
+  .s-skel { display: grid; gap: .35em; margin-top: .2em; }
+  .s-skel i { display: block; height: .8em; border-radius: .35em; background: rgba(0,0,0,.08); }
+  .s-skel i.w { width: 62%; }
+  .s-skel i.m { width: 86%; }
+  .s-skel i.s { width: 40%; }
+  @media (max-width: 760px) {
+    .stack { grid-template-columns: 1fr; top: 28%; bottom: 6%; gap: 10px; }
+    #st-permiso { grid-column: auto !important; }
+    .s-card p { font-size: .98em; }
+  }
+  @media (prefers-reduced-motion: reduce) { .teo-fig * { transition: none !important; } }
+  </style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 2 de 3 · Estados (UI Stack)</p>
+    <h1>Una pantalla tiene <em>cinco</em> personalidades</h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Cinco tarjetas muestran los estados de una pantalla: vacío (con acción), cargando (con esqueleto), error (qué pasó y qué hacer), éxito (confirmación discreta) y sin permiso.">
+      <svg viewBox="0 0 800 520" aria-hidden="true"></svg>
+
+      <div class="stack">
+        <div class="s-card blank" id="st-vacio" data-r="-1">
+          <span class="s-tag">Vacío</span>
+          <span class="s-ic" aria-hidden="true">＋</span>
+          <b>Futuro + acción</b>
+          <p>“Aún no hay pedidos”. Muestra el valor y el primer paso.</p>
+        </div>
+        <div class="s-card load" id="st-cargando" data-r=".8">
+          <span class="s-tag">Cargando</span>
+          <span class="s-ic" aria-hidden="true">…</span>
+          <b>Silencio explicado</b>
+          <p>Esqueleto: se entiende qué viene. No un spinner sin contexto.</p>
+          <div class="s-skel" aria-hidden="true"><i class="m"></i><i class="w"></i><i class="s"></i></div>
+        </div>
+        <div class="s-card err" id="st-error" data-r="-.6">
+          <span class="s-tag">Error</span>
+          <span class="s-ic" aria-hidden="true">!</span>
+          <b>Qué pasó + qué hago</b>
+          <p>No asustes. Di qué ocurrió y da una acción: reintentar o volver.</p>
+        </div>
+        <div class="s-card ok" id="st-exito" data-r="1.2">
+          <span class="s-tag">Éxito</span>
+          <span class="s-ic" aria-hidden="true">✓</span>
+          <b>Confirma sin estorbar</b>
+          <p>“Guardado”. Si bloquea el trabajo, no es éxito: es castigo.</p>
+        </div>
+        <div class="s-card no" id="st-permiso" data-r=".4" style="grid-column:1 / -1">
+          <span class="s-tag">Sin permiso</span>
+          <span class="s-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M7 17L17 7"></path>
+            </svg>
+          </span>
+          <b>Explica el límite</b>
+          <p>No es “403”. Es “Necesitas rol de administrador” + “pide acceso” o “cambia de cuenta”.</p>
+        </div>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Ideal no basta</b><p>La interfaz real es lo que muestra cuando aún no hay datos, cuando tarda, cuando falla o cuando el usuario no puede.</p></li>
+        <li><b>Vacío</b><p>Promete el valor y muestra una acción. Un vacío sin acción es un callejón.</p></li>
+        <li><b>Cargando</b><p>El esqueleto gana al spinner: reduce ansiedad y enseña estructura.</p></li>
+        <li><b>Error</b><p>Di qué pasó y qué hacer ahora. Un error sin salida es abandono.</p></li>
+        <li><b>Éxito y permiso</b><p>El éxito es discreto. El permiso explica el límite y cómo resolverlo.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Hurff, S. (2015). <i>How to fix a bad user interface: You're ignoring the UI Stack</i>. (Adaptación de clase: “sin permiso” como estado explícito).</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  "use strict";
+  TEO.escena([
+    function (tl) { TEO.pegar(tl, "#st-vacio"); },
+    function (tl) { TEO.pegar(tl, "#st-cargando"); },
+    function (tl) { TEO.pegar(tl, "#st-error"); },
+    function (tl) { TEO.pegar(tl, "#st-exito"); },
+    function (tl) { TEO.pegar(tl, "#st-permiso"); }
+  ]);
+})();
+</script>
+</body>
+</html>

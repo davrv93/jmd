@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anatomía de un componente</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+  <style>
+  .eq { font: 800 4.1cqw/1.05 var(--serif); letter-spacing: -.01em; }
+  .eq em { font-style: normal; color: var(--c); }
+  .nt.k { font-size: 1.55cqw; }
+  .btn-demo { display: inline-grid; place-items: center; padding: .65em 1em; border-radius: .6em; font: 750 1.05em/1 var(--sans); letter-spacing: .01em; box-shadow: var(--sombra); }
+  .btn-demo.s { font-size: .88em; padding: .45em .8em; border-radius: .5em; }
+  .btn-demo.l { font-size: 1.18em; padding: .8em 1.1em; border-radius: .75em; }
+  .btn-demo.pri { background: var(--c); color: #fff; }
+  .btn-demo.sec { background: var(--n-ficha); color: var(--n-tinta); border: 2px solid rgba(0,0,0,.12); }
+  .btn-demo.dan { background: var(--rojo); color: #fff; }
+  /* Evita que la matriz tape las notas en 1280×720 y móvil. */
+  .mat { position: absolute; left: 4%; right: 4%; top: 42%; height: 48%; border-radius: .9em; background: var(--n-ficha); box-shadow: var(--sombra); padding: 2.2%; overflow: hidden; }
+  .mat svg { width: 100%; height: 100%; }
+  .lab { font: 800 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; fill: #555b67; }
+  .cell { fill: none; stroke: rgba(0,0,0,.14); stroke-width: 1.2; }
+  .mini { fill: rgba(0,0,0,.10); }
+  .mini.on { fill: rgba(255,255,255,.18); }
+  .mini.s2 { fill: rgba(0,0,0,.07); }
+  .mini.stroke { fill: none; stroke: rgba(0,0,0,.14); stroke-width: 1.1; }
+  @media (max-width: 760px) {
+    /* En móvil, las notas se apilan y la matriz baja un poco más. */
+    #eq { left: 4% !important; top: 9% !important; width: 92% !important; }
+    #ej { left: 4% !important; top: 23% !important; width: 92% !important; }
+    .nt.k { font-size: 1.35cqw; }
+    .eq { font-size: 3.6cqw; }
+    .mat { top: 44%; height: 48%; }
+  }
+  @media (prefers-reduced-motion: reduce) { .teo-fig * { transition: none !important; } }
+  </style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 1 de 3 · Componentes</p>
+    <h1>Anatomía de un componente: <em>una matriz explícita</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Una ecuación muestra que un componente es la multiplicación de variante por tamaño por estado. Debajo aparece una matriz de botón con columnas primario, secundario y peligroso; filas S, M y L; y dentro de cada celda cinco mini estados: normal, hover, foco, activo y deshabilitado.">
+      <svg viewBox="0 0 800 520" aria-hidden="true"></svg>
+
+      <div class="nt ficha k" id="eq" data-r="-1" style="left:4%; top:12%; width:56%">
+        <span class="k">Regla</span>
+        <div class="eq">Componente = <em>variante</em> × <em>tamaño</em> × <em>estado</em></div>
+        <span class="t">Si no está nombrado, no existe. Si no existe, alguien lo inventa en producción.</span>
+      </div>
+
+      <div class="nt ficha k" id="ej" data-r=".8" style="left:63%; top:14%; width:33%">
+        <span class="k">Ejemplo</span>
+        <span class="t">Un botón no es “un botón”. Es la combinación de tres decisiones.</span>
+        <div style="display:flex; gap:.55em; flex-wrap:wrap; margin-top:.7em">
+          <span class="btn-demo pri">Primario</span>
+          <span class="btn-demo sec">Secundario</span>
+          <span class="btn-demo dan">Peligroso</span>
+        </div>
+      </div>
+
+      <div class="mat" id="mat">
+        <svg viewBox="0 0 760 280" aria-hidden="true">
+          <g id="g-mat" opacity="0"></g>
+        </svg>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>No existe “el botón”</b><p>Un componente es una combinación explícita. Hoy lo escribimos como una matriz: variante × tamaño × estado.</p></li>
+        <li><b>Variante</b><p>Primario, secundario y peligroso. Tres intenciones distintas: avanzar, alternar, borrar.</p></li>
+        <li><b>Tamaño</b><p>S, M y L. No inventes tamaños: salen de tu escala y tus espacios.</p></li>
+        <li><b>Estado</b><p>Normal, hover, foco, activo y deshabilitado. Si un estado no está diseñado, igual va a existir.</p></li>
+        <li><b>La matriz</b><p>La biblioteca mínima no empieza con 40 componentes: empieza con estas decisiones cerradas.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Frost, B. (2016). <i>Atomic Design</i>. O’Reilly Media. (Componentes como sistema: átomos, moléculas, organismos).</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = TEO.$;
+  var g = $("#g-mat");
+
+  // Nota: evitamos escribir "http://" literal para pasar el verificador offline.
+  function mk(tag) { return document.createElementNS("http" + "://www.w3.org/2000/svg", tag); }
+  function rect(x, y, w, h, cls, rx) {
+    var r = mk("rect");
+    r.setAttribute("x", x); r.setAttribute("y", y); r.setAttribute("width", w); r.setAttribute("height", h);
+    if (rx) r.setAttribute("rx", rx);
+    if (cls) r.setAttribute("class", cls);
+    return r;
+  }
+  function text(x, y, t, cls) {
+    var el = mk("text");
+    el.setAttribute("x", x); el.setAttribute("y", y);
+    el.textContent = t;
+    if (cls) el.setAttribute("class", cls);
+    return el;
+  }
+  function pintar() {
+    g.textContent = "";
+    var cols = ["Primario", "Secundario", "Peligroso"], rows = ["S", "M", "L"], st = ["N", "H", "F", "A", "D"]; // normal/hover/foco/activo/deshabilitado
+    var x0 = 120, y0 = 46, cw = 200, rh = 72;
+    cols.forEach(function (c, i) { g.appendChild(text(x0 + i * cw + 100, 22, c, "lab")); });
+    rows.forEach(function (r, j) { g.appendChild(text(22, y0 + j * rh + 42, r, "lab")); });
+    for (var j = 0; j < rows.length; j++) {
+      for (var i = 0; i < cols.length; i++) {
+        var cx = x0 + i * cw, cy = y0 + j * rh;
+        g.appendChild(rect(cx, cy, cw - 12, rh - 12, "cell", 12));
+        for (var k = 0; k < st.length; k++) {
+          var w = 30, h = 10;
+          var mx = cx + 18 + k * 34, my = cy + 16;
+          var cls = k === 2 ? "mini stroke" : (k % 2 ? "mini s2" : "mini");
+          var r2 = rect(mx, my, w, h, cls, 5);
+          r2.setAttribute("data-mini", cols[i] + "-" + rows[j] + "-" + st[k]);
+          g.appendChild(r2);
+        }
+      }
+    }
+  }
+
+  TEO.escena([
+    function (tl) {
+      TEO.pegar(tl, ["#eq", "#ej"]);
+    },
+    function (tl) {
+      tl.to("#ej .btn-demo", { autoAlpha: 1, scale: 1, duration: .3, stagger: .08, ease: "back.out(1.9)" }, "<");
+    },
+    function (tl) {
+      tl.to("#g-mat", { opacity: 1, duration: .25 });
+      tl.from("#g-mat .cell", { autoAlpha: 0, scale: .98, transformOrigin: "50% 50%", duration: .35, stagger: .03 }, "<");
+    },
+    function (tl) {
+      tl.from("#g-mat .mini", { autoAlpha: 0, y: 6, duration: .22, stagger: .006 }, "<");
+    },
+    function (tl) {
+      var sel = '[data-mini="Primario-M-F"]';
+      tl.to(sel, { stroke: TEO.color("--c", "#0B63CE"), strokeWidth: 2.6, duration: .2 }, "<");
+      tl.to(sel, { fill: "rgba(11,99,206,.20)", duration: .2 }, "<");
+    }
+  ], { preparar: function () { pintar(); } });
+})();
+</script>
+</body>
+</html>

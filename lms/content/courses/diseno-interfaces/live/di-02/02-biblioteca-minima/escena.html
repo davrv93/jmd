@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Biblioteca mínima</title>
+<!-- Seis componentes (botón, campo, selector, tabla, modal, aviso) con selectores de variante/tamaño/estado.
+     Tokens editables arriba (color primario, radio, base 8) + botón para copiar el CSS. -->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/di.css">
+<style id="esc-propio">
+.b02 { display: grid; grid-template-columns: 1.4fr .6fr; gap: 2.2vw; align-items: start; }
+.b02-izq { min-width: 0; display: grid; gap: 1.1vh; }
+.b02-top { display: grid; gap: .7em; }
+.b02-toks { display: flex; flex-wrap: wrap; gap: .55em 1em; align-items: center; padding: .75em .9em; border: 1px solid var(--line2); border-radius: .9em; background: var(--s2); }
+.b02-toks label { display: inline-flex; gap: .5em; align-items: center; font-size: .72em; color: var(--muted); }
+.b02-toks input[type="color"] { width: 2.2em; height: 2em; padding: 0; border: 0; background: transparent; }
+.b02-toks input[type="range"] { width: 9.5em; }
+.b02-toks b { color: var(--fg); font-family: var(--mono); font-size: .95em; }
+.b02-ctrl { display: flex; flex-wrap: wrap; gap: .5em .8em; align-items: center; }
+.b02-ctrl .k-seg { flex: 0 0 auto; }
+.b02-vista { border: 1px solid var(--line2); border-radius: 1em; background: var(--s2); padding: 1.2em; min-height: 18em; position: relative; overflow: hidden; }
+.b02-vista::before { content: ""; position: absolute; inset: 0; background: radial-gradient(900px 240px at 40% -40%, rgba(11,99,206,.16), transparent 55%); pointer-events: none; }
+.ui { --p: #0b63ce; --r: 10px; --u: 8px; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #1a1d23; position: relative; }
+.ui * { box-sizing: border-box; }
+.ui .row { display: flex; gap: calc(var(--u) * 1px); flex-wrap: wrap; align-items: center; }
+.ui .mut { color: #5b6270; }
+.ui .k { font: 800 11px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
+.ui .card { background: #fff; border: 1px solid rgba(0,0,0,.12); border-radius: calc(var(--r) * 1px); padding: calc(var(--u) * 1px); box-shadow: 0 12px 30px -22px rgba(0,0,0,.35); }
+.ui .btn { border: 0; border-radius: calc(var(--r) * 1px); padding: .7em 1em; font-weight: 750; cursor: default; display: inline-flex; align-items: center; gap: .55em; }
+.ui[data-size="s"] .btn { padding: .5em .8em; font-size: .9em; }
+.ui[data-size="l"] .btn { padding: .86em 1.1em; font-size: 1.07em; }
+.ui[data-variant="primario"] .btn { background: var(--p); color: #fff; }
+.ui[data-variant="secundario"] .btn { background: #f5f6f8; color: #1a1d23; border: 1.5px solid rgba(0,0,0,.14); }
+.ui[data-variant="peligroso"] .btn { background: #b3261e; color: #fff; }
+.ui[data-state="hover"] .btn { filter: brightness(.98) saturate(1.06); box-shadow: 0 10px 26px -18px rgba(0,0,0,.45); }
+.ui[data-state="foco"] .btn { box-shadow: 0 0 0 4px rgba(11,99,206,.18), 0 10px 26px -18px rgba(0,0,0,.45); outline: 2px solid rgba(11,99,206,.6); outline-offset: 2px; }
+.ui[data-state="activo"] .btn { transform: translateY(1px); filter: brightness(.95); }
+.ui[data-state="deshabilitado"] .btn { opacity: .48; }
+.ui .fld { display: grid; gap: .35em; }
+.ui .fld label { font-size: .78em; font-weight: 760; }
+.ui .in { width: min(28em, 100%); border-radius: calc(var(--r) * 1px); border: 1.5px solid rgba(0,0,0,.18); padding: .7em .8em; background: #fff; }
+.ui[data-size="s"] .in { padding: .55em .7em; }
+.ui[data-size="l"] .in { padding: .85em .9em; }
+.ui .help { font-size: .74em; color: #5b6270; }
+.ui .err { font-size: .74em; color: #b3261e; font-weight: 700; }
+.ui[data-state="hover"] .in { border-color: rgba(0,0,0,.28); }
+.ui[data-state="foco"] .in { border-color: rgba(11,99,206,.8); box-shadow: 0 0 0 3px rgba(11,99,206,.18); }
+.ui[data-state="activo"] .in { border-color: rgba(0,0,0,.32); }
+.ui[data-state="deshabilitado"] .in { opacity: .55; }
+.ui[data-variant="peligroso"] .in { border-color: rgba(179,38,30,.7); box-shadow: 0 0 0 3px rgba(179,38,30,.12); }
+.ui .sel { display: inline-flex; align-items: center; justify-content: space-between; gap: .8em; width: min(18em, 100%); padding: .65em .8em; border-radius: calc(var(--r) * 1px); border: 1.5px solid rgba(0,0,0,.18); background: #fff; }
+.ui .chev { width: .55em; height: .55em; border-right: 2px solid #5b6270; border-bottom: 2px solid #5b6270; transform: rotate(45deg); }
+.ui table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: calc(var(--r) * 1px); }
+.ui th, .ui td { font-size: .78em; padding: .7em .8em; border-bottom: 1px solid rgba(0,0,0,.10); }
+.ui th { text-align: left; font-weight: 800; color: #1a1d23; background: rgba(0,0,0,.03); }
+.ui tr:last-child td { border-bottom: 0; }
+.ui .badge { display: inline-flex; align-items: center; gap: .35em; padding: .25em .55em; border-radius: 999px; font-size: .74em; font-weight: 800; background: rgba(11,99,206,.12); color: #0b63ce; }
+.ui[data-variant="peligroso"] .badge { background: rgba(179,38,30,.12); color: #b3261e; }
+.ui[data-variant="secundario"] .badge { background: rgba(91,98,112,.12); color: #5b6270; }
+.ui .modal { position: relative; width: min(36em, 100%); border-radius: calc(var(--r) * 1px); border: 1px solid rgba(0,0,0,.16); background: #fff; padding: calc(var(--u) * 1px); box-shadow: 0 26px 70px -44px rgba(0,0,0,.55); }
+.ui .modal .h { display: flex; justify-content: space-between; gap: 1em; align-items: baseline; }
+.ui .modal h3 { margin: 0; font-size: 1.05em; }
+.ui .modal p { margin: .4em 0 0; font-size: .85em; color: #5b6270; }
+.ui .alert { display: flex; gap: .7em; align-items: flex-start; border-radius: calc(var(--r) * 1px); padding: .8em .9em; border: 1px solid rgba(0,0,0,.14); background: rgba(11,99,206,.08); }
+.ui .dot { width: .75em; height: .75em; border-radius: 50%; background: currentColor; margin-top: .2em; }
+.ui[data-variant="peligroso"] .alert { background: rgba(179,38,30,.08); }
+.ui[data-variant="secundario"] .alert { background: rgba(91,98,112,.08); }
+.ui .alert b { display: block; font-size: .85em; }
+.ui .alert span { display: block; font-size: .8em; color: #5b6270; margin-top: .2em; }
+.b02-der { min-width: 0; display: grid; gap: 1.1vh; }
+.b02-der .k-caja { display: grid; gap: .45em; }
+.b02-p { margin: 0; font-size: .74em; line-height: 1.45; color: var(--muted); }
+@media (max-width: 760px) { .b02 { grid-template-columns: 1fr; gap: 14px; } }
+@media (prefers-reduced-motion: reduce) { .ui[data-state="activo"] .btn { transform: none; } }
+</style>
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Diseño de interfaces · Sesión 2</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <h1 class="esc-titulo a-in" style="font-size:1.85em">Biblioteca mínima: <em>seis componentes, tres decisiones</em></h1>
+    <div class="b02">
+      <div class="b02-izq a-in" style="--d:.1s">
+        <div class="b02-top">
+          <div class="b02-toks" id="toks" aria-label="Tokens editables">
+            <label>Primario <input type="color" id="t-primary" value="#0b63ce"><b id="v-primary">#0B63CE</b></label>
+            <label>Radio <input type="range" id="t-radius" min="4" max="18" step="1" value="10"><b><span id="v-radius">10</span>px</b></label>
+            <label>Base 8 <input type="range" id="t-u" min="6" max="12" step="1" value="8"><b><span id="v-u">8</span>px</b></label>
+            <button type="button" class="k-btn sec" id="copiar">Copiar tokens CSS</button>
+          </div>
+          <div class="b02-ctrl" aria-label="Selectores">
+            <div class="k-seg" data-seg="cmp" id="seg-cmp">
+              <button data-op="btn">Botón</button>
+              <button data-op="fld">Campo</button>
+              <button data-op="sel">Selector</button>
+              <button data-op="tbl">Tabla</button>
+              <button data-op="mdl">Modal</button>
+              <button data-op="alt">Aviso</button>
+            </div>
+            <div class="k-seg" data-seg="var" id="seg-var">
+              <button data-op="primario">Primario</button>
+              <button data-op="secundario">Secundario</button>
+              <button data-op="peligroso">Peligroso</button>
+            </div>
+            <div class="k-seg" data-seg="siz" id="seg-siz">
+              <button data-op="s">S</button>
+              <button data-op="m">M</button>
+              <button data-op="l">L</button>
+            </div>
+            <div class="k-seg" data-seg="st" id="seg-st">
+              <button data-op="normal">Normal</button>
+              <button data-op="hover">Hover</button>
+              <button data-op="foco">Foco</button>
+              <button data-op="activo">Activo</button>
+              <button data-op="deshabilitado">Deshabilitado</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="b02-vista">
+          <div class="ui" id="ui" data-cmp="btn" data-variant="primario" data-size="m" data-state="normal" role="region" aria-label="Vista del componente">
+            <div class="card" id="v">
+              <div class="k">Vista</div>
+              <div style="height:10px"></div>
+              <div id="slot"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="b02-der a-in" style="--d:.22s">
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--di)">Tu objetivo (mínimo viable)</p>
+          <p class="b02-p">Define una sola versión por combinación: variante × tamaño × estado. Si no está aquí, no existe.</p>
+          <ul class="k-check" data-check="di02-biblioteca" data-listo="Listo: ya puedes replicar esto en Figma con propiedades.">
+            <li><label><input type="checkbox"><span></span><em>Ajusté tokens (primario, radio, base)</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Recorrí variante, tamaño y estado</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Identifiqué 6 componentes mínimos</em></label></li>
+          </ul>
+        </div>
+        <div class="k-caja">
+          <p class="k-q" style="--c:var(--ph-or)">Regla</p>
+          <p class="b02-p">Hoy “estado” no es solo el botón: también el campo, el selector, la tabla y el modal deben tener normal/hover/foco/activo/deshabilitado.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span>Tip: en Figma, conviértelo en componentes con variantes y propiedades; en código, en clases y tokens CSS.</span>
+  </footer>
+</div>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/di.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var ui = $("ui"), slot = $("slot");
+
+  function hexUpper(h) { return String(h || "").toUpperCase(); }
+  function aplicarTokens() {
+    var p = $("t-primary").value, r = +$("t-radius").value, u = +$("t-u").value;
+    ui.style.setProperty("--p", p);
+    ui.style.setProperty("--r", String(r));
+    ui.style.setProperty("--u", String(u));
+    $("v-primary").textContent = hexUpper(p);
+    $("v-radius").textContent = String(r);
+    $("v-u").textContent = String(u);
+  }
+  function estado(dis) {
+    var s = ui.getAttribute("data-state");
+    ui.setAttribute("aria-busy", "false");
+    slot.querySelectorAll("button, input").forEach(function (el) { el.disabled = dis; });
+  }
+  function vista() {
+    var cmp = ui.getAttribute("data-cmp");
+    slot.textContent = "";
+    if (cmp === "btn") {
+      var b = document.createElement("button"); b.className = "btn"; b.type = "button";
+      b.innerHTML = '<span class="badge">Ctrl+S</span> Guardar cambios';
+      slot.appendChild(b);
+    }
+    else if (cmp === "fld") {
+      var f = document.createElement("div"); f.className = "fld";
+      f.innerHTML = '<label for="in">Nombre del producto</label><input class="in" id="in" value="Pintura látex 4 L"><div class="help">Ayuda: escribe como lo dice la etiqueta.</div><div class="err" hidden>El nombre es obligatorio.</div>';
+      slot.appendChild(f);
+      var st = ui.getAttribute("data-state");
+      if (st === "deshabilitado") f.querySelector("#in").disabled = true;
+      var v = ui.getAttribute("data-variant");
+      if (v === "peligroso") { f.querySelector(".err").hidden = false; f.querySelector(".help").hidden = true; }
+    }
+    else if (cmp === "sel") {
+      var s = document.createElement("div"); s.className = "row";
+      s.innerHTML = '<div class="sel" role="button" aria-label="Selector"><span><b>Proveedor</b> <span class="mut">· Don Lucho</span></span><i class="chev" aria-hidden="true"></i></div>';
+      slot.appendChild(s);
+    }
+    else if (cmp === "tbl") {
+      var t = document.createElement("div");
+      t.innerHTML = '<table aria-label="Tabla"><thead><tr><th>Producto</th><th>Stock</th><th>Estado</th></tr></thead><tbody><tr><td>Pintura látex 4 L</td><td>2</td><td><span class="badge">Bajo</span></td></tr><tr><td>Cemento 42,5 kg</td><td>18</td><td><span class="badge">Ok</span></td></tr><tr><td>Taladro 650 W</td><td>0</td><td><span class="badge">Agotado</span></td></tr></tbody></table>';
+      slot.appendChild(t);
+    }
+    else if (cmp === "mdl") {
+      var m = document.createElement("div"); m.className = "modal";
+      m.innerHTML = '<div class="h"><h3>Eliminar producto</h3><span class="badge">Acción peligrosa</span></div><p>Esto no se puede deshacer. ¿Seguro?</p><div style="height:10px"></div><div class="row"><button class="btn" type="button">Eliminar</button><button class="btn" type="button" style="background:#f5f6f8;color:#1a1d23;border:1.5px solid rgba(0,0,0,.14)">Cancelar</button></div>';
+      slot.appendChild(m);
+    }
+    else if (cmp === "alt") {
+      var a = document.createElement("div"); a.className = "alert";
+      a.innerHTML = '<i class="dot" aria-hidden="true"></i><div><b>Actualizado</b><span>El stock se guardó correctamente.</span></div>';
+      slot.appendChild(a);
+    }
+
+    var st2 = ui.getAttribute("data-state");
+    if (st2 === "deshabilitado") estado(true);
+  }
+
+  function setA(k, v) { ui.setAttribute(k, v); vista(); }
+  document.addEventListener("k-seg", function (e) {
+    var n = e.detail && e.detail.nombre, op = e.detail && e.detail.op;
+    if (n === "cmp") setA("data-cmp", op);
+    if (n === "var") setA("data-variant", op);
+    if (n === "siz") setA("data-size", op);
+    if (n === "st") setA("data-state", op === "normal" ? "normal" : op);
+  });
+
+  ["t-primary", "t-radius", "t-u"].forEach(function (id) { $(id).addEventListener("input", function () { aplicarTokens(); }); });
+  aplicarTokens(); vista();
+
+  $("copiar").addEventListener("click", function () {
+    var p = hexUpper($("t-primary").value);
+    var r = +$("t-radius").value;
+    var u = +$("t-u").value;
+    var css = ':root{\n  --color-primario: ' + p + ';\n  --radio: ' + r + 'px;\n  --espacio-base: ' + u + 'px;\n}\n';
+    var b = this, o = b.textContent;
+    DI.copiar(css).then(function (ok) { b.textContent = ok ? "✓ Copiados" : "No pude copiar"; setTimeout(function () { b.textContent = o; }, 1400); });
+  });
+})();
+</script>
+</body>
+</html>
