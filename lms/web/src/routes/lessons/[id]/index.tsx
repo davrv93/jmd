@@ -267,7 +267,7 @@ export default component$(() => {
         </div>
 
         <AhoraClase l={l} ocupado={st.busy} onLogre$={(id: string) => toggle(id, true)} />
-        <LiveEntrada lesson={l.id} staff={isStaff(session.me)} />
+        <LiveEntrada lesson={l.id} staff={isStaff(session.me)} teoria={l.content_html.trim().length > 0} onTeoria$={() => select("contenido")} />
 
         <Tabs tabs={tabs} active={tab.value} onSelect$={select} />
 

@@ -1,4 +1,4 @@
-import { component$, useSignal, useVisibleTask$ } from "@builder.io/qwik";
+import { component$, useSignal, useVisibleTask$, type QRL } from "@builder.io/qwik";
 import { api } from "~/lib/api";
 import { Icon } from "~/components/icon";
 
@@ -33,7 +33,8 @@ export const LiveAviso = component$(() => {
 });
 
 // Acceso al modo LIVE dentro de la página de la clase.
-export const LiveEntrada = component$((props: { lesson: string; staff: boolean }) => {
+// Si la clase tiene teoría escrita (pestaña «Contenido»), el alumno la puede leer sin esperar a que empiece el LIVE.
+export const LiveEntrada = component$((props: { lesson: string; staff: boolean; teoria?: boolean; onTeoria$?: QRL<() => void> }) => {
   const hay = useSignal(false); // la clase tiene escenas LIVE
   const enVivo = useSignal(false);
   // eslint-disable-next-line qwik/no-use-visible-task
@@ -63,9 +64,16 @@ export const LiveEntrada = component$((props: { lesson: string; staff: boolean }
             ? "Entra para seguir las escenas, abrir tu terminal y tu visor."
             : props.staff
               ? "Abre el control para iniciar la clase y llevar a todos de escena en escena."
-              : "Se abre aquí cuando el instructor inicie la clase. Tendrás un aviso en cualquier pantalla."}
+              : props.teoria
+                ? "Mientras el instructor no inicie la clase en vivo, lee aquí la teoría de la sesión a tu ritmo. Cuando empiece, tendrás un aviso en cualquier pantalla."
+                : "Se abre aquí cuando el instructor inicie la clase. Tendrás un aviso en cualquier pantalla."}
         </div>
       </div>
+      {!enVivo.value && !props.staff && props.teoria && props.onTeoria$ && (
+        <button type="button" class="btn" onClick$={() => props.onTeoria$?.()}>
+          <Icon name="book" size={14} /> Leer la teoría
+        </button>
+      )}
       {(enVivo.value || props.staff) && (
         <a class="btn ok" href={href}>
           <Icon name="play" size={14} /> {props.staff ? (enVivo.value ? "Abrir el control" : "Abrir el control del LIVE") : "Entrar al LIVE"}
