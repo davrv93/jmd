@@ -5,8 +5,9 @@ Corre en el servidor. Entra como instructor, pide los enlaces de acceso del LIVE
 que el alumno al abrir su aula. Las sesiones viven solo en la memoria de este proceso y se cierran al terminar.
 No imprime enlaces, tokens ni nombres.
 
-Uso: python3 aulas-clase.py <lección> [--probar] [--minutos N]
+Uso: python3 aulas-clase.py <lección> [--probar] [--minutos N] [--plugin NOMBRE ...]
   --probar     solo comprueba el acceso de instructor y cuenta alumnos
+  --plugin X   instala en el dsh del aula el plugin aula/plugins/X (se repite para varios); va antes de abrir dsh
   --minutos N  mantiene las aulas encendidas N minutos (se apagan a los 15 sin uso)
 """
 import http.client, json, os, re, subprocess, sys, time, urllib.parse
@@ -72,6 +73,18 @@ def instalar(nombre):
     subprocess.run(d + ["sh", "-c", "[ -e /trabajo/AGENTS.md ] || cat > /trabajo/AGENTS.md"], input=agentes, check=True, capture_output=True)
 
 
+def instalar_plugin(nombre, plugin):
+    """Copia aula/plugins/<plugin> al home del alumno y lo agrega al perfil web de dsh (el home es tmpfs: hay que
+    repetirlo cada vez que el aula se recrea)."""
+    d = ["sudo", "docker", "exec", "-i", "-u", "alumno", nombre]
+    tar = subprocess.run(["tar", "-C", str(REPO / "plugins"), "-cf", "-", plugin], capture_output=True, check=True)
+    subprocess.run(d + ["sh", "-c", 'mkdir -p "$HOME/.dsh-plugins" && tar -C "$HOME/.dsh-plugins" -xf -'], input=tar.stdout,
+                   check=True, capture_output=True)
+    r = subprocess.run(d + ["sh", "-c", f'export DSH_HOME="${{DSH_HOME:-$HOME/.dsh}}"; dsh plugin --profile web add '
+                                        f'"link:$HOME/.dsh-plugins/{plugin}" 2>&1 | tail -3'], capture_output=True, text=True)
+    return r.returncode == 0 and "ERR" not in r.stdout, r.stdout.strip()[-200:]
+
+
 def comprobar(nombre):
     orden = ('printf "%s " "$(ls /trabajo/.agents/skills | wc -l)"; [ -n "$EVO_TOKEN" ] && printf "evo "; '
              'psql "$DATABASE_URL" -tAc "select 1" >/dev/null 2>&1 && printf "pg "; '
@@ -113,6 +126,10 @@ def main():
         except subprocess.CalledProcessError as e:
             print(f"{i:2} skills fallaron: {e.returncode}", flush=True)
             fallos += 1
+        for pl in [sys.argv[k + 1] for k, x in enumerate(sys.argv) if x == "--plugin"]:
+            ok, salida = instalar_plugin(nombre, pl)
+            print(f"{i:2} plugin {pl}: {'ok' if ok else 'FALLÓ ' + salida}", flush=True)
+            fallos += 0 if ok else 1
         estado, texto, _ = pedir("POST", "/api/v1/dsh/abrir", cookie, {})
         if estado != 200:
             print(f"{i:2} dsh falló: {estado} {texto[:90].decode(errors='replace')}", flush=True)
