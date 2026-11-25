@@ -9,7 +9,7 @@ objectives:
   - {id: dso-01-o2, title: "Delegar responsabilidades: qué hace cada agente y qué revisa el orquestador"}
   - {id: dso-01-o3, title: "Reutilizar IA externa cuando un modelo especializado lo hace mejor o más barato"}
 materials:
-  - {id: dso-01-plugin-orquesta, title: "Plugin dsh-orquesta 0.1.0 (tareas en segundo plano y visor de subagentes)", kind: file, file: materials/dsh-orquesta-0.1.0.zip}
+  - {id: dso-01-plugin-orquesta, title: "Plugin dsh-orquesta 0.2.0 (flujo visual de la orquesta, tareas en segundo plano)", kind: file, file: materials/dsh-orquesta-0.2.0.zip}
 ---
 ## Sesión 1 · Tu orquesta: subagentes, delegación e IA externa
 

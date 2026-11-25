@@ -58,7 +58,7 @@ export function apply(ctx, config = {}) {
 
   register(ctx, {
     name: 'orquesta_visor',
-    description: 'Genera orquesta-visor.html autocontenido con carriles, eventos, mensajes y totales a partir de los JSONL del workspace.',
+    description: 'Genera orquesta-visor.html: un flujo visual de la orquesta (grafo Orquestador→subagentes con estado y color en vivo) más carriles, eventos y totales.',
     parameters: objectSchema({}, []),
     execute: async (_args, exec) => runtime.viewer(await workspaceFor(ctx, exec)),
     render: (_args, value) => `visor generado: ${value.path} (${value.tasks} tareas, ${value.events} eventos)`,

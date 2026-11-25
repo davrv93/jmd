@@ -133,3 +133,16 @@ npm run pack:zip
 ```
 
 Produce `dsh-orquesta-0.1.0.zip` en esta misma carpeta. No publica nada.
+
+## Ver el flujo de la orquesta (nuevo en 0.2.0)
+
+`orquesta_visor` genera `orquesta-visor.html` con dos vistas (botones arriba):
+
+- **Flujo** (por defecto): un grafo en vivo. El nodo **Orquestador** arriba, y debajo un nodo por
+  cada subagente o comando. Las aristas se pintan según el estado: **azul punteada animada** =
+  trabajando, **cian** = listo, **rojo** = fallo, **ámbar** = cancelado, gris = en cola. Cada
+  nodo muestra su etiqueta, estado, tipo, duración y tokens. Clic en un nodo salta a su detalle.
+- **Carriles**: la línea de tiempo de eventos por tarea (lo de antes).
+
+Vuelve a ejecutar `orquesta_visor` para refrescar, o usa **Cargar JSONL** con `.orquesta/*.jsonl`.
+
