@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crea una skill · DeepSeek, el orquestador</title>
+  <link rel="stylesheet" href="../../comun/escena.css">
+  <link rel="stylesheet" href="../../comun/dsh.css">
+  <style>
+    .ruta{display:grid;grid-template-columns:auto 1fr;gap:.65em;align-items:start}.ruta b{width:2em;height:2em;border-radius:50%;display:grid;place-items:center;background:var(--accent-bg);color:var(--accent);font:800 .82em var(--mono)}
+    .arbol{font:600 .88em/1.55 var(--mono);white-space:pre-wrap;background:var(--s2);border:1px solid var(--line);padding:.7em .9em;border-radius:.7em}
+    .alerta{border-left:4px solid var(--warn);padding-left:.8em}.okline{color:var(--ok);font-weight:750}
+    @media(max-width:760px){.dsh-g2{grid-template-columns:1fr}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+<main class="esc dsh">
+  <header class="esc-cab"><span class="esc-fase" data-ph="ea">Experimentación</span><span class="esc-num">4 / 12</span></header>
+  <section class="esc-cuerpo">
+    <div><p class="dsh-et">Skill = instrucciones reutilizables</p><h1 class="esc-titulo">Una skill existe solo si DSH la <em>descubre</em></h1>
+      <p class="esc-sub">El nombre de carpeta, el archivo <code>SKILL.md</code> y el YAML deben coincidir. Un front matter inválido puede hacer que desaparezca del catálogo sin aviso.</p></div>
+
+    <div class="dsh-g2">
+      <article class="esc-card">
+        <h2>1 · Elige dónde vive</h2>
+        <div class="ruta"><b>1</b><p><code>&lt;repo&gt;/.dsh/skills/mi-skill/SKILL.md</code><br><small>Primera prioridad dentro del proyecto.</small></p></div>
+        <div class="ruta"><b>2</b><p><code>&lt;repo&gt;/.agents/skills/mi-skill/SKILL.md</code><br><small>Compatible con otros agentes.</small></p></div>
+        <div class="ruta"><b>3</b><p><code>~/.dsh/skills/mi-skill/SKILL.md</code><br><small>Disponible para tus proyectos.</small></p></div>
+      </article>
+      <article class="esc-card">
+        <h2>2 · Escribe el archivo mínimo</h2>
+        <pre class="arbol">---
+name: revisar-api
+description: "Revisa una API: contrato, errores y evidencia. Úsala cuando pidan validar un endpoint."
+---
+
+# Revisar una API
+1. Lee el contrato.
+2. Ejecuta casos válidos e inválidos.
+3. Entrega evidencia.</pre>
+      </article>
+    </div>
+
+    <div class="esc-card alerta">
+      <h2>La trampa del YAML</h2>
+      <p>Si el texto contiene <code>: </code>, pon toda la descripción entre comillas. El <code>name</code> debe estar en kebab-case y coincidir con el nombre que invocarás: <code>revisar-api</code>.</p>
+    </div>
+
+    <div class="esc-card">
+      <div class="dsh-fila" style="justify-content:space-between"><div><p class="dsh-et">Pedido copiable</p><h2>Crea, valida y carga la skill</h2></div>
+        <button class="dsh-boton" type="button" data-pedido-de="p-skill">Copiar y abrir DeepSeek Harness</button></div>
+      <pre class="dsh-pedido" id="p-skill" data-pedido><code>Crea una skill de proyecto llamada revisar-api en .dsh/skills/revisar-api/SKILL.md. Usa front matter YAML válido con name y description entre comillas cuando corresponda. Su flujo debe leer el contrato, probar casos válidos e inválidos y entregar evidencia. Después confirma que revisar-api aparece en el catálogo de skills de esta sesión, cárgala con la herramienta skill y resume la primera instrucción que cargaste. Si no aparece, revisa el YAML y la ubicación; no afirmes que cargó sin comprobarlo.</code></pre>
+      <p class="okline">Prueba de carga: aparece en el catálogo → DSH llama <code>skill({ name: "revisar-api" })</code> → devuelve el cuerpo de SKILL.md.</p>
+    </div>
+  </section>
+</main>
+<div class="dsh-toast" id="dsh-toast" role="status" aria-live="polite"></div>
+<script src="../../comun/dsh.js"></script>
+</body>
+</html>

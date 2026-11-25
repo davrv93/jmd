@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tareas en segundo plano · DeepSeek, el orquestador</title>
+  <link rel="stylesheet" href="../../comun/escena.css"><link rel="stylesheet" href="../../comun/dsh.css">
+  <style>
+    .jobflow{display:grid;grid-template-columns:repeat(4,1fr);gap:.6em}.job{border:1px solid var(--line);border-radius:.8em;padding:.8em;background:var(--s1)}.job i{display:block;width:.65em;height:.65em;border-radius:50%;background:var(--accent);margin-bottom:.5em}.job b{display:block}.herr{font:700 .82em var(--mono);color:var(--accent)}.real{border:1px solid var(--ok);background:var(--ok-bg)}
+    @media(max-width:800px){.jobflow{grid-template-columns:1fr 1fr}}@media(max-width:480px){.jobflow{grid-template-columns:1fr}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+<main class="esc dsh">
+  <header class="esc-cab"><span class="esc-fase" data-ph="ca">Conceptualización</span><span class="esc-num">8 / 12</span></header>
+  <section class="esc-cuerpo">
+    <div><p class="dsh-et">Capacidad nativa confirmada en DSH</p><h1 class="esc-titulo">El orquestador puede continuar mientras un <em>job</em> trabaja</h1>
+      <p class="esc-sub">Una llamada de <code>bash</code> o terminal con <code>run_in_background: true</code> devuelve un <code>job_id</code>. Ese identificador permite consultar, esperar o detener el proceso.</p></div>
+    <div class="jobflow">
+      <div class="job"><i></i><b>1 · Lanzar</b><span class="herr">bash</span><p>Activa <code>run_in_background</code>.</p></div>
+      <div class="job"><i></i><b>2 · Recordar</b><span class="herr">job_id</span><p>No inventes ni pierdas el identificador.</p></div>
+      <div class="job"><i></i><b>3 · Consultar</b><span class="herr">job_list / job_output</span><p>Revisa estado y salida incremental.</p></div>
+      <div class="job"><i></i><b>4 · Detener</b><span class="herr">job_kill</span><p>Solo si ya no debe continuar.</p></div>
+    </div>
+    <div class="dsh-g2">
+      <article class="esc-card real"><h2>Lo que sí ocurre</h2><p>El job puede quedar <code>running</code> después de que termine el turno. DSH registra estados <code>completed</code>, <code>failed</code> o <code>killed</code> y conserva salida limitada.</p></article>
+      <article class="esc-card"><h2>Lo que no debes asumir</h2><p>Terminar el turno no significa que el job terminó. Tampoco significa que un subagente sea un job: son capacidades distintas, aunque ambas puedan avanzar mientras el orquestador sigue.</p></article>
+    </div>
+    <div class="esc-card">
+      <div class="dsh-fila" style="justify-content:space-between"><div><p class="dsh-et">Pedido copiable</p><h2>Lanza una prueba segura y sigue trabajando</h2></div><button class="dsh-boton" type="button" data-pedido-de="p-job">Copiar y abrir DeepSeek Harness</button></div>
+      <pre class="dsh-pedido" id="p-job" data-pedido><code>Actúa como orquestador. Lanza en segundo plano una tarea segura que espere unos segundos y escriba cinco avances en un archivo temporal, usando la capacidad run_in_background de bash o terminal. Conserva el job_id. Mientras corre, enumera tres criterios para revisar el resultado. Luego usa job_list y job_output con ese id, informa el estado real y muestra la salida. Si sigue activo, espera con un límite razonable; no lo declares terminado antes de comprobarlo. No uses job_kill salvo que quede bloqueado.</code></pre>
+    </div>
+  </section>
+<section style="margin:18px auto 0;max-width:980px;padding:16px 18px;border:1.5px solid var(--line,#d5d9e0);border-radius:14px">
+  <p style="margin:0 0 6px;font-weight:700">Plugin JMD «dsh-orquesta» · tareas en segundo plano con registro y visor</p>
+  <p style="margin:0 0 10px">Agrega a DSH las herramientas <code>tarea_fondo</code>, <code>tarea_estado</code>, <code>tareas_listar</code>, <code>tarea_cancelar</code> y <code>orquesta_visor</code> (genera <code>orquesta-visor.html</code> con un carril por agente).</p>
+  <p style="margin:0 0 10px"><a download href="/files/deepseek-orquestador/materials/dsh-orquesta-0.1.0.zip">Descargar dsh-orquesta-0.1.0.zip</a></p>
+  <p style="margin:0 0 4px">Instálalo (descomprime el zip en una carpeta y usa su ruta):</p>
+  <pre style="white-space:pre-wrap;margin:0"><code>dsh plugin --profile desktop add link:/ruta/a/dsh-orquesta</code></pre>
+</section>
+</main>
+<div class="dsh-toast" id="dsh-toast" role="status" aria-live="polite"></div><script src="../../comun/dsh.js"></script>
+</body>
+</html>

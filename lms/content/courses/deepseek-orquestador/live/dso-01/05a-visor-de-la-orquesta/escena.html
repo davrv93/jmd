@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visor de la orquesta · DeepSeek, el orquestador</title>
+  <link rel="stylesheet" href="../../comun/escena.css"><link rel="stylesheet" href="../../comun/dsh.css">
+  <style>
+    .sim{--az:#5475ff;--ve:#238b55;--ro:#c54242;--am:#b87200}.simbar{display:flex;gap:.45em;align-items:center;flex-wrap:wrap}.simbar button,.simbar select{border:1px solid var(--line2);background:var(--s1);color:var(--fg);border-radius:.6em;padding:.5em .72em;font:700 .78em var(--mono);cursor:pointer}.simbar button.pri{background:var(--accent);color:var(--on-accent);border-color:transparent}.simbar button:disabled{opacity:.45;cursor:default}.simbar label{margin-left:auto;font-size:.78em;color:var(--muted)}
+    .aviso-sim{display:flex;gap:.65em;align-items:flex-start;border:1px solid var(--warn);background:var(--warn-bg);border-radius:.7em;padding:.65em .8em}.aviso-sim b{white-space:nowrap;color:var(--warn)}
+    .orq{display:grid;grid-template-columns:auto 1fr auto;gap:.7em;align-items:center;padding:.75em .9em;border:1px solid var(--line);border-radius:.8em;background:var(--s2)}.nodo{width:2.2em;height:2.2em;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font:800 .78em var(--mono)}.orq small{color:var(--muted)}
+    .carriles{display:grid;gap:.45em;position:relative}.carril{display:grid;grid-template-columns:8.5em 1fr 10.5em;gap:.65em;align-items:center;min-height:3.6em;border:1px solid var(--line);border-radius:.75em;padding:.55em .7em;background:var(--s1);overflow:hidden}.agente{display:flex;gap:.5em;align-items:center;font-weight:750}.agente i{width:.7em;height:.7em;border-radius:50%;background:var(--muted)}.carril[data-est="trabajando"] .agente i{background:var(--az);box-shadow:0 0 0 .3em color-mix(in srgb,var(--az) 18%,transparent)}.carril[data-est="listo"] .agente i{background:var(--ve)}.carril[data-est="fallo"] .agente i{background:var(--ro)}.carril[data-est="reintento"] .agente i{background:var(--am)}
+    .pista{height:1.65em;border-radius:999px;background:var(--s2);position:relative;overflow:hidden}.avance{height:100%;width:0;background:color-mix(in srgb,var(--az) 62%,transparent);transition:width .35s ease;border-radius:999px}.mensaje{position:absolute;inset:.18em auto auto .45em;font:700 .72em var(--mono);white-space:nowrap}.estado{justify-self:end;font:750 .73em var(--mono);color:var(--muted)}
+    .flecha{height:1.15em;display:flex;align-items:center;gap:.4em;color:var(--accent);font:700 .68em var(--mono);opacity:0;transform:translateX(-1em)}.flecha.ver{opacity:1;transform:none;transition:.25s}.flecha::before{content:"";height:1px;width:4em;background:currentColor}.flecha::after{content:"›";font-size:1.4em}.jobbg{display:grid;grid-template-columns:auto 1fr auto;gap:.6em;align-items:center;border:1px dashed var(--line2);border-radius:.7em;padding:.6em .75em}.jobbg .barra{height:.45em;background:var(--s2);border-radius:1em;overflow:hidden}.jobbg .barra i{display:block;height:100%;width:0;background:var(--am);transition:width .3s}.jobbg b{font-size:.82em}.jobbg span{font:700 .72em var(--mono);color:var(--muted)}
+    .datos{display:grid;grid-template-columns:1.25fr 1fr;gap:.75em}.log{height:10.5em;overflow:auto;background:#141622;color:#e8eaff;border-radius:.7em;padding:.65em;font:500 .72em/1.5 var(--mono)}.log p{margin:0}.log time{color:#8d96b5}.metricas{display:grid;grid-template-columns:repeat(3,1fr);gap:.45em}.met{background:var(--s2);border-radius:.65em;padding:.6em}.met b{display:block;font:800 1.05em var(--mono)}.met span{font-size:.7em;color:var(--muted)}
+    .prompts{display:grid;grid-template-columns:1fr 1fr;gap:.7em}.prompts .dsh-pedido{font-size:.72em;max-height:12em;overflow:auto}
+    @media(max-width:780px){.carril{grid-template-columns:1fr auto}.pista{grid-column:1/-1;grid-row:2}.estado{grid-column:2;grid-row:1}.datos,.prompts{grid-template-columns:1fr}.simbar label{margin-left:0}.orq{grid-template-columns:auto 1fr}.orq>span:last-child{grid-column:1/-1}.metricas{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:430px){.esc.dsh{padding:.7em .7em 3em}.simbar button,.simbar select{padding:.45em .55em}.carril{padding:.45em}.agente{font-size:.82em}.log{height:9em}.met{padding:.45em}.aviso-sim{display:block}.aviso-sim b{display:block;margin-bottom:.25em}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.flecha{transform:none}}
+  </style>
+</head>
+<body>
+<main class="esc dsh sim">
+  <header class="esc-cab"><span class="esc-fase" data-ph="ea">Experimentación</span><span class="esc-num">10 / 12</span></header>
+  <section class="esc-cuerpo">
+    <div><p class="dsh-et">Visor de la orquesta</p><h1 class="esc-titulo">Mira quién trabaja, quién espera y quién <em>verifica</em></h1></div>
+    <div class="aviso-sim"><b>SIMULACIÓN DIDÁCTICA</b><span>Estos estados, tokens y costos son un ejemplo local; no muestran una sesión real de DSH. Los prompts del final sí sirven para pedir el flujo real.</span></div>
+    <div class="simbar" aria-label="Controles de la simulación">
+      <button id="ejecutar" class="pri" type="button">Ejecutar</button><button id="pausar" type="button" disabled>Pausar</button><button id="paso" type="button">Paso a paso</button><button id="reiniciar" type="button">Reiniciar</button>
+      <label for="vel">Velocidad</label><select id="vel"><option value="1">1×</option><option value="1.7">1.7×</option><option value="3">3×</option></select><span id="progreso" class="esc-chip">0 / 16</span>
+    </div>
+    <div class="orq"><span class="nodo">O</span><div><b>Orquestador</b><small id="orden">Define el plan y espera la ejecución.</small></div><span class="esc-chip" id="orqEstado">en espera</span></div>
+    <div class="flecha" id="flecha">mensaje: asignación</div>
+    <div class="carriles" aria-label="Línea de tiempo de subagentes">
+      <div class="carril" id="programador" data-est="cola"><div class="agente"><i></i>Programador</div><div class="pista"><div class="avance"></div><span class="mensaje">en cola</span></div><span class="estado">0 tok</span></div>
+      <div class="carril" id="probador" data-est="cola"><div class="agente"><i></i>Probador</div><div class="pista"><div class="avance"></div><span class="mensaje">en cola</span></div><span class="estado">0 tok</span></div>
+      <div class="carril" id="revisor" data-est="cola"><div class="agente"><i></i>Revisor</div><div class="pista"><div class="avance"></div><span class="mensaje">en cola</span></div><span class="estado">0 tok</span></div>
+      <div class="carril" id="investigador" data-est="cola"><div class="agente"><i></i>Investigador</div><div class="pista"><div class="avance"></div><span class="mensaje">en cola</span></div><span class="estado">0 tok</span></div>
+    </div>
+    <div class="jobbg"><b>Job de fondo · suite extensa</b><div class="barra"><i id="jobBar"></i></div><span id="jobEstado">sin iniciar</span></div>
+    <div class="datos">
+      <div class="log" id="log" role="log" aria-live="polite"><p><time>00:00</time> Sistema listo para simular.</p></div>
+      <div class="metricas" aria-label="Métricas estimadas">
+        <div class="met"><b id="tiempo">0.0 s</b><span>tiempo</span></div><div class="met"><b id="tokens">0</b><span>tokens</span></div><div class="met"><b id="costo">$0.0000</b><span>costo estimado</span></div>
+        <div class="met"><b id="activos">0</b><span>agentes activos</span></div><div class="met"><b id="listos">0 / 4</b><span>agentes listos</span></div><div class="met"><b id="reintentos">0</b><span>reintentos</span></div>
+      </div>
+    </div>
+    <div class="prompts">
+      <div class="esc-card"><p class="dsh-et">Prompt real · subagentes</p><button class="dsh-boton chico" type="button" data-pedido-de="p-real">Copiar y abrir DSH</button><pre class="dsh-pedido" id="p-real" data-pedido><code>Actúa como orquestador. Crea cuatro subagentes con nombres programador, probador, revisor e investigador. Delega una tarea acotada a cada uno con salida verificable. Usa list_agents para informar sus estados reales; usa send_message solo si un agente necesita una corrección. No confundas inactive con éxito: confirma cada resultado recibido y resume tiempo y uso reportado por DSH, sin inventar costos.</code></pre></div>
+      <div class="esc-card"><p class="dsh-et">Prompt real · job paralelo</p><button class="dsh-boton chico" type="button" data-pedido-de="p-job-real">Copiar y abrir DSH</button><pre class="dsh-pedido" id="p-job-real" data-pedido><code>Mientras coordinas los subagentes, lanza la suite de pruebas en segundo plano con run_in_background. Conserva el job_id y continúa revisando los resultados de los agentes. Antes de cerrar, usa job_list y job_output para comprobar el estado y la salida del job. Si falló, informa el código o detalle real; si sigue activo, dilo claramente.</code></pre></div>
+    </div>
+  </section>
+</main>
+<div class="dsh-toast" id="dsh-toast" role="status" aria-live="polite"></div><script src="../../comun/dsh.js"></script>
+<script>
+(function(){
+  var ids=['programador','probador','revisor','investigador'], i=0, timer=null, corriendo=false, inicio=0, tok=0, retry=0;
+  var eventos=[
+    ['plan','El orquestador divide el objetivo en cuatro salidas.'],['msg','Envía asignaciones a los cuatro agentes.'],['work','programador','Implementa el cambio.',18,160],['job','La suite extensa sigue en segundo plano.',16],['work','investigador','Contrasta la documentación.',42,210],['work','probador','Diseña y ejecuta casos.',38,195],['fail','programador','Falló una validación: devuelve evidencia.',56,260],['retry','programador','Recibe el fallo y reintenta.',68,315],['done','investigador','Fuente oficial confirmada.',100,360],['work','revisor','Revisa el diff mientras el job continúa.',45,220],['done','programador','Corrección lista para verificar.',100,430],['done','probador','Casos y evidencia listos.',100,390],['done','revisor','Revisión cruzada aprobada.',100,350],['jobdone','La suite de fondo terminó correctamente.',100],['collect','El orquestador recoge resultados y consulta estados.'],['finish','Ejecución simulada completa.']
+  ];
+  function $(x){return document.getElementById(x)}
+  function log(txt,tipo){var p=document.createElement('p'),s=((Date.now()-(inicio||Date.now()))/1000).toFixed(1).padStart(4,'0');p.innerHTML='<time>00:'+s+'</time> '+txt;if(tipo)p.style.color=tipo==='error'?'#ff8a86':'#8fe1ad';$('log').appendChild(p);$('log').scrollTop=$('log').scrollHeight}
+  function agente(id,est,msg,pct,t){var e=$(id),seg=t?(t/125).toFixed(1):'0.0',usd=(t*.00000055).toFixed(4);e.dataset.est=est;e.querySelector('.mensaje').textContent=msg;e.querySelector('.avance').style.width=pct+'%';e.querySelector('.estado').textContent=seg+'s · '+t+' tok · $'+usd}
+  function metricas(){var activos=ids.filter(function(x){return ['trabajando','reintento'].includes($(x).dataset.est)}).length,hechos=ids.filter(function(x){return $(x).dataset.est==='listo'}).length;$('tokens').textContent=tok.toLocaleString('es-PE');$('costo').textContent='$'+(tok*.00000055).toFixed(4);$('activos').textContent=activos;$('listos').textContent=hechos+' / 4';$('reintentos').textContent=retry;$('tiempo').textContent=((Date.now()-(inicio||Date.now()))/1000).toFixed(1)+' s';$('progreso').textContent=i+' / '+eventos.length}
+  function aplicar(e){var k=e[0],id=e[1];$('flecha').classList.remove('ver');if(k==='plan'){$('orden').textContent=e[1];$('orqEstado').textContent='planificando';log(e[1])}else if(k==='msg'){$('flecha').textContent='orquestador → agentes: asignaciones';$('flecha').classList.add('ver');$('orden').textContent=e[1];$('orqEstado').textContent='coordinando';ids.forEach(function(x){agente(x,'cola','asignación recibida',8,20)});tok+=80;log(e[1])}else if(k==='work'){agente(id,'trabajando',e[2],e[3],e[4]);tok+=e[4];log(id+': '+e[2])}else if(k==='fail'){agente(id,'fallo','falló → evidencia enviada',e[3],e[4]);tok+=e[4];$('flecha').textContent='probador → programador: caso fallido';$('flecha').classList.add('ver');log(id+': '+e[2],'error')}else if(k==='retry'){retry++;agente(id,'reintento','reintento en curso',e[3],e[4]);tok+=e[4];$('flecha').textContent='orquestador → programador: reintenta';$('flecha').classList.add('ver');log(id+': '+e[2])}else if(k==='done'){agente(id,'listo',e[2],e[3],e[4]);tok+=e[4];log(id+': '+e[2],'ok')}else if(k==='job'){$('jobBar').style.width=e[2]+'%';$('jobEstado').textContent='running';log(e[1])}else if(k==='jobdone'){$('jobBar').style.width=e[2]+'%';$('jobEstado').textContent='completed';log(e[1],'ok')}else if(k==='collect'){$('orden').textContent=e[1];$('orqEstado').textContent='verificando';log(e[1])}else if(k==='finish'){$('orden').textContent=e[1];$('orqEstado').textContent='listo';log(e[1],'ok')}metricas()}
+  function siguiente(){if(i>=eventos.length){detener();return false}if(!inicio)inicio=Date.now();aplicar(eventos[i++]);metricas();return i<eventos.length}
+  function ciclo(){if(!corriendo)return;if(siguiente()){var v=Number($('vel').value)||1;timer=setTimeout(ciclo,700/v)}else detener()}
+  function ejecutar(){if(i>=eventos.length)reiniciar();corriendo=true;$('ejecutar').disabled=true;$('pausar').disabled=false;$('paso').disabled=true;ciclo()}
+  function detener(){corriendo=false;clearTimeout(timer);$('ejecutar').disabled=false;$('pausar').disabled=true;$('paso').disabled=false;$('pausar').textContent='Pausar'}
+  function reiniciar(){detener();i=0;tok=0;retry=0;inicio=0;ids.forEach(function(x){agente(x,'cola','en cola',0,0)});$('jobBar').style.width='0';$('jobEstado').textContent='sin iniciar';$('orden').textContent='Define el plan y espera la ejecución.';$('orqEstado').textContent='en espera';$('flecha').classList.remove('ver');$('flecha').textContent='mensaje: asignación';$('log').innerHTML='<p><time>00:00</time> Sistema listo para simular.</p>';metricas()}
+  $('ejecutar').onclick=ejecutar;$('pausar').onclick=function(){detener()};$('paso').onclick=function(){if(i>=eventos.length)reiniciar();siguiente()};$('reiniciar').onclick=reiniciar;reiniciar();
+})();
+</script>
+</body>
+</html>

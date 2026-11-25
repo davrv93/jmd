@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crea un plugin · DeepSeek, el orquestador</title>
+  <link rel="stylesheet" href="../../comun/escena.css"><link rel="stylesheet" href="../../comun/dsh.css">
+  <style>
+    .flujo{display:grid;grid-template-columns:repeat(4,1fr);gap:.7em}.paso{position:relative;padding:.8em;border:1px solid var(--line);border-radius:.8em;background:var(--s1)}.paso b{display:block;color:var(--accent);font:800 .75em var(--mono);margin-bottom:.25em}
+    .files{font:600 .84em/1.55 var(--mono);white-space:pre-wrap;background:var(--s2);padding:.7em;border-radius:.6em}.nota{border-left:4px solid var(--accent);padding-left:.8em}
+    @media(max-width:850px){.flujo{grid-template-columns:1fr 1fr}}@media(max-width:520px){.flujo{grid-template-columns:1fr}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+<main class="esc dsh">
+  <header class="esc-cab"><span class="esc-fase" data-ph="ea">Experimentación</span><span class="esc-num">5 / 12</span></header>
+  <section class="esc-cuerpo">
+    <div><p class="dsh-et">Plugin = código + capa de configuración</p><h1 class="esc-titulo">Empaqueta una capacidad como <em>bundle</em></h1>
+      <p class="esc-sub">Un <code>.zip</code> sirve para transportarlo. DSH instala la carpeta extraída —o un paquete npm/tarball— en un perfil.</p></div>
+    <div class="flujo" aria-label="Flujo para crear e instalar un plugin">
+      <div class="paso"><b>01 · CÓDIGO</b><span><code>index.js</code> exporta <code>apply(ctx)</code>.</span></div>
+      <div class="paso"><b>02 · CAPA</b><span><code>cordis.patch.yml</code> inserta el plugin.</span></div>
+      <div class="paso"><b>03 · MANIFIESTO</b><span><code>package.json</code> declara <code>dsh.bundle</code>.</span></div>
+      <div class="paso"><b>04 · PERFIL</b><span>Instala y verifica la configuración compuesta.</span></div>
+    </div>
+
+    <div class="dsh-g2">
+      <article class="esc-card"><h2>Estructura mínima</h2><pre class="files">mi-plugin/
+├── package.json
+├── cordis.patch.yml
+└── index.js</pre>
+        <p><b>Manifiesto clave:</b> <code>"dsh":{"bundle":{"patch":"./cordis.patch.yml"}}</code></p></article>
+      <article class="esc-card"><h2>Empaquetado e instalación</h2>
+        <p><code>zip -r mi-plugin.zip mi-plugin</code> transporta el proyecto.</p>
+        <p>Extrae el zip y ejecuta <code>dsh plugin --profile &lt;perfil&gt; add ./mi-plugin</code>.</p>
+        <p>En perfiles CLI comprueba con <code>dsh --profile &lt;perfil&gt; --dump-config</code>. En Desktop, reinicia la app y verifica que aparezca la herramienta o skill: ese perfil lo administra Electron y puede rechazar <code>--dump-config</code>.</p></article>
+    </div>
+
+    <div class="esc-card nota"><h2>No confundas zip con formato instalable</h2>
+      <p>La guía oficial distribuye bundles como carpeta, npm, GitHub o <code>pnpm pack</code> (<code>.tgz</code>). En el aula puedes adjuntar el zip y pedir a DSH que lo extraiga e instale; verifica siempre el perfil y el nombre del bundle.</p></div>
+
+    <div class="esc-card">
+      <div class="dsh-fila" style="justify-content:space-between"><div><p class="dsh-et">Pedido copiable</p><h2>Haz que DSH construya y compruebe el bundle</h2></div><button class="dsh-boton" type="button" data-pedido-de="p-plugin">Copiar y abrir DeepSeek Harness</button></div>
+      <pre class="dsh-pedido" id="p-plugin" data-pedido><code>Crea en una carpeta mi-plugin un bundle mínimo para DeepSeek Harness: package.json con name dsh-mi-plugin, type module, main index.js, files y dsh.bundle.patch; cordis.patch.yml que inserte el módulo; e index.js con export name y apply(ctx). Valida JSON y YAML, crea mi-plugin.zip para transportarlo y explícame cómo instalar la carpeta extraída en el perfil que estoy usando. Antes de instalar, lista el contenido y advierte si ejecutará scripts. Después verifica el bundle con --dump-config. No inventes el nombre del perfil: pregúntame o detecta el perfil actual.</code></pre>
+    </div>
+  </section>
+</main>
+<div class="dsh-toast" id="dsh-toast" role="status" aria-live="polite"></div><script src="../../comun/dsh.js"></script>
+</body>
+</html>
