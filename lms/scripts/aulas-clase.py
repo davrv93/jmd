@@ -80,9 +80,29 @@ def instalar_plugin(nombre, plugin):
     tar = subprocess.run(["tar", "-C", str(REPO / "plugins"), "-cf", "-", plugin], capture_output=True, check=True)
     subprocess.run(d + ["sh", "-c", 'mkdir -p "$HOME/.dsh-plugins" && tar -C "$HOME/.dsh-plugins" -xf -'], input=tar.stdout,
                    check=True, capture_output=True)
-    r = subprocess.run(d + ["sh", "-c", f'export DSH_HOME="${{DSH_HOME:-$HOME/.dsh}}"; dsh plugin --profile web add '
-                                        f'"link:$HOME/.dsh-plugins/{plugin}" 2>&1 | tail -3'], capture_output=True, text=True)
-    return r.returncode == 0 and "ERR" not in r.stdout, r.stdout.strip()[-200:]
+    # El aula no trae pnpm (dsh plugin add lo exige): se registra a mano igual que lo hace ese comando —
+    # dependencia link: + node_modules/<plugin> + dsh.profile.bundles — y se reinicia el dsh web para que lo cargue.
+    registrar = r"""
+const fs = require('fs'), path = require('path');
+const home = process.env.DSH_HOME || path.join(process.env.HOME, '.dsh');
+const perfil = path.join(home, 'profiles', 'web'), dir = path.join(process.env.HOME, '.dsh-plugins', process.argv[1]);
+fs.mkdirSync(path.join(perfil, 'node_modules'), { recursive: true });
+const pj = path.join(perfil, 'package.json');
+const p = fs.existsSync(pj) ? JSON.parse(fs.readFileSync(pj, 'utf8'))
+  : { name: 'dsh-profile-web', private: true, dependencies: {}, dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'] } } };
+const nombre = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).name;
+p.dependencies = Object.assign({}, p.dependencies, { [nombre]: 'link:' + dir });
+const b = p.dsh.profile.bundles; if (!b.includes(nombre)) b.push(nombre);
+fs.writeFileSync(pj, JSON.stringify(p, null, 2));
+const ln = path.join(perfil, 'node_modules', nombre); try { fs.rmSync(ln, { force: true, recursive: true }); } catch {}
+fs.symlinkSync(dir, ln);
+console.log('registrado', nombre);
+"""
+    r = subprocess.run(d + ["node", "-e", registrar, plugin], capture_output=True, text=True)
+    if r.returncode != 0:
+        return False, (r.stdout + r.stderr).strip()[-200:]
+    subprocess.run(d + ["sh", "-c", "pkill -f 'dsh --profile web' || true"], capture_output=True)
+    return True, r.stdout.strip()
 
 
 def comprobar(nombre):
