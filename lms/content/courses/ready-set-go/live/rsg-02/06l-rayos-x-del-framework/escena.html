@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Rayos X del framework</title>
+<!--
+  Escena del modo LIVE (Ready Set Go, clase rsg-02). Escrita a mano.
+  A la izquierda, el juego del alumno en Forja. A la derecha, los «rayos X del framework»: cada juego lleva
+  plantillas/rayos.js, que cada 250 ms mira qué pieza trabaja (bucle, física, animación, partículas, sonido, dibujo…)
+  y lo manda con postMessage; Forja lo pasa a esta escena (mismo origen). Esta página solo lo pinta.
+-->
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/rsg.css">
+<link rel="stylesheet" href="../../comun/taller.css">
+</head>
+<body>
+<div class="esc">
+  <header class="esc-cab"><span class="esc-fase" data-ph="or">Rayos X</span><span class="esc-num">Ready Set Go · C2 · E06L</span></header>
+  <main class="esc-cuerpo tl-cuerpo">
+    <div class="tl-cab" style="align-items:center">
+      <div class="tl-preg"><h1 style="font-size:1.7em">¿Qué framework trabaja <em style="font-style:normal;color:var(--accent)">ahora</em> en tu juego?</h1>
+        <p class="tl-profe"><span class="x-et">Prueba</span> Salta · choca con un rival · junta algo · abre el menú (M): mira qué se enciende y qué se apaga.</p></div>
+      <p class="tl-ej"><span class="x-et">Tu juego</span> <span class="tl-chip" id="rxJuego">esperando…</span> <span class="tl-chip" id="rxFps">— fps</span></p>
+    </div>
+    <div class="rx">
+      <iframe class="rx-marco" id="rxMarco" src="/forja/?clase=rsg-02&amp;abrir=juegos&amp;rayos=1" title="Tu juego en Forja" allow="autoplay; fullscreen; gamepad"></iframe>
+      <aside class="rx-panel" aria-label="Rayos X del framework">
+        <div class="rx-ahora"><span class="rx-et">Rayos X · en vivo</span><strong id="rxAhora">Abre tu juego y juega</strong><span id="rxPor">Aquí verás qué pieza del juego está trabajando en cada momento.</span></div>
+        <div class="rx-fws" id="rxFws" aria-label="Frameworks"></div>
+        <ul class="rx-capas" id="rxCapas" aria-live="off"><li class="rx-espera">Cuando el juego arranque, cada pieza aparece aquí con su barra de actividad.</li></ul>
+        <div class="rx-teclas" id="rxTeclas">Teclado: —</div>
+      </aside>
+    </div>
+  </main>
+  <footer class="esc-pie"><span class="esc-nota">Un juego no es un solo programa: el bucle, la física, las animaciones, el sonido y el dibujo trabajan por turnos, 60 veces por segundo.</span></footer>
+</div>
+<script>
+(function () { try { var t = new URLSearchParams(location.search).get("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t); } catch (e) {} })();
+(function () {
+  var COLOR = { "Phaser 4": "#c6ff4a", "Web Audio": "#ffb020", "WebGL": "#7fd4ff", "Canvas 2D": "#7fd4ff", "Forja (comun.js)": "#ff7bd3", "Motor Forja": "#ff7bd3", "Motor Forja (entrada)": "#ff7bd3", "p5.js": "#ed225d", "p5.js WEBGL": "#ed225d", "Anime.js": "#ff4b4b", "Web Workers": "#6ff5d2" };
+  var marco = document.getElementById("rxMarco"), capasEl = document.getElementById("rxCapas"), fwsEl = document.getElementById("rxFws");
+  var ahora = document.getElementById("rxAhora"), por = document.getElementById("rxPor"), teclas = document.getElementById("rxTeclas");
+  var filas = {}, chips = {}, ultimo = 0;
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function fila(c) {
+    var li = el("li", "rx-capa"), b = el("b", null, c.nombre), i = el("i", null, c.fw), barra = el("div", "rx-barra"), s = el("small");
+    barra.appendChild(el("span")); li.appendChild(b); li.appendChild(i); li.appendChild(barra); li.appendChild(s);
+    li.style.setProperty("--c", COLOR[c.fw] || "#6ff5d2"); return li;
+  }
+  window.addEventListener("message", function (e) {
+    if (e.source !== marco.contentWindow || !e.data || e.data.forja !== "rayos") return;
+    var d = e.data, capas = d.capas || [];
+    if (!ultimo) capasEl.innerHTML = "";
+    ultimo = Date.now();
+    document.getElementById("rxJuego").textContent = d.juego || d.plantilla || "tu juego";
+    document.getElementById("rxFps").textContent = (d.fps || 0) + " fps";
+    var porFw = {}, mejor = null;
+    capas.forEach(function (c) {
+      var li = filas[c.id];
+      if (!li || li.querySelector("b").textContent !== c.nombre) { if (li) li.remove(); li = filas[c.id] = fila(c); capasEl.appendChild(li); }
+      li.style.setProperty("--n", Math.max(0.02, c.nivel || 0).toFixed(2));
+      li.classList.toggle("on", (c.nivel || 0) > 0.35);
+      li.querySelector("i").textContent = c.fw; li.querySelector("small").textContent = c.detalle || "";
+      porFw[c.fw] = Math.max(porFw[c.fw] || 0, c.nivel || 0);
+      if (c.id !== "bucle" && c.id !== "render" && c.id !== "entrada" && (!mejor || (c.nivel || 0) > (mejor.nivel || 0))) mejor = c;
+    });
+    Object.keys(filas).forEach(function (id) { if (!capas.some(function (c) { return c.id === id; })) { filas[id].remove(); delete filas[id]; } });
+    Object.keys(porFw).forEach(function (fw) {
+      var ch = chips[fw]; if (!ch) { ch = chips[fw] = el("span", "rx-fw", fw); ch.style.setProperty("--c", COLOR[fw] || "#6ff5d2"); fwsEl.appendChild(ch); }
+      ch.classList.toggle("on", porFw[fw] > 0.35);
+    });
+    if (mejor && mejor.nivel > 0.2) { ahora.textContent = "Ahora trabaja: " + mejor.nombre + " · " + mejor.fw; por.textContent = mejor.detalle || ""; }
+    else { ahora.textContent = "Todo tranquilo: solo el bucle y el dibujo"; por.textContent = "Muévete o salta y mira qué se enciende."; }
+    teclas.innerHTML = "";
+    teclas.appendChild(document.createTextNode("Teclado: "));
+    if (d.teclas && d.teclas.length) { d.teclas.forEach(function (k) { teclas.appendChild(el("kbd", null, k)); }); if (d.acciones && d.acciones.length) teclas.appendChild(document.createTextNode(" → " + d.acciones.join(", "))); }
+    else teclas.appendChild(document.createTextNode("—"));
+  });
+  setInterval(function () { if (ultimo && Date.now() - ultimo > 2500) { ahora.textContent = "El juego está cerrado o en pausa"; por.textContent = "Ábrelo en «Juegos» o cierra el menú para seguir viendo los rayos X."; } }, 1000);
+})();
+</script>
+</body>
+</html>
