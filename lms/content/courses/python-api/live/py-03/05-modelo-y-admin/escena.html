@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E05 · Tu modelo y el admin</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/py01.css">
+<style id="esc-propio">
+body { font-size: clamp(14px, calc(1vw + .55vh), 26px); }
+.esc-cielo { opacity: calc(var(--cielo) * .45); }
+.esc { grid-template-columns: minmax(0, 1fr); } .esc-cuerpo { min-width: 0; }
+.dj-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 1.6vw; align-items: start; }
+.dj-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.1vh; align-content: start; min-width: 0; }
+.dj-col .k-pasos { gap: .5em; }
+.dj-dos { display: grid; gap: .35em; min-width: 0; }
+.dj-col .k-sal { font-size: .62em; }
+.ar { display: grid; gap: .45em; min-width: 0; }
+.ar-cab { display: flex; align-items: center; justify-content: space-between; gap: .5em; flex-wrap: wrap; }
+.ar-tabs { display: flex; flex-wrap: wrap; gap: .3em; }
+.ar-tabs button { font: 700 .66em/1 var(--mono); padding: .55em .8em; min-height: 36px; border-radius: .6em; border: 1px solid var(--line2); background: var(--s2); color: var(--muted); cursor: pointer; }
+.ar-tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ar-tabs button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+.ar-code { max-height: 52vh; overflow: auto; font-size: .68em; }
+[data-p][hidden] { display: none !important; }
+.dj-tabla { width: 100%; border-collapse: collapse; font-size: .66em; }
+.dj-tabla th, .dj-tabla td { text-align: left; padding: .3em .5em; border-bottom: 1px solid var(--line2); }
+.dj-tabla th { color: var(--muted); font-weight: 700; }
+.dj-tabla td { font-family: var(--mono); font-weight: 600; }
+.dj-par { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .5em; }
+.dj-par div { border-radius: .7em; padding: .45em .6em; background: var(--s2); border: 1.5px solid var(--line2); font-size: .62em; line-height: 1.4; min-width: 0; }
+.dj-par b { display: block; font: 800 1em var(--mono); color: var(--accent); }
+.dj-par code { overflow-wrap: anywhere; }
+.dj-avisos { display: flex; flex-wrap: wrap; gap: .4em; }
+.dj-avisos .esc-chip { white-space: normal; display: inline-block; max-width: 100%; overflow-wrap: anywhere; border-radius: .7em; font-size: .64em; line-height: 1.35; }
+@media (max-width: 760px) { .dj-cols, .dj-par { grid-template-columns: minmax(0, 1fr); } .ar-code { max-height: none; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1120 130 C1170 70 1230 190 1290 130 S1410 70 1470 140"/>
+  <path class="tb" pathLength="1" d="M70 660 C120 600 180 720 240 660 S360 600 420 670"/>
+  <g><circle class="eo" cx="1120" cy="130" r="5"/><circle class="e" cx="1290" cy="130" r="3.5"/><circle class="eg" cx="1470" cy="140" r="4"/><circle class="e" cx="70" cy="660" r="3.5"/><circle class="eo" cx="240" cy="660" r="4.5"/><circle class="eg" cx="420" cy="670" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Python · Clase 3 · E05</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="k-so-cab">
+      <h1 class="esc-titulo a-in">Tu modelo y el <em>admin</em></h1>
+      <p class="k-pie a-in" style="--d:.1s">Los comandos son iguales en Windows, macOS y Linux · siempre con <code>(.venv)</code> activo, dentro de <code>mi-django</code></p>
+    </div>
+
+    <div class="dj-cols">
+      <div class="dj-col a-in" style="--d:.2s">
+        <div class="esc-card">
+          <ol class="k-pasos">
+            <li><b>Pega <code>models.py</code> (derecha) en <code>inventario/models.py</code> y guarda</b><span></span></li>
+            <li><b>Crea la migración <small>· Django compara tu clase con la base y escribe el plan</small></b>
+              <div class="dj-dos"><pre class="esc-cmd"><span class="p">(.venv) &gt; </span>python manage.py makemigrations</pre>
+              <pre class="k-sal">Migrations for 'inventario':
+  inventario/migrations/0001_initial.py
+    + Create model Producto</pre></div></li>
+            <li><b>Aplícala <small>· crea <code>db.sqlite3</code> con todas las tablas</small></b>
+              <div class="dj-dos"><pre class="esc-cmd"><span class="p">(.venv) &gt; </span>python manage.py migrate</pre>
+              <pre class="k-sal">  Applying inventario.0001_initial... OK</pre></div></li>
+            <li><b>Crea tu usuario administrador <small>· la contraseña no se ve al escribir; el correo puede ir vacío</small></b>
+              <div class="dj-dos"><pre class="esc-cmd"><span class="p">(.venv) &gt; </span>python manage.py createsuperuser</pre>
+              <pre class="k-sal">Nombre de usuario (leave blank to use '…'): admin
+Dirección de correo electrónico:
+Password:
+Password (again):
+Superuser created successfully.</pre></div></li>
+            <li><b>Pega <code>admin.py</code> (derecha) en <code>inventario/admin.py</code> y levanta el servidor</b><pre class="esc-cmd"><span class="p">(.venv) &gt; </span>python manage.py runserver</pre></li>
+            <li><b>Entra a <code>/admin/</code> → <b>Productos</b> → <b>Añadir producto</b> y crea estos 3</b>
+              <table class="dj-tabla"><thead><tr><th>nombre</th><th>precio</th><th>stock</th><th>categoria</th></tr></thead>
+                <tbody><tr><td>Arroz</td><td>4.50</td><td>40</td><td>abarrotes</td></tr><tr><td>Detergente</td><td>6.50</td><td>2</td><td>limpieza</td></tr><tr><td>Leche</td><td>4.20</td><td>12</td><td>lácteos</td></tr></tbody></table></li>
+            <li><b>Busca «arroz», filtra por categoría y prueba un precio de <code>-3</code> <small>· sale en rojo: «Asegúrese de que este valor es mayor o igual a 0.01.»</small></b><span></span></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="dj-col a-in" style="--d:.4s">
+        <div class="ar" data-ar>
+          <div class="ar-cab">
+            <div class="ar-tabs" role="tablist" aria-label="Archivos">
+              <button type="button" role="tab" data-t="models">inventario/models.py</button>
+              <button type="button" role="tab" data-t="admin">inventario/admin.py</button>
+            </div>
+            <span class="k-links"><button class="k-btn" type="button" data-ar-copiar>Copiar archivo</button><button class="k-link" type="button" data-abrir="http://127.0.0.1:8000/admin/">Abrir /admin</button></span>
+          </div>
+<pre class="k-py ar-code" data-p="models">from decimal import Decimal
+
+from django.core.validators import MinValueValidator
+from django.db import models
+
+
+class Producto(models.Model):
+    nombre = models.CharField(max_length=100)
+    precio = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],  # mayor que 0
+    )
+    stock = models.PositiveIntegerField(default=0)  # 0 o más
+    categoria = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.nombre} (stock {self.stock})"
+</pre>
+<pre class="k-py ar-code" data-p="admin" hidden>from django.contrib import admin
+
+from .models import Producto
+
+
+@admin.register(Producto)
+class ProductoAdmin(admin.ModelAdmin):
+    list_display = ["id", "nombre", "precio", "stock", "categoria"]
+    search_fields = ["nombre", "categoria"]
+    list_filter = ["categoria"]
+</pre>
+        </div>
+        <div class="dj-par">
+          <div><b>FastAPI (clase 2)</b><code>precio: float = Field(gt=0)</code><br><code>stock: int = Field(ge=0)</code><br>un dict en memoria: se vacía al reiniciar</div>
+          <div><b>Django (hoy)</b><code>DecimalField</code> + <code>MinValueValidator</code><br><code>PositiveIntegerField</code><br>una tabla en <code>db.sqlite3</code>: tus productos se quedan</div>
+        </div>
+        <div class="k-caja">
+          <ul class="k-check" data-check="py03-admin" data-listo="Listo: toma la captura de la lista de productos y pulsa «Lo logré».">
+            <li><label><input type="checkbox"><span></span><em><code>makemigrations</code> creó <code>0001_initial.py</code> y <code>migrate</code> dijo OK</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Entré a <code>/admin/</code> con mi usuario</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Veo mis 3 productos con id, nombre, precio, stock y categoría</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>La búsqueda y el filtro funcionan, y el precio -3 da error</em></label></li>
+          </ul>
+        </div>
+        <div class="dj-avisos">
+          <span class="esc-chip warn">«This password is too common»: responde <code>N</code> y elige otra (o <code>y</code>, solo en tu máquina)</span>
+          <span class="esc-chip warn">«no such table: inventario_producto»: te faltó <code>migrate</code></span>
+          <span class="esc-chip warn">¿No sale «Productos» en el admin? Revisa <code>admin.py</code> y que <code>'inventario'</code> esté en <code>INSTALLED_APPS</code></span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Toma una captura de /admin con tus 3 productos y súbela · luego «Lo logré»</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/py01.js"></script>
+<script>
+/* Pestañas de archivos: cada botón [data-t] muestra su <pre data-p>; «Copiar archivo» copia el visible. */
+(function () {
+  Array.prototype.forEach.call(document.querySelectorAll("[data-ar]"), function (caja) {
+    var tabs = caja.querySelectorAll("[data-t]"), b = caja.querySelector("[data-ar-copiar]"), actual = "";
+    function ver(id) {
+      actual = id;
+      Array.prototype.forEach.call(tabs, function (t) { t.setAttribute("aria-selected", String(t.getAttribute("data-t") === id)); });
+      Array.prototype.forEach.call(caja.querySelectorAll("[data-p]"), function (p) { p.hidden = p.getAttribute("data-p") !== id; });
+    }
+    Array.prototype.forEach.call(tabs, function (t) { t.addEventListener("click", function () { ver(t.getAttribute("data-t")); }); });
+    if (b) b.addEventListener("click", function () {
+      var pre = caja.querySelector('[data-p="' + actual + '"]');
+      PY.copiar(pre ? pre.textContent : "").then(function (ok) {
+        b.textContent = ok ? "✓ Copiado" : "No pude copiar"; b.classList.toggle("ok", !!ok);
+        setTimeout(function () { b.textContent = "Copiar archivo"; b.classList.remove("ok"); }, 2200);
+      });
+    });
+    ver(tabs[0].getAttribute("data-t"));
+  });
+})();
+</script>
+</body>
+</html>

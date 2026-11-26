@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E09 · Gunicorn y Docker</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/py01.css">
+<style id="esc-propio">
+body { font-size: clamp(14px, calc(1vw + .55vh), 26px); }
+.esc-cielo { opacity: calc(var(--cielo) * .45); }
+.esc { grid-template-columns: minmax(0, 1fr); } .esc-cuerpo { min-width: 0; }
+.dj-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1.6vw; align-items: start; }
+.dj-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.1vh; align-content: start; min-width: 0; }
+.dj-col .k-pasos { gap: .45em; }
+.dj-col .k-pasos > li > b { font-size: .78em; }
+.dj-col .k-pasos .esc-cmd { font-size: .66em; overflow-wrap: anywhere; }
+.dj-dos { display: grid; gap: .35em; min-width: 0; }
+.dj-col .k-sal { font-size: .6em; }
+.dj-h { margin: 0 0 .1em; font: 800 .74em system-ui, -apple-system, sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+.dj-h small { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--muted); }
+.dj-nota { margin: 0; font-size: .68em; line-height: 1.45; color: var(--muted); }
+.dj-nota b { color: var(--fg); }
+.ar { display: grid; gap: .45em; min-width: 0; }
+.ar-cab { display: flex; align-items: center; justify-content: space-between; gap: .5em; flex-wrap: wrap; }
+.ar-tabs { display: flex; flex-wrap: wrap; gap: .3em; }
+.ar-tabs button { font: 700 .58em/1 var(--mono); padding: .55em .7em; min-height: 34px; border-radius: .6em; border: 1px solid var(--line2); background: var(--s2); color: var(--muted); cursor: pointer; }
+.ar-tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ar-tabs button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+.ar-code { max-height: 38vh; overflow: auto; font-size: .62em; }
+.ar-plano { margin: 0; font: 600 .62em/1.55 var(--mono); background: var(--term); color: #e6eefb; border-radius: .8em; padding: .75em 1em; border: 1px solid rgba(169,208,245,.22); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 38vh; overflow: auto; }
+[data-p][hidden] { display: none !important; }
+.dj-arbol { min-width: 0; margin: 0; font: 600 .6em/1.5 var(--mono); background: var(--term); color: #e6eefb; border-radius: .8em; padding: .6em .9em; border: 1px solid rgba(169,208,245,.22); white-space: pre; overflow: auto; }
+.dj-arbol .c { color: #7f93ad; font-style: italic; }
+.dj-arbol .d { color: #84b9ee; }
+.dj-arbol .y { color: #ffd43b; }
+.dj-dos-apis { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .5em; }
+.dj-dos-apis div { border-radius: .7em; padding: .5em .7em; background: var(--s2); border: 1.5px solid var(--line2); font-size: .64em; line-height: 1.4; min-width: 0; display: grid; gap: .3em; justify-items: start; }
+.dj-dos-apis b { font: 800 1em var(--mono); color: var(--accent); }
+.dj-avisos { display: flex; flex-wrap: wrap; gap: .4em; }
+.dj-avisos .esc-chip { white-space: normal; display: inline-block; max-width: 100%; overflow-wrap: anywhere; border-radius: .7em; font-size: .6em; line-height: 1.35; }
+@media (max-width: 760px) { .dj-cols, .dj-dos-apis { grid-template-columns: minmax(0, 1fr); } .ar-code, .ar-plano { max-height: none; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1120 130 C1170 70 1230 190 1290 130 S1410 70 1470 140"/>
+  <path class="tb" pathLength="1" d="M70 660 C120 600 180 720 240 660 S360 600 420 670"/>
+  <g><circle class="eo" cx="1120" cy="130" r="5"/><circle class="e" cx="1290" cy="130" r="3.5"/><circle class="eg" cx="1470" cy="140" r="4"/><circle class="e" cx="70" cy="660" r="3.5"/><circle class="eo" cx="240" cy="660" r="4.5"/><circle class="eg" cx="420" cy="670" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Python · Clase 3 · E09 · Entregable</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="k-so-cab">
+      <h1 class="esc-titulo a-in">Gunicorn y <em>Docker</em>: las dos APIs</h1>
+      <div class="k-so a-in" style="--d:.1s" data-so-tabs></div>
+    </div>
+
+    <div class="dj-cols">
+      <div class="dj-col a-in" style="--d:.2s">
+        <div class="esc-card">
+          <p class="dj-h">A · Gunicorn en tu máquina <small>(dentro de mi-django, con el venv)</small></p>
+          <ol class="k-pasos" data-so="mac linux">
+            <li><b>Detén runserver (Ctrl+C) e instala</b><pre class="esc-cmd"><span class="p">(.venv) $ </span>pip install gunicorn whitenoise</pre></li>
+            <li><b>Sírvelo con Gunicorn y abre <code>/admin/</code> <small>· sale sin estilos: Gunicorn solo corre Python, no sirve <code>/static/</code> (404)</small></b>
+              <div class="dj-dos"><pre class="esc-cmd"><span class="p">(.venv) $ </span>gunicorn config.wsgi</pre>
+              <pre class="k-sal">[INFO] Starting gunicorn 27.0.1
+[INFO] Listening at: http://127.0.0.1:8000
+[INFO] Using worker: sync</pre></div></li>
+            <li><b>Ctrl+C, aplica los 5 cambios de <code>settings.py</code> (derecha) y junta los estáticos</b><pre class="esc-cmd"><span class="p">(.venv) $ </span>python manage.py collectstatic</pre></li>
+            <li><b>Otra vez <code>gunicorn config.wsgi</code>: el admin ya tiene estilos. Ctrl+C</b><span></span></li>
+          </ol>
+          <ol class="k-pasos" data-so="win">
+            <li><b>Detén runserver (Ctrl+C) e instala <small>· van a tu <code>requirements.txt</code></small></b><pre class="esc-cmd"><span class="p">(.venv) PS&gt; </span>pip install gunicorn whitenoise</pre></li>
+            <li><b>Gunicorn <u>no corre</u> en Windows nativo <small>· falla con «No module named 'fcntl'», una pieza que solo existe en Linux y macOS. Lo correrás en Docker (que es Linux) o en WSL</small></b><span></span></li>
+            <li><b>Aplica los 5 cambios de <code>settings.py</code> (derecha) y junta los estáticos</b><pre class="esc-cmd"><span class="p">(.venv) PS&gt; </span>python manage.py collectstatic</pre></li>
+            <li><b>Opcional: un servidor de producción que sí corre en Windows</b><div class="dj-dos"><pre class="esc-cmd"><span class="p">(.venv) PS&gt; </span>pip install waitress</pre><pre class="esc-cmd"><span class="p">(.venv) PS&gt; </span>waitress-serve --listen=127.0.0.1:8000 config.wsgi:application</pre></div></li>
+          </ol>
+          <p class="dj-h" style="margin-top:.6em">B · Docker: las dos APIs juntas <small>(el entregable)</small></p>
+          <ol class="k-pasos">
+            <li><b>Sube a la carpeta que tiene <code>mi-api</code> y <code>mi-django</code>, y crea los archivos de las pestañas</b>
+              <div class="dj-dos"><pre class="esc-cmd">cd ..</pre><pre class="esc-cmd">code docker-compose.yml</pre></div></li>
+            <li><b>Abre Docker Desktop y levanta las dos <small>· la primera vez tarda ~1 min</small></b>
+              <div class="dj-dos"><pre class="esc-cmd">docker compose up --build</pre>
+              <pre class="k-sal">fastapi-1  | Using worker: uvicorn_worker.UvicornWorker
+django-1   |   No migrations to apply.
+django-1   | Listening at: http://0.0.0.0:8000</pre></div></li>
+            <li><b>Prueba las dos en Swagger: un POST en cada una → <code>201</code></b>
+              <div class="dj-dos-apis">
+                <div><b>FastAPI · :8000</b><button class="k-link" type="button" data-abrir="http://localhost:8000/docs">localhost:8000/docs</button></div>
+                <div><b>Django · :8001</b><button class="k-link" type="button" data-abrir="http://localhost:8001/api/docs/">localhost:8001/api/docs/</button></div>
+              </div></li>
+            <li><b>Toma tu captura y apaga todo <small>· en la terminal del compose: Ctrl+C y luego</small></b><pre class="esc-cmd">docker compose down</pre></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="dj-col a-in" style="--d:.4s">
+<pre class="dj-arbol" aria-label="Carpeta del entregable"><span class="d">curso-python/</span>              <span class="c"># la que contiene a las dos</span>
+├── <span class="y">docker-compose.yml</span>
+├── <span class="d">mi-api/</span>       main.py · requirements.txt · Dockerfile · .dockerignore
+└── <span class="d">mi-django/</span>    manage.py · config/ · inventario/ · db.sqlite3
+                 requirements.txt · Dockerfile · .dockerignore</pre>
+        <div class="ar" data-ar>
+          <div class="ar-cab">
+            <div class="ar-tabs" role="tablist" aria-label="Archivos">
+              <button type="button" role="tab" data-t="settings">mi-django/config/settings.py</button>
+              <button type="button" role="tab" data-t="compose">docker-compose.yml</button>
+              <button type="button" role="tab" data-t="djreq">mi-django/requirements.txt</button>
+              <button type="button" role="tab" data-t="djdocker">mi-django/Dockerfile</button>
+              <button type="button" role="tab" data-t="apireq">mi-api/requirements.txt</button>
+              <button type="button" role="tab" data-t="apidocker">mi-api/Dockerfile</button>
+              <button type="button" role="tab" data-t="ignore">.dockerignore (en las dos)</button>
+              <button type="button" role="tab" data-t="main">mi-api/main.py (clase 2)</button>
+            </div>
+          </div>
+<pre class="k-py ar-code" data-p="settings" data-nocopiar># 5 cambios: edítalos a mano en config/settings.py
+import os  # 1 · arriba, junto a «from pathlib import Path»
+
+DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"  # 2 · en Docker: DJANGO_DEBUG=0
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]           # 3
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # 4 · justo aquí, debajo de Security
+    # … el resto de la lista queda igual
+]
+
+STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"  # 5 · aquí junta collectstatic</pre>
+<pre class="ar-plano" data-p="compose" hidden>services:
+  fastapi:
+    build: ./mi-api
+    ports:
+      - "8000:8000"
+
+  django:
+    build: ./mi-django
+    environment:
+      DJANGO_DEBUG: "0"
+    ports:
+      - "8001:8000"
+</pre>
+<pre class="ar-plano" data-p="djreq" hidden>django==6.1.3
+djangorestframework==3.18.3
+drf-spectacular==0.30.0
+gunicorn==27.0.1
+whitenoise==6.12.0
+</pre>
+<pre class="ar-plano" data-p="djdocker" hidden>FROM python:3.13-slim
+ENV PYTHONUNBUFFERED=1
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN python manage.py collectstatic --noinput
+EXPOSE 8000
+# migrate al arrancar y luego Gunicorn con 2 workers (comparten la base SQLite)
+CMD ["sh", "-c", "python manage.py migrate --noinput &amp;&amp; gunicorn config.wsgi --bind 0.0.0.0:8000 --workers 2"]
+</pre>
+<pre class="ar-plano" data-p="apireq" hidden>fastapi==0.165.0
+gunicorn==27.0.1
+uvicorn-worker==0.4.0
+</pre>
+<pre class="ar-plano" data-p="apidocker" hidden>FROM python:3.13-slim
+ENV PYTHONUNBUFFERED=1
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8000
+# 1 worker: los productos viven en un dict en memoria y cada worker tendría el suyo
+CMD ["gunicorn", "main:app", "-k", "uvicorn_worker.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "1"]
+</pre>
+<pre class="ar-plano" data-p="ignore" hidden>.venv
+__pycache__
+staticfiles
+</pre>
+<pre class="k-py ar-code" data-p="main" hidden>from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+app = FastAPI(title="Inventario de mi tienda")
+
+
+class Producto(BaseModel):
+    """Lo que el cliente manda en el body de POST y PUT."""
+    nombre: str
+    precio: float = Field(gt=0)  # mayor que 0
+    stock: int = Field(ge=0)     # 0 o más
+    categoria: str
+
+
+# La «base de datos»: un dict en memoria. Llave = id, valor = el producto
+productos: dict[int, dict] = {}
+siguiente_id = 1
+
+
+def buscar(producto_id: int) -&gt; dict:
+    if producto_id not in productos:  # en un dict se va directo a la llave
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return productos[producto_id]
+
+
+@app.get("/productos")
+def listar():
+    return list(productos.values())
+
+
+@app.get("/productos/{producto_id}")
+def ver(producto_id: int):
+    return buscar(producto_id)
+
+
+@app.post("/productos", status_code=201)
+def crear(producto: Producto):
+    global siguiente_id
+    nuevo = {"id": siguiente_id, **producto.model_dump()}  # id + los 4 campos
+    productos[siguiente_id] = nuevo
+    siguiente_id += 1
+    return nuevo
+
+
+@app.put("/productos/{producto_id}")
+def editar(producto_id: int, producto: Producto):
+    buscar(producto_id)  # si no existe, responde 404
+    productos[producto_id] = {"id": producto_id, **producto.model_dump()}
+    return productos[producto_id]
+
+
+@app.delete("/productos/{producto_id}", status_code=204)
+def borrar(producto_id: int):
+    buscar(producto_id)
+    del productos[producto_id]
+</pre>
+          <div class="ar-cab">
+            <span class="dj-nota" data-ar-nota>Crea cada archivo con <code>code &lt;ruta&gt;</code> desde la carpeta del curso: así no queda como <code>Dockerfile.txt</code></span>
+            <span class="k-links"><button class="k-btn" type="button" data-ar-copiar>Copiar archivo</button></span>
+          </div>
+        </div>
+        <div class="k-caja">
+          <ul class="k-check" data-check="py03-docker" data-listo="¡Entregable listo! Sube la captura de las dos /docs y pulsa «Lo logré».">
+            <li><label><input type="checkbox"><span></span><em><code>collectstatic</code> copió los archivos a <code>staticfiles/</code></em></label></li>
+            <li><label><input type="checkbox"><span></span><em><code>docker compose up --build</code> levantó <code>fastapi-1</code> y <code>django-1</code></em></label></li>
+            <li><label><input type="checkbox"><span></span><em><code>localhost:8000/docs</code> (FastAPI) y <code>localhost:8001/api/docs/</code> (Django) responden</em></label></li>
+            <li><label><input type="checkbox"><span></span><em><code>localhost:8001/admin/</code> se ve con estilos</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Al final, <code>docker compose down</code></em></label></li>
+          </ul>
+        </div>
+        <div class="dj-avisos">
+          <span class="esc-chip">FastAPI: <code>-k uvicorn_worker.UvicornWorker</code> (paquete <code>uvicorn-worker</code>). El viejo <code>uvicorn.workers</code> aún arranca, pero está obsoleto</span>
+          <span class="esc-chip warn">¿Por qué 1 worker en FastAPI? Con 2, cada uno tiene su propio dict: creas 4 y la lista muestra 2</span>
+          <span class="esc-chip warn">«Cannot connect to the Docker daemon» o «error during connect»: abre Docker Desktop</span>
+          <span class="esc-chip warn">«port is already allocated»: cierra runserver o <code>fastapi dev</code> que usen 8000 u 8001</span>
+          <span class="esc-chip">Tus productos del admin viajan en <code>db.sqlite3</code>; lo que crees dentro de Docker se borra con <code>down</code></span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Entregable: tu carpeta con las dos APIs y el docker-compose.yml · captura de las dos /docs y «Lo logré»</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/py01.js"></script>
+<script>
+/* Pestañas de archivos: cada botón [data-t] muestra su <pre data-p>; «Copiar archivo» copia el visible.
+   Un <pre data-nocopiar> (cambios sueltos) deja el botón apagado: esos se editan a mano. */
+(function () {
+  Array.prototype.forEach.call(document.querySelectorAll("[data-ar]"), function (caja) {
+    var tabs = caja.querySelectorAll("[data-t]"), b = caja.querySelector("[data-ar-copiar]"), actual = "";
+    function ver(id) {
+      actual = id;
+      Array.prototype.forEach.call(tabs, function (t) { t.setAttribute("aria-selected", String(t.getAttribute("data-t") === id)); });
+      Array.prototype.forEach.call(caja.querySelectorAll("[data-p]"), function (p) { p.hidden = p.getAttribute("data-p") !== id; });
+      var pre = caja.querySelector('[data-p="' + id + '"]');
+      if (b) { var no = !!(pre && pre.hasAttribute("data-nocopiar")); b.disabled = no; b.textContent = no ? "Edítalo a mano" : "Copiar archivo"; }
+    }
+    Array.prototype.forEach.call(tabs, function (t) { t.addEventListener("click", function () { ver(t.getAttribute("data-t")); }); });
+    if (b) b.addEventListener("click", function () {
+      var pre = caja.querySelector('[data-p="' + actual + '"]');
+      if (!pre || pre.hasAttribute("data-nocopiar")) return;
+      PY.copiar(pre.textContent).then(function (ok) {
+        b.textContent = ok ? "✓ Copiado" : "No pude copiar"; b.classList.toggle("ok", !!ok);
+        setTimeout(function () { b.textContent = "Copiar archivo"; b.classList.remove("ok"); }, 2200);
+      });
+    });
+    ver(tabs[0].getAttribute("data-t"));
+  });
+})();
+</script>
+</body>
+</html>

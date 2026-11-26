@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>runserver es para probar; producción pide Gunicorn</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %.
+     Paso 1: runserver (izq.) y terminal (der.). Pasos 2–3: arbiter arriba, 5 workers (y 140–205), puerto (y 240),
+     comando (y 275), fórmula (y 343) y núcleos a la derecha. Paso 4: dos filas WSGI / ASGI. Paso 5: compose. */
+  .teo h1 code { font: 600 .8em var(--mono); letter-spacing: -.02em; }
+  .caja { fill: var(--papel2); stroke: var(--tinta); stroke-width: 2.4; }
+  .caja.srv { fill: var(--papel3); }
+  .fila { font: 700 15px var(--mono); fill: var(--tinta); }
+  .medio { text-anchor: middle; }
+  .via { fill: none; stroke: var(--gris); stroke-width: 2; stroke-dasharray: 4 6; }
+  .pedido { fill: var(--azul); stroke: var(--papel); stroke-width: 2; }
+  .enchufe { fill: var(--n-act); stroke: var(--tinta); stroke-width: 2.2; }
+  .enchufe-t { font: 800 16px var(--mono); fill: #16181D; text-anchor: middle; dominant-baseline: central; letter-spacing: .08em; }
+  .chip { fill: var(--papel3); stroke: var(--tinta); stroke-width: 2.4; }
+  .pata { stroke: var(--tinta); stroke-width: 2.4; stroke-linecap: round; }
+  .halo { fill: none; stroke: var(--acento); stroke-width: 3.5; }
+  .vivo { fill: var(--verde); }
+  .nt.term { background: #1B1E24; color: #ECE7DC; border: 1px solid rgba(241, 236, 226, .22); }
+  .nt.term .t.mono { font-size: .8em; white-space: pre-wrap; overflow-wrap: anywhere; hyphens: none; }
+  .nt.term .aviso { color: #F6C177; }
+  .nt.term .gris { color: #9AA3B2; }
+  .cmd1 .t.mono { white-space: pre; }
+  .nt .t small { display: block; font: 600 .8em var(--mono); opacity: .8; margin-top: .2em; }
+  #formula .igual { color: var(--acento); }
+  #pBroma, #pTope, #pAsgi, #pUp, #pAhora, #pPort1, #pPort2 { white-space: nowrap; }
+  #pAhora { background: var(--tinta); color: var(--papel); border-color: transparent; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 4 de 4 · Gunicorn, Uvicorn y Docker</p>
+    <h1><code>runserver</code> es para probar; <em>producción pide Gunicorn</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Primero, runserver recibe pedidos en un solo servidor de desarrollo y la terminal muestra su aviso: es un servidor de desarrollo, no lo uses en producción. La documentación de Django explica que no pasó auditorías de seguridad ni pruebas de rendimiento. Luego Gunicorn: un proceso arbiter arriba vigila a cinco workers, y los pedidos que llegan por el puerto 8000 se reparten entre ellos; se arranca con gunicorn config.wsgi --workers 5. La fórmula de partida es (2 × núcleos) + 1: con 2 núcleos, 5 workers; entre 4 y 12 workers aguantan mucho tráfico. Después, dos filas: Django se conecta por WSGI con Gunicorn y FastAPI se conecta por ASGI con Gunicorn más el worker de Uvicorn. Al final, un docker-compose.yml con dos servicios lado a lado: FastAPI con Uvicorn en el puerto 8000 y Django con Gunicorn en el 8001, que arrancan con docker compose up.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <!-- Paso 1: runserver -->
+        <g id="p1s" class="solo-anim">
+          <g id="rsBox">
+            <rect class="caja" x="30" y="46" width="250" height="160" rx="14"/>
+            <text class="rot fuerte" x="50" y="78">RUNSERVER</text>
+            <text class="fila" x="50" y="110">127.0.0.1:8000</text>
+            <path class="via" d="M0 170 H262"/>
+          </g>
+          <circle class="pedido" cx="10" cy="170" r="9"/>
+          <circle class="pedido" cx="10" cy="170" r="9"/>
+          <circle class="pedido" cx="10" cy="170" r="9"/>
+        </g>
+
+        <!-- Pasos 2 y 3: Gunicorn (visible sin GSAP) -->
+        <g id="p2s">
+          <g id="arb">
+            <rect class="caja srv" x="260" y="16" width="280" height="60" rx="12"/>
+            <text class="rot fuerte" x="280" y="42">ARBITER</text>
+            <text class="rot" x="280" y="64">CREA Y VIGILA</text>
+          </g>
+          <g id="mgs">
+            <path class="trazo fino guion mg" d="M400 76 L236 138"/>
+            <path class="trazo fino guion mg" d="M400 76 L351 138"/>
+            <path class="trazo fino guion mg" d="M400 76 L466 138"/>
+            <path class="trazo fino guion mg" d="M400 76 L581 138"/>
+            <path class="trazo fino guion mg" d="M400 76 L696 138"/>
+          </g>
+          <g class="wk"><rect class="caja wkr" x="190" y="140" width="92" height="65" rx="10"/><text class="rot fuerte medio" x="236" y="170">W1</text><text class="rot medio" x="236" y="192">WORKER</text></g>
+          <g class="wk"><rect class="caja wkr" x="305" y="140" width="92" height="65" rx="10"/><text class="rot fuerte medio" x="351" y="170">W2</text><text class="rot medio" x="351" y="192">WORKER</text></g>
+          <g class="wk"><rect class="caja wkr" x="420" y="140" width="92" height="65" rx="10"/><text class="rot fuerte medio" x="466" y="170">W3</text><text class="rot medio" x="466" y="192">WORKER</text></g>
+          <g class="wk"><rect class="caja wkr" x="535" y="140" width="92" height="65" rx="10"/><text class="rot fuerte medio" x="581" y="170">W4</text><text class="rot medio" x="581" y="192">WORKER</text></g>
+          <g class="wk"><rect class="caja wkr" x="650" y="140" width="92" height="65" rx="10"/><text class="rot fuerte medio" x="696" y="170">W5</text><text class="rot medio" x="696" y="192">WORKER</text></g>
+          <g id="puerto">
+            <path class="via" d="M16 240 H742"/>
+            <text class="rot" x="600" y="262">PUERTO :8000</text>
+          </g>
+          <g class="solo-anim">
+            <circle class="pedido pw" cx="20" cy="240" r="8"/>
+            <circle class="pedido pw" cx="20" cy="240" r="8"/>
+            <circle class="pedido pw" cx="20" cy="240" r="8"/>
+            <circle class="pedido pw" cx="20" cy="240" r="8"/>
+            <circle class="pedido pw" cx="20" cy="240" r="8"/>
+          </g>
+        </g>
+        <g id="p3s">
+          <g id="chips">
+            <g class="pata"><path d="M600 314 v-10 M620 314 v-10 M640 314 v-10 M600 382 v10 M620 382 v10 M640 382 v10 M700 314 v-10 M720 314 v-10 M740 314 v-10 M700 382 v10 M720 382 v10 M740 382 v10"/></g>
+            <rect class="chip" x="586" y="314" width="68" height="68" rx="8"/>
+            <rect class="chip" x="686" y="314" width="68" height="68" rx="8"/>
+            <text class="rot fuerte medio" x="620" y="353">CPU</text>
+            <text class="rot fuerte medio" x="720" y="353">CPU</text>
+            <text class="rot medio" x="670" y="420">2 NÚCLEOS</text>
+          </g>
+          <g class="solo-anim">
+            <rect class="halo" x="184" y="134" width="104" height="77" rx="13"/>
+            <rect class="halo" x="299" y="134" width="104" height="77" rx="13"/>
+            <rect class="halo" x="414" y="134" width="104" height="77" rx="13"/>
+            <rect class="halo" x="529" y="134" width="104" height="77" rx="13"/>
+            <rect class="halo" x="644" y="134" width="104" height="77" rx="13"/>
+          </g>
+        </g>
+
+        <!-- Paso 4: WSGI y ASGI -->
+        <g id="p4s" class="solo-anim">
+          <g id="djA"><rect class="caja" x="24" y="40" width="200" height="90" rx="12"/><text class="rot fuerte" x="44" y="72">DJANGO</text><text class="fila" x="44" y="108">config/wsgi.py</text></g>
+          <g id="plugA"><rect class="enchufe" x="266" y="68" width="92" height="34" rx="17"/><text class="enchufe-t" x="312" y="85">WSGI</text><text class="rot medio" x="312" y="126">PEP 3333</text></g>
+          <g id="gunA"><rect class="caja srv" x="400" y="40" width="376" height="90" rx="12"/><text class="rot fuerte" x="420" y="72">GUNICORN</text><text class="fila" x="420" y="108">workers sync</text></g>
+          <path id="aA1" class="trazo" d="M226 85 H258"/>
+          <path id="aA2" class="trazo" d="M360 85 H392"/>
+          <g id="faB"><rect class="caja" x="24" y="250" width="200" height="90" rx="12"/><text class="rot fuerte" x="44" y="282">FASTAPI</text><text class="fila" x="44" y="318">main.py · async</text></g>
+          <g id="plugB"><rect class="enchufe" x="266" y="278" width="92" height="34" rx="17"/><text class="enchufe-t" x="312" y="295">ASGI</text><text class="rot medio" x="312" y="336">ASYNC</text></g>
+          <g id="gunB"><rect class="caja srv" x="400" y="250" width="376" height="90" rx="12"/><text class="rot fuerte" x="420" y="282">GUNICORN + UVICORN</text><text class="fila" x="420" y="318">worker de Uvicorn</text></g>
+          <path id="aB1" class="trazo" d="M226 295 H258"/>
+          <path id="aB2" class="trazo" d="M360 295 H392"/>
+        </g>
+
+        <!-- Paso 5: docker compose -->
+        <g id="p5s" class="solo-anim">
+          <rect id="compose" class="trazo fino guion" x="40" y="22" width="720" height="282" rx="18"/>
+          <text class="rot fuerte" x="64" y="54">DOCKER-COMPOSE.YML</text>
+          <g class="cont"><rect class="caja" x="80" y="74" width="300" height="200" rx="14"/><text class="rot fuerte" x="100" y="104">SERVICIO: DJANGO</text><text class="fila" x="100" y="250">gunicorn config.wsgi</text><circle class="vivo" cx="356" cy="98" r="9"/></g>
+          <g class="cont"><rect class="caja" x="420" y="74" width="300" height="200" rx="14"/><text class="rot fuerte" x="440" y="104">SERVICIO: FASTAPI</text><text class="fila" x="440" y="250">uvicorn main:app</text><circle class="vivo" cx="696" cy="98" r="9"/></g>
+        </g>
+      </svg>
+
+      <!-- Paso 1 -->
+      <div class="capa solo-anim" id="p1h">
+        <div class="nt term" id="term" data-r="-.6" style="left:39%; top:7%; width:58%"><span class="k">Terminal</span><span class="t mono">$ python manage.py runserver
+<span class="gris">…
+Starting development server at http://127.0.0.1:8000/</span>
+<span class="aviso">WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.</span></span><span class="sello solo-anim" id="sDev">SOLO DESARROLLO</span></div>
+        <p class="cita" id="cita1" style="left:4%; top:46%; width:62%">«Este servidor liviano de desarrollo no ha pasado auditorías de seguridad ni pruebas de rendimiento; por eso no sirve para producción.»<small>Django 6.1 · django-admin runserver</small></p>
+        <p class="pastilla" id="pBroma" style="left:4%; top:67%">«Hacemos frameworks web, no servidores web» · tutorial de Django</p>
+      </div>
+
+      <!-- Pasos 2 y 3 (visibles sin GSAP) -->
+      <div class="capa" id="p2h">
+        <div class="nt cmd cmd1" id="nCmd" data-r="-.5" style="left:3%; top:53%"><span class="k">Así lo arrancas</span><span class="t mono">gunicorn config.wsgi --workers 5</span></div>
+      </div>
+      <div class="capa" id="p3h">
+        <p class="formula" id="formula" style="left:3%; top:66%"><span class="fl">(2 ×</span> <span class="fl">núcleos)</span> <span class="fl">+ 1</span> <span class="igual solo-anim" id="igual">= 5</span><span class="que capas"><span id="q1">workers para empezar</span><span id="q2" class="solo-anim">con 2 núcleos: (2 × 2) + 1 = 5 workers</span></span></p>
+        <p class="pastilla" id="pTope" style="left:3%; top:89%">workers ≠ clientes · 4 a 12 workers aguantan mucho tráfico</p>
+      </div>
+
+      <!-- Paso 4 -->
+      <div class="capa solo-anim" id="p4h">
+        <div class="nt cmd cmd1" id="nA" data-r=".5" style="left:50%; top:28%"><span class="k">Django en producción</span><span class="t mono">gunicorn config.wsgi -w 5</span></div>
+        <div class="nt info cmd1" id="nB" data-r="-.4" style="left:30%; top:68%"><span class="k">FastAPI en producción</span><span class="t mono">gunicorn main:app -w 4 -k uvicorn_worker.UvicornWorker
+# o solo: uvicorn main:app --workers 4</span></div>
+        <p class="pastilla" id="pAsgi" style="left:3%; top:89%">ASGI: el «sucesor espiritual» de WSGI, para código async</p>
+      </div>
+
+      <!-- Paso 5 -->
+      <div class="capa solo-anim" id="p5h">
+        <div class="nt info" id="nDj" data-r="-.8" style="left:13.5%; top:28%; width:33%"><span class="k">Gunicorn · WSGI</span><span class="t">Tu inventario en Django<small>puerto 8001</small></span></div>
+        <div class="nt cmd" id="nFa" data-r=".7" style="left:56%; top:28%; width:33%"><span class="k">Uvicorn · ASGI</span><span class="t">Tu inventario en FastAPI<small>puerto 8000</small></span></div>
+        <p class="pastilla" id="pPort1" style="left:12%; top:62%">localhost:8001/api/docs/</p>
+        <p class="pastilla" id="pPort2" style="left:56%; top:62%">localhost:8000/docs</p>
+        <p class="pastilla" id="pUp" style="left:36%; top:74%">$ docker compose up</p>
+        <p class="pastilla" id="pAhora" style="left:24%; top:87%">Ahora: Gunicorn y Docker en tu terminal</p>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>runserver avisa: solo desarrollo</b><p>Desde Django 5.2, <code>runserver</code> lo dice al arrancar: es un servidor de desarrollo. La documentación explica por qué: no pasó auditorías de seguridad ni pruebas de rendimiento. Y el tutorial bromea: «hacemos frameworks web, no servidores web».</p></li>
+        <li><b>Gunicorn reparte el trabajo en workers</b><p>Gunicorn usa el modelo <i>pre-fork</i>: un proceso <i>arbiter</i> crea y vigila varios procesos <i>worker</i>, y son los workers los que atienden los pedidos. Lo arrancas con <code>gunicorn config.wsgi --workers 5</code>.</p></li>
+        <li><b>¿Cuántos workers? (2 × núcleos) + 1</b><p>La guía de Gunicorn propone empezar con esa fórmula: con 2 núcleos, 5 workers. Workers no son clientes: entre 4 y 12 suelen bastar para mucho tráfico, y demasiados desperdician recursos.</p><p class="aparte">Es un punto de partida: mide y ajusta con carga real. Cada worker es un proceso con su propia memoria; en un servidor de 2 GB, eso pesa.</p></li>
+        <li><b>WSGI para Django, ASGI para FastAPI</b><p>WSGI es el estándar de Python entre servidor y aplicación (PEP 3333), y Django lo trae listo en <code>wsgi.py</code>. FastAPI es ASGI, su sucesor asíncrono: lo atiende Uvicorn, como worker dentro de Gunicorn o solo con <code>--workers</code>.</p><p class="aparte">El viejo <code>uvicorn.workers.UvicornWorker</code> está en desuso: hoy se instala el paquete <code>uvicorn-worker</code>. Gunicorn trae además un worker ASGI propio (<code>--worker-class asgi</code>), estable desde la versión 25.1.</p></li>
+        <li><b>Docker compose las pone lado a lado</b><p>Un solo <code>docker-compose.yml</code> describe dos servicios: tu inventario en FastAPI con Uvicorn en el puerto 8000 y el de Django con Gunicorn en el 8001. Con <code>docker compose up</code> arrancan juntos. Ahora, a tu terminal.</p><p class="aparte">En un servidor real va además un proxy delante, como Nginx: Gunicorn lo recomienda. Hoy lo dejamos fuera.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Django Software Foundation (2026). Django 6.1: «django-admin: runserver», «Writing your first Django app, part 1» y «How to deploy with WSGI». docs.djangoproject.com/en/6.1/ · Gunicorn 27 (2026). «Design» y «Deploying». gunicorn.org · Encode (2026). Uvicorn 0.54: «Deployment». uvicorn.dev/deployment/ · Eby, P. J. (2010). PEP 3333: Python Web Server Gateway Interface v1.0.1. peps.python.org/pep-3333 · ASGI Team. ASGI Documentation. asgi.readthedocs.io · Docker Inc. (2026). Docker Compose. docs.docker.com/compose/</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, $$ = TEO.$$, puntas = {};
+  var wx = [236, 351, 466, 581, 696];
+
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .35 }, pos);
+    tl.fromTo(puntas[id], { autoAlpha: 0 }, { autoAlpha: 1, duration: .15 }, "-=.08");
+  }
+  function aparecer(tl, sel, pos) {
+    return tl.fromTo(sel, { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 }, pos);
+  }
+
+  TEO.escena([
+    function (tl) { // 1. runserver avisa
+      tl.fromTo(["#p1s", "#p1h"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.from("#rsBox", { autoAlpha: 0, y: 14, duration: .45 });
+      $$("#p1s .pedido").forEach(function (d, i) {
+        tl.fromTo(d, { autoAlpha: 0, attr: { cx: 10 } }, { autoAlpha: 1, attr: { cx: 246 - i * 28 }, duration: .55, ease: "power1.inOut" }, i ? "<+.2" : ">");
+      });
+      TEO.pegar(tl, "#term");
+      tl.fromTo("#sDev", { autoAlpha: 0, scale: 2.4 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.2)" });
+      tl.fromTo("#cita1", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.from(TEO.palabras($("#cita1")), { autoAlpha: 0, y: 8, duration: .3, stagger: .035 });
+      tl.from("#cita1 small", { autoAlpha: 0, duration: .3 });
+      aparecer(tl, "#pBroma");
+    },
+    function (tl) { // 2. Gunicorn: arbiter y workers
+      tl.to(["#p1s", "#p1h"], { autoAlpha: 0, duration: .35 });
+      tl.fromTo(["#p2s", "#p2h"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.from("#arb", { autoAlpha: 0, y: -12, duration: .4 });
+      tl.from(".wk", { autoAlpha: 0, y: 12, duration: .35, stagger: .09 });
+      tl.from(".mg", { autoAlpha: 0, duration: .3, stagger: .05 }, "-=.2");
+      tl.from("#puerto", { autoAlpha: 0, duration: .3 });
+      tl.addLabel("reparto");
+      var rects = $$(".wkr"), info = TEO.color("--n-info", "#B9DFA3");
+      $$(".pw").forEach(function (d, j) {
+        var t0 = j * .18;
+        tl.fromTo(d, { autoAlpha: 0, attr: { cx: 20, cy: 240 } }, { autoAlpha: 1, attr: { cx: wx[j] }, duration: .5, ease: "power1.inOut" }, "reparto+=" + t0);
+        tl.to(d, { attr: { cy: 224 }, duration: .2, ease: "power1.out" }, "reparto+=" + (t0 + .5));
+        tl.to(rects[j], { fill: info, duration: .2 }, "reparto+=" + (t0 + .62));
+      });
+      TEO.pegar(tl, "#nCmd", "+=.1");
+    },
+    function (tl) { // 3. la fórmula (clímax)
+      tl.fromTo(["#p3s", "#p3h"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.from("#chips", { autoAlpha: 0, y: 10, duration: .4 });
+      tl.from("#formula .fl", { autoAlpha: 0, y: 22, duration: .5, stagger: .14, ease: "back.out(2)" });
+      tl.from("#q1", { autoAlpha: 0, y: 6, duration: .35 }, "-=.1");
+      tl.fromTo("#igual", { autoAlpha: 0, scale: 1.6 }, { autoAlpha: 1, scale: 1, duration: .4, ease: "back.out(2)" }, "+=.3");
+      tl.to("#q1", { autoAlpha: 0, duration: .2 });
+      tl.fromTo("#q2", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 });
+      tl.fromTo(".halo", { autoAlpha: 0 }, { autoAlpha: 1, duration: .2, stagger: .14 });
+      aparecer(tl, "#pTope", "+=.1");
+    },
+    function (tl) { // 4. WSGI y ASGI
+      tl.to(["#p2s", "#p2h", "#p3s", "#p3h"], { autoAlpha: 0, duration: .35 });
+      tl.fromTo(["#p4s", "#p4h"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.from(["#djA", "#gunA"], { autoAlpha: 0, y: 10, duration: .35, stagger: .1 });
+      tl.from("#plugA", { autoAlpha: 0, scale: .6, transformOrigin: "50% 50%", duration: .35, ease: "back.out(2)" });
+      flecha(tl, "aA1"); flecha(tl, "aA2");
+      TEO.pegar(tl, "#nA");
+      tl.from(["#faB", "#gunB"], { autoAlpha: 0, y: 10, duration: .35, stagger: .1 });
+      tl.from("#plugB", { autoAlpha: 0, scale: .6, transformOrigin: "50% 50%", duration: .35, ease: "back.out(2)" });
+      flecha(tl, "aB1"); flecha(tl, "aB2");
+      TEO.pegar(tl, "#nB");
+      aparecer(tl, "#pAsgi");
+    },
+    function (tl) { // 5. docker compose
+      tl.to(["#p4s", "#p4h"], { autoAlpha: 0, duration: .35 });
+      tl.fromTo(["#p5s", "#p5h"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.from(["#compose", "#p5s > text"], { autoAlpha: 0, duration: .4 });
+      tl.from(".cont", { autoAlpha: 0, y: 12, duration: .4, stagger: .15 });
+      TEO.pegar(tl, ["#nDj", "#nFa"]);
+      aparecer(tl, "#pUp");
+      tl.fromTo(".vivo", { autoAlpha: 0, scale: .3, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .3, stagger: .12, ease: "back.out(3)" });
+      tl.fromTo(["#pPort1", "#pPort2"], { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .3, stagger: .12 });
+      aparecer(tl, "#pAhora", "+=.15");
+    }
+  ], {
+    preparar: function () {
+      ["aA1", "aA2", "aB1", "aB2"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); });
+      gsap.set(["#p1s", "#p1h", "#p2s", "#p2h", "#p3s", "#p3h", "#p4s", "#p4h", "#p5s", "#p5h",
+                "#sDev", "#pBroma", ".pedido", "#igual", "#q2", ".halo", "#pTope", "#pAsgi",
+                "#pUp", ".vivo", "#pPort1", "#pPort2", "#pAhora"], { autoAlpha: 0 });
+      gsap.set(Object.keys(puntas).map(function (k) { return puntas[k]; }), { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>

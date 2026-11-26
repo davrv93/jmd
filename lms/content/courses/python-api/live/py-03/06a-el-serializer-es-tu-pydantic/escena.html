@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El serializer es tu Pydantic en Django</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %.
+     Arriba (y 20–260): FastAPI a la izquierda, DRF a la derecha, unidos por ≈.
+     Abajo (y 290–500): el serializer traduce en los dos sentidos; luego ViewSet y router. */
+  .caja { fill: var(--papel2); stroke: var(--tinta); stroke-width: 2.4; }
+  .ser { fill: var(--n-pol); stroke: #16181D; stroke-width: 2.4; }
+  .rotN { font: 700 14px var(--mono); letter-spacing: .14em; fill: #16181D; text-anchor: middle; }
+  .rotN.fino { font-weight: 600; letter-spacing: .04em; font-size: 14px; }
+  .via { fill: none; stroke: var(--gris); stroke-width: 2; stroke-dasharray: 4 6; }
+  .une { fill: none; stroke: var(--tinta); stroke-width: 1.6; stroke-dasharray: 5 6; opacity: .6; }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .ventana { fill: var(--papel); stroke: var(--tinta); stroke-width: 2.4; }
+  .barraurl { fill: var(--papel2); stroke: var(--linea); }
+  .metodo { font: 800 14px var(--mono); fill: #fff; text-anchor: middle; dominant-baseline: central; }
+  .ruta { font: 600 15px var(--mono); fill: var(--tinta); dominant-baseline: central; }
+  .codigo .t.mono { white-space: pre; font-size: .86em; hyphens: none; overflow-wrap: normal; }
+  #igual { position: absolute; margin: 0; font: 600 6cqw/1 var(--serif); color: var(--acento); }
+  #pGenera, #p400, #p6, #pAhora { white-space: nowrap; }
+  #s400 { right: auto; left: 46%; top: 81%; }
+  .par { display: grid; grid-template-columns: minmax(0, 1fr) 1.6em minmax(0, 1fr); align-items: center; gap: .4em; }
+  .par > span { font: 600 1.02em/1.3 var(--mono); }
+  .par > i { font: 600 1.7em/1 var(--serif); font-style: normal; color: var(--acento); text-align: center; }
+  .dicc { width: 84%; padding-top: .8em; padding-bottom: .9em; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 3 de 4 · Django REST Framework</p>
+    <h1>El serializer <em>es tu Pydantic</em> en Django</h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="A la izquierda, el modelo Pydantic Producto de la clase 2 en FastAPI; a la derecha, ProductoSerializer de Django REST Framework, un ModelSerializer que lee los campos del modelo Producto. Entre los dos, el signo aproximadamente igual. Abajo, el serializer traduce en los dos sentidos: convierte una fila de la tabla en JSON y revisa el JSON que llega; un stock de -1 se detiene y vuelve un 400. Luego, un ModelViewSet y un DefaultRouter arman dos URL, /api/productos/ con GET y POST, y /api/productos/{id}/ con GET, PUT, PATCH y DELETE. drf-spectacular lee ese código, genera el esquema OpenAPI en /api/schema/ y Swagger UI lo muestra en /api/docs/ con seis operaciones. Al final, un diccionario: BaseModel equivale a ModelSerializer, cinco funciones a un ModelViewSet con router, /docs a drf-spectacular y el dict en memoria a una tabla.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="cab">
+          <text class="rot fuerte" x="24" y="30">FASTAPI · CLASE 2</text>
+          <text class="rot fuerte" x="440" y="30">DJANGO REST FRAMEWORK · HOY</text>
+          <path class="une" d="M362 112 H378 M422 112 H438"/>
+        </g>
+        <g id="g2">
+          <path id="vSale" class="via" d="M236 340 H506"/>
+          <path id="vEntra" class="via" d="M526 446 H488"/>
+          <path id="vRebota" class="via" d="M488 446 H526" style="opacity:0"/>
+          <rect class="ser" x="318" y="300" width="164" height="172" rx="14"/>
+          <text class="rotN" x="400" y="326">SERIALIZER</text>
+          <text class="rotN fino" x="400" y="366">sale: convierte</text>
+          <text class="rotN fino" x="400" y="404">entra: valida</text>
+        </g>
+        <g id="gClimax" class="solo-anim">
+          <path id="a1" class="trazo" d="M180 52 H208"/>
+          <path id="a2" class="trazo" d="M380 52 H408"/>
+          <path id="a3" class="trazo" d="M580 52 H608"/>
+        </g>
+        <g id="swagger" class="solo-anim">
+          <rect class="ventana" x="150" y="118" width="500" height="380" rx="14"/>
+          <rect class="barraurl" x="170" y="134" width="460" height="26" rx="13"/>
+          <text class="ruta" x="188" y="147">127.0.0.1:8000/api/docs/</text>
+          <g id="filasSw"></g>
+        </g>
+        <g id="cabD" class="solo-anim">
+          <text class="rot fuerte" x="80" y="30">EN FASTAPI</text>
+          <text class="rot fuerte" x="440" y="30">EN DJANGO + DRF</text>
+        </g>
+        <circle id="punto" class="solo-anim" cx="236" cy="340" r="9"/>
+      </svg>
+
+      <div class="capa" id="arriba">
+        <div class="nt pol codigo" id="nPyd" data-r="-.8" style="left:3%; top:9%; width:42%"><span class="k">Pydantic · main.py</span><span class="t mono">class Producto(BaseModel):
+    nombre: str
+    precio: float = Field(gt=0)
+    stock: int = Field(ge=0)
+    categoria: str</span></div>
+        <p id="igual" style="left:47.2%; top:16%">≈</p>
+        <div class="nt pol codigo" id="nSer" data-r=".8" style="left:55%; top:9%; width:42%"><span class="k">DRF · inventario/serializers.py</span><span class="t mono">class ProductoSerializer(
+        serializers.ModelSerializer):
+    class Meta:
+        model = Producto
+        fields = "__all__"</span></div>
+        <p class="pastilla" id="pGenera" style="left:11%; top:46%">ModelSerializer lee tu modelo: campos y validadores, sin reescribirlos</p>
+      </div>
+
+      <div class="capa" id="banda2">
+        <div class="nt act" id="nFila" data-r="-1" style="left:3%; top:58%; width:26.5%"><span class="k">Fila de la tabla</span><span class="t mono" style="white-space:pre">id 1 · arroz
+4.50 · 20 · abarrotes</span></div>
+        <div class="nt cmd codigo" id="nJson" data-r=".9" style="left:64%; top:56%; width:33%"><span class="k">Sale · JSON</span><span class="t mono">{"id": 1, "nombre": "arroz",
+ "precio": "4.50",
+ "stock": 20, …}</span></div>
+        <div class="nt hot codigo" id="nMal" data-r="-.7" style="left:66%; top:80%; width:22%"><span class="k">Entra · POST</span><span class="t mono">{"stock": -1}</span></div>
+        <span class="sello solo-anim" id="s400">400</span>
+        <p class="pastilla" id="p400" style="left:3%; top:91%">400 · {"stock": ["Asegúrese de que este valor es mayor o igual a 0."]}</p>
+      </div>
+
+      <div class="capa solo-anim" id="banda3">
+        <div class="nt ev codigo" id="nVs" data-r="-.6" style="left:3%; top:55%; width:53%"><span class="k">inventario/views.py · urls.py</span><span class="t mono">class ProductoViewSet(viewsets.ModelViewSet):
+    queryset = Producto.objects.all()
+    serializer_class = ProductoSerializer
+
+router = DefaultRouter()
+router.register("productos", ProductoViewSet)</span></div>
+        <div class="nt info" id="nR1" data-r=".8" style="left:61%; top:55%; width:36%"><span class="k">/api/productos/</span><span class="t">GET lista · POST crea</span></div>
+        <div class="nt cmd" id="nR2" data-r="-.8" style="left:61%; top:73%; width:36%"><span class="k">/api/productos/{id}/</span><span class="t">GET · PUT · PATCH · DELETE</span></div>
+        <p class="pastilla" id="p6" style="left:3%; top:91%">2 clases → 6 acciones · en FastAPI fueron 5 funciones</p>
+      </div>
+
+      <div class="capa solo-anim" id="climax">
+        <div class="nt ev" id="c1" data-r="-1" style="left:1%; top:4%; width:21%"><span class="k">Tu código</span><span class="t">ViewSet + serializer</span></div>
+        <div class="nt pol" id="c2" data-r=".8" style="left:26%; top:4%; width:21%"><span class="k">Lee y describe</span><span class="t">drf-spectacular</span></div>
+        <div class="nt cmd" id="c3" data-r="-.7" style="left:51%; top:4%; width:21%"><span class="k">/api/schema/</span><span class="t">OpenAPI 3.0.3</span></div>
+        <div class="nt info" id="c4" data-r="1" style="left:76%; top:4%; width:22%"><span class="k">/api/docs/</span><span class="t">Swagger UI</span></div>
+      </div>
+
+      <div class="capa solo-anim" id="dicc">
+        <div class="nt ficha s dicc" id="d1" data-r="-.5" style="left:8%; top:9%"><div class="par"><span>class Producto(BaseModel)</span><i>≈</i><span>class ProductoSerializer</span></div></div>
+        <div class="nt ficha k dicc" id="d2" data-r=".5" style="left:8%; top:27%"><div class="par"><span>5 funciones con @app.get…</span><i>≈</i><span>1 ModelViewSet + router</span></div></div>
+        <div class="nt ficha r dicc" id="d3" data-r="-.4" style="left:8%; top:45%"><div class="par"><span>/docs, incluido</span><i>≈</i><span>drf-spectacular · /api/docs/</span></div></div>
+        <div class="nt ficha p dicc" id="d4" data-r=".6" style="left:8%; top:63%"><div class="par"><span>dict en memoria</span><i>≈</i><span>una tabla real (teoría 2)</span></div></div>
+        <p class="pastilla" id="pAhora" style="left:22%; top:86%">Ahora: API + Swagger en tu terminal → /api/docs/</p>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>El serializer valida y convierte</b><p>En FastAPI, un modelo Pydantic decía cómo debía venir un producto. En DRF ese papel lo cumple el serializer. Con <code>ModelSerializer</code> no reescribes los campos: los lee de tu modelo <code>Producto</code>, con sus tipos y validaciones.</p></li>
+        <li><b>Traduce en los dos sentidos</b><p>De salida, convierte una fila de la tabla en JSON. De entrada, revisa el JSON antes de guardarlo: si llega <code>"stock": -1</code>, responde 400 y dice qué campo falló, porque <code>PositiveIntegerField</code> no acepta negativos.</p><p class="aparte">FastAPI respondía 422 a este error; DRF responde 400 Bad Request. De fábrica, DRF manda el precio como texto, "4.50", para no perder precisión decimal; en la práctica lo pondrás como número (<code>COERCE_DECIMAL_TO_STRING: False</code>), igual que en FastAPI.</p></li>
+        <li><b>ViewSet y router: el CRUD completo</b><p>Un <code>ModelViewSet</code> trae seis acciones: listar, ver, crear, editar, editar en parte y borrar. El router las reparte en dos URL. En FastAPI escribiste cinco funciones; aquí bastan dos clases cortas.</p><p class="aparte">Simplificado: el prefijo <code>/api/</code> sale de <code>path("api/", include(router.urls))</code>, y el router llama <code>{pk}</code> a lo que Swagger muestra como <code>{id}</code>.</p></li>
+        <li><b>drf-spectacular escribe tu Swagger</b><p>drf-spectacular lee tus ViewSets y serializers y genera el esquema OpenAPI en <code>/api/schema/</code>. Swagger UI lo pinta en <code>/api/docs/</code>, con «Try it out», como en la clase 2. En FastAPI venía incluido; aquí lo agregas tú.</p><p class="aparte">Tres piezas: <code>"drf_spectacular"</code> en INSTALLED_APPS, <code>DEFAULT_SCHEMA_CLASS</code> en REST_FRAMEWORK y dos rutas. Por defecto genera OpenAPI 3.0.3.</p></li>
+        <li><b>Tu inventario, de FastAPI a DRF</b><p>Lo que aprendiste no se pierde: cambia de nombre. BaseModel pasa a serializer, tus funciones a un ViewSet, <code>/docs</code> a drf-spectacular y el dict a una tabla que sobrevive al reinicio. Ahora lo armas en tu terminal.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Encode OSS (2026). Django REST framework 3.18: «Serializers», «ViewSets» y «Routers». https://www.django-rest-framework.org/api-guide/serializers/ · Feldmann, T. y colaboradores (2026). drf-spectacular 0.30: README y Settings. https://drf-spectacular.readthedocs.io/ · Ramírez, S. (2026). FastAPI, documentación. https://fastapi.tiangolo.com/es/</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, NS = "http://www.w3.org/2000/svg";
+  function svg(tag, at, txt) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; return e; }
+  // Swagger UI pinta cada método con su color: GET azul, POST verde, PUT naranja, PATCH turquesa, DELETE rojo.
+  [["GET", "#61AFFE", "/api/productos/"], ["POST", "#49CC90", "/api/productos/"], ["GET", "#61AFFE", "/api/productos/{id}/"],
+   ["PUT", "#FCA130", "/api/productos/{id}/"], ["PATCH", "#50E3C2", "/api/productos/{id}/"], ["DELETE", "#F93E3E", "/api/productos/{id}/"]].forEach(function (r, i) {
+    var y = 176 + i * 52, g = svg("g", { "class": "filaSw" });
+    g.appendChild(svg("rect", { x: 170, y: y, width: 460, height: 40, rx: 6, fill: r[1], "fill-opacity": ".16", stroke: r[1], "stroke-width": 2 }));
+    g.appendChild(svg("rect", { x: 178, y: y + 7, width: 78, height: 26, rx: 4, fill: r[1] }));
+    g.appendChild(svg("text", { "class": "metodo", x: 217, y: y + 20 }, r[0]));
+    g.appendChild(svg("text", { "class": "ruta", x: 272, y: y + 20 }, r[2]));
+    $("#filasSw").appendChild(g);
+  });
+
+  var punto = $("#punto"), puntas = {};
+  function flecha(tl, id) {
+    TEO.trazar(tl, "#" + id, { duration: .35 });
+    tl.from(puntas[id], { autoAlpha: 0, duration: .15 }, "-=.08");
+  }
+
+  TEO.escena([
+    function (tl) { // 1. Pydantic ≈ serializer
+      tl.fromTo("#cab", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      TEO.pegar(tl, "#nPyd");
+      TEO.pegar(tl, "#nSer", "+=.25");
+      tl.fromTo("#igual", { autoAlpha: 0, scale: .4 }, { autoAlpha: 1, scale: 1, duration: .45, ease: "back.out(2.2)" });
+      tl.fromTo("#pGenera", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 });
+    },
+    function (tl) { // 2. los dos sentidos
+      tl.fromTo("#g2", { autoAlpha: 0 }, { autoAlpha: 1, duration: .35 });
+      TEO.pegar(tl, "#nFila");
+      tl.set(punto, { attr: { cx: 236, cy: 340 } });
+      tl.fromTo(punto, { autoAlpha: 0, scale: .3 }, { autoAlpha: 1, scale: 1, duration: .25, transformOrigin: "50% 50%" });
+      TEO.viajar(tl, punto, $("#vSale"), 1.3);
+      TEO.pegar(tl, "#nJson", "-=.15");
+      tl.to(punto, { autoAlpha: 0, duration: .2 }, "<");
+      TEO.pegar(tl, "#nMal", "+=.2");
+      tl.set(punto, { attr: { cx: 526, cy: 446 } });
+      tl.to(punto, { autoAlpha: 1, duration: .2 });
+      TEO.viajar(tl, punto, $("#vEntra"), .6);
+      tl.fromTo("#s400", { autoAlpha: 0, scale: 1.9 }, { autoAlpha: 1, scale: 1, duration: .35, ease: "back.out(2.5)" });
+      TEO.viajar(tl, punto, $("#vRebota"), .5);
+      tl.to(punto, { autoAlpha: 0, duration: .2 });
+      tl.fromTo("#p400", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 });
+    },
+    function (tl) { // 3. ViewSet + router
+      tl.to(["#g2", "#banda2"], { autoAlpha: 0, duration: .35 });
+      tl.fromTo("#banda3", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#nVs");
+      TEO.pegar(tl, ["#nR1", "#nR2"], "+=.15");
+      tl.fromTo("#p6", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 });
+    },
+    function (tl) { // 4. drf-spectacular → Swagger (clímax)
+      tl.to(["#arriba", "#cab", "#banda3"], { autoAlpha: 0, duration: .4 });
+      tl.fromTo(["#climax", "#gClimax"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#c1");
+      flecha(tl, "a1");
+      TEO.pegar(tl, "#c2");
+      flecha(tl, "a2");
+      TEO.pegar(tl, "#c3");
+      flecha(tl, "a3");
+      TEO.pegar(tl, "#c4");
+      tl.fromTo("#swagger", { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: .4 });
+      tl.from(".filaSw", { autoAlpha: 0, x: -20, duration: .3, stagger: .14 });
+    },
+    function (tl) { // 5. el diccionario y el puente
+      tl.to(["#climax", "#gClimax", "#swagger"], { autoAlpha: 0, duration: .35 });
+      tl.fromTo(["#dicc", "#cabD"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      TEO.pegar(tl, ["#d1", "#d2", "#d3", "#d4"]);
+      tl.fromTo("#pAhora", { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .4 });
+    }
+  ], {
+    preparar: function () {
+      ["a1", "a2", "a3"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); });
+      gsap.set(punto, { autoAlpha: 0 });
+      gsap.set(["#cab", "#igual", "#pGenera", "#g2", "#s400", "#p400", "#banda3", "#p6", "#climax", "#gClimax", "#swagger", "#dicc", "#cabD", "#pAhora"], { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>

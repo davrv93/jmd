@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E07 · Tu API con DRF y Swagger</title>
+<link rel="stylesheet" href="../../comun/escena.css">
+<link rel="stylesheet" href="../../comun/py01.css">
+<style id="esc-propio">
+body { font-size: clamp(14px, calc(1vw + .55vh), 26px); }
+.esc-cielo { opacity: calc(var(--cielo) * .45); }
+.esc { grid-template-columns: minmax(0, 1fr); } .esc-cuerpo { min-width: 0; }
+.dj-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1.6vw; align-items: start; }
+.dj-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.1vh; align-content: start; min-width: 0; }
+.dj-col .k-pasos { gap: .5em; }
+.dj-col .k-pasos > li > b { font-size: .8em; }
+.dj-col .k-pasos .esc-cmd { font-size: .66em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dj-dos { display: grid; gap: .35em; min-width: 0; }
+.cr-m { display: inline-block; min-width: 3.9em; text-align: center; padding: .05em .4em; margin-right: .3em; border-radius: .35em; font: 800 .82em var(--mono); color: #fff; vertical-align: .05em; }
+.cr-m.get { background: #2f6fb3; } .cr-m.post { background: #1f8a4c; } .cr-m.put { background: #b07a00; } .cr-m.del { background: #b8343f; }
+.cr-cod { font: 700 .9em var(--mono); color: var(--ok); }
+.cr-cod.mal { color: var(--bad); }
+.ar { display: grid; gap: .45em; min-width: 0; }
+.ar-cab { display: flex; align-items: center; justify-content: space-between; gap: .5em; flex-wrap: wrap; }
+.ar-tabs { display: flex; flex-wrap: wrap; gap: .3em; }
+.ar-tabs button { font: 700 .62em/1 var(--mono); padding: .55em .75em; min-height: 36px; border-radius: .6em; border: 1px solid var(--line2); background: var(--s2); color: var(--muted); cursor: pointer; }
+.ar-tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ar-tabs button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+.ar-code { max-height: 40vh; overflow: auto; font-size: .64em; }
+.ar-nota { margin: 0; font-size: .64em; color: var(--muted); }
+[data-p][hidden] { display: none !important; }
+.cr-400 { margin: 0; font: 600 .62em/1.5 var(--mono); background: var(--term); color: #e6eefb; border-radius: .8em; padding: .6em .9em; border: 1px solid rgba(169,208,245,.22); white-space: pre-wrap; overflow-wrap: anywhere; }
+.cr-400 .k { color: #84b9ee; } .cr-400 .s { color: #9be39f; } .cr-400 .c { color: #7f93ad; }
+.dj-lee { margin: 0; font-size: .66em; color: var(--muted); line-height: 1.45; }
+.dj-lee b { color: var(--fg); }
+.dj-vs { width: 100%; border-collapse: collapse; font-size: .62em; }
+.dj-vs th, .dj-vs td { text-align: left; padding: .28em .5em; border-bottom: 1px solid var(--line2); vertical-align: top; }
+.dj-vs th { color: var(--muted); font-weight: 700; }
+.dj-vs td { font-family: var(--mono); font-weight: 600; overflow-wrap: anywhere; }
+.dj-avisos { display: flex; flex-wrap: wrap; gap: .4em; }
+.dj-avisos .esc-chip { white-space: normal; display: inline-block; max-width: 100%; overflow-wrap: anywhere; border-radius: .7em; font-size: .62em; line-height: 1.35; }
+@media (max-width: 760px) { .dj-cols { grid-template-columns: minmax(0, 1fr); } .ar-code { max-height: none; } }
+</style>
+</head>
+<body>
+<svg class="esc-cielo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <path class="t" pathLength="1" d="M1120 130 C1170 70 1230 190 1290 130 S1410 70 1470 140"/>
+  <path class="tb" pathLength="1" d="M70 660 C120 600 180 720 240 660 S360 600 420 670"/>
+  <g><circle class="eo" cx="1120" cy="130" r="5"/><circle class="e" cx="1290" cy="130" r="3.5"/><circle class="eg" cx="1470" cy="140" r="4"/><circle class="e" cx="70" cy="660" r="3.5"/><circle class="eo" cx="240" cy="660" r="4.5"/><circle class="eg" cx="420" cy="670" r="3.5"/></g>
+</svg>
+
+<div class="esc">
+  <header class="esc-cab">
+    <span class="esc-fase" data-ph="ea">Experimentación</span>
+    <span class="esc-num">Python · Clase 3 · E07</span>
+  </header>
+
+  <main class="esc-cuerpo">
+    <div class="k-so-cab">
+      <h1 class="esc-titulo a-in">Tu API con <em>DRF</em> y Swagger</h1>
+      <p class="k-pie a-in" style="--d:.1s">Iguales en Windows, macOS y Linux · con <code>(.venv)</code> activo, dentro de <code>mi-django</code></p>
+    </div>
+
+    <div class="dj-cols">
+      <div class="dj-col a-in" style="--d:.2s">
+        <div class="esc-card">
+          <ol class="k-pasos">
+            <li><b>Detén el servidor (Ctrl+C) e instala DRF y drf-spectacular</b><pre class="esc-cmd"><span class="p">(.venv) &gt; </span>pip install djangorestframework drf-spectacular</pre></li>
+            <li><b>En <code>config/settings.py</code>, debajo de <code>'inventario',</code> agrega <small>· con guion bajo, no guion</small></b><pre class="esc-cmd">    'rest_framework',
+    'drf_spectacular',</pre></li>
+            <li><b>Pega los 4 archivos de la derecha <small>· <code>settings.py</code> va al final; <code>serializers.py</code> es nuevo; <code>views.py</code> y <code>urls.py</code> se reemplazan enteros</small></b><span></span></li>
+            <li><b>Levántalo y abre Swagger en <code>/api/docs/</code></b><pre class="esc-cmd"><span class="p">(.venv) &gt; </span>python manage.py runserver</pre></li>
+            <li><b>En Swagger, con <b>Try it out</b> → <b>Execute</b>, recorre el CRUD:</b>
+              <div class="dj-dos">
+                <span class="dj-lee"><span class="cr-m post">POST</span>/api/productos/ → <span class="cr-cod">201</span> <small>· sale con id 4 (los 3 del admin ya existen)</small></span>
+                <pre class="esc-cmd">{"nombre": "Aceite", "precio": 9.9, "stock": 15, "categoria": "abarrotes"}</pre>
+                <span class="dj-lee"><span class="cr-m get">GET</span>/api/productos/ → <span class="cr-cod">200</span> · <span class="cr-m get">GET</span>/api/productos/{id}/ con <code>4</code> → <span class="cr-cod">200</span></span>
+                <span class="dj-lee"><span class="cr-m put">PUT</span>/api/productos/{id}/ con <code>1</code> → <span class="cr-cod">200</span></span>
+                <pre class="esc-cmd">{"nombre": "Arroz", "precio": 5.2, "stock": 38, "categoria": "abarrotes"}</pre>
+                <span class="dj-lee"><span class="cr-m del">DELETE</span>/api/productos/{id}/ con <code>2</code> → <span class="cr-cod">204</span> <small>· pídelo otra vez: <span class="cr-cod mal">404</span></small></span>
+                <span class="dj-lee"><span class="cr-m post">POST</span> con un body malo → <span class="cr-cod mal">400</span></span>
+                <pre class="esc-cmd">{"nombre": "Aceite", "precio": -3, "stock": "muchos", "categoria": "abarrotes"}</pre>
+              </div></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="dj-col a-in" style="--d:.4s">
+        <div class="ar" data-ar>
+          <div class="ar-cab">
+            <div class="ar-tabs" role="tablist" aria-label="Archivos">
+              <button type="button" role="tab" data-t="settings">settings.py · al final</button>
+              <button type="button" role="tab" data-t="serializers">inventario/serializers.py</button>
+              <button type="button" role="tab" data-t="views">inventario/views.py</button>
+              <button type="button" role="tab" data-t="urls">config/urls.py</button>
+            </div>
+            <span class="k-links"><button class="k-btn" type="button" data-ar-copiar>Copiar archivo</button><button class="k-link" type="button" data-abrir="http://127.0.0.1:8000/api/docs/">Abrir /api/docs/</button></span>
+          </div>
+<pre class="k-py ar-code" data-p="settings"># Pégalo al FINAL de config/settings.py
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "COERCE_DECIMAL_TO_STRING": False,  # precio como número, igual que en FastAPI
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Inventario de mi tienda (Django)",
+    "VERSION": "1.0.0",
+}
+</pre>
+<pre class="k-py ar-code" data-p="serializers" hidden>from rest_framework import serializers
+
+from .models import Producto
+
+
+class ProductoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Producto
+        fields = ["id", "nombre", "precio", "stock", "categoria"]
+</pre>
+<pre class="k-py ar-code" data-p="views" hidden>from rest_framework import viewsets
+
+from .models import Producto
+from .serializers import ProductoSerializer
+
+
+class ProductoViewSet(viewsets.ModelViewSet):
+    """Listar, ver, crear, editar y borrar productos."""
+    queryset = Producto.objects.order_by("id")
+    serializer_class = ProductoSerializer
+</pre>
+<pre class="k-py ar-code" data-p="urls" hidden>from django.contrib import admin
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework.routers import DefaultRouter
+
+from inventario.views import ProductoViewSet
+
+router = DefaultRouter()
+router.register("productos", ProductoViewSet)
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/", include(router.urls)),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
+]
+</pre>
+        </div>
+<pre class="cr-400" aria-label="Ejemplo de respuesta 400"><span class="c">// 400 · así responde DRF (verificado)</span>
+{<span class="k">"precio"</span>: [<span class="s">"Asegúrese de que este valor es mayor o igual a 0.01."</span>],
+ <span class="k">"stock"</span>: [<span class="s">"Introduzca un número entero válido."</span>]}</pre>
+        <p class="dj-lee"><b>¿Por qué 400 y no 422?</b> FastAPI usa <b>422</b> (Unprocessable Content: el JSON llegó bien armado, pero no cumple las reglas). DRF usa <b>400</b> (Bad Request) para todo dato inválido. Los dos son 4xx: el error está en lo que mandaste. Cambia la forma: FastAPI da una lista <code>detail</code> con <code>loc</code> y <code>msg</code>; DRF, cada campo con sus mensajes.</p>
+        <table class="dj-vs">
+          <thead><tr><th>FastAPI · clase 2</th><th>Django + DRF · hoy</th></tr></thead>
+          <tbody>
+            <tr><td>class Producto(BaseModel)</td><td>ProductoSerializer</td></tr>
+            <tr><td>5 funciones con @app.get…</td><td>1 ModelViewSet (+ PATCH gratis)</td></tr>
+            <tr><td>/productos</td><td>/api/productos/ ← con barra final</td></tr>
+            <tr><td>/docs</td><td>/api/docs/</td></tr>
+            <tr><td>422 + detail</td><td>400 + campo: [mensajes]</td></tr>
+          </tbody>
+        </table>
+        <div class="k-caja">
+          <ul class="k-check" data-check="py03-drf" data-listo="CRUD completo en Django. Toma la captura de /api/docs/ y pulsa «Lo logré».">
+            <li><label><input type="checkbox"><span></span><em><code>/api/docs/</code> abre Swagger con el título «Inventario de mi tienda (Django)»</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Creé uno (201) y listé (200): salen también los del admin</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Edité con PUT (200) y borré (204, luego 404)</em></label></li>
+            <li><label><input type="checkbox"><span></span><em>Vi el 400 y leí qué campo falló</em></label></li>
+          </ul>
+        </div>
+        <div class="dj-avisos">
+          <span class="esc-chip warn">«No module named 'rest_framework'»: instalaste fuera del venv; activa <code>(.venv)</code> y repite el pip</span>
+          <span class="esc-chip warn">Con curl o Postman pon la barra final: <code>POST /api/productos</code> sin barra da error 500</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="esc-pie">
+    <span class="esc-nota">Lo creado en Swagger aparece en /admin y viceversa: es la misma base · captura de /api/docs/ y «Lo logré»</span>
+  </footer>
+</div>
+
+<script>
+/* Tema: ?tema=dark|light fuerza el tema del LMS; si no, manda el del sistema. */
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get("tema");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+<script src="../../comun/copiar.js"></script>
+<script src="../../comun/py01.js"></script>
+<script>
+/* Pestañas de archivos: cada botón [data-t] muestra su <pre data-p>; «Copiar archivo» copia el visible. */
+(function () {
+  Array.prototype.forEach.call(document.querySelectorAll("[data-ar]"), function (caja) {
+    var tabs = caja.querySelectorAll("[data-t]"), b = caja.querySelector("[data-ar-copiar]"), actual = "";
+    function ver(id) {
+      actual = id;
+      Array.prototype.forEach.call(tabs, function (t) { t.setAttribute("aria-selected", String(t.getAttribute("data-t") === id)); });
+      Array.prototype.forEach.call(caja.querySelectorAll("[data-p]"), function (p) { p.hidden = p.getAttribute("data-p") !== id; });
+    }
+    Array.prototype.forEach.call(tabs, function (t) { t.addEventListener("click", function () { ver(t.getAttribute("data-t")); }); });
+    if (b) b.addEventListener("click", function () {
+      var pre = caja.querySelector('[data-p="' + actual + '"]');
+      PY.copiar(pre ? pre.textContent : "").then(function (ok) {
+        b.textContent = ok ? "✓ Copiado" : "No pude copiar"; b.classList.toggle("ok", !!ok);
+        setTimeout(function () { b.textContent = "Copiar archivo"; b.classList.remove("ok"); }, 2200);
+      });
+    });
+    ver(tabs[0].getAttribute("data-t"));
+  });
+})();
+</script>
+</body>
+</html>

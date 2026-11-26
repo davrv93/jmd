@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Una clase de Python se vuelve una tabla</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %.
+     Pasos 1–3: clase (arriba izq.) → plan 0001 (arriba der.) → tabla (abajo der.), con el SQL abajo a la izq.
+     Pasos 4–5: cita arriba, línea de tiempo de migraciones al medio, el caso de la 0002 abajo. */
+  .codigo .t.mono { white-space: pre; font-size: .9em; hyphens: none; }
+  .marca { border-radius: .2em; padding: 0 .08em; }
+  .celda { font: 700 12.5px var(--mono); fill: var(--tinta); text-anchor: middle; dominant-baseline: central; }
+  .celda.izq { text-anchor: start; }
+  .celda.nulo { fill: var(--gris); font-weight: 600; }
+  .fan .celda { fill: var(--gris); }
+  .fan .marco { fill: none; stroke: var(--gris); stroke-width: 2; stroke-dasharray: 6 6; }
+  .fan line { stroke: var(--gris); stroke-width: 1.4; stroke-dasharray: 4 5; }
+  .cab { fill: var(--papel3); }
+  .fondoTb { fill: var(--papel); }
+  #idHalo { fill: var(--acento); fill-opacity: .22; }
+  #colVenc .cabNueva { fill: var(--acento); fill-opacity: .22; }
+  #punto, #punto2 { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  .nodo { fill: var(--acento); stroke: var(--tinta); stroke-width: 2; }
+  .nodo.fan2 { fill: var(--papel2); stroke: var(--gris); stroke-width: 2; stroke-dasharray: 3 3; }
+  .nota-svg { font: 600 13px var(--mono); fill: var(--gris); }
+  .pastilla { white-space: nowrap; }
+  #nClase { width: 47.5%; }
+  #nClase .t.mono { font-size: .88em; }
+  #nPlan { width: 39.5%; }
+  #nSql { width: 38%; }
+  #nVenc { width: 46%; }
+  .etq { width: 21%; }
+  .etq .t.mono { font-size: .82em; hyphens: none; overflow-wrap: anywhere; }
+  #cita { width: 84%; font-size: 2.6cqw; }
+  #fFinal { width: 66%; }
+  #fFinal .t.mono { font-size: 1.15em; white-space: pre; line-height: 1.5; hyphens: none; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 2 de 4 · El ORM de Django</p>
+    <h1>Una clase de Python <em>se vuelve una tabla</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Arriba a la izquierda, la clase Producto de models.py con nombre, precio, stock y categoría. Cada atributo se vuelve una columna de la tabla inventario_producto, y Django agrega solo la columna id. Una flecha lleva la clase al archivo migrations/0001_initial.py, que escribe makemigrations con la operación CreateModel; la base todavía no cambia. Otra flecha lleva el plan a la base: migrate crea la tabla en db.sqlite3 con el SQL CREATE TABLE que se muestra abajo a la izquierda. Después, una línea de tiempo muestra las migraciones como historial: 0001_initial y luego 0002, que agrega el campo vencimiento. Al aplicar la 0002 con migrate, la tabla gana la columna vencimiento, vacía (NULL), y los productos que ya estaban se quedan. Al final, las órdenes para crear el modelo y abrir el panel /admin/.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="tresSvg">
+          <!-- tabla fantasma: así quedará (pasos 1 y 2) -->
+          <g id="tbFan" class="fan solo-anim">
+            <rect id="idHalo" x="470" y="250" width="38" height="96"/>
+            <rect class="marco" x="470" y="250" width="315" height="96" rx="4"/>
+            <line x1="470" y1="282" x2="785" y2="282"/>
+            <line x1="508" y1="250" x2="508" y2="346"/><line x1="584" y1="250" x2="584" y2="346"/>
+            <line x1="648" y1="250" x2="648" y2="346"/><line x1="704" y1="250" x2="704" y2="346"/>
+            <text class="celda cId" x="489" y="266">id</text>
+            <text class="celda c1" x="546" y="266">nombre</text>
+            <text class="celda c2" x="616" y="266">precio</text>
+            <text class="celda c3" x="676" y="266">stock</text>
+            <text class="celda c4" x="744.5" y="266">categoria</text>
+            <text id="tbAun" class="nota-svg" x="470" y="372">así quedará · aún no existe</text>
+          </g>
+          <!-- tabla real (paso 3) -->
+          <g id="tbReal">
+            <rect class="fondoTb" x="470" y="250" width="315" height="96" rx="4"/>
+            <rect id="tbCab" class="cab" x="470" y="250" width="315" height="32" rx="4"/>
+            <path class="trazo lTb" d="M474 250 H781 Q785 250 785 254 V342 Q785 346 781 346 H474 Q470 346 470 342 V254 Q470 250 474 250 Z"/>
+            <path class="trazo fino lTb" d="M470 282 H785"/>
+            <path class="trazo fino lTb" d="M508 250 V346 M584 250 V346 M648 250 V346 M704 250 V346"/>
+            <g id="tbTxt">
+              <text class="celda" x="489" y="266">id</text><text class="celda" x="546" y="266">nombre</text>
+              <text class="celda" x="616" y="266">precio</text><text class="celda" x="676" y="266">stock</text>
+              <text class="celda" x="744.5" y="266">categoria</text>
+            </g>
+            <text id="tbVacia" class="nota-svg" x="470" y="372">tabla creada · 0 filas</text>
+          </g>
+          <text id="tbCap" class="rot fuerte" x="470" y="238">INVENTARIO_PRODUCTO</text>
+          <path id="a1" class="trazo" d="M396 85 H466"/>
+          <path id="a2" class="trazo" d="M740 166 V240"/>
+          <path id="lSql" class="trazo fino guion" d="M322 298 H462"/>
+          <path id="ruta" d="M396 85 H600 Q740 85 740 150 V248" fill="none" stroke="none"/>
+          <circle id="punto" class="solo-anim" cx="396" cy="85" r="9"/>
+        </g>
+
+        <g id="histSvg" class="solo-anim">
+          <path id="linea" class="trazo" d="M50 200 H762"/>
+          <circle class="nodo" id="nodo1" cx="120" cy="200" r="11"/>
+          <circle class="nodo fan2" id="nodo2f" cx="330" cy="200" r="11"/>
+          <circle class="nodo" id="nodo2" cx="330" cy="200" r="11"/>
+          <circle class="nodo fan2" id="nodo3" cx="540" cy="200" r="11"/>
+          <text class="nota-svg" id="tres3" x="540" y="236" text-anchor="middle">…</text>
+          <!-- la tabla de tu PC (paso 5) -->
+          <g id="tbMini">
+            <rect class="fondoTb" x="450" y="300" width="218" height="96" rx="4"/>
+            <rect class="cab" x="450" y="300" width="218" height="32" rx="4"/>
+            <path class="trazo" d="M454 300 H668 V396 H454 Q450 396 450 392 V304 Q450 300 454 300 Z"/>
+            <path class="trazo fino" d="M450 332 H668 M450 364 H668 M485 300 V396 M640 300 V396"/>
+            <text class="celda" x="467.5" y="316">id</text><text class="celda" x="562.5" y="316">nombre</text><text class="celda" x="654" y="316">…</text>
+            <text class="celda" x="467.5" y="348">1</text><text class="celda izq" x="493" y="348">Paracetamol 500 mg</text><text class="celda" x="654" y="348">…</text>
+            <text class="celda" x="467.5" y="380">2</text><text class="celda izq" x="493" y="380">Alcohol 70°</text><text class="celda" x="654" y="380">…</text>
+            <text class="rot fuerte" x="450" y="288">TU DB.SQLITE3</text>
+          </g>
+          <g id="colVenc">
+            <rect class="fondoTb" x="668" y="300" width="117" height="96"/>
+            <rect class="cabNueva" x="668" y="300" width="117" height="96"/>
+            <path class="trazo" d="M668 300 H781 Q785 300 785 304 V392 Q785 396 781 396 H668"/>
+            <path class="trazo fino" d="M668 332 H785 M668 364 H785"/>
+            <text class="celda" x="726.5" y="316">vencimiento</text>
+            <text class="celda nulo" x="726.5" y="348">NULL</text><text class="celda nulo" x="726.5" y="380">NULL</text>
+          </g>
+          <text id="tSiguen" class="nota-svg" x="450" y="422">tus productos siguen ahí</text>
+          <path id="ruta2" d="M330 200 H727 V296" fill="none" stroke="none"/>
+          <circle id="punto2" cx="330" cy="200" r="9"/>
+        </g>
+      </svg>
+
+      <div class="capa" id="tres">
+        <div class="nt cmd codigo" id="nClase" data-r="-.6" style="left:1.5%; top:4%"><span class="k">inventario/models.py · tú escribes</span><span class="t mono">class Producto(models.Model):
+  <span class="marca" id="m1">nombre</span> = models.CharField(max_length=100)
+  <span class="marca" id="m2">precio</span> = models.DecimalField(
+      max_digits=10, decimal_places=2)
+  <span class="marca" id="m3">stock</span> = models.PositiveIntegerField(default=0)
+  <span class="marca" id="m4">categoria</span> = models.CharField(max_length=50)</span></div>
+        <p class="pastilla solo-anim" id="pId" style="left:3%; top:44%">id: lo agrega Django, tú no lo escribes</p>
+        <p class="pastilla solo-anim" id="pNombre" style="left:3%; top:56%">app + _ + modelo → inventario_producto</p>
+        <div class="nt pol codigo" id="nPlan" data-r=".8" style="left:59%; top:4%"><span class="k">migrations/0001_initial.py · lo escribe Django</span><span class="t mono">operations = [
+  migrations.CreateModel(
+    name="Producto",
+    fields=[
+      ("id", models.BigAutoField(…)),
+      ("nombre", models.CharField(…)),
+      …</span></div>
+        <p class="pastilla solo-anim" id="pMake" style="left:1.5%; top:32%">$ python manage.py makemigrations → Create model Producto</p>
+        <p class="pastilla solo-anim" id="pIntacta" style="right:1.5%; top:77%">db.sqlite3: todavía sin tocar</p>
+        <p class="pastilla solo-anim" id="pMigrate" style="right:1.5%; top:77%">$ python manage.py migrate → 0001_initial... OK</p>
+        <div class="nt info codigo" id="nSql" data-r="-.5" style="left:1.5%; top:41%"><span class="k">El SQL que Django escribe por ti</span><span class="t mono">CREATE TABLE inventario_producto (
+  id        integer PRIMARY KEY,
+  nombre    varchar(100),
+  precio    decimal,
+  stock     integer,
+  categoria varchar(50)
+);</span></div>
+      </div>
+
+      <div class="capa solo-anim" id="historia">
+        <p class="cita" id="cita" style="left:4%; top:3%">«Piensa en las migraciones como un control de versiones para el esquema de tu base de datos.»<small>Django 6.1 · documentación, «Migrations» (traducido)</small></p>
+        <p class="pastilla" id="pCommit" style="left:4%; top:25%">makemigrations ≈ hacer un commit</p>
+        <p class="pastilla" id="pAplica" style="left:47%; top:25%">migrate ≈ aplicar los commits a tu base</p>
+        <div class="nt pol etq" id="e1" data-r="-1" style="left:4.5%; top:44%"><span class="k">0001 · initial</span><span class="t mono">Create model Producto</span></div>
+        <div class="nt fantasma etq" id="e2f" data-r=".6" style="left:30.75%; top:44%"><span class="k">0002 · ¿?</span><span class="t mono">el próximo cambio</span></div>
+        <div class="nt pol etq" id="e2" data-r="1" style="left:30.75%; top:44%"><span class="k">0002 · producto_vencimiento</span><span class="t mono">Add field vencimiento</span></div>
+        <div class="nt act codigo" id="nVenc" data-r="-.7" style="left:1.5%; top:58%"><span class="k">models.py · tu compañera agrega</span><span class="t mono">vencimiento = models.DateField(null=True)</span></div>
+        <p class="pastilla" id="pPull" style="left:1.5%; top:76%">$ git pull → $ python manage.py migrate</p>
+        <p class="pastilla" id="pSin" style="left:1.5%; top:87%">Sin ALTER TABLE a mano, ni en tu PC ni en el servidor</p>
+      </div>
+
+      <div class="capa solo-anim" id="final">
+        <div class="nt ficha s" id="fFinal" data-r="-.6" style="left:17%; top:16%"><span class="k">Tu modelo y el panel, en la escena siguiente</span><span class="t mono">python manage.py makemigrations
+python manage.py migrate
+python manage.py createsuperuser
+# admin.py: admin.site.register(Producto)
+# abre http://127.0.0.1:8000/admin/</span></div>
+        <p class="pastilla" id="pFinal" style="left:22%; top:72%">1 clase → 1 plan → 1 tabla → 1 panel /admin/</p>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>Escribes una clase, no SQL</b><p>En <code>models.py</code> describes un producto como una clase de Python. Cada atributo será una columna, y Django agrega solo la columna <code>id</code>. La tabla se llamará <code>inventario_producto</code>: el nombre de la app, un guion bajo y el modelo en minúsculas.</p><p class="aparte">Desde Django 6.0, ese <code>id</code> es un <code>BigAutoField</code>: un entero de 64 bits que crece solo.</p></li>
+        <li><b>makemigrations escribe el plan</b><p><code>makemigrations</code> compara tus modelos con las migraciones que ya existen y escribe un archivo nuevo, <code>0001_initial.py</code>, con la operación <code>CreateModel</code>. Es un plan en Python que puedes leer y guardar en Git. La base todavía no cambia.</p></li>
+        <li><b>migrate lo aplica a la base</b><p><code>migrate</code> lee el plan y lo ejecuta: crea la tabla en <code>db.sqlite3</code> y anota que la 0001 ya se aplicó, para no repetirla. El SQL lo escribe Django por ti.</p><p class="aparte">Simplificado: el SQL real agrega NOT NULL, AUTOINCREMENT y un CHECK (stock &gt;= 0). El exacto lo ves con <code>python manage.py sqlmigrate inventario 0001</code>.</p></li>
+        <li><b>Las migraciones son el historial de tu base</b><p>La documentación de Django lo dice así: las migraciones son un control de versiones del esquema. <code>makemigrations</code> empaqueta cada cambio en un archivo, como un commit, y <code>migrate</code> los aplica en orden. Cada archivo sabe cuál va antes que él.</p></li>
+        <li><b>Tu compañera agrega el vencimiento</b><p>En una botica, el vencimiento importa. Tu compañera agrega <code>vencimiento</code> al modelo, corre <code>makemigrations</code> y sube la 0002 al repositorio. Tú haces <code>git pull</code> y <code>migrate</code>: aparece la columna, vacía (NULL), y tus productos siguen ahí.</p></li>
+        <li><b>Ahora: tu modelo y el admin</b><p>Escribes <code>Producto</code> en <code>inventario/models.py</code>, corres las dos órdenes y creas tu usuario. Con una línea en <code>admin.py</code>, el panel <code>/admin/</code> te deja crear, editar y borrar productos sin programar una sola pantalla.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Django Software Foundation (2026). Documentación de Django 6.1: «Migrations», https://docs.djangoproject.com/en/6.1/topics/migrations/ · «Model Meta options: Table names», https://docs.djangoproject.com/en/6.1/ref/models/options/ · «Settings: DEFAULT_AUTO_FIELD», https://docs.djangoproject.com/en/6.1/ref/settings/</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, puntas = {};
+  var amarillo = "rgba(255, 214, 92, 1)", sinColor = "rgba(255, 214, 92, 0)";
+  function flecha(tl, id, pos) {
+    TEO.trazar(tl, "#" + id, { duration: .6 }, pos);
+    tl.fromTo(puntas[id], { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 }, "-=.1");
+  }
+  function entra(tl, sel, pos) { return tl.fromTo(sel, { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 }, pos); }
+  function resaltar(tl, marca, col) { // la palabra se enciende y su columna aparece en la tabla fantasma
+    tl.to(marca, { backgroundColor: amarillo, duration: .25 });
+    tl.fromTo(col, { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 }, "<");
+    tl.to(marca, { backgroundColor: sinColor, duration: .3 }, "+=.25");
+  }
+
+  TEO.escena([
+    function (tl) { // 1. la clase y su tabla fantasma
+      TEO.pegar(tl, "#nClase");
+      tl.fromTo("#tbFan .marco, #tbFan line", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 });
+      resaltar(tl, "#m1", "#tbFan .c1");
+      resaltar(tl, "#m2", "#tbFan .c2");
+      resaltar(tl, "#m3", "#tbFan .c3");
+      resaltar(tl, "#m4", "#tbFan .c4");
+      tl.fromTo("#tbFan .cId", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.fromTo("#idHalo", { opacity: 0 }, { opacity: 1, duration: .3 }, "<");
+      entra(tl, "#pId");
+      tl.fromTo(["#tbCap", "#tbAun"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .35 });
+      entra(tl, "#pNombre");
+    },
+    function (tl) { // 2. makemigrations: el plan
+      tl.to(["#pId", "#pNombre"], { autoAlpha: 0, duration: .3 });
+      tl.to("#idHalo", { opacity: 0, duration: .3 }, "<");
+      flecha(tl, "a1");
+      TEO.pegar(tl, "#nPlan");
+      entra(tl, "#pMake");
+      entra(tl, "#pIntacta", "+=.2");
+    },
+    function (tl) { // 3. migrate: el punto lleva el plan a la base (clímax)
+      tl.to("#pIntacta", { autoAlpha: 0, duration: .3 });
+      tl.set("#punto", { attr: { cx: 396, cy: 85 } });
+      tl.fromTo("#punto", { autoAlpha: 0, scale: .3 }, { autoAlpha: 1, scale: 1, duration: .3, transformOrigin: "50% 50%" });
+      TEO.viajar(tl, $("#punto"), $("#ruta"), 1.6);
+      flecha(tl, "a2", "-=.35");
+      tl.to("#tbFan", { autoAlpha: 0, duration: .35 });
+      tl.fromTo("#tbReal", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 }, "<");
+      tl.fromTo([".fondoTb", "#tbCab"].map(function (s) { return "#tbReal " + s; }).join(","), { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 }, "<");
+      TEO.trazar(tl, "#tbReal .lTb", { duration: .7, stagger: .1 }, "<");
+      tl.fromTo("#tbTxt text", { autoAlpha: 0 }, { autoAlpha: 1, duration: .25, stagger: .08 });
+      tl.to("#punto", { autoAlpha: 0, scale: .3, duration: .3 }, "<");
+      entra(tl, "#pMigrate");
+      TEO.pegar(tl, "#nSql");
+      tl.fromTo("#lSql", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.fromTo("#tbVacia", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 }, "<");
+    },
+    function (tl) { // 4. el historial
+      tl.to(["#tresSvg", "#tres"], { autoAlpha: 0, duration: .4 });
+      tl.fromTo(["#histSvg", "#historia"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.from(TEO.palabras($("#cita")), { autoAlpha: 0, y: 10, duration: .4, stagger: .05 });
+      tl.from("#cita small", { autoAlpha: 0, duration: .3 });
+      TEO.trazar(tl, "#linea", { duration: .8 });
+      tl.fromTo("#nodo1", { autoAlpha: 0, scale: .3 }, { autoAlpha: 1, scale: 1, duration: .35, transformOrigin: "50% 50%" });
+      TEO.pegar(tl, "#e1");
+      tl.fromTo(["#nodo2f", "#nodo3", "#tres3"], { autoAlpha: 0 }, { autoAlpha: 1, duration: .35, stagger: .1 });
+      TEO.pegar(tl, "#e2f", "<");
+      entra(tl, "#pCommit");
+      entra(tl, "#pAplica", "+=.15");
+    },
+    function (tl) { // 5. la 0002 llega a tu base
+      tl.to(["#pCommit", "#pAplica"], { autoAlpha: 0, duration: .3 });
+      TEO.pegar(tl, "#nVenc");
+      tl.fromTo("#tbMini", { autoAlpha: 0 }, { autoAlpha: 1, duration: .4 }, "<");
+      tl.to(["#e2f", "#nodo2f"], { autoAlpha: 0, duration: .25 });
+      tl.fromTo("#nodo2", { autoAlpha: 0, scale: .3 }, { autoAlpha: 1, scale: 1, duration: .35, transformOrigin: "50% 50%" }, "<");
+      TEO.pegar(tl, "#e2", "<");
+      entra(tl, "#pPull");
+      tl.set("#punto2", { attr: { cx: 330, cy: 200 } });
+      tl.fromTo("#punto2", { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 });
+      TEO.viajar(tl, $("#punto2"), $("#ruta2"), 1.2);
+      tl.fromTo("#colVenc", { autoAlpha: 0, x: -24 }, { autoAlpha: 1, x: 0, duration: .45, ease: "back.out(1.6)" });
+      tl.to("#punto2", { autoAlpha: 0, duration: .25 }, "<");
+      tl.fromTo("#tSiguen", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      entra(tl, "#pSin");
+    },
+    function (tl) { // 6. puente a la práctica
+      tl.to(["#histSvg", "#historia"], { autoAlpha: 0, duration: .4 });
+      tl.fromTo("#final", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#fFinal");
+      entra(tl, "#pFinal");
+    }
+  ], {
+    preparar: function () {
+      puntas.a1 = TEO.punta($("#a1")); puntas.a2 = TEO.punta($("#a2"));
+      gsap.set([puntas.a1, puntas.a2], { autoAlpha: 0 });
+      gsap.set(["#m1", "#m2", "#m3", "#m4"], { backgroundColor: sinColor });
+      gsap.set(["#tbFan .marco", "#tbFan line", "#tbFan text", "#tbCap"], { autoAlpha: 0 });
+      gsap.set("#idHalo", { opacity: 0 });
+      gsap.set(["#tbReal", "#lSql", "#tbVacia", "#punto", "#punto2"], { autoAlpha: 0 });
+      gsap.set(["#pId", "#pNombre", "#pMake", "#pIntacta", "#pMigrate"], { autoAlpha: 0 });
+      gsap.set(["#histSvg", "#historia", "#final", "#nodo1", "#nodo2f", "#nodo2", "#nodo3", "#tres3", "#tbMini", "#colVenc", "#tSiguen"], { autoAlpha: 0 });
+      gsap.set(["#pCommit", "#pAplica", "#pPull", "#pSin", "#pFinal"], { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>

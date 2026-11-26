@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Django trae la casa armada</title>
+<link rel="stylesheet" href="../../comun/teoria.css">
+<style>
+  /* viewBox 800 × 520: left = x / 8 %, top = y / 5.2 %. Izquierda (x 16–330): lo que cambia en cada paso.
+     Derecha (x 350–750): la casa de Django; techo = proyecto, cuartos = apps, sótano = base de datos. */
+  .guia { fill: none; stroke: none; }
+  #punto { fill: var(--acento); filter: drop-shadow(0 0 6px var(--acento)); }
+  #foco { fill: none; stroke: var(--acento); stroke-width: 3.2; }
+  .cuarto { width: 20.5%; }
+  .archivo { width: 17%; }
+  .izq { width: 37%; }
+  .nt .t.mono { white-space: pre; hyphens: none; }
+  #pPide, #pResp, #pBat, #pCasa, #pCohete { white-space: nowrap; }
+  #fCmd { width: 40%; }
+  #fCmd .t.mono { font-size: .9em; line-height: 1.5; }
+  #cita2, #cita4 { width: 39%; }
+  .anio { width: 17.5%; }
+  .mapa .k { text-transform: none; letter-spacing: .02em; font-size: .78em; }
+</style>
+</head>
+<body>
+<main class="teo">
+  <header>
+    <p class="teo-ceja">Teoría 1 de 4 · Django</p>
+    <h1>Django te entrega <em>la casa ya armada</em></h1>
+  </header>
+
+  <div class="teo-cuerpo">
+    <figure class="teo-fig" role="img" aria-label="Una casa representa un proyecto Django. El techo es el proyecto config, con settings.py y urls.py. Los cuartos son apps: inventario, que es la tuya, ventas, y admin y auth, que ya vienen incluidas. El sótano es la base de datos db.sqlite3. Un pedido GET /api/productos/ entra por la puerta a urls.py, que lo manda a la vista en views.py; la vista pide los datos al modelo en models.py y el ORM los lee de db.sqlite3; sale una respuesta 200 en JSON. A la izquierda, en otros pasos: lo que FastAPI trae y lo que eliges tú, la cita del tutorial sobre proyectos y apps, el origen de Django en World Online entre 2003 y 2005, cómo se reparte tu main.py de FastAPI en la app inventario, y los tres comandos startproject, startapp y runserver.">
+      <svg viewBox="0 0 800 520" aria-hidden="true">
+        <g id="casa">
+          <path id="techo" class="trazo" d="M330 152 L550 34 L770 152"/>
+          <path id="muros" class="trazo" d="M350 182 V152 H750 V440 H350 V246"/>
+          <path id="divV" class="trazo fino guion" d="M550 160 V432"/>
+          <path id="divH" class="trazo fino guion" d="M358 298 H742"/>
+          <g id="sotano">
+            <path class="trazo fino guion" d="M350 440 V508 H750 V440"/>
+            <text class="rot" x="366" y="482">BASE DE DATOS</text>
+          </g>
+        </g>
+        <g id="flechas3">
+          <g id="ga0"><path id="a0" class="trazo" d="M178 214 H362"/></g>
+          <path id="a1" class="trazo" d="M512 214 H568"/>
+          <path id="a2" class="trazo" d="M644 246 V310"/>
+          <path id="a3" class="trazo" d="M644 372 V444"/>
+        </g>
+        <g id="con5" class="solo-anim">
+          <path id="c1" class="trazo fino guion" d="M330 104 C362 112 384 146 400 180"/>
+          <path id="c2" class="trazo fino guion" d="M330 236 C430 250 500 342 568 342"/>
+          <path id="c3" class="trazo fino guion" d="M330 372 C430 384 500 476 568 476"/>
+        </g>
+        <path id="g1" class="guia" d="M178 214 H440"/>
+        <path id="g2" class="guia" d="M440 214 H644"/>
+        <path id="g3" class="guia" d="M644 214 V342"/>
+        <path id="g4" class="guia" d="M644 342 V476"/>
+        <rect id="foco" class="solo-anim" x="364" y="180" width="152" height="66" rx="6"/>
+        <circle id="punto" class="solo-anim" cx="178" cy="214" r="9"/>
+      </svg>
+
+      <!-- Paso 1: lo que trae cada uno -->
+      <div class="capa solo-anim" id="c1izq">
+        <div class="nt cmd izq" id="n1" data-r="-1" style="left:3%; top:20%"><span class="k">FastAPI · lo que ya usaste</span><span class="t">rutas · validación · /docs</span></div>
+        <div class="nt fantasma izq" id="n2" data-r=".8" style="left:3%; top:41%"><span class="k">¿y lo demás?</span><span class="t">base de datos, panel, login: los eliges y conectas tú</span></div>
+        <p class="pastilla" id="pBat" style="left:3%; top:68%">Django: «baterías incluidas»</p>
+      </div>
+      <div class="capa solo-anim" id="c1casa">
+        <div class="nt info cuarto" id="b1" data-r="-1.2" style="left:46.5%; top:34%"><span class="k">viene en la caja</span><span class="t">ORM y migraciones</span></div>
+        <div class="nt info cuarto" id="b2" data-r=".9" style="left:71.5%; top:34%"><span class="k">viene en la caja</span><span class="t">Panel admin</span></div>
+        <div class="nt info cuarto" id="b3" data-r=".7" style="left:46.5%; top:62%"><span class="k">viene en la caja</span><span class="t">Usuarios y login</span></div>
+        <div class="nt info cuarto" id="b4" data-r="-.8" style="left:71.5%; top:62%"><span class="k">y más</span><span class="t">mensajes, sitemaps, estáticos</span></div>
+      </div>
+
+      <!-- Paso 2: proyecto y apps (el techo se queda hasta el final) -->
+      <div class="nt pol" id="p1" data-r="-.6" style="left:55.5%; top:15%; width:27%"><span class="k">proyecto · config/</span><span class="t mono">settings.py · urls.py</span></div>
+      <div class="capa solo-anim" id="c2cuartos">
+        <div class="nt act cuarto" id="r1" data-r="-1.2" style="left:46.5%; top:34%"><span class="k">app · inventario</span><span class="t">la tuya: Producto</span></div>
+        <div class="nt fantasma cuarto" id="r2" data-r=".9" style="left:71.5%; top:34%"><span class="k">app · ventas</span><span class="t">otra app, otro día</span></div>
+        <div class="nt info cuarto" id="r3" data-r=".7" style="left:46.5%; top:62%"><span class="k">app · admin</span><span class="t">ya incluida</span></div>
+        <div class="nt info cuarto" id="r4" data-r="-.8" style="left:71.5%; top:62%"><span class="k">app · auth</span><span class="t">ya incluida</span></div>
+      </div>
+      <p class="cita solo-anim" id="cita2" style="left:2%; top:22%">«Un proyecto puede contener varias apps. Una app puede estar en varios proyectos.»<small>Tutorial de Django, parte 1</small></p>
+
+      <!-- Paso 3: el recorrido de un pedido (es también la figura estática) -->
+      <div class="capa" id="c3casa">
+        <div class="nt cmd archivo" id="u" data-r="-.8" style="left:46.5%; top:35.5%"><span class="k">config/urls.py</span><span class="t">la recepción</span></div>
+        <div class="nt act archivo" id="v" data-r=".8" style="left:72%; top:35.5%"><span class="k">inventario/views.py</span><span class="t">la vista</span></div>
+        <div class="nt ev archivo" id="m" data-r="-.6" style="left:72%; top:60.5%"><span class="k">inventario/models.py</span><span class="t">el modelo · ORM</span></div>
+        <div class="nt sis archivo" id="db" data-r=".6" style="left:72%; top:86.5%"><span class="k">db.sqlite3</span><span class="t">la tabla</span></div>
+      </div>
+      <div class="capa" id="c3izq">
+        <p class="pastilla" id="pPide" style="left:2%; top:38%">GET /api/productos/</p>
+        <p class="pastilla" id="pResp" style="left:2%; top:52%">200 · [{"nombre": "arroz", …}]</p>
+      </div>
+      <p class="pastilla solo-anim" id="narra" style="left:2%; top:4%; width:40%"><span class="capas">
+        <span>1 · urls.py busca la ruta</span>
+        <span>2 · la vista decide</span>
+        <span>3 · el modelo arma la consulta</span>
+        <span>4 · la base entrega las filas</span>
+        <span>5 · sale la respuesta en JSON</span>
+      </span></p>
+
+      <!-- Paso 4: el caso real -->
+      <div class="capa solo-anim" id="c4">
+        <p class="cita" id="cita4" style="left:2%; top:14%">«World Online, la web de un periódico, construye aplicaciones web intensivas con plazos de periodismo.»<small>FAQ de Django · traducción</small></p>
+        <div class="nt ev anio" id="e1" data-r="-1.4" style="left:3%; top:55%"><span class="k">otoño 2003</span><span class="t">de PHP a Python</span></div>
+        <div class="nt ev anio" id="e2" data-r="1.1" style="left:22.5%; top:55%"><span class="k">verano 2005</span><span class="t">código abierto</span></div>
+        <p class="pastilla" id="pCasa" style="left:3%; top:76%">si hay hora de cierre, la casa ya armada</p>
+      </div>
+
+      <!-- Paso 5: tu inventario se muda -->
+      <div class="capa solo-anim" id="c5">
+        <div class="nt cmd izq mapa" id="f1" data-r="-.8" style="left:2%; top:13%"><span class="k">main.py · @app.get(…)</span><span class="t">→ urls.py + views.py</span></div>
+        <div class="nt pol izq mapa" id="f2" data-r=".7" style="left:2%; top:39%"><span class="k">main.py · class Producto(BaseModel)</span><span class="t">→ models.py (y el serializer)</span></div>
+        <div class="nt ev izq mapa" id="f3" data-r="-.6" style="left:2%; top:65%"><span class="k">main.py · productos = {…}</span><span class="t">→ una tabla en db.sqlite3</span></div>
+        <p class="pastilla" id="pDict" style="left:2%; top:88%">dict: se vaciaba · tabla: se queda</p>
+      </div>
+
+      <!-- Paso 6: el puente a la práctica -->
+      <div class="capa solo-anim" id="c6">
+        <div class="nt ficha k" id="fCmd" data-r="-.6" style="left:1.5%; top:18%"><span class="k">Ahora, en tu terminal</span><span class="t mono">django-admin startproject config .
+python manage.py startapp inventario
+python manage.py runserver</span></div>
+        <p class="pastilla" id="pCohete" style="left:2%; top:60%">127.0.0.1:8000 → el cohete de Django</p>
+      </div>
+    </figure>
+
+    <aside class="teo-relato" aria-live="polite">
+      <ol>
+        <li><b>FastAPI te dio piezas; Django, la casa</b><p>Con FastAPI tuviste rutas, validación y <code>/docs</code>; la base de datos, el panel y el login los eliges tú. Django sigue la filosofía de las «baterías incluidas»: ORM, migraciones, panel de administración y usuarios vienen en la caja.</p><p class="aparte">Son dos estilos, no uno mejor que otro: FastAPI te deja elegir cada pieza; Django ya tomó muchas decisiones por ti.</p></li>
+        <li><b>Un proyecto guarda varias apps</b><p>El proyecto es la casa: la configuración (<code>settings.py</code>) y las rutas principales (<code>urls.py</code>). Las apps son los cuartos y cada una hace una cosa. Tu inventario será una app; el panel <code>admin</code> y los usuarios (<code>auth</code>) también son apps, ya incluidas.</p></li>
+        <li><b>Un pedido recorre cuatro paradas</b><p>Llega <code>GET /api/productos/</code>. <code>urls.py</code> prueba las rutas en orden y se queda con la primera que coincide; llama a la vista; la vista pide los datos al modelo y el ORM los lee de la base. La vista devuelve la respuesta.</p><p class="aparte">Django se describe como un framework «MTV»: modelo, template y vista. En una API no hay template: responde con JSON, que arma el serializer (teoría 3).</p></li>
+        <li><b>Nació con plazos de periódico</b><p>Django salió de World Online, la web de un periódico, que construía aplicaciones «con plazos de periodismo». En otoño de 2003, Adrian Holovaty y Simon Willison dejaron PHP por Python; en el verano de 2005 publicaron el resultado como código abierto.</p><p class="aparte">Lectura nuestra, no de la fuente: si cada nota tiene hora de cierre, no hay tiempo de armar la casa cada vez.</p></li>
+        <li><b>Tu inventario se muda de casa</b><p>Lo que en FastAPI vivía en <code>main.py</code> se reparte: las rutas van a <code>urls.py</code> y <code>views.py</code>, la clase <code>Producto</code> pasa a <code>models.py</code>, y el dict en memoria se vuelve una tabla. Al reiniciar, el dict se vaciaba; la tabla se queda.</p></li>
+        <li><b>Ahora: levanta tu proyecto</b><p><code>startproject</code> crea la casa, <code>startapp</code> el cuarto del inventario y <code>runserver</code> la abre en tu navegador. Si ves el cohete de Django, todo va bien. Lo haces en la escena siguiente.</p></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer class="teo-pie">
+    <div class="teo-ctrl">
+      <button type="button" class="teo-btn" id="ant">← Anterior</button>
+      <div class="teo-puntos"></div>
+      <button type="button" class="teo-btn pri" id="sig">Siguiente →</button>
+      <button type="button" class="teo-btn" id="rep" title="Repetir este paso">↺</button>
+      <button type="button" class="teo-btn" id="todo">Ver todo</button>
+      <span class="teo-tecla">← → o espacio</span>
+    </div>
+    <p class="teo-fuente">Django Software Foundation (2026). Documentación de Django 6.1: «contrib packages» (docs.djangoproject.com/en/6.1/ref/contrib/) · «Writing your first Django app, part 1» (…/intro/tutorial01/) · «URL dispatcher: How Django processes a request» (…/topics/http/urls/) · «FAQ: General» (…/faq/general/).</p>
+  </footer>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/teoria.js"></script>
+<script>
+(function () {
+  var $ = TEO.$, puntas = {}, narra = [], punto = $("#punto");
+  var focos = { u: [364, 180], v: [568, 180], m: [568, 310], db: [568, 444] };
+
+  function flecha(tl, id, d, pos) {
+    TEO.trazar(tl, "#" + id, { duration: d || .35 }, pos);
+    tl.from(puntas[id], { autoAlpha: 0, duration: .15 }, "-=.05");
+  }
+  function decir(tl, k) {
+    if (k > 0) tl.to(narra[k - 1], { autoAlpha: 0, duration: .15 });
+    tl.to(narra[k], { autoAlpha: 1, duration: .2 }, k > 0 ? "<+.08" : undefined);
+  }
+  function enfocar(tl, id) { tl.to("#foco", { attr: { x: focos[id][0], y: focos[id][1] }, duration: .25 }, "<"); }
+  function aparecer(tl, sel) { tl.fromTo(sel, { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .35 }); }
+
+  TEO.escena([
+    function (tl) { // 1. piezas o casa
+      tl.fromTo("#c1izq", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, ["#n1", "#n2"]);
+      TEO.trazar(tl, ["#techo", "#muros"], { duration: .9, stagger: .2 });
+      tl.from(["#divV", "#divH"], { autoAlpha: 0, duration: .3 });
+      tl.fromTo("#c1casa", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, ["#b1", "#b2", "#b3", "#b4"]);
+      aparecer(tl, "#pBat");
+    },
+    function (tl) { // 2. proyecto y apps
+      tl.to(["#c1izq", "#c1casa"], { autoAlpha: 0, duration: .35 });
+      TEO.pegar(tl, "#p1");
+      tl.fromTo("#c2cuartos", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, ["#r1", "#r2", "#r3", "#r4"]);
+      tl.fromTo("#cita2", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.from(TEO.palabras($("#cita2")), { autoAlpha: 0, y: 10, duration: .35, stagger: .05 });
+      tl.from("#cita2 small", { autoAlpha: 0, duration: .3 });
+    },
+    function (tl) { // 3. el recorrido (clímax)
+      tl.to(["#c2cuartos", "#cita2"], { autoAlpha: 0, duration: .35 });
+      tl.fromTo("#sotano", { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 });
+      tl.fromTo("#c3casa", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, ["#u", "#v", "#m", "#db"]);
+      tl.fromTo("#c3izq", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.fromTo("#pPide", { autoAlpha: 0, x: -12 }, { autoAlpha: 1, x: 0, duration: .3 });
+      flecha(tl, "a0"); flecha(tl, "a1"); flecha(tl, "a2"); flecha(tl, "a3");
+      tl.fromTo("#narra", { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: .35 });
+      tl.set(punto, { attr: { cx: 178, cy: 214 } });
+      tl.fromTo(punto, { autoAlpha: 0, scale: .3 }, { autoAlpha: 1, scale: 1, duration: .3, transformOrigin: "50% 50%" });
+      TEO.viajar(tl, punto, $("#g1"), .7);
+      tl.set("#foco", { attr: { x: focos.u[0], y: focos.u[1] } });
+      tl.fromTo("#foco", { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 });
+      decir(tl, 0);
+      TEO.viajar(tl, punto, $("#g2"), .8, "+=.5"); decir(tl, 1); enfocar(tl, "v");
+      TEO.viajar(tl, punto, $("#g3"), .7, "+=.5"); decir(tl, 2); enfocar(tl, "m");
+      TEO.viajar(tl, punto, $("#g4"), .7, "+=.5"); decir(tl, 3); enfocar(tl, "db");
+      tl.to([punto, "#foco"], { autoAlpha: 0, duration: .3 }, "+=.6");
+      decir(tl, 4);
+      tl.fromTo("#pResp", { autoAlpha: 0, x: 12 }, { autoAlpha: 1, x: 0, duration: .4 });
+    },
+    function (tl) { // 4. el caso real
+      tl.to(["#c3izq", "#narra"], { autoAlpha: 0, duration: .35 });
+      tl.to("#c3casa", { autoAlpha: .3, duration: .35 }, "<");
+      tl.to("#flechas3", { opacity: .3, duration: .35 }, "<");
+      tl.to("#ga0", { autoAlpha: 0, duration: .35 }, "<");
+      tl.fromTo("#c4", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.from(TEO.palabras($("#cita4")), { autoAlpha: 0, y: 10, duration: .35, stagger: .05 });
+      tl.from("#cita4 small", { autoAlpha: 0, duration: .3 });
+      TEO.pegar(tl, ["#e1", "#e2"]);
+      aparecer(tl, "#pCasa");
+    },
+    function (tl) { // 5. tu inventario se muda
+      tl.to("#c4", { autoAlpha: 0, duration: .35 });
+      tl.to("#c3casa", { autoAlpha: 1, duration: .35 }, "<");
+      tl.fromTo("#c5", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      tl.fromTo("#con5", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      ["1", "2", "3"].forEach(function (k) {
+        TEO.pegar(tl, "#f" + k);
+        tl.fromTo("#c" + k, { autoAlpha: 0 }, { autoAlpha: 1, duration: .35 });
+      });
+      aparecer(tl, "#pDict");
+    },
+    function (tl) { // 6. el puente
+      tl.to(["#c5", "#con5"], { autoAlpha: 0, duration: .35 });
+      tl.to("#flechas3", { opacity: 1, duration: .35 }, "<");
+      tl.fromTo("#c6", { autoAlpha: 0 }, { autoAlpha: 1, duration: .01 });
+      TEO.pegar(tl, "#fCmd");
+      aparecer(tl, "#pCohete");
+    }
+  ], {
+    preparar: function () {
+      ["a0", "a1", "a2", "a3"].forEach(function (id) { puntas[id] = TEO.punta($("#" + id)); });
+      narra = gsap.utils.toArray("#narra .capas > span");
+      gsap.set(narra, { autoAlpha: 0 });
+      gsap.set(["#c1izq", "#c1casa", "#c2cuartos", "#cita2", "#sotano", "#c3casa", "#c3izq", "#pPide", "#pResp", "#narra",
+                "#c4", "#c5", "#con5", "#c6", "#pBat", "#pCasa", "#pDict", "#pCohete", "#foco", punto], { autoAlpha: 0 });
+      gsap.set(["#c1", "#c2", "#c3"], { autoAlpha: 0 });
+    },
+    textoFin: "Fin de la teoría"
+  });
+})();
+</script>
+</body>
+</html>

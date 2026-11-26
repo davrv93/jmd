@@ -1,4 +1,4 @@
-// py01.js · kit de las escenas de «Python: de cero a tu API» (clases 1 y 2: py-01, py-02). Script clásico, sin módulos:
+// py01.js · kit de las escenas de «Python: de cero a tu API» (clases 1, 2 y 3: py-01, py-02, py-03). Script clásico, sin módulos:
 //   <link rel="stylesheet" href="../../comun/py01.css">
 //   <script src="../../comun/py01.js"></script>            (al final del body)
 //
@@ -33,6 +33,11 @@
     CLASE = "Clase 2 · Estructuras de datos y tu API con FastAPI";
     FECHA = "Jueves 19 de noviembre de 2026";
     NUM = 2; FRASE = "Hoy armé mi API de inventario con FastAPI y la probé en /docs.";
+  }
+  if (LECCION === "py-03") {
+    CLASE = "Clase 3 · Django, Gunicorn y despliegue con Docker";
+    FECHA = "Jueves 26 de noviembre de 2026";
+    NUM = 3; FRASE = "Hoy hice mi API en Django con Swagger y la corrí junto a FastAPI en Docker.";
   }
 
   // ---------- utilidades ----------
