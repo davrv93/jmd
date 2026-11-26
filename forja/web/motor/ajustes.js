@@ -35,6 +35,16 @@ function limpiar(a) {
     const amp = numero(a.oscilacion.amp, ...OSCILACION.amp), vel = numero(a.oscilacion.vel, ...OSCILACION.vel);
     if (amp != null && vel != null) o.oscilacion = { amp, vel };
   }
+  if (a.reglas && typeof a.reglas === 'object') {   // { plantilla: { clave: valor } } — valores JSON simples, con tope
+    const r = {};
+    for (const [pl, m] of Object.entries(a.reglas)) {
+      if (!/^[a-z0-9-]{1,30}$/.test(pl) || !m || typeof m !== 'object') continue;
+      const lim = {}; let n = 0;
+      for (const [k, v] of Object.entries(m)) { if (n >= 800 || !/^[a-zA-Z0-9_.-]{1,60}$/.test(k)) continue; const j = JSON.stringify(v); if (j !== undefined && j.length <= 400) { lim[k] = v; n++; } }
+      r[pl] = lim;
+    }
+    o.reglas = r;
+  }
   return o;
 }
 export function guardarAjustes(nuevos) {

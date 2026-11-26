@@ -12,6 +12,10 @@ function azar(semilla) {
 }
 
 const Forja = {
+  // --- REGLAS DEL JUEGO: lo que el alumno eligió en «Diseña tu videojuego» (catálogo motor/juegos/<plantilla>.js).
+  // Cada regla tiene una clave; si el alumno no eligió nada, vale el defecto que se pasa aquí.
+  regla(clave, defecto) { const v = D.reglas && D.reglas[clave]; return v === undefined ? defecto : v; },
+
   // --- RECURSOS: una hoja de sprites es UNA imagen con todos los cuadros; el atlas (JSON) dice dónde está cada uno.
   precargar(escena, imagenes = []) {
     for (const k of ['heroe', 'enemigo', 'objetos']) escena.load.atlas(k, recurso(k + '.png'), EN_ESTUDIO ? EN_ESTUDIO[k + '.json'] : 'assets/' + k + '.json');
@@ -29,6 +33,7 @@ const Forja = {
 
   // --- COLISIÓN: la caja de choque es más pequeña que el dibujo. Se calcula con las medidas reales del personaje.
   cuerpo(sprite, p, alto = 150, pie = false) {
+    if (p === D.heroe) alto *= Forja.regla('jugador.tamano', 1);   // regla común: tamaño del héroe
     const k = alto / p.px, w = Math.max(30, alto * p.relAncho * 0.6) / k, h = Math.max(40, alto * p.relAlto * 0.92) / k;
     sprite.setScale(k).setOrigin(0.5, 0.96);
     if (pie) sprite.body.setSize(w * 0.8, h * 0.28).setOffset((p.px - w * 0.8) / 2, p.px * 0.96 - h * 0.28); // vista desde arriba: solo chocan los pies

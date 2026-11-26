@@ -8,7 +8,7 @@ const celda = (x, y) => ({ c: Math.floor(x / CW), f: Math.floor(y / CH) });
 // Generar el laberinto («excavar con vuelta atrás»): se parte de una rejilla llena de muros. Desde una celda se elige
 // un vecino al azar que aún sea muro, se excava hasta él y se sigue desde ahí. Si no quedan vecinos, se vuelve atrás.
 // Así todas las celdas quedan conectadas. Al final se abren algunos muros extra para que haya más de un camino.
-function generar(semilla) {
+function generar(semilla, atajos = 14) {
   const r = azar(semilla), m = Array.from({ length: FILAS }, () => Array(COLS).fill(1)); // 1 = muro, 0 = pasillo
   const pila = [[1, 1]]; m[1][1] = 0;
   while (pila.length) {
@@ -18,7 +18,7 @@ function generar(semilla) {
     const [nc, nf, pc, pf] = vecinos[Math.floor(r() * vecinos.length)];
     m[pf][pc] = 0; m[nf][nc] = 0; pila.push([nc, nf]);
   }
-  for (let i = 0; i < 14; i++) { const c = 1 + Math.floor(r() * (COLS - 2)), f = 1 + Math.floor(r() * (FILAS - 2)); if (m[f][c] === 1 && ((m[f][c - 1] === 0 && m[f][c + 1] === 0) || (m[f - 1][c] === 0 && m[f + 1][c] === 0))) m[f][c] = 0; }
+  for (let i = 0; i < atajos; i++) { const c = 1 + Math.floor(r() * (COLS - 2)), f = 1 + Math.floor(r() * (FILAS - 2)); if (m[f][c] === 1 && ((m[f][c - 1] === 0 && m[f][c + 1] === 0) || (m[f - 1][c] === 0 && m[f + 1][c] === 0))) m[f][c] = 0; }
   return m;
 }
 // <<<
@@ -52,7 +52,7 @@ class Laberinto extends Phaser.Scene {
   create() {
     Forja.animaciones(this); Forja.efectos(this);
     this.add.image(0, 0, 'cielo').setOrigin(0).setDepth(-10).setTint(0x555577);
-    const r = azar(D.semilla * 31 + 7), mapa = (this.mapa = generar(D.semilla));
+    const r = azar(D.semilla * 31 + 7), mapa = (this.mapa = generar(D.semilla, Forja.regla('laberinto.atajos', 14)));
     const muros = this.physics.add.staticGroup(), libres = [];
     for (let f = 0; f < FILAS; f++) for (let c = 0; c < COLS; c++) {
       const p = centro(c, f);
@@ -62,15 +62,15 @@ class Laberinto extends Phaser.Scene {
     const inicio = { c: 1, f: 1 }, salida = libres.reduce((m, x) => (lejos(x, inicio) > lejos(m, inicio) ? x : m), inicio);
     const ps = centro(salida.c, salida.f); this.meta = this.add.sprite(ps.x, ps.y + 4, 'objetos').setScale(1.1).play('meta').setAlpha(0.35); this.salida = salida;
     this.gemas = this.physics.add.group();
-    const candidatas = libres.filter((x) => lejos(x, inicio) > 3 && lejos(x, salida) > 1).sort(() => r() - 0.5).slice(0, 7);
+    const candidatas = libres.filter((x) => lejos(x, inicio) > 3 && lejos(x, salida) > 1).sort(() => r() - 0.5).slice(0, Forja.regla('gemas.cuantas', 7));
     for (const g of candidatas) { const p = centro(g.c, g.f); this.gemas.create(p.x, p.y, 'objetos').setScale(0.62).play('gema'); }
     const pi = centro(1, 1);
     this.heroe = Forja.cuerpo(this.physics.add.sprite(pi.x, pi.y + 14, 'heroe', 'quieto_0'), D.heroe, TAM, true);
-    this.heroe.setData({ vidas: 3, inmune: 0 });
+    this.heroe.setData({ vidas: Forja.regla('vidas.inicio', 3), inmune: 0 });
     this.physics.add.collider(this.heroe, muros);
     this.physics.add.overlap(this.heroe, this.gemas, (h, g) => { this.chispas.explode(8, g.x, g.y); Forja.sonar(this, 'moneda', 0.4); g.destroy(); if (!this.gemas.countActive()) { this.meta.setAlpha(1); Forja.sonar(this, 'celebrar', 0.4); } });
     const puestos = libres.filter((x) => lejos(x, inicio) > 9).sort(() => r() - 0.5);
-    this.rivales = [0, 1].map((i) => {
+    this.rivales = Array.from({ length: Forja.regla('rivales.cuantos', 2) }, (_, i) => i).map((i) => {
       const cel = puestos[i] || salida, p = centro(cel.c, cel.f);
       const s = this.add.sprite(p.x, p.y + 14, 'enemigo', 'caminar_0').setScale(TAM / D.enemigo.px).setOrigin(0.5, 0.96).play('enemigo:caminar');
       s.setData({ estado: 'patrulla', ruta: [], destino: null, piensa: i * 0.2, visitadas: 0 }); return s;
@@ -89,11 +89,11 @@ class Laberinto extends Phaser.Scene {
     const yo = celda(e.x, e.y - 14), tu = celda(this.heroe.x, this.heroe.y - 10);
     e.setData('piensa', e.getData('piensa') - dt);
     if (e.getData('piensa') <= 0) {
-      e.setData('piensa', 0.35);
+      e.setData('piensa', Forja.regla('rivales.piensa', 0.35));   // regla: cada cuánto vuelve a calcular su ruta
       let destino = tu;
       if (D.rival) { e.setData('estado', 'tu regla'); destino = this.celdaLibreCerca(this.objetivoRegla(e, yo, tu)); }
       else {
-        const cerca = Math.abs(yo.c - tu.c) + Math.abs(yo.f - tu.f) <= 6;
+        const cerca = Math.abs(yo.c - tu.c) + Math.abs(yo.f - tu.f) <= Forja.regla('rivales.vista', 6);
         e.setData('estado', cerca ? 'persigue' : 'patrulla');
         if (!cerca) { destino = e.getData('destino'); if (!destino || (destino.c === yo.c && destino.f === yo.f)) destino = this.libres[Math.floor(this.r() * this.libres.length)]; e.setData('destino', destino); }
       }
@@ -102,7 +102,7 @@ class Laberinto extends Phaser.Scene {
     }
     const ruta = e.getData('ruta'), sig = ruta[1] || ruta[0];
     if (!sig) return;
-    const p = centro(sig.c, sig.f), dx = p.x - e.x, dy = p.y + 14 - e.y, d = Math.hypot(dx, dy), v = ({ persigue: 104, 'tu regla': 92 }[e.getData('estado')] || 70) * dt;
+    const p = centro(sig.c, sig.f), dx = p.x - e.x, dy = p.y + 14 - e.y, d = Math.hypot(dx, dy), v = ({ persigue: 104, 'tu regla': 92 }[e.getData('estado')] || 70) * Forja.regla('rivales.velocidad', 1) * dt;
     if (d <= v) { e.setPosition(p.x, p.y + 14); ruta.shift(); } else { e.x += dx / d * v; e.y += dy / d * v; if (Math.abs(dx) > 1) e.setFlipX(dx < 0); }
   }
   // <<<
@@ -117,7 +117,7 @@ class Laberinto extends Phaser.Scene {
     if (R.tipo === 'celda') return tu;
     if (R.tipo === 'delante') return { c: tu.c + d.c * n, f: tu.f + d.f * n };
     if (R.tipo === 'pinza') { // la flecha que va del OTRO rival a «n delante de ti», duplicada
-      const t = { c: tu.c + d.c * n, f: tu.f + d.f * n }, otro = celda(this.rivales[1 - i].x, this.rivales[1 - i].y - 14);
+      const t = { c: tu.c + d.c * n, f: tu.f + d.f * n }, otro = celda(this.rivales[(i + 1) % this.rivales.length].x, this.rivales[(i + 1) % this.rivales.length].y - 14);
       return { c: 2 * t.c - otro.c, f: 2 * t.f - otro.f };
     }
     if (R.tipo === 'indeciso') return Math.hypot(yo.c - tu.c, yo.f - tu.f) > n ? tu : esquina;
@@ -138,7 +138,7 @@ class Laberinto extends Phaser.Scene {
     if (c.rayosX) Forja.rayosX(this);
     this.texto.setText('Gemas ' + this.gemas.countActive() + '   Vidas ' + h.getData('vidas') + (D.rival ? '   Regla: ' + D.rival.nombre : ''));
     if (this.fin) { h.setVelocity(0, 0); return; }
-    const m = Math.hypot(c.x, c.y) || 1, vel = Math.min(175, D.fisica.velocidad * 0.7);
+    const m = Math.hypot(c.x, c.y) || 1, vel = Math.min(Forja.regla('jugador.velocidadMax', 175), D.fisica.velocidad * 0.7);
     h.setVelocity(c.x / m * vel, c.y / m * vel); if (c.x) h.setFlipX(c.x < 0);
     if (c.x || c.y) this.dirHeroe = Math.abs(c.x) >= Math.abs(c.y) ? { c: Math.sign(c.x), f: 0 } : { c: 0, f: Math.sign(c.y) };
     h.setData('inmune', Math.max(0, h.getData('inmune') - dt)); h.setAlpha(h.getData('inmune') > 0 && Math.floor(h.getData('inmune') * 14) % 2 ? 0.45 : 1);
@@ -146,12 +146,14 @@ class Laberinto extends Phaser.Scene {
     for (const e of this.rivales) {
       this.pensar(e, dt); e.setDepth(e.y);
       if (h.getData('inmune') <= 0 && Phaser.Math.Distance.Between(e.x, e.y, h.x, h.y) < 34) {
-        const p = centro(1, 1); h.setData({ vidas: h.getData('vidas') - 1, inmune: 1.6 }); h.setPosition(p.x, p.y + 14); Forja.sonar(this, 'dano', 0.6);
+        const p = centro(1, 1); h.setData({ vidas: h.getData('vidas') - 1, inmune: Forja.regla('jugador.inmunidad', 1.6) }); h.setPosition(p.x, p.y + 14); Forja.sonar(this, 'dano', 0.6);
         if (h.getData('vidas') <= 0) { this.fin = true; Forja.sonar(this, 'morir'); h.play('heroe:morir'); Forja.aviso(this, 'Te atraparon\nR para repetir'); }
       }
     }
     const aqui = celda(h.x, h.y - 10);
-    if (!this.gemas.countActive() && aqui.c === this.salida.c && aqui.f === this.salida.f) {
+    const limite = Forja.regla('resultado.tiempo', 0);   // regla: segundos para escapar (0 = sin límite)
+    if (limite && !this.fin && (this.time.now - this.inicio) / 1000 > limite) { this.fin = true; h.play('heroe:morir'); Forja.aviso(this, 'Se acabó el tiempo\nR para repetir'); }
+    if (!this.fin && (Forja.regla('meta.requiere', 'todas') === 'ninguna' || !this.gemas.countActive()) && aqui.c === this.salida.c && aqui.f === this.salida.f) {
       this.fin = true; h.play('heroe:celebrar'); Forja.sonar(this, 'celebrar', 0.6); this.chispas.explode(30, h.x, h.y - 40);
       Forja.aviso(this, '¡Escapaste en ' + Math.floor((this.time.now - this.inicio) / 1000) + ' s!\nR para repetir');
     }

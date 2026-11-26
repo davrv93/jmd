@@ -71,3 +71,20 @@ test('sonidos y ZIP son archivos válidos', async () => {
   const z = new Uint8Array(await zip([{ nombre: 'a/hola.txt', datos: 'hola ñ' }, { nombre: 'b.bin', datos: new Uint8Array([1, 2, 3]) }]).arrayBuffer());
   assert.deepEqual([...z.slice(0, 4)], [0x50, 0x4b, 3, 4]); assert.deepEqual([...z.slice(-22, -18)], [0x50, 0x4b, 5, 6]); assert.equal(z[z.length - 12], 2);
 });
+
+// Catálogos de reglas de juego (motor/juegos): válidos, que cubren los 8 elementos y que la plantilla lee de verdad.
+test('catálogos de reglas de las plantillas', async () => {
+  const { catalogoDe, revisar, claves } = await import('./web/motor/juegos/index.js');
+  const comun = fs.readFileSync(new URL('./web/plantillas/comun.js', import.meta.url), 'utf8');
+  for (const [id, minimo] of [['plataformas', 30], ['futbol', 30], ['laberinto', 30], ['runner', 30], ['fortaleza', 500], ['persecucion', 500]]) {
+    const { reglas, ficha } = await catalogoDe(id);
+    assert.ok(ficha, `${id}: falta ficha`);
+    assert.deepEqual(revisar(reglas), [], `${id}: catálogo con errores`);
+    assert.ok(reglas.length >= minimo, `${id}: ${reglas.length} reglas, mínimo ${minimo}`);
+    const src = fs.readFileSync(new URL(`./web/plantillas/${id}.js`, import.meta.url), 'utf8') + comun;
+    // una clave se lee literal ('vidas.inicio') o armada por número de entidad ('rival' + n + '.' + 'regla' → rival3.regla)
+    const lee = (c) => { if (src.includes(`'${c}'`)) return true; const m = /^([a-z]+)\d+\.(.+)$/.exec(c); return !!m && src.includes(`'${m[1]}' +`) && src.includes(`'${m[2]}'`); };
+    const sinLeer = claves(reglas).filter((k) => !lee(k.clave)).map((k) => k.clave);
+    assert.deepEqual(sinLeer, [], `${id}: claves que la plantilla no lee`);
+  }
+});

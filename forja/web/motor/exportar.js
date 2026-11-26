@@ -5,7 +5,8 @@ import { zip, pngDeLienzo } from './zip.js';
 import { wav } from './sonido.js';
 import { recorte } from './escenario.js';
 import { nivel as crearNivel, fisicaJugable } from './nivel.js';
-import { aplicarAjustes } from './ajustes.js';
+import { aplicarAjustes, leerAjustes } from './ajustes.js';
+import { catalogoDe, porDefecto } from './juegos/index.js';
 
 const texto = new Map();
 const leer = async (ruta) => { if (!texto.has(ruta)) texto.set(ruta, await (await fetch(ruta)).text()); return texto.get(ruta); };
@@ -58,6 +59,8 @@ export async function armarProyecto(d, id) {
   const DATOS = { nombre: d.spec.nombre, juego: meta.nombre, semilla: d.semilla, heroe: cifras(d.hoja), enemigo: cifras(d.enemigo.hoja), fisica: fisicaJugable(d.spec.fisica), fisicaBase: d.spec.fisica, sonidos: Object.keys(d.sonidos), objetos: d.objetos.ids, ambiente: d.escenario.ambiente, hora: d.escenario.hora };
   if (id === 'plataformas') DATOS.nivel = crearNivel(d.semilla);
   aplicarAjustes(DATOS);   // lo que el alumno decidió en las escenas de la clase (gravedad, salto, velocidad, regla del rival)
+  // reglas del juego: las del catálogo de la plantilla, con lo que el alumno eligió en «Diseña tu videojuego» encima
+  DATOS.reglas = { ...porDefecto((await catalogoDe(id)).reglas), ...(leerAjustes().reglas?.[id] || {}) };
   const datosJS = `// datos.js · generado por Forja para «${d.spec.nombre}». Son solo números y listas: cámbialos y mira qué pasa.\nwindow.DATOS = ${JSON.stringify(DATOS, null, 1)};\n`;
   const [comun, juego, index] = await Promise.all([leer('plantillas/comun.js'), codigoDe(id), leer('plantillas/index.html')]);
   const guiones = ['phaser.min.js', 'datos.js', 'comun.js', 'juego.js'].map((s) => `<script src="${s}"></script>`).join('\n');

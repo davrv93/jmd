@@ -41,15 +41,47 @@ const ICONOS = { // trazos simples, currentColor
   resultado: '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M12 13v4M8 20h8M7 6H4a3 3 0 0 0 3 3M17 6h3a3 3 0 0 1-3 3"/>',
 };
 
+import { catalogoDe, claves, porDefecto } from './juegos/index.js';
+
 export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMeta, REGLAS_RIVAL, COL_FONDO, aplicar }) {
+  // Catálogos de reglas de cada plantilla (motor/juegos/<id>.js): fichas para contar el juego y reglas para personalizarlo.
+  const CAT = {};
+  const listos = Promise.all(plantillasMeta.map(async (p) => { CAT[p.id] = await catalogoDe(p.id); }));
   const g = window.gsap, quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let D = { semilla: 1 + Math.floor(Math.random() * 9999), plantilla: 'plataformas', velocidad: 240, gravedad: 'tierra', rival: 'celda', fondo: 'noche' };
+  let D = { semilla: 1 + Math.floor(Math.random() * 9999), plantilla: 'plataformas', velocidad: 240, gravedad: 'tierra', rival: 'celda', fondo: 'noche', reglas: {} };
   try { Object.assign(D, JSON.parse(localStorage.getItem('forja.disena') || '{}').D || {}); } catch { /* nada */ }
   const recordar = (hecho = false) => { try { const v = JSON.parse(localStorage.getItem('forja.disena') || '{}'); localStorage.setItem('forja.disena', JSON.stringify({ hecho: v.hecho || hecho, D })); } catch { /* nada */ } };
   const capa = el('div', { class: 'disena', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'dTitulo', hidden: '' });
   document.body.append(capa);
   let paso = 0, opcionesHeroe = null;
-  const juego = () => JUEGO[D.plantilla] || JUEGO.plataformas;
+  const FICHA_VACIA = { tipo: '', objetivo: '', recursos: [], conflicto: '', limites: '', gana: '', pierde: '' };
+  const juego = () => (CAT[D.plantilla] && CAT[D.plantilla].ficha) || JUEGO[D.plantilla] || FICHA_VACIA;
+  const reglasDe = (id = D.plantilla) => (CAT[id] && CAT[id].reglas) || [];
+  const valorDe = (k) => (k.clave in D.reglas ? D.reglas[k.clave] : porDefecto(k.opciones)[k.clave]);
+  // Personalizar: las reglas del catálogo de ESTE juego para ESTE elemento. Las «simples» a la vista; el resto, plegado.
+  function personalizar(elemento) {
+    const ks = claves(reglasDe(), elemento); if (!ks.length) return [];
+    const fila = (k) => {
+      const f = el('div', { class: 'd-regla' }), c = el('div', { class: 'd-chips', role: 'radiogroup', 'aria-label': k.ajuste }), v = JSON.stringify(valorDe(k));
+      for (const o of k.opciones) {
+        const b = el('button', { type: 'button', class: 'd-chip', role: 'radio', 'aria-checked': String(JSON.stringify(o.valor) === v), title: o.d || '' }, o.nombre);
+        b.onclick = () => { D.reglas[k.clave] = o.valor; recordar(); mostrar(true); }; c.append(b);
+      }
+      f.append(el('span', {}, k.ajuste), c); return f;
+    };
+    const simples = ks.filter((k) => k.simple), resto = ks.filter((k) => !k.simple), out = [];
+    const caja = el('div', { class: 'd-personaliza' }); caja.append(el('p', { class: 'd-sub' }, 'Personaliza tu juego:'), ...simples.map(fila)); out.push(caja);
+    if (resto.length) {
+      const det = el('details', { class: 'd-mas' }); if (abiertos.has(elemento)) det.open = true;
+      det.ontoggle = () => { if (det.open) abiertos.add(elemento); else abiertos.delete(elemento); };
+      det.append(el('summary', {}, `Más reglas de ${PASOS.find((x) => x.id === elemento)?.nombre.toLowerCase() || elemento} (${resto.length} ajustes · ${resto.reduce((n, k) => n + k.opciones.length, 0)} opciones)`));
+      const grupos = new Map(); for (const k of resto) { if (!grupos.has(k.grupo)) grupos.set(k.grupo, []); grupos.get(k.grupo).push(k); }
+      for (const [g, lista] of grupos) det.append(el('p', { class: 'd-grupo' }, g), ...lista.map(fila));
+      out.push(det);
+    }
+    return out;
+  }
+  const abiertos = new Set();
   const metaDe = (id) => plantillasMeta.find((p) => p.id === id) || {};
 
   // Cada paso: elemento, pregunta, definición (Fullerton) y su contenido.
@@ -67,13 +99,11 @@ export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMet
         return [caja, otra];
       }, listo: () => !!D.heroe, falta: 'Elige un héroe para seguir.' },
     { id: 'objetivo', nombre: 'Objetivo', pregunta: '¿Qué tiene que lograr?', def: 'Lo que el jugador intenta conseguir dentro de las reglas. Da el tono de todo el juego.',
-      cuerpo: () => [radio(Object.keys(JUEGO).map((id) => ({ id, nombre: metaDe(id).nombre || id, d: `${JUEGO[id].tipo}: ${JUEGO[id].objetivo}` })), D.plantilla, (id) => { D.plantilla = id; })] },
+      cuerpo: () => [radio(plantillasMeta.map((p) => { const f = (CAT[p.id] && CAT[p.id].ficha) || JUEGO[p.id] || {}; return { id: p.id, nombre: p.nombre, d: `${f.tipo ? f.tipo + ': ' : ''}${f.objetivo || p.lema} · ${reglasDe(p.id).length} reglas` }; }), D.plantilla, (id) => { D.plantilla = id; })] },
     { id: 'procedimientos', nombre: 'Procedimientos', pregunta: '¿Qué acciones puede hacer?', def: 'Los métodos de juego: quién hace qué, dónde, cuándo y cómo. En un videojuego, los controles.',
-      cuerpo: () => [teclas(metaDe(D.plantilla).controles || ''), el('p', { class: 'd-sub' }, '¿A qué ritmo se mueve tu héroe?'), radio(RITMO, D.velocidad, (v) => { D.velocidad = v; })],
-      nota: () => D.plantilla === 'plataformas' ? '' : 'El ritmo se usa en Plataformas; en esta plantilla el ritmo lo pone el juego.' },
+      cuerpo: () => [teclas(metaDe(D.plantilla).controles || ''), ...(D.plantilla === 'plataformas' ? [el('p', { class: 'd-sub' }, '¿A qué ritmo se mueve tu héroe?'), radio(RITMO, D.velocidad, (v) => { D.velocidad = v; })] : [])] },
     { id: 'reglas', nombre: 'Reglas', pregunta: '¿Qué se puede y qué no?', def: 'Las reglas definen los objetos del juego y las acciones permitidas. En un videojuego, el código las hace cumplir.',
-      cuerpo: () => [el('p', { class: 'd-sub' }, 'Una regla que tú decides: la gravedad.'), radio(GRAVEDAD, D.gravedad, (v) => { D.gravedad = v; }), lista(['Las paredes y el suelo no se atraviesan.', 'Si un rival o un peligro te toca, pierdes una vida.'])],
-      nota: () => D.plantilla === 'plataformas' ? '' : 'La gravedad se usa en Plataformas.' },
+      cuerpo: () => [...(D.plantilla === 'plataformas' ? [el('p', { class: 'd-sub' }, 'La gravedad de tu mundo:'), radio(GRAVEDAD, D.gravedad, (v) => { D.gravedad = v; })] : [])] },
     { id: 'recursos', nombre: 'Recursos', pregunta: '¿Qué cosas valen y escasean?', def: 'Lo que sirve para lograr el objetivo y a la vez es escaso: por eso hay que cuidarlo.',
       cuerpo: () => [lista(juego().recursos)] },
     { id: 'conflicto', nombre: 'Conflicto', pregunta: '¿Qué te lo impide?', def: 'Lo que no deja lograr el objetivo de forma directa: obstáculos, oponentes o dilemas. Sin conflicto no hay reto.',
@@ -117,13 +147,15 @@ export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMet
       cuerpo.append(el('p', { class: 'd-num' }, `Elemento ${paso + 1} de ${PASOS.length}`), Object.assign(el('h2', { id: 'dTitulo' }), { textContent: P.nombre }),
         el('p', { class: 'd-pregunta' }, P.pregunta));
       const def = el('p', { class: 'd-def' }, P.def + ' '); def.append(el('cite', {}, '— según Fullerton, Game Design Workshop (2014)')); cuerpo.append(def);
-      cuerpo.append(...P.cuerpo());
+      cuerpo.append(...P.cuerpo(), ...personalizar(P.id));
       const nota = P.nota?.(); if (nota) cuerpo.append(el('p', { class: 'd-nota' }, nota));
     } else {
       cuerpo.append(el('p', { class: 'd-num' }, 'Prueba final'), Object.assign(el('h2', { id: 'dTitulo' }), { textContent: '¿Ya es un juego?' }),
         el('p', { class: 'd-def' }, 'Jesper Juul (2003) reunió las definiciones de juego de un siglo y propuso seis rasgos que todo juego tiene. Revisemos el tuyo.'));
       const u = el('ul', { class: 'd-juul' });
       JUUL.forEach(([t, d], i) => { const li = el('li'); li.append(el('i', { 'aria-hidden': 'true' }, '✓'), el('b', {}, t), el('span', {}, typeof d === 'function' ? d() : d)); li.style.setProperty('--i', i); u.append(li); });
+      const n = claves(reglasDe()).length, cambiadas = claves(reglasDe()).filter((k) => k.clave in D.reglas && JSON.stringify(D.reglas[k.clave]) !== JSON.stringify(porDefecto(k.opciones)[k.clave])).length;
+      cuerpo.append(el('p', { class: 'd-nota' }, `Tu ${metaDe(D.plantilla).nombre || 'juego'}: ${reglasDe().length} reglas en ${n} ajustes; cambiaste ${cambiadas}.`));
       cuerpo.append(u, el('p', { class: 'd-ref' }, 'Juul, J. (2003). The Game, the Player, the World: Looking for a Heart of Gameness. DiGRA Level Up, Utrecht.'));
     }
     const pie = el('div', { class: 'd-pie' });
@@ -144,11 +176,14 @@ export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMet
   }
   function cerrar(aplicarlo) {
     recordar(true); capa.hidden = true;
-    if (aplicarlo) aplicar({ heroe: D.heroe, plantilla: D.plantilla, fondo: D.fondo, ajustes: { velocidad: D.velocidad, ...GRAVEDAD.find((x) => x.id === D.gravedad).v, ...(D.plantilla === 'laberinto' ? { rival: { tipo: D.rival, n: 4 } } : {}) } });
+    if (!aplicarlo) return;
+    const propias = new Set(reglasDe().map((r) => r.clave)), elegidas = {};
+    for (const [k, v] of Object.entries(D.reglas)) if (propias.has(k)) elegidas[k] = v;
+    aplicar({ heroe: D.heroe, plantilla: D.plantilla, fondo: D.fondo, ajustes: { velocidad: D.velocidad, ...GRAVEDAD.find((x) => x.id === D.gravedad).v, ...(D.plantilla === 'laberinto' ? { rival: { tipo: D.rival, n: 4 } } : {}), reglas: { [D.plantilla]: elegidas } } });
   }
   capa.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(false); });
   return {
-    abrir: () => { paso = 0; capa.hidden = false; mostrar(); },
+    abrir: async () => { await listos; paso = 0; capa.hidden = false; mostrar(); },
     hecho: () => { try { return !!JSON.parse(localStorage.getItem('forja.disena') || '{}').hecho; } catch { return false; } },
   };
 }

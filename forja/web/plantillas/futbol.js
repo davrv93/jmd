@@ -20,10 +20,10 @@ class Futbol extends Phaser.Scene {
     this.balon = this.physics.add.sprite(480, 295, 'objetos', 'balon_0').setScale(0.55).play('balon');
     // >>> rebote
     // El balón es un círculo que rebota en los bordes (bounce) y se va frenando solo (damping + drag): eso imita el roce con el pasto.
-    this.balon.body.setCircle(22, 10, 10); this.balon.setBounce(0.75).setCollideWorldBounds(true).setDamping(true).setDrag(0.45);
+    this.balon.body.setCircle(22, 10, 10); this.balon.setBounce(Forja.regla('balon.rebote', 0.75)).setCollideWorldBounds(true).setDamping(true).setDrag(Forja.regla('balon.frenado', 0.45));   // reglas: cuánto rebota y cuánto frena el balón
     // <<<
     for (const j of [this.heroe, this.defensa, this.arquero, this.miArquero]) this.physics.add.overlap(j, this.balon, () => this.toque(j));
-    this.leer = Forja.controles(this); this.goles = [0, 0]; this.tiempo = 90; this.fin = false; this.pausa = 0;
+    this.leer = Forja.controles(this); this.goles = [0, 0]; this.tiempo = Forja.regla('partido.tiempo', 90); this.fin = false; this.pausa = 0;
     this.texto = Forja.marcador(this);
   }
 
@@ -51,7 +51,7 @@ class Futbol extends Phaser.Scene {
 
   toque(j) { // quien toca el balón lo empuja en la dirección en que venía; si patea, sale más fuerte
     const b = this.balon, dx = b.x - j.x, dy = b.y - (j.y - 18), d = Math.hypot(dx, dy) || 1;
-    const fuerza = j.getData('patea') ? (j === this.heroe ? 540 : 400) : 150 + Math.hypot(j.body.velocity.x, j.body.velocity.y) * 0.9;
+    const fuerza = j.getData('patea') ? (j === this.heroe ? Forja.regla('patada.fuerza', 540) : 400 * Forja.regla('rival.fuerza', 1)) : 150 + Math.hypot(j.body.velocity.x, j.body.velocity.y) * 0.9;
     let vx = dx / d, vy = dy / d;
     if (j.getData('patea')) { const meta = j === this.heroe || j === this.miArquero ? CAMPO.x2 : CAMPO.x1, mx = meta - b.x, my = 295 + (j.getData('apunta') || 0) * 60 - b.y, m = Math.hypot(mx, my); vx = mx / m; vy = my / m; Forja.sonar(this, 'golpe'); this.polvo.explode(5, b.x, b.y); j.setData('patea', false); }
     b.setVelocity(vx * fuerza, vy * fuerza);
@@ -66,13 +66,13 @@ class Futbol extends Phaser.Scene {
     const d = this.defensa, b = this.balon, casa = d.getData('casa');
     const enSuMitad = b.x > 430, cerca = Phaser.Math.Distance.Between(d.x, d.y - 18, b.x, b.y);
     switch (d.getData('estado')) {
-      case 'volver': this.irA(d, casa.x, casa.y, 150); if (enSuMitad) d.setData('estado', 'perseguir'); break;
-      case 'perseguir': this.irA(d, b.x + 26, b.y + 18, 185); if (cerca < 46) d.setData('estado', 'despejar'); else if (!enSuMitad) d.setData('estado', 'volver'); break;
+      case 'volver': this.irA(d, casa.x, casa.y, 150 * Forja.regla('rival.velocidad', 1)); if (enSuMitad) d.setData('estado', 'perseguir'); break;
+      case 'perseguir': this.irA(d, b.x + 26, b.y + 18, 185 * Forja.regla('rival.velocidad', 1)); if (cerca < 46) d.setData('estado', 'despejar'); else if (!enSuMitad) d.setData('estado', 'volver'); break;
       case 'despejar': d.setData({ patea: true, apunta: Math.sin(this.time.now / 300), estado: 'perseguir' }); break;
     }
     // El arquero solo tiene un estado: seguir la altura del balón sin salir de su arco.
     for (const [a, x] of [[this.arquero, CAMPO.x2 - 34], [this.miArquero, CAMPO.x1 + 34]]) {
-      this.irA(a, x, Phaser.Math.Clamp(b.y + 18, CAMPO.arcoY1 + 10, CAMPO.arcoY2 + 30), 150);
+      this.irA(a, x, Phaser.Math.Clamp(b.y + 18, CAMPO.arcoY1 + 10, CAMPO.arcoY2 + 30), 150 * (a === this.arquero ? Forja.regla('arquero.rival', 1) : Forja.regla('arquero.tuyo', 1)));
       if (Phaser.Math.Distance.Between(a.x, a.y - 18, b.x, b.y) < 50) a.setData({ patea: true, apunta: b.y < 295 ? -1 : 1 });
     }
   }
@@ -83,9 +83,12 @@ class Futbol extends Phaser.Scene {
     this.chispas.explode(30, this.balon.x, this.balon.y);
     const t = Forja.aviso(this, quien === 0 ? '¡GOOOL!' : 'Gol del rival'); this.time.delayedCall(1300, () => t.destroy());
     this.balon.setPosition(480, 295).setVelocity(0, 0); this.heroe.setPosition(250, 295); this.defensa.setPosition(640, 295); this.arquero.setPosition(CAMPO.x2 - 30, 295); this.miArquero.setPosition(CAMPO.x1 + 30, 295);
-    if (this.goles[quien] >= 3) this.terminar();
+    const meta = Forja.regla('partido.goles', 3);   // regla: goles para ganar (0 = solo cuenta el tiempo)
+    if ((meta && this.goles[quien] >= meta) || (this.oro && this.goles[0] !== this.goles[1])) this.terminar();
   }
-  terminar() { this.fin = true; const [a, b] = this.goles; Forja.aviso(this, (a > b ? '¡Ganaste ' : a < b ? 'Perdiste ' : 'Empate ') + a + ' - ' + b + '\nR para repetir'); }
+  terminar() {
+    if (!this.oro && this.goles[0] === this.goles[1] && Forja.regla('partido.empate', 'empate') === 'oro') { this.oro = true; this.tiempo = 9999; const t = Forja.aviso(this, 'Empate: ¡gol de oro!'); this.time.delayedCall(1500, () => t.destroy()); return; }   // regla: qué pasa si empatan
+    this.fin = true; const [a, b] = this.goles; Forja.aviso(this, (a > b ? '¡Ganaste ' : a < b ? 'Perdiste ' : 'Empate ') + a + ' - ' + b + '\nR para repetir'); }
 
   update(t, ms) {
     const dt = ms / 1000, h = this.heroe, b = this.balon, c = this.leer();
@@ -97,7 +100,7 @@ class Futbol extends Phaser.Scene {
     if (this.pausa > 0) { this.pausa -= dt; todos.forEach((j) => j.setVelocity(0, 0)); return; }
     this.tiempo -= dt; if (this.tiempo <= 0) return this.terminar();
     // tú: ocho direcciones. La diagonal se normaliza para no correr más rápido en diagonal.
-    const m = Math.hypot(c.x, c.y) || 1, vel = Math.min(260, D.fisica.velocidad);
+    const m = Math.hypot(c.x, c.y) || 1, vel = Math.min(Forja.regla('jugador.velocidadMax', 260), D.fisica.velocidad);
     h.setVelocity(c.x / m * vel, c.y / m * vel); if (c.x) h.setFlipX(c.x < 0);
     if (c.golpeYa || c.saltoYa) { h.setData({ patea: true, apunta: c.y }); this.time.delayedCall(220, () => h.setData('patea', false)); }
     this.pensar(dt);

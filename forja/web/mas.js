@@ -91,7 +91,7 @@ export function iniciarMas(A) {
   // Ajustes de la clase: llegan guardados desde las escenas del LIVE («Llevar a mi juego») o por la dirección.
   const deURL = tomarDeLaURL();
   if (deURL) { const conOnda = /[?&](amp|vel)=/.test(location.search); plantilla = deURL.rival && deURL.salto == null && !conOnda ? 'laberinto' : 'plataformas'; guarda('forja.plantilla', plantilla); }
-  { const pj0 = new URLSearchParams(location.search).get('juego'); if (/^(plataformas|futbol|laberinto|runner)$/.test(pj0 || '')) { plantilla = pj0; guarda('forja.plantilla', plantilla); } }   // ?juego=laberinto (escena LIVE)
+  { const pj0 = new URLSearchParams(location.search).get('juego'); if (/^(plataformas|futbol|laberinto|runner|fortaleza|persecucion)$/.test(pj0 || '')) { plantilla = pj0; guarda('forja.plantilla', plantilla); } }   // ?juego=laberinto (escena LIVE)
   const marco = $('marcoJuego');
   async function arrancarJuego() {
     PL = PL.length ? PL : await plantillas();
@@ -350,7 +350,7 @@ export function iniciarMas(A) {
     disenaRef = crearDisena({ el, R, sorpresa: (r, n, f) => { const x = sorpresa(r, n, f); return { ...x, params: { ...PARAMS_BASE, ...x.params } }; }, fichaDe, miniatura, plantillasMeta: PLm, REGLAS_RIVAL, COL_FONDO: A.COL_FONDO,
       aplicar: (d) => {
         if (d.heroe) A.cargar({ ...d.heroe, params: { ...PARAMS_BASE, ...d.heroe.params, fondo: d.fondo } });
-        borrarAjustes(); guardarAjustes(d.ajustes);
+        const antes = leerAjustes().reglas || {}; borrarAjustes(); guardarAjustes({ ...d.ajustes, reglas: { ...antes, ...d.ajustes.reglas } });   // las reglas de otras plantillas se conservan
         plantilla = d.plantilla; guarda('forja.plantilla', plantilla);
         tuJuego.marcar('personaje');
         setTimeout(() => { if (!$('dPista').open) $('bProbar').click(); else arrancarJuego(); }, 350);

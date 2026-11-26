@@ -25,7 +25,7 @@ class Runner extends Phaser.Scene {
     this.physics.add.overlap(this.heroe, this.cosas, (h, o) => this.tocar(o));
     this.capaX = this.add.graphics().setDepth(940);
     this.r = azar(D.semilla * 13 + 3); this.leer = Forja.controles(this);
-    this.distancia = 0; this.monedas = 0; this.vidas = 3; this.inmune = 0; this.saltos = 0; this.proximo = 500; this.fin = false; this.tiempo = 0;
+    this.distancia = 0; this.monedas = 0; this.vidas = Forja.regla('vidas.inicio', 3); this.inmune = 0; this.saltos = 0; this.proximo = 500; this.fin = false; this.tiempo = 0;
     this.texto = Forja.marcador(this);
   }
 
@@ -41,7 +41,7 @@ class Runner extends Phaser.Scene {
   // Generación por azar con reglas: cada cierta distancia se elige un «patrón» (bomba, proyectil, monedas en arco…).
   // La separación entre patrones se achica con la dificultad, pero nunca tanto que sea imposible reaccionar.
   generar() {
-    const r = this.r, dif = Math.min(1, this.tiempo / 70), x = 1020, suerte = r();
+    const r = this.r, dif = Math.min(1, this.tiempo / Forja.regla('dificultad.segundos', 70)), x = 1020, suerte = r() * Forja.regla('peligros.mezcla', 1);
     if (suerte < 0.34) this.poner('bomba', x, SUELO - 26);
     else if (suerte < 0.56) this.poner('proyectil', x, this.yProyectil);                       // alto: hay que agacharse
     else if (suerte < 0.72) { this.poner('bomba', x, SUELO - 26); this.poner('bomba', x + 58, SUELO - 26); }
@@ -52,9 +52,9 @@ class Runner extends Phaser.Scene {
   // <<<
 
   tocar(o) {
-    if (o.getData('tipo') === 'moneda') { this.monedas++; this.chispas.explode(6, o.x, o.y); Forja.sonar(this, 'moneda', 0.4); return this.guardar(o); }
+    if (o.getData('tipo') === 'moneda') { this.monedas += Forja.regla('monedas.valor', 1); const pide = Forja.regla('objetivo.monedas', 0); if (pide && this.monedas >= pide && !this.fin) { this.fin = true; this.heroe.play('heroe:celebrar'); Forja.sonar(this, 'celebrar', 0.6); Forja.aviso(this, '¡Juntaste ' + pide + ' monedas!\nR para repetir'); } this.chispas.explode(6, o.x, o.y); Forja.sonar(this, 'moneda', 0.4); return this.guardar(o); }
     if (this.inmune > 0 || this.fin) return;
-    this.vidas--; this.inmune = 1.3; this.guardar(o); this.polvo.explode(12, o.x, o.y); Forja.sonar(this, 'dano', 0.6); this.cameras.main.shake(180, 0.008);
+    this.vidas -= Forja.regla('dano.golpe', 1); this.inmune = Forja.regla('jugador.inmunidad', 1.3); this.guardar(o); this.polvo.explode(12, o.x, o.y); Forja.sonar(this, 'dano', 0.6); this.cameras.main.shake(180, 0.008);
     if (this.vidas <= 0) { this.fin = true; Forja.sonar(this, 'morir'); this.heroe.play('heroe:morir'); Forja.aviso(this, Math.floor(this.distancia / 10) + ' metros · ' + this.monedas + ' monedas\nR para repetir'); }
   }
 
@@ -66,14 +66,16 @@ class Runner extends Phaser.Scene {
     this.tiempo += dt; this.inmune = Math.max(0, this.inmune - dt);
     // >>> dificultad
     // Curva de dificultad: la velocidad sube poco a poco con el tiempo y tiene un tope. Todo lo demás depende de ella.
-    const velocidad = Math.min(760, 300 + this.tiempo * 7);
+    const velocidad = Math.min(Forja.regla('ritmo.tope', 760), Forja.regla('ritmo.inicio', 300) + this.tiempo * Forja.regla('ritmo.aumento', 7));
+    const meta = Forja.regla('resultado.metros', 0);   // regla: 0 = sin meta; si no, metros para ganar
+    if (meta && this.distancia / 10 >= meta) { this.fin = true; this.heroe.play('heroe:celebrar'); Forja.sonar(this, 'celebrar', 0.6); Forja.aviso(this, '¡Llegaste a ' + meta + ' m!\n' + this.monedas + ' monedas · R para repetir'); return; }
     // <<<
     this.distancia += velocidad * dt; this.piso.tilePositionX = this.distancia; Forja.paralaje(this, this.distancia);
     if (this.distancia >= this.proximo) this.generar();
     for (const o of this.cosas.getChildren()) { if (!o.active) continue; o.x -= (o.getData('tipo') === 'proyectil' ? velocidad * 1.25 : velocidad) * dt; if (o.x < -60) this.guardar(o); }
     const piso = h.body.blocked.down || h.body.touching.down, agachado = c.abajo && piso;
     if (piso) this.saltos = 0;
-    if (c.saltoYa && this.saltos < 2) { h.setVelocityY(-F.salto * (this.saltos ? 0.85 : 1)); this.saltos++; Forja.sonar(this, 'salto', 0.45); this.polvo.explode(5, h.x, h.y); } // doble salto
+    if (c.saltoYa && this.saltos < Forja.regla('salto.maximos', 2)) { h.setVelocityY(-F.salto * (this.saltos ? 0.85 : 1)); this.saltos++; Forja.sonar(this, 'salto', 0.45); this.polvo.explode(5, h.x, h.y); } // doble salto
     if (c.abajo && !piso) h.setVelocityY(Math.max(h.body.velocity.y, 700));                                                                                      // caer rápido
     h.body.setSize(h.body.width, agachado ? this.altoCuerpo * 0.55 : this.altoCuerpo).setOffset(h.body.offset.x, agachado ? this.offY + this.altoCuerpo * 0.45 : this.offY);
     h.x = X_HEROE; h.setAlpha(this.inmune > 0 && Math.floor(this.inmune * 14) % 2 ? 0.45 : 1);
