@@ -1,0 +1,113 @@
+/* Ready Set Go · Clase 2 · «Senda»: la estética de las láminas de pathfinding.
+   El mundo entero es una cuadrícula que no termina: la lámina no tiene bordes ni tarjetas.
+   El mapa vive en el lienzo; el texto flota encima, a la izquierda (o abajo en móvil).
+   Solo fuentes del sistema: la CSP de las escenas tiene font-src data:. */
+:root {
+  --fondo: #EFEBE3; --tinta: #14161B; --suave: #5F5E5A; --tenue: rgba(20,22,27,.42);
+  --rejilla: rgba(20,22,27,.075); --piso: #FBF9F4; --pared: #2A2E38; --pared-lado: #101217;
+  --barro: #A8743F; --agua: #3E86B3; --luz: #FFD36B;
+  --heroe: #FFB020; --rival: #FF4F3F; --rival2: #7A5CFF; --rival3: #19A974;
+  --ola0: #FF4F3F; --ola1: #FFB020; --ola2: #2EC4B6;
+  --camino: #14161B; --acento: #FF4F3F; --boton: rgba(20,22,27,.06);
+  --serif: "Iowan Old Style", "Charter", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="light"]) {
+    --fondo: #0B0C10; --tinta: #F1EEE7; --suave: #A9A59C; --tenue: rgba(241,238,231,.45);
+    --rejilla: rgba(241,238,231,.05); --piso: #15171E; --pared: #3B4254; --pared-lado: #1E222C;
+    --barro: #9C6A38; --agua: #3B7FAA; --luz: #FFD36B;
+    --camino: #FFFFFF; --boton: rgba(241,238,231,.08); color-scheme: dark;
+  }
+}
+:root[data-tema="dark"] {
+  --fondo: #0B0C10; --tinta: #F1EEE7; --suave: #A9A59C; --tenue: rgba(241,238,231,.45);
+  --rejilla: rgba(241,238,231,.05); --piso: #15171E; --pared: #3B4254; --pared-lado: #1E222C;
+  --barro: #9C6A38; --agua: #3B7FAA; --luz: #FFD36B;
+  --camino: #FFFFFF; --boton: rgba(241,238,231,.08); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--fondo); color: var(--tinta); font: 400 clamp(14px, calc(.9vw + .55vh), 26px)/1.4 var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
+.sd { position: fixed; inset: 0; }
+#sd-lienzo { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+#sd-lienzo.toca { cursor: crosshair; }
+#sd-lienzo.arrastra { cursor: grabbing; }
+
+/* Cabecera: ceja + título que afirma. */
+.sd-cab { position: absolute; left: 3.2vw; top: 4.2vh; width: 31vw; pointer-events: none; }
+.sd-ceja { display: flex; gap: .8em; align-items: center; font: 700 .62em/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--suave); }
+.sd-ceja b { color: var(--acento); font-weight: 800; white-space: nowrap; }
+.sd-cab h1 { margin: .55em 0 0; font: 800 2.05em/1.02 var(--sans); letter-spacing: -.025em; text-wrap: balance; }
+.sd-cab h1 em { font: italic 500 1.06em/1 var(--serif); color: var(--acento); letter-spacing: -.01em; }
+
+/* Relato: solo el paso actual, grande. */
+.sd-relato { list-style: none; margin: 0; padding: 0; position: absolute; left: 3.2vw; bottom: 15vh; width: 31vw; }
+.sd-relato > li { position: absolute; left: 0; bottom: 0; width: 100%; visibility: hidden; }
+.sd-relato > li.vivo { visibility: visible; }
+.sd-relato h2 { margin: 0 0 .45em; font: italic 500 1.75em/1.05 var(--serif); letter-spacing: -.01em; overflow: hidden; padding-bottom: .06em; }
+.sd-relato h2 span { display: inline-block; }
+.sd-relato p { margin: 0 0 .5em; font-size: 1em; line-height: 1.45; color: var(--tinta); }
+.sd-relato p .w { display: inline-block; white-space: pre; }
+.sd-relato code, .sd-cod { font: 600 .86em var(--mono); background: var(--boton); padding: .05em .35em; border-radius: .3em; }
+.sd-relato .aparte { font-size: .78em; color: var(--suave); }
+.sd-relato b { color: var(--acento); }
+.sd-tuturno { display: inline-block; font: 800 .62em/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--fondo); background: var(--acento); padding: .45em .7em; border-radius: 99px; margin-bottom: .7em; }
+
+.sd-fuente { position: absolute; left: 3.2vw; bottom: 3.4vh; width: 46vw; margin: 0; font: 500 .56em/1.35 var(--mono); color: var(--suave); }
+
+/* Pie: la senda de pasos (un bicho camina hasta el paso actual) y los botones. */
+.sd-pie { position: absolute; right: 2.4vw; bottom: 3vh; display: flex; align-items: center; gap: .9em; }
+.sd-senda { position: relative; display: flex; align-items: center; gap: 1.5em; padding: 0 .3em; height: 2em; }
+.sd-senda::before { content: ""; position: absolute; left: .6em; right: .6em; top: 50%; border-top: 2px dashed var(--tenue); }
+.sd-senda button { position: relative; width: .8em; height: .8em; padding: 0; border-radius: 50%; border: 2px solid var(--tinta); background: var(--fondo); cursor: pointer; }
+.sd-senda button.hecho { background: var(--tinta); }
+.sd-senda button:focus-visible { outline: 3px solid var(--acento); outline-offset: 3px; }
+.sd-marca { position: absolute; left: 0; top: 50%; width: 1.3em; height: 1.3em; margin: -.65em 0 0 -.25em; border-radius: 45% 45% 40% 40%; background: var(--rival); pointer-events: none; box-shadow: 0 0 0 3px var(--fondo); }
+.sd-marca::before, .sd-marca::after { content: ""; position: absolute; top: 34%; width: 22%; height: 26%; border-radius: 50%; background: #fff; }
+.sd-marca::before { left: 22%; } .sd-marca::after { right: 22%; }
+.sd-btn { font: 700 .72em/1 var(--sans); color: var(--tinta); background: var(--boton); border: 1.5px solid var(--tenue); border-radius: 99px; padding: .7em 1.1em; cursor: pointer; transition: transform .15s, border-color .15s, background .15s; }
+.sd-btn:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--tinta); }
+.sd-btn:disabled { opacity: .3; cursor: default; }
+.sd-btn.pri { background: var(--tinta); color: var(--fondo); border-color: var(--tinta); }
+.sd-btn[aria-pressed="true"] { background: var(--acento); color: #fff; border-color: var(--acento); }
+.sd-btn:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+.sd-num { font: 700 .62em/1 var(--mono); color: var(--suave); letter-spacing: .1em; min-width: 3.4em; text-align: right; }
+
+/* Herramientas y datos: arriba a la derecha, sobre el mapa. */
+.sd-herr { position: absolute; right: 2.4vw; top: 3.6vh; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .45em; max-width: 60vw; }
+.sd-herr[hidden] { display: none; }
+.sd-datos { position: absolute; left: 36vw; top: 4vh; display: flex; gap: 1.6em; pointer-events: none; }
+.sd-dato { display: grid; gap: .25em; }
+.sd-dato i { font: 700 .55em/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--suave); font-style: normal; }
+.sd-dato b { font: 800 1.5em/1 var(--mono); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.sd-herr:not([hidden]) ~ .sd-datos { top: 11.5vh; }
+.sd-dato.rojo b { color: var(--rival); } .sd-dato.ambar b { color: var(--heroe); } .sd-dato.verde b { color: var(--rival3); } .sd-dato.lila b { color: var(--rival2); }
+
+/* Palabra gigante: kinética, detrás del texto y encima del mapa. */
+.sd-gigante { position: absolute; left: 36vw; right: 2vw; top: 42%; transform: translateY(-50%); text-align: center; pointer-events: none; font: italic 600 9vw/1 var(--serif); letter-spacing: -.03em; color: var(--tinta); white-space: nowrap; opacity: 0; mix-blend-mode: normal; text-shadow: 0 .04em 0 var(--fondo), 0 0 .3em var(--fondo); }
+.sd-gigante small { display: block; font: 700 .12em/1.2 var(--mono); letter-spacing: .2em; text-transform: uppercase; font-style: normal; color: var(--suave); margin-top: .8em; }
+
+/* Código flotante. */
+.sd-codigo { position: absolute; right: 2.4vw; top: 12vh; max-width: 34vw; margin: 0; padding: .9em 1.1em; font: 600 .66em/1.55 var(--mono); color: #EDEAFF; background: #15132A; border-radius: .8em; white-space: pre; opacity: 0; pointer-events: none; box-shadow: 0 1em 3em rgba(0,0,0,.25); }
+.sd-codigo .c { color: #8F8AB8; } .sd-codigo .k { color: #C6FF4A; } .sd-codigo .s { color: #FFB020; }
+
+@media (max-width: 900px), (max-aspect-ratio: 1/1) {
+  body { font-size: clamp(14px, 3.6vw, 20px); }
+  .sd-cab { left: 16px; right: 16px; top: 12px; width: auto; }
+  .sd-cab h1 { font-size: 1.35em; }
+  .sd-relato { left: 16px; right: 16px; width: auto; bottom: 11vh; }
+  .sd-relato h2 { font-size: 1.3em; }
+  .sd-relato p { font-size: .9em; }
+  .sd-fuente { left: 16px; right: 16px; width: auto; bottom: .6vh; font-size: .5em; max-height: 3.2vh; overflow: hidden; }
+  .sd-pie { right: 16px; bottom: 4.6vh; gap: .5em; }
+  .sd-senda { gap: .8em; }
+  .sd-herr { right: 16px; left: 16px; top: auto; bottom: 41vh; max-width: none; justify-content: flex-start; }
+  .sd-datos, .sd-herr:not([hidden]) ~ .sd-datos { left: 16px; top: 13.5vh; bottom: auto; gap: 1em; font-size: .8em; }
+  .sd-gigante { left: 0; right: 0; top: 34%; font-size: 15vw; }
+  .sd-codigo { left: 16px; right: 16px; max-width: none; top: 22vh; font-size: .55em; }
+}
+@media (prefers-reduced-motion: reduce) { .sd-btn { transition: none; } }

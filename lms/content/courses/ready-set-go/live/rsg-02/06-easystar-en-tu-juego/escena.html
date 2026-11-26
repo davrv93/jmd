@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EasyStar en tu juego</title>
+<!-- Ready Set Go · Clase 2 · Práctica. Motor: ../../comun/senda.js (Mundo, buscar, Vista). Escrita a mano.
+     El alumno arma su nivel, juega contra sus bichos (A* con las mismas opciones que EasyStar.js)
+     y se lleva el código para Phaser. Sin <form>: el iframe del LIVE no tiene allow-forms. -->
+<link rel="stylesheet" href="../../comun/senda.css">
+<style>
+  body { overflow: hidden; }
+  .px { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 1.4vh 2.2vw; padding: 3.2vh 2.4vw 2.6vh 3.2vw; }
+  .px-cab { position: static; width: auto; grid-column: 1 / -1; pointer-events: auto; }
+  .px-cab h1 { font-size: 1.75em; margin-top: .35em; }
+  .px-juego { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 1vh; min-height: 0; min-width: 0; }
+  .px-barra { display: flex; flex-wrap: wrap; gap: .4em; align-items: center; }
+  .px-barra .sep { width: 1px; align-self: stretch; background: var(--tenue); margin: 0 .2em; }
+  .px-lienzo { position: relative; min-height: 0; min-width: 0; border-radius: .9em; background: var(--boton); overflow: hidden; }
+  #nivel { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; cursor: crosshair; }
+  #nivel.jugando { cursor: default; }
+  #nivel:focus-visible { box-shadow: inset 0 0 0 2px var(--tenue); }
+  .px-aviso { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: .7em 1.2em; border-radius: .8em; background: var(--tinta); color: var(--fondo); font: italic 600 1.5em/1.1 var(--serif); text-align: center; pointer-events: none; opacity: 0; transition: opacity .25s; white-space: nowrap; }
+  .px-aviso small { display: block; font: 700 .42em/1.4 var(--mono); letter-spacing: .12em; text-transform: uppercase; font-style: normal; opacity: .75; margin-top: .4em; }
+  .px-aviso.ver { opacity: 1; }
+  .px-estado { display: flex; align-items: center; gap: 1.4em; flex-wrap: wrap; }
+  .px-estado .sd-dato b { font-size: 1.25em; }
+  .px-ayuda { flex: 1; min-width: 12em; margin: 0; font-size: .74em; color: var(--suave); }
+  .px-ayuda b { color: var(--tinta); }
+  .px-cruz { display: grid; grid-template-columns: repeat(3, 2.3em); grid-template-rows: repeat(2, 2.1em); gap: .25em; }
+  .px-cruz button { padding: 0; font-size: .8em; border-radius: .5em; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .px-cruz [data-dir="arriba"] { grid-column: 2; grid-row: 1; }
+  .px-cruz [data-dir="izq"] { grid-column: 1; grid-row: 2; }
+  .px-cruz [data-dir="abajo"] { grid-column: 2; grid-row: 2; }
+  .px-cruz [data-dir="der"] { grid-column: 3; grid-row: 2; }
+
+  .px-lado { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 1vh; min-height: 0; min-width: 0; }
+  .px-et { font: 700 .58em/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--suave); }
+  .px-ops { display: grid; grid-template-columns: 1fr 1fr; gap: .45em 1em; align-items: center; }
+  .px-ops .fila { display: flex; gap: .4em; grid-column: 1 / -1; flex-wrap: wrap; }
+  .px-rango { display: grid; grid-template-columns: auto 1fr 4.4em; gap: .5em; align-items: center; font-size: .72em; white-space: nowrap; }
+  .px-rango input { width: 100%; accent-color: var(--acento); min-width: 0; }
+  .px-rango output { font: 700 1em var(--mono); text-align: right; color: var(--acento); }
+  .px-cod-cab { display: flex; align-items: center; justify-content: space-between; gap: .6em; }
+  .px-cod { margin: 0; min-height: 0; overflow: auto; padding: .8em 1em; font: 600 .6em/1.5 var(--mono); color: #EDEAFF; background: #15132A; border-radius: .8em; white-space: pre; tab-size: 2; user-select: text; }
+  .px-cod .c { color: #8F8AB8; } .px-cod .k { color: #C6FF4A; } .px-cod .s { color: #FFB020; } .px-cod .n { color: #7FE3FF; }
+  .px-cod:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  .px-copia { font-size: .68em; color: var(--suave); min-height: 1.2em; margin: 0; }
+  .px-retos { list-style: none; margin: 0; padding: 0; display: grid; gap: .3em; font-size: .74em; }
+  .px-retos li { display: grid; grid-template-columns: 1.4em 1fr; gap: .55em; align-items: center; }
+  .px-retos li::before { content: ""; width: 1.25em; height: 1.25em; border-radius: .35em; border: 2px solid var(--tenue); box-sizing: border-box; }
+  .px-retos li.ok::before { background: var(--rival3); border-color: var(--rival3); box-shadow: inset 0 0 0 .2em var(--fondo); }
+  .px-retos li.ok { color: var(--suave); }
+  .px-retos li.ok span { text-decoration: line-through; text-decoration-thickness: 1px; }
+
+  @media (max-width: 900px), (max-aspect-ratio: 1/1) {
+    body { overflow: auto; }
+    .px { position: static; display: flex; flex-direction: column; padding: 14px 16px 24px; gap: 14px; }
+    .px-cab h1 { font-size: 1.35em; }
+    .px-lienzo { aspect-ratio: 20 / 12.4; flex: none; }
+    .px-lado { display: flex; flex-direction: column; }
+    .px-cod { max-height: 55vh; font-size: .62em; }
+    .px-ops { grid-template-columns: 1fr; }
+    .px-aviso { font-size: 1.1em; }
+  }
+  @media (prefers-reduced-motion: reduce) { .px-aviso { transition: none; } }
+</style>
+</head>
+<body>
+<main class="px">
+  <header class="sd-cab px-cab">
+    <div class="sd-ceja"><b>Práctica · Clase 2</b><span>EasyStar.js + Phaser</span></div>
+    <h1>Tu nivel, tus bichos: <em>el código es tuyo</em></h1>
+  </header>
+
+  <section class="px-juego" aria-label="Tu nivel">
+    <div class="px-barra" role="toolbar" aria-label="Herramientas del nivel">
+      <button class="sd-btn" type="button" data-h="pared" aria-pressed="true">Pared</button>
+      <button class="sd-btn" type="button" data-h="borrar" aria-pressed="false">Borrar</button>
+      <button class="sd-btn" type="button" data-h="barro" aria-pressed="false">Barro</button>
+      <button class="sd-btn" type="button" data-h="heroe" aria-pressed="false">Mover héroe</button>
+      <button class="sd-btn" type="button" data-h="bicho" aria-pressed="false">Poner bicho</button>
+      <span class="sep" aria-hidden="true"></span>
+      <button class="sd-btn pri" type="button" id="jugar">Jugar</button>
+      <button class="sd-btn" type="button" id="caminos" aria-pressed="true">Ver caminos</button>
+      <button class="sd-btn" type="button" id="original">Nivel original</button>
+    </div>
+    <div class="px-lienzo">
+      <canvas id="nivel" tabindex="0" aria-label="Tu nivel de 20 por 12 casillas: paredes, piso, barro, tu héroe Cubito y hasta tres bichos. En modo edición se pinta con el ratón o el dedo. En modo juego el héroe se mueve con las flechas o WASD y los bichos te persiguen con A*. La línea de color es el camino que calculó cada bicho."></canvas>
+      <div class="px-aviso" id="aviso" role="status" aria-live="assertive"></div>
+    </div>
+    <div class="px-estado">
+      <div class="sd-dato ambar"><i>Sobrevives</i><b id="tiempo">0,0 s</b></div>
+      <div class="sd-dato"><i>Récord</i><b id="record">—</b></div>
+      <div class="sd-dato rojo"><i>Bichos</i><b id="nbichos">1</b></div>
+      <p class="px-ayuda" id="ayuda" aria-live="polite"><b>Editando.</b> Pinta paredes y barro, mueve al héroe y pon hasta 3 bichos. Luego pulsa <b>Jugar</b>.</p>
+      <div class="px-cruz" role="group" aria-label="Mover al héroe">
+        <button class="sd-btn" type="button" data-dir="arriba" aria-label="Arriba">▲</button>
+        <button class="sd-btn" type="button" data-dir="izq" aria-label="Izquierda">◀</button>
+        <button class="sd-btn" type="button" data-dir="abajo" aria-label="Abajo">▼</button>
+        <button class="sd-btn" type="button" data-dir="der" aria-label="Derecha">▶</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="px-lado" aria-label="Opciones, código y retos">
+    <div class="px-ops" role="group" aria-label="Opciones de EasyStar">
+      <span class="px-et" style="grid-column:1/-1">Opciones de EasyStar</span>
+      <div class="fila">
+        <button class="sd-btn" type="button" id="diag" aria-pressed="false">Diagonales</button>
+        <button class="sd-btn" type="button" id="esquinas" aria-pressed="false">Cortar esquinas</button>
+      </div>
+      <label class="px-rango">Costo del barro <input type="range" id="costo" min="1" max="9" step="1" value="1"><output id="costoV">1</output></label>
+      <label class="px-rango">Piensa cada <input type="range" id="cada" min="100" max="1000" step="50" value="300"><output id="cadaV">300 ms</output></label>
+      <label class="px-rango">Velocidad <input type="range" id="vel" min="1" max="6" step="0.5" value="3"><output id="velV">3 c/s</output></label>
+    </div>
+    <div class="px-cod-cab"><span class="px-et">Tu código · Phaser + EasyStar.js</span><button class="sd-btn pri" type="button" id="copiar">Copiar código</button></div>
+    <pre class="px-cod" id="cod" tabindex="0" aria-label="Código generado para tu juego"></pre>
+    <div>
+      <p class="px-copia" id="copiado" aria-live="polite"></p>
+      <span class="px-et">Retos</span>
+      <ul class="px-retos" id="retos" style="margin-top:.45em">
+        <li data-r="1"><span>Sobrevive 20 s con 2 bichos o más.</span></li>
+        <li data-r="2"><span>Activa diagonales <b>sin</b> cortar esquinas.</span></li>
+        <li data-r="3"><span>Con el barro a costo 4 o más, haz que un bicho lo rodee en vez de cruzarlo.</span></li>
+        <li data-r="4"><span>Copia el código y pégalo en tu juego.</span></li>
+      </ul>
+    </div>
+  </aside>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/senda.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); }, $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  var ORIGINAL = [
+    "####################",
+    "#..R.......#.......#",
+    "#..........#..##...#",
+    "#...####...#...#...#",
+    "#......#.......#...#",
+    "#......#..~~~..#...#",
+    "#..##..#..~~~......#",
+    "#...#.....~~~..###.#",
+    "#...#..#.......#...#",
+    "#...####...#...#.H.#",
+    "#..........#.......#",
+    "####################"
+  ];
+  var CLAVE = "rsg02.nivel";
+  var COLORES = function () { var C = SENDA.colores(); return [C.rival, C.rival2, C.rival3]; };
+
+  // ── Estado ──
+  var m, inicio; // inicio = { heroe:[x,y], bichos:[[x,y]...] }
+  var op = { diag: false, esquinas: false, costo: 1, cada: 300, vel: 3, caminos: true };
+  var herr = "pared", jugando = false, atrapado = false;
+  var heroe = { x: 0, y: 0 }, bichos = [];
+  var reloj = 0, record = 0, pensar = 0, teclas = {};
+  var retos = { 1: false, 2: false, 3: false, 4: false };
+
+  function cargar() {
+    var g = null; try { g = JSON.parse(localStorage.getItem(CLAVE) || "null"); } catch (e) {}
+    if (g && g.filas && g.filas.length === 12 && g.heroe) {
+      m = new SENDA.Mundo(g.filas); inicio = { heroe: g.heroe, bichos: g.bichos || [] };
+      if (g.op) Object.keys(op).forEach(function (k) { if (k in g.op) op[k] = g.op[k]; });
+      if (g.retos) Object.keys(retos).forEach(function (k) { retos[k] = !!g.retos[k]; });
+    } else original();
+  }
+  function original() {
+    m = new SENDA.Mundo(ORIGINAL);
+    inicio = { heroe: m.marca("H"), bichos: [m.marca("R")] };
+  }
+  function guardar() {
+    try {
+      localStorage.setItem(CLAVE, JSON.stringify({ filas: filasTexto(), heroe: inicio.heroe, bichos: inicio.bichos, op: op, retos: retos }));
+    } catch (e) {}
+  }
+  function filasTexto() { var out = []; for (var y = 0; y < m.h; y++) { var f = ""; for (var x = 0; x < m.w; x++) f += ["." , "#", "~"][m.t[m.i(x, y)]] || "."; out.push(f); } return out; }
+  function colocar() {
+    heroe = { x: inicio.heroe[0], y: inicio.heroe[1] };
+    bichos = inicio.bichos.map(function (b, k) { return { x: b[0], y: b[1], camino: null, k: 1, color: k }; });
+    reloj = 0; pensar = 0; atrapado = false;
+  }
+
+  // ── A* con las mismas opciones que EasyStar ──
+  function opciones() { m.costos[2] = op.costo; return { algo: "astar", diag: op.diag, esquinas: op.esquinas }; }
+  function celdaDe(a) { return m.i(Math.round(a.x), Math.round(a.y)); }
+  function pensarTodos() {
+    var o = opciones(), meta = celdaDe(heroe), recto = { algo: "astar", diag: op.diag, esquinas: op.esquinas, costo: function () { return 1; } };
+    bichos.forEach(function (b) {
+      var r = SENDA.buscar(m, celdaDe(b), meta, o);
+      b.camino = r.camino; b.k = 1;
+      // Reto 3: el camino directo (sin precios) pisa barro y el de EasyStar lo evita.
+      if (op.costo >= 4 && r.camino) {
+        var d = SENDA.buscar(m, celdaDe(b), meta, recto);
+        if (d.camino && barro(d.camino) > 0 && barro(r.camino) < barro(d.camino)) marcar(3);
+      }
+    });
+  }
+  function barro(c) { var n = 0; for (var k = 0; k < c.length; k++) if (m.t[c[k]] === 2) n++; return n; }
+
+  // ── Retos ──
+  function marcar(n) { if (retos[n]) return; retos[n] = true; pintarRetos(); guardar(); }
+  function pintarRetos() { $$("#retos li").forEach(function (li) { li.classList.toggle("ok", !!retos[li.dataset.r]); }); }
+
+  // ── Vista ──
+  var cv = $("#nivel");
+  var v = new SENDA.Vista(cv, function (W, H) { return { x: 6, y: 6, w: W - 12, h: H - 12 }; });
+  SENDA.leerColores();
+  try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", SENDA.leerColores); } catch (e) {}
+  try { new ResizeObserver(function () { v.resize(); }).observe($(".px-lienzo")); } catch (e) {}
+  var CAM = { z: 1 };
+
+  // ── Edición con el puntero ──
+  var pinta = null;
+  function celdaEv(e) { var r = cv.getBoundingClientRect(); return v.celdaEn(m, e.clientX - r.left, e.clientY - r.top); }
+  function ocupada(i) {
+    var x = m.x(i), y = m.y(i);
+    return (inicio.heroe[0] === x && inicio.heroe[1] === y) || inicio.bichos.some(function (b) { return b[0] === x && b[1] === y; });
+  }
+  function borde(i) { var x = m.x(i), y = m.y(i); return x === 0 || y === 0 || x === m.w - 1 || y === m.h - 1; }
+  cv.addEventListener("pointerdown", function (e) {
+    cv.focus({ preventScroll: true });
+    if (jugando) return;
+    var i = celdaEv(e); if (i < 0) return;
+    var x = m.x(i), y = m.y(i);
+    if (herr === "heroe") { if (!m.pared(i)) { inicio.heroe = [x, y]; pinta = { mover: true }; } }
+    else if (herr === "bicho") {
+      var k = inicio.bichos.findIndex(function (b) { return b[0] === x && b[1] === y; });
+      if (k >= 0) inicio.bichos.splice(k, 1);
+      else if (!m.pared(i) && !(inicio.heroe[0] === x && inicio.heroe[1] === y)) {
+        if (inicio.bichos.length >= 3) { ayuda("<b>Máximo 3 bichos.</b> Toca uno para quitarlo."); }
+        else inicio.bichos.push([x, y]);
+      }
+    } else {
+      var t = herr === "pared" ? 1 : herr === "barro" ? 2 : 0;
+      if (herr !== "borrar" && m.t[i] === t) t = 0; // tocar lo mismo lo borra
+      pinta = { t: t }; aplicar(i);
+    }
+    try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+    cambio();
+  });
+  cv.addEventListener("pointermove", function (e) {
+    if (!pinta || jugando) return; var i = celdaEv(e); if (i < 0) return;
+    if (pinta.mover) { if (!m.pared(i) && !inicio.bichos.some(function (b) { return b[0] === m.x(i) && b[1] === m.y(i); })) { inicio.heroe = [m.x(i), m.y(i)]; cambio(); } }
+    else if (aplicar(i)) cambio();
+  });
+  function soltar() { if (pinta) { pinta = null; guardar(); } }
+  cv.addEventListener("pointerup", soltar); cv.addEventListener("pointercancel", soltar);
+  function aplicar(i) {
+    if (borde(i)) return false;                       // el marco del nivel queda cerrado
+    if (pinta.t === 1 && ocupada(i)) return false;    // nunca una pared encima de alguien
+    return m.poner(i, pinta.t);
+  }
+  function cambio() { colocar(); pensarTodos(); generar(); $("#nbichos").textContent = bichos.length; }
+
+  $$("[data-h]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      herr = b.dataset.h; $$("[data-h]").forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+      if (jugando) alternar();
+    });
+  });
+  $("#original").addEventListener("click", function () { if (jugando) alternar(); original(); cambio(); guardar(); ayuda("<b>Nivel original.</b> Tus opciones y retos se mantienen."); });
+  $("#caminos").addEventListener("click", function () { op.caminos = !op.caminos; this.setAttribute("aria-pressed", op.caminos ? "true" : "false"); guardar(); });
+
+  // ── Jugar / Editar ──
+  $("#jugar").addEventListener("click", alternar);
+  function alternar() {
+    jugando = !jugando; colocar(); pensarTodos(); teclas = {};
+    $("#jugar").textContent = jugando ? "Editar" : "Jugar";
+    cv.classList.toggle("jugando", jugando);
+    aviso("");
+    if (jugando) {
+      ayuda(bichos.length ? "<b>Jugando.</b> Muévete con las flechas, WASD o los botones. Los bichos piensan cada " + op.cada + " ms." : "<b>No hay bichos.</b> Pulsa Editar y ponlos con «Poner bicho».");
+      cv.focus({ preventScroll: true });
+    } else ayuda("<b>Editando.</b> Pinta paredes y barro, mueve al héroe y pon hasta 3 bichos. Luego pulsa <b>Jugar</b>.");
+  }
+  function ayuda(html) { $("#ayuda").innerHTML = html; }
+  var avisoT = null;
+  function aviso(html) { var a = $("#aviso"); clearTimeout(avisoT); a.innerHTML = html; a.classList.toggle("ver", !!html); }
+
+  // ── Teclado y cruceta ──
+  var MAPA_T = { ArrowUp: "arriba", KeyW: "arriba", ArrowDown: "abajo", KeyS: "abajo", ArrowLeft: "izq", KeyA: "izq", ArrowRight: "der", KeyD: "der" };
+  window.addEventListener("keydown", function (e) {
+    if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+    var d = MAPA_T[e.code]; if (!d) return;
+    if (jugando || e.target === cv) e.preventDefault();
+    if (jugando) teclas[d] = true;
+  });
+  window.addEventListener("keyup", function (e) { var d = MAPA_T[e.code]; if (d) teclas[d] = false; });
+  window.addEventListener("blur", function () { teclas = {}; });
+  $$(".px-cruz button").forEach(function (b) {
+    var d = b.dataset.dir;
+    b.addEventListener("pointerdown", function (e) { e.preventDefault(); if (!jugando) alternar(); teclas[d] = true; try { b.setPointerCapture(e.pointerId); } catch (er) {} });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function (t) { b.addEventListener(t, function () { teclas[d] = false; }); });
+  });
+
+  // ── Opciones ──
+  function pintarOps() {
+    $("#diag").setAttribute("aria-pressed", op.diag ? "true" : "false");
+    $("#esquinas").setAttribute("aria-pressed", op.esquinas ? "true" : "false");
+    $("#esquinas").disabled = !op.diag;
+    $("#caminos").setAttribute("aria-pressed", op.caminos ? "true" : "false");
+    $("#costo").value = op.costo; $("#costoV").textContent = op.costo;
+    $("#cada").value = op.cada; $("#cadaV").textContent = op.cada + " ms";
+    $("#vel").value = op.vel; $("#velV").textContent = String(op.vel).replace(".", ",") + " c/s";
+    if (op.diag && !op.esquinas) marcar(2);
+  }
+  $("#diag").addEventListener("click", function () { op.diag = !op.diag; if (!op.diag) op.esquinas = false; opsCambio(); });
+  $("#esquinas").addEventListener("click", function () { op.esquinas = !op.esquinas; opsCambio(); });
+  $("#costo").addEventListener("input", function () { op.costo = +this.value; opsCambio(); });
+  $("#cada").addEventListener("input", function () { op.cada = +this.value; opsCambio(); });
+  $("#vel").addEventListener("input", function () { op.vel = +this.value; opsCambio(); });
+  function opsCambio() { pintarOps(); pensarTodos(); generar(); guardar(); }
+
+  // ── Código generado ──
+  var textoCodigo = "";
+  function generar() {
+    var filas = [];
+    for (var y = 0; y < m.h; y++) { var f = []; for (var x = 0; x < m.w; x++) f.push(m.t[m.i(x, y)] === 1 ? 1 : m.t[m.i(x, y)] === 2 ? 2 : 0); filas.push("  [" + f.join(",") + "]"); }
+    var hayBarro = filas.join("").indexOf("2") >= 0;
+    var L = [];
+    L.push("// 1) En tu index.html, ANTES del archivo de tu juego:");
+    L.push('// <script src="https://cdn.jsdelivr.net/npm/easystarjs@0.4.4/bin/easystar-0.4.4.min.js"><\/script>');
+    L.push("");
+    L.push("// 2) Tu nivel: 0 = piso, 1 = pared, 2 = barro");
+    L.push("const T = 32; // tamaño de una casilla en píxeles");
+    L.push("const mapa = [");
+    L.push(filas.join(",\n"));
+    L.push("];");
+    L.push("const inicioHeroe = [" + inicio.heroe.join(", ") + "];   // [columna, fila]");
+    L.push("const inicioBichos = [" + inicio.bichos.map(function (b) { return "[" + b.join(", ") + "]"; }).join(", ") + "];");
+    L.push("");
+    L.push("// 3) EasyStar: busca los caminos con A*");
+    L.push("const easystar = new EasyStar.js();");
+    L.push("easystar.setGrid(mapa);                // las filas del mapa: mapa[y][x]");
+    L.push("easystar.setAcceptableTiles([0, 2]);   // se camina por piso y por barro");
+    L.push("easystar.setTileCost(2, " + op.costo + ");" + pad(("easystar.setTileCost(2, " + op.costo + ");").length) + "// pisar barro cuesta " + op.costo + (op.costo === 1 ? " (igual que el piso)" : " veces más"));
+    if (op.diag) {
+      L.push("easystar.enableDiagonals();            // 8 vecinos: también en diagonal");
+      if (!op.esquinas) L.push("easystar.disableCornerCutting();       // sin atravesar el canto de una pared");
+      else L.push("// El corte de esquinas viene activado: puede rozar el canto de una pared");
+    } else L.push("// Sin enableDiagonals(): solo 4 vecinos (arriba, abajo, izquierda, derecha)");
+    L.push("");
+    L.push("class Nivel extends Phaser.Scene {");
+    L.push("  create() {");
+    L.push("    // Dibuja el nivel con rectángulos (luego los cambias por tus sprites)");
+    L.push("    mapa.forEach((fila, y) => fila.forEach((c, x) => {");
+    L.push("      if (c === 1) this.add.rectangle(x * T + T / 2, y * T + T / 2, T, T, 0x2a2e38);");
+    if (hayBarro) L.push("      if (c === 2) this.add.rectangle(x * T + T / 2, y * T + T / 2, T, T, 0xa8743f);");
+    L.push("    }));");
+    L.push("    this.heroe = this.add.rectangle(inicioHeroe[0] * T + T / 2, inicioHeroe[1] * T + T / 2, T * 0.8, T * 0.8, 0xffb020);");
+    L.push("    this.bichos = inicioBichos.map(([x, y]) => {");
+    L.push("      const b = this.add.circle(x * T + T / 2, y * T + T / 2, T * 0.38, 0xff4f3f);");
+    L.push("      b.camino = null; b.k = 1;");
+    L.push("      return b;");
+    L.push("    });");
+    L.push("    this.teclas = this.input.keyboard.createCursorKeys();");
+    L.push("    this.inicio = this.time.now;");
+    L.push("");
+    L.push("    // Cada " + op.cada + " ms, cada bicho vuelve a pensar su camino hacia el héroe");
+    L.push("    this.time.addEvent({");
+    L.push("      delay: " + op.cada + ", loop: true,");
+    L.push("      callback: () => {");
+    L.push("        const hx = Math.floor(this.heroe.x / T), hy = Math.floor(this.heroe.y / T);");
+    L.push("        for (const b of this.bichos) {");
+    L.push("          const bx = Math.floor(b.x / T), by = Math.floor(b.y / T);");
+    L.push("          easystar.findPath(bx, by, hx, hy, (camino) => {");
+    L.push("            // camino es null si no hay forma de llegar");
+    L.push("            b.camino = camino; b.k = 1;");
+    L.push("          });");
+    L.push("        }");
+    L.push("        easystar.calculate();");
+    L.push("      }");
+    L.push("    });");
+    L.push("  }");
+    L.push("");
+    L.push("  update(time, delta) {");
+    L.push("    // El héroe: flechas, sin atravesar paredes");
+    L.push("    const h = this.heroe, v = 4.5 * T * delta / 1000, k = this.teclas;");
+    L.push("    const nx = h.x + (k.right.isDown - k.left.isDown) * v;");
+    L.push("    const ny = h.y + (k.down.isDown - k.up.isDown) * v;");
+    L.push("    if (libre(nx, h.y)) h.x = nx;");
+    L.push("    if (libre(h.x, ny)) h.y = ny;");
+    L.push("");
+    L.push("    // Cada bicho camina hacia la siguiente casilla de su camino");
+    L.push("    const paso = " + String(op.vel) + " * T * delta / 1000; // " + String(op.vel).replace(".", ",") + " casillas por segundo");
+    L.push("    for (const b of this.bichos) {");
+    L.push("      if (!b.camino || b.k >= b.camino.length) continue;");
+    L.push("      const meta = b.camino[b.k];");
+    L.push("      const tx = meta.x * T + T / 2, ty = meta.y * T + T / 2;");
+    L.push("      const dx = tx - b.x, dy = ty - b.y, d = Math.hypot(dx, dy);");
+    L.push("      if (d <= paso) { b.x = tx; b.y = ty; b.k++; }");
+    L.push("      else { b.x += dx / d * paso; b.y += dy / d * paso; }");
+    L.push("");
+    L.push("      // ¿Te alcanzó?");
+    L.push("      if (Math.hypot(b.x - h.x, b.y - h.y) < T * 0.6) {");
+    L.push("        const s = ((time - this.inicio) / 1000).toFixed(1);");
+    L.push("        console.log('Te alcanzaron en ' + s + ' s');");
+    L.push("        this.scene.restart();");
+    L.push("      }");
+    L.push("    }");
+    L.push("  }");
+    L.push("}");
+    L.push("");
+    L.push("// ¿Esa posición (en píxeles) deja al héroe fuera de las paredes?");
+    L.push("function libre(px, py) {");
+    L.push("  const r = T * 0.4;");
+    L.push("  return [[-r, -r], [r, -r], [-r, r], [r, r]].every(([ox, oy]) => {");
+    L.push("    const fila = mapa[Math.floor((py + oy) / T)];");
+    L.push("    return fila && fila[Math.floor((px + ox) / T)] !== 1;");
+    L.push("  });");
+    L.push("}");
+    L.push("");
+    L.push("new Phaser.Game({");
+    L.push("  type: Phaser.AUTO,");
+    L.push("  width: mapa[0].length * T, height: mapa.length * T,");
+    L.push("  backgroundColor: '#fbf9f4',");
+    L.push("  scene: Nivel");
+    L.push("});");
+    textoCodigo = L.join("\n");
+    $("#cod").innerHTML = resaltar(textoCodigo);
+  }
+  function pad(n) { return new Array(Math.max(1, 39 - n + 1)).join(" "); }
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function resaltar(txt) {
+    return txt.split("\n").map(function (lin) {
+      var c = comentario(lin), cod = c < 0 ? lin : lin.slice(0, c), com = c < 0 ? "" : lin.slice(c);
+      // Un solo recorrido: así la palabra «class» de un <span> nunca se vuelve a resaltar.
+      var re = /('[^']*'|"[^"]*")|\b(const|let|for|of|if|else|class|extends|new|return|continue|this)\b/g, h = "", ult = 0, mt;
+      while ((mt = re.exec(cod))) {
+        h += esc(cod.slice(ult, mt.index)) + (mt[1] ? '<span class="s">' + esc(mt[1]) + "</span>" : '<span class="k">' + mt[2] + "</span>");
+        ult = re.lastIndex;
+      }
+      h += esc(cod.slice(ult));
+      return h + (com ? '<span class="c">' + esc(com) + "</span>" : "");
+    }).join("\n");
+  }
+  function comentario(lin) { var q = null; for (var k = 0; k < lin.length - 1; k++) { var ch = lin[k]; if (q) { if (ch === q) q = null; } else if (ch === "'" || ch === '"') q = ch; else if (ch === "/" && lin[k + 1] === "/") return k; } return -1; }
+
+  // ── Copiar ──
+  $("#copiar").addEventListener("click", function () {
+    var ok = function () { $("#copiado").textContent = "Copiado. Pégalo en el archivo de tu juego."; marcar(4); };
+    var respaldo = function () {
+      var pre = $("#cod"), r = document.createRange(); r.selectNodeContents(pre);
+      var s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      var hecho = false; try { hecho = document.execCommand("copy"); } catch (e) {}
+      if (hecho) ok();
+      else { $("#copiado").textContent = "Tu navegador no deja copiar desde aquí: el código quedó seleccionado, pulsa Ctrl+C (⌘+C en Mac)."; marcar(4); }
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(textoCodigo).then(ok, respaldo);
+      else respaldo();
+    } catch (e) { respaldo(); }
+  });
+  // Copiar a mano (Ctrl+C sobre el código) también cuenta.
+  document.addEventListener("copy", function () { var s = String(getSelection() || ""); if (s.indexOf("easystar") >= 0) marcar(4); });
+
+  // ── Bucle ──
+  var antes = performance.now() / 1000;
+  SENDA.cadaCuadro(function (t) {
+    var dt = Math.min(.05, t - antes); antes = t;
+    if (jugando && !atrapado) paso(dt);
+    dibujar(t);
+  });
+
+  function paso(dt) {
+    // Héroe: movimiento libre que choca con las paredes (como libre() del código)
+    var dx = (teclas.der ? 1 : 0) - (teclas.izq ? 1 : 0), dy = (teclas.abajo ? 1 : 0) - (teclas.arriba ? 1 : 0), vh = 4.5 * dt;
+    if (dx && libre(heroe.x + dx * vh, heroe.y)) heroe.x += dx * vh;
+    if (dy && libre(heroe.x, heroe.y + dy * vh)) heroe.y += dy * vh;
+    if (!bichos.length) return;
+    reloj += dt; $("#tiempo").textContent = reloj.toFixed(1).replace(".", ",") + " s";
+    if (reloj >= 20 && bichos.length >= 2) marcar(1);
+    pensar -= dt * 1000;
+    if (pensar <= 0) { pensarTodos(); pensar = op.cada; }
+    var vb = op.vel * dt;
+    bichos.forEach(function (b) {
+      if (!b.camino || b.k >= b.camino.length) return;
+      var meta = b.camino[b.k], tx = m.x(meta), ty = m.y(meta), ddx = tx - b.x, ddy = ty - b.y, d = Math.hypot(ddx, ddy);
+      if (d <= vb) { b.x = tx; b.y = ty; b.k++; } else { b.x += ddx / d * vb; b.y += ddy / d * vb; }
+    });
+    var hit = bichos.some(function (b) { return Math.hypot(b.x - heroe.x, b.y - heroe.y) < .6; });
+    if (hit) {
+      atrapado = true; teclas = {};
+      var s = reloj.toFixed(1).replace(".", ",");
+      if (reloj > record) { record = reloj; $("#record").textContent = s + " s"; }
+      aviso("Te alcanzaron en " + s + " s<small>Volvemos a empezar…</small>");
+      avisoT = setTimeout(function () { aviso(""); colocar(); pensarTodos(); $("#tiempo").textContent = "0,0 s"; }, 1700);
+    }
+  }
+  // Las coordenadas de los personajes son la esquina de su casilla: el centro está en +0,5.
+  function libre(x, y) {
+    var r = .4, cx = x + .5, cy = y + .5;
+    return [[-r, -r], [r, -r], [-r, r], [r, r]].every(function (o) { var gx = Math.floor(cx + o[0]), gy = Math.floor(cy + o[1]); return m.en(gx, gy) && !m.pared(m.i(gx, gy)); });
+  }
+
+  function dibujar(t) {
+    v.camara(m, CAM); v.limpiar();
+    v.rejilla(1);
+    v.piso(m, 1, 0, null);
+    v.paredes(m, 1, 1, null);
+    var cols = COLORES();
+    if (op.caminos) bichos.forEach(function (b, k) {
+      if (!b.camino || b.camino.length < 2) return;
+      var resto = b.camino.slice(Math.max(0, b.k - 1));
+      v.camino(m, resto, 1, SENDA.rgba(cols[k % 3], .55), .13, (k - 1) * .06);
+    });
+    v.heroe(heroe.x, heroe.y, 1, bichos[0] ? [bichos[0].x - heroe.x, bichos[0].y - heroe.y] : null, t);
+    bichos.forEach(function (b, k) { v.bicho(b.x, b.y, 1, cols[k % 3], [heroe.x - b.x, heroe.y - b.y], t, k * 1.7); });
+  }
+
+  // ── Arranque ──
+  cargar(); colocar(); pintarOps(); pintarRetos(); pensarTodos(); generar();
+  $("#nbichos").textContent = bichos.length;
+  if (window.gsap && !SENDA.quieto) gsap.from(".px-cab > *, .px-juego, .px-lado > *", { y: 24, opacity: 0, duration: .9, stagger: .08, ease: "expo.out", clearProps: "all" });
+})();
+</script>
+</body>
+</html>

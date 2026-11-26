@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>No todo paso cuesta lo mismo</title>
+<!-- Ready Set Go · Clase 2 · Pathfinding 3 de 5. Motor: ../../comun/senda.js (SENDA). Escrita a mano. -->
+<link rel="stylesheet" href="../../comun/senda.css">
+</head>
+<body>
+<main class="sd">
+  <canvas id="sd-lienzo" tabindex="0" aria-label="Un campo abierto cruzado por un río de barro de cuatro casillas. Un bicho rojo a la izquierda y el héroe Cubito a la derecha. Primero el bicho cruza derecho por el barro. Luego cada casilla muestra su precio: piso 1, barro 5. La ola de Dijkstra avanza lenta en el barro y el camino nuevo rodea el río por arriba. Al final tres bichos con precios distintos toman tres caminos: el normal rodea por arriba, el miedoso evita la luz de la antorcha y rodea por abajo, y el tanque cruza el barro."></canvas>
+  <header class="sd-cab">
+    <div class="sd-ceja"><b>RSG · Clase 2</b><span>Pathfinding 3 de 5 · Dijkstra, 1956</span></div>
+    <h1>No todo paso <em>cuesta lo mismo</em></h1>
+  </header>
+  <ol class="sd-relato">
+    <li><h2>Llega el barro</h2>
+      <p>Al nivel le agregamos un río de barro. La ola de la lámina anterior cuenta pasos, no esfuerzo.</p>
+      <p>Por eso manda al bicho derecho por el barro.</p></li>
+    <li><h2>Cada casilla tiene precio</h2>
+      <p>El piso cuesta <b>1</b>. El barro cuesta <b>5</b>.</p>
+      <p>Ya no gana el camino con menos pasos, sino el más barato.</p></li>
+    <li><h2>Veinte minutos en un café</h2>
+      <p>Edsger Dijkstra lo pensó en 1956, en la terraza de un café de Ámsterdam: unos veinte minutos y sin papel.</p>
+      <p>La regla: abre siempre la casilla pendiente <b>más barata</b>. Por eso la ola se frena en el barro.</p>
+      <p class="aparte">Lo publicó en 1959.</p></li>
+    <li><h2>El camino rodea</h2>
+      <p>Ahora el bicho da la vuelta: más pasos, menos costo.</p>
+      <p>Nadie le escribió «evita el barro». Lo decidió el precio.</p></li>
+    <li><h2>El precio es la personalidad</h2>
+      <p>Tres bichos, el mismo mapa, tres tablas de precios. Al <b style="color:var(--rival2)">miedoso</b> la luz le cuesta 8; al <b style="color:var(--rival3)">tanque</b>, el barro le cuesta 1.</p>
+      <p>Cada uno toma su camino. En EasyStar es una línea: <code>setTileCost</code>.</p></li>
+    <li><span class="sd-tuturno">Tu turno</span><h2>Pon tú el precio</h2>
+      <p>Pinta barro, borra y cambia el precio del barro con los botones.</p>
+      <p>¿A partir de qué precio el bicho prefiere rodear?</p></li>
+  </ol>
+  <p class="sd-fuente">Dijkstra, E. W. (1959). A note on two problems in connexion with graphs. <i>Numerische Mathematik</i> 1, 269–271 · Misa, T. J. y Frana, P. L. (2010). An interview with Edsger W. Dijkstra. <i>Communications of the ACM</i> 53(8), 41–47 · EasyStar.js (setTileCost).</p>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/senda.js"></script>
+<script>
+(function () {
+  var MAPA = [
+    "##########################",
+    "#...........*............#",
+    "#..........~~~~..........#",
+    "#..........~~~~..........#",
+    "#..........~~~~..........#",
+    "#.R........~~~~........H.#",
+    "#..........~~~~..........#",
+    "#...##.....~~~~.....##...#",
+    "#...##.....~~~~.....##...#",
+    "#..........~~~~..........#",
+    "#..........~~~~..........#",
+    "#..........~~~~..........#",
+    "#........................#",
+    "##########################"
+  ];
+  var C = SENDA.colores();
+  var LUZ = 8, PRECIO = 5;
+
+  function costoDe(m, cam, fn) { var s = 0; if (!cam) return null; for (var k = 1; k < cam.length; k++) s += fn(cam[k]); return s; }
+  function cercaDeLuz(m) {
+    var luces = []; for (var i = 0; i < m.t.length; i++) if (m.t[i] === 4) luces.push(i);
+    return function (j) { var x = m.x(j), y = m.y(j); return luces.some(function (l) { return Math.max(Math.abs(m.x(l) - x), Math.abs(m.y(l) - y)) <= 2; }); };
+  }
+
+  function alEditar(D, api) {
+    var m = api.mundo(); m.costos[2] = D.precio;
+    var he = D.he, r0 = D.r0, ih = m.i(he.x, he.y), ir = m.i(r0.x, r0.y);
+    var normal = function (j) { return m.costo(j); };
+    var b = api.buscar(m, ir, ih, { algo: "bfs" });
+    D.bfsCam = b.camino ? b.camino : null;
+    D.dij = api.buscar(m, ir, -1, { algo: "dijkstra" });
+    var d = api.buscar(m, ir, ih, { algo: "dijkstra" });
+    D.dijCam = d.camino;
+    if (D.personas) {
+      var luz = cercaDeLuz(m);
+      var pers = [
+        { r: D.r0, f: normal, color: C.rival, clave: "camino", desfase: 0 },
+        { r: D.r1, f: function (j) { return luz(j) ? Math.max(LUZ, m.costo(j)) : m.costo(j); }, color: C.rival2, clave: "c2", desfase: -.08 },
+        { r: D.r2, f: function (j) { return m.t[j] === 2 ? 1 : m.costo(j); }, color: C.rival3, clave: "c3", desfase: .08 }
+      ];
+      D.caminos = []; D.pers = [];
+      pers.forEach(function (p) {
+        var res = api.buscar(m, m.i(p.r.x, p.r.y), ih, { algo: "dijkstra", costo: p.f });
+        D.pers.push(res.camino ? res.camino.length - 1 : null);
+        if (res.camino) D.caminos.push({ celdas: res.camino, clave: p.clave, color: p.color, ancho: .15, desfase: p.desfase });
+      });
+    } else D.caminos = d.camino ? [{ celdas: d.camino, clave: "camino", color: C.rival, ancho: .18 }] : [];
+
+    var p = api.paso();
+    if (D.pasoDatos !== p) { api.limpiarDatos(); D.pasoDatos = p; }
+    if (p === 3) {
+      api.dato("a", "Costo cruzando el barro", costoDe(m, D.bfsCam, normal) == null ? "null" : costoDe(m, D.bfsCam, normal));
+      api.dato("b", "Costo rodeando", d.camino ? d.costo : "null", "rojo");
+    } else if (p === 4) {
+      var nom = ["Normal · pasos", "Miedoso · pasos", "Tanque · pasos"], cl = ["rojo", "lila", "verde"];
+      D.pers.forEach(function (n, k) { api.dato("p" + k, nom[k], n == null ? "null" : n, cl[k]); });
+    } else if (p === 5) {
+      api.dato("precio", "Precio del barro", D.precio, "ambar");
+      api.dato("costo", "Costo del camino", d.camino ? d.costo : "null", "rojo");
+    }
+  }
+  function cambiarPrecio(api, delta) {
+    var D = api.D; D.precio = SENDA.clamp(D.precio + delta, 1, 15); D.precioUsuario = D.precio;
+    alEditar(D, api); api.replay(.01);
+  }
+
+  SENDA.escena({
+    mapas: { base: MAPA },
+    S: { olaA: 1, costos: 0, caminoBfs: 0, fantasma: 1, c2: 0, c3: 0, luz: 0 },
+    reiniciar: function (D, api) {
+      var m = api.mundo(), r = m.marca("R"), h = m.marca("H");
+      D.r0 = D.r0 || { tipo: "rival", x: r[0], y: r[1] };
+      D.he = D.he || { tipo: "heroe", x: h[0], y: h[1] };
+      D.r1 = D.r1 || { tipo: "rival", x: r[0], y: r[1] - 1, color: C.rival2 };
+      D.r2 = D.r2 || { tipo: "rival", x: r[0], y: r[1] + 1, color: C.rival3 };
+      D.actores = [D.r0, D.he]; D.personas = false; D.precio = PRECIO;
+    },
+    alEditar: alEditar,
+    pasos: [
+      { // 1 · la ola de antes cruza el barro
+        s: { caminoBfs: 1 },
+        anim: function (tl, S) { tl.fromTo(S, { caminoBfs: 0 }, { caminoBfs: 1, duration: 2.2, ease: "power2.inOut" }, .9); }
+      },
+      { // 2 · el precio de cada casilla
+        s: { costos: 1, z: 1.55, cx: 13, cy: 5.5, fantasma: .45 },
+        dur: 1.5
+      },
+      { // 3 · la ola de Dijkstra, lenta en el barro
+        s: { costos: 0, z: 1, cx: 13, cy: 7, ola: 1, numeros: .9, fantasma: .2, gig: 0 },
+        anim: function (tl, S, api) {
+          api.gigante("1956<small>un café en Ámsterdam · veinte minutos</small>");
+          tl.to(S, { costos: 0, z: 1, cx: 13, cy: 7, fantasma: .2, duration: 1.1, ease: "power3.inOut" })
+            .fromTo(S, { gig: 0 }, { gig: .9, duration: .6, ease: "power2.out" }, .2)
+            .to(S, { gig: 0, duration: .5, ease: "power2.in" }, 1.8)
+            .fromTo(S, { ola: 0 }, { ola: 1, duration: 4.2, ease: "none" }, 1.6)
+            .to(S, { numeros: .9, duration: .5 }, 1.6);
+        }
+      },
+      { // 4 · el camino rodea
+        s: { numeros: 0, olaA: .3, camino: 1, fantasma: .35 },
+        anim: function (tl, S) {
+          tl.to(S, { numeros: 0, olaA: .3, fantasma: .35, duration: .7, ease: "power2.out" })
+            .fromTo(S, { camino: 0 }, { camino: 1, duration: 2.4, ease: "power2.inOut" }, .4);
+        }
+      },
+      { // 5 · tres bichos, tres precios
+        s: { olaA: 0, ola: 0, fantasma: 0, camino: 1, c2: 1, c3: 1, luz: 1 },
+        fijar: function (D) { D.personas = true; D.actores = [D.r0, D.r1, D.r2, D.he]; },
+        anim: function (tl, S) {
+          tl.to(S, { olaA: 0, fantasma: 0, duration: .6 })
+            .set(S, { ola: 0 })
+            .fromTo(S, { luz: 0 }, { luz: 1, duration: .8, ease: "power2.out" }, .3)
+            .fromTo(S, { camino: 0 }, { camino: 1, duration: 1.6, ease: "power2.inOut" }, .6)
+            .fromTo(S, { c2: 0 }, { c2: 1, duration: 1.8, ease: "power2.inOut" }, 1.2)
+            .fromTo(S, { c3: 0 }, { c3: 1, duration: 1.4, ease: "power2.inOut" }, 1.8);
+        }
+      },
+      { // 6 · tu turno
+        s: { c2: 0, c3: 0, luz: .5, fantasma: .3, camino: 1, caminoBfs: 1 },
+        fijar: function (D) { D.precio = D.precioUsuario || PRECIO; D.personas = false; D.actores = [D.r0, D.he]; },
+        toca: ["barro", "borrar", "pared", "heroe",
+          { texto: "Barro −", accion: function (api) { cambiarPrecio(api, -1); } },
+          { texto: "Barro +", accion: function (api) { cambiarPrecio(api, 1); } }]
+      }
+    ],
+    dibujar: function (v, S, D, api, t) {
+      var m = api.mundo(), C = SENDA.colores(), c = v.cx;
+      v.rejilla(S.rejilla); v.recortar();
+      v.piso(m, S.piso, 0, S.revela);
+      if (S.luz > 0) { c.save(); c.beginPath(); c.rect(v.px(1), v.py(1), (m.w - 2) * v.T, (m.h - 2) * v.T); c.clip(); }
+      if (S.luz > 0) for (var i = 0; i < m.t.length; i++) if (m.t[i] === 4) {
+        var lx = v.px(m.x(i) + .5), ly = v.py(m.y(i) + .5), R = v.T * 2.5;
+        c.save(); c.globalAlpha = S.luz; c.fillStyle = SENDA.rgba(C.luz, .22); c.beginPath(); c.arc(lx, ly, R, 0, 7); c.fill();
+        c.strokeStyle = SENDA.rgba(C.luz, .9); c.lineWidth = v.T * .06; c.setLineDash([v.T * .2, v.T * .14]); c.stroke(); c.restore();
+      }
+      if (S.luz > 0) c.restore();
+      v.ola(m, D.dij, S.ola, S.olaA);
+      v.paredes(m, S.paredes, S.alto, S.revela);
+      v.numeros(m, S.costos, function (i) { return m.t[i] === 1 ? null : String(m.costo(i)); }, function (i) { return m.t[i] === 2 ? "#14161B" : C.tinta; });
+      if (D.dij) v.numeros(m, S.numeros * S.olaA, function (i) { var tt = D.dij.t[i]; return tt >= 0 && tt <= S.ola + 1e-6 ? String(Math.round(D.dij.g[i])) : null; }, "#14161B");
+      if (S.fantasma > 0) { c.save(); c.globalAlpha = S.fantasma; v.camino(m, D.bfsCam, S.caminoBfs, C.tinta, .14); c.restore(); }
+      (D.caminos || []).forEach(function (k) { v.camino(m, k.celdas, S[k.clave], k.color, k.ancho, k.desfase); });
+      SENDA.dibujarActores(v, S, D, t);
+      v.soltar();
+    },
+    textoFin: "Fin del terreno"
+  });
+})();
+</script>
+</body>
+</html>

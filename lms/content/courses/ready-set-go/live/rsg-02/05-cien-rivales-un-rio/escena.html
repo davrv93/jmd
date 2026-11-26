@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cien rivales siguen un río</title>
+<!-- Ready Set Go · Clase 2 · Pathfinding 5 de 5. Motor: ../../comun/senda.js (SENDA). Escrita a mano.
+     Los 100 bichos se simulan con un bucle propio (no con GSAP): cada uno mira la flecha de su casilla. -->
+<link rel="stylesheet" href="../../comun/senda.css">
+<style>.sd-ceja b { white-space: nowrap; }</style>
+</head>
+<body>
+<main class="sd">
+  <canvas id="sd-lienzo" tabindex="0" aria-label="Un nivel con seis cuartos y puertas, el héroe Cubito y cien bichos pequeños. Primero cada bicho dibuja su propio camino hasta el héroe y las líneas se enredan. Luego una sola ola sale del héroe y cubre el mapa con distancias; cada casilla apunta con una flecha a su vecina más cercana al héroe y los cien bichos fluyen siguiendo las flechas como un río. Con el mapa multiplicado por menos 1,2 y vuelto a calcular, los bichos huyen hacia las puertas. Al final, dos filas de recolectores se atascan en un pasillo y, con los choques apagados, se cruzan sin problema."></canvas>
+  <header class="sd-cab">
+    <div class="sd-ceja"><b>RSG · Clase 2</b><span>Pathfinding 5 de 5 · Emerson, 2013 · Walker, 2010</span></div>
+    <h1>Cien rivales no piensan cien veces: <em>siguen un río</em></h1>
+  </header>
+  <ol class="sd-relato">
+    <li><h2>Cien A* es caro</h2>
+      <p>Cien bichos, cien búsquedas A*. Y cada vez que te mueves, otras cien.</p>
+      <p>En un juego de estrategia no son cien: son miles de unidades.</p></li>
+    <li><h2>Un solo mapa de costos</h2>
+      <p>Mejor, lo de la ola: se suelta <b>una vez</b> desde tu héroe y cubre todo el mapa.</p>
+      <p>Ahora cada casilla sabe cuánto le falta para llegar a ti.</p></li>
+    <li><h2>Flechas: un campo de flujo</h2>
+      <p>Cada casilla apunta a su vecina más cercana a ti. El mapa se vuelve un río que desemboca en tu héroe.</p>
+      <p>Así movía ejércitos <i>Supreme Commander 2</i> (2010), según su programador, Elijah Emerson.</p></li>
+    <li><h2>Que fluyan</h2>
+      <p>Cada bicho solo mira la flecha que tiene bajo los pies. Ninguno busca nada.</p>
+      <p>Pon mil bichos y la búsqueda sigue siendo <b>una sola</b>.</p></li>
+    <li><h2>Huir con inteligencia</h2>
+      <p>Un bicho que solo se aleja de ti termina atrapado en una esquina.</p>
+      <p>En <i>Brogue</i>, Brian Walker multiplica el mapa por <b>−1,2</b> y vuelve a pasar la ola. Ahora huyen hacia las puertas. Si los acorralas, intentan escapar pasando a tu lado.</p></li>
+    <li><h2>La trampa de StarCraft</h2>
+      <p>En <i>StarCraft</i> (1998) los recolectores se atascaban en el tráfico y el dinero dejaba de entrar.</p>
+      <p>La solución de Patrick Wyatt no fue un algoritmo mejor: mientras recolectan, <b>no chocan</b> entre ellos. Casi nadie lo nota.</p>
+      <p class="aparte">Diseño antes que perfección.</p></li>
+    <li><span class="sd-tuturno">Tu turno</span><h2>Mueve el río</h2>
+      <p>Arrastra a tu héroe y mira cómo cambia el río. Pinta paredes para cerrarles el paso.</p>
+      <p>Cambia a <b>Huir</b>: ¿hacia dónde escapan? ¿Puedes acorralar a alguno?</p></li>
+  </ol>
+  <p class="sd-fuente">Emerson, E. (2013). Crowd Pathfinding and Steering Using Flow Field Tiles. En S. Rabin (ed.), <i>Game AI Pro</i>, cap. 23. CRC Press · Walker, B. (2010). The Incredible Power of Dijkstra Maps. RogueBasin · Wyatt, P. (2013). The StarCraft path-finding hack. <i>Code of Honor</i>.</p>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/senda.js"></script>
+<script>
+(function () {
+  var BASE = [
+    "############################",
+    "#.......#..........#.......#",
+    "#..##...#..........#...##..#",
+    "#..##...#....##....#...##..#",
+    "#.............##...........#",
+    "#.......#..........#.......#",
+    "#.......#..........#.......#",
+    "####.#######....#######.####",
+    "#.......#..........#.......#",
+    "#..###..#..........#..###..#",
+    "#..........H...............#",
+    "#.......#..........#.......#",
+    "#.......#....##....#.......#",
+    "############################"
+  ];
+  // Minerales a la izquierda, base a la derecha, un pasillo de una casilla en medio.
+  var PASILLO = [
+    "##########################",
+    "#.....##############.....#",
+    "#.....##############.....#",
+    "#........................#",
+    "#.....##############.....#",
+    "#.....##############.....#",
+    "##########################"
+  ];
+
+  /* ── Los bichos: arreglos fijos, nada se crea por cuadro ── */
+  var MAX = 100, n = 0;
+  var ax = new Float32Array(MAX), ay = new Float32Array(MAX), vx = new Float32Array(MAX), vy = new Float32Array(MAX);
+  var sx = new Float32Array(MAX), sy = new Float32Array(MAX), sp = new Float32Array(MAX), fa = new Float32Array(MAX);
+  var grupo = new Uint8Array(MAX), rumbo = new Uint8Array(MAX), quieto = new Uint8Array(MAX);
+  function azar(semilla) { var a = semilla >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+  /* Siembra 100 bichos: «lejos» (a 4+ pasos del héroe) o «cerca» (a 1–6 pasos, para que huyan). */
+  function sembrar(D, api, modo) {
+    var m = api.mundo("base"), ih = m.i(D.heroe.x, D.heroe.y), r = api.buscar(m, ih, -1, { algo: "bfs" });
+    var rnd = azar(modo === "cerca" ? 7 : 3), cand = [];
+    for (var i = 0; i < m.t.length; i++) if (!m.pared(i) && isFinite(r.g[i]) && (modo === "cerca" ? r.g[i] >= 1 && r.g[i] <= 6 : r.g[i] >= 4)) cand.push(i);
+    n = cand.length ? MAX : 0;
+    for (var k = 0; k < n; k++) {
+      var c = cand[Math.floor(rnd() * cand.length)];
+      ax[k] = m.x(c) + .2 + rnd() * .6; ay[k] = m.y(c) + .2 + rnd() * .6; vx[k] = vy[k] = 0;
+      sp[k] = 2.1 + rnd() * 1.1; fa[k] = rnd() * 6.283; grupo[k] = 0; quieto[k] = 0;
+    }
+  }
+  function sembrarPasillo() {
+    var rnd = azar(11); n = 20;
+    for (var k = 0; k < n; k++) {
+      var izq = k < 10;
+      ax[k] = (izq ? 1.3 + rnd() * 3.4 : 20.3 + rnd() * 3.4); ay[k] = 1.3 + rnd() * 4.4;
+      vx[k] = vy[k] = 0; sp[k] = 2.4 + rnd() * .5; fa[k] = rnd() * 6.283;
+      grupo[k] = izq ? 0 : 1; rumbo[k] = izq ? 1 : 0; quieto[k] = 0; // rumbo 1 = hacia la base (derecha)
+    }
+  }
+
+  /* Huida de Brogue: g' = −1,2·g y relajación hasta que nada cambie (cada celda ≤ vecino + 1). */
+  function mapaHuida(m, res) {
+    var N = m.w * m.h, g = new Float64Array(N), cambio = true, vueltas = 0;
+    for (var i = 0; i < N; i++) g[i] = !m.pared(i) && isFinite(res.g[i]) ? -1.2 * res.g[i] : Infinity;
+    var vec = []; for (i = 0; i < N; i++) vec.push(m.pared(i) ? [] : m.vecinos(i, {}));
+    while (cambio && vueltas++ < 500) {
+      cambio = false;
+      for (i = 0; i < N; i++) { if (!isFinite(g[i])) continue; var vs = vec[i]; for (var k = 0; k < vs.length; k++) if (g[vs[k]] + 1 < g[i] - 1e-9) { g[i] = g[vs[k]] + 1; cambio = true; } }
+    }
+    var lo = Infinity, hi = -Infinity; res.orden.forEach(function (c) { if (g[c] < lo) lo = g[c]; if (g[c] > hi) hi = g[c]; });
+    var t = new Float32Array(N).fill(-1); res.orden.forEach(function (c) { t[c] = hi > lo ? (hi - g[c]) / (hi - lo) : 0; }); // rojo = peligro (cerca de ti)
+    return { orden: res.orden, g: g, t: t, revisadas: res.revisadas };
+  }
+
+  /* ── Simulación por cuadro (sin GSAP) ── */
+  function simFlujo(dt, D, m, t) {
+    var dir = D.huir ? D.dirHuir : D.dir; if (!dir) return;
+    var w = m.w, R = .5, R2 = R * R, i, j;
+    for (i = 0; i < n; i++) { sx[i] = 0; sy[i] = 0; }
+    for (i = 0; i < n; i++) for (j = i + 1; j < n; j++) {
+      var dx = ax[j] - ax[i], dy = ay[j] - ay[i], d2 = dx * dx + dy * dy;
+      if (d2 < R2 && d2 > 1e-6) { var d = Math.sqrt(d2), f = (R - d) / d * .5; sx[i] -= dx * f; sy[i] -= dy * f; sx[j] += dx * f; sy[j] += dy * f; }
+    }
+    var k6 = Math.min(1, dt * 6), k10 = Math.min(1, dt * 10);
+    for (i = 0; i < n; i++) {
+      var cx = Math.floor(ax[i]), cy = Math.floor(ay[i]), c = cy * w + cx;
+      if (m.pared(c)) { // le pintaron una pared encima: vuelve a una casilla libre cercana al héroe
+        var h = m.i(D.heroe.x, D.heroe.y); ax[i] = m.x(h) + .5 + Math.sin(fa[i]) * .3; ay[i] = m.y(h) + .5 + Math.cos(fa[i]) * .3; continue;
+      }
+      var j2 = dir[c], ux = 0, uy = 0;
+      if (j2 >= 0) {
+        ux = m.x(j2) + .5 - ax[i]; uy = m.y(j2) + .5 - ay[i]; var L = Math.sqrt(ux * ux + uy * uy) || 1; ux /= L; uy /= L;
+        var wob = Math.sin(t * 2.3 + fa[i]) * .25, px = -uy, py = ux; ux += px * wob; uy += py * wob;
+      }
+      vx[i] += (ux * sp[i] - vx[i]) * k6; vy[i] += (uy * sp[i] - vy[i]) * k6;
+      var nx = ax[i] + vx[i] * dt + sx[i] * k10, ny = ay[i] + vy[i] * dt + sy[i] * k10;
+      if (m.pared(Math.floor(ay[i]) * w + Math.floor(nx))) { nx = ax[i]; vx[i] = 0; }
+      if (m.pared(Math.floor(ny) * w + Math.floor(nx))) { ny = ay[i]; vy[i] = 0; }
+      ax[i] = nx; ay[i] = ny;
+    }
+  }
+  function simPasillo(dt, S, D, m) {
+    if (!D.dirIzq) return;
+    var w = m.w, choque = S.choque > .5, i, k;
+    for (i = 0; i < n; i++) {
+      var c = Math.floor(ay[i]) * w + Math.floor(ax[i]);
+      if (rumbo[i] === 1 && D.resDer.g[c] === 0) rumbo[i] = 0;      // llegó a la base: vuelve por minerales
+      else if (rumbo[i] === 0 && D.resIzq.g[c] === 0) rumbo[i] = 1; // cargó minerales: vuelve a la base
+      var dir = rumbo[i] ? D.dirDer : D.dirIzq, j = dir[c], ux = 0, uy = 0;
+      if (j >= 0) { ux = m.x(j) + .5 - ax[i]; uy = m.y(j) + .5 - ay[i]; var L = Math.sqrt(ux * ux + uy * uy) || 1; ux /= L; uy /= L; }
+      else { ux = rumbo[i] ? 1 : -1; } // dentro de la zona: sigue un poco hacia adentro
+      var bloq = false;
+      if (choque) for (k = 0; k < n && !bloq; k++) {
+        if (k === i) continue; var rx = ax[k] - ax[i], ry = ay[k] - ay[i], d2 = rx * rx + ry * ry;
+        if (d2 < .49 && rx * ux + ry * uy > .25 * Math.sqrt(d2)) bloq = true;
+      }
+      var s = bloq ? 0 : sp[i];
+      vx[i] += (ux * s - vx[i]) * Math.min(1, dt * 8); vy[i] += (uy * s - vy[i]) * Math.min(1, dt * 8);
+      var nx = ax[i] + vx[i] * dt, ny = ay[i] + vy[i] * dt;
+      if (m.pared(Math.floor(ay[i]) * w + Math.floor(nx))) { nx = ax[i]; vx[i] = 0; }
+      if (m.pared(Math.floor(ny) * w + Math.floor(nx))) { ny = ay[i]; vy[i] = 0; }
+      ax[i] = nx; ay[i] = ny;
+      quieto[i] = bloq && D.resIzq.g[c] !== 0 && D.resDer.g[c] !== 0 ? 1 : 0;
+    }
+  }
+  function simular(dt, S, D, api, t) {
+    if (!D.sim || dt <= 0) return;
+    var m = api.mundo();
+    if (D.sim === "pasillo" && D.mapa === "pasillo") simPasillo(dt, S, D, m);
+    else if (D.sim === "flujo" && D.mapa === "base") simFlujo(dt, D, m, t);
+  }
+
+  /* ── Dibujo ── */
+  function dibujarBichos(v, a, t, C) {
+    if (a <= 0 || !n) return;
+    var c = v.cx, T = v.T, r = T * .24, i;
+    c.save(); c.globalAlpha = a; c.lineWidth = Math.max(1, T * .045); c.strokeStyle = "#14161B";
+    for (i = 0; i < n; i++) {
+      c.fillStyle = grupo[i] ? C.rival3 : C.rival;
+      c.beginPath(); c.arc(v.px(ax[i]), v.py(ay[i]) + Math.sin(t * 7 + fa[i]) * T * .025, r, 0, 6.283); c.fill(); c.stroke();
+    }
+    c.fillStyle = "#fff"; c.beginPath();
+    for (i = 0; i < n; i++) { var x = v.px(ax[i]), y = v.py(ay[i]) + Math.sin(t * 7 + fa[i]) * T * .025 - r * .1; c.moveTo(x - r * .36 + r * .3, y); c.arc(x - r * .36, y, r * .3, 0, 6.283); c.moveTo(x + r * .36 + r * .3, y); c.arc(x + r * .36, y, r * .3, 0, 6.283); }
+    c.fill();
+    c.fillStyle = "#14161B"; c.beginPath();
+    for (i = 0; i < n; i++) {
+      var L = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]), ex = L > .05 ? vx[i] / L : 0, ey = L > .05 ? vy[i] / L : 0;
+      var x2 = v.px(ax[i]) + ex * r * .13, y2 = v.py(ay[i]) + Math.sin(t * 7 + fa[i]) * T * .025 - r * .1 + ey * r * .13;
+      c.moveTo(x2 - r * .36 + r * .15, y2); c.arc(x2 - r * .36, y2, r * .15, 0, 6.283); c.moveTo(x2 + r * .36 + r * .15, y2); c.arc(x2 + r * .36, y2, r * .15, 0, 6.283);
+    }
+    c.fill(); c.restore();
+  }
+  /* Las 100 líneas de A*, enredadas, dibujadas hasta la fracción p. */
+  function dibujarLineas(v, D, p, C) {
+    if (p <= 0 || !D.lineas) return; var c = v.cx, T = v.T;
+    c.save(); c.globalAlpha = .45; c.strokeStyle = C.rival; c.lineWidth = Math.max(1, T * .045); c.lineJoin = "round"; c.lineCap = "round"; c.beginPath();
+    var m = v._m;
+    for (var k = 0; k < D.lineas.length; k++) {
+      var L = D.lineas[k]; if (!L || L.length < 2) continue;
+      var o = ((k % 7) - 3) * T * .045, hasta = p * (L.length - 1), q;
+      c.moveTo(v.px(ax[k]) + o, v.py(ay[k]) + o);
+      for (q = 1; q <= Math.floor(hasta); q++) c.lineTo(v.px(m.x(L[q]) + .5) + o, v.py(m.y(L[q]) + .5) + o);
+      var f = hasta - Math.floor(hasta);
+      if (f > 0 && q < L.length) c.lineTo(v.px(SENDA.lerp(m.x(L[q - 1]), m.x(L[q]), f) + .5) + o, v.py(SENDA.lerp(m.y(L[q - 1]), m.y(L[q]), f) + .5) + o);
+    }
+    c.stroke(); c.restore();
+  }
+  function dibujarZonas(v, m, C) {
+    var c = v.cx, T = v.T; c.save();
+    for (var y = 1; y < m.h - 1; y++) for (var x = 1; x <= 3; x++) { // cristales
+      if (m.pared(m.i(x, y))) continue; var cx = v.px(x + .5), cy = v.py(y + .5), s = T * .22;
+      c.fillStyle = C.agua; c.globalAlpha = .75; c.beginPath(); c.moveTo(cx, cy - s * 1.3); c.lineTo(cx + s, cy); c.lineTo(cx, cy + s * 1.3); c.lineTo(cx - s, cy); c.closePath(); c.fill();
+    }
+    c.globalAlpha = .18; c.fillStyle = C.heroe; c.fillRect(v.px(22), v.py(1), T * 3, T * (m.h - 2));
+    c.restore();
+  }
+  function rotulosZonas(v) {
+    var c = v.cx, T = v.T; c.save();
+    c.globalAlpha = .9; c.fillStyle = "#fff"; c.font = "700 " + Math.round(T * .42) + "px ui-monospace, Menlo, Consolas, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
+    c.fillText("MINERALES", v.px(3), v.py(.5)); c.fillText("BASE", v.px(23.5), v.py(.5));
+    c.restore();
+  }
+
+  /* ── Datos (contadores) ── */
+  function datos(D, api) {
+    var p = api.paso();
+    if (D.pasoDatos !== p) { api.limpiarDatos(); D.pasoDatos = p; }
+    if (p === 0) { api.dato("b", "Búsquedas A* por recálculo", 100, "rojo"); api.dato("c", "Casillas revisadas", D.sumaA || 0, "ambar"); }
+    else if (p === 1 || p === 2) { api.dato("b", "Búsquedas por recálculo", 1, "verde"); api.dato("c", "Casillas revisadas", D.res.revisadas, "ambar"); }
+    else if (p === 3) { api.dato("b", "Bichos", n, "rojo"); api.dato("c", "Búsquedas por bicho", 0, "verde"); }
+    else if (p === 4) { api.dato("b", "Olas", "2", "verde"); api.dato("c", "Bichos que huyen", n, "rojo"); }
+    else if (p === 6) { api.dato("m", "Modo", D.huir ? "Huir" : "Perseguir", D.huir ? "lila" : "rojo"); api.dato("b", "Olas por recálculo", D.huir ? 2 : 1, "verde"); }
+  }
+
+  var tPrev = 0;
+  SENDA.escena({
+    mapas: { base: BASE, pasillo: PASILLO },
+    S: { lineas: 0, bichos: 1, olaA: 1, flechas: 0, choque: 1 },
+    reiniciar: function (D, api) {
+      var m = api.mundo("base");
+      if (!D.heroe) { var h = m.marca("H"); D.heroe = { tipo: "heroe", x: h[0], y: h[1] }; }
+      D.actores = [D.heroe]; D.huir = false; D.sim = null; D.lineas = null;
+    },
+    alEditar: function (D, api) {
+      var m = api.mundo();
+      if (D.mapa === "pasillo") {
+        var izq = [], der = [];
+        for (var i = 0; i < m.t.length; i++) { if (m.pared(i)) continue; if (m.x(i) <= 3) izq.push(i); else if (m.x(i) >= 22) der.push(i); }
+        D.resIzq = api.buscar(m, izq, -1, { algo: "bfs" }); D.dirIzq = api.flujo(m, D.resIzq, {});
+        D.resDer = api.buscar(m, der, -1, { algo: "bfs" }); D.dirDer = api.flujo(m, D.resDer, {});
+        return;
+      }
+      var ih = m.i(D.heroe.x, D.heroe.y);
+      D.res = api.buscar(m, ih, -1, { algo: "bfs" });
+      D.dir = api.flujo(m, D.res, {});
+      D.resHuir = mapaHuida(m, D.res);
+      D.dirHuir = api.flujo(m, D.resHuir, {});
+      datos(D, api);
+    },
+    pasos: [
+      { // 1 · cien búsquedas A*, cien líneas enredadas
+        s: { lineas: 1, bichos: 1, ola: 0, numeros: 0, flechas: 0 },
+        fijar: function (D, api) {
+          sembrar(D, api, "lejos");
+          var m = api.mundo("base"), ih = m.i(D.heroe.x, D.heroe.y), suma = 0;
+          D.lineas = [];
+          for (var k = 0; k < n; k++) { var r = api.buscar(m, m.i(Math.floor(ax[k]), Math.floor(ay[k])), ih, { algo: "astar" }); D.lineas.push(r.camino); suma += r.revisadas; }
+          D.sumaA = suma;
+        },
+        anim: function (tl, S) { tl.fromTo(S, { lineas: 0 }, { lineas: 1, duration: 2.6, ease: "power1.inOut" }, .3); }
+      },
+      { // 2 · una sola ola desde el héroe
+        s: { lineas: 0, ola: 1, numeros: .45, bichos: .35 },
+        anim: function (tl, S) {
+          tl.to(S, { lineas: 0, bichos: .35, duration: .6, ease: "power2.out" })
+            .fromTo(S, { ola: 0 }, { ola: 1, duration: 3, ease: "none" }, .2)
+            .to(S, { numeros: .45, duration: .8 }, .4);
+        }
+      },
+      { // 3 · flechas: el campo de flujo (acercamos la cámara al héroe)
+        s: { flechas: 1, numeros: .12, olaA: .45, bichos: .25, z: 1.35, cx: 12, cy: 7.6 },
+        anim: function (tl, S) {
+          tl.to(S, { z: 1.35, cx: 12, cy: 7.6, olaA: .45, numeros: .12, bichos: .25, duration: 1.3, ease: "power3.inOut" })
+            .fromTo(S, { flechas: 0 }, { flechas: 1, duration: 1.2, ease: "power1.out" }, .6);
+        }
+      },
+      { // 4 · que fluyan
+        s: { z: 1, cx: 14, cy: 7, flechas: .3, bichos: 1, olaA: .3, numeros: 0 },
+        fijar: function (D, api) { D.sim = "flujo"; D.huir = false; sembrar(D, api, "lejos"); },
+        dur: 1.2
+      },
+      { // 5 · huir: ×(−1,2) y otra ola
+        s: { olaA: .55, flechas: .3, gig: 0 },
+        fijar: function (D, api) { D.sim = "flujo"; D.huir = true; sembrar(D, api, "cerca"); },
+        anim: function (tl, S, api) {
+          api.gigante("×(−1,2)<small>el mapa del miedo</small>");
+          tl.set(S, { ola: 0 })
+            .to(S, { olaA: .55, duration: .5 }, 0)
+            .fromTo(S, { gig: 0 }, { gig: .9, duration: .5, ease: "power2.out" }, 0)
+            .to(S, { gig: 0, duration: .5, ease: "power2.in" }, 1.9)
+            .to(S, { ola: 1, duration: 2.4, ease: "none" }, .3);
+        }
+      },
+      { // 6 · StarCraft: el pasillo se atasca y luego se apagan los choques
+        mapa: "pasillo",
+        s: { cx: 13, cy: 3.5, z: 1, olaA: 0, flechas: 0, numeros: 0, ola: 0, choque: 0 },
+        fijar: function (D) { D.actores = []; D.sim = "pasillo"; D.huir = false; sembrarPasillo(); },
+        anim: function (tl, S) {
+          tl.set(S, { choque: 1 })
+            .to(S, { cx: 13, cy: 3.5, z: 1, olaA: 0, flechas: 0, duration: 1.2, ease: "power3.inOut" }, 0)
+            .to(S, { choque: 0, duration: .01 }, 5.5);
+        }
+      },
+      { // 7 · tu turno
+        mapa: "base",
+        s: { cx: 14, cy: 7, z: 1, olaA: .3, flechas: .3, ola: 1, choque: 1 },
+        fijar: function (D, api) { D.actores = [D.heroe]; D.sim = "flujo"; D.huir = !!D.turnoHuir; sembrar(D, api, "lejos"); },
+        toca: ["heroe", "pared", "borrar",
+          { texto: "Perseguir", pulsado: function (api) { return !api.D.huir; }, accion: function (api) { api.D.turnoHuir = false; api.D.huir = false; api.refrescarHerr(); datos(api.D, api); } },
+          { texto: "Huir", pulsado: function (api) { return api.D.huir; }, accion: function (api) { api.D.turnoHuir = true; api.D.huir = true; api.refrescarHerr(); datos(api.D, api); } }]
+      }
+    ],
+    alCambiar: function (i, D, api) {
+      datos(D, api);
+      if (SENDA.quieto && D.sim) for (var k = 0; k < 240; k++) simular(1 / 30, api.S, D, api, k / 30); // sin movimiento: el estado final
+    },
+    dibujar: function (v, S, D, api, t) {
+      var C = SENDA.colores(), m = api.mundo(), dt = Math.min(.05, Math.max(0, t - tPrev)); tPrev = t;
+      v._m = m;
+      if (!SENDA.quieto) simular(dt, S, D, api, t);
+      v.rejilla(S.rejilla); v.recortar();
+      v.piso(m, S.piso, 0, S.revela);
+      if (D.mapa === "pasillo") dibujarZonas(v, m, C);
+      else v.ola(m, D.huir ? D.resHuir : D.res, S.ola, S.olaA);
+      v.paredes(m, S.paredes, S.alto, S.revela);
+      if (D.mapa === "pasillo") rotulosZonas(v);
+      if (D.mapa !== "pasillo") {
+        var res = D.huir ? D.resHuir : D.res;
+        if (res) v.numeros(m, S.numeros, function (i) { var tt = res.t[i]; return tt >= 0 && tt <= S.ola + 1e-6 && isFinite(res.g[i]) ? String(Math.round(res.g[i])) : null; }, "#14161B");
+        v.flechas(m, D.huir ? D.dirHuir : D.dir, S.flechas);
+        dibujarLineas(v, D, S.lineas, C);
+      }
+      dibujarBichos(v, S.bichos * S.actores, t, C);
+      SENDA.dibujarActores(v, S, D, t);
+      v.soltar();
+      if (api.paso() === 5 && D.mapa === "pasillo") {
+        var on = S.choque > .5, q = 0; for (var k = 0; k < n; k++) q += quieto[k];
+        if (D.chPrev !== on) { api.dato("ch0"); api.dato("ch1"); api.dato("q"); D.chPrev = on; } // mismo orden al cambiar de color
+        api.dato(on ? "ch0" : "ch1", "Choques entre recolectores", on ? "encendidos" : "apagados", on ? "rojo" : "verde");
+        api.dato("q", "Recolectores atascados", q, "ambar");
+      }
+    },
+    textoFin: "Fin del río"
+  });
+})();
+</script>
+</body>
+</html>

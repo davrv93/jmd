@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buscar es soltar una ola</title>
+<!-- Ready Set Go · Clase 2 · Pathfinding 2 de 5. Motor: ../../comun/senda.js (SENDA). Escrita a mano. -->
+<link rel="stylesheet" href="../../comun/senda.css">
+</head>
+<body>
+<main class="sd">
+  <canvas id="sd-lienzo" tabindex="0" aria-label="Un laberinto propio con un bicho rojo y el héroe Cubito. Desde el bicho sale una ola que pinta cada casilla con su distancia en pasos, del rojo (cerca) al turquesa (lejos). Cada casilla guarda una flecha hacia la casilla desde la que llegó la ola. Siguiendo esas flechas desde el héroe aparece el camino más corto. Después la ola sale del héroe y tres bichos bajan por los números hasta él."></canvas>
+  <header class="sd-cab">
+    <div class="sd-ceja"><b>RSG · Clase 2</b><span>Pathfinding 2 de 5 · Moore, 1959</span></div>
+    <h1>Buscar es <em>soltar una ola</em></h1>
+  </header>
+  <ol class="sd-relato">
+    <li><h2>Una piedra en el estanque</h2>
+      <p>El bicho no sabe dónde estás. Hace lo único que puede: mira sus cuatro vecinos. Luego, los vecinos de esos vecinos.</p>
+      <p>Como una piedra que cae en el agua.</p></li>
+    <li><h2>La ola anota distancias</h2>
+      <p>Cada casilla guarda en cuántos pasos llegó la ola. Se llama <b>búsqueda en anchura</b> (BFS).</p>
+      <p>Edward Moore la publicó en 1959 para resolver laberintos.</p></li>
+    <li><h2>Migas de pan</h2>
+      <p>Además del número, cada casilla anota <b>de dónde</b> le llegó la ola. Es una miga de pan que apunta hacia atrás.</p></li>
+    <li><h2>Del héroe, hacia atrás</h2>
+      <p>Cuando la ola toca al héroe, se siguen las migas de regreso. Ese es el camino más corto.</p>
+      <p>No hace falta comprobarlo: la ola llegó primero por ahí.</p></li>
+    <li><h2>El giro: la ola sale de ti</h2>
+      <p>Ahora suelta la ola desde el héroe. Cualquier bicho, esté donde esté, solo baja por los números hasta ti.</p>
+      <p>Un cálculo sirve para todos. En <i>Brogue</i> lo llaman <b>mapa de Dijkstra</b>.</p></li>
+    <li><span class="sd-tuturno">Tu turno</span><h2>Enciérrate si puedes</h2>
+      <p>Dibuja paredes y arrastra al héroe. La ola se vuelve a soltar cada vez.</p>
+      <p>¿Puedes encerrarte para que la ola no llegue? Mira qué le pasa al camino.</p></li>
+  </ol>
+  <p class="sd-fuente">Moore, E. F. (1959). The shortest path through a maze. <i>Proc. Int. Symposium on the Theory of Switching</i>, Harvard Univ. Press, 285–292 · Walker, B. (2010). The Incredible Power of Dijkstra Maps. RogueBasin.</p>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/senda.js"></script>
+<script>
+(function () {
+  var MAPA = [
+    "##########################",
+    "#........#...............#",
+    "#..R.....#.....####......#",
+    "#........#........#......#",
+    "#....#####........#..##..#",
+    "#.................#..#...#",
+    "#######....####...#..#...#",
+    "#.........#..#.......#...#",
+    "#..####...#..#####...#...#",
+    "#..#......#..........#.H.#",
+    "#..#..#####....#######...#",
+    "#..#...........#.........#",
+    "#.S............#......T..#",
+    "##########################"
+  ];
+  var C = SENDA.colores();
+  var rojo = function () { return SENDA.colores().rival; };
+
+  SENDA.escena({
+    mapas: { base: MAPA },
+    S: { pulso: 0 },
+    reiniciar: function (D, api) {
+      var m = api.mundo(), r = m.marca("R"), h = m.marca("H");
+      if (!D.inicio) D.inicio = { R: r, H: h, S: m.marca("S"), T: m.marca("T") };
+      D.actores = D.actores || [{ tipo: "rival", x: r[0], y: r[1] }, { tipo: "heroe", x: h[0], y: h[1] }];
+      D.actores = D.actores.slice(0, 2); D.desdeHeroe = false;
+    },
+    alEditar: function (D, api) {
+      var m = api.mundo(), A = D.actores, he = A[1], rv = A[0];
+      var ih = m.i(he.x, he.y), ir = m.i(rv.x, rv.y);
+      if (!D.desdeHeroe) {
+        D.res = api.buscar(m, ir, -1, { algo: "bfs" });      // la ola completa desde el bicho
+        var hasta = api.buscar(m, ir, ih, { algo: "bfs" }); // y el camino hasta el héroe
+        D.caminos = hasta.camino ? [{ celdas: hasta.camino.slice().reverse(), clave: "camino" }] : [];
+        D.largo = hasta.camino ? hasta.camino.length - 1 : null;
+      } else {
+        D.res = api.buscar(m, ih, -1, { algo: "bfs" });
+        var cols = [C.rival, C.rival2, C.rival3];
+        D.caminos = A.filter(function (a) { return a.tipo === "rival"; }).map(function (a, k) {
+          var c = m.i(a.x, a.y); if (!isFinite(D.res.g[c])) return null;
+          var celdas = []; for (; c >= 0; c = D.res.padre[c]) celdas.push(c);
+          return { celdas: celdas, clave: "camino", color: cols[k % 3], ancho: .16, desfase: (k - 1) * .07 };
+        }).filter(Boolean);
+        D.largo = isFinite(D.res.g[m.i(A[0].x, A[0].y)]) ? D.res.g[m.i(A[0].x, A[0].y)] : null;
+      }
+      if (api.paso() >= 5) {
+        api.dato("ola", "Casillas que tocó la ola", D.res.revisadas, "ambar");
+        api.dato("pasos", "Pasos del bicho rojo", D.largo == null ? "null" : D.largo, "rojo");
+      } else api.limpiarDatos();
+    },
+    pasos: [
+      { // 1 · la piedra: cámara encima del bicho, primer anillo
+        s: function (D, api) { var r = D.actores[0], gm = gmax(D); return { z: 2.3, cx: r.x + .5, cy: r.y + .5, ola: 2.2 / gm, pulso: 1 }; },
+        anim: function (tl, S, api) {
+          var D = api.D, r = D.actores[0], gm = gmax(D);
+          tl.to(S, { z: 2.3, cx: r.x + .5, cy: r.y + .5, duration: 1.4, ease: "power3.inOut" })
+            .fromTo(S, { pulso: 0 }, { pulso: 1, duration: 1.1, ease: "power2.out" }, "-=0.3")
+            .to(S, { ola: 1.01 / gm, duration: .6, ease: "power1.out" }, "-=0.7")
+            .to(S, { ola: 2.2 / gm, duration: .8, ease: "power1.out" }, "+=0.35");
+        }
+      },
+      { // 2 · la ola completa con números
+        s: { z: 1, cx: 13, cy: 7, ola: 1, numeros: 1, pulso: 0 },
+        anim: function (tl, S) {
+          tl.to(S, { z: 1, cx: 13, cy: 7, numeros: 1, pulso: 0, duration: 1.2, ease: "power3.inOut" })
+            .to(S, { ola: 1, duration: 3.6, ease: "none" }, .4);
+        }
+      },
+      { // 3 · migas: acercamos una zona del laberinto
+        s: { migas: 1, numeros: .25, z: 1.7, cx: 8, cy: 6 },
+        dur: 1.4
+      },
+      { // 4 · el camino, del héroe hacia atrás
+        s: { camino: 1, migas: .3, numeros: .15, z: 1, cx: 13, cy: 7 },
+        anim: function (tl, S) {
+          tl.to(S, { z: 1, cx: 13, cy: 7, migas: .3, numeros: .15, duration: 1.1, ease: "power3.inOut" })
+            .fromTo(S, { camino: 0 }, { camino: 1, duration: 2.4, ease: "power2.inOut" }, .6);
+        }
+      },
+      { // 5 · la ola sale del héroe; tres bichos bajan
+        s: { camino: 1, migas: 0, numeros: .55, ola: 1, gig: 0 },
+        fijar: function (D, api) {
+          var I = D.inicio;
+          D.actores = [{ tipo: "rival", x: I.R[0], y: I.R[1] }, D.actores[1], { tipo: "rival", x: I.S[0], y: I.S[1], color: C.rival2 }, { tipo: "rival", x: I.T[0], y: I.T[1], color: C.rival3 }];
+          D.desdeHeroe = true;
+        },
+        anim: function (tl, S, api) {
+          api.gigante("1 ola<small>sirve para todos los bichos</small>");
+          tl.set(S, { ola: 0, camino: 0, migas: 0 })
+            .to(S, { numeros: .55, duration: .5 })
+            .to(S, { ola: 1, duration: 2.8, ease: "none" }, 0)
+            .fromTo(S, { gig: 0 }, { gig: .9, duration: .6, ease: "power2.out" }, 1.6)
+            .to(S, { gig: 0, duration: .6, ease: "power2.in" }, "+=1.1")
+            .to(S, { camino: 1, duration: 1.8, ease: "power2.inOut" }, 2.6);
+        }
+      },
+      { // 6 · tu turno
+        s: { numeros: .35, ola: 1, camino: 1 },
+        fijar: function (D) { D.desdeHeroe = true; },
+        toca: ["pared", "borrar", "heroe"]
+      }
+    ],
+    dibujar: function (v, S, D, api, t) {
+      SENDA.dibujoBase(v, S, D, api, t);
+      if (S.pulso > 0 && S.pulso < 1) { var r = D.actores[0]; v.anillo(r.x, r.y, S.pulso * 2.6, (1 - S.pulso) * .9, SENDA.colores().rival, .07); v.anillo(r.x, r.y, S.pulso * 1.4, (1 - S.pulso) * .6, SENDA.colores().rival, .05); }
+    },
+    textoFin: "Fin de la ola"
+  });
+  function gmax(D) { var g = 0; D.res.orden.forEach(function (i) { if (D.res.g[i] > g) g = D.res.g[i]; }); return g || 1; }
+})();
+</script>
+</body>
+</html>

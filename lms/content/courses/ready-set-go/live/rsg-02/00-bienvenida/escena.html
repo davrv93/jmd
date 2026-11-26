@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoy tu bicho te busca</title>
+<!-- Ready Set Go · Clase 2 · Bienvenida. Motor: ../../comun/senda.js (SENDA). Escrita a mano. -->
+<link rel="stylesheet" href="../../comun/senda.css">
+</head>
+<body>
+<main class="sd">
+  <canvas id="sd-lienzo" tabindex="0" aria-label="Un bicho intenta llegar al héroe Cubito acercándose en línea recta y se atasca contra una pared en forma de U. Luego suelta una ola por todo el mapa y encuentra el camino que rodea la pared. Al final, el mapa de la clase: siete paradas unidas por un camino."></canvas>
+  <header class="sd-cab">
+    <div class="sd-ceja"><b>RSG · Clase 2</b><span>Jueves 26 de noviembre · 9:15 pm</span></div>
+    <h1>Hoy tu bicho deja de chocar: <em>te busca</em></h1>
+  </header>
+  <ol class="sd-relato">
+    <li><h2>Así terminó la clase 1</h2>
+      <p>Tu rival seguía una regla: «acércate a tu objetivo». Funciona en campo abierto.</p>
+      <p>Pon una pared en medio y se queda pegado, mirándote.</p></li>
+    <li><h2>Hoy, busca</h2>
+      <p>En vez de mirar solo a su alrededor, el bicho recorre el mapa entero antes de dar un paso.</p>
+      <p>Eso es <b>pathfinding</b>: encontrar un camino. Hoy lo haces puro, sin magia.</p></li>
+    <li><h2>El mapa de la clase</h2>
+      <p>Empiezas <b>tu proyecto en Forja</b> y lo guardas en tu aula. Luego cinco ideas que se tocan con la mano, tu nivel con <b>EasyStar.js</b> y tu rival dentro de tu juego.</p>
+      <p>Usa las flechas o «Siguiente» para avanzar.</p></li>
+  </ol>
+  <p class="sd-fuente">Ready Set Go! Haz tu videojuego con IA de forma profesional · Clase 2 de 4 · Pathfinding para diseño de videojuegos.</p>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/senda.js"></script>
+<script>
+(function () {
+  var MAPA = [
+    "####################",
+    "#..................#",
+    "#..................#",
+    "#.......#####......#",
+    "#...........#......#",
+    "#..R........#....H.#",
+    "#...........#......#",
+    "#.......#####......#",
+    "#..................#",
+    "#..................#",
+    "####################"
+  ];
+  var AGENDA = [
+    "..........................",
+    "..........................",
+    "..........................",
+    "..........................",
+    "..........................",
+    "..........................",
+    "..........................",
+    "..........................",
+    "..........................",
+    "..........................",
+    "..........................",
+    ".........................."
+  ];
+  // Paradas del mapa de la clase: [x, y, título, minutos]
+  var PARADAS = [
+    [3, 3, "Bienvenida", 5], [8, 3, "Tu proyecto en Forja", 12], [13, 3, "El mapa es un grafo", 8], [18, 3, "La ola (BFS)", 10], [23, 3, "El terreno cuesta", 9],
+    [23, 8, "A*: ola con brújula", 10], [18, 8, "Cien rivales, un río", 9], [13, 8, "Tu nivel con EasyStar", 15], [8, 8, "Tu rival en tu juego", 7], [3, 8, "Cierre", 5]
+  ];
+  var FORJA = { 1: 1, 8: 1 }, PRACTICA = 7;
+
+  SENDA.escena({
+    mapas: { base: MAPA, agenda: AGENDA },
+    S: { regla: 0, duda: 0, agenda: 0, ruta: 0 },
+    reiniciar: function (D, api) {
+      var m = api.mundo("base"), r = m.marca("R"), h = m.marca("H");
+      D.actores = [{ tipo: "rival", x: r[0], y: r[1] }, { tipo: "heroe", x: h[0], y: h[1] }];
+      D.res = null; D.caminos = null;
+      // La regla de la clase 1: en cada paso, el vecino más cercano al héroe (sin volver atrás). Se atasca en la U.
+      var celdas = [m.i(r[0], r[1])], vis = {}, ih = m.i(h[0], h[1]);
+      vis[celdas[0]] = 1;
+      for (var k = 0; k < 40; k++) {
+        var c = celdas[celdas.length - 1], mejor = -1, md = 1e9;
+        m.vecinos(c, {}).forEach(function (j) { if (vis[j]) return; var d = Math.hypot(m.x(j) - h[0], m.y(j) - h[1]); if (d < md - 1e-9) { md = d; mejor = j; } });
+        var dActual = Math.hypot(m.x(c) - h[0], m.y(c) - h[1]);
+        if (mejor < 0 || md >= dActual) break; vis[mejor] = 1; celdas.push(mejor);
+      }
+      D.regla = celdas;
+    },
+    pasos: [
+      { s: { regla: 1, duda: 1 },
+        anim: function (tl, S) { tl.fromTo(S, { regla: 0 }, { regla: 1, duration: 2.2, ease: "power1.inOut" }, .6).fromTo(S, { duda: 0 }, { duda: 1, duration: .6, ease: "back.out(2)" }); } },
+      { s: { duda: 0, ola: 1, camino: 1, regla: 0 },
+        fijar: function (D, api) {
+          var m = api.mundo(), A = D.actores;
+          D.res = api.buscar(m, m.i(A[0].x, A[0].y), -1, { algo: "bfs" });
+          var p = api.buscar(m, m.i(A[0].x, A[0].y), m.i(A[1].x, A[1].y), { algo: "bfs" });
+          D.caminos = [{ celdas: p.camino, clave: "camino", color: api.C.camino }];
+        },
+        anim: function (tl, S) {
+          tl.to(S, { duda: 0, regla: 0, duration: .4 })
+            .fromTo(S, { ola: 0 }, { ola: 1, duration: 2.6, ease: "none" }, .3)
+            .fromTo(S, { camino: 0 }, { camino: 1, duration: 1.6, ease: "power2.inOut" }, "-=0.4");
+        } },
+      { mapa: "agenda", s: { ola: 0, camino: 0, agenda: 1, ruta: 1, actores: 0, paredes: 0, piso: 0, cx: 13, cy: 6.3 },
+        fijar: function (D) { D.res = null; D.caminos = null; },
+        anim: function (tl, S) {
+          tl.to(S, { actores: 0, duration: .3 })
+            .fromTo(S, { ruta: 0 }, { ruta: 1, duration: 3.2, ease: "power1.inOut" }, .2)
+            .fromTo(S, { agenda: 0 }, { agenda: 1, duration: 3.2, ease: "none" }, .2);
+        } }
+    ],
+    dibujar: function (v, S, D, api, t) {
+      var C = api.C;
+      SENDA.dibujoBase(v, S, D, api, t);
+      var m = api.mundo();
+      v.recortar();
+      if (D.regla && S.regla > 0 && D.mapa === "base") v.camino(m, D.regla, S.regla, C.rival, .14);
+      if (S.duda > 0 && D.mapa === "base") { // signo de pregunta sobre el bicho atascado
+        var u = D.regla[D.regla.length - 1], x = v.px(m.x(u) + .5), y = v.py(m.y(u) - .45) + Math.sin(t * 5) * v.T * .05;
+        var c = v.cx; c.save(); c.globalAlpha = S.duda; c.fillStyle = C.rival; c.font = "italic 700 " + Math.round(v.T * .9 * S.duda) + "px Georgia, serif"; c.textAlign = "center"; c.fillText("?", x, y); c.restore();
+      }
+      if (S.ruta > 0 && D.mapa === "agenda") agenda(v, m, S, C, t);
+      v.soltar();
+    },
+    textoFin: "¡Empezamos!"
+  });
+
+  function agenda(v, m, S, C, t) {
+    var c = v.cx, T = v.T, n = PARADAS.length;
+    var pts = PARADAS.map(function (p) { return [v.px(p[0] + .5), v.py(p[1] + .5)]; });
+    // Una ruta en U: fila de arriba a la derecha, baja y vuelve por abajo. Etiquetas debajo de cada parada.
+    var tot = 0, seg = []; for (var k = 1; k < pts.length; k++) { var d = Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]); seg.push(d); tot += d; }
+    var resta = tot * S.ruta, hx = pts[0][0], hy = pts[0][1];
+    c.save(); c.strokeStyle = C.tinta; c.lineWidth = T * .16; c.lineCap = "round"; c.lineJoin = "round"; c.beginPath(); c.moveTo(hx, hy);
+    for (k = 1; k < pts.length && resta > 0; k++) { var u = Math.min(1, resta / seg[k - 1]); hx = pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * u; hy = pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * u; c.lineTo(hx, hy); resta -= seg[k - 1]; }
+    c.stroke(); c.restore();
+    c.save();
+    PARADAS.forEach(function (p, k) {
+      var a = SENDA.clamp(S.agenda * (n + .5) - k, 0, 1); if (a <= 0) return;
+      var x = pts[k][0], y = pts[k][1], col = k === PRACTICA ? C.rival : FORJA[k] || k === 0 ? C.heroe : C.fondo;
+      c.globalAlpha = a; c.fillStyle = col; c.strokeStyle = C.tinta; c.lineWidth = T * .1;
+      c.beginPath(); c.arc(x, y, T * .46 * (0.6 + .4 * a), 0, 7); c.fill(); c.stroke();
+      c.fillStyle = k === PRACTICA ? "#fff" : FORJA[k] ? "#14161B" : C.tinta; c.font = "800 " + Math.round(T * .4) + "px ui-monospace, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(String(k), x, y + T * .03);
+      c.fillStyle = C.tinta; c.font = "700 " + Math.round(T * .36) + "px system-ui, sans-serif"; var ar = p[1] < 5 ? -2.45 : 0; c.fillText(p[2], x, y + T * (1.05 + ar));
+      c.fillStyle = k === PRACTICA ? C.rival : FORJA[k] ? C.tinta : C.suave; c.font = "700 " + Math.round(T * .3) + "px ui-monospace, Menlo, monospace"; c.fillText(p[3] + " min" + (k === PRACTICA ? " · práctica" : FORJA[k] ? " · Forja" : ""), x, y + T * (1.5 + ar));
+    });
+    c.restore();
+    // El bicho que recorre la ruta mientras se dibuja.
+    if (S.ruta > 0 && S.ruta < 1) v.bicho((hx - v.ox) / T - .5, (hy - v.oy) / T - .5, 1, C.rival, [1, 0], t, 0);
+  }
+})();
+</script>
+</body>
+</html>

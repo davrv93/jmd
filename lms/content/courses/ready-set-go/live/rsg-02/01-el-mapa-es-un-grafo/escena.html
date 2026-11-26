@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu rival ve un grafo</title>
+<!-- Ready Set Go · Clase 2 · Pathfinding 1 de 5. Motor: ../../comun/senda.js (SENDA). Escrita a mano. -->
+<link rel="stylesheet" href="../../comun/senda.css">
+</head>
+<body>
+<main class="sd">
+  <canvas id="sd-lienzo" tabindex="0" aria-label="Un nivel propio con paredes, el héroe Cubito y un bicho. El nivel se corta en casillas con 0 (piso) y 1 (pared). Cada casilla de piso se encoge hasta ser un punto y las casillas vecinas se unen con líneas: un grafo. Luego aparecen las diagonales, una diagonal que corta la esquina de una pared tachada en rojo, y una flecha de un solo sentido para una caída."></canvas>
+  <header class="sd-cab">
+    <div class="sd-ceja"><b>RSG · Clase 2</b><span>Pathfinding 1 de 5</span></div>
+    <h1>Tu rival no ve el nivel: <em>ve un grafo</em></h1>
+  </header>
+  <ol class="sd-relato">
+    <li><h2>Esto ve el jugador</h2>
+      <p>Un nivel con paredes, tu héroe y un bicho que quiere alcanzarte.</p>
+      <p>Para ti es un dibujo. Para el bicho todavía no es nada.</p></li>
+    <li><h2>Lo partimos en casillas</h2>
+      <p>Cortamos el nivel en casillas iguales: <b>0</b> si se camina, <b>1</b> si es pared.</p>
+      <p>Ese arreglo de números es todo lo que el rival sabe del mundo. En EasyStar es <code>setGrid(mapa)</code>.</p></li>
+    <li><h2>Cada casilla, un nodo</h2>
+      <p>Cada casilla de piso se vuelve un punto, y cada vecino al que se puede pasar, una línea.</p>
+      <p>Puntos y líneas: eso es un <b>grafo</b>. Buscar un camino es buscar dentro de él.</p></li>
+    <li><h2>¿Cuatro vecinos u ocho?</h2>
+      <p>Con 4 vecinos el bicho se mueve como la torre del ajedrez; con 8, como el rey.</p>
+      <p>Si dejas <b>cortar esquinas</b>, la diagonal roza el canto de la pared y el jugador lo nota.</p></li>
+    <li><h2>Lo que no está en el grafo, no existe</h2>
+      <p>Una caída a la que solo se baja es una flecha de <b>un solo sentido</b>.</p>
+      <p>Si no la pones en el grafo, tu rival nunca la usará, ni para atajar ni para evitarla.</p></li>
+    <li><span class="sd-tuturno">Tu turno</span><h2>Rompe las líneas</h2>
+      <p>Dibuja y borra paredes. Cambia entre 4 y 8 vecinos.</p>
+      <p>¿Cuántos nodos y cuántas aristas tiene tu nivel? ¿Qué pasa con las diagonales junto a una pared?</p></li>
+  </ol>
+  <p class="sd-fuente">Patel, A. (2014). Grids and Graphs. Red Blob Games · EasyStar.js: setGrid, enableDiagonals, enableCornerCutting, setDirectionalCondition (github.com/prettymuchbryce/easystarjs).</p>
+</main>
+<script src="../../comun/gsap.min.js"></script>
+<script src="../../comun/senda.js"></script>
+<script>
+(function () {
+  var MAPA = [
+    "################",
+    "#..R...#.......#",
+    "#......#..##...#",
+    "#..##..#...#...#",
+    "#...#......#...#",
+    "#...#..###.#.H.#",
+    "#......#.......#",
+    "#..###.#..###..#",
+    "#..............#",
+    "################"
+  ];
+  // La esquina que se corta: de (5,3) a (4,2) rozando la pared (4,3). La caída: de (10,4) a (10,5).
+  var ESQ = [[5, 3], [4, 2]], CAIDA = [[10, 4], [10, 5]];
+
+  var api = SENDA.escena({
+    mapas: { base: MAPA },
+    S: { binario: 0, d8: 0, esquina: 0, flecha: 0, rejilla: .35 },
+    reiniciar: function (D, api) {
+      var m = api.mundo(), r = m.marca("R"), h = m.marca("H");
+      D.actores = D.actores || [{ tipo: "rival", x: r[0], y: r[1] }, { tipo: "heroe", x: h[0], y: h[1] }];
+      D.op = D.op || { diag: false, esquinas: false };
+      m.dir = {};
+    },
+    alEditar: function (D, api) {
+      var m = api.mundo(), nodos = 0, aristas = 0;
+      for (var i = 0; i < m.t.length; i++) if (!m.pared(i)) { nodos++; aristas += m.vecinos(i, D.op).length; }
+      if (api.paso() === 5) { api.dato("n", "Nodos", nodos, "ambar"); api.dato("a", "Aristas", aristas / 2, "rojo"); api.dato("v", "Vecinos", D.op.diag ? 8 : 4); }
+      else api.limpiarDatos();
+    },
+    pasos: [
+      { s: { z: 1, rejilla: .35 } },
+      { s: { binario: 1, rejilla: 1, actores: .25 },
+        anim: function (tl, S) { tl.to(S, { rejilla: 1, actores: .25, duration: .8 }).to(S, { binario: 1, duration: 1.2, ease: "power2.out" }, .3); } },
+      { s: { binario: 0, grafo: 1, aristas: 1, actores: .9 },
+        anim: function (tl, S) {
+          tl.to(S, { binario: 0, duration: .5 })
+            .to(S, { grafo: 1, duration: 1.6, ease: "expo.inOut" }, .2)
+            .to(S, { aristas: 1, duration: 1.2, ease: "power2.out" }, 1.2);
+        } },
+      { s: { d8: 1, esquina: 1, z: 1.7, cx: 5.5, cy: 3.5 },
+        anim: function (tl, S) {
+          tl.to(S, { z: 1.7, cx: 5.5, cy: 3.5, duration: 1.4, ease: "power3.inOut" })
+            .to(S, { d8: 1, duration: 1, ease: "power2.out" }, .9)
+            .to(S, { esquina: 1, duration: .6, ease: "back.out(2)" }, "+=0.5");
+        } },
+      { s: { d8: 0, esquina: 0, flecha: 1, z: 1.8, cx: 10, cy: 4.6 },
+        fijar: function (D, api) { var m = api.mundo(); m.dir[m.i(10, 4)] = [m.i(9, 4), m.i(10, 3)]; },
+        anim: function (tl, S, api) {
+          api.codigo('<span class="c">// a (10,4) solo se entra desde arriba o la izquierda</span>\neasystar.<span class="k">setDirectionalCondition</span>(10, 4,\n  [EasyStar.TOP, EasyStar.LEFT]);');
+          tl.to(S, { d8: 0, esquina: 0, z: 1.8, cx: 10, cy: 4.6, duration: 1.3, ease: "power3.inOut" })
+            .to(S, { flecha: 1, duration: 1, ease: "power2.out" }, 1)
+            .to(S, { codigo: 1, duration: .6 }, 1.6)
+            .to(S, { codigo: 0, duration: .4 }, "+=2.4");
+        } },
+      { s: { flecha: 0, z: 1, cx: 8, cy: 5, grafo: 1, aristas: 1 },
+        toca: ["pared", "borrar", {
+          texto: "4 ↔ 8 vecinos", pulsado: function (api) { return api.D.op.diag; },
+          accion: function (api, b) { api.D.op.diag = !api.D.op.diag; b.setAttribute("aria-pressed", api.D.op.diag ? "true" : "false"); api.mundo().version++; dispararEdicion(api); }
+        }, {
+          texto: "Cortar esquinas", pulsado: function (api) { return api.D.op.esquinas; },
+          accion: function (api, b) { api.D.op.esquinas = !api.D.op.esquinas; b.setAttribute("aria-pressed", api.D.op.esquinas ? "true" : "false"); dispararEdicion(api); }
+        }] }
+    ],
+    dibujar: function (v, S, D, api, t) {
+      var m = api.mundo(), C = api.C;
+      // El grafo sobre el piso: si cambian las opciones, las aristas se dibujan con D.op.
+      SENDA.dibujoBase(v, S, D, api, t);
+      v.recortar();
+      if (S.binario > 0) v.numeros(m, S.binario, function (i) { return m.pared(i) ? "1" : "0"; }, function (i) { return m.pared(i) ? "rgba(255,255,255,.75)" : C.tinta; });
+      if (S.d8 > 0) { // diagonales en ámbar, sin cortar esquinas
+        var c = v.cx; c.save(); c.globalAlpha = S.d8; c.strokeStyle = C.heroe; c.lineWidth = Math.max(1, v.T * .05); c.beginPath();
+        for (var i = 0; i < m.t.length; i++) { if (m.pared(i)) continue; m.vecinos(i, { diag: true }).forEach(function (j) { if (j < i || m.x(j) === m.x(i) || m.y(j) === m.y(i)) return; c.moveTo(v.px(m.x(i) + .5), v.py(m.y(i) + .5)); c.lineTo(v.px(m.x(j) + .5), v.py(m.y(j) + .5)); }); }
+        c.stroke(); c.restore();
+      }
+      if (S.esquina > 0) linea(v, ESQ[0], ESQ[1], S.esquina, C.rival, true);
+      if (S.flecha > 0) linea(v, CAIDA[0], CAIDA[1], S.flecha, C.acento, false);
+      v.soltar();
+    },
+    textoFin: "Fin del grafo"
+  });
+
+  function dispararEdicion(api) { api.alEditarExterno && api.alEditarExterno(); }
+  // Las opciones de 4/8 vecinos recalculan los contadores.
+  api.alEditarExterno = function () { var D = api.D, m = api.mundo(), nodos = 0, aristas = 0; for (var i = 0; i < m.t.length; i++) if (!m.pared(i)) { nodos++; aristas += m.vecinos(i, D.op).length; } api.dato("n", "Nodos", nodos, "ambar"); api.dato("a", "Aristas", aristas / 2, "rojo"); api.dato("v", "Vecinos", D.op.diag ? 8 : 4); };
+
+  /* Una arista gruesa entre dos celdas: tachada (esquina prohibida) o con punta (un solo sentido). */
+  function linea(v, a, b, al, color, tachar) {
+    var c = v.cx, T = v.T, x1 = v.px(a[0] + .5), y1 = v.py(a[1] + .5), x2 = v.px(b[0] + .5), y2 = v.py(b[1] + .5);
+    var u = SENDA.clamp(al, 0, 1), xm = x1 + (x2 - x1) * u, ym = y1 + (y2 - y1) * u;
+    c.save(); c.strokeStyle = color; c.lineWidth = T * .11; c.lineCap = "round";
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(xm, ym); c.stroke();
+    if (tachar && al > .5) { var cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, k = T * .2 * Math.min(1, (al - .5) * 2); c.lineWidth = T * .09; c.beginPath(); c.moveTo(cx - k, cy - k); c.lineTo(cx + k, cy + k); c.moveTo(cx + k, cy - k); c.lineTo(cx - k, cy + k); c.stroke(); }
+    if (!tachar && al > .9) { var dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy); dx /= L; dy /= L; var hx = -dy, hy = dx, k2 = T * .22; c.fillStyle = color; c.beginPath(); c.moveTo(x2 - dx * T * .12, y2 - dy * T * .12); c.lineTo(x2 - dx * (T * .12 + k2) + hx * k2 * .7, y2 - dy * (T * .12 + k2) + hy * k2 * .7); c.lineTo(x2 - dx * (T * .12 + k2) - hx * k2 * .7, y2 - dy * (T * .12 + k2) - hy * k2 * .7); c.fill(); }
+    c.restore();
+  }
+})();
+</script>
+</body>
+</html>
