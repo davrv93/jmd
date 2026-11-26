@@ -50,7 +50,7 @@ export function crearDirector(combate, { cinematicas = {}, acc = null, alEvento 
       if (e.tipo === 'impacto') { if (a.ctx.atacante) combate.impactoCinematica(e.golpe); }
       else if (e.tipo === 'sacudida') cam.sacudida = acc?.reducirMovimiento ? 0 : e.fuerza;
       if (e.tipo === 'fin') { if (a.ctx.atacante) combate.finCinematica(); actual = null; cam.zoom = 1; cam.oscuro = 0; cam.retrato = 0; cam.fondo = 0; cam.texto = 0; alEvento({ tipo: 'cineFin', id: a.id }); a.alTerminar?.(); }
-      alEvento({ tipo: 'cine:' + e.tipo, ...e });
+      alEvento({ ...e, tipo: 'cine:' + e.tipo });   // (antes el tipo original pisaba al prefijo: el «fin» de cada escena mostraba «EMPATE»)
       if (!actual) break;
     }
     return out;

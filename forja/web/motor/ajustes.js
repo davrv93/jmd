@@ -5,6 +5,7 @@
 // También se aceptan por la dirección: /forja/?gravedad=1500&salto=650&velocidad=240&rival=delante&n=4
 // Plataformas que flotan (función seno): oscilacion = { amp: px enteros 0–120, vel: ω en rad/s 0–4 con 2 decimales }.
 // amp 0 o vel 0 = plataformas quietas. Por la dirección: ?amp=60&vel=1.5
+import { limpiarControles } from './controles.js';
 export const CLAVE_AJUSTES = 'forja.ajustes';
 export const REGLAS_RIVAL = {
   celda: 'el cazador: va a tu celda',
@@ -45,6 +46,7 @@ function limpiar(a) {
     }
     o.reglas = r;
   }
+  if (a.controles && typeof a.controles === 'object') { const c = limpiarControles(a.controles); if (Object.keys(c).length) o.controles = c; }   // { plantilla: { accion: [teclas] } }
   return o;
 }
 export function guardarAjustes(nuevos) {

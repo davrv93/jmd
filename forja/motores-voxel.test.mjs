@@ -18,7 +18,7 @@ import { ESQUEMA, defecto } from './web/motores/voxel/config.js';
 import { validar, leerConfig } from './web/motores/nucleo/esquema.js';
 import { traducir } from './web/motores/voxel/agente.js';
 import { crearSupervivencia } from './web/motores/voxel/supervivencia.js';
-import { aEstrella } from './web/motores/voxel/criaturas.js';
+import { aEstrella, crearCriaturas, partesDe, TIPOS } from './web/motores/voxel/criaturas.js';
 import { lsistema, arbol } from './web/motores/voxel/arboles.js';
 
 const VOXEL = ['mundo-voxel', 'supervivencia-voxel', 'creativo-voxel', 'aventura-voxel'];
@@ -210,6 +210,59 @@ test('física: gravedad, suelo, paredes, sin atravesar a alta velocidad, agua y 
   assert.ok(n.enAgua && n.y > 11, `en el agua cae lento (sin agua habría caído ~14 bloques; y=${n.y.toFixed(2)})`);
   for (let i = 0; i < 120; i++) pasoCuerpo(n, 1 / 60, { x: 0, z: 0, salto: true }, agua); assert.ok(n.y > 15, 'nadando sube');
   assert.ok(dentroDelCuerpo(c, Math.floor(c.x), 11, Math.floor(c.z)) && !dentroDelCuerpo(c, Math.floor(c.x), 13, Math.floor(c.z)));
+});
+
+test('física jugable: sube un escalón de 1, se pega a la pared sin temblar, sale del agua y no pierde velocidad en bajadas', () => {
+  const k = (x, y, z) => `${x},${y},${z}`, con = (f) => { const m = new Map(); f((x, y, z, id) => m.set(k(x, y, z), id)); return { bloque: (x, y, z) => m.get(k(x, y, z)) ?? 0 }; };
+  const suelo = (p, y = 10) => { for (let x = -20; x <= 20; x++) for (let z = -20; z <= 20; z++) p(x, y, z, ID.piedra); };
+  const correr = (c, m, n, e) => { let sub = 0; for (let i = 0; i < n; i++) sub += pasoCuerpo(c, 1 / 60, e, m).subida; return sub; };
+  // escalón de 1 bloque en x = 3: con pasoAuto lo sube caminando (antes rebotaba: el impulso de 6,2 solo alcanzaba 0,69)
+  const esc = con((p) => { suelo(p); for (let z = -20; z <= 20; z++) for (let x = 3; x <= 20; x++) p(x, 11, z, ID.piedra); });
+  let c = crearCuerpo(0.5, 11, 0.5); const sub = correr(c, esc, 90, { x: 1, z: 0 });
+  assert.ok(c.y === 12 && c.x > 5 && sub === 1, `sube el escalón (x=${c.x.toFixed(2)}, y=${c.y}, subida=${sub})`);
+  c = crearCuerpo(0.5, 11, 0.5, { pasoAuto: false }); correr(c, esc, 90, { x: 1, z: 0 });
+  assert.ok(c.y === 11 && Math.abs(c.x - 2.7) < 1e-3, `sin pasoAuto se queda pegado a la pared (x=${c.x})`);
+  c = crearCuerpo(0.5, 11, 0.5, { pasoAuto: false }); correr(c, esc, 20, { x: 1, z: 0 }); correr(c, esc, 60, { x: 1, z: 0, salto: true });
+  assert.ok(c.x > 4 && c.y >= 12, 'saltando sí lo sube');
+  // pared de 3: los últimos 60 pasos empujando, la x no cambia ni una diezmilésima
+  const pared = con((p) => { suelo(p); for (let y = 11; y <= 13; y++) for (let z = -20; z <= 20; z++) p(4, y, z, ID.piedra); });
+  c = crearCuerpo(0.5, 11, 0.5); correr(c, pared, 60, { x: 1, z: 0 }); const xs = []; for (let i = 0; i < 60; i++) { pasoCuerpo(c, 1 / 60, { x: 1, z: 0 }, pared); xs.push(c.x); }
+  assert.ok(Math.max(...xs) - Math.min(...xs) < 1e-9 && 4 - 0.3 - Math.max(...xs) < 1e-3, `pegado a la pared y quieto (x=${xs[0]})`);
+  // salto: más de 1 bloque de altura
+  c = crearCuerpo(0.5, 11, 0.5); correr(c, pared, 5, { x: 0, z: 0 }); let ymax = 0; for (let i = 0; i < 50; i++) { pasoCuerpo(c, 1 / 60, { x: 0, z: 0, salto: true }, pared); ymax = Math.max(ymax, c.y); }
+  assert.ok(ymax - 11 > 1.2 && ymax - 11 < 1.6, `altura del salto ${(ymax - 11).toFixed(2)}`);
+  // agua hasta y = 9 y orilla con tope en 11: nadando hacia ella con espacio, se sale
+  const lago = con((p) => { for (let x = -20; x <= 20; x++) for (let z = -20; z <= 20; z++) { p(x, 5, z, ID.piedra); for (let y = 6; y <= 9; y++) p(x, y, z, x >= 4 ? ID.piedra : ID.agua); if (x >= 4) p(x, 10, z, ID.piedra); } });
+  c = crearCuerpo(0.5, 8, 0.5); correr(c, lago, 240, { x: 1, z: 0, salto: true });
+  assert.ok(!c.enAgua && c.x > 5 && c.y >= 11, `sale del agua a la orilla (x=${c.x.toFixed(2)}, y=${c.y.toFixed(2)})`);
+  // escalera de bloques en diagonal: sube y baja sin frenarse
+  const cuesta = con((p) => { for (let x = -20; x <= 20; x++) for (let z = -20; z <= 20; z++) { const h = 20 - Math.floor((x + z) / 2); for (let y = 0; y <= Math.max(0, Math.min(h, 30)); y++) p(x, y, z, ID.piedra); } });
+  c = crearCuerpo(0.5, 21, 0.5); correr(c, cuesta, 10, { x: 0, z: 0 }); let vmin = 9; for (let i = 0; i < 120; i++) { pasoCuerpo(c, 1 / 60, { x: -0.707, z: -0.707 }, cuesta); if (i > 30) vmin = Math.min(vmin, -c.vx); }
+  assert.ok(c.y > 25 && vmin > 2.5, `sube la cuesta caminando (y=${c.y}, v mínima ${vmin.toFixed(2)})`);
+});
+
+test('criaturas: suben un escalón, no atraviesan al jugador, avisan antes de golpear y caen al morir', () => {
+  const k = (x, y, z) => `${x},${y},${z}`, blo = new Map();
+  for (let x = -30; x <= 30; x++) for (let z = -30; z <= 30; z++) { blo.set(k(x, 9, z), ID.piedra); if (x >= 4) blo.set(k(x, 10, z), ID.piedra); }
+  const mundo = { H: 128, bloque: (x, y, z) => blo.get(k(x, y, z)) ?? 0, cargado: () => true };
+  const cfg = defecto('aventura-voxel'); cfg.criaturas.densidad = 0;
+  const golpes = [], muertes = [], polvo = [];
+  const cr = crearCriaturas({ mundo, cfg, semilla: 7, alAtacar: (e, d) => golpes.push(d), alMorir: (e) => muertes.push(e.tipo), alEvento: (t) => t === 'polvo' && polvo.push(t) });
+  const g = cr.crear('golem', 0, 10, 0); g.provocada = true;
+  const jug = { x: 9.5, y: 11, z: 0.5, enSuelo: true, corriendo: false }, ctx = { noche: true, mar: 5, pacifica: false, biomaEn: () => ({ id: 'pradera', fauna: [] }) };
+  let primerGolpe = null, minD = 99;
+  for (let i = 0; i < 60 * 8; i++) { cr.paso(1 / 60, jug, ctx); if (g.carga > 0 && primerGolpe == null) primerGolpe = { i, golpes: golpes.length }; if (g.y > 10.5) minD = Math.min(minD, Math.hypot(g.x - jug.x, g.z - jug.z)); }
+  assert.ok(g.y === 11, `el gólem subió el escalón de 1 bloque (y=${g.y}; antes saltaba 0,8 y rebotaba)`);
+  assert.ok(minD > 0.9, `se detiene a un paso del jugador, no se mete en él (distancia mínima ${minD.toFixed(2)})`);
+  assert.ok(primerGolpe && primerGolpe.golpes === 0 && golpes.length > 0, 'primero carga el golpe (aviso) y después golpea');
+  cr.golpear(g, 100, [1, 0, 0]); assert.equal(muertes.length, 1); assert.ok(cr.lista.includes(g) && g.muriendo > 0, 'derribada: sigue en la lista mientras cae');
+  assert.equal(cr.apuntada([g.x - 2, 11.8, g.z], [1, 0, 0], 6), null, 'una criatura derribada no se puede volver a golpear');
+  for (let i = 0; i < 60; i++) cr.paso(1 / 60, jug, ctx);
+  assert.ok(!cr.lista.includes(g) && polvo.length === 1, 'tras 0,6 s se deshace en polvo');
+  // despiece: el gólem tiene 2 patas y 2 brazos; el saltarín (cuerpo pegado al suelo) no tiene patas
+  const pg = partesDe(TIPOS.golem.cajas); assert.deepEqual(pg.piezas.map((q) => q.tipo).sort(), ['brazo', 'brazo', 'pata', 'pata']);
+  assert.equal(partesDe(TIPOS.saltarin.cajas).piezas.length, 0);
+  assert.notEqual(pg.piezas[0].fase, pg.piezas[1].fase, 'las piernas se alternan');
 });
 
 test('rayo DDA: primer bloque, cara y coordenadas negativas', () => {

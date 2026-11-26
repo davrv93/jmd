@@ -65,7 +65,7 @@ iniciarAnime({
   modosMenu: ['jefe'], directo: null, jugador: R('jugadores.luchador', C.jugador || 'ren'), nombreForja: D.nombre, usarForja: R('jugadores.luchador', 'ren') === 'forja' || !!D.heroe, saltarSeleccion: false,
   reglas, personajes, jefe, reglasJefe, sinIntro: !R('jefe.intro', true), continues: R('jugador.continues', 0), semilla: typeof D.semilla === 'number' ? D.semilla : 1,
   modos: { jefe: { sinIntro: !R('jefe.intro', true) } },
-  escenario: { tema: C.escenario?.tema || R('limites.escenarioTema', 'templo') },
+  escenario: { tema: C.escenario?.tema || R('limites.escenarioTema', 'templo') }, hora: D.hora || null,
   fx: { intensidad: C.efectos?.intensidad ?? R('efectos.intensidad', 1), densidad: C.efectos?.densidad ?? R('efectos.densidad', 1) },
   acc: { reducirMovimiento: sinSacudida || undefined, reducirDestellos: sinDestellos || undefined },
   presentacion: { impactoCuadro: R('efectos.impactoCuadro', true), lineasVelocidad: R('efectos.lineasVelocidad', true), postimagenes: R('efectos.postimagenes', true), estelas: R('efectos.estelas', true),

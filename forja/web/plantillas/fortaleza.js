@@ -5,6 +5,7 @@
 const R = (k, d) => Forja.regla(k, d);
 const W = 64, GR = 26, TOPE = 40;                          // ancho de baldosa, grosor del piso, margen de arriba
 const jugar = (s, k) => { if (s.scene && s.scene.anims.exists(k)) s.play(k, true); };
+const CONTACTO = 0.38;   // en el dibujo del golpe, el brazo (o la embestida) llega al blanco al 38 % de la animación
 
 // Las reglas del nivel n (con la dificultad creciente si hay varios niveles seguidos)
 function reglasDelNivel(n) {
@@ -122,12 +123,10 @@ class Fortaleza extends Phaser.Scene {
     this.techo = (p) => (p === 0 ? TOPE : this.yS(p - 1) + GR);                 // dónde empieza el techo de esa fila
     const ancho = N.COLS * W, alto = this.yS(K.PISOS - 1) + GR + 220;
     this.ancho = ancho; this.alto = alto;
-    // fondo: cielo, dos capas y la pared de cada sala
-    this.add.image(0, 0, 'cielo').setOrigin(0).setScrollFactor(0).setDepth(-10).setTint(0x8a7aa8);
-    this.capas = ['capa0', 'capa1'].map((k, i) => this.add.tileSprite(0, 0, 960, 540, k).setOrigin(0).setScrollFactor(0).setDepth(-9 + i).setTint(i ? 0x6e6490 : 0x8577a8));
-    this.add.tileSprite(0, TOPE, ancho, alto - TOPE, 'relleno').setOrigin(0).setDepth(-5).setTint(0x463d60).setAlpha(0.8);   // la pared del fondo: estás dentro de la fortaleza
-    for (let s = 0; s <= K.SALAS; s++) this.add.tileSprite(s * K.COLS * W - 10, TOPE, 20, alto - TOPE, 'relleno').setOrigin(0).setDepth(-4).setTint(0x2f2a40);
-    this.add.tileSprite(0, 0, ancho, TOPE, 'relleno').setOrigin(0).setDepth(2).setTint(0x3b3452);
+    // fondo: cielo y dos capas (se ven por las ventanas) y la muralla de piedra de cada sala (ver mazmorra())
+    this.add.image(0, 0, 'cielo').setOrigin(0).setScrollFactor(0).setDepth(-10).setTint(0xb4aac8);
+    this.capas = ['capa0', 'capa1'].map((k, i) => { const y = Forja.techo(this, k); return this.add.tileSprite(0, y, 960, 540 - y, k).setOrigin(0).setScrollFactor(0).setDepth(-9 + i).setTilePosition(0, y).setTint(i ? 0x8a80a8 : 0xa096bc); });
+    this.mazmorra(ancho, alto);
     // pisos (cuerpos sólidos) y lo que va dibujado encima de cada celda
     this.pisos = this.physics.add.staticGroup();
     this.dib = this.add.graphics().setDepth(3);
@@ -154,8 +153,10 @@ class Fortaleza extends Phaser.Scene {
     this.SPR = SPR;
     // héroe
     const ini = N.ini;
-    this.altoHeroe = 100 * R('jugador.tamano', 1);
     const h = (this.heroe = Forja.cuerpo(this.physics.add.sprite(ini.c * W + W / 2, this.yS(ini.p) - 2, 'heroe', 'quieto_0'), D.heroe, 100));
+    // Alturas medidas en el dibujo (no en el cuadro, que tiene aire arriba): de pie y colgado con los brazos arriba
+    this.altoHeroe = Forja.altoDibujo(h, 'quieto'); this.altoColgado = Forja.altoDibujo(h, 'saltar', Math.round(0.45 * Forja.cuadros('heroe', 'saltar')));
+    this.tGolpe = Forja.dura('heroe', 'golpe'); this.tDano = Forja.dura('heroe', 'dano'); this.ritmoGolpe = 1; this.pasoAtras = 0; this.empujeT = 0;
     h.setDepth(10).setMaxVelocity(900, R('reglas.velocidadCaida', 900));
     this.physics.add.collider(h, this.pisos, (a, losa) => { if (losa.getData('tipo') === 'D' && h.body.touching.down) this.pisaDesmorona(losa); });
     this.physics.add.overlap(h, this.items, (a, it) => this.tocaItem(it));
@@ -186,7 +187,7 @@ class Fortaleza extends Phaser.Scene {
     this.modo = 'suelo'; this.mira = 1; this.girando = 0; this.tCorrer = 0; this.caidaDesde = h.y; this.inmune = R('heroe.inicioInvencible', 0); this.pluma = 0;
     this.atacando = 0; this.bloqueoT = 0; this.contra = false; this.recupera = 0; this.salasVistas = new Set([0]);
     this.seguro = { x: h.x, y: h.y };
-    this.leer = Forja.controles(this); this.kShift = this.input.keyboard.addKey('SHIFT'); this.kC = this.input.keyboard.addKey('C'); this.abajoAntes = false;
+    this.leer = Forja.controles(this); this.abajoAntes = false;   // caminar con cuidado y beber poción son acciones (c.cuidado, c.pocionYa)
     this.texto = Forja.marcador(this); this.pista = this.add.graphics().setDepth(940); this.capaX = this.add.graphics().setDepth(960);
     // cámara y límites
     this.physics.world.setBounds(0, 0, ancho, alto + 400); this.physics.world.setBoundsCollision(true, true, false, false);   // paredes a los lados, sin piso abajo (fosos)
@@ -194,19 +195,130 @@ class Fortaleza extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, Math.max(ancho, 960), Math.max(alto, 540));
     if (R('nivel.camara', 'salas') === 'sigue') this.cameras.main.startFollow(h, true, 0.12, 0.12, 0, 60);
     this.luz();
+    this.arte();
     this.inicio = this.time.now;
     if (L.nivel > 1) { const av = Forja.aviso(this, 'Nivel ' + L.nivel); this.time.delayedCall(1600, () => av.destroy()); }
     this.pinta();
   }
 
+  // ARTE DE LA MAZMORRA: muralla de sillares con ventanas en arco (por ellas se ve el cielo), columnas entre salas, techo
+  // con cornisa, losas de piedra para los pisos y un abismo oscuro abajo. Todo se dibuja con código al empezar.
+  mazmorra(ancho, alto) {
+    const P = Forja.paleta(this), K = this.K, PH = K.PH, r = azar(D.semilla * 17 + 3), css = P.css, mz = P.mezcla;
+    const piedra = mz(mz(P.muro, [74, 68, 86], 0.55), [0, 0, 0], 0.42), luzVentana = P.noche ? [150, 170, 230] : P.hora === 'tarde' ? [255, 190, 120] : [255, 244, 214];
+    const bloque = (x, bx, by, bw, bh, base) => {                                    // un sillar con bisel
+      const t = mz(base, r() < 0.5 ? [255, 255, 255] : [0, 0, 0], r() * 0.12);
+      x.fillStyle = css(t); x.fillRect(bx, by, bw, bh);
+      x.fillStyle = css(mz(t, [255, 255, 255], 0.14)); x.fillRect(bx, by, bw, 1.5); x.fillRect(bx, by, 1.5, bh);
+      x.fillStyle = css(mz(t, [0, 0, 0], 0.3)); x.fillRect(bx, by + bh - 2, bw, 2); x.fillRect(bx + bw - 2, by, 2, bh);
+      if (r() < 0.12) { x.strokeStyle = css(mz(t, [0, 0, 0], 0.4), 0.8); x.lineWidth = 1; x.beginPath(); let cx = bx + r() * bw, cy = by + 2; x.moveTo(cx, cy); for (let k = 0; k < 3; k++) { cx += (r() - 0.5) * 10; cy += bh / 3.5; x.lineTo(cx, cy); } x.stroke(); }
+      if ((P.amb === 'bosque' || P.amb === 'noche') && r() < 0.14) { x.fillStyle = css(mz(P.filo, [0, 0, 0], 0.45), 0.55); for (let k = 0; k < 5; k++) { x.beginPath(); x.arc(bx + r() * bw, by + r() * 4, 1.5 + r() * 2.5, 0, 6.283); x.fill(); } }
+    };
+    // muralla: una franja de 480 × alto de un piso; se repite. La ventana queda en medio de lo que se ve de la pared.
+    Forja.lienzo(this, 'muralla', 480, PH, (x, w, h) => {
+      x.fillStyle = css(mz(piedra, [0, 0, 0], 0.45)); x.fillRect(0, 0, w, h);
+      const filas = Math.max(4, Math.round(h / 26)), bh = h / filas;
+      for (let f = 0; f < filas; f++) {                                              // cada hilera suma exactamente el ancho: se repite sin costura
+        const anchos = []; let suma = 0; while (suma < w) { const bw = 44 + Math.floor(r() * 4) * 12; anchos.push(bw); suma += bw; }
+        anchos[anchos.length - 1] -= suma - w; if (anchos[anchos.length - 1] < 30) { const u = anchos.pop(); anchos[anchos.length - 1] += u; }
+        let bx = f % 2 ? -30 : 0;
+        for (const bw of anchos) { for (const dx of [0, w, -w]) bloque(x, bx + dx + 1, f * bh + 1, bw - 2, bh - 2, piedra); bx += bw; r(); }
+      }
+      const cx = w / 2, vw = 26, ys = GR + (h - GR) * 0.66, alto2 = Math.min(78, (h - GR) * 0.48);
+      // rayo de luz que entra por la ventana
+      const rayo = x.createLinearGradient(cx, ys - alto2, cx + 60, h); rayo.addColorStop(0, css(luzVentana, 0.16)); rayo.addColorStop(1, css(luzVentana, 0));
+      x.fillStyle = rayo; x.beginPath(); x.moveTo(cx - vw, ys - alto2 + vw); x.lineTo(cx + vw, ys - alto2 + vw); x.lineTo(cx + vw + 70, h); x.lineTo(cx - vw + 30, h); x.fill();
+      const arco = () => { x.beginPath(); x.moveTo(cx - vw, ys); x.lineTo(cx - vw, ys - alto2 + vw); x.arc(cx, ys - alto2 + vw, vw, Math.PI, 0); x.lineTo(cx + vw, ys); x.closePath(); };
+      arco(); x.lineWidth = 12; x.strokeStyle = css(mz(piedra, [255, 255, 255], 0.12)); x.stroke(); x.lineWidth = 2; x.strokeStyle = css(mz(piedra, [0, 0, 0], 0.5)); x.stroke();
+      x.fillStyle = css(mz(piedra, [255, 255, 255], 0.2)); x.fillRect(cx - vw - 8, ys, vw * 2 + 16, 6); x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(cx - vw - 8, ys + 6, vw * 2 + 16, 3);
+      x.save(); x.globalCompositeOperation = 'destination-out'; arco(); x.fill(); x.restore();              // el hueco: aquí se ve el cielo
+      x.fillStyle = 'rgba(20,18,28,.9)'; x.fillRect(cx - 1.5, ys - alto2, 3, alto2); x.fillRect(cx - vw, ys - alto2 * 0.45, vw * 2, 3);   // reja de la ventana
+      // sombra del techo arriba y del piso abajo
+      const g = x.createLinearGradient(0, GR, 0, GR + 36); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, GR, w, 36);
+      const g2 = x.createLinearGradient(0, h - 26, 0, h); g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(1, 'rgba(0,0,0,.4)'); x.fillStyle = g2; x.fillRect(0, h - 26, w, 26);
+    });
+    this.add.tileSprite(0, TOPE, ancho, alto - TOPE, 'muralla').setOrigin(0).setDepth(-5);
+    // columnas entre salas: cilindro de piedra con capitel y basa
+    Forja.lienzo(this, 'pilar', 34, PH, (x, w, h) => {
+      const g = x.createLinearGradient(0, 0, w, 0); g.addColorStop(0, css(mz(piedra, [0, 0, 0], 0.5))); g.addColorStop(0.35, css(mz(piedra, [255, 255, 255], 0.18))); g.addColorStop(1, css(mz(piedra, [0, 0, 0], 0.6)));
+      x.fillStyle = g; x.fillRect(3, 0, w - 6, h);
+      for (let y = GR + 26; y < h; y += 26) { x.fillStyle = 'rgba(0,0,0,.3)'; x.fillRect(3, y, w - 6, 1.5); }
+      x.fillStyle = css(mz(piedra, [255, 255, 255], 0.1)); x.fillRect(0, GR, w, 7); x.fillRect(0, h - 8, w, 8);
+      x.fillStyle = 'rgba(0,0,0,.4)'; x.fillRect(0, GR + 7, w, 2);
+    });
+    for (let s = 0; s <= K.SALAS; s++) this.add.tileSprite(s * K.COLS * W - 17, TOPE, 34, alto - TOPE, 'pilar').setOrigin(0).setDepth(-4);
+    // techo con cornisa
+    Forja.lienzo(this, 'techo', 64, TOPE, (x, w, h) => {
+      const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, css(mz(piedra, [0, 0, 0], 0.7))); g.addColorStop(1, css(mz(piedra, [0, 0, 0], 0.35))); x.fillStyle = g; x.fillRect(0, 0, w, h);
+      x.fillStyle = css(mz(piedra, [255, 255, 255], 0.15)); x.fillRect(0, h - 9, w, 4); x.fillStyle = 'rgba(0,0,0,.45)'; x.fillRect(0, h - 5, w, 5); x.fillRect(31, 0, 2, h - 9);
+    });
+    this.add.tileSprite(0, 0, ancho, TOPE, 'techo').setOrigin(0).setDepth(2);
+    // losas de los pisos: cara de arriba gastada y clara, cara de frente con juntas. Tres variantes y una agrietada.
+    const losa = mz(piedra, [255, 255, 255], 0.1);
+    const t = Forja.lienzo(this, 'losaF', W * 4, GR, (x) => {
+      for (let k = 0; k < 4; k++) {
+        const ox = k * W, b = mz(losa, r() < 0.5 ? [255, 255, 255] : [0, 0, 0], r() * 0.08);
+        const g = x.createLinearGradient(0, 7, 0, GR); g.addColorStop(0, css(b)); g.addColorStop(1, css(mz(b, [0, 0, 0], 0.4))); x.fillStyle = g; x.fillRect(ox, 7, W, GR - 7);
+        x.fillStyle = css(mz(b, [255, 255, 255], 0.22)); x.fillRect(ox, 0, W, 7);
+        x.fillStyle = css(mz(b, [255, 255, 255], 0.45)); x.fillRect(ox, 0, W, 1.5);
+        x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(ox, 7, W, 1.5); x.fillRect(ox, GR - 2, W, 2);
+        const jx = ox + 14 + Math.floor(r() * 36); x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(jx, 8, 1.5, GR - 9); x.fillStyle = css(mz(b, [255, 255, 255], 0.15)); x.fillRect(jx + 1.5, 8, 1, GR - 9);
+        for (let i = 0; i < 8; i++) { x.fillStyle = `rgba(${r() < 0.5 ? '255,255,255' : '0,0,0'},.12)`; x.fillRect(ox + r() * W, 1 + r() * (GR - 3), 1.5, 1.5); }
+        if (k === 3) { x.strokeStyle = 'rgba(30,18,10,.85)'; x.lineWidth = 1.4; for (const sx of [14, 38, 52]) { x.beginPath(); let cx = ox + sx, cy = 0; x.moveTo(cx, cy); while (cy < GR) { cx += (r() - 0.5) * 9; cy += 4 + r() * 4; x.lineTo(cx, cy); } x.stroke(); } }
+      }
+    });
+    for (let k = 0; k < 4; k++) t.add('l' + k, 0, k * W, 0, W, GR);
+    // abismo: debajo del último piso todo se pierde en la oscuridad
+    const yAb = this.yS(K.PISOS - 1) + GR;
+    Forja.lienzo(this, 'abismo', 4, 64, (x) => { const g = x.createLinearGradient(0, 0, 0, 64); g.addColorStop(0, 'rgba(4,3,8,0)'); g.addColorStop(0.5, 'rgba(4,3,8,.75)'); g.addColorStop(1, 'rgba(4,3,8,.97)'); x.fillStyle = g; x.fillRect(0, 0, 4, 64); });
+    this.add.image(0, yAb, 'abismo').setOrigin(0).setDisplaySize(ancho, alto - yAb + 400).setDepth(-3);
+  }
+
+  // Antorchas (una por sala y piso), sombras bajo los pies, brillo en lo que se recoge, polvo en la luz y viñeta.
+  arte() {
+    const P = Forja.paleta(this), K = this.K;
+    this.heroe.setTint(Forja.luzPersonaje(this));   // (los guardias no: su color avisa si es el jefe o si va a atacar)
+    Forja.lienzo(this, 'antorcha', 20, 36, (x) => {
+      x.fillStyle = '#2a2230'; x.fillRect(4, 22, 12, 4); x.fillRect(8, 26, 4, 10);                       // soporte de hierro
+      const g = x.createLinearGradient(6, 0, 14, 0); g.addColorStop(0, '#5a3a22'); g.addColorStop(0.5, '#8a5a34'); g.addColorStop(1, '#4a2e1a');
+      x.fillStyle = g; x.fillRect(7, 6, 6, 18); x.fillStyle = '#3a2416'; x.fillRect(6, 4, 8, 4);          // palo y cabeza
+    });
+    this.antorchas = [];
+    for (let s = 0; s < K.SALAS; s++) for (let p = 0; p < K.PISOS; p++) {
+      const x = s * K.COLS * W + (K.COLS * W) / 2, y = this.yS(p) - (K.PH - GR) * 0.58;
+      this.add.image(x, y, 'antorcha').setOrigin(0.5, 0.15).setDepth(-2);
+      Forja.lujo(this, this.add.particles(x, y - 2, 'mota', { speedY: { min: -60, max: -25 }, speedX: { min: -8, max: 8 }, scale: { start: 0.42, end: 0 }, alpha: { start: 0.95, end: 0 }, lifespan: { min: 260, max: 460 }, frequency: 45, tint: [0xffe08a, 0xffa040, 0xff7a2a], blendMode: 'ADD' }).setDepth(-1.9));
+      const luz = Forja.lujo(this, this.add.image(x, y, 'halo').setBlendMode(Phaser.BlendModes.ADD).setTint(0xff9040).setDisplaySize(440, 440).setDepth(-1.8));
+      this.antorchas.push({ luz, fase: Math.random() * 10 });
+    }
+    // la luz de la antorcha tiembla: dos ondas rápidas que no coinciden nunca
+    Forja.antesDeDibujar(this, () => { const t = this.time.now / 1000; for (const a of this.antorchas) a.luz.setAlpha(0.5 + 0.07 * Math.sin(t * 9 + a.fase) + 0.05 * Math.sin(t * 23.7 + a.fase * 2)); });
+    this.luzPuerta = Forja.lujo(this, this.add.image(this.puerta.x, this.yS(this.puerta.p) - 60, 'halo').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffe2a0).setDisplaySize(260, 260).setAlpha(0.6).setDepth(3.5).setVisible(false));
+    // el piso que hay debajo de (x, y): la primera fila de losas por debajo de los pies que no sea hueco
+    const piso = (this.pisoDe = (x, y) => { const c = Math.floor(x / W); for (let p = 0; p < K.PISOS; p++) if (this.yS(p) >= y - 4 && this.solido(p, c)) return this.yS(p); return null; });
+    Forja.sombra(this, this.heroe, { piso, prof: 4.5 });
+    for (const g of this.guardias) Forja.sombra(this, g, { piso, prof: 4.5 });
+    for (const it of this.items.getChildren()) this.arteItem(it);
+    Forja.halo(this, this.heroe, 0xffe2b0, 240, { alfa: 0.1, late: 0.05, dy: -50, prof: 4.6 });
+    Forja.ambiente(this, { x: 0, y: TOPE, w: this.ancho, h: this.alto - TOPE - 200 }, { tipo: 'polvo', cuantas: 9, prof: 12 });
+    Forja.vineta(this, 0.5);
+    Forja.vigilar(this);
+  }
+  arteItem(it) {
+    Forja.sombra(this, it, { piso: this.pisoDe, prof: 4.5, ancho: 30, alfa: 0.4, pie: (q) => q.y + 14 });
+    const col = { gema: 0x8fe4ff, moneda: 0xffd25a, curar: 0xff7aa8, max: 0xff7aa8, pluma: 0x9fd8ff, reloj: 0xfff07a, cofre: 0xffd24a, tesoro: 0xffd24a, llave: 0xffe08a }[it.getData('tipo')] || 0xfff0b0;
+    Forja.halo(this, it, col, 90, { alfa: 0.45, prof: 4.6 });
+  }
+
   losa(p, c) {
-    const cel = this.N.G[p][c], s = this.pisos.create(c * W + W / 2, this.yS(p) + GR / 2, 'suelo').setDisplaySize(W, GR).refreshBody();
+    const cel = this.N.G[p][c], s = this.pisos.create(c * W + W / 2, this.yS(p) + GR / 2, 'losaF', cel.t === 'D' ? 'l3' : 'l' + ((c * 7 + p * 3) % 3)).setDisplaySize(W, GR).refreshBody();
     s.setData({ tipo: cel.t, p, c }); cel.slab = s; return s;
   }
   ponItem(tipo, x, y, SPR = this.SPR) {
     const nombre = D.objetos.includes(SPR[tipo]) ? SPR[tipo] : 'gema';
-    const it = this.items.create(x, y, 'objetos').setScale((tipo === 'tesoro' ? 64 : 44) / 64).play(nombre).setData('tipo', tipo);
+    const it = this.items.create(x, y, 'objetos').setScale((tipo === 'tesoro' ? 64 : 44) / 64).play(nombre).setData('tipo', tipo).setDepth(5);
     if (tipo === 'pluma') it.setTint(0x9fd8ff); if (tipo === 'tesoro') it.setTint(0xffd24a);
+    if (this.pisoDe) this.arteItem(it);   // lo que aparece a mitad del juego (un cofre que se abre, una llave) también brilla
     return it;
   }
 
@@ -235,13 +347,16 @@ class Fortaleza extends Phaser.Scene {
   colgar(b, desdeAbajo) {
     const h = this.heroe; this.modo = 'trepando'; h.body.enable = false; h.setVelocity(0, 0); this.borde = b; this.tColgado = 0;
     h.setFlipX(b.lado < 0); this.mira = b.lado;
-    const destino = { x: b.x - b.lado * 14, y: this.yS(b.p) + this.altoHeroe * 0.92 };
+    // colgado: asoma sobre el canto lo de arriba del dibujo (manos y cabeza, el 18 %), pegado a la pared del hueco
+    const destino = { x: b.x - b.lado * 20, y: this.yS(b.p) + this.altoColgado * 0.82 };
     this.tweens.add({ targets: h, x: destino.x, y: destino.y, duration: desdeAbajo ? R('mov.trepar', 0.6) * 450 : 160, ease: 'Sine.easeOut',
       onComplete: () => { this.modo = 'colgado'; } });
-    jugar(h, 'heroe:saltar');
+    Forja.pose(h, 'colgado');
   }
   trepar() {
     const h = this.heroe, b = this.borde; this.modo = 'trepando';
+    // primero se impulsa colgado; en la segunda mitad sube las piernas: agachado sobre el canto; al final, de pie
+    Forja.pose(h, 'colgado'); this.time.delayedCall(R('mov.trepar', 0.6) * 650 * 0.55, () => { if (this.modo === 'trepando') Forja.pose(h, 'agachado'); });
     this.tweens.add({ targets: h, y: this.yS(b.p) - 2, duration: R('mov.trepar', 0.6) * 650, ease: 'Sine.easeInOut' });
     this.tweens.add({ targets: h, x: b.x + b.lado * 26, duration: R('mov.trepar', 0.6) * 650, ease: 'Sine.easeIn',
       onComplete: () => { h.body.enable = true; h.body.reset(h.x, h.y); this.modo = 'suelo'; this.caidaDesde = h.y; } });
@@ -259,11 +374,11 @@ class Fortaleza extends Phaser.Scene {
     const h = this.heroe, pisos = (h.y - this.caidaDesde) / this.K.PH;
     this.polvo.explode(6, h.x, h.y);
     const p = this.filaDe(h.y), c = Math.floor(h.x / W);
-    if (p >= 0 && this.N.G[p][c].t === 'S' && this.pincho(p, c)?.alto > 0.5) this.herir(R('reglas.danoPinchos', 1));
+    if (p >= 0 && this.N.G[p][c].t === 'S' && this.pincho(p, c)?.alto > 0.5) this.herir(R('reglas.danoPinchos', 1), null);
     if (this.pluma > 0) return;
     const mortal = R('reglas.caidaMortal', 3), segura = R('reglas.caidaSegura', 1);
-    if (mortal > 0 && pisos >= mortal - 0.15) this.herir(99);
-    else if (pisos > segura + 0.15) this.herir(Math.ceil(pisos - segura) * R('reglas.danoCaida', 1));
+    if (mortal > 0 && pisos >= mortal - 0.15) this.herir(99, null);
+    else if (pisos > segura + 0.15) this.herir(Math.ceil(pisos - segura) * R('reglas.danoCaida', 1), null);   // una caída no empuja
   }
   // <<<
 
@@ -297,11 +412,13 @@ class Fortaleza extends Phaser.Scene {
     this.pinta();
   }
 
-  herir(n) {
+  // desde = x de lo que te golpeó (el empujón te aleja de ahí); null = sin empujón (caídas, pinchos al aterrizar)
+  herir(n, desde) {
     const h = this.heroe; if (this.inmune > 0 || this.modo === 'fin') return;
     this.cor -= n; this.inmune = R('jugador.inmunidad', 1); Forja.sonar(this, 'dano', 0.6); this.cameras.main.shake(140, 0.006);
-    const emp = R('reglas.empujeGolpe', 220);
-    if (this.modo === 'suelo' && emp) { h.setVelocity(-this.mira * emp, -emp * 0.6); this.modo = 'aire'; this.caidaDesde = h.y; }
+    this.atacando = 0;                                                             // el golpe recibido corta tu ataque
+    const emp = R('reglas.empujeGolpe', 220), lado = desde == null ? 0 : Math.sign(h.x - desde) || -this.mira;
+    if (this.modo === 'suelo' && emp && lado) { h.setVelocity(lado * emp, -emp * 0.6); this.modo = 'aire'; this.caidaDesde = h.y; this.empujeT = 0.25; }
     const pausa = R('reglas.pausaGolpe', 60); if (pausa) { this.physics.world.pause(); this.time.delayedCall(pausa, () => this.physics.world.resume()); }
     if (this.cor <= 0) this.sinCorazones();
     this.pinta();
@@ -382,7 +499,8 @@ class Fortaleza extends Phaser.Scene {
     const dt = Math.min(0.05, ms / 1000), h = this.heroe, c = (this.ctl = this.leer()), K = this.K;
     if (c.rayosX) Forja.rayosX(this);
     if (c.repetir) { this.scene.restart({ nivel: 1 }); return; }
-    const abajoYa = c.abajo && !this.abajoAntes; this.abajoAntes = c.abajo;
+    h.body.debugShowBody = h.body.enable;                                         // colgado (sin física) no se dibuja una caja vieja
+    const abajoYa = (c.ya ? c.ya('abajo') : false) || (c.abajo && !this.abajoAntes); this.abajoAntes = c.abajo;   // un toque rápido de ↓ también cuenta
     this.actualizarTrampas(t / 1000, dt);
     this.actualizarGuardias(dt);
     this.camara(dt);
@@ -395,7 +513,7 @@ class Fortaleza extends Phaser.Scene {
       if (this.tiempo <= 0) { this.tiempo = 0; if (R('resultado.sinTiempo', 'pierdes') === 'pierdes') { this.fin(false, 'Se acabó el tiempo'); return; } this.sinBonus = true; }
     }
     const cada = R('heroe.recupera', 0); if (cada) { this.recupera += dt; if (this.recupera >= cada) { this.recupera = 0; if (this.cor < this.corMax) { this.cor++; this.pinta(); } } }
-    if (Phaser.Input.Keyboard.JustDown(this.kC) && this.guardado > 0) { this.guardado--; this.beber('curar'); Forja.sonar(this, 'celebrar', 0.4); }
+    if (c.pocionYa && this.guardado > 0) { this.guardado--; this.beber('curar'); Forja.sonar(this, 'celebrar', 0.4); }
     this.inmune = Math.max(0, this.inmune - dt); h.setAlpha(this.inmune > 0 && Math.floor(this.inmune * 14) % 2 ? 0.45 : 1);
     if (this.pluma > 0) { this.pluma -= dt; h.body.setGravityY(-this.physics.world.gravity.y * (1 - R('reglas.plumaGravedad', 0.35))); h.body.maxVelocity.y = 200; }
     else { h.body.setGravityY(0); h.body.maxVelocity.y = R('reglas.velocidadCaida', 900); }
@@ -416,16 +534,22 @@ class Fortaleza extends Phaser.Scene {
     if (piso && p >= 0 && ['P', 'L', 'E'].includes(this.N.G[p][Math.floor(h.x / W)].t)) this.seguro = { x: h.x, y: h.y };
     // caer a un foso
     if (h.y > this.yS(K.PISOS - 1) + 170) {
-      this.herir(this.fosoPinchos ? R('reglas.danoPinchos', 1) : 1); if (this.modo === 'fin') return;
+      this.herir(this.fosoPinchos ? R('reglas.danoPinchos', 1) : 1, null); if (this.modo === 'fin') return;
       this.inmune = 0.6; this.volver(R('heroe.respawn', 'seguro')); return;
     }
     const duelo = this.guardias.find((g) => g.getData('estado') === 'duelo' && g.getData('p') === p && Math.abs(g.x - h.x) < g.getData('alc') * 3);
-    const cuidado = this.kShift.isDown || !!TACTO.cuidado;
+    const cuidado = !!this.ctl?.cuidado;
     // ---- espada (fuera o dentro del duelo)
-    this.atacando = Math.max(0, this.atacando - dt); this.bloqueoT = Math.max(0, this.bloqueoT - dt);
-    if (c.golpeYa && this.atacando <= 0) {
-      this.atacando = 0.42; const prep = this.contra && R('duelo.contraataque', 'normal') === 'rapido' ? 0 : R('duelo.preparar', 0.12); this.contra = false;
-      jugar(h, 'heroe:golpe'); this.time.delayedCall(prep * 1000, () => this.golpear());
+    this.atacando = Math.max(0, this.atacando - dt); this.bloqueoT = Math.max(0, this.bloqueoT - dt); this.empujeT = Math.max(0, this.empujeT - dt);
+    // El dibujo del golpe va a un ritmo tal que el brazo llega al blanco JUSTO cuando cuenta el golpe (tras «preparar»);
+    // después termina a su velocidad normal. Así lo que ves y lo que pasa coinciden.
+    const aturdido = this.inmune > 0 && R('jugador.inmunidad', 1) - this.inmune < this.tDano;   // mientras se ve el golpe recibido, no atacas
+    if (c.golpeYa && this.atacando <= 0 && !aturdido) {
+      const prep = this.contra && R('duelo.contraataque', 'normal') === 'rapido' ? 0 : R('duelo.preparar', 0.12); this.contra = false;
+      this.ritmoGolpe = Phaser.Math.Clamp((CONTACTO * this.tGolpe) / Math.max(0.01, prep), 0.4, 3);
+      this.atacando = (CONTACTO * this.tGolpe) / this.ritmoGolpe + (1 - CONTACTO) * this.tGolpe;
+      Forja.pose(h, 'golpe', { reinicia: true, ritmo: this.ritmoGolpe });
+      this.time.delayedCall(prep * 1000, () => { this.ritmoGolpe = 1; if (this.modo !== 'fin') this.golpear(); });
     }
     if (duelo && abajoYa) { this.bloqueoT = R('duelo.bloqueo', 0.3); }
     // ---- movimiento
@@ -433,16 +557,20 @@ class Fortaleza extends Phaser.Scene {
       if (duelo) {                                                               // en duelo: de frente, pasos cortos
         const hacia = Math.sign(duelo.x - h.x) || 1; this.mira = hacia; h.setFlipX(hacia < 0);
         const atras = c.x && Math.sign(c.x) !== hacia, adelante = c.x && Math.sign(c.x) === hacia;
-        if (atras && !this.atrasAntes) { const nx = h.x - hacia * R('duelo.retroceso', 25); if (this.solido(p, Math.floor(nx / W))) h.x = nx; }
+        // paso atrás: un saltito corto de «duelo.retroceso» px en 0,12 s (no un salto de posición), sin caerse del borde
+        if (atras && !this.atrasAntes && this.pasoAtras <= 0) this.pasoAtras = 0.12;
         this.atrasAntes = atras;
-        h.setVelocityX(adelante && Math.abs(duelo.x - h.x) > 50 ? hacia * 55 : 0);
+        let vx = adelante && Math.abs(duelo.x - h.x) > 50 ? hacia * 55 : 0;
+        if (this.pasoAtras > 0) { this.pasoAtras -= dt; vx = -hacia * R('duelo.retroceso', 25) / 0.12; if (!this.solido(p, Math.floor((h.x + vx * dt - hacia * h.body.width / 2) / W))) vx = 0; }
+        if (this.empujeT <= 0) h.setVelocityX(vx);
         if (c.saltoYa && R('duelo.saltar', false)) this.saltar(c, piso);
       } else {
-        const objetivo = c.abajo ? 0 : c.x * (cuidado ? R('mov.cuidado', 80) : R('mov.correr', 220));
+        const objetivo = c.abajo ? 0 : c.x * (cuidado ? R('mov.cuidado', 80) : R('mov.correr', 220)) * (this.atacando > 0 ? 0.3 : 1);   // al dar el golpe frena: el dibujo del golpe no camina
         if (c.x && Math.sign(c.x) !== this.mira && !this.girando) this.girando = R('mov.giro', 0.08) || 0.0001;
         if (this.girando > 0) { this.girando -= dt; if (this.girando <= 0) { this.girando = 0; this.mira = Math.sign(c.x) || this.mira; } }
         h.setFlipX(this.mira < 0);
         let vx = this.girando > 0 ? 0 : Phaser.Math.Linear(h.body.velocity.x, objetivo, Math.min(1, dt * R('mov.aceleracion', 7)));
+        if (this.empujeT > 0) vx = h.body.velocity.x;                              // durante el empujón de un golpe no frenas
         if (cuidado && R('mov.cuidadoBorde', 'frena') === 'frena' && p >= 0) {     // con cuidado no te caes del borde
           const delante = h.x + vx * dt + Math.sign(vx) * h.body.width * 0.25;
           if (!this.solido(p, Math.floor(delante / W))) vx = 0;
@@ -473,20 +601,25 @@ class Fortaleza extends Phaser.Scene {
       const medio = h.body.width / 2 + 8;
       if (fondo > cabeza + 8 && Math.abs(h.x - g.x) < medio) {
         const lado = h.x < g.x ? -1 : 1; h.x = g.x + lado * medio; h.setVelocityX(0);
-        if (g.cerrando && R('reglas.rejaAplasta', 'empuja') === 'dana') this.herir(1);
+        if (g.cerrando && R('reglas.rejaAplasta', 'empuja') === 'dana') this.herir(1, g.x);
       }
     }
     // pinchos al pasar corriendo
     if (piso && p >= 0) {
       const cc = Math.floor(h.x / W), s = this.N.G[p][cc].t === 'S' ? this.pincho(p, cc) : null;
-      if (s && s.alto > 0.5 && (Math.abs(h.body.velocity.x) > R('mov.cuidado', 80) + 15 || R('reglas.pinchosCuidado', 'seguro') === 'dana')) this.herir(R('reglas.danoPinchos', 1));
+      if (s && s.alto > 0.5 && (Math.abs(h.body.velocity.x) > R('mov.cuidado', 80) + 15 || R('reglas.pinchosCuidado', 'seguro') === 'dana')) this.herir(R('reglas.danoPinchos', 1), h.x + this.mira * 10);   // te echa hacia atrás
     }
     // salida
     if (piso && p === this.puerta.p && Math.abs(h.x - this.puerta.x) < W * 0.6 && c.saltoYa && this.salidaAbierta()) { this.fin(true); return; }
     // animación
-    const v = Math.abs(h.body.velocity.x);
-    if (this.modo !== 'trepando' && this.modo !== 'colgado')
-      jugar(h, 'heroe:' + (this.inmune > R('jugador.inmunidad', 1) - 0.3 ? 'dano' : this.atacando > 0.2 ? 'golpe' : !piso ? 'saltar' : c.abajo && !duelo ? 'agachado' : v > R('mov.correr', 220) * 0.7 ? 'correr' : v > 30 ? 'caminar' : 'quieto'));
+    // >>> pose
+    // La animación sale del estado del cuerpo: daño (lo que dura su dibujo), golpe (entero), en el aire (según suba o baje),
+    // agachado, o andando con pasos al ritmo de la rapidez real (con cuidado, pasos lentos).
+    const dano = this.inmune > 0 && R('jugador.inmunidad', 1) - this.inmune < this.tDano;
+    const g0 = this.physics.world.gravity.y, sube = Math.sqrt(2 * g0 * R('mov.alturaSalto', 40));
+    if (this.modo !== 'trepando' && this.modo !== 'colgado') Forja.pose(h, dano ? 'dano' : this.atacando > 0 ? 'golpe' : !piso ? 'aire' : c.abajo && !duelo ? 'agachado' : 'andar',
+      { v: Forja.rapidez(h, 'x'), max: R('mov.correr', 220), vy: h.body.velocity.y, salto: sube, ritmo: this.atacando > 0 ? this.ritmoGolpe : 1 });
+    // <<<
     this.marcaRuta();
   }
 
@@ -515,8 +648,10 @@ class Fortaleza extends Phaser.Scene {
       const dx = g.x - h.x; if (Math.sign(dx) !== this.mira || Math.abs(dx) > alc + g.body.width / 2) continue;
       const enDuelo = g.getData('estado') === 'duelo';
       if (enDuelo && g.getData('prep') <= 0 && Math.random() < R('guardias.bloqueo', 0.3) * g.getData('mBloqueo')) { this.chispas.explode(8, (g.x + h.x) / 2, g.y - 70); Forja.sonar(this, 'golpe', 0.3); return; }
-      g.setData('salud', g.getData('salud') - 1).setData('inmune', 0.3).setData('estado', 'duelo');
-      g.x += Math.sign(dx) * R('guardias.retrocede', 40); jugar(g, 'enemigo:dano'); Forja.sonar(this, 'golpe');
+      g.setData('salud', g.getData('salud') - 1).setData('inmune', Math.max(0.3, Forja.dura('enemigo', 'dano'))).setData('estado', 'duelo');
+      // retrocede «guardias.retrocede» px en 0,15 s, alejándose de ti (sin salirse de su tramo de piso), y corta su ataque
+      g.setData({ empuje: 0.15, empujeV: Math.sign(dx) * R('guardias.retrocede', 40) / 0.15, prep: 0, remata: 0 }); g.clearTint(); g.anims.timeScale = 1;
+      Forja.pose(g, 'dano', { reinicia: true }); Forja.sonar(this, 'golpe');
       const pausa = R('reglas.pausaGolpe', 60); if (pausa) { this.physics.world.pause(); this.time.delayedCall(pausa, () => this.physics.world.resume()); }
       if (g.getData('salud') <= 0) this.vencer(g);
       return;
@@ -533,7 +668,7 @@ class Fortaleza extends Phaser.Scene {
     this.pinta();
   }
   actualizarGuardias(dt) {
-    const h = this.heroe, hp = this.filaDe(h.y), cuidado = this.kShift.isDown || !!TACTO.cuidado;
+    const h = this.heroe, hp = this.filaDe(h.y), cuidado = !!this.ctl?.cuidado;
     for (const g of this.guardias) {
       g.vida.setPosition(g.x, g.y - (g.displayHeight || 120) - 8);
       if (g.getData('estado') === 'muerto') continue;
@@ -554,15 +689,21 @@ class Fortaleza extends Phaser.Scene {
           vx = Math.abs(dx) > d0 + 10 ? Math.sign(dx) * vel : Math.abs(dx) < d0 - 18 ? -Math.sign(dx) * vel * 0.5 : 0;
           // ataque: preparar y luego golpear
           let tA = g.getData('t') - dt, prep = g.getData('prep');
-          if (prep > 0) { prep -= dt; g.setTint(0xffb0b0); if (prep <= 0) { g.clearTint(); this.golpeGuardia(g); tA = R('guardias.ataqueCada', 1.6) * g.getData('mAtaque') * (0.8 + Math.random() * 0.4); } }
-          else if (tA <= 0 && Math.abs(dx) < g.getData('alc') + 40) { prep = 0.35; jugar(g, 'enemigo:golpe'); }
+          // aviso del golpe: se tiñe y el dibujo toma impulso despacio; el brazo llega justo cuando el golpe cuenta
+          if (prep > 0) { prep -= dt; g.setTint(0xffb0b0); if (prep <= 0) { g.clearTint(); g.anims.timeScale = 1; g.setData('remata', (1 - CONTACTO) * Forja.dura('enemigo', 'golpe')); this.golpeGuardia(g); tA = R('guardias.ataqueCada', 1.6) * g.getData('mAtaque') * (0.8 + Math.random() * 0.4); } }
+          // solo ataca si llega: se planta y golpea (si te alejas a tiempo, falla)
+          else if (tA <= 0 && Math.abs(dx) < g.getData('alc') + h.body.width / 2) { prep = 0.35; Forja.pose(g, 'golpe', { reinicia: true, ritmo: (CONTACTO * Forja.dura('enemigo', 'golpe')) / prep }); }
           g.setData({ t: tA, prep });
         }
       }
       g.setData('estado', estado);
+      if (g.getData('prep') > 0 || g.getData('remata') > 0) vx = 0;                // mientras golpea se planta: no patina con los pies quietos
+      if (g.getData('empuje') > 0) { g.setData('empuje', g.getData('empuje') - dt); vx = g.getData('empujeV'); }   // retrocede por tu golpe
       if (g.x + vx * dt < seg.min || g.x + vx * dt > seg.max) vx = 0;              // nunca se cae de su tramo de piso
-      g.setVelocityX(vx); g.setFlipX((vx || g.getData('dir')) < 0);
-      if (g.getData('prep') <= 0 && g.getData('inmune') <= 0) jugar(g, 'enemigo:' + (Math.abs(vx) > 5 ? 'caminar' : 'quieto'));
+      // en duelo mira siempre hacia ti (retrocede de espaldas, no se da la vuelta); patrullando mira hacia donde camina
+      g.setVelocityX(vx); g.setFlipX((estado === 'duelo' ? g.getData('dir') : vx || g.getData('dir')) < 0);
+      g.setData('remata', Math.max(0, (g.getData('remata') || 0) - dt));
+      if (g.getData('prep') <= 0 && g.getData('inmune') <= 0 && g.getData('remata') <= 0) Forja.pose(g, 'andar', { v: Forja.rapidez(g, 'x'), max: vel * 2 });
       if (R('rejas.guardiaPisa', false)) this.pisarPlacas(p, g.x);
     }
   }
@@ -570,7 +711,7 @@ class Fortaleza extends Phaser.Scene {
     const h = this.heroe, dx = h.x - g.x;
     if (this.filaDe(h.y) !== g.getData('p') || Math.abs(dx) > g.getData('alc') + h.body.width / 2 || this.modo === 'colgado') return;
     if (this.bloqueoT > 0) { this.chispas.explode(12, (g.x + h.x) / 2, h.y - 70); Forja.sonar(this, 'golpe', 0.35); this.contra = true; this.bloqueoT = 0; return; }
-    this.herir(R('guardias.dano', 1));
+    this.herir(R('guardias.dano', 1), g.x);
   }
   // <<<
 
@@ -603,21 +744,28 @@ class Fortaleza extends Phaser.Scene {
       const u = ((t + k.fase) % ritmo) / ritmo, cerrada = u > abierta;
       const obj = cerrada ? 1 : 0; k.cierre += (obj - k.cierre) * Math.min(1, dt * (cerrada ? 22 : 9));
       const x = k.c * W + W / 2, piso = this.yS(k.p), techo = this.techo(k.p), mitad = piso - this.altoHeroe * 0.55;
-      dib.fillStyle(0xd9dde8, 1);
-      dib.fillRect(x - 5, techo, 10, (mitad - techo) * k.cierre); dib.fillRect(x - 5, piso - (piso - mitad) * k.cierre, 10, (piso - mitad) * k.cierre);
-      dib.fillStyle(0x6b6f80, 1); dib.fillRect(x - 9, techo, 18, 6); dib.fillRect(x - 9, piso - 6, 18, 6);
+      const hA = (mitad - techo) * k.cierre, hB = (piso - mitad) * k.cierre;            // hoja de acero: brillo a la izquierda, sombra a la derecha
+      dib.fillGradientStyle(0xf6f8fc, 0x7c8296, 0xf6f8fc, 0x7c8296, 1);
+      if (hA > 0.5) dib.fillRect(x - 5, techo, 10, hA); if (hB > 0.5) dib.fillRect(x - 5, piso - hB, 10, hB);
+      dib.fillStyle(0xffffff, 0.9); if (hA > 0.5) dib.fillRect(x - 5, techo, 1.5, hA); if (hB > 0.5) dib.fillRect(x - 5, piso - hB, 1.5, hB);
+      dib.fillStyle(0x24222e, 1); dib.fillRect(x - 10, techo, 20, 7); dib.fillRect(x - 10, piso - 7, 20, 7);
+      dib.fillStyle(0x9aa0b4, 1); for (const rx of [x - 6, x + 6]) { dib.fillCircle(rx, techo + 3.5, 1.4); dib.fillCircle(rx, piso - 3.5, 1.4); }
       if (k.cierre > 0.8 && hp === k.p && Math.abs(h.x - x) < anchoC / 2 + h.body.width * 0.35 && this.modo !== 'fin') {
         const agachado = !!(this.ctl && this.ctl.abajo) && R('mov.agachadoEsquiva', 'esquiva') === 'esquiva';
-        if (!agachado) this.herir(R('reglas.danoCuchilla', 2));
+        if (!agachado) this.herir(R('reglas.danoCuchilla', 2), x);
       }
     }
     const ocultos = R('trampas.pinchos', 'visibles') === 'ocultos', dist = R('trampas.pinchosDistancia', 128);
     for (const s of this.pinchos) {
       const x = s.c * W, y = this.yS(s.p);
       if (ocultos && s.alto < 1 && hp === s.p && Math.abs(h.x - (x + W / 2)) < dist) s.alto = Math.min(1, s.alto + dt * 6);
-      if (s.alto <= 0) { dib.fillStyle(0x8a8fa0, 1); for (let i = 0; i < 4; i++) dib.fillRect(x + 6 + i * 15, y - 3, 8, 3); continue; }
-      dib.fillStyle(0xe6e9f2, 1);
-      for (let i = 0; i < 4; i++) dib.fillTriangle(x + 4 + i * 15, y, x + 11.5 + i * 15, y - 26 * s.alto, x + 19 + i * 15, y);
+      if (s.alto <= 0) { dib.fillStyle(0x24222e, 1); for (let i = 0; i < 4; i++) dib.fillRect(x + 6 + i * 15, y - 3, 8, 3); continue; }
+      for (let i = 0; i < 4; i++) {                                                  // cada pincho: cara iluminada y cara en sombra
+        const bx = x + 4 + i * 15, punta = y - 26 * s.alto;
+        dib.fillStyle(0xf0f2f8, 1); dib.fillTriangle(bx, y, bx + 7.5, punta, bx + 7.5, y);
+        dib.fillStyle(0x80869a, 1); dib.fillTriangle(bx + 7.5, punta, bx + 15, y, bx + 7.5, y);
+      }
+      dib.fillStyle(0x24222e, 1); dib.fillRect(x + 2, y - 3, W - 4, 3);
     }
     // desmoronar
     const vuelve = R('trampas.desmoronaVuelve', 0);
@@ -627,7 +775,7 @@ class Fortaleza extends Phaser.Scene {
       if (cel.slab && cel.t === 'D') {
         d.t -= dt; cel.slab.x = d.c * W + W / 2 + Math.sin(t * 60) * 2;
         if (d.t <= 0) {
-          const cae = this.add.image(cel.slab.x, cel.slab.y, 'suelo').setDisplaySize(W, GR).setTint(0xc79a6a).setDepth(4);
+          const cae = this.add.image(cel.slab.x, cel.slab.y, 'losaF', 'l3').setDisplaySize(W, GR).setTint(0xc79a6a).setDepth(4);
           this.tweens.add({ targets: cae, y: cae.y + 420, angle: 25, alpha: 0, duration: 900, ease: 'Quad.easeIn', onComplete: () => cae.destroy() });
           cel.slab.destroy(); cel.slab = null; cel.t = 'H'; Forja.sonar(this, 'golpe', 0.3);
           if (vuelve) this.time.delayedCall(vuelve * 1000, () => { cel.t = 'D'; this.losa(d.p, d.c).setTint(0xc79a6a); d.t = -1; });
@@ -639,7 +787,10 @@ class Fortaleza extends Phaser.Scene {
     for (const q of this.placas) {
       const x = q.c * W, y = this.yS(q.p), encima = hp === q.p && Math.floor(h.x / W) === q.c && this.modo === 'suelo';
       if (encima) this.activarPlaca(q); else if (!this.guardias.some((g) => g.getData('p') === q.p && Math.floor(g.x / W) === q.c)) q.pisada = false;
-      dib.fillStyle(q.modo === 'salida' ? 0xffd24a : q.modo === 'cierra' ? 0xd06a5a : 0x9fc7ff, 1); dib.fillRect(x + 12, y - (q.pisada ? 2 : 6), W - 24, q.pisada ? 2 : 6);
+      const ph = q.pisada ? 2 : 6;                                                     // placa con marco oscuro y filo de luz
+      dib.fillStyle(0x1c1a24, 1); dib.fillRect(x + 10, y - ph - 1.5, W - 20, ph + 1.5);
+      dib.fillStyle(q.modo === 'salida' ? 0xffd24a : q.modo === 'cierra' ? 0xd06a5a : 0x9fc7ff, 1); dib.fillRect(x + 12, y - ph, W - 24, ph);
+      dib.fillStyle(0xffffff, 0.55); dib.fillRect(x + 12, y - ph, W - 24, 1);
     }
     // rejas
     for (const g of this.rejas) {
@@ -648,14 +799,22 @@ class Fortaleza extends Phaser.Scene {
       else g.abierto = Math.max(0, g.abierto - dt * (g.rapido ? 4 : R('rejas.cierre', 40) / H));
       g.cerrando = g.abierto < antes;
       const fondo = this.techo(g.p) + H * (1 - g.abierto);
-      dib.lineStyle(5, 0x9aa0b4, 1); for (let i = -2; i <= 2; i++) dib.lineBetween(g.x + i * 7, this.techo(g.p), g.x + i * 7, fondo);
-      dib.lineStyle(4, 0x6b6f80, 1); dib.lineBetween(g.x - 18, fondo, g.x + 18, fondo);
+      dib.lineStyle(5, 0x2c2c3a, 1); for (let i = -2; i <= 2; i++) dib.lineBetween(g.x + i * 7, this.techo(g.p), g.x + i * 7, fondo);   // barrotes de hierro
+      dib.lineStyle(1.5, 0xa8aec2, 1); for (let i = -2; i <= 2; i++) dib.lineBetween(g.x + i * 7 - 1.2, this.techo(g.p), g.x + i * 7 - 1.2, fondo);
+      dib.lineStyle(4, 0x24222e, 1); dib.lineBetween(g.x - 18, fondo - 4, g.x + 18, fondo - 4); dib.lineBetween(g.x - 18, this.techo(g.p) + 10, g.x + 18, this.techo(g.p) + 10);
+      dib.fillStyle(0x2c2c3a, 1); for (let i = -2; i <= 2; i++) dib.fillTriangle(g.x + i * 7 - 3, fondo, g.x + i * 7 + 3, fondo, g.x + i * 7, fondo + 6);
     }
     // puerta de salida
     const pu = this.puerta, py = this.yS(pu.p), abierta2 = this.salidaAbierta();
-    dib.fillStyle(0x2a2238, 1); dib.fillRect(pu.x - 30, py - 118, 60, 118);
-    dib.fillStyle(abierta2 ? 0xffe9a8 : 0x4a3f5e, 1); dib.fillRect(pu.x - 24, py - 112, 48, 112);
-    dib.lineStyle(4, 0xc9a24a, 1); dib.strokeRect(pu.x - 30, py - 118, 60, 118);
+    const arco = (m) => ({ tl: 30 - m, tr: 30 - m, bl: 0, br: 0 });                  // puerta en arco: marco de piedra y hoja de madera
+    dib.fillStyle(0x2e2a3a, 1); dib.fillRoundedRect(pu.x - 34, py - 122, 68, 122, arco(-4));
+    dib.fillStyle(abierta2 ? 0xffe9a8 : 0x5a3a24, 1); dib.fillRoundedRect(pu.x - 26, py - 114, 52, 114, arco(4));
+    if (!abierta2) {
+      dib.fillStyle(0x3a2414, 1); for (let k = 1; k < 4; k++) dib.fillRect(pu.x - 26 + k * 13 - 1, py - 104, 2, 104);
+      dib.fillStyle(0x24202c, 1); dib.fillRect(pu.x - 26, py - 78, 52, 5); dib.fillRect(pu.x - 26, py - 30, 52, 5); dib.fillCircle(pu.x + 15, py - 52, 3);
+    }
+    dib.lineStyle(3, 0xc9a24a, 1); dib.strokeRoundedRect(pu.x - 34, py - 122, 68, 122, arco(-4));
+    if (this.luzPuerta) this.luzPuerta.setVisible(abierta2 && !Forja.bajo);
   }
   // <<<
 
@@ -665,8 +824,8 @@ class Fortaleza extends Phaser.Scene {
       const salaW = this.K.COLS * W, s = this.salaDe(h.x);
       const destinoX = Phaser.Math.Clamp(s * salaW - (960 - salaW) / 2, 0, Math.max(0, this.ancho - 960));
       const destinoY = Phaser.Math.Clamp(h.y - 330, 0, Math.max(0, this.alto - 540));
-      cam.scrollX = Math.abs(cam.scrollX - destinoX) > 2 ? Phaser.Math.Linear(cam.scrollX, destinoX, Math.min(1, dt * 9)) : destinoX;
-      cam.scrollY = Phaser.Math.Linear(cam.scrollY, destinoY, Math.min(1, dt * 5));
+      cam.scrollX = Math.abs(cam.scrollX - destinoX) > 0.5 ? Phaser.Math.Linear(cam.scrollX, destinoX, 1 - Math.exp(-dt * 9)) : destinoX;   // se acerca igual de suave a cualquier velocidad del equipo
+      cam.scrollY = Phaser.Math.Linear(cam.scrollY, destinoY, 1 - Math.exp(-dt * 5));
     }
     this.capas.forEach((c, i) => { c.tilePositionX = cam.scrollX * [0.15, 0.35][i]; });
   }

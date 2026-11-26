@@ -50,6 +50,9 @@ export function crearPartida(opc = {}) {
   const yo = (extra = {}) => ({ def: defDe(opc.jugador || 'ren'), eq: 0, control: 'humano', x: -180, ...extra });
   function arrancar() {
     const t = modo.tipo;
+    // presentación de la ronda: ~1,3 s con los dos quietos en guardia antes de que nadie se mueva (ni la CPU)
+    p.cuenta = t === 'jefe' || t === 'entrenamiento' || opc.sinCuenta ? 0 : 80;
+    if (p.cuenta) p.eventos.push({ tipo: 'ronda', n: p.ronda, indice: p.indice });
     if (t === 'duelo') nuevoCombate({ luchadores: [yo(), { def: defDe(rivalDe()), eq: 1, control: modo.rival === 'humano' ? 'humano' : 'cpu', x: 180, nivel: opc.nivel }] });
     else if (t === 'entrenamiento') nuevoCombate({ luchadores: [yo(), { def: defDe(rivalDe()), eq: 1, control: 'muneco', muneco: modo.muneco, x: 120 }] });
     else if (t === 'oleadas') nuevoCombate({ luchadores: [yo(), { def: defDe(modo.rivales[p.indice % modo.rivales.length]), eq: 1, control: 'cpu', x: 200, nivel: modo.niveles[Math.min(p.indice, modo.niveles.length - 1)] }] });
@@ -89,6 +92,11 @@ export function crearPartida(opc = {}) {
     if (p.tarjeta) { if ([...(entradas[0]?.recien || [])].length) p.tarjeta = null; else return p.eventos; }
     const c = p.combate;
     if (p.director.activa) { p.director.avanzar(dt * 1000); c.paso([]); return p.eventos; }   // cinemática: el combate está congelado
+    if (p.cuenta > 0) {   // presentación: el reloj no corre y nadie recibe entradas
+      p.cuenta--; for (const L of [...c.luchadores, ...c.extras]) { L.px = L.x; L.py = L.y; L.f++; }
+      if (!p.cuenta) p.eventos.push({ tipo: 'pelea' });
+      return p.eventos;
+    }
     // reparte entradas: humanos en orden, CPU con su IA
     let h = 0; const todos = [...c.luchadores, ...c.extras];
     const ents = todos.map((L) => {

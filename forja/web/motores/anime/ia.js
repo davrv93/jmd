@@ -48,6 +48,8 @@ export function crearIA(L, combate, { nivel = 'intermedio', semilla = 7, ajustes
   };
   const tendencia = (k) => (patrones.total > 2 ? (patrones[k] || 0) / patrones.total : 0) * N.adapta;
   const tiene = (k) => !!L.def.movimientos[k];
+  // alcance real de un golpe: borde lejano de su hitbox + media hurtbox del rival (distancia entre centros a la que pega)
+  const alcance = (k, op) => { const m = L.def.movimientos[k], b = m?.caja; if (!b || m.proyectil) return 0; return b.x + b.w * (L.def.alcance || 1) + (op?.def?.hurtbox?.depie?.w ?? 44) / 2 + (m.avance || 0) * m.arranque * 0.3; };
   const adelante = (op) => Math.sign(op.x - L.x) || L.dir;
 
   // ---- planes: lista de { en: cuadro relativo, x, y, r: botones recién apretados, sostener }
@@ -79,6 +81,7 @@ export function crearIA(L, combate, { nivel = 'intermedio', semilla = 7, ajustes
     const atacando = vista.mov && ESTADOS[vista.estado]?.ataque && vista.movF < vista.arr + vista.act;
     const enRecuperacion = vista.mov && ESTADOS[vista.estado]?.ataque && vista.movF >= vista.arr + vista.act && vista.movF < vista.arr + vista.act + vista.rec - 4;
     const enAire = !vista.suelo;
+    const corto = alcance('ligero', op) || 84;   // a esta distancia (o menos) sus golpes rápidos llegan
     // 1) amenaza → defensa
     if ((atacando && d < 190) || vista.proy) {
       const pBloq = N.bloqueo + tendencia('ataque') * 0.2;
@@ -91,18 +94,18 @@ export function crearIA(L, combate, { nivel = 'intermedio', semilla = 7, ajustes
     // 2) rival saltando cerca → antiaéreo (más probable si el jugador abusa del salto)
     if (enAire && d < 170 && tiene('antiaereo') && L.energia >= (L.def.movimientos.antiaereo.energia || 0) && rng.prob(N.antiaereo + tendencia('salto'))) { foco = 'antiaereo'; planMovimiento('antiaereo', op); return; }
     // 3) castigar un ataque fallido
-    if (enRecuperacion && d < 130 && rng.prob(N.castigo)) { foco = 'castigar'; planCombo(mejorCombo(), op); return; }
+    if (enRecuperacion && d < corto + 12 && rng.prob(N.castigo)) { foco = 'castigar'; planCombo(mejorCombo(), op); return; }
     // 4) Utility AI en neutro: cada opción recibe un puntaje según el contexto
     const u = {
-      acercarse: (d > 140 ? 0.6 : 0.1) + N.agresion * 0.4,
-      retroceder: (d < 90 ? 0.35 : 0.05) + (L.vida < L.vidaMax * 0.3 ? 0.2 : 0),
-      combo: d < 120 ? 0.55 + N.agresion * 0.5 - tendencia('bloqueo') * 0.4 : 0,
-      rompeGuardia: d < 110 && tiene('rompeGuardia') ? tendencia('bloqueo') * 1.2 : 0,
+      acercarse: (d > corto ? 0.6 : 0.05) + N.agresion * 0.4,
+      retroceder: (d < corto * 0.6 ? 0.35 : 0.05) + (L.vida < L.vidaMax * 0.3 ? 0.2 : 0),
+      combo: d < corto ? 0.55 + N.agresion * 0.5 - tendencia('bloqueo') * 0.4 : 0,
+      rompeGuardia: d < corto && tiene('rompeGuardia') ? tendencia('bloqueo') * 1.2 : 0,
       saltar: d > 120 && d < 260 ? 0.18 + N.agresion * 0.15 : 0.02,
       especial: d > 260 && tiene('especial') && L.energia >= 15 ? 0.45 : 0,
       impulsar: d > 200 && d < 380 && tiene('impulsoFuerte') ? 0.3 : 0,
       cargar: d > 330 && L.energia < 80 ? 0.4 : 0.02,
-      definitivo: L.energia >= 100 && d < 140 && !atacando ? 0.9 : 0,
+      definitivo: L.energia >= 100 && d < corto + 40 && !atacando ? 0.9 : 0,
       transformar: !L.transformado && L.def.transformaciones?.[0] && L.energia >= L.def.transformaciones[0].costo && d > 260 ? 0.7 : 0,
       esperar: 0.12 + (1 - N.agresion) * 0.2,
     };
@@ -127,6 +130,7 @@ export function crearIA(L, combate, { nivel = 'intermedio', semilla = 7, ajustes
     const e = { x: 0, y: 0, recien: new Set(), abajo: new Set() };
     if (!op || L.ko || combate.terminado) return e;
     if (ESTADOS[L.estado]?.sinControl) { plan.length = 0; return e; }
+    if (L.pausa > 0) for (const p of plan) p.en++;   // parón del impacto: el plan espera (si no, el siguiente botón llega antes de la ventana)
     if (plan.length) {
       const p = plan[0];
       if (p.en <= cuadro) { plan.shift(); e.x = p.x; e.y = p.y; for (const r of p.r || []) { e.recien.add(r); e.abajo.add(r); } return e; }

@@ -104,7 +104,7 @@ web/motor/juegos/     catálogos de las 6 plantillas, con el contrato de main (a
 - **Efectos:**
   - Partículas en arreglos tipados (structure of arrays) con presupuesto por perfil; lo que no cabe se descarta y se cuenta.
   - Formas (ondas, arcos eléctricos por desplazamiento del punto medio, cortes con Bézier, haces con ruido, distorsión por franjas) salen de un pool.
-  - El destello de golpe usa `ctx.filter` solo sobre el cuerpo. Antes era `source-atop`, que teñía el fondo.
+  - El destello de golpe mezcla los colores del cuerpo hacia el blanco (antes `ctx.filter`, que en GPU por software costaba un cuadro entero por cuerpo; antes aún `source-atop`, que teñía el fondo).
   - Accesibilidad:
     - Respeta `prefers-reduced-motion` y las opciones del juego.
     - Sin sacudidas: los zooms de cinemática bajan al 30 %.
@@ -135,6 +135,39 @@ web/motor/juegos/     catálogos de las 6 plantillas, con el contrato de main (a
   - Persistencia:
     - Solo deltas más el estado, en binario comprimido (CompressionStream, o RLE si no existe).
     - Con migración de formato y aviso si cambió la versión del generador.
+
+## Render y escenarios del anime (26-11-2026)
+
+Todo es presentación: el render lee el combate y nunca escribe en él. Las 38 pruebas siguen verdes.
+
+- **Nueve escenarios originales** en `anime/escenarios.js`: Plaza de los faroles, Azotea bajo la tormenta, Mercado de neón, Dojo del amanecer, Bosque de bambú, Puerto al atardecer, Cantera del templo (la del titán), Ruinas del desierto y Templo del cielo.
+  - Cada uno: cielo, tres o cuatro planos con paralaje y perspectiva atmosférica (cuanto más lejos, más niebla), un suelo en perspectiva y vida animada (faroles que se mecen, lluvia y relámpagos, neón que parpadea, brasas, hojas, banderas, cascadas, gaviotas).
+  - La regla `limites.escenarioTema` elige uno o una elección: `hora` (la hora de tu escenario en Forja, `DATOS.hora`; sin ella, la del reloj), `rotar` (uno distinto por pelea) o `elemento` (trueno → tormenta…). La historia usa el escenario de cada capítulo.
+  - `config.defecto('duelo-anime')` ya no fija `escenario`: antes pisaba la regla y el alumno nunca veía el escenario que elegía.
+- **Suelo en perspectiva real:** la cámara está a 168 px del suelo; la fila `y` está a profundidad `d = 168 / (y − 300)`. La textura se pinta en (x de mundo, profundidad) y se copia en franjas de 3 px con su escala. Las juntas que se alejan se dibujan como rectas hacia el punto de fuga (en la textura salían escalonadas).
+- **Reflejos** en suelos pulidos (plaza, azotea, mercado, dojo, cielo): el plano del fondo espejado y desvanecido UNA vez, las luces animadas espejadas y los luchadores espejados sobre su punto de apoyo, tenues.
+- **Luchadores:** sombra de celuloide del lado contrario a la luz del escenario, filo de contraluz del lado de la luz, luz de ambiente que los tiñe, torso en V con faja, extremidades que se afinan, ojo con iris y brillo. La geometría (largos, ángulos, IK) no cambió: el puño sigue cayendo en su hitbox. La hoja de sprites del estudio se tiñe con la luz del escenario y lleva filo de contraluz.
+- **Efectos:** chispa de golpe en estrella, escudo al bloquear, cuadros de impacto (inversión → negro con estallido blanco desde el golpe), sacudida con ruido y un giro mínimo, estelas en cinta que se afina, aura de llamas, partículas por lotes y brasas como halos.
+- **Etalonaje horneado:** el degradado de cada escenario se mezcla (`soft-light`) una vez en el cielo, las capas y el suelo. En cada cuadro solo queda la viñeta.
+- **GL por software:** si `capacidades()` detecta SwiftShader o llvmpipe, el cuadro se rasteriza en un lienzo de CPU (`willReadFrequently`) y se copia entero. Medido con SwiftShader: cada trazo en la GPU emulada costaba lo que 10 en CPU. En ese modo la resolución no baja (copiar sin escalar es lo rápido) y las traslaciones se redondean.
+- **Perfiles:** `bajo` quita reflejos, rayos de luz, lluvia y lo que va delante; menos postimágenes. `render.medir = {}` mide el costo de cada parte (con lienzo de CPU, `getImageData` obliga a rasterizar).
+- **Arreglo colateral:** el director reenviaba cada evento de cinemática con su tipo original (`{ tipo: 'cine:' + e.tipo, ...e }`): el «fin» de cada escena mostraba «EMPATE» y los impactos y sonidos de las cinemáticas nunca se veían ni sonaban.
+
+## Render y escenarios del voxel (26-11-2026)
+
+Antes: luz plana por cara, cielo de dos colores, agua lisa, texturas de ruido píxel a píxel; se parecía demasiado a un juego de bloques famoso. La jugabilidad no cambió (física, aparición, apuntado, criaturas, controles).
+
+- **Luz en lineal** (`render.js`): sol o luna direccional con N·L por cara (lo iluminado cálido, la sombra fría), cielo hemisférico por la luz de cielo del vértice, AO más marcado, luz de bloques cálida que se apaga en charcos, mínimo frío. Al final, en cada shader: exposición, ACES, gradación por hora/bioma/clima (lift, gain, saturación), viñeta y tramado.
+- **Malla** (`malla.js`): la luz de cielo y de bloques va SUAVIZADA por esquina (promedio de las 4 celdas; las opacas no cuentan) → copas y antorchas en degradado. Cuesta 4–5 % más triángulos (medido en 25 chunks). Cada cara trae el clima de su columna (`codigoClima`) para teñir césped, hojas y hierba; en el agua, las esquinas guardan la tierra vecina → espuma de orilla.
+- **Sombras:** `alto`/`ultra` tienen mapa de sombras ortográfico (2048/3072 px, caja de ±48/±72 bloques ajustada a la rejilla de texeles, caras traseras, PCF bilineal). Se redibuja solo si la caja se movió 2 bloques, el sol giró, cambió la geometría o pasaron 30 cuadros. `bajo`/`medio` usan la luz de cielo como sombra falsa.
+- **Cielo y niebla:** degradado con banda del amanecer/atardecer, disco del sol y halo, luna con fase y halo, estrellas que giran, nubes de fBm. La niebla es el MISMO color del cielo en esa dirección (esconde el borde de los chunks) más bruma baja en los valles; el fin de la niebla sigue la distancia real del perfil.
+- **Agua y plantas:** olas en la normal, fresnel, reflejo del cielo (bajo tierra no), brillo del sol, espuma, cáusticas bajo el agua; el color del agua es por bioma y cambia despacio (por cara salía en escalones: costuras rectas). Hojas y plantas se mecen con el viento y dejan pasar la luz a contraluz.
+- **Posproceso** solo en `alto`/`ultra` (`CALIDAD` en `render.js`): MSAA 2×/4×, bloom a ¼ de resolución y rayos de sol (desenfoque radial del brillo). La calidad automática los quita al bajar de perfil: probado forzando cuadros lentos (alto → medio → bajo y vuelta, sin errores).
+- **Ojo que se adapta:** bajo tierra (techo opaco y varios bloques bajo la superficie) la exposición sube despacio; de noche también. Las criaturas y el avatar toman la luz de las lámparas cercanas (`luzEn`, caché por celda).
+- **Atlas** (`atlas.js`): dirección de arte «diorama andino» con paletas cortas y manchas grandes (ruido periódico, sin costura): mampostería poligonal, adobe, lana tejida, ichu, cantuta/campanilla/amancay, tronco claro moteado, jacarandá. Las recetas de plugins siguen con el pintor anterior.
+- **Escenarios** (`VERSION_GENERADOR = 4`): prados de flores por manchas y de un color, helechos, arbustos con bayas, rocas medio enterradas, jacarandá, árboles dorados, robles grandes, lianas en la selva, senderos de tierra en las aldeas y una ruina nueva (columnata con arco, columnas caídas, enredaderas y farol encendido). Bloques 41–48 agregados al final: las partidas guardadas siguen valiendo (avisan del cambio de versión).
+- **Primera vista:** se aparece en un claro (sin árboles cerca, `gen.arbolEn`) y se mira hacia lo más despejado (rayos cada bloque y dos a los lados).
+- **Medido** (M4 Pro, 1280×720, sin vsync): 540–750 FPS en los cuatro perfiles, ~1,4 ms de CPU de render por cuadro; con vsync, 60 FPS en `alto` (el automático elige `alto` en la GPU real). Con SwiftShader el cuello son los vértices, no los píxeles (bajar la resolución no cambia los FPS).
 
 ## Anime.js 4.5.0: dónde sí y dónde no
 
@@ -169,6 +202,12 @@ Headless Chrome usa la GPU real (ANGLE Metal), no un render por software. Los FP
 - **Latencia de entrada:** medida de keydown al paso que la usa, 10–27 ms.
 - **Voxel:** el informe del fork trae chunks/ms, triángulos, draw calls y memoria.
 
+- **Render nuevo (26-11-2026), con la máquina cargada por otros procesos:**
+  - Chrome sin interfaz con GPU (ANGLE Metal): 60 FPS en los nueve escenarios y en el titán; peor cuadro 17 ms.
+  - Con SwiftShader (GL por software, lienzo de CPU): 3,6–6 ms por cuadro rasterizado y 57–61 FPS. El render anterior daba 24–31 FPS ahí.
+  - Por partes en CPU (plaza): fondo 1,3 ms, suelo 1,2, luchadores 0,9, efectos 0,3, viñeta 0,1.
+  - Dentro del estudio con SwiftShader, la propia página del estudio da 9 FPS con el juego sin dibujar: el cuello no es el juego.
+
 ## Pruebas
 
 - `cd forja && node --test`: 48/48.
@@ -187,14 +226,15 @@ Headless Chrome usa la GPU real (ANGLE Metal), no un render por software. Los FP
 
 - Los recursos que importa el alumno (sprite sheets, sonidos) tienen API (`nucleo/recursos.js importarArchivo`), pero aún no tienen botón en el Editor.
 - **Modos:**
-  - Arena 2.5D: los golpes respetan la profundidad, pero el dibujo es el mismo de 2D con sombra. El fondo no tiene perspectiva propia.
+  - Arena 2.5D: los golpes respetan la profundidad y el suelo ya tiene perspectiva, pero el luchador del fondo casi no se achica.
   - Torneo: las otras llaves no se simulan ni se muestran; solo juegas tus rondas.
 - Los luchadores tienen un solo esqueleto procedural, sin animación cuadro a cuadro dibujada a mano: no hay arte original adicional. El editor ajusta frame data, cajas y colores, no las poses una por una.
-- En el anime, la hora del estudio (Día, Tarde…) no cambia el escenario; el tema manda.
+- Escenarios: los planos lejanos no se escalan con el zoom (a propósito, por rendimiento) y los reflejos no siguen la perspectiva del suelo. Las ramas de bambú no se mecen.
 - Voxel:
   - Sin controles táctiles.
   - El agua y la lava no fluyen.
-  - La luz emisiva solo se propaga dentro del chunk y su borde.
+  - La luz emisiva solo se propaga dentro del chunk y su borde (las criaturas sí la toman de las lámparas vecinas).
+  - El mapa de sombras cubre ±48 bloques (alto); más allá, sombra falsa. Las hojas se mecen pero su sombra no.
   - Las criaturas que deambulan no se guardan.
   - Un tirón aislado de 83 ms en Aventura, sin investigar.
 - Sin probar dentro de `/vista/<alumno>/` del LMS real. El ZIP sí corre servido desde su carpeta.

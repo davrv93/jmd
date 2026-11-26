@@ -7,9 +7,13 @@ import { ID } from './bloques.js';
 
 export const ESPECIES = {
   roble:  { axioma: 'TTTB', reglas: { B: 'F[&+FB][&-FB][&FL]L' }, iter: 2, angulo: 38, tronco: 'madera', hojas: 'hojas', copa: 2 },
+  roble_grande: { axioma: 'TTTTB', reglas: { B: 'F[&+FB][&-FB][&+FB]L' }, iter: 2, angulo: 34, tronco: 'madera', hojas: 'hojas', copa: 3 },
   abedul: { axioma: 'TTTTTB', reglas: { B: 'F[&+L][&-L]L' }, iter: 1, angulo: 30, tronco: 'abedul', hojas: 'hojas', copa: 2 },
+  // jacarandá: tronco claro y copa ancha y aplanada, lila · dorado: tronco claro y hojas de otoño
+  jacaranda: { axioma: 'TTTB', reglas: { B: '[&+FFL][&-FFL][&FL]' }, iter: 1, angulo: 44, tronco: 'abedul', hojas: 'hojas_flor', copa: 2, plana: true },
+  dorado: { axioma: 'TTTTB', reglas: { B: 'F[&+L][&-L][&L]L' }, iter: 1, angulo: 32, tronco: 'abedul', hojas: 'hojas_oro', copa: 2 },
   acacia: { axioma: 'TTTB', reglas: { B: '[&+FFFL][&-FFL]' }, iter: 1, angulo: 48, tronco: 'madera', hojas: 'hojas', copa: 2, plana: true },
-  selva:  { axioma: 'TTTTTTTTB', reglas: { B: 'F[&+FFL][&-FFL][&FFL]L' }, iter: 1, angulo: 42, tronco: 'madera', hojas: 'hojas', copa: 3 },
+  selva:  { axioma: 'TTTTTTTTB', reglas: { B: 'F[&+FFL][&-FFL][&FFL]L' }, iter: 1, angulo: 42, tronco: 'madera', hojas: 'hojas', copa: 3, lianas: true },
   sauce:  { axioma: 'TTTTB', reglas: { B: '[&&+FFL][&&-FFL][&&FL]L' }, iter: 1, angulo: 50, tronco: 'madera', hojas: 'hojas', copa: 3, colgante: true },
   palma:  { axioma: 'TCTCTCTCTP', reglas: {}, iter: 0, angulo: 0, tronco: 'madera', hojas: 'hojas', palma: true },
   pino:   { conico: true, tronco: 'madera', hojas: 'pino' },
@@ -20,6 +24,21 @@ export function lsistema(axioma, reglas, iter) {
   let s = axioma;
   for (let i = 0; i < iter; i++) { let n = ''; for (const c of s) n += reglas[c] ?? c; s = n; }
   return s;
+}
+
+// Rocas: un canto rodado de 1 a 3 bloques de radio, medio enterrado (dy desde −1), con musgo arriba si se pide.
+// material: 'piedra' | 'arenisca' | 'musgosa' | 'arcilla' · devuelve [[dx, dy, dz, id], …] como arbol()
+export function roca(h, material = 'piedra') {
+  let r = h >>> 0 || 7; const azar = () => { r ^= r << 13; r ^= r >>> 17; r ^= r << 5; return (r >>> 0) / 4294967296; };
+  const out = [], base = ID[material] ?? ID.piedra, rad = 1.35 + azar() * 1.25, alto = 0.65 + azar() * 0.45, musgo = material === 'musgosa' || material === 'piedra';
+  const R = Math.ceil(rad);
+  for (let dy = -1; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) for (let dz = -R; dz <= R; dz++) {
+    const d = (dx * dx) / (rad * rad) + ((dy + 0.5) * (dy + 0.5)) / (rad * rad * alto * alto) + (dz * dz) / (rad * rad);
+    if (d > 1 + (azar() - 0.5) * 0.35) continue;
+    const arriba = (dx * dx) / (rad * rad) + ((dy + 1.5) * (dy + 1.5)) / (rad * rad * alto * alto) + (dz * dz) / (rad * rad) > 1;
+    out.push([dx, dy, dz, musgo && arriba && azar() < 0.55 ? ID.musgosa : azar() < 0.15 && material === 'piedra' ? ID.grava : base]);
+  }
+  return out;
 }
 
 // Devuelve [[dx, dy, dz, id], …] relativo a la raíz. h: hash de 32 bits de la raíz. nevado: pone nieve arriba.
@@ -34,6 +53,8 @@ export function arbol(especie, h, nevado = false) {
       pon(cx + dx, cy + dy, cz + dz, hoja, false);
     }
     if (E.colgante) for (let k = 0; k < 6; k++) { const a = azar() * 6.283, x = Math.round(cx + Math.cos(a) * rad), z = Math.round(cz + Math.sin(a) * rad); for (let y = 1; y <= 2 + (azar() * 3 | 0); y++) pon(x, cy - y, z, hoja, false); }
+    // lianas de la selva: cuelgan del borde de la copa (enredaderas, se pueden trepar)
+    if (E.lianas && ID.enredadera) for (let k = 0; k < 4; k++) { const a = azar() * 6.283, x = Math.round(cx + Math.cos(a) * (rad + 1)), z = Math.round(cz + Math.sin(a) * (rad + 1)); for (let y = 0; y <= 2 + (azar() * 4 | 0); y++) pon(x, cy - y, z, ID.enredadera, false); }
     if (nevado) pon(cx, cy + rad + 1, cz, ID.nieve, false);
   };
   if (E.conico) {   // pino: tronco alto y discos de hojas que se achican hacia la punta

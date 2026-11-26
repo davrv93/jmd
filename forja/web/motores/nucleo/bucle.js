@@ -12,7 +12,7 @@ export function crearBucle({ paso = 1 / 60, actualizar, dibujar = () => {}, maxP
       if (previo == null) { previo = ms; return 0; }
       let dt = (ms - previo) / 1000; previo = ms;
       if (dt > 0.25) dt = 0.25;   // pestaña dormida: no intentes recuperar minutos de simulación de golpe
-      if (!b.pausado) acumulado += dt * b.escala;
+      if (!b.pausado && !globalThis.FORJA_PAUSA) acumulado += dt * b.escala;   // FORJA_PAUSA: el menú fijo del juego (plantillas/menu.js)
       const t0 = ahora(); pasos = 0;
       while (acumulado >= paso && pasos < maxPasos) { actualizar(paso, b.pasos); b.pasos++; b.tiempo += paso; acumulado -= paso; pasos++; }
       if (pasos === maxPasos) acumulado = Math.min(acumulado, paso);   // espiral de la muerte: se suelta el atraso

@@ -16,10 +16,10 @@ import { crearRuido, voronoi2, suave } from '../nucleo/ruido.js';
 import { derivar, hash2, hash3 } from '../nucleo/semilla.js';
 import { ID } from './bloques.js';
 import { BIOMAS, BIOMA_ID } from './biomas.js';
-import { arbol, RADIO_MAX } from './arboles.js';
+import { arbol, roca, RADIO_MAX } from './arboles.js';
 import { crearEstructuras } from './estructuras.js';
 
-export const VERSION_GENERADOR = 3;
+export const VERSION_GENERADOR = 4;   // 4: prados de flores, helechos, arbustos, rocas, más especies de árbol, senderos y ruinas con columnas
 export const CHUNK = 16;
 export const OPCIONES_BASE = {
   altura: 128, mar: 48, relieve: 1, montanas: 1, oceanos: 1, lagos: 1, cuevas: 1, cavernas: 1, minerales: 1, vegetacion: 1, flores: 1,
@@ -172,27 +172,42 @@ export function crearGenerador(semilla, opciones = {}) {
         }
       }
     }
-    // vegetación de un bloque (flores, hierba, cactus) dentro del chunk
+    // vegetación de un bloque (flores, hierba, helechos, arbustos, cactus) dentro del chunk. Las flores crecen en PRADOS
+    // (manchas de ruido de baja frecuencia) y cada prado es casi de un solo color: cantuta, campanilla o amancay.
     for (let lz = 0; lz < CHUNK; lz++) for (let lx = 0; lx < CHUNK; lx++) {
       const c = cols[lx + lz * 16], v = c.bioma.vegetacion, top = alturas[lx + lz * 16], suelo = b[idx(lx, top, lz)];
       if (top + 3 >= H || top < MAR || b[idx(lx, top + 1, lz)]) continue;
-      const r = hash2(sVeg ^ 0x1234, c.x, c.z) / 4294967296;
+      const r = hash2(sVeg ^ 0x1234, c.x, c.z) / 4294967296, r2 = hash2(sVeg ^ 0x4321, c.x, c.z);
       if (v.cactus && suelo === ID.arena && r < v.cactus * o.vegetacion) { const alto = 1 + (hash2(sVeg, c.x, c.z + 7) % 3); for (let y = 1; y <= alto; y++) b[idx(lx, top + y, lz)] = ID.cactus; continue; }
       if (suelo !== ID.cesped && suelo !== ID.pasto_seco && suelo !== ID.nevado && suelo !== ID.barro) continue;
-      if (r < (v.flores || 0) * o.flores) b[idx(lx, top + 1, lz)] = ID.flor;
-      else if (r < ((v.flores || 0) * o.flores + (v.hierba || 0)) * Math.min(1.5, o.vegetacion)) b[idx(lx, top + 1, lz)] = ID.hierba;
+      const prado = nRel.s2(c.x * 0.045 * E + 300, c.z * 0.045 * E), pf = (v.flores || 0) * o.flores * (prado > 0.35 ? 5 : prado > 0.1 ? 1.2 : 0.25);
+      const pa = pf + (v.arbustos || 0) * o.vegetacion, ph = pa + (v.hierba || 0) * Math.min(1.5, o.vegetacion);
+      if (r < pf) { const t = nRel.s2(c.x * 0.02 * E - 77, c.z * 0.02 * E + 31) + ((r2 & 255) / 255 - 0.5) * 0.5; b[idx(lx, top + 1, lz)] = t < -0.22 ? ID.flor_azul : t > 0.28 ? ID.flor_amarilla : ID.flor; }
+      else if (r < pa && suelo !== ID.nevado) { b[idx(lx, top + 1, lz)] = ID.arbusto; if ((r2 & 7) < 2 && top + 2 < H) b[idx(lx, top + 2, lz)] = ID.arbusto; }
+      else if (r < ph) b[idx(lx, top + 1, lz)] = v.helechos && ((r2 >>> 8) & 255) / 256 < v.helechos ? ID.helecho : ID.hierba;
+    }
+    // rocas: cantos rodados medio enterrados (raíz en el chunk o en un margen de 3: cruzan bordes sin depender del orden)
+    if (o.vegetacion > 0) for (let z = z0 - 3; z < z0 + CHUNK + 3; z++) for (let x = x0 - 3; x < x0 + CHUNK + 3; x++) {
+      const c = columna(x, z), v = c.bioma.vegetacion; if (!v.rocas) continue;
+      const hh = hash2(sVeg ^ 0x5151, x, z); if (hh / 4294967296 >= v.rocas * Math.min(1.5, o.vegetacion) || c.h <= MAR) continue;
+      for (const [dx, dy, dz, id] of roca(hh, v.roca || 'piedra')) {
+        const lx = x + dx - x0, lz = z + dz - z0, y = c.h + 1 + dy;
+        if (lx < 0 || lz < 0 || lx >= CHUNK || lz >= CHUNK || y >= H || y < 1) continue;
+        const i = idx(lx, y, lz), ya = b[i]; if (!ya || ya === ID.hierba || ya === ID.flor || ya === ID.helecho || ya === ID.flor_azul || ya === ID.flor_amarilla || dy < 0) b[i] = id;
+      }
     }
     // árboles: raíces en el chunk y en un margen de RADIO_MAX (las copas cruzan bordes sin depender del orden)
     if (o.vegetacion > 0) for (let z = z0 - RADIO_MAX; z < z0 + CHUNK + RADIO_MAX; z++) for (let x = x0 - RADIO_MAX; x < x0 + CHUNK + RADIO_MAX; x++) {
       const hh = hash2(sVeg, x, z), c = columna(x, z), v = c.bioma.vegetacion;
       if (!v.arboles || hh / 4294967296 >= v.arboles * o.vegetacion || c.h <= MAR) continue;
       if (c.montana > 0.3 || (c.bioma.id === 'playa' && c.h > MAR + 2)) continue;
-      const especie = v.mezcla && (hh & 7) < 3 ? v.mezcla : v.arbol;
+      let especie = v.mezcla && (hh & 7) < 3 ? v.mezcla : v.arbol;
+      if (v.variantes) { let t = ((hh >>> 8) & 1023) / 1024; for (const [e, p] of v.variantes) { if (t < p) { especie = e; break; } t -= p; } }
       for (const [dx, dy, dz, id] of arbol(especie, hh, !!v.nevado)) {
         const lx = x + dx - x0, lz = z + dz - z0, y = c.h + 1 + dy;
         if (lx < 0 || lz < 0 || lx >= CHUNK || lz >= CHUNK || y >= H) continue;
         const i = idx(lx, y, lz), ya = b[i];
-        if (id === ID.madera || id === ID.abedul) b[i] = id; else if (!ya || ya === ID.hierba || ya === ID.flor) b[i] = id;
+        if (id === ID.madera || id === ID.abedul) b[i] = id; else if (!ya || ya === ID.hierba || ya === ID.flor || ya === ID.helecho || ya === ID.flor_azul || ya === ID.flor_amarilla) b[i] = id;
       }
     }
     // estructuras (después de los árboles: mandan ellas)
@@ -204,7 +219,12 @@ export function crearGenerador(semilla, opciones = {}) {
     return { cx, cz, bloques: b, alturas, biomas, marcadores, version: VERSION_GENERADOR };
   }
 
+  // ¿nace un árbol en (x, z)? (misma regla que generarChunk: sirve para aparecer en un claro y no contra un tronco)
+  function arbolEn(x, z) {
+    const c = columna(x, z), v = c.bioma.vegetacion;
+    return !!v.arboles && hash2(sVeg, x, z) / 4294967296 < v.arboles * o.vegetacion && c.h > MAR && c.montana <= 0.3;
+  }
   // bloque suelto sin chunk (pruebas, consultas puntuales): genera el chunk que lo contiene
   function bloqueEn(x, y, z) { const cx = Math.floor(x / 16), cz = Math.floor(z / 16); const c = generarChunk(cx, cz); return c.bloques[idx(x - cx * 16, y, z - cz * 16)]; }
-  return { semilla, opciones: o, H, MAR, version: VERSION_GENERADOR, columna, generarChunk, bloqueEn, estructuras, idx };
+  return { semilla, opciones: o, H, MAR, version: VERSION_GENERADOR, columna, generarChunk, bloqueEn, arbolEn, estructuras, idx };
 }

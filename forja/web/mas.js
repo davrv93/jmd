@@ -11,6 +11,7 @@ import { tomarDeLaURL, leerAjustes, borrarAjustes, resumenAjustes, guardarAjuste
 import { sesion, guardarEnAula, misJuegos } from './motor/aula.js';
 import { crearGuia } from './motor/guia.js';
 import { crearDisena } from './motor/disena.js';
+import { textoControles, leyenda, panelControles } from './motor/controles.js';
 
 export function iniciarMas(A) {
   const { R, $, el, aviso, bajar } = A;
@@ -101,7 +102,8 @@ export function iniciarMas(A) {
     enMemoria?.liberar(); enMemoria = paginaEnMemoria(proyecto); marco.srcdoc = enMemoria.html;
     marco.onload = () => marco.contentWindow?.focus();
     $('plantillas').replaceChildren(...PL.map((p) => { const b = el('button', { type: 'button', role: 'tab', 'aria-selected': String(p.id === plantilla), class: 'plantilla' }); b.append(el('b', {}, p.nombre), el('span', {}, p.lema)); b.onclick = () => { plantilla = p.id; arrancarJuego(); }; return b; }));
-    $('controlesJuego').textContent = meta.controles;
+    $('controlesJuego').textContent = textoControles(plantilla, proyecto.DATOS.controles, { todo: false }) + ' · Menú (M): todos los controles y la ayuda';
+    pintarLeyenda(proyecto.DATOS.controles);
     A.chips($('horas'), A.lista(R.meta.horas), hora, (id) => { hora = id; arrancarJuego(); });
     explicar(meta, proyecto);
   }
@@ -121,7 +123,7 @@ export function iniciarMas(A) {
           aj.oscilacion && 'La oscilación (A y ω) mueve las plataformas flotantes de Plataformas.'].filter(Boolean).join(' ');
         const p = el('p', { class: 'nota clase' }); p.append(el('b', {}, 'De tu clase: '), resumenAjustes(aj) + '. ' + usa + ' Van en datos.js de tu ZIP. ', quitar); deClase.push(p);
       }
-      caja.replaceChildren(...deClase, el('p', { class: 'nota' }, 'Cada tarjeta es un trozo real de juego.js. En el juego pulsa V (rayos X) para ver lo que el código «piensa».'), ...meta.algoritmos.map((a, i) => {
+      caja.replaceChildren(...deClase, el('p', { class: 'nota' }, `Cada tarjeta es un trozo real de juego.js. ${meta.motor === 'anime' ? 'En el juego, los rayos X (cajas de choque) se activan desde la pausa.' : 'En el juego pulsa V (rayos X) para ver lo que el código «piensa».'}`), ...meta.algoritmos.map((a, i) => {
         const d = el('details', { class: 'algoritmo' }); d.open = i === 0;
         d.append(el('summary', {}, a.nombre), el('p', {}, a.idea), el('pre', {}, extracto(proyecto.juego, a.id) || '(sin extracto)'), el('p', { class: 'prueba' }, 'Pruébalo: ' + a.prueba)); return d;
       }));
@@ -144,10 +146,66 @@ export function iniciarMas(A) {
   }
   $('bProbar').onclick = (ev) => ocupado(ev.currentTarget, async () => { $('dPista').showModal(); await arrancarJuego(); });
   $('bOtroNivel').onclick = () => { semillaNivel++; arrancarJuego(); };
-  $('bReiniciarJuego').onclick = () => { marco.srcdoc = enMemoria.html; };
+  // Reiniciar = partida nueva: los voxel autoguardan y, sin DATOS.nueva, recuperarían lo guardado.
+  $('bReiniciarJuego').onclick = () => { marco.srcdoc = enMemoria.html.replace(/<\/body>(?![\s\S]*<\/body>)/, '<script>window.DATOS && (window.DATOS.nueva = true);</script></body>'); };
   $('bZipJuego').onclick = (ev) => ocupado(ev.currentTarget, async () => { const { blob, carpeta } = await zipProyecto(paquete(128), plantilla); bajar(`${carpeta}.zip`, blob); aviso('Proyecto descargado'); guiaMarcar('guardar'); });
   $('dPista').addEventListener('close', () => { marco.srcdoc = ''; enMemoria?.liberar(); enMemoria = null; });
   window.__forjaJuego = () => marco.contentWindow; // para las pruebas automáticas
+
+  // ---------------------------------------------------------------- Modo juego: pantalla completa con TUS controles a la vista
+  const cajaJuego = marco.parentElement;   // .marco-pista: el iframe, la leyenda y el botón de salir
+  function pintarLeyenda(mapa) {
+    const l = $('leyendaJuego');
+    l.replaceChildren(el('b', {}, 'Tus controles'), ...leyenda(plantilla, mapa).filter((x) => x.basica).map((x) => { const f = el('span'); for (const t of x.teclas) f.append(el('kbd', {}, t)); f.append(' ' + x.nombre); return f; }),
+      el('span', { class: 'mas' }, 'Todos los controles: Menú (M)'));
+  }
+  let tLeyenda = 0;
+  function verLeyenda(ms = 6500) { const l = $('leyendaJuego'); l.classList.add('ve'); clearTimeout(tLeyenda); tLeyenda = setTimeout(() => l.classList.remove('ve'), ms); }
+  const enModo = () => document.fullscreenElement === cajaJuego || document.webkitFullscreenElement === cajaJuego || cajaJuego.classList.contains('llena');
+  async function modoJuego() {
+    if (!enMemoria) await arrancarJuego();
+    try {
+      if (cajaJuego.requestFullscreen) await cajaJuego.requestFullscreen({ navigationUI: 'hide' });
+      else if (cajaJuego.webkitRequestFullscreen) cajaJuego.webkitRequestFullscreen();
+      else throw new Error('sin pantalla completa');
+    } catch { cajaJuego.classList.add('llena'); }   // iPhone y navegadores sin la API: ocupa toda la ventana
+    try { await screen.orientation?.lock?.('landscape'); } catch { /* solo en móviles que lo permiten */ }
+    cajaJuego.classList.add('en-modo'); verLeyenda();
+    setTimeout(() => marco.contentWindow?.focus(), 200);
+  }
+  function salirModo() {
+    if (document.fullscreenElement) document.exitFullscreen?.(); else if (document.webkitFullscreenElement) document.webkitExitFullscreen?.();
+    cajaJuego.classList.remove('llena', 'en-modo');
+  }
+  const alCambiarPantalla = () => { if (!enModo()) cajaJuego.classList.remove('en-modo'); setTimeout(() => marco.contentWindow?.focus(), 100); };
+  document.addEventListener('fullscreenchange', alCambiarPantalla); document.addEventListener('webkitfullscreenchange', alCambiarPantalla);
+  $('bModoJuego').onclick = modoJuego;
+  $('bSalirJuego').onclick = salirModo;
+  $('bLeyenda').onclick = () => { verLeyenda(); marco.contentWindow?.focus(); };
+  marco.addEventListener('load', () => {
+    if (new URLSearchParams(location.search).get('rayos') && marco.srcdoc && !enModo()) cajaJuego.classList.add('llena', 'en-modo');   // escena «Rayos X» del LIVE: el juego ocupa todo
+    if (enModo()) verLeyenda(4000);
+  });
+  // El menú fijo de cada juego (plantillas/menu.js) pide aquí lo que solo el estudio puede hacer.
+  window.addEventListener('message', (e) => {
+    if (e.source !== marco.contentWindow || !e.data || typeof e.data.forja !== 'string') return;
+    if (e.data.forja === 'rayos') { if (window.parent !== window) window.parent.postMessage(e.data, location.origin); return; }   // plantillas/rayos.js → escena del LIVE
+    if (e.data.forja === 'salir') { if (enModo()) salirModo(); else $('dPista').close(); }
+    else if (e.data.forja === 'reiniciar') $('bReiniciarJuego').click();
+    else if (e.data.forja === 'pantalla') { if (enModo()) salirModo(); else modoJuego(); }
+    else if (e.data.forja === 'menuAbierto') { clearTimeout(tLeyenda); $('leyendaJuego').classList.remove('ve'); }
+  });
+
+  // ---------------------------------------------------------------- Controles: cambiarlos después de crear el juego
+  let controlesCambiaron = false;
+  $('bControles').onclick = () => {
+    controlesCambiaron = false;
+    $('cajaControles').replaceChildren(panelControles({ el, id: plantilla, propios: leerAjustes().controles?.[plantilla],
+      alCambiar: (dif) => { guardarAjustes({ controles: { ...leerAjustes().controles, [plantilla]: dif } }); controlesCambiaron = true; } }));
+    $('hControles').textContent = `Controles de ${(PL.find((p) => p.id === plantilla) || {}).nombre || 'tu juego'}`;
+    $('dControles').showModal();
+  };
+  $('dControles').addEventListener('close', () => { $('cajaControles').replaceChildren(); if (controlesCambiaron) { arrancarJuego(); aviso('Controles nuevos listos'); } });
 
   // ---------------------------------------------------------------- tu aula (jmd-learn.online): guardar y recuperar el juego
   // Con sesión del LMS, el juego se guarda en /trabajo/juego-<plantilla>/ de tu aula: lo ves en el Visor del LIVE y
@@ -190,7 +248,7 @@ export function iniciarMas(A) {
     $('bAulaJuego').onclick = (ev) => ocupado(ev.currentTarget, guardarAula);
     $('bAula').onclick = (ev) => ocupado(ev.currentTarget, guardarAula);
     $('bAbrirAula').onclick = () => listaAula();
-    if (q.get('clase') && !llegoConEnlace) {   // en el LIVE: seguir donde se quedó
+    if (q.get('clase') && !llegoConEnlace && !q.get('paso')) {   // en el LIVE: seguir donde se quedó (las preguntas llevan su propio estado)
       const js = await misJuegos();
       const j = js.find((x) => x.plantilla === q.get('juego')) || js[0];
       if (j) { abrirJuego(j); aviso(`Seguimos con tu juego del aula: ${j.nombre || j.plantilla}`); if ($('dPista').open) arrancarJuego(); }
@@ -353,13 +411,22 @@ export function iniciarMas(A) {
   // Antes del editor: los 8 elementos formales de un juego (Fullerton) y la prueba de los 6 rasgos (Juul, 2003).
   plantillas().then(async (PLm) => {
     disenaRef = crearDisena({ el, R, sorpresa: (r, n, f) => { const x = sorpresa(r, n, f); return { ...x, params: { ...PARAMS_BASE, ...x.params } }; }, fichaDe, miniatura, plantillasMeta: PLm, REGLAS_RIVAL, COL_FONDO: A.COL_FONDO,
-      aplicar: (d) => {
+      guardar: async () => { if (!(await sesion())) throw new Error('sin sesión'); return guardarAula(); },
+      aplicar: (d, { abrir = true } = {}) => {
         if (d.heroe) A.cargar({ ...d.heroe, params: { ...PARAMS_BASE, ...d.heroe.params, fondo: d.fondo } });
-        const antes = leerAjustes().reglas || {}; borrarAjustes(); guardarAjustes({ ...d.ajustes, reglas: { ...antes, ...d.ajustes.reglas } });   // las reglas de otras plantillas se conservan
+        const ya = leerAjustes(), antes = ya.reglas || {}; borrarAjustes(); guardarAjustes({ ...d.ajustes, reglas: { ...antes, ...d.ajustes.reglas }, controles: { ...ya.controles, ...d.ajustes.controles } });   // las reglas y controles de otras plantillas se conservan
         plantilla = d.plantilla; guarda('forja.plantilla', plantilla);
         tuJuego.marcar('personaje');
-        setTimeout(() => { if (!$('dPista').open) $('bProbar').click(); else arrancarJuego(); }, 350);
+        if (abrir) setTimeout(() => { if (!$('dPista').open) $('bProbar').click(); else arrancarJuego(); }, 350);
       } });
+    // Escenas del LIVE con una pregunta (?paso=jugadores|objetivo|…|resultado|final): abre esa pregunta y, al cerrar el
+    // juego para seguir pensando, vuelve a ella.
+    const pasoQ = q.get('paso');
+    if (pasoQ) {
+      disenaRef.abrir(pasoQ);
+      $('dPista').addEventListener('close', () => { const p = disenaRef.pregunta(); if (p) setTimeout(() => disenaRef.abrir(p), 250); });
+      return;
+    }
     if (disenaRef.hecho() || llegoConEnlace || q.has('sinrecorrido') || q.get('abrir') || q.get('sala')) return;
     if (q.get('clase')) { const u = await sesion(); if (u && (await misJuegos()).length) return; }   // ya tiene su juego en el aula
     disenaRef.abrir();

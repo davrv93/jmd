@@ -110,7 +110,7 @@ export function paneles({ id, config, cambiar, el }) {
 
   // ---- escenario, física, cámara, efectos, accesibilidad, audio, IA
   const esc = el('div'); esc.append(
-    fila('Tema', sel(c.escenario?.tema || 'noche', Object.keys(TEMAS).map((k) => [k, k]), (v) => { (c.escenario ||= {}).tema = v; guardar(true); })),
+    fila('Escenario', sel(c.escenario?.tema || '', [['', 'El de tus reglas'], ...Object.entries(TEMAS).map(([k, v]) => [k, v.nombre]), ['hora', 'Según la hora de tu escenario'], ['rotar', 'Uno distinto en cada pelea'], ['elemento', 'El de tu elemento']], (v) => { c.escenario ||= {}; if (v) c.escenario.tema = v; else delete c.escenario.tema; guardar(true); })),
     fila('Pilares que se rompen', rango((c.escenario?.obstaculos || []).length, 0, 6, 1, (v) => { (c.escenario ||= {}).obstaculos = Array.from({ length: v }, (_, i) => ({ x: -600 + i * (1150 / Math.max(1, v - 1 || 1)), y: 0, w: 48, h: 120, vida: 160, color: '#5a5068' })); guardar(true); })));
   out.push({ titulo: 'Escenario', nodo: esc });
   const fis = el('div'); const F = (k, t, a, b, s, d) => fila(t, rango(c.fisica?.[k] ?? d, a, b, s, (v) => { (c.fisica ||= {})[k] = v; guardar(true); }));

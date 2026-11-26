@@ -12,7 +12,16 @@ export const MAPA_BASE = {
 };
 const BOTONES_MANDO = { 0: 'salto', 1: 'fuerte', 2: 'ligero', 3: 'medio', 4: 'bloqueo', 5: 'especial', 6: 'carga', 7: 'definitivo', 9: 'pausa', 12: 'arriba', 13: 'abajo', 14: 'izq', 15: 'der' };
 
-export function crearEntrada({ mapa = MAPA_BASE, objetivo = globalThis.window, mando = 0, tacto = globalThis.window?.TACTO } = {}) {
+// Los controles que el alumno eligió al crear su juego (paso «Procedimientos» de «Diseña tu videojuego») llegan en
+// DATOS.controles = { accion: ['KeyJ', …] } y reemplazan las teclas de esa acción. propios: false los ignora (jugador 2).
+export function conPropios(mapa, propios = globalThis.window?.DATOS?.controles) {
+  if (!propios || typeof propios !== 'object') return mapa;
+  const m = { ...mapa };
+  for (const [acc, cods] of Object.entries(propios)) if (acc in m && Array.isArray(cods)) m[acc] = cods.filter((c) => typeof c === 'string');   // [] = sin tecla
+  return m;
+}
+export function crearEntrada({ mapa = MAPA_BASE, objetivo = globalThis.window, mando = 0, tacto = globalThis.window?.TACTO, propios = true } = {}) {
+  if (propios) mapa = conPropios(mapa);
   const porCodigo = new Map();
   for (const [acc, cods] of Object.entries(mapa)) for (const c of cods) { if (!porCodigo.has(c)) porCodigo.set(c, []); porCodigo.get(c).push(acc); }
   const abajo = new Set(), recien = new Set(), soltadas = new Set(), stamp = new Map();

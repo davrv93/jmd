@@ -10,6 +10,8 @@ import { pngDeLienzo } from '../../motor/zip.js';
 import { catalogoDe, porDefecto } from '../../motor/juegos/index.js';
 import { leerAjustes } from '../../motor/ajustes.js';
 import { configDe } from './config.js';
+import { mapaDe, textoControles } from '../../motor/controles.js';
+import { menuDe } from '../../motor/ayuda.js';
 
 const cacheTexto = new Map(), cacheBytes = new Map();
 const base = () => new URL('./', globalThis.location?.href || 'http://localhost/');
@@ -59,6 +61,8 @@ QUÉ HAY
   index.html      la página (importmap: «motores/» y «animejs» apuntan a carpetas de aquí)
   datos.js        DATOS: tu personaje, las reglas que elegiste en «Diseña tu videojuego» y la configuración
   config.json     la configuración avanzada (la del Editor de Forja). Es solo datos: el juego la valida y nunca la ejecuta
+  menu.js         el menú del juego: descripción, controles, ayuda y salir (lee DATOS.menu)
+  rayos.js        «rayos X del framework»: cuenta qué pieza trabaja (solo dentro de Forja o del LIVE)
   juego.js        EL JUEGO. Los algoritmos están marcados con «// >>> nombre»
   motores/        el motor (núcleo compartido + ${motor}). Los Workers son archivos .js aparte
   motor/sonido.js sonidos calculados con ondas (los mismos del estudio)
@@ -79,21 +83,23 @@ export async function armarMotor(d, meta) {
   const reglas = { ...porDefecto(cat.reglas), ...(leerAjustes().reglas?.[id] || {}) };
   const config = configDe(id);
   const DATOS = { motor: meta.motor, plantilla: id, nombre: d?.spec?.nombre || 'Sin nombre', juego: meta.nombre, semilla: d?.semilla ?? 1,
-    heroe: cifras(d?.hoja), enemigo: cifras(d?.enemigo?.hoja), colores: d?.spec?.colores ? colores(d.spec) : null, fisicaBase: d?.spec?.fisica || null, hora: d?.escenario?.hora || null, reglas, config };
+    heroe: cifras(d?.hoja), enemigo: cifras(d?.enemigo?.hoja), colores: d?.spec?.colores ? colores(d.spec) : null, fisicaBase: d?.spec?.fisica || null, hora: d?.escenario?.hora || null, reglas, config,
+    controles: mapaDe(id, leerAjustes().controles?.[id]) };   // las teclas que el alumno eligió; crearEntrada() las aplica
+  DATOS.menu = menuDe(id, { ficha: cat.ficha, catalogo: cat.reglas, reglas, controles: DATOS.controles });   // menú fijo (plantillas/menu.js)
   const datosJS = `// datos.js · generado por Forja para «${DATOS.nombre}». Son solo datos: cámbialos y mira qué pasa.\nwindow.DATOS = ${JSON.stringify(DATOS, null, 1)};\n`;
   const entrada = `plantillas/${id}.js`;
-  const [juego, plantillaIndex, deps] = await Promise.all([texto(entrada), texto('motores/forja/index.html'), dependencias(entrada)]);
+  const [juego, plantillaIndex, deps, menu, rayos] = await Promise.all([texto(entrada), texto('motores/forja/index.html'), dependencias(entrada), texto('plantillas/menu.js'), texto('plantillas/rayos.js')]);
   const vendor = ['vendor/p5.min.js', 'vendor/anime.esm.min.js', 'vendor/LICENSE-animejs.txt'];
   const propios = deps.filter((r) => !r.startsWith('vendor/'));
   const contenidos = await Promise.all([...propios.map((r) => texto(r)), ...vendor.map((r) => bytes(r))]);
   [...propios, ...vendor].forEach((r, i) => archivos.push({ nombre: r, datos: contenidos[i] }));
   const html = plantillaIndex.replaceAll('__NOMBRE__', esc(DATOS.nombre)).replaceAll('__JUEGO__', esc(meta.nombre));
-  const guiones = `<script type="importmap">{"imports":{"animejs":"./vendor/anime.esm.min.js","motores/":"./motores/"}}</script>\n<script src="vendor/p5.min.js"></script>\n<script src="datos.js"></script>\n<script type="module" src="juego.js"></script>`;
-  archivos.push({ nombre: 'datos.js', datos: datosJS }, { nombre: 'juego.js', datos: juego }, { nombre: 'config.json', datos: JSON.stringify(config, null, 1) },
+  const guiones = `<script type="importmap">{"imports":{"animejs":"./vendor/anime.esm.min.js","motores/":"./motores/"}}</script>\n<script src="vendor/p5.min.js"></script>\n<script src="datos.js"></script>\n<script src="menu.js"></script>\n<script src="rayos.js"></script>\n<script type="module" src="juego.js"></script>`;
+  archivos.push({ nombre: 'datos.js', datos: datosJS }, { nombre: 'juego.js', datos: juego }, { nombre: 'menu.js', datos: menu }, { nombre: 'rayos.js', datos: rayos }, { nombre: 'config.json', datos: JSON.stringify(config, null, 1) },
     { nombre: 'index.html', datos: html.replace('__SCRIPTS__', () => guiones) },
-    { nombre: 'LEEME.txt', datos: LEEME(DATOS.nombre, meta.nombre, meta.controles, meta.motor, d?.enlace) },
+    { nombre: 'LEEME.txt', datos: LEEME(DATOS.nombre, meta.nombre, textoControles(id, DATOS.controles), meta.motor, d?.enlace) },
     { nombre: 'ficha.json', datos: JSON.stringify({ nombre: DATOS.nombre, plantilla: id, motor: meta.motor, estado: d?.estado || null, reglas, enlace: d?.enlace || null }, null, 1) });
-  const p = { motor: meta.motor, meta, archivos, DATOS, datosJS, comun: '', juego, index: html };
+  const p = { motor: meta.motor, meta, archivos, DATOS, datosJS, comun: '', juego, index: html, menu, rayos };
   p.enMemoria = () => paginaMotor(p);
   return p;
 }
@@ -114,6 +120,8 @@ export function paginaMotor(p) {
 <script>window.FORJA_ASSETS = ${JSON.stringify(mapa)};</script>
 <script src="${abs('vendor/p5.min.js')}"></script>
 <script>${p.datosJS.replace(/<\/script/gi, '<\\/script')}</script>
+<script>${p.menu.replace(/<\/script/gi, '<\\/script')}</script>
+<script>${p.rayos.replace(/<\/script/gi, '<\\/script')}</script>
 <script type="module">${juego}</script>`;
   return { html: p.index.replace('__SCRIPTS__', () => guiones), liberar: () => urls.forEach((u) => URL.revokeObjectURL(u)) };
 }

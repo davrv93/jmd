@@ -6,6 +6,7 @@
 // usando el PRNG de la partida: con la misma semilla y las mismas entradas, la pelea se repite exacta.
 import { crearBuffer } from './buffer.js';
 
+export { INCLINA };
 export const JEFES = {
   gaiaron: {
     id: 'gaiaron', nombre: 'Gaiaron, el Titán Dormido', clase: 'Coloso de piedra', salud: 5200, defensa: 1, masa: 20, ancho: 260, alto: 430, elemento: 'tierra',
@@ -26,6 +27,8 @@ export const JEFES = {
   },
 };
 
+const ALCANCE_PUNO = 400, INCLINA = 35 * Math.PI / 180;   // el brazo de piedra llega hasta 400 px por delante de su centro
+
 export function crearJefe(combate, def, { x = 420, eq = 1, reglasJefe = {} } = {}) {
   const R = { danoMul: 1, avisoMul: 1, agotadoMul: 1, nucleoMul: 1.6, manoVulnerable: true, rocas: null, ondaVel: null, empujeMul: 1, recuperacionMul: 1, repetir: false, lluviaApunta: true, enfurecido: null, ...reglasJefe };
   const rng = combate.prng;
@@ -33,11 +36,27 @@ export function crearJefe(combate, def, { x = 420, eq = 1, reglasJefe = {} } = {
   Object.assign(J, { armadura: true, tipo: 'jefe', ancho: def.ancho, alto: def.alto, masa: def.masa, buffer: crearBuffer(), fase: 0, ataque: null, t: 0, avisos: [], rocas: [], ondas: [], hechos: 0, agotado: 0, espera: 90, ultimo: null, enfria: {}, dormido: true, cambioFase: null });
   const objetivo = () => combate.rival(J);
   const inst = () => ({ id: Math.floor(rng.num() * 1e9), golpeados: new Map() });
+  // Medidas del dibujo (render.js → dibujarJefe), en unidades de su alto: las cajas salen de las MISMAS medidas, así que
+  // lo que se ve es lo que se golpea. Agotado, el titán se arrodilla: todo baja `baja` y la cabeza queda al alcance.
+  // De rodillas se inclina hacia adelante (INCLINA grados, girando sobre la base del torso): la cara —el núcleo— baja
+  // hasta donde llegan los ataques en salto.
+  const baja = () => (J.agotado > 0 ? 110 : 0);
+  J.cabeza = () => (J.agotado > 0 ? { x: J.x - Math.sin(INCLINA) * 240, y: 30 + Math.cos(INCLINA) * 240 } : { x: J.x, y: 380 });   // centro del núcleo
+  // dónde está su puño ahora: en reposo junto al cuerpo, alzado durante el aviso, en el suelo al golpear y mientras se
+  // recupera (ahí se le puede pegar), y de vuelta a su sitio en los últimos cuadros
+  J.mano = () => {
+    const a = J.ataque, b0 = baja(), reposo = b0 ? { x: J.x - 262, y: 30 } : { x: J.x - 196, y: 199 };   // de rodillas apoya la mano en el suelo
+    if (!a || J.ko) return reposo;
+    if (J.t < a.avisoF) { const k = J.t / Math.max(1, a.avisoF); return { x: J.x - 190 - k * 40, y: 160 - b0 + k * 260 }; }
+    const suelo = a.mano ? { x: a.xMano, y: 30 } : { x: J.x - 210, y: 30 }, fin = a.avisoF + a.activo + a.recuperacion;
+    const cae = Math.min(1, (J.t - a.avisoF + 1) / 2), sube = Math.max(0, Math.min(1, (J.t - (fin - 16)) / 16));
+    const alto = { x: J.x - 230, y: 420 - b0 }, p = { x: alto.x + (suelo.x - alto.x) * cae, y: alto.y + (suelo.y - alto.y) * cae };
+    return { x: p.x + (reposo.x - p.x) * sube, y: p.y + (reposo.y - p.y) * sube };
+  };
   J.hurtboxes = () => {
-    const b = [{ x: J.x - def.ancho * 0.36, y: 0, w: def.ancho * 0.72, h: def.alto * 0.78, zona: 'cuerpo', mul: 1 }];
-    const bajo = J.agotado > 0;   // agotado: se arrodilla y el núcleo de la cabeza queda al alcance
-    b.push({ x: J.x - 55, y: bajo ? 120 : def.alto * 0.8, w: 110, h: 90, zona: 'nucleo', mul: bajo ? R.nucleoMul : 1.15 });
-    if (R.manoVulnerable && J.ataque?.mano && J.t > J.ataque.avisoF) b.push({ x: J.ataque.xMano - 70, y: 0, w: 140, h: 70, zona: 'mano', mul: 1.3 });
+    const b0 = baja(), b = [{ x: J.x - 110, y: 0, w: 220, h: 330 - b0, zona: 'cuerpo', mul: 1 }];
+    const c = J.cabeza(); b.push({ x: c.x - 55, y: c.y - 45, w: 110, h: 90, zona: 'nucleo', mul: b0 ? R.nucleoMul : 1.15 });
+    const m = J.mano(); if (R.manoVulnerable && J.ataque?.mano && J.t > J.ataque.avisoF && m.y < 60) b.push({ x: m.x - 70, y: 0, w: 140, h: 70, zona: 'mano', mul: 1.3 });
     return b;
   };
   J.hitboxes = () => {
@@ -55,7 +74,7 @@ export function crearJefe(combate, def, { x = 420, eq = 1, reglasJefe = {} } = {
     const f = def.fases[J.fase], d = Math.abs(op.x - J.x);
     const u = f.ataques.map((id) => {
       let s = 1 + rng.num() * 0.6;
-      if (id === 'puno' || id === 'doble') s += d < 450 ? 0.8 : 0.1;
+      if (id === 'puno' || id === 'doble') s += d < ALCANCE_PUNO ? 0.8 : -0.8;   // lejos, primero se acerca
       if (id === 'barrido') s += op.suelo ? 0.6 : -0.4;
       if (id === 'onda') s += d > 250 ? 0.5 : 0.2;
       if (id === 'lluvia') s += d > 300 ? 0.7 : 0.3;
@@ -73,7 +92,7 @@ export function crearJefe(combate, def, { x = 420, eq = 1, reglasJefe = {} } = {
     a.recuperacion = Math.round(b.recuperacion * (J.fase === 2 ? 0.8 : 1) * R.recuperacionMul);
     J.ataque = a; J.t = 0; J.ultimo = id; J.enfria[id] = combate.cuadro + 240; J.avisos = []; J.rocas = []; J.ondas = [];
     // el aviso apunta a donde ESTÁ el jugador al empezar (no lo persigue: se puede esquivar moviéndose)
-    if (a.mano) { a.xMano = Math.max(combate.limites.izq + 90, Math.min(J.x - 160, op.x)); J.avisos.push({ tipo: 'suelo', x: a.xMano - a.ancho / 2, w: a.ancho, y: 0, h: 14 }); }
+    if (a.mano) { a.xMano = Math.max(combate.limites.izq + 90, J.x - ALCANCE_PUNO, Math.min(J.x - 160, op.x)); J.avisos.push({ tipo: 'suelo', x: a.xMano - a.ancho / 2, w: a.ancho, y: 0, h: 14 }); }
     if (id === 'barrido') J.avisos.push({ tipo: 'franja', x: combate.limites.izq, w: J.x - combate.limites.izq - 120, y: 0, h: a.alto, d: 'salta' });
     if (id === 'onda') J.avisos.push({ tipo: 'franja', x: combate.limites.izq, w: J.x - combate.limites.izq, y: 0, h: a.alto, d: 'salta' });
     if (id === 'rayo') { a.yRayo = rng.prob(0.5) ? 70 : 6; J.avisos.push({ tipo: 'linea', x: combate.limites.izq, w: J.x - combate.limites.izq - 80, y: a.yRayo, h: a.altoRayo, d: a.yRayo > 30 ? 'agáchate' : 'salta' }); }
@@ -89,10 +108,15 @@ export function crearJefe(combate, def, { x = 420, eq = 1, reglasJefe = {} } = {
     const pct = J.vida / J.vidaMax;
     while (J.fase < def.fases.length - 1 && pct <= def.fases[J.fase].hasta) { J.fase++; J.ataque = null; J.avisos = []; J.agotado = 0; J.espera = 70; c.eventos.push({ cuadro: c.cuadro, tipo: 'jefeFase', id: J.id, fase: J.fase, nombre: def.fases[J.fase].nombre, cinematica: def.fases[J.fase].cinematica || null }); }
     // el cuerpo del titán empuja al jugador (no se le atraviesa)
-    for (const L of c.luchadores) if (L.activo && L.eq !== J.eq && L.y < def.alto * 0.7) { const borde = J.x - def.ancho * 0.36 - L.ancho / 2; if (L.x > borde) { L.x = borde; if (L.vx > 0) L.vx = 0; } }
+    for (const L of c.luchadores) if (L.activo && L.eq !== J.eq && L.y < def.alto * 0.7) { const borde = J.x - 110 - L.ancho / 2; if (L.x > borde) { L.x = borde; if (L.vx > 0) L.vx = 0; } }
+    J.vx = 0;
     if (!op) return;
     if (J.agotado > 0) { J.agotado--; if (J.agotado === 0) c.eventos.push({ cuadro: c.cuadro, tipo: 'jefeSeLevanta', id: J.id }); return; }
     if (!J.ataque) {
+      // entre ataques camina: se acerca si estás fuera del alcance de su puño, y vuelve a su sitio si lo arrinconas
+      J.casa ??= J.x;
+      const d = J.x - op.x, v = d > ALCANCE_PUNO + 40 ? -2 : d < 240 && J.x < J.casa ? 1.4 : 0;
+      J.x = Math.max(c.limites.izq + 380, Math.min(J.casa, J.x + v)); J.vx = v;
       if (--J.espera > 0) return;
       if (J.hechos > 0 && J.hechos % def.fases[J.fase].agotadoCada === 0 && !J._agotoEn?.[J.hechos]) { (J._agotoEn ||= {})[J.hechos] = 1; J.agotado = Math.round(150 * R.agotadoMul); c.eventos.push({ cuadro: c.cuadro, tipo: 'jefeAgotado', id: J.id }); return; }
       empezar(elegir(op), op); return;
@@ -103,7 +127,7 @@ export function crearJefe(combate, def, { x = 420, eq = 1, reglasJefe = {} } = {
     if (a.id === 'onda') for (const o of J.ondas) o.x += o.dir * a.vel;
     if (a.id === 'lluvia' && J.t >= a.avisoF - 22) for (const r of J.rocas) { r.vy -= 1.6; r.y = Math.max(-60, r.y + r.vy); if (r.y <= 0 && !r.cayo) { r.cayo = true; c.eventos.push({ cuadro: c.cuadro, tipo: 'roca', x: r.x }); } }
     if (J.t >= a.avisoF + a.activo + a.recuperacion) {
-      if (--a.veces > 0) { const o = objetivo(); J.t = 0; a.inst = inst(); a.xMano = Math.max(c.limites.izq + 90, Math.min(J.x - 160, o.x)); J.avisos = [{ tipo: 'suelo', x: a.xMano - a.ancho / 2, w: a.ancho, y: 0, h: 14 }]; a.avisoF = Math.round(a.avisoF * 0.7); return; }
+      if (--a.veces > 0) { const o = objetivo(); J.t = 0; a.inst = inst(); a.xMano = Math.max(c.limites.izq + 90, J.x - ALCANCE_PUNO, Math.min(J.x - 160, o.x)); J.avisos = [{ tipo: 'suelo', x: a.xMano - a.ancho / 2, w: a.ancho, y: 0, h: 14 }]; a.avisoF = Math.round(a.avisoF * 0.7); return; }
       J.ataque = null; J.hechos++; J.espera = Math.round((J.fase === 2 ? 26 : 44) * R.avisoMul); J.ondas = []; J.rocas = [];
     }
   };

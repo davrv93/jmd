@@ -47,16 +47,16 @@ function bfs(mapa, desde, hasta) {
 // <<<
 
 class Laberinto extends Phaser.Scene {
-  preload() { Forja.precargar(this, ['relleno', 'cielo']); }
+  preload() { Forja.precargar(this, ['relleno', 'suelo']); }
 
   create() {
     Forja.animaciones(this); Forja.efectos(this);
-    this.add.image(0, 0, 'cielo').setOrigin(0).setDepth(-10).setTint(0x555577);
     const r = azar(D.semilla * 31 + 7), mapa = (this.mapa = generar(D.semilla, Forja.regla('laberinto.atajos', 14)));
+    Forja.laberinto(this, mapa, { cw: CW, ch: CH, alto: 0.3, clave: 'lab' });   // piso y muros en 3/4, dibujados con código (comun.js)
     const muros = this.physics.add.staticGroup(), libres = [];
     for (let f = 0; f < FILAS; f++) for (let c = 0; c < COLS; c++) {
       const p = centro(c, f);
-      if (mapa[f][c]) { const s = muros.create(p.x, p.y, 'relleno').setDisplaySize(CW, CH); s.refreshBody(); } else libres.push({ c, f });
+      if (mapa[f][c]) { const s = muros.create(p.x, p.y, 'relleno').setDisplaySize(CW, CH).setVisible(false); s.refreshBody(); } else libres.push({ c, f });   // el muro se ve en el dibujo de arriba; aquí solo choca
     }
     const lejos = (a, b) => Math.abs(a.c - b.c) + Math.abs(a.f - b.f);
     const inicio = { c: 1, f: 1 }, salida = libres.reduce((m, x) => (lejos(x, inicio) > lejos(m, inicio) ? x : m), inicio);
@@ -68,11 +68,11 @@ class Laberinto extends Phaser.Scene {
     this.heroe = Forja.cuerpo(this.physics.add.sprite(pi.x, pi.y + 14, 'heroe', 'quieto_0'), D.heroe, TAM, true);
     this.heroe.setData({ vidas: Forja.regla('vidas.inicio', 3), inmune: 0 });
     this.physics.add.collider(this.heroe, muros);
-    this.physics.add.overlap(this.heroe, this.gemas, (h, g) => { this.chispas.explode(8, g.x, g.y); Forja.sonar(this, 'moneda', 0.4); g.destroy(); if (!this.gemas.countActive()) { this.meta.setAlpha(1); Forja.sonar(this, 'celebrar', 0.4); } });
+    this.physics.add.overlap(this.heroe, this.gemas, (h, g) => { this.chispas.explode(8, g.x, g.y); Forja.sonar(this, 'moneda', 0.4); g.destroy(); if (!this.gemas.countActive()) { this.meta.setAlpha(1); this.chispas.explode(20, this.meta.x, this.meta.y); Forja.sonar(this, 'celebrar', 0.4); } });
     const puestos = libres.filter((x) => lejos(x, inicio) > 9).sort(() => r() - 0.5);
     this.rivales = Array.from({ length: Forja.regla('rivales.cuantos', 2) }, (_, i) => i).map((i) => {
       const cel = puestos[i] || salida, p = centro(cel.c, cel.f);
-      const s = this.add.sprite(p.x, p.y + 14, 'enemigo', 'caminar_0').setScale(TAM / D.enemigo.px).setOrigin(0.5, 0.96).play('enemigo:caminar');
+      const s = Forja.apoyo(this, this.add.sprite(p.x, p.y + 14, 'enemigo', 'caminar_0').setScale(TAM / D.enemigo.px).play('enemigo:caminar'));   // apoyo: los pies en su sitio
       s.setData({ estado: 'patrulla', ruta: [], destino: null, piensa: i * 0.2, visitadas: 0 }); return s;
     });
     this.capaX = this.add.graphics().setDepth(940);
@@ -80,6 +80,25 @@ class Laberinto extends Phaser.Scene {
     this.texto = Forja.marcador(this);
     this.libres = libres; this.r = r; this.dirHeroe = { c: 1, f: 0 };
     if (D.rival) { const av = Forja.aviso(this, 'Tus rivales usan TU regla:\n' + D.rival.nombre); this.time.delayedCall(3000, () => av.destroy()); }
+    this.arte();
+  }
+
+  // ARTE: sombras bajo los pies, gemas que brillan (y flotan sobre su sombra), la salida que se enciende al abrirse,
+  // luz alrededor del héroe de noche y partículas de ambiente. No cambia nada del juego.
+  arte() {
+    const P = Forja.paleta(this), colorGema = Forja.colorDe(this, 'objetos', 'gema_0', 0x8fe4ff), luz = Forja.luzPersonaje(this);
+    for (const s of [this.heroe, ...this.rivales]) s.setTint(luz);
+    Forja.sombra(this, this.heroe, { prof: -4 });
+    for (const e of this.rivales) Forja.sombra(this, e, { prof: -4, ancho: TAM * 0.55 });
+    for (const g of this.gemas.getChildren()) {
+      this.tweens.add({ targets: g, y: g.y - 5, duration: 900 + Math.random() * 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });   // flota (su caja de choque va con ella)
+      const y0 = g.y; Forja.sombra(this, g, { prof: -4, ancho: 22, alfa: 0.4, pie: (s) => s.y + 12, piso: () => y0 + 18 });
+      Forja.halo(this, g, colorGema, 84, { alfa: P.noche ? 0.55 : 0.4, prof: -1 });
+    }
+    Forja.halo(this, this.meta, 0xfff0b8, 170, { alfa: 0.5, prof: -1, late: 0.2 });   // con la salida cerrada (medio transparente) brilla poco
+    if (P.noche) Forja.halo(this, this.heroe, P.hex(P.acento), 260, { alfa: 0.14, late: 0.06, dy: -30, prof: -1 });
+    Forja.ambiente(this, { x: 0, y: 0, w: 960, h: 540 }, { cuantas: 12, prof: 900 });
+    Forja.vigilar(this);
   }
 
   // >>> estados
@@ -101,9 +120,11 @@ class Laberinto extends Phaser.Scene {
       const res = bfs(this.mapa, yo, destino); e.setData({ ruta: res.ruta, visitadas: res.visitadas });
     }
     const ruta = e.getData('ruta'), sig = ruta[1] || ruta[0];
+    e.setData('v', 0);
     if (!sig) return;
     const p = centro(sig.c, sig.f), dx = p.x - e.x, dy = p.y + 14 - e.y, d = Math.hypot(dx, dy), v = ({ persigue: 104, 'tu regla': 92 }[e.getData('estado')] || 70) * Forja.regla('rivales.velocidad', 1) * dt;
     if (d <= v) { e.setPosition(p.x, p.y + 14); ruta.shift(); } else { e.x += dx / d * v; e.y += dy / d * v; if (Math.abs(dx) > 1) e.setFlipX(dx < 0); }
+    e.setData('v', v / dt);
   }
   // <<<
 
@@ -137,16 +158,29 @@ class Laberinto extends Phaser.Scene {
     if (c.repetir) { this.scene.restart(); return; }
     if (c.rayosX) Forja.rayosX(this);
     this.texto.setText('Gemas ' + this.gemas.countActive() + '   Vidas ' + h.getData('vidas') + (D.rival ? '   Regla: ' + D.rival.nombre : ''));
-    if (this.fin) { h.setVelocity(0, 0); return; }
+    if (this.fin) { h.setVelocity(0, 0); for (const e of this.rivales) Forja.pose(e, 'quieto'); return; }   // nadie camina en el sitio
     const m = Math.hypot(c.x, c.y) || 1, vel = Math.min(Forja.regla('jugador.velocidadMax', 175), D.fisica.velocidad * 0.7);
-    h.setVelocity(c.x / m * vel, c.y / m * vel); if (c.x) h.setFlipX(c.x < 0);
+    let vx = c.x / m * vel, vy = c.y / m * vel;
+    // >>> esquinas
+    // Ayuda en las esquinas: si empujas hacia un pasillo abierto pero vas unos píxeles desalineado, el héroe se desliza
+    // hacia el centro del pasillo en vez de quedarse trabado contra la punta del muro (así se siente en los juegos de laberinto).
+    const yo = celda(h.x, h.y - 6), libre = (cc, ff) => this.mapa[ff]?.[cc] === 0, cen = centro(yo.c, yo.f);
+    if (c.y && !c.x && libre(yo.c, yo.f + Math.sign(c.y)) && Math.abs(cen.x - h.x) > 1) vx = Phaser.Math.Clamp((cen.x - h.x) * 12, -vel, vel);
+    if (c.x && !c.y && libre(yo.c + Math.sign(c.x), yo.f) && Math.abs(cen.y + 14 - h.y) > 1) vy = Phaser.Math.Clamp((cen.y + 14 - h.y) * 12, -vel, vel);
+    const n = Math.hypot(vx, vy); if (n > vel) { vx *= vel / n; vy *= vel / n; }   // deslizarse no te hace ir más rápido
+    // <<<
+    h.setVelocity(vx, vy); if (c.x) h.setFlipX(c.x < 0);
     if (c.x || c.y) this.dirHeroe = Math.abs(c.x) >= Math.abs(c.y) ? { c: Math.sign(c.x), f: 0 } : { c: 0, f: Math.sign(c.y) };
     h.setData('inmune', Math.max(0, h.getData('inmune') - dt)); h.setAlpha(h.getData('inmune') > 0 && Math.floor(h.getData('inmune') * 14) % 2 ? 0.45 : 1);
-    h.play('heroe:' + (h.getData('inmune') > 1 ? 'dano' : c.x || c.y ? 'caminar' : 'quieto'), true); h.setDepth(h.y);
+    // la animación sale de lo que de verdad avanzó (contra un muro, aunque empujes, está quieto)
+    const tDano = Forja.dura('heroe', 'dano'), dano = h.getData('inmune') > 0 && Forja.regla('jugador.inmunidad', 1.6) - h.getData('inmune') < tDano;
+    Forja.pose(h, dano ? 'dano' : 'andar', { v: Forja.rapidez(h), max: vel * 2 }); h.setDepth(h.y);
     for (const e of this.rivales) {
       this.pensar(e, dt); e.setDepth(e.y);
+      Forja.pose(e, 'andar', { v: e.getData('v'), max: 170 * Forja.regla('rivales.velocidad', 1) });
       if (h.getData('inmune') <= 0 && Phaser.Math.Distance.Between(e.x, e.y, h.x, h.y) < 34) {
-        const p = centro(1, 1); h.setData({ vidas: h.getData('vidas') - 1, inmune: Forja.regla('jugador.inmunidad', 1.6) }); h.setPosition(p.x, p.y + 14); Forja.sonar(this, 'dano', 0.6);
+        const p = centro(1, 1); this.chispas.explode(12, h.x, h.y - 30); this.cameras.main.shake(160, 0.006);
+        h.setData({ vidas: h.getData('vidas') - 1, inmune: Forja.regla('jugador.inmunidad', 1.6) }); h.setPosition(p.x, p.y + 14); h.setVelocity(0, 0); Forja.sonar(this, 'dano', 0.6);
         if (h.getData('vidas') <= 0) { this.fin = true; Forja.sonar(this, 'morir'); h.play('heroe:morir'); Forja.aviso(this, 'Te atraparon\nR para repetir'); }
       }
     }

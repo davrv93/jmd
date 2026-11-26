@@ -26,12 +26,17 @@ export function perfilSugerido(c) {
 }
 
 // Observa el tiempo de cuadro y decide. alCambiar(perfilId, escalaResolucion)
+// Pantallas a 30 Hz (modo ahorro de batería, algunos portátiles): el cuadro dura 33 ms aunque la máquina vaya
+// sobrada. Por eso los primeros 90 cuadros (menú y carga, que dibujan poco) solo miden la cadencia de la pantalla
+// —el cuadro más corto visto— y el objetivo nunca queda por debajo de 1,2 veces esa cadencia.
 export function crearAutoCalidad({ inicial = 'medio', alCambiar = () => {}, objetivoMs = 20, holguraMs = 12 } = {}) {
-  let actual = inicial, malo = 0, bueno = 0, escala = PERFILES[inicial].resolucion;
+  let actual = inicial, malo = 0, bueno = 0, escala = PERFILES[inicial].resolucion, cadencia = Infinity, vistos = 0;
   return {
-    get perfil() { return actual; }, get escala() { return escala; },
+    get perfil() { return actual; }, get escala() { return escala; }, get cadencia() { return cadencia; },
     observar(msCuadro, dt) {
-      if (msCuadro > objetivoMs) { malo += dt; bueno = 0; } else if (msCuadro < holguraMs) { bueno += dt; malo = 0; } else { malo = Math.max(0, malo - dt); bueno = 0; }
+      if (vistos < 90) { vistos++; if (msCuadro > 0) cadencia = Math.min(cadencia, msCuadro); return; }
+      const objetivo = Math.max(objetivoMs, cadencia * 1.2);
+      if (msCuadro > objetivo) { malo += dt; bueno = 0; } else if (msCuadro < holguraMs) { bueno += dt; malo = 0; } else { malo = Math.max(0, malo - dt); bueno = 0; }
       if (malo > 2) {
         malo = 0; const k = ORDEN.indexOf(actual);
         if (escala > PERFILES[actual].resolucion * 0.75) escala = +(escala * 0.85).toFixed(2);   // primero baja la resolución

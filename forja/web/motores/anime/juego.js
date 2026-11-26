@@ -4,7 +4,7 @@
 import { crearPartida, MODOS } from './modos.js';
 import { PERSONAJES, CINEMATICAS } from './personajes.js';
 import { JEFES } from './jefe.js';
-import { crearRender, ANCHO, ALTO } from './render.js';
+import { crearRender, ANCHO, ALTO, TEMAS, elegirEscenario } from './render.js';
 import { crearFX } from './fx.js';
 import { crearBucle } from '../nucleo/bucle.js';
 import { crearEntrada, MAPA_BASE } from '../nucleo/entrada.js';
@@ -18,7 +18,33 @@ import { ESQUEMA } from './config.js';
 
 const MAPA_P1 = { izq: ['KeyA'], der: ['KeyD'], arriba: ['KeyW'], abajo: ['KeyS'], salto: ['KeyW'], ligero: ['KeyF'], medio: ['KeyG'], fuerte: ['KeyH'], especial: ['KeyR'], bloqueo: ['KeyT'], esquiva: ['KeyY'], carga: ['KeyV'], definitivo: ['KeyB'], transformar: ['KeyC'], relevo: ['KeyQ'], pausa: ['Escape'], omitir: ['Enter'] };
 const MAPA_P2 = { izq: ['ArrowLeft'], der: ['ArrowRight'], arriba: ['ArrowUp'], abajo: ['ArrowDown'], salto: ['ArrowUp'], ligero: ['Numpad1', 'Digit1'], medio: ['Numpad2', 'Digit2'], fuerte: ['Numpad3', 'Digit3'], especial: ['Numpad4', 'Digit4'], bloqueo: ['Numpad5', 'Digit5'], esquiva: ['Numpad6', 'Digit6'], carga: ['Numpad0', 'Digit0'], definitivo: ['Numpad7', 'Digit7'], transformar: ['Numpad8', 'Digit8'], relevo: ['Numpad9', 'Digit9'] };
-const MAPA_1P = { ...MAPA_BASE, relevo: ['KeyQ'], omitir: ['Enter'], ligero: ['KeyJ'], medio: ['KeyK'], fuerte: ['KeyL'], especial: ['KeyI'], salto: ['Space', 'KeyW', 'ArrowUp'] };
+// golpe: botón único del esquema Simple (sin tecla aquí; DATOS.controles se la da). Ver golpeUnico() más abajo.
+const MAPA_1P = { ...MAPA_BASE, relevo: ['KeyQ'], omitir: ['Enter'], golpe: [], ligero: ['KeyJ'], medio: ['KeyK'], fuerte: ['KeyL'], especial: ['KeyI'], salto: ['Space', 'KeyW', 'ArrowUp'] };
+// Botón único de golpe: cada pulsación sigue el combo ligero → medio → fuerte si llega a menos de 28 pasos (~0,47 s)
+// de la anterior; si no, empieza otra vez por el ligero. Solo traduce la entrada: la simulación recibe golpes normales.
+const COMBO_UNICO = ['ligero', 'medio', 'fuerte'];
+export function crearGolpeUnico(ventana = 28) {
+  let i = -1, ultimo = -1e9, n = 0;
+  return (s) => {
+    n++;
+    if (s.recien.has('golpe')) { i = n - ultimo <= ventana ? (i + 1) % 3 : 0; ultimo = n; s.recien.add(COMBO_UNICO[i]); }
+    if (s.abajo.has('golpe') && i >= 0) s.abajo.add(COMBO_UNICO[i]);
+    return s;
+  };
+}
+// nombre legible de una tecla (KeyJ → J, ArrowLeft → ←, Space → Espacio…)
+const TECLA = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Space: 'Espacio', Escape: 'Esc', Enter: 'Enter', ShiftLeft: 'Shift', ShiftRight: 'Shift', Backquote: '`', Tab: 'Tab' };
+export const nombreTecla = (c) => TECLA[c] || c.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Numpad/, 'Num ');
+// Ayuda de controles armada desde el mapa REAL (incluye las teclas que el alumno eligió en DATOS.controles)
+export function ayudaControles(mapa, { breve = false } = {}) {
+  const t = (a, n = 2) => [...(mapa[a] || [])].sort((x, y) => (y.startsWith('Key') ? 1 : 0) - (x.startsWith('Key') ? 1 : 0)).slice(0, n).map(nombreTecla).join(' / ');   // letras primero
+  const partes = [
+    ['Moverte', `${t('izq', 1)} ${t('der', 1)}`], ['Saltar', t('salto')], ['Agacharte', t('abajo', 1)],
+    (mapa.golpe || []).length ? ['Golpe (combo)', t('golpe', 1)] : ['Golpes', `${t('ligero', 1)} ${t('medio', 1)} ${t('fuerte', 1)}`], ['Especial', t('especial', 1)], ['Bloquear', `${t('bloqueo', 1)} o atrás`],
+    ['Esquivar', t('esquiva', 1)], ['Cargar energía', t('carga', 1)], ['Definitivo', t('definitivo', 1)], ['Transformarte', t('transformar', 1)], ['Pausa', t('pausa')],
+  ].filter(([, v]) => v.trim() && !/^ *o atrás$/.test(v));
+  return (breve ? partes.slice(0, 6) : partes).map(([k, v]) => `${k}: ${v}`).join(' · ');
+}
 const aEntrada = (s) => ({ x: (s.abajo.has('der') ? 1 : 0) - (s.abajo.has('izq') ? 1 : 0), y: (s.abajo.has('abajo') ? 1 : 0) - (s.abajo.has('arriba') ? 1 : 0), recien: s.recien, abajo: s.abajo });
 
 export async function iniciarAnime(o) {
@@ -36,16 +62,29 @@ export async function iniciarAnime(o) {
   // tu personaje de Forja como luchador: la hoja de sprites del estudio, con su nombre
   if (o.usarForja !== false) { const h = await atlasDe('heroe'); if (h) { const base = personajes[o.jugador || 'ren']; personajes.forja = { ...base, id: 'forja', nombre: o.nombreForja || 'Tu personaje' }; sprites.forja = { ...h, relAlto: globalThis.DATOS?.heroe?.relAlto || 0.8 }; } }
   let perfilId = o.perfil && o.perfil !== 'auto' ? o.perfil : 'medio', p5i = null, partida = null, render = null, fx = null, pausa = false, opcionesPartida = null, enMenu = true;
-  const auto = crearAutoCalidad({ inicial: perfilId, alCambiar: (id, esc) => { perfilId = id; if (fx) fx.presupuesto = Math.round(PERFILES[id].particulas * (o.fx?.presupuestoMul ?? 1)); p5i?.pixelDensity(Math.min(2, devicePixelRatio || 1) * esc); monitor.poner('perfil', `${PERFILES[id].nombre} ×${esc}`); } });
+  // GL por software (SwiftShader, llvmpipe): el canvas 2D «acelerado» corre en una GPU emulada y cada trazo cuesta.
+  // Ahí el cuadro se rasteriza en un lienzo de CPU y se copia entero (render.js). o.lienzoCPU lo fuerza (true/false).
+  let porSoftware = false;
+  try { const cv = document.createElement('canvas'), gl = cv.getContext('webgl'); porSoftware = capacidades(gl).software; gl?.getExtension('WEBGL_lose_context')?.loseContext(); } catch { /* sin WebGL: el 2D de siempre */ }
+  const lienzoCPU = o.lienzoCPU ?? porSoftware;
+  const auto = crearAutoCalidad({ inicial: perfilId, alCambiar: (id, esc) => { perfilId = id; if (fx) fx.presupuesto = Math.round(PERFILES[id].particulas * (o.fx?.presupuestoMul ?? 1)); render?.calidad(id); if (!lienzoCPU) { p5i?.pixelDensity(Math.min(2, devicePixelRatio || 1) * esc); ajustar?.(); } monitor.poner('perfil', `${PERFILES[id].nombre} ×${esc}${lienzoCPU ? ' · CPU' : ''}`); } });
   const dos = o.controles === '2p';
-  const entradas = dos ? [crearEntrada({ mapa: MAPA_P1 }), crearEntrada({ mapa: MAPA_P2 })] : [crearEntrada({ mapa: MAPA_1P })];
-  let barras = null, combos = [], ultimoTexto = 0;
+  const golpeUnico = crearGolpeUnico();
+  const entradas = dos ? [crearEntrada({ mapa: MAPA_P1 }), crearEntrada({ mapa: MAPA_P2, propios: false })] : [crearEntrada({ mapa: MAPA_1P })];
+  let barras = null, combos = [], ultimoTexto = 0, combateVisto = null, ajustar = null;   // ajustar: encaja el lienzo en su caja (también tras cambiar la resolución)
+  // escenario: el del capítulo (historia) si lo trae; si no, el de la regla — un id o una elección ('hora', 'rotar',
+  // 'elemento') que se resuelve por pelea con la hora de tu escenario en Forja, el número de pelea o tu elemento
+  const temaDe = () => {
+    const t = partida.combate.escenario?.tema; if (TEMAS[t]) return t;
+    return elegirEscenario(o.escenario?.tema || (partida.modo.tipo === 'jefe' ? 'templo' : 'hora'), { hora: o.hora, indice: partida.indice, elemento: personajes[opcionesPartida?.jugador]?.elemento });
+  };
 
   const bucle = crearBucle({
     monitor,
     actualizar: (dt) => {
       if (!partida || pausa || enMenu) { for (const e of entradas) e.muestrear(); return; }
       const ss = entradas.map((e) => e.muestrear());
+      if (!dos) golpeUnico(ss[0]);
       if (ss[0].recien.has('pausa')) return abrirPausa();
       if (partida.director.activa && (ss[0].recien.has('omitir') || ss[0].recien.has('salto') || ss[0].recien.has('pausa'))) partida.omitir();
       const ev = partida.paso(ss.map(aEntrada), dt);
@@ -56,6 +95,7 @@ export async function iniciarAnime(o) {
       hud.tick();   // Anime.js avanza aquí (useDefaultMainLoop = false): menús y HUD siguen al bucle del juego
       if (!partida) return;
       if (!pausa) fx.actualizar(dt * bucle.escala);
+      if (partida.combate !== combateVisto) { combateVisto = partida.combate; render.cambiarTema(temaDe()); }   // otra pelea: quizá otro escenario
       const t = performance.now() / 1000;
       render.camara(partida.combate, partida.director, alfa);
       render.dibujar(partida.combate, partida, alfa, t);
@@ -89,6 +129,9 @@ export async function iniciarAnime(o) {
         if (e.fase === 'inicio') { const L = c.buscar(e.id); fx.columna(L.x, { color: L.def.transformaciones[0].colores?.aura || '#fff' }); fx.distorsion(L.x, 80); hud.texto(e.nombre.toUpperCase(), { y: 26, color: L.def.transformaciones[0].colores?.aura, ms: 1400 }); audio.tocar('transformar'); }
         else if (e.fase === 'listo') { const L = c.buscar(e.id); fx.ondaExpansiva(L.x, 60, { color: '#ffffff', radio: 320 }); fx.destellar(0.5); }
         break;
+      case 'ronda': hud.texto(textoRonda(), { y: 40, color: '#ffffff', ms: 1100 }); break;
+      case 'pelea': hud.texto('¡A PELEAR!', { y: 40, color: '#c6ff4a', ms: 800 }); audio.tocar('aviso'); break;
+      case 'sinEnergia': { const L = c.buscar(e.id); if (L?.control === 'humano' && performance.now() - ultimoTexto > 900) { hud.texto(`Falta energía · mantén ${nombreTecla(entradas[0].mapa.carga?.[0] || 'KeyH')} para cargar`, { y: 30, color: '#7fd4ff', ms: 900 }); ultimoTexto = performance.now(); } break; }
       case 'cinematica': audio.tocar('carga'); break;
       case 'cineInicio': hud.texto(e.texto, { y: 72, color: e.color, ms: 1600 }); break;
       case 'cine:sonido': audio.tocar(e.nombre); break;
@@ -153,18 +196,23 @@ export async function iniciarAnime(o) {
     const modo = typeof op.modo === 'object' ? op.modo : { ...MODOS[op.modo], ...(o.modos?.[op.modo] || {}) };
     partida = crearPartida({ ...op, modo, personajes, continues: o.continues, historiaReintentar: o.historiaReintentar, sinIntro: o.sinIntro, reglas: o.reglas, semilla: o.semilla ?? 1, acc, escenario: { tema: o.escenario?.tema, obstaculos: o.escenario?.obstaculos }, jefe: o.jefe, reglasJefe: o.reglasJefe, ajustesIA: o.ia, cinematicas: { ...CINEMATICAS, ...(o.cinematicas || {}) } });
     fx = crearFX({ max: 4000, acc, densidad: o.fx?.densidad ?? 1, intensidad: o.fx?.intensidad ?? 1, semilla: o.semilla ?? 3 }); fx.presupuesto = PERFILES[perfilId].particulas;
-    const tema = partida.combate.escenario?.tema || o.escenario?.tema || (op.modo === 'jefe' ? 'templo' : 'noche');
-    render = crearRender(p5i, { tema, semilla: o.semilla ?? 9, acc, fx, cuerpos: o.cuerpos, sprites, mostrarCajas: op.modo === 'entrenamiento' || !!o.mostrarCajas, postimagenes: pres.postimagenes !== false, estelas: pres.estelas !== false, zoomFijo: !!pres.zoomFijo, zoomMax: pres.zoomMax || 1.15 });
+    render = crearRender(p5i, { tema: temaDe(), semilla: typeof o.semilla === 'number' ? o.semilla : 9, acc, fx, cuerpos: o.cuerpos, sprites, mostrarCajas: op.modo === 'entrenamiento' || !!o.mostrarCajas, postimagenes: pres.postimagenes !== false, estelas: pres.estelas !== false, zoomFijo: !!pres.zoomFijo, zoomMax: pres.zoomMax || 1.15, calidad: perfilId, cpu: lienzoCPU });
+    combateVisto = partida.combate;
     fx.permitirImpacto = pres.impactoCuadro !== false; fx.permitirLineas = pres.lineasVelocidad !== false;
     bucle.escala = o.velocidad || 1;
     montarHUD();
-    const tit = modo.tipo === 'jefe' ? (o.jefe || JEFES.gaiaron).nombre.toUpperCase() : '¡A PELEAR!';
-    hud.texto(tit, { y: 40, color: '#ffffff', ms: 1300 });
+    const tit = modo.tipo === 'jefe' ? (o.jefe || JEFES.gaiaron).nombre.toUpperCase() : partida.cuenta ? textoRonda() : '¡A PELEAR!';
+    hud.texto(tit, { y: 40, color: '#ffffff', ms: 1100 });
+    enfocar();
   }
+  // el lienzo toma el teclado (dentro del iframe del estudio, un clic en el juego basta para jugar)
+  function enfocar() { try { p5i?.canvas?.focus?.({ preventScroll: true }); } catch { /* sin foco: las teclas igual llegan a la ventana */ } }
+  const textoRonda = () => { const m = partida?.modo?.tipo; return m === 'duelo' || m === 'equipos' ? `RONDA ${partida.ronda}` : m === 'oleadas' ? `RIVAL ${partida.indice + 1}` : m === 'torneo' ? 'TORNEO' : m === 'historia' ? `CAPÍTULO ${partida.indice + 1}` : 'PREPÁRATE'; };
+  const ayuda = () => (dos ? `Jugador 1 · ${ayudaControles(entradas[0].mapa, { breve: true })}. Jugador 2 · ${ayudaControles(entradas[1].mapa, { breve: true })}.` : ayudaControles(entradas[0].mapa, { breve: true }) + ' · Menú (M): todos los controles' + '.');
   function menuInicio() {
     enMenu = true;
     const modos = (o.modosMenu || ['cpu']).filter((m) => MODOS[m]);
-    hud.menu(o.titulo || 'Forja', o.subtitulo || 'Elige cómo jugar. Controles: A D moverte · W saltar · S agacharte · J K L golpes · I especial · U bloquear · O esquivar · H cargar · Y definitivo · T transformarte · P pausa · F3 monitor.',
+    hud.menu(o.titulo || 'Forja', `${o.subtitulo || 'Elige cómo jugar.'} ${ayuda()}`,
       modos.map((m) => ({ texto: MODOS[m].nombre, accion: () => elegirLuchador(m) })));
   }
   function elegirLuchador(modo) {
@@ -175,7 +223,7 @@ export async function iniciarAnime(o) {
   }
   function abrirPausa() {
     pausa = true; entradas.forEach((e) => e.pausar(true));
-    hud.menu('Pausa', '', [
+    hud.menu('Pausa', ayuda(), [
       { texto: 'Seguir', accion: cerrarPausa },
       { texto: 'Reiniciar la pelea', accion: () => { cerrarPausa(); arrancar(opcionesPartida); } },
       { texto: render.mostrarCajas ? 'Ocultar cajas de golpe' : 'Ver cajas de golpe (rayos X)', accion: () => { render.mostrarCajas = !render.mostrarCajas; cerrarPausa(); } },
@@ -209,13 +257,24 @@ export async function iniciarAnime(o) {
         const cv = s.createCanvas(ANCHO, ALTO); cv.elt.tabIndex = 0; cv.elt.setAttribute('aria-label', o.titulo || 'Juego');
         const c = capacidades(cv.elt.getContext('webgl') || null); void c;
         if (o.perfil === 'auto' || !o.perfil) perfilId = perfilSugerido({ ...capacidades(null), webgl: true, gpu: '' }) === 'bajo' ? 'bajo' : 'alto';
-        s.pixelDensity(Math.min(2, devicePixelRatio || 1) * PERFILES[perfilId].resolucion);
-        const ajustar = () => { const r = cont.getBoundingClientRect(), k = Math.min(r.width / ANCHO, r.height / ALTO); cv.elt.style.width = ANCHO * k + 'px'; cv.elt.style.height = ALTO * k + 'px'; const hr = hud.raiz.style; hr.left = (r.width - ANCHO * k) / 2 + 'px'; hr.top = (r.height - ALTO * k) / 2 + 'px'; hr.width = ANCHO * k + 'px'; hr.height = ALTO * k + 'px'; hr.right = 'auto'; hr.bottom = 'auto'; };
+        // con lienzo de CPU la resolución no baja: copiar sin escalar es lo rápido (la calidad baja quitando efectos)
+        s.pixelDensity(lienzoCPU ? 1 : Math.min(2, devicePixelRatio || 1) * PERFILES[perfilId].resolucion);
+        ajustar = () => { const r = cont.getBoundingClientRect(), k = Math.min(r.width / ANCHO, r.height / ALTO); cv.elt.style.width = ANCHO * k + 'px'; cv.elt.style.height = ALTO * k + 'px'; const hr = hud.raiz.style; hr.left = (r.width - ANCHO * k) / 2 + 'px'; hr.top = (r.height - ALTO * k) / 2 + 'px'; hr.width = ANCHO * k + 'px'; hr.height = ALTO * k + 'px'; hr.right = 'auto'; hr.bottom = 'auto'; };
         ajustar(); globalThis.addEventListener('resize', ajustar);
         s.noLoop(); ok();
       };
     }, cont);
   });
+  // menús con teclado: ↑ ↓ (o W S) recorren las opciones; Enter / Espacio eligen (botones nativos). Clic en el juego → foco.
+  globalThis.addEventListener?.('keydown', (ev) => {
+    const m = hud._menu; if (!m) return;
+    if (pausa && (ev.code === 'Escape' || ev.code === 'KeyP') && !ev.repeat) { ev.preventDefault(); cerrarPausa(); return; }
+    const bs = [...m.querySelectorAll('button')], i = bs.indexOf(document.activeElement);
+    const paso = ev.code === 'ArrowDown' || ev.code === 'KeyS' ? 1 : ev.code === 'ArrowUp' || ev.code === 'KeyW' ? -1 : 0;
+    if (paso) { ev.preventDefault(); bs[(i + paso + bs.length) % bs.length]?.focus(); }
+    else if ((ev.code === 'Enter' || ev.code === 'Space') && i < 0 && bs[0]) { ev.preventDefault(); bs[0].click(); }
+  });
+  cont.addEventListener?.('pointerdown', (ev) => { if (!ev.target.closest?.('button')) enfocar(); });
   // p5 solo da el lienzo; el ritmo lo lleva el bucle de paso fijo (requestAnimationFrame propio)
   bucle.iniciar();
   if (o.directo) arrancar({ modo: o.directo, jugador: o.jugador || (personajes.forja ? 'forja' : 'ren'), rival: o.rival, nivel: o.nivel });

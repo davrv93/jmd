@@ -113,7 +113,7 @@ function mapaHuida(m, desde, coef) {
 class Persecucion extends Phaser.Scene {
   constructor() { super('persecucion'); }
   init(datos) { this.previo = datos && datos.nivel ? datos : null; }
-  preload() { Forja.precargar(this, ['relleno', 'cielo']); }
+  preload() { Forja.precargar(this, ['relleno', 'suelo']); }
 
   create() {
     Forja.animaciones(this); Forja.efectos(this);
@@ -122,14 +122,14 @@ class Persecucion extends Phaser.Scene {
     this.vidas = P.vidas ?? RG('vidas.inicio', 3); this.proximaVida = P.proximaVida ?? RG('vida.extra', 10000);
     const semilla = D.semilla * 97 + RG('laberinto.semilla', 0) * 7919 + (RG('niveles.nuevo', true) ? (this.nivel - 1) * 131 : 0);
     const L = generar(semilla); this.mapa = L.m; this.casa = L.casa; this.fc = L.fc; this.r = azar(semilla + 5);
-    this.add.image(0, 0, 'cielo').setOrigin(0).setDisplaySize(960, 540).setDepth(-10).setTint(0x40405a);
     const tinte = RG('laberinto.estilo', 0xffffff), libres = [];
-    for (let f = 0; f < FILAS; f++) for (let c = 0; c < COLS; c++) {
-      const p = centro(c, f);
-      if (this.mapa[f][c]) this.add.image(p.x, p.y, 'relleno').setDisplaySize(CW + 0.6, CH + 0.6).setTint(tinte).setDepth(-5); else libres.push({ c, f });
-    }
+    Forja.laberinto(this, this.mapa, { cw: CW, ch: CH, alto: 0.28, tinte, clave: 'per' });   // piso y muros en 3/4 (comun.js); el estilo tiñe los muros
+    for (let f = 0; f < FILAS; f++) for (let c = 0; c < COLS; c++) if (!this.mapa[f][c]) libres.push({ c, f });
     this.libres = libres;
-    const g0 = this.add.graphics().setDepth(-4); g0.fillStyle(0xffffff, 0.08); for (const k of this.casa) { const p = centro(k.c, k.f); g0.fillRect(p.x - CW / 2, p.y - CH / 2, CW, CH); }
+    // la casa de los rivales: un patio con borde de luz
+    const g0 = this.add.graphics().setDepth(-4.4), k0 = centro(this.casa[0].c, this.casa[0].f), k1 = centro(this.casa[this.casa.length - 1].c, this.casa[0].f);
+    g0.fillStyle(0xffffff, 0.07).fillRoundedRect(k0.x - CW / 2 + 3, k0.y - CH / 2 + 3, k1.x - k0.x + CW - 6, CH - 6, 8);
+    g0.lineStyle(2, Forja.paleta(this).hex(Forja.paleta(this).acento), 0.45).strokeRoundedRect(k0.x - CW / 2 + 3, k0.y - CH / 2 + 3, k1.x - k0.x + CW - 6, CH - 6, 8);
     const enCasa = (x) => this.casa.some((k) => igual(k, x)), cerca = (o) => libres.reduce((b, x) => ((x.c - o.c) ** 2 + (x.f - o.f) ** 2 < (b.c - o.c) ** 2 + (b.f - o.f) ** 2 ? x : b), libres[0]);
     this.cerca = cerca;
     // dónde empiezas
@@ -166,7 +166,7 @@ class Persecucion extends Phaser.Scene {
     const marca = RG('rivales.marca', 'anillo');
     this.rivales = [];
     for (let i = 0; i < cuantos; i++) {
-      const n = i + 1, s = this.add.sprite(0, 0, 'enemigo', 'caminar_0').setScale(TAM / D.enemigo.px).setOrigin(0.5, 0.96).play('enemigo:caminar');
+      const n = i + 1, s = Forja.apoyo(this, this.add.sprite(0, 0, 'enemigo', 'caminar_0').setScale(TAM / D.enemigo.px).play('enemigo:caminar'));   // apoyo: los pies en su sitio
       if (marca !== 'anillo') s.setTint(COLORES[i]);
       const nn = RR(n, 'n', 'auto'), rep = RR(n, 'repiensa', 'global');
       const e = {
@@ -186,6 +186,18 @@ class Persecucion extends Phaser.Scene {
     this.leer = Forja.controles(this); this.fin = false; this.texto = Forja.marcador(this);
     try { this.record = RG('resultado.record', true) ? +(localStorage.getItem('forja.persecucion.record') || 0) : 0; } catch { this.record = 0; }
     this.empezar(RG('inicio.listos', 2), this.nivel > 1 ? 'Nivel ' + this.nivel : '¡Listos!');
+    this.arte();
+  }
+
+  // ARTE: sombras bajo los pies, supergemas que brillan, luz alrededor del héroe de noche y partículas de ambiente.
+  arte() {
+    const P = Forja.paleta(this);
+    Forja.sombra(this, this.heroe, { prof: -4 });
+    for (const e of this.rivales) Forja.sombra(this, e.s, { prof: -4, ancho: CW * 0.7 });
+    for (const o of this.superg.values()) Forja.halo(this, o, Forja.colorDe(this, 'objetos', o.frame.name, 0xfff0b0), CW * 2.4, { alfa: P.noche ? 0.6 : 0.45, prof: 1 });
+    if (P.noche) Forja.halo(this, this.heroe, P.hex(P.acento), CW * 5, { alfa: 0.13, late: 0.06, dy: -CH * 0.5, prof: 1 });
+    Forja.ambiente(this, { x: 0, y: 0, w: 960, h: 540 }, { cuantas: 10, prof: 900 });
+    Forja.vigilar(this);
   }
 
   empezar(seg, texto) {
@@ -256,6 +268,7 @@ class Persecucion extends Phaser.Scene {
     if (c.repetir) { this.scene.restart(this.fin === 'perdio' && RG('resultado.continuar', 'cero') === 'nivel' ? { nivel: this.nivel, puntos: 0, vidas: RG('vidas.inicio', 3), cazados: 0 } : {}); return; }
     if (c.rayosX) { Forja.rayosX(this); this.etiquetas.forEach((x) => x.setVisible(this.verX)); }
     this.marcador();
+    if (this.fin || this.listos > 0) { H.v = 0; for (const e of this.rivales) e.v = 0; }   // quietos: nadie camina en el sitio
     if (this.fin) { this.heroe.setVelocity(0, 0); this.pintar(t); return; }
     if (this.listos > 0) { this.listos -= dt; if (this.listos <= 0) { this.avisoListos?.destroy(); this.avisoListos = null; } this.pintar(t); return; }
     this.tiempo += dt; this.tiempoTotal += dt; this.sonidoT -= dt;
@@ -280,9 +293,10 @@ class Persecucion extends Phaser.Scene {
     }
     // turbo con Espacio
     const tipo = RG('heroe.turbo', 'no'); this.turboT = Math.max(0, this.turboT - dt); this.turboCarga = Math.max(0, this.turboCarga - dt);
-    if (tipo !== 'no' && c.saltoYa && this.turboCarga <= 0) { this.turboT = tipo === 'largo' ? 2 : 1; this.turboCarga = tipo === 'largo' ? 9 : 5; Forja.sonar(this, 'salto', 0.3); }
+    if (tipo !== 'no' && c.turboYa && this.turboCarga <= 0) { this.turboT = tipo === 'largo' ? 2 : 1; this.turboCarga = tipo === 'largo' ? 9 : 5; Forja.sonar(this, 'salto', 0.3); }
     H.freno = Math.min(1, H.freno + dt * 3);
     let v = this.velHeroe * (this.turboT > 0 ? 1.6 : 1) * H.freno * dt;
+    const v0 = v, x0 = H.x, y0 = H.y;
     for (let vuelta = 0; v > 0 && vuelta < 6; vuelta++) {
       if (!(H.dir.c || H.dir.f)) {
         if (H.quiere && this.pasable(H.desde, H.quiere)) { H.dir = { ...H.quiere }; H.hacia = { c: H.desde.c + H.dir.c, f: H.desde.f + H.dir.f }; } else break;
@@ -298,6 +312,7 @@ class Persecucion extends Phaser.Scene {
       if (!sig) { H.dir = { c: 0, f: 0 }; H.hacia = { ...H.desde }; break; }
       H.dir = { ...sig }; H.hacia = { c: H.desde.c + sig.c, f: H.desde.f + sig.f };
     }
+    H.v = Math.abs(H.x - x0) > CW * 2 ? v0 / dt : Math.hypot(H.x - x0, H.y - y0) / dt;   // lo que de verdad avanzó (por un túnel, el salto de lado a lado no cuenta)
   }
   pasable(cel, dir) { let c = cel.c + dir.c; const f = cel.f + dir.f; if (c < 0) c = COLS - 1; else if (c >= COLS) c = 0; return (dir.c || dir.f) && this.mapa[f]?.[c] === 0; }
 
@@ -319,6 +334,7 @@ class Persecucion extends Phaser.Scene {
       const sitio = lugar === 'azar' ? this.libres[Math.floor(this.r() * this.libres.length)] : lugar === 'lejos' ? this.libres.reduce((b, x) => (Math.abs(x.c - cel.c) + Math.abs(x.f - cel.f) > Math.abs(b.c - cel.c) + Math.abs(b.f - cel.f) ? x : b), this.libres[0]) : this.cerca({ c: MITAD, f: this.fc + 2 });
       const p = centro(sitio.c, sitio.f); this.bonus?.s.destroy();
       this.bonus = { cel: sitio, t: RG('bonus.dura', 9), s: this.add.sprite(p.x, p.y, 'objetos').setScale((CW * 0.95) / 64).play(this.anim(tipo)).setDepth(4) };
+      Forja.halo(this, this.bonus.s, 0xffe08a, CW * 2.6, { alfa: 0.5, prof: 3 });
     }
   }
   sumar(v) {
@@ -344,6 +360,7 @@ class Persecucion extends Phaser.Scene {
   // si no, sigue la ruta que calculó su algoritmo hacia su celda objetivo (y la recalcula cada tanto).
   moverRival(e, dt) {
     e.piensa -= dt;
+    e.v = 0;
     if (e.modo === 'casa') {
       e.espera -= dt; const p = centro(e.desde.c, e.desde.f); e.y = p.y + Math.sin(this.tiempo * 6 + e.i) * CH * 0.08;
       if (e.espera <= 0) { e.modo = this.modoGlobal; e.y = p.y; e.piensa = 0; }
@@ -356,9 +373,9 @@ class Persecucion extends Phaser.Scene {
     const acel = RG('rivales.acelera', 0.15);
     if (e.i === 0 && acel && e.modo === 'persigue' && 1 - this.comidas / this.total <= (acel >= 0.25 ? 0.1 : 0.2)) vel *= 1 + acel;
     if (this.esTunel(e.desde) && e.modo !== 'regresa') vel *= RG('tuneles.lentos', 0.5);
-    let v = vel * dt;
+    let v = vel * dt; e.v = vel;
     for (let vuelta = 0; v > 0 && vuelta < 6; vuelta++) {
-      if (igual(e.hacia, e.desde)) { this.decidir(e); if (igual(e.hacia, e.desde)) break; }
+      if (igual(e.hacia, e.desde)) { this.decidir(e); if (igual(e.hacia, e.desde)) { e.v = 0; break; } }
       const p = centro(e.hacia.c, e.hacia.f), dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
       if (d > v) { e.x += (dx / d) * v; e.y += (dy / d) * v; if (Math.abs(dx) > 0.5) e.s.setFlipX(dx < 0); break; }
       v -= d; e.prev = { ...e.desde }; e.desde = { c: (e.hacia.c + COLS) % COLS, f: e.hacia.f }; const q = centro(e.desde.c, e.desde.f); e.x = q.x; e.y = q.y;
@@ -453,7 +470,9 @@ class Persecucion extends Phaser.Scene {
     const H = this.H, h = this.heroe, mueve = H.dir.c || H.dir.f;
     h.setPosition(H.x, H.y + PIE).setDepth(20 + H.y);
     if (!this.fin) {
-      h.play('heroe:' + (H.inmune > 1.2 ? 'dano' : mueve ? RG('heroe.paso', 'caminar') : 'quieto'), true);
+      // pasos al ritmo de lo que avanza; con «heroe.paso» = correr, a tu rapidez normal ya corre (y con turbo, más rápido)
+      const dano = H.inmune > 0 && RG('jugador.inmunidad', 2) - H.inmune < Forja.dura('heroe', 'dano');
+      Forja.pose(h, dano ? 'dano' : 'andar', { v: mueve ? H.v || 0 : 0, max: this.velHeroe * (RG('heroe.paso', 'caminar') === 'correr' ? 1 : 2) });
       if (H.dir.c) h.setFlipX(H.dir.c < 0);
       h.setAlpha(H.inmune > 0 && Math.floor(H.inmune * 14) % 2 ? 0.45 : 1);
     }
@@ -465,8 +484,8 @@ class Persecucion extends Phaser.Scene {
       if (e.modo === 'regresa') e.s.setAlpha(0.35).setTint(0xb8b8c8);
       else if (asustado) e.s.setAlpha(1).setTint(aviso ? 0xffffff : e.modo === 'lento' ? 0xffd36b : 0x6f8cff);
       else { e.s.setAlpha(1); if (RG('rivales.marca', 'anillo') === 'anillo') e.s.clearTint(); else e.s.setTint(e.color); }
-      const anim = asustado && !e.congelado && this.anims.exists('enemigo:correr') ? 'enemigo:correr' : e.congelado || e.modo === 'casa' ? 'enemigo:quieto' : 'enemigo:caminar';
-      if (this.anims.exists(anim)) e.s.play(anim, true);
+      // pasos al ritmo de su rapidez: asustado va más lento (camina despacio), de regreso a casa va al doble (corre)
+      Forja.pose(e.s, e.congelado || e.modo === 'casa' ? 'quieto' : 'andar', { v: e.v || 0, max: RG('rivales.velocidad', 115) * (CW / 64) * 2 });
       if (aro && e.modo !== 'regresa') { this.aros.lineStyle(3, e.color, 0.95); this.aros.strokeEllipse(e.x, e.y + PIE - 2, CW * 0.7, CH * 0.28); }
     }
     // oscuridad: un anillo negro gigante alrededor de tu héroe; solo se ve lo que está cerca

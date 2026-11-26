@@ -25,8 +25,28 @@ export const TIPOS = {
   mercader: { nombre: 'Mercader', clase: 'comerciante', vida: 20, vel: 1.1, alto: 1.8, persistente: true, cajas: [[-0.3, 0, -0.2, 0.6, 0.75, 0.4, C(60, 70, 120)], [-0.32, 0.75, -0.22, 0.64, 0.7, 0.44, C(150, 60, 80)], [-0.25, 1.45, -0.25, 0.5, 0.45, 0.5, C(225, 180, 140)], [-0.35, 1.85, -0.35, 0.7, 0.12, 0.7, C(200, 160, 60)]] },
   aldeano: { nombre: 'Aldeana', clase: 'exploradora', vida: 20, vel: 1.3, alto: 1.8, persistente: true, cajas: [[-0.3, 0, -0.2, 0.6, 0.75, 0.4, C(90, 60, 40)], [-0.32, 0.75, -0.22, 0.64, 0.7, 0.44, C(70, 130, 90)], [-0.25, 1.45, -0.25, 0.5, 0.45, 0.5, C(170, 120, 90)]] },
   cartografa: { nombre: 'Cartógrafa', clase: 'exploradora', vida: 20, vel: 1.6, alto: 1.8, persistente: true, cajas: [[-0.3, 0, -0.2, 0.6, 0.75, 0.4, C(70, 70, 80)], [-0.32, 0.75, -0.22, 0.64, 0.7, 0.44, C(220, 180, 60)], [-0.25, 1.45, -0.25, 0.5, 0.45, 0.5, C(120, 80, 60)], [0.3, 0.8, -0.3, 0.15, 0.5, 0.15, C(240, 230, 200)]] },
-  guardian: { nombre: 'Guardián de la mazmorra', clase: 'jefe', vida: 140, vel: 1.5, alto: 3.6, dano: 5, escala: 2, persistente: true, suelta: [['cristal', 6], ['oro', 4]], cajas: [[-0.45, 0.7, -0.3, 0.9, 0.85, 0.6, C(118, 124, 132)], [-0.35, 1.55, -0.35, 0.7, 0.55, 0.7, C(140, 146, 154)], [-0.25, 1.72, -0.37, 0.5, 0.12, 0.05, C(150, 240, 255)], [-0.38, 0, -0.22, 0.32, 0.7, 0.44, C(96, 100, 108)], [0.06, 0, -0.22, 0.32, 0.7, 0.44, C(96, 100, 108)], [-0.8, 0.8, -0.2, 0.32, 0.8, 0.4, C(96, 100, 108)], [0.48, 0.8, -0.2, 0.32, 0.8, 0.4, C(96, 100, 108)], [-0.15, 2.1, -0.1, 0.3, 0.25, 0.2, C(150, 240, 255)]] },
+  guardian: { nombre: 'Guardián de la mazmorra', clase: 'jefe', vida: 140, vel: 1.5, alto: 2.3, dano: 5, escala: 1.25, persistente: true, suelta: [['cristal', 6], ['oro', 4]], cajas: [[-0.45, 0.7, -0.3, 0.9, 0.85, 0.6, C(118, 124, 132)], [-0.35, 1.55, -0.35, 0.7, 0.55, 0.7, C(140, 146, 154)], [-0.25, 1.72, -0.37, 0.5, 0.12, 0.05, C(150, 240, 255)], [-0.38, 0, -0.22, 0.32, 0.7, 0.44, C(96, 100, 108)], [0.06, 0, -0.22, 0.32, 0.7, 0.44, C(96, 100, 108)], [-0.8, 0.8, -0.2, 0.32, 0.8, 0.4, C(96, 100, 108)], [0.48, 0.8, -0.2, 0.32, 0.8, 0.4, C(96, 100, 108)], [-0.15, 2.1, -0.1, 0.3, 0.25, 0.2, C(150, 240, 255)]] },
 };
+
+// Despiece de un modelo de cajas para animarlo: las cajas que nacen en el suelo (y = 0) y son bajas son PATAS; las
+// que cuelgan a los lados del cuerpo, altas y finas, son BRAZOS. Cada pieza gira sobre su bisagra (arriba de la caja).
+// Las patas de un lado se mueven a la vez que las del lado contrario de atrás (paso diagonal, como un cuadrúpedo);
+// en un bípedo, izquierda y derecha se alternan. Una caja de piernas ancha (los humanoides) se parte en dos.
+export function partesDe(cajas) {
+  const cuerpo = [], patas = [], brazos = [];
+  for (const c of cajas) {
+    const [x, y, z, w, h, d] = c;
+    if (y < 0.05 && h <= 0.8 && d <= 0.45 && (w <= 0.33 || (w >= 0.5 && x < 0 && x + w > 0))) { if (w >= 0.5) { patas.push([x, y, z, w / 2 - 0.01, h, d, ...c.slice(6)], [x + w / 2 + 0.01, y, z, w / 2 - 0.01, h, d, ...c.slice(6)]); } else patas.push(c); }
+    else if (y > 0.5 && h >= 0.5 && w <= 0.35 && (x + w / 2 < -0.4 || x + w / 2 > 0.4)) brazos.push(c);
+    else cuerpo.push(c);
+  }
+  const zc = patas.reduce((a, c) => a + c[2] + c[5] / 2, 0) / (patas.length || 1), cuadrupedo = patas.some((c) => c[2] + c[5] / 2 < zc - 0.15) && patas.some((c) => c[2] + c[5] / 2 > zc + 0.15);
+  const pieza = (c, tipo) => { const [x, y, z, w, h, d] = c, cx = x + w / 2, cz = z + d / 2; const lado = cx < 0 ? -1 : 1, fila = cuadrupedo ? (cz < zc ? 1 : -1) : 1; return { cajas: [c], pivote: [cx, y + h, cz], fase: lado * fila > 0 ? 0 : Math.PI, tipo }; };
+  return { cuerpo, piezas: [...patas.map((c) => pieza(c, 'pata')), ...brazos.map((c) => { const p = pieza(c, 'brazo'); p.fase = (p.fase + Math.PI) % (Math.PI * 2); return p; })] };
+}
+
+// Ojo: `alto` es la altura del modelo SIN escalar; la caja de choque mide alto × escala. El guardián: 2,3 × 1,25 ≈ 2,9,
+// que pasa bajo la lámpara colgada a 3 bloques del piso de su sala; con 3,6 × 2 = 7,2 chocaba con el techo y no se movía.
 
 // A* en la superficie: nodos (x, z) con su altura de pie; paso de subida ≤ 1, de bajada ≤ 3
 export function aEstrella(mundo, ini, fin, { radio = 20, maxNodos = 400 } = {}) {
@@ -57,7 +77,7 @@ export function crearCriaturas({ mundo, cfg, semilla, alAtacar = () => {}, alMor
     lista,
     crear(tipo, x, y, z, extra = {}) {
       if (!TIPOS[tipo] || !enabled(tipo)) return null;
-      const t = TIPOS[tipo], e = { id: siguienteId++, tipo, t, x: x + 0.5, y, z: z + 0.5, px: x + 0.5, py: y, pz: z + 0.5, vx: 0, vy: 0, vz: 0, giro: azar.entre(0, 6.28), vida: t.vida * (t.clase === 'jefe' ? 1 + (cfg.supervivencia.dificultad === 'dificil' ? 0.5 : 0) : 1), estado: 'descanso', t0: 0, casa: [x, y, z], ruta: null, provocada: false, golpe: 0, cool: 0, activa: true, ...extra };
+      const t = TIPOS[tipo], e = { id: siguienteId++, tipo, t, x: x + 0.5, y, z: z + 0.5, px: x + 0.5, py: y, pz: z + 0.5, vx: 0, vy: 0, vz: 0, giro: azar.entre(0, 6.28), vida: t.vida * (t.clase === 'jefe' ? 1 + (cfg.supervivencia.dificultad === 'dificil' ? 0.5 : 0) : 1), estado: 'descanso', t0: 0, casa: [x, y, z], ruta: null, provocada: false, golpe: 0, cool: 0, carga: 0, ataque: 0, fase: 0, amp: 0, muriendo: null, activa: true, ...extra };
       lista.push(e); return e;
     },
     // marcadores de las estructuras (mercader en la aldea, gólems y guardián en la mazmorra)
@@ -80,11 +100,15 @@ export function crearCriaturas({ mundo, cfg, semilla, alAtacar = () => {}, alMor
         if (!e.activa) { if (d > CR.radioSim * 1.7 && !e.persistente) lista.splice(i, 1); continue; }
         if (!mundo.cargado(e.x, e.z)) continue;
         e.px = e.x; e.py = e.y; e.pz = e.z;
+        // derribada: cae hacia atrás medio segundo y se deshace en polvo (ya soltó su botín al morir)
+        if (e.muriendo != null) { e.estado = 'muerta'; mover(e, dt, jug); e.muriendo -= dt; if (e.muriendo <= 0) { lista.splice(i, 1); alEvento('polvo', e); } continue; }
         if (piensa) pensar(e, jug, d, ctx);
-        mover(e, dt);
-        if (e.cool > 0) e.cool -= dt; if (e.golpe > 0) e.golpe -= dt;
-        // ataque cuerpo a cuerpo
-        if ((e.estado === 'atacar') && d < 1.6 + (e.t.escala || 1) * 0.4 && e.cool <= 0) { e.cool = e.t.clase === 'jefe' ? 1.6 : 1.1; alAtacar(e, (e.t.dano || 1) * (CR.agresividad > 1.5 ? 1.25 : 1)); }
+        mover(e, dt, jug);
+        if (e.cool > 0) e.cool -= dt; if (e.golpe > 0) e.golpe -= dt; if (e.ataque > 0) e.ataque -= dt;
+        // ataque cuerpo a cuerpo con aviso: levanta los brazos (o se agacha) 0,4 s y solo entonces golpea, si sigues cerca
+        const alcance = alcanceDe(e);
+        if (e.carga > 0) { e.carga -= dt; if (e.carga <= 0) { e.carga = 0; e.ataque = 0.25; e.cool = e.t.clase === 'jefe' ? 1.6 : 1.1; if (d < alcance + 0.5 && !ctx.pacifica) alAtacar(e, (e.t.dano || 1) * (CR.agresividad > 1.5 ? 1.25 : 1)); } }
+        else if (e.estado === 'atacar' && d < alcance && e.cool <= 0 && e.t.dano) e.carga = e.t.clase === 'jefe' ? 0.6 : 0.4;
         // golpe en el suelo del jefe: aviso (destello) y onda a los 0,8 s
         if (e.t.clase === 'jefe' && e.estado === 'atacar' && !e.slam && d < 7 && azar.prob(0.004)) e.slam = 0.8;
         if (e.slam != null) { e.slam -= dt; if (e.slam <= 0) { e.slam = null; if (d < 5 && jug.enSuelo) alAtacar(e, 4, 'onda'); alEvento('onda', e); } }
@@ -93,19 +117,35 @@ export function crearCriaturas({ mundo, cfg, semilla, alAtacar = () => {}, alMor
       if (relojAparicion > 2) { relojAparicion = 0; aparecer(jug, ctx); }
     },
     golpear(e, dano, dir) {
-      e.vida -= dano; e.golpe = 0.25; e.provocada = true; e.vx += dir[0] * 6; e.vz += dir[2] * 6; e.vy = Math.max(e.vy, 4);
+      if (e.muriendo != null) return;
+      const l = Math.hypot(dir[0], dir[2]) || 1, fuerza = e.t.clase === 'jefe' ? 2 : 6;   // empujón horizontal, lejos de quien golpea
+      e.vida -= dano; e.golpe = 0.3; e.provocada = true; e.carga = 0; e.vx = (dir[0] / l) * fuerza; e.vz = (dir[2] / l) * fuerza; e.vy = Math.max(e.vy, e.t.clase === 'jefe' ? 2 : 4.5);
       if (e.t.clase === 'pasiva') { e.estado = 'huir'; e.t0 = 0; }
       if (e.t.clase === 'jefe' && e.vida < e.t.vida * 0.5 && !e.fase2) { e.fase2 = true; alEvento('fase', e); for (let k = 0; k < 2; k++) cr.crear('golem', Math.floor(e.x) + (k ? 3 : -3), Math.floor(e.y), Math.floor(e.z)); }
-      if (e.vida <= 0) { lista.splice(lista.indexOf(e), 1); alMorir(e); }
+      if (e.vida <= 0) { e.muriendo = 0.6; e.estado = 'muerta'; e.ruta = null; alMorir(e); }
     },
     // rayo contra las cajas de las criaturas (para atacar con el clic)
     apuntada(o, d, max) {
       let mejor = null, tm = max;
       for (const e of lista) {
-        if (!e.activa) continue; const s = e.t.escala || 1, w = 0.5 * s, h = e.t.alto * s;
+        if (!e.activa || e.muriendo != null) continue; const s = e.t.escala || 1, w = 0.5 * s, h = e.t.alto * s;
         const t = rayoCaja(o, d, e.x - w, e.y, e.z - w, e.x + w, e.y + h, e.z + w); if (t != null && t < tm) { tm = t; mejor = e; }
       }
       return mejor ? { e: mejor, dist: tm } : null;
+    },
+    // el jugador y las criaturas no se atraviesan: devuelve cuánto hay que correr al jugador (las grandes no ceden)
+    empujar(jug, radioJug = 0.3) {
+      let px = 0, pz = 0;
+      for (const e of lista) {
+        if (!e.activa || e.muriendo != null || e.t.vuela) continue;
+        const s = e.t.escala || 1, r = radioJug + 0.3 * s, dx = jug.x - e.x, dz = jug.z - e.z, dd = Math.hypot(dx, dz);
+        if (dd >= r || jug.y > e.y + e.t.alto * s - 0.2 || jug.y + 1.7 < e.y) continue;
+        const nx = dd > 1e-4 ? dx / dd : 1, nz = dd > 1e-4 ? dz / dd : 0, sobra = r - dd, cede = e.persistente || e.t.clase === 'jefe' ? 0 : 0.5;
+        const ex = e.x - nx * sobra * cede, ez = e.z - nz * sobra * cede, w = 0.3 * s;
+        if (cede && !cajaChoca(ex, e.y, ez, w, e.t.alto * s)) { e.x = ex; e.z = ez; } else { px += nx * sobra * cede; pz += nz * sobra * cede; }
+        px += nx * sobra * (1 - cede); pz += nz * sobra * (1 - cede);
+      }
+      return [px, pz];
     },
     exportar() { return lista.filter((e) => e.persistente && e.marcador).map((e) => ({ marcador: e.marcador, vida: e.vida })); },
   };
@@ -121,7 +161,7 @@ export function crearCriaturas({ mundo, cfg, semilla, alAtacar = () => {}, alMor
     const ve = hostil || c === 'pasiva' ? percibe(e, jug, d) : d < 8;
     // árbol de comportamiento
     if (c === 'pasiva' && e.estado === 'huir') { e.objetivo = [jug.x, jug.y, jug.z]; if ((e.t0 += 0.1) < 4) return; }
-    if (hostil && ve && !ctx.pacifica) { e.estado = d < 1.8 + (e.t.escala || 1) * 0.3 ? 'atacar' : 'perseguir'; e.objetivo = [jug.x, jug.y, jug.z]; if (e.estado === 'perseguir' && (!e.ruta || (e.tRuta = (e.tRuta || 0) + 0.1) > 1.5)) { e.tRuta = 0; e.ruta = bloqueado(e, jug) ? aEstrella(mundo, [Math.floor(e.x), Math.floor(e.y), Math.floor(e.z)], [Math.floor(jug.x), Math.floor(jug.y), Math.floor(jug.z)]).ruta : null; } return; }
+    if (hostil && ve && !ctx.pacifica) { e.estado = d < alcanceDe(e) + 0.3 ? 'atacar' : 'perseguir'; e.objetivo = [jug.x, jug.y, jug.z]; if (e.estado === 'perseguir' && (!e.ruta || (e.tRuta = (e.tRuta || 0) + 0.1) > 1.5)) { e.tRuta = 0; e.ruta = bloqueado(e, jug) ? aEstrella(mundo, [Math.floor(e.x), Math.floor(e.y), Math.floor(e.z)], [Math.floor(jug.x), Math.floor(jug.y), Math.floor(jug.z)]).ruta : null; } return; }
     if ((c === 'comerciante' || c === 'exploradora') && d < 5) { e.estado = 'atender'; return; }
     // utilidad: cada opción tiene un puntaje; gana la mayor (con un poco de azar para que no sea un reloj)
     e.t0 += 0.1;
@@ -134,35 +174,49 @@ export function crearCriaturas({ mundo, cfg, semilla, alAtacar = () => {}, alMor
     e.ruta = null;
   }
   const bloqueado = (e, jug) => { const dx = Math.sign(jug.x - e.x), dz = Math.sign(jug.z - e.z); return solido(e.x + dx * 0.8, e.y + 0.5, e.z) && solido(e.x + dx * 0.8, e.y + 1.5, e.z) || solido(e.x, e.y + 0.5, e.z + dz * 0.8) && solido(e.x, e.y + 1.5, e.z + dz * 0.8); };
-  function mover(e, dt) {
-    const v = e.t.vel * CR.velocidad * (e.estado === 'huir' ? 1.6 : e.estado === 'perseguir' || e.estado === 'atacar' ? 1.25 * Math.min(1.6, 0.7 + 0.3 * CR.agresividad) : e.estado === 'deambular' || e.estado === 'volver' ? 0.6 : 0);
+  function mover(e, dt, jug) {
+    const v = e.carga > 0 || e.muriendo != null ? 0 : e.t.vel * CR.velocidad * (e.estado === 'huir' ? 1.6 : e.estado === 'perseguir' || e.estado === 'atacar' ? 1.25 * Math.min(1.6, 0.7 + 0.3 * CR.agresividad) : e.estado === 'deambular' || e.estado === 'volver' ? 0.6 : 0);
     let ox = 0, oz = 0;
     if (e.estado === 'huir' && e.objetivo) { ox = e.x - e.objetivo[0]; oz = e.z - e.objetivo[2]; }
     else if (e.ruta && e.ruta.length > 1) { const p = e.ruta[1]; ox = p[0] + 0.5 - e.x; oz = p[2] + 0.5 - e.z; if (Math.hypot(ox, oz) < 0.4) e.ruta.shift(); }
     else if (e.objetivo && e.estado !== 'descanso' && e.estado !== 'atender' && e.estado !== 'pastar') { ox = e.objetivo[0] - e.x; oz = e.objetivo[2] - e.z; }
     // separación (steering): que no se encimen
-    for (const o of lista) { if (o === e || !o.activa) continue; const sx = e.x - o.x, sz = e.z - o.z, dd = sx * sx + sz * sz; if (dd < 0.8 && dd > 1e-4) { ox += sx / dd * 0.3; oz += sz / dd * 0.3; } }
-    const l = Math.hypot(ox, oz), llega = e.estado === 'volver' || e.estado === 'deambular' ? Math.min(1, l / 1.5) : 1;   // «arrive»: frena al llegar
+    for (const o of lista) { if (o === e || !o.activa || o.muriendo != null) continue; const sx = e.x - o.x, sz = e.z - o.z, dd = sx * sx + sz * sz; if (dd < 0.8 && dd > 1e-4) { ox += sx / dd * 0.3; oz += sz / dd * 0.3; } }
+    // «arrive»: frena al llegar; si persigue, se detiene a un paso del jugador en vez de meterse en él
+    const caza = (e.estado === 'perseguir' || e.estado === 'atacar') && jug, dj = caza ? Math.hypot(jug.x - e.x, jug.z - e.z) : 0;
+    const l = Math.hypot(ox, oz), llega = e.estado === 'volver' || e.estado === 'deambular' ? Math.min(1, l / 1.5) : caza && !e.ruta ? Math.max(0, Math.min(1, (dj - 0.85 - 0.35 * (e.t.escala || 1)) / 0.6)) : 1;
     const tx = l > 0.05 ? (ox / l) * v * llega : 0, tz = l > 0.05 ? (oz / l) * v * llega : 0;
-    e.vx += (tx - e.vx) * Math.min(1, dt * 6); e.vz += (tz - e.vz) * Math.min(1, dt * 6);
-    if (l > 0.05 && v > 0) { const g = Math.atan2(e.vx, -e.vz); e.giro += ((((g - e.giro) % 6.283) + 9.42) % 6.283 - 3.14) * Math.min(1, dt * 8); }
-    if (e.t.vuela) { const suelo = altura(e.x, e.z, e.y); e.vy += ((suelo + 2.2 + Math.sin(performance.now() / 400 + e.id) * 0.4) - e.y) * dt * 3; e.vy *= 0.9; }
+    if (e.golpe > 0) { const fr = Math.exp(-dt * 2.5); e.vx *= fr; e.vz *= fr; }   // empujón del golpe: no lo frena la IA
+    else { e.vx += (tx - e.vx) * Math.min(1, dt * 6); e.vz += (tz - e.vz) * Math.min(1, dt * 6); }
+    // hacia dónde mira: a su presa si caza, a quien atiende si comercia, hacia donde camina si pasea; el empujón no lo hace girar
+    const mira = caza || (e.estado === 'atender' && jug) ? Math.atan2(jug.x - e.x, -(jug.z - e.z)) : e.golpe <= 0 && e.muriendo == null && Math.hypot(e.vx, e.vz) > 0.15 ? Math.atan2(e.vx, -e.vz) : null;
+    if (mira != null) e.giro += ((((mira - e.giro) % 6.283) + 9.42) % 6.283 - 3.14) * Math.min(1, dt * 8);
+    if (e.t.vuela) { const suelo = altura(e.x, e.z, e.y), meta = caza ? Math.max(suelo + 0.6, jug.y + 0.9) : suelo + 2.2; e.vy += ((meta + Math.sin(performance.now() / 400 + e.id) * 0.3) - e.y) * dt * 3; e.vy *= 0.9; }
     else { e.vy -= 26 * dt; if (e.enAgua) { e.vy = Math.max(e.vy, 1.2); } }
     const w = 0.3 * (e.t.escala || 1), h = e.t.alto * (e.t.escala || 1);
     let ny = e.y + e.vy * dt;
     if (cajaChoca(e.x, ny, e.z, w, h)) { if (e.vy < 0) { ny = Math.floor(ny) + 1; e.enSuelo = true; } else ny = e.y; e.vy = 0; } else e.enSuelo = false;
     e.y = ny;
+    const metida = cajaChoca(e.x, e.y, e.z, w, h);   // si ya está metida en un bloque (apareció así), que pueda salir caminando
     for (const eje of ['x', 'z']) {
       const nx = eje === 'x' ? e.x + e.vx * dt : e.x, nz = eje === 'z' ? e.z + e.vz * dt : e.z;
-      if (cajaChoca(nx, e.y, nz, w, h)) { if (e.enSuelo && !cajaChoca(nx, e.y + 1.05, nz, w, h)) e.vy = 6.5; else if (eje === 'x') e.vx = 0; else e.vz = 0; continue; }
+      if (metida) { e.x = nx; e.z = nz; continue; }
+      // escalón de un bloque: salta lo justo para subirlo (√(2·g·1,25) ≈ 8 con g = 26); si no cabe arriba, se para
+      if (cajaChoca(nx, e.y, nz, w, h)) { if (e.enSuelo && e.muriendo == null && !cajaChoca(nx, Math.floor(e.y) + 1.02, nz, w, h) && !cajaChoca(e.x, Math.floor(e.y) + 1.02, e.z, w, h)) e.vy = 8.1; else if (eje === 'x') e.vx = 0; else e.vz = 0; continue; }
       const bajo = mundo.bloque(Math.floor(nx), Math.floor(e.y - 1), Math.floor(nz)), bajo2 = mundo.bloque(Math.floor(nx), Math.floor(e.y - 2), Math.floor(nz));
       if (!e.t.vuela && e.estado !== 'perseguir' && (bajo === 6 || (!T.solido[bajo] && !T.solido[bajo2] && bajo >= 0))) { if (eje === 'x') e.vx = 0; else e.vz = 0; continue; }   // no se tira por barrancos ni a la lava
       e.x = nx; e.z = nz;
     }
-    if (e.t.salta && e.enSuelo && Math.hypot(e.vx, e.vz) > 0.5) e.vy = 5;
+    if (e.t.salta && e.enSuelo && e.muriendo == null && Math.hypot(e.vx, e.vz) > 0.5) e.vy = 5;
     const id = mundo.bloque(Math.floor(e.x), Math.floor(e.y + 0.2), Math.floor(e.z)); e.enAgua = T.liquido[id] === 1;
     e.vx *= 0.98; e.vz *= 0.98;
+    // animación: la fase avanza con la distancia recorrida (las patas no «patinan») y la amplitud sigue a la velocidad
+    const anda = Math.hypot(e.vx, e.vz), zancada = 1.1 * (e.t.escala || 1);
+    e.fase = (e.fase + (anda * dt * Math.PI * 2) / zancada) % (Math.PI * 2);
+    const ampMeta = e.enSuelo || e.t.vuela ? Math.min(0.75, (anda / Math.max(0.5, e.t.vel)) * 0.55) : 0.5;
+    e.amp += (ampMeta - e.amp) * Math.min(1, dt * 10);
   }
+  const alcanceDe = (e) => 1.5 + 0.45 * (e.t.escala || 1);
   const cajaChoca = (x, y, z, w, h) => { for (let yy = Math.floor(y); yy <= Math.floor(y + h - 0.01); yy++) for (let xx = Math.floor(x - w); xx <= Math.floor(x + w); xx++) for (let zz = Math.floor(z - w); zz <= Math.floor(z + w); zz++) if (solido(xx, yy, zz)) return true; return false; };
   const altura = (x, z, y0) => { for (let y = Math.floor(y0); y > y0 - 12; y--) if (solido(x, y, z)) return y + 1; return y0 - 12; };
   function aparecer(jug, ctx) {

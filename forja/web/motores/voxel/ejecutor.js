@@ -1,7 +1,7 @@
 // Forja · voxel · reparte trabajos entre Workers (pool) o, si no hay Workers (Node, pruebas), los corre en el hilo.
 // enviar(orden) → Promise con la respuesta; cancelar(id) avisa al Worker para que la salte si aún no empezó.
 import { crearGenerador } from './generador.js';
-import { mallar } from './malla.js';
+import { mallar, climaDeChunk } from './malla.js';
 
 export function crearEjecutor({ semilla, opciones, hilos = null, bloquesExtra = [], forzarLocal = false } = {}) {
   const puede = !forzarLocal && typeof Worker !== 'undefined';
@@ -16,7 +16,7 @@ export function crearEjecutor({ semilla, opciones, hilos = null, bloquesExtra = 
           if (cancel.delete(id)) return { id, cancelado: true };
           const t0 = performance.now();
           if (o.tipo === 'generar') { const c = gen.generarChunk(o.cx, o.cz); return { id, tipo: 'generar', cx: o.cx, cz: o.cz, bloques: c.bloques, alturas: c.alturas, biomas: c.biomas, marcadores: c.marcadores, ms: performance.now() - t0 }; }
-          const r = mallar(o.vol, o.H, { ao: o.ao !== false }); return { id, tipo: 'malla', cx: o.cx, cz: o.cz, version: o.version, malla: r, ms: performance.now() - t0 };
+          const r = mallar(o.vol, o.H, { ao: o.ao !== false, clima: climaDeChunk(gen, o.cx, o.cz) }); return { id, tipo: 'malla', cx: o.cx, cz: o.cz, version: o.version, malla: r, ms: performance.now() - t0 };
         });
         p.id = id; return p;
       },

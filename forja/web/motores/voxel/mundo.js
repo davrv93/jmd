@@ -84,6 +84,11 @@ export function crearMundo({ ejecutor, H = 128, radio = 5, cacheMax = 128, enVue
       }
     },
     // ---------------------------------------------------------------- deltas (persistencia)
+    // «Empezar de nuevo»: deshace todos los bloques cambiados (los chunks vuelven a lo que dio el generador)
+    reiniciarDeltas() {
+      for (const [k, d] of deltas) { const c = chunks.get(k); if (!c) continue; for (const [i, [, orig]] of d) c.bloques[i] = orig; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) { const kk = clave(c.cx + dx, c.cz + dz), o = chunks.get(kk); if (o) { o.sucio = true; o.version++; urgentes.add(kk); } } }
+      deltas.clear(); m.planificar();
+    },
     exportarDeltas() { const o = {}; for (const [k, d] of deltas) o[k] = [...d].map(([i, [id, orig]]) => [i, id, orig]); return o; },
     importarDeltas(o) {
       deltas.clear();

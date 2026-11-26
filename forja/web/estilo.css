@@ -203,7 +203,38 @@ dialog pre, .explica pre { background: var(--fondo); border: 1px solid var(--lin
 .plantilla[aria-selected="true"] { border-color: var(--chispa); box-shadow: inset 0 0 0 1px var(--chispa); } .plantilla[aria-selected="true"] b { color: var(--chispa); }
 .taller { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px; align-items: start; }
 .taller > div { display: grid; gap: 8px; min-width: 0; }
-.marco-pista { border-radius: 14px; overflow: hidden; border: 1px solid var(--linea); background: #000; }
+.marco-pista { border-radius: 14px; overflow: hidden; border: 1px solid var(--linea); background: #000; position: relative; }
+/* Modo juego: el marco a pantalla completa (o a toda la ventana si el navegador no deja), con la leyenda de tus controles */
+.marco-pista:fullscreen, .marco-pista.llena { position: fixed; inset: 0; z-index: 9999; width: 100vw; height: 100dvh; border: 0; border-radius: 0; display: grid; place-items: center; }
+.marco-pista:fullscreen #marcoJuego, .marco-pista.llena #marcoJuego { width: 100%; height: 100%; aspect-ratio: auto; }
+.marco-pista:-webkit-full-screen { width: 100vw; height: 100vh; }
+.marco-pista:-webkit-full-screen #marcoJuego { width: 100%; height: 100%; aspect-ratio: auto; }
+.modo-barra { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); gap: 6px; z-index: 3; opacity: .35; transition: opacity .2s; }
+.modo-barra:hover, .modo-barra:focus-within { opacity: 1; }
+.marco-pista.en-modo .modo-barra, .marco-pista:fullscreen .modo-barra { display: none; }   /* Salir y Controles están en el menú de cada juego */
+.modo-barra .btn { background: rgba(15,12,24,.75); backdrop-filter: blur(6px); }
+.leyenda-juego { position: absolute; left: 50%; bottom: 18px; transform: translate(-50%, 12px); max-width: min(92%, 980px); display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; padding: 12px 16px; border-radius: 14px; background: rgba(15,12,24,.86); border: 1px solid rgba(255,255,255,.12); color: #f5f0ff; font-size: 13.5px; pointer-events: none; opacity: 0; transition: opacity .35s, transform .35s var(--suavidad); z-index: 3; }
+.leyenda-juego.ve { opacity: 1; transform: translate(-50%, 0); }
+.leyenda-juego b { width: 100%; text-align: center; font: 800 11px/1 var(--mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--acento, #c8ff3d); }
+.leyenda-juego span { white-space: nowrap; }
+.leyenda-juego .mas { width: 100%; text-align: center; color: rgba(245,240,255,.6); font-size: 12.5px; }
+.leyenda-juego kbd, .d-teclas-de kbd { display: inline-block; min-width: 1.7em; padding: 2px 6px; margin-right: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,.28); border-bottom-width: 3px; background: rgba(255,255,255,.07); font: 700 12px/1.3 var(--mono, ui-monospace, monospace); text-align: center; color: #fff; }
+.btn.jugar { font-weight: 800; }
+/* Panel de controles (paso «Procedimientos» y diálogo Controles) */
+.d-controles { display: grid; gap: 8px; }
+.d-teclado { display: grid; gap: 4px; max-height: 40vh; overflow: auto; padding-right: 4px; }
+.d-tecla-fila { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 5px 8px; border-radius: 10px; background: rgba(255,255,255,.04); }
+.d-accion { font-size: 13.5px; }
+.d-teclas-de { display: flex; flex-wrap: wrap; gap: 3px; justify-content: flex-end; }
+.d-guardado { font-size: 13px; color: var(--acento, #c8ff3d); align-self: center; }
+.d-sin { font-size: 12px; color: rgba(244,241,255,.45); }
+.d-teclas-de kbd.choca { border-color: #ffb020; color: #ffb020; }
+.d-cambiar { border: 1px solid var(--linea); background: none; color: var(--tinta); border-radius: 99px; padding: 4px 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.d-cambiar:hover { border-color: var(--suave); }
+.d-cambiar.escucha { border-color: var(--acento, #c8ff3d); color: var(--acento, #c8ff3d); animation: latido 1s ease-in-out infinite; }
+@keyframes latido { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--acento, #c8ff3d) 25%, transparent); } }
+#dControles { max-width: 560px; }
+@media (prefers-reduced-motion: reduce) { .d-cambiar.escucha { animation: none; } .leyenda-juego { transition: none; } }
 #marcoJuego { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #000; }
 .explica-caja { border: 1px solid var(--linea); border-radius: 14px; overflow: hidden; background: var(--panel2); min-width: 0; }
 .pestanas { display: flex; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--linea); }

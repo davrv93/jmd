@@ -49,7 +49,10 @@ export function crearCombate(opc = {}) {
   const activos = () => todos().filter((l) => l.activo);
   const rival = (L) => { let best = null, d = Infinity; for (const o of activos()) if (o.eq !== L.eq && !o.ko) { const dd = Math.abs(o.x - L.x) + Math.abs(o.z - L.z) * 0.5; if (dd < d) { d = dd; best = o; } } return best; };
   c.rival = rival;
-  const mult = (L, k) => (L.def[k] ?? 1) * (L.transformado ? L.transformado.mult[k] ?? 1 : 1);
+  // multiplicador de un atributo: el del personaje (fuerza, defensa, velAtaque son factores ≈ 1) por el de su
+  // transformación. velocidad y alcance NO: def.velocidad son píxeles por cuadro (4.8) y def.alcance ya se aplica en la
+  // hitbox; multiplicarlos aquí los elevaba al cuadrado (caminar a 23 px/cuadro, saltos de 700 px).
+  const mult = (L, k) => (k === 'velocidad' || k === 'alcance' ? 1 : L.def[k] ?? 1) * (L.transformado ? L.transformado.mult[k] ?? 1 : 1);
   c.mult = mult;
 
   // ---------------------------------------------------------------- cambios de estado (validados)
@@ -81,16 +84,21 @@ export function crearCombate(opc = {}) {
   // ---------------------------------------------------------------- decisión: qué quiere hacer el luchador este paso
   const ORDEN = ['definitivo', 'cargado', 'antiaereo', 'teleporte', 'embestida', 'especial', 'aereoEspecial', 'rompeGuardia', 'impulsoFuerte', 'lanzador', 'bajoMedio', 'bajoLigero', 'aereoFuerte', 'aereoMedio', 'aereoLigero', 'fuerte', 'medio', 'ligero'];
   function quiereMovimiento(L, lista) {
+    let falta = null;
     for (const k of lista) {
       const m = L.def.movimientos[k]; if (!m || m.solo === 'cancel' && !lista.cancel) continue;
-      if (m.energia && L.energia < m.energia) continue;
-      if (cumple(L.buffer, L.cmd[k], { enAire: !L.suelo, impulsando: L.estado === 'impulso' || L.estado === 'correr' })) return k;
+      const pide = cumple(L.buffer, L.cmd[k], { enAire: !L.suelo, impulsando: L.estado === 'impulso' || L.estado === 'correr' });
+      if (m.energia && L.energia < m.energia) { if (pide && !falta) falta = k; continue; }
+      if (pide) return k;
     }
+    // pidió una técnica sin energía suficiente: se avisa (y se gasta la pulsación) para que no parezca que la tecla falla
+    if (falta && !lista.cancel) { for (const b of L.cmd[falta].botones) L.buffer.consumir(b); ev({ tipo: 'sinEnergia', id: L.id, mov: falta, falta: L.def.movimientos[falta].energia - Math.floor(L.energia) }); }
     return null;
   }
   function decidir(L, e) {
     const st = ESTADOS[L.estado], B = L.buffer, op = rival(L);
     if (st.sinControl) return;
+    if (L.estado === 'caida' && L.voló) return;   // saliendo volando de un golpe: sin control hasta tocar el suelo
     const libre = ['reposo', 'caminar', 'correr', 'agachado', 'aterrizaje', 'carga', 'bloqueo'].includes(L.estado);
     const aire = ['salto', 'caida'].includes(L.estado);
     // cancelaciones dentro de un ataque (combo cancel, air cancel, recovery cancel)
@@ -144,7 +152,14 @@ export function crearCombate(opc = {}) {
     }
   }
   // ¿hay un ataque del rival que podría alcanzarme pronto? (para bloquear sosteniendo atrás sin quedarse pegado)
-  function amenaza(L, op) { return (op.mov && ESTADOS[op.estado].ataque) || c.proyectiles.some((p) => p.eq !== L.eq && Math.abs(p.x - L.x) < 320) || Math.abs(op.x - L.x) < 160; }
+  // Solo cuando de verdad viene algo: un ataque del rival que aún no terminó su parte activa, un proyectil que se acerca o
+  // un golpe bloqueable del jefe a punto de caer. Antes bastaba con estar a menos de 160 px: de cerca, «atrás» siempre
+  // bloqueaba y era imposible retroceder caminando (y junto al titán no se podía huir de su puño, que no se bloquea).
+  function amenaza(L, op) {
+    if (c.proyectiles.some((p) => p.eq !== L.eq && Math.abs(p.x - L.x) < 320 && Math.sign(p.vx) === Math.sign(L.x - p.x))) return true;
+    if (op.ataque) return !op.ataque.mano && op.t >= op.ataque.avisoF - 8 && op.t < op.ataque.avisoF + op.ataque.activo;
+    return !!(op.mov && ESTADOS[op.estado].ataque && op.movF < op.mov.arranque + op.mov.activo && Math.abs(op.x - L.x) < 260);
+  }
 
   function relevo(L) {
     const comp = c.luchadores.find((o) => o.eq === L.eq && o !== L && !o.activo && !o.ko);
@@ -187,6 +202,8 @@ export function crearCombate(opc = {}) {
   function hurtbox(L) {
     const st = ESTADOS[L.estado];
     const h = L.estado === 'agachado' || (L.estado === 'bloqueo' && L.agachaBloqueo) || L.mov?.bajo ? L.def.hurtbox.agachado : !L.suelo ? L.def.hurtbox.aire : L.def.hurtbox.depie;
+    // tumbado: la caja también se acuesta (el dibujo queda en el suelo, con la cabeza hacia atrás); es invulnerable igual
+    if (L.estado === 'derribado' || (L.estado === 'levantarse' && L.f < 8)) { const w = L.alto * 0.8; return [{ x: L.dir > 0 ? L.x - w + 20 : L.x - 20, y: 0, w, h: 30 }]; }
     const cajas = [{ x: L.x + h.x, y: L.y + h.y, w: h.w, h: h.h }];
     // el brazo o la pierna que golpea también se puede golpear (castigar un ataque que falló)
     if (st.ataque && L.mov && !L.mov.proyectil && !L.mov.rayo && L.movF >= L.mov.arranque) { const b = L.mov.caja, w = b.w * 0.7; cajas.push({ x: L.dir > 0 ? L.x + b.x : L.x - b.x - w, y: L.y + b.y + 2, w, h: Math.max(10, b.h - 4) }); }
@@ -262,6 +279,9 @@ export function crearCombate(opc = {}) {
     const vuela = m.lanza || !D.suelo || m.empuje[1] > 6 || pesado;
     if (vuela) D.voló = true;
     cambiar(D, pesado ? 'empujado' : 'aturdido', true); D.durEstado = aturd;
+    // dónde y cuán fuerte pegó: solo lo lee el dibujo (cabeza atrás, doblarse o rodilla que cede); no cambia el combate
+    const yImp = proyectil ? proyectil.y : (A.y || 0) + (m.caja?.y ?? 60) + (m.caja?.h ?? 20) / 2, rel = (yImp - (D.y || 0)) / (D.alto || 116);
+    D.reaccion = { zona: m.bajo || rel < 0.32 ? 'bajo' : rel > 0.66 ? 'alto' : 'medio', fuerza: Math.min(1, 0.45 + (m.pausa || 6) / 20) };
     impulso(D, hacia * m.empuje[0] * (pesado ? 1.1 : 1), m.empuje[1] + (vuela && !D.suelo ? 2.5 : 0));
     if (D.suelo && !vuela) D.vy = 0;
     if (pesado && D.vy < 5) { D.vy = 5; D.suelo = false; }
@@ -355,7 +375,7 @@ export function crearCombate(opc = {}) {
       const caja = { x: p.x - p.w / 2, y: p.y - p.h / 2, w: p.w, h: p.h };
       for (const D of act) {
         if (D.eq === p.eq || D.ko) continue; if (reglas.profundidad && Math.abs((D.z || 0) - (p.z || 0)) > 34) continue;
-        for (const hb of c.hurtbox(D)) { const t = barrido(caja, p.vx, p.vy, hb); if (t >= 0) { const A = buscar(p.dueño); if (golpear(A, D, p.mov, p.inst, p.x, { proyectil: p })) { p.golpes--; if (p.golpes <= 0) p.vida = 0; } break; } }
+        for (const hb of c.hurtbox(D)) { const t = barrido(caja, p.vx, p.vy, hb); if (t >= 0) { const A = buscar(p.dueño); if (golpear(A, D, p.mov, p.inst, p.x, { proyectil: p })) { p.golpes--; if (p.golpes <= 0) p.vida = 0; else { p.vx = 0; p.vy = 0; p.vida = Math.min(p.vida, (p.cadaGolpe + 1) * p.golpes + 1); } } break; } }   // con golpes pendientes, el proyectil se queda pegado al cuerpo: no lo atraviesa
       }
       for (const o of c.obstaculos) if (!o.roto && solapan(caja, o)) { danarObstaculo(o, p.mov.dano); p.vida = 0; }
       p.x += p.vx; p.y += p.vy; p.vida--;
@@ -400,7 +420,7 @@ export function crearCombate(opc = {}) {
     L.saltosAereos = reglas.saltosAereos ?? L.def.saltosAereos;
     if (L.reboteSueloPend && ['empujado', 'aturdido'].includes(L.estado)) { L.reboteSueloPend = false; L.reboteSueloUsado = true; L.vy = Math.max(7, v * F.reboteSuelo); L.suelo = false; L.y = 0.5; ev({ tipo: 'reboteSuelo', id: L.id, x: L.x, y: 0 }); return; }
     if (L.ko) { if (L.estado !== 'derrota') { L.estado = 'derribado'; L.f = 0; L.durEstado = 9999; L.vx *= 0.3; } ev({ tipo: 'caidaKO', id: L.id, x: L.x }); return; }
-    if (L.estado === 'empujado' || (L.estado === 'aturdido' && L.voló)) { cambiar(L, 'derribado', true); L.durEstado = ESTADOS.derribado.dur; L.vx *= 0.4; ev({ tipo: 'derribo', id: L.id, x: L.x, v }); return; }
+    if (L.estado === 'empujado' || ((L.estado === 'aturdido' || L.estado === 'caida') && L.voló)) { cambiar(L, 'derribado', true); L.durEstado = ESTADOS.derribado.dur; L.vx *= 0.4; ev({ tipo: 'derribo', id: L.id, x: L.x, v }); return; }   // lanzado: cae derribado, no de pie
     if (L.estado === 'aturdido') return;
     if (['salto', 'caida'].includes(L.estado)) { if (L.combo) terminarCombo(L); cambiar(L, 'aterrizaje'); L.durEstado = ESTADOS.aterrizaje.dur; L.flotaInvul = false; ev({ tipo: 'aterriza', id: L.id }); return; }
     if (ESTADOS[L.estado].ataque && !ESTADOS[L.estado].suelo && L.mov?.aire) { cambiar(L, 'aterrizaje'); L.durEstado = 6; return; }

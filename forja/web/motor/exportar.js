@@ -7,6 +7,8 @@ import { recorte } from './escenario.js';
 import { nivel as crearNivel, fisicaJugable } from './nivel.js';
 import { aplicarAjustes, leerAjustes } from './ajustes.js';
 import { catalogoDe, porDefecto } from './juegos/index.js';
+import { mapaDe, textoControles } from './controles.js';
+import { menuDe } from './ayuda.js';
 
 const texto = new Map();
 const leer = async (ruta) => { if (!texto.has(ruta)) texto.set(ruta, await (await fetch(ruta)).text()); return texto.get(ruta); };
@@ -37,6 +39,8 @@ QUÉ HAY Y EN QUÉ ORDEN SE CARGA
   phaser.min.js   el motor (no se toca)
   datos.js        los números de TU personaje: medidas, física, animaciones y nivel
   comun.js        utilidades que comparten las plantillas: cargar recursos, controles, partículas, rayos X
+  menu.js         el menú del juego: descripción, controles, ayuda y salir (lee DATOS.menu)
+  rayos.js        «rayos X del framework»: cuenta qué pieza trabaja (solo dentro de Forja o del LIVE)
   juego.js        EL JUEGO. Los algoritmos están marcados con «// >>> nombre». Empieza a cambiar cosas aquí.
   assets/         recursos: hojas de sprites (.png) con su atlas (.json), fondo en capas, losetas y sonidos (.wav)
   ficha.json      las reglas que se aplicaron para crear tu personaje
@@ -59,19 +63,24 @@ export async function armarProyecto(d, id) {
   for (const r of meta.recursos) if (imagenes[r]) await png(`${r}.png`, imagenes[r]());
   for (const [n, m] of Object.entries(d.sonidos)) archivos.push({ nombre: `${A}sonidos/${n}.wav`, datos: wav(m), muestras: m });
   const cifras = (h) => ({ px: h.px, relAlto: +h.relAlto.toFixed(3), relAncho: +h.relAncho.toFixed(3), animaciones: h.animaciones });
-  const DATOS = { nombre: d.spec.nombre, juego: meta.nombre, semilla: d.semilla, heroe: cifras(d.hoja), enemigo: cifras(d.enemigo.hoja), fisica: fisicaJugable(d.spec.fisica), fisicaBase: d.spec.fisica, sonidos: Object.keys(d.sonidos), objetos: d.objetos.ids, ambiente: d.escenario.ambiente, hora: d.escenario.hora };
+  const DATOS = { plantilla: id, nombre: d.spec.nombre, juego: meta.nombre, semilla: d.semilla, heroe: cifras(d.hoja), enemigo: cifras(d.enemigo.hoja), fisica: fisicaJugable(d.spec.fisica), fisicaBase: d.spec.fisica, sonidos: Object.keys(d.sonidos), objetos: d.objetos.ids, ambiente: d.escenario.ambiente, hora: d.escenario.hora };
   if (id === 'plataformas') DATOS.nivel = crearNivel(d.semilla);
   aplicarAjustes(DATOS);   // lo que el alumno decidió en las escenas de la clase (gravedad, salto, velocidad, regla del rival)
   // reglas del juego: las del catálogo de la plantilla, con lo que el alumno eligió en «Diseña tu videojuego» encima
-  DATOS.reglas = { ...porDefecto((await catalogoDe(id)).reglas), ...(leerAjustes().reglas?.[id] || {}) };
+  const cat = await catalogoDe(id);
+  DATOS.reglas = { ...porDefecto(cat.reglas), ...(leerAjustes().reglas?.[id] || {}) };
+  // controles: los que el alumno eligió en «Procedimientos» (acción → teclas); comun.js los lee con Forja.controles
+  DATOS.controles = mapaDe(id, leerAjustes().controles?.[id]);
+  // menú fijo del juego (plantillas/menu.js): descripción, controles y ayuda
+  DATOS.menu = menuDe(id, { ficha: cat.ficha, catalogo: cat.reglas, reglas: DATOS.reglas, controles: DATOS.controles });
   const datosJS = `// datos.js · generado por Forja para «${d.spec.nombre}». Son solo números y listas: cámbialos y mira qué pasa.\nwindow.DATOS = ${JSON.stringify(DATOS, null, 1)};\n`;
-  const [comun, juego, index] = await Promise.all([leer('plantillas/comun.js'), codigoDe(id), leer('plantillas/index.html')]);
-  const guiones = ['phaser.min.js', 'datos.js', 'comun.js', 'juego.js'].map((s) => `<script src="${s}"></script>`).join('\n');
-  archivos.push({ nombre: 'datos.js', datos: datosJS }, { nombre: 'comun.js', datos: comun }, { nombre: 'juego.js', datos: juego },
+  const [comun, juego, index, menu, rayos] = await Promise.all([leer('plantillas/comun.js'), codigoDe(id), leer('plantillas/index.html'), leer('plantillas/menu.js'), leer('plantillas/rayos.js')]);
+  const guiones = ['phaser.min.js', 'datos.js', 'comun.js', 'juego.js', 'menu.js', 'rayos.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+  archivos.push({ nombre: 'datos.js', datos: datosJS }, { nombre: 'comun.js', datos: comun }, { nombre: 'juego.js', datos: juego }, { nombre: 'menu.js', datos: menu }, { nombre: 'rayos.js', datos: rayos },
     { nombre: 'index.html', datos: index.replace('__NOMBRE__', d.spec.nombre).replace('__JUEGO__', meta.nombre).replace('__SCRIPTS__', guiones) },
-    { nombre: 'LEEME.txt', datos: LEEME(d.spec.nombre, meta.nombre, meta.controles, d.enlace) },
+    { nombre: 'LEEME.txt', datos: LEEME(d.spec.nombre, meta.nombre, textoControles(id, DATOS.controles), d.enlace) },
     { nombre: 'ficha.json', datos: JSON.stringify({ nombre: d.spec.nombre, estado: d.estado, fisica: d.spec.fisica, medidas: d.spec.dims, reglas: d.spec.reglas, enlace: d.enlace }, null, 1) });
-  return { meta, archivos, DATOS, datosJS, comun, juego, index };
+  return { meta, archivos, DATOS, datosJS, comun, juego, index, menu, rayos };
 }
 
 export async function zipProyecto(d, id = 'plataformas') {
@@ -93,7 +102,7 @@ export function paginaEnMemoria(p) {
     else { const u = URL.createObjectURL(new Blob([a.datos], { type: n.endsWith('.png') ? 'image/png' : 'audio/wav' })); urls.push(u); mapa[n] = u; }
   }
   const phaser = new URL('vendor/phaser.min.js', location.href).href;
-  const guiones = `<script>window.FORJA_ASSETS = ${JSON.stringify(mapa)};</script>\n<script src="${phaser}"></script>\n<script>${p.datosJS}</script>\n<script>${p.comun}</script>\n<script>${p.juego}</script>`;
+  const guiones = `<script>window.FORJA_ASSETS = ${JSON.stringify(mapa)};</script>\n<script src="${phaser}"></script>\n<script>${p.datosJS}</script>\n<script>${p.comun}</script>\n<script>${p.juego}</script>\n<script>${p.menu}</script>\n<script>${p.rayos}</script>`;
   return { html: p.index.replace('__NOMBRE__', p.DATOS.nombre).replace('__JUEGO__', p.meta.nombre).replace('__SCRIPTS__', () => guiones), liberar: () => urls.forEach((u) => URL.revokeObjectURL(u)) };
 }
 

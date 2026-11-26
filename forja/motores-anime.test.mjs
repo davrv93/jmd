@@ -11,7 +11,7 @@ import { crearIA } from './web/motores/anime/ia.js';
 import { crearDirector } from './web/motores/anime/director.js';
 import { crearPartida, MODOS } from './web/motores/anime/modos.js';
 import { crearJefe, JEFES } from './web/motores/anime/jefe.js';
-import { poseDe, POSES } from './web/motores/anime/esqueleto.js';
+import { poseDe, POSES, puntos, apoyar, GOLPEA, ESCALA, SUELA } from './web/motores/anime/esqueleto.js';
 import { ESQUEMA, defecto, personajesCon } from './web/motores/anime/config.js';
 import { traducir } from './web/motores/anime/agente.js';
 import { crearBucle } from './web/motores/nucleo/bucle.js';
@@ -50,6 +50,54 @@ test('hitboxes sincronizadas con la pose: la caja solo existe en los cuadros act
     assert.equal(caja, activo, `cuadro ${k}`);
     if (activo) assert.equal(brazo, POSES.fuerte[1].hC ?? POSES.guardia.hC, 'pose de golpe en los cuadros activos');
   }
+});
+
+test('coherencia visual: el puño o el pie que golpea llega a su hitbox, y los pies pisan el suelo', () => {
+  for (const id of ['ren', 'mako']) {
+    const d = PERSONAJES[id], s = d.alto / ESCALA;
+    for (const [k, m] of Object.entries(d.movimientos)) {
+      if (!GOLPEA[k] || !m.caja || m.proyectil || m.rayo || m.onda) continue;
+      const L = { estado: m.aire ? 'ataqueAereo' : 'ataqueMedio', mov: m, movF: m.arranque, suelo: !m.aire, y: m.aire ? 80 : 0, alto: d.alto, def: d, f: 0 };
+      const P = puntos(poseDe(L, 0)), g = GOLPEA[k], tip = g === 'pC' ? P.pieC : g === 'bL' ? P.manoL : P.manoC;
+      const tx = tip.x * s, ty = tip.y * s, b = m.caja;
+      assert.ok(tx >= b.x - 4 && tx <= b.x + b.w + 4 && ty >= b.y - 4 && ty <= b.y + b.h + 4, `${id}.${k}: punta (${tx.toFixed(0)}, ${ty.toFixed(0)}) fuera de su caja`);
+      if (b.h <= b.w * 1.2) assert.ok(b.x + b.w - tx <= 22, `${id}.${k}: la caja llega ${(b.x + b.w - tx).toFixed(0)} px más lejos que el golpe dibujado`);
+    }
+  }
+  // en el suelo, el pie más bajo apoya justo en la línea (ni flota ni se hunde), en guardia, agachado y caminando
+  for (const e of ['reposo', 'agachado', 'bloqueo', 'caminar', 'aterrizaje']) for (const fase of [0, 0.13, 0.4, 0.77]) {
+    const P = puntos(apoyar({ ...poseDe({ estado: e, suelo: true, y: 0, f: 3, durEstado: 6, alto: 116, def: PERSONAJES.ren }, 0, {}, { fase }) }));
+    assert.ok(Math.abs(Math.min(P.pieC.y, P.pieL.y) - SUELA) < 0.01, `${e} fase ${fase}: pie a ${Math.min(P.pieC.y, P.pieL.y).toFixed(2)}`);
+  }
+});
+
+test('movimiento coherente: camina a su velocidad, salta a una altura razonable y puede retroceder cerca del rival', () => {
+  const c = duelo({ luchadores: [{ def: PERSONAJES.ren, eq: 0, x: -300 }, { def: PERSONAJES.mako, eq: 1, x: 300 }] }), L = c.luchadores[0];
+  correr(c, () => E({ x: 1 }), 30); assert.ok(Math.abs(L.vx - PERSONAJES.ren.velocidad) < 0.05, `vx ${L.vx} (antes salía al cuadrado: 23 px/cuadro)`);
+  let alto = 0; correr(c, (f) => { alto = Math.max(alto, L.y); return f === 0 ? E({ r: ['salto'] }) : E(); }, 60);
+  assert.ok(alto > 100 && alto < 220, `altura del salto ${alto.toFixed(0)}`);
+  // pegados y sin que el rival ataque: «atrás» camina hacia atrás (no se queda bloqueando)
+  const k = duelo({ luchadores: [{ def: PERSONAJES.ren, eq: 0, x: -30 }, { def: PERSONAJES.mako, eq: 1, x: 30 }] }), R = k.luchadores[0], x0 = R.x;
+  correr(k, () => E({ x: -1 }), 30); assert.ok(R.x < x0 - 60 && R.estado === 'caminar', `retrocedió ${x0 - R.x} px, estado ${R.estado}`);
+  // los cuerpos no se encimen
+  const p = duelo({ luchadores: [{ def: PERSONAJES.ren, eq: 0, x: -100 }, { def: PERSONAJES.mako, eq: 1, x: 100 }] });
+  for (let f = 0; f < 120; f++) { p.paso([E({ x: 1 }), E({ x: -1 })]); const [a, b] = p.luchadores; assert.ok(b.x - a.x >= (a.ancho + b.ancho) / 2 - 1e-6, `se encimaron: ${b.x - a.x}`); }
+});
+
+test('reacciones coherentes: el lanzado cae derribado y se levanta; un proyectil no atraviesa al que golpea', () => {
+  const c = duelo({ luchadores: [{ def: PERSONAJES.ren, eq: 0, x: -35 }, { def: PERSONAJES.mako, eq: 1, x: 35 }] }), D = c.luchadores[1], vistos = new Set();
+  for (let f = 0; f < 200; f++) { c.paso([f === 1 ? E({ y: 1, r: ['fuerte'] }) : f === 0 ? E({ y: 1 }) : E(), E()]); vistos.add(D.estado); if (D.estado === 'caida') assert.ok(D.voló, 'en el aire tras el golpe sigue sin control'); }
+  for (const e of ['aturdido', 'derribado', 'levantarse']) assert.ok(vistos.has(e), `pasó por ${e}: ${[...vistos]}`);
+  assert.ok(!vistos.has('aterrizaje'), 'no aterriza de pie después de un lanzador');
+  const k = duelo({ reglas: { energiaInicial: 100 }, luchadores: [{ def: PERSONAJES.mako, eq: 0, x: -250 }, { def: PERSONAJES.ren, eq: 1, x: 150 }] });
+  let pasa = false; for (let f = 0; f < 120; f++) { k.paso([f === 1 ? E({ r: ['especial'] }) : E(), E()]); for (const p of k.proyectiles) if (p.x > k.luchadores[1].x + 40) pasa = true; }
+  assert.ok(!pasa, 'la bola de fuego (2 golpes) no sigue de largo a través del cuerpo');
+});
+
+test('presentación de ronda: nadie se mueve ni corre el reloj hasta «¡A pelear!»', () => {
+  const p = crearPartida({ modo: 'cpu', semilla: 2 }), c = p.combate, t0 = c.tiempo, xs = c.luchadores.map((L) => L.x);
+  let pelea = -1; for (let f = 0; f < 120; f++) { const ev = p.paso([E({ x: 1, r: ['ligero'] })]); if (ev.some((e) => e.tipo === 'pelea')) pelea = f; if (pelea < 0) { assert.deepEqual(c.luchadores.map((L) => L.x), xs); assert.equal(c.tiempo, t0); } }
+  assert.ok(pelea > 30, `empieza en el cuadro ${pelea}`);
 });
 
 test('combos reproducibles y con escalado: la misma entrada da el mismo resultado', () => {

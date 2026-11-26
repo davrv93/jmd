@@ -8,6 +8,9 @@ import { PORCLAVE, LOSETA } from './bloques.js';
 import { iconoDe } from './atlas.js';
 
 const CSS = `
+.vx-ui [hidden]{display:none!important}
+.fx-hud{z-index:7}.fx-menu>div{max-height:92%;overflow:auto;box-sizing:border-box}
+@media (max-height:460px){.fx-menu h2{font-size:20px}.fx-menu p{font-size:12px;margin-bottom:8px}.fx-menu button{padding:7px 12px;margin:4px 0;font-size:13px}.vx-panel{max-height:92%}}
 .vx-ui{position:absolute;inset:0;pointer-events:none;font:13px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;color:#f5f0ff;z-index:6;user-select:none}
 .vx-mira{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px}
 .vx-mira::before,.vx-mira::after{content:"";position:absolute;background:#fff;mix-blend-mode:difference}
@@ -24,7 +27,8 @@ const CSS = `
 .vx-casilla i{position:absolute;left:4px;right:4px;bottom:3px;height:3px;border-radius:2px;background:#6f6}
 .vx-casilla small{position:absolute;left:3px;top:1px;font-size:9px;opacity:.6}
 .vx-estado{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);display:flex;gap:10px}
-.vx-medidor{width:120px;height:8px;border-radius:5px;background:rgba(10,8,18,.6);overflow:hidden;border:1px solid rgba(255,255,255,.25)}
+.vx-medidor{position:relative;width:120px;height:8px;border-radius:5px;background:rgba(10,8,18,.6);border:1px solid rgba(255,255,255,.25)}
+.vx-medidor::before{content:attr(data-k);position:absolute;left:2px;bottom:9px;font:600 10px/1 system-ui,sans-serif;opacity:.8;text-shadow:0 1px 2px #000}
 .vx-medidor i{display:block;height:100%;transform-origin:left;border-radius:5px}
 .vx-avisos{position:absolute;left:50%;top:14%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px}
 .vx-aviso{padding:7px 14px;border-radius:999px;background:rgba(14,11,22,.82);border:1px solid rgba(198,255,74,.45);font-weight:600;white-space:nowrap}
@@ -33,7 +37,7 @@ const CSS = `
 .vx-misiones{position:absolute;right:10px;top:60px;width:min(300px,40vw);padding:10px 12px;border-radius:12px;background:rgba(14,11,22,.8);border:1px solid #3b3354}
 .vx-misiones h3,.vx-panel h3{margin:0 0 6px;font:800 14px system-ui;letter-spacing:.03em}
 .vx-misiones li{margin:3px 0;list-style:none}.vx-misiones ul{margin:0;padding:0}.vx-misiones li.ok{opacity:.55;text-decoration:line-through}
-.vx-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(640px,94vw);max-height:80vh;overflow:auto;padding:14px 16px;border-radius:16px;background:rgba(20,16,32,.96);border:1px solid #4a4068;pointer-events:auto;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+.vx-panel{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(640px,94vw);max-height:80vh;overflow:auto;padding:14px 16px;border-radius:16px;background:rgba(20,16,32,.96);border:1px solid #4a4068;pointer-events:auto;box-shadow:0 20px 60px rgba(0,0,0,.55)}
 .vx-rejilla{display:grid;grid-template-columns:repeat(9,44px);gap:4px;margin:6px 0 10px}
 .vx-recetas{display:flex;flex-wrap:wrap;gap:6px}
 .vx-recetas button,.vx-panel>button{padding:6px 10px;border-radius:9px;border:1px solid #4a4068;background:#2a2240;color:#fff;font:600 12px system-ui;cursor:pointer}
@@ -67,8 +71,9 @@ export function crearInterfaz(padre, { atlas, cfg, sup, acc, alFabricar, alComer
   const iconos = new Map();
   const icono = (it) => { if (!iconos.has(it)) iconos.set(it, esBloque(it) ? iconoDe(atlas, LOSETA[PORCLAVE[it].id * 3 + 2]) : iconoObjeto(it)); return iconos.get(it); };
   const medidores = {};
+  const NOMBRES = { salud: 'Salud', hambre: 'Hambre', resistencia: 'Energía', aire: 'Aire', xp: 'Nivel' };
   for (const [k, color, activo] of [['salud', '#ff5a6e', cfg.modulos.salud], ['hambre', '#e0a54a', cfg.modulos.hambre], ['resistencia', '#6fd3ff', cfg.modulos.resistencia], ['aire', '#9fe8ff', cfg.modulos.danoAmbiental], ['xp', '#c6ff4a', cfg.modulos.experiencia]]) {
-    if (!activo || cfg.modo === 'creativo') continue; const m = el('div', 'vx-medidor'), i = el('i'); i.style.background = color; m.title = k; m.append(i); estado.append(m); medidores[k] = { i, v: -1 };
+    if (!activo || cfg.modo === 'creativo') continue; const m = el('div', 'vx-medidor'), i = el('i'); i.style.background = color; m.title = k; m.dataset.k = NOMBRES[k]; m.append(i); estado.append(m); medidores[k] = { i, v: -1, m };
   }
   const casilla = (x, idx) => {
     const c = el('div', 'vx-casilla'); c.dataset.i = idx;
@@ -99,7 +104,8 @@ export function crearInterfaz(padre, { atlas, cfg, sup, acc, alFabricar, alComer
       }
     },
     medir(o) {
-      for (const [k, m] of Object.entries(medidores)) { const v = Math.max(0, Math.min(1, o[k])); if (Math.abs(v - m.v) > 0.004) { m.v = v; animate(m.i, { scaleX: v, duration: d(260), ease: 'outQuad' }); } }
+      for (const [k, m] of Object.entries(medidores)) { const v = Math.max(0, Math.min(1, o[k])); if (k === 'aire') m.m.hidden = v > 0.999;   // el aire solo se ve bajo el agua
+        if (Math.abs(v - m.v) > 0.004) { m.v = v; animate(m.i, { scaleX: v, duration: d(260), ease: 'outQuad' }); } }
     },
     info(t) { info.innerHTML = t; },
     clic(v) { clic.hidden = !v; },

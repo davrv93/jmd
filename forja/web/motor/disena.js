@@ -42,18 +42,22 @@ const ICONOS = { // trazos simples, currentColor
 };
 
 import { catalogoDe, claves, porDefecto } from './juegos/index.js';
+import { panelControles, textoControles, mapaDe } from './controles.js';
 
-export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMeta, REGLAS_RIVAL, COL_FONDO, aplicar }) {
+// Modo pregunta (?paso=<elemento>, escenas del LIVE): el profesor hace UNA pregunta por escena; el alumno la contesta
+// aquí, pulsa «Aplicar y probar mi juego» (ve el cambio en su juego) y «Guardar en mi aula». guardar() lo da mas.js.
+export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMeta, REGLAS_RIVAL, COL_FONDO, aplicar, guardar = null }) {
   // Catálogos de reglas de cada plantilla (motor/juegos/<id>.js): fichas para contar el juego y reglas para personalizarlo.
   const CAT = {};
   const listos = Promise.all(plantillasMeta.map(async (p) => { CAT[p.id] = await catalogoDe(p.id); }));
   const g = window.gsap, quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let D = { semilla: 1 + Math.floor(Math.random() * 9999), plantilla: 'plataformas', velocidad: 240, gravedad: 'tierra', rival: 'celda', fondo: 'noche', reglas: {} };
+  let D = { semilla: 1 + Math.floor(Math.random() * 9999), plantilla: 'plataformas', velocidad: 240, gravedad: 'tierra', rival: 'celda', fondo: 'noche', reglas: {}, controles: {} };
   try { Object.assign(D, JSON.parse(localStorage.getItem('forja.disena') || '{}').D || {}); } catch { /* nada */ }
+  D.controles ||= {};
   const recordar = (hecho = false) => { try { const v = JSON.parse(localStorage.getItem('forja.disena') || '{}'); localStorage.setItem('forja.disena', JSON.stringify({ hecho: v.hecho || hecho, D })); } catch { /* nada */ } };
   const capa = el('div', { class: 'disena', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'dTitulo', hidden: '' });
   document.body.append(capa);
-  let paso = 0, opcionesHeroe = null;
+  let paso = 0, opcionesHeroe = null, pregunta = false, notaGuardar = '';
   const FICHA_VACIA = { tipo: '', objetivo: '', recursos: [], conflicto: '', limites: '', gana: '', pierde: '' };
   const juego = () => (CAT[D.plantilla] && CAT[D.plantilla].ficha) || JUEGO[D.plantilla] || FICHA_VACIA;
   const reglasDe = (id = D.plantilla) => (CAT[id] && CAT[id].reglas) || [];
@@ -74,7 +78,7 @@ export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMet
     if (resto.length) {
       const det = el('details', { class: 'd-mas' }); if (abiertos.has(elemento)) det.open = true;
       det.ontoggle = () => { if (det.open) abiertos.add(elemento); else abiertos.delete(elemento); };
-      det.append(el('summary', {}, `Más reglas de ${PASOS.find((x) => x.id === elemento)?.nombre.toLowerCase() || elemento} (${resto.length} ajustes · ${resto.reduce((n, k) => n + k.opciones.length, 0)} opciones)`));
+      det.append(el('summary', {}, `${elemento === 'reglas' ? 'Más reglas' : `Más reglas de ${PASOS.find((x) => x.id === elemento)?.nombre.toLowerCase() || elemento}`} (${resto.length} ajustes · ${resto.reduce((n, k) => n + k.opciones.length, 0)} opciones)`));
       const grupos = new Map(); for (const k of resto) { if (!grupos.has(k.grupo)) grupos.set(k.grupo, []); grupos.get(k.grupo).push(k); }
       for (const [g, lista] of grupos) det.append(el('p', { class: 'd-grupo' }, g), ...lista.map(fila));
       out.push(det);
@@ -101,7 +105,8 @@ export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMet
     { id: 'objetivo', nombre: 'Objetivo', pregunta: '¿Qué tiene que lograr?', def: 'Lo que el jugador intenta conseguir dentro de las reglas. Da el tono de todo el juego.',
       cuerpo: () => [radio(plantillasMeta.map((p) => { const f = (CAT[p.id] && CAT[p.id].ficha) || JUEGO[p.id] || {}; return { id: p.id, nombre: p.nombre, d: `${f.tipo ? f.tipo + ': ' : ''}${f.objetivo || p.lema} · ${reglasDe(p.id).length} reglas` }; }), D.plantilla, (id) => { D.plantilla = id; })] },
     { id: 'procedimientos', nombre: 'Procedimientos', pregunta: '¿Qué acciones puede hacer?', def: 'Los métodos de juego: quién hace qué, dónde, cuándo y cómo. En un videojuego, los controles.',
-      cuerpo: () => [teclas(metaDe(D.plantilla).controles || ''), ...(D.plantilla === 'plataformas' ? [el('p', { class: 'd-sub' }, '¿A qué ritmo se mueve tu héroe?'), radio(RITMO, D.velocidad, (v) => { D.velocidad = v; })] : [])] },
+      // Los controles los elige el alumno: un esquema o tecla por tecla (motor/controles.js).
+      cuerpo: () => [panelControles({ el, id: D.plantilla, propios: D.controles[D.plantilla], alCambiar: (dif) => { D.controles[D.plantilla] = dif; recordar(); } }), ...(D.plantilla === 'plataformas' ? [el('p', { class: 'd-sub' }, '¿A qué ritmo se mueve tu héroe?'), radio(RITMO, D.velocidad, (v) => { D.velocidad = v; })] : [])] },
     { id: 'reglas', nombre: 'Reglas', pregunta: '¿Qué se puede y qué no?', def: 'Las reglas definen los objetos del juego y las acciones permitidas. En un videojuego, el código las hace cumplir.',
       cuerpo: () => [...(D.plantilla === 'plataformas' ? [el('p', { class: 'd-sub' }, 'La gravedad de tu mundo:'), radio(GRAVEDAD, D.gravedad, (v) => { D.gravedad = v; })] : [])] },
     { id: 'recursos', nombre: 'Recursos', pregunta: '¿Qué cosas valen y escasean?', def: 'Lo que sirve para lograr el objetivo y a la vez es escaso: por eso hay que cuidarlo.',
@@ -119,7 +124,7 @@ export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMet
     ['Reglas', 'Las del paso 4, y el código las hace cumplir.'],
     ['Resultado variable y que se mide', () => juego().gana],
     ['Cada resultado vale distinto', 'Ganar es mejor que perder.'],
-    ['Esfuerzo del jugador', () => `Tus controles: ${metaDe(D.plantilla).controles || ''}`],
+    ['Esfuerzo del jugador', () => `Tus controles: ${textoControles(D.plantilla, mapaDe(D.plantilla, D.controles[D.plantilla]), { todo: false })}`],
     ['Te importa el resultado', () => `Juegas con tu héroe${D.heroe ? ': ' + fichaDe(D.heroe).nombre : ''}.`],
     ['Las consecuencias se negocian', 'Es un juego: si pierdes, repites con R.'],
   ];
@@ -135,7 +140,6 @@ export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMet
     return c;
   }
   const lista = (xs) => { const u = el('ul', { class: 'd-lista' }); for (const x of xs) u.append(el('li', {}, x)); return u; };
-  function teclas(t) { const p = el('p', { class: 'd-teclas' }); for (const parte of t.split('·')) { const s = el('span'); s.textContent = parte.trim(); p.append(s); } return p; }
   const icono = (id) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('aria-hidden', 'true'); s.innerHTML = ICONOS[id]; return s; };
 
   function mostrar(mismo = false) {
@@ -159,6 +163,24 @@ export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMet
       cuerpo.append(u, el('p', { class: 'd-ref' }, 'Juul, J. (2003). The Game, the Player, the World: Looking for a Heart of Gameness. DiGRA Level Up, Utrecht.'));
     }
     const pie = el('div', { class: 'd-pie' });
+    if (pregunta && !final) {   // una pregunta: se contesta, se prueba y se guarda; el ritmo lo pone el profesor
+      const nota = el('span', { class: 'd-guardado', role: 'status', 'aria-live': 'polite' }, notaGuardar);
+      const bG = el('button', { type: 'button', class: 'btn' }, 'Guardar en mi aula');
+      bG.onclick = async () => {
+        if (!guardar) return;
+        bG.disabled = true; nota.textContent = 'Guardando…';
+        try { aplicar(datosAplicar(), { abrir: false }); const r = await guardar(); notaGuardar = `Guardado en tu aula ✓ ${r?.ruta || ''}`; }
+        catch (e) { notaGuardar = /401|sesi/i.test(String(e?.message)) ? 'Para guardar, entra con tu cuenta de jmd-learn.online.' : `No se pudo guardar: ${e?.message || e}`; }
+        nota.textContent = notaGuardar; bG.disabled = false; recordar();
+      };
+      const bA = el('button', { type: 'button', class: 'btn primario' }, 'Aplicar y probar mi juego');
+      bA.onclick = () => cerrar(true);
+      pie.append(nota, el('span', { class: 'd-esp' }), ...(guardar ? [bG] : []), bA);
+      capa.replaceChildren(piezas, cuerpo, pie);
+      if (g && !quieto && !mismo) g.fromTo(cuerpo.children, { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: .5, stagger: .05, ease: 'power3.out' });
+      (capa.querySelector('[aria-checked="true"]') || bA).focus({ preventScroll: true });
+      return;
+    }
     const saltar = el('button', { type: 'button', class: 'd-enlace' }, 'Ir directo al editor'); saltar.onclick = () => cerrar(false);
     const atras = el('button', { type: 'button', class: 'btn' }, 'Atrás'); atras.disabled = paso === 0; atras.onclick = () => { paso--; mostrar(); };
     const listo = final || !P.listo || P.listo();
@@ -174,16 +196,23 @@ export function crearDisena({ el, R, sorpresa, fichaDe, miniatura, plantillasMet
     }
     (capa.querySelector('[aria-checked="true"]') || sig).focus({ preventScroll: true });
   }
-  function cerrar(aplicarlo) {
-    recordar(true); capa.hidden = true;
-    if (!aplicarlo) return;
+  function datosAplicar() {
     const propias = new Set(reglasDe().map((r) => r.clave)), elegidas = {};
     for (const [k, v] of Object.entries(D.reglas)) if (propias.has(k)) elegidas[k] = v;
-    aplicar({ heroe: D.heroe, plantilla: D.plantilla, fondo: D.fondo, ajustes: { velocidad: D.velocidad, ...GRAVEDAD.find((x) => x.id === D.gravedad).v, ...(D.plantilla === 'laberinto' ? { rival: { tipo: D.rival, n: 4 } } : {}), reglas: { [D.plantilla]: elegidas } } });
+    return { heroe: D.heroe, plantilla: D.plantilla, fondo: D.fondo, ajustes: { velocidad: D.velocidad, ...GRAVEDAD.find((x) => x.id === D.gravedad).v, ...(D.plantilla === 'laberinto' ? { rival: { tipo: D.rival, n: 4 } } : {}), reglas: { [D.plantilla]: elegidas }, controles: { [D.plantilla]: D.controles[D.plantilla] || {} } } };
+  }
+  function cerrar(aplicarlo) {
+    recordar(true); capa.hidden = true;
+    if (aplicarlo) aplicar(datosAplicar());
   }
   capa.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(false); });
   return {
-    abrir: async () => { await listos; paso = 0; capa.hidden = false; mostrar(); },
+    // abrir() empieza por el primer elemento; abrir('procedimientos') abre SOLO esa pregunta (modo pregunta del LIVE)
+    abrir: async (elemento) => {
+      await listos; const i = PASOS.findIndex((x) => x.id === elemento);
+      pregunta = i >= 0 || elemento === 'final'; paso = elemento === 'final' ? PASOS.length : Math.max(0, i); capa.hidden = false; mostrar();
+    },
+    pregunta: () => (pregunta ? (paso === PASOS.length ? 'final' : PASOS[paso].id) : null),
     hecho: () => { try { return !!JSON.parse(localStorage.getItem('forja.disena') || '{}').hecho; } catch { return false; } },
   };
 }

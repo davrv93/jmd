@@ -22,7 +22,7 @@ export function reglas() {
     ...clave(P, 'jugadores', 'Partida', 'jugadores.menu', 'Al empezar', [['menu', 'Mostrar el menú de modos', 'menu', '', true], ['directo', 'Ir directo al combate', 'directo']]),
     ...luchador(P),
     ...clave(P, 'jugadores', 'Rival', 'jugadores.rival', 'Rival', [['mako', 'Mako Enjin', 'mako', '', true], ['ren', 'Ren Shiden', 'ren'], ['eco', 'Eco de sombra', 'eco', 'Débil: para practicar']]),
-    ...clave(P, 'jugadores', 'Rival', 'cpu.nivel', 'Nivel de la CPU', [['principiante', 'Principiante', 'principiante'], ['intermedio', 'Intermedio', 'intermedio', '', true], ['avanzado', 'Avanzado', 'avanzado'], ['experto', 'Experto', 'experto'], ['jefe', 'Jefe', 'jefe', 'Casi sin errores']], { simple: true }),
+    ...clave(P, 'jugadores', 'Rival', 'cpu.nivel', 'Nivel de la CPU', [['principiante', 'Tranquilo', 'principiante'], ['intermedio', 'Intermedio', 'intermedio', '', true], ['avanzado', 'Avanzado', 'avanzado'], ['experto', 'Experto', 'experto'], ['jefe', 'Jefe', 'jefe', 'Casi sin errores']], { simple: true }),
     ...clave(P, 'jugadores', 'Rival', 'cpu.reaccion', 'Tiempo de reacción de la CPU', [['nivel', 'El de su nivel', null, '', true], ['lenta', 'Lenta (0,5 s)', 500], ['humana', 'Humana (0,32 s)', 320], ['rapida', 'Rápida (0,2 s)', 200], ['refleja', 'Refleja (0,14 s)', 140]]),
     ...clave(P, 'jugadores', 'Rival', 'cpu.agresion', 'Actitud de la CPU', [['nivel', 'La de su nivel', null, '', true], ['cauta', 'Cauta', 0.25], ['agresiva', 'Agresiva', 0.8], ['implacable', 'Implacable', 1]]),
     ...clave(P, 'jugadores', 'Rival', 'cpu.bloqueo', 'Cuánto bloquea la CPU', [['nivel', 'Lo de su nivel', null, '', true], ['nunca', 'Nunca', 0], ['aveces', 'A veces', 0.3], ['muro', 'Casi siempre', 0.95]]),

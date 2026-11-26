@@ -38,7 +38,8 @@ export function integrar(c, F, limites, { gravedad = true, enSuelo = 'normal' } 
 // Empujón de cuerpos: dos luchadores no se encimen. Reparte la separación según la masa (el pesado se mueve menos).
 export function separar(a, b, F, limites) {
   if (Math.abs(a.y - b.y) > Math.max(a.alto, b.alto) * 0.8 || Math.abs((a.z || 0) - (b.z || 0)) > 26) return;
-  const d = b.x - a.x, min = (a.ancho + b.ancho) / 2;
+  // +10: las guardias (brazos adelante) son más anchas que el tronco; sin este margen los dibujos se meten uno en otro
+  const d = b.x - a.x, min = (a.ancho + b.ancho) / 2 + 10;
   if (Math.abs(d) >= min) return;
   const sol = (min - Math.abs(d)) * F.empujeCuerpo, s = d === 0 ? (a.id < b.id ? 1 : -1) : Math.sign(d);
   const ma = a.masa || 1, mb = b.masa || 1, pa = mb / (ma + mb), pb = ma / (ma + mb);

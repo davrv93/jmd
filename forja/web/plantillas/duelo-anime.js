@@ -74,14 +74,15 @@ for (const k of Object.keys(ia)) if (ia[k] == null) delete ia[k];
 const sinSacudida = !R('efectos.sacudida', true) || C.accesibilidad?.reducirMovimiento, sinDestellos = !R('efectos.destellos', true) || C.accesibilidad?.reducirDestellos;
 
 iniciarAnime({
-  titulo: C.titulo || 'Shadow Warriors', subtitulo: `${D.nombre && D.nombre !== 'Prueba' ? D.nombre + ' · ' : ''}Duelo anime hecho con Forja. A D moverte · W saltar · J K L golpes · I especial (↓↘→ + I) · U bloquear · O esquivar · H cargar · Y definitivo · T transformarte · P pausa · F3 monitor.`,
+  titulo: C.titulo || 'Shadow Warriors', // los controles se agregan solos al texto (desde el mapa de teclas real, con las que elegiste en Forja)
+  subtitulo: `${D.nombre && D.nombre !== 'Prueba' ? D.nombre + ' · ' : ''}Duelo anime hecho con Forja.`,
   modosMenu: C.modosMenu?.length ? [modoElegido, ...C.modosMenu.filter((m) => m !== modoElegido)] : [modoElegido],
   directo: R('jugadores.menu', 'menu') === 'directo' ? modoElegido : null,
   controles: modoElegido === 'versus' ? '2p' : '1p',
   jugador: R('jugadores.luchador', C.jugador || 'ren'), rival: R('jugadores.rival', C.rival || 'mako'), nivel: R('cpu.nivel', C.nivel || 'intermedio'), ia,
   nombreForja: D.nombre, usarForja: R('jugadores.luchador', 'ren') === 'forja' || !!D.heroe,
   reglas, personajes, modos, semilla: typeof D.semilla === 'number' ? D.semilla : 1,
-  escenario: { tema: C.escenario?.tema || R('limites.escenarioTema', 'noche'), obstaculos: C.escenario?.obstaculos || OBSTACULOS[R('conflicto.obstaculos', 'pilares')] },
+  escenario: { tema: C.escenario?.tema || R('limites.escenarioTema', 'hora'), obstaculos: C.escenario?.obstaculos || OBSTACULOS[R('conflicto.obstaculos', 'pilares')] }, hora: D.hora || null, // la hora que elegiste en Forja elige el escenario si la regla es «Según la hora»
   fx: { intensidad: C.efectos?.intensidad ?? R('efectos.intensidad', 1), densidad: C.efectos?.densidad ?? R('efectos.densidad', 1) },
   acc: { reducirMovimiento: sinSacudida || undefined, reducirDestellos: sinDestellos || undefined },
   presentacion: { impactoCuadro: R('efectos.impactoCuadro', true), lineasVelocidad: R('efectos.lineasVelocidad', true), postimagenes: R('efectos.postimagenes', true), estelas: R('efectos.estelas', true),

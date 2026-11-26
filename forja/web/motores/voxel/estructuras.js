@@ -94,6 +94,46 @@ export function crearEstructuras({ semilla, H = 128, mar = 48, columna, opciones
   };
 }
 
+// piedras sueltas y matas alrededor de una ruina (sobre el terreno, sin tapar la entrada)
+function escombros(o, columna, azar, cx, cz, radio, n) {
+  for (let k = 0; k < n; k++) {
+    const a = azar() * 6.283, r = radio * (0.6 + azar() * 0.6), x = Math.round(cx + Math.cos(a) * r), z = Math.round(cz + Math.sin(a) * r), h = columna(x, z).h;
+    pon(o, x, h + 1, z, azar() < 0.6 ? 'musgosa' : 'tallada'); if (azar() < 0.3) pon(o, x, h + 2, z, 'musgosa');
+    const hx = x + (azar() < 0.5 ? 1 : -1); pon(o, hx, columna(hx, z).h + 1, z, azar() < 0.5 ? 'helecho' : 'hierba');
+  }
+}
+// columnata: plataforma de 11×11, 8 columnas en anillo con alturas rotas, un arco al norte, un altar con farol y el cofre
+function columnata(o, columna, azar, y) {
+  const R = 5;
+  cimiento(o, o.x - R, o.z - R, 2 * R + 1, 2 * R + 1, y, 6, columna, 'piedra');
+  for (let dx = -R; dx <= R; dx++) for (let dz = -R; dz <= R; dz++) {
+    const d = Math.hypot(dx, dz); if (d > R + 0.3) continue;
+    const t = azar();
+    pon(o, o.x + dx, y, o.z + dz, t < 0.12 ? 'grava' : t < 0.5 ? 'musgosa' : 'tallada');
+    if (d < R - 0.5 && t > 0.93) pon(o, o.x + dx, y + 1, o.z + dz, azar() < 0.5 ? 'hierba' : 'flor_azul');
+  }
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * 6.283 + 0.2, px = Math.round(o.x + Math.cos(a) * 4), pz = Math.round(o.z + Math.sin(a) * 4);
+    if (Math.abs(pz - (o.z - R + 1)) <= 1 && Math.abs(px - o.x) <= 2) continue;   // el arco ocupa ese lado
+    const alto = 1 + (azar() * 5 | 0);
+    for (let dy = 1; dy <= alto; dy++) pon(o, px, y + dy, pz, dy === alto && azar() < 0.5 ? 'musgosa' : 'tallada');
+    if (alto <= 2) {   // columna caída: sus piezas quedan tendidas al lado
+      const dir = azar() < 0.5 ? [1, 0] : [0, 1];
+      for (let j = 1; j <= 2; j++) pon(o, px + dir[0] * j, y + 1, pz + dir[1] * j, 'tallada');
+    } else if (azar() < 0.6) for (let dy = 1; dy < alto; dy++) if (azar() < 0.6) pon(o, px + (azar() < 0.5 ? 1 : -1), y + dy, pz, 'enredadera');
+  }
+  // arco: dos columnas de 5 y un dintel con piezas que faltan
+  const az = o.z - R + 1;
+  for (const px of [o.x - 2, o.x + 2]) for (let dy = 1; dy <= 5; dy++) pon(o, px, y + dy, az, 'tallada');
+  for (let dx = -2; dx <= 2; dx++) if (Math.abs(dx) === 2 || azar() < 0.75) pon(o, o.x + dx, y + 6, az, dx === 0 ? 'musgosa' : 'tallada');
+  for (let dy = 2; dy <= 4; dy++) pon(o, o.x - 3, y + dy, az, 'enredadera');
+  // altar con farol encendido (se ve de noche) y el cofre delante
+  for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) pon(o, o.x + dx, y + 1, o.z + dz, 'tallada');
+  pon(o, o.x, y + 2, o.z, 'lampara');
+  pon(o, o.x, y + 1, o.z + 2, 'cofre');
+  escombros(o, columna, azar, o.x, o.z, R + 3, 8);
+  o.marcadores.push({ tipo: 'cofre', x: o.x, y: y + 1, z: o.z + 2, botin: 'ruina' }, { tipo: 'ruina', x: o.x, y: y + 1, z: o.z + 2 });
+}
 // ---------------------------------------------------------------- constructores
 function azarDe(h) { let r = h >>> 0 || 1; return () => { r ^= r << 13; r ^= r >>> 17; r ^= r << 5; return (r >>> 0) / 4294967296; }; }
 const pon = (o, x, y, z, clave) => o.bloques.push([x, y, z, typeof clave === 'number' ? clave : ID[clave]]);
@@ -127,7 +167,7 @@ function camino(o, xa, za, xb, zb, columna, mar, conPuentes = true) {
     for (const [dx, dz] of [[0, 0], [1, 0], [0, 1]]) {
       const hh = columna(x + dx, z + dz).h;
       if (hh < mar) { if (conPuentes) { pon(o, x + dx, mar + 1, z + dz, 'tablas'); o.puente = true; } }
-      else { pon(o, x + dx, hh, z + dz, 'grava'); pon(o, x + dx, hh + 1, z + dz, 'aire'); pon(o, x + dx, hh + 2, z + dz, 'aire'); }
+      else { pon(o, x + dx, hh, z + dz, (Math.imul(x + dx, 73856093) ^ Math.imul(z + dz, 19349663)) % 7 === 0 ? 'grava' : 'sendero'); pon(o, x + dx, hh + 1, z + dz, 'aire'); pon(o, x + dx, hh + 2, z + dz, 'aire'); }
     }
     if (h < mar && conPuentes && i % 4 === 0) { pon(o, x - 1, mar + 2, z - 1, 'madera'); pon(o, x + 2, mar + 2, z + 2, 'madera'); }
   }
@@ -148,11 +188,17 @@ const CONSTRUCTORES = {
     }
     o.marcadores.push({ tipo: 'mercader', x: o.x + 2, y: y + 1, z: o.z + 2 }, { tipo: 'aldeano', x: o.x - 3, y: y + 1, z: o.z + 1 });
   },
+  // Ruinas: una casa o un santuario derruidos, o una COLUMNATA (plataforma, columnas rotas, un arco y un altar con
+  // farol). Alrededor, piedras sueltas y enredaderas: se ven desde lejos y de noche brillan un poco.
   ruina(o, { columna }) {
-    const azar = azarDe(o.h), y = o.y - 1, nombre = azar() < 0.5 ? 'casa' : 'santuario', P = PLANTILLAS[nombre];
+    const azar = azarDe(o.h), y = o.y - 1, tirada = azar();
+    if (tirada < 0.45) { columnata(o, columna, azar, y); return; }
+    const nombre = tirada < 0.72 ? 'casa' : 'santuario', P = PLANTILLAS[nombre];
     const ancho = P.capas[0][0].length, fondo = P.capas[0].length;
     cimiento(o, o.x, o.z, ancho, fondo, y, 2, columna, 'musgosa');
     estampar(o, nombre, o.x, y, o.z, (o.h >>> 3) & 3, 0.4, azar, { tablas: 'tallada', madera: 'musgosa', ladrillos: 'musgosa', vidrio: 'aire', lana: 'aire' });
+    escombros(o, columna, azar, o.x + 2, o.z + 2, 6, 7);
+    for (let k = 0; k < 5; k++) { const lado = k & 3, t = 1 + (azar() * 3 | 0), px = lado === 0 ? o.x - 1 : lado === 1 ? o.x + ancho : o.x + t, pz = lado === 2 ? o.z - 1 : lado === 3 ? o.z + fondo : o.z + t; for (let dy = 1 + (azar() * 2 | 0); dy <= 3; dy++) pon(o, px, y + dy, pz, 'enredadera'); }
     pon(o, o.x + 2, y + 1, o.z + 2, 'cofre'); o.marcadores.push({ tipo: 'cofre', x: o.x + 2, y: y + 1, z: o.z + 2, botin: 'ruina' }, { tipo: 'ruina', x: o.x + 2, y: y + 1, z: o.z + 2 });
   },
   campamento(o, { columna }) {

@@ -34,7 +34,7 @@ export const ESQUEMA = { tipo: 'objeto', extra: false, props: {
   jugador: id, rival: id, nivel: { tipo: 'texto', enum: Object.keys(NIVELES) },
   titulo: nombre, velocidad: num(0.4, 1.8),
   personajes: { tipo: 'objeto', extra: personaje },
-  escenario: { tipo: 'objeto', extra: false, props: { tema: { tipo: 'texto', enum: Object.keys(TEMAS) }, obstaculos: { tipo: 'lista', maxItems: 8, items: { tipo: 'objeto', extra: false, props: { x: num(-1200, 1200), y: num(0, 300), w: num(10, 200), h: num(10, 300), vida: num(10, 2000), color } } } } },
+  escenario: { tipo: 'objeto', extra: false, props: { tema: { tipo: 'texto', enum: [...Object.keys(TEMAS), 'hora', 'rotar', 'elemento'] }, obstaculos: { tipo: 'lista', maxItems: 8, items: { tipo: 'objeto', extra: false, props: { x: num(-1200, 1200), y: num(0, 300), w: num(10, 200), h: num(10, 300), vida: num(10, 2000), color } } } } },
   fisica: { tipo: 'objeto', extra: false, props: { gravedad: num(0.2, 2.5), friccionSuelo: num(0.3, 0.99), friccionAire: num(0.8, 1), rebotePared: num(0, 1), reboteSuelo: num(0, 1) } },
   combate: { tipo: 'objeto', extra: false, props: { danoMul: num(0.2, 4), malabarMax: ent(1, 20), comboMaxCuadros: ent(60, 3600), ventanaParada: ent(0, 20), escaladoPaso: num(0, 0.4), escaladoMinimo: num(0.05, 1), chip: num(0, 0.5), energiaMul: num(0, 4), tiempoRonda: ent(10, 999) } },
   efectos: { tipo: 'objeto', extra: false, props: { intensidad: num(0, 2), densidad: num(0, 2) } },
@@ -49,7 +49,7 @@ export const ESQUEMA = { tipo: 'objeto', extra: false, props: {
 export function defecto(plantilla) {
   if (plantilla === 'jefe-titan') return { version: 1, modo: 'jefe', modosMenu: ['jefe'], jugador: 'ren', titulo: 'Titan Awakening', velocidad: 1, efectos: { intensidad: 1, densidad: 1 }, camara: { cajas: false }, accesibilidad: { reducirMovimiento: false, reducirDestellos: false }, audio: { volumen: 0.5, silencio: false }, jefe: { salud: 5200, danoMul: 1, avisoMul: 1, agotadoMul: 1 }, perfil: 'auto' };
   return { version: 1, modo: 'cpu', modosMenu: ['cpu', 'versus', 'entrenamiento', 'supervivencia', 'torneo', 'historia', 'equipos', 'lateral', 'arena25d'], jugador: 'ren', rival: 'mako', nivel: 'intermedio', titulo: 'Shadow Warriors', velocidad: 1,
-    escenario: { tema: 'noche', obstaculos: [{ x: -560, y: 0, w: 50, h: 120, vida: 160, color: '#5a5068' }, { x: 510, y: 0, w: 50, h: 120, vida: 160, color: '#5a5068' }] },
+    // sin «escenario»: lo deciden las reglas (limites.escenarioTema, conflicto.obstaculos). Si el Editor lo fija, manda.
     efectos: { intensidad: 1, densidad: 1 }, camara: { cajas: false }, accesibilidad: { reducirMovimiento: false, reducirDestellos: false }, audio: { volumen: 0.5, silencio: false }, perfil: 'auto' };
 }
 

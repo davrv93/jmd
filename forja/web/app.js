@@ -89,9 +89,12 @@ function pintar(cambioTipo = false) {
   });
 }
 const t0 = performance.now();
+let dPistaEl = null;
+const dPistaAbierto = () => !!(dPistaEl ??= document.getElementById('dPista'))?.open;
 (function cuadro(ahora) {
   requestAnimationFrame(cuadro);
   if (!pj) return;
+  if (dPistaAbierto()) return;   // con un juego abierto el estudio no se ve: no gasta GPU que el juego necesita
   const d = duracion(spec, anim) * (anim === 'saltar' || anim === 'golpe' ? 1.25 : 1), u = (((ahora - t0) / 1000) / d) % 1;
   posar(pj, spec, anim, u);
   const k = Math.min(1, (ahora - golpe) / 420); // aparece con un rebote

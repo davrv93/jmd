@@ -8,6 +8,7 @@
 import { crearPool } from '../nucleo/pool.js';
 import { crearRuido } from '../nucleo/ruido.js';
 import { crearPRNG } from '../nucleo/semilla.js';
+import { halo } from './escenarios.js';
 
 const T = { chispa: 0, fuego: 1, polvo: 2, fragmento: 3, energia: 4, humo: 5 };
 export function crearFX({ max = 2000, acc = { reducirMovimiento: false, reducirDestellos: false, destello: (t, a) => a }, densidad = 1, intensidad = 1, semilla = 3 } = {}) {
@@ -19,7 +20,7 @@ export function crearFX({ max = 2000, acc = { reducirMovimiento: false, reducirD
   const rng = crearPRNG(semilla), ruido = crearRuido(semilla);
   const r = () => rng.num();
   const formas = crearPool(() => ({ tipo: '', x: 0, y: 0, t: 0, dur: 0, color: '#fff', a: 0, b: 0, c: 0, d: 0, pts: null, dir: 1 }), 160);
-  const fx = { permitirImpacto: true, permitirLineas: true, sacudida: 0, flash: 0, flashColor: '#fff', lineas: 0, lineasDir: 0, impactoCuadro: 0, tiempo: 0, densidad, intensidad, presupuesto: max };
+  const fx = { cpu: false, permitirImpacto: true, permitirLineas: true, sacudida: 0, flash: 0, flashColor: '#fff', lineas: 0, lineasDir: 0, impactoCuadro: 0, impactoTotal: 0, impactoX: 0, impactoY: 0, impactoColor: '#fff', tiempo: 0, densidad, intensidad, presupuesto: max };
   function emitir(t, cx, cy, ang, dang, vel, dvel, vidaS, tamano, c, g = 0) {
     if (n >= fx.presupuesto) { descartadas++; return; }
     const a = ang + (r() - 0.5) * dang, v = vel + (r() - 0.5) * dvel;
@@ -34,7 +35,10 @@ export function crearFX({ max = 2000, acc = { reducirMovimiento: false, reducirD
     const k = fuerza / 8 * fx.intensidad;
     for (let i = 0; i < cuantas(10 * k); i++) emitir(T.chispa, px, py, dir > 0 ? 0 : Math.PI, 2.4, 9 * k, 7, 0.32, 3.2, bloqueado ? '#bfe9ff' : c, -18);
     forma({ tipo: 'onda', x: px, y: py, dur: 0.24, color: bloqueado ? '#bfe9ff' : '#ffffff', a: 10, b: 60 * k });
-    if (!bloqueado && fuerza >= 9) { forma({ tipo: 'radial', x: px, y: py, dur: 0.18, color: c, a: 14 + fuerza, b: 30 + fuerza * 6 }); fx.impactoCuadro = Math.max(fx.impactoCuadro, fuerza >= 12 ? 3 : 2); }
+    // chispa de golpe anime: estrella de puntas irregulares que se abre en 2–3 cuadros; al bloquear, un escudo
+    if (bloqueado) forma({ tipo: 'escudo', x: px, y: py, dur: 0.2, color: '#bfe9ff', a: 30 + fuerza * 1.5, dir });
+    else forma({ tipo: 'estrella', x: px, y: py, dur: 0.13 + Math.min(0.08, fuerza * 0.005), color: c, a: (22 + fuerza * 3) * Math.min(1.4, 0.7 + fx.intensidad * 0.3), b: r() * 6.283, pts: Array.from({ length: 12 }, () => 0.6 + r() * 0.8) });
+    if (!bloqueado && fuerza >= 9) { forma({ tipo: 'radial', x: px, y: py, dur: 0.18, color: c, a: 14 + fuerza, b: 30 + fuerza * 6 }); const n = fuerza >= 12 ? 3 : 2; if (n >= fx.impactoCuadro) { fx.impactoCuadro = fx.impactoTotal = n; fx.impactoX = px; fx.impactoY = py; fx.impactoColor = c; } }
     if (elemento === 'electrico') fx.arco(px - 40 * dir, py + 30, px + 30 * dir, py - 20, { color: '#bfe9ff', ramas: 2 });
     if (elemento === 'fuego') fx.fuego(px, py, { cantidad: 14 * k });
     fx.sacudir(fuerza * 0.6 * k);
@@ -43,7 +47,7 @@ export function crearFX({ max = 2000, acc = { reducirMovimiento: false, reducirD
   fx.destellar = (alfa = 0.6, c = '#fff') => { const a = acc.destello(fx.tiempo, alfa); if (a > 0) { fx.flash = Math.max(fx.flash, a); fx.flashColor = c; } };
   fx.chispas = (px, py, { color: c = '#ffe27a', cantidad = 12, vel = 7 } = {}) => { for (let i = 0; i < cuantas(cantidad); i++) emitir(T.chispa, px, py, -Math.PI / 2, 6.28, vel, vel, 0.5, 2.6, c, -16); };
   fx.fuego = (px, py, { color: c = '#ffb35a', cantidad = 16 } = {}) => { for (let i = 0; i < cuantas(cantidad); i++) emitir(T.fuego, px + (r() - 0.5) * 20, py, Math.PI / 2, 1.2, 3.5, 2, 0.6, 10, i % 3 ? c : '#ffe27a', 4); };
-  fx.polvo = (px, py, { cantidad = 10, color: c = '#d9cbb8' } = {}) => { for (let i = 0; i < cuantas(cantidad); i++) emitir(T.polvo, px + (r() - 0.5) * 30, py + 4, Math.PI / 2 + (r() > 0.5 ? -1 : 1) * 1.2, 0.8, 2.5, 2, 0.7, 12, c, 0); };
+  fx.polvo = (px, py, { cantidad = 10, color: c = '#d9cbb8' } = {}) => { for (let i = 0; i < cuantas(cantidad); i++) emitir(T.polvo, px + (r() - 0.5) * 30, py + 6, r() > 0.5 ? 0.3 : Math.PI - 0.3, 0.5, 3, 2, 0.6, 11, c, -1); };   // nubes que ruedan a ras de suelo
   fx.fragmentos = (px, py, { cantidad = 16, color: c = '#8e889e', fuerza = 9 } = {}) => { for (let i = 0; i < cuantas(cantidad); i++) emitir(T.fragmento, px, py, Math.PI / 2, 2.4, fuerza, fuerza * 0.8, 1.4, 9, i % 4 ? c : '#5a5566', -26); };
   fx.explosion = (px, py, { color: c = '#ffb35a', radio = 90 } = {}) => {
     for (let i = 0; i < cuantas(26); i++) emitir(T.fuego, px, py, 0, 6.28, radio * 0.09, radio * 0.06, 0.7, 14, i % 2 ? c : '#ffe27a', 2);
@@ -89,16 +93,26 @@ export function crearFX({ max = 2000, acc = { reducirMovimiento: false, reducirD
   // ctx: CanvasRenderingContext2D; aPant(x, y) → [sx, sy] de mundo a pantalla; escala: px de pantalla por px de mundo
   fx.dibujar = (ctx, aPant, escala = 1) => {
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    for (let c = 0; c < paleta.length; c++) {
-      ctx.fillStyle = paleta[c];
+    ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    // Por lotes: un trazo (chispas) y un relleno (fuego, energía) por color y por nivel de alfa (4 niveles). Antes era
+    // un save/rotate/restore por chispa; con cientos en pantalla eso pesa en GPU por software.
+    const nivel = new Uint8Array(n);
+    for (let i = 0; i < n; i++) nivel[i] = Math.min(3, Math.floor(Math.min(1, vida[i] / vmax[i] * 1.4) * 4));
+    for (let c = 0; c < paleta.length; c++) for (let q = 0; q < 4; q++) {
+      let lin = false;
+      ctx.beginPath();
       for (let i = 0; i < n; i++) {
-        if (col[i] !== c || tipo[i] === T.fragmento || tipo[i] === T.humo || tipo[i] === T.polvo) continue;
-        const [sx, sy] = aPant(x[i], y[i]), u = vida[i] / vmax[i], s = tam[i] * escala * (tipo[i] === T.fuego ? 0.5 + u : u);
-        ctx.globalAlpha = Math.min(1, u * 1.4);
-        if (tipo[i] === T.chispa) { ctx.save(); ctx.translate(sx, sy); ctx.rotate(Math.atan2(-vy[i], vx[i])); ctx.fillRect(-s * 2.2, -s * 0.35, s * 4.4, s * 0.7); ctx.restore(); }
-        else { ctx.beginPath(); ctx.arc(sx, sy, s, 0, 6.283); ctx.fill(); }
+        if (col[i] !== c || nivel[i] !== q || tipo[i] !== T.chispa) continue;
+        const [sx, sy] = aPant(x[i], y[i]), u = vida[i] / vmax[i], s = tam[i] * escala * u * 2.2, v = Math.hypot(vx[i], vy[i]) || 1, dx = vx[i] / v * s, dy = -vy[i] / v * s;
+        ctx.moveTo(sx - dx, sy - dy); ctx.lineTo(sx + dx, sy + dy); lin = true;
       }
+      if (lin) { ctx.globalAlpha = (q + 1) / 4; ctx.strokeStyle = paleta[c]; ctx.lineWidth = Math.max(1, 2.1 * escala); ctx.stroke(); }
+    }
+    // fuego y energía: halos aditivos (un drawImage por partícula: se ven como brasas, no como bolas planas)
+    for (let i = 0; i < n; i++) {
+      if (tipo[i] !== T.fuego && tipo[i] !== T.energia) continue;
+      const [sx, sy] = aPant(x[i], y[i]), u = vida[i] / vmax[i], s = tam[i] * escala * (tipo[i] === T.fuego ? 0.5 + u : u) * 2.4;
+      ctx.globalAlpha = Math.min(1, u * 1.5); ctx.drawImage(halo(paleta[col[i]], fx.cpu), sx - s, sy - s, s * 2, s * 2);
     }
     ctx.globalCompositeOperation = 'source-over';
     for (let i = 0; i < n; i++) {
@@ -106,7 +120,7 @@ export function crearFX({ max = 2000, acc = { reducirMovimiento: false, reducirD
       const [sx, sy] = aPant(x[i], y[i]), u = vida[i] / vmax[i], s = tam[i] * escala;
       ctx.globalAlpha = tipo[i] === T.fragmento ? Math.min(1, u * 2) : u * 0.5; ctx.fillStyle = paleta[col[i]];
       if (tipo[i] === T.fragmento) { ctx.save(); ctx.translate(sx, sy); ctx.rotate(rot[i]); ctx.fillRect(-s / 2, -s / 2, s, s * 0.7); ctx.strokeStyle = '#1d1828'; ctx.lineWidth = 1.5; ctx.strokeRect(-s / 2, -s / 2, s, s * 0.7); ctx.restore(); }
-      else { ctx.beginPath(); ctx.arc(sx, sy, s * (1.6 - u), 0, 6.283); ctx.fill(); }
+      else { const rr = s * (1.7 - u) * 1.6; ctx.globalAlpha = u * 0.4; ctx.drawImage(halo(paleta[col[i]], fx.cpu), sx - rr, sy - rr * 0.7, rr * 2, rr * 1.4); }
     }
     ctx.globalAlpha = 1;
     formas.cada((f) => dibujarForma(ctx, f, aPant, escala));
@@ -115,8 +129,23 @@ export function crearFX({ max = 2000, acc = { reducirMovimiento: false, reducirD
   function dibujarForma(ctx, f, aPant, e) {
     const u = f.t / f.dur, [sx, sy] = aPant(f.x, f.y);
     ctx.save(); ctx.strokeStyle = ctx.fillStyle = f.color;
-    if (f.tipo === 'onda') { ctx.globalAlpha = 1 - u; ctx.lineWidth = Math.max(1, 10 * (1 - u) * e); ctx.beginPath(); ctx.ellipse(sx, sy, (f.a + (f.b - f.a) * Math.sqrt(u)) * e, (f.a + (f.b - f.a) * Math.sqrt(u)) * e * 0.62, 0, 0, 6.283); ctx.stroke(); }
+    if (f.tipo === 'onda') { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (1 - u) * 0.85; ctx.lineWidth = Math.max(1, 10 * (1 - u) * e); ctx.beginPath(); ctx.ellipse(sx, sy, (f.a + (f.b - f.a) * Math.sqrt(u)) * e, (f.a + (f.b - f.a) * Math.sqrt(u)) * e * 0.62, 0, 0, 6.283); ctx.stroke(); }
     else if (f.tipo === 'radial') { ctx.globalAlpha = 1 - u; ctx.lineWidth = 3 * e; const nR = 14; for (let i = 0; i < nR; i++) { const a = i / nR * 6.283 + i * 0.37; ctx.beginPath(); ctx.moveTo(sx + Math.cos(a) * f.a * e, sy + Math.sin(a) * f.a * e); ctx.lineTo(sx + Math.cos(a) * (f.a + (f.b - f.a) * u) * e, sy + Math.sin(a) * (f.a + (f.b - f.a) * u) * e); ctx.stroke(); } }
+    else if (f.tipo === 'estrella') {   // chispa de golpe: abre rápido, se queda y se apaga
+      const k = Math.min(1, u / 0.25), R = f.a * e * (0.45 + 0.75 * Math.sqrt(k)), nP = f.pts.length;
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1 - u * u;
+      for (const [esc, col] of [[1, f.color], [0.58, '#ffffff']]) {
+        ctx.fillStyle = col; ctx.beginPath();
+        for (let i = 0; i < nP * 2; i++) { const a = f.b + i / (nP * 2) * 6.283, rr = (i % 2 ? R * 0.3 : R * f.pts[i >> 1]) * esc; i ? ctx.lineTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr) : ctx.moveTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr); }
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = '#1a1020'; ctx.globalAlpha = (1 - u) * 0.5; ctx.lineWidth = Math.max(1, 2 * e); ctx.stroke();
+    }
+    else if (f.tipo === 'escudo') {   // bloqueo: un hexágono de energía del lado del que se defiende
+      const R = f.a * e * (0.7 + 0.5 * u); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (1 - u) * 0.9; ctx.lineWidth = Math.max(1.5, 4 * e * (1 - u));
+      ctx.beginPath(); for (let i = 0; i <= 6; i++) { const a = i / 6 * 6.283 + 0.5236, px = sx + Math.cos(a) * R * 0.55, py = sy + Math.sin(a) * R; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke();
+      ctx.globalAlpha = (1 - u) * 0.25; ctx.fill();
+    }
     else if (f.tipo === 'arco') { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1 - u * 0.6; ctx.lineJoin = 'round'; for (const [w, a] of [[7, 0.25], [2.5, 1]]) { ctx.lineWidth = w * e; ctx.globalAlpha = a * (1 - u * 0.6); ctx.beginPath(); f.pts.forEach((p, i) => { const [qx, qy] = aPant(p[0], p[1]); i ? ctx.lineTo(qx, qy) : ctx.moveTo(qx, qy); }); ctx.stroke(); } }
     else if (f.tipo === 'corte') {
       const R = f.a * e, a0 = -1.1 + f.b, a1 = 1.1 + f.b, s = f.dir, w = R * 0.32 * (1 - u);
@@ -135,9 +164,19 @@ export function crearFX({ max = 2000, acc = { reducirMovimiento: false, reducirD
     ctx.restore();
   }
   // capa de pantalla: líneas de velocidad, cuadro de impacto (inversión de 2–3 cuadros), destello
-  fx.dibujarPantalla = (ctx, w, h) => {
+  fx.dibujarPantalla = (ctx, w, h, aPant = null) => {
     if (fx.lineas > 0 && fx.permitirLineas) { ctx.save(); ctx.globalAlpha = Math.min(0.7, fx.lineas); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; const cx = w / 2, cy = h / 2; for (let i = 0; i < 40; i++) { const a = rng.num() * 6.283, r0 = Math.min(w, h) * (0.35 + rng.num() * 0.2), r1 = Math.max(w, h) * 0.8; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); ctx.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); ctx.stroke(); } ctx.restore(); }
-    if (fx.impactoCuadro > 0 && fx.permitirImpacto && !acc.reducirDestellos) { ctx.save(); ctx.globalCompositeOperation = 'difference'; ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.85; ctx.fillRect(0, 0, w, h); ctx.restore(); }
+    // cuadros de impacto (anime): 1.º inversión de color, 2.º negro con estallido blanco desde el golpe, 3.º solo el
+    // estallido. Respeta «reducir destellos» (no se dibuja) y la opción de la plantilla.
+    if (fx.impactoCuadro > 0 && fx.permitirImpacto && !acc.reducirDestellos) {
+      const paso = fx.impactoTotal - fx.impactoCuadro, [ix, iy] = aPant ? aPant(fx.impactoX, fx.impactoY) : [w / 2, h / 2];
+      ctx.save();
+      if (paso === 0) { ctx.globalCompositeOperation = 'difference'; ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.85; ctx.fillRect(-40, -40, w + 80, h + 80); }
+      else if (paso === 1) { ctx.globalAlpha = 0.5; ctx.fillStyle = '#05030a'; ctx.fillRect(-40, -40, w + 80, h + 80); }
+      ctx.globalCompositeOperation = paso === 0 ? 'source-over' : 'lighter'; ctx.globalAlpha = paso === 0 ? 0.55 : 0.75; ctx.fillStyle = paso === 0 ? '#000000' : '#ffffff'; ctx.beginPath();
+      for (let i = 0; i < 26; i++) { const a = i / 26 * 6.283 + rng.num() * 0.2, r0 = 60 + rng.num() * 60, r1 = Math.max(w, h), ab = 0.012 + rng.num() * 0.02; ctx.moveTo(ix + Math.cos(a) * r0, iy + Math.sin(a) * r0); ctx.lineTo(ix + Math.cos(a - ab) * r1, iy + Math.sin(a - ab) * r1); ctx.lineTo(ix + Math.cos(a + ab) * r1, iy + Math.sin(a + ab) * r1); ctx.closePath(); }
+      ctx.fill(); ctx.restore();
+    }
     if (fx.flash > 0) { ctx.save(); ctx.globalAlpha = fx.flash; ctx.fillStyle = fx.flashColor; ctx.fillRect(0, 0, w, h); ctx.restore(); }
   };
   Object.defineProperty(fx, 'particulas', { get: () => n });

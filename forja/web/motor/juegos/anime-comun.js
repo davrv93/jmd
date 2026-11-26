@@ -76,7 +76,13 @@ export const limites = (p) => [
   ...nums(p, 'limites', 'Ritmo', 'limites.velocidad', 'Velocidad del juego', [['Lenta', 0.8], ['Normal', 1], ['Rápida', 1.25], ['Turbo', 1.5]], 1, { simple: true }),
   ...nums(p, 'limites', 'Ritmo', 'limites.velocidadMovimiento', 'Velocidad al caminar', [['Lenta', 0.8], ['Normal', 1], ['Rápida', 1.2]], 1),
   ...nums(p, 'limites', 'Física', 'limites.salto', 'Altura del salto', [['Bajo', 0.8], ['Normal', 1], ['Alto', 1.2]], 1),
-  ...clave(p, 'limites', 'Escenario', 'limites.escenarioTema', 'Escenario', [['noche', 'Arena nocturna', 'noche'], ['dojo', 'Dojo', 'dojo'], ['puerto', 'Puerto al atardecer', 'puerto'], ['azotea', 'Azotea con lluvia', 'azotea'], ['templo', 'Templo en ruinas', 'templo'], ['bosque', 'Bosque', 'bosque']].map((x, i, a) => (x[0] === (p === 'jefe-titan' ? 'templo' : 'noche') ? [...x, '', true] : x)), { simple: true }),
+  // escenarios: nueve sets pintados por el motor (motores/anime/escenarios.js) o una elección que cambia por pelea
+  ...clave(p, 'limites', 'Escenario', 'limites.escenarioTema', 'Escenario', [
+    ['hora', 'Según la hora de tu escenario', 'hora', 'Amanecer, día, tarde o noche, como lo elegiste en Forja'], ['rotar', 'Uno distinto en cada pelea', 'rotar', 'Supervivencia, torneo y oleadas recorren los nueve'],
+    ['elemento', 'El de tu elemento', 'elemento', 'Trueno → tormenta, fuego → cantera, viento → bambú…'],
+    ['noche', 'Plaza de los faroles (noche)', 'noche'], ['azotea', 'Azotea bajo la tormenta', 'azotea'], ['mercado', 'Mercado de neón', 'mercado'],
+    ['dojo', 'Dojo del amanecer', 'dojo'], ['bosque', 'Bosque de bambú', 'bosque'], ['puerto', 'Puerto al atardecer', 'puerto'],
+    ['templo', 'Cantera del templo', 'templo', 'Columnas rotas, braseros y un guardián tallado'], ['desierto', 'Ruinas del desierto', 'desierto'], ['cielo', 'Templo del cielo', 'cielo', 'Islas flotantes sobre un mar de nubes']].map((x) => (x[0] === (p === 'jefe-titan' ? 'templo' : 'hora') ? [...x.slice(0, 4).concat(Array(Math.max(0, 4 - x.length)).fill('')), true] : x)), { simple: true }),
 ];
 
 export const presentacion = (p) => [
