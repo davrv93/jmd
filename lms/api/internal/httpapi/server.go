@@ -246,6 +246,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/aula", s.authed(s.aulaEstado))
 	mux.Handle("POST /api/v1/aula/asistente", s.authed(s.aulaAsistente))
 	mux.Handle("POST /api/v1/aula/apagar", s.authed(s.aulaApagar))
+	mux.Handle("POST /api/v1/aula/proyecto", s.authed(s.aulaProyecto)) // Forja guarda el juego del alumno en /trabajo (lo abre el Visor)
 	mux.Handle("GET /vista/{sub}/{ruta...}", s.authed(s.vistaServir))
 	mux.Handle("GET /api/v1/vista/version", s.authed(s.vistaVersion))
 	mux.Handle("GET /api/v1/vista/proyectos", s.authed(s.vistaProyectos))
