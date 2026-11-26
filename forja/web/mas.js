@@ -91,7 +91,7 @@ export function iniciarMas(A) {
   // Ajustes de la clase: llegan guardados desde las escenas del LIVE («Llevar a mi juego») o por la dirección.
   const deURL = tomarDeLaURL();
   if (deURL) { const conOnda = /[?&](amp|vel)=/.test(location.search); plantilla = deURL.rival && deURL.salto == null && !conOnda ? 'laberinto' : 'plataformas'; guarda('forja.plantilla', plantilla); }
-  { const pj0 = new URLSearchParams(location.search).get('juego'); if (/^(plataformas|futbol|laberinto|runner|fortaleza|persecucion)$/.test(pj0 || '')) { plantilla = pj0; guarda('forja.plantilla', plantilla); } }   // ?juego=laberinto (escena LIVE)
+  { const pj0 = new URLSearchParams(location.search).get('juego'); if (/^(plataformas|futbol|laberinto|runner|fortaleza|persecucion|duelo-anime|jefe-titan|mundo-voxel|supervivencia-voxel|creativo-voxel|aventura-voxel)$/.test(pj0 || '')) { plantilla = pj0; guarda('forja.plantilla', plantilla); } }   // ?juego=laberinto (escena LIVE)
   const marco = $('marcoJuego');
   async function arrancarJuego() {
     PL = PL.length ? PL : await plantillas();
@@ -107,6 +107,11 @@ export function iniciarMas(A) {
   }
   function explicar(meta, proyecto) {
     const caja = $('explica');
+    // >>> motores: la pestaña «Editor» solo existe para las plantillas de los motores anime y voxel
+    const bEd = $('pExplica').querySelector('[data-v="editor"]'); if (bEd) bEd.hidden = !meta.motor;
+    if (vista === 'editor' && !meta.motor) vista = 'algoritmos';
+    if (vista === 'editor') { import('./motores/forja/editor.js').then((m) => m.montarEditor(caja, { meta, proyecto, marco, reiniciar: arrancarJuego, aviso })); for (const b of $('pExplica').children) { b.setAttribute('aria-selected', String(b.dataset.v === vista)); b.onclick = () => { vista = b.dataset.v; explicar(meta, proyecto); }; } return; }
+    // <<< motores
     for (const b of $('pExplica').children) { b.setAttribute('aria-selected', String(b.dataset.v === vista)); b.onclick = () => { vista = b.dataset.v; explicar(meta, proyecto); }; }
     if (vista === 'algoritmos') {
       const aj = leerAjustes(), deClase = [];
@@ -152,8 +157,8 @@ export function iniciarMas(A) {
   const fichaAula = () => ({ nombre: A.spec().nombre, estado: copiaEstado(), hora, semillaNivel, ajustes: leerAjustes(), enlace: A.enlace() });
   async function guardarAula() {
     const p = await armarProyecto(paquete(128), plantilla);
-    phaserAula ??= new Uint8Array(await (await fetch('vendor/phaser.min.js')).arrayBuffer());
-    const r = await guardarEnAula(plantilla, [...p.archivos.map((a) => ({ nombre: a.nombre, datos: a.datos })), { nombre: 'phaser.min.js', datos: phaserAula }], fichaAula());
+    if (!p.motor) phaserAula ??= new Uint8Array(await (await fetch('vendor/phaser.min.js')).arrayBuffer());
+    const r = await guardarEnAula(plantilla, [...p.archivos.map((a) => ({ nombre: a.nombre, datos: a.datos })), ...(p.motor ? [] : [{ nombre: 'phaser.min.js', datos: phaserAula }])], fichaAula());
     const nota = $('notaAula'); nota.hidden = false;
     nota.replaceChildren('Guardado en tu aula: ', el('b', {}, r.ruta), '. Ábrelo en el Visor del LIVE o ', Object.assign(el('a', { href: r.visor, target: '_blank', rel: 'noopener' }), { textContent: 'aquí' }), '.');
     aviso('Guardado en tu aula'); guiaMarcar('guardar');

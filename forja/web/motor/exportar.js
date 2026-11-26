@@ -47,6 +47,9 @@ Para volver a editar el personaje: ${enlace}
 // d: { spec, hoja, enemigo: { spec, hoja }, objetos, escenario, sonidos (banco), semilla, estado, enlace }
 export async function armarProyecto(d, id) {
   const meta = (await plantillas()).find((p) => p.id === id), A = 'assets/', archivos = [];
+  // >>> motores anime y voxel: sus plantillas se arman aparte (p5 + Anime.js + módulos del motor, sin Phaser)
+  if (meta?.motor && meta.motor !== 'phaser') return (await import('../motores/forja/proyecto.js')).armarMotor(d, meta);
+  // <<< motores
   const png = async (nombre, lienzo) => archivos.push({ nombre: A + nombre, datos: await pngDeLienzo(lienzo), lienzo });
   const atlas = (h, nombre) => { const a = JSON.parse(JSON.stringify(h.atlas)); a.meta.image = nombre + '.png'; return a; };
   await png('heroe.png', d.hoja.hoja); archivos.push({ nombre: `${A}heroe.json`, datos: JSON.stringify(atlas(d.hoja, 'heroe')) });
@@ -73,6 +76,7 @@ export async function armarProyecto(d, id) {
 
 export async function zipProyecto(d, id = 'plataformas') {
   const p = await armarProyecto(d, id);
+  if (p.motor) return { blob: zip(p.archivos.map((a) => ({ nombre: `${d.hoja.clave}-${id}/${a.nombre}`, datos: a.datos }))), carpeta: `${d.hoja.clave}-${id}` };   // motores: ya traen todo
   phaserBytes ??= new Uint8Array(await (await fetch('vendor/phaser.min.js')).arrayBuffer());
   const carpeta = `${d.hoja.clave}-${id}`;
   return { blob: zip([...p.archivos, { nombre: 'phaser.min.js', datos: phaserBytes }].map((a) => ({ nombre: `${carpeta}/${a.nombre}`, datos: a.datos }))), carpeta };
@@ -80,6 +84,7 @@ export async function zipProyecto(d, id = 'plataformas') {
 
 // Para jugar dentro del estudio: la misma página y el mismo código, con los recursos en memoria (blob:) en vez de en assets/.
 export function paginaEnMemoria(p) {
+  if (p.motor) return p.enMemoria();   // motores anime y voxel (motores/forja/proyecto.js)
   const urls = [], mapa = {};
   for (const a of p.archivos) {
     if (!a.nombre.startsWith('assets/')) continue;

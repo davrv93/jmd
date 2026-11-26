@@ -266,5 +266,187 @@
     "prueba": "Con V se ve el turno y cuántos segundos le quedan. Prueba «Siempre persiguen» en Reglas."
    }
   ]
+ },
+ {
+  "id": "duelo-anime",
+  "motor": "anime",
+  "nombre": "Duelo anime",
+  "lema": "Combos, energía y transformación contra la CPU",
+  "gravedad": true,
+  "controles": "A D moverte · W saltar · S agacharte · J ligero · K medio · L fuerte · I especial · U bloquear (justo a tiempo: parada) · O esquivar · H cargar energía · Y definitivo · T transformarte · ↓↘→ + golpe: técnica · P pausa · F3 monitor",
+  "recursos": [
+   "heroe",
+   "enemigo"
+  ],
+  "algoritmos": [
+   {
+    "id": "reglas",
+    "nombre": "Las reglas se vuelven números del motor",
+    "idea": "Cada opción que elegiste en «Diseña tu videojuego» llega en DATOS.reglas. Esta parte la traduce a la física y a las reglas del combate: daño, escalado de combos (cada golpe del combo rinde un poco menos), límite de malabares para que no haya combos infinitos, ventana de la parada, gravedad. El combate avanza en pasos fijos de 1/60 s: con 30 o 144 cuadros por segundo el resultado es idéntico.",
+    "prueba": "Elige «Sin escalado» y «20 malabares» y entra al Entrenamiento: con rayos X (pausa → ver cajas) mira cuánto dura tu combo. Luego vuelve a «Normal»."
+   },
+   {
+    "id": "personajes",
+    "nombre": "Los luchadores son datos (y su frame data)",
+    "idea": "Ren y Mako no están programados: son fichas JSON con vida, velocidad, masa y una lista de movimientos. Cada golpe tiene arranque (cuadros antes de pegar), activo (cuadros en que la caja roja existe) y recuperación (cuadros en que quedas expuesto). La pose del dibujo sale del MISMO contador de cuadros: el dibujo y el daño no se pueden desincronizar. Las cajas de golpe y de daño son independientes del dibujo.",
+    "prueba": "En la pestaña Editor → «Combos, habilidades y frame data» sube la recuperación del golpe fuerte a 40: la CPU te castigará cada vez que falles."
+   },
+   {
+    "id": "modos",
+    "nombre": "Modos declarativos e IA con reflejos humanos",
+    "idea": "Cada modo (CPU, torneo, supervivencia, historia, 2 contra 2, lateral, 2.5D) es un objeto de configuración que el motor lee. La CPU no lee tus teclas: ve una foto tuya de hace 0,2–0,45 s (según su nivel), predice dónde estarás, elige con puntajes (Utility AI) entre acercarse, bloquear, castigar o hacer combo, y anota lo que repites para anticiparse.",
+    "prueba": "Pon la CPU en «Refleja (0,14 s)» y luego en «Lenta (0,5 s)»: salta siempre igual y mira cómo una aprende a esperarte con el antiaéreo."
+   }
+  ]
+ },
+ {
+  "id": "jefe-titan",
+  "motor": "anime",
+  "nombre": "Jefe titán",
+  "lema": "Un coloso con fases y ataques que avisan",
+  "gravedad": true,
+  "controles": "A D moverte · W saltar · J K L golpes · I especial · O esquivar (invulnerable un instante) · U bloquear · H cargar · Y definitivo · P pausa · F3 monitor",
+  "recursos": [
+   "heroe",
+   "enemigo"
+  ],
+  "algoritmos": [
+   {
+    "id": "titan",
+    "nombre": "Un jefe hecho de fases y avisos",
+    "idea": "El titán es un objeto de datos: fases por porcentaje de vida y ataques con tres tiempos, igual que un golpe de lucha: aviso (la zona dorada/roja en el suelo), activo (la caja que daña) y recuperación (cuando puedes castigarlo). Elige su ataque con puntajes según tu distancia y no repite el mismo. Cada cierto número de ataques se agota y su núcleo queda expuesto: ahí el daño se multiplica.",
+    "prueba": "Pon los avisos en «Relámpago» y el titán en «Brutal». ¿Puedes ganar solo esquivando (O te hace invulnerable un instante)?"
+   },
+   {
+    "id": "reglas",
+    "nombre": "Las reglas del combate",
+    "idea": "Las mismas reglas del duelo: daño, escalado, malabares, energía y física. El combate y el jefe corren en pasos fijos y con la misma semilla: con las mismas teclas, la pelea se repite exacta.",
+    "prueba": "Activa «Ver siempre las cajas de golpe» y mira las zonas del titán: cuerpo, núcleo y la mano apoyada en el suelo."
+   }
+  ]
+ },
+ {
+  "id": "mundo-voxel",
+  "motor": "voxel",
+  "nombre": "Mundo voxel",
+  "lema": "Explora un mundo infinito que nace de una semilla",
+  "gravedad": true,
+  "controles": "clic para mirar con el ratón · W A S D caminar · Mayús correr · espacio saltar/nadar · Ctrl agacharte · clic izq. romper · clic der. poner · 1-9 o rueda elegir bloque · F cámara 1.ª/3.ª persona · F3 monitor",
+  "recursos": [
+   "heroe"
+  ],
+  "algoritmos": [
+   {
+    "id": "reglas",
+    "nombre": "Reglas → configuración del motor",
+    "idea": "Cada regla que eliges en «Diseña tu videojuego» es una RUTA dentro de la configuración del motor: 'mundo.relieve' es config.mundo.relieve. La plantilla tiene la lista de claves y aplicarReglas() copia cada valor en su ruta. Si dejaste una regla como venía, no pisa lo que cambiaste en la pestaña Editor. La configuración es solo datos: se valida con un esquema y nunca se ejecuta.",
+    "prueba": "En datos.js cambia \"mundo.montanas\" a 2.4 y \"mundo.oceanos\" a 0: recarga y verás cordilleras sin mar. Prueba \"jugador.gravedad\": 14 (gravedad lunar)."
+   },
+   {
+    "id": "semilla",
+    "nombre": "La semilla: el mismo mundo en todas las computadoras",
+    "idea": "El mundo no se guarda: se CALCULA. Cada bloque depende solo de (semilla, x, y, z). La semilla de texto se convierte en un número de 32 bits con un hash estable (FNV-1a + mezcla de murmur3) y de ahí salen el ruido Simplex, los biomas, las cuevas y las estructuras. Por eso dos alumnos con la misma semilla ven el mismo mundo, y descargar un chunk lejano no pierde nada: se vuelve a calcular igual. Solo se guardan los bloques que TÚ cambiaste (deltas).",
+    "prueba": "Abre el juego con ?semilla=ANDES-2026 en la dirección y compara con un compañero. Luego cambia una letra: el mundo es otro."
+   },
+   {
+    "id": "inicio",
+    "nombre": "Chunks, Workers y greedy meshing",
+    "idea": "iniciarVoxel() arma el motor: el mundo se parte en chunks de 16×16 bloques; una cola de prioridad pide primero los cercanos y los que están hacia donde caminas; los Web Workers generan el terreno (ruido, biomas, cuevas, árboles con L-systems) y construyen la malla con greedy meshing: las caras iguales se funden en rectángulos, así un chunk que tendría decenas de miles de triángulos queda en unos pocos miles. p5.js dibuja cada chunk con UNA geometría (nunca un box() por bloque). Los chunks lejanos se descargan.",
+    "prueba": "Pulsa F3: verás chunks activos, pendientes, en caché, triángulos y draw calls. Camina corriendo (Mayús) y mira cómo suben los pendientes y luego bajan a 0."
+   }
+  ]
+ },
+ {
+  "id": "supervivencia-voxel",
+  "motor": "voxel",
+  "nombre": "Supervivencia voxel",
+  "lema": "Recolecta, fabrica y aguanta la noche",
+  "gravedad": true,
+  "controles": "clic para mirar · W A S D · Mayús correr · espacio saltar · clic izq. romper · clic der. poner · E inventario y fabricar · 1-9 hotbar · F cámara · F3 monitor",
+  "recursos": [
+   "heroe"
+  ],
+  "algoritmos": [
+   {
+    "id": "reglas",
+    "nombre": "Reglas → configuración del motor",
+    "idea": "Cada regla que eliges en «Diseña tu videojuego» es una RUTA dentro de la configuración del motor: 'mundo.relieve' es config.mundo.relieve. La plantilla tiene la lista de claves y aplicarReglas() copia cada valor en su ruta. Si dejaste una regla como venía, no pisa lo que cambiaste en la pestaña Editor. La configuración es solo datos: se valida con un esquema y nunca se ejecuta.",
+    "prueba": "En datos.js cambia \"mundo.montanas\" a 2.4 y \"mundo.oceanos\" a 0: recarga y verás cordilleras sin mar. Prueba \"jugador.gravedad\": 14 (gravedad lunar)."
+   },
+   {
+    "id": "semilla",
+    "nombre": "La semilla: el mismo mundo en todas las computadoras",
+    "idea": "El mundo no se guarda: se CALCULA. Cada bloque depende solo de (semilla, x, y, z). La semilla de texto se convierte en un número de 32 bits con un hash estable (FNV-1a + mezcla de murmur3) y de ahí salen el ruido Simplex, los biomas, las cuevas y las estructuras. Por eso dos alumnos con la misma semilla ven el mismo mundo, y descargar un chunk lejano no pierde nada: se vuelve a calcular igual. Solo se guardan los bloques que TÚ cambiaste (deltas).",
+    "prueba": "Abre el juego con ?semilla=ANDES-2026 en la dirección y compara con un compañero. Luego cambia una letra: el mundo es otro."
+   },
+   {
+    "id": "recetas",
+    "nombre": "Fabricar es leer una tabla",
+    "idea": "Las recetas no son código: son una tabla de datos (qué usas, qué sale y qué mesa hace falta cerca). El inventario revisa si tienes los materiales, los descuenta y te da el objeto. Para saber si hay una mesa o un horno cerca, el juego mira los bloques a 4 de distancia (un cubo de 9×6×9: 486 consultas, no el mundo entero).",
+    "prueba": "Copia la línea de la receta propia y cámbiala: por ejemplo 1 carbón + 1 palo → 16 antorchas. Pulsa E cerca de una mesa de trabajo para verla."
+   }
+  ]
+ },
+ {
+  "id": "creativo-voxel",
+  "motor": "voxel",
+  "nombre": "Creativo voxel",
+  "lema": "Construye sin límites y vuela",
+  "gravedad": true,
+  "controles": "clic para mirar · W A S D · espacio subir · Ctrl bajar · doble espacio volar · clic izq. romper · clic der. poner · 1-9 bloque · F cámara · F3 monitor",
+  "recursos": [
+   "heroe"
+  ],
+  "algoritmos": [
+   {
+    "id": "reglas",
+    "nombre": "Reglas → configuración del motor",
+    "idea": "Cada regla que eliges en «Diseña tu videojuego» es una RUTA dentro de la configuración del motor: 'mundo.relieve' es config.mundo.relieve. La plantilla tiene la lista de claves y aplicarReglas() copia cada valor en su ruta. Si dejaste una regla como venía, no pisa lo que cambiaste en la pestaña Editor. La configuración es solo datos: se valida con un esquema y nunca se ejecuta.",
+    "prueba": "En datos.js cambia \"mundo.montanas\" a 2.4 y \"mundo.oceanos\" a 0: recarga y verás cordilleras sin mar. Prueba \"jugador.gravedad\": 14 (gravedad lunar)."
+   },
+   {
+    "id": "semilla",
+    "nombre": "La semilla: el mismo mundo en todas las computadoras",
+    "idea": "El mundo no se guarda: se CALCULA. Cada bloque depende solo de (semilla, x, y, z). La semilla de texto se convierte en un número de 32 bits con un hash estable (FNV-1a + mezcla de murmur3) y de ahí salen el ruido Simplex, los biomas, las cuevas y las estructuras. Por eso dos alumnos con la misma semilla ven el mismo mundo, y descargar un chunk lejano no pierde nada: se vuelve a calcular igual. Solo se guardan los bloques que TÚ cambiaste (deltas).",
+    "prueba": "Abre el juego con ?semilla=ANDES-2026 en la dirección y compara con un compañero. Luego cambia una letra: el mundo es otro."
+   },
+   {
+    "id": "plugin",
+    "nombre": "Un bloque nuevo con un plugin",
+    "idea": "Los bloques del motor están en un registro declarativo (id, textura, dureza, transparencia, luz, herramienta…). Un plugin agrega uno sin tocar el motor: se registra en el hilo principal y en cada Worker con el mismo id, el atlas pinta su textura a partir de una receta y el mallador lo trata igual que a los demás. Este bloque de neón además emite luz: la luz se propaga por inundación (BFS) dentro del chunk.",
+    "prueba": "Cambia el color base del neón (base: [255, 80, 200]) o su luz (13). Ponlo en una cueva oscura con la tecla 9."
+   }
+  ]
+ },
+ {
+  "id": "aventura-voxel",
+  "motor": "voxel",
+  "nombre": "Aventura voxel",
+  "lema": "Ruinas, mazmorras, criaturas y misiones",
+  "gravedad": true,
+  "controles": "clic para mirar · W A S D · Mayús correr · espacio saltar · clic izq. romper/atacar · clic der. poner/usar · E inventario · Q misiones · F cámara · F3 monitor",
+  "recursos": [
+   "heroe"
+  ],
+  "algoritmos": [
+   {
+    "id": "reglas",
+    "nombre": "Reglas → configuración del motor",
+    "idea": "Cada regla que eliges en «Diseña tu videojuego» es una RUTA dentro de la configuración del motor: 'mundo.relieve' es config.mundo.relieve. La plantilla tiene la lista de claves y aplicarReglas() copia cada valor en su ruta. Si dejaste una regla como venía, no pisa lo que cambiaste en la pestaña Editor. La configuración es solo datos: se valida con un esquema y nunca se ejecuta.",
+    "prueba": "En datos.js cambia \"mundo.montanas\" a 2.4 y \"mundo.oceanos\" a 0: recarga y verás cordilleras sin mar. Prueba \"jugador.gravedad\": 14 (gravedad lunar)."
+   },
+   {
+    "id": "semilla",
+    "nombre": "La semilla: el mismo mundo en todas las computadoras",
+    "idea": "El mundo no se guarda: se CALCULA. Cada bloque depende solo de (semilla, x, y, z). La semilla de texto se convierte en un número de 32 bits con un hash estable (FNV-1a + mezcla de murmur3) y de ahí salen el ruido Simplex, los biomas, las cuevas y las estructuras. Por eso dos alumnos con la misma semilla ven el mismo mundo, y descargar un chunk lejano no pierde nada: se vuelve a calcular igual. Solo se guardan los bloques que TÚ cambiaste (deltas).",
+    "prueba": "Abre el juego con ?semilla=ANDES-2026 en la dirección y compara con un compañero. Luego cambia una letra: el mundo es otro."
+   },
+   {
+    "id": "historia",
+    "nombre": "Una historia hecha de misiones",
+    "idea": "La aventura del reino perdido es una lista de misiones: cada una dice qué tipo de objetivo es (visitar una estructura, abrir cofres, vencer criaturas, recoger objetos) y cuántas veces. El motor revisa la lista cada medio segundo con lo que hiciste y la brújula apunta a la estructura de la siguiente misión. Las ruinas, torres, templos y la mazmorra salen de la semilla por regiones: cada región del mapa tiene a lo sumo una, en un lugar fijo, aunque cruce varios chunks.",
+    "prueba": "Agrega una misión: { id: 'r9', texto: 'Visita un templo', tipo: 'visitar', estructura: 'templo' }. Pulsa Q en el juego para ver la lista."
+   }
+  ]
  }
 ]

@@ -26,6 +26,14 @@ const CARGA = {
   runner: () => import('./runner.js'),
   fortaleza: () => import('./fortaleza.js'),
   persecucion: () => import('./persecucion.js'),
+  // >>> motores anime y voxel (rama feat/motores-anime-voxel): catálogos de las seis plantillas nuevas
+  'duelo-anime': () => import('./duelo-anime.js'),
+  'jefe-titan': () => import('./jefe-titan.js'),
+  'mundo-voxel': () => import('./mundo-voxel.js'),
+  'supervivencia-voxel': () => import('./supervivencia-voxel.js'),
+  'creativo-voxel': () => import('./creativo-voxel.js'),
+  'aventura-voxel': () => import('./aventura-voxel.js'),
+  // <<< motores
 };
 const cache = new Map();
 export async function catalogoDe(id) {

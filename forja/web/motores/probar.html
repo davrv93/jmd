@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Banco de pruebas de motores</title>
+<link rel="icon" href="data:,">
+<!-- Banco de pruebas para desarrollo y pruebas automáticas: arranca una plantilla de los motores sin pasar por el
+     estudio (sin personaje del alumno: el juego usa su luchador/avatar procedural). Los alumnos juegan desde Forja.
+     probar.html?plantilla=duelo-anime  ·  &reglas={"ritmo.juego":1.3}  ·  &config={...}  ·  &semilla=ANDES-2026 -->
+<style>
+  html, body { margin: 0; height: 100%; background: #0e0b16; color: #f5f0ff; font: 15px system-ui, sans-serif; overflow: hidden; }
+  #juego { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+  #juego canvas { display: block; max-width: 100%; max-height: 100%; }
+  #cargando { position: absolute; inset: 0; display: grid; place-items: center; color: #c6ff4a; font-weight: 700; }
+</style>
+<script type="importmap">{"imports":{"animejs":"../vendor/anime.esm.min.js","motores/":"./"}}</script>
+<script src="../vendor/p5.min.js"></script>
+</head><body>
+<div id="juego"><div id="cargando">Cargando…</div></div>
+<script>window.TACTO = {};</script>
+<script type="module">
+  import { catalogoDe, porDefecto } from '../motor/juegos/index.js';
+  import { configDe, PLANTILLAS } from './forja/config.js';
+  const q = new URLSearchParams(location.search), id = q.get('plantilla') || 'duelo-anime';
+  if (!PLANTILLAS[id]) throw new Error('plantilla desconocida: ' + id);
+  const json = (k) => { try { return q.get(k) ? JSON.parse(q.get(k)) : {}; } catch { return {}; } };
+  const cat = await catalogoDe(id);
+  const config = { ...configDe(id), ...json('config') };
+  if (q.get('semilla')) config.semilla = q.get('semilla');
+  window.DATOS = { motor: PLANTILLAS[id], plantilla: id, nombre: q.get('nombre') || 'Prueba', juego: id, semilla: 1, heroe: null, enemigo: null, colores: null, reglas: { ...porDefecto(cat.reglas), ...json('reglas') }, config };
+  await import(`../plantillas/${id}.js`);
+</script>
+</body></html>
