@@ -16,6 +16,10 @@ function gradiente() {
 const col = (c) => new THREE.Color().setHSL(c.h / 360, c.s, c.l, THREE.SRGBColorSpace);
 const H = (h, s, l) => ({ h, s, l });
 
+// Acabado del render: «caricatura» (toon con contorno, el de siempre) o «arcilla» (PBR). Lo cambia calidad/app.js.
+let ACABADO = (() => { try { return JSON.parse(localStorage.getItem('forja.render') || '{}').acabado === 'arcilla' ? 'arcilla' : 'caricatura'; } catch { return 'caricatura'; } })();
+export const acabado = (id) => { if (id) ACABADO = id === 'arcilla' ? 'arcilla' : 'caricatura'; return ACABADO; };
+
 export function construir(spec) {
   // Estilo «chibi»: cabeza grande, cuerpo corto y extremidades gorditas. Se aplica aquí, sobre las medidas de las reglas.
   const d = { ...spec.dims };
@@ -28,6 +32,7 @@ export function construir(spec) {
   const mats = new Map();
   const g = spec.grosor * 1.65;
   const matContorno = new THREE.MeshBasicMaterial({ color: col(C.contorno), side: THREE.BackSide }); basura.push(matContorno);
+  const arcilla = ACABADO === 'arcilla';
 
   // textura de patrón (p5) solo para el cuerpo
   let mapa = null;
@@ -35,12 +40,15 @@ export function construir(spec) {
   if (gp) { graficos.push(gp); mapa = new THREE.CanvasTexture(gp.elt); mapa.wrapS = mapa.wrapT = THREE.RepeatWrapping; mapa.colorSpace = THREE.SRGBColorSpace; mapa.repeat.set(2, 1); basura.push(mapa); }
 
   function mat(c, o = {}) {
-    const k = `${c.h.toFixed(1)}|${c.s.toFixed(2)}|${c.l.toFixed(2)}|${o.mapa ? 1 : 0}|${o.luz || 0}|${o.alfa || 1}|${o.doble ? 1 : 0}|${o.plano ? 1 : 0}`;
+    const k = `${arcilla ? 'a' : 't'}|${o.metal ? 1 : 0}|${c.h.toFixed(1)}|${c.s.toFixed(2)}|${c.l.toFixed(2)}|${o.mapa ? 1 : 0}|${o.luz || 0}|${o.alfa || 1}|${o.doble ? 1 : 0}|${o.plano ? 1 : 0}`;
     if (mats.has(k)) return mats.get(k);
     let m;
     if (o.plano) m = new THREE.MeshBasicMaterial({ color: col(c) });
     else {
-      m = new THREE.MeshToonMaterial({ color: o.mapa && mapa ? 0xffffff : col(c), gradientMap: gradiente(), map: o.mapa && mapa ? mapa : null });
+      const base = { color: o.mapa && mapa ? 0xffffff : col(c), map: o.mapa && mapa ? mapa : null };
+      m = arcilla   // PBR: plástico suave con barniz y terciopelo; los metales brillan de verdad con la luz de ambiente
+        ? new THREE.MeshPhysicalMaterial({ ...base, roughness: o.metal ? 0.28 : 0.58, metalness: o.metal ? 0.85 : 0, clearcoat: o.metal ? 0 : 0.18, clearcoatRoughness: 0.45, sheen: o.metal ? 0 : 0.45, sheenRoughness: 0.7, sheenColor: col(c).clone().lerp(new THREE.Color(0xffffff), 0.35) })
+        : new THREE.MeshToonMaterial({ ...base, gradientMap: gradiente() });
       const em = (o.luz || 0) + (o.cuerpo ? spec.emisivo : 0);
       if (em > 0) { m.emissive = col(c); m.emissiveIntensity = em; }
     }
@@ -54,7 +62,7 @@ export function construir(spec) {
     cuerpo: () => mat(C.cuerpo, { mapa: true, cuerpo: true, alfa: alfaCuerpo }), liso: () => mat(C.cuerpo, { cuerpo: true, alfa: alfaCuerpo }),
     panza: () => mat(C.panza, { cuerpo: true, alfa: alfaCuerpo }), ext: () => mat(C.extremidad, { cuerpo: true, alfa: alfaCuerpo }),
     det: () => mat(C.detalle), acc: () => mat(C.accesorio), oscuro: () => mat(C.ojo), blanco: () => mat(H(0, 0, 0.97)),
-    oro: () => mat(H(46, 0.9, 0.58), { luz: 0.15 }), metal: () => mat(H(C.cuerpo.h, 0.12, 0.72)), hueso: () => mat(H(45, 0.4, 0.88)),
+    oro: () => mat(H(46, 0.9, 0.58), { luz: 0.15, metal: true }), metal: () => mat(H(C.cuerpo.h, 0.12, 0.72), { metal: true }), hueso: () => mat(H(45, 0.4, 0.88)),
     madera: () => mat(H(28, 0.5, 0.36)), brillo: () => mat(H(0, 0, 1), { plano: true }),
     luz: (c = C.detalle) => mat(H(c.h, 0.9, 0.66), { luz: 0.9 }),
   };

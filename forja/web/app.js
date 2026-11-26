@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { resolver, sorpresa, mutar, PARAMS_BASE, css, clamp } from './motor/resolver.js';
 import { iniciarP5 } from './motor/texturas.js';
-import { construir } from './motor/personaje.js';
+import { construir, acabado } from './motor/personaje.js';
+import { crearCalidad, LUCES, CALIDADES } from './motor/calidad.js';
 import { posar, duracion } from './motor/animar.js';
 import { miniatura, hojaSprites, codigoPhaser } from './motor/sprites.js';
 import { interpretar, aParams } from './motor/interprete.js';
@@ -39,9 +40,9 @@ const lienzo = $('lienzo'), escenario = $('escenario');
 const render = new THREE.WebGLRenderer({ canvas: lienzo, antialias: true, alpha: true, preserveDrawingBuffer: true }); // se conserva el dibujo para copiarlo al GIF y al video
 render.setPixelRatio(Math.min(devicePixelRatio, 2));
 const escena = new THREE.Scene();
-escena.add(new THREE.HemisphereLight(0xffffff, 0x8a7f9c, 1.5));
-const sol = new THREE.DirectionalLight(0xffffff, 2.2); sol.position.set(2.5, 4, 3.5); escena.add(sol);
 const camara = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+// luces, sombras, tonemapping y posproceso: motor/calidad.js (Render → Luz, Acabado, Calidad)
+const Q = crearCalidad({ render, escena, camara, lienzo, escenario: $('escenario'), alAvisar: (t) => aviso(t) });
 const control = new OrbitControls(camara, lienzo);
 Object.assign(control, { enablePan: false, enableDamping: true, dampingFactor: 0.08, minPolarAngle: 0.9, maxPolarAngle: 1.62, autoRotateSpeed: 2.2 });
 // tarima y sombra de contacto
@@ -52,7 +53,7 @@ sombra.rotation.x = -Math.PI / 2; sombra.position.y = 0.004; escena.add(sombra);
 let objetivoY = 0.8, distancia = 6;
 function tamano() {
   const w = escenario.clientWidth, h = escenario.clientHeight;
-  render.setSize(w, h, false); camara.aspect = w / h; camara.updateProjectionMatrix(); encuadrar(false);
+  Q.tamano(w, h); camara.aspect = w / h; camara.updateProjectionMatrix(); encuadrar(false);
 }
 function encuadrar(mover = true) {
   if (!pj) return;
@@ -79,7 +80,7 @@ function pintar(cambioTipo = false) {
     spec = resolver(R, E.familia, E.variante, E.params, E.semilla);
     const nuevo = construir(spec);
     if (pj) { escena.remove(pj.raiz); pj.liberar(); }
-    pj = nuevo; escena.add(pj.raiz);
+    pj = nuevo; escena.add(pj.raiz); Q.sombrear(pj.raiz);
     sombra.scale.setScalar(clamp(pj.ancho * 0.5, 0.25, 1.4));
     encuadrar(fueTipo || !camara.userData.listo); camara.userData.listo = true;
     if (fueTipo) golpe = performance.now();
@@ -95,8 +96,8 @@ const t0 = performance.now();
   posar(pj, spec, anim, u);
   const k = Math.min(1, (ahora - golpe) / 420); // aparece con un rebote
   if (k < 1) { const e = 1 - Math.pow(1 - k, 3), r = 1 + 0.16 * Math.sin(k * Math.PI * 2.2) * (1 - k); pj.raiz.scale.setScalar(spec.dims.escala * (0.55 + 0.45 * e) * r); } else pj.raiz.scale.setScalar(spec.dims.escala);
-  sombra.material.opacity = 0.3 / (1 + pj.P.todo.position.y * 1.6);
-  control.update(); render.render(escena, camara);
+  sombra.material.opacity = (Q.E.calidad === 'rapida' ? 0.3 : 0.16) / (1 + pj.P.todo.position.y * 1.6);
+  control.update(); Q.dibujar(ahora);
 })(t0);
 
 // ---------------------------------------------------------------- interfaz
@@ -214,7 +215,17 @@ chips($('animaciones'), lista(M.animaciones), anim, function elegir(id) { anim =
 const COL_FONDO = { noche: '#3a2f6b', bosque: '#2f7a4c', cielo: '#8ec9ff', desierto: '#f2c070', nieve: '#f3f7ff', cueva: '#3b3340', ciudad: '#7b6ea8', lava: '#b8421c' };
 function fondos() {
   $('fondos').replaceChildren(...M.fondos.map((f) => { const b = el('button', { type: 'button', role: 'radio', 'aria-checked': String(E.params.fondo === f), 'aria-label': `Fondo ${f}`, title: nombreDe(f), style: `--c:${COL_FONDO[f]}` }); b.onclick = () => { fijar({ fondo: f }); fondos(); }; return b; }));
-  escenario.dataset.fondo = E.params.fondo; escenario.toggleAttribute('data-claro', ['cielo', 'desierto', 'nieve'].includes(E.params.fondo));
+  escenario.dataset.fondo = E.params.fondo; escenario.toggleAttribute('data-claro', ['cielo', 'desierto', 'nieve'].includes(E.params.fondo)); Q.fondo();
+}
+// Render: luz, acabado y calidad (motor/calidad.js). Un solo botón, tres filas de opciones.
+{
+  const caja = $('panelRender'), filas = [
+    ['Luz', Object.entries(LUCES).map(([id, l]) => ({ id, nombre: l.nombre })), () => Q.E.luz, (id) => Q.luz(id)],
+    ['Acabado', [{ id: 'caricatura', nombre: 'Caricatura' }, { id: 'arcilla', nombre: 'Arcilla' }], () => acabado(), (id) => { acabado(id); try { const g = JSON.parse(localStorage.getItem('forja.render') || '{}'); g.acabado = id; localStorage.setItem('forja.render', JSON.stringify(g)); } catch { /* nada */ } pintar(); }],
+    ['Calidad', Object.entries(CALIDADES).map(([id, nombre]) => ({ id, nombre })), () => Q.E.calidad, (id) => Q.calidad(id)],
+  ];
+  const armar = () => caja.replaceChildren(...filas.map(([t, lista, act, fn]) => { const f = el('div', { class: 'fila-render' }), c = el('div', { class: 'chips', role: 'radiogroup', 'aria-label': t }); f.append(el('span', {}, t), c); chips(c, lista, act(), (id) => { fn(id); armar(); }); return f; }));
+  $('bRender').onclick = (e) => { caja.hidden = !caja.hidden; e.currentTarget.setAttribute('aria-expanded', String(!caja.hidden)); if (!caja.hidden) armar(); };
 }
 $('bGirar').onclick = (e) => { control.autoRotate = !control.autoRotate; e.currentTarget.setAttribute('aria-pressed', String(control.autoRotate)); };
 

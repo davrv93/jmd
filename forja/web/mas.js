@@ -7,7 +7,10 @@ import { banco, sonar } from './motor/sonido.js';
 import { zipProyecto, armarProyecto, paginaEnMemoria, plantillas, extracto, grabarVideo, modeloGLB } from './motor/exportar.js';
 import { zip, pngDeLienzo } from './motor/zip.js';
 import { gif } from './motor/gif.js';
-import { tomarDeLaURL, leerAjustes, borrarAjustes, resumenAjustes } from './motor/ajustes.js';
+import { tomarDeLaURL, leerAjustes, borrarAjustes, resumenAjustes, guardarAjustes, REGLAS_RIVAL } from './motor/ajustes.js';
+import { sesion, guardarEnAula, misJuegos } from './motor/aula.js';
+import { crearGuia } from './motor/guia.js';
+import { crearDisena } from './motor/disena.js';
 
 export function iniciarMas(A) {
   const { R, $, el, aviso, bajar } = A;
@@ -19,6 +22,7 @@ export function iniciarMas(A) {
   // el villano de la pista: otro personaje de las mismas reglas, en versión sombría
   const villano = (semilla) => { const s = sorpresa(R, semilla * 7 + 999, { variante: 'sombra' }); return fichaDe({ ...s, params: { ...PARAMS_BASE, ...s.params, expresion: 'enojado' } }); };
   let hora = 'dia', semillaNivel = 1;
+  let guiaMarcar = () => {}, disenaRef = null;   // la guía se crea al final; hasta entonces no marca nada
   function paquete(px = 128) {
     const spec = A.spec(), malo = villano(spec.semilla);
     return { spec, hoja: hojaSprites(spec, R, px), enemigo: { spec: malo, hoja: hojaSprites(malo, R, px) }, objetos: hojaObjetos(R, spec.variante, 64),
@@ -87,11 +91,13 @@ export function iniciarMas(A) {
   // Ajustes de la clase: llegan guardados desde las escenas del LIVE («Llevar a mi juego») o por la dirección.
   const deURL = tomarDeLaURL();
   if (deURL) { const conOnda = /[?&](amp|vel)=/.test(location.search); plantilla = deURL.rival && deURL.salto == null && !conOnda ? 'laberinto' : 'plataformas'; guarda('forja.plantilla', plantilla); }
+  { const pj0 = new URLSearchParams(location.search).get('juego'); if (/^(plataformas|futbol|laberinto|runner)$/.test(pj0 || '')) { plantilla = pj0; guarda('forja.plantilla', plantilla); } }   // ?juego=laberinto (escena LIVE)
   const marco = $('marcoJuego');
   async function arrancarJuego() {
     PL = PL.length ? PL : await plantillas();
     const meta = PL.find((p) => p.id === plantilla) || PL[0]; plantilla = meta.id; guarda('forja.plantilla', plantilla);
     const proyecto = await armarProyecto(paquete(128), plantilla);
+    guiaMarcar('juego');
     enMemoria?.liberar(); enMemoria = paginaEnMemoria(proyecto); marco.srcdoc = enMemoria.html;
     marco.onload = () => marco.contentWindow?.focus();
     $('plantillas').replaceChildren(...PL.map((p) => { const b = el('button', { type: 'button', role: 'tab', 'aria-selected': String(p.id === plantilla), class: 'plantilla' }); b.append(el('b', {}, p.nombre), el('span', {}, p.lema)); b.onclick = () => { plantilla = p.id; arrancarJuego(); }; return b; }));
@@ -134,12 +140,60 @@ export function iniciarMas(A) {
   $('bProbar').onclick = (ev) => ocupado(ev.currentTarget, async () => { $('dPista').showModal(); await arrancarJuego(); });
   $('bOtroNivel').onclick = () => { semillaNivel++; arrancarJuego(); };
   $('bReiniciarJuego').onclick = () => { marco.srcdoc = enMemoria.html; };
-  $('bZipJuego').onclick = (ev) => ocupado(ev.currentTarget, async () => { const { blob, carpeta } = await zipProyecto(paquete(128), plantilla); bajar(`${carpeta}.zip`, blob); aviso('Proyecto descargado'); });
+  $('bZipJuego').onclick = (ev) => ocupado(ev.currentTarget, async () => { const { blob, carpeta } = await zipProyecto(paquete(128), plantilla); bajar(`${carpeta}.zip`, blob); aviso('Proyecto descargado'); guiaMarcar('guardar'); });
   $('dPista').addEventListener('close', () => { marco.srcdoc = ''; enMemoria?.liberar(); enMemoria = null; });
   window.__forjaJuego = () => marco.contentWindow; // para las pruebas automáticas
 
+  // ---------------------------------------------------------------- tu aula (jmd-learn.online): guardar y recuperar el juego
+  // Con sesión del LMS, el juego se guarda en /trabajo/juego-<plantilla>/ de tu aula: lo ves en el Visor del LIVE y
+  // lo recuperas desde cualquier computadora. En el LIVE (?clase=…), si entras sin enlace, se abre tu último juego.
+  let phaserAula = null;
+  const llegoConEnlace = location.hash.length > 3;   // se mira al arrancar: luego la Forja escribe su propio enlace en #
+  const fichaAula = () => ({ nombre: A.spec().nombre, estado: copiaEstado(), hora, semillaNivel, ajustes: leerAjustes(), enlace: A.enlace() });
+  async function guardarAula() {
+    const p = await armarProyecto(paquete(128), plantilla);
+    phaserAula ??= new Uint8Array(await (await fetch('vendor/phaser.min.js')).arrayBuffer());
+    const r = await guardarEnAula(plantilla, [...p.archivos.map((a) => ({ nombre: a.nombre, datos: a.datos })), { nombre: 'phaser.min.js', datos: phaserAula }], fichaAula());
+    const nota = $('notaAula'); nota.hidden = false;
+    nota.replaceChildren('Guardado en tu aula: ', el('b', {}, r.ruta), '. Ábrelo en el Visor del LIVE o ', Object.assign(el('a', { href: r.visor, target: '_blank', rel: 'noopener' }), { textContent: 'aquí' }), '.');
+    aviso('Guardado en tu aula'); guiaMarcar('guardar');
+    return r;
+  }
+  function abrirJuego(j) {
+    A.cargar(j.estado);
+    if (j.ajustes && typeof j.ajustes === 'object') { borrarAjustes(); guardarAjustes(j.ajustes); }
+    if (j.hora) hora = j.hora;
+    if (+j.semillaNivel) semillaNivel = +j.semillaNivel;
+    plantilla = j.plantilla || plantilla; guarda('forja.plantilla', plantilla);
+  }
+  async function listaAula() {
+    const caja = $('listaAula'); caja.replaceChildren(el('p', { class: 'nota' }, 'Buscando en tu aula…')); $('dAula').showModal();
+    const js = await misJuegos();
+    if (!js.length) { caja.replaceChildren(el('p', { class: 'nota' }, 'Aún no guardas ningún juego en tu aula. Usa «Guardar en mi aula».')); return; }
+    caja.replaceChildren(...js.map((j) => {
+      const f = el('div', { class: 'juego' }), t = el('div');
+      t.append(el('b', {}, `${j.nombre || 'Tu personaje'} · ${j.plantilla}`), el('span', {}, `${j.carpeta}/ · ${new Date(j.guardado).toLocaleString()}`));
+      const ab = el('button', { type: 'button', class: 'btn mini primario' }, 'Abrir aquí');
+      ab.onclick = () => { abrirJuego(j); $('dAula').close(); if (!$('dPista').open) $('dPista').showModal(); arrancarJuego(); aviso('Abierto desde tu aula'); };
+      const vis = Object.assign(el('a', { class: 'btn mini', href: j.visor, target: '_blank', rel: 'noopener' }), { textContent: 'Ver en el Visor' });
+      f.append(t, ab, vis); return f;
+    }));
+  }
+  sesion().then(async (u) => {
+    if (!u) return;
+    for (const id of ['bAulaJuego', 'bAbrirAula', 'bAula']) $(id).hidden = false;
+    $('bAulaJuego').onclick = (ev) => ocupado(ev.currentTarget, guardarAula);
+    $('bAula').onclick = (ev) => ocupado(ev.currentTarget, guardarAula);
+    $('bAbrirAula').onclick = () => listaAula();
+    if (q.get('clase') && !llegoConEnlace) {   // en el LIVE: seguir donde se quedó
+      const js = await misJuegos();
+      const j = js.find((x) => x.plantilla === q.get('juego')) || js[0];
+      if (j) { abrirJuego(j); aviso(`Seguimos con tu juego del aula: ${j.nombre || j.plantilla}`); if ($('dPista').open) arrancarJuego(); }
+    }
+  });
+
   // ---------------------------------------------------------------- exportación completa
-  $('bZip').onclick = (ev) => ocupado(ev.currentTarget, async () => { const { blob, carpeta } = await zipProyecto(paquete(128), plantilla); bajar(`${carpeta}.zip`, blob); aviso('Proyecto Phaser descargado'); });
+  $('bZip').onclick = (ev) => ocupado(ev.currentTarget, async () => { const { blob, carpeta } = await zipProyecto(paquete(128), plantilla); bajar(`${carpeta}.zip`, blob); aviso('Proyecto Phaser descargado'); guiaMarcar('guardar'); });
   $('bVideo').onclick = (ev) => ocupado(ev.currentTarget, async () => {
     const antes = A.control.autoRotate; A.control.autoRotate = true;
     const f = A.COL_FONDO[A.estado().params.fondo] || '#3a2f6b';
@@ -261,7 +315,7 @@ export function iniciarMas(A) {
     const accion = (nombre, fn) => { const b = el('button', { type: 'button' }, nombre); b.onclick = () => { cerrarB(); fn(); }; return b; };
     const lista = el('div', { class: 'lista' });
     const guiaLink = el('a', { href: 'guia.html', target: '_blank', rel: 'noopener' }, 'Guía de una página');
-    lista.append(accion('Hacer el recorrido', abrirRecorrido), accion('Crear con una frase', () => { $('texto').value = A.ejemplos[Math.floor(Math.random() * A.ejemplos.length)]; A.forjar(); }),
+    lista.append(accion('Diseñar mi juego paso a paso', () => disenaRef?.abrir()), accion('Hacer el recorrido', abrirRecorrido), accion('Crear con una frase', () => { $('texto').value = A.ejemplos[Math.floor(Math.random() * A.ejemplos.length)]; A.forjar(); }),
       accion('Probar un juego', () => $('bProbar').click()), accion('Entender los algoritmos', () => { vista = 'algoritmos'; $('bProbar').click(); }), guiaLink);
     burbuja.replaceChildren(el('h3', {}, 'Soy Chispa, tu guía'), el('p', { class: 'consejo' }, texto || consejoAhora()), lista);
     burbuja.hidden = false; guia.setAttribute('aria-expanded', 'true');
@@ -274,5 +328,47 @@ export function iniciarMas(A) {
   $('bGuardar').addEventListener('click', () => consejo('guardar', 'Guardado. En «Mis personajes» puedes marcarlo con ★ para tu elenco: héroe, enemigos y jefe.'));
   $('bProbar').addEventListener('click', () => { vistos.add('juegos'); guarda('forja.consejos', [...vistos]); });
   $('bExportar').addEventListener('click', () => { vistos.add('exportar'); guarda('forja.consejos', [...vistos]); });
-  if (!lee('forja.recorrido', 0) && !q.get('sala') && !q.get('abrir') && !q.has('sinrecorrido')) setTimeout(abrirRecorrido, 900);
+  // El recorrido de 9 tarjetas ya no arranca solo: se pide desde Chispa («Hacer el recorrido»). Lo que guía es «Tu juego».
+
+  // ---------------------------------------------------------------- «Tu juego»: guía de primeros pasos (motor/guia.js)
+  const abrirJuegos = () => { if (!$('dPista').open) $('bProbar').click(); };
+  const tuJuego = crearGuia({
+    el, alTerminar: () => aviso('¡Hiciste tu videojuego!'),
+    acciones: {
+      personaje: () => A.abrir('catalogo'),
+      juego: abrirJuegos,
+      jugar: () => { abrirJuegos(); setTimeout(() => marco.contentWindow?.focus(), 900); },
+      ajustar: () => { if ($('dPista').open) $('dPista').close(); A.abrir('cuerpo'); },
+      guardar: () => { abrirJuegos(); setTimeout(() => ($('bAulaJuego').hidden ? $('bZipJuego') : $('bAulaJuego')).click(), 1600); },
+    },
+  });
+  guiaMarcar = tuJuego.marcar;
+
+  // ---------------------------------------------------------------- «Diseña tu videojuego»: la entrada paso a paso (motor/disena.js)
+  // Antes del editor: los 8 elementos formales de un juego (Fullerton) y la prueba de los 6 rasgos (Juul, 2003).
+  plantillas().then(async (PLm) => {
+    disenaRef = crearDisena({ el, R, sorpresa: (r, n, f) => { const x = sorpresa(r, n, f); return { ...x, params: { ...PARAMS_BASE, ...x.params } }; }, fichaDe, miniatura, plantillasMeta: PLm, REGLAS_RIVAL, COL_FONDO: A.COL_FONDO,
+      aplicar: (d) => {
+        if (d.heroe) A.cargar({ ...d.heroe, params: { ...PARAMS_BASE, ...d.heroe.params, fondo: d.fondo } });
+        borrarAjustes(); guardarAjustes(d.ajustes);
+        plantilla = d.plantilla; guarda('forja.plantilla', plantilla);
+        tuJuego.marcar('personaje');
+        setTimeout(() => { if (!$('dPista').open) $('bProbar').click(); else arrancarJuego(); }, 350);
+      } });
+    if (disenaRef.hecho() || llegoConEnlace || q.has('sinrecorrido') || q.get('abrir') || q.get('sala')) return;
+    if (q.get('clase')) { const u = await sesion(); if (u && (await misJuegos()).length) return; }   // ya tiene su juego en el aula
+    disenaRef.abrir();
+  });
+  // Lo que marca cada paso: mirar el estado, nunca un clic en «siguiente».
+  // «personaje»: cambió la familia o la variante. «ajustar»: cambió un número del MISMO personaje después de elegir juego.
+  let ref = copiaEstado();
+  if (llegoConEnlace) tuJuego.marcar('personaje');
+  setInterval(() => {
+    const e = A.estado();
+    if (e.familia !== ref.familia || e.variante !== ref.variante || e.semilla !== ref.semilla) { tuJuego.marcar('personaje'); ref = copiaEstado(); return; }
+    if (JSON.stringify(e.params) !== JSON.stringify(ref.params)) { if (tuJuego.hecho().juego) tuJuego.marcar('ajustar'); ref = copiaEstado(); }
+  }, 900);
+  let teclas = 0;
+  marco.addEventListener('load', () => { try { marco.contentWindow.addEventListener('keydown', () => { if (++teclas >= 25) tuJuego.marcar('jugar'); }); } catch { /* otro origen */ } });
+
 }
