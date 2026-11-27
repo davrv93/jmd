@@ -66,6 +66,10 @@ func migrate(db *sql.DB) error {
 	// existente la columna «numero» recién se creó en los adds de arriba.
 	// Parcial (WHERE numero IS NOT NULL): las filas viejas sin número no lo
 	// bloquean; las nuevas no pueden repetirlo dentro del mismo sorteo.
+	// Laboratorio de ideas (ver laboratorio.go): la idea de cada alumno por curso.
+	if _, err := db.Exec(tablaLaboratorios); err != nil {
+		return fmt.Errorf("tabla laboratorios: %w", err)
+	}
 	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS visitas_publicas (
 		ruta TEXT NOT NULL, huella TEXT NOT NULL, veces INTEGER NOT NULL DEFAULT 1, ultima TEXT NOT NULL,
 		PRIMARY KEY (ruta, huella));`); err != nil {

@@ -1,0 +1,179 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>convertir</title>
+<script type="importmap">{"imports":{"three":"/three/build/three.module.js","three/addons/":"/three/examples/jsm/"}}</script></head>
+<body>
+<script type="module">
+// Female_Adult_11_facial.fbx (Rocketbox, MIT) → geometria.glb: tres mallas con piel (cuerpo, cabeza, pelo) soldadas,
+// sin piernas (plano medio), con ~55 formas de cara (ARKit + visemas Oculus) con nombre estándar. Sin texturas:
+// las pone despues herr/texturas.mjs. Además, máscaras UV hechas con la malla (ojos, labios, interior de la boca).
+import * as THREE from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+const log = (o) => fetch('/log', { method: 'POST', body: typeof o === 'string' ? o : JSON.stringify(o) });
+try {
+const PX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+const man = new THREE.LoadingManager(); man.setURLModifier((u) => /\.(tga|png|jpg|dds)$/i.test(u) ? PX : u);
+const root = await new FBXLoader(man).loadAsync('/dl/fa11/Female_Adult_11_facial.fbx');
+const src = root.getObjectByName('f011_hipoly_81_bones_opacity');
+const G = src.geometry, dict = src.morphTargetDictionary;
+// ARKit (sin lengua ni mirada lateral: los ojos giran con sus huesos) + visemas de Oculus
+const ARKIT = ['BrowDownLeft', 'BrowDownRight', 'BrowInnerUp', 'BrowOuterUpLeft', 'BrowOuterUpRight', 'CheekPuff', 'CheekSquintLeft', 'CheekSquintRight',
+  'EyeBlinkLeft', 'EyeBlinkRight', 'EyeLookDownLeft', 'EyeLookDownRight', 'EyeLookUpLeft', 'EyeLookUpRight', 'EyeSquintLeft', 'EyeSquintRight', 'EyeWideLeft', 'EyeWideRight',
+  'JawOpen', 'JawForward', 'MouthClose', 'MouthDimpleLeft', 'MouthDimpleRight', 'MouthFrownLeft', 'MouthFrownRight', 'MouthFunnel', 'MouthLeft', 'MouthRight',
+  'MouthLowerDownLeft', 'MouthLowerDownRight', 'MouthPressLeft', 'MouthPressRight', 'MouthPucker', 'MouthRollLower', 'MouthRollUpper', 'MouthShrugLower', 'MouthShrugUpper',
+  'MouthSmileLeft', 'MouthSmileRight', 'MouthStretchLeft', 'MouthStretchRight', 'MouthUpperUpLeft', 'MouthUpperUpRight', 'NoseSneerLeft', 'NoseSneerRight'];
+const VIS = { '01_PP': 'PP', '02_FF': 'FF', '04_DD': 'DD', '05_KK': 'kk', '06_CH': 'CH', '07_SS': 'SS', '08_nn': 'nn', '09_RR': 'RR', '10_aa': 'aa', '11_E': 'E', '12_I': 'I', '13_O': 'O', '14_U': 'U' };
+const SEL = [];
+for (const k of Object.keys(dict)) {
+  const n = k.replace(/^blendShape1\./, '');
+  let m = n.match(/^AK_\d+_(.+)$/); if (m && ARKIT.includes(m[1])) { SEL.push([k, m[1][0].toLowerCase() + m[1].slice(1)]); continue; }
+  m = n.match(/^AA_VI_(\d+_\w+)$/); if (m && VIS[m[1]]) SEL.push([k, 'viseme_' + VIS[m[1]]]);
+}
+const pos = G.attributes.position, sw = G.attributes.skinWeight, si = G.attributes.skinIndex;
+const bones = src.skeleton.bones, bi = (n) => bones.findIndex((b) => b.name === n);
+const pesoEn = (v, set) => { let s = 0; for (let c = 0; c < 4; c++) if (set.has(si.getComponent(v, c))) s += sw.getComponent(v, c); return s; };
+// triángulos por material (grupos), con filtro opcional
+function triangulos(mat, filtro) {
+  const out = [];
+  for (const g of G.groups) if (g.materialIndex === mat) for (let i = g.start; i < g.start + g.count; i += 3) if (!filtro || filtro(i)) out.push(i, i + 1, i + 2);
+  return out;
+}
+function parte(idx, nombre) {
+  const geo = new THREE.BufferGeometry();
+  for (const name of ['position', 'normal', 'uv', 'skinIndex', 'skinWeight']) {
+    const a = G.attributes[name], n = a.itemSize, arr = new a.array.constructor(idx.length * n);
+    for (let k = 0; k < idx.length; k++) for (let c = 0; c < n; c++) arr[k * n + c] = a.array[idx[k] * n + c];
+    geo.setAttribute(name, new THREE.BufferAttribute(arr, n, a.normalized));
+  }
+  const morphs = [], usados = [];
+  for (const [k, corto] of SEL) {
+    const a = G.morphAttributes.position[dict[k]], arr = new Float32Array(idx.length * 3); let mx = 0;
+    for (let j = 0; j < idx.length; j++) for (let c = 0; c < 3; c++) { const v = a.array[idx[j] * 3 + c]; arr[j * 3 + c] = v; mx = Math.max(mx, Math.abs(v)); }
+    if (mx > 0.002) { const ba = new THREE.BufferAttribute(arr, 3); ba.name = corto; morphs.push(ba); usados.push(corto); }
+  }
+  if (morphs.length) { geo.morphAttributes.position = morphs; geo.morphTargetsRelative = true; }
+  const soldada = mergeVertices(geo, 1e-4);
+  // mergeVertices no copia el nombre de las formas: sin esto el .glb sale con «0», «1», …
+  if (soldada.morphAttributes.position) soldada.morphAttributes.position.forEach((a, i) => { a.name = usados[i]; });
+  return { geo: soldada, usados, antes: idx.length, despues: soldada.attributes.position.count, tris: soldada.index.count / 3 };
+}
+// cuerpo sin piernas: fuera los triángulos con los 3 vértices por debajo de 55 cm (el eje z local es la altura)
+const CORTE = 55;
+const triCuerpo = triangulos(0, (i) => Math.max(pos.getZ(i), pos.getZ(i + 1), pos.getZ(i + 2)) >= CORTE);
+const P = { cuerpo: parte(triCuerpo), cabeza: parte(triangulos(1)), pelo: parte(triangulos(2)) };
+const info = {};
+// Cráneo más redondo: la malla de Rocketbox es baja en la coronilla y su silueta se ve en facetas contra el fondo claro.
+// Subdivisión con punto medio de Hermite (el punto medio sale hacia afuera según las normales, como en PN) en los
+// triángulos del cráneo; los vecinos que comparten una arista partida también se parten (sin juntas en T). Las aristas
+// se reconocen por posición, así que una costura de UV no abre grietas.
+function subdividirCraneo(geo, enRegion) {
+  const pos = geo.attributes.position, nor = geo.attributes.normal, uv = geo.attributes.uv, sI = geo.attributes.skinIndex, sW = geo.attributes.skinWeight;
+  const mps = geo.morphAttributes.position || [];
+  const ix = Array.from(geo.index.array);
+  const P3 = (i) => new THREE.Vector3().fromBufferAttribute(pos, i), N3 = (i) => new THREE.Vector3().fromBufferAttribute(nor, i);
+  const kp = (i) => [pos.getX(i), pos.getY(i), pos.getZ(i)].map((v) => Math.round(v * 1000)).join(',');
+  const kArista = (a, b) => { const x = kp(a), y = kp(b); return x < y ? x + '|' + y : y + '|' + x; };
+  const partidas = new Set();
+  for (let t = 0; t < ix.length; t += 3) if (enRegion(ix[t], ix[t + 1], ix[t + 2])) for (const [a, b] of [[ix[t], ix[t + 1]], [ix[t + 1], ix[t + 2]], [ix[t + 2], ix[t]]]) partidas.add(kArista(a, b));
+  const A = { p: Array.from(pos.array), n: Array.from(nor.array), u: Array.from(uv.array), si: Array.from(sI.array), sw: Array.from(sW.array), m: mps.map((m) => Array.from(m.array)) };
+  let nv = pos.count; const medio = new Map();
+  function puntoMedio(a, b) {
+    const clave = a < b ? a + '_' + b : b + '_' + a; if (medio.has(clave)) return medio.get(clave);
+    const p0 = P3(a), p1 = P3(b), n0 = N3(a), n1 = N3(b), d = p1.clone().sub(p0);
+    const m = p0.clone().add(p1).multiplyScalar(0.5).add(n1.clone().multiplyScalar(d.dot(n1) / 8)).sub(n0.clone().multiplyScalar(d.dot(n0) / 8));
+    const n = n0.clone().add(n1).normalize();
+    A.p.push(m.x, m.y, m.z); A.n.push(n.x, n.y, n.z); A.u.push((uv.getX(a) + uv.getX(b)) / 2, (uv.getY(a) + uv.getY(b)) / 2);
+    const w = new Map(); for (const v of [a, b]) for (let c = 0; c < 4; c++) { const j = sI.getComponent(v, c), x = sW.getComponent(v, c) / 2; if (x) w.set(j, (w.get(j) || 0) + x); }
+    const top = [...w.entries()].sort((x, y) => y[1] - x[1]).slice(0, 4); const tot = top.reduce((s, x) => s + x[1], 0) || 1;
+    for (let c = 0; c < 4; c++) { A.si.push(top[c] ? top[c][0] : 0); A.sw.push(top[c] ? top[c][1] / tot : 0); }
+    mps.forEach((mp, k) => { for (let c = 0; c < 3; c++) A.m[k].push((mp.array[a * 3 + c] + mp.array[b * 3 + c]) / 2); });
+    medio.set(clave, nv); return nv++;
+  }
+  const nuevo = []; let n4 = 0, n2 = 0, n3 = 0;
+  for (let t = 0; t < ix.length; t += 3) {
+    let [a, b, c] = [ix[t], ix[t + 1], ix[t + 2]];
+    let sAB = partidas.has(kArista(a, b)), sBC = partidas.has(kArista(b, c)), sCA = partidas.has(kArista(c, a));
+    const k = sAB + sBC + sCA;
+    if (!k) { nuevo.push(a, b, c); continue; }
+    if (k === 3) { const ab = puntoMedio(a, b), bc = puntoMedio(b, c), ca = puntoMedio(c, a); nuevo.push(a, ab, ca, b, bc, ab, c, ca, bc, ab, bc, ca); n4++; continue; }
+    // rotar (conserva el sentido) hasta que la arista partida sea a→b (y, si son dos, también b→c)
+    while (!sAB || (k === 2 && !sBC)) { [a, b, c] = [b, c, a]; [sAB, sBC, sCA] = [sBC, sCA, sAB]; }
+    if (k === 1) { const ab = puntoMedio(a, b); nuevo.push(a, ab, c, ab, b, c); n2++; }
+    else { const ab = puntoMedio(a, b), bc = puntoMedio(b, c); nuevo.push(ab, b, bc, a, ab, bc, a, bc, c); n3++; }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(A.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(A.n, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(A.u, 2));
+  g.setAttribute('skinIndex', new THREE.BufferAttribute(new sI.array.constructor(A.si), 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(A.sw, 4));
+  if (mps.length) { g.morphAttributes.position = mps.map((m, k) => { const at = new THREE.Float32BufferAttribute(A.m[k], 3); at.name = m.name; return at; }); g.morphTargetsRelative = true; }
+  g.setIndex(nuevo);
+  return { g, n4, n2, n3 };
+}
+{
+  const iHead = bi('Bip01_Head'), zOjos = 161.2;
+  for (let pasada = 0; pasada < 2; pasada++) {
+    const g = P.cabeza.geo, gp = g.attributes.position, gsi = g.attributes.skinIndex, gsw = g.attributes.skinWeight;
+    const craneo = (v) => { let w = 0; for (let c = 0; c < 4; c++) if (gsi.getComponent(v, c) === iHead) w += gsw.getComponent(v, c); return w > 0.9 && gp.getZ(v) > zOjos + 2.5; };
+    const r = subdividirCraneo(g, (a, b, c) => craneo(a) && craneo(b) && craneo(c));
+    info['subdivision' + pasada] = { tris: r.g.index.count / 3, x4: r.n4, x2: r.n2, x3: r.n3 };
+    P.cabeza.geo = r.g;
+  }
+  P.cabeza.tris = P.cabeza.geo.index.count / 3; P.cabeza.despues = P.cabeza.geo.attributes.position.count;
+}
+// UV al convenio de glTF (v hacia abajo, origen arriba a la izquierda): las texturas van al derecho en el .glb
+for (const k in P) { const uv = P[k].geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i)); }
+for (const k in P) info[k] = { tris: P[k].tris, verts: P[k].despues, de: P[k].antes, formas: P[k].usados.length };
+info.formasCabeza = P.cabeza.usados; info.formasPelo = P.pelo.usados;
+
+// máscaras UV (2048): ojos (huesos LEye/REye), labios (huesos de labios), interior de la boca (dientes, lengua, encías)
+const S = 2048;
+function mascara(tris, filtroTri, uvAttr = G.attributes.uv) {
+  const c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0, 0, S, S); x.fillStyle = '#fff'; x.strokeStyle = '#fff'; x.lineWidth = 3; x.lineJoin = 'round';
+  let n = 0;
+  for (let k = 0; k < tris.length; k += 3) {
+    if (!filtroTri(tris[k], tris[k + 1], tris[k + 2])) continue; n++;
+    x.beginPath();
+    for (let j = 0; j < 3; j++) { const v = tris[k + j]; const u = uvAttr.getX(v), w = uvAttr.getY(v); j ? x.lineTo(u * S, (1 - w) * S) : x.moveTo(u * S, (1 - w) * S); }
+    x.closePath(); x.fill(); x.stroke();
+  }
+  return { c, n };
+}
+const triCab = triangulos(1);
+const OJOS = new Set([bi('Bip01_LEye'), bi('Bip01_REye')]);
+const LABIOS = new Set(['Bip01_MUpperLip', 'Bip01_MBottomLip', 'Bip01_LUpperlip', 'Bip01_RUpperlip', 'Bip01_LMouthBottom', 'Bip01_RMouthBottom', 'Bip01_LMouthCorner', 'Bip01_RMouthCorner'].map(bi));
+const BOCA = new Set(['Bip01_MTongue'].map(bi));
+const mOjos = mascara(triCab, (a, b, c) => pesoEn(a, OJOS) + pesoEn(b, OJOS) + pesoEn(c, OJOS) > 1.5);
+const mLabios = mascara(triCab, (a, b, c) => pesoEn(a, LABIOS) + pesoEn(b, LABIOS) + pesoEn(c, LABIOS) > 1.2);
+// interior de la boca: por la zona de la textura (abajo a la izquierda: dientes, encías, lengua, fondo)
+const uvA = G.attributes.uv;
+const CUELLO = new Set(['Bip01_Neck', 'Bip01_Spine2', 'Bip01_Spine1', 'Bip01_L_Clavicle', 'Bip01_R_Clavicle'].map(bi));
+const mBoca = mascara(triCab, (a, b, c) => { const u = (uvA.getX(a) + uvA.getX(b) + uvA.getX(c)) / 3, v = (uvA.getY(a) + uvA.getY(b) + uvA.getY(c)) / 3; return u < 0.2 && v < 0.38 && pesoEn(a, CUELLO) + pesoEn(b, CUELLO) + pesoEn(c, CUELLO) < 0.2; });
+info.mascaras = { ojos: mOjos.n, labios: mLabios.n, boca: mBoca.n };
+for (const [n, m] of [['mask_ojos.png', mOjos], ['mask_labios.png', mLabios], ['mask_boca.png', mBoca]]) {
+  const blob = await new Promise((ok) => m.c.toBlob(ok, 'image/png'));
+  await fetch('/guardar?n=' + n, { method: 'POST', body: blob });
+}
+// huesos que se usan para la cara (¿la piel de los ojos sigue a sus huesos?)
+const ojosV = []; for (let v = 0; v < pos.count; v++) if (pesoEn(v, OJOS) > 0.5) ojosV.push(v);
+info.vertsOjos = ojosV.length;
+
+// escena a exportar: el esqueleto tal cual (cm, Biped) y las tres mallas con la misma piel
+const escena = new THREE.Scene();
+const raiz = new THREE.Group(); raiz.name = 'rosa'; escena.add(raiz);
+raiz.add(root.getObjectByName('Bip01'));
+const mats = { cuerpo: 'cuerpo', cabeza: 'cabeza', pelo: 'pelo' };
+for (const k of ['cuerpo', 'cabeza', 'pelo']) {
+  const m = new THREE.SkinnedMesh(P[k].geo, new THREE.MeshStandardMaterial({ name: mats[k], roughness: 0.6, metalness: 0, side: k === 'pelo' ? THREE.DoubleSide : THREE.FrontSide, alphaTest: k === 'pelo' ? 0.4 : 0 }));
+  m.name = k; m.position.copy(src.position); m.quaternion.copy(src.quaternion); m.scale.copy(src.scale);
+  m.updateMorphTargets();
+  raiz.add(m); m.bind(src.skeleton, src.bindMatrix);
+}
+escena.updateMatrixWorld(true);
+const glb = await new GLTFExporter().parseAsync(escena, { binary: true, onlyVisible: true, animations: [] });
+const r = await (await fetch('/guardar?n=geometria.glb', { method: 'POST', body: glb })).json();
+info.glb = r.bytes;
+window.INFO = info; document.title = 'listo';
+} catch (e) { window.INFO = { error: String(e && e.stack || e) }; document.title = 'listo'; }
+</script></body></html>

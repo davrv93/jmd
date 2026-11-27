@@ -12,6 +12,24 @@ objectives:
     title: Ordenar la entrevista en un mapa de empatía y encontrar un insight
   - id: dtc-01-o4
     title: Escribir un punto de vista y una pregunta «¿Cómo podríamos…?»
+materials:
+  - id: dtc-01-v1
+    title: "Video · Qué es el Design Thinking (51 s)"
+    kind: video
+    file: materials/videos/v1-que-es-design-thinking.mp4
+  - id: dtc-01-v2
+    title: "Video · Cybex: mirar caras (32 s)"
+    kind: video
+    file: materials/videos/v2-cybex-mirar-caras.mp4
+  - id: dtc-01-v3
+    title: "Video · Cybex: miedo, tubos y un jefe que dice no (41 s)"
+    kind: video
+    file: materials/videos/v3-cybex-miedo-y-tubos.mp4
+  - id: dtc-01-rosa3d
+    title: "Rosa 3D · modelo del avatar de práctica (glTF, 3,4 MB; lo carga la estación «Entrevista a Rosa»)"
+    kind: file
+    file: materials/rosa3d/rosa.glb
+    objective_ids: [dtc-01-o2]
 cycle:
   - id: ver
     title: Ver los clips y el caso Cybex

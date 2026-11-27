@@ -6,7 +6,7 @@ Una idea del alumno madura en tres movimientos (Entender, Imaginar, Probar) y 13
 Este generador escribe dos tipos de escena:
   - escenas del laboratorio: <body data-estacion="…">, abren el laboratorio en esa estación («ficha» = la idea
     consolidada en una página). Lo que se escribe, los pedidos para Claude y la galería están en lab.js;
-  - láminas: bienvenida, principios, cómo pensamos, clips del webinar, repaso y simulador.
+  - láminas: bienvenida, principios, cómo pensamos, videos propios, repaso y simulador.
 
 Fuentes de los clips: Klebahn, P. y Utley, J. (2021, 3 de septiembre). «Design Thinking: What is it and why should
 I care?». Webinar de Stanford Online, Hasso Plattner Institute of Design (d.school). Los tiempos (hh:mm:ss) son los
@@ -23,7 +23,7 @@ LIVE = CURSO / "live"
 e = html.escape
 
 WEBINAR = ("Klebahn, P. y Utley, J. (2021, 3 de septiembre). <i>Design Thinking: What is it and why should I care?</i> "
-           "Webinar de Stanford Online, Hasso Plattner Institute of Design (d.school), Stanford University. Los clips se proyectan en vivo; el video no se publica.")
+           "Webinar de Stanford Online, Hasso Plattner Institute of Design (d.school), Stanford University. Los videos son propios de JMD Learning, narrados con voz sintética (Gemini) a partir de ese webinar y de las fuentes citadas en pantalla.")
 PRACTICA = "Preguntas de práctica escritas para este curso: no son preguntas oficiales del examen DTPC®."
 FASES = {"emp": "Empatizar", "def": "Definir", "ide": "Idear", "pro": "Prototipar", "eva": "Evaluar", "met": "El método"}
 FLECHA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>'
@@ -31,11 +31,17 @@ H2 = 'class="seccion"'
 
 
 # ------------------------------------------------------------------ piezas de las láminas
+VIDEOS = {"00:00:56": "v1-que-es-design-thinking.mp4", "00:07:58": "v2-cybex-mirar-caras.mp4", "00:09:54": "v3-cybex-miedo-y-tubos.mp4",
+          "00:19:04": "v4-diverger-antes.mp4", "00:15:03": "v6-crea-tus-datos.mp4", "00:35:34": "v7-westfield.mp4"}
+
+
 def clip(inicio, fin, titulo, texto):
-    """Los tiempos quedan solo en un comentario (la guía del profe es ANALISIS-3-sesiones.md); el alumno ve la duración."""
-    a = [int(x) for x in inicio.split(":")]; z = [int(x) for x in fin.split(":")]
-    minutos = max(1, round(((z[0] - a[0]) * 3600 + (z[1] - a[1]) * 60 + z[2] - a[2]) / 60))
-    return f'<!-- clip {inicio} → {fin} --><div class="clip"><span class="tc">Clip · {minutos} min</span><b>{titulo}</b><p>{texto}</p></div>'
+    """Video propio de JMD Learning (narrado, con fuentes en pantalla) en lugar del clip del webinar. Los tiempos del
+    webinar quedan en un comentario: son la referencia del profe (ANALISIS-3-sesiones.md)."""
+    archivo = VIDEOS[inicio]
+    return (f'<!-- basado en el webinar {inicio} → {fin} --><figure class="video">'
+            f'<video controls preload="metadata" playsinline src="/files/design-thinking-claude/materials/videos/{archivo}"></video>'
+            f'<figcaption><b>{titulo}</b> {texto}</figcaption></figure>')
 
 
 def revela(rid, pregunta, respuesta, boton="Ver la respuesta"):
@@ -82,13 +88,14 @@ def reloj(seg, titulo, texto):
 
 
 def quiz(preguntas, modo="repaso"):
-    out = [f'<form class="quiz" data-quiz="{modo}">']
+    # div, no <form>: el iframe del LIVE no tiene allow-forms y un submit nunca llega (lms-escenas-medios).
+    out = [f'<div class="quiz" data-quiz="{modo}">']
     for n, (enun, ops, ok, porque) in enumerate(preguntas, 1):
         out.append(f'<div class="preg"><fieldset data-ok="{ok}"><legend>{n}. {enun}</legend>')
         for letra, op in zip("abcd", ops):
             out.append(f'<label><input type="radio" name="q{n}" value="{letra}"> <span>{op}</span></label>')
         out.append(f'<p class="porque">{porque}</p></fieldset></div>')
-    out.append('<div class="fila" style="margin-top:14px"><button class="boton" type="submit">Corregir</button><span data-quiz-res></span></div></form>')
+    out.append('<div class="fila" style="margin-top:14px"><button class="boton" type="button" data-corregir>Corregir</button><span data-quiz-res aria-live="polite"></span></div></div>')
     return "\n".join(out)
 
 
@@ -146,6 +153,7 @@ def laboratorio(leccion, sid, titulo, fase_lms, paso, minutos, estacion, *, anex
     (d / "escena.html").write_text(CABEZA.format(titulo=e(titulo)) + f'''<body data-escena="{sid}" data-estacion="{estacion}">
 <div id="lab"></div>
 {extra}<noscript><p style="padding:24px">El laboratorio necesita JavaScript.</p></noscript>
+<script src="../../comun/rosa3d.js"></script>
 <script src="../../comun/lab.js"></script>
 </body>
 </html>
@@ -182,7 +190,7 @@ def sesion1():
     lamina(L, 2, T, "01-principios", "Los principios, de la fuente", "conceptualizacion", "ver", 8, "met",
            "Tres fuentes, <em>una misma idea:</em> primero la persona",
            "La d.school de Stanford, IDEO y el Design Council británico describen el método con palabras distintas. Las tres empiezan por entender a alguien, y ninguna es una receta.",
-           f'''{revela("r-variable", "Antes del clip: según la investigación que citan, ¿qué variable influye más en lo buenas que son tus ideas?",
+           f'''{revela("r-variable", "Antes del video: según la investigación que citan, ¿qué variable influye más en lo buenas que son tus ideas?",
         "<p><b>Cuántas ideas tienes</b>. «Para tener una buena idea, necesitas muchas», dice Utley citando a Linus Pauling.</p>")}
 {clip("00:00:56", "00:05:00", "Qué es y por qué te importa", "Jeremy Utley: «una manera de generar ideas y ver si sirven», para cualquier rol. Las cinco fases, y el aviso: no es una receta de pastel.")}
 <div class="rej">
@@ -290,7 +298,7 @@ def sesion2():
     lamina(L, 2, T, "01-diverger-antes", "Diverger antes de converger", "conceptualizacion", "ver", 8, "ide",
            "Abre muchas puertas <em>antes</em> de elegir una",
            "En la solución convencional, el jefe da una idea y tú la ejecutas. El Design Thinking agrega dos pasos: generar muchas opciones antes de decidir, y hacerlo con el problema y también con la solución.",
-           f'''{revela("r-dos", "Antes del clip: ¿cuántas ideas deja, en promedio, una lluvia de ideas en una empresa?",
+           f'''{revela("r-dos", "Antes del video: ¿cuántas ideas deja, en promedio, una lluvia de ideas en una empresa?",
         "<p><b>Dos. Solo dos</b>, según Jeremy Utley. El video no cita el estudio. Por eso hoy la meta es cantidad: 15 ideas tuyas antes de juzgar.</p>")}
 {clip("00:19:04", "00:23:30", "Dos avances sobre la solución convencional", "Diverger antes de converger, y separar «encontrar el problema» de «resolverlo». «Un problema bien planteado está medio resuelto» (John Dewey). El 2×2: ¿trabajas en el problema o en la solución? ¿Abres opciones o decides?")}
 {dxd(["ds"])}
@@ -362,7 +370,7 @@ def sesion3():
            "En la sesión 1 quedó una pregunta: Bill puso dos caminadoras lado a lado en un hotel. ¿Cuántas personas eligieron la nueva?",
            f'''{apuesta("apuesta_cybex", "De 30 personas, ¿cuántas eligieron la nueva?", "Por ejemplo: 18 de 30", "Publicar mi apuesta")}
 <section class="revela" id="r-28" data-oculto>
-  <p><b>Cuando todos hayan publicado, el profe pone el clip.</b></p>
+  <p><b>Cuando todos hayan publicado, el profe pone el video.</b></p>
   <div class="dentro">
 {clip("00:15:03", "00:18:34", "Crear tus propios datos", "Jeremy Utley: el jefe reaccionaba a una idea sin información. Los diseñadores «encuentran maneras ingeniosas de crear datos nuevos».")}
 <div class="rej">
@@ -377,7 +385,7 @@ def sesion3():
     lamina(L, 3, T, "02-la-gente-miente", "Lo que dicen y lo que hacen", "reflexion", "ver", 8, "eva",
            "Preguntar «¿vendrías?» <em>no es probar</em>",
            "Un centro comercial preguntó a mil personas si subirían a un jardín cervecero en el cuarto piso. 850 dijeron que sí.",
-           f'''{revela("r-westfield", "Antes del clip: construyeron el jardín cervecero. ¿Qué pasó con la gente en el cuarto piso?",
+           f'''{revela("r-westfield", "Antes del video: construyeron el jardín cervecero. ¿Qué pasó con la gente en el cuarto piso?",
         "<p><b>Casi nada cambió.</b> No subió más gente, las rentas siguieron cayendo y los locatarios se iban. La gente «no miente por malicia»: no puede imaginar la verdad o no quiere decirle que no a quien pregunta.</p>")}
 {clip("00:35:34", "00:40:33", "Westfield, San Francisco, 2016", "La reunión de emergencia, la encuesta y el fracaso. La prueba que debieron hacer: cortinas, un practicante, una jarra de cerveza y un cactus, y contar quién sube al cuarto piso.")}
 <div class="rej dos">

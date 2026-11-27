@@ -212,6 +212,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("PUT /api/v1/lessons/{id}/opinion", s.authed(s.guardarOpinion))
 	mux.Handle("POST /api/v1/opiniones/{id}/like", s.authed(s.opinionLike))
 	mux.Handle("PUT /api/v1/opiniones/{id}/oculta", s.authed(s.staff(s.opinionOcultar)))
+	// Laboratorio de ideas: la idea de cada alumno por curso, en la base (ver laboratorio.go).
+	mux.Handle("GET /api/v1/laboratorio/{curso}", s.authed(s.laboratorioGet))
+	mux.Handle("PUT /api/v1/laboratorio/{curso}", s.authed(s.laboratorioPut))
+	mux.Handle("GET /api/v1/laboratorio/{curso}/grupo", s.authed(s.staff(s.laboratorioGrupo)))
 	mux.Handle("GET /api/v1/examples/{id}", s.authed(s.example))
 	mux.Handle("POST /api/v1/run", s.authed(s.run))
 	mux.Handle("GET /api/v1/term", s.authed(s.term))

@@ -12,6 +12,19 @@ objectives:
     title: Decidir a qué fase volver con lo aprendido
   - id: dtc-03-o4
     title: Practicar el formato del examen DTPC® y presentar el proyecto en 200 caracteres
+materials:
+  - id: dtc-03-v6
+    title: "Video · Crea tus datos: 28 de 30 (29 s)"
+    kind: video
+    file: materials/videos/v6-crea-tus-datos.mp4
+  - id: dtc-03-v7
+    title: "Video · Westfield: lo que dicen y lo que hacen (37 s)"
+    kind: video
+    file: materials/videos/v7-westfield.mp4
+  - id: dtc-03-v8
+    title: "Video · Somos los del enfoque (24 s)"
+    kind: video
+    file: materials/videos/v8-somos-del-enfoque.mp4
 cycle:
   - id: ver
     title: Ver los clips sobre crear datos

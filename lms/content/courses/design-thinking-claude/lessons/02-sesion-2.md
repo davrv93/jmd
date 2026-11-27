@@ -12,6 +12,15 @@ objectives:
     title: Construir un MVP de baja fidelidad en 15 minutos (maqueta, servicio actuado, pantalla o mago de Oz)
   - id: dtc-02-o4
     title: Nombrar el supuesto más riesgoso y cómo se va a medir
+materials:
+  - id: dtc-02-v4
+    title: "Video · Diverger antes de converger (43 s)"
+    kind: video
+    file: materials/videos/v4-diverger-antes.mp4
+  - id: dtc-02-v5
+    title: "Video · Elegir y prototipar rápido (40 s)"
+    kind: video
+    file: materials/videos/v5-elegir-y-prototipar.mp4
 cycle:
   - id: ver
     title: Ver los clips sobre diverger y converger

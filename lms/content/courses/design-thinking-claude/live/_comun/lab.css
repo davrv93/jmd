@@ -164,6 +164,8 @@ details[open] > summary::before { content: "–"; }
 .cuadrante textarea { border: 0 !important; box-shadow: none !important; padding: 6px 0; border-radius: 0; background: transparent; min-height: 96px; font-size: 16px; }
 .cuadrante textarea:focus { outline: none; }
 .cuadrante:focus-within { box-shadow: inset 0 0 0 2px var(--lab-tinta); }
+.cuadrante-q { margin: 4px 0 2px; font-size: 14px; line-height: 1.4; color: var(--lab-mut2); }
+.cuadrante textarea::placeholder { font-style: italic; }
 
 .criterios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: start; }
 .criterio { background: var(--lab-s1); border-radius: 16px; padding: 14px 16px; box-shadow: var(--lab-sombra); display: grid; gap: 2px; }
@@ -307,7 +309,8 @@ details[open] > summary::before { content: "–"; }
 /* ------------------------------------------------------------------ pantallas angostas */
 @media (max-width: 880px) {
   .lab-top { height: 52px; padding: 0 12px; gap: 8px; }
-  .lab-cuerpo { grid-template-columns: 1fr; }
+  .lab-cuerpo { grid-template-columns: minmax(0, 1fr); }
+  .lab-rail, .lab-hoja { min-width: 0; }
   .lab-rail { position: sticky; top: 52px; z-index: 4; height: auto; display: flex; gap: 4px; overflow-x: auto; padding: 6px 10px; background: var(--lab-bg); border-bottom: 1px solid var(--lab-lin); scrollbar-width: none; }
   .lab-rail::-webkit-scrollbar { display: none; }
   .mov { display: contents; } .lab-rail ul, .lab-rail li { display: contents; }
@@ -339,6 +342,45 @@ details[open] > summary::before { content: "–"; }
 .caso summary { color: var(--lab-fg); font-weight: 600; }
 .caso, .ejemplo { background: var(--lab-s1); border-radius: 16px; padding: 12px 18px; box-shadow: var(--lab-sombra); }
 .caso-x { margin: 10px 0 0; font-size: 15.5px; line-height: 1.55; } .caso-f { margin: 8px 0 0; font-size: 13px; color: var(--lab-mut2); }
+
+/* Videos propios (cuaderno de campo) */
+.video { margin: 0; display: grid; gap: 8px; }
+.video video { width: 100%; aspect-ratio: 16 / 9; border-radius: 18px; background: #fbfbfa; box-shadow: var(--lab-sombra); display: block; }
+.video figcaption { font-size: 14px; color: var(--lab-mut2); } .video figcaption b { color: var(--lab-fg); font-weight: 600; }
+
+/* Tablero de la lluvia de ideas: post-its de papel (los tuyos amarillos, los de Claude en su tono) */
+.tablero { background: var(--lab-s1); border-radius: 20px; padding: 18px 20px; box-shadow: var(--lab-sombra); display: grid; gap: 14px; }
+.tablero-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.tablero-fila { flex-wrap: nowrap; }
+.tablero-in { flex: 1; min-width: 0; border: 1px solid var(--lab-lin2); border-radius: 12px; padding: 12px 14px; background: var(--lab-s1); font: 400 17px/1.4 var(--lab-font); }
+.tablero-in:focus { outline: 2px solid var(--lab-tinta); outline-offset: 1px; border-color: transparent; }
+.tablero-notas { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; align-items: start; }
+.nota-post { position: relative; background: #fff4b8; color: #1d1d1f; border-radius: 3px 3px 12px 3px; padding: 10px 12px 10px; min-height: 120px; display: flex; flex-direction: column; gap: 4px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .06), 0 6px 14px -8px rgba(0, 0, 0, .35); }
+.nota-post.de-claude { background: #f7e1d7; }
+.nota-post.fav { box-shadow: 0 0 0 2px #1d1d1f, 0 6px 14px -8px rgba(0, 0, 0, .35); }
+.nota-post.elegida { box-shadow: 0 0 0 2.5px #1d1d1f, 0 6px 14px -8px rgba(0, 0, 0, .35); }
+.tablero-notas.votar .nota-post.fav:not(.elegida) { box-shadow: 0 1px 1px rgba(0, 0, 0, .06), 0 6px 14px -8px rgba(0, 0, 0, .35); }
+.nota-de { font: 600 11px/1 var(--lab-font); letter-spacing: .05em; text-transform: uppercase; color: rgba(29, 29, 31, .62); }
+.nota-post.de-claude .nota-de { color: #8a3818; }
+.nota-t { border: 0; background: transparent; resize: none; font: 500 15.5px/1.35 var(--lab-font); color: #1d1d1f; padding: 0; min-height: 3.2em; overflow: hidden; }
+.nota-t:focus { outline: none; }
+.nota-post:focus-within { outline: 2px solid #1d1d1f; outline-offset: 2px; }
+.nota-acc { display: flex; justify-content: space-between; margin-top: auto; }
+.nota-fav, .nota-borrar { border: 0; background: rgba(255, 255, 255, .55); width: 34px; height: 34px; border-radius: 50%; font-size: 18px; line-height: 1; cursor: pointer; color: #1d1d1f; }
+.nota-fav[aria-pressed="true"] { background: #1d1d1f; color: #fff4b8; }
+.nota-puntos { display: flex; align-items: center; gap: 6px; margin-top: auto; flex-wrap: wrap; }
+.punto-voto { --c: #6e6e73; width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid var(--c); background: rgba(255, 255, 255, .6); cursor: pointer; }
+.punto-voto.c1 { --c: #237a4b; } .punto-voto.c2 { --c: #2f6db8; } .punto-voto.c3 { --c: #8f3a5a; }
+.punto-voto[aria-pressed="true"] { background: var(--c); }
+.nota-elegir { margin-left: auto; font-size: 13px; color: #1d1d1f; }
+@media (max-width: 600px) { .tablero-notas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Rosa 3D: retrato de entrevista; el SVG queda debajo hasta que la escena 3D aparece */
+.rosa-3d { position: relative; width: 320px; height: 360px; max-width: 100%; border-radius: 22px; overflow: hidden; flex: none; display: grid; place-items: center; background: var(--lab-s3); }
+.rosa-cab.con-3d { align-items: flex-end; }
+.rosa-3d .rosa-retrato.descubierto::after { border-color: transparent; }
+@media (max-width: 600px) { .rosa-cab.con-3d { flex-direction: column; align-items: stretch; } .rosa-3d { width: 100%; height: auto; aspect-ratio: 8 / 9; } }
 
 /* Rosa: el avatar de práctica (personaje ficticio; responde la IA de la clase) */
 .tema { background: var(--lab-s1); border-radius: 18px; padding: 18px 20px; box-shadow: var(--lab-sombra); display: grid; gap: 8px; }

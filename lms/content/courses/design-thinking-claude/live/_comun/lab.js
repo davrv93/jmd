@@ -125,9 +125,16 @@
         f: "All.Can (2019), «GE Healthcare Adventure Series»; Milwaukee Journal Sentinel (21-01-2016)." },
       clave: ["sorpresa", "necesidad"],
       b: [
+        { k: "consejos", t: "Cómo llenarlo", abierto: true, items: [
+          ["Relee tus notas de la entrevista", "Cada frase o dato va a uno de los cuatro cuadrantes. Una idea por línea."],
+          ["Separa lo que oíste de lo que interpretas", "Dice y Hace son hechos: lo que dijo y lo que hizo. Piensa y Siente son tu lectura: márcalos con (S) si no los dijo."],
+          ["Busca dónde no cuadra", "Cuando dice una cosa y hace otra, ahí suele estar el insight. Bill vio a gente que decía estar bien y se agarraba de la pantalla."]] },
+        { k: "traerCitas" },
         { k: "mapa", campos: [
-          { id: "dice", t: "Dice", ph: "Citas textuales" }, { id: "piensa", t: "Piensa", ph: "Lo que le preocupa o cree" },
-          { id: "hace", t: "Hace", ph: "Acciones y hábitos" }, { id: "siente", t: "Siente", ph: "Miedo, cansancio, orgullo… Bill escribió «miedo»" }] },
+          { id: "dice", t: "Dice", q: "¿Qué frases dijo, tal cual? Entre comillas.", ph: "Ej. Cybex: «Elegí esta máquina porque se siente más segura»" },
+          { id: "piensa", t: "Piensa", q: "¿Qué crees que pasa por su cabeza, aunque no lo diga?", ph: "Ej. Cybex: «Me puedo caer» (S)" },
+          { id: "hace", t: "Hace", q: "¿Qué hizo o hace? Acciones concretas, no opiniones.", ph: "Ej. Cybex: se agarra de la pantalla con las dos manos" },
+          { id: "siente", t: "Siente", q: "¿Qué emociones mostró o nombró?", ph: "Ej. Cybex: miedo, inseguridad" }] },
         { k: "claude", id: "p-mapa", t: "Revisa tu mapa", d: "Claude compara tu mapa con tus notas; no inventa datos.", req: ["notas"],
           x: "Te paso mis notas de una entrevista con {{entrevistado}}, sobre este reto: {{reto}}\n\n{{notas}}\n\nY el mapa de empatía que armé:\nDICE: {{dice}}\nPIENSA: {{piensa}}\nHACE: {{hace}}\nSIENTE: {{siente}}\n\n1. Marca con (S) lo que en mi mapa es suposición mía y no algo que la persona dijo o hizo.\n2. Dime qué de mis notas falta en el mapa.\n3. Señala 2 tensiones o contradicciones (dice una cosa y hace otra).\n4. Propón 3 posibles insights, cada uno con la cita que lo respalda.\nNo inventes nada que no esté en mis notas." },
         { k: "campo", id: "sorpresa", t: "Lo que me sorprendió", ayuda: "El insight: algo que no sabías antes de la entrevista.", max: 200 },
@@ -151,7 +158,7 @@
       ] },
     { id: "ideas", mov: "imaginar", fase: "ide", escena: "02-lluvia-de-ideas", t: "Ideas",
       h: "Primero tú, después Claude",
-      d: "Cinco minutos de ideas tuyas, una por línea y sin juzgar. Cuando tengas al menos cinco, Claude suma las que no se te ocurrieron.",
+      d: "Cinco minutos de ideas tuyas en el tablero, una por nota y sin juzgar. Cuando tengas al menos cinco, Claude suma las que no se te ocurrieron.",
       ia: { h: "Ir primero tú. Las ideas de la IA se parecen entre sí, y verlas antes de pensar puede fijarte en ellas: menos ideas, menos variadas.",
         m: "Volumen y variedad. En un estudio de Wharton, la IA generativa (GPT-4) dio ideas más rápido y más barato que estudiantes de MBA, con mayor intención de compra promedio, y la mayoría de las mejores fueron suyas.",
         ev: "Girotra, Meincke, Terwiesch y Ulrich (2023), «Ideas are dimes a dozen», Wharton · Doshi y Hauser (2024), Science Advances 10(28) · Wadinambiarachchi et al. (2024), CHI." },
@@ -160,10 +167,9 @@
       clave: ["ideas"],
       b: [
         { k: "reloj", s: 300, t: "5 minutos, solo tú", d: "Antes de abrir Claude. La meta: 15 ideas." },
-        { k: "campo", id: "ideas", t: "Mis ideas", ayuda: "Una por línea. Marca tu favorita con * al inicio.", filas: 8, lineas: true, ph: "* Recordatorio en audio con la voz de la doctora" },
+        { k: "tablero", modo: "idear" },
         { k: "claude", id: "p-ideas", t: "Suma ideas y aplica SCAMPER", d: "Se activa con 5 ideas tuyas. Claude no evalúa todavía: agrega variedad y deforma tu favorita.", req: ["hmw", "ideas"], min: { ideas: 5 },
           x: "Mi pregunta: {{hmw}}\n\nMis ideas (la que tiene * es mi favorita):\n{{ideas}}\n\n1. No las evalúes todavía.\n2. Agrega 10 ideas distintas a las mías y rotúlalas: 3 SEGURAS, 4 RARAS y 3 que ROMPAN UNA REGLA de mi rubro.\n3. Aplica SCAMPER a mi idea favorita: una variante por letra (Sustituir, Combinar, Adaptar, Modificar, Poner otro uso, Eliminar, Reordenar)." },
-        { k: "campo", id: "ideas_claude", t: "Las ideas de Claude que me sirven", ayuda: "Solo las que te muevan algo.", filas: 4, lineas: true },
         { k: "consejos", t: "Las reglas de la lluvia de ideas", items: [
           ["Cantidad antes que calidad", "«Para tener una buena idea necesitas muchas» (Linus Pauling, citado por Utley)."],
           ["Nada de «sí, pero…»", "Hoy no se evalúa: se elige en la estación Elegir."],
@@ -186,13 +192,15 @@
     { id: "elegir", mov: "imaginar", fase: "ide", escena: "04-elige", t: "Elegir",
       h: "Elige con tres criterios, no con uno",
       d: "Si eliges solo por presupuesto, siempre gana lo de siempre. Marca tus ideas con tres criterios distintos, como los puntos de colores de Klebahn.",
+      video: ["v5-elegir-y-prototipar.mp4", "Video · Elegir y prototipar rápido (40 s)"],
       ia: { h: "La decisión. En un experimento con 758 consultores, en una tarea de juicio fuera del alcance de la IA, quienes usaron GPT-4 acertaron 19 puntos menos.",
         m: "Compara cada idea con cada criterio por separado y te dice qué aprenderías al probarla.",
         ev: "Dell'Acqua, McFowland, Mollick et al. (2023), «Navigating the Jagged Technological Frontier», Harvard Business School; Organization Science (2026)." },
       clave: ["top3", "idea"],
       b: [
         { k: "criterios", items: [["c1", "La que más encantaría", "a la persona de tu entrevista, no a ti"], ["c2", "La más rápida de probar", "esta semana y con menos de S/ 50"], ["c3", "La más audaz", "la que nadie de tu rubro se atrevería"]] },
-        { k: "campo", id: "top3", t: "Mis 3 finalistas", ayuda: "Una por línea, con sus criterios.", filas: 3, lineas: true },
+        { k: "tablero", modo: "votar" },
+        { k: "campo", id: "top3", t: "Mis 3 finalistas", ayuda: "Se llenan con las notas que más puntos tienen; puedes editarlos.", filas: 3, lineas: true },
         { k: "claude", id: "p-elegir", t: "Compara sin decidir por ti", d: "Claude evalúa cada criterio por separado; decides tú.", req: ["hmw", "top3"],
           x: "Estoy resolviendo: {{hmw}}\nPara: {{usuario}}\n\nMis 3 finalistas:\n{{top3}}\n\nEvalúalas con 3 criterios POR SEPARADO, sin un ranking único: 1) cuánto le encantaría a la persona, 2) qué tan rápido la pruebo esta semana con menos de S/ 50, 3) qué tan audaz es. Dame una tabla y, para cada idea, qué aprendería si la pruebo primero. No elijas por mí." },
         { k: "campo", id: "idea", t: "La idea que pruebo primero", ayuda: "Si dudas entre dos, prototipa las dos: es un portafolio.", max: 200 }
@@ -239,12 +247,15 @@
       b: [
         { k: "reloj", s: 360, t: "6 minutos por persona", d: "Luego cambian de rol." },
         { k: "mapa", campos: [
-          { id: "gusto", t: "Le gustó", ph: "Lo que funcionó y cómo lo notaste" }, { id: "mejora", t: "Mejoraría", ph: "Dónde se trabó o qué criticó" },
-          { id: "dudas", t: "Preguntó", ph: "Cada pregunta es un hueco del prototipo" }, { id: "ideas_nuevas", t: "Ideas nuevas", ph: "Lo que se te ocurrió al verlo usarlo" }] }
+          { id: "gusto", t: "Le gustó", q: "¿Qué usó sin ayuda o le sacó una sonrisa?", ph: "Lo que funcionó y cómo lo notaste" },
+          { id: "mejora", t: "Mejoraría", q: "¿Dónde se trabó, dudó o se quejó?", ph: "Dónde se trabó o qué criticó" },
+          { id: "dudas", t: "Preguntó", q: "¿Qué preguntó? Cópialo tal cual.", ph: "Cada pregunta es un hueco del prototipo" },
+          { id: "ideas_nuevas", t: "Ideas nuevas", q: "¿Qué se te ocurrió al verlo usarlo?", ph: "Lo que se te ocurrió al verlo usarlo" }] }
       ] },
     { id: "iterar", mov: "probar", fase: "eva", escena: "05-iterar", t: "Iterar",
       h: "No sabemos la respuesta hasta actuar",
       d: "Escribe tu lectura de la prueba. Volver a una fase anterior no es fracasar: es el método.",
+      video: ["v8-somos-del-enfoque.mp4", "Video · Somos los del enfoque (24 s)"],
       ia: { h: "Decidir a qué fase volver.", m: "Separa lo que la persona hizo de lo que esperabas y propone la siguiente prueba más barata." },
       clave: ["iterar"],
       b: [
@@ -269,6 +280,7 @@
   var ROTULO = { titulo: "El nombre de mi idea", adivina: "Mi apuesta", apuesta_cybex: "Mi apuesta" };
   EST.forEach(function (e) { e.b.forEach(function (b) { if (b.id && b.t && b.k !== "claude") ROTULO[b.id] = b.t; (b.campos || []).forEach(function (c) { ROTULO[c.id] = c.t; }); }); });
   EST.forEach(function (e) { ROTULO["claude_" + e.id] = "Lo que respondió Claude · " + e.t; });
+  ROTULO.ideas = "Mis ideas (en el tablero)"; ROTULO.ideas_claude = "Las ideas de Claude";
 
   // Madurez: la idea pasa de semilla a concreta según lo que ya tiene escrito.
   var CLAVES_MADUREZ = ["reto", "usuario", "notas", "sorpresa", "pov", "hmw", "ideas", "idea", "mvp", "supuesto", "gusto", "iterar", "pitch"];
@@ -288,7 +300,9 @@
   }
   var marcaT = 0;
   function alCambiar() {
+    S._t = Date.now();
     var ok = guardar();
+    nubeGuardar();
     document.body.classList.toggle("sin-guardar", !ok);
     if (ok) { $$("[data-guardado]").forEach(function (g) { g.classList.add("ver"); }); clearTimeout(marcaT); marcaT = setTimeout(function () { $$("[data-guardado]").forEach(function (g) { g.classList.remove("ver"); }); }, 1600); }
     pintarEspejos(); if (window.LAB && LAB.refrescar) LAB.refrescar();
@@ -363,6 +377,8 @@
       EST.filter(function (e) { return e.mov === mv.id; }).forEach(function (e) {
         var campos = [];
         e.b.forEach(function (b) { if (b.id && b.k !== "claude" && val(b.id)) campos.push("**" + b.t + ":** " + val(b.id)); (b.campos || []).forEach(function (c) { if (val(c.id)) campos.push("**" + c.t + ":** " + val(c.id)); }); });
+        if (e.b.some(function (b) { return b.k === "tablero" && b.modo === "idear"; }) && Array.isArray(S.tablero) && S.tablero.length)
+          campos.push("**Tablero de ideas:**\n" + S.tablero.map(function (n) { return "- " + (n.fav ? "★ " : "") + n.t + (n.de === "claude" ? " (Claude)" : "") + (puntos(n) ? " · " + CRIT.filter(function (c) { return n.v[c[0]]; }).map(function (c) { return c[1]; }).join(", ") : ""); }).join("\n"));
         if (val("claude_" + e.id)) campos.push("**Lo que respondió Claude:**\n\n" + val("claude_" + e.id));
         if (campos.length) bloque.push("### " + e.t, "", campos.join("\n\n"), "");
       });
@@ -412,8 +428,9 @@
   function enlazarQuiz(form) {
     if (form._lab) return; form._lab = 1;
     var examen = form.getAttribute("data-quiz") === "examen";
-    form.addEventListener("submit", function (ev) {
-      ev.preventDefault(); var bien = 0, total = 0, mal = [];
+    var corregir = $("[data-corregir]", form); if (!corregir) return;
+    corregir.addEventListener("click", function () {
+      var bien = 0, total = 0, mal = [];
       $$(".preg fieldset", form).forEach(function (fs, n) {
         total++; var ok = fs.getAttribute("data-ok"), marcada = $("input:checked", fs);
         $$("label", fs).forEach(function (l) { l.classList.remove("bien", "mal"); var inp = $("input", l); if (inp.value === ok) l.classList.add("bien"); else if (inp.checked) l.classList.add("mal"); });
@@ -596,8 +613,18 @@
     var log = h("div", { class: "rosa-log", "aria-live": "polite" });
     var cara = h("div", { class: "rosa-retrato", html: CARA });
     var svg = $("svg", cara), boca = $(".boca", cara), bocaA = $(".boca-abierta", cara);
-    function gesto(g) { g = BOCAS[g] ? g : "tranquila"; svg.setAttribute("data-gesto", g); boca.setAttribute("d", BOCAS[g]); }
-    function abrir(n) { bocaA.setAttribute("ry", (n * 4.5).toFixed(2)); }
+    var r3d = null, caja3d = null;
+    function gesto(g) { g = BOCAS[g] ? g : "tranquila"; svg.setAttribute("data-gesto", g); boca.setAttribute("d", BOCAS[g]); if (r3d) r3d.gesto(g); }
+    function abrir(n) { bocaA.setAttribute("ry", (n * 4.5).toFixed(2)); if (r3d) r3d.boca(n); }
+    // Rosa 3D (rosa3d.js: Rocketbox Female_Adult_11, Three.js). Sin WebGL2 o en un equipo débil queda el dibujo SVG.
+    function volverAlSvg() { r3d = null; if (caja3d && caja3d.parentNode) caja3d.replaceWith(cara); }
+    if (window.Rosa3D && window.Rosa3D.disponible()) {
+      caja3d = h("div", { class: "rosa-3d" }); caja3d.appendChild(cara);
+      window.Rosa3D.montar(caja3d, { alPerder: volverAlSvg }).then(function (r) {
+        r3d = r; r3d.gesto(svg.getAttribute("data-gesto") || "tranquila");
+        if (cara.classList.contains("descubierto")) r3d.descubierto({ inmediato: true });
+      }, volverAlSvg);
+    }
     var campo = h("textarea", { class: "rosa-campo", rows: 2, placeholder: "Escribe o dicta tu pregunta a Rosa…", "aria-label": "Tu pregunta a Rosa", maxlength: 300 });
     var estado = h("p", { class: "rosa-estado quieto", role: "status" });
     var chipR = h("span", { class: "rosa-chip" }), chipI = h("span", { class: "rosa-chip" });
@@ -633,7 +660,7 @@
         burbuja("rosa", t.r); gesto(t.g);
         var antes = cara.classList.contains("descubierto"), rev = pintarEstado();
         estado.textContent = rosaCoach(q);
-        if (rev === "si" && !antes) { cara.classList.add("descubierto"); avisar("Descubriste lo que Rosa no decía. Anótalo en «Lo que me sorprendió»."); evidencia("Rosa: insight descubierto con " + rosaRepreguntas() + " repreguntas"); }
+        if (rev === "si" && !antes) { cara.classList.add("descubierto"); if (r3d) r3d.descubierto(); avisar("Descubriste lo que Rosa no decía. Anótalo en «Lo que me sorprendió»."); evidencia("Rosa: insight descubierto con " + rosaRepreguntas() + " repreguntas"); }
         if (voz.checked) hablarRosa(t.r, abrir);
       });
     }
@@ -651,12 +678,12 @@
     var armado = 0;
     var bNueva = h("button", { type: "button", class: "boton texto", text: "Empezar de nuevo", onclick: function () {
       if (Date.now() - armado > 3000) { armado = Date.now(); bNueva.textContent = "¿Seguro? Toca otra vez"; setTimeout(function () { bNueva.textContent = "Empezar de nuevo"; }, 3000); return; }
-      S.rosa = []; guardar(); callarRosa(); ir_(e.id);
+      S.rosa = []; guardar(); callarRosa(); if (r3d) r3d.destruir(); ir_(e.id);
     } });
     pintarEstado(); gesto(hist.length ? hist[hist.length - 1].g : "tranquila");
     if (hist.some(function (t) { return t.rev === "si"; })) cara.classList.add("descubierto");
     return h("section", { class: "rosa", "aria-label": "Entrevista a Rosa, personaje de práctica" }, [
-      h("div", { class: "rosa-cab" }, [cara, h("div", null, [h("h2", { class: "h3", text: "Rosa Huamán, 38" }), h("p", { class: "quieto", text: "Asistente contable en Surquillo. Falta a sus citas médicas." }), h("p", { class: "rosa-ficticia", text: "Personaje ficticio de práctica · responde la IA de la clase" }),
+      h("div", { class: "rosa-cab" + (caja3d ? " con-3d" : "") }, [caja3d || cara, h("div", null, [h("h2", { class: "h3", text: "Rosa Huamán, 38" }), h("p", { class: "quieto", text: "Asistente contable en Surquillo. Falta a sus citas médicas." }), h("p", { class: "rosa-ficticia", text: "Personaje ficticio de práctica · responde la IA de la clase" }),
         h("div", { class: "fila rosa-chips" }, [chipR, chipI])])]),
       log,
       h("div", { class: "rosa-entrada" }, [campo, h("div", { class: "fila" }, [bHablar, bPreguntar, h("label", { class: "rosa-voz", for: "rosa-voz" }, [voz, " Rosa responde en voz alta"])])]),
@@ -664,6 +691,124 @@
       h("div", { class: "fila" }, [bNotas, bNueva])]);
   }
   var ir_ = function () { };
+
+  // ================================================================ tablero de la lluvia de ideas
+  // Notas tipo post-it: las tuyas (amarillas) y las que trae Claude (color Claude). En «Idear» se escriben,
+  // se marca la favorita y se borran; en «Elegir» cada nota recibe puntos de tres criterios (verde, azul,
+  // morado) y las que más tienen pasan a finalistas. Vive en S.tablero; S.ideas y S.ideas_claude salen de él
+  // para que los pedidos a Claude, la madurez y la ficha sigan funcionando.
+  var CRIT = [["c1", "Encanta"], ["c2", "Rápida"], ["c3", "Audaz"]];
+  function tablero() {
+    if (!Array.isArray(S.tablero)) {
+      S.tablero = [];
+      val("ideas").split("\n").forEach(function (l) { var t = l.replace(/^\s*\*\s*/, "").trim(); if (t) S.tablero.push({ id: nuevoId(), t: t, de: "yo", fav: /^\s*\*/.test(l), v: {} }); });
+      val("ideas_claude").split("\n").forEach(function (l) { var t = l.trim(); if (t) S.tablero.push({ id: nuevoId(), t: t, de: "claude", fav: false, v: {} }); });
+    }
+    return S.tablero;
+  }
+  function nuevoId() { return "n" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
+  function derivarIdeas() {
+    var tb = tablero();
+    S.ideas = tb.filter(function (n) { return n.de === "yo"; }).map(function (n) { return (n.fav ? "* " : "") + n.t; }).join("\n");
+    S.ideas_claude = tb.filter(function (n) { return n.de === "claude"; }).map(function (n) { return n.t; }).join("\n");
+  }
+  function puntos(n) { return CRIT.filter(function (c) { return n.v && n.v[c[0]]; }).length; }
+  function bloqueTablero(b) {
+    var votar = b.modo === "votar";
+    var caja = h("div", { class: "tablero-notas" + (votar ? " votar" : ""), role: "list" });
+    var conteo = h("span", { class: "quieto tablero-n", "aria-live": "polite" });
+    function cambio() { derivarIdeas(); alCambiar(); pintar(); }
+    function nota(n) {
+      var texto = h("textarea", { class: "nota-t", rows: 3, "aria-label": "Idea", maxlength: 160 });
+      texto.value = n.t;
+      texto.addEventListener("input", function () { n.t = texto.value; autoalto(texto); derivarIdeas(); alCambiar(); });
+      texto.addEventListener("blur", function () { if (!texto.value.trim()) { S.tablero = tablero().filter(function (x) { return x !== n; }); cambio(); } });
+      var hijos = [h("span", { class: "nota-de", text: n.de === "claude" ? "Claude" : "Tú" }), texto];
+      if (votar) {
+        hijos.push(h("div", { class: "nota-puntos" }, CRIT.map(function (c) {
+          return h("button", { type: "button", class: "punto-voto " + c[0], "aria-pressed": String(!!(n.v && n.v[c[0]])), "aria-label": c[1] + ": " + n.t.slice(0, 40), title: c[1],
+            onclick: function () { n.v = n.v || {}; n.v[c[0]] = !n.v[c[0]]; cambio(); } });
+        }).concat([h("button", { type: "button", class: "enlace nota-elegir", text: val("idea") === n.t ? "La pruebo primero" : "Probar esta", onclick: function () { S.idea = n.t; alCambiar(); var el = $('[data-campo="idea"]'); if (el) { el.value = n.t; autoalto(el); contar(el); } pintar(); avisar("Elegida para probar primero."); } })])));
+      } else {
+        hijos.push(h("div", { class: "nota-acc" }, [
+          h("button", { type: "button", class: "nota-fav", "aria-pressed": String(!!n.fav), "aria-label": "Favorita", title: "Favorita", text: n.fav ? "★" : "☆",
+            onclick: function () { tablero().forEach(function (x) { if (x !== n) x.fav = false; }); n.fav = !n.fav; cambio(); } }),
+          h("button", { type: "button", class: "nota-borrar", "aria-label": "Borrar idea", title: "Borrar", text: "×",
+            onclick: function () { S.tablero = tablero().filter(function (x) { return x !== n; }); cambio(); } })]));
+      }
+      var el = h("article", { class: "nota-post de-" + n.de + (n.fav ? " fav" : "") + (val("idea") === n.t ? " elegida" : ""), role: "listitem" }, hijos);
+      setTimeout(function () { autoalto(texto); }, 0);
+      return el;
+    }
+    function pintar() {
+      var tb = tablero().slice();
+      if (votar) tb.sort(function (a, z) { return puntos(z) - puntos(a); });
+      caja.textContent = "";
+      if (!tb.length) caja.appendChild(h("p", { class: "quieto", text: votar ? "Tu tablero está vacío: vuelve a «Ideas» y escribe algunas." : "Todavía no hay ideas. Escribe la primera arriba." }));
+      tb.forEach(function (n) { caja.appendChild(nota(n)); });
+      var yo = tb.filter(function (n) { return n.de === "yo"; }).length, cl = tb.length - yo;
+      conteo.textContent = votar ? tb.filter(function (n) { return puntos(n); }).length + " con puntos" : yo + (yo === 1 ? " idea tuya" : " ideas tuyas") + (cl ? " · " + cl + " de Claude" : "");
+    }
+    var hijos = [h("div", { class: "tablero-cab" }, [h("h2", { class: "h3", text: votar ? "Vota en tu tablero" : "Tablero de ideas" }), conteo])];
+    if (!votar) {
+      var entrada = h("input", { type: "text", class: "tablero-in", maxlength: 160, placeholder: "Escribe una idea y pulsa Enter", "aria-label": "Nueva idea" });
+      function agregar() { var t = entrada.value.trim(); if (!t) { entrada.focus(); return; } tablero().unshift({ id: nuevoId(), t: t, de: "yo", fav: false, v: {} }); entrada.value = ""; cambio(); entrada.focus(); }
+      entrada.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); agregar(); } });
+      hijos.push(h("div", { class: "fila tablero-fila" }, [entrada, h("button", { type: "button", class: "boton", text: "Agregar", onclick: agregar })]));
+      var pega = h("textarea", { rows: 4, placeholder: "Pega aquí las ideas de Claude que te sirvan, una por línea.", "aria-label": "Ideas de Claude" });
+      hijos.push(caja);
+      hijos.push(h("details", { class: "respuesta" }, [h("summary", { text: "Agregar ideas de Claude al tablero" }), pega,
+        h("div", { class: "fila", style: "margin-top:10px" }, [h("button", { type: "button", class: "boton claude-b", text: "Agregar al tablero", onclick: function () {
+          var n = 0; pega.value.split("\n").forEach(function (l) { var t = l.replace(/^\s*([-*•]|\d+[.)])\s*/, "").trim(); if (t) { tablero().push({ id: nuevoId(), t: t.slice(0, 160), de: "claude", fav: false, v: {} }); n++; } });
+          if (!n) { avisar("Pega al menos una idea."); return; } pega.value = ""; cambio(); avisar("Agregué " + n + " ideas de Claude al tablero.");
+        } })])]));
+    } else {
+      hijos.push(h("p", { class: "quieto", text: "Toca los puntos de cada nota: verde si encantaría, azul si es rápida de probar, morado si es audaz. Las que más puntos juntan suben." }));
+      hijos.push(caja);
+      hijos.push(h("div", { class: "fila" }, [h("button", { type: "button", class: "boton sec", text: "Usar las 3 con más puntos como finalistas", onclick: function () {
+        var top = tablero().slice().filter(puntos).sort(function (a, z) { return puntos(z) - puntos(a); }).slice(0, 3);
+        if (!top.length) { avisar("Primero dale puntos a algunas notas."); return; }
+        S.top3 = top.map(function (n) { return n.t + " (" + CRIT.filter(function (c) { return n.v[c[0]]; }).map(function (c) { return c[1].toLowerCase(); }).join(", ") + ")"; }).join("\n");
+        alCambiar(); var el = $('[data-campo="top3"]'); if (el) { el.value = S.top3; autoalto(el); contar(el); }
+        avisar("Listo: tus 3 finalistas salieron del tablero.");
+      } })]));
+    }
+    pintar();
+    return h("section", { class: "tablero", "aria-label": votar ? "Votación del tablero" : "Tablero de ideas" }, hijos);
+  }
+
+  // ================================================================ tu idea en tu cuenta (base de datos del LMS)
+  // GET/PUT /api/v1/laboratorio/design-thinking-claude: la misma idea en cualquier equipo y en las tres
+  // sesiones, y el instructor la ve. Gana la copia con la marca de tiempo (_t) más nueva. Si el endpoint no
+  // responde (sin conexión o antes de desplegarlo), todo sigue en este navegador.
+  var CURSO_ID = "design-thinking-claude";
+  var nube = { ok: null, timer: 0 };
+  function marcaGuardado(txt) { $$("[data-guardado]").forEach(function (g) { g.textContent = txt; }); }
+  function nubeGuardar() {
+    clearTimeout(nube.timer);
+    nube.timer = setTimeout(function () {
+      fetch("/api/v1/laboratorio/" + CURSO_ID, { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ datos: S }) })
+        .then(function (r) { nube.ok = r.ok; marcaGuardado(r.ok ? "Guardado en tu cuenta" : "Guardado en este navegador"); })
+        .catch(function () { nube.ok = false; marcaGuardado("Guardado en este navegador"); });
+    }, 1200);
+  }
+  function nubeCargar(listo) {
+    fetch("/api/v1/laboratorio/" + CURSO_ID, { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); })
+      .then(function (x) {
+        nube.ok = true;
+        var remoto = x && x.datos && typeof x.datos === "object" ? x.datos : null;
+        var tl = +S._t || 0, tr = remoto ? +remoto._t || 0 : 0;
+        if (remoto && tr > tl) {
+          Object.keys(S).forEach(function (k) { delete S[k]; });
+          Object.keys(remoto).forEach(function (k) { S[k] = remoto[k]; });
+          guardar(); marcaGuardado("Guardado en tu cuenta"); if (listo) listo(true); return;
+        }
+        if (Object.keys(S).length && tl > tr) nubeGuardar();
+        if (listo) listo(false);
+      })
+      .catch(function () { nube.ok = false; if (listo) listo(false); });
+  }
 
   // ================================================================ el laboratorio
   var pedidoN = 0;
@@ -699,12 +844,24 @@
           h("div", { class: "fila" }, [h("button", { type: "button", class: "boton", "data-reloj-ir": true, text: "Empezar" }), h("button", { type: "button", class: "boton texto", "data-reloj-cero": true, text: "Reiniciar" })])]);
       case "mapa":
         return h("div", { class: "cuadrantes" }, b.campos.map(function (c) {
-          return h("div", { class: "campo cuadrante" }, [h("label", { for: "c-" + c.id, text: c.t }), h("textarea", { "data-campo": c.id, rows: 4, placeholder: c.ph || "", id: "c-" + c.id })]);
+          return h("div", { class: "campo cuadrante" }, [h("label", { for: "c-" + c.id, text: c.t }), c.q ? h("p", { class: "cuadrante-q", id: "q-" + c.id, text: c.q }) : null,
+            h("textarea", { "data-campo": c.id, rows: 4, placeholder: c.ph || "", id: "c-" + c.id, "aria-describedby": c.q ? "q-" + c.id : null })]);
         }));
+      case "traerCitas":
+        return h("div", { class: "fila" }, [h("button", { type: "button", class: "boton sec", text: "Traer las frases de mis notas a «Dice»", onclick: function () {
+          var citas = (val("notas").match(/«[^»]{3,}»|"[^"]{3,}"/g) || []).map(function (x) { return "«" + x.slice(1, -1).trim() + "»"; });
+          if (!citas.length) { avisar("No encontré frases entre comillas en tus notas. Escríbelas en «Lo que dijo, tal cual» o directo en «Dice»."); return; }
+          var ya = val("dice"), nuevas = citas.filter(function (c) { return ya.indexOf(c) < 0; });
+          S.dice = (ya ? ya + "\n" : "") + nuevas.join("\n"); guardar(); alCambiar();
+          var el = $('[data-campo="dice"]'); if (el) { el.value = S.dice; autoalto(el); el.focus(); }
+          avisar(nuevas.length ? "Traje " + nuevas.length + " frases a «Dice». Ahora reparte lo demás." : "Esas frases ya estaban en «Dice».");
+        } }), h("span", { class: "quieto", text: "Toma las frases entre comillas de tu entrevista." })]);
       case "formula": return h("p", { class: "formula", html: b.x });
       case "ejemplo": return h("details", { class: "consejos ejemplo" }, [h("summary", { text: b.t }), h("p", { html: b.x })]);
       case "criterios":
         return h("div", { class: "criterios" }, b.items.map(function (c) { return h("div", { class: "criterio " + c[0] }, [h("i", { "aria-hidden": "true" }), h("b", { text: c[1] }), h("span", { text: c[2] })]); }));
+      case "tablero":
+        return bloqueTablero(b);
       case "avatar":
         if (LECCION && LECCION !== "dtc-01") return h("aside", { class: "consejo" }, [h("b", { text: "Rosa fue la práctica de la sesión 1" }), h("p", { text: "Ahora tus notas salen de personas reales: anótalas en «Lo que dijo, tal cual»." })]);
         return bloqueRosa(e);
@@ -769,6 +926,8 @@
     function pintarEstacion(e) {
       var kids = [h("header", { class: "cab" }, [h("h1", { text: e.h }), h("p", { class: "lead", text: e.d })]),
         h("p", { class: "aviso-guardado", role: "alert", text: "Este navegador no está guardando lo que escribes. Al terminar, ve a la ficha y descarga tu idea." })];
+      if (e.video) kids.push(h("figure", { class: "video" }, [h("video", { controls: true, preload: "metadata", playsinline: true, src: "/files/" + CURSO_ID + "/materials/videos/" + e.video[0] }),
+        h("figcaption", null, [h("b", { text: e.video[1] }), " Basado en Klebahn y Utley (2021), Stanford Online."])]));
       if (e.ia) kids.push(h("section", { class: "ia", "aria-label": "Quién hace qué en esta estación" }, [
         h("div", { class: "humano" }, [h("p", { class: "ia-t", text: "Sigue siendo tuyo" }), h("p", { text: e.ia.h })]),
         h("div", { class: "mejora" }, [h("p", { class: "ia-t", text: "Claude mejora aquí" }), h("p", { text: e.ia.m })]),
@@ -850,6 +1009,7 @@
     }
     enlazar(top);
     ir_ = ir;
+    nubeCargar(function (cambio) { if (cambio) { $$('[data-campo]', top).forEach(function (el) { var k = el.getAttribute("data-campo"); el.value = S[k] == null ? "" : S[k]; }); ir(actual, true); avisar("Traje tu idea desde tu cuenta."); } });
     window.LAB = { refrescar: function () { pintarRail(); pintarMadurez(); }, ir: ir };
     ir(inicial, true);
   }
