@@ -41,6 +41,8 @@ PREGUNTAS = [
      ['Llegas a la meta', 'Te quedas sin vidas', 'Se acaba el reloj'], True, 4),
 ]
 
+CORTA = ['¿Quién juega?', '¿Qué debe lograr?', '¿Con qué teclas?', '¿Qué se puede?', '¿Qué vale?', '¿Qué te lo impide?', '¿Dónde ocurre?', '¿Cómo se gana?']
+
 YAML = '''id: {id}
 titulo: "{titulo}"
 fase: experimentacion
@@ -107,7 +109,7 @@ def main():
     for i, (carpeta, paso, nombre, pregunta, profe, ejemplos, guardar, minutos) in enumerate(PREGUNTAS):
         d = os.path.join(LIVE, carpeta)
         os.makedirs(d, exist_ok=True)
-        titulo = f'Tu juego · {i + 1}/8 · {pregunta}'
+        titulo = f'Pregunta {i + 1}/8 · {CORTA[i]}'   # corto: la lista de escenas del LIVE tiene alto fijo
         with open(os.path.join(d, 'escena.yaml'), 'w', encoding='utf-8') as f:
             f.write(YAML.format(id=carpeta, titulo=titulo.replace('"', '\\"'), min=minutos))
         pg = HTML.format(
