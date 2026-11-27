@@ -7,7 +7,7 @@ objectives:
   - id: dtc-01-o1
     title: Explicar qué es el Design Thinking y por qué no es una receta lineal, con el caso Cybex
   - id: dtc-01-o2
-    title: Preparar con Claude una entrevista de empatía y hacerla a una persona real
+    title: Preparar con Claude una entrevista de empatía y practicarla con Rosa, un avatar en tiempo real
   - id: dtc-01-o3
     title: Ordenar la entrevista en un mapa de empatía y encontrar un insight
   - id: dtc-01-o4
@@ -20,17 +20,17 @@ cycle:
     description: El profe proyecta clips cortos del webinar de la d.school de Stanford (Klebahn y Utley, 2021). Escenas 2 y 3.
     check: Sabes qué emoción encontró Bill y cómo la probó
   - id: reto
-    title: Escribir tu reto y arrancar a tu coach en Claude
+    title: Tomar el tema de hoy y arrancar a tu coach en Claude
     tool: lms
     phase: experiencia
-    description: En la escena 4 escribes el problema (no la solución) y pegas en claude.ai el pedido que convierte a Claude en tu coach.
-    check: Tu reto está en la bitácora y Claude te hizo sus 3 preguntas
+    description: "El profe pone el tema: pacientes que faltan a sus citas. En la estación 1 lo usas y pegas en claude.ai el pedido que convierte a Claude en tu coach."
+    check: El tema está en tu laboratorio y Claude te hizo sus 3 preguntas
   - id: entrevistar
-    title: Entrevistar a una persona real
+    title: Entrevistar a Rosa, el avatar de práctica
     tool: lms
     phase: experimentacion
-    description: Preparas 6 preguntas abiertas con Claude y entrevistas 8 minutos. Anotas lo que dijo con sus palabras.
-    check: Tienes notas con al menos 3 frases textuales
+    description: "Escribes tus preguntas, Claude las afina y entrevistas a Rosa en tiempo real, escribiendo o hablando. Rosa es un personaje ficticio que guarda un secreto: solo lo cuenta si le pides historias y repreguntas. Esta semana entrevistas a dos personas reales."
+    check: Descubriste el insight de Rosa y pasaste la entrevista a tus notas
   - id: mapa
     title: Armar el mapa de empatía
     tool: lms

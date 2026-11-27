@@ -92,6 +92,7 @@
       ia: { h: "Elegir el problema que te importa y a quién le duele.", m: "Te hace las preguntas que no te hiciste y avisa si tu reto ya trae una solución adentro." },
       clave: ["reto", "usuario"],
       b: [
+        { k: "tema", reto: "Los pacientes faltan a sus citas médicas sin avisar", usuario: "Pacientes adultos que trabajan y sacan cita por teléfono" },
         { k: "campo", id: "reto", t: "Mi reto", max: 200, ph: "Los pacientes de mi consultorio faltan a sus citas sin avisar" },
         { k: "campo", id: "usuario", t: "Para quién", linea: true, max: 120, ph: "Pacientes adultos que trabajan y sacan cita por WhatsApp" },
         { k: "claude", id: "p-coach", t: "Arranca a tu coach", d: "Pégalo en un chat nuevo de claude.ai y sigue en ese mismo chat las tres sesiones.", req: ["reto", "usuario"],
@@ -100,8 +101,8 @@
       ] },
     { id: "entrevista", mov: "entender", fase: "emp", escena: "05-tu-entrevista", t: "Entrevista",
       h: "Pide historias, no opiniones",
-      d: "Escribe tus preguntas, deja que Claude las afine y habla 8 minutos con una persona real. Lo que dice, con sus palabras, vale más que lo que tú crees.",
-      ia: { h: "Hablar con la persona, mirar sus manos y su cara, aguantar el silencio. Claude no puede entrevistar por ti.", m: "Revisa tus preguntas en un minuto: marca las que sugieren la respuesta y completa las que faltan." },
+      d: "Escribe tus preguntas, deja que Claude las afine y entrevista a Rosa, una paciente que falta a sus citas. Rosa guarda un secreto: solo lo cuenta si le preguntas bien.",
+      ia: { h: "Escuchar y repreguntar. Rosa es un simulador para practicar; esta semana entrevistas a dos personas reales, porque ninguna IA reemplaza a una persona.", m: "Revisa tus preguntas en un minuto, y hoy además hace de Rosa para que practiques sin miedo a equivocarte." },
       clave: ["notas"],
       b: [
         { k: "campo", id: "preguntas", t: "Mis preguntas", ayuda: "Escribe 3 o más, a tu manera. Empieza por «Cuéntame la última vez que…».", filas: 4, ph: "1. Cuéntame la última vez que…" },
@@ -112,8 +113,8 @@
           ["Pregunta «¿por qué?» aunque parezca obvio", "La emoción suele aparecer en la segunda o tercera respuesta."],
           ["Mira lo que hace, no solo lo que dice", "Como Bill en el gimnasio: los gestos y las manos también son datos."],
           ["Calla", "Tres segundos de silencio hacen que la persona siga hablando."]] },
-        { k: "reloj", s: 480, t: "8 minutos de entrevista", d: "En parejas, 4 minutos cada uno. Si estás solo, el profe te empareja o llamas a alguien que viva el problema." },
-        { k: "campo", id: "entrevistado", t: "A quién entrevisté", linea: true, max: 100, ph: "Una paciente de 34 años, contadora (sin datos personales)" },
+        { k: "avatar" },
+        { k: "campo", id: "entrevistado", t: "A quién entrevisté", linea: true, max: 100, ph: "Rosa (personaje de práctica), o una persona real sin datos personales" },
         { k: "campo", id: "notas", t: "Lo que dijo, tal cual", ayuda: "Frases textuales entre comillas. Anota también lo que hizo y cómo lo dijo.", filas: 6, ph: "«Siempre se me olvida porque…»" }
       ] },
     { id: "mapa", mov: "entender", fase: "emp", escena: "06-mapa-de-empatia", t: "Mapa de empatía",
@@ -369,6 +370,7 @@
       out = out.concat(bloque);
     });
     if (S.quiz) out.push("## Práctica DTPC®", "", "Puntaje: " + S.quiz, "");
+    (S.practicas || []).forEach(function (pr, n) { out.push("## Idea de práctica " + (n + 1) + ": " + (pr.reto || "tema de la clase"), ""); ["pov", "hmw", "sorpresa"].forEach(function (k) { if (pr[k]) out.push("**" + ROTULO[k] + ":** " + pr[k], ""); }); });
     out.push("<!-- laboratorio-de-ideas:v1 " + encodeURIComponent(JSON.stringify(S)) + " -->", "");
     return out.join("\n");
   }
@@ -460,6 +462,209 @@
     leer(); setInterval(function () { if (!document.hidden && document.body.contains(caja)) leer(); }, 6000);
   }
 
+  // ================================================================ Rosa: el avatar de práctica (sesión 1)
+  // Personaje FICTICIO para practicar la entrevista de empatía, en tiempo real: el alumno escribe o dicta, Rosa responde
+  // con texto y voz. El cerebro es la IA de la clase del LMS (/escenario, DeepSeek): su historia y su secreto viven en
+  // live/dtc-01/05-tu-entrevista/escenario.json, no en esta página. Rosa solo cuenta el secreto si le preguntan bien
+  // (historias y repreguntas); a las preguntas cerradas responde con cortesía, como la gente real.
+  var ROSA_ESCENA = "05-tu-entrevista";
+  var RE_REPREGUNTA = /(por\s*qu[eé]|c[oó]mo te sentiste|qu[eé] sentiste|c[oó]mo te hizo sentir|qu[eé] hiciste despu[eé]s|y despu[eé]s|qu[eé] pensaste|qu[eé] pas[oó] despu[eé]s)/i;
+  var RE_CERRADA = /^\s*¿?\s*(y\s+)?(te\s+(gustar|servir|ayudar|parece|conviene)|usar[ií]as|ser[ií]a|es\s+porque|verdad|no\s+crees|crees\s+que|tienes|has\s+pensado|quisieras|podr[ií]as|estar[ií]as|pagar[ií]as|preferir[ií]as|se\s+te\s+olvida)/i;
+  var RE_HISTORIA = /(cu[eé]ntame|c[oó]mo fue|qu[eé] pas[oó]|la [uú]ltima vez|descr[ií]beme|h[aá]blame de|c[oó]mo es un d[ií]a)/i;
+  var RE_SOLUCION = /(app|aplicaci[oó]n|recordatorio|whatsapp|bot\b|sistema|notificaci|alarma)/i;
+
+  function rosaHistorial() { return Array.isArray(S.rosa) ? S.rosa : (S.rosa = []); }
+  function rosaRepreguntas() { return rosaHistorial().filter(function (t) { return RE_REPREGUNTA.test(t.p); }).length; }
+  function rosaCoach(q) {
+    if (RE_CERRADA.test(q) && RE_SOLUCION.test(q)) return "Ofreciste una solución: Rosa dirá que sí por cortesía, como en Westfield.";
+    if (RE_CERRADA.test(q)) return "Pregunta cerrada: invita a una historia («Cuéntame la última vez que…»).";
+    if (RE_REPREGUNTA.test(q)) return "Bien: repreguntaste. Sigue tirando del hilo.";
+    if (RE_HISTORIA.test(q)) return "Bien: pediste una historia. Ahora pregunta «¿por qué?».";
+    return "Escucha y repregunta lo que te sorprenda.";
+  }
+
+  // Voz de Rosa: una voz femenina en español del navegador; si no hay, la del servidor (Piper); si no, solo texto.
+  var VOZ_FEM = /(paulina|m[oó]nica|sabina|helena|laura|dalia|elvira|paloma|luciana|francisca|marisol|soledad|ximena|camila|valeria|renata|google espa[nñ]ol)/i;
+  function vozRosa() {
+    if (!window.speechSynthesis) return null;
+    var vs = window.speechSynthesis.getVoices().filter(function (v) { return /^es/i.test(v.lang); });
+    return vs.filter(function (v) { return VOZ_FEM.test(v.name) && /(MX|US|419|PE|CO|AR|CL)/i.test(v.lang); })[0] || vs.filter(function (v) { return VOZ_FEM.test(v.name); })[0] || null;
+  }
+  try { if (window.speechSynthesis) { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = function () { }; } } catch (e) { /* sin voz */ }
+  var audioCtx = null, fuente = null;
+  function callarRosa() {
+    try { if (fuente) fuente.stop(); } catch (e) { /* ya paró */ } fuente = null;
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) { /* sin voz */ }
+  }
+  function hablarRosa(texto, boca) {
+    callarRosa();
+    var v = vozRosa();
+    if (v) return new Promise(function (ok) {
+      var u = new SpeechSynthesisUtterance(texto); u.voice = v; u.lang = v.lang; u.rate = 1.02; u.pitch = 1.05;
+      var t = setInterval(function () { boca(0.25 + Math.random() * 0.75); }, 110);
+      u.onend = u.onerror = function () { clearInterval(t); boca(0); ok(); };
+      window.speechSynthesis.speak(u);
+    });
+    var C = window.AudioContext || window.webkitAudioContext; if (!C) return Promise.resolve();
+    if (!audioCtx) audioCtx = new C();
+    return fetch("/api/v1/live/" + encodeURIComponent(LECCION || "dtc-01") + "/voz", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: texto.slice(0, 700) }) })
+      .then(function (r) { if (!r.ok) throw new Error("voz"); return r.arrayBuffer(); })
+      .then(function (buf) { return new Promise(function (ok, mal) { audioCtx.decodeAudioData(buf, ok, mal); }); })
+      .then(function (ab) {
+        return new Promise(function (ok) {
+          var src = audioCtx.createBufferSource(), an = audioCtx.createAnalyser(); an.fftSize = 256;
+          src.buffer = ab; src.connect(an); an.connect(audioCtx.destination);
+          var datos = new Uint8Array(an.frequencyBinCount), vivo = true;
+          (function paso() { if (!vivo) return; an.getByteTimeDomainData(datos); var m = 0; for (var k = 0; k < datos.length; k++) m = Math.max(m, Math.abs(datos[k] - 128)); boca(Math.min(1, m / 50)); requestAnimationFrame(paso); })();
+          src.onended = function () { vivo = false; boca(0); fuente = null; ok(); };
+          fuente = src; src.start();
+        });
+      }).catch(function () { boca(0); });
+  }
+
+  // Dictado: Web Speech (es-PE); si el navegador no lo da, se graba y transcribe el servidor (/transcribir).
+  function aWav(blob) {
+    return blob.arrayBuffer().then(function (buf) {
+      var C = window.AudioContext || window.webkitAudioContext, ctx = new C();
+      return new Promise(function (ok, mal) { ctx.decodeAudioData(buf, ok, mal); }).then(function (ab) {
+        ctx.close();
+        var n = Math.max(1, Math.ceil(ab.duration * 16000)), off = new OfflineAudioContext(1, n, 16000), src = off.createBufferSource();
+        src.buffer = ab; src.connect(off.destination); src.start(); return off.startRendering();
+      });
+    }).then(function (ab) {
+      var d = ab.getChannelData(0), out = new DataView(new ArrayBuffer(44 + d.length * 2));
+      function txt(o, s) { for (var k = 0; k < s.length; k++) out.setUint8(o + k, s.charCodeAt(k)); }
+      txt(0, "RIFF"); out.setUint32(4, 36 + d.length * 2, true); txt(8, "WAVEfmt "); out.setUint32(16, 16, true);
+      out.setUint16(20, 1, true); out.setUint16(22, 1, true); out.setUint32(24, 16000, true); out.setUint32(28, 32000, true);
+      out.setUint16(32, 2, true); out.setUint16(34, 16, true); txt(36, "data"); out.setUint32(40, d.length * 2, true);
+      for (var k = 0; k < d.length; k++) { var v = Math.max(-1, Math.min(1, d[k])); out.setInt16(44 + k * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
+      var bytes = new Uint8Array(out.buffer), bin = "";
+      for (var k2 = 0; k2 < bytes.length; k2 += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(k2, k2 + 0x8000));
+      return btoa(bin);
+    });
+  }
+  function dictado(boton, campo, decir, alTerminar) {
+    var Reco = window.SpeechRecognition || window.webkitSpeechRecognition, grabar = !Reco, reco = null, oyendo = false, grab = null, flujo = null, trozos = [], tope = null;
+    function pintar() { boton.setAttribute("aria-pressed", String(oyendo)); boton.querySelector("span").textContent = oyendo ? "Detener" : "Hablar"; boton.classList.toggle("oyendo", oyendo); }
+    function poner(t) { campo.value = t; campo.dispatchEvent(new Event("input", { bubbles: true })); }
+    function detener() { clearTimeout(tope); if (reco) { try { reco.stop(); } catch (e) { /* ya */ } } if (grab && grab.state !== "inactive") grab.stop(); oyendo = false; pintar(); }
+    function conReco() {
+      var base = ""; reco = new Reco(); reco.lang = "es-PE"; reco.interimResults = true; reco.continuous = false;
+      reco.onresult = function (e) { var fin = "", par = ""; for (var i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) fin += e.results[i][0].transcript; else par += e.results[i][0].transcript; } if (fin) base += fin; poner((base + par).trim()); };
+      reco.onerror = function (e) {
+        if (e.error === "not-allowed") decir("Permiso de micrófono denegado: actívalo en el candado de la barra de direcciones.");
+        else if (/network|service-not-allowed|audio-capture|language-not-supported/.test(e.error)) { grabar = true; decir("El dictado del navegador no está disponible: pulsa «Hablar» otra vez y grabaré tu voz."); }
+      };
+      reco.onend = function () { reco = null; var estaba = oyendo; oyendo = false; pintar(); if (estaba && campo.value.trim() && alTerminar) alTerminar(); };
+      try { reco.start(); oyendo = true; pintar(); decir("Te escucho… pregunta con calma."); tope = setTimeout(detener, 30000); } catch (e) { reco = null; grabar = true; decir("Pulsa «Hablar» otra vez: grabaré tu voz."); }
+    }
+    function conGrabadora() {
+      if (!navigator.mediaDevices || !window.MediaRecorder) { decir("Este navegador no da el micrófono: escribe tu pregunta."); return; }
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (f) {
+        flujo = f; trozos = []; grab = new MediaRecorder(f);
+        grab.ondataavailable = function (e) { if (e.data && e.data.size) trozos.push(e.data); };
+        grab.onstop = function () {
+          flujo.getTracks().forEach(function (t) { t.stop(); });
+          if (!trozos.length) return; decir("Transcribiendo tu voz…"); boton.disabled = true;
+          aWav(new Blob(trozos, { type: grab.mimeType || "audio/webm" })).then(function (b64) { return api("/transcribir", { audio: b64 }); })
+            .then(function (x) { var t = String((x.b && x.b.texto) || "").trim(); if (t) { poner(t); if (alTerminar) alTerminar(); } else decir("No se entendió. Habla más cerca del micrófono."); })
+            .finally(function () { boton.disabled = false; });
+        };
+        grab.start(); oyendo = true; pintar(); decir("Grabando (máximo 20 s)… pulsa «Detener» al terminar."); tope = setTimeout(detener, 20000);
+      }, function () { decir("Permiso de micrófono denegado: escribe tu pregunta."); });
+    }
+    boton.addEventListener("click", function () { if (oyendo) { detener(); return; } callarRosa(); if (grabar) conGrabadora(); else conReco(); });
+  }
+
+  var CARA = '<svg class="rosa-cara" viewBox="0 0 120 120" role="img" aria-label="Rosa, personaje de práctica">' +
+    '<circle cx="60" cy="60" r="58" class="fondo"/>' +
+    '<path class="ropa" d="M22 118c4-20 20-30 38-30s34 10 38 30z"/>' +
+    '<path class="cuello" d="M52 80h16v12c-5 4-11 4-16 0z"/>' +
+    '<path class="pelo" d="M31 62c-2-24 12-38 29-38s31 14 29 38c-2-6-4-14-10-20-6 4-22 6-38 0-6 6-8 14-10 20z"/>' +
+    '<circle class="pelo" cx="60" cy="22" r="9"/>' +
+    '<ellipse class="piel" cx="60" cy="58" rx="24" ry="29"/>' +
+    '<path class="pelo" d="M36 52c2-14 12-22 24-22s22 8 24 22c-8-8-16-11-24-11s-16 3-24 11z"/>' +
+    '<g class="cejas"><path class="ceja ci" d="M45 50q5-3 10 0"/><path class="ceja cd" d="M65 50q5-3 10 0"/></g>' +
+    '<g class="ojos"><ellipse cx="50" cy="58" rx="2.4" ry="3"/><ellipse cx="70" cy="58" rx="2.4" ry="3"/></g>' +
+    '<path class="nariz" d="M60 61q-2 6 1 7"/>' +
+    '<path class="boca" d="M52 74q8 4 16 0"/>' +
+    '<ellipse class="boca-abierta" cx="60" cy="75" rx="5" ry="0"/></svg>';
+  var BOCAS = { tranquila: "M52 74q8 4 16 0", dudosa: "M52 75q8 0 16-1", incomoda: "M52 76q8-3 16 0", emocionada: "M51 73q9 7 18 0", seria: "M52 75q8 0 16 0" };
+
+  function bloqueRosa(e) {
+    var hist = rosaHistorial();
+    var log = h("div", { class: "rosa-log", "aria-live": "polite" });
+    var cara = h("div", { class: "rosa-retrato", html: CARA });
+    var svg = $("svg", cara), boca = $(".boca", cara), bocaA = $(".boca-abierta", cara);
+    function gesto(g) { g = BOCAS[g] ? g : "tranquila"; svg.setAttribute("data-gesto", g); boca.setAttribute("d", BOCAS[g]); }
+    function abrir(n) { bocaA.setAttribute("ry", (n * 4.5).toFixed(2)); }
+    var campo = h("textarea", { class: "rosa-campo", rows: 2, placeholder: "Escribe o dicta tu pregunta a Rosa…", "aria-label": "Tu pregunta a Rosa", maxlength: 300 });
+    var estado = h("p", { class: "rosa-estado quieto", role: "status" });
+    var chipR = h("span", { class: "rosa-chip" }), chipI = h("span", { class: "rosa-chip" });
+    var voz = h("input", { type: "checkbox", id: "rosa-voz", checked: S.rosaMuda ? null : true });
+    var bHablar = h("button", { type: "button", class: "boton sec", html: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Hablar</span>' });
+    var bPreguntar = h("button", { type: "button", class: "boton", html: "Preguntar " + ICO.flecha });
+    function pintarEstado() {
+      var rev = hist.some(function (t) { return t.rev === "si"; }) ? "si" : hist.some(function (t) { return t.rev === "pista"; }) ? "pista" : "no";
+      chipR.textContent = "Repreguntas: " + rosaRepreguntas();
+      chipI.textContent = rev === "si" ? "Insight: descubierto" : rev === "pista" ? "Insight: asomó" : "Insight: oculto";
+      chipI.className = "rosa-chip" + (rev === "si" ? " si" : rev === "pista" ? " pista" : "");
+      return rev;
+    }
+    function burbuja(quien, texto, g) { log.appendChild(h("div", { class: "rosa-b " + quien }, [h("span", { class: "quien", text: quien === "tu" ? "Tú" : "Rosa" }), h("p", { text: texto })])); log.scrollTop = log.scrollHeight; }
+    hist.forEach(function (t) { burbuja("tu", t.p); burbuja("rosa", t.r); });
+    if (!hist.length) log.appendChild(h("p", { class: "rosa-vacio", text: "Rosa espera tu primera pregunta. Empieza por una historia: «Cuéntame la última vez que…»." }));
+    if (hist.length) gesto(hist[hist.length - 1].g);
+    function preguntar() {
+      var q = campo.value.replace(/\s+/g, " ").trim();
+      if (q.length < 4) { avisar("Escribe o dicta una pregunta."); campo.focus(); return; }
+      var vacio = $(".rosa-vacio", log); if (vacio) vacio.remove();
+      burbuja("tu", q); campo.value = ""; bPreguntar.disabled = true; estado.textContent = rosaCoach(q) + " · Rosa está pensando…";
+      var muestra = { conversacion: hist.slice(-6).map(function (t) { return { p: t.p.slice(0, 300), r: t.r.slice(0, 400) }; }), repreguntas: rosaRepreguntas() + (RE_REPREGUNTA.test(q) ? 1 : 0) };
+      api("/escenario", { escena: ROSA_ESCENA, pedido: q.slice(0, 300), empresa: { razon: "Rosa (personaje de práctica)", rubro: "entrevista de empatía", regimen: "Design Thinking" }, muestra: muestra }).then(function (x) {
+        bPreguntar.disabled = false;
+        var fila = x.estado === 200 && x.b && x.b.escenario && x.b.escenario.tablas && (x.b.escenario.tablas.Respuesta || [])[0];
+        if (!fila || !fila[0]) {
+          var msg = x.estado === 429 ? "Llegaste al tope de preguntas de hoy." : x.estado === 503 ? "Rosa no está disponible: el profe debe activar la IA de la clase para este grupo." : x.estado === 404 ? "Rosa atiende en la sesión 1." : x.estado === 0 ? "Sin conexión con el LMS." : "Rosa no respondió. Pregunta otra vez.";
+          estado.textContent = msg; burbuja("rosa", "…"); return;
+        }
+        var t = { p: q, r: String(fila[0]), g: String(fila[1] || "tranquila"), rev: String(fila[2] || "no") };
+        hist.push(t); S.rosa = hist; guardar();
+        burbuja("rosa", t.r); gesto(t.g);
+        var antes = cara.classList.contains("descubierto"), rev = pintarEstado();
+        estado.textContent = rosaCoach(q);
+        if (rev === "si" && !antes) { cara.classList.add("descubierto"); avisar("Descubriste lo que Rosa no decía. Anótalo en «Lo que me sorprendió»."); evidencia("Rosa: insight descubierto con " + rosaRepreguntas() + " repreguntas"); }
+        if (voz.checked) hablarRosa(t.r, abrir);
+      });
+    }
+    bPreguntar.addEventListener("click", preguntar);
+    campo.addEventListener("keydown", function (ev) { if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); preguntar(); } });
+    voz.addEventListener("change", function () { S.rosaMuda = !voz.checked; guardar(); if (!voz.checked) callarRosa(); });
+    dictado(bHablar, campo, function (t) { estado.textContent = t; }, preguntar);
+    var bNotas = h("button", { type: "button", class: "boton sec", text: "Pasar la entrevista a mis notas", onclick: function () {
+      if (!hist.length) { avisar("Primero entrevista a Rosa."); return; }
+      var notas = hist.map(function (t) { return "P: " + t.p + "\nRosa: «" + t.r + "»"; }).join("\n\n");
+      S.notas = (val("notas") ? val("notas") + "\n\n" : "") + notas; S.entrevistado = val("entrevistado") || "Rosa Huamán, 38, asistente contable (personaje de práctica)";
+      guardar(); alCambiar(); var n = $('[data-campo="notas"]'); if (n) { n.value = S.notas; autoalto(n); n.focus(); }
+      avisar("Pasé la entrevista a «Lo que dijo, tal cual». Sigue con el mapa de empatía.");
+    } });
+    var armado = 0;
+    var bNueva = h("button", { type: "button", class: "boton texto", text: "Empezar de nuevo", onclick: function () {
+      if (Date.now() - armado > 3000) { armado = Date.now(); bNueva.textContent = "¿Seguro? Toca otra vez"; setTimeout(function () { bNueva.textContent = "Empezar de nuevo"; }, 3000); return; }
+      S.rosa = []; guardar(); callarRosa(); ir_(e.id);
+    } });
+    pintarEstado(); gesto(hist.length ? hist[hist.length - 1].g : "tranquila");
+    if (hist.some(function (t) { return t.rev === "si"; })) cara.classList.add("descubierto");
+    return h("section", { class: "rosa", "aria-label": "Entrevista a Rosa, personaje de práctica" }, [
+      h("div", { class: "rosa-cab" }, [cara, h("div", null, [h("h2", { class: "h3", text: "Rosa Huamán, 38" }), h("p", { class: "quieto", text: "Asistente contable en Surquillo. Falta a sus citas médicas." }), h("p", { class: "rosa-ficticia", text: "Personaje ficticio de práctica · responde la IA de la clase" }),
+        h("div", { class: "fila rosa-chips" }, [chipR, chipI])])]),
+      log,
+      h("div", { class: "rosa-entrada" }, [campo, h("div", { class: "fila" }, [bHablar, bPreguntar, h("label", { class: "rosa-voz", for: "rosa-voz" }, [voz, " Rosa responde en voz alta"])])]),
+      estado,
+      h("div", { class: "fila" }, [bNotas, bNueva])]);
+  }
+  var ir_ = function () { };
+
   // ================================================================ el laboratorio
   var pedidoN = 0;
   function bloque(b, e) {
@@ -500,6 +705,16 @@
       case "ejemplo": return h("details", { class: "consejos ejemplo" }, [h("summary", { text: b.t }), h("p", { html: b.x })]);
       case "criterios":
         return h("div", { class: "criterios" }, b.items.map(function (c) { return h("div", { class: "criterio " + c[0] }, [h("i", { "aria-hidden": "true" }), h("b", { text: c[1] }), h("span", { text: c[2] })]); }));
+      case "avatar":
+        if (LECCION && LECCION !== "dtc-01") return h("aside", { class: "consejo" }, [h("b", { text: "Rosa fue la práctica de la sesión 1" }), h("p", { text: "Ahora tus notas salen de personas reales: anótalas en «Lo que dijo, tal cual»." })]);
+        return bloqueRosa(e);
+      case "tema":
+        return h("section", { class: "tema" }, [h("p", { class: "ia-t", text: "El tema de hoy lo pone el profe" }), h("h2", { class: "h3", text: b.reto }), h("p", { class: "quieto", text: "Para: " + b.usuario }),
+          h("div", { class: "fila" }, [h("button", { type: "button", class: "boton", text: "Usar este tema", onclick: function () {
+            S.reto = b.reto; S.usuario = b.usuario; guardar(); alCambiar();
+            $$('[data-campo="reto"],[data-campo="usuario"]').forEach(function (el) { el.value = S[el.getAttribute("data-campo")]; autoalto(el); contar(el); });
+            avisar("Listo. Ahora arranca a tu coach en Claude.");
+          } })]), h("p", { class: "quieto", text: "En la sesión 2 puedes seguir con este tema o empezar tu propia idea." })]);
       case "muro":
         if (ESCENA !== e.escena) return h("aside", { class: "consejo" }, [h("b", { text: "Galería del grupo" }), h("p", { text: "Se abre en clase, cuando el profe llega a esta estación." })]);
         return h("section", { class: "galeria", "data-muro": b.campo, "data-orden-likes": true }, [
@@ -605,6 +820,18 @@
         h("button", { type: "button", class: "boton", "data-bitacora": "descargar", html: "Descargar mi idea " + ICO.baja }),
         h("button", { type: "button", class: "boton sec", "data-bitacora": "copiar", text: "Copiarla para Claude" }),
         h("label", { class: "boton texto recuperar", html: ICO.sube + "<span>Recuperar desde archivo</span>" }, [entrada])]));
+      if (ALCANCE >= 2 && !S.idea_propia) {
+        var armado = 0;
+        var bPropia = h("button", { type: "button", class: "boton texto", text: "Empezar mi propia idea", onclick: function () {
+          if (Date.now() - armado > 4000) { armado = Date.now(); bPropia.textContent = "Guardo el tema de práctica y empiezo de cero. Toca otra vez"; return; }
+          var copia = {}; Object.keys(S).forEach(function (k) { if (k !== "practicas") copia[k] = S[k]; });
+          var practicas = (S.practicas || []).concat([copia]), quiz = S.quiz;
+          Object.keys(S).forEach(function (k) { S[k] = undefined; });
+          S.practicas = practicas; if (quiz) S.quiz = quiz; S.idea_propia = true;
+          guardar(); avisar("Tu práctica quedó guardada. Empieza tu idea en «Tu reto»."); ir("reto");
+        } });
+        kids.push(h("div", { class: "consejo" }, [h("b", { text: "¿Seguir con el tema de la clase o empezar la tuya?" }), h("p", { text: "Puedes seguir con «pacientes que faltan a sus citas» o empezar tu propia idea. La práctica no se pierde: queda guardada y se descarga con tu idea." }), bPropia]));
+      }
       $$("[data-anexo]").forEach(function (a) { a.hidden = false; kids.push(a); });
       return kids;
     }
@@ -622,6 +849,7 @@
       if (!sinFoco) { window.scrollTo(0, 0); hoja.focus({ preventScroll: true }); }
     }
     enlazar(top);
+    ir_ = ir;
     window.LAB = { refrescar: function () { pintarRail(); pintarMadurez(); }, ir: ir };
     ir(inicial, true);
   }

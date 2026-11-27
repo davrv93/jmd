@@ -179,7 +179,7 @@ def sesion1():
         ("Todo se guarda solo", "En este navegador. Al final de cada sesión descargas tu idea en un archivo.")])}''',
            sesion=1, lo_logre=False, fuente="Laboratorio de ideas · Design Thinking con Claude · JMD Learning.")
 
-    lamina(L, 2, T, "01-principios", "Los principios, de la fuente", "conceptualizacion", "ver", 9, "met",
+    lamina(L, 2, T, "01-principios", "Los principios, de la fuente", "conceptualizacion", "ver", 8, "met",
            "Tres fuentes, <em>una misma idea:</em> primero la persona",
            "La d.school de Stanford, IDEO y el Design Council británico describen el método con palabras distintas. Las tres empiezan por entender a alguien, y ninguna es una receta.",
            f'''{revela("r-variable", "Antes del clip: según la investigación que citan, ¿qué variable influye más en lo buenas que son tus ideas?",
@@ -197,7 +197,7 @@ def sesion1():
                "Brown, T. (2008). Design Thinking. <i>Harvard Business Review</i>, 86(6), 84–92.",
                "Design Council (2005, 2007). <i>The Double Diamond</i> y <i>Eleven lessons: managing design in eleven global brands</i>. Londres."))
 
-    lamina(L, 3, T, "02-como-pensamos", "Cómo pensamos, y dónde ayuda la IA", "conceptualizacion", "ver", 7, "met",
+    lamina(L, 3, T, "02-como-pensamos", "Cómo pensamos, y dónde ayuda la IA", "conceptualizacion", "ver", 6, "met",
            "Tu cerebro quiere <em>saltar a la solución</em>",
            "El método existe porque pensamos con atajos. Aquí van cuatro atajos que el Design Thinking frena y, en la tabla, dónde Claude ayuda de verdad y dónde no.",
            f'''<div class="rej dos">
@@ -228,7 +228,7 @@ def sesion1():
                "Dell'Acqua, F., McFowland, E., Mollick, E. et al. (2023). <i>Navigating the jagged technological frontier</i>. HBS Working Paper 24-013; <i>Organization Science</i> (2026).",
                WEBINAR))
 
-    lamina(L, 4, T, "03-caso-cybex", "El caso Cybex: una emoción", "reflexion", "ver", 10, ["emp", "def"],
+    lamina(L, 4, T, "03-caso-cybex", "El caso Cybex: una emoción", "reflexion", "ver", 9, ["emp", "def"],
            "Bill no midió nada: <em>miró caras</em>",
            "Un ingeniero de Cybex, una de las grandes marcas de caminadoras, fue a un gimnasio con su cuaderno. Lo que vio cambió el producto.",
            f'''{clip("00:07:58", "00:09:54", "Observar en el gimnasio", "Perry Klebahn cuenta cómo Bill Pacheco se sentó a mirar. La gente se agarraba de las pantallas «como si su vida dependiera de ello».")}
@@ -250,12 +250,14 @@ def sesion1():
   <div class="fila" style="margin-top:12px"><button class="boton sec" type="button" data-revelar="r-bill">Ver qué vio Bill</button></div>
 </section>''', sesion=1)
 
-    laboratorio(L, "04-tu-reto", "Estación 1 · Tu reto", "experiencia", "reto", 5, "reto")
-    laboratorio(L, "05-tu-entrevista", "Estación 2 · Entrevista", "experimentacion", "entrevistar", 13, "entrevista")
+    laboratorio(L, "04-tu-reto", "Estación 1 · El tema de hoy", "experiencia", "reto", 4, "reto")
+    laboratorio(L, "05-tu-entrevista", "Estación 2 · Entrevista a Rosa", "experimentacion", "entrevistar", 17, "entrevista")
+    # Rosa, el avatar de práctica: su historia y su secreto viven aquí (los lee /escenario en el servidor), no en la página.
+    shutil.copy(CURSO / "_fuente" / "rosa-escenario.json", LIVE / L / "05-tu-entrevista" / "escenario.json")
     laboratorio(L, "06-mapa-de-empatia", "Estación 3 · Mapa de empatía", "experimentacion", "mapa", 11, "mapa")
     laboratorio(L, "07-tu-pregunta", "Estación 4 · Tu pregunta", "experimentacion", "definir", 12, "pregunta", evidencia="hallazgo")
     laboratorio(L, "08-cierre", "Cierre · la ficha de tu idea", "reflexion", "", 5, "ficha", anexo=f'''<h2 {H2}>Para el viernes 4 de diciembre</h2>
-{pasos([("Entrevista a dos personas más", "Con el mismo guion. Si algo contradice tu punto de vista, ajústalo: eso es iterar."),
+{pasos([("Entrevista a dos personas reales", "Pacientes que faltan a sus citas, o personas que viven el problema de tu propia idea. Rosa fue la práctica: ahora, la realidad. ¿Dicen lo mismo que ella?"),
         ("Trae papel y un plumón", "En la sesión 2 dibujas 8 ideas en 8 minutos.")])}
 <h2 {H2}>Tres preguntas de práctica</h2>
 {quiz([
