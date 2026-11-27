@@ -37,11 +37,14 @@
  *     opciones: modelo (URL del .glb), motor (URL de rosa3d-motor.js), fondo ('auto' | 'claro' | 'oscuro' |
  *     'transparente'; 'auto' sigue a html[data-tema] y a prefers-color-scheme), calidad ('auto' | 'alta' | 'baja'),
  *     sinMovimiento (true = sin balanceo; también con prefers-reduced-motion), alPerder (función si se pierde WebGL).
- *  gesto('tranquila'|'dudosa'|'incomoda'|'emocionada'|'seria')  cara + postura, fundido de ~300 ms
+ *  gesto(nombre)   cara + postura, fundido de ~300 ms, con un parpadeo al cambiar. Nombres: neutra (al inicio),
+ *                  tranquila, pensativa, dudosa, sorprendida, emocionada, aliviada, seria, molesta, nerviosa, incomoda,
+ *                  avergonzada, triste. Uno desconocido = neutra.
  *  boca(n)         apertura 0..1 → mandíbula y visemas
  *  hablando(bool)  cuerpo en modo habla (cabeceos, manos) o escucha
  *  descubierto(o)  una sola vez: se abre (toma aire, suelta los hombros, cierra los ojos, sonríe, mano al pecho);
  *                  o = { inmediato: true } la deja en ese estado sin la escena (al recargar)
+ *  reiniciar()     vuelve a neutra y deshace el descubierto, sin volver a cargar nada («Reiniciar entrevista»)
  *  destruir()      libera WebGL, geometrías, texturas, observadores y el bucle
  */
 (function () {
@@ -97,5 +100,5 @@
     return cargarMotor(op.motor || BASE + "rosa3d-motor.js").then(function (M) { return M.montar(contenedor, op); });
   }
 
-  window.Rosa3D = { disponible: disponible, montar: montar, version: "1.0.0" };
+  window.Rosa3D = { disponible: disponible, montar: montar, version: "1.1.0" };
 })();

@@ -53,7 +53,8 @@
     baja: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
     sube: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M5 20h14"/></svg>',
     hoja: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z"/><path d="M14 3.5V8h4M9.5 12.5h5M9.5 16h5"/></svg>',
-    marca: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2"/></svg>'
+    marca: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2"/></svg>',
+    reinicia: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg>'
   };
 
   var toastEl = null, toastT = 0;
@@ -606,7 +607,13 @@
     '<path class="nariz" d="M60 61q-2 6 1 7"/>' +
     '<path class="boca" d="M52 74q8 4 16 0"/>' +
     '<ellipse class="boca-abierta" cx="60" cy="75" rx="5" ry="0"/></svg>';
-  var BOCAS = { tranquila: "M52 74q8 4 16 0", dudosa: "M52 75q8 0 16-1", incomoda: "M52 76q8-3 16 0", emocionada: "M51 73q9 7 18 0", seria: "M52 75q8 0 16 0" };
+  var BOCAS = { neutra: "M52 75q8 1 16 0", tranquila: "M52 74q8 4 16 0", pensativa: "M53 75q7-1 14 1", dudosa: "M52 75q8 0 16-1",
+    sorprendida: "M55 74q5 4 10 0", emocionada: "M51 73q9 7 18 0", aliviada: "M52 74q8 5 16 0", seria: "M52 75q8 0 16 0",
+    molesta: "M52 76q8-2 16 0", nerviosa: "M51 75q4.5-2 9 0t9 0", incomoda: "M52 76q8-3 16 0", avergonzada: "M53 75q6 2 13-1", triste: "M52 77q8-5 16 0" };
+  // lo que el alumno ve de Rosa, escrito como acotación en la transcripción (sirve para el «Siente» del mapa de empatía)
+  var EMOCION = { tranquila: "tranquila", pensativa: "se queda pensando", dudosa: "duda", sorprendida: "se sorprende", emocionada: "se emociona",
+    aliviada: "se ve aliviada", seria: "se pone seria", molesta: "se molesta", nerviosa: "se pone nerviosa", incomoda: "se incomoda",
+    avergonzada: "baja la mirada, avergonzada", triste: "se entristece" };
 
   function bloqueRosa(e) {
     var hist = rosaHistorial();
@@ -614,14 +621,14 @@
     var cara = h("div", { class: "rosa-retrato", html: CARA });
     var svg = $("svg", cara), boca = $(".boca", cara), bocaA = $(".boca-abierta", cara);
     var r3d = null, caja3d = null;
-    function gesto(g) { g = BOCAS[g] ? g : "tranquila"; svg.setAttribute("data-gesto", g); boca.setAttribute("d", BOCAS[g]); if (r3d) r3d.gesto(g); }
+    function gesto(g) { g = BOCAS[g] ? g : "neutra"; svg.setAttribute("data-gesto", g); boca.setAttribute("d", BOCAS[g]); if (r3d) r3d.gesto(g); }
     function abrir(n) { bocaA.setAttribute("ry", (n * 4.5).toFixed(2)); if (r3d) r3d.boca(n); }
     // Rosa 3D (rosa3d.js: Rocketbox Female_Adult_11, Three.js). Sin WebGL2 o en un equipo débil queda el dibujo SVG.
     function volverAlSvg() { r3d = null; if (caja3d && caja3d.parentNode) caja3d.replaceWith(cara); }
     if (window.Rosa3D && window.Rosa3D.disponible()) {
       caja3d = h("div", { class: "rosa-3d" }); caja3d.appendChild(cara);
       window.Rosa3D.montar(caja3d, { alPerder: volverAlSvg }).then(function (r) {
-        r3d = r; r3d.gesto(svg.getAttribute("data-gesto") || "tranquila");
+        r3d = r; r3d.gesto(svg.getAttribute("data-gesto") || "neutra");
         if (cara.classList.contains("descubierto")) r3d.descubierto({ inmediato: true });
       }, volverAlSvg);
     }
@@ -638,26 +645,32 @@
       chipI.className = "rosa-chip" + (rev === "si" ? " si" : rev === "pista" ? " pista" : "");
       return rev;
     }
-    function burbuja(quien, texto, g) { log.appendChild(h("div", { class: "rosa-b " + quien }, [h("span", { class: "quien", text: quien === "tu" ? "Tú" : "Rosa" }), h("p", { text: texto })])); log.scrollTop = log.scrollHeight; }
-    hist.forEach(function (t) { burbuja("tu", t.p); burbuja("rosa", t.r); });
-    if (!hist.length) log.appendChild(h("p", { class: "rosa-vacio", text: "Rosa espera tu primera pregunta. Empieza por una historia: «Cuéntame la última vez que…»." }));
+    function burbuja(quien, texto, g) {
+      var rotulo = quien === "tu" ? "Tú" : "Rosa" + (EMOCION[g] ? " · " + EMOCION[g] : "");
+      log.appendChild(h("div", { class: "rosa-b " + quien }, [h("span", { class: "quien", text: rotulo }), h("p", { text: texto })])); log.scrollTop = log.scrollHeight;
+    }
+    function vacio() { log.appendChild(h("p", { class: "rosa-vacio", text: "Rosa espera tu primera pregunta. Empieza por una historia: «Cuéntame la última vez que…»." })); }
+    hist.forEach(function (t) { burbuja("tu", t.p); burbuja("rosa", t.r, t.g); });
+    if (!hist.length) vacio();
     if (hist.length) gesto(hist[hist.length - 1].g);
     function preguntar() {
       var q = campo.value.replace(/\s+/g, " ").trim();
       if (q.length < 4) { avisar("Escribe o dicta una pregunta."); campo.focus(); return; }
       var vacio = $(".rosa-vacio", log); if (vacio) vacio.remove();
       burbuja("tu", q); campo.value = ""; bPreguntar.disabled = true; estado.textContent = rosaCoach(q) + " · Rosa está pensando…";
+      var gAntes = svg.getAttribute("data-gesto") || "neutra"; gesto("pensativa");
       var muestra = { conversacion: hist.slice(-6).map(function (t) { return { p: t.p.slice(0, 300), r: t.r.slice(0, 400) }; }), repreguntas: rosaRepreguntas() + (RE_REPREGUNTA.test(q) ? 1 : 0) };
       api("/escenario", { escena: ROSA_ESCENA, pedido: q.slice(0, 300), empresa: { razon: "Rosa (personaje de práctica)", rubro: "entrevista de empatía", regimen: "Design Thinking" }, muestra: muestra }).then(function (x) {
         bPreguntar.disabled = false;
         var fila = x.estado === 200 && x.b && x.b.escenario && x.b.escenario.tablas && (x.b.escenario.tablas.Respuesta || [])[0];
         if (!fila || !fila[0]) {
           var msg = x.estado === 429 ? "Llegaste al tope de preguntas de hoy." : x.estado === 503 ? "Rosa no está disponible: el profe debe activar la IA de la clase para este grupo." : x.estado === 404 ? "Rosa atiende en la sesión 1." : x.estado === 0 ? "Sin conexión con el LMS." : "Rosa no respondió. Pregunta otra vez.";
-          estado.textContent = msg; burbuja("rosa", "…"); return;
+          estado.textContent = msg; burbuja("rosa", "…"); gesto(gAntes); return;
         }
-        var t = { p: q, r: String(fila[0]), g: String(fila[1] || "tranquila"), rev: String(fila[2] || "no") };
-        hist.push(t); S.rosa = hist; guardar();
-        burbuja("rosa", t.r); gesto(t.g);
+        var g = String(fila[1] || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        var t = { p: q, r: String(fila[0]), g: BOCAS[g] ? g : "neutra", rev: String(fila[2] || "no") };
+        hist.push(t); S.rosa = hist; alCambiar();
+        burbuja("rosa", t.r, t.g); gesto(t.g); pintarReinicio();
         var antes = cara.classList.contains("descubierto"), rev = pintarEstado();
         estado.textContent = rosaCoach(q);
         if (rev === "si" && !antes) { cara.classList.add("descubierto"); if (r3d) r3d.descubierto(); avisar("Descubriste lo que Rosa no decía. Anótalo en «Lo que me sorprendió»."); evidencia("Rosa: insight descubierto con " + rosaRepreguntas() + " repreguntas"); }
@@ -670,25 +683,43 @@
     dictado(bHablar, campo, function (t) { estado.textContent = t; }, preguntar);
     var bNotas = h("button", { type: "button", class: "boton sec", text: "Pasar la entrevista a mis notas", onclick: function () {
       if (!hist.length) { avisar("Primero entrevista a Rosa."); return; }
-      var notas = hist.map(function (t) { return "P: " + t.p + "\nRosa: «" + t.r + "»"; }).join("\n\n");
+      var notas = hist.map(function (t) { return "P: " + t.p + "\nRosa" + (EMOCION[t.g] ? " (" + EMOCION[t.g] + ")" : "") + ": «" + t.r + "»"; }).join("\n\n");
       S.notas = (val("notas") ? val("notas") + "\n\n" : "") + notas; S.entrevistado = val("entrevistado") || "Rosa Huamán, 38, asistente contable (personaje de práctica)";
       guardar(); alCambiar(); var n = $('[data-campo="notas"]'); if (n) { n.value = S.notas; autoalto(n); n.focus(); }
       avisar("Pasé la entrevista a «Lo que dijo, tal cual». Sigue con el mapa de empatía.");
     } });
-    var armado = 0;
-    var bNueva = h("button", { type: "button", class: "boton texto", text: "Empezar de nuevo", onclick: function () {
-      if (Date.now() - armado > 3000) { armado = Date.now(); bNueva.textContent = "¿Seguro? Toca otra vez"; setTimeout(function () { bNueva.textContent = "Empezar de nuevo"; }, 3000); return; }
-      S.rosa = []; guardar(); callarRosa(); if (r3d) r3d.destruir(); ir_(e.id);
-    } });
-    pintarEstado(); gesto(hist.length ? hist[hist.length - 1].g : "tranquila");
+    // Reiniciar: en el sitio (no vuelve a pintar la estación ni a cargar el modelo 3D). Rosa vuelve neutra y olvida
+    // la conversación; lo que ya pasaste a tus notas se queda. Pide un segundo toque para no borrar por accidente.
+    var armado = 0, armadoT = 0, TXT_REINICIO = "Reiniciar entrevista";
+    var bReinicio = h("button", { type: "button", class: "boton sec rosa-reinicio", "aria-live": "polite", html: ICO.reinicia + "<span>" + TXT_REINICIO + "</span>" });
+    function rotuloReinicio(t) { $("span", bReinicio).textContent = t; bReinicio.classList.toggle("armado", t !== TXT_REINICIO); }
+    function pintarReinicio() { bReinicio.disabled = !hist.length; if (!hist.length) { armado = 0; rotuloReinicio(TXT_REINICIO); } }
+    function reiniciar() {
+      callarRosa(); clearTimeout(armadoT); armado = 0;
+      hist = []; S.rosa = []; alCambiar();
+      log.textContent = ""; vacio();
+      cara.classList.remove("descubierto"); if (r3d && r3d.reiniciar) r3d.reiniciar();
+      gesto("neutra"); pintarEstado(); pintarReinicio();
+      campo.value = ""; bPreguntar.disabled = false; estado.textContent = "Entrevista reiniciada: Rosa no recuerda lo anterior. Tus notas siguen igual.";
+      campo.focus();
+    }
+    bReinicio.addEventListener("click", function () {
+      if (!hist.length) return;
+      if (Date.now() - armado > 3000) {
+        armado = Date.now(); rotuloReinicio("¿Borrar la conversación? Toca otra vez");
+        clearTimeout(armadoT); armadoT = setTimeout(function () { armado = 0; rotuloReinicio(TXT_REINICIO); }, 3000); return;
+      }
+      reiniciar();
+    });
+    pintarEstado(); pintarReinicio(); gesto(hist.length ? hist[hist.length - 1].g : "neutra");
     if (hist.some(function (t) { return t.rev === "si"; })) cara.classList.add("descubierto");
     return h("section", { class: "rosa", "aria-label": "Entrevista a Rosa, personaje de práctica" }, [
       h("div", { class: "rosa-cab" + (caja3d ? " con-3d" : "") }, [caja3d || cara, h("div", null, [h("h2", { class: "h3", text: "Rosa Huamán, 38" }), h("p", { class: "quieto", text: "Asistente contable en Surquillo. Falta a sus citas médicas." }), h("p", { class: "rosa-ficticia", text: "Personaje ficticio de práctica · responde la IA de la clase" }),
-        h("div", { class: "fila rosa-chips" }, [chipR, chipI])])]),
+        h("div", { class: "fila rosa-chips" }, [chipR, chipI]), bReinicio])]),
       log,
       h("div", { class: "rosa-entrada" }, [campo, h("div", { class: "fila" }, [bHablar, bPreguntar, h("label", { class: "rosa-voz", for: "rosa-voz" }, [voz, " Rosa responde en voz alta"])])]),
       estado,
-      h("div", { class: "fila" }, [bNotas, bNueva])]);
+      h("div", { class: "fila" }, [bNotas])]);
   }
   var ir_ = function () { };
 
@@ -787,11 +818,17 @@
   function nubeGuardar() {
     clearTimeout(nube.timer);
     nube.timer = setTimeout(function () {
+      nube.timer = 0;
       fetch("/api/v1/laboratorio/" + CURSO_ID, { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ datos: S }) })
         .then(function (r) { nube.ok = r.ok; marcaGuardado(r.ok ? "Guardado en tu cuenta" : "Guardado en este navegador"); })
         .catch(function () { nube.ok = false; marcaGuardado("Guardado en este navegador"); });
     }, 1200);
   }
+  // si la pestaña se cierra con un guardado pendiente (por ejemplo, justo después de «Reiniciar entrevista»), sale igual
+  window.addEventListener("pagehide", function () {
+    if (!nube.timer) return; clearTimeout(nube.timer); nube.timer = 0;
+    try { fetch("/api/v1/laboratorio/" + CURSO_ID, { method: "PUT", credentials: "same-origin", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ datos: S }) }); } catch (e) { /* sin red: queda en este navegador */ }
+  });
   function nubeCargar(listo) {
     fetch("/api/v1/laboratorio/" + CURSO_ID, { credentials: "same-origin", cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); })

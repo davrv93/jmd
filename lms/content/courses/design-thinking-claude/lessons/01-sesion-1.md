@@ -17,6 +17,10 @@ materials:
     title: "Video · Qué es el Design Thinking (51 s)"
     kind: video
     file: materials/videos/v1-que-es-design-thinking.mp4
+  - id: dtc-01-v10
+    title: "Video · Design Thinking: las cinco etapas y seis palabras clave (1:41)"
+    kind: video
+    file: materials/videos/v10-etapas-y-palabras-clave.mp4
   - id: dtc-01-v2
     title: "Video · Cybex: mirar caras (32 s)"
     kind: video

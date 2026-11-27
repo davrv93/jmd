@@ -198,7 +198,8 @@ def sesion1():
   <article class="tarjeta"><h2 class="h3">Deseable, factible, viable</h2><p>Une lo que las personas necesitan con lo que la tecnología permite y lo que un negocio puede sostener. Pide empatía, optimismo, experimentación y colaboración.</p><span class="de">IDEO · Tim Brown, 2008</span></article>
   <article class="tarjeta"><h2 class="h3">El doble diamante</h2><p>Descubrir, definir, desarrollar y entregar: abrir y cerrar dos veces. El primer diamante es «diseñar lo correcto»; el segundo, «diseñar bien lo correcto».</p><span class="de">Design Council · 2005</span></article>
 </div>
-<p class="calma">Las tres coinciden en que se vuelve atrás cuando hace falta. El Design Council lo dice así: «no es un proceso lineal».</p>''',
+<p class="calma">Las tres coinciden en que se vuelve atrás cuando hace falta. El Design Council lo dice así: «no es un proceso lineal».</p>
+<figure class="video"><video controls preload="metadata" playsinline src="/files/design-thinking-claude/materials/videos/v10-etapas-y-palabras-clave.mp4"></video><figcaption><b>Las cinco etapas y seis palabras clave</b> Qué se hace en cada etapa y qué significan empatía, insight, punto de vista, «¿cómo podríamos…?», prototipo e iteración. Fuentes en pantalla (1:41).</figcaption></figure>''',
            sesion=1, fuente=fuentes(
                WEBINAR,
                "Hasso Plattner Institute of Design at Stanford (d.school). <i>Bootcamp Bootleg</i> (CC BY-NC-SA 3.0) y <i>Design Thinking Bootleg</i> (2018).",
