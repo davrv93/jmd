@@ -25,6 +25,10 @@ materials:
     title: "Video · Somos los del enfoque (24 s)"
     kind: video
     file: materials/videos/v8-somos-del-enfoque.mp4
+  - id: dtc-03-v9
+    title: "Video · Cybex: lo que pasó, recreado con IA (35 s)"
+    kind: video
+    file: materials/videos/v9-cybex-lo-que-paso.mp4
 cycle:
   - id: ver
     title: Ver los clips sobre crear datos
