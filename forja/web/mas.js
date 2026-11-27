@@ -378,7 +378,7 @@ export function iniciarMas(A) {
     const accion = (nombre, fn) => { const b = el('button', { type: 'button' }, nombre); b.onclick = () => { cerrarB(); fn(); }; return b; };
     const lista = el('div', { class: 'lista' });
     const guiaLink = el('a', { href: 'guia.html', target: '_blank', rel: 'noopener' }, 'Guía de una página');
-    lista.append(accion('Diseñar mi juego paso a paso', () => disenaRef?.abrir()), accion('Hacer el recorrido', abrirRecorrido), accion('Crear con una frase', () => { $('texto').value = A.ejemplos[Math.floor(Math.random() * A.ejemplos.length)]; A.forjar(); }),
+    lista.append(accion('Diseñar mi juego paso a paso', () => disenaRef?.abrir()), accion('Ver «Tu juego» (primeros pasos)', () => tuJuego?.mostrar()), accion('Hacer el recorrido', abrirRecorrido), accion('Crear con una frase', () => { $('texto').value = A.ejemplos[Math.floor(Math.random() * A.ejemplos.length)]; A.forjar(); }),
       accion('Probar un juego', () => $('bProbar').click()), accion('Entender los algoritmos', () => { vista = 'algoritmos'; $('bProbar').click(); }), guiaLink);
     burbuja.replaceChildren(el('h3', {}, 'Soy Chispa, tu guía'), el('p', { class: 'consejo' }, texto || consejoAhora()), lista);
     burbuja.hidden = false; guia.setAttribute('aria-expanded', 'true');

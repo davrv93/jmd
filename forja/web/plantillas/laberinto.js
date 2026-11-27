@@ -73,7 +73,7 @@ class Laberinto extends Phaser.Scene {
     this.rivales = Array.from({ length: Forja.regla('rivales.cuantos', 2) }, (_, i) => i).map((i) => {
       const cel = puestos[i] || salida, p = centro(cel.c, cel.f);
       const s = Forja.apoyo(this, this.add.sprite(p.x, p.y + 14, 'enemigo', 'caminar_0').setScale(TAM / D.enemigo.px).play('enemigo:caminar'));   // apoyo: los pies en su sitio
-      s.setData({ estado: 'patrulla', ruta: [], destino: null, piensa: i * 0.2, visitadas: 0 }); return s;
+      s.setData({ estado: 'patrulla', ruta: [], destino: null, piensa: i * 0.2, visitadas: 0, casa: cel, quieto: 0 }); return s;   // casa: adonde vuelve si te atrapa
     });
     this.capaX = this.add.graphics().setDepth(940);
     this.leer = Forja.controles(this); this.fin = false; this.inicio = this.time.now;
@@ -107,6 +107,7 @@ class Laberinto extends Phaser.Scene {
   pensar(e, dt) {
     const yo = celda(e.x, e.y - 14), tu = celda(this.heroe.x, this.heroe.y - 10);
     e.setData('piensa', e.getData('piensa') - dt);
+    if (e.getData('quieto') > 0) { e.setData({ quieto: e.getData('quieto') - dt, v: 0 }); return; }   // recién vuelto a casa: espera
     if (e.getData('piensa') <= 0) {
       e.setData('piensa', Forja.regla('rivales.piensa', 0.35));   // regla: cada cuánto vuelve a calcular su ruta
       let destino = tu;
@@ -181,6 +182,17 @@ class Laberinto extends Phaser.Scene {
       if (h.getData('inmune') <= 0 && Phaser.Math.Distance.Between(e.x, e.y, h.x, h.y) < 34) {
         const p = centro(1, 1); this.chispas.explode(12, h.x, h.y - 30); this.cameras.main.shake(160, 0.006);
         h.setData({ vidas: h.getData('vidas') - 1, inmune: Forja.regla('jugador.inmunidad', 1.6) }); h.setPosition(p.x, p.y + 14); h.setVelocity(0, 0); Forja.sonar(this, 'dano', 0.6);
+        // >>> volver a casa
+        // Justo: si el rival se quedara junto a la salida, te atraparía otra vez al reaparecer. El que te atrapó, y cualquiera
+        // que ronde la salida, vuelven a su casa y esperan 1,5 s antes de buscarte de nuevo.
+        for (const r2 of this.rivales) {
+          const rc = celda(r2.x, r2.y - 14);
+          if (r2 !== e && Math.abs(rc.c - 1) + Math.abs(rc.f - 1) >= 8) continue;
+          const casa = r2.getData('casa'), q = centro(casa.c, casa.f);
+          this.chispas.explode(8, r2.x, r2.y - 20);
+          r2.setPosition(q.x, q.y + 14); r2.setData({ ruta: [], destino: null, piensa: 0, quieto: 1.5, estado: 'patrulla', v: 0 });
+        }
+        // <<<
         if (h.getData('vidas') <= 0) { this.fin = true; Forja.sonar(this, 'morir'); h.play('heroe:morir'); Forja.aviso(this, 'Te atraparon\nR para repetir'); }
       }
     }

@@ -16,19 +16,22 @@ export const PASOS = [
 ];
 
 export function crearGuia({ el, acciones, alTerminar = () => {} }) {
-  let hecho = {}, plegada = false;
-  try { const g = JSON.parse(localStorage.getItem(CLAVE) || '{}'); hecho = g.hecho || {}; plegada = !!g.plegada; } catch { /* sin almacenamiento */ }
-  const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify({ hecho, plegada })); } catch { /* nada */ } };
+  // plegada: solo la cabecera · cerrada: oculta del todo (se vuelve a abrir desde la ayuda «?» → «Ver Tu juego»)
+  let hecho = {}, plegada = false, cerrada = false;
+  try { const g = JSON.parse(localStorage.getItem(CLAVE) || '{}'); hecho = g.hecho || {}; plegada = !!g.plegada; cerrada = !!g.cerrada; } catch { /* sin almacenamiento */ }
+  const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify({ hecho, plegada, cerrada })); } catch { /* nada */ } };
   const caja = el('aside', { class: 'guia', 'aria-label': 'Tu juego: primeros pasos' });
   document.body.append(caja);
   const cuantos = () => PASOS.filter((p) => hecho[p.id]).length;
   function pintar() {
     const n = cuantos(), sig = PASOS.find((p) => !hecho[p.id]);
-    caja.classList.toggle('plegada', plegada); caja.classList.toggle('lista', !sig);
+    caja.hidden = cerrada; caja.classList.toggle('plegada', plegada); caja.classList.toggle('lista', !sig);
     const cab = el('button', { type: 'button', class: 'guia-cab', 'aria-expanded': String(!plegada) });
     cab.append(el('b', {}, sig ? 'Tu juego' : '¡Tu juego está listo!'), el('span', { class: 'guia-n' }, `${n} de ${PASOS.length}`));
     const barra = el('i', { class: 'guia-barra', style: `--p:${n / PASOS.length}` }); cab.append(barra);
     cab.onclick = () => { plegada = !plegada; guardar(); pintar(); };
+    const x = el('button', { type: 'button', class: 'guia-cerrar', 'aria-label': 'Cerrar «Tu juego»', title: 'Cerrar (vuelve con la ayuda «?»)' }, '✕');
+    x.onclick = () => { cerrada = true; guardar(); pintar(); };
     const lista = el('ol', { class: 'guia-pasos' });
     for (const p of PASOS) {
       const li = el('li', { class: hecho[p.id] ? 'hecho' : p === sig ? 'ahora' : '' });
@@ -40,16 +43,20 @@ export function crearGuia({ el, acciones, alTerminar = () => {} }) {
       lista.append(li);
     }
     const pie = el('p', { class: 'guia-pie' });
-    if (!sig) pie.append('Ahora: cambia la regla del rival, prueba otra plantilla o publica en la galería de tu clase.');
-    caja.replaceChildren(cab, ...(plegada ? [] : [lista, pie]));
+    if (!sig) {
+      pie.append('Ahora: cambia la regla del rival, prueba otra plantilla o publica en la galería de tu clase. ');
+      const listo = el('button', { type: 'button', class: 'btn mini' }, 'Listo, cerrar'); listo.onclick = () => { cerrada = true; guardar(); pintar(); }; pie.append(listo);
+    }
+    caja.replaceChildren(cab, x, ...(plegada ? [] : [lista, pie]));
   }
   function marcar(id) {
     if (hecho[id] || !PASOS.some((p) => p.id === id)) return;
     hecho[id] = Date.now(); guardar(); pintar();
     caja.classList.remove('festeja'); void caja.offsetWidth; caja.classList.add('festeja');
-    if (!PASOS.some((p) => !hecho[p.id])) alTerminar();
+    if (!PASOS.some((p) => !hecho[p.id])) { alTerminar(); setTimeout(() => { plegada = true; guardar(); pintar(); }, 8000); }   // celebrada, se pliega sola
   }
-  function reiniciar() { hecho = {}; plegada = false; guardar(); pintar(); }
+  function reiniciar() { hecho = {}; plegada = false; cerrada = false; guardar(); pintar(); }
+  function mostrar() { cerrada = false; plegada = false; guardar(); pintar(); }
   pintar();
-  return { marcar, reiniciar, hecho: () => ({ ...hecho }), caja };
+  return { marcar, reiniciar, mostrar, hecho: () => ({ ...hecho }), caja };
 }
